@@ -1,71 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756060Ab2FFKyk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 06:54:40 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:45499 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754492Ab2FFKyi (ORCPT
+	id S1756067Ab2FFKzf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 06:55:35 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:43949 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756013Ab2FFKyf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 06:54:38 -0400
-From: Sasha Levin <levinsasha928@gmail.com>
-To: konrad.wilk@oracle.com, dan.magenheimer@oracle.com
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: [PATCH 10/11] mm: frontswap: split out function to clear a page out
-Date: Wed,  6 Jun 2012 12:55:14 +0200
-Message-Id: <1338980115-2394-10-git-send-email-levinsasha928@gmail.com>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1338980115-2394-1-git-send-email-levinsasha928@gmail.com>
-References: <1338980115-2394-1-git-send-email-levinsasha928@gmail.com>
+	Wed, 6 Jun 2012 06:54:35 -0400
+Message-ID: <4FCF36E6.9060701@openvz.org>
+Date: Wed, 06 Jun 2012 14:54:30 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120517 Firefox/10.0.4 Iceape/2.7.4
+MIME-Version: 1.0
+To: Hans de Bruin <jmdebruin@xmsnet.nl>
+CC: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+        Ondrej Zary <linux@rainbow-software.org>,
+        Hugh Dickins <hughd@google.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux NFS mailing list <linux-nfs@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        =?ISO-8859-1?Q?Toralf_F=F6r?= =?ISO-8859-1?Q?ster?= 
+	<toralf.foerster@gmx.de>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>
+Subject: Re: [bisected commit 0fc9d10] NFS-server corruption with 3.4
+References: <201206051116.17711.linux@rainbow-software.org> <4FCE0A83.4050502@openvz.org> <201206051620.47925.linux@rainbow-software.org> <4FCE1D17.1080904@openvz.org> <87zk8h23wn.fsf@devron.myhome.or.jp> <4FCE2256.7010804@openvz.org> <4FCE2CCE.9000900@openvz.org> <87pq9d20lx.fsf@devron.myhome.or.jp> <4FCE3631.9020407@openvz.org> <4FCE888F.8050605@xmsnet.nl>
+In-Reply-To: <4FCE888F.8050605@xmsnet.nl>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
----
- mm/frontswap.c |   15 +++++++++------
- 1 files changed, 9 insertions(+), 6 deletions(-)
+Hans de Bruin wrote:
+> On 06/05/2012 06:39 PM, Konstantin Khlebnikov wrote:
+>> OGAWA Hirofumi wrote:
+>>> Konstantin Khlebnikov<khlebnikov@openvz.org>  writes:
+>>>
+>>>> Proper fix in attachment.
+>>>
+>>> Maybe, you are going to add the stable tag for next stable?
+>>>
+>>> Thanks.
+>>
+>> Yes, this definitely must be in next stable 3.4.x , but first I'll wait
+>> for confirmation.
+>>
+>> Guys, who can reproduce this, please check patch "radix-tree: fix
+>> contiguous iterator"
+>> from my previous mail in this thread.
+>>
+>>>
+>>>> radix-tree: fix contiguous iterator
+>>>>
+>>>> From: Konstantin Khlebnikov<khlebnikov@openvz.org>
+>>>>
+>>>> This patch fixes bug in macro radix_tree_for_each_contig().
+>>>> If radix_tree_next_slot() sees NULL in next slot it returns NULL, but
+>>>> following
+>>>> radix_tree_next_chunk() switches iterating into next chunk. As result
+>>>> iterating
+>>>> becomes non-contiguous and breaks vfs "splice" and all its users.
+>>>
+>>
+>
+> I patched on to off v3.4 and Firefox an Thunderbird do not segfault
+> anymore. The do not start either. This was de feature on my 'production'
+> server I could not reproduce on my test server. Maybe it has something
+> to with the different type of nic's.
+>
+> For the second attempt I branched of at 0fc9d1040313047edf6a39fd and
+> applied your patch on top of it. Firefox an Thunderbird where back
+> again. So your patch works.
+>
+> Now I need some git-instructions. Apparently something else is broken. I
+> branched of with:
+>
+> git branch debug 0fc9d1040313047edf6a3
+> git checkout debug
+> applied the patch.
+> git commit -a (got commit 5c09c685ba2d36c3b905220d43ad1b47354e456eed back)
+>
+> Now I want all commits in my master branch up until ref v3.4 added to my
+> debug branch so I can bisect between 5c09 and v3.4
+>
 
-diff --git a/mm/frontswap.c b/mm/frontswap.c
-index c0cd8bc..92e2e7b 100644
---- a/mm/frontswap.c
-+++ b/mm/frontswap.c
-@@ -99,6 +99,12 @@ void __frontswap_init(unsigned type)
- }
- EXPORT_SYMBOL(__frontswap_init);
- 
-+static inline void __frontswap_clear(struct swap_info_struct *sis, pgoff_t offset)
-+{
-+	frontswap_clear(sis, offset);
-+	atomic_dec(&sis->frontswap_pages);
-+}
-+
- /*
-  * "Put" data from a page to frontswap and associate it with the page's
-  * swaptype and offset.  Page must be locked and in the swap cache.
-@@ -131,10 +137,8 @@ int __frontswap_put_page(struct page *page)
- 		  the (older) page from frontswap
- 		 */
- 		frontswap_failed_puts++;
--		if (dup) {
--			frontswap_clear(sis, offset);
--			atomic_dec(&sis->frontswap_pages);
--		}
-+		if (dup)
-+			__frontswap_clear(sis, offset);
- 	}
- 	if (frontswap_writethrough_enabled)
- 		/* report failure so swap also writes to swap device */
-@@ -179,8 +183,7 @@ void __frontswap_invalidate_page(unsigned type, pgoff_t offset)
- 	trace_frontswap_invalidate_page(type, offset, sis, frontswap_test(sis, offset));
- 	if (frontswap_test(sis, offset)) {
- 		frontswap_ops.invalidate_page(type, offset);
--		atomic_dec(&sis->frontswap_pages);
--		frontswap_clear(sis, offset);
-+		__frontswap_clear(sis, offset);
- 		frontswap_invalidates++;
- 	}
- }
--- 
-1.7.8.6
+No, it does not work in this way. you should apply patch before each test.
+You can fix radix-tree bug in find_get_pages_contig() to avoid changing
+radix-tree.h and rebuild kernel faster.
+
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -927,7 +927,7 @@ repeat:
+                  * otherwise we can get both false positives and false
+                  * negatives, which is just confusing to the caller.
+                  */
+-               if (page->mapping == NULL || page->index != iter.index) {
++               if (page->mapping == NULL || page->index != index + ret) {
+                         page_cache_release(page);
+                         break;
+                 }
 
