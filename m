@@ -1,82 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755665Ab2FFKPD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 06:15:03 -0400
-Received: from mga02.intel.com ([134.134.136.20]:23871 "EHLO mga02.intel.com"
+	id S1755580Ab2FFKQq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 06:16:46 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:39406 "EHLO mail.mev.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751173Ab2FFKPA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 06:15:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="asc'?scan'208";a="153623565"
-Message-ID: <1338977927.6875.29.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH 7/8] kbuild: move W=... stuff to Kbuild.arch
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Sam Ravnborg <sam@ravnborg.org>, Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild <linux-kbuild@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Date: Wed, 06 Jun 2012 13:18:47 +0300
-In-Reply-To: <1336205926-13946-7-git-send-email-sam@ravnborg.org>
-References: <20120505080640.GA13773@merkur.ravnborg.org>
-	 <1336205926-13946-7-git-send-email-sam@ravnborg.org>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-DvzCN11APWpVJiWZoEP9"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1752645Ab2FFKQo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 06:16:44 -0400
+Message-ID: <4FCF2E07.1090401@mev.co.uk>
+Date: Wed, 6 Jun 2012 11:16:39 +0100
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120601 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Ian Abbott <ian.abbott@mev.co.uk>,
+        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] staging: comedi: ni_mio_common.c: local functions should
+ be static
+References: <201206051120.22177.hartleys@visionengravers.com>
+In-Reply-To: <201206051120.22177.hartleys@visionengravers.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2012-06-05 19:20, H Hartley Sweeten wrote:
+> Local functions should be marked static to prevent them from
+> being exposed globally.
+>
+> This quiets the following sparse warnings:
+>
+> warning: symbol 'ni_release_gpct_mite_channel' was not declared. Should it be static?
+> warning: symbol 'ni_prime_channelgain_list' was not declared. Should it be static?
+>
+> Signed-off-by: H Hartley Sweeten<hsweeten@visionengravers.com>
+> Cc: Ian Abbott<abbotti@mev.co.uk>
+> Cc: Mori Hess<fmhess@users.sourceforge.net>
+> Cc: Greg Kroah-Hartman<gregkh@linuxfoundation.org>
+>
+> ---
+>
+> diff --git a/drivers/staging/comedi/drivers/ni_mio_common.c b/drivers/staging/comedi/drivers/ni_mio_common.c
+> index fd232bc..3b3a0b1 100644
+> --- a/drivers/staging/comedi/drivers/ni_mio_common.c
+> +++ b/drivers/staging/comedi/drivers/ni_mio_common.c
+> @@ -644,7 +644,7 @@ static void ni_release_ao_mite_channel(struct comedi_device *dev)
+>   #endif /*  PCIDMA */
+>   }
+>
+> -void ni_release_gpct_mite_channel(struct comedi_device *dev,
+> +static void ni_release_gpct_mite_channel(struct comedi_device *dev,
+>   				  unsigned gpct_index)
+>   {
+>   #ifdef PCIDMA
+> @@ -1880,7 +1880,7 @@ static int ni_ai_insn_read(struct comedi_device *dev,
+>   	return insn->n;
+>   }
 
---=-DvzCN11APWpVJiWZoEP9
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+This results in a compiler warning about the unused function 
+ni_release_gpct_mite_channel when compiling ni_atmio.c.  It was unused 
+before of course, but now it is static, the compiler realizes it!
 
-On Sat, 2012-05-05 at 10:18 +0200, Sam Ravnborg wrote:
-> Prevent that we eveluate cc-option multiple times for the same
-> option by moving the definitions to Kbuild.arch.
-> The file is included once only, thus gcc is not invoked once per director=
-y.
->=20
-> Another side-effect of this patch is that KCFLAGS are appended last
-> to the list of options. This allows us to better control the options.
-> Artem Bityutskiy <dedekind1@gmail.com> noticed this.
->=20
-> Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
-> Cc: Artem Bityutskiy <dedekind1@gmail.com>
+It could be fixed for now by moving the '#ifdef PCIDMA' and matching 
+'#endif' to surround the whole function, though I guess we want to try 
+and get rid of the #ifdef's eventually.  It's tricky because 
+ni_mio_common.c isn't a standalone compilation unit, it's #include'd by 
+some other .c files.  We might need to have a go at splitting it up at 
+some point.
 
-Hi,
-
-what happened to this patch? I was fixing the real issue I am
-encountering and I thought it'd be taken instead of my original patch.
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-DvzCN11APWpVJiWZoEP9
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJPzy6IAAoJECmIfjd9wqK0PM4QAK2LJrVY2P8B62C+e4mgSCC6
-1ztY31Afx91SuVvrSvq0zOKAzO8Ao4rfcUceOFDksBeSeczRvTeHtqV36S8B2yyQ
-EwOneveIsJ8jP6o6wwwLT15EoGk3rbNERfhYSgkEn7pGqmZsU2vAihpPgw+E83/j
-MQ6nY5DZByapzWA+JN8JJXzXeX9PB+XMcTfikA0AQevk+kYgLedTIvsc/YpZMWLZ
-klgba7MCLMYBjEDISAvoxcoWSEG9qglUeU2AuFborBG+7TUGgNlxCWBjF1duFpne
-Vr2JSVich2922IXN6fJUDLBCo8ByAHyqdBA0ys9NvmyOa46h2KnztmFyBCiBaswE
-xXoecl0QhQ3xaVxMv9mUQmafj86eBY7QR9Cd75ZcvZWipzlWQDXQdwvpoHwaz/Jd
-pcvb57d0FKkR2zlxYxC33oXf9ExD1DVTmpYa+9LRu0UOBnI3tbrESYwB3JmtBU9x
-xm4QeIUgNWZXwdZfjxEEamTRhDJrkLwx6DPMrjyhyUkII5RGcXTIGwCxsX+N+S7P
-/7WHJPc3PBZ20xpc58UDBYrGut4OWsAn7Le7DEUyVMI70mHpLXIrkH9HnWGbfGWT
-YDNE0qBPZhsyFJ3WxrldG4HE/6RAfPLCLMzH9cHgMF6wd4CUcJY7s8wov0Qw9UST
-8YnzPZcijeJxDyrWXnST
-=/Kqe
------END PGP SIGNATURE-----
-
---=-DvzCN11APWpVJiWZoEP9--
-
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
