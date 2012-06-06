@@ -1,85 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756015Ab2FFO0v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 10:26:51 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:50369 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755921Ab2FFO0t convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 10:26:49 -0400
+	id S1755986Ab2FFO1q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 10:27:46 -0400
+Received: from antcom.de ([188.40.178.216]:40593 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754397Ab2FFO1p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 10:27:45 -0400
+Message-ID: <4FCF68DE.6000701@antcom.de>
+Date: Wed, 06 Jun 2012 16:27:42 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM IT Research & Development
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1206051313490.1542-100000@iolanthe.rowland.org>
-References: <CAF1ivSYVznOU43XT9_5d-EMNp1TQwBiYfG=PL6J1KPdmQx9pgw@mail.gmail.com>
-	<Pine.LNX.4.44L0.1206051313490.1542-100000@iolanthe.rowland.org>
-Date: Wed, 6 Jun 2012 23:26:47 +0900
-X-Google-Sender-Auth: UqTM1y2ppbaL9Zww5Dbl5ftWmOI
-Message-ID: <CAF1ivSYzeUzKPwgopYZTpSDR4oZKdXJ28GJNVVs7ysm1sn02TA@mail.gmail.com>
-Subject: Re: [RFC v2 PATCH 2/4] block: add queue runtime pm callbacks
-From: Lin Ming <ming.m.lin@intel.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Jens Axboe <axboe@kernel.dk>, Jeff Moyer <jmoyer@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: dedekind1@gmail.com
+CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        dwmw2@infradead.org, kevin.wells@nxp.com, srinivas.bakki@nxp.com,
+        linux-arm-kernel@lists.infradead.org, hechtb@googlemail.com,
+        lars@metafoo.de, b32955@freescale.com, leiwen@marvell.com,
+        linux@arm.linux.org.uk
+Subject: Re: [PATCH v6] MTD: LPC32xx SLC NAND driver
+References: <1338974414-5308-1-git-send-email-stigge@antcom.de> <1338989921.6875.50.camel@sauron.fi.intel.com>
+In-Reply-To: <1338989921.6875.50.camel@sauron.fi.intel.com>
+X-Enigmail-Version: 1.4
+OpenPGP: url=subkeys.pgp.net
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 6, 2012 at 2:27 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Tue, 22 May 2012, Lin Ming wrote:
->
->> > Next, you have to change the parts of the block layer responsible for
->> > taking a request from the queue and handing it to the lower-level
->> > driver (both peek and get).  If q->rpm_status is RPM_SUSPENDED, they
->> > shouldn't do anything -- act as though the queue is empty.  If
->> > q->rpm_status is RPM_SUSPENDING or RPM_RESUMING, they should hand over
->> > the request only if it has the REQ_PM flag set.
->
-> I just realized this isn't quite right.  In fact, when the status is
-> RPM_SUSPENDING or RPM_RESUMING you need to search through the queue for
-> the first request with REQ_PM set.
->
-> Otherwise you can end up in a deadlock.  For example, suppose the
-> device is suspended and a normal I/O request arrives.  It gets put on
-> the queue and a runtime resume is issued.  The sd resume method then
-> submits a "spin-up drive" command to the queue with REQ_PM set, and it
-> doesn't return until this command is finished.  But the command won't
-> even start, because it isn't at the head of the queue -- the I/O
-> request is, and it prevents the "spin-up" command from running.
+Hi,
 
-At least for SCSI sd driver, the PM request is always queued at the head.
+On 06/06/2012 03:38 PM, Artem Bityutskiy wrote:
+>> +#else +#define lpc32xx_nand_resume NULL +#define
+>> lpc32xx_nand_suspend NULL +#endif
+> 
+> 0, not NULL.
 
-scsi_execute()
-  blk_execute_rq(req->q, NULL, req, 1);
+Can you please point me to an explanation for this? NULL sounds
+natural here, since it is used as a pointer, and other nand drivers
+are already doing it via NULL:
 
-"1" means the request will be inserted at the head.
+bcm_umi_nand.c
+bf5xx_nand.c
+pxa3xx_nand.c
+r852.c
+s3c2410.c
+tmio_nand.c
+txx9ndfmc.c
 
-blk_execute_rq_nowait()
-   spin_lock_irq(q->queue_lock);
-   __elv_add_request(q, rq, where);
-   __blk_run_queue(q)
-   spin_unlock_irq(q->queue_lock);
+... and none is #defining as 0.
 
-So the request is inserted at the head and executed immediatly.
+Thanks in advance,
 
->
-> There are two other issues you also need to address.  The first is
-> simple: Make sure your changes don't cause any harm if CONFIG_PM or
-> CONFIG_PM_RUNTIME is set to N.
->
-> Second, near the end of scsi_pm.c:scsi_bus_resume_common(), you can see
-> that during resume from a system sleep, the device automatically gets
-> set back to RPM_ACTIVE.  You want the queue's runtime status to remain
-> in sync with the device's status; therefore you need to call
-> blk_pre_runtime_resume near the start of this function and
-> blk_post_runtime_resume near the end.  (This is the drawback of having
-> separate rpm_status fields for the queue and the device.)
->
-> Alan Stern
-
-I am travelling through June 10.
-I'll investigate these when I'm back.
-
-Thanks,
-Lin Ming
+Roland
