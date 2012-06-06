@@ -1,85 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753435Ab2FFG6b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 02:58:31 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:53194 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751445Ab2FFG63 (ORCPT
+	id S1753839Ab2FFG6n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 02:58:43 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35741 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751719Ab2FFG6l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 02:58:29 -0400
-Date: Wed, 6 Jun 2012 09:00:08 +0200
-From: Fabio Baltieri <fabio.baltieri@gmail.com>
-To: Bryan Wu <bryan.wu@canonical.com>
-Cc: linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Richard Purdie <rpurdie@rpsys.net>
-Subject: Re: [PATCH 2/2] leds: fix led_brightness_set when soft-blinking
-Message-ID: <20120606070008.GA1494@gmail.com>
-References: <1338932339-1660-1-git-send-email-fabio.baltieri@gmail.com>
- <1338932339-1660-2-git-send-email-fabio.baltieri@gmail.com>
- <CAK5ve-J1Oo3Xkr=LMxVkG0F-in3VDbB+RfB1O835vPKVzpGu6A@mail.gmail.com>
+	Wed, 6 Jun 2012 02:58:41 -0400
+Date: Tue, 5 Jun 2012 23:58:19 -0700
+From: tip-bot for David Ahern <dsahern@gmail.com>
+Message-ID: <tip-52deff71bc2b2c24587ab71f588ff5e4c9279349@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, akihiro.nagai.hw@hitachi.com,
+        peterz@infradead.org, fweisbec@gmail.com, dsahern@gmail.com,
+        tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com,
+        akihiro.nagai.hw@hitachi.com, peterz@infradead.org, fweisbec@gmail.com,
+        dsahern@gmail.com, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <1338353906-60706-1-git-send-email-dsahern@gmail.com>
+References: <1338353906-60706-1-git-send-email-dsahern@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf script:
+  Fix regression in callchain dso name
+Git-Commit-ID: 52deff71bc2b2c24587ab71f588ff5e4c9279349
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAK5ve-J1Oo3Xkr=LMxVkG0F-in3VDbB+RfB1O835vPKVzpGu6A@mail.gmail.com>
-X-Operating-System: Linux balto-eee 3.5.0-rc1-balto-eee-00008-g4a25fe7-dirty
- GNU/Linux
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 05 Jun 2012 23:58:25 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 06, 2012 at 11:58:10AM +0800, Bryan Wu wrote:
-> On Wed, Jun 6, 2012 at 5:38 AM, Fabio Baltieri <fabio.baltieri@gmail.com> wrote:
-> > Change led_brightness_set to ensure software blink timer is stopped
-> > before calling led_stop_software_blink() and use led_set_brightness()
-> > instead of calling led_cdev->brightness_set() directly to ensure
-> > led_cdev->brightness is always consistent with current LED status.
-> >
-> > This ensure proper cleaning when changing triggers, as without this fix
-> > a LED may be turned off while leaving it's led_cdev->brightness = 1,
-> > leading to an erratic software-blink behaviour.
-> >
-> > The problem was easy to reproduce by changing the trigger from "timer"
-> > to "oneshot".
-> >
-> > Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
-> > Cc: Bryan Wu <bryan.wu@canonical.com>
-> > ---
-> >  drivers/leds/led-core.c | 3 ++-
-> >  1 file changed, 2 insertions(+), 1 deletion(-)
-> >
-> > diff --git a/drivers/leds/led-core.c b/drivers/leds/led-core.c
-> > index 579eb78..3e9f934 100644
-> > --- a/drivers/leds/led-core.c
-> > +++ b/drivers/leds/led-core.c
-> > @@ -115,7 +115,8 @@ EXPORT_SYMBOL(led_blink_set_oneshot);
-> >  void led_brightness_set(struct led_classdev *led_cdev,
-> >                        enum led_brightness brightness)
-> >  {
-> > +       del_timer_sync(&led_cdev->blink_timer);
-> 
-> This is not necessary, since led_stop_software_blink() will call
-> del_timer_sync() as you want.
+Commit-ID:  52deff71bc2b2c24587ab71f588ff5e4c9279349
+Gitweb:     http://git.kernel.org/tip/52deff71bc2b2c24587ab71f588ff5e4c9279349
+Author:     David Ahern <dsahern@gmail.com>
+AuthorDate: Tue, 29 May 2012 22:58:26 -0600
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 30 May 2012 14:24:38 -0300
 
-Actually I removed it in the oneshot patch because it was only needed in
-the non-oneshot variant of led_blink_set, but I may put it back where it
-was and move led_stop_software_blink earlier into led_blink_set... do
-you think it's better?
+perf script: Fix regression in callchain dso name
 
-> 
-> >        led_stop_software_blink(led_cdev);
-> > -       led_cdev->brightness_set(led_cdev, brightness);
-> > +       led_set_brightness(led_cdev, brightness);
-> >  }
-> >  EXPORT_SYMBOL(led_brightness_set);
-> > --
-> > 1.7.10.2.520.g6a4a482.dirty
-> >
-> 
-> Thanks,
-> -- 
-> Bryan Wu <bryan.wu@canonical.com>
-> Kernel Developer    +86.186-168-78255 Mobile
-> Canonical Ltd.      www.canonical.com
-> Ubuntu - Linux for human beings | www.ubuntu.com
+$ perf script -i /tmp/perf.data
+...
+gcc 13623 544315.062858: context-switches:
+    ffffffff815f65c9 __schedule ([kernel.kallsyms])
+    ffffffff81087cea __cond_resched ([kernel.kallsyms])
+    ffffffff815f6b92 _cond_resched ([kernel.kallsyms])
+    ffffffff815fb87a do_page_fault ([kernel.kallsyms])
+    ffffffff815f8465 page_fault ([kernel.kallsyms])
+        2b7a71ea0303 _dl_lookup_symbol_x ([kernel.kallsyms])
+        2b7a71ea1eb5 _dl_relocate_object ([kernel.kallsyms])
+        2b7a71e99b2e dl_main ([kernel.kallsyms])
+        2b7a71eab7f4 _dl_sysdep_start ([kernel.kallsyms])
+
+All DSO's in a callchain are printed as [kernel.kallsyms].
+
+git bisect chased it to:
+
+547a92e0aedb88129e7fbd804697a11949de2e5a is the first bad commit
+commit 547a92e0aedb88129e7fbd804697a11949de2e5a
+Author: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
+Date:   Mon Jan 30 13:42:57 2012 +0900
+
+    perf script: Unify the expressions indicating "unknown"
+
+    The perf script command uses various expressions to indicate "unknown".
+
+    It is unfriendly for user scripts to parse it. So, this patch unifies
+    the expressions to "[unknown]".
+
+Looks like a copy-paste in that the other references use al.map but this one
+should be node->map.
+
+With this patch you get:
+
+$ perf script -i /tmp/perf.data
+...
+gcc 13623 544315.062858: context-switches:
+    ffffffff815f65c9 __schedule ([kernel.kallsyms])
+    ffffffff81087cea __cond_resched ([kernel.kallsyms])
+    ffffffff815f6b92 _cond_resched ([kernel.kallsyms])
+    ffffffff815fb87a do_page_fault ([kernel.kallsyms])
+    ffffffff815f8465 page_fault ([kernel.kallsyms])
+        2b7a71ea0303 _dl_lookup_symbol_x (/lib64/ld-2.14.90.so)
+        2b7a71ea1eb5 _dl_relocate_object (/lib64/ld-2.14.90.so)
+        2b7a71e99b2e dl_main (/lib64/ld-2.14.90.so)
+        2b7a71eab7f4 _dl_sysdep_start (/lib64/ld-2.14.90.so)
+
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Link: http://lkml.kernel.org/r/1338353906-60706-1-git-send-email-dsahern@gmail.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/session.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 93d355d..4820614 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1460,7 +1460,7 @@ void perf_event__print_ip(union perf_event *event, struct perf_sample *sample,
+ 			}
+ 			if (print_dso) {
+ 				printf(" (");
+-				map__fprintf_dsoname(al.map, stdout);
++				map__fprintf_dsoname(node->map, stdout);
+ 				printf(")");
+ 			}
+ 			printf("\n");
