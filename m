@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756610Ab2FFPRp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 11:17:45 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39890 "EHLO
+	id S1756645Ab2FFPSN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 11:18:13 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39904 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752543Ab2FFPRn (ORCPT
+	with ESMTP id S1755693Ab2FFPSL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 11:17:43 -0400
-Date: Wed, 6 Jun 2012 08:17:03 -0700
-From: tip-bot for Xiaotian Feng <xtfeng@gmail.com>
-Message-ID: <tip-aff5a62d52ff03956ff6992b9fe4b561fd855804@git.kernel.org>
+	Wed, 6 Jun 2012 11:18:11 -0400
+Date: Wed, 6 Jun 2012 08:17:55 -0700
+From: tip-bot for Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Message-ID: <tip-4af463d28f1a026e25c0b879fac2a0d2b7bff599@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        dannyfeng@tencent.com, tj@kernel.org, tglx@linutronix.de,
-        xtfeng@gmail.com
+        isimatu.yasuaki@jp.fujitsu.com, tglx@linutronix.de,
+        kosaki.motohiro@jp.fujitsu.com, rientjes@google.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        dannyfeng@tencent.com, tj@kernel.org, tglx@linutronix.de,
-        xtfeng@gmail.com
-In-Reply-To: <1338922831-2847-1-git-send-email-xtfeng@gmail.com>
-References: <1338922831-2847-1-git-send-email-xtfeng@gmail.com>
+        isimatu.yasuaki@jp.fujitsu.com, tglx@linutronix.de,
+        rientjes@google.com, kosaki.motohiro@jp.fujitsu.com
+In-Reply-To: <4FCC2098.4030007@jp.fujitsu.com>
+References: <4FCC2098.4030007@jp.fujitsu.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/gart: Fix kmemleak warning
-Git-Commit-ID: aff5a62d52ff03956ff6992b9fe4b561fd855804
+Subject: [tip:x86/urgent] x86/numa:
+  Set numa_nodes_parsed at acpi_numa_memory_affinity_init()
+Git-Commit-ID: 4af463d28f1a026e25c0b879fac2a0d2b7bff599
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,77 +30,87 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 06 Jun 2012 08:17:10 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 06 Jun 2012 08:18:01 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  aff5a62d52ff03956ff6992b9fe4b561fd855804
-Gitweb:     http://git.kernel.org/tip/aff5a62d52ff03956ff6992b9fe4b561fd855804
-Author:     Xiaotian Feng <xtfeng@gmail.com>
-AuthorDate: Tue, 5 Jun 2012 15:00:31 -0400
+Commit-ID:  4af463d28f1a026e25c0b879fac2a0d2b7bff599
+Gitweb:     http://git.kernel.org/tip/4af463d28f1a026e25c0b879fac2a0d2b7bff599
+Author:     Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+AuthorDate: Mon, 4 Jun 2012 11:42:32 +0900
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 6 Jun 2012 11:58:38 +0200
+CommitDate: Wed, 6 Jun 2012 11:58:39 +0200
 
-x86/gart: Fix kmemleak warning
+x86/numa: Set numa_nodes_parsed at acpi_numa_memory_affinity_init()
 
-aperture_64.c now is using memblock, the previous
-kmemleak_ignore() for alloc_bootmem() should be removed then.
+When hot-adding a CPU, the system outputs following messages
+since node_to_cpumask_map[2] was not allocated memory.
 
-Otherwise, with kmemleak enabled, kernel will throw warnings
-like:
+Booting Node 2 Processor 32 APIC 0xc0
+node_to_cpumask_map[2] NULL
+Pid: 0, comm: swapper/32 Tainted: G       A     3.3.5-acd #21
+Call Trace:
+ [<ffffffff81048845>] debug_cpumask_set_cpu+0x155/0x160
+ [<ffffffff8105e28a>] ? add_timer_on+0xaa/0x120
+ [<ffffffff8150665f>] numa_add_cpu+0x1e/0x22
+ [<ffffffff815020bb>] identify_cpu+0x1df/0x1e4
+ [<ffffffff815020d6>] identify_econdary_cpu+0x16/0x1d
+ [<ffffffff81504614>] smp_store_cpu_info+0x3c/0x3e
+ [<ffffffff81505263>] smp_callin+0x139/0x1be
+ [<ffffffff815052fb>] start_secondary+0x13/0xeb
 
-[    0.000000] kmemleak: Trying to color unknown object at 0xffff8800c4000000 as Black
-[    0.000000] Pid: 0, comm: swapper/0 Not tainted 3.5.0-rc1-next-20120605+ #130
-[    0.000000] Call Trace:
-[    0.000000]  [<ffffffff811b27e6>] paint_ptr+0x66/0xc0
-[    0.000000]  [<ffffffff816b90fb>] kmemleak_ignore+0x2b/0x60
-[    0.000000]  [<ffffffff81ef7bc0>] kmemleak_init+0x217/0x2c1
-[    0.000000]  [<ffffffff81ed2b97>] start_kernel+0x32d/0x3eb
-[    0.000000]  [<ffffffff81ed25e4>] ? repair_env_string+0x5a/0x5a
-[    0.000000]  [<ffffffff81ed2356>] x86_64_start_reservations+0x131/0x135
-[    0.000000]  [<ffffffff81ed2120>] ? early_idt_handlers+0x120/0x120
-[    0.000000]  [<ffffffff81ed245c>] x86_64_start_kernel+0x102/0x111
-[    0.000000] kmemleak: Early log backtrace:
-[    0.000000]    [<ffffffff816b911b>] kmemleak_ignore+0x4b/0x60
-[    0.000000]    [<ffffffff81ee6a38>] gart_iommu_hole_init+0x3e7/0x547
-[    0.000000]    [<ffffffff81edb20b>] pci_iommu_alloc+0x44/0x6f
-[    0.000000]    [<ffffffff81ee81ad>] mem_init+0x19/0xec
-[    0.000000]    [<ffffffff81ed2a54>] start_kernel+0x1ea/0x3eb
-[    0.000000]    [<ffffffff81ed2356>] x86_64_start_reservations+0x131/0x135
-[    0.000000]    [<ffffffff81ed245c>] x86_64_start_kernel+0x102/0x111
-[    0.000000]    [<ffffffffffffffff>] 0xffffffffffffffff
+The reason is that the bit of node 2 was not set at
+numa_nodes_parsed. numa_nodes_parsed is set by only
+acpi_numa_processor_affinity_init /
+acpi_numa_x2apic_affinity_init. Thus even if hot-added memory
+which is same PXM as hot-added CPU is written in ACPI SRAT
+Table, if the hot-added CPU is not written in ACPI SRAT table,
+numa_nodes_parsed is not set.
 
-Signed-off-by: Xiaotian Feng <dannyfeng@tencent.com>
-Cc: Xiaotian Feng <xtfeng@gmail.com>
-Cc: Tejun Heo <tj@kernel.org>
-Link: http://lkml.kernel.org/r/1338922831-2847-1-git-send-email-xtfeng@gmail.com
+But according to ACPI Spec Rev 5.0, it says about ACPI SRAT
+table as follows: This optional table provides information that
+allows OSPM to associate processors and memory ranges, including
+ranges of memory provided by hot-added memory devices, with
+system localities / proximity domains and clock domains.
+
+It means that ACPI SRAT table only provides information for CPUs
+present at boot time and for memory including hot-added memory.
+So hot-added memory is written in ACPI SRAT table, but hot-added
+CPU is not written in it. Thus numa_nodes_parsed should be set
+by not only acpi_numa_processor_affinity_init /
+acpi_numa_x2apic_affinity_init but also
+acpi_numa_memory_affinity_init for the case.
+
+Additionally, if system has cpuless memory node,
+acpi_numa_processor_affinity_init /
+acpi_numa_x2apic_affinity_init cannot set numa_nodes_parseds
+since these functions cannot find cpu description for the node.
+In this case, numa_nodes_parsed needs to be set by
+acpi_numa_memory_affinity_init.
+
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: liuj97@gmail.com
+Cc: kosaki.motohiro@gmail.com
+Link: http://lkml.kernel.org/r/4FCC2098.4030007@jp.fujitsu.com
+[ merged it ]
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/kernel/aperture_64.c |    6 ------
- 1 files changed, 0 insertions(+), 6 deletions(-)
+ arch/x86/mm/srat.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/aperture_64.c b/arch/x86/kernel/aperture_64.c
-index 6e76c19..d5fd66f 100644
---- a/arch/x86/kernel/aperture_64.c
-+++ b/arch/x86/kernel/aperture_64.c
-@@ -20,7 +20,6 @@
- #include <linux/bitops.h>
- #include <linux/ioport.h>
- #include <linux/suspend.h>
--#include <linux/kmemleak.h>
- #include <asm/e820.h>
- #include <asm/io.h>
- #include <asm/iommu.h>
-@@ -95,11 +94,6 @@ static u32 __init allocate_aperture(void)
- 		return 0;
+diff --git a/arch/x86/mm/srat.c b/arch/x86/mm/srat.c
+index 732af3a..4599c3e 100644
+--- a/arch/x86/mm/srat.c
++++ b/arch/x86/mm/srat.c
+@@ -176,6 +176,8 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
+ 		return;
  	}
- 	memblock_reserve(addr, aper_size);
--	/*
--	 * Kmemleak should not scan this block as it may not be mapped via the
--	 * kernel direct mapping.
--	 */
--	kmemleak_ignore(phys_to_virt(addr));
- 	printk(KERN_INFO "Mapping aperture over %d KB of RAM @ %lx\n",
- 			aper_size >> 10, addr);
- 	insert_aperture_resource((u32)addr, aper_size);
+ 
++	node_set(node, numa_nodes_parsed);
++
+ 	printk(KERN_INFO "SRAT: Node %u PXM %u [mem %#010Lx-%#010Lx]\n",
+ 	       node, pxm,
+ 	       (unsigned long long) start, (unsigned long long) end - 1);
