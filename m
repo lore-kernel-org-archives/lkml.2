@@ -1,51 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755782Ab2FFOb1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 10:31:27 -0400
-Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:43369
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752941Ab2FFOb0 (ORCPT
+	id S1756135Ab2FFOcH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 10:32:07 -0400
+Received: from smtp3.mundo-r.com ([212.51.32.191]:56034 "EHLO
+	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754788Ab2FFOcF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 10:31:26 -0400
-X-Forefront-Antispam-Report: CIP:160.36.179.112;KIP:(null);UIP:(null);IPV:NLI;H:kedge2.utk.tennessee.edu;RD:kedge2.utk.tennessee.edu;EFVD:NLI
-X-SpamScore: -9
-X-BigFish: VS-9(zz936eI1432N98dKzz1202hzz8275dhz2dh87h2a8h668h839h8e2h8e3h944he96hbe9i)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Wed, 6 Jun 2012 10:30:32 -0400
-From: Vince Weaver <vweaver1@eecs.utk.edu>
-X-X-Sender: vweaver1@ig.icl.utk.edu
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: <linux-kernel@vger.kernel.org>, <mingo@elte.hu>, <paulus@samba.org>,
-        <acme@ghostprotocols.net>
-Subject: Re: [perf] exporting perf_pmu_register?
-In-Reply-To: <1338979285.2749.94.camel@twins>
-Message-ID: <alpine.LRH.2.00.1206061027420.37035@ig.icl.utk.edu>
-References: <alpine.DEB.2.00.1203151737430.15513@cl320.eecs.utk.edu> <1338979285.2749.94.camel@twins>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	Wed, 6 Jun 2012 10:32:05 -0400
+X-Greylist: delayed 577 seconds by postgrey-1.27 at vger.kernel.org; Wed, 06 Jun 2012 10:32:05 EDT
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EAMFmz09bdWOb/2dsb2JhbABFhU6uZ4EHgkIPAUY1AiYCYBKID6RJkmCBI458gRIDlR2PeoJi
+X-IronPort-AV: E=Sophos;i="4.75,724,1330902000"; 
+   d="scan'208";a="999999518"
+From: =?UTF-8?q?Miguel=20G=C3=B3mez?= <magomez@igalia.com>
+To: arnaud.patard@rtp-net.org, gregkh@linuxfoundation.org,
+        aaro.koskinen@iki.fi, dan.carpenter@oracle.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Miguel=20G=C3=B3mez?= <magomez@igalia.com>
+Subject: [PATCH 1/4] Staging: xgifb: Remove #ifdef MODULE
+Date: Wed,  6 Jun 2012 16:22:04 +0200
+Message-Id: <1338992527-5659-1-git-send-email-magomez@igalia.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Jun 2012, Peter Zijlstra wrote:
+Check for MODULE is not needed. In a static compilation the parameters
+definition is valid and module_exit() does nothing.
 
-> On Thu, 2012-03-15 at 17:41 -0400, Vince Weaver wrote:
-> > Would a patch similar to
-> >   https://lkml.org/lkml/2010/8/18/64
-> > be accepted that exported this?
-> > 
-> If it comes with a patch that uses the exports, sure.
-> 
+Signed-off-by: Miguel Gómez <magomez@igalia.com>
+---
+ drivers/staging/xgifb/XGI_main_26.c |    4 ----
+ 1 file changed, 4 deletions(-)
 
-while I understand the logic behind that from a kernel-developer 
-perspective, it does make things harder in the real world.
-
-In the end PAPI has implemented RAPL support via reading /dev/cpu/*/msr
-because it was easier to convince our sysadmin to give us read-only 
-permission to /dev/cpu/*/msr than to take our in-production Sandybridge-EP 
-system and patch it up to export perf_pmu_register so we could work on a 
-proper driver.
-
-Vince
+diff --git a/drivers/staging/xgifb/XGI_main_26.c b/drivers/staging/xgifb/XGI_main_26.c
+index 85dbf32..61dc7cb 100644
+--- a/drivers/staging/xgifb/XGI_main_26.c
++++ b/drivers/staging/xgifb/XGI_main_26.c
+@@ -2325,8 +2325,6 @@ module_init(xgifb_init);
+ /*                      MODULE                       */
+ /*****************************************************/
+ 
+-#ifdef MODULE
+-
+ MODULE_DESCRIPTION("Z7 Z9 Z9S Z11 framebuffer device driver");
+ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("XGITECH , Others");
+@@ -2359,5 +2357,3 @@ static void __exit xgifb_remove_module(void)
+ }
+ 
+ module_exit(xgifb_remove_module);
+-
+-#endif	/*  /MODULE  */
+-- 
+1.7.9.5
 
