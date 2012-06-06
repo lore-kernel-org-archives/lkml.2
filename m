@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758598Ab2FFVTk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 17:19:40 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:38091 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754103Ab2FFVTi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 17:19:38 -0400
+	id S1758527Ab2FFVUO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 17:20:14 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:42384 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750775Ab2FFVUM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 17:20:12 -0400
 From: Leed Aguilar <leed.aguilar@ti.com>
 To: <linux-kernel@vger.kernel.org>
 CC: <gregkh@linuxfoundation.org>, <leed.aguilar@ti.com>,
         <linux-iio@vger.kernel.org>
-Subject: [PATCH 2/3] staging:iio:magnetometer:ak8975: use gpio_request_one api
-Date: Wed, 6 Jun 2012 16:15:40 -0400
-Message-ID: <1339013740-15465-1-git-send-email-leed.aguilar@ti.com>
+Subject: [PATCH 3/3] staging:iio:magnetometer:ak8975: remove 'mode' attribute
+Date: Wed, 6 Jun 2012 16:16:02 -0400
+Message-ID: <1339013762-15495-1-git-send-email-leed.aguilar@ti.com>
 X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -21,55 +20,125 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use gpio_request_one api, it looks cleaner.
+The raw data reading process (ak8975_read_axis) sets the
+single measurement mode to take a sample and once the
+conversion is completed the device enters into power-down
+mode automatically, therefore there is no need to enable
+a flag for this to happen.
 
 Signed-off-by: Leed Aguilar <leed.aguilar@ti.com>
 Acked-by: Jonathan Cameron <jic23@kernel.org>
+Acked-by: Laxman Dewangan <ldewangan@nvidia.com>
 ---
- drivers/staging/iio/magnetometer/Kconfig  |    2 +-
- drivers/staging/iio/magnetometer/ak8975.c |   10 +---------
- 2 files changed, 2 insertions(+), 10 deletions(-)
+ drivers/staging/iio/magnetometer/ak8975.c |   73 -----------------------------
+ 1 files changed, 0 insertions(+), 73 deletions(-)
 
-diff --git a/drivers/staging/iio/magnetometer/Kconfig b/drivers/staging/iio/magnetometer/Kconfig
-index b9d9325..df5e0d4 100644
---- a/drivers/staging/iio/magnetometer/Kconfig
-+++ b/drivers/staging/iio/magnetometer/Kconfig
-@@ -6,7 +6,7 @@ menu "Magnetometer sensors"
- config SENSORS_AK8975
- 	tristate "Asahi Kasei AK8975 3-Axis Magnetometer"
- 	depends on I2C
--	depends on GENERIC_GPIO
-+	depends on GPIOLIB
- 	help
- 	  Say yes here to build support for Asahi Kasei AK8975 3-Axis
- 	  Magnetometer.
 diff --git a/drivers/staging/iio/magnetometer/ak8975.c b/drivers/staging/iio/magnetometer/ak8975.c
-index 001b3bf..11bde3f 100644
+index 11bde3f..01b4b07 100644
 --- a/drivers/staging/iio/magnetometer/ak8975.c
 +++ b/drivers/staging/iio/magnetometer/ak8975.c
-@@ -499,21 +499,13 @@ static int __devinit ak8975_probe(struct i2c_client *client,
- 	/* We may not have a GPIO based IRQ to scan, that is fine, we will
- 	   poll if so */
- 	if (gpio_is_valid(eoc_gpio)) {
--		err = gpio_request(eoc_gpio, "ak_8975");
-+		err = gpio_request_one(eoc_gpio, GPIOF_IN, "ak_8975");
- 		if (err < 0) {
- 			dev_err(&client->dev,
- 				"failed to request GPIO %d, error %d\n",
- 							eoc_gpio, err);
- 			goto exit;
- 		}
--
--		err = gpio_direction_input(eoc_gpio);
--		if (err < 0) {
--			dev_err(&client->dev,
--				"Failed to configure input direction for GPIO %d, error %d\n",
--						eoc_gpio, err);
--			goto exit_gpio;
--		}
- 	}
+@@ -92,7 +92,6 @@ struct ak8975_data {
+ 	struct mutex		lock;
+ 	u8			asa[3];
+ 	long			raw_to_gauss[3];
+-	bool			mode;
+ 	u8			reg_cache[AK8975_MAX_REGS];
+ 	int			eoc_gpio;
+ 	int			eoc_irq;
+@@ -247,60 +246,6 @@ static int ak8975_setup(struct i2c_client *client)
+ 	return 0;
+ }
  
- 	/* Register with IIO */
+-/*
+- * Shows the device's mode.  0 = off, 1 = on.
+- */
+-static ssize_t show_mode(struct device *dev, struct device_attribute *devattr,
+-			 char *buf)
+-{
+-	struct iio_dev *indio_dev = dev_to_iio_dev(dev);
+-	struct ak8975_data *data = iio_priv(indio_dev);
+-
+-	return sprintf(buf, "%u\n", data->mode);
+-}
+-
+-/*
+- * Sets the device's mode.  0 = off, 1 = on.  The device's mode must be on
+- * for the magn raw attributes to be available.
+- */
+-static ssize_t store_mode(struct device *dev, struct device_attribute *devattr,
+-			  const char *buf, size_t count)
+-{
+-	struct iio_dev *indio_dev = dev_to_iio_dev(dev);
+-	struct ak8975_data *data = iio_priv(indio_dev);
+-	struct i2c_client *client = data->client;
+-	bool value;
+-	int ret;
+-
+-	/* Convert mode string and do some basic sanity checking on it.
+-	   only 0 or 1 are valid. */
+-	ret = strtobool(buf, &value);
+-	if (ret < 0)
+-		return ret;
+-
+-	mutex_lock(&data->lock);
+-
+-	/* Write the mode to the device. */
+-	if (data->mode != value) {
+-		ret = ak8975_write_data(client,
+-					AK8975_REG_CNTL,
+-					(u8)value,
+-					AK8975_REG_CNTL_MODE_MASK,
+-					AK8975_REG_CNTL_MODE_SHIFT);
+-
+-		if (ret < 0) {
+-			dev_err(&client->dev, "Error in setting mode\n");
+-			mutex_unlock(&data->lock);
+-			return ret;
+-		}
+-		data->mode = value;
+-	}
+-
+-	mutex_unlock(&data->lock);
+-
+-	return count;
+-}
+-
+ static int wait_conversion_complete_gpio(struct ak8975_data *data)
+ {
+ 	struct i2c_client *client = data->client;
+@@ -368,12 +313,6 @@ static int ak8975_read_axis(struct iio_dev *indio_dev, int index, int *val)
+ 
+ 	mutex_lock(&data->lock);
+ 
+-	if (data->mode == 0) {
+-		dev_err(&client->dev, "Operating mode is in power down mode\n");
+-		ret = -EBUSY;
+-		goto exit;
+-	}
+-
+ 	/* Set up the device for taking a sample. */
+ 	ret = ak8975_write_data(client,
+ 				AK8975_REG_CNTL,
+@@ -465,19 +404,7 @@ static const struct iio_chan_spec ak8975_channels[] = {
+ 	AK8975_CHANNEL(X, 0), AK8975_CHANNEL(Y, 1), AK8975_CHANNEL(Z, 2),
+ };
+ 
+-static IIO_DEVICE_ATTR(mode, S_IRUGO | S_IWUSR, show_mode, store_mode, 0);
+-
+-static struct attribute *ak8975_attr[] = {
+-	&iio_dev_attr_mode.dev_attr.attr,
+-	NULL
+-};
+-
+-static struct attribute_group ak8975_attr_group = {
+-	.attrs = ak8975_attr,
+-};
+-
+ static const struct iio_info ak8975_info = {
+-	.attrs = &ak8975_attr_group,
+ 	.read_raw = &ak8975_read_raw,
+ 	.driver_module = THIS_MODULE,
+ };
 -- 
 1.7.1
 
