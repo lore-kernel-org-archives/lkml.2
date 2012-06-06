@@ -1,75 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755204Ab2FFJSv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 05:18:51 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:43230 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751493Ab2FFJSt (ORCPT
+	id S1755358Ab2FFJS7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 05:18:59 -0400
+Received: from www.linutronix.de ([62.245.132.108]:49509 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755273Ab2FFJS6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 05:18:49 -0400
-Date: Wed, 6 Jun 2012 11:18:44 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Anton Arapov <anton@redhat.com>
-Subject: Re: [RESEND PATCH 1/3] uprobes: Remove redundant
- lock_page/unlock_page
-Message-ID: <20120606091844.GA421@gmail.com>
-References: <20120531114630.23691.33166.sendpatchset@srdronam.in.ibm.com>
- <1338465518.28384.55.camel@twins>
- <20120531150756.GC24279@linux.vnet.ibm.com>
- <1338483372.28384.65.camel@twins>
- <20120601091950.GF24279@linux.vnet.ibm.com>
+	Wed, 6 Jun 2012 05:18:58 -0400
+Date: Wed, 6 Jun 2012 11:18:53 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Chen Gong <gong.chen@linux.intel.com>
+cc: LKML <linux-kernel@vger.kernel.org>, tony.luck@intel.com, bp@amd64.org,
+        x86@kernel.org, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [patch 2/2] x86: mce: Implement cmci poll mode for intel
+ machines
+In-Reply-To: <4FCF0500.9050704@linux.intel.com>
+Message-ID: <alpine.LFD.2.02.1206061056520.3086@ionos>
+References: <20120524174943.989990966@linutronix.de> <20120524175056.478167482@linutronix.de> <4FCC1F7C.5000008@linux.intel.com> <alpine.LFD.2.02.1206042158200.3086@ionos> <4FCDF1C8.9020007@linux.intel.com> <alpine.LFD.2.02.1206051503560.3086@ionos>
+ <4FCF0500.9050704@linux.intel.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120601091950.GF24279@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1860358884-1338974334=:3086"
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-* Srikar Dronamraju <srikar@linux.vnet.ibm.com> wrote:
+--8323328-1860358884-1338974334=:3086
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 
-> From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+On Wed, 6 Jun 2012, Chen Gong wrote:
+> 于 2012/6/5 21:35, Thomas Gleixner 写道:
+> I add some print in timer callback, it shows:
 > 
-> Since read_opcode() reads from the referenced page and doesnt modify
-> the page contents nor the page attributes, there is no need to lock
-> the page.
-> 
-> Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> ---
->  Modified changelog based on comments from Peter Zijlstra
-> 
->  kernel/events/uprobes.c |    2 --
->  1 files changed, 0 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-> index 42b21eb..b3f3095 100644
-> --- a/kernel/events/uprobes.c
-> +++ b/kernel/events/uprobes.c
-> @@ -315,12 +315,10 @@ static int read_opcode(struct mm_struct *mm, unsigned long vaddr, uprobe_opcode_
->  	if (ret <= 0)
->  		return ret;
->  
-> -	lock_page(page);
->  	vaddr_new = kmap_atomic(page);
->  	vaddr &= ~PAGE_MASK;
->  	memcpy(opcode, vaddr_new + vaddr, UPROBE_SWBP_INSN_SIZE);
->  	kunmap_atomic(vaddr_new);
-> -	unlock_page(page);
->  
->  	put_page(page);
+> smp_processor_id() = 0, mce_timer_fn data(CPU id) = 10
+> timer->function = ffffffff8102c200, timer pending = 1, CPU = 0
+> (add_timer_on, BUG!!!)
 
-Is this also a bug fix, or can it wait until v3.6?
+Sure. That's not a surprise. The timer function for cpu 10 is called
+on cpu 0. And the timer function does:
 
-Thanks,
+   struct timer_list *t = &__get_cpu_var(mce_timer);
 
-	Ingo
+which gets a pointer to the timer of cpu0. And that timer is
+pending. So yes, it's exploding for a good reason.
+
+Though, this does not tell us how the timer of cpu10 gets on cpu0.
+
+Did you do any cpu hotplug operations ?
+
+> > @@ -1305,13 +1305,14 @@ void mce_timer_kick(unsigned long interv
+> >  	unsigned long when = jiffies + interval;
+> >  	unsigned long iv = __this_cpu_read(mce_next_interval);
+> >  
+> > -	if (time_before(when, t->expires) && timer_pending(t)) {
+> > -		mod_timer(t, when);
+> > -	} else if (!mce_next_interval) {
+> > -		t->expires = round_jiffies(jiffies + iv);
+> > +	if (timer_pending(t)) {
+> > +		if (time_before(when, t->expires))
+> > +			mod_timer(t, when);
+> > +	} else {
+> > +		t->expires = round_jiffies(jiffies + when);
+> 
+> should be "t->expires = round_jiffies(when);"
+
+True.
+
+> >  		add_timer_on(t, smp_processor_id());
+> >  	}
+> > -	if (interval < iv)
+> > +	if (interval > iv)
+> >  		__this_cpu_write(mce_next_interval, iv);
+> >  }
+> >  
+> Strange, anyway, mce_next_interval should be updated in proper way, but
+> if using above logic, mce_next_interval doesn't make change. I prefer
+> if (interval < iv)
+>     __this_cpu_write(mce_next_interval, interval);
+
+Grr. you are right. Stupid me.
+ 
+> In fact, during my test, I wrote the similar codes to do the test, but
+> it can't fix the bug. The logic here is not the key, no matter how you set
+> timer, you can get a poll timer. The issue happens in the timer function
+> itself. Once timer callback is entered, the issue happens every time.
+ 
+--8323328-1860358884-1338974334=:3086--
