@@ -1,76 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755580Ab2FFKQq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 06:16:46 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:39406 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752645Ab2FFKQo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 06:16:44 -0400
-Message-ID: <4FCF2E07.1090401@mev.co.uk>
-Date: Wed, 6 Jun 2012 11:16:39 +0100
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120601 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Ian Abbott <ian.abbott@mev.co.uk>,
-        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] staging: comedi: ni_mio_common.c: local functions should
- be static
-References: <201206051120.22177.hartleys@visionengravers.com>
-In-Reply-To: <201206051120.22177.hartleys@visionengravers.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+	id S1755460Ab2FFKRs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 06:17:48 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:57549 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751199Ab2FFKRq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 06:17:46 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+k9wxwx8Ck06SlSlyJb7mjnhjKwta3EG1c81QXjH
+	ZmmPxEUAWVYHYJ
+Message-ID: <1338977861.28497.36.camel@marge.simpson.net>
+Subject: Re: [rfc][patch] select_idle_sibling() inducing bouncing on westmere
+From: Mike Galbraith <efault@gmx.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Paul Turner <pjt@google.com>, Arjan Van De Ven <arjan@linux.intel.com>
+Date: Wed, 06 Jun 2012 12:17:41 +0200
+In-Reply-To: <1337865431.9783.148.camel@laptop>
+References: <1337857490.7300.19.camel@marge.simpson.net>
+	 <1337865431.9783.148.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-06-05 19:20, H Hartley Sweeten wrote:
-> Local functions should be marked static to prevent them from
-> being exposed globally.
->
-> This quiets the following sparse warnings:
->
-> warning: symbol 'ni_release_gpct_mite_channel' was not declared. Should it be static?
-> warning: symbol 'ni_prime_channelgain_list' was not declared. Should it be static?
->
-> Signed-off-by: H Hartley Sweeten<hsweeten@visionengravers.com>
-> Cc: Ian Abbott<abbotti@mev.co.uk>
-> Cc: Mori Hess<fmhess@users.sourceforge.net>
-> Cc: Greg Kroah-Hartman<gregkh@linuxfoundation.org>
->
-> ---
->
-> diff --git a/drivers/staging/comedi/drivers/ni_mio_common.c b/drivers/staging/comedi/drivers/ni_mio_common.c
-> index fd232bc..3b3a0b1 100644
-> --- a/drivers/staging/comedi/drivers/ni_mio_common.c
-> +++ b/drivers/staging/comedi/drivers/ni_mio_common.c
-> @@ -644,7 +644,7 @@ static void ni_release_ao_mite_channel(struct comedi_device *dev)
->   #endif /*  PCIDMA */
->   }
->
-> -void ni_release_gpct_mite_channel(struct comedi_device *dev,
-> +static void ni_release_gpct_mite_channel(struct comedi_device *dev,
->   				  unsigned gpct_index)
->   {
->   #ifdef PCIDMA
-> @@ -1880,7 +1880,7 @@ static int ni_ai_insn_read(struct comedi_device *dev,
->   	return insn->n;
->   }
+On Thu, 2012-05-24 at 15:17 +0200, Peter Zijlstra wrote:
 
-This results in a compiler warning about the unused function 
-ni_release_gpct_mite_channel when compiling ni_atmio.c.  It was unused 
-before of course, but now it is static, the compiler realizes it!
+> Did you do you numbers with the distro NR_CPUS=4096 bloat?
 
-It could be fixed for now by moving the '#ifdef PCIDMA' and matching 
-'#endif' to surround the whole function, though I guess we want to try 
-and get rid of the #ifdef's eventually.  It's tricky because 
-ni_mio_common.c isn't a standalone compilation unit, it's #include'd by 
-some other .c files.  We might need to have a go at splitting it up at 
-some point.
+4 socket Westmere-EX 40 core box.. ouch^ouch. 
 
--- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
+3.0 has none of the below, 3.0x all, 3.0xx all but the ones commented
+out.  Most of the deltas are sibling avoidance, though throttle-nohz
+plays a role in 3.0 vs 3.0x, as does knob tweakery, though very very
+small for these particular tests.  The rest are ~meaningless.
+
+sched-use-rt-nr_cpus_allowed-to-recover-select_task_rq-cycles.patch
+sched-set-skip_clock_update-when-yielding.patch
+sched-throttle-nohz.patch
+sched-Wrap-scheduler-p--cpus_allowed-access.patch
+sched-Avoid-SMT-siblings-in-select_idle_sibling-if-possible.patch
+sched-Clean-up-domain-traversal-in-select_idle_sibling.patch
+sched-Remove-rcu_read_lock-unlock-from-select_idle_sibling.patch
+sched-Fix-the-sched-group-node-allocation-for-SD_OVERLAP-domains.patch
+sched-domain-flags-proc-handler.patch
+# sched-tweak-select_idle_sibling.patch
+sched-tweak-knobs.patch
+# sched-ratelimit-affine-wakeup-migrations.patch
+
+thench      1         2         4          8         16         32         64        128
+3.0       225       451       911       1573       2723       3501      11189      13951
+3.0x      299       603      1211       2418       4697       6847      11606      14557
+vs 3.0  1.328     1.337     1.329      1.537      1.724       1.955     1.037      1.043
+
+3.0xx      30        41       118        645       3769       6214      12233      14312
+vs 3.0x 0.100     0.067     0.097      0.266      0.802       0.907     1.054      0.983
+                                                                        hmmm 
+aim7 ~low load.. not saturating.
+
+Benchmark       Version Machine Run Date
+AIM Multiuser Benchmark - Suite VII     "1.1"   3.0x      Jun  6 09:29:20 2012
+
+Tasks   Jobs/Min        JTI     Real    CPU     Jobs/sec/task
+64      26223.1         98      14.8    293.3   6.8289
+
+Benchmark       Version Machine Run Date
+AIM Multiuser Benchmark - Suite VII     "1.1"   3.0xx     Jun  6 11:12:21 2012
+
+Tasks   Jobs/Min        JTI     Real    CPU     Jobs/sec/task
+64      18845.5         82      20.6    254.8   4.9077       vs 3.0x  0.718
+
+
