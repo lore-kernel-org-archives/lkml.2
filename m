@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755452Ab2FFNit (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 09:38:49 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:41400 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754428Ab2FFNik (ORCPT
+	id S1755362Ab2FFNis (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 09:38:48 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:58275 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754453Ab2FFNih (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 09:38:40 -0400
+	Wed, 6 Jun 2012 09:38:37 -0400
 From: sjur.brandeland@stericsson.com
 To: Ohad Ben-Cohen <ohad@wizery.com>
 Cc: Loic PALLARDY <loic.pallardy@stericsson.com>,
@@ -14,12 +14,10 @@ Cc: Loic PALLARDY <loic.pallardy@stericsson.com>,
         linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
         =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjurbren@gmail.com>,
         =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
-Subject: [PATCH 4/7] remoteproc: Assign boot_addr in a separate function
-Date: Wed,  6 Jun 2012 15:38:24 +0200
-Message-Id: <1338989907-25360-5-git-send-email-sjur.brandeland@stericsson.com>
+Subject: [PATCH 0/7] remoteproc: Custom firmware handling.
+Date: Wed,  6 Jun 2012 15:38:20 +0200
+Message-Id: <1338989907-25360-1-git-send-email-sjur.brandeland@stericsson.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1338989907-25360-1-git-send-email-sjur.brandeland@stericsson.com>
-References: <1338989907-25360-1-git-send-email-sjur.brandeland@stericsson.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -29,74 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Sjur Brændeland <sjur.brandeland@stericsson.com>
 
-Prepare for introduction of custom firmware loaders by
-moving the function operating on ELF data-structures into
-separate functions. The assignment of boot_addr is moved
-to the function rproc_set_boot_addr().
+Hi Ohad, 
 
-Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
----
- drivers/remoteproc/remoteproc_core.c |   26 +++++++++++++++++---------
- 1 files changed, 17 insertions(+), 9 deletions(-)
+I think I have addressed most of your review comments, except
+dynamic detection of firmware format.
 
-diff --git a/drivers/remoteproc/remoteproc_core.c b/drivers/remoteproc/remoteproc_core.c
-index 07036e2..1dd7f53 100644
---- a/drivers/remoteproc/remoteproc_core.c
-+++ b/drivers/remoteproc/remoteproc_core.c
-@@ -1003,6 +1003,22 @@ static int rproc_fw_sanity_check(struct rproc *rproc, const struct firmware *fw)
- 	return 0;
- }
- 
-+/**
-+ * rproc_set_boot_addr() - Set rproc's boot address.
-+ * @rproc: remote processor which needs boot address set.
-+ * @fw: the  the ELF firmware image
-+ *
-+ * This function reads the ELF entry point address and assign this
-+ * to the rproc's boot address.
-+ * Note that the boot address is not a configurable property of all remote
-+ * processors. Some will always boot at a specific hard-coded address.
-+ */
-+void rproc_set_boot_addr(struct rproc *rproc, const struct firmware *fw)
-+{
-+	struct elf32_hdr *ehdr  = (struct elf32_hdr *)fw->data;
-+	rproc->bootaddr = ehdr->e_entry;
-+}
-+
- /*
-  * take a firmware and boot a remote processor with it.
-  */
-@@ -1010,7 +1026,6 @@ static int rproc_fw_boot(struct rproc *rproc, const struct firmware *fw)
- {
- 	struct device *dev = rproc->dev;
- 	const char *name = rproc->firmware;
--	struct elf32_hdr *ehdr;
- 	struct resource_table *table;
- 	int ret, tablesz;
- 
-@@ -1018,8 +1033,6 @@ static int rproc_fw_boot(struct rproc *rproc, const struct firmware *fw)
- 	if (ret)
- 		return ret;
- 
--	ehdr = (struct elf32_hdr *)fw->data;
--
- 	dev_info(dev, "Booting fw image %s, size %zd\n", name, fw->size);
- 
- 	/*
-@@ -1032,12 +1045,7 @@ static int rproc_fw_boot(struct rproc *rproc, const struct firmware *fw)
- 		return ret;
- 	}
- 
--	/*
--	 * The ELF entry point is the rproc's boot addr (though this is not
--	 * a configurable property of all remote processors: some will always
--	 * boot at a specific hardcoded address).
--	 */
--	rproc->bootaddr = ehdr->e_entry;
-+	rproc_set_boot_addr(rproc, fw);
- 
- 	/* look for the resource table */
- 	table = rproc_find_rsc_table(rproc, fw, &tablesz);
+Warning: I have not been able to test this properly,
+I don't yet have a proper test environment running.
+
+Regards,
+Sjur
+
+
+
+Sjur Brændeland (7):
+  remoteproc: fix print format warnings
+  remoteproc: Fix missing fault indication in error-path
+  remoteproc: Pass struct fw to load_segments and find_rsc_table.
+  remoteproc: Assign boot_addr in a separate function
+  remoteproc: Move Elf related functions to separate file
+  remoteproc: Support custom firmware handlers
+  remoteproc: Add custom STE-modem firmware loader.
+
+ drivers/remoteproc/Kconfig                       |    4 +
+ drivers/remoteproc/Makefile                      |    2 +
+ drivers/remoteproc/omap_remoteproc.c             |    1 +
+ drivers/remoteproc/remoteproc_core.c             |  257 +------------------
+ drivers/remoteproc/remoteproc_elf_loader.c       |  287 ++++++++++++++++++++++
+ drivers/remoteproc/remoteproc_ste_modem_loader.c |  176 +++++++++++++
+ include/linux/remoteproc.h                       |   57 +++++
+ 7 files changed, 538 insertions(+), 246 deletions(-)
+ create mode 100644 drivers/remoteproc/remoteproc_elf_loader.c
+ create mode 100644 drivers/remoteproc/remoteproc_ste_modem_loader.c
+
 -- 
 1.7.5.4
 
