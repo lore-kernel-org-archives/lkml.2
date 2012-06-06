@@ -1,57 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758969Ab2FFVmx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 17:42:53 -0400
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:33775 "EHLO
-	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758736Ab2FFVlz (ORCPT
+	id S1758982Ab2FFVnP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 17:43:15 -0400
+Received: from oproxy9.bluehost.com ([69.89.24.6]:38496 "HELO
+	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758835Ab2FFVnL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 17:41:55 -0400
-X-IronPort-AV: E=Sophos;i="4.75,726,1330902000"; 
-   d="scan'208";a="161655288"
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Brett Rudley <brudley@broadcom.com>
-Cc: kernel-janitors@vger.kernel.org, Roland Vossen <rvossen@broadcom.com>,
-        Arend van Spriel <arend@broadcom.com>,
-        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
-        Kan Yan <kanyan@broadcom.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, joe@perches.com,
-        Julia Lawall <julia@diku.dk>
-Subject: [PATCH 5/7] drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c: adjust suspicious bit operation
-Date: Wed,  6 Jun 2012 23:41:39 +0200
-Message-Id: <1339018901-28439-6-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1339018901-28439-1-git-send-email-Julia.Lawall@lip6.fr>
-References: <1339018901-28439-1-git-send-email-Julia.Lawall@lip6.fr>
+	Wed, 6 Jun 2012 17:43:11 -0400
+Message-ID: <4FCFCEE5.1000200@xenotime.net>
+Date: Wed, 06 Jun 2012 14:43:01 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Dan Williams <dan.j.williams@gmail.com>
+Subject: Re: linux-next: Tree for Jun 1 (scsi)
+References: <20120601132202.ac73b03c845299d384defeaf@canb.auug.org.au>	 <4FCC2BF9.7000802@xenotime.net> <1338962053.23080.7.camel@dabdike.int.hansenpartnership.com>
+In-Reply-To: <1338962053.23080.7.camel@dabdike.int.hansenpartnership.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+On 06/05/2012 10:54 PM, James Bottomley wrote:
 
-IRQF_TRIGGER_HIGH is 0x00000004, so it seems that & was intended rather than |.
+> On Sun, 2012-06-03 at 20:31 -0700, Randy Dunlap wrote:
+>> On 05/31/2012 08:22 PM, Stephen Rothwell wrote:
+>>
+>>> Hi all,
+>>>
+>>> Changes since 20120531:
+>>
+>>
+>>
+>> already fixed?
+>>
+>> on i386 and x86_64, loadable module or builtin:
+>>
+>>
+>> ERROR: "scsi_sd_probe_domain" [drivers/scsi/scsi_mod.ko] undefined!
+>> or
+>> (.text+0x4f6c77): undefined reference to `scsi_sd_probe_domain'
+> 
+> This looks to be an obvious thinko:  the symbol is conditionally
+> defined, but unconditionally used in
+> scsi_scan.c:scsi_complete_async_scans().  We can fix just by removing
+> the wrong conditional.
+> 
+> James
+> 
+> ---
+> 
+> diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
+> index 61c82a3..bbbc9c9 100644
+> --- a/drivers/scsi/scsi.c
+> +++ b/drivers/scsi/scsi.c
+> @@ -90,11 +90,9 @@ unsigned int scsi_logging_level;
+>  EXPORT_SYMBOL(scsi_logging_level);
+>  #endif
+>  
+> -#if IS_ENABLED(CONFIG_PM) || IS_ENABLED(CONFIG_BLK_DEV_SD)
+> -/* sd and scsi_pm need to coordinate flushing async actions */
+> +/* sd, scsi core and power management need to coordinate flushing async actions */
+>  LIST_HEAD(scsi_sd_probe_domain);
+>  EXPORT_SYMBOL(scsi_sd_probe_domain);
+>                                 -#endif
 
-This problem was found using Coccinelle (http://coccinelle.lip6.fr/).
 
-Signed-off-by: Julia Lawall <julia@diku.dk>
+Yes, this patch works after I move that "-#endif" to column 1 (or 0).
 
----
- drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Thanks.
 
-diff --git a/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c b/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c
-index e2480d1..bed208f 100644
---- a/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c
-+++ b/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c
-@@ -91,7 +91,7 @@ int brcmf_sdio_intr_register(struct brcmf_sdio_dev *sdiodev)
- 
- 	/* redirect, configure ane enable io for interrupt signal */
- 	data = SDIO_SEPINT_MASK | SDIO_SEPINT_OE;
--	if (sdiodev->irq_flags | IRQF_TRIGGER_HIGH)
-+	if (sdiodev->irq_flags & IRQF_TRIGGER_HIGH)
- 		data |= SDIO_SEPINT_ACT_HI;
- 	brcmf_sdio_regwb(sdiodev, SDIO_CCCR_BRCM_SEPINT, data, &ret);
- 
+Acked-by: Randy Dunlap <rdunlap@xenotime.net>
 
+
+>  
+
+>  /* NB: These are exposed through /proc/scsi/scsi and form part of the ABI.
+>   * You may not alter any existing entry (although adding new ones is
+> 
+> 
+
+
+
+-- 
+~Randy
