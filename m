@@ -1,245 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753175Ab2FFDBS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 23:01:18 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:50457 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752040Ab2FFDBQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 23:01:16 -0400
-Date: Wed, 6 Jun 2012 11:00:55 +0800
-From: Wanpeng Li <liwp.linux@gmail.com>
-To: Gavin Shan <shangw@linux.vnet.ibm.com>
+	id S1753303Ab2FFDEH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 23:04:07 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:54342 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752362Ab2FFDEF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 23:04:05 -0400
+Message-ID: <1338951842.11962.41.camel@joe2Laptop>
+Subject: [PATCH 9/8] printk: Only look for prefix levels in kernel messages
+From: Joe Perches <joe@perches.com>
+To: Kay Sievers <kay@vrfy.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>, Rob Landley <rob@landley.net>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        "David S. Miller" <davem@davemloft.net>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
-        DavidHowells <dhowells@redhat.com>,
-        James Morris <james.l.morris@oracle.com>, Ingo Molnar <mingo@elte.hu>,
-        "MichelLespinasse@kernel" <walken@google.com>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Wanpeng Li <liwp@linux.vnet.ibm.com>
-Subject: Re: [PATCH v2] remove no longer use of pdflush interface
-Message-ID: <20120606030028.GA10953@kernel>
-Reply-To: Wanpeng Li <liwp.linux@gmail.com>
-References: <1338888372-3555-1-git-send-email-liwp.linux@gmail.com>
- <20120605144519.GA4054@shangw>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120605144519.GA4054@shangw>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        alsa-devel@alsa-project.org
+Date: Tue, 05 Jun 2012 20:04:02 -0700
+In-Reply-To: <CAPXgP11DA2z2y4kR8C+AGtrd_-8=2Cy0jj3GX7T5JqczNke4GQ@mail.gmail.com>
+References: <cover.1338889066.git.joe@perches.com>
+	 <20120605142826.d92316a0.akpm@linux-foundation.org>
+	 <1338934303.5780.8.camel@joe2Laptop>
+	 <20120605151754.a794ac7c.akpm@linux-foundation.org>
+	 <1338936572.5780.29.camel@joe2Laptop>
+	 <20120605162910.caccb0d4.akpm@linux-foundation.org>
+	 <1338939316.11962.3.camel@joe2Laptop>
+	 <CAPXgP13J+8-dPpZkSfh9sM3xXujC2Rb9tJaOvGoEPghgdr8jiw@mail.gmail.com>
+	 <1338939792.11962.4.camel@joe2Laptop>
+	 <CAPXgP10DEsqtz9xbPUQ3xCwdFGTTYyTGSd7yEcU2vUr3SJ83Sw@mail.gmail.com>
+	 <1338940345.11962.9.camel@joe2Laptop>
+	 <20120605165808.cd255b93.akpm@linux-foundation.org>
+	 <1338941247.11962.16.camel@joe2Laptop>
+	 <CAPXgP12OFnh6FZO4zFGCw=Ea4U6Ne5OoCg_9BPxRX62x0EVnng@mail.gmail.com>
+	 <1338941971.11962.20.camel@joe2Laptop>
+	 <CAPXgP10VE2huY4gGpeFPe=YKYM+nDBfoMgpHnGmQwn0jdPxhbw@mail.gmail.com>
+	 <20120605173751.65a2e1ee.akpm@linux-foundation.org>
+	 <1338943205.11962.28.camel@joe2Laptop>
+	 <20120605174638.69bcfa31.akpm@linux-foundation.org>
+	 <CAPXgP11DA2z2y4kR8C+AGtrd_-8=2Cy0jj3GX7T5JqczNke4GQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 05, 2012 at 10:45:20PM +0800, Gavin Shan wrote:
+vprintk_emit prefix parsing should only be done for internal
+kernel messages.  This allows existing behavior to be kept
+in all cases.
 
-Hi Gavin,
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ kernel/printk.c |   32 +++++++++++++++++---------------
+ 1 files changed, 17 insertions(+), 15 deletions(-)
 
->
->- Why not just remove the proc entry since we needn't it anymore?
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 5cd73f7..4e72c07 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -1267,7 +1267,6 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 	static char cont_buf[LOG_LINE_MAX];
+ 	static size_t cont_len;
+ 	static int cont_level;
+-	int kern_level;
+ 	static struct task_struct *cont_task;
+ 	static char textbuf[LOG_LINE_MAX];
+ 	char *text = textbuf;
+@@ -1329,21 +1328,24 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 		newline = true;
+ 	}
+ 
+-	/* strip syslog prefix and extract log level or control flags */
+-	kern_level = printk_get_level(text);
+-	if (kern_level) {
+-		const char *end_of_header = printk_skip_level(text);
+-		switch (kern_level) {
+-		case '0' ... '7':
+-			if (level == -1)
+-				level = kern_level - '0';
+-		case 'd':	/* KERN_DEFAULT */
+-			prefix = true;
+-		case 'c':	/* KERN_CONT */
+-			break;
++	/* strip kernel syslog prefix and extract log level or control flags */
++	if (facility == 0) {
++		int kern_level = printk_get_level(text);
++
++		if (kern_level) {
++			const char *end_of_header = printk_skip_level(text);
++			switch (kern_level) {
++			case '0' ... '7':
++				if (level == -1)
++					level = kern_level - '0';
++			case 'd':	/* KERN_DEFAULT */
++				prefix = true;
++			case 'c':	/* KERN_CONT */
++				break;
++			}
++			text_len -= end_of_header - text;
++			text = (char *)end_of_header;
+ 		}
+-		text_len -=  end_of_header - text;
+-		text = (char *)end_of_header;
+ 	}
+ 
+ 	if (level == -1)
 
-Some user applications maybe still use this interface, so we should take
-attention to back-compatibility issues.
 
->- If we really want to keep the entry and just output warning message, we *only*
->  can see the message out of system console. It's reasonable to put the message
->  into the buffer directly so that any users from system console/telnet/ssh can
->  see the warning message?
-
-Maybe this is a good idea.
-
->
->>From: Wanpeng Li <liwp@linux.vnet.ibm.com>
->>
->>------------------
->>
->>Change in v2:
->>
->>* add printk warning
->>* add description in Documentation
->>
->>------------------
->>
->>Signed-off-by: Wanpeng Li <liwp@linux.vnet.ibm.com>
->>---
->> .../ABI/obsolete/proc-sys-vm-nr_pdflush_threads    |    5 +++++
->> Documentation/feature-removal-schedule.txt         |    8 ++++++++
->> Documentation/sysctl/vm.txt                        |   11 -----------
->> fs/fs-writeback.c                                  |    5 -----
->> include/linux/sysctl.h                             |    3 +++
->> include/linux/writeback.h                          |    5 -----
->> kernel/sysctl.c                                    |   18 +++++++++++++-----
->> kernel/sysctl_binary.c                             |    2 +-
->> 8 files changed, 30 insertions(+), 27 deletions(-)
->> create mode 100644 Documentation/ABI/obsolete/proc-sys-vm-nr_pdflush_threads
->>
->>diff --git a/Documentation/ABI/obsolete/proc-sys-vm-nr_pdflush_threads b/Documentation/ABI/obsolete/proc-sys-vm-nr_pdflush_threads
->>new file mode 100644
->>index 0000000..edbe548
->>--- /dev/null
->>+++ b/Documentation/ABI/obsolete/proc-sys-vm-nr_pdflush_threads
->>@@ -0,0 +1,5 @@
->>+What:		/proc/sys/vm/nr_pdflush_threads
->>+Date:		June 2012
->>+Contact:	Wanpeng Li <liwp@linux.vnet.ibm.com>
->>+Description: Since pdflush is replaced by per-BDI flusher, the interface of old pdflush
->>+             exported in /proc/sys/vm/ should be removed.
->>diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
->>index e4b5775..7eea1ee 100644
->>--- a/Documentation/feature-removal-schedule.txt
->>+++ b/Documentation/feature-removal-schedule.txt
->>@@ -6,6 +6,14 @@ be removed from this file.
->>
->> ---------------------------
->>
->>+What: /proc/sys/vm/nr_pdflush_threads
->>+When: 2012
->>+Why: Since pdflush is deprecated, the interface exported in /proc/sys/vm/
->>+     should be removed.
->>+Who: Wanpeng Li <liwp@linux.vnet.ibm.com>
->>+
->>+---------------------------
->>+
->> What:	CONFIG_APM_CPU_IDLE, and its ability to call APM BIOS in idle
->> When:	2012
->> Why:	This optional sub-feature of APM is of dubious reliability,
->>diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
->>index 96f0ee8..71c17d2 100644
->>--- a/Documentation/sysctl/vm.txt
->>+++ b/Documentation/sysctl/vm.txt
->>@@ -42,7 +42,6 @@ Currently, these files are in /proc/sys/vm:
->> - mmap_min_addr
->> - nr_hugepages
->> - nr_overcommit_hugepages
->>-- nr_pdflush_threads
->> - nr_trim_pages         (only if CONFIG_MMU=n)
->> - numa_zonelist_order
->> - oom_dump_tasks
->>@@ -426,16 +425,6 @@ See Documentation/vm/hugetlbpage.txt
->>
->> ==============================================================
->>
->>-nr_pdflush_threads
->>-
->>-The current number of pdflush threads.  This value is read-only.
->>-The value changes according to the number of dirty pages in the system.
->>-
->>-When necessary, additional pdflush threads are created, one per second, up to
->>-nr_pdflush_threads_max.
->>-
->>-==============================================================
->>-
->> nr_trim_pages
->>
->> This is available only on NOMMU kernels.
->>diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
->>index 539f36c..30ddb8a 100644
->>--- a/fs/fs-writeback.c
->>+++ b/fs/fs-writeback.c
->>@@ -52,11 +52,6 @@ struct wb_writeback_work {
->> 	struct completion *done;	/* set if the caller waits */
->> };
->>
->>-/*
->>- * We don't actually have pdflush, but this one is exported though /proc...
->>- */
->>-int nr_pdflush_threads;
->>-
->> /**
->>  * writeback_in_progress - determine whether there is writeback in progress
->>  * @bdi: the device's backing_dev_info structure.
->>diff --git a/include/linux/sysctl.h b/include/linux/sysctl.h
->>index c34b4c8..f25be74 100644
->>--- a/include/linux/sysctl.h
->>+++ b/include/linux/sysctl.h
->>@@ -964,6 +964,9 @@ extern int proc_doulongvec_ms_jiffies_minmax(struct ctl_table *table, int,
->> 				      void __user *, size_t *, loff_t *);
->> extern int proc_do_large_bitmap(struct ctl_table *, int,
->> 				void __user *, size_t *, loff_t *);
->>+extern int proc_deprecated(struct ctl_table *, int,
->>+				void __user *, size_t *, loff_t *);
->>+
->>
->> /*
->>  * Register a set of sysctl names by calling register_sysctl_table
->>diff --git a/include/linux/writeback.h b/include/linux/writeback.h
->>index a2b84f5..13b5df7 100644
->>--- a/include/linux/writeback.h
->>+++ b/include/linux/writeback.h
->>@@ -193,9 +193,4 @@ void tag_pages_for_writeback(struct address_space *mapping,
->>
->> void account_page_redirty(struct page *page);
->>
->>-/* pdflush.c */
->>-extern int nr_pdflush_threads;	/* Global so it can be exported to sysctl
->>-				   read-only. */
->>-
->>-
->> #endif		/* WRITEBACK_H */
->>diff --git a/kernel/sysctl.c b/kernel/sysctl.c
->>index 4ab1187..1ab53cb 100644
->>--- a/kernel/sysctl.c
->>+++ b/kernel/sysctl.c
->>@@ -1095,11 +1095,9 @@ static struct ctl_table vm_table[] = {
->> 		.extra1		= &zero,
->> 	},
->> 	{
->>-		.procname	= "nr_pdflush_threads",
->>-		.data		= &nr_pdflush_threads,
->>-		.maxlen		= sizeof nr_pdflush_threads,
->>-		.mode		= 0444 /* read-only*/,
->>-		.proc_handler	= proc_dointvec,
->>+		.procname       = "nr_pdflush_threads",
->>+		.mode           = 0444 /* read-only */,
->>+		.proc_handler   = proc_deprecated,
->> 	},
->> 	{
->> 		.procname	= "swappiness",
->>@@ -2505,6 +2503,15 @@ int proc_doulongvec_ms_jiffies_minmax(struct ctl_table *table, int write,
->>
->> #endif /* CONFIG_PROC_SYSCTL */
->>
->>+/* notice associated proc deprecated */
->>+int proc_deprecated(struct ctl_table *table, int write,
->>+		    void __user *buffer, size_t *lenp, loff_t *ppos)
->>+{
->>+	printk(KERN_WARNING "%s exported in /proc is deprecated\n",
->>+			table->procname);
->>+	return -ENOSYS;
->>+}
->>+
->> /*
->>  * No sense putting this after each symbol definition, twice,
->>  * exception granted :-)
->>@@ -2517,3 +2524,4 @@ EXPORT_SYMBOL(proc_dointvec_ms_jiffies);
->> EXPORT_SYMBOL(proc_dostring);
->> EXPORT_SYMBOL(proc_doulongvec_minmax);
->> EXPORT_SYMBOL(proc_doulongvec_ms_jiffies_minmax);
->>+EXPORT_SYMBOL(proc_deprecated);
->>diff --git a/kernel/sysctl_binary.c b/kernel/sysctl_binary.c
->>index a650694..65bdcf1 100644
->>--- a/kernel/sysctl_binary.c
->>+++ b/kernel/sysctl_binary.c
->>@@ -147,7 +147,7 @@ static const struct bin_table bin_vm_table[] = {
->> 	{ CTL_INT,	VM_DIRTY_RATIO,			"dirty_ratio" },
->> 	/* VM_DIRTY_WB_CS "dirty_writeback_centisecs" no longer used */
->> 	/* VM_DIRTY_EXPIRE_CS "dirty_expire_centisecs" no longer used */
->>-	{ CTL_INT,	VM_NR_PDFLUSH_THREADS,		"nr_pdflush_threads" },
->>+	/* VM_NR_PDFLUSH_THREADS "nr_pdflush_threads" no longer used */
->> 	{ CTL_INT,	VM_OVERCOMMIT_RATIO,		"overcommit_ratio" },
->> 	/* VM_PAGEBUF unused */
->> 	/* VM_HUGETLB_PAGES "nr_hugepages" no longer used */
->>-- 
->>1.7.9.5
->>
->
->--
->To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->the body of a message to majordomo@vger.kernel.org
->More majordomo info at  http://vger.kernel.org/majordomo-info.html
->Please read the FAQ at  http://www.tux.org/lkml/
