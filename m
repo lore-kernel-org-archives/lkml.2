@@ -1,85 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756423Ab2FFOwJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 10:52:09 -0400
-Received: from na3sys009aog137.obsmtp.com ([74.125.149.18]:36739 "EHLO
-	na3sys009aog137.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756189Ab2FFOwH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 10:52:07 -0400
-Date: Wed, 6 Jun 2012 17:50:15 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Joe Perches <joe@perches.com>
-Cc: Felipe Balbi <balbi@ti.com>, trivial@kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RESEND PATCH] trivial: treewide: remove extra semicolon added
- by module_init/exit
-Message-ID: <20120606145014.GD14628@arwen.pp.htv.fi>
-Reply-To: balbi@ti.com
-References: <1338991324-7051-1-git-send-email-balbi@ti.com>
- <1338994062.9522.12.camel@joe2Laptop>
+	id S1756450Ab2FFOwe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 10:52:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61543 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756040Ab2FFOwd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 10:52:33 -0400
+Date: Wed, 6 Jun 2012 16:50:09 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 2/3] uprobes: change build_map_info() to try
+	kmalloc(GFP_NOWAIT) first
+Message-ID: <20120606145009.GC24078@redhat.com>
+References: <20120604145238.GA6408@redhat.com> <20120606144933.GA24078@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="4Epv4kl9IRBfg3rk"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1338994062.9522.12.camel@joe2Laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120606144933.GA24078@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+build_map_info() doesn't allocate the memory under i_mmap_mutex
+to avoid the deadlock with page reclaim. But it can try GFP_NOWAIT
+first, it should work in the likely case and thus we almost never
+need the pre-alloc-and-retry path.
 
---4Epv4kl9IRBfg3rk
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ kernel/events/uprobes.c |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
 
-On Wed, Jun 06, 2012 at 07:47:42AM -0700, Joe Perches wrote:
-> On Wed, 2012-06-06 at 17:02 +0300, Felipe Balbi wrote:
-> > The definition of module_init() and module_exit()
-> > already added the final semicolon creating a situation
-> > where most of our drivers end up with two semicolons
-> > at the end of every module_init()/module_exit() call.
-> >=20
-> > To fix that, we add missing semicolons to the places
-> > which didn't have them and remove the semicolons from
-> > the definition of module_init/module_exit.
-> >=20
-> > Patch generated with the following sed script:
-> >=20
-> > $ sed -i 's/^module_\(init\|exit\)\s*\((\w\+)\)$/module_\1\2;/g' \
-> > 	$(git ls-files)
->=20
-> I don't think that script works completely.
-> It doesn't find the module_init in fs/autofs4/init.c
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index a1bbcab..88e903d 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -771,6 +771,16 @@ build_map_info(struct address_space *mapping, loff_t offset, bool is_register)
+ 		if (!valid_vma(vma, is_register))
+ 			continue;
+ 
++		if (!prev && !more) {
++			/*
++			 * Needs GFP_NOWAIT to avoid i_mmap_mutex recursion through
++			 * reclaim. This is optimistic, no harm done if it fails.
++			 */
++			prev = kmalloc(sizeof(struct map_info),
++					GFP_NOWAIT | __GFP_NOMEMALLOC | __GFP_NOWARN);
++			if (prev)
++				prev->next = NULL;
++		}
+ 		if (!prev) {
+ 			more++;
+ 			continue;
+-- 
+1.5.5.1
 
-hehe, there's a trailing whitespace at the end of that module_init()
-call. Will fix the patch and resend.
 
---=20
-balbi
-
---4Epv4kl9IRBfg3rk
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPz24mAAoJEIaOsuA1yqREqSMQAJexwgryFdLn5JS4eT7otB1b
-nMnOWBhsm+/L/KV3jW2Ll6fwjXsz19v7w5hVdGgl1S92ME7xVD4Wee/597xVTEBb
-KmhFr6GGdJ+LWobMjntc8/E4cTmR/l6Kx4UGveq11kx+iUQNfaBxZiEsoDc0Cwie
-JXkPV4YvX0gGmLXJGp58VaW0x/esJdamWbp7oNFEBXQauDRIAmzQG+xLOw1nNIqY
-G9Qty9iJtDz7NH/+/BTEi1jDB7Bo9HHrwEnDep9tgyYYGwViO0qyrQVdEC4XFKP3
-Di1yekVG1Kz7iHR/kjaAE8yHlA5t25JhU0LusZVlUx24hsCWMsPD/BaRBj8IdNd1
-2Ag9y0q5KIzHMlNSOXBv0NPA9BaoBKBRpvkQiQhuNrUvGNHARFCZC2+UAi32dJ7Y
-v0lPS+GKp1JhE5qbcXBlMjjSyNLotmEm38PnzaFmgTG3Fd1UaLfEJ+qdM/qmgDZL
-MV/q1OkfUp9NPSxFqsHxc1zH0xnCnkr6GvOYFSTR/xN5v4XAb+Vj+rY2fG3t6bYF
-pcoUaXM0IafYcxLrdDMhbqIeYCpprcd81LR05L5of0XEnDE0w2aRAQY/SGiJu/hf
-5D3a4KJlj5RZ1U4rb2vsAcQ4mJO9PvuxyykDByNUkcG0mHLTei0jx0ejwh6nLAEn
-JyW1RiVmxBdy0K7I1XYB
-=klfU
------END PGP SIGNATURE-----
-
---4Epv4kl9IRBfg3rk--
