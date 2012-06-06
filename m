@@ -1,44 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752842Ab2FFILs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 04:11:48 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56158 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750942Ab2FFILq (ORCPT
+	id S1753310Ab2FFINe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 04:13:34 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:57555 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751505Ab2FFINa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 04:11:46 -0400
-Date: Wed, 6 Jun 2012 17:11:35 +0900
-From: Greg KH <gregkh@linuxfoundation.org>
-To: stefani@seibold.net
-Cc: linux-kernel@vger.kernel.org, oneukum@suse.de, alan@lxorguk.ukuu.org.uk
-Subject: Re: [PATCH] fix usb skeleton driver
-Message-ID: <20120606081135.GA7306@kroah.com>
-References: <1338966036-30443-1-git-send-email-stefani@seibold.net>
+	Wed, 6 Jun 2012 04:13:30 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6733"; a="198194203"
+Message-ID: <dd131f3f86e367a47b3528015cde9dd9.squirrel@www.codeaurora.org>
+In-Reply-To: <20120604171344.GA15837@plastictigers.com>
+References: <1338340310-4473-1-git-send-email-sdharia@codeaurora.org>
+    <20120601001617.GA16311@plastictigers.com>
+    <74993ac9d11db0db7080c0864daef397.squirrel@www.codeaurora.org>
+    <20120604171344.GA15837@plastictigers.com>
+Date: Wed, 6 Jun 2012 01:13:30 -0700 (PDT)
+Subject: Re: [PATCH] slimbus: Linux driver framework for SLIMbus.
+From: "Sagar Dharia" <sdharia@codeaurora.org>
+To: "Marc Butler" <marc@plastictigers.com>
+Cc: "Sagar Dharia" <sdharia@codeaurora.org>, davidb@codeaurora.org,
+        bryanh@codeaurora.org, kheitke@codeaurora.org, gclemson@audience.com,
+        broonie@opensource.wolfsonmicro.com, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, rob@landley.net,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com, ohad@wizery.com,
+        gregkh@linuxfoundation.org, linus.walleij@linaro.org,
+        rusty@rustcorp.com.au, joerg.roedel@amd.com, trenn@suse.de,
+        ak@linux.intel.com, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Reply-To: sdharia@codeaurora.org
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1338966036-30443-1-git-send-email-stefani@seibold.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 06, 2012 at 09:00:36AM +0200, stefani@seibold.net wrote:
-> From: Stefani Seibold <stefani@seibold.net>
-> 
-> This is a fix for the USB skeleton driver to bring it in shape.
-> 
-> - The usb_device structure pointer will no longer stored 
-> - Every access to the USB will be handled trought the usb_interface pointer
-> - No longer assign a NULL to usb_interface pointer in the disconnect() handler
-> - Add a new bool 'connected' for signaling a disconnect (== false)
-> - Handle a non blocking read without blocking
-> - Code clean up
+> I understand it is not a 1-to-1 mapping. However it *is* used as such:
+>
+>  wbuf[2] = (u8)((segdist & 0xF00) >> 8) | (slc->prop.prot << 4);
+>
+> which results in NEXT_DEFINE_CHANNEL messages with an invalid TP
+> field.
+Yes, thanks for catching this. I will make changes to rectify this.
 
-Please break this up into individual patches for all of these things,
-and also always cc: the linux-usb@vger.kernel.org mailing list when you
-submit USB related patches.
+>
+> Yes, my mistake. The driver wouldn't have to poll if there was another
+> callback. So I don't see how the completion mechanism is superior: it
+> forces a synchronous interface to asynchronous events, or the driver
+> developer has to work around it.
+The get_logical_address API itself doesn't take completion. Completion is
+part of slim_device structure so that the slim_device's driver can wait on
+it whenever it needs LA for the first time. (Framework signals completion
+on a slim_device when it gets enumerated)
+If callback is preferred, I will change it to callback.
 
-thanks,
+Regards-
+Sagar
 
-greg k-h
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
