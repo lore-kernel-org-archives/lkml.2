@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756743Ab2FFPxm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 11:53:42 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40224 "EHLO
+	id S932082Ab2FFPyf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 11:54:35 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40233 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754738Ab2FFPxk (ORCPT
+	with ESMTP id S1754473Ab2FFPyd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 11:53:40 -0400
-Date: Wed, 6 Jun 2012 08:53:25 -0700
-From: tip-bot for Alex Shi <alex.shi@intel.com>
-Message-ID: <tip-10717dcde10d09f9fcee53a12a4236af1a82b484@git.kernel.org>
+	Wed, 6 Jun 2012 11:54:33 -0400
+Date: Wed, 6 Jun 2012 08:54:17 -0700
+From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
+Message-ID: <tip-7f1b43936f0ecad14770634c021cf4a929aec74d@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, alex.shi@intel.com, tglx@linutronix.de
+        rostedt@goodmis.org, a.p.zijlstra@chello.nl, roland@kernel.org,
+        tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, alex.shi@intel.com
-In-Reply-To: <1338965571-9812-1-git-send-email-alex.shi@intel.com>
-References: <1338965571-9812-1-git-send-email-alex.shi@intel.com>
+        a.p.zijlstra@chello.nl, rostedt@goodmis.org, roland@kernel.org,
+        tglx@linutronix.de
+In-Reply-To: <1337282386.4281.77.camel@twins>
+References: <1337282386.4281.77.camel@twins>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] sched/numa: Load balance between remote nodes
-Git-Commit-ID: 10717dcde10d09f9fcee53a12a4236af1a82b484
+Subject: [tip:sched/urgent] sched/rt:
+  Fix lockdep annotation within find_lock_lowest_rq()
+Git-Commit-ID: 7f1b43936f0ecad14770634c021cf4a929aec74d
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -27,55 +30,55 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 06 Jun 2012 08:53:31 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 06 Jun 2012 08:54:24 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  10717dcde10d09f9fcee53a12a4236af1a82b484
-Gitweb:     http://git.kernel.org/tip/10717dcde10d09f9fcee53a12a4236af1a82b484
-Author:     Alex Shi <alex.shi@intel.com>
-AuthorDate: Wed, 6 Jun 2012 14:52:51 +0800
+Commit-ID:  7f1b43936f0ecad14770634c021cf4a929aec74d
+Gitweb:     http://git.kernel.org/tip/7f1b43936f0ecad14770634c021cf4a929aec74d
+Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+AuthorDate: Thu, 17 May 2012 21:19:46 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 6 Jun 2012 16:52:25 +0200
+CommitDate: Wed, 6 Jun 2012 16:52:26 +0200
 
-sched/numa: Load balance between remote nodes
+sched/rt: Fix lockdep annotation within find_lock_lowest_rq()
 
-Commit cb83b629b ("sched/numa: Rewrite the CONFIG_NUMA sched
-domain support") removed the NODE sched domain and started checking
-if the node distance in SLIT table is farther than REMOTE_DISTANCE,
-if so, it will lose the load balance chance at exec/fork/wake_affine
-points.
+Roland Dreier reported spurious, hard to trigger lockdep warnings
+within the scheduler - without any real lockup.
 
-But actually, even the node distance is farther than REMOTE_DISTANCE.
+This bit gives us the right clue:
 
-Modern CPUs also has QPI like connections, which ensures that memory
-access is not too slow between nodes. So the above change in behavior
-on NUMA machine causes a performance regression on various benchmarks:
-hackbench, tbench, netperf, oltp, etc.
+> [89945.640512]  [<ffffffff8103fa1a>] double_lock_balance+0x5a/0x90
+> [89945.640568]  [<ffffffff8104c546>] push_rt_task+0xc6/0x290
 
-This patch will recover the scheduler behavior to old mode on all my
-Intel platforms: NHM EP/EX, WSM EP, SNB EP/EP4S, and thus fixes the
-perfromance regressions. (all of them just have 2 kinds distance, 10, 21)
+if you look at that code you'll find the double_lock_balance() in
+question is the one in find_lock_lowest_rq() [yay for inlining].
 
-Signed-off-by: Alex Shi <alex.shi@intel.com>
+Now find_lock_lowest_rq() has a bug.. it fails to use
+double_unlock_balance() in one exit path, if this results in a retry in
+push_rt_task() we'll call double_lock_balance() again, at which point
+we'll run into said lockdep confusion.
+
+Reported-by: Roland Dreier <roland@kernel.org>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1338965571-9812-1-git-send-email-alex.shi@intel.com
+Link: http://lkml.kernel.org/r/1337282386.4281.77.camel@twins
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/core.c |    2 +-
+ kernel/sched/rt.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index c46958e..6546083 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -6321,7 +6321,7 @@ static int sched_domains_curr_level;
+diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+index 2a4e8df..573e1ca 100644
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -1562,7 +1562,7 @@ static struct rq *find_lock_lowest_rq(struct task_struct *task, struct rq *rq)
+ 				     task_running(rq, task) ||
+ 				     !task->on_rq)) {
  
- static inline int sd_local_flags(int level)
- {
--	if (sched_domains_numa_distance[level] > REMOTE_DISTANCE)
-+	if (sched_domains_numa_distance[level] > RECLAIM_DISTANCE)
- 		return 0;
- 
- 	return SD_BALANCE_EXEC | SD_BALANCE_FORK | SD_WAKE_AFFINE;
+-				raw_spin_unlock(&lowest_rq->lock);
++				double_unlock_balance(rq, lowest_rq);
+ 				lowest_rq = NULL;
+ 				break;
+ 			}
