@@ -1,106 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756547Ab2FFPFb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 11:05:31 -0400
-Received: from www84.your-server.de ([213.133.104.84]:57876 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756524Ab2FFPFa (ORCPT
+	id S1756498Ab2FFPFz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 11:05:55 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39680 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756008Ab2FFPFy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 11:05:30 -0400
-Message-ID: <1338995150.9281.7.camel@wall-e>
-Subject: Re: [PATCH] fix usb skeleton driver
-From: Stefani Seibold <stefani@seibold.net>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org, oneukum@suse.de,
-        alan@lxorguk.ukuu.org.uk, linux-usb@vger.kernel.org
-Date: Wed, 06 Jun 2012 17:05:50 +0200
-In-Reply-To: <CACVXFVPX-F820rgusEiC9F9XQNqYybi29Cd_hSyiN95c2OAWHg@mail.gmail.com>
-References: <1338988998-9061-1-git-send-email-stefani@seibold.net>
-	 <CACVXFVPX-F820rgusEiC9F9XQNqYybi29Cd_hSyiN95c2OAWHg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Authenticated-Sender: stefani@seibold.net
+	Wed, 6 Jun 2012 11:05:54 -0400
+Date: Wed, 6 Jun 2012 08:05:42 -0700
+From: tip-bot for Alexander Gordeev <agordeev@redhat.com>
+Message-ID: <tip-49d0c7a0a425a89190b7c3b1445faba9eb227bec@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, agordeev@redhat.com, hpa@zytor.com,
+        mingo@kernel.org, yinghai@kernel.org, suresh.b.siddha@intel.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, agordeev@redhat.com,
+        linux-kernel@vger.kernel.org, yinghai@kernel.org,
+        suresh.b.siddha@intel.com, tglx@linutronix.de
+In-Reply-To: <20120605112310.GA11443@dhcp-26-207.brq.redhat.com>
+References: <20120605112310.GA11443@dhcp-26-207.brq.redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/apic] x86/apic: Trivial whitespace fixes
+Git-Commit-ID: 49d0c7a0a425a89190b7c3b1445faba9eb227bec
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 06 Jun 2012 08:05:48 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, den 06.06.2012, 22:28 +0800 schrieb Ming Lei:
-> On Wed, Jun 6, 2012 at 9:23 PM,  <stefani@seibold.net> wrote:
-> > From: Stefani Seibold <stefani@seibold.net>
-> >
-> > This is a fix for the USB skeleton driver to bring it in shape.
-> >
-> > - The usb_interface structure pointer will be no longer stored
-> > - Every access to the USB will be handled trought the usb_interface pointer
-> > - Add a new bool 'connected' for signaling a disconnect (== false)
-> > - Handle a non blocking read without blocking
-> > - Code cleanup
-> > - Synchronize disconnect() handler with open() and release(), to fix races
-> > - Introduced fsync
-> > - Single user mode
-> > - More code cleanup :-)
-> > - Save some bytes in the dev structure
-> 
-> So many purposes, you need to split your patches for review easily, :-)
-> 
+Commit-ID:  49d0c7a0a425a89190b7c3b1445faba9eb227bec
+Gitweb:     http://git.kernel.org/tip/49d0c7a0a425a89190b7c3b1445faba9eb227bec
+Author:     Alexander Gordeev <agordeev@redhat.com>
+AuthorDate: Tue, 5 Jun 2012 13:23:15 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 6 Jun 2012 10:22:16 +0200
 
-This is the next step :-)
+x86/apic: Trivial whitespace fixes
 
-> >  static void skel_delete(struct kref *kref)
-> >  {
-> > @@ -86,15 +90,13 @@ static int skel_open(struct inode *inode, struct file *file)
-> >  {
-> >        struct usb_skel *dev;
-> >        struct usb_interface *interface;
-> > -       int subminor;
-> > -       int retval = 0;
-> > +       int retval;
-> >
-> > -       subminor = iminor(inode);
-> > +       /* lock against skel_disconnect() */
-> > +       mutex_lock(&sync_mutex);
-> 
-> This one is not needed since we have minor_rwsem(drivers/usb/core/file.c)
-> to avoid the race.
-> 
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Link: http://lkml.kernel.org/r/20120605112310.GA11443@dhcp-26-207.brq.redhat.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/kernel/apic/apic_flat_64.c   |    2 +-
+ arch/x86/kernel/apic/io_apic.c        |    4 ++--
+ arch/x86/kernel/apic/x2apic_cluster.c |    2 +-
+ 3 files changed, 4 insertions(+), 4 deletions(-)
 
-The mutex is not for the minor handling, it is for the disconnect(). As
-mentioned in the previous posting, there is a race betwenn open() and
-connect().
-
-Oliver told me that a interface pointer can be already used by an other
-driver when the disconnect() was called. 
-
-So the interface will be used to determinate the dev pointer, which can
-at this time also owned by an other driver.
-
-And at last the dev pointer could be point to an already released
-memory.
-
-So it is IMHO needed.
-
-> >
-> >  static int skel_release(struct inode *inode, struct file *file)
-> >  {
-> > -       struct usb_skel *dev;
-> > -
-> > -       dev = file->private_data;
-> > -       if (dev == NULL)
-> > -               return -ENODEV;
-> > +       struct usb_skel *dev = file->private_data;
-> >
-> > +       /* lock against skel_disconnect() */
-> > +       mutex_lock(&sync_mutex);
-> 
-> Since the reference count is held now, so is there any race between
-> release and disconnect?
-> 
-
-Same as above, the interface could be owned by an other driver.
-
-Thanks,
-Stefani
-
-
+diff --git a/arch/x86/kernel/apic/apic_flat_64.c b/arch/x86/kernel/apic/apic_flat_64.c
+index 0e881c4..de279b3 100644
+--- a/arch/x86/kernel/apic/apic_flat_64.c
++++ b/arch/x86/kernel/apic/apic_flat_64.c
+@@ -92,7 +92,7 @@ static void flat_send_IPI_mask(const struct cpumask *cpumask, int vector)
+ }
+ 
+ static void
+- flat_send_IPI_mask_allbutself(const struct cpumask *cpumask, int vector)
++flat_send_IPI_mask_allbutself(const struct cpumask *cpumask, int vector)
+ {
+ 	unsigned long mask = cpumask_bits(cpumask)[0];
+ 	int cpu = smp_processor_id();
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 910a311..74c5697 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -1363,7 +1363,7 @@ static void setup_ioapic_irq(unsigned int irq, struct irq_cfg *cfg,
+ 		    cfg->vector, irq, attr->trigger, attr->polarity, dest);
+ 
+ 	if (setup_ioapic_entry(irq, &entry, dest, cfg->vector, attr)) {
+-		pr_warn("Failed to setup ioapic entry for ioapic  %d, pin %d\n",
++		pr_warn("Failed to setup ioapic entry for ioapic %d, pin %d\n",
+ 			mpc_ioapic_id(attr->ioapic), attr->ioapic_pin);
+ 		__clear_irq_vector(irq, cfg);
+ 
+@@ -1466,7 +1466,7 @@ void setup_IO_APIC_irq_extra(u32 gsi)
+  * Set up the timer pin, possibly with the 8259A-master behind.
+  */
+ static void __init setup_timer_IRQ0_pin(unsigned int ioapic_idx,
+-					 unsigned int pin, int vector)
++					unsigned int pin, int vector)
+ {
+ 	struct IO_APIC_route_entry entry;
+ 
+diff --git a/arch/x86/kernel/apic/x2apic_cluster.c b/arch/x86/kernel/apic/x2apic_cluster.c
+index 90d999c..2919e45 100644
+--- a/arch/x86/kernel/apic/x2apic_cluster.c
++++ b/arch/x86/kernel/apic/x2apic_cluster.c
+@@ -81,7 +81,7 @@ static void x2apic_send_IPI_mask(const struct cpumask *mask, int vector)
+ }
+ 
+ static void
+- x2apic_send_IPI_mask_allbutself(const struct cpumask *mask, int vector)
++x2apic_send_IPI_mask_allbutself(const struct cpumask *mask, int vector)
+ {
+ 	__x2apic_send_IPI_mask(mask, vector, APIC_DEST_ALLBUT);
+ }
