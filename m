@@ -1,27 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754549Ab2FFHEm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 03:04:42 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35868 "EHLO
+	id S1754542Ab2FFHGJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 03:06:09 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35896 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753206Ab2FFHEl (ORCPT
+	with ESMTP id S1751225Ab2FFHGH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 03:04:41 -0400
-Date: Wed, 6 Jun 2012 00:04:25 -0700
-From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
-Message-ID: <tip-55da80059de6c7533724fcd95f16c5d5618ecf4d@git.kernel.org>
+	Wed, 6 Jun 2012 03:06:07 -0400
+Date: Wed, 6 Jun 2012 00:05:17 -0700
+From: tip-bot for Jiri Olsa <jolsa@redhat.com>
+Message-ID: <tip-8db4841fc72acc58254029f050226ea5f8103854@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
         hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, namhyung@gmail.com, tglx@linutronix.de
+        jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
+        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com, mingo@elte.hu
 Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
         linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, tglx@linutronix.de, namhyung@gmail.com
-In-Reply-To: <1338443506-25009-3-git-send-email-namhyung.kim@lge.com>
-References: <1338443506-25009-3-git-send-email-namhyung.kim@lge.com>
+        jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
+        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+In-Reply-To: <1338380624-7443-2-git-send-email-jolsa@redhat.com>
+References: <1338380624-7443-2-git-send-email-jolsa@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf evlist:
-  Pass third argument to ioctl explicitly
-Git-Commit-ID: 55da80059de6c7533724fcd95f16c5d5618ecf4d
+Subject: [tip:perf/urgent] perf symbols:
+  Handle different endians properly during symbol load
+Git-Commit-ID: 8db4841fc72acc58254029f050226ea5f8103854
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,55 +32,207 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 06 Jun 2012 00:04:31 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 06 Jun 2012 00:05:24 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  55da80059de6c7533724fcd95f16c5d5618ecf4d
-Gitweb:     http://git.kernel.org/tip/55da80059de6c7533724fcd95f16c5d5618ecf4d
-Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Thu, 31 May 2012 14:51:46 +0900
+Commit-ID:  8db4841fc72acc58254029f050226ea5f8103854
+Gitweb:     http://git.kernel.org/tip/8db4841fc72acc58254029f050226ea5f8103854
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Wed, 30 May 2012 14:23:42 +0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 31 May 2012 11:39:16 -0300
+CommitDate: Thu, 31 May 2012 11:55:36 -0300
 
-perf evlist: Pass third argument to ioctl explicitly
+perf symbols: Handle different endians properly during symbol load
 
-The ioctl on perf event fd wants 3 arguments but we only passed 2. As
-the only user of the functions is perf record and it calls them for
-every event (regardless of group setting), just pass 0 for now.
+Currently we dont care about the file object's endianness. It's possible
+we read buildid file object from different architecture than we are
+currentlly running on. So we need to care about properly reading such
+object's data - handle different endianness properly.
 
-Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
+Adding:
+	needs_swap DSO field
+	dso__swap_init function to initialize DSO's needs_swap
+	DSO__SWAP to read the data with proper swaps
+
+Together with other endianity patches, this change fixies perf report
+discrepancies on origin and target systems as described in test 1 below,
+e.g. following perf report diff:
+
+...
+      0.12%               ps  [kernel.kallsyms]    [k] clear_page
+-     0.12%              awk  bash                 [.] alloc_word_desc
++     0.12%              awk  bash                 [.] yyparse
+      0.11%   beah-rhts-task  libpython2.6.so.1.0  [.] 0x5560e
+      0.10%             perf  libc-2.12.so         [.] __ctype_toupper_loc
+-     0.09%  rhts-test-runne  bash                 [.] maybe_make_export_env
++     0.09%  rhts-test-runne  bash                 [.] 0x385a0
+      0.09%               ps  [kernel.kallsyms]    [k] page_fault
+...
+
+Note, running following to test perf endianity handling:
+test 1)
+  - origin system:
+    # perf record -a -- sleep 10 (any perf record will do)
+    # perf report > report.origin
+    # perf archive perf.data
+
+  - copy the perf.data, report.origin and perf.data.tar.bz2
+    to a target system and run:
+    # tar xjvf perf.data.tar.bz2 -C ~/.debug
+    # perf report > report.target
+    # diff -u report.origin report.target
+
+  - the diff should produce no output
+    (besides some white space stuff and possibly different
+     date/TZ output)
+
+test 1)
+  - origin system:
+    # perf record -ag -fo /tmp/perf.data -- sleep 1
+  - mount origin system root to the target system on /mnt/origin
+  - target system:
+    # perf script --symfs /mnt/origin -I -i /mnt/origin/tmp/perf.data \
+     --kallsyms /mnt/origin/proc/kallsyms
+  - complete perf.data header is displayed
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1338443506-25009-3-git-send-email-namhyung.kim@lge.com
+Link: http://lkml.kernel.org/r/1338380624-7443-2-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/evlist.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+ tools/perf/util/symbol.c |   33 ++++++++++++++++++++++++++++++++-
+ tools/perf/util/symbol.h |   30 ++++++++++++++++++++++++++++++
+ 2 files changed, 62 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index ed277e5..7400fb3 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -274,7 +274,8 @@ void perf_evlist__disable(struct perf_evlist *evlist)
- 	for (cpu = 0; cpu < evlist->cpus->nr; cpu++) {
- 		list_for_each_entry(pos, &evlist->entries, node) {
- 			for (thread = 0; thread < evlist->threads->nr; thread++)
--				ioctl(FD(pos, cpu, thread), PERF_EVENT_IOC_DISABLE);
-+				ioctl(FD(pos, cpu, thread),
-+				      PERF_EVENT_IOC_DISABLE, 0);
- 		}
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index e2ba885..9d04dcd 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -323,6 +323,7 @@ struct dso *dso__new(const char *name)
+ 		dso->sorted_by_name = 0;
+ 		dso->has_build_id = 0;
+ 		dso->kernel = DSO_TYPE_USER;
++		dso->needs_swap = DSO_SWAP__UNSET;
+ 		INIT_LIST_HEAD(&dso->node);
  	}
+ 
+@@ -1156,6 +1157,33 @@ static size_t elf_addr_to_index(Elf *elf, GElf_Addr addr)
+ 	return -1;
  }
-@@ -287,7 +288,8 @@ void perf_evlist__enable(struct perf_evlist *evlist)
- 	for (cpu = 0; cpu < evlist->cpus->nr; cpu++) {
- 		list_for_each_entry(pos, &evlist->entries, node) {
- 			for (thread = 0; thread < evlist->threads->nr; thread++)
--				ioctl(FD(pos, cpu, thread), PERF_EVENT_IOC_ENABLE);
-+				ioctl(FD(pos, cpu, thread),
-+				      PERF_EVENT_IOC_ENABLE, 0);
- 		}
+ 
++static int dso__swap_init(struct dso *dso, unsigned char eidata)
++{
++	static unsigned int const endian = 1;
++
++	dso->needs_swap = DSO_SWAP__NO;
++
++	switch (eidata) {
++	case ELFDATA2LSB:
++		/* We are big endian, DSO is little endian. */
++		if (*(unsigned char const *)&endian != 1)
++			dso->needs_swap = DSO_SWAP__YES;
++		break;
++
++	case ELFDATA2MSB:
++		/* We are little endian, DSO is big endian. */
++		if (*(unsigned char const *)&endian != 0)
++			dso->needs_swap = DSO_SWAP__YES;
++		break;
++
++	default:
++		pr_err("unrecognized DSO data encoding %d\n", eidata);
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
+ static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
+ 			 int fd, symbol_filter_t filter, int kmodule,
+ 			 int want_symtab)
+@@ -1187,6 +1215,9 @@ static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
+ 		goto out_elf_end;
  	}
- }
+ 
++	if (dso__swap_init(dso, ehdr.e_ident[EI_DATA]))
++		goto out_elf_end;
++
+ 	/* Always reject images with a mismatched build-id: */
+ 	if (dso->has_build_id) {
+ 		u8 build_id[BUILD_ID_SIZE];
+@@ -1272,7 +1303,7 @@ static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
+ 		if (opdsec && sym.st_shndx == opdidx) {
+ 			u32 offset = sym.st_value - opdshdr.sh_addr;
+ 			u64 *opd = opddata->d_buf + offset;
+-			sym.st_value = *opd;
++			sym.st_value = DSO__SWAP(dso, u64, *opd);
+ 			sym.st_shndx = elf_addr_to_index(elf, sym.st_value);
+ 		}
+ 
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 5649d63..af0752b 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -9,6 +9,7 @@
+ #include <linux/list.h>
+ #include <linux/rbtree.h>
+ #include <stdio.h>
++#include <byteswap.h>
+ 
+ #ifdef HAVE_CPLUS_DEMANGLE
+ extern char *cplus_demangle(const char *, int);
+@@ -160,11 +161,18 @@ enum dso_kernel_type {
+ 	DSO_TYPE_GUEST_KERNEL
+ };
+ 
++enum dso_swap_type {
++	DSO_SWAP__UNSET,
++	DSO_SWAP__NO,
++	DSO_SWAP__YES,
++};
++
+ struct dso {
+ 	struct list_head node;
+ 	struct rb_root	 symbols[MAP__NR_TYPES];
+ 	struct rb_root	 symbol_names[MAP__NR_TYPES];
+ 	enum dso_kernel_type	kernel;
++	enum dso_swap_type	needs_swap;
+ 	u8		 adjust_symbols:1;
+ 	u8		 has_build_id:1;
+ 	u8		 hit:1;
+@@ -182,6 +190,28 @@ struct dso {
+ 	char		 name[0];
+ };
+ 
++#define DSO__SWAP(dso, type, val)			\
++({							\
++	type ____r = val;				\
++	BUG_ON(dso->needs_swap == DSO_SWAP__UNSET);	\
++	if (dso->needs_swap == DSO_SWAP__YES) {		\
++		switch (sizeof(____r)) {		\
++		case 2:					\
++			____r = bswap_16(val);		\
++			break;				\
++		case 4:					\
++			____r = bswap_32(val);		\
++			break;				\
++		case 8:					\
++			____r = bswap_64(val);		\
++			break;				\
++		default:				\
++			BUG_ON(1);			\
++		}					\
++	}						\
++	____r;						\
++})
++
+ struct dso *dso__new(const char *name);
+ void dso__delete(struct dso *dso);
+ 
