@@ -1,130 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756951Ab2FFQSL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 12:18:11 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40728 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754113Ab2FFQSJ (ORCPT
+	id S1757150Ab2FFQSj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 12:18:39 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:53319 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754113Ab2FFQSg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 12:18:09 -0400
-Date: Wed, 6 Jun 2012 09:17:56 -0700
-From: tip-bot for Andi Kleen <ak@linux.intel.com>
-Message-ID: <tip-70ab7003dec58afeae7f5d681dfa309b3a259f03@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, ak@linux.intel.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, ak@linux.intel.com, tglx@linutronix.de
-In-Reply-To: <1338944211-28275-2-git-send-email-andi@firstfloor.org>
-References: <1338944211-28275-2-git-send-email-andi@firstfloor.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf/x86: Don'
- t assume there can be only 4 PEBS events
-Git-Commit-ID: 70ab7003dec58afeae7f5d681dfa309b3a259f03
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 6 Jun 2012 12:18:36 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 06 Jun 2012 09:18:02 -0700 (PDT)
+In-Reply-To: <1338975852.5858.2.camel@Nokia-N900>
+References: <1337754877-19759-1-git-send-email-yinghai@kernel.org>
+ <CAE9FiQXx_x9M5ncLk4DyL8heYQTcsHZt2JofFMjPfUd4mympeA@mail.gmail.com>
+ <CAE9FiQX=ECg5BmKm7B2ua_rZ6bOsceeHNsfFQRWBbNZx+8sBfw@mail.gmail.com>
+ <20120525043651.GA1391@google.com> <CAE9FiQXvYH4zCqp_uOb2nw7jvm8B=q3yx1tCjJUT+PkdymYEuw@mail.gmail.com>
+ <CAE9FiQW0rm2_sKdSCWs3TfatJB9yHwvmvt9_vBYMtOq_YBbmfw@mail.gmail.com>
+ <20120525193716.GA8817@google.com> <CAE9FiQWrZaBpT1fzC_-mSBfDd4AKGrdGomPxVNSU-SFPrVNvOw@mail.gmail.com>
+ <CAErSpo7d+zn-qgWKcbro7yneXRtmZQCOHi+kiGzYUTfs+aiF4g@mail.gmail.com>
+ <CAE9FiQUWWO75WP3gYRwYbyO_ZiWwyjKnzMxOGhfjY4H98w2Hbw@mail.gmail.com>
+ <CAErSpo46fCCFCijNfMzGYP__pP6hkPFurMS=1=wSAZsg5z0-Lg@mail.gmail.com>
+ <CAE9FiQWUrkKEpLmEn9kzkKOtEtX7-R8shdVSKGgSyHezKpzJCw@mail.gmail.com>
+ <4FC50E09.4000204@zytor.com> <CAE9FiQUtio=dut3A9+jCcsgUWEeNYcpqLP6RpqGOZUfPPAtHWw@mail.gmail.com>
+ <4FC51D79.6010804@zytor.com> <CAE9FiQUWMAdU5jtKfq1_=1E-574gW-Afo8Pby49mUFQYFrs9Pw@mail.gmail.com>
+ <4FC536A5.6020600@zytor.com> <CAE9FiQXi23-mY6p2Dr1EJmukhTSPxvBGtjvQ8wyJYPDS+6o5ZA@mail.gmail.com>
+ <CAErSpo67h_mdZtoEn-W_OOXZ8m7gs3g6Q25kte285ZX=2FKf+A@mail.gmail.com>
+ <CAE9FiQV7jpBWkcXy2vgixnxx2fhid28Wj0iHAhGkVVdQn6epNQ@mail.gmail.com>
+ <CAErSpo7ivA4NpTv8jT=sxe9qAEZZ89qm6km+WBGq1UZK1Uhz8A@mail.gmail.com>
+ <CAE9FiQWbET=awz9o=6JBwonv_obe5KzRPNXjowNtFWrN3_4T_w@mail.gmail.com> <1338975852.5858.2.camel@Nokia-N900>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 6 Jun 2012 09:18:13 -0700
+Message-ID: <CAErSpo7BwkiVugTn9A8pM-OViRnNZ+az-pf9vjxYnd=iZ3AuSQ@mail.gmail.com>
+Subject: Re: [PATCH 02/11] PCI: Try to allocate mem64 above 4G at first
+To: Steven Newbury <steve@snewbury.org.uk>
+Cc: Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        David Miller <davem@davemloft.net>, Tony Luck <tony.luck@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  70ab7003dec58afeae7f5d681dfa309b3a259f03
-Gitweb:     http://git.kernel.org/tip/70ab7003dec58afeae7f5d681dfa309b3a259f03
-Author:     Andi Kleen <ak@linux.intel.com>
-AuthorDate: Tue, 5 Jun 2012 17:56:48 -0700
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 6 Jun 2012 17:23:40 +0200
+On Wed, Jun 6, 2012 at 2:44 AM, Steven Newbury <steve@snewbury.org.uk> wrote:
+> On Tue,   5 Jun 2012, 06:04:57 BST, Yinghai Lu <yinghai@kernel.org> wrote:
+>> > Linux has a long history of allocating bottom-up.  Windows has a long
+>> > history of allocating top-down.  You're proposing a third alternative,
+>> > allocating bottom-up starting at 4GB for 64-bit BARs.  If we change
+>> > this area, I would prefer something that follows Windows because I
+>> > think it will be closer to what's been tested by Windows.  Do you
+>> > think your alternative is better?
+>>
+>> hope we can figure out how windows is making it work.
+>>
+>> Steve, Can you check if Windows is working with your test case ?
+>>
+>> If it works, we may try do the same thing from Linux, so you will not
+>> need to append "pci=nocrs pci=alloc_high"...
+>>
+> Unfortunately I don't have a 64 bit version of Windows to test with.  Vista(32 bit) fails to even boot when docked, hot-plugging fails to allocate resources, but at least doesn't crash.
+>
+> From what I've read about the (64 bit) Windows allocation stragegy it's closer to Yinghai's method than the Linux default, preferring 64 bit resources (>4G) when possible.  I'll try to find the specification document again.
 
-perf/x86: Don't assume there can be only 4 PEBS events
+Here's the host bridge info from the BIOS (from
+https://bugzilla.kernel.org/show_bug.cgi?id=10461 attachment
+https://bugzilla.kernel.org/attachment.cgi?id=72869):
 
-On Sandy Bridge in non HT mode there are 8 counters available.
-Since every counter can write a PEBS record assuming there are
-4 max is incorrect. Use the reported counter number -- with an
-upper limit for a static array -- instead.
+ACPI: PCI Root Bridge [PCI0] (domain 0000 [bus 00-ff])
+pci_root PNP0A03:00: host bridge window [io  0x0000-0x0cf7]
+pci_root PNP0A03:00: host bridge window [io  0x0d00-0xffff]
+pci_root PNP0A03:00: host bridge window [mem 0x000a0000-0x000bffff]
+pci_root PNP0A03:00: host bridge window [mem 0x000d0000-0x000dffff]
+pci_root PNP0A03:00: host bridge window [mem 0xe0000000-0xf7ffffff]
+pci_root PNP0A03:00: host bridge window [mem 0xfc000000-0xfebfffff]
+pci_root PNP0A03:00: host bridge window [mem 0xfec10000-0xfecfffff]
+pci_root PNP0A03:00: host bridge window [mem 0xfed1c000-0xfed1ffff]
+pci_root PNP0A03:00: host bridge window [mem 0xfed90000-0xfed9ffff]
+pci_root PNP0A03:00: host bridge window [mem 0xfed40000-0xfed44fff]
+pci_root PNP0A03:00: host bridge window [mem 0xfeda7000-0xfedfffff]
+pci_root PNP0A03:00: host bridge window [mem 0xfee10000-0xff9fffff]
+pci_root PNP0A03:00: host bridge window [mem 0xffc00000-0xffdfffff]
 
-Also I made the warning messages a bit more informational.
-
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1338944211-28275-2-git-send-email-andi@firstfloor.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/cpu/perf_event.h          |    3 ++-
- arch/x86/kernel/cpu/perf_event_intel.c    |    2 ++
- arch/x86/kernel/cpu/perf_event_intel_ds.c |    8 ++++----
- 3 files changed, 8 insertions(+), 5 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 23b5710..3df3de9 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -69,7 +69,7 @@ struct amd_nb {
- };
- 
- /* The maximal number of PEBS events: */
--#define MAX_PEBS_EVENTS		4
-+#define MAX_PEBS_EVENTS		8
- 
- /*
-  * A debug store configuration.
-@@ -378,6 +378,7 @@ struct x86_pmu {
- 	void		(*drain_pebs)(struct pt_regs *regs);
- 	struct event_constraint *pebs_constraints;
- 	void		(*pebs_aliases)(struct perf_event *event);
-+	int 		max_pebs_events;
- 
- 	/*
- 	 * Intel LBR
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 187c294..e23e71f 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1800,6 +1800,8 @@ __init int intel_pmu_init(void)
- 	x86_pmu.events_maskl		= ebx.full;
- 	x86_pmu.events_mask_len		= eax.split.mask_length;
- 
-+	x86_pmu.max_pebs_events		= min_t(unsigned, MAX_PEBS_EVENTS, x86_pmu.num_counters);
-+
- 	/*
- 	 * Quirk: v2 perfmon does not report fixed-purpose events, so
- 	 * assume at least 3 events:
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 35e2192..026373e 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -620,7 +620,7 @@ static void intel_pmu_drain_pebs_core(struct pt_regs *iregs)
- 	 * Should not happen, we program the threshold at 1 and do not
- 	 * set a reset value.
- 	 */
--	WARN_ON_ONCE(n > 1);
-+	WARN_ONCE(n > 1, "bad leftover pebs %d\n", n);
- 	at += n - 1;
- 
- 	__intel_pmu_pebs_event(event, iregs, at);
-@@ -651,10 +651,10 @@ static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
- 	 * Should not happen, we program the threshold at 1 and do not
- 	 * set a reset value.
- 	 */
--	WARN_ON_ONCE(n > MAX_PEBS_EVENTS);
-+	WARN_ONCE(n > x86_pmu.max_pebs_events, "Unexpected number of pebs records %d\n", n);
- 
- 	for ( ; at < top; at++) {
--		for_each_set_bit(bit, (unsigned long *)&at->status, MAX_PEBS_EVENTS) {
-+		for_each_set_bit(bit, (unsigned long *)&at->status, x86_pmu.max_pebs_events) {
- 			event = cpuc->events[bit];
- 			if (!test_bit(bit, cpuc->active_mask))
- 				continue;
-@@ -670,7 +670,7 @@ static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
- 			break;
- 		}
- 
--		if (!event || bit >= MAX_PEBS_EVENTS)
-+		if (!event || bit >= x86_pmu.max_pebs_events)
- 			continue;
- 
- 		__intel_pmu_pebs_event(event, iregs, at);
+There's no aperture above 4GB.  So I don't think any version of
+Windows will ever assign a BAR above 4GB.
