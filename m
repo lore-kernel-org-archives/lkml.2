@@ -1,72 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759308Ab2FFXZQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 19:25:16 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:35265 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758916Ab2FFXZO (ORCPT
+	id S1759293Ab2FFX2l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 19:28:41 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50120 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751895Ab2FFX2j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 19:25:14 -0400
-Date: Wed, 6 Jun 2012 16:24:06 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Ming Lei <ming.lei@canonical.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        USB list <linux-usb@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] driver core: fix shutdown races with probe/remove
-Message-ID: <20120606232406.GP19601@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120606155515.GM19601@linux.vnet.ibm.com>
- <Pine.LNX.4.44L0.1206061256400.1788-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1206061256400.1788-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12060623-7408-0000-0000-000005A4BDDB
+	Wed, 6 Jun 2012 19:28:39 -0400
+From: David Daney <ddaney.cavm@gmail.com>
+To: linux-mips@linux-mips.org, ralf@linux-mips.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>
+Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
+Subject: [PATCH v3 0/5] MIPS: OCTEON: Convert some device to use Device Tree.
+Date: Wed,  6 Jun 2012 16:28:29 -0700
+Message-Id: <1339025314-24216-1-git-send-email-ddaney.cavm@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 06, 2012 at 12:58:29PM -0400, Alan Stern wrote:
-> On Wed, 6 Jun 2012, Paul E. McKenney wrote:
-> 
-> > On Wed, Jun 06, 2012 at 11:44:50AM -0400, Alan Stern wrote:
-> > > On Wed, 6 Jun 2012, Paul E. McKenney wrote:
-> > > 
-> > > > > That just seems wrong.  By the same reasoning, the compiler is within 
-> > > > > its rights to transform either the original code or the code using 
-> > > > > ACCESS_ONCE into:
-> > > > > 
-> > > > > 	b = 999;
-> > > > > 	if (a)
-> > > > > 		b = 9;
-> > > > > 	else
-> > > > > 		b = 42;
-> > > > > 
-> > > > > and again, other code would be confused.  The simple fact is that 
-> > > > > SMP-safe code is not likely to be produced by a compiler that assumes 
-> > > > > everything is single-threaded.
-> > > > 
-> > > > If you use ACCESS_ONCE(), the compiler is prohibited from inserting
-> > > > the "b = 999".
-> > > 
-> > > What prohibits it?
-> > 
-> > The compiler cannot move a volatile access across a sequence point, for
-> > example, across a statement boundary.
-> 
-> How does inserting a store to a non-volatile value qualify as moving a
-> volatile access?
+From: David Daney <david.daney@cavium.com>
 
-Assuming that there is no access to "b" prior to the "if", then any
-access to or modification of "b" would have to be associated with the
-two assignments, which could not precede the volatile (at least as I
-understand the sequencing rules).  If there is some use of "b" prior
-to the "if", then yes, the "b = 999" might be associated with those
-prior accesses.
+This patch set depends on the previous set to add Device Tree to
+OCTEON.  That set can be found among other places here:
 
-							Thanx, Paul
+http://www.linux-mips.org/archives/linux-mips/2012-06/msg00081.html
+
+For v3:
+
+No functional changes, Added more Acked-bys, rebased to avoid merge
+conflicts.
+
+For v2:
+
+No functional changes, but minor clean-ups to use some new device tree
+helper functions.
+
+Some Acked-bys added.
+
+I am suggesting that all these go via Ralf's linux-mips.org tree as
+they depend on other patches in that tree.
+
+>From v1:
+
+The patches are for drivers scattered throughout the tree, but there
+is an order dependency as well as the dependency mentioned above, so
+it may be preferable to merge them all via Ralf's linux-mips.org tree
+rather that separately via the various device sub-system maintainers.
+
+The mdio-octeon.c and octeon_mgmt patches were already Acked-by davem.
+
+The i2c has been seen before, but to my knowledge was never acked.
+
+The octeon_ethernet patch is in staging and has also been seen before.
+
+The serial patch is new.
+
+David Daney (5):
+  i2c: Convert i2c-octeon.c to use device tree.
+  netdev: mdio-octeon.c: Convert to use device tree.
+  netdev: octeon_mgmt: Convert to use device tree.
+  staging: octeon_ethernet: Convert to use device tree.
+  MIPS: Octeon: Use device tree to register serial ports.
+
+ arch/mips/cavium-octeon/octeon-irq.c      |    8 -
+ arch/mips/cavium-octeon/octeon-platform.c |  176 ----------------
+ arch/mips/cavium-octeon/serial.c          |  134 +++++--------
+ arch/mips/include/asm/octeon/octeon.h     |    5 -
+ drivers/i2c/busses/i2c-octeon.c           |   92 +++++----
+ drivers/net/ethernet/octeon/octeon_mgmt.c |  312 +++++++++++++++++++----------
+ drivers/net/phy/mdio-octeon.c             |   92 ++++++---
+ drivers/staging/octeon/ethernet-mdio.c    |   28 ++--
+ drivers/staging/octeon/ethernet.c         |  153 +++++++++-----
+ drivers/staging/octeon/octeon-ethernet.h  |    3 +
+ 10 files changed, 484 insertions(+), 519 deletions(-)
+
+-- 
+1.7.2.3
 
