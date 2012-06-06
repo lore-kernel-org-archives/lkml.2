@@ -1,48 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755006Ab2FFIUA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 04:20:00 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:50960 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754838Ab2FFIT3 (ORCPT
+	id S1754835Ab2FFIW1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 04:22:27 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:54512 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750862Ab2FFIWY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 04:19:29 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6733"; a="198195347"
-Message-ID: <a4f1b4bab3fc234deafc4e55b69f7ce8.squirrel@www.codeaurora.org>
-In-Reply-To: <4FCD47C7.3000708@gmail.com>
-References: <1338340310-4473-1-git-send-email-sdharia@codeaurora.org>
-    <4FCD47C7.3000708@gmail.com>
-Date: Wed, 6 Jun 2012 01:19:29 -0700 (PDT)
-Subject: Re: [PATCH] slimbus: Linux driver framework for SLIMbus.
-From: "Sagar Dharia" <sdharia@codeaurora.org>
-To: "Ryan Mallon" <rmallon@gmail.com>
-Cc: "Sagar Dharia" <sdharia@codeaurora.org>, davidb@codeaurora.org,
-        bryanh@codeaurora.org, kheitke@codeaurora.org, marc@plastictigers.com,
-        gclemson@audience.com, broonie@opensource.wolfsonmicro.com,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        rob@landley.net, grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        ohad@wizery.com, gregkh@linuxfoundation.org, linus.walleij@linaro.org,
-        rusty@rustcorp.com.au, joerg.roedel@amd.com, trenn@suse.de,
-        ak@linux.intel.com, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Reply-To: sdharia@codeaurora.org
-User-Agent: SquirrelMail/1.4.17
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+	Wed, 6 Jun 2012 04:22:24 -0400
+Subject: Re: [V2 RFC net-next PATCH 1/2] virtio_net: convert the statistics
+ into array
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: netdev@vger.kernel.org, rusty@rustcorp.com.au,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, mst@redhat.com
+In-Reply-To: <20120606075208.29081.75284.stgit@amd-6168-8-1.englab.nay.redhat.com>
+References: <20120606075208.29081.75284.stgit@amd-6168-8-1.englab.nay.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 06 Jun 2012 10:22:19 +0200
+Message-ID: <1338970939.2760.3887.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->
-> Hi Sagar. A few comments below. I have only done a quick read through.
->
-> ~Ryan
-Thank you Ryan for taking time to review this. I agree with most of the
-comments and will take care of them when I submit the next patch.
+On Wed, 2012-06-06 at 15:52 +0800, Jason Wang wrote:
+> Currently, we store the statistics in the independent fields of virtnet_stats,
+> this is not scalable when we want to add more counters. As suggested by Michael,
+> this patch convert it to an array and use the enum as the index to access them.
+> 
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> ---
+>  drivers/net/virtio_net.c |   30 +++++++++++++++++-------------
+>  1 files changed, 17 insertions(+), 13 deletions(-)
+> 
 
-Regards
-Sagar
+>  struct virtnet_stats {
+>  	struct u64_stats_sync syncp;
+> -	u64 tx_bytes;
+> -	u64 tx_packets;
+> -
+> -	u64 rx_bytes;
+> -	u64 rx_packets;
+> +	u64 data[VIRTNET_NUM_STATS];
+>  };
+>  
+
+Interesting, but I fear you'll have a lot of problems.
+
+Current code is buggy, and you are adding more possible races.
+
+We could have one cpu doing the :
+
+       u64_stats_update_begin(&stats->syncp);
+       stats->rx_bytes += skb->len;
+       stats->rx_packets++;
+       u64_stats_update_end(&stats->syncp);
+
+And another one doing :
+
+       u64_stats_update_begin(&stats->syncp);
+       stats->tx_bytes += skb->len;
+       stats->tx_packets++;
+       u64_stats_update_end(&stats->syncp);
+ 
+And one syncp sequence increment can be lost, since both cpus are
+basically doing this at the same time :
+
+    write_seqcount_begin(&syncp->seq);
+
+I'll send a fix in a separate thread.
+
+
 
