@@ -1,77 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754155Ab2FFAqJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 20:46:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35945 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752491Ab2FFAqH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 20:46:07 -0400
-Date: Tue, 5 Jun 2012 17:46:38 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Joe Perches <joe@perches.com>
-Cc: Kay Sievers <kay@vrfy.org>, Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        alsa-devel@alsa-project.org
-Subject: Re: [PATCH 0/8] Rework KERN_<LEVEL>
-Message-Id: <20120605174638.69bcfa31.akpm@linux-foundation.org>
-In-Reply-To: <1338943205.11962.28.camel@joe2Laptop>
-References: <cover.1338889066.git.joe@perches.com>
-	<20120605142826.d92316a0.akpm@linux-foundation.org>
-	<1338934303.5780.8.camel@joe2Laptop>
-	<20120605151754.a794ac7c.akpm@linux-foundation.org>
-	<1338936572.5780.29.camel@joe2Laptop>
-	<20120605162910.caccb0d4.akpm@linux-foundation.org>
-	<1338939316.11962.3.camel@joe2Laptop>
-	<CAPXgP13J+8-dPpZkSfh9sM3xXujC2Rb9tJaOvGoEPghgdr8jiw@mail.gmail.com>
-	<1338939792.11962.4.camel@joe2Laptop>
-	<CAPXgP10DEsqtz9xbPUQ3xCwdFGTTYyTGSd7yEcU2vUr3SJ83Sw@mail.gmail.com>
-	<1338940345.11962.9.camel@joe2Laptop>
-	<20120605165808.cd255b93.akpm@linux-foundation.org>
-	<1338941247.11962.16.camel@joe2Laptop>
-	<CAPXgP12OFnh6FZO4zFGCw=Ea4U6Ne5OoCg_9BPxRX62x0EVnng@mail.gmail.com>
-	<1338941971.11962.20.camel@joe2Laptop>
-	<CAPXgP10VE2huY4gGpeFPe=YKYM+nDBfoMgpHnGmQwn0jdPxhbw@mail.gmail.com>
-	<20120605173751.65a2e1ee.akpm@linux-foundation.org>
-	<1338943205.11962.28.camel@joe2Laptop>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754237Ab2FFAqv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 20:46:51 -0400
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:20573
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754187Ab2FFAqX convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 20:46:23 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -15
+X-BigFish: VS-15(zz9371I936eI542M1432N98dKzz1202hzz8275dhz2dh2a8h668h839h8e2h8e3h944hd25hf0ahbe9i)
+From: Bhushan Bharat-R65777 <R65777@freescale.com>
+To: David Miller <davem@davemloft.net>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        Andrea Arcangeli <aarcange@redhat.com>
+CC: "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: RE: [PATCH] powerpc: Fix assmption of end_of_DRAM() returns end
+ address
+Thread-Topic: [PATCH] powerpc: Fix assmption of end_of_DRAM() returns end
+ address
+Thread-Index: AQHNQyHQxqfK7c+rIkeAALFeKlrMkJbsn5eAgAAA7QD//9KCoA==
+Date: Wed, 6 Jun 2012 00:46:17 +0000
+Message-ID: <6A3DF150A5B70D4F9B66A25E3F7C888D03D68F08@039-SN2MPN1-022.039d.mgd.msft.net>
+References: <1338904504-2750-1-git-send-email-bharat.bhushan@freescale.com>
+	<1338934659.7150.113.camel@pasglop>
+ <20120605.152058.828742127223799137.davem@davemloft.net>
+In-Reply-To: <20120605.152058.828742127223799137.davem@davemloft.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [122.176.148.233]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 05 Jun 2012 17:40:05 -0700 Joe Perches <joe@perches.com> wrote:
 
-> On Tue, 2012-06-05 at 17:37 -0700, Andrew Morton wrote:
-> > On Tue, 05 Jun 2012 17:07:27 -0700 Joe Perches <joe@perches.com> wrote:
-> > 
-> > > On Tue, 2012-06-05 at 16:58 -0700, Andrew Morton wrote:
-> > > >  echo "\0014Hello Joe" > /dev/kmsg
-> > > 
-> > > # echo -e "\x014Hello Me" > /dev/kmsg
-> > > gives:
-> > > 12,778,4057982669;Hello Me
-> > 
-> > That's changed behavior.
+
+> -----Original Message-----
+> From: David Miller [mailto:davem@davemloft.net]
+> Sent: Wednesday, June 06, 2012 3:51 AM
+> To: benh@kernel.crashing.org
+> Cc: Bhushan Bharat-R65777; linuxppc-dev@lists.ozlabs.org; linux-
+> kernel@vger.kernel.org; galak@kernel.crashing.org; Bhushan Bharat-R65777
+> Subject: Re: [PATCH] powerpc: Fix assmption of end_of_DRAM() returns end address
 > 
-> Which is an improvement too.
-
-No it isn't.  It exposes internal kernel implementation details in
-random weird inexplicable ways.  It doesn't seem at all important
-though.
-
-> I very much doubt a single app will change
-> because of this.
-
-I doubt it as well.
-
-> > printk_emit() does parse the leading \0014, and then skips over it,
-> > removing it from the output stream.  printk_emit() then throws away the
-> > resulting level because devkmsg_writev() did not pass in level==-1.
+> From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Date: Wed, 06 Jun 2012 08:17:39 +1000
 > 
-> I'm glad you know how it works now.
+> > On Tue, 2012-06-05 at 19:25 +0530, Bharat Bhushan wrote:
+> >> memblock_end_of_DRAM() returns end_address + 1, not end address.
+> >> While some code assumes that it returns end address.
+> >
+> > Shouldn't we instead fix it the other way around ? IE, make
+> > memblock_end_of_DRAM() does what the name implies, which is to return
+> > the last byte of DRAM, and fix the -other- callers not to make bad
+> > assumptions ?
+> 
+> That was my impression too when I saw this patch.
 
-It's nice to see you learning about it as well.
+Initially I also intended to do so. I initiated a email on linux-mm@  subject "memblock_end_of_DRAM()  return end address + 1" and the only response I received from Andrea was:
+
+"
+It's normal that "end" means "first byte offset out of the range". End = not ok.
+end = start+size.
+This is true for vm_end too. So it's better to keep it that way.
+My suggestion is to just fix point 1 below and audit the rest :)
+"
+
+Thanks
+-Bharat
+
