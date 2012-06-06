@@ -1,79 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755460Ab2FFKRs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 06:17:48 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:57549 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751199Ab2FFKRq (ORCPT
+	id S1755622Ab2FFKS1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 06:18:27 -0400
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:35295
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751199Ab2FFKS0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 06:17:46 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+k9wxwx8Ck06SlSlyJb7mjnhjKwta3EG1c81QXjH
-	ZmmPxEUAWVYHYJ
-Message-ID: <1338977861.28497.36.camel@marge.simpson.net>
-Subject: Re: [rfc][patch] select_idle_sibling() inducing bouncing on westmere
-From: Mike Galbraith <efault@gmx.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Paul Turner <pjt@google.com>, Arjan Van De Ven <arjan@linux.intel.com>
-Date: Wed, 06 Jun 2012 12:17:41 +0200
-In-Reply-To: <1337865431.9783.148.camel@laptop>
-References: <1337857490.7300.19.camel@marge.simpson.net>
-	 <1337865431.9783.148.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	Wed, 6 Jun 2012 06:18:26 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -11
+X-BigFish: VS-11(zzbb2dI9371I1432N98dKzz1202hzzz2dh2a8h668h839h944hd25hf0ah)
+Date: Wed, 6 Jun 2012 18:19:03 +0800
+From: Zhao Chenhui <chenhui.zhao@freescale.com>
+To: Scott Wood <scottwood@freescale.com>
+CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <galak@kernel.crashing.org>, <leoli@freescale.com>
+Subject: Re: [PATCH v5 5/5] powerpc/85xx: add support to JOG feature using
+ cpufreq interface
+Message-ID: <20120606101903.GC23505@localhost.localdomain>
+References: <1336737235-15370-1-git-send-email-chenhui.zhao@freescale.com>
+ <1336737235-15370-5-git-send-email-chenhui.zhao@freescale.com>
+ <4FC950AF.90007@freescale.com>
+ <20120605105929.GA22427@localhost.localdomain>
+ <4FCE2CB1.5090308@freescale.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4FCE2CB1.5090308@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-24 at 15:17 +0200, Peter Zijlstra wrote:
+On Tue, Jun 05, 2012 at 10:58:41AM -0500, Scott Wood wrote:
+> On 06/05/2012 05:59 AM, Zhao Chenhui wrote:
+> > On Fri, Jun 01, 2012 at 06:30:55PM -0500, Scott Wood wrote:
+> >> On 05/11/2012 06:53 AM, Zhao Chenhui wrote:
+> >>> The jog mode frequency transition process on the MPC8536 is similar to
+> >>> the deep sleep process. The driver need save the CPU state and restore
+> >>> it after CPU warm reset.
+> >>>
+> >>> Note:
+> >>>  * The I/O peripherals such as PCIe and eTSEC may lose packets during
+> >>>    the jog mode frequency transition.
+> >>
+> >> That might be acceptable for eTSEC, but it is not acceptable to lose
+> >> anything on PCIe.  Especially not if you're going to make this "default y".
+> > 
+> > It is a hardware limitation.
+> 
+> Then make sure jog isn't used if PCIe is used.
+> 
+> Maybe you could do something with the suspend infrastructure, but this
+> is sufficiently heavyweight that transitions should be manually
+> requested, not triggered by the automatic cpufreq governor.
+> 
+> Does this apply to p1022, or just mpc8536?
 
-> Did you do you numbers with the distro NR_CPUS=4096 bloat?
+Both of them.
 
-4 socket Westmere-EX 40 core box.. ouch^ouch. 
+> 
+> > Peripherals in the platform will not be operating
+> > during the jog mode frequency transition process.
+> 
+> What ensures this?
+> 
+> -Scott
 
-3.0 has none of the below, 3.0x all, 3.0xx all but the ones commented
-out.  Most of the deltas are sibling avoidance, though throttle-nohz
-plays a role in 3.0 vs 3.0x, as does knob tweakery, though very very
-small for these particular tests.  The rest are ~meaningless.
+Hardware ensures it without software intervention.
 
-sched-use-rt-nr_cpus_allowed-to-recover-select_task_rq-cycles.patch
-sched-set-skip_clock_update-when-yielding.patch
-sched-throttle-nohz.patch
-sched-Wrap-scheduler-p--cpus_allowed-access.patch
-sched-Avoid-SMT-siblings-in-select_idle_sibling-if-possible.patch
-sched-Clean-up-domain-traversal-in-select_idle_sibling.patch
-sched-Remove-rcu_read_lock-unlock-from-select_idle_sibling.patch
-sched-Fix-the-sched-group-node-allocation-for-SD_OVERLAP-domains.patch
-sched-domain-flags-proc-handler.patch
-# sched-tweak-select_idle_sibling.patch
-sched-tweak-knobs.patch
-# sched-ratelimit-affine-wakeup-migrations.patch
-
-thench      1         2         4          8         16         32         64        128
-3.0       225       451       911       1573       2723       3501      11189      13951
-3.0x      299       603      1211       2418       4697       6847      11606      14557
-vs 3.0  1.328     1.337     1.329      1.537      1.724       1.955     1.037      1.043
-
-3.0xx      30        41       118        645       3769       6214      12233      14312
-vs 3.0x 0.100     0.067     0.097      0.266      0.802       0.907     1.054      0.983
-                                                                        hmmm 
-aim7 ~low load.. not saturating.
-
-Benchmark       Version Machine Run Date
-AIM Multiuser Benchmark - Suite VII     "1.1"   3.0x      Jun  6 09:29:20 2012
-
-Tasks   Jobs/Min        JTI     Real    CPU     Jobs/sec/task
-64      26223.1         98      14.8    293.3   6.8289
-
-Benchmark       Version Machine Run Date
-AIM Multiuser Benchmark - Suite VII     "1.1"   3.0xx     Jun  6 11:12:21 2012
-
-Tasks   Jobs/Min        JTI     Real    CPU     Jobs/sec/task
-64      18845.5         82      20.6    254.8   4.9077       vs 3.0x  0.718
-
+-Chenhui
 
