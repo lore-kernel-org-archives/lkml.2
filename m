@@ -1,136 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759253Ab2FFXBX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 19:01:23 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:50067 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759215Ab2FFXBX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 19:01:23 -0400
-MIME-Version: 1.0
-X-Originating-IP: [197.179.0.64]
-In-Reply-To: <CAHVUoiTZmzT3vquaDC65AJfCFZX-qS5GjgjP2-+=0R7skurW5g@mail.gmail.com>
-References: <CAHVUoiQywo=iHKsXQbsVE7coc1FL9A9qy_a71SK94MKNV0GrKA@mail.gmail.com>
- <CAHVUoiTZmzT3vquaDC65AJfCFZX-qS5GjgjP2-+=0R7skurW5g@mail.gmail.com>
-From: Brian Gitonga Marete <marete@toshnix.com>
-Date: Thu, 7 Jun 2012 02:01:01 +0300
-Message-ID: <CAHVUoiQgcAMr874d_yPfm9ssUBOoX+dNLy9JNCOCYwOCrAKXFQ@mail.gmail.com>
-Subject: Re: [Regression] [Radeon] Stream command failures and render problems
- in Evergreen (Radeon HD 5600) in kernel 3.4
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
-        Jerome Glisse <jglisse@redhat.com>
-Content-Type: multipart/mixed; boundary=20cf3074d5a2e610f204c1d5be3b
+	id S1759211Ab2FFXCs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 19:02:48 -0400
+Received: from mga03.intel.com ([143.182.124.21]:48242 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750994Ab2FFXCq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 19:02:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="108742426"
+Subject: Re: [PATCH 1/2] x86, irq: update irq_cfg domain unless the new
+ affinity is a subset of the current domain
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: yinghai@kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        gorcunov@openvz.org, Ingo Molnar <mingo@kernel.org>
+Date: Wed, 06 Jun 2012 16:02:05 -0700
+In-Reply-To: <20120606172017.GA4777@dhcp-26-207.brq.redhat.com>
+References: <1337643880.1997.166.camel@sbsiddha-desk.sc.intel.com>
+	 <1337644682-19854-1-git-send-email-suresh.b.siddha@intel.com>
+	 <20120606172017.GA4777@dhcp-26-207.brq.redhat.com>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1339023725.28766.55.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---20cf3074d5a2e610f204c1d5be3b
-Content-Type: text/plain; charset=ISO-8859-1
+On Wed, 2012-06-06 at 19:20 +0200, Alexander Gordeev wrote:
+> On Mon, May 21, 2012 at 04:58:01PM -0700, Suresh Siddha wrote:
+> > Until now, irq_cfg domain is mostly static. Either all cpu's (used by flat
+> > mode) or one cpu (first cpu in the irq afffinity mask) to which irq is being
+> > migrated (this is used by the rest of apic modes).
+> > 
+> > Upcoming x2apic cluster mode optimization patch allows the irq to be sent
+> > to any cpu in the x2apic cluster (if supported by the HW). So irq_cfg
+> > domain changes on the fly (depending on which cpu in the x2apic cluster
+> > is online).
+> > 
+> > Instead of checking for any intersection between the new irq affinity
+> > mask and the current irq_cfg domain, check if the new irq affinity mask
+> > is a subset of the current irq_cfg domain. Otherwise proceed with
+> > updating the irq_cfg domain aswell as assigning vector's on all the cpu's
+> > specified in the new mask.
+> > 
+> > This also cleans up a workaround in updating irq_cfg domain for legacy irq's
+> > that are handled by the IO-APIC.
+> 
+> Suresh,
+> 
+> I thought you posted these patches for reference and held off with my comments
+> until you are collecting the data. But since Ingo picked the patches I will
+> sound my concerns in this thread.
 
-On Thu, Jun 7, 2012 at 1:59 AM, Brian Gitonga Marete <marete@toshnix.com> wrote:
-> On Sun, Jun 3, 2012 at 8:26 PM, Brian Gitonga Marete <marete@toshnix.com> wrote:
->> Hello,
->>
->> 3.4 breaks rendering on my Radeon evergreen card. Immediately after
->> logging in into the desktop, I get the following errors in the kernel
->> log:
->>
->> radeon 0000:01:00.0: evergreen_cs_track_validate_cb:439 cb[0] bo too
->> small (layer size 147456, offset 0, max layer 1, bo size 143360, slice
->> 575)
->> radeon 0000:01:00.0: evergreen_cs_track_validate_cb:443 problematic
->> surf: (192 192) (0 4 1 0 0 0 0)
->> radeon 0000:01:00.0: evergreen_packet3_check:2055 invalid cmd stream 461
->> [drm:radeon_cs_ib_chunk] *ERROR* Invalid command stream !
->> radeon 0000:01:00.0: evergreen_cs_track_validate_cb:439 cb[0] bo too
->> small (layer size 147456, offset 0, max layer 1, bo size 143360, slice
->> 575)
->> radeon 0000:01:00.0: evergreen_cs_track_validate_cb:443 problematic
->> surf: (192 192) (0 4 1 0 0 0 0)
->> radeon 0000:01:00.0: evergreen_packet3_check:2055 invalid cmd stream 461
->> [drm:radeon_cs_ib_chunk] *ERROR* Invalid command stream !
->> radeon 0000:01:00.0: evergreen_cs_track_validate_cb:439 cb[0] bo too
->> small (layer size 798720, offset 0, max layer 1, bo size 794624, slice
->> 3119)
->> radeon 0000:01:00.0: evergreen_cs_track_validate_cb:443 problematic
->> surf: (384 520) (0 4 1 0 0 0 0)
->> radeon 0000:01:00.0: evergreen_packet3_check:2055 invalid cmd stream 461
->> [drm:radeon_cs_ib_chunk] *ERROR* Invalid command stream !
->> radeon 0000:01:00.0: evergreen_cs_track_validate_cb:439 cb[0] bo too
->> small (layer size 458752, offset 0, max layer 1, bo size 446464, slice
->> 1791)
->> radeon 0000:01:00.0: evergreen_cs_track_validate_cb:443 problematic
->> surf: (512 224) (0 4 1 0 0 0 0)
->> radeon 0000:01:00.0: evergreen_packet3_check:2055 invalid cmd stream 7170
->> [drm:radeon_cs_ib_chunk] *ERROR* Invalid command stream !
->> radeon 0000:01:00.0: evergreen_cs_track_validate_cb:439 cb[0] bo too
->> small (layer size 798720, offset 0, max layer 1, bo size 790528, slice
->> 3119)
->> radeon 0000:01:00.0: evergreen_cs_track_validate_cb:443 problematic
->> surf: (384 520) (0 4 1 0 0 0 0)
->> radeon 0000:01:00.0: evergreen_packet3_check:2055 invalid cmd stream 461
->> [drm:radeon_cs_ib_chunk] *ERROR* Invalid command stream !
->>
->> Meanwhile, windows on the desktop are rendered incorrectly (with
->> certain regions covered by strange patterns or smudged) or not at all.
->> This makes the desktop unusable.
->>
->> I can always reproduce this problem on 3.4
->>
->> Kernels prior to 3.4 work fine.
->>
->> I will try and find the time to bisect this issue but meanwhile here
->> are some further details:
->>
->
-> I have git-bisected this to find that the first bad commit is:
-> 285484e2d55 - drm/radeon: add support for evergreen/ni tiling
-> informations v11.
->
-> So I have also added Jerome to the CC list. Please see the attached
-> bisect.log for the git-bisect log.
+These are tested patches and I am ok with Ingo picking it up for getting
+further baked in -tip. About the data collection, I have to find the
+right system/bios to run the tests for power-aware/round-robin interrupt
+routing. Anyways logical xapic mode already has this capability and we
+are adding the capability for x2apic cluster mode here. And also,
+irqbalance has to ultimately take advantage of this by specifying
+multiple cpu's when migrating an interrupt.
 
-Sorry, forgot to attach. Now attached.
+Only concern I have with this patchset is what I already mentioned in
+the changelog of the second patch. i.e., it reduces the number of IRQ's
+that the platform can handle, as we reduce the available number of
+vectors by a factor of 16.
 
--- 
-Brian Gitonga Marete
-Toshnix Systems - http://toshnix.com
+If this indeed becomes a problem, then there are few options. Either
+reserve the vectors based on the irq destination mask (rather than
+reserving on all the cluster members) or reducing the grouping from 16
+to a smaller number etc. I can post another patch shortly for this.
 
---20cf3074d5a2e610f204c1d5be3b
-Content-Type: application/octet-stream; name="bisect.log"
-Content-Disposition: attachment; filename="bisect.log"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h3503wvi0
+> > 
+> > Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+> > ---
+> >  arch/x86/kernel/apic/io_apic.c |   15 ++++++---------
+> >  1 files changed, 6 insertions(+), 9 deletions(-)
+> > 
+> > diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+> > index ffdc152..bbf8c43 100644
+> > --- a/arch/x86/kernel/apic/io_apic.c
+> > +++ b/arch/x86/kernel/apic/io_apic.c
+> > @@ -1137,8 +1137,7 @@ __assign_irq_vector(int irq, struct irq_cfg *cfg, const struct cpumask *mask)
+> >  	old_vector = cfg->vector;
+> >  	if (old_vector) {
+> >  		cpumask_and(tmp_mask, mask, cpu_online_mask);
+> > -		cpumask_and(tmp_mask, cfg->domain, tmp_mask);
+> > -		if (!cpumask_empty(tmp_mask)) {
+> > +		if (cpumask_subset(tmp_mask, cfg->domain)) {
+> 
+> Imagine that passed mask is a subset of cfg->domain and also contains at least
+> one online CPU from a different cluster. Since domains are always one cluster
+> wide this condition ^^^ will fail and we go further.
+> 
+> >  			free_cpumask_var(tmp_mask);
+> >  			return 0;
+> >  		}
+> > @@ -1152,6 +1151,11 @@ __assign_irq_vector(int irq, struct irq_cfg *cfg, const struct cpumask *mask)
+> >  
+> >  		apic->vector_allocation_domain(cpu, tmp_mask);
+> >  
+> > +		if (cpumask_subset(tmp_mask, cfg->domain)) {
+> 
+> Because the mask intersects with cfg->domain this condition ^^^ may succeed and
+> we could return with no change from here.
+> 
+> That raises few concerns to me:
+> - The first check is not perfect, because it failed to recognize the
+> intersection right away. Instead, we possibly lost multiple loops through the
+> mask before we realized we do not need any change at all. Therefore...
+> 
+> - It would be better to recognize the intersection even before entering the
+> loop. But that is exactly what the removed code has been doing before.
+> 
+> - Depending from the passed mask, we equally likely could have select another
+> cluster and switch to it, even though the current cfg->domain is contained
+> within the requested mask. Besides it is just not nice, we are also switching
+> from a cache-hot cluster. If you suggested that it is enough to pick a first
+> found cluster (rather than select a best possible) then there is even less
+> reason to switch from cfg->domain here.
 
-Z2l0IGJpc2VjdCBzdGFydCAnZHJpdmVycy9ncHUnCiMgYmFkOiBbNzZlMTBkMTU4ZWZiNmQ0NTE2
-MDE4ODQ2ZjYwYzJhYjU1MDE5MDBiY10gTGludXggMy40CmdpdCBiaXNlY3QgYmFkIDc2ZTEwZDE1
-OGVmYjZkNDUxNjAxODg0NmY2MGMyYWI1NTAxOTAwYmMKIyBnb29kOiBbYzE2ZmE0ZjJhZDE5OTA4
-YTQ3YzYzZDhmYTQzNmExMTc4NDM4YzdlN10gTGludXggMy4zCmdpdCBiaXNlY3QgZ29vZCBjMTZm
-YTRmMmFkMTk5MDhhNDdjNjNkOGZhNDM2YTExNzg0MzhjN2U3CiMgYmFkOiBbNTBkNDRhNTIzNzU5
-YzM5YWYxMTE5Mjg1YTUzOTZjYTM4NzI4OGFmMF0gZ21hNTAwOiBGaXggcmVzdW1lIHBhdGhzCmdp
-dCBiaXNlY3QgYmFkIDUwZDQ0YTUyMzc1OWMzOWFmMTExOTI4NWE1Mzk2Y2EzODcyODhhZjAKIyBi
-YWQ6IFszYWUxOWI3NTBiZGMwOWNlMjMzZTE1MDQzNDgzMjAxNDE1OTNmZmRhXSBkcm0vcmFkZW9u
-L2ttczogYWRkIHdhaXRfZm9yX3ZibGFuayBhc2ljIGNhbGxiYWNrCmdpdCBiaXNlY3QgYmFkIDNh
-ZTE5Yjc1MGJkYzA5Y2UyMzNlMTUwNDM0ODMyMDE0MTU5M2ZmZGEKIyBnb29kOiBbMDUyOWEwZDlm
-MGU3MDJmZDUyMTVhNDkzYjc0NDBiZTczZjU5NDFhZl0gZHJtL2k5MTU6IGNvcnJlY3RseSBwcm9n
-cmFtIHRoZSBWU1lOQ1NISUZUIHJlZ2lzdGVyCmdpdCBiaXNlY3QgZ29vZCAwNTI5YTBkOWYwZTcw
-MmZkNTIxNWE0OTNiNzQ0MGJlNzNmNTk0MWFmCiMgZ29vZDogW2ViNGY5MjNiMWNlYWM4YTYxODQ2
-OWM1MWZmMjQ5YmQ4OWJjMGRmYTRdIHZtd2dmeDogUGljayB1cCB0aGUgaW5pdGlhbCBzaXplIGZy
-b20gdGhlIHdpZHRoIGFuZCBoZWlnaHQgcmVncwpnaXQgYmlzZWN0IGdvb2QgZWI0ZjkyM2IxY2Vh
-YzhhNjE4NDY5YzUxZmYyNDliZDg5YmMwZGZhNAojIGdvb2Q6IFthNzFkOGQ5NDUyNWU4ZmQ4NTVj
-MDQ2NmZiNTg2YWUxY2IwMDhmM2EyXSBkcm0vaTkxNTogUmVjb3JkIHRoZSB0YWlsIGF0IGVhY2gg
-cmVxdWVzdCBhbmQgdXNlIGl0IHRvIGVzdGltYXRlIHRoZSBoZWFkCmdpdCBiaXNlY3QgZ29vZCBh
-NzFkOGQ5NDUyNWU4ZmQ4NTVjMDQ2NmZiNTg2YWUxY2IwMDhmM2EyCiMgYmFkOiBbNDJiOTIzYjU4
-N2QwNTVjZDk4ZmI4NGYzMmUzZTc1ODY3MjAyNmFlOV0gZHJtL3JhZGVvbi9ldmVyZ3JlZW46IG1h
-a2UgdGV4ZHdbXSBhcnJheSBsYXJnZXIKZ2l0IGJpc2VjdCBiYWQgNDJiOTIzYjU4N2QwNTVjZDk4
-ZmI4NGYzMmUzZTc1ODY3MjAyNmFlOQojIGdvb2Q6IFs1MWE1OWFjODczOWIzMzNlYWE0M2EzMTAy
-YjZhY2FhYjUwMzdiZmEyXSBkcm06IEZpeCBrY2FsbG9jIHBhcmFtZXRlcnMgc3dhcHBlZApnaXQg
-YmlzZWN0IGdvb2QgNTFhNTlhYzg3MzliMzMzZWFhNDNhMzEwMmI2YWNhYWI1MDM3YmZhMgojIGJh
-ZDogWzI4NTQ4NGUyZDU1ZTc2MDMxYjQ1OTI2NzIwYzEwYjFhZWM4Yjc4MmFdIGRybS9yYWRlb246
-IGFkZCBzdXBwb3J0IGZvciBldmVyZ3JlZW4vbmkgdGlsaW5nIGluZm9ybWF0aW9ucyB2MTEKZ2l0
-IGJpc2VjdCBiYWQgMjg1NDg0ZTJkNTVlNzYwMzFiNDU5MjY3MjBjMTBiMWFlYzhiNzgyYQojIGdv
-b2Q6IFtkZDIyMGEwMGU4YmQ1YWQ3Zjk4ZWNkYzNlZWQ2OTlhN2NmYWJkYzI3XSBkcm0vcmFkZW9u
-L2ttczogYWRkIHN1cHBvcnQgZm9yIHN0cmVhbW91dCB2NwpnaXQgYmlzZWN0IGdvb2QgZGQyMjBh
-MDBlOGJkNWFkN2Y5OGVjZGMzZWVkNjk5YTdjZmFiZGMyNwo=
---20cf3074d5a2e610f204c1d5be3b--
+Few things to keep in perspective.
+
+this is generic portion of the vector handling code and has to work
+across different apic drivers and their cfg domains. And also most of
+the intelligence lies in the irqbalance which specifies the irq
+destination mask. Traditionally Kernel code selected the first possible
+destination and not the best destination among the specified mask.
+
+Anyways the above hunks are trying to address scenario like this for
+example: During boot, all the IO-APIC interrupts (legacy/non-legacy) are
+routed to cpu-0 with only cpu-0 in their cfg->domain (as we don't know
+which other cpu's fall into the same x2apic cluster, we can't pre-set
+them in the cfg->domain). Consider a single socket system. After the SMP
+bringup of other siblings, those io-apic irq's affinity is modified to
+all cpu's in setup_ioapic_dest(). And with the current code,
+assign_irq_vector() will bail immediately with out reserving the
+corresponding vector on all the cluster members that are now online. And
+the interrupt ends up going to only cpu-0 and it will not get corrected
+as long as cpu-0 is in the specified interrupt destination mask.
+
+> > +			free_cpumask_var(tmp_mask);
+> > +			return 0;
+> > +		}
+> > +
+> >  		vector = current_vector;
+> >  		offset = current_offset;
+> >  next:
+> > @@ -1357,13 +1361,6 @@ static void setup_ioapic_irq(unsigned int irq, struct irq_cfg *cfg,
+> >  
+> >  	if (!IO_APIC_IRQ(irq))
+> >  		return;
+> > -	/*
+> > -	 * For legacy irqs, cfg->domain starts with cpu 0 for legacy
+> > -	 * controllers like 8259. Now that IO-APIC can handle this irq, update
+> > -	 * the cfg->domain.
+> > -	 */
+> > -	if (irq < legacy_pic->nr_legacy_irqs && cpumask_test_cpu(0, cfg->domain))
+> > -		apic->vector_allocation_domain(0, cfg->domain);
+> 
+> 
+> This hunk reverts your 69c89ef commit. Regression?
+> 
+
+As I mentioned in the changelog, this patch removes the need for that
+hacky workaround. commit 69c89ef didn't really fix the underlying
+problem (and hence we re-encountered the similar issue (above mentioned)
+in the context of x2apic cluster). Clean fix is to address the issue in
+assign_irq_vector() which is what this patch does.
+
+thanks,
+suresh
+
