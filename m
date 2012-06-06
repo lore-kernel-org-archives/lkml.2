@@ -1,97 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756989Ab2FFQBe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 12:01:34 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40376 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756246Ab2FFQBc (ORCPT
+	id S1757099Ab2FFQCM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 12:02:12 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:49563 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756790Ab2FFQCJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 12:01:32 -0400
-Date: Wed, 6 Jun 2012 09:01:17 -0700
-From: tip-bot for Dimitri Sivanich <sivanich@sgi.com>
-Message-ID: <tip-a841f8cef4bb124f0f5563314d0beaf2e1249d72@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, sivanich@sgi.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, sivanich@sgi.com
-In-Reply-To: <20120605184436.GA15668@sgi.com>
-References: <20120605184436.GA15668@sgi.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] sched:
-  Fix the relax_domain_level boot parameter
-Git-Commit-ID: a841f8cef4bb124f0f5563314d0beaf2e1249d72
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 6 Jun 2012 12:02:09 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 06 Jun 2012 09:01:23 -0700 (PDT)
+In-Reply-To: <20120606073909.GI17808@gmail.com>
+References: <1337268092-6765-1-git-send-email-h.mitake@gmail.com>
+	<4FB52636.3040604@linux.intel.com>
+	<CAMO-S2g9fkg_KH0CPOsB_7GQTN2mu8zir+UZDp6=VC+7XDrfrg@mail.gmail.com>
+	<CAMO-S2gyzK3VTQcTRw+FAO9ui_gy=1z=MVxUYM9sPN51KrDgkg@mail.gmail.com>
+	<4FCE4D24.5040307@linux.intel.com>
+	<20120606073909.GI17808@gmail.com>
+Date: Thu, 7 Jun 2012 01:02:08 +0900
+Message-ID: <CAMO-S2j_3tT3WEYiiSo1MWwRctMhKdaNOSTRUx+2Vpvp+eYCHQ@mail.gmail.com>
+Subject: Re: [PATCH] perf bench: add new benchmark subsystem and suite "futex wait"
+From: Hitoshi Mitake <h.mitake@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Darren Hart <dvhart@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Michel Lespinasse <walken@google.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a841f8cef4bb124f0f5563314d0beaf2e1249d72
-Gitweb:     http://git.kernel.org/tip/a841f8cef4bb124f0f5563314d0beaf2e1249d72
-Author:     Dimitri Sivanich <sivanich@sgi.com>
-AuthorDate: Tue, 5 Jun 2012 13:44:36 -0500
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 6 Jun 2012 17:07:41 +0200
+On Wed, Jun 6, 2012 at 4:39 PM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> * Darren Hart <dvhart@linux.intel.com> wrote:
+>
+>> On 05/20/2012 02:37 AM, Hitoshi Mitake wrote:
+>> > On Sun, May 20, 2012 at 5:32 PM, Hitoshi Mitake <h.mitake@gmail.com> wrote:
+>> >> On Fri, May 18, 2012 at 1:24 AM, Darren Hart <dvhart@linux.intel.com> wrote:
+>> >>> On 05/17/2012 08:21 AM, Hitoshi Mitake wrote:
+>> >>>> Hi Ingo, Eric and Darren,
+>> >>>> (CCed perf and futex folks)
+>> >>>>
+>> >>>> I wrote this patch for adding new subsystem "futex" and its suite "wait" to perf
+>> >>>> bench on tip/master. This is based on futextest by Darren Hart.
+>> >>>>
+>> >>>> Could you allow me to import your source code of futextest to perf bench, Darren?
+>> >>>>
+>> >>>
+>> >>> I do have some concerns I'd like to address first.
+>> >>>
+>> >>> What is advantage of incorporating this into perf as opposed to running
+>> >>> it with perf?
+>> >>
+>> >> The main and direct advantage is that perf bench can share useful
+>> >> utilities stored under tools/perf/util/ directory e.g. parse-options[ch].
+>> >>
+>> >
+>> > BTW, I often feel parse-options.[ch] of perf (this was come from git,
+>> > right?) is very useful not only for perf and git but also other
+>> > projects. So I think these stuff are worth independence as a
+>> > library. If the library contains unified feature for parsing and
+>> > evaluating configuration files, the hell of managing configurable
+>> > options will be reduced. e.g. I often use "strace -e open <command>"
+>> > to detect configuration files read by the <command>...
+>> >
+>> > I thought that if perf bench can be independent from perf with such
+>> > efforts, it can be smaller sized and statically linked binary. From my
+>> > experience, this will be good for embedded systems people.
+>> >
+>> > This independence also has risk: less people can find it or is
+>> > attracted even if it stays in the kernel tree (e.g. tools/bench/). But
+>> > it seems that very few people know about perf bench, so this will not
+>> > be a serious problem ;)
+>> >
+>> > I'd like to hear your opinion.
+>>
+>> I haven't been involved with perf tools/bench so I haven't
+>> really formed an opinion. Ingo and Arnaldo, would either of
+>> you care to weigh in on the pros/cons of merging futextest
+>> into perf?
+>
+> No objections from me - 'perf bench futex' seems rather natural
+> to type to me and it would certainly make futex performance
+> testing easier and more widespread.
+>
+> So it all depends on whether you'd like to host it upstream and
+> within tools/perf/bench/.
+>
+> I'd rather not split it from the main perf binary, if embedded
+> wants a small static binary (do they really?) we could add
+> support for minimal builds of perf, with just a few [even one]
+> subcommand activated or so.
 
-sched: Fix the relax_domain_level boot parameter
 
-It does not get processed because sched_domain_level_max is 0 at the
-time that setup_relax_domain_level() is run.
+Sorry, I meant that the main problem is not size of binary, dependency
+of libraries and headers for building perf.
 
-Simply accept the value as it is, as we don't know the value of
-sched_domain_level_max until sched domain construction is completed.
+Preparing cross compilers is hard. Preparing libraries and headers for
+them are also hard. So I think making build process of perf is
+suitable for embedded systems.
 
-Fix sched_relax_domain_level in cpuset.  The build_sched_domain() routine calls
-the set_domain_attribute() routine prior to setting the sd->level, however,
-the set_domain_attribute() routine relies on the sd->level to decide whether
-idle load balancing will be off/on.
+As Arnaldo says, menuconfig approach might be promising.
+# I couldn't come up with the idea...
 
-Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20120605184436.GA15668@sgi.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/sched/core.c |    9 +++------
- 1 files changed, 3 insertions(+), 6 deletions(-)
+Thanks,
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 2bdd176..d5594a4 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -6268,11 +6268,8 @@ int sched_domain_level_max;
- 
- static int __init setup_relax_domain_level(char *str)
- {
--	unsigned long val;
--
--	val = simple_strtoul(str, NULL, 0);
--	if (val < sched_domain_level_max)
--		default_relax_domain_level = val;
-+	if (kstrtoint(str, 0, &default_relax_domain_level))
-+		pr_warn("Unable to set relax_domain_level\n");
- 
- 	return 1;
- }
-@@ -6698,7 +6695,6 @@ struct sched_domain *build_sched_domain(struct sched_domain_topology_level *tl,
- 	if (!sd)
- 		return child;
- 
--	set_domain_attribute(sd, attr);
- 	cpumask_and(sched_domain_span(sd), cpu_map, tl->mask(cpu));
- 	if (child) {
- 		sd->level = child->level + 1;
-@@ -6706,6 +6702,7 @@ struct sched_domain *build_sched_domain(struct sched_domain_topology_level *tl,
- 		child->parent = sd;
- 	}
- 	sd->child = child;
-+	set_domain_attribute(sd, attr);
- 
- 	return sd;
- }
+
+-- 
+Hitoshi Mitake
+h.mitake@gmail.com
