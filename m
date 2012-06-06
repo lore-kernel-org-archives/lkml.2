@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754010Ab2FFNS4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 09:18:56 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:45209 "EHLO
+	id S1754204Ab2FFNTE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 09:19:04 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:45232 "EHLO
 	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753057Ab2FFNSx (ORCPT
+	with ESMTP id S1752990Ab2FFNS7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 09:18:53 -0400
-X-AuditID: cbfee61b-b7f8f6d000005ca4-1b-4fcf58bc1c66
+	Wed, 6 Jun 2012 09:18:59 -0400
+X-AuditID: cbfee61b-b7f8f6d000005ca4-28-4fcf58c238f3
 From: Marek Szyprowski <m.szyprowski@samsung.com>
 To: linux-arm-kernel@lists.infradead.org, linaro-mm-sig@lists.linaro.org,
         linux-mm@kvack.org, linux-arch@vger.kernel.org,
@@ -25,71 +25,101 @@ Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
         Sumit Semwal <sumit.semwal@linaro.org>,
         Abhinav Kochhar <abhinav.k@samsung.com>,
         Tomasz Stanislawski <t.stanislaws@samsung.com>
-Subject: [PATCH/RFC 0/2] ARM: DMA-mapping: new extensions for buffer sharing
- (part 2)
-Date: Wed, 06 Jun 2012 15:17:35 +0200
-Message-id: <1338988657-20770-1-git-send-email-m.szyprowski@samsung.com>
+Subject: [PATCH 1/2] common: DMA-mapping: add DMA_ATTR_SKIP_CPU_SYNC attribute
+Date: Wed, 06 Jun 2012 15:17:36 +0200
+Message-id: <1338988657-20770-2-git-send-email-m.szyprowski@samsung.com>
 X-Mailer: git-send-email 1.7.10
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPJMWRmVeSWpSXmKPExsVy+t9jAd09Eef9DXpncFh07PrKYnF51xw2
-	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDI63jxhLljBV7FlSR9jA+Nj7i5GTg4JAROJf72nmSFs
-	MYkL99azdTFycQgJLGKU+Ld0IpTTxSSx5OxeVpAqNgFDia63XWwgtojADEaJXX1pIEXMAvtY
-	JDo3n2DsYuTgEBYIl3jXrAtSwyKgKvFo3jx2EJtXwEPi6YftrBDb5CWe3u9jm8DIvYCRYRWj
-	aGpBckFxUnqukV5xYm5xaV66XnJ+7iZGsDefSe9gXNVgcYhRgINRiYf3bdh5fyHWxLLiytxD
-	jBIczEoivHHOQCHelMTKqtSi/Pii0pzU4kOM0hwsSuK8fcfO+QsJpCeWpGanphakFsFkmTg4
-	pRoYy46yscv/OHdgafMco2Nr0n+5pBQ7P51xW357B+9k3lczeIMY/jM/fv6V+bFRpRE3B2/w
-	kgn139xaX5+etlHB9a3cCW63R3YPhRfc+1t1c5+AW7Pzsc+M/zJy01YVSz0/7y0eLjZfP2bv
-	/8jFaj0P+qcoXeoWVFtw8OMudd78FDFx7zTd+utmSizFGYmGWsxFxYkAijWPquIBAAA=
+In-reply-to: <1338988657-20770-1-git-send-email-m.szyprowski@samsung.com>
+References: <1338988657-20770-1-git-send-email-m.szyprowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrOJMWRmVeSWpSXmKPExsVy+t9jAd1DEef9DSY80bLo2PWVxeLyrjls
+	DkwenzfJBTBGcdmkpOZklqUW6dslcGXcm9PHUnBHtuLjmkNMDYw/JLoYOTkkBEwkHs9azQZh
+	i0lcuLceyObiEBJYxCjxs3kGO4TTxSTR+fAmK0gVm4ChRNfbLrAOEYEZjBK7+tJAipgF9rFI
+	dG4+wQiSEBbwk1jY9Zyli5GDg0VAVWLafLB6XgEPiQ2z3zJCbJOXeHq/DyzOKeApMeXgfHYQ
+	Wwio5taJXqYJjLwLGBlWMYqmFiQXFCel5xrpFSfmFpfmpesl5+duYgR7/5n0DsZVDRaHGAU4
+	GJV4eN+GnfcXYk0sK67MPcQowcGsJMIb5wwU4k1JrKxKLcqPLyrNSS0+xCjNwaIkztt37Jy/
+	kEB6YklqdmpqQWoRTJaJg1OqgXHzndZHjbMXbspZ4OApdEFDNs9qs+jRJ5sTd5xJE3D5luxY
+	LTpD6+6zCXfc+ntWSSp8WPA8bcZVpe3SNXKzsm8biBYdzeD+975T1cjfr+Fdq8U7UabVB3e2
+	38pp7vkzJ+Smmu0u78DDnWLe3zTTLvHEpF3Y421wdV6Is7Pbk7r4/5pN58PMW5RYijMSDbWY
+	i4oTAVdlKpn6AQAA
 X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+This patch adds DMA_ATTR_SKIP_CPU_SYNC attribute to the DMA-mapping
+subsystem.
 
-This is a continuation of the dma-mapping extensions posted in the
-following thread:
-http://thread.gmane.org/gmane.linux.kernel.mm/78644
+By default dma_map_{single,page,sg} functions family transfer a given
+buffer from CPU domain to device domain. Some advanced use cases might
+require sharing a buffer between more than one device. This requires
+having a mapping created separately for each device and is usually
+performed by calling dma_map_{single,page,sg} function more than once
+for the given buffer with device pointer to each device taking part in
+the buffer sharing. The first call transfers a buffer from 'CPU' domain
+to 'device' domain, what synchronizes CPU caches for the given region
+(usually it means that the cache has been flushed or invalidated
+depending on the dma direction). However, next calls to
+dma_map_{single,page,sg}() for other devices will perform exactly the
+same sychronization operation on the CPU cache. CPU cache sychronization
+might be a time consuming operation, especially if the buffers are
+large, so it is highly recommended to avoid it if possible.
+DMA_ATTR_SKIP_CPU_SYNC allows platform code to skip synchronization of
+the CPU cache for the given buffer assuming that it has been already
+transferred to 'device' domain. This attribute can be also used for
+dma_unmap_{single,page,sg} functions family to force buffer to stay in
+device domain after releasing a mapping for it. Use this attribute with
+care!
 
-We noticed that some advanced buffer sharing use cases usually require
-creating a dma mapping for the same memory buffer for more than one
-device. Usually also such buffer is never touched with CPU, so the data
-are processed by the devices.
-
->From the DMA-mapping perspective this requires to call one of the
-dma_map_{page,single,sg} function for the given memory buffer a few
-times, for each of the devices. Each dma_map_* call performs CPU cache
-synchronization, what might be a time consuming operation, especially
-when the buffers are large. We would like to avoid any useless and time
-consuming operations, so that was the main reason for introducing
-another attribute for DMA-mapping subsystem: DMA_ATTR_SKIP_CPU_SYNC,
-which lets dma-mapping core to skip CPU cache synchronization in certain
-cases.
-
-The proposed patches have been generated on top of the ARM DMA-mapping
-redesign patch series on Linux v3.4-rc7. They are also available on the
-following GIT branch:
-
-git://git.linaro.org/people/mszyprowski/linux-dma-mapping.git 3.4-rc7-arm-dma-v10-ext
-
-with all require patches on top of vanilla v3.4-rc7 kernel. I will
-resend them rebased onto v3.5-rc1 soon.
-
-Best regards
-Marek Szyprowski
-Samsung Poland R&D Center
-
-
-Patch summary:
-
-Marek Szyprowski (2):
-  common: DMA-mapping: add DMA_ATTR_SKIP_CPU_SYNC attribute
-  ARM: dma-mapping: add support for DMA_ATTR_SKIP_CPU_SYNC attribute
-
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+---
  Documentation/DMA-attributes.txt |   24 ++++++++++++++++++++++++
- arch/arm/mm/dma-mapping.c        |   20 +++++++++++---------
  include/linux/dma-attrs.h        |    1 +
- 3 files changed, 36 insertions(+), 9 deletions(-)
+ 2 files changed, 25 insertions(+), 0 deletions(-)
 
+diff --git a/Documentation/DMA-attributes.txt b/Documentation/DMA-attributes.txt
+index 725580d..f503090 100644
+--- a/Documentation/DMA-attributes.txt
++++ b/Documentation/DMA-attributes.txt
+@@ -67,3 +67,27 @@ set on each call.
+ Since it is optional for platforms to implement
+ DMA_ATTR_NO_KERNEL_MAPPING, those that do not will simply ignore the
+ attribute and exhibit default behavior.
++
++DMA_ATTR_SKIP_CPU_SYNC
++----------------------
++
++By default dma_map_{single,page,sg} functions family transfer a given
++buffer from CPU domain to device domain. Some advanced use cases might
++require sharing a buffer between more than one device. This requires
++having a mapping created separately for each device and is usually
++performed by calling dma_map_{single,page,sg} function more than once
++for the given buffer with device pointer to each device taking part in
++the buffer sharing. The first call transfers a buffer from 'CPU' domain
++to 'device' domain, what synchronizes CPU caches for the given region
++(usually it means that the cache has been flushed or invalidated
++depending on the dma direction). However, next calls to
++dma_map_{single,page,sg}() for other devices will perform exactly the
++same sychronization operation on the CPU cache. CPU cache sychronization
++might be a time consuming operation, especially if the buffers are
++large, so it is highly recommended to avoid it if possible.
++DMA_ATTR_SKIP_CPU_SYNC allows platform code to skip synchronization of
++the CPU cache for the given buffer assuming that it has been already
++transferred to 'device' domain. This attribute can be also used for
++dma_unmap_{single,page,sg} functions family to force buffer to stay in
++device domain after releasing a mapping for it. Use this attribute with
++care!
+diff --git a/include/linux/dma-attrs.h b/include/linux/dma-attrs.h
+index a37c10c..f83f793 100644
+--- a/include/linux/dma-attrs.h
++++ b/include/linux/dma-attrs.h
+@@ -16,6 +16,7 @@ enum dma_attr {
+ 	DMA_ATTR_WRITE_COMBINE,
+ 	DMA_ATTR_NON_CONSISTENT,
+ 	DMA_ATTR_NO_KERNEL_MAPPING,
++	DMA_ATTR_SKIP_CPU_SYNC,
+ 	DMA_ATTR_MAX,
+ };
+ 
 -- 
 1.7.1.569.g6f426
 
