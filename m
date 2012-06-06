@@ -1,106 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752726Ab2FFHvE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 03:51:04 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:60830 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751225Ab2FFHvB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 03:51:01 -0400
-Message-ID: <1338969050.4274.1.camel@phoenix>
-Subject: [PATCH] regulator: palmas: Slightly code change for better
- readability
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Graeme Gregory <gg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Date: Wed, 06 Jun 2012 15:50:50 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754746Ab2FFHvg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 03:51:36 -0400
+Received: from mga03.intel.com ([143.182.124.21]:8138 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751733Ab2FFHve (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 03:51:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="152223127"
+Message-ID: <4FCF0C03.9010400@linux.intel.com>
+Date: Wed, 06 Jun 2012 15:51:31 +0800
+From: Chen Gong <gong.chen@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>, "Luck, Tony" <tony.luck@intel.com>,
+        "bp@amd64.org" <bp@amd64.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [tip:x86/urgent] x86/mce: Fix the MCE poll timer logic
+References: <1338863702-9245-1-git-send-email-gong.chen@linux.intel.com> <tip-958fb3c51295764599d6abce87e1a01ace897a3e@git.kernel.org>
+In-Reply-To: <tip-958fb3c51295764599d6abce87e1a01ace897a3e@git.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's a little bit hard to read that the "else" case means id == PALMAS_REG_SMPS10.
+于 2012/6/6 15:10, tip-bot for Chen Gong 写道:
+> Commit-ID:  958fb3c51295764599d6abce87e1a01ace897a3e
+> Gitweb:     http://git.kernel.org/tip/958fb3c51295764599d6abce87e1a01ace897a3e
+> Author:     Chen Gong <gong.chen@linux.intel.com>
+> AuthorDate: Tue, 5 Jun 2012 10:35:02 +0800
+> Committer:  Ingo Molnar <mingo@kernel.org>
+> CommitDate: Wed, 6 Jun 2012 08:28:21 +0200
+>
+> x86/mce: Fix the MCE poll timer logic
+>
+> In commit 82f7af09 ("x86/mce: Cleanup timer mess), Thomas just
+> forgot the "/ 2" there while cleaning up.
+>
+> Signed-off-by: Chen Gong <gong.chen@linux.intel.com>
+> Acked-by: Thomas Gleixner <tglx@linutronix.de>
+> Cc: bp@amd64.org
+> Cc: tony.luck@intel.com
+> Link: http://lkml.kernel.org/r/1338863702-9245-1-git-send-email-gong.chen@linux.intel.com
+> Signed-off-by: Ingo Molnar <mingo@kernel.org>
+> ---
+>  arch/x86/kernel/cpu/mcheck/mce.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+> index 0a687fd..a97f3c4 100644
+> --- a/arch/x86/kernel/cpu/mcheck/mce.c
+> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
+> @@ -1274,7 +1274,7 @@ static void mce_timer_fn(unsigned long data)
+>  	 */
+>  	iv = __this_cpu_read(mce_next_interval);
+>  	if (mce_notify_irq())
+> -		iv = max(iv, (unsigned long) HZ/100);
+> +		iv = max(iv / 2, (unsigned long) HZ/100);
+>  	else
+>  		iv = min(iv * 2, round_jiffies_relative(check_interval * HZ));
+>  	__this_cpu_write(mce_next_interval, iv);
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-This patch changes below syntax:
-if (id != PALMAS_REG_SMPS10){
-        do something for the cases id != PALMAS_REG_SMPS10;
-} else {
-        do something for the case id == PALMAS_REG_SMPS10;
+In fact, there still exists another potential issue:
+
+static void __mcheck_cpu_init_timer(void)
+{
+        struct timer_list *t = &__get_cpu_var(mce_timer);
+        unsigned long iv = __this_cpu_read(mce_next_interval);
+
+        setup_timer(t, mce_timer_fn, smp_processor_id());
+
+        if (mce_ignore_ce)
+                return;
+
+        __this_cpu_write(mce_next_interval, iv);
+        if (!iv)
+                return;
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Because the 2nd patch is not merged yet, so here iv is zero when this
+function is called, which means at the beginning, the poll timers are
+not registered until some other conditions trigger *add_timer_on*.
+
+        t->expires = round_jiffies(jiffies + iv);
+        add_timer_on(t, smp_processor_id());
 }
 
-to below syntax:
-if (id == PALMAS_REG_SMPS10) {
-        do something for the case id == PALMAS_REG_SMPS10;
-} else {
-        do something for the cases id != PALMAS_REG_SMPS10;
-}
-
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/palmas-regulator.c |   22 +++++++++++-----------
- 1 file changed, 11 insertions(+), 11 deletions(-)
-
-diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
-index b4e10b0..5820d1a 100644
---- a/drivers/regulator/palmas-regulator.c
-+++ b/drivers/regulator/palmas-regulator.c
-@@ -517,7 +517,13 @@ static int palmas_smps_init(struct palmas *palmas, int id,
- 	if (ret)
- 		return ret;
- 
--	if (id != PALMAS_REG_SMPS10) {
-+	if (id == PALMAS_REG_SMPS10) {
-+		if (reg_init->mode_sleep) {
-+			reg &= ~PALMAS_SMPS10_CTRL_MODE_SLEEP_MASK;
-+			reg |= reg_init->mode_sleep <<
-+					PALMAS_SMPS10_CTRL_MODE_SLEEP_SHIFT;
-+		}
-+	} else {
- 		if (reg_init->warm_reset)
- 			reg |= PALMAS_SMPS12_CTRL_WR_S;
- 
-@@ -529,12 +535,6 @@ static int palmas_smps_init(struct palmas *palmas, int id,
- 			reg |= reg_init->mode_sleep <<
- 					PALMAS_SMPS12_CTRL_MODE_SLEEP_SHIFT;
- 		}
--	} else {
--		if (reg_init->mode_sleep) {
--			reg &= ~PALMAS_SMPS10_CTRL_MODE_SLEEP_MASK;
--			reg |= reg_init->mode_sleep <<
--					PALMAS_SMPS10_CTRL_MODE_SLEEP_SHIFT;
--		}
- 
- 	}
- 	ret = palmas_smps_write(palmas, addr, reg);
-@@ -660,10 +660,7 @@ static __devinit int palmas_probe(struct platform_device *pdev)
- 		pmic->desc[id].name = palmas_regs_info[id].name;
- 		pmic->desc[id].id = id;
- 
--		if (id != PALMAS_REG_SMPS10) {
--			pmic->desc[id].ops = &palmas_ops_smps;
--			pmic->desc[id].n_voltages = PALMAS_SMPS_NUM_VOLTAGES;
--		} else {
-+		if (id == PALMAS_REG_SMPS10) {
- 			pmic->desc[id].n_voltages = PALMAS_SMPS10_NUM_VOLTAGES;
- 			pmic->desc[id].ops = &palmas_ops_smps10;
- 			pmic->desc[id].vsel_reg = PALMAS_SMPS10_CTRL;
-@@ -672,6 +669,9 @@ static __devinit int palmas_probe(struct platform_device *pdev)
- 			pmic->desc[id].enable_mask = SMPS10_BOOST_EN;
- 			pmic->desc[id].min_uV = 3750000;
- 			pmic->desc[id].uV_step = 1250000;
-+		} else {
-+			pmic->desc[id].ops = &palmas_ops_smps;
-+			pmic->desc[id].n_voltages = PALMAS_SMPS_NUM_VOLTAGES;
- 		}
- 
- 		pmic->desc[id].type = REGULATOR_VOLTAGE;
--- 
-1.7.9.5
-
-
+Another potential issue is in this function two smp_processor_id()
+are called. If conext changes during this procedure (I'm not sure
+if it can hapen, besides secondary_cpu kickoff, online/offline will
+call these functions, even in virtualization envrionment, etc.).
+So I think it will be better saving the value in the beginning of
+this function. Make sense?
 
