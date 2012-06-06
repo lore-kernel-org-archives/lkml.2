@@ -1,77 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757994Ab2FFSIP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 14:08:15 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:47991 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757969Ab2FFSIM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 14:08:12 -0400
-Subject: Re: [PATCH 2/2] [POWERPC] uprobes: powerpc port
-From: Jim Keniston <jkenisto@linux.vnet.ibm.com>
-To: ananth@in.ibm.com
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        lkml <linux-kernel@vger.kernel.org>, oleg@redhat.com,
-        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
-        Ingo Molnar <mingo@elte.hu>, linuxppc-dev@lists.ozlabs.org
-In-Reply-To: <20120606093541.GA29580@in.ibm.com>
-References: <20120606091950.GB6745@in.ibm.com>
-	 <20120606092150.GC6745@in.ibm.com> <1338974822.2749.89.camel@twins>
-	 <20120606093541.GA29580@in.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 06 Jun 2012 11:08:04 -0700
-Message-ID: <1339006084.3458.25.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12060618-7182-0000-0000-000001AF0A48
+	id S1757750Ab2FFSJs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 14:09:48 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:42908 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751773Ab2FFSJr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 14:09:47 -0400
+Date: Wed, 6 Jun 2012 13:09:46 -0500
+From: Nathan Zimmer <nzimmer@sgi.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, Don Zickus <dzickus@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH] watchdog: reduce "NMI watchdog enabled, takes one hw-pmu
+	counter." messages
+Message-ID: <20120606180946.GA16566@gulag1.americas.sgi.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-06-06 at 15:05 +0530, Ananth N Mavinakayanahalli wrote:
-> On Wed, Jun 06, 2012 at 11:27:02AM +0200, Peter Zijlstra wrote:
-> > On Wed, 2012-06-06 at 14:51 +0530, Ananth N Mavinakayanahalli wrote:
-> > > One TODO in this port compared to x86 is the uprobe abort_xol() logic.
-> > > x86 depends on the thread_struct.trap_nr (absent in powerpc) to determine
-> > > if a signal was caused when the uprobed instruction was single-stepped/
-> > > emulated, in which case, we reset the instruction pointer to the probed
-> > > address and retry the probe again. 
-> > 
-> > Another curious difference is that x86 uses an instruction decoder and
-> > contains massive tables to validate we can probe a particular
-> > instruction.
+ watchdog: reduces some noise on a large system
+ The printk buffer can be flooded with with redundant
+ "NMI watchdog enabled, takes one hw-pmu counter." messages.
+ It doesn't add any value beyond the first.
 
-Part of that difference is because the x86 instruction set is a lot more
-complex.  Another part is due to the lack, back when the x86 code was
-created, of robust handling by uprobes of traps by probed instructions.
-So we refused to probe instructions that we knew (or strongly suspected)
-would generate traps in user mode -- e.g., privileged instructions,
-illegal instructions.  A couple of times we had to "legalize"
-instructions or prefixes that we didn't originally expect to encounter.
+ Note the message needs logged a second time if the watchdog was disabled then
+ reenabled.
 
-> > 
-> > Can we probe all possible PPC instructions?
-> 
-> For the kernel, the only ones that are off limits are rfi (return from
-> interrupt), mtmsr (move to msr). All other instructions can be probed.
-> 
-> Both those instructions are supervisor level, so we won't see them in
-> userspace at all; so we should be able to probe all user level
-> instructions.
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Nathan Zimmer <nzimmer@sgi.com>
+---
+ kernel/watchdog.c |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
 
-Presumably rfi or mtmsr could show up in the instruction stream via an
-erroneous or mischievous asm statement.  It'd be good to verify that you
-handle that gracefully.
-
-> 
-> I am not aware of specific caveats for vector/altivec instructions;
-> maybe Paul or Ben are more suitable to comment on that.
-> 
-> Ananth
-> 
-
-Jim
-
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index e5e1d85..404b141 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -372,6 +372,8 @@ static int watchdog(void *unused)
+ 
+ 
+ #ifdef CONFIG_HARDLOCKUP_DETECTOR
++static bool already_notified;
++
+ static int watchdog_nmi_enable(int cpu)
+ {
+ 	struct perf_event_attr *wd_attr;
+@@ -391,7 +393,10 @@ static int watchdog_nmi_enable(int cpu)
+ 	/* Try to register using hardware perf events */
+ 	event = perf_event_create_kernel_counter(wd_attr, cpu, NULL, watchdog_overflow_callback, NULL);
+ 	if (!IS_ERR(event)) {
+-		pr_info("enabled, takes one hw-pmu counter.\n");
++		if (!already_notified) {
++			pr_info("enabled, takes one hw-pmu counter.\n");
++			already_notified = true;
++		}
+ 		goto out_save;
+ 	}
+ 
+@@ -426,6 +431,7 @@ static void watchdog_nmi_disable(int cpu)
+ 
+ 		/* should be in cleanup, but blocks oprofile */
+ 		perf_event_release_kernel(event);
++		already_notified = false;
+ 	}
+ 	return;
+ }
+-- 
+1.6.0.2
 
