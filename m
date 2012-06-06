@@ -1,78 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756665Ab2FFPS0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 11:18:26 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:48258 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755693Ab2FFPSZ (ORCPT
+	id S1756639Ab2FFPTQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 11:19:16 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:44394 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752543Ab2FFPTP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 11:18:25 -0400
-X-AuditID: b753bd60-98cf0ba000000f6c-53-4fcf74b6b06b
-X-AuditID: b753bd60-98cf0ba000000f6c-53-4fcf74b6b06b
-Message-ID: <4FCF74B4.2060309@hitachi.com>
-Date: Thu, 07 Jun 2012 00:18:12 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        yrl.pp-manager.tt@hitachi.com
-Subject: Re: [RFC][PATCH 06/12] ftrace/x86: Add save_regs for i386 function
- calls
-References: <20120606035058.108720095@goodmis.org>  <20120606040014.660425497@goodmis.org> <1338993457.13348.547.camel@gandalf.stny.rr.com>
-In-Reply-To: <1338993457.13348.547.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15
+	Wed, 6 Jun 2012 11:19:15 -0400
+Subject: Re: [PATCH] virtio-net: fix a race on 32bit arches
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Jason Wang <jasowang@redhat.com>, netdev@vger.kernel.org,
+        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Stephen Hemminger <shemminger@vyatta.com>
+In-Reply-To: <20120606144941.GA17092@redhat.com>
+References: <1338971724.2760.3913.camel@edumazet-glaptop>
+	 <1338972341.2760.3944.camel@edumazet-glaptop>
+	 <20120606111357.GA15070@redhat.com>
+	 <1338988210.2760.4485.camel@edumazet-glaptop>
+	 <20120606144941.GA17092@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 06 Jun 2012 17:19:04 +0200
+Message-ID: <1338995944.26966.6.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/06/06 23:37), Steven Rostedt wrote:
-> On Tue, 2012-06-05 at 23:51 -0400, Steven Rostedt wrote:
+On Wed, 2012-06-06 at 17:49 +0300, Michael S. Tsirkin wrote:
+> On Wed, Jun 06, 2012 at 03:10:10PM +0200, Eric Dumazet wrote:
+> > On Wed, 2012-06-06 at 14:13 +0300, Michael S. Tsirkin wrote:
+> > 
+> > > We currently do all stats either on napi callback or from
+> > > start_xmit callback.
+> > > This makes them safe, yes?
+> > 
+> > Hmm, then _bh() variant is needed in virtnet_stats(), as explained in
+> > include/linux/u64_stats_sync.h section 6)
+> > 
+> >  * 6) If counter might be written by an interrupt, readers should block interrupts.
+> >  *    (On UP, there is no seqcount_t protection, a reader allowing interrupts could
+> >  *     read partial values)
+> > 
+> > Yes, its tricky...
 > 
->> +ENTRY(ftrace_regs_caller)
->> +	pushf	/* push flags before compare */
->> +	cmpl $0, function_trace_stop
->> +	jne ftrace_exit
->> +
->> +
-> 
-> Masami,
-> 
-> Do we really need to push before the compare? As the compare flags are
-> really meaningless with calling functions, and here we are only trying
-> to hide what the cmpl did. If something else was tracing without regs,
-> and we put a probe just after the nop, then it would include the cmpl
-> changes. My version of the patch doesn't restore the flags, so two
-> probes would have different values. But again, do we care? What would
-> need to know the value of cmp flags when calling into a function when
-> they are not going to be restored anyway.
+> Sounds good, but I have a question: this realies on counters
+> being atomic on 64 bit.
+> Would not it be better to always use a seqlock even on 64 bit?
+> This way counters would actually be correct and in sync.
+> As it is if we want e.g. average packet size,
+> we can not rely e.g. on it being bytes/packets.
 
-Yes, it needs to be saved and restored too, for transparency.
-If we don't guarantee it, users must check whether a probe
-can do what they are doing, before they put the probe. And
-if not, they must find another appropriate place. It's not
-compatible with previous kprobes.
+When this stuff was discussed, we chose to have a nop on 64bits.
 
-Actually, I think we can push flags after compare if we
-add a note on kprobes document, so that user can expect
-compare flags will be not correct if KPROBE_FLAG_FTRACE
-is set. (Of course, it is better to provide an API
-(ftrace_location is enough?) for giving him a hint how he
-can get a correct flags with kprobes)
+Your point has little to do with 64bit stats, it was already like that
+with 'long int' counters.
 
-But if you'd like to introduce -mfentry, I hope ftrace to
-restore flags, which will be useful for debugging/investigation
-by tweaking flags while executing a function.
+Consider average driver doing :
 
-Thank you,
+dev->stats.rx_bytes += skb->len;
+dev->stats.rx_packets++;
 
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+A concurrent reader can read an updated rx_bytes and a 'previous'
+rx_packets one.
+
+'fixing' this requires a lot of work and memory barriers (in all
+drivers), for a very litle gain (at most one packet error)
+
+u64_stats_sync was really meant to be 0-cost on 64bit arches.
+
+
+
