@@ -1,116 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756645Ab2FFPSN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 11:18:13 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39904 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755693Ab2FFPSL (ORCPT
+	id S1756665Ab2FFPS0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 11:18:26 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:48258 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755693Ab2FFPSZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 11:18:11 -0400
-Date: Wed, 6 Jun 2012 08:17:55 -0700
-From: tip-bot for Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Message-ID: <tip-4af463d28f1a026e25c0b879fac2a0d2b7bff599@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        isimatu.yasuaki@jp.fujitsu.com, tglx@linutronix.de,
-        kosaki.motohiro@jp.fujitsu.com, rientjes@google.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        isimatu.yasuaki@jp.fujitsu.com, tglx@linutronix.de,
-        rientjes@google.com, kosaki.motohiro@jp.fujitsu.com
-In-Reply-To: <4FCC2098.4030007@jp.fujitsu.com>
-References: <4FCC2098.4030007@jp.fujitsu.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/numa:
-  Set numa_nodes_parsed at acpi_numa_memory_affinity_init()
-Git-Commit-ID: 4af463d28f1a026e25c0b879fac2a0d2b7bff599
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 6 Jun 2012 11:18:25 -0400
+X-AuditID: b753bd60-98cf0ba000000f6c-53-4fcf74b6b06b
+X-AuditID: b753bd60-98cf0ba000000f6c-53-4fcf74b6b06b
+Message-ID: <4FCF74B4.2060309@hitachi.com>
+Date: Thu, 07 Jun 2012 00:18:12 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 06 Jun 2012 08:18:01 -0700 (PDT)
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        yrl.pp-manager.tt@hitachi.com
+Subject: Re: [RFC][PATCH 06/12] ftrace/x86: Add save_regs for i386 function
+ calls
+References: <20120606035058.108720095@goodmis.org>  <20120606040014.660425497@goodmis.org> <1338993457.13348.547.camel@gandalf.stny.rr.com>
+In-Reply-To: <1338993457.13348.547.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4af463d28f1a026e25c0b879fac2a0d2b7bff599
-Gitweb:     http://git.kernel.org/tip/4af463d28f1a026e25c0b879fac2a0d2b7bff599
-Author:     Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-AuthorDate: Mon, 4 Jun 2012 11:42:32 +0900
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 6 Jun 2012 11:58:39 +0200
+(2012/06/06 23:37), Steven Rostedt wrote:
+> On Tue, 2012-06-05 at 23:51 -0400, Steven Rostedt wrote:
+> 
+>> +ENTRY(ftrace_regs_caller)
+>> +	pushf	/* push flags before compare */
+>> +	cmpl $0, function_trace_stop
+>> +	jne ftrace_exit
+>> +
+>> +
+> 
+> Masami,
+> 
+> Do we really need to push before the compare? As the compare flags are
+> really meaningless with calling functions, and here we are only trying
+> to hide what the cmpl did. If something else was tracing without regs,
+> and we put a probe just after the nop, then it would include the cmpl
+> changes. My version of the patch doesn't restore the flags, so two
+> probes would have different values. But again, do we care? What would
+> need to know the value of cmp flags when calling into a function when
+> they are not going to be restored anyway.
 
-x86/numa: Set numa_nodes_parsed at acpi_numa_memory_affinity_init()
+Yes, it needs to be saved and restored too, for transparency.
+If we don't guarantee it, users must check whether a probe
+can do what they are doing, before they put the probe. And
+if not, they must find another appropriate place. It's not
+compatible with previous kprobes.
 
-When hot-adding a CPU, the system outputs following messages
-since node_to_cpumask_map[2] was not allocated memory.
+Actually, I think we can push flags after compare if we
+add a note on kprobes document, so that user can expect
+compare flags will be not correct if KPROBE_FLAG_FTRACE
+is set. (Of course, it is better to provide an API
+(ftrace_location is enough?) for giving him a hint how he
+can get a correct flags with kprobes)
 
-Booting Node 2 Processor 32 APIC 0xc0
-node_to_cpumask_map[2] NULL
-Pid: 0, comm: swapper/32 Tainted: G       A     3.3.5-acd #21
-Call Trace:
- [<ffffffff81048845>] debug_cpumask_set_cpu+0x155/0x160
- [<ffffffff8105e28a>] ? add_timer_on+0xaa/0x120
- [<ffffffff8150665f>] numa_add_cpu+0x1e/0x22
- [<ffffffff815020bb>] identify_cpu+0x1df/0x1e4
- [<ffffffff815020d6>] identify_econdary_cpu+0x16/0x1d
- [<ffffffff81504614>] smp_store_cpu_info+0x3c/0x3e
- [<ffffffff81505263>] smp_callin+0x139/0x1be
- [<ffffffff815052fb>] start_secondary+0x13/0xeb
+But if you'd like to introduce -mfentry, I hope ftrace to
+restore flags, which will be useful for debugging/investigation
+by tweaking flags while executing a function.
 
-The reason is that the bit of node 2 was not set at
-numa_nodes_parsed. numa_nodes_parsed is set by only
-acpi_numa_processor_affinity_init /
-acpi_numa_x2apic_affinity_init. Thus even if hot-added memory
-which is same PXM as hot-added CPU is written in ACPI SRAT
-Table, if the hot-added CPU is not written in ACPI SRAT table,
-numa_nodes_parsed is not set.
+Thank you,
 
-But according to ACPI Spec Rev 5.0, it says about ACPI SRAT
-table as follows: This optional table provides information that
-allows OSPM to associate processors and memory ranges, including
-ranges of memory provided by hot-added memory devices, with
-system localities / proximity domains and clock domains.
-
-It means that ACPI SRAT table only provides information for CPUs
-present at boot time and for memory including hot-added memory.
-So hot-added memory is written in ACPI SRAT table, but hot-added
-CPU is not written in it. Thus numa_nodes_parsed should be set
-by not only acpi_numa_processor_affinity_init /
-acpi_numa_x2apic_affinity_init but also
-acpi_numa_memory_affinity_init for the case.
-
-Additionally, if system has cpuless memory node,
-acpi_numa_processor_affinity_init /
-acpi_numa_x2apic_affinity_init cannot set numa_nodes_parseds
-since these functions cannot find cpu description for the node.
-In this case, numa_nodes_parsed needs to be set by
-acpi_numa_memory_affinity_init.
-
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: liuj97@gmail.com
-Cc: kosaki.motohiro@gmail.com
-Link: http://lkml.kernel.org/r/4FCC2098.4030007@jp.fujitsu.com
-[ merged it ]
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/mm/srat.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/mm/srat.c b/arch/x86/mm/srat.c
-index 732af3a..4599c3e 100644
---- a/arch/x86/mm/srat.c
-+++ b/arch/x86/mm/srat.c
-@@ -176,6 +176,8 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
- 		return;
- 	}
- 
-+	node_set(node, numa_nodes_parsed);
-+
- 	printk(KERN_INFO "SRAT: Node %u PXM %u [mem %#010Lx-%#010Lx]\n",
- 	       node, pxm,
- 	       (unsigned long long) start, (unsigned long long) end - 1);
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
