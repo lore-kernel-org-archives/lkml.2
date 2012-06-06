@@ -1,73 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756696Ab2FFPUi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 11:20:38 -0400
-Received: from mailrelay011.isp.belgacom.be ([195.238.6.178]:23565 "EHLO
-	mailrelay011.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756178Ab2FFPUf (ORCPT
+	id S1756730Ab2FFPUs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 11:20:48 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39947 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754061Ab2FFPUq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 11:20:35 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAMxzz0/CTtAn/2dsb2JhbABFtDWBB4IYAQEFJxM/EAsYLhQYMROID7dZixiFOWADlRwBiSOGV4Ji
-Date: Wed, 6 Jun 2012 17:20:30 +0200
-From: Philippe De Muyter <phdm@macqel.be>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-m68k@vger.kernel.org, Greg Ungerer <gerg@uclinux.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] m68k: Use generic strncpy_from_user(), strlen_user(),
-	and strnlen_user()
-Message-ID: <20120606152030.GA9809@frolo.macqel>
-References: <1338327216-15309-1-git-send-email-geert@linux-m68k.org> <20120530102226.GA28628@frolo.macqel> <CAMuHMdV5GVZR1BvGD3EncDFfPt=Bt9ndkKE8Mp7euE9KoSaGNQ@mail.gmail.com> <20120530140444.GA10543@frolo.macqel> <CAMuHMdW0XqO9iOiuOXrRao_A41L-0iZXXyZugCmiizG=7-VkHg@mail.gmail.com>
+	Wed, 6 Jun 2012 11:20:46 -0400
+Date: Wed, 6 Jun 2012 08:20:33 -0700
+From: tip-bot for Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>
+Message-ID: <tip-f6175f5bfb4c9f2ed32758c95f765b529b1a7f15@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, agordeev@redhat.com, hpa@zytor.com,
+        mingo@kernel.org, yinghai@kernel.org, tomoki.sekiyama.qu@hitachi.com,
+        suresh.b.siddha@intel.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, agordeev@redhat.com,
+        linux-kernel@vger.kernel.org, yinghai@kernel.org,
+        suresh.b.siddha@intel.com, tglx@linutronix.de,
+        tomoki.sekiyama.qu@hitachi.com
+In-Reply-To: <4FC340BE.7080101@hitachi.com>
+References: <4FC340BE.7080101@hitachi.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86/ioapic:
+  Fix NULL pointer dereference on CPU hotplug after disabling irqs
+Git-Commit-ID: f6175f5bfb4c9f2ed32758c95f765b529b1a7f15
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <CAMuHMdW0XqO9iOiuOXrRao_A41L-0iZXXyZugCmiizG=7-VkHg@mail.gmail.com>
-User-Agent: Mutt/1.5.16 (2007-06-09)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 06 Jun 2012 08:20:39 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert,
+Commit-ID:  f6175f5bfb4c9f2ed32758c95f765b529b1a7f15
+Gitweb:     http://git.kernel.org/tip/f6175f5bfb4c9f2ed32758c95f765b529b1a7f15
+Author:     Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>
+AuthorDate: Mon, 28 May 2012 18:09:18 +0900
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 6 Jun 2012 12:03:25 +0200
 
-On Wed, Jun 06, 2012 at 03:44:03PM +0200, Geert Uytterhoeven wrote:
-> On Wed, May 30, 2012 at 4:04 PM, Philippe De Muyter <phdm@macqel.be> wrote:
-> >> > Sorry, I did not follow what happened to unaligned accesses, but
-> >> > CPU32 family (at least 68340) crashes on unaligned accesses.
-> >>
-> >> We don't seem to have CONFIG_M68340 in arch/m68k/Kconfig.cpu?
-> >
-> > I have a local port here (but based on an ancient linux kernel, 2.6.2 IIRC)
-> 
-> Just to be sure: basically include/asm-m68knommu/unaligned.h has always
-> been wrong (also in 2.6.2), so you had to fix this locally?
+x86/ioapic: Fix NULL pointer dereference on CPU hotplug after disabling irqs
 
-I have just verified, and you are right :
+In current Linux, percpu variable `vector_irq' is not cleared on
+offlined cpus while disabling devices' irqs. If the cpu that has
+the disabled irqs in vector_irq is hotplugged,
+__setup_vector_irq() hits invalid irq vector and may crash.
 
-	include/asm-m68knommu/unaligned.h was wrong in 2.6.2
+This bug can be reproduced as following;
 
-But I did not have to fix it locally.
+  # echo 0 > /sys/devices/system/cpu/cpu7/online
+  # modprobe -r some_driver_using_interrupts      # vector_irq@cpu7 uncleared
+  # echo 1 > /sys/devices/system/cpu/cpu7/online  # kernel may crash
 
-I remember the ppp driver kernel doing by error unaligned accesses
-(of course without using unaligned macros) and crashing my kernel.
-I fixed the error in the ppp driver and the fix went into the
-mainline kernel.
+This patch fixes this bug by clearing vector_irq in
+__clear_irq_vector() even if the cpu is offlined.
 
-I am not aware that unaligned macros were used in the parts of the
-kernel I used on this board.  Just to be sure I made a quick list :
+Signed-off-by: Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: yrl.pp-manager.tt@hitachi.com
+Cc: ltc-kernel@ml.yrl.intra.hitachi.co.jp
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Alexander Gordeev <agordeev@redhat.com>
+Link: http://lkml.kernel.org/r/4FC340BE.7080101@hitachi.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/kernel/apic/io_apic.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-$ find -name \*.o | sed -e 's/\.o$/.c/' | xargs grep t_unaligned 2> /dev/null
-./fs/partitions/msdos.c:#define SYS_IND(p) (get_unaligned(&p->sys_ind))
-./fs/partitions/msdos.c:                   get_unaligned(&p->nr_sects); \
-./fs/partitions/msdos.c:                   get_unaligned(&p->start_sect);      \
-./drivers/net/slhc.c:   put_unaligned(ip_fast_csum(icp, ip->ihl),
-
-I am 100% sure I did not use msdos partitions on that board.  I don't
-know why msdos.c was compiled in.  For the slhc case, I surmise that it
-was not used because its usage depends on some option we did not use.
-
-Best regards
-
-Philippe
-
--- 
-Philippe De Muyter +32 2 6101532 Macq SA rue de l'Aeronef 2 B-1140 Bruxelles
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index ac96561..5f0ff59 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -1195,7 +1195,7 @@ static void __clear_irq_vector(int irq, struct irq_cfg *cfg)
+ 	BUG_ON(!cfg->vector);
+ 
+ 	vector = cfg->vector;
+-	for_each_cpu_and(cpu, cfg->domain, cpu_online_mask)
++	for_each_cpu(cpu, cfg->domain)
+ 		per_cpu(vector_irq, cpu)[vector] = -1;
+ 
+ 	cfg->vector = 0;
+@@ -1203,7 +1203,7 @@ static void __clear_irq_vector(int irq, struct irq_cfg *cfg)
+ 
+ 	if (likely(!cfg->move_in_progress))
+ 		return;
+-	for_each_cpu_and(cpu, cfg->old_domain, cpu_online_mask) {
++	for_each_cpu(cpu, cfg->old_domain) {
+ 		for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS;
+ 								vector++) {
+ 			if (per_cpu(vector_irq, cpu)[vector] != irq)
