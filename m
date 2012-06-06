@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754805Ab2FFHnq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 03:43:46 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:45837 "EHLO
+	id S1754796Ab2FFHoe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 03:44:34 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:45845 "EHLO
 	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751445Ab2FFHno (ORCPT
+	with ESMTP id S1751445Ab2FFHoc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 03:43:44 -0400
-Message-ID: <4FCF088E.7030702@panasas.com>
-Date: Wed, 6 Jun 2012 10:36:46 +0300
+	Wed, 6 Jun 2012 03:44:32 -0400
+Message-ID: <4FCF08BE.3040801@panasas.com>
+Date: Wed, 6 Jun 2012 10:37:34 +0300
 From: Boaz Harrosh <bharrosh@panasas.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
 MIME-Version: 1.0
@@ -74,6 +74,10 @@ On 06/06/2012 10:31 AM, Boaz Harrosh wrote:
 > +		    void __user *buffer, size_t *lenp, loff_t *ppos, )
 > +{
 > +	if (*ctl_table->data) {
+
+
++	if(!*ctl_table->data) {
+
 > +		printk(KERN_WARNING "%s exported in /proc is deprecated\n",
 > +			table->procname);
 > +		*ctl_table->data = 0;
