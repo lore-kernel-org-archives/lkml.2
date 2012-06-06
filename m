@@ -1,365 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753624Ab2FFFAp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 01:00:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54649 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750764Ab2FFFAo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 01:00:44 -0400
-Message-ID: <4FCEE45B.8080800@redhat.com>
-Date: Wed, 06 Jun 2012 13:02:19 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120210 Thunderbird/10.0.1
+	id S1754038Ab2FFFEn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 01:04:43 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38570 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750764Ab2FFFEl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 01:04:41 -0400
+Message-ID: <4FCEE4E0.6030707@vflare.org>
+Date: Tue, 05 Jun 2012 22:04:32 -0700
+From: Nitin Gupta <ngupta@vflare.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: netdev@vger.kernel.org, rusty@rustcorp.com.au,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [net-next RFC PATCH] virtio_net: collect satistics and export
- through ethtool
-References: <20120605083841.11878.69056.stgit@amd-6168-8-1.englab.nay.redhat.com> <20120605101037.GA19834@redhat.com>
-In-Reply-To: <20120605101037.GA19834@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Minchan Kim <minchan@kernel.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>
+Subject: Re: [PATCH 2/2] zram: clean up handle
+References: <1338881031-19662-1-git-send-email-minchan@kernel.org> <1338881031-19662-2-git-send-email-minchan@kernel.org>
+In-Reply-To: <1338881031-19662-2-git-send-email-minchan@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2012 06:10 PM, Michael S. Tsirkin wrote:
-> On Tue, Jun 05, 2012 at 04:38:41PM +0800, Jason Wang wrote:
->> Satistics counters is useful for debugging and performance optimization, so this
->> patch lets virtio_net driver collect following and export them to userspace
->> through "ethtool -S":
->>
->> - number of packets sent/received
->> - number of bytes sent/received
->> - number of callbacks for tx/rx
->> - number of kick for tx/rx
->> - number of bytes/packets queued for tx
->>
->> As virtnet_stats were per-cpu, so both per-cpu and gloabl satistics were exposed
->> like:
->>
->> NIC statistics:
->>       tx_bytes[0]: 2551
->>       tx_packets[0]: 12
->>       tx_kick[0]: 12
->>       tx_callbacks[0]: 1
->>       tx_queued_packets[0]: 12
->>       tx_queued_bytes[0]: 3055
->>       rx_bytes[0]: 0
->>       rx_packets[0]: 0
->>       rx_kick[0]: 0
->>       rx_callbacks[0]: 0
->>       tx_bytes[1]: 5575
->>       tx_packets[1]: 37
->>       tx_kick[1]: 38
->>       tx_callbacks[1]: 0
->>       tx_queued_packets[1]: 38
->>       tx_queued_bytes[1]: 5217
->>       rx_bytes[1]: 4175
->>       rx_packets[1]: 25
->>       rx_kick[1]: 1
->>       rx_callbacks[1]: 16
->>       tx_bytes: 8126
->>       tx_packets: 49
->>       tx_kick: 50
->>       tx_callbacks: 1
->>       tx_queued_packets: 50
->>       tx_queued_bytes: 8272
->>       rx_bytes: 4175
->>       rx_packets: 25
->>       rx_kick: 1
->>       rx_callbacks: 16
->>
->> TODO:
->>
->> - more satistics
->> - unitfy the ndo_get_stats64 and get_ethtool_stats
->> - calculate the pending bytes/pkts
->>
->> Signed-off-by: Jason Wang<jasowang@redhat.com>
->> ---
->>   drivers/net/virtio_net.c |  130 +++++++++++++++++++++++++++++++++++++++++++++-
->>   1 files changed, 127 insertions(+), 3 deletions(-)
->>
->> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
->> index 5214b1e..7ab0cc1 100644
->> --- a/drivers/net/virtio_net.c
->> +++ b/drivers/net/virtio_net.c
->> @@ -41,6 +41,10 @@ module_param(gso, bool, 0444);
->>   #define VIRTNET_SEND_COMMAND_SG_MAX    2
->>   #define VIRTNET_DRIVER_VERSION "1.0.0"
->>
->> +#define VIRTNET_STAT_OFF(m) offsetof(struct virtnet_stats, m)
->> +#define VIRTNET_STAT(stat, i) (*((u64 *)((char *)stat + \
-> What's going on? Why cast to char *?
+On 06/05/2012 12:23 AM, Minchan Kim wrote:
 
-It's used to let the pointer advance at the unit of bytes instead of the 
-whole stat strcuture.
->> +			       virtnet_stats_str_attr[i].stat_offset)))
-> These are confusing unless you see what virtnet_stats_str_attr
-> is so please move them near that definition.
+> zram's handle variable can store handle of zsmalloc in case of
+> compressing efficiently. Otherwise, it stores point of page descriptor.
+> This patch clean up the mess by union struct.
+> 
+> changelog
+>   * from v1
+> 	- none(new add in v2)
+> 
+> Cc: Nitin Gupta <ngupta@vflare.org>
+> Acked-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+> Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> ---
+>  drivers/staging/zram/zram_drv.c |   77 ++++++++++++++++++++-------------------
+>  drivers/staging/zram/zram_drv.h |    5 ++-
+>  2 files changed, 44 insertions(+), 38 deletions(-)
+> 
 
-ok.
->> +
->>   struct virtnet_stats {
->>   	struct u64_stats_sync syncp;
->>   	u64 tx_bytes;
->> @@ -48,8 +52,33 @@ struct virtnet_stats {
->>
->>   	u64 rx_bytes;
->>   	u64 rx_packets;
->> +
->> +	u64 tx_kick;
->> +	u64 rx_kick;
->> +	u64 tx_callbacks;
->> +	u64 rx_callbacks;
->> +	u64 tx_queued_packets;
->> +	u64 tx_queued_bytes;
->> +};
-> I have an idea (not a must): why don't we simply create an enum
-> enum virtnet_stats {
-> 	VIRTNET_TX_KICK,
-> 	VIRTNET_RX_KICK,
-> 	....
-> 	VIRTNET_MAX_STAT,
-> }
->
->
-> now stats can just do
-> 	stats->data[VIRTNET_RX_KICK] instead of stats->rx_kick
-> which is not a big problem, but copying them in bulk
-> becomes straight-forward, no need for macros at all.
->
-> If we decide to do this, needs to be a separate patch,
-> then this one on top.
 
-Make sense, would do this.
->> +
->> +static struct {
-> static const.
->
->> +	char string[ETH_GSTRING_LEN];
->> +	int stat_offset;
->> +} virtnet_stats_str_attr[] = {
->> +	{ "tx_bytes", VIRTNET_STAT_OFF(tx_bytes)},
->> +	{ "tx_packets", VIRTNET_STAT_OFF(tx_packets)},
->> +	{ "tx_kick", VIRTNET_STAT_OFF(tx_kick)},
->> +	{ "tx_callbacks", VIRTNET_STAT_OFF(tx_callbacks)},
->> +	{ "tx_queued_packets", VIRTNET_STAT_OFF(tx_queued_packets)},
->> +	{ "tx_queued_bytes", VIRTNET_STAT_OFF(tx_queued_bytes)},
->> +	{ "rx_bytes" , VIRTNET_STAT_OFF(rx_bytes)},
->> +	{ "rx_packets", VIRTNET_STAT_OFF(rx_packets)},
->> +	{ "rx_kick", VIRTNET_STAT_OFF(rx_kick)},
->> +	{ "rx_callbacks", VIRTNET_STAT_OFF(rx_callbacks)},
-> VIRTNET_STAT_OFF does not save much here, but if you are after
-> saving characters then make the macro instanciate the string
-> as well.
->
->>   };
->>
->> +#define VIRTNET_NUM_STATS ARRAY_SIZE(virtnet_stats_str_attr)
->> +
-> if you pass virtnet_stats_str_attr to VIRTNET_STAT macro,
-> then it's explicit and VIRTNET_NUM_STATS won't be needed either.
+I think page vs handle distinction was added since xvmalloc could not
+handle full page allocation. Now that zsmalloc allows full page
+allocation, we can just use it for both cases. This would also allow
+removing the ZRAM_UNCOMPRESSED flag. The only downside will be slightly
+slower code path for full page allocation but this event is anyways
+supposed to be rare, so should be fine.
 
-It's used to report the number of satistics through .get_sset_count.
->
->>   struct virtnet_info {
->>   	struct virtio_device *vdev;
->>   	struct virtqueue *rvq, *svq, *cvq;
->> @@ -142,6 +171,11 @@ static struct page *get_a_page(struct virtnet_info *vi, gfp_t gfp_mask)
->>   static void skb_xmit_done(struct virtqueue *svq)
->>   {
->>   	struct virtnet_info *vi = svq->vdev->priv;
->> +	struct virtnet_stats *stats = this_cpu_ptr(vi->stats);
->> +
->> +	u64_stats_update_begin(&stats->syncp);
->> +	stats->tx_callbacks++;
->> +	u64_stats_update_end(&stats->syncp);
->>
->>   	/* Suppress further interrupts. */
->>   	virtqueue_disable_cb(svq);
->> @@ -461,6 +495,7 @@ static bool try_fill_recv(struct virtnet_info *vi, gfp_t gfp)
->>   {
->>   	int err;
->>   	bool oom;
->> +	struct virtnet_stats *stats = this_cpu_ptr(vi->stats);
->>
->>   	do {
->>   		if (vi->mergeable_rx_bufs)
->> @@ -477,13 +512,24 @@ static bool try_fill_recv(struct virtnet_info *vi, gfp_t gfp)
->>   	} while (err>  0);
->>   	if (unlikely(vi->num>  vi->max))
->>   		vi->max = vi->num;
->> -	virtqueue_kick(vi->rvq);
->> +	if (virtqueue_kick_prepare(vi->rvq)) {
->> +		virtqueue_notify(vi->rvq);
->> +		u64_stats_update_begin(&stats->syncp);
->> +		stats->rx_kick++;
->> +		u64_stats_update_end(&stats->syncp);
->> +	}
->>   	return !oom;
->>   }
->>
->>   static void skb_recv_done(struct virtqueue *rvq)
->>   {
->>   	struct virtnet_info *vi = rvq->vdev->priv;
->> +	struct virtnet_stats *stats = this_cpu_ptr(vi->stats);
->> +
->> +	u64_stats_update_begin(&stats->syncp);
->> +	stats->rx_callbacks++;
->> +	u64_stats_update_end(&stats->syncp);
->> +
->>   	/* Schedule NAPI, Suppress further interrupts if successful. */
->>   	if (napi_schedule_prep(&vi->napi)) {
->>   		virtqueue_disable_cb(rvq);
->> @@ -626,7 +672,9 @@ static int xmit_skb(struct virtnet_info *vi, struct sk_buff *skb)
->>   static netdev_tx_t start_xmit(struct sk_buff *skb, struct net_device *dev)
->>   {
->>   	struct virtnet_info *vi = netdev_priv(dev);
->> +	struct virtnet_stats *stats = this_cpu_ptr(vi->stats);
->>   	int capacity;
->> +	bool kick;
->>
->>   	/* Free up any pending old buffers before queueing new ones. */
->>   	free_old_xmit_skbs(vi);
->> @@ -651,7 +699,17 @@ static netdev_tx_t start_xmit(struct sk_buff *skb, struct net_device *dev)
->>   		kfree_skb(skb);
->>   		return NETDEV_TX_OK;
->>   	}
->> -	virtqueue_kick(vi->svq);
->> +
->> +	kick = virtqueue_kick_prepare(vi->svq);
->> +	if (kick)
-> probably
-> 	 if (unlikely(kick))
->
->> +		virtqueue_notify(vi->svq);
->> +
->> +	u64_stats_update_begin(&stats->syncp);
->> +	if (kick)
-> this too
->
->> +		stats->tx_kick++;
->> +	stats->tx_queued_bytes += skb->len;
->> +	stats->tx_queued_packets++;
->> +	u64_stats_update_end(&stats->syncp);
->>
->>   	/* Don't wait up for transmitted skbs to be freed. */
->>   	skb_orphan(skb);
->> @@ -926,7 +984,6 @@ static void virtnet_get_ringparam(struct net_device *dev,
->>
->>   }
->>
->> -
->>   static void virtnet_get_drvinfo(struct net_device *dev,
->>   				struct ethtool_drvinfo *info)
->>   {
->> @@ -939,10 +996,77 @@ static void virtnet_get_drvinfo(struct net_device *dev,
->>
->>   }
->>
->> +static void virtnet_get_strings(struct net_device *dev, u32 stringset, u8 *buf)
->> +{
->> +	int i, cpu;
->> +	switch (stringset) {
->> +	case ETH_SS_STATS:
->> +		for_each_possible_cpu(cpu)
->> +			for (i = 0; i<  VIRTNET_NUM_STATS; i++) {
->> +				sprintf(buf, "%s[%u]",
->> +					virtnet_stats_str_attr[i].string, cpu);
->> +				buf += ETH_GSTRING_LEN;
->> +			}
->> +		for (i = 0; i<  VIRTNET_NUM_STATS; i++) {
->> +			memcpy(buf, virtnet_stats_str_attr[i].string,
->> +				ETH_GSTRING_LEN);
->> +			buf += ETH_GSTRING_LEN;
->> +		}
->> +		break;
->> +	}
->> +}
->> +
->> +static int virtnet_get_sset_count(struct net_device *dev, int sset)
->> +{
->> +	switch (sset) {
->> +	case ETH_SS_STATS:
->> +		return VIRTNET_NUM_STATS * (num_online_cpus() + 1);
-> This will allocate buffers for online cpus only, but the above
-> will fill them in for all possible cpus.
-> Will this overrun some buffer?
->
+I should have discussed this earlier and saved you a lot of effort!
 
-Yes, a typo here, should be num_possible_cpus().
-Thanks
->> +	default:
->> +		return -EOPNOTSUPP;
->> +	}
->> +}
->> +
->> +static void virtnet_get_ethtool_stats(struct net_device *dev,
->> +				struct ethtool_stats *stats, u64 *buf)
-> The coding style says
-> 	Descendants are always substantially shorter than the parent and
-> 	are placed substantially to the right.
->
-> you can't call it substantially to the right if it's to the left of
-> the opening '('  :), so please indent it aligning on the opening.
+Thanks,
+Nitin
 
-Looks like something wrong in my emacs c-style confiugration, would 
-check it.
->> +{
->> +	struct virtnet_info *vi = netdev_priv(dev);
->> +	int cpu, i;
->> +	unsigned int start;
->> +	struct virtnet_stats sample, total;
->> +
->> +	memset(&total, 0, sizeof(total));
->> +	memset(&sample, 0, sizeof(sample));
->> +
->> +	for_each_possible_cpu(cpu) {
->> +		struct virtnet_stats *stats = per_cpu_ptr(vi->stats, cpu);
->> +		do {
->> +			start = u64_stats_fetch_begin(&stats->syncp);
->> +			for (i = 0; i<  VIRTNET_NUM_STATS; i++) {
->> +				VIRTNET_STAT(&sample, i) =
->> +					VIRTNET_STAT(stats, i);
-> when you feel the need to break lines like this - don't :)
-> use an inline function instead.
->
->> +
-> kill empty line here
->> +			}
-> don't put {} around single statements pls.
+> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+> index abd69d1..ceab5ca 100644
+> --- a/drivers/staging/zram/zram_drv.c
+> +++ b/drivers/staging/zram/zram_drv.c
+> @@ -150,7 +150,7 @@ static void zram_free_page(struct zram *zram, size_t index)
+>  	}
+>  
+>  	if (unlikely(zram_test_flag(zram, index, ZRAM_UNCOMPRESSED))) {
+> -		__free_page((struct page *)handle);
+> +		__free_page(zram->table[index].page);
+>  		zram_clear_flag(zram, index, ZRAM_UNCOMPRESSED);
+>  		zram_stat_dec(&zram->stats.pages_expand);
+>  		goto out;
+> @@ -189,7 +189,7 @@ static void handle_uncompressed_page(struct zram *zram, struct bio_vec *bvec,
+>  	unsigned char *user_mem, *cmem;
+>  
+>  	user_mem = kmap_atomic(page);
+> -	cmem = kmap_atomic((struct page *)zram->table[index].handle);
+> +	cmem = kmap_atomic(zram->table[index].page);
+>  
+>  	memcpy(user_mem + bvec->bv_offset, cmem + offset, bvec->bv_len);
+>  	kunmap_atomic(cmem);
+> @@ -315,7 +315,6 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+>  			   int offset)
+>  {
+>  	int ret;
+> -	u32 store_offset;
+>  	size_t clen;
+>  	unsigned long handle;
+>  	struct zobj_header *zheader;
+> @@ -396,25 +395,33 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+>  			goto out;
+>  		}
+>  
+> -		store_offset = 0;
+> -		zram_set_flag(zram, index, ZRAM_UNCOMPRESSED);
+> -		zram_stat_inc(&zram->stats.pages_expand);
+> -		handle = (unsigned long)page_store;
+>  		src = kmap_atomic(page);
+>  		cmem = kmap_atomic(page_store);
+> -		goto memstore;
+> -	}
+> +		memcpy(cmem, src, clen);
+> +		kunmap_atomic(cmem);
+> +		kunmap_atomic(src);
+>  
+> -	handle = zs_malloc(zram->mem_pool, clen + sizeof(*zheader));
+> -	if (!handle) {
+> -		pr_info("Error allocating memory for compressed "
+> -			"page: %u, size=%zu\n", index, clen);
+> -		ret = -ENOMEM;
+> -		goto out;
+> -	}
+> -	cmem = zs_map_object(zram->mem_pool, handle);
+> +		zram->table[index].page = page_store;
+> +		zram->table[index].size = PAGE_SIZE;
+> +
+> +		zram_set_flag(zram, index, ZRAM_UNCOMPRESSED);
+> +		zram_stat_inc(&zram->stats.pages_expand);
+> +	} else {
+> +		handle = zs_malloc(zram->mem_pool, clen + sizeof(*zheader));
+> +		if (!handle) {
+> +			pr_info("Error allocating memory for "
+> +				"compressed page: %u, size=%zu\n", index, clen);
+> +			ret = -ENOMEM;
+> +			goto out;
+> +		}
+> +
+> +		zram->table[index].handle = handle;
+> +		zram->table[index].size = clen;
+>  
+> -memstore:
+> +		cmem = zs_map_object(zram->mem_pool, handle);
+> +		memcpy(cmem, src, clen);
+> +		zs_unmap_object(zram->mem_pool, handle);
+> +	}
+>  #if 0
+>  	/* Back-reference needed for memory defragmentation */
+>  	if (!zram_test_flag(zram, index, ZRAM_UNCOMPRESSED)) {
+> @@ -424,18 +431,6 @@ memstore:
+>  	}
+>  #endif
+>  
+> -	memcpy(cmem, src, clen);
+> -
+> -	if (unlikely(zram_test_flag(zram, index, ZRAM_UNCOMPRESSED))) {
+> -		kunmap_atomic(cmem);
+> -		kunmap_atomic(src);
+> -	} else {
+> -		zs_unmap_object(zram->mem_pool, handle);
+> -	}
+> -
+> -	zram->table[index].handle = handle;
+> -	zram->table[index].size = clen;
+> -
+>  	/* Update stats */
+>  	zram_stat64_add(zram, &zram->stats.compr_size, clen);
+>  	zram_stat_inc(&zram->stats.pages_stored);
+> @@ -580,6 +575,8 @@ error:
+>  void __zram_reset_device(struct zram *zram)
+>  {
+>  	size_t index;
+> +	unsigned long handle;
+> +	struct page *page;
+>  
+>  	zram->init_done = 0;
+>  
+> @@ -592,14 +589,17 @@ void __zram_reset_device(struct zram *zram)
+>  
+>  	/* Free all pages that are still in this zram device */
+>  	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
+> -		unsigned long handle = zram->table[index].handle;
+> -		if (!handle)
+> -			continue;
+> -
+> -		if (unlikely(zram_test_flag(zram, index, ZRAM_UNCOMPRESSED)))
+> -			__free_page((struct page *)handle);
+> -		else
+> +		if (unlikely(zram_test_flag(zram, index, ZRAM_UNCOMPRESSED))) {
+> +			page = zram->table[index].page;
+> +			if (!page)
+> +				continue;
+> +			__free_page(page);
+> +		} else {
+> +			handle = zram->table[index].handle;
+> +			if (!handle)
+> +				continue;
+>  			zs_free(zram->mem_pool, handle);
+> +		}
+>  	}
+>  
+>  	vfree(zram->table);
+> @@ -788,6 +788,9 @@ static int __init zram_init(void)
+>  {
+>  	int ret, dev_id;
+>  
+> +	BUILD_BUG_ON(sizeof(((struct table *)0)->page) !=
+> +		sizeof(((struct table *)0)->handle));
+> +
+>  	if (num_devices > max_num_devices) {
+>  		pr_warning("Invalid value for num_devices: %u\n",
+>  				num_devices);
+> diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
+> index 7a7e256..54d082f 100644
+> --- a/drivers/staging/zram/zram_drv.h
+> +++ b/drivers/staging/zram/zram_drv.h
+> @@ -81,7 +81,10 @@ enum zram_pageflags {
+>  
+>  /* Allocated for each disk page */
+>  struct table {
+> -	unsigned long handle;
+> +	union {
+> +		unsigned long handle; /* compressible */
+> +		struct page *page; /* incompressible */
+> +	};
+>  	u16 size;	/* object size (excluding header) */
+>  	u8 count;	/* object ref count (not yet used) */
+>  	u8 flags;
 
-Sure
->> +		} while (u64_stats_fetch_retry(&stats->syncp, start));
->> +		for (i = 0; i<  VIRTNET_NUM_STATS; i++) {
->> +			*buf = VIRTNET_STAT(&sample, i);
->> +			VIRTNET_STAT(&total, i) += VIRTNET_STAT(stats, i);
->> +			buf++;
->> +		}
->> +	}
->> +
->> +	for (i = 0; i<  VIRTNET_NUM_STATS; i++) {
->> +		*buf = VIRTNET_STAT(&total, i);
->> +		buf++;
->> +	}
->> +}
->> +
->>   static const struct ethtool_ops virtnet_ethtool_ops = {
->>   	.get_drvinfo = virtnet_get_drvinfo,
->>   	.get_link = ethtool_op_get_link,
->>   	.get_ringparam = virtnet_get_ringparam,
->> +	.get_ethtool_stats = virtnet_get_ethtool_stats,
->> +	.get_strings = virtnet_get_strings,
->> +	.get_sset_count = virtnet_get_sset_count,
->>   };
->>
->>   #define MIN_MTU 68
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
