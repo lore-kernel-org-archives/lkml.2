@@ -1,98 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757306Ab2FFQPc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 12:15:32 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40659 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756723Ab2FFQPb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 12:15:31 -0400
-Date: Wed, 6 Jun 2012 09:15:18 -0700
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-ID: <tip-l4gkfnivwv4yi5mqxjlovymx@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf/x86: Fix wrmsrl() debug wrapper
-Git-Commit-ID: 1c2ac3fde3e35279958e7b0408e2dcf866465301
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1757322Ab2FFQQN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 12:16:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64979 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754155Ab2FFQQM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 12:16:12 -0400
+Date: Wed, 6 Jun 2012 12:15:44 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        linux-fsdevel@vger.kernel.org,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: write-behind on streaming writes
+Message-ID: <20120606161544.GA8133@redhat.com>
+References: <20120529155759.GA11326@localhost>
+ <CA+55aFykFaBhzzEyRYWRS9Qoy_q_R65Cuth7=XvfOZEMqjn6=w@mail.gmail.com>
+ <20120530032129.GA7479@localhost>
+ <20120605172302.GB28556@redhat.com>
+ <20120605174157.GC28556@redhat.com>
+ <20120605184853.GD28556@redhat.com>
+ <20120605201045.GE28556@redhat.com>
+ <20120606025729.GA1197@redhat.com>
+ <CA+55aFyxucvhYhbk0yyNa1WSeYXgHHAyWRHPNWDwODQhyAWGww@mail.gmail.com>
+ <20120606121408.GB4934@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 06 Jun 2012 09:15:24 -0700 (PDT)
+In-Reply-To: <20120606121408.GB4934@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1c2ac3fde3e35279958e7b0408e2dcf866465301
-Gitweb:     http://git.kernel.org/tip/1c2ac3fde3e35279958e7b0408e2dcf866465301
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Mon, 14 May 2012 15:25:34 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 6 Jun 2012 17:23:22 +0200
+On Wed, Jun 06, 2012 at 08:14:08AM -0400, Vivek Goyal wrote:
 
-perf/x86: Fix wrmsrl() debug wrapper
+[..]
+> I think it is happening because sync_file_range() will send all
+> the writes as SYNC and it will compete with firefox IO. On the other
+> hand, flusher's IO will show up as ASYNC and CFQ  will be penalize it
+> heavily and firefox's IO will be prioritized. And this effect should
+> just get worse as more processes do sync_file_range().
 
-Move the wrmslr() debug wrapper to the common header now that all the
-include games are gone. Also clean it up a bit to avoid multiple
-evaluation of the argument.
+Ok, this time I tried the same test again but with 4 processes doing
+writes in parallel on 4 different files.
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-l4gkfnivwv4yi5mqxjlovymx@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/cpu/perf_event.c |   11 -----------
- arch/x86/kernel/cpu/perf_event.h |   12 ++++++++++++
- 2 files changed, 12 insertions(+), 11 deletions(-)
+And with sync_file_range() things turned ugly. Interactivity was very poor. 
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index c4706cf..43c2017 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -35,17 +35,6 @@
- 
- #include "perf_event.h"
- 
--#if 0
--#undef wrmsrl
--#define wrmsrl(msr, val) 					\
--do {								\
--	trace_printk("wrmsrl(%lx, %lx)\n", (unsigned long)(msr),\
--			(unsigned long)(val));			\
--	native_write_msr((msr), (u32)((u64)(val)), 		\
--			(u32)((u64)(val) >> 32));		\
--} while (0)
--#endif
--
- struct x86_pmu x86_pmu __read_mostly;
- 
- DEFINE_PER_CPU(struct cpu_hw_events, cpu_hw_events) = {
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 7241e2f..23b5710 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -14,6 +14,18 @@
- 
- #include <linux/perf_event.h>
- 
-+#if 0
-+#undef wrmsrl
-+#define wrmsrl(msr, val) 						\
-+do {									\
-+	unsigned int _msr = (msr);					\
-+	u64 _val = (val);						\
-+	trace_printk("wrmsrl(%x, %Lx)\n", (unsigned int)(_msr),		\
-+			(unsigned long long)(_val));			\
-+	native_write_msr((_msr), (u32)(_val), (u32)(_val >> 32));	\
-+} while (0)
-+#endif
-+
- /*
-  *          |   NHM/WSM    |      SNB     |
-  * register -------------------------------
+firefox launch test took around 1m:45s with sync_file range() while it
+took only about 35seconds with regular flusher threads.
+
+So sending writeback IO synchronously wreaks havoc.
+
+Thanks
+Vivek
