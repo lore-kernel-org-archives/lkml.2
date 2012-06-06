@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758470Ab2FFVCj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 17:02:39 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:49602 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758447Ab2FFVCf (ORCPT
+	id S1758414Ab2FFVKh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 17:10:37 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:48826 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753651Ab2FFVKf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 17:02:35 -0400
-Date: Wed, 6 Jun 2012 16:55:23 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: "Liu, Jinsong" <jinsong.liu@intel.com>
-Cc: Borislav Petkov <bp@amd64.org>, "Luck, Tony" <tony.luck@intel.com>,
-        "'xen-devel@lists.xensource.com'" <xen-devel@lists.xensource.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] xen/mce: Add mcelog support for Xen platform
-Message-ID: <20120606205523.GA10891@phenom.dumpdata.com>
-References: <DE8DF0795D48FD4CA783C40EC82923351FEE7C@SHSMSX101.ccr.corp.intel.com>
+	Wed, 6 Jun 2012 17:10:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <DE8DF0795D48FD4CA783C40EC82923351FEE7C@SHSMSX101.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <20120512001754.GF14782@lizard>
+References: <20120512001506.GA8653@lizard>
+	<20120512001754.GF14782@lizard>
+Date: Wed, 6 Jun 2012 14:10:34 -0700
+X-Google-Sender-Auth: UX2qVn_4f4sO0QwczcWm3sb8P8M
+Message-ID: <CAMbhsRTi2Gkk+CgRdcuQRU6f3SO51bqPt8o_+JDpTuXjkDf64Q@mail.gmail.com>
+Subject: Re: [PATCH 06/11] persistent_ram: Make it possible to use memory
+ outside of bootmem
+From: Colin Cross <ccross@android.com>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
+        John Stultz <john.stultz@linaro.org>, arve@android.com,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 31, 2012 at 12:57:44PM +0000, Liu, Jinsong wrote:
-> >From 1a7951d6ca01d7f2c9dd2bdb6de5f8e7fdcb8bbd Mon Sep 17 00:00:00 2001
-> From: root <root@ljsromley.bj.intel.com>
-> Date: Fri, 1 Jun 2012 03:12:51 +0800
-> Subject: [PATCH 1/2] xen/mce: Add mcelog support for Xen platform
-> 
-> When MCA error occurs, it would be handled by Xen hypervisor first,
-> and then the error information would be sent to initial domain for logging.
-> 
-> This patch gets error information from Xen hypervisor and convert
-> Xen format error into Linux format mcelog. This logic is basically
-> self-contained, not touching other kernel components.
-> 
-> By using tools like mcelog tool users could read specific error information,
-> like what they did under native Linux.
-> 
-> To test follow directions outlined in Documentation/acpi/apei/einj.txt
+On Fri, May 11, 2012 at 5:17 PM, Anton Vorontsov
+<anton.vorontsov@linaro.org> wrote:
+> This includes devices' memory (e.g. framebuffers or memory mapped
+> EEPROMs on a local bus), as well as the normal RAM that we don't use
+> for the main memory.
+>
+> For the normal (but unused) ram we could use kmaps, but this assumes
+> highmem support, so we don't bother and just use the memory via
+> ioremap.
+>
+> As a side effect, the following hack is possible: when used together
+> with pstore_ram (new ramoops) module, we can limit the normal RAM region
+> with mem= and then point ramoops to use the rest of the memory, e.g.
+>
+>        mem=128M ramoops.mem_address=0x8000000
+>
+> Sure, we could just reserve the region with memblock_reserve() early in
+> the arch/ code, and then register a pstore_ram platform device pointing
+> to the reserved region. It's still a viable option if platform wants
+> to do so.
+>
+> Also, we might want to use IO accessors in case of a real device,
+> but for now we don't bother (the old ramoops wasn't using it either, so
+> at least we don't make things worse).
 
-[   53.264610] switch: port 1(eth0) entered forwarding state
-[ 1058.051938] BUG: sleeping function called from invalid context at /home/konrad/linux/include/linux/kernel.h:199
-[ 1058.052066] in_atomic(): 1, irqs_disabled(): 0, pid: 4552, name: mcelog
-[ 1058.052130] Pid: 4552, comm: mcelog Tainted: G           O 3.5.0-rc1upstream-00041-ga16e594-dirty #2
-[ 1058.052235] Call Trace:
-[ 1058.052291]  [<ffffffff8109ad9a>] __might_sleep+0xda/0x100
-[ 1058.052349]  [<ffffffff8132a55b>] xen_mce_chrdev_read+0xab/0x140
-[ 1058.052408]  [<ffffffff81148d85>] vfs_read+0xc5/0x190
-[ 1058.052461]  [<ffffffff81148f4c>] sys_read+0x4c/0x90
-[ 1058.052515]  [<ffffffff815bdd79>] system_call_fastpath+0x16/0x1
-
-?
+This is long merged, but I remembered why I moved away from using
+ioremap.  The current code uses atomics to track the ringbuffer
+positions, which results in ldrex and strex instructions on ARM.
+ldrex and strex on memory that is mapped as Device memory (which is
+what ioremap maps as) is implementation defined, and is unpredictable
+at the architecture level.
