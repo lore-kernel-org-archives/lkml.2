@@ -1,79 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759024Ab2FFWjJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 18:39:09 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:41045 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758916Ab2FFWjI convert rfc822-to-8bit (ORCPT
+	id S1756991Ab2FFWqz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 18:46:55 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:38378 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750994Ab2FFWqy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 18:39:08 -0400
+	Wed, 6 Jun 2012 18:46:54 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120606194233.GA1537@redhat.com>
-References: <20120603223617.GB7707@redhat.com> <CA+55aFwCusEdMq3_3TAXSZ=+kbN7H6AbnngVaagAZw=ZpicckQ@mail.gmail.com>
- <20120603231709.GP30000@ZenIV.linux.org.uk> <20120603232820.GQ30000@ZenIV.linux.org.uk>
- <20120606194233.GA1537@redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 6 Jun 2012 15:38:46 -0700
-X-Google-Sender-Auth: XiLrJYrLOHBRFaCJQuzc_dPExXk
-Message-ID: <CA+55aFwxFVLPk4-dp73uccKXepKwjpGFgh0NW1u8d0zYzr=hBA@mail.gmail.com>
-Subject: Re: processes hung after sys_renameat, and 'missing' processes
-To: Dave Jones <davej@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>, Jan Kara <jack@suse.cz>
+Date: Wed, 6 Jun 2012 22:46:52 +0000
+Message-ID: <CA+Z7AcYDcZiAxPr+Au8PKoNzoT6G_0F0dAn75nb9ktXp9kBf9g@mail.gmail.com>
+Subject: [PATCH] change lock model in aio_put_req
+From: mihailov ivan <mihailov.iaa@gmail.com>
+To: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So what filesystem is this?
+Why used spin_lock/unlock_irq instead of
+spin_lock_irqsave/spin_unlock_irqrestore?
+__aio_put_req it's interrupt safe call but why aio_put_req not?
 
-It really looks like something has left i_mutex locked on a directory,
-but I'm for the life of me not seeing it. There are lookup changes
-mainly by Miklos, but they don't seem to change the i_mutex locking.
+simply if I'll do some kind of this code:
 
-They do change some other things, though. In particular, I mislike the
-last patch in that series ("vfs: retry last component if opening stale
-dentry"), which does the whole "save_parent" thing. There's a few
-things that look odd there, and I don't like this code, for example:
+spin_lock_irqsave(&lock, flags);
+--some functions 1--
+aio_put_req(aiocb);
+--some functions 2--
+spin_unlock_irqrestore(&lock, flags);
 
-+               save_parent.dentry = nd->path.dentry;
-+               save_parent.mnt = mntget(path->mnt);
-+               nd->path.dentry = path->dentry;
-...
-+               path_put(&save_parent);
+On aio_put_req we unlock all interrupts...
+And after that 'some functions 2' unsafe now.
 
-whete there isn't a dget() on the dentry (but path_put() will do a
-dput() on it). I'm guessing it's because we lose a refcount to it when
-we overwrite nd->path.dentry, but why isn't there a dget() on *that*
-one? The patch just makes me nervous. Miklos, can you explain more?
-The interactions with "path_put_conditional()" makes me extra nervous.
+Or this call work as designed?
+If not I have smally patchset for that.
 
-I'm also adding Jan, since he changed the i_mutex rules for the quota
-files. That should be totally immaterial, but just the fact that it
-touches i_mutex makes me want to hear more. Maybe there's some path
-that had a lock, the unlock got deleted, and inode information ended
-up leaking through the slab caches or something insane like that.
 
-The lock output doesn't tell me anything new, except that yes, once
-more people are waiting for a directory mutex, or waiting for the
-rename mutex that is held by another process waiting for the directory
-mutex.
-
-Anybody see any i_mutex changes I missed?
-
-                Linus
-
-On Wed, Jun 6, 2012 at 12:42 PM, Dave Jones <davej@redhat.com> wrote:
->
-> Just hit this again on a different box, though this time the stack traces
-> of the stuck processes seems to vary between fchmod/fchown/getdents calls.
->
-> partial dmesg at http://fpaste.org/jBVM/
-> sysrq-w: http://fpaste.org/uYtj/
-> sysrq-d: http://fpaste.org/Xxur/
->
-> does this give any new clues that the previous traces didn't ?
->
->        Dave
->
+--- /usr/src/linux/fs/aio.c	2011-07-22 02:17:23.000000000 +0000
++++ aio.c	2012-06-07 01:12:33.737299121 +0000
+@@ -581,10 +581,10 @@
+ int aio_put_req(struct kiocb *req)
+ {
+ 	struct kioctx *ctx = req->ki_ctx;
+-	int ret;
+-	spin_lock_irq(&ctx->ctx_lock);
++	int ret, flags;
++	spin_lock_irqsave(&ctx->ctx_lock, flags);
+ 	ret = __aio_put_req(ctx, req);
+-	spin_unlock_irq(&ctx->ctx_lock);
++	spin_unlock_irqrestore(&ctx->ctx_lock, flags);
+ 	return ret;
+ }
+ EXPORT_SYMBOL(aio_put_req);
