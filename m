@@ -1,77 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754835Ab2FFIW1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 04:22:27 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:54512 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750862Ab2FFIWY (ORCPT
+	id S1752099Ab2FFIWl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 04:22:41 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:33098 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754839Ab2FFIWg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 04:22:24 -0400
-Subject: Re: [V2 RFC net-next PATCH 1/2] virtio_net: convert the statistics
- into array
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: netdev@vger.kernel.org, rusty@rustcorp.com.au,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, mst@redhat.com
-In-Reply-To: <20120606075208.29081.75284.stgit@amd-6168-8-1.englab.nay.redhat.com>
-References: <20120606075208.29081.75284.stgit@amd-6168-8-1.englab.nay.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 06 Jun 2012 10:22:19 +0200
-Message-ID: <1338970939.2760.3887.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 6 Jun 2012 04:22:36 -0400
+Date: Wed, 6 Jun 2012 10:22:31 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [PATCH 4/8] x86: apic: Factor out default
+ vector_allocation_domain() operations
+Message-ID: <20120606082231.GD5991@gmail.com>
+References: <20120605112353.GA11457@dhcp-26-207.brq.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120605112353.GA11457@dhcp-26-207.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-06-06 at 15:52 +0800, Jason Wang wrote:
-> Currently, we store the statistics in the independent fields of virtnet_stats,
-> this is not scalable when we want to add more counters. As suggested by Michael,
-> this patch convert it to an array and use the enum as the index to access them.
-> 
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
+
+* Alexander Gordeev <agordeev@redhat.com> wrote:
+
+> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
 > ---
->  drivers/net/virtio_net.c |   30 +++++++++++++++++-------------
->  1 files changed, 17 insertions(+), 13 deletions(-)
-> 
+>  arch/x86/include/asm/apic.h           |   21 +++++++++++++++++++++
+>  arch/x86/include/asm/x2apic.h         |    9 ---------
+>  arch/x86/kernel/apic/apic_flat_64.c   |   22 +---------------------
+>  arch/x86/kernel/apic/apic_noop.c      |    3 +--
+>  arch/x86/kernel/apic/apic_numachip.c  |    8 +-------
+>  arch/x86/kernel/apic/bigsmp_32.c      |    8 +-------
+>  arch/x86/kernel/apic/es7000_32.c      |   19 ++-----------------
+>  arch/x86/kernel/apic/numaq_32.c       |   16 +---------------
+>  arch/x86/kernel/apic/probe_32.c       |   17 +----------------
+>  arch/x86/kernel/apic/summit_32.c      |   16 +---------------
+>  arch/x86/kernel/apic/x2apic_cluster.c |    2 +-
+>  arch/x86/kernel/apic/x2apic_phys.c    |    2 +-
+>  arch/x86/kernel/apic/x2apic_uv_x.c    |    8 +-------
+>  13 files changed, 33 insertions(+), 118 deletions(-)
 
->  struct virtnet_stats {
->  	struct u64_stats_sync syncp;
-> -	u64 tx_bytes;
-> -	u64 tx_packets;
-> -
-> -	u64 rx_bytes;
-> -	u64 rx_packets;
-> +	u64 data[VIRTNET_NUM_STATS];
->  };
->  
+Nice cleanups.
 
-Interesting, but I fear you'll have a lot of problems.
+This one didn't apply due to the following fresh patch in -tip:
 
-Current code is buggy, and you are adding more possible races.
+0b8255e660a0 x86/x2apic/cluster: Use all the members of one cluster specified in the smp_affinity 
 
-We could have one cpu doing the :
+So I applied the first three to tip:x86/apic, mind sending the 
+remaining 4 patches on top of -tip?
 
-       u64_stats_update_begin(&stats->syncp);
-       stats->rx_bytes += skb->len;
-       stats->rx_packets++;
-       u64_stats_update_end(&stats->syncp);
+Thanks,
 
-And another one doing :
-
-       u64_stats_update_begin(&stats->syncp);
-       stats->tx_bytes += skb->len;
-       stats->tx_packets++;
-       u64_stats_update_end(&stats->syncp);
- 
-And one syncp sequence increment can be lost, since both cpus are
-basically doing this at the same time :
-
-    write_seqcount_begin(&syncp->seq);
-
-I'll send a fix in a separate thread.
-
-
-
+	Ingo
