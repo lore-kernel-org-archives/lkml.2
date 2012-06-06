@@ -1,296 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756079Ab2FFKzw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 06:55:52 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:45499 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755909Ab2FFKye (ORCPT
+	id S1756100Ab2FFK4H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 06:56:07 -0400
+Received: from mail-pb0-f66.google.com ([209.85.160.66]:44134 "EHLO
+	mail-pb0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755899Ab2FFK4E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 06:54:34 -0400
-From: Sasha Levin <levinsasha928@gmail.com>
-To: konrad.wilk@oracle.com, dan.magenheimer@oracle.com
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: [PATCH 08/11] mm: frontswap: add tracing support
-Date: Wed,  6 Jun 2012 12:55:12 +0200
-Message-Id: <1338980115-2394-8-git-send-email-levinsasha928@gmail.com>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1338980115-2394-1-git-send-email-levinsasha928@gmail.com>
-References: <1338980115-2394-1-git-send-email-levinsasha928@gmail.com>
+	Wed, 6 Jun 2012 06:56:04 -0400
+Date: Wed, 6 Jun 2012 18:55:52 +0800
+From: Wanpeng Li <liwp.linux@gmail.com>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, Rob Landley <rob@landley.net>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "Eric W.Biederman" <ebiederm@xmission.com>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        "David S. Miller" <davem@davemloft.net>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
+        David Howells <dhowells@redhat.com>,
+        James Morris <james.l.morris@oracle.com>, IngoMolnar <mingo@elte.hu>,
+        Michel Lespinasse <walken@google.com>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Gavin Shan <shangw@linux.vnet.ibm.com>,
+        Wanpeng Li <liwp.linux@gmail.com>,
+        Wanpeng Li <liwp@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2] remove no longer use of pdflush interface
+Message-ID: <20120606105552.GC10953@kernel>
+Reply-To: Wanpeng Li <liwp.linux@gmail.com>
+References: <1338888372-3555-1-git-send-email-liwp.linux@gmail.com>
+ <20120605152845.8b633881.akpm@linux-foundation.org>
+ <4FCF0740.1040204@panasas.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FCF0740.1040204@panasas.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add tracepoints to frontswap API.
+On Wed, Jun 06, 2012 at 10:31:12AM +0300, Boaz Harrosh wrote:
+>
+>If there are many users than a self made print once is worth it
+>we can use the ctl_table->data pointer for this, some thing like:
+>
+>int nr_pdflush_was_printed;
+>
+>@@ -1095,11 +1095,9 @@ static struct ctl_table vm_table[] = {
+> 		.extra1		= &zero,
+> 	},
+> 	{
+>-		.procname	= "nr_pdflush_threads",
+>-		.data		= &nr_pdflush_threads,
+>-		.maxlen		= sizeof nr_pdflush_threads,
+>-		.mode		= 0444 /* read-only*/,
+>-		.proc_handler	= proc_dointvec,
+>+		.data		= &nr_pdflush_was_printed,
+>+		.procname       = "nr_pdflush_threads",
+>+		.mode           = 0444 /* read-only */,
+>+		.proc_handler   = proc_obsolete,
+> 	},
+>
+>
+>+/* notice associated proc deprecated */
+>+int proc_deprecated(struct ctl_table *table, int write,
+>+		    void __user *buffer, size_t *lenp, loff_t *ppos, )
+>+{
+>+	if (*ctl_table->data) {
+>+		printk(KERN_WARNING "%s exported in /proc is deprecated\n",
+>+			table->procname);
+>+		*ctl_table->data = 0;
+>+	}
+>+	return -ENOSYS;
+>+}
 
-Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
----
- include/trace/events/frontswap.h |  167 ++++++++++++++++++++++++++++++++++++++
- mm/frontswap.c                   |   14 +++
- 2 files changed, 181 insertions(+), 0 deletions(-)
- create mode 100644 include/trace/events/frontswap.h
-
-diff --git a/include/trace/events/frontswap.h b/include/trace/events/frontswap.h
-new file mode 100644
-index 0000000..d6c4934
---- /dev/null
-+++ b/include/trace/events/frontswap.h
-@@ -0,0 +1,167 @@
-+#undef TRACE_SYSTEM
-+#define TRACE_SYSTEM frontswap
-+
-+#if !defined(_TRACE_FRONTSWAP_H) || defined(TRACE_HEADER_MULTI_READ)
-+#define _TRACE_FRONTSWAP_H
-+
-+#include <linux/tracepoint.h>
-+
-+struct frontswap_ops;
-+
-+TRACE_EVENT(frontswap_init,
-+	TP_PROTO(unsigned int type, void *sis, void *frontswap_map),
-+	TP_ARGS(type, sis, frontswap_map),
-+
-+	TP_STRUCT__entry(
-+		__field(	unsigned int,	type		)
-+		__field(	void *,		sis		)
-+		__field(	void *,		frontswap_map	)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->type		= type;
-+		__entry->sis		= sis;
-+		__entry->frontswap_map	= frontswap_map;
-+	),
-+
-+	TP_printk("type: %u sis: %p frontswap_map: %p",
-+		  __entry->type, __entry->sis, __entry->frontswap_map)
-+);
-+
-+TRACE_EVENT(frontswap_register_ops,
-+	TP_PROTO(struct frontswap_ops *old, struct frontswap_ops *new),
-+	TP_ARGS(old, new),
-+
-+	TP_STRUCT__entry(
-+		__field(struct frontswap_ops *,		old		)
-+		__field(struct frontswap_ops *,		new		)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->old		= old;
-+		__entry->new		= new;
-+	),
-+
-+	TP_printk("old: {init=%p put_page=%p get_page=%p invalidate_page=%p invalidate_area=%p}"
-+		" new: {init=%p put_page=%p get_page=%p invalidate_page=%p invalidate_area=%p}",
-+		__entry->old->init,__entry->old->put_page,__entry->old->get_page,
-+		__entry->old->invalidate_page,__entry->old->invalidate_area,__entry->new->init,
-+		__entry->new->put_page,__entry->new->get_page,__entry->new->invalidate_page,
-+		__entry->new->invalidate_area)
-+);
-+
-+TRACE_EVENT(frontswap_put_page,
-+	TP_PROTO(void *page, int dup, int ret),
-+	TP_ARGS(page, dup, ret),
-+
-+	TP_STRUCT__entry(
-+		__field(	int,		dup		)
-+		__field(	int,		ret		)
-+		__field(	void *,		page		)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->dup		= dup;
-+		__entry->ret		= ret;
-+		__entry->page		= page;
-+	),
-+
-+	TP_printk("page: %p dup: %d ret: %d",
-+		  __entry->page, __entry->dup, __entry->ret)
-+);
-+
-+TRACE_EVENT(frontswap_get_page,
-+	TP_PROTO(void *page, int ret),
-+	TP_ARGS(page, ret),
-+
-+	TP_STRUCT__entry(
-+		__field(	int,		ret		)
-+		__field(	void *,		page		)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->ret		= ret;
-+		__entry->page		= page;
-+	),
-+
-+	TP_printk("page: %p ret: %d",
-+		  __entry->page, __entry->ret)
-+);
-+
-+TRACE_EVENT(frontswap_invalidate_page,
-+	TP_PROTO(int type, unsigned long offset, void *sis, int test),
-+	TP_ARGS(type, offset, sis, test),
-+
-+	TP_STRUCT__entry(
-+		__field(	int,		type		)
-+		__field(	unsigned long,	offset		)
-+		__field(	void *,		sis		)
-+		__field(	int,		test		)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->type		= type;
-+		__entry->offset		= offset;
-+		__entry->sis		= sis;
-+		__entry->test		= test;
-+	),
-+
-+	TP_printk("type: %d offset: %lu sys: %p frontswap_test: %d",
-+		  __entry->type, __entry->offset, __entry->sis, __entry->test)
-+);
-+
-+TRACE_EVENT(frontswap_invalidate_area,
-+	TP_PROTO(int type, void *sis, void *map),
-+	TP_ARGS(type, sis, map),
-+
-+	TP_STRUCT__entry(
-+		__field(	int,		type		)
-+		__field(	void *,		map		)
-+		__field(	void *,		sis		)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->type		= type;
-+		__entry->sis		= sis;
-+		__entry->map		= map;
-+	),
-+
-+	TP_printk("type: %d sys: %p map: %p",
-+		  __entry->type, __entry->sis, __entry->map)
-+);
-+
-+TRACE_EVENT(frontswap_curr_pages,
-+	TP_PROTO(unsigned long totalpages),
-+	TP_ARGS(totalpages),
-+
-+	TP_STRUCT__entry(
-+		__field(unsigned long,		totalpages	)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->totalpages	= totalpages;
-+	),
-+
-+	TP_printk("total pages: %lu",
-+		  __entry->totalpages)
-+);
-+
-+TRACE_EVENT(frontswap_shrink,
-+	TP_PROTO(unsigned long target_pages),
-+	TP_ARGS(target_pages),
-+
-+	TP_STRUCT__entry(
-+		__field(unsigned long,		target_pages	)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->target_pages	= target_pages;
-+	),
-+
-+	TP_printk("target pages: %lu",
-+		  __entry->target_pages)
-+);
-+
-+#endif /* _TRACE_FRONTSWAP_H */
-+
-+#include <trace/define_trace.h>
-diff --git a/mm/frontswap.c b/mm/frontswap.c
-index bf99c7d..b98df99 100644
---- a/mm/frontswap.c
-+++ b/mm/frontswap.c
-@@ -11,6 +11,7 @@
-  * This work is licensed under the terms of the GNU GPL, version 2.
-  */
- 
-+#define CREATE_TRACE_POINTS
- #include <linux/mm.h>
- #include <linux/mman.h>
- #include <linux/swap.h>
-@@ -23,6 +24,7 @@
- #include <linux/debugfs.h>
- #include <linux/frontswap.h>
- #include <linux/swapfile.h>
-+#include <trace/events/frontswap.h>
- 
- /*
-  * frontswap_ops is set by frontswap_register_ops to contain the pointers
-@@ -66,6 +68,7 @@ struct frontswap_ops frontswap_register_ops(struct frontswap_ops *ops)
- {
- 	struct frontswap_ops old = frontswap_ops;
- 
-+	trace_frontswap_register_ops(&old, ops);
- 	frontswap_ops = *ops;
- 	frontswap_enabled = 1;
- 	return old;
-@@ -87,6 +90,9 @@ void __frontswap_init(unsigned type)
- 	struct swap_info_struct *sis = swap_info[type];
- 
- 	BUG_ON(sis == NULL);
-+
-+	trace_frontswap_init(type, sis, sis->frontswap_map);
-+
- 	if (sis->frontswap_map == NULL)
- 		return;
- 	frontswap_ops.init(type);
-@@ -113,6 +119,7 @@ int __frontswap_put_page(struct page *page)
- 	if (frontswap_test(sis, offset))
- 		dup = 1;
- 	ret = frontswap_ops.put_page(type, offset, page);
-+	trace_frontswap_put_page(page, dup, ret);
- 	if (ret == 0) {
- 		frontswap_set(sis, offset);
- 		frontswap_succ_puts++;
-@@ -153,6 +160,7 @@ int __frontswap_get_page(struct page *page)
- 	BUG_ON(sis == NULL);
- 	if (frontswap_test(sis, offset))
- 		ret = frontswap_ops.get_page(type, offset, page);
-+	trace_frontswap_get_page(page, ret);
- 	if (ret == 0)
- 		frontswap_gets++;
- 	return ret;
-@@ -168,6 +176,7 @@ void __frontswap_invalidate_page(unsigned type, pgoff_t offset)
- 	struct swap_info_struct *sis = swap_info[type];
- 
- 	BUG_ON(sis == NULL);
-+	trace_frontswap_invalidate_page(type, offset, sis, frontswap_test(sis, offset));
- 	if (frontswap_test(sis, offset)) {
- 		frontswap_ops.invalidate_page(type, offset);
- 		atomic_dec(&sis->frontswap_pages);
-@@ -186,6 +195,7 @@ void __frontswap_invalidate_area(unsigned type)
- 	struct swap_info_struct *sis = swap_info[type];
- 
- 	BUG_ON(sis == NULL);
-+	trace_frontswap_invalidate_area(type, sis, sis->frontswap_map);
- 	if (sis->frontswap_map == NULL)
- 		return;
- 	frontswap_ops.invalidate_area(type);
-@@ -274,6 +284,8 @@ void frontswap_shrink(unsigned long target_pages)
- 	unsigned long pages_to_unuse = 0;
- 	int type, ret;
- 
-+	trace_frontswap_shrink(target_pages);
-+
- 	/*
- 	 * we don't want to hold swap_lock while doing a very
- 	 * lengthy try_to_unuse, but swap_list may change
-@@ -301,6 +313,8 @@ unsigned long frontswap_curr_pages(void)
- 	totalpages = __frontswap_curr_pages();
- 	spin_unlock(&swap_lock);
- 
-+	trace_frontswap_curr_pages(totalpages);
-+
- 	return totalpages;
- }
- EXPORT_SYMBOL(frontswap_curr_pages);
--- 
-1.7.8.6
-
+But this time you add another variable nr_pdflush_was_printed. 
+So remove variable nr_pdflush_threads does not make sense.
