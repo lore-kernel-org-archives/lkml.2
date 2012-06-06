@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756133Ab2FFOhq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 10:37:46 -0400
-Received: from mga03.intel.com ([143.182.124.21]:11641 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755849Ab2FFOho (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 10:37:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="108542074"
-Date: Wed, 6 Jun 2012 07:37:43 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        eranian@google.com
-Subject: Re: [PATCH 3/5] perf, x86: Check LBR format capability
-Message-ID: <20120606143743.GI28225@tassilo.jf.intel.com>
-References: <1338944211-28275-1-git-send-email-andi@firstfloor.org>
- <1338944211-28275-3-git-send-email-andi@firstfloor.org>
- <1338979224.2749.93.camel@twins>
- <20120606141419.GE28225@tassilo.jf.intel.com>
- <1338992556.2749.118.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1338992556.2749.118.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755694Ab2FFOhl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 10:37:41 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20604 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754537Ab2FFOhj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 10:37:39 -0400
+X-Authority-Analysis: v=2.0 cv=D8PF24tj c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=ugXGoXdywmAA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=g2AdxcNTe4MC7UN34qAA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1338993457.13348.547.camel@gandalf.stny.rr.com>
+Subject: Re: [RFC][PATCH 06/12] ftrace/x86: Add save_regs for i386 function
+ calls
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Date: Wed, 06 Jun 2012 10:37:37 -0400
+In-Reply-To: <20120606040014.660425497@goodmis.org>
+References: <20120606035058.108720095@goodmis.org>
+	 <20120606040014.660425497@goodmis.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 06, 2012 at 04:22:36PM +0200, Peter Zijlstra wrote:
-> On Wed, 2012-06-06 at 07:14 -0700, Andi Kleen wrote:
-> > On Wed, Jun 06, 2012 at 12:40:24PM +0200, Peter Zijlstra wrote:
-> > > On Tue, 2012-06-05 at 17:56 -0700, Andi Kleen wrote:
-> > > > From: Andi Kleen <ak@linux.intel.com>
-> > > > 
-> > > > Double check the CPU has a LBR format we support before using it.
-> > > > 
-> > > > Also I made the init functions __init while I was on it. 
-> > > 
-> > > Why? Its all after a model test anyway.
-> > 
-> > Because the spec says we should check it.
-> 
-> The spec says lots of things.. but being that LBR is very much model
-> specific I really can't be bothered.
+On Tue, 2012-06-05 at 23:51 -0400, Steven Rostedt wrote:
 
-Well you don't need to be, I did it already :-)
+> +ENTRY(ftrace_regs_caller)
+> +	pushf	/* push flags before compare */
+> +	cmpl $0, function_trace_stop
+> +	jne ftrace_exit
+> +
+> +
 
-> 
-> > It could catch bad VMs and other inconsistencies and it's the right thing
-> > to do.
-> 
-> That might be a reason, but does it?, and why wasn't that in the
-> changelog?
+Masami,
 
-No it will not catch KVM because zero is a valid version :-/
-That would still need the MISC_ENABLE re-read I think.
+Do we really need to push before the compare? As the compare flags are
+really meaningless with calling functions, and here we are only trying
+to hide what the cmpl did. If something else was tracing without regs,
+and we put a probe just after the nop, then it would include the cmpl
+changes. My version of the patch doesn't restore the flags, so two
+probes would have different values. But again, do we care? What would
+need to know the value of cmp flags when calling into a function when
+they are not going to be restored anyway.
 
-Still it's the right thing to do I believe.
+-- Steve
 
--andi
 
--- 
-ak@linux.intel.com -- Speaking for myself only
