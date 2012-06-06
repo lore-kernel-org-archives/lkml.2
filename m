@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755891Ab2FFKxq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 06:53:46 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:40729 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753050Ab2FFKxn (ORCPT
+	id S1754610Ab2FFKyG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 06:54:06 -0400
+Received: from casper.infradead.org ([85.118.1.10]:33404 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754562Ab2FFKyF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 06:53:43 -0400
-Message-ID: <4FCF3694.206@mvista.com>
-Date: Wed, 06 Jun 2012 14:53:08 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Alex Shi <alex.shi@intel.com>
-CC: a.p.zijlstra@chello.nl, anton@samba.org, benh@kernel.crashing.org,
-        cmetcalf@tilera.com, dhowells@redhat.com, davem@davemloft.net,
-        fenghua.yu@intel.com, hpa@zytor.com, ink@jurassic.park.msu.ru,
-        linux-alpha@vger.kernel.org, linux-ia64@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
-        linuxppc-dev@lists.ozlabs.org, linux-sh@vger.kernel.org,
-        mattst88@gmail.com, paulus@samba.org, lethal@linux-sh.org,
-        ralf@linux-mips.org, rth@twiddle.net, sparclinux@vger.kernel.org,
-        tony.luck@intel.com, x86@kernel.org, sivanich@sgi.com,
-        greg.pearson@hp.com, kamezawa.hiroyu@jp.fujitsu.com,
-        bob.picco@oracle.com, chris.mason@oracle.com,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        mingo@kernel.org, pjt@google.com, tglx@linutronix.de,
-        seto.hidetoshi@jp.fujitsu.com, ak@linux.intel.com,
-        arjan.van.de.ven@intel.com
-Subject: Re: [RFC PATCH] sched/numa: do load balance between remote nodes
-References: <1338965571-9812-1-git-send-email-alex.shi@intel.com>
-In-Reply-To: <1338965571-9812-1-git-send-email-alex.shi@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 6 Jun 2012 06:54:05 -0400
+Message-ID: <1338980038.2749.97.camel@twins>
+Subject: Re: [PATCH] perf, x86: Fix Intel shared extra MSR allocation
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, zheng.z.yan@linux.intel.com
+Date: Wed, 06 Jun 2012 12:53:58 +0200
+In-Reply-To: <1338979012.2749.90.camel@twins>
+References: <20120605213527.GA5019@quad>
+	 <CABPqkBQkgSeRMtP9F61ckCaikFd_rUTQvF1NxB_DDQRugRRv3g@mail.gmail.com>
+	 <1338979012.2749.90.camel@twins>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Wed, 2012-06-06 at 12:36 +0200, Peter Zijlstra wrote:
+> On Wed, 2012-06-06 at 12:35 +0200, Stephane Eranian wrote:
+> > Ok, I found the problem. It was in intel_fixup_er().
+> > Unlike in the original code, this routine must update
+> > the event->extra_reg.idx to the idx parameter instead
+> > of trying to swap out from it. 
+> 
+> Ah indeed. Thanks!
 
-On 06-06-2012 10:52, Alex Shi wrote:
 
-> commit cb83b629b
+static void intel_fixup_er(struct perf_event *event, int idx)
+{
+        event->hw.extra_reg.idx = idx;
 
-    Please also specify that commit's summary in parens.
+        if (idx == EXTRA_REG_RSP_0) {
+                event->hw.config &= ~INTEL_ARCH_EVENT_MASK;
+                event->hw.config |= 0x01b7;
+                event->hw.extra_reg.reg = MSR_OFFCORE_RSP_0;
+        } else if (idx == EXTRA_REG_RSP_1) {
+                event->hw.config &= ~INTEL_ARCH_EVENT_MASK;
+                event->hw.config |= 0x01bb;
+                event->hw.extra_reg.reg = MSR_OFFCORE_RSP_1;
+        }
+}
 
-> remove the NODE sched domain and check if the node
-> distance in SLIT table is farther than REMOTE_DISTANCE, if so, it will
-> lose the load balance chance at exec/fork/wake_affine points.
-
-> But actually, even the node distance is farther than REMOTE_DISTANCE,
-> Modern CPUs also has QPI like connections, that make memory access is
-
-    "Is" not needed here.
-
-> not too slow between nodes.  So above losing on NUMA machine make a
-> huge performance regression on benchmark: hackbench, tbench, netperf
-> and oltp etc.
-
-> This patch will recover the scheduler behavior to old mode on all my
-> Intel platforms: NHM EP/EX, WSM EP, SNB EP/EP4S, and so remove the
-> perfromance regressions. (all of them just has 2 kinds distance, 10 21)
-
-> Signed-off-by: Alex Shi<alex.shi@intel.com>
-
-WBR, Sergei
+Like that then?
