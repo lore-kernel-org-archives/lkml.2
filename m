@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753320Ab2FFMAl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 08:00:41 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37994 "EHLO
+	id S1753274Ab2FFMBg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 08:01:36 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38004 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751719Ab2FFMAk (ORCPT
+	with ESMTP id S1752595Ab2FFMBf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 08:00:40 -0400
-Date: Wed, 6 Jun 2012 05:00:24 -0700
+	Wed, 6 Jun 2012 08:01:35 -0400
+Date: Wed, 6 Jun 2012 05:01:16 -0700
 From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
-Message-ID: <tip-99d5f3aac674fe081ffddd2dbb8946ccbc14c410@git.kernel.org>
+Message-ID: <tip-e40468a54882ef7411fb178dbf2e465ec2349af7@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         fweisbec@gmail.com, peterz@infradead.org, tglx@linutronix.de,
         gilad@benyossef.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         fweisbec@gmail.com, peterz@infradead.org, tglx@linutronix.de,
         gilad@benyossef.com
-In-Reply-To: <20120525214819.236377028@linutronix.de>
-References: <20120525214819.236377028@linutronix.de>
+In-Reply-To: <20120525214819.317535385@linutronix.de>
+References: <20120525214819.317535385@linutronix.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/core] timers: Add accounting of non deferrable timers
-Git-Commit-ID: 99d5f3aac674fe081ffddd2dbb8946ccbc14c410
+Subject: [tip:timers/core] timers: Improve get_next_timer_interrupt()
+Git-Commit-ID: e40468a54882ef7411fb178dbf2e465ec2349af7
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,126 +29,85 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 06 Jun 2012 05:00:30 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 06 Jun 2012 05:01:22 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  99d5f3aac674fe081ffddd2dbb8946ccbc14c410
-Gitweb:     http://git.kernel.org/tip/99d5f3aac674fe081ffddd2dbb8946ccbc14c410
+Commit-ID:  e40468a54882ef7411fb178dbf2e465ec2349af7
+Gitweb:     http://git.kernel.org/tip/e40468a54882ef7411fb178dbf2e465ec2349af7
 Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Fri, 25 May 2012 22:08:58 +0000
+AuthorDate: Fri, 25 May 2012 22:08:59 +0000
 Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Wed, 6 Jun 2012 13:49:01 +0200
+CommitDate: Wed, 6 Jun 2012 13:49:02 +0200
 
-timers: Add accounting of non deferrable timers
+timers: Improve get_next_timer_interrupt()
 
-The code in get_next_timer_interrupt() is suboptimal as it has to run
-through the cascade to find the next expiring timer. On a completely
-idle core we should only do that when there is an active timer
-enqueued and base->next_timer does not give us a fast answer.
+Gilad reported at
 
-Add accounting of the active timers to the now consolidated
-attach/detach code. I deliberately avoided sanity checks because the
-code is fully symetric and any fiddling with timers w/o using the API
-functions will lead to cute explosions anyway. ulong is big enough
-even on 32bit and if we really run into the situation to have more
-than 1<<32 timers enqueued there, then we are definitely not in a
-state to go idle and run through that code.
+ http://lkml.kernel.org/r/1336056962-10465-2-git-send-email-gilad@benyossef.com
 
-This allows us to fix another shortcoming of get_next_timer_interrupt().
+"Current timer code fails to correctly return a value meaning that
+ there is no future timer event, with the result that the timer keeps
+ getting re-armed in HZ one shot mode even when we could turn it off,
+ generating unneeded interrupts.
 
+ What is happening is that when __next_timer_interrupt() wishes
+ to return a value that signifies "there is no future timer
+ event", it returns (base->timer_jiffies + NEXT_TIMER_MAX_DELTA).
+
+ However, the code in tick_nohz_stop_sched_tick(), which called
+ __next_timer_interrupt() via get_next_timer_interrupt(),
+ compares the return value to (last_jiffies + NEXT_TIMER_MAX_DELTA)
+ to see if the timer needs to be re-armed.
+
+ base->timer_jiffies != last_jiffies and so tick_nohz_stop_sched_tick()
+ interperts the return value as indication that there is a distant
+ future event 12 days from now and programs the timer to fire next
+ after KTIME_MAX nsecs instead of avoiding to arm it. This ends up
+ causing a needless interrupt once every KTIME_MAX nsecs."
+
+Fix this by using the new active timer accounting. This avoids scans
+when no active timer is enqueued completely, so we don't have to rely
+on base->timer_next and base->timer_jiffies anymore.
+
+Reported-by: Gilad Ben-Yossef <gilad@benyossef.com>
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Gilad Ben-Yossef <gilad@benyossef.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Link: http://lkml.kernel.org/r/20120525214819.236377028@linutronix.de
+Link: http://lkml.kernel.org/r/20120525214819.317535385@linutronix.de
 ---
- kernel/timer.c |   31 +++++++++++++++++++++++--------
- 1 files changed, 23 insertions(+), 8 deletions(-)
+ kernel/timer.c |   13 ++++++++-----
+ 1 files changed, 8 insertions(+), 5 deletions(-)
 
 diff --git a/kernel/timer.c b/kernel/timer.c
-index 7207690..7fada69 100644
+index 7fada69..a61c093 100644
 --- a/kernel/timer.c
 +++ b/kernel/timer.c
-@@ -77,6 +77,7 @@ struct tvec_base {
- 	struct timer_list *running_timer;
- 	unsigned long timer_jiffies;
- 	unsigned long next_timer;
-+	unsigned long active_timers;
- 	struct tvec_root tv1;
- 	struct tvec tv2;
- 	struct tvec tv3;
-@@ -377,11 +378,13 @@ static void internal_add_timer(struct tvec_base *base, struct timer_list *timer)
+@@ -1326,18 +1326,21 @@ static unsigned long cmp_next_hrtimer_event(unsigned long now,
+ unsigned long get_next_timer_interrupt(unsigned long now)
  {
- 	__internal_add_timer(base, timer);
+ 	struct tvec_base *base = __this_cpu_read(tvec_bases);
+-	unsigned long expires;
++	unsigned long expires = now + NEXT_TIMER_MAX_DELTA;
+ 
  	/*
--	 * Update base->next_timer if this is the earliest one.
-+	 * Update base->active_timers and base->next_timer
+ 	 * Pretend that there is no timer pending if the cpu is offline.
+ 	 * Possible pending timers will be migrated later to an active cpu.
  	 */
--	if (time_before(timer->expires, base->next_timer) &&
--	    !tbase_get_deferrable(timer->base))
--		base->next_timer = timer->expires;
-+	if (!tbase_get_deferrable(timer->base)) {
-+		if (time_before(timer->expires, base->next_timer))
-+			base->next_timer = timer->expires;
-+		base->active_timers++;
-+	}
- }
- 
- #ifdef CONFIG_TIMER_STATS
-@@ -678,6 +681,14 @@ static inline void detach_timer(struct timer_list *timer, bool clear_pending)
- 	entry->prev = LIST_POISON2;
- }
- 
-+static inline void
-+detach_expired_timer(struct timer_list *timer, struct tvec_base *base)
-+{
-+	detach_timer(timer, true);
-+	if (!tbase_get_deferrable(timer->base))
-+		timer->base->active_timers--;
-+}
+ 	if (cpu_is_offline(smp_processor_id()))
+-		return now + NEXT_TIMER_MAX_DELTA;
++		return expires;
 +
- static int detach_if_pending(struct timer_list *timer, struct tvec_base *base,
- 			     bool clear_pending)
- {
-@@ -685,9 +696,11 @@ static int detach_if_pending(struct timer_list *timer, struct tvec_base *base,
- 		return 0;
- 
- 	detach_timer(timer, clear_pending);
--	if (timer->expires == base->next_timer &&
--	    !tbase_get_deferrable(timer->base))
--		base->next_timer = base->timer_jiffies;
-+	if (!tbase_get_deferrable(timer->base)) {
-+		timer->base->active_timers--;
-+		if (timer->expires == base->next_timer)
-+			base->next_timer = base->timer_jiffies;
+ 	spin_lock(&base->lock);
+-	if (time_before_eq(base->next_timer, base->timer_jiffies))
+-		base->next_timer = __next_timer_interrupt(base);
+-	expires = base->next_timer;
++	if (base->active_timers) {
++		if (time_before_eq(base->next_timer, base->timer_jiffies))
++			base->next_timer = __next_timer_interrupt(base);
++		expires = base->next_timer;
 +	}
- 	return 1;
- }
+ 	spin_unlock(&base->lock);
  
-@@ -1175,7 +1188,7 @@ static inline void __run_timers(struct tvec_base *base)
- 			timer_stats_account_timer(timer);
- 
- 			base->running_timer = timer;
--			detach_timer(timer, true);
-+			detach_expired_timer(timer, base);
- 
- 			spin_unlock_irq(&base->lock);
- 			call_timer_fn(timer, fn, data);
-@@ -1701,6 +1714,7 @@ static int __cpuinit init_timers_cpu(int cpu)
- 
- 	base->timer_jiffies = jiffies;
- 	base->next_timer = base->timer_jiffies;
-+	base->active_timers = 0;
- 	return 0;
- }
- 
-@@ -1711,6 +1725,7 @@ static void migrate_timer_list(struct tvec_base *new_base, struct list_head *hea
- 
- 	while (!list_empty(head)) {
- 		timer = list_first_entry(head, struct timer_list, entry);
-+		/* We ignore the accounting on the dying cpu */
- 		detach_timer(timer, false);
- 		timer_set_base(timer, new_base);
- 		internal_add_timer(new_base, timer);
+ 	if (time_before_eq(expires, now))
