@@ -1,52 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754749Ab2FFHnc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 03:43:32 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:62370 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751445Ab2FFHnb convert rfc822-to-8bit (ORCPT
+	id S1754805Ab2FFHnq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 03:43:46 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:45837 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751445Ab2FFHno (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 03:43:31 -0400
+	Wed, 6 Jun 2012 03:43:44 -0400
+Message-ID: <4FCF088E.7030702@panasas.com>
+Date: Wed, 6 Jun 2012 10:36:46 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
 MIME-Version: 1.0
-In-Reply-To: <tip-r74n3n8hhuc2ynbrnp3vt954@git.kernel.org>
-References: <tip-r74n3n8hhuc2ynbrnp3vt954@git.kernel.org>
-Date: Wed, 6 Jun 2012 15:43:29 +0800
-Message-ID: <CAGjg+kFhGwhjfxp3vmQbDVUyHiOfn1HMKBDgtjZKU_f+fw=JWw@mail.gmail.com>
-Subject: Re: [tip:sched/core] sched/numa: Rewrite the CONFIG_NUMA sched domain support
-From: Alex Shi <lkml.alex@gmail.com>
-To: mingo@kernel.org, a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
-        cmetcalf@tilera.com, tony.luck@intel.com, sivanich@sgi.com,
-        akpm@linux-foundation.org, ralf@linux-mips.org, greg.pearson@hp.com,
-        ink@jurassic.park.msu.ru, tglx@linutronix.de, rth@twiddle.net,
-        kamezawa.hiroyu@jp.fujitsu.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, hpa@zytor.com, anton@samba.org,
-        lethal@linux-sh.org, davem@davemloft.net, benh@kernel.crashing.org,
-        dhowells@redhat.com, mattst88@gmail.com, fenghua.yu@intel.com,
-        Alex Shi <alex.shi@intel.com>
-Cc: linux-tip-commits@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Wanpeng Li <liwp.linux@gmail.com>, Fengguang Wu <fengguang.wu@intel.com>,
+        Rob Landley <rob@landley.net>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        "David S. Miller" <davem@davemloft.net>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
+        David Howells <dhowells@redhat.com>,
+        James Morris <james.l.morris@oracle.com>, Ingo Molnar <mingo@elte.hu>,
+        Michel Lespinasse <walken@google.com>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
+        Gavin Shan <shangw@linux.vnet.ibm.com>,
+        Wanpeng Li <liwp@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2] remove no longer use of pdflush interface
+References: <1338888372-3555-1-git-send-email-liwp.linux@gmail.com> <20120605152845.8b633881.akpm@linux-foundation.org> <4FCF0740.1040204@panasas.com>
+In-Reply-To: <4FCF0740.1040204@panasas.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +       /*
-> +        * O(nr_nodes^2) deduplicating selection sort -- in order to find the
-> +        * unique distances in the node_distance() table.
-> +        *
-> +        * Assumes node_distance(0,j) includes all distances in
-> +        * node_distance(i,j) in order to avoid cubic time.
+On 06/06/2012 10:31 AM, Boaz Harrosh wrote:
 
-Curious for other platforms node_distance number, actually, this
-assumption is right for what I saw Intel platforms. but it is not
-match acpispec50.pdf:
+> On 06/06/2012 01:28 AM, Andrew Morton wrote:
+> 
+>> On Tue,  5 Jun 2012 17:26:11 +0800
+>> Wanpeng Li <liwp.linux@gmail.com> wrote:
+>>
+>> So perhaps the solution is to give up on the generic proc_obsolete()
+>> idea, and just add a handler specifically for nr_pdflush_threads, whcih
+>> uses printk_once().
+>>
+> 
+> 
+> If there are many users than a self made print once is worth it
+> we can use the ctl_table->data pointer for this, some thing like:
+> 
+> int nr_pdflush_was_printed;
+> 
+> @@ -1095,11 +1095,9 @@ static struct ctl_table vm_table[] = {
+>  		.extra1		= &zero,
+>  	},
+>  	{
+> -		.procname	= "nr_pdflush_threads",
+> -		.data		= &nr_pdflush_threads,
+> -		.maxlen		= sizeof nr_pdflush_threads,
+> -		.mode		= 0444 /* read-only*/,
+> -		.proc_handler	= proc_dointvec,
+> +		.data		= &nr_pdflush_was_printed,
+> +		.procname       = "nr_pdflush_threads",
+> +		.mode           = 0444 /* read-only */,
+> +		.proc_handler   = proc_obsolete,
+>  	},
+> 
+> 
+> +/* notice associated proc deprecated */
+> +int proc_deprecated(struct ctl_table *table, int write,
+> +		    void __user *buffer, size_t *lenp, loff_t *ppos, )
+> +{
+> +	if (*ctl_table->data) {
+> +		printk(KERN_WARNING "%s exported in /proc is deprecated\n",
+> +			table->procname);
+> +		*ctl_table->data = 0;
 
-Table 6-152 Example Relative Distances Between Proximity Domains
-Proximity Domain 0 1 2 3
-0 10 15 20 18
-1 15 10 16 24
-2 20 16 10 12
-3 18 24 12 10
+
++		*ctl_table->data = 1;
+
+stupid me, time for coffee
+
+Boaz
+
+> +	}
+> +	return -ENOSYS;
+> +}
 
 
-Alex
