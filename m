@@ -1,53 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754444Ab2FFFx7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 01:53:59 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:59956 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751567Ab2FFFx5 (ORCPT
+	id S1754527Ab2FFFyT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 01:54:19 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:57155 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753650Ab2FFFyR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 01:53:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120522215743.GF10210@sortiz-mobl>
-References: <1337593907-6615-1-git-send-email-jonghwa3.lee@samsung.com>
-	<1337593907-6615-2-git-send-email-jonghwa3.lee@samsung.com>
-	<20120522215743.GF10210@sortiz-mobl>
-Date: Wed, 6 Jun 2012 11:23:57 +0530
-Message-ID: <CAKew6eW0vXDNKdO0TtPOv-z4kFnfEPKPDX5HCJ+gqXqiTjYGSg@mail.gmail.com>
-Subject: Re: [PATCH v4 1/3] mfd: MAX77686: Add Maxim 77686 mfd driver
-From: Yadwinder Singh Brar <yadi.brar01@gmail.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Jonghwa Lee <jonghwa3.lee@samsung.com>, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Gridwodd <lrg@ti.com>, Alessandro Zummo <a.zummo@towertech.it>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 6 Jun 2012 01:54:17 -0400
+Message-ID: <1338962053.23080.7.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: linux-next: Tree for Jun 1 (scsi)
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Dan Williams <dan.j.williams@gmail.com>
+Date: Wed, 06 Jun 2012 14:54:13 +0900
+In-Reply-To: <4FCC2BF9.7000802@xenotime.net>
+References: <20120601132202.ac73b03c845299d384defeaf@canb.auug.org.au>
+	 <4FCC2BF9.7000802@xenotime.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Samuel,
+On Sun, 2012-06-03 at 20:31 -0700, Randy Dunlap wrote:
+> On 05/31/2012 08:22 PM, Stephen Rothwell wrote:
+> 
+> > Hi all,
+> > 
+> > Changes since 20120531:
+> 
+> 
+> 
+> already fixed?
+> 
+> on i386 and x86_64, loadable module or builtin:
+> 
+> 
+> ERROR: "scsi_sd_probe_domain" [drivers/scsi/scsi_mod.ko] undefined!
+> or
+> (.text+0x4f6c77): undefined reference to `scsi_sd_probe_domain'
 
-I want to fix bug and build error and add device tree support
-in this driver, but i cann't see it in for-next branch of your tree.
-Please let me know if you have queued up this patch anywhere in your tree.
-Or can we review this patch and get it revised again?
+This looks to be an obvious thinko:  the symbol is conditionally
+defined, but unconditionally used in
+scsi_scan.c:scsi_complete_async_scans().  We can fix just by removing
+the wrong conditional.
 
-Regards,
-Yadwinder.
+James
 
-On Wed, May 23, 2012 at 3:27 AM, Samuel Ortiz <sameo@linux.intel.com> wrote:
-> Hi Jongwha,
->
-> On Mon, May 21, 2012 at 06:51:45PM +0900, Jonghwa Lee wrote:
->> This patch is device driver for MAX77686 chip.
->> MAX77686 is PMIC and includes regulator and rtc on it.
->> This driver is core of MAX77686 chip, so provides common support for accessing
->> on-chip devices. It uses irq_domain to manage irq and regmap to read/write data
->> to its register with i2c bus.
-> I'll try to push this one after rc1, or as a late merge window pull request.
->
-> Cheers,
-> Samuel.
->
+---
+
+diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
+index 61c82a3..bbbc9c9 100644
+--- a/drivers/scsi/scsi.c
++++ b/drivers/scsi/scsi.c
+@@ -90,11 +90,9 @@ unsigned int scsi_logging_level;
+ EXPORT_SYMBOL(scsi_logging_level);
+ #endif
+ 
+-#if IS_ENABLED(CONFIG_PM) || IS_ENABLED(CONFIG_BLK_DEV_SD)
+-/* sd and scsi_pm need to coordinate flushing async actions */
++/* sd, scsi core and power management need to coordinate flushing async actions */
+ LIST_HEAD(scsi_sd_probe_domain);
+ EXPORT_SYMBOL(scsi_sd_probe_domain);
+                                -#endif
+ 
+ /* NB: These are exposed through /proc/scsi/scsi and form part of the ABI.
+  * You may not alter any existing entry (although adding new ones is
+
+
