@@ -1,166 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753475Ab2FFECA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 00:02:00 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13974 "EHLO
+	id S1754056Ab2FFECj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 00:02:39 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:30972 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751199Ab2FFEAS (ORCPT
+	with ESMTP id S1750832Ab2FFEAR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 00:00:18 -0400
-X-Authority-Analysis: v=2.0 cv=NbpkJh/4 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Ciwy3NGCPMMA:10 a=I7ZbloWSLd4A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=3nbZYyFuAAAA:8 a=l4rZkT0uxlpPlpUS7bMA:9 a=jEp0ucaQiEUA:10 a=EvKJbDF4Ut8A:10 a=jeBq3FmKZ4MA:10 a=HiqBL7w5QJmu2Jzd:21 a=_sQNNhn3A_NhS0-M:21 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+	Wed, 6 Jun 2012 00:00:17 -0400
+X-Authority-Analysis: v=2.0 cv=D8PF24tj c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Ciwy3NGCPMMA:10 a=nR0LJrxyqwEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=3nbZYyFuAAAA:8 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=oGMlB6cnAAAA:8 a=VnNF1IyMAAAA:8 a=Z4Rwk6OoAAAA:8 a=pGLkceISAAAA:8 a=o1OHuDzbAAAA:8 a=oxaXq_tzS96xDOGSeD8A:9 a=f11Q_CvFJXMA:10 a=EvKJbDF4Ut8A:10 a=Zh68SRI7RUMA:10 a=jEp0ucaQiEUA:10 a=CY6gl2JlH4YA:10 a=jbrJJM5MRmoA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.80.29
-Message-Id: <20120606040014.660425497@goodmis.org>
+Message-Id: <20120606040015.776243136@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Tue, 05 Jun 2012 23:51:04 -0400
+Date: Tue, 05 Jun 2012 23:51:08 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [RFC][PATCH 06/12] ftrace/x86: Add save_regs for i386 function calls
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>
+Subject: [RFC][PATCH 10/12] kprobes: Move locks into appropriate functions
 References: <20120606035058.108720095@goodmis.org>
-Content-Disposition: inline; filename=0006-ftrace-x86-Add-save_regs-for-i386-function-calls.patch
+Content-Disposition: inline; filename=0010-kprobes-Move-locks-into-appropriate-functions.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <srostedt@redhat.com>
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-Add saving full regs for function tracing on i386.
-The saving of regs was influenced by patches sent out by
-Masami Hiramatsu.
+Break a big critical region into fine-grained pieces at
+registering kprobe path. This helps us to solve circular
+locking dependency when introducing ftrace-based kprobes.
 
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Link: http://lkml.kernel.org/r/20120605102826.27845.81689.stgit@localhost.localdomain
+
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: "Frank Ch. Eigler" <fche@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/x86/include/asm/ftrace.h |    2 --
- arch/x86/kernel/entry_32.S    |   53 +++++++++++++++++++++++++++++++++++++++++
- arch/x86/kernel/ftrace.c      |    4 ----
- 3 files changed, 53 insertions(+), 6 deletions(-)
+ kernel/kprobes.c |   63 ++++++++++++++++++++++++++++++++++++------------------
+ 1 file changed, 42 insertions(+), 21 deletions(-)
 
-diff --git a/arch/x86/include/asm/ftrace.h b/arch/x86/include/asm/ftrace.h
-index 71eeef6..fd34c43 100644
---- a/arch/x86/include/asm/ftrace.h
-+++ b/arch/x86/include/asm/ftrace.h
-@@ -39,10 +39,8 @@
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index 6137fe3..9e47f44 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -759,20 +759,28 @@ static __kprobes void try_to_optimize_kprobe(struct kprobe *p)
+ 	struct kprobe *ap;
+ 	struct optimized_kprobe *op;
  
- #ifdef CONFIG_DYNAMIC_FTRACE
- #define ARCH_SUPPORTS_FTRACE_OPS 1
--#ifdef CONFIG_X86_64
- #define ARCH_SUPPORTS_FTRACE_SAVE_REGS
- #endif
--#endif
- 
- #ifndef __ASSEMBLY__
- extern void mcount(void);
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index 4f9895f..c54d5db 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -1116,6 +1116,7 @@ ftrace_call:
- 	popl %edx
- 	popl %ecx
- 	popl %eax
-+ftrace_ret:
- #ifdef CONFIG_FUNCTION_GRAPH_TRACER
- .globl ftrace_graph_call
- ftrace_graph_call:
-@@ -1127,6 +1128,58 @@ ftrace_stub:
- 	ret
- END(ftrace_caller)
- 
-+ENTRY(ftrace_regs_caller)
-+	pushf	/* push flags before compare */
-+	cmpl $0, function_trace_stop
-+	jne ftrace_exit
++	/* For preparing optimization, jump_label_text_reserved() is called */
++	jump_label_lock();
++	mutex_lock(&text_mutex);
 +
-+	subl $8, %esp	/* skip ip and orig_ax */
-+	pushl %gs
-+	pushl %fs
-+	pushl %es
-+	pushl %ds
-+	pushl %eax
-+	pushl %ebp
-+	pushl %edi
-+	pushl %esi
-+	pushl %edx
-+	pushl %ecx
-+	pushl %ebx
-+	movl 14*4(%esp), %eax	/* Load return address */
-+	pushl %eax		/* Save return address (+4) */
-+	subl $MCOUNT_INSN_SIZE, %eax
-+	movl %eax, 12*4+4(%esp)	/* Store IP */
-+	movl 13*4+4(%esp), %edx	/* Load flags */
-+	movl %edx, 14*4+4(%esp)	/* Store flags */
-+	movl $__KERNEL_CS, %edx
-+	movl %edx, 13*4+4(%esp)	/* Store CS */
-+
-+	movl 0x4(%ebp), %edx
-+	lea  4(%esp), %ecx
-+	pushl %ecx		/* Save pt_regs as 4th parameter */
-+	leal function_trace_op, %ecx
-+
-+GLOBAL(ftrace_regs_call)
-+	call ftrace_stub
-+
-+	addl $4,%esp		/* Skip pt_regs */
-+	popl %eax
-+	movl %eax, 14*4(%esp)	/* Restore return address */
-+	popl %ebx
-+	popl %ecx
-+	popl %edx
-+	popl %esi
-+	popl %edi
-+	popl %ebp
-+	popl %eax
-+	popl %ds
-+	popl %es
-+	popl %fs
-+	popl %gs
-+	addl $8, %esp
-+ftrace_exit:
-+	addl $4, %esp		/* Skip eflags */
-+	jmp ftrace_ret
- #else /* ! CONFIG_DYNAMIC_FTRACE */
+ 	ap = alloc_aggr_kprobe(p);
+ 	if (!ap)
+-		return;
++		goto out;
  
- ENTRY(mcount)
-diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
-index 54cfc66..cf4de56 100644
---- a/arch/x86/kernel/ftrace.c
-+++ b/arch/x86/kernel/ftrace.c
-@@ -206,7 +206,6 @@ static int
- ftrace_modify_code(unsigned long ip, unsigned const char *old_code,
- 		   unsigned const char *new_code);
- 
--#ifdef ARCH_SUPPORTS_FTRACE_SAVE_REGS
- /* Should never be called */
- int ftrace_modify_call(struct dyn_ftrace *rec, unsigned long old_addr,
- 				 unsigned long addr)
-@@ -220,7 +219,6 @@ int ftrace_modify_call(struct dyn_ftrace *rec, unsigned long old_addr,
- 
- 	return ftrace_modify_code(rec->ip, old, new);
- }
--#endif
- 
- int ftrace_update_ftrace_func(ftrace_func_t func)
- {
-@@ -236,7 +234,6 @@ int ftrace_update_ftrace_func(ftrace_func_t func)
- 
- 	ret = ftrace_modify_code(ip, old, new);
- 
--#ifdef ARCH_SUPPORTS_FTRACE_SAVE_REGS
- 	/* Also update the regs version */
- 	if (!ret) {
- 		ip = (unsigned long)(&ftrace_regs_call);
-@@ -244,7 +241,6 @@ int ftrace_update_ftrace_func(ftrace_func_t func)
- 		new = ftrace_call_replace(ip, (unsigned long)func);
- 		ret = ftrace_modify_code(ip, old, new);
+ 	op = container_of(ap, struct optimized_kprobe, kp);
+ 	if (!arch_prepared_optinsn(&op->optinsn)) {
+ 		/* If failed to setup optimizing, fallback to kprobe */
+ 		arch_remove_optimized_kprobe(op);
+ 		kfree(op);
+-		return;
++		goto out;
  	}
--#endif
  
- 	atomic_dec(&modifying_ftrace_code);
+ 	init_aggr_kprobe(ap, p);
+-	optimize_kprobe(ap);
++	optimize_kprobe(ap);	/* This just kicks optimizer thread */
++
++out:
++	mutex_unlock(&text_mutex);
++	jump_label_unlock();
+ }
  
+ #ifdef CONFIG_SYSCTL
+@@ -1144,12 +1152,6 @@ static int __kprobes add_new_kprobe(struct kprobe *ap, struct kprobe *p)
+ 	if (p->post_handler && !ap->post_handler)
+ 		ap->post_handler = aggr_post_handler;
+ 
+-	if (kprobe_disabled(ap) && !kprobe_disabled(p)) {
+-		ap->flags &= ~KPROBE_FLAG_DISABLED;
+-		if (!kprobes_all_disarmed)
+-			/* Arm the breakpoint again. */
+-			__arm_kprobe(ap);
+-	}
+ 	return 0;
+ }
+ 
+@@ -1189,11 +1191,22 @@ static int __kprobes register_aggr_kprobe(struct kprobe *orig_p,
+ 	int ret = 0;
+ 	struct kprobe *ap = orig_p;
+ 
++	/* For preparing optimization, jump_label_text_reserved() is called */
++	jump_label_lock();
++	/*
++	 * Get online CPUs to avoid text_mutex deadlock.with stop machine,
++	 * which is invoked by unoptimize_kprobe() in add_new_kprobe()
++	 */
++	get_online_cpus();
++	mutex_lock(&text_mutex);
++
+ 	if (!kprobe_aggrprobe(orig_p)) {
+ 		/* If orig_p is not an aggr_kprobe, create new aggr_kprobe. */
+ 		ap = alloc_aggr_kprobe(orig_p);
+-		if (!ap)
+-			return -ENOMEM;
++		if (!ap) {
++			ret = -ENOMEM;
++			goto out;
++		}
+ 		init_aggr_kprobe(ap, orig_p);
+ 	} else if (kprobe_unused(ap))
+ 		/* This probe is going to die. Rescue it */
+@@ -1213,7 +1226,7 @@ static int __kprobes register_aggr_kprobe(struct kprobe *orig_p,
+ 			 * free aggr_probe. It will be used next time, or
+ 			 * freed by unregister_kprobe.
+ 			 */
+-			return ret;
++			goto out;
+ 
+ 		/* Prepare optimized instructions if possible. */
+ 		prepare_optimized_kprobe(ap);
+@@ -1228,7 +1241,20 @@ static int __kprobes register_aggr_kprobe(struct kprobe *orig_p,
+ 
+ 	/* Copy ap's insn slot to p */
+ 	copy_kprobe(ap, p);
+-	return add_new_kprobe(ap, p);
++	ret = add_new_kprobe(ap, p);
++
++out:
++	mutex_unlock(&text_mutex);
++	put_online_cpus();
++	jump_label_unlock();
++
++	if (ret == 0 && kprobe_disabled(ap) && !kprobe_disabled(p)) {
++		ap->flags &= ~KPROBE_FLAG_DISABLED;
++		if (!kprobes_all_disarmed)
++			/* Arm the breakpoint again. */
++			arm_kprobe(ap);
++	}
++	return ret;
+ }
+ 
+ static int __kprobes in_kprobes_functions(unsigned long addr)
+@@ -1387,10 +1413,6 @@ int __kprobes register_kprobe(struct kprobe *p)
+ 		return ret;
+ 
+ 	mutex_lock(&kprobe_mutex);
+-	jump_label_lock(); /* needed to call jump_label_text_reserved() */
+-
+-	get_online_cpus();	/* For avoiding text_mutex deadlock. */
+-	mutex_lock(&text_mutex);
+ 
+ 	old_p = get_kprobe(p->addr);
+ 	if (old_p) {
+@@ -1399,7 +1421,9 @@ int __kprobes register_kprobe(struct kprobe *p)
+ 		goto out;
+ 	}
+ 
++	mutex_lock(&text_mutex);	/* Avoiding text modification */
+ 	ret = arch_prepare_kprobe(p);
++	mutex_unlock(&text_mutex);
+ 	if (ret)
+ 		goto out;
+ 
+@@ -1408,15 +1432,12 @@ int __kprobes register_kprobe(struct kprobe *p)
+ 		       &kprobe_table[hash_ptr(p->addr, KPROBE_HASH_BITS)]);
+ 
+ 	if (!kprobes_all_disarmed && !kprobe_disabled(p))
+-		__arm_kprobe(p);
++		arm_kprobe(p);
+ 
+ 	/* Try to optimize kprobe */
+ 	try_to_optimize_kprobe(p);
+ 
+ out:
+-	mutex_unlock(&text_mutex);
+-	put_online_cpus();
+-	jump_label_unlock();
+ 	mutex_unlock(&kprobe_mutex);
+ 
+ 	if (probed_mod)
 -- 
 1.7.10
 
