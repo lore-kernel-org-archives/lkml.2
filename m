@@ -1,51 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755788Ab2FFOOg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 10:14:36 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:47785 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755693Ab2FFOOf convert rfc822-to-8bit (ORCPT
+	id S1755900Ab2FFOPm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 10:15:42 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:33760 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755212Ab2FFOPl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 10:14:35 -0400
-Message-ID: <1338992061.2749.111.camel@twins>
-Subject: Re: [PATCH 1/5] perf, x86: Don't assume the alternative cycles
- encoding is architectural
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        eranian@google.com
-Date: Wed, 06 Jun 2012 16:14:21 +0200
-In-Reply-To: <20120606141247.GD28225@tassilo.jf.intel.com>
-References: <1338944211-28275-1-git-send-email-andi@firstfloor.org>
-	 <1338979188.2749.92.camel@twins>
-	 <20120606141247.GD28225@tassilo.jf.intel.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Wed, 6 Jun 2012 10:15:41 -0400
+From: Chetan Loke <loke.chetan@gmail.com>
+To: Paul.Clements@steeleye.com, axboe@kernel.dk, linux-kernel@vger.kernel.org
+Cc: netdev@vger.kernel.org, Chetan Loke <loke.chetan@gmail.com>
+Subject: [PATCH 1/1] block/nbd: micro-optimization in nbd request completion
+Date: Wed,  6 Jun 2012 10:15:16 -0400
+Message-Id: <1338992116-28094-1-git-send-email-loke.chetan@gmail.com>
+X-Mailer: git-send-email 1.7.5.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-06-06 at 07:12 -0700, Andi Kleen wrote:
-> On Wed, Jun 06, 2012 at 12:39:48PM +0200, Peter Zijlstra wrote:
-> > On Tue, 2012-06-05 at 17:56 -0700, Andi Kleen wrote:
-> > > From: Andi Kleen <ak@linux.intel.com>
-> > > 
-> > > cycles:p uses an special cycles encoding by default. However that is not
-> > > architectural, so it can only be used when the CPU is known
-> > > (it already caused problems on Sandy Bridge). It may or may not work
-> > > on future CPUs.
-> > > 
-> > > So make it opt-in only. Right now I enabled it on Core2, Nehalem, Westmere
-> > > and not on Sandy-Bridge or Atom.
-> > 
-> > No. 
-> 
-> What do you mean? Are you claiming it's architectural?
 
-I mean this patch is shite.
+Add in-flight cmds to the tail. That way while searching(during request completion),we will always get a hit on the first element.
 
-You don't disable it because it doesn't work some place, you fix it.
 
-But don't bother, its already done.
+Signed-off-by: Chetan Loke <loke.chetan@gmail.com>
+---
+ drivers/block/nbd.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
+index 061427a..8957b9f 100644
+--- a/drivers/block/nbd.c
++++ b/drivers/block/nbd.c
+@@ -481,7 +481,7 @@ static void nbd_handle_req(struct nbd_device *nbd, struct request *req)
+ 		nbd_end_request(req);
+ 	} else {
+ 		spin_lock(&nbd->queue_lock);
+-		list_add(&req->queuelist, &nbd->queue_head);
++		list_add_tail(&req->queuelist, &nbd->queue_head);
+ 		spin_unlock(&nbd->queue_lock);
+ 	}
+ 
+-- 
+1.7.5.2
+
