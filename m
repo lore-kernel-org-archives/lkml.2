@@ -1,56 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757603Ab2FFRci (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 13:32:38 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:8510 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751773Ab2FFRch (ORCPT
+	id S1757136Ab2FFRho (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 13:37:44 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:37661 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752173Ab2FFRhm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 13:32:37 -0400
-Subject: Re: [PATCH] Disable Bus Master on PCI device shutdown
-From: Khalid Aziz <khalid.aziz@hp.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: linux-kernel@vger.kernel.org, bhelgaas@google.com,
-        linux-pci@vger.kernel.org
-In-Reply-To: <20120606162703.GA6779@srcf.ucam.org>
-References: <20120427190033.GA17588@ldl.usa.hp.com>
-	 <20120606135009.GB1517@srcf.ucam.org> <1338999463.25761.630.camel@lyra>
-	 <20120606162703.GA6779@srcf.ucam.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 06 Jun 2012 11:32:36 -0600
-Message-ID: <1339003956.25761.667.camel@lyra>
+	Wed, 6 Jun 2012 13:37:42 -0400
+Date: Wed, 06 Jun 2012 10:37:41 -0700 (PDT)
+Message-Id: <20120606.103741.1134656571479190113.davem@davemloft.net>
+To: christian.dietrich@informatik.uni-erlangen.de
+Cc: sshtylyov@mvista.com, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, vamos-dev@lists.cs.fau.de
+Subject: Re: [PATCH] ide: icside.c: Fix compile with
+ CONFIG_BLK_DEV_IDEDMA_ICS=n
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <864nqq3q2v.fsf@gandalf.zerties.org>
+References: <86lik87jgw.fsf@gandalf.zerties.org>
+	<20120602.171210.1245211360510437081.davem@davemloft.net>
+	<864nqq3q2v.fsf@gandalf.zerties.org>
+X-Mailer: Mew version 6.5 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-06-06 at 17:27 +0100, Matthew Garrett wrote:
-> If the qla driver knows that this is safe, then can't this just be done 
-> in the qla driver?
+From: Christian Dietrich <christian.dietrich@informatik.uni-erlangen.de>
+Date: Tue, 05 Jun 2012 14:23:20 +0200
+
+> The icside driver can be configured without DMA support, but it
+> doesn't compile then, because DMA operations are referenced.
 > 
+> drivers/ide/icside.c:523: error: 'icside_v6_port_ops' undeclared
+> drivers/ide/icside.c:522: error: 'icside_dma_init' undeclared
+> 
+> Signed-off-by: Christian Dietrich<christian.dietrich@informatik.uni-erlangen.de>
 
-That is one way of doing it. It makes for a safe change but potentially
-leaves out a number of other cases that could be helped by wider scope
-change of disabling Bus Master bit on all PCI devices, until we
-laboriously debug every one of those cases and then add code to disable
-Bus Master bit. Sounds to me like it is not a clear win in either case.
-
-Do we agree that if device shutdown routine cleanly shuts down all I/O,
-clearing PCI Bus Mster bit should be safe? If yes, then we only have to
-deal with broken devices. So the approach could be to disable Bus Master
-bit unless the device ID matches a blacklist which we update as we find
-broken devices. I really don't like the idea of maintaining blacklists
-in the kernel for such things but is that a more practical approach? If
-blacklist does not sound good, maybe we can ask drivers to tell PCI
-subsystem if they are not ok with clearing Bus Master bit and then PCI
-subsystem could skip those devices.
-
--- 
-Khalid
-====================================================================
-Khalid Aziz                                         Unix Systems Lab
-(970)898-9214                                        Hewlett-Packard
-khalid.aziz@hp.com                                  Fort Collins, CO
-
+Applied.
