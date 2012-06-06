@@ -1,55 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755694Ab2FFOhl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 10:37:41 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20604 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754537Ab2FFOhj (ORCPT
+	id S1755571Ab2FFOix (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 10:38:53 -0400
+Received: from casper.infradead.org ([85.118.1.10]:37783 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752026Ab2FFOiw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 10:37:39 -0400
-X-Authority-Analysis: v=2.0 cv=D8PF24tj c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=ugXGoXdywmAA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=g2AdxcNTe4MC7UN34qAA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1338993457.13348.547.camel@gandalf.stny.rr.com>
-Subject: Re: [RFC][PATCH 06/12] ftrace/x86: Add save_regs for i386 function
- calls
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Date: Wed, 06 Jun 2012 10:37:37 -0400
-In-Reply-To: <20120606040014.660425497@goodmis.org>
-References: <20120606035058.108720095@goodmis.org>
-	 <20120606040014.660425497@goodmis.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
+	Wed, 6 Jun 2012 10:38:52 -0400
+Message-ID: <1338993524.2749.122.camel@twins>
+Subject: Re: [PATCH 5/5] perf, x86: Prefer RDPMC over RDMSR for reading
+ counters
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Stephane Eranian <eranian@google.com>
+Cc: Andi Kleen <ak@linux.intel.com>, Andi Kleen <andi@firstfloor.org>,
+        linux-kernel@vger.kernel.org
+Date: Wed, 06 Jun 2012 16:38:44 +0200
+In-Reply-To: <CABPqkBQ7xwK+BjYainpxXV+D_KjMgH0KFVhYK9w89TxqQOF_MQ@mail.gmail.com>
+References: <1338944211-28275-1-git-send-email-andi@firstfloor.org>
+	 <1338944211-28275-5-git-send-email-andi@firstfloor.org>
+	 <1338979579.2749.95.camel@twins>
+	 <20120606141644.GF28225@tassilo.jf.intel.com>
+	 <1338992472.2749.116.camel@twins>
+	 <CABPqkBQ7xwK+BjYainpxXV+D_KjMgH0KFVhYK9w89TxqQOF_MQ@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-06-05 at 23:51 -0400, Steven Rostedt wrote:
+On Wed, 2012-06-06 at 16:33 +0200, Stephane Eranian wrote:
+> Yes, his patch did but somehow I don't see this code in tip-x86.
+> The thing that I would worry about between rdmsrl() and rdpmc()
+> is what happens to the upper bits. rdpmc() returns bits [N-1:0] of
+> the N-bit counters. N is 48 (or 40) nowadays. When you read 64 bit
+> worth, what do you get in bits [63:N]? are those sign-extended or
+> zero-extended. Is that the same behavior across all Intel and AMD
+> processors? With perf_events, I think the (N-1)th bit is always set.
+> 
+Queued his patch after I saw Andi's trainwreck -- had totally forgotten
+about it :/
 
-> +ENTRY(ftrace_regs_caller)
-> +	pushf	/* push flags before compare */
-> +	cmpl $0, function_trace_stop
-> +	jne ftrace_exit
-> +
-> +
-
-Masami,
-
-Do we really need to push before the compare? As the compare flags are
-really meaningless with calling functions, and here we are only trying
-to hide what the cmpl did. If something else was tracing without regs,
-and we put a probe just after the nop, then it would include the cmpl
-changes. My version of the patch doesn't restore the flags, so two
-probes would have different values. But again, do we care? What would
-need to know the value of cmp flags when calling into a function when
-they are not going to be restored anyway.
-
--- Steve
-
-
+For the kernel it doesn't matter, we manually sign-extend for however
+many bits the counter has.
