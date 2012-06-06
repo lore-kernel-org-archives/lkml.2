@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932122Ab2FFX2y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 19:28:54 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:54683 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759302Ab2FFX2l (ORCPT
+	id S1759369Ab2FFX2u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 19:28:50 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50120 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758916Ab2FFX2k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 19:28:41 -0400
+	Wed, 6 Jun 2012 19:28:40 -0400
 From: David Daney <ddaney.cavm@gmail.com>
 To: linux-mips@linux-mips.org, ralf@linux-mips.org,
         devicetree-discuss@lists.ozlabs.org,
         Grant Likely <grant.likely@secretlab.ca>,
         Rob Herring <rob.herring@calxeda.com>
 Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
-Subject: [PATCH v3 5/5] MIPS: Octeon: Use device tree to register serial ports.
-Date: Wed,  6 Jun 2012 16:28:34 -0700
-Message-Id: <1339025314-24216-6-git-send-email-ddaney.cavm@gmail.com>
+Subject: [PATCH v3 4/5] staging: octeon_ethernet: Convert to use device tree.
+Date: Wed,  6 Jun 2012 16:28:33 -0700
+Message-Id: <1339025314-24216-5-git-send-email-ddaney.cavm@gmail.com>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1339025314-24216-1-git-send-email-ddaney.cavm@gmail.com>
 References: <1339025314-24216-1-git-send-email-ddaney.cavm@gmail.com>
@@ -25,201 +25,372 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David Daney <david.daney@cavium.com>
 
-Switch to using the device tree to register serial ports.
-
-Add all the ports with compatible = "cavium,octeon-3860-uart".  Octeon serial
-ports have their own device type, required port flags, and I/O
-functions, so using of_serial.c is not indicated.
-
-We need to do this as late_initcall, as the 8250 driver must be
-initialized before we add any ports.  8250 initialization is done at
-device_initcall time.
-
-The OCTEON_IRQ_UART{0,1,2} symbols are removed as they are now unused
-and interfere with irq_domain used by the device tree code.
+Get MAC address and PHY connection from the device tree.  The driver
+is converted to a platform driver.
 
 Signed-off-by: David Daney <david.daney@cavium.com>
 Acked-by: Grant Likely <grant.likely@secretlab.ca>
 ---
- arch/mips/cavium-octeon/octeon-irq.c |    4 -
- arch/mips/cavium-octeon/serial.c     |  134 +++++++++++++--------------------
- 2 files changed, 53 insertions(+), 85 deletions(-)
+ drivers/staging/octeon/ethernet-mdio.c   |   28 +++---
+ drivers/staging/octeon/ethernet.c        |  153 +++++++++++++++++++-----------
+ drivers/staging/octeon/octeon-ethernet.h |    3 +
+ 3 files changed, 117 insertions(+), 67 deletions(-)
 
-diff --git a/arch/mips/cavium-octeon/octeon-irq.c b/arch/mips/cavium-octeon/octeon-irq.c
-index 5fb76aa..7fb1f22 100644
---- a/arch/mips/cavium-octeon/octeon-irq.c
-+++ b/arch/mips/cavium-octeon/octeon-irq.c
-@@ -1184,9 +1184,6 @@ static void __init octeon_irq_init_ciu(void)
- 	octeon_irq_set_ciu_mapping(OCTEON_IRQ_MBOX0, 0, 32, chip_mbox, handle_percpu_irq);
- 	octeon_irq_set_ciu_mapping(OCTEON_IRQ_MBOX1, 0, 33, chip_mbox, handle_percpu_irq);
+diff --git a/drivers/staging/octeon/ethernet-mdio.c b/drivers/staging/octeon/ethernet-mdio.c
+index e31949c..f15b31b 100644
+--- a/drivers/staging/octeon/ethernet-mdio.c
++++ b/drivers/staging/octeon/ethernet-mdio.c
+@@ -28,6 +28,7 @@
+ #include <linux/ethtool.h>
+ #include <linux/phy.h>
+ #include <linux/ratelimit.h>
++#include <linux/of_mdio.h>
  
--	octeon_irq_set_ciu_mapping(OCTEON_IRQ_UART0, 0, 34, chip, handle_level_irq);
--	octeon_irq_set_ciu_mapping(OCTEON_IRQ_UART1, 0, 35, chip, handle_level_irq);
--
- 	for (i = 0; i < 4; i++)
- 		octeon_irq_set_ciu_mapping(i + OCTEON_IRQ_PCI_INT0, 0, i + 36, chip, handle_level_irq);
- 	for (i = 0; i < 4; i++)
-@@ -1203,7 +1200,6 @@ static void __init octeon_irq_init_ciu(void)
- 	for (i = 0; i < 16; i++)
- 		octeon_irq_set_ciu_mapping(i + OCTEON_IRQ_WDOG0, 1, i + 0, chip_wd, handle_level_irq);
+ #include <net/dst.h>
  
--	octeon_irq_set_ciu_mapping(OCTEON_IRQ_UART2, 1, 16, chip, handle_level_irq);
- 	octeon_irq_set_ciu_mapping(OCTEON_IRQ_USB1, 1, 17, chip, handle_level_irq);
+@@ -161,22 +162,23 @@ static void cvm_oct_adjust_link(struct net_device *dev)
+ int cvm_oct_phy_setup_device(struct net_device *dev)
+ {
+ 	struct octeon_ethernet *priv = netdev_priv(dev);
++	struct device_node *phy_node;
  
- 	gpio_node = of_find_compatible_node(NULL, NULL, "cavium,octeon-3860-gpio");
-diff --git a/arch/mips/cavium-octeon/serial.c b/arch/mips/cavium-octeon/serial.c
-index 057f0ae..138b221 100644
---- a/arch/mips/cavium-octeon/serial.c
-+++ b/arch/mips/cavium-octeon/serial.c
-@@ -43,95 +43,67 @@ void octeon_serial_out(struct uart_port *up, int offset, int value)
- 	cvmx_write_csr((uint64_t)(up->membase + (offset << 3)), (u8)value);
+-	int phy_addr = cvmx_helper_board_get_mii_address(priv->port);
+-	if (phy_addr != -1) {
+-		char phy_id[MII_BUS_ID_SIZE + 3];
++	if (!priv->of_node)
++		return 0;
+ 
+-		snprintf(phy_id, sizeof(phy_id), PHY_ID_FMT, "mdio-octeon-0", phy_addr);
++	phy_node = of_parse_phandle(priv->of_node, "phy-handle", 0);
++	if (!phy_node)
++		return 0;
+ 
+-		priv->phydev = phy_connect(dev, phy_id, cvm_oct_adjust_link, 0,
+-					PHY_INTERFACE_MODE_GMII);
++	priv->phydev = of_phy_connect(dev, phy_node, cvm_oct_adjust_link, 0,
++				      PHY_INTERFACE_MODE_GMII);
++
++	if (priv->phydev == NULL)
++		return -ENODEV;
++
++	priv->last_link = 0;
++	phy_start_aneg(priv->phydev);
+ 
+-		if (IS_ERR(priv->phydev)) {
+-			priv->phydev = NULL;
+-			return -1;
+-		}
+-		priv->last_link = 0;
+-		phy_start_aneg(priv->phydev);
+-	}
+ 	return 0;
  }
+diff --git a/drivers/staging/octeon/ethernet.c b/drivers/staging/octeon/ethernet.c
+index 18f7a79..683bedc 100644
+--- a/drivers/staging/octeon/ethernet.c
++++ b/drivers/staging/octeon/ethernet.c
+@@ -24,6 +24,7 @@
+  * This file may also be available under a different license from Cavium.
+  * Contact Cavium Networks for more information
+ **********************************************************************/
++#include <linux/platform_device.h>
+ #include <linux/kernel.h>
+ #include <linux/init.h>
+ #include <linux/module.h>
+@@ -32,6 +33,7 @@
+ #include <linux/phy.h>
+ #include <linux/slab.h>
+ #include <linux/interrupt.h>
++#include <linux/of_net.h>
+ 
+ #include <net/dst.h>
+ 
+@@ -113,15 +115,6 @@ int rx_napi_weight = 32;
+ module_param(rx_napi_weight, int, 0444);
+ MODULE_PARM_DESC(rx_napi_weight, "The NAPI WEIGHT parameter.");
  
 -/*
-- * Allocated in .bss, so it is all zeroed.
+- * The offset from mac_addr_base that should be used for the next port
+- * that is configured.  By convention, if any mgmt ports exist on the
+- * chip, they get the first mac addresses, The ports controlled by
+- * this driver are numbered sequencially following any mgmt addresses
+- * that may exist.
 - */
--#define OCTEON_MAX_UARTS 3
--static struct plat_serial8250_port octeon_uart8250_data[OCTEON_MAX_UARTS + 1];
--static struct platform_device octeon_uart8250_device = {
--	.name			= "serial8250",
--	.id			= PLAT8250_DEV_PLATFORM,
--	.dev			= {
--		.platform_data	= octeon_uart8250_data,
--	},
--};
+-static unsigned int cvm_oct_mac_addr_offset;
 -
--static void __init octeon_uart_set_common(struct plat_serial8250_port *p)
-+static int __devinit octeon_serial_probe(struct platform_device *pdev)
+ /**
+  * cvm_oct_poll_queue - Workqueue for polling operations.
+  */
+@@ -176,7 +169,7 @@ static void cvm_oct_periodic_worker(struct work_struct *work)
+ 		queue_delayed_work(cvm_oct_poll_queue, &priv->port_periodic_work, HZ);
+  }
+ 
+-static __init void cvm_oct_configure_common_hw(void)
++static __devinit void cvm_oct_configure_common_hw(void)
  {
--	p->flags = ASYNC_SKIP_TEST | UPF_SHARE_IRQ | UPF_FIXED_TYPE;
--	p->type = PORT_OCTEON;
--	p->iotype = UPIO_MEM;
--	p->regshift = 3;	/* I/O addresses are every 8 bytes */
-+	int irq, res;
-+	struct resource *res_mem;
-+	struct uart_port port;
-+
-+	/* All adaptors have an irq.  */
-+	irq = platform_get_irq(pdev, 0);
-+	if (irq < 0)
-+		return irq;
-+
-+	memset(&port, 0, sizeof(port));
-+
-+	port.flags = ASYNC_SKIP_TEST | UPF_SHARE_IRQ | UPF_FIXED_TYPE;
-+	port.type = PORT_OCTEON;
-+	port.iotype = UPIO_MEM;
-+	port.regshift = 3;
-+	port.dev = &pdev->dev;
-+
- 	if (octeon_is_simulation())
- 		/* Make simulator output fast*/
--		p->uartclk = 115200 * 16;
-+		port.uartclk = 115200 * 16;
- 	else
--		p->uartclk = octeon_get_io_clock_rate();
--	p->serial_in = octeon_serial_in;
--	p->serial_out = octeon_serial_out;
--}
-+		port.uartclk = octeon_get_io_clock_rate();
+ 	/* Setup the FPA */
+ 	cvmx_fpa_enable();
+@@ -396,23 +389,21 @@ static void cvm_oct_common_set_multicast_list(struct net_device *dev)
  
--static int __init octeon_serial_init(void)
--{
--	int enable_uart0;
--	int enable_uart1;
--	int enable_uart2;
--	struct plat_serial8250_port *p;
+  * Returns Zero on success
+  */
+-static int cvm_oct_common_set_mac_address(struct net_device *dev, void *addr)
++static int cvm_oct_set_mac_filter(struct net_device *dev)
+ {
+ 	struct octeon_ethernet *priv = netdev_priv(dev);
+ 	union cvmx_gmxx_prtx_cfg gmx_cfg;
+ 	int interface = INTERFACE(priv->port);
+ 	int index = INDEX(priv->port);
+ 
+-	memcpy(dev->dev_addr, addr + 2, 6);
 -
--#ifdef CONFIG_CAVIUM_OCTEON_2ND_KERNEL
--	/*
--	 * If we are configured to run as the second of two kernels,
--	 * disable uart0 and enable uart1. Uart0 is owned by the first
--	 * kernel
--	 */
--	enable_uart0 = 0;
--	enable_uart1 = 1;
--#else
--	/*
--	 * We are configured for the first kernel. We'll enable uart0
--	 * if the bootloader told us to use 0, otherwise will enable
--	 * uart 1.
--	 */
--	enable_uart0 = (octeon_get_boot_uart() == 0);
--	enable_uart1 = (octeon_get_boot_uart() == 1);
--#ifdef CONFIG_KGDB
--	enable_uart1 = 1;
--#endif
--#endif
--
--	/* Right now CN52XX is the only chip with a third uart */
--	enable_uart2 = OCTEON_IS_MODEL(OCTEON_CN52XX);
--
--	p = octeon_uart8250_data;
--	if (enable_uart0) {
--		/* Add a ttyS device for hardware uart 0 */
--		octeon_uart_set_common(p);
--		p->membase = (void *) CVMX_MIO_UARTX_RBR(0);
--		p->mapbase = CVMX_MIO_UARTX_RBR(0) & ((1ull << 49) - 1);
--		p->irq = OCTEON_IRQ_UART0;
--		p++;
--	}
-+	port.serial_in = octeon_serial_in;
-+	port.serial_out = octeon_serial_out;
-+	port.irq = irq;
+ 	if ((interface < 2)
+ 	    && (cvmx_helper_interface_get_mode(interface) !=
+ 		CVMX_HELPER_INTERFACE_MODE_SPI)) {
+ 		int i;
+-		uint8_t *ptr = addr;
++		uint8_t *ptr = dev->dev_addr;
+ 		uint64_t mac = 0;
+ 		for (i = 0; i < 6; i++)
+-			mac = (mac << 8) | (uint64_t) (ptr[i + 2]);
++			mac = (mac << 8) | (uint64_t)ptr[i];
  
--	if (enable_uart1) {
--		/* Add a ttyS device for hardware uart 1 */
--		octeon_uart_set_common(p);
--		p->membase = (void *) CVMX_MIO_UARTX_RBR(1);
--		p->mapbase = CVMX_MIO_UARTX_RBR(1) & ((1ull << 49) - 1);
--		p->irq = OCTEON_IRQ_UART1;
--		p++;
--	}
--	if (enable_uart2) {
--		/* Add a ttyS device for hardware uart 2 */
--		octeon_uart_set_common(p);
--		p->membase = (void *) CVMX_MIO_UART2_RBR;
--		p->mapbase = CVMX_MIO_UART2_RBR & ((1ull << 49) - 1);
--		p->irq = OCTEON_IRQ_UART2;
--		p++;
-+	res_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (res_mem == NULL) {
-+		dev_err(&pdev->dev, "found no memory resource\n");
-+		return -ENXIO;
- 	}
-+	port.mapbase = res_mem->start;
-+	port.membase = ioremap(res_mem->start, resource_size(res_mem));
+ 		gmx_cfg.u64 =
+ 		    cvmx_read_csr(CVMX_GMXX_PRTX_CFG(index, interface));
+@@ -421,17 +412,17 @@ static int cvm_oct_common_set_mac_address(struct net_device *dev, void *addr)
  
--	BUG_ON(p > &octeon_uart8250_data[OCTEON_MAX_UARTS]);
-+	res = serial8250_register_port(&port);
- 
--	return platform_device_register(&octeon_uart8250_device);
-+	return res >= 0 ? 0 : res;
+ 		cvmx_write_csr(CVMX_GMXX_SMACX(index, interface), mac);
+ 		cvmx_write_csr(CVMX_GMXX_RXX_ADR_CAM0(index, interface),
+-			       ptr[2]);
++			       ptr[0]);
+ 		cvmx_write_csr(CVMX_GMXX_RXX_ADR_CAM1(index, interface),
+-			       ptr[3]);
++			       ptr[1]);
+ 		cvmx_write_csr(CVMX_GMXX_RXX_ADR_CAM2(index, interface),
+-			       ptr[4]);
++			       ptr[2]);
+ 		cvmx_write_csr(CVMX_GMXX_RXX_ADR_CAM3(index, interface),
+-			       ptr[5]);
++			       ptr[3]);
+ 		cvmx_write_csr(CVMX_GMXX_RXX_ADR_CAM4(index, interface),
+-			       ptr[6]);
++			       ptr[4]);
+ 		cvmx_write_csr(CVMX_GMXX_RXX_ADR_CAM5(index, interface),
+-			       ptr[7]);
++			       ptr[5]);
+ 		cvm_oct_common_set_multicast_list(dev);
+ 		cvmx_write_csr(CVMX_GMXX_PRTX_CFG(index, interface),
+ 			       gmx_cfg.u64);
+@@ -439,6 +430,15 @@ static int cvm_oct_common_set_mac_address(struct net_device *dev, void *addr)
+ 	return 0;
  }
  
--device_initcall(octeon_serial_init);
-+static struct of_device_id octeon_serial_match[] = {
++static int cvm_oct_common_set_mac_address(struct net_device *dev, void *addr)
++{
++	int r = eth_mac_addr(dev, addr);
++
++	if (r)
++		return r;
++	return cvm_oct_set_mac_filter(dev);
++}
++
+ /**
+  * cvm_oct_common_init - per network device initialization
+  * @dev:    Device to initialize
+@@ -448,26 +448,17 @@ static int cvm_oct_common_set_mac_address(struct net_device *dev, void *addr)
+ int cvm_oct_common_init(struct net_device *dev)
+ {
+ 	struct octeon_ethernet *priv = netdev_priv(dev);
+-	struct sockaddr sa;
+-	u64 mac = ((u64)(octeon_bootinfo->mac_addr_base[0] & 0xff) << 40) |
+-		((u64)(octeon_bootinfo->mac_addr_base[1] & 0xff) << 32) |
+-		((u64)(octeon_bootinfo->mac_addr_base[2] & 0xff) << 24) |
+-		((u64)(octeon_bootinfo->mac_addr_base[3] & 0xff) << 16) |
+-		((u64)(octeon_bootinfo->mac_addr_base[4] & 0xff) << 8) |
+-		(u64)(octeon_bootinfo->mac_addr_base[5] & 0xff);
+-
+-	mac += cvm_oct_mac_addr_offset;
+-	sa.sa_data[0] = (mac >> 40) & 0xff;
+-	sa.sa_data[1] = (mac >> 32) & 0xff;
+-	sa.sa_data[2] = (mac >> 24) & 0xff;
+-	sa.sa_data[3] = (mac >> 16) & 0xff;
+-	sa.sa_data[4] = (mac >> 8) & 0xff;
+-	sa.sa_data[5] = mac & 0xff;
+-
+-	if (cvm_oct_mac_addr_offset >= octeon_bootinfo->mac_addr_count)
+-		printk(KERN_DEBUG "%s: Using MAC outside of the assigned range:"
+-			" %pM\n", dev->name, sa.sa_data);
+-	cvm_oct_mac_addr_offset++;
++	const u8 *mac = NULL;
++
++	if (priv->of_node)
++		mac = of_get_mac_address(priv->of_node);
++
++	if (mac && is_valid_ether_addr(mac)) {
++		memcpy(dev->dev_addr, mac, ETH_ALEN);
++		dev->addr_assign_type &= ~NET_ADDR_RANDOM;
++	} else {
++		eth_hw_addr_random(dev);
++	}
+ 
+ 	/*
+ 	 * Force the interface to use the POW send if always_use_pow
+@@ -488,7 +479,7 @@ int cvm_oct_common_init(struct net_device *dev)
+ 	SET_ETHTOOL_OPS(dev, &cvm_oct_ethtool_ops);
+ 
+ 	cvm_oct_phy_setup_device(dev);
+-	dev->netdev_ops->ndo_set_mac_address(dev, &sa);
++	cvm_oct_set_mac_filter(dev);
+ 	dev->netdev_ops->ndo_change_mtu(dev, dev->mtu);
+ 
+ 	/*
+@@ -595,22 +586,55 @@ static const struct net_device_ops cvm_oct_pow_netdev_ops = {
+ 
+ extern void octeon_mdiobus_force_mod_depencency(void);
+ 
+-static int __init cvm_oct_init_module(void)
++static struct device_node * __devinit cvm_oct_of_get_child(const struct device_node *parent,
++							   int reg_val)
++{
++	struct device_node *node = NULL;
++	int size;
++	const __be32 *addr;
++
++	for (;;) {
++		node = of_get_next_child(parent, node);
++		if (!node)
++			break;
++		addr = of_get_property(node, "reg", &size);
++		if (addr && (be32_to_cpu(*addr) == reg_val))
++			break;
++	}
++	return node;
++}
++
++static struct device_node * __devinit cvm_oct_node_for_port(struct device_node *pip,
++							    int interface, int port)
++{
++	struct device_node *ni, *np;
++
++	ni = cvm_oct_of_get_child(pip, interface);
++	if (!ni)
++		return NULL;
++
++	np = cvm_oct_of_get_child(ni, port);
++	of_node_put(ni);
++
++	return np;
++}
++
++static int __devinit cvm_oct_probe(struct platform_device *pdev)
+ {
+ 	int num_interfaces;
+ 	int interface;
+ 	int fau = FAU_NUM_PACKET_BUFFERS_TO_FREE;
+ 	int qos;
++	struct device_node *pip;
+ 
+ 	octeon_mdiobus_force_mod_depencency();
+ 	pr_notice("cavium-ethernet %s\n", OCTEON_ETHERNET_VERSION);
+ 
+-	if (OCTEON_IS_MODEL(OCTEON_CN52XX))
+-		cvm_oct_mac_addr_offset = 2; /* First two are the mgmt ports. */
+-	else if (OCTEON_IS_MODEL(OCTEON_CN56XX))
+-		cvm_oct_mac_addr_offset = 1; /* First one is the mgmt port. */
+-	else
+-		cvm_oct_mac_addr_offset = 0;
++	pip = pdev->dev.of_node;
++	if (!pip) {
++		pr_err("Error: No 'pip' in /aliases\n");
++		return -EINVAL;
++	}
+ 
+ 	cvm_oct_poll_queue = create_singlethread_workqueue("octeon-ethernet");
+ 	if (cvm_oct_poll_queue == NULL) {
+@@ -689,10 +713,11 @@ static int __init cvm_oct_init_module(void)
+ 		    cvmx_helper_interface_get_mode(interface);
+ 		int num_ports = cvmx_helper_ports_on_interface(interface);
+ 		int port;
++		int port_index;
+ 
+-		for (port = cvmx_helper_get_ipd_port(interface, 0);
++		for (port_index = 0, port = cvmx_helper_get_ipd_port(interface, 0);
+ 		     port < cvmx_helper_get_ipd_port(interface, num_ports);
+-		     port++) {
++		     port_index++, port++) {
+ 			struct octeon_ethernet *priv;
+ 			struct net_device *dev =
+ 			    alloc_etherdev(sizeof(struct octeon_ethernet));
+@@ -703,6 +728,7 @@ static int __init cvm_oct_init_module(void)
+ 
+ 			/* Initialize the device private structure. */
+ 			priv = netdev_priv(dev);
++			priv->of_node = cvm_oct_node_for_port(pip, interface, port_index);
+ 
+ 			INIT_DELAYED_WORK(&priv->port_periodic_work,
+ 					  cvm_oct_periodic_worker);
+@@ -787,7 +813,7 @@ static int __init cvm_oct_init_module(void)
+ 	return 0;
+ }
+ 
+-static void __exit cvm_oct_cleanup_module(void)
++static int __devexit cvm_oct_remove(struct platform_device *pdev)
+ {
+ 	int port;
+ 
+@@ -835,10 +861,29 @@ static void __exit cvm_oct_cleanup_module(void)
+ 	if (CVMX_FPA_OUTPUT_BUFFER_POOL != CVMX_FPA_PACKET_POOL)
+ 		cvm_oct_mem_empty_fpa(CVMX_FPA_OUTPUT_BUFFER_POOL,
+ 				      CVMX_FPA_OUTPUT_BUFFER_POOL_SIZE, 128);
++	return 0;
+ }
+ 
++static struct of_device_id cvm_oct_match[] = {
 +	{
-+		.compatible = "cavium,octeon-3860-uart",
++		.compatible = "cavium,octeon-3860-pip",
 +	},
 +	{},
 +};
-+MODULE_DEVICE_TABLE(of, octeon_serial_match);
++MODULE_DEVICE_TABLE(of, cvm_oct_match);
 +
-+static struct platform_driver octeon_serial_driver = {
-+	.probe		= octeon_serial_probe,
++static struct platform_driver cvm_oct_driver = {
++	.probe		= cvm_oct_probe,
++	.remove		= __devexit_p(cvm_oct_remove),
 +	.driver		= {
 +		.owner	= THIS_MODULE,
-+		.name	= "octeon_serial",
-+		.of_match_table = octeon_serial_match,
++		.name	= KBUILD_MODNAME,
++		.of_match_table = cvm_oct_match,
 +	},
 +};
 +
-+static int __init octeon_serial_init(void)
-+{
-+	return platform_driver_register(&octeon_serial_driver);
-+}
-+late_initcall(octeon_serial_init);
++module_platform_driver(cvm_oct_driver);
++
+ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("Cavium Networks <support@caviumnetworks.com>");
+ MODULE_DESCRIPTION("Cavium Networks Octeon ethernet driver.");
+-module_init(cvm_oct_init_module);
+-module_exit(cvm_oct_cleanup_module);
+diff --git a/drivers/staging/octeon/octeon-ethernet.h b/drivers/staging/octeon/octeon-ethernet.h
+index d581925..9360e22 100644
+--- a/drivers/staging/octeon/octeon-ethernet.h
++++ b/drivers/staging/octeon/octeon-ethernet.h
+@@ -31,6 +31,8 @@
+ #ifndef OCTEON_ETHERNET_H
+ #define OCTEON_ETHERNET_H
+ 
++#include <linux/of.h>
++
+ /**
+  * This is the definition of the Ethernet driver's private
+  * driver state stored in netdev_priv(dev).
+@@ -59,6 +61,7 @@ struct octeon_ethernet {
+ 	void (*poll) (struct net_device *dev);
+ 	struct delayed_work	port_periodic_work;
+ 	struct work_struct	port_work;	/* may be unused. */
++	struct device_node	*of_node;
+ };
+ 
+ int cvm_oct_free_work(void *work_queue_entry);
 -- 
 1.7.2.3
 
