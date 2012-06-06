@@ -1,97 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755223Ab2FFJLm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 05:11:42 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:44248 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754893Ab2FFJLl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 05:11:41 -0400
-From: Rajendra Nayak <rnayak@ti.com>
-To: <mturquette@ti.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Rajendra Nayak <rnayak@ti.com>
-Subject: [PATCH 2/2] clk: Allow late cache allocation for clk->parents
-Date: Wed, 6 Jun 2012 14:41:31 +0530
-Message-ID: <1338973891-28719-3-git-send-email-rnayak@ti.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1338973891-28719-1-git-send-email-rnayak@ti.com>
-References: <1338973891-28719-1-git-send-email-rnayak@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1754947Ab2FFJP7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 05:15:59 -0400
+Received: from casper.infradead.org ([85.118.1.10]:60008 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751360Ab2FFJP6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 05:15:58 -0400
+Message-ID: <1338974105.2749.85.camel@twins>
+Subject: Re: [tip:sched/core] sched/numa: Rewrite the CONFIG_NUMA sched
+ domain support
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Alex Shi <lkml.alex@gmail.com>
+Cc: mingo@kernel.org, torvalds@linux-foundation.org, cmetcalf@tilera.com,
+        tony.luck@intel.com, sivanich@sgi.com, akpm@linux-foundation.org,
+        ralf@linux-mips.org, greg.pearson@hp.com, ink@jurassic.park.msu.ru,
+        tglx@linutronix.de, rth@twiddle.net, kamezawa.hiroyu@jp.fujitsu.com,
+        paulus@samba.org, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        anton@samba.org, lethal@linux-sh.org, davem@davemloft.net,
+        benh@kernel.crashing.org, dhowells@redhat.com, mattst88@gmail.com,
+        fenghua.yu@intel.com, Alex Shi <alex.shi@intel.com>,
+        linux-tip-commits@vger.kernel.org
+Date: Wed, 06 Jun 2012 11:15:05 +0200
+In-Reply-To: <CAGjg+kFhGwhjfxp3vmQbDVUyHiOfn1HMKBDgtjZKU_f+fw=JWw@mail.gmail.com>
+References: <tip-r74n3n8hhuc2ynbrnp3vt954@git.kernel.org>
+	 <CAGjg+kFhGwhjfxp3vmQbDVUyHiOfn1HMKBDgtjZKU_f+fw=JWw@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Parent clocks for muxes are cached in clk->parents to
-avoid frequent lookups, however the cache allocation happens
-only during clock registeration and later clk_set_parent()
-assumes a cache space available and allocated.
+On Wed, 2012-06-06 at 15:43 +0800, Alex Shi wrote:
+> > +       /*
+> > +        * O(nr_nodes^2) deduplicating selection sort -- in order to find the
+> > +        * unique distances in the node_distance() table.
+> > +        *
+> > +        * Assumes node_distance(0,j) includes all distances in
+> > +        * node_distance(i,j) in order to avoid cubic time.
+> 
+> Curious for other platforms node_distance number, actually, this
+> assumption is right for what I saw Intel platforms. but it is not
+> match acpispec50.pdf:
+> 
+> Table 6-152 Example Relative Distances Between Proximity Domains
+> Proximity Domain 0 1 2 3
+> 0 10 15 20 18
+> 1 15 10 16 24
+> 2 20 16 10 12
+> 3 18 24 12 10
 
-This is not entirely true for platforms which do early clock
-registerations wherein the cache allocation using kzalloc
-could fail during clock registeration.
+Yes I know its allowed, I just haven't seen it in practice.
 
-Allow cache allocation to happen later as part of clk_set_parent()
-to help such cases and avoid crashes assuming a cache being
-available.
-
-While here also replace existing kmalloc() with kzalloc()
-in the file.
-
-Signed-off-by: Rajendra Nayak <rnayak@ti.com>
----
- drivers/clk/clk.c |   17 +++++++++++------
- 1 files changed, 11 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 40568e9..0d67745 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -999,7 +999,7 @@ static struct clk *__clk_init_parent(struct clk *clk)
- 
- 	if (!clk->parents)
- 		clk->parents =
--			kmalloc((sizeof(struct clk*) * clk->num_parents),
-+			kzalloc((sizeof(struct clk*) * clk->num_parents),
- 					GFP_KERNEL);
- 
- 	if (!clk->parents)
-@@ -1065,9 +1065,13 @@ static int __clk_set_parent(struct clk *clk, struct clk *parent)
- 	old_parent = clk->parent;
- 
- 	/* find index of new parent clock using cached parent ptrs */
--	for (i = 0; i < clk->num_parents; i++)
--		if (clk->parents[i] == parent)
--			break;
-+	if (clk->parents)
-+		for (i = 0; i < clk->num_parents; i++)
-+			if (clk->parents[i] == parent)
-+				break;
-+	else
-+		clk->parents = kzalloc((sizeof(struct clk*) * clk->num_parents),
-+								GFP_KERNEL);
- 
- 	/*
- 	 * find index of new parent clock using string name comparison
-@@ -1076,7 +1080,8 @@ static int __clk_set_parent(struct clk *clk, struct clk *parent)
- 	if (i == clk->num_parents)
- 		for (i = 0; i < clk->num_parents; i++)
- 			if (!strcmp(clk->parent_names[i], parent->name)) {
--				clk->parents[i] = __clk_lookup(parent->name);
-+				if (clk->parents)
-+					clk->parents[i] = __clk_lookup(parent->name);
- 				break;
- 			}
- 
-@@ -1230,7 +1235,7 @@ int __clk_init(struct device *dev, struct clk *clk)
- 	 * for clock drivers to statically initialize clk->parents.
- 	 */
- 	if ((clk->num_parents > 1) && !clk->parents) {
--		clk->parents = kmalloc((sizeof(struct clk*) * clk->num_parents),
-+		clk->parents = kzalloc((sizeof(struct clk*) * clk->num_parents),
- 				GFP_KERNEL);
- 		/*
- 		 * __clk_lookup returns NULL for parents that have not been
--- 
-1.7.1
-
+I've got a patch that validates this assumption if you boot with
+"sched_debug". If we ever run into such a setup we might need to fix
+this -- it shouldn't be too hard, just expensive.
