@@ -1,52 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758115Ab2FFUWe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 16:22:34 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:34377 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756293Ab2FFUWd (ORCPT
+	id S1758198Ab2FFUYY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 16:24:24 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:39290 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752574Ab2FFUYW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 16:22:33 -0400
-Date: Wed, 6 Jun 2012 16:22:32 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Stefani Seibold <stefani@seibold.net>
-cc: linux-kernel@vger.kernel.org, <gregkh@linuxfoundation.org>,
-        <oneukum@suse.de>, <alan@lxorguk.ukuu.org.uk>,
-        <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH] fix usb skeleton driver
-In-Reply-To: <1339013986.3437.20.camel@wall-e>
-Message-ID: <Pine.LNX.4.44L0.1206061621110.1183-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 6 Jun 2012 16:24:22 -0400
+Subject: Re: [PATCH] virtio-net: fix a race on 32bit arches
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Stephen Hemminger <shemminger@vyatta.com>,
+        Jason Wang <jasowang@redhat.com>, netdev@vger.kernel.org,
+        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+In-Reply-To: <20120606201620.GA23358@redhat.com>
+References: <1338971724.2760.3913.camel@edumazet-glaptop>
+	 <1338972341.2760.3944.camel@edumazet-glaptop>
+	 <20120606111357.GA15070@redhat.com>
+	 <1338988210.2760.4485.camel@edumazet-glaptop>
+	 <20120606144941.GA17092@redhat.com>
+	 <20120606081432.6b602065@nehalam.linuxnetplumber.net>
+	 <20120606185107.GA20503@redhat.com>
+	 <1339012441.26966.48.camel@edumazet-glaptop>
+	 <20120606195814.GA20677@redhat.com>
+	 <1339013289.26966.62.camel@edumazet-glaptop>
+	 <20120606201620.GA23358@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 06 Jun 2012 22:24:19 +0200
+Message-ID: <1339014259.26966.70.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Jun 2012, Stefani Seibold wrote:
-
-> The reason to fix the skeleton driver was about the complains for my
-> NRPZ driver, which was based on the design of the usb skeleton driver.
-> 
-> > Going even farther, I'm not so sure it's a good idea for usb-skeleton
-> > to try supporting both synchronous and asynchronous accesses.  This
-> > adds a layer of complexity that people just don't need.  IMO it would 
-> > be better to have two separate example drivers, an easy one that is 
-> > purely synchronous and a more advanced one that is purely async.
+On Wed, 2012-06-06 at 23:16 +0300, Michael S. Tsirkin wrote:
+> On Wed, Jun 06, 2012 at 10:08:09PM +0200, Eric Dumazet wrote:
+> > On Wed, 2012-06-06 at 22:58 +0300, Michael S. Tsirkin wrote:
 > > 
+> > > Absolutely, I am talking about virtio here.  I'm not kicking
+> > > u64_stats_sync idea I am just saying that simple locking
+> > > would work for virtio and might be better as it
+> > > gives us a way to get counters atomically.
+> > 
+> > Which lock do you own in the RX path ?
 > 
-> Agree, i think this would be a good idea to have to separate drivers.
-> Both should be also working drivers, for really simple hardware.
-> 
-> The best way for me to do this is to shrink later this to a simplified
-> driver. 
+> We can just disable napi, everything is updated from napi callback.
 
-That makes sense.  Will you do it?
+This is very disruptive, and illegal from ndo_get_stats64()
 
-> I think it is important to have a clean and working example. It would
-> save a lot of time for everybody and shrinks the number of round trips.
+(ndo_get_stats64() is not allowed to sleep, and I cant see how you are
+going to disable napi without sleeping)
 
-How can you tell that it works?  By testing your NRPZ driver?
 
-Alan Stern
 
