@@ -1,51 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755740Ab2FFVX6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 17:23:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43275 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752170Ab2FFVX4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 17:23:56 -0400
-From: Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH] PCI: Add Ralink RT2800 broken INTx masking quirk
-To: bjorn.helgaas@hp.com, linux-pci@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, jan.kiszka@siemens.com,
-        andihartmann@01019freenet.de
-Date: Wed, 06 Jun 2012 15:23:40 -0600
-Message-ID: <20120606212241.6627.98371.stgit@bling.home>
-User-Agent: StGIT/0.14.3
+	id S1756913Ab2FFVYh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 17:24:37 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:58808 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752170Ab2FFVYg convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 17:24:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Date: Wed, 6 Jun 2012 14:24:35 -0700
+Message-ID: <CAFR8uefaH_MzjfkPTY1+D5yav8cawtOS7NKyexzRG318Bris1w@mail.gmail.com>
+Subject: RFC:blk-exec-call-completion-if-queue-dead [was Q:
+ blk_execute_rq_nowait() doesn't call completion in case of dead queue
+From: Muthu Kumar <muthu.lkml@gmail.com>
+To: Jens Axboe <axboe@kernel.dk>, tj@kernel.org,
+        James.Bottomley@hansenpartnership.com
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Passes pci_intx_mask_supported but continues to send interrupts
-as discovered through VFIO-based device assignment.
+How about this change?
 
-http://www.spinics.net/lists/kvm/msg73738.html
+diff --git a/block/blk-exec.c b/block/blk-exec.c
+index fb2cbd5..6bf5c0b 100644
+--- a/block/blk-exec.c
++++ b/block/blk-exec.c
+@@ -56,8 +56,10 @@ void blk_execute_rq_nowait(struct request_queue *q, struct ge
+        if (unlikely(blk_queue_dead(q))) {
+                spin_unlock_irq(q->queue_lock);
+                rq->errors = -ENXIO;
+-               if (rq->end_io)
+-                       rq->end_io(rq, rq->errors);
++                if (done)
++                    done(rq, rq->errors);
++                else if (rq->end_io)    //XXX Not sure if this check and end_io
++                    rq->end_io(rq, rq->errors);
+                return;
+        }
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
----
+Only one driver - sx8.c, doesn't set done() function and every one
+else expects done() to be called with error.
 
-Depends on Jan's base patch for this quirk:
-http://www.spinics.net/lists/linux-pci/msg15516.html
+Regards,
+Muthu
 
- drivers/pci/quirks.c |    2 ++
- 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index cbb4358..178f494 100644
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -2940,6 +2940,8 @@ static void __devinit quirk_broken_intx_masking(struct pci_dev *dev)
- }
- DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_CHELSIO, 0x0010,
- 			quirk_broken_intx_masking);
-+DECLARE_PCI_FIXUP_FINAL(0x1814, 0x0601, /* Ralink RT2800 802.11n PCI */
-+			quirk_broken_intx_masking);
- 
- static void pci_do_fixups(struct pci_dev *dev, struct pci_fixup *f,
- 			  struct pci_fixup *end)
-
+On Wed, Jun 6, 2012 at 11:59 AM, Muthu Kumar <muthu.lkml@gmail.com> wrote:
+> Jens, Tejun et al,
+> blk_execute_rq() calls blk_execute_rq_nowait() with blk_end_sync_rq()
+> as the completion (done) routine. And then waits for the completion().
+>
+>
+>        rq->end_io_data = &wait;
+>        blk_execute_rq_nowait(q, bd_disk, rq, at_head, blk_end_sync_rq);
+>        ...
+>        ...
+>        wait_for_completion(&wait)
+>
+> But in blk_execute_rq_nowait() if the queue is dead, completion
+> routine is not called. Shouldn't we have to call the above completion
+> (done()) to wake up the wait_for_completion()?
+>
+>
+>        if (unlikely(blk_queue_dead(q))) {
+>                spin_unlock_irq(q->queue_lock);
+>                rq->errors = -ENXIO;
+>                if (rq->end_io)
+>                        rq->end_io(rq, rq->errors);
+>                return;
+>       }
+>
+> Thanks.
+>
+> Regards,
+> Muthu
