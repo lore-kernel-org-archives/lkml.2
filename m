@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757592Ab2FFRbs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 13:31:48 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:45666 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751773Ab2FFRbq (ORCPT
+	id S1757603Ab2FFRci (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 13:32:38 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:8510 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751773Ab2FFRch (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 13:31:46 -0400
-Subject: Re: [PATCH v9] tilegx network driver: initial support
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: bhutchings@solarflare.com, arnd@arndb.de,
-        David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-In-Reply-To: <201206042023.q54KNEZp003834@farm-0002.internal.tilera.com>
-References: <201205201636.q4KGaoA3003845@farm-0027.internal.tilera.com>
-	 <20120520.165546.1211013675964130504.davem@davemloft.net>
-	 <201205240115.q4O1FwqG006336@lab-41.internal.tilera.com>
-	 <20120524.003148.700603156196416506.davem@davemloft.net>
-	 <201205251853.q4PIrE7T000723@lab-41.internal.tilera.com>
-	 <201206042023.q54KNEZp003834@farm-0002.internal.tilera.com>
+	Wed, 6 Jun 2012 13:32:37 -0400
+Subject: Re: [PATCH] Disable Bus Master on PCI device shutdown
+From: Khalid Aziz <khalid.aziz@hp.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: linux-kernel@vger.kernel.org, bhelgaas@google.com,
+        linux-pci@vger.kernel.org
+In-Reply-To: <20120606162703.GA6779@srcf.ucam.org>
+References: <20120427190033.GA17588@ldl.usa.hp.com>
+	 <20120606135009.GB1517@srcf.ucam.org> <1338999463.25761.630.camel@lyra>
+	 <20120606162703.GA6779@srcf.ucam.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 06 Jun 2012 19:31:40 +0200
-Message-ID: <1339003900.26966.24.camel@edumazet-glaptop>
+Date: Wed, 06 Jun 2012 11:32:36 -0600
+Message-ID: <1339003956.25761.667.camel@lyra>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -30,24 +26,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-06-04 at 16:12 -0400, Chris Metcalf wrote:
-> This change adds support for the tilegx network driver based on the
-> GXIO IORPC support in the tilegx software stack, using the on-chip
-> mPIPE packet processing engine.
+On Wed, 2012-06-06 at 17:27 +0100, Matthew Garrett wrote:
+> If the qla driver knows that this is safe, then can't this just be done 
+> in the qla driver?
+> 
 
-> +static void tile_net_setup(struct net_device *dev)
-> +{
-> +	ether_setup(dev);
-> +	dev->netdev_ops = &tile_net_ops;
-> +	dev->watchdog_timeo = TILE_NET_TIMEOUT;
-> +	dev->features |= NETIF_F_LLTX;
-> +	dev->features |= NETIF_F_HW_CSUM;
-> +	dev->features |= NETIF_F_SG;
-> +	dev->features |= NETIF_F_TSO;
-> +	dev->tx_queue_len = 0;
-> +	dev->mtu = 1500;
-> +}
+That is one way of doing it. It makes for a safe change but potentially
+leaves out a number of other cases that could be helped by wider scope
+change of disabling Bus Master bit on all PCI devices, until we
+laboriously debug every one of those cases and then add code to disable
+Bus Master bit. Sounds to me like it is not a clear win in either case.
 
-Why is tx_queue_len set to 0 ?
+Do we agree that if device shutdown routine cleanly shuts down all I/O,
+clearing PCI Bus Mster bit should be safe? If yes, then we only have to
+deal with broken devices. So the approach could be to disable Bus Master
+bit unless the device ID matches a blacklist which we update as we find
+broken devices. I really don't like the idea of maintaining blacklists
+in the kernel for such things but is that a more practical approach? If
+blacklist does not sound good, maybe we can ask drivers to tell PCI
+subsystem if they are not ok with clearing Bus Master bit and then PCI
+subsystem could skip those devices.
 
+-- 
+Khalid
+====================================================================
+Khalid Aziz                                         Unix Systems Lab
+(970)898-9214                                        Hewlett-Packard
+khalid.aziz@hp.com                                  Fort Collins, CO
 
