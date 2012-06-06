@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752099Ab2FFIWl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 04:22:41 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:33098 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754839Ab2FFIWg (ORCPT
+	id S1754984Ab2FFIYK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 04:24:10 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38494 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750862Ab2FFIYH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 04:22:36 -0400
-Date: Wed, 6 Jun 2012 10:22:31 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [PATCH 4/8] x86: apic: Factor out default
- vector_allocation_domain() operations
-Message-ID: <20120606082231.GD5991@gmail.com>
-References: <20120605112353.GA11457@dhcp-26-207.brq.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120605112353.GA11457@dhcp-26-207.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 6 Jun 2012 04:24:07 -0400
+Message-ID: <1338971020.2749.64.camel@twins>
+Subject: RE: [PATCH 0/6] x86/cpu hotplug: Wake up offline CPU via mwait or
+ nmi
+From: Peter Zijlstra <peterz@infradead.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: "Luck, Tony" <tony.luck@intel.com>, "Yu, Fenghua" <fenghua.yu@intel.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@elte.hu>,
+        H Peter Anvin <hpa@zytor.com>,
+        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
+        "Mallick, Asit K" <asit.k.mallick@intel.com>,
+        Arjan Dan De Ven <arjan@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>,
+        linux-pm <linux-pm@vger.kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Date: Wed, 06 Jun 2012 10:23:40 +0200
+In-Reply-To: <alpine.LFD.2.02.1206052337300.3086@ionos>
+References: <1338833876-29721-1-git-send-email-fenghua.yu@intel.com>
+	    <alpine.LFD.2.02.1206042203590.3086@ionos>
+	    <1338842001.28282.135.camel@twins> <87zk8iioam.fsf@rustcorp.com.au>
+	    <1338881971.28282.150.camel@twins>
+	    <3E5A0FA7E9CA944F9D5414FEC6C7122007727023@ORSMSX105.amr.corp.intel.com>
+	   <1338912565.2749.9.camel@twins>
+	    <3E5A0FA7E9CA944F9D5414FEC6C7122007728081@ORSMSX105.amr.corp.intel.com>
+	    <1338913190.2749.10.camel@twins>
+	    <3908561D78D1C84285E8C5FCA982C28F19300965@ORSMSX104.amr.corp.intel.com>
+	  <1338918625.2749.29.camel@twins>
+	 <alpine.LFD.2.02.1206052106440.3086@ionos>
+	  <1338925756.2749.36.camel@twins>
+	 <alpine.LFD.2.02.1206052153200.3086@ionos> <1338931856.2749.57.camel@twins>
+	 <alpine.LFD.2.02.1206052337300.3086@ionos>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2012-06-06 at 00:09 +0200, Thomas Gleixner wrote:
+> > Well, no not like that, but I think we could do with some coupling
+> > there. Like steer active interrupts away when they keep hitting idle
+> > state.
+> 
+> That's possible, but that wants a well coordinated mechanism which
+> takes the user space steering into account.
 
-* Alexander Gordeev <agordeev@redhat.com> wrote:
+Sure, if the provided interrupt affinity mask doesn't allow this, we
+loose. But typically those are all bits set.
 
-> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> ---
->  arch/x86/include/asm/apic.h           |   21 +++++++++++++++++++++
->  arch/x86/include/asm/x2apic.h         |    9 ---------
->  arch/x86/kernel/apic/apic_flat_64.c   |   22 +---------------------
->  arch/x86/kernel/apic/apic_noop.c      |    3 +--
->  arch/x86/kernel/apic/apic_numachip.c  |    8 +-------
->  arch/x86/kernel/apic/bigsmp_32.c      |    8 +-------
->  arch/x86/kernel/apic/es7000_32.c      |   19 ++-----------------
->  arch/x86/kernel/apic/numaq_32.c       |   16 +---------------
->  arch/x86/kernel/apic/probe_32.c       |   17 +----------------
->  arch/x86/kernel/apic/summit_32.c      |   16 +---------------
->  arch/x86/kernel/apic/x2apic_cluster.c |    2 +-
->  arch/x86/kernel/apic/x2apic_phys.c    |    2 +-
->  arch/x86/kernel/apic/x2apic_uv_x.c    |    8 +-------
->  13 files changed, 33 insertions(+), 118 deletions(-)
+> I'm not saying it's impossible, I'm just trying to imagine the extra
+> user space interfaces needed for that. 
 
-Nice cleanups.
-
-This one didn't apply due to the following fresh patch in -tip:
-
-0b8255e660a0 x86/x2apic/cluster: Use all the members of one cluster specified in the smp_affinity 
-
-So I applied the first three to tip:x86/apic, mind sending the 
-remaining 4 patches on top of -tip?
-
-Thanks,
-
-	Ingo
+None, preferably.
