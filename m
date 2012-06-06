@@ -1,126 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753325Ab2FFGvK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 02:51:10 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:56409 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752591Ab2FFGuV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 02:50:21 -0400
-Date: Wed, 6 Jun 2012 08:50:14 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Akihiro Nagai <akihiro.nagai.hw@hitachi.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, Avik Sil <avik.sil@linaro.org>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Namhyung Kim <namhyung.kim@lge.com>, Oleg Nesterov <oleg@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Sunjin Yang <fan4326@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-perf-users@vger.kernel.org
-Subject: Re: [GIT PULL 00/15] perf/urgent fixes
-Message-ID: <20120606065014.GB17808@gmail.com>
-References: <1338588999-32509-1-git-send-email-acme@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1338588999-32509-1-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752600Ab2FFGys (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 02:54:48 -0400
+Received: from mga01.intel.com ([192.55.52.88]:18616 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751231Ab2FFGyp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 02:54:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="175368209"
+From: Alex Shi <alex.shi@intel.com>
+To: a.p.zijlstra@chello.nl
+Cc: anton@samba.org, benh@kernel.crashing.org, cmetcalf@tilera.com,
+        dhowells@redhat.com, davem@davemloft.net, fenghua.yu@intel.com,
+        hpa@zytor.com, ink@jurassic.park.msu.ru, linux-alpha@vger.kernel.org,
+        linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
+        linux-sh@vger.kernel.org, mattst88@gmail.com, paulus@samba.org,
+        lethal@linux-sh.org, ralf@linux-mips.org, rth@twiddle.net,
+        sparclinux@vger.kernel.org, tony.luck@intel.com, x86@kernel.org,
+        sivanich@sgi.com, greg.pearson@hp.com, kamezawa.hiroyu@jp.fujitsu.com,
+        bob.picco@oracle.com, chris.mason@oracle.com,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        mingo@kernel.org, pjt@google.com, tglx@linutronix.de,
+        seto.hidetoshi@jp.fujitsu.com, ak@linux.intel.com,
+        arjan.van.de.ven@intel.com
+Subject: [RFC PATCH] sched/numa: do load balance between remote nodes
+Date: Wed,  6 Jun 2012 14:52:51 +0800
+Message-Id: <1338965571-9812-1-git-send-email-alex.shi@intel.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+commit cb83b629b remove the NODE sched domain and check if the node
+distance in SLIT table is farther than REMOTE_DISTANCE, if so, it will
+lose the load balance chance at exec/fork/wake_affine points.
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+But actually, even the node distance is farther than REMOTE_DISTANCE,
+Modern CPUs also has QPI like connections, that make memory access is
+not too slow between nodes. So above losing on NUMA machine make a
+huge performance regression on benchmark: hackbench, tbench, netperf
+and oltp etc.
 
-> Hi Ingo,
-> 
-> 	Please consider pulling, this is in addition to what already were in
-> perf/urgent.
-> 
-> - Arnaldo
-> 
-> The following changes since commit 79695e1bb65ba0e21488c360a1bed6e358354aaa:
-> 
->   perf stat: Initialize default events wrt exclude_{guest,host} (2012-05-30 14:02:38 -0300)
-> 
-> are available in the git repository at:
->   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-urgent-for-mingo
-> 
-> Arnaldo Carvalho de Melo (2):
->       perf tools: Fix make tarballs
->       perf tools: Make --version show kernel version instead of pull req tag
-> 
-> Avik Sil (1):
->       perf tools: Fix pager on minimal-install embedded systems
-> 
-> David Ahern (2):
->       perf script: Fix regression in callchain dso name
->       perf tool: Build fix, remove duplicate declarations
-> 
-> Jiri Olsa (3):
->       perf symbols: Handle different endians properly during symbol load
->       perf session: Handle endianity swap on sample_id_all header data
->       perf evsel: Fix 32 bit values endianity swap for sample_id_all header
-> 
-> Namhyung Kim (5):
->       perf callchain: Make callchain cursors TLS
->       perf tools: Check if callchain is corrupted
->       perf tools: Update ioctl documentation for PERF_IOC_FLAG_GROUP
->       perf evlist: Pass third argument to ioctl explicitly
->       perf: Remove duplicate invocation on perf_event_for_each
-> 
-> Srikar Dronamraju (2):
->       perf symbols: Check for valid dso before creating map
->       perf uprobes: Remove unnecessary check before strlist__delete
-> 
->  include/linux/perf_event.h       |    4 +-
->  kernel/events/core.c             |    1 -
->  tools/perf/MANIFEST              |    2 +
->  tools/perf/builtin-report.c      |    2 +-
->  tools/perf/builtin-top.c         |    2 +-
->  tools/perf/design.txt            |    7 ++-
->  tools/perf/util/PERF-VERSION-GEN |    2 +-
->  tools/perf/util/callchain.c      |    2 +
->  tools/perf/util/callchain.h      |    2 +
->  tools/perf/util/evlist.c         |    6 ++-
->  tools/perf/util/evsel.c          |   29 +++++++++---
->  tools/perf/util/hist.c           |    7 ++-
->  tools/perf/util/hist.h           |    2 -
->  tools/perf/util/pager.c          |    4 ++
->  tools/perf/util/probe-event.c    |    8 +--
->  tools/perf/util/session.c        |   97 +++++++++++++++++++++++++++++--------
->  tools/perf/util/symbol.c         |   38 ++++++++++++++-
->  tools/perf/util/symbol.h         |   34 ++++++++++++-
->  tools/perf/util/util.h           |    6 +--
->  19 files changed, 195 insertions(+), 60 deletions(-)
+This patch will recover the scheduler behavior to old mode on all my
+Intel platforms: NHM EP/EX, WSM EP, SNB EP/EP4S, and so remove the
+perfromance regressions. (all of them just has 2 kinds distance, 10 21)
 
-Hm, I got this build failure:
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+---
+ kernel/sched/core.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-bench/mem-memcpy.c: In function ‘bench_mem_memcpy’:
-bench/mem-memcpy.c:193:2: error: implicit declaration of function ‘perf_atoll’ [-Werror=implicit-function-declaration]
-bench/mem-memcpy.c:193:2: error: nested extern declaration of ‘perf_atoll’ [-Werror=nested-externs]
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 39eb601..b2ee41a 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -6286,7 +6286,7 @@ static int sched_domains_curr_level;
+ 
+ static inline int sd_local_flags(int level)
+ {
+-	if (sched_domains_numa_distance[level] > REMOTE_DISTANCE)
++	if (sched_domains_numa_distance[level] > RECLAIM_DISTANCE)
+ 		return 0;
+ 
+ 	return SD_BALANCE_EXEC | SD_BALANCE_FORK | SD_WAKE_AFFINE;
+-- 
+1.7.5.4
 
-Which appears to be a result of:
-
-6b7df4a0237a perf tool: Build fix, remove duplicate declarations
-
-Those declarations were not so unused on this fresh install of 
-Fedora 17.
-
-Luckily, the offending commit was the last one in the series, so 
-I merged your tree at cb7225f, excluding only the buggy commit.
-
-Thanks,
-
-	Ingo
