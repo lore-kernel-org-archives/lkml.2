@@ -1,217 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757006Ab2FFP5M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 11:57:12 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40274 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756670Ab2FFP5J (ORCPT
+	id S1757008Ab2FFP5a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 11:57:30 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:51288 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757021Ab2FFP51 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 11:57:09 -0400
-Date: Wed, 6 Jun 2012 08:56:56 -0700
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-ID: <tip-6uc3wk5s9udxtdl9cnku0vtt@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, lkml.alex@gmail.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, lkml.alex@gmail.com
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] sched: Validate assumptions in sched_init_numa(
- )
-Git-Commit-ID: d039ac60800fe8ed8522ec3b9ca796aaf748c18b
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 6 Jun 2012 11:57:27 -0400
+Date: Wed, 6 Jun 2012 11:57:26 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Namjae Jeon <linkinjeon@gmail.com>
+cc: James.Bottomley@HansenPartnership.com, <gregkh@linuxfoundation.org>,
+        <mdharm-usb@one-eyed-alien.net>, <linux-usb@vger.kernel.org>,
+        <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Pankaj Kumar <pankaj.km@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: Re: [PATCH 2/3] usb: storage: add support write cache quirk on usb
+ hdd
+In-Reply-To: <1338985247-9720-1-git-send-email-linkinjeon@gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1206061154100.1788-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 06 Jun 2012 08:57:02 -0700 (PDT)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d039ac60800fe8ed8522ec3b9ca796aaf748c18b
-Gitweb:     http://git.kernel.org/tip/d039ac60800fe8ed8522ec3b9ca796aaf748c18b
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Thu, 31 May 2012 21:20:16 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 6 Jun 2012 16:52:30 +0200
+On Wed, 6 Jun 2012, Namjae Jeon wrote:
 
-sched: Validate assumptions in sched_init_numa()
+> Add support write cache quirk on usb hdd. scsi driver will be set to wce by detecting write cache quirk in quirk list when plugging usb hdd.
+> 
+> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+> Signed-off-by: Pankaj Kumar <pankaj.km@samsung.com>
+> Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
+> ---
+>  drivers/usb/storage/scsiglue.c |    6 ++++++
+>  drivers/usb/storage/usb.c      |    5 ++++-
+>  include/linux/usb/quirks.h     |    3 +++
+>  include/linux/usb_usual.h      |    4 +++-
+>  4 files changed, 16 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/usb/storage/scsiglue.c b/drivers/usb/storage/scsiglue.c
+> index a324a5d..f7d0ea5 100644
+> --- a/drivers/usb/storage/scsiglue.c
+> +++ b/drivers/usb/storage/scsiglue.c
+> @@ -51,6 +51,7 @@
+>  #include <scsi/scsi_devinfo.h>
+>  #include <scsi/scsi_device.h>
+>  #include <scsi/scsi_eh.h>
+> +#include <linux/usb/quirks.h>
+>  
+>  #include "usb.h"
+>  #include "scsiglue.h"
+> @@ -230,6 +231,11 @@ static int slave_configure(struct scsi_device *sdev)
+>  					US_FL_SCM_MULT_TARG)) &&
+>  				us->protocol == USB_PR_BULK)
+>  			us->use_last_sector_hacks = 1;
+> +
+> +		/* Check for the cache quirk present or not */
+> +		if (us->pusb_dev->quirks & USB_QUIRK_WRITE_CACHE ||
+> +				us->fflags & US_FL_WRITE_CACHE)
+> +				sdev->wce_quirk = 1;
 
-Add some code to validate assumptions we're making and output
-warnings if they are not.
+This is very wrong.  Your new quirk should be added only to us->fflags, 
+not to us->pusb_dev->quirks.
 
-If this trigger we want to know about it.
+> --- a/drivers/usb/storage/usb.c
+> +++ b/drivers/usb/storage/usb.c
+> @@ -473,7 +473,7 @@ static void adjust_quirks(struct us_data *us)
+>  			US_FL_CAPACITY_OK | US_FL_IGNORE_RESIDUE |
+>  			US_FL_SINGLE_LUN | US_FL_NO_WP_DETECT |
+>  			US_FL_NO_READ_DISC_INFO | US_FL_NO_READ_CAPACITY_16 |
+> -			US_FL_INITIAL_READ10);
+> +			US_FL_INITIAL_READ10 | US_FL_WRITE_CACHE);
+>  
+>  	p = quirks;
+>  	while (*p) {
+> @@ -538,6 +538,9 @@ static void adjust_quirks(struct us_data *us)
+>  		case 'w':
+>  			f |= US_FL_NO_WP_DETECT;
+>  			break;
+> +		case 'p':
+> +			f |= US_FL_WRITE_CACHE;
+> +			break;
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Alex Shi <lkml.alex@gmail.com>
-Link: http://lkml.kernel.org/n/tip-6uc3wk5s9udxtdl9cnku0vtt@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/sched/core.c |   99 +++++++++++++++++++++++++++++++++++++++++----------
- 1 files changed, 80 insertions(+), 19 deletions(-)
+These cases are in alphabetical order.  Please keep them that way.
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 725ee7c..2bdd176 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -5556,15 +5556,20 @@ static cpumask_var_t sched_domains_tmpmask; /* sched_domains_mutex */
- 
- #ifdef CONFIG_SCHED_DEBUG
- 
--static __read_mostly int sched_domain_debug_enabled;
-+static __read_mostly int sched_debug_enabled;
- 
--static int __init sched_domain_debug_setup(char *str)
-+static int __init sched_debug_setup(char *str)
- {
--	sched_domain_debug_enabled = 1;
-+	sched_debug_enabled = 1;
- 
- 	return 0;
- }
--early_param("sched_debug", sched_domain_debug_setup);
-+early_param("sched_debug", sched_debug_setup);
-+
-+static inline bool sched_debug(void)
-+{
-+	return sched_debug_enabled;
-+}
- 
- static int sched_domain_debug_one(struct sched_domain *sd, int cpu, int level,
- 				  struct cpumask *groupmask)
-@@ -5657,7 +5662,7 @@ static void sched_domain_debug(struct sched_domain *sd, int cpu)
- {
- 	int level = 0;
- 
--	if (!sched_domain_debug_enabled)
-+	if (!sched_debug_enabled)
- 		return;
- 
- 	if (!sd) {
-@@ -5678,6 +5683,10 @@ static void sched_domain_debug(struct sched_domain *sd, int cpu)
- }
- #else /* !CONFIG_SCHED_DEBUG */
- # define sched_domain_debug(sd, cpu) do { } while (0)
-+static inline bool sched_debug(void)
-+{
-+	return false;
-+}
- #endif /* CONFIG_SCHED_DEBUG */
- 
- static int sd_degenerate(struct sched_domain *sd)
-@@ -6373,7 +6382,6 @@ static struct sched_domain_topology_level *sched_domain_topology = default_topol
- #ifdef CONFIG_NUMA
- 
- static int sched_domains_numa_levels;
--static int sched_domains_numa_scale;
- static int *sched_domains_numa_distance;
- static struct cpumask ***sched_domains_numa_masks;
- static int sched_domains_curr_level;
-@@ -6438,6 +6446,42 @@ static const struct cpumask *sd_numa_mask(int cpu)
- 	return sched_domains_numa_masks[sched_domains_curr_level][cpu_to_node(cpu)];
- }
- 
-+static void sched_numa_warn(const char *str)
-+{
-+	static int done = false;
-+	int i,j;
-+
-+	if (done)
-+		return;
-+
-+	done = true;
-+
-+	printk(KERN_WARNING "ERROR: %s\n\n", str);
-+
-+	for (i = 0; i < nr_node_ids; i++) {
-+		printk(KERN_WARNING "  ");
-+		for (j = 0; j < nr_node_ids; j++)
-+			printk(KERN_CONT "%02d ", node_distance(i,j));
-+		printk(KERN_CONT "\n");
-+	}
-+	printk(KERN_WARNING "\n");
-+}
-+
-+static bool find_numa_distance(int distance)
-+{
-+	int i;
-+
-+	if (distance == node_distance(0, 0))
-+		return true;
-+
-+	for (i = 0; i < sched_domains_numa_levels; i++) {
-+		if (sched_domains_numa_distance[i] == distance)
-+			return true;
-+	}
-+
-+	return false;
-+}
-+
- static void sched_init_numa(void)
- {
- 	int next_distance, curr_distance = node_distance(0, 0);
-@@ -6445,7 +6489,6 @@ static void sched_init_numa(void)
- 	int level = 0;
- 	int i, j, k;
- 
--	sched_domains_numa_scale = curr_distance;
- 	sched_domains_numa_distance = kzalloc(sizeof(int) * nr_node_ids, GFP_KERNEL);
- 	if (!sched_domains_numa_distance)
- 		return;
-@@ -6456,23 +6499,41 @@ static void sched_init_numa(void)
- 	 *
- 	 * Assumes node_distance(0,j) includes all distances in
- 	 * node_distance(i,j) in order to avoid cubic time.
--	 *
--	 * XXX: could be optimized to O(n log n) by using sort()
- 	 */
- 	next_distance = curr_distance;
- 	for (i = 0; i < nr_node_ids; i++) {
- 		for (j = 0; j < nr_node_ids; j++) {
--			int distance = node_distance(0, j);
--			if (distance > curr_distance &&
--					(distance < next_distance ||
--					 next_distance == curr_distance))
--				next_distance = distance;
-+			for (k = 0; k < nr_node_ids; k++) {
-+				int distance = node_distance(i, k);
-+
-+				if (distance > curr_distance &&
-+				    (distance < next_distance ||
-+				     next_distance == curr_distance))
-+					next_distance = distance;
-+
-+				/*
-+				 * While not a strong assumption it would be nice to know
-+				 * about cases where if node A is connected to B, B is not
-+				 * equally connected to A.
-+				 */
-+				if (sched_debug() && node_distance(k, i) != distance)
-+					sched_numa_warn("Node-distance not symmetric");
-+
-+				if (sched_debug() && i && !find_numa_distance(distance))
-+					sched_numa_warn("Node-0 not representative");
-+			}
-+			if (next_distance != curr_distance) {
-+				sched_domains_numa_distance[level++] = next_distance;
-+				sched_domains_numa_levels = level;
-+				curr_distance = next_distance;
-+			} else break;
- 		}
--		if (next_distance != curr_distance) {
--			sched_domains_numa_distance[level++] = next_distance;
--			sched_domains_numa_levels = level;
--			curr_distance = next_distance;
--		} else break;
-+
-+		/*
-+		 * In case of sched_debug() we verify the above assumption.
-+		 */
-+		if (!sched_debug())
-+			break;
- 	}
- 	/*
- 	 * 'level' contains the number of unique distances, excluding the
+Also, if you're going to change a module parameter like this then you 
+_must_ update the description in Documentation/kernel-parameters.txt.
+
+> --- a/include/linux/usb/quirks.h
+> +++ b/include/linux/usb/quirks.h
+> @@ -30,4 +30,7 @@
+>     descriptor */
+>  #define USB_QUIRK_DELAY_INIT		0x00000040
+>  
+> +/* Device can't handle cache status request */
+> +#define USB_QUIRK_WRITE_CACHE		0x00000080
+
+As mentioned above, this is wrong.
+
+> --- a/include/linux/usb_usual.h
+> +++ b/include/linux/usb_usual.h
+> @@ -64,7 +64,9 @@
+>  	US_FLAG(NO_READ_CAPACITY_16,	0x00080000)		\
+>  		/* cannot handle READ_CAPACITY_16 */		\
+>  	US_FLAG(INITIAL_READ10,	0x00100000)			\
+> -		/* Initial READ(10) (and others) must be retried */
+> +		/* Initial READ(10) (and others) must be retried */	\
+> +	US_FLAG(WRITE_CACHE, 0x00200000)		\
+
+And this is right.  But please try to make your '\' characters line up 
+with the existing ones.
+
+> +	/* Cache read status is not correct */
+
+This comment, however is wrong.  The flag applies when the cache status 
+is not _available_ rather than when it is not _correct_.
+
+Alan Stern
+
