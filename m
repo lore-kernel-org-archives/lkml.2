@@ -1,77 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757355Ab2FFQ7K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 12:59:10 -0400
-Received: from mga01.intel.com ([192.55.52.88]:13725 "EHLO mga01.intel.com"
+	id S1757377Ab2FFRBa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 13:01:30 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:40098 "EHLO mail.mev.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756816Ab2FFQ7I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 12:59:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="175577765"
-Message-ID: <4FCF8C59.8090808@linux.intel.com>
-Date: Wed, 06 Jun 2012 09:59:05 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1756406Ab2FFRB2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 13:01:28 -0400
+Message-ID: <4FCF8CE2.1020507@mev.co.uk>
+Date: Wed, 6 Jun 2012 18:01:22 +0100
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120601 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        "Yu, Fenghua" <fenghua.yu@intel.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@elte.hu>,
-        H Peter Anvin <hpa@zytor.com>,
-        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
-        "Mallick, Asit K" <asit.k.mallick@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>,
-        linux-pm <linux-pm@vger.kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [PATCH 0/6] x86/cpu hotplug: Wake up offline CPU via mwait or
- nmi
-References: <3908561D78D1C84285E8C5FCA982C28F19300965@ORSMSX104.amr.corp.intel.com> <1338918625.2749.29.camel@twins> <alpine.LFD.2.02.1206052106440.3086@ionos> <1338925756.2749.36.camel@twins> <alpine.LFD.2.02.1206052153200.3086@ionos> <1338931856.2749.57.camel@twins> <20120605221240.GW2388@linux.vnet.ibm.com> <1338972223.2749.79.camel@twins> <20120606144127.GF19601@linux.vnet.ibm.com> <4FCF760A.7030501@linux.intel.com> <20120606154944.GL19601@linux.vnet.ibm.com>
-In-Reply-To: <20120606154944.GL19601@linux.vnet.ibm.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=ISO-8859-1
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+CC: Ian Abbott <ian.abbott@mev.co.uk>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] staging: comedi: ni_mio_common.c: local functions should
+ be static
+References: <201206051120.22177.hartleys@visionengravers.com> <4FCF2E07.1090401@mev.co.uk> <ADE657CA350FB648AAC2C43247A983F0020698D12BFE@AUSP01VMBX24.collaborationhost.net>
+In-Reply-To: <ADE657CA350FB648AAC2C43247A983F0020698D12BFE@AUSP01VMBX24.collaborationhost.net>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/6/2012 8:49 AM, Paul E. McKenney wrote:
-> On Wed, Jun 06, 2012 at 08:23:54AM -0700, Arjan van de Ven wrote:
->> On 6/6/2012 7:41 AM, Paul E. McKenney wrote:
->>> On Wed, Jun 06, 2012 at 10:43:43AM +0200, Peter Zijlstra wrote:
->>>> On Tue, 2012-06-05 at 15:12 -0700, Paul E. McKenney wrote:
->>>>>> What I can't see is the isolated functional, aside from the above
->>>>>> mentioned things, that's not strictly a per-cpu property, we can have a
->>>>>> group that's isolated from the rest but not from each other.
->>>>>
->>>>> I suspect that Thomas is thinking that the CPU is so idle that it no
->>>>> longer has to participate in TLB invalidation or RCU.  (Thomas will
->>>>> correct me if I am confused.)  But Peter, is that the level of idle
->>>>> you are thinking of? 
->>>>
->>>> No, we're talking about isolated, so its very much running something.
+On 2012-06-06 17:22, H Hartley Sweeten wrote:
+> On Wednesday, June 06, 2012 3:17 AM, Ian Abbott wrote:
+>> On 2012-06-05 19:20, H Hartley Sweeten wrote:
+>>> Local functions should be marked static to prevent them from
+>>> being exposed globally.
 >>>
->>> From what I can see, if the CPU is running something, this is Thomas's
->>> "Isolated functional" state rather than his "Isolated idle" state.
->>> The isolated-idle state should not need to participate in TLB invalidation
->>> or RCU, so that the CPU never ever needs to wake up while in the
->>> isolated-idle state.
+>>> This quiets the following sparse warnings:
+>>>
+>>> warning: symbol 'ni_release_gpct_mite_channel' was not declared. Should it be static?
+>>> warning: symbol 'ni_prime_channelgain_list' was not declared. Should it be static?
+>>>
+>>> Signed-off-by: H Hartley Sweeten<hsweeten@visionengravers.com>
+>>> Cc: Ian Abbott<abbotti@mev.co.uk>
+>>> Cc: Mori Hess<fmhess@users.sourceforge.net>
+>>> Cc: Greg Kroah-Hartman<gregkh@linuxfoundation.org>
+>>>
+>>> ---
+>>>
+>>> diff --git a/drivers/staging/comedi/drivers/ni_mio_common.c b/drivers/staging/comedi/drivers/ni_mio_common.c
+>>> index fd232bc..3b3a0b1 100644
+>>> --- a/drivers/staging/comedi/drivers/ni_mio_common.c
+>>> +++ b/drivers/staging/comedi/drivers/ni_mio_common.c
+>>> @@ -644,7 +644,7 @@ static void ni_release_ao_mite_channel(struct comedi_device *dev)
+>>>    #endif /*  PCIDMA */
+>>>    }
+>>>
+>>> -void ni_release_gpct_mite_channel(struct comedi_device *dev,
+>>> +static void ni_release_gpct_mite_channel(struct comedi_device *dev,
+>>>    				  unsigned gpct_index)
+>>>    {
+>>>    #ifdef PCIDMA
+>>> @@ -1880,7 +1880,7 @@ static int ni_ai_insn_read(struct comedi_device *dev,
+>>>    	return insn->n;
+>>>    }
 >>
->> btw TLB invalidation I think is a red herring in this discussion
->> (other than "global PTEs" kind of kernel pte changes);
->> at least on x86 this is not happening for a long time; if a CPU is
->> really idle (which means the CPU internally flushes the tlbs anyway),
->> Linux also switches to the kernel PTE set so there's no need for a flush
->> later on.
-> 
-> Right, as I understand it, only unmappings in the kernel address space
-> would need to IPI an idle CPU.  But this is still a source of IPIs that
-> could wake up the CPU, correct?
+>> This results in a compiler warning about the unused function
+>> ni_release_gpct_mite_channel when compiling ni_atmio.c.  It was unused
+>> before of course, but now it is static, the compiler realizes it!
+>
+> Ugh... c code including c code... I didn't notice that until now.
+>
+>> It could be fixed for now by moving the '#ifdef PCIDMA' and matching
+>> '#endif' to surround the whole function, though I guess we want to try
+>> and get rid of the #ifdef's eventually.  It's tricky because
+>> ni_mio_common.c isn't a standalone compilation unit, it's #include'd by
+>> some other .c files.  We might need to have a go at splitting it up at
+>> some point.
+>
+> The ni_mio_common.c file should just get turned into a library module.
+>
+> Right now it's a bit of a mess. The individual drivers define PCIDMA
+> before including ni_mio_common.c. The only one that sets the define
+> is ni_pcimio but it's also included by ni_atmio and ni_mio_cs.
+>
+> I'll look it over and see what might be done to fix it.
 
-this is correct.
-in practice, they happen pretty much only when you load or unload a
-kernel module...
+You have to be careful with module dependencies if doing that, as you 
+don't want the ni_atmio module to depend on the mite and ni_tiocmd 
+modules for example.
 
-frankly I wouldn't worry about optimizing for that case ;-)
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
