@@ -1,96 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756730Ab2FFPUs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 11:20:48 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39947 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754061Ab2FFPUq (ORCPT
+	id S1756671Ab2FFPVz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 11:21:55 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:51235 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756603Ab2FFPVy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 11:20:46 -0400
-Date: Wed, 6 Jun 2012 08:20:33 -0700
-From: tip-bot for Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>
-Message-ID: <tip-f6175f5bfb4c9f2ed32758c95f765b529b1a7f15@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, agordeev@redhat.com, hpa@zytor.com,
-        mingo@kernel.org, yinghai@kernel.org, tomoki.sekiyama.qu@hitachi.com,
-        suresh.b.siddha@intel.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, agordeev@redhat.com,
-        linux-kernel@vger.kernel.org, yinghai@kernel.org,
-        suresh.b.siddha@intel.com, tglx@linutronix.de,
-        tomoki.sekiyama.qu@hitachi.com
-In-Reply-To: <4FC340BE.7080101@hitachi.com>
-References: <4FC340BE.7080101@hitachi.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/ioapic:
-  Fix NULL pointer dereference on CPU hotplug after disabling irqs
-Git-Commit-ID: f6175f5bfb4c9f2ed32758c95f765b529b1a7f15
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 6 Jun 2012 11:21:54 -0400
+Date: Wed, 6 Jun 2012 11:21:52 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: Ming Lei <ming.lei@canonical.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        USB list <linux-usb@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] driver core: fix shutdown races with probe/remove
+In-Reply-To: <20120606134214.GC19601@linux.vnet.ibm.com>
+Message-ID: <Pine.LNX.4.44L0.1206061110360.1788-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 06 Jun 2012 08:20:39 -0700 (PDT)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f6175f5bfb4c9f2ed32758c95f765b529b1a7f15
-Gitweb:     http://git.kernel.org/tip/f6175f5bfb4c9f2ed32758c95f765b529b1a7f15
-Author:     Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>
-AuthorDate: Mon, 28 May 2012 18:09:18 +0900
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 6 Jun 2012 12:03:25 +0200
+On Wed, 6 Jun 2012, Paul E. McKenney wrote:
 
-x86/ioapic: Fix NULL pointer dereference on CPU hotplug after disabling irqs
+> No sane compiler would change it to a byte-at-a-time store, but the
+> compiler would nevertheless be within its rights to do so.  And a quick
+> review of certain LKML threads could easily cause anyone to question gcc's
+> sanity.  Furthermore, the compiler is permitted to make transformations
+> like the following, which it might well do to save a branch:
+> 
+> 	if (b)				a = 0;
+> 		a = 1;			if (b)
+> 	else					a = 1;
+> 		a = 0;
 
-In current Linux, percpu variable `vector_irq' is not cleared on
-offlined cpus while disabling devices' irqs. If the cpu that has
-the disabled irqs in vector_irq is hotplugged,
-__setup_vector_irq() hits invalid irq vector and may crash.
+The compiler would be forbidden if the original code were
 
-This bug can be reproduced as following;
+	if (b)
+		ACCESS_ONCE(a) = 1;
+	else
+		ACCESS_ONCE(a) = 0;
 
-  # echo 0 > /sys/devices/system/cpu/cpu7/online
-  # modprobe -r some_driver_using_interrupts      # vector_irq@cpu7 uncleared
-  # echo 1 > /sys/devices/system/cpu/cpu7/online  # kernel may crash
+But if I remember correctly, the code snippet we were talking was more 
+like:
 
-This patch fixes this bug by clearing vector_irq in
-__clear_irq_vector() even if the cpu is offlined.
+	if (ACCESS_ONCE(b))
+		a = 1;
 
-Signed-off-by: Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>
-Acked-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: yrl.pp-manager.tt@hitachi.com
-Cc: ltc-kernel@ml.yrl.intra.hitachi.co.jp
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Alexander Gordeev <agordeev@redhat.com>
-Link: http://lkml.kernel.org/r/4FC340BE.7080101@hitachi.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/apic/io_apic.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Isn't this use of ACCESS_ONCE unnecessary?
 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index ac96561..5f0ff59 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -1195,7 +1195,7 @@ static void __clear_irq_vector(int irq, struct irq_cfg *cfg)
- 	BUG_ON(!cfg->vector);
- 
- 	vector = cfg->vector;
--	for_each_cpu_and(cpu, cfg->domain, cpu_online_mask)
-+	for_each_cpu(cpu, cfg->domain)
- 		per_cpu(vector_irq, cpu)[vector] = -1;
- 
- 	cfg->vector = 0;
-@@ -1203,7 +1203,7 @@ static void __clear_irq_vector(int irq, struct irq_cfg *cfg)
- 
- 	if (likely(!cfg->move_in_progress))
- 		return;
--	for_each_cpu_and(cpu, cfg->old_domain, cpu_online_mask) {
-+	for_each_cpu(cpu, cfg->old_domain) {
- 		for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS;
- 								vector++) {
- 			if (per_cpu(vector_irq, cpu)[vector] != irq)
+> In short, without ACCESS_ONCE(), the compiler is within its rights to
+> assume that the code is single-threaded.  There are a large number of
+> non-obvious optimizations that are safe in single-threaded code but
+> destructive in multithreaded code.
+
+Followed to its logical conclusion, this means that virtually every
+access to a shared variable that isn't protected by some sort of lock
+or isn't one of the special atomic operations needs to use
+ACCESS_ONCE.  The kernel must be riddled with places that don't do 
+this.
+
+Besides, how sure are you that even in the presence of ACCESS_ONCE, the
+compiler will not make any unsafe transformations?  For example, is the
+compiler forbidden from transforming
+
+	if (a)
+		ACCESS_ONCE(b) = 5;
+
+into
+
+	tmp = c;
+	c = 999;
+	if (a)
+		ACCESS_ONCE(b) = 5;
+	c = tmp;
+
+?  After all, the c variable isn't protected by ACCESS_ONCE in the 
+original code.  And yet this transformation is clearly _unsafe_ for 
+multi-threaded operation.
+
+> In addition, and perhaps more important, ACCESS_ONCE() serves as useful
+> documentation of the fact that the variable is accessed outside of locks.
+
+True.
+
+Alan Stern
+
+
+
