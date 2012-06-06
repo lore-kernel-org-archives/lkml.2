@@ -1,39 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757938Ab2FFTCj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 15:02:39 -0400
-Received: from smtp-out002.kontent.com ([81.88.40.216]:58931 "EHLO
-	smtp-out002.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757364Ab2FFTCi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 15:02:38 -0400
-From: Oliver Neukum <oliver@neukum.org>
-To: stefani@seibold.net
-Subject: Re: [PATCH 04/11] remove usb_interface pointer
-Date: Wed, 6 Jun 2012 20:59:25 +0200
-User-Agent: KMail/1.13.5 (Linux/3.3.0-12-desktop+; KDE/4.4.4; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        alan@lxorguk.ukuu.org.uk, linux-usb@vger.kernel.org
-References: <1339000032-10313-1-git-send-email-stefani@seibold.net> <1339000032-10313-5-git-send-email-stefani@seibold.net>
-In-Reply-To: <1339000032-10313-5-git-send-email-stefani@seibold.net>
+	id S932109Ab2FFTDE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 15:03:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38882 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757856Ab2FFTDB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 15:03:01 -0400
+Date: Wed, 6 Jun 2012 12:53:40 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: linux-mm@kvack.org
+Subject: kernel BUG at mm/memory.c:1228!
+Message-ID: <20120606165330.GA27744@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201206062059.25125.oliver@neukum.org>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, 6. Juni 2012, 18:27:05 schrieb stefani@seibold.net:
-> 
-> From: Stefani Seibold <stefani@seibold.net>
-> 
-> this saves a litte bit of memory space in the driver devices structure
-> 
+I hit this in overnight testing..
 
-This really is the wrong way round.
+------------[ cut here ]------------
+kernel BUG at mm/memory.c:1228!
+invalid opcode: 0000 [#1] PREEMPT SMP 
+CPU 0 
+Modules linked in: ipt_ULOG tun fuse dccp_ipv6 dccp_ipv4 dccp nfnetlink binfmt_misc sctp libcrc32c caif_socket caif phonet bluetooth rfkill can llc2 pppoe pppox ppp_generic slhc irda crc_ccitt rds af_key decnet rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables kvm_intel kvm crc32c_intel ghash_clmulni_intel serio_raw microcode usb_debug pcspkr i2c_i801 e1000e nfsd nfs_acl auth_rpcgss lockd sunrpc i915 video i2c_algo_bit drm_kms_helper drm i2c_core [last unloaded: scsi_wait_scan]
 
-	Regards
-		Oliver
+Pid: 30885, comm: trinity-child0 Not tainted 3.5.0-rc1+ #61
+RIP: 0010:[<ffffffff8116a4f2>]  [<ffffffff8116a4f2>] unmap_single_vma+0x6f2/0x750
+RSP: 0000:ffff880119c4dab8  EFLAGS: 00010246
+RAX: ffff880116976300 RBX: 0000000100001000 RCX: ffff880000000000
+RDX: ffff880117c59000 RSI: 0000000100000fff RDI: ffff880119c4dbe0
+RBP: ffff880119c4db78 R08: 0000000000000000 R09: 0000000000000000
+R10: 0000000000000001 R11: 0000000000000000 R12: ffffffffffffffff
+R13: 0000000100000000 R14: 0000000100000000 R15: ffff880119c4dbe0
+FS:  00007fd1f2624740(0000) GS:ffff880147c00000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 000000000256f000 CR3: 0000000116e19000 CR4: 00000000001407f0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process trinity-child0 (pid: 30885, threadinfo ffff880119c4c000, task ffff880117dc0000)
+Stack:
+ 0000000019c4dad8 0000000000000070 0000000100000fff 0000000100000fff
+ 0000000100001000 ffff880116e19000 0000000100000fff ffff88013f500020
+ 0000000100001000 ffff880116976300 ffff880116976360 000000013d559160
+Call Trace:
+ [<ffffffff8116ad22>] unmap_vmas+0x52/0xa0
+ [<ffffffff81172934>] exit_mmap+0xb4/0x150
+ [<ffffffff81046033>] mmput+0x83/0xf0
+ [<ffffffff8104f2b8>] exit_mm+0x108/0x130
+ [<ffffffff8164dd2b>] ? _raw_spin_unlock_irq+0x3b/0x60
+ [<ffffffff8104f444>] do_exit+0x164/0xb90
+ [<ffffffff81062781>] ? get_signal_to_deliver+0x291/0x930
+ [<ffffffff810b1e7e>] ? put_lock_stats.isra.23+0xe/0x40
+ [<ffffffff8164dd20>] ? _raw_spin_unlock_irq+0x30/0x60
+ [<ffffffff810501bc>] do_group_exit+0x4c/0xc0
+ [<ffffffff810627be>] get_signal_to_deliver+0x2ce/0x930
+ [<ffffffff8100225f>] do_signal+0x3f/0x610
+ [<ffffffff81630000>] ? ich6_lpc_generic_decode+0x12/0x73
+ [<ffffffff8163fb4b>] ? is_prefetch.isra.13+0xd8/0x1fd
+ [<ffffffff8164e443>] ? error_sti+0x5/0x6
+ [<ffffffff8164e08e>] ? retint_signal+0x11/0x83
+ [<ffffffff810028d8>] do_notify_resume+0x88/0xc0
+ [<ffffffff8164e0c3>] retint_signal+0x46/0x83
+Code: 40 49 89 04 24 e9 a4 fd ff ff 0f 1f 80 00 00 00 00 48 8b 55 98 48 8b 7d a0 4c 89 e9 4c 89 f6 e8 15 dd ff ff e9 a9 fd ff ff 0f 0b <0f> 0b 48 8b 7d a0 31 d2 31 f6 e8 1f 97 ec ff e9 74 f9 ff ff 48 
+RIP  [<ffffffff8116a4f2>] unmap_single_vma+0x6f2/0x750
+ RSP <ffff880119c4dab8>
+---[ end trace 9e2b5f3bc9692250 ]---
+
+
+That's this in zap_pmd_range
+
+
+1227                         if (next - addr != HPAGE_PMD_SIZE) {
+1228                                 VM_BUG_ON(!rwsem_is_locked(&tlb->mm->mmap_sem));
+1229                                 split_huge_page_pmd(vma->vm_mm, pmd);
 
