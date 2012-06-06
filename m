@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757489Ab2FFRNK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 13:13:10 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:46819 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755817Ab2FFRNH (ORCPT
+	id S1757471Ab2FFRQI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 13:16:08 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:38141 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756633Ab2FFRQH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 13:13:07 -0400
-Subject: Re: [PATCH] virtio-net: fix a race on 32bit arches
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Jason Wang <jasowang@redhat.com>, netdev@vger.kernel.org,
-        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Stephen Hemminger <shemminger@vyatta.com>
-In-Reply-To: <20120606161715.GA17575@redhat.com>
-References: <1338971724.2760.3913.camel@edumazet-glaptop>
-	 <1338972341.2760.3944.camel@edumazet-glaptop>
-	 <20120606111357.GA15070@redhat.com>
-	 <1338988210.2760.4485.camel@edumazet-glaptop>
-	 <20120606144941.GA17092@redhat.com>
-	 <1338995944.26966.6.camel@edumazet-glaptop>
-	 <20120606161715.GA17575@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 06 Jun 2012 19:13:02 +0200
-Message-ID: <1339002782.26966.22.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Wed, 6 Jun 2012 13:16:07 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6733"; a="198355575"
+Message-ID: <4FCF9053.6020102@codeaurora.org>
+Date: Wed, 06 Jun 2012 10:16:03 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Bryan Freed <bfreed@chromium.org>
+CC: linux-kernel@vger.kernel.org, keescook@chromium.org,
+        marco.stornelli@gmail.com, grant.likely@secretlab.ca,
+        anton.vorontsov@linaro.org
+Subject: Re: [PATCH] pstore/ram: Add ramoops support for the Flattened Device
+ Tree.
+References: <1338926395-26298-1-git-send-email-bfreed@chromium.org>
+In-Reply-To: <1338926395-26298-1-git-send-email-bfreed@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-06-06 at 19:17 +0300, Michael S. Tsirkin wrote:
+On 06/05/12 12:59, Bryan Freed wrote:
+> When called with a non-zero of_node, fill out a new ramoops_platform_data
+> with data from the specified Flattened Device Tree node.
+> Update ramoops documentation with the new FDT interface.
+>
+> Change-Id: Id8f9f0abc5b564375c1b6d5d30c92d57d76520b7
+> Signed-off-by: Bryan Freed <bfreed@chromium.org>
+> ---
+>  Documentation/ramoops.txt |   19 +++++++++++++++++--
+>  fs/pstore/ram.c           |   43 +++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 60 insertions(+), 2 deletions(-)
 
-> But why do you say at most 1 packet?
-> 
-> Consider get_stats doing:
->                u64_stats_update_begin(&stats->syncp);
->                stats->tx_bytes += skb->len;
-> 
-> on 64 bit at this point
-> tx_packets might get incremented any number of times, no?
-> 
->                 stats->tx_packets++;
->                 u64_stats_update_end(&stats->syncp);
-> 
-> now tx_bytes and tx_packets are out of sync by more than 1.
+Can you document the binding in Documentation/devicetree/bindings/* too?
 
-You lost me there.
+> diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
+> index 9123cce..bf0f882 100644
+> --- a/fs/pstore/ram.c
+> +++ b/fs/pstore/ram.c
+> @@ -213,6 +248,14 @@ static int __init ramoops_probe(struct platform_device *pdev)
+>  	if (cxt->max_count)
+>  		goto fail_out;
+>  
+> +	if (pdev->dev.of_node) {
+> +		if (of_ramoops_platform_data(pdev->dev.of_node, &of_pdata)) {
+> +			pr_err("Invalid ramoops device tree data\n");
 
-No idea of what you are thinking about.
+dev_err()?
 
-There is no atomicity guarantee in SNMP counters. (Ie fetching tx_bytes
-and tx_packets in a transaction is not mandatory in any RFC)
-
-As long as there is no cumulative error, its OK.
-
-
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
