@@ -1,49 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759146Ab2FFWye (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 18:54:34 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:38093 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754513Ab2FFWyc (ORCPT
+	id S1759202Ab2FFW4p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 18:56:45 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:53727 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754923Ab2FFW4o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 18:54:32 -0400
-Date: Thu, 7 Jun 2012 07:54:26 +0900
-From: Greg KH <gregkh@linuxfoundation.org>
-To: stefani@seibold.net
-Cc: linux-kernel@vger.kernel.org, oneukum@suse.de, alan@lxorguk.ukuu.org.uk,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH 04/11] remove usb_interface pointer
-Message-ID: <20120606225426.GA8270@kroah.com>
-References: <1339000032-10313-1-git-send-email-stefani@seibold.net>
- <1339000032-10313-5-git-send-email-stefani@seibold.net>
+	Wed, 6 Jun 2012 18:56:44 -0400
+Message-ID: <4FCFE028.10005@gmail.com>
+Date: Wed, 06 Jun 2012 17:56:40 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339000032-10313-5-git-send-email-stefani@seibold.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+CC: linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH 1/2] edac: add support for Calxeda highbank memory controller
+References: <1339020125-20198-1-git-send-email-robherring2@gmail.com> <1339020125-20198-2-git-send-email-robherring2@gmail.com> <4FCFDB12.3090403@redhat.com>
+In-Reply-To: <4FCFDB12.3090403@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 06, 2012 at 06:27:05PM +0200, stefani@seibold.net wrote:
-> From: Stefani Seibold <stefani@seibold.net>
-> 
-> this saves a litte bit of memory space in the driver devices structure
-> 
-> Signed-off-by: Stefani Seibold <stefani@seibold.net>
-> ---
->  drivers/usb/usb-skeleton.c |   23 ++++++++++++-----------
->  1 files changed, 12 insertions(+), 11 deletions(-)
-> 
-> diff --git a/drivers/usb/usb-skeleton.c b/drivers/usb/usb-skeleton.c
-> index 2f17991..f7fe32f 100644
-> --- a/drivers/usb/usb-skeleton.c
-> +++ b/drivers/usb/usb-skeleton.c
-> @@ -49,7 +49,6 @@ MODULE_DEVICE_TABLE(usb, skel_table);
->  /* Structure to hold all of our device specific stuff */
->  struct usb_skel {
->  	struct usb_device	*udev;			/* the usb device for this device */
-> -	struct usb_interface	*interface;		/* the interface for this device */
+Mauro,
 
-No, that's the exact opposite of what I asked you to do.
+On 06/06/2012 05:34 PM, Mauro Carvalho Chehab wrote:
+> Hi Rob,
+> 
+> Em 06-06-2012 19:02, Rob Herring escreveu:
+>> From: Rob Herring <rob.herring@calxeda.com>
+>>
+>> Add support for memory controller on Calxeda Highbank platforms. Highbank
+>> platforms support a single 4GB mini-DIMM with 1-bit correction and 2-bit
+>> detection.
+>>
 
+[snip]
+
+>> +
+>> +	layers[0].type = EDAC_MC_LAYER_CHIP_SELECT;
+>> +	layers[0].size = 1;
+>> +	layers[0].is_virt_csrow = true;
+>> +	layers[1].type = EDAC_MC_LAYER_CHANNEL;
+>> +	layers[1].size = 1;
+>> +	layers[1].is_virt_csrow = false;
+>> +	mci = edac_mc_alloc(0, ARRAY_SIZE(layers), layers,
+>> +			    sizeof(struct hb_mc_drvdata));
+> 
+> Hmm... I suspect that memories by DIMM chip select/channel at Calxeda,
+> as it is using just 1 cs/channel. It probably makes more sense to add new layer
+> type(s) to properly represent the way your memory controller addresses it, if
+> Calxeda doesn't work with DIMMs.
+
+Not sure I follow. DIMMs are supported, but only a newer JEDEC form
+factor (DDR3 72-bit mini DIMM). The h/w pretty much fixed to a single
+4GB DIMM. The controller is 1 72-bit channel.
+
+Rob
