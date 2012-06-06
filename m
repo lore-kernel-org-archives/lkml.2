@@ -1,183 +1,309 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755051Ab2FFI0g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 04:26:36 -0400
-Received: from casper.infradead.org ([85.118.1.10]:59194 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751445Ab2FFI0c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 04:26:32 -0400
-Message-ID: <1338971183.26785.33.camel@shinybook.infradead.org>
-Subject: Re: [PATCH 2/2] iommu: dmar -- reserve mmio space used by IOMMU
-From: David Woodhouse <dwmw2@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Don Dutile <ddutile@redhat.com>, iommu@lists.linux-foundation.org,
-        mingo@elte.hu, linux-kernel@vger.kernel.org, chrisw@redhat.com,
-        suresh.b.siddha@intel.com
-Date: Wed, 06 Jun 2012 09:26:23 +0100
-In-Reply-To: <20120606081600.GB5991@gmail.com>
-References: <1338845342-12464-1-git-send-email-ddutile@redhat.com>
-	 <1338845342-12464-3-git-send-email-ddutile@redhat.com>
-	 <1338849430.10884.288.camel@shinybook.infradead.org>
-	 <4FCD401D.9000304@redhat.com>
-	 <1338852196.26785.10.camel@shinybook.infradead.org>
-	 <20120606081600.GB5991@gmail.com>
-Content-Type: multipart/signed; micalg="sha1"; protocol="application/x-pkcs7-signature";
-	boundary="=-e++umgOLuj8SaWFuQA2K"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1755087Ab2FFI2M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 04:28:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59910 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754845Ab2FFI2B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 04:28:01 -0400
+Date: Wed, 6 Jun 2012 11:27:52 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: netdev@vger.kernel.org, rusty@rustcorp.com.au,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [V2 RFC net-next PATCH 2/2] virtio_net: export more statistics
+ through ethtool
+Message-ID: <20120606082752.GA12767@redhat.com>
+References: <20120606075208.29081.75284.stgit@amd-6168-8-1.englab.nay.redhat.com>
+ <20120606075217.29081.30713.stgit@amd-6168-8-1.englab.nay.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120606075217.29081.30713.stgit@amd-6168-8-1.englab.nay.redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jun 06, 2012 at 03:52:17PM +0800, Jason Wang wrote:
+> Satistics counters is useful for debugging and performance optimization, so this
+> patch lets virtio_net driver collect following and export them to userspace
+> through "ethtool -S":
+> 
+> - number of packets sent/received
+> - number of bytes sent/received
+> - number of callbacks for tx/rx
+> - number of kick for tx/rx
+> - number of bytes/packets queued for tx
+> 
+> As virtnet_stats were per-cpu, so both per-cpu and gloabl satistics were
+> collected like:
+> 
+> NIC statistics:
+>      tx_bytes[0]: 1731209929
+>      tx_packets[0]: 60685
+>      tx_kicks[0]: 63
+>      tx_callbacks[0]: 73
+>      tx_queued_bytes[0]: 1935749360
+>      tx_queued_packets[0]: 80652
+>      rx_bytes[0]: 2695648
+>      rx_packets[0]: 40767
+>      rx_kicks[0]: 1
+>      rx_callbacks[0]: 2077
+>      tx_bytes[1]: 9105588697
+>      tx_packets[1]: 344150
+>      tx_kicks[1]: 162
+>      tx_callbacks[1]: 905
+>      tx_queued_bytes[1]: 8901049412
+>      tx_queued_packets[1]: 324184
+>      rx_bytes[1]: 23679828
+>      rx_packets[1]: 358770
+>      rx_kicks[1]: 6
+>      rx_callbacks[1]: 17717
+>      tx_bytes: 10836798626
+>      tx_packets: 404835
+>      tx_kicks: 225
+>      tx_callbacks: 978
+>      tx_queued_bytes: 10836798772
+>      tx_queued_packets: 404836
+>      rx_bytes: 26375476
+>      rx_packets: 399537
+>      rx_kicks: 7
+>      rx_callbacks: 19794
+> 
+> TODO:
+> 
+> - more statistics
+> - calculate the pending bytes/pkts
+>
 
---=-e++umgOLuj8SaWFuQA2K
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Do we need that? pending is (queued - packets), no?
+ 
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> 
+> ---
+> Changes from v1:
+> 
+> - style & typo fixs
+> - convert the statistics fields to array
+> - use unlikely()
+> ---
+>  drivers/net/virtio_net.c |  115 +++++++++++++++++++++++++++++++++++++++++++++-
+>  1 files changed, 113 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> index 6e4aa6f..909a0a7 100644
+> --- a/drivers/net/virtio_net.c
+> +++ b/drivers/net/virtio_net.c
+> @@ -44,8 +44,14 @@ module_param(gso, bool, 0444);
+>  enum virtnet_stats_type {
+>  	VIRTNET_TX_BYTES,
+>  	VIRTNET_TX_PACKETS,
+> +	VIRTNET_TX_KICKS,
+> +	VIRTNET_TX_CBS,
+> +	VIRTNET_TX_Q_BYTES,
+> +	VIRTNET_TX_Q_PACKETS,
+>  	VIRTNET_RX_BYTES,
+>  	VIRTNET_RX_PACKETS,
+> +	VIRTNET_RX_KICKS,
+> +	VIRTNET_RX_CBS,
+>  	VIRTNET_NUM_STATS,
+>  };
+>  
+> @@ -54,6 +60,21 @@ struct virtnet_stats {
+>  	u64 data[VIRTNET_NUM_STATS];
+>  };
+>  
+> +static struct {
 
-On Wed, 2012-06-06 at 10:16 +0200, Ingo Molnar wrote:
-> So basically the patch-set is fine as-is, we just want a=20
-> sufficiently nasty sounding warning message about the BIOS bug,=20
+static const?
 
-No. The other change that's required is that the warning and the
-workaround need to trigger even when IOMMU support isn't built into the
-kernel. This BIOS bug can bite you even when you aren't *using* the
-IOMMU.
+> +	char string[ETH_GSTRING_LEN];
+> +} virtnet_stats_str_attr[] = {
+> +	{ "tx_bytes" },
+> +	{ "tx_packets" },
+> +	{ "tx_kicks" },
+> +	{ "tx_callbacks" },
+> +	{ "tx_queued_bytes" },
+> +	{ "tx_queued_packets" },
+> +	{ "rx_bytes" },
+> +	{ "rx_packets" },
+> +	{ "rx_kicks" },
+> +	{ "rx_callbacks" },
+> +};
+> +
+>  struct virtnet_info {
+>  	struct virtio_device *vdev;
+>  	struct virtqueue *rvq, *svq, *cvq;
+> @@ -146,6 +167,11 @@ static struct page *get_a_page(struct virtnet_info *vi, gfp_t gfp_mask)
+>  static void skb_xmit_done(struct virtqueue *svq)
+>  {
+>  	struct virtnet_info *vi = svq->vdev->priv;
+> +	struct virtnet_stats *stats = this_cpu_ptr(vi->stats);
+> +
+> +	u64_stats_update_begin(&stats->syncp);
+> +	stats->data[VIRTNET_TX_CBS]++;
+> +	u64_stats_update_end(&stats->syncp);
+>  
+>  	/* Suppress further interrupts. */
+>  	virtqueue_disable_cb(svq);
+> @@ -465,6 +491,7 @@ static bool try_fill_recv(struct virtnet_info *vi, gfp_t gfp)
+>  {
+>  	int err;
+>  	bool oom;
+> +	struct virtnet_stats *stats = this_cpu_ptr(vi->stats);
+>  
+>  	do {
+>  		if (vi->mergeable_rx_bufs)
+> @@ -481,13 +508,24 @@ static bool try_fill_recv(struct virtnet_info *vi, gfp_t gfp)
+>  	} while (err > 0);
+>  	if (unlikely(vi->num > vi->max))
+>  		vi->max = vi->num;
+> -	virtqueue_kick(vi->rvq);
+> +	if (virtqueue_kick_prepare(vi->rvq)) {
 
-> If we could integrate Coreboot into the kernel and could build a=20
-> bzImage that one could write into the BIOS flash image and thus=20
-> have an updated and functional BIOS, that would be awesome.
+if (unlikely())
+also move stats here where they are actually used?
 
-People *have* used the kernel as a Coreboot payload, but it's not really
-the best solution. For anything but deeply embedded devices, you
-probably do want a real firmware of some kind (like Tianocore).
+> +		virtqueue_notify(vi->rvq);
+> +		u64_stats_update_begin(&stats->syncp);
+> +		stats->data[VIRTNET_RX_KICKS]++;
+> +		u64_stats_update_end(&stats->syncp);
+> +	}
+>  	return !oom;
+>  }
+>  
+>  static void skb_recv_done(struct virtqueue *rvq)
+>  {
+>  	struct virtnet_info *vi = rvq->vdev->priv;
+> +	struct virtnet_stats *stats = this_cpu_ptr(vi->stats);
+> +
+> +	u64_stats_update_begin(&stats->syncp);
+> +	stats->data[VIRTNET_RX_CBS]++;
+> +	u64_stats_update_end(&stats->syncp);
+> +
+>  	/* Schedule NAPI, Suppress further interrupts if successful. */
+>  	if (napi_schedule_prep(&vi->napi)) {
+>  		virtqueue_disable_cb(rvq);
+> @@ -630,7 +668,9 @@ static int xmit_skb(struct virtnet_info *vi, struct sk_buff *skb)
+>  static netdev_tx_t start_xmit(struct sk_buff *skb, struct net_device *dev)
+>  {
+>  	struct virtnet_info *vi = netdev_priv(dev);
+> +	struct virtnet_stats *stats = this_cpu_ptr(vi->stats);
+>  	int capacity;
+> +	bool kick;
+>  
+>  	/* Free up any pending old buffers before queueing new ones. */
+>  	free_old_xmit_skbs(vi);
+> @@ -655,7 +695,17 @@ static netdev_tx_t start_xmit(struct sk_buff *skb, struct net_device *dev)
+>  		kfree_skb(skb);
+>  		return NETDEV_TX_OK;
+>  	}
+> -	virtqueue_kick(vi->svq);
+> +
+> +	kick = virtqueue_kick_prepare(vi->svq);
+> +	if (unlikely(kick))
+> +		virtqueue_notify(vi->svq);
+> +
+> +	u64_stats_update_begin(&stats->syncp);
+> +	if (unlikely(kick))
+> +		stats->data[VIRTNET_TX_KICKS]++;
+> +	stats->data[VIRTNET_TX_Q_BYTES] += skb->len;
+> +	stats->data[VIRTNET_TX_Q_PACKETS]++;
+> +	u64_stats_update_end(&stats->syncp);
+>  
+>  	/* Don't wait up for transmitted skbs to be freed. */
+>  	skb_orphan(skb);
+> @@ -943,10 +993,71 @@ static void virtnet_get_drvinfo(struct net_device *dev,
+>  
+>  }
+>  
+> +static void virtnet_get_strings(struct net_device *dev, u32 stringset, u8 *buf)
+> +{
+> +	int i, cpu;
+> +	switch (stringset) {
+> +	case ETH_SS_STATS:
+> +		for_each_possible_cpu(cpu)
+> +			for (i = 0; i < VIRTNET_NUM_STATS; i++) {
+> +				sprintf(buf, "%s[%u]",
+> +					virtnet_stats_str_attr[i].string, cpu);
+> +				buf += ETH_GSTRING_LEN;
 
-The point in having hardware which is fully supported by Coreboot is
-that it gives you the choice. You *can* do the above, or more sensibly
-you can use it to deploy an up-to-date and working Tianocore without the
-type of bugs that we're discussing here. Or at least without the ones
-which offend *you*.
+I would do
+	 ret = snprintf(buf, ETH_GSTRING_LEN, ...)
+	 BUG_ON(ret >= ETH_GSTRING_LEN);
+here to make it more robust.
 
---=20
-dwmw2
+> +			}
+> +		for (i = 0; i < VIRTNET_NUM_STATS; i++) {
+> +			memcpy(buf, virtnet_stats_str_attr[i].string,
+> +				ETH_GSTRING_LEN);
+> +			buf += ETH_GSTRING_LEN;
+> +		}
 
---=-e++umgOLuj8SaWFuQA2K
-Content-Type: application/x-pkcs7-signature; name="smime.p7s"
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Transfer-Encoding: base64
+		So why not just memcpy the whole array there?
+		memcpy(buf, virtnet_stats_str_attr,
+		       sizeof virtnet_stats_str_attr);
 
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIUbjCCBjQw
-ggQcoAMCAQICAR4wDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0
-Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxKTAn
-BgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3MTAyNDIxMDE1NVoX
-DTE3MTAyNDIxMDE1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSsw
-KQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFy
-dENvbSBDbGFzcyAxIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTCCASIwDQYJKoZIhvcN
-AQEBBQADggEPADCCAQoCggEBAMcJg8zOLdgasSmkLhOrlr6KMoOMpohBllVHrdRvEg/q6r8jR+EK
-75xCGhR8ToREoqe7zM9/UnC6TS2y9UKTpT1v7RSMzR0t6ndl0TWBuUr/UXBhPk+Kmy7bI4yW4urC
-+y7P3/1/X7U8ocb8VpH/Clt+4iq7nirMcNh6qJR+xjOhV+VHzQMALuGYn5KZmc1NbJQYclsGkDxD
-z2UbFqE2+6vIZoL+jb9x4Pa5gNf1TwSDkOkikZB1xtB4ZqtXThaABSONdfmv/Z1pua3FYxnCFmdr
-/+N2JLKutIxMYqQOJebr/f/h5t95m4JgrM3Y/w7YX9d7YAL9jvN4SydHsU6n65cCAwEAAaOCAa0w
-ggGpMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBRTcu2SnODaywFc
-fH6WNU7y1LhRgjAfBgNVHSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRa
-MFgwJwYIKwYBBQUHMAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYh
-aHR0cDovL3d3dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6
-Ly93d3cuc3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5j
-b20vc2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
-dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93d3cu
-c3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBAAqDCH14qywG
-XLhjjF6uHLkjd02hcdh9hrw+VUsv+q1eeQWB21jWj3kJ96AUlPCoEGZ/ynJNScWy6QMVQjbbMXlt
-UfO4n4bGGdKo3awPWp61tjAFgraLJgDk+DsSvUD6EowjMTNx25GQgyYJ5RPIzKKR9tQW8gGK+2+R
-HxkUCTbYFnL6kl8Ch507rUdPPipJ9CgJFws3kDS3gOS5WFMxcjO5DwKfKSETEPrHh7p5shuuNktv
-sv6hxHTLhiMKX893gxdT3XLS9OKmCv87vkINQcNEcIIoFWbP9HORz9v3vQwR4e3ksLc2JZOAFK+s
-sS5XMEoznzpihEP0PLc4dCBYjbvSD7kxgDwZ+Aj8Q9PkbvE9sIPP7ON0fz095HdThKjiVJe6vofq
-+n6b1NBc8XdrQvBmunwxD5nvtTW4vtN6VY7mUCmxsCieuoBJ9OlqmsVWQvifIYf40dJPZkk9YgGT
-zWLpXDSfLSplbY2LL9C9U0ptvjcDjefLTvqSFc7tw1sEhF0n/qpA2r0GpvkLRDmcSwVyPvmjFBGq
-Up/pNy8ZuPGQmHwFi2/14+xeSUDG2bwnsYJQG2EdJCB6luQ57GEnTA/yKZSTKI8dDQa8Sd3zfXb1
-9mOgSF0bBdXbuKhEpuP9wirslFe6fQ1t5j5R0xi72MZ8ikMu1RQZKCyDbMwazlHiMIIHFzCCBf+g
-AwIBAgIDBCZ6MA0GCSqGSIb3DQEBBQUAMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRD
-b20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYG
-A1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0EwHhcN
-MTIwNTAxMTI1ODI3WhcNMTMwNTAzMTEzNzIwWjBdMRkwFwYDVQQNExA4Y1VOSzUzMTc0ODRYRjk3
-MRwwGgYDVQQDDBNkd213MkBpbmZyYWRlYWQub3JnMSIwIAYJKoZIhvcNAQkBFhNkd213MkBpbmZy
-YWRlYWQub3JnMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyYe7wo6MrtrB4uIGGbrY
-4IifY/Xsq22pSv605yganL0+uyUdd8rCjrYlH6Q/ra5TVJCQFTgzaepkuqPQc79DC/Cxmzm6Qo+s
-wLZy868oFsccsVokL2bPAWIPaRXfNPJKkYR1FTWQfZpWJVQmT+sPf1XFUullVBAK+d9RztopyacI
-xWoZ/W/Cmv7mseQbttYTtGKJa0btX73nsQRWl6SgErWXo59zg9friCLTy1GXMXJYB8H+PtnuwX0w
-MrAvWDdX1ABgIlA17W3FraCn0eW15ZM46eyu0/amGzJZNtemCWF73P7BAijzeV1jNmiJFXdZ0DT0
-w+hmtMO9PxdDUyt78QIDAQABo4IDrjCCA6owCQYDVR0TBAIwADALBgNVHQ8EBAMCBLAwHQYDVR0l
-BBYwFAYIKwYBBQUHAwIGCCsGAQUFBwMEMB0GA1UdDgQWBBTkfe5UOr3PcirsjApibyyUEfsyRzAf
-BgNVHSMEGDAWgBRTcu2SnODaywFcfH6WNU7y1LhRgjAeBgNVHREEFzAVgRNkd213MkBpbmZyYWRl
-YWQub3JnMIICIQYDVR0gBIICGDCCAhQwggIQBgsrBgEEAYG1NwECAjCCAf8wLgYIKwYBBQUHAgEW
-Imh0dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93
-d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwgfcGCCsGAQUFBwICMIHqMCcWIFN0YXJ0
-Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MAMCAQEagb5UaGlzIGNlcnRpZmljYXRlIHdhcyBp
-c3N1ZWQgYWNjb3JkaW5nIHRvIHRoZSBDbGFzcyAxIFZhbGlkYXRpb24gcmVxdWlyZW1lbnRzIG9m
-IHRoZSBTdGFydENvbSBDQSBwb2xpY3ksIHJlbGlhbmNlIG9ubHkgZm9yIHRoZSBpbnRlbmRlZCBw
-dXJwb3NlIGluIGNvbXBsaWFuY2Ugb2YgdGhlIHJlbHlpbmcgcGFydHkgb2JsaWdhdGlvbnMuMIGc
-BggrBgEFBQcCAjCBjzAnFiBTdGFydENvbSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgECGmRM
-aWFiaWxpdHkgYW5kIHdhcnJhbnRpZXMgYXJlIGxpbWl0ZWQhIFNlZSBzZWN0aW9uICJMZWdhbCBh
-bmQgTGltaXRhdGlvbnMiIG9mIHRoZSBTdGFydENvbSBDQSBwb2xpY3kuMDYGA1UdHwQvMC0wK6Ap
-oCeGJWh0dHA6Ly9jcmwuc3RhcnRzc2wuY29tL2NydHUxLWNybC5jcmwwgY4GCCsGAQUFBwEBBIGB
-MH8wOQYIKwYBBQUHMAGGLWh0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9zdWIvY2xhc3MxL2NsaWVu
-dC9jYTBCBggrBgEFBQcwAoY2aHR0cDovL2FpYS5zdGFydHNzbC5jb20vY2VydHMvc3ViLmNsYXNz
-MS5jbGllbnQuY2EuY3J0MCMGA1UdEgQcMBqGGGh0dHA6Ly93d3cuc3RhcnRzc2wuY29tLzANBgkq
-hkiG9w0BAQUFAAOCAQEAqDU1FKifNtCFJbLnvOi1BLRfk7mut55PMtPSZLJ4/AnG7AjmJnbBI4U5
-DELwvVq3mIpwUpGqZUkqkZMEfBPIbfq517UZB3h4iANtqif+ULfTLhg5XgcK5eF8/T6EtX2c3epq
-ylARdleCbj/0FwiUDvPlTsA6PIN4SCekjRLgjKERrL3heFz+Hteq1rtMAvMkNuyL0/0ijyyg2y45
-NASAl2Afl9SLes/fnoh9nBwzfNQfb6qDYUFpnglfpGrq/0b1NtaOUb2z1SR+H1tKlb8bVJJIdvpu
-mEi27kSRIhzk3h30uTfKkKetgy++ouyldxZ7KZ0PuoLQrBy465EoQLosETCCBxcwggX/oAMCAQIC
-AwQmejANBgkqhkiG9w0BAQUFADCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0
-ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMT
-L1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBMB4XDTEyMDUw
-MTEyNTgyN1oXDTEzMDUwMzExMzcyMFowXTEZMBcGA1UEDRMQOGNVTks1MzE3NDg0WEY5NzEcMBoG
-A1UEAwwTZHdtdzJAaW5mcmFkZWFkLm9yZzEiMCAGCSqGSIb3DQEJARYTZHdtdzJAaW5mcmFkZWFk
-Lm9yZzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMmHu8KOjK7aweLiBhm62OCIn2P1
-7KttqUr+tOcoGpy9PrslHXfKwo62JR+kP62uU1SQkBU4M2nqZLqj0HO/QwvwsZs5ukKPrMC2cvOv
-KBbHHLFaJC9mzwFiD2kV3zTySpGEdRU1kH2aViVUJk/rD39VxVLpZVQQCvnfUc7aKcmnCMVqGf1v
-wpr+5rHkG7bWE7RiiWtG7V+957EEVpekoBK1l6Ofc4PX64gi08tRlzFyWAfB/j7Z7sF9MDKwL1g3
-V9QAYCJQNe1txa2gp9HlteWTOOnsrtP2phsyWTbXpglhe9z+wQIo83ldYzZoiRV3WdA09MPoZrTD
-vT8XQ1Mre/ECAwEAAaOCA64wggOqMAkGA1UdEwQCMAAwCwYDVR0PBAQDAgSwMB0GA1UdJQQWMBQG
-CCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQU5H3uVDq9z3Iq7IwKYm8slBH7MkcwHwYDVR0j
-BBgwFoAUU3Ltkpzg2ssBXHx+ljVO8tS4UYIwHgYDVR0RBBcwFYETZHdtdzJAaW5mcmFkZWFkLm9y
-ZzCCAiEGA1UdIASCAhgwggIUMIICEAYLKwYBBAGBtTcBAgIwggH/MC4GCCsGAQUFBwIBFiJodHRw
-Oi8vd3d3LnN0YXJ0c3NsLmNvbS9wb2xpY3kucGRmMDQGCCsGAQUFBwIBFihodHRwOi8vd3d3LnN0
-YXJ0c3NsLmNvbS9pbnRlcm1lZGlhdGUucGRmMIH3BggrBgEFBQcCAjCB6jAnFiBTdGFydENvbSBD
-ZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgEBGoG+VGhpcyBjZXJ0aWZpY2F0ZSB3YXMgaXNzdWVk
-IGFjY29yZGluZyB0byB0aGUgQ2xhc3MgMSBWYWxpZGF0aW9uIHJlcXVpcmVtZW50cyBvZiB0aGUg
-U3RhcnRDb20gQ0EgcG9saWN5LCByZWxpYW5jZSBvbmx5IGZvciB0aGUgaW50ZW5kZWQgcHVycG9z
-ZSBpbiBjb21wbGlhbmNlIG9mIHRoZSByZWx5aW5nIHBhcnR5IG9ibGlnYXRpb25zLjCBnAYIKwYB
-BQUHAgIwgY8wJxYgU3RhcnRDb20gQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkwAwIBAhpkTGlhYmls
-aXR5IGFuZCB3YXJyYW50aWVzIGFyZSBsaW1pdGVkISBTZWUgc2VjdGlvbiAiTGVnYWwgYW5kIExp
-bWl0YXRpb25zIiBvZiB0aGUgU3RhcnRDb20gQ0EgcG9saWN5LjA2BgNVHR8ELzAtMCugKaAnhiVo
-dHRwOi8vY3JsLnN0YXJ0c3NsLmNvbS9jcnR1MS1jcmwuY3JsMIGOBggrBgEFBQcBAQSBgTB/MDkG
-CCsGAQUFBzABhi1odHRwOi8vb2NzcC5zdGFydHNzbC5jb20vc3ViL2NsYXNzMS9jbGllbnQvY2Ew
-QgYIKwYBBQUHMAKGNmh0dHA6Ly9haWEuc3RhcnRzc2wuY29tL2NlcnRzL3N1Yi5jbGFzczEuY2xp
-ZW50LmNhLmNydDAjBgNVHRIEHDAahhhodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS8wDQYJKoZIhvcN
-AQEFBQADggEBAKg1NRSonzbQhSWy57zotQS0X5O5rreeTzLT0mSyePwJxuwI5iZ2wSOFOQxC8L1a
-t5iKcFKRqmVJKpGTBHwTyG36ude1GQd4eIgDbaon/lC30y4YOV4HCuXhfP0+hLV9nN3qaspQEXZX
-gm4/9BcIlA7z5U7AOjyDeEgnpI0S4IyhEay94Xhc/h7Xqta7TALzJDbsi9P9Io8soNsuOTQEgJdg
-H5fUi3rP356IfZwcM3zUH2+qg2FBaZ4JX6Rq6v9G9TbWjlG9s9Ukfh9bSpW/G1SSSHb6bphItu5E
-kSIc5N4d9Lk3ypCnrYMvvqLspXcWeymdD7qC0KwcuOuRKEC6LBExggNvMIIDawIBATCBlDCBjDEL
-MAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdp
-dGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFy
-eSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgMEJnowCQYFKw4DAhoFAKCCAa8wGAYJKoZIhvcNAQkD
-MQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTIwNjA2MDgyNjIzWjAjBgkqhkiG9w0BCQQx
-FgQU7ugNZ+Ud9lT5wd6MKuEDYPYSLCkwgaUGCSsGAQQBgjcQBDGBlzCBlDCBjDELMAkGA1UEBhMC
-SUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRp
-ZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1l
-ZGlhdGUgQ2xpZW50IENBAgMEJnowgacGCyqGSIb3DQEJEAILMYGXoIGUMIGMMQswCQYDVQQGEwJJ
-TDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlm
-aWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVk
-aWF0ZSBDbGllbnQgQ0ECAwQmejANBgkqhkiG9w0BAQEFAASCAQCqkMUfquS5WYt3oEbcU11Z1EAo
-vGyTxcjyuKuH1s3iGk5+t8QBmL/1l2LR8/BhhcMYIKcQ3GLSLbW2CZAL/1dqLsL0I1sE1XeKClgv
-QQf2/WwQTEIn9KBqsZP3qygNVzGj06wti94dwkr4fUuL7eLNZUw+/Mua0Ope0f3riK7Q8TlnlqHx
-/4bzoybjZ5KmdEsMjjYjc7J5bciq7BFzlBAZgSYHQfOto+aPVbXpZPuctovn0w7ksDDqi9rf4sJ7
-FN9gOzWAs6IxJk5KAiFmPgSMn92bAXC+jFmKaueFFCDxqkFGACHB3kjdX2Yo70ESsgRFxowEPBS3
-evNXw9RIEee1AAAAAAAA
+> +		break;
+> +	}
+> +}
+> +
+> +static int virtnet_get_sset_count(struct net_device *dev, int sset)
+> +{
+> +	switch (sset) {
+> +	case ETH_SS_STATS:
+
+also add
+	BUILD_BUG_ON(VIRTNET_NUM_STATS != (sizeof virtnet_stats_str_attr) / ETH_GSTRING_LEN);
 
 
---=-e++umgOLuj8SaWFuQA2K--
+> +		return VIRTNET_NUM_STATS * (num_possible_cpus() + 1);
+> +	default:
+> +		return -EOPNOTSUPP;
+> +	}
+> +}
+> +
+> +static void virtnet_get_ethtool_stats(struct net_device *dev,
+> +				      struct ethtool_stats *stats, u64 *buf)
+> +{
+> +	struct virtnet_info *vi = netdev_priv(dev);
+> +	int cpu, i;
+> +	unsigned int start;
+> +	struct virtnet_stats sample, total;
+> +
+> +	memset(&total, 0, sizeof(total));
 
+sizeof total
+when operand is a variable,
+to distinguish from when it is a type.
+
+> +
+> +	for_each_possible_cpu(cpu) {
+> +		struct virtnet_stats *s = per_cpu_ptr(vi->stats, cpu);
+> +		do {
+> +			start = u64_stats_fetch_begin(&s->syncp);
+> +			memcpy(&sample.data, &s->data,
+> +			       sizeof(u64) * VIRTNET_NUM_STATS);
+> +		} while (u64_stats_fetch_retry(&s->syncp, start));
+> +
+> +		for (i = 0; i < VIRTNET_NUM_STATS; i++) {
+> +			*buf = sample.data[i];
+> +			total.data[i] += sample.data[i];
+> +			buf++;
+> +		}
+> +	}
+> +
+> +	memcpy(buf, &total.data, sizeof(u64) * VIRTNET_NUM_STATS);
+> +}
+> +
+>  static const struct ethtool_ops virtnet_ethtool_ops = {
+>  	.get_drvinfo = virtnet_get_drvinfo,
+>  	.get_link = ethtool_op_get_link,
+>  	.get_ringparam = virtnet_get_ringparam,
+> +	.get_ethtool_stats = virtnet_get_ethtool_stats,
+> +	.get_strings = virtnet_get_strings,
+> +	.get_sset_count = virtnet_get_sset_count,
+>  };
+>  
+>  #define MIN_MTU 68
