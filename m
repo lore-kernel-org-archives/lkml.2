@@ -1,50 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758538Ab2FFVbB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 17:31:01 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:48373 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752170Ab2FFVbA (ORCPT
+	id S1758412Ab2FFViT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 17:38:19 -0400
+Received: from www.linutronix.de ([62.245.132.108]:52188 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753826Ab2FFViS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 17:31:00 -0400
-From: Sasha Levin <levinsasha928@gmail.com>
-To: dbaryshkov@gmail.com, slapin@ossfans.org, davem@davemloft.net
-Cc: linux-zigbee-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Sasha Levin <levinsasha928@gmail.com>
-Subject: [PATCH] ieee802154: verify packet size before trying to allocate it
-Date: Wed,  6 Jun 2012 23:32:02 +0200
-Message-Id: <1339018322-19360-1-git-send-email-levinsasha928@gmail.com>
-X-Mailer: git-send-email 1.7.8.6
+	Wed, 6 Jun 2012 17:38:18 -0400
+Date: Wed, 6 Jun 2012 23:38:11 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+cc: Tony Luck <tony.luck@intel.com>, Borislav Petkov <borislav.petkov@amd.com>,
+        Chen Gong <gong.chen@linux.intel.com>, x86@kernel.org,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [patch 1/6] x86: mce: Create devices in CPU_UP_PREPARE
+In-Reply-To: <20120606212334.513459224@linutronix.de>
+Message-ID: <alpine.LFD.2.02.1206062337310.3086@ionos>
+References: <20120606211746.693649684@linutronix.de> <20120606212334.513459224@linutronix.de>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently when sending data over datagram, the send function will attempt to
-allocate any size passed on from the userspace.
+On Wed, 6 Jun 2012, Thomas Gleixner wrote:
 
-We should make sure that this size is checked and limited. The maximum size
-of an IP packet seemed like the safest limit here.
+> This makes the treshold_cpu_callback for AMD actually work and makes
+> the code symetric vs. teardown.
 
-Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
----
- net/ieee802154/dgram.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
-
-diff --git a/net/ieee802154/dgram.c b/net/ieee802154/dgram.c
-index 6fbb2ad..cf5070b 100644
---- a/net/ieee802154/dgram.c
-+++ b/net/ieee802154/dgram.c
-@@ -232,6 +232,10 @@ static int dgram_sendmsg(struct kiocb *iocb, struct sock *sk,
- 
- 	hlen = LL_RESERVED_SPACE(dev);
- 	tlen = dev->needed_tailroom;
-+	if (hlen + tlen + size > USHRT_MAX) {
-+		err = -EMSGSIZE;
-+		goto out;
-+	}
- 	skb = sock_alloc_send_skb(sk, hlen + tlen + size,
- 			msg->msg_flags & MSG_DONTWAIT,
- 			&err);
--- 
-1.7.8.6
-
+Ignore that. I sent out the wrong version of this lot. Sorry for the noise
