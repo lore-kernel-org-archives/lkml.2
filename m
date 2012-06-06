@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754643Ab2FFHJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 03:09:59 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35977 "EHLO
+	id S1754659Ab2FFHKm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 03:10:42 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35998 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751330Ab2FFHJ6 (ORCPT
+	with ESMTP id S1754203Ab2FFHKl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 03:09:58 -0400
-Date: Wed, 6 Jun 2012 00:09:36 -0700
-From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
-Message-ID: <tip-cb7225feec627e91d598198996429e9ee6804f8d@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, namhyung@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, tglx@linutronix.de, namhyung@gmail.com
-In-Reply-To: <1338443506-25009-1-git-send-email-namhyung.kim@lge.com>
-References: <1338443506-25009-1-git-send-email-namhyung.kim@lge.com>
+	Wed, 6 Jun 2012 03:10:41 -0400
+Date: Wed, 6 Jun 2012 00:10:30 -0700
+From: tip-bot for Chen Gong <gong.chen@linux.intel.com>
+Message-ID: <tip-958fb3c51295764599d6abce87e1a01ace897a3e@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        tglx@linutronix.de, gong.chen@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, gong.chen@linux.intel.com
+In-Reply-To: <1338863702-9245-1-git-send-email-gong.chen@linux.intel.com>
+References: <1338863702-9245-1-git-send-email-gong.chen@linux.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf:
-  Remove duplicate invocation on perf_event_for_each
-Git-Commit-ID: cb7225feec627e91d598198996429e9ee6804f8d
+Subject: [tip:x86/urgent] x86/mce: Fix the MCE poll timer logic
+Git-Commit-ID: 958fb3c51295764599d6abce87e1a01ace897a3e
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,45 +27,43 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 06 Jun 2012 00:09:43 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 06 Jun 2012 00:10:35 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  cb7225feec627e91d598198996429e9ee6804f8d
-Gitweb:     http://git.kernel.org/tip/cb7225feec627e91d598198996429e9ee6804f8d
-Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Thu, 31 May 2012 14:51:44 +0900
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 31 May 2012 14:01:00 -0300
+Commit-ID:  958fb3c51295764599d6abce87e1a01ace897a3e
+Gitweb:     http://git.kernel.org/tip/958fb3c51295764599d6abce87e1a01ace897a3e
+Author:     Chen Gong <gong.chen@linux.intel.com>
+AuthorDate: Tue, 5 Jun 2012 10:35:02 +0800
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 6 Jun 2012 08:28:21 +0200
 
-perf: Remove duplicate invocation on perf_event_for_each
+x86/mce: Fix the MCE poll timer logic
 
-The @func callback was invoked twice for group leader when
-perf_event_for_each() called. It seems the commit 75f937f24bd9
-("perf_counter: Fix ctx->mutex vs counter ->mutex inversion") made the
-mistake during the change.
+In commit 82f7af09 ("x86/mce: Cleanup timer mess), Thomas just
+forgot the "/ 2" there while cleaning up.
 
-Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1338443506-25009-1-git-send-email-namhyung.kim@lge.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Chen Gong <gong.chen@linux.intel.com>
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: bp@amd64.org
+Cc: tony.luck@intel.com
+Link: http://lkml.kernel.org/r/1338863702-9245-1-git-send-email-gong.chen@linux.intel.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/events/core.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ arch/x86/kernel/cpu/mcheck/mce.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 5b06cbb..f85c015 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -3181,7 +3181,6 @@ static void perf_event_for_each(struct perf_event *event,
- 	event = event->group_leader;
- 
- 	perf_event_for_each_child(event, func);
--	func(event);
- 	list_for_each_entry(sibling, &event->sibling_list, group_entry)
- 		perf_event_for_each_child(sibling, func);
- 	mutex_unlock(&ctx->mutex);
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 0a687fd..a97f3c4 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -1274,7 +1274,7 @@ static void mce_timer_fn(unsigned long data)
+ 	 */
+ 	iv = __this_cpu_read(mce_next_interval);
+ 	if (mce_notify_irq())
+-		iv = max(iv, (unsigned long) HZ/100);
++		iv = max(iv / 2, (unsigned long) HZ/100);
+ 	else
+ 		iv = min(iv * 2, round_jiffies_relative(check_interval * HZ));
+ 	__this_cpu_write(mce_next_interval, iv);
