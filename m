@@ -1,129 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756703Ab2FFPT6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 11:19:58 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39926 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756560Ab2FFPT4 (ORCPT
+	id S1756696Ab2FFPUi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 11:20:38 -0400
+Received: from mailrelay011.isp.belgacom.be ([195.238.6.178]:23565 "EHLO
+	mailrelay011.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756178Ab2FFPUf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 11:19:56 -0400
-Date: Wed, 6 Jun 2012 08:19:40 -0700
-From: tip-bot for Feng Tang <feng.tang@intel.com>
-Message-ID: <tip-55c844a4dd16a4d1fdc0cf2a283ec631a02ec448@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, feng.tang@intel.com,
-        dzickus@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, feng.tang@intel.com,
-        dzickus@redhat.com
-In-Reply-To: <20120530231541.4c13433a@feng-i7>
-References: <20120530231541.4c13433a@feng-i7>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/reboot:
-  Fix a warning message triggered by stop_other_cpus()
-Git-Commit-ID: 55c844a4dd16a4d1fdc0cf2a283ec631a02ec448
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 6 Jun 2012 11:20:35 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EAMxzz0/CTtAn/2dsb2JhbABFtDWBB4IYAQEFJxM/EAsYLhQYMROID7dZixiFOWADlRwBiSOGV4Ji
+Date: Wed, 6 Jun 2012 17:20:30 +0200
+From: Philippe De Muyter <phdm@macqel.be>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-m68k@vger.kernel.org, Greg Ungerer <gerg@uclinux.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] m68k: Use generic strncpy_from_user(), strlen_user(),
+	and strnlen_user()
+Message-ID: <20120606152030.GA9809@frolo.macqel>
+References: <1338327216-15309-1-git-send-email-geert@linux-m68k.org> <20120530102226.GA28628@frolo.macqel> <CAMuHMdV5GVZR1BvGD3EncDFfPt=Bt9ndkKE8Mp7euE9KoSaGNQ@mail.gmail.com> <20120530140444.GA10543@frolo.macqel> <CAMuHMdW0XqO9iOiuOXrRao_A41L-0iZXXyZugCmiizG=7-VkHg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 06 Jun 2012 08:19:46 -0700 (PDT)
+In-Reply-To: <CAMuHMdW0XqO9iOiuOXrRao_A41L-0iZXXyZugCmiizG=7-VkHg@mail.gmail.com>
+User-Agent: Mutt/1.5.16 (2007-06-09)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  55c844a4dd16a4d1fdc0cf2a283ec631a02ec448
-Gitweb:     http://git.kernel.org/tip/55c844a4dd16a4d1fdc0cf2a283ec631a02ec448
-Author:     Feng Tang <feng.tang@intel.com>
-AuthorDate: Wed, 30 May 2012 23:15:41 +0800
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 6 Jun 2012 12:03:23 +0200
+Hi Geert,
 
-x86/reboot: Fix a warning message triggered by stop_other_cpus()
+On Wed, Jun 06, 2012 at 03:44:03PM +0200, Geert Uytterhoeven wrote:
+> On Wed, May 30, 2012 at 4:04 PM, Philippe De Muyter <phdm@macqel.be> wrote:
+> >> > Sorry, I did not follow what happened to unaligned accesses, but
+> >> > CPU32 family (at least 68340) crashes on unaligned accesses.
+> >>
+> >> We don't seem to have CONFIG_M68340 in arch/m68k/Kconfig.cpu?
+> >
+> > I have a local port here (but based on an ancient linux kernel, 2.6.2 IIRC)
+> 
+> Just to be sure: basically include/asm-m68knommu/unaligned.h has always
+> been wrong (also in 2.6.2), so you had to fix this locally?
 
-When rebooting our 24 CPU Westmere servers with 3.4-rc6, we
-always see this warning msg:
+I have just verified, and you are right :
 
-Restarting system.
-machine restart
-------------[ cut here ]------------
-WARNING: at arch/x86/kernel/smp.c:125
-native_smp_send_reschedule+0x74/0xa7() Hardware name: X8DTN
-Modules linked in: igb [last unloaded: scsi_wait_scan]
-Pid: 1, comm: systemd-shutdow Not tainted 3.4.0-rc6+ #22
-Call Trace:
- <IRQ>  [<ffffffff8102a41f>] warn_slowpath_common+0x7e/0x96
- [<ffffffff8102a44c>] warn_slowpath_null+0x15/0x17
- [<ffffffff81018cf7>] native_smp_send_reschedule+0x74/0xa7
- [<ffffffff810561c1>] trigger_load_balance+0x279/0x2a6
- [<ffffffff81050112>] scheduler_tick+0xe0/0xe9
- [<ffffffff81036768>] update_process_times+0x60/0x70
- [<ffffffff81062f2f>] tick_sched_timer+0x68/0x92
- [<ffffffff81046e33>] __run_hrtimer+0xb3/0x13c
- [<ffffffff81062ec7>] ? tick_nohz_handler+0xd0/0xd0
- [<ffffffff810474f2>] hrtimer_interrupt+0xdb/0x198
- [<ffffffff81019a35>] smp_apic_timer_interrupt+0x81/0x94
- [<ffffffff81655187>] apic_timer_interrupt+0x67/0x70
- <EOI>  [<ffffffff8101a3c4>] ? default_send_IPI_mask_allbutself_phys+0xb4/0xc4
- [<ffffffff8101c680>] physflat_send_IPI_allbutself+0x12/0x14
- [<ffffffff81018db4>] native_nmi_stop_other_cpus+0x8a/0xd6
- [<ffffffff810188ba>] native_machine_shutdown+0x50/0x67
- [<ffffffff81018926>] machine_shutdown+0xa/0xc
- [<ffffffff8101897e>] native_machine_restart+0x20/0x32
- [<ffffffff810189b0>] machine_restart+0xa/0xc
- [<ffffffff8103b196>] kernel_restart+0x47/0x4c
- [<ffffffff8103b2e6>] sys_reboot+0x13e/0x17c
- [<ffffffff8164e436>] ? _raw_spin_unlock_bh+0x10/0x12
- [<ffffffff810fcac9>] ? bdi_queue_work+0xcf/0xd8
- [<ffffffff810fe82f>] ? __bdi_start_writeback+0xae/0xb7
- [<ffffffff810e0d64>] ? iterate_supers+0xa3/0xb7
- [<ffffffff816547a2>] system_call_fastpath+0x16/0x1b
----[ end trace 320af5cb1cb60c5b ]---
+	include/asm-m68knommu/unaligned.h was wrong in 2.6.2
 
-The root cause seems to be the
-default_send_IPI_mask_allbutself_phys() takes quite some time (I
-measured it could be several ms) to complete sending NMIs to all
-the other 23 CPUs, and for HZ=250/1000 system, the time is long
-enough for a timer interrupt to happen, which will in turn
-trigger to kick load balance to a stopped CPU and cause this
-warning in native_smp_send_reschedule().
+But I did not have to fix it locally.
 
-So disabling the local irq before stop_other_cpu() can fix this
-problem (tested 25 times reboot ok), and it is fine as there
-should be nobody caring the timer interrupt in such reboot
-stage.
+I remember the ppp driver kernel doing by error unaligned accesses
+(of course without using unaligned macros) and crashing my kernel.
+I fixed the error in the ppp driver and the fix went into the
+mainline kernel.
 
-The latest 3.4 kernel slightly changes this behavior by sending
-REBOOT_VECTOR first and only send NMI_VECTOR if the REBOOT_VCTOR
-fails, and this patch is still needed to prevent the problem.
+I am not aware that unaligned macros were used in the parts of the
+kernel I used on this board.  Just to be sure I made a quick list :
 
-Signed-off-by: Feng Tang <feng.tang@intel.com>
-Acked-by: Don Zickus <dzickus@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20120530231541.4c13433a@feng-i7
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/reboot.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+$ find -name \*.o | sed -e 's/\.o$/.c/' | xargs grep t_unaligned 2> /dev/null
+./fs/partitions/msdos.c:#define SYS_IND(p) (get_unaligned(&p->sys_ind))
+./fs/partitions/msdos.c:                   get_unaligned(&p->nr_sects); \
+./fs/partitions/msdos.c:                   get_unaligned(&p->start_sect);      \
+./drivers/net/slhc.c:   put_unaligned(ip_fast_csum(icp, ip->ihl),
 
-diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-index 79c45af..25b48ed 100644
---- a/arch/x86/kernel/reboot.c
-+++ b/arch/x86/kernel/reboot.c
-@@ -639,9 +639,11 @@ void native_machine_shutdown(void)
- 	set_cpus_allowed_ptr(current, cpumask_of(reboot_cpu_id));
- 
- 	/*
--	 * O.K Now that I'm on the appropriate processor,
--	 * stop all of the others.
-+	 * O.K Now that I'm on the appropriate processor, stop all of the
-+	 * others. Also disable the local irq to not receive the per-cpu
-+	 * timer interrupt which may trigger scheduler's load balance.
- 	 */
-+	local_irq_disable();
- 	stop_other_cpus();
- #endif
- 
+I am 100% sure I did not use msdos partitions on that board.  I don't
+know why msdos.c was compiled in.  For the slhc case, I surmise that it
+was not used because its usage depends on some option we did not use.
+
+Best regards
+
+Philippe
+
+-- 
+Philippe De Muyter +32 2 6101532 Macq SA rue de l'Aeronef 2 B-1140 Bruxelles
