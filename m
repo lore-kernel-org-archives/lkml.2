@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759202Ab2FFW4p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 18:56:45 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:53727 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754923Ab2FFW4o (ORCPT
+	id S1759178Ab2FFW5t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 18:57:49 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38812 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754508Ab2FFW5r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 18:56:44 -0400
-Message-ID: <4FCFE028.10005@gmail.com>
-Date: Wed, 06 Jun 2012 17:56:40 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-CC: linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH 1/2] edac: add support for Calxeda highbank memory controller
-References: <1339020125-20198-1-git-send-email-robherring2@gmail.com> <1339020125-20198-2-git-send-email-robherring2@gmail.com> <4FCFDB12.3090403@redhat.com>
-In-Reply-To: <4FCFDB12.3090403@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 6 Jun 2012 18:57:47 -0400
+From: David Daney <ddaney.cavm@gmail.com>
+To: linux-mips@linux-mips.org, ralf@linux-mips.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>
+Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
+Subject: [PATCH v8 1/4] MIPS: Don't define early_init_devtree() and device_tree_init() in prom.c for CPU_CAVIUM_OCTEON
+Date: Wed,  6 Jun 2012 15:57:40 -0700
+Message-Id: <1339023463-20267-2-git-send-email-ddaney.cavm@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <1339023463-20267-1-git-send-email-ddaney.cavm@gmail.com>
+References: <1339023463-20267-1-git-send-email-ddaney.cavm@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mauro,
+From: David Daney <david.daney@cavium.com>
 
-On 06/06/2012 05:34 PM, Mauro Carvalho Chehab wrote:
-> Hi Rob,
-> 
-> Em 06-06-2012 19:02, Rob Herring escreveu:
->> From: Rob Herring <rob.herring@calxeda.com>
->>
->> Add support for memory controller on Calxeda Highbank platforms. Highbank
->> platforms support a single 4GB mini-DIMM with 1-bit correction and 2-bit
->> detection.
->>
+This code is not common enough to be in a shared file, so OCTEON defines
+it's own versions.
 
-[snip]
+When the last of this target specific code is moved out, we can remove
+all of this.
 
->> +
->> +	layers[0].type = EDAC_MC_LAYER_CHIP_SELECT;
->> +	layers[0].size = 1;
->> +	layers[0].is_virt_csrow = true;
->> +	layers[1].type = EDAC_MC_LAYER_CHANNEL;
->> +	layers[1].size = 1;
->> +	layers[1].is_virt_csrow = false;
->> +	mci = edac_mc_alloc(0, ARRAY_SIZE(layers), layers,
->> +			    sizeof(struct hb_mc_drvdata));
-> 
-> Hmm... I suspect that memories by DIMM chip select/channel at Calxeda,
-> as it is using just 1 cs/channel. It probably makes more sense to add new layer
-> type(s) to properly represent the way your memory controller addresses it, if
-> Calxeda doesn't work with DIMMs.
+Signed-off-by: David Daney <david.daney@cavium.com>
+---
+ arch/mips/kernel/prom.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-Not sure I follow. DIMMs are supported, but only a newer JEDEC form
-factor (DDR3 72-bit mini DIMM). The h/w pretty much fixed to a single
-4GB DIMM. The controller is 1 72-bit channel.
+diff --git a/arch/mips/kernel/prom.c b/arch/mips/kernel/prom.c
+index f11b2bb..fcb325e 100644
+--- a/arch/mips/kernel/prom.c
++++ b/arch/mips/kernel/prom.c
+@@ -60,6 +60,7 @@ void __init early_init_dt_setup_initrd_arch(unsigned long start,
+ }
+ #endif
+ 
++#ifndef CONFIG_CPU_CAVIUM_OCTEON
+ void __init early_init_devtree(void *params)
+ {
+ 	/* Setup flat device-tree pointer */
+@@ -108,3 +109,4 @@ void __init __dt_setup_arch(struct boot_param_header *bph)
+ 
+ 	early_init_devtree(initial_boot_params);
+ }
++#endif /* !CONFIG_CPU_CAVIUM_OCTEON */
+-- 
+1.7.2.3
 
-Rob
