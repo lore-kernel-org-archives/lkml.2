@@ -1,74 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756278Ab2FFOoo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 10:44:44 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:56467 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753886Ab2FFOok (ORCPT
+	id S1756317Ab2FFOo5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 10:44:57 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:43629 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756146Ab2FFOom convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 10:44:40 -0400
-Date: Wed, 6 Jun 2012 07:44:17 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, "Luck, Tony" <tony.luck@intel.com>,
-        "Yu, Fenghua" <fenghua.yu@intel.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@elte.hu>,
-        H Peter Anvin <hpa@zytor.com>,
-        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
-        "Mallick, Asit K" <asit.k.mallick@intel.com>,
-        Arjan Dan De Ven <arjan@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>,
-        linux-pm <linux-pm@vger.kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [PATCH 0/6] x86/cpu hotplug: Wake up offline CPU via mwait or nmi
-Message-ID: <20120606144417.GH19601@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <3E5A0FA7E9CA944F9D5414FEC6C7122007728081@ORSMSX105.amr.corp.intel.com>
- <1338913190.2749.10.camel@twins>
- <3908561D78D1C84285E8C5FCA982C28F19300965@ORSMSX104.amr.corp.intel.com>
- <1338918625.2749.29.camel@twins>
- <alpine.LFD.2.02.1206052106440.3086@ionos>
- <1338925756.2749.36.camel@twins>
- <alpine.LFD.2.02.1206052153200.3086@ionos>
- <1338931856.2749.57.camel@twins>
- <20120605221240.GW2388@linux.vnet.ibm.com>
- <1338972175.2749.78.camel@twins>
+	Wed, 6 Jun 2012 10:44:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1338972175.2749.78.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12060614-7408-0000-0000-000005A084AD
+In-Reply-To: <alpine.LNX.2.00.1206061601460.12208@pobox.suse.cz>
+References: <CAOY97VZN2a36OBsacQS21P8G70L2tbtbWK5OMWhZYa=D74XO+w@mail.gmail.com>
+	<alpine.LNX.2.00.1206051134020.5478@pobox.suse.cz>
+	<CAN+gG=FSTxE9d8o4O6+kQHmyg9PdJK28x6=Gjpgr+_xppiRVbQ@mail.gmail.com>
+	<alpine.LNX.2.00.1206061601460.12208@pobox.suse.cz>
+Date: Wed, 6 Jun 2012 16:44:41 +0200
+Message-ID: <CAN+gG=EjBkOn6MGAO0bfO0Bj-3YDp-kzseMu9DfiXWJaMkWUXA@mail.gmail.com>
+Subject: Re: [PATCH] Add Support for Novatek Touchscreen
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Austin Hendrix <ahendrix@willowgarage.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 06, 2012 at 10:42:55AM +0200, Peter Zijlstra wrote:
-> On Tue, 2012-06-05 at 15:12 -0700, Paul E. McKenney wrote:
-> > > RCU has similar nasties.
-> > 
-> > I am working to rid RCU of this sort of thing.  I have rcu_barrier() so
-> > that it avoids messing with CPUs that don't have callbacks, which will
-> > be almost all of the idle CPUs, especially for CONFIG_RCU_FAST_NO_HZ=y.
-> > I believe that I have also removed all of RCU's dependencies on CPU
-> > hotplug's using kstopmachine, though Murphy would say otherwise.
-> > 
-> > I still need to fix up synchronize_sched_expedited(), but that is on
-> > the list.  I considered getting rid of this one, but I am probably going
-> > to have to make synchronize_sched() map to it during boot time to keep
-> > the boot-speed demons satisfied. 
-> 
-> Not the point really. Its perfectly fine for applications in an
-> 'isolated' set to use system calls, hence they get to participate in RCU
-> state.
-> 
-> I don't think the isolation means userspace while(1) applications is
-> interesting. Sure, some people do this, and we should dtrt for them, but
-> the far more interesting case is 'regular' applications that do use
-> system calls.
+On Wed, Jun 6, 2012 at 4:03 PM, Jiri Kosina <jkosina@suse.cz> wrote:
+> On Tue, 5 Jun 2012, Benjamin Tissoires wrote:
+>
+>> >> Add support for a Novatek touchscreen panel as a generic HID multitouch
+>> >> panel.
+>> >>
+>> >> Signed-off-by: Austin Hendrix <ahendrix@willowgarage.com>
+>> >> ---
+>> >>  hid-core.c       |    1 +
+>> >>  hid-ids.h        |    3 +++
+>> >>  hid-multitouch.c |    5 +++++
+>> >>  3 files changed, 9 insertions(+)
+>> >>
+>> >> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+>> >> index 8e3a6b2..0d6dde1 100644
+>> >> --- a/drivers/hid/hid-core.c
+>> >> +++ b/drivers/hid/hid-core.c
+>> >> @@ -1605,6 +1605,7 @@ static const struct hid_device_id
+>> >> hid_have_special_driver[] = {
+>> >
+>> > Austin,
+>> >
+>> > thanks for the patch. Your mail client is corrupting (line-wrapping)
+>> > patches. Please fix that for your future submissions.
+>> >
+>> > I have now fixed that up manually and applied.
+>> >
+>> >>       { HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_16) },
+>> >>       { HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_17) },
+>> >>       { HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_18) },
+>> >> +     { HID_USB_DEVICE(USB_VENDOR_ID_NOVATEK, USB_DEVICE_ID_NOVATEK_PCT) },
+>>
+>> I don't think this should be included in 3.5-rc+ (the whole MT-related
+>> devices has been removed from this list).
+>
+> Yeah, I have noticed this and fixed it in 3.5-rc+ branch.
+>
+>>
+>> >>       { HID_USB_DEVICE(USB_VENDOR_ID_ORTEK, USB_DEVICE_ID_ORTEK_PKB1700) },
+>> >>       { HID_USB_DEVICE(USB_VENDOR_ID_ORTEK, USB_DEVICE_ID_ORTEK_WKB2000) },
+>> >>       { HID_USB_DEVICE(USB_VENDOR_ID_PETALYNX,
+>> >> USB_DEVICE_ID_PETALYNX_MAXTER_REMOTE) },
+>> >> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+>> >> index 9373f53..734a2b9 100644
+>> >> --- a/drivers/hid/hid-ids.h
+>> >> +++ b/drivers/hid/hid-ids.h
+>> >> @@ -564,6 +564,9 @@
+>> >>  #define USB_VENDOR_ID_NINTENDO               0x057e
+>> >>  #define USB_DEVICE_ID_NINTENDO_WIIMOTE       0x0306
+>> >>
+>> >> +#define USB_VENDOR_ID_NOVATEK                0x0603
+>> >> +#define USB_DEVICE_ID_NOVATK_PCT    0x0600
+>> >> +
+>> >>  #define USB_VENDOR_ID_NTRIG          0x1b96
+>> >>  #define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN   0x0001
+>> >>  #define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_1   0x0003
+>> >> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+>> >> index 6e3332a..fae08df 100644
+>> >> --- a/drivers/hid/hid-multitouch.c
+>> >> +++ b/drivers/hid/hid-multitouch.c
+>> >> @@ -951,6 +951,11 @@ static const struct hid_device_id mt_devices[] = {
+>> >>               MT_USB_DEVICE(USB_VENDOR_ID_PANASONIC,
+>> >>                       USB_DEVICE_ID_PANABOARD_UBT880) },
+>> >>
+>> >> +     /* Novatek Panel */
+>> >> +     { .driver_data = MT_CLS_DEFAULT,
+>> >> +             HID_USB_DEVICE(USB_VENDOR_ID_NOVATEK,
+>> >> +                     USB_DEVICE_ID_NOVATEK_PCT) },
+>>
+>> Shouldn't we use MT_USB_DEVICE instead?
+>
+> We should, I have missed this and will fix this up with your Reported-by:,
+> ok?
 
-OK, I will bite.  What are the semantics/properties for your isolated set?
+No-problem.
 
-							Thanx, Paul
+Thanks,
+Benjamin
 
+>
+> Thanks!
+>
+> --
+> Jiri Kosina
+> SUSE Labs
