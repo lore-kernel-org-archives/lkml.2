@@ -1,161 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755420Ab2FFJV0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 05:21:26 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:39551 "EHLO
-	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751681Ab2FFJVK (ORCPT
+	id S1755344Ab2FFJWM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 05:22:12 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:46456 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751493Ab2FFJWK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 05:21:10 -0400
-From: Roland Stigge <stigge@antcom.de>
-To: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        dwmw2@infradead.org, kevin.wells@nxp.com, srinivas.bakki@nxp.com,
-        linux-arm-kernel@lists.infradead.org, hechtb@googlemail.com,
-        lars@metafoo.de, b32955@freescale.com, leiwen@marvell.com,
-        linux@arm.linux.org.uk, dedekind1@gmail.com
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH v6] MTD: LPC32xx SLC NAND driver
-Date: Wed,  6 Jun 2012 11:20:13 +0200
-Message-Id: <1338974414-5308-1-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 1.7.10
-X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
+	Wed, 6 Jun 2012 05:22:10 -0400
+Date: Wed, 6 Jun 2012 14:51:50 +0530
+From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+To: linuxppc-dev@lists.ozlabs.org, lkml <linux-kernel@vger.kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>, benh@kernel.crashing.org,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Anton Blanchard <anton@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        peterz@infradead.org, oleg@redhat.com
+Subject: [PATCH 2/2] [POWERPC] uprobes: powerpc port
+Message-ID: <20120606092150.GC6745@in.ibm.com>
+Reply-To: ananth@in.ibm.com
+References: <20120606091950.GB6745@in.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120606091950.GB6745@in.ibm.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12060609-7282-0000-0000-000009A80262
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for the SLC NAND controller inside the LPC32xx SoC.
+From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
 
-Signed-off-by: Roland Stigge <stigge@antcom.de>
+This is the port of uprobes to powerpc. Usage is similar to x86.
 
----
-Applies to 3.5-rc1
+One TODO in this port compared to x86 is the uprobe abort_xol() logic.
+x86 depends on the thread_struct.trap_nr (absent in powerpc) to determine
+if a signal was caused when the uprobed instruction was single-stepped/
+emulated, in which case, we reset the instruction pointer to the probed
+address and retry the probe again.
 
-Changes since v5:
-* Configurable as "tristate" in Kconfig (was "bool")
+[root@xxxx ~]# ./bin/perf probe -x /lib64/libc.so.6 malloc
+Added new event:
+  probe_libc:malloc    (on 0xb4860)
 
-Changes since v4:
-* Dropped superfluous error handling of dmaengine_submit()
-* Added unmapping of dma sg buffers
+You can now use it in all perf tools, such as:
 
-Changes since v3:
-* Adjusted to mtd API changes
+	perf record -e probe_libc:malloc -aR sleep 1
 
-Changes since v2:
-* Fixed dma data direction and dma transfer direction differences
-* Removed dma_sync_sg_for_cpu() - not necessary due to unmap
-* Removed dma_set_mask()
+[root@xxxx ~]# ./bin/perf record -e probe_libc:malloc -aR sleep 20
+[ perf record: Woken up 22 times to write data ]
+[ perf record: Captured and wrote 5.843 MB perf.data (~255302 samples) ]
+[root@xxxx ~]# ./bin/perf report --stdio
+# ========
+# captured on: Mon Jun  4 05:26:31 2012
+# hostname : xxxx.ibm.com
+# os release : 3.4.0-uprobe
+# perf version : 3.4.0
+# arch : ppc64
+# nrcpus online : 4
+# nrcpus avail : 4
+# cpudesc : POWER6 (raw), altivec supported
+# cpuid : 62,769
+# total memory : 7310528 kB
+# cmdline : /root/bin/perf record -e probe_libc:malloc -aR sleep 20
+# event : name = probe_libc:malloc, type = 2, config = 0x124, config1 = 0x0, con
+# HEADER_CPU_TOPOLOGY info available, use -I to display
+# HEADER_NUMA_TOPOLOGY info available, use -I to display
+# ========
+#
+# Samples: 83K of event 'probe_libc:malloc'
+# Event count (approx.): 83484
+#
+# Overhead       Command  Shared Object      Symbol
+# ........  ............  .............  ..........
+#
+    69.05%           tar  libc-2.12.so   [.] malloc
+    28.57%            rm  libc-2.12.so   [.] malloc
+     1.32%  avahi-daemon  libc-2.12.so   [.] malloc
+     0.58%          bash  libc-2.12.so   [.] malloc
+     0.28%          sshd  libc-2.12.so   [.] malloc
+     0.08%    irqbalance  libc-2.12.so   [.] malloc
+     0.05%         bzip2  libc-2.12.so   [.] malloc
+     0.04%         sleep  libc-2.12.so   [.] malloc
+     0.03%    multipathd  libc-2.12.so   [.] malloc
+     0.01%      sendmail  libc-2.12.so   [.] malloc
+     0.01%     automount  libc-2.12.so   [.] malloc
 
-Changes since v1:
-* Fixed busy wait DMA timeout with cpu_relax() - unexpected condition anyway
-* Fixed comment of dma_setup function
-* Minor cleanup
 
-Thanks to Artem Bityutskiy, Huang Shijie and Russell King for reviewing!
-
- Documentation/devicetree/bindings/mtd/lpc32xx-slc.txt |   52 
- drivers/mtd/nand/Kconfig                              |   11 
- drivers/mtd/nand/Makefile                             |    1 
- drivers/mtd/nand/lpc32xx_nand_slc.c                   | 1060 ++++++++++++++++++
- 4 files changed, 1124 insertions(+)
-
---- /dev/null
-+++ linux-2.6/Documentation/devicetree/bindings/mtd/lpc32xx-slc.txt
-@@ -0,0 +1,52 @@
-+NXP LPC32xx SoC NAND SLC controller
-+
-+Required properties:
-+- compatible: "nxp,lpc3220-slc"
-+- reg: Address and size of the controller
-+- nand-on-flash-bbt: Use bad block table on flash
-+- gpios: GPIO specification for NAND write protect
-+
-+The following required properties are very controller specific. See the LPC32xx
-+User Manual:
-+- nxp,wdr-clks: Delay before Ready signal is tested on write (W_RDY)
-+- nxp,rdr-clks: Delay before Ready signal is tested on read (R_RDY)
-+(The following values are specified in Hz, to make them independent of actual
-+clock speed:)
-+- nxp,wwidth: Write pulse width (W_WIDTH)
-+- nxp,whold: Write hold time (W_HOLD)
-+- nxp,wsetup: Write setup time (W_SETUP)
-+- nxp,rwidth: Read pulse width (R_WIDTH)
-+- nxp,rhold: Read hold time (R_HOLD)
-+- nxp,rsetup: Read setup time (R_SETUP)
-+
-+Optional subnodes:
-+- Partitions, see Documentation/devicetree/bindings/mtd/partition.txt
-+
-+Example:
-+
-+	slc: flash@20020000 {
-+		compatible = "nxp,lpc3220-slc";
-+		reg = <0x20020000 0x1000>;
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+
-+		nxp,wdr-clks = <14>;
-+		nxp,wwidth = <40000000>;
-+		nxp,whold = <100000000>;
-+		nxp,wsetup = <100000000>;
-+		nxp,rdr-clks = <14>;
-+		nxp,rwidth = <40000000>;
-+		nxp,rhold = <66666666>;
-+		nxp,rsetup = <100000000>;
-+		nand-on-flash-bbt;
-+		gpios = <&gpio 5 19 1>; /* GPO_P3 19, active low */
-+
-+		mtd0@00000000 {
-+			label = "phy3250-boot";
-+			reg = <0x00000000 0x00064000>;
-+			read-only;
-+		};
-+
-+		...
-+
-+	};
---- linux-2.6.orig/drivers/mtd/nand/Kconfig
-+++ linux-2.6/drivers/mtd/nand/Kconfig
-@@ -454,6 +454,17 @@ config MTD_NAND_PXA3xx
- 	  This enables the driver for the NAND flash device found on
- 	  PXA3xx processors
+Signed-off-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Index: linux-3.5-rc1/arch/powerpc/include/asm/thread_info.h
+===================================================================
+--- linux-3.5-rc1.orig/arch/powerpc/include/asm/thread_info.h	2012-06-03 06:59:26.000000000 +0530
++++ linux-3.5-rc1/arch/powerpc/include/asm/thread_info.h	2012-06-03 21:05:48.226233001 +0530
+@@ -96,6 +96,7 @@
+ #define TIF_RESTOREALL		11	/* Restore all regs (implies NOERROR) */
+ #define TIF_NOERROR		12	/* Force successful syscall return */
+ #define TIF_NOTIFY_RESUME	13	/* callback before returning to user */
++#define TIF_UPROBE		14	/* breakpointed or single-stepping */
+ #define TIF_SYSCALL_TRACEPOINT	15	/* syscall tracepoint instrumentation */
  
-+config MTD_NAND_SLC_LPC32XX
-+	tristate "NXP LPC32xx SLC Controller"
-+	depends on ARCH_LPC32XX
-+	help
-+	  Enables support for NXP's LPC32XX SLC (i.e. for Single Level Cell
-+	  chips) NAND controller. This is the default for the PHYTEC 3250
-+	  reference board which contains a NAND256R3A2CZA6 chip.
-+
-+	  Please check the actual NAND chip connected and its support
-+	  by the SLC NAND controller.
-+
- config MTD_NAND_CM_X270
- 	tristate "Support for NAND Flash on CM-X270 modules"
- 	depends on MACH_ARMCORE
---- linux-2.6.orig/drivers/mtd/nand/Makefile
-+++ linux-2.6/drivers/mtd/nand/Makefile
-@@ -40,6 +40,7 @@ obj-$(CONFIG_MTD_NAND_ORION)		+= orion_n
- obj-$(CONFIG_MTD_NAND_FSL_ELBC)		+= fsl_elbc_nand.o
- obj-$(CONFIG_MTD_NAND_FSL_IFC)		+= fsl_ifc_nand.o
- obj-$(CONFIG_MTD_NAND_FSL_UPM)		+= fsl_upm.o
-+obj-$(CONFIG_MTD_NAND_SLC_LPC32XX)      += lpc32xx_nand_slc.o
- obj-$(CONFIG_MTD_NAND_SH_FLCTL)		+= sh_flctl.o
- obj-$(CONFIG_MTD_NAND_MXC)		+= mxc_nand.o
- obj-$(CONFIG_MTD_NAND_SOCRATES)		+= socrates_nand.o
---- /dev/null
-+++ linux-2.6/drivers/mtd/nand/lpc32xx_nand_slc.c
-@@ -0,0 +1,1060 @@
+ /* as above, but as bit values */
+@@ -112,12 +113,13 @@
+ #define _TIF_RESTOREALL		(1<<TIF_RESTOREALL)
+ #define _TIF_NOERROR		(1<<TIF_NOERROR)
+ #define _TIF_NOTIFY_RESUME	(1<<TIF_NOTIFY_RESUME)
++#define _TIF_UPROBE		(1<<TIF_UPROBE)
+ #define _TIF_SYSCALL_TRACEPOINT	(1<<TIF_SYSCALL_TRACEPOINT)
+ #define _TIF_SYSCALL_T_OR_A	(_TIF_SYSCALL_TRACE | _TIF_SYSCALL_AUDIT | \
+ 				 _TIF_SECCOMP | _TIF_SYSCALL_TRACEPOINT)
+ 
+ #define _TIF_USER_WORK_MASK	(_TIF_SIGPENDING | _TIF_NEED_RESCHED | \
+-				 _TIF_NOTIFY_RESUME)
++				 _TIF_NOTIFY_RESUME | _TIF_UPROBE)
+ #define _TIF_PERSYSCALL_MASK	(_TIF_RESTOREALL|_TIF_NOERROR)
+ 
+ /* Bits in local_flags */
+Index: linux-3.5-rc1/arch/powerpc/include/asm/uprobes.h
+===================================================================
+--- linux-3.5-rc1.orig/arch/powerpc/include/asm/uprobes.h	2012-05-31 02:23:15.746233001 +0530
++++ linux-3.5-rc1/arch/powerpc/include/asm/uprobes.h	2012-06-03 21:05:48.226233001 +0530
+@@ -0,0 +1,49 @@
++#ifndef _ASM_UPROBES_H
++#define _ASM_UPROBES_H
 +/*
-+ * NXP LPC32XX NAND SLC driver
-+ *
-+ * Authors:
-+ *    Kevin Wells <kevin.wells@nxp.com>
-+ *    Roland Stigge <stigge@antcom.de>
-+ *
-+ * Copyright (C) 2011 NXP Semiconductors
-+ * Copyright (C) 2012 Roland Stigge
++ * User-space Probes (UProbes) for powerpc
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License as published by
@@ -166,1044 +134,257 @@ Thanks to Artem Bityutskiy, Huang Shijie and Russell King for reviewing!
 + * but WITHOUT ANY WARRANTY; without even the implied warranty of
 + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 + * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
++ *
++ * Copyright (C) IBM Corporation, 2007-2012
++ *
++ * Adapted from the x86 port by Ananth N Mavinakayanahalli <ananth@in.ibm.com>
 + */
 +
-+#include <linux/slab.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/mtd/mtd.h>
-+#include <linux/mtd/nand.h>
-+#include <linux/mtd/partitions.h>
-+#include <linux/clk.h>
-+#include <linux/err.h>
-+#include <linux/delay.h>
-+#include <linux/io.h>
-+#include <linux/mm.h>
-+#include <linux/dma-mapping.h>
-+#include <linux/dmaengine.h>
-+#include <linux/mtd/nand_ecc.h>
-+#include <linux/gpio.h>
-+#include <linux/of.h>
-+#include <linux/of_mtd.h>
-+#include <linux/of_gpio.h>
-+#include <linux/amba/pl08x.h>
++#include <linux/notifier.h>
 +
-+#define LPC32XX_MODNAME		"lpc32xx-nand"
++typedef unsigned int uprobe_opcode_t;
 +
-+/**********************************************************************
-+* SLC NAND controller register offsets
-+**********************************************************************/
++#define MAX_UINSN_BYTES			4
++#define UPROBE_XOL_SLOT_BYTES		(MAX_UINSN_BYTES)
 +
-+#define SLC_DATA(x)		(x + 0x000)
-+#define SLC_ADDR(x)		(x + 0x004)
-+#define SLC_CMD(x)		(x + 0x008)
-+#define SLC_STOP(x)		(x + 0x00C)
-+#define SLC_CTRL(x)		(x + 0x010)
-+#define SLC_CFG(x)		(x + 0x014)
-+#define SLC_STAT(x)		(x + 0x018)
-+#define SLC_INT_STAT(x)		(x + 0x01C)
-+#define SLC_IEN(x)		(x + 0x020)
-+#define SLC_ISR(x)		(x + 0x024)
-+#define SLC_ICR(x)		(x + 0x028)
-+#define SLC_TAC(x)		(x + 0x02C)
-+#define SLC_TC(x)		(x + 0x030)
-+#define SLC_ECC(x)		(x + 0x034)
-+#define SLC_DMA_DATA(x)		(x + 0x038)
++#define UPROBE_SWBP_INSN		0x7fe00008
++#define UPROBE_SWBP_INSN_SIZE		4 /* swbp insn size in bytes */
 +
-+/**********************************************************************
-+* slc_ctrl register definitions
-+**********************************************************************/
-+#define SLCCTRL_SW_RESET	(1 << 2) /* Reset the NAND controller bit */
-+#define SLCCTRL_ECC_CLEAR	(1 << 1) /* Reset ECC bit */
-+#define SLCCTRL_DMA_START	(1 << 0) /* Start DMA channel bit */
-+
-+/**********************************************************************
-+* slc_cfg register definitions
-+**********************************************************************/
-+#define SLCCFG_CE_LOW		(1 << 5) /* Force CE low bit */
-+#define SLCCFG_DMA_ECC		(1 << 4) /* Enable DMA ECC bit */
-+#define SLCCFG_ECC_EN		(1 << 3) /* ECC enable bit */
-+#define SLCCFG_DMA_BURST	(1 << 2) /* DMA burst bit */
-+#define SLCCFG_DMA_DIR		(1 << 1) /* DMA write(0)/read(1) bit */
-+#define SLCCFG_WIDTH		(1 << 0) /* External device width, 0=8bit */
-+
-+/**********************************************************************
-+* slc_stat register definitions
-+**********************************************************************/
-+#define SLCSTAT_DMA_FIFO	(1 << 2) /* DMA FIFO has data bit */
-+#define SLCSTAT_SLC_FIFO	(1 << 1) /* SLC FIFO has data bit */
-+#define SLCSTAT_NAND_READY	(1 << 0) /* NAND device is ready bit */
-+
-+/**********************************************************************
-+* slc_int_stat, slc_ien, slc_isr, and slc_icr register definitions
-+**********************************************************************/
-+#define SLCSTAT_INT_TC		(1 << 1) /* Transfer count bit */
-+#define SLCSTAT_INT_RDY_EN	(1 << 0) /* Ready interrupt bit */
-+
-+/**********************************************************************
-+* slc_tac register definitions
-+**********************************************************************/
-+/* Clock setting for RDY write sample wait time in 2*n clocks */
-+#define SLCTAC_WDR(n)		(((n) & 0xF) << 28)
-+/* Write pulse width in clock cycles, 1 to 16 clocks */
-+#define SLCTAC_WWIDTH(n)	(((n) & 0xF) << 24)
-+/* Write hold time of control and data signals, 1 to 16 clocks */
-+#define SLCTAC_WHOLD(n)		(((n) & 0xF) << 20)
-+/* Write setup time of control and data signals, 1 to 16 clocks */
-+#define SLCTAC_WSETUP(n)	(((n) & 0xF) << 16)
-+/* Clock setting for RDY read sample wait time in 2*n clocks */
-+#define SLCTAC_RDR(n)		(((n) & 0xF) << 12)
-+/* Read pulse width in clock cycles, 1 to 16 clocks */
-+#define SLCTAC_RWIDTH(n)	(((n) & 0xF) << 8)
-+/* Read hold time of control and data signals, 1 to 16 clocks */
-+#define SLCTAC_RHOLD(n)		(((n) & 0xF) << 4)
-+/* Read setup time of control and data signals, 1 to 16 clocks */
-+#define SLCTAC_RSETUP(n)	(((n) & 0xF) << 0)
-+
-+/**********************************************************************
-+* slc_ecc register definitions
-+**********************************************************************/
-+/* ECC line party fetch macro */
-+#define SLCECC_TO_LINEPAR(n)	(((n) >> 6) & 0x7FFF)
-+#define SLCECC_TO_COLPAR(n)	((n) & 0x3F)
-+
-+/*
-+ * DMA requires storage space for the DMA local buffer and the hardware ECC
-+ * storage area. The DMA local buffer is only used if DMA mapping fails
-+ * during runtime.
-+ */
-+#define LPC32XX_DMA_DATA_SIZE		4096
-+#define LPC32XX_ECC_SAVE_SIZE		((4096 / 256) * 4)
-+
-+/* Number of bytes used for ECC stored in NAND per 256 bytes */
-+#define LPC32XX_SLC_DEV_ECC_BYTES	3
-+
-+/*
-+ * If the NAND base clock frequency can't be fetched, this frequency will be
-+ * used instead as the base. This rate is used to setup the timing registers
-+ * used for NAND accesses.
-+ */
-+#define LPC32XX_DEF_BUS_RATE		133250000
-+
-+/* Milliseconds for DMA FIFO timeout (unlikely anyway) */
-+#define LPC32XX_DMA_TIMEOUT		100
-+
-+/*
-+ * NAND ECC Layout for small page NAND devices
-+ * Note: For large and huge page devices, the default layouts are used
-+ */
-+static struct nand_ecclayout lpc32xx_nand_oob_16 = {
-+	.eccbytes = 6,
-+	.eccpos = {10, 11, 12, 13, 14, 15},
-+	.oobfree = {
-+		{ .offset = 0, .length = 4 },
-+		{ .offset = 6, .length = 4 },
-+	},
++struct arch_uprobe {
++	u8	insn[MAX_UINSN_BYTES];
 +};
 +
-+static u8 bbt_pattern[] = {'B', 'b', 't', '0' };
-+static u8 mirror_pattern[] = {'1', 't', 'b', 'B' };
-+
-+/*
-+ * Small page FLASH BBT descriptors, marker at offset 0, version at offset 6
-+ * Note: Large page devices used the default layout
-+ */
-+static struct nand_bbt_descr bbt_smallpage_main_descr = {
-+	.options = NAND_BBT_LASTBLOCK | NAND_BBT_CREATE | NAND_BBT_WRITE
-+		| NAND_BBT_2BIT | NAND_BBT_VERSION | NAND_BBT_PERCHIP,
-+	.offs =	0,
-+	.len = 4,
-+	.veroffs = 6,
-+	.maxblocks = 4,
-+	.pattern = bbt_pattern
++struct arch_uprobe_task {
 +};
 +
-+static struct nand_bbt_descr bbt_smallpage_mirror_descr = {
-+	.options = NAND_BBT_LASTBLOCK | NAND_BBT_CREATE | NAND_BBT_WRITE
-+		| NAND_BBT_2BIT | NAND_BBT_VERSION | NAND_BBT_PERCHIP,
-+	.offs =	0,
-+	.len = 4,
-+	.veroffs = 6,
-+	.maxblocks = 4,
-+	.pattern = mirror_pattern
-+};
-+
-+/*
-+ * NAND platform configuration structure
-+ */
-+struct lpc32xx_nand_cfg_slc {
-+	u32     wdr_clks;
-+	u32     wwidth;
-+	u32     whold;
-+	u32     wsetup;
-+	u32     rdr_clks;
-+	u32     rwidth;
-+	u32     rhold;
-+	u32     rsetup;
-+	bool    use_bbt;
-+	unsigned wp_gpio;
-+	struct mtd_partition *parts;
-+	unsigned num_parts;
-+};
-+
-+struct lpc32xx_nand_host {
-+	struct nand_chip	nand_chip;
-+	struct clk		*clk;
-+	struct mtd_info		mtd;
-+	void __iomem		*io_base;
-+	struct lpc32xx_nand_cfg_slc *ncfg;
-+
-+	struct completion	comp;
-+	struct dma_chan		*dma_chan;
-+	u32			dma_buf_len;
-+	struct dma_slave_config	dma_slave_config;
-+	struct scatterlist	sgl;
-+
-+	/*
-+	 * DMA and CPU addresses of ECC work area and data buffer
-+	 */
-+	u32			*ecc_buf;
-+	u8			*data_buf;
-+	dma_addr_t		io_base_dma;
-+};
-+
-+static void lpc32xx_nand_setup(struct lpc32xx_nand_host *host)
-+{
-+	u32 clkrate, tmp;
-+
-+	/* Reset SLC controller */
-+	writel(SLCCTRL_SW_RESET, SLC_CTRL(host->io_base));
-+	udelay(1000);
-+
-+	/* Basic setup */
-+	writel(0, SLC_CFG(host->io_base));
-+	writel(0, SLC_IEN(host->io_base));
-+	writel((SLCSTAT_INT_TC | SLCSTAT_INT_RDY_EN),
-+		SLC_ICR(host->io_base));
-+
-+	/* Get base clock for SLC block */
-+	clkrate = clk_get_rate(host->clk);
-+	if (clkrate == 0)
-+		clkrate = LPC32XX_DEF_BUS_RATE;
-+
-+	/* Compute clock setup values */
-+	tmp = SLCTAC_WDR(host->ncfg->wdr_clks) |
-+		SLCTAC_WWIDTH(1 + (clkrate / host->ncfg->wwidth)) |
-+		SLCTAC_WHOLD(1 + (clkrate / host->ncfg->whold)) |
-+		SLCTAC_WSETUP(1 + (clkrate / host->ncfg->wsetup)) |
-+		SLCTAC_RDR(host->ncfg->rdr_clks) |
-+		SLCTAC_RWIDTH(1 + (clkrate / host->ncfg->rwidth)) |
-+		SLCTAC_RHOLD(1 + (clkrate / host->ncfg->rhold)) |
-+		SLCTAC_RSETUP(1 + (clkrate / host->ncfg->rsetup));
-+	writel(tmp, SLC_TAC(host->io_base));
-+}
-+
-+/*
-+ * Hardware specific access to control lines
-+ */
-+static void lpc32xx_nand_cmd_ctrl(struct mtd_info *mtd, int cmd,
-+	unsigned int ctrl)
-+{
-+	u32 tmp;
-+	struct nand_chip *chip = mtd->priv;
-+	struct lpc32xx_nand_host *host = chip->priv;
-+
-+	/* Does CE state need to be changed? */
-+	tmp = readl(SLC_CFG(host->io_base));
-+	if (ctrl & NAND_NCE)
-+		tmp |= SLCCFG_CE_LOW;
-+	else
-+		tmp &= ~SLCCFG_CE_LOW;
-+	writel(tmp, SLC_CFG(host->io_base));
-+
-+	if (cmd != NAND_CMD_NONE) {
-+		if (ctrl & NAND_CLE)
-+			writel(cmd, SLC_CMD(host->io_base));
-+		else
-+			writel(cmd, SLC_ADDR(host->io_base));
++extern int  arch_uprobe_analyze_insn(struct arch_uprobe *aup, struct mm_struct *mm, loff_t vaddr);
++extern unsigned long uprobe_get_swbp_addr(struct pt_regs *regs);
++extern int  arch_uprobe_pre_xol(struct arch_uprobe *aup, struct pt_regs *regs);
++extern int  arch_uprobe_post_xol(struct arch_uprobe *aup, struct pt_regs *regs);
++extern bool arch_uprobe_xol_was_trapped(struct task_struct *tsk);
++extern int  arch_uprobe_exception_notify(struct notifier_block *self, unsigned long val, void *data);
++extern void arch_uprobe_abort_xol(struct arch_uprobe *aup, struct pt_regs *regs);
++#endif	/* _ASM_UPROBES_H */
+Index: linux-3.5-rc1/arch/powerpc/kernel/Makefile
+===================================================================
+--- linux-3.5-rc1.orig/arch/powerpc/kernel/Makefile	2012-06-03 06:59:26.000000000 +0530
++++ linux-3.5-rc1/arch/powerpc/kernel/Makefile	2012-06-03 21:05:48.226233001 +0530
+@@ -96,6 +96,7 @@
+ obj-$(CONFIG_BOOTX_TEXT)	+= btext.o
+ obj-$(CONFIG_SMP)		+= smp.o
+ obj-$(CONFIG_KPROBES)		+= kprobes.o
++obj-$(CONFIG_UPROBES)		+= uprobes.o
+ obj-$(CONFIG_PPC_UDBG_16550)	+= legacy_serial.o udbg_16550.o
+ obj-$(CONFIG_STACKTRACE)	+= stacktrace.o
+ obj-$(CONFIG_SWIOTLB)		+= dma-swiotlb.o
+Index: linux-3.5-rc1/arch/powerpc/kernel/signal.c
+===================================================================
+--- linux-3.5-rc1.orig/arch/powerpc/kernel/signal.c	2012-06-03 06:59:26.000000000 +0530
++++ linux-3.5-rc1/arch/powerpc/kernel/signal.c	2012-06-03 21:05:48.236233000 +0530
+@@ -11,6 +11,7 @@
+ 
+ #include <linux/tracehook.h>
+ #include <linux/signal.h>
++#include <linux/uprobes.h>
+ #include <linux/key.h>
+ #include <asm/hw_breakpoint.h>
+ #include <asm/uaccess.h>
+@@ -157,6 +158,11 @@
+ 
+ void do_notify_resume(struct pt_regs *regs, unsigned long thread_info_flags)
+ {
++	if (thread_info_flags & _TIF_UPROBE) {
++		clear_thread_flag(TIF_UPROBE);
++		uprobe_notify_resume(regs);
 +	}
-+}
 +
+ 	if (thread_info_flags & _TIF_SIGPENDING)
+ 		do_signal(regs);
+ 
+Index: linux-3.5-rc1/arch/powerpc/kernel/uprobes.c
+===================================================================
+--- linux-3.5-rc1.orig/arch/powerpc/kernel/uprobes.c	2012-05-31 02:23:15.746233001 +0530
++++ linux-3.5-rc1/arch/powerpc/kernel/uprobes.c	2012-06-03 21:05:48.236233000 +0530
+@@ -0,0 +1,163 @@
 +/*
-+ * Read the Device Ready pin
++ * User-space Probes (UProbes) for powerpc
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
++ *
++ * Copyright (C) IBM Corporation, 2007-2012
++ *
++ * Adapted from the x86 port by Ananth N Mavinakayanahalli <ananth@in.ibm.com>
 + */
-+static int lpc32xx_nand_device_ready(struct mtd_info *mtd)
-+{
-+	struct nand_chip *chip = mtd->priv;
-+	struct lpc32xx_nand_host *host = chip->priv;
-+	int rdy = 0;
++#include <linux/kernel.h>
++#include <linux/sched.h>
++#include <linux/ptrace.h>
++#include <linux/uprobes.h>
++#include <linux/uaccess.h>
 +
-+	if ((readl(SLC_STAT(host->io_base)) & SLCSTAT_NAND_READY) != 0)
-+		rdy = 1;
++#include <linux/kdebug.h>
++#include <asm/sstep.h>
 +
-+	return rdy;
-+}
-+
-+/*
-+ * Enable NAND write protect
++/**
++ * arch_uprobe_analyze_insn
++ * @mm: the probed address space.
++ * @arch_uprobe: the probepoint information.
++ * Return 0 on success or a -ve number on error.
 + */
-+static void lpc32xx_wp_enable(struct lpc32xx_nand_host *host)
++int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm, loff_t vaddr)
 +{
-+	gpio_set_value(host->ncfg->wp_gpio, 0);
-+}
-+
-+/*
-+ * Disable NAND write protect
-+ */
-+static void lpc32xx_wp_disable(struct lpc32xx_nand_host *host)
-+{
-+	gpio_set_value(host->ncfg->wp_gpio, 1);
-+}
-+
-+/*
-+ * Prepares SLC for transfers with H/W ECC enabled
-+ */
-+static void lpc32xx_nand_ecc_enable(struct mtd_info *mtd, int mode)
-+{
-+	/* Hardware ECC is enabled automatically in hardware as needed */
-+}
-+
-+/*
-+ * Calculates the ECC for the data
-+ */
-+static int lpc32xx_nand_ecc_calculate(struct mtd_info *mtd,
-+				      const unsigned char *buf,
-+				      unsigned char *code)
-+{
-+	/*
-+	 * ECC is calculated automatically in hardware during syndrome read
-+	 * and write operations, so it doesn't need to be calculated here.
-+	 */
++	if (vaddr & 0x03)
++		return -EINVAL;
 +	return 0;
 +}
 +
 +/*
-+ * Read a single byte from NAND device
++ * arch_uprobe_pre_xol - prepare to execute out of line.
++ * @auprobe: the probepoint information.
++ * @regs: reflects the saved user state of current task.
 + */
-+static u8 lpc32xx_nand_read_byte(struct mtd_info *mtd)
++int arch_uprobe_pre_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
 +{
-+	struct nand_chip *chip = mtd->priv;
-+	struct lpc32xx_nand_host *host = chip->priv;
-+
-+	return (u8)readl(SLC_DATA(host->io_base));
-+}
-+
-+/*
-+ * Simple device read without ECC
-+ */
-+static void lpc32xx_nand_read_buf(struct mtd_info *mtd, u_char *buf, int len)
-+{
-+	struct nand_chip *chip = mtd->priv;
-+	struct lpc32xx_nand_host *host = chip->priv;
-+
-+	/* Direct device read with no ECC */
-+	while (len-- > 0)
-+		*buf++ = (u8)readl(SLC_DATA(host->io_base));
-+}
-+
-+/*
-+ * Simple device write without ECC
-+ */
-+static void lpc32xx_nand_write_buf(struct mtd_info *mtd, const u8 *buf, int len)
-+{
-+	struct nand_chip *chip = mtd->priv;
-+	struct lpc32xx_nand_host *host = chip->priv;
-+
-+	/* Direct device write with no ECC */
-+	while (len-- > 0)
-+		writel((u32)*buf++, SLC_DATA(host->io_base));
-+}
-+
-+/*
-+ * Verify data in buffer to data on device
-+ */
-+static int lpc32xx_verify_buf(struct mtd_info *mtd, const u8 *buf, int len)
-+{
-+	struct nand_chip *chip = mtd->priv;
-+	struct lpc32xx_nand_host *host = chip->priv;
-+	int i;
-+
-+	/* DATA register must be read as 32 bits or it will fail */
-+	for (i = 0; i < len; i++) {
-+		if (buf[i] != (u8)readl(SLC_DATA(host->io_base)))
-+			return -EFAULT;
-+	}
-+
++	/* FIXME: We don't support abort_xol on powerpc for now */
++	regs->nip = current->utask->xol_vaddr;
 +	return 0;
 +}
 +
-+/*
-+ * Read the OOB data from the device without ECC using FIFO method
++/**
++ * uprobe_get_swbp_addr - compute address of swbp given post-swbp regs
++ * @regs: Reflects the saved state of the task after it has hit a breakpoint
++ * instruction.
++ * Return the address of the breakpoint instruction.
 + */
-+static int lpc32xx_nand_read_oob_syndrome(struct mtd_info *mtd,
-+					  struct nand_chip *chip, int page)
++unsigned long uprobe_get_swbp_addr(struct pt_regs *regs)
 +{
-+	chip->cmdfunc(mtd, NAND_CMD_READOOB, 0, page);
-+	chip->read_buf(mtd, chip->oob_poi, mtd->oobsize);
-+
-+	return 0;
-+}
-+
-+/*
-+ * Write the OOB data to the device without ECC using FIFO method
-+ */
-+static int lpc32xx_nand_write_oob_syndrome(struct mtd_info *mtd,
-+	struct nand_chip *chip, int page)
-+{
-+	int status;
-+
-+	chip->cmdfunc(mtd, NAND_CMD_SEQIN, mtd->writesize, page);
-+	chip->write_buf(mtd, chip->oob_poi, mtd->oobsize);
-+
-+	/* Send command to program the OOB data */
-+	chip->cmdfunc(mtd, NAND_CMD_PAGEPROG, -1, -1);
-+
-+	status = chip->waitfunc(mtd, chip);
-+
-+	return status & NAND_STATUS_FAIL ? -EIO : 0;
++	return instruction_pointer(regs);
 +}
 +
 +/*
-+ * Fills in the ECC fields in the OOB buffer with the hardware generated ECC
++ * If xol insn itself traps and generates a signal (SIGILL/SIGSEGV/etc),
++ * then detect the case where a singlestepped instruction jumps back to its
++ * own address. It is assumed that anything like do_page_fault/do_trap/etc
++ * sets thread.trap_nr != -1.
++ *
++ * FIXME: powerpc however doesn't have thread.trap_nr yet.
++ *
++ * arch_uprobe_pre_xol/arch_uprobe_post_xol save/restore thread.trap_nr,
++ * arch_uprobe_xol_was_trapped() simply checks that ->trap_nr is not equal to
++ * UPROBE_TRAP_NR == -1 set by arch_uprobe_pre_xol().
 + */
-+static void lpc32xx_slc_ecc_copy(u8 *spare, const u32 *ecc, int count)
++bool arch_uprobe_xol_was_trapped(struct task_struct *t)
 +{
-+	int i;
-+
-+	for (i = 0; i < (count * 3); i += 3) {
-+		u32 ce = ecc[i / 3];
-+		ce = ~(ce << 2) & 0xFFFFFF;
-+		spare[i + 2] = (u8)(ce & 0xFF);
-+		ce >>= 8;
-+		spare[i + 1] = (u8)(ce & 0xFF);
-+		ce >>= 8;
-+		spare[i] = (u8)(ce & 0xFF);
-+	}
-+}
-+
-+static void lpc32xx_dma_complete_func(void *completion)
-+{
-+	complete(completion);
-+}
-+
-+static int lpc32xx_xmit_dma(struct mtd_info *mtd, dma_addr_t dma,
-+			    void *mem, int len, enum dma_transfer_direction dir)
-+{
-+	struct nand_chip *chip = mtd->priv;
-+	struct lpc32xx_nand_host *host = chip->priv;
-+	struct dma_async_tx_descriptor *desc;
-+	int flags = DMA_CTRL_ACK | DMA_PREP_INTERRUPT;
-+	int res;
-+
-+	host->dma_slave_config.direction = dir;
-+	host->dma_slave_config.src_addr = dma;
-+	host->dma_slave_config.dst_addr = dma;
-+	host->dma_slave_config.src_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
-+	host->dma_slave_config.dst_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
-+	host->dma_slave_config.src_maxburst = 4;
-+	host->dma_slave_config.dst_maxburst = 4;
-+	/* DMA controller does flow control: */
-+	host->dma_slave_config.device_fc = false;
-+	if (dmaengine_slave_config(host->dma_chan, &host->dma_slave_config)) {
-+		dev_err(mtd->dev.parent, "Failed to setup DMA slave\n");
-+		return -ENXIO;
-+	}
-+
-+	sg_init_one(&host->sgl, mem, len);
-+
-+	res = dma_map_sg(host->dma_chan->device->dev, &host->sgl, 1,
-+			 DMA_BIDIRECTIONAL);
-+	if (res != 1) {
-+		dev_err(mtd->dev.parent, "Failed to map sg list\n");
-+		return -ENXIO;
-+	}
-+	desc = dmaengine_prep_slave_sg(host->dma_chan, &host->sgl, 1, dir,
-+				       flags);
-+	if (!desc) {
-+		dev_err(mtd->dev.parent, "Failed to prepare slave sg\n");
-+		goto out1;
-+	}
-+
-+	init_completion(&host->comp);
-+	desc->callback = lpc32xx_dma_complete_func;
-+	desc->callback_param = &host->comp;
-+
-+	dmaengine_submit(desc);
-+	dma_async_issue_pending(host->dma_chan);
-+
-+	wait_for_completion_timeout(&host->comp, msecs_to_jiffies(1000));
-+
-+	dma_unmap_sg(host->dma_chan->device->dev, &host->sgl, 1,
-+		     DMA_BIDIRECTIONAL);
-+
-+	return 0;
-+out1:
-+	dma_unmap_sg(host->dma_chan->device->dev, &host->sgl, 1,
-+		     DMA_BIDIRECTIONAL);
-+	return -ENXIO;
-+}
-+
-+/*
-+ * DMA read/write transfers with ECC support
-+ */
-+static int lpc32xx_xfer(struct mtd_info *mtd, u8 *buf, int eccsubpages,
-+			int read)
-+{
-+	struct nand_chip *chip = mtd->priv;
-+	struct lpc32xx_nand_host *host = chip->priv;
-+	int i, status = 0;
-+	unsigned long timeout;
-+	int res;
-+	enum dma_transfer_direction dir =
-+		read ? DMA_DEV_TO_MEM : DMA_MEM_TO_DEV;
-+	u8 *dma_buf;
-+	bool dma_mapped;
-+
-+	if ((void *)buf <= high_memory) {
-+		dma_buf = buf;
-+		dma_mapped = true;
-+	} else {
-+		dma_buf = host->data_buf;
-+		dma_mapped = false;
-+		if (!read)
-+			memcpy(host->data_buf, buf, mtd->writesize);
-+	}
-+
-+	if (read) {
-+		writel(readl(SLC_CFG(host->io_base)) |
-+		       SLCCFG_DMA_DIR | SLCCFG_ECC_EN | SLCCFG_DMA_ECC |
-+		       SLCCFG_DMA_BURST, SLC_CFG(host->io_base));
-+	} else {
-+		writel((readl(SLC_CFG(host->io_base)) |
-+			SLCCFG_ECC_EN | SLCCFG_DMA_ECC | SLCCFG_DMA_BURST) &
-+		       ~SLCCFG_DMA_DIR,
-+			SLC_CFG(host->io_base));
-+	}
-+
-+	/* Clear initial ECC */
-+	writel(SLCCTRL_ECC_CLEAR, SLC_CTRL(host->io_base));
-+
-+	/* Transfer size is data area only */
-+	writel(mtd->writesize, SLC_TC(host->io_base));
-+
-+	/* Start transfer in the NAND controller */
-+	writel(readl(SLC_CTRL(host->io_base)) | SLCCTRL_DMA_START,
-+	       SLC_CTRL(host->io_base));
-+
-+	for (i = 0; i < chip->ecc.steps; i++) {
-+		/* Data */
-+		res = lpc32xx_xmit_dma(mtd, SLC_DMA_DATA(host->io_base_dma),
-+				       dma_buf + i * chip->ecc.size,
-+				       mtd->writesize / chip->ecc.steps, dir);
-+		if (res)
-+			return res;
-+
-+		/* Always _read_ ECC */
-+		if (i == chip->ecc.steps - 1)
-+			break;
-+		if (!read) /* ECC availability delayed on write */
-+			udelay(10);
-+		res = lpc32xx_xmit_dma(mtd, SLC_ECC(host->io_base_dma),
-+				       &host->ecc_buf[i], 4, DMA_DEV_TO_MEM);
-+		if (res)
-+			return res;
-+	}
-+
-+	/*
-+	 * According to NXP, the DMA can be finished here, but the NAND
-+	 * controller may still have buffered data. After porting to using the
-+	 * dmaengine DMA driver (amba-pl080), the condition (DMA_FIFO empty)
-+	 * appears to be always true, according to tests. Keeping the check for
-+	 * safety reasons for now.
-+	 */
-+	if (readl(SLC_STAT(host->io_base)) & SLCSTAT_DMA_FIFO) {
-+		dev_warn(mtd->dev.parent, "FIFO not empty!\n");
-+		timeout = jiffies + msecs_to_jiffies(LPC32XX_DMA_TIMEOUT);
-+		while ((readl(SLC_STAT(host->io_base)) & SLCSTAT_DMA_FIFO) &&
-+		       time_before(jiffies, timeout))
-+			cpu_relax();
-+		if (!time_before(jiffies, timeout)) {
-+			dev_err(mtd->dev.parent, "FIFO held data too long\n");
-+			status = -EIO;
-+		}
-+	}
-+
-+	/* Read last calculated ECC value */
-+	if (!read)
-+		udelay(10);
-+	host->ecc_buf[chip->ecc.steps - 1] =
-+		readl(SLC_ECC(host->io_base));
-+
-+	/* Flush DMA */
-+	dmaengine_terminate_all(host->dma_chan);
-+
-+	if (readl(SLC_STAT(host->io_base)) & SLCSTAT_DMA_FIFO ||
-+	    readl(SLC_TC(host->io_base))) {
-+		/* Something is left in the FIFO, something is wrong */
-+		dev_err(mtd->dev.parent, "DMA FIFO failure\n");
-+		status = -EIO;
-+	}
-+
-+	/* Stop DMA & HW ECC */
-+	writel(readl(SLC_CTRL(host->io_base)) & ~SLCCTRL_DMA_START,
-+	       SLC_CTRL(host->io_base));
-+	writel(readl(SLC_CFG(host->io_base)) &
-+	       ~(SLCCFG_DMA_DIR | SLCCFG_ECC_EN | SLCCFG_DMA_ECC |
-+		 SLCCFG_DMA_BURST), SLC_CFG(host->io_base));
-+
-+	if (!dma_mapped && read)
-+		memcpy(buf, host->data_buf, mtd->writesize);
-+
-+	return status;
-+}
-+
-+/*
-+ * Read the data and OOB data from the device, use ECC correction with the
-+ * data, disable ECC for the OOB data
-+ */
-+static int lpc32xx_nand_read_page_syndrome(struct mtd_info *mtd,
-+					   struct nand_chip *chip, u8 *buf,
-+					   int oob_required, int page)
-+{
-+	struct lpc32xx_nand_host *host = chip->priv;
-+	int stat, i, status;
-+	u8 *oobecc, tmpecc[LPC32XX_ECC_SAVE_SIZE];
-+
-+	/* Issue read command */
-+	chip->cmdfunc(mtd, NAND_CMD_READ0, 0, page);
-+
-+	/* Read data and oob, calculate ECC */
-+	status = lpc32xx_xfer(mtd, buf, chip->ecc.steps, 1);
-+
-+	/* Get OOB data */
-+	chip->read_buf(mtd, chip->oob_poi, mtd->oobsize);
-+
-+	/* Convert to stored ECC format */
-+	lpc32xx_slc_ecc_copy(tmpecc, (u32 *) host->ecc_buf, chip->ecc.steps);
-+
-+	/* Pointer to ECC data retrieved from NAND spare area */
-+	oobecc = chip->oob_poi + chip->ecc.layout->eccpos[0];
-+
-+	for (i = 0; i < chip->ecc.steps; i++) {
-+		stat = chip->ecc.correct(mtd, buf, oobecc,
-+					 &tmpecc[i * chip->ecc.bytes]);
-+		if (stat < 0)
-+			mtd->ecc_stats.failed++;
-+		else
-+			mtd->ecc_stats.corrected += stat;
-+
-+		buf += chip->ecc.size;
-+		oobecc += chip->ecc.bytes;
-+	}
-+
-+	return status;
-+}
-+
-+/*
-+ * Read the data and OOB data from the device, no ECC correction with the
-+ * data or OOB data
-+ */
-+static int lpc32xx_nand_read_page_raw_syndrome(struct mtd_info *mtd,
-+					       struct nand_chip *chip,
-+					       u8 *buf, int oob_required,
-+					       int page)
-+{
-+	/* Issue read command */
-+	chip->cmdfunc(mtd, NAND_CMD_READ0, 0, page);
-+
-+	/* Raw reads can just use the FIFO interface */
-+	chip->read_buf(mtd, buf, chip->ecc.size * chip->ecc.steps);
-+	chip->read_buf(mtd, chip->oob_poi, mtd->oobsize);
-+
-+	return 0;
-+}
-+
-+/*
-+ * Write the data and OOB data to the device, use ECC with the data,
-+ * disable ECC for the OOB data
-+ */
-+static void lpc32xx_nand_write_page_syndrome(struct mtd_info *mtd,
-+					     struct nand_chip *chip,
-+					     const u8 *buf, int oob_required)
-+{
-+	struct lpc32xx_nand_host *host = chip->priv;
-+	u8 *pb = chip->oob_poi + chip->ecc.layout->eccpos[0];
-+
-+	/* Write data, calculate ECC on outbound data */
-+	lpc32xx_xfer(mtd, (u8 *)buf, chip->ecc.steps, 0);
-+
-+	/*
-+	 * The calculated ECC needs some manual work done to it before
-+	 * committing it to NAND. Process the calculated ECC and place
-+	 * the resultant values directly into the OOB buffer. */
-+	lpc32xx_slc_ecc_copy(pb, (u32 *)host->ecc_buf, chip->ecc.steps);
-+
-+	/* Write ECC data to device */
-+	chip->write_buf(mtd, chip->oob_poi, mtd->oobsize);
-+}
-+
-+/*
-+ * Write the data and OOB data to the device, no ECC correction with the
-+ * data or OOB data
-+ */
-+static void lpc32xx_nand_write_page_raw_syndrome(struct mtd_info *mtd,
-+						 struct nand_chip *chip,
-+						 const u8 *buf,
-+						 int oob_required)
-+{
-+	/* Raw writes can just use the FIFO interface */
-+	chip->write_buf(mtd, buf, chip->ecc.size * chip->ecc.steps);
-+	chip->write_buf(mtd, chip->oob_poi, mtd->oobsize);
-+}
-+
-+static bool lpc32xx_dma_filter(struct dma_chan *chan, void *param)
-+{
-+	struct pl08x_dma_chan *ch =
-+		container_of(chan, struct pl08x_dma_chan, chan);
-+
-+	/* In LPC32xx's PL080 DMA wiring, the SLC NAND DMA signal is #1 */
-+	if (ch->cd->min_signal == 1)
-+		return true;
++	/* FIXME: We don't support abort_xol on powerpc for now */
 +	return false;
 +}
 +
-+static int lpc32xx_nand_dma_setup(struct lpc32xx_nand_host *host)
++/*
++ * Called after single-stepping. To avoid the SMP problems that can
++ * occur when we temporarily put back the original opcode to
++ * single-step, we single-stepped a copy of the instruction.
++ *
++ * This function prepares to resume execution after the single-step.
++ */
++int arch_uprobe_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
 +{
-+	struct mtd_info *mtd = &host->mtd;
-+	dma_cap_mask_t mask;
++	/* FIXME: We don't support abort_xol on powerpc for now */
 +
-+	dma_cap_zero(mask);
-+	dma_cap_set(DMA_SLAVE, mask);
-+	host->dma_chan = dma_request_channel(mask, lpc32xx_dma_filter, NULL);
-+	if (!host->dma_chan) {
-+		dev_err(mtd->dev.parent, "Failed to request DMA channel\n");
-+		return -EBUSY;
-+	}
-+
++	/*
++	 * On powerpc, except for loads and stores, most instructions
++	 * including ones that alter code flow (branches, calls, returns)
++	 * are emulated in the kernel. We get here only if the emulation
++	 * support doesn't exist and have to fix-up the next instruction
++	 * to be executed.
++	 */
++	regs->nip = current->utask->vaddr + MAX_UINSN_BYTES;
 +	return 0;
 +}
 +
-+#ifdef CONFIG_OF
-+static struct lpc32xx_nand_cfg_slc *lpc32xx_parse_dt(struct device *dev)
++/* callback routine for handling exceptions. */
++int arch_uprobe_exception_notify(struct notifier_block *self, unsigned long val, void *data)
 +{
-+	struct lpc32xx_nand_cfg_slc *pdata;
-+	struct device_node *np = dev->of_node;
++	struct die_args *args = data;
++	struct pt_regs *regs = args->regs;
++	int ret = NOTIFY_DONE;
 +
-+	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
-+	if (!pdata) {
-+		dev_err(dev, "could not allocate memory for platform data\n");
-+		return NULL;
++	/* We are only interested in userspace traps */
++	if (regs && !user_mode(regs))
++		return NOTIFY_DONE;
++
++	switch (val) {
++	case DIE_BPT:
++		if (uprobe_pre_sstep_notifier(regs))
++			ret = NOTIFY_STOP;
++		break;
++	case DIE_SSTEP:
++		if (uprobe_post_sstep_notifier(regs))
++			ret = NOTIFY_STOP;
++	default:
++		break;
 +	}
-+
-+	of_property_read_u32(np, "nxp,wdr-clks", &pdata->wdr_clks);
-+	of_property_read_u32(np, "nxp,wwidth", &pdata->wwidth);
-+	of_property_read_u32(np, "nxp,whold", &pdata->whold);
-+	of_property_read_u32(np, "nxp,wsetup", &pdata->wsetup);
-+	of_property_read_u32(np, "nxp,rdr-clks", &pdata->rdr_clks);
-+	of_property_read_u32(np, "nxp,rwidth", &pdata->rwidth);
-+	of_property_read_u32(np, "nxp,rhold", &pdata->rhold);
-+	of_property_read_u32(np, "nxp,rsetup", &pdata->rsetup);
-+
-+	if (!pdata->wdr_clks || !pdata->wwidth || !pdata->whold ||
-+	    !pdata->wsetup || !pdata->rdr_clks || !pdata->rwidth ||
-+	    !pdata->rhold || !pdata->rsetup) {
-+		dev_err(dev, "chip parameters not specified correctly\n");
-+		return NULL;
-+	}
-+
-+	pdata->use_bbt = of_get_nand_on_flash_bbt(np);
-+	pdata->wp_gpio = of_get_named_gpio_flags(np, "gpios", 0, NULL);
-+
-+	return pdata;
-+}
-+#else
-+static struct lpc32xx_nand_cfg_slc *lpc32xx_parse_dt(struct device *dev)
-+{
-+	return NULL;
-+}
-+#endif
-+
-+/*
-+ * Probe for NAND controller
-+ */
-+static int __devinit lpc32xx_nand_probe(struct platform_device *pdev)
-+{
-+	struct lpc32xx_nand_host *host;
-+	struct mtd_info *mtd;
-+	struct nand_chip *chip;
-+	struct resource *rc;
-+	struct mtd_part_parser_data ppdata = {};
-+	int res;
-+
-+	rc = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (rc == NULL) {
-+		dev_err(&pdev->dev, "No memory resource found for device\n");
-+		return -EBUSY;
-+	}
-+
-+	/* Allocate memory for the device structure (and zero it) */
-+	host = devm_kzalloc(&pdev->dev, sizeof(*host), GFP_KERNEL);
-+	if (!host) {
-+		dev_err(&pdev->dev, "failed to allocate device structure\n");
-+		return -ENOMEM;
-+	}
-+	host->io_base_dma = rc->start;
-+
-+	host->io_base = devm_request_and_ioremap(&pdev->dev, rc);
-+	if (host->io_base == NULL) {
-+		dev_err(&pdev->dev, "ioremap failed\n");
-+		return -ENOMEM;
-+	}
-+
-+	if (pdev->dev.of_node)
-+		host->ncfg = lpc32xx_parse_dt(&pdev->dev);
-+	else
-+		host->ncfg = pdev->dev.platform_data;
-+	if (!host->ncfg) {
-+		dev_err(&pdev->dev, "Missing platform data\n");
-+		return -ENOENT;
-+	}
-+	if (gpio_request(host->ncfg->wp_gpio, "NAND WP")) {
-+		dev_err(&pdev->dev, "GPIO not available\n");
-+		return -EBUSY;
-+	}
-+	lpc32xx_wp_disable(host);
-+
-+	mtd = &host->mtd;
-+	chip = &host->nand_chip;
-+	chip->priv = host;
-+	mtd->priv = chip;
-+	mtd->owner = THIS_MODULE;
-+	mtd->dev.parent = &pdev->dev;
-+
-+	/* Get NAND clock */
-+	host->clk = clk_get(&pdev->dev, NULL);
-+	if (IS_ERR(host->clk)) {
-+		dev_err(&pdev->dev, "Clock failure\n");
-+		res = -ENOENT;
-+		goto err_exit1;
-+	}
-+	clk_enable(host->clk);
-+
-+	/* Set NAND IO addresses and command/ready functions */
-+	chip->IO_ADDR_R = SLC_DATA(host->io_base);
-+	chip->IO_ADDR_W = SLC_DATA(host->io_base);
-+	chip->cmd_ctrl = lpc32xx_nand_cmd_ctrl;
-+	chip->dev_ready = lpc32xx_nand_device_ready;
-+	chip->chip_delay = 20; /* 20us command delay time */
-+
-+	/* Init NAND controller */
-+	lpc32xx_nand_setup(host);
-+
-+	platform_set_drvdata(pdev, host);
-+
-+	/* NAND callbacks for LPC32xx SLC hardware */
-+	chip->ecc.mode = NAND_ECC_HW_SYNDROME;
-+	chip->read_byte = lpc32xx_nand_read_byte;
-+	chip->read_buf = lpc32xx_nand_read_buf;
-+	chip->write_buf = lpc32xx_nand_write_buf;
-+	chip->ecc.read_page_raw = lpc32xx_nand_read_page_raw_syndrome;
-+	chip->ecc.read_page = lpc32xx_nand_read_page_syndrome;
-+	chip->ecc.write_page_raw = lpc32xx_nand_write_page_raw_syndrome;
-+	chip->ecc.write_page = lpc32xx_nand_write_page_syndrome;
-+	chip->ecc.write_oob = lpc32xx_nand_write_oob_syndrome;
-+	chip->ecc.read_oob = lpc32xx_nand_read_oob_syndrome;
-+	chip->ecc.calculate = lpc32xx_nand_ecc_calculate;
-+	chip->ecc.correct = nand_correct_data;
-+	chip->ecc.strength = 1;
-+	chip->ecc.hwctl = lpc32xx_nand_ecc_enable;
-+	chip->verify_buf = lpc32xx_verify_buf;
-+
-+	/* bitflip_threshold's default is defined as ecc_strength anyway.
-+	 * Unfortunately, it is set only later at add_mtd_device(). Meanwhile
-+	 * being 0, it causes bad block table scanning errors in
-+	 * nand_scan_tail(), so preparing it here already. */
-+	mtd->bitflip_threshold = chip->ecc.strength;
-+
-+	/*
-+	 * Allocate a large enough buffer for a single huge page plus
-+	 * extra space for the spare area and ECC storage area
-+	 */
-+	host->dma_buf_len = LPC32XX_DMA_DATA_SIZE + LPC32XX_ECC_SAVE_SIZE;
-+	host->data_buf = devm_kzalloc(&pdev->dev, host->dma_buf_len,
-+				      GFP_KERNEL);
-+	if (host->data_buf == NULL) {
-+		dev_err(&pdev->dev, "Error allocating memory\n");
-+		res = -ENOMEM;
-+		goto err_exit2;
-+	}
-+
-+	res = lpc32xx_nand_dma_setup(host);
-+	if (res) {
-+		res = -EIO;
-+		goto err_exit2;
-+	}
-+
-+	/* Find NAND device */
-+	if (nand_scan_ident(mtd, 1, NULL)) {
-+		res = -ENXIO;
-+		goto err_exit3;
-+	}
-+
-+	/* OOB and ECC CPU and DMA work areas */
-+	host->ecc_buf = (u32 *)(host->data_buf + LPC32XX_DMA_DATA_SIZE);
-+
-+	/*
-+	 * Small page FLASH has a unique OOB layout, but large and huge
-+	 * page FLASH use the standard layout. Small page FLASH uses a
-+	 * custom BBT marker layout.
-+	 */
-+	if (mtd->writesize <= 512)
-+		chip->ecc.layout = &lpc32xx_nand_oob_16;
-+
-+	/* These sizes remain the same regardless of page size */
-+	chip->ecc.size = 256;
-+	chip->ecc.bytes = LPC32XX_SLC_DEV_ECC_BYTES;
-+	chip->ecc.prepad = chip->ecc.postpad = 0;
-+
-+	/* Avoid extra scan if using BBT, setup BBT support */
-+	if (host->ncfg->use_bbt) {
-+		chip->options |= NAND_SKIP_BBTSCAN;
-+		chip->bbt_options |= NAND_BBT_USE_FLASH;
-+
-+		/*
-+		 * Use a custom BBT marker setup for small page FLASH that
-+		 * won't interfere with the ECC layout. Large and huge page
-+		 * FLASH use the standard layout.
-+		 */
-+		if (mtd->writesize <= 512) {
-+			chip->bbt_td = &bbt_smallpage_main_descr;
-+			chip->bbt_md = &bbt_smallpage_mirror_descr;
-+		}
-+	}
-+
-+	/*
-+	 * Fills out all the uninitialized function pointers with the defaults
-+	 */
-+	if (nand_scan_tail(mtd)) {
-+		res = -ENXIO;
-+		goto err_exit3;
-+	}
-+
-+	/* Standard layout in FLASH for bad block tables */
-+	if (host->ncfg->use_bbt) {
-+		if (nand_default_bbt(mtd) < 0)
-+			dev_err(&pdev->dev,
-+			       "Error initializing default bad block tables\n");
-+	}
-+
-+	mtd->name = "nxp_lpc3220_slc";
-+	ppdata.of_node = pdev->dev.of_node;
-+	res = mtd_device_parse_register(mtd, NULL, &ppdata, host->ncfg->parts,
-+					host->ncfg->num_parts);
-+	if (!res)
-+		return res;
-+
-+	nand_release(mtd);
-+
-+err_exit3:
-+	dma_release_channel(host->dma_chan);
-+err_exit2:
-+	clk_disable(host->clk);
-+	clk_put(host->clk);
-+	platform_set_drvdata(pdev, NULL);
-+err_exit1:
-+	lpc32xx_wp_enable(host);
-+	gpio_free(host->ncfg->wp_gpio);
-+
-+	return res;
++	return ret;
 +}
 +
 +/*
-+ * Remove NAND device.
++ * This function gets called when XOL instruction either gets trapped or
++ * the thread has a fatal signal, so reset the instruction pointer to its
++ * probed address.
 + */
-+static int __devexit lpc32xx_nand_remove(struct platform_device *pdev)
++void arch_uprobe_abort_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
 +{
-+	u32 tmp;
-+	struct lpc32xx_nand_host *host = platform_get_drvdata(pdev);
-+	struct mtd_info *mtd = &host->mtd;
-+
-+	nand_release(mtd);
-+	dma_release_channel(host->dma_chan);
-+
-+	/* Force CE high */
-+	tmp = readl(SLC_CTRL(host->io_base));
-+	tmp &= ~SLCCFG_CE_LOW;
-+	writel(tmp, SLC_CTRL(host->io_base));
-+
-+	clk_disable(host->clk);
-+	clk_put(host->clk);
-+	platform_set_drvdata(pdev, NULL);
-+	lpc32xx_wp_enable(host);
-+	gpio_free(host->ncfg->wp_gpio);
-+
-+	return 0;
++	/* FIXME: We don't support abort_xol on powerpc for now */
++	return;
 +}
 +
-+#ifdef CONFIG_PM
-+static int lpc32xx_nand_resume(struct platform_device *pdev)
++/*
++ * See if the instruction can be emulated.
++ * Returns true if instruction was emulated, false otherwise.
++ */
++bool arch_uprobe_skip_sstep(struct arch_uprobe *auprobe, struct pt_regs *regs)
 +{
-+	struct lpc32xx_nand_host *host = platform_get_drvdata(pdev);
++	int ret;
++	unsigned int insn;
 +
-+	/* Re-enable NAND clock */
-+	clk_enable(host->clk);
++	memcpy(&insn, auprobe->insn, MAX_UINSN_BYTES);
 +
-+	/* Fresh init of NAND controller */
-+	lpc32xx_nand_setup(host);
++	/*
++	 * emulate_step() returns 1 if the insn was successfully emulated.
++	 * For all other cases, we need to single-step in hardware.
++	 */
++	ret = emulate_step(regs, insn);
++	if (ret > 0)
++		return true;
 +
-+	/* Disable write protect */
-+	lpc32xx_wp_disable(host);
-+
-+	return 0;
++	return false;
 +}
+Index: linux-3.5-rc1/arch/powerpc/Kconfig
+===================================================================
+--- linux-3.5-rc1.orig/arch/powerpc/Kconfig	2012-06-03 06:59:26.000000000 +0530
++++ linux-3.5-rc1/arch/powerpc/Kconfig	2012-06-03 21:05:48.246233000 +0530
+@@ -237,6 +237,9 @@
+ config ARCH_SUPPORTS_DEBUG_PAGEALLOC
+ 	def_bool y
+ 
++config ARCH_SUPPORTS_UPROBES
++	def_bool y
 +
-+static int lpc32xx_nand_suspend(struct platform_device *pdev, pm_message_t pm)
-+{
-+	u32 tmp;
-+	struct lpc32xx_nand_host *host = platform_get_drvdata(pdev);
-+
-+	/* Force CE high */
-+	tmp = readl(SLC_CTRL(host->io_base));
-+	tmp &= ~SLCCFG_CE_LOW;
-+	writel(tmp, SLC_CTRL(host->io_base));
-+
-+	/* Enable write protect for safety */
-+	lpc32xx_wp_enable(host);
-+
-+	/* Disable clock */
-+	clk_disable(host->clk);
-+
-+	return 0;
-+}
-+
-+#else
-+#define lpc32xx_nand_resume NULL
-+#define lpc32xx_nand_suspend NULL
-+#endif
-+
-+#if defined(CONFIG_OF)
-+static const struct of_device_id lpc32xx_nand_match[] = {
-+	{ .compatible = "nxp,lpc3220-slc" },
-+	{ /* sentinel */ },
-+};
-+MODULE_DEVICE_TABLE(of, lpc32xx_nand_match);
-+#endif
-+
-+static struct platform_driver lpc32xx_nand_driver = {
-+	.probe		= lpc32xx_nand_probe,
-+	.remove		= __devexit_p(lpc32xx_nand_remove),
-+	.resume		= lpc32xx_nand_resume,
-+	.suspend	= lpc32xx_nand_suspend,
-+	.driver		= {
-+		.name	= LPC32XX_MODNAME,
-+		.owner	= THIS_MODULE,
-+		.of_match_table = of_match_ptr(lpc32xx_nand_match),
-+	},
-+};
-+
-+module_platform_driver(lpc32xx_nand_driver);
-+
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Kevin Wells <kevin.wells@nxp.com>");
-+MODULE_AUTHOR("Roland Stigge <stigge@antcom.de>");
-+MODULE_DESCRIPTION("NAND driver for the NXP LPC32XX SLC controller");
+ config PPC_ADV_DEBUG_REGS
+ 	bool
+ 	depends on 40x || BOOKE
+
