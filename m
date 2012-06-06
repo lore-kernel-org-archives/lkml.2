@@ -1,104 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755189Ab2FFIff (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 04:35:35 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:49891 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752190Ab2FFIfc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 04:35:32 -0400
-Subject: [PATCH] virtio-net: fix a race on 32bit arches
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: netdev@vger.kernel.org, rusty@rustcorp.com.au,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, mst@redhat.com,
-        Stephen Hemminger <shemminger@vyatta.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 06 Jun 2012 10:35:24 +0200
-Message-ID: <1338971724.2760.3913.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1755196Ab2FFIgr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 04:36:47 -0400
+Received: from mga09.intel.com ([134.134.136.24]:42319 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752190Ab2FFIgo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 04:36:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="153587800"
+Message-ID: <4FCF160D.8010404@intel.com>
+Date: Wed, 06 Jun 2012 16:34:21 +0800
+From: ShuoX Liu <shuox.liu@intel.com>
+Reply-To: shuox.liu@intel.com
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+        Borislav Petkov <bp@alien8.de>, "Luck, Tony" <tony.luck@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: [PATCH v6 2/2] x86 mce: use new printk recursion disabling interface
+References: <4FBF3295.7090608@intel.com>  <3908561D78D1C84285E8C5FCA982C28F192F4D39@ORSMSX104.amr.corp.intel.com>  <1338165058.14538.209.camel@ymzhang.sh.intel.com>  <4FC2E8CF.2040109@intel.com> <4FC2E944.6060903@intel.com>  <20120604171202.GA8533@x1.osrc.amd.com>  <1338856360.14538.220.camel@ymzhang.sh.intel.com>  <20120605081448.GA7097@liondog.tnic> <4FCDD72A.9030701@intel.com>  <4FCDD78A.3070106@intel.com> <20120605151542.GA10669@x1.osrc.amd.com> <1338942965.14538.233.camel@ymzhang.sh.intel.com> <4FCF155B.3090705@intel.com>
+In-Reply-To: <4FCF155B.3090705@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <edumazet@google.com>
+From: ShuoX Liu <shuox.liu@intel.com>
 
-commit 3fa2a1df909 (virtio-net: per cpu 64 bit stats (v2)) added a race
-on 32bit arches.
+On x86 machines, some times MCE happens just when kernel calls printk
+to output some log info to serial console, while usually MCE module in
+kernel is used to print out some hardware error information, such like
+bad cache or bad memory bank. That causes printk recursion and printk
+would omit MCE printk output.
 
-We must use separate syncp for rx and tx path as they can be run at the
-same time on different cpus. Thus one sequence increment can be lost and
-readers spin forever.
+We hit it when running MTBF testing on Android ATOM mobiles.
 
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Stephen Hemminger <shemminger@vyatta.com>
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Cc: Jason Wang <jasowang@redhat.com>
+Here in mce_panic, we choose to disable printk recursion to make sure
+MCE logs printed out.
+
+Signed-off-by: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+Signed-off-by: ShuoX Liu <shuox.liu@intel.com>
 ---
- drivers/net/virtio_net.c |   19 ++++++++++++-------
- 1 file changed, 12 insertions(+), 7 deletions(-)
+v6: move the disabling checking in print_mce
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index 5214b1e..f18149a 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -42,7 +42,8 @@ module_param(gso, bool, 0444);
- #define VIRTNET_DRIVER_VERSION "1.0.0"
- 
- struct virtnet_stats {
--	struct u64_stats_sync syncp;
-+	struct u64_stats_sync tx_syncp;
-+	struct u64_stats_sync rx_syncp;
- 	u64 tx_bytes;
- 	u64 tx_packets;
- 
-@@ -300,10 +301,10 @@ static void receive_buf(struct net_device *dev, void *buf, unsigned int len)
- 
- 	hdr = skb_vnet_hdr(skb);
- 
--	u64_stats_update_begin(&stats->syncp);
-+	u64_stats_update_begin(&stats->rx_syncp);
- 	stats->rx_bytes += skb->len;
- 	stats->rx_packets++;
--	u64_stats_update_end(&stats->syncp);
-+	u64_stats_update_end(&stats->rx_syncp);
- 
- 	if (hdr->hdr.flags & VIRTIO_NET_HDR_F_NEEDS_CSUM) {
- 		pr_debug("Needs csum!\n");
-@@ -565,10 +566,10 @@ static unsigned int free_old_xmit_skbs(struct virtnet_info *vi)
- 	while ((skb = virtqueue_get_buf(vi->svq, &len)) != NULL) {
- 		pr_debug("Sent skb %p\n", skb);
- 
--		u64_stats_update_begin(&stats->syncp);
-+		u64_stats_update_begin(&stats->tx_syncp);
- 		stats->tx_bytes += skb->len;
- 		stats->tx_packets++;
--		u64_stats_update_end(&stats->syncp);
-+		u64_stats_update_end(&stats->tx_syncp);
- 
- 		tot_sgs += skb_vnet_hdr(skb)->num_sg;
- 		dev_kfree_skb_any(skb);
-@@ -703,12 +704,16 @@ static struct rtnl_link_stats64 *virtnet_stats(struct net_device *dev,
- 		u64 tpackets, tbytes, rpackets, rbytes;
- 
- 		do {
--			start = u64_stats_fetch_begin(&stats->syncp);
-+			start = u64_stats_fetch_begin(&stats->tx_syncp);
- 			tpackets = stats->tx_packets;
- 			tbytes   = stats->tx_bytes;
-+		} while (u64_stats_fetch_retry(&stats->tx_syncp, start));
-+
-+		do {
-+			start = u64_stats_fetch_begin(&stats->rx_syncp);
- 			rpackets = stats->rx_packets;
- 			rbytes   = stats->rx_bytes;
--		} while (u64_stats_fetch_retry(&stats->syncp, start));
-+		} while (u64_stats_fetch_retry(&stats->rx_syncp, start));
- 
- 		tot->rx_packets += rpackets;
- 		tot->tx_packets += tpackets;
+---
+ arch/x86/kernel/cpu/mcheck/mce.c |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
 
-
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 2afcbd2..6056e94 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -242,6 +242,7 @@ static void print_mce(struct mce *m)
+ {
+ 	int ret = 0;
+ 
++	printk_recursion_check_disable();
+ 	pr_emerg(HW_ERR "CPU %d: Machine Check Exception: %Lx Bank %d: %016Lx\n",
+ 	       m->extcpu, m->mcgstatus, m->bank, m->status);
+ 
+@@ -275,10 +276,13 @@ static void print_mce(struct mce *m)
+ 	 * (if the CPU has an implementation for that)
+ 	 */
+ 	ret = atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, m);
+-	if (ret == NOTIFY_STOP)
++	if (ret == NOTIFY_STOP) {
++		printk_recursion_check_enable();
+ 		return;
++	}
+ 
+ 	pr_emerg_ratelimited(HW_ERR "Run the above through 'mcelog --ascii'\n");
++	printk_recursion_check_enable();
+ }
+ 
+ #define PANIC_TIMEOUT 5 /* 5 seconds */
+-- 
+1.7.1
