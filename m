@@ -1,29 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753839Ab2FFG6n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 02:58:43 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35741 "EHLO
+	id S1753693Ab2FFG7h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 02:59:37 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35759 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751719Ab2FFG6l (ORCPT
+	with ESMTP id S1751232Ab2FFG7g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 02:58:41 -0400
-Date: Tue, 5 Jun 2012 23:58:19 -0700
-From: tip-bot for David Ahern <dsahern@gmail.com>
-Message-ID: <tip-52deff71bc2b2c24587ab71f588ff5e4c9279349@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, akihiro.nagai.hw@hitachi.com,
-        peterz@infradead.org, fweisbec@gmail.com, dsahern@gmail.com,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com,
-        akihiro.nagai.hw@hitachi.com, peterz@infradead.org, fweisbec@gmail.com,
-        dsahern@gmail.com, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1338353906-60706-1-git-send-email-dsahern@gmail.com>
-References: <1338353906-60706-1-git-send-email-dsahern@gmail.com>
+	Wed, 6 Jun 2012 02:59:36 -0400
+Date: Tue, 5 Jun 2012 23:59:11 -0700
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Message-ID: <tip-z3mjj74927xvqwhlmu18kj80@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, rostedt@goodmis.org, dsahern@gmail.com,
+        tglx@linutronix.de, borislav.petkov@amd.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, rostedt@goodmis.org, dsahern@gmail.com,
+        tglx@linutronix.de, borislav.petkov@amd.com
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf script:
-  Fix regression in callchain dso name
-Git-Commit-ID: 52deff71bc2b2c24587ab71f588ff5e4c9279349
+Subject: [tip:perf/urgent] perf tools: Fix make tarballs
+Git-Commit-ID: f1439c315b328bbb3f7f6fdd814a7057f9e130d5
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,90 +31,51 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 05 Jun 2012 23:58:25 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 05 Jun 2012 23:59:17 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  52deff71bc2b2c24587ab71f588ff5e4c9279349
-Gitweb:     http://git.kernel.org/tip/52deff71bc2b2c24587ab71f588ff5e4c9279349
-Author:     David Ahern <dsahern@gmail.com>
-AuthorDate: Tue, 29 May 2012 22:58:26 -0600
+Commit-ID:  f1439c315b328bbb3f7f6fdd814a7057f9e130d5
+Gitweb:     http://git.kernel.org/tip/f1439c315b328bbb3f7f6fdd814a7057f9e130d5
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Wed, 30 May 2012 15:02:42 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 30 May 2012 14:24:38 -0300
+CommitDate: Wed, 30 May 2012 15:05:59 -0300
 
-perf script: Fix regression in callchain dso name
+perf tools: Fix make tarballs
 
-$ perf script -i /tmp/perf.data
-...
-gcc 13623 544315.062858: context-switches:
-    ffffffff815f65c9 __schedule ([kernel.kallsyms])
-    ffffffff81087cea __cond_resched ([kernel.kallsyms])
-    ffffffff815f6b92 _cond_resched ([kernel.kallsyms])
-    ffffffff815fb87a do_page_fault ([kernel.kallsyms])
-    ffffffff815f8465 page_fault ([kernel.kallsyms])
-        2b7a71ea0303 _dl_lookup_symbol_x ([kernel.kallsyms])
-        2b7a71ea1eb5 _dl_relocate_object ([kernel.kallsyms])
-        2b7a71e99b2e dl_main ([kernel.kallsyms])
-        2b7a71eab7f4 _dl_sysdep_start ([kernel.kallsyms])
+The patch series that introduced the top level tools/ makefile and the
+libtraceevent broke this feature where files needed to build in a
+detached tarball were not included in the MANIFEST file and thus not
+included in the tarball.
 
-All DSO's in a callchain are printed as [kernel.kallsyms].
+Fix it by adding the relevant files to the MANIFEST.
 
-git bisect chased it to:
-
-547a92e0aedb88129e7fbd804697a11949de2e5a is the first bad commit
-commit 547a92e0aedb88129e7fbd804697a11949de2e5a
-Author: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
-Date:   Mon Jan 30 13:42:57 2012 +0900
-
-    perf script: Unify the expressions indicating "unknown"
-
-    The perf script command uses various expressions to indicate "unknown".
-
-    It is unfriendly for user scripts to parse it. So, this patch unifies
-    the expressions to "[unknown]".
-
-Looks like a copy-paste in that the other references use al.map but this one
-should be node->map.
-
-With this patch you get:
-
-$ perf script -i /tmp/perf.data
-...
-gcc 13623 544315.062858: context-switches:
-    ffffffff815f65c9 __schedule ([kernel.kallsyms])
-    ffffffff81087cea __cond_resched ([kernel.kallsyms])
-    ffffffff815f6b92 _cond_resched ([kernel.kallsyms])
-    ffffffff815fb87a do_page_fault ([kernel.kallsyms])
-    ffffffff815f8465 page_fault ([kernel.kallsyms])
-        2b7a71ea0303 _dl_lookup_symbol_x (/lib64/ld-2.14.90.so)
-        2b7a71ea1eb5 _dl_relocate_object (/lib64/ld-2.14.90.so)
-        2b7a71e99b2e dl_main (/lib64/ld-2.14.90.so)
-        2b7a71eab7f4 _dl_sysdep_start (/lib64/ld-2.14.90.so)
-
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
+Cc: Borislav Petkov <borislav.petkov@amd.com>
+Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/r/1338353906-60706-1-git-send-email-dsahern@gmail.com
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/n/tip-z3mjj74927xvqwhlmu18kj80@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/session.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ tools/perf/MANIFEST |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 93d355d..4820614 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -1460,7 +1460,7 @@ void perf_event__print_ip(union perf_event *event, struct perf_sample *sample,
- 			}
- 			if (print_dso) {
- 				printf(" (");
--				map__fprintf_dsoname(al.map, stdout);
-+				map__fprintf_dsoname(node->map, stdout);
- 				printf(")");
- 			}
- 			printf("\n");
+diff --git a/tools/perf/MANIFEST b/tools/perf/MANIFEST
+index 5476bc0..b4b572e 100644
+--- a/tools/perf/MANIFEST
++++ b/tools/perf/MANIFEST
+@@ -1,4 +1,6 @@
+ tools/perf
++tools/scripts
++tools/lib/traceevent
+ include/linux/const.h
+ include/linux/perf_event.h
+ include/linux/rbtree.h
