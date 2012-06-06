@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758305Ab2FFU0D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 16:26:03 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:41575 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752574Ab2FFU0A (ORCPT
+	id S1758297Ab2FFU2h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 16:28:37 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:39265 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753811Ab2FFU2f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 16:26:00 -0400
-Subject: Re: [PATCH] virtio-net: fix a race on 32bit arches
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Ben Hutchings <bhutchings@solarflare.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Jason Wang <jasowang@redhat.com>, netdev@vger.kernel.org,
-        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-In-Reply-To: <1339013979.2836.52.camel@bwh-desktop.uk.solarflarecom.com>
-References: <1338971724.2760.3913.camel@edumazet-glaptop>
-	 <1338972341.2760.3944.camel@edumazet-glaptop>
-	 <20120606111357.GA15070@redhat.com>
-	 <1338988210.2760.4485.camel@edumazet-glaptop>
-	 <20120606144941.GA17092@redhat.com>
-	 <20120606081432.6b602065@nehalam.linuxnetplumber.net>
-	 <20120606185107.GA20503@redhat.com>
-	 <1339012441.26966.48.camel@edumazet-glaptop>
-	 <20120606195814.GA20677@redhat.com>
-	 <1339013289.26966.62.camel@edumazet-glaptop>
-	 <1339013979.2836.52.camel@bwh-desktop.uk.solarflarecom.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 06 Jun 2012 22:25:57 +0200
-Message-ID: <1339014357.26966.72.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 6 Jun 2012 16:28:35 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6734"; a="198444092"
+Date: Wed, 6 Jun 2012 13:28:33 -0700
+From: David Brown <davidb@codeaurora.org>
+To: Rajendra Nayak <rnayak@ti.com>
+Cc: David Collins <collinsd@codeaurora.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: Supporting non-device tree consumers with device tree regulator
+ drivers
+Message-ID: <20120606202833.GA11202@codeaurora.org>
+References: <4FCE30D6.7060102@codeaurora.org>
+ <4FCEE5DA.7090403@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FCEE5DA.7090403@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-06-06 at 21:19 +0100, Ben Hutchings wrote:
-> On Wed, 2012-06-06 at 22:08 +0200, Eric Dumazet wrote:
-> > On Wed, 2012-06-06 at 22:58 +0300, Michael S. Tsirkin wrote:
-> > 
-> > > Absolutely, I am talking about virtio here.  I'm not kicking
-> > > u64_stats_sync idea I am just saying that simple locking
-> > > would work for virtio and might be better as it
-> > > gives us a way to get counters atomically.
-> > 
-> > Which lock do you own in the RX path ?
-> > 
-> > You'll have to add a lock in fast path. This sounds really a bad choice
-> > to me.
+On Wed, Jun 06, 2012 at 10:38:42AM +0530, Rajendra Nayak wrote:
+> On Tuesday 05 June 2012 09:46 PM, David Collins wrote:
+> >In the long term, this problem should go away of its own accord.  However,
+> >in the short term, many systems are converting over to using device tree.
+> >  Therefore, we are left with a situation currently where some regulator
+> >consumer drivers are being probed via device tree and some are being
+> >probed via board file devices within a single platform.
 > 
-> You have the NAPI 'lock', so when gathering stats you can synchronise
-> using napi_disable() ;-)
+> Is this a situation you are facing in your mainline kernel or internal
+> trees? What you explain would need you to work with hybrid board files
+> with some devices created through device tree and some others statically
+> from the board file in the kernel, and that approach was already shot
+> down as unacceptable.
 
-Nice, this adds one new bug in network stack.
+As I understand, this is something being done on our internal kernel.
+I don't think this really applies to the mainline kernel, since none
+of these transitionary drivers are going into the upstream kernel
+without being made to work with device tree.
 
-Really guys, can we stop this thread, please ?
+Thanks,
+David
 
-
-
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
