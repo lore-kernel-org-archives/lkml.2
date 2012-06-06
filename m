@@ -1,94 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756434Ab2FFPIv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 11:08:51 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39716 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753980Ab2FFPIu (ORCPT
+	id S1756554Ab2FFPJa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 11:09:30 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:51210 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755503Ab2FFPJ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 11:08:50 -0400
-Date: Wed, 6 Jun 2012 08:08:19 -0700
-From: tip-bot for Oleg Nesterov <oleg@redhat.com>
-Message-ID: <tip-a41d60e10a611f0addf2741e2d56c95e14bd5ee0@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org, ananth@in.ibm.com,
-        anton@redhat.com, masami.hiramatsu.pt@hitachi.com,
-        srikar@linux.vnet.ibm.com, tglx@linutronix.de, oleg@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org, ananth@in.ibm.com,
-        anton@redhat.com, masami.hiramatsu.pt@hitachi.com,
-        srikar@linux.vnet.ibm.com, oleg@redhat.com, tglx@linutronix.de
-In-Reply-To: <20120529192744.GA8057@redhat.com>
-References: <20120529192744.GA8057@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] uprobes: Optimize is_swbp_at_addr()
-  for current-%3Emm
-Git-Commit-ID: a41d60e10a611f0addf2741e2d56c95e14bd5ee0
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 6 Jun 2012 11:09:28 -0400
+Date: Wed, 6 Jun 2012 11:09:27 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
+        Kevin Hilman <khilman@ti.com>, Len Brown <len.brown@intel.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        "Tomas M." <tmezzadra@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        <preeti@linux.vnet.ibm.com>, <linux-pm@lists.linux-foundation.org>,
+        Ferenc Wagner <wferi@niif.hu>,
+        Arjan van de Ven <arjan@linux.intel.com>, Jean Pihet <j-pihet@ti.com>
+Subject: Re: [linux-pm] Suspend/resume regressions on Lenovo S10-3
+In-Reply-To: <201206061543.03537.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.44L0.1206061108040.1788-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 06 Jun 2012 08:08:24 -0700 (PDT)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a41d60e10a611f0addf2741e2d56c95e14bd5ee0
-Gitweb:     http://git.kernel.org/tip/a41d60e10a611f0addf2741e2d56c95e14bd5ee0
-Author:     Oleg Nesterov <oleg@redhat.com>
-AuthorDate: Tue, 29 May 2012 21:27:44 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 6 Jun 2012 11:30:54 +0200
+On Wed, 6 Jun 2012, Rafael J. Wysocki wrote:
 
-uprobes: Optimize is_swbp_at_addr() for current-%3Emm
+> > --- a/drivers/acpi/processor_idle.c
+> > +++ b/drivers/acpi/processor_idle.c
+> > @@ -895,8 +895,9 @@ static int acpi_idle_enter_bm(struct cpuidle_device *dev,
+> >  	if (unlikely(!pr))
+> >  		return -EINVAL;
+> >  
+> > -
+> >  	if (acpi_idle_suspend) {
+> > +		local_irq_disable();
+> > +		local_irq_enable();
+> >  		cpu_relax();
+> >  		return -EINVAL;
+> >  	}
+> 
+> May I say this is ugly?  Why can't we track the status of interrupts
+> properly here?
 
-Change is_swbp_at_addr() to try to avoid the costly
-read_opcode() if mm == current->mm, __copy_from_user_inatomic()
-should succeed in the likely case.
+It's not just ugly; it's illogical.  What reason could there possibly
+be for disabling interrupts and then enabling them again without doing
+anything in between?
 
-Currently this optimization is not important, but we are going
-to add more is_swbp_at_addr(current->mm) callers.
+Alan Stern
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: Anton Arapov <anton@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20120529192744.GA8057@redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/events/uprobes.c |   12 +++++++++++-
- 1 files changed, 11 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 985be4d..d0f5ec0 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -333,10 +333,20 @@ static int is_swbp_at_addr(struct mm_struct *mm, unsigned long vaddr)
- 	uprobe_opcode_t opcode;
- 	int result;
- 
-+	if (current->mm == mm) {
-+		pagefault_disable();
-+		result = __copy_from_user_inatomic(&opcode, (void __user*)vaddr,
-+								sizeof(opcode));
-+		pagefault_enable();
-+
-+		if (likely(result == 0))
-+			goto out;
-+	}
-+
- 	result = read_opcode(mm, vaddr, &opcode);
- 	if (result)
- 		return result;
--
-+out:
- 	if (is_swbp_insn(&opcode))
- 		return 1;
- 
