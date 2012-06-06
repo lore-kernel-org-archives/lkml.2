@@ -1,94 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758640Ab2FFVaO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 17:30:14 -0400
-Received: from oproxy9.bluehost.com ([69.89.24.6]:40592 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756206Ab2FFVaM (ORCPT
+	id S1756856Ab2FFVac (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 17:30:32 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:15613 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751326Ab2FFVa3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 17:30:12 -0400
-Message-ID: <4FCFCBD9.8080700@xenotime.net>
-Date: Wed, 06 Jun 2012 14:30:01 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Wed, 6 Jun 2012 17:30:29 -0400
+Date: Wed, 6 Jun 2012 23:30:27 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Michal Marek <mmarek@suse.cz>, linux-kbuild <linux-kbuild@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH] kbuild: always show verbose section mismatch warnings
+Message-ID: <20120606213026.GA17374@merkur.ravnborg.org>
 MIME-Version: 1.0
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Doug Thompson <dougthompson@xmission.com>,
-        Borislav Petkov <borislav.petkov@amd.com>, linux-edac@vger.kernel.org
-Subject: Re: linux-next: Tree for Jun 5 (amd64_edac)
-References: <20120605133000.f2d21fb02881ef54a7bfe728@canb.auug.org.au> <4FCE333F.6060207@xenotime.net> <4FCE4408.1030506@redhat.com>
-In-Reply-To: <4FCE4408.1030506@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2012 10:38 AM, Mauro Carvalho Chehab wrote:
+>From 7a299bd90526f46c72620110ab04a116311dd141 Mon Sep 17 00:00:00 2001
+From: Sam Ravnborg <sam@ravnborg.org>
+Date: Wed, 6 Jun 2012 23:23:30 +0200
+Subject: [PATCH] kbuild: always show verbose section mismatch warnings
 
-> Hi Randy,
-> 
-> Em 05-06-2012 13:26, Randy Dunlap escreveu:
->> On 06/04/2012 08:30 PM, Stephen Rothwell wrote:
->>
->>> Hi all,
->>>
->>> There will be no linux-next release tomorrow.
->>>
->>> Changes since 20120604:
->>
->>
->>
->> on x86_64:
->>
->> drivers/edac/amd64_edac_inj.o: In function `amd64_remove_sysfs_dbg_files':
->> amd64_edac_inj.c:(.text+0x420): multiple definition of `amd64_remove_sysfs_dbg_files'
->> drivers/edac/amd64_edac.o:amd64_edac.c:(.text+0x3d60): first defined here
->> make[3]: *** [drivers/edac/amd64_edac_mod.o] Error 1
->>
->>
->> Full randconfig file is attached.
->>
->>
-> 
-> Thanks for pointing it. The enclosed patch should fix it.
-> 
-> amd64_edac: Avoid compilation breakage
-> 
-> when:
-> 	CONFIG_EDAC_AMD64=m
-> 	CONFIG_EDAC_AMD64_ERROR_INJECTION=y
-> 	# CONFIG_EDAC_DEBUG is not set
-> 
-> The compilation breaks, as amd64_remove_sysfs_dbg_files() were not declared
-> as static.
-> 
-> Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+The number of section mismatch warnings are down on an acceptable level.
+So lets always see the full warning - in the vain hope that
+users will recognize the function names and fix them.
 
+This patch enable section mismatch analysis for each link,
+but you need to enable CONFIG_DEBUG_SECTION_MISMATCH to
+have vmlinux.o analyzed.
+This saves us from one time-consuming link step in the final
+link of the kernel (which we hit for all changes).
 
-Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+---
 
-Thanks.
+Steven triggered this patch with a comment on G+:
+https://plus.google.com/116317370665849559569/posts/RvEpCqrWPLU
 
-> 
-> diff --git a/drivers/edac/amd64_edac.h b/drivers/edac/amd64_edac.h
-> index 098f336..8d48047 100644
-> --- a/drivers/edac/amd64_edac.h
-> +++ b/drivers/edac/amd64_edac.h
-> @@ -421,7 +421,7 @@ static inline int amd64_create_sysfs_dbg_files(struct mem_ctl_info *mci)
->  {
->  	return 0;
->  }
-> -void inline amd64_remove_sysfs_dbg_files(struct mem_ctl_info *mci)
-> +static void inline amd64_remove_sysfs_dbg_files(struct mem_ctl_info *mci)
->  {
->  }
->  #endif
-> --
+And I had in mind to do it anyway..
 
+ lib/Kconfig.debug        |   14 ++++----------
+ scripts/Makefile.build   |    4 +---
+ scripts/Makefile.modpost |    1 -
+ scripts/link-vmlinux.sh  |   12 ++++++------
+ 4 files changed, 11 insertions(+), 20 deletions(-)
 
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index a42d3ae..5b03f74 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -145,16 +145,10 @@ config DEBUG_SECTION_MISMATCH
+ 	    the analysis would not catch the illegal reference.
+ 	    This option tells gcc to inline less (but it does result in
+ 	    a larger kernel).
+-	  - Run the section mismatch analysis for each module/built-in.o file.
+-	    When we run the section mismatch analysis on vmlinux.o, we
+-	    lose valueble information about where the mismatch was
+-	    introduced.
+-	    Running the analysis for each module/built-in.o file
+-	    tells where the mismatch happens much closer to the
+-	    source. The drawback is that the same mismatch is
+-	    reported at least twice.
+-	  - Enable verbose reporting from modpost in order to help resolve
+-	    the section mismatches that are reported.
++	  - Run the section mismatch analysis on vmlinux.o.
++	    This will in most cases duplicate already reported warnings,
++	    but may catch section mismatchs involving diferent parts
++	    of the kernel.
+ 
+ config DEBUG_KERNEL
+ 	bool "Kernel debugging"
+diff --git a/scripts/Makefile.build b/scripts/Makefile.build
+index ff1720d..db81790 100644
+--- a/scripts/Makefile.build
++++ b/scripts/Makefile.build
+@@ -159,9 +159,7 @@ ifneq ($(KBUILD_CHECKSRC),0)
+ endif
+ 
+ # Do section mismatch analysis for each module/built-in.o
+-ifdef CONFIG_DEBUG_SECTION_MISMATCH
+-  cmd_secanalysis = ; scripts/mod/modpost $@
+-endif
++cmd_secanalysis = ; scripts/mod/modpost $@
+ 
+ # Compile C sources (.c)
+ # ---------------------------------------------------------------------------
+diff --git a/scripts/Makefile.modpost b/scripts/Makefile.modpost
+index 08dce14..5dc9086 100644
+--- a/scripts/Makefile.modpost
++++ b/scripts/Makefile.modpost
+@@ -79,7 +79,6 @@ modpost = scripts/mod/modpost                    \
+  $(if $(KBUILD_EXTMOD),-I $(modulesymfile))      \
+  $(if $(KBUILD_EXTRA_SYMBOLS), $(patsubst %, -e %,$(KBUILD_EXTRA_SYMBOLS))) \
+  $(if $(KBUILD_EXTMOD),-o $(modulesymfile))      \
+- $(if $(CONFIG_DEBUG_SECTION_MISMATCH),,-S)      \
+  $(if $(KBUILD_EXTMOD)$(KBUILD_MODPOST_WARN),-w) \
+  $(if $(cross_build),-c)
+ 
+diff --git a/scripts/link-vmlinux.sh b/scripts/link-vmlinux.sh
+index cd9c6c6..a2f89e6 100644
+--- a/scripts/link-vmlinux.sh
++++ b/scripts/link-vmlinux.sh
+@@ -129,12 +129,12 @@ fi
+ # We need access to CONFIG_ symbols
+ . ./.config
+ 
+-#link vmlinux.o
+-info LD vmlinux.o
+-modpost_link vmlinux.o
+-
+-# modpost vmlinux.o to check for section mismatches
+-${MAKE} -f "${srctree}/scripts/Makefile.modpost" vmlinux.o
++# Section mismatch check on vmlinux.o
++if [ ! -n "${CONFIG_DEBUG_SECTION_MISMATCH}" ]; then
++	info LD vmlinux.o
++	modpost_link vmlinux.o
++	${MAKE} -f "${srctree}/scripts/Makefile.modpost" vmlinux.o
++fi
+ 
+ # Update version
+ info GEN .version
 -- 
-~Randy
+1.6.0.6
+
