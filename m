@@ -1,203 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755559Ab2FFNrk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 09:47:40 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:55503 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754459Ab2FFNri (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 09:47:38 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Huang Ying <ying.huang@intel.com>
-Subject: Re: [PATCH -v4 2/2] PCIe: Add PCIe runtime D3cold support
-Date: Wed, 6 Jun 2012 15:52:47 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0+; KDE/4.6.0; x86_64; ; )
-Cc: Bjorn Helgaas <bhelgaas@google.com>, ming.m.lin@intel.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        Zheng Yan <zheng.z.yan@intel.com>
-References: <1337305725-10482-1-git-send-email-ying.huang@intel.com> <201206020110.28487.rjw@sisk.pl> <1338873853.6824.76.camel@yhuang-dev>
-In-Reply-To: <1338873853.6824.76.camel@yhuang-dev>
+	id S1754141Ab2FFNuO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 09:50:14 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:51081 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753470Ab2FFNuN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 09:50:13 -0400
+Date: Wed, 6 Jun 2012 14:50:09 +0100
+From: Matthew Garrett <mjg@redhat.com>
+To: Khalid Aziz <khalid.aziz@hp.com>
+Cc: linux-kernel@vger.kernel.org, bhelgaas@google.com,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH] Disable Bus Master on PCI device shutdown
+Message-ID: <20120606135009.GB1517@srcf.ucam.org>
+References: <20120427190033.GA17588@ldl.usa.hp.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201206061552.47395.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120427190033.GA17588@ldl.usa.hp.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, June 05, 2012, Huang Ying wrote:
-> On Sat, 2012-06-02 at 01:10 +0200, Rafael J. Wysocki wrote:
-> > On Friday, June 01, 2012, Huang Ying wrote:
-> > > On Thu, 2012-05-31 at 21:01 +0200, Rafael J. Wysocki wrote:
-> > > > On Thursday, May 31, 2012, Huang Ying wrote:
-> > > > > On Wed, 2012-05-30 at 23:49 +0200, Rafael J. Wysocki wrote:
-> > > > > > On Tuesday, May 22, 2012, Rafael J. Wysocki wrote:
-> > > > > > > On Friday, May 18, 2012, Huang Ying wrote:
-> > > > > > > > This patch adds runtime D3cold support to PCIe bus.  D3cold is the
-> > > > > > > > deepest power saving state for PCIe devices.  Where the main PCIe link
-> > > > > > > > will be powered off totally, so before the PCIe main link is powered
-> > > > > > > > on again, you can not access the device, even the configuration space,
-> > > > > > > > which is still accessible in D3hot.  Because the main PCIe link is not
-> > > > > > > > available, the PCI PM registers can not be used to put device into/out
-> > > > > > > > of D3cold state, that will be done by platform logic such as ACPI
-> > > > > > > > _PR3.
-> > > > > > > > 
-> > > > > > > > To support remote wake up in D3cold, aux power is supplied, and a
-> > > > > > > > side-band pin: WAKE# is used to notify remote wake up event, the pin
-> > > > > > > > is usually connected to platform logic such as ACPI GPE.  This is
-> > > > > > > > quite different with other power saving states, where remote wake up
-> > > > > > > > is notified via PME message through the PCIe main link.
-> > > > > > > > 
-> > > > > > > > PCIe devices in plug-in slot usually has no direct platform logic, for
-> > > > > > > > example, there is usually no ACPI _PR3 for them.  The D3cold support
-> > > > > > > > for these devices can be done via the PCIe port connected to it.  When
-> > > > > > > > power on/off the PCIe port, the corresponding PCIe devices are powered
-> > > > > > > > on/off too.  And the remote wake up event from PCIe device will be
-> > > > > > > > notified to the corresponding PCIe port.
-> > > > > > > > 
-> > > > > > > > The PCI subsystem D3cold support and corresponding ACPI platform
-> > > > > > > > support is implemented in the patch.  Including the support for PCIe
-> > > > > > > > devices in plug-in slot.
-> > > > > > > > 
-> > > > > > > > For more information about PCIe D3cold and corresponding ACPI support,
-> > > > > > > > please refer to:
-> > > > > > > > 
-> > > > > > > > - PCI Express Base Specification Revision 2.0
-> > > > > > > > - Advanced Configuration and Power Interface Specification Revision 5.0
-> > > > > > > > 
-> > > > > > > > Originally-by: Zheng Yan <zheng.z.yan@intel.com>
-> > > > > > > > Signed-off-by: Huang Ying <ying.huang@intel.com>
-> > > > > > > 
-> > > > > > > Reviewed-by: Rafael J. Wysocki <rjw@sisk.pl>
-> > > > > > 
-> > > > > > On a second thought ...
-> > > > > > 
-> > > > > > > > ---
-> > > > > > > >  drivers/pci/pci-acpi.c         |   23 +++++++-
-> > > > > > > >  drivers/pci/pci-driver.c       |    3 +
-> > > > > > > >  drivers/pci/pci-sysfs.c        |   29 ++++++++++
-> > > > > > > >  drivers/pci/pci.c              |  110 +++++++++++++++++++++++++++++++++++++----
-> > > > > > > >  drivers/pci/pci.h              |    1 
-> > > > > > > >  drivers/pci/pcie/portdrv_pci.c |   44 ++++++++++++++--
-> > > > > > > >  include/linux/pci.h            |   16 ++++-
-> > > > > > > >  7 files changed, 205 insertions(+), 21 deletions(-)
-> > > > > > > > 
-> > > > > > > > --- a/drivers/pci/pci-acpi.c
-> > > > > > > > +++ b/drivers/pci/pci-acpi.c
-> > > > > > > > @@ -48,6 +48,12 @@ static void pci_acpi_wake_dev(acpi_handl
-> > > > > > > >  	if (event != ACPI_NOTIFY_DEVICE_WAKE || !pci_dev)
-> > > > > > > >  		return;
-> > > > > > > >  
-> > > > > > > > +	if (pci_dev->current_state == PCI_D3cold) {
-> > > > > > > > +		pci_wakeup_event(pci_dev);
-> > > > > > > > +		pm_runtime_resume(&pci_dev->dev);
-> > > > > > > > +		return;
-> > > > > > > > +	}
-> > > > > > > > +
-> > > > > > > >  	if (!pci_dev->pm_cap || !pci_dev->pme_support
-> > > > > > > >  	     || pci_check_pme_status(pci_dev)) {
-> > > > > > > >  		if (pci_dev->pme_poll)
-> > > > > > > > @@ -187,10 +193,13 @@ acpi_status pci_acpi_remove_pm_notifier(
-> > > > > > > >  
-> > > > > > > >  static pci_power_t acpi_pci_choose_state(struct pci_dev *pdev)
-> > > > > > > >  {
-> > > > > > > > -	int acpi_state;
-> > > > > > > > +	int acpi_state, d_max;
-> > > > > > > >  
-> > > > > > > > -	acpi_state = acpi_pm_device_sleep_state(&pdev->dev, NULL,
-> > > > > > > > -						ACPI_STATE_D3);
-> > > > > > 
-> > > > > > I wonder what tree this patch is against?  The code above doesn't seem to
-> > > > > > be present in the current mainline.
-> > > > > 
-> > > > > As stated in [PATCH -v4 0/2], This patchset is based on:
-> > > > > 
-> > > > > [PATCH -v2] ACPI, PM, Specify lowest allowed state for device sleep
-> > > > > state
-> > > > > 
-> > > > > Which is sent to LKML separately.
-> > > > 
-> > > > I see.
-> > > > 
-> > > > Can you post the latest version of that patch, please?
-> > > > 
-> > > > Besides, this hunk of the $subject patch:
-> > > > 
-> > > > > @@ -731,8 +791,8 @@ int pci_set_power_state(struct pci_dev *
-> > > > >       int error;
-> > > > >  
-> > > > >       /* bound the state we're entering */
-> > > > > -     if (state > PCI_D3hot)
-> > > > > -             state = PCI_D3hot;
-> > > > > +     if (state > PCI_D3cold)
-> > > > > +             state = PCI_D3cold;
-> > > > >       else if (state < PCI_D0)
-> > > > >               state = PCI_D0;
-> > > > >       else if ((state == PCI_D1 || state == PCI_D2) && pci_no_d1d2(dev))
-> > > > > @@ -747,10 +807,15 @@ int pci_set_power_state(struct pci_dev *
-> > > > >  
-> > > > >       /* This device is quirked not to be put into D3, so
-> > > > >          don't put it in D3 */
-> > > > > -     if (state == PCI_D3hot && (dev->dev_flags & PCI_DEV_FLAGS_NO_D3))
-> > > > > +     if (state >= PCI_D3hot && (dev->dev_flags & PCI_DEV_FLAGS_NO_D3))
-> > > > >               return 0;
-> > > > >  
-> > > > > -     error = pci_raw_set_power_state(dev, state);
-> > > > > +     /*
-> > > > > +      * To put device in D3cold, we put device into D3hot in native
-> > > > > +      * way, then put device into D3cold with platform ops
-> > > > > +      */
-> > > > > +     error = pci_raw_set_power_state(dev, state > PCI_D3hot ?
-> > > > > +                                     PCI_D3hot : state);
-> > > > >  
-> > > > >       if (!__pci_complete_power_transition(dev, state))
-> > > > >               error = 0;
-> > > > 
-> > > > should be merged separately, because it will affect suspend/hibernation code
-> > > > paths.  Namely, it will change the behavior in such a way that some devices
-> > > > put into D3hot previously will be put into D3cold now during system suspend.
-> > > 
-> > > Yes.  This patch enables both runtime D3cold and D3cold during system
-> > > suspend.  How about separate this patch into the following patches?
-> > > 
-> > > - Add d3cold disable logic, including flags: no_d3cold, d3cold_allowed,
-> > > runtime_d3cold, and disable runtime d3cold (because part of runtime
-> > > d3cold support will be enabled by system d3cold support).
-> > > 
-> > > - system d3cold support for PCIe port
-> > > 
-> > > - system d3cold support in PCI core
-> > > 
-> > > - runtime d3cold support for PCIe port
-> > > 
-> > > - runtime d3cold support in PCI core
-> > 
-> > Sounds good in principle.
-> 
-> Thought it again.
-> 
-> If my understanding were correct, in most cases, The value to put
-> devices into D3cold during system suspend/hibernate may be questionable.
-> Because after Linux put the devices into lower power state,  the
-> firmware may put devices into D3cold state before entering system
-> suspend state.
-> 
-> So, I think maybe we can just constrain the target state to D3hot in
-> pci_set_power_state() if system suspend/hibernate is ongoing
-> (dev->runtime_d3cold is not set).  That is something as follow:
-> 
-> /* D3cold during system suspend/hibernate is not supported yet */
-> if (dev->runtime_d3cold && state >= PCI_D3cold)
-> 	state = PCI_D3cold;
-> else if (state > PCI_D3hot)
-> 	state = PCI_D3hot;
-> 
-> This way, we can just make some minor change to this patch and maybe
-> work on D3cold during system suspend/hibernate after some discussion.
+On Fri, Apr 27, 2012 at 01:00:33PM -0600, Khalid Aziz wrote:
+> Disable Bus Master bit on the device in
+> pci_device_shutdown() to ensure PCI devices do not continue
+> to DMA data after shutdown. This can cause memory
+> corruption in case of a kexec where the current kernel
+> shuts down and transfers control to a new kernel while a
+> PCI device continues to DMA to memory that does not belong
+> to it any more in the new kernel.
 
-I don't honestly think we should add such ugly checks to pci_set_power_state().
+This protects against the case where a piece of hardware is continuing 
+to DMA even after the driver shutdown method has been called? I'm not 
+convinced this is safe. Some Broadcom parts will crash if busmastering 
+is disabled while they're still performing DMA, and they'll then hang 
+the bus if reenabled. There's also the risk that the hardware will start 
+DMAing again if it's reenabled after being shut down. It seems like 
+you're covering over the case where the driver didn't correctly quiesce 
+the hardware, but you risk triggering other bugs instead.
 
-Why don't we ensure that acpi_pm_device_sleep_state() doesn't return 4
-(D3cold) if acpi_target_sleep_state is different from 0 instead?
-
-Rafael
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
