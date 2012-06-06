@@ -1,113 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754530Ab2FFOBM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 10:01:12 -0400
-Received: from mga01.intel.com ([192.55.52.88]:7006 "EHLO mga01.intel.com"
+	id S1754129Ab2FFODV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 10:03:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48944 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752529Ab2FFOBL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 10:01:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="161713676"
-Date: Wed, 6 Jun 2012 22:00:58 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        linux-fsdevel@vger.kernel.org,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: write-behind on streaming writes
-Message-ID: <20120606140058.GA8098@localhost>
-References: <20120529155759.GA11326@localhost>
- <CA+55aFykFaBhzzEyRYWRS9Qoy_q_R65Cuth7=XvfOZEMqjn6=w@mail.gmail.com>
- <20120530032129.GA7479@localhost>
- <20120605172302.GB28556@redhat.com>
- <20120605174157.GC28556@redhat.com>
- <20120605184853.GD28556@redhat.com>
- <20120605201045.GE28556@redhat.com>
- <20120606025729.GA1197@redhat.com>
- <CA+55aFyxucvhYhbk0yyNa1WSeYXgHHAyWRHPNWDwODQhyAWGww@mail.gmail.com>
- <20120606121408.GB4934@redhat.com>
+	id S1752173Ab2FFODT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 10:03:19 -0400
+Date: Wed, 6 Jun 2012 16:03:09 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Austin Hendrix <ahendrix@willowgarage.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Add Support for Novatek Touchscreen
+In-Reply-To: <CAN+gG=FSTxE9d8o4O6+kQHmyg9PdJK28x6=Gjpgr+_xppiRVbQ@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1206061601460.12208@pobox.suse.cz>
+References: <CAOY97VZN2a36OBsacQS21P8G70L2tbtbWK5OMWhZYa=D74XO+w@mail.gmail.com> <alpine.LNX.2.00.1206051134020.5478@pobox.suse.cz> <CAN+gG=FSTxE9d8o4O6+kQHmyg9PdJK28x6=Gjpgr+_xppiRVbQ@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120606121408.GB4934@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 06, 2012 at 08:14:08AM -0400, Vivek Goyal wrote:
-> On Tue, Jun 05, 2012 at 08:14:08PM -0700, Linus Torvalds wrote:
-> > On Tue, Jun 5, 2012 at 7:57 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> > >
-> > > I had expected a bigger difference as sync_file_range() is just driving
-> > > max queue depth of 32 (total 16MB IO in flight), while flushers are
-> > > driving queue depths up to 140 or so. So in this paritcular test, driving
-> > > much deeper queue depths is not really helping much. (I have seen higher
-> > > throughputs with higher queue depths in the past. Now sure why don't we
-> > > see it here).
-> > 
-> > How did interactivity feel?
-> > 
-> > Because quite frankly, if the throughput difference is 12.5 vs 12
-> > seconds, I suspect the interactivity thing is what dominates.
-> > 
-> > And from my memory of the interactivity different was absolutely
-> > *huge*. Even back when I used rotational media, I basically couldn't
-> > even notice the background write with the sync_file_range() approach.
-> > While the regular writeback without the writebehind had absolutely
-> > *huge* pauses if you used something like firefox that uses fsync()
-> > etc. And starting new applications that weren't cached was noticeably
-> > worse too - and then with sync_file_range it wasn't even all that
-> > noticeable.
-> > 
-> > NOTE! For the real "firefox + fsync" test, I suspect you'd need to do
-> > the writeback on the same filesystem (and obviously disk) as your home
-> > directory is. If the big write is to another filesystem and another
-> > disk, I think you won't see the same issues.
+On Tue, 5 Jun 2012, Benjamin Tissoires wrote:
+
+> >> Add support for a Novatek touchscreen panel as a generic HID multitouch
+> >> panel.
+> >>
+> >> Signed-off-by: Austin Hendrix <ahendrix@willowgarage.com>
+> >> ---
+> >>  hid-core.c       |    1 +
+> >>  hid-ids.h        |    3 +++
+> >>  hid-multitouch.c |    5 +++++
+> >>  3 files changed, 9 insertions(+)
+> >>
+> >> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+> >> index 8e3a6b2..0d6dde1 100644
+> >> --- a/drivers/hid/hid-core.c
+> >> +++ b/drivers/hid/hid-core.c
+> >> @@ -1605,6 +1605,7 @@ static const struct hid_device_id
+> >> hid_have_special_driver[] = {
+> >
+> > Austin,
+> >
+> > thanks for the patch. Your mail client is corrupting (line-wrapping)
+> > patches. Please fix that for your future submissions.
+> >
+> > I have now fixed that up manually and applied.
+> >
+> >>       { HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_16) },
+> >>       { HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_17) },
+> >>       { HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_18) },
+> >> +     { HID_USB_DEVICE(USB_VENDOR_ID_NOVATEK, USB_DEVICE_ID_NOVATEK_PCT) },
 > 
-> Ok, I did following test on my single SATA disk and my root filesystem
-> is on this disk.
+> I don't think this should be included in 3.5-rc+ (the whole MT-related
+> devices has been removed from this list).
+
+Yeah, I have noticed this and fixed it in 3.5-rc+ branch.
+
 > 
-> I dropped caches and launched firefox and monitored the time it takes
-> for firefox to start. (cache cold).
+> >>       { HID_USB_DEVICE(USB_VENDOR_ID_ORTEK, USB_DEVICE_ID_ORTEK_PKB1700) },
+> >>       { HID_USB_DEVICE(USB_VENDOR_ID_ORTEK, USB_DEVICE_ID_ORTEK_WKB2000) },
+> >>       { HID_USB_DEVICE(USB_VENDOR_ID_PETALYNX,
+> >> USB_DEVICE_ID_PETALYNX_MAXTER_REMOTE) },
+> >> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+> >> index 9373f53..734a2b9 100644
+> >> --- a/drivers/hid/hid-ids.h
+> >> +++ b/drivers/hid/hid-ids.h
+> >> @@ -564,6 +564,9 @@
+> >>  #define USB_VENDOR_ID_NINTENDO               0x057e
+> >>  #define USB_DEVICE_ID_NINTENDO_WIIMOTE       0x0306
+> >>
+> >> +#define USB_VENDOR_ID_NOVATEK                0x0603
+> >> +#define USB_DEVICE_ID_NOVATK_PCT    0x0600
+> >> +
+> >>  #define USB_VENDOR_ID_NTRIG          0x1b96
+> >>  #define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN   0x0001
+> >>  #define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_1   0x0003
+> >> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+> >> index 6e3332a..fae08df 100644
+> >> --- a/drivers/hid/hid-multitouch.c
+> >> +++ b/drivers/hid/hid-multitouch.c
+> >> @@ -951,6 +951,11 @@ static const struct hid_device_id mt_devices[] = {
+> >>               MT_USB_DEVICE(USB_VENDOR_ID_PANASONIC,
+> >>                       USB_DEVICE_ID_PANABOARD_UBT880) },
+> >>
+> >> +     /* Novatek Panel */
+> >> +     { .driver_data = MT_CLS_DEFAULT,
+> >> +             HID_USB_DEVICE(USB_VENDOR_ID_NOVATEK,
+> >> +                     USB_DEVICE_ID_NOVATEK_PCT) },
 > 
-> And my results are reverse of what you have been seeing. With
-> sync_file_range() running, firefox takes roughly 30 seconds to start and
-> with flusher in operation, it takes roughly 20 seconds to start. (I have
-> approximated the average of 3 runs for simplicity).
-> 
-> I think it is happening because sync_file_range() will send all
-> the writes as SYNC and it will compete with firefox IO. On the other
-> hand, flusher's IO will show up as ASYNC and CFQ  will be penalize it
-> heavily and firefox's IO will be prioritized. And this effect should
-> just get worse as more processes do sync_file_range().
-> 
-> So write-behind should provide better interactivity if writes submitted
-> are ASYNC and not SYNC.
+> Shouldn't we use MT_USB_DEVICE instead?
 
-Hi Vivek, thanks for testing all of these out! The result is
-definitely interesting and a surprise: we overlooked the SYNC nature
-of sync_file_range().
+We should, I have missed this and will fix this up with your Reported-by:, 
+ok?
 
-I'd suggest to use these calls to achieve the write-and-drop-behind
-behavior, *with* WB_SYNC_NONE:
+Thanks!
 
-        posix_fadvise(fd, offset, len, POSIX_FADV_DONTNEED);
-        sync_file_range(fd, offset, len, SYNC_FILE_RANGE_WAIT_AFTER);
-
-The caveat is, the below bdi_write_congested() will never evaluate to
-true since we are only filling the request queue with 8MB data.
-
-SYSCALL_DEFINE(fadvise64_64):
-
-        case POSIX_FADV_DONTNEED:
-                if (!bdi_write_congested(mapping->backing_dev_info))
-                        __filemap_fdatawrite_range(mapping, offset, endbyte,
-                                                   WB_SYNC_NONE);
-
-Thanks,
-Fengguang
+-- 
+Jiri Kosina
+SUSE Labs
