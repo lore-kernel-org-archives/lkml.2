@@ -1,164 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753522Ab2FFMRx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 08:17:53 -0400
-Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:2069 "EHLO
-	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753348Ab2FFMRv (ORCPT
+	id S1753707Ab2FFMSE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 08:18:04 -0400
+Received: from www84.your-server.de ([213.133.104.84]:43439 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753348Ab2FFMSA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 08:17:51 -0400
-Message-ID: <1338985066.21725.11.camel@x61.thuisdomein>
-Subject: [PATCH] [TRIVIAL] treewide: Put a space between #include and FILE
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Jiri Kosina <trivial@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Date: Wed, 06 Jun 2012 14:17:46 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+	Wed, 6 Jun 2012 08:18:00 -0400
+Message-ID: <1338985098.6961.2.camel@wall-e>
+Subject: Re: [PATCH] fix usb skeleton driver
+From: Stefani Seibold <stefani@seibold.net>
+To: Oliver Neukum <oneukum@suse.de>
+Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        alan@lxorguk.ukuu.org.uk
+Date: Wed, 06 Jun 2012 14:18:18 +0200
+In-Reply-To: <201206060932.15984.oneukum@suse.de>
+References: <1338966036-30443-1-git-send-email-stefani@seibold.net>
+	 <201206060932.15984.oneukum@suse.de>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-X-OriginalArrivalTime: 06 Jun 2012 12:17:46.0260 (UTC) FILETIME=[61957D40:01CD43DE]
-X-RcptDomain: vger.kernel.org
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-0) I was surprised to learn that it is legal to have no whitespace
-between an #include preprocessor directive and its "FILE" or <FILE>. I
-only discovered that because of some oddities in the output of a script
-that grepped for #include directives. Since it is uncommon to have no
-whitespace after #include, and a bit ugly too, I suggest to put a space
-between these #include directives and their FILE.
+Am Mittwoch, den 06.06.2012, 09:32 +0200 schrieb Oliver Neukum:
+> Am Mittwoch, 6. Juni 2012, 09:00:36 schrieb stefani@seibold.net:
+> > @@ -126,32 +122,21 @@ exit:
+> >  
+> >  static int skel_release(struct inode *inode, struct file *file)
+> >  {
+> > -       struct usb_skel *dev;
+> > -
+> > -       dev = file->private_data;
+> > -       if (dev == NULL)
+> > -               return -ENODEV;
+> > +       struct usb_skel *dev = file->private_data;
+> >  
+> >         /* allow the device to be autosuspended */
+> > -       mutex_lock(&dev->io_mutex);
+> > -       if (dev->interface)
+> > -               usb_autopm_put_interface(dev->interface);
+> > -       mutex_unlock(&dev->io_mutex);
+> > +       usb_autopm_put_interface(dev->interface);
+> 
+> That is a bug. You must check for disconnect here, because
+> after a disconnect the interface may be bound already to another
+> driver.
+> 
+> 	Regards
+> 		Oliver
 
-1) Only git tested (with "git diff -w HEAD^"). Compile test would
-require toolchains that I do not have at hand. Looks obviously correct
-anyway.
+Yes, you are right.
 
- arch/arm/plat-samsung/include/plat/gpio-cfg.h |    2 +-
- arch/ia64/kernel/ia64_ksyms.c                 |    2 +-
- arch/ia64/kvm/vmm.c                           |    6 +++---
- arch/parisc/include/asm/compat_rt_sigframe.h  |    6 +++---
- drivers/media/video/zoran/zr36016.c           |    4 ++--
- drivers/net/wireless/iwlwifi/iwl-io.c         |    2 +-
- drivers/scsi/aha1542.c                        |    2 +-
- drivers/staging/comedi/drivers/s626.h         |    2 +-
- 8 files changed, 13 insertions(+), 13 deletions(-)
+But as i now figured out, the whole usb_skeleton.c drivers is full of
+races in the skel_open and skel_release path.
 
-diff --git a/arch/arm/plat-samsung/include/plat/gpio-cfg.h b/arch/arm/plat-samsung/include/plat/gpio-cfg.h
-index df8155b..08740ee 100644
---- a/arch/arm/plat-samsung/include/plat/gpio-cfg.h
-+++ b/arch/arm/plat-samsung/include/plat/gpio-cfg.h
-@@ -24,7 +24,7 @@
- #ifndef __PLAT_GPIO_CFG_H
- #define __PLAT_GPIO_CFG_H __FILE__
- 
--#include<linux/types.h>
-+#include <linux/types.h>
- 
- typedef unsigned int __bitwise__ samsung_gpio_pull_t;
- typedef unsigned int __bitwise__ s5p_gpio_drvstr_t;
-diff --git a/arch/ia64/kernel/ia64_ksyms.c b/arch/ia64/kernel/ia64_ksyms.c
-index 7f4a0ed..5b7791d 100644
---- a/arch/ia64/kernel/ia64_ksyms.c
-+++ b/arch/ia64/kernel/ia64_ksyms.c
-@@ -12,7 +12,7 @@ EXPORT_SYMBOL(memset);
- EXPORT_SYMBOL(memcpy);
- EXPORT_SYMBOL(strlen);
- 
--#include<asm/pgtable.h>
-+#include <asm/pgtable.h>
- EXPORT_SYMBOL_GPL(empty_zero_page);
- 
- #include <asm/checksum.h>
-diff --git a/arch/ia64/kvm/vmm.c b/arch/ia64/kvm/vmm.c
-index f0b9cac..176a12c 100644
---- a/arch/ia64/kvm/vmm.c
-+++ b/arch/ia64/kvm/vmm.c
-@@ -20,9 +20,9 @@
-  */
- 
+I will send a clean and tested patch set in the next few days.
 
--#include<linux/kernel.h>
--#include<linux/module.h>
--#include<asm/fpswa.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <asm/fpswa.h>
- 
- #include "vcpu.h"
- 
-diff --git a/arch/parisc/include/asm/compat_rt_sigframe.h b/arch/parisc/include/asm/compat_rt_sigframe.h
-index 81bec28..b3f95a7 100644
---- a/arch/parisc/include/asm/compat_rt_sigframe.h
-+++ b/arch/parisc/include/asm/compat_rt_sigframe.h
-@@ -1,6 +1,6 @@
--#include<linux/compat.h>
--#include<linux/compat_siginfo.h>
--#include<asm/compat_ucontext.h>
-+#include <linux/compat.h>
-+#include <linux/compat_siginfo.h>
-+#include <asm/compat_ucontext.h>
- 
- #ifndef _ASM_PARISC_COMPAT_RT_SIGFRAME_H
- #define _ASM_PARISC_COMPAT_RT_SIGFRAME_H
-diff --git a/drivers/media/video/zoran/zr36016.c b/drivers/media/video/zoran/zr36016.c
-index 21c088e..b87ddba 100644
---- a/drivers/media/video/zoran/zr36016.c
-+++ b/drivers/media/video/zoran/zr36016.c
-@@ -40,10 +40,10 @@
- /* v4l  API */
- 
- /* headerfile of this module */
--#include"zr36016.h"
-+#include "zr36016.h"
- 
- /* codec io API */
--#include"videocodec.h"
-+#include "videocodec.h"
- 
- /* it doesn't make sense to have more than 20 or so,
-   just to prevent some unwanted loops */
-diff --git a/drivers/net/wireless/iwlwifi/iwl-io.c b/drivers/net/wireless/iwlwifi/iwl-io.c
-index 081dd34..0f8b8aa 100644
---- a/drivers/net/wireless/iwlwifi/iwl-io.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-io.c
-@@ -29,7 +29,7 @@
- #include <linux/device.h>
- 
- #include "iwl-io.h"
--#include"iwl-csr.h"
-+#include "iwl-csr.h"
- #include "iwl-debug.h"
- 
- #define IWL_POLL_INTERVAL 10	/* microseconds */
-diff --git a/drivers/scsi/aha1542.c b/drivers/scsi/aha1542.c
-index f79c8f9..770c48d 100644
---- a/drivers/scsi/aha1542.c
-+++ b/drivers/scsi/aha1542.c
-@@ -49,7 +49,7 @@
- #define SCSI_BUF_PA(address)	isa_virt_to_bus(address)
- #define SCSI_SG_PA(sgent)	(isa_page_to_bus(sg_page((sgent))) + (sgent)->offset)
- 
--#include<linux/stat.h>
-+#include <linux/stat.h>
- 
- #ifdef DEBUG
- #define DEB(x) x
-diff --git a/drivers/staging/comedi/drivers/s626.h b/drivers/staging/comedi/drivers/s626.h
-index 2d1afec..92d3ea5 100644
---- a/drivers/staging/comedi/drivers/s626.h
-+++ b/drivers/staging/comedi/drivers/s626.h
-@@ -80,7 +80,7 @@
- #define INLINE static __inline
- #endif
- 
--#include<linux/slab.h>
-+#include <linux/slab.h>
- 
- #define S626_SIZE 0x0200
- #define SIZEOF_ADDRESS_SPACE		0x0200
--- 
-1.7.7.6
+Greetings,
+Stefani
+
 
