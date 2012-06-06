@@ -1,183 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756738Ab2FFSdB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 14:33:01 -0400
-Received: from mga01.intel.com ([192.55.52.88]:49522 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751634Ab2FFSc6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 14:32:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="175618633"
-From: Andi Kleen <andi@firstfloor.org>
-To: lenb@kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH] turbostat: Add SMI count to turbostat
-Date: Wed,  6 Jun 2012 11:32:50 -0700
-Message-Id: <1339007570-32505-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.7.6
+	id S1757340Ab2FFSgG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 14:36:06 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:38663 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756631Ab2FFSgE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 14:36:04 -0400
+Message-ID: <4FCFA312.4020505@tilera.com>
+Date: Wed, 6 Jun 2012 14:36:02 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: <bhutchings@solarflare.com>, <arnd@arndb.de>,
+        David Miller <davem@davemloft.net>, <linux-kernel@vger.kernel.org>,
+        <netdev@vger.kernel.org>
+Subject: Re: [PATCH v9] tilegx network driver: initial support
+References: <201205201636.q4KGaoA3003845@farm-0027.internal.tilera.com>  <20120520.165546.1211013675964130504.davem@davemloft.net>  <201205240115.q4O1FwqG006336@lab-41.internal.tilera.com>  <20120524.003148.700603156196416506.davem@davemloft.net>  <201205251853.q4PIrE7T000723@lab-41.internal.tilera.com>  <201206042023.q54KNEZp003834@farm-0002.internal.tilera.com> <1339004459.26966.31.camel@edumazet-glaptop>
+In-Reply-To: <1339004459.26966.31.camel@edumazet-glaptop>
+X-Enigmail-Version: 1.4.2
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On 6/6/2012 1:40 PM, Eric Dumazet wrote:
+> On Mon, 2012-06-04 at 16:12 -0400, Chris Metcalf wrote:
+>
+>> +/* Allocate and push a buffer. */
+>> +static bool tile_net_provide_buffer(bool small)
+>> +{
+>> +	int stack = small ? small_buffer_stack : large_buffer_stack;
+>> +	const unsigned long buffer_alignment = 128;
+>> +	struct sk_buff *skb;
+>> +	int len;
+>> +
+>> +	len = sizeof(struct sk_buff **) + buffer_alignment;
+>> +	len += (small ? 128 : 1664);
+> 1664 is a magic number, it should be a nice define
+>
+> #define ..... ( ETH_DATA_LEN + .... )
 
-When debugging timing related problems it's often useful to know
-the SMI count. Newer Intel CPUs have a MSR to read it. Since turbostat
-already has all the required infrastructure for polling MSRs I just
-added it there (even though it's strictly not power related)
-The counter is printed by default.
+Fair enough.  However, the magic-ness comes from the hardware header code
+in arch/tile/gxio/mpipe.h, which provides a limited set of allowed buffer
+sizes, including 1664.  But I can add these #defines at the top of this driver:
 
-Unfortunately since it's a model specific counter needs a model
-list number. I added Nehalems and Westmeres for it, and reused
-the existing Sandy Bridge model list. This will need to be later
-extended for each new CPU.
+/* Buffer sizes and mpipe enum codes for buffer stacks.
+ * See arch/tile/include/gxio/mpipe.h for the set of possible values.
+ */
+#define BUFFER_SIZE_SMALL_ENUM GXIO_MPIPE_BUFFER_SIZE_128
+#define BUFFER_SIZE_SMALL 128
+#define BUFFER_SIZE_LARGE_ENUM GXIO_MPIPE_BUFFER_SIZE_1664
+#define BUFFER_SIZE_LARGE 1664
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- tools/power/x86/turbostat/turbostat.c |   44 ++++++++++++++++++++++++++++++++-
- 1 files changed, 43 insertions(+), 1 deletions(-)
 
-diff --git a/tools/power/x86/turbostat/turbostat.c b/tools/power/x86/turbostat/turbostat.c
-index ab2f682..6fa80b4 100644
---- a/tools/power/x86/turbostat/turbostat.c
-+++ b/tools/power/x86/turbostat/turbostat.c
-@@ -36,6 +36,7 @@
- #include <sched.h>
- 
- #define MSR_TSC	0x10
-+#define MSR_SMI_COUNT 0x34
- #define MSR_NEHALEM_PLATFORM_INFO	0xCE
- #define MSR_NEHALEM_TURBO_RATIO_LIMIT	0x1AD
- #define MSR_APERF	0xE8
-@@ -67,6 +68,7 @@ double bclk;
- unsigned int show_pkg;
- unsigned int show_core;
- unsigned int show_cpu;
-+unsigned int do_smi_count;
- 
- int aperf_mperf_unstable;
- int backwards_count;
-@@ -89,6 +91,7 @@ struct counters {
- 	unsigned long long pc6;	/* per package */
- 	unsigned long long pc7;	/* per package */
- 	unsigned long long extra_msr;	/* per thread */
-+	unsigned long long smi_count;	/* per thread */
- 	int pkg;
- 	int core;
- 	int cpu;
-@@ -192,6 +195,8 @@ void print_header(void)
- 		fprintf(stderr, "   %%pc7");
- 	if (extra_msr_offset)
- 		fprintf(stderr, "        MSR 0x%x ", extra_msr_offset);
-+	if (do_smi_count)
-+		fprintf(stderr, "   SMIs");
- 
- 	putc('\n', stderr);
- }
-@@ -213,6 +218,7 @@ void dump_cnt(struct counters *cnt)
- 	if (cnt->pc6) fprintf(stderr, "pc6: %016llX\n", cnt->pc6);
- 	if (cnt->pc7) fprintf(stderr, "pc7: %016llX\n", cnt->pc7);
- 	if (cnt->extra_msr) fprintf(stderr, "msr0x%x: %016llX\n", extra_msr_offset, cnt->extra_msr);
-+	if (cnt->smi_count) fprintf(stderr, "smi: %llu\n", cnt->smi_count);
- }
- 
- void dump_list(struct counters *cnt)
-@@ -312,6 +318,8 @@ void print_cnt(struct counters *p)
- 		fprintf(stderr, " %6.2f", 100.0 * p->pc7/p->tsc);
- 	if (extra_msr_offset)
- 		fprintf(stderr, "  0x%016llx", p->extra_msr);
-+	if (do_smi_count)
-+		fprintf(stderr, "  %5llu", p->smi_count);
- 	putc('\n', stderr);
- }
- 
-@@ -450,6 +458,13 @@ int compute_delta(struct counters *after,
- 		 * for "extra msr", just copy the latest w/o subtracting
- 		 */
- 		delta->extra_msr = after->extra_msr;
-+
-+		if (SUBTRACT_COUNTER(after->smi_count, before->smi_count, delta->smi_count)) {
-+			fprintf(stderr, "cpu%d MSI counter went backwards %llX to %llX\n",
-+				before->cpu, before->smi_count, after->smi_count);
-+			errors++;
-+		}
-+
- 		if (errors) {
- 			fprintf(stderr, "ERROR cpu%d before:\n", before->cpu);
- 			dump_cnt(before);
-@@ -483,6 +498,7 @@ void compute_average(struct counters *delta, struct counters *avg)
- 		sum->pc3 += delta->pc3;
- 		sum->pc6 += delta->pc6;
- 		sum->pc7 += delta->pc7;
-+		sum->smi_count += delta->smi_count;
- 	}
- 	avg->tsc = sum->tsc/num_cpus;
- 	avg->c1 = sum->c1/num_cpus;
-@@ -495,6 +511,7 @@ void compute_average(struct counters *delta, struct counters *avg)
- 	avg->pc3 = sum->pc3/num_cpus;
- 	avg->pc6 = sum->pc6/num_cpus;
- 	avg->pc7 = sum->pc7/num_cpus;
-+	avg->smi_count = sum->smi_count/num_cpus;
- 
- 	free(sum);
- }
-@@ -542,6 +559,11 @@ int get_counters(struct counters *cnt)
- 		if (extra_msr_offset)
- 			if (get_msr(cnt->cpu, extra_msr_offset, &cnt->extra_msr))
- 				return -1;
-+		if (do_smi_count) {
-+			if (get_msr(cnt->cpu, MSR_SMI_COUNT, &cnt->smi_count))
-+				return -1;
-+			cnt->smi_count &= 0xffffffff;
-+		}
- 	}
- 	return 0;
- }
-@@ -906,7 +928,7 @@ int has_nehalem_turbo_ratio_limit(unsigned int family, unsigned int model)
- 
- int is_snb(unsigned int family, unsigned int model)
- {
--	if (!genuine_intel)
-+	if (!genuine_intel || family != 6)
- 		return 0;
- 
- 	switch (model) {
-@@ -917,6 +939,22 @@ int is_snb(unsigned int family, unsigned int model)
- 	return 0;
- }
- 
-+int is_nhm_wsm(unsigned int family, unsigned int model)
-+{
-+	if (!genuine_intel || family != 6)
-+		return 0;
-+
-+	switch (model) {
-+	case 26:
-+	case 30:
-+	case 46:
-+	case 37:
-+	case 44:
-+	case 47:
-+		return 1;
-+	}
-+	return 0;
-+}
- double discover_bclk(unsigned int family, unsigned int model)
- {
- 	if (is_snb(family, model))
-@@ -1000,6 +1038,10 @@ void check_cpuid()
- 	bclk = discover_bclk(family, model);
- 
- 	do_nehalem_turbo_ratio_limit = has_nehalem_turbo_ratio_limit(family, model);
-+
-+	/* Do unconditionally? Started with Nehalem, but may not be on Atoms */
-+	if (is_snb(family, model) || is_nhm_wsm(family, model))
-+		do_smi_count = 1;
- }
- 
- 
+>> +	skb = dev_alloc_skb(len);
+>> +	if (skb == NULL)
+>> +		return false;
+>> +
+>> +	/* Make room for a back-pointer to 'skb' and guarantee alignment. */
+>> +	skb_reserve(skb, sizeof(struct sk_buff **));
+>> +	skb_reserve(skb, -(long)skb->data & (buffer_alignment - 1));
+>> +
+>> +	/* Save a back-pointer to 'skb'. */
+>> +	*(struct sk_buff **)(skb->data - sizeof(struct sk_buff **)) = skb;
+>> +
+>> +	/* Make sure "skb" and the back-pointer have been flushed. */
+>> +	wmb();
+> Interesting, have you considered using build_skb() instead of this
+> convoluted thing ?
+>
+> This could save some cache misses...
+
+I hadn't looked at build_skb() before; we built up this driver mostly on a
+base of 2.6.38, where it doesn't exist.  That said, it doesn't seem like it
+matters; dev_alloc_skb() will just end up calling down to build_skb()
+anyway, as far as I can tell.
+
+The code where we do the two skb_reserves and then stuff in a backpointer
+and do a barrier are because we track the skbuffs in hardware, and hardware
+ignores the low 7 bits aof the address (thus the "buffer_alignment" part)
+and we need to be able to pull the actual skb address out of the data when
+the hardware returns a pointer to the data to us.
+
+By the way, your question about tx_queue_len is a good one; I'm roping in
+our other network developer folks to figure it out.  Originally it was a
+performance optimization, I believe; I'm not sure it's still required. 
+I'll follow up on that one when we've tracked it down.
+
 -- 
-1.7.7.6
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
