@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755261Ab2FFJBu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 05:01:50 -0400
-Received: from antcom.de ([188.40.178.216]:41235 "EHLO chuck.antcom.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751542Ab2FFJBs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 05:01:48 -0400
-Message-ID: <4FCF1C78.5000309@antcom.de>
-Date: Wed, 06 Jun 2012 11:01:44 +0200
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
-MIME-Version: 1.0
-To: dedekind1@gmail.com
-CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        dwmw2@infradead.org, kevin.wells@nxp.com, srinivas.bakki@nxp.com,
-        linux-arm-kernel@lists.infradead.org, hechtb@googlemail.com,
-        lars@metafoo.de, b32955@freescale.com, leiwen@marvell.com,
-        linux@arm.linux.org.uk
-Subject: Re: [PATCH v5] MTD: LPC32xx SLC NAND driver
-References: <1338837901-24075-1-git-send-email-stigge@antcom.de> <1338972168.6875.7.camel@sauron.fi.intel.com>
-In-Reply-To: <1338972168.6875.7.camel@sauron.fi.intel.com>
-X-Enigmail-Version: 1.4
-OpenPGP: url=subkeys.pgp.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1755035Ab2FFJCX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 05:02:23 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:57755 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751992Ab2FFJCU convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 05:02:20 -0400
+Message-ID: <1338973295.2749.81.camel@twins>
+Subject: Re: [RFC PATCH] sched/numa: do load balance between remote nodes
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Alex Shi <alex.shi@intel.com>
+Cc: anton@samba.org, benh@kernel.crashing.org, cmetcalf@tilera.com,
+        dhowells@redhat.com, davem@davemloft.net, fenghua.yu@intel.com,
+        hpa@zytor.com, ink@jurassic.park.msu.ru, linux-alpha@vger.kernel.org,
+        linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
+        linux-sh@vger.kernel.org, mattst88@gmail.com, paulus@samba.org,
+        lethal@linux-sh.org, ralf@linux-mips.org, rth@twiddle.net,
+        sparclinux@vger.kernel.org, tony.luck@intel.com, x86@kernel.org,
+        sivanich@sgi.com, greg.pearson@hp.com, kamezawa.hiroyu@jp.fujitsu.com,
+        bob.picco@oracle.com, chris.mason@oracle.com,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        mingo@kernel.org, pjt@google.com, tglx@linutronix.de,
+        seto.hidetoshi@jp.fujitsu.com, ak@linux.intel.com,
+        arjan.van.de.ven@intel.com
+Date: Wed, 06 Jun 2012 11:01:35 +0200
+In-Reply-To: <1338965571-9812-1-git-send-email-alex.shi@intel.com>
+References: <1338965571-9812-1-git-send-email-alex.shi@intel.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/06/2012 10:42 AM, Artem Bityutskiy wrote:
-> On Mon, 2012-06-04 at 21:25 +0200, Roland Stigge wrote:
->> +config MTD_NAND_SLC_LPC32XX +	bool "NXP LPC32xx SLC Controller"
-> 
-> Why bool and not tristate here? Why you force this to be
-> compiled-in and make it impossible to be a kernel module like other
-> drivers are?
+On Wed, 2012-06-06 at 14:52 +0800, Alex Shi wrote:
+> -       if (sched_domains_numa_distance[level] > REMOTE_DISTANCE)
+> +       if (sched_domains_numa_distance[level] > RECLAIM_DISTANCE) 
 
-Right - the solution for both issues you mention (compiling as module
-and linker error) is replacing above "bool" with "tristate".
+I actually considered this.. I just felt a little uneasy re-purposing
+the RECLAIM_DISTANCE for this, but I guess its all the same anyway. Both
+mean expensive-away-distance.
 
-Will post an updated patch.
+So I've taken this.
 
-Thanks,
-
-Roland
+thanks!
