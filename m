@@ -1,101 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754746Ab2FFHvg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 03:51:36 -0400
-Received: from mga03.intel.com ([143.182.124.21]:8138 "EHLO mga03.intel.com"
+	id S1753797Ab2FFH6A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 03:58:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32020 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751733Ab2FFHve (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 03:51:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="152223127"
-Message-ID: <4FCF0C03.9010400@linux.intel.com>
-Date: Wed, 06 Jun 2012 15:51:31 +0800
-From: Chen Gong <gong.chen@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1750888Ab2FFH56 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 03:57:58 -0400
+Subject: [V2 RFC net-next PATCH 1/2] virtio_net: convert the statistics into
+ array
+To: netdev@vger.kernel.org, rusty@rustcorp.com.au,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, mst@redhat.com
+From: Jason Wang <jasowang@redhat.com>
+Date: Wed, 06 Jun 2012 15:52:09 +0800
+Message-ID: <20120606075208.29081.75284.stgit@amd-6168-8-1.englab.nay.redhat.com>
+User-Agent: StGit/0.16-1-g60c4
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>, "Luck, Tony" <tony.luck@intel.com>,
-        "bp@amd64.org" <bp@amd64.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [tip:x86/urgent] x86/mce: Fix the MCE poll timer logic
-References: <1338863702-9245-1-git-send-email-gong.chen@linux.intel.com> <tip-958fb3c51295764599d6abce87e1a01ace897a3e@git.kernel.org>
-In-Reply-To: <tip-958fb3c51295764599d6abce87e1a01ace897a3e@git.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2012/6/6 15:10, tip-bot for Chen Gong 写道:
-> Commit-ID:  958fb3c51295764599d6abce87e1a01ace897a3e
-> Gitweb:     http://git.kernel.org/tip/958fb3c51295764599d6abce87e1a01ace897a3e
-> Author:     Chen Gong <gong.chen@linux.intel.com>
-> AuthorDate: Tue, 5 Jun 2012 10:35:02 +0800
-> Committer:  Ingo Molnar <mingo@kernel.org>
-> CommitDate: Wed, 6 Jun 2012 08:28:21 +0200
->
-> x86/mce: Fix the MCE poll timer logic
->
-> In commit 82f7af09 ("x86/mce: Cleanup timer mess), Thomas just
-> forgot the "/ 2" there while cleaning up.
->
-> Signed-off-by: Chen Gong <gong.chen@linux.intel.com>
-> Acked-by: Thomas Gleixner <tglx@linutronix.de>
-> Cc: bp@amd64.org
-> Cc: tony.luck@intel.com
-> Link: http://lkml.kernel.org/r/1338863702-9245-1-git-send-email-gong.chen@linux.intel.com
-> Signed-off-by: Ingo Molnar <mingo@kernel.org>
-> ---
->  arch/x86/kernel/cpu/mcheck/mce.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-> index 0a687fd..a97f3c4 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-> @@ -1274,7 +1274,7 @@ static void mce_timer_fn(unsigned long data)
->  	 */
->  	iv = __this_cpu_read(mce_next_interval);
->  	if (mce_notify_irq())
-> -		iv = max(iv, (unsigned long) HZ/100);
-> +		iv = max(iv / 2, (unsigned long) HZ/100);
->  	else
->  		iv = min(iv * 2, round_jiffies_relative(check_interval * HZ));
->  	__this_cpu_write(mce_next_interval, iv);
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Currently, we store the statistics in the independent fields of virtnet_stats,
+this is not scalable when we want to add more counters. As suggested by Michael,
+this patch convert it to an array and use the enum as the index to access them.
 
-In fact, there still exists another potential issue:
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+ drivers/net/virtio_net.c |   30 +++++++++++++++++-------------
+ 1 files changed, 17 insertions(+), 13 deletions(-)
 
-static void __mcheck_cpu_init_timer(void)
-{
-        struct timer_list *t = &__get_cpu_var(mce_timer);
-        unsigned long iv = __this_cpu_read(mce_next_interval);
-
-        setup_timer(t, mce_timer_fn, smp_processor_id());
-
-        if (mce_ignore_ce)
-                return;
-
-        __this_cpu_write(mce_next_interval, iv);
-        if (!iv)
-                return;
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Because the 2nd patch is not merged yet, so here iv is zero when this
-function is called, which means at the beginning, the poll timers are
-not registered until some other conditions trigger *add_timer_on*.
-
-        t->expires = round_jiffies(jiffies + iv);
-        add_timer_on(t, smp_processor_id());
-}
-
-Another potential issue is in this function two smp_processor_id()
-are called. If conext changes during this procedure (I'm not sure
-if it can hapen, besides secondary_cpu kickoff, online/offline will
-call these functions, even in virtualization envrionment, etc.).
-So I think it will be better saving the value in the beginning of
-this function. Make sense?
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index 5214b1e..6e4aa6f 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -41,13 +41,17 @@ module_param(gso, bool, 0444);
+ #define VIRTNET_SEND_COMMAND_SG_MAX    2
+ #define VIRTNET_DRIVER_VERSION "1.0.0"
+ 
++enum virtnet_stats_type {
++	VIRTNET_TX_BYTES,
++	VIRTNET_TX_PACKETS,
++	VIRTNET_RX_BYTES,
++	VIRTNET_RX_PACKETS,
++	VIRTNET_NUM_STATS,
++};
++
+ struct virtnet_stats {
+ 	struct u64_stats_sync syncp;
+-	u64 tx_bytes;
+-	u64 tx_packets;
+-
+-	u64 rx_bytes;
+-	u64 rx_packets;
++	u64 data[VIRTNET_NUM_STATS];
+ };
+ 
+ struct virtnet_info {
+@@ -301,8 +305,8 @@ static void receive_buf(struct net_device *dev, void *buf, unsigned int len)
+ 	hdr = skb_vnet_hdr(skb);
+ 
+ 	u64_stats_update_begin(&stats->syncp);
+-	stats->rx_bytes += skb->len;
+-	stats->rx_packets++;
++	stats->data[VIRTNET_RX_BYTES] += skb->len;
++	stats->data[VIRTNET_RX_PACKETS]++;
+ 	u64_stats_update_end(&stats->syncp);
+ 
+ 	if (hdr->hdr.flags & VIRTIO_NET_HDR_F_NEEDS_CSUM) {
+@@ -566,8 +570,8 @@ static unsigned int free_old_xmit_skbs(struct virtnet_info *vi)
+ 		pr_debug("Sent skb %p\n", skb);
+ 
+ 		u64_stats_update_begin(&stats->syncp);
+-		stats->tx_bytes += skb->len;
+-		stats->tx_packets++;
++		stats->data[VIRTNET_TX_BYTES] += skb->len;
++		stats->data[VIRTNET_TX_PACKETS]++;
+ 		u64_stats_update_end(&stats->syncp);
+ 
+ 		tot_sgs += skb_vnet_hdr(skb)->num_sg;
+@@ -704,10 +708,10 @@ static struct rtnl_link_stats64 *virtnet_stats(struct net_device *dev,
+ 
+ 		do {
+ 			start = u64_stats_fetch_begin(&stats->syncp);
+-			tpackets = stats->tx_packets;
+-			tbytes   = stats->tx_bytes;
+-			rpackets = stats->rx_packets;
+-			rbytes   = stats->rx_bytes;
++			tpackets = stats->data[VIRTNET_TX_PACKETS];
++			tbytes   = stats->data[VIRTNET_TX_BYTES];
++			rpackets = stats->data[VIRTNET_RX_PACKETS];
++			rbytes   = stats->data[VIRTNET_RX_BYTES];
+ 		} while (u64_stats_fetch_retry(&stats->syncp, start));
+ 
+ 		tot->rx_packets += rpackets;
 
