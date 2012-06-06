@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932128Ab2FFVSK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 17:18:10 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2806 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754038Ab2FFVSI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 17:18:08 -0400
-X-Authority-Analysis: v=2.0 cv=eIiRfQV1 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=VwQbUJbxAAAA:8 a=oioPlalLgeHcZa3h1WIA:9 a=PUjeQqilurYA:10 a=_jmfxP3KFCXnpc18:21 a=QbXv9zc3RogYTjc5:21 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1339017485.13348.555.camel@gandalf.stny.rr.com>
-Subject: [ANNOUNCE] 3.2.19-rt30
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Date: Wed, 06 Jun 2012 17:18:05 -0400
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1758593Ab2FFVS5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 17:18:57 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:42323 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757128Ab2FFVSz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 17:18:55 -0400
+From: Leed Aguilar <leed.aguilar@ti.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <gregkh@linuxfoundation.org>, <leed.aguilar@ti.com>,
+        <linux-iio@vger.kernel.org>
+Subject: [PATCH 1/3] staging:iio:magnetometer:ak8975: set power-down mode after reading fuse ROM data
+Date: Wed, 6 Jun 2012 16:14:56 -0400
+Message-ID: <1339013696-15436-1-git-send-email-leed.aguilar@ti.com>
+X-Mailer: git-send-email 1.7.1
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Fuse ROM data access mode is the only mode which does not
+transition to power-down mode automatically.
 
-Dear RT Folks,
+As per the AK8975 data sheet, it is recomended to set the
+power-down mode first before attempting to change into
+another mode.
 
-I'm pleased to announce the 3.2.19-rt30 stable release.
+Signed-off-by: Leed Aguilar <leed.aguilar@ti.com>
+Acked-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+ drivers/staging/iio/magnetometer/ak8975.c |   11 +++++++++++
+ 1 files changed, 11 insertions(+), 0 deletions(-)
 
-
-This release is just an update to the new stable 3.2.19 version
-and no RT specific changes have been made.
-
-(one exception: commit 5d79c6f6 workqueue: skip nr_running sanity check in worker_enter_idle() if trustee is active
-  has been reverted. Thanks to Ibrahim Umar for pointing out the
-  build failure. The commit was to remove a triggering of a false
-  WARN_ON, but it required variables that did not exist in the -rt
-  workqueue version. Hopefully we do not see this false positive.)
-
-
-You can get this release via the git tree at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
-
-  Head SHA1: a0fea1c718c2cd7b168c355e8febe9e670099558
-
-
-Or to build 3.2.19-rt30 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.2.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.2.19.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/patch-3.2.19-rt30.patch.xz
-
-
-
-Enjoy,
-
--- Steve
-
-
+diff --git a/drivers/staging/iio/magnetometer/ak8975.c b/drivers/staging/iio/magnetometer/ak8975.c
+index 7562caf..001b3bf 100644
+--- a/drivers/staging/iio/magnetometer/ak8975.c
++++ b/drivers/staging/iio/magnetometer/ak8975.c
+@@ -194,6 +194,17 @@ static int ak8975_setup(struct i2c_client *client)
+ 		return ret;
+ 	}
+ 
++	/* After reading fuse ROM data set power-down mode */
++	ret = ak8975_write_data(client,
++				AK8975_REG_CNTL,
++				AK8975_REG_CNTL_MODE_POWER_DOWN,
++				AK8975_REG_CNTL_MODE_MASK,
++				AK8975_REG_CNTL_MODE_SHIFT);
++	if (ret < 0) {
++		dev_err(&client->dev, "Error in setting power-down mode\n");
++		return ret;
++	}
++
+ /*
+  * Precalculate scale factor (in Gauss units) for each axis and
+  * store in the device data.
+-- 
+1.7.1
 
