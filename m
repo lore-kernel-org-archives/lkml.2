@@ -1,53 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758919Ab2FFVmA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 17:42:00 -0400
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:33774 "EHLO
-	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758835Ab2FFVl4 (ORCPT
+	id S1758935Ab2FFVmi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 17:42:38 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:45694 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758838Ab2FFVlz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 17:41:56 -0400
-X-IronPort-AV: E=Sophos;i="4.75,726,1330902000"; 
-   d="scan'208";a="161655290"
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Wolfgang Grandegger <wg@grandegger.com>
-Cc: kernel-janitors@vger.kernel.org, Marc Kleine-Budde <mkl@pengutronix.de>,
-        linux-can@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, joe@perches.com,
-        Julia Lawall <julia@diku.dk>
-Subject: [PATCH 7/7] drivers/net/can/cc770/cc770_platform.c: adjust suspicious bit operation
-Date: Wed,  6 Jun 2012 23:41:41 +0200
-Message-Id: <1339018901-28439-8-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1339018901-28439-1-git-send-email-Julia.Lawall@lip6.fr>
-References: <1339018901-28439-1-git-send-email-Julia.Lawall@lip6.fr>
+	Wed, 6 Jun 2012 17:41:55 -0400
+Date: Wed, 6 Jun 2012 23:42:19 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
+        Chen Gong <gong.chen@linux.intel.com>, x86@kernel.org,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [patch 1/6] x86: mce: Create devices in CPU_UP_PREPARE
+Message-ID: <20120606214219.GC6841@aftab.osrc.amd.com>
+References: <20120606211746.693649684@linutronix.de>
+ <20120606212334.513459224@linutronix.de>
+ <alpine.LFD.2.02.1206062337310.3086@ionos>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1206062337310.3086@ionos>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+On Wed, Jun 06, 2012 at 11:38:11PM +0200, Thomas Gleixner wrote:
+> On Wed, 6 Jun 2012, Thomas Gleixner wrote:
+> 
+> > This makes the treshold_cpu_callback for AMD actually work and makes
+> > the code symetric vs. teardown.
+> 
+> Ignore that. I sent out the wrong version of this lot. Sorry for the noise
 
-CPUIF_DSC is 0x40, so it would seem that & is wanted rather than |.
+By this you mean the chunk at the end of 5/6, right?
 
-This problem was found using Coccinelle (http://coccinelle.lip6.fr/).
+There's a chunk touching amd_64_threshold_cpu_callback...
 
-Signed-off-by: Julia Lawall <julia@diku.dk>
+-- 
+Regards/Gruss,
+Boris.
 
----
- drivers/net/can/cc770/cc770_platform.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/net/can/cc770/cc770_platform.c b/drivers/net/can/cc770/cc770_platform.c
-index 53115ee..688371c 100644
---- a/drivers/net/can/cc770/cc770_platform.c
-+++ b/drivers/net/can/cc770/cc770_platform.c
-@@ -154,7 +154,7 @@ static int __devinit cc770_get_platform_data(struct platform_device *pdev,
- 	struct cc770_platform_data *pdata = pdev->dev.platform_data;
- 
- 	priv->can.clock.freq = pdata->osc_freq;
--	if (priv->cpu_interface | CPUIF_DSC)
-+	if (priv->cpu_interface & CPUIF_DSC)
- 		priv->can.clock.freq /= 2;
- 	priv->clkout = pdata->cor;
- 	priv->bus_config = pdata->bcr;
-
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
