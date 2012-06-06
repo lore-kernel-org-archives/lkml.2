@@ -1,78 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757650Ab2FFRlN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 13:41:13 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:58655 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757568Ab2FFRlJ (ORCPT
+	id S1757655Ab2FFRmI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 13:42:08 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:45549 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752570Ab2FFRmF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 13:41:09 -0400
-Date: Wed, 6 Jun 2012 19:41:04 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        shai@scalemp.com, akpm@linux-foundation.org, tglx@linutronix.de,
-        ido@wizery.com, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/mm] x86/pat: Avoid contention on cpa_lock if possible
-Message-ID: <20120606174104.GB2110@gmail.com>
-References: <1334873492-31255-1-git-send-email-ido@wizery.com>
- <tip-d2956406fb61e15ad2b47eda823288db4996acf1@git.kernel.org>
- <1339003443.23343.6.camel@twins>
+	Wed, 6 Jun 2012 13:42:05 -0400
+Date: Wed, 6 Jun 2012 18:42:02 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Khalid Aziz <khalid.aziz@hp.com>
+Cc: linux-kernel@vger.kernel.org, bhelgaas@google.com,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH] Disable Bus Master on PCI device shutdown
+Message-ID: <20120606174202.GA8750@srcf.ucam.org>
+References: <20120427190033.GA17588@ldl.usa.hp.com>
+ <20120606135009.GB1517@srcf.ucam.org>
+ <1338999463.25761.630.camel@lyra>
+ <20120606162703.GA6779@srcf.ucam.org>
+ <1339003956.25761.667.camel@lyra>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1339003443.23343.6.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1339003956.25761.667.camel@lyra>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jun 06, 2012 at 11:32:36AM -0600, Khalid Aziz wrote:
 
-* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> Do we agree that if device shutdown routine cleanly shuts down all I/O,
+> clearing PCI Bus Mster bit should be safe?
 
-> On Wed, 2012-06-06 at 09:18 -0700, tip-bot for Shai Fultheim wrote:
-> 
-> > [ I absolutely hate these locking patterns ... yet I have no better idea. Maybe the gents on Cc: ... ]
-> > Signed-off-by: Ingo Molnar <mingo@kernel.org>
-> 
-> Oh yuck, this is vile..
-> 
-> static struct static_key scale_mp_trainwreck = STATIC_KEY_INIT_FALSE;
-> 
-> static DEFINE_SPINLOCK(_cpa_lock);
-> 
-> static inline void cpa_lock(void)
-> {
-> 	if (static_key_false(&scale_mp_trainwreck))
-> 		return;
-> 
-> 	spin_lock(&_cpa_lock);
-> }
-> 
-> static inline void cpa_unlock(void)
-> {
-> 	if (static_key_false(&scale_mp_trainwreck))
-> 		return;
-> 
-> 	spin_lock(&_cpa_lock);
-> }
-> 
-> And then use cpa_{,un}lock(), and the scale-mp guys can
-> static_key_slow_inc(&scale_mp_trainwreck).
-> 
-> [ and yes I hate those jump_label names ... but I'm not wanting
->   to go through another round of bike-shed painting. ]
+In the absence of hardware that dislikes the bus master bit ever being 
+disabled, yes. Do we know if hardware is ever tested in that situation?
 
-ok.
+> If yes, then we only have to deal with broken devices. So the approach 
+> could be to disable Bus Master bit unless the device ID matches a 
+> blacklist which we update as we find broken devices. I really don't 
+> like the idea of maintaining blacklists in the kernel for such things 
+> but is that a more practical approach? If blacklist does not sound 
+> good, maybe we can ask drivers to tell PCI subsystem if they are not 
+> ok with clearing Bus Master bit and then PCI subsystem could skip 
+> those devices.
 
-Another problem this patch has is inadequate testing:
+Or we could just put responsibility on the drivers to ensure that the 
+hardware won't continue doing any DMA, either by shutting down the 
+engines or clearing the bit.
 
-arch/x86/mm/pageattr.c:798:2: error: implicit declaration of 
-function ‘is_vsmp_box’ [-Werror=implicit-function-declaration]
-
-So I'm removing it from tip:x86/mm for now.
-
-Thanks,
-
-	Ingo
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
