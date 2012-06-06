@@ -1,75 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754527Ab2FFFyT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 01:54:19 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:57155 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753650Ab2FFFyR (ORCPT
+	id S1754508Ab2FFFyw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 01:54:52 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:52625 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752177Ab2FFFyu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 01:54:17 -0400
-Message-ID: <1338962053.23080.7.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: linux-next: Tree for Jun 1 (scsi)
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Dan Williams <dan.j.williams@gmail.com>
-Date: Wed, 06 Jun 2012 14:54:13 +0900
-In-Reply-To: <4FCC2BF9.7000802@xenotime.net>
-References: <20120601132202.ac73b03c845299d384defeaf@canb.auug.org.au>
-	 <4FCC2BF9.7000802@xenotime.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 6 Jun 2012 01:54:50 -0400
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        sachin.kamat@linaro.org, patches@linaro.org
+Subject: [PATCH 1/1] PM: devfreq: Add missing static storage class specifier in devfreq.c file
+Date: Wed,  6 Jun 2012 11:13:46 +0530
+Message-Id: <1338961426-31470-1-git-send-email-sachin.kamat@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-06-03 at 20:31 -0700, Randy Dunlap wrote:
-> On 05/31/2012 08:22 PM, Stephen Rothwell wrote:
-> 
-> > Hi all,
-> > 
-> > Changes since 20120531:
-> 
-> 
-> 
-> already fixed?
-> 
-> on i386 and x86_64, loadable module or builtin:
-> 
-> 
-> ERROR: "scsi_sd_probe_domain" [drivers/scsi/scsi_mod.ko] undefined!
-> or
-> (.text+0x4f6c77): undefined reference to `scsi_sd_probe_domain'
+Fixes the following sparse warning:
+drivers/devfreq/devfreq.c:30:14: warning: symbol 'devfreq_class' was not declared. Should it be static?
 
-This looks to be an obvious thinko:  the symbol is conditionally
-defined, but unconditionally used in
-scsi_scan.c:scsi_complete_async_scans().  We can fix just by removing
-the wrong conditional.
-
-James
-
+Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
 ---
+ drivers/devfreq/devfreq.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
-index 61c82a3..bbbc9c9 100644
---- a/drivers/scsi/scsi.c
-+++ b/drivers/scsi/scsi.c
-@@ -90,11 +90,9 @@ unsigned int scsi_logging_level;
- EXPORT_SYMBOL(scsi_logging_level);
- #endif
+diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
+index 70c31d4..9eb6805 100644
+--- a/drivers/devfreq/devfreq.c
++++ b/drivers/devfreq/devfreq.c
+@@ -27,7 +27,7 @@
+ #include <linux/hrtimer.h>
+ #include "governor.h"
  
--#if IS_ENABLED(CONFIG_PM) || IS_ENABLED(CONFIG_BLK_DEV_SD)
--/* sd and scsi_pm need to coordinate flushing async actions */
-+/* sd, scsi core and power management need to coordinate flushing async actions */
- LIST_HEAD(scsi_sd_probe_domain);
- EXPORT_SYMBOL(scsi_sd_probe_domain);
-                                -#endif
+-struct class *devfreq_class;
++static struct class *devfreq_class;
  
- /* NB: These are exposed through /proc/scsi/scsi and form part of the ABI.
-  * You may not alter any existing entry (although adding new ones is
-
+ /*
+  * devfreq_work periodically monitors every registered device.
+-- 
+1.7.4.1
 
