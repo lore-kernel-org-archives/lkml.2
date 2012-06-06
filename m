@@ -1,140 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757961Ab2FFSFe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 14:05:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26364 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757902Ab2FFSFc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 14:05:32 -0400
-Date: Wed, 6 Jun 2012 13:04:28 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        linux-fsdevel@vger.kernel.org,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: write-behind on streaming writes
-Message-ID: <20120606170428.GB8133@redhat.com>
-References: <CA+55aFykFaBhzzEyRYWRS9Qoy_q_R65Cuth7=XvfOZEMqjn6=w@mail.gmail.com>
- <20120530032129.GA7479@localhost>
- <20120605172302.GB28556@redhat.com>
- <20120605174157.GC28556@redhat.com>
- <20120605184853.GD28556@redhat.com>
- <20120605201045.GE28556@redhat.com>
- <20120606025729.GA1197@redhat.com>
- <CA+55aFyxucvhYhbk0yyNa1WSeYXgHHAyWRHPNWDwODQhyAWGww@mail.gmail.com>
- <20120606121408.GB4934@redhat.com>
- <20120606140058.GA8098@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120606140058.GA8098@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757383Ab2FFSHo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 14:07:44 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:45173 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751773Ab2FFSHm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 14:07:42 -0400
+Subject: Re: [PATCH] Disable Bus Master on PCI device shutdown
+From: Khalid Aziz <khalid.aziz@hp.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: linux-kernel@vger.kernel.org, bhelgaas@google.com,
+        linux-pci@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>
+In-Reply-To: <20120606174202.GA8750@srcf.ucam.org>
+References: <20120427190033.GA17588@ldl.usa.hp.com>
+	 <20120606135009.GB1517@srcf.ucam.org> <1338999463.25761.630.camel@lyra>
+	 <20120606162703.GA6779@srcf.ucam.org> <1339003956.25761.667.camel@lyra>
+	 <20120606174202.GA8750@srcf.ucam.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 06 Jun 2012 12:07:40 -0600
+Message-ID: <1339006060.25761.689.camel@lyra>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 06, 2012 at 10:00:58PM +0800, Fengguang Wu wrote:
-> On Wed, Jun 06, 2012 at 08:14:08AM -0400, Vivek Goyal wrote:
-> > On Tue, Jun 05, 2012 at 08:14:08PM -0700, Linus Torvalds wrote:
-> > > On Tue, Jun 5, 2012 at 7:57 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> > > >
-> > > > I had expected a bigger difference as sync_file_range() is just driving
-> > > > max queue depth of 32 (total 16MB IO in flight), while flushers are
-> > > > driving queue depths up to 140 or so. So in this paritcular test, driving
-> > > > much deeper queue depths is not really helping much. (I have seen higher
-> > > > throughputs with higher queue depths in the past. Now sure why don't we
-> > > > see it here).
-> > > 
-> > > How did interactivity feel?
-> > > 
-> > > Because quite frankly, if the throughput difference is 12.5 vs 12
-> > > seconds, I suspect the interactivity thing is what dominates.
-> > > 
-> > > And from my memory of the interactivity different was absolutely
-> > > *huge*. Even back when I used rotational media, I basically couldn't
-> > > even notice the background write with the sync_file_range() approach.
-> > > While the regular writeback without the writebehind had absolutely
-> > > *huge* pauses if you used something like firefox that uses fsync()
-> > > etc. And starting new applications that weren't cached was noticeably
-> > > worse too - and then with sync_file_range it wasn't even all that
-> > > noticeable.
-> > > 
-> > > NOTE! For the real "firefox + fsync" test, I suspect you'd need to do
-> > > the writeback on the same filesystem (and obviously disk) as your home
-> > > directory is. If the big write is to another filesystem and another
-> > > disk, I think you won't see the same issues.
-> > 
-> > Ok, I did following test on my single SATA disk and my root filesystem
-> > is on this disk.
-> > 
-> > I dropped caches and launched firefox and monitored the time it takes
-> > for firefox to start. (cache cold).
-> > 
-> > And my results are reverse of what you have been seeing. With
-> > sync_file_range() running, firefox takes roughly 30 seconds to start and
-> > with flusher in operation, it takes roughly 20 seconds to start. (I have
-> > approximated the average of 3 runs for simplicity).
-> > 
-> > I think it is happening because sync_file_range() will send all
-> > the writes as SYNC and it will compete with firefox IO. On the other
-> > hand, flusher's IO will show up as ASYNC and CFQ  will be penalize it
-> > heavily and firefox's IO will be prioritized. And this effect should
-> > just get worse as more processes do sync_file_range().
-> > 
-> > So write-behind should provide better interactivity if writes submitted
-> > are ASYNC and not SYNC.
+On Wed, 2012-06-06 at 18:42 +0100, Matthew Garrett wrote:
+> On Wed, Jun 06, 2012 at 11:32:36AM -0600, Khalid Aziz wrote:
 > 
-> Hi Vivek, thanks for testing all of these out! The result is
-> definitely interesting and a surprise: we overlooked the SYNC nature
-> of sync_file_range().
+> > Do we agree that if device shutdown routine cleanly shuts down all I/O,
+> > clearing PCI Bus Mster bit should be safe?
 > 
-> I'd suggest to use these calls to achieve the write-and-drop-behind
-> behavior, *with* WB_SYNC_NONE:
+> In the absence of hardware that dislikes the bus master bit ever being 
+> disabled, yes. Do we know if hardware is ever tested in that situation?
+
+I will wait for device vendors to comment on that. I can't claim I have
+tested more than a few devices that way.
+
 > 
->         posix_fadvise(fd, offset, len, POSIX_FADV_DONTNEED);
->         sync_file_range(fd, offset, len, SYNC_FILE_RANGE_WAIT_AFTER);
+> > If yes, then we only have to deal with broken devices. So the approach 
+> > could be to disable Bus Master bit unless the device ID matches a 
+> > blacklist which we update as we find broken devices. I really don't 
+> > like the idea of maintaining blacklists in the kernel for such things 
+> > but is that a more practical approach? If blacklist does not sound 
+> > good, maybe we can ask drivers to tell PCI subsystem if they are not 
+> > ok with clearing Bus Master bit and then PCI subsystem could skip 
+> > those devices.
 > 
-> The caveat is, the below bdi_write_congested() will never evaluate to
-> true since we are only filling the request queue with 8MB data.
+> Or we could just put responsibility on the drivers to ensure that the 
+> hardware won't continue doing any DMA, either by shutting down the 
+> engines or clearing the bit.
 > 
-> SYSCALL_DEFINE(fadvise64_64):
-> 
->         case POSIX_FADV_DONTNEED:
->                 if (!bdi_write_congested(mapping->backing_dev_info))
->                         __filemap_fdatawrite_range(mapping, offset, endbyte,
->                                                    WB_SYNC_NONE);
 
-Hi Fengguang,
+I assume device shutdown routine should stop all I/O and shutting down
+DMA engine. Disabling Bus Master bit is just an extra measure of safety.
+I do like the idea of disabling Bus Master bit in device shutdown
+routine. After all, drivers know their hardware best. On the other hand,
+it is change to lots of driver code to implement this which means it
+will end up happening slowly over period of time. I don't mind doing the
+work up front on a good number of drivers I feel comfortable modifying.
+I am ok with pulling out code to clear bus master bit from PCI subsystem
+and replacing it with modified shutdown routines for a few drivers to
+start with.
 
-Instead of above, I modified sync_file_range() to call __filemap_fdatawrite_range(WB_SYNC_NONE) and I do see now ASYNC writes showing up at elevator.
+Does any one see any other issues with modifying driver shutdown
+routines for disabling Bus Master bit? Bjorn, any opinions?
 
-With 4 processes doing sync_file_range() now, firefox start time test
-clocks around 18-19 seconds which is better than 30-35 seconds of 4
-processes doing buffered writes. And system looks pretty good from
-interactivity point of view.
+====================================================================
+Khalid Aziz                                         Unix Systems Lab
+(970)898-9214                                        Hewlett-Packard
+khalid.aziz@hp.com                                  Fort Collins, CO
 
-Thanks
-Vivek
-
-Following is the patch I applied to test.
-
----
- fs/sync.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-Index: linux-2.6/fs/sync.c
-===================================================================
---- linux-2.6.orig/fs/sync.c	2012-06-06 00:12:33.000000000 -0400
-+++ linux-2.6/fs/sync.c	2012-06-06 23:11:17.050691776 -0400
-@@ -342,7 +342,7 @@ SYSCALL_DEFINE(sync_file_range)(int fd, 
- 	}
- 
- 	if (flags & SYNC_FILE_RANGE_WRITE) {
--		ret = filemap_fdatawrite_range(mapping, offset, endbyte);
-+		ret = __filemap_fdatawrite_range(mapping, offset, endbyte, WB_SYNC_NONE);
- 		if (ret < 0)
- 			goto out_put;
- 	}
