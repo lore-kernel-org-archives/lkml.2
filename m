@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758735Ab2FFV2s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 17:28:48 -0400
-Received: from www.linutronix.de ([62.245.132.108]:52067 "EHLO
+	id S1758816Ab2FFV3A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 17:29:00 -0400
+Received: from www.linutronix.de ([62.245.132.108]:52063 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758526Ab2FFV1Q (ORCPT
+	with ESMTP id S1756395Ab2FFV1Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 6 Jun 2012 17:27:16 -0400
-Message-Id: <20120606212334.773764908@linutronix.de>
+Message-Id: <20120606212334.710908084@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Wed, 06 Jun 2012 21:27:15 -0000
+Date: Wed, 06 Jun 2012 21:27:14 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Tony Luck <tony.luck@intel.com>, Borislav Petkov <borislav.petkov@amd.com>,
         Chen Gong <gong.chen@linux.intel.com>, x86@kernel.org,
         Peter Zijlstra <peterz@infradead.org>
-Subject: [patch 5/6] x86: mce: Remove the frozen cases in the hotplug code
+Subject: [patch 4/6] x86: mce: Split timer init
 References: <20120606211746.693649684@linutronix.de>
-Content-Disposition: inline; filename=x86-mce-remove-frozen-cases.patch
+Content-Disposition: inline; filename=x86-mce-split-timer-init.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -25,78 +25,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No point in having double cases if we can simply mask the FROZEN bit
-out.
+Split timer init function into the init and the start part, so the
+start part can replace the open coded version in CPU_DOWN_FAILED.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/x86/kernel/cpu/mcheck/mce.c     |   12 +++++-------
- arch/x86/kernel/cpu/mcheck/mce_amd.c |    6 ++----
- 2 files changed, 7 insertions(+), 11 deletions(-)
+ arch/x86/kernel/cpu/mcheck/mce.c |   25 +++++++++++++------------
+ 1 file changed, 13 insertions(+), 12 deletions(-)
 
 Index: tip/arch/x86/kernel/cpu/mcheck/mce.c
 ===================================================================
 --- tip.orig/arch/x86/kernel/cpu/mcheck/mce.c
 +++ tip/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -2260,34 +2260,32 @@ mce_cpu_callback(struct notifier_block *
- 	unsigned int cpu = (unsigned long)hcpu;
- 	struct timer_list *t = &per_cpu(mce_timer, cpu);
- 
--	switch (action) {
-+	switch (action & ~CPU_TASKS_FROZEN) {
- 	case CPU_UP_PREPARE:
--	case CPU_UP_PREPARE_FROZEN:
- 		mce_device_create(cpu);
- 		if (threshold_cpu_callback)
- 			threshold_cpu_callback(action, cpu);
- 		break;
- 	case CPU_DEAD:
--	case CPU_DEAD_FROZEN:
- 		if (threshold_cpu_callback)
- 			threshold_cpu_callback(action, cpu);
- 		mce_device_remove(cpu);
- 		break;
- 	case CPU_DOWN_PREPARE:
--	case CPU_DOWN_PREPARE_FROZEN:
- 		del_timer_sync(t);
- 		smp_call_function_single(cpu, mce_disable_cpu, &action, 1);
- 		break;
- 	case CPU_DOWN_FAILED:
--	case CPU_DOWN_FAILED_FROZEN:
- 		smp_call_function_single(cpu, mce_reenable_cpu, &action, 1);
- 		mce_start_timer(cpu, t);
- 		break;
--	case CPU_POST_DEAD:
-+	}
-+
-+	if (action == CPU_POST_DEAD) {
- 		/* intentionally ignoring frozen here */
- 		cmci_rediscover(cpu);
--		break;
+@@ -1554,23 +1554,28 @@ static void __mcheck_cpu_init_vendor(str
  	}
-+
- 	return NOTIFY_OK;
  }
  
-Index: tip/arch/x86/kernel/cpu/mcheck/mce_amd.c
-===================================================================
---- tip.orig/arch/x86/kernel/cpu/mcheck/mce_amd.c
-+++ tip/arch/x86/kernel/cpu/mcheck/mce_amd.c
-@@ -748,13 +748,11 @@ static void threshold_remove_device(unsi
- static void __cpuinit
- amd_64_threshold_cpu_callback(unsigned long action, unsigned int cpu)
+-static void __mcheck_cpu_init_timer(void)
++static void mce_start_timer(unsigned int cpu, struct timer_list *t)
  {
--	switch (action) {
--	case CPU_ONLINE:
--	case CPU_ONLINE_FROZEN:
-+	switch (action & ~CPU_TASKS_FROZEN) {
-+	case CPU_UP_PREPARE:
- 		threshold_create_device(cpu);
+-	struct timer_list *t = &__get_cpu_var(mce_timer);
+ 	unsigned long iv = check_interval * HZ;
+ 
+-	setup_timer(t, mce_timer_fn, smp_processor_id());
++	__this_cpu_write(mce_next_interval, iv);
+ 
+-	if (mce_ignore_ce)
++	if (mce_ignore_ce || !iv)
+ 		return;
+ 
+-	__this_cpu_write(mce_next_interval, iv);
+-	if (!iv)
+-		return;
+ 	t->expires = round_jiffies(jiffies + iv);
+ 	add_timer_on(t, smp_processor_id());
+ }
+ 
++static void __mcheck_cpu_init_timer(void)
++{
++	struct timer_list *t = &__get_cpu_var(mce_timer);
++	unsigned int cpu = smp_processor_id();
++
++	setup_timer(t, mce_timer_fn, cpu);
++	mce_start_timer(cpu, t);
++}
++
+ /* Handle unconfigured int18 (should never happen) */
+ static void unexpected_machine_check(struct pt_regs *regs, long error_code)
+ {
+@@ -2275,12 +2280,8 @@ mce_cpu_callback(struct notifier_block *
  		break;
- 	case CPU_DEAD:
--	case CPU_DEAD_FROZEN:
- 		threshold_remove_device(cpu);
+ 	case CPU_DOWN_FAILED:
+ 	case CPU_DOWN_FAILED_FROZEN:
+-		if (!mce_ignore_ce && check_interval) {
+-			t->expires = round_jiffies(jiffies +
+-					per_cpu(mce_next_interval, cpu));
+-			add_timer_on(t, cpu);
+-		}
+ 		smp_call_function_single(cpu, mce_reenable_cpu, &action, 1);
++		mce_start_timer(cpu, t);
  		break;
- 	default:
+ 	case CPU_POST_DEAD:
+ 		/* intentionally ignoring frozen here */
 
 
