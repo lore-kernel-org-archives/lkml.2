@@ -1,105 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757073Ab2FFQWT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 12:22:19 -0400
-Received: from mail160.messagelabs.com ([216.82.253.99]:56419 "EHLO
-	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754225Ab2FFQWQ (ORCPT
+	id S1756819Ab2FFQ03 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 12:26:29 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:39229 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752879Ab2FFQ01 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 12:22:16 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-5.tower-160.messagelabs.com!1338999729!8676722!10
-X-Originating-IP: [216.166.12.69]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Ian Abbott <abbotti@mev.co.uk>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Ian Abbott <ian.abbott@mev.co.uk>,
-        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Date: Wed, 6 Jun 2012 11:22:08 -0500
-Subject: RE: [PATCH] staging: comedi: ni_mio_common.c: local functions
- should be static
-Thread-Topic: [PATCH] staging: comedi: ni_mio_common.c: local functions
- should be static
-Thread-Index: Ac1DzXq5aFk0IruMSV+hnvQQuNJj9wAMjyEA
-Message-ID: <ADE657CA350FB648AAC2C43247A983F0020698D12BFE@AUSP01VMBX24.collaborationhost.net>
-References: <201206051120.22177.hartleys@visionengravers.com>
- <4FCF2E07.1090401@mev.co.uk>
-In-Reply-To: <4FCF2E07.1090401@mev.co.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Wed, 6 Jun 2012 12:26:27 -0400
+Date: Wed, 6 Jun 2012 09:24:29 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Ming Lei <ming.lei@canonical.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        USB list <linux-usb@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] driver core: fix shutdown races with probe/remove
+Message-ID: <20120606162429.GN19601@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120606154808.GK19601@linux.vnet.ibm.com>
+ <Pine.LNX.4.44L0.1206061159020.1788-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1206061159020.1788-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12060616-6148-0000-0000-00000678EFE5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q56GMN7k011251
 
-On Wednesday, June 06, 2012 3:17 AM, Ian Abbott wrote:
-> On 2012-06-05 19:20, H Hartley Sweeten wrote:
->> Local functions should be marked static to prevent them from
->> being exposed globally.
->>
->> This quiets the following sparse warnings:
->>
->> warning: symbol 'ni_release_gpct_mite_channel' was not declared. Should it be static?
->> warning: symbol 'ni_prime_channelgain_list' was not declared. Should it be static?
->>
->> Signed-off-by: H Hartley Sweeten<hsweeten@visionengravers.com>
->> Cc: Ian Abbott<abbotti@mev.co.uk>
->> Cc: Mori Hess<fmhess@users.sourceforge.net>
->> Cc: Greg Kroah-Hartman<gregkh@linuxfoundation.org>
->>
->> ---
->>
->> diff --git a/drivers/staging/comedi/drivers/ni_mio_common.c b/drivers/staging/comedi/drivers/ni_mio_common.c
->> index fd232bc..3b3a0b1 100644
->> --- a/drivers/staging/comedi/drivers/ni_mio_common.c
->> +++ b/drivers/staging/comedi/drivers/ni_mio_common.c
->> @@ -644,7 +644,7 @@ static void ni_release_ao_mite_channel(struct comedi_device *dev)
->>   #endif /*  PCIDMA */
->>   }
->>
->> -void ni_release_gpct_mite_channel(struct comedi_device *dev,
->> +static void ni_release_gpct_mite_channel(struct comedi_device *dev,
->>   				  unsigned gpct_index)
->>   {
->>   #ifdef PCIDMA
->> @@ -1880,7 +1880,7 @@ static int ni_ai_insn_read(struct comedi_device *dev,
->>   	return insn->n;
->>   }
->
-> This results in a compiler warning about the unused function 
-> ni_release_gpct_mite_channel when compiling ni_atmio.c.  It was unused 
-> before of course, but now it is static, the compiler realizes it!
+On Wed, Jun 06, 2012 at 12:05:08PM -0400, Alan Stern wrote:
+> On Wed, 6 Jun 2012, Paul E. McKenney wrote:
+> 
+> > On Wed, Jun 06, 2012 at 11:21:52AM -0400, Alan Stern wrote:
+> > > On Wed, 6 Jun 2012, Paul E. McKenney wrote:
+> > > 
+> > > > No sane compiler would change it to a byte-at-a-time store, but the
+> > > > compiler would nevertheless be within its rights to do so.  And a quick
+> > > > review of certain LKML threads could easily cause anyone to question gcc's
+> > > > sanity.  Furthermore, the compiler is permitted to make transformations
+> > > > like the following, which it might well do to save a branch:
+> > > > 
+> > > > 	if (b)				a = 0;
+> > > > 		a = 1;			if (b)
+> > > > 	else					a = 1;
+> > > > 		a = 0;
+> > > 
+> > > The compiler would be forbidden if the original code were
+> > > 
+> > > 	if (b)
+> > > 		ACCESS_ONCE(a) = 1;
+> > > 	else
+> > > 		ACCESS_ONCE(a) = 0;
+> > > 
+> > > But if I remember correctly, the code snippet we were talking was more 
+> > > like:
+> > > 
+> > > 	if (ACCESS_ONCE(b))
+> > > 		a = 1;
+> > > 
+> > > Isn't this use of ACCESS_ONCE unnecessary?
+> > 
+> > That would depend on what else is nearby.
+> 
+> Here's the relevant part of the original patch:
+> 
+> @@ -467,6 +473,12 @@ EXPORT_SYMBOL_GPL(driver_attach);
+>  static void __device_release_driver(struct device *dev)
+>  {
+>  	struct device_driver *drv;
+> +	int idx;
+> +
+> +	idx = srcu_read_lock(&driver_srcu);
+> +
+> +	if (ACCESS_ONCE(device_shutdown_started))
+> +		goto exit;
+> 
+>  	drv = dev->driver;
+>  	if (drv) {
+> @@ -494,6 +506,8 @@ static void __device_release_driver(struct device *dev)
+>  						     dev);
+> 
+>  	}
+> +exit:
+> +	srcu_read_unlock(&driver_srcu, idx);
+>  }
 
-Ugh... c code including c code... I didn't notice that until now.
+In this case, the ACCESS_ONCE() prevents the compiler from speculatively
+executing the stuff following the "goto exit", which I freely admit is
+insane even for compiler writers.  But the documentation benefits still
+stand.
 
-> It could be fixed for now by moving the '#ifdef PCIDMA' and matching 
-> '#endif' to surround the whole function, though I guess we want to try 
-> and get rid of the #ifdef's eventually.  It's tricky because 
-> ni_mio_common.c isn't a standalone compilation unit, it's #include'd by 
-> some other .c files.  We might need to have a go at splitting it up at 
-> some point.
+> > There are some limitations because volatile accesses are not allowed to
+> > move past "sequence points", but it would be possible to come up with
+> > similar examples.  This sort of thing is why C1x has a memory model and
+> > why it allows variables to be designated as needing to be SMP-safe.
+> 
+> Almost certainly the kernel won't use this facility.  Or else it will 
+> just require that _all_ global variables be SMP-safe.
 
-The ni_mio_common.c file should just get turned into a library module.
+I will reserve judgment until after I see what effect requiring all
+globals to be SMP-safe has on code generation.  ;-)
 
-Right now it's a bit of a mess. The individual drivers define PCIDMA
-before including ni_mio_common.c. The only one that sets the define
-is ni_pcimio but it's also included by ni_atmio and ni_mio_cs.
+							Thanx, Paul
 
-I'll look it over and see what might be done to fix it.
-
-Regards,
-Hartley
-
-
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
