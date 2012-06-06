@@ -1,138 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757249Ab2FFQpy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 12:45:54 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:55235 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755019Ab2FFQpw (ORCPT
+	id S1757289Ab2FFQuK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 12:50:10 -0400
+Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:3897 "EHLO
+	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754923Ab2FFQuI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 12:45:52 -0400
-Message-ID: <4FCF8936.5030909@linux.vnet.ibm.com>
-Date: Wed, 06 Jun 2012 22:15:42 +0530
-From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Dave Hansen <dave@linux.vnet.ibm.com>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, "Tomas M." <tmezzadra@gmail.com>,
-        Ferenc Wagner <wferi@niif.hu>, Arnd Bergmann <arnd@arndb.de>,
-        Len Brown <len.brown@intel.com>, Kevin Hilman <khilman@ti.com>,
-        Arjan van de Ven <arjan@linux.intel.com>, Jean Pihet <j-pihet@ti.com>,
-        Trinabh Gupta <g.trinabh@gmail.com>,
-        linux-pm@lists.linux-foundation.org,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        preeti@linux.vnet.ibm.com
-Subject: Re: Suspend/resume regressions on Lenovo S10-3
-References: <4FC2DA8C.7050401@linux.vnet.ibm.com> <4FCF5249.2070600@linux.vnet.ibm.com> <201206061543.03537.rjw@sisk.pl>
-In-Reply-To: <201206061543.03537.rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 6 Jun 2012 12:50:08 -0400
+Message-ID: <1339001406.2763.49.camel@lorien2>
+Subject: [PATCH RFC] iommu/amd: Fix missing iommu_shutdown initialization in
+ passthrough mode
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: joerg.roedel@amd.com
+Cc: iommu@lists.linux-foundation.org, LKML <linux-kernel@vger.kernel.org>,
+        Shuah Khan <shuah.khan@hp.com>
+Date: Wed, 06 Jun 2012 10:50:06 -0600
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-x-cbid: 12060616-3864-0000-0000-00000337433F
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/06/2012 07:13 PM, Rafael J. Wysocki wrote:
+Change AMD iommu driver to call disable iommus in pass-through mode. AMD
+iommu driver's amd_iommu_init() routine doesn't initialize iommu_shutdown
+in pass-through mode. As a result iommu disable via a call to disable_iommus()
+doesn't happen at shutdown. Enable and disable of iommus is inconsistent in
+pass-through mode. IOMMU is enabled, but not disabled. IOMMU disable is called
+from error legs in amd_iommu_init() in pass-through mode.
 
-> On Wednesday, June 06, 2012, Deepthi Dharwar wrote:
->> On 05/28/2012 07:23 AM, Dave Hansen wrote:
->>
->>> I have a Lenovo S10-3 Atom netbook.  It's always had some amount of
->>> trouble working with the intel_idle driver, so I usually compile that
->>> out an use the acpi one.  However, just after 3.1, suspend/resume broke.
->>>  'echo mem > /sys/power/state' would hang before suspending.  I bisected
->>> it down to the commits around:
->>>
->>> 	e978aa7d7d57d04eb5f88a7507c4fb98577def77 / v3.1-1-ge978aa7
->>>
->>> by Deepthi.  But, current mainline (v3.4-07644-g07acfc2) hangs with a
->>> different symptom: it suspends, but hangs on resume from suspend.  I
->>> think _that_ delta in the behavior was caused by:
->>>
->>> 	3439a8da16bcad6b0982ece938c9f8299bb53584
->>>
->>>         ACPI / cpuidle: Remove acpi_idle_suspend (to fix suspend
->>> 		regression)
->>>
->>> It's a bit of a pain to bisect these two different things in parallel.
->>> I was trying to tell git bisect 'good' on working suspend/resume, 'bad'
->>> on the hang during resume, and 'skip' on the hangs _during_ suspend.  83
->>> kernels in, I'm not sure that's working very well. :)
->>>
->>> Deepthi, do you have any idea why your patches broke me in the first
->>> place?  Perhaps we should fix that regression first before we go on and
->>> try to figure out what changed to let it suspend again, but break later.
->>
->>
->> Hi Dave,
->>
->> Sorry about my patches breaking your suspend-resume.
->>
->> I, basically tried out building and booting 3.1 kernel with 
->> my patch set to reproduce the failure. I could clearly
->> see suspend not happening. It turns out to be 
->> a bug with my first patch in global registration
->> series submitted earlier.
->>
->> e978aa7d7d57d04eb5f88a7507c4fb98577def77 / v3.1-1-ge978aa7
->>
->> The following patch, fixes the suspend issues
->> seen on my laptop due to earlier cpuidle cleanup 
->> (Lenevo T420 booting with acpi_idle enabled). 
->> Can you please give this a try
->> on top of my patch set (without Rafael's fix) 
->> and see if it fixes the problem for you. 
->> I am not reverting acpi_idle_suspend flag and 
->> hopefully it should resume fine too. 
->>
->> ---
->>
->> This patch fixes suspend-resume issue seen in the kernel 3.1
->> series using acpi_idle_driver because of cpuidle global 
->> registration cleanup.
->> Here, when acpi_idle_suspend flag was set ( during suspend)
->> the interrupts were not getting enabled in acpi_idle_enter_bm()
->> routine which was causing the system to hang.
->>
->>
->> Signed-off-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
->>
->> ---
->>  drivers/acpi/processor_idle.c |    3 ++-
->>  1 files changed, 2 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
->> index 24fe3af..6e35293 100644
->> --- a/drivers/acpi/processor_idle.c
->> +++ b/drivers/acpi/processor_idle.c
->> @@ -895,8 +895,9 @@ static int acpi_idle_enter_bm(struct cpuidle_device *dev,
->>  	if (unlikely(!pr))
->>  		return -EINVAL;
->>  
->> -
->>  	if (acpi_idle_suspend) {
->> +		local_irq_disable();
->> +		local_irq_enable();
->>  		cpu_relax();
->>  		return -EINVAL;
->>  	}
-> 
-> May I say this is ugly?  Why can't we track the status of interrupts
-> properly here?
+Requesting for comments as I don't have access to AMD system that supports
+IOMMU. I tested the change on AMD platforms with GART IOMMU which is not
+sufficient.
+
+Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+---
+ drivers/iommu/amd_iommu_init.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
+index c567903..1d8ab7f 100644
+--- a/drivers/iommu/amd_iommu_init.c
++++ b/drivers/iommu/amd_iommu_init.c
+@@ -1644,6 +1644,8 @@ static int __init amd_iommu_init(void)
+ 
+ 	amd_iommu_init_api();
+ 
++	x86_platform.iommu_shutdown = disable_iommus;
++
+ 	if (iommu_pass_through)
+ 		goto out;
+ 
+@@ -1652,8 +1654,6 @@ static int __init amd_iommu_init(void)
+ 	else
+ 		printk(KERN_INFO "AMD-Vi: Lazy IO/TLB flushing enabled\n");
+ 
+-	x86_platform.iommu_shutdown = disable_iommus;
+-
+ out:
+ 	return ret;
+ 
+-- 
+1.7.9.5
 
 
-
-I agree. Just the irq_enable call should do the trick.
-Once the cpu enters idle via cpu_idle call, irqs are disabled. We
-need to enable them if acpi_idle_suspend is set.
-Else we'll see a hang during suspend.
-
-The patch that was posted was just for workaround patch.
-I shall do some more testing with just irq_enable call
-and then shall post the fix which can be considered
-for inclusion.
-
-Cheers
-Deepthi
 
