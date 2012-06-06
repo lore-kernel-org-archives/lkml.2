@@ -1,99 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752062Ab2FFC1Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 22:27:16 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55541 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752450Ab2FFC1I convert rfc822-to-8bit (ORCPT
+	id S1752906Ab2FFC3t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 22:29:49 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59714 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752382Ab2FFC3s convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 22:27:08 -0400
+	Tue, 5 Jun 2012 22:29:48 -0400
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1206051256130.1542-100000@iolanthe.rowland.org>
-References: <CACVXFVMdidqhFE1AhenUi8VXbYhac492YdxsvPmVqcwmo=TrcA@mail.gmail.com>
-	<Pine.LNX.4.44L0.1206051256130.1542-100000@iolanthe.rowland.org>
-Date: Wed, 6 Jun 2012 10:27:04 +0800
-Message-ID: <CACVXFVPjQmvmXnYNm4sSjJXq83qe-Xg8=YjRppSNMpUQYLokjQ@mail.gmail.com>
-Subject: Re: [PATCH] driver core: fix shutdown races with probe/remove
-From: Ming Lei <ming.lei@canonical.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        USB list <linux-usb@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <20120606021436.GA10714@mcarlson.broadcom.com>
+References: <alpine.DEB.2.01.1206041546070.5568@trent.utfs.org>
+	<20120606010255.GA9991@mcarlson.broadcom.com>
+	<CABawtvPE_xuamH2ysL8x0WsJMXdFV5oXPrWjMT-EC-DF_kCxxw@mail.gmail.com>
+	<20120606021436.GA10714@mcarlson.broadcom.com>
+Date: Wed, 6 Jun 2012 10:29:47 +0800
+Message-ID: <CABawtvNVKkxAgrQqJS7FJGoswQ9ZVyJcHcNwbSJQk4yscTn8gw@mail.gmail.com>
+Subject: Re: tg3: transmit timed out, resetting
+From: ethan zhao <ethan.kernel@gmail.com>
+To: Matt Carlson <mcarlson@broadcom.com>
+Cc: Christian Kujau <lists@nerdbynature.de>,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 6, 2012 at 1:09 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
+So no way to fix it via firmware update or Linux driver ? :<
 
->> After device_shutdown() has been called, the whole system will enter power down
->> or reset later, so it doesn't matter if who should manage the device.
+On Wed, Jun 6, 2012 at 10:14 AM, Matt Carlson <mcarlson@broadcom.com> wrote:
+> Hi Ethan.  This device does not have any special firmware (beyond
+> bootcode).  It shouldn't be necessary to disable any of the device's
+> features if it is working correctly.
 >
-> Maybe.  But there might be quite some time between the shutdown call
-> and the eventual power-off or reboot.
-
-Between device_shutdown and machine_halt, there is only syscore_shutdown left
-to complete, so no much time is involved.
-
+> Thanks for the debugging output.  The tg3_stop_block() timeouts mean
+> that (a portion of) the chip is stuck somehow.  Later drivers output a lot
+> more information than this.  The additional information can help answer a
+> lot of questions in a short period of time.  I was hoping I could
+> accomplish a lot more in fewer emails if I have more data available. :)
 >
-> On the whole, it might be easier just to hold the device lock during
-> the shutdown call.
-
-Yes, it is easier, but it is not efficient because there are very less
-drivers which implemented .shutdown callback. Suppose there are some
-drivers which have no .shutdown but are holding device lock,  extra
-time will be consumed in the lock acquiring, which may slow down 'power
-down'.
-
->
->> >> @@ -1803,6 +1806,9 @@ void device_shutdown(void)
->> >>  {
->> >>       struct device *dev;
->> >>
->> >> +     ACCESS_ONCE(device_shutdown_started) = 1;
->> >
->> > This does not need to be ACCESS_ONCE.  ACCESS_ONCE is needed only in
->> > situations where the compiler might insert multiple reads or writes.
+> On Wed, Jun 06, 2012 at 09:58:42AM +0800, ethan zhao wrote:
+>> Saw many similar bugs report by simply google,
+>> The root cause of this issue may be related to  Broadcom tg3 firmware
+>> and the version of tg3 hardware, so I think it is hard to get fix in
+>> Linux driver. better way is get another NIC, or disable some its
+>> feature to workaround if we got what feature block it (tso ? sg ? ).
 >>
->> I have talked with Paul about the ACCESS_ONCE, and Paul thought it is needed
->> to prevent the compiler from doing byte-at-a-time stores.
->
-> Why on earth would a compiler change this into a byte-at-a-time store?
-> And even if it did, what problem would that cause?  Only one of the
-> bytes would be different from the original value.
-
-Maybe Paul can answer the question...
-
->
->> Maybe Paul has a detailed explanation about it.
->
->> >>  static int really_probe(struct device *dev, struct device_driver *drv)
->> >>  {
->> >>       int ret = 0;
->> >> +     int idx;
->> >>
->> >> +     idx = srcu_read_lock(&driver_srcu);
->> >>       atomic_inc(&probe_count);
->> >> +     if (ACCESS_ONCE(device_shutdown_started))
->> >
->> > This doesn't need to be ACCESS_ONCE either.  If it would make you feel
+>> Some debugging messages from other guys:
 >>
->> Because the global variable of device_shutdown_started is not changed inside
->> the function, the compiler may put the above line after the line of
->> 'dev->driver = drv',
+>> [ 3538.223529] tg3 0000:01:08.0: eth1: transmit timed out, resetting
+>> [ 3538.229698] tg3 0000:01:08.0: eth1: DEBUG: MAC_TX_STATUS[00000008]
+>> MAC_RX_STATUS[00000008]
+>> [ 3538.236001] tg3 0000:01:08.0: eth1: DEBUG: RDMAC_STATUS[00000000]
+>> WDMAC_STATUS[00000000]
+>> [ 3538.343602] tg3 0000:01:08.0: tg3_stop_block timed out, ofs=1800 enable_bit=2
+>> [ 3538.449609] tg3 0000:01:08.0: tg3_stop_block timed out, ofs=c00 enable_bit=2
+>> [ 3538.555402] tg3 0000:01:08.0: tg3_stop_block timed out, ofs=4800 enable_bit=2
+>> [ 3538.692079] tg3 0000:01:08.0: eth1: Link is down
+>>
+>> We could see tg3_reset_hw()-->tg3_stop_fw()--> tg3_stop_block() timeout,
+>> so the response of firmware is not right.
+>>
+>> Just my 2 cents.
+>>
+>> Ethan
+>>
+>>
+>> On Wed, Jun 6, 2012 at 9:02 AM, Matt Carlson <mcarlson@broadcom.com> wrote:
+>> > I'm attempting to reproduce this in our lab. ?In the meantime,
+>> > the latest revisions of the driver output a register dump and some
+>> > additional information when transmit timeouts happen. ?It would be
+>> > useful to see that data. ?Would it be possible to try a the latest
+>> > kernels and get this information?
+>> >
+>> > On Mon, Jun 04, 2012 at 04:14:30PM -0700, Christian Kujau wrote:
+>> >> Hi,
+>> >>
+>> >> on this Ideapad S10 the onboard Broadcom BCM5906M prints the warning
+>> >> below, once. From then on, the "transmit timed out, resetting" message
+>> >> repeats, every now and then.
+>> >>
+>> >> This laptop is mounting 2 readonly NFS shares from a box in the same LAN
+>> >> and when scanning lots of files on these NFS shares, the transmit timeouts
+>> >> occur more often, I think. When there's sequential traffic (i.e. reading
+>> >> larger files from the NFS shares), fewer warnings occur. But this is just
+>> >> manual observation, I haven't been able to reproduce this reliably.
+>> >> However, there's constant traffic on the device (maybe ~700KB/s both tx
+>> >> and rx), so the messages occur pretty regularly.
+>> >>
+>> >> I have reported the error against the Fedora 17 kernel [0] but it happens
+>> >> with a vanilla 3.4.0 too[1] - check out for full dmesg, .config and more.
+>> >>
+>> >> I had a similar issue a while ago[2] and almost forgot about them. The
+>> >> laptop ran Ubuntu 10.04 (2.6.32) since then and the problem was gone, so
+>> >> I'd say 2.6.32 fixed it. Now the same laptop switched to Fedora, kernel
+>> >> 3.3.4 and the problem seems to be back again.
+>> >>
+>> >> I'll try running with sg=off, as Matt suggested in [3] and report back.
+>> >>
+>> >> Thanks,
+>> >> Christian.
+>> >>
+>> >> [0] https://bugzilla.redhat.com/show_bug.cgi?id=825123
+>> >> [1] http://nerdbynature.de/bits/3.4.0/tg3/
+>> >> [2] http://lkml.indiana.edu/hypermail/linux/kernel/0906.1/00004.html
+>> >> [3] http://lkml.indiana.edu/hypermail/linux/kernel/0906.1/00317.html
+>> >>
+>> >> ------------[ cut here ]------------
+>> >> WARNING: at /opt/home/chrisk/dev/linux-2.6-git/net/sched/sch_generic.c:255
+>> >> dev_watchdog+0x1cc/0x1e0()
+>> >> Hardware name: Lenovo
+>> >> NETDEV WATCHDOG: p2p1 (tg3): transmit queue 0 timed out
+>> >> Modules linked in: acpi_cpufreq mperf freq_table nfs lockd sunrpc b43
+>> >> mac80211 cfg80211 ssb coretemp hwmon usb_storage [last unloaded: scsi_wait_scan]
+>> >> Pid: 685, comm: FahCore_78 Not tainted 3.4.0-10151-g4fc3acf #8
+>> >> Call Trace:
+>> >> ?[<c102b299>] ? warn_slowpath_common+0x79/0xb0
+>> >> ?[<c12d54ec>] ? dev_watchdog+0x1cc/0x1e0
+>> >> ?[<c12d54ec>] ? dev_watchdog+0x1cc/0x1e0
+>> >> ?[<c102b374>] ? warn_slowpath_fmt+0x34/0x40
+>> >> ?[<c12d54ec>] ? dev_watchdog+0x1cc/0x1e0
+>> >> ?[<c12d5320>] ? pfifo_fast_dequeue+0xe0/0xe0
+>> >> ?[<c1035cf1>] ? run_timer_softirq+0xd1/0x1d0
+>> >> ?[<c1031615>] ? __do_softirq+0x75/0x100
+>> >> ?[<c10315a0>] ? remote_softirq_receive+0x20/0x20
+>> >> ?<IRQ> ?[<c10318a6>] ? irq_exit+0x66/0x90
+>> >> ?[<c101b8d9>] ? smp_apic_timer_interrupt+0x59/0x90
+>> >> ?[<c1360b35>] ? apic_timer_interrupt+0x31/0x38
+>> >> ?[<c1360000>] ? rt_mutex_trylock+0x70/0x70
+>> >> ---[ end trace 9de668a859ee5d6c ]---
+>> >> tg3 0000:02:00.0: p2p1: transmit timed out, resetting
+>> >>
+>> >>
+>> >> --
+>> >> BOFH excuse #438:
+>> >>
+>> >> sticky bit has come loose
+>> >>
+>> >
+>> > --
+>> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> > the body of a message to majordomo@vger.kernel.org
+>> > More majordomo info at ?http://vger.kernel.org/majordomo-info.html
+>> > Please read the FAQ at ?http://www.tux.org/lkml/
+>>
 >
-> No, it can't do that.  If the compiler moved this read farther down,
-> and as a result the CPU wrote to dev->driver when it shouldn't have,
-> the result would be incorrect (i.e., different from what would have
-> happened if the statement hadn't been moved).  Hence the compiler is
-> prohibited from making such an optimization.
-
-There are some similar examples(check on global variable is moved) with
-ACCESS_ONCE usage in Documentation/atomic_ops.txt. (from line 88)
-
-
-Thanks,
---
-Ming Lei
