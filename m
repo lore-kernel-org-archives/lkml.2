@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758935Ab2FFVmi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 17:42:38 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:45694 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758838Ab2FFVlz (ORCPT
+	id S1758969Ab2FFVmx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 17:42:53 -0400
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:33775 "EHLO
+	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758736Ab2FFVlz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 6 Jun 2012 17:41:55 -0400
-Date: Wed, 6 Jun 2012 23:42:19 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
-        Chen Gong <gong.chen@linux.intel.com>, x86@kernel.org,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [patch 1/6] x86: mce: Create devices in CPU_UP_PREPARE
-Message-ID: <20120606214219.GC6841@aftab.osrc.amd.com>
-References: <20120606211746.693649684@linutronix.de>
- <20120606212334.513459224@linutronix.de>
- <alpine.LFD.2.02.1206062337310.3086@ionos>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1206062337310.3086@ionos>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-IronPort-AV: E=Sophos;i="4.75,726,1330902000"; 
+   d="scan'208";a="161655288"
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Brett Rudley <brudley@broadcom.com>
+Cc: kernel-janitors@vger.kernel.org, Roland Vossen <rvossen@broadcom.com>,
+        Arend van Spriel <arend@broadcom.com>,
+        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
+        Kan Yan <kanyan@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, joe@perches.com,
+        Julia Lawall <julia@diku.dk>
+Subject: [PATCH 5/7] drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c: adjust suspicious bit operation
+Date: Wed,  6 Jun 2012 23:41:39 +0200
+Message-Id: <1339018901-28439-6-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1339018901-28439-1-git-send-email-Julia.Lawall@lip6.fr>
+References: <1339018901-28439-1-git-send-email-Julia.Lawall@lip6.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 06, 2012 at 11:38:11PM +0200, Thomas Gleixner wrote:
-> On Wed, 6 Jun 2012, Thomas Gleixner wrote:
-> 
-> > This makes the treshold_cpu_callback for AMD actually work and makes
-> > the code symetric vs. teardown.
-> 
-> Ignore that. I sent out the wrong version of this lot. Sorry for the noise
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-By this you mean the chunk at the end of 5/6, right?
+IRQF_TRIGGER_HIGH is 0x00000004, so it seems that & was intended rather than |.
 
-There's a chunk touching amd_64_threshold_cpu_callback...
+This problem was found using Coccinelle (http://coccinelle.lip6.fr/).
 
--- 
-Regards/Gruss,
-Boris.
+Signed-off-by: Julia Lawall <julia@diku.dk>
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+---
+ drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c b/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c
+index e2480d1..bed208f 100644
+--- a/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c
++++ b/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c
+@@ -91,7 +91,7 @@ int brcmf_sdio_intr_register(struct brcmf_sdio_dev *sdiodev)
+ 
+ 	/* redirect, configure ane enable io for interrupt signal */
+ 	data = SDIO_SEPINT_MASK | SDIO_SEPINT_OE;
+-	if (sdiodev->irq_flags | IRQF_TRIGGER_HIGH)
++	if (sdiodev->irq_flags & IRQF_TRIGGER_HIGH)
+ 		data |= SDIO_SEPINT_ACT_HI;
+ 	brcmf_sdio_regwb(sdiodev, SDIO_CCCR_BRCM_SEPINT, data, &ret);
+ 
+
