@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753940Ab2FFPKU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 11:10:20 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39754 "EHLO
+	id S1756173Ab2FFPKb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 11:10:31 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39760 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752173Ab2FFPKS (ORCPT
+	with ESMTP id S1752847Ab2FFPK3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 11:10:18 -0400
-Date: Wed, 6 Jun 2012 08:09:11 -0700
+	Wed, 6 Jun 2012 11:10:29 -0400
+Date: Wed, 6 Jun 2012 08:10:03 -0700
 From: tip-bot for Oleg Nesterov <oleg@redhat.com>
-Message-ID: <tip-2c357a15491100e94de8e6105e6046ee3a71e05a@git.kernel.org>
+Message-ID: <tip-2a1bca6ff0ef8fd9b943ce2e6a8826606dc58e3f@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         torvalds@linux-foundation.org, peterz@infradead.org, ananth@in.ibm.com,
         anton@redhat.com, masami.hiramatsu.pt@hitachi.com,
@@ -18,11 +18,11 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         torvalds@linux-foundation.org, peterz@infradead.org, ananth@in.ibm.com,
         anton@redhat.com, masami.hiramatsu.pt@hitachi.com,
         srikar@linux.vnet.ibm.com, oleg@redhat.com, tglx@linutronix.de
-In-Reply-To: <20120529192759.GB8057@redhat.com>
-References: <20120529192759.GB8057@redhat.com>
+In-Reply-To: <20120529192857.GC8057@redhat.com>
+References: <20120529192857.GC8057@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] uprobes: Change read_opcode() to use FOLL_FORCE
-Git-Commit-ID: 2c357a15491100e94de8e6105e6046ee3a71e05a
+Subject: [tip:perf/core] uprobes: Introduce find_active_uprobe() helper
+Git-Commit-ID: 2a1bca6ff0ef8fd9b943ce2e6a8826606dc58e3f
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,28 +31,30 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 06 Jun 2012 08:09:17 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 06 Jun 2012 08:10:09 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2c357a15491100e94de8e6105e6046ee3a71e05a
-Gitweb:     http://git.kernel.org/tip/2c357a15491100e94de8e6105e6046ee3a71e05a
+Commit-ID:  2a1bca6ff0ef8fd9b943ce2e6a8826606dc58e3f
+Gitweb:     http://git.kernel.org/tip/2a1bca6ff0ef8fd9b943ce2e6a8826606dc58e3f
 Author:     Oleg Nesterov <oleg@redhat.com>
-AuthorDate: Tue, 29 May 2012 21:27:59 +0200
+AuthorDate: Tue, 29 May 2012 21:28:57 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
 CommitDate: Wed, 6 Jun 2012 11:30:55 +0200
 
-uprobes: Change read_opcode() to use FOLL_FORCE
+uprobes: Introduce find_active_uprobe() helper
 
-set_orig_insn()->read_opcode() should not fail if the probed
-task did mprotect() after uprobe_register(), change it to use
-FOLL_FORCE. Without FOLL_WRITE this doesn't have any "side"
-effect but allows to read the !VM_READ memory.
+No functional changes. Move the "find uprobe" code from
+handle_swbp() to the new helper, find_active_uprobe().
 
-There is another reason for this change, we are going to use
-is_swbp_at_addr() from handle_swbp() which can race with another
-thread doing mprotect().
+Note: with or without this change, the find-active-uprobe logic
+is not exactly right. We can race with another thread which
+unmaps the memory with the valid uprobe before we take
+mm->mmap_sem. We can't find this uprobe simply because
+find_vma() fails. In this case we wrongly assume that this trap
+was not caused by uprobe and send the erroneous SIGTRAP. See the
+next changes.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
@@ -61,22 +63,80 @@ Cc: Anton Arapov <anton@redhat.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20120529192759.GB8057@redhat.com
+Link: http://lkml.kernel.org/r/20120529192857.GC8057@redhat.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/events/uprobes.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ kernel/events/uprobes.c |   47 ++++++++++++++++++++++++++++-------------------
+ 1 files changed, 28 insertions(+), 19 deletions(-)
 
 diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index d0f5ec0..a0dbc87 100644
+index a0dbc87..eaf4d55 100644
 --- a/kernel/events/uprobes.c
 +++ b/kernel/events/uprobes.c
-@@ -312,7 +312,7 @@ static int read_opcode(struct mm_struct *mm, unsigned long vaddr, uprobe_opcode_
- 	void *vaddr_new;
- 	int ret;
+@@ -1489,38 +1489,47 @@ static bool can_skip_sstep(struct uprobe *uprobe, struct pt_regs *regs)
+ 	return false;
+ }
  
--	ret = get_user_pages(NULL, mm, vaddr, 1, 0, 0, &page, NULL);
-+	ret = get_user_pages(NULL, mm, vaddr, 1, 0, 1, &page, NULL);
- 	if (ret <= 0)
- 		return ret;
+-/*
+- * Run handler and ask thread to singlestep.
+- * Ensure all non-fatal signals cannot interrupt thread while it singlesteps.
+- */
+-static void handle_swbp(struct pt_regs *regs)
++static struct uprobe *find_active_uprobe(unsigned long bp_vaddr)
+ {
++	struct mm_struct *mm = current->mm;
++	struct uprobe *uprobe = NULL;
+ 	struct vm_area_struct *vma;
+-	struct uprobe_task *utask;
+-	struct uprobe *uprobe;
+-	struct mm_struct *mm;
+-	unsigned long bp_vaddr;
  
+-	uprobe = NULL;
+-	bp_vaddr = uprobe_get_swbp_addr(regs);
+-	mm = current->mm;
+ 	down_read(&mm->mmap_sem);
+ 	vma = find_vma(mm, bp_vaddr);
+ 
+-	if (vma && vma->vm_start <= bp_vaddr && valid_vma(vma, false)) {
+-		struct inode *inode;
+-		loff_t offset;
++	if (vma && vma->vm_start <= bp_vaddr) {
++		if (valid_vma(vma, false)) {
++			struct inode *inode;
++			loff_t offset;
+ 
+-		inode = vma->vm_file->f_mapping->host;
+-		offset = bp_vaddr - vma->vm_start;
+-		offset += (vma->vm_pgoff << PAGE_SHIFT);
+-		uprobe = find_uprobe(inode, offset);
++			inode = vma->vm_file->f_mapping->host;
++			offset = bp_vaddr - vma->vm_start;
++			offset += (vma->vm_pgoff << PAGE_SHIFT);
++			uprobe = find_uprobe(inode, offset);
++		}
+ 	}
+ 
+ 	srcu_read_unlock_raw(&uprobes_srcu, current->uprobe_srcu_id);
+ 	current->uprobe_srcu_id = -1;
+ 	up_read(&mm->mmap_sem);
+ 
++	return uprobe;
++}
++
++/*
++ * Run handler and ask thread to singlestep.
++ * Ensure all non-fatal signals cannot interrupt thread while it singlesteps.
++ */
++static void handle_swbp(struct pt_regs *regs)
++{
++	struct uprobe_task *utask;
++	struct uprobe *uprobe;
++	unsigned long bp_vaddr;
++
++	bp_vaddr = uprobe_get_swbp_addr(regs);
++	uprobe = find_active_uprobe(bp_vaddr);
++
+ 	if (!uprobe) {
+ 		/* No matching uprobe; signal SIGTRAP. */
+ 		send_sig(SIGTRAP, current, 0);
