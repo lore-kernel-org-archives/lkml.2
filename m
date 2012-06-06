@@ -1,142 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757246Ab2FFQHx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 12:07:53 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40512 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757031Ab2FFQHv (ORCPT
+	id S1757238Ab2FFQIo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 12:08:44 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:58049 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756937Ab2FFQIm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 12:07:51 -0400
-Date: Wed, 6 Jun 2012 09:07:27 -0700
-From: tip-bot for Oleg Nesterov <oleg@redhat.com>
-Message-ID: <tip-3a9ea0520f38def4a3915b91f82455b749f07d88@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org, ananth@in.ibm.com,
-        anton@redhat.com, masami.hiramatsu.pt@hitachi.com,
-        srikar@linux.vnet.ibm.com, tglx@linutronix.de, oleg@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org, ananth@in.ibm.com,
-        anton@redhat.com, masami.hiramatsu.pt@hitachi.com,
-        srikar@linux.vnet.ibm.com, oleg@redhat.com, tglx@linutronix.de
-In-Reply-To: <20120529192857.GC8057@redhat.com>
-References: <20120529192857.GC8057@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] uprobes: Introduce find_active_uprobe() helper
-Git-Commit-ID: 3a9ea0520f38def4a3915b91f82455b749f07d88
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 6 Jun 2012 12:08:42 -0400
+Date: Wed, 6 Jun 2012 08:49:45 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        "Yu, Fenghua" <fenghua.yu@intel.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@elte.hu>,
+        H Peter Anvin <hpa@zytor.com>,
+        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
+        "Mallick, Asit K" <asit.k.mallick@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>,
+        linux-pm <linux-pm@vger.kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [PATCH 0/6] x86/cpu hotplug: Wake up offline CPU via mwait or nmi
+Message-ID: <20120606154944.GL19601@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <3908561D78D1C84285E8C5FCA982C28F19300965@ORSMSX104.amr.corp.intel.com>
+ <1338918625.2749.29.camel@twins>
+ <alpine.LFD.2.02.1206052106440.3086@ionos>
+ <1338925756.2749.36.camel@twins>
+ <alpine.LFD.2.02.1206052153200.3086@ionos>
+ <1338931856.2749.57.camel@twins>
+ <20120605221240.GW2388@linux.vnet.ibm.com>
+ <1338972223.2749.79.camel@twins>
+ <20120606144127.GF19601@linux.vnet.ibm.com>
+ <4FCF760A.7030501@linux.intel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 06 Jun 2012 09:07:32 -0700 (PDT)
+In-Reply-To: <4FCF760A.7030501@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12060616-7606-0000-0000-000000E8E924
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3a9ea0520f38def4a3915b91f82455b749f07d88
-Gitweb:     http://git.kernel.org/tip/3a9ea0520f38def4a3915b91f82455b749f07d88
-Author:     Oleg Nesterov <oleg@redhat.com>
-AuthorDate: Tue, 29 May 2012 21:28:57 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 6 Jun 2012 17:15:17 +0200
+On Wed, Jun 06, 2012 at 08:23:54AM -0700, Arjan van de Ven wrote:
+> On 6/6/2012 7:41 AM, Paul E. McKenney wrote:
+> > On Wed, Jun 06, 2012 at 10:43:43AM +0200, Peter Zijlstra wrote:
+> >> On Tue, 2012-06-05 at 15:12 -0700, Paul E. McKenney wrote:
+> >>>> What I can't see is the isolated functional, aside from the above
+> >>>> mentioned things, that's not strictly a per-cpu property, we can have a
+> >>>> group that's isolated from the rest but not from each other.
+> >>>
+> >>> I suspect that Thomas is thinking that the CPU is so idle that it no
+> >>> longer has to participate in TLB invalidation or RCU.  (Thomas will
+> >>> correct me if I am confused.)  But Peter, is that the level of idle
+> >>> you are thinking of? 
+> >>
+> >> No, we're talking about isolated, so its very much running something.
+> > 
+> > From what I can see, if the CPU is running something, this is Thomas's
+> > "Isolated functional" state rather than his "Isolated idle" state.
+> > The isolated-idle state should not need to participate in TLB invalidation
+> > or RCU, so that the CPU never ever needs to wake up while in the
+> > isolated-idle state.
+> 
+> btw TLB invalidation I think is a red herring in this discussion
+> (other than "global PTEs" kind of kernel pte changes);
+> at least on x86 this is not happening for a long time; if a CPU is
+> really idle (which means the CPU internally flushes the tlbs anyway),
+> Linux also switches to the kernel PTE set so there's no need for a flush
+> later on.
 
-uprobes: Introduce find_active_uprobe() helper
+Right, as I understand it, only unmappings in the kernel address space
+would need to IPI an idle CPU.  But this is still a source of IPIs that
+could wake up the CPU, correct?
 
-No functional changes. Move the "find uprobe" code from
-handle_swbp() to the new helper, find_active_uprobe().
+							Thanx, Paul
 
-Note: with or without this change, the find-active-uprobe logic
-is not exactly right. We can race with another thread which
-unmaps the memory with the valid uprobe before we take
-mm->mmap_sem. We can't find this uprobe simply because
-find_vma() fails. In this case we wrongly assume that this trap
-was not caused by uprobe and send the erroneous SIGTRAP. See the
-next changes.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: Anton Arapov <anton@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20120529192857.GC8057@redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/events/uprobes.c |   47 ++++++++++++++++++++++++++++-------------------
- 1 files changed, 28 insertions(+), 19 deletions(-)
-
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index a0dbc87..eaf4d55 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -1489,38 +1489,47 @@ static bool can_skip_sstep(struct uprobe *uprobe, struct pt_regs *regs)
- 	return false;
- }
- 
--/*
-- * Run handler and ask thread to singlestep.
-- * Ensure all non-fatal signals cannot interrupt thread while it singlesteps.
-- */
--static void handle_swbp(struct pt_regs *regs)
-+static struct uprobe *find_active_uprobe(unsigned long bp_vaddr)
- {
-+	struct mm_struct *mm = current->mm;
-+	struct uprobe *uprobe = NULL;
- 	struct vm_area_struct *vma;
--	struct uprobe_task *utask;
--	struct uprobe *uprobe;
--	struct mm_struct *mm;
--	unsigned long bp_vaddr;
- 
--	uprobe = NULL;
--	bp_vaddr = uprobe_get_swbp_addr(regs);
--	mm = current->mm;
- 	down_read(&mm->mmap_sem);
- 	vma = find_vma(mm, bp_vaddr);
- 
--	if (vma && vma->vm_start <= bp_vaddr && valid_vma(vma, false)) {
--		struct inode *inode;
--		loff_t offset;
-+	if (vma && vma->vm_start <= bp_vaddr) {
-+		if (valid_vma(vma, false)) {
-+			struct inode *inode;
-+			loff_t offset;
- 
--		inode = vma->vm_file->f_mapping->host;
--		offset = bp_vaddr - vma->vm_start;
--		offset += (vma->vm_pgoff << PAGE_SHIFT);
--		uprobe = find_uprobe(inode, offset);
-+			inode = vma->vm_file->f_mapping->host;
-+			offset = bp_vaddr - vma->vm_start;
-+			offset += (vma->vm_pgoff << PAGE_SHIFT);
-+			uprobe = find_uprobe(inode, offset);
-+		}
- 	}
- 
- 	srcu_read_unlock_raw(&uprobes_srcu, current->uprobe_srcu_id);
- 	current->uprobe_srcu_id = -1;
- 	up_read(&mm->mmap_sem);
- 
-+	return uprobe;
-+}
-+
-+/*
-+ * Run handler and ask thread to singlestep.
-+ * Ensure all non-fatal signals cannot interrupt thread while it singlesteps.
-+ */
-+static void handle_swbp(struct pt_regs *regs)
-+{
-+	struct uprobe_task *utask;
-+	struct uprobe *uprobe;
-+	unsigned long bp_vaddr;
-+
-+	bp_vaddr = uprobe_get_swbp_addr(regs);
-+	uprobe = find_active_uprobe(bp_vaddr);
-+
- 	if (!uprobe) {
- 		/* No matching uprobe; signal SIGTRAP. */
- 		send_sig(SIGTRAP, current, 0);
