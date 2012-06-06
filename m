@@ -1,120 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756104Ab2FFK4t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 06:56:49 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:56671 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755959Ab2FFKy0 (ORCPT
+	id S1755997Ab2FFLG7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 07:06:59 -0400
+Received: from [213.199.154.142] ([213.199.154.142]:54353 "EHLO
+	db3outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1755899Ab2FFLG5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 06:54:26 -0400
-From: Sasha Levin <levinsasha928@gmail.com>
-To: konrad.wilk@oracle.com, dan.magenheimer@oracle.com
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: [PATCH 04/11] mm: frontswap: split out __frontswap_unuse_pages
-Date: Wed,  6 Jun 2012 12:55:08 +0200
-Message-Id: <1338980115-2394-4-git-send-email-levinsasha928@gmail.com>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1338980115-2394-1-git-send-email-levinsasha928@gmail.com>
-References: <1338980115-2394-1-git-send-email-levinsasha928@gmail.com>
+	Wed, 6 Jun 2012 07:06:57 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -14
+X-BigFish: VPS-14(zz98dK4015Izz1202hzz15d4Rz2dh668h839h944hd25he5bhf0ah)
+X-WSS-ID: 0M5704Q-01-2LT-02
+X-M-MSG: 
+Date: Wed, 6 Jun 2012 13:05:14 +0200
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: <dwmw2@infradead.org>, <iommu@lists.linux-foundation.org>,
+        <bhelgaas@google.com>, <benh@kernel.crashing.org>, <aik@ozlabs.ru>,
+        <david@gibson.dropbear.id.au>, <konrad.wilk@oracle.com>,
+        <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>,
+        <gregkh@linuxfoundation.org>, <ddutile@redhat.com>, <liuj97@gmail.com>
+Subject: Re: [PATCH v2 0/7] IOMMU: Groups support
+Message-ID: <20120606110514.GG757@amd.com>
+References: <20120530201424.31527.33142.stgit@bling.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20120530201424.31527.33142.stgit@bling.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-An attempt at making frontswap_shrink shorter and more readable. This patch
-splits out walking through the swap list to find an entry with enough
-pages to unuse.
+On Wed, May 30, 2012 at 02:18:29PM -0600, Alex Williamson wrote:
+> v2:
+>  - Trickle down changes from pci_get_dma_source() to better handle
+>    PCI device reference counting in IOMMU driver patches
 
-Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
----
- mm/frontswap.c |   59 +++++++++++++++++++++++++++++++++++++-------------------
- 1 files changed, 39 insertions(+), 20 deletions(-)
+Okay, I looked again over the code and looks good for merging to me. The
+IOMMU Groups code depends on changes in the PCI code. We need to work
+out how to merge this.
 
-diff --git a/mm/frontswap.c b/mm/frontswap.c
-index 52b9dab..a9b76cb 100644
---- a/mm/frontswap.c
-+++ b/mm/frontswap.c
-@@ -209,6 +209,41 @@ static unsigned long __frontswap_curr_pages(void)
- 	return totalpages;
- }
- 
-+static int __frontswap_unuse_pages(unsigned long total, unsigned long *unused,
-+					int *swapid)
-+{
-+	int ret = -EINVAL;
-+	struct swap_info_struct *si = NULL;
-+	int si_frontswap_pages;
-+	unsigned long total_pages_to_unuse = total;
-+	unsigned long pages = 0, pages_to_unuse = 0;
-+	int type;
-+
-+	lockdep_assert_held(&swap_lock);
-+	for (type = swap_list.head; type >= 0; type = si->next) {
-+		si = swap_info[type];
-+		si_frontswap_pages = atomic_read(&si->frontswap_pages);
-+		if (total_pages_to_unuse < si_frontswap_pages) {
-+			pages = pages_to_unuse = total_pages_to_unuse;
-+		} else {
-+			pages = si_frontswap_pages;
-+			pages_to_unuse = 0; /* unuse all */
-+		}
-+		/* ensure there is enough RAM to fetch pages from frontswap */
-+		if (security_vm_enough_memory_mm(current->mm, pages)) {
-+			ret = -ENOMEM;
-+			continue;
-+		}
-+		vm_unacct_memory(pages);
-+		*unused = pages_to_unuse;
-+		*swapid = type;
-+		ret = 0;
-+		break;
-+	}
-+
-+	return ret;
-+}
-+
- /*
-  * Frontswap, like a true swap device, may unnecessarily retain pages
-  * under certain circumstances; "shrink" frontswap is essentially a
-@@ -219,11 +254,9 @@ static unsigned long __frontswap_curr_pages(void)
-  */
- void frontswap_shrink(unsigned long target_pages)
- {
--	struct swap_info_struct *si = NULL;
--	int si_frontswap_pages;
- 	unsigned long total_pages = 0, total_pages_to_unuse;
--	unsigned long pages = 0, pages_to_unuse = 0;
--	int type;
-+	unsigned long pages_to_unuse = 0;
-+	int type, ret;
- 	bool locked = false;
- 
- 	/*
-@@ -237,22 +270,8 @@ void frontswap_shrink(unsigned long target_pages)
- 	if (total_pages <= target_pages)
- 		goto out;
- 	total_pages_to_unuse = total_pages - target_pages;
--	for (type = swap_list.head; type >= 0; type = si->next) {
--		si = swap_info[type];
--		si_frontswap_pages = atomic_read(&si->frontswap_pages);
--		if (total_pages_to_unuse < si_frontswap_pages) {
--			pages = pages_to_unuse = total_pages_to_unuse;
--		} else {
--			pages = si_frontswap_pages;
--			pages_to_unuse = 0; /* unuse all */
--		}
--		/* ensure there is enough RAM to fetch pages from frontswap */
--		if (security_vm_enough_memory_mm(current->mm, pages))
--			continue;
--		vm_unacct_memory(pages);
--		break;
--	}
--	if (type < 0)
-+	ret = __frontswap_unuse_pages(total_pages_to_unuse, &pages_to_unuse, &type);
-+	if (ret < 0)
- 		goto out;
- 	locked = false;
- 	spin_unlock(&swap_lock);
+Bjorn,
+
+I need the PCI changes before I can merge the IOMMU Groups code. There
+are two ways that would work for me:
+
+	a) You Ack the PCI patch-set from Alex and I put it into my tree
+	   and merge the IOMMU Group code on-top, or
+	b) You merge the PCI related patch-set into a seperate branch
+	   which you can merge into your next-branch and which I can
+	   pull in to merge IOMMU Groups on-top.
+
+Please let me know what works best for you.
+
+What I would also appreciate are a few more Acks from other IOMMU
+maintainers (David W.?) and from the Power side.
+
+
+Thanks,
+
+	Joerg
+
 -- 
-1.7.8.6
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
