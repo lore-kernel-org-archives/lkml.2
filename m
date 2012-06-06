@@ -1,62 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754984Ab2FFIYK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 04:24:10 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38494 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750862Ab2FFIYH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 04:24:07 -0400
-Message-ID: <1338971020.2749.64.camel@twins>
-Subject: RE: [PATCH 0/6] x86/cpu hotplug: Wake up offline CPU via mwait or
- nmi
-From: Peter Zijlstra <peterz@infradead.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: "Luck, Tony" <tony.luck@intel.com>, "Yu, Fenghua" <fenghua.yu@intel.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@elte.hu>,
-        H Peter Anvin <hpa@zytor.com>,
-        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
-        "Mallick, Asit K" <asit.k.mallick@intel.com>,
-        Arjan Dan De Ven <arjan@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>,
-        linux-pm <linux-pm@vger.kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Wed, 06 Jun 2012 10:23:40 +0200
-In-Reply-To: <alpine.LFD.2.02.1206052337300.3086@ionos>
-References: <1338833876-29721-1-git-send-email-fenghua.yu@intel.com>
-	    <alpine.LFD.2.02.1206042203590.3086@ionos>
-	    <1338842001.28282.135.camel@twins> <87zk8iioam.fsf@rustcorp.com.au>
-	    <1338881971.28282.150.camel@twins>
-	    <3E5A0FA7E9CA944F9D5414FEC6C7122007727023@ORSMSX105.amr.corp.intel.com>
-	   <1338912565.2749.9.camel@twins>
-	    <3E5A0FA7E9CA944F9D5414FEC6C7122007728081@ORSMSX105.amr.corp.intel.com>
-	    <1338913190.2749.10.camel@twins>
-	    <3908561D78D1C84285E8C5FCA982C28F19300965@ORSMSX104.amr.corp.intel.com>
-	  <1338918625.2749.29.camel@twins>
-	 <alpine.LFD.2.02.1206052106440.3086@ionos>
-	  <1338925756.2749.36.camel@twins>
-	 <alpine.LFD.2.02.1206052153200.3086@ionos> <1338931856.2749.57.camel@twins>
-	 <alpine.LFD.2.02.1206052337300.3086@ionos>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
+	id S1755045Ab2FFIYi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 04:24:38 -0400
+Received: from mga01.intel.com ([192.55.52.88]:39860 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754647Ab2FFIYg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 04:24:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="asc'?scan'208";a="175394642"
+Message-ID: <1338971303.6875.6.camel@sauron.fi.intel.com>
+Subject: Re: init: multi param parsing regression since 3.4
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: =?ISO-8859-1?Q?Beno=EEt_Th=E9baudeau?= 
+	<benoit.thebaudeau@advansee.com>,
+        Pawel Moll <pawel.moll@arm.com>, linux-kernel@vger.kernel.org
+Date: Wed, 06 Jun 2012 11:28:23 +0300
+In-Reply-To: <87ipf71ytx.fsf@rustcorp.com.au>
+References: <1170056063.1844670.1338571611538.JavaMail.root@advansee.com>
+	 <87ipf71ytx.fsf@rustcorp.com.au>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-9Wdb7vTTf/2Oa4WKok/G"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-06-06 at 00:09 +0200, Thomas Gleixner wrote:
-> > Well, no not like that, but I think we could do with some coupling
-> > there. Like steer active interrupts away when they keep hitting idle
-> > state.
-> 
-> That's possible, but that wants a well coordinated mechanism which
-> takes the user space steering into account.
 
-Sure, if the provided interrupt affinity mask doesn't allow this, we
-loose. But typically those are all bits set.
+--=-9Wdb7vTTf/2Oa4WKok/G
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> I'm not saying it's impossible, I'm just trying to imagine the extra
-> user space interfaces needed for that. 
+On Mon, 2012-06-04 at 14:02 +0930, Rusty Russell wrote:
+> +	printk("ubi_mtd_param_parse: val =3D %s\n", val);
+> +	WARN_ON(1);
+>  	if (!val)
+>  		return -EINVAL;
 
-None, preferably.
+Hi, please, zap this printk() and WARN_ON().
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-9Wdb7vTTf/2Oa4WKok/G
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJPzxSnAAoJECmIfjd9wqK028kQANK+tIYzFrGOgnz/jgBhieyg
+0EQbAgCqjbL+0QjX7pfV3M5JGm41iXMjn8ENqKX1o8tGaFFbO/z/WG5BS7GmdFPj
+MiZDlloD/6AEEZlvGCgGq4kBG/k2FD614xYczcF6OduCWuXNDI+vZjISCsZl4o6U
+YlsFpTwB+VQQEgcT9X40GROaJoQeDFQKysuz19sJ+4mmyCRDH1Rrbzz3OBr6RJHf
+VFReRNF/wuh/5hOG/dyfpegKAvPX/DbOHV8tNev3N5C/xpPnpM3h7BRdBpj4H3LF
+2I5lFJ17Kxl/4JGJ60RtbQukQkQuSETpFx+44Ojs4QptgFDGHQixIAXXV7Uzl3vZ
+YmsL9o5/9f73tqFUyoNR2Gb9b0E5bAG1/1PaU0xRZ4tezxzRuwFlozJvo3rd6W/M
+id8BITOSBr7QqPX38wKeQyz7/BEV1+fe3qWeZsN58AD6xtShNCg43nk9gCY3caeS
+QvFmr0NivkFh4uTIv3yTDlLo+zdLkSHc7WIW42l4pQZpyuOyzQ96QtEJDOb9DIt1
+AvQsXI8vO3h7l/t9q7KSteRaSTW3jwZ+NlURSQUn7nTfoPFQ3+8EkUBHylmZPN9j
+2wcased/wt5yiOMxhE4YtVPLoNEC/a+JOZjq/6Y8G2+uq3/fZP5gXdBsJat/fcc5
+VLx4hzdVwUJvgYH0wKH5
+=iZJB
+-----END PGP SIGNATURE-----
+
+--=-9Wdb7vTTf/2Oa4WKok/G--
+
