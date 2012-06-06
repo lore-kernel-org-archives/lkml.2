@@ -1,91 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751989Ab2FFBxF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 21:53:05 -0400
-Received: from mga03.intel.com ([143.182.124.21]:40638 "EHLO mga03.intel.com"
+	id S1752217Ab2FFBxV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 21:53:21 -0400
+Received: from mga03.intel.com ([143.182.124.21]:55891 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751239Ab2FFBxD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 21:53:03 -0400
+	id S1751239Ab2FFBxR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 21:53:17 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="108326479"
-Message-ID: <1338947674.1492.33.camel@rui.sh.intel.com>
-Subject: Re: thermal_zone trip_point_0_temp =?ISO-8859-1?Q?200=B0C?=
-From: Zhang Rui <rui.zhang@intel.com>
-To: Mark <markieb.lists.20090330@gmail.com>
-Cc: Clemens Ladisch <clemens@ladisch.de>, linux-kernel@vger.kernel.org
-Date: Wed, 06 Jun 2012 09:54:34 +0800
-In-Reply-To: <4FCCC92B.3080809@gmail.com>
-References: <CABAQT1ChtWVauLisaRk_KpN3JSWsvUXKKWDTAW6yuW-G32vmMw@mail.gmail.com>
-	  <4FC9D021.1030207@ladisch.de> <1338778611.1472.265.camel@rui.sh.intel.com>
-	 <4FCCC92B.3080809@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+   d="scan'208";a="152126041"
+Message-ID: <4FCEB7F5.7070202@linux.intel.com>
+Date: Tue, 05 Jun 2012 18:52:53 -0700
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Andi Kleen <andi@firstfloor.org>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Luck\\, Tony" <tony.luck@intel.com>,
+        "Yu\\, Fenghua" <fenghua.yu@intel.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@elte.hu>,
+        H Peter Anvin <hpa@zytor.com>,
+        "Siddha\\, Suresh B" <suresh.b.siddha@intel.com>,
+        "Mallick\\, Asit K" <asit.k.mallick@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>,
+        linux-pm <linux-pm@vger.kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [PATCH 0/6] x86/cpu hotplug: Wake up offline CPU via mwait or
+ nmi
+References: <3E5A0FA7E9CA944F9D5414FEC6C7122007727023@ORSMSX105.amr.corp.intel.com> <1338912565.2749.9.camel@twins> <3E5A0FA7E9CA944F9D5414FEC6C7122007728081@ORSMSX105.amr.corp.intel.com> <1338913190.2749.10.camel@twins> <3908561D78D1C84285E8C5FCA982C28F19300965@ORSMSX104.amr.corp.intel.com> <1338918625.2749.29.camel@twins> <alpine.LFD.2.02.1206052106440.3086@ionos> <m2ipf5jx27.fsf@firstfloor.org> <alpine.LFD.2.02.1206052305370.3086@ionos> <alpine.LFD.2.02.1206052318420.3086@ionos> <20120605231352.GF27374@one.firstfloor.org>
+In-Reply-To: <20120605231352.GF27374@one.firstfloor.org>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 一, 2012-06-04 at 10:41 -0400, Mark wrote:
-> Hi Rui,
+On 6/5/2012 4:13 PM, Andi Kleen wrote:
+>> And aside of the above requirements it should add the ability to deal
+>> with the fact that aside of server workloads this needs to be able to
+>> cope with appplications in the embedded/mobile space which know more
+>> about the future system state than the scheduler itself.
 > 
-> Thanks for writing;
+> Well solving world hunger in one try is hard. Baby steps are easier.
 > 
-> On 06/03/2012 10:56 PM, Zhang Rui wrote:
-> > Usually, the critical trip point value is a hard coded number provided
-> > by the BIOS.
+> What I think would be useful short term is a clean mechanism for drivers
+> to lock a interrupt onto a CPU, without irqbalanced touching it. 
+> This would be mainly for MSI-X drivers to spread their interrupts properly
+> and give better performance out of the box.
 
-This is the ASL code for critical trip point in the ACPI table,
 
-            Name (DCRT, 0x127C)
+like the IRQ_NO_BALANCING flag ? ;-)
 
-            Method (_CRT, 0, NotSerialized)
-            {
-                Return (DCRT)
-            }
 
-_CRT, the control method which OS evaluates to get the thermal critical
-trip point, returns DCRT, which is a hard coded value 0x127C. And this
-equals 473.2 K, or 200C.
-
-So I do not see ACPI thermal does anything wrong here.
-
-> 200° though, possibly the kernel should set a default upper limit, unless there's
-> a rational reason
-
-you can use module parameter thermal.crt= to override the critical trip
-point.
-But I'm not sure if kernel should set a default upper limit or not.
-Maybe we need another entry for this laptop in thermal_dmi_table.
-
-> > About fan control, it seems that there is no ACPI FAN on this machine,
-> > so the fan may be controlled either by firmware or by some platform
-> > specific driver.
-> > To make a double check, it would be great if you can refer to
-> > http://www.lesswatts.org/projects/acpi/utilities.php
-> > to get the acpidump output of this machine.
-> >
-> > thanks,
-> > rui
 > 
-> I'm tending to a similar conclusion, it looks as though that's generally the case
-> with many Aspires; there is a script for poking the hardware registers
-> http://code.google.com/p/aceracpi/source/browse/trunk/acer_ec/acer_ec.pl referred
-> to at http://www.linuxquestions.org/questions/showthread.php?p=4657451 though it
-> sounds a somewhat risky/random business without the manufacturers' specifications
-> at the ready
+> Another short term case is the power aware interrupt routing now on recent 
+> Intel CPUs.  In this case the interrupt needs logical focus to multiple CPUs 
+> and the hardware makes the decision (essentially it does power aware load 
+> balancing in hardware). Again nobody else should touch it.
+
+PAIR is hard, it sadly needs a mostly complete revamp on how Linux does
+interrupts. t
+
 > 
-> there are 2-3 symbols in the ACPI that may be relevant, FANG, FANW, possibly
-> FANU; I attach the relevant files
-> 
-FANG/FANW/FANU can be used for fan control?
-I do not know what these mean as they are not ACPI pre-defined control
-method.
-But if all the Aspires machines follow the same rule, then maybe we need
-a kernel Acer platform driver that handles this.
+> Then maybe this mechanism could be extended with a power aware 
+> software solution with some input from the load balancer like you suggested. 
 
-thanks,
-rui
-
-
+irqbalanced at least tries to be power aware.
