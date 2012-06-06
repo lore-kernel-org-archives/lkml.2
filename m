@@ -1,54 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758253Ab2FFUUE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 16:20:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51864 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757520Ab2FFUTs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 16:19:48 -0400
-Date: Wed, 6 Jun 2012 23:19:43 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Jason Wang <jasowang@redhat.com>, netdev@vger.kernel.org,
-        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Stephen Hemminger <shemminger@vyatta.com>
-Subject: Re: [PATCH] virtio-net: fix a race on 32bit arches
-Message-ID: <20120606201942.GA23405@redhat.com>
-References: <1338971724.2760.3913.camel@edumazet-glaptop>
- <1338972341.2760.3944.camel@edumazet-glaptop>
- <20120606111357.GA15070@redhat.com>
- <1338988210.2760.4485.camel@edumazet-glaptop>
- <20120606144941.GA17092@redhat.com>
- <1338995944.26966.6.camel@edumazet-glaptop>
- <20120606161715.GA17575@redhat.com>
- <1339002782.26966.22.camel@edumazet-glaptop>
- <20120606184351.GA20380@redhat.com>
- <1339013171.26966.60.camel@edumazet-glaptop>
+	id S1758115Ab2FFUWe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 16:22:34 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:34377 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756293Ab2FFUWd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 16:22:33 -0400
+Date: Wed, 6 Jun 2012 16:22:32 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Stefani Seibold <stefani@seibold.net>
+cc: linux-kernel@vger.kernel.org, <gregkh@linuxfoundation.org>,
+        <oneukum@suse.de>, <alan@lxorguk.ukuu.org.uk>,
+        <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH] fix usb skeleton driver
+In-Reply-To: <1339013986.3437.20.camel@wall-e>
+Message-ID: <Pine.LNX.4.44L0.1206061621110.1183-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339013171.26966.60.camel@edumazet-glaptop>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 06, 2012 at 10:06:11PM +0200, Eric Dumazet wrote:
-> On Wed, 2012-06-06 at 21:43 +0300, Michael S. Tsirkin wrote:
-> 
-> > 1. We are trying to look at counters for purposes of tuning the device.
-> > E.g. if ethtool reports packets and bytes, we'd like to calculate
-> > average packet size by bytes/packets.
-> > 
-> > If both counters are read atomically the metric becomes more exact.
-> > Not a must but nice to have.
-> > 
-> 
-> metrics are exact right now.
+On Wed, 6 Jun 2012, Stefani Seibold wrote:
 
-Yes, but they are not synchronised between themselves.
-E.g. you can in theory have a report where #of packets > #of bytes.
+> The reason to fix the skeleton driver was about the complains for my
+> NRPZ driver, which was based on the design of the usb skeleton driver.
+> 
+> > Going even farther, I'm not so sure it's a good idea for usb-skeleton
+> > to try supporting both synchronous and asynchronous accesses.  This
+> > adds a layer of complexity that people just don't need.  IMO it would 
+> > be better to have two separate example drivers, an easy one that is 
+> > purely synchronous and a more advanced one that is purely async.
+> > 
+> 
+> Agree, i think this would be a good idea to have to separate drivers.
+> Both should be also working drivers, for really simple hardware.
+> 
+> The best way for me to do this is to shrink later this to a simplified
+> driver. 
 
-I know there's no guarantee they are synchronised
-on an arbitrary device but if they are, without
-slowing fast path, it's nice.
+That makes sense.  Will you do it?
+
+> I think it is important to have a clean and working example. It would
+> save a lot of time for everybody and shrinks the number of round trips.
+
+How can you tell that it works?  By testing your NRPZ driver?
+
+Alan Stern
+
