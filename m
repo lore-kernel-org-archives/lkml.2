@@ -1,63 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758153Ab2FFT6z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 15:58:55 -0400
-Received: from www84.your-server.de ([213.133.104.84]:53966 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753228Ab2FFT6x (ORCPT
+	id S1758131Ab2FFUAH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 16:00:07 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:64762 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751257Ab2FFUAE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 15:58:53 -0400
-Message-ID: <1339012753.3437.2.camel@wall-e>
-Subject: Re: [PATCH 01/11] fix wrong label in skel_open
-From: Stefani Seibold <stefani@seibold.net>
-To: Oliver Neukum <oliver@neukum.org>
-Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        alan@lxorguk.ukuu.org.uk, linux-usb@vger.kernel.org
-Date: Wed, 06 Jun 2012 21:59:13 +0200
-In-Reply-To: <201206062052.57385.oliver@neukum.org>
-References: <1339000032-10313-1-git-send-email-stefani@seibold.net>
-	 <1339000032-10313-2-git-send-email-stefani@seibold.net>
-	 <201206062052.57385.oliver@neukum.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 6 Jun 2012 16:00:04 -0400
+Subject: Re: [PATCH] virtio-net: fix a race on 32bit arches
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Jason Wang <jasowang@redhat.com>, netdev@vger.kernel.org,
+        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Stephen Hemminger <shemminger@vyatta.com>
+In-Reply-To: <20120606165754.GA19357@redhat.com>
+References: <1338971724.2760.3913.camel@edumazet-glaptop>
+	 <1338972341.2760.3944.camel@edumazet-glaptop>
+	 <20120606111357.GA15070@redhat.com>
+	 <1338988210.2760.4485.camel@edumazet-glaptop>
+	 <20120606144941.GA17092@redhat.com>
+	 <1338995944.26966.6.camel@edumazet-glaptop>
+	 <20120606165754.GA19357@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 06 Jun 2012 22:00:00 +0200
+Message-ID: <1339012800.26966.53.camel@edumazet-glaptop>
 Mime-Version: 1.0
-X-Authenticated-Sender: stefani@seibold.net
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, den 06.06.2012, 20:52 +0200 schrieb Oliver Neukum:
-> Am Mittwoch, 6. Juni 2012, 18:27:02 schrieb stefani@seibold.net:
-> > From: Stefani Seibold <stefani@seibold.net>
-> 
-> Thank you for putting the effort to even split this up.
-> It makes it much easier to review.
->  
-> > Signed-off-by: Stefani Seibold <stefani@seibold.net>
-> > ---
-> >  drivers/usb/usb-skeleton.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/drivers/usb/usb-skeleton.c b/drivers/usb/usb-skeleton.c
-> > index 0616f23..a57f1d2 100644
-> > --- a/drivers/usb/usb-skeleton.c
-> > +++ b/drivers/usb/usb-skeleton.c
-> > @@ -114,7 +114,7 @@ static int skel_open(struct inode *inode, struct file *file)
-> >  
-> >  	retval = usb_autopm_get_interface(interface);
-> >  	if (retval)
-> > -		goto out_err;
-> > +		goto exit;
-> 
-> Are you removing io_mutex? If not, the correct fix is a second label
-> to drop the lock, not changing the label.  
+On Wed, 2012-06-06 at 19:57 +0300, Michael S. Tsirkin wrote:
+
+> So for virtio since all counters get incremented from bh we can
+> ensure they are read atomically, simply but reading them
+> from the correct CPU with bh disabled.
+> And then we don't need u64_stats_sync at all.
 > 
 
-You are right. The skeleton driver was not compile clean and i already
-fixted this. But due the split into smaller patches this was lost.
+Really ? How are you going to read 64bit stats from foreign cpus on
+32bit arches, without additional cost in fast path ?
 
-Anyway it will be fixed with the Patch 09/11] "Synchronize disconnect()
-handler with open() and release(), to fix races".
+You should read include/linux/u64_stats_sync.h to fully understand the
+issues.
+
 
 
