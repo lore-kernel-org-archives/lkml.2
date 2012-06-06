@@ -1,94 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756255Ab2FFOoh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 10:44:37 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:53867 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755987Ab2FFOof (ORCPT
+	id S1756278Ab2FFOoo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 10:44:44 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:56467 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753886Ab2FFOok (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 10:44:35 -0400
-X-AuditID: b753bd60-a2688ba000000655-31-4fcf6cd09cbc
-X-AuditID: b753bd60-a2688ba000000655-31-4fcf6cd09cbc
-Message-ID: <4FCF6CCC.1050808@hitachi.com>
-Date: Wed, 06 Jun 2012 23:44:28 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Wed, 6 Jun 2012 10:44:40 -0400
+Date: Wed, 6 Jun 2012 07:44:17 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, "Luck, Tony" <tony.luck@intel.com>,
+        "Yu, Fenghua" <fenghua.yu@intel.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@elte.hu>,
+        H Peter Anvin <hpa@zytor.com>,
+        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
+        "Mallick, Asit K" <asit.k.mallick@intel.com>,
+        Arjan Dan De Ven <arjan@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>,
+        linux-pm <linux-pm@vger.kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [PATCH 0/6] x86/cpu hotplug: Wake up offline CPU via mwait or nmi
+Message-ID: <20120606144417.GH19601@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <3E5A0FA7E9CA944F9D5414FEC6C7122007728081@ORSMSX105.amr.corp.intel.com>
+ <1338913190.2749.10.camel@twins>
+ <3908561D78D1C84285E8C5FCA982C28F19300965@ORSMSX104.amr.corp.intel.com>
+ <1338918625.2749.29.camel@twins>
+ <alpine.LFD.2.02.1206052106440.3086@ionos>
+ <1338925756.2749.36.camel@twins>
+ <alpine.LFD.2.02.1206052153200.3086@ionos>
+ <1338931856.2749.57.camel@twins>
+ <20120605221240.GW2388@linux.vnet.ibm.com>
+ <1338972175.2749.78.camel@twins>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Anthony Liguori <anthony@codemonkey.ws>, Borislav Petkov <bp@amd64.org>,
-        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        Grant Likely <grant.likely@secretlab.ca>, qemu-devel@nongnu.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>, systemtap@sourceware.org,
-        Joerg Roedel <joerg.roedel@amd.com>, yrl.pp-manager.tt@hitachi.com,
-        Cam Macdonell <cam@cs.ualberta.ca>,
-        Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
-Subject: Re: [Qemu-devel] [RFC PATCH 1/2] ivring: Add a ring-buffer driver
- on IVShmem
-References: <20120605104954.15442.62695.stgit@ltc189.sdl.hitachi.co.jp> <20120605130117.15479.32680.stgit@ltc189.sdl.hitachi.co.jp> <20120605131031.GF13495@aftab.osrc.amd.com> <4FCE902A.3060603@codemonkey.ws> <20120605232210.GA8858@kroah.com>
-In-Reply-To: <20120605232210.GA8858@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1338972175.2749.78.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12060614-7408-0000-0000-000005A084AD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/06/06 8:22), Greg Kroah-Hartman wrote:
-> On Wed, Jun 06, 2012 at 07:03:06AM +0800, Anthony Liguori wrote:
->> On 06/05/2012 09:10 PM, Borislav Petkov wrote:
->>> On Tue, Jun 05, 2012 at 10:01:17PM +0900, Yoshihiro YUNOMAE wrote:
->>>> This patch adds a ring-buffer driver for IVShmem device, a virtual RAM device in
->>>> QEMU. This driver can be used as a ring-buffer for kernel logging or tracing of
->>>> a guest OS by recording kernel programing or SystemTap.
->>>>
->>>> This ring-buffer driver is implemented very simple. First 4kB of shared memory
->>>> region is control structure of a ring-buffer. In this region, some values for
->>>> managing the ring-buffer is stored such as bits and mask of whole memory size,
->>>> writing position, threshold value for notification to a reader on a host OS.
->>>> This region is used by the reader to know writing position. Then, "total
->>>> memory size - 4kB" equals to usable memory region for recording data.
->>>> This ring-buffer driver records any data from start to end of the writable
->>>> memory region.
->>>>
->>>> When writing size exceeds a threshold value, this driver can notify a reader
->>>> to read data by using writel(). As this later patch, reader does not have any
->>>> function for receiving the notification. This notification feature will be used
->>>> near the future.
->>>>
->>>> As a writer records data in this ring-buffer, spinlock function is used to
->>>> avoid competing by some writers in multi CPU environment. Not to use spinlock,
->>>> lockless ring-buffer like as ftrace and one ring-buffer one CPU will be
->>>> implemented near the future.
->>>
->>> Yet another ring buffer?
->>>
->>> We already have an ftrace and perf ring buffer, can't you use one of those?
->>
->> Not to mention virtio :-)
->>
->> Why not just make a virtio device for this kind of thing?
+On Wed, Jun 06, 2012 at 10:42:55AM +0200, Peter Zijlstra wrote:
+> On Tue, 2012-06-05 at 15:12 -0700, Paul E. McKenney wrote:
+> > > RCU has similar nasties.
+> > 
+> > I am working to rid RCU of this sort of thing.  I have rcu_barrier() so
+> > that it avoids messing with CPUs that don't have callbacks, which will
+> > be almost all of the idle CPUs, especially for CONFIG_RCU_FAST_NO_HZ=y.
+> > I believe that I have also removed all of RCU's dependencies on CPU
+> > hotplug's using kstopmachine, though Murphy would say otherwise.
+> > 
+> > I still need to fix up synchronize_sched_expedited(), but that is on
+> > the list.  I considered getting rid of this one, but I am probably going
+> > to have to make synchronize_sched() map to it during boot time to keep
+> > the boot-speed demons satisfied. 
 > 
-> Yeah, that's exactly what I was thinking, why reinvent things again?
+> Not the point really. Its perfectly fine for applications in an
+> 'isolated' set to use system calls, hence they get to participate in RCU
+> state.
+> 
+> I don't think the isolation means userspace while(1) applications is
+> interesting. Sure, some people do this, and we should dtrt for them, but
+> the far more interesting case is 'regular' applications that do use
+> system calls.
 
-Agreed. Actually, we think this is just a concept prototype.
-Because of many restrictions of this device, especially for
-scalability (which Yoshihiro will give a talk in LinuxCon Japan),
-we are considering to move onto a virtio-based shmem device.
+OK, I will bite.  What are the semantics/properties for your isolated set?
 
-Afaics, it seems possible to use it virtio-ballon like way to pass
-actual pages of the guest ring buffer to host. Then the reader
-can read the pages directly from qemu.
+							Thanx, Paul
 
-Thank you,
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
