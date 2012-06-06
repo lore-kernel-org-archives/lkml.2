@@ -1,70 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757289Ab2FFQuK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 12:50:10 -0400
-Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:3897 "EHLO
-	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754923Ab2FFQuI (ORCPT
+	id S1757331Ab2FFQz4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 12:55:56 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:51323 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755913Ab2FFQzz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 12:50:08 -0400
-Message-ID: <1339001406.2763.49.camel@lorien2>
-Subject: [PATCH RFC] iommu/amd: Fix missing iommu_shutdown initialization in
- passthrough mode
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: joerg.roedel@amd.com
-Cc: iommu@lists.linux-foundation.org, LKML <linux-kernel@vger.kernel.org>,
-        Shuah Khan <shuah.khan@hp.com>
-Date: Wed, 06 Jun 2012 10:50:06 -0600
-Organization: ISS-Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 6 Jun 2012 12:55:55 -0400
+Date: Wed, 6 Jun 2012 12:55:53 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Stefani Seibold <stefani@seibold.net>
+cc: linux-kernel@vger.kernel.org, <gregkh@linuxfoundation.org>,
+        <oneukum@suse.de>, <alan@lxorguk.ukuu.org.uk>,
+        <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH] fix usb skeleton driver
+In-Reply-To: <1339000032-10313-1-git-send-email-stefani@seibold.net>
+Message-ID: <Pine.LNX.4.44L0.1206061252000.1788-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change AMD iommu driver to call disable iommus in pass-through mode. AMD
-iommu driver's amd_iommu_init() routine doesn't initialize iommu_shutdown
-in pass-through mode. As a result iommu disable via a call to disable_iommus()
-doesn't happen at shutdown. Enable and disable of iommus is inconsistent in
-pass-through mode. IOMMU is enabled, but not disabled. IOMMU disable is called
-from error legs in amd_iommu_init() in pass-through mode.
+On Wed, 6 Jun 2012 stefani@seibold.net wrote:
 
-Requesting for comments as I don't have access to AMD system that supports
-IOMMU. I tested the change on AMD platforms with GART IOMMU which is not
-sufficient.
+> From: Stefani Seibold <stefani@seibold.net>
+> 
+> This is a fix for the USB skeleton driver to bring it in shape.
+> 
+> - The usb_interface structure pointer will be no longer stored 
+> - Every access to the USB will be handled trought the usb_interface pointer
 
-Signed-off-by: Shuah Khan <shuah.khan@hp.com>
----
- drivers/iommu/amd_iommu_init.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Those two changes sound contradictory.
 
-diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
-index c567903..1d8ab7f 100644
---- a/drivers/iommu/amd_iommu_init.c
-+++ b/drivers/iommu/amd_iommu_init.c
-@@ -1644,6 +1644,8 @@ static int __init amd_iommu_init(void)
- 
- 	amd_iommu_init_api();
- 
-+	x86_platform.iommu_shutdown = disable_iommus;
-+
- 	if (iommu_pass_through)
- 		goto out;
- 
-@@ -1652,8 +1654,6 @@ static int __init amd_iommu_init(void)
- 	else
- 		printk(KERN_INFO "AMD-Vi: Lazy IO/TLB flushing enabled\n");
- 
--	x86_platform.iommu_shutdown = disable_iommus;
--
- out:
- 	return ret;
- 
--- 
-1.7.9.5
+> - Add a new bool 'connected' for signaling a disconnect (== false)
+> - Handle a non blocking read without blocking
+> - Code cleanup
+> - Synchronize disconnect() handler with open() and release(), to fix races
+> - Introduced fsync
+> - Single user mode
+> - Eliminated dead code
+> - Save some bytes in the dev structure
 
+How about simplifying the code so that it can be read by somebody who's 
+not already an expert?
 
+Alan Stern
 
