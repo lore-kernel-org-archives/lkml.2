@@ -1,34 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755363Ab2FFJYO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 05:24:14 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:42892 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751410Ab2FFJYN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 05:24:13 -0400
-Message-ID: <1338974632.2749.87.camel@twins>
-Subject: Re: [PATCH 1/2] uprobes: Pass probed vaddr to
- arch_uprobe_analyze_insn()
-From: Peter Zijlstra <peterz@infradead.org>
-To: ananth@in.ibm.com
-Cc: linuxppc-dev@lists.ozlabs.org, lkml <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>, benh@kernel.crashing.org,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Anton Blanchard <anton@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        oleg@redhat.com
-Date: Wed, 06 Jun 2012 11:23:52 +0200
-In-Reply-To: <20120606091950.GB6745@in.ibm.com>
-References: <20120606091950.GB6745@in.ibm.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1755424Ab2FFJYr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 05:24:47 -0400
+Received: from twin.jikos.cz ([89.185.236.188]:35819 "EHLO twin.jikos.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751410Ab2FFJYq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 05:24:46 -0400
+Date: Wed, 6 Jun 2012 11:24:28 +0200
+From: David Sterba <dave@jikos.cz>
+To: Asias He <asias@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        Chris Mason <chris.mason@oracle.com>, Jens Axboe <axboe@kernel.dk>,
+        jeffm@suse.com
+Subject: Re: [PATCH 1/2] btrfs: Drop unused function btrfs_abort_devices()
+Message-ID: <20120606092427.GD32402@twin.jikos.cz>
+Reply-To: dave@jikos.cz
+Mail-Followup-To: Asias He <asias@redhat.com>, linux-kernel@vger.kernel.org,
+	linux-btrfs@vger.kernel.org, Chris Mason <chris.mason@oracle.com>,
+	Jens Axboe <axboe@kernel.dk>, jeffm@suse.com
+References: <1337915422-24988-1-git-send-email-asias@redhat.com>
+ <20120528134159.GT24394@twin.jikos.cz>
+ <4FCEBDB8.800@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FCEBDB8.800@redhat.com>
+User-Agent: Mutt/1.5.21 (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-06-06 at 14:49 +0530, Ananth N Mavinakayanahalli wrote:
-> +int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm, loff_t vaddr)
+On Wed, Jun 06, 2012 at 10:17:28AM +0800, Asias He wrote:
+> Hello, Jeff
+> >This was added in 49b25e0540904be0bf558b84475c69d72e4de66e adding a
+> >transaction abort infrastructure.  I'm not sure if Jeff had some
+> >intentions with it or whether it got obsolete during the patchset long
+> >evolution, CCed.
+> 
+> Any comments?
 
-Don't we traditionally use unsigned long to pass vaddrs?
+Has been merged via the 3.5 -rc1 pull, commit
+d07eb9117050c9ed3f78296ebcc06128b52693be
+
+david
