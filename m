@@ -1,78 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756100Ab2FFK4H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 06:56:07 -0400
-Received: from mail-pb0-f66.google.com ([209.85.160.66]:44134 "EHLO
-	mail-pb0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755899Ab2FFK4E (ORCPT
+	id S1756051Ab2FFK4f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 06:56:35 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:45499 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754305Ab2FFKya (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 06:56:04 -0400
-Date: Wed, 6 Jun 2012 18:55:52 +0800
-From: Wanpeng Li <liwp.linux@gmail.com>
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>, Rob Landley <rob@landley.net>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Eric W.Biederman" <ebiederm@xmission.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        "David S. Miller" <davem@davemloft.net>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
-        David Howells <dhowells@redhat.com>,
-        James Morris <james.l.morris@oracle.com>, IngoMolnar <mingo@elte.hu>,
-        Michel Lespinasse <walken@google.com>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Wanpeng Li <liwp.linux@gmail.com>,
-        Wanpeng Li <liwp@linux.vnet.ibm.com>
-Subject: Re: [PATCH v2] remove no longer use of pdflush interface
-Message-ID: <20120606105552.GC10953@kernel>
-Reply-To: Wanpeng Li <liwp.linux@gmail.com>
-References: <1338888372-3555-1-git-send-email-liwp.linux@gmail.com>
- <20120605152845.8b633881.akpm@linux-foundation.org>
- <4FCF0740.1040204@panasas.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FCF0740.1040204@panasas.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 6 Jun 2012 06:54:30 -0400
+From: Sasha Levin <levinsasha928@gmail.com>
+To: konrad.wilk@oracle.com, dan.magenheimer@oracle.com
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Sasha Levin <levinsasha928@gmail.com>
+Subject: [PATCH 06/11] mm: frontswap: make all branches of if statement in put page consistent
+Date: Wed,  6 Jun 2012 12:55:10 +0200
+Message-Id: <1338980115-2394-6-git-send-email-levinsasha928@gmail.com>
+X-Mailer: git-send-email 1.7.8.6
+In-Reply-To: <1338980115-2394-1-git-send-email-levinsasha928@gmail.com>
+References: <1338980115-2394-1-git-send-email-levinsasha928@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 06, 2012 at 10:31:12AM +0300, Boaz Harrosh wrote:
->
->If there are many users than a self made print once is worth it
->we can use the ctl_table->data pointer for this, some thing like:
->
->int nr_pdflush_was_printed;
->
->@@ -1095,11 +1095,9 @@ static struct ctl_table vm_table[] = {
-> 		.extra1		= &zero,
-> 	},
-> 	{
->-		.procname	= "nr_pdflush_threads",
->-		.data		= &nr_pdflush_threads,
->-		.maxlen		= sizeof nr_pdflush_threads,
->-		.mode		= 0444 /* read-only*/,
->-		.proc_handler	= proc_dointvec,
->+		.data		= &nr_pdflush_was_printed,
->+		.procname       = "nr_pdflush_threads",
->+		.mode           = 0444 /* read-only */,
->+		.proc_handler   = proc_obsolete,
-> 	},
->
->
->+/* notice associated proc deprecated */
->+int proc_deprecated(struct ctl_table *table, int write,
->+		    void __user *buffer, size_t *lenp, loff_t *ppos, )
->+{
->+	if (*ctl_table->data) {
->+		printk(KERN_WARNING "%s exported in /proc is deprecated\n",
->+			table->procname);
->+		*ctl_table->data = 0;
->+	}
->+	return -ENOSYS;
->+}
+Currently it has a complex structure where different things are compared
+at each branch. Simplify that and make both branches look similar.
 
-But this time you add another variable nr_pdflush_was_printed. 
-So remove variable nr_pdflush_threads does not make sense.
+Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+---
+ mm/frontswap.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/mm/frontswap.c b/mm/frontswap.c
+index 618ef91..f2f4685 100644
+--- a/mm/frontswap.c
++++ b/mm/frontswap.c
+@@ -119,16 +119,16 @@ int __frontswap_put_page(struct page *page)
+ 		frontswap_succ_puts++;
+ 		if (!dup)
+ 			atomic_inc(&sis->frontswap_pages);
+-	} else if (dup) {
++	} else {
+ 		/*
+ 		  failed dup always results in automatic invalidate of
+ 		  the (older) page from frontswap
+ 		 */
+-		frontswap_clear(sis, offset);
+-		atomic_dec(&sis->frontswap_pages);
+-		frontswap_failed_puts++;
+-	} else {
+ 		frontswap_failed_puts++;
++		if (dup) {
++			frontswap_clear(sis, offset);
++			atomic_dec(&sis->frontswap_pages);
++		}
+ 	}
+ 	if (frontswap_writethrough_enabled)
+ 		/* report failure so swap also writes to swap device */
+-- 
+1.7.8.6
+
