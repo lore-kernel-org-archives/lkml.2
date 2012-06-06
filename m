@@ -1,46 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755571Ab2FFOix (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 10:38:53 -0400
-Received: from casper.infradead.org ([85.118.1.10]:37783 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752026Ab2FFOiw convert rfc822-to-8bit (ORCPT
+	id S1754004Ab2FFOkV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 10:40:21 -0400
+Received: from static.121.164.40.188.clients.your-server.de ([188.40.164.121]:60741
+	"EHLO smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752026Ab2FFOkU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 10:38:52 -0400
-Message-ID: <1338993524.2749.122.camel@twins>
-Subject: Re: [PATCH 5/5] perf, x86: Prefer RDPMC over RDMSR for reading
- counters
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Stephane Eranian <eranian@google.com>
-Cc: Andi Kleen <ak@linux.intel.com>, Andi Kleen <andi@firstfloor.org>,
-        linux-kernel@vger.kernel.org
-Date: Wed, 06 Jun 2012 16:38:44 +0200
-In-Reply-To: <CABPqkBQ7xwK+BjYainpxXV+D_KjMgH0KFVhYK9w89TxqQOF_MQ@mail.gmail.com>
-References: <1338944211-28275-1-git-send-email-andi@firstfloor.org>
-	 <1338944211-28275-5-git-send-email-andi@firstfloor.org>
-	 <1338979579.2749.95.camel@twins>
-	 <20120606141644.GF28225@tassilo.jf.intel.com>
-	 <1338992472.2749.116.camel@twins>
-	 <CABPqkBQ7xwK+BjYainpxXV+D_KjMgH0KFVhYK9w89TxqQOF_MQ@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Wed, 6 Jun 2012 10:40:20 -0400
+Date: Wed, 6 Jun 2012 16:40:12 +0200
+From: Sander Eikelenboom <linux@eikelenboom.it>
+Organization: Eikelenboom IT services
+X-Priority: 3 (Normal)
+Message-ID: <1482118647.20120606164012@eikelenboom.it>
+To: Kees Cook <keescook@chromium.org>
+CC: "Ted Ts'o" <tytso@mit.edu>, Linus Torvalds <torvalds@linux-foundation.org>,
+        <dm-devel@redhat.com>, <linux-ext4@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: EXT4-fs error (device dm-42): ext4_mb_generate_buddy:741: group 1904, 32254 clusters in bitmap, 32258 in gd
+In-Reply-To: <CAGXu5jK-4dO59-x3eTU10OntcPwsVptjpUzQdbbHOvy9_VBQ2A@mail.gmail.com>
+References: <471046920.20120604234941@eikelenboom.it> <20120605000356.GM29466@outflux.net> <1018371644.20120605224154@eikelenboom.it> <20120605210806.GB7182@thunk.org> <1883708187.20120606090126@eikelenboom.it> <CAGXu5jK-4dO59-x3eTU10OntcPwsVptjpUzQdbbHOvy9_VBQ2A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-06-06 at 16:33 +0200, Stephane Eranian wrote:
-> Yes, his patch did but somehow I don't see this code in tip-x86.
-> The thing that I would worry about between rdmsrl() and rdpmc()
-> is what happens to the upper bits. rdpmc() returns bits [N-1:0] of
-> the N-bit counters. N is 48 (or 40) nowadays. When you read 64 bit
-> worth, what do you get in bits [63:N]? are those sign-extended or
-> zero-extended. Is that the same behavior across all Intel and AMD
-> processors? With perf_events, I think the (N-1)th bit is always set.
-> 
-Queued his patch after I saw Andi's trainwreck -- had totally forgotten
-about it :/
 
-For the kernel it doesn't matter, we manually sign-extend for however
-many bits the counter has.
+Wednesday, June 6, 2012, 4:32:52 PM, you wrote:
+
+> On Wed, Jun 6, 2012 at 12:01 AM, Sander Eikelenboom
+> <linux@eikelenboom.it> wrote:
+>> Another thing that thought of that could be of interest, i think this was a ext3 converted to ext4 partition.
+>> Don't know if that is true for the other reports as well though.
+
+> FWIW, in my case, I have just built a fresh ext4 and immediately copy
+> data to it.
+
+> -Kees
+
+
+
+And it still results in the error ?
+And if you use it without the uninit_bg feature by running:
+
+tune2fs -O ^uninit_bg
+
+Then fsck found errors in my case after fixing them, i could copy files normally.
+Does that work in your case as well ?
+--
+Sander
+
+
