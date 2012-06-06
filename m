@@ -1,44 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758494Ab2FFVMv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 17:12:51 -0400
-Received: from ns.omikk.bme.hu ([152.66.114.1]:42201 "EHLO
-	webmail.omikk.bme.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758442Ab2FFVMt (ORCPT
+	id S932105Ab2FFVNJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 17:13:09 -0400
+Received: from corporat201-245170165.sta.etb.net.co ([201.245.170.165]:28958
+	"EHLO mail.herasmomeoz.gov.co" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758447Ab2FFVNI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 17:12:49 -0400
-Message-ID: <4FCFC7C3.3080603@users.sourceforge.net>
-Date: Wed, 06 Jun 2012 23:12:35 +0200
-From: Jozsef Marton <jmarton@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120506 Iceowl/1.0b1 Icedove/3.0.11
+	Wed, 6 Jun 2012 17:13:08 -0400
+X-Greylist: delayed 1794 seconds by postgrey-1.27 at vger.kernel.org; Wed, 06 Jun 2012 17:13:07 EDT
+Date: Wed, 6 Jun 2012 15:20:31 -0500 (COT)
+From: Westnet Support <nubia.rodriguez@herasmomeoz.gov.co>
+Reply-To: Westnet Support <noreply@webmaster.org>
+Message-ID: <12640599.458.1339014031460.JavaMail.root@mail.herasmomeoz.gov.co>
+Subject: Re-validate your mailbox please!!!
 MIME-Version: 1.0
-To: Rob Landley <rob@landley.net>, Mauro Carvalho Chehab <mchehab@redhat.com>
-CC: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        =?ISO-8859-2?Q?N=E9meth_M=E1rton?= <nm127@freemail.hu>,
-        torvalds@linux-foundation.org, Jean-Francois Moine <moinejf@free.fr>
-Subject: [PATCH] Documentation: removed media from linux/Documentation/dontdiff
- to include changes under drivers/media
-References: <4FB27CC6.3050500@users.sourceforge.net>
-In-Reply-To: <4FB27CC6.3050500@users.sourceforge.net>
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+X-Originating-IP: [116.203.26.240]
+X-Mailer: Zimbra 6.0.8_GA_2661 (zclient/6.0.8_GA_2661)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q56LDFUm012814
 
-From: Jozsef Marton <jmarton@users.sourceforge.net>
+Ваш поштовий ящик перевищив зберігання межа, який становить 20 ГБ, встановлений адміністратором, ви в даний час працює на 20,9 Гб, ви не зможете відправляти і отримувати пошту, поки ви повторно перевірити вашу поштову скриньку. 
 
-Dontdiff patterns in linux/Documentation/dontdiff used to include media, so "diff -uprN -X linux/Documentation/dontdiff ..." as suggested to be used in linux/Documentation/SubmittingPatches did not examine changes under linux/drivers/media. Pattern has been removed.
 
-Signed-off-by: Jozsef Marton <jmarton@users.sourceforge.net>
----
---- linux-3.4-rc7-vanilla/Documentation/dontdiff	2012-05-13 03:37:47.000000000 +0200
-+++ linux-3.4-rc7/Documentation/dontdiff	2012-05-15 17:10:44.023622889 +0200
-@@ -164,7 +164,6 @@ machtypes.h
- map
- map_hugetlb
- maui_boot.h
--media
- mconf
- miboot*
- mk_elfconfig
+https://docs.google.com/spreadsheet/viewform?formkey=dGRqMkpBbVp4NnBDU0ZkQVlvTGVzOXc6MQ
+
+Для повторної перевірки Вашої поштової скриньки, натисніть на посилання і заповнити необхідні дані в Спасибо Webmail системного адміністратора���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
