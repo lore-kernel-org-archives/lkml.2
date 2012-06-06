@@ -1,70 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758356Ab2FFUaR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 16:30:17 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:9295 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758278Ab2FFUaO (ORCPT
+	id S1758310Ab2FFUfK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 16:35:10 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:38596 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756849Ab2FFUfI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 16:30:14 -0400
-Message-ID: <1339014612.2763.98.camel@lorien2>
-Subject: Re: [PATCH v2] leds: fix led_brightness_set when soft-blinking
-From: Shuah Khan <shuahkhan@gmail.com>
-Reply-To: shuahkhan@gmail.com
-To: Fabio Baltieri <fabio.baltieri@gmail.com>
-Cc: shuahkhan@gmail.com, Bryan Wu <bryan.wu@canonical.com>,
-        linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Richard Purdie <rpurdie@rpsys.net>
-Date: Wed, 06 Jun 2012 14:30:12 -0600
-In-Reply-To: <20120606191149.GA1376@gmail.com>
-References: <20120606070008.GA1494@gmail.com>
-	 <1338967142-6249-1-git-send-email-fabio.baltieri@gmail.com>
-	 <CAK5ve-+gv=83MLAttiq8NYK0d_242UWRjJZftyKHONqMkxWTxQ@mail.gmail.com>
-	 <20120606111007.GA1311@gmail.com>
-	 <CAK5ve-LrnZQqAi2tamFfdN1_upjGQ=TYgpU-xLXnL+8xRv=+Xw@mail.gmail.com>
-	 <20120606191149.GA1376@gmail.com>
+	Wed, 6 Jun 2012 16:35:08 -0400
+Message-ID: <1339014904.2836.56.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: [PATCH] virtio-net: fix a race on 32bit arches
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Eric Dumazet <eric.dumazet@gmail.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Jason Wang <jasowang@redhat.com>, <netdev@vger.kernel.org>,
+        <rusty@rustcorp.com.au>, <linux-kernel@vger.kernel.org>,
+        <virtualization@lists.linux-foundation.org>
+Date: Wed, 6 Jun 2012 21:35:04 +0100
+In-Reply-To: <20120606201620.GA23358@redhat.com>
+References: <1338971724.2760.3913.camel@edumazet-glaptop>
+	 <1338972341.2760.3944.camel@edumazet-glaptop>
+	 <20120606111357.GA15070@redhat.com>
+	 <1338988210.2760.4485.camel@edumazet-glaptop>
+	 <20120606144941.GA17092@redhat.com>
+	 <20120606081432.6b602065@nehalam.linuxnetplumber.net>
+	 <20120606185107.GA20503@redhat.com>
+	 <1339012441.26966.48.camel@edumazet-glaptop>
+	 <20120606195814.GA20677@redhat.com>
+	 <1339013289.26966.62.camel@edumazet-glaptop>
+	 <20120606201620.GA23358@redhat.com>
+Organization: Solarflare Communications
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+MIME-Version: 1.0
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-6.800.1017-18950.005
+X-TM-AS-Result: No--15.588800-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> I realize now that my last patch broke ledtrig-timer updates as that
-> works by passing delay_{on,off} values by pointer, and moving
-> led_stop_software_blink() earlier destroy the other value.
-
-Fabio,
-
-This type of interaction is what I am concerned about, and came up
-during the transient trigger discussion as well. In the case of
-transient trigger it was an easy decision to use separate namespace, but
-that doesn't make sense in this case.
-
+On Wed, 2012-06-06 at 23:16 +0300, Michael S. Tsirkin wrote:
+> On Wed, Jun 06, 2012 at 10:08:09PM +0200, Eric Dumazet wrote:
+> > On Wed, 2012-06-06 at 22:58 +0300, Michael S. Tsirkin wrote:
+> > 
+> > > Absolutely, I am talking about virtio here.  I'm not kicking
+> > > u64_stats_sync idea I am just saying that simple locking
+> > > would work for virtio and might be better as it
+> > > gives us a way to get counters atomically.
+> > 
+> > Which lock do you own in the RX path ?
 > 
-> That's a bit of a pitfall, as the old code was working because values
-> were copied when entering led_set_software_blink.
+> We can just disable napi, everything is updated from napi callback.
+
+Seriously, though: don't do that; this is going to hurt performance for
+minimal benefit.
+
+Ben.
+
+> > You'll have to add a lock in fast path. This sounds really a bad choice
+> > to me.
 > 
-> I see three options here:
-> - reverting back my leds: "fix led_brightness_set when soft-blinking"
->   (9b05cd0) to the first version I posted, wich should work as before.
-> - modify ledtrig-timer to use two internal variables to store delay_on
->   and delay_off instead of the led_cdev ones.
+> .ndo_get_stats64 is not data path though, is it?
+> 
 
-Don't this this is a viable option without restructuring the leds code.
-These two variables are common to led_cdev and used by other drivers as
-well. ledtrig-timer will still have to store it as these are used in the
-led_timer_function() in led-class.c
-
-> - moving the two led_cdev->blink_delay_xx = 0 only into
->   led_brightness_set, as that's the only place when they are needed.
-
-Sounds reasonable. I would like to pull your patches in and do some
-testing, but very likely I won't be able to get to it until this
-weekend. This is where use-cases will help as well for us go through
-various transitions and see if it all comes together.
-
--- Shuah
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
