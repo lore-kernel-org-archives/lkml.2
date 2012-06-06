@@ -1,89 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757997Ab2FFSJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 14:09:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17728 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757898Ab2FFSJ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 14:09:57 -0400
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH EDAC] e752x_edac: Fix the driver to report the right type on i3100
-Date: Wed,  6 Jun 2012 14:57:38 -0300
-Message-Id: <7e119b9b0dead22d3964c071ade4a900160e9348.1339005427.git.mchehab@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-To: unlisted-recipients:; (no To-header on input)
+	id S1758002Ab2FFSKi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 14:10:38 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:55174 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752630Ab2FFSKg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 14:10:36 -0400
+Subject: Re: [PATCH v9] tilegx network driver: initial support
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: bhutchings@solarflare.com, arnd@arndb.de,
+        David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+In-Reply-To: <201206042023.q54KNEZp003834@farm-0002.internal.tilera.com>
+References: <201205201636.q4KGaoA3003845@farm-0027.internal.tilera.com>
+	 <20120520.165546.1211013675964130504.davem@davemloft.net>
+	 <201205240115.q4O1FwqG006336@lab-41.internal.tilera.com>
+	 <20120524.003148.700603156196416506.davem@davemloft.net>
+	 <201205251853.q4PIrE7T000723@lab-41.internal.tilera.com>
+	 <201206042023.q54KNEZp003834@farm-0002.internal.tilera.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 06 Jun 2012 20:10:23 +0200
+Message-ID: <1339006223.26966.36.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The i3100 datasheet is clear[1]:
-	"A Intel® 3100 Chipset system implementation consists of:
-	 ...
-	 . One to four DDR2-400 DIMMs (a maximum of 4 ranks are supported)"
+On Mon, 2012-06-04 at 16:12 -0400, Chris Metcalf wrote:
+> This change adds support for the tilegx network driver based on the
+> GXIO IORPC support in the tilegx software stack, using the on-chip
+> mPIPE packet processing engine.
+> 
 
-[1] ftp://download.intel.com/design/intarch/datashts/31345803.pdf
+> +
+> +/* Do "TSO" handling for egress.
+> + *
+> + * Normally drivers set NETIF_F_TSO only to support hardware TSO;
+> + * otherwise the stack uses scatter-gather to implement GSO in software.
+> + * On our testing, enabling GSO support (via NETIF_F_SG) drops network
+> + * performance down to around 7.5 Gbps on the 10G interfaces, although
+> + * also dropping cpu utilization way down, to under 8%.  But
+> + * implementing "TSO" in the driver brings performance back up to line
+> + * rate, while dropping cpu usage even further, to less than 4%.  In
+> + * practice, profiling of GSO shows that skb_segment() is what causes
+> + * the performance overheads; we benefit in the driver from using
+> + * preallocated memory to duplicate the TCP/IP headers.
+> + */
 
-So, the only supported memory type is DDR2, and not DDR, as the ones
-at the older cuipsets.
+All this stuff cost about 300 lines of code in this driver, without IPv6
+support.
 
-Fix it to report the proper information for userspace.
+I am pretty sure this performance problem should be solved in net/{core|
+ipv4|ipv6} instead
 
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
----
- drivers/edac/e752x_edac.c |   14 ++++++++++----
- 1 file changed, 10 insertions(+), 4 deletions(-)
+What TCP performance do you get with TSO/GSO and SG off ?
 
-diff --git a/drivers/edac/e752x_edac.c b/drivers/edac/e752x_edac.c
-index a5ed6b7..a88eaba 100644
---- a/drivers/edac/e752x_edac.c
-+++ b/drivers/edac/e752x_edac.c
-@@ -1066,7 +1066,7 @@ static inline int remap_csrow_index(struct mem_ctl_info *mci, int index)
- }
- 
- static void e752x_init_csrows(struct mem_ctl_info *mci, struct pci_dev *pdev,
--			u16 ddrcsr)
-+			      u16 ddrcsr, enum e752x_chips dev_idx)
- {
- 	struct csrow_info *csrow;
- 	enum edac_type edac_mode;
-@@ -1131,7 +1131,10 @@ static void e752x_init_csrows(struct mem_ctl_info *mci, struct pci_dev *pdev,
- 			edac_dbg(3, "Initializing rank at (%i,%i)\n", index, i);
- 			dimm->nr_pages = nr_pages / csrow->nr_channels;
- 			dimm->grain = 1 << 12;	/* 4KiB - resolution of CELOG */
--			dimm->mtype = MEM_RDDR;	/* only one type supported */
-+			if (dev_idx == I3100)
-+				dimm->mtype = MEM_DDR2;
-+			else
-+				dimm->mtype = MEM_RDDR;
- 			dimm->dtype = mem_dev ? DEV_X4 : DEV_X8;
- 			dimm->edac_mode = edac_mode;
- 		}
-@@ -1301,7 +1304,10 @@ static int e752x_probe1(struct pci_dev *pdev, int dev_idx)
- 		return -ENOMEM;
- 
- 	edac_dbg(3, "init mci\n");
--	mci->mtype_cap = MEM_FLAG_RDDR;
-+	if (dev_idx == I3100)
-+		mci->mtype_cap = MEM_FLAG_DDR2;
-+	else
-+		mci->mtype_cap = MEM_FLAG_RDDR;
- 	/* 3100 IMCH supports SECDEC only */
- 	mci->edac_ctl_cap = (dev_idx == I3100) ? EDAC_FLAG_SECDED :
- 		(EDAC_FLAG_NONE | EDAC_FLAG_SECDED | EDAC_FLAG_S4ECD4ED);
-@@ -1335,7 +1341,7 @@ static int e752x_probe1(struct pci_dev *pdev, int dev_idx)
- 	pci_read_config_byte(pdev, E752X_DRM, &stat8);
- 	pvt->map_type = ((stat8 & 0x0f) > ((stat8 >> 4) & 0x0f));
- 
--	e752x_init_csrows(mci, pdev, ddrcsr);
-+	e752x_init_csrows(mci, pdev, ddrcsr, dev_idx);
- 	e752x_init_mem_map_table(pdev, pvt);
- 
- 	if (dev_idx == I3100)
--- 
-1.7.10.2
+
 
