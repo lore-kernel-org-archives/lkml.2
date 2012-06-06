@@ -1,69 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758087Ab2FFS24 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 14:28:56 -0400
-Received: from [213.199.154.206] ([213.199.154.206]:57372 "EHLO
-	am1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1755212Ab2FFS2x (ORCPT
+	id S1757487Ab2FFS33 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 14:29:29 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:46453 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754294Ab2FFS31 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 14:28:53 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -11
-X-BigFish: VS-11(zzbb2dI9371I1432N98dKzz1202hzzz2dh2a8h668h839hd25he5bhf0ah)
-Message-ID: <4FCFA0C8.9090800@freescale.com>
-Date: Wed, 6 Jun 2012 13:26:16 -0500
-From: Scott Wood <scottwood@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Wed, 6 Jun 2012 14:29:27 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Glauber Costa <glommer@parallels.com>
+Cc: Daniel Lezcano <daniel.lezcano@free.fr>, <linux-kernel@vger.kernel.org>,
+        <cgroups@vger.kernel.org>, <devel@openvz.org>, <kir@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, Tejun Heo <tj@kernel.org>
+References: <1338816828-25312-1-git-send-email-glommer@parallels.com>
+	<4FCDD315.502@free.fr> <4FCDEE8E.8000005@parallels.com>
+Date: Wed, 06 Jun 2012 11:29:16 -0700
+In-Reply-To: <4FCDEE8E.8000005@parallels.com> (Glauber Costa's message of
+	"Tue, 5 Jun 2012 15:33:34 +0400")
+Message-ID: <87txyo1egz.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-To: Zhao Chenhui <chenhui.zhao@freescale.com>
-CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <galak@kernel.crashing.org>, <leoli@freescale.com>,
-        Matthew McClintock <msm@freescale.com>
-Subject: Re: [PATCH v5 1/5] powerpc/85xx: implement hardware timebase sync
-References: <1336737235-15370-1-git-send-email-chenhui.zhao@freescale.com> <4FC8E250.9090000@freescale.com> <20120605090831.GA21929@localhost.localdomain> <4FCE2ECD.4050107@freescale.com> <20120606093142.GA23505@localhost.localdomain>
-In-Reply-To: <20120606093142.GA23505@localhost.localdomain>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1/PEWtqq4cGp3w4pLa7mCOqfW1n20b4RM4=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
+	*      [score: 0.2273]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
+X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Glauber Costa <glommer@parallels.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH] allow a task to join a pid namespace
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/06/2012 04:31 AM, Zhao Chenhui wrote:
-> On Tue, Jun 05, 2012 at 11:07:41AM -0500, Scott Wood wrote:
->> On 06/05/2012 04:08 AM, Zhao Chenhui wrote:
->>> On Fri, Jun 01, 2012 at 10:40:00AM -0500, Scott Wood wrote:
->>>> I know you say this is for dual-core chips only, but it would be nice if
->>>> you'd write this in a way that doesn't assume that (even if the
->>>> corenet-specific timebase freezing comes later).
->>>
->>> At this point, I have not thought about how to implement the cornet-specific timebase freezing.
->>
->> I wasn't asking you to.  I was asking you to not have logic that breaks
->> with more than 2 CPUs.
-> 
-> These routines only called in the dual-core case. 
+Glauber Costa <glommer@parallels.com> writes:
+>
+> Please let me know what you think of the attached patch. It is ontop of Eric's
+> tree that you pointed me to, but I am not really using any of its functionality,
+> so this would be equally doable in current mainline kernel - but I wanted to
+> make sure it integrates well with what Eric is doing as well.
 
-Come on, you know we have chips with more than two cores.  Why design
-such a limitation into it, just because you're not personally interested
-in supporting anything but e500v2?
+The trees I have out there for pid namespace work are for historical
+reference at this point.
 
-Is it so hard to make it work for an arbitrary number of cores?
+> It is a bit wasteful space-wise, but this approach pretty much guarantees we
+> don't need to update pointers anywhere - therefore, totally
+> lock-free. pid->level is only updated after switch_task_namespaces(), so every
+> call before that will see correct information up to the previous
+> level.
 
->>> If do not set them, it may make KEXEC fail on other platforms.
->>
->> What platforms?
-> 
-> Such as P4080, P3041, etc.
+This solves none of the pid namespace life cycle problems and the issues
+you solve by extending a pid can probably be solved better by allocating
+a new pid and setting it's low pids the same as the original pid and
+then atomically swapping them.
 
-So we need to wait for corenet timebase sync before we stop causing
-problems in virtualization, simulators, etc. if a kernel has kexec or
-cpu hotplug enabled (whether used or not)?
+So I do not find the patch below at all interesting.
 
-Can you at least make sure we're actually in a kexec/hotplug scenario at
-runtime?
+Eric
 
-Or just implement corenet timebase sync -- it's not that different.
 
--Scott
-
+> From 1192e0ff3c854f4690d44fadccbc575fff653578 Mon Sep 17 00:00:00 2001
+> From: Glauber Costa <glommer@parallels.com>
+> Date: Tue, 5 Jun 2012 15:23:12 +0400
+> Subject: [PATCH] pid_ns: expand the current pid namespace to a new namespace
+>
+> install pid_ns doesn't go as far as needed. Things like
+> ns_of_pid() will rely on the current level to get to the
+> right task. So when attaching a task to a new pid namespace,
+> we need to make sure the upid vector grows as needed, and the
+> level updated accordingly
+>
+> To do that, this patch leaves room for one more upid at the end
+> of the structure at all times. It also stores the original level so
+> we know afterwards which cache to free from.
+>
+> Although this is, of course, a bit wasteful, it has the advantage
+> that we never need to touch the existing struct pid, nor the existing
+> upid vectors. That would be racy in nature, and may require us to pick
+> locks here and there - which seems to me like a big no.
+>
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> ---
+>  include/linux/pid.h    |    3 +++
+>  kernel/nsproxy.c       |    2 ++
+>  kernel/pid.c           |   54 +++++++++++++++++++++++++++++++++++++++++++++++-
+>  kernel/pid_namespace.c |   30 +++++++++++++++++++++++++--
+>  4 files changed, 86 insertions(+), 3 deletions(-)
+>
+> diff --git a/include/linux/pid.h b/include/linux/pid.h
+> index b152d44..2f01763 100644
+> --- a/include/linux/pid.h
+> +++ b/include/linux/pid.h
+> @@ -58,6 +58,7 @@ struct pid
+>  {
+>  	atomic_t count;
+>  	unsigned int level;
+> +	unsigned int orig_level;
+>  	/* lists of tasks that use this pid */
+>  	struct hlist_head tasks[PIDTYPE_MAX];
+>  	struct rcu_head rcu;
+> @@ -121,6 +122,8 @@ int next_pidmap(struct pid_namespace *pid_ns, unsigned int last);
+>  
+>  extern struct pid *alloc_pid(struct pid_namespace *ns);
+>  extern void free_pid(struct pid *pid);
+> +extern int expand_pid(struct pid *pid, struct pid_namespace *ns);
+> +extern void  update_expanded_pid(struct task_struct *task);
+>  
+>  /*
+>   * ns_of_pid() returns the pid namespace in which the specified pid was
+> diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
+> index b956079..9851f11 100644
+> --- a/kernel/nsproxy.c
+> +++ b/kernel/nsproxy.c
+> @@ -267,6 +267,8 @@ SYSCALL_DEFINE2(setns, int, fd, int, nstype)
+>  		goto out;
+>  	}
+>  	switch_task_namespaces(tsk, new_nsproxy);
+> +	if (nstype == CLONE_NEWPID)
+> +		update_expanded_pid(current);
+>  out:
+>  	fput(file);
+>  	return err;
+> diff --git a/kernel/pid.c b/kernel/pid.c
+> index 8c51c26..f2b1bd7 100644
+> --- a/kernel/pid.c
+> +++ b/kernel/pid.c
+> @@ -247,7 +247,7 @@ void put_pid(struct pid *pid)
+>  	if (!pid)
+>  		return;
+>  
+> -	ns = pid->numbers[pid->level].ns;
+> +	ns = pid->numbers[pid->orig_level].ns;
+>  	if ((atomic_read(&pid->count) == 1) ||
+>  	     atomic_dec_and_test(&pid->count)) {
+>  		kmem_cache_free(ns->pid_cachep, pid);
+> @@ -306,6 +306,7 @@ struct pid *alloc_pid(struct pid_namespace *ns)
+>  
+>  	get_pid_ns(ns);
+>  	pid->level = ns->level;
+> +	pid->orig_level = ns->level;
+>  	atomic_set(&pid->count, 1);
+>  	for (type = 0; type < PIDTYPE_MAX; ++type)
+>  		INIT_HLIST_HEAD(&pid->tasks[type]);
+> @@ -329,6 +330,57 @@ out_free:
+>  	goto out;
+>  }
+>  
+> +int expand_pid(struct pid *pid, struct pid_namespace *ns)
+> +{
+> +	int i, nr;
+> +	struct pid_namespace *tmp;
+> +	struct upid *upid;
+> +
+> +	if  ((ns->level - pid->orig_level) > 1)
+> +		return -EINVAL;
+> +
+> +	if (ns->parent != pid->numbers[pid->orig_level].ns)
+> +		return -EINVAL;
+> +
+> +	tmp = ns;
+> +	for (i = ns->level; i > pid->level; i--) {
+> +		if (ns->dead)
+> +			goto out_free;
+> +		nr = alloc_pidmap(tmp);
+> +		if (nr < 0)
+> +			goto out_free;
+> +
+> +		pid->numbers[i].nr = nr;
+> +		pid->numbers[i].ns = tmp;
+> +		tmp = tmp->parent;
+> +	}
+> +
+> +	upid = pid->numbers + ns->level;
+> +	spin_lock_irq(&pidmap_lock);
+> +	for (i = ns->level; i > pid->level; i--) {
+> +		upid = &pid->numbers[i];
+> +		hlist_add_head_rcu(&upid->pid_chain,
+> +				&pid_hash[pid_hashfn(upid->nr, upid->ns)]);
+> +	}
+> +	spin_unlock_irq(&pidmap_lock);
+> +
+> +	return 0;
+> +
+> +out_free:
+> +	while (++i <= ns->level)
+> +		free_pidmap(pid->numbers + i);
+> +
+> +	return -ENOMEM;
+> +}
+> +
+> +void update_expanded_pid(struct task_struct *task)
+> +{
+> +	struct pid *pid;
+> +	pid = get_task_pid(task, PIDTYPE_PID);
+> +
+> +	pid->level++;
+> +}
+> +
+>  struct pid *find_pid_ns(int nr, struct pid_namespace *ns)
+>  {
+>  	struct hlist_node *elem;
+> diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
+> index 79bf459..0f3a521 100644
+> --- a/kernel/pid_namespace.c
+> +++ b/kernel/pid_namespace.c
+> @@ -49,8 +49,12 @@ static struct kmem_cache *create_pid_cachep(int nr_ids)
+>  		goto err_alloc;
+>  
+>  	snprintf(pcache->name, sizeof(pcache->name), "pid_%d", nr_ids);
+> +	/*
+> +	 * nr_ids - 1 would provide room for upids up to the right level.
+> +	 * We leave room for one in the end for usage with setns.
+> +	 */
+>  	cachep = kmem_cache_create(pcache->name,
+> -			sizeof(struct pid) + (nr_ids - 1) * sizeof(struct upid),
+> +			sizeof(struct pid) + (nr_ids) * sizeof(struct upid),
+>  			0, SLAB_HWCACHE_ALIGN, NULL);
+>  	if (cachep == NULL)
+>  		goto err_cachep;
+> @@ -244,8 +248,30 @@ static void pidns_put(void *ns)
+>  	put_pid_ns(ns);
+>  }
+>  
+> -static int pidns_install(struct nsproxy *nsproxy, void *ns)
+> +static int pidns_install(struct nsproxy *nsproxy, void *_ns)
+>  {
+> +	int ret = 0;
+> +	struct pid *pid;
+> +	struct pid_namespace *ns = _ns;
+> +
+> +	rcu_read_lock();
+> +	pid = task_pid(current);
+> +	rcu_read_unlock();
+> +
+> +	if (is_container_init(current) || (get_nr_threads(current) > 1))
+> +		return -EINVAL;
+> +
+> +	read_lock(&tasklist_lock);
+> +	if ((task_pgrp(current) != pid) || task_session(current) != pid)
+> +		ret = -EPERM;
+> +	read_unlock(&tasklist_lock);
+> +	if (ret)
+> +		return ret;
+> +
+> +	ret = expand_pid(pid, ns);
+> +	if (ret)
+> +		return ret;
+> +
+>  	put_pid_ns(nsproxy->pid_ns);
+>  	nsproxy->pid_ns = get_pid_ns(ns);
+>  	return 0;
