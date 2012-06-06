@@ -1,47 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756615Ab2FFPOh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 11:14:37 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:54533 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756533Ab2FFPOf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 11:14:35 -0400
-Date: Wed, 6 Jun 2012 08:14:32 -0700
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Jason Wang <jasowang@redhat.com>,
-        netdev@vger.kernel.org, rusty@rustcorp.com.au,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH] virtio-net: fix a race on 32bit arches
-Message-ID: <20120606081432.6b602065@nehalam.linuxnetplumber.net>
-In-Reply-To: <20120606144941.GA17092@redhat.com>
-References: <1338971724.2760.3913.camel@edumazet-glaptop>
-	<1338972341.2760.3944.camel@edumazet-glaptop>
-	<20120606111357.GA15070@redhat.com>
-	<1338988210.2760.4485.camel@edumazet-glaptop>
-	<20120606144941.GA17092@redhat.com>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756620Ab2FFPOy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 11:14:54 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39831 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755212Ab2FFPOw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 11:14:52 -0400
+Date: Wed, 6 Jun 2012 08:14:25 -0700
+From: tip-bot for Christian Borntraeger <borntraeger@de.ibm.com>
+Message-ID: <tip-8a173b1476d126674104c7c5c6cef0bcd824b001@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org, mst@redhat.com,
+        rusty@rustcorp.com.au, borntraeger@de.ibm.com,
+        akpm@linux-foundation.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        rusty@rustcorp.com.au, mst@redhat.com, torvalds@linux-foundation.org,
+        a.p.zijlstra@chello.nl, borntraeger@de.ibm.com,
+        akpm@linux-foundation.org, tglx@linutronix.de
+In-Reply-To: <1338283124-7063-1-git-send-email-borntraeger@de.ibm.com>
+References: <1338283124-7063-1-git-send-email-borntraeger@de.ibm.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:core/urgent] spinlock:
+  Indicate that a lockup is only suspected
+Git-Commit-ID: 8a173b1476d126674104c7c5c6cef0bcd824b001
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 06 Jun 2012 08:14:31 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Jun 2012 17:49:42 +0300
-"Michael S. Tsirkin" <mst@redhat.com> wrote:
+Commit-ID:  8a173b1476d126674104c7c5c6cef0bcd824b001
+Gitweb:     http://git.kernel.org/tip/8a173b1476d126674104c7c5c6cef0bcd824b001
+Author:     Christian Borntraeger <borntraeger@de.ibm.com>
+AuthorDate: Tue, 29 May 2012 11:18:44 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 6 Jun 2012 11:34:20 +0200
 
-> Sounds good, but I have a question: this realies on counters
-> being atomic on 64 bit.
-> Would not it be better to always use a seqlock even on 64 bit?
-> This way counters would actually be correct and in sync.
-> As it is if we want e.g. average packet size,
-> we can not rely e.g. on it being bytes/packets.
+spinlock: Indicate that a lockup is only suspected
 
-This has not been a requirement on real physical devices; therefore
-the added overhead is not really justified.
+On an over-committed KVM system we got a:
 
-Many network cards use counters in hardware to count packets/bytes
-and there is no expectation of atomic access there.
+  "BUG: spinlock lockup on CPU#2, swapper/2/0"
+
+message on the heavily contended virtio blk spinlock.
+
+While we might want to reconsider the locking of virtio-blk
+(lock is held while switching to the host) this patch tries to
+make the message clearer: the lockup is only suspected.
+
+Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1338283124-7063-1-git-send-email-borntraeger@de.ibm.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ lib/spinlock_debug.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/lib/spinlock_debug.c b/lib/spinlock_debug.c
+index d0ec4f3..e91fbc2 100644
+--- a/lib/spinlock_debug.c
++++ b/lib/spinlock_debug.c
+@@ -118,7 +118,7 @@ static void __spin_lock_debug(raw_spinlock_t *lock)
+ 		/* lockup suspected: */
+ 		if (print_once) {
+ 			print_once = 0;
+-			spin_dump(lock, "lockup");
++			spin_dump(lock, "lockup suspected");
+ #ifdef CONFIG_SMP
+ 			trigger_all_cpu_backtrace();
+ #endif
