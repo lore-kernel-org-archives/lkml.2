@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756656Ab2FFPdx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 11:33:53 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:51259 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756172Ab2FFPdv (ORCPT
+	id S1756668Ab2FFPf1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 11:35:27 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:16922 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753788Ab2FFPf0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 11:33:51 -0400
-Date: Wed, 6 Jun 2012 11:33:50 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Namjae Jeon <linkinjeon@gmail.com>
-cc: James.Bottomley@HansenPartnership.com, <gregkh@linuxfoundation.org>,
-        <mdharm-usb@one-eyed-alien.net>, <linux-usb@vger.kernel.org>,
-        <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Pankaj Kumar <pankaj.km@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [PATCH 3/3] usb: core: update usb devices for write cache quirk
- in quirk list.
-In-Reply-To: <1338985269-9756-1-git-send-email-linkinjeon@gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1206061133140.1788-100000@iolanthe.rowland.org>
+	Wed, 6 Jun 2012 11:35:26 -0400
+Date: Wed, 6 Jun 2012 17:35:21 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: Michal Marek <mmarek@suse.cz>, linux-kbuild <linux-kbuild@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 7/8] kbuild: move W=... stuff to Kbuild.arch
+Message-ID: <20120606153521.GA30811@merkur.ravnborg.org>
+References: <20120505080640.GA13773@merkur.ravnborg.org> <1336205926-13946-7-git-send-email-sam@ravnborg.org> <1338977927.6875.29.camel@sauron.fi.intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1338977927.6875.29.camel@sauron.fi.intel.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Jun 2012, Namjae Jeon wrote:
-
-> Update Product ID and Vendor ID of Segate Portable HDD and WD My Passport HDD in quirk list.
+On Wed, Jun 06, 2012 at 01:18:47PM +0300, Artem Bityutskiy wrote:
+> On Sat, 2012-05-05 at 10:18 +0200, Sam Ravnborg wrote:
+> > Prevent that we eveluate cc-option multiple times for the same
+> > option by moving the definitions to Kbuild.arch.
+> > The file is included once only, thus gcc is not invoked once per directory.
+> > 
+> > Another side-effect of this patch is that KCFLAGS are appended last
+> > to the list of options. This allows us to better control the options.
+> > Artem Bityutskiy <dedekind1@gmail.com> noticed this.
+> > 
+> > Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
+> > Cc: Artem Bityutskiy <dedekind1@gmail.com>
 > 
-> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-> Signed-off-by: Pankaj Kumar <pankaj.km@samsung.com>
-> Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
-> ---
->  drivers/usb/core/quirks.c |    6 ++++++
->  1 file changed, 6 insertions(+)
+> Hi,
 > 
-> diff --git a/drivers/usb/core/quirks.c b/drivers/usb/core/quirks.c
-> index 32d3adc..624d111 100644
-> --- a/drivers/usb/core/quirks.c
-> +++ b/drivers/usb/core/quirks.c
-> @@ -153,6 +153,12 @@ static const struct usb_device_id usb_quirk_list[] = {
->  	/* INTEL VALUE SSD */
->  	{ USB_DEVICE(0x8086, 0xf1a5), .driver_info = USB_QUIRK_RESET_RESUME },
->  
-> +	/* Seagate Portable Hdd */
-> +	{ USB_DEVICE(0x0BC2, 0x2300), .driver_info = USB_QUIRK_WRITE_CACHE },
-> +
-> +	/* My Passport Hdd (WD) */
-> +	{ USB_DEVICE(0x1058, 0x070A), .driver_info = USB_QUIRK_WRITE_CACHE },
-> +
+> what happened to this patch? I was fixing the real issue I am
+> encountering and I thought it'd be taken instead of my original patch.
+We decided to move this to next merge release because is was not added
+to kbuild thus not enough exposure in -next.
 
-These entries belong in drivers/usb/storage/unusual_devs.h, not here.
+I am planning to resend the serie at around -rc2 time.
 
-Alan Stern
-
+	Sam
