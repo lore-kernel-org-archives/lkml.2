@@ -1,80 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754730Ab2FFHia (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 03:38:30 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:45738 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752842Ab2FFHi1 (ORCPT
+	id S1754716Ab2FFHjQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 03:39:16 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:40728 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751005Ab2FFHjO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 03:38:27 -0400
-Message-ID: <4FCF0740.1040204@panasas.com>
-Date: Wed, 6 Jun 2012 10:31:12 +0300
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
+	Wed, 6 Jun 2012 03:39:14 -0400
+Date: Wed, 6 Jun 2012 09:39:09 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: Hitoshi Mitake <h.mitake@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Michel Lespinasse <walken@google.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [PATCH] perf bench: add new benchmark subsystem and suite "futex
+ wait"
+Message-ID: <20120606073909.GI17808@gmail.com>
+References: <1337268092-6765-1-git-send-email-h.mitake@gmail.com>
+ <4FB52636.3040604@linux.intel.com>
+ <CAMO-S2g9fkg_KH0CPOsB_7GQTN2mu8zir+UZDp6=VC+7XDrfrg@mail.gmail.com>
+ <CAMO-S2gyzK3VTQcTRw+FAO9ui_gy=1z=MVxUYM9sPN51KrDgkg@mail.gmail.com>
+ <4FCE4D24.5040307@linux.intel.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Wanpeng Li <liwp.linux@gmail.com>, Fengguang Wu <fengguang.wu@intel.com>,
-        Rob Landley <rob@landley.net>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        "David S. Miller" <davem@davemloft.net>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
-        David Howells <dhowells@redhat.com>,
-        James Morris <james.l.morris@oracle.com>, Ingo Molnar <mingo@elte.hu>,
-        Michel Lespinasse <walken@google.com>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
-        Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Wanpeng Li <liwp@linux.vnet.ibm.com>
-Subject: Re: [PATCH v2] remove no longer use of pdflush interface
-References: <1338888372-3555-1-git-send-email-liwp.linux@gmail.com> <20120605152845.8b633881.akpm@linux-foundation.org>
-In-Reply-To: <20120605152845.8b633881.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FCE4D24.5040307@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/06/2012 01:28 AM, Andrew Morton wrote:
 
-> On Tue,  5 Jun 2012 17:26:11 +0800
-> Wanpeng Li <liwp.linux@gmail.com> wrote:
+* Darren Hart <dvhart@linux.intel.com> wrote:
+
+> On 05/20/2012 02:37 AM, Hitoshi Mitake wrote:
+> > On Sun, May 20, 2012 at 5:32 PM, Hitoshi Mitake <h.mitake@gmail.com> wrote:
+> >> On Fri, May 18, 2012 at 1:24 AM, Darren Hart <dvhart@linux.intel.com> wrote:
+> >>> On 05/17/2012 08:21 AM, Hitoshi Mitake wrote:
+> >>>> Hi Ingo, Eric and Darren,
+> >>>> (CCed perf and futex folks)
+> >>>>
+> >>>> I wrote this patch for adding new subsystem "futex" and its suite "wait" to perf
+> >>>> bench on tip/master. This is based on futextest by Darren Hart.
+> >>>>
+> >>>> Could you allow me to import your source code of futextest to perf bench, Darren?
+> >>>>
+> >>>
+> >>> I do have some concerns I'd like to address first.
+> >>>
+> >>> What is advantage of incorporating this into perf as opposed to running
+> >>> it with perf?
+> >>
+> >> The main and direct advantage is that perf bench can share useful
+> >> utilities stored under tools/perf/util/ directory e.g. parse-options[ch].
+> >>
+> > 
+> > BTW, I often feel parse-options.[ch] of perf (this was come from git,
+> > right?) is very useful not only for perf and git but also other
+> > projects. So I think these stuff are worth independence as a
+> > library. If the library contains unified feature for parsing and
+> > evaluating configuration files, the hell of managing configurable
+> > options will be reduced. e.g. I often use "strace -e open <command>"
+> > to detect configuration files read by the <command>...
+> > 
+> > I thought that if perf bench can be independent from perf with such
+> > efforts, it can be smaller sized and statically linked binary. From my
+> > experience, this will be good for embedded systems people.
+> > 
+> > This independence also has risk: less people can find it or is
+> > attracted even if it stays in the kernel tree (e.g. tools/bench/). But
+> > it seems that very few people know about perf bench, so this will not
+> > be a serious problem ;)
+> > 
+> > I'd like to hear your opinion.
 > 
-> So perhaps the solution is to give up on the generic proc_obsolete()
-> idea, and just add a handler specifically for nr_pdflush_threads, whcih
-> uses printk_once().
-> 
+> I haven't been involved with perf tools/bench so I haven't 
+> really formed an opinion. Ingo and Arnaldo, would either of 
+> you care to weigh in on the pros/cons of merging futextest 
+> into perf?
 
+No objections from me - 'perf bench futex' seems rather natural 
+to type to me and it would certainly make futex performance 
+testing easier and more widespread.
 
-If there are many users than a self made print once is worth it
-we can use the ctl_table->data pointer for this, some thing like:
+So it all depends on whether you'd like to host it upstream and 
+within tools/perf/bench/.
 
-int nr_pdflush_was_printed;
+I'd rather not split it from the main perf binary, if embedded 
+wants a small static binary (do they really?) we could add 
+support for minimal builds of perf, with just a few [even one] 
+subcommand activated or so.
 
-@@ -1095,11 +1095,9 @@ static struct ctl_table vm_table[] = {
- 		.extra1		= &zero,
- 	},
- 	{
--		.procname	= "nr_pdflush_threads",
--		.data		= &nr_pdflush_threads,
--		.maxlen		= sizeof nr_pdflush_threads,
--		.mode		= 0444 /* read-only*/,
--		.proc_handler	= proc_dointvec,
-+		.data		= &nr_pdflush_was_printed,
-+		.procname       = "nr_pdflush_threads",
-+		.mode           = 0444 /* read-only */,
-+		.proc_handler   = proc_obsolete,
- 	},
+Thanks,
 
-
-+/* notice associated proc deprecated */
-+int proc_deprecated(struct ctl_table *table, int write,
-+		    void __user *buffer, size_t *lenp, loff_t *ppos, )
-+{
-+	if (*ctl_table->data) {
-+		printk(KERN_WARNING "%s exported in /proc is deprecated\n",
-+			table->procname);
-+		*ctl_table->data = 0;
-+	}
-+	return -ENOSYS;
-+}
+	Ingo
