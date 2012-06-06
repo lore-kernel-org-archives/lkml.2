@@ -1,96 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757340Ab2FFSgG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 14:36:06 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:38663 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756631Ab2FFSgE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 14:36:04 -0400
-Message-ID: <4FCFA312.4020505@tilera.com>
-Date: Wed, 6 Jun 2012 14:36:02 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
+	id S1757260Ab2FFSn6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 14:43:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30125 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752062Ab2FFSn4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 14:43:56 -0400
+Date: Wed, 6 Jun 2012 21:43:52 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
 To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: <bhutchings@solarflare.com>, <arnd@arndb.de>,
-        David Miller <davem@davemloft.net>, <linux-kernel@vger.kernel.org>,
-        <netdev@vger.kernel.org>
-Subject: Re: [PATCH v9] tilegx network driver: initial support
-References: <201205201636.q4KGaoA3003845@farm-0027.internal.tilera.com>  <20120520.165546.1211013675964130504.davem@davemloft.net>  <201205240115.q4O1FwqG006336@lab-41.internal.tilera.com>  <20120524.003148.700603156196416506.davem@davemloft.net>  <201205251853.q4PIrE7T000723@lab-41.internal.tilera.com>  <201206042023.q54KNEZp003834@farm-0002.internal.tilera.com> <1339004459.26966.31.camel@edumazet-glaptop>
-In-Reply-To: <1339004459.26966.31.camel@edumazet-glaptop>
-X-Enigmail-Version: 1.4.2
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Cc: Jason Wang <jasowang@redhat.com>, netdev@vger.kernel.org,
+        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Stephen Hemminger <shemminger@vyatta.com>
+Subject: Re: [PATCH] virtio-net: fix a race on 32bit arches
+Message-ID: <20120606184351.GA20380@redhat.com>
+References: <1338971724.2760.3913.camel@edumazet-glaptop>
+ <1338972341.2760.3944.camel@edumazet-glaptop>
+ <20120606111357.GA15070@redhat.com>
+ <1338988210.2760.4485.camel@edumazet-glaptop>
+ <20120606144941.GA17092@redhat.com>
+ <1338995944.26966.6.camel@edumazet-glaptop>
+ <20120606161715.GA17575@redhat.com>
+ <1339002782.26966.22.camel@edumazet-glaptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339002782.26966.22.camel@edumazet-glaptop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/6/2012 1:40 PM, Eric Dumazet wrote:
-> On Mon, 2012-06-04 at 16:12 -0400, Chris Metcalf wrote:
->
->> +/* Allocate and push a buffer. */
->> +static bool tile_net_provide_buffer(bool small)
->> +{
->> +	int stack = small ? small_buffer_stack : large_buffer_stack;
->> +	const unsigned long buffer_alignment = 128;
->> +	struct sk_buff *skb;
->> +	int len;
->> +
->> +	len = sizeof(struct sk_buff **) + buffer_alignment;
->> +	len += (small ? 128 : 1664);
-> 1664 is a magic number, it should be a nice define
->
-> #define ..... ( ETH_DATA_LEN + .... )
+On Wed, Jun 06, 2012 at 07:13:02PM +0200, Eric Dumazet wrote:
+> On Wed, 2012-06-06 at 19:17 +0300, Michael S. Tsirkin wrote:
+> 
+> > But why do you say at most 1 packet?
+> > 
+> > Consider get_stats doing:
+> >                u64_stats_update_begin(&stats->syncp);
+> >                stats->tx_bytes += skb->len;
+> > 
+> > on 64 bit at this point
+> > tx_packets might get incremented any number of times, no?
+> > 
+> >                 stats->tx_packets++;
+> >                 u64_stats_update_end(&stats->syncp);
+> > 
+> > now tx_bytes and tx_packets are out of sync by more than 1.
+> 
+> You lost me there.
+> 
+> No idea of what you are thinking about.
 
-Fair enough.  However, the magic-ness comes from the hardware header code
-in arch/tile/gxio/mpipe.h, which provides a limited set of allowed buffer
-sizes, including 1664.  But I can add these #defines at the top of this driver:
+Sorry about that. This is not a bug. I am saying two things:
 
-/* Buffer sizes and mpipe enum codes for buffer stacks.
- * See arch/tile/include/gxio/mpipe.h for the set of possible values.
- */
-#define BUFFER_SIZE_SMALL_ENUM GXIO_MPIPE_BUFFER_SIZE_128
-#define BUFFER_SIZE_SMALL 128
-#define BUFFER_SIZE_LARGE_ENUM GXIO_MPIPE_BUFFER_SIZE_1664
-#define BUFFER_SIZE_LARGE 1664
+1. We are trying to look at counters for purposes of tuning the device.
+E.g. if ethtool reports packets and bytes, we'd like to calculate
+average packet size by bytes/packets.
 
+If both counters are read atomically the metric becomes more exact.
+Not a must but nice to have.
 
->> +	skb = dev_alloc_skb(len);
->> +	if (skb == NULL)
->> +		return false;
->> +
->> +	/* Make room for a back-pointer to 'skb' and guarantee alignment. */
->> +	skb_reserve(skb, sizeof(struct sk_buff **));
->> +	skb_reserve(skb, -(long)skb->data & (buffer_alignment - 1));
->> +
->> +	/* Save a back-pointer to 'skb'. */
->> +	*(struct sk_buff **)(skb->data - sizeof(struct sk_buff **)) = skb;
->> +
->> +	/* Make sure "skb" and the back-pointer have been flushed. */
->> +	wmb();
-> Interesting, have you considered using build_skb() instead of this
-> convoluted thing ?
->
-> This could save some cache misses...
+2. 32 bit systems have some overhead because of the seqlock.
+virtio could instead simply keep tx counters in the queue structure, and
+get the tx lock when they are read.
 
-I hadn't looked at build_skb() before; we built up this driver mostly on a
-base of 2.6.38, where it doesn't exist.  That said, it doesn't seem like it
-matters; dev_alloc_skb() will just end up calling down to build_skb()
-anyway, as far as I can tell.
-
-The code where we do the two skb_reserves and then stuff in a backpointer
-and do a barrier are because we track the skbuffs in hardware, and hardware
-ignores the low 7 bits aof the address (thus the "buffer_alignment" part)
-and we need to be able to pull the actual skb address out of the data when
-the hardware returns a pointer to the data to us.
-
-By the way, your question about tx_queue_len is a good one; I'm roping in
-our other network developer folks to figure it out.  Originally it was a
-performance optimization, I believe; I'm not sure it's still required. 
-I'll follow up on that one when we've tracked it down.
 
 -- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
-
+MST
