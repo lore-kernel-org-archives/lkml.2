@@ -1,67 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753441Ab2FFMI5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 08:08:57 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:18192 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752509Ab2FFMIp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 08:08:45 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Wed, 06 Jun 2012 05:08:30 -0700
-Date: Wed, 6 Jun 2012 15:07:54 +0300
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Mike Turquette <mturquette@ti.com>
-CC: Rajendra Nayak <rnayak@ti.com>, Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH] clk: add extension API
-Message-ID: <20120606120754.GU8026@tbergstrom-lnx.Nvidia.com>
-References: <1338285540-24407-1-git-send-email-pdeschrijver@nvidia.com>
- <4FC5E837.30702@ti.com>
- <20120531191916.GA19475@gmail.com>
+	id S1753227Ab2FFMOT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 08:14:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25536 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751243Ab2FFMOR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 08:14:17 -0400
+Date: Wed, 6 Jun 2012 08:14:08 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        linux-fsdevel@vger.kernel.org,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: write-behind on streaming writes
+Message-ID: <20120606121408.GB4934@redhat.com>
+References: <CA+55aFxHt8q8+jQDuoaK=hObX+73iSBTa4bBWodCX3s-y4Q1GQ@mail.gmail.com>
+ <20120529155759.GA11326@localhost>
+ <CA+55aFykFaBhzzEyRYWRS9Qoy_q_R65Cuth7=XvfOZEMqjn6=w@mail.gmail.com>
+ <20120530032129.GA7479@localhost>
+ <20120605172302.GB28556@redhat.com>
+ <20120605174157.GC28556@redhat.com>
+ <20120605184853.GD28556@redhat.com>
+ <20120605201045.GE28556@redhat.com>
+ <20120606025729.GA1197@redhat.com>
+ <CA+55aFyxucvhYhbk0yyNa1WSeYXgHHAyWRHPNWDwODQhyAWGww@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120531191916.GA19475@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CA+55aFyxucvhYhbk0yyNa1WSeYXgHHAyWRHPNWDwODQhyAWGww@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 31, 2012 at 09:19:16PM +0200, Mike Turquette wrote:
-> On 20120530-14:58, Rajendra Nayak wrote:
-> > Hi Peter,
-> > 
-> > On Tuesday 29 May 2012 03:28 PM, Peter De Schrijver wrote:
-> > >Add an extension API for clocks. This allows clocktypes to provide extensions
-> > >for features which are uncommon and cannot be easily mapped onto normal clock
-> > >framework concecpts. eg: resetting blocks, configuring clock phase etc.
-> > 
-> > I was thinking on similar lines for OMAP wherein I need to control
-> > 'hardware-auto-gating' bits on clocks which are otherwise just normal
-> > gates or dividers. We just disable all of them early at boot and
-> > re-enable them late in the boot process once PM kicks in.
-> > 
+On Tue, Jun 05, 2012 at 08:14:08PM -0700, Linus Torvalds wrote:
+> On Tue, Jun 5, 2012 at 7:57 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> >
+> > I had expected a bigger difference as sync_file_range() is just driving
+> > max queue depth of 32 (total 16MB IO in flight), while flushers are
+> > driving queue depths up to 140 or so. So in this paritcular test, driving
+> > much deeper queue depths is not really helping much. (I have seen higher
+> > throughputs with higher queue depths in the past. Now sure why don't we
+> > see it here).
 > 
-> It would be helpful to get an idea of what these different functions
-> actually do.  This patch exposes a sort of poor man's ioctl/syscall
-> interface (which may indeed be necessary), but I would first prefer to
-> pool together everybody's needs and see if some new high-level APIs
-> should be added to clk.h.
+> How did interactivity feel?
 > 
-> Already a clk_reset/module reset call has been discussed in this thread.
-> The changelog discusses setting clock phase and Rajendra mentioned
-> controlling auto-gating behavior.
+> Because quite frankly, if the throughput difference is 12.5 vs 12
+> seconds, I suspect the interactivity thing is what dominates.
 > 
-> Do other folks have these same needs?  What about other needs that are
-> unlisted?  Please add them to the thread so we can get an idea of what
-> we're up against.
+> And from my memory of the interactivity different was absolutely
+> *huge*. Even back when I used rotational media, I basically couldn't
+> even notice the background write with the sync_file_range() approach.
+> While the regular writeback without the writebehind had absolutely
+> *huge* pauses if you used something like firefox that uses fsync()
+> etc. And starting new applications that weren't cached was noticeably
+> worse too - and then with sync_file_range it wasn't even all that
+> noticeable.
+> 
+> NOTE! For the real "firefox + fsync" test, I suspect you'd need to do
+> the writeback on the same filesystem (and obviously disk) as your home
+> directory is. If the big write is to another filesystem and another
+> disk, I think you won't see the same issues.
 
-* clock phase (invert or programmable delay)
-* external request line configuration
+Ok, I did following test on my single SATA disk and my root filesystem
+is on this disk.
 
-Cheers,
+I dropped caches and launched firefox and monitored the time it takes
+for firefox to start. (cache cold).
 
-Peter.
+And my results are reverse of what you have been seeing. With
+sync_file_range() running, firefox takes roughly 30 seconds to start and
+with flusher in operation, it takes roughly 20 seconds to start. (I have
+approximated the average of 3 runs for simplicity).
+
+I think it is happening because sync_file_range() will send all
+the writes as SYNC and it will compete with firefox IO. On the other
+hand, flusher's IO will show up as ASYNC and CFQ  will be penalize it
+heavily and firefox's IO will be prioritized. And this effect should
+just get worse as more processes do sync_file_range().
+
+So write-behind should provide better interactivity if writes submitted
+are ASYNC and not SYNC.
+
+Thanks
+Vivek
