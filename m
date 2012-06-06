@@ -1,80 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753118Ab2FFC6U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 22:58:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46581 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751312Ab2FFC6S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 22:58:18 -0400
-Date: Tue, 5 Jun 2012 22:57:30 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        linux-fsdevel@vger.kernel.org,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: write-behind on streaming writes
-Message-ID: <20120606025729.GA1197@redhat.com>
-References: <20120528114124.GA6813@localhost>
- <CA+55aFxHt8q8+jQDuoaK=hObX+73iSBTa4bBWodCX3s-y4Q1GQ@mail.gmail.com>
- <20120529155759.GA11326@localhost>
- <CA+55aFykFaBhzzEyRYWRS9Qoy_q_R65Cuth7=XvfOZEMqjn6=w@mail.gmail.com>
- <20120530032129.GA7479@localhost>
- <20120605172302.GB28556@redhat.com>
- <20120605174157.GC28556@redhat.com>
- <20120605184853.GD28556@redhat.com>
- <20120605201045.GE28556@redhat.com>
+	id S1753175Ab2FFDBS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 23:01:18 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:50457 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752040Ab2FFDBQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 23:01:16 -0400
+Date: Wed, 6 Jun 2012 11:00:55 +0800
+From: Wanpeng Li <liwp.linux@gmail.com>
+To: Gavin Shan <shangw@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, Rob Landley <rob@landley.net>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        "David S. Miller" <davem@davemloft.net>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
+        DavidHowells <dhowells@redhat.com>,
+        James Morris <james.l.morris@oracle.com>, Ingo Molnar <mingo@elte.hu>,
+        "MichelLespinasse@kernel" <walken@google.com>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Wanpeng Li <liwp@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2] remove no longer use of pdflush interface
+Message-ID: <20120606030028.GA10953@kernel>
+Reply-To: Wanpeng Li <liwp.linux@gmail.com>
+References: <1338888372-3555-1-git-send-email-liwp.linux@gmail.com>
+ <20120605144519.GA4054@shangw>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120605201045.GE28556@redhat.com>
+In-Reply-To: <20120605144519.GA4054@shangw>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 05, 2012 at 04:10:45PM -0400, Vivek Goyal wrote:
-> On Tue, Jun 05, 2012 at 02:48:53PM -0400, Vivek Goyal wrote:
-> 
-> [..]
-> > So sync_file_range() test keeps less in flight requests on on average
-> > hence better latencies. It might not produce throughput drop on SATA
-> > disks but might have some effect on storage array luns. Will give it
-> > a try.
-> 
-> Well, I ran dd and syn_file_range test on a storage array Lun. Wrote a
-> file of size 4G on ext4. Got about 300MB/s write speed. In fact when I
-> measured time using "time", sync_file_range test finished little faster.
-> 
-> Then I started looking at blktrace output. sync_file_range() test
-> initially (for about 8 seconds), drives shallow queue depth (about 16),
-> but after 8 seconds somehow flusher gets involved and starts submitting
-> lots of requests and we start driving much higher queue depth (upto more than
-> 100). Not sure why flusher should get involved. Is everything working as
-> expected. I thought that as we wait for last 8MB IO to finish before we
-> start new one, we should have at max 16MB of IO in flight. Fengguang?
+On Tue, Jun 05, 2012 at 10:45:20PM +0800, Gavin Shan wrote:
 
-Ok, found it. I am using "int index" which in turn caused signed integer
-extension of (i*BUFSIZE). Once "i" crosses 255, integer overflow happens
-and 64bit offset is sign extended and offsets are screwed. So after 2G
-file size, sync_file_range() effectively stops working leaving dirty
-pages which are cleaned up by flusher. So that explains why flusher
-was kicking during my tests. Change "int" to "unsigned int" and problem
-if fixed.
+Hi Gavin,
 
-Now I ran sync_file_range() test and another program which writes 4GB file
-and does a fdatasync() at the end and compared total execution time. First
-one takes around 12.5 seconds while later one takes around 12.00 seconds.
-So sync_file_range() is just little slower on this SAN lun.
+>
+>- Why not just remove the proc entry since we needn't it anymore?
 
-I had expected a bigger difference as sync_file_range() is just driving
-max queue depth of 32 (total 16MB IO in flight), while flushers are
-driving queue depths up to 140 or so. So in this paritcular test, driving
-much deeper queue depths is not really helping much. (I have seen higher
-throughputs with higher queue depths in the past. Now sure why don't we
-see it here).
+Some user applications maybe still use this interface, so we should take
+attention to back-compatibility issues.
 
-Thanks
-Vivek
+>- If we really want to keep the entry and just output warning message, we *only*
+>  can see the message out of system console. It's reasonable to put the message
+>  into the buffer directly so that any users from system console/telnet/ssh can
+>  see the warning message?
+
+Maybe this is a good idea.
+
+>
+>>From: Wanpeng Li <liwp@linux.vnet.ibm.com>
+>>
+>>------------------
+>>
+>>Change in v2:
+>>
+>>* add printk warning
+>>* add description in Documentation
+>>
+>>------------------
+>>
+>>Signed-off-by: Wanpeng Li <liwp@linux.vnet.ibm.com>
+>>---
+>> .../ABI/obsolete/proc-sys-vm-nr_pdflush_threads    |    5 +++++
+>> Documentation/feature-removal-schedule.txt         |    8 ++++++++
+>> Documentation/sysctl/vm.txt                        |   11 -----------
+>> fs/fs-writeback.c                                  |    5 -----
+>> include/linux/sysctl.h                             |    3 +++
+>> include/linux/writeback.h                          |    5 -----
+>> kernel/sysctl.c                                    |   18 +++++++++++++-----
+>> kernel/sysctl_binary.c                             |    2 +-
+>> 8 files changed, 30 insertions(+), 27 deletions(-)
+>> create mode 100644 Documentation/ABI/obsolete/proc-sys-vm-nr_pdflush_threads
+>>
+>>diff --git a/Documentation/ABI/obsolete/proc-sys-vm-nr_pdflush_threads b/Documentation/ABI/obsolete/proc-sys-vm-nr_pdflush_threads
+>>new file mode 100644
+>>index 0000000..edbe548
+>>--- /dev/null
+>>+++ b/Documentation/ABI/obsolete/proc-sys-vm-nr_pdflush_threads
+>>@@ -0,0 +1,5 @@
+>>+What:		/proc/sys/vm/nr_pdflush_threads
+>>+Date:		June 2012
+>>+Contact:	Wanpeng Li <liwp@linux.vnet.ibm.com>
+>>+Description: Since pdflush is replaced by per-BDI flusher, the interface of old pdflush
+>>+             exported in /proc/sys/vm/ should be removed.
+>>diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
+>>index e4b5775..7eea1ee 100644
+>>--- a/Documentation/feature-removal-schedule.txt
+>>+++ b/Documentation/feature-removal-schedule.txt
+>>@@ -6,6 +6,14 @@ be removed from this file.
+>>
+>> ---------------------------
+>>
+>>+What: /proc/sys/vm/nr_pdflush_threads
+>>+When: 2012
+>>+Why: Since pdflush is deprecated, the interface exported in /proc/sys/vm/
+>>+     should be removed.
+>>+Who: Wanpeng Li <liwp@linux.vnet.ibm.com>
+>>+
+>>+---------------------------
+>>+
+>> What:	CONFIG_APM_CPU_IDLE, and its ability to call APM BIOS in idle
+>> When:	2012
+>> Why:	This optional sub-feature of APM is of dubious reliability,
+>>diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
+>>index 96f0ee8..71c17d2 100644
+>>--- a/Documentation/sysctl/vm.txt
+>>+++ b/Documentation/sysctl/vm.txt
+>>@@ -42,7 +42,6 @@ Currently, these files are in /proc/sys/vm:
+>> - mmap_min_addr
+>> - nr_hugepages
+>> - nr_overcommit_hugepages
+>>-- nr_pdflush_threads
+>> - nr_trim_pages         (only if CONFIG_MMU=n)
+>> - numa_zonelist_order
+>> - oom_dump_tasks
+>>@@ -426,16 +425,6 @@ See Documentation/vm/hugetlbpage.txt
+>>
+>> ==============================================================
+>>
+>>-nr_pdflush_threads
+>>-
+>>-The current number of pdflush threads.  This value is read-only.
+>>-The value changes according to the number of dirty pages in the system.
+>>-
+>>-When necessary, additional pdflush threads are created, one per second, up to
+>>-nr_pdflush_threads_max.
+>>-
+>>-==============================================================
+>>-
+>> nr_trim_pages
+>>
+>> This is available only on NOMMU kernels.
+>>diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+>>index 539f36c..30ddb8a 100644
+>>--- a/fs/fs-writeback.c
+>>+++ b/fs/fs-writeback.c
+>>@@ -52,11 +52,6 @@ struct wb_writeback_work {
+>> 	struct completion *done;	/* set if the caller waits */
+>> };
+>>
+>>-/*
+>>- * We don't actually have pdflush, but this one is exported though /proc...
+>>- */
+>>-int nr_pdflush_threads;
+>>-
+>> /**
+>>  * writeback_in_progress - determine whether there is writeback in progress
+>>  * @bdi: the device's backing_dev_info structure.
+>>diff --git a/include/linux/sysctl.h b/include/linux/sysctl.h
+>>index c34b4c8..f25be74 100644
+>>--- a/include/linux/sysctl.h
+>>+++ b/include/linux/sysctl.h
+>>@@ -964,6 +964,9 @@ extern int proc_doulongvec_ms_jiffies_minmax(struct ctl_table *table, int,
+>> 				      void __user *, size_t *, loff_t *);
+>> extern int proc_do_large_bitmap(struct ctl_table *, int,
+>> 				void __user *, size_t *, loff_t *);
+>>+extern int proc_deprecated(struct ctl_table *, int,
+>>+				void __user *, size_t *, loff_t *);
+>>+
+>>
+>> /*
+>>  * Register a set of sysctl names by calling register_sysctl_table
+>>diff --git a/include/linux/writeback.h b/include/linux/writeback.h
+>>index a2b84f5..13b5df7 100644
+>>--- a/include/linux/writeback.h
+>>+++ b/include/linux/writeback.h
+>>@@ -193,9 +193,4 @@ void tag_pages_for_writeback(struct address_space *mapping,
+>>
+>> void account_page_redirty(struct page *page);
+>>
+>>-/* pdflush.c */
+>>-extern int nr_pdflush_threads;	/* Global so it can be exported to sysctl
+>>-				   read-only. */
+>>-
+>>-
+>> #endif		/* WRITEBACK_H */
+>>diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+>>index 4ab1187..1ab53cb 100644
+>>--- a/kernel/sysctl.c
+>>+++ b/kernel/sysctl.c
+>>@@ -1095,11 +1095,9 @@ static struct ctl_table vm_table[] = {
+>> 		.extra1		= &zero,
+>> 	},
+>> 	{
+>>-		.procname	= "nr_pdflush_threads",
+>>-		.data		= &nr_pdflush_threads,
+>>-		.maxlen		= sizeof nr_pdflush_threads,
+>>-		.mode		= 0444 /* read-only*/,
+>>-		.proc_handler	= proc_dointvec,
+>>+		.procname       = "nr_pdflush_threads",
+>>+		.mode           = 0444 /* read-only */,
+>>+		.proc_handler   = proc_deprecated,
+>> 	},
+>> 	{
+>> 		.procname	= "swappiness",
+>>@@ -2505,6 +2503,15 @@ int proc_doulongvec_ms_jiffies_minmax(struct ctl_table *table, int write,
+>>
+>> #endif /* CONFIG_PROC_SYSCTL */
+>>
+>>+/* notice associated proc deprecated */
+>>+int proc_deprecated(struct ctl_table *table, int write,
+>>+		    void __user *buffer, size_t *lenp, loff_t *ppos)
+>>+{
+>>+	printk(KERN_WARNING "%s exported in /proc is deprecated\n",
+>>+			table->procname);
+>>+	return -ENOSYS;
+>>+}
+>>+
+>> /*
+>>  * No sense putting this after each symbol definition, twice,
+>>  * exception granted :-)
+>>@@ -2517,3 +2524,4 @@ EXPORT_SYMBOL(proc_dointvec_ms_jiffies);
+>> EXPORT_SYMBOL(proc_dostring);
+>> EXPORT_SYMBOL(proc_doulongvec_minmax);
+>> EXPORT_SYMBOL(proc_doulongvec_ms_jiffies_minmax);
+>>+EXPORT_SYMBOL(proc_deprecated);
+>>diff --git a/kernel/sysctl_binary.c b/kernel/sysctl_binary.c
+>>index a650694..65bdcf1 100644
+>>--- a/kernel/sysctl_binary.c
+>>+++ b/kernel/sysctl_binary.c
+>>@@ -147,7 +147,7 @@ static const struct bin_table bin_vm_table[] = {
+>> 	{ CTL_INT,	VM_DIRTY_RATIO,			"dirty_ratio" },
+>> 	/* VM_DIRTY_WB_CS "dirty_writeback_centisecs" no longer used */
+>> 	/* VM_DIRTY_EXPIRE_CS "dirty_expire_centisecs" no longer used */
+>>-	{ CTL_INT,	VM_NR_PDFLUSH_THREADS,		"nr_pdflush_threads" },
+>>+	/* VM_NR_PDFLUSH_THREADS "nr_pdflush_threads" no longer used */
+>> 	{ CTL_INT,	VM_OVERCOMMIT_RATIO,		"overcommit_ratio" },
+>> 	/* VM_PAGEBUF unused */
+>> 	/* VM_HUGETLB_PAGES "nr_hugepages" no longer used */
+>>-- 
+>>1.7.9.5
+>>
+>
+>--
+>To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>the body of a message to majordomo@vger.kernel.org
+>More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>Please read the FAQ at  http://www.tux.org/lkml/
