@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755637Ab2FFOOV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 10:14:21 -0400
-Received: from mga03.intel.com ([143.182.124.21]:19799 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754849Ab2FFOOV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 10:14:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="152355465"
-Date: Wed, 6 Jun 2012 07:14:19 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+	id S1755788Ab2FFOOg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 10:14:36 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:47785 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755693Ab2FFOOf convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 10:14:35 -0400
+Message-ID: <1338992061.2749.111.camel@twins>
+Subject: Re: [PATCH 1/5] perf, x86: Don't assume the alternative cycles
+ encoding is architectural
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Andi Kleen <ak@linux.intel.com>
 Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
         eranian@google.com
-Subject: Re: [PATCH 3/5] perf, x86: Check LBR format capability
-Message-ID: <20120606141419.GE28225@tassilo.jf.intel.com>
+Date: Wed, 06 Jun 2012 16:14:21 +0200
+In-Reply-To: <20120606141247.GD28225@tassilo.jf.intel.com>
 References: <1338944211-28275-1-git-send-email-andi@firstfloor.org>
- <1338944211-28275-3-git-send-email-andi@firstfloor.org>
- <1338979224.2749.93.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1338979224.2749.93.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	 <1338979188.2749.92.camel@twins>
+	 <20120606141247.GD28225@tassilo.jf.intel.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 06, 2012 at 12:40:24PM +0200, Peter Zijlstra wrote:
-> On Tue, 2012-06-05 at 17:56 -0700, Andi Kleen wrote:
-> > From: Andi Kleen <ak@linux.intel.com>
+On Wed, 2012-06-06 at 07:12 -0700, Andi Kleen wrote:
+> On Wed, Jun 06, 2012 at 12:39:48PM +0200, Peter Zijlstra wrote:
+> > On Tue, 2012-06-05 at 17:56 -0700, Andi Kleen wrote:
+> > > From: Andi Kleen <ak@linux.intel.com>
+> > > 
+> > > cycles:p uses an special cycles encoding by default. However that is not
+> > > architectural, so it can only be used when the CPU is known
+> > > (it already caused problems on Sandy Bridge). It may or may not work
+> > > on future CPUs.
+> > > 
+> > > So make it opt-in only. Right now I enabled it on Core2, Nehalem, Westmere
+> > > and not on Sandy-Bridge or Atom.
 > > 
-> > Double check the CPU has a LBR format we support before using it.
-> > 
-> > Also I made the init functions __init while I was on it. 
+> > No. 
 > 
-> Why? Its all after a model test anyway.
+> What do you mean? Are you claiming it's architectural?
 
-Because the spec says we should check it.
+I mean this patch is shite.
 
-It could catch bad VMs and other inconsistencies and it's the right thing
-to do.
+You don't disable it because it doesn't work some place, you fix it.
 
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only
+But don't bother, its already done.
