@@ -1,46 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932184Ab2FFUTt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 16:19:49 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:34370 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932122Ab2FFUTp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 16:19:45 -0400
-Date: Wed, 6 Jun 2012 16:19:44 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Stefani Seibold <stefani@seibold.net>
-cc: Oliver Neukum <oliver@neukum.org>, <linux-kernel@vger.kernel.org>,
-        <gregkh@linuxfoundation.org>, <alan@lxorguk.ukuu.org.uk>,
-        <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH 04/11] remove usb_interface pointer
-In-Reply-To: <1339013051.3437.5.camel@wall-e>
-Message-ID: <Pine.LNX.4.44L0.1206061617580.1183-100000@iolanthe.rowland.org>
+	id S1758253Ab2FFUUE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 16:20:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51864 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757520Ab2FFUTs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 16:19:48 -0400
+Date: Wed, 6 Jun 2012 23:19:43 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Jason Wang <jasowang@redhat.com>, netdev@vger.kernel.org,
+        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Stephen Hemminger <shemminger@vyatta.com>
+Subject: Re: [PATCH] virtio-net: fix a race on 32bit arches
+Message-ID: <20120606201942.GA23405@redhat.com>
+References: <1338971724.2760.3913.camel@edumazet-glaptop>
+ <1338972341.2760.3944.camel@edumazet-glaptop>
+ <20120606111357.GA15070@redhat.com>
+ <1338988210.2760.4485.camel@edumazet-glaptop>
+ <20120606144941.GA17092@redhat.com>
+ <1338995944.26966.6.camel@edumazet-glaptop>
+ <20120606161715.GA17575@redhat.com>
+ <1339002782.26966.22.camel@edumazet-glaptop>
+ <20120606184351.GA20380@redhat.com>
+ <1339013171.26966.60.camel@edumazet-glaptop>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339013171.26966.60.camel@edumazet-glaptop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Jun 2012, Stefani Seibold wrote:
-
-> Am Mittwoch, den 06.06.2012, 20:59 +0200 schrieb Oliver Neukum:
-> > Am Mittwoch, 6. Juni 2012, 18:27:05 schrieb stefani@seibold.net:
-> > > 
-> > > From: Stefani Seibold <stefani@seibold.net>
-> > > 
-> > > this saves a litte bit of memory space in the driver devices structure
-> > > 
+On Wed, Jun 06, 2012 at 10:06:11PM +0200, Eric Dumazet wrote:
+> On Wed, 2012-06-06 at 21:43 +0300, Michael S. Tsirkin wrote:
+> 
+> > 1. We are trying to look at counters for purposes of tuning the device.
+> > E.g. if ethtool reports packets and bytes, we'd like to calculate
+> > average packet size by bytes/packets.
 > > 
-> > This really is the wrong way round.
+> > If both counters are read atomically the metric becomes more exact.
+> > Not a must but nice to have.
 > > 
 > 
-> This was what Grek asked for. And interface is the whole driver only in
-> the open and close path needed.
+> metrics are exact right now.
 
-What about the error messages in the various callback routines?  What 
-about in skel_release?
+Yes, but they are not synchronised between themselves.
+E.g. you can in theory have a report where #of packets > #of bytes.
 
-Alan Stern
-
+I know there's no guarantee they are synchronised
+on an arbitrary device but if they are, without
+slowing fast path, it's nice.
