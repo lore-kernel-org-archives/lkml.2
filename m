@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757268Ab2FFQJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 12:09:26 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40533 "EHLO
+	id S1757283Ab2FFQJh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 12:09:37 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40540 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756974Ab2FFQJZ (ORCPT
+	with ESMTP id S1756432Ab2FFQJe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 12:09:25 -0400
-Date: Wed, 6 Jun 2012 09:08:19 -0700
+	Wed, 6 Jun 2012 12:09:34 -0400
+Date: Wed, 6 Jun 2012 09:09:11 -0700
 From: tip-bot for Oleg Nesterov <oleg@redhat.com>
-Message-ID: <tip-d790d34653ab20c74034902f5f0889bba807949a@git.kernel.org>
+Message-ID: <tip-77fc4af1b59d12ab3b1467adf0a5204806853123@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         torvalds@linux-foundation.org, peterz@infradead.org, ananth@in.ibm.com,
         anton@redhat.com, masami.hiramatsu.pt@hitachi.com,
@@ -18,12 +18,12 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         torvalds@linux-foundation.org, peterz@infradead.org, ananth@in.ibm.com,
         anton@redhat.com, masami.hiramatsu.pt@hitachi.com,
         srikar@linux.vnet.ibm.com, oleg@redhat.com, tglx@linutronix.de
-In-Reply-To: <20120529192914.GD8057@redhat.com>
-References: <20120529192914.GD8057@redhat.com>
+In-Reply-To: <20120529192928.GE8057@redhat.com>
+References: <20120529192928.GE8057@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] uprobes: Teach find_active_uprobe()
-  to provide the "is_swbp" info
-Git-Commit-ID: d790d34653ab20c74034902f5f0889bba807949a
+Subject: [tip:perf/core] uprobes: Change register_for_each_vma()
+  to take mm->mmap_sem for writing
+Git-Commit-ID: 77fc4af1b59d12ab3b1467adf0a5204806853123
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,48 +32,37 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 06 Jun 2012 09:08:25 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 06 Jun 2012 09:09:17 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d790d34653ab20c74034902f5f0889bba807949a
-Gitweb:     http://git.kernel.org/tip/d790d34653ab20c74034902f5f0889bba807949a
+Commit-ID:  77fc4af1b59d12ab3b1467adf0a5204806853123
+Gitweb:     http://git.kernel.org/tip/77fc4af1b59d12ab3b1467adf0a5204806853123
 Author:     Oleg Nesterov <oleg@redhat.com>
-AuthorDate: Tue, 29 May 2012 21:29:14 +0200
+AuthorDate: Tue, 29 May 2012 21:29:28 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 6 Jun 2012 17:15:24 +0200
+CommitDate: Wed, 6 Jun 2012 17:21:48 +0200
 
-uprobes: Teach find_active_uprobe() to provide the "is_swbp" info
+uprobes: Change register_for_each_vma() to take mm->mmap_sem for writing
 
-A separate patch to simplify the review, and for the
-documentation.
+Change register_for_each_vma() to take mm->mmap_sem for writing.
+This is a bit unfortunate but hopefully not too bad, this is the
+slow path anyway.
 
-The patch adds another "int *is_swbp" argument to
-find_active_uprobe(), so far its only caller doesn't use this
-info.
+This is needed to ensure that find_active_uprobe() can not race
+with uprobe_register() which adds the new bp at the same
+bp_vaddr, after find_uprobe() fails and before
+is_swbp_at_addr_fast() checks the memory.
 
-With this patch find_active_uprobe() additionally does:
+IOW, this is needed to ensure that if find_active_uprobe()
+returns NULL but is_swbp == true, we can safely assume that it
+was the "normal" int3 and we should send SIGTRAP.
 
-	- if find_vma() + ->vm_start check fails, *is_swbp = -EFAULT
-
-	- otherwise, if valid_vma() + find_uprobe() fails, it holds
-	  the result of is_swbp_at_addr(), can be negative too. The
-	  latter is only possible if we raced with another thread
-	  which did munmap/etc after we hit this bp.
-
-IOW. If find_active_uprobe(&is_swbp) returns NULL, the caller
-can look at is_swbp to figure out whether the current insn is bp
-or not, or detect the race with another thread if it is
-negative.
-
-Note: I think that performance-wise this change is fine. This
-adds is_swbp_at_addr(), but only if we raced with
-uprobe_unregister() or if we hit the "normal" int3 but this mm
-has uprobes as well. And even in this case the slow
-read_opcode() path is very unlikely, this insn recently
-triggered do_int3(), __copy_from_user_inatomic() shouldn't fail
-in the likely case.
+There is another reason for this change. We are going to replace
+uprobes_state->count with MMF_ flags set by register/unregister
+and cleared by find_active_uprobe(), and set/clear shouldn't
+race with each other.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
@@ -82,54 +71,46 @@ Cc: Anton Arapov <anton@redhat.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20120529192914.GD8057@redhat.com
+Link: http://lkml.kernel.org/r/20120529192928.GE8057@redhat.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/events/uprobes.c |   11 ++++++++---
- 1 files changed, 8 insertions(+), 3 deletions(-)
+ kernel/events/uprobes.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index eaf4d55..ee3df70 100644
+index ee3df70..a2ed82b 100644
 --- a/kernel/events/uprobes.c
 +++ b/kernel/events/uprobes.c
-@@ -1489,7 +1489,7 @@ static bool can_skip_sstep(struct uprobe *uprobe, struct pt_regs *regs)
- 	return false;
- }
- 
--static struct uprobe *find_active_uprobe(unsigned long bp_vaddr)
-+static struct uprobe *find_active_uprobe(unsigned long bp_vaddr, int *is_swbp)
- {
- 	struct mm_struct *mm = current->mm;
- 	struct uprobe *uprobe = NULL;
-@@ -1497,7 +1497,6 @@ static struct uprobe *find_active_uprobe(unsigned long bp_vaddr)
- 
- 	down_read(&mm->mmap_sem);
- 	vma = find_vma(mm, bp_vaddr);
--
- 	if (vma && vma->vm_start <= bp_vaddr) {
- 		if (valid_vma(vma, false)) {
- 			struct inode *inode;
-@@ -1508,6 +1507,11 @@ static struct uprobe *find_active_uprobe(unsigned long bp_vaddr)
- 			offset += (vma->vm_pgoff << PAGE_SHIFT);
- 			uprobe = find_uprobe(inode, offset);
+@@ -853,12 +853,12 @@ static int register_for_each_vma(struct uprobe *uprobe, bool is_register)
  		}
-+
-+		if (!uprobe)
-+			*is_swbp = is_swbp_at_addr(mm, bp_vaddr);
-+	} else {
-+		*is_swbp = -EFAULT;
- 	}
  
- 	srcu_read_unlock_raw(&uprobes_srcu, current->uprobe_srcu_id);
-@@ -1526,9 +1530,10 @@ static void handle_swbp(struct pt_regs *regs)
- 	struct uprobe_task *utask;
- 	struct uprobe *uprobe;
- 	unsigned long bp_vaddr;
-+	int is_swbp;
+ 		mm = vi->mm;
+-		down_read(&mm->mmap_sem);
++		down_write(&mm->mmap_sem);
+ 		vma = find_vma(mm, (unsigned long)vi->vaddr);
+ 		if (!vma || !valid_vma(vma, is_register)) {
+ 			list_del(&vi->probe_list);
+ 			kfree(vi);
+-			up_read(&mm->mmap_sem);
++			up_write(&mm->mmap_sem);
+ 			mmput(mm);
+ 			continue;
+ 		}
+@@ -867,7 +867,7 @@ static int register_for_each_vma(struct uprobe *uprobe, bool is_register)
+ 						vaddr != vi->vaddr) {
+ 			list_del(&vi->probe_list);
+ 			kfree(vi);
+-			up_read(&mm->mmap_sem);
++			up_write(&mm->mmap_sem);
+ 			mmput(mm);
+ 			continue;
+ 		}
+@@ -877,7 +877,7 @@ static int register_for_each_vma(struct uprobe *uprobe, bool is_register)
+ 		else
+ 			remove_breakpoint(uprobe, mm, vi->vaddr);
  
- 	bp_vaddr = uprobe_get_swbp_addr(regs);
--	uprobe = find_active_uprobe(bp_vaddr);
-+	uprobe = find_active_uprobe(bp_vaddr, &is_swbp);
- 
- 	if (!uprobe) {
- 		/* No matching uprobe; signal SIGTRAP. */
+-		up_read(&mm->mmap_sem);
++		up_write(&mm->mmap_sem);
+ 		mmput(mm);
+ 		if (is_register) {
+ 			if (ret && ret == -EEXIST)
