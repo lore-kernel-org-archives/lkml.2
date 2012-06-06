@@ -1,92 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757189Ab2FFQFO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 12:05:14 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:51302 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756782Ab2FFQFJ (ORCPT
+	id S1757200Ab2FFQGK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 12:06:10 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40448 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757167Ab2FFQGH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 12:05:09 -0400
-Date: Wed, 6 Jun 2012 12:05:08 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: Ming Lei <ming.lei@canonical.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        USB list <linux-usb@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] driver core: fix shutdown races with probe/remove
-In-Reply-To: <20120606154808.GK19601@linux.vnet.ibm.com>
-Message-ID: <Pine.LNX.4.44L0.1206061159020.1788-100000@iolanthe.rowland.org>
+	Wed, 6 Jun 2012 12:06:07 -0400
+Date: Wed, 6 Jun 2012 09:05:41 -0700
+From: tip-bot for Oleg Nesterov <oleg@redhat.com>
+Message-ID: <tip-c00b275043adc14d668f36266b890f0c53d46640@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org, ananth@in.ibm.com,
+        anton@redhat.com, masami.hiramatsu.pt@hitachi.com,
+        srikar@linux.vnet.ibm.com, tglx@linutronix.de, oleg@redhat.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org, ananth@in.ibm.com,
+        anton@redhat.com, masami.hiramatsu.pt@hitachi.com,
+        srikar@linux.vnet.ibm.com, oleg@redhat.com, tglx@linutronix.de
+In-Reply-To: <20120529192744.GA8057@redhat.com>
+References: <20120529192744.GA8057@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] uprobes: Optimize is_swbp_at_addr() for current->
+ mm
+Git-Commit-ID: c00b275043adc14d668f36266b890f0c53d46640
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 06 Jun 2012 09:05:47 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Jun 2012, Paul E. McKenney wrote:
+Commit-ID:  c00b275043adc14d668f36266b890f0c53d46640
+Gitweb:     http://git.kernel.org/tip/c00b275043adc14d668f36266b890f0c53d46640
+Author:     Oleg Nesterov <oleg@redhat.com>
+AuthorDate: Tue, 29 May 2012 21:27:44 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 6 Jun 2012 17:13:59 +0200
 
-> On Wed, Jun 06, 2012 at 11:21:52AM -0400, Alan Stern wrote:
-> > On Wed, 6 Jun 2012, Paul E. McKenney wrote:
-> > 
-> > > No sane compiler would change it to a byte-at-a-time store, but the
-> > > compiler would nevertheless be within its rights to do so.  And a quick
-> > > review of certain LKML threads could easily cause anyone to question gcc's
-> > > sanity.  Furthermore, the compiler is permitted to make transformations
-> > > like the following, which it might well do to save a branch:
-> > > 
-> > > 	if (b)				a = 0;
-> > > 		a = 1;			if (b)
-> > > 	else					a = 1;
-> > > 		a = 0;
-> > 
-> > The compiler would be forbidden if the original code were
-> > 
-> > 	if (b)
-> > 		ACCESS_ONCE(a) = 1;
-> > 	else
-> > 		ACCESS_ONCE(a) = 0;
-> > 
-> > But if I remember correctly, the code snippet we were talking was more 
-> > like:
-> > 
-> > 	if (ACCESS_ONCE(b))
-> > 		a = 1;
-> > 
-> > Isn't this use of ACCESS_ONCE unnecessary?
-> 
-> That would depend on what else is nearby.
+uprobes: Optimize is_swbp_at_addr() for current->mm
 
-Here's the relevant part of the original patch:
+Change is_swbp_at_addr() to try to avoid the costly
+read_opcode() if mm == current->mm, __copy_from_user_inatomic()
+should succeed in the likely case.
 
-@@ -467,6 +473,12 @@ EXPORT_SYMBOL_GPL(driver_attach);
- static void __device_release_driver(struct device *dev)
- {
- 	struct device_driver *drv;
-+	int idx;
-+
-+	idx = srcu_read_lock(&driver_srcu);
-+
-+	if (ACCESS_ONCE(device_shutdown_started))
-+		goto exit;
+Currently this optimization is not important, but we are going
+to add more is_swbp_at_addr(current->mm) callers.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: Anton Arapov <anton@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/20120529192744.GA8057@redhat.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/events/uprobes.c |   12 +++++++++++-
+ 1 files changed, 11 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index 985be4d..d0f5ec0 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -333,10 +333,20 @@ static int is_swbp_at_addr(struct mm_struct *mm, unsigned long vaddr)
+ 	uprobe_opcode_t opcode;
+ 	int result;
  
- 	drv = dev->driver;
- 	if (drv) {
-@@ -494,6 +506,8 @@ static void __device_release_driver(struct device *dev)
- 						     dev);
++	if (current->mm == mm) {
++		pagefault_disable();
++		result = __copy_from_user_inatomic(&opcode, (void __user*)vaddr,
++								sizeof(opcode));
++		pagefault_enable();
++
++		if (likely(result == 0))
++			goto out;
++	}
++
+ 	result = read_opcode(mm, vaddr, &opcode);
+ 	if (result)
+ 		return result;
+-
++out:
+ 	if (is_swbp_insn(&opcode))
+ 		return 1;
  
- 	}
-+exit:
-+	srcu_read_unlock(&driver_srcu, idx);
- }
-
-> There are some limitations because volatile accesses are not allowed to
-> move past "sequence points", but it would be possible to come up with
-> similar examples.  This sort of thing is why C1x has a memory model and
-> why it allows variables to be designated as needing to be SMP-safe.
-
-Almost certainly the kernel won't use this facility.  Or else it will 
-just require that _all_ global variables be SMP-safe.
-
-Alan Stern
-
