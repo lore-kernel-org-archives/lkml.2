@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751772Ab2FFLre (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 07:47:34 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:36812 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751801Ab2FFLrd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 07:47:33 -0400
-Date: Wed, 6 Jun 2012 17:14:23 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, linuxppc-dev@lists.ozlabs.org,
-        lkml <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-        benh@kernel.crashing.org, Anton Blanchard <anton@samba.org>,
-        Ingo Molnar <mingo@elte.hu>, oleg@redhat.com
-Subject: Re: [PATCH 1/2] uprobes: Pass probed vaddr to
- arch_uprobe_analyze_insn()
-Message-ID: <20120606114423.GA32094@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20120606091950.GB6745@in.ibm.com>
- <1338974632.2749.87.camel@twins>
- <20120606093744.GB29580@in.ibm.com>
- <20120606094014.GD9495@gmail.com>
+	id S1752798Ab2FFLzX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 07:55:23 -0400
+Received: from hulk.biessmann.org ([62.75.166.25]:37009 "EHLO
+	hulk.biessmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752109Ab2FFLzW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 07:55:22 -0400
+X-Greylist: delayed 1915 seconds by postgrey-1.27 at vger.kernel.org; Wed, 06 Jun 2012 07:55:22 EDT
+From: =?UTF-8?q?Andreas=20Bie=C3=9Fmann?= <andreas@biessmann.de>
+To: linux-kernel@vger.kernel.org
+Cc: Hans Ulli Kroll <ulli.kroll@googlemail.com>,
+        =?UTF-8?q?Andreas=20Bie=C3=9Fmann?= <andreas@biessmann.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH] arm:gemini: fix irq.c
+Date: Wed,  6 Jun 2012 13:22:58 +0200
+Message-Id: <1338981778-19938-1-git-send-email-andreas@biessmann.de>
+X-Mailer: git-send-email 1.7.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20120606094014.GD9495@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12060611-6078-0000-0000-00000BCC80CE
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SPAM_bar: --
+X-SPAM_score: -28
+X-ChkData-Signature: 479a4824087870c93aa9915b09c024b1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Ingo Molnar <mingo@kernel.org> [2012-06-06 11:40:15]:
+Commit 9f97da78bf018206fb623cd351d454af2f105fe0 moved disable_hlt() from
+arch/arm/include/asm/system.h to arch/arm/include/asm/system_misc.h but missed
+to change arch/arm/mach-gemini/irq.c.
 
-> 
-> * Ananth N Mavinakayanahalli <ananth@in.ibm.com> wrote:
-> 
-> > On Wed, Jun 06, 2012 at 11:23:52AM +0200, Peter Zijlstra wrote:
-> > > On Wed, 2012-06-06 at 14:49 +0530, Ananth N Mavinakayanahalli wrote:
-> > > > +int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm, loff_t vaddr)
-> > > 
-> > > Don't we traditionally use unsigned long to pass vaddrs?
-> > 
-> > Right. But the vaddr we pass here is vma_info->vaddr which is loff_t.
-> > I guess I should've made that clear in the patch description.
-> 
-> Why not fix struct vma_info's vaddr type?
-> 
+This patch fixes following error:
 
-Calculating and comparing vaddr results either uses variables of type loff_t. 
-To avoid typecasting and avoid overflow at each of these places, we used
-loff_t. 
+---8<---
+arch/arm/mach-gemini/irq.c: In function 'gemini_init_irq':
+arch/arm/mach-gemini/irq.c:79:2: error: implicit declaration of function 'disable_hlt' [-Werror=implicit-function-declaration]
+--->8---
 
-Ananth, install_breakpoint() already has a variable of type addr of type
-unsigned long.  Why dont you use addr instead of vaddr. 
+Signed-off-by: Andreas Bießmann <andreas@biessmann.de>
+cc: Hans Ulli Kroll <ulli.kroll@googlemail.com> 
+cc: Russell King <linux@arm.linux.org.uk>
+cc: linux-arm-kernel@lists.infradead.org
+---
+Note: this is broken since 3.4 release, 3.3 is sane.
 
+ arch/arm/mach-gemini/irq.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/mach-gemini/irq.c b/arch/arm/mach-gemini/irq.c
+index ca70e5f..020852d 100644
+--- a/arch/arm/mach-gemini/irq.c
++++ b/arch/arm/mach-gemini/irq.c
+@@ -17,6 +17,7 @@
+ #include <linux/sched.h>
+ #include <asm/irq.h>
+ #include <asm/mach/irq.h>
++#include <asm/system_misc.h>
+ #include <mach/hardware.h>
+ 
+ #define IRQ_SOURCE(base_addr)	(base_addr + 0x00)
 -- 
-Thanks and regards
-Srikar
+1.7.10
 
