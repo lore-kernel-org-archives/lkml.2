@@ -1,60 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754176Ab2FFH0F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 03:26:05 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:63178 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751225Ab2FFH0D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 03:26:03 -0400
-Date: Wed, 6 Jun 2012 09:25:58 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Joe Perches <joe@perches.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Kay Sievers <kay@vrfy.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] printk: Shrink printk_sched buffer size, eliminate it
- when !CONFIG_PRINTK
-Message-ID: <20120606072558.GG17808@gmail.com>
-References: <1337096141.27694.82.camel@twins>
- <1337193010.27694.146.camel@twins>
- <CA+55aFzuygx6L-2hVCMbk5cvEdDp6AUtOGq-wYFn=4yEyebPLw@mail.gmail.com>
- <1337468148.573.139.camel@twins>
- <CANQmPXhN92i9E8HqxE7pqz=kOwtn5Mz0crW37H6qs+XD420Yuw@mail.gmail.com>
- <20120523150359.GB26974@gmail.com>
- <1337787838.1734.15.camel@joe2Laptop>
- <20120523155003.GA8202@gmail.com>
- <1338315431.18974.10.camel@joe2Laptop>
- <1338912268.5780.0.camel@joe2Laptop>
+	id S1754251Ab2FFHc1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 03:32:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51904 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751225Ab2FFHcT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 03:32:19 -0400
+From: Oliver Neukum <oneukum@suse.de>
+Organization: SUSE
+To: stefani@seibold.net
+Subject: Re: [PATCH] fix usb skeleton driver
+Date: Wed, 6 Jun 2012 09:29:02 +0200
+User-Agent: KMail/1.13.5 (Linux/3.3.0-12-desktop+; KDE/4.4.4; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        alan@lxorguk.ukuu.org.uk
+References: <1338966036-30443-1-git-send-email-stefani@seibold.net>
+In-Reply-To: <1338966036-30443-1-git-send-email-stefani@seibold.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1338912268.5780.0.camel@joe2Laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201206060929.02676.oneukum@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Joe Perches <joe@perches.com> wrote:
-
-> On Tue, 2012-05-29 at 11:17 -0700, Joe Perches wrote:
-> > The size of the per-cpu printk_sched buf is much larger
-> > than necessary.  The maximum sched message emitted is
-> > ~80 bytes. Shrink the allocation for this printk_sched
-> > buffer from 512 bytes to 128.
-> > 
-> > printk_sched creates an unnecessary per-cpu buffer when
-> > CONFIG_PRINTK is not enabled.  Remove it when appropriate
-> > so embedded uses save a bit of space too.
+Am Mittwoch, 6. Juni 2012, 09:00:36 schrieb stefani@seibold.net:
+> From: Stefani Seibold <stefani@seibold.net>
 > 
-> Ingo, what's happening with this patch?
+> This is a fix for the USB skeleton driver to bring it in shape.
+> 
+> - The usb_device structure pointer will no longer stored 
+> - Every access to the USB will be handled trought the usb_interface pointer
+> - No longer assign a NULL to usb_interface pointer in the disconnect() handler
 
-The merge window is a busy period for most maintainers, so 
-non-fix patches sent in that period typically get delayed,
-to be processed when there's more time available.
+Why? What is gained?
 
-Thanks,
-
-	Ingo
+	Regards
+		Oliver
