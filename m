@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754587Ab2FFHG3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 03:06:29 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35910 "EHLO
+	id S1754603Ab2FFHH3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 03:07:29 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35922 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751225Ab2FFHG1 (ORCPT
+	with ESMTP id S1751225Ab2FFHH1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 03:06:27 -0400
-Date: Wed, 6 Jun 2012 00:06:10 -0700
+	Wed, 6 Jun 2012 03:07:27 -0400
+Date: Wed, 6 Jun 2012 00:07:01 -0700
 From: tip-bot for Jiri Olsa <jolsa@redhat.com>
-Message-ID: <tip-268fb20f832e1eb4afd5113ee31fef9332986b13@git.kernel.org>
+Message-ID: <tip-37073f9e449bc430e6c40b9cffc2558002a0256a@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
         hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
         jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
-        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com
+        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com, mingo@elte.hu
 Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, fweisbec@gmail.com,
-        a.p.zijlstra@chello.nl, dsahern@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, jolsa@redhat.com
-In-Reply-To: <1338380624-7443-3-git-send-email-jolsa@redhat.com>
-References: <1338380624-7443-3-git-send-email-jolsa@redhat.com>
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
+        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+In-Reply-To: <1338380624-7443-4-git-send-email-jolsa@redhat.com>
+References: <1338380624-7443-4-git-send-email-jolsa@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf session:
-  Handle endianity swap on sample_id_all header data
-Git-Commit-ID: 268fb20f832e1eb4afd5113ee31fef9332986b13
+Subject: [tip:perf/urgent] perf evsel:
+  Fix 32 bit values endianity swap for sample_id_all header
+Git-Commit-ID: 37073f9e449bc430e6c40b9cffc2558002a0256a
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,31 +32,26 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 06 Jun 2012 00:06:15 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 06 Jun 2012 00:07:07 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  268fb20f832e1eb4afd5113ee31fef9332986b13
-Gitweb:     http://git.kernel.org/tip/268fb20f832e1eb4afd5113ee31fef9332986b13
+Commit-ID:  37073f9e449bc430e6c40b9cffc2558002a0256a
+Gitweb:     http://git.kernel.org/tip/37073f9e449bc430e6c40b9cffc2558002a0256a
 Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Wed, 30 May 2012 14:23:43 +0200
+AuthorDate: Wed, 30 May 2012 14:23:44 +0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 31 May 2012 11:58:14 -0300
+CommitDate: Thu, 31 May 2012 11:59:01 -0300
 
-perf session: Handle endianity swap on sample_id_all header data
+perf evsel: Fix 32 bit values endianity swap for sample_id_all header
 
-Adding endianity swapping for event header attached via sample_id_all.
-
-Currently we dont do that and it's causing wrong data to be read when
-running report on architecture with different endianity than the record.
-
-The perf is currently able to process 32-bit PPC samples on 32-bit
-and 64-bit x86.
+We swap the sample_id_all header by u64 pointers. Some members of the
+header happen to be 32 bit values. We need to handle them separatelly.
 
 Together with other endianity patches, this change fixies perf report
-discrepancies on origin and target systems as described in test 1
-below, e.g. following perf report diff:
+discrepancies on origin and target systems as described in test 1 below,
+e.g. following perf report diff:
 
 ...
       0.12%               ps  [kernel.kallsyms]    [k] clear_page
@@ -101,159 +96,73 @@ Tested-by: David Ahern <dsahern@gmail.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1338380624-7443-3-git-send-email-jolsa@redhat.com
+Link: http://lkml.kernel.org/r/1338380624-7443-4-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/session.c |   67 +++++++++++++++++++++++++++++++++++++--------
- 1 files changed, 55 insertions(+), 12 deletions(-)
+ tools/perf/util/evsel.c |   29 ++++++++++++++++++++++-------
+ 1 files changed, 22 insertions(+), 7 deletions(-)
 
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 04d1e33..2600916 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -454,37 +454,65 @@ void mem_bswap_64(void *src, int byte_size)
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 91d1913..9f6cebd 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -494,16 +494,24 @@ int perf_evsel__open_per_thread(struct perf_evsel *evsel,
+ }
+ 
+ static int perf_event__parse_id_sample(const union perf_event *event, u64 type,
+-				       struct perf_sample *sample)
++				       struct perf_sample *sample,
++				       bool swapped)
+ {
+ 	const u64 *array = event->sample.array;
++	union u64_swap u;
+ 
+ 	array += ((event->header.size -
+ 		   sizeof(event->header)) / sizeof(u64)) - 1;
+ 
+ 	if (type & PERF_SAMPLE_CPU) {
+-		u32 *p = (u32 *)array;
+-		sample->cpu = *p;
++		u.val64 = *array;
++		if (swapped) {
++			/* undo swap of u64, then swap on individual u32s */
++			u.val64 = bswap_64(u.val64);
++			u.val32[0] = bswap_32(u.val32[0]);
++		}
++
++		sample->cpu = u.val32[0];
+ 		array--;
  	}
- }
  
--static void perf_event__all64_swap(union perf_event *event)
-+static void swap_sample_id_all(union perf_event *event, void *data)
-+{
-+	void *end = (void *) event + event->header.size;
-+	int size = end - data;
-+
-+	BUG_ON(size % sizeof(u64));
-+	mem_bswap_64(data, size);
-+}
-+
-+static void perf_event__all64_swap(union perf_event *event,
-+				   bool sample_id_all __used)
- {
- 	struct perf_event_header *hdr = &event->header;
- 	mem_bswap_64(hdr + 1, event->header.size - sizeof(*hdr));
- }
- 
--static void perf_event__comm_swap(union perf_event *event)
-+static void perf_event__comm_swap(union perf_event *event, bool sample_id_all)
- {
- 	event->comm.pid = bswap_32(event->comm.pid);
- 	event->comm.tid = bswap_32(event->comm.tid);
-+
-+	if (sample_id_all) {
-+		void *data = &event->comm.comm;
-+
-+		data += ALIGN(strlen(data) + 1, sizeof(u64));
-+		swap_sample_id_all(event, data);
-+	}
- }
- 
--static void perf_event__mmap_swap(union perf_event *event)
-+static void perf_event__mmap_swap(union perf_event *event,
-+				  bool sample_id_all)
- {
- 	event->mmap.pid	  = bswap_32(event->mmap.pid);
- 	event->mmap.tid	  = bswap_32(event->mmap.tid);
- 	event->mmap.start = bswap_64(event->mmap.start);
- 	event->mmap.len	  = bswap_64(event->mmap.len);
- 	event->mmap.pgoff = bswap_64(event->mmap.pgoff);
-+
-+	if (sample_id_all) {
-+		void *data = &event->mmap.filename;
-+
-+		data += ALIGN(strlen(data) + 1, sizeof(u64));
-+		swap_sample_id_all(event, data);
-+	}
- }
- 
--static void perf_event__task_swap(union perf_event *event)
-+static void perf_event__task_swap(union perf_event *event, bool sample_id_all)
- {
- 	event->fork.pid	 = bswap_32(event->fork.pid);
- 	event->fork.tid	 = bswap_32(event->fork.tid);
- 	event->fork.ppid = bswap_32(event->fork.ppid);
- 	event->fork.ptid = bswap_32(event->fork.ptid);
- 	event->fork.time = bswap_64(event->fork.time);
-+
-+	if (sample_id_all)
-+		swap_sample_id_all(event, &event->fork + 1);
- }
- 
--static void perf_event__read_swap(union perf_event *event)
-+static void perf_event__read_swap(union perf_event *event, bool sample_id_all)
- {
- 	event->read.pid		 = bswap_32(event->read.pid);
- 	event->read.tid		 = bswap_32(event->read.tid);
-@@ -492,6 +520,9 @@ static void perf_event__read_swap(union perf_event *event)
- 	event->read.time_enabled = bswap_64(event->read.time_enabled);
- 	event->read.time_running = bswap_64(event->read.time_running);
- 	event->read.id		 = bswap_64(event->read.id);
-+
-+	if (sample_id_all)
-+		swap_sample_id_all(event, &event->read + 1);
- }
- 
- static u8 revbyte(u8 b)
-@@ -543,7 +574,8 @@ void perf_event__attr_swap(struct perf_event_attr *attr)
- 	swap_bitfield((u8 *) (&attr->read_format + 1), sizeof(u64));
- }
- 
--static void perf_event__hdr_attr_swap(union perf_event *event)
-+static void perf_event__hdr_attr_swap(union perf_event *event,
-+				      bool sample_id_all __used)
- {
- 	size_t size;
- 
-@@ -554,18 +586,21 @@ static void perf_event__hdr_attr_swap(union perf_event *event)
- 	mem_bswap_64(event->attr.id, size);
- }
- 
--static void perf_event__event_type_swap(union perf_event *event)
-+static void perf_event__event_type_swap(union perf_event *event,
-+					bool sample_id_all __used)
- {
- 	event->event_type.event_type.event_id =
- 		bswap_64(event->event_type.event_type.event_id);
- }
- 
--static void perf_event__tracing_data_swap(union perf_event *event)
-+static void perf_event__tracing_data_swap(union perf_event *event,
-+					  bool sample_id_all __used)
- {
- 	event->tracing_data.size = bswap_32(event->tracing_data.size);
- }
- 
--typedef void (*perf_event__swap_op)(union perf_event *event);
-+typedef void (*perf_event__swap_op)(union perf_event *event,
-+				    bool sample_id_all);
- 
- static perf_event__swap_op perf_event__swap_ops[] = {
- 	[PERF_RECORD_MMAP]		  = perf_event__mmap_swap,
-@@ -999,6 +1034,15 @@ static int perf_session__process_user_event(struct perf_session *session, union
+@@ -523,9 +531,16 @@ static int perf_event__parse_id_sample(const union perf_event *event, u64 type,
  	}
- }
  
-+static void event_swap(union perf_event *event, bool sample_id_all)
-+{
-+	perf_event__swap_op swap;
+ 	if (type & PERF_SAMPLE_TID) {
+-		u32 *p = (u32 *)array;
+-		sample->pid = p[0];
+-		sample->tid = p[1];
++		u.val64 = *array;
++		if (swapped) {
++			/* undo swap of u64, then swap on individual u32s */
++			u.val64 = bswap_64(u.val64);
++			u.val32[0] = bswap_32(u.val32[0]);
++			u.val32[1] = bswap_32(u.val32[1]);
++		}
 +
-+	swap = perf_event__swap_ops[event->header.type];
-+	if (swap)
-+		swap(event, sample_id_all);
-+}
-+
- static int perf_session__process_event(struct perf_session *session,
- 				       union perf_event *event,
- 				       struct perf_tool *tool,
-@@ -1007,9 +1051,8 @@ static int perf_session__process_event(struct perf_session *session,
- 	struct perf_sample sample;
- 	int ret;
++		sample->pid = u.val32[0];
++		sample->tid = u.val32[1];
+ 	}
  
--	if (session->header.needs_swap &&
--	    perf_event__swap_ops[event->header.type])
--		perf_event__swap_ops[event->header.type](event);
-+	if (session->header.needs_swap)
-+		event_swap(event, session->sample_id_all);
+ 	return 0;
+@@ -562,7 +577,7 @@ int perf_event__parse_sample(const union perf_event *event, u64 type,
+ 	if (event->header.type != PERF_RECORD_SAMPLE) {
+ 		if (!sample_id_all)
+ 			return 0;
+-		return perf_event__parse_id_sample(event, type, data);
++		return perf_event__parse_id_sample(event, type, data, swapped);
+ 	}
  
- 	if (event->header.type >= PERF_RECORD_HEADER_MAX)
- 		return -EINVAL;
+ 	array = event->sample.array;
