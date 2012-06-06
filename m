@@ -1,50 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755216Ab2FFNoH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 09:44:07 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:40098 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754680Ab2FFNoF convert rfc822-to-8bit (ORCPT
+	id S1755312Ab2FFNpw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 09:45:52 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:54788 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753547Ab2FFNpu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 09:44:05 -0400
+	Wed, 6 Jun 2012 09:45:50 -0400
+Message-ID: <4FCF5F04.7030207@gmail.com>
+Date: Wed, 06 Jun 2012 19:15:40 +0530
+From: Subash Patel <subashrp@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120530140444.GA10543@frolo.macqel>
-References: <1338327216-15309-1-git-send-email-geert@linux-m68k.org>
-	<20120530102226.GA28628@frolo.macqel>
-	<CAMuHMdV5GVZR1BvGD3EncDFfPt=Bt9ndkKE8Mp7euE9KoSaGNQ@mail.gmail.com>
-	<20120530140444.GA10543@frolo.macqel>
-Date: Wed, 6 Jun 2012 15:44:03 +0200
-X-Google-Sender-Auth: 9Pv5C9JdZTt_wVdgwKb2Pn6EIBQ
-Message-ID: <CAMuHMdW0XqO9iOiuOXrRao_A41L-0iZXXyZugCmiizG=7-VkHg@mail.gmail.com>
-Subject: Re: [PATCH] m68k: Use generic strncpy_from_user(), strlen_user(), and strnlen_user()
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Philippe De Muyter <phdm@macqel.be>
-Cc: linux-m68k@vger.kernel.org, Greg Ungerer <gerg@uclinux.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+CC: linux-arm-kernel@lists.infradead.org, linaro-mm-sig@lists.linaro.org,
+        linux-mm@kvack.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Chunsang Jeong <chunsang.jeong@linaro.org>,
+        Krishna Reddy <vdumpa@nvidia.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Hiroshi Doyu <hdoyu@nvidia.com>,
+        Subash Patel <subash.ramaswamy@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Abhinav Kochhar <abhinav.k@samsung.com>,
+        Tomasz Stanislawski <t.stanislaws@samsung.com>
+Subject: Re: [PATCH/RFC 0/2] ARM: DMA-mapping: new extensions for buffer sharing
+ (part 2)
+References: <1338988657-20770-1-git-send-email-m.szyprowski@samsung.com>
+In-Reply-To: <1338988657-20770-1-git-send-email-m.szyprowski@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 30, 2012 at 4:04 PM, Philippe De Muyter <phdm@macqel.be> wrote:
->> > Sorry, I did not follow what happened to unaligned accesses, but
->> > CPU32 family (at least 68340) crashes on unaligned accesses.
->>
->> We don't seem to have CONFIG_M68340 in arch/m68k/Kconfig.cpu?
+Hello Marek,
+
+Thanks for the patch. We had found below two challenges when using UMM 
+related to the cache invalidate/flush after/before performing the DMA 
+operations:
+
+a) when using HIGH_MEM pages, the page-table walk consumed lot of time 
+to get the KVA of each page. Moreover the overhead was from the spinlock 
+we acquire/release for each of the page.
+
+b) One of my colleague tried to map/unmap the buffers only once instead 
+of every time(which results in this problem) and we didn't find 
+significant performance improvement. The reason is (as per my knowledge) 
+when we give address range to cache controller to invalidate/flush out, 
+the hardware operation is too fast(if there were any cache lines 
+associated with the pages at all) to add any overhead to the CPU operation.
+
+But this patch makes logical flow for dma-mapping one step closer :) I 
+will adopt it as part of pulling all your new patches, and will keep you 
+updated of any new findings.
+
+Regards,
+Subash
+
+On 06/06/2012 06:47 PM, Marek Szyprowski wrote:
+> Hello,
 >
-> I have a local port here (but based on an ancient linux kernel, 2.6.2 IIRC)
-
-Just to be sure: basically include/asm-m68knommu/unaligned.h has always
-been wrong (also in 2.6.2), so you had to fix this locally?
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+> This is a continuation of the dma-mapping extensions posted in the
+> following thread:
+> http://thread.gmane.org/gmane.linux.kernel.mm/78644
+>
+> We noticed that some advanced buffer sharing use cases usually require
+> creating a dma mapping for the same memory buffer for more than one
+> device. Usually also such buffer is never touched with CPU, so the data
+> are processed by the devices.
+>
+>  From the DMA-mapping perspective this requires to call one of the
+> dma_map_{page,single,sg} function for the given memory buffer a few
+> times, for each of the devices. Each dma_map_* call performs CPU cache
+> synchronization, what might be a time consuming operation, especially
+> when the buffers are large. We would like to avoid any useless and time
+> consuming operations, so that was the main reason for introducing
+> another attribute for DMA-mapping subsystem: DMA_ATTR_SKIP_CPU_SYNC,
+> which lets dma-mapping core to skip CPU cache synchronization in certain
+> cases.
+>
+> The proposed patches have been generated on top of the ARM DMA-mapping
+> redesign patch series on Linux v3.4-rc7. They are also available on the
+> following GIT branch:
+>
+> git://git.linaro.org/people/mszyprowski/linux-dma-mapping.git 3.4-rc7-arm-dma-v10-ext
+>
+> with all require patches on top of vanilla v3.4-rc7 kernel. I will
+> resend them rebased onto v3.5-rc1 soon.
+>
+> Best regards
+> Marek Szyprowski
+> Samsung Poland R&D Center
+>
+>
+> Patch summary:
+>
+> Marek Szyprowski (2):
+>    common: DMA-mapping: add DMA_ATTR_SKIP_CPU_SYNC attribute
+>    ARM: dma-mapping: add support for DMA_ATTR_SKIP_CPU_SYNC attribute
+>
+>   Documentation/DMA-attributes.txt |   24 ++++++++++++++++++++++++
+>   arch/arm/mm/dma-mapping.c        |   20 +++++++++++---------
+>   include/linux/dma-attrs.h        |    1 +
+>   3 files changed, 36 insertions(+), 9 deletions(-)
+>
