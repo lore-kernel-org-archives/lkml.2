@@ -1,53 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752421Ab2FFLqL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 07:46:11 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:57916 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751366Ab2FFLqJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 07:46:09 -0400
+	id S1751772Ab2FFLre (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 07:47:34 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:36812 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751801Ab2FFLrd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 07:47:33 -0400
+Date: Wed, 6 Jun 2012 17:14:23 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, linuxppc-dev@lists.ozlabs.org,
+        lkml <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
+        benh@kernel.crashing.org, Anton Blanchard <anton@samba.org>,
+        Ingo Molnar <mingo@elte.hu>, oleg@redhat.com
+Subject: Re: [PATCH 1/2] uprobes: Pass probed vaddr to
+ arch_uprobe_analyze_insn()
+Message-ID: <20120606114423.GA32094@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20120606091950.GB6745@in.ibm.com>
+ <1338974632.2749.87.camel@twins>
+ <20120606093744.GB29580@in.ibm.com>
+ <20120606094014.GD9495@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <4FCE9ADB.9000405@gmail.com>
-References: <4FCE25C6.2080601@gmail.com>
-	<1338912052.2749.2.camel@twins>
-	<1338912312.2749.6.camel@twins>
-	<4FCE3DE3.9060805@gmail.com>
-	<1338917712.2749.24.camel@twins>
-	<4FCE9ADB.9000405@gmail.com>
-Date: Wed, 6 Jun 2012 13:46:07 +0200
-Message-ID: <CABPqkBRDvg9AnSm0jR_JWst6Cy7Me0BgEK9E7=G92nLK87fJ9Q@mail.gmail.com>
-Subject: Re: git bisect and perf
-From: Stephane Eranian <eranian@google.com>
-To: David Ahern <dsahern@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20120606094014.GD9495@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12060611-6078-0000-0000-00000BCC80CE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 6, 2012 at 1:48 AM, David Ahern <dsahern@gmail.com> wrote:
-> Thanks for the explanation and patience.
->
->
-> On 6/5/12 11:35 AM, Peter Zijlstra wrote:
->>
->> Now not all events the Intel PMU can do are PEBS capable; in fact most
->> aren't. So the whole cycles thing is about mapping the regular cycles
->> event to something that is PEBS capable.
->>
->
->
-> I think I get it now. 7639dae0 is the commit I needed. With it 2.6.35.14 can
-> do cycles:pp profiling.
->
-> In general only the events listed in intel_XXXXX_pebs_events can be used
-> with :p.
->
-Yes.
+* Ingo Molnar <mingo@kernel.org> [2012-06-06 11:40:15]:
 
-> David
->
+> 
+> * Ananth N Mavinakayanahalli <ananth@in.ibm.com> wrote:
+> 
+> > On Wed, Jun 06, 2012 at 11:23:52AM +0200, Peter Zijlstra wrote:
+> > > On Wed, 2012-06-06 at 14:49 +0530, Ananth N Mavinakayanahalli wrote:
+> > > > +int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm, loff_t vaddr)
+> > > 
+> > > Don't we traditionally use unsigned long to pass vaddrs?
+> > 
+> > Right. But the vaddr we pass here is vma_info->vaddr which is loff_t.
+> > I guess I should've made that clear in the patch description.
+> 
+> Why not fix struct vma_info's vaddr type?
+> 
+
+Calculating and comparing vaddr results either uses variables of type loff_t. 
+To avoid typecasting and avoid overflow at each of these places, we used
+loff_t. 
+
+Ananth, install_breakpoint() already has a variable of type addr of type
+unsigned long.  Why dont you use addr instead of vaddr. 
+
+-- 
+Thanks and regards
+Srikar
+
