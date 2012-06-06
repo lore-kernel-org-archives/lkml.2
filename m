@@ -1,84 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932082Ab2FFPyf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 11:54:35 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40233 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754473Ab2FFPyd (ORCPT
+	id S1756765Ab2FFPzA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 11:55:00 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:49630 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753788Ab2FFPy6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 11:54:33 -0400
-Date: Wed, 6 Jun 2012 08:54:17 -0700
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-ID: <tip-7f1b43936f0ecad14770634c021cf4a929aec74d@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        rostedt@goodmis.org, a.p.zijlstra@chello.nl, roland@kernel.org,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, rostedt@goodmis.org, roland@kernel.org,
-        tglx@linutronix.de
-In-Reply-To: <1337282386.4281.77.camel@twins>
-References: <1337282386.4281.77.camel@twins>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] sched/rt:
-  Fix lockdep annotation within find_lock_lowest_rq()
-Git-Commit-ID: 7f1b43936f0ecad14770634c021cf4a929aec74d
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 6 Jun 2012 11:54:58 -0400
+Date: Wed, 6 Jun 2012 17:54:51 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Liu Ying <Ying.Liu@freescale.com>
+cc: FlorianSchandinat@gmx.de, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] mx3fb: support pan display with fb_set_var
+In-Reply-To: <1338352042-26522-1-git-send-email-Ying.Liu@freescale.com>
+Message-ID: <Pine.LNX.4.64.1206061711090.12739@axis700.grange>
+References: <1338352042-26522-1-git-send-email-Ying.Liu@freescale.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 06 Jun 2012 08:54:24 -0700 (PDT)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:6TQHA7dAp74XLAdrUdMvPyrL1pIZ3i4y7ODx6+4UHo4
+ cN/l7BRrYMSqINB3Pwz9nIxcl4QIwdt7g7tmxoan2T0QK6Jiex
+ zV/HCJ8/kR0C1fXPFdKqsJ6tSueWXIxUiuntuXq3T7h5NLBgYe
+ 8ub7Jup2/EqEJ7SxkP3YHX1McUru3o+tXHcXD/aebi+LcRoGh2
+ R0hxunCPNQ+y7BLN4mTJc010HCFvxPkUv4nr9ZwCGA758catnJ
+ 3cjzJPXdUv3hnqu8Yn3BsgORshBcUbOuKot+pYPKjM+S3YNgxf
+ IRZhT1BHtfWiUFMVqXHEYkphUxoEytyr0+JgF/RMS18HpdcYTj
+ WvvcsrzK5QRsHyKSMoi31+kSs6SwwsG+2BlS3puYP2Ot/EahGZ
+ DOonXZ91YN4Bw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7f1b43936f0ecad14770634c021cf4a929aec74d
-Gitweb:     http://git.kernel.org/tip/7f1b43936f0ecad14770634c021cf4a929aec74d
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Thu, 17 May 2012 21:19:46 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 6 Jun 2012 16:52:26 +0200
+On Wed, 30 May 2012, Liu Ying wrote:
 
-sched/rt: Fix lockdep annotation within find_lock_lowest_rq()
+> Users may call FBIOPUT_VSCREENINFO ioctrl to do pan display.
+> This ioctrl relies on fb_set_var() to do the job. fb_set_var()
+> calls custom fb_set_par() method and then calls custom
+> fb_pan_display() method. The current implementation of mx3fb
+> reinitializes IPU display controller every time the custom
+> fb_set_par() method is called, which makes the display flash
+> if fb_set_var() is called to do panning frequently. The custom
+> fb_pan_display() method checks if the current xoffset and
+> yoffset are different from previous ones before doing actual
+> panning, which prevents the panning from happening within the
+> fb_set_var() context. This patch checks new var info to decide
+> whether we really need to reinitialize IPU display controller.
+> We ignore xoffset and yoffset update because it doesn't require
+> to reinitialize the controller. Users may specify activate field
+> of var info with FB_ACTIVATE_NOW and FB_ACTIVATE_FORCE to
+> reinialize the controller by force. Meanwhile, this patch removes
+> the check in custom fb_pan_display() method mentioned before to
+> have the panning work within fb_set_var() context. It doesn't
+> hurt to do panning again if there is no update for xoffset and
+> yoffset.
 
-Roland Dreier reported spurious, hard to trigger lockdep warnings
-within the scheduler - without any real lockup.
+You are really addressing 2 separate problems here: (1) panning cannot be 
+set using FBIOPUT_VSCREENINFO and (2) screen flashes every time 
+fb_set_var() is called, even if only panning is required. The reason for 
+the first one is, that in fb_set_var() info->var is already updated from 
+the new *var when fb_pan_display() is called. So, as you correctly 
+identified, the condition
 
-This bit gives us the right clue:
+	if (fbi->var.xoffset == var->xoffset &&
+	    fbi->var.yoffset == var->yoffset)
+		return 0;	/* No change, do nothing */
 
-> [89945.640512]  [<ffffffff8103fa1a>] double_lock_balance+0x5a/0x90
-> [89945.640568]  [<ffffffff8104c546>] push_rt_task+0xc6/0x290
+is trivially met and no panning takes place. Instead, you can use your 
+idea to cache var_info locally and check against that one to see, whether 
+offsets have changed, instead of removing that check completely.
 
-if you look at that code you'll find the double_lock_balance() in
-question is the one in find_lock_lowest_rq() [yay for inlining].
+To solve the second problem you can use your check against the cached copy 
+of var_info. See below for more details.
 
-Now find_lock_lowest_rq() has a bug.. it fails to use
-double_unlock_balance() in one exit path, if this results in a retry in
-push_rt_task() we'll call double_lock_balance() again, at which point
-we'll run into said lockdep confusion.
+> 
+> Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
+> ---
+>  drivers/video/mx3fb.c |   31 +++++++++++++++++++++++++++----
+>  1 files changed, 27 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/video/mx3fb.c b/drivers/video/mx3fb.c
+> index e3406ab..238b9aa 100644
+> --- a/drivers/video/mx3fb.c
+> +++ b/drivers/video/mx3fb.c
+> @@ -269,6 +269,8 @@ struct mx3fb_info {
+>  	struct scatterlist		sg[2];
+>  
+>  	u32				sync;	/* preserve var->sync flags */
 
-Reported-by: Roland Dreier <roland@kernel.org>
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1337282386.4281.77.camel@twins
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+An incremental patch could then also remove the above .sync member and 
+switch to using .cur_var.sync instead.
+
+> +
+> +	struct fb_var_screeninfo	cur_var; /* current var info */
+>  };
+>  
+>  static void mx3fb_dma_done(void *);
+> @@ -721,6 +723,26 @@ static void mx3fb_dma_done(void *arg)
+>  	complete(&mx3_fbi->flip_cmpl);
+>  }
+>  
+> +static bool mx3fb_need_not_to_set_par(struct fb_info *fbi)
+
+How about inverting logic and calling the function 
+mx3fb_must_update_par()?
+
+> +{
+> +	struct mx3fb_info *mx3_fbi = fbi->par;
+> +	struct fb_var_screeninfo old_var = mx3_fbi->cur_var;
+> +	struct fb_var_screeninfo new_var = fbi->var;
+> +
+> +	if ((fbi->var.activate & FB_ACTIVATE_FORCE) &&
+> +	    (fbi->var.activate & FB_ACTIVATE_MASK) == FB_ACTIVATE_NOW)
+> +		return false;
+> +
+> +	/*
+> +	 * Ignore xoffset and yoffset update,
+> +	 * because pan display handles this case.
+> +	 */
+> +	old_var.xoffset = new_var.xoffset;
+> +	old_var.yoffset = new_var.yoffset;
+> +
+> +	return !memcmp(&old_var, &new_var, sizeof(struct fb_var_screeninfo));
+> +}
+> +
+>  static int __set_par(struct fb_info *fbi, bool lock)
+>  {
+>  	u32 mem_len;
+> @@ -732,6 +754,9 @@ static int __set_par(struct fb_info *fbi, bool lock)
+>  	struct idmac_video_param *video = &ichan->params.video;
+>  	struct scatterlist *sg = mx3_fbi->sg;
+>  
+> +	if (mx3fb_need_not_to_set_par(fbi))
+> +		return 0;
+> +
+
+__set_par() is called from 2 locations: from mx3fb_set_par() and 
+init_fb_chan(), called from probing. You don't need to perform the above 
+check in init_fb_chan() - there you always have to configure. Maybe better 
+put it in mx3fb_set_par() just before calling __set_par() like
+
+	ret = mx3fb_must_set_par() ? __set_par() : 0;
+
+As mentioned above, this solves problem #2 and should go into patch #2.
+
+>  	/* Total cleanup */
+>  	if (mx3_fbi->txd)
+>  		sdc_disable_channel(mx3_fbi);
+> @@ -808,6 +833,8 @@ static int __set_par(struct fb_info *fbi, bool lock)
+>  	if (mx3_fbi->blank == FB_BLANK_UNBLANK)
+>  		sdc_enable_channel(mx3_fbi);
+>  
+> +	mx3_fbi->cur_var = fbi->var;
+> +
+
+Yes, but preserve xoffset and yoffset - you don't apply them yet in 
+__set_par().
+
+>  	return 0;
+>  }
+>  
+> @@ -1068,10 +1095,6 @@ static int mx3fb_pan_display(struct fb_var_screeninfo *var,
+>  		return -EINVAL;
+>  	}
+>  
+> -	if (fbi->var.xoffset == var->xoffset &&
+> -	    fbi->var.yoffset == var->yoffset)
+> -		return 0;	/* No change, do nothing */
+> -
+
+I think, it would be better not to remove these completely, but check 
+against cached .cur_var, and then update those values too.
+
+>  	y_bottom = var->yoffset;
+>  
+>  	if (!(var->vmode & FB_VMODE_YWRAP))
+> -- 
+> 1.7.1
+
+Makes sense? Or have I misunderstood something?
+
+Thanks
+Guennadi
 ---
- kernel/sched/rt.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index 2a4e8df..573e1ca 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -1562,7 +1562,7 @@ static struct rq *find_lock_lowest_rq(struct task_struct *task, struct rq *rq)
- 				     task_running(rq, task) ||
- 				     !task->on_rq)) {
- 
--				raw_spin_unlock(&lowest_rq->lock);
-+				double_unlock_balance(rq, lowest_rq);
- 				lowest_rq = NULL;
- 				break;
- 			}
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
