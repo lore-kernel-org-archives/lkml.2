@@ -1,49 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754256Ab2FFGSK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 02:18:10 -0400
-Received: from trent.utfs.org ([94.185.90.103]:45258 "EHLO trent.utfs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750885Ab2FFGSJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 02:18:09 -0400
-Date: Tue, 5 Jun 2012 23:17:49 -0700 (PDT)
-From: Christian Kujau <lists@nerdbynature.de>
-To: Matt Carlson <mcarlson@broadcom.com>
-cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: tg3: transmit timed out, resetting
-In-Reply-To: <20120606010255.GA9991@mcarlson.broadcom.com>
-Message-ID: <alpine.DEB.2.01.1206052314340.5568@trent.utfs.org>
-References: <alpine.DEB.2.01.1206041546070.5568@trent.utfs.org> <20120606010255.GA9991@mcarlson.broadcom.com>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
+	id S1754463Ab2FFGW5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 02:22:57 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:49990 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751066Ab2FFGW4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 02:22:56 -0400
+Date: Wed, 6 Jun 2012 10:22:50 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>, Oleg Nesterov <oleg@redhat.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>
+Subject: Re: [PATCH] fcntl: Add F_GETOWNER_UIDS option v3
+Message-ID: <20120606062250.GA1934@moon>
+References: <20120605082512.GC15171@moon>
+ <20120605154743.53d494e6.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120605154743.53d494e6.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 5 Jun 2012 at 18:02, Matt Carlson wrote:
-> I'm attempting to reproduce this in our lab.  In the meantime, 
-> the latest revisions of the driver output a register dump and some
-> additional information when transmit timeouts happen.  It would be
-> useful to see that data.
+On Tue, Jun 05, 2012 at 03:47:43PM -0700, Andrew Morton wrote:
+> > 
+> > This option is valid iif CONFIG_CHECKPOINT_RESTORE
+> > is turned on, otherwise returning -EINVAL.
+> 
+> um, OK.
+> 
+> But we still have
+> 
+> c-r-prctl-add-ability-to-set-new-mm_struct-exe_file-update-after-mm-num_exe_file_vmas-removal.patch
+> c-r-prctl-add-ability-to-set-new-mm_struct-exe_file-add-minimal-address-test-to-pr_set_mm.patch
+> c-r-prctl-add-ability-to-get-clear_tid_address.patch
+> c-r-prctl-drop-vma-flags-test-on-pr_set_mm_-stack-data-assignment.patch
+> 
+> floating about unmerged due to various unresolved issues.  Can we
+> please get all that stuff nailed down before working on new things?
 
-I've only copied so much of the warning into my initial email, but after 
-that, much more followed, which looks like a register dump. I've put 
-everything (the whole logs and more) here:
+Hmm, Andrew, I must admit I don't understand which unresolved issues
+here with the rest of prctl SET_MM code. Could you please clarify?
+Do they not apply on current linux-next, or something like that?
 
-  http://nerdbynature.de/bits/3.4.0/tg3/
-
-Is that what you're looking for?
-
-> Would it be possible to try a the latest kernels and get this information?
-
-I've observed this with 3.4, but I'll update to latest 3.5-git tomorrow 
-and let you know.
-
-Thanks for replying,
-Christian.
--- 
-BOFH excuse #192:
-
-runaway cat on system.
+	Cyrill
