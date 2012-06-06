@@ -1,70 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932086Ab2FFRlJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 13:41:09 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:52612 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756915Ab2FFRlH (ORCPT
+	id S1757650Ab2FFRlN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 13:41:13 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:58655 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757568Ab2FFRlJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 13:41:07 -0400
-Subject: Re: [PATCH v9] tilegx network driver: initial support
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: bhutchings@solarflare.com, arnd@arndb.de,
-        David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-In-Reply-To: <201206042023.q54KNEZp003834@farm-0002.internal.tilera.com>
-References: <201205201636.q4KGaoA3003845@farm-0027.internal.tilera.com>
-	 <20120520.165546.1211013675964130504.davem@davemloft.net>
-	 <201205240115.q4O1FwqG006336@lab-41.internal.tilera.com>
-	 <20120524.003148.700603156196416506.davem@davemloft.net>
-	 <201205251853.q4PIrE7T000723@lab-41.internal.tilera.com>
-	 <201206042023.q54KNEZp003834@farm-0002.internal.tilera.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 06 Jun 2012 19:40:59 +0200
-Message-ID: <1339004459.26966.31.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 6 Jun 2012 13:41:09 -0400
+Date: Wed, 6 Jun 2012 19:41:04 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        shai@scalemp.com, akpm@linux-foundation.org, tglx@linutronix.de,
+        ido@wizery.com, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/mm] x86/pat: Avoid contention on cpa_lock if possible
+Message-ID: <20120606174104.GB2110@gmail.com>
+References: <1334873492-31255-1-git-send-email-ido@wizery.com>
+ <tip-d2956406fb61e15ad2b47eda823288db4996acf1@git.kernel.org>
+ <1339003443.23343.6.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1339003443.23343.6.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-06-04 at 16:12 -0400, Chris Metcalf wrote:
 
-> +/* Allocate and push a buffer. */
-> +static bool tile_net_provide_buffer(bool small)
-> +{
-> +	int stack = small ? small_buffer_stack : large_buffer_stack;
-> +	const unsigned long buffer_alignment = 128;
-> +	struct sk_buff *skb;
-> +	int len;
-> +
-> +	len = sizeof(struct sk_buff **) + buffer_alignment;
-> +	len += (small ? 128 : 1664);
+* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
 
-1664 is a magic number, it should be a nice define
+> On Wed, 2012-06-06 at 09:18 -0700, tip-bot for Shai Fultheim wrote:
+> 
+> > [ I absolutely hate these locking patterns ... yet I have no better idea. Maybe the gents on Cc: ... ]
+> > Signed-off-by: Ingo Molnar <mingo@kernel.org>
+> 
+> Oh yuck, this is vile..
+> 
+> static struct static_key scale_mp_trainwreck = STATIC_KEY_INIT_FALSE;
+> 
+> static DEFINE_SPINLOCK(_cpa_lock);
+> 
+> static inline void cpa_lock(void)
+> {
+> 	if (static_key_false(&scale_mp_trainwreck))
+> 		return;
+> 
+> 	spin_lock(&_cpa_lock);
+> }
+> 
+> static inline void cpa_unlock(void)
+> {
+> 	if (static_key_false(&scale_mp_trainwreck))
+> 		return;
+> 
+> 	spin_lock(&_cpa_lock);
+> }
+> 
+> And then use cpa_{,un}lock(), and the scale-mp guys can
+> static_key_slow_inc(&scale_mp_trainwreck).
+> 
+> [ and yes I hate those jump_label names ... but I'm not wanting
+>   to go through another round of bike-shed painting. ]
 
-#define ..... ( ETH_DATA_LEN + .... )
+ok.
 
-> +	skb = dev_alloc_skb(len);
-> +	if (skb == NULL)
-> +		return false;
-> +
-> +	/* Make room for a back-pointer to 'skb' and guarantee alignment. */
-> +	skb_reserve(skb, sizeof(struct sk_buff **));
-> +	skb_reserve(skb, -(long)skb->data & (buffer_alignment - 1));
-> +
-> +	/* Save a back-pointer to 'skb'. */
-> +	*(struct sk_buff **)(skb->data - sizeof(struct sk_buff **)) = skb;
-> +
-> +	/* Make sure "skb" and the back-pointer have been flushed. */
-> +	wmb();
+Another problem this patch has is inadequate testing:
 
-Interesting, have you considered using build_skb() instead of this
-convoluted thing ?
+arch/x86/mm/pageattr.c:798:2: error: implicit declaration of 
+function ‘is_vsmp_box’ [-Werror=implicit-function-declaration]
 
-This could save some cache misses...
+So I'm removing it from tip:x86/mm for now.
 
+Thanks,
 
-
+	Ingo
