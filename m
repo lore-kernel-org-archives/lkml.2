@@ -1,85 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757359Ab2FFQa4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 12:30:56 -0400
-Received: from www84.your-server.de ([213.133.104.84]:36968 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756175Ab2FFQaz (ORCPT
+	id S1757161Ab2FFQeR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 12:34:17 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:60406 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756811Ab2FFQeQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 12:30:55 -0400
-From: stefani@seibold.net
-To: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org, oneukum@suse.de
-Cc: alan@lxorguk.ukuu.org.uk, linux-usb@vger.kernel.org,
-        Stefani Seibold <stefani@seibold.net>
-Subject: [PATCH 10/11] Introduce single user mode
-Date: Wed,  6 Jun 2012 18:27:11 +0200
-Message-Id: <1339000032-10313-11-git-send-email-stefani@seibold.net>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1339000032-10313-1-git-send-email-stefani@seibold.net>
-References: <1339000032-10313-1-git-send-email-stefani@seibold.net>
-X-Authenticated-Sender: stefani@seibold.net
+	Wed, 6 Jun 2012 12:34:16 -0400
+Date: Wed, 6 Jun 2012 22:00:50 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org, lkml <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>, benh@kernel.crashing.org,
+        Anton Blanchard <anton@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        peterz@infradead.org
+Subject: Re: [PATCH 1/2] uprobes: Pass probed vaddr to
+ arch_uprobe_analyze_insn()
+Message-ID: <20120606163050.GB32094@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20120606091950.GB6745@in.ibm.com>
+ <20120606150848.GA24641@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20120606150848.GA24641@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12060616-6148-0000-0000-000006790647
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefani Seibold <stefani@seibold.net>
+* Oleg Nesterov <oleg@redhat.com> [2012-06-06 17:08:48]:
 
-Most USB devices can only used in a single usage mode. This patch
-prevents a reopening on an already opened device.
+> On 06/06, Ananth N Mavinakayanahalli wrote:
+> >
+> > From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+> >
+> > On RISC architectures like powerpc, instructions are fixed size.
+> > Instruction analysis on such platforms is just a matter of (insn % 4).
+> > Pass the vaddr at which the uprobe is to be inserted so that
+> > arch_uprobe_analyze_insn() can flag misaligned registration requests.
+> 
+> And the next patch checks "vaddr & 0x03".
+> 
+> But why do you need this new arg? arch_uprobe_analyze_insn() could
+> check "container_of(auprobe, struct uprobe, arch)->offset & 0x3" with
+> the same effect, no? vm_start/vm_pgoff are obviously page-aligned.
+> 
 
-Signed-off-by: Stefani Seibold <stefani@seibold.net>
----
- drivers/usb/usb-skeleton.c |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
+We cant use container_of because we moved the definition for struct
+uprobe to kernel/events/uprobe.c. This was possible before when struct
+uprobe definition was in include/uprobes.h 
 
-diff --git a/drivers/usb/usb-skeleton.c b/drivers/usb/usb-skeleton.c
-index 11cc97b..81d256f 100644
---- a/drivers/usb/usb-skeleton.c
-+++ b/drivers/usb/usb-skeleton.c
-@@ -61,6 +61,7 @@ struct usb_skel {
- 	int			errors;			/* the last request tanked */
- 	bool			ongoing_read;		/* a read is going on */
- 	bool			connected;		/* connected flag */
-+	bool			in_use;			/* in use flag */
- 	spinlock_t		err_lock;		/* lock for errors */
- 	struct kref		kref;
- 	struct mutex		io_mutex;		/* synchronize with disconnect */
-@@ -104,6 +105,11 @@ static int skel_open(struct inode *inode, struct file *file)
- 		goto exit;
- 	}
- 
-+	if (dev->in_use) {
-+		retval = -EBUSY;
-+		goto exit;
-+	}
-+
- 	retval = usb_autopm_get_interface(interface);
- 	if (retval)
- 		goto exit;
-@@ -111,6 +117,7 @@ static int skel_open(struct inode *inode, struct file *file)
- 	/* increment our usage count for the device */
- 	kref_get(&dev->kref);
- 
-+	dev->in_use = true;
- 	mutex_unlock(&sync_mutex);
- 
- 	/* save our object in the file's private structure */
-@@ -131,6 +138,7 @@ static int skel_release(struct inode *inode, struct file *file)
- 	if (dev->connected)
- 		usb_autopm_put_interface(
- 			usb_find_interface(&skel_driver, iminor(inode)));
-+	dev->in_use = false;
- 
- 	/* decrement the count on our device */
- 	kref_put(&dev->kref, skel_delete);
-@@ -529,6 +537,7 @@ static int skel_probe(struct usb_interface *interface,
- 
- 	dev->udev = usb_get_dev(interface_to_usbdev(interface));
- 	dev->connected = true;
-+	dev->in_use = false;
- 
- 	/* set up the endpoint information */
- 	/* use only the first bulk-in and bulk-out endpoints */
 -- 
-1.7.8.6
+Thanks and Regards
+Srikar
 
