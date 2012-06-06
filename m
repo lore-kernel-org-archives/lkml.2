@@ -1,69 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754240Ab2FFBLR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 21:11:17 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64703 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751194Ab2FFBLP convert rfc822-to-8bit (ORCPT
+	id S1754400Ab2FFBZK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 21:25:10 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:36655 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752203Ab2FFBZI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 21:11:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120605174638.69bcfa31.akpm@linux-foundation.org>
-References: <cover.1338889066.git.joe@perches.com> <20120605142826.d92316a0.akpm@linux-foundation.org>
- <1338934303.5780.8.camel@joe2Laptop> <20120605151754.a794ac7c.akpm@linux-foundation.org>
- <1338936572.5780.29.camel@joe2Laptop> <20120605162910.caccb0d4.akpm@linux-foundation.org>
- <1338939316.11962.3.camel@joe2Laptop> <CAPXgP13J+8-dPpZkSfh9sM3xXujC2Rb9tJaOvGoEPghgdr8jiw@mail.gmail.com>
- <1338939792.11962.4.camel@joe2Laptop> <CAPXgP10DEsqtz9xbPUQ3xCwdFGTTYyTGSd7yEcU2vUr3SJ83Sw@mail.gmail.com>
- <1338940345.11962.9.camel@joe2Laptop> <20120605165808.cd255b93.akpm@linux-foundation.org>
- <1338941247.11962.16.camel@joe2Laptop> <CAPXgP12OFnh6FZO4zFGCw=Ea4U6Ne5OoCg_9BPxRX62x0EVnng@mail.gmail.com>
- <1338941971.11962.20.camel@joe2Laptop> <CAPXgP10VE2huY4gGpeFPe=YKYM+nDBfoMgpHnGmQwn0jdPxhbw@mail.gmail.com>
- <20120605173751.65a2e1ee.akpm@linux-foundation.org> <1338943205.11962.28.camel@joe2Laptop>
- <20120605174638.69bcfa31.akpm@linux-foundation.org>
-From: Kay Sievers <kay@vrfy.org>
-Date: Wed, 6 Jun 2012 03:10:54 +0200
-Message-ID: <CAPXgP11DA2z2y4kR8C+AGtrd_-8=2Cy0jj3GX7T5JqczNke4GQ@mail.gmail.com>
-Subject: Re: [PATCH 0/8] Rework KERN_<LEVEL>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Joe Perches <joe@perches.com>,
+	Tue, 5 Jun 2012 21:25:08 -0400
+Date: Wed, 6 Jun 2012 10:54:59 +0930
+From: Christopher Yeoh <cyeoh@au1.ibm.com>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        alsa-devel@alsa-project.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        LKML <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Subject: Re: [PATCH] CMA: Do no enable it by default
+Message-ID: <20120606105459.49430920@Gantu>
+In-Reply-To: <20120605110541.GC13495@aftab.osrc.amd.com>
+References: <20120531153512.GK14515@aftab.osrc.amd.com>
+	<20120531154224.GL14515@aftab.osrc.amd.com>
+	<20120601110647.2c446aa7@rockpopper>
+	<20120605110541.GC13495@aftab.osrc.amd.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+x-cbid: 12060515-9264-0000-0000-000001A694A1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 6, 2012 at 2:46 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Tue, 05 Jun 2012 17:40:05 -0700 Joe Perches <joe@perches.com> wrote:
->
->> On Tue, 2012-06-05 at 17:37 -0700, Andrew Morton wrote:
->> > On Tue, 05 Jun 2012 17:07:27 -0700 Joe Perches <joe@perches.com> wrote:
->> >
->> > > On Tue, 2012-06-05 at 16:58 -0700, Andrew Morton wrote:
->> > > >  echo "\0014Hello Joe" > /dev/kmsg
->> > >
->> > > # echo -e "\x014Hello Me" > /dev/kmsg
->> > > gives:
->> > > 12,778,4057982669;Hello Me
->> >
->> > That's changed behavior.
->>
->> Which is an improvement too.
->
-> No it isn't.  It exposes internal kernel implementation details in
-> random weird inexplicable ways.  It doesn't seem at all important
-> though.
->
->> I very much doubt a single app will change
->> because of this.
->
-> I doubt it as well.
+On Tue, 5 Jun 2012 13:05:41 +0200
+Borislav Petkov <bp@amd64.org> wrote:
+> 
+> CROSS_MEMORY_ATTACH is a MPI feature which shouldn't be enabled by
+> default on every linux system simply because the majority of users do
+> not need it.
 
-Yeah, the value of injecting such binary data is kind of questionable. :)
+btw although CMA was primarily written for MPI it is used by more than
+just MPI implementations. For example, recent versions of strace now
+use it instead of PTRACE_PEEKDATA if its available:
 
-Joe, maybe you can change printk_emit() to skip the prefix
-detection/stripping if a prefix is already passed to the function?
+http://article.gmane.org/gmane.comp.sysutils.strace.devel/2467/match=process_vm_readv
 
-Kay
+> Besides, in the config option it says "... which allow a process with
+> the correct privileges to directly read from or write to to another
+> process's address space.", which, if the reading process has somehow
+> gained privileges (as that never happens) is your security issue right
+> there.
+
+The privileges required are exactly the same as required to ptrace the
+target. You're rather stuffed anyway if you have a hostile process with
+those privileges.
+
+Regards,
+
+Chris
+-- 
+cyeoh@au.ibm.com
+
