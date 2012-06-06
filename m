@@ -1,129 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752113Ab2FFB6o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 21:58:44 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:54514 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751327Ab2FFB6n convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 21:58:43 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120606010255.GA9991@mcarlson.broadcom.com>
-References: <alpine.DEB.2.01.1206041546070.5568@trent.utfs.org>
-	<20120606010255.GA9991@mcarlson.broadcom.com>
-Date: Wed, 6 Jun 2012 09:58:42 +0800
-Message-ID: <CABawtvPE_xuamH2ysL8x0WsJMXdFV5oXPrWjMT-EC-DF_kCxxw@mail.gmail.com>
-Subject: Re: tg3: transmit timed out, resetting
-From: ethan zhao <ethan.kernel@gmail.com>
-To: Matt Carlson <mcarlson@broadcom.com>
-Cc: Christian Kujau <lists@nerdbynature.de>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1752176Ab2FFCGK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 22:06:10 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:39723 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751219Ab2FFCGI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 22:06:08 -0400
+Message-ID: <1338948365.11962.32.camel@joe2Laptop>
+Subject: Re: [PATCH 0/8] Rework KERN_<LEVEL>
+From: Joe Perches <joe@perches.com>
+To: Kay Sievers <kay@vrfy.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        alsa-devel@alsa-project.org
+Date: Tue, 05 Jun 2012 19:06:05 -0700
+In-Reply-To: <CAPXgP11DA2z2y4kR8C+AGtrd_-8=2Cy0jj3GX7T5JqczNke4GQ@mail.gmail.com>
+References: <cover.1338889066.git.joe@perches.com>
+	 <20120605142826.d92316a0.akpm@linux-foundation.org>
+	 <1338934303.5780.8.camel@joe2Laptop>
+	 <20120605151754.a794ac7c.akpm@linux-foundation.org>
+	 <1338936572.5780.29.camel@joe2Laptop>
+	 <20120605162910.caccb0d4.akpm@linux-foundation.org>
+	 <1338939316.11962.3.camel@joe2Laptop>
+	 <CAPXgP13J+8-dPpZkSfh9sM3xXujC2Rb9tJaOvGoEPghgdr8jiw@mail.gmail.com>
+	 <1338939792.11962.4.camel@joe2Laptop>
+	 <CAPXgP10DEsqtz9xbPUQ3xCwdFGTTYyTGSd7yEcU2vUr3SJ83Sw@mail.gmail.com>
+	 <1338940345.11962.9.camel@joe2Laptop>
+	 <20120605165808.cd255b93.akpm@linux-foundation.org>
+	 <1338941247.11962.16.camel@joe2Laptop>
+	 <CAPXgP12OFnh6FZO4zFGCw=Ea4U6Ne5OoCg_9BPxRX62x0EVnng@mail.gmail.com>
+	 <1338941971.11962.20.camel@joe2Laptop>
+	 <CAPXgP10VE2huY4gGpeFPe=YKYM+nDBfoMgpHnGmQwn0jdPxhbw@mail.gmail.com>
+	 <20120605173751.65a2e1ee.akpm@linux-foundation.org>
+	 <1338943205.11962.28.camel@joe2Laptop>
+	 <20120605174638.69bcfa31.akpm@linux-foundation.org>
+	 <CAPXgP11DA2z2y4kR8C+AGtrd_-8=2Cy0jj3GX7T5JqczNke4GQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Saw many similar bugs report by simply google,
-The root cause of this issue may be related to  Broadcom tg3 firmware
-and the version of tg3 hardware, so I think it is hard to get fix in
-Linux driver. better way is get another NIC, or disable some its
-feature to workaround if we got what feature block it (tso ? sg ? ).
+On Wed, 2012-06-06 at 03:10 +0200, Kay Sievers wrote:
+> On Wed, Jun 6, 2012 at 2:46 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> > On Tue, 05 Jun 2012 17:40:05 -0700 Joe Perches <joe@perches.com> wrote:
+> >
+> >> On Tue, 2012-06-05 at 17:37 -0700, Andrew Morton wrote:
+> >> > On Tue, 05 Jun 2012 17:07:27 -0700 Joe Perches <joe@perches.com> wrote:
+> >> >
+> >> > > On Tue, 2012-06-05 at 16:58 -0700, Andrew Morton wrote:
+> >> > > >  echo "\0014Hello Joe" > /dev/kmsg
+> >> > >
+> >> > > # echo -e "\x014Hello Me" > /dev/kmsg
+> >> > > gives:
+> >> > > 12,778,4057982669;Hello Me
+> >> >
+> >> > That's changed behavior.
+> >>
+> >> Which is an improvement too.
+> >
+> > No it isn't.  It exposes internal kernel implementation details in
+> > random weird inexplicable ways.  It doesn't seem at all important
+> > though.
+> >
+> >> I very much doubt a single app will change
+> >> because of this.
+> >
+> > I doubt it as well.
+> 
+> Yeah, the value of injecting such binary data is kind of questionable. :)
+> 
+> Joe, maybe you can change printk_emit() to skip the prefix
+> detection/stripping if a prefix is already passed to the function?
 
-Some debugging messages from other guys:
+Sure, it's pretty trivial.
 
-[ 3538.223529] tg3 0000:01:08.0: eth1: transmit timed out, resetting
-[ 3538.229698] tg3 0000:01:08.0: eth1: DEBUG: MAC_TX_STATUS[00000008]
-MAC_RX_STATUS[00000008]
-[ 3538.236001] tg3 0000:01:08.0: eth1: DEBUG: RDMAC_STATUS[00000000]
-WDMAC_STATUS[00000000]
-[ 3538.343602] tg3 0000:01:08.0: tg3_stop_block timed out, ofs=1800 enable_bit=2
-[ 3538.449609] tg3 0000:01:08.0: tg3_stop_block timed out, ofs=c00 enable_bit=2
-[ 3538.555402] tg3 0000:01:08.0: tg3_stop_block timed out, ofs=4800 enable_bit=2
-[ 3538.692079] tg3 0000:01:08.0: eth1: Link is down
-
-We could see tg3_reset_hw()-->tg3_stop_fw()--> tg3_stop_block() timeout,
-so the response of firmware is not right.
-
-Just my 2 cents.
-
-Ethan
+Perhaps all binary data data should be elided.
+Maybe print . for all non-printable ascii chars.
 
 
-On Wed, Jun 6, 2012 at 9:02 AM, Matt Carlson <mcarlson@broadcom.com> wrote:
-> I'm attempting to reproduce this in our lab.  In the meantime,
-> the latest revisions of the driver output a register dump and some
-> additional information when transmit timeouts happen.  It would be
-> useful to see that data.  Would it be possible to try a the latest
-> kernels and get this information?
->
-> On Mon, Jun 04, 2012 at 04:14:30PM -0700, Christian Kujau wrote:
->> Hi,
->>
->> on this Ideapad S10 the onboard Broadcom BCM5906M prints the warning
->> below, once. From then on, the "transmit timed out, resetting" message
->> repeats, every now and then.
->>
->> This laptop is mounting 2 readonly NFS shares from a box in the same LAN
->> and when scanning lots of files on these NFS shares, the transmit timeouts
->> occur more often, I think. When there's sequential traffic (i.e. reading
->> larger files from the NFS shares), fewer warnings occur. But this is just
->> manual observation, I haven't been able to reproduce this reliably.
->> However, there's constant traffic on the device (maybe ~700KB/s both tx
->> and rx), so the messages occur pretty regularly.
->>
->> I have reported the error against the Fedora 17 kernel [0] but it happens
->> with a vanilla 3.4.0 too[1] - check out for full dmesg, .config and more.
->>
->> I had a similar issue a while ago[2] and almost forgot about them. The
->> laptop ran Ubuntu 10.04 (2.6.32) since then and the problem was gone, so
->> I'd say 2.6.32 fixed it. Now the same laptop switched to Fedora, kernel
->> 3.3.4 and the problem seems to be back again.
->>
->> I'll try running with sg=off, as Matt suggested in [3] and report back.
->>
->> Thanks,
->> Christian.
->>
->> [0] https://bugzilla.redhat.com/show_bug.cgi?id=825123
->> [1] http://nerdbynature.de/bits/3.4.0/tg3/
->> [2] http://lkml.indiana.edu/hypermail/linux/kernel/0906.1/00004.html
->> [3] http://lkml.indiana.edu/hypermail/linux/kernel/0906.1/00317.html
->>
->> ------------[ cut here ]------------
->> WARNING: at /opt/home/chrisk/dev/linux-2.6-git/net/sched/sch_generic.c:255
->> dev_watchdog+0x1cc/0x1e0()
->> Hardware name: Lenovo
->> NETDEV WATCHDOG: p2p1 (tg3): transmit queue 0 timed out
->> Modules linked in: acpi_cpufreq mperf freq_table nfs lockd sunrpc b43
->> mac80211 cfg80211 ssb coretemp hwmon usb_storage [last unloaded: scsi_wait_scan]
->> Pid: 685, comm: FahCore_78 Not tainted 3.4.0-10151-g4fc3acf #8
->> Call Trace:
->>  [<c102b299>] ? warn_slowpath_common+0x79/0xb0
->>  [<c12d54ec>] ? dev_watchdog+0x1cc/0x1e0
->>  [<c12d54ec>] ? dev_watchdog+0x1cc/0x1e0
->>  [<c102b374>] ? warn_slowpath_fmt+0x34/0x40
->>  [<c12d54ec>] ? dev_watchdog+0x1cc/0x1e0
->>  [<c12d5320>] ? pfifo_fast_dequeue+0xe0/0xe0
->>  [<c1035cf1>] ? run_timer_softirq+0xd1/0x1d0
->>  [<c1031615>] ? __do_softirq+0x75/0x100
->>  [<c10315a0>] ? remote_softirq_receive+0x20/0x20
->>  <IRQ>  [<c10318a6>] ? irq_exit+0x66/0x90
->>  [<c101b8d9>] ? smp_apic_timer_interrupt+0x59/0x90
->>  [<c1360b35>] ? apic_timer_interrupt+0x31/0x38
->>  [<c1360000>] ? rt_mutex_trylock+0x70/0x70
->> ---[ end trace 9de668a859ee5d6c ]---
->> tg3 0000:02:00.0: p2p1: transmit timed out, resetting
->>
->>
->> --
->> BOFH excuse #438:
->>
->> sticky bit has come loose
->>
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
