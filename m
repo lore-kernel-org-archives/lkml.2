@@ -1,142 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756173Ab2FFPKb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 11:10:31 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39760 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752847Ab2FFPK3 (ORCPT
+	id S1756333Ab2FFPK5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 11:10:57 -0400
+Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:50525 "EHLO
+	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756208Ab2FFPKz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 11:10:29 -0400
-Date: Wed, 6 Jun 2012 08:10:03 -0700
-From: tip-bot for Oleg Nesterov <oleg@redhat.com>
-Message-ID: <tip-2a1bca6ff0ef8fd9b943ce2e6a8826606dc58e3f@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org, ananth@in.ibm.com,
-        anton@redhat.com, masami.hiramatsu.pt@hitachi.com,
-        srikar@linux.vnet.ibm.com, tglx@linutronix.de, oleg@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org, ananth@in.ibm.com,
-        anton@redhat.com, masami.hiramatsu.pt@hitachi.com,
-        srikar@linux.vnet.ibm.com, oleg@redhat.com, tglx@linutronix.de
-In-Reply-To: <20120529192857.GC8057@redhat.com>
-References: <20120529192857.GC8057@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] uprobes: Introduce find_active_uprobe() helper
-Git-Commit-ID: 2a1bca6ff0ef8fd9b943ce2e6a8826606dc58e3f
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 6 Jun 2012 11:10:55 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 06 Jun 2012 08:10:09 -0700 (PDT)
+In-Reply-To: <201205312046.14823.arnd@arndb.de>
+References: <1338375394-16268-1-git-send-email-kishon@ti.com>
+	<201205310922.18550.arnd@arndb.de>
+	<CAAe_U6J3p9Lh9g82tSSLxOJ7nqrozdRe11zV_v2rqTuMYPjbyA@mail.gmail.com>
+	<201205312046.14823.arnd@arndb.de>
+Date: Wed, 6 Jun 2012 20:40:50 +0530
+Message-ID: <CAAe_U6+zi50muNFKXW9ytK0BVki+5wxVK_S0rjEc53M2oc-GeQ@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/5] omap: add ocp2scp as a misc driver
+From: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
+To: Arnd Bergmann <arnd@arndb.de>, "Cousson, Benoit" <b-cousson@ti.com>,
+        Paul Walmsley <paul@pwsan.com>, Kevin Hilman <khilman@ti.com>
+Cc: tony@atomide.com, linux@arm.linux.org.uk, gregkh@linuxfoundation.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, balbi@ti.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2a1bca6ff0ef8fd9b943ce2e6a8826606dc58e3f
-Gitweb:     http://git.kernel.org/tip/2a1bca6ff0ef8fd9b943ce2e6a8826606dc58e3f
-Author:     Oleg Nesterov <oleg@redhat.com>
-AuthorDate: Tue, 29 May 2012 21:28:57 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 6 Jun 2012 11:30:55 +0200
+Hi Kevin, Benoit, Paul,
 
-uprobes: Introduce find_active_uprobe() helper
+On Fri, Jun 1, 2012 at 2:16 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Thursday 31 May 2012, ABRAHAM, KISHON VIJAY wrote:
+>> > I would mark the multiplexed device compatible with "simple-bus", which
+>> > results in the child devices automatically getting added.
+>>
+>> hmm.. ocp2scp has a sysconfig register and it also has a module mode
+>> by which it can be enabled/disabled. I was making use of pm_runtime
+>> API's to control these registers (Apart from creating child devices,
+>> the driver also has a call to pm_runtime_enable).
+>
+> I see.
+>
+>> I'm not sure if with
+>> "simple-bus" we'll be able to do those. I have to check on that.
+>
+> How about making it compatible with both "simple-bus" and something
+> that handles the pm_runtime requirements?
+>
+> I don't understand enough of what needs to be done for pm_runtime
+> across a lot of devices, but I'd hope that it should be possible
+> to do that in a generic way based on the device definition.
 
-No functional changes. Move the "find uprobe" code from
-handle_swbp() to the new helper, find_active_uprobe().
+Is there already exists a generic way for handling pm_runtime
+requirements (as simple as doing a pm_runtime_enable on a device).
 
-Note: with or without this change, the find-active-uprobe logic
-is not exactly right. We can race with another thread which
-unmaps the memory with the valid uprobe before we take
-mm->mmap_sem. We can't find this uprobe simply because
-find_vma() fails. In this case we wrongly assume that this trap
-was not caused by uprobe and send the erroneous SIGTRAP. See the
-next changes.
+So the actual problem is we have ocp2scp as parent and usb2phy and
+usb3phy as the child device. ocp2scp has the sysconfig register and it
+can be controlled using module mode bit (both of this can be
+controlled by pm_runtime). Whenever usb controller(dwc3/musb) wants to
+enable a phy, it calls an exported API in usb2/usb3 phy to enable it.
+These API's have pm_runtime_get_sync on usb2/usb3 device which in-turn
+calls pm_runtime_get_sync of ocp2scp because of parent->child
+relationship (For this both usb2/usb3 phy and ocp2scp devices should
+have called pm_runtime_enable). All I'm trying is to find a place to
+have pm_runtime_enable for ocp2scp.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: Anton Arapov <anton@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20120529192857.GC8057@redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/events/uprobes.c |   47 ++++++++++++++++++++++++++++-------------------
- 1 files changed, 28 insertions(+), 19 deletions(-)
-
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index a0dbc87..eaf4d55 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -1489,38 +1489,47 @@ static bool can_skip_sstep(struct uprobe *uprobe, struct pt_regs *regs)
- 	return false;
- }
- 
--/*
-- * Run handler and ask thread to singlestep.
-- * Ensure all non-fatal signals cannot interrupt thread while it singlesteps.
-- */
--static void handle_swbp(struct pt_regs *regs)
-+static struct uprobe *find_active_uprobe(unsigned long bp_vaddr)
- {
-+	struct mm_struct *mm = current->mm;
-+	struct uprobe *uprobe = NULL;
- 	struct vm_area_struct *vma;
--	struct uprobe_task *utask;
--	struct uprobe *uprobe;
--	struct mm_struct *mm;
--	unsigned long bp_vaddr;
- 
--	uprobe = NULL;
--	bp_vaddr = uprobe_get_swbp_addr(regs);
--	mm = current->mm;
- 	down_read(&mm->mmap_sem);
- 	vma = find_vma(mm, bp_vaddr);
- 
--	if (vma && vma->vm_start <= bp_vaddr && valid_vma(vma, false)) {
--		struct inode *inode;
--		loff_t offset;
-+	if (vma && vma->vm_start <= bp_vaddr) {
-+		if (valid_vma(vma, false)) {
-+			struct inode *inode;
-+			loff_t offset;
- 
--		inode = vma->vm_file->f_mapping->host;
--		offset = bp_vaddr - vma->vm_start;
--		offset += (vma->vm_pgoff << PAGE_SHIFT);
--		uprobe = find_uprobe(inode, offset);
-+			inode = vma->vm_file->f_mapping->host;
-+			offset = bp_vaddr - vma->vm_start;
-+			offset += (vma->vm_pgoff << PAGE_SHIFT);
-+			uprobe = find_uprobe(inode, offset);
-+		}
- 	}
- 
- 	srcu_read_unlock_raw(&uprobes_srcu, current->uprobe_srcu_id);
- 	current->uprobe_srcu_id = -1;
- 	up_read(&mm->mmap_sem);
- 
-+	return uprobe;
-+}
-+
-+/*
-+ * Run handler and ask thread to singlestep.
-+ * Ensure all non-fatal signals cannot interrupt thread while it singlesteps.
-+ */
-+static void handle_swbp(struct pt_regs *regs)
-+{
-+	struct uprobe_task *utask;
-+	struct uprobe *uprobe;
-+	unsigned long bp_vaddr;
-+
-+	bp_vaddr = uprobe_get_swbp_addr(regs);
-+	uprobe = find_active_uprobe(bp_vaddr);
-+
- 	if (!uprobe) {
- 		/* No matching uprobe; signal SIGTRAP. */
- 		send_sig(SIGTRAP, current, 0);
+Thanks
+Kishon
