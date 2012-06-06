@@ -1,107 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753550Ab2FFMOj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 08:14:39 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:59401 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753366Ab2FFMOh (ORCPT
+	id S1753184Ab2FFMRj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 08:17:39 -0400
+Received: from casper.infradead.org ([85.118.1.10]:34851 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752588Ab2FFMRi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 08:14:37 -0400
-Message-id: <4FCF49A7.8040203@samsung.com>
-Date: Wed, 06 Jun 2012 14:14:31 +0200
-From: Tomasz Stanislawski <t.stanislaws@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430
- Thunderbird/12.0.1
-MIME-version: 1.0
-Newsgroups: gmane.linux.kernel.mm,gmane.comp.video.dri.devel,gmane.linux.drivers.video-input-infrastructure,gmane.linux.kernel
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: paul.gortmaker@windriver.com,
-        =?UTF-8?B?J+uwleqyveuvvCc=?= <kyungmin.park@samsung.com>,
-        amwang@redhat.com, dri-devel@lists.freedesktop.org,
-        "'???/Mobile S/W Platform Lab.(???)/E3(??)/????'" 
-	<inki.dae@samsung.com>,
-        prashanth.g@samsung.com, Marek Szyprowski <m.szyprowski@samsung.com>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Rob Clark <rob@ti.com>, Dave Airlie <airlied@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andy Whitcroft <apw@shadowen.org>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v3] scatterlist: add sg_alloc_table_from_pages function
-References: <4FA8EC69.8010805@samsung.com>
- <20120517165614.d5e6e4b6.akpm@linux-foundation.org>
- <4FBA4ACE.4080602@samsung.com>
- <20120522131059.415a881c.akpm@linux-foundation.org>
-In-reply-to: <20120522131059.415a881c.akpm@linux-foundation.org>
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-TM-AS-MML: No
+	Wed, 6 Jun 2012 08:17:38 -0400
+Message-ID: <1338985041.2749.107.camel@twins>
+Subject: Re: [PATCH 0/6] x86/cpu hotplug: Wake up offline CPU via mwait or
+ nmi
+From: Peter Zijlstra <peterz@infradead.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: Thomas Gleixner <tglx@linutronix.de>, "Luck, Tony" <tony.luck@intel.com>,
+        "Yu, Fenghua" <fenghua.yu@intel.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@elte.hu>,
+        H Peter Anvin <hpa@zytor.com>,
+        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
+        "Mallick, Asit K" <asit.k.mallick@intel.com>,
+        Arjan Dan De Ven <arjan@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>,
+        linux-pm <linux-pm@vger.kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Date: Wed, 06 Jun 2012 14:17:21 +0200
+In-Reply-To: <20120605220059.GV2388@linux.vnet.ibm.com>
+References: <3E5A0FA7E9CA944F9D5414FEC6C7122007727023@ORSMSX105.amr.corp.intel.com>
+	 <1338912565.2749.9.camel@twins>
+	 <3E5A0FA7E9CA944F9D5414FEC6C7122007728081@ORSMSX105.amr.corp.intel.com>
+	 <1338913190.2749.10.camel@twins>
+	 <3908561D78D1C84285E8C5FCA982C28F19300965@ORSMSX104.amr.corp.intel.com>
+	 <1338918625.2749.29.camel@twins> <alpine.LFD.2.02.1206052106440.3086@ionos>
+	 <1338925756.2749.36.camel@twins> <20120605212947.GA8686@linux.vnet.ibm.com>
+	 <1338932241.2749.62.camel@twins> <20120605220059.GV2388@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2012 10:10 PM, Andrew Morton wrote:
-> On Mon, 21 May 2012 16:01:50 +0200
-> Tomasz Stanislawski <t.stanislaws@samsung.com> wrote:
+On Tue, 2012-06-05 at 15:00 -0700, Paul E. McKenney wrote:
+> On Tue, Jun 05, 2012 at 11:37:21PM +0200, Peter Zijlstra wrote:
+> > On Tue, 2012-06-05 at 14:29 -0700, Paul E. McKenney wrote:
+> > > OK, I'll bite...  Why not just use CPU hotplug to expel the timers?
+> > 
+> > Currently? Can you say: 'kstopmachine'?
 > 
->>>> +int sg_alloc_table_from_pages(struct sg_table *sgt,
->>>> +	struct page **pages, unsigned int n_pages,
->>>> +	unsigned long offset, unsigned long size,
->>>> +	gfp_t gfp_mask)
->>>
->>> I guess a 32-bit n_pages is OK.  A 16TB IO seems enough ;)
->>>
->>
->> Do you think that 'unsigned long' for offset is too big?
->>
->> Ad n_pages. Assuming that Moore's law holds it will take
->> circa 25 years before the limit of 16 TB is reached :) for
->> high-end scatterlist operations.
->> Or I can change the type of n_pages to 'unsigned long' now at
->> no cost :).
-> 
-> By then it will be Someone Else's Problem ;)
-> 
+> So if CPU hotplug (or whatever you want to call it) stops using
+> kstopmachine, you are OK with it?
 
-Ok. So let's keep to 'unsigned int n_pages'.
+It would be much better, still not ideal though.
 
->>>> +{
->>>> +	unsigned int chunks;
->>>> +	unsigned int i;
->>>
->>> erk, please choose a different name for this.  When a C programmer sees
->>> "i", he very much assumes it has type "int".  Making it unsigned causes
->>> surprise.
->>>
->>> And don't rename it to "u"!  Let's give it a nice meaningful name.  pageno?
->>>
->>
->> The problem is that 'i' is  a natural name for a loop counter.
+> > But its also a question of interface and naming. Do you want to have to
+> > iterate all cpus in your isolated set, do you want to bring them down
+> > far enough to physically unplug. Ideally no to both.
 > 
-> It's also the natural name for an integer.  If a C programmer sees "i",
-> he thinks "int".  It's a Fortran thing ;)
-> 
->> AFAIK, in the kernel code developers try to avoid Hungarian notation.
->> A name of a variable should reflect its purpose, not its type.
->> I can change the name of 'i' to 'pageno' and 'j' to 'pageno2' (?)
->> but I think it will make the code less reliable.
-> 
-> Well, one could do something radical such as using "p".
-> 
-> 
+> For many use cases, it is indeed not necessary to get to a point where
+> the CPUs could be physically removed from the system.  But CPU-failure
+> use cases would need the CPU to be fully deactivated.  And many of the
+> hardware guys tell me that the CPU-failure case will be getting more
+> common, though I sure hope that they are wrong.
 
-I can not change the type to 'int' due to 'signed vs unsigned' comparisons
-in the loop condition.
-What do you think about changing the names 'i' -> 'p' and 'j' -> 'q'?
-
-Regards,
-Tomasz Stanislawski
-
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
+Uhm, yeah, that doesn't sound right.
 
