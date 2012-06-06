@@ -1,89 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756176Ab2FFOcQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 10:32:16 -0400
-Received: from smtp3.mundo-r.com ([212.51.32.191]:56034 "EHLO
-	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756146Ab2FFOcL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 10:32:11 -0400
-X-Greylist: delayed 577 seconds by postgrey-1.27 at vger.kernel.org; Wed, 06 Jun 2012 10:32:05 EDT
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av4EAMFmz09bdWOb/2dsb2JhbABFhU6uZ4EHghkBBSMECwFGECUCJgICVwcSiA+kSZJggSOOfIESA5Udj3qCYg
-X-IronPort-AV: E=Sophos;i="4.75,724,1330902000"; 
-   d="scan'208";a="999999581"
-From: =?UTF-8?q?Miguel=20G=C3=B3mez?= <magomez@igalia.com>
-To: arnaud.patard@rtp-net.org, gregkh@linuxfoundation.org,
-        aaro.koskinen@iki.fi, dan.carpenter@oracle.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Miguel=20G=C3=B3mez?= <magomez@igalia.com>
-Subject: [PATCH 3/4] Staging: xgifb: disable pci device if there's an error after enabling it.
-Date: Wed,  6 Jun 2012 16:22:06 +0200
-Message-Id: <1338992527-5659-3-git-send-email-magomez@igalia.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1338992527-5659-1-git-send-email-magomez@igalia.com>
-References: <1338992527-5659-1-git-send-email-magomez@igalia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1756215Ab2FFOcs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 10:32:48 -0400
+Received: from mga14.intel.com ([143.182.124.37]:9927 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754537Ab2FFOcq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 10:32:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="asc'?scan'208";a="152363420"
+Message-ID: <1338993390.6875.63.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH v6] MTD: LPC32xx SLC NAND driver
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Roland Stigge <stigge@antcom.de>
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        dwmw2@infradead.org, kevin.wells@nxp.com, srinivas.bakki@nxp.com,
+        linux-arm-kernel@lists.infradead.org, hechtb@googlemail.com,
+        lars@metafoo.de, b32955@freescale.com, leiwen@marvell.com,
+        linux@arm.linux.org.uk
+Date: Wed, 06 Jun 2012 17:36:30 +0300
+In-Reply-To: <4FCF68DE.6000701@antcom.de>
+References: <1338974414-5308-1-git-send-email-stigge@antcom.de>
+	 <1338989921.6875.50.camel@sauron.fi.intel.com> <4FCF68DE.6000701@antcom.de>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-Ef4+bn1I7oqMnE/pAFFN"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Miguel Gómez <magomez@igalia.com>
----
- drivers/staging/xgifb/XGI_main_26.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/staging/xgifb/XGI_main_26.c b/drivers/staging/xgifb/XGI_main_26.c
-index 96abb23..438781f 100644
---- a/drivers/staging/xgifb/XGI_main_26.c
-+++ b/drivers/staging/xgifb/XGI_main_26.c
-@@ -1904,7 +1904,7 @@ static int __devinit xgifb_probe(struct pci_dev *pdev,
- 	if (reg1 != 0xa1) { /*I/O error */
- 		pr_err("I/O error!!!");
- 		ret = -EIO;
--		goto error;
-+		goto error_disable;
- 	}
- 
- 	switch (xgifb_info->chip_id) {
-@@ -1927,7 +1927,7 @@ static int __devinit xgifb_probe(struct pci_dev *pdev,
- 		break;
- 	default:
- 		ret = -ENODEV;
--		goto error;
-+		goto error_disable;
- 	}
- 
- 	pr_info("chipid = %x\n", xgifb_info->chip);
-@@ -1936,7 +1936,7 @@ static int __devinit xgifb_probe(struct pci_dev *pdev,
- 	if (XGIfb_get_dram_size(xgifb_info)) {
- 		pr_err("Fatal error: Unable to determine RAM size.\n");
- 		ret = -ENODEV;
--		goto error;
-+		goto error_disable;
- 	}
- 
- 	/* Enable PCI_LINEAR_ADDRESSING and MMIO_ENABLE  */
-@@ -1956,7 +1956,7 @@ static int __devinit xgifb_probe(struct pci_dev *pdev,
- 		pr_err("Fatal error: Unable to reserve frame buffer memory\n");
- 		pr_err("Is there another framebuffer driver active?\n");
- 		ret = -ENODEV;
--		goto error;
-+		goto error_disable;
- 	}
- 
- 	if (!request_mem_region(xgifb_info->mmio_base,
-@@ -2271,6 +2271,8 @@ error_1:
- 	release_mem_region(xgifb_info->mmio_base, xgifb_info->mmio_size);
- error_0:
- 	release_mem_region(xgifb_info->video_base, xgifb_info->video_size);
-+error_disable:
-+	pci_disable_device(pdev);
- error:
- 	framebuffer_release(fb_info);
- 	return ret;
--- 
-1.7.9.5
+--=-Ef4+bn1I7oqMnE/pAFFN
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+On Wed, 2012-06-06 at 16:27 +0200, Roland Stigge wrote:
+> >> +#else +#define lpc32xx_nand_resume NULL +#define
+> >> lpc32xx_nand_suspend NULL +#endif
+> >=20
+> > 0, not NULL.
+>=20
+> Can you please point me to an explanation for this? NULL sounds
+
+Right, sorry, that was incorrect.
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-Ef4+bn1I7oqMnE/pAFFN
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJPz2ruAAoJECmIfjd9wqK0AhsP/Rl8yELzehgMokWZaJPv4sxY
+TX4yqAqO7Jd2T4VFnjj8z84dXcYsHuFgYsJPmEtn9pLwmDC85FMQZTSNz5mTYxZe
+9sElONk5SD3qEa6WsOzqbQ2ehnIA9/7o0kq8qNV/z92OTwrQtD29VlY7u1ENF4dY
+2q/RUZozxAYIeQZ/kSqBwSV2aErbcTX8CiltYGXboRqA1BPSVGtOkDAPC/tZJNM2
+OlF7AaCAUAdUcGxJvPrH2L1vU8+ctnJwn2raZrEkeZQWMudryWPtNd95UZ5IV79z
+Y8x+O64XG0RZxa+P0gGmwukORfpRDj8qayEbnmM3blzWwlB8IvA6dd0OLLY0wTXy
+ffQGT2vgG1G2XCOGfkPF6VEkuDRDgeF4nwydm7WLjpbRZLA0zqjo5cv+MaFx/mek
+le3pkuZiZPb9CALIDzuCX0Xd/oRONRRdGRBymVN9+8RhYCHLuwPPQdzgCTJPIPwG
++HahoagrheSuheiG6Rvsesa2tgjnePf71Y0UsP/mXr9nGG2S0WMaYnKx/BcI0lEL
+MnrhIQ1ItnYw10rkYdNS9cUXiUPB75YZm4xjh4YHcypnAWZ1oJv0MmBESEewEXwM
+mJwqZrfPgOdelgiJukSAjKivvUhkIguan7rKyc4FTi06AaETYnybhJ8lqcYT9I3L
+3V7M12mj7jX8bLgyUzzn
+=wGXp
+-----END PGP SIGNATURE-----
+
+--=-Ef4+bn1I7oqMnE/pAFFN--
 
