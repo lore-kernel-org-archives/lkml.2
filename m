@@ -1,82 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755934Ab2FFOPr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 10:15:47 -0400
-Received: from www.linutronix.de ([62.245.132.108]:50729 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753898Ab2FFOPp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 10:15:45 -0400
-Date: Wed, 6 Jun 2012 16:15:36 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Chen Gong <gong.chen@linux.intel.com>
-cc: LKML <linux-kernel@vger.kernel.org>, tony.luck@intel.com, bp@amd64.org,
-        x86@kernel.org, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [patch 2/2] x86: mce: Implement cmci poll mode for intel
- machines
-In-Reply-To: <4FCF4BFE.6090103@linux.intel.com>
-Message-ID: <alpine.LFD.2.02.1206061535410.3086@ionos>
-References: <20120524174943.989990966@linutronix.de> <20120524175056.478167482@linutronix.de> <4FCC1F7C.5000008@linux.intel.com> <alpine.LFD.2.02.1206042158200.3086@ionos> <4FCDF1C8.9020007@linux.intel.com> <alpine.LFD.2.02.1206051503560.3086@ionos>
- <4FCF0500.9050704@linux.intel.com> <alpine.LFD.2.02.1206061056520.3086@ionos> <alpine.LFD.2.02.1206061215250.3086@ionos> <4FCF4BFE.6090103@linux.intel.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1755869Ab2FFOQq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 10:16:46 -0400
+Received: from mga11.intel.com ([192.55.52.93]:46564 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754940Ab2FFOQp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 10:16:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="175508345"
+Date: Wed, 6 Jun 2012 07:16:44 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        eranian@google.com
+Subject: Re: [PATCH 5/5] perf, x86: Prefer RDPMC over RDMSR for reading
+ counters
+Message-ID: <20120606141644.GF28225@tassilo.jf.intel.com>
+References: <1338944211-28275-1-git-send-email-andi@firstfloor.org>
+ <1338944211-28275-5-git-send-email-andi@firstfloor.org>
+ <1338979579.2749.95.camel@twins>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1446935026-1338992137=:3086"
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1338979579.2749.95.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
---8323328-1446935026-1338992137=:3086
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-
-On Wed, 6 Jun 2012, Chen Gong wrote:
-> 于 2012/6/6 18:23, Thomas Gleixner 写道:
-> I think you mean
+On Wed, Jun 06, 2012 at 12:46:19PM +0200, Peter Zijlstra wrote:
+> On Tue, 2012-06-05 at 17:56 -0700, Andi Kleen wrote:
+> > From: Andi Kleen <ak@linux.intel.com>
+> > 
+> > RDPMC is much faster than RDMSR for reading performance counters,
+> > since it's not serializing.  Use it if possible in the perf handler.
+> > 
+> > Only tested on Sandy Bridge, so I only enabled it there so far.
 > 
-> -               del_timer_sync(t);
->                 smp_call_function_single(cpu, mce_disable_cpu, &action, 1);
-> +		del_timer_sync(t);
->                 break;
+> That's just stupid.. I took Vince's patch from a while back.
 
-No I meant it the way I wrote, but as you don't execute hotplug it's
-irrelevant.
+What do you mean? It's significantly faster to read the counters this
+way, because it avoids serialization and other overhead. 
 
-So the obvious candidate is the mce-injection code, which was
-obviously never tested with DEBUG_PREEMPT enabled.
+Vince's patch only enabled it for user space I believe, This is for lowering
+the kernel PMI handler overhead.
 
-raise_local() can be called with preemption enabled from
-raise_mce(). Fix for that below.
+-Andi
 
-Though I can't see how that would do anything with the timer.
-
-Another thing in that mce injection code is that there is no
-protection against concurrent writes, except when the device was
-opened with O_EXCL, but what guarantees that ?
-
-Thanks,
-
-	tglx
-
-Index: tip/arch/x86/kernel/cpu/mcheck/mce-inject.c
-===================================================================
---- tip.orig/arch/x86/kernel/cpu/mcheck/mce-inject.c
-+++ tip/arch/x86/kernel/cpu/mcheck/mce-inject.c
-@@ -194,7 +194,11 @@ static void raise_mce(struct mce *m)
- 		put_online_cpus();
- 	} else
- #endif
-+	{
-+		preempt_disable();
- 		raise_local();
-+		preempt_enable();
-+	}
- }
- 
- /* Error injection interface */
---8323328-1446935026-1338992137=:3086--
+-- 
+ak@linux.intel.com -- Speaking for myself only
