@@ -1,113 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932112Ab2FFUT0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 16:19:26 -0400
-Received: from www84.your-server.de ([213.133.104.84]:56223 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757520Ab2FFUTZ (ORCPT
+	id S932152Ab2FFUTp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 16:19:45 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:31392 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757520Ab2FFUTo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 16:19:25 -0400
-Message-ID: <1339013986.3437.20.camel@wall-e>
-Subject: Re: [PATCH] fix usb skeleton driver
-From: Stefani Seibold <stefani@seibold.net>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org, oneukum@suse.de,
-        alan@lxorguk.ukuu.org.uk, linux-usb@vger.kernel.org
-Date: Wed, 06 Jun 2012 22:19:46 +0200
-In-Reply-To: <Pine.LNX.4.44L0.1206061406500.1788-100000@iolanthe.rowland.org>
-References: <Pine.LNX.4.44L0.1206061406500.1788-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.3 
+	Wed, 6 Jun 2012 16:19:44 -0400
+Message-ID: <1339013979.2836.52.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: [PATCH] virtio-net: fix a race on 32bit arches
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: "Michael S. Tsirkin" <mst@redhat.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Jason Wang <jasowang@redhat.com>, <netdev@vger.kernel.org>,
+        <rusty@rustcorp.com.au>, <linux-kernel@vger.kernel.org>,
+        <virtualization@lists.linux-foundation.org>
+Date: Wed, 6 Jun 2012 21:19:39 +0100
+In-Reply-To: <1339013289.26966.62.camel@edumazet-glaptop>
+References: <1338971724.2760.3913.camel@edumazet-glaptop>
+	 <1338972341.2760.3944.camel@edumazet-glaptop>
+	 <20120606111357.GA15070@redhat.com>
+	 <1338988210.2760.4485.camel@edumazet-glaptop>
+	 <20120606144941.GA17092@redhat.com>
+	 <20120606081432.6b602065@nehalam.linuxnetplumber.net>
+	 <20120606185107.GA20503@redhat.com>
+	 <1339012441.26966.48.camel@edumazet-glaptop>
+	 <20120606195814.GA20677@redhat.com>
+	 <1339013289.26966.62.camel@edumazet-glaptop>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Authenticated-Sender: stefani@seibold.net
+MIME-Version: 1.0
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-6.800.1017-18950.005
+X-TM-AS-Result: No--15.276600-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, den 06.06.2012, 14:16 -0400 schrieb Alan Stern:
-> On Wed, 6 Jun 2012, Stefani Seibold wrote:
+On Wed, 2012-06-06 at 22:08 +0200, Eric Dumazet wrote:
+> On Wed, 2012-06-06 at 22:58 +0300, Michael S. Tsirkin wrote:
 > 
-> > Am Mittwoch, den 06.06.2012, 12:55 -0400 schrieb Alan Stern:
-> > > On Wed, 6 Jun 2012 stefani@seibold.net wrote:
-> > > 
-> > > > From: Stefani Seibold <stefani@seibold.net>
-> > > > 
-> > > > This is a fix for the USB skeleton driver to bring it in shape.
-> > > > 
-> > > > - The usb_interface structure pointer will be no longer stored 
-> > > > - Every access to the USB will be handled trought the usb_interface pointer
-> > > 
-> > 
-> > Sorry, missed to fix. Should be:
-> > 
-> > Every access to the USB will be handled through the usb_device pointer
+> > Absolutely, I am talking about virtio here.  I'm not kicking
+> > u64_stats_sync idea I am just saying that simple locking
+> > would work for virtio and might be better as it
+> > gives us a way to get counters atomically.
 > 
-> But that's wrong -- the accesses should go through the interface 
-> pointer.  After all, the driver is bound to the interface, not to the 
-> device.
+> Which lock do you own in the RX path ?
 > 
+> You'll have to add a lock in fast path. This sounds really a bad choice
+> to me.
 
-Not really true, in whole driver only the open() and close() use the
-interface pointer.
+You have the NAPI 'lock', so when gathering stats you can synchronise
+using napi_disable() ;-)
 
-In the open path the interface is already determinate by
-usb_find_interface(), so it was reasonable to do this also in the close
-path.
+Ben.
 
-> > > > - Introduced fsync
-> > > > - Single user mode
-> > > > - Eliminated dead code
-> > > > - Save some bytes in the dev structure
-> > > 
-> > > How about simplifying the code so that it can be read by somebody who's 
-> > > not already an expert?
-> > > 
-> > > Alan Stern
-> > > 
-> > 
-> > Hey, i thought i get a little thank you for the voluntary work, what a
-> > nice job. Not a demand for more work to do.
-> 
-> Have you submitted many kernel patches in the past?  :-)  This is the 
-> way it usually works out...
-> 
-
-Yes i did (kfifo, superio, procfs, udpcp, nrpz, mtd nand, framebuffer
-and so on). And i know the way it works ;-) But i do this mostly in my
-spear time.
-
-> In this case, I really think it's worthwhile to look for ways to
-> simplify usb-skeleton.c.  For example, does supporting fsync really
-> help somebody who's trying to learn how to write a USB device driver?  
-> I suspect it doesn't.
-> 
-
-The reason to fix the skeleton driver was about the complains for my
-NRPZ driver, which was based on the design of the usb skeleton driver.
-
-> Going even farther, I'm not so sure it's a good idea for usb-skeleton
-> to try supporting both synchronous and asynchronous accesses.  This
-> adds a layer of complexity that people just don't need.  IMO it would 
-> be better to have two separate example drivers, an easy one that is 
-> purely synchronous and a more advanced one that is purely async.
-> 
-
-Agree, i think this would be a good idea to have to separate drivers.
-Both should be also working drivers, for really simple hardware.
-
-The best way for me to do this is to shrink later this to a simplified
-driver. 
-
-> Now, things like the race between disconnect and open are good for
-> teaching, because they crop up in every driver and have to be handled.  
-> Other things aren't so clear (such as the autosuspend support).
-> 
-
-I think it is important to have a clean and working example. It would
-save a lot of time for everybody and shrinks the number of round trips.
-
-Greetings,
-Stefani
-
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
