@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754652Ab2FFNUU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 09:20:20 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:54573 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754141Ab2FFNUS (ORCPT
+	id S1754368Ab2FFNWT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 09:22:19 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:36252 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753467Ab2FFNWS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 09:20:18 -0400
+	Wed, 6 Jun 2012 09:22:18 -0400
 MIME-Version: 1.0
-Date: Wed, 6 Jun 2012 21:20:17 +0800
-Message-ID: <CAJd=RBCyZAYkP4O=QpbgdTJtJGxZteYp-MCrDhBht4jaWjGofA@mail.gmail.com>
-Subject: [patch] BFS 421: fix try_preempt
+Date: Wed, 6 Jun 2012 21:22:16 +0800
+Message-ID: <CAJd=RBCofLoqZiUX3PirgcGw3q6mC8FPxi_D4PRV9e5kQ+1auA@mail.gmail.com>
+Subject: [patch] BFS 421: cleanup by removing rq_running
 From: Hillf Danton <dhillf@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>, Hillf Danton <dhillf@gmail.com>
 Content-Type: text/plain; charset=UTF-8
@@ -18,48 +18,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have to keep deadline latest, so no update if not checked.
-
-Alternatively we could try preempt in the following way,
-
-	rcu_read_lock();
-	for_each_domain(task_cpu(q), sd) {
-		for_each_cpu_and(cpu, tsk_cpus_allowed(p),
-						sched_domain_span(sd)) {
-			if (!cpu_online(cpu))
-				continue;
-			if (can_preempt(p, cpu_rq(cpu)->rq_prio,
-						cpu_rq(cpu)->rq_deadline)) {
-				resched_task(cpu_rq(cpu)->curr);
-				goto out;
-			}
-		}
-	}
-out:
-	rcu_read_unlock();
+Again two points, good shot.
 
 
-where the upside is that the LLC is invovled, and the downside is that we are
-not sure the preempted task has the highest priority and the latest deadline.
+--- a/kernel/sched/bfs.c	Wed Jun  6 20:19:12 2012
++++ b/kernel/sched/bfs.c	Wed Jun  6 20:51:38 2012
+@@ -246,7 +246,6 @@ struct rq {
+ 	int rq_time_slice;
+ 	u64 rq_last_ran;
+ 	int rq_prio;
+-	bool rq_running; /* There is a task running */
 
-What to do next?
+ 	/* Accurate timekeeping data */
+ 	u64 timekeep_clock;
+@@ -2044,7 +2043,8 @@ unsigned long nr_active(void)
+ /* Beyond a task running on this CPU, load is equal everywhere on BFS */
+ unsigned long this_cpu_load(void)
+ {
+-	return this_rq()->rq_running +
++	struct rq *rq = this_rq();
++	return (rq->curr != rq->idle) +
+ 		((queued_notrunning() + nr_uninterruptible()) / grq.noc);
+ }
 
+@@ -3114,10 +3114,6 @@ static inline void set_rq_task(struct rq
+ 	rq->rq_last_ran = p->last_ran = rq->clock;
+ 	rq->rq_policy = p->policy;
+ 	rq->rq_prio = p->prio;
+-	if (p != rq->idle)
+-		rq->rq_running = true;
+-	else
+-		rq->rq_running = false;
+ }
 
---- a/kernel/sched/bfs.c	Wed Jun  6 20:14:36 2012
-+++ b/kernel/sched/bfs.c	Wed Jun  6 20:16:48 2012
-@@ -1452,10 +1452,11 @@ static void try_preempt(struct task_stru
- 		if (rq_prio < highest_prio)
- 			continue;
-
--		if (rq_prio > highest_prio ||
--		    deadline_after(rq->rq_deadline, latest_deadline)) {
-+		if (rq_prio > highest_prio)
-+			goto set;
-+		if (deadline_after(rq->rq_deadline, latest_deadline)) {
- 			latest_deadline = rq->rq_deadline;
--			highest_prio = rq_prio;
-+set:			highest_prio = rq_prio;
- 			highest_prio_rq = rq;
- 		}
- 	}
+ static void reset_rq_task(struct rq *rq, struct task_struct *p)
 --
