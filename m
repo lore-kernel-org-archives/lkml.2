@@ -1,63 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758002Ab2FFSKi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 14:10:38 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:55174 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752630Ab2FFSKg (ORCPT
+	id S1758006Ab2FFSQJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 14:16:09 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:51350 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757903Ab2FFSQH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 14:10:36 -0400
-Subject: Re: [PATCH v9] tilegx network driver: initial support
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: bhutchings@solarflare.com, arnd@arndb.de,
-        David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-In-Reply-To: <201206042023.q54KNEZp003834@farm-0002.internal.tilera.com>
-References: <201205201636.q4KGaoA3003845@farm-0027.internal.tilera.com>
-	 <20120520.165546.1211013675964130504.davem@davemloft.net>
-	 <201205240115.q4O1FwqG006336@lab-41.internal.tilera.com>
-	 <20120524.003148.700603156196416506.davem@davemloft.net>
-	 <201205251853.q4PIrE7T000723@lab-41.internal.tilera.com>
-	 <201206042023.q54KNEZp003834@farm-0002.internal.tilera.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 06 Jun 2012 20:10:23 +0200
-Message-ID: <1339006223.26966.36.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 6 Jun 2012 14:16:07 -0400
+Date: Wed, 6 Jun 2012 14:16:05 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Stefani Seibold <stefani@seibold.net>
+cc: linux-kernel@vger.kernel.org, <gregkh@linuxfoundation.org>,
+        <oneukum@suse.de>, <alan@lxorguk.ukuu.org.uk>,
+        <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH] fix usb skeleton driver
+In-Reply-To: <1339005186.11678.3.camel@wall-e>
+Message-ID: <Pine.LNX.4.44L0.1206061406500.1788-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-06-04 at 16:12 -0400, Chris Metcalf wrote:
-> This change adds support for the tilegx network driver based on the
-> GXIO IORPC support in the tilegx software stack, using the on-chip
-> mPIPE packet processing engine.
+On Wed, 6 Jun 2012, Stefani Seibold wrote:
+
+> Am Mittwoch, den 06.06.2012, 12:55 -0400 schrieb Alan Stern:
+> > On Wed, 6 Jun 2012 stefani@seibold.net wrote:
+> > 
+> > > From: Stefani Seibold <stefani@seibold.net>
+> > > 
+> > > This is a fix for the USB skeleton driver to bring it in shape.
+> > > 
+> > > - The usb_interface structure pointer will be no longer stored 
+> > > - Every access to the USB will be handled trought the usb_interface pointer
+> > 
 > 
+> Sorry, missed to fix. Should be:
+> 
+> Every access to the USB will be handled through the usb_device pointer
 
-> +
-> +/* Do "TSO" handling for egress.
-> + *
-> + * Normally drivers set NETIF_F_TSO only to support hardware TSO;
-> + * otherwise the stack uses scatter-gather to implement GSO in software.
-> + * On our testing, enabling GSO support (via NETIF_F_SG) drops network
-> + * performance down to around 7.5 Gbps on the 10G interfaces, although
-> + * also dropping cpu utilization way down, to under 8%.  But
-> + * implementing "TSO" in the driver brings performance back up to line
-> + * rate, while dropping cpu usage even further, to less than 4%.  In
-> + * practice, profiling of GSO shows that skb_segment() is what causes
-> + * the performance overheads; we benefit in the driver from using
-> + * preallocated memory to duplicate the TCP/IP headers.
-> + */
+But that's wrong -- the accesses should go through the interface 
+pointer.  After all, the driver is bound to the interface, not to the 
+device.
 
-All this stuff cost about 300 lines of code in this driver, without IPv6
-support.
+> > Those two changes sound contradictory.
+> > 
+> > > - Add a new bool 'connected' for signaling a disconnect (== false)
+> > > - Handle a non blocking read without blocking
+> > > - Code cleanup
+> > > - Synchronize disconnect() handler with open() and release(), to fix races
+> > > - Introduced fsync
+> > > - Single user mode
+> > > - Eliminated dead code
+> > > - Save some bytes in the dev structure
+> > 
+> > How about simplifying the code so that it can be read by somebody who's 
+> > not already an expert?
+> > 
+> > Alan Stern
+> > 
+> 
+> Hey, i thought i get a little thank you for the voluntary work, what a
+> nice job. Not a demand for more work to do.
 
-I am pretty sure this performance problem should be solved in net/{core|
-ipv4|ipv6} instead
+Have you submitted many kernel patches in the past?  :-)  This is the 
+way it usually works out...
 
-What TCP performance do you get with TSO/GSO and SG off ?
+Seriously, what seems like an improvement to one person might not seem 
+so great to somebody else.  Often even the most trivial changes can't 
+get accepted without a lot of back-and-forth arguing^Wdiscussion.
 
+In this case, I really think it's worthwhile to look for ways to
+simplify usb-skeleton.c.  For example, does supporting fsync really
+help somebody who's trying to learn how to write a USB device driver?  
+I suspect it doesn't.
 
+Going even farther, I'm not so sure it's a good idea for usb-skeleton
+to try supporting both synchronous and asynchronous accesses.  This
+adds a layer of complexity that people just don't need.  IMO it would 
+be better to have two separate example drivers, an easy one that is 
+purely synchronous and a more advanced one that is purely async.
+
+Now, things like the race between disconnect and open are good for
+teaching, because they crop up in every driver and have to be handled.  
+Other things aren't so clear (such as the autosuspend support).
+
+Alan Stern
 
