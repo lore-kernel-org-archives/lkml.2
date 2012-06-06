@@ -1,49 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758172Ab2FFUIO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 16:08:14 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:57489 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751257Ab2FFUIN (ORCPT
+	id S1758141Ab2FFUKI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 16:10:08 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:53780 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754056Ab2FFUKG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 16:08:13 -0400
-Subject: Re: [PATCH] virtio-net: fix a race on 32bit arches
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Stephen Hemminger <shemminger@vyatta.com>,
-        Jason Wang <jasowang@redhat.com>, netdev@vger.kernel.org,
-        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-In-Reply-To: <20120606195814.GA20677@redhat.com>
-References: <1338971724.2760.3913.camel@edumazet-glaptop>
-	 <1338972341.2760.3944.camel@edumazet-glaptop>
-	 <20120606111357.GA15070@redhat.com>
-	 <1338988210.2760.4485.camel@edumazet-glaptop>
-	 <20120606144941.GA17092@redhat.com>
-	 <20120606081432.6b602065@nehalam.linuxnetplumber.net>
-	 <20120606185107.GA20503@redhat.com>
-	 <1339012441.26966.48.camel@edumazet-glaptop>
-	 <20120606195814.GA20677@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 06 Jun 2012 22:08:09 +0200
-Message-ID: <1339013289.26966.62.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 6 Jun 2012 16:10:06 -0400
+Date: Wed, 6 Jun 2012 21:09:46 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Khalid Aziz <khalid.aziz@hp.com>, linux-kernel@vger.kernel.org,
+        bhelgaas@google.com, linux-pci@vger.kernel.org
+Subject: Re: [PATCH] Disable Bus Master on PCI device shutdown
+Message-ID: <20120606200946.GA11946@srcf.ucam.org>
+References: <20120427190033.GA17588@ldl.usa.hp.com>
+ <20120606135009.GB1517@srcf.ucam.org>
+ <1338999463.25761.630.camel@lyra>
+ <20120606162703.GA6779@srcf.ucam.org>
+ <1339003956.25761.667.camel@lyra>
+ <20120606174202.GA8750@srcf.ucam.org>
+ <1339006060.25761.689.camel@lyra>
+ <87obowxm5s.fsf@xmission.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87obowxm5s.fsf@xmission.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-06-06 at 22:58 +0300, Michael S. Tsirkin wrote:
+On Wed, Jun 06, 2012 at 12:42:07PM -0700, Eric W. Biederman wrote:
 
-> Absolutely, I am talking about virtio here.  I'm not kicking
-> u64_stats_sync idea I am just saying that simple locking
-> would work for virtio and might be better as it
-> gives us a way to get counters atomically.
+> pci_device_shutdown calls drv->shutdown before calling
+> pci_device_disable.  Which means that only devices that have trouble
+> with this bit being flipped while DMA is ongoing and don't bother
+> to stop their own DMA will have a problem.
 
-Which lock do you own in the RX path ?
+drv->shutdown should already be quiescing the hardware. If it isn't, it 
+should be. If it is, what does this patch fix? Many drivers 
+call pci_enable_device() early enough that they clearly expect the 
+hardware to be quiescent when they do so, so this really does seem to 
+simply handle the kexec case without handling any other cases that could 
+be similarly problematic.                               
 
-You'll have to add a lock in fast path. This sounds really a bad choice
-to me.
-
-
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
