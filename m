@@ -1,439 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755150Ab2FFKdk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 06:33:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5025 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751329Ab2FFKdi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 06:33:38 -0400
-Message-ID: <4FCF31EF.1090405@redhat.com>
-Date: Wed, 06 Jun 2012 07:33:19 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1755664Ab2FFKfR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 06:35:17 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:64489 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752194Ab2FFKfO convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 06:35:14 -0400
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Aristeu Rozanski <arozansk@redhat.com>,
-        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH v29] RAS: Add a tracepoint for reporting memory controller
- events
-References: <1338563258-13322-1-git-send-email-mchehab@redhat.com> <20120601152151.GC28216@aftab.osrc.amd.com> <4FC8E5C4.4080008@redhat.com> <20120605130752.GE13495@aftab.osrc.amd.com>
-In-Reply-To: <20120605130752.GE13495@aftab.osrc.amd.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120605213527.GA5019@quad>
+References: <20120605213527.GA5019@quad>
+Date: Wed, 6 Jun 2012 12:35:12 +0200
+Message-ID: <CABPqkBQkgSeRMtP9F61ckCaikFd_rUTQvF1NxB_DDQRugRRv3g@mail.gmail.com>
+Subject: Re: [PATCH] perf, x86: Fix Intel shared extra MSR allocation
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, zheng.z.yan@linux.intel.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 05-06-2012 10:07, Borislav Petkov escreveu:
-> On Fri, Jun 01, 2012 at 12:54:44PM -0300, Mauro Carvalho Chehab wrote:
->> +	TP_printk("%d %s error%s:%s%s on memory stick %s (mc:%d location:%d:%d:%d address:0x%08lx grain:%d syndrome:0x%08lx%s%s)",
-> 
-> Just a minor nitpick:
-> 
->        mcegen.py-3078  [019] .N..  6815.663058: mc_event: 1 Corrected error: amd64_edac on memory stick unknown memory (mc:0 location:3:1:-1 address:0x000007ba grain:2 syndrome:0x00001809)
-> 
-> It says "... on memory stick unknown memory... "
-> 
-> Can we make the printk proto like this:
-> 
-> 	TP_printk("%d %s error%s:%s%s on %s (mc:%d location:%d:%d:%d address:0x%08lx grain:%d syndrome:0x%08lx%s%s)",
-> 
-> so that both
-> 
-> 	"Corrected error on DIMMx..."
-> 
-> and
-> 
-> 	"Corrected error on unknown memory..."
-> 
-> work semantically?
-> 
-> Thanks.
+Ok, I found the problem. It was in intel_fixup_er().
+Unlike in the original code, this routine must update
+the event->extra_reg.idx to the idx parameter instead
+of trying to swap out from it.
 
-RAS: Add a tracepoint for reporting memory controller events
-
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-
-Add a new tracepoint-based hardware events report method for
-reporting Memory Controller events.
-
-Part of the description bellow is shamelessly copied from Tony
-Luck's notes about the Hardware Error BoF during LPC 2010 [1].
-Tony, thanks for your notes and discussions to generate the
-h/w error reporting requirements.
-
-[1] http://lwn.net/Articles/416669/
-
-    We have several subsystems & methods for reporting hardware errors:
-
-    1) EDAC ("Error Detection and Correction").  In its original form
-    this consisted of a platform specific driver that read topology
-    information and error counts from chipset registers and reported
-    the results via a sysfs interface.
-
-    2) mcelog - x86 specific decoding of machine check bank registers
-    reporting in binary form via /dev/mcelog. Recent additions make use
-    of the APEI extensions that were documented in version 4.0a of the
-    ACPI specification to acquire more information about errors without
-    having to rely reading chipset registers directly. A user level
-    programs decodes into somewhat human readable format.
-
-    3) drivers/edac/mce_amd.c - this driver hooks into the mcelog path and
-    decodes errors reported via machine check bank registers in AMD
-    processors to the console log using printk();
-
-    Each of these mechanisms has a band of followers ... and none
-    of them appear to meet all the needs of all users.
-
-As part of a RAS subsystem, let's encapsulate the memory error hardware
-events into a trace facility.
-
-The tracepoint printk will be displayed like:
-
-mc_event: [quant] (Corrected|Uncorrected|Fatal) error:[error msg] on memory stick [label] ([location] [edac_mc detail] [driver_d$
-
-Where:
-       	[quant] is the quantity of errors
-	[error msg] is the driver-specific error message
-		    (e. g. "memory read", "bus error", ...);
-	[location] is the location in terms of memory controller and
-		   branch/channel/slot, channel/slot or csrow/channel;
-	[label] is the memory stick label;
-	[edac_mc detail] describes the address location of the error
-			 and the syndrome;
-	[driver detail] is driver-specifig error message details,
-			when needed/provided (e. g. "area:DMA", ...)
-
-For example:
-
-mc_event: 1 Corrected error:memory read on memory stick DIMM_1A (mc:0 location:0:0:0 page:0x586b6e offset:0xa66 grain:32 syndrome:0x0 area:DMA)
-
-Of course, any userspace tools meant to handle errors should not parse
-the above data. They should, instead, use the binary fields provided by
-the tracepoint, mapping them directly into their Management Information
-Base.
-
-NOTE: The original patch was providing an additional mechanism for
-MCA-based trace events that also contained MCA error register data.
-However, as no agreement was reached so far for the MCA-based trace
-events, for now, let's add events only for memory errors.
-A latter patch is planned to change the tracepoint, for those types
-of event.
-
-Cc: Aristeu Rozanski <arozansk@redhat.com>
-Cc: Doug Thompson <norsk5@yahoo.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-
-diff --git a/drivers/edac/edac_core.h b/drivers/edac/edac_core.h
-index f06ce9a..740c7e2 100644
---- a/drivers/edac/edac_core.h
-+++ b/drivers/edac/edac_core.h
-@@ -463,12 +463,12 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
- 			  const unsigned long page_frame_number,
- 			  const unsigned long offset_in_page,
- 			  const unsigned long syndrome,
--			  const int layer0,
--			  const int layer1,
--			  const int layer2,
-+			  const int top_layer,
-+			  const int mid_layer,
-+			  const int low_layer,
- 			  const char *msg,
- 			  const char *other_detail,
--			  const void *mcelog);
-+			  const void *arch_log);
- 
- /*
-  * edac_device APIs
-diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
-index 10f3750..ce25750 100644
---- a/drivers/edac/edac_mc.c
-+++ b/drivers/edac/edac_mc.c
-@@ -27,12 +27,17 @@
- #include <linux/list.h>
- #include <linux/ctype.h>
- #include <linux/edac.h>
-+#include <linux/bitops.h>
- #include <asm/uaccess.h>
- #include <asm/page.h>
- #include <asm/edac.h>
- #include "edac_core.h"
- #include "edac_module.h"
- 
-+#define CREATE_TRACE_POINTS
-+#define TRACE_INCLUDE_PATH ../../include/ras
-+#include <ras/ras_event.h>
-+
- /* lock to memory controller's control array */
- static DEFINE_MUTEX(mem_ctls_mutex);
- static LIST_HEAD(mc_devices);
-@@ -384,6 +389,7 @@ struct mem_ctl_info *edac_mc_alloc(unsigned mc_num,
- 	 * which will perform kobj unregistration and the actual free
- 	 * will occur during the kobject callback operation
- 	 */
-+
- 	return mci;
- }
- EXPORT_SYMBOL_GPL(edac_mc_alloc);
-@@ -902,19 +908,19 @@ static void edac_ce_error(struct mem_ctl_info *mci,
- 			  const bool enable_per_layer_report,
- 			  const unsigned long page_frame_number,
- 			  const unsigned long offset_in_page,
--			  u32 grain)
-+			  long grain)
- {
- 	unsigned long remapped_page;
- 
- 	if (edac_mc_get_log_ce()) {
- 		if (other_detail && *other_detail)
- 			edac_mc_printk(mci, KERN_WARNING,
--				       "CE %s on %s (%s%s - %s)\n",
-+				       "CE %s on %s (%s %s - %s)\n",
- 				       msg, label, location,
- 				       detail, other_detail);
- 		else
- 			edac_mc_printk(mci, KERN_WARNING,
--				       "CE %s on %s (%s%s)\n",
-+				       "CE %s on %s (%s %s)\n",
- 				       msg, label, location,
- 				       detail);
- 	}
-@@ -953,12 +959,12 @@ static void edac_ue_error(struct mem_ctl_info *mci,
- 	if (edac_mc_get_log_ue()) {
- 		if (other_detail && *other_detail)
- 			edac_mc_printk(mci, KERN_WARNING,
--				       "UE %s on %s (%s%s - %s)\n",
-+				       "UE %s on %s (%s %s - %s)\n",
- 			               msg, label, location, detail,
- 				       other_detail);
- 		else
- 			edac_mc_printk(mci, KERN_WARNING,
--				       "UE %s on %s (%s%s)\n",
-+				       "UE %s on %s (%s %s)\n",
- 			               msg, label, location, detail);
- 	}
- 
-@@ -975,27 +981,50 @@ static void edac_ue_error(struct mem_ctl_info *mci,
- }
- 
- #define OTHER_LABEL " or "
-+
-+/**
-+ * edac_mc_handle_error - reports a memory event to userspace
-+ *
-+ * @type:		severity of the error (CE/UE/Fatal)
-+ * @mci:		a struct mem_ctl_info pointer
-+ * @page_frame_number:	mem page where the error occurred
-+ * @offset_in_page:	offset of the error inside the page
-+ * @syndrome:		ECC syndrome
-+ * @top_layer:		Memory layer[0] position
-+ * @mid_layer:		Memory layer[1] position
-+ * @low_layer:		Memory layer[2] position
-+ * @msg:		Message meaningful to the end users that
-+ *			explains the event
-+ * @other_detail:	Technical details about the event that
-+ *			may help hardware manufacturers and
-+ *			EDAC developers to analyse the event
-+ * @arch_log:		Architecture-specific struct that can
-+ *			be used to add extended information to the
-+ *			tracepoint, like dumping MCE registers.
-+ */
- void edac_mc_handle_error(const enum hw_event_mc_err_type type,
- 			  struct mem_ctl_info *mci,
- 			  const unsigned long page_frame_number,
- 			  const unsigned long offset_in_page,
- 			  const unsigned long syndrome,
--			  const int layer0,
--			  const int layer1,
--			  const int layer2,
-+			  const int top_layer,
-+			  const int mid_layer,
-+			  const int low_layer,
- 			  const char *msg,
- 			  const char *other_detail,
--			  const void *mcelog)
-+			  const void *arch_log)
- {
- 	/* FIXME: too much for stack: move it to some pre-alocated area */
- 	char detail[80], location[80];
- 	char label[(EDAC_MC_LABEL_LEN + 1 + sizeof(OTHER_LABEL)) * mci->tot_dimms];
- 	char *p;
- 	int row = -1, chan = -1;
--	int pos[EDAC_MAX_LAYERS] = { layer0, layer1, layer2 };
-+	int pos[EDAC_MAX_LAYERS] = { top_layer, mid_layer, low_layer };
- 	int i;
--	u32 grain;
-+	long grain;
- 	bool enable_per_layer_report = false;
-+	u16 error_count;	/* FIXME: make it a parameter */
-+	u8 grain_bits;
- 
- 	debugf3("MC%d: %s()\n", mci->mc_idx, __func__);
- 
-@@ -1045,11 +1074,11 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
- 	for (i = 0; i < mci->tot_dimms; i++) {
- 		struct dimm_info *dimm = &mci->dimms[i];
- 
--		if (layer0 >= 0 && layer0 != dimm->location[0])
-+		if (top_layer >= 0 && top_layer != dimm->location[0])
- 			continue;
--		if (layer1 >= 0 && layer1 != dimm->location[1])
-+		if (mid_layer >= 0 && mid_layer != dimm->location[1])
- 			continue;
--		if (layer2 >= 0 && layer2 != dimm->location[2])
-+		if (low_layer >= 0 && low_layer != dimm->location[2])
- 			continue;
- 
- 		/* get the max grain, over the error match range */
-@@ -1120,11 +1149,22 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
- 			     edac_layer_name[mci->layers[i].type],
- 			     pos[i]);
- 	}
-+	if (p > location)
-+		*(p - 1) = '\0';
-+
-+	/* Report the error via the trace interface */
-+
-+	error_count = 1;	/* FIXME: allow change it */
-+	grain_bits = fls_long(grain) + 1;
-+	trace_mc_event(type, msg, label, error_count,
-+		       mci->mc_idx, top_layer, mid_layer, low_layer,
-+		       PAGES_TO_MiB(page_frame_number) | offset_in_page,
-+		       grain_bits, syndrome, other_detail);
- 
- 	/* Memory type dependent details about the error */
- 	if (type == HW_EVENT_ERR_CORRECTED) {
- 		snprintf(detail, sizeof(detail),
--			"page:0x%lx offset:0x%lx grain:%d syndrome:0x%lx",
-+			"page:0x%lx offset:0x%lx grain:%ld syndrome:0x%lx",
- 			page_frame_number, offset_in_page,
- 			grain, syndrome);
- 		edac_ce_error(mci, pos, msg, location, label, detail,
-@@ -1132,7 +1172,7 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
- 			      page_frame_number, offset_in_page, grain);
- 	} else {
- 		snprintf(detail, sizeof(detail),
--			"page:0x%lx offset:0x%lx grain:%d",
-+			"page:0x%lx offset:0x%lx grain:%ld",
- 			page_frame_number, offset_in_page, grain);
- 
- 		edac_ue_error(mci, pos, msg, location, label, detail,
-diff --git a/include/ras/ras_event.h b/include/ras/ras_event.h
-new file mode 100644
-index 0000000..260470e
---- /dev/null
-+++ b/include/ras/ras_event.h
-@@ -0,0 +1,102 @@
-+#undef TRACE_SYSTEM
-+#define TRACE_SYSTEM ras
-+#define TRACE_INCLUDE_FILE ras_event
-+
-+#if !defined(_TRACE_HW_EVENT_MC_H) || defined(TRACE_HEADER_MULTI_READ)
-+#define _TRACE_HW_EVENT_MC_H
-+
-+#include <linux/tracepoint.h>
-+#include <linux/edac.h>
-+#include <linux/ktime.h>
-+
-+/*
-+ * Hardware Events Report
-+ *
-+ * Those events are generated when hardware detected a corrected or
-+ * uncorrected event, and are meant to replace the current API to report
-+ * errors defined on both EDAC and MCE subsystems.
-+ *
-+ * FIXME: Add events for handling memory errors originated from the
-+ *        MCE subsystem.
-+ */
-+
-+/*
-+ * Hardware-independent Memory Controller specific events
-+ */
-+
-+/*
-+ * Default error mechanisms for Memory Controller errors (CE and UE)
-+ */
-+TRACE_EVENT(mc_event,
-+
-+	TP_PROTO(const unsigned int err_type,
-+		 const char *error_msg,
-+		 const char *label,
-+		 const int error_count,
-+		 const u8 mc_index,
-+		 const s8 top_layer,
-+		 const s8 mid_layer,
-+		 const s8 low_layer,
-+		 unsigned long address,
-+		 const u8 grain_bits,
-+		 unsigned long syndrome,
-+		 const char *driver_detail),
-+
-+	TP_ARGS(err_type, error_msg, label, error_count, mc_index,
-+		top_layer, mid_layer, low_layer, address, grain_bits,
-+		syndrome, driver_detail),
-+
-+	TP_STRUCT__entry(
-+		__field(	unsigned int,	error_type		)
-+		__string(	msg,		error_msg		)
-+		__string(	label,		label			)
-+		__field(	u16,		error_count		)
-+		__field(	u8,		mc_index		)
-+		__field(	s8,		top_layer		)
-+		__field(	s8,		middle_layer		)
-+		__field(	s8,		lower_layer		)
-+		__field(	long,		address			)
-+		__field(	u8,		grain_bits		)
-+		__field(	long,		syndrome		)
-+		__string(	driver_detail,	driver_detail		)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->error_type		= err_type;
-+		__assign_str(msg, error_msg);
-+		__assign_str(label, label);
-+		__entry->error_count		= error_count;
-+		__entry->mc_index		= mc_index;
-+		__entry->top_layer		= top_layer;
-+		__entry->middle_layer		= mid_layer;
-+		__entry->lower_layer		= low_layer;
-+		__entry->address		= address;
-+		__entry->grain_bits		= grain_bits;
-+		__entry->syndrome		= syndrome;
-+		__assign_str(driver_detail, driver_detail);
-+	),
-+
-+	TP_printk("%d %s error%s:%s%s on %s (mc:%d location:%d:%d:%d address:0x%08lx grain:%d syndrome:0x%08lx%s%s)",
-+		  __entry->error_count,
-+		  (__entry->error_type == HW_EVENT_ERR_CORRECTED) ? "Corrected" :
-+			((__entry->error_type == HW_EVENT_ERR_FATAL) ?
-+			"Fatal" : "Uncorrected"),
-+		  __entry->error_count > 1 ? "s" : "",
-+		  ((char *)__get_str(msg))[0] ? " " : "",
-+		  __get_str(msg),
-+		  __get_str(label),
-+		  __entry->mc_index,
-+		  __entry->top_layer,
-+		  __entry->middle_layer,
-+		  __entry->lower_layer,
-+		  __entry->address,
-+		  1 << __entry->grain_bits,
-+		  __entry->syndrome,
-+		  ((char *)__get_str(driver_detail))[0] ? " " : "",
-+		  __get_str(driver_detail))
-+);
-+
-+#endif /* _TRACE_HW_EVENT_MC_H */
-+
-+/* This part must be outside protection */
-+#include <trace/define_trace.h>
+I will repost an updated version (v2).
 
 
-
+On Tue, Jun 5, 2012 at 11:35 PM, Stephane Eranian <eranian@google.com> wrote:
+>
+> Zheng Yan reported that event group validation can wreck event state
+> when Intel extra_reg allocation changes event state.
+>
+> Validation shouldn't change any persistent state. Cloning events in
+> validate_{event,group}() isn't really pretty either, so add a few
+> special cases to avoid modifying the event state.
+>
+> The code is restructured to minimize the special case impact.
+>
+> Reported-by: Zheng Yan <zheng.z.yan@linux.intel.com>
+> Cc: Stephane Eranian <eranian@google.com>
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Acked-by: Stephane Eranian <eranian@google.com>
+> ---
+>
+> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+> index e049d6d..cb60838 100644
+> --- a/arch/x86/kernel/cpu/perf_event.c
+> +++ b/arch/x86/kernel/cpu/perf_event.c
+> @@ -1496,6 +1496,7 @@ static struct cpu_hw_events *allocate_fake_cpuc(void)
+>                if (!cpuc->shared_regs)
+>                        goto error;
+>        }
+> +       cpuc->is_fake = 1;
+>        return cpuc;
+>  error:
+>        free_fake_cpuc(cpuc);
+> diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+> index 6638aaf..83794d8 100644
+> --- a/arch/x86/kernel/cpu/perf_event.h
+> +++ b/arch/x86/kernel/cpu/perf_event.h
+> @@ -117,6 +117,7 @@ struct cpu_hw_events {
+>        struct perf_event       *event_list[X86_PMC_IDX_MAX]; /* in enabled order */
+>
+>        unsigned int            group_flag;
+> +       int                     is_fake;
+>
+>        /*
+>         * Intel DebugStore bits
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+> index 166546e..76a2bd2 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
+> @@ -1119,27 +1119,33 @@ intel_bts_constraints(struct perf_event *event)
+>        return NULL;
+>  }
+>
+> -static bool intel_try_alt_er(struct perf_event *event, int orig_idx)
+> +static int intel_alt_er(int idx)
+>  {
+>        if (!(x86_pmu.er_flags & ERF_HAS_RSP_1))
+> -               return false;
+> +               return idx;
+>
+> -       if (event->hw.extra_reg.idx == EXTRA_REG_RSP_0) {
+> +       if (idx == EXTRA_REG_RSP_0)
+> +               return EXTRA_REG_RSP_1;
+> +
+> +       if (idx == EXTRA_REG_RSP_1)
+> +               return EXTRA_REG_RSP_0;
+> +
+> +       return idx;
+> +}
+> +
+> +static void intel_fixup_er(struct perf_event *event, int idx)
+> +{
+> +       if (idx == EXTRA_REG_RSP_0) {
+>                event->hw.config &= ~INTEL_ARCH_EVENT_MASK;
+>                event->hw.config |= 0x01bb;
+>                event->hw.extra_reg.idx = EXTRA_REG_RSP_1;
+>                event->hw.extra_reg.reg = MSR_OFFCORE_RSP_1;
+> -       } else if (event->hw.extra_reg.idx == EXTRA_REG_RSP_1) {
+> +       } else if (idx == EXTRA_REG_RSP_1) {
+>                event->hw.config &= ~INTEL_ARCH_EVENT_MASK;
+>                event->hw.config |= 0x01b7;
+>                event->hw.extra_reg.idx = EXTRA_REG_RSP_0;
+>                event->hw.extra_reg.reg = MSR_OFFCORE_RSP_0;
+>        }
+> -
+> -       if (event->hw.extra_reg.idx == orig_idx)
+> -               return false;
+> -
+> -       return true;
+>  }
+>
+>  /*
+> @@ -1157,14 +1163,19 @@ __intel_shared_reg_get_constraints(struct cpu_hw_events *cpuc,
+>        struct event_constraint *c = &emptyconstraint;
+>        struct er_account *era;
+>        unsigned long flags;
+> -       int orig_idx = reg->idx;
+> +       int idx = reg->idx;
+>
+> -       /* already allocated shared msr */
+> -       if (reg->alloc)
+> -               return NULL; /* call x86_get_event_constraint() */
+> +       /*
+> +        * reg->alloc can be set due to existing state, so for fake cpuc
+> +        * we need to ignore this, otherwise we might fail to allocate
+> +        * proper fake state for this extra reg constraint. Also see
+> +        * the comment below.
+> +       */
+> +       if (reg->alloc && !cpuc->is_fake)
+> +               return NULL; /* call x86_get_event_constraints() */
+>
+>  again:
+> -       era = &cpuc->shared_regs->regs[reg->idx];
+> +       era = &cpuc->shared_regs->regs[idx];
+>        /*
+>         * we use spin_lock_irqsave() to avoid lockdep issues when
+>         * passing a fake cpuc
+> @@ -1172,6 +1183,27 @@ again:
+>        raw_spin_lock_irqsave(&era->lock, flags);
+>
+>        if (!atomic_read(&era->ref) || era->config == reg->config) {
+> +               /*
+> +                * If its a fake cpuc -- as per validate_{group,event}() we
+> +                * shouldn't touch event state and we can avoid doing so
+> +                * since both will only call get_event_constraints() once
+> +                * on each event, this avoids the need for reg->alloc.
+> +                *
+> +                * Not doing the ER fixup will only result in era->reg being
+> +                * wrong, but since we won't actually try and program hardware
+> +                * this isn't a problem either.
+> +                */
+> +               if (!cpuc->is_fake) {
+> +                       if (idx != reg->idx)
+> +                               intel_fixup_er(event, idx);
+> +                       /*
+> +                        * x86_schedule_events() calls get_event_constraints()
+> +                        * multiple times on events in the case of incremental
+> +                        * scheduling(). reg->alloc ensures we only do the ER
+> +                        * allocation once.
+> +                        */
+> +                       reg->alloc = 1;
+> +               }
+>
+>                /* lock in msr value */
+>                era->config = reg->config;
+> @@ -1180,18 +1212,19 @@ again:
+>                /* one more user */
+>                atomic_inc(&era->ref);
+>
+> -               /* no need to reallocate during incremental event scheduling */
+> -               reg->alloc = 1;
+> -
+>                /*
+>                 * need to call x86_get_event_constraint()
+>                 * to check if associated event has constraints
+>                 */
+>                c = NULL;
+> -       } else if (intel_try_alt_er(event, orig_idx)) {
+> -               raw_spin_unlock_irqrestore(&era->lock, flags);
+> -               goto again;
+> +       } else {
+> +               idx = intel_alt_er(idx);
+> +               if (idx != reg->idx) {
+> +                       raw_spin_unlock_irqrestore(&era->lock, flags);
+> +                       goto again;
+> +               }
+>        }
+> +
+>        raw_spin_unlock_irqrestore(&era->lock, flags);
+>
+>        return c;
+> @@ -1204,11 +1237,14 @@ __intel_shared_reg_put_constraints(struct cpu_hw_events *cpuc,
+>        struct er_account *era;
+>
+>        /*
+> -        * only put constraint if extra reg was actually
+> -        * allocated. Also takes care of event which do
+> -        * not use an extra shared reg
+> +        * Only put constraint if extra reg was actually allocated. Also takes
+> +        * care of event which do not use an extra shared reg.
+> +        *
+> +        * Also, if this is a fake cpuc we shouldn't touch any event state
+> +        * (reg->alloc) and we don't care about leaving inconsistent cpuc state
+> +        * either since it'll be thrown out.
+>         */
+> -       if (!reg->alloc)
+> +       if (!reg->alloc || cpuc->is_fake)
+>                return;
+>
+>        era = &cpuc->shared_regs->regs[reg->idx];
