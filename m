@@ -1,70 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757260Ab2FFSn6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 14:43:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30125 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752062Ab2FFSn4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 14:43:56 -0400
-Date: Wed, 6 Jun 2012 21:43:52 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Jason Wang <jasowang@redhat.com>, netdev@vger.kernel.org,
-        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Stephen Hemminger <shemminger@vyatta.com>
-Subject: Re: [PATCH] virtio-net: fix a race on 32bit arches
-Message-ID: <20120606184351.GA20380@redhat.com>
-References: <1338971724.2760.3913.camel@edumazet-glaptop>
- <1338972341.2760.3944.camel@edumazet-glaptop>
- <20120606111357.GA15070@redhat.com>
- <1338988210.2760.4485.camel@edumazet-glaptop>
- <20120606144941.GA17092@redhat.com>
- <1338995944.26966.6.camel@edumazet-glaptop>
- <20120606161715.GA17575@redhat.com>
- <1339002782.26966.22.camel@edumazet-glaptop>
+	id S1757470Ab2FFSoa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 14:44:30 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:56119 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753410Ab2FFSo3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 14:44:29 -0400
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Wed, 06 Jun 2012 14:44:29 EDT
+X-Originating-IP: 108.223.40.66
+Date: Wed, 6 Jun 2012 11:38:02 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: [GIT PULL] hwmon fixes for 3.5-rc2
+Message-ID: <20120606183802.GA5836@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="xHFwDpU9dbj6ez1V"
 Content-Disposition: inline
-In-Reply-To: <1339002782.26966.22.camel@edumazet-glaptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 06, 2012 at 07:13:02PM +0200, Eric Dumazet wrote:
-> On Wed, 2012-06-06 at 19:17 +0300, Michael S. Tsirkin wrote:
-> 
-> > But why do you say at most 1 packet?
-> > 
-> > Consider get_stats doing:
-> >                u64_stats_update_begin(&stats->syncp);
-> >                stats->tx_bytes += skb->len;
-> > 
-> > on 64 bit at this point
-> > tx_packets might get incremented any number of times, no?
-> > 
-> >                 stats->tx_packets++;
-> >                 u64_stats_update_end(&stats->syncp);
-> > 
-> > now tx_bytes and tx_packets are out of sync by more than 1.
-> 
-> You lost me there.
-> 
-> No idea of what you are thinking about.
 
-Sorry about that. This is not a bug. I am saying two things:
+--xHFwDpU9dbj6ez1V
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-1. We are trying to look at counters for purposes of tuning the device.
-E.g. if ethtool reports packets and bytes, we'd like to calculate
-average packet size by bytes/packets.
+Hi Linus,
 
-If both counters are read atomically the metric becomes more exact.
-Not a must but nice to have.
+Please pull hwmon fixes for Linux 3.5-rc2 from signed tag:
 
-2. 32 bit systems have some overhead because of the seqlock.
-virtio could instead simply keep tx counters in the queue structure, and
-get the tx lock when they are read.
+    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
 
+First time I am sending this from my home server. Hope it works.
 
--- 
-MST
+Thanks,
+Guenter
+------
+
+The following changes since commit f8f5701bdaf9134b1f90e5044a82c66324d2073f:
+
+  Linux 3.5-rc1 (2012-06-02 18:29:26 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
+
+for you to fetch changes up to ca4620853a5b578725edec1fc8f1345db3a823ab:
+
+  MAINTAINERS: Update my e-mail address (2012-06-03 08:13:41 -0700)
+
+----------------------------------------------------------------
+hwmon updates for 3.5-rc2
+
+Update e-mail address in MAINTAINERS
+
+----------------------------------------------------------------
+Guenter Roeck (1):
+      MAINTAINERS: Update my e-mail address
+
+ MAINTAINERS |   15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
+
+--xHFwDpU9dbj6ez1V
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPz6OJAAoJEMsfJm/On5mBpXIP/3NhZI0rL6Aagi6tJ2jdExSG
+zZLjC1g3kg2/Gljei0BIFVNDk2te28v4TVV5qyetI0QZ1ZPOyMC9ELWgM5QYGSbt
+SXwKUDCHIqbamT07KeSd8vLKBRQzK0tMTCLs5kU/EQz7Uh3OtA95mqMRw1ssSpsY
+PeYE1zTNjyixL5a3c/17FnloDnlIkhd3B/VvkNrubYKyVnpZQvcUznqz/Ugp8Ezo
+qessUwxW8AEwm2LG6WY/MO02Pvpt2IvYj5hRV6C4EwNqTcrBOiStvST6jvyctpA/
+Km+xQtRUp7/ejGwT/bKkC2hCDk1aweUiSNWPdtKOHqdWTboWQAXdAgbFu6dyBAyz
+MynVto/56iuTxpPsYTYDOJbmYTBUfkUXxeRda9YlCq3Q+caODtrzTqzItqqe/hf8
+hVxehGnejHkYByQYzS0+VfthjxInI76fI7xU94XEv5iZLtYovOVgTTxhAeQdYMyM
+/oG7tcdKXWEFK/SGfpBsqFvSAbvme5kTD4qps+YysykKuK/fVbdUR5I9R27h8YBX
+eymes567LhtYTAHtc0/+e0osjKGlrxAZNtX1BG0LPEBa610Yr1e+++O3IfNdS1Vf
+JHNpso/yXtG/nQgybVuTzx7BQogAxtaQdws0nuGcS+G7GkeF8NAp2X6+LDDpZUuj
+KuxhjPtA8jPKWl9jCjCS
+=G+Jj
+-----END PGP SIGNATURE-----
+
+--xHFwDpU9dbj6ez1V--
