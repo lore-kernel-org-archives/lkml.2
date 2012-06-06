@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754430Ab2FFHDA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 03:03:00 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35835 "EHLO
+	id S1754538Ab2FFHDy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 03:03:54 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35856 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752665Ab2FFHC7 (ORCPT
+	with ESMTP id S1753088Ab2FFHDx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 03:02:59 -0400
-Date: Wed, 6 Jun 2012 00:02:41 -0700
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-vc9b4e6023iegz9kabr3yvyv@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
+	Wed, 6 Jun 2012 03:03:53 -0400
+Date: Wed, 6 Jun 2012 00:03:33 -0700
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-a59e64a13a927fb7530bef39e9f5e7de8268137e@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, namhyung@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, tglx@linutronix.de, namhyung@gmail.com
+In-Reply-To: <1338443506-25009-2-git-send-email-namhyung.kim@lge.com>
+References: <1338443506-25009-2-git-send-email-namhyung.kim@lge.com>
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:perf/urgent] perf tools:
-  Make --version show kernel version instead of pull req tag
-Git-Commit-ID: aa5cdd308ddbb08959534be408eba8ef040b5989
+  Update ioctl documentation for PERF_IOC_FLAG_GROUP
+Git-Commit-ID: a59e64a13a927fb7530bef39e9f5e7de8268137e
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,54 +30,53 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 06 Jun 2012 00:02:46 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 06 Jun 2012 00:03:38 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  aa5cdd308ddbb08959534be408eba8ef040b5989
-Gitweb:     http://git.kernel.org/tip/aa5cdd308ddbb08959534be408eba8ef040b5989
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Thu, 31 May 2012 11:17:34 -0300
+Commit-ID:  a59e64a13a927fb7530bef39e9f5e7de8268137e
+Gitweb:     http://git.kernel.org/tip/a59e64a13a927fb7530bef39e9f5e7de8268137e
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Thu, 31 May 2012 14:51:45 +0900
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 31 May 2012 11:20:59 -0300
+CommitDate: Thu, 31 May 2012 11:38:42 -0300
 
-perf tools: Make --version show kernel version instead of pull req tag
+perf tools: Update ioctl documentation for PERF_IOC_FLAG_GROUP
 
-Before:
+The ioctl interface of perf event fd receives 3 arguments to control
+event group behavior but it lacked documentation.
 
-  $ perf --version
-  perf version perf.urgent.for.mingo.5.g37da28
-
-After:
-
-  $ perf --version
-  perf version 3.4.8941.g37da28.dirty
-
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
+Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
 Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-vc9b4e6023iegz9kabr3yvyv@git.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1338443506-25009-2-git-send-email-namhyung.kim@lge.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/PERF-VERSION-GEN |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ tools/perf/design.txt |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/util/PERF-VERSION-GEN b/tools/perf/util/PERF-VERSION-GEN
-index ad73300..95264f3 100755
---- a/tools/perf/util/PERF-VERSION-GEN
-+++ b/tools/perf/util/PERF-VERSION-GEN
-@@ -12,7 +12,7 @@ LF='
- # First check if there is a .git to get the version from git describe
- # otherwise try to get the version from the kernel makefile
- if test -d ../../.git -o -f ../../.git &&
--	VN=$(git describe --abbrev=4 HEAD 2>/dev/null) &&
-+	VN=$(git describe --match 'v[0-9].[0-9]*' --abbrev=4 HEAD 2>/dev/null) &&
- 	case "$VN" in
- 	*$LF*) (exit 1) ;;
- 	v[0-9]*)
+diff --git a/tools/perf/design.txt b/tools/perf/design.txt
+index bd0bb1b..67e5d0c 100644
+--- a/tools/perf/design.txt
++++ b/tools/perf/design.txt
+@@ -409,14 +409,15 @@ Counters can be enabled and disabled in two ways: via ioctl and via
+ prctl.  When a counter is disabled, it doesn't count or generate
+ events but does continue to exist and maintain its count value.
+ 
+-An individual counter or counter group can be enabled with
++An individual counter can be enabled with
+ 
+-	ioctl(fd, PERF_EVENT_IOC_ENABLE);
++	ioctl(fd, PERF_EVENT_IOC_ENABLE, 0);
+ 
+ or disabled with
+ 
+-	ioctl(fd, PERF_EVENT_IOC_DISABLE);
++	ioctl(fd, PERF_EVENT_IOC_DISABLE, 0);
+ 
++For a counter group, pass PERF_IOC_FLAG_GROUP as the third argument.
+ Enabling or disabling the leader of a group enables or disables the
+ whole group; that is, while the group leader is disabled, none of the
+ counters in the group will count.  Enabling or disabling a member of a
