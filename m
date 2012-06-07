@@ -1,90 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932160Ab2FGQrk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 12:47:40 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:40263 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757979Ab2FGQri (ORCPT
+	id S1760061Ab2FGQso (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 12:48:44 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:49121 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758327Ab2FGQsn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 12:47:38 -0400
-Date: Thu, 7 Jun 2012 12:40:34 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Ben Guthro <ben@guthro.net>
-Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
-Subject: Re: [Xen-devel] [PATCH] xen/hvc: Fix polling mode to work with
- kdb/kgdb
-Message-ID: <20120607164034.GQ9472@phenom.dumpdata.com>
-References: <CAOvdn6VWdOy1nNM+x3ogCCFXy8FExZjTJaV-s6SR7kbGu+REOA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOvdn6VWdOy1nNM+x3ogCCFXy8FExZjTJaV-s6SR7kbGu+REOA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Thu, 7 Jun 2012 12:48:43 -0400
+From: Devendra Naga <devendra.aaru@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Dong Aisheng <aisheng.dong@freescale.com>,
+        linux-kernel@vger.kernel.org
+Cc: Devendra Naga <devendra.aaru@gmail.com>
+Subject: [PATCH V2 1/2] pinctrl: pinctrl-imx: free allocated pinctrl_map structure only once and use kernel facilities for IMX_PMX_DUMP
+Date: Thu,  7 Jun 2012 22:18:35 +0530
+Message-Id: <1339087715-14683-1-git-send-email-devendra.aaru@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 07, 2012 at 09:30:06AM -0400, Ben Guthro wrote:
-> Fix the polling section of the hvc driver to use the global "last_hvc"
-> variable, rather than the ttys.
+a) as we allocate the pinctrl_map structure at imx_dt_node_to_map at  line 167, anyway
+if its an element, or a num_elements * (sizeof(type)) elements allocated to one single
+pointer must be freed only once.
 
-Could you just do:
+CASE. A)
 
-       struct tty_struct *tty = driver->ttys[last_hvc];
+as new_map is not moved and allocated like,
 
-as well? So how come the '0' one did not work? Is that b/c
-of console=tty becoming '0' instead of hvc0? Is there a crash
-involved with this? Or is that it just is listening on the
-wrong console (and which one is that?)
-> 
-> With this change debugging a xen dom0 kernel is possible via the
-> following kernel parameter:
-> kgdboc=hvc0
+for (i = 0; i < MAX_ELEMS; i++) {
+	new_map[i] = kmalloc(numelems * size, GFP_KERNEL);
+}
 
-Hm, if that is the problem then this should also be a problem on
-IBM Power boxes I would think?
+its freed as
 
-> 
-> Signed-off-by: Ben Guthro <Benjamin.Guthro@citrix.com>
-> 
-> 
-> diff --git a/drivers/tty/hvc/hvc_console.c b/drivers/tty/hvc/hvc_console.c
-> index 2d691eb..3750e74 100644
-> --- a/drivers/tty/hvc/hvc_console.c
-> +++ b/drivers/tty/hvc/hvc_console.c
-> @@ -766,12 +766,10 @@ int hvc_poll_init(struct tty_driver *driver, int
-> line, char *options)
-> 
->  static int hvc_poll_get_char(struct tty_driver *driver, int line)
->  {
-> -       struct tty_struct *tty = driver->ttys[0];
-> -       struct hvc_struct *hp = tty->driver_data;
->         int n;
->         char ch;
-> 
-> -       n = hp->ops->get_chars(hp->vtermno, &ch, 1);
-> +       n = cons_ops[last_hvc]->get_chars(vtermnos[last_hvc], &ch, 1);
-> 
->         if (n == 0)
->                 return NO_POLL_CHAR;
-> @@ -781,12 +779,10 @@ static int hvc_poll_get_char(struct tty_driver
-> *driver, int line)
-> 
->  static void hvc_poll_put_char(struct tty_driver *driver, int line, char ch)
->  {
-> -       struct tty_struct *tty = driver->ttys[0];
-> -       struct hvc_struct *hp = tty->driver_data;
->         int n;
-> 
->         do {
-> -               n = hp->ops->put_chars(hp->vtermno, &ch, 1);
-> +               n = cons_ops[last_hvc]->put_chars(vtermnos[last_hvc], &ch, 1);
->         } while (n <= 0);
->  }
->  #endif
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xen.org
-> http://lists.xen.org/xen-devel
+for (i = 0; i < MAX_ELEMS; i++) {
+	kfree(new_map[i]);
+}
+
+CASE. B)
+and its allocated like
+	new_map = kmalloc(numelems * size, GFP_KERNEL);
+
+it just needs kfree not as case A's.
+
+b) use KERN_DEBUG facility for the IMX_PMX_DUMP macro.
+
+Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
+Acked-by: Dong Aisheng <dong.aisheng@linaro.org>
+---
+ drivers/pinctrl/pinctrl-imx.c |   25 +++++++++++--------------
+ 1 file changed, 11 insertions(+), 14 deletions(-)
+
+diff --git a/drivers/pinctrl/pinctrl-imx.c b/drivers/pinctrl/pinctrl-imx.c
+index f6e7c67..7a59a59 100644
+--- a/drivers/pinctrl/pinctrl-imx.c
++++ b/drivers/pinctrl/pinctrl-imx.c
+@@ -27,16 +27,16 @@
+ #include "core.h"
+ #include "pinctrl-imx.h"
+ 
+-#define IMX_PMX_DUMP(info, p, m, c, n)		\
+-{						\
+-	int i, j;				\
+-	printk("Format: Pin Mux Config\n");	\
+-	for (i = 0; i < n; i++) {		\
+-		j = p[i];			\
+-		printk("%s %d 0x%lx\n",		\
+-			info->pins[j].name,	\
+-			m[i], c[i]);		\
+-	}					\
++#define IMX_PMX_DUMP(info, p, m, c, n)			\
++{							\
++	int i, j;					\
++	printk(KERN_DEBUG "Format: Pin Mux Config\n");	\
++	for (i = 0; i < n; i++) {			\
++		j = p[i];				\
++		printk(KERN_DEBUG "%s %d 0x%lx\n",	\
++			info->pins[j].name,		\
++			m[i], c[i]);			\
++	}						\
+ }
+ 
+ /* The bits in CONFIG cell defined in binding doc*/
+@@ -201,10 +201,7 @@ static int imx_dt_node_to_map(struct pinctrl_dev *pctldev,
+ static void imx_dt_free_map(struct pinctrl_dev *pctldev,
+ 				struct pinctrl_map *map, unsigned num_maps)
+ {
+-	int i;
+-
+-	for (i = 0; i < num_maps; i++)
+-		kfree(map);
++	kfree(map);
+ }
+ 
+ static struct pinctrl_ops imx_pctrl_ops = {
+-- 
+1.7.9.5
+
