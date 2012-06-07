@@ -1,70 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757180Ab2FGPnN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 11:43:13 -0400
-Received: from 8bytes.org ([85.214.48.195]:56020 "EHLO
-	h2027444.stratoserver.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754947Ab2FGPnM (ORCPT
+	id S1761224Ab2FGPnc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 11:43:32 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27565 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758315Ab2FGPnQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 11:43:12 -0400
-Date: Thu, 7 Jun 2012 17:43:07 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Bryan Schumaker <bjschuma@netapp.com>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: NFS regression in v3.5-rc1: mount.nfs yells about incorrect
- mount option
-Message-ID: <20120607154307.GQ12795@8bytes.org>
-References: <20120607150456.GO12795@8bytes.org>
- <4FD0C4C2.8020605@netapp.com>
- <4FD0C613.7020400@netapp.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FD0C613.7020400@netapp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Thu Jun  7 17:43:07 2012
-X-DSPAM-Confidence: 0.9983
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 4fd0cc0b28382043879804
+	Thu, 7 Jun 2012 11:43:16 -0400
+X-Authority-Analysis: v=2.0 cv=eIiRfQV1 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Ciwy3NGCPMMA:10 a=l95s83e4SmoA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=6ohNodAXAAAA:8 a=VwQbUJbxAAAA:8 a=lpFEZuzkmf573gxAE2YA:9 a=gDjHQkheYgsA:10 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-Id: <20120607154313.536321748@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Thu, 07 Jun 2012 11:42:24 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>,
+        Priyanka Jain <Priyanka.Jain@freescale.com>,
+        Rajan Srivastava <Rajan.Srivastava@freescale.com>
+Subject: [PATCH RT 2/4] net,RT:REmove preemption disabling in netif_rx()
+References: <20120607154222.443210802@goodmis.org>
+Content-Disposition: inline; filename=0002-net-RT-REmove-preemption-disabling-in-netif_rx.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 07, 2012 at 11:17:39AM -0400, Bryan Schumaker wrote:
-> On 06/07/2012 11:12 AM, Bryan Schumaker wrote:
-> commit cdf66442fab82916fe38f928b4f91815195a294c
-> Author: Bryan Schumaker <bjschuma@netapp.com>
-> Date:   Tue Jun 5 14:59:54 2012 -0400
-> 
->     NFS4: Set parsed mount data version to 4
->     
->     This patch only affects mounting through "-t nfs4" since it doesn't set
->     up an nfs version to use in the mount data.  The nfs client was trying
->     to mount using NFS v0, causing either a BUG() or a protocol not
->     supported message.
->     
->     Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
->     Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-> 
-> diff --git a/fs/nfs/super.c b/fs/nfs/super.c
-> index ff656c0..bdd6731 100644
-> --- a/fs/nfs/super.c
-> +++ b/fs/nfs/super.c
-> @@ -2637,6 +2637,8 @@ static int nfs4_validate_mount_data(void *options,
->  	if (data == NULL)
->  		goto out_no_data;
->  
-> +	args->version = 4;
-> +
->  	switch (data->version) {
->  	case 1:
->  		if (data->host_addrlen > sizeof(args->nfs_server.address))
+From: Priyanka Jain <Priyanka.Jain@freescale.com>
 
-No, this doesn't fix it for me. Same behavior as with plain v3.5-rc1.
+1)enqueue_to_backlog() (called from netif_rx) should be
+  bind to a particluar CPU. This can be achieved by
+  disabling migration. No need to disable preemption
 
+2)Fixes crash "BUG: scheduling while atomic: ksoftirqd"
+  in case of RT.
+  If preemption is disabled, enqueue_to_backog() is called
+  in atomic context. And if backlog exceeds its count,
+  kfree_skb() is called. But in RT, kfree_skb() might
+  gets scheduled out, so it expects non atomic context.
 
-	Joerg
+3)When CONFIG_PREEMPT_RT_FULL is not defined,
+ migrate_enable(), migrate_disable() maps to
+ preempt_enable() and preempt_disable(), so no
+ change in functionality in case of non-RT.
+
+-Replace preempt_enable(), preempt_disable() with
+ migrate_enable(), migrate_disable() respectively
+-Replace get_cpu(), put_cpu() with get_cpu_light(),
+ put_cpu_light() respectively
+
+Signed-off-by: Priyanka Jain <Priyanka.Jain@freescale.com>
+Acked-by: Rajan Srivastava <Rajan.Srivastava@freescale.com>
+Cc: <rostedt@goodmis.orgn>
+Link: http://lkml.kernel.org/r/1337227511-2271-1-git-send-email-Priyanka.Jain@freescale.com
+Cc: stable-rt@vger.kernel.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ net/core/dev.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 811100d..578a74d 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -3030,7 +3030,7 @@ int netif_rx(struct sk_buff *skb)
+ 		struct rps_dev_flow voidflow, *rflow = &voidflow;
+ 		int cpu;
+ 
+-		preempt_disable();
++		migrate_disable();
+ 		rcu_read_lock();
+ 
+ 		cpu = get_rps_cpu(skb->dev, skb, &rflow);
+@@ -3040,13 +3040,13 @@ int netif_rx(struct sk_buff *skb)
+ 		ret = enqueue_to_backlog(skb, cpu, &rflow->last_qtail);
+ 
+ 		rcu_read_unlock();
+-		preempt_enable();
++		migrate_enable();
+ 	}
+ #else
+ 	{
+ 		unsigned int qtail;
+-		ret = enqueue_to_backlog(skb, get_cpu(), &qtail);
+-		put_cpu();
++		ret = enqueue_to_backlog(skb, get_cpu_light(), &qtail);
++		put_cpu_light();
+ 	}
+ #endif
+ 	return ret;
+-- 
+1.7.10
 
 
