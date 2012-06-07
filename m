@@ -1,66 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759869Ab2FGKft (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 06:35:49 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:57827 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759783Ab2FGKfs (ORCPT
+	id S1759798Ab2FGKgZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 06:36:25 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:62222 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756274Ab2FGKgY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 06:35:48 -0400
-Message-ID: <4FD083E3.5080900@panasas.com>
-Date: Thu, 7 Jun 2012 13:35:15 +0300
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
+	Thu, 7 Jun 2012 06:36:24 -0400
 MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>
-CC: <user-mode-linux-devel@lists.sourceforge.net>,
-        <gregkh@linuxfoundation.org>, <linux-kernel@vger.kernel.org>,
-        <viro@zeniv.linux.org.uk>, <jslaby@suse.cz>, <alan@linux.intel.com>
-Subject: Re: [uml-devel] um: TTY fixes (?)
-References: <1338841657-30358-1-git-send-email-richard@nod.at> <4FCF6748.6020005@panasas.com> <4FD059AC.8050808@panasas.com> <4FD06A22.6040002@nod.at> <4FD07F14.50902@panasas.com> <4FD0802A.1020203@nod.at>
-In-Reply-To: <4FD0802A.1020203@nod.at>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1339064963.23343.16.camel@twins>
+References: <1337801535-12865-1-git-send-email-jolsa@redhat.com>
+	<1337801535-12865-2-git-send-email-jolsa@redhat.com>
+	<1337852636.9783.89.camel@laptop>
+	<20120607094624.GB19842@somewhere.redhat.com>
+	<1339064963.23343.16.camel@twins>
+Date: Thu, 7 Jun 2012 12:36:22 +0200
+Message-ID: <CABPqkBTCEaDy9in75_=uu9U_4w5=wgyKDaAZ-jYHnbj-6vs9Sw@mail.gmail.com>
+Subject: Re: [PATCH 01/16] perf: Unified API to record selective sets of arch registers
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        acme@redhat.com, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, gorcunov@openvz.org, tzanussi@gmail.com,
+        mhiramat@redhat.com, robert.richter@amd.com, fche@redhat.com,
+        linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
+        drepper@gmail.com, asharma@fb.com, benjamin.redelings@nescent.org
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/07/2012 01:19 PM, Richard Weinberger wrote:
-
-> 
-> No, it works fine.
-> 
-
-
-OK Sorry I missed that part. So you are saying that these patches
-fix Fedora, but completely break other systems which now work?
-
-I saw in your cover letter that Debian was fine with or without
-->hangup() so I assumed all other system are more like Debian.
-
->> I don't see Alan's comment at all. This is not a regression it was always
->> like that. Ever since Fedora was working on UML, But these fixes are real
->> live regression crashes.
+On Thu, Jun 7, 2012 at 12:29 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Thu, 2012-06-07 at 11:46 +0200, Frederic Weisbecker wrote:
 >>
->> And I don't see the all "leaving other vendors systems insecure". It just
->> a freaking UML tty. You need to be root 5 times before you have access
->> to all these, and it's only the UML that's compromised not the "all system"
->> And surely the current plain tty0 crash is much less secure then this thing.
-> 
-> The "TTY problem" is not UML specific.
-> 
+>> Do you think that compat regs are always a subset of native regs in all
+>> archs as in x86? Sounds logic but I'm asking just in case. If so then yeah
+>> this should work.
+>
+> I can't answer this authoritatively but it would seem strange if this
+> were not the case. But even if it were so, you could always frob both
+> sets in a single space such that the shared registers overlap etc.
 
-
-Exactly my point, so it is not anything your UM-only patches can do anything
-about it. right?
-
-> Thanks,
-> //richard
-> 
-
-
-I guess I will have to carry these longer. Can I fix my FC12 and FC15 so they
-don't crash with mainline?
-
-Thanks
-Boaz
+Agreed.
