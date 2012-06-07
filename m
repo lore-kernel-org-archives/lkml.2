@@ -1,89 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932407Ab2FHBkX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 21:40:23 -0400
-Received: from dalsmrelay2.nai.com ([205.227.136.216]:64953 "EHLO
-	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759827Ab2FHBkV (ORCPT
+	id S1760108Ab2FHBtH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 21:49:07 -0400
+Received: from saturn.frankmayer.net ([213.239.206.99]:60137 "EHLO
+	saturn.frankmayer.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759958Ab2FHBtF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 21:40:21 -0400
-Message-ID: <4FD157B1.8050509@snapgear.com>
-Date: Fri, 8 Jun 2012 11:38:57 +1000
-From: Greg Ungerer <gerg@snapgear.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Thu, 7 Jun 2012 21:49:05 -0400
+X-Greylist: delayed 20073 seconds by postgrey-1.27 at vger.kernel.org; Thu, 07 Jun 2012 21:49:05 EDT
+Reply-To: <dawtarek@gmail.com>
+From: "Tarek Mansour Daw" <scanner@glss-law.gr>
+Subject: From Tarek Mansour Daw
+Date: Thu, 7 Jun 2012 22:13:11 +0200
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: <linux-m68k@vger.kernel.org>, Greg Ungerer <gerg@uclinux.org>,
-        Philippe De Muyter <phdm@macqel.be>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/5] m68k: Move CPU_HAS_* config options
-References: <1339094827-12349-1-git-send-email-geert@linux-m68k.org> <1339094827-12349-2-git-send-email-geert@linux-m68k.org>
-In-Reply-To: <1339094827-12349-2-git-send-email-geert@linux-m68k.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Type: text/plain;
+	charset="Windows-1251"
 Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+Message-ID: <SERVERGLSS8QVjp3b6u000005b8@glss-law.gr>
+X-OriginalArrivalTime: 07 Jun 2012 20:14:18.0173 (UTC) FILETIME=[1E1AEED0:01CD44EA]
+X-Assp-Version: 2.1.2(12099) on saturn.frankmayer.net
+X-Assp-ID: saturn.frankmayer.net 00613-02671
+X-Assp-Envelope-From: scanner@glss-law.gr
+X-Assp-Intended-For: linux-kernel@vger.kernel.org
+X-Assp-Original-Subject: From Tarek Mansour Daw
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/06/12 04:47, Geert Uytterhoeven wrote:
-> They belong together with the CPU selection
->
-> Signed-off-by: Geert Uytterhoeven<geert@linux-m68k.org>
+Dear Friend,
 
-Acked-by: Greg Ungerer<gerg@uclinux.org>
+I sent you an email last week and since i did not get a reply , i have decided to send it again. Anyway, my name is Tarek Mansour daw,the only child of Mr. Mansour Daw,  Libyan politician and Minister of Internal security during the time of Colnel Gaddafi .I saw your profile while going through an online directory and decided to contact you.
 
-Regards
-Greg
+I am seeking for your co-operation to invest my family funds totaling US$12 million in your country. The funds is in Europe at the moment. Due to the present political situation in libya,there is a need to invest these funds in a safe economy. 
 
+I wait to hear from you so i can explain more about the matter.
 
->   arch/m68k/Kconfig     |    9 ---------
->   arch/m68k/Kconfig.cpu |    9 +++++++++
->   2 files changed, 9 insertions(+), 9 deletions(-)
->
-> diff --git a/arch/m68k/Kconfig b/arch/m68k/Kconfig
-> index bc8cc50..87b504c 100644
-> --- a/arch/m68k/Kconfig
-> +++ b/arch/m68k/Kconfig
-> @@ -53,15 +53,6 @@ config ZONE_DMA
->   	bool
->   	default y
->
-> -config CPU_HAS_NO_BITFIELDS
-> -	bool
-> -
-> -config CPU_HAS_NO_MULDIV64
-> -	bool
-> -
-> -config CPU_HAS_ADDRESS_SPACES
-> -	bool
-> -
->   config HZ
->   	int
->   	default 1000 if CLEOPATRA
-> diff --git a/arch/m68k/Kconfig.cpu b/arch/m68k/Kconfig.cpu
-> index 2b53254..6cd8c1a 100644
-> --- a/arch/m68k/Kconfig.cpu
-> +++ b/arch/m68k/Kconfig.cpu
-> @@ -360,6 +360,15 @@ config NODES_SHIFT
->   	default "3"
->   	depends on !SINGLE_MEMORY_CHUNK
->
-> +config CPU_HAS_NO_BITFIELDS
-> +	bool
-> +
-> +config CPU_HAS_NO_MULDIV64
-> +	bool
-> +
-> +config CPU_HAS_ADDRESS_SPACES
-> +	bool
-> +
->   config FPU
->   	bool
->
+Regards,
 
-
--- 
-------------------------------------------------------------------------
-Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
-SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
-8 Gardner Close                             FAX:         +61 7 3217 5323
-Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
+Tarek Mansour Daw
