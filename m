@@ -1,78 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752255Ab2FGHHN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 03:07:13 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:38203 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751118Ab2FGHHL (ORCPT
+	id S1753101Ab2FGHLi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 03:11:38 -0400
+Received: from canardo.mork.no ([148.122.252.1]:38844 "EHLO canardo.mork.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751845Ab2FGHLg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 03:07:11 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: processes hung after sys_renameat, and 'missing' processes
-CC: Dave Jones <davej@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>, Jan Kara <jack@suse.cz>
-Date: Thu, 07 Jun 2012 09:07:55 +0200
-Message-ID: <87fwa7ha5w.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Thu, 7 Jun 2012 03:11:36 -0400
+From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+To: Stefani Seibold <stefani@seibold.net>
+Cc: Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, oneukum@suse.de, alan@lxorguk.ukuu.org.uk,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH] fix usb skeleton driver
+Organization: m
+References: <Pine.LNX.4.44L0.1206061406500.1788-100000@iolanthe.rowland.org>
+	<1339013986.3437.20.camel@wall-e>
+Date: Thu, 07 Jun 2012 09:10:27 +0200
+In-Reply-To: <1339013986.3437.20.camel@wall-e> (Stefani Seibold's message of
+	"Wed, 06 Jun 2012 22:19:46 +0200")
+Message-ID: <87k3zjtx5o.fsf@nemi.mork.no>
+User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> They do change some other things, though. In particular, I mislike the
-> last patch in that series ("vfs: retry last component if opening stale
-> dentry"), which does the whole "save_parent" thing. There's a few
-> things that look odd there, and I don't like this code, for example:
-> 
-> +               save_parent.dentry = nd->path.dentry;
-> +               save_parent.mnt = mntget(path->mnt);
-> +               nd->path.dentry = path->dentry;
-> ...
-> +               path_put(&save_parent);
-> 
-> whete there isn't a dget() on the dentry (but path_put() will do a
-> dput() on it). I'm guessing it's because we lose a refcount to it when
-> we overwrite nd->path.dentry, but why isn't there a dget() on *that*
-> one? The patch just makes me nervous. Miklos, can you explain more?
-> The interactions with "path_put_conditional()" makes me extra nervous.
+Stefani Seibold <stefani@seibold.net> writes:
+> Am Mittwoch, den 06.06.2012, 14:16 -0400 schrieb Alan Stern:
+>
+>> But that's wrong -- the accesses should go through the interface 
+>> pointer.  After all, the driver is bound to the interface, not to the 
+>> device.
+>> 
+>
+> Not really true, in whole driver only the open() and close() use the
+> interface pointer.
+>
+> In the open path the interface is already determinate by
+> usb_find_interface(), so it was reasonable to do this also in the close
+> path.
 
-Yeah, see the comment in below patch for how it's supposed to work.  I
-*think* it's correct.
+You are ignoring a few printk's you had to change:
 
-Thanks,
-Miklos
+@@ -460,9 +466,8 @@ static ssize_t skel_write(struct file *file, const char *user_buffer,
+ 
+ 	/* send the data out the bulk port */
+ 	retval = usb_submit_urb(urb, GFP_KERNEL);
+-	mutex_unlock(&dev->io_mutex);
+ 	if (retval) {
+-		dev_err(&dev->interface->dev,
++		dev_err(&dev->udev->dev,
+ 			"%s - failed submitting write urb, error %d\n",
+ 			__func__, retval);
+ 		goto error_unanchor;
 
 
-Subject: vfs: add comment to save_parent
-From: Miklos Szeredi <mszeredi@suse.cz>
+IMHO this is really bad in an example driver.  This is an interface
+driver, and any messages from it should either reference the interface
+or some related device the driver has registered.
 
-Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
----
- fs/namei.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+"Simplifying" like this is not the way to go when writing a HOWTO.
 
-Index: linux-2.6/fs/namei.c
-===================================================================
---- linux-2.6.orig/fs/namei.c	2012-06-05 19:29:39.000000000 +0200
-+++ linux-2.6/fs/namei.c	2012-06-07 08:41:55.000000000 +0200
-@@ -2355,6 +2355,16 @@ static struct file *do_last(struct namei
- 	if ((nd->flags & LOOKUP_RCU) || nd->path.mnt != path->mnt) {
- 		path_to_nameidata(path, nd);
- 	} else {
-+		/*
-+		 * We are not in RCU mode and nd->path.mnt == path->mnt.
-+		 * In that case path_to_nameidata() would just do
-+		 *
-+		 * 	dput(nd->path.dentry)
-+		 *	nd->path.dentry = path->dentry;
-+		 *
-+		 * So here we can save a dget/dput pair by just transferring the
-+		 * ref to save_parent.dentry.
-+		 */
- 		save_parent.dentry = nd->path.dentry;
- 		save_parent.mnt = mntget(path->mnt);
- 		nd->path.dentry = path->dentry;
+
+Bjørn
