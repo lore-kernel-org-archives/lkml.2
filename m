@@ -1,51 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755851Ab2FGMoi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 08:44:38 -0400
-Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:38975
+	id S1756100Ab2FGMo7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 08:44:59 -0400
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:5073
 	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755024Ab2FGMog (ORCPT
+	by vger.kernel.org with ESMTP id S1754745Ab2FGMo6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 08:44:36 -0400
+	Thu, 7 Jun 2012 08:44:58 -0400
 X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -15
-X-BigFish: VPS-15(zz179dN1432N98dKzz1202hzzz2dh668h839h944hd25hf0ah)
-X-WSS-ID: 0M58ZE5-01-2YK-02
+X-SpamScore: -1
+X-BigFish: VPS-1(zz936eIzz1202hzz8275dhz2dh668h839h944hd25hf0ah)
+X-WSS-ID: 0M58ZES-01-2Z4-02
 X-M-MSG: 
-Date: Thu, 7 Jun 2012 14:44:52 +0200
+Date: Thu, 7 Jun 2012 14:45:13 +0200
 From: Borislav Petkov <borislav.petkov@amd.com>
-To: Rob Herring <robherring2@gmail.com>
-CC: Mauro Carvalho Chehab <mchehab@redhat.com>, <linux-edac@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [PATCH 1/2] edac: add support for Calxeda highbank memory
- controller
-Message-ID: <20120607124452.GE11153@aftab.osrc.amd.com>
-References: <1339020125-20198-1-git-send-email-robherring2@gmail.com>
- <1339020125-20198-2-git-send-email-robherring2@gmail.com>
- <4FCFDB12.3090403@redhat.com>
- <4FCFE028.10005@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+CC: Clemens Ladisch <clemens@ladisch.de>, Bjorn Helgaas <bhelgaas@google.com>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>, x86 <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] AMD thresholding fixes for 3.6
+Message-ID: <20120607124513.GF11153@aftab.osrc.amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <4FCFE028.10005@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 06, 2012 at 05:56:40PM -0500, Rob Herring wrote:
-> > Hmm... I suspect that memories by DIMM chip select/channel at Calxeda,
-> > as it is using just 1 cs/channel. It probably makes more sense to add new layer
-> > type(s) to properly represent the way your memory controller addresses it, if
-> > Calxeda doesn't work with DIMMs.
-> 
-> Not sure I follow. DIMMs are supported, but only a newer JEDEC form
-> factor (DDR3 72-bit mini DIMM). The h/w pretty much fixed to a single
-> 4GB DIMM. The controller is 1 72-bit channel.
+Hi Ingo,
 
-Me too, why would this need a new define although those are more-or-less
-normal DIMMs (modulo the form factor)?
+those didn't make it in time for the merge window so I'm sending them
+now so at they can spend their quality time in linux-next.
+
+Please pull, thanks.
+
+The following changes since commit f8f5701bdaf9134b1f90e5044a82c66324d2073f:
+
+  Linux 3.5-rc1 (2012-06-02 18:29:26 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git tags/amd-thresholding-fixes-for-3.6
+
+for you to fetch changes up to 11122570193a429f72014703ce6b849640f8d7e5:
+
+  x86, MCE, AMD: Update copyrights and boilerplate (2012-06-07 12:43:50 +0200)
+
+----------------------------------------------------------------
+AMD thresholding fixes for 3.6
+
+Those are a bunch of patches which give the MCE thresholding code a
+hard look and a scrubbing to remove a couple of annoyances like sysfs
+warnings when running CPU off-/online tests and the threshold_bank4 node
+under /sys/devices/system/machinecheck/ is a symlink.
+
+It also gives proper names to the thresholding banks instead of simply
+enumerating them, like this:
+
+     /sys/devices/system/machinecheck/machinecheck0/
+     |-- bank0
+     |-- bank1
+     |-- bank2
+     |-- bank3
+     |-- bank4
+     |-- bank5
+     |-- bank6
+     |-- check_interval
+     |-- cmci_disabled
+     |-- combined_unit
+     |   |-- combined_unit
+     |       |-- error_count
+     |       |-- threshold_limit
+     |-- dont_log_ce
+     |-- execution_unit
+     |   |-- execution_unit
+     |       |-- error_count
+     |       |-- threshold_limit
+     |-- ignore_ce
+     |-- insn_fetch
+     |   |-- insn_fetch
+     |       |-- error_count
+     |       |-- threshold_limit
+     |-- load_store
+     |   |-- load_store
+     |       |-- error_count
+     |       |-- threshold_limit
+     |-- monarch_timeout
+     |-- northbridge
+     |   |-- dram
+     |   |   |-- error_count
+     |   |   |-- interrupt_enable
+     |   |   |-- threshold_limit
+     |   |-- ht_links
+     |   |   |-- error_count
+     |   |   |-- interrupt_enable
+     |   |   |-- threshold_limit
+     |   |-- l3_cache
+     |       |-- error_count
+     |       |-- interrupt_enable
+     |       |-- threshold_limit
+    ...
+
+It is tested on all our families >= K8.
+
+----------------------------------------------------------------
+Borislav Petkov (9):
+      x86, amd_nb: Export model 0x10 and later PCI id
+      x86, MCE, AMD: Remove shared banks sysfs linking
+      x86, MCE, AMD: Remove local_allocate_... wrapper
+      x86, MCE, AMD: Move shared bank to node descriptor
+      x86, MCE, AMD: Print decimal thresholding values
+      x86, MCE, AMD: Cleanup reading of error_count
+      x86, MCE, AMD: Make error_count read only
+      x86, MCE, AMD: Give proper names to the thresholding banks
+      x86, MCE, AMD: Update copyrights and boilerplate
+
+ arch/x86/include/asm/amd_nb.h        |  21 +++
+ arch/x86/kernel/amd_nb.c             |   1 +
+ arch/x86/kernel/cpu/mcheck/mce_amd.c | 264 ++++++++++++++++-------------------
+ drivers/hwmon/k10temp.c              |   5 +-
+ include/linux/pci_ids.h              |   1 +
+ 5 files changed, 147 insertions(+), 145 deletions(-)
 
 -- 
 Regards/Gruss,
