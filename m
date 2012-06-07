@@ -1,310 +1,317 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932773Ab2FGSqI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 14:46:08 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:52477 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755362Ab2FGSqF (ORCPT
+	id S932795Ab2FGSrO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 14:47:14 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:50617 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753228Ab2FGSrM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 14:46:05 -0400
-Message-ID: <1339094834.21398.4.camel@key-ThinkPad-W510>
-Subject: [PATCH 1/2] tpm: Move tpm_get_random api into the TPM device driver
-From: Kent Yoder <key@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: tpmdd-devel@lists.sourceforge.net, m.selhorst@sirrix.com,
-        safford@us.ibm.com, key@linux.vnet.ibm.com
-Date: Thu, 07 Jun 2012 13:47:14 -0500
-In-Reply-To: <1339094567.21398.2.camel@key-ThinkPad-W510>
-References: <1339094567.21398.2.camel@key-ThinkPad-W510>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12060718-1780-0000-0000-0000063F9069
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000281; HX=3.00000190; KW=3.00000007;
- PH=3.00000001; SC=3.00000002; SDB=6.00146040; UDB=6.00033436; UTC=2012-06-07
- 18:45:59
+	Thu, 7 Jun 2012 14:47:12 -0400
+Date: Thu, 7 Jun 2012 14:40:08 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: dan.magenheimer@oracle.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 08/11] mm: frontswap: add tracing support
+Message-ID: <20120607184008.GC9472@phenom.dumpdata.com>
+References: <1338980115-2394-1-git-send-email-levinsasha928@gmail.com>
+ <1338980115-2394-8-git-send-email-levinsasha928@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1338980115-2394-8-git-send-email-levinsasha928@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the tpm_get_random api from the trusted keys code into the TPM
-device driver itself so that other callers can make use of it. Also,
-change the api slightly so that the number of bytes read is returned in
-the call, since the TPM command can potentially return fewer bytes than
-requested.
+On Wed, Jun 06, 2012 at 12:55:12PM +0200, Sasha Levin wrote:
+> Add tracepoints to frontswap API.
+> 
+> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> ---
+>  include/trace/events/frontswap.h |  167 ++++++++++++++++++++++++++++++++++++++
+>  mm/frontswap.c                   |   14 +++
+>  2 files changed, 181 insertions(+), 0 deletions(-)
+>  create mode 100644 include/trace/events/frontswap.h
+> 
+> diff --git a/include/trace/events/frontswap.h b/include/trace/events/frontswap.h
+> new file mode 100644
+> index 0000000..d6c4934
+> --- /dev/null
+> +++ b/include/trace/events/frontswap.h
+> @@ -0,0 +1,167 @@
+> +#undef TRACE_SYSTEM
+> +#define TRACE_SYSTEM frontswap
+> +
+> +#if !defined(_TRACE_FRONTSWAP_H) || defined(TRACE_HEADER_MULTI_READ)
+> +#define _TRACE_FRONTSWAP_H
+> +
+> +#include <linux/tracepoint.h>
+> +
+> +struct frontswap_ops;
+> +
+> +TRACE_EVENT(frontswap_init,
+> +	TP_PROTO(unsigned int type, void *sis, void *frontswap_map),
+> +	TP_ARGS(type, sis, frontswap_map),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(	unsigned int,	type		)
+> +		__field(	void *,		sis		)
+> +		__field(	void *,		frontswap_map	)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->type		= type;
+> +		__entry->sis		= sis;
+> +		__entry->frontswap_map	= frontswap_map;
+> +	),
+> +
+> +	TP_printk("type: %u sis: %p frontswap_map: %p",
+> +		  __entry->type, __entry->sis, __entry->frontswap_map)
+> +);
+> +
+> +TRACE_EVENT(frontswap_register_ops,
+> +	TP_PROTO(struct frontswap_ops *old, struct frontswap_ops *new),
+> +	TP_ARGS(old, new),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(struct frontswap_ops *,		old		)
+> +		__field(struct frontswap_ops *,		new		)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->old		= old;
+> +		__entry->new		= new;
+> +	),
+> +
+> +	TP_printk("old: {init=%p put_page=%p get_page=%p invalidate_page=%p invalidate_area=%p}"
+> +		" new: {init=%p put_page=%p get_page=%p invalidate_page=%p invalidate_area=%p}",
+> +		__entry->old->init,__entry->old->put_page,__entry->old->get_page,
+> +		__entry->old->invalidate_page,__entry->old->invalidate_area,__entry->new->init,
+> +		__entry->new->put_page,__entry->new->get_page,__entry->new->invalidate_page,
 
-Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
----
- drivers/char/tpm/tpm.c  |   53 +++++++++++++++++++++++++++++++++++++++++-----
- drivers/char/tpm/tpm.h  |   23 ++++++++++++++++++++
- include/linux/tpm.h     |    4 +++
- security/keys/trusted.c |   47 ++++++++--------------------------------
- 4 files changed, 84 insertions(+), 43 deletions(-)
+s/get_page/load
+s/put_page/store
 
-diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
-index ad7c732..8c74b24 100644
---- a/drivers/char/tpm/tpm.c
-+++ b/drivers/char/tpm/tpm.c
-@@ -31,12 +31,6 @@
- 
- #include "tpm.h"
- 
--enum tpm_const {
--	TPM_MINOR = 224,	/* officially assigned */
--	TPM_BUFSIZE = 4096,
--	TPM_NUM_DEVICES = 256,
--};
--
- enum tpm_duration {
- 	TPM_SHORT = 0,
- 	TPM_MEDIUM = 1,
-@@ -482,6 +476,7 @@ static ssize_t transmit_cmd(struct tpm_chip *chip, struct tpm_cmd_t *cmd,
- #define TPM_INTERNAL_RESULT_SIZE 200
- #define TPM_TAG_RQU_COMMAND cpu_to_be16(193)
- #define TPM_ORD_GET_CAP cpu_to_be32(101)
-+#define TPM_ORD_GET_RANDOM cpu_to_be32(70)
- 
- static const struct tpm_input_header tpm_getcap_header = {
- 	.tag = TPM_TAG_RQU_COMMAND,
-@@ -1318,6 +1313,52 @@ int tpm_pm_resume(struct device *dev)
- }
- EXPORT_SYMBOL_GPL(tpm_pm_resume);
- 
-+#define TPM_GETRANDOM_RESULT_SIZE	18
-+static struct tpm_input_header tpm_getrandom_header = {
-+	.tag = TPM_TAG_RQU_COMMAND,
-+	.length = cpu_to_be32(14),
-+	.ordinal = TPM_ORD_GET_RANDOM
-+};
-+
-+/**
-+ * tpm_get_random() - Get random bytes from the tpm's RNG
-+ * @chip_num: A specific chip number for the request or TPM_ANY_NUM
-+ * @out: destination buffer for the random bytes
-+ * @max: on input, the max number of bytes to write to @out, on output
-+ *       this is set to the actual number of bytes written to @out
-+ *
-+ * Note that @max will be capped at TPM_MAX_RNG_DATA bytes.
-+ */
-+int tpm_get_random(u32 chip_num, u8 *out, size_t *max)
-+{
-+	struct tpm_chip *chip;
-+	struct tpm_cmd_t tpm_cmd;
-+	u32 num_bytes = min_t(u32, *max, TPM_MAX_RNG_DATA);
-+	int err;
-+
-+	chip = tpm_chip_find_get(chip_num);
-+	if (chip == NULL)
-+		return -ENODEV;
-+
-+	if (!num_bytes)
-+		return -EINVAL;
-+
-+	tpm_cmd.header.in = tpm_getrandom_header;
-+	tpm_cmd.params.getrandom_in.num_bytes = cpu_to_be32(num_bytes);
-+
-+	err = transmit_cmd(chip, &tpm_cmd,
-+			   TPM_GETRANDOM_RESULT_SIZE + num_bytes,
-+			   "attempting get random");
-+	if (err)
-+		goto out;
-+
-+	*max = be32_to_cpu(tpm_cmd.params.getrandom_out.rng_data_len);
-+	memcpy(out, tpm_cmd.params.getrandom_out.rng_data, *max);
-+out:
-+	return err;
-+}
-+EXPORT_SYMBOL_GPL(tpm_get_random);
-+
- /* In case vendor provided release function, call it too.*/
- 
- void tpm_dev_vendor_release(struct tpm_chip *chip)
-diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
-index b1c5280..610fe42 100644
---- a/drivers/char/tpm/tpm.h
-+++ b/drivers/char/tpm/tpm.h
-@@ -28,6 +28,12 @@
- #include <linux/io.h>
- #include <linux/tpm.h>
- 
-+enum tpm_const {
-+	TPM_MINOR = 224,	/* officially assigned */
-+	TPM_BUFSIZE = 4096,
-+	TPM_NUM_DEVICES = 256,
-+};
-+
- enum tpm_timeout {
- 	TPM_TIMEOUT = 5,	/* msecs */
- };
-@@ -269,6 +275,21 @@ struct tpm_pcrextend_in {
- 	u8	hash[TPM_DIGEST_SIZE];
- }__attribute__((packed));
- 
-+/* 128 bytes is an arbitrary cap. This could be as large as TPM_BUFSIZE - 18
-+ * bytes, but 128 is still a relatively large number of random bytes and
-+ * anything much bigger causes users of struct tpm_cmd_t to start getting
-+ * compiler warnings about stack frame size. */
-+#define TPM_MAX_RNG_DATA	128
-+
-+struct tpm_getrandom_out {
-+	__be32 rng_data_len;
-+	u8     rng_data[TPM_MAX_RNG_DATA];
-+}__attribute__((packed));
-+
-+struct tpm_getrandom_in {
-+	__be32 num_bytes;
-+}__attribute__((packed));
-+
- typedef union {
- 	struct	tpm_getcap_params_out getcap_out;
- 	struct	tpm_readpubek_params_out readpubek_out;
-@@ -277,6 +298,8 @@ typedef union {
- 	struct	tpm_pcrread_in	pcrread_in;
- 	struct	tpm_pcrread_out	pcrread_out;
- 	struct	tpm_pcrextend_in pcrextend_in;
-+	struct	tpm_getrandom_in getrandom_in;
-+	struct	tpm_getrandom_out getrandom_out;
- } tpm_cmd_params;
- 
- struct tpm_cmd_t {
-diff --git a/include/linux/tpm.h b/include/linux/tpm.h
-index fdc718a..d5b2f2d 100644
---- a/include/linux/tpm.h
-+++ b/include/linux/tpm.h
-@@ -32,6 +32,7 @@
- extern int tpm_pcr_read(u32 chip_num, int pcr_idx, u8 *res_buf);
- extern int tpm_pcr_extend(u32 chip_num, int pcr_idx, const u8 *hash);
- extern int tpm_send(u32 chip_num, void *cmd, size_t buflen);
-+extern int tpm_get_random(u32 chip_num, u8 *data, size_t *max);
- #else
- static inline int tpm_pcr_read(u32 chip_num, int pcr_idx, u8 *res_buf) {
- 	return -ENODEV;
-@@ -42,5 +43,8 @@ static inline int tpm_pcr_extend(u32 chip_num, int pcr_idx, const u8 *hash) {
- static inline int tpm_send(u32 chip_num, void *cmd, size_t buflen) {
- 	return -ENODEV;
- }
-+static inline int tpm_get_random(u32 chip_num, u8 *data, size_t *max) {
-+	return -ENODEV;
-+}
- #endif
- #endif
-diff --git a/security/keys/trusted.c b/security/keys/trusted.c
-index 2d5d041..48a9eabc 100644
---- a/security/keys/trusted.c
-+++ b/security/keys/trusted.c
-@@ -369,38 +369,6 @@ static int trusted_tpm_send(const u32 chip_num, unsigned char *cmd,
- }
- 
- /*
-- * get a random value from TPM
-- */
--static int tpm_get_random(struct tpm_buf *tb, unsigned char *buf, uint32_t len)
--{
--	int ret;
--
--	INIT_BUF(tb);
--	store16(tb, TPM_TAG_RQU_COMMAND);
--	store32(tb, TPM_GETRANDOM_SIZE);
--	store32(tb, TPM_ORD_GETRANDOM);
--	store32(tb, len);
--	ret = trusted_tpm_send(TPM_ANY_NUM, tb->data, sizeof tb->data);
--	if (!ret)
--		memcpy(buf, tb->data + TPM_GETRANDOM_SIZE, len);
--	return ret;
--}
--
--static int my_get_random(unsigned char *buf, int len)
--{
--	struct tpm_buf *tb;
--	int ret;
--
--	tb = kmalloc(sizeof *tb, GFP_KERNEL);
--	if (!tb)
--		return -ENOMEM;
--	ret = tpm_get_random(tb, buf, len);
--
--	kfree(tb);
--	return ret;
--}
--
--/*
-  * Lock a trusted key, by extending a selected PCR.
-  *
-  * Prevents a trusted key that is sealed to PCRs from being accessed.
-@@ -409,11 +377,12 @@ static int my_get_random(unsigned char *buf, int len)
- static int pcrlock(const int pcrnum)
- {
- 	unsigned char hash[SHA1_DIGEST_SIZE];
-+	size_t digest_size = SHA1_DIGEST_SIZE;
- 	int ret;
- 
- 	if (!capable(CAP_SYS_ADMIN))
- 		return -EPERM;
--	ret = my_get_random(hash, SHA1_DIGEST_SIZE);
-+	ret = tpm_get_random(TPM_ANY_NUM, hash, &digest_size);
- 	if (ret < 0)
- 		return ret;
- 	return tpm_pcr_extend(TPM_ANY_NUM, pcrnum, hash) ? -EINVAL : 0;
-@@ -427,9 +396,10 @@ static int osap(struct tpm_buf *tb, struct osapsess *s,
- {
- 	unsigned char enonce[TPM_NONCE_SIZE];
- 	unsigned char ononce[TPM_NONCE_SIZE];
-+	size_t nonce_size = TPM_NONCE_SIZE;
- 	int ret;
- 
--	ret = tpm_get_random(tb, ononce, TPM_NONCE_SIZE);
-+	ret = tpm_get_random(TPM_ANY_NUM, ononce, &nonce_size);
- 	if (ret < 0)
- 		return ret;
- 
-@@ -500,6 +470,7 @@ static int tpm_seal(struct tpm_buf *tb, uint16_t keytype,
- 	uint32_t ordinal;
- 	uint32_t pcrsize;
- 	uint32_t datsize;
-+	size_t nonce_size = TPM_NONCE_SIZE;
- 	int sealinfosize;
- 	int encdatasize;
- 	int storedsize;
-@@ -524,7 +495,7 @@ static int tpm_seal(struct tpm_buf *tb, uint16_t keytype,
- 	if (ret < 0)
- 		goto out;
- 
--	ret = tpm_get_random(tb, td->nonceodd, TPM_NONCE_SIZE);
-+	ret = tpm_get_random(TPM_ANY_NUM, td->nonceodd, &nonce_size);
- 	if (ret < 0)
- 		goto out;
- 	ordinal = htonl(TPM_ORD_SEAL);
-@@ -618,6 +589,7 @@ static int tpm_unseal(struct tpm_buf *tb,
- 	unsigned char cont = 0;
- 	uint32_t ordinal;
- 	uint32_t keyhndl;
-+	size_t nonce_size = TPM_NONCE_SIZE;
- 	int ret;
- 
- 	/* sessions for unsealing key and data */
-@@ -634,7 +606,7 @@ static int tpm_unseal(struct tpm_buf *tb,
- 
- 	ordinal = htonl(TPM_ORD_UNSEAL);
- 	keyhndl = htonl(SRKHANDLE);
--	ret = tpm_get_random(tb, nonceodd, TPM_NONCE_SIZE);
-+	ret = tpm_get_random(TPM_ANY_NUM, nonceodd, &nonce_size);
- 	if (ret < 0) {
- 		pr_info("trusted_key: tpm_get_random failed (%d)\n", ret);
- 		return ret;
-@@ -974,7 +946,8 @@ static int trusted_instantiate(struct key *key, const void *data,
- 			pr_info("trusted_key: key_unseal failed (%d)\n", ret);
- 		break;
- 	case Opt_new:
--		ret = my_get_random(payload->key, payload->key_len);
-+		ret = tpm_get_random(TPM_ANY_NUM, payload->key,
-+				     &payload->key_len);
- 		if (ret < 0) {
- 			pr_info("trusted_key: key_create failed (%d)\n", ret);
- 			goto out;
--- 
-1.7.5.4
+> +		__entry->new->invalidate_area)
+> +);
+> +
+> +TRACE_EVENT(frontswap_put_page,
+
+Its not called put_page anymore.
 
 
+> +	TP_PROTO(void *page, int dup, int ret),
+> +	TP_ARGS(page, dup, ret),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(	int,		dup		)
+> +		__field(	int,		ret		)
+> +		__field(	void *,		page		)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->dup		= dup;
+> +		__entry->ret		= ret;
+> +		__entry->page		= page;
+> +	),
+> +
+> +	TP_printk("page: %p dup: %d ret: %d",
+> +		  __entry->page, __entry->dup, __entry->ret)
+> +);
+> +
+> +TRACE_EVENT(frontswap_get_page,
+
+Ditto
+> +	TP_PROTO(void *page, int ret),
+> +	TP_ARGS(page, ret),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(	int,		ret		)
+> +		__field(	void *,		page		)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->ret		= ret;
+> +		__entry->page		= page;
+> +	),
+> +
+> +	TP_printk("page: %p ret: %d",
+> +		  __entry->page, __entry->ret)
+> +);
+> +
+> +TRACE_EVENT(frontswap_invalidate_page,
+> +	TP_PROTO(int type, unsigned long offset, void *sis, int test),
+> +	TP_ARGS(type, offset, sis, test),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(	int,		type		)
+> +		__field(	unsigned long,	offset		)
+> +		__field(	void *,		sis		)
+> +		__field(	int,		test		)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->type		= type;
+> +		__entry->offset		= offset;
+> +		__entry->sis		= sis;
+> +		__entry->test		= test;
+> +	),
+> +
+> +	TP_printk("type: %d offset: %lu sys: %p frontswap_test: %d",
+> +		  __entry->type, __entry->offset, __entry->sis, __entry->test)
+> +);
+> +
+> +TRACE_EVENT(frontswap_invalidate_area,
+
+Ditto.
+
+> +	TP_PROTO(int type, void *sis, void *map),
+> +	TP_ARGS(type, sis, map),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(	int,		type		)
+> +		__field(	void *,		map		)
+> +		__field(	void *,		sis		)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->type		= type;
+> +		__entry->sis		= sis;
+> +		__entry->map		= map;
+> +	),
+> +
+> +	TP_printk("type: %d sys: %p map: %p",
+> +		  __entry->type, __entry->sis, __entry->map)
+> +);
+> +
+> +TRACE_EVENT(frontswap_curr_pages,
+> +	TP_PROTO(unsigned long totalpages),
+> +	TP_ARGS(totalpages),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(unsigned long,		totalpages	)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->totalpages	= totalpages;
+> +	),
+> +
+> +	TP_printk("total pages: %lu",
+> +		  __entry->totalpages)
+> +);
+> +
+> +TRACE_EVENT(frontswap_shrink,
+> +	TP_PROTO(unsigned long target_pages),
+> +	TP_ARGS(target_pages),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(unsigned long,		target_pages	)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->target_pages	= target_pages;
+> +	),
+> +
+> +	TP_printk("target pages: %lu",
+> +		  __entry->target_pages)
+> +);
+> +
+> +#endif /* _TRACE_FRONTSWAP_H */
+> +
+> +#include <trace/define_trace.h>
+> diff --git a/mm/frontswap.c b/mm/frontswap.c
+> index bf99c7d..b98df99 100644
+> --- a/mm/frontswap.c
+> +++ b/mm/frontswap.c
+> @@ -11,6 +11,7 @@
+>   * This work is licensed under the terms of the GNU GPL, version 2.
+>   */
+>  
+> +#define CREATE_TRACE_POINTS
+>  #include <linux/mm.h>
+>  #include <linux/mman.h>
+>  #include <linux/swap.h>
+> @@ -23,6 +24,7 @@
+>  #include <linux/debugfs.h>
+>  #include <linux/frontswap.h>
+>  #include <linux/swapfile.h>
+> +#include <trace/events/frontswap.h>
+>  
+>  /*
+>   * frontswap_ops is set by frontswap_register_ops to contain the pointers
+> @@ -66,6 +68,7 @@ struct frontswap_ops frontswap_register_ops(struct frontswap_ops *ops)
+>  {
+>  	struct frontswap_ops old = frontswap_ops;
+>  
+> +	trace_frontswap_register_ops(&old, ops);
+>  	frontswap_ops = *ops;
+>  	frontswap_enabled = 1;
+>  	return old;
+> @@ -87,6 +90,9 @@ void __frontswap_init(unsigned type)
+>  	struct swap_info_struct *sis = swap_info[type];
+>  
+>  	BUG_ON(sis == NULL);
+> +
+> +	trace_frontswap_init(type, sis, sis->frontswap_map);
+> +
+>  	if (sis->frontswap_map == NULL)
+>  		return;
+>  	frontswap_ops.init(type);
+> @@ -113,6 +119,7 @@ int __frontswap_put_page(struct page *page)
+>  	if (frontswap_test(sis, offset))
+>  		dup = 1;
+>  	ret = frontswap_ops.put_page(type, offset, page);
+> +	trace_frontswap_put_page(page, dup, ret);
+
+Uh, why a different parameter layout?
+
+>  	if (ret == 0) {
+>  		frontswap_set(sis, offset);
+>  		frontswap_succ_puts++;
+> @@ -153,6 +160,7 @@ int __frontswap_get_page(struct page *page)
+>  	BUG_ON(sis == NULL);
+>  	if (frontswap_test(sis, offset))
+>  		ret = frontswap_ops.get_page(type, offset, page);
+> +	trace_frontswap_get_page(page, ret);
+>  	if (ret == 0)
+>  		frontswap_gets++;
+>  	return ret;
+> @@ -168,6 +176,7 @@ void __frontswap_invalidate_page(unsigned type, pgoff_t offset)
+>  	struct swap_info_struct *sis = swap_info[type];
+>  
+>  	BUG_ON(sis == NULL);
+> +	trace_frontswap_invalidate_page(type, offset, sis, frontswap_test(sis, offset));
+>  	if (frontswap_test(sis, offset)) {
+>  		frontswap_ops.invalidate_page(type, offset);
+>  		atomic_dec(&sis->frontswap_pages);
+> @@ -186,6 +195,7 @@ void __frontswap_invalidate_area(unsigned type)
+>  	struct swap_info_struct *sis = swap_info[type];
+>  
+>  	BUG_ON(sis == NULL);
+> +	trace_frontswap_invalidate_area(type, sis, sis->frontswap_map);
+>  	if (sis->frontswap_map == NULL)
+>  		return;
+>  	frontswap_ops.invalidate_area(type);
+> @@ -274,6 +284,8 @@ void frontswap_shrink(unsigned long target_pages)
+>  	unsigned long pages_to_unuse = 0;
+>  	int type, ret;
+>  
+> +	trace_frontswap_shrink(target_pages);
+> +
+>  	/*
+>  	 * we don't want to hold swap_lock while doing a very
+>  	 * lengthy try_to_unuse, but swap_list may change
+> @@ -301,6 +313,8 @@ unsigned long frontswap_curr_pages(void)
+>  	totalpages = __frontswap_curr_pages();
+>  	spin_unlock(&swap_lock);
+>  
+> +	trace_frontswap_curr_pages(totalpages);
+> +
+>  	return totalpages;
+>  }
+>  EXPORT_SYMBOL(frontswap_curr_pages);
+> -- 
+> 1.7.8.6
