@@ -1,223 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757856Ab2FGDkt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 23:40:49 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:51506 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754769Ab2FGDkr (ORCPT
+	id S1758098Ab2FGDpp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 23:45:45 -0400
+Received: from audible.transient.net ([216.254.12.79]:48730 "HELO
+	audible.transient.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752672Ab2FGDpn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 23:40:47 -0400
-Message-ID: <4FD022BA.8090109@gmail.com>
-Date: Wed, 06 Jun 2012 22:40:42 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Wed, 6 Jun 2012 23:45:43 -0400
+X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Wed, 06 Jun 2012 23:45:43 EDT
+Date: Thu, 7 Jun 2012 03:38:30 +0000
+From: Jamie Heilman <jamie@audible.transient.net>
+To: Daniel Mack <zonque@gmail.com>
+Cc: Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: 3.5-rc1 snd_usb_audio stream format breakage
+Message-ID: <20120607033830.GB4321@cucamonga.audible.transient.net>
+Mail-Followup-To: Daniel Mack <zonque@gmail.com>,
+	Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+	linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-To: David Daney <ddaney.cavm@gmail.com>
-CC: linux-mips@linux-mips.org, ralf@linux-mips.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
-        David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH v8 1/1] of/lib: Allow scripts/dtc/libfdt to be used from
- kernel code
-References: <1339022972-20036-1-git-send-email-ddaney.cavm@gmail.com>
-In-Reply-To: <1339022972-20036-1-git-send-email-ddaney.cavm@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/06/2012 05:49 PM, David Daney wrote:
-> From: David Daney <david.daney@cavium.com>
-> 
-> libfdt is part of the device tree support in scripts/dtc/libfdt.  For
-> some platforms that use the Device Tree, we want to be able to edit
-> the flattened device tree form.
-> 
-> We don't want to burden kernel builds that do not require it, so we
-> gate compilation of libfdt files with CONFIG_LIBFDT.  So if it is
-> needed, you need to do this in your Kconfig:
-> 
-> 	select LIBFDT
-> 
-> And in the Makefile of the code using libfdt something like:
-> 
-> ccflags-y := -I$(src)/../../../scripts/dtc/libfdt
-> 
-> Signed-off-by: David Daney <david.daney@cavium.com>
+With the USB audio streaming logic changes, my HeadRoom Bithead
+(08bb:2902 Burr-Brown PCM2902) no longer works.  Symptoms include the
+loss of most of the normally available formats leaving only:
 
-Looks like you've addressed all of Grant's prior comments and looks okay
-to me. I'd merge it with the rest of patches thru the MIPS tree.
+root@cucamonga:~# cat /proc/asound/bithead/stream0 
+Burr-Brown from TI USB Audio CODEC at usb-0000:00:1a.7-1.1.4, full speed : USB Audio
 
-Acked-by: Rob Herring <rob.herring@calxeda.com>
+Playback:
+  Status: Stop
+  Interface 1
+    Altset 6
+    Format: U8
+    Channels: 1
+    Endpoint: 2 OUT (ADAPTIVE)
+    Rates: 32000, 44100, 48000
 
+Capture:
+  Status: Stop
+  Interface 2
+    Altset 18
+    Format: S8
+    Channels: 1
+    Endpoint: 4 IN (SYNC)
+    Rates: 11025
 
-> ---
-> This patch has been seen several times before as part of a larger
-> patch set for my OCTEON Device Tree work.  After further refinement to
-> my patches that depend on core Device Tree functionality, this is the
-> only remaining patch to the common 'core' code.
-> 
-> Here is the history:
-> 
-> v8: Rebased lib/Makefile to avoid merge conflict.
-> 
-> v7: No changes other that to split from other, now unneeded, patches.
-> 
-> v6: No changes other than to split these out of the MIPS/OCTEON patch
->     set to allow them to be merged separately if desired.
-> 
-> v5: Build libfdt in the lib directory instead of devices/of, and
->     include all libfdt files.
-> 
->     Changes to of_find_node_by_path() requested by Grant Likely.
-> 
-> v4: No changes to these two patches.
-> 
-> v3: libfdt building moved to devices/of/libfdt.  Cleanup and style
->     improvements as suggested by Grant Likely.
-> 
-> v2: No changes to these two patches.
-> 
-> There are a couple of possibility for merging this.
-> 
-> 1) Via the Device Tree maintainers, thus blocking the follow-ons until
->    it is merged.
-> 
-> 2) Via Ralf's Linux/MIPS tree with the rest of the patches after
->    Device Tree maintainer sign-off.
-> 
->  include/linux/libfdt.h     |    8 ++++++++
->  include/linux/libfdt_env.h |   13 +++++++++++++
->  lib/Kconfig                |    6 ++++++
->  lib/Makefile               |    5 +++++
->  lib/fdt.c                  |    2 ++
->  lib/fdt_ro.c               |    2 ++
->  lib/fdt_rw.c               |    2 ++
->  lib/fdt_strerror.c         |    2 ++
->  lib/fdt_sw.c               |    2 ++
->  lib/fdt_wip.c              |    2 ++
->  10 files changed, 44 insertions(+), 0 deletions(-)
->  create mode 100644 include/linux/libfdt.h
->  create mode 100644 include/linux/libfdt_env.h
->  create mode 100644 lib/fdt.c
->  create mode 100644 lib/fdt_ro.c
->  create mode 100644 lib/fdt_rw.c
->  create mode 100644 lib/fdt_strerror.c
->  create mode 100644 lib/fdt_sw.c
->  create mode 100644 lib/fdt_wip.c
-> 
-> diff --git a/include/linux/libfdt.h b/include/linux/libfdt.h
-> new file mode 100644
-> index 0000000..4c0306c
-> --- /dev/null
-> +++ b/include/linux/libfdt.h
-> @@ -0,0 +1,8 @@
-> +#ifndef _INCLUDE_LIBFDT_H_
-> +#define _INCLUDE_LIBFDT_H_
-> +
-> +#include <linux/libfdt_env.h>
-> +#include "../../scripts/dtc/libfdt/fdt.h"
-> +#include "../../scripts/dtc/libfdt/libfdt.h"
-> +
-> +#endif /* _INCLUDE_LIBFDT_H_ */
-> diff --git a/include/linux/libfdt_env.h b/include/linux/libfdt_env.h
-> new file mode 100644
-> index 0000000..01508c7
-> --- /dev/null
-> +++ b/include/linux/libfdt_env.h
-> @@ -0,0 +1,13 @@
-> +#ifndef _LIBFDT_ENV_H
-> +#define _LIBFDT_ENV_H
-> +
-> +#include <linux/string.h>
-> +
-> +#include <asm/byteorder.h>
-> +
-> +#define fdt32_to_cpu(x) be32_to_cpu(x)
-> +#define cpu_to_fdt32(x) cpu_to_be32(x)
-> +#define fdt64_to_cpu(x) be64_to_cpu(x)
-> +#define cpu_to_fdt64(x) cpu_to_be64(x)
-> +
-> +#endif /* _LIBFDT_ENV_H */
-> diff --git a/lib/Kconfig b/lib/Kconfig
-> index a9e1540..e091300 100644
-> --- a/lib/Kconfig
-> +++ b/lib/Kconfig
-> @@ -395,4 +395,10 @@ config SIGNATURE
->  	  Digital signature verification. Currently only RSA is supported.
->  	  Implementation is done using GnuPG MPI library
->  
-> +#
-> +# libfdt files, only selected if needed.
-> +#
-> +config LIBFDT
-> +	bool
-> +
->  endmenu
-> diff --git a/lib/Makefile b/lib/Makefile
-> index 8c31a0c..2f2be5a 100644
-> --- a/lib/Makefile
-> +++ b/lib/Makefile
-> @@ -130,6 +130,11 @@ obj-$(CONFIG_GENERIC_STRNLEN_USER) += strnlen_user.o
->  
->  obj-$(CONFIG_STMP_DEVICE) += stmp_device.o
->  
-> +libfdt_files = fdt.o fdt_ro.o fdt_wip.o fdt_rw.o fdt_sw.o fdt_strerror.o
-> +$(foreach file, $(libfdt_files), \
-> +	$(eval CFLAGS_$(file) = -I$(src)/../scripts/dtc/libfdt))
-> +lib-$(CONFIG_LIBFDT) += $(libfdt_files)
-> +
->  hostprogs-y	:= gen_crc32table
->  clean-files	:= crc32table.h
->  
-> diff --git a/lib/fdt.c b/lib/fdt.c
-> new file mode 100644
-> index 0000000..97f2006
-> --- /dev/null
-> +++ b/lib/fdt.c
-> @@ -0,0 +1,2 @@
-> +#include <linux/libfdt_env.h>
-> +#include "../scripts/dtc/libfdt/fdt.c"
-> diff --git a/lib/fdt_ro.c b/lib/fdt_ro.c
-> new file mode 100644
-> index 0000000..f73c04e
-> --- /dev/null
-> +++ b/lib/fdt_ro.c
-> @@ -0,0 +1,2 @@
-> +#include <linux/libfdt_env.h>
-> +#include "../scripts/dtc/libfdt/fdt_ro.c"
-> diff --git a/lib/fdt_rw.c b/lib/fdt_rw.c
-> new file mode 100644
-> index 0000000..0c1f0f4
-> --- /dev/null
-> +++ b/lib/fdt_rw.c
-> @@ -0,0 +1,2 @@
-> +#include <linux/libfdt_env.h>
-> +#include "../scripts/dtc/libfdt/fdt_rw.c"
-> diff --git a/lib/fdt_strerror.c b/lib/fdt_strerror.c
-> new file mode 100644
-> index 0000000..8713e3f
-> --- /dev/null
-> +++ b/lib/fdt_strerror.c
-> @@ -0,0 +1,2 @@
-> +#include <linux/libfdt_env.h>
-> +#include "../scripts/dtc/libfdt/fdt_strerror.c"
-> diff --git a/lib/fdt_sw.c b/lib/fdt_sw.c
-> new file mode 100644
-> index 0000000..9ac7e50
-> --- /dev/null
-> +++ b/lib/fdt_sw.c
-> @@ -0,0 +1,2 @@
-> +#include <linux/libfdt_env.h>
-> +#include "../scripts/dtc/libfdt/fdt_sw.c"
-> diff --git a/lib/fdt_wip.c b/lib/fdt_wip.c
-> new file mode 100644
-> index 0000000..45b3fc3
-> --- /dev/null
-> +++ b/lib/fdt_wip.c
-> @@ -0,0 +1,2 @@
-> +#include <linux/libfdt_env.h>
-> +#include "../scripts/dtc/libfdt/fdt_wip.c"
+(normally 2 channel S16_LE is available, with capture rates up to
+48kHz ... only the last altset's are being reported now) and a slew of
+proc registration warnings logged:
 
+------------[ cut here ]------------
+WARNING: at fs/proc/generic.c:586 proc_register+0x169/0x1a6()
+Hardware name: Precision WorkStation T3400  
+proc_dir_entry 'card1/pcm0p' already registered
+Modules linked in: snd_usb_audio(+) snd_usbmidi_lib snd_hda_intel(+) snd_hda_codec snd_hwdep snd_seq_midi snd_seq_midi_event snd_pcm snd_page_alloc snd_rawmidi snd_seq snd_seq_device snd_timer snd soundcore dcdbas floppy sr_mod usb_storage cdrom kvm_intel psmouse kvm tg3 evdev xfs dm_mod raid1 md_mod
+Pid: 1152, comm: modprobe Not tainted 3.5.0-rc1-00110-g71fae7e #2
+Call Trace:
+ [<ffffffff8102a400>] warn_slowpath_common+0x83/0x9c
+ [<ffffffff8102a4bc>] warn_slowpath_fmt+0x46/0x48
+ [<ffffffff813829ad>] ? add_preempt_count+0x39/0x3b
+ [<ffffffff811292f0>] proc_register+0x169/0x1a6
+ [<ffffffff8112962e>] create_proc_entry+0x74/0x8c
+ [<ffffffffa018eb63>] snd_info_register+0x3e/0xc3 [snd]
+ [<ffffffffa01fde2e>] snd_pcm_new_stream+0xb1/0x404 [snd_pcm]
+ [<ffffffffa024861f>] snd_usb_add_audio_stream+0xd2/0x230 [snd_usb_audio]
+ [<ffffffffa0241d33>] ? snd_usb_parse_audio_format+0x252/0x34f [snd_usb_audio]
+ [<ffffffff810d6b17>] ? kmem_cache_alloc_trace+0xab/0xbb
+ [<ffffffffa0248c29>] snd_usb_parse_audio_interface+0x4ac/0x567 [snd_usb_audio]
+ [<ffffffffa023f0ff>] snd_usb_create_stream+0xe9/0x125 [snd_usb_audio]
+ [<ffffffffa023f9b1>] usb_audio_probe+0x62a/0x72c [snd_usb_audio]
+ [<ffffffff812c49f5>] usb_probe_interface+0x136/0x1b1
+ [<ffffffff81287e66>] ? driver_probe_device+0x1d3/0x1d3
+ [<ffffffff81287d43>] driver_probe_device+0xb0/0x1d3
+ [<ffffffff81287ec5>] __driver_attach+0x5f/0x83
+ [<ffffffff812863a2>] bus_for_each_dev+0x54/0x86
+ [<ffffffff81287730>] driver_attach+0x1e/0x20
+ [<ffffffff8128747f>] bus_add_driver+0xfd/0x23a
+ [<ffffffff812882e8>] driver_register+0x93/0x10e
+ [<ffffffff812c383f>] usb_register_driver+0x7e/0x12a
+ [<ffffffffa0257000>] ? 0xffffffffa0256fff
+ [<ffffffffa0257000>] ? 0xffffffffa0256fff
+ [<ffffffffa0257040>] snd_usb_audio_init+0x40/0x1000 [snd_usb_audio]
+ [<ffffffff810001ff>] do_one_initcall+0x7f/0x134
+ [<ffffffffa0257000>] ? 0xffffffffa0256fff
+ [<ffffffff810688d4>] sys_init_module+0x16cf/0x195e
+ [<ffffffff8106516c>] ? free_notes_attrs+0x4d/0x4d
+ [<ffffffff810c38cb>] ? mmap_region+0x1c7/0x469
+ [<ffffffff813856d2>] system_call_fastpath+0x16/0x1b
+---[ end trace c1baea1a25a91564 ]---
+
+followed immediately by 4 more instances of:
+
+------------[ cut here ]------------
+WARNING: at fs/proc/generic.c:586 proc_register+0x169/0x1a6()
+Hardware name: Precision WorkStation T3400  
+proc_dir_entry 'card1/pcm0p' already registered
+Modules linked in: snd_usb_audio(+) snd_usbmidi_lib snd_hda_intel(+) snd_hda_codec snd_hwdep snd_seq_midi snd_seq_midi_event snd_pcm snd_page_alloc snd_rawmidi snd_seq snd_seq_device snd_timer snd soundcore dcdbas floppy sr_mod usb_storage cdrom kvm_intel psmouse kvm tg3 evdev xfs dm_mod raid1 md_mod
+Pid: 1152, comm: modprobe Tainted: G        W    3.5.0-rc1-00110-g71fae7e #2
+Call Trace:
+ [<ffffffff8102a400>] warn_slowpath_common+0x83/0x9c
+ [<ffffffff8102a4bc>] warn_slowpath_fmt+0x46/0x48
+ [<ffffffff813829ad>] ? add_preempt_count+0x39/0x3b
+ [<ffffffff811292f0>] proc_register+0x169/0x1a6
+ [<ffffffff8112962e>] create_proc_entry+0x74/0x8c
+ [<ffffffffa018eb63>] snd_info_register+0x3e/0xc3 [snd]
+ [<ffffffffa01fde2e>] snd_pcm_new_stream+0xb1/0x404 [snd_pcm]
+ [<ffffffffa024861f>] snd_usb_add_audio_stream+0xd2/0x230 [snd_usb_audio]
+ [<ffffffffa0241d33>] ? snd_usb_parse_audio_format+0x252/0x34f [snd_usb_audio]
+ [<ffffffff810d6b17>] ? kmem_cache_alloc_trace+0xab/0xbb
+ [<ffffffffa0248c29>] snd_usb_parse_audio_interface+0x4ac/0x567 [snd_usb_audio]
+ [<ffffffffa023f0ff>] snd_usb_create_stream+0xe9/0x125 [snd_usb_audio]
+ [<ffffffffa023f9b1>] usb_audio_probe+0x62a/0x72c [snd_usb_audio]
+ [<ffffffff812c49f5>] usb_probe_interface+0x136/0x1b1
+ [<ffffffff81287e66>] ? driver_probe_device+0x1d3/0x1d3
+ [<ffffffff81287d43>] driver_probe_device+0xb0/0x1d3
+ [<ffffffff81287ec5>] __driver_attach+0x5f/0x83
+ [<ffffffff812863a2>] bus_for_each_dev+0x54/0x86
+ [<ffffffff81287730>] driver_attach+0x1e/0x20
+ [<ffffffff8128747f>] bus_add_driver+0xfd/0x23a
+ [<ffffffff812882e8>] driver_register+0x93/0x10e
+ [<ffffffff812c383f>] usb_register_driver+0x7e/0x12a
+ [<ffffffffa0257000>] ? 0xffffffffa0256fff
+ [<ffffffffa0257000>] ? 0xffffffffa0256fff
+ [<ffffffffa0257040>] snd_usb_audio_init+0x40/0x1000 [snd_usb_audio]
+ [<ffffffff810001ff>] do_one_initcall+0x7f/0x134
+ [<ffffffffa0257000>] ? 0xffffffffa0256fff
+ [<ffffffff810688d4>] sys_init_module+0x16cf/0x195e
+ [<ffffffff8106516c>] ? free_notes_attrs+0x4d/0x4d
+ [<ffffffff810c38cb>] ? mmap_region+0x1c7/0x469
+ [<ffffffff813856d2>] system_call_fastpath+0x16/0x1b
+---[ end trace c1baea1a25a91565 ]---
+
+and then 17 instances of the same thing only for proc_dir_entry
+'card1/pcm0c'
+
+Bisecting the issue got as far as
+d399ff9593e088d33fb38f5206c6427825892baa being bad and
+8fdff6a319e7dac757c558bd283dc4577e68cde7 being good ... with
+edcd3633e72a1590c4cf46befe5e6cd03b5aec3e not building, but its pretty
+obvious when things went wrong.
+
+The host system is built for x86_64, happy to provide configs and such
+if you think them relevant.  Lemme know if I can be of help in testing
+fixes or providing more debugging info.
+
+-- 
+Jamie Heilman                     http://audible.transient.net/~jamie/
