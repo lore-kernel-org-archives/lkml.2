@@ -1,99 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760950Ab2FGOwe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 10:52:34 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:37518 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753227Ab2FGOwc (ORCPT
+	id S1760986Ab2FGPDY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 11:03:24 -0400
+Received: from www84.your-server.de ([213.133.104.84]:50022 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753184Ab2FGPDX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 10:52:32 -0400
-MIME-Version: 1.0
-Reply-To: rus@sfinxsoft.com
-In-Reply-To: <20120607142459.GB5053@x1.osrc.amd.com>
-References: <CAKgfjTktMLc5bfqhCOKy0evssxggofNQqLT-gQqBkHcBvOgF0g@mail.gmail.com>
- <CAKgfjTnvCAT=3JFxmDTsui_hguiiBfHQfMmErv9wt6QG_30hKA@mail.gmail.com> <20120607142459.GB5053@x1.osrc.amd.com>
-From: Rus <rus@sfinxsoft.com>
-Date: Thu, 7 Jun 2012 17:51:51 +0300
-X-Google-Sender-Auth: MEMu3aFu1mV8nEmbYgr0wV5WBkc
-Message-ID: <CAKgfjTn3KXmDio0F0M3syeHnDc=ByKZu1ipe7S+75KRcCBy0QA@mail.gmail.com>
-Subject: Re: 3.[34].x Reproducable [Firmware bug] message upon warm boot only
-To: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Thu, 7 Jun 2012 11:03:23 -0400
+Message-ID: <1339081423.13015.8.camel@wall-e>
+Subject: Re: [PATCH 04/11] remove usb_interface pointer
+From: Stefani Seibold <stefani@seibold.net>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
+        oneukum@suse.de, alan@lxorguk.ukuu.org.uk, linux-usb@vger.kernel.org
+Date: Thu, 07 Jun 2012 17:03:43 +0200
+In-Reply-To: <Pine.LNX.4.44L0.1206071026160.1311-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1206071026160.1311-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Am Donnerstag, den 07.06.2012, 10:28 -0400 schrieb Alan Stern:
+> On Thu, 7 Jun 2012, Stefani Seibold wrote:
+> 
+> > I tried to implement your idea to kick away the usb_device pointer, but
+> > i think it is impossible. The skel_delete() function needs the
+> > usb_device pointer for calling usb_put, which is called from
+> > skel_disconnect() or skel_release().
+>   
+> Does skel_delete() really need to call usb_put_dev()?  I suspect that  
+> the driver doesn't need to take a reference to either the device or the
+> interface.
+>  
 
->> Cold boot do not show this message. The hardware is Asus M5A97 PRO
->> (latest 1208 Bios) and FX-8150 CPU, 24GB RAM, the only system on this
->> box is Linux.
->
-> Can you send /proc/cpuinfo from that box?
->
+I think it will be needed, since usb core will decrement the reference
+when the device go away. Lock every access to the usb core if a tedious
+thing and will waste a lot of code.
 
-The /proc/cpuinfo :
+The problem with hotpluging is not the plug, it is the unplug, which can
+happen any time.
 
-.........
-processor	: 0
-vendor_id	: AuthenticAMD
-cpu family	: 21
-model		: 1
-model name	: AMD FX(tm)-8150 Eight-Core Processor
-stepping	: 2
-microcode	: 0x6000626
-cpu MHz		: 3600.000
-cache size	: 2048 KB
-physical id	: 0
-siblings	: 8
-core id		: 0
-cpu cores	: 4
-apicid		: 16
-initial apicid	: 0
-fpu		: yes
-fpu_exception	: yes
-cpuid level	: 13
-wp		: yes
-flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov
-pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt
-pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc extd_apicid
-aperfmperf pni pclmulqdq monitor ssse3 cx16 sse4_1 sse4_2 popcnt aes
-xsave avx lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a
-misalignsse 3dnowprefetch osvw ibs xop skinit wdt lwp fma4 nodeid_msr
-topoext perfctr_core arat cpb hw_pstate npt lbrv svm_lock nrip_save
-tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold
-bogomips	: 7224.00
-TLB size	: 1536 4K pages
-clflush size	: 64
-cache_alignment	: 64
-address sizes	: 48 bits physical, 48 bits virtual power management: ts
-ttp tm 100mhzsteps hwpstate cpb
-.....
+BTW: An interface have no reference count.
 
->> Is this message harmless or this is some problem with hardware/bios/Linux ?
->
-> Mostly harmless, fix is already upstream: f227d306cf3 and also on its
-> way to stable. You can try 3.5-rc1 on the box (it should be pretty
-> stable on AMD) or wait for the stable backport.
+> > A call of interface_to_usbdev(dev->intf) results in a udev pointer, but
+> > this pointer is only valid if it was called trough kref_put() from
+> > skel_disconnect().
+> > 
+> > For an already opened devices, the call will come from skel_release()
+> > and in this case the interface pointer could be already owned by an
+> > other driver and no more longer handle by the skeleton driver.
+> > 
+> > So i think we need both.
+> 
+> If skel_delete is changed then we don't need the usb_device pointer.
+> 
 
-Ok, compiling ... will report soon. The reason I've asked - this
-particular brand new box is freezing once at a 2-3 days without any
-output - no oops, no sysrq, nothing. So I'm trying to investigate what
-is the problem. The previous kernels (3.3.x) have the serious problem
-with iommu - the onboard USB3.0 and Ethernet did not work at all on
-them. The 3.4.x is better, but seems like still freezing.
+I have no idea how to do this. Every USB driver i know stores the
+usb_device pointer.
 
-Thanks
+Maybe you have an idea?
 
->
-> Thanks.
->
-> --
-> Regards/Gruss,
-> Boris.
+Steffi
 
 
-
--- 
-SfinxSoft
-http://sfinxsoft.com
