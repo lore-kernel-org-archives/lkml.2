@@ -1,32 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754433Ab2FGPfc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 11:35:32 -0400
-Received: from na3sys010aog114.obsmtp.com ([74.125.245.96]:38282 "HELO
-	na3sys010aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752624Ab2FGPfa (ORCPT
+	id S1757180Ab2FGPnN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 11:43:13 -0400
+Received: from 8bytes.org ([85.214.48.195]:56020 "EHLO
+	h2027444.stratoserver.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754947Ab2FGPnM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 11:35:30 -0400
+	Thu, 7 Jun 2012 11:43:12 -0400
+Date: Thu, 7 Jun 2012 17:43:07 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Bryan Schumaker <bjschuma@netapp.com>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: NFS regression in v3.5-rc1: mount.nfs yells about incorrect
+ mount option
+Message-ID: <20120607154307.GQ12795@8bytes.org>
+References: <20120607150456.GO12795@8bytes.org>
+ <4FD0C4C2.8020605@netapp.com>
+ <4FD0C613.7020400@netapp.com>
 MIME-Version: 1.0
-In-Reply-To: <CAH3drwacayQEZHOidbKKuJ3KjgMvnYzT0S0csXV2QwSmC8nMxg@mail.gmail.com>
-References: <CAHVUoiQywo=iHKsXQbsVE7coc1FL9A9qy_a71SK94MKNV0GrKA@mail.gmail.com>
- <CAHVUoiTZmzT3vquaDC65AJfCFZX-qS5GjgjP2-+=0R7skurW5g@mail.gmail.com>
- <CAHVUoiQgcAMr874d_yPfm9ssUBOoX+dNLy9JNCOCYwOCrAKXFQ@mail.gmail.com> <CAH3drwacayQEZHOidbKKuJ3KjgMvnYzT0S0csXV2QwSmC8nMxg@mail.gmail.com>
-From: Roland Dreier <roland@purestorage.com>
-Date: Thu, 7 Jun 2012 08:35:05 -0700
-Message-ID: <CAL1RGDXotXpZXUeR6JGu=qAkJE3H8iJ_0A0fQTCXrBJkWJDBRA@mail.gmail.com>
-Subject: Re: [Regression] [Radeon] Stream command failures and render problems
- in Evergreen (Radeon HD 5600) in kernel 3.4
-To: Jerome Glisse <j.glisse@gmail.com>
-Cc: Brian Gitonga Marete <marete@toshnix.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Airlie <airlied@linux.ie>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Jerome Glisse <jglisse@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FD0C613.7020400@netapp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Thu Jun  7 17:43:07 2012
+X-DSPAM-Confidence: 0.9983
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 4fd0cc0b28382043879804
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Update your libdrm to libdrm from git should fix your issue.
+On Thu, Jun 07, 2012 at 11:17:39AM -0400, Bryan Schumaker wrote:
+> On 06/07/2012 11:12 AM, Bryan Schumaker wrote:
+> commit cdf66442fab82916fe38f928b4f91815195a294c
+> Author: Bryan Schumaker <bjschuma@netapp.com>
+> Date:   Tue Jun 5 14:59:54 2012 -0400
+> 
+>     NFS4: Set parsed mount data version to 4
+>     
+>     This patch only affects mounting through "-t nfs4" since it doesn't set
+>     up an nfs version to use in the mount data.  The nfs client was trying
+>     to mount using NFS v0, causing either a BUG() or a protocol not
+>     supported message.
+>     
+>     Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
+>     Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+> 
+> diff --git a/fs/nfs/super.c b/fs/nfs/super.c
+> index ff656c0..bdd6731 100644
+> --- a/fs/nfs/super.c
+> +++ b/fs/nfs/super.c
+> @@ -2637,6 +2637,8 @@ static int nfs4_validate_mount_data(void *options,
+>  	if (data == NULL)
+>  		goto out_no_data;
+>  
+> +	args->version = 4;
+> +
+>  	switch (data->version) {
+>  	case 1:
+>  		if (data->host_addrlen > sizeof(args->nfs_server.address))
 
-That's unfortunate -- it means a kernel change breaks working userspace?
+No, this doesn't fix it for me. Same behavior as with plain v3.5-rc1.
+
+
+	Joerg
+
+
