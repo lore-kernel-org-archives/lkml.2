@@ -1,81 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932246Ab2FGKzF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 06:55:05 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:50090 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932216Ab2FGKzD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 06:55:03 -0400
+	id S1760693Ab2FGKzi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 06:55:38 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:37942 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932227Ab2FGKzg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 06:55:36 -0400
+Message-ID: <4FD08813.9070307@parallels.com>
+Date: Thu, 7 Jun 2012 14:53:07 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <4FCFEE36.3010902@linaro.org>
-References: <1338575387-26972-1-git-send-email-john.stultz@linaro.org>
-	<1338575387-26972-4-git-send-email-john.stultz@linaro.org>
-	<4FC9235F.5000402@gmail.com>
-	<4FC92E30.4000906@linaro.org>
-	<4FC9360B.4020401@gmail.com>
-	<4FC937AD.8040201@linaro.org>
-	<4FC9438B.1000403@gmail.com>
-	<4FC94F61.20305@linaro.org>
-	<4FCFB4F6.6070308@gmail.com>
-	<4FCFEE36.3010902@linaro.org>
-Date: Thu, 7 Jun 2012 12:55:01 +0200
-Message-ID: <CAO6Zf6D++8hOz19BmUwQ8iwbQknQRNsF4npP4r-830j04vbj=g@mail.gmail.com>
-Subject: Re: [PATCH 3/3] [RFC] tmpfs: Add FALLOC_FL_MARK_VOLATILE/UNMARK_VOLATILE
- handlers
-From: Dmitry Adamushko <dmitry.adamushko@gmail.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        Neil Brown <neilb@suse.de>, Andrea Righi <andrea@betterlinux.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Taras Glek <tgek@mozilla.com>, Mike Hommey <mh@glandium.org>,
-        Jan Kara <jack@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
+        <linux-mm@kvack.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
+        Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, <devel@openvz.org>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH v3 00/28] kmem limitation for memcg
+References: <1337951028-3427-1-git-send-email-glommer@parallels.com> <20120607102604.GE19842@somewhere.redhat.com>
+In-Reply-To: <20120607102604.GE19842@somewhere.redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ ... ]
->> Ok, so can you please explain your ideal order to reclaim. your last mail
->> described old and new volatiled region. but I'm not sure regular tmpfs pages
->> vs volatile pages vs regular file cache order. That said, when using shrink_slab(),
->> we choose random order to drop against page cache. I'm not sure why you sure
->> it is ideal.
+On 06/07/2012 02:26 PM, Frederic Weisbecker wrote:
+> On Fri, May 25, 2012 at 05:03:20PM +0400, Glauber Costa wrote:
+>> Hello All,
+>>
+>> This is my new take for the memcg kmem accounting. This should merge
+>> all of the previous comments from you, plus fix a bunch of bugs.
+>>
+>> At this point, I consider the series pretty mature. Since last submission
+>> 2 weeks ago, I focused on broadening the testing coverage. Some bugs were
+>> fixed, but that of course doesn't mean no bugs exist.
+>>
+>> I believe some of the early patches here are already in some trees around.
+>> I don't know who should pick this, so if everyone agrees with what's in here,
+>> please just ack them and tell me which tree I should aim for (-mm? Hocko's?)
+>> and I'll rebase it.
+>>
+>> I should point out again that most, if not all, of the code in the caches
+>> are wrapped in static_key areas, meaning they will be completely patched out
+>> until the first limit is set. Enabling and disabling of static_keys incorporate
+>> the last fixes for sock memcg, and should be pretty robust.
+>>
+>> I also put a lot of effort, as you will all see, in the proper separation
+>> of the patches, so the review process is made as easy as the complexity of
+>> the work allows to.
 >
-> So I'm not totally sure its ideal, but I can tell you what make sense to
-> me. If there is a more ideal order, I'm open to suggestions.
+> So I believe that if I want to implement a per kernel stack accounting/limitation,
+> I need to work on top of your patchset.
 >
-> So volatile ranges should be purged first-in-first-out. So the first
-> range marked volatile should be purged first. Since volatile ranges
-> might have different costs depending on what filesystem the file is
-> backed by, this LRU order is per-filesystem.
+> What do you think about having some sub kmem accounting based on the caches?
+> For example there could be a specific accounting per kmem cache.
 >
-> It seems that if we have tmpfs volatile ranges, we should purge them
-> before we swap out any regular tmpfs pages. Thus why I'm purging any
-> available ranges on shmem_writepage before swapping, rather then using a
-> shrinker now (I'm hoping you saw the updated patchset I sent out friday).
+> Like if we use a specific kmem cache to allocate the kernel stack
+> (as is done by some archs but I can generalize that for those who want
+> kernel stack accounting), allocations are accounted globally in the memcg as
+> done in your patchset but also on a seperate counter only for this kmem cache
+> on the memcg, resulting in a kmem.stack.usage somewhere.
 >
+> The concept of per kmem cache accounting can be expanded more for any
+> kind of finegrained kmem accounting.
+>
+> Thoughts?
 
-so there are multiple sources of reclaimable memory, each coming with
-its own cost of (a) giving a memory page back to the kernel and (b)
-populating a new page with the content (if accessed later). Given that
-the costs are different, I assume that the kernel tries to balance
-between different sources with the goal of minimizing the overall
-cost.
+I believe a general separation is too much, and will lead to knob 
+explosion. So I don't think it is a good idea.
 
-In this light, the placement of a new source (like 'volatile ranges')
-of reclaimable memory does affect this balance (and hence, the overall
-cost) one way or another. For instance,
+Now, for the stack itself, it can be justified. The question that 
+remains to be answered is:
 
-"we should purge them before we swap out any regular tmpfs pages"
+Why do you need to set the stack value separately? Isn't accounting the 
+stack value, and limiting against the global kmem limit enough?
 
-but maybe we should also purge them before we swap out some non-tmpfs
-pages or drop some file-backed pages?
-
--- Dmitry
