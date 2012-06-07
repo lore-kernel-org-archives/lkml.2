@@ -1,51 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759578Ab2FGNSQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 09:18:16 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:59292 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756093Ab2FGNSP (ORCPT
+	id S1760117Ab2FGNTT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 09:19:19 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:33509 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757853Ab2FGNTR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 09:18:15 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Masami Hiramatsu <mhiramat@redhat.com>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] Use test_and_clear_bit() instead atomic_dec_and_test() for stop_machine
-References: <87likkt7u6.fsf@devron.myhome.or.jp>
-	<87ehqct7a3.fsf@devron.myhome.or.jp>
-	<20120522214633.GB30024@home.goodmis.org>
-	<87aa0zty4r.fsf@devron.myhome.or.jp>
-	<87mx4zr0l9.fsf@devron.myhome.or.jp>
-	<1339073661.7559.1.camel@gandalf.stny.rr.com>
-Date: Thu, 07 Jun 2012 22:18:08 +0900
-In-Reply-To: <1339073661.7559.1.camel@gandalf.stny.rr.com> (Steven Rostedt's
-	message of "Thu, 07 Jun 2012 08:54:21 -0400")
-Message-ID: <877gvji7lb.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1.50 (gnu/linux)
+	Thu, 7 Jun 2012 09:19:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <4FD01896.1010506@intel.com>
+References: <4FC2E944.6060903@intel.com>
+	<20120604171202.GA8533@x1.osrc.amd.com>
+	<1338856360.14538.220.camel@ymzhang.sh.intel.com>
+	<20120605081448.GA7097@liondog.tnic>
+	<4FCDD72A.9030701@intel.com>
+	<4FCDD78A.3070106@intel.com>
+	<20120605151542.GA10669@x1.osrc.amd.com>
+	<1338942965.14538.233.camel@ymzhang.sh.intel.com>
+	<4FCF155B.3090705@intel.com>
+	<4FCF160D.8010404@intel.com>
+	<20120606152238.GA3874@x1.osrc.amd.com>
+	<4FD01896.1010506@intel.com>
+Date: Thu, 7 Jun 2012 13:19:16 +0000
+Message-ID: <CAO6yerJVKgjHe9LBL1ZfcMUzqHA5iZwSf2La+hf19QBDEQ-L0w@mail.gmail.com>
+Subject: Re: [PATCH v7 1/2] printk: add interface for disabling recursion check
+From: bing deng <deng8bing@gmail.com>
+To: shuox.liu@intel.com
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@alien8.de>,
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven Rostedt <rostedt@goodmis.org> writes:
-
-> On Wed, 2012-05-23 at 13:19 +0900, OGAWA Hirofumi wrote:
->> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp> writes:
->> 
->> >> The down side to this is that it adds 4 more bytes on a 64bit
->> >> machine. (sizeof(unsigned log) == 8 and sizeof(atomic_t) == 4)
->> 
->> Another patch without additional 4bytes. This simply change
->> atomic_dec_and_test() to atomic_xchg().
->> 
+On Thu, Jun 7, 2012 at 2:57 AM, ShuoX Liu <shuox.liu@intel.com> wrote:
+> From: ShuoX Liu <shuox.liu@intel.com>
 >
-> If nobody picked this up, you might want to resend it with my acked-by.
-> (The second patch, not the first). As patches added to replies are
-> usually ignored.
+> With some special scenario, such as Machine Check Exception happened
+> in printk, we want to bypass printk recursion check to printk some
+> important information. So we add these interfaces of printk.
+>
+> 1) printk_recursion_check_disable() for disabling recursion check
+> 2) printk_recursion_check_enable() for enabling recursion check
+>
+> Signed-off-by: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+> Signed-off-by: ShuoX Liu <shuox.liu@intel.com>
+> ---
+>  include/linux/printk.h |    3 +++
+>  kernel/printk.c        |   17 ++++++++++++++++-
+>  2 files changed, 19 insertions(+), 1 deletions(-)
+>
+> diff --git a/include/linux/printk.h b/include/linux/printk.h
+> index 1bec2f7..da48ec7 100644
+> --- a/include/linux/printk.h
+> +++ b/include/linux/printk.h
+> @@ -42,6 +42,9 @@ static inline void console_verbose(void)
+>                console_loglevel = 15;
+>  }
+>
+> +void printk_recursion_check_disable(void);
+> +void printk_recursion_check_enable(void);
+> +
+>  struct va_format {
+>        const char *fmt;
+>        va_list *va;
+> diff --git a/kernel/printk.c b/kernel/printk.c
+> index 32462d2..0580f67 100644
+> --- a/kernel/printk.c
+> +++ b/kernel/printk.c
+> @@ -78,6 +78,19 @@ int console_printk[4] = {
+>  int oops_in_progress;
+>  EXPORT_SYMBOL(oops_in_progress);
+>
+> +static atomic_t recursion_check_disabled = ATOMIC_INIT(0);
+> +
+> +void printk_recursion_check_disable(void)
+> +{
+> +       atomic_inc(&recursion_check_disabled);
+> +}
+> +
+> +void printk_recursion_check_enable(void)
+> +{
+> +       WARN_ON(atomic_read(&recursion_check_disabled) < 1);
+> +       atomic_dec(&recursion_check_disabled);
+> +}
+> +
+>  /*
+>  * console_sem protects the console_drivers list, and also
+>  * provides serialisation for access to the entire console
+> @@ -1295,7 +1308,9 @@ asmlinkage int vprintk_emit(int facility, int level,
+>                 * recursion and return - but flag the recursion so that
+>                 * it can be printed at the next appropriate moment:
+>                 */
+> -               if (!oops_in_progress && !lockdep_recursing(current)) {
+> +               if (!atomic_read(&recursion_check_disabled)
+> +                       && !oops_in_progress
+> +                       && !lockdep_recursing(current)) {
+>                        recursion_bug = 1;
+>                        goto out_restore_irqs;
+>                }
+> --
+> 1.7.1
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Thanks. I was going to add that to my personal patchset, I will try it again.
+Hi Shuo,
+
+    Should the two function be export by EXPORT_SYMBOL? The the other
+module can use it.
+
 -- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Best Regards,
+Bing
