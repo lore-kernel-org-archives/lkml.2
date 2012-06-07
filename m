@@ -1,55 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933055Ab2FGVxK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 17:53:10 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:33925 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757756Ab2FGVxI (ORCPT
+	id S933086Ab2FGV4s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 17:56:48 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:35404 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932991Ab2FGV4r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 17:53:08 -0400
-Date: Thu, 7 Jun 2012 22:53:05 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH] gpiolib: wm8994: Pay attention to the value set when
- enabling as output
-Message-ID: <20120607215305.GA19760@sirena.org.uk>
-References: <1338916327-3958-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <CACRpkdY379kHbaMhGD4Q9y=Nkv2NPey+n1zUuTLAE-j7f8gadA@mail.gmail.com>
+	Thu, 7 Jun 2012 17:56:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdY379kHbaMhGD4Q9y=Nkv2NPey+n1zUuTLAE-j7f8gadA@mail.gmail.com>
-X-Cookie: Is there life before breakfast?
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+X-Originating-IP: [41.212.116.88]
+In-Reply-To: <CAHVUoiTfooPSXyVpcg_Khc0rzYcnmvAbGgfko42hOxqukc91_A@mail.gmail.com>
+References: <CAHVUoiQywo=iHKsXQbsVE7coc1FL9A9qy_a71SK94MKNV0GrKA@mail.gmail.com>
+ <CAHVUoiTZmzT3vquaDC65AJfCFZX-qS5GjgjP2-+=0R7skurW5g@mail.gmail.com>
+ <CAHVUoiQgcAMr874d_yPfm9ssUBOoX+dNLy9JNCOCYwOCrAKXFQ@mail.gmail.com>
+ <CAH3drwacayQEZHOidbKKuJ3KjgMvnYzT0S0csXV2QwSmC8nMxg@mail.gmail.com>
+ <CAHVUoiSP7SiWCtYPvKS_1RuAV0upWmT06iN7PR1OE6NAtToirQ@mail.gmail.com>
+ <CAH3drwY61Pqd1MXxgSYcHRPJF5pNr2FO7vrM_ULsRvMbYjAhOQ@mail.gmail.com> <CAHVUoiTfooPSXyVpcg_Khc0rzYcnmvAbGgfko42hOxqukc91_A@mail.gmail.com>
+From: Brian Gitonga Marete <marete@toshnix.com>
+Date: Fri, 8 Jun 2012 00:56:26 +0300
+Message-ID: <CAHVUoiT4FgEpWDLtzfTUaCTZR-rFx76E3MRdU8u9swjmt74ZQg@mail.gmail.com>
+Subject: Re: [Regression] [Radeon] Stream command failures and render problems
+ in Evergreen (Radeon HD 5600) in kernel 3.4
+To: Jerome Glisse <j.glisse@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, David Airlie <airlied@linux.ie>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Jerome Glisse <jglisse@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 07, 2012 at 01:11:20PM +0200, Linus Walleij wrote:
-> <broonie@opensource.wolfsonmicro.com> wrote:
+On Fri, Jun 8, 2012 at 12:44 AM, Brian Gitonga Marete
+<marete@toshnix.com> wrote:
+> On Thu, Jun 7, 2012 at 11:20 PM, Jerome Glisse <j.glisse@gmail.com> wrote:
+>> On Thu, Jun 7, 2012 at 3:59 PM, Brian Gitonga Marete <marete@toshnix.com> wrote:
+>>> On Thu, Jun 7, 2012 at 5:25 PM, Jerome Glisse <j.glisse@gmail.com> wrote:
+>>>>
+>>>> Update your libdrm to libdrm from git should fix your issue.
+>>>
+>>> Hello Jerome,
+>>>
+>>> Thanks for looking into this.
+>>>
+>>> I am afraid that even with the very latest libdrm (git 93a5117d), the
+>>> rendering is still broken.
+>>>
+>>> What else should I try? I would revert the patch that git-bisect
+>>> fingered (your patch, git 285484e2d, Linux mainline) but there are
+>>> merge problems when I try to do that, which I have not yet looked
+>>> into. Perhaps you can see if you can help me revert that patch so that
+>>> we can see if the problem then goes away?
+>>>
+>> What happen if you upgrade to xf86-video-ati from git ?
+>
+> Hello Jerome,
+>
+> Once again, thanks a lot for your help.
+>
+> Some progress but also a setback: Upgrading to the latest
+> xf86-video-ati git gets rid of the stream command failures - No more
+> error messages in dmesg(8). But then, now, rendering is completely
+> messed up. Previously, it was mostly the window boundaries that were
+> blurred/messed but now also entire windows and text so that you can't
+> read anything from the desktop. (For example, the previous render
+> problems would still allow me to use gnome-terminal even though its
+> frames were completely blurred. Now the text withing gnome-terminal is
+> also blurred/smudged)
+>
 
-> > + ? ? ? if (value)
-> > + ? ? ? ? ? ? ? value = WM8994_GPN_LVL;
+I should add that in this case rendering is completely messed up in
+_both_ 3.3.x and 3.4. But the stream command failures in 3.4 go away
+upon upgrading to the latext xf86-video-ati git HEAD.
 
-> > ? ? ? ?return wm8994_set_bits(wm8994, WM8994_GPIO_1 + offset,
-> > - ? ? ? ? ? ? ? ? ? ? ? ? ? ? ?WM8994_GPN_DIR, 0);
-> > + ? ? ? ? ? ? ? ? ? ? ? ? ? ? ?WM8994_GPN_DIR | WM8994_GPN_LVL, value);
-> > ?}
-
-> The commit message is so terse compared to what the code does that
-> I cannot claim to understand what this patch is doing.
-
-> Could you elaborate on the problem ans symptoms, just for a nice
-> commit log?
-
-I'm not really sure what more there is to say...  previously we were
-ignoring the value that's set as part of setting output mode so if
-someone wanted to set a value different to the one the chip happened to
-have that wouldn't happen.  Ignoring the vaue that the user is trying to
-set seems like an obvious enough bug in itself.
+Thanks.
