@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932846Ab2FGEUM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 00:20:12 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62777 "EHLO
+	id S932770Ab2FGETm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 00:19:42 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63306 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932807Ab2FGEUI (ORCPT
+	with ESMTP id S932745Ab2FGETi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 00:20:08 -0400
-Message-Id: <20120607040345.089064266@linuxfoundation.org>
+	Thu, 7 Jun 2012 00:19:38 -0400
+Message-Id: <20120607040344.300504752@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 07 Jun 2012 13:04:36 +0900
+Date: Thu, 07 Jun 2012 13:04:31 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Andreas Dilger <adilger@whamcloud.com>,
-        Eric Sandeen <sandeen@redhat.com>, "Theodore Tso" <tytso@mit.edu>
-Subject: [ 60/82] ext4: force ro mount if ext4_setup_super() fails
+        alan@lxorguk.ukuu.org.uk, Gao feng <gaofeng@cn.fujitsu.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 55/82] ipv6: fix incorrect ipsec fragment
 In-Reply-To: <20120607041406.GA13233@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,43 +25,175 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Sandeen <sandeen@redhat.com>
 
-commit 7e84b6216467b84cd332c8e567bf5aa113fd2f38 upstream.
+From: Gao feng <gaofeng@cn.fujitsu.com>
 
-If ext4_setup_super() fails i.e. due to a too-high revision,
-the error is logged in dmesg but the fs is not mounted RO as
-indicated.
+[ Upstream commit 0c1833797a5a6ec23ea9261d979aa18078720b74 ]
 
-Tested by:
+Since commit ad0081e43a
+"ipv6: Fragment locally generated tunnel-mode IPSec6 packets as needed"
+the fragment of packets is incorrect.
+because tunnel mode needs IPsec headers and trailer for all fragments,
+while on transport mode it is sufficient to add the headers to the
+first fragment and the trailer to the last.
 
-# mkfs.ext4 -r 4 /dev/sdb6
-# mount /dev/sdb6 /mnt/test
-# dmesg | grep "too high"
-[164919.759248] EXT4-fs (sdb6): revision level too high, forcing read-only mode
-# grep sdb6 /proc/mounts
-/dev/sdb6 /mnt/test2 ext4 rw,seclabel,relatime,data=ordered 0 0
+so modify mtu and maxfraglen base on ipsec mode and if fragment is first
+or last.
 
-Reviewed-by: Andreas Dilger <adilger@whamcloud.com>
-Signed-off-by: Eric Sandeen <sandeen@redhat.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+with my test,it work well(every fragment's size is the mtu)
+and does not trigger slow fragment path.
+
+Changes from v1:
+	though optimization, mtu_prev and maxfraglen_prev can be delete.
+	replace xfrm mode codes with dst_entry's new frag DST_XFRM_TUNNEL.
+	add fuction ip6_append_data_mtu to make codes clearer.
+
+Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/ext4/super.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ include/net/dst.h      |    1 
+ net/ipv6/ip6_output.c  |   68 ++++++++++++++++++++++++++++++++++++-------------
+ net/xfrm/xfrm_policy.c |    3 ++
+ 3 files changed, 54 insertions(+), 18 deletions(-)
 
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -3592,7 +3592,8 @@ no_journal:
- 		goto failed_mount4;
+--- a/include/net/dst.h
++++ b/include/net/dst.h
+@@ -60,6 +60,7 @@ struct dst_entry {
+ #define DST_NOCOUNT		0x0020
+ #define DST_NOPEER		0x0040
+ #define DST_FAKE_RTABLE		0x0080
++#define DST_XFRM_TUNNEL		0x0100
+ 
+ 	short			error;
+ 	short			obsolete;
+--- a/net/ipv6/ip6_output.c
++++ b/net/ipv6/ip6_output.c
+@@ -1181,6 +1181,29 @@ static inline struct ipv6_rt_hdr *ip6_rt
+ 	return src ? kmemdup(src, (src->hdrlen + 1) * 8, gfp) : NULL;
+ }
+ 
++static void ip6_append_data_mtu(int *mtu,
++				int *maxfraglen,
++				unsigned int fragheaderlen,
++				struct sk_buff *skb,
++				struct rt6_info *rt)
++{
++	if (!(rt->dst.flags & DST_XFRM_TUNNEL)) {
++		if (skb == NULL) {
++			/* first fragment, reserve header_len */
++			*mtu = *mtu - rt->dst.header_len;
++
++		} else {
++			/*
++			 * this fragment is not first, the headers
++			 * space is regarded as data space.
++			 */
++			*mtu = dst_mtu(rt->dst.path);
++		}
++		*maxfraglen = ((*mtu - fragheaderlen) & ~7)
++			      + fragheaderlen - sizeof(struct frag_hdr);
++	}
++}
++
+ int ip6_append_data(struct sock *sk, int getfrag(void *from, char *to,
+ 	int offset, int len, int odd, struct sk_buff *skb),
+ 	void *from, int length, int transhdrlen,
+@@ -1190,7 +1213,7 @@ int ip6_append_data(struct sock *sk, int
+ 	struct inet_sock *inet = inet_sk(sk);
+ 	struct ipv6_pinfo *np = inet6_sk(sk);
+ 	struct inet_cork *cork;
+-	struct sk_buff *skb;
++	struct sk_buff *skb, *skb_prev = NULL;
+ 	unsigned int maxfraglen, fragheaderlen;
+ 	int exthdrlen;
+ 	int dst_exthdrlen;
+@@ -1248,8 +1271,12 @@ int ip6_append_data(struct sock *sk, int
+ 		inet->cork.fl.u.ip6 = *fl6;
+ 		np->cork.hop_limit = hlimit;
+ 		np->cork.tclass = tclass;
+-		mtu = np->pmtudisc == IPV6_PMTUDISC_PROBE ?
+-		      rt->dst.dev->mtu : dst_mtu(&rt->dst);
++		if (rt->dst.flags & DST_XFRM_TUNNEL)
++			mtu = np->pmtudisc == IPV6_PMTUDISC_PROBE ?
++			      rt->dst.dev->mtu : dst_mtu(&rt->dst);
++		else
++			mtu = np->pmtudisc == IPV6_PMTUDISC_PROBE ?
++			      rt->dst.dev->mtu : dst_mtu(rt->dst.path);
+ 		if (np->frag_size < mtu) {
+ 			if (np->frag_size)
+ 				mtu = np->frag_size;
+@@ -1345,25 +1372,27 @@ int ip6_append_data(struct sock *sk, int
+ 			unsigned int fraglen;
+ 			unsigned int fraggap;
+ 			unsigned int alloclen;
+-			struct sk_buff *skb_prev;
+ alloc_new_skb:
+-			skb_prev = skb;
+-
+ 			/* There's no room in the current skb */
+-			if (skb_prev)
+-				fraggap = skb_prev->len - maxfraglen;
++			if (skb)
++				fraggap = skb->len - maxfraglen;
+ 			else
+ 				fraggap = 0;
++			/* update mtu and maxfraglen if necessary */
++			if (skb == NULL || skb_prev == NULL)
++				ip6_append_data_mtu(&mtu, &maxfraglen,
++						    fragheaderlen, skb, rt);
++
++			skb_prev = skb;
+ 
+ 			/*
+ 			 * If remaining data exceeds the mtu,
+ 			 * we know we need more fragment(s).
+ 			 */
+ 			datalen = length + fraggap;
+-			if (datalen > (cork->length <= mtu && !(cork->flags & IPCORK_ALLFRAG) ? mtu : maxfraglen) - fragheaderlen)
+-				datalen = maxfraglen - fragheaderlen;
+ 
+-			fraglen = datalen + fragheaderlen;
++			if (datalen > (cork->length <= mtu && !(cork->flags & IPCORK_ALLFRAG) ? mtu : maxfraglen) - fragheaderlen)
++				datalen = maxfraglen - fragheaderlen - rt->dst.trailer_len;
+ 			if ((flags & MSG_MORE) &&
+ 			    !(rt->dst.dev->features&NETIF_F_SG))
+ 				alloclen = mtu;
+@@ -1372,13 +1401,16 @@ alloc_new_skb:
+ 
+ 			alloclen += dst_exthdrlen;
+ 
+-			/*
+-			 * The last fragment gets additional space at tail.
+-			 * Note: we overallocate on fragments with MSG_MODE
+-			 * because we have no idea if we're the last one.
+-			 */
+-			if (datalen == length + fraggap)
+-				alloclen += rt->dst.trailer_len;
++			if (datalen != length + fraggap) {
++				/*
++				 * this is not the last fragment, the trailer
++				 * space is regarded as data space.
++				 */
++				datalen += rt->dst.trailer_len;
++			}
++
++			alloclen += rt->dst.trailer_len;
++			fraglen = datalen + fragheaderlen;
+ 
+ 			/*
+ 			 * We just reserve space for fragment header.
+--- a/net/xfrm/xfrm_policy.c
++++ b/net/xfrm/xfrm_policy.c
+@@ -1919,6 +1919,9 @@ no_transform:
  	}
+ ok:
+ 	xfrm_pols_put(pols, drop_pols);
++	if (dst && dst->xfrm &&
++	    dst->xfrm->props.mode == XFRM_MODE_TUNNEL)
++		dst->flags |= DST_XFRM_TUNNEL;
+ 	return dst;
  
--	ext4_setup_super(sb, es, sb->s_flags & MS_RDONLY);
-+	if (ext4_setup_super(sb, es, sb->s_flags & MS_RDONLY))
-+		sb->s_flags |= MS_RDONLY;
- 
- 	/* determine the minimum size of new large inodes, if present */
- 	if (sbi->s_inode_size > EXT4_GOOD_OLD_INODE_SIZE) {
+ nopol:
 
 
