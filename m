@@ -1,102 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756459Ab2FGHrS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 03:47:18 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:59739 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752206Ab2FGHrP (ORCPT
+	id S1756533Ab2FGHto (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 03:49:44 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:31383 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755363Ab2FGHtm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 03:47:15 -0400
-Subject: Re: vmsplice triggering bug in kfree.
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Dave Jones <davej@redhat.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, axboe@kernel.dk,
-        Tom Herbert <therbert@google.com>
-In-Reply-To: <1339048365.26966.89.camel@edumazet-glaptop>
-References: <20120607025117.GA28261@redhat.com>
-	 <1339043263.26966.79.camel@edumazet-glaptop>
-	 <1339044013.26966.80.camel@edumazet-glaptop>
-	 <1339048365.26966.89.camel@edumazet-glaptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 07 Jun 2012 09:47:08 +0200
-Message-ID: <1339055228.26966.103.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Thu, 7 Jun 2012 03:49:42 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -16
+X-BigFish: VPS-16(zzbb2dI9371I542M1432N98dKzz1202hzz8275bh8275dhz2dh668h839hd25he5bhf0ah)
+X-WSS-ID: 0M58LQQ-02-2G0-02
+X-M-MSG: 
+Message-ID: <4FD05CED.60905@amd.com>
+Date: Thu, 7 Jun 2012 09:49:01 +0200
+From: Andre Przywara <andre.przywara@amd.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120404 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Borislav Petkov <bp@amd64.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jacob Shin <jacob.shin@amd.com>, <jeremy@goop.org>,
+        <xen-devel@lists.xensource.com>, LKML <linux-kernel@vger.kernel.org>,
+        Jan Beulich <JBeulich@suse.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>, <stable@vger.kernel.org>
+Subject: Re: [PATCH 3/4] x86, AMD: Fix crash as Xen Dom0 on AMD Trinity systems
+References: <1338562358-28182-1-git-send-email-bp@amd64.org> <1338562358-28182-4-git-send-email-bp@amd64.org> <4FCFD2EE.8060508@zytor.com> <20120607072159.GB9856@aftab.osrc.amd.com>
+In-Reply-To: <20120607072159.GB9856@aftab.osrc.amd.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-06-07 at 07:52 +0200, Eric Dumazet wrote:
-> On Thu, 2012-06-07 at 06:40 +0200, Eric Dumazet wrote:
-> > On Thu, 2012-06-07 at 06:27 +0200, Eric Dumazet wrote:
-> > 
-> > > Thanks Dave, I'll take a look today on this report.
-> > > 
-> > 
-> > OK, trivial bug, I am testing a fix, thanks again.
-> > 
-> 
-> Not sure if you can reproduce this bug easily, if so could you test
-> following patch ?
+On 06/07/2012 09:21 AM, Borislav Petkov wrote:
+> On Wed, Jun 06, 2012 at 03:00:14PM -0700, H. Peter Anvin wrote:
+>> On 06/01/2012 07:52 AM, Borislav Petkov wrote:
+>>> From: Andre Przywara<andre.przywara@amd.com>
+>>>
+>>> f7f286a910221 ("x86/amd: Re-enable CPU topology extensions in case BIOS
+>>> has disabled it") wrongfully added code which used the AMD-specific
+>>> {rd,wr}msr variants for no real reason.
+>>>
+>>> This caused boot panics on xen which wasn't initializing the
+>>> {rd,wr}msr_safe_regs pv_ops members properly.
+>>>
+>>> This, in turn, caused a heated discussion leading to us reviewing all
+>>> uses of the AMD-specific variants and removing them where unneeded
+>>> (almost everywhere except an obscure K8 BIOS fix, see 6b0f43ddfa358).
+>>>
+>>> Finally, this patch switches to the standard {rd,wr}msr*_safe* variants
+>>> which should've been used in the first place anyway and avoided unneeded
+>>> excitation with xen.
+>>>
+>>> Signed-off-by: Andre Przywara<andre.przywara@amd.com>
+>>> Cc: Andreas Herrmann<andreas.herrmann3@amd.com>
+>>> Cc: stable@vger.kernel.org # 3.4+
+>>> Link:<http://lkml.kernel.org/r/1338383402-3838-1-git-send-email-andre.przywara@amd.com>
+>>> [Boris: correct and expand commit message]
+>>> Signed-off-by: Borislav Petkov<borislav.petkov@amd.com>
+>>
+>> Why -stable?  I though we had agreed that we didn't have an active
+>> problem (unclean hack, yes, but not an active problem) in 3.4/3.5 as it
+>> currently sits?
 
-By the way, following program triggers the bug instantly :
+This is probably a leftover from the original patch, before Konrad's 
+patch got committed.
 
-#define __USE_GNU 1
-#define _GNU_SOURCE
-#include <fcntl.h>
-#include <pthread.h>
-#include <sys/types.h>
+> Yes, AFAICT, we need at least one fix for 3.4 where the original patch
+> f7f286a910221 broke xen.
+>
+> So either this one or 1ab46fd319bc should be backported to stable, if
+> I'm not mistaken. If the second, I'll drop the stable tag from this one
+> and resend.
+>
+> Konrad, what do you want wrt xen paravirt nullptr breakage for
+> 3.4-stable?
 
-#include <unistd.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <errno.h>
+Greg just sent out the review mail for 1ab46fd319bc, so we can drop the 
+stable tag from this one.
 
-int pfd[2];
+Regards,
+Andre.
 
-void *worker(void *arg)
-{
-	unsigned int page_size = 4096;
+-------- Original Message --------
+Subject: [ 21/82] x86, amd, xen: Avoid NULL pointer paravirt references
+Date: Thu, 7 Jun 2012 13:03:57 +0900
+From: Greg KH <gregkh@linuxfoundation.org>
+To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
+CC: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>, 
+<alan@lxorguk.ukuu.org.uk>, Andre Przywara <andre.przywara@amd.com>, "H. 
+Peter Anvin" <hpa@zytor.com>
 
-	while (1) {
-		fcntl(pfd[1], F_SETPIPE_SZ, 16 * page_size);
-		fcntl(pfd[1], F_SETPIPE_SZ, 64 * page_size);
-	}
-}
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-char buffer[1024*1024];
+------------------
 
-int main(int argc, char *argv[])
-{
-	pthread_t tid;
-	int res, fdnull = open("/dev/null", O_WRONLY);
+From: Konrad Rzeszutek Wilk <konrad@darnok.org>
 
-	if (pipe(pfd) == -1) {
-		perror("pipe");
-		return 1;
-	}
-	res = pthread_create(&tid, NULL, worker, NULL);
-	if (res) {
-		errno = res;
-		perror("pthread_create");
-		return 1;
-	}
+commit 1ab46fd319bcf1fcd9fb6311727d532b580e4eba upstream.
 
-	while (1) {
-		struct iovec iov[1];
-		int wr;
+Stub out MSR methods that aren't actually needed.  This fixes a crash
+as Xen Dom0 on AMD Trinity systems.  A bigger patch should be added to
+remove the paravirt machinery completely for the methods which
+apparently have no users!
+.....
 
-		iov[0].iov_base = buffer;
-		iov[0].iov_len = 1024*1024;
-		wr = vmsplice(pfd[1], iov, 1, SPLICE_F_GIFT);
-		if (wr > 0) {
-			wr = splice(pfd[0], NULL,
-				    fdnull, NULL,
-				    wr, SPLICE_F_MOVE | SPLICE_F_MORE);
-		}
-	}
-}
 
+
+-- 
+Andre Przywara
+AMD-OSRC (Dresden)
+Tel: x29712
 
