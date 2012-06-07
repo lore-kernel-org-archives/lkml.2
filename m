@@ -1,53 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759387Ab2FGBkq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 21:40:46 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:46244 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752507Ab2FGBkp convert rfc822-to-8bit (ORCPT
+	id S1759417Ab2FGBlV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 21:41:21 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:39644 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757765Ab2FGBlT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 21:40:45 -0400
+	Wed, 6 Jun 2012 21:41:19 -0400
+Date: Thu, 7 Jun 2012 10:41:09 +0900
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Chris Boot <bootc@bootc.net>
+Cc: e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, nix@esperi.org.uk,
+        carolyn.wyborny@intel.com, stable@vger.kernel.org
+Subject: Re: [PATCH 1/2] e1000e: Disable ASPM L1 on 82574
+Message-ID: <20120607014109.GD16281@kroah.com>
+References: <1335216578-21542-1-git-send-email-bootc@bootc.net>
+ <1335216578-21542-2-git-send-email-bootc@bootc.net>
+ <4FC93154.1060906@bootc.net>
 MIME-Version: 1.0
-In-Reply-To: <20120607011915.GA17566@redhat.com>
-References: <CA+55aFwCusEdMq3_3TAXSZ=+kbN7H6AbnngVaagAZw=ZpicckQ@mail.gmail.com>
- <20120603231709.GP30000@ZenIV.linux.org.uk> <20120603232820.GQ30000@ZenIV.linux.org.uk>
- <20120606194233.GA1537@redhat.com> <CA+55aFwxFVLPk4-dp73uccKXepKwjpGFgh0NW1u8d0zYzr=hBA@mail.gmail.com>
- <20120606230040.GA18089@redhat.com> <CA+55aFx_oREEd2XS_aG7PJ7dwzWjgx689V_uRPGWpVS01_++6A@mail.gmail.com>
- <20120606235403.GC30000@ZenIV.linux.org.uk> <20120607002914.GB22223@redhat.com>
- <CA+55aFyp2GUbc218eb5BDyAqz+cOPTJMVcb4ptk+f1_RBB+-mg@mail.gmail.com> <20120607011915.GA17566@redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 6 Jun 2012 18:40:23 -0700
-X-Google-Sender-Auth: U8ZSkhbnnpmRa5XPGFmLrpVNaKg
-Message-ID: <CA+55aFysx_AA7QvOcZSaJPYPdaGvg6p_6u3fmNtn23a71F7ouw@mail.gmail.com>
-Subject: Re: processes hung after sys_renameat, and 'missing' processes
-To: Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>, Jan Kara <jack@suse.cz>,
-        Peter Zijlstra <peterz@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FC93154.1060906@bootc.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 6, 2012 at 6:19 PM, Dave Jones <davej@redhat.com> wrote:
->
-> ok, I ended up with..
->
->        WARN_ON_ONCE(!mutex_is_locked(&target->d_parent->d_inode->i_mutex));
->
->        if (dentry->d_parent != NULL)
->                WARN_ON_ONCE(!mutex_is_locked(&dentry->d_inode->i_mutex));
+On Fri, Jun 01, 2012 at 10:17:08PM +0100, Chris Boot wrote:
+> On 23/04/2012 22:29, Chris Boot wrote:
+> > ASPM on the 82574 causes trouble. Currently the driver disables L0s for
+> > this NIC but only disables L1 if the MTU is >1500. This patch simply
+> > causes L1 to be disabled regardless of the MTU setting.
+> >
+> > Signed-off-by: Chris Boot <bootc@bootc.net>
+> > Cc: "Wyborny, Carolyn" <carolyn.wyborny@intel.com>
+> > Cc: Nix <nix@esperi.org.uk>
+> > Link: https://lkml.org/lkml/2012/3/19/362
+> > ---
+> >  drivers/net/ethernet/intel/e1000e/82571.c |    3 ++-
+> >  1 file changed, 2 insertions(+), 1 deletion(-)
+> >
+> > diff --git a/drivers/net/ethernet/intel/e1000e/82571.c b/drivers/net/ethernet/intel/e1000e/82571.c
+> > index b3fdc69..c6d95f2 100644
+> > --- a/drivers/net/ethernet/intel/e1000e/82571.c
+> > +++ b/drivers/net/ethernet/intel/e1000e/82571.c
+> > @@ -2061,8 +2061,9 @@ const struct e1000_info e1000_82574_info = {
+> >  				  | FLAG_HAS_SMART_POWER_DOWN
+> >  				  | FLAG_HAS_AMT
+> >  				  | FLAG_HAS_CTRLEXT_ON_LOAD,
+> > -	.flags2			  = FLAG2_CHECK_PHY_HANG
+> > +	.flags2			= FLAG2_CHECK_PHY_HANG
+> >  				  | FLAG2_DISABLE_ASPM_L0S
+> > +				  | FLAG2_DISABLE_ASPM_L1
+> >  				  | FLAG2_NO_DISABLE_RX,
+> >  	.pba			= 32,
+> >  	.max_hw_frame_size	= DEFAULT_JUMBO,
+> 
+> Now that this patch is in master (d4a4206e) and has presumably been
+> widely tested, what's the possibility of it making it into stable? I
+> really should have included a CC to stable when I sent it...
 
-It should just be something like
+I'd be glad to apply it, but it doesn't apply properly to the 3.4-stable
+tree :(
 
-    WARN_ON_ONCE(!mutex_is_locked(&dentry->d_parent->d_inode->i_mutex));
-    WARN_ON_ONCE(!mutex_is_locked(&target->d_parent->d_inode->i_mutex));
+> This patch should probably also be accompanied with 59aed952 (e1000e:
+> Remove special case for 82573/82574 ASPM L1 disablement) on top, to
+> remove a special case that's no longer required once this is applied.
 
-(And doing it as two separate ones rather than one that tests both is
-probably a good idea, so that you see *which* one it is that triggers
-if they do)
+As I can't apply the first one, this one shouldn't be applied either at
+this point in time...
 
-                    Linus
+thanks,
+
+greg k-h
