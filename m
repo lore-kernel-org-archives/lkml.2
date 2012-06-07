@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756438Ab2FGU1N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 16:27:13 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:54684 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753774Ab2FGU1L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 16:27:11 -0400
-MIME-Version: 1.0
-X-Originating-IP: [41.212.116.88]
-In-Reply-To: <CAH3drwbEoT6RxYHRuY=x9T=Zz2L=UW-p2a0PHanSQV8Wzk9XXw@mail.gmail.com>
-References: <CAHVUoiQywo=iHKsXQbsVE7coc1FL9A9qy_a71SK94MKNV0GrKA@mail.gmail.com>
- <CAHVUoiTZmzT3vquaDC65AJfCFZX-qS5GjgjP2-+=0R7skurW5g@mail.gmail.com>
- <CAHVUoiQgcAMr874d_yPfm9ssUBOoX+dNLy9JNCOCYwOCrAKXFQ@mail.gmail.com>
- <CAH3drwacayQEZHOidbKKuJ3KjgMvnYzT0S0csXV2QwSmC8nMxg@mail.gmail.com>
- <CAHVUoiSP7SiWCtYPvKS_1RuAV0upWmT06iN7PR1OE6NAtToirQ@mail.gmail.com>
- <CAH3drwY61Pqd1MXxgSYcHRPJF5pNr2FO7vrM_ULsRvMbYjAhOQ@mail.gmail.com>
- <CAHVUoiQpLpFVmeHCxpXKBvg9y41KcpKOO-_FKA9UTEHSjbhz9g@mail.gmail.com> <CAH3drwbEoT6RxYHRuY=x9T=Zz2L=UW-p2a0PHanSQV8Wzk9XXw@mail.gmail.com>
-From: Brian Gitonga Marete <marete@toshnix.com>
-Date: Thu, 7 Jun 2012 23:26:49 +0300
-Message-ID: <CAHVUoiQ9p_q_Q8+tqokw02+L0j-jOAgSAOLO8hsxKj4KMJz2oQ@mail.gmail.com>
-Subject: Re: [Regression] [Radeon] Stream command failures and render problems
- in Evergreen (Radeon HD 5600) in kernel 3.4
-To: Jerome Glisse <j.glisse@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, David Airlie <airlied@linux.ie>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Jerome Glisse <jglisse@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756465Ab2FGU2f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 16:28:35 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:48137 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753774Ab2FGU2e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 16:28:34 -0400
+Message-ID: <1339100913.14838.14.camel@joe2Laptop>
+Subject: Re: [PATCH 3/3] staging: zram: conventions, line splitting
+From: Joe Perches <joe@perches.com>
+To: Sam Hansen <solid.se7en@gmail.com>
+Cc: Sam Hansen <sam@meebo-inc.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Date: Thu, 07 Jun 2012 13:28:33 -0700
+In-Reply-To: <1339100404-18773-4-git-send-email-solid.se7en@gmail.com>
+References: <1339100404-18773-1-git-send-email-solid.se7en@gmail.com>
+	 <1339100404-18773-4-git-send-email-solid.se7en@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 7, 2012 at 11:23 PM, Jerome Glisse <j.glisse@gmail.com> wrote:
-> On Thu, Jun 7, 2012 at 4:22 PM, Brian Gitonga Marete <marete@toshnix.com> wrote:
->> On Thu, Jun 7, 2012 at 11:20 PM, Jerome Glisse <j.glisse@gmail.com> wrote:
->>> What happen if you upgrade to xf86-video-ati from git ?
->>>
->>
->> Had actually just though of that and cloned it :) Will try and report.
->>
->> Thanks!
->>
->> --
->> Brian Gitonga Marete
->> Toshnix Systems - http://toshnix.com
->
-> If it works please also give me mesa version, and am i right assuming
-> you are using unity ? Is this a stock ubuntu 12 installation (ie not
-> custome package) ?
->
+On Thu, 2012-06-07 at 13:20 -0700, Sam Hansen wrote:
+> Opting to violate the 80-char limit in favor of not splitting strings onto
+> multiple lines (via pr_info()).  This mostly to help readability.
+[]
+> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+[]
+> @@ -390,8 +390,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+>  		clen = PAGE_SIZE;
+>  		page_store = alloc_page(GFP_NOIO | __GFP_HIGHMEM);
+>  		if (unlikely(!page_store)) {
+> -			pr_info("Error allocating memory for "
+> -				"incompressible page: %u\n", index);
+> +			pr_info("Error allocating memory for incompressible page: %u\n", index);
 
-These are stock Ubuntu 11.04 Xorg/drm/mesa packages. I am using Ubuntu
-in the _classic_ mode, not in the usual Unity mode.
+Hi Sam.
 
--- 
-Brian Gitonga Marete
-Toshnix Systems - http://toshnix.com
+The general use has been to allow the format string to exceed
+80 columns, but not any additional arguments on the same line.
+
+i.e. it's more conformant to use:
+
+			pr_info("Error allocating memory for incompressible page: %u\n",
+				index);
+
+
