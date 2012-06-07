@@ -1,56 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754680Ab2FGAo1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 20:44:27 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:48131 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753339Ab2FGAo0 (ORCPT
+	id S1756954Ab2FGAom (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 20:44:42 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:55152 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754767Ab2FGAol (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 20:44:26 -0400
-Date: Wed, 6 Jun 2012 20:37:20 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Cesar Eduardo Barros <cesarb@cesarb.net>
-Cc: linux-kernel@vger.kernel.org, Dan Magenheimer <dan.magenheimer@oracle.com>,
-        linux-mm@kvack.org
-Subject: Re: frontswap: is frontswap_init called from swapoff safe?
-Message-ID: <20120607003720.GI9472@phenom.dumpdata.com>
-References: <4FCDE270.1020906@cesarb.net>
+	Wed, 6 Jun 2012 20:44:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FCDE270.1020906@cesarb.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+In-Reply-To: <CAG4TOxPHXg_cDpG2gMNKgyNGs2BcXbM3bTgiuS+mjnPZFhbD8A@mail.gmail.com>
+References: <1339003047-15734-1-git-send-email-roland@kernel.org>
+ <20120606162121.7d8e8f52.akpm@linux-foundation.org> <CAG4TOxPHXg_cDpG2gMNKgyNGs2BcXbM3bTgiuS+mjnPZFhbD8A@mail.gmail.com>
+From: Roland Dreier <roland@kernel.org>
+Date: Wed, 6 Jun 2012 17:44:20 -0700
+X-Google-Sender-Auth: vB_lQzUS4ihDKKywpJmkf-XuFg4
+Message-ID: <CAG4TOxNwVYPPP_AL=YZ6LnZZWyp8FUa50aGtgqGjTwnu598-Lw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] btree: Fix tree corruption in btree_get_prev()
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Joern Engel <joern@logfs.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 05, 2012 at 07:41:52AM -0300, Cesar Eduardo Barros wrote:
-> I was looking at the swapfile.c parts of the recently-merged
-> frontswap, and noticed that frontswap_init can be called from
-> swapoff when try_to_unuse fails.
-> 
-> This looks odd to me. Whether it is safe or not depends on what
-> frontswap_ops.init does, but the comment for __frontswap_init
-> ("Called when a swap device is swapon'd") and the function name
-> itself seem to imply it should be called only for swapon, not when
-> relinking the swap_info after a failed swapoff.
+On Wed, Jun 6, 2012 at 4:36 PM, Roland Dreier <roland@kernel.org> wrote:
+> On the other hand, your change makes me think we don't
+> even need a separate iterator (and we can avoid the variable
+> length array declaration)
 
-<nods>
-> 
-> In particular, if frontswap_ops.init assumes the swap map is empty,
-> it would break, since as far as I know when try_to_unuse fails there
-> are still pages in the swap.
+FWIW with that change on top of my patch, I see
 
-Let me look at this - can't do it this week - but will get back to you
-shortly.
-> 
-> (By the way, the comment above enable_swap_info at sys_swapoff needs
-> to be updated to also explain why reading p->frontswap_map outside
-> the lock is safe at that point, like it does for p->prio and
-> p->swap_map.)
-> 
-> -- 
-> Cesar Eduardo Barros
-> cesarb@cesarb.net
-> cesar.barros@gmail.com
+add/remove: 0/0 grow/shrink: 0/1 up/down: 0/-123 (-123)
+function                                     old     new   delta
+btree_get_prev                               646     523    -123
+
+on x86-64, so avoiding the variable length array is definitely
+worth something.
+
+So the issue for me is whether messing with the caller's
+__key storage is OK, or if it's worth having a temporary
+local variable.
+
+ - R.
