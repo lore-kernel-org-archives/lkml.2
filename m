@@ -1,81 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932780Ab2FGSig (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 14:38:36 -0400
-Received: from mail19e.g19.rapidsite.net ([204.202.242.20]:41160 "HELO
-	mail19e.g19.rapidsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752725Ab2FGSif (ORCPT
+	id S1761314Ab2FGSiu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 14:38:50 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:19469 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760930Ab2FGSis (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 14:38:35 -0400
-thread-index: Ac1E3L6mb5sab8OYQDq3zSUx9tAEUg==
-Thread-Topic: Earn Over A 3856 Dollars A Week Without A Website! Recommends Advanced Sports to you
-From: <shane@gmail.com>
-To: <linux-kernel@vger.kernel.org>
-Subject: Earn Over A 3856 Dollars A Week Without A Website! Recommends Advanced Sports to you
-Date: Thu, 7 Jun 2012 14:38:34 -0400
-Message-ID: <92D39222C3D74CA2A8947C1AAE88A7D5@g19.win.smewh.net>
+	Thu, 7 Jun 2012 14:38:48 -0400
+Date: Thu, 7 Jun 2012 14:31:45 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: dan.magenheimer@oracle.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 07/11] mm: frontswap: remove unnecessary check during
+ initialization
+Message-ID: <20120607183145.GB9472@phenom.dumpdata.com>
+References: <1338980115-2394-1-git-send-email-levinsasha928@gmail.com>
+ <1338980115-2394-7-git-send-email-levinsasha928@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft CDO for Windows 2000
-Content-Class: urn:content-classes:message
-Importance: normal
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4913
-X-Spam: [F=0.2000000000; S=0.200(2010122901); MH=0.500(2012060717)]
-X-MAIL-FROM: <shane@gmail.com>
-X-SOURCE-IP: [199.239.254.58]
-X-SF-Loop: 1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1338980115-2394-7-git-send-email-levinsasha928@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From         :Earn Over A 3856 Dollars A Week Without A Website!
-Email        :shane@gmail.com
-Friend Name  :Friend
-Friend Email :linux-kernel@vger.kernel.org
-comment      :
+On Wed, Jun 06, 2012 at 12:55:11PM +0200, Sasha Levin wrote:
 
+Could you explain in the git commit why it is unnecessary?
+I am pretty sure I know - it is b/c frontswap_init already
+does the check, but the git commit should mention it.
 
-Hi Friend,
-                        
-This is not the usual "rags-to-riches" story because 
-I'm pretty sure you don't want to hear it. 
-
-If you're tired of all the so-called "systems" and business opportunities that 
-require you to sell affiliate products, run pay per click advertising campaigns, 
-operate websites or recruit new members then I have excellent news for you.
-
-http://www.make6easyfigure.com/?code=4fd098d1978d8 
-
-Keep reading because I guarantee that this will be the most important piece 
-of information you will ever read about making money online... 
-or in general for that matter.
-
-I have discovered an amazingly simple income system that will allow you and 
-anyone else to earn an incredible income from home, just by using your computer and the 
-Internet. 
-
-http://www.make6easyfigure.com/?code=4fd098d1978d8 
-
-To Your Success,
-
-Shane
-
-
-
-
-PS: Grab it Now before the $114.97 Price is back for a last few spots.
-    its ONLY:$9.97
-
-
-
-
-http://www.make6easyfigure.com/?code=4fd098d1978d8
-
-
-
-
-
-
-
-
+> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> ---
+>  mm/frontswap.c |    3 +--
+>  1 files changed, 1 insertions(+), 2 deletions(-)
+> 
+> diff --git a/mm/frontswap.c b/mm/frontswap.c
+> index f2f4685..bf99c7d 100644
+> --- a/mm/frontswap.c
+> +++ b/mm/frontswap.c
+> @@ -89,8 +89,7 @@ void __frontswap_init(unsigned type)
+>  	BUG_ON(sis == NULL);
+>  	if (sis->frontswap_map == NULL)
+>  		return;
+> -	if (frontswap_enabled)
+> -		frontswap_ops.init(type);
+> +	frontswap_ops.init(type);
+>  }
+>  EXPORT_SYMBOL(__frontswap_init);
+>  
+> -- 
+> 1.7.8.6
