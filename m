@@ -1,100 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932860Ab2FGVEV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 17:04:21 -0400
-Received: from mout0.freenet.de ([195.4.92.90]:54179 "EHLO mout0.freenet.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752904Ab2FGVET (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 17:04:19 -0400
-Message-Id: <201206072101.q57L1LqG003192@mail.maya.org>
-Date: Thu, 7 Jun 2012 23:01:19 +0200
-From: Andreas Hartmann <andihartmann@01019freenet.de>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: Andreas Hartmann <andihartmann@01019freenet.de>, bhelgaas@google.com,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, jan.kiszka@siemens.com
-Subject: Re: [PATCH] PCI: Add Ralink RT2800 broken INTx masking quirk
-In-Reply-To: <1339088741.26976.19.camel@ul30vt>
-References: <20120606212241.6627.98371.stgit@bling.home>  <4FD047A7.6050602@01019freenet.de> <1339088741.26976.19.camel@ul30vt>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S932807Ab2FGVQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 17:16:57 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54295 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757195Ab2FGVQz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 17:16:55 -0400
+Message-ID: <4FD11A3C.801@vflare.org>
+Date: Thu, 07 Jun 2012 14:16:44 -0700
+From: Nitin Gupta <ngupta@vflare.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: Minchan Kim <minchan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>
+Subject: Re: [PATCH 2/2] zram: clean up handle
+References: <1338881031-19662-1-git-send-email-minchan@kernel.org> <1338881031-19662-2-git-send-email-minchan@kernel.org> <4FCEE4E0.6030707@vflare.org> <4FD015FE.7070906@kernel.org> <dfc7087d-6826-4429-8063-d47d05cd2d26@default>
+In-Reply-To: <dfc7087d-6826-4429-8063-d47d05cd2d26@default>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alex Williamson wrote:
-> On Thu, 2012-06-07 at 08:18 +0200, Andreas Hartmann wrote:
->> Hello Alex,
+On 06/07/2012 01:47 PM, Dan Magenheimer wrote:
+
+>> From: Minchan Kim [mailto:minchan@kernel.org]
+>> Subject: Re: [PATCH 2/2] zram: clean up handle
 >>
->> what about a module parameter to achieve this behaviour manually by
->> the user without recompiling? I fear, there are much more candidates
->> out there needing this "feature".
+>> On 06/06/2012 02:04 PM, Nitin Gupta wrote:
+>>
+>>> On 06/05/2012 12:23 AM, Minchan Kim wrote:
+>>>
+>>>> zram's handle variable can store handle of zsmalloc in case of
+>>>> compressing efficiently. Otherwise, it stores point of page descriptor.
+>>>> This patch clean up the mess by union struct.
+>>>>
+>>>> changelog
+>>>>   * from v1
+>>>> 	- none(new add in v2)
+>>>>
+>>>> Cc: Nitin Gupta <ngupta@vflare.org>
+>>>> Acked-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+>>>> Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>>>> Signed-off-by: Minchan Kim <minchan@kernel.org>
+>>>> ---
+>>>>  drivers/staging/zram/zram_drv.c |   77 ++++++++++++++++++++-------------------
+>>>>  drivers/staging/zram/zram_drv.h |    5 ++-
+>>>>  2 files changed, 44 insertions(+), 38 deletions(-)
+>>>
+>>> I think page vs handle distinction was added since xvmalloc could not
+>>> handle full page allocation. Now that zsmalloc allows full page
+>>
+>> I see. I didn't know that because I'm blind on xvmalloc.
+>>
+>>> allocation, we can just use it for both cases. This would also allow
+>>> removing the ZRAM_UNCOMPRESSED flag. The only downside will be slightly
+>>> slower code path for full page allocation but this event is anyways
+>>> supposed to be rare, so should be fine.
+>>
+>> Fair enough.
+>> It can remove many code of zram.
+>> Okay. Will look into that.
 > 
-> Yeah, that's probably a good idea.  For debugging and letting users have
-> a workaround rather than any kind of regular use.  I'll add a nointxmask
-> to vfio-pci with a description indicating that if it fixes a device to
-> report it for quirking.
-
-That's exactly what I meant.
-
-
-May I have please another question? 
-Unfortunately I can't cleanly unmount filesystems during shutdown with your 
-kernel (this problem doesn't happen with the patched 3.4 suse kernel).
-
-I applied your vfio-patches from your git-repository to an openSUSE 3.4 
-kernel (plus one other to get the patches applied):
-
-iommu_core:_pass_a_user-provided_token_to_fault_handlers.patch
-0ca4120cbaeaa2aecdccc5043b309fe1808aae2a.patch [PATCH] pci: Add PCI DMA source ID quirk
-db47c1f7313ad863818261f62f1babaf0b564e55.patch [PATCH] pci: Add ACS validation utility
-a89edb6943102d4519860bca5671740c1b7364cc.patch [PATCH] pci: export pci_user functions for use by other drivers
-38fdda7327b6cf50c1265a6332e94b97100aa10e.patch [PATCH] pci: Create common pcibios_err_to_errno
-cb6e045625e5a217df3cebcb4585b40cbcad6c96.patch [PATCH] pci: Misc pci_reg additions
-c6985f9b501903f5c707a1711fa53dc94c72f999.patch [PATCH] driver core: Add iommu_group tracking to struct device
-581187e853620c52e4b78db643161cc3be2f3388.patch [PATCH] iommu: IOMMU Groups
-635e48574089f4c8205a2fd7b1d85edd02344fe5.patch [PATCH] amd_iommu: Support IOMMU groups
-37f2d6d5217fdd2facd9641b83fde683263adcaf.patch [PATCH] intel-iommu: Support IOMMU groups
-351d849a51787140736e04f261ae9db09c980868.patch [PATCH] amd_iommu: Make use of DMA quirks and ACS checks in IOMMU
-92eef0a72193ef8504eea10b4ccbdb2e1ee9f4b3.patch [PATCH] intel-iommu: Make use of DMA quirks and ACS checks in IOMMU groups
-dd2886fe0a8936d649a365162658406e7a18d274.patch [PATCH] iommu: Remove group_mf
-6891b9a7d56841e592cfb444a7f4b2b02831f866.patch [PATCH] vfio: VFIO core
-51b06ff680d8bc30d1bd627e2dd24641789be55d.patch [PATCH] vfio: Add documentation
-4b36b306122a225d33e947e7f9e6d1117a4fb699.patch [PATCH] vfio: Type1 IOMMU implementation
-91e4950e482b142dd9ab46f0ec386c5eed9f1470.patch [PATCH] vfio: Add PCI device driver
-PCI:_Mark_INTx_masking_support_of_Chelsio_T310_10GbE_NIC_as_broken.patch 
-PCI:_Add_Ralink_RT2800_broken_INTx_masking_quirk.patch 
-IRQF_ONESHOT.patch"
+> Nitin, can zsmalloc allow full page allocation by assigning
+> an actual physical pageframe (which is what zram does now)?
+> Or will it allocate PAGE_SIZE bytes which zsmalloc will allocate
+> crossing a page boundary which, presumably, will have much worse
+> impact on page allocator availability when these pages are
+> "reclaimed" via your swap notify callback.
+> 
 
 
-The VM does work as expected, but fglrx isn't happy any
-more (but worked fine with your kernel and works fine, too, with the
-unpatched suse 3.4 kernel). fglrx says:
+zsmalloc does not add any object headers, so when allocating PAGE_SIZE
+you get a separate page from as if you did alloc_page(). So, it does not
+span page boundaries.
 
-Jun  7 14:21:42 host kernel: [  105.103610] [fglrx:firegl_cail_init] *ERROR* CAIL: CAILInitialize failed, error 1
-Jun  7 14:21:42 host kernel: [  105.103613] [fglrx:hal_init_asic] *ERROR* Failed to initialize ASIC.
-Jun  7 14:21:42 host kernel: [  105.103645] [fglrx:firegl_init_pcie] *ERROR* Can not get FB size
-Jun  7 14:21:42 host kernel: [  105.103653] [fglrx:IRQMGR_alloc_context] *ERROR* IRQMGR_GetExtensionSize returned 0
-Jun  7 14:21:42 host kernel: [  105.103654] [fglrx:irqmgr_wrap_initialize] *ERROR* Fail to allocate IRQMGR context! 
-Jun  7 14:21:42 host kernel: [  105.109151] [fglrx:firegl_irq_enable] *ERROR* interrupt source ff000032 is not supported on this hardware (return code = 2)
-Jun  7 14:21:42 host kernel: [  105.109173] [fglrx:firegl_irq_enable] *ERROR* interrupt source 10000000 is not supported on this hardware (return code = 2)
-Jun  7 14:21:42 host kernel: [  105.169073] [fglrx:firegl_irq_enable] *ERROR* interrupt source 60000001 is not supported on this hardware (return code = 2)
-Jun  7 14:21:42 host kernel: [  105.169107] [fglrx:firegl_irq_enable] *ERROR* interrupt source ff00002c is not supported on this hardware (return code = 2)
-Jun  7 14:21:42 host kernel: [  105.169125] [fglrx:firegl_irq_enable] *ERROR* interrupt source ff00004e is not supported on this hardware (return code = 2)
-Jun  7 14:21:42 host kernel: [  105.169142] [fglrx:firegl_irq_enable] *ERROR* interrupt source 20000400 is not supported on this hardware (return code = 2)
-Jun  7 14:21:42 host kernel: [  105.172906] [fglrx:firegl_cmmqs_init] *ERROR* CMMQS init:GAL is not initialized.
-Jun  7 14:21:42 host kernel: [  105.172909] [fglrx:firegl_cmmqs_createdriver] *ERROR* CMMQS Initialization failed: firegl_cmmqs_createdriver
-Jun  7 14:21:42 host kernel: [  105.172940] [fglrx:firegl_cmmqs_BIOSControl] *ERROR* CMMQS BIOS Control: CMMQS handle is not valid.
-Jun  7 14:21:42 host kernel: [  105.172942] [fglrx:firegl_bios_control] *ERROR* CMMQS BIOS Control is failed: firegl_bios_control
-Jun  7 14:21:42 host kernel: [  105.195648] AMD-Vi: Event logged [IO_PAGE_FAULT device=01:00.0 domain=0x0017 address=0x0000000f00268a00 flags=0x0010]
-Jun  7 14:21:42 host kernel: [  105.195651] AMD-Vi: Event logged [IO_PAGE_FAULT device=01:00.0 domain=0x0017 address=0x0000000f0026a300 flags=0x0010]
-...
 
-Do you have by chance an idea which other patch is missing to get
-it working again?
+> Though this may be rare across all workloads, it may turn out
+> to be very common for certain workloads (e.g. if the workload
+> has many dirty anonymous pages that are already compressed
+> by userland).
+> 
+> It may not be worth cleaning up the code if it causes
+> performance issues with this case.
+> 
+> And anyway can zsmalloc handle and identify to the caller pages
+> that are both compressed and "native" (uncompressed)?  It
+> certainly has to handle both if you remove ZRAM_UNCOMPRESSED
+> as compressing some pages actually results in more than
+> PAGE_SIZE bytes.  So you need to record somewhere that
+> this "compressed page" is special and that must somehow
+> be communicated to the caller of your "get" routine.
+> 
+> (Just trying to save Minchan from removing all that code but
+> then needing to add it back again.)
+> 
 
+
+zsmalloc cannot identify compressed vs uncompressed pages. However, in
+zram, we can tell if the page is uncompressed using table[i]->size which
+is set to PAGE_SIZE for uncompressed pages.   Pages that compress to
+more than PAGE_SIZE (i.e. expand on compression) are stored
+as-is/uncompressed and thus will have size field set to PAGE_SIZE.
+
+Thus, we do not require ZRAM_UNCOMPRESSED flag when using zsmalloc for
+both compressed and uncompressed pages.
 
 Thanks,
-Andreas
+Nitin
+
+Thanks,
+Nitin
