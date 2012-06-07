@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760800Ab2FGNlo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 09:41:44 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:60803 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760469Ab2FGNln (ORCPT
+	id S932202Ab2FGNm5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 09:42:57 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:40217 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758095Ab2FGNm4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 09:41:43 -0400
-Message-ID: <4FD0AF72.9040003@panasas.com>
-Date: Thu, 7 Jun 2012 16:41:06 +0300
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
+	Thu, 7 Jun 2012 09:42:56 -0400
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Richard Weinberger <richard@nod.at>,
-        <user-mode-linux-devel@lists.sourceforge.net>,
-        <gregkh@linuxfoundation.org>, <linux-kernel@vger.kernel.org>,
-        <viro@zeniv.linux.org.uk>, <jslaby@suse.cz>, <alan@linux.intel.com>
-Subject: Re: [uml-devel] um: TTY fixes (?)
-References: <1338841657-30358-1-git-send-email-richard@nod.at> <4FCF6748.6020005@panasas.com> <4FD059AC.8050808@panasas.com> <4FD06A22.6040002@nod.at> <4FD07F14.50902@panasas.com> <4FD0802A.1020203@nod.at> <20120607115227.6643d1ad@pyramind.ukuu.org.uk>
-In-Reply-To: <20120607115227.6643d1ad@pyramind.ukuu.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120607040337.622672845@linuxfoundation.org>
+References: <20120607041406.GA13233@kroah.com>
+	<20120607040337.622672845@linuxfoundation.org>
+Date: Thu, 7 Jun 2012 09:42:55 -0400
+Message-ID: <CA+5PVA6A0K3WYBQJH8z3ddd2X3=fQm1a34z+fWSYGcUg4TR9+A@mail.gmail.com>
+Subject: Re: [ 08/82] mm: pmd_read_atomic: fix 32bit PAE pmd walk vs
+ pmd_populate SMP race condition
+From: Josh Boyer <jwboyer@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Ulrich Obergfell <uobergfe@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Hugh Dickins <hughd@google.com>, Larry Woodman <lwoodman@redhat.com>,
+        Petr Matousek <pmatouse@redhat.com>, Rik van Riel <riel@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/07/2012 01:52 PM, Alan Cox wrote:
+On Thu, Jun 7, 2012 at 12:03 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> 3.4-stable review patch.  If anyone has any objections, please let me know.
+>
+> ------------------
+>
+> From: Andrea Arcangeli <aarcange@redhat.com>
+>
+> commit 26c191788f18129af0eb32a358cdaea0c7479626 upstream.
+>
+> When holding the mmap_sem for reading, pmd_offset_map_lock should only
+> run on a pmd_t that has been read atomically from the pmdp pointer,
+> otherwise we may read only half of it leading to this crash.
 
->> No, it works fine.
-> 
-> Not really. You happen to be lucky. Anyway with no tty port the UML code
-> will soon cease to function completely so a solution of some sort is
-> needed.
->  
+This one is important, but it can break Xen apparently:
 
+http://permalink.gmane.org/gmane.comp.emulators.xen.devel/132522
+https://bugzilla.redhat.com/show_bug.cgi?id=829016
 
-This is what I understood. That mainline code moved so far that the current
-UML driver was too far behind to properly function and *completely* broke.
+Not sure if you want to hold off on it or see if Andrea comes up with
+a follow up fix?
 
-If only breakage with new UM-TTY code is old util-linux. And we have a
-ready made patch for it.
-
-Would you please reconsider, and point the util-linux users to the fixing
-patch.
-
-Because as it stands:
-
-Current code:
-util-linux 	-	works
-FC12-17		-	Broken (Patch *not* available)
-Debain based	-	works
-
-New code:
-util-linux	- 	Broken, patch available
-FC12-15		-	Works (with issues)
-Debain based	-	works
-
-So it is not like I'm sacrificing util-linux People
-completely, but I am totally sacrificing FC People by
-not committing.
-
-Please reconsider, unless you have a patch for me for FC systems
-that I can apply so I can use the old code.
-
-Thanks again for everything, so far
-Boaz
+josh
