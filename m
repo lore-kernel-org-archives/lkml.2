@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933079Ab2FGEVI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 00:21:08 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:59627 "EHLO
+	id S1759802Ab2FGEVP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 00:21:15 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:63657 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933001Ab2FGEVD (ORCPT
+	with ESMTP id S933075Ab2FGEVI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 00:21:03 -0400
-Message-Id: <20120607040346.825721870@linuxfoundation.org>
+	Thu, 7 Jun 2012 00:21:08 -0400
+Message-Id: <20120607040346.201103842@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 07 Jun 2012 13:04:47 +0900
+Date: Thu, 07 Jun 2012 13:04:43 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 71/82] drm/radeon/kms: add new Palm, Sumo PCI ids
+        alan@lxorguk.ukuu.org.uk,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>
+Subject: [ 67/82] radix-tree: fix contiguous iterator
 In-Reply-To: <20120607041406.GA13233@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,35 +25,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
 
-commit 4a6991cc1fad514745b79181df3ace72d561e7aa upstream.
+commit fffaee365fded09f9ebf2db19066065fa54323c3 upstream.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+This patch fixes bug in macro radix_tree_for_each_contig().
+
+If radix_tree_next_slot() sees NULL in next slot it returns NULL, but following
+radix_tree_next_chunk() switches iterating into next chunk. As result iterating
+becomes non-contiguous and breaks vfs "splice" and all its users.
+
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Reported-and-bisected-by: Hans de Bruin <jmdebruin@xmsnet.nl>
+Reported-and-bisected-by: Ondrej Zary <linux@rainbow-software.org>
+Reported-bisected-and-tested-by: Toralf Förster <toralf.foerster@gmx.de>
+Link: https://lkml.org/lkml/2012/6/5/64
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/drm/drm_pciids.h |    2 ++
- 1 file changed, 2 insertions(+)
+ include/linux/radix-tree.h |    5 ++++-
+ lib/radix-tree.c           |    3 +++
+ 2 files changed, 7 insertions(+), 1 deletion(-)
 
---- a/include/drm/drm_pciids.h
-+++ b/include/drm/drm_pciids.h
-@@ -531,6 +531,7 @@
- 	{0x1002, 0x9645, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO2|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x9647, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP},\
- 	{0x1002, 0x9648, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP},\
-+	{0x1002, 0x9649, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP},\
- 	{0x1002, 0x964a, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x964b, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x964c, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
-@@ -550,6 +551,7 @@
- 	{0x1002, 0x9807, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PALM|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x9808, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PALM|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x9809, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PALM|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
-+	{0x1002, 0x980A, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PALM|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x9900, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x9901, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x9903, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
+--- a/include/linux/radix-tree.h
++++ b/include/linux/radix-tree.h
+@@ -368,8 +368,11 @@ radix_tree_next_slot(void **slot, struct
+ 			iter->index++;
+ 			if (likely(*slot))
+ 				return slot;
+-			if (flags & RADIX_TREE_ITER_CONTIG)
++			if (flags & RADIX_TREE_ITER_CONTIG) {
++				/* forbid switching to the next chunk */
++				iter->next_index = 0;
+ 				break;
++			}
+ 		}
+ 	}
+ 	return NULL;
+--- a/lib/radix-tree.c
++++ b/lib/radix-tree.c
+@@ -673,6 +673,9 @@ void **radix_tree_next_chunk(struct radi
+ 	 * during iterating; it can be zero only at the beginning.
+ 	 * And we cannot overflow iter->next_index in a single step,
+ 	 * because RADIX_TREE_MAP_SHIFT < BITS_PER_LONG.
++	 *
++	 * This condition also used by radix_tree_next_slot() to stop
++	 * contiguous iterating, and forbid swithing to the next chunk.
+ 	 */
+ 	index = iter->next_index;
+ 	if (!index && iter->index)
 
 
