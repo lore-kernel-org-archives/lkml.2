@@ -1,58 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757422Ab2FGVBl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 17:01:41 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:35030 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755424Ab2FGVBk (ORCPT
+	id S932511Ab2FGVDD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 17:03:03 -0400
+Received: from violet.fr.zoreil.com ([92.243.8.30]:45168 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755263Ab2FGVDA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 17:01:40 -0400
-MIME-Version: 1.0
-Reply-To: rus@sfinxsoft.com
-In-Reply-To: <20120607151352.GA8261@x1.osrc.amd.com>
-References: <CAKgfjTktMLc5bfqhCOKy0evssxggofNQqLT-gQqBkHcBvOgF0g@mail.gmail.com>
- <CAKgfjTnvCAT=3JFxmDTsui_hguiiBfHQfMmErv9wt6QG_30hKA@mail.gmail.com>
- <20120607142459.GB5053@x1.osrc.amd.com> <CAKgfjTn3KXmDio0F0M3syeHnDc=ByKZu1ipe7S+75KRcCBy0QA@mail.gmail.com>
- <20120607151352.GA8261@x1.osrc.amd.com>
-From: Rus <rus@sfinxsoft.com>
-Date: Fri, 8 Jun 2012 00:00:59 +0300
-X-Google-Sender-Auth: xsF4wf9y9u0IYAwivPVP7wVsqM8
-Message-ID: <CAKgfjTkAn88JTNyoZk-9u-nZFQUx_MHg6A31C4tVhbB38N-EEg@mail.gmail.com>
-Subject: Re: 3.[34].x Reproducable [Firmware bug] message upon warm boot only
-To: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Thu, 7 Jun 2012 17:03:00 -0400
+Date: Thu, 7 Jun 2012 22:53:56 +0200
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: Denys Fedoryshchenko <denys@visp.net.lb>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Deadlock, L2TP over IP are not working, 3.4.1
+Message-ID: <20120607205356.GA2491@electric-eye.fr.zoreil.com>
+References: <7ed49f446365ac625437702d92946add@visp.net.lb>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <7ed49f446365ac625437702d92946add@visp.net.lb>
+User-Agent: Mutt/1.4.2.2i
+X-Organisation: Land of Sunshine Inc.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-More info:
+Denys Fedoryshchenko <denys@visp.net.lb> :
+[...]
+> [ 8683.927442] ======================================================
+> [ 8683.927555] [ INFO: possible circular locking dependency detected ]
+> [ 8683.927672] 3.4.1-build-0061 #14 Not tainted
+> [ 8683.927782] -------------------------------------------------------
+> [ 8683.927895] swapper/0/0 is trying to acquire lock:
+> [ 8683.928007]  (slock-AF_INET){+.-...}, at: [<e0fc73ec>]
+> l2tp_xmit_skb+0x173/0x47e [l2tp_core]
+> [ 8683.928121]
+> [ 8683.928121] but task is already holding lock:
+> [ 8683.928121]  (_xmit_ETHER#2){+.-...}, at: [<c02f062d>]
+> sch_direct_xmit+0x36/0x119
+> [ 8683.928121]
+> [ 8683.928121] which lock already depends on the new lock.
 
-Tried to switch off the IOMMU in the BIOS:
+Any reason why it could not be made LLTX ?
 
-3.4.1 boots, but onboard ethernet is not woking with the previously
-posted net/sched/sch_generic.c:256 warning.
-3.5-rc1 fails to boot due to AHCI timeouts
+(untested patch against -git, applies to 3.4.1 with some offset)
 
-If the at the same time the USB3.0 controller is disabled in the BIOS
-- for both kernels the USB keyboard do not work (the 3.5-rc1 can't
-load the usb modules though) even in USB2.0 ports. If the USB3.0 is
-enabled in the BIOS - the USB keyboard works only in USB3.0 ports -
-the USB2.0 ports are failed with the device descriptor read errors. By
-the way: people with the older kernels and older BIOS'es struggles
-from the same problem on the same m/b -
-http://www.spinics.net/lists/linux-usb/msg54761.html
-
-After re-enabling the IOMMU the keyboard and ethernet became work
-again. This is somewhat strange as week ago I've observed exact the
-opposite behaviour - the Ethernet works only with IOMMU switched off.
-USB was bugging as described - works only in USB3.0 ports. Seems like
-some random bug hits the IOMMU subsystem or this motherboard need to
-be thrown away.
-
-As usual can supply any additional info.
-
-Rus
-
--- 
-SfinxSoft
-http://sfinxsoft.com
+diff --git a/net/l2tp/l2tp_eth.c b/net/l2tp/l2tp_eth.c
+index 443591d..5725258 100644
+--- a/net/l2tp/l2tp_eth.c
++++ b/net/l2tp/l2tp_eth.c
+@@ -36,12 +36,20 @@
+ /* Default device name. May be overridden by name specified by user */
+ #define L2TP_ETH_DEV_NAME	"l2tpeth%d"
+ 
++struct l2tp_eth_stats {
++	u64			packets;
++	u64			bytes;
++	struct u64_stats_sync	syncp;
++};
++
+ /* via netdev_priv() */
+ struct l2tp_eth {
+ 	struct net_device	*dev;
+ 	struct sock		*tunnel_sock;
+ 	struct l2tp_session	*session;
+ 	struct list_head	list;
++	struct l2tp_eth_stats	rstats;
++	struct l2tp_eth_stats	tstats;
+ };
+ 
+ /* via l2tp_session_priv() */
+@@ -87,25 +95,56 @@ static int l2tp_eth_dev_xmit(struct sk_buff *skb, struct net_device *dev)
+ {
+ 	struct l2tp_eth *priv = netdev_priv(dev);
+ 	struct l2tp_session *session = priv->session;
++	struct l2tp_eth_stats *tstats = &priv->tstats;
+ 
+ 	l2tp_xmit_skb(session, skb, session->hdr_len);
+ 
+-	dev->stats.tx_bytes += skb->len;
+-	dev->stats.tx_packets++;
++	u64_stats_update_begin(&tstats->syncp);
++	tstats->packets++;
++	tstats->bytes += skb->len;
++	u64_stats_update_end(&tstats->syncp);
+ 
+ 	return 0;
+ }
+ 
++static struct rtnl_link_stats64 *
++l2tp_eth_get_stats64(struct net_device *dev, struct rtnl_link_stats64 *stats)
++{
++	struct l2tp_eth *priv = netdev_priv(dev);
++	struct l2tp_eth_stats *s;
++	unsigned int start;
++
++	s = &priv->rstats;
++	do {
++		start = u64_stats_fetch_begin_bh(&s->syncp);
++		stats->rx_packets	= s->packets;
++		stats->rx_bytes		= s->bytes;
++	} while (u64_stats_fetch_retry_bh(&s->syncp, start));
++
++	s = &priv->tstats;
++	do {
++		start = u64_stats_fetch_begin_bh(&s->syncp);
++		stats->tx_packets	= s->packets;
++		stats->tx_bytes		= s->bytes;
++	} while (u64_stats_fetch_retry_bh(&s->syncp, start));
++
++	stats->rx_errors = dev->stats.rx_errors;
++
++	return stats;
++}
++
+ static struct net_device_ops l2tp_eth_netdev_ops = {
+ 	.ndo_init		= l2tp_eth_dev_init,
+ 	.ndo_uninit		= l2tp_eth_dev_uninit,
+ 	.ndo_start_xmit		= l2tp_eth_dev_xmit,
++	.ndo_get_stats64	= l2tp_eth_get_stats64,
+ };
+ 
+ static void l2tp_eth_dev_setup(struct net_device *dev)
+ {
+ 	ether_setup(dev);
+-	dev->priv_flags &= ~IFF_TX_SKB_SHARING;
++	dev->features		|= NETIF_F_LLTX;
++	dev->priv_flags		&= ~IFF_TX_SKB_SHARING;
+ 	dev->netdev_ops		= &l2tp_eth_netdev_ops;
+ 	dev->destructor		= free_netdev;
+ }
+@@ -139,8 +178,13 @@ static void l2tp_eth_dev_recv(struct l2tp_session *session, struct sk_buff *skb,
+ 	nf_reset(skb);
+ 
+ 	if (dev_forward_skb(dev, skb) == NET_RX_SUCCESS) {
+-		dev->stats.rx_packets++;
+-		dev->stats.rx_bytes += data_len;
++		struct l2tp_eth *priv = netdev_priv(dev);
++		struct l2tp_eth_stats *rstats = &priv->rstats;
++
++		u64_stats_update_begin(&rstats->syncp);
++		rstats->packets++;
++		rstats->bytes += data_len;
++		u64_stats_update_end(&rstats->syncp);
+ 	} else
+ 		dev->stats.rx_errors++;
+ 
