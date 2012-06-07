@@ -1,64 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933423Ab2FGWy4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 18:54:56 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:48408 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756834Ab2FGWyy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 18:54:54 -0400
-Date: Thu, 7 Jun 2012 18:54:46 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Kees Cook <keescook@chromium.org>
-Cc: djwong@us.ibm.com, Sander Eikelenboom <linux@eikelenboom.it>,
-        Linus Torvalds <torvalds@linux-foundation.org>, dm-devel@redhat.com,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [dm-devel] EXT4-fs error (device dm-42):
- ext4_mb_generate_buddy:741: group 1904, 32254 clusters in bitmap, 32258 in
- gd
-Message-ID: <20120607225446.GK19839@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Kees Cook <keescook@chromium.org>, djwong@us.ibm.com,
-	Sander Eikelenboom <linux@eikelenboom.it>,
-	Linus Torvalds <torvalds@linux-foundation.org>, dm-devel@redhat.com,
-	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <471046920.20120604234941@eikelenboom.it>
- <20120605000356.GM29466@outflux.net>
- <1018371644.20120605224154@eikelenboom.it>
- <20120605210806.GB7182@thunk.org>
- <1883708187.20120606090126@eikelenboom.it>
- <CAGXu5jK-4dO59-x3eTU10OntcPwsVptjpUzQdbbHOvy9_VBQ2A@mail.gmail.com>
- <1482118647.20120606164012@eikelenboom.it>
- <20120607042756.GA30776@thunk.org>
- <20120607222729.GI6938@tux1.beaverton.ibm.com>
- <CAGXu5jKmBkfvuSR7q47-Ac57dVZynz_JkYXiA_-aXaGQiR_C4g@mail.gmail.com>
+	id S1758188Ab2FGW6V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 18:58:21 -0400
+Received: from mms2.broadcom.com ([216.31.210.18]:2758 "EHLO mms2.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758014Ab2FGW6U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 18:58:20 -0400
+X-Server-Uuid: 72204117-5C29-4314-8910-60DB108979CB
+Date: Thu, 7 Jun 2012 15:56:54 -0700
+From: "Matt Carlson" <mcarlson@broadcom.com>
+To: "ethan zhao" <ethan.kernel@gmail.com>
+cc: "Eric Dumazet" <eric.dumazet@gmail.com>,
+        "Matt Carlson" <mcarlson@broadcom.com>,
+        "Christian Kujau" <lists@nerdbynature.de>,
+        LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>
+Subject: Re: tg3: transmit timed out, resetting
+Message-ID: <20120607225654.GA14247@mcarlson.broadcom.com>
+References: <alpine.DEB.2.01.1206041546070.5568@trent.utfs.org>
+ <20120606010255.GA9991@mcarlson.broadcom.com>
+ <CABawtvPE_xuamH2ysL8x0WsJMXdFV5oXPrWjMT-EC-DF_kCxxw@mail.gmail.com>
+ <20120606021436.GA10714@mcarlson.broadcom.com>
+ <CABawtvNVKkxAgrQqJS7FJGoswQ9ZVyJcHcNwbSJQk4yscTn8gw@mail.gmail.com>
+ <1338955977.2760.3603.camel@edumazet-glaptop>
+ <CABawtvOBJQ-oajFQmviOdgKCub-4n06kRW+x7nE2uyiWnoky9Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <CABawtvOBJQ-oajFQmviOdgKCub-4n06kRW+x7nE2uyiWnoky9Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-WSS-ID: 63CFEDB73IK1141941-01-01
+Content-Type: text/plain;
+ charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAGXu5jKmBkfvuSR7q47-Ac57dVZynz_JkYXiA_-aXaGQiR_C4g@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 07, 2012 at 03:40:40PM -0700, Kees Cook wrote:
+On Wed, Jun 06, 2012 at 12:52:32PM +0800, ethan zhao wrote:
+> Eric,
+>   That is ask for confirmation from Matt Carlson of Broadcom.
 > 
-> FWIW, I was building the filesystem that triggered this as ext4:
+> Ethan
 > 
->   mkfs.ext4 -T default -m 0 -O ^huge_file,^flex_bg -E
-> discard,lazy_itable_init /dev/mapper/...
+> On Wed, Jun 6, 2012 at 12:12 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> > On Wed, 2012-06-06 at 10:29 +0800, ethan zhao wrote:
+> >> So no way to fix it via firmware update or Linux driver ? :<
+> >
+> > Yes, but you need to cooperate, or else it might take more time than
+> > necessary.
+> >
+> > Asking questions like that on lkml is not going to help very much.
+> >
+> > So, once again, we kindly ask you try a recent kernel and post
+> > register dump and some additional information when transmit timeouts
+> > happen.
+> >
+> > The 'latest kernel' is either linux-3.5.rc1, or one of David Miller
+> > tree :
+> >
+> > http://git.kernel.org/?p=linux/kernel/git/davem/net-next.git;a=summary
+> >
+> > or
+> >
+> > http://git.kernel.org/?p=linux/kernel/git/davem/net.git;a=summary
+> >
+> > Thanks
 
-Ouy of curiosity, was there a reason you chose those particular file
-system parameters?  It's a surprising set, because if you're starting
-with a fresh file system, enabling flex_bg produces a more optimal
-file system layout.
+Does the following patch fix your problem?
 
-The reason why I wrote the commit description way I did was because it
-seemed to be the most likely way that someone would trip across this
-bug.  We didn't notice this for as long as we did since most of the
-users of ext4 (especially those who use community distributions) have
-been using freshly mkfs'ed ext4 file systems.
 
-						- Ted
+[PATCH] tg3: Apply short DMA frag workaround to 5906
+
+5906 devices also need the short DMA fragment workaround.  This patch
+makes the necessary change.
+
+Signed-off-by: Matt Carlson <mcarlson@broadcom.com>
+---
+ drivers/net/ethernet/broadcom/tg3.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
+index d55df32..2db4d70 100644
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -14275,7 +14275,8 @@ static int __devinit tg3_get_invariants(struct tg3 *tp)
+ 		}
+ 	}
+ 
+-	if (tg3_flag(tp, 5755_PLUS))
++	if (tg3_flag(tp, 5755_PLUS) ||
++	    GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5906)
+ 		tg3_flag_set(tp, SHORT_DMA_BUG);
+ 
+ 	if (GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5719)
+-- 
+1.7.3.4
+
+
