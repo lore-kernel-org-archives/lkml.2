@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754789Ab2FGEQf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 00:16:35 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62777 "EHLO
+	id S1755640Ab2FGEQk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 00:16:40 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63306 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932364Ab2FGEQa (ORCPT
+	with ESMTP id S1754634Ab2FGEQf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 00:16:30 -0400
-Message-Id: <20120607040338.979353483@linuxfoundation.org>
+	Thu, 7 Jun 2012 00:16:35 -0400
+Message-Id: <20120607040339.134031529@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 07 Jun 2012 13:03:54 +0900
+Date: Thu, 07 Jun 2012 13:03:55 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Eyal Shapira <eyal@wizery.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 18/82] mac80211: fix ADDBA declined after suspend with wowlan
+        alan@lxorguk.ukuu.org.uk, Richard Cochran <richardcochran@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [ 19/82] ixp4xx: fix compilation by adding gpiolib support
 In-Reply-To: <20120607041406.GA13233@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,51 +25,204 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eyal Shapira <eyal@wizery.com>
+From: Richard Cochran <richardcochran@gmail.com>
 
-commit 7b21aea04d084916ac4e0e8852dcc9cd60ec0d1d upstream.
+commit 9dde0ae3769875ec1370cb316e50c54b57d52c1a upstream.
 
-WLAN_STA_BLOCK_BA is set while suspending but doesn't get cleared
-when resuming in case of wowlan. This causes further ADDBA requests
-received to be rejected. Fix it by clearing it in the wowlan path
-as well.
+Once again, ixp4xx no longer even compiles. This patch fixes the issue
+by converting over to gpiolib. This patch was first made by Imre and
+posted by Marc, and I added in Russell's suggestion to empty the gpio
+header file.
 
-Signed-off-by: Eyal Shapira <eyal@wizery.com>
-Reviewed-by: Johannes Berg <johannes@sipsolutions.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This fix should also go for 3.1, 3.2, 3.3, and 3.4.
+
+Signed-off-by: Richard Cochran <richardcochran@gmail.com>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/util.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ arch/arm/Kconfig                         |    2 
+ arch/arm/mach-ixp4xx/common.c            |   48 ++++++++++++++++++
+ arch/arm/mach-ixp4xx/include/mach/gpio.h |   79 -------------------------------
+ 3 files changed, 48 insertions(+), 81 deletions(-)
 
---- a/net/mac80211/util.c
-+++ b/net/mac80211/util.c
-@@ -1321,6 +1321,12 @@ int ieee80211_reconfig(struct ieee80211_
- 		}
- 	}
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -556,7 +556,7 @@ config ARCH_IXP4XX
+ 	select ARCH_HAS_DMA_SET_COHERENT_MASK
+ 	select CLKSRC_MMIO
+ 	select CPU_XSCALE
+-	select GENERIC_GPIO
++	select ARCH_REQUIRE_GPIOLIB
+ 	select GENERIC_CLOCKEVENTS
+ 	select MIGHT_HAVE_PCI
+ 	select NEED_MACH_IO_H
+--- a/arch/arm/mach-ixp4xx/common.c
++++ b/arch/arm/mach-ixp4xx/common.c
+@@ -28,6 +28,7 @@
+ #include <linux/clockchips.h>
+ #include <linux/io.h>
+ #include <linux/export.h>
++#include <linux/gpio.h>
  
-+	/* add back keys */
-+	list_for_each_entry(sdata, &local->interfaces, list)
-+		if (ieee80211_sdata_running(sdata))
-+			ieee80211_enable_keys(sdata);
+ #include <mach/udc.h>
+ #include <mach/hardware.h>
+@@ -107,7 +108,7 @@ static signed char irq2gpio[32] = {
+ 	 7,  8,  9, 10, 11, 12, -1, -1,
+ };
+ 
+-int gpio_to_irq(int gpio)
++static int ixp4xx_gpio_to_irq(struct gpio_chip *chip, unsigned gpio)
+ {
+ 	int irq;
+ 
+@@ -117,7 +118,6 @@ int gpio_to_irq(int gpio)
+ 	}
+ 	return -EINVAL;
+ }
+-EXPORT_SYMBOL(gpio_to_irq);
+ 
+ int irq_to_gpio(unsigned int irq)
+ {
+@@ -383,12 +383,56 @@ static struct platform_device *ixp46x_de
+ unsigned long ixp4xx_exp_bus_size;
+ EXPORT_SYMBOL(ixp4xx_exp_bus_size);
+ 
++static int ixp4xx_gpio_direction_input(struct gpio_chip *chip, unsigned gpio)
++{
++	gpio_line_config(gpio, IXP4XX_GPIO_IN);
 +
-+ wake_up:
- 	/*
- 	 * Clear the WLAN_STA_BLOCK_BA flag so new aggregation
- 	 * sessions can be established after a resume.
-@@ -1342,12 +1348,6 @@ int ieee80211_reconfig(struct ieee80211_
- 		mutex_unlock(&local->sta_mtx);
- 	}
++	return 0;
++}
++
++static int ixp4xx_gpio_direction_output(struct gpio_chip *chip, unsigned gpio,
++					int level)
++{
++	gpio_line_set(gpio, level);
++	gpio_line_config(gpio, IXP4XX_GPIO_OUT);
++
++	return 0;
++}
++
++static int ixp4xx_gpio_get_value(struct gpio_chip *chip, unsigned gpio)
++{
++	int value;
++
++	gpio_line_get(gpio, &value);
++
++	return value;
++}
++
++static void ixp4xx_gpio_set_value(struct gpio_chip *chip, unsigned gpio,
++				  int value)
++{
++	gpio_line_set(gpio, value);
++}
++
++static struct gpio_chip ixp4xx_gpio_chip = {
++	.label			= "IXP4XX_GPIO_CHIP",
++	.direction_input	= ixp4xx_gpio_direction_input,
++	.direction_output	= ixp4xx_gpio_direction_output,
++	.get			= ixp4xx_gpio_get_value,
++	.set			= ixp4xx_gpio_set_value,
++	.to_irq			= ixp4xx_gpio_to_irq,
++	.base			= 0,
++	.ngpio			= 16,
++};
++
+ void __init ixp4xx_sys_init(void)
+ {
+ 	ixp4xx_exp_bus_size = SZ_16M;
  
--	/* add back keys */
--	list_for_each_entry(sdata, &local->interfaces, list)
--		if (ieee80211_sdata_running(sdata))
--			ieee80211_enable_keys(sdata);
+ 	platform_add_devices(ixp4xx_devices, ARRAY_SIZE(ixp4xx_devices));
+ 
++	gpiochip_add(&ixp4xx_gpio_chip);
++
+ 	if (cpu_is_ixp46x()) {
+ 		int region;
+ 
+--- a/arch/arm/mach-ixp4xx/include/mach/gpio.h
++++ b/arch/arm/mach-ixp4xx/include/mach/gpio.h
+@@ -1,79 +1,2 @@
+-/*
+- * arch/arm/mach-ixp4xx/include/mach/gpio.h
+- *
+- * IXP4XX GPIO wrappers for arch-neutral GPIO calls
+- *
+- * Written by Milan Svoboda <msvoboda@ra.rockwell.com>
+- * Based on PXA implementation by Philipp Zabel <philipp.zabel@gmail.com>
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+- *
+- */
 -
-- wake_up:
- 	ieee80211_wake_queues_by_reason(hw,
- 			IEEE80211_QUEUE_STOP_REASON_SUSPEND);
+-#ifndef __ASM_ARCH_IXP4XX_GPIO_H
+-#define __ASM_ARCH_IXP4XX_GPIO_H
+-
+-#include <linux/kernel.h>
+-#include <mach/hardware.h>
+-
+-#define __ARM_GPIOLIB_COMPLEX
+-
+-static inline int gpio_request(unsigned gpio, const char *label)
+-{
+-	return 0;
+-}
+-
+-static inline void gpio_free(unsigned gpio)
+-{
+-	might_sleep();
+-
+-	return;
+-}
+-
+-static inline int gpio_direction_input(unsigned gpio)
+-{
+-	gpio_line_config(gpio, IXP4XX_GPIO_IN);
+-	return 0;
+-}
+-
+-static inline int gpio_direction_output(unsigned gpio, int level)
+-{
+-	gpio_line_set(gpio, level);
+-	gpio_line_config(gpio, IXP4XX_GPIO_OUT);
+-	return 0;
+-}
+-
+-static inline int gpio_get_value(unsigned gpio)
+-{
+-	int value;
+-
+-	gpio_line_get(gpio, &value);
+-
+-	return value;
+-}
+-
+-static inline void gpio_set_value(unsigned gpio, int value)
+-{
+-	gpio_line_set(gpio, value);
+-}
+-
+-#include <asm-generic/gpio.h>			/* cansleep wrappers */
+-
+-extern int gpio_to_irq(int gpio);
+-#define gpio_to_irq gpio_to_irq
+-extern int irq_to_gpio(unsigned int irq);
+-
+-#endif
++/* empty */
  
 
 
