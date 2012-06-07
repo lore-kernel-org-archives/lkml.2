@@ -1,74 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761405Ab2FGTYj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 15:24:39 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:48654 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761381Ab2FGTYi (ORCPT
+	id S1761408Ab2FGTcV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 15:32:21 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:30260 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754129Ab2FGTcU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 15:24:38 -0400
-Date: Thu, 7 Jun 2012 21:24:27 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Christoph Fritz <chf.fritz@googlemail.com>
-Cc: Sascha Hauer <kernel@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Christian Hemp <c.hemp@phytec.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        "Hans J. Koch" <hjk@hansjkoch.de>
-Subject: Re: [PATCH] ARM: mx35: add WEIM register addresses
-Message-ID: <20120607192427.GO30400@pengutronix.de>
-References: <20120509131638.GA2057@lovely.krouter>
- <20120607180738.GM30400@pengutronix.de>
- <1339093049.4704.192.camel@mars>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339093049.4704.192.camel@mars>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 21:16:43 up 208 days,  3:03, 17 users,  load average: 1.65, 1.41,
- 1.41
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Thu, 7 Jun 2012 15:32:20 -0400
+X-Authority-Analysis: v=2.0 cv=D8PF24tj c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=RcwUMuyEaQwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=7QN3BhfgatrIv94iBCYA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1339097538.13377.11.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH RT 3/4] mips-remove-smp-reserve-lock.patch
+From: Steven Rostedt <rostedt@goodmis.org>
+To: David Daney <ddaney.cavm@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>, Ralf Baechle <ralf@linux-mips.org>
+Date: Thu, 07 Jun 2012 15:32:18 -0400
+In-Reply-To: <4FD0FC26.3030101@gmail.com>
+References: <20120607155148.698959275@goodmis.org>
+		 <20120607155221.836885041@goodmis.org> <4FD0E9F9.60906@gmail.com>
+	 <1339095399.13377.2.camel@gandalf.stny.rr.com> <4FD0FC26.3030101@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1+b1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 07, 2012 at 08:17:29PM +0200, Christoph Fritz wrote:
-> On Thu, 2012-06-07 at 20:07 +0200, Sascha Hauer wrote:
+On Thu, 2012-06-07 at 12:08 -0700, David Daney wrote:
+
+> > Should it go to mainline stable?
+> >
 > 
-> > The same could be used on i.MX25 aswell. I think we should clean this
-> > up before adding more SoCs.
-> 
-> :) full ack. What would you suggest? A macro?
+> I don't think it is necessary.  As far as I know, RT may be the only 
+> thing that needs it.
 
-Something like the following should do. We still could do better, but at
-least we have all pieces together.
+Ah, you're right. As this is just an issue because it is called with
+interrupts disabled (from stop_machine). Although it's interesting that
+the mips code, re-enables interrupts from that function.
 
-imx-weim.h:
+>From kernel/cpu.c:
 
-#define IMX_WEIM_CSU_BITS	...
+_cpu_down() {
+	 __stop_machine(take_cpu_down, &tcd_param, cpumask_of(cpu));
 
-static inline void imx_weim_cs(void __iomem *base, int cs, u32 csu, u32 csl, u32 csa)
+take_cpu_down() {
+	err = __cpu_disable();
+
+kernel/stop_machine.c:
+
+__stop_machine(int (*fn)(void *) ...) {
+	local_irq_save(flags);
+	hard_irq_disable();
+	ret = (*fn)(data);
+	local_irq_restore(flags);
+
+
+arch/mips/include/asm/smp.h:
+
+static inline int __cpu_disable(void)
 {
-	do_it
+        extern struct plat_smp_ops *mp_ops;     /* private */
+
+        return mp_ops->cpu_disable();
 }
 
-static inline void mx27_weim_cs(int cs, u32 csu, u32 csl, u32 csa)
-{
-	imx_weim_cs(MX27_IO_ADDRESS(MX27_WEIM_BASE), cs, csu, csl, csa));
-}
+arch/mips/cavium-octeon/smp.c:
+
+octeon_cpu_disable(void) {
+        local_irq_disable();
+        fixup_irqs();
+        local_irq_enable();
+
+struct plat_smp_ops octeon_smp_ops = {
+        .cpu_disable            = octeon_cpu_disable,
 
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Is this expected? It causes the cpu notifiers to be called with
+interrupts enabled. Not sure if that's a problem or not.
+
+-- Steve
+
+
