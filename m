@@ -1,138 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760401Ab2FGNUt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 09:20:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1026 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760213Ab2FGNUr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 09:20:47 -0400
-Date: Thu, 7 Jun 2012 15:18:48 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "markus@trippelsdorf.de" <markus@trippelsdorf.de>,
-        "hughd@google.com" <hughd@google.com>,
-        "kamezawa.hiroyu@jp.fujitsu.com" <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: 3.4-rc7: BUG: Bad rss-counter state mm:ffff88040b56f800 idx:1
-	val:-59
-Message-ID: <20120607131848.GA19076@redhat.com>
-References: <4FBC1618.5010408@fold.natur.cuni.cz> <20120522162835.c193c8e0.akpm@linux-foundation.org> <20120522162946.2afcdb50.akpm@linux-foundation.org> <20120523172146.GA27598@redhat.com> <4FC52F17.20709@openvz.org> <20120530171158.GA8614@redhat.com> <4FD05F75.1050108@openvz.org>
+	id S1760336Ab2FGNYx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 09:24:53 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:58490 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756125Ab2FGNYv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 09:24:51 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -1
+X-BigFish: VPS-1(zz936eIzz1202hzz8275bh8275dhz2dh668h839h944hd25hf0ah)
+X-WSS-ID: 0M59195-02-6F8-02
+X-M-MSG: 
+Date: Thu, 7 Jun 2012 15:25:05 +0200
+From: Borislav Petkov <borislav.petkov@amd.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Andre Przywara <andre.przywara@amd.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jacob Shin <jacob.shin@amd.com>, <jeremy@goop.org>,
+        <xen-devel@lists.xensource.com>, LKML <linux-kernel@vger.kernel.org>,
+        Jan Beulich <JBeulich@suse.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>, <stable@vger.kernel.org>
+Subject: [GIT PULL] x86, CPU, AMD: Cleanup AMD-specific MSR-rw users
+Message-ID: <20120607132505.GG11153@aftab.osrc.amd.com>
+References: <1338562358-28182-1-git-send-email-bp@amd64.org>
+ <1338562358-28182-4-git-send-email-bp@amd64.org>
+ <4FCFD2EE.8060508@zytor.com>
+ <20120607072159.GB9856@aftab.osrc.amd.com>
+ <4FD05CED.60905@amd.com>
+ <20120607080833.GA23186@kroah.com>
+ <4FD063F0.3060301@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <4FD05F75.1050108@openvz.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4FD063F0.3060301@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/07, Konstantin Khlebnikov wrote:
->
-> Oleg Nesterov wrote:
->>
->> I'll write the changelog and send the patch tomorrow.
->
-> Ding! Week is over, or I missed something? )
+Hi Peter,
 
-Pong ;)
+so here are the final versions of the patches, as discussed. 3/4 has
+lost the stable tag and all have received Konrad's Acked-by. Other than
+that, 1ab46fd319bc takes care of the -stable issue for xen and Greg is
+picking that one up. So all those should be queued for 3.6.
 
-I have sent the patch on May 31, see
-http://marc.info/?l=linux-kernel&m=133848759505805
-Also attached below, just in case.
+Please pull, thanks.
 
-Initiallly I sent 2 patches, see
-http://marc.info/?l=linux-kernel&m=133848784705941
-but 2/2 (your patch) was already merged.
+The following changes since commit f8f5701bdaf9134b1f90e5044a82c66324d2073f:
 
--------------------------------------------------------------------------------
-[PATCH] correctly synchronize rss-counters at exit/exec
+  Linux 3.5-rc1 (2012-06-02 18:29:26 -0700)
 
-A simplified version of Konstantin Khlebnikov's patch.
+are available in the git repository at:
 
-do_exit() and exec_mmap() call sync_mm_rss() before mm_release()
-does put_user(clear_child_tid) which can update task->rss_stat
-and thus make mm->rss_stat inconsistent. This triggers the "BUG:"
-printk in check_mm().
+  git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git tags/amd-rdmsr-cleanups-for-3.6
 
-- Move the final sync_mm_rss() from do_exit() to exit_mm(), and
-  change exec_mmap() to call sync_mm_rss() after mm_release() to
-  make check_mm() happy.
+for you to fetch changes up to c5214c0192813ebaa5784be36d2ae142034f84db:
 
-  Perhaps we should simply move it into mm_release() and call it
-  unconditionally to catch the "task->rss_stat != 0 && !task->mm"
-  bugs.
+  x86, CPU, AMD: Deprecate AMD-specific MSR variants (2012-06-07 12:52:58 +0200)
 
-- Since taskstats_exit() is called before exit_mm(), add another
-  sync_mm_rss() into xacct_add_tsk() who actually uses rss_stat.
+----------------------------------------------------------------
+x86, CPU, AMD: Cleanup AMD-specific MSR-rw users
 
-  Probably we should also shift acct_update_integrals().
+This patchset takes care of all the {rd,wr}msrl_amd_safe headaches we
+had wrt xen. After it is applied, the AMD-specific variants become
+private to amd.c and issue a warning when used on anything else beside
+K8 because they're supposed to be used only on K8.
 
-Reported-by: Markus Trippelsdorf <markus@trippelsdorf.de>
-Tested-by: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
----
- fs/exec.c       |    2 +-
- kernel/exit.c   |    5 ++---
- kernel/tsacct.c |    1 +
- 3 files changed, 4 insertions(+), 4 deletions(-)
+This also contains the two patches from Andre which cleanup the PV-side
+of things.
 
-diff --git a/fs/exec.c b/fs/exec.c
-index 52c9e2f..e49e3c2 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -823,10 +823,10 @@ static int exec_mmap(struct mm_struct *mm)
- 	/* Notify parent that we're no longer interested in the old VM */
- 	tsk = current;
- 	old_mm = current->mm;
--	sync_mm_rss(old_mm);
- 	mm_release(tsk, old_mm);
- 
- 	if (old_mm) {
-+		sync_mm_rss(old_mm);
- 		/*
- 		 * Make sure that if there is a core dump in progress
- 		 * for the old mm, we get out and die instead of going
-diff --git a/kernel/exit.c b/kernel/exit.c
-index ab972a7..b3a84b5 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -655,6 +655,8 @@ static void exit_mm(struct task_struct * tsk)
- 	mm_release(tsk, mm);
- 	if (!mm)
- 		return;
-+
-+	sync_mm_rss(mm);
- 	/*
- 	 * Serialize with any possible pending coredump.
- 	 * We must hold mmap_sem around checking core_state
-@@ -965,9 +967,6 @@ void do_exit(long code)
- 				preempt_count());
- 
- 	acct_update_integrals(tsk);
--	/* sync mm's RSS info before statistics gathering */
--	if (tsk->mm)
--		sync_mm_rss(tsk->mm);
- 	group_dead = atomic_dec_and_test(&tsk->signal->live);
- 	if (group_dead) {
- 		hrtimer_cancel(&tsk->signal->real_timer);
-diff --git a/kernel/tsacct.c b/kernel/tsacct.c
-index 23b4d78..a64ee90 100644
---- a/kernel/tsacct.c
-+++ b/kernel/tsacct.c
-@@ -91,6 +91,7 @@ void xacct_add_tsk(struct taskstats *stats, struct task_struct *p)
- 	stats->virtmem = p->acct_vm_mem1 * PAGE_SIZE / MB;
- 	mm = get_task_mm(p);
- 	if (mm) {
-+		sync_mm_rss(mm);
- 		/* adjust to KB unit */
- 		stats->hiwater_rss   = get_mm_hiwater_rss(mm) * PAGE_SIZE / KB;
- 		stats->hiwater_vm    = get_mm_hiwater_vm(mm)  * PAGE_SIZE / KB;
+----------------------------------------------------------------
+Andre Przywara (2):
+      x86, pvops: Remove hooks for {rd,wr}msr_safe_regs
+      x86, AMD: Fix crash as Xen Dom0 on AMD Trinity systems
+
+Borislav Petkov (2):
+      x86, CPU: Fix show_msr MSR accessing function
+      x86, CPU, AMD: Deprecate AMD-specific MSR variants
+
+ arch/x86/include/asm/msr.h            | 42 ++---------------------------------
+ arch/x86/include/asm/paravirt.h       | 39 --------------------------------
+ arch/x86/include/asm/paravirt_types.h |  2 --
+ arch/x86/kernel/cpu/amd.c             | 37 ++++++++++++++++++++++++++++--
+ arch/x86/kernel/cpu/common.c          |  2 +-
+ arch/x86/kernel/paravirt.c            |  2 --
+ arch/x86/lib/msr-reg-export.c         |  4 ++--
+ arch/x86/lib/msr-reg.S                | 10 ++++-----
+ arch/x86/xen/enlighten.c              |  2 --
+ 9 files changed, 45 insertions(+), 95 deletions(-)
+
 -- 
-1.5.5.1
+Regards/Gruss,
+Boris.
 
+osrc-kernel@elbe.amd.com - where all your Linux questions get answered.
+
+Operating Systems Research Center
+Advanced Micro Devices, Inc.
 
