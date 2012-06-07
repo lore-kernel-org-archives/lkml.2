@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933265Ab2FGEWc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 00:22:32 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63306 "EHLO
+	id S933284Ab2FGEWi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 00:22:38 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62777 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933238Ab2FGEWY (ORCPT
+	with ESMTP id S933235Ab2FGEWe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 00:22:24 -0400
-Message-Id: <20120607041358.350114550@linuxfoundation.org>
+	Thu, 7 Jun 2012 00:22:34 -0400
+Message-Id: <20120607041358.910470464@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 07 Jun 2012 13:13:59 +0900
+Date: Thu, 07 Jun 2012 13:14:03 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, James Bottomley <JBottomley@Parallels.com>
-Subject: [ 01/47] SCSI: fix scsi_wait_scan
+        alan@lxorguk.ukuu.org.uk,
+        Meenakshi Venkataraman <meenakshi.venkataraman@intel.com>,
+        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 05/47] iwlwifi: update BT traffic load states correctly
 In-Reply-To: <20120607041504.GA13819@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,42 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Bottomley <jbottomley@parallels.com>
+From: Meenakshi Venkataraman <meenakshi.venkataraman@intel.com>
 
-commit 1ff2f40305772b159a91c19590ee159d3a504afc upstream.
+commit 882dde8eb0d49ce0f853f8f4084dde56a21fe55f upstream.
 
-Commit  c751085943362143f84346d274e0011419c84202
-Author: Rafael J. Wysocki <rjw@sisk.pl>
-Date:   Sun Apr 12 20:06:56 2009 +0200
+When BT traffic load changes from its
+previous state, a new LQ command needs to be
+sent down to the firmware. This needs to
+be done only once per change. The state
+variable that keeps track of this change is
+last_bt_traffic_load. However, it was not
+being updated when the change had been
+handled. Not updating this variable was
+causing a flood of advanced BT config
+commands to be sent to the firmware. Fix
+this.
 
-    PM/Hibernate: Wait for SCSI devices scan to complete during resume
-
-Broke the scsi_wait_scan module in 2.6.30.  Apparently debian still uses it so
-fix it and backport to stable before removing it in 3.6.
-
-The breakage is caused because the function template in
-include/scsi/scsi_scan.h is defined to be a nop unless SCSI is built in.
-That means that in the modular case (which is every distro), the
-scsi_wait_scan module does a simple async_synchronize_full() instead of
-waiting for scans.
-
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Meenakshi Venkataraman <meenakshi.venkataraman@intel.com>
+Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/scsi_wait_scan.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/iwlwifi/iwl-agn-rs.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/scsi/scsi_wait_scan.c
-+++ b/drivers/scsi/scsi_wait_scan.c
-@@ -12,7 +12,7 @@
+--- a/drivers/net/wireless/iwlwifi/iwl-agn-rs.c
++++ b/drivers/net/wireless/iwlwifi/iwl-agn-rs.c
+@@ -878,6 +878,7 @@ static void rs_bt_update_lq(struct iwl_p
+ 	if ((priv->bt_traffic_load != priv->last_bt_traffic_load) ||
+ 	    (priv->bt_full_concurrent != full_concurrent)) {
+ 		priv->bt_full_concurrent = full_concurrent;
++		priv->last_bt_traffic_load = priv->bt_traffic_load;
  
- #include <linux/module.h>
- #include <linux/device.h>
--#include <scsi/scsi_scan.h>
-+#include "scsi_priv.h"
- 
- static int __init wait_scan_init(void)
- {
+ 		/* Update uCode's rate table. */
+ 		tbl = &(lq_sta->lq_info[lq_sta->active_tbl]);
 
 
