@@ -1,94 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758278Ab2FGISM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 04:18:12 -0400
-Received: from orion.tchmachines.com ([208.76.84.200]:34780 "EHLO
-	orion.tchmachines.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751621Ab2FGISH (ORCPT
+	id S1758526Ab2FGISa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 04:18:30 -0400
+Received: from audible.transient.net ([216.254.12.79]:48732 "HELO
+	audible.transient.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754049Ab2FGISH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 7 Jun 2012 04:18:07 -0400
-From: Vlad Zolotarov <vlad@scalemp.com>
-To: Ingo Molnar <mingo@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Shai@scalemp.com
-Subject: Re: [PATCH v4 0/2] Move x86_cpu_to_apicid to the __read_mostly section
-Date: Thu, 07 Jun 2012 11:18:02 +0300
-Message-ID: <6799312.MzsZpBJbVB@vlad>
-Organization: ScaleMP Ltd.
-User-Agent: KMail/4.8.3 (Linux/3.2.0-24-generic; KDE/4.8.3; i686; ; )
-In-Reply-To: <1415723.ntIHEoaamI@vlad>
-References: <1744141.b5asW8k6jC@vlad> <5555210.ryZGheQWJb@vlad> <1415723.ntIHEoaamI@vlad>
+Date: Thu, 7 Jun 2012 08:17:35 +0000
+From: Jamie Heilman <jamie@audible.transient.net>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Daniel Mack <zonque@gmail.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: 3.5-rc1 snd_usb_audio stream format breakage
+Message-ID: <20120607081735.GA4648@cucamonga.audible.transient.net>
+Mail-Followup-To: Takashi Iwai <tiwai@suse.de>,
+	Daniel Mack <zonque@gmail.com>, alsa-devel@alsa-project.org,
+	linux-kernel@vger.kernel.org
+References: <20120607033830.GB4321@cucamonga.audible.transient.net>
+ <s5hhaun7efv.wl%tiwai@suse.de>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - orion.tchmachines.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - scalemp.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <s5hhaun7efv.wl%tiwai@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 23 May 2012 12:16:29 Vlad Zolotarov wrote:
-> On Tuesday, May 22, 2012 18:55:41 Vlad Zolotarov wrote:
-> > > > I have no fundamental prefer to either approach, but the
-> > > > direction taken should be justified explicitly, with numbers,
-> > > > arguments, etc. - also a short blurb somewhere in the headers
-> > > > that explains when they should be used, so that others can be
-> > > > aware of vSMP's special needs here.
-> > > 
-> > > I.e. *numbers* are needed: roughly how many percpu variables in
-> > > a defconfig of one type versus the other type. This settles the
-> > > question whether we want to identify read-mostly or
-> > > write-frequently variables, to address this particular problem
-> > > ...
+Takashi Iwai wrote:
+> At Thu, 7 Jun 2012 03:38:30 +0000,
+> Jamie Heilman wrote:
+> > 
+> > With the USB audio streaming logic changes, my HeadRoom Bithead
+> > (08bb:2902 Burr-Brown PCM2902) no longer works.  Symptoms include the
+> > loss of most of the normally available formats leaving only:
+> > 
+> > root@cucamonga:~# cat /proc/asound/bithead/stream0 
+> > Burr-Brown from TI USB Audio CODEC at usb-0000:00:1a.7-1.1.4, full speed : USB Audio
+> > 
+> > Playback:
+> >   Status: Stop
+> >   Interface 1
+> >     Altset 6
+> >     Format: U8
+> >     Channels: 1
+> >     Endpoint: 2 OUT (ADAPTIVE)
+> >     Rates: 32000, 44100, 48000
+> > 
+> > Capture:
+> >   Status: Stop
+> >   Interface 2
+> >     Altset 18
+> >     Format: S8
+> >     Channels: 1
+> >     Endpoint: 4 IN (SYNC)
+> >     Rates: 11025
+> > 
+> > (normally 2 channel S16_LE is available, with capture rates up to
+> > 48kHz ... only the last altset's are being reported now) and a slew of
+> > proc registration warnings logged:
+> > 
+> > ------------[ cut here ]------------
+> > WARNING: at fs/proc/generic.c:586 proc_register+0x169/0x1a6()
+> > Hardware name: Precision WorkStation T3400  
+> > proc_dir_entry 'card1/pcm0p' already registered
+> > Modules linked in: snd_usb_audio(+) snd_usbmidi_lib snd_hda_intel(+) snd_hda_codec snd_hwdep snd_seq_midi snd_seq_midi_event snd_pcm snd_page_alloc snd_rawmidi snd_seq snd_seq_device snd_timer snd soundcore dcdbas floppy sr_mod usb_storage cdrom kvm_intel psmouse kvm tg3 evdev xfs dm_mod raid1 md_mod
+> > Pid: 1152, comm: modprobe Not tainted 3.5.0-rc1-00110-g71fae7e #2
+> > Call Trace:
+> >  [<ffffffff8102a400>] warn_slowpath_common+0x83/0x9c
+> >  [<ffffffff8102a4bc>] warn_slowpath_fmt+0x46/0x48
+> >  [<ffffffff813829ad>] ? add_preempt_count+0x39/0x3b
+> >  [<ffffffff811292f0>] proc_register+0x169/0x1a6
+> >  [<ffffffff8112962e>] create_proc_entry+0x74/0x8c
+> >  [<ffffffffa018eb63>] snd_info_register+0x3e/0xc3 [snd]
+> >  [<ffffffffa01fde2e>] snd_pcm_new_stream+0xb1/0x404 [snd_pcm]
+> >  [<ffffffffa024861f>] snd_usb_add_audio_stream+0xd2/0x230 [snd_usb_audio]
+> >  [<ffffffffa0241d33>] ? snd_usb_parse_audio_format+0x252/0x34f [snd_usb_audio]
+> >  [<ffffffff810d6b17>] ? kmem_cache_alloc_trace+0xab/0xbb
+> >  [<ffffffffa0248c29>] snd_usb_parse_audio_interface+0x4ac/0x567 [snd_usb_audio]
+> >  [<ffffffffa023f0ff>] snd_usb_create_stream+0xe9/0x125 [snd_usb_audio]
+> >  [<ffffffffa023f9b1>] usb_audio_probe+0x62a/0x72c [snd_usb_audio]
+> >  [<ffffffff812c49f5>] usb_probe_interface+0x136/0x1b1
+> >  [<ffffffff81287e66>] ? driver_probe_device+0x1d3/0x1d3
+> >  [<ffffffff81287d43>] driver_probe_device+0xb0/0x1d3
+> >  [<ffffffff81287ec5>] __driver_attach+0x5f/0x83
+> >  [<ffffffff812863a2>] bus_for_each_dev+0x54/0x86
+> >  [<ffffffff81287730>] driver_attach+0x1e/0x20
+> >  [<ffffffff8128747f>] bus_add_driver+0xfd/0x23a
+> >  [<ffffffff812882e8>] driver_register+0x93/0x10e
+> >  [<ffffffff812c383f>] usb_register_driver+0x7e/0x12a
+> >  [<ffffffffa0257000>] ? 0xffffffffa0256fff
+> >  [<ffffffffa0257000>] ? 0xffffffffa0256fff
+> >  [<ffffffffa0257040>] snd_usb_audio_init+0x40/0x1000 [snd_usb_audio]
+> >  [<ffffffff810001ff>] do_one_initcall+0x7f/0x134
+> >  [<ffffffffa0257000>] ? 0xffffffffa0256fff
+> >  [<ffffffff810688d4>] sys_init_module+0x16cf/0x195e
+> >  [<ffffffff8106516c>] ? free_notes_attrs+0x4d/0x4d
+> >  [<ffffffff810c38cb>] ? mmap_region+0x1c7/0x469
+> >  [<ffffffff813856d2>] system_call_fastpath+0x16/0x1b
+> > ---[ end trace c1baea1a25a91564 ]---
 > 
-> Ingo, here is the proposal to the patch (series) description:
-> 
-> ----------------------------------------------------------------------------
-> -------------------- Added "read-mostly" qualifier to the following
-> variables in smp.h: - cpu_sibling_map
->  - cpu_core_map
->  - cpu_llc_shared_map
->  - cpu_llc_id
->  - cpu_number
->  - x86_cpu_to_apicid
->  - x86_bios_cpu_apicid
->  - x86_cpu_to_logical_apicid
-> 
-> As long as all the variables above are only written during the
-> initialization, this change is meant to prevent the false sharing. More
-> specifically, on vSMP Foundation platform x86_cpu_to_apicid shared the same
-> internode_cache_line with frequently written lapic_events.
-> 
-> From the analysis of the first 33 per_cpu variables  out of 219 (memories
-> they describe, to be more specific) the 8 have read_mostly nature
-> (tlb_vector_offset, cpu_loops_per_jiffy, xen_debug_irq, etc.) and 25 are
-> frequently written (irq_stack_union, gdt_page, exception_stacks, idt_desc,
-> etc.). Assuming that the spread of the rest of the per_cpu variables is
-> similar, identifying the read mostly memories will make more sense in terms
-> of long-term code maintenance comparing to identifying frequently written
-> memories.
-> ----------------------------------------------------------------------------
-> -----------------------
-> 
-> Pls., tell me if the above looks satisfactory to u in light of all your
-> previous remarks.
-> 
-> If yes - I'll respin the series with the description above.
+> Looks like the PCM substream assignment is buggy.
+> Does the patch (untested at all) below help?
 
-Ingo, sorry for bothering. Could u, pls., tell if the above description is ok? We'd
-like to move on with this patch series.
+Yep, that fixed it.  Thanks!
 
-thanks in advance,
-vlad
-
-> 
-> thanks,
-> vlad
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+-- 
+Jamie Heilman                     http://audible.transient.net/~jamie/
