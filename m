@@ -1,55 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760820Ab2FGOI5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 10:08:57 -0400
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:42881 "EHLO
-	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760582Ab2FGOI4 convert rfc822-to-8bit (ORCPT
+	id S1760808Ab2FGOPn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 10:15:43 -0400
+Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:3562 "EHLO
+	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751772Ab2FGOPm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 10:08:56 -0400
-Date: Thu, 07 Jun 2012 10:08:52 -0400 (EDT)
-From: Zhouping Liu <zliu@redhat.com>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: AutoNUMA15
-Message-ID: <097fc79d-1e82-4633-8cf0-c47612e5f729@zmail13.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <CAJd=RBAQiKC1Np7qzNrD1AEXcoPwfSLwTh9ZjUkvAb7F6eUX9A@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Originating-IP: [10.66.113.184]
-X-Mailer: Zimbra 7.1.2_GA_3268 (ZimbraWebClient - FF3.0 (Linux)/7.1.2_GA_3268)
+	Thu, 7 Jun 2012 10:15:42 -0400
+Message-ID: <1339078540.25798.13.camel@x61.thuisdomein>
+Subject: [PATCH] ARM: s3c24xx: remove unused header
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 07 Jun 2012 16:15:40 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-OriginalArrivalTime: 07 Jun 2012 14:15:40.0782 (UTC) FILETIME=[04BDA0E0:01CD44B8]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Thu, Jun 7, 2012 at 10:30 AM, Zhouping Liu <zliu@redhat.com>
-> wrote:
-> >
-> > [    3.114024] ---[ end trace e696d6ddf3adb276 ]---
-> > [    3.121541] swapper/0 used greatest stack depth: 4768 bytes left
-> > [    3.143784] Kernel panic - not syncing: Attempted to kill init!
-> > exitcode=0x0000000b
-> > [    3.143784]
-> >
-> > such above errors occurred in my two boxes:
-> > in one machine, which has 120Gb RAM and 8 numa nodes with AMD CPU,
-> > kernel
-> > panic occurred in autonuma15 and Linus tree(3.5.0-rc1)
-> > but in another one, which has 16Gb RAM and 4 numa nodes with AMD
-> > CPU, kernel
-> > panic only occurred in autonuma15, no such issues in Linus tree,
-> >
-> Related to fix at https://lkml.org/lkml/2012/6/5/31  ?
-> 
+Since (at least) v2.6.12-rc2 there has been a bast-pmu.h header in the
+tree. Currently it can be found at
+arch/arm/mach-s3c24xx/include/mach/bast-pmu.h.
 
-hi, Hillf
+It seems that during that entire period nothing included that header and
+that none of the named constants it provided were ever used. That header
+can safely be removed.
 
-Thanks! but the Linus tree I tested has contained the patch,
-also I tested it in autunuma15 with the patch just now, and
-the panic is still alive, so maybe it's a new issues...
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Tested with "git grep". But it's again hard to imagine how this could
+break anything.
 
+ arch/arm/mach-s3c24xx/include/mach/bast-pmu.h |   40 -------------------------
+ 1 files changed, 0 insertions(+), 40 deletions(-)
+ delete mode 100644 arch/arm/mach-s3c24xx/include/mach/bast-pmu.h
+
+diff --git a/arch/arm/mach-s3c24xx/include/mach/bast-pmu.h b/arch/arm/mach-s3c24xx/include/mach/bast-pmu.h
+deleted file mode 100644
+index 4c38b39..0000000
+--- a/arch/arm/mach-s3c24xx/include/mach/bast-pmu.h
++++ /dev/null
+@@ -1,40 +0,0 @@
+-/* arch/arm/mach-s3c2410/include/mach/bast-pmu.h
+- *
+- * Copyright (c) 2003-2004 Simtec Electronics
+- *	Ben Dooks <ben@simtec.co.uk>
+- *	Vincent Sanders <vince@simtec.co.uk>
+- *
+- * Machine BAST - Power Management chip
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+-*/
+-
+-#ifndef __ASM_ARCH_BASTPMU_H
+-#define __ASM_ARCH_BASTPMU_H "08_OCT_2004"
+-
+-#define BASTPMU_REG_IDENT	(0x00)
+-#define BASTPMU_REG_VERSION	(0x01)
+-#define BASTPMU_REG_DDCCTRL	(0x02)
+-#define BASTPMU_REG_POWER	(0x03)
+-#define BASTPMU_REG_RESET	(0x04)
+-#define BASTPMU_REG_GWO		(0x05)
+-#define BASTPMU_REG_WOL		(0x06)
+-#define BASTPMU_REG_WOR		(0x07)
+-#define BASTPMU_REG_UID		(0x09)
+-
+-#define BASTPMU_EEPROM		(0xC0)
+-
+-#define BASTPMU_EEP_UID		(BASTPMU_EEPROM + 0)
+-#define BASTPMU_EEP_WOL		(BASTPMU_EEPROM + 8)
+-#define BASTPMU_EEP_WOR		(BASTPMU_EEPROM + 9)
+-
+-#define BASTPMU_IDENT_0		0x53
+-#define BASTPMU_IDENT_1		0x42
+-#define BASTPMU_IDENT_2		0x50
+-#define BASTPMU_IDENT_3		0x4d
+-
+-#define BASTPMU_RESET_GUARD	(0x55)
+-
+-#endif /* __ASM_ARCH_BASTPMU_H */
 -- 
-Thanks,
-Zhouping
+1.7.7.6
+
