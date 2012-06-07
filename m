@@ -1,69 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754814Ab2FGPbZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 11:31:25 -0400
-Received: from 8bytes.org ([85.214.48.195]:56003 "EHLO
-	h2027444.stratoserver.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752335Ab2FGPbY (ORCPT
+	id S1754433Ab2FGPfc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 11:35:32 -0400
+Received: from na3sys010aog114.obsmtp.com ([74.125.245.96]:38282 "HELO
+	na3sys010aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752624Ab2FGPfa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 11:31:24 -0400
-Date: Thu, 7 Jun 2012 17:31:22 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Bryan Schumaker <bjschuma@netapp.com>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: NFS regression in v3.5-rc1: mount.nfs yells about incorrect
- mount option
-Message-ID: <20120607153122.GP12795@8bytes.org>
-References: <20120607150456.GO12795@8bytes.org>
- <4FD0C4C2.8020605@netapp.com>
+	Thu, 7 Jun 2012 11:35:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FD0C4C2.8020605@netapp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Thu Jun  7 17:31:23 2012
-X-DSPAM-Confidence: 0.9964
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 4fd0c94b28381478682282
+In-Reply-To: <CAH3drwacayQEZHOidbKKuJ3KjgMvnYzT0S0csXV2QwSmC8nMxg@mail.gmail.com>
+References: <CAHVUoiQywo=iHKsXQbsVE7coc1FL9A9qy_a71SK94MKNV0GrKA@mail.gmail.com>
+ <CAHVUoiTZmzT3vquaDC65AJfCFZX-qS5GjgjP2-+=0R7skurW5g@mail.gmail.com>
+ <CAHVUoiQgcAMr874d_yPfm9ssUBOoX+dNLy9JNCOCYwOCrAKXFQ@mail.gmail.com> <CAH3drwacayQEZHOidbKKuJ3KjgMvnYzT0S0csXV2QwSmC8nMxg@mail.gmail.com>
+From: Roland Dreier <roland@purestorage.com>
+Date: Thu, 7 Jun 2012 08:35:05 -0700
+Message-ID: <CAL1RGDXotXpZXUeR6JGu=qAkJE3H8iJ_0A0fQTCXrBJkWJDBRA@mail.gmail.com>
+Subject: Re: [Regression] [Radeon] Stream command failures and render problems
+ in Evergreen (Radeon HD 5600) in kernel 3.4
+To: Jerome Glisse <j.glisse@gmail.com>
+Cc: Brian Gitonga Marete <marete@toshnix.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Airlie <airlied@linux.ie>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Jerome Glisse <jglisse@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 07, 2012 at 11:12:02AM -0400, Bryan Schumaker wrote:
-> On 06/07/2012 11:04 AM, Joerg Roedel wrote:
-> 
-> Can you use `mount -v` to get more output?
+> Update your libdrm to libdrm from git should fix your issue.
 
-Hmm, that is weird. When I use mount -v it actually does mount the
-remote NFS tree. Here is the output:
-
-root@chrom:~# mount -v lemmy:/data/repos /data/lemmy/
-mount: no type was given - I'll assume nfs because of the colon
-mount.nfs: timeout set for Thu Jun  7 17:21:54 2012
-mount.nfs: text-based options: 'addr=165.204.15.93'
-mount.nfs: mount(2): Protocol not supported
-mount.nfs: trying 165.204.15.93 prog 100003 vers 3 prot UDP port 2049
-mount.nfs: trying 165.204.15.93 prog 100005 vers 3 prot UDP port 39332
-mount.nfs: text-based options (retry): 'addr=165.204.15.93,vers=3,proto=udp,mountvers=3,mountproto=udp,mountport=39332'
-lemmy:/data/repos on /data/lemmy type nfs (rw)
-
-When I unmount and try to mount it again without -v I still get the
-error message and the mount fails.
-
-With 3.4 the mount -v output is:
-
-mount: no type was given - I'll assume nfs because of the colon
-mount.nfs: timeout set for Thu Jun  7 17:19:44 2012
-mount.nfs: text-based options: 'addr=165.204.15.93'
-lemmy:/data/repos/ on /data/lemmy type nfs (rw)
-
-So for some reason the text-based options are different. Maybe that has
-something to do with the problem.
-
-Regards,
-
-	Joerg
-
-
+That's unfortunate -- it means a kernel change breaks working userspace?
