@@ -1,68 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760709Ab2FGK6e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 06:58:34 -0400
-Received: from slimlogic.co.uk ([89.16.172.20]:47507 "EHLO slimlogic.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755664Ab2FGK6d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 06:58:33 -0400
-Message-ID: <4FD08957.5080901@slimlogic.co.uk>
-Date: Thu, 07 Jun 2012 11:58:31 +0100
-From: Graeme Gregory <gg@slimlogic.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S932244Ab2FGLAp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 07:00:45 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:56366 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755664Ab2FGLAo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 07:00:44 -0400
 MIME-Version: 1.0
-To: Axel Lin <axel.lin@gmail.com>
-CC: linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH RFC/RFT] regulator: palmas: Clear PALMAS_SMPS12_CTRL_MODE_ACTIVE_MASK
- bits in palmas_set_mode_smps
-References: <1339060101.5274.5.camel@phoenix>
-In-Reply-To: <1339060101.5274.5.camel@phoenix>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1338656677-3979-1-git-send-email-devendra.aaru@gmail.com>
+References: <1338656677-3979-1-git-send-email-devendra.aaru@gmail.com>
+Date: Thu, 7 Jun 2012 13:00:43 +0200
+Message-ID: <CACRpkdZDvAGcfRuE76YiNwfOoLt77Cr97hf+uWf9VMkERKCp-A@mail.gmail.com>
+Subject: Re: [PATCH 2/2] pinctrl: free if of_get_parent fails to get the
+ parent node
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Devendra Naga <devendra.aaru@gmail.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Dong Aisheng <dong.aisheng@linaro.org>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-That looks like a C&P error on my part.
+On Sat, Jun 2, 2012 at 7:04 PM, Devendra Naga <devendra.aaru@gmail.com> wrote:
 
-Thanks for noticing.
-
-Acked-by: Graeme Gregory <gg@slimlogic.co.uk>
-
-On 07/06/12 10:08, Axel Lin wrote:
-> Current code actually clears more bits than PALMAS_SMPS12_CTRL_MODE_ACTIVE_MASK bits.
+> of_get_parent can return null if no parent node found, so the allocated new_map
+> should be freed.
 >
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
 > ---
-> Hi Graeme,
->
-> I'm wandering if we need to clear the status bits.
-> Current code actually clears bit[7:4] and bit[1:0] and set bit[7:6] to bit[3:2].
-> Looks like we only need to clear PALMAS_SMPS12_CTRL_MODE_ACTIVE_MASK bit[1:0] bits here.
-> and this change makes the intent more clear.
->
-> I don't have this hardware,
-> I'd appreciate if you can test this patch if you think this change ok.
->
-> Regards,
-> Axel
->  drivers/regulator/palmas-regulator.c |    3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
->
-> diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
-> index 92f475c..ae0951a 100644
-> --- a/drivers/regulator/palmas-regulator.c
-> +++ b/drivers/regulator/palmas-regulator.c
-> @@ -257,8 +257,7 @@ static int palmas_set_mode_smps(struct regulator_dev *dev, unsigned int mode)
->  	unsigned int reg;
->  
->  	palmas_smps_read(pmic->palmas, palmas_regs_info[id].ctrl_addr, &reg);
-> -	reg &= ~PALMAS_SMPS12_CTRL_STATUS_MASK;
-> -	reg >>= PALMAS_SMPS12_CTRL_STATUS_SHIFT;
-> +	reg &= ~PALMAS_SMPS12_CTRL_MODE_ACTIVE_MASK;
->  
->  	switch (mode) {
->  	case REGULATOR_MODE_NORMAL:
+>  drivers/pinctrl/pinctrl-imx.c |    4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
 
+Shawn/Dong can you ACK/NACK this patch so I can apply it to
+pinctrl? Alternatively you can push it through the i.MX tree if
+need be, Acked-by: Linus Walleij <linus.walleij@linaro.org>
+
+Yours,
+Linus Walleij
