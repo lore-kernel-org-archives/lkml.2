@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932793Ab2FGETq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 00:19:46 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:59627 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932768Ab2FGETn (ORCPT
+	id S932814Ab2FGETw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 00:19:52 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63306 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932795Ab2FGETs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 00:19:43 -0400
-Message-Id: <20120607040343.713385544@linuxfoundation.org>
+	Thu, 7 Jun 2012 00:19:48 -0400
+Message-Id: <20120607040344.597358152@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 07 Jun 2012 13:04:27 +0900
+Date: Thu, 07 Jun 2012 13:04:33 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Thomas Hellstrom <thellstrom@vmware.com>,
-        Jakob Bornecrantz <jakob@vmware.com>, Dave Airlie <airlied@redhat.com>
-Subject: [ 51/82] drm/ttm: Fix spinlock imbalance
+        alan@lxorguk.ukuu.org.uk, Felix Fietkau <nbd@openwrt.org>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 57/82] skb: avoid unnecessary reallocations in __skb_cow
 In-Reply-To: <20120607041406.GA13233@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,31 +26,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Hellstrom <thellstrom@vmware.com>
 
-commit a8ff3ee211fccf708e1911bbc096625453ebf759 upstream.
+From: Felix Fietkau <nbd@openwrt.org>
 
-This imbalance may cause hangs when TTM is trying to swap out a buffer
-that is already on the delayed delete list.
+[ Upstream commit 617c8c11236716dcbda877e764b7bf37c6fd8063 ]
 
-Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
-Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+At the beginning of __skb_cow, headroom gets set to a minimum of
+NET_SKB_PAD. This causes unnecessary reallocations if the buffer was not
+cloned and the headroom is just below NET_SKB_PAD, but still more than the
+amount requested by the caller.
+This was showing up frequently in my tests on VLAN tx, where
+vlan_insert_tag calls skb_cow_head(skb, VLAN_HLEN).
+
+Locally generated packets should have enough headroom, and for forward
+paths, we already have NET_SKB_PAD bytes of headroom, so we don't need to
+add any extra space here.
+
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/gpu/drm/ttm/ttm_bo.c |    1 +
- 1 file changed, 1 insertion(+)
+ include/linux/skbuff.h |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/drivers/gpu/drm/ttm/ttm_bo.c
-+++ b/drivers/gpu/drm/ttm/ttm_bo.c
-@@ -1821,6 +1821,7 @@ static int ttm_bo_swapout(struct ttm_mem
- 			spin_unlock(&glob->lru_lock);
- 			(void) ttm_bo_cleanup_refs(bo, false, false, false);
- 			kref_put(&bo->list_kref, ttm_bo_release_list);
-+			spin_lock(&glob->lru_lock);
- 			continue;
- 		}
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -1881,8 +1881,6 @@ static inline int __skb_cow(struct sk_bu
+ {
+ 	int delta = 0;
+ 
+-	if (headroom < NET_SKB_PAD)
+-		headroom = NET_SKB_PAD;
+ 	if (headroom > skb_headroom(skb))
+ 		delta = headroom - skb_headroom(skb);
  
 
 
