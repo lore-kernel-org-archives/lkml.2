@@ -1,40 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932400Ab2FGRBn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 13:01:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46017 "EHLO mx1.redhat.com"
+	id S932409Ab2FGRCN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 13:02:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56641 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932289Ab2FGRBl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 13:01:41 -0400
-Date: Thu, 7 Jun 2012 18:59:42 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 0/3] uprobes fixes for 3.5
-Message-ID: <20120607165942.GA31966@redhat.com>
+	id S1754592Ab2FGRCK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 13:02:10 -0400
+From: Alex Williamson <alex.williamson@redhat.com>
+Subject: [PATCH v2] PCI: Add Ralink RT2800 broken INTx masking quirk
+To: bhelgaas@google.com, linux-pci@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, jan.kiszka@siemens.com,
+        andihartmann@01019freenet.de
+Date: Thu, 07 Jun 2012 11:01:59 -0600
+Message-ID: <20120607170026.3174.52434.stgit@bling.home>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Passes pci_intx_mask_supported test but continues to send interrupts
+as discovered through VFIO-based device assignment.
 
-This doesn't depend on other uprobes patches I sent, and I think
-this is 3.5 material. However, please remember I do not understand
-vm, iow please review.
+http://www.spinics.net/lists/kvm/msg73738.html
 
-write_opcode() becomes really ugly after 3/3, I'll try to cleanup
-it later. In fact I think it needs some cleanups even without this
-fix.
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Tested-by: Andreas Hartmann <andihartmann@01019freenet.de>
+---
 
-Oleg.
+v2: context-only respin for Jan's v2 patch
+
+Depends on Jan's patch:
+http://www.spinics.net/lists/linux-pci/msg15720.html
+
+ drivers/pci/quirks.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+index 87b9edd..3681678 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -2940,6 +2940,8 @@ static void __devinit quirk_broken_intx_masking(struct pci_dev *dev)
+ }
+ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_CHELSIO, 0x0030,
+ 			quirk_broken_intx_masking);
++DECLARE_PCI_FIXUP_FINAL(0x1814, 0x0601, /* Ralink RT2800 802.11n PCI */
++			quirk_broken_intx_masking);
+ 
+ static void pci_do_fixups(struct pci_dev *dev, struct pci_fixup *f,
+ 			  struct pci_fixup *end)
 
