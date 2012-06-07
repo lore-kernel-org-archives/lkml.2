@@ -1,119 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760234Ab2FGNQt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 09:16:49 -0400
-Received: from mail.windriver.com ([147.11.1.11]:57035 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759597Ab2FGNQs (ORCPT
+	id S1759578Ab2FGNSQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 09:18:16 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:59292 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756093Ab2FGNSP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 09:16:48 -0400
-Message-ID: <4FD0A9B9.3050608@windriver.com>
-Date: Thu, 7 Jun 2012 09:16:41 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
+	Thu, 7 Jun 2012 09:18:15 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Masami Hiramatsu <mhiramat@redhat.com>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] Use test_and_clear_bit() instead atomic_dec_and_test() for stop_machine
+References: <87likkt7u6.fsf@devron.myhome.or.jp>
+	<87ehqct7a3.fsf@devron.myhome.or.jp>
+	<20120522214633.GB30024@home.goodmis.org>
+	<87aa0zty4r.fsf@devron.myhome.or.jp>
+	<87mx4zr0l9.fsf@devron.myhome.or.jp>
+	<1339073661.7559.1.camel@gandalf.stny.rr.com>
+Date: Thu, 07 Jun 2012 22:18:08 +0900
+In-Reply-To: <1339073661.7559.1.camel@gandalf.stny.rr.com> (Steven Rostedt's
+	message of "Thu, 07 Jun 2012 08:54:21 -0400")
+Message-ID: <877gvji7lb.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1.50 (gnu/linux)
 MIME-Version: 1.0
-To: <daniel.santos@pobox.com>
-CC: Daniel Santos <danielfsantos@att.net>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv3 1/6] [RFC] compiler{,-gcc4}.h: Remove duplicate macro
- & cleanup
-References: <4FD070F9.3060709@att.net>
-In-Reply-To: <4FD070F9.3060709@att.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12-06-07 05:14 AM, Daniel Santos wrote:
-> __linktime_error() does the same thing as __compiletime_error() and is
-> only used in bug.h.  Since the macro defines a function attribute that
-> will cause a failure at compile-time (not link-time), it makes more
-> sense to keep __compiletime_error(), which is also neatly mated with
-> __compiletime_warning().
-> 
-> However, gcc version check for __compiletime_error() prevented its use
-> one minor version after it was availble (4.4 instead of 4.3). So to fix
-> this and clean things up a bit, I've moved it in with other macros
-> defined for 4.3 and later.
+Steven Rostedt <rostedt@goodmis.org> writes:
 
-When you find yourself making lists of changes like this, it is good
-to consider instead breaking it up into separate logical changes for
-ease of review and integration -- i.e. if the compiletime_error was
-incorrectly limited to 4.4+ instead of 4.3+ then make that as a commit.
+> On Wed, 2012-05-23 at 13:19 +0900, OGAWA Hirofumi wrote:
+>> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp> writes:
+>> 
+>> >> The down side to this is that it adds 4 more bytes on a 64bit
+>> >> machine. (sizeof(unsigned log) == 8 and sizeof(atomic_t) == 4)
+>> 
+>> Another patch without additional 4bytes. This simply change
+>> atomic_dec_and_test() to atomic_xchg().
+>> 
+>
+> If nobody picked this up, you might want to resend it with my acked-by.
+> (The second patch, not the first). As patches added to replies are
+> usually ignored.
 
-Also, your removal of linktime error from compiler.h probably breaks
-anyone who might still be trying to use gcc-3.x (I don't know without
-looking, which arch still support it).
-
-Finally, you should expand your cc list to include folks like Andrew,
-Rusty, Ingo, Andi, etc. to get more (and likely better quality) review
-comments.
-
-P.
---
- 
-> 
-> Finally, I moved __compiletime_object_size() towards the top of the file
-> so that all macros are defined in order of the gcc version they appear
-> in.
-> 
-> Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
-> ---
->  include/linux/compiler-gcc4.h |   21 ++++++++++-----------
->  include/linux/compiler.h      |    3 ---
->  2 files changed, 10 insertions(+), 14 deletions(-)
-> 
-> diff --git a/include/linux/compiler-gcc4.h b/include/linux/compiler-gcc4.h
-> index 2f40791..77be10c 100644
-> --- a/include/linux/compiler-gcc4.h
-> +++ b/include/linux/compiler-gcc4.h
-> @@ -13,6 +13,10 @@
->  #define __must_check 		__attribute__((warn_unused_result))
->  #define __compiler_offsetof(a,b) __builtin_offsetof(a,b)
->  +#if __GNUC_MINOR__ >= 1
-> +#define __compiletime_object_size(obj) __builtin_object_size(obj, 0)
-> +#endif /* __GNUC_MINOR__ >= 1 */
-> +
->  #if __GNUC_MINOR__ >= 3
->  /* Mark functions as cold. gcc will assume any path leading to a call
->     to them will be unlikely.  This means a lot of manual unlikely()s
-> @@ -29,7 +33,11 @@
->     the kernel context */
->  #define __cold			__attribute__((__cold__))
->  -#define __linktime_error(message) __attribute__((__error__(message)))
-> +#if !defined(__CHECKER__)
-> +#define __compiletime_warning(message) __attribute__((warning(message)))
-> +#define __compiletime_error(message) __attribute__((error(message)))
-> +#endif /* !defined(__CHECKER__) */
-> +#endif /* __GNUC_MINOR__ >= 3 */
->   #if __GNUC_MINOR__ >= 5
->  /*
-> @@ -45,14 +53,5 @@
->   /* Mark a function definition as prohibited from being cloned. */
->  #define __noclone	__attribute__((__noclone__))
-> +#endif /* __GNUC_MINOR__ >= 5 */
->  -#endif
-> -#endif
-> -
-> -#if __GNUC_MINOR__ > 0
-> -#define __compiletime_object_size(obj) __builtin_object_size(obj, 0)
-> -#endif
-> -#if __GNUC_MINOR__ >= 4 && !defined(__CHECKER__)
-> -#define __compiletime_warning(message) __attribute__((warning(message)))
-> -#define __compiletime_error(message) __attribute__((error(message)))
-> -#endif
-> diff --git a/include/linux/compiler.h b/include/linux/compiler.h
-> index 923d093..4d9f353 100644
-> --- a/include/linux/compiler.h
-> +++ b/include/linux/compiler.h
-> @@ -293,9 +293,6 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
->  #ifndef __compiletime_error
->  # define __compiletime_error(message)
->  #endif
-> -#ifndef __linktime_error
-> -# define __linktime_error(message)
-> -#endif
->  /*
->   * Prevent the compiler from merging or refetching accesses.  The compiler
->   * is also forbidden from reordering successive instances of ACCESS_ONCE(),
+Thanks. I was going to add that to my personal patchset, I will try it again.
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
