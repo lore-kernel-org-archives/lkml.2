@@ -1,90 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757904Ab2FGAlP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 20:41:15 -0400
-Received: from mga09.intel.com ([134.134.136.24]:8750 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756858Ab2FGAlM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 20:41:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="asc'?scan'208";a="153951916"
-Message-ID: <1339029671.10602.81.camel@jtkirshe-mobl>
-Subject: Re: [E1000-devel] [next-net PATCH]
- drivers/net/ethernet/intel/e1000e: fix unregistered net_device ethX name
- output by e1000e
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Reply-To: jeffrey.t.kirsher@intel.com
-To: Ethan Zhao <ethan.kernel@gmail.com>
-Cc: eric.dumazet@gmail.com, linux.nics@intel.com,
-        e1000-devel@lists.sourceforge.net, LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 06 Jun 2012 17:41:11 -0700
-In-Reply-To: <CABawtvNv7LwT_awXscXGEid-1wes-+ZELc7YMLZqyo2h=h98UA@mail.gmail.com>
-References: <CABawtvNv7LwT_awXscXGEid-1wes-+ZELc7YMLZqyo2h=h98UA@mail.gmail.com>
-Organization: Intel Corporation
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-YXBi4oF6dToZVndGR90t"
-X-Mailer: Evolution 3.4.1 (3.4.1-2.fc17) 
-Mime-Version: 1.0
+	id S1756906Ab2FGAm6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 20:42:58 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:62467 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752619Ab2FGAm4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 20:42:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120607002914.GB22223@redhat.com>
+References: <20120603223617.GB7707@redhat.com> <CA+55aFwCusEdMq3_3TAXSZ=+kbN7H6AbnngVaagAZw=ZpicckQ@mail.gmail.com>
+ <20120603231709.GP30000@ZenIV.linux.org.uk> <20120603232820.GQ30000@ZenIV.linux.org.uk>
+ <20120606194233.GA1537@redhat.com> <CA+55aFwxFVLPk4-dp73uccKXepKwjpGFgh0NW1u8d0zYzr=hBA@mail.gmail.com>
+ <20120606230040.GA18089@redhat.com> <CA+55aFx_oREEd2XS_aG7PJ7dwzWjgx689V_uRPGWpVS01_++6A@mail.gmail.com>
+ <20120606235403.GC30000@ZenIV.linux.org.uk> <20120607002914.GB22223@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 6 Jun 2012 17:42:35 -0700
+X-Google-Sender-Auth: T-rqomf7mkJrGTm94kXvLjgRy_Q
+Message-ID: <CA+55aFyp2GUbc218eb5BDyAqz+cOPTJMVcb4ptk+f1_RBB+-mg@mail.gmail.com>
+Subject: Re: processes hung after sys_renameat, and 'missing' processes
+To: Dave Jones <davej@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Miklos Szeredi <mszeredi@suse.cz>, Jan Kara <jack@suse.cz>,
+        Peter Zijlstra <peterz@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jun 6, 2012 at 5:29 PM, Dave Jones <davej@redhat.com> wrote:
+>
+> Like this ?
 
---=-YXBi4oF6dToZVndGR90t
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+No.
 
-On Wed, 2012-06-06 at 22:57 +0800, Ethan Zhao wrote:
-> commit ca3ccc6835943287b6f69e973c126a02bc4de409
-> Author: ethan.zhao <ethan.kernel@gmail.com>
-> Date:   Wed Jun 6 07:32:11 2012 -0700
->=20
->         modified:   drivers/net/ethernet/intel/e1000e/param.c
->=20
->     While e1000e_check_options() is called, netdev is not registered,
-> so the
->     e1000e driver will print out confused ethernet interface name
-> (unregistered net_device) :
->=20
->     e1000e 0000:04:00.0:(unregistered net_device): Interrupt
-> Throttling Rate (ints/sec) set to dynamic conservative mode
->=20
->     So change e_info() back to dev_printk() by simply redefine the
-> e_info macro used by
->     e1000e_check_options() and e1000_validate_option
->=20
->     after applied this patch, we got:
->=20
->     e1000e 0000:04:00.0: Interrupt Throttling Rate (ints/sec) set to
-> dynamic conservative mode
->     e1000e 0000:04:00.0: irq 95 for MSI/MSI-X=20
+>  void d_move(struct dentry *dentry, struct dentry *target)
+>  {
+>        write_seqlock(&rename_lock);
+> +
+> +       BUG_ON(!spin_is_locked(&target->d_parent->d_lock));
+> +
+> +       if (dentry->d_parent != NULL)
+> +               BUG_ON(!spin_is_locked(&dentry->d_parent->d_lock));
 
-NACK, I currently have a patch in my queue from Bruce Allan to resolve
-this issue.  I should be pushing the patch upstream in a few days.
+It's true that the d_lock needs to be held too, but we actually do
+that in __d_move() (which calls dentry_lock_for_move), so the callers
+don't have to worry about that part.
 
---=-YXBi4oF6dToZVndGR90t
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+So Al meant you to test mutex_is_locked(dentry->d_inode->i_mutex) of
+the parents.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+And I'd suggest making it just a WARN_ON_ONCE(), because if you make
+it a BUG_ON() and it triggers, your system will likely be dead. And
+ONCE is all that matters - it should never happen.
 
-iQIcBAABCgAGBQJPz/inAAoJEOVv75VaS+3OldUP/3+hmOqKahHcY8b1TuuoDUCp
-kN73G1R7F4zFm+Y1+3zV2uwxMlRW/7W+eOEWF+icTrUnrjypIpX1XAhsWfpibbwV
-E3r5vPI/ZJyPK9RD8IW4yRabfdmOq+FuMI7TynnEJECb9FuPuzBia44i52rXDgig
-qrthBXaspAVVVj47CzIDPqP18omB7q3F12mk5fCAG8lVcLpA8JGpE0vfsUk+HC9U
-Aj+96olKx3o323l84OdJdcZWJlRlnbsmTYwXqtRqga3hwjcP+uPBtilmO5TcbbCj
-SQ2Lb8v5xfMK9WtQIVI0ZKqK8N0PS2qXue6UUHeQQ2nKjaFQLC8KhOd42VDvsh97
-e8D2IGMh5zWGZq4HiFncE+P1DijrQQht05wYXxebAaSn+9IHjgtaHKLVdL1CR2vA
-s4+m9hvdZENzeiivshJhteZnmZunyw+5It5xBwYFxESt2Tnl+5z737TmqrpyLS2f
-ptbcpgtVbIlt8r9NSaL3Jn8JLl3wRSR/1E4qefYg7f8N+fri3V9Q3ugfhZDhDl/O
-3gptslNycE2m1mocb57C8SqpBWvg/JEfBZiKCvStATFR+IJNKLHLnMTzxVdQYHpj
-SX36AyTdjRgrRQeZI1e/c5PMhdE5XxYG85drB3sTkrq+p2Vve3/9Qafnxpbw2o6Y
-KwMOk6PRixd+c3tcl6JL
-=D+Jc
------END PGP SIGNATURE-----
+> To be clear, do you want me to try that with or without the reverts ?
 
---=-YXBi4oF6dToZVndGR90t--
+I think either would be interesting. *If* that d_move() from
+d_splice_alias ever triggers, that would be an interesting backtrace
+to see too.
 
+Of course, if that d_splice_alias change is the cause of this, then
+with those two commits reverted you'd not be able to reproduce the
+problem, which would also be interesting to know, so either way it
+would be good information.
+
+               Linus
