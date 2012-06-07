@@ -1,90 +1,300 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759486Ab2FGC0r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 22:26:47 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7221 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756870Ab2FGC0q (ORCPT
+	id S1759361Ab2FGCbJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 22:31:09 -0400
+Received: from nm16.access.bullet.mail.mud.yahoo.com ([66.94.237.217]:46074
+	"HELO nm16.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754294Ab2FGCbH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 22:26:46 -0400
-X-Authority-Analysis: v=2.0 cv=D8PF24tj c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=9um5mg54tOgA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=X-l27-cIecZVniD6ERYA:9 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1339036003.13348.560.camel@gandalf.stny.rr.com>
-Subject: [PATCH][GIT PULL][3.5] tracing: Have tracing_off() actually turn
- tracing off (and not on!)
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>, stable <stable@vger.kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>
-Date: Wed, 06 Jun 2012 22:26:43 -0400
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
+	Wed, 6 Jun 2012 22:31:07 -0400
+X-Yahoo-Newman-Id: 194432.94204.bm@smtp108.biz.mail.ne1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 80agBtEVM1kg_3rbdvhCoKFR0ln32fja_WZ3_VjNKbWEfKv
+ 84HSiVs_TwPJaMYtheegZAGyWwDbNfQ7lqOMLSV5fNmbxpKIQymYzKf76HWS
+ Jol1jdwJPByaSCji8_vRIN1JoBRRkJkfP7_qOKU_tb6PAqKZ6k7K3NubiDMO
+ m5a.661lfhPLunL5tTuQWOpo6sWZWA4utr.XXuMbU7ZWp5NBeejCg4nZmliG
+ .IXytAXvZMbmfoDZLgMH2ga8BlKpxB.3YB0thJwdXR78SFu1SFu3rdbfwjRu
+ Ya2Ke5YlnUq0Ng3tX9SnS5lwAnh5JGHYiCLOw6lBxBQOPCjmfW0Jy4Gtjz7T
+ kZx_hhWCiW7_WQPTreS3YuAnHlkBx36ZRAJJLkMY9dJPP7G.d6EFVhElGib2
+ BYSW3VQLzmi6Yo3me0yCDmQx7nzKNdlF8pSthi4xEK9wcbgDTx_HbCkpJrXJ
+ luBmsHavQMZ2gFJtcI5nTN1Y5S.TGLPLccntOhV6ZvJEj05mjPjVwclJdLOH
+ E150dK0rstJs0NRVOdxow6IpHhf2unqMDuyXAfiMdGP45GhS5J0U-
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+Message-ID: <4FD0126A.4060605@schaufler-ca.com>
+Date: Wed, 06 Jun 2012 19:31:06 -0700
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Casey Schaufler <casey@schaufler-ca.com>
+CC: LKLM <linux-kernel@vger.kernel.org>,
+        LSM <linux-security-module@vger.kernel.org>
+Subject: Re: [PATCH] Smack: onlycap limits on CAP_MAC_ADMIN
+References: <4FCE880E.3020809@schaufler-ca.com>
+In-Reply-To: <4FCE880E.3020809@schaufler-ca.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 6/5/2012 3:28 PM, Casey Schaufler wrote:
+> From: Casey Schaufler <casey@schaufler-ca.com>
+> Subject: [PATCH] Smack: onlycap limits on CAP_MAC_ADMIN
+>
+> Smack is integrated with the POSIX capabilities scheme,
+> using the capabilities CAP_MAC_OVERRIDE and CAP_MAC_ADMIN to
+> determine if a process is allowed to ignore Smack checks or
+> change Smack related data respectively. Smack provides an
+> additional restriction that if an onlycap value is set
+> by writing to /smack/onlycap only tasks with that Smack
+> label are allowed to use CAP_MAC_OVERRIDE.
+>
+> This change adds CAP_MAC_ADMIN as a capability that is affected
+> by the onlycap mechanism. 
+>
+> Targeted for git://git.gitorious.org/smack-next/kernel.git
+>
+> Signed-off-by: Casey Schaufler <casey@schaufler-ca.com>
 
-Ingo,
+Applied to git://git.gitorious.org/smack-next/kernel.git
 
-This was one of those "oh crap" moments. I was adding a feature request
-by Arnaldo, and found that tracing_off() wasn't working. This is
-something I know Thomas and Peter use often and I'm lucky that I found
-it before I had to go dig another dead frozen shark out of my rafters.
-
-It was a silly cut and paste bug from a previous change (that happened
-to make it into 3.4).
-
-
-Please pull the latest tip/perf/urgent tree, which can be found at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-tip/perf/urgent
-
-Head SHA1: f2bf1f6f5f89d031245067512449fc889b2f4bb2
-
-
-Steven Rostedt (1):
-      tracing: Have tracing_off() actually turn tracing off
-
-----
- kernel/trace/trace.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
----------------------------
-commit f2bf1f6f5f89d031245067512449fc889b2f4bb2
-Author: Steven Rostedt <srostedt@redhat.com>
-Date:   Wed Jun 6 19:50:40 2012 -0400
-
-    tracing: Have tracing_off() actually turn tracing off
-    
-    A recent update to have tracing_on/off() only affect the ftrace ring
-    buffers instead of all ring buffers had a cut and paste error.
-    The tracing_off() did the exact same thing as tracing_on() and
-    would not actually turn off tracing. Unfortunately, tracing_off()
-    is more important to be working than tracing_on() as this is a key
-    development tool, as it lets the developer turn off tracing as soon
-    as a problem is discovered. It is also used by panic and oops code.
-    
-    This bug also breaks the 'echo func:traceoff > set_ftrace_filter'
-    
-    Cc: <stable@vger.kernel.org> # 3.4
-    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 68032c6..49249c2 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -371,7 +371,7 @@ EXPORT_SYMBOL_GPL(tracing_on);
- void tracing_off(void)
- {
- 	if (global_trace.buffer)
--		ring_buffer_record_on(global_trace.buffer);
-+		ring_buffer_record_off(global_trace.buffer);
- 	/*
- 	 * This flag is only looked at when buffers haven't been
- 	 * allocated yet. We don't really care about the race
-
+>
+> ---
+>  security/smack/smack.h        |   13 +++++++++++++
+>  security/smack/smack_access.c |    9 ++-------
+>  security/smack/smack_lsm.c    |   17 +++++++++--------
+>  security/smack/smackfs.c      |   21 ++++++++++-----------
+>  4 files changed, 34 insertions(+), 26 deletions(-)
+>
+> diff --git a/security/smack/smack.h b/security/smack/smack.h
+> index 76feb31..99b3612 100644
+> --- a/security/smack/smack.h
+> +++ b/security/smack/smack.h
+> @@ -283,6 +283,19 @@ static inline char *smk_of_current(void)
+>  }
+>  
+>  /*
+> + * Is the task privileged and allowed to be privileged
+> + * by the onlycap rule.
+> + */
+> +static inline int smack_privileged(int cap)
+> +{
+> +	if (!capable(cap))
+> +		return 0;
+> +	if (smack_onlycap == NULL || smack_onlycap == smk_of_current())
+> +		return 1;
+> +	return 0;
+> +}
+> +
+> +/*
+>   * logging functions
+>   */
+>  #define SMACK_AUDIT_DENIED 0x1
+> diff --git a/security/smack/smack_access.c b/security/smack/smack_access.c
+> index 9f3705e..db14689 100644
+> --- a/security/smack/smack_access.c
+> +++ b/security/smack/smack_access.c
+> @@ -220,14 +220,9 @@ int smk_curacc(char *obj_label, u32 mode, struct smk_audit_info *a)
+>  	}
+>  
+>  	/*
+> -	 * Return if a specific label has been designated as the
+> -	 * only one that gets privilege and current does not
+> -	 * have that label.
+> +	 * Allow for priviliged to override policy.
+>  	 */
+> -	if (smack_onlycap != NULL && smack_onlycap != sp)
+> -		goto out_audit;
+> -
+> -	if (capable(CAP_MAC_OVERRIDE))
+> +	if (rc != 0 && smack_privileged(CAP_MAC_OVERRIDE))
+>  		rc = 0;
+>  
+>  out_audit:
+> diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
+> index 5a4d52c..99a457a 100644
+> --- a/security/smack/smack_lsm.c
+> +++ b/security/smack/smack_lsm.c
+> @@ -217,7 +217,7 @@ static int smack_syslog(int typefrom_file)
+>  	int rc = 0;
+>  	char *sp = smk_of_current();
+>  
+> -	if (capable(CAP_MAC_OVERRIDE))
+> +	if (smack_privileged(CAP_MAC_OVERRIDE))
+>  		return 0;
+>  
+>  	 if (sp != smack_known_floor.smk_known)
+> @@ -821,7 +821,7 @@ static int smack_inode_setxattr(struct dentry *dentry, const char *name,
+>  	    strcmp(name, XATTR_NAME_SMACKIPOUT) == 0 ||
+>  	    strcmp(name, XATTR_NAME_SMACKEXEC) == 0 ||
+>  	    strcmp(name, XATTR_NAME_SMACKMMAP) == 0) {
+> -		if (!capable(CAP_MAC_ADMIN))
+> +		if (!smack_privileged(CAP_MAC_ADMIN))
+>  			rc = -EPERM;
+>  		/*
+>  		 * check label validity here so import wont fail on
+> @@ -831,7 +831,7 @@ static int smack_inode_setxattr(struct dentry *dentry, const char *name,
+>  		    smk_import(value, size) == NULL)
+>  			rc = -EINVAL;
+>  	} else if (strcmp(name, XATTR_NAME_SMACKTRANSMUTE) == 0) {
+> -		if (!capable(CAP_MAC_ADMIN))
+> +		if (!smack_privileged(CAP_MAC_ADMIN))
+>  			rc = -EPERM;
+>  		if (size != TRANS_TRUE_SIZE ||
+>  		    strncmp(value, TRANS_TRUE, TRANS_TRUE_SIZE) != 0)
+> @@ -927,7 +927,7 @@ static int smack_inode_removexattr(struct dentry *dentry, const char *name)
+>  	    strcmp(name, XATTR_NAME_SMACKEXEC) == 0 ||
+>  	    strcmp(name, XATTR_NAME_SMACKTRANSMUTE) == 0 ||
+>  	    strcmp(name, XATTR_NAME_SMACKMMAP)) {
+> -		if (!capable(CAP_MAC_ADMIN))
+> +		if (!smack_privileged(CAP_MAC_ADMIN))
+>  			rc = -EPERM;
+>  	} else
+>  		rc = cap_inode_removexattr(dentry, name);
+> @@ -1722,7 +1722,8 @@ static int smack_task_wait(struct task_struct *p)
+>  	 * state into account in the decision as well as
+>  	 * the smack value.
+>  	 */
+> -	if (capable(CAP_MAC_OVERRIDE) || has_capability(p, CAP_MAC_OVERRIDE))
+> +	if (smack_privileged(CAP_MAC_OVERRIDE) ||
+> +	    has_capability(p, CAP_MAC_OVERRIDE))
+>  		rc = 0;
+>  	/* we log only if we didn't get overriden */
+>   out_log:
+> @@ -2723,7 +2724,7 @@ static int smack_setprocattr(struct task_struct *p, char *name,
+>  	if (p != current)
+>  		return -EPERM;
+>  
+> -	if (!capable(CAP_MAC_ADMIN))
+> +	if (!smack_privileged(CAP_MAC_ADMIN))
+>  		return -EPERM;
+>  
+>  	if (value == NULL || size == 0 || size >= SMK_LONGLABEL)
+> @@ -2786,7 +2787,7 @@ static int smack_unix_stream_connect(struct sock *sock,
+>  	smk_ad_setfield_u_net_sk(&ad, other);
+>  #endif
+>  
+> -	if (!capable(CAP_MAC_OVERRIDE))
+> +	if (!smack_privileged(CAP_MAC_OVERRIDE))
+>  		rc = smk_access(ssp->smk_out, osp->smk_in, MAY_WRITE, &ad);
+>  
+>  	/*
+> @@ -2822,7 +2823,7 @@ static int smack_unix_may_send(struct socket *sock, struct socket *other)
+>  	smk_ad_setfield_u_net_sk(&ad, other->sk);
+>  #endif
+>  
+> -	if (!capable(CAP_MAC_OVERRIDE))
+> +	if (!smack_privileged(CAP_MAC_OVERRIDE))
+>  		rc = smk_access(ssp->smk_out, osp->smk_in, MAY_WRITE, &ad);
+>  
+>  	return rc;
+> diff --git a/security/smack/smackfs.c b/security/smack/smackfs.c
+> index 3686db7..2152965 100644
+> --- a/security/smack/smackfs.c
+> +++ b/security/smack/smackfs.c
+> @@ -595,13 +595,12 @@ static int smk_open_load(struct inode *inode, struct file *file)
+>  static ssize_t smk_write_load(struct file *file, const char __user *buf,
+>  			      size_t count, loff_t *ppos)
+>  {
+> -
+>  	/*
+>  	 * Must have privilege.
+>  	 * No partial writes.
+>  	 * Enough data must be present.
+>  	 */
+> -	if (!capable(CAP_MAC_ADMIN))
+> +	if (!smack_privileged(CAP_MAC_ADMIN))
+>  		return -EPERM;
+>  
+>  	return smk_write_rules_list(file, buf, count, ppos, NULL, NULL,
+> @@ -787,7 +786,7 @@ static ssize_t smk_set_cipso(struct file *file, const char __user *buf,
+>  	 * No partial writes.
+>  	 * Enough data must be present.
+>  	 */
+> -	if (!capable(CAP_MAC_ADMIN))
+> +	if (!smack_privileged(CAP_MAC_ADMIN))
+>  		return -EPERM;
+>  	if (*ppos != 0)
+>  		return -EINVAL;
+> @@ -1090,7 +1089,7 @@ static ssize_t smk_write_netlbladdr(struct file *file, const char __user *buf,
+>  	 * "<addr/mask, as a.b.c.d/e><space><label>"
+>  	 * "<addr, as a.b.c.d><space><label>"
+>  	 */
+> -	if (!capable(CAP_MAC_ADMIN))
+> +	if (!smack_privileged(CAP_MAC_ADMIN))
+>  		return -EPERM;
+>  	if (*ppos != 0)
+>  		return -EINVAL;
+> @@ -1267,7 +1266,7 @@ static ssize_t smk_write_doi(struct file *file, const char __user *buf,
+>  	char temp[80];
+>  	int i;
+>  
+> -	if (!capable(CAP_MAC_ADMIN))
+> +	if (!smack_privileged(CAP_MAC_ADMIN))
+>  		return -EPERM;
+>  
+>  	if (count >= sizeof(temp) || count == 0)
+> @@ -1334,7 +1333,7 @@ static ssize_t smk_write_direct(struct file *file, const char __user *buf,
+>  	char temp[80];
+>  	int i;
+>  
+> -	if (!capable(CAP_MAC_ADMIN))
+> +	if (!smack_privileged(CAP_MAC_ADMIN))
+>  		return -EPERM;
+>  
+>  	if (count >= sizeof(temp) || count == 0)
+> @@ -1412,7 +1411,7 @@ static ssize_t smk_write_mapped(struct file *file, const char __user *buf,
+>  	char temp[80];
+>  	int i;
+>  
+> -	if (!capable(CAP_MAC_ADMIN))
+> +	if (!smack_privileged(CAP_MAC_ADMIN))
+>  		return -EPERM;
+>  
+>  	if (count >= sizeof(temp) || count == 0)
+> @@ -1503,7 +1502,7 @@ static ssize_t smk_write_ambient(struct file *file, const char __user *buf,
+>  	char *data;
+>  	int rc = count;
+>  
+> -	if (!capable(CAP_MAC_ADMIN))
+> +	if (!smack_privileged(CAP_MAC_ADMIN))
+>  		return -EPERM;
+>  
+>  	data = kzalloc(count + 1, GFP_KERNEL);
+> @@ -1586,7 +1585,7 @@ static ssize_t smk_write_onlycap(struct file *file, const char __user *buf,
+>  	char *sp = smk_of_task(current->cred->security);
+>  	int rc = count;
+>  
+> -	if (!capable(CAP_MAC_ADMIN))
+> +	if (!smack_privileged(CAP_MAC_ADMIN))
+>  		return -EPERM;
+>  
+>  	/*
+> @@ -1664,7 +1663,7 @@ static ssize_t smk_write_logging(struct file *file, const char __user *buf,
+>  	char temp[32];
+>  	int i;
+>  
+> -	if (!capable(CAP_MAC_ADMIN))
+> +	if (!smack_privileged(CAP_MAC_ADMIN))
+>  		return -EPERM;
+>  
+>  	if (count >= sizeof(temp) || count == 0)
+> @@ -1885,7 +1884,7 @@ static ssize_t smk_write_load2(struct file *file, const char __user *buf,
+>  	/*
+>  	 * Must have privilege.
+>  	 */
+> -	if (!capable(CAP_MAC_ADMIN))
+> +	if (!smack_privileged(CAP_MAC_ADMIN))
+>  		return -EPERM;
+>  
+>  	return smk_write_rules_list(file, buf, count, ppos, NULL, NULL,
+>  
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
