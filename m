@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760208Ab2FGIWK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 04:22:10 -0400
-Received: from www84.your-server.de ([213.133.104.84]:39296 "EHLO
+	id S1760224Ab2FGIWO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 04:22:14 -0400
+Received: from www84.your-server.de ([213.133.104.84]:39292 "EHLO
 	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758274Ab2FGIU2 (ORCPT
+	with ESMTP id S1757676Ab2FGIU1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 04:20:28 -0400
+	Thu, 7 Jun 2012 04:20:27 -0400
 From: stefani@seibold.net
 To: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org, oneukum@suse.de
 Cc: linux-usb@vger.kernel.org, Stefani Seibold <stefani@seibold.net>
-Subject: [PATCH 04/13] remove unneeded forward declaration
-Date: Thu,  7 Jun 2012 10:20:34 +0200
-Message-Id: <1339057243-10029-5-git-send-email-stefani@seibold.net>
+Subject: [PATCH 03/13] remove dead code
+Date: Thu,  7 Jun 2012 10:20:33 +0200
+Message-Id: <1339057243-10029-4-git-send-email-stefani@seibold.net>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1339057243-10029-1-git-send-email-stefani@seibold.net>
 References: <1339057243-10029-1-git-send-email-stefani@seibold.net>
@@ -23,60 +23,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stefani Seibold <stefani@seibold.net>
 
-Place the skel_draw_down() function at the rigth place to remove
-the forward declaration.
+All code which use processed_urb can be eliminated.
 
 Signed-off-by: Stefani Seibold <stefani@seibold.net>
 ---
- drivers/usb/usb-skeleton.c |   21 ++++++++++-----------
- 1 files changed, 10 insertions(+), 11 deletions(-)
+ drivers/usb/usb-skeleton.c |   12 ------------
+ 1 files changed, 0 insertions(+), 12 deletions(-)
 
 diff --git a/drivers/usb/usb-skeleton.c b/drivers/usb/usb-skeleton.c
-index 92cdfca..7fc9621 100644
+index 7385aa8..92cdfca 100644
 --- a/drivers/usb/usb-skeleton.c
 +++ b/drivers/usb/usb-skeleton.c
-@@ -67,7 +67,6 @@ struct usb_skel {
- #define to_skel_dev(d) container_of(d, struct usb_skel, kref)
- 
- static struct usb_driver skel_driver;
--static void skel_draw_down(struct usb_skel *dev);
- 
- static void skel_delete(struct kref *kref)
- {
-@@ -130,6 +129,16 @@ static int skel_release(struct inode *inode, struct file *file)
- 	return 0;
- }
- 
-+static void skel_draw_down(struct usb_skel *dev)
-+{
-+	int time;
-+
-+	time = usb_wait_anchor_empty_timeout(&dev->submitted, 1000);
-+	if (!time)
-+		usb_kill_anchored_urbs(&dev->submitted);
-+	usb_kill_urb(dev->bulk_in_urb);
-+}
-+
- static int skel_flush(struct file *file, fl_owner_t id)
- {
- 	struct usb_skel *dev = file->private_data;
-@@ -586,16 +595,6 @@ static void skel_disconnect(struct usb_interface *interface)
- 	dev_info(&interface->dev, "USB Skeleton #%d now disconnected", minor);
- }
- 
--static void skel_draw_down(struct usb_skel *dev)
--{
--	int time;
+@@ -59,7 +59,6 @@ struct usb_skel {
+ 	__u8			bulk_out_endpointAddr;	/* the address of the bulk out endpoint */
+ 	int			errors;			/* the last request tanked */
+ 	bool			ongoing_read;		/* a read is going on */
+-	bool			processed_urb;		/* indicates we haven't processed the urb */
+ 	spinlock_t		err_lock;		/* lock for errors */
+ 	struct kref		kref;
+ 	struct mutex		io_mutex;		/* synchronize I/O with disconnect */
+@@ -256,17 +255,6 @@ retry:
+ 		 * we must finish now
+ 		 */
+ 		dev->bulk_in_copied = 0;
+-		dev->processed_urb = true;
+-	}
 -
--	time = usb_wait_anchor_empty_timeout(&dev->submitted, 1000);
--	if (!time)
--		usb_kill_anchored_urbs(&dev->submitted);
--	usb_kill_urb(dev->bulk_in_urb);
--}
--
- static int skel_suspend(struct usb_interface *intf, pm_message_t message)
- {
- 	struct usb_skel *dev = usb_get_intfdata(intf);
+-	if (!dev->processed_urb) {
+-		/*
+-		 * the URB hasn't been processed
+-		 * do it now
+-		 */
+-		wait_for_completion(&dev->bulk_in_completion);
+-		dev->bulk_in_copied = 0;
+-		dev->processed_urb = true;
+ 	}
+ 
+ 	/* errors must be reported */
 -- 
 1.7.8.6
 
