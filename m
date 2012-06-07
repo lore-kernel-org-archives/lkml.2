@@ -1,42 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932753Ab2FGSRf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 14:17:35 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:46684 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754067Ab2FGSRe (ORCPT
+	id S1761259Ab2FGSgu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 14:36:50 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:30915 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751626Ab2FGSgt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 14:17:34 -0400
-Subject: Re: [PATCH] ARM: mx35: add WEIM register addresses
-From: Christoph Fritz <chf.fritz@googlemail.com>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Sascha Hauer <kernel@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Christian Hemp <c.hemp@phytec.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        "Hans J. Koch" <hjk@hansjkoch.de>
-In-Reply-To: <20120607180738.GM30400@pengutronix.de>
-References: <20120509131638.GA2057@lovely.krouter>
-	 <20120607180738.GM30400@pengutronix.de>
-Content-Type: text/plain; charset="us-ascii"
-Date: Thu, 07 Jun 2012 20:17:29 +0200
-Message-ID: <1339093049.4704.192.camel@mars>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 7 Jun 2012 14:36:49 -0400
+Date: Thu, 7 Jun 2012 14:28:56 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: konrad@darnok.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        dan.magenheimer@oracle.com
+Subject: Re: [PATCH 05/11] mm: frontswap: split frontswap_shrink further to
+ eliminate locking games
+Message-ID: <20120607182856.GZ9472@phenom.dumpdata.com>
+References: <1338980115-2394-1-git-send-email-levinsasha928@gmail.com>
+ <1338980115-2394-5-git-send-email-levinsasha928@gmail.com>
+ <CAPbh3ruJVJkemK4WqjxQYbXYtD9zdDB3dqrRF916cpw3Ub66ug@mail.gmail.com>
+ <1338982637.3292.63.camel@lappy>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1338982637.3292.63.camel@lappy>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-06-07 at 20:07 +0200, Sascha Hauer wrote:
+On Wed, Jun 06, 2012 at 01:37:17PM +0200, Sasha Levin wrote:
+> On Wed, 2012-06-06 at 07:30 -0400, Konrad Rzeszutek Wilk wrote:
+> > 
+> > On Jun 6, 2012 6:55 AM, "Sasha Levin" <levinsasha928@gmail.com> wrote:
+> > >
+> > > Split frontswap_shrink to eliminate the locking issues in the
+> > original code.
+> > 
+> > Can you describe the locking issue please?
+> 
+> I may have worded that wrong, it's less of an "issue" and more of a
+> complicated code to deal with locking, specifically the extra local
+> variable to keep track whether we are locking or not.
 
-> The same could be used on i.MX25 aswell. I think we should clean this
-> up before adding more SoCs.
-
-:) full ack. What would you suggest? A macro?
-
-
-Thanks,
-  -- Christoph
-
+So "simplying the locking"?
