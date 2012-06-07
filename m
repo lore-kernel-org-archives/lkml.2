@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759327Ab2FGB3G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 21:29:06 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:55648 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754461Ab2FGB3D (ORCPT
+	id S1758005Ab2FGB3E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 21:29:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48090 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753694Ab2FGB3D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 6 Jun 2012 21:29:03 -0400
-Date: Thu, 7 Jun 2012 02:29:00 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>, Jan Kara <jack@suse.cz>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: processes hung after sys_renameat, and 'missing' processes
-Message-ID: <20120607012900.GE30000@ZenIV.linux.org.uk>
-References: <20120603231709.GP30000@ZenIV.linux.org.uk>
- <20120603232820.GQ30000@ZenIV.linux.org.uk>
- <20120606194233.GA1537@redhat.com>
- <CA+55aFwxFVLPk4-dp73uccKXepKwjpGFgh0NW1u8d0zYzr=hBA@mail.gmail.com>
- <20120606230040.GA18089@redhat.com>
- <CA+55aFx_oREEd2XS_aG7PJ7dwzWjgx689V_uRPGWpVS01_++6A@mail.gmail.com>
- <20120606235403.GC30000@ZenIV.linux.org.uk>
- <20120607002914.GB22223@redhat.com>
- <CA+55aFyp2GUbc218eb5BDyAqz+cOPTJMVcb4ptk+f1_RBB+-mg@mail.gmail.com>
- <20120607011915.GA17566@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120607011915.GA17566@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Wed, 6 Jun 2012 18:29:38 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Roland Dreier <roland@kernel.org>
+Cc: Joern Engel <joern@logfs.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] btree: Fix tree corruption in btree_get_prev()
+Message-Id: <20120606182938.f8f6178d.akpm@linux-foundation.org>
+In-Reply-To: <CAG4TOxNwVYPPP_AL=YZ6LnZZWyp8FUa50aGtgqGjTwnu598-Lw@mail.gmail.com>
+References: <1339003047-15734-1-git-send-email-roland@kernel.org>
+	<20120606162121.7d8e8f52.akpm@linux-foundation.org>
+	<CAG4TOxPHXg_cDpG2gMNKgyNGs2BcXbM3bTgiuS+mjnPZFhbD8A@mail.gmail.com>
+	<CAG4TOxNwVYPPP_AL=YZ6LnZZWyp8FUa50aGtgqGjTwnu598-Lw@mail.gmail.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 06, 2012 at 09:19:15PM -0400, Dave Jones wrote:
-> On Wed, Jun 06, 2012 at 05:42:35PM -0700, Linus Torvalds wrote:
-> 
->  > So Al meant you to test mutex_is_locked(dentry->d_inode->i_mutex) of
->  > the parents.
-> 
-> ok, I ended up with..
-> 
->         WARN_ON_ONCE(!mutex_is_locked(&target->d_parent->d_inode->i_mutex));
-> 
->         if (dentry->d_parent != NULL)
-			       != dentry)
+On Wed, 6 Jun 2012 17:44:20 -0700 Roland Dreier <roland@kernel.org> wrote:
 
-->d_parent *never* should be NULL; when dentry is disconnected from the
-tree (or hadn't been connected to it yet), it points to that dentry itself.
+> On Wed, Jun 6, 2012 at 4:36 PM, Roland Dreier <roland@kernel.org> wrote:
+> > On the other hand, your change makes me think we don't
+> > even need a separate iterator (and we can avoid the variable
+> > length array declaration)
+> 
+> FWIW with that change on top of my patch, I see
+> 
+> add/remove: 0/0 grow/shrink: 0/1 up/down: 0/-123 (-123)
+> function                                     old     new   delta
+> btree_get_prev                               646     523    -123
+> 
+> on x86-64, so avoiding the variable length array is definitely
+> worth something.
+> 
+> So the issue for me is whether messing with the caller's
+> __key storage is OK, or if it's worth having a temporary
+> local variable.
+> 
+
+Sometimes altering the caller's *__key when lookup fails is pretty rude
+behavior :(
+
+Perhaps we could add an arg to btree_get_prev(), provide it with
+separate input and output key pointers?
