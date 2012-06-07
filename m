@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933609Ab2FGEYx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 00:24:53 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63306 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933537Ab2FGEYr (ORCPT
+	id S933625Ab2FGEZA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 00:25:00 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:63657 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933536Ab2FGEYw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 00:24:47 -0400
-Message-Id: <20120607041402.488333447@linuxfoundation.org>
+	Thu, 7 Jun 2012 00:24:52 -0400
+Message-Id: <20120607041402.633194282@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 07 Jun 2012 13:14:28 +0900
+Date: Thu, 07 Jun 2012 13:14:29 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Yevgen Pronenko <yevgen.pronenko@sonymobile.com>,
+        alan@lxorguk.ukuu.org.uk, Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+        Kun Jiang <kunx.jiang@intel.com>, Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 30/47] ipv4: Do not use dead fib_info entries.
+Subject: [ 31/47] ipv4: fix the rcu race between free_fib_info and ip_route_output_slow
 In-Reply-To: <20120607041504.GA13819@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,33 +27,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: "David S. Miller" <davem@davemloft.net>
+From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
 
-[ Upstream commit dccd9ecc374462e5d6a5b8f8110415a86c2213d8 ]
+[ Upstream commit e49cc0da7283088c5e03d475ffe2fdcb24a6d5b1 ]
 
-Due to RCU lookups and RCU based release, fib_info objects can
-be found during lookup which have fi->fib_dead set.
+We hit a kernel OOPS.
 
-We must ignore these entries, otherwise we risk dereferencing
-the parts of the entry which are being torn down.
+<3>[23898.789643] BUG: sleeping function called from invalid context at
+/data/buildbot/workdir/ics/hardware/intel/linux-2.6/arch/x86/mm/fault.c:1103
+<3>[23898.862215] in_atomic(): 0, irqs_disabled(): 0, pid: 10526, name:
+Thread-6683
+<4>[23898.967805] HSU serial 0000:00:05.1: 0000:00:05.2:HSU serial prevented me
+to suspend...
+<4>[23899.258526] Pid: 10526, comm: Thread-6683 Tainted: G        W
+3.0.8-137685-ge7742f9 #1
+<4>[23899.357404] HSU serial 0000:00:05.1: 0000:00:05.2:HSU serial prevented me
+to suspend...
+<4>[23899.904225] Call Trace:
+<4>[23899.989209]  [<c1227f50>] ? pgtable_bad+0x130/0x130
+<4>[23900.000416]  [<c1238c2a>] __might_sleep+0x10a/0x110
+<4>[23900.007357]  [<c1228021>] do_page_fault+0xd1/0x3c0
+<4>[23900.013764]  [<c18e9ba9>] ? restore_all+0xf/0xf
+<4>[23900.024024]  [<c17c007b>] ? napi_complete+0x8b/0x690
+<4>[23900.029297]  [<c1227f50>] ? pgtable_bad+0x130/0x130
+<4>[23900.123739]  [<c1227f50>] ? pgtable_bad+0x130/0x130
+<4>[23900.128955]  [<c18ea0c3>] error_code+0x5f/0x64
+<4>[23900.133466]  [<c1227f50>] ? pgtable_bad+0x130/0x130
+<4>[23900.138450]  [<c17f6298>] ? __ip_route_output_key+0x698/0x7c0
+<4>[23900.144312]  [<c17f5f8d>] ? __ip_route_output_key+0x38d/0x7c0
+<4>[23900.150730]  [<c17f63df>] ip_route_output_flow+0x1f/0x60
+<4>[23900.156261]  [<c181de58>] ip4_datagram_connect+0x188/0x2b0
+<4>[23900.161960]  [<c18e981f>] ? _raw_spin_unlock_bh+0x1f/0x30
+<4>[23900.167834]  [<c18298d6>] inet_dgram_connect+0x36/0x80
+<4>[23900.173224]  [<c14f9e88>] ? _copy_from_user+0x48/0x140
+<4>[23900.178817]  [<c17ab9da>] sys_connect+0x9a/0xd0
+<4>[23900.183538]  [<c132e93c>] ? alloc_file+0xdc/0x240
+<4>[23900.189111]  [<c123925d>] ? sub_preempt_count+0x3d/0x50
 
-Reported-by: Yevgen Pronenko <yevgen.pronenko@sonymobile.com>
+Function free_fib_info resets nexthop_nh->nh_dev to NULL before releasing
+fi. Other cpu might be accessing fi. Fixing it by delaying the releasing.
+
+With the patch, we ran MTBF testing on Android mobile for 12 hours
+and didn't trigger the issue.
+
+Thank Eric for very detailed review/checking the issue.
+
+Signed-off-by: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+Signed-off-by: Kun Jiang <kunx.jiang@intel.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/fib_trie.c |    2 ++
- 1 file changed, 2 insertions(+)
+ net/ipv4/fib_semantics.c |   20 +++++++++++++-------
+ 1 file changed, 13 insertions(+), 7 deletions(-)
 
---- a/net/ipv4/fib_trie.c
-+++ b/net/ipv4/fib_trie.c
-@@ -1371,6 +1371,8 @@ static int check_leaf(struct fib_table *
+--- a/net/ipv4/fib_semantics.c
++++ b/net/ipv4/fib_semantics.c
+@@ -142,6 +142,18 @@ const struct fib_prop fib_props[RTN_MAX
+ };
  
- 			if (fa->fa_tos && fa->fa_tos != flp->flowi4_tos)
- 				continue;
-+			if (fi->fib_dead)
-+				continue;
- 			if (fa->fa_info->fib_scope < flp->flowi4_scope)
- 				continue;
- 			fib_alias_accessed(fa);
+ /* Release a nexthop info record */
++static void free_fib_info_rcu(struct rcu_head *head)
++{
++	struct fib_info *fi = container_of(head, struct fib_info, rcu);
++
++	change_nexthops(fi) {
++		if (nexthop_nh->nh_dev)
++			dev_put(nexthop_nh->nh_dev);
++	} endfor_nexthops(fi);
++
++	release_net(fi->fib_net);
++	kfree(fi);
++}
+ 
+ void free_fib_info(struct fib_info *fi)
+ {
+@@ -149,14 +161,8 @@ void free_fib_info(struct fib_info *fi)
+ 		pr_warning("Freeing alive fib_info %p\n", fi);
+ 		return;
+ 	}
+-	change_nexthops(fi) {
+-		if (nexthop_nh->nh_dev)
+-			dev_put(nexthop_nh->nh_dev);
+-		nexthop_nh->nh_dev = NULL;
+-	} endfor_nexthops(fi);
+ 	fib_info_cnt--;
+-	release_net(fi->fib_net);
+-	kfree_rcu(fi, rcu);
++	call_rcu(&fi->rcu, free_fib_info_rcu);
+ }
+ 
+ void fib_release_info(struct fib_info *fi)
 
 
