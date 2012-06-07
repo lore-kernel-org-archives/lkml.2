@@ -1,47 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758494Ab2FGXfU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 19:35:20 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:64014 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757386Ab2FGXfS (ORCPT
+	id S1752846Ab2FGXif (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 19:38:35 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:59060 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750928Ab2FGXid convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 19:35:18 -0400
+	Thu, 7 Jun 2012 19:38:33 -0400
 MIME-Version: 1.0
-In-Reply-To: <1339111642-869-1-git-send-email-dhsharp@google.com>
-References: <1339111642-869-1-git-send-email-dhsharp@google.com>
-From: David Sharp <dhsharp@google.com>
-Date: Thu, 7 Jun 2012 16:34:55 -0700
-Message-ID: <CAJL_eku9byV+Uk-5boR52HLEO0D-++2h_y=PeaaQG_PrCuALhQ@mail.gmail.com>
-Subject: Re: [PATCH] ring-buffer: fix uninitialized read_stamp
-To: rostedt@goodmis.org, linux-kernel@vger.kernel.org
-Cc: vnagarnaik@google.com, David Sharp <dhsharp@google.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20120607225446.GK19839@thunk.org>
+References: <471046920.20120604234941@eikelenboom.it>
+	<20120605000356.GM29466@outflux.net>
+	<1018371644.20120605224154@eikelenboom.it>
+	<20120605210806.GB7182@thunk.org>
+	<1883708187.20120606090126@eikelenboom.it>
+	<CAGXu5jK-4dO59-x3eTU10OntcPwsVptjpUzQdbbHOvy9_VBQ2A@mail.gmail.com>
+	<1482118647.20120606164012@eikelenboom.it>
+	<20120607042756.GA30776@thunk.org>
+	<20120607222729.GI6938@tux1.beaverton.ibm.com>
+	<CAGXu5jKmBkfvuSR7q47-Ac57dVZynz_JkYXiA_-aXaGQiR_C4g@mail.gmail.com>
+	<20120607225446.GK19839@thunk.org>
+Date: Thu, 7 Jun 2012 16:38:31 -0700
+X-Google-Sender-Auth: l_8Qri6Hp31fGD8D-1i811V7dXc
+Message-ID: <CAGXu5j+mF1jnMXDT-Vpb6T5s34XgTRTeDOdyoXYy_RwNfaUn6w@mail.gmail.com>
+Subject: Re: [dm-devel] EXT4-fs error (device dm-42): ext4_mb_generate_buddy:741:
+ group 1904, 32254 clusters in bitmap, 32258 in gd
+From: Kees Cook <keescook@chromium.org>
+To: "Ted Ts'o" <tytso@mit.edu>, Kees Cook <keescook@chromium.org>,
+        djwong@us.ibm.com, Sander Eikelenboom <linux@eikelenboom.it>,
+        Linus Torvalds <torvalds@linux-foundation.org>, dm-devel@redhat.com,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 7, 2012 at 4:27 PM, David Sharp <dhsharp@google.com> wrote:
-> This fixes a scenario in which trace_pipe_raw will return events with invalid
-> timestamps when events are copied out one at a time (instead of swapping out
-> the reader page with a spare page). In this scenario, ring_buffer_read_page()
-> uses cpu_buffer->read_stamp to keep track of the time of the earliest event.
-> However, cpu_buffer->read_stamp was not always updated. The only function that
-> sets read_stamp to a new valid value is rb_reset_reader_page(), which is called
-> only by rb_get_reader_page(). rb_reset_reader_page() was not called when there
-> is data immediately available on the page to read (read < rb_page_size()). This
-> is the bug.
+On Thu, Jun 7, 2012 at 3:54 PM, Ted Ts'o <tytso@mit.edu> wrote:
+> On Thu, Jun 07, 2012 at 03:40:40PM -0700, Kees Cook wrote:
+>>
+>> FWIW, I was building the filesystem that triggered this as ext4:
+>>
+>>   mkfs.ext4 -T default -m 0 -O ^huge_file,^flex_bg -E
+>> discard,lazy_itable_init /dev/mapper/...
 >
-> Setting the read_stamp on the first read from a page fixes the bug.
->
-> Tested: On certain lightly-loaded machines, repetitive reads from
-> trace_pipe_raw without using splice() would sometimes result in invalid
-> timestamps. Poisoning read_stamp in rb_init_page() with a negative value makes
-> the problem more visible. After this fix, the invalid timstamps disappear.
+> Ouy of curiosity, was there a reason you chose those particular file
+> system parameters?  It's a surprising set, because if you're starting
+> with a fresh file system, enabling flex_bg produces a more optimal
+> file system layout.
 
-err, that's poisoning the bpage->time_stamp, not read_stamp.
+The intent of this was to create a small (64M) initial filesystem as
+fast as possible that could be resized (to 3G) on the fly later. (The
+performance of the filesystem did not need to be optimized, just the
+speed of creation so that the create+mount would happen as fast as
+possible, to unblock things waiting for this filesystem to exist.)
 
->
-> Google-Bug-Id: 6410455
-> Signed-off-by: David Sharp <dhsharp@google.com>
+In the more common situation, it was built also with:
+ -b 4096 ... -E ...,resize=MMM ... [device] NNN
+where MMM > NNN. And an online resize would be started a bit after it
+was created, growing it up to MMM.
+
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
