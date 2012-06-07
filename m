@@ -1,55 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756968Ab2FGUjw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 16:39:52 -0400
-Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:10233 "EHLO
-	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756310Ab2FGUjv (ORCPT
+	id S1756947Ab2FGUmK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 16:42:10 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:54948 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753703Ab2FGUmI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 16:39:51 -0400
-Message-ID: <4FD11194.2040405@hp.com>
-Date: Thu, 07 Jun 2012 13:39:48 -0700
-From: Rick Jones <rick.jones2@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Thu, 7 Jun 2012 16:42:08 -0400
+Date: Thu, 7 Jun 2012 16:42:07 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Stefani Seibold <stefani@seibold.net>
+cc: Greg KH <gregkh@linuxfoundation.org>, <linux-kernel@vger.kernel.org>,
+        <oneukum@suse.de>, <alan@lxorguk.ukuu.org.uk>,
+        <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH 04/11] remove usb_interface pointer
+In-Reply-To: <1339098621.13885.13.camel@wall-e>
+Message-ID: <Pine.LNX.4.44L0.1206071640031.1185-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Ben Hutchings <bhutchings@solarflare.com>
-CC: David Miller <davem@davemloft.net>, jasowang@redhat.com,
-        netdev@vger.kernel.org, rusty@rustcorp.com.au,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, mst@redhat.com
-Subject: Re: [V2 RFC net-next PATCH 2/2] virtio_net: export more statistics
- through ethtool
-References: <20120606075208.29081.75284.stgit@amd-6168-8-1.englab.nay.redhat.com> <20120606075217.29081.30713.stgit@amd-6168-8-1.englab.nay.redhat.com> <1339089306.2770.10.camel@bwh-desktop.uk.solarflarecom.com> <20120607.130512.219951433412203999.davem@davemloft.net> <1339100649.2770.20.camel@bwh-desktop.uk.solarflarecom.com>
-In-Reply-To: <1339100649.2770.20.camel@bwh-desktop.uk.solarflarecom.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/07/2012 01:24 PM, Ben Hutchings wrote:
-> On Thu, 2012-06-07 at 13:05 -0700, David Miller wrote:
->> From: Ben Hutchings<bhutchings@solarflare.com>
->> Date: Thu, 7 Jun 2012 18:15:06 +0100
->>
->>> I would really like to see some sort of convention for presenting
->>> per-queue statistics through ethtool.  At the moment we have a complete
->>> mess of different formats:
->>
->> Indeed.  Probably ${QUEUE_TYPE}-${INDEX}-${STATISTIC} is best.
->> With an agreed upon list of queue types such as "rx", "tx", "rxtx"
->> etc.
->
-> I think we should leave the type names open-ended, as there are other
-> useful groupings like per-virtual-port.  In that case the separator
-> should be chosen to allow arbitrary type names without ambiguity.
+On Thu, 7 Jun 2012, Stefani Seibold wrote:
 
-So you mean like something along the lines of the presence of say '.' 
-indicating indent a level:
+> That what i am looking for. If we do an usb_get_intf() in the
+> skel_probe() function and an usb_put_intf() in skel_delete() function at
+> the end, then it should be save to access the usb_device pointer by
+> interface_to_usbdev() in the skel_delete() function. Right?
 
-rx_bytes:  1234
-     myqueue1.rx_bytes: 234
-     myqueue2.rx_bytes: 345
-     ...
+Safe, yes, but unnecessary.  Just get rid of the usb_put_dev() in 
+skel_delete and the usb_get_dev in skel_probe.
 
-rick jones
+Alan Stern
+
