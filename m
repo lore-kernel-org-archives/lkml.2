@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932335Ab2FGEQS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 00:16:18 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:63657 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932260Ab2FGEQP (ORCPT
+	id S932360Ab2FGEQY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 00:16:24 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62777 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932251Ab2FGEQU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 00:16:15 -0400
-Message-Id: <20120607040337.884876947@linuxfoundation.org>
+	Thu, 7 Jun 2012 00:16:20 -0400
+Message-Id: <20120607040338.713193831@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 07 Jun 2012 13:03:46 +0900
+Date: Thu, 07 Jun 2012 13:03:52 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Meenakshi Venkataraman <meenakshi.venkataraman@intel.com>,
-        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 10/82] iwlwifi: update BT traffic load states correctly
+        alan@lxorguk.ukuu.org.uk, David Woodhouse <David.Woodhouse@intel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 16/82] solos-pci: Fix DMA support
 In-Reply-To: <20120607041406.GA13233@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,41 +25,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Meenakshi Venkataraman <meenakshi.venkataraman@intel.com>
+From: David Woodhouse <dwmw2@infradead.org>
 
-commit 882dde8eb0d49ce0f853f8f4084dde56a21fe55f upstream.
+commit b4bd8ad9bb311e8536f726f7a633620ccd358cde upstream.
 
-When BT traffic load changes from its
-previous state, a new LQ command needs to be
-sent down to the firmware. This needs to
-be done only once per change. The state
-variable that keeps track of this change is
-last_bt_traffic_load. However, it was not
-being updated when the change had been
-handled. Not updating this variable was
-causing a flood of advanced BT config
-commands to be sent to the firmware. Fix
-this.
+DMA support has finally made its way to the top of the TODO list, having
+realised that a Geode using MMIO can't keep up with two ADSL2+ lines
+each running at 21Mb/s.
 
-Signed-off-by: Meenakshi Venkataraman <meenakshi.venkataraman@intel.com>
-Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This patch fixes a couple of bugs in the DMA support in the driver, so
+once the corresponding FPGA update is complete and tested everything
+should work properly.
+
+We weren't storing the currently-transmitting skb, so we were never
+unmapping it and never freeing/popping it when the TX was done.
+And the addition of pci_set_master() is fairly self-explanatory.
+
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/iwl-agn-rs.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/atm/solos-pci.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/iwlwifi/iwl-agn-rs.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-agn-rs.c
-@@ -884,6 +884,7 @@ static void rs_bt_update_lq(struct iwl_p
- 	if ((priv->bt_traffic_load != priv->last_bt_traffic_load) ||
- 	    (priv->bt_full_concurrent != full_concurrent)) {
- 		priv->bt_full_concurrent = full_concurrent;
-+		priv->last_bt_traffic_load = priv->bt_traffic_load;
+--- a/drivers/atm/solos-pci.c
++++ b/drivers/atm/solos-pci.c
+@@ -984,6 +984,7 @@ static uint32_t fpga_tx(struct solos_car
+ 			} else if (skb && card->using_dma) {
+ 				SKB_CB(skb)->dma_addr = pci_map_single(card->dev, skb->data,
+ 								       skb->len, PCI_DMA_TODEVICE);
++				card->tx_skb[port] = skb;
+ 				iowrite32(SKB_CB(skb)->dma_addr,
+ 					  card->config_regs + TX_DMA_ADDR(port));
+ 			}
+@@ -1152,7 +1153,8 @@ static int fpga_probe(struct pci_dev *de
+ 		db_fpga_upgrade = db_firmware_upgrade = 0;
+ 	}
  
- 		/* Update uCode's rate table. */
- 		tbl = &(lq_sta->lq_info[lq_sta->active_tbl]);
+-	if (card->fpga_version >= DMA_SUPPORTED){
++	if (card->fpga_version >= DMA_SUPPORTED) {
++		pci_set_master(dev);
+ 		card->using_dma = 1;
+ 	} else {
+ 		card->using_dma = 0;
 
 
