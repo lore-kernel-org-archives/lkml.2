@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932616Ab2FGETH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 00:19:07 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63306 "EHLO
+	id S932646Ab2FGETM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 00:19:12 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62777 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932560Ab2FGETE (ORCPT
+	with ESMTP id S932621Ab2FGETI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 00:19:04 -0400
-Message-Id: <20120607040343.316773054@linuxfoundation.org>
+	Thu, 7 Jun 2012 00:19:08 -0400
+Message-Id: <20120607040343.436193482@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 07 Jun 2012 13:04:24 +0900
+Date: Thu, 07 Jun 2012 13:04:25 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
         Dave Airlie <airlied@redhat.com>
-Subject: [ 48/82] drm/radeon: fix bank information in tiling config
+Subject: [ 49/82] drm/radeon: properly program gart on rv740, juniper, cypress, barts, hemlock
 In-Reply-To: <20120607041406.GA13233@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,77 +27,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 29d654067a98c1cb8874c774e5fd799a038af8a6 upstream.
+commit 0b8c30bc4943137a4a36b9cb059b1cc684f5d702 upstream.
 
-While there are cards with more than 8 mem banks, the max
-number of banks from a tiling perspective is 8, so cap
-the tiling config at 8 banks.
-
-Fixes:
-https://bugs.freedesktop.org/show_bug.cgi?id=43448
+Need to program an additional VM register.  This doesn't not currently
+cause any problems, but allows us to program the proper backend
+map in a subsequent patch which should improve performance on these
+asics.
 
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/evergreen.c |    9 ++++++---
- drivers/gpu/drm/radeon/ni.c        |    9 ++++++---
- drivers/gpu/drm/radeon/rv770.c     |    8 ++++++--
- 3 files changed, 18 insertions(+), 8 deletions(-)
+ drivers/gpu/drm/radeon/evergreen.c  |    5 +++++
+ drivers/gpu/drm/radeon/evergreend.h |    1 +
+ drivers/gpu/drm/radeon/rv770.c      |    2 ++
+ drivers/gpu/drm/radeon/rv770d.h     |    1 +
+ 4 files changed, 9 insertions(+)
 
 --- a/drivers/gpu/drm/radeon/evergreen.c
 +++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -2136,9 +2136,12 @@ static void evergreen_gpu_init(struct ra
- 	/* num banks is 8 on all fusion asics. 0 = 4, 1 = 8, 2 = 16 */
- 	if (rdev->flags & RADEON_IS_IGP)
- 		rdev->config.evergreen.tile_config |= 1 << 4;
--	else
--		rdev->config.evergreen.tile_config |=
--			((mc_arb_ramcfg & NOOFBANK_MASK) >> NOOFBANK_SHIFT) << 4;
-+	else {
-+		if ((mc_arb_ramcfg & NOOFBANK_MASK) >> NOOFBANK_SHIFT)
-+			rdev->config.evergreen.tile_config |= 1 << 4;
-+		else
-+			rdev->config.evergreen.tile_config |= 0 << 4;
-+	}
- 	rdev->config.evergreen.tile_config |=
- 		((mc_arb_ramcfg & BURSTLENGTH_MASK) >> BURSTLENGTH_SHIFT) << 8;
- 	rdev->config.evergreen.tile_config |=
---- a/drivers/gpu/drm/radeon/ni.c
-+++ b/drivers/gpu/drm/radeon/ni.c
-@@ -866,9 +866,12 @@ static void cayman_gpu_init(struct radeo
- 	/* num banks is 8 on all fusion asics. 0 = 4, 1 = 8, 2 = 16 */
- 	if (rdev->flags & RADEON_IS_IGP)
- 		rdev->config.cayman.tile_config |= 1 << 4;
--	else
--		rdev->config.cayman.tile_config |=
--			((mc_arb_ramcfg & NOOFBANK_MASK) >> NOOFBANK_SHIFT) << 4;
-+	else {
-+		if ((mc_arb_ramcfg & NOOFBANK_MASK) >> NOOFBANK_SHIFT)
-+			rdev->config.cayman.tile_config |= 1 << 4;
-+		else
-+			rdev->config.cayman.tile_config |= 0 << 4;
-+	}
- 	rdev->config.cayman.tile_config |=
- 		((gb_addr_config & PIPE_INTERLEAVE_SIZE_MASK) >> PIPE_INTERLEAVE_SIZE_SHIFT) << 8;
- 	rdev->config.cayman.tile_config |=
+@@ -1029,6 +1029,11 @@ int evergreen_pcie_gart_enable(struct ra
+ 		WREG32(MC_VM_MD_L1_TLB0_CNTL, tmp);
+ 		WREG32(MC_VM_MD_L1_TLB1_CNTL, tmp);
+ 		WREG32(MC_VM_MD_L1_TLB2_CNTL, tmp);
++		if ((rdev->family == CHIP_JUNIPER) ||
++		    (rdev->family == CHIP_CYPRESS) ||
++		    (rdev->family == CHIP_HEMLOCK) ||
++		    (rdev->family == CHIP_BARTS))
++			WREG32(MC_VM_MD_L1_TLB3_CNTL, tmp);
+ 	}
+ 	WREG32(MC_VM_MB_L1_TLB0_CNTL, tmp);
+ 	WREG32(MC_VM_MB_L1_TLB1_CNTL, tmp);
+--- a/drivers/gpu/drm/radeon/evergreend.h
++++ b/drivers/gpu/drm/radeon/evergreend.h
+@@ -232,6 +232,7 @@
+ #define	MC_VM_MD_L1_TLB0_CNTL				0x2654
+ #define	MC_VM_MD_L1_TLB1_CNTL				0x2658
+ #define	MC_VM_MD_L1_TLB2_CNTL				0x265C
++#define	MC_VM_MD_L1_TLB3_CNTL				0x2698
+ 
+ #define	FUS_MC_VM_MD_L1_TLB0_CNTL			0x265C
+ #define	FUS_MC_VM_MD_L1_TLB1_CNTL			0x2660
 --- a/drivers/gpu/drm/radeon/rv770.c
 +++ b/drivers/gpu/drm/radeon/rv770.c
-@@ -689,8 +689,12 @@ static void rv770_gpu_init(struct radeon
- 
- 	if (rdev->family == CHIP_RV770)
- 		gb_tiling_config |= BANK_TILING(1);
--	else
--		gb_tiling_config |= BANK_TILING((mc_arb_ramcfg & NOOFBANK_MASK) >> NOOFBANK_SHIFT);
-+	else {
-+		if ((mc_arb_ramcfg & NOOFBANK_MASK) >> NOOFBANK_SHIFT)
-+			gb_tiling_config |= BANK_TILING(1);
-+		else
-+			gb_tiling_config |= BANK_TILING(0);
-+	}
- 	rdev->config.rv770.tiling_nbanks = 4 << ((gb_tiling_config >> 4) & 0x3);
- 	gb_tiling_config |= GROUP_SIZE((mc_arb_ramcfg & BURSTLENGTH_MASK) >> BURSTLENGTH_SHIFT);
- 	if ((mc_arb_ramcfg & BURSTLENGTH_MASK) >> BURSTLENGTH_SHIFT)
+@@ -151,6 +151,8 @@ int rv770_pcie_gart_enable(struct radeon
+ 	WREG32(MC_VM_MD_L1_TLB0_CNTL, tmp);
+ 	WREG32(MC_VM_MD_L1_TLB1_CNTL, tmp);
+ 	WREG32(MC_VM_MD_L1_TLB2_CNTL, tmp);
++	if (rdev->family == CHIP_RV740)
++		WREG32(MC_VM_MD_L1_TLB3_CNTL, tmp);
+ 	WREG32(MC_VM_MB_L1_TLB0_CNTL, tmp);
+ 	WREG32(MC_VM_MB_L1_TLB1_CNTL, tmp);
+ 	WREG32(MC_VM_MB_L1_TLB2_CNTL, tmp);
+--- a/drivers/gpu/drm/radeon/rv770d.h
++++ b/drivers/gpu/drm/radeon/rv770d.h
+@@ -174,6 +174,7 @@
+ #define	MC_VM_MD_L1_TLB0_CNTL				0x2654
+ #define	MC_VM_MD_L1_TLB1_CNTL				0x2658
+ #define	MC_VM_MD_L1_TLB2_CNTL				0x265C
++#define	MC_VM_MD_L1_TLB3_CNTL				0x2698
+ #define	MC_VM_SYSTEM_APERTURE_DEFAULT_ADDR		0x203C
+ #define	MC_VM_SYSTEM_APERTURE_HIGH_ADDR			0x2038
+ #define	MC_VM_SYSTEM_APERTURE_LOW_ADDR			0x2034
 
 
