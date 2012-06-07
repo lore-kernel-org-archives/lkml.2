@@ -1,212 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759877Ab2FGGMo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 02:12:44 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:44440 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752969Ab2FGGMn convert rfc822-to-8bit (ORCPT
+	id S1760068Ab2FGGNI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 02:13:08 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:63332 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759971Ab2FGGND (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 02:12:43 -0400
+	Thu, 7 Jun 2012 02:13:03 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAK5ve-JuZcjdbw_tV8vcriHWxOq1KFHm2mZBm6z3_j7hpPw-eA@mail.gmail.com>
-References: <CAK5ve-JuZcjdbw_tV8vcriHWxOq1KFHm2mZBm6z3_j7hpPw-eA@mail.gmail.com>
-From: Bryan Wu <bryan.wu@canonical.com>
-Date: Thu, 7 Jun 2012 14:12:21 +0800
-X-Google-Sender-Auth: QjpbrHHHU8PRdJUHTKCmBMO8rcw
-Message-ID: <CAK5ve-+3rKjeQA-WMQWvT48roFx-3Y-jNLZ3ciyOuH42x4Nu9A@mail.gmail.com>
-Subject: Re: [GIT PULL] LED CPU trigger driver and ARM LED code consolidation
-To: Arnd Bergmann <arnd.bergmann@linaro.org>, Olof Johansson <olof@lixom.net>
-Cc: linux-arm-kernel@lists.infradead.org, lkml <linux-kernel@vger.kernel.org>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <CAOS58YPAOYcHYkXu7hW-DeGRXkFqoF1cLarJFfh0eNfFaVHyBg@mail.gmail.com>
+References: <CAFR8ueeUH-O8+jeZu2Aeyu4ZDHv255a2qqnt0_Af79oY2JGzTw@mail.gmail.com>
+	<CAOS58YOf0m5WUcn3b2f_PGr=P+DH1-0EHBy_fHw3xmccHW+zRA@mail.gmail.com>
+	<CAFR8uedYpEX+9RiK11G-KvcEU7mYrt58OAFWs4mgoUpLQMowTQ@mail.gmail.com>
+	<CAOS58YPAOYcHYkXu7hW-DeGRXkFqoF1cLarJFfh0eNfFaVHyBg@mail.gmail.com>
+Date: Wed, 6 Jun 2012 23:13:02 -0700
+Message-ID: <CAFR8uedHZ81JpY2jb0j9FLE3Uxibc=mSDFp496ChQLzkQqQdMw@mail.gmail.com>
+Subject: Re: [PATCH] blk-exec-assign-endio-before-queue-dead-check
+From: Muthu Kumar <muthu.lkml@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>, James.Bottomley@hansenpartnership.com,
+        linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=20cf307d059eb4f42204c1dbc635
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd and Olof,
+--20cf307d059eb4f42204c1dbc635
+Content-Type: text/plain; charset=ISO-8859-1
 
-Is there any chance to pull this LED code into ARM SoC tree?
+On Wed, Jun 6, 2012 at 10:53 PM, Tejun Heo <tj@kernel.org> wrote:
+> Hello,
+>
+> On Thu, Jun 7, 2012 at 2:42 PM, Muthu Kumar <muthu.lkml@gmail.com> wrote:
+>>>> One more thing to consider is, the completion function is called from
+>>>> the same calling context here. As far as my check, it looks ok. Let me
+>>>> know if you think otherwise.
+>>>
+>>> Not sure what you mean.
+>>
+>> If there is no error, then the completion routine is called in a
+>> different context - rq completion context. But here, we call the
+>> completion routine in the same context of the caller.
+>
+> Ah, okay. I think the only problem there would be that the end_io
+> callback is being called outside queue lock. Can you please take care
+> of that too?
+>
 
-Thanks,
--Bryan
+Revised patch (below as well as attached)
 
-On Mon, Jun 4, 2012 at 3:25 PM, Bryan Wu <bryan.wu@canonical.com> wrote:
-> Hi Arnd and Olof,
+>> blk-exec.c: In blk_execute_rq_nowait(), if the queue is dead, call to
+>> done() routine is not made. That will result in blk_execute_rq() stuck
+>> in wait_for_completion(). Avoid this by initializing rq->end_io to
+>> done() routine before we check for dead queue.
 >
-> Please consider to pull my branch for LED CPU trigger driver and ARM
-> LED code consolidation, which is based on 3.5-rc1:
+> Yeah, sounds about right.
 >
-> The following changes since commit f8f5701bdaf9134b1f90e5044a82c66324d2073f:
+> Thanks.
 >
->  Linux 3.5-rc1 (2012-06-02 18:29:26 -0700)
->
-> are available in the git repository at:
->
->  git://git.kernel.org/pub/scm/linux/kernel/git/cooloney/linux-leds.git
-> for-arm-soc
->
-> for you to fetch changes up to ea19d193ef750c09cd789cc3b00196f07ce2209f:
->
->  ARM: use new LEDS CPU trigger stub to replace old one (2012-06-04
-> 08:50:01 +0800)
->
-> ----------------------------------------------------------------
-> Bryan Wu (18):
->      led-triggers: create a trigger for CPU activity
->      ARM: at91: convert old leds drivers to gpio_led and led_trigger drivers
->      ARM: mach-realview and mach-versatile: retire custom LED code
->      ARM: mach-ks8695: remove leds driver, since nobody use it
->      ARM: mach-shark: retire custom LED code
->      ARM: mach-orion5x: convert custom LED code to gpio_led and LED CPU trigger
->      ARM: mach-integrator: move CM_CTRL to header file for accessing
-> by other functions
->      ARM: mach-integrator: retire custom LED code
->      ARM: mach-clps711x: retire custom LED code of P720T machine
->      ARM: mach-ebsa110: retire custom LED code
->      ARM: mach-footbridge: retire custom LED code
->      char: nwflash: remove old led event code
->      ARM: mach-pxa: retire custom LED code
->      ARM: plat-samsung: remove including old leds event API header file
->      ARM: mach-pnx4008: remove including old leds event API header file
->      ARM: mach-omap1: retire custom LED code
->      ARM: mach-sa1100: retire custom LED code
->      ARM: use new LEDS CPU trigger stub to replace old one
->
->  arch/arm/Kconfig                             |   53 -----
->  arch/arm/include/asm/leds.h                  |   50 -----
->  arch/arm/kernel/Makefile                     |    1 -
->  arch/arm/kernel/leds.c                       |  121 -----------
->  arch/arm/kernel/process.c                    |    6 +-
->  arch/arm/kernel/time.c                       |   17 --
->  arch/arm/mach-at91/board-csb337.c            |    2 -
->  arch/arm/mach-at91/board-ecbat91.c           |   18 +-
->  arch/arm/mach-at91/board-eco920.c            |   22 +-
->  arch/arm/mach-at91/board-kafa.c              |   17 +-
->  arch/arm/mach-at91/board-kb9202.c            |   23 +-
->  arch/arm/mach-at91/board-rm9200dk.c          |    3 -
->  arch/arm/mach-at91/board-rm9200ek.c          |    3 -
->  arch/arm/mach-at91/board-rsi-ews.c           |    3 -
->  arch/arm/mach-at91/board-sam9-l9260.c        |   23 +-
->  arch/arm/mach-at91/board-sam9261ek.c         |    3 -
->  arch/arm/mach-at91/board-yl-9200.c           |    3 -
->  arch/arm/mach-at91/include/mach/board.h      |    1 -
->  arch/arm/mach-at91/leds.c                    |  105 ---------
->  arch/arm/mach-clps711x/Makefile              |    2 -
->  arch/arm/mach-clps711x/common.c              |    1 -
->  arch/arm/mach-clps711x/p720t-leds.c          |   63 ------
->  arch/arm/mach-clps711x/p720t.c               |   61 ++++++
->  arch/arm/mach-ebsa110/Makefile               |    4 +-
->  arch/arm/mach-ebsa110/leds.c                 |   81 ++++---
->  arch/arm/mach-footbridge/Makefile            |    4 -
->  arch/arm/mach-footbridge/ebsa285-leds.c      |  138 ------------
->  arch/arm/mach-footbridge/ebsa285.c           |   81 +++++++
->  arch/arm/mach-footbridge/netwinder-hw.c      |  112 ++++++++--
->  arch/arm/mach-footbridge/netwinder-leds.c    |  138 ------------
->  arch/arm/mach-integrator/Makefile            |    3 +-
->  arch/arm/mach-integrator/core.c              |    3 -
->  arch/arm/mach-integrator/include/mach/cm.h   |    2 +
->  arch/arm/mach-integrator/leds.c              |  161 ++++++++------
->  arch/arm/mach-ks8695/Makefile                |    3 -
->  arch/arm/mach-ks8695/devices.c               |   21 --
->  arch/arm/mach-ks8695/include/mach/devices.h  |    5 -
->  arch/arm/mach-ks8695/leds.c                  |   92 --------
->  arch/arm/mach-omap1/Makefile                 |    8 -
->  arch/arm/mach-omap1/board-h2.c               |   32 +++
->  arch/arm/mach-omap1/board-h3.c               |   32 +++
->  arch/arm/mach-omap1/board-osk.c              |   33 +++
->  arch/arm/mach-omap1/leds-h2p2-debug.c        |  166 ---------------
->  arch/arm/mach-omap1/leds-innovator.c         |   98 ---------
->  arch/arm/mach-omap1/leds-osk.c               |  113 ----------
->  arch/arm/mach-omap1/leds.c                   |   69 ------
->  arch/arm/mach-omap1/leds.h                   |    3 -
->  arch/arm/mach-omap1/time.c                   |    1 -
->  arch/arm/mach-omap1/timer32k.c               |    1 -
->  arch/arm/mach-orion5x/rd88f5181l-fxo-setup.c |    1 -
->  arch/arm/mach-orion5x/rd88f5181l-ge-setup.c  |    1 -
->  arch/arm/mach-orion5x/rd88f5182-setup.c      |   72 ++-----
->  arch/arm/mach-orion5x/rd88f6183ap-ge-setup.c |    1 -
->  arch/arm/mach-pnx4008/time.c                 |    1 -
->  arch/arm/mach-pxa/Makefile                   |    8 -
->  arch/arm/mach-pxa/idp.c                      |   81 +++++++
->  arch/arm/mach-pxa/leds-idp.c                 |  115 ----------
->  arch/arm/mach-pxa/leds-lubbock.c             |  124 -----------
->  arch/arm/mach-pxa/leds-mainstone.c           |  119 -----------
->  arch/arm/mach-pxa/leds.c                     |   32 ---
->  arch/arm/mach-pxa/leds.h                     |   13 --
->  arch/arm/mach-pxa/lubbock.c                  |   95 +++++++++
->  arch/arm/mach-pxa/mainstone.c                |   94 +++++++++
->  arch/arm/mach-realview/core.c                |   39 ----
->  arch/arm/mach-realview/core.h                |    2 -
->  arch/arm/mach-realview/realview_eb.c         |    5 -
->  arch/arm/mach-realview/realview_pb1176.c     |    5 -
->  arch/arm/mach-realview/realview_pb11mp.c     |    5 -
->  arch/arm/mach-realview/realview_pba8.c       |    5 -
->  arch/arm/mach-realview/realview_pbx.c        |    5 -
->  arch/arm/mach-sa1100/Makefile                |    9 -
->  arch/arm/mach-sa1100/assabet.c               |   85 ++++++++
->  arch/arm/mach-sa1100/badge4.c                |   30 +++
->  arch/arm/mach-sa1100/cerf.c                  |   42 ++++
->  arch/arm/mach-sa1100/hackkit.c               |   32 +++
->  arch/arm/mach-sa1100/lart.c                  |   26 +++
->  arch/arm/mach-sa1100/leds-assabet.c          |  113 ----------
->  arch/arm/mach-sa1100/leds-badge4.c           |  110 ----------
->  arch/arm/mach-sa1100/leds-cerf.c             |  109 ----------
->  arch/arm/mach-sa1100/leds-hackkit.c          |  111 ----------
->  arch/arm/mach-sa1100/leds-lart.c             |  100 ---------
->  arch/arm/mach-sa1100/leds.c                  |   50 -----
->  arch/arm/mach-sa1100/leds.h                  |   13 --
->  arch/arm/mach-shark/Makefile                 |    4 +-
->  arch/arm/mach-shark/core.c                   |    1 -
->  arch/arm/mach-shark/leds.c                   |  220 ++++++++-----------
->  arch/arm/mach-versatile/core.c               |    5 -
->  arch/arm/plat-omap/Kconfig                   |    3 +-
->  arch/arm/plat-omap/debug-leds.c              |  293 ++++++--------------------
->  arch/arm/plat-samsung/time.c                 |    1 -
->  arch/arm/plat-versatile/Kconfig              |    4 +-
->  arch/arm/plat-versatile/leds.c               |   13 +-
->  drivers/char/nwflash.c                       |   34 ---
->  drivers/leds/Kconfig                         |   10 +
->  drivers/leds/Makefile                        |    1 +
->  drivers/leds/ledtrig-cpu.c                   |  163 ++++++++++++++
->  include/linux/leds.h                         |   16 ++
->  97 files changed, 1445 insertions(+), 2981 deletions(-)
->  delete mode 100644 arch/arm/include/asm/leds.h
->  delete mode 100644 arch/arm/kernel/leds.c
->  delete mode 100644 arch/arm/mach-clps711x/p720t-leds.c
->  delete mode 100644 arch/arm/mach-footbridge/ebsa285-leds.c
->  delete mode 100644 arch/arm/mach-footbridge/netwinder-leds.c
->  delete mode 100644 arch/arm/mach-ks8695/leds.c
->  delete mode 100644 arch/arm/mach-omap1/leds-h2p2-debug.c
->  delete mode 100644 arch/arm/mach-omap1/leds-innovator.c
->  delete mode 100644 arch/arm/mach-omap1/leds-osk.c
->  delete mode 100644 arch/arm/mach-omap1/leds.c
->  delete mode 100644 arch/arm/mach-omap1/leds.h
->  delete mode 100644 arch/arm/mach-pxa/leds-idp.c
->  delete mode 100644 arch/arm/mach-pxa/leds-lubbock.c
->  delete mode 100644 arch/arm/mach-pxa/leds-mainstone.c
->  delete mode 100644 arch/arm/mach-pxa/leds.c
->  delete mode 100644 arch/arm/mach-pxa/leds.h
->  delete mode 100644 arch/arm/mach-sa1100/leds-assabet.c
->  delete mode 100644 arch/arm/mach-sa1100/leds-badge4.c
->  delete mode 100644 arch/arm/mach-sa1100/leds-cerf.c
->  delete mode 100644 arch/arm/mach-sa1100/leds-hackkit.c
->  delete mode 100644 arch/arm/mach-sa1100/leds-lart.c
->  delete mode 100644 arch/arm/mach-sa1100/leds.c
->  delete mode 100644 arch/arm/mach-sa1100/leds.h
->  create mode 100644 drivers/leds/ledtrig-cpu.c
->
-> Thanks,
 > --
-> Bryan Wu <bryan.wu@canonical.com>
-> Kernel Developer    +86.186-168-78255 Mobile
-> Canonical Ltd.      www.canonical.com
-> Ubuntu - Linux for human beings | www.ubuntu.com
+> tejun
 
 
+-----------------------
+blk-exec.c: In blk_execute_rq_nowait(), if the queue is dead, call to
+done() routine is not made. That will result in blk_execute_rq() stuck
+in wait_for_completion(). Avoid this by initializing rq->end_io to
+done() routine before we check for dead queue.
 
--- 
-Bryan Wu <bryan.wu@canonical.com>
-Kernel Developer    +86.186-168-78255 Mobile
-Canonical Ltd.      www.canonical.com
-Ubuntu - Linux for human beings | www.ubuntu.com
+Signed-off-by: Muthukumar Ratty <muthur@gmail.com>
+CC: Tejun Heo <tj@kernel.org>
+CC: Jens Axboe <axboe@kernel.dk>
+CC: James Bottomley <James.Bottomley@hansenpartnership.com>
+
+-----------------------
+
+diff --git a/block/blk-exec.c b/block/blk-exec.c
+index fb2cbd5..284bf56 100644
+--- a/block/blk-exec.c
++++ b/block/blk-exec.c
+@@ -53,16 +53,17 @@ void blk_execute_rq_nowait(struct request_queue
+*q, struct gendisk *bd_disk,
+        WARN_ON(irqs_disabled());
+        spin_lock_irq(q->queue_lock);
+
++       rq->rq_disk = bd_disk;
++       rq->end_io = done;
++
+        if (unlikely(blk_queue_dead(q))) {
+-               spin_unlock_irq(q->queue_lock);
+                rq->errors = -ENXIO;
+                if (rq->end_io)
+                        rq->end_io(rq, rq->errors);
++               spin_unlock_irq(q->queue_lock);
+                return;
+        }
+
+-       rq->rq_disk = bd_disk;
+-       rq->end_io = done;
+        __elv_add_request(q, rq, where);
+        __blk_run_queue(q);
+        /* the queue is stopped so it won't be run */
+
+--20cf307d059eb4f42204c1dbc635
+Content-Type: text/x-diff; charset=US-ASCII; 
+	name="blk-exec-assign-endio-before-queue-dead-check.patch"
+Content-Disposition: attachment; 
+	filename="blk-exec-assign-endio-before-queue-dead-check.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h35fiq0z0
+
+LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KYmxrLWV4ZWMuYzogSW4gYmxrX2V4ZWN1dGVfcnFfbm93
+YWl0KCksIGlmIHRoZSBxdWV1ZSBpcyBkZWFkLCBjYWxsIHRvIApkb25lKCkgcm91dGluZSBpcyBu
+b3QgbWFkZS4gVGhhdCB3aWxsIHJlc3VsdCBpbiBibGtfZXhlY3V0ZV9ycSgpIHN0dWNrCmluIHdh
+aXRfZm9yX2NvbXBsZXRpb24oKS4gQXZvaWQgdGhpcyBieSBpbml0aWFsaXppbmcgcnEtPmVuZF9p
+byB0bwpkb25lKCkgcm91dGluZSBiZWZvcmUgd2UgY2hlY2sgZm9yIGRlYWQgcXVldWUuCgpTaWdu
+ZWQtb2ZmLWJ5OiBNdXRodWt1bWFyIFJhdHR5IDxtdXRodXJAZ21haWwuY29tPgpDQzogVGVqdW4g
+SGVvIDx0akBrZXJuZWwub3JnPgpDQzogSmVucyBBeGJvZSA8YXhib2VAa2VybmVsLmRrPgpDQzog
+SmFtZXMgQm90dG9tbGV5IDxKYW1lcy5Cb3R0b21sZXlAaGFuc2VucGFydG5lcnNoaXAuY29tPgoK
+LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KCmRpZmYgLS1naXQgYS9ibG9jay9ibGstZXhlYy5jIGIv
+YmxvY2svYmxrLWV4ZWMuYwppbmRleCBmYjJjYmQ1Li4yODRiZjU2IDEwMDY0NAotLS0gYS9ibG9j
+ay9ibGstZXhlYy5jCisrKyBiL2Jsb2NrL2Jsay1leGVjLmMKQEAgLTUzLDE2ICs1MywxNyBAQCB2
+b2lkIGJsa19leGVjdXRlX3JxX25vd2FpdChzdHJ1Y3QgcmVxdWVzdF9xdWV1ZSAqcSwgc3RydWN0
+IGdlbmRpc2sgKmJkX2Rpc2ssCiAJV0FSTl9PTihpcnFzX2Rpc2FibGVkKCkpOwogCXNwaW5fbG9j
+a19pcnEocS0+cXVldWVfbG9jayk7CiAKKwlycS0+cnFfZGlzayA9IGJkX2Rpc2s7CisJcnEtPmVu
+ZF9pbyA9IGRvbmU7CisKIAlpZiAodW5saWtlbHkoYmxrX3F1ZXVlX2RlYWQocSkpKSB7Ci0JCXNw
+aW5fdW5sb2NrX2lycShxLT5xdWV1ZV9sb2NrKTsKIAkJcnEtPmVycm9ycyA9IC1FTlhJTzsKIAkJ
+aWYgKHJxLT5lbmRfaW8pCiAJCQlycS0+ZW5kX2lvKHJxLCBycS0+ZXJyb3JzKTsKKwkJc3Bpbl91
+bmxvY2tfaXJxKHEtPnF1ZXVlX2xvY2spOwogCQlyZXR1cm47CiAJfQogCi0JcnEtPnJxX2Rpc2sg
+PSBiZF9kaXNrOwotCXJxLT5lbmRfaW8gPSBkb25lOwogCV9fZWx2X2FkZF9yZXF1ZXN0KHEsIHJx
+LCB3aGVyZSk7CiAJX19ibGtfcnVuX3F1ZXVlKHEpOwogCS8qIHRoZSBxdWV1ZSBpcyBzdG9wcGVk
+IHNvIGl0IHdvbid0IGJlIHJ1biAqLwo=
+--20cf307d059eb4f42204c1dbc635--
