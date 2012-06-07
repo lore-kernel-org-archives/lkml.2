@@ -1,196 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932762Ab2FGTgP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 15:36:15 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:46897 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751707Ab2FGTgN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 15:36:13 -0400
-Date: Thu, 7 Jun 2012 20:36:07 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>, Jan Kara <jack@suse.cz>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-fsdevel@vger.kernel.org, "J. Bruce Fields" <bfields@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Sage Weil <sage@newdream.net>
-Subject: Re: processes hung after sys_renameat, and 'missing' processes
-Message-ID: <20120607193607.GI30000@ZenIV.linux.org.uk>
-References: <20120603232820.GQ30000@ZenIV.linux.org.uk>
- <20120606194233.GA1537@redhat.com>
- <CA+55aFwxFVLPk4-dp73uccKXepKwjpGFgh0NW1u8d0zYzr=hBA@mail.gmail.com>
- <20120606230040.GA18089@redhat.com>
- <CA+55aFx_oREEd2XS_aG7PJ7dwzWjgx689V_uRPGWpVS01_++6A@mail.gmail.com>
- <20120606235403.GC30000@ZenIV.linux.org.uk>
- <20120607002914.GB22223@redhat.com>
- <CA+55aFyp2GUbc218eb5BDyAqz+cOPTJMVcb4ptk+f1_RBB+-mg@mail.gmail.com>
- <20120607011915.GA17566@redhat.com>
- <20120607012900.GE30000@ZenIV.linux.org.uk>
+	id S1755387Ab2FGTh5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 15:37:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30195 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751832Ab2FGThz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 15:37:55 -0400
+Date: Thu, 7 Jun 2012 21:37:47 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Zhouping Liu <zliu@redhat.com>
+Cc: Hillf Danton <dhillf@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: AutoNUMA15
+Message-ID: <20120607193747.GH21339@redhat.com>
+References: <CAJd=RBAQiKC1Np7qzNrD1AEXcoPwfSLwTh9ZjUkvAb7F6eUX9A@mail.gmail.com>
+ <097fc79d-1e82-4633-8cf0-c47612e5f729@zmail13.collab.prod.int.phx2.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20120607012900.GE30000@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <097fc79d-1e82-4633-8cf0-c47612e5f729@zmail13.collab.prod.int.phx2.redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[maintainers of assorted code involved Cc'd]
-
-On Thu, Jun 07, 2012 at 02:29:00AM +0100, Al Viro wrote:
-> On Wed, Jun 06, 2012 at 09:19:15PM -0400, Dave Jones wrote:
-> > On Wed, Jun 06, 2012 at 05:42:35PM -0700, Linus Torvalds wrote:
-> > 
-> >  > So Al meant you to test mutex_is_locked(dentry->d_inode->i_mutex) of
-> >  > the parents.
-> > 
-> > ok, I ended up with..
-> > 
-> >         WARN_ON_ONCE(!mutex_is_locked(&target->d_parent->d_inode->i_mutex));
-> > 
-> >         if (dentry->d_parent != NULL)
-> 			       != dentry)
+On Thu, Jun 07, 2012 at 10:08:52AM -0400, Zhouping Liu wrote:
+> > On Thu, Jun 7, 2012 at 10:30 AM, Zhouping Liu <zliu@redhat.com>
+> > wrote:
+> > >
+> > > [    3.114024] ---[ end trace e696d6ddf3adb276 ]---
+> > > [    3.121541] swapper/0 used greatest stack depth: 4768 bytes left
+> > > [    3.143784] Kernel panic - not syncing: Attempted to kill init!
+> > > exitcode=0x0000000b
+> > > [    3.143784]
+> > >
+> > > such above errors occurred in my two boxes:
+> > > in one machine, which has 120Gb RAM and 8 numa nodes with AMD CPU,
+> > > kernel
+> > > panic occurred in autonuma15 and Linus tree(3.5.0-rc1)
+> > > but in another one, which has 16Gb RAM and 4 numa nodes with AMD
+> > > CPU, kernel
+> > > panic only occurred in autonuma15, no such issues in Linus tree,
+> > >
+> > Related to fix at https://lkml.org/lkml/2012/6/5/31  ?
+> >
 > 
-> ->d_parent *never* should be NULL; when dentry is disconnected from the
-> tree (or hadn't been connected to it yet), it points to that dentry itself.
+> hi, Hillf
+> 
+> Thanks! but the Linus tree I tested has contained the patch,
+> also I tested it in autunuma15 with the patch just now, and
+> the panic is still alive, so maybe it's a new issues...
 
-BTW, I've started to put together some documentation on ->d_parent use.
-And already have found idiocies.
+I guess this 74a5ce20e6eeeb3751340b390e7ac1d1d07bbf55 or this
+8e7fbcbc22c12414bcc9dfdd683637f58fb32759 may have introduced a problem
+with sgp->power being null.
 
-0) *all* instances of struct dentry should come from __d_alloc(); never
-embed it into another object or declare variables of type struct dentry.
-AFAICS, that one is satisfied now; any out-of-tree code violating that
-deserves to be broken and *will* be broken.
+After applying the zalloc_node it oopses in a different place here:
 
-1) For all code outside of fs/dcache.c it's read-only.  Never change it
-directly, period.  Again, satisfied in mainline, out-of-tree code can
-go play in the traffic, for all I care.
+	/* Adjust by relative CPU power of the group */
+	sgs->avg_load = (sgs->group_load*SCHED_POWER_SCALE) / group->sgp->power;
 
-2) Places that set ->d_parent: __d_alloc(), d_alloc(), __d_move(),
-__d_materialize_dentry().  The first two are doing that to new instance
-of struct dentry with no references to it anywhere in shared data
-structures.  The other two have had dentry passed to dentry_lock_for_move().
+power is zero.
 
-3) d_alloc(NULL, name) should never happen (will instantly oops in that case).
+[    3.243773] divide error: 0000 [#1] SMP
+[    3.244564] CPU 5
+[    3.245016] Modules linked in:
+[    3.245642]
+[    3.245939] Pid: 0, comm: swapper/5 Not tainted 3.5.0-rc1+ #1 HP ProLiant DL785 G6   
+[    3.247640] RIP: 0010:[<ffffffff810afbeb>]  [<ffffffff810afbeb>] update_sd_lb_stats+0x27b/0x620
+[    3.249534] RSP: 0000:ffff880411207b48  EFLAGS: 00010056
+[    3.250636] RAX: 0000000000000000 RBX: 0000000000000000 RCX: ffff880811496d00
+[    3.252174] RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffff8818116a0548
+[    3.253509] RBP: ffff880411207c28 R08: 0000000000000000 R09: 0000000000000000
+[    3.255073] R10: 0000000000000001 R11: 0000000000000000 R12: 0000000000000000
+[    3.256607] R13: 0000000000000000 R14: 0000000000000000 R15: 0000000000000030
+[    3.258278] FS:  0000000000000000(0000) GS:ffff881817200000(0000) knlGS:0000000000000000
+[    3.260010] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[    3.261250] CR2: 0000000000000000 CR3: 000000000196f000 CR4: 00000000000007e0
+[    3.262586] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[    3.263912] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[    3.265320] Process swapper/5 (pid: 0, threadinfo ffff880411206000, task ffff8804111fa680)
+[    3.267150] Stack:
+[    3.267670]  0000000000000001 ffff880411207e34 ffff880411207bb8 ffff880411207d90
+[    3.269344]  00000000ffffffff ffff8818116a0548 00000000001d4780 00000000001d4780
+[    3.270953]  ffff880416c21000 ffff880411207c38 ffff8818116a0560 0000000000000000
+[    3.272379] Call Trace:
+[    3.272933]  [<ffffffff810affc9>] find_busiest_group+0x39/0x4b0
+[    3.274214]  [<ffffffff810b0545>] load_balance+0x105/0xac0
+[    3.275408]  [<ffffffff810ceefd>] ? trace_hardirqs_off+0xd/0x10
+[    3.276695]  [<ffffffff810aa26f>] ? local_clock+0x6f/0x80
+[    3.277925]  [<ffffffff810b1500>] idle_balance+0x130/0x2d0
+[    3.279137]  [<ffffffff810b1420>] ? idle_balance+0x50/0x2d0
+[    3.280224]  [<ffffffff81683e40>] __schedule+0x910/0xa00
+[    3.281229]  [<ffffffff81684269>] schedule+0x29/0x70
+[    3.282165]  [<ffffffff8102352f>] cpu_idle+0x12f/0x140
+[    3.283130]  [<ffffffff8166bf85>] start_secondary+0x262/0x264
 
-4) ->d_parent is *never* NULL; the only way to stumble across a dentry with
-that not being true is to crawl through the slab page directly and to run
-into an object that has been allocated by not initialized yet.  Don't do
-that (nothing in mainline does, thanks $DEITY).  "No parent" == "dentry
-has ->d_parent pointing to dentry itself".  There's a helper checking that,
-albeit with slightly misleading name - IS_ROOT(dentry).  Doesn't have to
-be fs root - anything still not attached to the tree or already detached
-from it will be that way.  Any code checking that ->d_parent is NULL is
-almost certainly a bug.  And we have a bunch of such places in fs/ceph:
-	ceph_init_dentry()
-	ceph_d_prune()
-	ceph_mdsc_build_path()
-a few in fs/cifs:
-	build_path_from_dentry()
-complete idiocy in fs/debugfs (not only check for NULL ->d_parent, but
-one for ->d_parent being a negative dentry; also can't happen).
-	debugfs_remove()
-	debugfs_remove_recursive()
-one in fs/ocfs2:
-	ocfs2_match_dentry()
-and one in security/inode.c:
-	securityfs_remove() (nicked from debugfs, at a guess).
-Some of those guys can be simply dropped, but I really wonder what
-ceph_init_dentry/ceph_d_prune intended there.
+Please let me know if it rings a bell, it looks an upstream problem.
 
-Incidentall, build_path_from_dentry() ought to be lifted into fs/dcache.c;
-we have at least three copies and one of them is not an instant roothole
-only because hppfs doesn't follow underlying procfs changes.  And I'm going
-to export is_subdir() - at least gfs2 has grown itself a b0rken copy...
-
-5) all assignments to dentry->d_parent after initialization are under
-dentry->d_lock; dentry_lock_for_move() takes care of that.
-
-6) all reassignments to dentry->d_parent have ->d_lock held on old and new
-parent.  Again, dentry_lock_for_move() takes care of that and so does
-d_alloc() (that one - for new parent only; old parent is dentry itself
-here and nothing could have seen it yet).
-
-7) attached dentry moving away from old parent must have ->i_mutex on
-that old parent held.
-
-8) dentry getting attached to a new parent must have ->i_mutex held on
-that new parent.
-
-9) attached dentry getting moved to a new parent must have ->s_vfs_rename_mutex
-held.
-
-Now, (7--9) are interesting; the call graph looks so:
-__d_move()
-	<- d_move()
-	<- __d_unalias()
-		<- d_materialise_unique()
-__d_materialise_dentry()
-	<- d_materialise_unique()
-
-rename-related callers of d_move() (vfs_rename_dir/vfs_rename_other/
-nfs_rename/ocfs2_dentry_move from ocfs2_rename/ceph_rename/v9fs_vfs_rename)
-share the same locking environment; we have both parents + ->s_vfs_rename_mutex
-in case of cross-directory move held.  Pretty much by an accident we have
-one difference between vfs_rename_dir and vfs_rename_other - holding ->i_mutex
-on *victim* of overwriting rename() is not something d_move() cares about.
-We can make that more uniform, but that's really unrelated to that.
-Note that in all these cases both dentries are guaranteed to be attached
-all along.
-
-Other callers of d_move():
-	vfat_lookup() does d_move() of an alias; the validity of that
-strongly relies on the lack of anything resembling hardlinks on VFAT;
-the parents will be the same (and parent of target is locked).
-	sysfs_lookup() plays insane games with d_move(); I _really_
-don't like the look of that code.  It tries to play catch-up after
-sysfs_rename() done its thing.  AFAICS, the parent *can* be changed
-by sysfs_rename().  No lock is held on said parent here; no
-->s_vfs_rename_mutex either.  Moreover, none of the sysfs_rename() callers
-(kobject_move(), etc.) appear to give a damn about checking if it would
-create a loop.
-	* debugfs_rename() - imitates what vfs_rename() is doing.  Same
-locking environment.  BTW,
-        trap = lock_rename(new_dir, old_dir);
-        /* Source or destination directories don't exist? */
-        if (!old_dir->d_inode || !new_dir->d_inode)
-                goto exit;
-is bogus - lock_rename() is taking ->i_mutex on these inodes, for fsck sake!
-If this can be called with old_dir or new_dir negative, it's buggered.
-	* ceph_fill_trace() in CEPH_MDS_OP_RENAME case.  Seems to be
-done while ceph_rename() is being executed; i.e. the usual locking
-environment holds.  No idea why it feels the need to grab references
-to old_dentry and new_dentry in ceph_rename(), though - if that thing
-can outlive ceph_rename(), we have a bad trouble.  And if it can't, there's
-no reasons to pin them down that way.
-	* d_splice_alias() - broken.  Called without any locking on the
-old directory, nevermind ->s_vfs_rename_mutex.  I really believe that
-this pair of commits needs to be reverted.  The earlier code used to
-guarantee that alias would be detached.
-
-d_materialise_unique(dentry, inode) must be called with dentry->d_parent
-having its ->d_inode->i_mutex held.  AFAICS, that's satisfied for all
-callers - they come either from ->lookup() or from ->readdir(), both
-having the parent inode locked.  ceph is a possible exceptions; it's
-damn hard to trace back to the places triggering ceph_fill_trace() in
-general ;-/
-
-__d_unalias(), in case we are asked for cross-directory move, grabs
-->s_vfs_rename_mutex first (with trylock).  That makes ->d_parent of
-alias stable; then it grabs ->i_mutex on that parent (again with trylock)
-and we are all set.
-
-__d_materialise_dentry(dentry, alias) is called only when alias is
-unattached.  That looks like potential race, BTW - what's to prevent it
-from becoming attached right under us?  We do have __d_materialise_dentry()
-and __d_ualias serialized by alias->d_inode->i_lock, but... there's another
-way for that unattached alias to get attached - d_splice_alias().  And
-it's done without ->i_lock there.  OTOH, it's not a problem to extend
-the protection of ->i_lock to that spot as well.
-
-I'll continue this series in a couple of hours - there's more.  In the
-meanwhile, I'd like to hear from ceph, sysfs and nfsd folks - see above
-for the reasons.
+Thanks,
+Andrea
