@@ -1,92 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756907Ab2FGX6M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 19:58:12 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:53382 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756668Ab2FGX6J (ORCPT
+	id S1753003Ab2FHAAB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 20:00:01 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:61040 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753822Ab2FGX77 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 19:58:09 -0400
-Date: Fri, 8 Jun 2012 09:57:55 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: Re: linux-next: boot problem with next-20120607
-Message-Id: <20120608095755.2676d319863e46b87b907774@canb.auug.org.au>
-In-Reply-To: <20120607150549.63f3ab81.akpm@linux-foundation.org>
-References: <20120607135320.7a1298385346bc238a0f92b0@canb.auug.org.au>
-	<20120607150549.63f3ab81.akpm@linux-foundation.org>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__8_Jun_2012_09_57_55_+1000_N.EOXjLgA/W/ct5x"
+	Thu, 7 Jun 2012 19:59:59 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Sasha Levin <levinsasha928@gmail.com>
+Subject: Re: lp: hung task in lp_open
+Date: Thu, 7 Jun 2012 23:59:43 +0000
+User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
+Cc: Greg KH <greg@kroah.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>
+References: <1339075302.3279.14.camel@lappy>
+In-Reply-To: <1339075302.3279.14.camel@lappy>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201206072359.43707.arnd@arndb.de>
+X-Provags-ID: V02:K0:W5SiMtAM1T0d3dGmtLW8Ianj5oY5Tth/AdTEeKB5tjp
+ aeOjYY/TOAuX6QaI6SRBWg2uJbV82TQZ2cK3c4RjjUdcvfeU46
+ hEw9VW/QobJt4h0qvAsFYgSu9BmEX+6xNa9pwKNwpN+8eOC3YZ
+ dNqENsMa/zZJSoPBlVUVuowCJrNR6q0qEOaUeoyF+jR4IFQqf3
+ h7I98HFOcDQXeR3mtM9IFRKij38hddmIjRGWU7J0nUFxb+q6pN
+ 3dhtNWxRQPssCTCm5PlTTD1PDeDM/Z04M3UAoljcjMsqPvY1Gb
+ A2n5jRn5/QDezrQbuUHAgoYcx0Ij6uZKxxvPovVbkA6oQ0o5WR
+ aqL8CZVtASM41LrFHBdo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__8_Jun_2012_09_57_55_+1000_N.EOXjLgA/W/ct5x
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thursday 07 June 2012, Sasha Levin wrote:
+> This appears to be happening since we can block on port open, which
+> is done within the mutex lock, so that any further lp_open calls with
+> appear to be "hung" on that mutex.
+> 
+> That mutex was added there as part of BKL cleanup.
+> 
+> I'm not sure whether the solution here is to get the lock just on the
+> parts which need locking, or add it as an exception to the hung task monitor.
 
-Hi Andrew,
+Hmm, does the hung task detector only trigger because this is an
+uninterruptible sleep? Does this fix it?
 
-On Thu, 7 Jun 2012 15:05:49 -0700 Andrew Morton <akpm@linux-foundation.org>=
- wrote:
->
-> On Thu, 7 Jun 2012 13:53:20 +1000 Stephen Rothwell <sfr@canb.auug.org.au>=
- wrote:
-> >=20
-> > My boot of next-20120607 in PowerPC produces lots of these warnings:
-> >=20
-> > BUG: Bad rss-counter state mm:c000000278508000 idx:0 val:-27
-> > BUG: Bad rss-counter state mm:c000000278284000 idx:0 val:-27
-> > BUG: Bad rss-counter state mm:c000000279e13000 idx:0 val:-27
-> > BUG: Bad rss-counter state mm:c000000278285400 idx:0 val:-27
-> >=20
-> > And so on (with different mm, idx and val numbers).  Searching showed me
-> > commit "mm: correctly synchronize rss-counters at exit/exec" which seems
-> > to be there to fix this exact problem?
->=20
-> Well that's a worry.  Are you really sure
-> mm-correctly-synchronize-rss-counters-at-exit-exec.patch was applied at
-> the time?
+8<------
+lp: use only one per-port mutex
 
-Yes.  This was exactly next-20120607.
+Different stages of the BKL removal in the lp driver have taken different
+approaches: the earlier read/write conversion used a new per-port mutex,
+while the later open and ioctl conversion used a global mutex and
+did an uninterruptible sleep, which causes tasks to hang when multiple
+ones try to open any device. Using mutex_lock_interruptible lets the
+user stop waiting for a device that is already open and decouples the
+devices from one another.
 
-> There's been an extended amount of inconclusive waffling on that patch,
-> but I thought it concerned the best way to fix it, rather than
-> *whether* it fixes it.
+Reported-by: Sasha Levin <levinsasha928@gmail.com>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
-Ah, well, it may fix it for some, but not for me - I have never seen
-those messages before yesterday.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__8_Jun_2012_09_57_55_+1000_N.EOXjLgA/W/ct5x
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJP0UADAAoJEECxmPOUX5FEsYAP/3PbIsrSYIg2BeqL0girwvkZ
-FEJQA3S9unyVuVXvCj+LhRCApUFELfBjuIuieJNPG8szSM8OGwB6hmaBhBqSup4o
-yANvQTdVw8fJieTXWc2JaD9sRZYrQyx6Cia3/CAP+Qd83zNwtl9abQKYuC4Jq87Y
-hSzFbw5lAzAxZZup8trxOki96Sy/s71nl8m4+RXhPxiPtgbuCV7qVEwQcCnneUca
-c/dL+5fP90F6j62PBJUrce85zjdYIUAFAGn3mpdrOGeLb2/G6v163wQj08x9cyYo
-NEmKOaM1iLn3yEbsRoTLRqJHK1k3CjoIZEhcptdq/05Y2Uz9mOfZAhL3jktLrOv8
-i9etQq0JC8JYU53m8YSEIK0TaMFZidM3iBOv3Zbt+b0oyJpIrk0vXZYH9eazOez6
-RcEKXin9CWBsUc0iOE/N9vgpkBb7CyObbDbJiD8UZ6JE2FMhDiWXPN4JE62xCkV+
-eoyY0UrKdeFeIQqP/Y6AMtIz2wz0b3y/mH/6loMv5Z3aSi+gE2N/r0m8G1ex9moI
-hM8M8xTPW2vR+SF0uIhORQb/wQmyJF74S9JfoQ3qQVAv+5YoXMiJv7TYmOE2Z8Z5
-gcXoQaWlw/Zs+KgO7DQHaoK3qhjsBECqyY/BMpq393G/fYBJNGbhl4AoQwG7wFA+
-N5x1qFo1w54+MpRXObPJ
-=Skdd
------END PGP SIGNATURE-----
-
---Signature=_Fri__8_Jun_2012_09_57_55_+1000_N.EOXjLgA/W/ct5x--
+diff --git a/drivers/char/lp.c b/drivers/char/lp.c
+index a741e41..0fcb197 100644
+--- a/drivers/char/lp.c
++++ b/drivers/char/lp.c
+@@ -493,11 +493,12 @@ static int lp_open(struct inode * inode, struct file * file)
+ 	unsigned int minor = iminor(inode);
+ 	int ret = 0;
+ 
+-	mutex_lock(&lp_mutex);
+-	if (minor >= LP_NO) {
+-		ret = -ENXIO;
+-		goto out;
+-	}
++	if (minor >= LP_NO)
++		return -ENXIO;
++
++	if (mutex_lock_interruptible(&lp_table[minor].port_mutex))
++		return -ERESTARTSYS;
++
+ 	if ((LP_F(minor) & LP_EXIST) == 0) {
+ 		ret = -ENXIO;
+ 		goto out;
+@@ -554,7 +555,7 @@ static int lp_open(struct inode * inode, struct file * file)
+ 	lp_release_parport (&lp_table[minor]);
+ 	lp_table[minor].current_mode = IEEE1284_MODE_COMPAT;
+ out:
+-	mutex_unlock(&lp_mutex);
++	mutex_unlock(&lp_table[minor].port_mutex);
+ 	return ret;
+ }
+ 
+@@ -680,7 +681,8 @@ static long lp_ioctl(struct file *file, unsigned int cmd,
+ 	int ret;
+ 
+ 	minor = iminor(file->f_path.dentry->d_inode);
+-	mutex_lock(&lp_mutex);
++	if (mutex_lock_interruptible(&lp_table[minor].port_mutex))
++		return -ERESTARTSYS;
+ 	switch (cmd) {
+ 	case LPSETTIMEOUT:
+ 		if (copy_from_user(&par_timeout, (void __user *)arg,
+@@ -694,7 +696,7 @@ static long lp_ioctl(struct file *file, unsigned int cmd,
+ 		ret = lp_do_ioctl(minor, cmd, arg, (void __user *)arg);
+ 		break;
+ 	}
+-	mutex_unlock(&lp_mutex);
++	mutex_unlock(&lp_table[minor].port_mutex);
+ 
+ 	return ret;
+ }
+@@ -708,7 +710,8 @@ static long lp_compat_ioctl(struct file *file, unsigned int cmd,
+ 	int ret;
+ 
+ 	minor = iminor(file->f_path.dentry->d_inode);
+-	mutex_lock(&lp_mutex);
++	if (mutex_lock_interruptible(&lp_table[minor].port_mutex))
++		return -ERESTARTSYS;
+ 	switch (cmd) {
+ 	case LPSETTIMEOUT:
+ 		if (compat_get_timeval(&par_timeout, compat_ptr(arg))) {
+@@ -727,7 +730,7 @@ static long lp_compat_ioctl(struct file *file, unsigned int cmd,
+ 		ret = lp_do_ioctl(minor, cmd, arg, compat_ptr(arg));
+ 		break;
+ 	}
+-	mutex_unlock(&lp_mutex);
++	mutex_unlock(&lp_table[minor].port_mutex);
+ 
+ 	return ret;
+ }
