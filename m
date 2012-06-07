@@ -1,63 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760630Ab2FGKuV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 06:50:21 -0400
-Received: from canardo.mork.no ([148.122.252.1]:41715 "EHLO canardo.mork.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755150Ab2FGKuT convert rfc822-to-8bit (ORCPT
+	id S932246Ab2FGKzF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 06:55:05 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:50090 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932216Ab2FGKzD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 06:50:19 -0400
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: Stefani Seibold <stefani@seibold.net>
-Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org, oneukum@suse.de,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH 02/13] code cleanup
-Organization: m
-References: <1339057243-10029-1-git-send-email-stefani@seibold.net>
-	<1339057243-10029-3-git-send-email-stefani@seibold.net>
-	<877gvjtrsf.fsf@nemi.mork.no> <1339060906.11583.9.camel@wall-e>
-Date: Thu, 07 Jun 2012 12:49:49 +0200
-In-Reply-To: <1339060906.11583.9.camel@wall-e> (Stefani Seibold's message of
-	"Thu, 07 Jun 2012 11:21:46 +0200")
-Message-ID: <87vcj3s8fm.fsf@nemi.mork.no>
-User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
+	Thu, 7 Jun 2012 06:55:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <4FCFEE36.3010902@linaro.org>
+References: <1338575387-26972-1-git-send-email-john.stultz@linaro.org>
+	<1338575387-26972-4-git-send-email-john.stultz@linaro.org>
+	<4FC9235F.5000402@gmail.com>
+	<4FC92E30.4000906@linaro.org>
+	<4FC9360B.4020401@gmail.com>
+	<4FC937AD.8040201@linaro.org>
+	<4FC9438B.1000403@gmail.com>
+	<4FC94F61.20305@linaro.org>
+	<4FCFB4F6.6070308@gmail.com>
+	<4FCFEE36.3010902@linaro.org>
+Date: Thu, 7 Jun 2012 12:55:01 +0200
+Message-ID: <CAO6Zf6D++8hOz19BmUwQ8iwbQknQRNsF4npP4r-830j04vbj=g@mail.gmail.com>
+Subject: Re: [PATCH 3/3] [RFC] tmpfs: Add FALLOC_FL_MARK_VOLATILE/UNMARK_VOLATILE
+ handlers
+From: Dmitry Adamushko <dmitry.adamushko@gmail.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        Neil Brown <neilb@suse.de>, Andrea Righi <andrea@betterlinux.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Taras Glek <tgek@mozilla.com>, Mike Hommey <mh@glandium.org>,
+        Jan Kara <jack@suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stefani Seibold <stefani@seibold.net> writes:
+[ ... ]
+>> Ok, so can you please explain your ideal order to reclaim. your last mail
+>> described old and new volatiled region. but I'm not sure regular tmpfs pages
+>> vs volatile pages vs regular file cache order. That said, when using shrink_slab(),
+>> we choose random order to drop against page cache. I'm not sure why you sure
+>> it is ideal.
+>
+> So I'm not totally sure its ideal, but I can tell you what make sense to
+> me. If there is a more ideal order, I'm open to suggestions.
+>
+> So volatile ranges should be purged first-in-first-out. So the first
+> range marked volatile should be purged first. Since volatile ranges
+> might have different costs depending on what filesystem the file is
+> backed by, this LRU order is per-filesystem.
+>
+> It seems that if we have tmpfs volatile ranges, we should purge them
+> before we swap out any regular tmpfs pages. Thus why I'm purging any
+> available ranges on shmem_writepage before swapping, rather then using a
+> shrinker now (I'm hoping you saw the updated patchset I sent out friday).
+>
 
-> If it is necessary...
+so there are multiple sources of reclaimable memory, each coming with
+its own cost of (a) giving a memory page back to the kernel and (b)
+populating a new page with the content (if accessed later). Given that
+the costs are different, I assume that the kernel tries to balance
+between different sources with the goal of minimizing the overall
+cost.
 
-So, why is it necessary for you to change this code *from* the style
-recommended by CodingStyle and LDD3?
+In this light, the placement of a new source (like 'volatile ranges')
+of reclaimable memory does affect this balance (and hence, the overall
+cost) one way or another. For instance,
 
-Quoting from LDD3:
+"we should purge them before we swap out any regular tmpfs pages"
 
- "Error recovery is sometimes best handled with the goto statement. We
-  normally hate to use goto, but in our opinion, this is one situation
-  where it is useful. Careful use of goto in error situations can
-  eliminate a great deal of complicated, highly-indented, "structured"
-  logic. Thus, in the kernel, goto is often used as shown here to deal
-  with errors."
+but maybe we should also purge them before we swap out some non-tmpfs
+pages or drop some file-backed pages?
 
-> Compacting improves since it will make the code more readable.
-
-No, it does not.  As pointed out, instead of having to follow a single
-exit path from each function, your changes makes it necessary to follow
-n exit paths.  That does not make the code more readable, and it
-contradicts both CodingStyle and LDD3.
-
-Note that I am not stating in any way that those documents contain
-absolute truths and that you cannot write your own driver the way you
-like.  I do however find it extremely strange that you insist on
-changing a coding example to be inconsistent with those documents.
-Regardless of whether you agree with them or not, you must see that such
-inconsistent guidelines will be a problem for anyone trying to use this
-code for learning?
-
-
-Bjørn
+-- Dmitry
