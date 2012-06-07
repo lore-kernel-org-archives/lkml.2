@@ -1,58 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754152Ab2FGQVb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 12:21:31 -0400
-Received: from mga01.intel.com ([192.55.52.88]:20329 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751176Ab2FGQV3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 12:21:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="176197207"
-Date: Thu, 7 Jun 2012 17:37:11 +0100
-From: Alan Cox <alan@linux.intel.com>
-To: Richard Weinberger <richard@nod.at>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Boaz Harrosh <bharrosh@panasas.com>,
-        user-mode-linux-devel@lists.sourceforge.net,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, jslaby@suse.cz
-Subject: Re: [uml-devel] um: TTY fixes (?)
-Message-ID: <20120607173711.22ae146f@bob.linux.org.uk>
-In-Reply-To: <4FD0C64D.2050302@nod.at>
-References: <1338841657-30358-1-git-send-email-richard@nod.at>
-	<4FCF6748.6020005@panasas.com>
-	<4FD059AC.8050808@panasas.com>
-	<4FD06A22.6040002@nod.at>
-	<4FD07F14.50902@panasas.com>
-	<4FD0802A.1020203@nod.at>
-	<20120607115227.6643d1ad@pyramind.ukuu.org.uk>
-	<4FD0C64D.2050302@nod.at>
-Organization: Intel
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
- Registered office Pipers Way, Swindon, SN3 1RJ
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755240Ab2FGQWE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 12:22:04 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38762 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754673Ab2FGQWB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 12:22:01 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAL1RGDXotXpZXUeR6JGu=qAkJE3H8iJ_0A0fQTCXrBJkWJDBRA@mail.gmail.com>
+References: <CAHVUoiQywo=iHKsXQbsVE7coc1FL9A9qy_a71SK94MKNV0GrKA@mail.gmail.com>
+	<CAHVUoiTZmzT3vquaDC65AJfCFZX-qS5GjgjP2-+=0R7skurW5g@mail.gmail.com>
+	<CAHVUoiQgcAMr874d_yPfm9ssUBOoX+dNLy9JNCOCYwOCrAKXFQ@mail.gmail.com>
+	<CAH3drwacayQEZHOidbKKuJ3KjgMvnYzT0S0csXV2QwSmC8nMxg@mail.gmail.com>
+	<CAL1RGDXotXpZXUeR6JGu=qAkJE3H8iJ_0A0fQTCXrBJkWJDBRA@mail.gmail.com>
+Date: Thu, 7 Jun 2012 12:22:00 -0400
+Message-ID: <CAH3drwYGH23iuLFnrjnCx3wWsBH9s_QzQ4uOtOBOFKW-D1d3Xg@mail.gmail.com>
+Subject: Re: [Regression] [Radeon] Stream command failures and render problems
+ in Evergreen (Radeon HD 5600) in kernel 3.4
+From: Jerome Glisse <j.glisse@gmail.com>
+To: Roland Dreier <roland@purestorage.com>
+Cc: Brian Gitonga Marete <marete@toshnix.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Airlie <airlied@linux.ie>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Jerome Glisse <jglisse@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 07 Jun 2012 17:18:37 +0200
-Richard Weinberger <richard@nod.at> wrote:
+On Thu, Jun 7, 2012 at 11:35 AM, Roland Dreier <roland@purestorage.com> wrote:
+>> Update your libdrm to libdrm from git should fix your issue.
+>
+> That's unfortunate -- it means a kernel change breaks working userspace?
 
-> Alan, Jiri!
-> 
-> If I omit ->hangup(), mingetty (And all other getty implementations)
-> are unable to open /dev/ttyX. open() returns -EIO.
-> Currently I'm testing it on FC12.
-> Also if I do something like "echo foo >/dev/tty1" it fails with -EIO.
-> And now the strange thing, opening and writing an unknown (unknown to
-> this upstart rubbish) tty works. E.g.: echo foo >/dev/tty10.
-> 
-> Any ideas what's going wrong?
+Yes and no, welcome to GPU world. So this patch is suppose to report
+some GPU informations to userspace, sadly on some GPU we report wrong
+informations (that's a bug). So solution is to fix kernel to report
+right information, i think the following patch does that.
+http://www.mail-archive.com/stable@vger.kernel.org/msg09247.html
 
-Yes I know exactly what is going on. However getting a more tolerant
-behaviour is going to take a couple more kernels.
+The no side, is to have it broken you also need to have upgraded your
+libdrm, ie old libdrm/radeon with this kernel will work as previously.
+This issue have been fix recently in libdrm :
+http://cgit.freedesktop.org/mesa/drm/commit/?id=c2b77a02d4e188cfa6d1b73a721946fd9b1d3577
 
-Alan
+Of course here i am assuming that the bug Brian is experiencing is
+related to wrong tile infos reporting.
+
+Cheers,
+Jerome
