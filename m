@@ -1,59 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933185Ab2FGEWJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 00:22:09 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:63657 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933094Ab2FGEWF (ORCPT
+	id S933246Ab2FGEWY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 00:22:24 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62777 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933156Ab2FGEWT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 00:22:05 -0400
-Message-Id: <20120607040348.373565277@linuxfoundation.org>
+	Thu, 7 Jun 2012 00:22:19 -0400
+Message-Id: <20120607041358.482356043@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 07 Jun 2012 13:04:57 +0900
+Date: Thu, 07 Jun 2012 13:14:00 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Chris Wilson <chris@chris-wilson.co.uk>,
-        Keith Packard <keithp@keithp.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 81/82] drm/i915/dp: Flush any outstanding work to turn the VDD off
-In-Reply-To: <20120607041406.GA13233@kroah.com>
+        alan@lxorguk.ukuu.org.uk,
+        Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>,
+        Junichi Nomura <j-nomura@ce.jp.nec.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 02/47] SCSI: Fix dm-multipath starvation when scsi host is busy
+In-Reply-To: <20120607041504.GA13819@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
 
-commit 17038de5f16569a25343cf68668f3b657eafb00e upstream.
+commit b7e94a1686c5daef4f649f7f4f839cc294f07710 upstream.
 
-As we may kick off a delayed workqueue task to switch of the VDD lines, we
-need to complete that task prior to turning off the panel (which itself
-depends upon VDD being off).
+block congestion control doesn't have any concept of fairness across
+multiple queues.  This means that if SCSI reports the host as busy in
+the queue congestion control it can result in an unfair starvation
+situation in dm-mp if there are multiple multipath devices on the same
+host.  For example:
+http://www.redhat.com/archives/dm-devel/2012-May/msg00123.html
 
-v2: Don't cancel the outstanding work as this may trigger a deadlock
+The fix for this is to report only the sdev busy state (and ignore the
+host busy state) in the block congestion control call back.
+The host is still congested, but the SCSI subsystem will sort out the
+congestion in a fair way because it knows the relation between the
+queues and the host.
 
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Keith Packard <keithp@keithp.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+[jejb: fixed up trailing whitespace]
+Reported-by: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+Tested-by: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+Signed-off-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_dp.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/scsi/scsi_lib.c |   11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_dp.c
-+++ b/drivers/gpu/drm/i915/intel_dp.c
-@@ -1149,6 +1149,7 @@ static void ironlake_edp_panel_off(struc
- 	DRM_DEBUG_KMS("Turn eDP power off\n");
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -1380,16 +1380,19 @@ static int scsi_lld_busy(struct request_
+ {
+ 	struct scsi_device *sdev = q->queuedata;
+ 	struct Scsi_Host *shost;
+-	struct scsi_target *starget;
  
- 	WARN(intel_dp->want_panel_vdd, "Cannot turn power off while VDD is on\n");
-+	ironlake_panel_vdd_off_sync(intel_dp); /* finish any pending work */
+ 	if (!sdev)
+ 		return 0;
  
- 	pp = ironlake_get_pp_control(dev_priv);
- 	pp &= ~(POWER_TARGET_ON | EDP_FORCE_VDD | PANEL_POWER_RESET | EDP_BLC_ENABLE);
+ 	shost = sdev->host;
+-	starget = scsi_target(sdev);
+ 
+-	if (scsi_host_in_recovery(shost) || scsi_host_is_busy(shost) ||
+-	    scsi_target_is_busy(starget) || scsi_device_is_busy(sdev))
++	/*
++	 * Ignore host/starget busy state.
++	 * Since block layer does not have a concept of fairness across
++	 * multiple queues, congestion of host/starget needs to be handled
++	 * in SCSI layer.
++	 */
++	if (scsi_host_in_recovery(shost) || scsi_device_is_busy(sdev))
+ 		return 1;
+ 
+ 	return 0;
 
 
