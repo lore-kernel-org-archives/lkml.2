@@ -1,79 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760150Ab2FGJAw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 05:00:52 -0400
-Received: from mtaout01-winn.ispmail.ntl.com ([81.103.221.47]:29317 "EHLO
-	mtaout01-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755273Ab2FGJAu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 05:00:50 -0400
-Message-ID: <4FD06DA8.8090306@snewbury.org.uk>
-Date: Thu, 07 Jun 2012 10:00:24 +0100
-From: Steven Newbury <steve@snewbury.org.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120530 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>
-CC: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
-Subject: Re: [PATCH] ALSA: hda - HDMI Audio init all connectors
-References: <1339048379.2910.9.camel@Nokia-N900> <s5hd35b7bk4.wl%tiwai@suse.de>
-In-Reply-To: <s5hd35b7bk4.wl%tiwai@suse.de>
-X-Enigmail-Version: 1.4.2
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1760230Ab2FGJEH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 05:04:07 -0400
+Received: from mga09.intel.com ([134.134.136.24]:34898 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760194Ab2FGJEF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 05:04:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="154116250"
+Date: Thu, 7 Jun 2012 10:19:51 +0100
+From: Alan Cox <alan@linux.intel.com>
+To: Richard Weinberger <richard@nod.at>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, jslaby@suse.cz,
+        user-mode-linux-devel@lists.sourceforge.net,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk
+Subject: Re: um: TTY fixes (?)
+Message-ID: <20120607101951.14d6596d@bob.linux.org.uk>
+In-Reply-To: <4FCFE504.2020100@nod.at>
+References: <1338841657-30358-1-git-send-email-richard@nod.at>
+	<20120604221731.5e378fc2@pyramind.ukuu.org.uk>
+	<4FCFE504.2020100@nod.at>
+Organization: Intel
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
+ Registered office Pipers Way, Swindon, SN3 1RJ
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Cloudmark-Analysis: v=1.1 cv=R50lirqlHffDPPkwUlkuVa99MrvKdVWo//yz83qex8g= c=1 sm=0 a=OH90f2hQQRgA:10 a=1AGrrh2Las4A:10 a=8nJEP1OIZ-IA:10 a=xqWC_Br6kY4A:10 a=N1CowNylAAAA:8 a=xe8BsctaAAAA:8 a=AchURstAsFJlKHtw9_YA:9 a=wPNLvfGTeEIA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+On Thu, 07 Jun 2012 01:17:24 +0200
+Richard Weinberger <richard@nod.at> wrote:
 
-On 07/06/12 09:47, Takashi Iwai wrote:
-> At the next time you submit a patch, please add Cc to maintainer
-> and subsystem ML.  Otherwise it'd be easily overlooked.
+> Am 04.06.2012 23:17, schrieb Alan Cox:
+> > We can half ignore it on console for the simple reason that you
+> > don't "dial in" to the console. I suspect it may be abusable but
+> > I've not found a way to do so.
+> > 
 > 
-I meant to, somehow I managed to send it off before adding the CC,
-probably too early in the morning!
+> BTW: Can't we add such a mode to tty_port?
+> E.g. tty_port->non_dialin_console. 8)
 
-> At Thu, 07 Jun 2012 06:52:59 +0100, Steven Newbury wrote:
->> 
->> When VGA_SWITCHEROO support is enabled hda_intel initialises the
->> HDMI audio device on the current VGA device.  When it's not
->> enabled it only initialises the HDMI device on the default VGA
->> adaptor, this means secondary cards get no audio support which is
->> very unhelpful for multi-seat!
->> 
->> With this patch, when SUPPORT_VGA_SWITCHEROO is disabled
->> hda_intel initialises all HDMI audio devices, not just the
->> default VGA.
->> 
->> Signed-off-by: Steven Newbury <steve@snewbury.org.uk>
-> 
-> OK, it must be fixed indeed.  The bug was introduced due to the
-> change in VGA-switcheroo side -- originally check_hdmi_disabled()
-> really checked the VGA-switcheroo state, so it returned the correct
-> value in the earlier version.
-> 
-> In anyway, your patch looks almost OK, but it'd be better to move 
-> ifdef and simplify like below.  Could you check whether it works
-> for you?
-> 
-Looks better, saves the pointless function call. I'll give it spin on
-my next boot.
+That is basically what you are doing when you omit a hangup method. The
+security consequences on a multi-user box run deeper however so in the
+end we need to fix the util-linux code.
 
-> Also, please give a patch that is applicable directly via git-am. 
-> Apparently you created it via git show.  Instead, use
-> git-format-patch or use --pretty=email for git-show.  Or, send the
-> patch directly via git-send-email.
-> 
-I think it's the first time I've attempted to send a complete patch to
-LKML (in the git era at least), rather than just a one-liner.  Thanks
-for the tips, hopefully I'll get it right next time! :)
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk/QbacACgkQGcb56gMuC6226wCffwsBXTF7M2MhmUgggleo4gHB
-v1MAoIwXx4REh1lSEEVhsGRuFQBZEs0q
-=R4Ys
------END PGP SIGNATURE-----
+Alan
