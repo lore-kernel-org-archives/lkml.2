@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760011Ab2FGEiU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 00:38:20 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:63657 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932905Ab2FGEU1 (ORCPT
+	id S932874Ab2FGEUP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 00:20:15 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63306 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932819Ab2FGEUD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 00:20:27 -0400
-Message-Id: <20120607040345.775333506@linuxfoundation.org>
+	Thu, 7 Jun 2012 00:20:03 -0400
+Message-Id: <20120607040344.937607770@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 07 Jun 2012 13:04:40 +0900
+Date: Thu, 07 Jun 2012 13:04:35 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Tao Ma <boyu.mt@taobao.com>,
+        alan@lxorguk.ukuu.org.uk, Jan Kara <jack@suse.cz>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
         "Theodore Tso" <tytso@mit.edu>
-Subject: [ 64/82] ext4: dont trash state flags in EXT4_IOC_SETFLAGS
+Subject: [ 59/82] ext4: fix potential NULL dereference in ext4_free_inodes_counts()
 In-Reply-To: <20120607041406.GA13233@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,52 +26,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 79906964a187c405db72a3abc60eb9b50d804fbc upstream.
+commit bb3d132a24cd8bf5e7773b2d9f9baa58b07a7dae upstream.
 
-In commit 353eb83c we removed i_state_flags with 64-bit longs, But
-when handling the EXT4_IOC_SETFLAGS ioctl, we replace i_flags
-directly, which trashes the state flags which are stored in the high
-32-bits of i_flags on 64-bit platforms.  So use the the
-ext4_{set,clear}_inode_flags() functions which use atomic bit
-manipulation functions instead.
+The ext4_get_group_desc() function returns NULL on error, and
+ext4_free_inodes_count() function dereferences it without checking.
+There is a check on the next line, but it's too late.
 
-Reported-by: Tao Ma <boyu.mt@taobao.com>
+Reviewed-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/ioctl.c |   12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+ fs/ext4/ialloc.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/fs/ext4/ioctl.c
-+++ b/fs/ext4/ioctl.c
-@@ -38,7 +38,7 @@ long ext4_ioctl(struct file *filp, unsig
- 		handle_t *handle = NULL;
- 		int err, migrate = 0;
- 		struct ext4_iloc iloc;
--		unsigned int oldflags;
-+		unsigned int oldflags, mask, i;
- 		unsigned int jflag;
+--- a/fs/ext4/ialloc.c
++++ b/fs/ext4/ialloc.c
+@@ -488,10 +488,12 @@ fallback_retry:
+ 	for (i = 0; i < ngroups; i++) {
+ 		grp = (parent_group + i) % ngroups;
+ 		desc = ext4_get_group_desc(sb, grp, NULL);
+-		grp_free = ext4_free_inodes_count(sb, desc);
+-		if (desc && grp_free && grp_free >= avefreei) {
+-			*group = grp;
+-			return 0;
++		if (desc) {
++			grp_free = ext4_free_inodes_count(sb, desc);
++			if (grp_free && grp_free >= avefreei) {
++				*group = grp;
++				return 0;
++			}
+ 		}
+ 	}
  
- 		if (!inode_owner_or_capable(inode))
-@@ -115,8 +115,14 @@ long ext4_ioctl(struct file *filp, unsig
- 		if (err)
- 			goto flags_err;
- 
--		flags = flags & EXT4_FL_USER_MODIFIABLE;
--		flags |= oldflags & ~EXT4_FL_USER_MODIFIABLE;
-+		for (i = 0, mask = 1; i < 32; i++, mask <<= 1) {
-+			if (!(mask & EXT4_FL_USER_MODIFIABLE))
-+				continue;
-+			if (mask & flags)
-+				ext4_set_inode_flag(inode, i);
-+			else
-+				ext4_clear_inode_flag(inode, i);
-+		}
- 		ei->i_flags = flags;
- 
- 		ext4_set_inode_flags(inode);
 
 
