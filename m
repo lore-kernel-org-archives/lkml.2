@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933360Ab2FGEWx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 00:22:53 -0400
+	id S1759966Ab2FGEe3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 00:34:29 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:63306 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933336Ab2FGEWs (ORCPT
+	with ESMTP id S933253Ab2FGEW3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 00:22:48 -0400
-Message-Id: <20120607041359.366464839@linuxfoundation.org>
+	Thu, 7 Jun 2012 00:22:29 -0400
+Message-Id: <20120607041358.771108955@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 07 Jun 2012 13:14:06 +0900
+Date: Thu, 07 Jun 2012 13:14:02 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Helge Deller <deller@gmx.de>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 08/47] PARISC: fix TLB fault path on PA2.0 narrow systems
+        alan@lxorguk.ukuu.org.uk, Ulrich Obergfell <uobergfe@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Hugh Dickins <hughd@google.com>, Larry Woodman <lwoodman@redhat.com>,
+        Petr Matousek <pmatouse@redhat.com>, Rik van Riel <riel@redhat.com>
+Subject: [ 04/47] mm: pmd_read_atomic: fix 32bit PAE pmd walk vs pmd_populate SMP race condition
 In-Reply-To: <20120607041504.GA13819@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,140 +27,213 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Bottomley <JBottomley@Parallels.com>
+From: Andrea Arcangeli <aarcange@redhat.com>
 
-commit 2f649c1f6f0fef445ce79a19b79e5ce8fe9d7f19 upstream.
+commit 26c191788f18129af0eb32a358cdaea0c7479626 upstream.
 
-commit 5e185581d7c46ddd33cd9c01106d1fc86efb9376
-Author: James Bottomley <JBottomley@Parallels.com>
+When holding the mmap_sem for reading, pmd_offset_map_lock should only
+run on a pmd_t that has been read atomically from the pmdp pointer,
+otherwise we may read only half of it leading to this crash.
 
-    [PARISC] fix PA1.1 oops on boot
+PID: 11679  TASK: f06e8000  CPU: 3   COMMAND: "do_race_2_panic"
+ #0 [f06a9dd8] crash_kexec at c049b5ec
+ #1 [f06a9e2c] oops_end at c083d1c2
+ #2 [f06a9e40] no_context at c0433ded
+ #3 [f06a9e64] bad_area_nosemaphore at c043401a
+ #4 [f06a9e6c] __do_page_fault at c0434493
+ #5 [f06a9eec] do_page_fault at c083eb45
+ #6 [f06a9f04] error_code (via page_fault) at c083c5d5
+    EAX: 01fb470c EBX: fff35000 ECX: 00000003 EDX: 00000100 EBP:
+    00000000
+    DS:  007b     ESI: 9e201000 ES:  007b     EDI: 01fb4700 GS:  00e0
+    CS:  0060     EIP: c083bc14 ERR: ffffffff EFLAGS: 00010246
+ #7 [f06a9f38] _spin_lock at c083bc14
+ #8 [f06a9f44] sys_mincore at c0507b7d
+ #9 [f06a9fb0] system_call at c083becd
+                         start           len
+    EAX: ffffffda  EBX: 9e200000  ECX: 00001000  EDX: 6228537f
+    DS:  007b      ESI: 00000000  ES:  007b      EDI: 003d0f00
+    SS:  007b      ESP: 62285354  EBP: 62285388  GS:  0033
+    CS:  0073      EIP: 00291416  ERR: 000000da  EFLAGS: 00000286
 
-Didn't quite fix the crash on boot.  It moved it from PA1.1 processors to
-PA2.0 narrow kernels.  The final fix is to make sure the [id]tlb_miss_20 paths
-also work.  Even on narrow systems, these paths require using the wide
-instructions becuase the tlb insertion format is wide.  Fix this by
-conditioning the dep[wd],z on whether we're being called from _11 or _20[w]
-paths.
+This should be a longstanding bug affecting x86 32bit PAE without THP.
+Only archs with 64bit large pmd_t and 32bit unsigned long should be
+affected.
 
-Tested-by: Helge Deller <deller@gmx.de>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+With THP enabled the barrier() in pmd_none_or_trans_huge_or_clear_bad()
+would partly hide the bug when the pmd transition from none to stable,
+by forcing a re-read of the *pmd in pmd_offset_map_lock, but when THP is
+enabled a new set of problem arises by the fact could then transition
+freely in any of the none, pmd_trans_huge or pmd_trans_stable states.
+So making the barrier in pmd_none_or_trans_huge_or_clear_bad()
+unconditional isn't good idea and it would be a flakey solution.
+
+This should be fully fixed by introducing a pmd_read_atomic that reads
+the pmd in order with THP disabled, or by reading the pmd atomically
+with cmpxchg8b with THP enabled.
+
+Luckily this new race condition only triggers in the places that must
+already be covered by pmd_none_or_trans_huge_or_clear_bad() so the fix
+is localized there but this bug is not related to THP.
+
+NOTE: this can trigger on x86 32bit systems with PAE enabled with more
+than 4G of ram, otherwise the high part of the pmd will never risk to be
+truncated because it would be zero at all times, in turn so hiding the
+SMP race.
+
+This bug was discovered and fully debugged by Ulrich, quote:
+
+----
+[..]
+pmd_none_or_trans_huge_or_clear_bad() loads the content of edx and
+eax.
+
+    496 static inline int pmd_none_or_trans_huge_or_clear_bad(pmd_t
+    *pmd)
+    497 {
+    498         /* depend on compiler for an atomic pmd read */
+    499         pmd_t pmdval = *pmd;
+
+                                // edi = pmd pointer
+0xc0507a74 <sys_mincore+548>:   mov    0x8(%esp),%edi
+...
+                                // edx = PTE page table high address
+0xc0507a84 <sys_mincore+564>:   mov    0x4(%edi),%edx
+...
+                                // eax = PTE page table low address
+0xc0507a8e <sys_mincore+574>:   mov    (%edi),%eax
+
+[..]
+
+Please note that the PMD is not read atomically. These are two "mov"
+instructions where the high order bits of the PMD entry are fetched
+first. Hence, the above machine code is prone to the following race.
+
+-  The PMD entry {high|low} is 0x0000000000000000.
+   The "mov" at 0xc0507a84 loads 0x00000000 into edx.
+
+-  A page fault (on another CPU) sneaks in between the two "mov"
+   instructions and instantiates the PMD.
+
+-  The PMD entry {high|low} is now 0x00000003fda38067.
+   The "mov" at 0xc0507a8e loads 0xfda38067 into eax.
+----
+
+Reported-by: Ulrich Obergfell <uobergfe@redhat.com>
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Larry Woodman <lwoodman@redhat.com>
+Cc: Petr Matousek <pmatouse@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/parisc/kernel/entry.S |   30 +++++++++++++++++-------------
- 1 file changed, 17 insertions(+), 13 deletions(-)
+ arch/x86/include/asm/pgtable-3level.h |   50 ++++++++++++++++++++++++++++++++++
+ include/asm-generic/pgtable.h         |   22 +++++++++++++-
+ 2 files changed, 70 insertions(+), 2 deletions(-)
 
---- a/arch/parisc/kernel/entry.S
-+++ b/arch/parisc/kernel/entry.S
-@@ -552,7 +552,7 @@
- 	 * entry (identifying the physical page) and %r23 up with
- 	 * the from tlb entry (or nothing if only a to entry---for
- 	 * clear_user_page_asm) */
--	.macro		do_alias	spc,tmp,tmp1,va,pte,prot,fault
-+	.macro		do_alias	spc,tmp,tmp1,va,pte,prot,fault,patype
- 	cmpib,COND(<>),n 0,\spc,\fault
- 	ldil		L%(TMPALIAS_MAP_START),\tmp
- #if defined(CONFIG_64BIT) && (TMPALIAS_MAP_START >= 0x80000000)
-@@ -581,11 +581,15 @@
- 	 */
- 	cmpiclr,=	0x01,\tmp,%r0
- 	ldi		(_PAGE_DIRTY|_PAGE_READ|_PAGE_WRITE),\prot
--#ifdef CONFIG_64BIT
-+.ifc \patype,20
- 	depd,z		\prot,8,7,\prot
--#else
-+.else
-+.ifc \patype,11
- 	depw,z		\prot,8,7,\prot
--#endif
-+.else
-+	.error "undefined PA type to do_alias"
-+.endif
-+.endif
+--- a/arch/x86/include/asm/pgtable-3level.h
++++ b/arch/x86/include/asm/pgtable-3level.h
+@@ -31,6 +31,56 @@ static inline void native_set_pte(pte_t
+ 	ptep->pte_low = pte.pte_low;
+ }
+ 
++#define pmd_read_atomic pmd_read_atomic
++/*
++ * pte_offset_map_lock on 32bit PAE kernels was reading the pmd_t with
++ * a "*pmdp" dereference done by gcc. Problem is, in certain places
++ * where pte_offset_map_lock is called, concurrent page faults are
++ * allowed, if the mmap_sem is hold for reading. An example is mincore
++ * vs page faults vs MADV_DONTNEED. On the page fault side
++ * pmd_populate rightfully does a set_64bit, but if we're reading the
++ * pmd_t with a "*pmdp" on the mincore side, a SMP race can happen
++ * because gcc will not read the 64bit of the pmd atomically. To fix
++ * this all places running pmd_offset_map_lock() while holding the
++ * mmap_sem in read mode, shall read the pmdp pointer using this
++ * function to know if the pmd is null nor not, and in turn to know if
++ * they can run pmd_offset_map_lock or pmd_trans_huge or other pmd
++ * operations.
++ *
++ * Without THP if the mmap_sem is hold for reading, the
++ * pmd can only transition from null to not null while pmd_read_atomic runs.
++ * So there's no need of literally reading it atomically.
++ *
++ * With THP if the mmap_sem is hold for reading, the pmd can become
++ * THP or null or point to a pte (and in turn become "stable") at any
++ * time under pmd_read_atomic, so it's mandatory to read it atomically
++ * with cmpxchg8b.
++ */
++#ifndef CONFIG_TRANSPARENT_HUGEPAGE
++static inline pmd_t pmd_read_atomic(pmd_t *pmdp)
++{
++	pmdval_t ret;
++	u32 *tmp = (u32 *)pmdp;
++
++	ret = (pmdval_t) (*tmp);
++	if (ret) {
++		/*
++		 * If the low part is null, we must not read the high part
++		 * or we can end up with a partial pmd.
++		 */
++		smp_rmb();
++		ret |= ((pmdval_t)*(tmp + 1)) << 32;
++	}
++
++	return (pmd_t) { ret };
++}
++#else /* CONFIG_TRANSPARENT_HUGEPAGE */
++static inline pmd_t pmd_read_atomic(pmd_t *pmdp)
++{
++	return (pmd_t) { atomic64_read((atomic64_t *)pmdp) };
++}
++#endif /* CONFIG_TRANSPARENT_HUGEPAGE */
++
+ static inline void native_set_pte_atomic(pte_t *ptep, pte_t pte)
+ {
+ 	set_64bit((unsigned long long *)(ptep), native_pte_val(pte));
+--- a/include/asm-generic/pgtable.h
++++ b/include/asm-generic/pgtable.h
+@@ -445,6 +445,18 @@ static inline int pmd_write(pmd_t pmd)
+ #endif /* __HAVE_ARCH_PMD_WRITE */
+ #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
+ 
++#ifndef pmd_read_atomic
++static inline pmd_t pmd_read_atomic(pmd_t *pmdp)
++{
++	/*
++	 * Depend on compiler for an atomic pmd read. NOTE: this is
++	 * only going to work, if the pmdval_t isn't larger than
++	 * an unsigned long.
++	 */
++	return *pmdp;
++}
++#endif
++
+ /*
+  * This function is meant to be used by sites walking pagetables with
+  * the mmap_sem hold in read mode to protect against MADV_DONTNEED and
+@@ -458,11 +470,17 @@ static inline int pmd_write(pmd_t pmd)
+  * undefined so behaving like if the pmd was none is safe (because it
+  * can return none anyway). The compiler level barrier() is critically
+  * important to compute the two checks atomically on the same pmdval.
++ *
++ * For 32bit kernels with a 64bit large pmd_t this automatically takes
++ * care of reading the pmd atomically to avoid SMP race conditions
++ * against pmd_populate() when the mmap_sem is hold for reading by the
++ * caller (a special atomic read not done by "gcc" as in the generic
++ * version above, is also needed when THP is disabled because the page
++ * fault can populate the pmd from under us).
+  */
+ static inline int pmd_none_or_trans_huge_or_clear_bad(pmd_t *pmd)
+ {
+-	/* depend on compiler for an atomic pmd read */
+-	pmd_t pmdval = *pmd;
++	pmd_t pmdval = pmd_read_atomic(pmd);
  	/*
- 	 * OK, it is in the temp alias region, check whether "from" or "to".
- 	 * Check "subtle" note in pacache.S re: r23/r26.
-@@ -1189,7 +1193,7 @@ dtlb_miss_20w:
- 	nop
- 
- dtlb_check_alias_20w:
--	do_alias	spc,t0,t1,va,pte,prot,dtlb_fault
-+	do_alias	spc,t0,t1,va,pte,prot,dtlb_fault,20
- 
- 	idtlbt          pte,prot
- 
-@@ -1213,7 +1217,7 @@ nadtlb_miss_20w:
- 	nop
- 
- nadtlb_check_alias_20w:
--	do_alias	spc,t0,t1,va,pte,prot,nadtlb_emulate
-+	do_alias	spc,t0,t1,va,pte,prot,nadtlb_emulate,20
- 
- 	idtlbt          pte,prot
- 
-@@ -1245,7 +1249,7 @@ dtlb_miss_11:
- 	nop
- 
- dtlb_check_alias_11:
--	do_alias	spc,t0,t1,va,pte,prot,dtlb_fault
-+	do_alias	spc,t0,t1,va,pte,prot,dtlb_fault,11
- 
- 	idtlba          pte,(va)
- 	idtlbp          prot,(va)
-@@ -1277,7 +1281,7 @@ nadtlb_miss_11:
- 	nop
- 
- nadtlb_check_alias_11:
--	do_alias	spc,t0,t1,va,pte,prot,nadtlb_emulate
-+	do_alias	spc,t0,t1,va,pte,prot,nadtlb_emulate,11
- 
- 	idtlba          pte,(va)
- 	idtlbp          prot,(va)
-@@ -1304,7 +1308,7 @@ dtlb_miss_20:
- 	nop
- 
- dtlb_check_alias_20:
--	do_alias	spc,t0,t1,va,pte,prot,dtlb_fault
-+	do_alias	spc,t0,t1,va,pte,prot,dtlb_fault,20
- 	
- 	idtlbt          pte,prot
- 
-@@ -1330,7 +1334,7 @@ nadtlb_miss_20:
- 	nop
- 
- nadtlb_check_alias_20:
--	do_alias	spc,t0,t1,va,pte,prot,nadtlb_emulate
-+	do_alias	spc,t0,t1,va,pte,prot,nadtlb_emulate,20
- 
- 	idtlbt          pte,prot
- 
-@@ -1457,7 +1461,7 @@ naitlb_miss_20w:
- 	nop
- 
- naitlb_check_alias_20w:
--	do_alias	spc,t0,t1,va,pte,prot,naitlb_fault
-+	do_alias	spc,t0,t1,va,pte,prot,naitlb_fault,20
- 
- 	iitlbt		pte,prot
- 
-@@ -1511,7 +1515,7 @@ naitlb_miss_11:
- 	nop
- 
- naitlb_check_alias_11:
--	do_alias	spc,t0,t1,va,pte,prot,itlb_fault
-+	do_alias	spc,t0,t1,va,pte,prot,itlb_fault,11
- 
- 	iitlba          pte,(%sr0, va)
- 	iitlbp          prot,(%sr0, va)
-@@ -1557,7 +1561,7 @@ naitlb_miss_20:
- 	nop
- 
- naitlb_check_alias_20:
--	do_alias	spc,t0,t1,va,pte,prot,naitlb_fault
-+	do_alias	spc,t0,t1,va,pte,prot,naitlb_fault,20
- 
- 	iitlbt          pte,prot
- 
+ 	 * The barrier will stabilize the pmdval in a register or on
+ 	 * the stack so that it will stop changing under the code.
 
 
