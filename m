@@ -1,51 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933469Ab2FGXFQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 19:05:16 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63924 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758221Ab2FGXE2 (ORCPT
+	id S933459Ab2FGXHa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 19:07:30 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:50200 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755573Ab2FGXH3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 19:04:28 -0400
-From: Sam Hansen <solid.se7en@gmail.com>
-To: Sam Hansen <sam@meebo-inc.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
-        Sam Hansen <solid.se7en@gmail.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH V2 2/3] staging: zram: conventions, __aligned() attribute
-Date: Thu,  7 Jun 2012 16:03:48 -0700
-Message-Id: <1339110229-19383-3-git-send-email-solid.se7en@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1339110229-19383-1-git-send-email-solid.se7en@gmail.com>
-References: <1339110229-19383-1-git-send-email-solid.se7en@gmail.com>
-In-Reply-To: <1339100404-18773-1-git-send-email-solid.se7en@gmail.com>
-References: <1339100404-18773-1-git-send-email-solid.se7en@gmail.com>
+	Thu, 7 Jun 2012 19:07:29 -0400
+MIME-Version: 1.0
+In-Reply-To: <4FD09B92.1020600@mvista.com>
+References: <1338985224-9684-1-git-send-email-linkinjeon@gmail.com>
+	<4FD09B92.1020600@mvista.com>
+Date: Fri, 8 Jun 2012 08:07:27 +0900
+Message-ID: <CAKYAXd-hd5QEYG41BzxUzRFO0N+rNTB0PcPRDQWFngUHQqi46g@mail.gmail.com>
+Subject: Re: [PATCH 1/3] scsi: set to WCE if usb cache quirk is present.
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+Cc: James.Bottomley@hansenpartnership.com, gregkh@linuxfoundation.org,
+        mdharm-usb@one-eyed-alien.net, linux-usb@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Pankaj Kumar <pankaj.km@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using the __aligned() attribute in favor of __attribute__((aligned(size)))
+Hi. Sergei.
 
-Signed-off-by: Sam Hansen <solid.se7en@gmail.com>
----
- drivers/staging/zram/zram_drv.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Good point. I will update.
+Thanks for your review.
 
-diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
-index fbe8ac9..cda89ec 100644
---- a/drivers/staging/zram/zram_drv.h
-+++ b/drivers/staging/zram/zram_drv.h
-@@ -85,7 +85,7 @@ struct table {
- 	u16 size;	/* object size (excluding header) */
- 	u8 count;	/* object ref count (not yet used) */
- 	u8 flags;
--} __attribute__((aligned(4)));
-+} __aligned(4);
- 
- struct zram_stats {
- 	u64 compr_size;		/* compressed size of pages stored */
--- 
-1.7.5.4
-
+2012/6/7, Sergei Shtylyov <sshtylyov@mvista.com>:
+> Hello.
+>
+> On 06-06-2012 16:20, Namjae Jeon wrote:
+>
+>> Make use of USB quirk method to identify such HDD while reading the cache
+>> status in sd_probe(). If cache quirk is present for the HDD, lets assume
+>> that cache is enabled and make WCE bit equal to 1.
+>
+>> Signed-off-by: Namjae Jeon<namjae.jeon@samsung.com>
+>> Signed-off-by: Pankaj Kumar<pankaj.km@samsung.com>
+>> Signed-off-by: Amit Sahrawat<a.sahrawat@samsung.com>
+>> ---
+>>   drivers/scsi/sd.c          |    9 +++++++--
+>>   include/scsi/scsi_device.h |    1 +
+>>   2 files changed, 8 insertions(+), 2 deletions(-)
+>
+>> diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+>> index 6f0a4c6..33faf6d 100644
+>> --- a/drivers/scsi/sd.c
+>> +++ b/drivers/scsi/sd.c
+>> @@ -2259,8 +2259,13 @@ bad_sense:
+>>   		sd_printk(KERN_ERR, sdkp, "Asking for cache data failed\n");
+>>
+>>   defaults:
+>> -	sd_printk(KERN_ERR, sdkp, "Assuming drive cache: write through\n");
+>> -	sdkp->WCE = 0;
+>> +	if (sdp->wce_quirk) {
+>> +		sdkp->WCE = 1;
+>> +		sd_printk(KERN_NOTICE, sdkp, "Assuming drive cache write back\n");
+>
+>     You forgot colon after "cache".
+>
+>> +	} else {
+>> +		sd_printk(KERN_ERR, sdkp, "Assuming drive cache: write through\n");
+>> +		sdkp->WCE = 0;
+>
+>     It makes sense to do assignments and printk() in the same order in both
+>
+> branches.
+>
+>> +	}
+>>   	sdkp->RCD = 0;
+>>   	sdkp->DPOFUA = 0;
+>>   }
+>
+> WBR, Sergei
+>
