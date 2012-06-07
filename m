@@ -1,83 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760480Ab2FGJV1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 05:21:27 -0400
-Received: from www84.your-server.de ([213.133.104.84]:45363 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751488Ab2FGJVZ convert rfc822-to-8bit (ORCPT
+	id S1760383Ab2FGJ2p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 05:28:45 -0400
+Received: from nm18.access.bullet.mail.mud.yahoo.com ([66.94.237.219]:27519
+	"HELO nm18.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751681Ab2FGJ2o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 05:21:25 -0400
-Message-ID: <1339060906.11583.9.camel@wall-e>
-Subject: Re: [PATCH 02/13] code cleanup
-From: Stefani Seibold <stefani@seibold.net>
-To: =?ISO-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>
-Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org, oneukum@suse.de,
-        linux-usb@vger.kernel.org
-Date: Thu, 07 Jun 2012 11:21:46 +0200
-In-Reply-To: <877gvjtrsf.fsf@nemi.mork.no>
-References: <1339057243-10029-1-git-send-email-stefani@seibold.net>
-	 <1339057243-10029-3-git-send-email-stefani@seibold.net>
-	 <877gvjtrsf.fsf@nemi.mork.no>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 8BIT
-Mime-Version: 1.0
-X-Authenticated-Sender: stefani@seibold.net
+	Thu, 7 Jun 2012 05:28:44 -0400
+X-Yahoo-Newman-Id: 244044.92071.bm@smtp101.sbc.mail.bf1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: sh0Mg_4VM1lfJzsNH9oW4X_SyRnq8YNX0MTwuXRkP1RXEut
+ _gTJ4gQd6XGpSO0ddYRmbBVbc1x8NWf87lAWpuKFYzU2x4TcwkJyPu8GdyHV
+ zEzM1vln672jNx7yauZxwZ_1lKslGkU0eyA9bxZSk6nBXEA6md0UhNyFibKn
+ uU2TKRzF1ayp3Ezvr6vvY7ioidVUlOgxlPkash5MfxzsDe_BrHyjopOhp5qW
+ _YIeSILjmhFRBCsvMR9umbk7KKPhbDqYZgd1MK99rttaKhWpST_QtijcNEz8
+ ehmkUZ9LBoLcYM9AILHoK8Pb0co_pM8_3NISphZpvBiFGb37XAtP53DaBw0y
+ xqANLJ14481uMy8GYgM2NNK.HaN2NJ6cghDVonnialzVZvECXmH6CMYhfFeX
+ 5NPYfSA5WnNX37mCG_uSs3L_ECSkKC5k-
+X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
+Message-ID: <4FD0744F.2010204@att.net>
+Date: Thu, 07 Jun 2012 04:28:47 -0500
+From: Daniel Santos <danielfsantos@att.net>
+Reply-To: daniel.santos@pobox.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120502 Thunderbird/10.0.4
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 0/6]  - bad patches
+References: <4FD070A7.8040505@att.net>
+In-Reply-To: <4FD070A7.8040505@att.net>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, den 07.06.2012, 11:06 +0200 schrieb Bjørn Mork:
-> stefani@seibold.net writes:
-> 
-> > @@ -95,15 +93,12 @@ static int skel_open(struct inode *inode, struct file *file)
-> >  	if (!interface) {
-> >  		pr_err("%s - error, can't find device for minor %d\n",
-> >  			__func__, subminor);
-> > -		retval = -ENODEV;
-> > -		goto exit;
-> > +		return -ENODEV;
-> >  	}
-> 
-> 
-> This may save you a line, but that line was there for a reason...
-> 
-> Using a common exit path for errors makes it easier to keep unlocking,
-> deallocation and other cleanups correct.  Although you *can* do that
-> change now, you introduce future bugs here.  Someone adding a lock
-> before this will now have to go through all the error paths to ensure
-> that they unlock before exiting.
-> 
-> See "Chapter 7: Centralized exiting of functions" in
-> Documentation/CodingStyle.
-> 
-
-If it is necessary... I get alway ten different complains from six
-developers. Developer A says do it in this way, developer B do it in the
-other way.
-
-> Focus on creating a *good* example.  Compacting the code is not
-> necessarily improving the code...
-> 
-
-Compacting improves since it will make the code more readable.
-
-> 
-> 
-> >  	/* verify that we actually have some data to write */
-> > -	if (count == 0)
-> > -		goto exit;
-> > +	if (!count)
-> > +		return 0;
-> 
-> zero-testing is discussed over and over again, and is a matter of
-> taste. But I fail to see how changing it can be part of a cleanup.  It
-> just changes the flavour to suit another taste.  What's the reason for
-> doing that?
-> 
-
-Consistency - there are a lot places in the driver skeleton handling
-this in the same way.
-
-
-
+I apologize, it appears that my patches were disgustingly mauled.  I'll
+re-send them tomorrow. ( I had *thought* I had it fixed :)
