@@ -1,90 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758354Ab2FGX0Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 19:26:16 -0400
-Received: from masquerade.micron.com ([137.201.242.130]:44095 "EHLO
-	masquerade.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758153Ab2FGX0O convert rfc822-to-8bit (ORCPT
+	id S1758337Ab2FGXeU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 19:34:20 -0400
+Received: from mail-wi0-f202.google.com ([209.85.212.202]:42791 "EHLO
+	mail-wi0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755816Ab2FGXeS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 19:26:14 -0400
-Message-ID: <4FD13890.7020203@micron.com>
-Date: Thu, 7 Jun 2012 16:26:08 -0700
-From: Asai Thambi S P <asamymuthupa@micron.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Jens Axboe <axboe@kernel.dk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sam Bradshaw <sbradshaw@micron.com>
-Subject: Re: [PATCH 1/2] mtip32xx: Remove 'registers' and 'flags' from sysfs
-References: <4FCD0FC7.9010105@micron.com> <20120605093314.GC21560@kroah.com> <4FCE4D67.1030309@micron.com> <20120605202555.GA4727@kroah.com> <4FCF9BA1.90308@micron.com> <20120606212554.GA17852@kroah.com>
-In-Reply-To: <20120606212554.GA17852@kroah.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8BIT
-X-TM-AS-Product-Ver: SMEX-10.0.0.4152-6.800.1017-18952.004
-X-TM-AS-Result: No--23.256900-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
-X-MT-CheckInternalSenderRule: True
+	Thu, 7 Jun 2012 19:34:18 -0400
+From: David Sharp <dhsharp@google.com>
+To: rostedt@goodmis.org, linux-kernel@vger.kernel.org
+Cc: vnagarnaik@google.com, David Sharp <dhsharp@google.com>
+Subject: [PATCH] ring-buffer: fix uninitialized read_stamp
+Date: Thu,  7 Jun 2012 16:27:22 -0700
+Message-Id: <1339111642-869-1-git-send-email-dhsharp@google.com>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/6/2012 2:25 PM, Greg KH wrote:
+This fixes a scenario in which trace_pipe_raw will return events with invalid
+timestamps when events are copied out one at a time (instead of swapping out
+the reader page with a spare page). In this scenario, ring_buffer_read_page()
+uses cpu_buffer->read_stamp to keep track of the time of the earliest event.
+However, cpu_buffer->read_stamp was not always updated. The only function that
+sets read_stamp to a new valid value is rb_reset_reader_page(), which is called
+only by rb_get_reader_page(). rb_reset_reader_page() was not called when there
+is data immediately available on the page to read (read < rb_page_size()). This
+is the bug.
 
-> On Wed, Jun 06, 2012 at 11:04:17AM -0700, Asai Thambi S P wrote:
->> On 6/5/2012 1:25 PM, Greg KH wrote:
->>
->>> On Tue, Jun 05, 2012 at 11:18:15AM -0700, Asai Thambi S P wrote:
->>>> On 6/5/2012 2:33 AM, Greg KH wrote:
->>>>
->>>>> On Mon, Jun 04, 2012 at 12:43:03PM -0700, Asai Thambi S P wrote:
->>>>>>
->>>>>> This patch removes entries 'registers' and 'flags' from sysfs. Updated ABI file
->>>>>> to reflect this change.
->>>>>>
->>>>>> Reported-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->>>>>> Signed-off-by: Asai Thambi S P <asamymuthupa@micron.com>
->>>>>
->>>>> Much nicer, thanks for doing this:
->>>>>
->>>>> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->>>>>
->>>>> But, one question on a different sysfs file:
->>>>>
->>>>>>  What:           /sys/block/rssd*/status
->>>>>>  Date:           April 2012
->>>>>>  KernelVersion:  3.4
->>>>>>  Contact:        Asai Thambi S P <asamymuthupa@micron.com>
->>>>>>  Description:    This is a read-only file. Indicates the status of the device.
->>>>>
->>>>> What "status" is this showing?  Why is this a sysfs file?  Who
->>>>> needs/wants it?
->>>>
->>>>
->>>> This shows the device status - online, write_protect or thermal_shutdown. This
->>>> would be used by management application.
->>>
->>> Is it used by a management application?  Shouldn't such a tool use the
->>> "standard" block device status files instead?  I thought we exported
->>> that information already in the /sys/block/* files.
->>>
->>
->>
->> device status is not exported by standard block interface.
-> 
-> Ok, but don't you think it should be?  Why make this unique to only your
-> driver?
-> 
+Setting the read_stamp on the first read from a page fixes the bug.
 
+Tested: On certain lightly-loaded machines, repetitive reads from
+trace_pipe_raw without using splice() would sometimes result in invalid
+timestamps. Poisoning read_stamp in rb_init_page() with a negative value makes
+the problem more visible. After this fix, the invalid timstamps disappear.
 
-It is unique to our driver because it exports information that is unique. In
-addition to write protect and thermal status, in future it would export the
-status of what we call “ftl rebuild”, which is a rebuilding of the logical to
-physical mappings internal to the flash controller. If and when other devices
-need to export device status, it could be moved to standard block interface.
+Google-Bug-Id: 6410455
+Signed-off-by: David Sharp <dhsharp@google.com>
+---
+ kernel/trace/ring_buffer.c |    9 ++++++++-
+ 1 files changed, 8 insertions(+), 1 deletions(-)
 
---
-Regards,
-Asai Thambi
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index 1d0f6a8..ad0239b 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -3226,8 +3226,15 @@ rb_get_reader_page(struct ring_buffer_per_cpu *cpu_buffer)
+ 	reader = cpu_buffer->reader_page;
+ 
+ 	/* If there's more to read, return this page */
+-	if (cpu_buffer->reader_page->read < rb_page_size(reader))
++	if (cpu_buffer->reader_page->read < rb_page_size(reader)) {
++		/*
++		 * If this is the first read from this page,
++		 * initialize the read timestamp.
++		 */
++		if (cpu_buffer->reader_page->read == 0)
++			cpu_buffer->read_stamp = reader->page->time_stamp;
+ 		goto out;
++	}
+ 
+ 	/* Never should we have an index greater than the size */
+ 	if (RB_WARN_ON(cpu_buffer,
+-- 
+1.7.7.3
 
