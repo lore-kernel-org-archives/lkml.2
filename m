@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933511Ab2FGEXq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 00:23:46 -0400
+	id S1759889Ab2FGEX4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 00:23:56 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:63657 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933483Ab2FGEXm (ORCPT
+	with ESMTP id S1759873Ab2FGEXw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 00:23:42 -0400
-Message-Id: <20120607041400.219152214@linuxfoundation.org>
+	Thu, 7 Jun 2012 00:23:52 -0400
+Message-Id: <20120607041401.204313562@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 07 Jun 2012 13:14:12 +0900
+Date: Thu, 07 Jun 2012 13:14:19 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Rodrigo Vivi <rodrigo.vivi@gmail.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 14/47] drm/i915: wait for a vblank to pass after tv detect
+        alan@lxorguk.ukuu.org.uk, Oliver Neukum <oliver@neukum.org>,
+        Don Zickus <dzickus@redhat.com>, Marcel Holtmann <marcel@holtmann.org>,
+        Johan Hedberg <johan.hedberg@intel.com>,
+        Jonathan Nieder <jrnieder@gmail.com>
+Subject: [ 21/47] Bluetooth: btusb: typo in Broadcom SoftSailing id
 In-Reply-To: <20120607041504.GA13819@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,64 +27,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Don Zickus <dzickus@redhat.com>
 
-commit bf2125e2f7e931b50a6c76ba0435ba001409ccbf upstream.
+commit 2e8b506310f6433d5558387fd568d4bfb1d6a799 upstream.
 
-Otherwise the hw will get confused and result in a black screen.
+I was trying to backport the following commit to RHEL-6
 
-This regression has been most likely introduce in
+    From 0cea73465cd22373c5cd43a3edd25fbd4bb532ef Mon Sep 17 00:00:00 2001
+    From: Oliver Neukum <oliver@neukum.org>
+    Date: Wed, 21 Sep 2011 11:37:15 +0200
+    Subject: [PATCH] btusb: add device entry for Broadcom SoftSailing
 
-commit 974b93315b2213b74a42a87e8a9d4fc8c0dbe90c
-Author: Chris Wilson <chris@chris-wilson.co.uk>
-Date:   Sun Sep 5 00:44:20 2010 +0100
+and noticed it wasn't working on an HP Elitebook.  Looking into the patch I
+noticed a very subtle typo in the ids.  The patch has '0x05ac' instead of
+'0x0a5c'.  A snippet of the lsusb -v output also shows this:
 
-    drm/i915/tv: Poll for DAC state change
+Bus 002 Device 003: ID 0a5c:21e1 Broadcom Corp.
+Device Descriptor:
+  bLength                18
+  bDescriptorType         1
+  bcdUSB               2.00
+  bDeviceClass          255 Vendor Specific Class
+  bDeviceSubClass         1
+  bDeviceProtocol         1
+  bMaxPacketSize0        64
+  idVendor           0x0a5c Broadcom Corp.
+  idProduct          0x21e1
+  bcdDevice            1.12
+  iManufacturer           1 Broadcom Corp
+  iProduct                2 BCM20702A0
+  iSerial                 3 60D819F0338C
+  bNumConfigurations      1
 
-That commit replace the first msleep(20) with a busy-loop, but failed
-to keep the 2nd msleep around. Later on we've replaced all these
-msleep(20) by proper vblanks.
+Looking at other Broadcom ids, the fix matches them whereas the original patch
+matches Apple's ids.
 
-For reference also see the commit in xf86-video-intel:
+Tested on an HP Elitebook 8760w.  The btusb binds and the userspace stuff loads
+correctly.
 
-commit 1142be53eb8d2ee8a9b60ace5d49f0ba27332275
-Author: Jesse Barnes <jbarnes@hobbes.lan>
-Date:   Mon Jun 9 08:52:59 2008 -0700
-
-    Fix TV programming:  add vblank wait after TV_CTL writes
-
-    Fxies FDO bug #14000; we need to wait for vblank after
-    writing TV_CTL or following "DPMS on" calls may not actually enable the output.
-
-v2: As suggested by Chris Wilson, add a small comment to ensure that
-no one accidentally removes this vblank wait again - there really
-seems to be no sane explanation for why we need it, but it is
-required.
-
-Launchpad: https://bugs.launchpad.net/ubuntu/+source/xserver-xorg-video-intel/+bug/763688
-Reported-and-Tested-by: Robert Lowery <rglowery@exemail.com.au>
-Cc: Rodrigo Vivi <rodrigo.vivi@gmail.com>
-Acked-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Oliver Neukum <oliver@neukum.org>
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+Acked-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+Cc: Jonathan Nieder <jrnieder@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_tv.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/bluetooth/btusb.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/intel_tv.c
-+++ b/drivers/gpu/drm/i915/intel_tv.c
-@@ -1301,6 +1301,11 @@ intel_tv_detect_type (struct intel_tv *i
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -61,7 +61,7 @@ static struct usb_device_id btusb_table[
+ 	{ USB_DEVICE_INFO(0xe0, 0x01, 0x01) },
  
- 	I915_WRITE(TV_DAC, save_tv_dac & ~TVDAC_STATE_CHG_EN);
- 	I915_WRITE(TV_CTL, save_tv_ctl);
-+	POSTING_READ(TV_CTL);
-+
-+	/* For unknown reasons the hw barfs if we don't do this vblank wait. */
-+	intel_wait_for_vblank(intel_tv->base.base.dev,
-+			      to_intel_crtc(intel_tv->base.base.crtc)->pipe);
+ 	/* Broadcom SoftSailing reporting vendor specific */
+-	{ USB_DEVICE(0x05ac, 0x21e1) },
++	{ USB_DEVICE(0x0a5c, 0x21e1) },
  
- 	/* Restore interrupt config */
- 	if (connector->polled & DRM_CONNECTOR_POLL_HPD) {
+ 	/* Apple MacBookPro 7,1 */
+ 	{ USB_DEVICE(0x05ac, 0x8213) },
 
 
