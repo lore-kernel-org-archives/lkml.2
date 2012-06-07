@@ -1,79 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933331Ab2FGW0e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 18:26:34 -0400
-Received: from mga14.intel.com ([143.182.124.37]:6539 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933235Ab2FGW0d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 18:26:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="109286571"
-Subject: Re: [PATCH 5/8] x86/apic: Try to spread IRQ vectors to different
- priority levels
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Yinghai Lu <yinghai@kernel.org>
-Date: Thu, 07 Jun 2012 15:26:03 -0700
-In-Reply-To: <20120607131514.GD4759@dhcp-26-207.brq.redhat.com>
-References: <20120605112353.GA11457@dhcp-26-207.brq.redhat.com>
-	 <20120606082231.GD5991@gmail.com>
-	 <20120607131514.GD4759@dhcp-26-207.brq.redhat.com>
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1339107963.28766.107.camel@sbsiddha-desk.sc.intel.com>
-Mime-Version: 1.0
+	id S933339Ab2FGW2z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 18:28:55 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:45307 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933233Ab2FGW2x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 18:28:53 -0400
+Date: Thu, 7 Jun 2012 15:27:29 -0700
+From: djwong <djwong@us.ibm.com>
+To: "Ted Ts'o" <tytso@mit.edu>, Sander Eikelenboom <linux@eikelenboom.it>,
+        Kees Cook <keescook@chromium.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>, dm-devel@redhat.com,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [dm-devel] EXT4-fs error (device dm-42):
+ ext4_mb_generate_buddy:741: group 1904, 32254 clusters in bitmap, 32258 in
+ gd
+Message-ID: <20120607222729.GI6938@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <471046920.20120604234941@eikelenboom.it>
+ <20120605000356.GM29466@outflux.net>
+ <1018371644.20120605224154@eikelenboom.it>
+ <20120605210806.GB7182@thunk.org>
+ <1883708187.20120606090126@eikelenboom.it>
+ <CAGXu5jK-4dO59-x3eTU10OntcPwsVptjpUzQdbbHOvy9_VBQ2A@mail.gmail.com>
+ <1482118647.20120606164012@eikelenboom.it>
+ <20120607042756.GA30776@thunk.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120607042756.GA30776@thunk.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12060722-2398-0000-0000-0000074F343A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-06-07 at 15:15 +0200, Alexander Gordeev wrote:
-> When assigning a new vector it is primarially done by adding 8 to the
-> previously given out vector number. Hence, two consequently allocated
-> vector numbers would likely fall into the same priority level. Try to
-> spread vector numbers to different priority levels better by changing
-> the step from 8 to 16.
+On Thu, Jun 07, 2012 at 12:27:56AM -0400, Ted Ts'o wrote:
+> I think this patch should fix things.  Could you give it a try (after
+> re-enabling uninit_bg and then running e2fsck on the file systems)?
 > 
-
-Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
-
-> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> ---
->  arch/x86/kernel/apic/io_apic.c |    7 +++----
->  1 files changed, 3 insertions(+), 4 deletions(-)
+> Many thanks,
 > 
-> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-> index 74c5697..05af3d3 100644
-> --- a/arch/x86/kernel/apic/io_apic.c
-> +++ b/arch/x86/kernel/apic/io_apic.c
-> @@ -1112,7 +1112,7 @@ __assign_irq_vector(int irq, struct irq_cfg *cfg, const struct cpumask *mask)
->  	 * 0x80, because int 0x80 is hm, kind of importantish. ;)
+> 						- Ted
+> 
+> commit b6b218940d47f20fc14e4d203930c575be0c65bf
+> Author: Theodore Ts'o <tytso@mit.edu>
+> Date:   Thu Jun 7 00:26:56 2012 -0400
+> 
+>     ext4: fix the free blocks calculation for ext3 file systems w/ uninit_bg
+>     
+>     Ext3 filesystems that are converted to use as many ext4 file systems
+>     as possible 
+
+Just to clarify the description a bit:
+
+Did you mean "..as many ext4 filesystem _features_ as possible" ?
+
+> will enable uninit_bg to speed up e2fsck times.  File
+>     systems with an native ext3 layout of inode tables and block
+
+Perhaps "On file systems with a native ext3 layout..." ?
+
+--D
+
+>     allocation bitmaps (as opposed to ext4's flex_bg layout), ext4 would
+>     sometimes incorrectly calculate the number of free blocks in an
+>     uninitialized block group.  As a result, when first allocating a block
+>     in block group marked uninitalized, ext4 would incorrectly report that
+>     the file system was corrupt:
+>     
+>     EXT4-fs error (device dm-42): ext4_mb_generate_buddy:741: group 1699, 32254 clusters in bitmap, 32258 in gd
+>     
+>     Fix the calculation in ext4_num_overhead_clusters() to avoid this
+>     problem.
+>     
+>     Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+> 
+> diff --git a/fs/ext4/balloc.c b/fs/ext4/balloc.c
+> index 99b6324..cee7812 100644
+> --- a/fs/ext4/balloc.c
+> +++ b/fs/ext4/balloc.c
+> @@ -90,8 +90,8 @@ unsigned ext4_num_overhead_clusters(struct super_block *sb,
+>  	 * unusual file system layouts.
 >  	 */
->  	static int current_vector = FIRST_EXTERNAL_VECTOR + VECTOR_OFFSET_START;
-> -	static int current_offset = VECTOR_OFFSET_START % 8;
-> +	static int current_offset = VECTOR_OFFSET_START % 16;
->  	unsigned int old_vector;
->  	int cpu, err;
->  	cpumask_var_t tmp_mask;
-> @@ -1148,10 +1148,9 @@ __assign_irq_vector(int irq, struct irq_cfg *cfg, const struct cpumask *mask)
->  		vector = current_vector;
->  		offset = current_offset;
->  next:
-> -		vector += 8;
-> +		vector += 16;
->  		if (vector >= first_system_vector) {
-> -			/* If out of vectors on large boxen, must share them. */
-> -			offset = (offset + 1) % 8;
-> +			offset = (offset + 1) % 16;
->  			vector = FIRST_EXTERNAL_VECTOR + offset;
->  		}
->  		if (unlikely(current_vector == vector))
-> -- 
-> 1.7.7.6
+>  	if (ext4_block_in_group(sb, ext4_block_bitmap(sb, gdp), block_group)) {
+> -		block_cluster = EXT4_B2C(sbi, (start -
+> -					       ext4_block_bitmap(sb, gdp)));
+> +		block_cluster = EXT4_B2C(sbi,
+> +					 ext4_block_bitmap(sb, gdp) - start);
+>  		if (block_cluster < num_clusters)
+>  			block_cluster = -1;
+>  		else if (block_cluster == num_clusters) {
+> @@ -102,7 +102,7 @@ unsigned ext4_num_overhead_clusters(struct super_block *sb,
 > 
-
+>  	if (ext4_block_in_group(sb, ext4_inode_bitmap(sb, gdp), block_group)) {
+>  		inode_cluster = EXT4_B2C(sbi,
+> -					 start - ext4_inode_bitmap(sb, gdp));
+> +					 ext4_inode_bitmap(sb, gdp) - start);
+>  		if (inode_cluster < num_clusters)
+>  			inode_cluster = -1;
+>  		else if (inode_cluster == num_clusters) {
+> @@ -114,7 +114,7 @@ unsigned ext4_num_overhead_clusters(struct super_block *sb,
+>  	itbl_blk = ext4_inode_table(sb, gdp);
+>  	for (i = 0; i < sbi->s_itb_per_group; i++) {
+>  		if (ext4_block_in_group(sb, itbl_blk + i, block_group)) {
+> -			c = EXT4_B2C(sbi, start - itbl_blk + i);
+> +			c = EXT4_B2C(sbi, itbl_blk + i - start);
+>  			if ((c < num_clusters) || (c == inode_cluster) ||
+>  			    (c == block_cluster) || (c == itbl_cluster))
+>  				continue;
+> 
+> --
+> dm-devel mailing list
+> dm-devel@redhat.com
+> https://www.redhat.com/mailman/listinfo/dm-devel
+> 
 
