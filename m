@@ -1,60 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757779Ab2FGIHS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 04:07:18 -0400
-Received: from www84.your-server.de ([213.133.104.84]:37987 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755098Ab2FGIHH (ORCPT
+	id S1758014Ab2FGIJA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 04:09:00 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58469 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757210Ab2FGIIq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 04:07:07 -0400
-Message-ID: <1339056445.4964.2.camel@wall-e>
-Subject: Re: [PATCH 04/11] remove usb_interface pointer
-From: Stefani Seibold <stefani@seibold.net>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, oneukum@suse.de, alan@lxorguk.ukuu.org.uk,
-        linux-usb@vger.kernel.org
-Date: Thu, 07 Jun 2012 10:07:25 +0200
-In-Reply-To: <20120606225426.GA8270@kroah.com>
-References: <1339000032-10313-1-git-send-email-stefani@seibold.net>
-	 <1339000032-10313-5-git-send-email-stefani@seibold.net>
-	 <20120606225426.GA8270@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Authenticated-Sender: stefani@seibold.net
+	Thu, 7 Jun 2012 04:08:46 -0400
+Date: Thu, 7 Jun 2012 17:08:33 +0900
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Andre Przywara <andre.przywara@amd.com>
+Cc: Borislav Petkov <bp@amd64.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jacob Shin <jacob.shin@amd.com>, jeremy@goop.org,
+        xen-devel@lists.xensource.com, LKML <linux-kernel@vger.kernel.org>,
+        Jan Beulich <JBeulich@suse.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>, stable@vger.kernel.org
+Subject: Re: [PATCH 3/4] x86, AMD: Fix crash as Xen Dom0 on AMD Trinity
+ systems
+Message-ID: <20120607080833.GA23186@kroah.com>
+References: <1338562358-28182-1-git-send-email-bp@amd64.org>
+ <1338562358-28182-4-git-send-email-bp@amd64.org>
+ <4FCFD2EE.8060508@zytor.com>
+ <20120607072159.GB9856@aftab.osrc.amd.com>
+ <4FD05CED.60905@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FD05CED.60905@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, den 07.06.2012, 07:54 +0900 schrieb Greg KH:
-> On Wed, Jun 06, 2012 at 06:27:05PM +0200, stefani@seibold.net wrote:
-> > From: Stefani Seibold <stefani@seibold.net>
-> > 
-> > this saves a litte bit of memory space in the driver devices structure
-> > 
-> > Signed-off-by: Stefani Seibold <stefani@seibold.net>
-> > ---
-> >  drivers/usb/usb-skeleton.c |   23 ++++++++++++-----------
-> >  1 files changed, 12 insertions(+), 11 deletions(-)
-> > 
-> > diff --git a/drivers/usb/usb-skeleton.c b/drivers/usb/usb-skeleton.c
-> > index 2f17991..f7fe32f 100644
-> > --- a/drivers/usb/usb-skeleton.c
-> > +++ b/drivers/usb/usb-skeleton.c
-> > @@ -49,7 +49,6 @@ MODULE_DEVICE_TABLE(usb, skel_table);
-> >  /* Structure to hold all of our device specific stuff */
-> >  struct usb_skel {
-> >  	struct usb_device	*udev;			/* the usb device for this device */
-> > -	struct usb_interface	*interface;		/* the interface for this device */
+On Thu, Jun 07, 2012 at 09:49:01AM +0200, Andre Przywara wrote:
+> On 06/07/2012 09:21 AM, Borislav Petkov wrote:
+> >On Wed, Jun 06, 2012 at 03:00:14PM -0700, H. Peter Anvin wrote:
+> >>On 06/01/2012 07:52 AM, Borislav Petkov wrote:
+> >>>From: Andre Przywara<andre.przywara@amd.com>
+> >>>
+> >>>f7f286a910221 ("x86/amd: Re-enable CPU topology extensions in case BIOS
+> >>>has disabled it") wrongfully added code which used the AMD-specific
+> >>>{rd,wr}msr variants for no real reason.
+> >>>
+> >>>This caused boot panics on xen which wasn't initializing the
+> >>>{rd,wr}msr_safe_regs pv_ops members properly.
+> >>>
+> >>>This, in turn, caused a heated discussion leading to us reviewing all
+> >>>uses of the AMD-specific variants and removing them where unneeded
+> >>>(almost everywhere except an obscure K8 BIOS fix, see 6b0f43ddfa358).
+> >>>
+> >>>Finally, this patch switches to the standard {rd,wr}msr*_safe* variants
+> >>>which should've been used in the first place anyway and avoided unneeded
+> >>>excitation with xen.
+> >>>
+> >>>Signed-off-by: Andre Przywara<andre.przywara@amd.com>
+> >>>Cc: Andreas Herrmann<andreas.herrmann3@amd.com>
+> >>>Cc: stable@vger.kernel.org # 3.4+
+> >>>Link:<http://lkml.kernel.org/r/1338383402-3838-1-git-send-email-andre.przywara@amd.com>
+> >>>[Boris: correct and expand commit message]
+> >>>Signed-off-by: Borislav Petkov<borislav.petkov@amd.com>
+> >>
+> >>Why -stable?  I though we had agreed that we didn't have an active
+> >>problem (unclean hack, yes, but not an active problem) in 3.4/3.5 as it
+> >>currently sits?
 > 
-> No, that's the exact opposite of what I asked you to do.
+> This is probably a leftover from the original patch, before Konrad's
+> patch got committed.
 > 
+> >Yes, AFAICT, we need at least one fix for 3.4 where the original patch
+> >f7f286a910221 broke xen.
+> >
+> >So either this one or 1ab46fd319bc should be backported to stable, if
+> >I'm not mistaken. If the second, I'll drop the stable tag from this one
+> >and resend.
+> >
+> >Konrad, what do you want wrt xen paravirt nullptr breakage for
+> >3.4-stable?
+> 
+> Greg just sent out the review mail for 1ab46fd319bc, so we can drop
+> the stable tag from this one.
+> 
+> Regards,
+> Andre.
 
-You asked me "Do you really need both?". But anyway i will find no way
-to kick the usb_device pointer away without wasting the code.
+What?  So I don't need to do anything?
 
-So i will revert it for the first time.
- 
+Totally confused,
 
-
+greg k-h
