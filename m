@@ -1,45 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752245Ab2FGLjo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 07:39:44 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:32929 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751489Ab2FGLjn (ORCPT
+	id S1752539Ab2FGLkv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 07:40:51 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:56616 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751489Ab2FGLkt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 07:39:43 -0400
+	Thu, 7 Jun 2012 07:40:49 -0400
+Date: Thu, 7 Jun 2012 13:40:45 +0200
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, andi@firstfloor.org, mingo@elte.hu,
+        ming.m.lin@intel.com
+Subject: [PATCH v2] perf/x86: check ucode before disabling PEBS on SandyBridge
+Message-ID: <20120607114045.GA8975@quad>
 MIME-Version: 1.0
-In-Reply-To: <CACRpkda-iZchGtKUzeBxCKecKkvZBW_1LHRa5PyrZHpT9BMPxw@mail.gmail.com>
-References: <1338656634-3870-1-git-send-email-devendra.aaru@gmail.com>
-	<CAHdPZaMYnMCygOa+mcUMq0vwJpW7W1PE9AqKPkNGEeN0u-bF6w@mail.gmail.com>
-	<CACRpkda-iZchGtKUzeBxCKecKkvZBW_1LHRa5PyrZHpT9BMPxw@mail.gmail.com>
-Date: Thu, 7 Jun 2012 17:09:42 +0530
-Message-ID: <CAHdPZaMqK2noV_4XXpYSgb6++OzTvty=ZLpnw_eV3hbHFyJjYQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] pinctrl: free allocated pinctrl_map structure only
- once and use kernel facilities for IMX_PMX_DUMP
-From: "devendra.aaru" <devendra.aaru@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-Thanks for the reply,
+PEBS on SandyBridge model 42 (desktop, mobile), and 45 (SNB-EP).
+was disabled for both models due to an erratum.
+    
+A workaround is implemented by micro-code from version 0x28.
 
-On Thu, Jun 7, 2012 at 4:34 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Mon, Jun 4, 2012 at 1:37 PM, devendra.aaru <devendra.aaru@gmail.com> wrote:
->
->> Anybody Please??
->
-> Take it easy. Give the Freescalers some time to review...
->
-> If nothing happens for a week I'll just apply it so they can shout
-> if there's something wrong with it :-D
->
-Sorry for shouting ... :(
-> Linus
+This patch checks the microcode version and prevent creation
+of a PEBS event if version < 0x28. The check is done each time
+a PEBS event is created and NOT at boot time because the
+micro-code update may only be done after the kernel has booted.
 
-Thanks,
-Devendra.
+Go to downloadcenter.intel.com to download microcode updates.
+Search for microcode, download update dated 6/6/2012 or later.
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 5ec146c..d4d2597 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1394,6 +1394,25 @@ static void intel_pebs_aliases_snb(struct perf_event *event)
+ 	}
+ }
+ 
++static int check_pebs_quirks(void)
++{
++	int uversion = cpu_data(smp_processor_id()).microcode;
++	int model = cpu_data(smp_processor_id()).x86_model;
++
++	/* do not have PEBS to begin with */
++	if (!x86_pmu.pebs)
++		return 0;
++	/*
++	 * check ucode version for SNB, SNB-EP
++	 * they need ucode 0x28 or later for PEBS
++	 * to be operational
++	 */
++	if ((model == 42 || model == 45) && uversion < 0x28)
++		return -ENOTSUPP;
++
++	return 0;
++}
++
+ static int intel_pmu_hw_config(struct perf_event *event)
+ {
+ 	int ret = x86_pmu_hw_config(event);
+@@ -1401,8 +1420,14 @@ static int intel_pmu_hw_config(struct perf_event *event)
+ 	if (ret)
+ 		return ret;
+ 
+-	if (event->attr.precise_ip && x86_pmu.pebs_aliases)
+-		x86_pmu.pebs_aliases(event);
++	if (event->attr.precise_ip) {
++
++		if (check_pebs_quirks())
++			return -ENOTSUPP;
++
++		if (x86_pmu.pebs_aliases)
++			x86_pmu.pebs_aliases(event);
++	}
+ 
+ 	if (intel_pmu_needs_lbr_smpl(event)) {
+ 		ret = intel_pmu_setup_lbr_filter(event);
+@@ -1716,9 +1741,17 @@ static __init void intel_clovertown_quirk(void)
+ 
+ static __init void intel_sandybridge_quirk(void)
+ {
+-	pr_warn("PEBS disabled due to CPU errata\n");
+-	x86_pmu.pebs = 0;
+-	x86_pmu.pebs_constraints = NULL;
++	int uversion = cpu_data(smp_processor_id()).microcode;
++	int model = cpu_data(smp_processor_id()).x86_model;
++	/*
++	 * check ucode version for SNB, SNB-EP
++	 */
++	if ((model == 42 || model == 45) && uversion < 0x28) {
++		pr_warn("perf_events: SandyBridge PEBS unavailable due to"
++			" CPU erratum, update microcode (was 0x%x, needs "
++			"at least version 0x28).\n",
++			uversion);
++	}
+ }
+ 
+ static const struct { int id; char *name; } intel_arch_events_map[] __initconst = {
