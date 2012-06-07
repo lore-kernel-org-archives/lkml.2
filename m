@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933496Ab2FGEXl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 00:23:41 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62777 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933483Ab2FGEXh (ORCPT
+	id S933511Ab2FGEXq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 00:23:46 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:63657 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933483Ab2FGEXm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 00:23:37 -0400
-Message-Id: <20120607041400.785048943@linuxfoundation.org>
+	Thu, 7 Jun 2012 00:23:42 -0400
+Message-Id: <20120607041400.219152214@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 07 Jun 2012 13:14:16 +0900
+Date: Thu, 07 Jun 2012 13:14:12 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "James M. Leddy" <james.leddy@canonical.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Johan Hedberg <johan.hedberg@intel.com>,
-        Jonathan Nieder <jrnieder@gmail.com>
-Subject: [ 18/47] Bluetooth: btusb: add support for BCM20702A0 [0a5c:21e6]
+        alan@lxorguk.ukuu.org.uk, Rodrigo Vivi <rodrigo.vivi@gmail.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 14/47] drm/i915: wait for a vblank to pass after tv detect
 In-Reply-To: <20120607041504.GA13819@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,46 +26,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "James M. Leddy" <james.leddy@canonical.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 0a4eaeeb993658a4d6cff054a863241f32d3d2fb upstream.
+commit bf2125e2f7e931b50a6c76ba0435ba001409ccbf upstream.
 
-Add another vendor specific ID for BCM20702A0.  This has been tested and
-works on hardware with this device.
+Otherwise the hw will get confused and result in a black screen.
 
-output of usb-devices:
-T: Bus=01 Lev=02 Prnt=02 Port=03 Cnt=04 Dev#= 6 Spd=12 MxCh= 0
-D: Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs= 1
-P: Vendor=0a5c ProdID=21e6 Rev=01.12
-S: Manufacturer=Broadcom Corp
-S: Product=BCM20702A0
-S: SerialNumber=D0DF9AFB227B
-C: #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=0mA
-I: If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
-I: If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
-I: If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-I: If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
+This regression has been most likely introduce in
 
-Signed-off-by: James M. Leddy <james.leddy@canonical.com>
-Acked-by: Marcel Holtmann <marcel@holtmann.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
-Cc: Jonathan Nieder <jrnieder@gmail.com>
+commit 974b93315b2213b74a42a87e8a9d4fc8c0dbe90c
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Sun Sep 5 00:44:20 2010 +0100
+
+    drm/i915/tv: Poll for DAC state change
+
+That commit replace the first msleep(20) with a busy-loop, but failed
+to keep the 2nd msleep around. Later on we've replaced all these
+msleep(20) by proper vblanks.
+
+For reference also see the commit in xf86-video-intel:
+
+commit 1142be53eb8d2ee8a9b60ace5d49f0ba27332275
+Author: Jesse Barnes <jbarnes@hobbes.lan>
+Date:   Mon Jun 9 08:52:59 2008 -0700
+
+    Fix TV programming:  add vblank wait after TV_CTL writes
+
+    Fxies FDO bug #14000; we need to wait for vblank after
+    writing TV_CTL or following "DPMS on" calls may not actually enable the output.
+
+v2: As suggested by Chris Wilson, add a small comment to ensure that
+no one accidentally removes this vblank wait again - there really
+seems to be no sane explanation for why we need it, but it is
+required.
+
+Launchpad: https://bugs.launchpad.net/ubuntu/+source/xserver-xorg-video-intel/+bug/763688
+Reported-and-Tested-by: Robert Lowery <rglowery@exemail.com.au>
+Cc: Rodrigo Vivi <rodrigo.vivi@gmail.com>
+Acked-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/bluetooth/btusb.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/gpu/drm/i915/intel_tv.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -102,6 +102,7 @@ static struct usb_device_id btusb_table[
+--- a/drivers/gpu/drm/i915/intel_tv.c
++++ b/drivers/gpu/drm/i915/intel_tv.c
+@@ -1301,6 +1301,11 @@ intel_tv_detect_type (struct intel_tv *i
  
- 	/* Broadcom BCM20702A0 */
- 	{ USB_DEVICE(0x0a5c, 0x21e3) },
-+	{ USB_DEVICE(0x0a5c, 0x21e6) },
- 	{ USB_DEVICE(0x0a5c, 0x21f3) },
- 	{ USB_DEVICE(0x413c, 0x8197) },
+ 	I915_WRITE(TV_DAC, save_tv_dac & ~TVDAC_STATE_CHG_EN);
+ 	I915_WRITE(TV_CTL, save_tv_ctl);
++	POSTING_READ(TV_CTL);
++
++	/* For unknown reasons the hw barfs if we don't do this vblank wait. */
++	intel_wait_for_vblank(intel_tv->base.base.dev,
++			      to_intel_crtc(intel_tv->base.base.crtc)->pipe);
  
+ 	/* Restore interrupt config */
+ 	if (connector->polled & DRM_CONNECTOR_POLL_HPD) {
 
 
