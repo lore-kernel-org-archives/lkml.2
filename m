@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932313Ab2FGEQO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 00:16:14 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:63657 "EHLO
+	id S932257Ab2FGEPz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 00:15:55 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:59627 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932260Ab2FGEQJ (ORCPT
+	with ESMTP id S932239Ab2FGEPu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 00:16:09 -0400
-Message-Id: <20120607040338.436136890@linuxfoundation.org>
+	Thu, 7 Jun 2012 00:15:50 -0400
+Message-Id: <20120607040338.032562268@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 07 Jun 2012 13:03:50 +0900
+Date: Thu, 07 Jun 2012 13:03:47 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, John David Anglin <dave.anglin@bell.net>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 14/82] PARISC: fix boot failure on 32-bit systems caused by branch stubs placed before .text
+        alan@lxorguk.ukuu.org.uk,
+        Meenakshi Venkataraman <meenakshi.venkataraman@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 11/82] iwlwifi: do not use shadow registers by default
 In-Reply-To: <20120607041406.GA13233@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,46 +27,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John David Anglin <dave.anglin@bell.net>
+From: Meenakshi Venkataraman <meenakshi.venkataraman@intel.com>
 
-commit ed5fb2471b7060767957fb964eb1aaec71533ab1 upstream.
+commit 66a770729a5cdd24efed8afa5258f81232d8bba2 upstream.
 
-In certain configurations, the resulting kernel becomes too large to boot
-because the linker places the long branch stubs for the merged .text section
-at the very start of the image.  As a result, the initial transfer of control
-jumps to an unexpected location.  Fix this by placing the head text in a
-separate section so the stubs for .text are not at the start of the image.
+Shadow registers in the device are meant to
+allow the driver to update certain device
+registers without needing to wake up all
+components of the device. However, using
+this feature in the device causes
+communication between the driver and the
+device to become unreliable, resulting in
+host command timeouts.
 
-Signed-off-by: John David Anglin <dave.anglin@bell.net>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Disable this feature by default till a fix is
+available for the bug.
+
+Signed-off-by: Meenakshi Venkataraman <meenakshi.venkataraman@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/parisc/kernel/vmlinux.lds.S |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/net/wireless/iwlwifi/iwl-2000.c |    4 ++--
+ drivers/net/wireless/iwlwifi/iwl-6000.c |    6 +++---
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
---- a/arch/parisc/kernel/vmlinux.lds.S
-+++ b/arch/parisc/kernel/vmlinux.lds.S
-@@ -50,8 +50,10 @@ SECTIONS
- 	. = KERNEL_BINARY_TEXT_START;
+--- a/drivers/net/wireless/iwlwifi/iwl-2000.c
++++ b/drivers/net/wireless/iwlwifi/iwl-2000.c
+@@ -183,7 +183,7 @@ static const struct iwl_base_params iwl2
+ 	.chain_noise_scale = 1000,
+ 	.wd_timeout = IWL_DEF_WD_TIMEOUT,
+ 	.max_event_log_size = 512,
+-	.shadow_reg_enable = true,
++	.shadow_reg_enable = false, /* TODO: fix bugs using this feature */
+ 	.hd_v2 = true,
+ };
  
- 	_text = .;		/* Text and read-only data */
--	.text ALIGN(16) : {
-+	.head ALIGN(16) : {
- 		HEAD_TEXT
-+	} = 0
-+	.text ALIGN(16) : {
- 		TEXT_TEXT
- 		SCHED_TEXT
- 		LOCK_TEXT
-@@ -65,7 +67,7 @@ SECTIONS
- 		*(.fixup)
- 		*(.lock.text)		/* out-of-line lock text */
- 		*(.gnu.warning)
--	} = 0
-+	}
- 	/* End of text section */
- 	_etext = .;
+@@ -202,7 +202,7 @@ static const struct iwl_base_params iwl2
+ 	.chain_noise_scale = 1000,
+ 	.wd_timeout = IWL_LONG_WD_TIMEOUT,
+ 	.max_event_log_size = 512,
+-	.shadow_reg_enable = true,
++	.shadow_reg_enable = false, /* TODO: fix bugs using this feature */
+ 	.hd_v2 = true,
+ };
  
+--- a/drivers/net/wireless/iwlwifi/iwl-6000.c
++++ b/drivers/net/wireless/iwlwifi/iwl-6000.c
+@@ -282,7 +282,7 @@ static const struct iwl_base_params iwl6
+ 	.chain_noise_scale = 1000,
+ 	.wd_timeout = IWL_DEF_WD_TIMEOUT,
+ 	.max_event_log_size = 512,
+-	.shadow_reg_enable = true,
++	.shadow_reg_enable = false, /* TODO: fix bugs using this feature */
+ };
+ 
+ static const struct iwl_base_params iwl6050_base_params = {
+@@ -299,7 +299,7 @@ static const struct iwl_base_params iwl6
+ 	.chain_noise_scale = 1500,
+ 	.wd_timeout = IWL_DEF_WD_TIMEOUT,
+ 	.max_event_log_size = 1024,
+-	.shadow_reg_enable = true,
++	.shadow_reg_enable = false, /* TODO: fix bugs using this feature */
+ };
+ 
+ static const struct iwl_base_params iwl6000_g2_base_params = {
+@@ -316,7 +316,7 @@ static const struct iwl_base_params iwl6
+ 	.chain_noise_scale = 1000,
+ 	.wd_timeout = IWL_LONG_WD_TIMEOUT,
+ 	.max_event_log_size = 512,
+-	.shadow_reg_enable = true,
++	.shadow_reg_enable = false, /* TODO: fix bugs using this feature */
+ };
+ 
+ static const struct iwl_ht_params iwl6000_ht_params = {
 
 
