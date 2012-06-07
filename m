@@ -1,54 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758005Ab2FGB3E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 21:29:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48090 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753694Ab2FGB3D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 21:29:03 -0400
-Date: Wed, 6 Jun 2012 18:29:38 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Roland Dreier <roland@kernel.org>
-Cc: Joern Engel <joern@logfs.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] btree: Fix tree corruption in btree_get_prev()
-Message-Id: <20120606182938.f8f6178d.akpm@linux-foundation.org>
-In-Reply-To: <CAG4TOxNwVYPPP_AL=YZ6LnZZWyp8FUa50aGtgqGjTwnu598-Lw@mail.gmail.com>
-References: <1339003047-15734-1-git-send-email-roland@kernel.org>
-	<20120606162121.7d8e8f52.akpm@linux-foundation.org>
-	<CAG4TOxPHXg_cDpG2gMNKgyNGs2BcXbM3bTgiuS+mjnPZFhbD8A@mail.gmail.com>
-	<CAG4TOxNwVYPPP_AL=YZ6LnZZWyp8FUa50aGtgqGjTwnu598-Lw@mail.gmail.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1759332Ab2FGBao (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 21:30:44 -0400
+Received: from tundra.namei.org ([65.99.196.166]:37483 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754630Ab2FGBal (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 21:30:41 -0400
+Date: Thu, 7 Jun 2012 11:29:48 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: Will Drewry <wad@chromium.org>
+cc: Kees Cook <keescook@chromium.org>, Andy Lutomirski <luto@amacapital.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-security-module@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        hpa@zytor.com, mingo@redhat.com, peterz@infradead.org,
+        tglx@linutronix.de, Eric Paris <eparis@redhat.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>, djm@mindrot.org,
+        scarybeasts@gmail.com, indan@nul.nu, pmoore@redhat.com,
+        Jonathan Corbet <corbet@lwn.net>, eric.dumazet@gmail.com,
+        markus@chromium.org, coreyb@linux.vnet.ibm.com,
+        linux-man@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>
+Subject: Re: Docs for PR_SET_NO_NEW_PRIVS
+In-Reply-To: <CABqD9hYXKhX1=064DpbaBTAVd8-g43jKAPvtsbxEUTbgC1MPxg@mail.gmail.com>
+Message-ID: <alpine.LRH.2.02.1206071127340.12194@tundra.namei.org>
+References: <4FCE3C18.4080302@amacapital.net> <CAGXu5jLc6UW85TxA7ccA4e1u78hkTbSrWeBJE+oTXXQECPvtjg@mail.gmail.com> <CABqD9hYXKhX1=064DpbaBTAVd8-g43jKAPvtsbxEUTbgC1MPxg@mail.gmail.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Jun 2012 17:44:20 -0700 Roland Dreier <roland@kernel.org> wrote:
+On Tue, 5 Jun 2012, Will Drewry wrote:
 
-> On Wed, Jun 6, 2012 at 4:36 PM, Roland Dreier <roland@kernel.org> wrote:
-> > On the other hand, your change makes me think we don't
-> > even need a separate iterator (and we can avoid the variable
-> > length array declaration)
+> Or Documentation/prctl/no-new-privs.txt
 > 
-> FWIW with that change on top of my patch, I see
-> 
-> add/remove: 0/0 grow/shrink: 0/1 up/down: 0/-123 (-123)
-> function                                     old     new   delta
-> btree_get_prev                               646     523    -123
-> 
-> on x86-64, so avoiding the variable length array is definitely
-> worth something.
-> 
-> So the issue for me is whether messing with the caller's
-> __key storage is OK, or if it's worth having a temporary
-> local variable.
-> 
+> Just a decision between what it does and how you get to it, but I'd
+> think either would make sense!
 
-Sometimes altering the caller's *__key when lookup fails is pretty rude
-behavior :(
+This makes sense as it's where the seccomp documentation is.
 
-Perhaps we could add an arg to btree_get_prev(), provide it with
-separate input and output key pointers?
+
+- James
+-- 
+James Morris
+<jmorris@namei.org>
