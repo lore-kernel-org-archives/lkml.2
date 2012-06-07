@@ -1,52 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761184Ab2FGRXM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 13:23:12 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:48422 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754010Ab2FGRXK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 13:23:10 -0400
-Date: Thu, 7 Jun 2012 18:26:15 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Richard Weinberger <richard@nod.at>
-Cc: Alan Cox <alan@linux.intel.com>, Boaz Harrosh <bharrosh@panasas.com>,
-        user-mode-linux-devel@lists.sourceforge.net,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, jslaby@suse.cz
-Subject: Re: [uml-devel] um: TTY fixes (?)
-Message-ID: <20120607182615.39877547@pyramind.ukuu.org.uk>
-In-Reply-To: <4FD0D9AF.4000605@nod.at>
-References: <1338841657-30358-1-git-send-email-richard@nod.at>
-	<4FCF6748.6020005@panasas.com>
-	<4FD059AC.8050808@panasas.com>
-	<4FD06A22.6040002@nod.at>
-	<4FD07F14.50902@panasas.com>
-	<4FD0802A.1020203@nod.at>
-	<20120607115227.6643d1ad@pyramind.ukuu.org.uk>
-	<4FD0C64D.2050302@nod.at>
-	<20120607173711.22ae146f@bob.linux.org.uk>
-	<4FD0D7AA.4010506@nod.at>
-	<20120607175024.696be664@bob.linux.org.uk>
-	<4FD0D9AF.4000605@nod.at>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S932510Ab2FGRXe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 13:23:34 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:65300 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932439Ab2FGRXd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 13:23:33 -0400
+X-IronPort-AV: E=Sophos;i="4.75,732,1330934400"; 
+   d="scan'208";a="653965530"
+Message-ID: <4FD0E382.8050800@netapp.com>
+Date: Thu, 07 Jun 2012 13:23:14 -0400
+From: Bryan Schumaker <bjschuma@netapp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+MIME-Version: 1.0
+To: Joerg Roedel <joro@8bytes.org>
+CC: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: NFS regression in v3.5-rc1: mount.nfs yells about incorrect mount
+ option
+References: <20120607150456.GO12795@8bytes.org> <4FD0C4C2.8020605@netapp.com> <20120607155006.GR12795@8bytes.org> <4FD0CEB0.9040804@netapp.com> <20120607160109.GS12795@8bytes.org>
+In-Reply-To: <20120607160109.GS12795@8bytes.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> What about the not nice ways?
-> Having a ugly driver until 3.7 is better than having no driver...
+On 06/07/2012 12:01 PM, Joerg Roedel wrote:
+> On Thu, Jun 07, 2012 at 11:54:24AM -0400, Bryan Schumaker wrote:
+>> On 06/07/2012 11:50 AM, Joerg Roedel wrote:
+>>> On Thu, Jun 07, 2012 at 11:12:02AM -0400, Bryan Schumaker wrote:
+>>>
+>>>> Can you use `mount -v` to get more output?
+>>>
+>>> Btw, it also works when I manually set the nfs-version at mount:
+>>>
+>>> mount -o nfsvers=3 ...
+>>
+>> What about `mount -o vers=4 ...`?  I'm compiling a kernel right now to
+>> see if I can reproduce this, what NFS .config options do you have set?
+>> (`cat .config | grep CONFIG_NFS_` should be good enough).
+> 
+> mount -o vers=2 and -o vers=3 works
+> mount -o vers=4 fails with:
+> 
+> root@chrom:~# mount -o vers=4 lemmy:/data/repos/ /data/lemmy/
+> mount.nfs: mounting lemmy:/data/repos/ failed, reason given by server:
+>   No such file or directory
 
-If you are willing to go do the work then yes.
+What does /etc/exports look like on the server?  You may have to mount it as "lemmy:/" when using NFS v4.
 
-> I'm wondering why does drivers/tty/vt/vt.c work?
-> Can't I model the UML driver after it?
+What distro are you using?  I haven't been able to get the incorrect mount option error you're seeing.
+> 
+> # grep CONFIG_NFS_ .config
+> CONFIG_NFS_FS=y
+> CONFIG_NFS_V2=y
+> CONFIG_NFS_V3=y
+> CONFIG_NFS_V3_ACL=y
+> CONFIG_NFS_V4=y
+> # CONFIG_NFS_V4_1 is not set
+> CONFIG_NFS_FSCACHE=y
+> # CONFIG_NFS_USE_LEGACY_DNS is not set
+> CONFIG_NFS_USE_KERNEL_DNS=y
+> CONFIG_NFS_ACL_SUPPORT=y
+> CONFIG_NFS_COMMON=y
+> 
+> 
+> 	Joerg
+> 
+> 
 
-Possibly although the vt driver has its own locking model to watch out
-for.
 
-Alan
