@@ -1,76 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760491Ab2FGJaG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 05:30:06 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:33096 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755617Ab2FGJaD convert rfc822-to-8bit (ORCPT
+	id S932193Ab2FGJcn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 05:32:43 -0400
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:3907
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760433Ab2FGJcl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 05:30:03 -0400
+	Thu, 7 Jun 2012 05:32:41 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -20
+X-BigFish: VPS-20(zz1432N98dK4015Izz1202hzz15d4R8275bhz2dh668h839h944hd25he5bhf0ah)
+X-WSS-ID: 0M58QI9-02-8B1-02
+X-M-MSG: 
+Date: Thu, 7 Jun 2012 11:32:35 +0200
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Shuah Khan <shuah.khan@hp.com>
+CC: <iommu@lists.linux-foundation.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFC] iommu/amd: Fix missing iommu_shutdown initialization
+ in passthrough mode
+Message-ID: <20120607093235.GK757@amd.com>
+References: <1339001406.2763.49.camel@lorien2>
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1206061022020.1788-100000@iolanthe.rowland.org>
-References: <CACVXFVPjQmvmXnYNm4sSjJXq83qe-Xg8=YjRppSNMpUQYLokjQ@mail.gmail.com>
-	<Pine.LNX.4.44L0.1206061022020.1788-100000@iolanthe.rowland.org>
-Date: Thu, 7 Jun 2012 17:30:00 +0800
-Message-ID: <CACVXFVOU4VyGicyn01w6ScMPenZip2kPco7dpzT+Qf5Xmgc8FQ@mail.gmail.com>
-Subject: Re: [PATCH] driver core: fix shutdown races with probe/remove
-From: Ming Lei <ming.lei@canonical.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        USB list <linux-usb@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1339001406.2763.49.camel@lorien2>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 6, 2012 at 10:44 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+On Wed, Jun 06, 2012 at 10:50:06AM -0600, Shuah Khan wrote:
+> Change AMD iommu driver to call disable iommus in pass-through mode. AMD
+> iommu driver's amd_iommu_init() routine doesn't initialize iommu_shutdown
+> in pass-through mode. As a result iommu disable via a call to disable_iommus()
+> doesn't happen at shutdown. Enable and disable of iommus is inconsistent in
+> pass-through mode. IOMMU is enabled, but not disabled. IOMMU disable is called
+> from error legs in amd_iommu_init() in pass-through mode.
+> 
+> Requesting for comments as I don't have access to AMD system that supports
+> IOMMU. I tested the change on AMD platforms with GART IOMMU which is not
+> sufficient.
+> 
+> Signed-off-by: Shuah Khan <shuah.khan@hp.com>
 
->> > On the whole, it might be easier just to hold the device lock during
->> > the shutdown call.
->>
->> Yes, it is easier, but it is not efficient because there are very less
->> drivers which implemented .shutdown callback. Suppose there are some
->> drivers which have no .shutdown but are holding device lock,  extra
->> time will be consumed in the lock acquiring, which may slow down 'power
->> down'.
->
-> The main reasons for holding the device lock are probe and remove
-> callbacks.  In your patch, synchronize_srcu has to wait for those too.
-> So there won't be much extra time.
+The patch is fine. Thanks, applied to iommu/fixes.
 
-There are differences between holding dev->lock(parent->lock) and
-using synchronize_srcu:
+-- 
+AMD Operating System Research Center
 
-	- synchronize_srcu just wait for the ongoing probe/release
-	to complete
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
-	- holding dev->lock and parent->lock before shutdown means
-	every dev->lock and parent->lock is to be acquired, so any
-	drivers holding dev lock during device_shutdown will slow down
-	'power down' or 'reset'.
-
-	- if the device has not .shutdown implemented, it is not
-	necessary to acquire the lock and parent->lock, either of
-	which may has been held in other places already.
-
-But after thinking about the problem further, the patch isn't good enough:
-
-	- even probe/remove is disallowed during shutdown, device_add/
-	device_del can be completed and only probe and release things
-	are bypassed, so .shutdown may see a deleted device from view of
-	driver model. For example, pci_device_shutdown need to access
-	its devres which may have been deleted by device_del already.
-
-	- violate driver model's implicit rule: once device_release_driver
-	(in device_del path) is completed, other callbacks for the device(driver)
-	won't be seen or called by others
-
-So take the simply approach of holding lock to fix the races.
-
-
-Thanks,
---
-Ming Lei
