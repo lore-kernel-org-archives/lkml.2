@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933087Ab2FGEVX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 00:21:23 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62777 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932827Ab2FGEVR (ORCPT
+	id S1759834Ab2FGEV3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 00:21:29 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:63657 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933082Ab2FGEVW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 00:21:17 -0400
-Message-Id: <20120607040347.317603430@linuxfoundation.org>
+	Thu, 7 Jun 2012 00:21:22 -0400
+Message-Id: <20120607040347.474529090@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 07 Jun 2012 13:04:50 +0900
+Date: Thu, 07 Jun 2012 13:04:51 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [ 74/82] iommu/amd: Cache pdev pointer to root-bridge
+Subject: [ 75/82] iommu/amd: Fix deadlock in ppr-handling error path
 In-Reply-To: <20120607041406.GA13233@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,78 +26,134 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Joerg Roedel <joerg.roedel@amd.com>
 
-commit c1bf94ec1e12d76838ad485158aecf208ebd8fb9 upstream.
+commit eee53537c476c947bf7faa1c916d2f5a0ae8ec93 upstream.
 
-At some point pci_get_bus_and_slot started to enable
-interrupts. Since this function is used in the
-amd_iommu_resume path it will enable interrupts on resume
-which causes a warning. The fix will use a cached pointer
-to the root-bridge to re-enable the IOMMU in case the BIOS
-is broken.
+In the error path of the ppr_notifer it can happen that the
+iommu->lock is taken recursivly. This patch fixes the
+problem by releasing the iommu->lock before any notifier is
+invoked. This also requires to move the erratum workaround
+for the ppr-log (interrupt may be faster than data in the log)
+one function up.
 
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iommu/amd_iommu_init.c  |   13 +++++--------
- drivers/iommu/amd_iommu_types.h |    3 +++
- 2 files changed, 8 insertions(+), 8 deletions(-)
+ drivers/iommu/amd_iommu.c |   73 ++++++++++++++++++++++++++++------------------
+ 1 file changed, 45 insertions(+), 28 deletions(-)
 
---- a/drivers/iommu/amd_iommu_init.c
-+++ b/drivers/iommu/amd_iommu_init.c
-@@ -1029,6 +1029,9 @@ static int __init init_iommu_one(struct
- 	if (!iommu->dev)
- 		return 1;
+--- a/drivers/iommu/amd_iommu.c
++++ b/drivers/iommu/amd_iommu.c
+@@ -547,26 +547,12 @@ static void iommu_poll_events(struct amd
+ 	spin_unlock_irqrestore(&iommu->lock, flags);
+ }
  
-+	iommu->root_pdev = pci_get_bus_and_slot(iommu->dev->bus->number,
-+						PCI_DEVFN(0, 0));
-+
- 	iommu->cap_ptr = h->cap_ptr;
- 	iommu->pci_seg = h->pci_seg;
- 	iommu->mmio_phys = h->mmio_phys;
-@@ -1323,20 +1326,16 @@ static void iommu_apply_resume_quirks(st
+-static void iommu_handle_ppr_entry(struct amd_iommu *iommu, u32 head)
++static void iommu_handle_ppr_entry(struct amd_iommu *iommu, u64 *raw)
  {
- 	int i, j;
- 	u32 ioc_feature_control;
--	struct pci_dev *pdev = NULL;
-+	struct pci_dev *pdev = iommu->root_pdev;
+ 	struct amd_iommu_fault fault;
+-	volatile u64 *raw;
+-	int i;
  
- 	/* RD890 BIOSes may not have completely reconfigured the iommu */
--	if (!is_rd890_iommu(iommu->dev))
-+	if (!is_rd890_iommu(iommu->dev) || !pdev)
+ 	INC_STATS_COUNTER(pri_requests);
+ 
+-	raw = (u64 *)(iommu->ppr_log + head);
+-
+-	/*
+-	 * Hardware bug: Interrupt may arrive before the entry is written to
+-	 * memory. If this happens we need to wait for the entry to arrive.
+-	 */
+-	for (i = 0; i < LOOP_TIMEOUT; ++i) {
+-		if (PPR_REQ_TYPE(raw[0]) != 0)
+-			break;
+-		udelay(1);
+-	}
+-
+ 	if (PPR_REQ_TYPE(raw[0]) != PPR_REQ_FAULT) {
+ 		pr_err_ratelimited("AMD-Vi: Unknown PPR request received\n");
+ 		return;
+@@ -578,12 +564,6 @@ static void iommu_handle_ppr_entry(struc
+ 	fault.tag       = PPR_TAG(raw[0]);
+ 	fault.flags     = PPR_FLAGS(raw[0]);
+ 
+-	/*
+-	 * To detect the hardware bug we need to clear the entry
+-	 * to back to zero.
+-	 */
+-	raw[0] = raw[1] = 0;
+-
+ 	atomic_notifier_call_chain(&ppr_notifier, 0, &fault);
+ }
+ 
+@@ -595,25 +575,62 @@ static void iommu_poll_ppr_log(struct am
+ 	if (iommu->ppr_log == NULL)
  		return;
  
- 	/*
- 	 * First, we need to ensure that the iommu is enabled. This is
- 	 * controlled by a register in the northbridge
- 	 */
--	pdev = pci_get_bus_and_slot(iommu->dev->bus->number, PCI_DEVFN(0, 0));
--
--	if (!pdev)
--		return;
- 
- 	/* Select Northbridge indirect register 0x75 and enable writing */
- 	pci_write_config_dword(pdev, 0x60, 0x75 | (1 << 7));
-@@ -1346,8 +1345,6 @@ static void iommu_apply_resume_quirks(st
- 	if (!(ioc_feature_control & 0x1))
- 		pci_write_config_dword(pdev, 0x64, ioc_feature_control | 1);
- 
--	pci_dev_put(pdev);
--
- 	/* Restore the iommu BAR */
- 	pci_write_config_dword(iommu->dev, iommu->cap_ptr + 4,
- 			       iommu->stored_addr_lo);
---- a/drivers/iommu/amd_iommu_types.h
-+++ b/drivers/iommu/amd_iommu_types.h
-@@ -481,6 +481,9 @@ struct amd_iommu {
- 	/* Pointer to PCI device of this IOMMU */
- 	struct pci_dev *dev;
- 
-+	/* Cache pdev to root device for resume quirks */
-+	struct pci_dev *root_pdev;
++	/* enable ppr interrupts again */
++	writel(MMIO_STATUS_PPR_INT_MASK, iommu->mmio_base + MMIO_STATUS_OFFSET);
 +
- 	/* physical address of MMIO space */
- 	u64 mmio_phys;
- 	/* virtual address of MMIO space */
+ 	spin_lock_irqsave(&iommu->lock, flags);
+ 
+ 	head = readl(iommu->mmio_base + MMIO_PPR_HEAD_OFFSET);
+ 	tail = readl(iommu->mmio_base + MMIO_PPR_TAIL_OFFSET);
+ 
+ 	while (head != tail) {
++		volatile u64 *raw;
++		u64 entry[2];
++		int i;
++
++		raw = (u64 *)(iommu->ppr_log + head);
++
++		/*
++		 * Hardware bug: Interrupt may arrive before the entry is
++		 * written to memory. If this happens we need to wait for the
++		 * entry to arrive.
++		 */
++		for (i = 0; i < LOOP_TIMEOUT; ++i) {
++			if (PPR_REQ_TYPE(raw[0]) != 0)
++				break;
++			udelay(1);
++		}
++
++		/* Avoid memcpy function-call overhead */
++		entry[0] = raw[0];
++		entry[1] = raw[1];
++
++		/*
++		 * To detect the hardware bug we need to clear the entry
++		 * back to zero.
++		 */
++		raw[0] = raw[1] = 0UL;
+ 
+-		/* Handle PPR entry */
+-		iommu_handle_ppr_entry(iommu, head);
+-
+-		/* Update and refresh ring-buffer state*/
++		/* Update head pointer of hardware ring-buffer */
+ 		head = (head + PPR_ENTRY_SIZE) % PPR_LOG_SIZE;
+ 		writel(head, iommu->mmio_base + MMIO_PPR_HEAD_OFFSET);
++
++		/*
++		 * Release iommu->lock because ppr-handling might need to
++		 * re-aquire it
++		 */
++		spin_unlock_irqrestore(&iommu->lock, flags);
++
++		/* Handle PPR entry */
++		iommu_handle_ppr_entry(iommu, entry);
++
++		spin_lock_irqsave(&iommu->lock, flags);
++
++		/* Refresh ring-buffer information */
++		head = readl(iommu->mmio_base + MMIO_PPR_HEAD_OFFSET);
+ 		tail = readl(iommu->mmio_base + MMIO_PPR_TAIL_OFFSET);
+ 	}
+ 
+-	/* enable ppr interrupts again */
+-	writel(MMIO_STATUS_PPR_INT_MASK, iommu->mmio_base + MMIO_STATUS_OFFSET);
+-
+ 	spin_unlock_irqrestore(&iommu->lock, flags);
+ }
+ 
 
 
