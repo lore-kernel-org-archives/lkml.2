@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933727Ab2FGEZj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 00:25:39 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:54880 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933704Ab2FGEZe (ORCPT
+	id S933796Ab2FGEZq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 00:25:46 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63306 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933704Ab2FGEZk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 00:25:34 -0400
-Message-Id: <20120607041403.048334284@linuxfoundation.org>
+	Thu, 7 Jun 2012 00:25:40 -0400
+Message-Id: <20120607041403.886734628@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 07 Jun 2012 13:14:32 +0900
+Date: Thu, 07 Jun 2012 13:14:38 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Eric Dumazet <edumazet@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 34/47] pktgen: fix crash at module unload
+        alan@lxorguk.ukuu.org.uk, Andreas Dilger <adilger@whamcloud.com>,
+        Eric Sandeen <sandeen@redhat.com>, "Theodore Tso" <tytso@mit.edu>
+Subject: [ 40/47] ext4: force ro mount if ext4_setup_super() fails
 In-Reply-To: <20120607041504.GA13819@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,70 +25,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Eric Sandeen <sandeen@redhat.com>
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+commit 7e84b6216467b84cd332c8e567bf5aa113fd2f38 upstream.
 
-[ Upstream commit c57b54684060c8aced64a5b78ff69ff289af97b9 ]
+If ext4_setup_super() fails i.e. due to a too-high revision,
+the error is logged in dmesg but the fs is not mounted RO as
+indicated.
 
-commit 7d3d43dab4e9 (net: In unregister_netdevice_notifier unregister
-the netdevices.) makes pktgen crashing at module unload.
+Tested by:
 
-[  296.820578] BUG: spinlock bad magic on CPU#6, rmmod/3267
-[  296.820719]  lock: ffff880310c38000, .magic: ffff8803, .owner: <none>/-1, .owner_cpu: -1
-[  296.820943] Pid: 3267, comm: rmmod Not tainted 3.4.0-rc5+ #254
-[  296.821079] Call Trace:
-[  296.821211]  [<ffffffff8168a715>] spin_dump+0x8a/0x8f
-[  296.821345]  [<ffffffff8168a73b>] spin_bug+0x21/0x26
-[  296.821507]  [<ffffffff812b4741>] do_raw_spin_lock+0x131/0x140
-[  296.821648]  [<ffffffff8169188e>] _raw_spin_lock+0x1e/0x20
-[  296.821786]  [<ffffffffa00cc0fd>] __pktgen_NN_threads+0x4d/0x140 [pktgen]
-[  296.821928]  [<ffffffffa00ccf8d>] pktgen_device_event+0x10d/0x1e0 [pktgen]
-[  296.822073]  [<ffffffff8154ed4f>] unregister_netdevice_notifier+0x7f/0x100
-[  296.822216]  [<ffffffffa00d2a0b>] pg_cleanup+0x48/0x73 [pktgen]
-[  296.822357]  [<ffffffff8109528e>] sys_delete_module+0x17e/0x2a0
-[  296.822502]  [<ffffffff81699652>] system_call_fastpath+0x16/0x1b
+# mkfs.ext4 -r 4 /dev/sdb6
+# mount /dev/sdb6 /mnt/test
+# dmesg | grep "too high"
+[164919.759248] EXT4-fs (sdb6): revision level too high, forcing read-only mode
+# grep sdb6 /proc/mounts
+/dev/sdb6 /mnt/test2 ext4 rw,seclabel,relatime,data=ordered 0 0
 
-Hold the pktgen_thread_lock while splicing pktgen_threads, and test
-pktgen_exiting in pktgen_device_event() to make unload faster.
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Eric W. Biederman <ebiederm@xmission.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reviewed-by: Andreas Dilger <adilger@whamcloud.com>
+Signed-off-by: Eric Sandeen <sandeen@redhat.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/core/pktgen.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
 
---- a/net/core/pktgen.c
-+++ b/net/core/pktgen.c
-@@ -1932,7 +1932,7 @@ static int pktgen_device_event(struct no
- {
- 	struct net_device *dev = ptr;
- 
--	if (!net_eq(dev_net(dev), &init_net))
-+	if (!net_eq(dev_net(dev), &init_net) || pktgen_exiting)
- 		return NOTIFY_DONE;
- 
- 	/* It is OK that we do not hold the group lock right now,
-@@ -3755,12 +3755,18 @@ static void __exit pg_cleanup(void)
- {
- 	struct pktgen_thread *t;
- 	struct list_head *q, *n;
-+	struct list_head list;
- 
- 	/* Stop all interfaces & threads */
- 	pktgen_exiting = true;
- 
--	list_for_each_safe(q, n, &pktgen_threads) {
-+	mutex_lock(&pktgen_thread_lock);
-+	list_splice(&list, &pktgen_threads);
-+	mutex_unlock(&pktgen_thread_lock);
-+
-+	list_for_each_safe(q, n, &list) {
- 		t = list_entry(q, struct pktgen_thread, th_list);
-+		list_del(&t->th_list);
- 		kthread_stop(t->tsk);
- 		kfree(t);
+---
+ fs/ext4/super.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -3618,7 +3618,8 @@ no_journal:
+ 		goto failed_mount4;
  	}
+ 
+-	ext4_setup_super(sb, es, sb->s_flags & MS_RDONLY);
++	if (ext4_setup_super(sb, es, sb->s_flags & MS_RDONLY))
++		sb->s_flags |= MS_RDONLY;
+ 
+ 	/* determine the minimum size of new large inodes, if present */
+ 	if (sbi->s_inode_size > EXT4_GOOD_OLD_INODE_SIZE) {
 
 
