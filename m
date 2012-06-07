@@ -1,70 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759592Ab2FGK0S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 06:26:18 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:61407 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753710Ab2FGK0Q (ORCPT
+	id S1759651Ab2FGK1H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 06:27:07 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:57008 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753710Ab2FGK1G convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 06:26:16 -0400
-Date: Thu, 7 Jun 2012 12:26:10 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
-        kamezawa.hiroyu@jp.fujitsu.com, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>, Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, devel@openvz.org,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH v3 00/28] kmem limitation for memcg
-Message-ID: <20120607102604.GE19842@somewhere.redhat.com>
-References: <1337951028-3427-1-git-send-email-glommer@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337951028-3427-1-git-send-email-glommer@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 7 Jun 2012 06:27:06 -0400
+Message-ID: <1339064814.23343.14.camel@twins>
+Subject: Re: processes hung after sys_renameat, and 'missing' processes
+From: Peter Zijlstra <peterz@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dave Jones <davej@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Miklos Szeredi <mszeredi@suse.cz>, Jan Kara <jack@suse.cz>
+Date: Thu, 07 Jun 2012 12:26:54 +0200
+In-Reply-To: <CA+55aFx_oREEd2XS_aG7PJ7dwzWjgx689V_uRPGWpVS01_++6A@mail.gmail.com>
+References: <20120603223617.GB7707@redhat.com>
+	 <CA+55aFwCusEdMq3_3TAXSZ=+kbN7H6AbnngVaagAZw=ZpicckQ@mail.gmail.com>
+	 <20120603231709.GP30000@ZenIV.linux.org.uk>
+	 <20120603232820.GQ30000@ZenIV.linux.org.uk>
+	 <20120606194233.GA1537@redhat.com>
+	 <CA+55aFwxFVLPk4-dp73uccKXepKwjpGFgh0NW1u8d0zYzr=hBA@mail.gmail.com>
+	 <20120606230040.GA18089@redhat.com>
+	 <CA+55aFx_oREEd2XS_aG7PJ7dwzWjgx689V_uRPGWpVS01_++6A@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 25, 2012 at 05:03:20PM +0400, Glauber Costa wrote:
-> Hello All,
-> 
-> This is my new take for the memcg kmem accounting. This should merge
-> all of the previous comments from you, plus fix a bunch of bugs.
-> 
-> At this point, I consider the series pretty mature. Since last submission
-> 2 weeks ago, I focused on broadening the testing coverage. Some bugs were
-> fixed, but that of course doesn't mean no bugs exist.
-> 
-> I believe some of the early patches here are already in some trees around.
-> I don't know who should pick this, so if everyone agrees with what's in here,
-> please just ack them and tell me which tree I should aim for (-mm? Hocko's?)
-> and I'll rebase it.
-> 
-> I should point out again that most, if not all, of the code in the caches
-> are wrapped in static_key areas, meaning they will be completely patched out
-> until the first limit is set. Enabling and disabling of static_keys incorporate
-> the last fixes for sock memcg, and should be pretty robust.
-> 
-> I also put a lot of effort, as you will all see, in the proper separation
-> of the patches, so the review process is made as easy as the complexity of
-> the work allows to.
+On Wed, 2012-06-06 at 16:31 -0700, Linus Torvalds wrote:
+> PeterZ - the fact that we use mutex_lock_nested with
+> I_MUTEX_PARENT/I_MUTEX_CHILD/nothing hopefully doesn't screw us up in
+> case we get it wrong, right? 
 
-So I believe that if I want to implement a per kernel stack accounting/limitation,
-I need to work on top of your patchset.
-
-What do you think about having some sub kmem accounting based on the caches?
-For example there could be a specific accounting per kmem cache.
-
-Like if we use a specific kmem cache to allocate the kernel stack
-(as is done by some archs but I can generalize that for those who want
-kernel stack accounting), allocations are accounted globally in the memcg as
-done in your patchset but also on a seperate counter only for this kmem cache
-on the memcg, resulting in a kmem.stack.usage somewhere.
-
-The concept of per kmem cache accounting can be expanded more for any
-kind of finegrained kmem accounting.
-
-Thoughts?
+Sadly, if you get that annotation wrong you can annotate an actual
+deadlock away. This the reason you have to be very careful when
+annotating stuff.
