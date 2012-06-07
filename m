@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756146Ab2FGUX4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 16:23:56 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:49576 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751517Ab2FGUXz (ORCPT
+	id S1756255Ab2FGUYE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 16:24:04 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:56009 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751517Ab2FGUYB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 16:23:55 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAHVUoiQpLpFVmeHCxpXKBvg9y41KcpKOO-_FKA9UTEHSjbhz9g@mail.gmail.com>
-References: <CAHVUoiQywo=iHKsXQbsVE7coc1FL9A9qy_a71SK94MKNV0GrKA@mail.gmail.com>
-	<CAHVUoiTZmzT3vquaDC65AJfCFZX-qS5GjgjP2-+=0R7skurW5g@mail.gmail.com>
-	<CAHVUoiQgcAMr874d_yPfm9ssUBOoX+dNLy9JNCOCYwOCrAKXFQ@mail.gmail.com>
-	<CAH3drwacayQEZHOidbKKuJ3KjgMvnYzT0S0csXV2QwSmC8nMxg@mail.gmail.com>
-	<CAHVUoiSP7SiWCtYPvKS_1RuAV0upWmT06iN7PR1OE6NAtToirQ@mail.gmail.com>
-	<CAH3drwY61Pqd1MXxgSYcHRPJF5pNr2FO7vrM_ULsRvMbYjAhOQ@mail.gmail.com>
-	<CAHVUoiQpLpFVmeHCxpXKBvg9y41KcpKOO-_FKA9UTEHSjbhz9g@mail.gmail.com>
-Date: Thu, 7 Jun 2012 16:23:54 -0400
-Message-ID: <CAH3drwbEoT6RxYHRuY=x9T=Zz2L=UW-p2a0PHanSQV8Wzk9XXw@mail.gmail.com>
-Subject: Re: [Regression] [Radeon] Stream command failures and render problems
- in Evergreen (Radeon HD 5600) in kernel 3.4
-From: Jerome Glisse <j.glisse@gmail.com>
-To: Brian Gitonga Marete <marete@toshnix.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, David Airlie <airlied@linux.ie>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Jerome Glisse <jglisse@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 7 Jun 2012 16:24:01 -0400
+Date: Thu, 7 Jun 2012 22:23:55 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: acme@redhat.com, jolsa@redhat.com, eranian@google.com,
+        linux-kernel@vger.kernel.org
+Subject: perf user tool precise attribute broken in 3.5rc1+
+Message-ID: <20120607202355.GQ27374@one.firstfloor.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 7, 2012 at 4:22 PM, Brian Gitonga Marete <marete@toshnix.com> wrote:
-> On Thu, Jun 7, 2012 at 11:20 PM, Jerome Glisse <j.glisse@gmail.com> wrote:
->> What happen if you upgrade to xf86-video-ati from git ?
->>
->
-> Had actually just though of that and cloned it :) Will try and report.
->
-> Thanks!
->
-> --
-> Brian Gitonga Marete
-> Toshnix Systems - http://toshnix.com
 
-If it works please also give me mesa version, and am i right assuming
-you are using unity ? Is this a stock ubuntu 12 installation (ie not
-custome package) ?
+With a perf user tool compiled from a 3.5rc1+ kernel I cannot
+use the 'p' attribute anymore. Always get
 
-Cheers,
-Jerome
+ak@petrock:~> ./perf record -e cycles:p ./t
+
+  Error: sys_perf_event_open() syscall returned with 22 (Invalid argument).  /bin/dmesg may provide additional information.
+
+  Fatal: No CONFIG_PERF_EVENTS=y kernel support configured?
+
+./t: Terminated
+
+With an older perf it works, so the kernel is ok.
+
+ak@petrock:~> ./perf record -e cycles:p ./t
+[ perf record: Woken up 1 times to write data ]
+[ perf record: Captured and wrote 0.005 MB perf.data (~217 samples) ]
+ak@petrock:~> 
+
+
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
