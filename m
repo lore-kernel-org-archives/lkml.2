@@ -1,119 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757624Ab2FGAkz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 20:40:55 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:36929 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754095Ab2FGAkx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 20:40:53 -0400
-Message-ID: <1339029719.13373.14.camel@lappy>
-Subject: Re: ecryptfs: kernel BUG at fs/ecryptfs/miscdev.c:52
-From: Sasha Levin <levinsasha928@gmail.com>
-To: tyhicks <tyhicks@canonical.com>
-Cc: "dustin.kirkland" <dustin.kirkland@gazzang.com>,
-        ecryptfs <ecryptfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 07 Jun 2012 02:41:59 +0200
-In-Reply-To: <1338061161.4284.16.camel@lappy>
-References: <1338061161.4284.16.camel@lappy>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
+	id S1757904Ab2FGAlP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 20:41:15 -0400
+Received: from mga09.intel.com ([134.134.136.24]:8750 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756858Ab2FGAlM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 20:41:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="asc'?scan'208";a="153951916"
+Message-ID: <1339029671.10602.81.camel@jtkirshe-mobl>
+Subject: Re: [E1000-devel] [next-net PATCH]
+ drivers/net/ethernet/intel/e1000e: fix unregistered net_device ethX name
+ output by e1000e
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Reply-To: jeffrey.t.kirsher@intel.com
+To: Ethan Zhao <ethan.kernel@gmail.com>
+Cc: eric.dumazet@gmail.com, linux.nics@intel.com,
+        e1000-devel@lists.sourceforge.net, LKML <linux-kernel@vger.kernel.org>
+Date: Wed, 06 Jun 2012 17:41:11 -0700
+In-Reply-To: <CABawtvNv7LwT_awXscXGEid-1wes-+ZELc7YMLZqyo2h=h98UA@mail.gmail.com>
+References: <CABawtvNv7LwT_awXscXGEid-1wes-+ZELc7YMLZqyo2h=h98UA@mail.gmail.com>
+Organization: Intel Corporation
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-YXBi4oF6dToZVndGR90t"
+X-Mailer: Evolution 3.4.1 (3.4.1-2.fc17) 
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-05-26 at 21:39 +0200, Sasha Levin wrote:
-> Hi all,
-> 
-> During fuzzing with trinity inside a KVM guest, using latest linux-next kernel, I've stumbled on the following:
-> 
-> [  175.995560] ------------[ cut here ]------------
-> [  175.996026] kernel BUG at fs/ecryptfs/miscdev.c:52!
-> [  175.996026] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-> [  175.996026] CPU 3 
-> [  175.996026] Pid: 7903, comm: trinity-child3 Tainted: G        W    3.4.0-next-20120524-sasha #296 Bochs Bochs
-> [  175.996026] RIP: 0010:[<ffffffff813e945a>]  [<ffffffff813e945a>] ecryptfs_miscdev_poll+0x5a/0x150
-> [  175.996026] RSP: 0018:ffff88002d4a3aa8  EFLAGS: 00010282
-> [  175.996026] RAX: 00000000ffffffea RBX: ffff88002d4a3b98 RCX: ffff880019d3c348
-> [  175.996026] RDX: ffffffff84444140 RSI: 000000000b32e681 RDI: ffff88002d4a3ab0
-> [  175.996026] RBP: ffff88002d4a3ad8 R08: cbf7d334712ee681 R09: 0200000000000000
-> [  175.996026] R10: 2000000000000000 R11: 3408000000000000 R12: ffff88003d53c000
-> [  176.022035] R13: 000000000b32e681 R14: ffff88002d4b059c R15: ffff88003d53c000
-> 165983 iteration[  176.026020] FS:  00007f0abac73700(0000) GS:ffff880035a00000(0000) knlGS:0000000000000000
-> [  176.026020] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> s.
-> [  176.026020] CR2: 00000000011750d8 CR3: 0000000039722000 CR4: 00000000000407e0
-> [  176.026020] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> [  176.026020] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> [  176.026020] Process trinity-child3 (pid: 7903, threadinfo ffff88002d4a2000, task ffff88002d503000)
-> [  176.026020] Stack:
-> [  176.026020]  ffff88002d4b069c ffff880019d3c348 ffff88002d4b069c ffff88002d4b069c
-> [  176.026020]  ffff88002d4a3b44 ffff88002d4a3b98 ffff88002d4a3b78 ffffffff8124d9bc
-> [  176.026020]  ffff88002d503000 ffff88002d503000 01ffffff811f5afe 0000000000000000
-> [  176.026020] Call Trace:
-> [  176.026020]  [<ffffffff8124d9bc>] do_poll+0x11c/0x2b0
-> [  176.026020]  [<ffffffff8124dcbf>] do_sys_poll+0x16f/0x240
-> [  176.026020]  [<ffffffff8114dfdd>] ? __lock_acquired+0x3d/0x2e0
-> [  176.026020]  [<ffffffff811fade6>] ? do_wp_page+0x5c6/0x800
-> [  176.026020]  [<ffffffff811faf73>] ? do_wp_page+0x753/0x800
-> 197143 iteration[  176.026020]  [<ffffffff8197e060>] ? do_raw_spin_unlock+0xd0/0xe0
-> s.
-> [  176.026020]  [<ffffffff83249080>] ? _raw_spin_unlock+0x30/0x60
-> [  176.026020]  [<ffffffff811fafe8>] ? do_wp_page+0x7c8/0x800
-> [  176.026020]  [<ffffffff8114dfdd>] ? __lock_acquired+0x3d/0x2e0
-> [  176.026020]  [<ffffffff8198044d>] ? debug_object_activate+0x6d/0x1b0
-> [  176.026020]  [<ffffffff81980532>] ? debug_object_activate+0x152/0x1b0
-> [  176.026020]  [<ffffffff8197e060>] ? do_raw_spin_unlock+0xd0/0xe0
-> [  176.026020]  [<ffffffff8114b4cd>] ? trace_hardirqs_off+0xd/0x10
-> [  176.026020]  [<ffffffff83249144>] ? _raw_spin_unlock_irqrestore+0x94/0xc0
-> [  176.026020]  [<ffffffff81980532>] ? debug_object_activate+0x152/0x1b0
-> [  176.026020]  [<ffffffff819611ee>] ? rb_insert_color+0x9e/0x160
-> [  176.026020]  [<ffffffff8110c488>] ? __hrtimer_start_range_ns+0x448/0x490
-> [  176.026020]  [<ffffffff8197e060>] ? do_raw_spin_unlock+0xd0/0xe0
-> [  176.026020]  [<ffffffff8124df6c>] sys_poll+0x6c/0x100
-> [  176.026020]  [<ffffffff8324a1f9>] system_call_fastpath+0x16/0x1b
-> [  176.026020] Code: 00 00 44 8b 68 24 e8 66 cc e5 01 48 8d 7d d8 48 c7 c2 40 41 44 84 44 89 ee e8 a3 ef ff ff 85 c0 75 09 48 8b 7d 
-> d8 48 85 ff 75 0e <0f> 0b 0f 1f 40 00 eb fe 66 0f 1f 44 00 00 48 83 c7 28 31 f6 e8 
-> [  176.026020] RIP  [<ffffffff813e945a>] ecryptfs_miscdev_poll+0x5a/0x150
-> [  176.026020]  RSP <ffff88002d4a3aa8>
-> [  176.028658] ---[ end trace 8f6ca168297608bd ]---
-> 
 
-I'm also seeing this, which is probably related:
+--=-YXBi4oF6dToZVndGR90t
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-[  269.149993] ------------[ cut here ]------------
-[  269.150735] kernel BUG at fs/ecryptfs/miscdev.c:272!
-[  269.150735] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[  269.150735] CPU 0 
-[  269.150735] Pid: 8059, comm: trinity-child0 Tainted: G        W    3.5.0-rc1-next-20120605-sasha-00012-g1389a60 #355  
-[  269.150735] RIP: 0010:[<ffffffff813eb711>]  [<ffffffff813eb711>] ecryptfs_miscdev_read+0x61/0x470
-[  269.150735] RSP: 0018:ffff88000baf3e58  EFLAGS: 00010282
-[  269.150735] RAX: 00000000ffffffea RBX: 00000000ffffffea RCX: ffff880028d9c620
-[  269.150735] RDX: ffffffff84a4d140 RSI: 000000007184449d RDI: ffff88000baf3eb0
-[  269.150735] RBP: ffff88000baf3ef8 R08: db1639ef5f10449d R09: 3a00000000000000
-[  269.150735] R10: a000000000000000 R11: 24e8000000000000 R12: ffff88000bb1b000
-[  269.150735] R13: 0000000000f59af0 R14: 0000000000000000 R15: 000000007184449d
-[  269.150735] FS:  00007fa2c283e700(0000) GS:ffff88000d800000(0000) knlGS:0000000000000000
-[  269.150735] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[  269.150735] CR2: 00000000012d0098 CR3: 000000003349e000 CR4: 00000000000406f0
-[  269.150735] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[  269.150735] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[  269.150735] Process trinity-child0 (pid: 8059, threadinfo ffff88000baf2000, task ffff88000bb1b000)
-[  269.150735] Stack:
-[  269.150735]  0000000000000000 0000000000000000 ffff88000bb1b000 0000000000020000
-[  269.150735]  ffff880019fbac10 ffff88001adeabe8 0000000000000004 0000000000000191
-[  269.150735]  ffff88000baf3ec8 ffffffff818ae971 0000000000000000 ffff880019fbac00
-[  269.150735] Call Trace:
-[  269.150735]  [<ffffffff818ae971>] ? security_file_permission+0x81/0x90
-[  269.150735]  [<ffffffff81239e87>] vfs_read+0xc7/0x190
-[  269.150735]  [<ffffffff8123a02f>] sys_read+0x4f/0x90
-[  269.150735]  [<ffffffff837cdf39>] system_call_fastpath+0x16/0x1b
-[  269.150735] Code: 80 b5 fc 85 e8 51 e8 3d 02 48 8d 7d b8 48 c7 c2 40 d1 a4 84 44 89 fe e8 2e ea ff ff 89 c3 85 c0 75 09 48 8b 7d 
-b8 48 85 ff 75 0f <0f> 0b 0f 1f 44 00 00 eb fe 66 0f 1f 44 00 00 48 83 c7 28 31 f6 
-[  269.150735] RIP  [<ffffffff813eb711>] ecryptfs_miscdev_read+0x61/0x470
-[  269.150735]  RSP <ffff88000baf3e58>
-[  269.188128] ---[ end trace 6d450e935ee18981 ]---
+On Wed, 2012-06-06 at 22:57 +0800, Ethan Zhao wrote:
+> commit ca3ccc6835943287b6f69e973c126a02bc4de409
+> Author: ethan.zhao <ethan.kernel@gmail.com>
+> Date:   Wed Jun 6 07:32:11 2012 -0700
+>=20
+>         modified:   drivers/net/ethernet/intel/e1000e/param.c
+>=20
+>     While e1000e_check_options() is called, netdev is not registered,
+> so the
+>     e1000e driver will print out confused ethernet interface name
+> (unregistered net_device) :
+>=20
+>     e1000e 0000:04:00.0:(unregistered net_device): Interrupt
+> Throttling Rate (ints/sec) set to dynamic conservative mode
+>=20
+>     So change e_info() back to dev_printk() by simply redefine the
+> e_info macro used by
+>     e1000e_check_options() and e1000_validate_option
+>=20
+>     after applied this patch, we got:
+>=20
+>     e1000e 0000:04:00.0: Interrupt Throttling Rate (ints/sec) set to
+> dynamic conservative mode
+>     e1000e 0000:04:00.0: irq 95 for MSI/MSI-X=20
+
+NACK, I currently have a patch in my queue from Bruce Allan to resolve
+this issue.  I should be pushing the patch upstream in a few days.
+
+--=-YXBi4oF6dToZVndGR90t
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABCgAGBQJPz/inAAoJEOVv75VaS+3OldUP/3+hmOqKahHcY8b1TuuoDUCp
+kN73G1R7F4zFm+Y1+3zV2uwxMlRW/7W+eOEWF+icTrUnrjypIpX1XAhsWfpibbwV
+E3r5vPI/ZJyPK9RD8IW4yRabfdmOq+FuMI7TynnEJECb9FuPuzBia44i52rXDgig
+qrthBXaspAVVVj47CzIDPqP18omB7q3F12mk5fCAG8lVcLpA8JGpE0vfsUk+HC9U
+Aj+96olKx3o323l84OdJdcZWJlRlnbsmTYwXqtRqga3hwjcP+uPBtilmO5TcbbCj
+SQ2Lb8v5xfMK9WtQIVI0ZKqK8N0PS2qXue6UUHeQQ2nKjaFQLC8KhOd42VDvsh97
+e8D2IGMh5zWGZq4HiFncE+P1DijrQQht05wYXxebAaSn+9IHjgtaHKLVdL1CR2vA
+s4+m9hvdZENzeiivshJhteZnmZunyw+5It5xBwYFxESt2Tnl+5z737TmqrpyLS2f
+ptbcpgtVbIlt8r9NSaL3Jn8JLl3wRSR/1E4qefYg7f8N+fri3V9Q3ugfhZDhDl/O
+3gptslNycE2m1mocb57C8SqpBWvg/JEfBZiKCvStATFR+IJNKLHLnMTzxVdQYHpj
+SX36AyTdjRgrRQeZI1e/c5PMhdE5XxYG85drB3sTkrq+p2Vve3/9Qafnxpbw2o6Y
+KwMOk6PRixd+c3tcl6JL
+=D+Jc
+-----END PGP SIGNATURE-----
+
+--=-YXBi4oF6dToZVndGR90t--
 
