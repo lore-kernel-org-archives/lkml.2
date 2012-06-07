@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933625Ab2FGEZA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 00:25:00 -0400
+	id S933642Ab2FGEZJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 00:25:09 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:63657 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933536Ab2FGEYw (ORCPT
+	with ESMTP id S933547Ab2FGEZE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 00:24:52 -0400
-Message-Id: <20120607041402.633194282@linuxfoundation.org>
+	Thu, 7 Jun 2012 00:25:04 -0400
+Message-Id: <20120607041402.910569680@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 07 Jun 2012 13:14:29 +0900
+Date: Thu, 07 Jun 2012 13:14:31 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        Kun Jiang <kunx.jiang@intel.com>, Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 31/47] ipv4: fix the rcu race between free_fib_info and ip_route_output_slow
+        alan@lxorguk.ukuu.org.uk, Sasha Levin <levinsasha928@gmail.com>,
+        James Chapman <jchapman@katalix.com>
+Subject: [ 33/47] l2tp: fix oops in L2TP IP sockets for connect() AF_UNSPEC case
 In-Reply-To: <20120607041504.GA13819@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,96 +26,109 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+From: James Chapman <jchapman@katalix.com>
 
-[ Upstream commit e49cc0da7283088c5e03d475ffe2fdcb24a6d5b1 ]
+[ Upstream commit c51ce49735c183ef2592db70f918ee698716276b ]
 
-We hit a kernel OOPS.
+An application may call connect() to disconnect a socket using an
+address with family AF_UNSPEC. The L2TP IP sockets were not handling
+this case when the socket is not bound and an attempt to connect()
+using AF_UNSPEC in such cases would result in an oops. This patch
+addresses the problem by protecting the sk_prot->disconnect() call
+against trying to unhash the socket before it is bound.
 
-<3>[23898.789643] BUG: sleeping function called from invalid context at
-/data/buildbot/workdir/ics/hardware/intel/linux-2.6/arch/x86/mm/fault.c:1103
-<3>[23898.862215] in_atomic(): 0, irqs_disabled(): 0, pid: 10526, name:
-Thread-6683
-<4>[23898.967805] HSU serial 0000:00:05.1: 0000:00:05.2:HSU serial prevented me
-to suspend...
-<4>[23899.258526] Pid: 10526, comm: Thread-6683 Tainted: G        W
-3.0.8-137685-ge7742f9 #1
-<4>[23899.357404] HSU serial 0000:00:05.1: 0000:00:05.2:HSU serial prevented me
-to suspend...
-<4>[23899.904225] Call Trace:
-<4>[23899.989209]  [<c1227f50>] ? pgtable_bad+0x130/0x130
-<4>[23900.000416]  [<c1238c2a>] __might_sleep+0x10a/0x110
-<4>[23900.007357]  [<c1228021>] do_page_fault+0xd1/0x3c0
-<4>[23900.013764]  [<c18e9ba9>] ? restore_all+0xf/0xf
-<4>[23900.024024]  [<c17c007b>] ? napi_complete+0x8b/0x690
-<4>[23900.029297]  [<c1227f50>] ? pgtable_bad+0x130/0x130
-<4>[23900.123739]  [<c1227f50>] ? pgtable_bad+0x130/0x130
-<4>[23900.128955]  [<c18ea0c3>] error_code+0x5f/0x64
-<4>[23900.133466]  [<c1227f50>] ? pgtable_bad+0x130/0x130
-<4>[23900.138450]  [<c17f6298>] ? __ip_route_output_key+0x698/0x7c0
-<4>[23900.144312]  [<c17f5f8d>] ? __ip_route_output_key+0x38d/0x7c0
-<4>[23900.150730]  [<c17f63df>] ip_route_output_flow+0x1f/0x60
-<4>[23900.156261]  [<c181de58>] ip4_datagram_connect+0x188/0x2b0
-<4>[23900.161960]  [<c18e981f>] ? _raw_spin_unlock_bh+0x1f/0x30
-<4>[23900.167834]  [<c18298d6>] inet_dgram_connect+0x36/0x80
-<4>[23900.173224]  [<c14f9e88>] ? _copy_from_user+0x48/0x140
-<4>[23900.178817]  [<c17ab9da>] sys_connect+0x9a/0xd0
-<4>[23900.183538]  [<c132e93c>] ? alloc_file+0xdc/0x240
-<4>[23900.189111]  [<c123925d>] ? sub_preempt_count+0x3d/0x50
+The patch also adds more checks that the sockaddr supplied to bind()
+and connect() calls is valid.
 
-Function free_fib_info resets nexthop_nh->nh_dev to NULL before releasing
-fi. Other cpu might be accessing fi. Fixing it by delaying the releasing.
+ RIP: 0010:[<ffffffff82e133b0>]  [<ffffffff82e133b0>] inet_unhash+0x50/0xd0
+ RSP: 0018:ffff88001989be28  EFLAGS: 00010293
+ Stack:
+  ffff8800407a8000 0000000000000000 ffff88001989be78 ffffffff82e3a249
+  ffffffff82e3a050 ffff88001989bec8 ffff88001989be88 ffff8800407a8000
+  0000000000000010 ffff88001989bec8 ffff88001989bea8 ffffffff82e42639
+ Call Trace:
+ [<ffffffff82e3a249>] udp_disconnect+0x1f9/0x290
+ [<ffffffff82e42639>] inet_dgram_connect+0x29/0x80
+ [<ffffffff82d012fc>] sys_connect+0x9c/0x100
 
-With the patch, we ran MTBF testing on Android mobile for 12 hours
-and didn't trigger the issue.
-
-Thank Eric for very detailed review/checking the issue.
-
-Signed-off-by: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Signed-off-by: Kun Jiang <kunx.jiang@intel.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Sasha Levin <levinsasha928@gmail.com>
+Signed-off-by: James Chapman <jchapman@katalix.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/fib_semantics.c |   20 +++++++++++++-------
- 1 file changed, 13 insertions(+), 7 deletions(-)
+ net/l2tp/l2tp_ip.c |   30 ++++++++++++++++++++++++------
+ 1 file changed, 24 insertions(+), 6 deletions(-)
 
---- a/net/ipv4/fib_semantics.c
-+++ b/net/ipv4/fib_semantics.c
-@@ -142,6 +142,18 @@ const struct fib_prop fib_props[RTN_MAX
- };
- 
- /* Release a nexthop info record */
-+static void free_fib_info_rcu(struct rcu_head *head)
-+{
-+	struct fib_info *fi = container_of(head, struct fib_info, rcu);
-+
-+	change_nexthops(fi) {
-+		if (nexthop_nh->nh_dev)
-+			dev_put(nexthop_nh->nh_dev);
-+	} endfor_nexthops(fi);
-+
-+	release_net(fi->fib_net);
-+	kfree(fi);
-+}
- 
- void free_fib_info(struct fib_info *fi)
+--- a/net/l2tp/l2tp_ip.c
++++ b/net/l2tp/l2tp_ip.c
+@@ -251,9 +251,16 @@ static int l2tp_ip_bind(struct sock *sk,
  {
-@@ -149,14 +161,8 @@ void free_fib_info(struct fib_info *fi)
- 		pr_warning("Freeing alive fib_info %p\n", fi);
- 		return;
- 	}
--	change_nexthops(fi) {
--		if (nexthop_nh->nh_dev)
--			dev_put(nexthop_nh->nh_dev);
--		nexthop_nh->nh_dev = NULL;
--	} endfor_nexthops(fi);
- 	fib_info_cnt--;
--	release_net(fi->fib_net);
--	kfree_rcu(fi, rcu);
-+	call_rcu(&fi->rcu, free_fib_info_rcu);
+ 	struct inet_sock *inet = inet_sk(sk);
+ 	struct sockaddr_l2tpip *addr = (struct sockaddr_l2tpip *) uaddr;
+-	int ret = -EINVAL;
++	int ret;
+ 	int chk_addr_ret;
+ 
++	if (!sock_flag(sk, SOCK_ZAPPED))
++		return -EINVAL;
++	if (addr_len < sizeof(struct sockaddr_l2tpip))
++		return -EINVAL;
++	if (addr->l2tp_family != AF_INET)
++		return -EINVAL;
++
+ 	ret = -EADDRINUSE;
+ 	read_lock_bh(&l2tp_ip_lock);
+ 	if (__l2tp_ip_bind_lookup(&init_net, addr->l2tp_addr.s_addr, sk->sk_bound_dev_if, addr->l2tp_conn_id))
+@@ -283,6 +290,8 @@ static int l2tp_ip_bind(struct sock *sk,
+ 	sk_del_node_init(sk);
+ 	write_unlock_bh(&l2tp_ip_lock);
+ 	ret = 0;
++	sock_reset_flag(sk, SOCK_ZAPPED);
++
+ out:
+ 	release_sock(sk);
+ 
+@@ -303,13 +312,14 @@ static int l2tp_ip_connect(struct sock *
+ 	__be32 saddr;
+ 	int oif, rc;
+ 
+-	rc = -EINVAL;
++	if (sock_flag(sk, SOCK_ZAPPED)) /* Must bind first - autobinding does not work */
++		return -EINVAL;
++
+ 	if (addr_len < sizeof(*lsa))
+-		goto out;
++		return -EINVAL;
+ 
+-	rc = -EAFNOSUPPORT;
+ 	if (lsa->l2tp_family != AF_INET)
+-		goto out;
++		return -EAFNOSUPPORT;
+ 
+ 	lock_sock(sk);
+ 
+@@ -363,6 +373,14 @@ out:
+ 	return rc;
  }
  
- void fib_release_info(struct fib_info *fi)
++static int l2tp_ip_disconnect(struct sock *sk, int flags)
++{
++	if (sock_flag(sk, SOCK_ZAPPED))
++		return 0;
++
++	return udp_disconnect(sk, flags);
++}
++
+ static int l2tp_ip_getname(struct socket *sock, struct sockaddr *uaddr,
+ 			   int *uaddr_len, int peer)
+ {
+@@ -591,7 +609,7 @@ static struct proto l2tp_ip_prot = {
+ 	.close		   = l2tp_ip_close,
+ 	.bind		   = l2tp_ip_bind,
+ 	.connect	   = l2tp_ip_connect,
+-	.disconnect	   = udp_disconnect,
++	.disconnect	   = l2tp_ip_disconnect,
+ 	.ioctl		   = udp_ioctl,
+ 	.destroy	   = l2tp_ip_destroy_sock,
+ 	.setsockopt	   = ip_setsockopt,
 
 
