@@ -1,87 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760554Ab2FGJ4s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 05:56:48 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:39870 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760504Ab2FGJ4q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 05:56:46 -0400
-Date: Thu, 7 Jun 2012 11:56:40 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>, acme@redhat.com, mingo@elte.hu,
-        paulus@samba.org, cjashfor@linux.vnet.ibm.com, gorcunov@openvz.org,
-        tzanussi@gmail.com, mhiramat@redhat.com, robert.richter@amd.com,
-        fche@redhat.com, linux-kernel@vger.kernel.org,
-        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
-        benjamin.redelings@nescent.org
-Subject: Re: [PATCH 02/16] perf: Add ability to attach registers dump to
- sample
-Message-ID: <20120607095636.GC19842@somewhere.redhat.com>
-References: <1337801535-12865-1-git-send-email-jolsa@redhat.com>
- <1337801535-12865-3-git-send-email-jolsa@redhat.com>
- <1337853048.9783.92.camel@laptop>
- <CABPqkBR9hewjNUJf9ByD-jHc42e_qwQiKoP68RyL7BU8Q7BGgQ@mail.gmail.com>
- <1337856142.9783.104.camel@laptop>
- <20120524115206.GB1775@m.brq.redhat.com>
-MIME-Version: 1.0
+	id S1760530Ab2FGKD5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 06:03:57 -0400
+Received: from plane.gmane.org ([80.91.229.3]:38031 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752777Ab2FGKDz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 06:03:55 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Satendra Pratap <satendra.pratap@gmail.com>
+Subject: dmatest to use synopsys dma driver =?utf-8?b?KGR3X2RtYWMuYyk=?= 
+Date: Thu, 7 Jun 2012 10:03:43 +0000 (UTC)
+Message-ID: <loom.20120607T120203-129@post.gmane.org>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120524115206.GB1775@m.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 115.113.209.38 (Mozilla/5.0 (Windows NT 5.1) AppleWebKit/536.5 (KHTML, like Gecko) Chrome/19.0.1084.52 Safari/536.5)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 24, 2012 at 01:52:06PM +0200, Jiri Olsa wrote:
-> On Thu, May 24, 2012 at 12:42:22PM +0200, Peter Zijlstra wrote:
-> > On Thu, 2012-05-24 at 12:06 +0200, Stephane Eranian wrote:
-> > 
-> > > > What are we doing here and why?
-> > > >
-> > > I think this is related to a discusion we had earlier about which
-> > > machine state you want
-> > > to sample.
-> > > 
-> > > There are 3 possible machine states:
-> > >   1- user level (even when sample is in kernel AND assuming you did
-> > > not hit a kernel only thread)
-> > >   2- interrupted state (@ PMU interrupt)
-> > >   3- precise state (state captured by PEBS on Intel, for instance)
-> > > 
-> > > Jiri is only interested in 1/. I am interested in the other two as well.
-> > > 
-> > > Question: is there a situation where we could need more than one machine
-> > > state per sample?
-> > 
-> > Well, IIRC you always wanted both 2 and 3 at the same time to compute
-> > skid, thus:
-> > 
-> > > If not, then a single bitmask is enough.
-> > 
-> > Indeed, so then we get to multiple bitmasks and unless you want to be
-> > restricted to the same bitmap for all these types this setup won't
-> > actually work.
-> 
-> My intention was to make this general. I could just add
-> bitmask for each type (user regs mask for now) but I wanted
-> to be consistent with other SAMPLE_* stuff..
-> 
-> So current patch adds PERF_SAMPLE_REGS sample_type bit.
-> Once it is set, the 'sample_regs' value is checked for what
-> type of registers you want for sample.
-> 
-> Each type then has separate bitmask in case you want different
-> registers for each type. Allowing whatever combination of regs dump
-> being added to the sample, since it seems there's no firm
-> decision on what combination might be needed.
-> 
-> Sure we can make the same with bitmasks for each regs type,
-> and check the presence in sample by bitmask being not empty.
+Hi,
 
-I believe we should allow the record of user regs and precise/irq
-as well in the same time. Unless we get some real proof that both
-will never be used at the same time. I really don't want us to be
-limited in the future for ABI reasons.
+We have Synopsys DMAC controller on our SoC and are trying to use open source
+dw_dmac.c driver. We are using linux-3.2.2 kernel but it seems dw_dmac.c does 
+not have any support for it. Later I checked out that its been added in later 
+versions of dw_dmac.c so I backported dw_dmac from linux-3.4 to linux-3.2.2.
+I have tried using dmatest to validate dw_dmac.c driver. I just compile kernel 
+with dw_dmac.c and with dmatest support then I test it. (I think I need not to 
+modify dmatest in order wo work with dw_dmac).
+While testing I get crashes with the ported driver (from linux-3.4 to linux-
+3.2.2) but with the original driver in linux-3.2.2 I get no crashes but "test 
+timed out"
+
+Below are the logs:
+
+1. dmatest with ported dw_dmac.c (from linux-3.4 to linux-3.2.2):
+
+dmatest started automatically and tries test with all registered 8
+channels of our dma engine but we get crashes with every channel as shown
+below:
+
+=============================================================
+
+[    0.830000] private_candidate: Checking for channel=0
+[    0.830000] private_candidate: Got channel=0
+[    0.840000] dmatest: Started 1 threads using dma0chan0
+[    0.840000] Unable to handle kernel NULL pointer dereference at virtual
+address 00000000
+[    0.840000] pgd = c0004000
+[    0.840000] [00000000] *pgd=00000000
+[    0.840000] Internal error: Oops: 5 [#1] SMP
+[    0.840000] Modules linked in:
+[    0.840000] CPU: 1    Not tainted  (3.2.2+ #176)
+[    0.840000] PC is at dwc_prep_dma_memcpy+0x60/0x1d0
+[    0.840000] LR is at dmatest_func+0x660/0xc1c
+[    0.840000] pc : [<c0188720>]    lr : [<c018622c>]    psr: 60000013
+[    0.840000] sp : df9a9e98  ip : df9a9ed8  fp : df9a9ed4
+[    0.840000] r10: 000017c7  r9 : df8a308c  r8 : 00000000
+[    0.840000] r7 : 000021c0  r6 : df8a308c  r5 : 00000000  r4 : 00000000
+[    0.840000] r3 : 000017c7  r2 : 00000000  r1 : c02f69a1  r0 : df8a308c
+[    0.840000] Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment
+kernel
+[    0.840000] Control: 10c53c7d  Table: 0000404a  DAC: 00000015
+[    0.840000] Process dma0chan0-copy0 (pid: 240, stack limit = 0xdf9a8270)
+[    0.840000] Stack: (0xdf9a9e98 to 0xdf9aa000)
+[    0.840000] 9e80:                                                      
+00000000 003f3f00
+[    0.840000] 9ea0: 1f9f61c0 1f9fa1da c000f960 dfa01220 000017c7 00000001
+000021c0 00000000
+[    0.840000] 9ec0: 000021da df8a308c df9a9fbc df9a9ed8 c018622c c01886cc
+0000001b 00000001
+[    0.840000] 9ee0: c03ef6a8 00000000 1f9f8000 df9a9ef8 c0186664 c0043b84
+1f9f61c0 df9a8000
+[    0.840000] 9f00: df9a9fac df9a9f10 c02df464 c001d7bc df9a9f7c df9a9f20
+c0843f00 df9a9f6c
+[    0.840000] 9f20: 00000010 df9a9f08 df9a9ef8 00000001 00000004 df9a9ee8
+00000000 000017c7
+[    0.840000] 9f40: df9a9ef8 df9a9eec df96e644 00000000 df9a9ef8 00000000
+00000001 00000001
+[    0.840000] 9f60: df9a9ee8 df8a3000 00000000 df82def8 00000013 df82def4
+00000013 00000001
+[    0.840000] 9f80: 00000000 df82dee4 dfa01220 c0185bcc 00000013 df82dee4
+dfa01220 c0185bcc
+[    0.840000] 9fa0: 00000013 00000000 00000000 00000000 df9a9ff4 df9a9fc0
+c0043f80 c0185bd8
+[    0.840000] 9fc0: 00000000 dfa01220 00000000 00000000 df9a9fd0 df9a9fd0
+00000000 df82dee4
+[    0.840000] 9fe0: c0043ef0 c0029f18 00000000 df9a9ff8 c0029f18 c0043efc
+7ddfd75b effffffd
+[    0.840000] Backtrace:
+[    0.840000] [<c01886c0>] (dwc_prep_dma_memcpy+0x0/0x1d0) from [<c018622c>]
+(dmatest_func+0x660/0x
+c1c)
+[    0.840000] [<c0185bcc>] (dmatest_func+0x0/0xc1c) from [<c0043f80>]
+(kthread+0x90/0x98)
+[    0.840000] [<c0043ef0>] (kthread+0x0/0x98) from [<c0029f18>]
+(do_exit+0x0/0x6d8)
+[    0.840000]  r6:c0029f18 r5:c0043ef0 r4:df82dee4
+[    0.840000] Code: e1a09006 e59f116c e3540000 e1a02004 (e5943000)
+[    0.840000] ---[ end trace cfbc40eba3a6e5e5 ]---
+[    1.070000] private_candidate: Checking for channel=0
+[    1.080000] private_candidate: Checking for channel=1
+[    1.080000] private_candidate: Got channel=1
+[    1.090000] dmatest: Started 1 threads using dma0chan1
+[    1.090000] Unable to handle kernel NULL pointer dereference at virtual
+address 00000000
+[    1.090000] pgd = c0004000
+[    1.090000] [00000000] *pgd=00000000
+[    1.090000] Internal error: Oops: 5 [#2] SMP
+[    1.090000] Modules linked in:
+[    1.090000] CPU: 1    Tainted: G      D       (3.2.2+ #176)
+[    1.090000] PC is at dwc_prep_dma_memcpy+0x60/0x1d0
+[    1.090000] LR is at dmatest_func+0x660/0xc1c
+[    1.090000] pc : [<c0188720>]    lr : [<c018622c>]    psr: 60000013
+[    1.090000] sp : df951e98  ip : df951ed8  fp : df951ed4
+[    1.090000] r10: 00001c5a  r9 : df8a3108  r8 : 00000000
+[    1.090000] r7 : 000000e7  r6 : df8a3108  r5 : 00000000  r4 : 00000000
+[    1.090000] r3 : 00001c5a  r2 : 00000000  r1 : c02f69a1  r0 : df8a3108
+[    1.090000] Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment
+kernel
+[    1.090000] Control: 10c53c7d  Table: 0000404a  DAC: 00000015
+[    1.090000] Process dma0chan1-copy0 (pid: 242, stack limit = 0xdf950270)
+[    1.090000] Stack: (0xdf951e98 to 0xdf952000)
+[    1.090000] 1e80:                                                      
+00000000 003f3f80
+[    1.090000] 1ea0: 1f9f00e7 1f9fcc98 c000f960 dfa011e0 00001c5a 00000001
+000000e7 00000000
+[    1.090000] 1ec0: 00000c98 df8a3108 df951fbc df951ed8 c018622c c01886cc
+0000001b 00000001
+[    1.090000] 1ee0: c03ef6a8 00000000 1f9fc000 df951ef8 c0186664 c0043b84
+1f9f00e7 df950000
+[    1.090000] 1f00: df951fac df951f10 c02df464 c001d7bc df951f7c df951f20
+c0843f80 df951f6c
+[    1.090000] 1f20: 00000010 df951f08 df951ef8 00000001 00000004 df951ee8
+00000000 00001c5a
+[    1.090000] 1f40: df951ef8 df951eec dfa0fd64 00000000 df951ef8 00000000
+00000001 00000001
+[    1.090000] 1f60: df951ee8 df8a3000 00000000 df82def8 00000013 df82def4
+00000013 00000001
+[    1.090000] 1f80: 00000000 df82dee4 dfa011e0 c0185bcc 00000013 df82dee4
+dfa011e0 c0185bcc
+[    1.090000] 1fa0: 00000013 00000000 00000000 00000000 df951ff4 df951fc0
+c0043f80 c0185bd8
+[    1.090000] 1fc0: 00000000 dfa011e0 00000000 00000000 df951fd0 df951fd0
+00000000 df82dee4
+[    1.090000] 1fe0: c0043ef0 c0029f18 00000000 df951ff8 c0029f18 c0043efc
+7ddfd77b effdffdd
+[    1.090000] Backtrace:
+[    1.090000] [<c01886c0>] (dwc_prep_dma_memcpy+0x0/0x1d0) from [<c018622c>]
+(dmatest_func+0x660/0x
+c1c)
+[    1.090000] [<c0185bcc>] (dmatest_func+0x0/0xc1c) from [<c0043f80>]
+(kthread+0x90/0x98)
+[    1.090000] [<c0043ef0>] (kthread+0x0/0x98) from [<c0029f18>]
+(do_exit+0x0/0x6d8)
+[    1.090000]  r6:c0029f18 r5:c0043ef0 r4:df82dee4
+[    1.090000] Code: e1a09006 e59f116c e3540000 e1a02004 (e5943000)
+[    1.090000] ---[ end trace cfbc40eba3a6e5e6 ]---
+
+
+2. dmatest with original dw_dma.c in linux-3.2.2:
+
+I tried using dmatest with the original (linux-3.2.2) dma driver (dw_dmac.c)
+and got the below results (timeout for tests):
+
+[    0.800000] Bridge firewalling registered
+[    0.810000] 8021q: 802.1Q VLAN Support v1.8
+[    0.810000] dmatest: Started 1 threads using dma0chan0
+[    0.820000] dmatest: Started 1 threads using dma0chan1
+[    0.820000] dmatest: Started 1 threads using dma0chan2
+[    0.830000] dmatest: Started 1 threads using dma0chan3
+[    0.830000] dmatest: Started 1 threads using dma0chan4
+[    0.840000] dmatest: Started 1 threads using dma0chan5
+[    0.840000] dmatest: Started 1 threads using dma0chan6
+[    0.850000] dmatest: Started 1 threads using dma0chan7
+[    3.810000] dma0chan0-copy0: #0: test timed out
+[    3.820000] dma0chan1-copy0: #0: test timed out
+[    3.820000] dma0chan2-copy0: #0: test timed out
+[    3.830000] dma0chan3-copy0: #0: test timed out
+[    3.830000] dma0chan4-copy0: #0: test timed out
+[    3.840000] dma0chan5-copy0: #0: test timed out
+
+Any help is greatly appreciated. It would be of very much help is some one could 
+(who has used dw_dmac.c) could share their code to use dw_dmac.c.
+
+Thanks,
+Satendra
+
+
