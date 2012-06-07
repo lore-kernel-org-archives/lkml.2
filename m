@@ -1,70 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753786Ab2FGMYD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 08:24:03 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:52588 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751777Ab2FGMX7 (ORCPT
+	id S1755120Ab2FGMdo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 08:33:44 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:48655 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754542Ab2FGMdm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 08:23:59 -0400
-Message-ID: <4FD09D35.9020505@mvista.com>
-Date: Thu, 07 Jun 2012 16:23:17 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Namjae Jeon <linkinjeon@gmail.com>
-CC: James.Bottomley@HansenPartnership.com, gregkh@linuxfoundation.org,
-        mdharm-usb@one-eyed-alien.net, linux-usb@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Pankaj Kumar <pankaj.km@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [PATCH 2/3] usb: storage: add support write cache quirk on usb
- hdd
-References: <1338985247-9720-1-git-send-email-linkinjeon@gmail.com>
-In-Reply-To: <1338985247-9720-1-git-send-email-linkinjeon@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Thu, 7 Jun 2012 08:33:42 -0400
+Message-ID: <1339072491.3279.6.camel@lappy>
+Subject: iwlwifi: kernel panic during boot due to module load order
+From: Sasha Levin <levinsasha928@gmail.com>
+To: donald.h.fry@intel.com, emmanuel.grumbach@intel.com,
+        johannes.berg@intel.com, linville@tuxdriver.com,
+        wey-yi.w.guy@intel.com
+Cc: ilw@linux.intel.com, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 07 Jun 2012 14:34:51 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Hi all,
 
-On 06-06-2012 16:20, Namjae Jeon wrote:
+Commit cc5f7e397 ("iwlwifi: implement dynamic opmode loading") causes a
+kernel panic during boot in the following scenario:
 
-> Add support
+1. All drivers are built-in.
+2. Due to their build order, iwl_init gets called before iwl_drv_init.
+3. iwl_init will call iwl_opmode_register which will iterate the new op
+list, and cause a NULL ptr deref when trying to list_for_each_entry the
+dev list, which won't be empty since it wasn't initialized (iwl_drv_init
+wasn't called yet).
 
-    You missed "for" here and in the subject.
+While it's possible to easily fix the actual deref, I suspect that the
+init function call order is wrong. I've looked at getting it right in
+the Makefile, but it seems to have specific ordering behind it, so I'd
+rather not try patching it myself.
 
-> write cache quirk on usb hdd. scsi driver will be set to wce by detecting write cache quirk in quirk list when plugging usb hdd.
+Thanks,
+Sasha.
 
-> Signed-off-by: Namjae Jeon<namjae.jeon@samsung.com>
-> Signed-off-by: Pankaj Kumar<pankaj.km@samsung.com>
-> Signed-off-by: Amit Sahrawat<a.sahrawat@samsung.com>
-> ---
->   drivers/usb/storage/scsiglue.c |    6 ++++++
->   drivers/usb/storage/usb.c      |    5 ++++-
->   include/linux/usb/quirks.h     |    3 +++
->   include/linux/usb_usual.h      |    4 +++-
->   4 files changed, 16 insertions(+), 2 deletions(-)
-
-> diff --git a/drivers/usb/storage/scsiglue.c b/drivers/usb/storage/scsiglue.c
-> index a324a5d..f7d0ea5 100644
-> --- a/drivers/usb/storage/scsiglue.c
-> +++ b/drivers/usb/storage/scsiglue.c
-[...]
-> @@ -230,6 +231,11 @@ static int slave_configure(struct scsi_device *sdev)
->   					US_FL_SCM_MULT_TARG))&&
->   				us->protocol == USB_PR_BULK)
->   			us->use_last_sector_hacks = 1;
-> +
-> +		/* Check for the cache quirk present or not */
-> +		if (us->pusb_dev->quirks & USB_QUIRK_WRITE_CACHE ||
-> +				us->fflags & US_FL_WRITE_CACHE)
-> +				sdev->wce_quirk = 1;
-
-    You overindented the last statement, so that it looks a bit like a 
-continuation of previous *if*.
-
-WBR, Sergei
