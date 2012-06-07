@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933676Ab2FGE3M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 00:29:12 -0400
+	id S933652Ab2FGE3p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 00:29:45 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:62777 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933648Ab2FGEZP (ORCPT
+	with ESMTP id S933517Ab2FGEY5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 00:25:15 -0400
-Message-Id: <20120607041403.185172524@linuxfoundation.org>
+	Thu, 7 Jun 2012 00:24:57 -0400
+Message-Id: <20120607041402.774327617@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 07 Jun 2012 13:14:33 +0900
+Date: Thu, 07 Jun 2012 13:14:30 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Eric Dumazet <edumazet@google.com>,
+        alan@lxorguk.ukuu.org.uk, Gao feng <gaofeng@cn.fujitsu.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 35/47] pktgen: fix module unload for good
+Subject: [ 32/47] ipv6: fix incorrect ipsec fragment
 In-Reply-To: <20120607041504.GA13819@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,45 +26,173 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Eric Dumazet <edumazet@google.com>
+From: Gao feng <gaofeng@cn.fujitsu.com>
 
-[ Upstream commit d4b1133558e0d417342d5d2c49e4c35b428ff20d ]
+[ Upstream commit 0c1833797a5a6ec23ea9261d979aa18078720b74 ]
 
-commit c57b5468406 (pktgen: fix crash at module unload) did a very poor
-job with list primitives.
+Since commit ad0081e43a
+"ipv6: Fragment locally generated tunnel-mode IPSec6 packets as needed"
+the fragment of packets is incorrect.
+because tunnel mode needs IPsec headers and trailer for all fragments,
+while on transport mode it is sufficient to add the headers to the
+first fragment and the trailer to the last.
 
-1) list_splice() arguments were in the wrong order
+so modify mtu and maxfraglen base on ipsec mode and if fragment is first
+or last.
 
-2) list_splice(list, head) has undefined behavior if head is not
-initialized.
+with my test,it work well(every fragment's size is the mtu)
+and does not trigger slow fragment path.
 
-3) We should use the list_splice_init() variant to clear pktgen_threads
-list.
+Changes from v1:
+	though optimization, mtu_prev and maxfraglen_prev can be delete.
+	replace xfrm mode codes with dst_entry's new frag DST_XFRM_TUNNEL.
+	add fuction ip6_append_data_mtu to make codes clearer.
 
-Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/pktgen.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ include/net/dst.h      |    1 
+ net/ipv6/ip6_output.c  |   68 ++++++++++++++++++++++++++++++++++++-------------
+ net/xfrm/xfrm_policy.c |    3 ++
+ 3 files changed, 54 insertions(+), 18 deletions(-)
 
---- a/net/core/pktgen.c
-+++ b/net/core/pktgen.c
-@@ -3755,13 +3755,13 @@ static void __exit pg_cleanup(void)
- {
- 	struct pktgen_thread *t;
- 	struct list_head *q, *n;
--	struct list_head list;
-+	LIST_HEAD(list);
+--- a/include/net/dst.h
++++ b/include/net/dst.h
+@@ -78,6 +78,7 @@ struct dst_entry {
+ #define DST_NOHASH		0x0008
+ #define DST_NOCACHE		0x0010
+ #define DST_NOCOUNT		0x0020
++#define DST_XFRM_TUNNEL		0x0100
+ 	union {
+ 		struct dst_entry	*next;
+ 		struct rtable __rcu	*rt_next;
+--- a/net/ipv6/ip6_output.c
++++ b/net/ipv6/ip6_output.c
+@@ -1194,6 +1194,29 @@ static inline struct ipv6_rt_hdr *ip6_rt
+ 	return src ? kmemdup(src, (src->hdrlen + 1) * 8, gfp) : NULL;
+ }
  
- 	/* Stop all interfaces & threads */
- 	pktgen_exiting = true;
++static void ip6_append_data_mtu(int *mtu,
++				int *maxfraglen,
++				unsigned int fragheaderlen,
++				struct sk_buff *skb,
++				struct rt6_info *rt)
++{
++	if (!(rt->dst.flags & DST_XFRM_TUNNEL)) {
++		if (skb == NULL) {
++			/* first fragment, reserve header_len */
++			*mtu = *mtu - rt->dst.header_len;
++
++		} else {
++			/*
++			 * this fragment is not first, the headers
++			 * space is regarded as data space.
++			 */
++			*mtu = dst_mtu(rt->dst.path);
++		}
++		*maxfraglen = ((*mtu - fragheaderlen) & ~7)
++			      + fragheaderlen - sizeof(struct frag_hdr);
++	}
++}
++
+ int ip6_append_data(struct sock *sk, int getfrag(void *from, char *to,
+ 	int offset, int len, int odd, struct sk_buff *skb),
+ 	void *from, int length, int transhdrlen,
+@@ -1203,7 +1226,7 @@ int ip6_append_data(struct sock *sk, int
+ 	struct inet_sock *inet = inet_sk(sk);
+ 	struct ipv6_pinfo *np = inet6_sk(sk);
+ 	struct inet_cork *cork;
+-	struct sk_buff *skb;
++	struct sk_buff *skb, *skb_prev = NULL;
+ 	unsigned int maxfraglen, fragheaderlen;
+ 	int exthdrlen;
+ 	int hh_len;
+@@ -1260,8 +1283,12 @@ int ip6_append_data(struct sock *sk, int
+ 		inet->cork.fl.u.ip6 = *fl6;
+ 		np->cork.hop_limit = hlimit;
+ 		np->cork.tclass = tclass;
+-		mtu = np->pmtudisc == IPV6_PMTUDISC_PROBE ?
+-		      rt->dst.dev->mtu : dst_mtu(rt->dst.path);
++		if (rt->dst.flags & DST_XFRM_TUNNEL)
++			mtu = np->pmtudisc == IPV6_PMTUDISC_PROBE ?
++			      rt->dst.dev->mtu : dst_mtu(&rt->dst);
++		else
++			mtu = np->pmtudisc == IPV6_PMTUDISC_PROBE ?
++			      rt->dst.dev->mtu : dst_mtu(rt->dst.path);
+ 		if (np->frag_size < mtu) {
+ 			if (np->frag_size)
+ 				mtu = np->frag_size;
+@@ -1356,38 +1383,43 @@ int ip6_append_data(struct sock *sk, int
+ 			unsigned int fraglen;
+ 			unsigned int fraggap;
+ 			unsigned int alloclen;
+-			struct sk_buff *skb_prev;
+ alloc_new_skb:
+-			skb_prev = skb;
+-
+ 			/* There's no room in the current skb */
+-			if (skb_prev)
+-				fraggap = skb_prev->len - maxfraglen;
++			if (skb)
++				fraggap = skb->len - maxfraglen;
+ 			else
+ 				fraggap = 0;
++			/* update mtu and maxfraglen if necessary */
++			if (skb == NULL || skb_prev == NULL)
++				ip6_append_data_mtu(&mtu, &maxfraglen,
++						    fragheaderlen, skb, rt);
++
++			skb_prev = skb;
  
- 	mutex_lock(&pktgen_thread_lock);
--	list_splice(&list, &pktgen_threads);
-+	list_splice_init(&pktgen_threads, &list);
- 	mutex_unlock(&pktgen_thread_lock);
+ 			/*
+ 			 * If remaining data exceeds the mtu,
+ 			 * we know we need more fragment(s).
+ 			 */
+ 			datalen = length + fraggap;
+-			if (datalen > (cork->length <= mtu && !(cork->flags & IPCORK_ALLFRAG) ? mtu : maxfraglen) - fragheaderlen)
+-				datalen = maxfraglen - fragheaderlen;
  
- 	list_for_each_safe(q, n, &list) {
+-			fraglen = datalen + fragheaderlen;
++			if (datalen > (cork->length <= mtu && !(cork->flags & IPCORK_ALLFRAG) ? mtu : maxfraglen) - fragheaderlen)
++				datalen = maxfraglen - fragheaderlen - rt->dst.trailer_len;
+ 			if ((flags & MSG_MORE) &&
+ 			    !(rt->dst.dev->features&NETIF_F_SG))
+ 				alloclen = mtu;
+ 			else
+ 				alloclen = datalen + fragheaderlen;
+ 
+-			/*
+-			 * The last fragment gets additional space at tail.
+-			 * Note: we overallocate on fragments with MSG_MODE
+-			 * because we have no idea if we're the last one.
+-			 */
+-			if (datalen == length + fraggap)
+-				alloclen += rt->dst.trailer_len;
++			if (datalen != length + fraggap) {
++				/*
++				 * this is not the last fragment, the trailer
++				 * space is regarded as data space.
++				 */
++				datalen += rt->dst.trailer_len;
++			}
++
++			alloclen += rt->dst.trailer_len;
++			fraglen = datalen + fragheaderlen;
+ 
+ 			/*
+ 			 * We just reserve space for fragment header.
+--- a/net/xfrm/xfrm_policy.c
++++ b/net/xfrm/xfrm_policy.c
+@@ -1917,6 +1917,9 @@ no_transform:
+ 	}
+ ok:
+ 	xfrm_pols_put(pols, drop_pols);
++	if (dst && dst->xfrm &&
++	    dst->xfrm->props.mode == XFRM_MODE_TUNNEL)
++		dst->flags |= DST_XFRM_TUNNEL;
+ 	return dst;
+ 
+ nopol:
 
 
