@@ -1,58 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760785Ab2FGNko (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 09:40:44 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:34039 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752177Ab2FGNkn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 09:40:43 -0400
+	id S1760791Ab2FGNlM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 09:41:12 -0400
+Received: from imr4.ericy.com ([198.24.6.9]:34786 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752177Ab2FGNlK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 09:41:10 -0400
+Date: Thu, 7 Jun 2012 06:38:36 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+CC: Jean Delvare <khali@linux-fr.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] hwmon: (applesmc) Limit key length in warning messages
+Message-ID: <20120607133836.GC26008@ericsson.com>
+References: <1339059269-383-1-git-send-email-rydberg@euromail.se>
 MIME-Version: 1.0
-Reply-To: rus@sfinxsoft.com
-In-Reply-To: <CAKgfjTktMLc5bfqhCOKy0evssxggofNQqLT-gQqBkHcBvOgF0g@mail.gmail.com>
-References: <CAKgfjTktMLc5bfqhCOKy0evssxggofNQqLT-gQqBkHcBvOgF0g@mail.gmail.com>
-From: Rus <rus@sfinxsoft.com>
-Date: Thu, 7 Jun 2012 16:40:01 +0300
-X-Google-Sender-Auth: iynnNfeCYCxINfZucPkEszkI6Ps
-Message-ID: <CAKgfjTnvCAT=3JFxmDTsui_hguiiBfHQfMmErv9wt6QG_30hKA@mail.gmail.com>
-Subject: 3.[34].x Reproducable [Firmware bug] message upon warm boot only
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1339059269-383-1-git-send-email-rydberg@euromail.se>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, Jun 07, 2012 at 04:54:29AM -0400, Henrik Rydberg wrote:
+> Key lookups may call read_smc() with a fixed-length key string,
+> and if the lookup fails, trailing stack content may appear in the
+> kernel log. Fixed with this patch.
+> 
+> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
 
-I have the following reproducable message upon each 3.4.1 warm boot :
+Applied.
 
-....
-[Firmware Bug]: cpu 0, invalid threshold interrupt offset 0 for bank
-4, block 0 (MSR00000413=0xc010000001000000)
-[Firmware Bug]: cpu 0, invalid threshold interrupt offset 0 for bank
-4, block 1 (MSRC0000408=0xc010000001000000)
-[Firmware Bug]: cpu 0, invalid threshold interrupt offset 0 for bank
-4, block 2 (MSRC0000409=0xc01001c001000000)
-.....
-[Firmware Bug]: cpu 7, try to use APIC500 (LVT offset 0) for vector
-0x10400, but the register is already in use for vector 0xf9 on another
-cpu
-[Firmware Bug]: cpu 7, IBS interrupt offset 0 not available
-(MSRC001103A=0x0000000000000100)
-Failed to setup IBS, -22
-.....
-
-Cold boot do not show this message. The hardware is Asus M5A97 PRO
-(latest 1208 Bios) and FX-8150 CPU, 24GB RAM, the only system on this
-box is Linux.
-
-Is this message harmless or this is some problem with hardware/bios/Linux ?
-
-Can supply any additional info.
-
-TIA, Rus
-
---
-SfinxSoft
-http://sfinxsoft.com
+Thanks,
+Guenter
