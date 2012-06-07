@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759651Ab2FGK1H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 06:27:07 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:57008 "EHLO
+	id S1759696Ab2FGK3u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 06:29:50 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:58241 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753710Ab2FGK1G convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751080Ab2FGK3s convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 06:27:06 -0400
-Message-ID: <1339064814.23343.14.camel@twins>
-Subject: Re: processes hung after sys_renameat, and 'missing' processes
-From: Peter Zijlstra <peterz@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Jones <davej@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>, Jan Kara <jack@suse.cz>
-Date: Thu, 07 Jun 2012 12:26:54 +0200
-In-Reply-To: <CA+55aFx_oREEd2XS_aG7PJ7dwzWjgx689V_uRPGWpVS01_++6A@mail.gmail.com>
-References: <20120603223617.GB7707@redhat.com>
-	 <CA+55aFwCusEdMq3_3TAXSZ=+kbN7H6AbnngVaagAZw=ZpicckQ@mail.gmail.com>
-	 <20120603231709.GP30000@ZenIV.linux.org.uk>
-	 <20120603232820.GQ30000@ZenIV.linux.org.uk>
-	 <20120606194233.GA1537@redhat.com>
-	 <CA+55aFwxFVLPk4-dp73uccKXepKwjpGFgh0NW1u8d0zYzr=hBA@mail.gmail.com>
-	 <20120606230040.GA18089@redhat.com>
-	 <CA+55aFx_oREEd2XS_aG7PJ7dwzWjgx689V_uRPGWpVS01_++6A@mail.gmail.com>
+	Thu, 7 Jun 2012 06:29:48 -0400
+Message-ID: <1339064963.23343.16.camel@twins>
+Subject: Re: [PATCH 01/16] perf: Unified API to record selective sets of
+ arch registers
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>, acme@redhat.com, mingo@elte.hu,
+        paulus@samba.org, cjashfor@linux.vnet.ibm.com, eranian@google.com,
+        gorcunov@openvz.org, tzanussi@gmail.com, mhiramat@redhat.com,
+        robert.richter@amd.com, fche@redhat.com, linux-kernel@vger.kernel.org,
+        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
+        benjamin.redelings@nescent.org
+Date: Thu, 07 Jun 2012 12:29:23 +0200
+In-Reply-To: <20120607094624.GB19842@somewhere.redhat.com>
+References: <1337801535-12865-1-git-send-email-jolsa@redhat.com>
+	 <1337801535-12865-2-git-send-email-jolsa@redhat.com>
+	 <1337852636.9783.89.camel@laptop>
+	 <20120607094624.GB19842@somewhere.redhat.com>
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7BIT
 X-Mailer: Evolution 3.2.2- 
@@ -32,11 +32,12 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-06-06 at 16:31 -0700, Linus Torvalds wrote:
-> PeterZ - the fact that we use mutex_lock_nested with
-> I_MUTEX_PARENT/I_MUTEX_CHILD/nothing hopefully doesn't screw us up in
-> case we get it wrong, right? 
+On Thu, 2012-06-07 at 11:46 +0200, Frederic Weisbecker wrote:
+> 
+> Do you think that compat regs are always a subset of native regs in all
+> archs as in x86? Sounds logic but I'm asking just in case. If so then yeah
+> this should work. 
 
-Sadly, if you get that annotation wrong you can annotate an actual
-deadlock away. This the reason you have to be very careful when
-annotating stuff.
+I can't answer this authoritatively but it would seem strange if this
+were not the case. But even if it were so, you could always frob both
+sets in a single space such that the shared registers overlap etc. 
