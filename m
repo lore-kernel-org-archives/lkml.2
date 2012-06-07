@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759989Ab2FGEhw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 00:37:52 -0400
+	id S1760011Ab2FGEiU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 00:38:20 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:63657 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932931Ab2FGEUb (ORCPT
+	with ESMTP id S932905Ab2FGEU1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 00:20:31 -0400
-Message-Id: <20120607040345.911030559@linuxfoundation.org>
+	Thu, 7 Jun 2012 00:20:27 -0400
+Message-Id: <20120607040345.775333506@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 07 Jun 2012 13:04:41 +0900
+Date: Thu, 07 Jun 2012 13:04:40 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Salman Qazi <sqazi@google.com>,
+        alan@lxorguk.ukuu.org.uk, Tao Ma <boyu.mt@taobao.com>,
         "Theodore Tso" <tytso@mit.edu>
-Subject: [ 65/82] ext4: add ext4_mb_unload_buddy in the error path
+Subject: [ 64/82] ext4: dont trash state flags in EXT4_IOC_SETFLAGS
 In-Reply-To: <20120607041406.GA13233@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,30 +25,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Salman Qazi <sqazi@google.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 02b7831019ea4e7994968c84b5826fa8b248ffc8 upstream.
+commit 79906964a187c405db72a3abc60eb9b50d804fbc upstream.
 
-ext4_free_blocks fails to pair an ext4_mb_load_buddy with a matching
-ext4_mb_unload_buddy when it fails a memory allocation.
+In commit 353eb83c we removed i_state_flags with 64-bit longs, But
+when handling the EXT4_IOC_SETFLAGS ioctl, we replace i_flags
+directly, which trashes the state flags which are stored in the high
+32-bits of i_flags on 64-bit platforms.  So use the the
+ext4_{set,clear}_inode_flags() functions which use atomic bit
+manipulation functions instead.
 
-Signed-off-by: Salman Qazi <sqazi@google.com>
+Reported-by: Tao Ma <boyu.mt@taobao.com>
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/mballoc.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/ext4/ioctl.c |   12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -4636,6 +4636,7 @@ do_more:
- 		 */
- 		new_entry = kmem_cache_alloc(ext4_free_data_cachep, GFP_NOFS);
- 		if (!new_entry) {
-+			ext4_mb_unload_buddy(&e4b);
- 			err = -ENOMEM;
- 			goto error_return;
- 		}
+--- a/fs/ext4/ioctl.c
++++ b/fs/ext4/ioctl.c
+@@ -38,7 +38,7 @@ long ext4_ioctl(struct file *filp, unsig
+ 		handle_t *handle = NULL;
+ 		int err, migrate = 0;
+ 		struct ext4_iloc iloc;
+-		unsigned int oldflags;
++		unsigned int oldflags, mask, i;
+ 		unsigned int jflag;
+ 
+ 		if (!inode_owner_or_capable(inode))
+@@ -115,8 +115,14 @@ long ext4_ioctl(struct file *filp, unsig
+ 		if (err)
+ 			goto flags_err;
+ 
+-		flags = flags & EXT4_FL_USER_MODIFIABLE;
+-		flags |= oldflags & ~EXT4_FL_USER_MODIFIABLE;
++		for (i = 0, mask = 1; i < 32; i++, mask <<= 1) {
++			if (!(mask & EXT4_FL_USER_MODIFIABLE))
++				continue;
++			if (mask & flags)
++				ext4_set_inode_flag(inode, i);
++			else
++				ext4_clear_inode_flag(inode, i);
++		}
+ 		ei->i_flags = flags;
+ 
+ 		ext4_set_inode_flags(inode);
 
 
