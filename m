@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759307Ab2FFX6i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 19:58:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15443 "EHLO mx1.redhat.com"
+	id S1758660Ab2FGAEm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 20:04:42 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43913 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756776Ab2FFX6h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 19:58:37 -0400
-Date: Wed, 6 Jun 2012 16:58:27 -0700
-From: Chris Wright <chrisw@redhat.com>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Don Dutile <ddutile@redhat.com>, iommu@lists.linux-foundation.org,
-        mingo@elte.hu, linux-kernel@vger.kernel.org, chrisw@redhat.com,
-        suresh.b.siddha@intel.com
-Subject: Re: [PATCH 2/2] iommu: dmar -- reserve mmio space used by IOMMU
-Message-ID: <20120606235827.GK12686@x200.localdomain>
-References: <1338845342-12464-1-git-send-email-ddutile@redhat.com>
- <1338845342-12464-3-git-send-email-ddutile@redhat.com>
- <1338849430.10884.288.camel@shinybook.infradead.org>
- <4FCD401D.9000304@redhat.com>
- <1338852196.26785.10.camel@shinybook.infradead.org>
+	id S1753693Ab2FGAEl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 20:04:41 -0400
+Message-ID: <4FCFEFF0.5070108@zytor.com>
+Date: Wed, 06 Jun 2012 17:04:00 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1338852196.26785.10.camel@shinybook.infradead.org>
-User-Agent: Mutt/1.5.21+46 (b01d63af6fea) (2011-07-01)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Suresh B Siddha <suresh.b.siddha@intel.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Asit K Mallick <asit.k.mallick@intel.com>,
+        Arjan Dan De Ven <arjan@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>,
+        linux-pm <linux-pm@vger.kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [PATCH] kthread: Implement park/unpark facility
+References: <1338833876-29721-1-git-send-email-fenghua.yu@intel.com>  <alpine.LFD.2.02.1206042203590.3086@ionos>  <1338842001.28282.135.camel@twins> <87zk8iioam.fsf@rustcorp.com.au>  <alpine.LFD.2.02.1206051135260.3086@ionos>  <alpine.LFD.2.02.1206051538280.3086@ionos> <1338905159.28282.186.camel@twins>
+In-Reply-To: <1338905159.28282.186.camel@twins>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* David Woodhouse (dwmw2@infradead.org) wrote:
-> On Mon, 2012-06-04 at 19:09 -0400, Don Dutile wrote:
-> > How does the kernel probe for chipsets, then registers with the chipsets
-> > to find the programmed IOMMU BAR values?
-> > -- I missed that class.... I only have Intel Virt Tech Directed I/O
-> > Architecture spec., and the beginning of IOMMU is based on DMAR tables...
-> > If you have more info/guidance, I'd appreciate it.
+On 06/05/2012 07:05 AM, Peter Zijlstra wrote:
+> On Tue, 2012-06-05 at 15:41 +0200, Thomas Gleixner wrote:
+>>  struct kthread {
+>> -       int should_stop;
+>> +       bool should_stop;
+>> +       bool should_park;
+>> +       bool is_parked;
+>> +       bool is_percpu; 
 > 
-> Hm, I thought we'd already started doing some of that in order to
-> sanity-check the DMAR tables. The VTBAR registers are in PCI config
-> space. The quirk_ioat_snb_local_iommu() check is already looking at
-> them...
+> bool doesn't have a well specified storage type. I typically try to
+> avoid using it in structures for this reason. Others might not care
+> though.
+> 
 
-I always had the impression that things like VTBAR registers are
-entirely chipset specific (and may not be there for all chipsets).
-Would be great if that's incorrect.  Any idea?
+On all known Linux platforms, bool is implemented as a single byte
+having a value of either 0 or 1.  However, it might make more sense to
+have a flags field here...
 
-thanks,
--chris
+	-hpa
+
