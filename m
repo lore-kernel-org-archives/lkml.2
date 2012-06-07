@@ -1,317 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932795Ab2FGSrO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 14:47:14 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:50617 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753228Ab2FGSrM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 14:47:12 -0400
-Date: Thu, 7 Jun 2012 14:40:08 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: dan.magenheimer@oracle.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 08/11] mm: frontswap: add tracing support
-Message-ID: <20120607184008.GC9472@phenom.dumpdata.com>
-References: <1338980115-2394-1-git-send-email-levinsasha928@gmail.com>
- <1338980115-2394-8-git-send-email-levinsasha928@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1338980115-2394-8-git-send-email-levinsasha928@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	id S932895Ab2FGSrY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 14:47:24 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:40395 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932818Ab2FGSrT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 14:47:19 -0400
+Message-ID: <1339094862.21398.6.camel@key-ThinkPad-W510>
+Subject: [PATCH 2/2] hw_random: add support for the TPM chip as a hardware
+ RNG source
+From: Kent Yoder <key@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: tpmdd-devel@lists.sourceforge.net, m.selhorst@sirrix.com,
+        safford@us.ibm.com, key@linux.vnet.ibm.com
+Date: Thu, 07 Jun 2012 13:47:42 -0500
+In-Reply-To: <1339094567.21398.2.camel@key-ThinkPad-W510>
+References: <1339094567.21398.2.camel@key-ThinkPad-W510>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12060718-5806-0000-0000-000015FEB0F7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 06, 2012 at 12:55:12PM +0200, Sasha Levin wrote:
-> Add tracepoints to frontswap API.
-> 
-> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-> ---
->  include/trace/events/frontswap.h |  167 ++++++++++++++++++++++++++++++++++++++
->  mm/frontswap.c                   |   14 +++
->  2 files changed, 181 insertions(+), 0 deletions(-)
->  create mode 100644 include/trace/events/frontswap.h
-> 
-> diff --git a/include/trace/events/frontswap.h b/include/trace/events/frontswap.h
-> new file mode 100644
-> index 0000000..d6c4934
-> --- /dev/null
-> +++ b/include/trace/events/frontswap.h
-> @@ -0,0 +1,167 @@
-> +#undef TRACE_SYSTEM
-> +#define TRACE_SYSTEM frontswap
-> +
-> +#if !defined(_TRACE_FRONTSWAP_H) || defined(TRACE_HEADER_MULTI_READ)
-> +#define _TRACE_FRONTSWAP_H
-> +
-> +#include <linux/tracepoint.h>
-> +
-> +struct frontswap_ops;
-> +
-> +TRACE_EVENT(frontswap_init,
-> +	TP_PROTO(unsigned int type, void *sis, void *frontswap_map),
-> +	TP_ARGS(type, sis, frontswap_map),
-> +
-> +	TP_STRUCT__entry(
-> +		__field(	unsigned int,	type		)
-> +		__field(	void *,		sis		)
-> +		__field(	void *,		frontswap_map	)
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__entry->type		= type;
-> +		__entry->sis		= sis;
-> +		__entry->frontswap_map	= frontswap_map;
-> +	),
-> +
-> +	TP_printk("type: %u sis: %p frontswap_map: %p",
-> +		  __entry->type, __entry->sis, __entry->frontswap_map)
-> +);
-> +
-> +TRACE_EVENT(frontswap_register_ops,
-> +	TP_PROTO(struct frontswap_ops *old, struct frontswap_ops *new),
-> +	TP_ARGS(old, new),
-> +
-> +	TP_STRUCT__entry(
-> +		__field(struct frontswap_ops *,		old		)
-> +		__field(struct frontswap_ops *,		new		)
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__entry->old		= old;
-> +		__entry->new		= new;
-> +	),
-> +
-> +	TP_printk("old: {init=%p put_page=%p get_page=%p invalidate_page=%p invalidate_area=%p}"
-> +		" new: {init=%p put_page=%p get_page=%p invalidate_page=%p invalidate_area=%p}",
-> +		__entry->old->init,__entry->old->put_page,__entry->old->get_page,
-> +		__entry->old->invalidate_page,__entry->old->invalidate_area,__entry->new->init,
-> +		__entry->new->put_page,__entry->new->get_page,__entry->new->invalidate_page,
+This driver will make use of any available TPM chip on the system as a
+hwrng source.
 
-s/get_page/load
-s/put_page/store
+Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
+---
+ drivers/char/hw_random/Kconfig   |   13 +++++++++
+ drivers/char/hw_random/Makefile  |    1 +
+ drivers/char/hw_random/tpm-rng.c |   55 ++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 69 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/char/hw_random/tpm-rng.c
 
-> +		__entry->new->invalidate_area)
-> +);
-> +
-> +TRACE_EVENT(frontswap_put_page,
+diff --git a/drivers/char/hw_random/Kconfig b/drivers/char/hw_random/Kconfig
+index f45dad3..4e8c01a 100644
+--- a/drivers/char/hw_random/Kconfig
++++ b/drivers/char/hw_random/Kconfig
+@@ -263,3 +263,16 @@ config HW_RANDOM_PSERIES
+ 	  module will be called pseries-rng.
+ 
+ 	  If unsure, say Y.
++
++config HW_RANDOM_TPM
++	tristate "TPM HW Random Number Generator support"
++	depends on HW_RANDOM && TCG_TPM
++	default HW_RANDOM
++	---help---
++	  This driver provides kernel-side support for the Random Number
++	  Generator in the Trusted Platform Module
++
++	  To compile this driver as a module, choose M here: the
++	  module will be called tpm-rng.
++
++	  If unsure, say Y.
+diff --git a/drivers/char/hw_random/Makefile b/drivers/char/hw_random/Makefile
+index d901dfa..5dc10da 100644
+--- a/drivers/char/hw_random/Makefile
++++ b/drivers/char/hw_random/Makefile
+@@ -23,3 +23,4 @@ obj-$(CONFIG_HW_RANDOM_NOMADIK) += nomadik-rng.o
+ obj-$(CONFIG_HW_RANDOM_PICOXCELL) += picoxcell-rng.o
+ obj-$(CONFIG_HW_RANDOM_PPC4XX) += ppc4xx-rng.o
+ obj-$(CONFIG_HW_RANDOM_PSERIES) += pseries-rng.o
++obj-$(CONFIG_HW_RANDOM_TPM) += tpm-rng.o
+diff --git a/drivers/char/hw_random/tpm-rng.c b/drivers/char/hw_random/tpm-rng.c
+new file mode 100644
+index 0000000..a869b42c
+--- /dev/null
++++ b/drivers/char/hw_random/tpm-rng.c
+@@ -0,0 +1,55 @@
++/*
++ * Copyright (C) 2012 Kent Yoder IBM Corporation
++ *
++ * HWRNG interfaces to pull RNG data from a TPM
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
++ */
++
++#include <linux/module.h>
++#include <linux/hw_random.h>
++#include <linux/tpm.h>
++
++#define MODULE_NAME "tpm-rng"
++
++static int tpm_rng_read(struct hwrng *rng, void *data, size_t max, bool wait)
++{
++	int err;
++	size_t tpm_max = max;
++
++	err = tpm_get_random(TPM_ANY_NUM, data, &tpm_max);
++
++	return err ? 0 : tpm_max;
++}
++
++static struct hwrng tpm_rng = {
++	.name = MODULE_NAME,
++	.read = tpm_rng_read,
++};
++
++static int __init rng_init(void)
++{
++	return hwrng_register(&tpm_rng);
++}
++module_init(rng_init);
++
++static void __exit rng_exit(void)
++{
++	hwrng_unregister(&tpm_rng);
++}
++module_exit(rng_exit);
++
++MODULE_LICENSE("GPL v2");
++MODULE_AUTHOR("Kent Yoder <key@linux.vnet.ibm.com>");
++MODULE_DESCRIPTION("RNG driver for TPM devices");
+-- 
+1.7.5.4
 
-Its not called put_page anymore.
 
-
-> +	TP_PROTO(void *page, int dup, int ret),
-> +	TP_ARGS(page, dup, ret),
-> +
-> +	TP_STRUCT__entry(
-> +		__field(	int,		dup		)
-> +		__field(	int,		ret		)
-> +		__field(	void *,		page		)
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__entry->dup		= dup;
-> +		__entry->ret		= ret;
-> +		__entry->page		= page;
-> +	),
-> +
-> +	TP_printk("page: %p dup: %d ret: %d",
-> +		  __entry->page, __entry->dup, __entry->ret)
-> +);
-> +
-> +TRACE_EVENT(frontswap_get_page,
-
-Ditto
-> +	TP_PROTO(void *page, int ret),
-> +	TP_ARGS(page, ret),
-> +
-> +	TP_STRUCT__entry(
-> +		__field(	int,		ret		)
-> +		__field(	void *,		page		)
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__entry->ret		= ret;
-> +		__entry->page		= page;
-> +	),
-> +
-> +	TP_printk("page: %p ret: %d",
-> +		  __entry->page, __entry->ret)
-> +);
-> +
-> +TRACE_EVENT(frontswap_invalidate_page,
-> +	TP_PROTO(int type, unsigned long offset, void *sis, int test),
-> +	TP_ARGS(type, offset, sis, test),
-> +
-> +	TP_STRUCT__entry(
-> +		__field(	int,		type		)
-> +		__field(	unsigned long,	offset		)
-> +		__field(	void *,		sis		)
-> +		__field(	int,		test		)
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__entry->type		= type;
-> +		__entry->offset		= offset;
-> +		__entry->sis		= sis;
-> +		__entry->test		= test;
-> +	),
-> +
-> +	TP_printk("type: %d offset: %lu sys: %p frontswap_test: %d",
-> +		  __entry->type, __entry->offset, __entry->sis, __entry->test)
-> +);
-> +
-> +TRACE_EVENT(frontswap_invalidate_area,
-
-Ditto.
-
-> +	TP_PROTO(int type, void *sis, void *map),
-> +	TP_ARGS(type, sis, map),
-> +
-> +	TP_STRUCT__entry(
-> +		__field(	int,		type		)
-> +		__field(	void *,		map		)
-> +		__field(	void *,		sis		)
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__entry->type		= type;
-> +		__entry->sis		= sis;
-> +		__entry->map		= map;
-> +	),
-> +
-> +	TP_printk("type: %d sys: %p map: %p",
-> +		  __entry->type, __entry->sis, __entry->map)
-> +);
-> +
-> +TRACE_EVENT(frontswap_curr_pages,
-> +	TP_PROTO(unsigned long totalpages),
-> +	TP_ARGS(totalpages),
-> +
-> +	TP_STRUCT__entry(
-> +		__field(unsigned long,		totalpages	)
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__entry->totalpages	= totalpages;
-> +	),
-> +
-> +	TP_printk("total pages: %lu",
-> +		  __entry->totalpages)
-> +);
-> +
-> +TRACE_EVENT(frontswap_shrink,
-> +	TP_PROTO(unsigned long target_pages),
-> +	TP_ARGS(target_pages),
-> +
-> +	TP_STRUCT__entry(
-> +		__field(unsigned long,		target_pages	)
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__entry->target_pages	= target_pages;
-> +	),
-> +
-> +	TP_printk("target pages: %lu",
-> +		  __entry->target_pages)
-> +);
-> +
-> +#endif /* _TRACE_FRONTSWAP_H */
-> +
-> +#include <trace/define_trace.h>
-> diff --git a/mm/frontswap.c b/mm/frontswap.c
-> index bf99c7d..b98df99 100644
-> --- a/mm/frontswap.c
-> +++ b/mm/frontswap.c
-> @@ -11,6 +11,7 @@
->   * This work is licensed under the terms of the GNU GPL, version 2.
->   */
->  
-> +#define CREATE_TRACE_POINTS
->  #include <linux/mm.h>
->  #include <linux/mman.h>
->  #include <linux/swap.h>
-> @@ -23,6 +24,7 @@
->  #include <linux/debugfs.h>
->  #include <linux/frontswap.h>
->  #include <linux/swapfile.h>
-> +#include <trace/events/frontswap.h>
->  
->  /*
->   * frontswap_ops is set by frontswap_register_ops to contain the pointers
-> @@ -66,6 +68,7 @@ struct frontswap_ops frontswap_register_ops(struct frontswap_ops *ops)
->  {
->  	struct frontswap_ops old = frontswap_ops;
->  
-> +	trace_frontswap_register_ops(&old, ops);
->  	frontswap_ops = *ops;
->  	frontswap_enabled = 1;
->  	return old;
-> @@ -87,6 +90,9 @@ void __frontswap_init(unsigned type)
->  	struct swap_info_struct *sis = swap_info[type];
->  
->  	BUG_ON(sis == NULL);
-> +
-> +	trace_frontswap_init(type, sis, sis->frontswap_map);
-> +
->  	if (sis->frontswap_map == NULL)
->  		return;
->  	frontswap_ops.init(type);
-> @@ -113,6 +119,7 @@ int __frontswap_put_page(struct page *page)
->  	if (frontswap_test(sis, offset))
->  		dup = 1;
->  	ret = frontswap_ops.put_page(type, offset, page);
-> +	trace_frontswap_put_page(page, dup, ret);
-
-Uh, why a different parameter layout?
-
->  	if (ret == 0) {
->  		frontswap_set(sis, offset);
->  		frontswap_succ_puts++;
-> @@ -153,6 +160,7 @@ int __frontswap_get_page(struct page *page)
->  	BUG_ON(sis == NULL);
->  	if (frontswap_test(sis, offset))
->  		ret = frontswap_ops.get_page(type, offset, page);
-> +	trace_frontswap_get_page(page, ret);
->  	if (ret == 0)
->  		frontswap_gets++;
->  	return ret;
-> @@ -168,6 +176,7 @@ void __frontswap_invalidate_page(unsigned type, pgoff_t offset)
->  	struct swap_info_struct *sis = swap_info[type];
->  
->  	BUG_ON(sis == NULL);
-> +	trace_frontswap_invalidate_page(type, offset, sis, frontswap_test(sis, offset));
->  	if (frontswap_test(sis, offset)) {
->  		frontswap_ops.invalidate_page(type, offset);
->  		atomic_dec(&sis->frontswap_pages);
-> @@ -186,6 +195,7 @@ void __frontswap_invalidate_area(unsigned type)
->  	struct swap_info_struct *sis = swap_info[type];
->  
->  	BUG_ON(sis == NULL);
-> +	trace_frontswap_invalidate_area(type, sis, sis->frontswap_map);
->  	if (sis->frontswap_map == NULL)
->  		return;
->  	frontswap_ops.invalidate_area(type);
-> @@ -274,6 +284,8 @@ void frontswap_shrink(unsigned long target_pages)
->  	unsigned long pages_to_unuse = 0;
->  	int type, ret;
->  
-> +	trace_frontswap_shrink(target_pages);
-> +
->  	/*
->  	 * we don't want to hold swap_lock while doing a very
->  	 * lengthy try_to_unuse, but swap_list may change
-> @@ -301,6 +313,8 @@ unsigned long frontswap_curr_pages(void)
->  	totalpages = __frontswap_curr_pages();
->  	spin_unlock(&swap_lock);
->  
-> +	trace_frontswap_curr_pages(totalpages);
-> +
->  	return totalpages;
->  }
->  EXPORT_SYMBOL(frontswap_curr_pages);
-> -- 
-> 1.7.8.6
