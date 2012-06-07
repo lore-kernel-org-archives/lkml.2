@@ -1,109 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752539Ab2FGLkv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 07:40:51 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:56616 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751489Ab2FGLkt (ORCPT
+	id S1752794Ab2FGLof (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 07:44:35 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:47275 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751489Ab2FGLoe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 07:40:49 -0400
-Date: Thu, 7 Jun 2012 13:40:45 +0200
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, andi@firstfloor.org, mingo@elte.hu,
-        ming.m.lin@intel.com
-Subject: [PATCH v2] perf/x86: check ucode before disabling PEBS on SandyBridge
-Message-ID: <20120607114045.GA8975@quad>
+	Thu, 7 Jun 2012 07:44:34 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4FD01229.4020607@redhat.com>
+References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
+	<20120529133627.GA7637@shutemov.name>
+	<20120529154308.GA10790@dhcp-27-244.brq.redhat.com>
+	<20120531180834.GP21339@redhat.com>
+	<4FD01229.4020607@redhat.com>
+Date: Thu, 7 Jun 2012 19:44:33 +0800
+Message-ID: <CAJd=RBAQiKC1Np7qzNrD1AEXcoPwfSLwTh9ZjUkvAb7F6eUX9A@mail.gmail.com>
+Subject: Re: AutoNUMA15
+From: Hillf Danton <dhillf@gmail.com>
+To: Zhouping Liu <zliu@redhat.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Zhouping
 
-PEBS on SandyBridge model 42 (desktop, mobile), and 45 (SNB-EP).
-was disabled for both models due to an erratum.
-    
-A workaround is implemented by micro-code from version 0x28.
-
-This patch checks the microcode version and prevent creation
-of a PEBS event if version < 0x28. The check is done each time
-a PEBS event is created and NOT at boot time because the
-micro-code update may only be done after the kernel has booted.
-
-Go to downloadcenter.intel.com to download microcode updates.
-Search for microcode, download update dated 6/6/2012 or later.
-
-Signed-off-by: Stephane Eranian <eranian@google.com>
----
-
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 5ec146c..d4d2597 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1394,6 +1394,25 @@ static void intel_pebs_aliases_snb(struct perf_event *event)
- 	}
- }
- 
-+static int check_pebs_quirks(void)
-+{
-+	int uversion = cpu_data(smp_processor_id()).microcode;
-+	int model = cpu_data(smp_processor_id()).x86_model;
-+
-+	/* do not have PEBS to begin with */
-+	if (!x86_pmu.pebs)
-+		return 0;
-+	/*
-+	 * check ucode version for SNB, SNB-EP
-+	 * they need ucode 0x28 or later for PEBS
-+	 * to be operational
-+	 */
-+	if ((model == 42 || model == 45) && uversion < 0x28)
-+		return -ENOTSUPP;
-+
-+	return 0;
-+}
-+
- static int intel_pmu_hw_config(struct perf_event *event)
- {
- 	int ret = x86_pmu_hw_config(event);
-@@ -1401,8 +1420,14 @@ static int intel_pmu_hw_config(struct perf_event *event)
- 	if (ret)
- 		return ret;
- 
--	if (event->attr.precise_ip && x86_pmu.pebs_aliases)
--		x86_pmu.pebs_aliases(event);
-+	if (event->attr.precise_ip) {
-+
-+		if (check_pebs_quirks())
-+			return -ENOTSUPP;
-+
-+		if (x86_pmu.pebs_aliases)
-+			x86_pmu.pebs_aliases(event);
-+	}
- 
- 	if (intel_pmu_needs_lbr_smpl(event)) {
- 		ret = intel_pmu_setup_lbr_filter(event);
-@@ -1716,9 +1741,17 @@ static __init void intel_clovertown_quirk(void)
- 
- static __init void intel_sandybridge_quirk(void)
- {
--	pr_warn("PEBS disabled due to CPU errata\n");
--	x86_pmu.pebs = 0;
--	x86_pmu.pebs_constraints = NULL;
-+	int uversion = cpu_data(smp_processor_id()).microcode;
-+	int model = cpu_data(smp_processor_id()).x86_model;
-+	/*
-+	 * check ucode version for SNB, SNB-EP
-+	 */
-+	if ((model == 42 || model == 45) && uversion < 0x28) {
-+		pr_warn("perf_events: SandyBridge PEBS unavailable due to"
-+			" CPU erratum, update microcode (was 0x%x, needs "
-+			"at least version 0x28).\n",
-+			uversion);
-+	}
- }
- 
- static const struct { int id; char *name; } intel_arch_events_map[] __initconst = {
+On Thu, Jun 7, 2012 at 10:30 AM, Zhouping Liu <zliu@redhat.com> wrote:
+>
+> [    3.114024] ---[ end trace e696d6ddf3adb276 ]---
+> [    3.121541] swapper/0 used greatest stack depth: 4768 bytes left
+> [    3.143784] Kernel panic - not syncing: Attempted to kill init!
+> exitcode=0x0000000b
+> [    3.143784]
+>
+> such above errors occurred in my two boxes:
+> in one machine, which has 120Gb RAM and 8 numa nodes with AMD CPU, kernel
+> panic occurred in autonuma15 and Linus tree(3.5.0-rc1)
+> but in another one, which has 16Gb RAM and 4 numa nodes with AMD CPU, kernel
+> panic only occurred in autonuma15, no such issues in Linus tree,
+>
+Related to fix at https://lkml.org/lkml/2012/6/5/31  ?
