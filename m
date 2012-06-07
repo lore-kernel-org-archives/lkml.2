@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759686Ab2FGEq4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 00:46:56 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:59627 "EHLO
+	id S1759778Ab2FGEr2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 00:47:28 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:63657 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932272Ab2FGEQD (ORCPT
+	with ESMTP id S932193Ab2FGEPk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 00:16:03 -0400
-Message-Id: <20120607040338.300581602@linuxfoundation.org>
+	Thu, 7 Jun 2012 00:15:40 -0400
+Message-Id: <20120607040337.762791373@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 07 Jun 2012 13:03:49 +0900
+Date: Thu, 07 Jun 2012 13:03:45 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Shirish Pargaonkar <shirishpargaonkar@gmail.com>,
-        Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@us.ibm.com>
-Subject: [ 13/82] cifs: fix oops while traversing open file list (try #4)
+        alan@lxorguk.ukuu.org.uk, KyongHo Cho <pullip.cho@samsung.com>,
+        "Olav Haugan" <ohaugan@codeaurora.org>
+Subject: [ 09/82] mm: fix faulty initialization in vmalloc_init()
 In-Reply-To: <20120607041406.GA13233@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,136 +25,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
+From: KyongHo <pullip.cho@samsung.com>
 
-commit 2c0c2a08bed7a3b791f88d09d16ace56acb3dd98 upstream.
+commit dbda591d920b4c7692725b13e3f68ecb251e9080 upstream.
 
-While traversing the linked list of open file handles, if the identfied
-file handle is invalid, a reopen is attempted and if it fails, we
-resume traversing where we stopped and cifs can oops while accessing
-invalid next element, for list might have changed.
+The transfer of ->flags causes some of the static mapping virtual
+addresses to be prematurely freed (before the mapping is removed) because
+VM_LAZY_FREE gets "set" if tmp->flags has VM_IOREMAP set.  This might
+cause subsequent vmalloc/ioremap calls to fail because it might allocate
+one of the freed virtual address ranges that aren't unmapped.
 
-So mark the invalid file handle and attempt reopen if no
-valid file handle is found in rest of the list.
-If reopen fails, move the invalid file handle to the end of the list
-and start traversing the list again from the begining.
-Repeat this four times before giving up and returning an error if
-file reopen keeps failing.
+va->flags has different types of flags from tmp->flags.  If a region with
+VM_IOREMAP set is registered with vm_area_add_early(), it will be removed
+by __purge_vmap_area_lazy().
 
-Signed-off-by: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
-Reviewed-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <sfrench@us.ibm.com>
+Fix vmalloc_init() to correctly initialize vmap_area for the given
+vm_struct.
+
+Also initialise va->vm.  If it is not set, find_vm_area() for the early
+vm regions will always fail.
+
+Signed-off-by: KyongHo Cho <pullip.cho@samsung.com>
+Cc: "Olav Haugan" <ohaugan@codeaurora.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/cifsglob.h |    1 
- fs/cifs/file.c     |   57 ++++++++++++++++++++++++++++++-----------------------
- 2 files changed, 34 insertions(+), 24 deletions(-)
+ mm/vmalloc.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/fs/cifs/cifsglob.h
-+++ b/fs/cifs/cifsglob.h
-@@ -43,6 +43,7 @@
- 
- #define CIFS_MIN_RCV_POOL 4
- 
-+#define MAX_REOPEN_ATT	5 /* these many maximum attempts to reopen a file */
- /*
-  * default attribute cache timeout (jiffies)
-  */
---- a/fs/cifs/file.c
-+++ b/fs/cifs/file.c
-@@ -1539,10 +1539,11 @@ struct cifsFileInfo *find_readable_file(
- struct cifsFileInfo *find_writable_file(struct cifsInodeInfo *cifs_inode,
- 					bool fsuid_only)
- {
--	struct cifsFileInfo *open_file;
-+	struct cifsFileInfo *open_file, *inv_file = NULL;
- 	struct cifs_sb_info *cifs_sb;
- 	bool any_available = false;
- 	int rc;
-+	unsigned int refind = 0;
- 
- 	/* Having a null inode here (because mapping->host was set to zero by
- 	the VFS or MM) should not happen but we had reports of on oops (due to
-@@ -1562,40 +1563,25 @@ struct cifsFileInfo *find_writable_file(
- 
- 	spin_lock(&cifs_file_list_lock);
- refind_writable:
-+	if (refind > MAX_REOPEN_ATT) {
-+		spin_unlock(&cifs_file_list_lock);
-+		return NULL;
-+	}
- 	list_for_each_entry(open_file, &cifs_inode->openFileList, flist) {
- 		if (!any_available && open_file->pid != current->tgid)
- 			continue;
- 		if (fsuid_only && open_file->uid != current_fsuid())
- 			continue;
- 		if (OPEN_FMODE(open_file->f_flags) & FMODE_WRITE) {
--			cifsFileInfo_get(open_file);
--
- 			if (!open_file->invalidHandle) {
- 				/* found a good writable file */
-+				cifsFileInfo_get(open_file);
- 				spin_unlock(&cifs_file_list_lock);
- 				return open_file;
-+			} else {
-+				if (!inv_file)
-+					inv_file = open_file;
- 			}
--
--			spin_unlock(&cifs_file_list_lock);
--
--			/* Had to unlock since following call can block */
--			rc = cifs_reopen_file(open_file, false);
--			if (!rc)
--				return open_file;
--
--			/* if it fails, try another handle if possible */
--			cFYI(1, "wp failed on reopen file");
--			cifsFileInfo_put(open_file);
--
--			spin_lock(&cifs_file_list_lock);
--
--			/* else we simply continue to the next entry. Thus
--			   we do not loop on reopen errors.  If we
--			   can not reopen the file, for example if we
--			   reconnected to a server with another client
--			   racing to delete or lock the file we would not
--			   make progress if we restarted before the beginning
--			   of the loop here. */
- 		}
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -1185,9 +1185,10 @@ void __init vmalloc_init(void)
+ 	/* Import existing vmlist entries. */
+ 	for (tmp = vmlist; tmp; tmp = tmp->next) {
+ 		va = kzalloc(sizeof(struct vmap_area), GFP_NOWAIT);
+-		va->flags = tmp->flags | VM_VM_AREA;
++		va->flags = VM_VM_AREA;
+ 		va->va_start = (unsigned long)tmp->addr;
+ 		va->va_end = va->va_start + tmp->size;
++		va->vm = tmp;
+ 		__insert_vmap_area(va);
  	}
- 	/* couldn't find useable FH with same pid, try any available */
-@@ -1603,7 +1589,30 @@ refind_writable:
- 		any_available = true;
- 		goto refind_writable;
- 	}
-+
-+	if (inv_file) {
-+		any_available = false;
-+		cifsFileInfo_get(inv_file);
-+	}
-+
- 	spin_unlock(&cifs_file_list_lock);
-+
-+	if (inv_file) {
-+		rc = cifs_reopen_file(inv_file, false);
-+		if (!rc)
-+			return inv_file;
-+		else {
-+			spin_lock(&cifs_file_list_lock);
-+			list_move_tail(&inv_file->flist,
-+					&cifs_inode->openFileList);
-+			spin_unlock(&cifs_file_list_lock);
-+			cifsFileInfo_put(inv_file);
-+			spin_lock(&cifs_file_list_lock);
-+			++refind;
-+			goto refind_writable;
-+		}
-+	}
-+
- 	return NULL;
- }
  
 
 
