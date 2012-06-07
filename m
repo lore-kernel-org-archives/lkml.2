@@ -1,177 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933473Ab2FGXNK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 19:13:10 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:58898 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755573Ab2FGXNI (ORCPT
+	id S1758297Ab2FGXSt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 19:18:49 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46525 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755573Ab2FGXSq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 19:13:08 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>, Jan Kara <jack@suse.cz>,
-        Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
-        "J. Bruce Fields" <bfields@redhat.com>, Sage Weil <sage@newdream.net>
-References: <20120603232820.GQ30000@ZenIV.linux.org.uk>
-	<20120606194233.GA1537@redhat.com>
-	<CA+55aFwxFVLPk4-dp73uccKXepKwjpGFgh0NW1u8d0zYzr=hBA@mail.gmail.com>
-	<20120606230040.GA18089@redhat.com>
-	<CA+55aFx_oREEd2XS_aG7PJ7dwzWjgx689V_uRPGWpVS01_++6A@mail.gmail.com>
-	<20120606235403.GC30000@ZenIV.linux.org.uk>
-	<20120607002914.GB22223@redhat.com>
-	<CA+55aFyp2GUbc218eb5BDyAqz+cOPTJMVcb4ptk+f1_RBB+-mg@mail.gmail.com>
-	<20120607011915.GA17566@redhat.com>
-	<20120607012900.GE30000@ZenIV.linux.org.uk>
-	<20120607193607.GI30000@ZenIV.linux.org.uk>
-Date: Thu, 07 Jun 2012 16:12:45 -0700
-In-Reply-To: <20120607193607.GI30000@ZenIV.linux.org.uk> (Al Viro's message of
-	"Thu, 7 Jun 2012 20:36:07 +0100")
-Message-ID: <873966n2c2.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Thu, 7 Jun 2012 19:18:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX19jDE26EQTjMJFGo2d9hQTQHPtf3Ihamu4=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
-	*      [score: 0.1472]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
-	*  0.0 T_XMDrugObfuBody_04 obfuscated drug references
-X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Al Viro <viro@ZenIV.linux.org.uk>
-X-Spam-Relay-Country: 
-Subject: Re: processes hung after sys_renameat, and 'missing' processes
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+In-Reply-To: <1338260214-21919-1-git-send-email-gaofeng@cn.fujitsu.com>
+References: <1338260214-21919-1-git-send-email-gaofeng@cn.fujitsu.com>
+From: Zhu Yanhai <zhu.yanhai@gmail.com>
+Date: Fri, 8 Jun 2012 07:18:25 +0800
+Message-ID: <CAC8teKU1SCnO7Wx7pw3DRZMzaVtsqRBmNdZvvzSa-s=kWfg_Pw@mail.gmail.com>
+Subject: Re: [PATCH] meminfo: show /proc/meminfo base on container's memcg
+To: Gao feng <gaofeng@cn.fujitsu.com>
+Cc: hannes@cmpxchg.org, kamezawa.hiroyu@jp.fujitsu.com, mhocko@suse.cz,
+        bsingharora@gmail.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.linux-foundation.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Al Viro <viro@ZenIV.linux.org.uk> writes:
+2012/5/29 Gao feng <gaofeng@cn.fujitsu.com>:
+> cgroup and namespaces are used for creating containers but some of
+> information is not isolated/virtualized. This patch is for isolating /proc/meminfo
+> information per container, which uses memory cgroup. By this, top,free
+> and other tools under container can work as expected(show container's
+> usage) without changes.
+>
+> This patch is a trial to show memcg's info in /proc/meminfo if 'current'
+> is under a memcg other than root.
+>
+> we show /proc/meminfo base on container's memory cgroup.
+> because there are lots of info can't be provide by memcg, and
+> the cmds such as top, free just use some entries of /proc/meminfo,
+> we replace those entries by memory cgroup.
+>
+> if container has no memcg, we will show host's /proc/meminfo
+> as before.
+>
+> there is no idea how to deal with Buffers,I just set it zero,
+> It's strange if Buffers bigger than MemTotal.
+>
+> Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
+> ---
+>  fs/proc/meminfo.c          |   11 +++++---
+>  include/linux/memcontrol.h |   15 +++++++++++
+>  mm/memcontrol.c            |   56 ++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 78 insertions(+), 4 deletions(-)
+>
+> diff --git a/fs/proc/meminfo.c b/fs/proc/meminfo.c
+> index 80e4645..29a1fcd 100644
+> --- a/fs/proc/meminfo.c
+> +++ b/fs/proc/meminfo.c
+> @@ -13,6 +13,7 @@
+>  #include <linux/atomic.h>
+>  #include <asm/page.h>
+>  #include <asm/pgtable.h>
+> +#include <linux/memcontrol.h>
+>  #include "internal.h"
+>
+>  void __attribute__((weak)) arch_report_meminfo(struct seq_file *m)
+> @@ -27,7 +28,6 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
+>        struct vmalloc_info vmi;
+>        long cached;
+>        unsigned long pages[NR_LRU_LISTS];
+> -       int lru;
+>
+>  /*
+>  * display in kilobytes.
+> @@ -39,16 +39,19 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
+>        allowed = ((totalram_pages - hugetlb_total_pages())
+>                * sysctl_overcommit_ratio / 100) + total_swap_pages;
+>
+> +       memcg_meminfo(&i);
+>        cached = global_page_state(NR_FILE_PAGES) -
+>                        total_swapcache_pages - i.bufferram;
+> +       /*
+> +        * If 'current' is in root memory cgroup, returns global status.
+> +        * If not, returns the status of memcg under which current runs.
+> +        */
+> +       sys_page_state(pages, &cached);
+>        if (cached < 0)
+>                cached = 0;
+>
+>        get_vmalloc_info(&vmi);
+>
+> -       for (lru = LRU_BASE; lru < NR_LRU_LISTS; lru++)
+> -               pages[lru] = global_page_state(NR_LRU_BASE + lru);
+> -
+>        /*
+>         * Tagged format, for easy grepping and expansion.
+>         */
+> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> index 0316197..6220764 100644
+> --- a/include/linux/memcontrol.h
+> +++ b/include/linux/memcontrol.h
+> @@ -21,6 +21,7 @@
+>  #define _LINUX_MEMCONTROL_H
+>  #include <linux/cgroup.h>
+>  #include <linux/vm_event_item.h>
+> +#include <linux/mm.h>
+>
+>  struct mem_cgroup;
+>  struct page_cgroup;
+> @@ -116,6 +117,9 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *,
+>                                   struct mem_cgroup_reclaim_cookie *);
+>  void mem_cgroup_iter_break(struct mem_cgroup *, struct mem_cgroup *);
+>
+> +extern void memcg_meminfo(struct sysinfo *si);
+> +extern void sys_page_state(unsigned long *page, long *cached);
+> +
+>  /*
+>  * For memory reclaim.
+>  */
+> @@ -323,6 +327,17 @@ static inline void mem_cgroup_iter_break(struct mem_cgroup *root,
+>  {
+>  }
+>
+> +static inline void memcg_meminfo(struct sysinfo *si)
+> +{
+> +}
+> +
+> +static inline void sys_page_state(unsigned long *pages, long *cached)
+> +{
+> +       int lru;
+> +       for (lru = LRU_BASE; lru < NR_LRU_LISTS; lru++)
+> +               pages[lru] = global_page_state(NR_LRU_BASE + lru);
+> +}
+> +
+>  static inline bool mem_cgroup_disabled(void)
+>  {
+>        return true;
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index f142ea9..c25e160 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -52,6 +52,7 @@
+>  #include "internal.h"
+>  #include <net/sock.h>
+>  #include <net/tcp_memcontrol.h>
+> +#include <linux/pid_namespace.h>
+>
+>  #include <asm/uaccess.h>
+>
+> @@ -4345,6 +4346,61 @@ mem_cgroup_get_total_stat(struct mem_cgroup *memcg, struct mcs_total_stat *s)
+>                mem_cgroup_get_local_stat(iter, s);
+>  }
+>
+> +void memcg_meminfo(struct sysinfo *val)
+> +{
+> +       struct mem_cgroup *memcg = mem_cgroup_from_task(current);
+> +       __kernel_ulong_t totalram, totalswap;
+> +       if (current->nsproxy->pid_ns == &init_pid_ns ||
+> +           memcg == NULL || mem_cgroup_is_root(memcg))
+> +               return;
+This is somehow not exactly the same with your description "if 'current'
+> is under a memcg other than root." since you are checking both namespace and cgroup constraint.
+> +
+> +       totalram = res_counter_read_u64(&memcg->res,
+> +                                       RES_LIMIT) >> PAGE_SHIFT;
+> +       if (totalram < val->totalram) {
+> +               __kernel_ulong_t usageram;
+> +               usageram = res_counter_read_u64(&memcg->res,
+> +                                               RES_USAGE) >> PAGE_SHIFT;
+> +               val->totalram = totalram;
+> +               val->freeram = totalram - usageram;
+> +               val->bufferram = 0;
+> +               val->totalhigh = 0;
+> +               val->freehigh = 0;
+> +       } else
+> +               return;
+You don't want to show the local swap usage and limit (below code) if
+mem.hard_limit_in_bytes is larger than the physical memory capacity?
+Why?
+> +
+> +       totalswap = res_counter_read_u64(&memcg->memsw,
+> +                                        RES_LIMIT) >> PAGE_SHIFT;
+> +       if (totalswap < val->totalswap) {
+here, do you need also to check memcg->memsw_is_minimum? Local
+swapping is disabled if memsw_is_minium is true.
+> +               __kernel_ulong_t usageswap;
+> +               usageswap = res_counter_read_u64(&memcg->memsw,
+> +                                                RES_USAGE) >> PAGE_SHIFT;
+> +               val->totalswap = totalswap - val->totalram;
+> +               val->freeswap = totalswap - usageswap - val->freeram;
+This is seriously broken, memsw.limit_in_bytes means the max swap
+space you can get, and under global memory pressure all physical
+memory belongs to a memcg might get dump into disk, until it reaches
+the limit set by memsw.limit_in_bytes. So you should not subtract the
+physical memory usage.
+> +       }
+And you need a 'else' statement here, although memsw.limit_in_bytes
+might be larger than val->totalswap, it's still wrong to show the user
+a global swap usage other than your local one, right?
 
-> [maintainers of assorted code involved Cc'd]
+> +}
+> +
+> +void sys_page_state(unsigned long *pages, long *cached)
+> +{
+> +       struct mem_cgroup *memcg = mem_cgroup_from_task(current);
+> +
+> +       if (current->nsproxy->pid_ns == &init_pid_ns ||
+> +           memcg == NULL || mem_cgroup_is_root(memcg)) {
+> +               int lru;
+> +               for (lru = LRU_BASE; lru < NR_LRU_LISTS; lru++)
+> +                       pages[lru] = global_page_state(NR_LRU_BASE + lru);
+> +       } else {
+> +               struct mcs_total_stat s;
+> +               memset(&s, 0, sizeof(s));
+> +               mem_cgroup_get_total_stat(memcg, &s);
+> +               *cached = s.stat[MCS_CACHE] >> PAGE_SHIFT;
+> +               pages[LRU_ACTIVE_ANON] = s.stat[MCS_ACTIVE_ANON] >> PAGE_SHIFT;
+> +               pages[LRU_ACTIVE_FILE] = s.stat[MCS_ACTIVE_FILE] >> PAGE_SHIFT;
+> +               pages[LRU_INACTIVE_ANON] = s.stat[MCS_INACTIVE_ANON] >> PAGE_SHIFT;
+> +               pages[LRU_INACTIVE_FILE] = s.stat[MCS_INACTIVE_FILE] >> PAGE_SHIFT;
+> +               pages[LRU_UNEVICTABLE] = s.stat[MCS_UNEVICTABLE] >> PAGE_SHIFT;
+> +       }
+> +}
+> +
+>  #ifdef CONFIG_NUMA
+>  static int mem_control_numa_stat_show(struct seq_file *m, void *arg)
+>  {
+> --
+> 1.7.7.6
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe cgroups" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-> 7) attached dentry moving away from old parent must have ->i_mutex on
-> that old parent held.
-> 
-> 8) dentry getting attached to a new parent must have ->i_mutex held on
-> that new parent.
-> 
-> 9) attached dentry getting moved to a new parent must have ->s_vfs_rename_mutex
-> held.
-> 
-> Now, (7--9) are interesting; the call graph looks so:
-> __d_move()
-> 	<- d_move()
-> 	<- __d_unalias()
-> 		<- d_materialise_unique()
-> __d_materialise_dentry()
-> 	<- d_materialise_unique()
+We have a highly similar patch with yours here on a large production
+system, AFAICS it's absolutely unaccepted to require correcting the
+userland tools to read the stat file exported by the various cgroups,
+which have different formats and locations and names with the legacy
+ones i.e. /proc/stat, /proc/meminfo and /proc/loadavg. There are tons
+of the tools and it's impossible to do so (just think about,
+top/sar/vmstat/mpstat/free/who, and various userland library read the
+number directly from above files, setup their thread pool or memory
+pool according to the available resource).
 
-So at least for filesystems that don't implement 
-inode->i_op->rename like sysfs I don't see where you get your
-rules 7-9 for d_move.
-
-We take the approprate dentry locks in the approparite order so d_move
-and the dcache should not care in the slightest about the inode
-mutecies.
-
-If we need the inode mutecies to make the dcache bits safe then
-something really is insane.  There may be subtle insanities in the
-vfs that require the inode muticies of the parents in d_move but I am
-certainly not seeing them.  At least as I read it the code in __d_move
-only touches and modifies dentry fields.
-
-For any distributed filesystem and for sysfs in particular all of the
-vfs inode mutex locking in the case of rename is absolutely useless as
-the renames don't go through vfs, and the vfs simply does not have
-enough information to use generic locks.
-
-> 	sysfs_lookup() plays insane games with d_move(); I _really_
-> don't like the look of that code.  It tries to play catch-up after
-> sysfs_rename() done its thing.  AFAICS, the parent *can* be changed
-> by sysfs_rename().  No lock is held on said parent here; no
-> ->s_vfs_rename_mutex either.  Moreover, none of the sysfs_rename() callers
-> (kobject_move(), etc.) appear to give a damn about checking if it would
-> create a loop.
-
-Can sysfs_lookup cause the weird renameat problems we are seeing? No.
-
-We don't leave any locks hanging and locks are all take in the order
-the vfs expects them to be taken and in the proper nesting orders.
-
-Your complaints about the inode muticies and of the parent directories
-and  s_vfs_rename_mutex seem to be completely irrelevant as those
-locks mean nothing to sysfs.
-
-All sysfs_lookup is doing is opportunistically updating the dcache
-to reflect reality if we happen to come accross a sysfs_dirent that
-has been renamed, and since it is just the dcache that is being
-updated the locks that d_move takes appear completely sufficient
-for that to be safe.
-
-Can sysfs_rename change the sysfs_dirent parent?  yes
-
-Do we have sufficient locking in sysfs_rename? yes we
-take the sysfs_mutex, that it overkill but it serializes all
-sysfs_dirent changes.
-
-Is there loop prevention for sysfs_rename?  No.  However there
-are only 5 callers of device_move and all of them are known
-not to create loops.
-
-It is probably worth it someday to get around to adding a test in
-sysfs_rename to be double check and verify that loops are not added.
-
-For purposes of analyzing sysfs_lookup we can assume that there are no
-in renames, as that would imply a bug in sysfs_rename.
-
-The interactions between the vfs and sysfs are indeed insane.  Because
-of the way the vfs is designed the vfs must tell lies about deleted
-files and directories when there are submounts involved.
-
-Additionally lies also get told to the vfs about renames because the vfs
-implements an on-demand consistency model with respect to remote
-filesystems.  With the result that frequently we don't have full
-knowledge about renames when we are revalidating directories so make a
-rename look like unlink+link pair instead.
-
-So I believe you are asking is sysfs_lookup safe? yes
-
-What syfs_lookup is doing is if it happens to have sufficient knowledge
-to detect a rename happened in the past is:
-
-- Each sysfs_dirent has at most one struct dentry per super block.
-
-- If d_find_alias finds a dirent then I know that the dirent for my
-  inode is in the wrong place in the dcache.
-
-- d_move performs all of the necessary dcache locking, to ensure moving
-  a dentry is safe even if the parent is renamed, at least with respect
-  to the dcache.
-
-- I hold sysfs_mutex over the whole thing which guarantees that the
-  sysfs directory structure does not change during this time.
-
-> I'll continue this series in a couple of hours - there's more.  In the
-> meanwhile, I'd like to hear from ceph, sysfs and nfsd folks - see above
-> for the reasons.
-
-I hope my explanations help.
-
-I'd like to hear why you happen to think s_vfs_rename_mutex and the
-inode muticies of the parent directories are at all interesting in the
-case of d_move and in the case of sysfs.
-
-Eric
-
+--
+Thanks,
+Zhu Yanhai
