@@ -1,45 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759485Ab2FGPuK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 11:50:10 -0400
-Received: from 8bytes.org ([85.214.48.195]:56041 "EHLO
-	h2027444.stratoserver.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754385Ab2FGPuI (ORCPT
+	id S1758901Ab2FGPwZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 11:52:25 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8721 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750847Ab2FGPwW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 11:50:08 -0400
-Date: Thu, 7 Jun 2012 17:50:06 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Bryan Schumaker <bjschuma@netapp.com>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: NFS regression in v3.5-rc1: mount.nfs yells about incorrect
- mount option
-Message-ID: <20120607155006.GR12795@8bytes.org>
-References: <20120607150456.GO12795@8bytes.org>
- <4FD0C4C2.8020605@netapp.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FD0C4C2.8020605@netapp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Thu Jun  7 17:50:06 2012
-X-DSPAM-Confidence: 0.9956
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 4fd0cdae28381237117784
+	Thu, 7 Jun 2012 11:52:22 -0400
+X-Authority-Analysis: v=2.0 cv=eIiRfQV1 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Ciwy3NGCPMMA:10 a=D7Wfu0q6AdEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=clqqo40ESsp2xoiuPbIA:9 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=Zh68SRI7RUMA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-Id: <20120607155221.445178514@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Thu, 07 Jun 2012 11:51:49 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>, David Sommerseth <davids@redhat.com>
+Subject: [PATCH RT 1/4] scsi: qla2xxx: Use local_irq_save_nort() in qla2x00_poll
+References: <20120607155148.698959275@goodmis.org>
+Content-Disposition: inline; filename=0001-scsi-qla2xxx-Use-local_irq_save_nort-in-qla2x00_poll.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 07, 2012 at 11:12:02AM -0400, Bryan Schumaker wrote:
+From: John Kacur <jkacur@redhat.com>
 
-> Can you use `mount -v` to get more output?
+RT triggers the following:
 
-Btw, it also works when I manually set the nfs-version at mount:
+[   11.307652]  [<ffffffff81077b27>] __might_sleep+0xe7/0x110
+[   11.307663]  [<ffffffff8150e524>] rt_spin_lock+0x24/0x60
+[   11.307670]  [<ffffffff8150da78>] ? rt_spin_lock_slowunlock+0x78/0x90
+[   11.307703]  [<ffffffffa0272d83>] qla24xx_intr_handler+0x63/0x2d0 [qla2xxx]
+[   11.307736]  [<ffffffffa0262307>] qla2x00_poll+0x67/0x90 [qla2xxx]
 
-mount -o nfsvers=3 ...
+Function qla2x00_poll does local_irq_save() before calling qla24xx_intr_handler
+which has a spinlock. Since spinlocks are sleepable on rt, it is not allowed
+to call them with interrupts disabled. Therefore we use local_irq_save_nort()
+instead which saves flags without disabling interrupts.
 
+This fix needs to be applied to v3.0-rt, v3.2-rt and v3.4-rt
 
-	Joerg
+Suggested-by: Thomas Gleixner
+Signed-off-by: John Kacur <jkacur@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: David Sommerseth <davids@redhat.com>
+Link: http://lkml.kernel.org/r/1335523726-10024-1-git-send-email-jkacur@redhat.com
+Cc: stable-rt@vger.kernel.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ drivers/scsi/qla2xxx/qla_inline.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/scsi/qla2xxx/qla_inline.h b/drivers/scsi/qla2xxx/qla_inline.h
+index 4c8167e..e5e99e9 100644
+--- a/drivers/scsi/qla2xxx/qla_inline.h
++++ b/drivers/scsi/qla2xxx/qla_inline.h
+@@ -36,12 +36,12 @@ qla2x00_poll(struct rsp_que *rsp)
+ {
+ 	unsigned long flags;
+ 	struct qla_hw_data *ha = rsp->hw;
+-	local_irq_save(flags);
++	local_irq_save_nort(flags);
+ 	if (IS_QLA82XX(ha))
+ 		qla82xx_poll(0, rsp);
+ 	else
+ 		ha->isp_ops->intr_handler(0, rsp);
+-	local_irq_restore(flags);
++	local_irq_restore_nort(flags);
+ }
+ 
+ static inline uint8_t *
+-- 
+1.7.10
 
 
