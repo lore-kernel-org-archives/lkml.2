@@ -1,147 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932511Ab2FGVDD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 17:03:03 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:45168 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755263Ab2FGVDA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 17:03:00 -0400
-Date: Thu, 7 Jun 2012 22:53:56 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Denys Fedoryshchenko <denys@visp.net.lb>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Deadlock, L2TP over IP are not working, 3.4.1
-Message-ID: <20120607205356.GA2491@electric-eye.fr.zoreil.com>
-References: <7ed49f446365ac625437702d92946add@visp.net.lb>
-Mime-Version: 1.0
+	id S932910Ab2FGVDP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 17:03:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24351 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932121Ab2FGVDC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 17:03:02 -0400
+Date: Thu, 7 Jun 2012 23:02:49 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Josh Boyer <jwboyer@gmail.com>, Greg KH <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Ulrich Obergfell <uobergfe@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Hugh Dickins <hughd@google.com>, Larry Woodman <lwoodman@redhat.com>,
+        Petr Matousek <pmatouse@redhat.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [ 08/82] mm: pmd_read_atomic: fix 32bit PAE pmd walk vs
+ pmd_populate SMP race condition
+Message-ID: <20120607210249.GI21339@redhat.com>
+References: <20120607041406.GA13233@kroah.com>
+ <20120607040337.622672845@linuxfoundation.org>
+ <CA+5PVA6A0K3WYBQJH8z3ddd2X3=fQm1a34z+fWSYGcUg4TR9+A@mail.gmail.com>
+ <20120607144204.GD21339@redhat.com>
+ <CA+55aFzv-z0njtAnpgOsVES70+igwV7HCteQbQ6M6uTsYvn5WQ@mail.gmail.com>
+ <20120607190414.GF21339@redhat.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <7ed49f446365ac625437702d92946add@visp.net.lb>
-User-Agent: Mutt/1.4.2.2i
-X-Organisation: Land of Sunshine Inc.
+In-Reply-To: <20120607190414.GF21339@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Denys Fedoryshchenko <denys@visp.net.lb> :
-[...]
-> [ 8683.927442] ======================================================
-> [ 8683.927555] [ INFO: possible circular locking dependency detected ]
-> [ 8683.927672] 3.4.1-build-0061 #14 Not tainted
-> [ 8683.927782] -------------------------------------------------------
-> [ 8683.927895] swapper/0/0 is trying to acquire lock:
-> [ 8683.928007]  (slock-AF_INET){+.-...}, at: [<e0fc73ec>]
-> l2tp_xmit_skb+0x173/0x47e [l2tp_core]
-> [ 8683.928121]
-> [ 8683.928121] but task is already holding lock:
-> [ 8683.928121]  (_xmit_ETHER#2){+.-...}, at: [<c02f062d>]
-> sch_direct_xmit+0x36/0x119
-> [ 8683.928121]
-> [ 8683.928121] which lock already depends on the new lock.
+On Thu, Jun 07, 2012 at 09:04:14PM +0200, Andrea Arcangeli wrote:
+>  #ifndef CONFIG_TRANSPARENT_HUGEPAGE
+> +#define pmd_read_atomic pmd_read_atomic
+>  static inline pmd_t pmd_read_atomic(pmd_t *pmdp)
+>  {
+>  	pmdval_t ret;
+> @@ -74,11 +81,6 @@ static inline pmd_t pmd_read_atomic(pmd_t *pmdp)
+>  
+>  	return (pmd_t) { ret };
+>  }
+> -#else /* CONFIG_TRANSPARENT_HUGEPAGE */
+> -static inline pmd_t pmd_read_atomic(pmd_t *pmdp)
+> -{
+> -	return (pmd_t) { atomic64_read((atomic64_t *)pmdp) };
+> -}
+>  #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
+>  
+>  static inline void native_set_pte_atomic(pte_t *ptep, pte_t pte)
 
-Any reason why it could not be made LLTX ?
-
-(untested patch against -git, applies to 3.4.1 with some offset)
-
-diff --git a/net/l2tp/l2tp_eth.c b/net/l2tp/l2tp_eth.c
-index 443591d..5725258 100644
---- a/net/l2tp/l2tp_eth.c
-+++ b/net/l2tp/l2tp_eth.c
-@@ -36,12 +36,20 @@
- /* Default device name. May be overridden by name specified by user */
- #define L2TP_ETH_DEV_NAME	"l2tpeth%d"
- 
-+struct l2tp_eth_stats {
-+	u64			packets;
-+	u64			bytes;
-+	struct u64_stats_sync	syncp;
-+};
-+
- /* via netdev_priv() */
- struct l2tp_eth {
- 	struct net_device	*dev;
- 	struct sock		*tunnel_sock;
- 	struct l2tp_session	*session;
- 	struct list_head	list;
-+	struct l2tp_eth_stats	rstats;
-+	struct l2tp_eth_stats	tstats;
- };
- 
- /* via l2tp_session_priv() */
-@@ -87,25 +95,56 @@ static int l2tp_eth_dev_xmit(struct sk_buff *skb, struct net_device *dev)
- {
- 	struct l2tp_eth *priv = netdev_priv(dev);
- 	struct l2tp_session *session = priv->session;
-+	struct l2tp_eth_stats *tstats = &priv->tstats;
- 
- 	l2tp_xmit_skb(session, skb, session->hdr_len);
- 
--	dev->stats.tx_bytes += skb->len;
--	dev->stats.tx_packets++;
-+	u64_stats_update_begin(&tstats->syncp);
-+	tstats->packets++;
-+	tstats->bytes += skb->len;
-+	u64_stats_update_end(&tstats->syncp);
- 
- 	return 0;
- }
- 
-+static struct rtnl_link_stats64 *
-+l2tp_eth_get_stats64(struct net_device *dev, struct rtnl_link_stats64 *stats)
-+{
-+	struct l2tp_eth *priv = netdev_priv(dev);
-+	struct l2tp_eth_stats *s;
-+	unsigned int start;
-+
-+	s = &priv->rstats;
-+	do {
-+		start = u64_stats_fetch_begin_bh(&s->syncp);
-+		stats->rx_packets	= s->packets;
-+		stats->rx_bytes		= s->bytes;
-+	} while (u64_stats_fetch_retry_bh(&s->syncp, start));
-+
-+	s = &priv->tstats;
-+	do {
-+		start = u64_stats_fetch_begin_bh(&s->syncp);
-+		stats->tx_packets	= s->packets;
-+		stats->tx_bytes		= s->bytes;
-+	} while (u64_stats_fetch_retry_bh(&s->syncp, start));
-+
-+	stats->rx_errors = dev->stats.rx_errors;
-+
-+	return stats;
-+}
-+
- static struct net_device_ops l2tp_eth_netdev_ops = {
- 	.ndo_init		= l2tp_eth_dev_init,
- 	.ndo_uninit		= l2tp_eth_dev_uninit,
- 	.ndo_start_xmit		= l2tp_eth_dev_xmit,
-+	.ndo_get_stats64	= l2tp_eth_get_stats64,
- };
- 
- static void l2tp_eth_dev_setup(struct net_device *dev)
- {
- 	ether_setup(dev);
--	dev->priv_flags &= ~IFF_TX_SKB_SHARING;
-+	dev->features		|= NETIF_F_LLTX;
-+	dev->priv_flags		&= ~IFF_TX_SKB_SHARING;
- 	dev->netdev_ops		= &l2tp_eth_netdev_ops;
- 	dev->destructor		= free_netdev;
- }
-@@ -139,8 +178,13 @@ static void l2tp_eth_dev_recv(struct l2tp_session *session, struct sk_buff *skb,
- 	nf_reset(skb);
- 
- 	if (dev_forward_skb(dev, skb) == NET_RX_SUCCESS) {
--		dev->stats.rx_packets++;
--		dev->stats.rx_bytes += data_len;
-+		struct l2tp_eth *priv = netdev_priv(dev);
-+		struct l2tp_eth_stats *rstats = &priv->rstats;
-+
-+		u64_stats_update_begin(&rstats->syncp);
-+		rstats->packets++;
-+		rstats->bytes += data_len;
-+		u64_stats_update_end(&rstats->syncp);
- 	} else
- 		dev->stats.rx_errors++;
- 
+This actually wasn't safe because if the high part wasn't none and the
+low part was none, the pmd_none check would fail. I sent an updated
+version that will fix this hopefully for good and it turns out the
+same pmd_read_atomic will work for THP=n/y without need of cmpxchg8b
+even if it's slightly less obviously safe than if we used
+atomic64_read for THP=y. Still safe that is...
