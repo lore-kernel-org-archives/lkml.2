@@ -1,111 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753998Ab2FGHPn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 03:15:43 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:54106 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750952Ab2FGHPl (ORCPT
+	id S1754381Ab2FGHVh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 03:21:37 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:48335 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752772Ab2FGHVf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 03:15:41 -0400
-Date: Thu, 7 Jun 2012 09:15:31 +0200
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, andi@firstfloor.org, mingo@elte.hu,
-        ming.m.lin@intel.com
-Subject: [PATCH] perf/x86: check ucode before disabling PEBS on SandyBridge
-Message-ID: <20120607071531.GA4849@quad>
+	Thu, 7 Jun 2012 03:21:35 -0400
+Date: Thu, 7 Jun 2012 09:21:59 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "H. Peter Anvin" <hpa@zytor.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Borislav Petkov <bp@amd64.org>, Jacob Shin <jacob.shin@amd.com>,
+        Andre Przywara <andre.przywara@amd.com>, jeremy@goop.org,
+        xen-devel@lists.xensource.com, LKML <linux-kernel@vger.kernel.org>,
+        Jan Beulich <JBeulich@suse.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>, stable@vger.kernel.org
+Subject: Re: [PATCH 3/4] x86, AMD: Fix crash as Xen Dom0 on AMD Trinity
+ systems
+Message-ID: <20120607072159.GB9856@aftab.osrc.amd.com>
+References: <1338562358-28182-1-git-send-email-bp@amd64.org>
+ <1338562358-28182-4-git-send-email-bp@amd64.org>
+ <4FCFD2EE.8060508@zytor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <4FCFD2EE.8060508@zytor.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jun 06, 2012 at 03:00:14PM -0700, H. Peter Anvin wrote:
+> On 06/01/2012 07:52 AM, Borislav Petkov wrote:
+> > From: Andre Przywara <andre.przywara@amd.com>
+> > 
+> > f7f286a910221 ("x86/amd: Re-enable CPU topology extensions in case BIOS
+> > has disabled it") wrongfully added code which used the AMD-specific
+> > {rd,wr}msr variants for no real reason.
+> > 
+> > This caused boot panics on xen which wasn't initializing the
+> > {rd,wr}msr_safe_regs pv_ops members properly.
+> > 
+> > This, in turn, caused a heated discussion leading to us reviewing all
+> > uses of the AMD-specific variants and removing them where unneeded
+> > (almost everywhere except an obscure K8 BIOS fix, see 6b0f43ddfa358).
+> > 
+> > Finally, this patch switches to the standard {rd,wr}msr*_safe* variants
+> > which should've been used in the first place anyway and avoided unneeded
+> > excitation with xen.
+> > 
+> > Signed-off-by: Andre Przywara <andre.przywara@amd.com>
+> > Cc: Andreas Herrmann <andreas.herrmann3@amd.com>
+> > Cc: stable@vger.kernel.org # 3.4+
+> > Link: <http://lkml.kernel.org/r/1338383402-3838-1-git-send-email-andre.przywara@amd.com>
+> > [Boris: correct and expand commit message]
+> > Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+> 
+> Why -stable?  I though we had agreed that we didn't have an active
+> problem (unclean hack, yes, but not an active problem) in 3.4/3.5 as it
+> currently sits?
 
-This patch checks the microcode version before disabling
-PEBS on SandyBridge model 42 (desktop, mobile), and 45 (SNB-EP).
-PEBS was disabled for both models due to an erratum.
+Yes, AFAICT, we need at least one fix for 3.4 where the original patch
+f7f286a910221 broke xen.
 
-A workaround is implemented by micro-code 0x28. This patch checks
-the microcode version and disables PEBS support if version < 0x28.
-The check is done each time a PEBS event is created and NOT at boot
-time because the micro-code update may only be done after the kernel
-has booted.
-    
-Go to downloadcenter.intel.com to download microcode updates.
-Need microcode update 6/6/2012 or later.
-    
-Signed-off-by: Stephane Eranian <eranian@google.com>
+So either this one or 1ab46fd319bc should be backported to stable, if
+I'm not mistaken. If the second, I'll drop the stable tag from this one
+and resend.
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 5ec146c..9c905bd 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1394,6 +1394,27 @@ static void intel_pebs_aliases_snb(struct perf_event *event)
- 	}
- }
- 
-+static int check_pebs_quirks(void)
-+{
-+	int uversion = cpu_data(smp_processor_id()).microcode;
-+	int model = cpu_data(smp_processor_id()).x86_model;
-+
-+	/* do not have PEBS to begin with */
-+	if (!x86_pmu.pebs)
-+		return 0;
-+
-+	/*
-+	 * check ucode version for SNB, SNB-EP
-+	 */
-+	if ((model == 42 || model == 45) && uversion < 0x28) {
-+		pr_warn("SandyBridge PEBS unavailable due to CPU erratum, "
-+			" update microcode (was 0x%x, needs at least 0x28).\n",
-+			uversion);
-+		return -ENOTSUPP;
-+	}
-+	return 0;
-+}
-+
- static int intel_pmu_hw_config(struct perf_event *event)
- {
- 	int ret = x86_pmu_hw_config(event);
-@@ -1401,8 +1422,14 @@ static int intel_pmu_hw_config(struct perf_event *event)
- 	if (ret)
- 		return ret;
- 
--	if (event->attr.precise_ip && x86_pmu.pebs_aliases)
--		x86_pmu.pebs_aliases(event);
-+	if (event->attr.precise_ip) {
-+
-+		if (check_pebs_quirks())
-+			return -ENOTSUPP;
-+
-+		if (x86_pmu.pebs_aliases)
-+			x86_pmu.pebs_aliases(event);
-+	}
- 
- 	if (intel_pmu_needs_lbr_smpl(event)) {
- 		ret = intel_pmu_setup_lbr_filter(event);
-@@ -1714,13 +1741,6 @@ static __init void intel_clovertown_quirk(void)
- 	x86_pmu.pebs_constraints = NULL;
- }
- 
--static __init void intel_sandybridge_quirk(void)
--{
--	pr_warn("PEBS disabled due to CPU errata\n");
--	x86_pmu.pebs = 0;
--	x86_pmu.pebs_constraints = NULL;
--}
--
- static const struct { int id; char *name; } intel_arch_events_map[] __initconst = {
- 	{ PERF_COUNT_HW_CPU_CYCLES, "cpu cycles" },
- 	{ PERF_COUNT_HW_INSTRUCTIONS, "instructions" },
-@@ -1914,7 +1934,6 @@ __init int intel_pmu_init(void)
- 
- 	case 42: /* SandyBridge */
- 	case 45: /* SandyBridge, "Romely-EP" */
--		x86_add_quirk(intel_sandybridge_quirk);
- 	case 58: /* IvyBridge */
- 		memcpy(hw_cache_event_ids, snb_hw_cache_event_ids,
- 		       sizeof(hw_cache_event_ids));
+Konrad, what do you want wrt xen paravirt nullptr breakage for
+3.4-stable?
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
