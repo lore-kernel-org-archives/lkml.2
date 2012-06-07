@@ -1,72 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757235Ab2FGUr3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 16:47:29 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:50679 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755263Ab2FGUr1 (ORCPT
+	id S932335Ab2FGUsJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 16:48:09 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:25328 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755263Ab2FGUsI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 16:47:27 -0400
-Message-ID: <4FD1135E.1050502@tilera.com>
-Date: Thu, 7 Jun 2012 16:47:26 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Thu, 7 Jun 2012 16:48:08 -0400
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: <eric.dumazet@gmail.com>, <bhutchings@solarflare.com>, <arnd@arndb.de>,
-        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
-Subject: Re: [PATCH v10] tilegx network driver: initial support
-References: <4FCFA312.4020505@tilera.com> <20120606.115440.1245419453265419850.davem@davemloft.net> <201206072031.q57KV0NG029301@farm-0023.internal.tilera.com> <20120607.133900.1764130639940088009.davem@davemloft.net> <4FD11292.10700@tilera.com>
-In-Reply-To: <4FD11292.10700@tilera.com>
-X-Enigmail-Version: 1.4.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Message-ID: <dfc7087d-6826-4429-8063-d47d05cd2d26@default>
+Date: Thu, 7 Jun 2012 13:47:40 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>
+Subject: RE: [PATCH 2/2] zram: clean up handle
+References: <1338881031-19662-1-git-send-email-minchan@kernel.org>
+ <1338881031-19662-2-git-send-email-minchan@kernel.org>
+ <4FCEE4E0.6030707@vflare.org> <4FD015FE.7070906@kernel.org>
+In-Reply-To: <4FD015FE.7070906@kernel.org>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.6  (510070) [OL
+ 12.0.6607.1000 (x86)]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/7/2012 4:44 PM, Chris Metcalf wrote:
-> On 6/7/2012 4:39 PM, David Miller wrote:
->> From: Chris Metcalf <cmetcalf@tilera.com>
->> Date: Fri, 6 Apr 2012 16:42:03 -0400
->>
->>> Date: Fri, 6 Apr 2012 16:42:03 -0400
->> You did not commit this file on April 6th.
->>
->> Please don't use the date emitted by the GIT tools, just
->> let the email use the natural correct date which is the
->> one at the time you send the email out.
->>
->> Otherwise your patch gets misordered as automated tools like
->> patchwork think this file should go all the way at the back
->> of the patch queue because of it's old date relative to
->> other pending patches.
-> Yes, when I use "git rebase" to merge changes into the earlier patch, this
-> is the behavior I see.  I don't know if there's some way to tell git to
-> take the date on the later change instead when I "squash" them.  Or if,
-> perhaps, there is some other workflow I should be using.  It does seem like
-> the git history should reflect the latest time.
->
-> The issue of the date on the email is separate.  I tend to use "git
-> format-patch" to start with, munge up the headers to jam in some
-> "In-Reply-To" and "References" lines, manually update the "Date:", then
-> feed it to "sendmail -t".  Perhaps there's a different workflow I should be
-> using there, too.  (I tried deleting the "Date", but the one time I tried
-> that I ended up with some surprisingly bogus date in the email that hit
-> LKML, so I've been avoiding that approach.)
->
-> I'll resend the patch without a Date: line and see how it ends up this time.
+> From: Minchan Kim [mailto:minchan@kernel.org]
+> Subject: Re: [PATCH 2/2] zram: clean up handle
+> 
+> On 06/06/2012 02:04 PM, Nitin Gupta wrote:
+> 
+> > On 06/05/2012 12:23 AM, Minchan Kim wrote:
+> >
+> >> zram's handle variable can store handle of zsmalloc in case of
+> >> compressing efficiently. Otherwise, it stores point of page descriptor.
+> >> This patch clean up the mess by union struct.
+> >>
+> >> changelog
+> >>   * from v1
+> >> 	- none(new add in v2)
+> >>
+> >> Cc: Nitin Gupta <ngupta@vflare.org>
+> >> Acked-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+> >> Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> >> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> >> ---
+> >>  drivers/staging/zram/zram_drv.c |   77 ++++++++++++++++++++-------------------
+> >>  drivers/staging/zram/zram_drv.h |    5 ++-
+> >>  2 files changed, 44 insertions(+), 38 deletions(-)
+> >
+> > I think page vs handle distinction was added since xvmalloc could not
+> > handle full page allocation. Now that zsmalloc allows full page
+> 
+> I see. I didn't know that because I'm blind on xvmalloc.
+> 
+> > allocation, we can just use it for both cases. This would also allow
+> > removing the ZRAM_UNCOMPRESSED flag. The only downside will be slightly
+> > slower code path for full page allocation but this event is anyways
+> > supposed to be rare, so should be fine.
+> 
+> Fair enough.
+> It can remove many code of zram.
+> Okay. Will look into that.
 
-Well, I see where the sendmail "Date:" weirdness was coming from; for some
-reason "git format-patch" was emitting a first line like this: "From
-4d76049b3a48f1b32aed1eeb17b4d3a2cb1b1ff6 Mon Sep 17 00:00:00 2001", and
-sendmail was helpfully pulling the "Date:" line from there.  Deleting that
-line as well does the right thing, as I see from the third version of this
-patch on LKML.  Why git is doing this is a good question.
+Nitin, can zsmalloc allow full page allocation by assigning
+an actual physical pageframe (which is what zram does now)?
+Or will it allocate PAGE_SIZE bytes which zsmalloc will allocate
+crossing a page boundary which, presumably, will have much worse
+impact on page allocator availability when these pages are
+"reclaimed" via your swap notify callback.
 
-Sorry for the spam, but hopefully that will avoid the issue in the future.
+Though this may be rare across all workloads, it may turn out
+to be very common for certain workloads (e.g. if the workload
+has many dirty anonymous pages that are already compressed
+by userland).
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+It may not be worth cleaning up the code if it causes
+performance issues with this case.
 
+And anyway can zsmalloc handle and identify to the caller pages
+that are both compressed and "native" (uncompressed)?  It
+certainly has to handle both if you remove ZRAM_UNCOMPRESSED
+as compressing some pages actually results in more than
+PAGE_SIZE bytes.  So you need to record somewhere that
+this "compressed page" is special and that must somehow
+be communicated to the caller of your "get" routine.
+
+(Just trying to save Minchan from removing all that code but
+then needing to add it back again.)
+
+Dan
