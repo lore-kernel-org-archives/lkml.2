@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932409Ab2FGRCN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 13:02:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56641 "EHLO mx1.redhat.com"
+	id S932447Ab2FGRCa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 13:02:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15178 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754592Ab2FGRCK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 13:02:10 -0400
-From: Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH v2] PCI: Add Ralink RT2800 broken INTx masking quirk
-To: bhelgaas@google.com, linux-pci@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, jan.kiszka@siemens.com,
-        andihartmann@01019freenet.de
-Date: Thu, 07 Jun 2012 11:01:59 -0600
-Message-ID: <20120607170026.3174.52434.stgit@bling.home>
-User-Agent: StGIT/0.14.3
+	id S932164Ab2FGRC2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 13:02:28 -0400
+Date: Thu, 7 Jun 2012 19:00:02 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/3] uprobes: valid_vma() should reject VM_HUGETLB
+Message-ID: <20120607170002.GA31974@redhat.com>
+References: <20120607165942.GA31966@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120607165942.GA31966@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Passes pci_intx_mask_supported test but continues to send interrupts
-as discovered through VFIO-based device assignment.
+__replace_page() obviously can't work with the hugetlbfs mappings,
+uprobe_register() will likely crash the kernel. Change valid_vma()
+to check VM_HUGETLB as well.
 
-http://www.spinics.net/lists/kvm/msg73738.html
+As for PageTransHuge() no need to worry, vma->vm_file != NULL.
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Tested-by: Andreas Hartmann <andihartmann@01019freenet.de>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
+ kernel/events/uprobes.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-v2: context-only respin for Jan's v2 patch
-
-Depends on Jan's patch:
-http://www.spinics.net/lists/linux-pci/msg15720.html
-
- drivers/pci/quirks.c |    2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index 87b9edd..3681678 100644
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -2940,6 +2940,8 @@ static void __devinit quirk_broken_intx_masking(struct pci_dev *dev)
- }
- DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_CHELSIO, 0x0030,
- 			quirk_broken_intx_masking);
-+DECLARE_PCI_FIXUP_FINAL(0x1814, 0x0601, /* Ralink RT2800 802.11n PCI */
-+			quirk_broken_intx_masking);
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index 6e3b181..48d53af 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -105,7 +105,8 @@ static bool valid_vma(struct vm_area_struct *vma, bool is_register)
+ 	if (!is_register)
+ 		return true;
  
- static void pci_do_fixups(struct pci_dev *dev, struct pci_fixup *f,
- 			  struct pci_fixup *end)
+-	if ((vma->vm_flags & (VM_READ|VM_WRITE|VM_EXEC|VM_SHARED)) == (VM_READ|VM_EXEC))
++	if ((vma->vm_flags & (VM_HUGETLB|VM_READ|VM_WRITE|VM_EXEC|VM_SHARED))
++				== (VM_READ|VM_EXEC))
+ 		return true;
+ 
+ 	return false;
+-- 
+1.5.5.1
+
 
