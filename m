@@ -1,98 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932335Ab2FGUsJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 16:48:09 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:25328 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755263Ab2FGUsI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 16:48:08 -0400
+	id S932491Ab2FGUtX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 16:49:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3906 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932086Ab2FGUtW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 16:49:22 -0400
+Date: Thu, 7 Jun 2012 22:49:15 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: Andi Kleen <andi@firstfloor.org>, acme@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: perf user tool precise attribute broken in 3.5rc1+
+Message-ID: <20120607204915.GA1698@m.redhat.com>
+References: <20120607202355.GQ27374@one.firstfloor.org>
+ <CABPqkBSoCO4nSm==THVzVVu_cn=B5s4TZ_YpPxV73EGMNMgbrg@mail.gmail.com>
 MIME-Version: 1.0
-Message-ID: <dfc7087d-6826-4429-8063-d47d05cd2d26@default>
-Date: Thu, 7 Jun 2012 13:47:40 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>
-Subject: RE: [PATCH 2/2] zram: clean up handle
-References: <1338881031-19662-1-git-send-email-minchan@kernel.org>
- <1338881031-19662-2-git-send-email-minchan@kernel.org>
- <4FCEE4E0.6030707@vflare.org> <4FD015FE.7070906@kernel.org>
-In-Reply-To: <4FD015FE.7070906@kernel.org>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.6  (510070) [OL
- 12.0.6607.1000 (x86)]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CABPqkBSoCO4nSm==THVzVVu_cn=B5s4TZ_YpPxV73EGMNMgbrg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Minchan Kim [mailto:minchan@kernel.org]
-> Subject: Re: [PATCH 2/2] zram: clean up handle
+On Thu, Jun 07, 2012 at 10:25:47PM +0200, Stephane Eranian wrote:
+> What CPU model?
++1, latest tip works for me ;)
+
+jirka
+
 > 
-> On 06/06/2012 02:04 PM, Nitin Gupta wrote:
-> 
-> > On 06/05/2012 12:23 AM, Minchan Kim wrote:
+> On Thu, Jun 7, 2012 at 10:23 PM, Andi Kleen <andi@firstfloor.org> wrote:
 > >
-> >> zram's handle variable can store handle of zsmalloc in case of
-> >> compressing efficiently. Otherwise, it stores point of page descriptor.
-> >> This patch clean up the mess by union struct.
-> >>
-> >> changelog
-> >>   * from v1
-> >> 	- none(new add in v2)
-> >>
-> >> Cc: Nitin Gupta <ngupta@vflare.org>
-> >> Acked-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
-> >> Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> >> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> >> ---
-> >>  drivers/staging/zram/zram_drv.c |   77 ++++++++++++++++++++-------------------
-> >>  drivers/staging/zram/zram_drv.h |    5 ++-
-> >>  2 files changed, 44 insertions(+), 38 deletions(-)
+> > With a perf user tool compiled from a 3.5rc1+ kernel I cannot
+> > use the 'p' attribute anymore. Always get
 > >
-> > I think page vs handle distinction was added since xvmalloc could not
-> > handle full page allocation. Now that zsmalloc allows full page
-> 
-> I see. I didn't know that because I'm blind on xvmalloc.
-> 
-> > allocation, we can just use it for both cases. This would also allow
-> > removing the ZRAM_UNCOMPRESSED flag. The only downside will be slightly
-> > slower code path for full page allocation but this event is anyways
-> > supposed to be rare, so should be fine.
-> 
-> Fair enough.
-> It can remove many code of zram.
-> Okay. Will look into that.
-
-Nitin, can zsmalloc allow full page allocation by assigning
-an actual physical pageframe (which is what zram does now)?
-Or will it allocate PAGE_SIZE bytes which zsmalloc will allocate
-crossing a page boundary which, presumably, will have much worse
-impact on page allocator availability when these pages are
-"reclaimed" via your swap notify callback.
-
-Though this may be rare across all workloads, it may turn out
-to be very common for certain workloads (e.g. if the workload
-has many dirty anonymous pages that are already compressed
-by userland).
-
-It may not be worth cleaning up the code if it causes
-performance issues with this case.
-
-And anyway can zsmalloc handle and identify to the caller pages
-that are both compressed and "native" (uncompressed)?  It
-certainly has to handle both if you remove ZRAM_UNCOMPRESSED
-as compressing some pages actually results in more than
-PAGE_SIZE bytes.  So you need to record somewhere that
-this "compressed page" is special and that must somehow
-be communicated to the caller of your "get" routine.
-
-(Just trying to save Minchan from removing all that code but
-then needing to add it back again.)
-
-Dan
+> > ak@petrock:~> ./perf record -e cycles:p ./t
+> >
+> >  Error: sys_perf_event_open() syscall returned with 22 (Invalid argument).  /bin/dmesg may provide additional information.
+> >
+> >  Fatal: No CONFIG_PERF_EVENTS=y kernel support configured?
+> >
+> > ./t: Terminated
+> >
+> > With an older perf it works, so the kernel is ok.
+> >
+> > ak@petrock:~> ./perf record -e cycles:p ./t
+> > [ perf record: Woken up 1 times to write data ]
+> > [ perf record: Captured and wrote 0.005 MB perf.data (~217 samples) ]
+> > ak@petrock:~>
+> >
+> >
+> > -Andi
+> > --
+> > ak@linux.intel.com -- Speaking for myself only.
