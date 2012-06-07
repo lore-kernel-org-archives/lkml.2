@@ -1,98 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757872Ab2FGCib (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 22:38:31 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31300 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752665Ab2FGCia (ORCPT
+	id S1759522Ab2FGCij (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 22:38:39 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:47072 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757920Ab2FGCig (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 22:38:30 -0400
-X-Authority-Analysis: v=2.0 cv=eIiRfQV1 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=5SG0PmZfjMsA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=VwQbUJbxAAAA:8 a=oioPlalLgeHcZa3h1WIA:9 a=PUjeQqilurYA:10 a=o18UIOG-KAijlCAz:21 a=dk6YzpboRIirwCYy:21 a=T_60X7iJLWoLFXNrjrMA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1339036704.13348.562.camel@gandalf.stny.rr.com>
-Subject: [ANNOUNCE] 3.0.33-rt53
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Date: Wed, 06 Jun 2012 22:38:24 -0400
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-VwtXzZS9VnqIH97wE7Qa"
-X-Mailer: Evolution 3.2.2-1 
+	Wed, 6 Jun 2012 22:38:36 -0400
+Message-ID: <1339036710.7309.8.camel@phoenix>
+Subject: [PATCH RFC/RFT] regulator: da903x: Don't read/write to
+ DA9030_INVAL/DA9034_INVAL address
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Eric Miao <eric.y.miao@gmail.com>, Mike Rapoport <mike@compulab.co.il>,
+        Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Thu, 07 Jun 2012 10:38:30 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+For fixed voltage, DA9030_LDO13 and DA9034_LDO5, the info->vol_reg is
+DA9030_INVAL/DA9034_INVAL.
+It does not make sense to read/write to DA9030_INVAL/DA9034_INVAL address.
 
---=-VwtXzZS9VnqIH97wE7Qa
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+Because we use [list|map]_voltage_linear for fixed voltage where uV_step is 0,
+this patch also needs below patch:
+[PATCH RFC 1/2] regulator: core: Allow uV_step to be 0 for linear mapping if fixed voltage
 
+ drivers/regulator/da903x.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-Dear RT Folks,
-
-I'm pleased to announce the 3.0.33-rt53 stable release.
-
-
-This release is just an update to the new stable 3.0.33 version
-and no RT specific changes have been made.
-
-(one exception: commit 93505585 workqueue: skip nr_running sanity check in =
-worker_enter_idle() if trustee is active
-  has been reverted. Thanks to Ibrahim Umar for pointing out the
-  build failure. The commit was to remove a triggering of a false
-  WARN_ON, but it required variables that did not exist in the -rt
-  workqueue version. Hopefully we do not see this false positive.)
-
-
-You can get this release via the git tree at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
-
-  Head SHA1: 1bc0637a6e466f764ad41b780f552fc8bc9d6f49
-
-
-Or to build 3.0.33-rt53 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.0/linux-3.0.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.0/patch-3.0.33.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/patch-3.0.33-rt53.=
-patch.xz
-
-
-
-Enjoy,
-
--- Steve
+diff --git a/drivers/regulator/da903x.c b/drivers/regulator/da903x.c
+index 1005f5f..36c5b92 100644
+--- a/drivers/regulator/da903x.c
++++ b/drivers/regulator/da903x.c
+@@ -107,6 +107,9 @@ static int da903x_set_voltage_sel(struct regulator_dev *rdev, unsigned selector)
+ 	struct device *da9034_dev = to_da903x_dev(rdev);
+ 	uint8_t val, mask;
+ 
++	if (rdev->desc->n_voltages == 1)
++		return -EINVAL;
++
+ 	val = selector << info->vol_shift;
+ 	mask = ((1 << info->vol_nbits) - 1)  << info->vol_shift;
+ 
+@@ -120,6 +123,9 @@ static int da903x_get_voltage_sel(struct regulator_dev *rdev)
+ 	uint8_t val, mask;
+ 	int ret;
+ 
++	if (rdev->desc->n_voltages == 1)
++		return 0;
++
+ 	ret = da903x_read(da9034_dev, info->vol_reg, &val);
+ 	if (ret)
+ 		return ret;
+-- 
+1.7.9.5
 
 
-
---=-VwtXzZS9VnqIH97wE7Qa
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJP0BQgAAoJEIy3vGnGbaoASccP/1ZG+9mAXPs3yqzuH2B2wZtL
-nKB3PZQvS17M7lv5aay23ZBocG9jreaZZwaPC892+xmkoCFH5wNWuK6kCXXt7YSB
-xFtNN5zRzWLcvwdM64UAmAF0qOoeOrSKBr/RjVLYwsMAhupGHhZ4Fd9Ss82UU3ir
-qfV1v7YufwebIgzdWhwKBU40jsBOLcQPrDBWP8l4mWpKvukpw+73XxdAOXgrbY5Z
-GS9iQA6c7fE5Z8X3xkPMKDhILoPhBptU+0LwDvWLcLG3pYopPQxIE90aNSQjxVIl
-XkPRWMo2AkL20M32DB8AE4ulsPeVPpJ2+v4utxbRw92lUQTkARhLVvlgumIJ8EUY
-Rl31DbI7MAPTTdXT1RVh8GBoxU7oxsBLlsbJvPkbcQmm3Ngxi4/kL8/8Roq9efwi
-1B/PROERCvEca+1ipRwsOVBDN9mma0gaX/7ljs6WFMlZqkvRO7BvOuQ345vdALhY
-P/qP5Mfk81URhE6HcTdylk492JZknCq56ROguU2vj3ybwcMNQyjKugKfzMRtESKP
-mQCDtiyTPkpaIGKbJUv8Kg6vrDSAUGIEqndQ+j4BAPMgn7CEBPnuaF0ePCsIdsTj
-G67/kqqLQtunB0tf4IB6wgWg5U4g87ppXJpH5MsW8b008ImrZTE4qZF8XS5ZDM09
-QEK72f3EaP98HvqEbZBq
-=riN/
------END PGP SIGNATURE-----
-
---=-VwtXzZS9VnqIH97wE7Qa--
 
