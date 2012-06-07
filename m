@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760119Ab2FGGQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 02:16:57 -0400
-Received: from mout0.freenet.de ([195.4.92.90]:58657 "EHLO mout0.freenet.de"
+	id S932148Ab2FGGUw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 02:20:52 -0400
+Received: from mout6.freenet.de ([195.4.92.96]:33982 "EHLO mout6.freenet.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754929Ab2FGGQz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 02:16:55 -0400
-Message-ID: <4FD046A5.8080903@01019freenet.de>
-Date: Thu, 07 Jun 2012 08:13:57 +0200
+	id S1754143Ab2FGGUu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 02:20:50 -0400
+Message-ID: <4FD047A7.6050602@01019freenet.de>
+Date: Thu, 07 Jun 2012 08:18:15 +0200
 From: Andreas Hartmann <andihartmann@01019freenet.de>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120428 Firefox/12.0 SeaMonkey/2.9.1
 MIME-Version: 1.0
@@ -25,15 +25,24 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Alex,
+
+what about a module parameter to achieve this behaviour manually by
+the user without recompiling? I fear, there are much more candidates
+out there needing this "feature".
+
+
+Kind regards and thank you,
+Andreas
+
+
 Alex Williamson wrote:
 > Passes pci_intx_mask_supported but continues to send interrupts as
 > discovered through VFIO-based device assignment.
 > 
 > http://www.spinics.net/lists/kvm/msg73738.html
 > 
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Tested-by: Andreas Hartmann <andihartmann@01019freenet.de>
-> ---
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com> ---
 > 
 > Depends on Jan's base patch for this quirk: 
 > http://www.spinics.net/lists/linux-pci/msg15516.html
@@ -52,3 +61,4 @@ Tested-by: Andreas Hartmann <andihartmann@01019freenet.de>
 > static void pci_do_fixups(struct pci_dev *dev, struct pci_fixup
 > *f, struct pci_fixup *end)
 > 
+
