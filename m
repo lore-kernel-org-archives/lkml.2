@@ -1,41 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933397Ab2FGWq7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 18:46:59 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:45390 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933294Ab2FGWq6 (ORCPT
+	id S933436Ab2FGWuk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 18:50:40 -0400
+Received: from mail.candelatech.com ([208.74.158.172]:53727 "EHLO
+	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756834Ab2FGWuj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 18:46:58 -0400
-Date: Fri, 8 Jun 2012 00:37:52 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Denys Fedoryshchenko <denys@visp.net.lb>, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Deadlock, L2TP over IP are not working, 3.4.1
-Message-ID: <20120607223752.GA4475@electric-eye.fr.zoreil.com>
-References: <7ed49f446365ac625437702d92946add@visp.net.lb> <20120607205356.GA2491@electric-eye.fr.zoreil.com> <1339104606.6001.4.camel@edumazet-glaptop>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339104606.6001.4.camel@edumazet-glaptop>
-User-Agent: Mutt/1.4.2.2i
-X-Organisation: Land of Sunshine Inc.
+	Thu, 7 Jun 2012 18:50:39 -0400
+Message-ID: <4FD1303E.1010002@candelatech.com>
+Date: Thu, 07 Jun 2012 15:50:38 -0700
+From: Ben Greear <greearb@candelatech.com>
+Organization: Candela Technologies
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: 3.3.7+  'reboot' causes shutdown instead.
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric Dumazet <eric.dumazet@gmail.com> :
-[...]
-> If LLTX is used, this means several cpus can execute this code at the
-> same time.
-> 
-> You need percpu stats, or use atomic primitives.
+One one of our super-micro motherboard systems, when
+we do a 'reboot', the system instead powers down.
 
-Would adding percpu stats not be frown upon ?
+This does not happen on the 3.0.32+ kernel.  The other systems we
+have tried reboot find on the same 3.3.7+ kernel.
 
-As atomic will defeat the 64 bits stats on 32 bits, I should probably stick
-to plain bh disabling lock.
+Any ideas on how to work around this or debug it further?
+
+Thanks,
+Ben
 
 -- 
-Ueimor
+Ben Greear <greearb@candelatech.com>
+Candela Technologies Inc  http://www.candelatech.com
+
