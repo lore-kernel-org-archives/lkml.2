@@ -1,58 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932491Ab2FGUtX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 16:49:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3906 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932086Ab2FGUtW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 16:49:22 -0400
-Date: Thu, 7 Jun 2012 22:49:15 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: Andi Kleen <andi@firstfloor.org>, acme@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: perf user tool precise attribute broken in 3.5rc1+
-Message-ID: <20120607204915.GA1698@m.redhat.com>
-References: <20120607202355.GQ27374@one.firstfloor.org>
- <CABPqkBSoCO4nSm==THVzVVu_cn=B5s4TZ_YpPxV73EGMNMgbrg@mail.gmail.com>
+	id S932540Ab2FGUuY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 16:50:24 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:38737 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755263Ab2FGUuX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 16:50:23 -0400
+Message-ID: <1339102219.2770.21.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: [PATCH v10] tilegx network driver: initial support
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Chris Metcalf <cmetcalf@tilera.com>
+CC: David Miller <davem@davemloft.net>, <eric.dumazet@gmail.com>,
+        <arnd@arndb.de>, <linux-kernel@vger.kernel.org>,
+        <netdev@vger.kernel.org>
+Date: Thu, 7 Jun 2012 21:50:19 +0100
+In-Reply-To: <4FD11292.10700@tilera.com>
+References: <4FCFA312.4020505@tilera.com>
+	 <20120606.115440.1245419453265419850.davem@davemloft.net>
+	 <201206072031.q57KV0NG029301@farm-0023.internal.tilera.com>
+	 <20120607.133900.1764130639940088009.davem@davemloft.net>
+	 <4FD11292.10700@tilera.com>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CABPqkBSoCO4nSm==THVzVVu_cn=B5s4TZ_YpPxV73EGMNMgbrg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-6.800.1017-18952.004
+X-TM-AS-Result: No--26.942200-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 07, 2012 at 10:25:47PM +0200, Stephane Eranian wrote:
-> What CPU model?
-+1, latest tip works for me ;)
-
-jirka
-
+On Thu, 2012-06-07 at 16:44 -0400, Chris Metcalf wrote:
+> On 6/7/2012 4:39 PM, David Miller wrote:
+> > From: Chris Metcalf <cmetcalf@tilera.com>
+> > Date: Fri, 6 Apr 2012 16:42:03 -0400
+> >
+> >> Date: Fri, 6 Apr 2012 16:42:03 -0400
+> > You did not commit this file on April 6th.
+> >
+> > Please don't use the date emitted by the GIT tools, just
+> > let the email use the natural correct date which is the
+> > one at the time you send the email out.
+> >
+> > Otherwise your patch gets misordered as automated tools like
+> > patchwork think this file should go all the way at the back
+> > of the patch queue because of it's old date relative to
+> > other pending patches.
 > 
-> On Thu, Jun 7, 2012 at 10:23 PM, Andi Kleen <andi@firstfloor.org> wrote:
-> >
-> > With a perf user tool compiled from a 3.5rc1+ kernel I cannot
-> > use the 'p' attribute anymore. Always get
-> >
-> > ak@petrock:~> ./perf record -e cycles:p ./t
-> >
-> >  Error: sys_perf_event_open() syscall returned with 22 (Invalid argument).  /bin/dmesg may provide additional information.
-> >
-> >  Fatal: No CONFIG_PERF_EVENTS=y kernel support configured?
-> >
-> > ./t: Terminated
-> >
-> > With an older perf it works, so the kernel is ok.
-> >
-> > ak@petrock:~> ./perf record -e cycles:p ./t
-> > [ perf record: Woken up 1 times to write data ]
-> > [ perf record: Captured and wrote 0.005 MB perf.data (~217 samples) ]
-> > ak@petrock:~>
-> >
-> >
-> > -Andi
-> > --
-> > ak@linux.intel.com -- Speaking for myself only.
+> Yes, when I use "git rebase" to merge changes into the earlier patch, this
+> is the behavior I see.  I don't know if there's some way to tell git to
+> take the date on the later change instead when I "squash" them.
+[...]
+
+git commit --amend --date="$(date)"
+
+Ben.
+
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
