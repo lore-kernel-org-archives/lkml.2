@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759827Ab2FGESG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 00:18:06 -0400
+	id S932386Ab2FGESM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 00:18:12 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:63306 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759809Ab2FGESC (ORCPT
+	with ESMTP id S1759830Ab2FGESH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 00:18:02 -0400
-Message-Id: <20120607040340.903447096@linuxfoundation.org>
+	Thu, 7 Jun 2012 00:18:07 -0400
+Message-Id: <20120607040341.737256038@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 07 Jun 2012 13:04:07 +0900
+Date: Thu, 07 Jun 2012 13:04:13 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Robert Lowery <rglowery@exemail.com.au>,
-        Rodrigo Vivi <rodrigo.vivi@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 31/82] drm/i915: Adding TV Out Missing modes.
+        alan@lxorguk.ukuu.org.uk, Christoph Lameter <cl@linux.com>,
+        Joonsoo Kim <js1304@gmail.com>, Pekka Enberg <penberg@kernel.org>
+Subject: [ 37/82] slub: fix a memory leak in get_partial_node()
 In-Reply-To: <20120607041406.GA13233@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,93 +25,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rodrigo Vivi <rodrigo.vivi@gmail.com>
+From: Joonsoo Kim <js1304@gmail.com>
 
-commit 9589919fb3d269d4202a112b197468c7db1f97a3 upstream.
+commit 02d7633fa567be7bf55a993b79d2a31b95ce2227 upstream.
 
-These 2 modes were removed by mistake during a clean up.
-So, now it is time to add them back. For further info about
-supported mode and standard timing table please check:
-VOL_3_display_registers_updated.pdf at intellinuxgraphics.org.
+In the case which is below,
 
-Note that this regression has been introduce in
+1. acquire slab for cpu partial list
+2. free object to it by remote cpu
+3. page->freelist = t
 
-commit 55a6713b3f30a5024056027e9dbf03ac8f13bfc9
-Author: Rodrigo Vivi <rodrigo.vivi@gmail.com>
-Date:   Thu Dec 15 14:47:33 2011 -0200
+then memory leak is occurred.
 
-    drm/i915: Removing TV Out modes.
+Change acquire_slab() not to zap freelist when it works for cpu partial list.
+I think it is a sufficient solution for fixing a memory leak.
 
-and this commit partially reverts it by re-adding the wrongly removed
-modes.
+Below is output of 'slabinfo -r kmalloc-256'
+when './perf stat -r 30 hackbench 50 process 4000 > /dev/null' is done.
 
-Reported-by: Robert Lowery <rglowery@exemail.com.au>
-Signed-off-by: Rodrigo Vivi <rodrigo.vivi@gmail.com>
-[danvet: Pimped commit message to cite the commit that introduced this
-regression.]
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+***Vanilla***
+Sizes (bytes)     Slabs              Debug                Memory
+------------------------------------------------------------------------
+Object :     256  Total  :     468   Sanity Checks : Off  Total: 3833856
+SlabObj:     256  Full   :     111   Redzoning     : Off  Used : 2004992
+SlabSiz:    8192  Partial:     302   Poisoning     : Off  Loss : 1828864
+Loss   :       0  CpuSlab:      55   Tracking      : Off  Lalig:       0
+Align  :       8  Objects:      32   Tracing       : Off  Lpadd:       0
+
+***Patched***
+Sizes (bytes)     Slabs              Debug                Memory
+------------------------------------------------------------------------
+Object :     256  Total  :     300   Sanity Checks : Off  Total: 2457600
+SlabObj:     256  Full   :     204   Redzoning     : Off  Used : 2348800
+SlabSiz:    8192  Partial:      33   Poisoning     : Off  Loss :  108800
+Loss   :       0  CpuSlab:      63   Tracking      : Off  Lalig:       0
+Align  :       8  Objects:      32   Tracing       : Off  Lpadd:       0
+
+Total and loss number is the impact of this patch.
+
+Acked-by: Christoph Lameter <cl@linux.com>
+Signed-off-by: Joonsoo Kim <js1304@gmail.com>
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_tv.c |   48 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 48 insertions(+)
+ mm/slub.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_tv.c
-+++ b/drivers/gpu/drm/i915/intel_tv.c
-@@ -674,6 +674,54 @@ static const struct tv_mode tv_modes[] =
- 		.filter_table = filter_table,
- 	},
- 	{
-+		.name       = "480p",
-+		.clock		= 107520,
-+		.refresh	= 59940,
-+		.oversample     = TV_OVERSAMPLE_4X,
-+		.component_only = 1,
-+
-+		.hsync_end      = 64,               .hblank_end         = 122,
-+		.hblank_start   = 842,              .htotal             = 857,
-+
-+		.progressive    = true,		    .trilevel_sync = false,
-+
-+		.vsync_start_f1 = 12,               .vsync_start_f2     = 12,
-+		.vsync_len      = 12,
-+
-+		.veq_ena        = false,
-+
-+		.vi_end_f1      = 44,               .vi_end_f2          = 44,
-+		.nbr_end        = 479,
-+
-+		.burst_ena      = false,
-+
-+		.filter_table = filter_table,
-+	},
-+	{
-+		.name       = "576p",
-+		.clock		= 107520,
-+		.refresh	= 50000,
-+		.oversample     = TV_OVERSAMPLE_4X,
-+		.component_only = 1,
-+
-+		.hsync_end      = 64,               .hblank_end         = 139,
-+		.hblank_start   = 859,              .htotal             = 863,
-+
-+		.progressive    = true,		    .trilevel_sync = false,
-+
-+		.vsync_start_f1 = 10,               .vsync_start_f2     = 10,
-+		.vsync_len      = 10,
-+
-+		.veq_ena        = false,
-+
-+		.vi_end_f1      = 48,               .vi_end_f2          = 48,
-+		.nbr_end        = 575,
-+
-+		.burst_ena      = false,
-+
-+		.filter_table = filter_table,
-+	},
-+	{
- 		.name       = "720p@60Hz",
- 		.clock		= 148800,
- 		.refresh	= 60000,
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -1514,15 +1514,19 @@ static inline void *acquire_slab(struct
+ 		freelist = page->freelist;
+ 		counters = page->counters;
+ 		new.counters = counters;
+-		if (mode)
++		if (mode) {
+ 			new.inuse = page->objects;
++			new.freelist = NULL;
++		} else {
++			new.freelist = freelist;
++		}
+ 
+ 		VM_BUG_ON(new.frozen);
+ 		new.frozen = 1;
+ 
+ 	} while (!__cmpxchg_double_slab(s, page,
+ 			freelist, counters,
+-			NULL, new.counters,
++			new.freelist, new.counters,
+ 			"lock and freeze"));
+ 
+ 	remove_partial(n, page);
+@@ -1564,7 +1568,6 @@ static void *get_partial_node(struct kme
+ 			object = t;
+ 			available =  page->objects - page->inuse;
+ 		} else {
+-			page->freelist = t;
+ 			available = put_cpu_partial(s, page, 0);
+ 			stat(s, CPU_PARTIAL_NODE);
+ 		}
 
 
