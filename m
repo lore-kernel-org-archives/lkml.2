@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759694Ab2FGER2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 00:17:28 -0400
+	id S1759646Ab2FGERO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 00:17:14 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:63657 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759650Ab2FGERX (ORCPT
+	with ESMTP id S1756627Ab2FGERJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 00:17:23 -0400
-Message-Id: <20120607040340.505364472@linuxfoundation.org>
+	Thu, 7 Jun 2012 00:17:09 -0400
+Message-Id: <20120607040340.209305939@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 07 Jun 2012 13:04:04 +0900
+Date: Thu, 07 Jun 2012 13:04:02 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Mehdi Aqadjani Memar <m.aqadjanimemar@student.ru.nl>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 28/82] drm/radeon: fix XFX quirk
+        alan@lxorguk.ukuu.org.uk, Joerg Roedel <joerg.roedel@amd.com>
+Subject: [ 26/82] iommu/amd: Check for the right TLP prefix bit
 In-Reply-To: <20120607041406.GA13233@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,38 +24,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Joerg Roedel <joerg.roedel@amd.com>
 
-commit 1ebf169ad4dc68f18cc0dab35163b0f324fc6c41 upstream.
+commit a3b93121430c7b46c2895a7744261be107ccdf7f upstream.
 
-Only override the ddc bus if the connector doesn't have
-a valid one.  The existing code overrode the ddc bus for
-all connectors even if it had ddc bus.
+Unfortunatly the PRI spec changed and moved the
+TLP-prefix-required bit to a different location. This patch
+makes the necessary change in the AMD IOMMU driver.
+Regressions are not expected because all hardware
+implementing the PRI capability sets this bit to zero
+anyway.
 
-Fixes ddc on another XFX card with the same pci ids that
-was broken by the quirk overwriting the correct ddc bus.
-
-Reported-by: Mehdi Aqadjani Memar <m.aqadjanimemar@student.ru.nl>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_atombios.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/iommu/amd_iommu.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_atombios.c
-+++ b/drivers/gpu/drm/radeon/radeon_atombios.c
-@@ -444,7 +444,9 @@ static bool radeon_atom_apply_quirks(str
- 	 */
- 	if ((dev->pdev->device == 0x9498) &&
- 	    (dev->pdev->subsystem_vendor == 0x1682) &&
--	    (dev->pdev->subsystem_device == 0x2452)) {
-+	    (dev->pdev->subsystem_device == 0x2452) &&
-+	    (i2c_bus->valid == false) &&
-+	    !(supported_device & (ATOM_DEVICE_TV_SUPPORT | ATOM_DEVICE_CV_SUPPORT))) {
- 		struct radeon_device *rdev = dev->dev_private;
- 		*i2c_bus = radeon_lookup_i2c_gpio(rdev, 0x93);
- 	}
+--- a/drivers/iommu/amd_iommu.c
++++ b/drivers/iommu/amd_iommu.c
+@@ -2035,20 +2035,20 @@ out_err:
+ }
+ 
+ /* FIXME: Move this to PCI code */
+-#define PCI_PRI_TLP_OFF		(1 << 2)
++#define PCI_PRI_TLP_OFF		(1 << 15)
+ 
+ bool pci_pri_tlp_required(struct pci_dev *pdev)
+ {
+-	u16 control;
++	u16 status;
+ 	int pos;
+ 
+ 	pos = pci_find_ext_capability(pdev, PCI_EXT_CAP_ID_PRI);
+ 	if (!pos)
+ 		return false;
+ 
+-	pci_read_config_word(pdev, pos + PCI_PRI_CTRL, &control);
++	pci_read_config_word(pdev, pos + PCI_PRI_STATUS, &status);
+ 
+-	return (control & PCI_PRI_TLP_OFF) ? true : false;
++	return (status & PCI_PRI_TLP_OFF) ? true : false;
+ }
+ 
+ /*
 
 
