@@ -1,123 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752594Ab2FGFOS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 01:14:18 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:39680 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750705Ab2FGFOQ (ORCPT
+	id S1755231Ab2FGFfP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 01:35:15 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:60271 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751731Ab2FGFfN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 01:14:16 -0400
-Message-ID: <4FD0389F.7030400@ozlabs.ru>
-Date: Thu, 07 Jun 2012 15:14:07 +1000
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Thu, 7 Jun 2012 01:35:13 -0400
 MIME-Version: 1.0
-To: Jan Kiszka <jan.kiszka@siemens.com>
-CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Alexander Graf <agraf@suse.de>, kvm <kvm@vger.kernel.org>
-Subject: Re: [PATCH] PCI: Mark INTx masking support of Chelsio T310 10GbE
- NIC as broken
-References: <4FBF90E5.8030800@siemens.com> <4FCE19DA.1070802@siemens.com>
-In-Reply-To: <4FCE19DA.1070802@siemens.com>
-Content-Type: text/plain; charset=KOI8-R
-Content-Transfer-Encoding: 7bit
+Date: Wed, 6 Jun 2012 22:35:12 -0700
+Message-ID: <CAFR8ueeUH-O8+jeZu2Aeyu4ZDHv255a2qqnt0_Af79oY2JGzTw@mail.gmail.com>
+Subject: [PATCH] blk-exec-assign-endio-before-queue-dead-check
+From: Muthu Kumar <muthu.lkml@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>, James.Bottomley@hansenpartnership.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/06/12 00:38, Jan Kiszka wrote:
-> On 2012-05-25 16:02, Jan Kiszka wrote:
->> According to Alexey, the T310 does not properly support INTx masking as
->> it fails to keep the PCI_STATUS_INTERRUPT bit updated once the interrupt
->> is masked. Mark this adapter as broken so that pci_intx_mask_supported
->> won't report it as compatible.
+On Wed, Jun 6, 2012 at 7:40 PM, Tejun Heo <tj@kernel.org> wrote:
+> On Wed, Jun 06, 2012 at 02:24:35PM -0700, Muthu Kumar wrote:
+>> How about this change?
 >>
->> Reported-by: Alexey Kardashevskiy <aik@ozlabs.ru>
->> Signed-off-by: Jan Kiszka <jan.kiszka@web.de>
->> ---
+>> diff --git a/block/blk-exec.c b/block/blk-exec.c
+>> index fb2cbd5..6bf5c0b 100644
+>> --- a/block/blk-exec.c
+>> +++ b/block/blk-exec.c
+>> @@ -56,8 +56,10 @@ void blk_execute_rq_nowait(struct request_queue *q, struct ge
+>>         if (unlikely(blk_queue_dead(q))) {
+>>                 spin_unlock_irq(q->queue_lock);
+>>                 rq->errors = -ENXIO;
+>> -               if (rq->end_io)
+>> -                       rq->end_io(rq, rq->errors);
+>> +                if (done)
+>> +                    done(rq, rq->errors);
+>> +                else if (rq->end_io)    //XXX Not sure if this check and end_io
+>> +                    rq->end_io(rq, rq->errors);
+>>                 return;
+>>         }
 >>
->> Alexey, please test if this catches your case correctly.
-> 
-> Alexey? Ping for testing.
+>> Only one driver - sx8.c, doesn't set done() function and every one
+>> else expects done() to be called with error.
+>
+> Looks like the bug there is rq->rq_disk and rq->end_io assignments
+> happening after the queue_dead check.  Just move the two lines before
+> queue_head check?
+>
+> Thanks.
+
+Thought about that. But the problem is, original rq->end_io is not
+saved before the new assignment. But exploring further, I guess its ok
+in this use case.
+
+One more thing to consider is, the completion function is called from
+the same calling context here. As far as my check, it looks ok. Let me
+know if you think otherwise.
+
+Anyway, patch attached (as well as inline).
+
+Regards,
+Muthu
+
+-----------------------
+blk-exec.c: In blk_execute_rq_nowait(), assign rq->endio,rq_disk
+before queue dead check.
+
+Signed-off-by: Muthukumar Ratty <muthur@gmail.com>
+CC: Tejun Heo <tj@kernel.org>
+CC: Jens Axboe <axboe@kernel.dk>
+CC: James Bottomley <James.Bottomley@hansenpartnership.com>
+
+-----------------------
+diff --git a/block/blk-exec.c b/block/blk-exec.c
+index fb2cbd5..f8b00c7 100644
+--- a/block/blk-exec.c
++++ b/block/blk-exec.c
+@@ -53,6 +53,9 @@ void blk_execute_rq_nowait(struct request_queue *q, struct gen
+        WARN_ON(irqs_disabled());
+        spin_lock_irq(q->queue_lock);
+
++       rq->rq_disk = bd_disk;
++       rq->end_io = done;
++
+        if (unlikely(blk_queue_dead(q))) {
+                spin_unlock_irq(q->queue_lock);
+                rq->errors = -ENXIO;
+@@ -61,8 +64,6 @@ void blk_execute_rq_nowait(struct request_queue *q, struct gen
+                return;
+        }
+
+-       rq->rq_disk = bd_disk;
+-       rq->end_io = done;
+        __elv_add_request(q, rq, where);
+        __blk_run_queue(q);
+        /* the queue is stopped so it won't be run */
+
+-------------------------------------------------
 
 
-Sorry, was in vacation and then a bit busy.
-Yes, that works, thanks. It just a device ID is wrong, should be 0x0030 rather than 0x0010 in your patch - may be 0x10 is broken too, I do not know, mine is 0x30 :)
 
-Here:
-
->> +DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_CHELSIO, 0x0010,
->> +			quirk_broken_intx_masking);
+>
+> --
+> tejun
 
 
 
 
-> 
-> Jan
-> 
->>
->>  drivers/pci/pci.c    |    3 +++
->>  drivers/pci/quirks.c |   12 ++++++++++++
->>  include/linux/pci.h  |    2 ++
->>  3 files changed, 17 insertions(+), 0 deletions(-)
->>
->> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
->> index 8f16900..3a1aeb5 100644
->> --- a/drivers/pci/pci.c
->> +++ b/drivers/pci/pci.c
->> @@ -2876,6 +2876,9 @@ bool pci_intx_mask_supported(struct pci_dev *dev)
->>  	bool mask_supported = false;
->>  	u16 orig, new;
->>  
->> +	if (dev->broken_intx_masking)
->> +		return false;
->> +
->>  	pci_cfg_access_lock(dev);
->>  
->>  	pci_read_config_word(dev, PCI_COMMAND, &orig);
->> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
->> index 2a75216..151e174 100644
->> --- a/drivers/pci/quirks.c
->> +++ b/drivers/pci/quirks.c
->> @@ -2929,6 +2929,18 @@ static void __devinit disable_igfx_irq(struct pci_dev *dev)
->>  DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x0102, disable_igfx_irq);
->>  DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x010a, disable_igfx_irq);
->>  
->> +/*
->> + * Some devices may pass our check in pci_intx_mask_supported if
->> + * PCI_COMMAND_INTX_DISABLE works though they actually do not properly
->> + * support this feature.
->> + */
->> +static void __devinit quirk_broken_intx_masking(struct pci_dev *dev)
->> +{
->> +	dev->broken_intx_masking = 1;
->> +}
->> +DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_CHELSIO, 0x0010,
->> +			quirk_broken_intx_masking);
->> +
->>  static void pci_do_fixups(struct pci_dev *dev, struct pci_fixup *f,
->>  			  struct pci_fixup *end)
->>  {
->> diff --git a/include/linux/pci.h b/include/linux/pci.h
->> index 17b7b5b..c7cfd73 100644
->> --- a/include/linux/pci.h
->> +++ b/include/linux/pci.h
->> @@ -324,6 +324,8 @@ struct pci_dev {
->>  	unsigned int    is_hotplug_bridge:1;
->>  	unsigned int    __aer_firmware_first_valid:1;
->>  	unsigned int	__aer_firmware_first:1;
->> +	unsigned int	broken_intx_masking:1;	/* device's INTx masking
->> +						   support is not working */
->>  	pci_dev_flags_t dev_flags;
->>  	atomic_t	enable_cnt;	/* pci_enable_device has been called */
->>  
-> 
 
 
--- 
-Alexey
+
+
+
+
+
+
+
+>
+> Thanks.
+>
+> --
+> tejun
