@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932694Ab2FGETZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 00:19:25 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:59627 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932669Ab2FGETS (ORCPT
+	id S932718Ab2FGETc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 00:19:32 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62777 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932696Ab2FGET2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 00:19:18 -0400
-Message-Id: <20120607040343.012541720@linuxfoundation.org>
+	Thu, 7 Jun 2012 00:19:28 -0400
+Message-Id: <20120607040344.002169511@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 07 Jun 2012 13:04:22 +0900
+Date: Thu, 07 Jun 2012 13:04:29 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Sascha Hauer <s.hauer@pengutronix.de>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        David Woodhouse <David.Woodhouse@intel.com>
-Subject: [ 46/82] mtd: mxc_nand: move ecc strengh setup before nand_scan_tail
+        alan@lxorguk.ukuu.org.uk, Eric Dumazet <edumazet@google.com>,
+        Allan Chou <allan@asix.com.tw>, Trond Wuellner <trond@chromium.org>,
+        Grant Grundler <grundler@chromium.org>,
+        Paul Stewart <pstew@chromium.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 53/82] asix: allow full size 8021Q frames to be received
 In-Reply-To: <20120607041406.GA13233@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,54 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sascha Hauer <s.hauer@pengutronix.de>
 
-commit 4a43faf54e9173b6acce37cf7f053fc9515a2cdf upstream.
+From: Eric Dumazet <edumazet@google.com>
 
-Since commit 6a918bade9dab40aaef80559bd1169c69e8d69cb, the mxc_nand driver
-fails with:
+[ Upstream commit 9dae31009b1a00d926c6fe032d5a88099620adc3 ]
 
-Driver must set ecc.strength when using hardware ECC
+asix driver drops 8021Q full size frames because it doesn't take into
+account VLAN header size.
 
-This is because nand_scan_tail checks for correct ecc strength
-settings, so we must set them up before nand_scan_tail.
+Tested on AX88772 adapter.
 
-Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Allan Chou <allan@asix.com.tw>
+CC: Trond Wuellner <trond@chromium.org>
+CC: Grant Grundler <grundler@chromium.org>
+CC: Paul Stewart <pstew@chromium.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/mtd/nand/mxc_nand.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/net/usb/asix.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/mtd/nand/mxc_nand.c
-+++ b/drivers/mtd/nand/mxc_nand.c
-@@ -1219,12 +1219,6 @@ static int __init mxcnd_probe(struct pla
- 	if (nfc_is_v21() && mtd->writesize == 4096)
- 		this->ecc.layout = &nandv2_hw_eccoob_4k;
+--- a/drivers/net/usb/asix.c
++++ b/drivers/net/usb/asix.c
+@@ -35,6 +35,7 @@
+ #include <linux/crc32.h>
+ #include <linux/usb/usbnet.h>
+ #include <linux/slab.h>
++#include <linux/if_vlan.h>
  
--	/* second phase scan */
--	if (nand_scan_tail(mtd)) {
--		err = -ENXIO;
--		goto escan;
--	}
--
- 	if (this->ecc.mode == NAND_ECC_HW) {
- 		if (nfc_is_v1())
- 			this->ecc.strength = 1;
-@@ -1232,6 +1226,12 @@ static int __init mxcnd_probe(struct pla
- 			this->ecc.strength = (host->eccsize == 4) ? 4 : 8;
- 	}
+ #define DRIVER_VERSION "22-Dec-2011"
+ #define DRIVER_NAME "asix"
+@@ -321,7 +322,7 @@ static int asix_rx_fixup(struct usbnet *
+ 			return 0;
+ 		}
  
-+	/* second phase scan */
-+	if (nand_scan_tail(mtd)) {
-+		err = -ENXIO;
-+		goto escan;
-+	}
-+
- 	/* Register the partitions */
- 	mtd_device_parse_register(mtd, part_probes, NULL, pdata->parts,
- 				  pdata->nr_parts);
+-		if ((size > dev->net->mtu + ETH_HLEN) ||
++		if ((size > dev->net->mtu + ETH_HLEN + VLAN_HLEN) ||
+ 		    (size + offset > skb->len)) {
+ 			netdev_err(dev->net, "asix_rx_fixup() Bad RX Length %d\n",
+ 				   size);
 
 
