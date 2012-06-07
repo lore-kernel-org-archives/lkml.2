@@ -1,69 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761165Ab2FGPSn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 11:18:43 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755058Ab2FGPSm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 11:18:42 -0400
-Message-ID: <4FD0C64D.2050302@nod.at>
-Date: Thu, 07 Jun 2012 17:18:37 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120427 Thunderbird/12.0.1
+	id S1753010Ab2FGP1E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 11:27:04 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:54837 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751724Ab2FGP1B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 11:27:01 -0400
+Date: Thu, 7 Jun 2012 11:27:00 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Stefani Seibold <stefani@seibold.net>
+cc: Greg KH <gregkh@linuxfoundation.org>, <linux-kernel@vger.kernel.org>,
+        <oneukum@suse.de>, <alan@lxorguk.ukuu.org.uk>,
+        <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH 04/11] remove usb_interface pointer
+In-Reply-To: <1339081423.13015.8.camel@wall-e>
+Message-ID: <Pine.LNX.4.44L0.1206071118310.1185-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Boaz Harrosh <bharrosh@panasas.com>,
-        user-mode-linux-devel@lists.sourceforge.net,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, jslaby@suse.cz, alan@linux.intel.com
-Subject: Re: [uml-devel] um: TTY fixes (?)
-References: <1338841657-30358-1-git-send-email-richard@nod.at> <4FCF6748.6020005@panasas.com> <4FD059AC.8050808@panasas.com> <4FD06A22.6040002@nod.at> <4FD07F14.50902@panasas.com> <4FD0802A.1020203@nod.at> <20120607115227.6643d1ad@pyramind.ukuu.org.uk>
-In-Reply-To: <20120607115227.6643d1ad@pyramind.ukuu.org.uk>
-X-Enigmail-Version: 1.4.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig3293C8C1F47D8C996BB4C705"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig3293C8C1F47D8C996BB4C705
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Thu, 7 Jun 2012, Stefani Seibold wrote:
 
-Alan, Jiri!
+> Am Donnerstag, den 07.06.2012, 10:28 -0400 schrieb Alan Stern:
+> > On Thu, 7 Jun 2012, Stefani Seibold wrote:
+> > 
+> > > I tried to implement your idea to kick away the usb_device pointer, but
+> > > i think it is impossible. The skel_delete() function needs the
+> > > usb_device pointer for calling usb_put, which is called from
+> > > skel_disconnect() or skel_release().
+> >   
+> > Does skel_delete() really need to call usb_put_dev()?  I suspect that  
+> > the driver doesn't need to take a reference to either the device or the
+> > interface.
+> >  
+> 
+> I think it will be needed, since usb core will decrement the reference
+> when the device go away.
 
-If I omit ->hangup(), mingetty (And all other getty implementations) are =
-unable to open /dev/ttyX.
-open() returns -EIO.
-Currently I'm testing it on FC12.
-Also if I do something like "echo foo >/dev/tty1" it fails with -EIO.
-And now the strange thing, opening and writing an unknown (unknown to thi=
-s upstart rubbish) tty works.
-E.g.: echo foo >/dev/tty10.
+But before it decrements the reference, it will unbind the driver.  As 
+long as usb-skeleton is careful not to access the device or the 
+interface after the disconnect routine returns, it doesn't need to keep 
+a reference.
 
-Any ideas what's going wrong?
+>  Lock every access to the usb core if a tedious
+> thing and will waste a lot of code.
 
-Thanks,
-//richard
+With proper design, it's not necessary to lock every access.
 
+> The problem with hotpluging is not the plug, it is the unplug, which can
+> happen any time.
+> 
+> BTW: An interface have no reference count.
 
---------------enig3293C8C1F47D8C996BB4C705
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Sure it does.  Look at the definitions of usb_get_intf() and 
+usb_put_intf() in drivers/usb/core/usb.c.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
+> > If skel_delete is changed then we don't need the usb_device pointer.
+> > 
+> 
+> I have no idea how to do this. Every USB driver i know stores the
+> usb_device pointer.
+> 
+> Maybe you have an idea?
 
-iQEcBAEBAgAGBQJP0MZNAAoJEN9758yqZn9ePiwIAJ3j+EtbhVDWeCX+7CXY1aXU
-3A5Jjd3cGBo/3TOrQ/6pWzsJYmrru5puFMvSYc2hv2k/+gyqJSHfs9Us4/TF4a2m
-ISE0l4V0zJ9i8zv2HLMB5bl9TNUFw912Vlb1Rwq2OS7Ueadl7GlojOwSuyZg3wC6
-d/6rSo7hqe1LFjZucIqmbcwI7pruuVVoTWc9bakFvrP3zH4lj+voxhhE2ZEP7JrY
-2r3gt1rWVpfD4UjbCvT9aheLm90leLAmr1r9936Me/eVpmZIjXiMlY89yx7+T5o2
-iVCxhr9vKn5RHjIQhyHLe2UCSCENQETiuAJk3CXPrBMGFXAGQXmJK/RB80ykT+k=
-=ddzF
------END PGP SIGNATURE-----
+No, I was wrong.  It turns out we really do need to keep the udev 
+pointer, because it gets used in calls to usb_fill_bulk_urb().  However 
+there's nothing wrong with keeping pointers to both the device and the 
+interface, if there's a good reason for doing so.
 
---------------enig3293C8C1F47D8C996BB4C705--
+(It also gets used in calls to usb_alloc_coherent(), but I would prefer
+to get rid of the coherent buffers.  They are rarely useful and don't
+belong here.)
+
+Alan Stern
+
