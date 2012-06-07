@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932595Ab2FGETA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 00:19:00 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:59627 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932560Ab2FGESy (ORCPT
+	id S932616Ab2FGETH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 00:19:07 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63306 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932560Ab2FGETE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 00:18:54 -0400
-Message-Id: <20120607040342.314328886@linuxfoundation.org>
+	Thu, 7 Jun 2012 00:19:04 -0400
+Message-Id: <20120607040343.316773054@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 07 Jun 2012 13:04:17 +0900
+Date: Thu, 07 Jun 2012 13:04:24 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "H. Peter Anvin" <hpa@zytor.com>
-Subject: [ 41/82] x86, x32, ptrace: Remove PTRACE_ARCH_PRCTL for x32
+        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 48/82] drm/radeon: fix bank information in tiling config
 In-Reply-To: <20120607041406.GA13233@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,44 +25,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H.J. Lu" <hjl.tools@gmail.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit bad1a753d4d4deb09d4bc0bac1dd4fc3298502e9 upstream.
+commit 29d654067a98c1cb8874c774e5fd799a038af8a6 upstream.
 
-When I added x32 ptrace to 3.4 kernel, I also include PTRACE_ARCH_PRCTL
-support for x32 GDB  For ARCH_GET_FS/GS, it takes a pointer to int64.  But
-at user level, ARCH_GET_FS/GS takes a pointer to int32.  So I have to add
-x32 ptrace to glibc to handle it with a temporary int64 passed to kernel and
-copy it back to GDB as int32.  Roland suggested that PTRACE_ARCH_PRCTL
-is obsolete and x32 GDB should use fs_base and gs_base fields of
-user_regs_struct instead.
+While there are cards with more than 8 mem banks, the max
+number of banks from a tiling perspective is 8, so cap
+the tiling config at 8 banks.
 
-Accordingly, remove PTRACE_ARCH_PRCTL completely from the x32 code to
-avoid possible memory overrun when pointer to int32 is passed to
-kernel.
+Fixes:
+https://bugs.freedesktop.org/show_bug.cgi?id=43448
 
-Link: http://lkml.kernel.org/r/CAMe9rOpDzHfS7NH7m1vmD9QRw8SSj4Sc%2BaNOgcWm_WJME2eRsQ@mail.gmail.com
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/ptrace.c |    6 ------
- 1 file changed, 6 deletions(-)
+ drivers/gpu/drm/radeon/evergreen.c |    9 ++++++---
+ drivers/gpu/drm/radeon/ni.c        |    9 ++++++---
+ drivers/gpu/drm/radeon/rv770.c     |    8 ++++++--
+ 3 files changed, 18 insertions(+), 8 deletions(-)
 
---- a/arch/x86/kernel/ptrace.c
-+++ b/arch/x86/kernel/ptrace.c
-@@ -1211,12 +1211,6 @@ static long x32_arch_ptrace(struct task_
- 					     0, sizeof(struct user_i387_struct),
- 					     datap);
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -2136,9 +2136,12 @@ static void evergreen_gpu_init(struct ra
+ 	/* num banks is 8 on all fusion asics. 0 = 4, 1 = 8, 2 = 16 */
+ 	if (rdev->flags & RADEON_IS_IGP)
+ 		rdev->config.evergreen.tile_config |= 1 << 4;
+-	else
+-		rdev->config.evergreen.tile_config |=
+-			((mc_arb_ramcfg & NOOFBANK_MASK) >> NOOFBANK_SHIFT) << 4;
++	else {
++		if ((mc_arb_ramcfg & NOOFBANK_MASK) >> NOOFBANK_SHIFT)
++			rdev->config.evergreen.tile_config |= 1 << 4;
++		else
++			rdev->config.evergreen.tile_config |= 0 << 4;
++	}
+ 	rdev->config.evergreen.tile_config |=
+ 		((mc_arb_ramcfg & BURSTLENGTH_MASK) >> BURSTLENGTH_SHIFT) << 8;
+ 	rdev->config.evergreen.tile_config |=
+--- a/drivers/gpu/drm/radeon/ni.c
++++ b/drivers/gpu/drm/radeon/ni.c
+@@ -866,9 +866,12 @@ static void cayman_gpu_init(struct radeo
+ 	/* num banks is 8 on all fusion asics. 0 = 4, 1 = 8, 2 = 16 */
+ 	if (rdev->flags & RADEON_IS_IGP)
+ 		rdev->config.cayman.tile_config |= 1 << 4;
+-	else
+-		rdev->config.cayman.tile_config |=
+-			((mc_arb_ramcfg & NOOFBANK_MASK) >> NOOFBANK_SHIFT) << 4;
++	else {
++		if ((mc_arb_ramcfg & NOOFBANK_MASK) >> NOOFBANK_SHIFT)
++			rdev->config.cayman.tile_config |= 1 << 4;
++		else
++			rdev->config.cayman.tile_config |= 0 << 4;
++	}
+ 	rdev->config.cayman.tile_config |=
+ 		((gb_addr_config & PIPE_INTERLEAVE_SIZE_MASK) >> PIPE_INTERLEAVE_SIZE_SHIFT) << 8;
+ 	rdev->config.cayman.tile_config |=
+--- a/drivers/gpu/drm/radeon/rv770.c
++++ b/drivers/gpu/drm/radeon/rv770.c
+@@ -689,8 +689,12 @@ static void rv770_gpu_init(struct radeon
  
--		/* normal 64bit interface to access TLS data.
--		   Works just like arch_prctl, except that the arguments
--		   are reversed. */
--	case PTRACE_ARCH_PRCTL:
--		return do_arch_prctl(child, data, addr);
--
- 	default:
- 		return compat_ptrace_request(child, request, addr, data);
- 	}
+ 	if (rdev->family == CHIP_RV770)
+ 		gb_tiling_config |= BANK_TILING(1);
+-	else
+-		gb_tiling_config |= BANK_TILING((mc_arb_ramcfg & NOOFBANK_MASK) >> NOOFBANK_SHIFT);
++	else {
++		if ((mc_arb_ramcfg & NOOFBANK_MASK) >> NOOFBANK_SHIFT)
++			gb_tiling_config |= BANK_TILING(1);
++		else
++			gb_tiling_config |= BANK_TILING(0);
++	}
+ 	rdev->config.rv770.tiling_nbanks = 4 << ((gb_tiling_config >> 4) & 0x3);
+ 	gb_tiling_config |= GROUP_SIZE((mc_arb_ramcfg & BURSTLENGTH_MASK) >> BURSTLENGTH_SHIFT);
+ 	if ((mc_arb_ramcfg & BURSTLENGTH_MASK) >> BURSTLENGTH_SHIFT)
 
 
