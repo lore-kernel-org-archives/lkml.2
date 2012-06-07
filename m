@@ -1,81 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760693Ab2FGKzi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 06:55:38 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:37942 "EHLO mx2.parallels.com"
+	id S1760709Ab2FGK6e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 06:58:34 -0400
+Received: from slimlogic.co.uk ([89.16.172.20]:47507 "EHLO slimlogic.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932227Ab2FGKzg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 06:55:36 -0400
-Message-ID: <4FD08813.9070307@parallels.com>
-Date: Thu, 7 Jun 2012 14:53:07 +0400
-From: Glauber Costa <glommer@parallels.com>
+	id S1755664Ab2FGK6d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 06:58:33 -0400
+Message-ID: <4FD08957.5080901@slimlogic.co.uk>
+Date: Thu, 07 Jun 2012 11:58:31 +0100
+From: Graeme Gregory <gg@slimlogic.co.uk>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
-        <linux-mm@kvack.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, <devel@openvz.org>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH v3 00/28] kmem limitation for memcg
-References: <1337951028-3427-1-git-send-email-glommer@parallels.com> <20120607102604.GE19842@somewhere.redhat.com>
-In-Reply-To: <20120607102604.GE19842@somewhere.redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Axel Lin <axel.lin@gmail.com>
+CC: linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH RFC/RFT] regulator: palmas: Clear PALMAS_SMPS12_CTRL_MODE_ACTIVE_MASK
+ bits in palmas_set_mode_smps
+References: <1339060101.5274.5.camel@phoenix>
+In-Reply-To: <1339060101.5274.5.camel@phoenix>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/07/2012 02:26 PM, Frederic Weisbecker wrote:
-> On Fri, May 25, 2012 at 05:03:20PM +0400, Glauber Costa wrote:
->> Hello All,
->>
->> This is my new take for the memcg kmem accounting. This should merge
->> all of the previous comments from you, plus fix a bunch of bugs.
->>
->> At this point, I consider the series pretty mature. Since last submission
->> 2 weeks ago, I focused on broadening the testing coverage. Some bugs were
->> fixed, but that of course doesn't mean no bugs exist.
->>
->> I believe some of the early patches here are already in some trees around.
->> I don't know who should pick this, so if everyone agrees with what's in here,
->> please just ack them and tell me which tree I should aim for (-mm? Hocko's?)
->> and I'll rebase it.
->>
->> I should point out again that most, if not all, of the code in the caches
->> are wrapped in static_key areas, meaning they will be completely patched out
->> until the first limit is set. Enabling and disabling of static_keys incorporate
->> the last fixes for sock memcg, and should be pretty robust.
->>
->> I also put a lot of effort, as you will all see, in the proper separation
->> of the patches, so the review process is made as easy as the complexity of
->> the work allows to.
->
-> So I believe that if I want to implement a per kernel stack accounting/limitation,
-> I need to work on top of your patchset.
->
-> What do you think about having some sub kmem accounting based on the caches?
-> For example there could be a specific accounting per kmem cache.
->
-> Like if we use a specific kmem cache to allocate the kernel stack
-> (as is done by some archs but I can generalize that for those who want
-> kernel stack accounting), allocations are accounted globally in the memcg as
-> done in your patchset but also on a seperate counter only for this kmem cache
-> on the memcg, resulting in a kmem.stack.usage somewhere.
->
-> The concept of per kmem cache accounting can be expanded more for any
-> kind of finegrained kmem accounting.
->
-> Thoughts?
+That looks like a C&P error on my part.
 
-I believe a general separation is too much, and will lead to knob 
-explosion. So I don't think it is a good idea.
+Thanks for noticing.
 
-Now, for the stack itself, it can be justified. The question that 
-remains to be answered is:
+Acked-by: Graeme Gregory <gg@slimlogic.co.uk>
 
-Why do you need to set the stack value separately? Isn't accounting the 
-stack value, and limiting against the global kmem limit enough?
+On 07/06/12 10:08, Axel Lin wrote:
+> Current code actually clears more bits than PALMAS_SMPS12_CTRL_MODE_ACTIVE_MASK bits.
+>
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+> Hi Graeme,
+>
+> I'm wandering if we need to clear the status bits.
+> Current code actually clears bit[7:4] and bit[1:0] and set bit[7:6] to bit[3:2].
+> Looks like we only need to clear PALMAS_SMPS12_CTRL_MODE_ACTIVE_MASK bit[1:0] bits here.
+> and this change makes the intent more clear.
+>
+> I don't have this hardware,
+> I'd appreciate if you can test this patch if you think this change ok.
+>
+> Regards,
+> Axel
+>  drivers/regulator/palmas-regulator.c |    3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+>
+> diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
+> index 92f475c..ae0951a 100644
+> --- a/drivers/regulator/palmas-regulator.c
+> +++ b/drivers/regulator/palmas-regulator.c
+> @@ -257,8 +257,7 @@ static int palmas_set_mode_smps(struct regulator_dev *dev, unsigned int mode)
+>  	unsigned int reg;
+>  
+>  	palmas_smps_read(pmic->palmas, palmas_regs_info[id].ctrl_addr, &reg);
+> -	reg &= ~PALMAS_SMPS12_CTRL_STATUS_MASK;
+> -	reg >>= PALMAS_SMPS12_CTRL_STATUS_SHIFT;
+> +	reg &= ~PALMAS_SMPS12_CTRL_MODE_ACTIVE_MASK;
+>  
+>  	switch (mode) {
+>  	case REGULATOR_MODE_NORMAL:
 
