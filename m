@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932188Ab2FGEPf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 00:15:35 -0400
+	id S932237Ab2FGEPu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 00:15:50 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:63306 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932139Ab2FGEP3 (ORCPT
+	with ESMTP id S932180Ab2FGEPp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 00:15:29 -0400
-Message-Id: <20120607040337.475946502@linuxfoundation.org>
+	Thu, 7 Jun 2012 00:15:45 -0400
+Message-Id: <20120607040337.204816103@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 07 Jun 2012 13:03:43 +0900
+Date: Thu, 07 Jun 2012 13:03:41 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>
-Subject: [ 07/82] mm: consider all swapped back pages in used-once logic
+        alan@lxorguk.ukuu.org.uk,
+        Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>,
+        Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Jens Axboe <axboe@kernel.dk>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Hugh Dickins <hughd@google.com>
+Subject: [ 05/82] mm/fork: fix overflow in vma length when copying mmap on clone
 In-Reply-To: <20120607041406.GA13233@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,63 +28,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Hocko <mhocko@suse.cz>
+From: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
 
-commit e48982734ea0500d1eba4f9d96195acc5406cad6 upstream.
+commit 7edc8b0ac16cbaed7cb4ea4c6b95ce98d2997e84 upstream.
 
-Commit 645747462435 ("vmscan: detect mapped file pages used only once")
-made mapped pages have another round in inactive list because they might
-be just short lived and so we could consider them again next time.  This
-heuristic helps to reduce pressure on the active list with a streaming
-IO worklods.
+The vma length in dup_mmap is calculated and stored in a unsigned int,
+which is insufficient and hence overflows for very large maps (beyond
+16TB). The following program demonstrates this:
 
-This patch fixes a regression introduced by this commit for heavy shmem
-based workloads because unlike Anon pages, which are excluded from this
-heuristic because they are usually long lived, shmem pages are handled
-as a regular page cache.
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/mman.h>
 
-This doesn't work quite well, unfortunately, if the workload is mostly
-backed by shmem (in memory database sitting on 80% of memory) with a
-streaming IO in the background (backup - up to 20% of memory).  Anon
-inactive list is full of (dirty) shmem pages when watermarks are hit.
-Shmem pages are kept in the inactive list (they are referenced) in the
-first round and it is hard to reclaim anything else so we reach lower
-scanning priorities very quickly which leads to an excessive swap out.
+#define GIG 1024 * 1024 * 1024L
+#define EXTENT 16393
 
-Let's fix this by excluding all swap backed pages (they tend to be long
-lived wrt.  the regular page cache anyway) from used-once heuristic and
-rather activate them if they are referenced.
+int main(void)
+{
+        int i, r;
+        void *m;
+        char buf[1024];
 
-The customer's workload is shmem backed database (80% of RAM) and they
-are measuring transactions/s with an IO in the background (20%).
-Transactions touch more or less random rows in the table.  The
-transaction rate fell by a factor of 3 (in the worst case) because of
-commit 64574746.  This patch restores the previous numbers.
+        for (i = 0; i < EXTENT; i++) {
+                m = mmap(NULL, (size_t) 1 * 1024 * 1024 * 1024L,
+                         PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
 
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Reviewed-by: Rik van Riel <riel@redhat.com>
+                if (m == (void *)-1)
+                        printf("MMAP Failed: %d\n", m);
+                else
+                        printf("%d : MMAP returned %p\n", i, m);
+
+                r = fork();
+
+                if (r == 0) {
+                        printf("%d: successed\n", i);
+                        return 0;
+                } else if (r < 0)
+                        printf("FORK Failed: %d\n", r);
+                else if (r > 0)
+                        wait(NULL);
+        }
+        return 0;
+}
+
+Increase the storage size of the result to unsigned long, which is
+sufficient for storing the difference between addresses.
+
+Signed-off-by: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Acked-by: Hugh Dickins <hughd@google.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/vmscan.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/fork.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -722,7 +722,7 @@ static enum page_references page_check_r
- 		return PAGEREF_RECLAIM;
- 
- 	if (referenced_ptes) {
--		if (PageAnon(page))
-+		if (PageSwapBacked(page))
- 			return PAGEREF_ACTIVATE;
- 		/*
- 		 * All mapped pages start out with page table
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -356,7 +356,8 @@ static int dup_mmap(struct mm_struct *mm
+ 		}
+ 		charge = 0;
+ 		if (mpnt->vm_flags & VM_ACCOUNT) {
+-			unsigned int len = (mpnt->vm_end - mpnt->vm_start) >> PAGE_SHIFT;
++			unsigned long len;
++			len = (mpnt->vm_end - mpnt->vm_start) >> PAGE_SHIFT;
+ 			if (security_vm_enough_memory_mm(oldmm, len)) /* sic */
+ 				goto fail_nomem;
+ 			charge = len;
 
 
