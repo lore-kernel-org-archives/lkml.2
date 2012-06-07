@@ -1,57 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761368Ab2FGTFT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 15:05:19 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:58681 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761322Ab2FGTFQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 15:05:16 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-mm@kvack.org, dhillf@gmail.com, rientjes@google.com, mhocko@suse.cz,
-        akpm@linux-foundation.org, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH -V7 07/14] mm/page_cgroup: Make page_cgroup point to the cgroup rather than the mem_cgroup
-In-Reply-To: <4FCD7FBB.1000304@jp.fujitsu.com>
-References: <1338388739-22919-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1338388739-22919-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <4FCD648E.90709@jp.fujitsu.com> <87ehpu8o5z.fsf@skywalker.in.ibm.com> <4FCD7FBB.1000304@jp.fujitsu.com>User-Agent: Notmuch/0.11.1+346~g13d19c3 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Fri, 08 Jun 2012 00:35:00 +0530
-Message-ID: <87sje72bab.fsf@skywalker.in.ibm.com>
+	id S1761377Ab2FGTGe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 15:06:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51251 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755522Ab2FGTGc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 15:06:32 -0400
+Date: Thu, 7 Jun 2012 15:06:13 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Fengguang Wu <fengguang.wu@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        linux-fsdevel@vger.kernel.org,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: write-behind on streaming writes
+Message-ID: <20120607190613.GC18538@redhat.com>
+References: <20120605172302.GB28556@redhat.com>
+ <20120605174157.GC28556@redhat.com>
+ <20120605184853.GD28556@redhat.com>
+ <20120605201045.GE28556@redhat.com>
+ <20120606025729.GA1197@redhat.com>
+ <CA+55aFyxucvhYhbk0yyNa1WSeYXgHHAyWRHPNWDwODQhyAWGww@mail.gmail.com>
+ <20120606121408.GB4934@redhat.com>
+ <20120606140058.GA8098@localhost>
+ <20120606170428.GB8133@redhat.com>
+ <20120607094504.GB25074@quack.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-x-cbid: 12060708-9264-0000-0000-000001A9E405
+Content-Disposition: inline
+In-Reply-To: <20120607094504.GB25074@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
+On Thu, Jun 07, 2012 at 11:45:04AM +0200, Jan Kara wrote:
+[..]
+> > Instead of above, I modified sync_file_range() to call
+> > __filemap_fdatawrite_range(WB_SYNC_NONE) and I do see now ASYNC writes
+> > showing up at elevator.
+> > 
+> > With 4 processes doing sync_file_range() now, firefox start time test
+> > clocks around 18-19 seconds which is better than 30-35 seconds of 4
+> > processes doing buffered writes. And system looks pretty good from
+> > interactivity point of view.
+>   So do you have any idea why is that? Do we drive shallower queues? Also
+> how does speed of the writers compare to the speed with normal buffered
+> writes + fsync (you'd need fsync for sync_file_range writers as well to
+> make comparison fair)?
 
-> You can use other pages than head/tails.
-> For example,I think you have 512 pages per 2M pages.
+Ok, I did more tests and few odd things I noticed.
 
-How about the below. This limit the usage to hugetlb cgroup to only
-hugepages with more than 3 normal pages. I guess that is an acceptable limitation.
+- Results are varying a lot. Sometimes with write+flush workload also firefox
+  launched fast. So now it is hard to conclude things.
 
-static inline struct hugetlb_cgroup *hugetlb_cgroup_from_page(struct page *page)
-{
-	if (!PageHuge(page))
-		return NULL;
-	if (compound_order(page) < 3)
-		return NULL;
-	return (struct hugetlb_cgroup *)page[2].lru.next;
-}
+- For some reason I had nr_requests as 16K on my root drive. I have no
+  idea who is setting it. Once I set it to 128, then firefox with
+  write+flush workload performs much better and launch time are similar
+  to sync_file_range.
 
-static inline
-int set_hugetlb_cgroup(struct page *page, struct hugetlb_cgroup *h_cg)
-{
-	if (!PageHuge(page))
-		return -1;
-	if (compound_order(page) < 3)
-		return -1;
-	page[2].lru.next = (void *)h_cg;
-	return 0;
-}
+- I tried to open new windows in firefox and browse web, load new
+  websites. I would say sync_file_range() feels little better but
+  I don't have any logical explanation and can't conclude anything yet
+  by looking at traces. I am continuing to stare though.
 
+So in summary, at this point of time I really can't conclude that
+using sync_file_range() with ASYNC request is providing better latencies
+in my setup.
 
--aneesh
+I will keept at it though and if I notice something new, will write back.
 
+Thanks
+Vivek
