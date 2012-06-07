@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759943Ab2FGEY3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 00:24:29 -0400
+	id S933535Ab2FGEYh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 00:24:37 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:54880 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759873Ab2FGEYZ (ORCPT
+	with ESMTP id S1759947Ab2FGEYd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 00:24:25 -0400
-Message-Id: <20120607041401.906645595@linuxfoundation.org>
+	Thu, 7 Jun 2012 00:24:33 -0400
+Message-Id: <20120607041402.061249159@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 07 Jun 2012 13:14:24 +0900
+Date: Thu, 07 Jun 2012 13:14:25 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: [ 26/47] mtd: nand: fix scan_read_raw_oob
+        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 27/47] drm/radeon: properly program gart on rv740, juniper, cypress, barts, hemlock
 In-Reply-To: <20120607041504.GA13819@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,31 +25,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Maluka <D.Maluka@adbglobal.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 34a5704d91d6f8376a4c0a0143a1dd3eb3ccb37e upstream.
+commit 0b8c30bc4943137a4a36b9cb059b1cc684f5d702 upstream.
 
-It seems there is a bug in scan_read_raw_oob() in nand_bbt.c which
-should cause wrong functioning of NAND_BBT_SCANALLPAGES option.
+Need to program an additional VM register.  This doesn't not currently
+cause any problems, but allows us to program the proper backend
+map in a subsequent patch which should improve performance on these
+asics.
 
-Artem: the patch did not apply and I had to amend it a bit.
-
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/nand/nand_bbt.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/gpu/drm/radeon/evergreen.c  |    5 +++++
+ drivers/gpu/drm/radeon/evergreend.h |    1 +
+ drivers/gpu/drm/radeon/rv770.c      |    2 ++
+ drivers/gpu/drm/radeon/rv770d.h     |    1 +
+ 4 files changed, 9 insertions(+)
 
---- a/drivers/mtd/nand/nand_bbt.c
-+++ b/drivers/mtd/nand/nand_bbt.c
-@@ -360,6 +360,7 @@ static int scan_read_raw_oob(struct mtd_
- 
- 		buf += mtd->oobsize + mtd->writesize;
- 		len -= mtd->writesize;
-+		offs += mtd->writesize;
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -926,6 +926,11 @@ int evergreen_pcie_gart_enable(struct ra
+ 		WREG32(MC_VM_MD_L1_TLB0_CNTL, tmp);
+ 		WREG32(MC_VM_MD_L1_TLB1_CNTL, tmp);
+ 		WREG32(MC_VM_MD_L1_TLB2_CNTL, tmp);
++		if ((rdev->family == CHIP_JUNIPER) ||
++		    (rdev->family == CHIP_CYPRESS) ||
++		    (rdev->family == CHIP_HEMLOCK) ||
++		    (rdev->family == CHIP_BARTS))
++			WREG32(MC_VM_MD_L1_TLB3_CNTL, tmp);
  	}
- 	return 0;
- }
+ 	WREG32(MC_VM_MB_L1_TLB0_CNTL, tmp);
+ 	WREG32(MC_VM_MB_L1_TLB1_CNTL, tmp);
+--- a/drivers/gpu/drm/radeon/evergreend.h
++++ b/drivers/gpu/drm/radeon/evergreend.h
+@@ -230,6 +230,7 @@
+ #define	MC_VM_MD_L1_TLB0_CNTL				0x2654
+ #define	MC_VM_MD_L1_TLB1_CNTL				0x2658
+ #define	MC_VM_MD_L1_TLB2_CNTL				0x265C
++#define	MC_VM_MD_L1_TLB3_CNTL				0x2698
+ 
+ #define	FUS_MC_VM_MD_L1_TLB0_CNTL			0x265C
+ #define	FUS_MC_VM_MD_L1_TLB1_CNTL			0x2660
+--- a/drivers/gpu/drm/radeon/rv770.c
++++ b/drivers/gpu/drm/radeon/rv770.c
+@@ -151,6 +151,8 @@ int rv770_pcie_gart_enable(struct radeon
+ 	WREG32(MC_VM_MD_L1_TLB0_CNTL, tmp);
+ 	WREG32(MC_VM_MD_L1_TLB1_CNTL, tmp);
+ 	WREG32(MC_VM_MD_L1_TLB2_CNTL, tmp);
++	if (rdev->family == CHIP_RV740)
++		WREG32(MC_VM_MD_L1_TLB3_CNTL, tmp);
+ 	WREG32(MC_VM_MB_L1_TLB0_CNTL, tmp);
+ 	WREG32(MC_VM_MB_L1_TLB1_CNTL, tmp);
+ 	WREG32(MC_VM_MB_L1_TLB2_CNTL, tmp);
+--- a/drivers/gpu/drm/radeon/rv770d.h
++++ b/drivers/gpu/drm/radeon/rv770d.h
+@@ -174,6 +174,7 @@
+ #define	MC_VM_MD_L1_TLB0_CNTL				0x2654
+ #define	MC_VM_MD_L1_TLB1_CNTL				0x2658
+ #define	MC_VM_MD_L1_TLB2_CNTL				0x265C
++#define	MC_VM_MD_L1_TLB3_CNTL				0x2698
+ #define	MC_VM_SYSTEM_APERTURE_DEFAULT_ADDR		0x203C
+ #define	MC_VM_SYSTEM_APERTURE_HIGH_ADDR			0x2038
+ #define	MC_VM_SYSTEM_APERTURE_LOW_ADDR			0x2034
 
 
