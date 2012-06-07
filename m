@@ -1,54 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758660Ab2FGAEm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 20:04:42 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43913 "EHLO mail.zytor.com"
+	id S1757541Ab2FGANw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 20:13:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39780 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753693Ab2FGAEl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 20:04:41 -0400
-Message-ID: <4FCFEFF0.5070108@zytor.com>
-Date: Wed, 06 Jun 2012 17:04:00 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
+	id S1753693Ab2FGANv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 20:13:51 -0400
+Date: Wed, 6 Jun 2012 20:13:40 -0400
+From: Dave Jones <davej@redhat.com>
 To: Peter Zijlstra <peterz@infradead.org>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Suresh B Siddha <suresh.b.siddha@intel.com>,
-        Tony Luck <tony.luck@intel.com>,
-        Asit K Mallick <asit.k.mallick@intel.com>,
-        Arjan Dan De Ven <arjan@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>,
-        linux-pm <linux-pm@vger.kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [PATCH] kthread: Implement park/unpark facility
-References: <1338833876-29721-1-git-send-email-fenghua.yu@intel.com>  <alpine.LFD.2.02.1206042203590.3086@ionos>  <1338842001.28282.135.camel@twins> <87zk8iioam.fsf@rustcorp.com.au>  <alpine.LFD.2.02.1206051135260.3086@ionos>  <alpine.LFD.2.02.1206051538280.3086@ionos> <1338905159.28282.186.camel@twins>
-In-Reply-To: <1338905159.28282.186.camel@twins>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, mingo@kernel.org
+Subject: Re: processes hung after sys_renameat, and 'missing' processes
+Message-ID: <20120607001340.GA22223@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Peter Zijlstra <peterz@infradead.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Al Viro <viro@zeniv.linux.org.uk>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, mingo@kernel.org
+References: <20120603223617.GB7707@redhat.com>
+ <CA+55aFwCusEdMq3_3TAXSZ=+kbN7H6AbnngVaagAZw=ZpicckQ@mail.gmail.com>
+ <20120604000059.GA14144@redhat.com>
+ <CA+55aFwJO40594yLH0gS_7YurDGAojVYfgBQXLNawraV_jdNsQ@mail.gmail.com>
+ <1338802157.28282.7.camel@twins>
+ <1338806988.28282.17.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1338806988.28282.17.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2012 07:05 AM, Peter Zijlstra wrote:
-> On Tue, 2012-06-05 at 15:41 +0200, Thomas Gleixner wrote:
->>  struct kthread {
->> -       int should_stop;
->> +       bool should_stop;
->> +       bool should_park;
->> +       bool is_parked;
->> +       bool is_percpu; 
-> 
-> bool doesn't have a well specified storage type. I typically try to
-> avoid using it in structures for this reason. Others might not care
-> though.
-> 
+On Mon, Jun 04, 2012 at 12:49:48PM +0200, Peter Zijlstra wrote:
 
-On all known Linux platforms, bool is implemented as a single byte
-having a value of either 0 or 1.  However, it might make more sense to
-have a flags field here...
+ > Something like the compile tested only patch below should do both
+ > things.
+ > 
+ ..
+ > +#ifdef CONFIG_LOCK_STAT
+ > +
+ > +static void lockstat_contended(struct held_lock *hlock)
+ > +{
+ > +	int contention_point, contending_point;
+ > +	struct lock_class_stats *stats;
+ > +
+ > +	hlock->waittime_stamp = lockstat_clock();
+ > +
+ > +	contention_point = lock_point(hlock_class(hlock)->contention_point, ip);
+ > +	contending_point = lock_point(hlock_class(hlock)->contending_point,
+ > +				      lock->ip);
+ > +
+ > +	stats = get_lock_stats(hlock_class(hlock));
+ > +	if (contention_point < LOCKSTAT_POINTS)
+ > +		stats->contention_point[contention_point]++;
+ > +	if (contending_point < LOCKSTAT_POINTS)
+ > +		stats->contending_point[contending_point]++;
+ > +	if (lock->cpu != smp_processor_id())
+ > +		stats->bounces[bounce_contended + !!hlock->read]++;
+ > +	put_lock_stats(stats);
+ > +}
 
-	-hpa
 
+kernel/lockdep.c: In function ‘lockstat_contended’:
+kernel/lockdep.c:3662:70: error: ‘ip’ undeclared (first use in this function)
+kernel/lockdep.c:3662:70: note: each undeclared identifier is reported only once for each function it appears in
+kernel/lockdep.c:3664:11: error: ‘lock’ undeclared (first use in this function)
+kernel/lockdep.c: In function ‘lockstat_acquired’:
+kernel/lockdep.c:3702:13: error: ‘ip’ undeclared (first use in this function)
+
+
+	Dave
