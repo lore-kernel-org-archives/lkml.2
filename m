@@ -1,75 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757357Ab2FGMwS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 08:52:18 -0400
-Received: from trent.utfs.org ([94.185.90.103]:55146 "EHLO trent.utfs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755945Ab2FGMwQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 08:52:16 -0400
-Date: Thu, 7 Jun 2012 05:52:09 -0700 (PDT)
-From: Christian Kujau <lists@nerdbynature.de>
-To: Ethan Zhao <ethan.kernel@gmail.com>
-cc: LKML <linux-kernel@vger.kernel.org>, mcarlson@broadcom.com
-Subject: Re: tg3: transmit timed out, resetting
-In-Reply-To: <CABawtvNSOkyphUmAU1EoCaCS-hGu-ejPHMmP=j-nRtBZfi7cwg@mail.gmail.com>
-Message-ID: <alpine.DEB.2.01.1206070531520.5568@trent.utfs.org>
-References: <alpine.DEB.2.01.1206041546070.5568@trent.utfs.org> <20120606010255.GA9991@mcarlson.broadcom.com> <alpine.DEB.2.01.1206052314340.5568@trent.utfs.org> <alpine.DEB.2.01.1206070002370.5568@trent.utfs.org>
- <CABawtvNSOkyphUmAU1EoCaCS-hGu-ejPHMmP=j-nRtBZfi7cwg@mail.gmail.com>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
+	id S1757708Ab2FGMw3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 08:52:29 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:43791 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756104Ab2FGMw0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 08:52:26 -0400
+Subject: Re: NETDEV WATCHDOG: eth0 (atl1c): transmit queue 0 timed out
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Thomas Meyer <thomas@m3y3r.de>
+Cc: Jonathan Nieder <jrnieder@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        jcliburn@gmail.com, chris.snook@gmail.com,
+        netdev <netdev@vger.kernel.org>, Josh Boyer <jwboyer@gmail.com>
+In-Reply-To: <1339072653.3018.9.camel@localhost.localdomain>
+References: <1329063403.1449.14.camel@localhost.localdomain>
+	 <CA+5PVA52+0vOMF6+tvMPkgzhdTKJRQnrjD4FfVmBZs0TMDJ5cg@mail.gmail.com>
+	 <1329204997.24837.15.camel@edumazet-laptop>
+	 <1329366846.5646.1.camel@edumazet-laptop>
+	 <1329847015.5133.4.camel@localhost.localdomain>
+	 <1329848093.18384.35.camel@edumazet-laptop>
+	 <1330111229.15610.50.camel@edumazet-laptop>
+	 <1330163565.1419.5.camel@localhost.localdomain>
+	 <20120606003856.GA7839@burratino>
+	 <1339072653.3018.9.camel@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 07 Jun 2012 14:52:17 +0200
+Message-ID: <1339073537.5083.4.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 7 Jun 2012 at 17:47, Ethan Zhao wrote:
->     Could you try 3.5RC1+ with pcie_aspm=off kernel parameter ?
+On Thu, 2012-06-07 at 14:37 +0200, Thomas Meyer wrote:
+> Am Dienstag, den 05.06.2012, 19:38 -0500 schrieb Jonathan Nieder:
+> > In February, 2012, Thomas Meyer wrote:
+> > > Am Freitag, den 24.02.2012, 20:20 +0100 schrieb Eric Dumazet:
+> > 
+> > >> Here is a cumulative patch to hopefuly remove the races in this driver,
+> > >> could you please test it ?
+> > [...]
+> > > just building a 3.2.7 kernel with your patch applied. I will watch out
+> > > for the warning in the next days.
+> > 
+> > Well, did it work? :)
+> 
+> Hi Jonathan,
+> 
+> no it didn't. I still get these warnings.
 
-Will try.
+I sent another patch today, you might try it ;)
 
-> I notice there are some AER errors ( UnsupReq+,RxErr+) with the tg3
-> from you lspci output, have you seen the AER errors on console ? if
-> so, please attach them.
+https://lkml.org/lkml/2012/6/7/143
 
-I haven't seen any actual erros on the console, except these messages 
-during bootup:
 
---------
-pci0000:00: Requesting ACPI _OSC control (0x1d)
-pci0000:00: ACPI _OSC request failed (AE_NOT_FOUND), returned control mask: 0x1d
-ACPI _OSC control for PCIe not granted, disabling ASPM
---------
 
-I have seen these messages in 3.2.0 (an Ubuntu kernel), can't say that I 
-have seen them before, they did not show up when I booted this 2.6.38 
-Ubuntu kernel.
-
-I'll try booting with pcie_aspm=off and see what it gives...
-
-Thanks,
-Christian.
-
-PS: AFAICT, Ubuntu's 2.6.38 [0] had these options set:
-
---------
-CONFIG_PCIEASPM=y
-# CONFIG_PCIEASPM_DEBUG is not set
---------
-
-With 3.5.x, my .config has:
-
---------
-CONFIG_PCIEASPM=y
-# CONFIG_PCIEASPM_DEBUG is not set
-CONFIG_PCIEASPM_DEFAULT=y
-# CONFIG_PCIEASPM_POWERSAVE is not set
-# CONFIG_PCIEASPM_PERFORMANCE is not set
---------
-
-[0] https://launchpad.net/ubuntu/natty/i386/linux-image-2.6.38-15-generic/2.6.38-15.60
-
--- 
-BOFH excuse #338:
-
-old inkjet cartridges emanate barium-based fumes
