@@ -1,46 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761259Ab2FGSgu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 14:36:50 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:30915 "EHLO
+	id S1761289Ab2FGSh1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 14:37:27 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:18772 "EHLO
 	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751626Ab2FGSgt (ORCPT
+	with ESMTP id S1751788Ab2FGShZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 14:36:49 -0400
-Date: Thu, 7 Jun 2012 14:28:56 -0400
+	Thu, 7 Jun 2012 14:37:25 -0400
+Date: Thu, 7 Jun 2012 14:30:22 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: Sasha Levin <levinsasha928@gmail.com>
-Cc: konrad@darnok.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        dan.magenheimer@oracle.com
-Subject: Re: [PATCH 05/11] mm: frontswap: split frontswap_shrink further to
- eliminate locking games
-Message-ID: <20120607182856.GZ9472@phenom.dumpdata.com>
+Cc: dan.magenheimer@oracle.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 06/11] mm: frontswap: make all branches of if statement
+ in put page consistent
+Message-ID: <20120607183022.GA9472@phenom.dumpdata.com>
 References: <1338980115-2394-1-git-send-email-levinsasha928@gmail.com>
- <1338980115-2394-5-git-send-email-levinsasha928@gmail.com>
- <CAPbh3ruJVJkemK4WqjxQYbXYtD9zdDB3dqrRF916cpw3Ub66ug@mail.gmail.com>
- <1338982637.3292.63.camel@lappy>
+ <1338980115-2394-6-git-send-email-levinsasha928@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1338982637.3292.63.camel@lappy>
+In-Reply-To: <1338980115-2394-6-git-send-email-levinsasha928@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 06, 2012 at 01:37:17PM +0200, Sasha Levin wrote:
-> On Wed, 2012-06-06 at 07:30 -0400, Konrad Rzeszutek Wilk wrote:
-> > 
-> > On Jun 6, 2012 6:55 AM, "Sasha Levin" <levinsasha928@gmail.com> wrote:
-> > >
-> > > Split frontswap_shrink to eliminate the locking issues in the
-> > original code.
-> > 
-> > Can you describe the locking issue please?
+On Wed, Jun 06, 2012 at 12:55:10PM +0200, Sasha Levin wrote:
+> Currently it has a complex structure where different things are compared
+> at each branch. Simplify that and make both branches look similar.
 > 
-> I may have worded that wrong, it's less of an "issue" and more of a
-> complicated code to deal with locking, specifically the extra local
-> variable to keep track whether we are locking or not.
+> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> ---
+>  mm/frontswap.c |   10 +++++-----
+>  1 files changed, 5 insertions(+), 5 deletions(-)
+> 
+> diff --git a/mm/frontswap.c b/mm/frontswap.c
+> index 618ef91..f2f4685 100644
+> --- a/mm/frontswap.c
+> +++ b/mm/frontswap.c
+> @@ -119,16 +119,16 @@ int __frontswap_put_page(struct page *page)
+>  		frontswap_succ_puts++;
+>  		if (!dup)
+>  			atomic_inc(&sis->frontswap_pages);
+> -	} else if (dup) {
+> +	} else {
+>  		/*
+>  		  failed dup always results in automatic invalidate of
+>  		  the (older) page from frontswap
+>  		 */
+> -		frontswap_clear(sis, offset);
+> -		atomic_dec(&sis->frontswap_pages);
+> -		frontswap_failed_puts++;
 
-So "simplying the locking"?
+Hmm, you must be using an older branch b/c the frontswap_failed_puts++
+doesn't exist anymore. Could you rebase on top of linus/master please.
+
+> -	} else {
+>  		frontswap_failed_puts++;
+> +		if (dup) {
+> +			frontswap_clear(sis, offset);
+> +			atomic_dec(&sis->frontswap_pages);
+> +		}
+>  	}
+>  	if (frontswap_writethrough_enabled)
+>  		/* report failure so swap also writes to swap device */
+> -- 
+> 1.7.8.6
