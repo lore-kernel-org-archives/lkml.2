@@ -1,54 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753955Ab2FGPad (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 11:30:33 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:50927 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751724Ab2FGPac (ORCPT
+	id S1754814Ab2FGPbZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 11:31:25 -0400
+Received: from 8bytes.org ([85.214.48.195]:56003 "EHLO
+	h2027444.stratoserver.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752335Ab2FGPbY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 11:30:32 -0400
+	Thu, 7 Jun 2012 11:31:24 -0400
+Date: Thu, 7 Jun 2012 17:31:22 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Bryan Schumaker <bjschuma@netapp.com>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: NFS regression in v3.5-rc1: mount.nfs yells about incorrect
+ mount option
+Message-ID: <20120607153122.GP12795@8bytes.org>
+References: <20120607150456.GO12795@8bytes.org>
+ <4FD0C4C2.8020605@netapp.com>
 MIME-Version: 1.0
-In-Reply-To: <1339064814.23343.14.camel@twins>
-References: <20120603223617.GB7707@redhat.com> <CA+55aFwCusEdMq3_3TAXSZ=+kbN7H6AbnngVaagAZw=ZpicckQ@mail.gmail.com>
- <20120603231709.GP30000@ZenIV.linux.org.uk> <20120603232820.GQ30000@ZenIV.linux.org.uk>
- <20120606194233.GA1537@redhat.com> <CA+55aFwxFVLPk4-dp73uccKXepKwjpGFgh0NW1u8d0zYzr=hBA@mail.gmail.com>
- <20120606230040.GA18089@redhat.com> <CA+55aFx_oREEd2XS_aG7PJ7dwzWjgx689V_uRPGWpVS01_++6A@mail.gmail.com>
- <1339064814.23343.14.camel@twins>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 7 Jun 2012 08:30:10 -0700
-X-Google-Sender-Auth: Pv2yyrwBYnB2WfNV25G8lfN8gGc
-Message-ID: <CA+55aFycTypSSvjOB-KXzpK86ALifGbrO2s4HRc69CqyoX=qJA@mail.gmail.com>
-Subject: Re: processes hung after sys_renameat, and 'missing' processes
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Dave Jones <davej@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>, Jan Kara <jack@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FD0C4C2.8020605@netapp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Thu Jun  7 17:31:23 2012
+X-DSPAM-Confidence: 0.9964
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 4fd0c94b28381478682282
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 7, 2012 at 3:26 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Wed, 2012-06-06 at 16:31 -0700, Linus Torvalds wrote:
->> PeterZ - the fact that we use mutex_lock_nested with
->> I_MUTEX_PARENT/I_MUTEX_CHILD/nothing hopefully doesn't screw us up in
->> case we get it wrong, right?
->
-> Sadly, if you get that annotation wrong you can annotate an actual
-> deadlock away. This the reason you have to be very careful when
-> annotating stuff.
+On Thu, Jun 07, 2012 at 11:12:02AM -0400, Bryan Schumaker wrote:
+> On 06/07/2012 11:04 AM, Joerg Roedel wrote:
+> 
+> Can you use `mount -v` to get more output?
 
-Is that true even if you can see an actual deadlock on the lock *instances*?
+Hmm, that is weird. When I use mount -v it actually does mount the
+remote NFS tree. Here is the output:
 
-The point of the locking classes (to me) was always that you could see
-the deadlock even if it didn't *actually* happen, just *potentially*
-happened. If the lock classes then mean that that hides an actual
-deadlock information, that's a big downside.
+root@chrom:~# mount -v lemmy:/data/repos /data/lemmy/
+mount: no type was given - I'll assume nfs because of the colon
+mount.nfs: timeout set for Thu Jun  7 17:21:54 2012
+mount.nfs: text-based options: 'addr=165.204.15.93'
+mount.nfs: mount(2): Protocol not supported
+mount.nfs: trying 165.204.15.93 prog 100003 vers 3 prot UDP port 2049
+mount.nfs: trying 165.204.15.93 prog 100005 vers 3 prot UDP port 39332
+mount.nfs: text-based options (retry): 'addr=165.204.15.93,vers=3,proto=udp,mountvers=3,mountproto=udp,mountport=39332'
+lemmy:/data/repos on /data/lemmy type nfs (rw)
 
-And yeah, that really means that we absolutely *have* to get the
-instance data in the lock debug printout, since we can't see deadlocks
-any other way. Can you check the compile error that Dave reported for
-your patch, because right now Dave is running without it, afaik, due
-to your lock-instance patch not really working in practice.
+When I unmount and try to mount it again without -v I still get the
+error message and the mount fails.
 
-                Linus
+With 3.4 the mount -v output is:
+
+mount: no type was given - I'll assume nfs because of the colon
+mount.nfs: timeout set for Thu Jun  7 17:19:44 2012
+mount.nfs: text-based options: 'addr=165.204.15.93'
+lemmy:/data/repos/ on /data/lemmy type nfs (rw)
+
+So for some reason the text-based options are different. Maybe that has
+something to do with the problem.
+
+Regards,
+
+	Joerg
+
+
