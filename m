@@ -1,66 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760766Ab2FGNkC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 09:40:02 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5066 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752177Ab2FGNj7 (ORCPT
+	id S1760785Ab2FGNko (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 09:40:44 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:34039 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752177Ab2FGNkn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 09:39:59 -0400
-X-Authority-Analysis: v=2.0 cv=D8PF24tj c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=VwQbUJbxAAAA:8 a=oioPlalLgeHcZa3h1WIA:9 a=PUjeQqilurYA:10 a=AqiG5UHJQZRIOjvh:21 a=iaoldVFnlvHl06ue:21 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1339076397.7559.4.camel@gandalf.stny.rr.com>
-Subject: [ANNOUNCE] 3.4.1-rt9
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Date: Thu, 07 Jun 2012 09:39:57 -0400
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 7 Jun 2012 09:40:43 -0400
+MIME-Version: 1.0
+Reply-To: rus@sfinxsoft.com
+In-Reply-To: <CAKgfjTktMLc5bfqhCOKy0evssxggofNQqLT-gQqBkHcBvOgF0g@mail.gmail.com>
+References: <CAKgfjTktMLc5bfqhCOKy0evssxggofNQqLT-gQqBkHcBvOgF0g@mail.gmail.com>
+From: Rus <rus@sfinxsoft.com>
+Date: Thu, 7 Jun 2012 16:40:01 +0300
+X-Google-Sender-Auth: iynnNfeCYCxINfZucPkEszkI6Ps
+Message-ID: <CAKgfjTnvCAT=3JFxmDTsui_hguiiBfHQfMmErv9wt6QG_30hKA@mail.gmail.com>
+Subject: 3.[34].x Reproducable [Firmware bug] message upon warm boot only
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
-Dear RT Folks,
+I have the following reproducable message upon each 3.4.1 warm boot :
 
-I'm pleased to announce the 3.4.1-rt9 stable release.
+....
+[Firmware Bug]: cpu 0, invalid threshold interrupt offset 0 for bank
+4, block 0 (MSR00000413=0xc010000001000000)
+[Firmware Bug]: cpu 0, invalid threshold interrupt offset 0 for bank
+4, block 1 (MSRC0000408=0xc010000001000000)
+[Firmware Bug]: cpu 0, invalid threshold interrupt offset 0 for bank
+4, block 2 (MSRC0000409=0xc01001c001000000)
+.....
+[Firmware Bug]: cpu 7, try to use APIC500 (LVT offset 0) for vector
+0x10400, but the register is already in use for vector 0xf9 on another
+cpu
+[Firmware Bug]: cpu 7, IBS interrupt offset 0 not available
+(MSRC001103A=0x0000000000000100)
+Failed to setup IBS, -22
+.....
 
+Cold boot do not show this message. The hardware is Asus M5A97 PRO
+(latest 1208 Bios) and FX-8150 CPU, 24GB RAM, the only system on this
+box is Linux.
 
-This release is just an update to the new stable 3.4.1 version
-and no RT specific changes have been made.
+Is this message harmless or this is some problem with hardware/bios/Linux ?
 
-(one exception: commit 24312d34 workqueue: skip nr_running sanity check in worker_enter_idle() if trustee is active
-  has been reverted. Thanks to Ibrahim Umar for pointing out the
-  build failure. The commit was to remove a triggering of a false
-  WARN_ON, but it required variables that did not exist in the -rt
-  workqueue version. Hopefully we do not see this false positive.)
+Can supply any additional info.
 
+TIA, Rus
 
-You can get this release via the git tree at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
-
-  Head SHA1: 0ccbbea2d9b1253eaae376df58705bfd11d0028f
-
-
-Or to build 3.4.1-rt9 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.4.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.4.1.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/patch-3.4.1-rt9.patch.xz
-
-
-
-Enjoy,
-
--- Steve
-
-
-
+--
+SfinxSoft
+http://sfinxsoft.com
