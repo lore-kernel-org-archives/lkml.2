@@ -1,123 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760127Ab2FGG1p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 02:27:45 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:54380 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752555Ab2FGG1o (ORCPT
+	id S1759754Ab2FGGjZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 02:39:25 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:57366 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750713Ab2FGGjX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 02:27:44 -0400
-MIME-Version: 1.0
-Date: Wed, 6 Jun 2012 23:27:43 -0700
-Message-ID: <CAFR8ueeU0z69zAHxJULohZoJ3ONX-ku2mzmUiUatQ=n-V4Eq+w@mail.gmail.com>
-Subject: [PATCH] block: In blk_execute_rq_nowait, init rq->end_io before
- checking for dead queue.
-From: Muthu Kumar <muthu.lkml@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Jens Axboe <axboe@kernel.dk>, James.Bottomley@hansenpartnership.com,
-        linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=14dae9cdc6bb3755df04c1dbfb60
+	Thu, 7 Jun 2012 02:39:23 -0400
+Subject: Re: 3.5.0+ - Linus GIT - WARNING: at net/sched/sch_generic.c:255
+ dev_watchdog+0xeb/0x15f()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Miles Lane <miles.lane@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Wim Van Sebroeck <wim@iguana.be>, Jay Cliburn <jcliburn@gmail.com>,
+        Chris Snook <chris.snook@gmail.com>, netdev <netdev@vger.kernel.org>,
+        Huang Xiong <xiong@qca.qualcomm.com>
+In-Reply-To: <CAHFgRy9jgxOrF=b=oQd-zK5CKxDacOKdBAX_BEuyW+R+sK_GyQ@mail.gmail.com>
+References: <CAHFgRy9jgxOrF=b=oQd-zK5CKxDacOKdBAX_BEuyW+R+sK_GyQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 07 Jun 2012 08:39:17 +0200
+Message-ID: <1339051157.26966.97.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---14dae9cdc6bb3755df04c1dbfb60
-Content-Type: text/plain; charset=ISO-8859-1
+On Thu, 2012-06-07 at 02:16 -0400, Miles Lane wrote:
+> WARNING: at net/sched/sch_generic.c:255 dev_watchdog+0xeb/0x15f()
+> Hardware name: UL50VT
+> NETDEV WATCHDOG: eth0 (atl1c): transmit queue 0 timed out
+> Modules linked in: hfsplus hfs vfat msdos fat snd_hrtimer ipv6
+> snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep
+> snd_pcm_oss snd_seq_dummy snd_mixer_oss uvcvideo videobuf2_core
+> snd_pcm videodev snd_seq_oss snd_seq_midi snd_rawmidi media
+> snd_seq_midi_event acpi_cpufreq videobuf2_vmalloc videobuf2_memops
+> snd_seq iwlwifi snd_timer snd_seq_device asus_laptop mac80211
+> sparse_keymap snd cfg80211 coretemp soundcore psmouse snd_page_alloc
+> rtc_cmos mperf processor evdev rfkill battery led_class input_polldev
+> ac i915 nouveau sr_mod cdrom sd_mod ehci_hcd atl1c uhci_hcd intel_agp
+> ttm usbcore intel_gtt usb_common drm_kms_helper thermal video
+> thermal_sys hwmon button
+> Pid: 3025, comm: hud-service Not tainted 3.5.0-rc1+ #128
+> Call Trace:
+>  <IRQ>  [<ffffffff8102d42f>] warn_slowpath_common+0x7e/0x97
+>  [<ffffffff8102d4dc>] warn_slowpath_fmt+0x41/0x43
+>  [<ffffffff81360f1c>] dev_watchdog+0xeb/0x15f
+>  [<ffffffff8103af44>] run_timer_softirq+0x20e/0x356
+>  [<ffffffff8103ae7e>] ? run_timer_softirq+0x148/0x356
+>  [<ffffffff81360e31>] ? netif_tx_unlock+0x57/0x57
+>  [<ffffffff810344f8>] __do_softirq+0x103/0x239
+>  [<ffffffff8107122a>] ? clockevents_program_event+0x9c/0xb9
+>  [<ffffffff8140a4cc>] call_softirq+0x1c/0x30
+>  [<ffffffff81003bb9>] do_softirq+0x37/0x82
+>  [<ffffffff81034888>] irq_exit+0x4c/0xb1
+>  [<ffffffff8101ba71>] smp_apic_timer_interrupt+0x76/0x84
+>  [<ffffffff81409adc>] apic_timer_interrupt+0x6c/0x80
+>  <EOI>  [<ffffffff81105161>] ? fget_raw_light+0x4c/0x7d
+>  [<ffffffff81105161>] ? fget_raw_light+0x4c/0x7d
+>  [<ffffffff8111153b>] sys_fcntl+0x23/0x53b
+>  [<ffffffff81004b68>] ? print_context_stack+0x44/0xb1
+>  [<ffffffff81408fe2>] system_call_fastpath+0x16/0x1b
+> ---[ end trace c1f284d9c873031d ]---
 
-On Wed, Jun 6, 2012 at 11:16 PM, Tejun Heo <tj@kernel.org> wrote:
-> Sorry to be nit-picky but Jens would appreciate proper subject and it
-> would also be nice to mention the locking change (or even separate
-> that into a separate patch).
+CC netdev and Huang Xiong 
 
-No problem. Changed the subject and also added the info about queue
-lock in the description. Please check.
+Atheros drivers are known to have buggy tx completion, its incredible...
 
------------------------
-blk-exec.c: In blk_execute_rq_nowait(), if the queue is dead, call to
-done() routine is not made. That will result in blk_execute_rq() stuck
-in wait_for_completion(). Avoid this by initializing rq->end_io to
-done() routine before we check for dead queue.
+You could try following patch, not a 'perfect' solution, but a fix.
 
-Also, in case of dead queue, call the completion routine with queue->lock held.
+Thanks
 
-
-Signed-off-by: Muthukumar Ratty <muthur@gmail.com>
-CC: Tejun Heo <tj@kernel.org>
-CC: Jens Axboe <axboe@kernel.dk>
-CC: James Bottomley <James.Bottomley@hansenpartnership.com>
-
------------------------
-
-diff --git a/block/blk-exec.c b/block/blk-exec.c
-index fb2cbd5..284bf56 100644
---- a/block/blk-exec.c
-+++ b/block/blk-exec.c
-@@ -53,16 +53,17 @@ void blk_execute_rq_nowait(struct request_queue
-*q, struct gendisk *bd_disk,
-        WARN_ON(irqs_disabled());
-        spin_lock_irq(q->queue_lock);
-
-+       rq->rq_disk = bd_disk;
-+       rq->end_io = done;
-+
-        if (unlikely(blk_queue_dead(q))) {
--               spin_unlock_irq(q->queue_lock);
-                rq->errors = -ENXIO;
-                if (rq->end_io)
-                        rq->end_io(rq, rq->errors);
-+               spin_unlock_irq(q->queue_lock);
-                return;
-        }
-
--       rq->rq_disk = bd_disk;
--       rq->end_io = done;
-        __elv_add_request(q, rq, where);
-        __blk_run_queue(q);
-        /* the queue is stopped so it won't be run */
-
-
-------------------------------------
+diff --git a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
+index 9cc1570..31224f3 100644
+--- a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
++++ b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
+@@ -1551,10 +1551,12 @@ static bool atl1c_clean_tx_irq(struct atl1c_adapter *adapter,
+ 		atomic_set(&tpd_ring->next_to_clean, next_to_clean);
+ 	}
+ 
++	spin_lock(&adapter->tx_lock);
+ 	if (netif_queue_stopped(adapter->netdev) &&
+ 			netif_carrier_ok(adapter->netdev)) {
+ 		netif_wake_queue(adapter->netdev);
+ 	}
++	spin_unlock(&adapter->tx_lock);
+ 
+ 	return true;
+ }
 
 
 
 
-
-
-
->
-> Thanks.
->
-> --
-> tejun
-
---14dae9cdc6bb3755df04c1dbfb60
-Content-Type: text/x-diff; charset=US-ASCII; 
-	name="blk-exec-assign-endio-before-queue-dead-check.patch"
-Content-Disposition: attachment; 
-	filename="blk-exec-assign-endio-before-queue-dead-check.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h35g10qi0
-
-LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KYmxrLWV4ZWMuYzogSW4gYmxrX2V4ZWN1dGVfcnFfbm93
-YWl0KCksIGlmIHRoZSBxdWV1ZSBpcyBkZWFkLCBjYWxsIHRvIApkb25lKCkgcm91dGluZSBpcyBu
-b3QgbWFkZS4gVGhhdCB3aWxsIHJlc3VsdCBpbiBibGtfZXhlY3V0ZV9ycSgpIHN0dWNrCmluIHdh
-aXRfZm9yX2NvbXBsZXRpb24oKS4gQXZvaWQgdGhpcyBieSBpbml0aWFsaXppbmcgcnEtPmVuZF9p
-byB0bwpkb25lKCkgcm91dGluZSBiZWZvcmUgd2UgY2hlY2sgZm9yIGRlYWQgcXVldWUuCgpBbHNv
-LCBpbiBjYXNlIG9mIGRlYWQgcXVldWUsIGNhbGwgdGhlIGNvbXBsZXRpb24gcm91dGluZSB3aXRo
-IHF1ZXVlLT5sb2NrIGhlbGQuCgoKU2lnbmVkLW9mZi1ieTogTXV0aHVrdW1hciBSYXR0eSA8bXV0
-aHVyQGdtYWlsLmNvbT4KQ0M6IFRlanVuIEhlbyA8dGpAa2VybmVsLm9yZz4KQ0M6IEplbnMgQXhi
-b2UgPGF4Ym9lQGtlcm5lbC5kaz4KQ0M6IEphbWVzIEJvdHRvbWxleSA8SmFtZXMuQm90dG9tbGV5
-QGhhbnNlbnBhcnRuZXJzaGlwLmNvbT4KCi0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCgpkaWZmIC0t
-Z2l0IGEvYmxvY2svYmxrLWV4ZWMuYyBiL2Jsb2NrL2Jsay1leGVjLmMKaW5kZXggZmIyY2JkNS4u
-Mjg0YmY1NiAxMDA2NDQKLS0tIGEvYmxvY2svYmxrLWV4ZWMuYworKysgYi9ibG9jay9ibGstZXhl
-Yy5jCkBAIC01MywxNiArNTMsMTcgQEAgdm9pZCBibGtfZXhlY3V0ZV9ycV9ub3dhaXQoc3RydWN0
-IHJlcXVlc3RfcXVldWUgKnEsIHN0cnVjdCBnZW5kaXNrICpiZF9kaXNrLAogCVdBUk5fT04oaXJx
-c19kaXNhYmxlZCgpKTsKIAlzcGluX2xvY2tfaXJxKHEtPnF1ZXVlX2xvY2spOwogCisJcnEtPnJx
-X2Rpc2sgPSBiZF9kaXNrOworCXJxLT5lbmRfaW8gPSBkb25lOworCiAJaWYgKHVubGlrZWx5KGJs
-a19xdWV1ZV9kZWFkKHEpKSkgewotCQlzcGluX3VubG9ja19pcnEocS0+cXVldWVfbG9jayk7CiAJ
-CXJxLT5lcnJvcnMgPSAtRU5YSU87CiAJCWlmIChycS0+ZW5kX2lvKQogCQkJcnEtPmVuZF9pbyhy
-cSwgcnEtPmVycm9ycyk7CisJCXNwaW5fdW5sb2NrX2lycShxLT5xdWV1ZV9sb2NrKTsKIAkJcmV0
-dXJuOwogCX0KIAotCXJxLT5ycV9kaXNrID0gYmRfZGlzazsKLQlycS0+ZW5kX2lvID0gZG9uZTsK
-IAlfX2Vsdl9hZGRfcmVxdWVzdChxLCBycSwgd2hlcmUpOwogCV9fYmxrX3J1bl9xdWV1ZShxKTsK
-IAkvKiB0aGUgcXVldWUgaXMgc3RvcHBlZCBzbyBpdCB3b24ndCBiZSBydW4gKi8K
---14dae9cdc6bb3755df04c1dbfb60--
