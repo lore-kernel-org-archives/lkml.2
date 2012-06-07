@@ -1,82 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759546Ab2FGDCc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 23:02:32 -0400
-Received: from mga02.intel.com ([134.134.136.20]:41279 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754746Ab2FGDCb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 23:02:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="149194984"
-Message-ID: <4FD01933.7070000@intel.com>
-Date: Thu, 07 Jun 2012 11:00:03 +0800
-From: ShuoX Liu <shuox.liu@intel.com>
-Reply-To: shuox.liu@intel.com
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1759558Ab2FGDK4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 23:10:56 -0400
+Received: from mail2.shareable.org ([80.68.89.115]:55731 "EHLO
+	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753310Ab2FGDKx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 23:10:53 -0400
+X-Greylist: delayed 2440 seconds by postgrey-1.27 at vger.kernel.org; Wed, 06 Jun 2012 23:10:53 EDT
+Date: Thu, 7 Jun 2012 03:29:31 +0100
+From: Jamie Lokier <jamie@shareable.org>
+To: Vladimir Davydov <VDavydov@parallels.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFC] make reading /proc/mounts consistent
+Message-ID: <20120607022931.GB26406@jl-vm1.vm.bytemark.co.uk>
+References: <1338362354-19519-1-git-send-email-vdavydov@parallels.com>
+ <87aa0lf7w8.fsf@xmission.com>
+ <77E04EBA-1AD8-4D9D-930B-575F29E3EDC1@parallels.com>
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Borislav Petkov <bp@alien8.de>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "andi@firstfloor.org" <andi@firstfloor.org>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH v7 2/2] x86 mce: use new printk recursion disabling interface
-References: <4FC2E944.6060903@intel.com> <20120604171202.GA8533@x1.osrc.amd.com> <1338856360.14538.220.camel@ymzhang.sh.intel.com> <20120605081448.GA7097@liondog.tnic> <4FCDD72A.9030701@intel.com> <4FCDD78A.3070106@intel.com> <20120605151542.GA10669@x1.osrc.amd.com> <1338942965.14538.233.camel@ymzhang.sh.intel.com> <4FCF155B.3090705@intel.com> <4FCF160D.8010404@intel.com> <20120606152238.GA3874@x1.osrc.amd.com> <4FD01896.1010506@intel.com>
-In-Reply-To: <4FD01896.1010506@intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <77E04EBA-1AD8-4D9D-930B-575F29E3EDC1@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: ShuoX Liu <shuox.liu@intel.com>
+Vladimir Davydov wrote:
+> >> This is achieved by keeping the position where a process stopped as a
+> >> pointer to mount entry and resuming reading from the position. If a mount entry
+> >> is removed, all processes that stopped on the entry are advanced i.e.  their
+> >> position is moved to the next entry. To achieve this, all processes reading
+> >> /proc/mounts are organized in a linked list.
+> >> 
+> >> An example of /proc/mounts inconsistency is here:
+> >> http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=593516
+> > 
+> > In the specific case of schroot I'm not convinced that you shouldn't
+> > just increase the user space buffer size if you don't read everything.
+> > Or to simply use mount namespaces to make unmounting unnecessary.
+> 
+> I agree, but there may be a lot of programs that already read
+> /proc/mounts and don't care about its consistency.
 
-On x86 machines, some times MCE happens just when kernel calls printk
-to output some log info to serial console, while usually MCE module in
-kernel is used to print out some hardware error information, such like
-bad cache or bad memory bank. That causes printk recursion and printk
-would omit MCE printk output.
+I have cared about its consistency, but didn't realise it didn't
+provide it.  Oops!  I will use a bigger buffer in future, thanks for
+pointing it out ;-)
 
-We hit it when running MTBF testing on Android ATOM mobiles.
-
-Here in print_mce, we choose to disable printk recursion to make sure
-MCE logs printed out.
-
-Signed-off-by: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Signed-off-by: ShuoX Liu <shuox.liu@intel.com>
----
- arch/x86/kernel/cpu/mcheck/mce.c |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 2afcbd2..6056e94 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -242,6 +242,7 @@ static void print_mce(struct mce *m)
- {
- 	int ret = 0;
- 
-+	printk_recursion_check_disable();
- 	pr_emerg(HW_ERR "CPU %d: Machine Check Exception: %Lx Bank %d: %016Lx\n",
- 	       m->extcpu, m->mcgstatus, m->bank, m->status);
- 
-@@ -275,10 +276,13 @@ static void print_mce(struct mce *m)
- 	 * (if the CPU has an implementation for that)
- 	 */
- 	ret = atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, m);
--	if (ret == NOTIFY_STOP)
-+	if (ret == NOTIFY_STOP) {
-+		printk_recursion_check_enable();
- 		return;
-+	}
- 
- 	pr_emerg_ratelimited(HW_ERR "Run the above through 'mcelog --ascii'\n");
-+	printk_recursion_check_enable();
- }
- 
- #define PANIC_TIMEOUT 5 /* 5 seconds */
--- 
-1.7.1
-
+-- Jamie
