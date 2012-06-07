@@ -1,72 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753973Ab2FGMJo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 08:09:44 -0400
-Received: from db3ehsobe002.messaging.microsoft.com ([213.199.154.140]:22392
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753520Ab2FGMJn (ORCPT
+	id S1754971Ab2FGMQI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 08:16:08 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:37314 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754331Ab2FGMQG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 08:09:43 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -8
-X-BigFish: VS-8(z616jz148cI1432N98dKzz1202hzz8275bh8275dhz2dh2a8h668h839h944hd25hf0ah)
-Date: Thu, 7 Jun 2012 20:09:11 +0800
-From: Dong Aisheng <aisheng.dong@freescale.com>
-To: Devendra Naga <devendra.aaru@gmail.com>
-CC: Linus Walleij <linus.walleij@linaro.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] pinctrl: free if of_get_parent fails to get the
- parent node
-Message-ID: <20120607120910.GE8354@shlinux2.ap.freescale.net>
-References: <1338656677-3979-1-git-send-email-devendra.aaru@gmail.com>
+	Thu, 7 Jun 2012 08:16:06 -0400
+Message-ID: <4FD09B83.1020306@atmel.com>
+Date: Thu, 7 Jun 2012 14:16:03 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1338656677-3979-1-git-send-email-devendra.aaru@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: freescale.com
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: Andrew Victor <linux@maxim.org.za>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: at91: remove two unused headers
+References: <1339064326.25798.9.camel@x61.thuisdomein>
+In-Reply-To: <1339064326.25798.9.camel@x61.thuisdomein>
+X-Enigmail-Version: 1.5pre
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.159.245.112]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 02, 2012 at 10:34:37PM +0530, Devendra Naga wrote:
-> of_get_parent can return null if no parent node found, so the allocated new_map
-> should be freed.
+On 06/07/2012 12:18 PM, Paul Bolle :
+> Commit 82c583e3ae31ffa76d1280197274cc1e1cde3179 ("AT91RM9200 hardware
+> headers") introduced arch/arm/mach-at91/include/mach/at91_spi.h and
+> arch/arm/mach-at91/include/mach/at91_ssc.h. (These files were called
+> at91rm9200_spi.h and at91rm9200_ssc.h then.) That commit was added in
+> the v2.6.18 development cycle.
 > 
-> Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
+> Nothing includes them now and nothing uses the named constants they
+> provide. (There's no way these named constants could be used unless
+> these files were included somehow.) It actually seems these two headers
+> have never been used since they were added to the tree. They can safely
+> be removed.
+> 
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+
+Thanks for finding this. I will queue it for our at91-3.6-cleanup branch.
+
 > ---
->  drivers/pinctrl/pinctrl-imx.c |    4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
+> Tested with "git grep". I do not have the related hardware (whatever
+> that might be) and don't have the toolchain needed for at91 at hand. But
+> it's hard to imagine how this could break anything.
 > 
-Thanks for fixing.
-
-Acked-by: Dong Aisheng <dong.aisheng@linaro.org>
-
-Regards
-Dong Aisheng
-
-> diff --git a/drivers/pinctrl/pinctrl-imx.c b/drivers/pinctrl/pinctrl-imx.c
-> index 553ed95..82c1d80 100644
-> --- a/drivers/pinctrl/pinctrl-imx.c
-> +++ b/drivers/pinctrl/pinctrl-imx.c
-> @@ -173,8 +173,10 @@ static int imx_dt_node_to_map(struct pinctrl_dev *pctldev,
->  
->  	/* create mux map */
->  	parent = of_get_parent(np);
-> -	if (!parent)
-> +	if (!parent) {
-> +		kfree(new_map);
->  		return -EINVAL;
-> +	}
->  	new_map[0].type = PIN_MAP_TYPE_MUX_GROUP;
->  	new_map[0].data.mux.function = parent->name;
->  	new_map[0].data.mux.group = np->name;
-> -- 
-> 1.7.9.5
+>  arch/arm/mach-at91/include/mach/at91_spi.h |   81 ---------------------
+>  arch/arm/mach-at91/include/mach/at91_ssc.h |  106 ----------------------------
+>  2 files changed, 0 insertions(+), 187 deletions(-)
+>  delete mode 100644 arch/arm/mach-at91/include/mach/at91_spi.h
+>  delete mode 100644 arch/arm/mach-at91/include/mach/at91_ssc.h
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+> diff --git a/arch/arm/mach-at91/include/mach/at91_spi.h b/arch/arm/mach-at91/include/mach/at91_spi.h
+> deleted file mode 100644
+> index 2f6ba0c..0000000
+> --- a/arch/arm/mach-at91/include/mach/at91_spi.h
+> +++ /dev/null
+> @@ -1,81 +0,0 @@
+> -/*
+> - * arch/arm/mach-at91/include/mach/at91_spi.h
+> - *
+> - * Copyright (C) 2005 Ivan Kokshaysky
+> - * Copyright (C) SAN People
+> - *
+> - * Serial Peripheral Interface (SPI) registers.
+> - * Based on AT91RM9200 datasheet revision E.
+> - *
+> - * This program is free software; you can redistribute it and/or modify
+> - * it under the terms of the GNU General Public License as published by
+> - * the Free Software Foundation; either version 2 of the License, or
+> - * (at your option) any later version.
+> - */
+> -
+> -#ifndef AT91_SPI_H
+> -#define AT91_SPI_H
+> -
+> -#define AT91_SPI_CR			0x00		/* Control Register */
+> -#define		AT91_SPI_SPIEN		(1 <<  0)		/* SPI Enable */
+> -#define		AT91_SPI_SPIDIS		(1 <<  1)		/* SPI Disable */
+> -#define		AT91_SPI_SWRST		(1 <<  7)		/* SPI Software Reset */
+> -#define		AT91_SPI_LASTXFER	(1 << 24)		/* Last Transfer [SAM9261 only] */
+> -
+> -#define AT91_SPI_MR			0x04		/* Mode Register */
+> -#define		AT91_SPI_MSTR		(1    <<  0)		/* Master/Slave Mode */
+> -#define		AT91_SPI_PS		(1    <<  1)		/* Peripheral Select */
+> -#define			AT91_SPI_PS_FIXED	(0 << 1)
+> -#define			AT91_SPI_PS_VARIABLE	(1 << 1)
+> -#define		AT91_SPI_PCSDEC		(1    <<  2)		/* Chip Select Decode */
+> -#define		AT91_SPI_DIV32		(1    <<  3)		/* Clock Selection [AT91RM9200 only] */
+> -#define		AT91_SPI_MODFDIS	(1    <<  4)		/* Mode Fault Detection */
+> -#define		AT91_SPI_LLB		(1    <<  7)		/* Local Loopback Enable */
+> -#define		AT91_SPI_PCS		(0xf  << 16)		/* Peripheral Chip Select */
+> -#define		AT91_SPI_DLYBCS		(0xff << 24)		/* Delay Between Chip Selects */
+> -
+> -#define AT91_SPI_RDR		0x08			/* Receive Data Register */
+> -#define		AT91_SPI_RD		(0xffff <<  0)		/* Receive Data */
+> -#define		AT91_SPI_PCS		(0xf	<< 16)		/* Peripheral Chip Select */
+> -
+> -#define AT91_SPI_TDR		0x0c			/* Transmit Data Register */
+> -#define		AT91_SPI_TD		(0xffff <<  0)		/* Transmit Data */
+> -#define		AT91_SPI_PCS		(0xf	<< 16)		/* Peripheral Chip Select */
+> -#define		AT91_SPI_LASTXFER	(1	<< 24)		/* Last Transfer [SAM9261 only] */
+> -
+> -#define AT91_SPI_SR		0x10			/* Status Register */
+> -#define		AT91_SPI_RDRF		(1 <<  0)		/* Receive Data Register Full */
+> -#define		AT91_SPI_TDRE		(1 <<  1)		/* Transmit Data Register Full */
+> -#define		AT91_SPI_MODF		(1 <<  2)		/* Mode Fault Error */
+> -#define		AT91_SPI_OVRES		(1 <<  3)		/* Overrun Error Status */
+> -#define		AT91_SPI_ENDRX		(1 <<  4)		/* End of RX buffer */
+> -#define		AT91_SPI_ENDTX		(1 <<  5)		/* End of TX buffer */
+> -#define		AT91_SPI_RXBUFF		(1 <<  6)		/* RX Buffer Full */
+> -#define		AT91_SPI_TXBUFE		(1 <<  7)		/* TX Buffer Empty */
+> -#define		AT91_SPI_NSSR		(1 <<  8)		/* NSS Rising [SAM9261 only] */
+> -#define		AT91_SPI_TXEMPTY	(1 <<  9)		/* Transmission Register Empty [SAM9261 only] */
+> -#define		AT91_SPI_SPIENS		(1 << 16)		/* SPI Enable Status */
+> -
+> -#define AT91_SPI_IER		0x14			/* Interrupt Enable Register */
+> -#define AT91_SPI_IDR		0x18			/* Interrupt Disable Register */
+> -#define AT91_SPI_IMR		0x1c			/* Interrupt Mask Register */
+> -
+> -#define AT91_SPI_CSR(n)		(0x30 + ((n) * 4))	/* Chip Select Registers 0-3 */
+> -#define		AT91_SPI_CPOL		(1    <<  0)		/* Clock Polarity */
+> -#define		AT91_SPI_NCPHA		(1    <<  1)		/* Clock Phase */
+> -#define		AT91_SPI_CSAAT		(1    <<  3)		/* Chip Select Active After Transfer [SAM9261 only] */
+> -#define		AT91_SPI_BITS		(0xf  <<  4)		/* Bits Per Transfer */
+> -#define			AT91_SPI_BITS_8		(0 << 4)
+> -#define			AT91_SPI_BITS_9		(1 << 4)
+> -#define			AT91_SPI_BITS_10	(2 << 4)
+> -#define			AT91_SPI_BITS_11	(3 << 4)
+> -#define			AT91_SPI_BITS_12	(4 << 4)
+> -#define			AT91_SPI_BITS_13	(5 << 4)
+> -#define			AT91_SPI_BITS_14	(6 << 4)
+> -#define			AT91_SPI_BITS_15	(7 << 4)
+> -#define			AT91_SPI_BITS_16	(8 << 4)
+> -#define		AT91_SPI_SCBR		(0xff <<  8)		/* Serial Clock Baud Rate */
+> -#define		AT91_SPI_DLYBS		(0xff << 16)		/* Delay before SPCK */
+> -#define		AT91_SPI_DLYBCT		(0xff << 24)		/* Delay between Consecutive Transfers */
+> -
+> -#endif
+> diff --git a/arch/arm/mach-at91/include/mach/at91_ssc.h b/arch/arm/mach-at91/include/mach/at91_ssc.h
+> deleted file mode 100644
+> index a81114c..0000000
+> --- a/arch/arm/mach-at91/include/mach/at91_ssc.h
+> +++ /dev/null
+> @@ -1,106 +0,0 @@
+> -/*
+> - * arch/arm/mach-at91/include/mach/at91_ssc.h
+> - *
+> - * Copyright (C) SAN People
+> - *
+> - * Serial Synchronous Controller (SSC) registers.
+> - * Based on AT91RM9200 datasheet revision E.
+> - *
+> - * This program is free software; you can redistribute it and/or modify
+> - * it under the terms of the GNU General Public License as published by
+> - * the Free Software Foundation; either version 2 of the License, or
+> - * (at your option) any later version.
+> - */
+> -
+> -#ifndef AT91_SSC_H
+> -#define AT91_SSC_H
+> -
+> -#define AT91_SSC_CR		0x00	/* Control Register */
+> -#define		AT91_SSC_RXEN		(1 <<  0)	/* Receive Enable */
+> -#define		AT91_SSC_RXDIS		(1 <<  1)	/* Receive Disable */
+> -#define		AT91_SSC_TXEN		(1 <<  8)	/* Transmit Enable */
+> -#define		AT91_SSC_TXDIS		(1 <<  9)	/* Transmit Disable */
+> -#define		AT91_SSC_SWRST		(1 << 15)	/* Software Reset */
+> -
+> -#define AT91_SSC_CMR		0x04	/* Clock Mode Register */
+> -#define		AT91_SSC_CMR_DIV	(0xfff << 0)	/* Clock Divider */
+> -
+> -#define AT91_SSC_RCMR		0x10	/* Receive Clock Mode Register */
+> -#define		AT91_SSC_CKS		(3    <<  0)	/* Clock Selection */
+> -#define			AT91_SSC_CKS_DIV		(0 << 0)
+> -#define			AT91_SSC_CKS_CLOCK		(1 << 0)
+> -#define			AT91_SSC_CKS_PIN		(2 << 0)
+> -#define		AT91_SSC_CKO		(7    <<  2)	/* Clock Output Mode Selection */
+> -#define			AT91_SSC_CKO_NONE		(0 << 2)
+> -#define			AT91_SSC_CKO_CONTINUOUS		(1 << 2)
+> -#define		AT91_SSC_CKI		(1    <<  5)	/* Clock Inversion */
+> -#define			AT91_SSC_CKI_FALLING		(0 << 5)
+> -#define			AT91_SSC_CK_RISING		(1 << 5)
+> -#define		AT91_SSC_CKG		(1    <<  6)	/* Receive Clock Gating Selection [AT91SAM9261 only] */
+> -#define			AT91_SSC_CKG_NONE		(0 << 6)
+> -#define			AT91_SSC_CKG_RFLOW		(1 << 6)
+> -#define			AT91_SSC_CKG_RFHIGH		(2 << 6)
+> -#define		AT91_SSC_START		(0xf  <<  8)	/* Start Selection */
+> -#define			AT91_SSC_START_CONTINUOUS	(0 << 8)
+> -#define			AT91_SSC_START_TX_RX		(1 << 8)
+> -#define			AT91_SSC_START_LOW_RF		(2 << 8)
+> -#define			AT91_SSC_START_HIGH_RF		(3 << 8)
+> -#define			AT91_SSC_START_FALLING_RF	(4 << 8)
+> -#define			AT91_SSC_START_RISING_RF	(5 << 8)
+> -#define			AT91_SSC_START_LEVEL_RF		(6 << 8)
+> -#define			AT91_SSC_START_EDGE_RF		(7 << 8)
+> -#define		AT91_SSC_STOP		(1    << 12)	/* Receive Stop Selection [AT91SAM9261 only] */
+> -#define		AT91_SSC_STTDLY		(0xff << 16)	/* Start Delay */
+> -#define		AT91_SSC_PERIOD		(0xff << 24)	/* Period Divider Selection */
+> -
+> -#define AT91_SSC_RFMR		0x14	/* Receive Frame Mode Register */
+> -#define		AT91_SSC_DATALEN	(0x1f <<  0)	/* Data Length */
+> -#define		AT91_SSC_LOOP		(1    <<  5)	/* Loop Mode */
+> -#define		AT91_SSC_MSBF		(1    <<  7)	/* Most Significant Bit First */
+> -#define		AT91_SSC_DATNB		(0xf  <<  8)	/* Data Number per Frame */
+> -#define		AT91_SSC_FSLEN		(0xf  << 16)	/* Frame Sync Length */
+> -#define		AT91_SSC_FSOS		(7    << 20)	/* Frame Sync Output Selection */
+> -#define			AT91_SSC_FSOS_NONE		(0 << 20)
+> -#define			AT91_SSC_FSOS_NEGATIVE		(1 << 20)
+> -#define			AT91_SSC_FSOS_POSITIVE		(2 << 20)
+> -#define			AT91_SSC_FSOS_LOW		(3 << 20)
+> -#define			AT91_SSC_FSOS_HIGH		(4 << 20)
+> -#define			AT91_SSC_FSOS_TOGGLE		(5 << 20)
+> -#define		AT91_SSC_FSEDGE		(1    << 24)	/* Frame Sync Edge Detection */
+> -#define			AT91_SSC_FSEDGE_POSITIVE	(0 << 24)
+> -#define			AT91_SSC_FSEDGE_NEGATIVE	(1 << 24)
+> -
+> -#define AT91_SSC_TCMR		0x18	/* Transmit Clock Mode Register */
+> -#define AT91_SSC_TFMR		0x1c	/* Transmit Fram Mode Register */
+> -#define		AT91_SSC_DATDEF		(1 <<  5)	/* Data Default Value */
+> -#define		AT91_SSC_FSDEN		(1 << 23)	/* Frame Sync Data Enable */
+> -
+> -#define AT91_SSC_RHR		0x20	/* Receive Holding Register */
+> -#define AT91_SSC_THR		0x24	/* Transmit Holding Register */
+> -#define AT91_SSC_RSHR		0x30	/* Receive Sync Holding Register */
+> -#define AT91_SSC_TSHR		0x34	/* Transmit Sync Holding Register */
+> -
+> -#define AT91_SSC_RC0R		0x38	/* Receive Compare 0 Register [AT91SAM9261 only] */
+> -#define AT91_SSC_RC1R		0x3c	/* Receive Compare 1 Register [AT91SAM9261 only] */
+> -
+> -#define AT91_SSC_SR		0x40	/* Status Register */
+> -#define		AT91_SSC_TXRDY		(1 <<  0)	/* Transmit Ready */
+> -#define		AT91_SSC_TXEMPTY	(1 <<  1)	/* Transmit Empty */
+> -#define		AT91_SSC_ENDTX		(1 <<  2)	/* End of Transmission */
+> -#define		AT91_SSC_TXBUFE		(1 <<  3)	/* Transmit Buffer Empty */
+> -#define		AT91_SSC_RXRDY		(1 <<  4)	/* Receive Ready */
+> -#define		AT91_SSC_OVRUN		(1 <<  5)	/* Receive Overrun */
+> -#define		AT91_SSC_ENDRX		(1 <<  6)	/* End of Reception */
+> -#define		AT91_SSC_RXBUFF		(1 <<  7)	/* Receive Buffer Full */
+> -#define		AT91_SSC_CP0		(1 <<  8)	/* Compare 0 [AT91SAM9261 only] */
+> -#define		AT91_SSC_CP1		(1 <<  9)	/* Compare 1 [AT91SAM9261 only] */
+> -#define		AT91_SSC_TXSYN		(1 << 10)	/* Transmit Sync */
+> -#define		AT91_SSC_RXSYN		(1 << 11)	/* Receive Sync */
+> -#define		AT91_SSC_TXENA		(1 << 16)	/* Transmit Enable */
+> -#define		AT91_SSC_RXENA		(1 << 17)	/* Receive Enable */
+> -
+> -#define AT91_SSC_IER		0x44	/* Interrupt Enable Register */
+> -#define AT91_SSC_IDR		0x48	/* Interrupt Disable Register */
+> -#define AT91_SSC_IMR		0x4c	/* Interrupt Mask Register */
+> -
+> -#endif
 
+
+-- 
+Nicolas Ferre
