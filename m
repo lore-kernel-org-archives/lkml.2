@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759834Ab2FGEV3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 00:21:29 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:63657 "EHLO
+	id S933105Ab2FGEVd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 00:21:33 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:59627 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933082Ab2FGEVW (ORCPT
+	with ESMTP id S1759838Ab2FGEVa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 00:21:22 -0400
-Message-Id: <20120607040347.474529090@linuxfoundation.org>
+	Thu, 7 Jun 2012 00:21:30 -0400
+Message-Id: <20120607040347.636736493@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 07 Jun 2012 13:04:51 +0900
+Date: Thu, 07 Jun 2012 13:04:52 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [ 75/82] iommu/amd: Fix deadlock in ppr-handling error path
+        alan@lxorguk.ukuu.org.uk, Andy Whitcroft <apw@canonical.com>,
+        Ralf Jung <post@ralfj.de>, Len Brown <len.brown@intel.com>
+Subject: [ 76/82] ACPI battery: only refresh the sysfs files when pertinent information changes
 In-Reply-To: <20120607041406.GA13233@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,136 +25,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joerg Roedel <joerg.roedel@amd.com>
+From: Andy Whitcroft <apw@canonical.com>
 
-commit eee53537c476c947bf7faa1c916d2f5a0ae8ec93 upstream.
+commit c5971456964290da7e98222892797b71ef793e62 upstream.
 
-In the error path of the ppr_notifer it can happen that the
-iommu->lock is taken recursivly. This patch fixes the
-problem by releasing the iommu->lock before any notifier is
-invoked. This also requires to move the erratum workaround
-for the ppr-log (interrupt may be faster than data in the log)
-one function up.
+We only need to regenerate the sysfs files when the capacity units
+change, avoid the update otherwise.
 
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+The origin of this issue is dates way back to 2.6.38:
+da8aeb92d4853f37e281f11fddf61f9c7d84c3cd
+(ACPI / Battery: Update information on info notification and resume)
+
+Signed-off-by: Andy Whitcroft <apw@canonical.com>
+Tested-by: Ralf Jung <post@ralfj.de>
+Signed-off-by: Len Brown <len.brown@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iommu/amd_iommu.c |   73 ++++++++++++++++++++++++++++------------------
- 1 file changed, 45 insertions(+), 28 deletions(-)
+ drivers/acpi/battery.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -547,26 +547,12 @@ static void iommu_poll_events(struct amd
- 	spin_unlock_irqrestore(&iommu->lock, flags);
- }
+--- a/drivers/acpi/battery.c
++++ b/drivers/acpi/battery.c
+@@ -643,11 +643,19 @@ static int acpi_battery_update(struct ac
  
--static void iommu_handle_ppr_entry(struct amd_iommu *iommu, u32 head)
-+static void iommu_handle_ppr_entry(struct amd_iommu *iommu, u64 *raw)
+ static void acpi_battery_refresh(struct acpi_battery *battery)
  {
- 	struct amd_iommu_fault fault;
--	volatile u64 *raw;
--	int i;
- 
- 	INC_STATS_COUNTER(pri_requests);
- 
--	raw = (u64 *)(iommu->ppr_log + head);
--
--	/*
--	 * Hardware bug: Interrupt may arrive before the entry is written to
--	 * memory. If this happens we need to wait for the entry to arrive.
--	 */
--	for (i = 0; i < LOOP_TIMEOUT; ++i) {
--		if (PPR_REQ_TYPE(raw[0]) != 0)
--			break;
--		udelay(1);
--	}
--
- 	if (PPR_REQ_TYPE(raw[0]) != PPR_REQ_FAULT) {
- 		pr_err_ratelimited("AMD-Vi: Unknown PPR request received\n");
- 		return;
-@@ -578,12 +564,6 @@ static void iommu_handle_ppr_entry(struc
- 	fault.tag       = PPR_TAG(raw[0]);
- 	fault.flags     = PPR_FLAGS(raw[0]);
- 
--	/*
--	 * To detect the hardware bug we need to clear the entry
--	 * to back to zero.
--	 */
--	raw[0] = raw[1] = 0;
--
- 	atomic_notifier_call_chain(&ppr_notifier, 0, &fault);
- }
- 
-@@ -595,25 +575,62 @@ static void iommu_poll_ppr_log(struct am
- 	if (iommu->ppr_log == NULL)
++	int power_unit;
++
+ 	if (!battery->bat.dev)
  		return;
  
-+	/* enable ppr interrupts again */
-+	writel(MMIO_STATUS_PPR_INT_MASK, iommu->mmio_base + MMIO_STATUS_OFFSET);
++	power_unit = battery->power_unit;
 +
- 	spin_lock_irqsave(&iommu->lock, flags);
- 
- 	head = readl(iommu->mmio_base + MMIO_PPR_HEAD_OFFSET);
- 	tail = readl(iommu->mmio_base + MMIO_PPR_TAIL_OFFSET);
- 
- 	while (head != tail) {
-+		volatile u64 *raw;
-+		u64 entry[2];
-+		int i;
+ 	acpi_battery_get_info(battery);
+-	/* The battery may have changed its reporting units. */
 +
-+		raw = (u64 *)(iommu->ppr_log + head);
++	if (power_unit == battery->power_unit)
++		return;
 +
-+		/*
-+		 * Hardware bug: Interrupt may arrive before the entry is
-+		 * written to memory. If this happens we need to wait for the
-+		 * entry to arrive.
-+		 */
-+		for (i = 0; i < LOOP_TIMEOUT; ++i) {
-+			if (PPR_REQ_TYPE(raw[0]) != 0)
-+				break;
-+			udelay(1);
-+		}
-+
-+		/* Avoid memcpy function-call overhead */
-+		entry[0] = raw[0];
-+		entry[1] = raw[1];
-+
-+		/*
-+		 * To detect the hardware bug we need to clear the entry
-+		 * back to zero.
-+		 */
-+		raw[0] = raw[1] = 0UL;
- 
--		/* Handle PPR entry */
--		iommu_handle_ppr_entry(iommu, head);
--
--		/* Update and refresh ring-buffer state*/
-+		/* Update head pointer of hardware ring-buffer */
- 		head = (head + PPR_ENTRY_SIZE) % PPR_LOG_SIZE;
- 		writel(head, iommu->mmio_base + MMIO_PPR_HEAD_OFFSET);
-+
-+		/*
-+		 * Release iommu->lock because ppr-handling might need to
-+		 * re-aquire it
-+		 */
-+		spin_unlock_irqrestore(&iommu->lock, flags);
-+
-+		/* Handle PPR entry */
-+		iommu_handle_ppr_entry(iommu, entry);
-+
-+		spin_lock_irqsave(&iommu->lock, flags);
-+
-+		/* Refresh ring-buffer information */
-+		head = readl(iommu->mmio_base + MMIO_PPR_HEAD_OFFSET);
- 		tail = readl(iommu->mmio_base + MMIO_PPR_TAIL_OFFSET);
- 	}
- 
--	/* enable ppr interrupts again */
--	writel(MMIO_STATUS_PPR_INT_MASK, iommu->mmio_base + MMIO_STATUS_OFFSET);
--
- 	spin_unlock_irqrestore(&iommu->lock, flags);
++	/* The battery has changed its reporting units. */
+ 	sysfs_remove_battery(battery);
+ 	sysfs_add_battery(battery);
  }
- 
 
 
