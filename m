@@ -1,124 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760117Ab2FGNTT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 09:19:19 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:33509 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757853Ab2FGNTR convert rfc822-to-8bit (ORCPT
+	id S1760244Ab2FGNUX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 09:20:23 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:59300 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757999Ab2FGNUV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 09:19:17 -0400
+	Thu, 7 Jun 2012 09:20:21 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Ingo Molnar <mingo@elte.hu>, Masami Hiramatsu <mhiramat@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH] Use atomic_xchg() instead atomic_dec_and_test() for stop_machine
+Date: Thu, 07 Jun 2012 22:20:18 +0900
+Message-ID: <87zk8fgsx9.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1.50 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <4FD01896.1010506@intel.com>
-References: <4FC2E944.6060903@intel.com>
-	<20120604171202.GA8533@x1.osrc.amd.com>
-	<1338856360.14538.220.camel@ymzhang.sh.intel.com>
-	<20120605081448.GA7097@liondog.tnic>
-	<4FCDD72A.9030701@intel.com>
-	<4FCDD78A.3070106@intel.com>
-	<20120605151542.GA10669@x1.osrc.amd.com>
-	<1338942965.14538.233.camel@ymzhang.sh.intel.com>
-	<4FCF155B.3090705@intel.com>
-	<4FCF160D.8010404@intel.com>
-	<20120606152238.GA3874@x1.osrc.amd.com>
-	<4FD01896.1010506@intel.com>
-Date: Thu, 7 Jun 2012 13:19:16 +0000
-Message-ID: <CAO6yerJVKgjHe9LBL1ZfcMUzqHA5iZwSf2La+hf19QBDEQ-L0w@mail.gmail.com>
-Subject: Re: [PATCH v7 1/2] printk: add interface for disabling recursion check
-From: bing deng <deng8bing@gmail.com>
-To: shuox.liu@intel.com
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@alien8.de>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "andi@firstfloor.org" <andi@firstfloor.org>,
-        Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 7, 2012 at 2:57 AM, ShuoX Liu <shuox.liu@intel.com> wrote:
-> From: ShuoX Liu <shuox.liu@intel.com>
->
-> With some special scenario, such as Machine Check Exception happened
-> in printk, we want to bypass printk recursion check to printk some
-> important information. So we add these interfaces of printk.
->
-> 1) printk_recursion_check_disable() for disabling recursion check
-> 2) printk_recursion_check_enable() for enabling recursion check
->
-> Signed-off-by: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-> Signed-off-by: ShuoX Liu <shuox.liu@intel.com>
-> ---
->  include/linux/printk.h |    3 +++
->  kernel/printk.c        |   17 ++++++++++++++++-
->  2 files changed, 19 insertions(+), 1 deletions(-)
->
-> diff --git a/include/linux/printk.h b/include/linux/printk.h
-> index 1bec2f7..da48ec7 100644
-> --- a/include/linux/printk.h
-> +++ b/include/linux/printk.h
-> @@ -42,6 +42,9 @@ static inline void console_verbose(void)
->                console_loglevel = 15;
->  }
->
-> +void printk_recursion_check_disable(void);
-> +void printk_recursion_check_enable(void);
-> +
->  struct va_format {
->        const char *fmt;
->        va_list *va;
-> diff --git a/kernel/printk.c b/kernel/printk.c
-> index 32462d2..0580f67 100644
-> --- a/kernel/printk.c
-> +++ b/kernel/printk.c
-> @@ -78,6 +78,19 @@ int console_printk[4] = {
->  int oops_in_progress;
->  EXPORT_SYMBOL(oops_in_progress);
->
-> +static atomic_t recursion_check_disabled = ATOMIC_INIT(0);
-> +
-> +void printk_recursion_check_disable(void)
-> +{
-> +       atomic_inc(&recursion_check_disabled);
-> +}
-> +
-> +void printk_recursion_check_enable(void)
-> +{
-> +       WARN_ON(atomic_read(&recursion_check_disabled) < 1);
-> +       atomic_dec(&recursion_check_disabled);
-> +}
-> +
->  /*
->  * console_sem protects the console_drivers list, and also
->  * provides serialisation for access to the entire console
-> @@ -1295,7 +1308,9 @@ asmlinkage int vprintk_emit(int facility, int level,
->                 * recursion and return - but flag the recursion so that
->                 * it can be printed at the next appropriate moment:
->                 */
-> -               if (!oops_in_progress && !lockdep_recursing(current)) {
-> +               if (!atomic_read(&recursion_check_disabled)
-> +                       && !oops_in_progress
-> +                       && !lockdep_recursing(current)) {
->                        recursion_bug = 1;
->                        goto out_restore_irqs;
->                }
-> --
-> 1.7.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
 
-Hi Shuo,
+stop_machine_first is just to see if it is first one or not.  In this
+usage, atomic_dec_and_test() makes value less than 0.
 
-    Should the two function be export by EXPORT_SYMBOL? The the other
-module can use it.
+I think it is not desirable, because it only triggers
+atomic_dec_and_test() less than 0 debug patch. (the patch tests result
+of atomic_dec_and_test() is < 0)
 
+So, this uses atomic_xchg() instead.
+
+Signed-off-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+---
+
+ arch/x86/kernel/alternative.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff -puN arch/x86/kernel/alternative.c~stop_machine-use-atomic_xchg arch/x86/kernel/alternative.c
+--- linux/arch/x86/kernel/alternative.c~stop_machine-use-atomic_xchg	2012-05-23 13:10:03.000000000 +0900
++++ linux-hirofumi/arch/x86/kernel/alternative.c	2012-05-23 13:10:03.000000000 +0900
+@@ -664,7 +664,7 @@ static int __kprobes stop_machine_text_p
+ 	struct text_poke_param *p;
+ 	int i;
+ 
+-	if (atomic_dec_and_test(&stop_machine_first)) {
++	if (atomic_xchg(&stop_machine_first, 0)) {
+ 		for (i = 0; i < tpp->nparams; i++) {
+ 			p = &tpp->params[i];
+ 			text_poke(p->addr, p->opcode, p->len);
+_
 -- 
-Best Regards,
-Bing
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
