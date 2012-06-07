@@ -1,96 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759754Ab2FGGjZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 02:39:25 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:57366 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750713Ab2FGGjX (ORCPT
+	id S1753033Ab2FGGpo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 02:45:44 -0400
+Received: from mga03.intel.com ([143.182.124.21]:15357 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751815Ab2FGGpm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 02:39:23 -0400
-Subject: Re: 3.5.0+ - Linus GIT - WARNING: at net/sched/sch_generic.c:255
- dev_watchdog+0xeb/0x15f()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Miles Lane <miles.lane@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Wim Van Sebroeck <wim@iguana.be>, Jay Cliburn <jcliburn@gmail.com>,
-        Chris Snook <chris.snook@gmail.com>, netdev <netdev@vger.kernel.org>,
-        Huang Xiong <xiong@qca.qualcomm.com>
-In-Reply-To: <CAHFgRy9jgxOrF=b=oQd-zK5CKxDacOKdBAX_BEuyW+R+sK_GyQ@mail.gmail.com>
-References: <CAHFgRy9jgxOrF=b=oQd-zK5CKxDacOKdBAX_BEuyW+R+sK_GyQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 07 Jun 2012 08:39:17 +0200
-Message-ID: <1339051157.26966.97.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 7 Jun 2012 02:45:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="108885185"
+From: "Liu, Jinsong" <jinsong.liu@intel.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Borislav Petkov <bp@amd64.org>, "Luck, Tony" <tony.luck@intel.com>,
+        "'xen-devel@lists.xensource.com'" <xen-devel@lists.xensource.com>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 1/2] xen/mce: Add mcelog support for Xen platform
+Thread-Topic: [PATCH 1/2] xen/mce: Add mcelog support for Xen platform
+Thread-Index: AQHNRCe5DOce9SoxVEmsF2YnWPn8AJbuaPkA
+Date: Thu, 7 Jun 2012 06:45:39 +0000
+Message-ID: <DE8DF0795D48FD4CA783C40EC829233521AF4B@SHSMSX101.ccr.corp.intel.com>
+References: <DE8DF0795D48FD4CA783C40EC82923351FEE7C@SHSMSX101.ccr.corp.intel.com>
+ <20120606205523.GA10891@phenom.dumpdata.com>
+In-Reply-To: <20120606205523.GA10891@phenom.dumpdata.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-06-07 at 02:16 -0400, Miles Lane wrote:
-> WARNING: at net/sched/sch_generic.c:255 dev_watchdog+0xeb/0x15f()
-> Hardware name: UL50VT
-> NETDEV WATCHDOG: eth0 (atl1c): transmit queue 0 timed out
-> Modules linked in: hfsplus hfs vfat msdos fat snd_hrtimer ipv6
-> snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep
-> snd_pcm_oss snd_seq_dummy snd_mixer_oss uvcvideo videobuf2_core
-> snd_pcm videodev snd_seq_oss snd_seq_midi snd_rawmidi media
-> snd_seq_midi_event acpi_cpufreq videobuf2_vmalloc videobuf2_memops
-> snd_seq iwlwifi snd_timer snd_seq_device asus_laptop mac80211
-> sparse_keymap snd cfg80211 coretemp soundcore psmouse snd_page_alloc
-> rtc_cmos mperf processor evdev rfkill battery led_class input_polldev
-> ac i915 nouveau sr_mod cdrom sd_mod ehci_hcd atl1c uhci_hcd intel_agp
-> ttm usbcore intel_gtt usb_common drm_kms_helper thermal video
-> thermal_sys hwmon button
-> Pid: 3025, comm: hud-service Not tainted 3.5.0-rc1+ #128
-> Call Trace:
->  <IRQ>  [<ffffffff8102d42f>] warn_slowpath_common+0x7e/0x97
->  [<ffffffff8102d4dc>] warn_slowpath_fmt+0x41/0x43
->  [<ffffffff81360f1c>] dev_watchdog+0xeb/0x15f
->  [<ffffffff8103af44>] run_timer_softirq+0x20e/0x356
->  [<ffffffff8103ae7e>] ? run_timer_softirq+0x148/0x356
->  [<ffffffff81360e31>] ? netif_tx_unlock+0x57/0x57
->  [<ffffffff810344f8>] __do_softirq+0x103/0x239
->  [<ffffffff8107122a>] ? clockevents_program_event+0x9c/0xb9
->  [<ffffffff8140a4cc>] call_softirq+0x1c/0x30
->  [<ffffffff81003bb9>] do_softirq+0x37/0x82
->  [<ffffffff81034888>] irq_exit+0x4c/0xb1
->  [<ffffffff8101ba71>] smp_apic_timer_interrupt+0x76/0x84
->  [<ffffffff81409adc>] apic_timer_interrupt+0x6c/0x80
->  <EOI>  [<ffffffff81105161>] ? fget_raw_light+0x4c/0x7d
->  [<ffffffff81105161>] ? fget_raw_light+0x4c/0x7d
->  [<ffffffff8111153b>] sys_fcntl+0x23/0x53b
->  [<ffffffff81004b68>] ? print_context_stack+0x44/0xb1
->  [<ffffffff81408fe2>] system_call_fastpath+0x16/0x1b
-> ---[ end trace c1f284d9c873031d ]---
+Konrad Rzeszutek Wilk wrote:
+> On Thu, May 31, 2012 at 12:57:44PM +0000, Liu, Jinsong wrote:
+>>> From 1a7951d6ca01d7f2c9dd2bdb6de5f8e7fdcb8bbd Mon Sep 17 00:00:00
+>>> 2001 
+>> From: root <root@ljsromley.bj.intel.com>
+>> Date: Fri, 1 Jun 2012 03:12:51 +0800
+>> Subject: [PATCH 1/2] xen/mce: Add mcelog support for Xen platform
+>> 
+>> When MCA error occurs, it would be handled by Xen hypervisor first,
+>> and then the error information would be sent to initial domain for
+>> logging. 
+>> 
+>> This patch gets error information from Xen hypervisor and convert
+>> Xen format error into Linux format mcelog. This logic is basically
+>> self-contained, not touching other kernel components.
+>> 
+>> By using tools like mcelog tool users could read specific error
+>> information, like what they did under native Linux.
+>> 
+>> To test follow directions outlined in
+>> Documentation/acpi/apei/einj.txt 
+> 
+> [   53.264610] switch: port 1(eth0) entered forwarding state
+> [ 1058.051938] BUG: sleeping function called from invalid context at
+> /home/konrad/linux/include/linux/kernel.h:199 [ 1058.052066]
+> in_atomic(): 1, irqs_disabled(): 0, pid: 4552, name: mcelog [
+> 1058.052130] Pid: 4552, comm: mcelog Tainted: G           O
+> 3.5.0-rc1upstream-00041-ga16e594-dirty #2 [ 1058.052235] Call Trace:
+> [ 1058.052291]  [<ffffffff8109ad9a>] __might_sleep+0xda/0x100 [
+> 1058.052349]  [<ffffffff8132a55b>] xen_mce_chrdev_read+0xab/0x140 [
+> 1058.052408]  [<ffffffff81148d85>] vfs_read+0xc5/0x190 [ 1058.052461]
+> [<ffffffff81148f4c>] sys_read+0x4c/0x90 [ 1058.052515] 
+> [<ffffffff815bdd79>] system_call_fastpath+0x16/0x1 
+> 
+> ?
 
-CC netdev and Huang Xiong 
+I will debug it. Would you tell me the steps to reproduce the bug, and your .config file?
+(Some issue w/ my email box this morning, just notice this)
 
-Atheros drivers are known to have buggy tx completion, its incredible...
-
-You could try following patch, not a 'perfect' solution, but a fix.
-
-Thanks
-
-diff --git a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-index 9cc1570..31224f3 100644
---- a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-+++ b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-@@ -1551,10 +1551,12 @@ static bool atl1c_clean_tx_irq(struct atl1c_adapter *adapter,
- 		atomic_set(&tpd_ring->next_to_clean, next_to_clean);
- 	}
- 
-+	spin_lock(&adapter->tx_lock);
- 	if (netif_queue_stopped(adapter->netdev) &&
- 			netif_carrier_ok(adapter->netdev)) {
- 		netif_wake_queue(adapter->netdev);
- 	}
-+	spin_unlock(&adapter->tx_lock);
- 
- 	return true;
- }
-
-
-
-
+Thanks,
+Jinsong
