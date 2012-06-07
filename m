@@ -1,90 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932857Ab2FGU6K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 16:58:10 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:14476 "EHLO
-	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932313Ab2FGU6I (ORCPT
+	id S932878Ab2FGU6i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 16:58:38 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:56053 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932446Ab2FGU6h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 16:58:08 -0400
-Message-ID: <1339102684.2770.27.camel@bwh-desktop.uk.solarflarecom.com>
-Subject: Re: [V2 RFC net-next PATCH 2/2] virtio_net: export more statistics
- through ethtool
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Rick Jones <rick.jones2@hp.com>
-CC: David Miller <davem@davemloft.net>, <jasowang@redhat.com>,
-        <netdev@vger.kernel.org>, <rusty@rustcorp.com.au>,
-        <virtualization@lists.linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, <mst@redhat.com>
-Date: Thu, 7 Jun 2012 21:58:04 +0100
-In-Reply-To: <1339102567.2770.25.camel@bwh-desktop.uk.solarflarecom.com>
-References: <20120606075208.29081.75284.stgit@amd-6168-8-1.englab.nay.redhat.com>
-	 <20120606075217.29081.30713.stgit@amd-6168-8-1.englab.nay.redhat.com>
-	 <1339089306.2770.10.camel@bwh-desktop.uk.solarflarecom.com>
-	 <20120607.130512.219951433412203999.davem@davemloft.net>
-	 <1339100649.2770.20.camel@bwh-desktop.uk.solarflarecom.com>
-	 <4FD11194.2040405@hp.com>
-	 <1339102567.2770.25.camel@bwh-desktop.uk.solarflarecom.com>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
-MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-6.800.1017-18952.004
-X-TM-AS-Result: No--13.919600-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+	Thu, 7 Jun 2012 16:58:37 -0400
+Date: Thu, 7 Jun 2012 22:58:36 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Andi Kleen <andi@firstfloor.org>, acme@redhat.com, jolsa@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: perf user tool precise attribute broken in 3.5rc1+
+Message-ID: <20120607205836.GT27374@one.firstfloor.org>
+References: <20120607202355.GQ27374@one.firstfloor.org> <CABPqkBQ99PTsET6c_NPuioLUr_yto4x=6EBQ1K73N4ratHz48A@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CABPqkBQ99PTsET6c_NPuioLUr_yto4x=6EBQ1K73N4ratHz48A@mail.gmail.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-06-07 at 21:56 +0100, Ben Hutchings wrote:
-> On Thu, 2012-06-07 at 13:39 -0700, Rick Jones wrote:
-> > On 06/07/2012 01:24 PM, Ben Hutchings wrote:
-> > > On Thu, 2012-06-07 at 13:05 -0700, David Miller wrote:
-> > >> From: Ben Hutchings<bhutchings@solarflare.com>
-> > >> Date: Thu, 7 Jun 2012 18:15:06 +0100
-> > >>
-> > >>> I would really like to see some sort of convention for presenting
-> > >>> per-queue statistics through ethtool.  At the moment we have a complete
-> > >>> mess of different formats:
-> > >>
-> > >> Indeed.  Probably ${QUEUE_TYPE}-${INDEX}-${STATISTIC} is best.
-> > >> With an agreed upon list of queue types such as "rx", "tx", "rxtx"
-> > >> etc.
-> > >
-> > > I think we should leave the type names open-ended, as there are other
-> > > useful groupings like per-virtual-port.  In that case the separator
-> > > should be chosen to allow arbitrary type names without ambiguity.
-> > 
-> > So you mean like something along the lines of the presence of say '.' 
-> > indicating indent a level:
-> > 
-> > rx_bytes:  1234
-> >      myqueue1.rx_bytes: 234
-> >      myqueue2.rx_bytes: 345
-> >      ...
-> 
-> Most drivers seem to want this sort of ordering/grouping:
-> 
-> group0.foo
-> group0.bar
-> ...
-> group1.foo
-> group1.bar
-> ...
-> 
-> but if we have a standard way of indicating groups of statistics then
-> the user can choose whether they want to reorder by type name.
+On Thu, Jun 07, 2012 at 10:53:19PM +0200, Stephane Eranian wrote:
+> On Thu, Jun 7, 2012 at 10:23 PM, Andi Kleen <andi@firstfloor.org> wrote:
+> >
+> > With a perf user tool compiled from a 3.5rc1+ kernel I cannot
+> > use the 'p' attribute anymore. Always get
+> >
+> > ak@petrock:~> ./perf record -e cycles:p ./t
+> >
+> >  Error: sys_perf_event_open() syscall returned with 22 (Invalid argument).  /bin/dmesg may provide additional information.
+> >
+> >  Fatal: No CONFIG_PERF_EVENTS=y kernel support configured?
+> >
+> Remember that PEBS is disabled on SNB unless you have the new ucode + my patch.
 
-I mean, whether they want to reorder/regroup by the final part of the
-statistic name.
+This is not the problem. This was actually a -E where it was not disabled
+in my tree.  And the older perf binary works, so it's clearly not a kernel 
+problem.
 
-Ben.
-
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
+-Andi
