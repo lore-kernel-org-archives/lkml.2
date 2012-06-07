@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932814Ab2FGETw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 00:19:52 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63306 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932795Ab2FGETs (ORCPT
+	id S932830Ab2FGEUE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 00:20:04 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:63657 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932666Ab2FGET6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 00:19:48 -0400
-Message-Id: <20120607040344.597358152@linuxfoundation.org>
+	Thu, 7 Jun 2012 00:19:58 -0400
+Message-Id: <20120607040344.747391233@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 07 Jun 2012 13:04:33 +0900
+Date: Thu, 07 Jun 2012 13:04:34 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Felix Fietkau <nbd@openwrt.org>,
-        Eric Dumazet <edumazet@google.com>,
+        alan@lxorguk.ukuu.org.uk, Benjamin Poirier <bpoirier@suse.de>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 57/82] skb: avoid unnecessary reallocations in __skb_cow
+Subject: [ 58/82] xfrm: take net hdr len into account for esp payload size calculation
 In-Reply-To: <20120607041406.GA13233@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,39 +26,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Benjamin Poirier <bpoirier@suse.de>
 
-[ Upstream commit 617c8c11236716dcbda877e764b7bf37c6fd8063 ]
+[ Upstream commit 91657eafb64b4cb53ec3a2fbc4afc3497f735788 ]
 
-At the beginning of __skb_cow, headroom gets set to a minimum of
-NET_SKB_PAD. This causes unnecessary reallocations if the buffer was not
-cloned and the headroom is just below NET_SKB_PAD, but still more than the
-amount requested by the caller.
-This was showing up frequently in my tests on VLAN tx, where
-vlan_insert_tag calls skb_cow_head(skb, VLAN_HLEN).
+Corrects the function that determines the esp payload size. The calculations
+done in esp{4,6}_get_mtu() lead to overlength frames in transport mode for
+certain mtu values and suboptimal frames for others.
 
-Locally generated packets should have enough headroom, and for forward
-paths, we already have NET_SKB_PAD bytes of headroom, so we don't need to
-add any extra space here.
+According to what is done, mainly in esp{,6}_output() and tcp_mtu_to_mss(),
+net_header_len must be taken into account before doing the alignment
+calculation.
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/linux/skbuff.h |    2 --
- 1 file changed, 2 deletions(-)
+ net/ipv4/esp4.c |   24 +++++++++---------------
+ net/ipv6/esp6.c |   18 +++++++-----------
+ 2 files changed, 16 insertions(+), 26 deletions(-)
 
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -1881,8 +1881,6 @@ static inline int __skb_cow(struct sk_bu
- {
- 	int delta = 0;
+--- a/net/ipv4/esp4.c
++++ b/net/ipv4/esp4.c
+@@ -459,28 +459,22 @@ static u32 esp4_get_mtu(struct xfrm_stat
+ 	struct esp_data *esp = x->data;
+ 	u32 blksize = ALIGN(crypto_aead_blocksize(esp->aead), 4);
+ 	u32 align = max_t(u32, blksize, esp->padlen);
+-	u32 rem;
+-
+-	mtu -= x->props.header_len + crypto_aead_authsize(esp->aead);
+-	rem = mtu & (align - 1);
+-	mtu &= ~(align - 1);
++	unsigned int net_adj;
  
--	if (headroom < NET_SKB_PAD)
--		headroom = NET_SKB_PAD;
- 	if (headroom > skb_headroom(skb))
- 		delta = headroom - skb_headroom(skb);
+ 	switch (x->props.mode) {
+-	case XFRM_MODE_TUNNEL:
+-		break;
+-	default:
+ 	case XFRM_MODE_TRANSPORT:
+-		/* The worst case */
+-		mtu -= blksize - 4;
+-		mtu += min_t(u32, blksize - 4, rem);
+-		break;
+ 	case XFRM_MODE_BEET:
+-		/* The worst case. */
+-		mtu += min_t(u32, IPV4_BEET_PHMAXLEN, rem);
++		net_adj = sizeof(struct iphdr);
++		break;
++	case XFRM_MODE_TUNNEL:
++		net_adj = 0;
+ 		break;
++	default:
++		BUG();
+ 	}
  
+-	return mtu - 2;
++	return ((mtu - x->props.header_len - crypto_aead_authsize(esp->aead) -
++		 net_adj) & ~(align - 1)) + (net_adj - 2);
+ }
+ 
+ static void esp4_err(struct sk_buff *skb, u32 info)
+--- a/net/ipv6/esp6.c
++++ b/net/ipv6/esp6.c
+@@ -411,19 +411,15 @@ static u32 esp6_get_mtu(struct xfrm_stat
+ 	struct esp_data *esp = x->data;
+ 	u32 blksize = ALIGN(crypto_aead_blocksize(esp->aead), 4);
+ 	u32 align = max_t(u32, blksize, esp->padlen);
+-	u32 rem;
++	unsigned int net_adj;
+ 
+-	mtu -= x->props.header_len + crypto_aead_authsize(esp->aead);
+-	rem = mtu & (align - 1);
+-	mtu &= ~(align - 1);
++	if (x->props.mode != XFRM_MODE_TUNNEL)
++		net_adj = sizeof(struct ipv6hdr);
++	else
++		net_adj = 0;
+ 
+-	if (x->props.mode != XFRM_MODE_TUNNEL) {
+-		u32 padsize = ((blksize - 1) & 7) + 1;
+-		mtu -= blksize - padsize;
+-		mtu += min_t(u32, blksize - padsize, rem);
+-	}
+-
+-	return mtu - 2;
++	return ((mtu - x->props.header_len - crypto_aead_authsize(esp->aead) -
++		 net_adj) & ~(align - 1)) + (net_adj - 2);
+ }
+ 
+ static void esp6_err(struct sk_buff *skb, struct inet6_skb_parm *opt,
 
 
