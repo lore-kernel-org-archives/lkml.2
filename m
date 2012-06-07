@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760272Ab2FGJID (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 05:08:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47786 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755569Ab2FGJIB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 05:08:01 -0400
-From: Marcus Meissner <meissner@suse.de>
-To: gregkh@linuxfoundation.org, kys@microsoft.com, dan.carpenter@oracle.com,
-        haiyangz@microsoft.com, jkosina@suse.cz, linux-kernel@vger.kernel.org,
-        stable@kernel.org
-Cc: Marcus Meissner <meissner@suse.de>, Sebastian Krahmer <krahmer@suse.de>,
-        Olaf Hering <ohering@suse.de>
-Subject: [PATCH] tools/hv: Check the source of netlink messages to be the kernel
-Date: Thu,  7 Jun 2012 11:07:48 +0200
-Message-Id: <1339060068-19951-1-git-send-email-meissner@suse.de>
-X-Mailer: git-send-email 1.7.9.2
+	id S1760302Ab2FGJI2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 05:08:28 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:36027 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755569Ab2FGJI1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 05:08:27 -0400
+Message-ID: <1339060101.5274.5.camel@phoenix>
+Subject: [PATCH RFC/RFT] regulator: palmas: Clear
+ PALMAS_SMPS12_CTRL_MODE_ACTIVE_MASK bits in palmas_set_mode_smps
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Graeme Gregory <gg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Date: Thu, 07 Jun 2012 17:08:21 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Current code actually clears more bits than PALMAS_SMPS12_CTRL_MODE_ACTIVE_MASK bits.
 
-The hyper-v userspace helper daemon receives and handles netlink
-messages. It assumes them to be from the kernel, but does not check
-that.
-
-This patch adds this checking (nl_pid == 0).
-
-CVE-2012-2669
-
-Ciao, Marcus
-
-Signed-off-by: Marcus Meissner <meissner@suse.de>
-Signed-off-by: Sebastian Krahmer <krahmer@suse.de>
-Signed-off-by: Olaf Hering <ohering@suse.de>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- tools/hv/hv_kvp_daemon.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+Hi Graeme,
 
-diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
-index 146fd61..f0566c8 100644
---- a/tools/hv/hv_kvp_daemon.c
-+++ b/tools/hv/hv_kvp_daemon.c
-@@ -701,14 +701,16 @@ int main(void)
- 	pfd.fd = fd;
+I'm wandering if we need to clear the status bits.
+Current code actually clears bit[7:4] and bit[1:0] and set bit[7:6] to bit[3:2].
+Looks like we only need to clear PALMAS_SMPS12_CTRL_MODE_ACTIVE_MASK bit[1:0] bits here.
+and this change makes the intent more clear.
+
+I don't have this hardware,
+I'd appreciate if you can test this patch if you think this change ok.
+
+Regards,
+Axel
+ drivers/regulator/palmas-regulator.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
+index 92f475c..ae0951a 100644
+--- a/drivers/regulator/palmas-regulator.c
++++ b/drivers/regulator/palmas-regulator.c
+@@ -257,8 +257,7 @@ static int palmas_set_mode_smps(struct regulator_dev *dev, unsigned int mode)
+ 	unsigned int reg;
  
- 	while (1) {
-+		struct sockaddr *addr_p = (struct sockaddr *) &addr;
-+		socklen_t addr_l = sizeof(addr);
- 		pfd.events = POLLIN;
- 		pfd.revents = 0;
- 		poll(&pfd, 1, -1);
+ 	palmas_smps_read(pmic->palmas, palmas_regs_info[id].ctrl_addr, &reg);
+-	reg &= ~PALMAS_SMPS12_CTRL_STATUS_MASK;
+-	reg >>= PALMAS_SMPS12_CTRL_STATUS_SHIFT;
++	reg &= ~PALMAS_SMPS12_CTRL_MODE_ACTIVE_MASK;
  
--		len = recv(fd, kvp_recv_buffer, sizeof(kvp_recv_buffer), 0);
-+		len = recvfrom(fd, kvp_recv_buffer, sizeof(kvp_recv_buffer), 0, addr_p, &addr_l);
- 
--		if (len < 0) {
--			syslog(LOG_ERR, "recv failed; error:%d", len);
-+		if (len < 0 || addr.nl_pid) {
-+			syslog(LOG_ERR, "recvfrom failed; pid:%u error:%d %s", addr.nl_pid, errno, strerror(errno));
- 			close(fd);
- 			return -1;
- 		}
+ 	switch (mode) {
+ 	case REGULATOR_MODE_NORMAL:
 -- 
-1.7.9.2
+1.7.9.5
+
+
 
