@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932386Ab2FGESM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 00:18:12 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63306 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759830Ab2FGESH (ORCPT
+	id S932410Ab2FGESS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 00:18:18 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:59627 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932364Ab2FGESL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 00:18:07 -0400
-Message-Id: <20120607040341.737256038@linuxfoundation.org>
+	Thu, 7 Jun 2012 00:18:11 -0400
+Message-Id: <20120607040341.877426395@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 07 Jun 2012 13:04:13 +0900
+Date: Thu, 07 Jun 2012 13:04:14 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Christoph Lameter <cl@linux.com>,
-        Joonsoo Kim <js1304@gmail.com>, Pekka Enberg <penberg@kernel.org>
-Subject: [ 37/82] slub: fix a memory leak in get_partial_node()
+        alan@lxorguk.ukuu.org.uk, Al Viro <viro@zeniv.linux.org.uk>
+Subject: [ 38/82] vfs: umount_tree() might be called on subtree that had never made it
 In-Reply-To: <20120607041406.GA13233@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,84 +24,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joonsoo Kim <js1304@gmail.com>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit 02d7633fa567be7bf55a993b79d2a31b95ce2227 upstream.
+commit 63d37a84ab6004c235314ffd7a76c5eb28c2fae0 upstream.
 
-In the case which is below,
+__mnt_make_shortterm() in there undoes the effect of __mnt_make_longterm()
+we'd done back when we set ->mnt_ns non-NULL; it should not be done to
+vfsmounts that had never gone through commit_tree() and friends.  Kudos to
+lczerner for catching that one...
 
-1. acquire slab for cpu partial list
-2. free object to it by remote cpu
-3. page->freelist = t
-
-then memory leak is occurred.
-
-Change acquire_slab() not to zap freelist when it works for cpu partial list.
-I think it is a sufficient solution for fixing a memory leak.
-
-Below is output of 'slabinfo -r kmalloc-256'
-when './perf stat -r 30 hackbench 50 process 4000 > /dev/null' is done.
-
-***Vanilla***
-Sizes (bytes)     Slabs              Debug                Memory
-------------------------------------------------------------------------
-Object :     256  Total  :     468   Sanity Checks : Off  Total: 3833856
-SlabObj:     256  Full   :     111   Redzoning     : Off  Used : 2004992
-SlabSiz:    8192  Partial:     302   Poisoning     : Off  Loss : 1828864
-Loss   :       0  CpuSlab:      55   Tracking      : Off  Lalig:       0
-Align  :       8  Objects:      32   Tracing       : Off  Lpadd:       0
-
-***Patched***
-Sizes (bytes)     Slabs              Debug                Memory
-------------------------------------------------------------------------
-Object :     256  Total  :     300   Sanity Checks : Off  Total: 2457600
-SlabObj:     256  Full   :     204   Redzoning     : Off  Used : 2348800
-SlabSiz:    8192  Partial:      33   Poisoning     : Off  Loss :  108800
-Loss   :       0  CpuSlab:      63   Tracking      : Off  Lalig:       0
-Align  :       8  Objects:      32   Tracing       : Off  Lpadd:       0
-
-Total and loss number is the impact of this patch.
-
-Acked-by: Christoph Lameter <cl@linux.com>
-Signed-off-by: Joonsoo Kim <js1304@gmail.com>
-Signed-off-by: Pekka Enberg <penberg@kernel.org>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/slub.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ fs/namespace.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -1514,15 +1514,19 @@ static inline void *acquire_slab(struct
- 		freelist = page->freelist;
- 		counters = page->counters;
- 		new.counters = counters;
--		if (mode)
-+		if (mode) {
- 			new.inuse = page->objects;
-+			new.freelist = NULL;
-+		} else {
-+			new.freelist = freelist;
-+		}
- 
- 		VM_BUG_ON(new.frozen);
- 		new.frozen = 1;
- 
- 	} while (!__cmpxchg_double_slab(s, page,
- 			freelist, counters,
--			NULL, new.counters,
-+			new.freelist, new.counters,
- 			"lock and freeze"));
- 
- 	remove_partial(n, page);
-@@ -1564,7 +1568,6 @@ static void *get_partial_node(struct kme
- 			object = t;
- 			available =  page->objects - page->inuse;
- 		} else {
--			page->freelist = t;
- 			available = put_cpu_partial(s, page, 0);
- 			stat(s, CPU_PARTIAL_NODE);
- 		}
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -1073,8 +1073,9 @@ void umount_tree(struct mount *mnt, int
+ 		list_del_init(&p->mnt_expire);
+ 		list_del_init(&p->mnt_list);
+ 		__touch_mnt_namespace(p->mnt_ns);
++		if (p->mnt_ns)
++			__mnt_make_shortterm(p);
+ 		p->mnt_ns = NULL;
+-		__mnt_make_shortterm(p);
+ 		list_del_init(&p->mnt_child);
+ 		if (mnt_has_parent(p)) {
+ 			p->mnt_parent->mnt_ghosts++;
 
 
