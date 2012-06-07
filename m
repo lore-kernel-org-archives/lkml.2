@@ -1,59 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760634Ab2FGNaj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 09:30:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52004 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758239Ab2FGNah (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 09:30:37 -0400
-Date: Thu, 7 Jun 2012 15:30:19 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Zhouping Liu <zliu@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: AutoNUMA15
-Message-ID: <20120607133019.GB21339@redhat.com>
-References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
- <20120529133627.GA7637@shutemov.name>
- <20120529154308.GA10790@dhcp-27-244.brq.redhat.com>
- <20120531180834.GP21339@redhat.com>
- <4FD01229.4020607@redhat.com>
- <CAJd=RBAQiKC1Np7qzNrD1AEXcoPwfSLwTh9ZjUkvAb7F6eUX9A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAJd=RBAQiKC1Np7qzNrD1AEXcoPwfSLwTh9ZjUkvAb7F6eUX9A@mail.gmail.com>
+	id S1760652Ab2FGNbU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 09:31:20 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:45567 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1758129Ab2FGNbT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 09:31:19 -0400
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH] x86: UV2 BAU legacy mode
+Cc: mingo@elte.hu, x86@kernel.org
+Message-Id: <E1SccoO-0002Lh-Cb@eag09.americas.sgi.com>
+From: Cliff Wickman <cpw@sgi.com>
+Date: Thu, 07 Jun 2012 08:31:40 -0500
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 07, 2012 at 07:44:33PM +0800, Hillf Danton wrote:
-> Hi Zhouping
-> 
-> On Thu, Jun 7, 2012 at 10:30 AM, Zhouping Liu <zliu@redhat.com> wrote:
-> >
-> > [    3.114024] ---[ end trace e696d6ddf3adb276 ]---
-> > [    3.121541] swapper/0 used greatest stack depth: 4768 bytes left
-> > [    3.143784] Kernel panic - not syncing: Attempted to kill init!
-> > exitcode=0x0000000b
-> > [    3.143784]
-> >
-> > such above errors occurred in my two boxes:
-> > in one machine, which has 120Gb RAM and 8 numa nodes with AMD CPU, kernel
-> > panic occurred in autonuma15 and Linus tree(3.5.0-rc1)
-> > but in another one, which has 16Gb RAM and 4 numa nodes with AMD CPU, kernel
-> > panic only occurred in autonuma15, no such issues in Linus tree,
-> >
-> Related to fix at https://lkml.org/lkml/2012/6/5/31  ?
+From: Cliff Wickman <cpw@sgi.com>
 
-Right thanks! I pushed an update after an upstream rebase to fix it.
+The SGI Altix UV2 BAU (Broadcast Assist Unit) as used for tlb-shootdown
+(selective broadcast mode) always uses UV2 broadcast descriptor format.
+There is no need to clear the 'legacy' (UV1) mode, because the hardware
+always uses UV2 mode for selective broadcast.
 
-git fetch; git checkout -f origin/autonuma
+But the BIOS uses general broadcast and legacy mode, and the hardware
+pays attention to the legacy mode bit for general broadcast.
+So the kernel must not clear that mode bit.
 
-or:
+Signed-off-by: Cliff Wickman <cpw@sgi.com>
+---
+ arch/x86/include/asm/uv/uv_bau.h |    1 -
+ arch/x86/platform/uv/tlb_uv.c    |    1 -
+ 2 files changed, 2 deletions(-)
 
-git clone --reference linux -b autonuma git://git.kernel.org/pub/scm/linux/kernel/git/andrea/aa.git
-
-Please let me know if you still have problems.
-
-Andrea
+Index: linus.current/arch/x86/include/asm/uv/uv_bau.h
+===================================================================
+--- linus.current.orig/arch/x86/include/asm/uv/uv_bau.h
++++ linus.current/arch/x86/include/asm/uv/uv_bau.h
+@@ -149,7 +149,6 @@
+ /* 4 bits of software ack period */
+ #define UV2_ACK_MASK			0x7UL
+ #define UV2_ACK_UNITS_SHFT		3
+-#define UV2_LEG_SHFT UV2H_LB_BAU_MISC_CONTROL_USE_LEGACY_DESCRIPTOR_FORMATS_SHFT
+ #define UV2_EXT_SHFT UV2H_LB_BAU_MISC_CONTROL_ENABLE_EXTENDED_SB_STATUS_SHFT
+ 
+ /*
+Index: linus.current/arch/x86/platform/uv/tlb_uv.c
+===================================================================
+--- linus.current.orig/arch/x86/platform/uv/tlb_uv.c
++++ linus.current/arch/x86/platform/uv/tlb_uv.c
+@@ -1295,7 +1295,6 @@ static void __init enable_timeouts(void)
+ 		 */
+ 		mmr_image |= (1L << SOFTACK_MSHIFT);
+ 		if (is_uv2_hub()) {
+-			mmr_image &= ~(1L << UV2_LEG_SHFT);
+ 			mmr_image |= (1L << UV2_EXT_SHFT);
+ 		}
+ 		write_mmr_misc_control(pnode, mmr_image);
