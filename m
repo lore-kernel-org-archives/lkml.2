@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759893Ab2FGIUe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 04:20:34 -0400
-Received: from www84.your-server.de ([213.133.104.84]:39286 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752420Ab2FGIU1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 04:20:27 -0400
-From: stefani@seibold.net
-To: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org, oneukum@suse.de
-Cc: linux-usb@vger.kernel.org, Stefani Seibold <stefani@seibold.net>
-Subject: [PATCH 01/13] fix wrong label in skel_open
-Date: Thu,  7 Jun 2012 10:20:31 +0200
-Message-Id: <1339057243-10029-2-git-send-email-stefani@seibold.net>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1339057243-10029-1-git-send-email-stefani@seibold.net>
-References: <1339057243-10029-1-git-send-email-stefani@seibold.net>
-X-Authenticated-Sender: stefani@seibold.net
+	id S1760089Ab2FGIUx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 04:20:53 -0400
+Received: from mga11.intel.com ([192.55.52.93]:5107 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752351Ab2FGIUc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 04:20:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="162135599"
+Subject: Re: [PATCH] dmaengine: pl330: dont complete descriptor for cyclic
+ dma
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: Tushar Behera <tushar.behera@linaro.org>
+Cc: linux-kernel@vger.kernel.org, dan.j.williams@intel.com, patches@linaro.org,
+        stable <stable@vger.kernel.org>
+In-Reply-To: <1337771851-3431-1-git-send-email-tushar.behera@linaro.org>
+References: <1337771851-3431-1-git-send-email-tushar.behera@linaro.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 07 Jun 2012 13:43:42 +0530
+Message-ID: <1339056822.1927.8.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefani Seibold <stefani@seibold.net>
+On Wed, 2012-05-23 at 16:47 +0530, Tushar Behera wrote:
+> Commit eab215855803 ("dmaengine: pl330: dont complete descriptor for
+> cyclic dma") wrongly completes descriptor for cyclic dma, hence following
+> BUG_ON is still hit with cyclic DMA operations.
+> 
+> kernel BUG at drivers/dma/dmaengine.h:53!
+> 
+> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+> ---
+>  drivers/dma/pl330.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
+> index fa3fb21..8c44f17 100644
+> --- a/drivers/dma/pl330.c
+> +++ b/drivers/dma/pl330.c
+> @@ -2322,7 +2322,7 @@ static void pl330_tasklet(unsigned long data)
+>  	/* Pick up ripe tomatoes */
+>  	list_for_each_entry_safe(desc, _dt, &pch->work_list, node)
+>  		if (desc->status == DONE) {
+> -			if (pch->cyclic)
+> +			if (!pch->cyclic)
+>  				dma_cookie_complete(&desc->txd);
+>  			list_move_tail(&desc->node, &list);
+>  		}
+Applied thanks. I have cc'ed stable.
 
-Signed-off-by: Stefani Seibold <stefani@seibold.net>
----
- drivers/usb/usb-skeleton.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/usb/usb-skeleton.c b/drivers/usb/usb-skeleton.c
-index 0616f23..efda3a5 100644
---- a/drivers/usb/usb-skeleton.c
-+++ b/drivers/usb/usb-skeleton.c
-@@ -114,10 +114,11 @@ static int skel_open(struct inode *inode, struct file *file)
- 
- 	retval = usb_autopm_get_interface(interface);
- 	if (retval)
--		goto out_err;
-+		goto exit2;
- 
- 	/* save our object in the file's private structure */
- 	file->private_data = dev;
-+exit2:
- 	mutex_unlock(&dev->io_mutex);
- 
- exit:
 -- 
-1.7.8.6
+~Vinod
 
