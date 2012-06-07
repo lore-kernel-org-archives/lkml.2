@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752287Ab2FGEPN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 00:15:13 -0400
+	id S1753783Ab2FGEPW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 00:15:22 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:63306 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751843Ab2FGEPI (ORCPT
+	with ESMTP id S1752032Ab2FGEPM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 00:15:08 -0400
-Message-Id: <20120607040336.793354927@linuxfoundation.org>
+	Thu, 7 Jun 2012 00:15:12 -0400
+Message-Id: <20120607040336.941708070@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 07 Jun 2012 13:03:38 +0900
+Date: Thu, 07 Jun 2012 13:03:39 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Lars-Peter Clausen <lars@metafoo.de>,
-        Michal Simek <monstr@monstr.eu>
-Subject: [ 02/82] microblaze: Do not select GENERIC_GPIO by default
+        alan@lxorguk.ukuu.org.uk, James Bottomley <JBottomley@Parallels.com>
+Subject: [ 03/82] SCSI: fix scsi_wait_scan
 In-Reply-To: <20120607041406.GA13233@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,40 +24,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: James Bottomley <jbottomley@parallels.com>
 
-commit 59516b07b4ffa7e607a5787674ea3c405f1b390c upstream.
+commit 1ff2f40305772b159a91c19590ee159d3a504afc upstream.
 
-The microblaze architecture does not provide a native GPIO API implementation
-nor requires GPIOLIB, but still selects GENERIC_GPIO by default. As a result the
-following build error occurs, if GPIOLIB is not selected:
+Commit  c751085943362143f84346d274e0011419c84202
+Author: Rafael J. Wysocki <rjw@sisk.pl>
+Date:   Sun Apr 12 20:06:56 2009 +0200
 
-	include/asm-generic/gpio.h: In function 'gpio_get_value_cansleep':
-	include/asm-generic/gpio.h:218: error: implicit declaration of function '__gpio_get_value'
-	include/asm-generic/gpio.h: In function 'gpio_set_value_cansleep':
-	include/asm-generic/gpio.h:224: error: implicit declaration of function '__gpio_set_value'
+    PM/Hibernate: Wait for SCSI devices scan to complete during resume
 
-This patch addresses the issue by not selecting GENERIC_GPIO by default. This
-causes the GPIO API to be stubbed out if no implementation is provided.
+Broke the scsi_wait_scan module in 2.6.30.  Apparently debian still uses it so
+fix it and backport to stable before removing it in 3.6.
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Tested-by: Michal Simek <monstr@monstr.eu>
+The breakage is caused because the function template in
+include/scsi/scsi_scan.h is defined to be a nop unless SCSI is built in.
+That means that in the modular case (which is every distro), the
+scsi_wait_scan module does a simple async_synchronize_full() instead of
+waiting for scans.
+
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/microblaze/Kconfig |    2 +-
+ drivers/scsi/scsi_wait_scan.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/microblaze/Kconfig
-+++ b/arch/microblaze/Kconfig
-@@ -57,7 +57,7 @@ config GENERIC_CLOCKEVENTS
- 	def_bool y
+--- a/drivers/scsi/scsi_wait_scan.c
++++ b/drivers/scsi/scsi_wait_scan.c
+@@ -12,7 +12,7 @@
  
- config GENERIC_GPIO
--	def_bool y
-+	bool
+ #include <linux/module.h>
+ #include <linux/device.h>
+-#include <scsi/scsi_scan.h>
++#include "scsi_priv.h"
  
- config GENERIC_CSUM
- 	def_bool y
+ static int __init wait_scan_init(void)
+ {
 
 
