@@ -1,64 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750893Ab2FGEBd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 00:01:33 -0400
-Received: from mga03.intel.com ([143.182.124.21]:33183 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750695Ab2FGEBK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 00:01:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="152708446"
-Message-ID: <4FD02784.3080302@intel.com>
-Date: Thu, 07 Jun 2012 12:01:08 +0800
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1751112Ab2FGEGh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 00:06:37 -0400
+Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:14158
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750753Ab2FGEGf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 00:06:35 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -11
+X-BigFish: VS-11(zzbb2dI9371I1432N98dKzz1202hzzz2dh2a8h668h839h944hd25hf0ah)
+Date: Thu, 7 Jun 2012 12:07:01 +0800
+From: Zhao Chenhui <chenhui.zhao@freescale.com>
+To: Scott Wood <scottwood@freescale.com>
+CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <galak@kernel.crashing.org>, <leoli@freescale.com>,
+        Matthew McClintock <msm@freescale.com>
+Subject: Re: [PATCH v5 1/5] powerpc/85xx: implement hardware timebase sync
+Message-ID: <20120607040701.GA15965@localhost.localdomain>
+References: <1336737235-15370-1-git-send-email-chenhui.zhao@freescale.com>
+ <4FC8E250.9090000@freescale.com>
+ <20120605090831.GA21929@localhost.localdomain>
+ <4FCE2ECD.4050107@freescale.com>
+ <20120606093142.GA23505@localhost.localdomain>
+ <4FCFA0C8.9090800@freescale.com>
 MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        "Yan, Zheng" <zheng.z.yan@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf: Fix intel shared extra msr allocation
-References: <1338520856-21020-1-git-send-email-zheng.z.yan@intel.com> <CABPqkBScjC5fJbTc1rYtbtRqOCyJ+7QUbdE32DgMcffBAGJNVw@mail.gmail.com> <CAAM7YAkYgUjwQptYvyeVawzcD5x4c-bTT_=+6AMyUb+-6HoMuQ@mail.gmail.com> <1338891271.28282.155.camel@twins> <CABPqkBSv8CbMzUiRsN2uOF1v6rFTpzhQqNbo7OKe-nzsus0GDg@mail.gmail.com> <1338892071.28282.157.camel@twins> <CABPqkBSqLpa4X-WbR0PkouYvhODT78r3pxWq70=PTj1j=a307Q@mail.gmail.com> <1338898024.28282.160.camel@twins> <1338899999.28282.164.camel@twins> <CABPqkBRCMAnPH3UW0=afMw4-YXgwQ5D-NLMEtnNWde_Tzh3aew@mail.gmail.com> <1338901490.28282.167.camel@twins> <CABPqkBRF_2LXE-54tLMBnQgLKbKyR9qo+4VohQiOchpqe1pgyw@mail.gmail.com> <1338903164.28282.177.camel@twins> <CABPqkBQ0OM__Ny9N9ZunKc2nCoqBH+cFY91CUH19xNUbM5NmGw@mail.gmail.com> <1338904039.28282.180.camel@twins> <CABPqkBSMi1ru3Grdh0kyBf6cqLk+=ugy66E0a6KFvFYzmjbgtQ@mail.gmail.com> <CABPqkBRe_+AAFTtuQuA-WKoFx1x3CkSbFBx+yikZqgaYSAG9kw@mail.gmail.com>
-In-Reply-To: <CABPqkBRe_+AAFTtuQuA-WKoFx1x3CkSbFBx+yikZqgaYSAG9kw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4FCFA0C8.9090800@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/06/2012 06:12 PM, Stephane Eranian wrote:
-> There is something wrong with this patch, I instrumented the code
-> and I can see:
-> [ 1377.324575] 1. idx=1 reg_idx=1 ref=-1 config=0xff01 era->config=0xff01
->                                                    ^^^^^^
-> The test case on WSM (RSP0, RSP1):
+On Wed, Jun 06, 2012 at 01:26:16PM -0500, Scott Wood wrote:
+> On 06/06/2012 04:31 AM, Zhao Chenhui wrote:
+> > On Tue, Jun 05, 2012 at 11:07:41AM -0500, Scott Wood wrote:
+> >> On 06/05/2012 04:08 AM, Zhao Chenhui wrote:
+> >>> On Fri, Jun 01, 2012 at 10:40:00AM -0500, Scott Wood wrote:
+> >>>> I know you say this is for dual-core chips only, but it would be nice if
+> >>>> you'd write this in a way that doesn't assume that (even if the
+> >>>> corenet-specific timebase freezing comes later).
+> >>>
+> >>> At this point, I have not thought about how to implement the cornet-specific timebase freezing.
+> >>
+> >> I wasn't asking you to.  I was asking you to not have logic that breaks
+> >> with more than 2 CPUs.
+> > 
+> > These routines only called in the dual-core case. 
 > 
-> $ perf stat  -a -C13 -e
-> offcore_response_1:dmnd_data_rd,offcore_response_1:dmnd_data_rd sleep
-> 100 &
-> $ perf stat -a -C1 -e offcore_response_1:dmnd_rfo sleep 1
+> Come on, you know we have chips with more than two cores.  Why design
+> such a limitation into it, just because you're not personally interested
+> in supporting anything but e500v2?
 > 
-> I think this happens during scheduling of the events, i.e., during the
-> run and not on initial
-> programming. That could happen with cgroups, for instance.
+> Is it so hard to make it work for an arbitrary number of cores?
 > 
-The bug is in intel_fixup_er(), it should be:
+> >>> If do not set them, it may make KEXEC fail on other platforms.
+> >>
+> >> What platforms?
+> > 
+> > Such as P4080, P3041, etc.
+> 
+> So we need to wait for corenet timebase sync before we stop causing
+> problems in virtualization, simulators, etc. if a kernel has kexec or
+> cpu hotplug enabled (whether used or not)?
+> 
+> Can you at least make sure we're actually in a kexec/hotplug scenario at
+> runtime?
+> 
+> Or just implement corenet timebase sync -- it's not that different.
+> 
+> -Scott
 
-static void intel_fixup_er(struct perf_event *event, int idx)
-{
-        if (idx == EXTRA_REG_RSP_0) {
-                event->hw.config &= ~INTEL_ARCH_EVENT_MASK;
-                event->hw.config |= 0x01b7;
-                event->hw.extra_reg.idx = EXTRA_REG_RSP_0;
-                event->hw.extra_reg.reg = MSR_OFFCORE_RSP_0;
-        } else if (idx == EXTRA_REG_RSP_1) {
-                event->hw.config &= ~INTEL_ARCH_EVENT_MASK;
-                event->hw.config |= 0x01bb;
-                event->hw.extra_reg.idx = EXTRA_REG_RSP_1;
-                event->hw.extra_reg.reg = MSR_OFFCORE_RSP_1;
-        }
-}
+We also work on the corenet timebase sync. Our plan is first the dual-core case,
+then the case of more than 2 cores. We will submit the corenet timebase sync patch soon.
 
-Regards
-Yan, Zheng
+-Chenhui
+
