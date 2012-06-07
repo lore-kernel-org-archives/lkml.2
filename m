@@ -1,118 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756051Ab2FGMsK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 08:48:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37701 "EHLO mx1.redhat.com"
+	id S1756885Ab2FGMuI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 08:50:08 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:45957 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754746Ab2FGMsI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 08:48:08 -0400
-Date: Thu, 7 Jun 2012 08:48:00 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Li Zhong <zhong@linux.vnet.ibm.com>
-Cc: Jan Beulich <JBeulich@suse.com>, x86@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86,nmi: Fix section mismatch warnings on 32-bit
-Message-ID: <20120607124800.GH32472@redhat.com>
-References: <1338839763-11140-1-git-send-email-dzickus@redhat.com>
- <4FCDDB7D0200007800088390@nat28.tlf.novell.com>
- <20120605144734.GU32472@redhat.com>
- <4FCE44FC0200007800088524@nat28.tlf.novell.com>
- <20120605183539.GA32472@redhat.com>
- <4FCF57B902000078000887EA@nat28.tlf.novell.com>
- <20120606140357.GB32472@redhat.com>
- <1339055005.18639.11.camel@ThinkPad-T420>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339055005.18639.11.camel@ThinkPad-T420>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755800Ab2FGMuG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 08:50:06 -0400
+From: Roman Kagan <rkagan@parallels.com>
+To: stable@vger.kernel.org
+Cc: Roman Kagan <rkagan@parallels.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        PJ Waskiewicz <peter.p.waskiewicz.jr@intel.com>,
+        Alex Duyck <alexander.h.duyck@intel.com>,
+        John Ronciak <john.ronciak@intel.com>,
+        Dean Nelson <dnelson@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] e1000: save skb counts in TX to avoid cache misses
+Date: Thu,  7 Jun 2012 16:49:56 +0400
+Message-Id: <b838d871c0d507787373061e4edd91a624d62475.1339073391.git.rkagan@parallels.com>
+X-Mailer: git-send-email 1.7.10.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 07, 2012 at 03:43:25PM +0800, Li Zhong wrote:
-> On Wed, 2012-06-06 at 10:03 -0400, Don Zickus wrote:
-> > On Wed, Jun 06, 2012 at 12:14:33PM +0100, Jan Beulich wrote:
-> > > > I didn't think it would be compiler dependent as I do not know what
-> > > > compiler the reporter was using.  I used a RHEL-6 4.4.4 compiler (which
-> > > > you probably don't have :^) ).
-> > > 
-> > > Indeed, somehow I failed to see the obvious - it's commit
-> > > 72b3fb24713755cf9740b403e95aa67ceedf3509 that causes
-> > > these problems. Instantiating static data like this just doesn't
-> > > play with any of the pointers passed being into .init.*.
-> > > 
-> > > I'd suggest either open coding register_nmi_handler() (with
-> > > the static data put into __initdata), or further abstracting it
-> > > by allowing an optional fifth argument (specifying the section
-> > > annotation if needed).
-> > 
-> > Ah.  Thanks for figuring that out!!  I will post a patch opencoding it.
-> > 
-> 
-> Hi Don, 
-> 
-> How about the following patch, adding an optional fifth argument as Jan
-> mentioned? We don't need change other users of register_nmi_handler(). 
+[Upstream commit 31c15a2f24ebdab14333d9bf5df49757842ae2ec with paths
+adjusted to compensate for the drivers/net/ethernet/intel reorg in
+dee1ad47f2ee75f5146d83ca757c1b7861c34c3b]
 
-Ah, ok.  I forgot about the variable args syntax.  That works too.  I give
-a quick test.
+Author: Dean Nelson <dnelson@redhat.com>
+Date:   Thu Aug 25 14:39:24 2011 +0000
 
-Thanks,
-Don
+    e1000: save skb counts in TX to avoid cache misses
 
-> 
-> Thanks, 
-> Zhong
-> 
-> Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
-> ---
-> diff --git a/arch/x86/include/asm/nmi.h b/arch/x86/include/asm/nmi.h
-> index 0e3793b..c0fa356 100644
-> --- a/arch/x86/include/asm/nmi.h
-> +++ b/arch/x86/include/asm/nmi.h
-> @@ -44,14 +44,14 @@ struct nmiaction {
->  	const char		*name;
->  };
->  
-> -#define register_nmi_handler(t, fn, fg, n)		\
-> +#define register_nmi_handler(t, fn, fg, n, init...)	\
->  ({							\
-> -	static struct nmiaction fn##_na = {		\
-> +	static struct nmiaction init fn##_na = {	\
->  		.handler = (fn),			\
->  		.name = (n),				\
->  		.flags = (fg),				\
->  	};						\
-> -	__register_nmi_handler((t), &fn##_na);	\
-> +	__register_nmi_handler((t), &fn##_na);		\
->  })
->  
->  int __register_nmi_handler(unsigned int, struct nmiaction *);
-> diff --git a/arch/x86/kernel/nmi_selftest.c
-> b/arch/x86/kernel/nmi_selftest.c
-> index e31bf8d..6d9582e 100644
-> --- a/arch/x86/kernel/nmi_selftest.c
-> +++ b/arch/x86/kernel/nmi_selftest.c
-> @@ -42,7 +42,8 @@ static int __init nmi_unk_cb(unsigned int val, struct
-> pt_regs *regs)
->  static void __init init_nmi_testsuite(void)
->  {
->  	/* trap all the unknown NMIs we may generate */
-> -	register_nmi_handler(NMI_UNKNOWN, nmi_unk_cb, 0, "nmi_selftest_unk");
-> +	register_nmi_handler(NMI_UNKNOWN, nmi_unk_cb, 0, "nmi_selftest_unk",
-> +			__initdata);
->  }
->  
->  static void __init cleanup_nmi_testsuite(void)
-> @@ -65,7 +66,7 @@ static void __init test_nmi_ipi(struct cpumask *mask)
->  	unsigned long timeout;
->  
->  	if (register_nmi_handler(NMI_LOCAL, test_nmi_ipi_callback,
-> -				 NMI_FLAG_FIRST, "nmi_selftest")) {
-> +				 NMI_FLAG_FIRST, "nmi_selftest", __initdata)) {
->  		nmi_fail = FAILURE;
->  		return;
->  	}
-> 
-> 
+    Virtual Machines with emulated e1000 network adapter running on Parallels'
+    server were seeing kernel panics due to the e1000 driver dereferencing an
+    unexpected NULL pointer retrieved from buffer_info->skb.
+
+    The problem has been addressed for the e1000e driver, but not for the e1000.
+    Since the two drivers share similar code in the affected area, a port of the
+    following e1000e driver commit solves the issue for the e1000 driver:
+
+    commit 9ed318d546a29d7a591dbe648fd1a2efe3be1180
+    Author: Tom Herbert <therbert@google.com>
+    Date:   Wed May 5 14:02:27 2010 +0000
+
+        e1000e: save skb counts in TX to avoid cache misses
+
+        In e1000_tx_map, precompute number of segements and bytecounts which
+        are derived from fields in skb; these are stored in buffer_info.  When
+        cleaning tx in e1000_clean_tx_irq use the values in the associated
+        buffer_info for statistics counting, this eliminates cache misses
+        on skb fields.
+
+    Signed-off-by: Dean Nelson <dnelson@redhat.com>
+    Acked-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+    Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Roman Kagan <rkagan@parallels.com>
+---
+ drivers/net/e1000/e1000.h      |    2 ++
+ drivers/net/e1000/e1000_main.c |   18 +++++++++---------
+ 2 files changed, 11 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/net/e1000/e1000.h b/drivers/net/e1000/e1000.h
+index 8676899..2c71884 100644
+--- a/drivers/net/e1000/e1000.h
++++ b/drivers/net/e1000/e1000.h
+@@ -150,6 +150,8 @@ struct e1000_buffer {
+ 	unsigned long time_stamp;
+ 	u16 length;
+ 	u16 next_to_watch;
++	unsigned int segs;
++	unsigned int bytecount;
+ 	u16 mapped_as_page;
+ };
+ 
+diff --git a/drivers/net/e1000/e1000_main.c b/drivers/net/e1000/e1000_main.c
+index 76e8af0..99525f9 100644
+--- a/drivers/net/e1000/e1000_main.c
++++ b/drivers/net/e1000/e1000_main.c
+@@ -2798,7 +2798,7 @@ static int e1000_tx_map(struct e1000_adapter *adapter,
+ 	struct e1000_buffer *buffer_info;
+ 	unsigned int len = skb_headlen(skb);
+ 	unsigned int offset = 0, size, count = 0, i;
+-	unsigned int f;
++	unsigned int f, bytecount, segs;
+ 
+ 	i = tx_ring->next_to_use;
+ 
+@@ -2899,7 +2899,13 @@ static int e1000_tx_map(struct e1000_adapter *adapter,
+ 		}
+ 	}
+ 
++	segs = skb_shinfo(skb)->gso_segs ?: 1;
++	/* multiply data chunks by size of headers */
++	bytecount = ((segs - 1) * skb_headlen(skb)) + skb->len;
++
+ 	tx_ring->buffer_info[i].skb = skb;
++	tx_ring->buffer_info[i].segs = segs;
++	tx_ring->buffer_info[i].bytecount = bytecount;
+ 	tx_ring->buffer_info[first].next_to_watch = i;
+ 
+ 	return count;
+@@ -3573,14 +3579,8 @@ static bool e1000_clean_tx_irq(struct e1000_adapter *adapter,
+ 			cleaned = (i == eop);
+ 
+ 			if (cleaned) {
+-				struct sk_buff *skb = buffer_info->skb;
+-				unsigned int segs, bytecount;
+-				segs = skb_shinfo(skb)->gso_segs ?: 1;
+-				/* multiply data chunks by size of headers */
+-				bytecount = ((segs - 1) * skb_headlen(skb)) +
+-				            skb->len;
+-				total_tx_packets += segs;
+-				total_tx_bytes += bytecount;
++				total_tx_packets += buffer_info->segs;
++				total_tx_bytes += buffer_info->bytecount;
+ 			}
+ 			e1000_unmap_and_free_tx_resource(adapter, buffer_info);
+ 			tx_desc->upper.data = 0;
+-- 
+1.7.10.2
+
