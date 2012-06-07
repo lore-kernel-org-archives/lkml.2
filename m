@@ -1,30 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759152Ab2FHAzJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 20:55:09 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:58692 "EHLO
+	id S1759234Ab2FHAzX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 20:55:23 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:58731 "EHLO
 	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759067Ab2FHAzE (ORCPT
+	with ESMTP id S1759064Ab2FHAzU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 20:55:04 -0400
-Date: Fri, 8 Jun 2012 07:37:00 +0800
+	Thu, 7 Jun 2012 20:55:20 -0400
+Date: Fri, 8 Jun 2012 07:27:08 +0800
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Graeme Gregory <gg@slimlogic.co.uk>,
+Cc: linux-kernel@vger.kernel.org, Marek Vasut <marek.vasut@gmail.com>,
         Liam Girdwood <lrg@ti.com>
-Message-ID: <20120607233659.GS14525@opensource.wolfsonmicro.com>
-References: <1338984098.5195.1.camel@phoenix>
+Message-ID: <20120607232707.GN14525@opensource.wolfsonmicro.com>
+References: <1339034714.7309.3.camel@phoenix>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="psiTe9LjpVyD9953"
+	protocol="application/pgp-signature"; boundary="BjavXC7V3ilNTWHC"
 Content-Disposition: inline
-In-Reply-To: <1338984098.5195.1.camel@phoenix>
+In-Reply-To: <1339034714.7309.3.camel@phoenix>
 X-Cookie: Long life is in store for you.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: 116.228.53.169
 X-SA-Exim-Mail-From: broonie@opensource.wolfsonmicro.com
-Subject: Re: [PATCH v2] regulator: palmas: Slightly code change for better
- readability
+Subject: Re: [PATCH RFC 1/2] regulator: core: Allow uV_step to be 0 for
+ linear mapping if fixed voltage
 X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
 X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -32,35 +32,36 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---psiTe9LjpVyD9953
+--BjavXC7V3ilNTWHC
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Wed, Jun 06, 2012 at 08:01:38PM +0800, Axel Lin wrote:
-> It's a little bit hard to read that the "else" case means id == PALMAS_REG_SMPS10.
+On Thu, Jun 07, 2012 at 10:05:14AM +0800, Axel Lin wrote:
+> Fixed voltage is a kind of linear mapping where n_voltages is 1 and uV_step is
+> 0. This change allows [list|map]_voltage_linear to be used for fixed voltage.
 
-Applied, thanks.
+Applied all, thanks.
 
---psiTe9LjpVyD9953
+--BjavXC7V3ilNTWHC
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJP0TsRAAoJEBus8iNuMP3dZ2IP/0amEBPWK5e7F9X0PxgF4wdU
-YnOUYYHlXGUrCgKjN1iYK3GRrBmqzgbFy3p0Zv7kuBUTjBlihlit2KsbWD2iLIsv
-cfw7QoLQ2yzhUAul7qBNeAPECmD5ZvQJ1D2FB7udR/Cen82sIU61OIUG01Y9PTA8
-DE158zK+ruSTgPkwq53220+uVnQCZGehhl2e2m+7/HGjaPT+YpqxraYZxeWG+K0u
-0gCFZZlYVNqfVwsI9d9Z31P75al1+4UCsqU0tSAGL78Qq0Y5UAiRAp3F4fWtr4KM
-c9IYvLV6acrUgZKIGFOVnLE6FbxP2EsCL4mkolRz2q2hMYe4l+tSSXsczaNUYaqd
-62oFO9Z7c/a/40+MRYzlcAfQWYy2HGcxt7wnKCLHij8gezXYV3EHa9V5pqY3Ikvv
-iIc2LvsTY/RsNDyQ9XPH2JTwenelSIE+4YSSROqVkMmXIYDjnVllEbghSSZpfXhQ
-uFmmD7xRcA2qiGqA0kB0CzRcBE83Z1yPxekZigktNTRKce98G5xQUKdqD2M4tknV
-IESKrfCx9T/06RokgEiq9P+DRXqClM7KakzpiOGYpFh+K2dwNkiZYdjOcX2LdPwy
-4oufUKdQZteUwpP4eJd5ansYYUtI6pvp4ZNVPzWRp39mFF6OnYv4NMd8pIjqZa1o
-Dz4gRH+Kk5tabtNTvpZQ
-=MI+U
+iQIcBAEBAgAGBQJP0TjCAAoJEBus8iNuMP3d130QAJuoJ2RDDxoKwlD55HG+yM6p
+JLYW/Uaj6kRhqFUXPNK3QReT7v148beqK+PM488PT+TPm9UROXZi8wgWPz4POLoQ
+vyJ+Agzawtu0XbGz07ynsDd6d0sVivIiawZa0X/BiDXC0u4lhCPMa0vqfFU6VFmw
+Q+dnDVmuNOfnAI4mX+Lj3Ef/dAYIC2SjEjwCuDjvTVOVBNzsJ9QP5VYtb1cBwiCr
+jwc5m/DD7MlaoRjOAr3zxEJFNvf08is64P+N5R9XiOIwt5u5z+jrTAi5V0gfbNHc
+fm916bFbjqI9enbmZJfjB6jJkNOjY+AdSrq/IC8tUikcUj3rVZOCc1+GbsmlM+xA
+i+UBQTijcrn3DpjeYHI7WxiFrHdCKWFluHqPxt46rIGYmcsQzPmYoC12UuvIvx+v
+ZrgGiBKZ6ARxZYnggkGEg3l1oXDOxT2a8EnPpxMVz6laICQQyFU9Rp/7o4oONDPh
+RnXsBb/yPmXEBUSZ2RkJGGp2ok3azG1rMQmMfzk9eOKAnfse58EXV5HHbuOPboPJ
+Nsn/wtN75QK+0zOYwOQ3DthYoajjEJgMmBBbNq3Ca5q7oApSSWoq2nOhXrHcw90w
+4vATE+IVbu8kpuEiISa4bToLj2l5dl8eE6+JC4SQ66BQnDC2/43yNiGEMO8FG74k
+0nE/oGiZND2PzcZ/vOrf
+=68Mz
 -----END PGP SIGNATURE-----
 
---psiTe9LjpVyD9953--
+--BjavXC7V3ilNTWHC--
