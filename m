@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932570Ab2FGESz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 00:18:55 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63306 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932538Ab2FGESt (ORCPT
+	id S932595Ab2FGETA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 00:19:00 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:59627 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932560Ab2FGESy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 00:18:49 -0400
-Message-Id: <20120607040342.849554995@linuxfoundation.org>
+	Thu, 7 Jun 2012 00:18:54 -0400
+Message-Id: <20120607040342.314328886@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 07 Jun 2012 13:04:21 +0900
+Date: Thu, 07 Jun 2012 13:04:17 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Gabor Juhos <juhosg@openwrt.org>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        David Woodhouse <David.Woodhouse@intel.com>
-Subject: [ 45/82] mtd: block2mtd: fix recursive call of mtd_writev
+        alan@lxorguk.ukuu.org.uk, "H. Peter Anvin" <hpa@zytor.com>
+Subject: [ 41/82] x86, x32, ptrace: Remove PTRACE_ARCH_PRCTL for x32
 In-Reply-To: <20120607041406.GA13233@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,40 +24,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gabor Juhos <juhosg@openwrt.org>
+From: "H.J. Lu" <hjl.tools@gmail.com>
 
-commit 2e24e32e2759348c9290404abad4f729f791bfad upstream.
+commit bad1a753d4d4deb09d4bc0bac1dd4fc3298502e9 upstream.
 
-The 'mtd_writev' interface calls the function assigned
-to the '_write' field of a given mtd device if that is
-not NULL. The block2mtd driver sets the '_writev' field
-to the 'mtd_writev' function itself and thus causes a
-endless loop.
+When I added x32 ptrace to 3.4 kernel, I also include PTRACE_ARCH_PRCTL
+support for x32 GDB  For ARCH_GET_FS/GS, it takes a pointer to int64.  But
+at user level, ARCH_GET_FS/GS takes a pointer to int32.  So I have to add
+x32 ptrace to glibc to handle it with a temporary int64 passed to kernel and
+copy it back to GDB as int32.  Roland suggested that PTRACE_ARCH_PRCTL
+is obsolete and x32 GDB should use fs_base and gs_base fields of
+user_regs_struct instead.
 
-This is caused by 1dbebd32562b3c2caeca35960e5cb00bfcc12900
-(mtd: harmonize mtd_writev usage).
+Accordingly, remove PTRACE_ARCH_PRCTL completely from the x32 code to
+avoid possible memory overrun when pointer to int32 is passed to
+kernel.
 
-Remove the assignment from the block2mtd driver to fix the
-issue.
-
-Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Link: http://lkml.kernel.org/r/CAMe9rOpDzHfS7NH7m1vmD9QRw8SSj4Sc%2BaNOgcWm_WJME2eRsQ@mail.gmail.com
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/devices/block2mtd.c |    1 -
- 1 file changed, 1 deletion(-)
+ arch/x86/kernel/ptrace.c |    6 ------
+ 1 file changed, 6 deletions(-)
 
---- a/drivers/mtd/devices/block2mtd.c
-+++ b/drivers/mtd/devices/block2mtd.c
-@@ -271,7 +271,6 @@ static struct block2mtd_dev *add_device(
- 	dev->mtd.flags = MTD_CAP_RAM;
- 	dev->mtd._erase = block2mtd_erase;
- 	dev->mtd._write = block2mtd_write;
--	dev->mtd._writev = mtd_writev;
- 	dev->mtd._sync = block2mtd_sync;
- 	dev->mtd._read = block2mtd_read;
- 	dev->mtd.priv = dev;
+--- a/arch/x86/kernel/ptrace.c
++++ b/arch/x86/kernel/ptrace.c
+@@ -1211,12 +1211,6 @@ static long x32_arch_ptrace(struct task_
+ 					     0, sizeof(struct user_i387_struct),
+ 					     datap);
+ 
+-		/* normal 64bit interface to access TLS data.
+-		   Works just like arch_prctl, except that the arguments
+-		   are reversed. */
+-	case PTRACE_ARCH_PRCTL:
+-		return do_arch_prctl(child, data, addr);
+-
+ 	default:
+ 		return compat_ptrace_request(child, request, addr, data);
+ 	}
 
 
