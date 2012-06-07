@@ -1,154 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758098Ab2FGDpp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 23:45:45 -0400
-Received: from audible.transient.net ([216.254.12.79]:48730 "HELO
-	audible.transient.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752672Ab2FGDpn (ORCPT
+	id S1759567Ab2FGDwU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 23:52:20 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45159 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752672Ab2FGDwS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 23:45:43 -0400
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Wed, 06 Jun 2012 23:45:43 EDT
-Date: Thu, 7 Jun 2012 03:38:30 +0000
-From: Jamie Heilman <jamie@audible.transient.net>
-To: Daniel Mack <zonque@gmail.com>
-Cc: Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: 3.5-rc1 snd_usb_audio stream format breakage
-Message-ID: <20120607033830.GB4321@cucamonga.audible.transient.net>
-Mail-Followup-To: Daniel Mack <zonque@gmail.com>,
-	Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-	linux-kernel@vger.kernel.org
+	Wed, 6 Jun 2012 23:52:18 -0400
+Message-ID: <4FD02567.20505@gmail.com>
+Date: Wed, 06 Jun 2012 21:52:07 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ingo Molnar <mingo@kernel.org>
+CC: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        linux-kernel@vger.kernel.org,
+        Akihiro Nagai <akihiro.nagai.hw@hitachi.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, Avik Sil <avik.sil@linaro.org>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Namhyung Kim <namhyung.kim@lge.com>, Oleg Nesterov <oleg@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Sunjin Yang <fan4326@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-perf-users@vger.kernel.org
+Subject: Re: [GIT PULL 00/15] perf/urgent fixes
+References: <1338588999-32509-1-git-send-email-acme@infradead.org> <20120606065014.GB17808@gmail.com>
+In-Reply-To: <20120606065014.GB17808@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the USB audio streaming logic changes, my HeadRoom Bithead
-(08bb:2902 Burr-Brown PCM2902) no longer works.  Symptoms include the
-loss of most of the normally available formats leaving only:
+On 6/6/12 12:50 AM, Ingo Molnar wrote:
+> Hm, I got this build failure:
+>
+> bench/mem-memcpy.c: In function ‘bench_mem_memcpy’:
+> bench/mem-memcpy.c:193:2: error: implicit declaration of function ‘perf_atoll’ [-Werror=implicit-function-declaration]
+> bench/mem-memcpy.c:193:2: error: nested extern declaration of ‘perf_atoll’ [-Werror=nested-externs]
+>
+> Which appears to be a result of:
+>
+> 6b7df4a0237a perf tool: Build fix, remove duplicate declarations
+>
+> Those declarations were not so unused on this fresh install of
+> Fedora 17.
+>
+> Luckily, the offending commit was the last one in the series, so
+> I merged your tree at cb7225f, excluding only the buggy commit.
+>
+> Thanks,
+>
+> 	Ingo
 
-root@cucamonga:~# cat /proc/asound/bithead/stream0 
-Burr-Brown from TI USB Audio CODEC at usb-0000:00:1a.7-1.1.4, full speed : USB Audio
 
-Playback:
-  Status: Stop
-  Interface 1
-    Altset 6
-    Format: U8
-    Channels: 1
-    Endpoint: 2 OUT (ADAPTIVE)
-    Rates: 32000, 44100, 48000
+I see the problem now: I had a stale util/string.h file which was 
+removed by e206d556. Local problem (stupidity) as to why. Sorry for the 
+noise.
 
-Capture:
-  Status: Stop
-  Interface 2
-    Altset 18
-    Format: S8
-    Channels: 1
-    Endpoint: 4 IN (SYNC)
-    Rates: 11025
+Arnaldo: please drop the patch.
 
-(normally 2 channel S16_LE is available, with capture rates up to
-48kHz ... only the last altset's are being reported now) and a slew of
-proc registration warnings logged:
-
-------------[ cut here ]------------
-WARNING: at fs/proc/generic.c:586 proc_register+0x169/0x1a6()
-Hardware name: Precision WorkStation T3400  
-proc_dir_entry 'card1/pcm0p' already registered
-Modules linked in: snd_usb_audio(+) snd_usbmidi_lib snd_hda_intel(+) snd_hda_codec snd_hwdep snd_seq_midi snd_seq_midi_event snd_pcm snd_page_alloc snd_rawmidi snd_seq snd_seq_device snd_timer snd soundcore dcdbas floppy sr_mod usb_storage cdrom kvm_intel psmouse kvm tg3 evdev xfs dm_mod raid1 md_mod
-Pid: 1152, comm: modprobe Not tainted 3.5.0-rc1-00110-g71fae7e #2
-Call Trace:
- [<ffffffff8102a400>] warn_slowpath_common+0x83/0x9c
- [<ffffffff8102a4bc>] warn_slowpath_fmt+0x46/0x48
- [<ffffffff813829ad>] ? add_preempt_count+0x39/0x3b
- [<ffffffff811292f0>] proc_register+0x169/0x1a6
- [<ffffffff8112962e>] create_proc_entry+0x74/0x8c
- [<ffffffffa018eb63>] snd_info_register+0x3e/0xc3 [snd]
- [<ffffffffa01fde2e>] snd_pcm_new_stream+0xb1/0x404 [snd_pcm]
- [<ffffffffa024861f>] snd_usb_add_audio_stream+0xd2/0x230 [snd_usb_audio]
- [<ffffffffa0241d33>] ? snd_usb_parse_audio_format+0x252/0x34f [snd_usb_audio]
- [<ffffffff810d6b17>] ? kmem_cache_alloc_trace+0xab/0xbb
- [<ffffffffa0248c29>] snd_usb_parse_audio_interface+0x4ac/0x567 [snd_usb_audio]
- [<ffffffffa023f0ff>] snd_usb_create_stream+0xe9/0x125 [snd_usb_audio]
- [<ffffffffa023f9b1>] usb_audio_probe+0x62a/0x72c [snd_usb_audio]
- [<ffffffff812c49f5>] usb_probe_interface+0x136/0x1b1
- [<ffffffff81287e66>] ? driver_probe_device+0x1d3/0x1d3
- [<ffffffff81287d43>] driver_probe_device+0xb0/0x1d3
- [<ffffffff81287ec5>] __driver_attach+0x5f/0x83
- [<ffffffff812863a2>] bus_for_each_dev+0x54/0x86
- [<ffffffff81287730>] driver_attach+0x1e/0x20
- [<ffffffff8128747f>] bus_add_driver+0xfd/0x23a
- [<ffffffff812882e8>] driver_register+0x93/0x10e
- [<ffffffff812c383f>] usb_register_driver+0x7e/0x12a
- [<ffffffffa0257000>] ? 0xffffffffa0256fff
- [<ffffffffa0257000>] ? 0xffffffffa0256fff
- [<ffffffffa0257040>] snd_usb_audio_init+0x40/0x1000 [snd_usb_audio]
- [<ffffffff810001ff>] do_one_initcall+0x7f/0x134
- [<ffffffffa0257000>] ? 0xffffffffa0256fff
- [<ffffffff810688d4>] sys_init_module+0x16cf/0x195e
- [<ffffffff8106516c>] ? free_notes_attrs+0x4d/0x4d
- [<ffffffff810c38cb>] ? mmap_region+0x1c7/0x469
- [<ffffffff813856d2>] system_call_fastpath+0x16/0x1b
----[ end trace c1baea1a25a91564 ]---
-
-followed immediately by 4 more instances of:
-
-------------[ cut here ]------------
-WARNING: at fs/proc/generic.c:586 proc_register+0x169/0x1a6()
-Hardware name: Precision WorkStation T3400  
-proc_dir_entry 'card1/pcm0p' already registered
-Modules linked in: snd_usb_audio(+) snd_usbmidi_lib snd_hda_intel(+) snd_hda_codec snd_hwdep snd_seq_midi snd_seq_midi_event snd_pcm snd_page_alloc snd_rawmidi snd_seq snd_seq_device snd_timer snd soundcore dcdbas floppy sr_mod usb_storage cdrom kvm_intel psmouse kvm tg3 evdev xfs dm_mod raid1 md_mod
-Pid: 1152, comm: modprobe Tainted: G        W    3.5.0-rc1-00110-g71fae7e #2
-Call Trace:
- [<ffffffff8102a400>] warn_slowpath_common+0x83/0x9c
- [<ffffffff8102a4bc>] warn_slowpath_fmt+0x46/0x48
- [<ffffffff813829ad>] ? add_preempt_count+0x39/0x3b
- [<ffffffff811292f0>] proc_register+0x169/0x1a6
- [<ffffffff8112962e>] create_proc_entry+0x74/0x8c
- [<ffffffffa018eb63>] snd_info_register+0x3e/0xc3 [snd]
- [<ffffffffa01fde2e>] snd_pcm_new_stream+0xb1/0x404 [snd_pcm]
- [<ffffffffa024861f>] snd_usb_add_audio_stream+0xd2/0x230 [snd_usb_audio]
- [<ffffffffa0241d33>] ? snd_usb_parse_audio_format+0x252/0x34f [snd_usb_audio]
- [<ffffffff810d6b17>] ? kmem_cache_alloc_trace+0xab/0xbb
- [<ffffffffa0248c29>] snd_usb_parse_audio_interface+0x4ac/0x567 [snd_usb_audio]
- [<ffffffffa023f0ff>] snd_usb_create_stream+0xe9/0x125 [snd_usb_audio]
- [<ffffffffa023f9b1>] usb_audio_probe+0x62a/0x72c [snd_usb_audio]
- [<ffffffff812c49f5>] usb_probe_interface+0x136/0x1b1
- [<ffffffff81287e66>] ? driver_probe_device+0x1d3/0x1d3
- [<ffffffff81287d43>] driver_probe_device+0xb0/0x1d3
- [<ffffffff81287ec5>] __driver_attach+0x5f/0x83
- [<ffffffff812863a2>] bus_for_each_dev+0x54/0x86
- [<ffffffff81287730>] driver_attach+0x1e/0x20
- [<ffffffff8128747f>] bus_add_driver+0xfd/0x23a
- [<ffffffff812882e8>] driver_register+0x93/0x10e
- [<ffffffff812c383f>] usb_register_driver+0x7e/0x12a
- [<ffffffffa0257000>] ? 0xffffffffa0256fff
- [<ffffffffa0257000>] ? 0xffffffffa0256fff
- [<ffffffffa0257040>] snd_usb_audio_init+0x40/0x1000 [snd_usb_audio]
- [<ffffffff810001ff>] do_one_initcall+0x7f/0x134
- [<ffffffffa0257000>] ? 0xffffffffa0256fff
- [<ffffffff810688d4>] sys_init_module+0x16cf/0x195e
- [<ffffffff8106516c>] ? free_notes_attrs+0x4d/0x4d
- [<ffffffff810c38cb>] ? mmap_region+0x1c7/0x469
- [<ffffffff813856d2>] system_call_fastpath+0x16/0x1b
----[ end trace c1baea1a25a91565 ]---
-
-and then 17 instances of the same thing only for proc_dir_entry
-'card1/pcm0c'
-
-Bisecting the issue got as far as
-d399ff9593e088d33fb38f5206c6427825892baa being bad and
-8fdff6a319e7dac757c558bd283dc4577e68cde7 being good ... with
-edcd3633e72a1590c4cf46befe5e6cd03b5aec3e not building, but its pretty
-obvious when things went wrong.
-
-The host system is built for x86_64, happy to provide configs and such
-if you think them relevant.  Lemme know if I can be of help in testing
-fixes or providing more debugging info.
-
--- 
-Jamie Heilman                     http://audible.transient.net/~jamie/
+David
