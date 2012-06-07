@@ -1,91 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933371Ab2FGWhm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 18:37:42 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:41964 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933211Ab2FGWhk convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 18:37:40 -0400
+	id S1758051Ab2FGWko (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 18:40:44 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:46950 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751931Ab2FGWkm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 18:40:42 -0400
 MIME-Version: 1.0
-In-Reply-To: <1339108157-30021-1-git-send-email-andi@firstfloor.org>
-References: <1339108157-30021-1-git-send-email-andi@firstfloor.org>
-Date: Fri, 8 Jun 2012 00:37:39 +0200
-Message-ID: <CABPqkBSEknXdTQWCrxeeeFgREX02ARRzxJ8bj6uh+0yOi0nAjg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] perf, x86: Add basic Ivy Bridge support
-From: Stephane Eranian <eranian@google.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        Andi Kleen <ak@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20120607222729.GI6938@tux1.beaverton.ibm.com>
+References: <471046920.20120604234941@eikelenboom.it>
+	<20120605000356.GM29466@outflux.net>
+	<1018371644.20120605224154@eikelenboom.it>
+	<20120605210806.GB7182@thunk.org>
+	<1883708187.20120606090126@eikelenboom.it>
+	<CAGXu5jK-4dO59-x3eTU10OntcPwsVptjpUzQdbbHOvy9_VBQ2A@mail.gmail.com>
+	<1482118647.20120606164012@eikelenboom.it>
+	<20120607042756.GA30776@thunk.org>
+	<20120607222729.GI6938@tux1.beaverton.ibm.com>
+Date: Thu, 7 Jun 2012 15:40:40 -0700
+X-Google-Sender-Auth: v445S5zbnWoc1cJIDRLfzxgadrg
+Message-ID: <CAGXu5jKmBkfvuSR7q47-Ac57dVZynz_JkYXiA_-aXaGQiR_C4g@mail.gmail.com>
+Subject: Re: [dm-devel] EXT4-fs error (device dm-42): ext4_mb_generate_buddy:741:
+ group 1904, 32254 clusters in bitmap, 32258 in gd
+From: Kees Cook <keescook@chromium.org>
+To: djwong@us.ibm.com
+Cc: "Ted Ts'o" <tytso@mit.edu>, Sander Eikelenboom <linux@eikelenboom.it>,
+        Linus Torvalds <torvalds@linux-foundation.org>, dm-devel@redhat.com,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 8, 2012 at 12:29 AM, Andi Kleen <andi@firstfloor.org> wrote:
-> From: Andi Kleen <ak@linux.intel.com>
+On Thu, Jun 7, 2012 at 3:27 PM, djwong <djwong@us.ibm.com> wrote:
+> On Thu, Jun 07, 2012 at 12:27:56AM -0400, Ted Ts'o wrote:
+>> I think this patch should fix things. �Could you give it a try (after
+>> re-enabling uninit_bg and then running e2fsck on the file systems)?
+>>
+>> Many thanks,
+>>
+>> � � � � � � � � � � � � � � � � � � � � � � � - Ted
+>>
+>> commit b6b218940d47f20fc14e4d203930c575be0c65bf
+>> Author: Theodore Ts'o <tytso@mit.edu>
+>> Date: � Thu Jun 7 00:26:56 2012 -0400
+>>
+>> � � ext4: fix the free blocks calculation for ext3 file systems w/ uninit_bg
+>>
+>> � � Ext3 filesystems that are converted to use as many ext4 file systems
+>> � � as possible
 >
-> Very similar to Sandy Bridge, but there is no PEBS problem.
+> Just to clarify the description a bit:
 >
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  arch/x86/kernel/cpu/perf_event_intel.c |    9 ++++++++-
->  1 files changed, 8 insertions(+), 1 deletions(-)
+> Did you mean "..as many ext4 filesystem _features_ as possible" ?
 >
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-> index 166546e..1249c56 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-> @@ -1698,6 +1698,7 @@ __init int intel_pmu_init(void)
->        union cpuid10_ebx ebx;
->        unsigned int unused;
->        int version;
-> +       char *name;
+>> will enable uninit_bg to speed up e2fsck times. �File
+>> � � systems with an native ext3 layout of inode tables and block
 >
->        if (!cpu_has(&boot_cpu_data, X86_FEATURE_ARCH_PERFMON)) {
->                switch (boot_cpu_data.x86) {
-> @@ -1839,9 +1840,15 @@ __init int intel_pmu_init(void)
->                pr_cont("Westmere events, ");
->                break;
->
-> +       case 58: /* IvyBridge */
-> +               name = "Ivy";
-> +               goto snb_ivb_common;
-> +
->        case 42: /* SandyBridge */
->                x86_add_quirk(intel_sandybridge_quirk);
->        case 45: /* SandyBridge, "Romely-EP" */
-> +               name = "Sandy";
-> +       snb_ivb_common:
->                memcpy(hw_cache_event_ids, snb_hw_cache_event_ids,
->                       sizeof(hw_cache_event_ids));
->
-> @@ -1861,7 +1868,7 @@ __init int intel_pmu_init(void)
->                intel_perfmon_event_map[PERF_COUNT_HW_STALLED_CYCLES_BACKEND] =
->                        X86_CONFIG(.event=0xb1, .umask=0x01, .inv=1, .cmask=1);
->
+> Perhaps "On file systems with a native ext3 layout..." ?
 
-But as far as I know for the other generic stall event:
-               /* UOPS_DISPATCHED.THREAD,c=1,i=1 to count stall cycles*/
-                intel_perfmon_event_map[PERF_COUNT_HW_STALLED_CYCLES_BACKEND] =
-                        X86_CONFIG(.event=0xb1, .umask=0x01, .inv=1, .cmask=1);
+FWIW, I was building the filesystem that triggered this as ext4:
 
-Event 0xb1, umask 0x1 does not exist on IVB. Only the
-UOPS_DISPATCHED.CORE version does.
-Given I don't have a definition for STALLED_CYCLES_BACKEND, I don't
-know if measuring across
-both HT thread would fit the bill. I would advise you keep this one
-undefined on IVB otherwise this
-may lead to confusion when comparing with SNB.
+  mkfs.ext4 -T default -m 0 -O ^huge_file,^flex_bg -E
+discard,lazy_itable_init /dev/mapper/...
 
+-Kees
 
-> -               pr_cont("SandyBridge events, ");
-> +               pr_cont("%sBridge events, ", name);
->                break;
->
->        default:
-> --
-> 1.7.7.6
->
+-- 
+Kees Cook
+Chrome OS Security
