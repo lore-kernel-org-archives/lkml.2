@@ -1,25 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759921Ab2FGEYP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 00:24:15 -0400
+	id S933514Ab2FGEYV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 00:24:21 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:62777 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759873Ab2FGEYJ (ORCPT
+	with ESMTP id S1759873Ab2FGEYR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 00:24:09 -0400
-Message-Id: <20120607041400.923334242@linuxfoundation.org>
+	Thu, 7 Jun 2012 00:24:17 -0400
+Message-Id: <20120607041401.763365727@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 07 Jun 2012 13:14:17 +0900
+Date: Thu, 07 Jun 2012 13:14:23 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Jo=C3=A3o=20Paulo=20Rechi=20Vita?= 
-	<jprvita@openbossa.org>,
-        "Gustavo F. Padovan" <padovan@profusion.mobi>,
-        Johan Hedberg <johan.hedberg@intel.com>,
-        Jonathan Nieder <jrnieder@gmail.com>
-Subject: [ 19/47] Bluetooth: btusb: Add USB device ID "0a5c 21e8"
+        alan@lxorguk.ukuu.org.uk, Al Viro <viro@zeniv.linux.org.uk>
+Subject: [ 25/47] vfs: umount_tree() might be called on subtree that had never made it
 In-Reply-To: <20120607041504.GA13819@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,43 +24,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Jo=C3=A3o=20Paulo=20Rechi=20Vita?= <jprvita@openbossa.org>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit 6dfc326f0605fd87e4c10ccde10de0ce4280d72d upstream.
+commit 63d37a84ab6004c235314ffd7a76c5eb28c2fae0 upstream.
 
-One more vendor-specific ID for BCM20702A0.
+__mnt_make_shortterm() in there undoes the effect of __mnt_make_longterm()
+we'd done back when we set ->mnt_ns non-NULL; it should not be done to
+vfsmounts that had never gone through commit_tree() and friends.  Kudos to
+lczerner for catching that one...
 
-T:  Bus=01 Lev=03 Prnt=05 Port=02 Cnt=01 Dev#=  9 Spd=12  MxCh= 0
-D:  Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=0a5c ProdID=21e8 Rev=01.12
-S:  Manufacturer=Broadcom Corp
-S:  Product=BCM20702A0
-S:  SerialNumber=00027221F4E2
-C:  #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=0mA
-I:  If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
-I:  If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
-I:  If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-I:  If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
-
-Signed-off-by: João Paulo Rechi Vita <jprvita@openbossa.org>
-Acked-by: Gustavo F. Padovan <padovan@profusion.mobi>
-Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
-Cc: Jonathan Nieder <jrnieder@gmail.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/bluetooth/btusb.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/namespace.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -103,6 +103,7 @@ static struct usb_device_id btusb_table[
- 	/* Broadcom BCM20702A0 */
- 	{ USB_DEVICE(0x0a5c, 0x21e3) },
- 	{ USB_DEVICE(0x0a5c, 0x21e6) },
-+	{ USB_DEVICE(0x0a5c, 0x21e8) },
- 	{ USB_DEVICE(0x0a5c, 0x21f3) },
- 	{ USB_DEVICE(0x413c, 0x8197) },
- 
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -1244,8 +1244,9 @@ void umount_tree(struct vfsmount *mnt, i
+ 		list_del_init(&p->mnt_expire);
+ 		list_del_init(&p->mnt_list);
+ 		__touch_mnt_namespace(p->mnt_ns);
++		if (p->mnt_ns)
++			__mnt_make_shortterm(p);
+ 		p->mnt_ns = NULL;
+-		__mnt_make_shortterm(p);
+ 		list_del_init(&p->mnt_child);
+ 		if (p->mnt_parent != p) {
+ 			p->mnt_parent->mnt_ghosts++;
 
 
