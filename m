@@ -1,103 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933969Ab2FGE2I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 00:28:08 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:48169 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933536Ab2FGE2E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 00:28:04 -0400
-Date: Thu, 7 Jun 2012 00:27:56 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Sander Eikelenboom <linux@eikelenboom.it>
-Cc: Kees Cook <keescook@chromium.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>, dm-devel@redhat.com,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: EXT4-fs error (device dm-42): ext4_mb_generate_buddy:741:
- group 1904, 32254 clusters in bitmap, 32258 in gd
-Message-ID: <20120607042756.GA30776@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Sander Eikelenboom <linux@eikelenboom.it>,
-	Kees Cook <keescook@chromium.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>, dm-devel@redhat.com,
-	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <471046920.20120604234941@eikelenboom.it>
- <20120605000356.GM29466@outflux.net>
- <1018371644.20120605224154@eikelenboom.it>
- <20120605210806.GB7182@thunk.org>
- <1883708187.20120606090126@eikelenboom.it>
- <CAGXu5jK-4dO59-x3eTU10OntcPwsVptjpUzQdbbHOvy9_VBQ2A@mail.gmail.com>
- <1482118647.20120606164012@eikelenboom.it>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1482118647.20120606164012@eikelenboom.it>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S933777Ab2FGE2w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 00:28:52 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:54880 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933616Ab2FGEZZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 00:25:25 -0400
+Message-Id: <20120607041403.468747729@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Thu, 07 Jun 2012 13:14:35 +0900
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        Vlad Yaseivch <vyasevich@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 37/47] sctp: check cached dst before using it
+In-Reply-To: <20120607041504.GA13819@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I think this patch should fix things.  Could you give it a try (after
-re-enabling uninit_bg and then running e2fsck on the file systems)?
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Many thanks,
+------------------
 
-						- Ted
 
-commit b6b218940d47f20fc14e4d203930c575be0c65bf
-Author: Theodore Ts'o <tytso@mit.edu>
-Date:   Thu Jun 7 00:26:56 2012 -0400
+From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
 
-    ext4: fix the free blocks calculation for ext3 file systems w/ uninit_bg
-    
-    Ext3 filesystems that are converted to use as many ext4 file systems
-    as possible will enable uninit_bg to speed up e2fsck times.  File
-    systems with an native ext3 layout of inode tables and block
-    allocation bitmaps (as opposed to ext4's flex_bg layout), ext4 would
-    sometimes incorrectly calculate the number of free blocks in an
-    uninitialized block group.  As a result, when first allocating a block
-    in block group marked uninitalized, ext4 would incorrectly report that
-    the file system was corrupt:
-    
-    EXT4-fs error (device dm-42): ext4_mb_generate_buddy:741: group 1699, 32254 clusters in bitmap, 32258 in gd
-    
-    Fix the calculation in ext4_num_overhead_clusters() to avoid this
-    problem.
-    
-    Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+[ Upstream commit e0268868ba064980488fc8c194db3d8e9fb2959c ]
 
-diff --git a/fs/ext4/balloc.c b/fs/ext4/balloc.c
-index 99b6324..cee7812 100644
---- a/fs/ext4/balloc.c
-+++ b/fs/ext4/balloc.c
-@@ -90,8 +90,8 @@ unsigned ext4_num_overhead_clusters(struct super_block *sb,
- 	 * unusual file system layouts.
- 	 */
- 	if (ext4_block_in_group(sb, ext4_block_bitmap(sb, gdp), block_group)) {
--		block_cluster = EXT4_B2C(sbi, (start -
--					       ext4_block_bitmap(sb, gdp)));
-+		block_cluster = EXT4_B2C(sbi,
-+					 ext4_block_bitmap(sb, gdp) - start);
- 		if (block_cluster < num_clusters)
- 			block_cluster = -1;
- 		else if (block_cluster == num_clusters) {
-@@ -102,7 +102,7 @@ unsigned ext4_num_overhead_clusters(struct super_block *sb,
+dst_check() will take care of SA (and obsolete field), hence
+IPsec rekeying scenario is taken into account.
+
+Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Acked-by: Vlad Yaseivch <vyasevich@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ include/net/sctp/sctp.h |   13 +++++++++++++
+ net/sctp/output.c       |    4 +---
+ net/sctp/transport.c    |   17 -----------------
+ 3 files changed, 14 insertions(+), 20 deletions(-)
+
+--- a/include/net/sctp/sctp.h
++++ b/include/net/sctp/sctp.h
+@@ -700,4 +700,17 @@ static inline void sctp_v4_map_v6(union
+ 	addr->v6.sin6_addr.s6_addr32[2] = htonl(0x0000ffff);
+ }
  
- 	if (ext4_block_in_group(sb, ext4_inode_bitmap(sb, gdp), block_group)) {
- 		inode_cluster = EXT4_B2C(sbi,
--					 start - ext4_inode_bitmap(sb, gdp));
-+					 ext4_inode_bitmap(sb, gdp) - start);
- 		if (inode_cluster < num_clusters)
- 			inode_cluster = -1;
- 		else if (inode_cluster == num_clusters) {
-@@ -114,7 +114,7 @@ unsigned ext4_num_overhead_clusters(struct super_block *sb,
- 	itbl_blk = ext4_inode_table(sb, gdp);
- 	for (i = 0; i < sbi->s_itb_per_group; i++) {
- 		if (ext4_block_in_group(sb, itbl_blk + i, block_group)) {
--			c = EXT4_B2C(sbi, start - itbl_blk + i);
-+			c = EXT4_B2C(sbi, itbl_blk + i - start);
- 			if ((c < num_clusters) || (c == inode_cluster) ||
- 			    (c == block_cluster) || (c == itbl_cluster))
- 				continue;
++/* The cookie is always 0 since this is how it's used in the
++ * pmtu code.
++ */
++static inline struct dst_entry *sctp_transport_dst_check(struct sctp_transport *t)
++{
++	if (t->dst && !dst_check(t->dst, 0)) {
++		dst_release(t->dst);
++		t->dst = NULL;
++	}
++
++	return t->dst;
++}
++
+ #endif /* __net_sctp_h__ */
+--- a/net/sctp/output.c
++++ b/net/sctp/output.c
+@@ -377,9 +377,7 @@ int sctp_packet_transmit(struct sctp_pac
+ 	 */
+ 	skb_set_owner_w(nskb, sk);
+ 
+-	/* The 'obsolete' field of dst is set to 2 when a dst is freed. */
+-	if (!dst || (dst->obsolete > 1)) {
+-		dst_release(dst);
++	if (!sctp_transport_dst_check(tp)) {
+ 		sctp_transport_route(tp, NULL, sctp_sk(sk));
+ 		if (asoc && (asoc->param_flags & SPP_PMTUD_ENABLE)) {
+ 			sctp_assoc_sync_pmtu(asoc);
+--- a/net/sctp/transport.c
++++ b/net/sctp/transport.c
+@@ -226,23 +226,6 @@ void sctp_transport_pmtu(struct sctp_tra
+ 		transport->pathmtu = SCTP_DEFAULT_MAXSEGMENT;
+ }
+ 
+-/* this is a complete rip-off from __sk_dst_check
+- * the cookie is always 0 since this is how it's used in the
+- * pmtu code
+- */
+-static struct dst_entry *sctp_transport_dst_check(struct sctp_transport *t)
+-{
+-	struct dst_entry *dst = t->dst;
+-
+-	if (dst && dst->obsolete && dst->ops->check(dst, 0) == NULL) {
+-		dst_release(t->dst);
+-		t->dst = NULL;
+-		return NULL;
+-	}
+-
+-	return dst;
+-}
+-
+ void sctp_transport_update_pmtu(struct sctp_transport *t, u32 pmtu)
+ {
+ 	struct dst_entry *dst;
+
+
