@@ -1,56 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932905Ab2FGU7Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 16:59:16 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:54961 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932511Ab2FGU7O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 16:59:14 -0400
-Date: Thu, 7 Jun 2012 16:59:13 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Randy Dunlap <rdunlap@xenotime.net>
-cc: Stephen Rothwell <sfr@canb.auug.org.au>, <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>, <devel@driverdev.osuosl.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mike Lockwood <lockwood@android.com>,
-        Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-Subject: Re: linux-next: Tree for Jun 7 (staging/ccg #2)
-In-Reply-To: <4FD10A30.50707@xenotime.net>
-Message-ID: <Pine.LNX.4.44L0.1206071646360.1185-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1757322Ab2FGVBF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 17:01:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36630 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752904Ab2FGVBD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 17:01:03 -0400
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg KH <gregkh@linuxfoundation.org>
+Cc: 676360@bugs.debian.org, xen-devel@lists.xensource.com,
+        Jonathan Nieder <jrnieder@gmail.com>, linux-kernel@vger.kernel.org,
+        "linux-mm@kvack.org Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        stable@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
+        Ulrich Obergfell <uobergfe@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Hugh Dickins <hughd@google.com>, Larry Woodman <lwoodman@redhat.com>,
+        Petr Matousek <pmatouse@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Jan Beulich <jbeulich@suse.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Subject: Re: [ 08/82] mm: pmd_read_atomic: fix 32bit PAE pmd walk vs pmd_populate SMP race condition
+Date: Thu,  7 Jun 2012 23:00:32 +0200
+Message-Id: <1339102833-12358-1-git-send-email-aarcange@redhat.com>
+In-Reply-To: <20120607190414.GF21339@redhat.com>
+References: <20120607190414.GF21339@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 7 Jun 2012, Randy Dunlap wrote:
+Hi,
 
-> on x86_64:
-> 
->   CC [M]  drivers/staging/ccg/ccg.o
-> In file included from drivers/staging/ccg/../../usb/gadget/f_mass_storage.c:311:0,
->                  from drivers/staging/ccg/ccg.c:52:
-> drivers/staging/ccg/../../usb/gadget/storage_common.c: In function 'fsg_lun_open':
-> drivers/staging/ccg/../../usb/gadget/storage_common.c:686:3: error: implicit declaration of function 'bdev_logical_block_size'
-> drivers/staging/ccg/../../usb/gadget/storage_common.c:687:3: error: implicit declaration of function 'blksize_bits'
-> In file included from drivers/staging/ccg/ccg.c:52:0:
-> drivers/staging/ccg/../../usb/gadget/f_mass_storage.c: In function 'fsg_main_thread':
-> drivers/staging/ccg/../../usb/gadget/f_mass_storage.c:2624:2: error: implicit declaration of function 'set_fs'
-> drivers/staging/ccg/../../usb/gadget/f_mass_storage.c:2624:2: error: implicit declaration of function 'get_ds'
+this should avoid the cmpxchg8b (to make Xen happy) but without
+reintroducing the race condition. It's actually going to be faster
+too, but it's conceptually more complicated as the pmd high/low may be
+inconsistent at times, but at those times we're going to declare the
+pmd unstable and ignore it anyway so it's ok.
 
-The problems above are caused by the fact that 
-drivers/staging/ccg/Kconfig does not make USB_G_CGG dependent on BLOCK.
+NOTE: in theory I could also drop the high part when THP=y thanks to
+the barrier() in the caller (and the barrier is needed for the generic
+version anyway):
 
-> In file included from drivers/staging/ccg/ccg.c:59:0:
-> drivers/staging/ccg/../../usb/gadget/f_fs.c: At top level:
-> drivers/staging/ccg/../../usb/gadget/f_fs.c:40:0: warning: "pr_vdebug" redefined
-> drivers/staging/ccg/../../usb/gadget/u_serial.c:138:0: note: this is the location of the previous definition
+static inline pmd_t pmd_read_atomic(pmd_t *pmdp)
+{
+	pmdval_t ret;
+	u32 *tmp = (u32 *)pmdp;
 
-This could be fixed by adding a #ifndef guard to f_fs.c and u_serial.c.  
-It's a little awkward to combine independent source files this way.
+	ret = (pmdval_t) (*tmp);
++#ifndef CONFIG_TRANSPARENT_HUGEPAGE
+	if (ret) {
+		/*
+		 * If the low part is null, we must not read the high part
+		 * or we can end up with a partial pmd.
+		 */
+		smp_rmb();
+		ret |= ((pmdval_t)*(tmp + 1)) << 32;
+	}
++#endif
 
-Alan Stern
+	return (pmd_t) { ret };
+}
+
+But it's not worth the extra complexity. It looks cleaner if we deal
+with "good" pmds if they're later found pointing to a pte (even if we
+discard them and force pte_offset to re-read the *pmd).
+
+Andrea Arcangeli (1):
+  thp: avoid atomic64_read in pmd_read_atomic for 32bit PAE
+
+ arch/x86/include/asm/pgtable-3level.h |   30 +++++++++++++++++-------------
+ include/asm-generic/pgtable.h         |   10 ++++++++++
+ 2 files changed, 27 insertions(+), 13 deletions(-)
 
