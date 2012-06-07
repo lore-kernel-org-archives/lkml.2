@@ -1,55 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756202Ab2FGUUU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 16:20:20 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:58299 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754789Ab2FGUUQ (ORCPT
+	id S1756355Ab2FGUUd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 16:20:33 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:36508 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756215Ab2FGUU2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 16:20:16 -0400
-Message-ID: <4FD10CFC.8030000@gmail.com>
-Date: Thu, 07 Jun 2012 22:20:12 +0200
-From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: lee.g.rosenbaum@intel.com, mingo@kernel.org, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, jordan.l.justen@intel.com,
-        tglx@linutronix.de, rydberg@euromail.se, matt.fleming@intel.com
-CC: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/urgent] x86, efi stub: Add .reloc section back into
- image
-References: <1339085121-12760-1-git-send-email-jordan.l.justen@intel.com> <tip-743628e868c5992354fc80b4d1e9a6143da1c0e6@git.kernel.org>
-In-Reply-To: <tip-743628e868c5992354fc80b4d1e9a6143da1c0e6@git.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Thu, 7 Jun 2012 16:20:28 -0400
+From: Sam Hansen <solid.se7en@gmail.com>
+To: Sam Hansen <sam@meebo-inc.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
+        Sam Hansen <solid.se7en@gmail.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/3] Styleguide conformity
+Date: Thu,  7 Jun 2012 13:20:01 -0700
+Message-Id: <1339100404-18773-1-git-send-email-solid.se7en@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+From: Sam Hansen <sam@meebo-inc.com>
 
-Op 07-06-12 20:37, tip-bot for Jordan Justen schreef:
-> Commit-ID:  743628e868c5992354fc80b4d1e9a6143da1c0e6
-> Gitweb:     http://git.kernel.org/tip/743628e868c5992354fc80b4d1e9a6143da1c0e6
-> Author:     Jordan Justen <jordan.l.justen@intel.com>
-> AuthorDate: Thu, 7 Jun 2012 09:05:21 -0700
-> Committer:  H. Peter Anvin <hpa@zytor.com>
-> CommitDate: Thu, 7 Jun 2012 09:52:33 -0700
->
-> x86, efi stub: Add .reloc section back into image
->
-> Some UEFI firmware will not load a .efi with a .reloc section
-> with a size of 0.
->
-> Therefore, we create a .efi image with 4 main areas and 3 sections.
-> 1. PE/COFF file header
-> 2. .setup section (covers all setup code following the first sector)
-> 3. .reloc section (contains 1 dummy reloc entry, created in build.c)
-> 4. .text section (covers the remaining kernel image)
->
-Scary how some patches arrive a few minutes before you need them.
-I can verify applying this patch fixes efi stub booting for my system.
-I wasn't even aware it was broken, but it definitely didn't want to boot
-without. :-)
+This patch set addresses basic checkpatch.pl issues.
 
-~Maarten
+Sam Hansen (3):
+  staging: zram: conventions pr_warning -> pr_warn()
+  staging: zram: conventions, __aligned() attribute
+  staging: zram: conventions, line splitting
+
+ drivers/staging/zram/zram_drv.c |   14 ++++++--------
+ drivers/staging/zram/zram_drv.h |    2 +-
+ 2 files changed, 7 insertions(+), 9 deletions(-)
+
+-- 
+1.7.5.4
+
