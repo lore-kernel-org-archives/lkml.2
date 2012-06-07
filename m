@@ -1,161 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760196Ab2FGNQe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 09:16:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38162 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758223Ab2FGNQc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 09:16:32 -0400
-Date: Thu, 7 Jun 2012 15:16:25 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 8/8] x86/apic: Make cpu_mask_to_apicid() operations check
- cpu_online_mask
-Message-ID: <20120607131624.GG4759@dhcp-26-207.brq.redhat.com>
-References: <20120605112353.GA11457@dhcp-26-207.brq.redhat.com>
- <20120606082231.GD5991@gmail.com>
+	id S1760234Ab2FGNQt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 09:16:49 -0400
+Received: from mail.windriver.com ([147.11.1.11]:57035 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759597Ab2FGNQs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 09:16:48 -0400
+Message-ID: <4FD0A9B9.3050608@windriver.com>
+Date: Thu, 7 Jun 2012 09:16:41 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120606082231.GD5991@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: <daniel.santos@pobox.com>
+CC: Daniel Santos <danielfsantos@att.net>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv3 1/6] [RFC] compiler{,-gcc4}.h: Remove duplicate macro
+ & cleanup
+References: <4FD070F9.3060709@att.net>
+In-Reply-To: <4FD070F9.3060709@att.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12-06-07 05:14 AM, Daniel Santos wrote:
+> __linktime_error() does the same thing as __compiletime_error() and is
+> only used in bug.h.  Since the macro defines a function attribute that
+> will cause a failure at compile-time (not link-time), it makes more
+> sense to keep __compiletime_error(), which is also neatly mated with
+> __compiletime_warning().
+> 
+> However, gcc version check for __compiletime_error() prevented its use
+> one minor version after it was availble (4.4 instead of 4.3). So to fix
+> this and clean things up a bit, I've moved it in with other macros
+> defined for 4.3 and later.
 
-Currently cpu_mask_to_apicid() should not get a offline CPU with the
-cpumask. Otherwise some apic drivers might try to access non-existent
-per-cpu variables (i.e. x2apic). In that regard cpu_mask_to_apicid() and
-cpu_mask_to_apicid_and() operations are inconsistent.
+When you find yourself making lists of changes like this, it is good
+to consider instead breaking it up into separate logical changes for
+ease of review and integration -- i.e. if the compiletime_error was
+incorrectly limited to 4.4+ instead of 4.3+ then make that as a commit.
 
-This fix makes the two operations do not rely on calling functions and
-always return the apicid for only online CPUs. As result, the meaning
-and implementations of cpu_mask_to_apicid() and cpu_mask_to_apicid_and()
-operations become straight.
+Also, your removal of linktime error from compiler.h probably breaks
+anyone who might still be trying to use gcc-3.x (I don't know without
+looking, which arch still support it).
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
----
- arch/x86/include/asm/apic.h           |    6 ++----
- arch/x86/kernel/apic/apic.c           |    2 +-
- arch/x86/kernel/apic/es7000_32.c      |    3 +--
- arch/x86/kernel/apic/summit_32.c      |    3 +--
- arch/x86/kernel/apic/x2apic_cluster.c |    2 +-
- arch/x86/kernel/apic/x2apic_uv_x.c    |    2 +-
- 6 files changed, 7 insertions(+), 11 deletions(-)
+Finally, you should expand your cc list to include folks like Andrew,
+Rusty, Ingo, Andi, etc. to get more (and likely better quality) review
+comments.
 
-diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
-index ae91f9c..1ed3eea 100644
---- a/arch/x86/include/asm/apic.h
-+++ b/arch/x86/include/asm/apic.h
-@@ -596,7 +596,7 @@ static inline int default_phys_pkg_id(int cpuid_apic, int index_msb)
- static inline int
- __flat_cpu_mask_to_apicid(unsigned long cpu_mask, unsigned int *apicid)
- {
--	cpu_mask &= APIC_ALL_CPUS;
-+	cpu_mask = cpu_mask & APIC_ALL_CPUS & cpumask_bits(cpu_online_mask)[0];
- 	if (likely(cpu_mask)) {
- 		*apicid = (unsigned int)cpu_mask;
- 		return 0;
-@@ -619,9 +619,7 @@ flat_cpu_mask_to_apicid_and(const struct cpumask *cpumask,
- {
- 	unsigned long mask1 = cpumask_bits(cpumask)[0];
- 	unsigned long mask2 = cpumask_bits(andmask)[0];
--	unsigned long mask3 = cpumask_bits(cpu_online_mask)[0];
--
--	return __flat_cpu_mask_to_apicid(mask1 & mask2 & mask3, apicid);
-+	return __flat_cpu_mask_to_apicid(mask1 & mask2, apicid);
- }
+P.
+--
  
- extern int
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index b8d9260..7e9bbe7 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -2136,7 +2136,7 @@ static inline int __default_cpu_to_apicid(int cpu, unsigned int *apicid)
- int default_cpu_mask_to_apicid(const struct cpumask *cpumask,
- 			       unsigned int *apicid)
- {
--	int cpu = cpumask_first(cpumask);
-+	int cpu = cpumask_first_and(cpumask, cpu_online_mask);
- 	return __default_cpu_to_apicid(cpu, apicid);
- }
- 
-diff --git a/arch/x86/kernel/apic/es7000_32.c b/arch/x86/kernel/apic/es7000_32.c
-index 515ebb0..b35cfb9 100644
---- a/arch/x86/kernel/apic/es7000_32.c
-+++ b/arch/x86/kernel/apic/es7000_32.c
-@@ -534,7 +534,7 @@ es7000_cpu_mask_to_apicid(const struct cpumask *cpumask, unsigned int *dest_id)
- 	/*
- 	 * The cpus in the mask must all be on the apic cluster.
- 	 */
--	for_each_cpu(cpu, cpumask) {
-+	for_each_cpu_and(cpu, cpumask, cpu_online_mask) {
- 		int new_apicid = early_per_cpu(x86_cpu_to_logical_apicid, cpu);
- 
- 		if (round && APIC_CLUSTER(apicid) != APIC_CLUSTER(new_apicid)) {
-@@ -561,7 +561,6 @@ es7000_cpu_mask_to_apicid_and(const struct cpumask *inmask,
- 		return 0;
- 
- 	cpumask_and(cpumask, inmask, andmask);
--	cpumask_and(cpumask, cpumask, cpu_online_mask);
- 	es7000_cpu_mask_to_apicid(cpumask, apicid);
- 
- 	free_cpumask_var(cpumask);
-diff --git a/arch/x86/kernel/apic/summit_32.c b/arch/x86/kernel/apic/summit_32.c
-index 5766d84..79d360f 100644
---- a/arch/x86/kernel/apic/summit_32.c
-+++ b/arch/x86/kernel/apic/summit_32.c
-@@ -272,7 +272,7 @@ summit_cpu_mask_to_apicid(const struct cpumask *cpumask, unsigned int *dest_id)
- 	/*
- 	 * The cpus in the mask must all be on the apic cluster.
- 	 */
--	for_each_cpu(cpu, cpumask) {
-+	for_each_cpu_and(cpu, cpumask, cpu_online_mask) {
- 		int new_apicid = early_per_cpu(x86_cpu_to_logical_apicid, cpu);
- 
- 		if (round && APIC_CLUSTER(apicid) != APIC_CLUSTER(new_apicid)) {
-@@ -298,7 +298,6 @@ summit_cpu_mask_to_apicid_and(const struct cpumask *inmask,
- 		return 0;
- 
- 	cpumask_and(cpumask, inmask, andmask);
--	cpumask_and(cpumask, cpumask, cpu_online_mask);
- 	summit_cpu_mask_to_apicid(cpumask, apicid);
- 
- 	free_cpumask_var(cpumask);
-diff --git a/arch/x86/kernel/apic/x2apic_cluster.c b/arch/x86/kernel/apic/x2apic_cluster.c
-index 5f86f79..23a46cf 100644
---- a/arch/x86/kernel/apic/x2apic_cluster.c
-+++ b/arch/x86/kernel/apic/x2apic_cluster.c
-@@ -99,7 +99,7 @@ static void x2apic_send_IPI_all(int vector)
- static int
- x2apic_cpu_mask_to_apicid(const struct cpumask *cpumask, unsigned int *apicid)
- {
--	int cpu = cpumask_first(cpumask);
-+	int cpu = cpumask_first_and(cpumask, cpu_online_mask);
- 	int i;
- 
- 	if (cpu >= nr_cpu_ids)
-diff --git a/arch/x86/kernel/apic/x2apic_uv_x.c b/arch/x86/kernel/apic/x2apic_uv_x.c
-index 2f3030f..307aa07 100644
---- a/arch/x86/kernel/apic/x2apic_uv_x.c
-+++ b/arch/x86/kernel/apic/x2apic_uv_x.c
-@@ -286,7 +286,7 @@ uv_cpu_mask_to_apicid(const struct cpumask *cpumask, unsigned int *apicid)
- 	 * We're using fixed IRQ delivery, can only return one phys APIC ID.
- 	 * May as well be the first.
- 	 */
--	int cpu = cpumask_first(cpumask);
-+	int cpu = cpumask_first_and(cpumask, cpu_online_mask);
- 	return __uv_cpu_to_apicid(cpu, apicid);
- }
- 
--- 
-1.7.7.6
-
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+> 
+> Finally, I moved __compiletime_object_size() towards the top of the file
+> so that all macros are defined in order of the gcc version they appear
+> in.
+> 
+> Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
+> ---
+>  include/linux/compiler-gcc4.h |   21 ++++++++++-----------
+>  include/linux/compiler.h      |    3 ---
+>  2 files changed, 10 insertions(+), 14 deletions(-)
+> 
+> diff --git a/include/linux/compiler-gcc4.h b/include/linux/compiler-gcc4.h
+> index 2f40791..77be10c 100644
+> --- a/include/linux/compiler-gcc4.h
+> +++ b/include/linux/compiler-gcc4.h
+> @@ -13,6 +13,10 @@
+>  #define __must_check 		__attribute__((warn_unused_result))
+>  #define __compiler_offsetof(a,b) __builtin_offsetof(a,b)
+>  +#if __GNUC_MINOR__ >= 1
+> +#define __compiletime_object_size(obj) __builtin_object_size(obj, 0)
+> +#endif /* __GNUC_MINOR__ >= 1 */
+> +
+>  #if __GNUC_MINOR__ >= 3
+>  /* Mark functions as cold. gcc will assume any path leading to a call
+>     to them will be unlikely.  This means a lot of manual unlikely()s
+> @@ -29,7 +33,11 @@
+>     the kernel context */
+>  #define __cold			__attribute__((__cold__))
+>  -#define __linktime_error(message) __attribute__((__error__(message)))
+> +#if !defined(__CHECKER__)
+> +#define __compiletime_warning(message) __attribute__((warning(message)))
+> +#define __compiletime_error(message) __attribute__((error(message)))
+> +#endif /* !defined(__CHECKER__) */
+> +#endif /* __GNUC_MINOR__ >= 3 */
+>   #if __GNUC_MINOR__ >= 5
+>  /*
+> @@ -45,14 +53,5 @@
+>   /* Mark a function definition as prohibited from being cloned. */
+>  #define __noclone	__attribute__((__noclone__))
+> +#endif /* __GNUC_MINOR__ >= 5 */
+>  -#endif
+> -#endif
+> -
+> -#if __GNUC_MINOR__ > 0
+> -#define __compiletime_object_size(obj) __builtin_object_size(obj, 0)
+> -#endif
+> -#if __GNUC_MINOR__ >= 4 && !defined(__CHECKER__)
+> -#define __compiletime_warning(message) __attribute__((warning(message)))
+> -#define __compiletime_error(message) __attribute__((error(message)))
+> -#endif
+> diff --git a/include/linux/compiler.h b/include/linux/compiler.h
+> index 923d093..4d9f353 100644
+> --- a/include/linux/compiler.h
+> +++ b/include/linux/compiler.h
+> @@ -293,9 +293,6 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
+>  #ifndef __compiletime_error
+>  # define __compiletime_error(message)
+>  #endif
+> -#ifndef __linktime_error
+> -# define __linktime_error(message)
+> -#endif
+>  /*
+>   * Prevent the compiler from merging or refetching accesses.  The compiler
+>   * is also forbidden from reordering successive instances of ACCESS_ONCE(),
