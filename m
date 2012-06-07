@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933129Ab2FGEVm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 00:21:42 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62777 "EHLO
+	id S933154Ab2FGEVq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 00:21:46 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63306 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933012Ab2FGEVh (ORCPT
+	with ESMTP id S933125Ab2FGEVm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 00:21:37 -0400
-Message-Id: <20120607040346.989570346@linuxfoundation.org>
+	Thu, 7 Jun 2012 00:21:42 -0400
+Message-Id: <20120607040347.933458983@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 07 Jun 2012 13:04:48 +0900
+Date: Thu, 07 Jun 2012 13:04:54 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 72/82] drm/radeon/kms: add new BTC PCI ids
+        alan@lxorguk.ukuu.org.uk,
+        Sebastian Riemer <sebastian.riemer@profitbricks.com>,
+        NeilBrown <neilb@suse.de>
+Subject: [ 78/82] md: raid1/raid10: fix problem with merge_bvec_fn
 In-Reply-To: <20120607041406.GA13233@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,35 +26,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: NeilBrown <neilb@suse.de>
 
-commit a2bef8ce826dd1e787fd8ad9b6e0566ba59dab43 upstream.
+commit aba336bd1d46d6b0404b06f6915ed76150739057 upstream.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+The new merge_bvec_fn which calls the corresponding function
+in subsidiary devices requires that mddev->merge_check_needed
+be set if any child has a merge_bvec_fn.
+
+However were were only setting that when a device was hot-added,
+not when a device was present from the start.
+
+This bug was introduced in 3.4 so patch is suitable for 3.4.y
+kernels.  However that are conflicts in raid10.c so a separate
+patch will be needed for 3.4.y.
+
+Reported-by: Sebastian Riemer <sebastian.riemer@profitbricks.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/drm/drm_pciids.h |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/md/raid1.c  |    4 ++++
+ drivers/md/raid10.c |    5 ++++-
+ 2 files changed, 8 insertions(+), 1 deletion(-)
 
---- a/include/drm/drm_pciids.h
-+++ b/include/drm/drm_pciids.h
-@@ -181,6 +181,7 @@
- 	{0x1002, 0x6747, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TURKS|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6748, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TURKS|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6749, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TURKS|RADEON_NEW_MEMMAP}, \
-+	{0x1002, 0x674A, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TURKS|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6750, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TURKS|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6751, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TURKS|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6758, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TURKS|RADEON_NEW_MEMMAP}, \
-@@ -198,6 +199,7 @@
- 	{0x1002, 0x6767, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CAICOS|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6768, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CAICOS|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6770, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CAICOS|RADEON_NEW_MEMMAP}, \
-+	{0x1002, 0x6771, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CAICOS|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6772, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CAICOS|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6778, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CAICOS|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6779, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CAICOS|RADEON_NEW_MEMMAP}, \
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -2548,6 +2548,7 @@ static struct r1conf *setup_conf(struct
+ 	err = -EINVAL;
+ 	spin_lock_init(&conf->device_lock);
+ 	rdev_for_each(rdev, mddev) {
++		struct request_queue *q;
+ 		int disk_idx = rdev->raid_disk;
+ 		if (disk_idx >= mddev->raid_disks
+ 		    || disk_idx < 0)
+@@ -2560,6 +2561,9 @@ static struct r1conf *setup_conf(struct
+ 		if (disk->rdev)
+ 			goto abort;
+ 		disk->rdev = rdev;
++		q = bdev_get_queue(rdev->bdev);
++		if (q->merge_bvec_fn)
++			mddev->merge_check_needed = 1;
+ 
+ 		disk->head_position = 0;
+ 	}
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -3311,7 +3311,7 @@ static int run(struct mddev *mddev)
+ 				 (conf->raid_disks / conf->near_copies));
+ 
+ 	rdev_for_each(rdev, mddev) {
+-
++		struct request_queue *q;
+ 		disk_idx = rdev->raid_disk;
+ 		if (disk_idx >= conf->raid_disks
+ 		    || disk_idx < 0)
+@@ -3327,6 +3327,9 @@ static int run(struct mddev *mddev)
+ 				goto out_free_conf;
+ 			disk->rdev = rdev;
+ 		}
++		q = bdev_get_queue(rdev->bdev);
++		if (q->merge_bvec_fn)
++			mddev->merge_check_needed = 1;
+ 
+ 		disk_stack_limits(mddev->gendisk, rdev->bdev,
+ 				  rdev->data_offset << 9);
 
 
