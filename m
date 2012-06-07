@@ -1,59 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759013Ab2FGQn1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 12:43:27 -0400
-Received: from casper.infradead.org ([85.118.1.10]:58033 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755051Ab2FGQn0 (ORCPT
+	id S1759932Ab2FGQqV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 12:46:21 -0400
+Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:56528
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753563Ab2FGQqS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 12:43:26 -0400
-Date: Thu, 7 Jun 2012 13:43:00 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org,
-        Akihiro Nagai <akihiro.nagai.hw@hitachi.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, Avik Sil <avik.sil@linaro.org>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Namhyung Kim <namhyung.kim@lge.com>, Oleg Nesterov <oleg@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Stephane Eranian <eranian@google.com>, Sunjin Yang <fan4326@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-perf-users@vger.kernel.org
-Subject: Re: [GIT PULL 00/15] perf/urgent fixes
-Message-ID: <20120607164300.GA5699@infradead.org>
-References: <1338588999-32509-1-git-send-email-acme@infradead.org>
- <20120606065014.GB17808@gmail.com>
- <4FD02567.20505@gmail.com>
- <20120607160909.GA4986@infradead.org>
- <1339085503.7559.5.camel@gandalf.stny.rr.com>
+	Thu, 7 Jun 2012 12:46:18 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah)
+X-WSS-ID: 0M59AKW-02-6B9-02
+X-M-MSG: 
+From: Hans Rosenfeld <hans.rosenfeld@amd.com>
+To: <hpa@zytor.com>
+CC: <tglx@linutronix.de>, <mingo@elte.hu>, <linux-kernel@vger.kernel.org>,
+        <x86@kernel.org>, Hans Rosenfeld <hans.rosenfeld@amd.com>
+Subject: [PATCH 1/5] x86, cacheinfo, amd: use cpuid topology extensions to enumerate caches
+Date: Thu, 7 Jun 2012 18:45:55 +0200
+Message-ID: <1339087559-32604-1-git-send-email-hans.rosenfeld@amd.com>
+X-Mailer: git-send-email 1.7.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339085503.7559.5.camel@gandalf.stny.rr.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Jun 07, 2012 at 12:11:43PM -0400, Steven Rostedt escreveu:
-> On Thu, 2012-06-07 at 13:09 -0300, Arnaldo Carvalho de Melo wrote:
-> > I guess its time for me to move this machine to f17 and do the ritual
-> > dance of complaining about gnome3...
-> 
-> I should too, but that's what KVM is for :-)
+AMD CPU family 0x15 introduced a new CPUID leaf for topology extensions,
+which can be used to enumerate the systems caches. Although a different
+CPUID leaf number is used, it is essentially compatible with Intels
+CPUID leaf 4. This means the existing code parsing CPUID leaf 4 can be
+used here. The old code emulating Intels CPUID leaf 4 for AMD systems will
+still be used on AMD CPUs that don't support the topology extensions
+leaf.
 
-Well, that too, but the disk I had with the kvm images, well, got
-busted, so I have to reinstall those VMs as well :-\
+There are two differences to the information in Intels CPUID leaf 4:
+- the "number of cores on the die" field is missing
+- AMD returns extra information in the EDX register about WBINVD
+  behaviour and cache inclusiveness
+Both are currently unused in Linux.
 
-- Arnaldo
+The shared_cpu_map can now be set up using the extended topology
+information on systems that support it, the old code for family 0x15
+cache indices 1 and 2 is gone. The old code for cache index 3 stays for
+CPUs not supporting the topology extensions.
+
+Signed-off-by: Hans Rosenfeld <hans.rosenfeld@amd.com>
+---
+ arch/x86/include/asm/cpufeature.h     |    1 +
+ arch/x86/kernel/cpu/intel_cacheinfo.c |   47 +++++++++++++++++++++++----------
+ 2 files changed, 34 insertions(+), 14 deletions(-)
+
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index 340ee49..080bfc7 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -303,6 +303,7 @@ extern const char * const x86_power_flags[32];
+ #define cpu_has_perfctr_core	boot_cpu_has(X86_FEATURE_PERFCTR_CORE)
+ #define cpu_has_cx8		boot_cpu_has(X86_FEATURE_CX8)
+ #define cpu_has_cx16		boot_cpu_has(X86_FEATURE_CX16)
++#define cpu_has_topoext	boot_cpu_has(X86_FEATURE_TOPOEXT)
+ 
+ #if defined(CONFIG_X86_INVLPG) || defined(CONFIG_X86_64)
+ # define cpu_has_invlpg		1
+diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
+index 9a7c90d..0973ca1 100644
+--- a/arch/x86/kernel/cpu/intel_cacheinfo.c
++++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
+@@ -538,7 +538,11 @@ __cpuinit cpuid4_cache_lookup_regs(int index,
+ 	unsigned		edx;
+ 
+ 	if (boot_cpu_data.x86_vendor == X86_VENDOR_AMD) {
+-		amd_cpuid4(index, &eax, &ebx, &ecx);
++		if (cpu_has_topoext)
++			cpuid_count(0x8000001d, index, &eax.full, &ebx.full,
++				    &ecx.full, &edx);
++		else
++			amd_cpuid4(index, &eax, &ebx, &ecx);
+ 		amd_init_l3_cache(this_leaf, index);
+ 	} else {
+ 		cpuid_count(4, index, &eax.full, &ebx.full, &ecx.full, &edx);
+@@ -728,37 +732,52 @@ static DEFINE_PER_CPU(struct _cpuid4_info *, ici_cpuid4_info);
+ static int __cpuinit cache_shared_amd_cpu_map_setup(unsigned int cpu, int index)
+ {
+ 	struct _cpuid4_info *this_leaf;
+-	int ret, i, sibling;
+-	struct cpuinfo_x86 *c = &cpu_data(cpu);
++	int i, sibling;
++
++	if (cpu_has_topoext) {
++		unsigned int apicid = cpu_data(cpu).apicid;
++		int nshared, first;
++
++		if (!per_cpu(ici_cpuid4_info, cpu))
++			return 0;
++
++		this_leaf = CPUID4_INFO_IDX(cpu, index);
++		nshared = 1 + this_leaf->base.eax.split.num_threads_sharing;
++		first = apicid - apicid % nshared;
++
++		for_each_online_cpu(i) {
++			if (cpu_data(i).apicid < first ||
++			    cpu_data(i).apicid >= first + nshared)
++				continue;
+ 
+-	ret = 0;
+-	if (index == 3) {
+-		ret = 1;
+-		for_each_cpu(i, cpu_llc_shared_mask(cpu)) {
+ 			if (!per_cpu(ici_cpuid4_info, i))
+ 				continue;
++
+ 			this_leaf = CPUID4_INFO_IDX(i, index);
+-			for_each_cpu(sibling, cpu_llc_shared_mask(cpu)) {
+-				if (!cpu_online(sibling))
++			for_each_online_cpu(sibling) {
++				if (cpu_data(sibling).apicid < first ||
++				    cpu_data(sibling).apicid >= first + nshared)
+ 					continue;
++
+ 				set_bit(sibling, this_leaf->shared_cpu_map);
+ 			}
+ 		}
+-	} else if ((c->x86 == 0x15) && ((index == 1) || (index == 2))) {
+-		ret = 1;
+-		for_each_cpu(i, cpu_sibling_mask(cpu)) {
++	} else if (index == 3) {
++		for_each_cpu(i, cpu_llc_shared_mask(cpu)) {
+ 			if (!per_cpu(ici_cpuid4_info, i))
+ 				continue;
+ 			this_leaf = CPUID4_INFO_IDX(i, index);
+-			for_each_cpu(sibling, cpu_sibling_mask(cpu)) {
++			for_each_cpu(sibling, cpu_llc_shared_mask(cpu)) {
+ 				if (!cpu_online(sibling))
+ 					continue;
+ 				set_bit(sibling, this_leaf->shared_cpu_map);
+ 			}
+ 		}
++	} else {
++		return 0;
+ 	}
+ 
+-	return ret;
++	return 1;
+ }
+ 
+ static void __cpuinit cache_shared_cpu_map_setup(unsigned int cpu, int index)
+-- 
+1.7.7
+
+
