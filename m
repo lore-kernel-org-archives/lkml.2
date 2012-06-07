@@ -1,46 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756255Ab2FGUYE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 16:24:04 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:56009 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751517Ab2FGUYB (ORCPT
+	id S1756403Ab2FGUYT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 16:24:19 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:39837 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752699Ab2FGUYO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 16:24:01 -0400
-Date: Thu, 7 Jun 2012 22:23:55 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: acme@redhat.com, jolsa@redhat.com, eranian@google.com,
-        linux-kernel@vger.kernel.org
-Subject: perf user tool precise attribute broken in 3.5rc1+
-Message-ID: <20120607202355.GQ27374@one.firstfloor.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.2.2i
+	Thu, 7 Jun 2012 16:24:14 -0400
+Message-ID: <1339100649.2770.20.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: [V2 RFC net-next PATCH 2/2] virtio_net: export more statistics
+ through ethtool
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: David Miller <davem@davemloft.net>
+CC: <jasowang@redhat.com>, <netdev@vger.kernel.org>, <rusty@rustcorp.com.au>,
+        <virtualization@lists.linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, <mst@redhat.com>
+Date: Thu, 7 Jun 2012 21:24:09 +0100
+In-Reply-To: <20120607.130512.219951433412203999.davem@davemloft.net>
+References: <20120606075208.29081.75284.stgit@amd-6168-8-1.englab.nay.redhat.com>
+	 <20120606075217.29081.30713.stgit@amd-6168-8-1.englab.nay.redhat.com>
+	 <1339089306.2770.10.camel@bwh-desktop.uk.solarflarecom.com>
+	 <20120607.130512.219951433412203999.davem@davemloft.net>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-6.800.1017-18952.004
+X-TM-AS-Result: No--13.061800-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2012-06-07 at 13:05 -0700, David Miller wrote:
+> From: Ben Hutchings <bhutchings@solarflare.com>
+> Date: Thu, 7 Jun 2012 18:15:06 +0100
+> 
+> > I would really like to see some sort of convention for presenting
+> > per-queue statistics through ethtool.  At the moment we have a complete
+> > mess of different formats:
+> 
+> Indeed.  Probably ${QUEUE_TYPE}-${INDEX}-${STATISTIC} is best.
+> With an agreed upon list of queue types such as "rx", "tx", "rxtx"
+> etc.
 
-With a perf user tool compiled from a 3.5rc1+ kernel I cannot
-use the 'p' attribute anymore. Always get
+I think we should leave the type names open-ended, as there are other
+useful groupings like per-virtual-port.  In that case the separator
+should be chosen to allow arbitrary type names without ambiguity.
 
-ak@petrock:~> ./perf record -e cycles:p ./t
+Ben.
 
-  Error: sys_perf_event_open() syscall returned with 22 (Invalid argument).  /bin/dmesg may provide additional information.
-
-  Fatal: No CONFIG_PERF_EVENTS=y kernel support configured?
-
-./t: Terminated
-
-With an older perf it works, so the kernel is ok.
-
-ak@petrock:~> ./perf record -e cycles:p ./t
-[ perf record: Woken up 1 times to write data ]
-[ perf record: Captured and wrote 0.005 MB perf.data (~217 samples) ]
-ak@petrock:~> 
-
-
--Andi
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
