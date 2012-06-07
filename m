@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933246Ab2FGEWY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 00:22:24 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62777 "EHLO
+	id S933265Ab2FGEWc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 00:22:32 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63306 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933156Ab2FGEWT (ORCPT
+	with ESMTP id S933238Ab2FGEWY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 00:22:19 -0400
-Message-Id: <20120607041358.482356043@linuxfoundation.org>
+	Thu, 7 Jun 2012 00:22:24 -0400
+Message-Id: <20120607041358.350114550@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 07 Jun 2012 13:14:00 +0900
+Date: Thu, 07 Jun 2012 13:13:59 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>,
-        Junichi Nomura <j-nomura@ce.jp.nec.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 02/47] SCSI: Fix dm-multipath starvation when scsi host is busy
+        alan@lxorguk.ukuu.org.uk, James Bottomley <JBottomley@Parallels.com>
+Subject: [ 01/47] SCSI: fix scsi_wait_scan
 In-Reply-To: <20120607041504.GA13819@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,59 +24,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
+From: James Bottomley <jbottomley@parallels.com>
 
-commit b7e94a1686c5daef4f649f7f4f839cc294f07710 upstream.
+commit 1ff2f40305772b159a91c19590ee159d3a504afc upstream.
 
-block congestion control doesn't have any concept of fairness across
-multiple queues.  This means that if SCSI reports the host as busy in
-the queue congestion control it can result in an unfair starvation
-situation in dm-mp if there are multiple multipath devices on the same
-host.  For example:
-http://www.redhat.com/archives/dm-devel/2012-May/msg00123.html
+Commit  c751085943362143f84346d274e0011419c84202
+Author: Rafael J. Wysocki <rjw@sisk.pl>
+Date:   Sun Apr 12 20:06:56 2009 +0200
 
-The fix for this is to report only the sdev busy state (and ignore the
-host busy state) in the block congestion control call back.
-The host is still congested, but the SCSI subsystem will sort out the
-congestion in a fair way because it knows the relation between the
-queues and the host.
+    PM/Hibernate: Wait for SCSI devices scan to complete during resume
 
-[jejb: fixed up trailing whitespace]
-Reported-by: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
-Tested-by: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
-Signed-off-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
+Broke the scsi_wait_scan module in 2.6.30.  Apparently debian still uses it so
+fix it and backport to stable before removing it in 3.6.
+
+The breakage is caused because the function template in
+include/scsi/scsi_scan.h is defined to be a nop unless SCSI is built in.
+That means that in the modular case (which is every distro), the
+scsi_wait_scan module does a simple async_synchronize_full() instead of
+waiting for scans.
+
 Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/scsi_lib.c |   11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+ drivers/scsi/scsi_wait_scan.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -1380,16 +1380,19 @@ static int scsi_lld_busy(struct request_
+--- a/drivers/scsi/scsi_wait_scan.c
++++ b/drivers/scsi/scsi_wait_scan.c
+@@ -12,7 +12,7 @@
+ 
+ #include <linux/module.h>
+ #include <linux/device.h>
+-#include <scsi/scsi_scan.h>
++#include "scsi_priv.h"
+ 
+ static int __init wait_scan_init(void)
  {
- 	struct scsi_device *sdev = q->queuedata;
- 	struct Scsi_Host *shost;
--	struct scsi_target *starget;
- 
- 	if (!sdev)
- 		return 0;
- 
- 	shost = sdev->host;
--	starget = scsi_target(sdev);
- 
--	if (scsi_host_in_recovery(shost) || scsi_host_is_busy(shost) ||
--	    scsi_target_is_busy(starget) || scsi_device_is_busy(sdev))
-+	/*
-+	 * Ignore host/starget busy state.
-+	 * Since block layer does not have a concept of fairness across
-+	 * multiple queues, congestion of host/starget needs to be handled
-+	 * in SCSI layer.
-+	 */
-+	if (scsi_host_in_recovery(shost) || scsi_device_is_busy(sdev))
- 		return 1;
- 
- 	return 0;
 
 
