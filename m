@@ -1,130 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756885Ab2FGMuI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 08:50:08 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:45957 "EHLO relay.sw.ru"
+	id S1757357Ab2FGMwS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 08:52:18 -0400
+Received: from trent.utfs.org ([94.185.90.103]:55146 "EHLO trent.utfs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755800Ab2FGMuG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 08:50:06 -0400
-From: Roman Kagan <rkagan@parallels.com>
-To: stable@vger.kernel.org
-Cc: Roman Kagan <rkagan@parallels.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        PJ Waskiewicz <peter.p.waskiewicz.jr@intel.com>,
-        Alex Duyck <alexander.h.duyck@intel.com>,
-        John Ronciak <john.ronciak@intel.com>,
-        Dean Nelson <dnelson@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] e1000: save skb counts in TX to avoid cache misses
-Date: Thu,  7 Jun 2012 16:49:56 +0400
-Message-Id: <b838d871c0d507787373061e4edd91a624d62475.1339073391.git.rkagan@parallels.com>
-X-Mailer: git-send-email 1.7.10.2
+	id S1755945Ab2FGMwQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 08:52:16 -0400
+Date: Thu, 7 Jun 2012 05:52:09 -0700 (PDT)
+From: Christian Kujau <lists@nerdbynature.de>
+To: Ethan Zhao <ethan.kernel@gmail.com>
+cc: LKML <linux-kernel@vger.kernel.org>, mcarlson@broadcom.com
+Subject: Re: tg3: transmit timed out, resetting
+In-Reply-To: <CABawtvNSOkyphUmAU1EoCaCS-hGu-ejPHMmP=j-nRtBZfi7cwg@mail.gmail.com>
+Message-ID: <alpine.DEB.2.01.1206070531520.5568@trent.utfs.org>
+References: <alpine.DEB.2.01.1206041546070.5568@trent.utfs.org> <20120606010255.GA9991@mcarlson.broadcom.com> <alpine.DEB.2.01.1206052314340.5568@trent.utfs.org> <alpine.DEB.2.01.1206070002370.5568@trent.utfs.org>
+ <CABawtvNSOkyphUmAU1EoCaCS-hGu-ejPHMmP=j-nRtBZfi7cwg@mail.gmail.com>
+User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Upstream commit 31c15a2f24ebdab14333d9bf5df49757842ae2ec with paths
-adjusted to compensate for the drivers/net/ethernet/intel reorg in
-dee1ad47f2ee75f5146d83ca757c1b7861c34c3b]
+On Thu, 7 Jun 2012 at 17:47, Ethan Zhao wrote:
+>     Could you try 3.5RC1+ with pcie_aspm=off kernel parameter ?
 
-Author: Dean Nelson <dnelson@redhat.com>
-Date:   Thu Aug 25 14:39:24 2011 +0000
+Will try.
 
-    e1000: save skb counts in TX to avoid cache misses
+> I notice there are some AER errors ( UnsupReq+,RxErr+) with the tg3
+> from you lspci output, have you seen the AER errors on console ? if
+> so, please attach them.
 
-    Virtual Machines with emulated e1000 network adapter running on Parallels'
-    server were seeing kernel panics due to the e1000 driver dereferencing an
-    unexpected NULL pointer retrieved from buffer_info->skb.
+I haven't seen any actual erros on the console, except these messages 
+during bootup:
 
-    The problem has been addressed for the e1000e driver, but not for the e1000.
-    Since the two drivers share similar code in the affected area, a port of the
-    following e1000e driver commit solves the issue for the e1000 driver:
+--------
+pci0000:00: Requesting ACPI _OSC control (0x1d)
+pci0000:00: ACPI _OSC request failed (AE_NOT_FOUND), returned control mask: 0x1d
+ACPI _OSC control for PCIe not granted, disabling ASPM
+--------
 
-    commit 9ed318d546a29d7a591dbe648fd1a2efe3be1180
-    Author: Tom Herbert <therbert@google.com>
-    Date:   Wed May 5 14:02:27 2010 +0000
+I have seen these messages in 3.2.0 (an Ubuntu kernel), can't say that I 
+have seen them before, they did not show up when I booted this 2.6.38 
+Ubuntu kernel.
 
-        e1000e: save skb counts in TX to avoid cache misses
+I'll try booting with pcie_aspm=off and see what it gives...
 
-        In e1000_tx_map, precompute number of segements and bytecounts which
-        are derived from fields in skb; these are stored in buffer_info.  When
-        cleaning tx in e1000_clean_tx_irq use the values in the associated
-        buffer_info for statistics counting, this eliminates cache misses
-        on skb fields.
+Thanks,
+Christian.
 
-    Signed-off-by: Dean Nelson <dnelson@redhat.com>
-    Acked-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-    Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Roman Kagan <rkagan@parallels.com>
----
- drivers/net/e1000/e1000.h      |    2 ++
- drivers/net/e1000/e1000_main.c |   18 +++++++++---------
- 2 files changed, 11 insertions(+), 9 deletions(-)
+PS: AFAICT, Ubuntu's 2.6.38 [0] had these options set:
 
-diff --git a/drivers/net/e1000/e1000.h b/drivers/net/e1000/e1000.h
-index 8676899..2c71884 100644
---- a/drivers/net/e1000/e1000.h
-+++ b/drivers/net/e1000/e1000.h
-@@ -150,6 +150,8 @@ struct e1000_buffer {
- 	unsigned long time_stamp;
- 	u16 length;
- 	u16 next_to_watch;
-+	unsigned int segs;
-+	unsigned int bytecount;
- 	u16 mapped_as_page;
- };
- 
-diff --git a/drivers/net/e1000/e1000_main.c b/drivers/net/e1000/e1000_main.c
-index 76e8af0..99525f9 100644
---- a/drivers/net/e1000/e1000_main.c
-+++ b/drivers/net/e1000/e1000_main.c
-@@ -2798,7 +2798,7 @@ static int e1000_tx_map(struct e1000_adapter *adapter,
- 	struct e1000_buffer *buffer_info;
- 	unsigned int len = skb_headlen(skb);
- 	unsigned int offset = 0, size, count = 0, i;
--	unsigned int f;
-+	unsigned int f, bytecount, segs;
- 
- 	i = tx_ring->next_to_use;
- 
-@@ -2899,7 +2899,13 @@ static int e1000_tx_map(struct e1000_adapter *adapter,
- 		}
- 	}
- 
-+	segs = skb_shinfo(skb)->gso_segs ?: 1;
-+	/* multiply data chunks by size of headers */
-+	bytecount = ((segs - 1) * skb_headlen(skb)) + skb->len;
-+
- 	tx_ring->buffer_info[i].skb = skb;
-+	tx_ring->buffer_info[i].segs = segs;
-+	tx_ring->buffer_info[i].bytecount = bytecount;
- 	tx_ring->buffer_info[first].next_to_watch = i;
- 
- 	return count;
-@@ -3573,14 +3579,8 @@ static bool e1000_clean_tx_irq(struct e1000_adapter *adapter,
- 			cleaned = (i == eop);
- 
- 			if (cleaned) {
--				struct sk_buff *skb = buffer_info->skb;
--				unsigned int segs, bytecount;
--				segs = skb_shinfo(skb)->gso_segs ?: 1;
--				/* multiply data chunks by size of headers */
--				bytecount = ((segs - 1) * skb_headlen(skb)) +
--				            skb->len;
--				total_tx_packets += segs;
--				total_tx_bytes += bytecount;
-+				total_tx_packets += buffer_info->segs;
-+				total_tx_bytes += buffer_info->bytecount;
- 			}
- 			e1000_unmap_and_free_tx_resource(adapter, buffer_info);
- 			tx_desc->upper.data = 0;
+--------
+CONFIG_PCIEASPM=y
+# CONFIG_PCIEASPM_DEBUG is not set
+--------
+
+With 3.5.x, my .config has:
+
+--------
+CONFIG_PCIEASPM=y
+# CONFIG_PCIEASPM_DEBUG is not set
+CONFIG_PCIEASPM_DEFAULT=y
+# CONFIG_PCIEASPM_POWERSAVE is not set
+# CONFIG_PCIEASPM_PERFORMANCE is not set
+--------
+
+[0] https://launchpad.net/ubuntu/natty/i386/linux-image-2.6.38-15-generic/2.6.38-15.60
+
 -- 
-1.7.10.2
+BOFH excuse #338:
 
+old inkjet cartridges emanate barium-based fumes
