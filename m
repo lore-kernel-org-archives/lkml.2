@@ -1,136 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756100Ab2FGMo7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 08:44:59 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:5073
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754745Ab2FGMo6 (ORCPT
+	id S1756288Ab2FGMpS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 08:45:18 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60139 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753957Ab2FGMpO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 08:44:58 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: VPS-1(zz936eIzz1202hzz8275dhz2dh668h839h944hd25hf0ah)
-X-WSS-ID: 0M58ZES-01-2Z4-02
-X-M-MSG: 
-Date: Thu, 7 Jun 2012 14:45:13 +0200
-From: Borislav Petkov <borislav.petkov@amd.com>
-To: Ingo Molnar <mingo@kernel.org>
-CC: Clemens Ladisch <clemens@ladisch.de>, Bjorn Helgaas <bhelgaas@google.com>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>, x86 <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] AMD thresholding fixes for 3.6
-Message-ID: <20120607124513.GF11153@aftab.osrc.amd.com>
+	Thu, 7 Jun 2012 08:45:14 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+In-Reply-To: <20120607120532.GD8354@shlinux2.ap.freescale.net>
+References: <1338656634-3870-1-git-send-email-devendra.aaru@gmail.com>
+	<20120607120532.GD8354@shlinux2.ap.freescale.net>
+Date: Thu, 7 Jun 2012 18:15:13 +0530
+Message-ID: <CAHdPZaOMYifk3g+8g5rVxMvcaAgKs0oUwbc04efFWq=_7U=zsg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] pinctrl: free allocated pinctrl_map structure only
+ once and use kernel facilities for IMX_PMX_DUMP
+From: "devendra.aaru" <devendra.aaru@gmail.com>
+To: Dong Aisheng <aisheng.dong@freescale.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+Hi Dong,
 
-those didn't make it in time for the merge window so I'm sending them
-now so at they can spend their quality time in linux-next.
+Thanks for the review.
 
-Please pull, thanks.
+On Thu, Jun 7, 2012 at 5:35 PM, Dong Aisheng <aisheng.dong@freescale.com> wrote:
+> On Sat, Jun 02, 2012 at 10:33:53PM +0530, Devendra Naga wrote:
+>> a) as we allocate the pinctrl_map structure at imx_dt_node_to_map at  line 167, anyway
+>> if its an element, or a num_elements * (sizeof(type)) elements allocated to one single
+>> pointer must be freed only once.
+>>
+>> CASE. A)
+>>
+>> as new_map is not moved and allocated like,
+>>
+>> for (i = 0; i < MAX_ELEMS; i++) {
+>>       new_map[i] = kmalloc(numelems * size, GFP_KERNEL);
+>> }
+>>
+>> its freed as
+>>
+>> for (i = 0; i < MAX_ELEMS; i++) {
+>>       kfree(new_map[i]);
+>> }
+>>
+>> CASE. B)
+>> and its allocated like
+>>       new_map = kmalloc(numelems * size, GFP_KERNEL);
+>>
+>> it just needs kfree not as case A's.
+>>
+>> b) use KERN_DEBUG facility for the IMX_PMX_DUMP macro.
+>>
+>> Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
+>> ---
+>>  drivers/pinctrl/pinctrl-imx.c |   23 +++++++++++------------
+>>  1 file changed, 11 insertions(+), 12 deletions(-)
+>>
+> Sorry for late reply.
+> I missed this patch series.
+> You can CC me next time. :)
+>
+>> diff --git a/drivers/pinctrl/pinctrl-imx.c b/drivers/pinctrl/pinctrl-imx.c
+>> index f6e7c67..553ed95 100644
+>> --- a/drivers/pinctrl/pinctrl-imx.c
+>> +++ b/drivers/pinctrl/pinctrl-imx.c
+>> @@ -27,16 +27,16 @@
+>>  #include "core.h"
+>>  #include "pinctrl-imx.h"
+>>
+>> -#define IMX_PMX_DUMP(info, p, m, c, n)               \
+>> -{                                            \
+>> -     int i, j;                               \
+>> -     printk("Format: Pin Mux Config\n");     \
+>> -     for (i = 0; i < n; i++) {               \
+>> -             j = p[i];                       \
+>> -             printk("%s %d 0x%lx\n",         \
+>> -                     info->pins[j].name,     \
+>> -                     m[i], c[i]);            \
+>> -     }                                       \
+>> +#define IMX_PMX_DUMP(info, p, m, c, n)                       \
+>> +{                                                    \
+>> +     int i, j;                                       \
+>> +     printk(KERN_DEBUG "Format: Pin Mux Config\n");  \
+>> +     for (i = 0; i < n; i++) {                       \
+>> +             j = p[i];                               \
+>> +             printk(KERN_DEBUG "%s %d 0x%lx\n",      \
+>> +                     info->pins[j].name,             \
+>> +                     m[i], c[i]);                    \
+>> +     }                                               \
+> I can't remember clearly but i encountered a strange issue before
+> that the format was not what i want with KERN_DEBUG...
+> But i just tried your patch and it did not appear.
+> So i'm ok with this change.
+>
+>>  }
+>>
+>>  /* The bits in CONFIG cell defined in binding doc*/
+>> @@ -203,8 +203,7 @@ static void imx_dt_free_map(struct pinctrl_dev *pctldev,
+>>  {
+>>       int i;
+> Also need removed?
+>
+Yeah. sorry , will send again with you Ack.
+>>
+>> -     for (i = 0; i < num_maps; i++)
+>> -             kfree(map);
+>> +     kfree(map);
+>
+> BTW, it would be better if the change the patch title to:
+> "pinctrl: pinctrl-imx: ...."
+Ok sure.
+>
+> Otherwise,
+> Acked-by: Dong Aisheng <dong.aisheng@linaro.org>
+>
+> Regards
+> Dong Aisheng
+>
 
-The following changes since commit f8f5701bdaf9134b1f90e5044a82c66324d2073f:
-
-  Linux 3.5-rc1 (2012-06-02 18:29:26 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git tags/amd-thresholding-fixes-for-3.6
-
-for you to fetch changes up to 11122570193a429f72014703ce6b849640f8d7e5:
-
-  x86, MCE, AMD: Update copyrights and boilerplate (2012-06-07 12:43:50 +0200)
-
-----------------------------------------------------------------
-AMD thresholding fixes for 3.6
-
-Those are a bunch of patches which give the MCE thresholding code a
-hard look and a scrubbing to remove a couple of annoyances like sysfs
-warnings when running CPU off-/online tests and the threshold_bank4 node
-under /sys/devices/system/machinecheck/ is a symlink.
-
-It also gives proper names to the thresholding banks instead of simply
-enumerating them, like this:
-
-     /sys/devices/system/machinecheck/machinecheck0/
-     |-- bank0
-     |-- bank1
-     |-- bank2
-     |-- bank3
-     |-- bank4
-     |-- bank5
-     |-- bank6
-     |-- check_interval
-     |-- cmci_disabled
-     |-- combined_unit
-     |   |-- combined_unit
-     |       |-- error_count
-     |       |-- threshold_limit
-     |-- dont_log_ce
-     |-- execution_unit
-     |   |-- execution_unit
-     |       |-- error_count
-     |       |-- threshold_limit
-     |-- ignore_ce
-     |-- insn_fetch
-     |   |-- insn_fetch
-     |       |-- error_count
-     |       |-- threshold_limit
-     |-- load_store
-     |   |-- load_store
-     |       |-- error_count
-     |       |-- threshold_limit
-     |-- monarch_timeout
-     |-- northbridge
-     |   |-- dram
-     |   |   |-- error_count
-     |   |   |-- interrupt_enable
-     |   |   |-- threshold_limit
-     |   |-- ht_links
-     |   |   |-- error_count
-     |   |   |-- interrupt_enable
-     |   |   |-- threshold_limit
-     |   |-- l3_cache
-     |       |-- error_count
-     |       |-- interrupt_enable
-     |       |-- threshold_limit
-    ...
-
-It is tested on all our families >= K8.
-
-----------------------------------------------------------------
-Borislav Petkov (9):
-      x86, amd_nb: Export model 0x10 and later PCI id
-      x86, MCE, AMD: Remove shared banks sysfs linking
-      x86, MCE, AMD: Remove local_allocate_... wrapper
-      x86, MCE, AMD: Move shared bank to node descriptor
-      x86, MCE, AMD: Print decimal thresholding values
-      x86, MCE, AMD: Cleanup reading of error_count
-      x86, MCE, AMD: Make error_count read only
-      x86, MCE, AMD: Give proper names to the thresholding banks
-      x86, MCE, AMD: Update copyrights and boilerplate
-
- arch/x86/include/asm/amd_nb.h        |  21 +++
- arch/x86/kernel/amd_nb.c             |   1 +
- arch/x86/kernel/cpu/mcheck/mce_amd.c | 264 ++++++++++++++++-------------------
- drivers/hwmon/k10temp.c              |   5 +-
- include/linux/pci_ids.h              |   1 +
- 5 files changed, 147 insertions(+), 145 deletions(-)
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
-
+Thanks,
+Devendra.
