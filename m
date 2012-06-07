@@ -1,122 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757235Ab2FGBYg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 21:24:36 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:65079 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754565Ab2FGBYf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 21:24:35 -0400
-Date: Wed, 6 Jun 2012 18:24:04 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Will Deacon <will.deacon@arm.com>
-cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] ipc: shm: restore MADV_REMOVE functionality on shared
- memory segments
-In-Reply-To: <1339002606-30921-1-git-send-email-will.deacon@arm.com>
-Message-ID: <alpine.LSU.2.00.1206061819200.23986@eggly.anvils>
-References: <1339002606-30921-1-git-send-email-will.deacon@arm.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	id S1757741Ab2FGBZi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 21:25:38 -0400
+Received: from mga02.intel.com ([134.134.136.20]:57188 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754636Ab2FGBZh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 21:25:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="153970696"
+Message-ID: <4FD0030F.4040205@intel.com>
+Date: Thu, 07 Jun 2012 09:25:35 +0800
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Stephane Eranian <eranian@google.com>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        "Yan, Zheng" <zheng.z.yan@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf: Fix intel shared extra msr allocation
+References: <1338520856-21020-1-git-send-email-zheng.z.yan@intel.com> <CABPqkBScjC5fJbTc1rYtbtRqOCyJ+7QUbdE32DgMcffBAGJNVw@mail.gmail.com> <CAAM7YAkYgUjwQptYvyeVawzcD5x4c-bTT_=+6AMyUb+-6HoMuQ@mail.gmail.com> <1338891271.28282.155.camel@twins> <CABPqkBSv8CbMzUiRsN2uOF1v6rFTpzhQqNbo7OKe-nzsus0GDg@mail.gmail.com> <1338892071.28282.157.camel@twins> <CABPqkBSqLpa4X-WbR0PkouYvhODT78r3pxWq70=PTj1j=a307Q@mail.gmail.com> <1338898024.28282.160.camel@twins> <1338899999.28282.164.camel@twins> <CABPqkBRCMAnPH3UW0=afMw4-YXgwQ5D-NLMEtnNWde_Tzh3aew@mail.gmail.com> <1338901490.28282.167.camel@twins> <CABPqkBRF_2LXE-54tLMBnQgLKbKyR9qo+4VohQiOchpqe1pgyw@mail.gmail.com> <1338903164.28282.177.camel@twins> <CABPqkBQ0OM__Ny9N9ZunKc2nCoqBH+cFY91CUH19xNUbM5NmGw@mail.gmail.com> <1338904039.28282.180.camel@twins> <CABPqkBSMi1ru3Grdh0kyBf6cqLk+=ugy66E0a6KFvFYzmjbgtQ@mail.gmail.com> <CABPqkBRe_+AAFTtuQuA-WKoFx1x3CkSbFBx+yikZqgaYSAG9kw@mail.gmail.com>
+In-Reply-To: <CABPqkBRe_+AAFTtuQuA-WKoFx1x3CkSbFBx+yikZqgaYSAG9kw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Jun 2012, Will Deacon wrote:
-> Commit 17cf28af ("mm/fs: remove truncate_range") removed the
-> truncate_range inode operation in favour of the fallocate file
-> operation.
+On 06/06/2012 06:12 PM, Stephane Eranian wrote:
+> There is something wrong with this patch, I instrumented the code
+> and I can see:
+> [ 1377.324575] 1. idx=1 reg_idx=1 ref=-1 config=0xff01 era->config=0xff01
+>                                                    ^^^^^^
+> The test case on WSM (RSP0, RSP1):
 > 
-> When using SYSV IPC shared memory segments, calling madvise with the
-> MADV_REMOVE advice on an area of shared memory will attempt to invoke
-> the .fallocate function for the shm_file_operations, which is NULL and
-> therefore returns -EOPNOTSUPP to userspace. The previous behaviour would
-> inherit the inode_operations from the underlying tmpfs file and invoke
-> truncate_range there.
+> $ perf stat  -a -C13 -e
+> offcore_response_1:dmnd_data_rd,offcore_response_1:dmnd_data_rd sleep
+> 100 &
+> $ perf stat -a -C1 -e offcore_response_1:dmnd_rfo sleep 1
 > 
-> This patch restores the previous behaviour by wrapping the underlying
-> fallocate function in shm_fallocate, as we do for fsync.
+> I think this happens during scheduling of the events, i.e., during the
+> run and not on initial
+> programming. That could happen with cgroups, for instance.
 > 
-> Cc: Hugh Dickins <hughd@google.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Will Deacon <will.deacon@arm.com>
 
-Acked-by: Hugh Dickins <hughd@google.com>
-
-Many thanks for discovering and fixing this so quickly:
-I admit it never even crossed my mind to look over here in ipc/shm.
-
-But I do have a minor improvement below, which akpm will probably
-want to merge in on top.
-
-> ---
->  ipc/shm.c |   12 ++++++++++++
->  1 files changed, 12 insertions(+), 0 deletions(-)
-> 
-> diff --git a/ipc/shm.c b/ipc/shm.c
-> index 5e2cbfd..8830e79 100644
-> --- a/ipc/shm.c
-> +++ b/ipc/shm.c
-> @@ -393,6 +393,16 @@ static int shm_fsync(struct file *file, loff_t start, loff_t end, int datasync)
->  	return sfd->file->f_op->fsync(sfd->file, start, end, datasync);
->  }
->  
-> +static long shm_fallocate(struct file *file, int mode, loff_t offset,
-> +			  loff_t len)
-> +{
-> +	struct shm_file_data *sfd = shm_file_data(file);
-> +
-> +	if (!sfd->file->f_op->fallocate)
-> +		return -EINVAL;
-> +	return sfd->file->f_op->fallocate(file, mode, offset, len);
-> +}
-> +
->  static unsigned long shm_get_unmapped_area(struct file *file,
->  	unsigned long addr, unsigned long len, unsigned long pgoff,
->  	unsigned long flags)
-> @@ -410,6 +420,7 @@ static const struct file_operations shm_file_operations = {
->  	.get_unmapped_area	= shm_get_unmapped_area,
->  #endif
->  	.llseek		= noop_llseek,
-> +	.fallocate	= shm_fallocate,
->  };
->  
->  static const struct file_operations shm_file_operations_huge = {
-> @@ -418,6 +429,7 @@ static const struct file_operations shm_file_operations_huge = {
->  	.release	= shm_release,
->  	.get_unmapped_area	= shm_get_unmapped_area,
->  	.llseek		= noop_llseek,
-> +	.fallocate	= shm_fallocate,
->  };
->  
->  int is_file_shm_hugepages(struct file *file)
-> -- 
-> 1.7.4.1
-
-[PATCH] ipc: shm: shm_fallocate use -ENOTSUPP
-
-When underlying filesystem (i.e. hugetlbfs) does not support fallocate(),
-let shm_fallocate() fail with -EOPNOTSUPP rather than -EINVAL: so that
-madvise(,,MADV_REMOVE) gives the same error as it does wherever else
-fallocate() is unsupported.  vmtruncate_range() gave -ENOSYS in this
-case, but that was not quite right.
-
-Signed-off-by: Hugh Dickins <hughd@google.com>
-___
-
- ipc/shm.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- will/ipc/shm.c	2012-06-06 17:54:42.968102209 -0700
-+++ hugh/ipc/shm.c	2012-06-06 17:58:14.600106628 -0700
-@@ -399,7 +399,7 @@ static long shm_fallocate(struct file *f
- 	struct shm_file_data *sfd = shm_file_data(file);
- 
- 	if (!sfd->file->f_op->fallocate)
--		return -EINVAL;
-+		return -EOPNOTSUPP;
- 	return sfd->file->f_op->fallocate(file, mode, offset, len);
- }
- 
+Maybe we need adjust shared MSRs' reference counts in intel_fixup_er() ?
