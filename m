@@ -1,41 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758176Ab2FGILb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 04:11:31 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:54012 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756782Ab2FGIL0 (ORCPT
+	id S1757953Ab2FGINO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 04:13:14 -0400
+Received: from www84.your-server.de ([213.133.104.84]:38581 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751118Ab2FGINF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 04:11:26 -0400
-Date: Thu, 7 Jun 2012 09:11:08 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: Roland Stigge <stigge@antcom.de>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, dwmw2@infradead.org,
-        kevin.wells@nxp.com, srinivas.bakki@nxp.com,
-        linux-arm-kernel@lists.infradead.org, hechtb@googlemail.com,
-        lars@metafoo.de, b32955@freescale.com, leiwen@marvell.com
-Subject: Re: [PATCH v6] MTD: LPC32xx SLC NAND driver
-Message-ID: <20120607081108.GO8262@n2100.arm.linux.org.uk>
-References: <1338974414-5308-1-git-send-email-stigge@antcom.de> <1338989921.6875.50.camel@sauron.fi.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1338989921.6875.50.camel@sauron.fi.intel.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Thu, 7 Jun 2012 04:13:05 -0400
+Message-ID: <1339056804.4964.8.camel@wall-e>
+Subject: Re: [PATCH] fix usb skeleton driver
+From: Stefani Seibold <stefani@seibold.net>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org, oneukum@suse.de,
+        alan@lxorguk.ukuu.org.uk, linux-usb@vger.kernel.org
+Date: Thu, 07 Jun 2012 10:13:24 +0200
+In-Reply-To: <Pine.LNX.4.44L0.1206061621110.1183-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1206061621110.1183-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 06, 2012 at 04:38:41PM +0300, Artem Bityutskiy wrote:
-> On Wed, 2012-06-06 at 11:20 +0200, Roland Stigge wrote:
-> > +#else
-> > +#define lpc32xx_nand_resume NULL
-> > +#define lpc32xx_nand_suspend NULL
-> > +#endif
+Am Mittwoch, den 06.06.2012, 16:22 -0400 schrieb Alan Stern:
+> On Wed, 6 Jun 2012, Stefani Seibold wrote:
 > 
-> 0, not NULL.
+> > The reason to fix the skeleton driver was about the complains for my
+> > NRPZ driver, which was based on the design of the usb skeleton driver.
+> > 
+> > > Going even farther, I'm not so sure it's a good idea for usb-skeleton
+> > > to try supporting both synchronous and asynchronous accesses.  This
+> > > adds a layer of complexity that people just don't need.  IMO it would 
+> > > be better to have two separate example drivers, an easy one that is 
+> > > purely synchronous and a more advanced one that is purely async.
+> > > 
+> > 
+> > Agree, i think this would be a good idea to have to separate drivers.
+> > Both should be also working drivers, for really simple hardware.
+> > 
+> > The best way for me to do this is to shrink later this to a simplified
+> > driver. 
+> 
+> That makes sense.  Will you do it?
 
-Err, what planet are you on there.  These are _pointers_ to functions,
-so using a _pointer_ is more correct than using an _integer_.
+Yes, if nobody other will do this.
+
+> 
+> > I think it is important to have a clean and working example. It would
+> > save a lot of time for everybody and shrinks the number of round trips.
+> 
+> How can you tell that it works?  By testing your NRPZ driver?
+> 
+
+That is an option. But i will look for a more generic hardware. Maybe a
+smartphone or a usb pen drive.
+
+
