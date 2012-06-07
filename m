@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759807Ab2FGESB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 00:18:01 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62777 "EHLO
+	id S1759827Ab2FGESG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 00:18:06 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63306 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759739Ab2FGER5 (ORCPT
+	with ESMTP id S1759809Ab2FGESC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 00:17:57 -0400
-Message-Id: <20120607040341.473637854@linuxfoundation.org>
+	Thu, 7 Jun 2012 00:18:02 -0400
+Message-Id: <20120607040340.903447096@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 07 Jun 2012 13:04:11 +0900
+Date: Thu, 07 Jun 2012 13:04:07 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Dave Jones <davej@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux.com>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: [ 35/82] mm: fix vma_resv_map() NULL pointer
+        alan@lxorguk.ukuu.org.uk, Robert Lowery <rglowery@exemail.com.au>,
+        Rodrigo Vivi <rodrigo.vivi@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 31/82] drm/i915: Adding TV Out Missing modes.
 In-Reply-To: <20120607041406.GA13233@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,68 +26,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Hansen <dave@linux.vnet.ibm.com>
+From: Rodrigo Vivi <rodrigo.vivi@gmail.com>
 
-commit 4523e1458566a0e8ecfaff90f380dd23acc44d27 upstream.
+commit 9589919fb3d269d4202a112b197468c7db1f97a3 upstream.
 
-hugetlb_reserve_pages() can be used for either normal file-backed
-hugetlbfs mappings, or MAP_HUGETLB.  In the MAP_HUGETLB, semi-anonymous
-mode, there is not a VMA around.  The new call to resv_map_put() assumed
-that there was, and resulted in a NULL pointer dereference:
+These 2 modes were removed by mistake during a clean up.
+So, now it is time to add them back. For further info about
+supported mode and standard timing table please check:
+VOL_3_display_registers_updated.pdf at intellinuxgraphics.org.
 
-  BUG: unable to handle kernel NULL pointer dereference at 0000000000000030
-  IP: vma_resv_map+0x9/0x30
-  PGD 141453067 PUD 1421e1067 PMD 0
-  Oops: 0000 [#1] PREEMPT SMP
-  ...
-  Pid: 14006, comm: trinity-child6 Not tainted 3.4.0+ #36
-  RIP: vma_resv_map+0x9/0x30
-  ...
-  Process trinity-child6 (pid: 14006, threadinfo ffff8801414e0000, task ffff8801414f26b0)
-  Call Trace:
-    resv_map_put+0xe/0x40
-    hugetlb_reserve_pages+0xa6/0x1d0
-    hugetlb_file_setup+0x102/0x2c0
-    newseg+0x115/0x360
-    ipcget+0x1ce/0x310
-    sys_shmget+0x5a/0x60
-    system_call_fastpath+0x16/0x1b
+Note that this regression has been introduce in
 
-This was reported by Dave Jones, but was reproducible with the
-libhugetlbfs test cases, so shame on me for not running them in the
-first place.
+commit 55a6713b3f30a5024056027e9dbf03ac8f13bfc9
+Author: Rodrigo Vivi <rodrigo.vivi@gmail.com>
+Date:   Thu Dec 15 14:47:33 2011 -0200
 
-With this, the oops is gone, and the output of libhugetlbfs's
-run_tests.py is identical to plain 3.4 again.
+    drm/i915: Removing TV Out modes.
 
-[ Marked for stable, since this was introduced by commit c50ac050811d
-  ("hugetlb: fix resv_map leak in error path") which was also marked for
-  stable ]
+and this commit partially reverts it by re-adding the wrongly removed
+modes.
 
-Reported-by: Dave Jones <davej@redhat.com>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Robert Lowery <rglowery@exemail.com.au>
+Signed-off-by: Rodrigo Vivi <rodrigo.vivi@gmail.com>
+[danvet: Pimped commit message to cite the commit that introduced this
+regression.]
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/hugetlb.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/i915/intel_tv.c |   48 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 48 insertions(+)
 
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -3035,7 +3035,8 @@ int hugetlb_reserve_pages(struct inode *
- 		region_add(&inode->i_mapping->private_list, from, to);
- 	return 0;
- out_err:
--	resv_map_put(vma);
-+	if (vma)
-+		resv_map_put(vma);
- 	return ret;
- }
- 
+--- a/drivers/gpu/drm/i915/intel_tv.c
++++ b/drivers/gpu/drm/i915/intel_tv.c
+@@ -674,6 +674,54 @@ static const struct tv_mode tv_modes[] =
+ 		.filter_table = filter_table,
+ 	},
+ 	{
++		.name       = "480p",
++		.clock		= 107520,
++		.refresh	= 59940,
++		.oversample     = TV_OVERSAMPLE_4X,
++		.component_only = 1,
++
++		.hsync_end      = 64,               .hblank_end         = 122,
++		.hblank_start   = 842,              .htotal             = 857,
++
++		.progressive    = true,		    .trilevel_sync = false,
++
++		.vsync_start_f1 = 12,               .vsync_start_f2     = 12,
++		.vsync_len      = 12,
++
++		.veq_ena        = false,
++
++		.vi_end_f1      = 44,               .vi_end_f2          = 44,
++		.nbr_end        = 479,
++
++		.burst_ena      = false,
++
++		.filter_table = filter_table,
++	},
++	{
++		.name       = "576p",
++		.clock		= 107520,
++		.refresh	= 50000,
++		.oversample     = TV_OVERSAMPLE_4X,
++		.component_only = 1,
++
++		.hsync_end      = 64,               .hblank_end         = 139,
++		.hblank_start   = 859,              .htotal             = 863,
++
++		.progressive    = true,		    .trilevel_sync = false,
++
++		.vsync_start_f1 = 10,               .vsync_start_f2     = 10,
++		.vsync_len      = 10,
++
++		.veq_ena        = false,
++
++		.vi_end_f1      = 48,               .vi_end_f2          = 48,
++		.nbr_end        = 575,
++
++		.burst_ena      = false,
++
++		.filter_table = filter_table,
++	},
++	{
+ 		.name       = "720p@60Hz",
+ 		.clock		= 148800,
+ 		.refresh	= 60000,
 
 
