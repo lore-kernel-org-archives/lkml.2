@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755240Ab2FGQWE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 12:22:04 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38762 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754673Ab2FGQWB (ORCPT
+	id S1754994Ab2FGQW5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 12:22:57 -0400
+Received: from mga14.intel.com ([143.182.124.37]:26866 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751176Ab2FGQW4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 12:22:01 -0400
+	Thu, 7 Jun 2012 12:22:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="152994969"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Borislav Petkov <borislav.petkov@amd.com>,
+        Chen Gong <gong.chen@linux.intel.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: RE: [patch 0/5] x86: mce: Bugfixes, cleanups and a new CMCI poll
+ version
+Thread-Topic: [patch 0/5] x86: mce: Bugfixes, cleanups and a new CMCI poll
+ version
+Thread-Index: AQHNRC7WkhFIdxHVtkmJOvUeOBJl15bvF+KAgAA5/4D//7iK4A==
+Date: Thu, 7 Jun 2012 16:22:53 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F19304893@ORSMSX104.amr.corp.intel.com>
+References: <20120606214941.104735929@linutronix.de>
+ <4FD07D8F.5020303@linux.intel.com>
+ <20120607133549.GH11153@aftab.osrc.amd.com>
+In-Reply-To: <20120607133549.GH11153@aftab.osrc.amd.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <CAL1RGDXotXpZXUeR6JGu=qAkJE3H8iJ_0A0fQTCXrBJkWJDBRA@mail.gmail.com>
-References: <CAHVUoiQywo=iHKsXQbsVE7coc1FL9A9qy_a71SK94MKNV0GrKA@mail.gmail.com>
-	<CAHVUoiTZmzT3vquaDC65AJfCFZX-qS5GjgjP2-+=0R7skurW5g@mail.gmail.com>
-	<CAHVUoiQgcAMr874d_yPfm9ssUBOoX+dNLy9JNCOCYwOCrAKXFQ@mail.gmail.com>
-	<CAH3drwacayQEZHOidbKKuJ3KjgMvnYzT0S0csXV2QwSmC8nMxg@mail.gmail.com>
-	<CAL1RGDXotXpZXUeR6JGu=qAkJE3H8iJ_0A0fQTCXrBJkWJDBRA@mail.gmail.com>
-Date: Thu, 7 Jun 2012 12:22:00 -0400
-Message-ID: <CAH3drwYGH23iuLFnrjnCx3wWsBH9s_QzQ4uOtOBOFKW-D1d3Xg@mail.gmail.com>
-Subject: Re: [Regression] [Radeon] Stream command failures and render problems
- in Evergreen (Radeon HD 5600) in kernel 3.4
-From: Jerome Glisse <j.glisse@gmail.com>
-To: Roland Dreier <roland@purestorage.com>
-Cc: Brian Gitonga Marete <marete@toshnix.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Airlie <airlied@linux.ie>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Jerome Glisse <jglisse@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 7, 2012 at 11:35 AM, Roland Dreier <roland@purestorage.com> wrote:
->> Update your libdrm to libdrm from git should fix your issue.
->
-> That's unfortunate -- it means a kernel change breaks working userspace?
+> Stupid question: do you even want to allow offlining of CPUs while the
+> storm is raging? IOW, wouldn't it be better to disallow hotplug when the
+> storm happens so that all online CPUs, which is all CPUs on the system,
+> can work out the storm conditions faster so that the system gets back to
+> normal faster...
 
-Yes and no, welcome to GPU world. So this patch is suppose to report
-some GPU informations to userspace, sadly on some GPU we report wrong
-informations (that's a bug). So solution is to fix kernel to report
-right information, i think the following patch does that.
-http://www.mail-archive.com/stable@vger.kernel.org/msg09247.html
+What if a processor is the source of the storm (we can get CMCI from
+corrected errors in the cache)? Then our action to abate the storm would
+be to take the cpu offline.
 
-The no side, is to have it broken you also need to have upgraded your
-libdrm, ie old libdrm/radeon with this kernel will work as previously.
-This issue have been fix recently in libdrm :
-http://cgit.freedesktop.org/mesa/drm/commit/?id=c2b77a02d4e188cfa6d1b73a721946fd9b1d3577
-
-Of course here i am assuming that the bug Brian is experiencing is
-related to wrong tile infos reporting.
-
-Cheers,
-Jerome
+-Tony
