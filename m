@@ -1,63 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932727Ab2FGSAS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 14:00:18 -0400
-Received: from mga09.intel.com ([134.134.136.24]:44258 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753056Ab2FGSAP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 14:00:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="154348264"
-From: Andi Kleen <andi@firstfloor.org>
-To: mingo@elte.hu
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        rostedt@goodmis.org
-Subject: [PATCH] perf: Don't disable function tracing for perf
-Date: Thu,  7 Jun 2012 10:59:56 -0700
-Message-Id: <1339091996-24109-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.7.6
+	id S932701Ab2FGSDv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 14:03:51 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:33016 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754887Ab2FGSDt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 14:03:49 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120607174815.GU9472@phenom.dumpdata.com>
+References: <CAOvdn6VWdOy1nNM+x3ogCCFXy8FExZjTJaV-s6SR7kbGu+REOA@mail.gmail.com>
+	<20120607164034.GQ9472@phenom.dumpdata.com>
+	<CAOvdn6WJ+Ub+LbhHKKQJi3AzsbCqX6-ksWhoxnZS5_OH=hkghQ@mail.gmail.com>
+	<20120607174815.GU9472@phenom.dumpdata.com>
+Date: Thu, 7 Jun 2012 14:03:48 -0400
+X-Google-Sender-Auth: jSsIAWte9pnufKwGRZc0KiWSg7U
+Message-ID: <CAOvdn6VtmWyMo4SEAWT+ipJTHBTwPm+DZ1TXZT4q3UobFv=2DA@mail.gmail.com>
+Subject: Re: [Xen-devel] [PATCH] xen/hvc: Fix polling mode to work with kdb/kgdb
+From: Ben Guthro <ben@guthro.net>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On Thu, Jun 7, 2012 at 1:48 PM, Konrad Rzeszutek Wilk
+<konrad.wilk@oracle.com> wrote:
+...snip...
 
-According to Steven there is no reason left to not do function
-tracing for perf code. So remove the -pg for the x86 and core
-perf code. This makes perf easier to debug.
+> Well, now that you guys are working for a big corporation
+> you can relax and afford to spend some time digging in the
+> inner-workings I think :-)
 
-Cc: rostedt@goodmis.org
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- arch/x86/kernel/cpu/Makefile |    1 -
- kernel/events/Makefile       |    4 ----
- 2 files changed, 0 insertions(+), 5 deletions(-)
+I'll pass along that suggestion.
+So far, that hasn't come to pass...
 
-diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
-index 6ab6aa2..5bd8b32 100644
---- a/arch/x86/kernel/cpu/Makefile
-+++ b/arch/x86/kernel/cpu/Makefile
-@@ -5,7 +5,6 @@
- # Don't trace early stages of a secondary CPU boot
- ifdef CONFIG_FUNCTION_TRACER
- CFLAGS_REMOVE_common.o = -pg
--CFLAGS_REMOVE_perf_event.o = -pg
- endif
- 
- # Make sure load_percpu_segment has no stackprotector
-diff --git a/kernel/events/Makefile b/kernel/events/Makefile
-index 103f5d1..a630994 100644
---- a/kernel/events/Makefile
-+++ b/kernel/events/Makefile
-@@ -1,7 +1,3 @@
--ifdef CONFIG_FUNCTION_TRACER
--CFLAGS_REMOVE_core.o = -pg
--endif
--
- obj-y := core.o ring_buffer.o callchain.o
- 
- obj-$(CONFIG_HAVE_HW_BREAKPOINT) += hw_breakpoint.o
--- 
-1.7.7.6
-
+I understood it when I wrote this months ago. I really should have
+written this up then.
+I'll try to dig in a bit, and report back.
