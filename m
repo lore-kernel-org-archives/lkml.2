@@ -1,203 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761344Ab2FGTDQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 15:03:16 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:56518 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755216Ab2FGTDO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 15:03:14 -0400
+	id S1761356Ab2FGTEd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 15:04:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4596 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761304Ab2FGTEb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 15:04:31 -0400
+Date: Thu, 7 Jun 2012 21:04:15 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Josh Boyer <jwboyer@gmail.com>, Greg KH <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Ulrich Obergfell <uobergfe@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Hugh Dickins <hughd@google.com>, Larry Woodman <lwoodman@redhat.com>,
+        Petr Matousek <pmatouse@redhat.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [ 08/82] mm: pmd_read_atomic: fix 32bit PAE pmd walk vs
+ pmd_populate SMP race condition
+Message-ID: <20120607190414.GF21339@redhat.com>
+References: <20120607041406.GA13233@kroah.com>
+ <20120607040337.622672845@linuxfoundation.org>
+ <CA+5PVA6A0K3WYBQJH8z3ddd2X3=fQm1a34z+fWSYGcUg4TR9+A@mail.gmail.com>
+ <20120607144204.GD21339@redhat.com>
+ <CA+55aFzv-z0njtAnpgOsVES70+igwV7HCteQbQ6M6uTsYvn5WQ@mail.gmail.com>
 MIME-Version: 1.0
-Reply-To: rus@sfinxsoft.com
-In-Reply-To: <20120607151352.GA8261@x1.osrc.amd.com>
-References: <CAKgfjTktMLc5bfqhCOKy0evssxggofNQqLT-gQqBkHcBvOgF0g@mail.gmail.com>
- <CAKgfjTnvCAT=3JFxmDTsui_hguiiBfHQfMmErv9wt6QG_30hKA@mail.gmail.com>
- <20120607142459.GB5053@x1.osrc.amd.com> <CAKgfjTn3KXmDio0F0M3syeHnDc=ByKZu1ipe7S+75KRcCBy0QA@mail.gmail.com>
- <20120607151352.GA8261@x1.osrc.amd.com>
-From: Rus <rus@sfinxsoft.com>
-Date: Thu, 7 Jun 2012 22:02:33 +0300
-X-Google-Sender-Auth: fhcNUw8qlDlvxt7jr0Z6wIOd71o
-Message-ID: <CAKgfjTn67KwR7-+icNZm7e5ZRfjqt1159kWMYD6S83WuhNfprQ@mail.gmail.com>
-Subject: Re: 3.[34].x Reproducable [Firmware bug] message upon warm boot only
-To: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzv-z0njtAnpgOsVES70+igwV7HCteQbQ6M6uTsYvn5WQ@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Do you have CONFIG_DETECT_HUNG_TASK enabled? Also CONFIG_PROVE_LOCKING,
-> CONFIG_KMEMCHECK, CONFIG_DEBUG_PREEMPT. These are just a couple of debug
-> options to enable right now which could tell us more.
+On Thu, Jun 07, 2012 at 10:46:44AM -0700, Linus Torvalds wrote:
+> So I assume that Xen just turns the page tables read-only in order to
+> track them, and then assumes that nobody modifies them in the
+> particular section. And the cmpxchg64 looks like a modification, even
+> if we only use it to read things.
 
-Kmemcheck setting is prevented the booting of the 3.5-rc1 with the
-following messages :
+Agreed, the implicit write could be the trigger.
 
-kmemcheck: Limiting number of CPUs to 1.
-kmemcheck: Initialized
-------------[ cut here ]------------
-WARNING: at kernel/lockdep.c:2739 lockdep_trace_alloc+0xcd/0xd0()
-Hardware name: To be filled by O.E.M.
-Modules linked in:
-Pid: 1, comm: swapper/0 Not tainted 3.5.0-rc1 #3
-Call Trace:
- [<ffffffff8104123a>] warn_slowpath_common+0x7a/0xb0
- [<ffffffff81041285>] warn_slowpath_null+0x15/0x20
- [<ffffffff81096f2d>] lockdep_trace_alloc+0xcd/0xd0
- [<ffffffff810ee48e>] __alloc_pages_nodemask+0x7e/0x890
- [<ffffffff810ee599>] ? __alloc_pages_nodemask+0x189/0x890
- [<ffffffff81278f3d>] ? trace_hardirqs_off_thunk+0x3a/0x3c
- [<ffffffff81278f3d>] ? trace_hardirqs_off_thunk+0x3a/0x3c
- [<ffffffff815c07d0>] ? error_exit+0x30/0xb0
- [<ffffffff811260c9>] kmemcheck_alloc_shadow+0x29/0xb0
- [<ffffffff8112409a>] new_slab+0x1fa/0x2e0
- [<ffffffff815b70ec>] __slab_alloc.isra.51.constprop.55+0x3e8/0x40e
- [<ffffffff815c07d0>] ? error_exit+0x30/0xb0
- [<ffffffff811251f7>] kmem_cache_alloc+0x87/0xb0
- [<ffffffff8126d7c0>] idr_pre_get+0x60/0x90
- [<ffffffff8126dd8b>] ida_pre_get+0x1b/0x90
- [<ffffffff810593b2>] create_worker+0x42/0x170
- [<ffffffff81ae441d>] init_workqueues+0x1f2/0x393
- [<ffffffff81ae422b>] ? usermodehelper_init+0x36/0x36
- [<ffffffff81ae422b>] ? usermodehelper_init+0x36/0x36
- [<ffffffff81002122>] do_one_initcall+0x122/0x180
- [<ffffffff81acbc7a>] kernel_init+0x9b/0x1f6
- [<ffffffff815c1f74>] kernel_thread_helper+0x4/0x10
- [<ffffffff815c0274>] ? retint_restore_args+0x13/0x13
- [<ffffffff81acbbdf>] ? start_kernel+0x3d2/0x3d2
- [<ffffffff815c1f70>] ? gs_change+0x13/0x13
----[ end trace 6d450e935ee1897c ]---
-MCE: In-kernel MCE decoding enabled.
-NMI watchdog: enabled, takes one hw-pmu counter.
-Brought up 1 CPUs
-----------------
-| NMI testsuite:
---------------------
-  remote IPI:  ok  |
-   local IPI:
-------------[ cut here ]------------
-------------[ cut here ]------------
-WARNING: at arch/x86/mm/kmemcheck/kmemcheck.c:634 kmemcheck_fault+0xb1/0xc0()
-Hardware name: To be filled by O.E.M.
-Modules linked in:
-Pid: 1, comm: swapper/0 Tainted: G        W    3.5.0-rc1 #3
-Call Trace:
- <NMI>  [<ffffffff8104123a>] warn_slowpath_common+0x7a/0xb0
- [<ffffffff81041285>] warn_slowpath_null+0x15/0x20
- [<ffffffff8103a1f1>] kmemcheck_fault+0xb1/0xc0
- [<ffffffff81033d48>] do_page_fault+0x3f8/0x480
- [<ffffffff81278f3d>] ? trace_hardirqs_off_thunk+0x3a/0x3c
- [<ffffffff815c0525>] page_fault+0x25/0x30
- [<ffffffff8131fe2d>] ? vt_console_print+0xad/0x3b0
- [<ffffffff8131fdea>] ? vt_console_print+0x6a/0x3b0
- [<ffffffff8127ebbd>] ? do_raw_spin_unlock+0x5d/0xb0
- [<ffffffff81042484>] console_unlock+0x174/0x280
- [<ffffffff810427fc>] vprintk_emit+0x16c/0x580
- [<ffffffff8103a1f1>] ? kmemcheck_fault+0xb1/0xc0
- [<ffffffff815b451b>] printk+0x5c/0x5e
- [<ffffffff8103a1f1>] ? kmemcheck_fault+0xb1/0xc0
- [<ffffffff810411f9>] warn_slowpath_common+0x39/0xb0
- [<ffffffff81041285>] warn_slowpath_null+0x15/0x20
- [<ffffffff8103a1f1>] kmemcheck_fault+0xb1/0xc0
- [<ffffffff81033d48>] do_page_fault+0x3f8/0x480
- [<ffffffff81278f3d>] ? trace_hardirqs_off_thunk+0x3a/0x3c
- [<ffffffff815c0525>] page_fault+0x25/0x30
- [<ffffffff8101ca8a>] ? x86_perf_event_update+0x2a/0xb0
- [<ffffffff8101dc66>] x86_pmu_handle_irq+0x96/0x130
- [<ffffffff8101c45d>] perf_event_nmi_handler+0x1d/0x20
- [<ffffffff81010891>] nmi_handle.isra.0+0x81/0xd0
- [<ffffffff81010810>] ? __register_nmi_handler+0x190/0x190
- [<ffffffff810109e8>] do_nmi+0x108/0x380
- [<ffffffff815c090c>] end_repeat_nmi+0x1a/0x1e
- [<ffffffff81278879>] ? delay_tsc+0x29/0xf0
- [<ffffffff81278879>] ? delay_tsc+0x29/0xf0
- [<ffffffff81278879>] ? delay_tsc+0x29/0xf0
- <<EOE>>  [<ffffffff812787ba>] __delay+0xa/0x10
- [<ffffffff812787eb>] __const_udelay+0x2b/0x30
- [<ffffffff81adf398>] test_nmi_ipi.constprop.2+0x51/0x84
- [<ffffffff81adf41e>] local_ipi+0x21/0x23
- [<ffffffff81adf2d2>] dotest.constprop.1+0x6/0x7b
- [<ffffffff81adf4af>] nmi_selftest+0x8f/0x185
- [<ffffffff81ada69b>] native_smp_cpus_done+0x2d/0x11e
- [<ffffffff81ae6199>] smp_init+0x97/0x9f
- [<ffffffff81acbc9e>] kernel_init+0xbf/0x1f6
- [<ffffffff815c1f74>] kernel_thread_helper+0x4/0x10
- [<ffffffff815c0274>] ? retint_restore_args+0x13/0x13
- [<ffffffff81acbbdf>] ? start_kernel+0x3d2/0x3d2
- [<ffffffff815c1f70>] ? gs_change+0x13/0x13
----[ end trace 6d450e935ee1897d ]---
-WARNING: at arch/x86/mm/kmemcheck/kmemcheck.c:634 kmemcheck_fault+0xb1/0xc0()
-Hardware name: To be filled by O.E.M.
-Modules linked in:
-Pid: 1, comm: swapper/0 Tainted: G        W    3.5.0-rc1 #3
-Call Trace:
- <NMI>  [<ffffffff8104123a>] warn_slowpath_common+0x7a/0xb0
- [<ffffffff81041285>] warn_slowpath_null+0x15/0x20
- [<ffffffff8103a1f1>] kmemcheck_fault+0xb1/0xc0
- [<ffffffff81033d48>] do_page_fault+0x3f8/0x480
- [<ffffffff81278f3d>] ? trace_hardirqs_off_thunk+0x3a/0x3c
- [<ffffffff815c0525>] page_fault+0x25/0x30
- [<ffffffff8101ca8a>] ? x86_perf_event_update+0x2a/0xb0
- [<ffffffff8101dc66>] x86_pmu_handle_irq+0x96/0x130
- [<ffffffff8101c45d>] perf_event_nmi_handler+0x1d/0x20
- [<ffffffff81010891>] nmi_handle.isra.0+0x81/0xd0
- [<ffffffff81010810>] ? __register_nmi_handler+0x190/0x190
- [<ffffffff810109e8>] do_nmi+0x108/0x380
- [<ffffffff815c090c>] end_repeat_nmi+0x1a/0x1e
- [<ffffffff81278879>] ? delay_tsc+0x29/0xf0
- [<ffffffff81278879>] ? delay_tsc+0x29/0xf0
- [<ffffffff81278879>] ? delay_tsc+0x29/0xf0
- <<EOE>>  [<ffffffff812787ba>] __delay+0xa/0x10
- [<ffffffff812787eb>] __const_udelay+0x2b/0x30
- [<ffffffff81adf398>] test_nmi_ipi.constprop.2+0x51/0x84
- [<ffffffff81adf41e>] local_ipi+0x21/0x23
- [<ffffffff81adf2d2>] dotest.constprop.1+0x6/0x7b
- [<ffffffff81adf4af>] nmi_selftest+0x8f/0x185
- [<ffffffff81ada69b>] native_smp_cpus_done+0x2d/0x11e
- [<ffffffff81ae6199>] smp_init+0x97/0x9f
- [<ffffffff81acbc9e>] kernel_init+0xbf/0x1f6
- [<ffffffff815c1f74>] kernel_thread_helper+0x4/0x10
- [<ffffffff815c0274>] ? retint_restore_args+0x13/0x13
- [<ffffffff81acbbdf>] ? start_kernel+0x3d2/0x3d2
- [<ffffffff815c1f70>] ? gs_change+0x13/0x13
----[ end trace 6d450e935ee1897e ]---
-  ok  |
---------------------
-Good, all   2 testcases passed! |
-....................
-Freeing unused kernel memory: 228k freed
-Freeing unused kernel memory: 1388k freed
-init (1) used greatest stack depth: 3256 bytes left
-Kernel panic - not syncing: Attempted to kill init! exitcode=0x00000005
+> Andrea, do we have any guarantees like "once it has turned into a
+> regular page table, we won't see it turn back if we hold the mmap
+> sem"? Or anything like that? Because it is possible that we could do
 
-Pid: 1, comm: init Tainted: G        W    3.5.0-rc1 #3
-Call Trace:
- [<ffffffff815b43ae>] panic+0xb5/0x1c6
- [<ffffffff810464d9>] ? do_exit+0x749/0x920
- [<ffffffff81046581>] do_exit+0x7f1/0x920
- [<ffffffff81046944>] do_group_exit+0x44/0xb0
- [<ffffffff81053211>] get_signal_to_deliver+0x1e1/0x5f0
- [<ffffffff8105168f>] ? __send_signal+0x16f/0x2f0
- [<ffffffff8100c26a>] do_signal+0x3a/0x920
- [<ffffffff815bfd65>] ? _raw_spin_unlock_irqrestore+0x45/0x80
- [<ffffffff8105214c>] ? force_sig_info+0xdc/0x100
- [<ffffffff81019f82>] ? syscall_trace_leave+0x122/0x130
- [<ffffffff8100cbdd>] do_notify_resume+0x6d/0xa0
- [<ffffffff81278efe>] ? trace_hardirqs_on_thunk+0x3a/0x3f
- [<ffffffff815c0e7a>] int_signal+0x12/0x17
- [<ffffffff815b290b>] ? run_init_process+0x1e/0x20
- [<ffffffff815b2952>] ? init_post+0x45/0xbe
- [<ffffffff81acbdd5>] ? kernel_init+0x1f6/0x1f6
- [<ffffffff81acb5ae>] ? do_early_param+0x8c/0x8c
- [<ffffffff815c1f74>] ? kernel_thread_helper+0x4/0x10
- [<ffffffff815c0274>] ? retint_restore_args+0x13/0x13
- [<ffffffff81acbbdf>] ? start_kernel+0x3d2/0x3d2
- [<ffffffff815c1f70>] ? gs_change+0x13/0x13
-.........
+Yes if it turns in a regular page table it will stop changing.
 
-After disabling kmemcheck the box is able to boot again.
+The problem is this is the THP case. Without THP it can only change
+from nono to regular page table. With THP it can change from none to
+trans_huge to none to trans_huge and it only stops if it eventually
+becomes a regular page table.
 
-Rus
+> this entirely with some ordering guarantee - something like the
+> attached patch?
 
--- 
-SfinxSoft
-http://sfinxsoft.com
+It's possible to do it with a loop like in the patch, gup_fast does it
+that way (and gup_fast does it on the pte so the pte is susciptible to
+the exact same instability that the pmd has even when THP=n, as
+madvise/pagefault can run under gup_fast), but I'm not sure if it's
+safe especially with irqs enabled.  Maybe gup_fast is safe because it
+disables irqs to stop MADV_DONTNEED?
+
+The race would be:
+
+            l = pmd.low
+            smp_rmb()
+            h = pmd.high
+	    smp_rmb()
+                                       pmd points to page 4G
+                                       MADV_DONTNEED
+                                       page fault allocates page at 8G
+            l = pmd.low
+
+Disabling irqs may be enough to hang MADV_DONTNEED on the tlb flush
+IPI. But my feeling is the page fault can happen even while
+MADV_DONTNEED waits on the tlb flush IPI. So the above could still
+happen on gup_fast too? But of course gup_fast troubles are irrelevant
+here, but I was thinking about this one before... so I mentioned it
+too as it's the same problem.
+
+The "simple" idea in pmd_none_or_trans_huge_or_clear_bad is that we
+need an atomic snapshot of the pmdval, stabilize it in register or
+local stack, and do the computations on it to know if the pmd is
+stable or unstable.
+
+But the more "complex" idea would be to relay on the below barrier and
+deal with "half corrupted" pmds.
+
+#ifdef CONFIG_TRANSPARENT_HUGEPAGE
+	barrier();
+#endif
+
+the barrier prevents the *pmdp read to be cached across the return of
+pmd_none_or_trans_huge_or_clear_bad when THP=y (our problem case). And
+all we need is to compute those checks atomically on the "low" part.
+
+	if (pmd_none(pmdval))
+		return 1;
+	if (unlikely(pmd_bad(pmdval))) {
+		if (!pmd_trans_huge(pmdval))
+			pmd_clear_bad(pmd);
+		return 1;
+	}
+
+If we remove the #ifdef CONFIG_TRANSPARENT_HUGEPAGE around the
+barrier(), we can get rid of pmd_read_atomic entirely and just do *pmd
+as before the fix (however note that if we triggered the crash in
+madvise with 32bit pae THP=n it means the value was cached by gcc and
+the corrupted pmdval was used for running pte_offset). So if we make
+the barrier() unconditional we'll force a second access to
+memory. This is the whole point of the barrier() conditional (to avoid
+screwing with gcc good work when not absolutely necessary).
+
+Anyway I made a patch below to take advantage of the barrier() and
+deal with corrupted pmds on pae 32bit x86 THP=y which I hope could fix
+this more optimally:
+
+diff --git a/arch/x86/include/asm/pgtable-3level.h b/arch/x86/include/asm/pgtable-3level.h
+index 43876f1..149d968 100644
+--- a/arch/x86/include/asm/pgtable-3level.h
++++ b/arch/x86/include/asm/pgtable-3level.h
+@@ -31,7 +31,6 @@ static inline void native_set_pte(pte_t *ptep, pte_t pte)
+ 	ptep->pte_low = pte.pte_low;
+ }
+ 
+-#define pmd_read_atomic pmd_read_atomic
+ /*
+  * pte_offset_map_lock on 32bit PAE kernels was reading the pmd_t with
+  * a "*pmdp" dereference done by gcc. Problem is, in certain places
+@@ -53,10 +52,18 @@ static inline void native_set_pte(pte_t *ptep, pte_t pte)
+  *
+  * With THP if the mmap_sem is hold for reading, the pmd can become
+  * THP or null or point to a pte (and in turn become "stable") at any
+- * time under pmd_read_atomic, so it's mandatory to read it atomically
+- * with cmpxchg8b.
++ * time under pmd_read_atomic. We could read it atomically here with a
++ * pmd_read_atomic using atomic64_read for the THP case, but instead
++ * we let the generic version of pmd_read_atomic run, and we instead
++ * relay on the barrier() in pmd_none_or_trans_huge_or_clear_bad() to
++ * prevent gcc to cache the potentially corrupted pmdval in pte_offset
++ * later. The barrier() will force the re-reading of the pmd and the
++ * checks in pmd_none_or_trans_huge_or_clear_bad() will only care
++ * about the low part of the pmd, regardless if the high part is
++ * consistent.
+  */
+ #ifndef CONFIG_TRANSPARENT_HUGEPAGE
++#define pmd_read_atomic pmd_read_atomic
+ static inline pmd_t pmd_read_atomic(pmd_t *pmdp)
+ {
+ 	pmdval_t ret;
+@@ -74,11 +81,6 @@ static inline pmd_t pmd_read_atomic(pmd_t *pmdp)
+ 
+ 	return (pmd_t) { ret };
+ }
+-#else /* CONFIG_TRANSPARENT_HUGEPAGE */
+-static inline pmd_t pmd_read_atomic(pmd_t *pmdp)
+-{
+-	return (pmd_t) { atomic64_read((atomic64_t *)pmdp) };
+-}
+ #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
+ 
+ static inline void native_set_pte_atomic(pte_t *ptep, pte_t pte)
+diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
+index ae39c4b..29e648a 100644
+--- a/include/asm-generic/pgtable.h
++++ b/include/asm-generic/pgtable.h
+@@ -484,6 +484,13 @@ static inline int pmd_none_or_trans_huge_or_clear_bad(pmd_t *pmd)
+ 	/*
+ 	 * The barrier will stabilize the pmdval in a register or on
+ 	 * the stack so that it will stop changing under the code.
++	 *
++	 * The barrier for the "x86 32bit PAE
++	 * CONFIG_TRANSPARENT_HUGEPAGE=y" case will also prevent an
++	 * inconsistent pmd low/high values (obtained by the generic
++	 * version of pmd_read_atomic) to be cached by gcc. The below
++	 * checks will only care about the low part of the pmd with
++	 * 32bit PAE.
+ 	 */
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+ 	barrier();
+
+
