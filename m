@@ -1,80 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759461Ab2FGCGr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 22:06:47 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46324 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757571Ab2FGCGq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 22:06:46 -0400
-Message-ID: <1339034800.7309.5.camel@phoenix>
-Subject: [PATCH RFC 2/2] regulator: isl6271a: Use
- regulator_[list|map]_voltage_linear for isl_fixed_ops
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Marek Vasut <marek.vasut@gmail.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Thu, 07 Jun 2012 10:06:40 +0800
-In-Reply-To: <1339034714.7309.3.camel@phoenix>
-References: <1339034714.7309.3.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1759472Ab2FGCI5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 22:08:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9949 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754756Ab2FGCI4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 22:08:56 -0400
+Date: Wed, 6 Jun 2012 22:08:47 -0400
+From: Dave Jones <davej@redhat.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Miklos Szeredi <mszeredi@suse.cz>, Jan Kara <jack@suse.cz>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: processes hung after sys_renameat, and 'missing' processes
+Message-ID: <20120607020846.GD17566@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Al Viro <viro@ZenIV.linux.org.uk>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Miklos Szeredi <mszeredi@suse.cz>, Jan Kara <jack@suse.cz>,
+	Peter Zijlstra <peterz@infradead.org>
+References: <20120606230040.GA18089@redhat.com>
+ <CA+55aFx_oREEd2XS_aG7PJ7dwzWjgx689V_uRPGWpVS01_++6A@mail.gmail.com>
+ <20120606235403.GC30000@ZenIV.linux.org.uk>
+ <20120607002914.GB22223@redhat.com>
+ <CA+55aFyp2GUbc218eb5BDyAqz+cOPTJMVcb4ptk+f1_RBB+-mg@mail.gmail.com>
+ <20120607011915.GA17566@redhat.com>
+ <20120607012900.GE30000@ZenIV.linux.org.uk>
+ <20120607013149.GF30000@ZenIV.linux.org.uk>
+ <CA+55aFx3QT0AA+s=M+QyJFKqQNh0cHiunwZ=fyrc1eneJTtarQ@mail.gmail.com>
+ <20120607015410.GG30000@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120607015410.GG30000@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/isl6271a-regulator.c |   14 +++++---------
- 1 file changed, 5 insertions(+), 9 deletions(-)
+On Thu, Jun 07, 2012 at 02:54:10AM +0100, Al Viro wrote:
 
-diff --git a/drivers/regulator/isl6271a-regulator.c b/drivers/regulator/isl6271a-regulator.c
-index 56d273f..4a11b82a 100644
---- a/drivers/regulator/isl6271a-regulator.c
-+++ b/drivers/regulator/isl6271a-regulator.c
-@@ -75,19 +75,13 @@ static struct regulator_ops isl_core_ops = {
- 
- static int isl6271a_get_fixed_voltage(struct regulator_dev *dev)
- {
--	int id = rdev_get_id(dev);
--	return (id == 1) ? 1100000 : 1300000;
--}
--
--static int isl6271a_list_fixed_voltage(struct regulator_dev *dev, unsigned selector)
--{
--	int id = rdev_get_id(dev);
--	return (id == 1) ? 1100000 : 1300000;
-+	return dev->desc->min_uV;
- }
- 
- static struct regulator_ops isl_fixed_ops = {
- 	.get_voltage	= isl6271a_get_fixed_voltage,
--	.list_voltage	= isl6271a_list_fixed_voltage,
-+	.list_voltage	= regulator_list_voltage_linear,
-+	.map_voltage	= regulator_map_voltage_linear,
- };
- 
- static const struct regulator_desc isl_rd[] = {
-@@ -107,6 +101,7 @@ static const struct regulator_desc isl_rd[] = {
- 		.ops		= &isl_fixed_ops,
- 		.type		= REGULATOR_VOLTAGE,
- 		.owner		= THIS_MODULE,
-+		.min_uV		= 1100000,
- 	}, {
- 		.name		= "LDO2",
- 		.id		= 2,
-@@ -114,6 +109,7 @@ static const struct regulator_desc isl_rd[] = {
- 		.ops		= &isl_fixed_ops,
- 		.type		= REGULATOR_VOLTAGE,
- 		.owner		= THIS_MODULE,
-+		.min_uV		= 1300000,
- 	},
- };
- 
--- 
-1.7.9.5
+ > > Do you even need the "dentry->d_parent != dentry" test? When do we
+ > > even rename root dentries?
+ > 
+ > Root of the filesystem - never; root of disconnected subtree - sure,
+ > that's how they become connected to the tree.  See d_materialize_unique(),
+ > for example...
+ > 
+ > BTW, I really need more coffee - those checks belong in __d_move(),
+ > not d_move(); aforementioned d_materialize_unique() doesn't use d_move(),
+ > it calls __d_move() directly.  Sorry.
 
+np, I'll restart the build/test.
 
+	Dave
 
