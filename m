@@ -1,76 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760610Ab2FGKtO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 06:49:14 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:47803 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760578Ab2FGKtM (ORCPT
+	id S1760630Ab2FGKuV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 06:50:21 -0400
+Received: from canardo.mork.no ([148.122.252.1]:41715 "EHLO canardo.mork.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755150Ab2FGKuT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 06:49:12 -0400
-Date: Thu, 7 Jun 2012 11:52:27 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Richard Weinberger <richard@nod.at>
-Cc: Boaz Harrosh <bharrosh@panasas.com>,
-        user-mode-linux-devel@lists.sourceforge.net,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, jslaby@suse.cz, alan@linux.intel.com
-Subject: Re: [uml-devel] um: TTY fixes (?)
-Message-ID: <20120607115227.6643d1ad@pyramind.ukuu.org.uk>
-In-Reply-To: <4FD0802A.1020203@nod.at>
-References: <1338841657-30358-1-git-send-email-richard@nod.at>
-	<4FCF6748.6020005@panasas.com>
-	<4FD059AC.8050808@panasas.com>
-	<4FD06A22.6040002@nod.at>
-	<4FD07F14.50902@panasas.com>
-	<4FD0802A.1020203@nod.at>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 7 Jun 2012 06:50:19 -0400
+From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+To: Stefani Seibold <stefani@seibold.net>
+Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org, oneukum@suse.de,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH 02/13] code cleanup
+Organization: m
+References: <1339057243-10029-1-git-send-email-stefani@seibold.net>
+	<1339057243-10029-3-git-send-email-stefani@seibold.net>
+	<877gvjtrsf.fsf@nemi.mork.no> <1339060906.11583.9.camel@wall-e>
+Date: Thu, 07 Jun 2012 12:49:49 +0200
+In-Reply-To: <1339060906.11583.9.camel@wall-e> (Stefani Seibold's message of
+	"Thu, 07 Jun 2012 11:21:46 +0200")
+Message-ID: <87vcj3s8fm.fsf@nemi.mork.no>
+User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > I really don't get it. You have not broken anything new. Only
-> > not fixed all of the problems. Current code does not work for "non-tty0
-> > terminals" as well right?
-> 
-> No, it works fine.
+Stefani Seibold <stefani@seibold.net> writes:
 
-Not really. You happen to be lucky. Anyway with no tty port the UML code
-will soon cease to function completely so a solution of some sort is
-needed.
- 
-> > I don't see Alan's comment at all. This is not a regression it was always
-> > like that. Ever since Fedora was working on UML, But these fixes are real
-> > live regression crashes.
-> > 
-> > And I don't see the all "leaving other vendors systems insecure". It just
-> > a freaking UML tty. You need to be root 5 times before you have access
-> > to all these, and it's only the UML that's compromised not the "all system"
-> > And surely the current plain tty0 crash is much less secure then this thing.
-> 
-> The "TTY problem" is not UML specific.
+> If it is necessary...
 
-That one is. The console driver handles stuff its own way and
-differently. It's eventually got to tackle the same problem.
+So, why is it necessary for you to change this code *from* the style
+recommended by CodingStyle and LDD3?
 
-I still think we ought to be able to solve it cleanly. It's a case of
-getting the tests right so that we allow for the misbehaviour util-linux
-does.
+Quoting from LDD3:
 
-As of itself util-linux behaviour doesn't appear to be something we can't
-permit as the 
+ "Error recovery is sometimes best handled with the goto statement. We
+  normally hate to use goto, but in our opinion, this is one situation
+  where it is useful. Careful use of goto in error situations can
+  eliminate a great deal of complicated, highly-indented, "structured"
+  logic. Thus, in the kernel, goto is often used as shown here to deal
+  with errors."
 
-	open
-	vhangup
+> Compacting improves since it will make the code more readable.
 
-sequence means the file handle that is left from before the vhangup due
-to util-linux misbehaving is a hung-up fd so cannot affect the tty.
+No, it does not.  As pointed out, instead of having to follow a single
+exit path from each function, your changes makes it necessary to follow
+n exit paths.  That does not make the code more readable, and it
+contradicts both CodingStyle and LDD3.
 
-UML is a good test case for fixing this properly because it's got almost
-no users, and those it has are fairly technical 8)
+Note that I am not stating in any way that those documents contain
+absolute truths and that you cannot write your own driver the way you
+like.  I do however find it extremely strange that you insist on
+changing a coding example to be inconsistent with those documents.
+Regardless of whether you agree with them or not, you must see that such
+inconsistent guidelines will be a problem for anyone trying to use this
+code for learning?
 
 
-Alan
+Bjørn
