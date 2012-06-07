@@ -1,44 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760921Ab2FGOZY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 10:25:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29906 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760760Ab2FGOZV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 10:25:21 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, kernel-janitors@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        joe@perches.com, Julia Lawall <julia@diku.dk>
-Subject: Re: [PATCH 4/7] fs/direct-io.c: adjust suspicious bit operation
-References: <1339018901-28439-1-git-send-email-Julia.Lawall@lip6.fr>
-	<1339018901-28439-5-git-send-email-Julia.Lawall@lip6.fr>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Thu, 07 Jun 2012 10:24:46 -0400
-In-Reply-To: <1339018901-28439-5-git-send-email-Julia.Lawall@lip6.fr> (Julia
-	Lawall's message of "Wed, 6 Jun 2012 23:41:38 +0200")
-Message-ID: <x49bokvb3o1.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1760868Ab2FGOZF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 10:25:05 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45193 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753274Ab2FGOZC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 10:25:02 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <CAHVUoiQgcAMr874d_yPfm9ssUBOoX+dNLy9JNCOCYwOCrAKXFQ@mail.gmail.com>
+References: <CAHVUoiQywo=iHKsXQbsVE7coc1FL9A9qy_a71SK94MKNV0GrKA@mail.gmail.com>
+	<CAHVUoiTZmzT3vquaDC65AJfCFZX-qS5GjgjP2-+=0R7skurW5g@mail.gmail.com>
+	<CAHVUoiQgcAMr874d_yPfm9ssUBOoX+dNLy9JNCOCYwOCrAKXFQ@mail.gmail.com>
+Date: Thu, 7 Jun 2012 10:25:02 -0400
+Message-ID: <CAH3drwacayQEZHOidbKKuJ3KjgMvnYzT0S0csXV2QwSmC8nMxg@mail.gmail.com>
+Subject: Re: [Regression] [Radeon] Stream command failures and render problems
+ in Evergreen (Radeon HD 5600) in kernel 3.4
+From: Jerome Glisse <j.glisse@gmail.com>
+To: Brian Gitonga Marete <marete@toshnix.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, David Airlie <airlied@linux.ie>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Jerome Glisse <jglisse@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Julia Lawall <Julia.Lawall@lip6.fr> writes:
-
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
+On Wed, Jun 6, 2012 at 7:01 PM, Brian Gitonga Marete <marete@toshnix.com> wrote:
+> On Thu, Jun 7, 2012 at 1:59 AM, Brian Gitonga Marete <marete@toshnix.com> wrote:
+>> On Sun, Jun 3, 2012 at 8:26 PM, Brian Gitonga Marete <marete@toshnix.com> wrote:
+>>> Hello,
+>>>
+>>> 3.4 breaks rendering on my Radeon evergreen card. Immediately after
+>>> logging in into the desktop, I get the following errors in the kernel
+>>> log:
+>>>
+>>> radeon 0000:01:00.0: evergreen_cs_track_validate_cb:439 cb[0] bo too
+>>> small (layer size 147456, offset 0, max layer 1, bo size 143360, slice
+>>> 575)
+>>> radeon 0000:01:00.0: evergreen_cs_track_validate_cb:443 problematic
+>>> surf: (192 192) (0 4 1 0 0 0 0)
+>>> radeon 0000:01:00.0: evergreen_packet3_check:2055 invalid cmd stream 461
+>>> [drm:radeon_cs_ib_chunk] *ERROR* Invalid command stream !
+>>> radeon 0000:01:00.0: evergreen_cs_track_validate_cb:439 cb[0] bo too
+>>> small (layer size 147456, offset 0, max layer 1, bo size 143360, slice
+>>> 575)
+>>> radeon 0000:01:00.0: evergreen_cs_track_validate_cb:443 problematic
+>>> surf: (192 192) (0 4 1 0 0 0 0)
+>>> radeon 0000:01:00.0: evergreen_packet3_check:2055 invalid cmd stream 461
+>>> [drm:radeon_cs_ib_chunk] *ERROR* Invalid command stream !
+>>> radeon 0000:01:00.0: evergreen_cs_track_validate_cb:439 cb[0] bo too
+>>> small (layer size 798720, offset 0, max layer 1, bo size 794624, slice
+>>> 3119)
+>>> radeon 0000:01:00.0: evergreen_cs_track_validate_cb:443 problematic
+>>> surf: (384 520) (0 4 1 0 0 0 0)
+>>> radeon 0000:01:00.0: evergreen_packet3_check:2055 invalid cmd stream 461
+>>> [drm:radeon_cs_ib_chunk] *ERROR* Invalid command stream !
+>>> radeon 0000:01:00.0: evergreen_cs_track_validate_cb:439 cb[0] bo too
+>>> small (layer size 458752, offset 0, max layer 1, bo size 446464, slice
+>>> 1791)
+>>> radeon 0000:01:00.0: evergreen_cs_track_validate_cb:443 problematic
+>>> surf: (512 224) (0 4 1 0 0 0 0)
+>>> radeon 0000:01:00.0: evergreen_packet3_check:2055 invalid cmd stream 7170
+>>> [drm:radeon_cs_ib_chunk] *ERROR* Invalid command stream !
+>>> radeon 0000:01:00.0: evergreen_cs_track_validate_cb:439 cb[0] bo too
+>>> small (layer size 798720, offset 0, max layer 1, bo size 790528, slice
+>>> 3119)
+>>> radeon 0000:01:00.0: evergreen_cs_track_validate_cb:443 problematic
+>>> surf: (384 520) (0 4 1 0 0 0 0)
+>>> radeon 0000:01:00.0: evergreen_packet3_check:2055 invalid cmd stream 461
+>>> [drm:radeon_cs_ib_chunk] *ERROR* Invalid command stream !
+>>>
+>>> Meanwhile, windows on the desktop are rendered incorrectly (with
+>>> certain regions covered by strange patterns or smudged) or not at all.
+>>> This makes the desktop unusable.
+>>>
+>>> I can always reproduce this problem on 3.4
+>>>
+>>> Kernels prior to 3.4 work fine.
+>>>
+>>> I will try and find the time to bisect this issue but meanwhile here
+>>> are some further details:
+>>>
+>>
+>> I have git-bisected this to find that the first bad commit is:
+>> 285484e2d55 - drm/radeon: add support for evergreen/ni tiling
+>> informations v11.
+>>
+>> So I have also added Jerome to the CC list. Please see the attached
+>> bisect.log for the git-bisect log.
 >
-> READ is 0, so the result of the bit-and operation is 0.  Rewrite with == as
-> done elsewhere in the same file.
+> Sorry, forgot to attach. Now attached.
 >
-> This problem was found using Coccinelle (http://coccinelle.lip6.fr/).
+> --
+> Brian Gitonga Marete
+> Toshnix Systems - http://toshnix.com
 
-Interesting catch, that one.  Yeah, we don't expect any readahead I/O to
-be done via O_DIRECT.  The test for rw == READ all over that file seems
-fine to me, given that.
+Update your libdrm to libdrm from git should fix your issue.
 
-Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
+Cheers,
+Jerome
