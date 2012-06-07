@@ -1,87 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760971Ab2FGOmW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 10:42:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23253 "EHLO mx1.redhat.com"
+	id S1760966Ab2FGOqB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 10:46:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39690 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760925Ab2FGOmU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 10:42:20 -0400
-Date: Thu, 7 Jun 2012 16:42:04 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Josh Boyer <jwboyer@gmail.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ulrich Obergfell <uobergfe@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Hugh Dickins <hughd@google.com>, Larry Woodman <lwoodman@redhat.com>,
-        Petr Matousek <pmatouse@redhat.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [ 08/82] mm: pmd_read_atomic: fix 32bit PAE pmd walk vs
- pmd_populate SMP race condition
-Message-ID: <20120607144204.GD21339@redhat.com>
-References: <20120607041406.GA13233@kroah.com>
- <20120607040337.622672845@linuxfoundation.org>
- <CA+5PVA6A0K3WYBQJH8z3ddd2X3=fQm1a34z+fWSYGcUg4TR9+A@mail.gmail.com>
+	id S1753441Ab2FGOqA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 10:46:00 -0400
+Date: Thu, 7 Jun 2012 16:45:56 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujtisu.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+        Rik van Riel <riel@redhat.com>, Ying Han <yinghan@google.com>,
+        Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>
+Subject: Re: [RFC -mm] memcg: prevent from OOM with too many dirty pages
+Message-ID: <20120607144556.GC543@tiehlicka.suse.cz>
+References: <1338219535-7874-1-git-send-email-mhocko@suse.cz>
+ <20120529030857.GA7762@localhost>
+ <20120529072853.GD1734@cmpxchg.org>
+ <20120529084848.GC10469@localhost>
+ <20120529093511.GE1734@cmpxchg.org>
+ <20120529135101.GD15293@tiehlicka.suse.cz>
+ <20120531090957.GA12809@tiehlicka.suse.cz>
+ <20120601083730.GA25986@tiehlicka.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+5PVA6A0K3WYBQJH8z3ddd2X3=fQm1a34z+fWSYGcUg4TR9+A@mail.gmail.com>
+In-Reply-To: <20120601083730.GA25986@tiehlicka.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Thu, Jun 07, 2012 at 09:42:55AM -0400, Josh Boyer wrote:
-> On Thu, Jun 7, 2012 at 12:03 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > 3.4-stable review patch.  If anyone has any objections, please let me know.
-> >
-> > ------------------
-> >
-> > From: Andrea Arcangeli <aarcange@redhat.com>
-> >
-> > commit 26c191788f18129af0eb32a358cdaea0c7479626 upstream.
-> >
-> > When holding the mmap_sem for reading, pmd_offset_map_lock should only
-> > run on a pmd_t that has been read atomically from the pmdp pointer,
-> > otherwise we may read only half of it leading to this crash.
+On Fri 01-06-12 10:37:30, Michal Hocko wrote:
+[...]
+> More detailed statistics (max/min - the worst/best performance).
+> 	comparison (cong is 100%)	comparison (page reclaim 100%)			
+> 	max	min	median		max	min	median
+> * ext3
+> ** Write
+> 5M	171.20%	95.33%	98.70%		216.96%	101.99%	103.61%
+> 60M	97.56%	98.80%	104.51%		110.09%	100.11%	116.59%
+> 300M	99.76%	99.49%	99.35%		99.47%	99.89%	99.57%
+> 2G	99.52%	99.53%	99.52%		100.09%	99.07%	100.02%
 > 
-> This one is important, but it can break Xen apparently:
+> ** Read					
+> 5M	35.37%	38.70%	39.09%		83.55%	89.85%	86.54%
+> 60M	89.70%	102.90%	102.00%		97.71%	101.91%	102.06%
+> 300M	92.38%	99.33%	99.14%		80.65%	98.39%	91.23%
+> 2G	90.07%	99.92%	100.38%		99.85%	100.75%	99.94%
 > 
-> http://permalink.gmane.org/gmane.comp.emulators.xen.devel/132522
-> https://bugzilla.redhat.com/show_bug.cgi?id=829016
+> * Tmpfs					
+> ** write
+> 5M	121.85%	99.69%	131.57%		219.22%	99.85%	135.30%
+> 60M	140.82%	99.70%	139.57%		98.14%	54.51%	73.65%
+> 300M	97.99%	99.54%	99.60%		99.29%	99.57%	99.32%
+> 2G	99.37%	99.62%	99.64%		98.72%	99.92%	99.18%
 > 
-> Not sure if you want to hold off on it or see if Andrea comes up with
-> a follow up fix?
+> ** read				
+> 5M	85.44%	92.96%	88.92%		129.13%	101.54%	97.87%
+> 60M	64.41%	94.35%	88.10%		97.41%	95.75%	96.31%
+> 300M	116.89%	106.52%	120.84%		132.17%	104.39%	130.63%
+> 2G	86.27%	99.96%	87.47%		60.69%	99.44%	98.49%
 
-Not knowing exactly why Xen trips on the atomic64_read on a PAE 32bit
-pmd on my side, I don't know what's the best direction to fix it yet.
+I have played with the patch below but it didn't show too much
+difference in the end or we end up doing even worse. 
 
-I knew this fix has been tested and was working fine with Xen +
-CONFIG_TRANSPARENT_HUGEPAGE=n + 32bit + x86 + PAE. And when THP=n I
-could fix the problem without having to use a slightly more expensive
-cmpxchg8b for every pmd read happening with the mmap_sem hold in read
-mode.
+Here is the no_patch/patched comparison:
 
-It was totally unexpected to run into trouble with Xen +
-CONFIG_TRANSPARENT_HUGEPAGE=y + 32bit + x86 + PAE, apologies.
+	comparison (page reclaim is 100%)
+* ext3  avg	max	min	median
+** Write
+5M    	81.49%	77.53%	101.91%	76.60%
+60M   	98.60%	95.58%	101.40%	99.62%
+300M  	101.68%	102.05%	101.19%	101.73%
+2G    	102.20%	102.25%	102.12%	102.22%
+				
+** Read  				
+5M    	103.94%	105.14%	103.95%	103.32%
+60M   	105.26%	107.91%	103.15%	104.95%
+300M  	104.83%	107.86%	101.65%	104.88%
+2G    	102.67%	101.26%	102.83%	103.35%
 
->From the oops it looks like atomic64_read trips on a dangling pmdp
-pointer, but if the problem doesn't happen with Xen then the pointer
-value shouldn't be the problem, and in turn the lock cmpxchg8b used to
-access the pointer is likely the problem.
+* Tmpfs
+** Write
+5M    	107.68%	119.66%	105.26%	102.78%
+60M   	122.16%	138.51%	103.62%	121.09%
+300M  	101.03%	100.67%	101.11%	101.17%
+2G    	101.82%	101.66%	101.87%	101.87%
+				
+** Read			
+5M    	102.47%	124.02%	98.05%	92.57%
+60M   	103.62%	121.03%	96.97%	96.52%
+300M  	98.90%	118.92%	102.64%	86.19%
+2G    	83.50%	76.34%	97.36%	81.92%
 
-I gave a few suggestions on how to fix it, that should work regardless
-of why this is happening, but I'd prefer the Xen developers to comment
-on that.
+I am not sure it really makes sense to play with the priority here. All
+the values we would end up with would be just wild guesses or mostly
+artificial workloads. So I think it makes some to go with the original
+version of the PageReclaim patch without any further fiddling with the
+priority.
 
-https://bugzilla.redhat.com/attachment.cgi?id=589620
+Is this sufficient to go with the patch or do people still have concerns
+which would block the patch from merging?
 
-<f0> 0f c7 09 c3 8d 76 0
-
-f0 0f is the infamous opcode lock cmpxchg8b so it confirms it trips
-exactly on the pmdp read.
-
-ecx/edx = dcaea360 and "BUG: unable to handle kernel paging request at
-dcaea360" are probably all right, my best guess is that the insn used
-to read the pmd is unexpected.
+---
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 7cccd81..a240bdf 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -726,7 +726,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+ 			 * writeback from reclaim and there is nothing else to
+ 			 * reclaim.
+ 			 */
+-			if (PageReclaim(page)
++			if (PageReclaim(page) && sc->priority < DEF_PRIORITY - 3
+ 					&& may_enter_fs && !global_reclaim(sc))
+ 				wait_on_page_writeback(page);
+ 			else {
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
