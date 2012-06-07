@@ -1,65 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760224Ab2FGIWO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 04:22:14 -0400
-Received: from www84.your-server.de ([213.133.104.84]:39292 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757676Ab2FGIU1 (ORCPT
+	id S1760202Ab2FGIXa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 04:23:30 -0400
+Received: from orion.tchmachines.com ([208.76.84.200]:34953 "EHLO
+	orion.tchmachines.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758749Ab2FGIX0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 04:20:27 -0400
-From: stefani@seibold.net
-To: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org, oneukum@suse.de
-Cc: linux-usb@vger.kernel.org, Stefani Seibold <stefani@seibold.net>
-Subject: [PATCH 03/13] remove dead code
-Date: Thu,  7 Jun 2012 10:20:33 +0200
-Message-Id: <1339057243-10029-4-git-send-email-stefani@seibold.net>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1339057243-10029-1-git-send-email-stefani@seibold.net>
-References: <1339057243-10029-1-git-send-email-stefani@seibold.net>
-X-Authenticated-Sender: stefani@seibold.net
+	Thu, 7 Jun 2012 04:23:26 -0400
+From: Vlad Zolotarov <vlad@scalemp.com>
+To: viro@zeniv.linux.org.uk
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Shai@scalemp.com
+Subject: Re: [PATCH RESEND] fs: Move bh_cachep to the __read_mostly section
+Date: Thu, 07 Jun 2012 11:23:16 +0300
+Message-ID: <2326820.48IRXJDP2Q@vlad>
+Organization: ScaleMP Ltd.
+User-Agent: KMail/4.8.3 (Linux/3.2.0-24-generic; KDE/4.8.3; i686; ; )
+In-Reply-To: <2325453.OX7ktP55U1@vlad>
+References: <2325453.OX7ktP55U1@vlad>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - orion.tchmachines.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - scalemp.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefani Seibold <stefani@seibold.net>
+On Monday 28 May 2012 14:58:42 Vlad Zolotarov wrote:
+> From: Shai Fultheim <shai@scalemp.com>
+> 
+> bh_cachep is only written to once on initialization, so move it to the
+> __read_mostly section.
+> 
+> Signed-off-by: Shai Fultheim <shai@scalemp.com>
+> Signed-off-by: Vlad Zolotarov <vlad@scalemp.com>
+> ---
+>  fs/buffer.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/fs/buffer.c b/fs/buffer.c
+> index ad5938c..838a9cf 100644
+> --- a/fs/buffer.c
+> +++ b/fs/buffer.c
+> @@ -3152,7 +3152,7 @@ SYSCALL_DEFINE2(bdflush, int, func, long, data)
+>  /*
+>   * Buffer-head allocation
+>   */
+> -static struct kmem_cache *bh_cachep;
+> +static struct kmem_cache *bh_cachep __read_mostly;
+> 
+>  /*
+>   * Once the number of bh's in the machine exceeds this level, we start
 
-All code which use processed_urb can be eliminated.
+Alexander, could u, pls., take a look at this patch? Could u, pls., update me 
+about its state. Should I respin?
 
-Signed-off-by: Stefani Seibold <stefani@seibold.net>
----
- drivers/usb/usb-skeleton.c |   12 ------------
- 1 files changed, 0 insertions(+), 12 deletions(-)
-
-diff --git a/drivers/usb/usb-skeleton.c b/drivers/usb/usb-skeleton.c
-index 7385aa8..92cdfca 100644
---- a/drivers/usb/usb-skeleton.c
-+++ b/drivers/usb/usb-skeleton.c
-@@ -59,7 +59,6 @@ struct usb_skel {
- 	__u8			bulk_out_endpointAddr;	/* the address of the bulk out endpoint */
- 	int			errors;			/* the last request tanked */
- 	bool			ongoing_read;		/* a read is going on */
--	bool			processed_urb;		/* indicates we haven't processed the urb */
- 	spinlock_t		err_lock;		/* lock for errors */
- 	struct kref		kref;
- 	struct mutex		io_mutex;		/* synchronize I/O with disconnect */
-@@ -256,17 +255,6 @@ retry:
- 		 * we must finish now
- 		 */
- 		dev->bulk_in_copied = 0;
--		dev->processed_urb = true;
--	}
--
--	if (!dev->processed_urb) {
--		/*
--		 * the URB hasn't been processed
--		 * do it now
--		 */
--		wait_for_completion(&dev->bulk_in_completion);
--		dev->bulk_in_copied = 0;
--		dev->processed_urb = true;
- 	}
- 
- 	/* errors must be reported */
--- 
-1.7.8.6
+thanks in advance,
+vlad
 
