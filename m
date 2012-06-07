@@ -1,98 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758188Ab2FGW6V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 18:58:21 -0400
-Received: from mms2.broadcom.com ([216.31.210.18]:2758 "EHLO mms2.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758014Ab2FGW6U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 18:58:20 -0400
-X-Server-Uuid: 72204117-5C29-4314-8910-60DB108979CB
-Date: Thu, 7 Jun 2012 15:56:54 -0700
-From: "Matt Carlson" <mcarlson@broadcom.com>
-To: "ethan zhao" <ethan.kernel@gmail.com>
-cc: "Eric Dumazet" <eric.dumazet@gmail.com>,
-        "Matt Carlson" <mcarlson@broadcom.com>,
-        "Christian Kujau" <lists@nerdbynature.de>,
-        LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>
-Subject: Re: tg3: transmit timed out, resetting
-Message-ID: <20120607225654.GA14247@mcarlson.broadcom.com>
-References: <alpine.DEB.2.01.1206041546070.5568@trent.utfs.org>
- <20120606010255.GA9991@mcarlson.broadcom.com>
- <CABawtvPE_xuamH2ysL8x0WsJMXdFV5oXPrWjMT-EC-DF_kCxxw@mail.gmail.com>
- <20120606021436.GA10714@mcarlson.broadcom.com>
- <CABawtvNVKkxAgrQqJS7FJGoswQ9ZVyJcHcNwbSJQk4yscTn8gw@mail.gmail.com>
- <1338955977.2760.3603.camel@edumazet-glaptop>
- <CABawtvOBJQ-oajFQmviOdgKCub-4n06kRW+x7nE2uyiWnoky9Q@mail.gmail.com>
-MIME-Version: 1.0
-In-Reply-To: <CABawtvOBJQ-oajFQmviOdgKCub-4n06kRW+x7nE2uyiWnoky9Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-WSS-ID: 63CFEDB73IK1141941-01-01
-Content-Type: text/plain;
- charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
+	id S933447Ab2FGXEc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 19:04:32 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:55246 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758223Ab2FGXE2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 19:04:28 -0400
+From: Sam Hansen <solid.se7en@gmail.com>
+To: Sam Hansen <sam@meebo-inc.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
+        Sam Hansen <solid.se7en@gmail.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH V2 1/3] staging: zram: conventions pr_warning -> pr_warn()
+Date: Thu,  7 Jun 2012 16:03:47 -0700
+Message-Id: <1339110229-19383-2-git-send-email-solid.se7en@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1339110229-19383-1-git-send-email-solid.se7en@gmail.com>
+References: <1339110229-19383-1-git-send-email-solid.se7en@gmail.com>
+In-Reply-To: <1339100404-18773-1-git-send-email-solid.se7en@gmail.com>
+References: <1339100404-18773-1-git-send-email-solid.se7en@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 06, 2012 at 12:52:32PM +0800, ethan zhao wrote:
-> Eric,
->   That is ask for confirmation from Matt Carlson of Broadcom.
-> 
-> Ethan
-> 
-> On Wed, Jun 6, 2012 at 12:12 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> > On Wed, 2012-06-06 at 10:29 +0800, ethan zhao wrote:
-> >> So no way to fix it via firmware update or Linux driver ? :<
-> >
-> > Yes, but you need to cooperate, or else it might take more time than
-> > necessary.
-> >
-> > Asking questions like that on lkml is not going to help very much.
-> >
-> > So, once again, we kindly ask you try a recent kernel and post
-> > register dump and some additional information when transmit timeouts
-> > happen.
-> >
-> > The 'latest kernel' is either linux-3.5.rc1, or one of David Miller
-> > tree :
-> >
-> > http://git.kernel.org/?p=linux/kernel/git/davem/net-next.git;a=summary
-> >
-> > or
-> >
-> > http://git.kernel.org/?p=linux/kernel/git/davem/net.git;a=summary
-> >
-> > Thanks
+Porting zram to use the pr_warn() function instead of the deprecated
+pr_warning().
 
-Does the following patch fix your problem?
-
-
-[PATCH] tg3: Apply short DMA frag workaround to 5906
-
-5906 devices also need the short DMA fragment workaround.  This patch
-makes the necessary change.
-
-Signed-off-by: Matt Carlson <mcarlson@broadcom.com>
+Signed-off-by: Sam Hansen <solid.se7en@gmail.com>
 ---
- drivers/net/ethernet/broadcom/tg3.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ drivers/staging/zram/zram_drv.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
-index d55df32..2db4d70 100644
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -14275,7 +14275,8 @@ static int __devinit tg3_get_invariants(struct tg3 *tp)
- 		}
+diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+index 685d612..55775ce 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -724,7 +724,7 @@ static int create_device(struct zram *zram, int device_id)
+ 	zram->disk = alloc_disk(1);
+ 	if (!zram->disk) {
+ 		blk_cleanup_queue(zram->queue);
+-		pr_warning("Error allocating disk structure for device %d\n",
++		pr_warn("Error allocating disk structure for device %d\n",
+ 			device_id);
+ 		ret = -ENOMEM;
+ 		goto out;
+@@ -755,7 +755,7 @@ static int create_device(struct zram *zram, int device_id)
+ 	ret = sysfs_create_group(&disk_to_dev(zram->disk)->kobj,
+ 				&zram_disk_attr_group);
+ 	if (ret < 0) {
+-		pr_warning("Error creating sysfs group");
++		pr_warn("Error creating sysfs group");
+ 		goto out;
  	}
  
--	if (tg3_flag(tp, 5755_PLUS))
-+	if (tg3_flag(tp, 5755_PLUS) ||
-+	    GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5906)
- 		tg3_flag_set(tp, SHORT_DMA_BUG);
+@@ -789,7 +789,7 @@ static int __init zram_init(void)
+ 	int ret, dev_id;
  
- 	if (GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5719)
+ 	if (num_devices > max_num_devices) {
+-		pr_warning("Invalid value for num_devices: %u\n",
++		pr_warn("Invalid value for num_devices: %u\n",
+ 				num_devices);
+ 		ret = -EINVAL;
+ 		goto out;
+@@ -797,7 +797,7 @@ static int __init zram_init(void)
+ 
+ 	zram_major = register_blkdev(0, "zram");
+ 	if (zram_major <= 0) {
+-		pr_warning("Unable to get major number\n");
++		pr_warn("Unable to get major number\n");
+ 		ret = -EBUSY;
+ 		goto out;
+ 	}
 -- 
-1.7.3.4
-
+1.7.5.4
 
