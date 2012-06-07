@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759734Ab2FGNP0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 09:15:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1030 "EHLO mx1.redhat.com"
+	id S1760022Ab2FGNPw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 09:15:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3875 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759493Ab2FGNPW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 09:15:22 -0400
-Date: Thu, 7 Jun 2012 15:15:15 +0200
+	id S1758674Ab2FGNPu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 09:15:50 -0400
+Date: Thu, 7 Jun 2012 15:15:44 +0200
 From: Alexander Gordeev <agordeev@redhat.com>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
         Suresh Siddha <suresh.b.siddha@intel.com>,
         Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 5/8] x86/apic: Try to spread IRQ vectors to different
- priority levels
-Message-ID: <20120607131514.GD4759@dhcp-26-207.brq.redhat.com>
+Subject: [PATCH 6/8] x86/apic: Avoid useless scanning thru a cpumask in
+ assign_irq_vector()
+Message-ID: <20120607131542.GE4759@dhcp-26-207.brq.redhat.com>
 References: <20120605112353.GA11457@dhcp-26-207.brq.redhat.com>
  <20120606082231.GD5991@gmail.com>
 MIME-Version: 1.0
@@ -27,43 +27,112 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-When assigning a new vector it is primarially done by adding 8 to the
-previously given out vector number. Hence, two consequently allocated
-vector numbers would likely fall into the same priority level. Try to
-spread vector numbers to different priority levels better by changing
-the step from 8 to 16.
+In case of static vector allocation domains (i.e. flat) if all vector
+numbers are exhausted, an attempt to assign a new vector will lead to
+useless scans through all CPUs in the cpumask, even though it is known
+that each new pass would fail. Make this corner case less painful by
+letting report whether the vector allocation domain depends on passed
+arguments or not and stop scanning early.
+
+The same could have been achived by introducing a static flag to the
+apic operations. But let's allow vector_allocation_domain() have more
+intelligence here and decide dynamically, in case we would need it in
+the future.
 
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
 ---
- arch/x86/kernel/apic/io_apic.c |    7 +++----
- 1 files changed, 3 insertions(+), 4 deletions(-)
+ arch/x86/include/asm/apic.h      |    8 +++++---
+ arch/x86/kernel/apic/apic_noop.c |    3 ++-
+ arch/x86/kernel/apic/io_apic.c   |   12 +++++++++---
+ 3 files changed, 16 insertions(+), 7 deletions(-)
 
+diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
+index feb2dbd..e3fecd5 100644
+--- a/arch/x86/include/asm/apic.h
++++ b/arch/x86/include/asm/apic.h
+@@ -306,7 +306,7 @@ struct apic {
+ 	unsigned long (*check_apicid_used)(physid_mask_t *map, int apicid);
+ 	unsigned long (*check_apicid_present)(int apicid);
+ 
+-	void (*vector_allocation_domain)(int cpu, struct cpumask *retmask);
++	bool (*vector_allocation_domain)(int cpu, struct cpumask *retmask);
+ 	void (*init_apic_ldr)(void);
+ 
+ 	void (*ioapic_phys_id_map)(physid_mask_t *phys_map, physid_mask_t *retmap);
+@@ -615,7 +615,7 @@ extern unsigned int
+ default_cpu_mask_to_apicid_and(const struct cpumask *cpumask,
+ 			       const struct cpumask *andmask);
+ 
+-static inline void
++static inline bool
+ flat_vector_allocation_domain(int cpu, struct cpumask *retmask)
+ {
+ 	/* Careful. Some cpus do not strictly honor the set of cpus
+@@ -628,12 +628,14 @@ flat_vector_allocation_domain(int cpu, struct cpumask *retmask)
+ 	 */
+ 	cpumask_clear(retmask);
+ 	cpumask_bits(retmask)[0] = APIC_ALL_CPUS;
++	return false;
+ }
+ 
+-static inline void
++static inline bool
+ default_vector_allocation_domain(int cpu, struct cpumask *retmask)
+ {
+ 	cpumask_copy(retmask, cpumask_of(cpu));
++	return true;
+ }
+ 
+ static inline unsigned long default_check_apicid_used(physid_mask_t *map, int apicid)
+diff --git a/arch/x86/kernel/apic/apic_noop.c b/arch/x86/kernel/apic/apic_noop.c
+index 3e43cf5..ac9edf2 100644
+--- a/arch/x86/kernel/apic/apic_noop.c
++++ b/arch/x86/kernel/apic/apic_noop.c
+@@ -100,11 +100,12 @@ static unsigned long noop_check_apicid_present(int bit)
+ 	return physid_isset(bit, phys_cpu_present_map);
+ }
+ 
+-static void noop_vector_allocation_domain(int cpu, struct cpumask *retmask)
++static bool noop_vector_allocation_domain(int cpu, struct cpumask *retmask)
+ {
+ 	if (cpu != 0)
+ 		pr_warning("APIC: Vector allocated for non-BSP cpu\n");
+ 	cpumask_copy(retmask, cpumask_of(cpu));
++	return true;
+ }
+ 
+ static u32 noop_apic_read(u32 reg)
 diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 74c5697..05af3d3 100644
+index 05af3d3..4061a7d 100644
 --- a/arch/x86/kernel/apic/io_apic.c
 +++ b/arch/x86/kernel/apic/io_apic.c
-@@ -1112,7 +1112,7 @@ __assign_irq_vector(int irq, struct irq_cfg *cfg, const struct cpumask *mask)
- 	 * 0x80, because int 0x80 is hm, kind of importantish. ;)
- 	 */
- 	static int current_vector = FIRST_EXTERNAL_VECTOR + VECTOR_OFFSET_START;
--	static int current_offset = VECTOR_OFFSET_START % 8;
-+	static int current_offset = VECTOR_OFFSET_START % 16;
- 	unsigned int old_vector;
- 	int cpu, err;
- 	cpumask_var_t tmp_mask;
-@@ -1148,10 +1148,9 @@ __assign_irq_vector(int irq, struct irq_cfg *cfg, const struct cpumask *mask)
- 		vector = current_vector;
- 		offset = current_offset;
- next:
--		vector += 8;
-+		vector += 16;
- 		if (vector >= first_system_vector) {
--			/* If out of vectors on large boxen, must share them. */
--			offset = (offset + 1) % 8;
-+			offset = (offset + 1) % 16;
+@@ -1137,8 +1137,9 @@ __assign_irq_vector(int irq, struct irq_cfg *cfg, const struct cpumask *mask)
+ 	for_each_cpu_and(cpu, mask, cpu_online_mask) {
+ 		int new_cpu;
+ 		int vector, offset;
++		bool more_domains;
+ 
+-		apic->vector_allocation_domain(cpu, tmp_mask);
++		more_domains = apic->vector_allocation_domain(cpu, tmp_mask);
+ 
+ 		if (cpumask_subset(tmp_mask, cfg->domain)) {
+ 			free_cpumask_var(tmp_mask);
+@@ -1153,8 +1154,13 @@ next:
+ 			offset = (offset + 1) % 16;
  			vector = FIRST_EXTERNAL_VECTOR + offset;
  		}
- 		if (unlikely(current_vector == vector))
+-		if (unlikely(current_vector == vector))
+-			continue;
++
++		if (unlikely(current_vector == vector)) {
++			if (more_domains)
++				continue;
++			else
++				break;
++		}
+ 
+ 		if (test_bit(vector, used_vectors))
+ 			goto next;
 -- 
 1.7.7.6
 
