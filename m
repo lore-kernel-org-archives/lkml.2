@@ -1,37 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932829Ab2FGSt6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 14:49:58 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:29530 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759763Ab2FGSt5 (ORCPT
+	id S1761332Ab2FGS4m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 14:56:42 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27576 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754428Ab2FGS4l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 14:49:57 -0400
-Date: Thu, 7 Jun 2012 14:42:53 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: dan.magenheimer@oracle.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/11] mm: frontswap: remove casting from function calls
- through ops structure
-Message-ID: <20120607184253.GD9472@phenom.dumpdata.com>
-References: <1338980115-2394-1-git-send-email-levinsasha928@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1338980115-2394-1-git-send-email-levinsasha928@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Thu, 7 Jun 2012 14:56:41 -0400
+X-Authority-Analysis: v=2.0 cv=NbpkJh/4 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=RcwUMuyEaQwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=8RkEiRJX6qWgLYaZfeUA:9 a=PUjeQqilurYA:10 a=Zh68SRI7RUMA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1339095399.13377.2.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH RT 3/4] mips-remove-smp-reserve-lock.patch
+From: Steven Rostedt <rostedt@goodmis.org>
+To: David Daney <ddaney.cavm@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>, Ralf Baechle <ralf@linux-mips.org>
+Date: Thu, 07 Jun 2012 14:56:39 -0400
+In-Reply-To: <4FD0E9F9.60906@gmail.com>
+References: <20120607155148.698959275@goodmis.org>
+	 <20120607155221.836885041@goodmis.org> <4FD0E9F9.60906@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1+b1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 06, 2012 at 12:55:05PM +0200, Sasha Levin wrote:
-> Removes unneeded casts.
+On Thu, 2012-06-07 at 10:50 -0700, David Daney wrote:
+> On 06/07/2012 08:51 AM, Steven Rostedt wrote:
+> > From: Thomas Gleixner<tglx@linutronix.de>
+> >
+> > Instead of making the lock raw, remove it as it protects nothing.
+> 
+> I don't know how you guys are managing the RT branch, but this seems 
+> quite similar to:
+> 
+> a3c8b4faeeccb33dbad6969bc9e50bf409f167e7 (MIPS: Cavium: Remove 
+> smp_reserve_lock.)
 
-On the cover letter can you do a git diff --stat linus/master.. so
-that at a quick glance I can figure out how much we are shaving off
-the code?
+Great! Then we don't need to worry about it :-)
 
-Thanks!
+But as it doesn't seem that this patch was marked as stable, we will be
+carrying it in -rt where we support older kernels.
+
+Should it go to mainline stable?
+
+-- Steve
+
+> 
+> David Daney
+> 
+
 
