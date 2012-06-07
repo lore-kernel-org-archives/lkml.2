@@ -1,51 +1,272 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756173Ab2FGUZu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 16:25:50 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:32875 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754132Ab2FGUZt convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 16:25:49 -0400
+	id S1756452Ab2FGU0X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 16:26:23 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:37208 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753783Ab2FGU0V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 16:26:21 -0400
+From: "Justin Piszcz" <jpiszcz@lucidpixels.com>
+To: <linux-kernel@vger.kernel.org>
+Subject: 3.4.0 x86_64: rcu_bh self-detected stall on CPU && atom d510 CPU question
+Date: Thu, 7 Jun 2012 16:26:19 -0400
+Message-ID: <03b701cd44eb$cc354960$649fdc20$@lucidpixels.com>
 MIME-Version: 1.0
-In-Reply-To: <20120607202355.GQ27374@one.firstfloor.org>
-References: <20120607202355.GQ27374@one.firstfloor.org>
-Date: Thu, 7 Jun 2012 22:25:47 +0200
-Message-ID: <CABPqkBSoCO4nSm==THVzVVu_cn=B5s4TZ_YpPxV73EGMNMgbrg@mail.gmail.com>
-Subject: Re: perf user tool precise attribute broken in 3.5rc1+
-From: Stephane Eranian <eranian@google.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: acme@redhat.com, jolsa@redhat.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: Ac1E68u5qQNY/yDITg2072etqnCoWQ==
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-What CPU model?
+Hi,
 
-On Thu, Jun 7, 2012 at 10:23 PM, Andi Kleen <andi@firstfloor.org> wrote:
->
-> With a perf user tool compiled from a 3.5rc1+ kernel I cannot
-> use the 'p' attribute anymore. Always get
->
-> ak@petrock:~> ./perf record -e cycles:p ./t
->
->  Error: sys_perf_event_open() syscall returned with 22 (Invalid argument).  /bin/dmesg may provide additional information.
->
->  Fatal: No CONFIG_PERF_EVENTS=y kernel support configured?
->
-> ./t: Terminated
->
-> With an older perf it works, so the kernel is ok.
->
-> ak@petrock:~> ./perf record -e cycles:p ./t
-> [ perf record: Woken up 1 times to write data ]
-> [ perf record: Captured and wrote 0.005 MB perf.data (~217 samples) ]
-> ak@petrock:~>
->
->
-> -Andi
-> --
-> ak@linux.intel.com -- Speaking for myself only.
+Was curious as to what I should look for as to the root cause of these
+stalls?
+
+Additionally, is this option safe/compatible with Atom CPUs?
+[*]   Cpuidle Driver for Intel Processors
+
+[353037.552017] INFO: rcu_bh self-detected stall on CPU
+[353037.552139]         2: (1 GPs behind) idle=029/1/0 \x08
+[353037.552206]          (t=0 jiffies)
+[353037.552313] sending NMI to all CPUs:
+[353037.552387] NMI backtrace for cpu 2
+[353037.552454] CPU 2 
+[353037.552565] Pid: 0, comm: swapper/2 Not tainted 3.4.0 #3 Supermicro
+X7SPA-HF/X7SPA-HF
+[353037.552785] RIP: 0010:[<ffffffff812d3ee1>]  [<ffffffff812d3ee1>]
+__const_udelay+0x1/0x30
+[353037.552930] RSP: 0018:ffff88013fd03df8  EFLAGS: 00000006
+[353037.553001] RAX: 0000000000000c00 RBX: 0000000000002710 RCX:
+00000000000000bb
+[353037.553008] RDX: 00000000000000d4 RSI: 0000000000000002 RDI:
+0000000000418958
+[353037.553008] RBP: ffff88013fd03e18 R08: 0000000000000000 R09:
+0000000000000000
+[353037.553008] R10: 0000000000000000 R11: 0000000000000001 R12:
+ffffffff8181e600
+[353037.553008] R13: ffffffff8181e600 R14: 7fffffffffffffff R15:
+00014115f5e14118
+[353037.553008] FS:  0000000000000000(0000) GS:ffff88013fd00000(0000)
+knlGS:0000000000000000
+[353037.553008] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[353037.553008] CR2: ffffffffff600400 CR3: 0000000137319000 CR4:
+00000000000007e0
+[353037.553008] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+0000000000000000
+[353037.553008] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
+0000000000000400
+[353037.553008] Process swapper/2 (pid: 0, threadinfo ffff88013f134000, task
+ffff88013f1311c0)
+[353037.553008] Stack:
+[353037.553008]  ffff88013fd03e18 ffffffff8101d12a 0000000000000000
+ffff88013fd0d740
+[353037.553008]  ffff88013fd03e68 ffffffff81071eca ffff880139ab54c0
+0000000000001000
+[353037.553008]  ffff88013af8ce28 0000000000000002 000000000000d740
+0000000000000002
+[353037.553008] Call Trace:
+[353037.553008]  <IRQ> 
+[353037.553008]  [<ffffffff8101d12a>] ?
+arch_trigger_all_cpu_backtrace+0x6a/0x90
+[353037.553008]  [<ffffffff81071eca>] __rcu_pending+0x19a/0x4c0
+[353037.553008]  [<ffffffff81072de7>] rcu_check_callbacks+0xe7/0xf0
+[353037.553008]  [<ffffffff81039214>] update_process_times+0x44/0x90
+[353037.553008]  [<ffffffff81061a30>] tick_sched_timer+0x60/0xb0
+[353037.553008]  [<ffffffff8104abbf>] __run_hrtimer.isra.33+0x4f/0x110
+[353037.553008]  [<ffffffff8104b63f>] hrtimer_interrupt+0xdf/0x200
+[353037.553008]  [<ffffffff8101c504>] smp_apic_timer_interrupt+0x64/0xa0
+[353037.553008]  [<ffffffff815a6e87>] apic_timer_interrupt+0x67/0x70
+[353037.553008]  <EOI> 
+[353037.553008]  [<ffffffff81306459>] ? intel_idle+0xe9/0x150
+[353037.553008]  [<ffffffff81306438>] ? intel_idle+0xc8/0x150
+[353037.553008]  [<ffffffff814390e9>] cpuidle_enter+0x19/0x20
+[353037.553008]  [<ffffffff81439398>] cpuidle_idle_call+0x88/0xf0
+[353037.553008]  [<ffffffff8100a0ca>] cpu_idle+0x7a/0xd0
+[353037.553008]  [<ffffffff818b6460>] start_secondary+0x1a3/0x1a7
+[353037.553008] Code: 55 00 50 3e 2d 81 48 89 e5 5d c3 66 66 66 66 66 66 2e
+0f 1f 84 00 00 00 00 00 55 48 89 e5 ff 15 5e 9c 55 00 5d c3 0f 1f 40 00 55
+<48> 8d 04 bd 00 00 00 00 48 89 e5 65 48 8b 14 25 18 0f 01 00 48 
+[353037.553008] Call Trace:
+[353037.553008]  <IRQ>  [<ffffffff8101d12a>] ?
+arch_trigger_all_cpu_backtrace+0x6a/0x90
+[353037.553008]  [<ffffffff81071eca>] __rcu_pending+0x19a/0x4c0
+[353037.553008]  [<ffffffff81072de7>] rcu_check_callbacks+0xe7/0xf0
+[353037.553008]  [<ffffffff81039214>] update_process_times+0x44/0x90
+[353037.553008]  [<ffffffff81061a30>] tick_sched_timer+0x60/0xb0
+[353037.553008]  [<ffffffff8104abbf>] __run_hrtimer.isra.33+0x4f/0x110
+[353037.553008]  [<ffffffff8104b63f>] hrtimer_interrupt+0xdf/0x200
+[353037.553008]  [<ffffffff8101c504>] smp_apic_timer_interrupt+0x64/0xa0
+[353037.553008]  [<ffffffff815a6e87>] apic_timer_interrupt+0x67/0x70
+[353037.553008]  <EOI>  [<ffffffff81306459>] ? intel_idle+0xe9/0x150
+[353037.553008]  [<ffffffff81306438>] ? intel_idle+0xc8/0x150
+[353037.553008]  [<ffffffff814390e9>] cpuidle_enter+0x19/0x20
+[353037.553008]  [<ffffffff81439398>] cpuidle_idle_call+0x88/0xf0
+[353037.553008]  [<ffffffff8100a0ca>] cpu_idle+0x7a/0xd0
+[353037.553008]  [<ffffffff818b6460>] start_secondary+0x1a3/0x1a7
+[353037.512258] NMI backtrace for cpu 0
+[353037.512258] CPU 0 
+[353037.512258] Pid: 0, comm: swapper/0 Not tainted 3.4.0 #3 Supermicro
+X7SPA-HF/X7SPA-HF
+[353037.512258] RIP: 0010:[<ffffffff81306428>]  [<ffffffff81306428>]
+intel_idle+0xb8/0x150
+[353037.512258] RSP: 0018:ffffffff81801e78  EFLAGS: 00000046
+[353037.512258] RAX: 0000000000000000 RBX: 0000000000000002 RCX:
+0000000000000001
+[353037.512258] RDX: 0000000000000000 RSI: ffffffff81801fd8 RDI:
+ffffffff81816180
+[353037.512258] RBP: ffffffff81801ed8 R08: 00000000fffffffe R09:
+000000000000002b
+[353037.512258] R10: 0000000000000000 R11: 0000000000000001 R12:
+0000000000000001
+[353037.512258] R13: ffff88013fc13570 R14: 0000000000000000 R15:
+129565355f0f4d6b
+[353037.512258] FS:  0000000000000000(0000) GS:ffff88013fc00000(0000)
+knlGS:0000000000000000
+[353037.512258] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[353037.512258] CR2: ffffffffff600400 CR3: 0000000137319000 CR4:
+00000000000007f0
+[353037.512258] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+0000000000000000
+[353037.512258] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
+0000000000000400
+[353037.512258] Process swapper/0 (pid: 0, threadinfo ffffffff81800000, task
+ffffffff81814020)
+[353037.512258] Stack:
+[353037.512258]  0000000000000000 0000000004b67d89 ffffffff81801ee8
+ffffffff8143a7a1
+[353037.512258]  0000000000000000 0000000004b67d89 0000000000000000
+ffff88013fc13570
+[353037.512258]  ffffffff81830040 00000000fffffff0 ffffffffffffffff
+0000000000000000
+[353037.512258] Call Trace:
+[353037.512258]  [<ffffffff8143a7a1>] ? menu_select+0xf1/0x3a0
+[353037.512258]  [<ffffffff814390e9>] cpuidle_enter+0x19/0x20
+[353037.512258]  [<ffffffff81439398>] cpuidle_idle_call+0x88/0xf0
+[353037.512258]  [<ffffffff8100a0ca>] cpu_idle+0x7a/0xd0
+[353037.512258]  [<ffffffff81590984>] rest_init+0x68/0x74
+[353037.512258]  [<ffffffff81884a8f>] start_kernel+0x2a7/0x2b5
+[353037.512258]  [<ffffffff818845e5>] ? repair_env_string+0x5a/0x5a
+[353037.512258]  [<ffffffff818842f1>] x86_64_start_reservations+0x101/0x105
+[353037.512258]  [<ffffffff818843e6>] x86_64_start_kernel+0xf1/0xf9
+[353037.512258] Code: 48 8d 86 28 e0 ff ff 75 22 31 d2 48 83 c0 10 48 89 d1
+0f 01 c8 0f ae f0 48 8b 86 38 e0 ff ff a8 08 75 08 b1 01 4c 89 f0 0f 01 c9
+<e8> 83 46 d5 ff 4c 29 f8 48 89 c7 e8 88 c5 d2 ff 4c 69 f0 40 42 
+[353037.512258] Call Trace:
+[353037.512258]  [<ffffffff8143a7a1>] ? menu_select+0xf1/0x3a0
+[353037.512258]  [<ffffffff814390e9>] cpuidle_enter+0x19/0x20
+[353037.512258]  [<ffffffff81439398>] cpuidle_idle_call+0x88/0xf0
+[353037.512258]  [<ffffffff8100a0ca>] cpu_idle+0x7a/0xd0
+[353037.512258]  [<ffffffff81590984>] rest_init+0x68/0x74
+[353037.512258]  [<ffffffff81884a8f>] start_kernel+0x2a7/0x2b5
+[353037.512258]  [<ffffffff818845e5>] ? repair_env_string+0x5a/0x5a
+[353037.512258]  [<ffffffff818842f1>] x86_64_start_reservations+0x101/0x105
+[353037.512258]  [<ffffffff818843e6>] x86_64_start_kernel+0xf1/0xf9
+[353037.553005] NMI backtrace for cpu 1
+[353037.553005] CPU 1 
+[353037.553005] Pid: 0, comm: swapper/1 Not tainted 3.4.0 #3 Supermicro
+X7SPA-HF/X7SPA-HF
+[353037.553005] RIP: 0010:[<ffffffff81306428>]  [<ffffffff81306428>]
+intel_idle+0xb8/0x150
+[353037.553005] RSP: 0018:ffff88013f105e68  EFLAGS: 00000046
+[353037.553005] RAX: 0000000000000000 RBX: 0000000000000002 RCX:
+0000000000000001
+[353037.553005] RDX: 0000000000000000 RSI: ffff88013f105fd8 RDI:
+ffffffff81816180
+[353037.553005] RBP: ffff88013f105ec8 R08: 00000000fffffffe R09:
+0000000000000284
+[353037.553005] R10: 0000000000000000 R11: 0000000000000000 R12:
+0000000000000001
+[353037.553005] R13: ffff88013fc93570 R14: 0000000000000000 R15:
+12956535617ca871
+[353037.553005] FS:  0000000000000000(0000) GS:ffff88013fc80000(0000)
+knlGS:0000000000000000
+[353037.553005] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[353037.553005] CR2: ffffffffff600400 CR3: 000000013a035000 CR4:
+00000000000007e0
+[353037.553005] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+0000000000000000
+[353037.553005] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
+0000000000000400
+[353037.553005] Process swapper/1 (pid: 0, threadinfo ffff88013f104000, task
+ffff88013f0ff180)
+[353037.553005] Stack:
+[353037.553005]  0000000000000000 00000000000f100e ffff88013f105ed8
+ffffffff8143a7a1
+[353037.553005]  0000000000000000 00000001000f100e 0000000000000000
+ffff88013fc93570
+[353037.553005]  ffffffff81830040 00000000fffffff0 0000000000000000
+0000000000000000
+[353037.553005] Call Trace:
+[353037.553005]  [<ffffffff8143a7a1>] ? menu_select+0xf1/0x3a0
+[353037.553005]  [<ffffffff814390e9>] cpuidle_enter+0x19/0x20
+[353037.553005]  [<ffffffff81439398>] cpuidle_idle_call+0x88/0xf0
+[353037.553005]  [<ffffffff8100a0ca>] cpu_idle+0x7a/0xd0
+[353037.553005]  [<ffffffff818b6460>] start_secondary+0x1a3/0x1a7
+[353037.553005] Code: 48 8d 86 28 e0 ff ff 75 22 31 d2 48 83 c0 10 48 89 d1
+0f 01 c8 0f ae f0 48 8b 86 38 e0 ff ff a8 08 75 08 b1 01 4c 89 f0 0f 01 c9
+<e8> 83 46 d5 ff 4c 29 f8 48 89 c7 e8 88 c5 d2 ff 4c 69 f0 40 42 
+[353037.553005] Call Trace:
+[353037.553005]  [<ffffffff8143a7a1>] ? menu_select+0xf1/0x3a0
+[353037.553005]  [<ffffffff814390e9>] cpuidle_enter+0x19/0x20
+[353037.553005]  [<ffffffff81439398>] cpuidle_idle_call+0x88/0xf0
+[353037.553005]  [<ffffffff8100a0ca>] cpu_idle+0x7a/0xd0
+[353037.553005]  [<ffffffff818b6460>] start_secondary+0x1a3/0x1a7
+[353037.552019] NMI backtrace for cpu 3
+[353037.574839] CPU 3 
+[353037.574839] Pid: 0, comm: swapper/3 Not tainted 3.4.0 #3 Supermicro
+X7SPA-HF/X7SPA-HF
+[353037.574839] RIP: 0010:[<ffffffff81306428>]  [<ffffffff81306428>]
+intel_idle+0xb8/0x150
+[353037.574839] RSP: 0018:ffff88013f149e68  EFLAGS: 00000046
+[353037.574839] RAX: 0000000000000000 RBX: 0000000000000002 RCX:
+0000000000000001
+[353037.574839] RDX: 0000000000000000 RSI: ffff88013f149fd8 RDI:
+ffffffff81816180
+[353037.574839] RBP: ffff88013f149ec8 R08: 00000000fffffffe R09:
+000000000000ff35
+[353037.574839] R10: 0000000000000000 R11: 0000000000000000 R12:
+0000000000000001
+[353037.574839] R13: ffff88013fd93570 R14: 0000000000000000 R15:
+12956535616db70a
+[353037.574839] FS:  0000000000000000(0000) GS:ffff88013fd80000(0000)
+knlGS:0000000000000000
+[353037.574839] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[353037.574839] CR2: ffffffffff600400 CR3: 000000013a035000 CR4:
+00000000000007e0
+[353037.574839] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+0000000000000000
+[353037.574839] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
+0000000000000400
+[353037.574839] Process swapper/3 (pid: 0, threadinfo ffff88013f148000, task
+ffff88013f145200)
+[353037.574839] Stack:
+[353037.574839]  0000000000000000 0000000002fa7591 ffff88013f149ed8
+ffffffff8143a7a1
+[353037.574839]  0000000000000000 0000000302fa7591 0000000000000000
+ffff88013fd93570
+[353037.574839]  ffffffff81830040 00000000fffffff0 0000000000000000
+0000000000000000
+[353037.574839] Call Trace:
+[353037.574839]  [<ffffffff8143a7a1>] ? menu_select+0xf1/0x3a0
+[353037.574839]  [<ffffffff814390e9>] cpuidle_enter+0x19/0x20
+[353037.574839]  [<ffffffff81439398>] cpuidle_idle_call+0x88/0xf0
+[353037.574839]  [<ffffffff8100a0ca>] cpu_idle+0x7a/0xd0
+[353037.574839]  [<ffffffff818b6460>] start_secondary+0x1a3/0x1a7
+[353037.574839] Code: 48 8d 86 28 e0 ff ff 75 22 31 d2 48 83 c0 10 48 89 d1
+0f 01 c8 0f ae f0 48 8b 86 38 e0 ff ff a8 08 75 08 b1 01 4c 89 f0 0f 01 c9
+<e8> 83 46 d5 ff 4c 29 f8 48 89 c7 e8 88 c5 d2 ff 4c 69 f0 40 42 
+[353037.574839] Call Trace:
+[353037.574839]  [<ffffffff8143a7a1>] ? menu_select+0xf1/0x3a0
+[353037.574839]  [<ffffffff814390e9>] cpuidle_enter+0x19/0x20
+[353037.574839]  [<ffffffff81439398>] cpuidle_idle_call+0x88/0xf0
+[353037.574839]  [<ffffffff8100a0ca>] cpu_idle+0x7a/0xd0
+[353037.574839]  [<ffffffff818b6460>] start_secondary+0x1a3/0x1a7
+
+Justin.
+
