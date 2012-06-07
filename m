@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759778Ab2FGEr2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 00:47:28 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:63657 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932193Ab2FGEPk (ORCPT
+	id S1752928Ab2FGEPU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 00:15:20 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62777 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752512Ab2FGEPR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 00:15:40 -0400
-Message-Id: <20120607040337.762791373@linuxfoundation.org>
+	Thu, 7 Jun 2012 00:15:17 -0400
+Message-Id: <20120607040337.063625675@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 07 Jun 2012 13:03:45 +0900
+Date: Thu, 07 Jun 2012 13:03:40 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, KyongHo Cho <pullip.cho@samsung.com>,
-        "Olav Haugan" <ohaugan@codeaurora.org>
-Subject: [ 09/82] mm: fix faulty initialization in vmalloc_init()
+        alan@lxorguk.ukuu.org.uk,
+        Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>,
+        Junichi Nomura <j-nomura@ce.jp.nec.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 04/82] SCSI: Fix dm-multipath starvation when scsi host is busy
 In-Reply-To: <20120607041406.GA13233@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,49 +27,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: KyongHo <pullip.cho@samsung.com>
+From: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
 
-commit dbda591d920b4c7692725b13e3f68ecb251e9080 upstream.
+commit b7e94a1686c5daef4f649f7f4f839cc294f07710 upstream.
 
-The transfer of ->flags causes some of the static mapping virtual
-addresses to be prematurely freed (before the mapping is removed) because
-VM_LAZY_FREE gets "set" if tmp->flags has VM_IOREMAP set.  This might
-cause subsequent vmalloc/ioremap calls to fail because it might allocate
-one of the freed virtual address ranges that aren't unmapped.
+block congestion control doesn't have any concept of fairness across
+multiple queues.  This means that if SCSI reports the host as busy in
+the queue congestion control it can result in an unfair starvation
+situation in dm-mp if there are multiple multipath devices on the same
+host.  For example:
+http://www.redhat.com/archives/dm-devel/2012-May/msg00123.html
 
-va->flags has different types of flags from tmp->flags.  If a region with
-VM_IOREMAP set is registered with vm_area_add_early(), it will be removed
-by __purge_vmap_area_lazy().
+The fix for this is to report only the sdev busy state (and ignore the
+host busy state) in the block congestion control call back.
+The host is still congested, but the SCSI subsystem will sort out the
+congestion in a fair way because it knows the relation between the
+queues and the host.
 
-Fix vmalloc_init() to correctly initialize vmap_area for the given
-vm_struct.
-
-Also initialise va->vm.  If it is not set, find_vm_area() for the early
-vm regions will always fail.
-
-Signed-off-by: KyongHo Cho <pullip.cho@samsung.com>
-Cc: "Olav Haugan" <ohaugan@codeaurora.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[jejb: fixed up trailing whitespace]
+Reported-by: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+Tested-by: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+Signed-off-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/vmalloc.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/scsi/scsi_lib.c |   11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -1185,9 +1185,10 @@ void __init vmalloc_init(void)
- 	/* Import existing vmlist entries. */
- 	for (tmp = vmlist; tmp; tmp = tmp->next) {
- 		va = kzalloc(sizeof(struct vmap_area), GFP_NOWAIT);
--		va->flags = tmp->flags | VM_VM_AREA;
-+		va->flags = VM_VM_AREA;
- 		va->va_start = (unsigned long)tmp->addr;
- 		va->va_end = va->va_start + tmp->size;
-+		va->vm = tmp;
- 		__insert_vmap_area(va);
- 	}
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -1378,16 +1378,19 @@ static int scsi_lld_busy(struct request_
+ {
+ 	struct scsi_device *sdev = q->queuedata;
+ 	struct Scsi_Host *shost;
+-	struct scsi_target *starget;
  
+ 	if (!sdev)
+ 		return 0;
+ 
+ 	shost = sdev->host;
+-	starget = scsi_target(sdev);
+ 
+-	if (scsi_host_in_recovery(shost) || scsi_host_is_busy(shost) ||
+-	    scsi_target_is_busy(starget) || scsi_device_is_busy(sdev))
++	/*
++	 * Ignore host/starget busy state.
++	 * Since block layer does not have a concept of fairness across
++	 * multiple queues, congestion of host/starget needs to be handled
++	 * in SCSI layer.
++	 */
++	if (scsi_host_in_recovery(shost) || scsi_device_is_busy(sdev))
+ 		return 1;
+ 
+ 	return 0;
 
 
