@@ -1,99 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761121Ab2FGPRw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 11:17:52 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:64464 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753015Ab2FGPRu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 11:17:50 -0400
-X-IronPort-AV: E=Sophos;i="4.75,731,1330934400"; 
-   d="scan'208";a="653924180"
-Message-ID: <4FD0C613.7020400@netapp.com>
-Date: Thu, 07 Jun 2012 11:17:39 -0400
-From: Bryan Schumaker <bjschuma@netapp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S932369Ab2FGPSF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 11:18:05 -0400
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:14503 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1761164Ab2FGPSB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 11:18:01 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -9
+X-BigFish: VPS-9(zz1432N98dKzz1202hzz8275bhz2dh668h839h944hd25hf0ah)
+X-WSS-ID: 0M596HU-02-3H8-02
+X-M-MSG: 
+Date: Thu, 7 Jun 2012 17:18:18 +0200
+From: Borislav Petkov <borislav.petkov@amd.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
+        Chen Gong <gong.chen@linux.intel.com>, <x86@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [patch 3/5] x86: mce: Split timer init
+Message-ID: <20120607151818.GC16941@aftab.osrc.amd.com>
+References: <20120606214941.104735929@linutronix.de>
+ <20120606215116.614980367@linutronix.de>
 MIME-Version: 1.0
-To: Joerg Roedel <joro@8bytes.org>
-CC: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: NFS regression in v3.5-rc1: mount.nfs yells about incorrect mount
- option
-References: <20120607150456.GO12795@8bytes.org> <4FD0C4C2.8020605@netapp.com>
-In-Reply-To: <4FD0C4C2.8020605@netapp.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20120606215116.614980367@linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/07/2012 11:12 AM, Bryan Schumaker wrote:
-> On 06/07/2012 11:04 AM, Joerg Roedel wrote:
->> Hi,
->>
->> since Linux v3.5-rc1 I experience problems using NFS between my
->> machines. One of my test-machines gives me:
->>
->> root@chrom:~# mount lemmy:/data/repos /data/lemmy
->> mount.nfs: an incorrect mount option was specified
+On Wed, Jun 06, 2012 at 09:53:23PM +0000, Thomas Gleixner wrote:
+> Split timer init function into the init and the start part, so the
+> start part can replace the open coded version in CPU_DOWN_FAILED.
 > 
-> Hi,
-> 
-> Can you use `mount -v` to get more output?
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 
-Ah, I'm getting my patch titles confused.  I think I found this bug earlier in the week, does this patch fix it for you?
+Ok, it looks good to me and it has been lightly tested. In light of last
+time's review debacle, however, I'd only very tentatively say:
 
-commit cdf66442fab82916fe38f928b4f91815195a294c
-Author: Bryan Schumaker <bjschuma@netapp.com>
-Date:   Tue Jun 5 14:59:54 2012 -0400
+Acked-by: Borislav Petkov <borislav.petkov@amd.com>
 
-    NFS4: Set parsed mount data version to 4
-    
-    This patch only affects mounting through "-t nfs4" since it doesn't set
-    up an nfs version to use in the mount data.  The nfs client was trying
-    to mount using NFS v0, causing either a BUG() or a protocol not
-    supported message.
-    
-    Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+-- 
+Regards/Gruss,
+Boris.
 
-diff --git a/fs/nfs/super.c b/fs/nfs/super.c
-index ff656c0..bdd6731 100644
---- a/fs/nfs/super.c
-+++ b/fs/nfs/super.c
-@@ -2637,6 +2637,8 @@ static int nfs4_validate_mount_data(void *options,
- 	if (data == NULL)
- 		goto out_no_data;
- 
-+	args->version = 4;
-+
- 	switch (data->version) {
- 	case 1:
- 		if (data->host_addrlen > sizeof(args->nfs_server.address))
-
-
-> 
-> - Bryan
->>
->> The same works fine on v3.4. I tried to bisect but got different errors
->> in between. In the end, using every non-working case as bad, bisection
->> pointed to:
->>
->> 	db83335 NFS: Let mount data parsing set the NFS version
->>
->> but that at that commit the kernel panics when trying to mount the NFS
->> tree. Please let me know if you need any additional information.
->>
->> Regards,
->>
->> 	Joerg
->>
->>
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
 
