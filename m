@@ -1,59 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759472Ab2FGCI5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 22:08:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9949 "EHLO mx1.redhat.com"
+	id S1759451Ab2FGCMV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 22:12:21 -0400
+Received: from mga03.intel.com ([143.182.124.21]:29825 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754756Ab2FGCI4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 22:08:56 -0400
-Date: Wed, 6 Jun 2012 22:08:47 -0400
-From: Dave Jones <davej@redhat.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>, Jan Kara <jack@suse.cz>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: processes hung after sys_renameat, and 'missing' processes
-Message-ID: <20120607020846.GD17566@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Al Viro <viro@ZenIV.linux.org.uk>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Miklos Szeredi <mszeredi@suse.cz>, Jan Kara <jack@suse.cz>,
-	Peter Zijlstra <peterz@infradead.org>
-References: <20120606230040.GA18089@redhat.com>
- <CA+55aFx_oREEd2XS_aG7PJ7dwzWjgx689V_uRPGWpVS01_++6A@mail.gmail.com>
- <20120606235403.GC30000@ZenIV.linux.org.uk>
- <20120607002914.GB22223@redhat.com>
- <CA+55aFyp2GUbc218eb5BDyAqz+cOPTJMVcb4ptk+f1_RBB+-mg@mail.gmail.com>
- <20120607011915.GA17566@redhat.com>
- <20120607012900.GE30000@ZenIV.linux.org.uk>
- <20120607013149.GF30000@ZenIV.linux.org.uk>
- <CA+55aFx3QT0AA+s=M+QyJFKqQNh0cHiunwZ=fyrc1eneJTtarQ@mail.gmail.com>
- <20120607015410.GG30000@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120607015410.GG30000@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754756Ab2FGCMU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 22:12:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="152664495"
+Message-ID: <1339035207.14538.240.camel@ymzhang.sh.intel.com>
+Subject: Re: [PATCH v6 2/2] x86 mce: use new printk recursion disabling
+ interface
+From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: ShuoX Liu <shuox.liu@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        Ingo Molnar <mingo@elte.hu>
+Date: Thu, 07 Jun 2012 10:13:27 +0800
+In-Reply-To: <20120606152238.GA3874@x1.osrc.amd.com>
+References: <4FC2E944.6060903@intel.com>
+	 <20120604171202.GA8533@x1.osrc.amd.com>
+	 <1338856360.14538.220.camel@ymzhang.sh.intel.com>
+	 <20120605081448.GA7097@liondog.tnic> <4FCDD72A.9030701@intel.com>
+	 <4FCDD78A.3070106@intel.com> <20120605151542.GA10669@x1.osrc.amd.com>
+	 <1338942965.14538.233.camel@ymzhang.sh.intel.com>
+	 <4FCF155B.3090705@intel.com> <4FCF160D.8010404@intel.com>
+	 <20120606152238.GA3874@x1.osrc.amd.com>
+Organization: MCG
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 07, 2012 at 02:54:10AM +0100, Al Viro wrote:
+On Wed, 2012-06-06 at 17:22 +0200, Borislav Petkov wrote:
+> On Wed, Jun 06, 2012 at 04:34:21PM +0800, ShuoX Liu wrote:
+> > From: ShuoX Liu <shuox.liu@intel.com>
+> > 
+> > On x86 machines, some times MCE happens just when kernel calls printk
+> > to output some log info to serial console, while usually MCE module in
+> > kernel is used to print out some hardware error information, such like
+> > bad cache or bad memory bank. That causes printk recursion and printk
+> > would omit MCE printk output.
+> > 
+> > We hit it when running MTBF testing on Android ATOM mobiles.
+> > 
+> > Here in mce_panic, we choose to disable printk recursion to make sure
+> > MCE logs printed out.
+> 
+> Just a minor nitpick: this should say "print_mce" or you can simply
+> remove the whole sentence - commit message is fine without it too.
+Thanks for your very careful/detailed comments. We would make it perfect.
 
- > > Do you even need the "dentry->d_parent != dentry" test? When do we
- > > even rename root dentries?
- > 
- > Root of the filesystem - never; root of disconnected subtree - sure,
- > that's how they become connected to the tree.  See d_materialize_unique(),
- > for example...
- > 
- > BTW, I really need more coffee - those checks belong in __d_move(),
- > not d_move(); aforementioned d_materialize_unique() doesn't use d_move(),
- > it calls __d_move() directly.  Sorry.
-
-np, I'll restart the build/test.
-
-	Dave
 
