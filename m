@@ -1,73 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932610Ab2FGRnu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 13:43:50 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:41046 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932414Ab2FGRns (ORCPT
+	id S932600Ab2FGRrK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 13:47:10 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:37708 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753923Ab2FGRrI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 13:43:48 -0400
-Subject: Re: [PATCH] Disable Bus Master on PCI device shutdown
-From: Khalid Aziz <khalid.aziz@hp.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
-        bhelgaas@google.com, linux-pci@vger.kernel.org
-In-Reply-To: <20120606200946.GA11946@srcf.ucam.org>
-References: <20120427190033.GA17588@ldl.usa.hp.com>
-	 <20120606135009.GB1517@srcf.ucam.org> <1338999463.25761.630.camel@lyra>
-	 <20120606162703.GA6779@srcf.ucam.org> <1339003956.25761.667.camel@lyra>
-	 <20120606174202.GA8750@srcf.ucam.org> <1339006060.25761.689.camel@lyra>
-	 <87obowxm5s.fsf@xmission.com>  <20120606200946.GA11946@srcf.ucam.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 07 Jun 2012 11:43:44 -0600
-Message-ID: <1339091024.25761.896.camel@lyra>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 7 Jun 2012 13:47:08 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120607144204.GD21339@redhat.com>
+References: <20120607041406.GA13233@kroah.com> <20120607040337.622672845@linuxfoundation.org>
+ <CA+5PVA6A0K3WYBQJH8z3ddd2X3=fQm1a34z+fWSYGcUg4TR9+A@mail.gmail.com> <20120607144204.GD21339@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 7 Jun 2012 10:46:44 -0700
+X-Google-Sender-Auth: 7XitsKAfLtFd-YJ3KuzN-eg2TX4
+Message-ID: <CA+55aFzv-z0njtAnpgOsVES70+igwV7HCteQbQ6M6uTsYvn5WQ@mail.gmail.com>
+Subject: Re: [ 08/82] mm: pmd_read_atomic: fix 32bit PAE pmd walk vs
+ pmd_populate SMP race condition
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Josh Boyer <jwboyer@gmail.com>, Greg KH <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Ulrich Obergfell <uobergfe@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Hugh Dickins <hughd@google.com>, Larry Woodman <lwoodman@redhat.com>,
+        Petr Matousek <pmatouse@redhat.com>, Rik van Riel <riel@redhat.com>
+Content-Type: multipart/mixed; boundary=0016e6dab700d3697d04c1e578be
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-06-06 at 21:09 +0100, Matthew Garrett wrote:
-> On Wed, Jun 06, 2012 at 12:42:07PM -0700, Eric W. Biederman wrote:
-> 
-> > pci_device_shutdown calls drv->shutdown before calling
-> > pci_device_disable.  Which means that only devices that have trouble
-> > with this bit being flipped while DMA is ongoing and don't bother
-> > to stop their own DMA will have a problem.
-> 
-> drv->shutdown should already be quiescing the hardware. If it isn't, it 
-> should be. If it is, what does this patch fix? Many drivers 
-> call pci_enable_device() early enough that they clearly expect the 
-> hardware to be quiescent when they do so, so this really does seem to 
-> simply handle the kexec case without handling any other cases that could 
-> be similarly problematic.                               
-> 
+--0016e6dab700d3697d04c1e578be
+Content-Type: text/plain; charset=ISO-8859-1
 
-I agree drv->shutdown should quiesce the hardware (although anecdotal
-evidence suggests that is not happening), so turning Bus Master bit off
-is an additional safety measure. As Alan pointed out, doing that can be
-fraught with danger. Clearing Bus Master bit seems like the right thing
-to do, but due to buggy hardware/firmware it can cause problems,
-although those problems happen at predictable times and thus become
-easier to diagnose.
+On Thu, Jun 7, 2012 at 7:42 AM, Andrea Arcangeli <aarcange@redhat.com> wrote:
+>
+> From the oops it looks like atomic64_read trips on a dangling pmdp
+> pointer, but if the problem doesn't happen with Xen then the pointer
+> value shouldn't be the problem, and in turn the lock cmpxchg8b used to
+> access the pointer is likely the problem.
 
-I am considering other options. Andi mentioned command line option which
-does allow for some control instead of blindly clearing Bus Master bit
-on all system. I am also wondering if clearing Bus Master bit on just
-the PCI bridges is an option. If Bus Master bit is clear on a bridge, it
-is not supposed to allow DMA transactions through it. That can prevent
-random memory corruption by broken devices and also not upset the
-devices that do not like their Bus Master bit cleared. Any opinions on
-this option?
+So I assume that Xen just turns the page tables read-only in order to
+track them, and then assumes that nobody modifies them in the
+particular section. And the cmpxchg64 looks like a modification, even
+if we only use it to read things.
 
-I have also acquired a broadcom NIC that is causing what looks like
-random DMAs into kernel memory on a kexec, although this is with a
-kernel that does not have the Bus Master reset patch. I will run some
-experiments on this NIC and see what I can figure out.
+Andrea, do we have any guarantees like "once it has turned into a
+regular page table, we won't see it turn back if we hold the mmap
+sem"? Or anything like that? Because it is possible that we could do
+this entirely with some ordering guarantee - something like the
+attached patch?
 
-====================================================================
-Khalid Aziz                                         Unix Systems Lab
-(970)898-9214                                        Hewlett-Packard
-khalid.aziz@hp.com                                  Fort Collins, CO
+Totally untested, of course.
 
+                         Linus
+
+--0016e6dab700d3697d04c1e578be
+Content-Type: application/octet-stream; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h364bcia0
+
+IGFyY2gveDg2L2luY2x1ZGUvYXNtL3BndGFibGUtM2xldmVsLmggfCAyOSArKysrKysrKysrKysr
+KystLS0tLS0tLS0tLS0tLQogMSBmaWxlIGNoYW5nZWQsIDE1IGluc2VydGlvbnMoKyksIDE0IGRl
+bGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2FyY2gveDg2L2luY2x1ZGUvYXNtL3BndGFibGUtM2xl
+dmVsLmggYi9hcmNoL3g4Ni9pbmNsdWRlL2FzbS9wZ3RhYmxlLTNsZXZlbC5oCmluZGV4IDQzODc2
+ZjE2Y2FmMS4uNGQ2YmY5ZjU0YmFkIDEwMDY0NAotLS0gYS9hcmNoL3g4Ni9pbmNsdWRlL2FzbS9w
+Z3RhYmxlLTNsZXZlbC5oCisrKyBiL2FyY2gveDg2L2luY2x1ZGUvYXNtL3BndGFibGUtM2xldmVs
+LmgKQEAgLTUzLDMzICs1MywzNCBAQCBzdGF0aWMgaW5saW5lIHZvaWQgbmF0aXZlX3NldF9wdGUo
+cHRlX3QgKnB0ZXAsIHB0ZV90IHB0ZSkKICAqCiAgKiBXaXRoIFRIUCBpZiB0aGUgbW1hcF9zZW0g
+aXMgaG9sZCBmb3IgcmVhZGluZywgdGhlIHBtZCBjYW4gYmVjb21lCiAgKiBUSFAgb3IgbnVsbCBv
+ciBwb2ludCB0byBhIHB0ZSAoYW5kIGluIHR1cm4gYmVjb21lICJzdGFibGUiKSBhdCBhbnkKLSAq
+IHRpbWUgdW5kZXIgcG1kX3JlYWRfYXRvbWljLCBzbyBpdCdzIG1hbmRhdG9yeSB0byByZWFkIGl0
+IGF0b21pY2FsbHkKLSAqIHdpdGggY21weGNoZzhiLgorICogdGltZSB1bmRlciBwbWRfcmVhZF9h
+dG9taWMsIHNvIHdlIGhhdmUgdG8gYmUgcmVhbGx5IGNhcmVmdWwuIFdlJ2xsCisgKiByZS1yZWFk
+IHRoZSBsb3cgd29yZCB0byBjaGVjayB0aGF0IGl0IGhhc24ndCBiZWNvbWUgTlVMTCBvciB0dXJu
+ZWQKKyAqIGludG8gYSBwdGUuCiAgKi8KLSNpZm5kZWYgQ09ORklHX1RSQU5TUEFSRU5UX0hVR0VQ
+QUdFCiBzdGF0aWMgaW5saW5lIHBtZF90IHBtZF9yZWFkX2F0b21pYyhwbWRfdCAqcG1kcCkKIHsK
+IAlwbWR2YWxfdCByZXQ7Ci0JdTMyICp0bXAgPSAodTMyICopcG1kcDsKKwl1MzIgbG93LCBoaWdo
+dCwgKnRtcCA9ICh1MzIgKilwbWRwOwogCi0JcmV0ID0gKHBtZHZhbF90KSAoKnRtcCk7Ci0JaWYg
+KHJldCkgeworcmVwZWF0OgorCWxvdyA9IHRtcFswXTsKKwloaWdoID0gMDsKKwlpZiAobG93KSB7
+CiAJCS8qCiAJCSAqIElmIHRoZSBsb3cgcGFydCBpcyBudWxsLCB3ZSBtdXN0IG5vdCByZWFkIHRo
+ZSBoaWdoIHBhcnQKIAkJICogb3Igd2UgY2FuIGVuZCB1cCB3aXRoIGEgcGFydGlhbCBwbWQuCiAJ
+CSAqLwogCQlzbXBfcm1iKCk7Ci0JCXJldCB8PSAoKHBtZHZhbF90KSoodG1wICsgMSkpIDw8IDMy
+OworCQloaWdoID0gdG1wWzFdOworCQlpZiAoSVNfRU5BQkxFRChDT05GSUdfVFJBTlNQQVJFTlRf
+SFVHRVBBR0UpKSB7CisJCQlzbXBfcm1iKCk7CisJCQlpZiAobG93ICE9IHRtcFswXSkKKwkJCQln
+b3RvIHJlcGVhdDsKKwkJfQogCX0KIAotCXJldHVybiAocG1kX3QpIHsgcmV0IH07CisJcmV0dXJu
+IChwbWRfdCkgeyBsb3cgKyAoKHU2NCloaWdoIDw8IDMyKSB9OwogfQotI2Vsc2UgLyogQ09ORklH
+X1RSQU5TUEFSRU5UX0hVR0VQQUdFICovCi1zdGF0aWMgaW5saW5lIHBtZF90IHBtZF9yZWFkX2F0
+b21pYyhwbWRfdCAqcG1kcCkKLXsKLQlyZXR1cm4gKHBtZF90KSB7IGF0b21pYzY0X3JlYWQoKGF0
+b21pYzY0X3QgKilwbWRwKSB9OwotfQotI2VuZGlmIC8qIENPTkZJR19UUkFOU1BBUkVOVF9IVUdF
+UEFHRSAqLwogCiBzdGF0aWMgaW5saW5lIHZvaWQgbmF0aXZlX3NldF9wdGVfYXRvbWljKHB0ZV90
+ICpwdGVwLCBwdGVfdCBwdGUpCiB7Cg==
+--0016e6dab700d3697d04c1e578be--
