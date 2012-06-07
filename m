@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932297Ab2FGEQF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 00:16:05 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63306 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932260Ab2FGEP7 (ORCPT
+	id S932313Ab2FGEQO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 00:16:14 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:63657 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932260Ab2FGEQJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 00:15:59 -0400
-Message-Id: <20120607040338.163584141@linuxfoundation.org>
+	Thu, 7 Jun 2012 00:16:09 -0400
+Message-Id: <20120607040338.436136890@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 07 Jun 2012 13:03:48 +0900
+Date: Thu, 07 Jun 2012 13:03:50 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Shirish Pargaonkar <shirishpargaonkar@gmail.com>,
-        Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@us.ibm.com>
-Subject: [ 12/82] cifs: Include backup intent search flags during searches {try #2)
+        alan@lxorguk.ukuu.org.uk, John David Anglin <dave.anglin@bell.net>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 14/82] PARISC: fix boot failure on 32-bit systems caused by branch stubs placed before .text
 In-Reply-To: <20120607041406.GA13233@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,145 +25,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
+From: John David Anglin <dave.anglin@bell.net>
 
-commit 2608bee744a92d60d15ff4e6e0b913d8b406aedd upstream.
+commit ed5fb2471b7060767957fb964eb1aaec71533ab1 upstream.
 
-As observed and suggested by Tushar Gosavi...
+In certain configurations, the resulting kernel becomes too large to boot
+because the linker places the long branch stubs for the merged .text section
+at the very start of the image.  As a result, the initial transfer of control
+jumps to an unexpected location.  Fix this by placing the head text in a
+separate section so the stubs for .text are not at the start of the image.
 
----------
-readdir calls these function to send TRANS2_FIND_FIRST and
-TRANS2_FIND_NEXT command to the server. The current cifs module is
-not specifying CIFS_SEARCH_BACKUP_SEARCH flag while sending these
-command when backupuid/backupgid is specified. This can be resolved
-by specifying CIFS_SEARCH_BACKUP_SEARCH flag.
----------
-
-Reported-and-Tested-by: Tushar Gosavi <tugosavi@in.ibm.com>
-Signed-off-by: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
-Acked-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <sfrench@us.ibm.com>
+Signed-off-by: John David Anglin <dave.anglin@bell.net>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/cifsproto.h |    6 ++++--
- fs/cifs/cifssmb.c   |   12 +++++-------
- fs/cifs/readdir.c   |   15 +++++++++++++--
- 3 files changed, 22 insertions(+), 11 deletions(-)
+ arch/parisc/kernel/vmlinux.lds.S |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/fs/cifs/cifsproto.h
-+++ b/fs/cifs/cifsproto.h
-@@ -192,11 +192,13 @@ extern int CIFSTCon(unsigned int xid, st
+--- a/arch/parisc/kernel/vmlinux.lds.S
++++ b/arch/parisc/kernel/vmlinux.lds.S
+@@ -50,8 +50,10 @@ SECTIONS
+ 	. = KERNEL_BINARY_TEXT_START;
  
- extern int CIFSFindFirst(const int xid, struct cifs_tcon *tcon,
- 		const char *searchName, const struct nls_table *nls_codepage,
--		__u16 *searchHandle, struct cifs_search_info *psrch_inf,
-+		__u16 *searchHandle, __u16 search_flags,
-+		struct cifs_search_info *psrch_inf,
- 		int map, const char dirsep);
+ 	_text = .;		/* Text and read-only data */
+-	.text ALIGN(16) : {
++	.head ALIGN(16) : {
+ 		HEAD_TEXT
++	} = 0
++	.text ALIGN(16) : {
+ 		TEXT_TEXT
+ 		SCHED_TEXT
+ 		LOCK_TEXT
+@@ -65,7 +67,7 @@ SECTIONS
+ 		*(.fixup)
+ 		*(.lock.text)		/* out-of-line lock text */
+ 		*(.gnu.warning)
+-	} = 0
++	}
+ 	/* End of text section */
+ 	_etext = .;
  
- extern int CIFSFindNext(const int xid, struct cifs_tcon *tcon,
--		__u16 searchHandle, struct cifs_search_info *psrch_inf);
-+		__u16 searchHandle, __u16 search_flags,
-+		struct cifs_search_info *psrch_inf);
- 
- extern int CIFSFindClose(const int, struct cifs_tcon *tcon,
- 			const __u16 search_handle);
---- a/fs/cifs/cifssmb.c
-+++ b/fs/cifs/cifssmb.c
-@@ -4344,7 +4344,7 @@ int
- CIFSFindFirst(const int xid, struct cifs_tcon *tcon,
- 	      const char *searchName,
- 	      const struct nls_table *nls_codepage,
--	      __u16 *pnetfid,
-+	      __u16 *pnetfid, __u16 search_flags,
- 	      struct cifs_search_info *psrch_inf, int remap, const char dirsep)
- {
- /* level 257 SMB_ */
-@@ -4416,8 +4416,7 @@ findFirstRetry:
- 	    cpu_to_le16(ATTR_READONLY | ATTR_HIDDEN | ATTR_SYSTEM |
- 			ATTR_DIRECTORY);
- 	pSMB->SearchCount = cpu_to_le16(CIFSMaxBufSize/sizeof(FILE_UNIX_INFO));
--	pSMB->SearchFlags = cpu_to_le16(CIFS_SEARCH_CLOSE_AT_END |
--		CIFS_SEARCH_RETURN_RESUME);
-+	pSMB->SearchFlags = cpu_to_le16(search_flags);
- 	pSMB->InformationLevel = cpu_to_le16(psrch_inf->info_level);
- 
- 	/* BB what should we set StorageType to? Does it matter? BB */
-@@ -4487,8 +4486,8 @@ findFirstRetry:
- 	return rc;
- }
- 
--int CIFSFindNext(const int xid, struct cifs_tcon *tcon,
--		 __u16 searchHandle, struct cifs_search_info *psrch_inf)
-+int CIFSFindNext(const int xid, struct cifs_tcon *tcon, __u16 searchHandle,
-+		 __u16 search_flags, struct cifs_search_info *psrch_inf)
- {
- 	TRANSACTION2_FNEXT_REQ *pSMB = NULL;
- 	TRANSACTION2_FNEXT_RSP *pSMBr = NULL;
-@@ -4531,8 +4530,7 @@ int CIFSFindNext(const int xid, struct c
- 		cpu_to_le16(CIFSMaxBufSize / sizeof(FILE_UNIX_INFO));
- 	pSMB->InformationLevel = cpu_to_le16(psrch_inf->info_level);
- 	pSMB->ResumeKey = psrch_inf->resume_key;
--	pSMB->SearchFlags =
--	      cpu_to_le16(CIFS_SEARCH_CLOSE_AT_END | CIFS_SEARCH_RETURN_RESUME);
-+	pSMB->SearchFlags = cpu_to_le16(search_flags);
- 
- 	name_len = psrch_inf->resume_name_len;
- 	params += name_len;
---- a/fs/cifs/readdir.c
-+++ b/fs/cifs/readdir.c
-@@ -219,6 +219,7 @@ int get_symlink_reparse_path(char *full_
- 
- static int initiate_cifs_search(const int xid, struct file *file)
- {
-+	__u16 search_flags;
- 	int rc = 0;
- 	char *full_path = NULL;
- 	struct cifsFileInfo *cifsFile;
-@@ -270,8 +271,12 @@ ffirst_retry:
- 		cifsFile->srch_inf.info_level = SMB_FIND_FILE_DIRECTORY_INFO;
- 	}
- 
-+	search_flags = CIFS_SEARCH_CLOSE_AT_END | CIFS_SEARCH_RETURN_RESUME;
-+	if (backup_cred(cifs_sb))
-+		search_flags |= CIFS_SEARCH_BACKUP_SEARCH;
-+
- 	rc = CIFSFindFirst(xid, pTcon, full_path, cifs_sb->local_nls,
--		&cifsFile->netfid, &cifsFile->srch_inf,
-+		&cifsFile->netfid, search_flags, &cifsFile->srch_inf,
- 		cifs_sb->mnt_cifs_flags &
- 			CIFS_MOUNT_MAP_SPECIAL_CHR, CIFS_DIR_SEP(cifs_sb));
- 	if (rc == 0)
-@@ -502,11 +507,13 @@ static int cifs_save_resume_key(const ch
- static int find_cifs_entry(const int xid, struct cifs_tcon *pTcon,
- 	struct file *file, char **ppCurrentEntry, int *num_to_ret)
- {
-+	__u16 search_flags;
- 	int rc = 0;
- 	int pos_in_buf = 0;
- 	loff_t first_entry_in_buffer;
- 	loff_t index_to_find = file->f_pos;
- 	struct cifsFileInfo *cifsFile = file->private_data;
-+	struct cifs_sb_info *cifs_sb = CIFS_SB(file->f_path.dentry->d_sb);
- 	/* check if index in the buffer */
- 
- 	if ((cifsFile == NULL) || (ppCurrentEntry == NULL) ||
-@@ -560,10 +567,14 @@ static int find_cifs_entry(const int xid
- 						cifsFile);
- 	}
- 
-+	search_flags = CIFS_SEARCH_CLOSE_AT_END | CIFS_SEARCH_RETURN_RESUME;
-+	if (backup_cred(cifs_sb))
-+		search_flags |= CIFS_SEARCH_BACKUP_SEARCH;
-+
- 	while ((index_to_find >= cifsFile->srch_inf.index_of_last_entry) &&
- 	      (rc == 0) && !cifsFile->srch_inf.endOfSearch) {
- 		cFYI(1, "calling findnext2");
--		rc = CIFSFindNext(xid, pTcon, cifsFile->netfid,
-+		rc = CIFSFindNext(xid, pTcon, cifsFile->netfid, search_flags,
- 				  &cifsFile->srch_inf);
- 		/* FindFirst/Next set last_entry to NULL on malformed reply */
- 		if (cifsFile->srch_inf.last_entry)
 
 
