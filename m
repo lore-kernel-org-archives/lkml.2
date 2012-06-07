@@ -1,58 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756578Ab2FGAkF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 20:40:05 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:49980 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752749Ab2FGAkD (ORCPT
+	id S1757334Ab2FGAkY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 20:40:24 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:56232 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756817Ab2FGAkU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 20:40:03 -0400
-Date: Thu, 7 Jun 2012 01:40:00 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>, Jan Kara <jack@suse.cz>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: processes hung after sys_renameat, and 'missing' processes
-Message-ID: <20120607004000.GD30000@ZenIV.linux.org.uk>
-References: <20120603223617.GB7707@redhat.com>
- <CA+55aFwCusEdMq3_3TAXSZ=+kbN7H6AbnngVaagAZw=ZpicckQ@mail.gmail.com>
- <20120603231709.GP30000@ZenIV.linux.org.uk>
- <20120603232820.GQ30000@ZenIV.linux.org.uk>
- <20120606194233.GA1537@redhat.com>
- <CA+55aFwxFVLPk4-dp73uccKXepKwjpGFgh0NW1u8d0zYzr=hBA@mail.gmail.com>
- <20120606230040.GA18089@redhat.com>
- <CA+55aFx_oREEd2XS_aG7PJ7dwzWjgx689V_uRPGWpVS01_++6A@mail.gmail.com>
- <20120606235403.GC30000@ZenIV.linux.org.uk>
- <20120607002914.GB22223@redhat.com>
+	Wed, 6 Jun 2012 20:40:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120607002914.GB22223@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <Pine.LNX.4.44L0.1206061126280.1788-100000@iolanthe.rowland.org>
+References: <1338985224-9684-1-git-send-email-linkinjeon@gmail.com>
+	<Pine.LNX.4.44L0.1206061126280.1788-100000@iolanthe.rowland.org>
+Date: Thu, 7 Jun 2012 09:40:19 +0900
+Message-ID: <CAKYAXd_T4DTB=FZFejf8hbpdRzeeXx5cybx56SNG6srCtRLRHQ@mail.gmail.com>
+Subject: Re: [PATCH 1/3] scsi: set to WCE if usb cache quirk is present.
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: James.Bottomley@hansenpartnership.com, gregkh@linuxfoundation.org,
+        mdharm-usb@one-eyed-alien.net, linux-usb@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Pankaj Kumar <pankaj.km@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 06, 2012 at 08:29:14PM -0400, Dave Jones wrote:
->  void d_move(struct dentry *dentry, struct dentry *target)
->  {
->         write_seqlock(&rename_lock);
-> +
-> +       BUG_ON(!spin_is_locked(&target->d_parent->d_lock));
-> +
-> +       if (dentry->d_parent != NULL)
-> +               BUG_ON(!spin_is_locked(&dentry->d_parent->d_lock));
-> +
->         __d_move(dentry, target);
->         write_sequnlock(&rename_lock);
->  }
-> 
-> 
-> To be clear, do you want me to try that with or without the reverts ?
+Hi Alan.
 
-No.  Not ->d_lock; ->d_inode->i_mutex.  _That_ needs to be held for
-d_move() to be safe (and on cross-directory move you need ->s_vfs_rename_mutex
-as well).  I'd do it with WARN_ON, BTW, and without the reverts - that
-way we'll have a clear indication if that code is stepped on.
+I will send patch v2 after chaing code.
+Thanks for your review.
+
+2012/6/7, Alan Stern <stern@rowland.harvard.edu>:
+> On Wed, 6 Jun 2012, Namjae Jeon wrote:
+>
+>> Make use of USB quirk method to identify such HDD while reading the cache
+>> status in sd_probe(). If cache quirk is present for the HDD, lets assume
+>> that cache is enabled and make WCE bit equal to 1.
+>
+> Your lines should be wrapped after 72 columns or so.
+>
+> Calling this a "quirk" sounds strange.  Really, your new flag indicates
+> that WCE should default to "on" instead of "off".  How about calling it
+> "wce_default_on" instead of "wce_quirk"?
+>
+>> --- a/include/scsi/scsi_device.h
+>> +++ b/include/scsi/scsi_device.h
+>> @@ -152,6 +152,7 @@ struct scsi_device {
+>>  	unsigned no_read_disc_info:1;	/* Avoid READ_DISC_INFO cmds */
+>>  	unsigned no_read_capacity_16:1; /* Avoid READ_CAPACITY_16 cmds */
+>>  	unsigned is_visible:1;	/* is the device visible in sysfs */
+>> +	unsigned wce_quirk:1; /* cache read page is not available */
+>
+> The comment is wrong.  There's no need for a quirk to indicate the
+> cache page is unavailable; the driver already knows when the page is
+> unavailable.  Rather, the quirk indicates that WCE should default to
+> "on".
+>
+> Alan Stern
+>
+>
