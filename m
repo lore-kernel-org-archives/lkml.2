@@ -1,106 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933299Ab2FGWWx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 18:22:53 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:42952 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933212Ab2FGWWw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 18:22:52 -0400
-MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:1aa9:5ff:fe24:37a9]
-In-Reply-To: <1338926395-26298-1-git-send-email-bfreed@chromium.org>
-References: <1338926395-26298-1-git-send-email-bfreed@chromium.org>
-Date: Thu, 7 Jun 2012 15:22:51 -0700
-Message-ID: <CAOesGMgznrjPooqtAC6C+msk3yjBSm3OzVA-xOgkfdqAfsZ=jQ@mail.gmail.com>
-Subject: Re: [PATCH] pstore/ram: Add ramoops support for the Flattened Device Tree.
-From: Olof Johansson <olof@lixom.net>
-To: Bryan Freed <bfreed@chromium.org>
-Cc: linux-kernel@vger.kernel.org, keescook@chromium.org,
-        marco.stornelli@gmail.com, grant.likely@secretlab.ca,
-        anton.vorontsov@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S933271Ab2FGWYj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 18:24:39 -0400
+Received: from mga14.intel.com ([143.182.124.37]:37007 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933212Ab2FGWYi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 18:24:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="153155985"
+Subject: Re: [PATCH 7/8] x86/apic: Make cpu_mask_to_apicid() operations
+ return error code
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Yinghai Lu <yinghai@kernel.org>
+Date: Thu, 07 Jun 2012 15:24:05 -0700
+In-Reply-To: <20120607131559.GF4759@dhcp-26-207.brq.redhat.com>
+References: <20120605112353.GA11457@dhcp-26-207.brq.redhat.com>
+	 <20120606082231.GD5991@gmail.com>
+	 <20120607131559.GF4759@dhcp-26-207.brq.redhat.com>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1339107848.28766.104.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, 2012-06-07 at 15:15 +0200, Alexander Gordeev wrote:
+> Current cpu_mask_to_apicid() and cpu_mask_to_apicid_and()
+> implementations have few shortcomings:
+> 
+> 1. A value returned by cpu_mask_to_apicid() is written to hardware
+> registers unconditionally. Should BAD_APICID get ever returned it will
+> be written to a hardware too. But the value of BAD_APICID is not
+> universal across all hardware in all modes and might cause unexpected
+> results, i.e. interrupts might get routed to CPUs that are not
+> configured to receive it.
+> 
+> 2. Because the value of BAD_APICID is not universal it is counter-
+> intuitive to return it for a hardware where it does not make sense
+> (i.e. x2apic).
+> 
+> 3. cpu_mask_to_apicid_and() operation is thought as an complement to
+> cpu_mask_to_apicid() that only applies a AND mask on top of a cpumask
+> being passed. Yet, as consequence of 18374d8 commit the two operations
+> are inconsistent in that of:
+>   cpu_mask_to_apicid() should not get a offline CPU with the cpumask
+>   cpu_mask_to_apicid_and() should not fail and return BAD_APICID
+> These limitations are impossible to realize just from looking at the
+> operations prototypes.
+> 
+> Most of these shortcomings are resolved by returning a error code
+> instead of BAD_APICID. As the result, faults are reported back early
+> rather than possibilities to cause a unexpected behaviour exist (in case
+> of [1]).
+> 
+> The only exception is setup_timer_IRQ0_pin() routine. Although obviously
+> controversial to this fix, its existing behaviour is preserved to not
+> break the fragile check_timer() and would better addressed in a separate
+> fix.
+> 
 
-On Tue, Jun 5, 2012 at 12:59 PM, Bryan Freed <bfreed@chromium.org> wrote:
-> When called with a non-zero of_node, fill out a new ramoops_platform_data
-> with data from the specified Flattened Device Tree node.
-> Update ramoops documentation with the new FDT interface.
->
-> Change-Id: Id8f9f0abc5b564375c1b6d5d30c92d57d76520b7
-> Signed-off-by: Bryan Freed <bfreed@chromium.org>
-> ---
->  Documentation/ramoops.txt |   19 +++++++++++++++++--
->  fs/pstore/ram.c           |   43 +++++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 60 insertions(+), 2 deletions(-)
->
-> diff --git a/Documentation/ramoops.txt b/Documentation/ramoops.txt
-> index 4ba7db2..9ed3ab7 100644
-> --- a/Documentation/ramoops.txt
-> +++ b/Documentation/ramoops.txt
-> @@ -3,7 +3,7 @@ Ramoops oops/panic logger
->
->  Sergiu Iordache <sergiu@chromium.org>
->
-> -Updated: 17 November 2011
-> +Updated: 5 June 2012
->
->  0. Introduction
->
-> @@ -37,7 +37,7 @@ corrupt, but usually it is restorable.
->
->  2. Setting the parameters
->
-> -Setting the ramoops parameters can be done in 2 different manners:
-> +Setting the ramoops parameters can be done in 3 different manners:
->  1. Use the module parameters (which have the names of the variables described
->  as before).
->  2. Use a platform device and set the platform data. The parameters can then
-> @@ -70,6 +70,21 @@ if (ret) {
->        return ret;
->  }
->
-> + 3. Use the Flattened Device Tree to set the platform data.  For example:
-> +  arch/arm/boot/dts/$BOARD.dts:
-> +        ramoops {
-> +                compatible = "ramoops";
-> +                reg = <0x41f00000 0x00100000>;
-> +                record-size = <0x00020000>;
-> +                dump-oops = <1>;
-> +                ecc = <0>;
-> +        };
-> + The "reg = <0x41f00000 0x00100000>" line specifies a mem_size of 1MB at
-> +  mem_address 0x41f00000.
-> + The "record-size = <0x00020000>" line specifies a record size of 128KB.
-> + The "dump-oops = <1>" line tells us to dump oopses as well as panics.
-> + The "ecc = <0>" line tells us to turn off ECC protection.
+I am ok with these changes. But even better would be to remove the
+cpu_mask_to_apicid() and just use cpu_mask_to_apicid_and() instead.
 
-Device tree properties are binary just by being present or not. So
-there is no need to have values on these -- to turn "dump-oops" off,
-don't include the property. Same for ecc.
+Looks like there are only two places cpu_mask_to_apicid() being used
+anyways. So instead of patches 7 and 8, can you remove
+cpu_mask_to_apicid() in patch-7 and fixup the return value of
+cpu_mask_to_apicid_and() in patch-8
 
-But to take a step up, to be honest I don't think "dump-oops" belongs
-here. The device tree is supposed to define hardware. In this case,
-what truly needs to be defined for that is the base address, and
-_possibly_ the record size used.
+thanks,
+suresh
 
-The rest are software attributes. For dump-oops, I propose using
-sysctl/module parameters instead. That is true for ECC as well.
-
-So, I would just remove those pieces from the device tree binding and
-parsing, and focus on the memory range and record size. The rest can
-be configured after booting (or on the commandline) if needed.
-
-Also, the device-tree documentation should be added under
-Documentation/devicetree/bindings as well (or maybe only there, and
-referenced from the ramoops.txt docs).
-
-
-Thanks!
-
--Olof
