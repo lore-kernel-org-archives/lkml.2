@@ -1,90 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933291Ab2FGWVp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 18:21:45 -0400
-Received: from trent.utfs.org ([94.185.90.103]:58451 "EHLO trent.utfs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933184Ab2FGWVo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 18:21:44 -0400
-Date: Thu, 7 Jun 2012 15:21:36 -0700 (PDT)
-From: Christian Kujau <lists@nerdbynature.de>
-To: Ethan Zhao <ethan.kernel@gmail.com>
-cc: LKML <linux-kernel@vger.kernel.org>, mcarlson@broadcom.com
-Subject: Re: tg3: transmit timed out, resetting
-In-Reply-To: <alpine.DEB.2.01.1206070531520.5568@trent.utfs.org>
-Message-ID: <alpine.DEB.2.01.1206071517510.5568@trent.utfs.org>
-References: <alpine.DEB.2.01.1206041546070.5568@trent.utfs.org> <20120606010255.GA9991@mcarlson.broadcom.com> <alpine.DEB.2.01.1206052314340.5568@trent.utfs.org> <alpine.DEB.2.01.1206070002370.5568@trent.utfs.org> <CABawtvNSOkyphUmAU1EoCaCS-hGu-ejPHMmP=j-nRtBZfi7cwg@mail.gmail.com>
- <alpine.DEB.2.01.1206070531520.5568@trent.utfs.org>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
+	id S933299Ab2FGWWx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 18:22:53 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:42952 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933212Ab2FGWWw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 18:22:52 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
+X-Originating-IP: [2620:0:1000:1b02:1aa9:5ff:fe24:37a9]
+In-Reply-To: <1338926395-26298-1-git-send-email-bfreed@chromium.org>
+References: <1338926395-26298-1-git-send-email-bfreed@chromium.org>
+Date: Thu, 7 Jun 2012 15:22:51 -0700
+Message-ID: <CAOesGMgznrjPooqtAC6C+msk3yjBSm3OzVA-xOgkfdqAfsZ=jQ@mail.gmail.com>
+Subject: Re: [PATCH] pstore/ram: Add ramoops support for the Flattened Device Tree.
+From: Olof Johansson <olof@lixom.net>
+To: Bryan Freed <bfreed@chromium.org>
+Cc: linux-kernel@vger.kernel.org, keescook@chromium.org,
+        marco.stornelli@gmail.com, grant.likely@secretlab.ca,
+        anton.vorontsov@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 7 Jun 2012 at 05:52, Christian Kujau wrote:
-> On Thu, 7 Jun 2012 at 17:47, Ethan Zhao wrote:
-> >     Could you try 3.5RC1+ with pcie_aspm=off kernel parameter ?
+Hi,
 
-Hm, this didn't help.
+On Tue, Jun 5, 2012 at 12:59 PM, Bryan Freed <bfreed@chromium.org> wrote:
+> When called with a non-zero of_node, fill out a new ramoops_platform_data
+> with data from the specified Flattened Device Tree node.
+> Update ramoops documentation with the new FDT interface.
+>
+> Change-Id: Id8f9f0abc5b564375c1b6d5d30c92d57d76520b7
+> Signed-off-by: Bryan Freed <bfreed@chromium.org>
+> ---
+>  Documentation/ramoops.txt |   19 +++++++++++++++++--
+>  fs/pstore/ram.c           |   43 +++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 60 insertions(+), 2 deletions(-)
+>
+> diff --git a/Documentation/ramoops.txt b/Documentation/ramoops.txt
+> index 4ba7db2..9ed3ab7 100644
+> --- a/Documentation/ramoops.txt
+> +++ b/Documentation/ramoops.txt
+> @@ -3,7 +3,7 @@ Ramoops oops/panic logger
+>
+>  Sergiu Iordache <sergiu@chromium.org>
+>
+> -Updated: 17 November 2011
+> +Updated: 5 June 2012
+>
+>  0. Introduction
+>
+> @@ -37,7 +37,7 @@ corrupt, but usually it is restorable.
+>
+>  2. Setting the parameters
+>
+> -Setting the ramoops parameters can be done in 2 different manners:
+> +Setting the ramoops parameters can be done in 3 different manners:
+>  1. Use the module parameters (which have the names of the variables described
+>  as before).
+>  2. Use a platform device and set the platform data. The parameters can then
+> @@ -70,6 +70,21 @@ if (ret) {
+>        return ret;
+>  }
+>
+> + 3. Use the Flattened Device Tree to set the platform data.  For example:
+> +  arch/arm/boot/dts/$BOARD.dts:
+> +        ramoops {
+> +                compatible = "ramoops";
+> +                reg = <0x41f00000 0x00100000>;
+> +                record-size = <0x00020000>;
+> +                dump-oops = <1>;
+> +                ecc = <0>;
+> +        };
+> + The "reg = <0x41f00000 0x00100000>" line specifies a mem_size of 1MB at
+> +  mem_address 0x41f00000.
+> + The "record-size = <0x00020000>" line specifies a record size of 128KB.
+> + The "dump-oops = <1>" line tells us to dump oopses as well as panics.
+> + The "ecc = <0>" line tells us to turn off ECC protection.
 
-> > I notice there are some AER errors ( UnsupReq+,RxErr+) with the tg3
-> > from you lspci output
+Device tree properties are binary just by being present or not. So
+there is no need to have values on these -- to turn "dump-oops" off,
+don't include the property. Same for ecc.
 
-Isn't lspci just listing ASPM _capabilities_ there? Booting with 
-pcie_aspm=off showed almost the same output:
+But to take a step up, to be honest I don't think "dump-oops" belongs
+here. The device tree is supposed to define hardware. In this case,
+what truly needs to be defined for that is the base address, and
+_possibly_ the record size used.
 
-   http://nerdbynature.de/bits/3.4.0/tg3/lspci_aspm.diff.txt
+The rest are software attributes. For dump-oops, I propose using
+sysctl/module parameters instead. That is true for ECC as well.
 
-So, the workaround for me is to disable "scatter-gather":
+So, I would just remove those pieces from the device tree binding and
+parsing, and focus on the memory range and record size. The rest can
+be configured after booting (or on the commandline) if needed.
 
- ethtool -K p2p1 sg off
+Also, the device-tree documentation should be added under
+Documentation/devicetree/bindings as well (or maybe only there, and
+referenced from the ramoops.txt docs).
 
-With that, no more errors show up and the interface keeps working.
 
-Christian.
+Thanks!
 
-> pci0000:00: Requesting ACPI _OSC control (0x1d)
-> pci0000:00: ACPI _OSC request failed (AE_NOT_FOUND), returned control mask: 0x1d
-> ACPI _OSC control for PCIe not granted, disabling ASPM
-> --------
-> 
-> I have seen these messages in 3.2.0 (an Ubuntu kernel), can't say that I 
-> have seen them before, they did not show up when I booted this 2.6.38 
-> Ubuntu kernel.
-> 
-> I'll try booting with pcie_aspm=off and see what it gives...
-> 
-> Thanks,
-> Christian.
-> 
-> PS: AFAICT, Ubuntu's 2.6.38 [0] had these options set:
-> 
-> --------
-> CONFIG_PCIEASPM=y
-> # CONFIG_PCIEASPM_DEBUG is not set
-> --------
-> 
-> With 3.5.x, my .config has:
-> 
-> --------
-> CONFIG_PCIEASPM=y
-> # CONFIG_PCIEASPM_DEBUG is not set
-> CONFIG_PCIEASPM_DEFAULT=y
-> # CONFIG_PCIEASPM_POWERSAVE is not set
-> # CONFIG_PCIEASPM_PERFORMANCE is not set
-> --------
-> 
-> [0] https://launchpad.net/ubuntu/natty/i386/linux-image-2.6.38-15-generic/2.6.38-15.60
-> 
-> -- 
-> BOFH excuse #338:
-> 
-> old inkjet cartridges emanate barium-based fumes
-> 
-
--- 
-BOFH excuse #396:
-
-Mail server hit by UniSpammer.
+-Olof
