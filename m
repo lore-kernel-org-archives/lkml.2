@@ -1,347 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760936Ab2FGOjh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 10:39:37 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:32819 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753122Ab2FGOjf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 10:39:35 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6734"; a="196401575"
-From: Yaniv Gardi <ygardi@codeaurora.org>
-To: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org (open list)
-Cc: ygardi@codeaurora.org, merez@codeaurora.org
-Subject: [PATCH v6 1/2] block: ioctl support for sanitize in eMMC 4.5
-Date: Thu,  7 Jun 2012 17:39:00 +0300
-Message-Id: <1339079942-23542-2-git-send-email-ygardi@codeaurora.org>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1339079942-23542-1-git-send-email-ygardi@codeaurora.org>
-References: <1339079942-23542-1-git-send-email-ygardi@codeaurora.org>
+	id S1760971Ab2FGOmW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 10:42:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23253 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760925Ab2FGOmU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 10:42:20 -0400
+Date: Thu, 7 Jun 2012 16:42:04 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Josh Boyer <jwboyer@gmail.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Ulrich Obergfell <uobergfe@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Hugh Dickins <hughd@google.com>, Larry Woodman <lwoodman@redhat.com>,
+        Petr Matousek <pmatouse@redhat.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [ 08/82] mm: pmd_read_atomic: fix 32bit PAE pmd walk vs
+ pmd_populate SMP race condition
+Message-ID: <20120607144204.GD21339@redhat.com>
+References: <20120607041406.GA13233@kroah.com>
+ <20120607040337.622672845@linuxfoundation.org>
+ <CA+5PVA6A0K3WYBQJH8z3ddd2X3=fQm1a34z+fWSYGcUg4TR9+A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+5PVA6A0K3WYBQJH8z3ddd2X3=fQm1a34z+fWSYGcUg4TR9+A@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding a new ioctl to support sanitize operation in eMMC
-cards version 4.5.
-The sanitize ioctl support helps performing this operation
-via user application.
+Hi,
 
-Signed-off-by: Yaniv Gardi <ygardi@codeaurora.org>
-Signed-off-by: Maya Erez <merez@codeaurora.org>
-Signed-off-by: Yaniv Gardi <ygardi@codeaurora.org>
+On Thu, Jun 07, 2012 at 09:42:55AM -0400, Josh Boyer wrote:
+> On Thu, Jun 7, 2012 at 12:03 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> > 3.4-stable review patch.  If anyone has any objections, please let me know.
+> >
+> > ------------------
+> >
+> > From: Andrea Arcangeli <aarcange@redhat.com>
+> >
+> > commit 26c191788f18129af0eb32a358cdaea0c7479626 upstream.
+> >
+> > When holding the mmap_sem for reading, pmd_offset_map_lock should only
+> > run on a pmd_t that has been read atomically from the pmdp pointer,
+> > otherwise we may read only half of it leading to this crash.
+> 
+> This one is important, but it can break Xen apparently:
+> 
+> http://permalink.gmane.org/gmane.comp.emulators.xen.devel/132522
+> https://bugzilla.redhat.com/show_bug.cgi?id=829016
+> 
+> Not sure if you want to hold off on it or see if Andrea comes up with
+> a follow up fix?
 
----
- block/blk-core.c          |   18 ++++++++++++---
- block/blk-lib.c           |   51 +++++++++++++++++++++++++++++++++++++++++++++
- block/blk-merge.c         |    6 +++++
- block/elevator.c          |   41 ++++++++++++++++++++++++++++++++++-
- block/ioctl.c             |    9 ++++++++
- include/linux/blk_types.h |    5 +++-
- include/linux/blkdev.h    |    3 ++
- include/linux/fs.h        |    1 +
- kernel/trace/blktrace.c   |    2 +
- 9 files changed, 129 insertions(+), 7 deletions(-)
+Not knowing exactly why Xen trips on the atomic64_read on a PAE 32bit
+pmd on my side, I don't know what's the best direction to fix it yet.
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 3c923a7..1eafc3a 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -1641,7 +1641,8 @@ generic_make_request_checks(struct bio *bio)
- 		goto end_io;
- 	}
- 
--	if (unlikely(!(bio->bi_rw & REQ_DISCARD) &&
-+
-+	if (unlikely(!(bio->bi_rw & (REQ_DISCARD | REQ_SANITIZE)) &&
- 		     nr_sectors > queue_max_hw_sectors(q))) {
- 		printk(KERN_ERR "bio too big device %s (%u > %u)\n",
- 		       bdevname(bio->bi_bdev, b),
-@@ -1689,8 +1690,16 @@ generic_make_request_checks(struct bio *bio)
- 		goto end_io;
- 	}
- 
-+	if ((bio->bi_rw & REQ_SANITIZE) &&
-+	    (!blk_queue_sanitize(q))) {
-+		pr_info("%s - got a SANITIZE request but the queue "
-+		       "doesn't support sanitize requests", __func__);
-+		err = -EOPNOTSUPP;
-+		goto end_io;
-+	}
-+
- 	if (blk_throtl_bio(q, bio))
--		return false;	/* throttled, will be resubmitted later */
-+		goto end_io;
- 
- 	trace_block_bio_queue(q, bio);
- 	return true;
-@@ -1794,7 +1803,8 @@ void submit_bio(int rw, struct bio *bio)
- 	 * If it's a regular read/write or a barrier with data attached,
- 	 * go through the normal accounting stuff before submission.
- 	 */
--	if (bio_has_data(bio) && !(rw & REQ_DISCARD)) {
-+	if (bio_has_data(bio) &&
-+	    (!(rw & (REQ_DISCARD | REQ_SANITIZE)))) {
- 		if (rw & WRITE) {
- 			count_vm_events(PGPGOUT, count);
- 		} else {
-@@ -1840,7 +1850,7 @@ EXPORT_SYMBOL(submit_bio);
-  */
- int blk_rq_check_limits(struct request_queue *q, struct request *rq)
- {
--	if (rq->cmd_flags & REQ_DISCARD)
-+	if (rq->cmd_flags & (REQ_DISCARD | REQ_SANITIZE))
- 		return 0;
- 
- 	if (blk_rq_sectors(rq) > queue_max_sectors(q) ||
-diff --git a/block/blk-lib.c b/block/blk-lib.c
-index 2b461b4..280d63e 100644
---- a/block/blk-lib.c
-+++ b/block/blk-lib.c
-@@ -115,6 +115,57 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
- EXPORT_SYMBOL(blkdev_issue_discard);
- 
- /**
-+ * blkdev_issue_sanitize - queue a sanitize request
-+ * @bdev:	blockdev to issue sanitize for
-+ * @gfp_mask:	memory allocation flags (for bio_alloc)
-+ *
-+ * Description:
-+ *    Issue a sanitize request for the specified block device
-+ */
-+int blkdev_issue_sanitize(struct block_device *bdev, gfp_t gfp_mask)
-+{
-+	DECLARE_COMPLETION_ONSTACK(wait);
-+	struct request_queue *q = bdev_get_queue(bdev);
-+	int type = REQ_WRITE | REQ_SANITIZE;
-+	struct bio_batch bb;
-+	struct bio *bio;
-+	int ret = 0;
-+
-+	if (!q)
-+		return -ENXIO;
-+
-+	if (!blk_queue_sanitize(q)) {
-+		pr_err("%s - card doesn't support sanitize", __func__);
-+		return -EOPNOTSUPP;
-+	}
-+
-+	bio = bio_alloc(gfp_mask, 1);
-+	if (!bio)
-+		return -ENOMEM;
-+
-+	atomic_set(&bb.done, 1);
-+	bb.flags = 1 << BIO_UPTODATE;
-+	bb.wait = &wait;
-+
-+	bio->bi_end_io = bio_batch_end_io;
-+	bio->bi_bdev = bdev;
-+	bio->bi_private = &bb;
-+
-+	atomic_inc(&bb.done);
-+	submit_bio(type, bio);
-+
-+	/* Wait for bios in-flight */
-+	if (!atomic_dec_and_test(&bb.done))
-+		wait_for_completion(&wait);
-+
-+	if (!test_bit(BIO_UPTODATE, &bb.flags))
-+		ret = -EIO;
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL(blkdev_issue_sanitize);
-+
-+/**
-  * blkdev_issue_zeroout - generate number of zero filed write bios
-  * @bdev:	blockdev to issue
-  * @sector:	start sector
-diff --git a/block/blk-merge.c b/block/blk-merge.c
-index 160035f..4fced1b 100644
---- a/block/blk-merge.c
-+++ b/block/blk-merge.c
-@@ -383,6 +383,12 @@ static int attempt_merge(struct request_queue *q, struct request *req,
- 		return 0;
- 
- 	/*
-+	 * Don't merge file system requests and sanitize requests
-+	 */
-+	if ((req->cmd_flags & REQ_SANITIZE) != (next->cmd_flags & REQ_SANITIZE))
-+		return 0;
-+
-+	/*
- 	 * not contiguous
- 	 */
- 	if (blk_rq_pos(req) + blk_rq_sectors(req) != blk_rq_pos(next))
-diff --git a/block/elevator.c b/block/elevator.c
-index 6a55d41..ae37b54 100644
---- a/block/elevator.c
-+++ b/block/elevator.c
-@@ -73,7 +73,44 @@ static int elv_iosched_allow_merge(struct request *rq, struct bio *bio)
-  */
- bool elv_rq_merge_ok(struct request *rq, struct bio *bio)
- {
--	if (!blk_rq_merge_ok(rq, bio))
-+
-+	if (!rq_mergeable(rq))
-+		return 0;
-+
-+	/*
-+	 * Don't merge file system requests and discard requests
-+	 */
-+	if ((bio->bi_rw & REQ_DISCARD) != (rq->bio->bi_rw & REQ_DISCARD))
-+		return 0;
-+
-+	/*
-+	 * Don't merge discard requests and secure discard requests
-+	 */
-+	if ((bio->bi_rw & REQ_SECURE) != (rq->bio->bi_rw & REQ_SECURE))
-+		return 0;
-+
-+	/*
-+	 * Don't merge sanitize requests
-+	 */
-+	if ((bio->bi_rw & REQ_SANITIZE) != (rq->bio->bi_rw & REQ_SANITIZE))
-+		return 0;
-+
-+	/*
-+	 * different data direction or already started, don't merge
-+	 */
-+	if (bio_data_dir(bio) != rq_data_dir(rq))
-+		return 0;
-+
-+	/*
-+	 * must be same device and not a special request
-+	 */
-+	if (rq->rq_disk != bio->bi_bdev->bd_disk || rq->special)
-+		return 0;
-+
-+	/*
-+	 * only merge integrity protected bio into ditto rq
-+	 */
-+	if (bio_integrity(bio) != blk_integrity_rq(rq))
- 		return 0;
- 
- 	if (!elv_iosched_allow_merge(rq, bio))
-@@ -563,7 +600,7 @@ void __elv_add_request(struct request_queue *q, struct request *rq, int where)
- 	if (rq->cmd_flags & REQ_SOFTBARRIER) {
- 		/* barriers are scheduling boundary, update end_sector */
- 		if (rq->cmd_type == REQ_TYPE_FS ||
--		    (rq->cmd_flags & REQ_DISCARD)) {
-+		    (rq->cmd_flags & (REQ_DISCARD | REQ_SANITIZE))) {
- 			q->end_sector = rq_end_sector(rq);
- 			q->boundary_rq = rq;
- 		}
-diff --git a/block/ioctl.c b/block/ioctl.c
-index ba15b2d..dd76ba0 100644
---- a/block/ioctl.c
-+++ b/block/ioctl.c
-@@ -132,6 +132,11 @@ static int blk_ioctl_discard(struct block_device *bdev, uint64_t start,
- 	return blkdev_issue_discard(bdev, start, len, GFP_KERNEL, flags);
- }
- 
-+static int blk_ioctl_sanitize(struct block_device *bdev)
-+{
-+	return blkdev_issue_sanitize(bdev, GFP_KERNEL);
-+}
-+
- static int put_ushort(unsigned long arg, unsigned short val)
- {
- 	return put_user(val, (unsigned short __user *)arg);
-@@ -234,6 +239,10 @@ int blkdev_ioctl(struct block_device *bdev, fmode_t mode, unsigned cmd,
- 		set_device_ro(bdev, n);
- 		return 0;
- 
-+	case BLKSANITIZE:
-+		ret = blk_ioctl_sanitize(bdev);
-+		break;
-+
- 	case BLKDISCARD:
- 	case BLKSECDISCARD: {
- 		uint64_t range[2];
-diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
-index 0edb65d..e58e0db 100644
---- a/include/linux/blk_types.h
-+++ b/include/linux/blk_types.h
-@@ -160,6 +160,7 @@ enum rq_flag_bits {
- 	__REQ_FLUSH_SEQ,	/* request for flush sequence */
- 	__REQ_IO_STAT,		/* account I/O stat */
- 	__REQ_MIXED_MERGE,	/* merge of different types, fail separately */
-+	__REQ_SANITIZE,		/* sanitize */
- 	__REQ_NR_BITS,		/* stops here */
- };
- 
-@@ -171,13 +172,15 @@ enum rq_flag_bits {
- #define REQ_META		(1 << __REQ_META)
- #define REQ_PRIO		(1 << __REQ_PRIO)
- #define REQ_DISCARD		(1 << __REQ_DISCARD)
-+#define REQ_SANITIZE		(1 << __REQ_SANITIZE)
- #define REQ_NOIDLE		(1 << __REQ_NOIDLE)
- 
- #define REQ_FAILFAST_MASK \
- 	(REQ_FAILFAST_DEV | REQ_FAILFAST_TRANSPORT | REQ_FAILFAST_DRIVER)
- #define REQ_COMMON_MASK \
- 	(REQ_WRITE | REQ_FAILFAST_MASK | REQ_SYNC | REQ_META | REQ_PRIO | \
--	 REQ_DISCARD | REQ_NOIDLE | REQ_FLUSH | REQ_FUA | REQ_SECURE)
-+	 REQ_DISCARD | REQ_NOIDLE | REQ_FLUSH | REQ_FUA | REQ_SECURE | \
-+	 REQ_SANITIZE)
- #define REQ_CLONE_MASK		REQ_COMMON_MASK
- 
- #define REQ_RAHEAD		(1 << __REQ_RAHEAD)
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index ba43f40..1db6c91 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -438,6 +438,7 @@ struct request_queue {
- #define QUEUE_FLAG_ADD_RANDOM  16	/* Contributes to random pool */
- #define QUEUE_FLAG_SECDISCARD  17	/* supports SECDISCARD */
- #define QUEUE_FLAG_SAME_FORCE  18	/* force complete on same CPU */
-+#define QUEUE_FLAG_SANITIZE    19	/* supports SANITIZE */
- 
- #define QUEUE_FLAG_DEFAULT	((1 << QUEUE_FLAG_IO_STAT) |		\
- 				 (1 << QUEUE_FLAG_STACKABLE)	|	\
-@@ -518,6 +519,7 @@ static inline void queue_flag_clear(unsigned int flag, struct request_queue *q)
- #define blk_queue_stackable(q)	\
- 	test_bit(QUEUE_FLAG_STACKABLE, &(q)->queue_flags)
- #define blk_queue_discard(q)	test_bit(QUEUE_FLAG_DISCARD, &(q)->queue_flags)
-+#define blk_queue_sanitize(q)	test_bit(QUEUE_FLAG_SANITIZE, &(q)->queue_flags)
- #define blk_queue_secdiscard(q)	(blk_queue_discard(q) && \
- 	test_bit(QUEUE_FLAG_SECDISCARD, &(q)->queue_flags))
- 
-@@ -971,6 +973,7 @@ static inline struct request *blk_map_queue_find_tag(struct blk_queue_tag *bqt,
- extern int blkdev_issue_flush(struct block_device *, gfp_t, sector_t *);
- extern int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
- 		sector_t nr_sects, gfp_t gfp_mask, unsigned long flags);
-+extern int blkdev_issue_sanitize(struct block_device *bdev, gfp_t gfp_mask);
- extern int blkdev_issue_zeroout(struct block_device *bdev, sector_t sector,
- 			sector_t nr_sects, gfp_t gfp_mask);
- static inline int sb_issue_discard(struct super_block *sb, sector_t block,
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index b0a6d44..167c450 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -333,6 +333,7 @@ struct inodes_stat_t {
- #define BLKDISCARDZEROES _IO(0x12,124)
- #define BLKSECDISCARD _IO(0x12,125)
- #define BLKROTATIONAL _IO(0x12,126)
-+#define BLKSANITIZE _IO(0x12, 127)
- 
- #define BMAP_IOCTL 1		/* obsolete - kept for compatibility */
- #define FIBMAP	   _IO(0x00,1)	/* bmap access */
-diff --git a/kernel/trace/blktrace.c b/kernel/trace/blktrace.c
-index c0bd030..06f7940 100644
---- a/kernel/trace/blktrace.c
-+++ b/kernel/trace/blktrace.c
-@@ -1788,6 +1788,8 @@ void blk_fill_rwbs(char *rwbs, u32 rw, int bytes)
- 		rwbs[i++] = 'W';
- 	else if (rw & REQ_DISCARD)
- 		rwbs[i++] = 'D';
-+	else if (rw & REQ_SANITIZE)
-+		rwbs[i++] = 'Z';
- 	else if (bytes)
- 		rwbs[i++] = 'R';
- 	else
--- 
-1.7.6
--- 
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum
+I knew this fix has been tested and was working fine with Xen +
+CONFIG_TRANSPARENT_HUGEPAGE=n + 32bit + x86 + PAE. And when THP=n I
+could fix the problem without having to use a slightly more expensive
+cmpxchg8b for every pmd read happening with the mmap_sem hold in read
+mode.
+
+It was totally unexpected to run into trouble with Xen +
+CONFIG_TRANSPARENT_HUGEPAGE=y + 32bit + x86 + PAE, apologies.
+
+>From the oops it looks like atomic64_read trips on a dangling pmdp
+pointer, but if the problem doesn't happen with Xen then the pointer
+value shouldn't be the problem, and in turn the lock cmpxchg8b used to
+access the pointer is likely the problem.
+
+I gave a few suggestions on how to fix it, that should work regardless
+of why this is happening, but I'd prefer the Xen developers to comment
+on that.
+
+https://bugzilla.redhat.com/attachment.cgi?id=589620
+
+<f0> 0f c7 09 c3 8d 76 0
+
+f0 0f is the infamous opcode lock cmpxchg8b so it confirms it trips
+exactly on the pmdp read.
+
+ecx/edx = dcaea360 and "BUG: unable to handle kernel paging request at
+dcaea360" are probably all right, my best guess is that the insn used
+to read the pmd is unexpected.
