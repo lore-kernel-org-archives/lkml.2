@@ -1,151 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760513Ab2FGJpS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 05:45:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50085 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751557Ab2FGJpP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 05:45:15 -0400
-Date: Thu, 7 Jun 2012 11:45:04 +0200
-From: Jan Kara <jack@suse.cz>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        linux-fsdevel@vger.kernel.org,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: write-behind on streaming writes
-Message-ID: <20120607094504.GB25074@quack.suse.cz>
-References: <20120530032129.GA7479@localhost>
- <20120605172302.GB28556@redhat.com>
- <20120605174157.GC28556@redhat.com>
- <20120605184853.GD28556@redhat.com>
- <20120605201045.GE28556@redhat.com>
- <20120606025729.GA1197@redhat.com>
- <CA+55aFyxucvhYhbk0yyNa1WSeYXgHHAyWRHPNWDwODQhyAWGww@mail.gmail.com>
- <20120606121408.GB4934@redhat.com>
- <20120606140058.GA8098@localhost>
- <20120606170428.GB8133@redhat.com>
+	id S1760523Ab2FGJqj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 05:46:39 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:45713 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753531Ab2FGJqh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 05:46:37 -0400
+Date: Thu, 7 Jun 2012 11:46:29 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Jiri Olsa <jolsa@redhat.com>, acme@redhat.com, mingo@elte.hu,
+        paulus@samba.org, cjashfor@linux.vnet.ibm.com, eranian@google.com,
+        gorcunov@openvz.org, tzanussi@gmail.com, mhiramat@redhat.com,
+        robert.richter@amd.com, fche@redhat.com, linux-kernel@vger.kernel.org,
+        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
+        benjamin.redelings@nescent.org
+Subject: Re: [PATCH 01/16] perf: Unified API to record selective sets of arch
+ registers
+Message-ID: <20120607094624.GB19842@somewhere.redhat.com>
+References: <1337801535-12865-1-git-send-email-jolsa@redhat.com>
+ <1337801535-12865-2-git-send-email-jolsa@redhat.com>
+ <1337852636.9783.89.camel@laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120606170428.GB8133@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1337852636.9783.89.camel@laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 06-06-12 13:04:28, Vivek Goyal wrote:
-> On Wed, Jun 06, 2012 at 10:00:58PM +0800, Fengguang Wu wrote:
-> > On Wed, Jun 06, 2012 at 08:14:08AM -0400, Vivek Goyal wrote:
-> > > On Tue, Jun 05, 2012 at 08:14:08PM -0700, Linus Torvalds wrote:
-> > > > On Tue, Jun 5, 2012 at 7:57 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> > > > >
-> > > > > I had expected a bigger difference as sync_file_range() is just driving
-> > > > > max queue depth of 32 (total 16MB IO in flight), while flushers are
-> > > > > driving queue depths up to 140 or so. So in this paritcular test, driving
-> > > > > much deeper queue depths is not really helping much. (I have seen higher
-> > > > > throughputs with higher queue depths in the past. Now sure why don't we
-> > > > > see it here).
-> > > > 
-> > > > How did interactivity feel?
-> > > > 
-> > > > Because quite frankly, if the throughput difference is 12.5 vs 12
-> > > > seconds, I suspect the interactivity thing is what dominates.
-> > > > 
-> > > > And from my memory of the interactivity different was absolutely
-> > > > *huge*. Even back when I used rotational media, I basically couldn't
-> > > > even notice the background write with the sync_file_range() approach.
-> > > > While the regular writeback without the writebehind had absolutely
-> > > > *huge* pauses if you used something like firefox that uses fsync()
-> > > > etc. And starting new applications that weren't cached was noticeably
-> > > > worse too - and then with sync_file_range it wasn't even all that
-> > > > noticeable.
-> > > > 
-> > > > NOTE! For the real "firefox + fsync" test, I suspect you'd need to do
-> > > > the writeback on the same filesystem (and obviously disk) as your home
-> > > > directory is. If the big write is to another filesystem and another
-> > > > disk, I think you won't see the same issues.
-> > > 
-> > > Ok, I did following test on my single SATA disk and my root filesystem
-> > > is on this disk.
-> > > 
-> > > I dropped caches and launched firefox and monitored the time it takes
-> > > for firefox to start. (cache cold).
-> > > 
-> > > And my results are reverse of what you have been seeing. With
-> > > sync_file_range() running, firefox takes roughly 30 seconds to start and
-> > > with flusher in operation, it takes roughly 20 seconds to start. (I have
-> > > approximated the average of 3 runs for simplicity).
-> > > 
-> > > I think it is happening because sync_file_range() will send all
-> > > the writes as SYNC and it will compete with firefox IO. On the other
-> > > hand, flusher's IO will show up as ASYNC and CFQ  will be penalize it
-> > > heavily and firefox's IO will be prioritized. And this effect should
-> > > just get worse as more processes do sync_file_range().
-> > > 
-> > > So write-behind should provide better interactivity if writes submitted
-> > > are ASYNC and not SYNC.
-> > 
-> > Hi Vivek, thanks for testing all of these out! The result is
-> > definitely interesting and a surprise: we overlooked the SYNC nature
-> > of sync_file_range().
-> > 
-> > I'd suggest to use these calls to achieve the write-and-drop-behind
-> > behavior, *with* WB_SYNC_NONE:
-> > 
-> >         posix_fadvise(fd, offset, len, POSIX_FADV_DONTNEED);
-> >         sync_file_range(fd, offset, len, SYNC_FILE_RANGE_WAIT_AFTER);
-> > 
-> > The caveat is, the below bdi_write_congested() will never evaluate to
-> > true since we are only filling the request queue with 8MB data.
-> > 
-> > SYSCALL_DEFINE(fadvise64_64):
-> > 
-> >         case POSIX_FADV_DONTNEED:
-> >                 if (!bdi_write_congested(mapping->backing_dev_info))
-> >                         __filemap_fdatawrite_range(mapping, offset, endbyte,
-> >                                                    WB_SYNC_NONE);
+On Thu, May 24, 2012 at 11:43:56AM +0200, Peter Zijlstra wrote:
+> On Wed, 2012-05-23 at 21:32 +0200, Jiri Olsa wrote:
+> > +static inline u64 perf_reg_value(struct pt_regs *regs, int idx)
+> > +{
+> > +       switch (idx) {
+> > +       case PERF_X86_32_REG_EAX:
+> > +               return regs->ax;
+> > +       case PERF_X86_32_REG_EBX:
+> > +               return regs->bx;
+> > +       case PERF_X86_32_REG_ECX:
+> > +               return regs->cx;
+> > +       case PERF_X86_32_REG_EDX:
+> > +               return regs->dx;
+> > +       case PERF_X86_32_REG_ESI:
+> > +               return regs->si;
+> > +       case PERF_X86_32_REG_EDI:
+> > +               return regs->di;
+> > +       case PERF_X86_32_REG_EBP:
+> > +               return regs->bp;
+> > +       case PERF_X86_32_REG_ESP:
+> > +               return regs->sp;
+> > +       case PERF_X86_32_REG_EIP:
+> > +               return regs->ip;
+> > +       case PERF_X86_32_REG_FLAGS:
+> > +               return regs->flags;
+> > +       case PERF_X86_32_REG_CS:
+> > +               return regs->cs;
+> > +       case PERF_X86_32_REG_DS:
+> > +               return regs->ds;
+> > +       case PERF_X86_32_REG_ES:
+> > +               return regs->es;
+> > +       case PERF_X86_32_REG_FS:
+> > +               return regs->fs;
+> > +       case PERF_X86_32_REG_GS:
+> > +               return regs->gs;
+> > +       }
+> > +
+> > +       return 0;
+> > +} 
 > 
-> Hi Fengguang,
+> This is just sad... is there really no saner way to write this? I
+> suppose you're going to iterate your sample_regs bitmap and call this
+> function for every bit. GCC isn't known to generate particularly sane
+> code for switches :/
 > 
-> Instead of above, I modified sync_file_range() to call
-> __filemap_fdatawrite_range(WB_SYNC_NONE) and I do see now ASYNC writes
-> showing up at elevator.
-> 
-> With 4 processes doing sync_file_range() now, firefox start time test
-> clocks around 18-19 seconds which is better than 30-35 seconds of 4
-> processes doing buffered writes. And system looks pretty good from
-> interactivity point of view.
-  So do you have any idea why is that? Do we drive shallower queues? Also
-how does speed of the writers compare to the speed with normal buffered
-writes + fsync (you'd need fsync for sync_file_range writers as well to
-make comparison fair)?
 
-								Honza
-> ---
->  fs/sync.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> Index: linux-2.6/fs/sync.c
-> ===================================================================
-> --- linux-2.6.orig/fs/sync.c	2012-06-06 00:12:33.000000000 -0400
-> +++ linux-2.6/fs/sync.c	2012-06-06 23:11:17.050691776 -0400
-> @@ -342,7 +342,7 @@ SYSCALL_DEFINE(sync_file_range)(int fd, 
->  	}
->  
->  	if (flags & SYNC_FILE_RANGE_WRITE) {
-> -		ret = filemap_fdatawrite_range(mapping, offset, endbyte);
-> +		ret = __filemap_fdatawrite_range(mapping, offset, endbyte, WB_SYNC_NONE);
->  		if (ret < 0)
->  			goto out_put;
->  	}
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Do you think that compat regs are always a subset of native regs in all
+archs as in x86? Sounds logic but I'm asking just in case. If so then yeah
+this should work.
