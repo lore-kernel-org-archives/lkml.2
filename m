@@ -1,41 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933065Ab2FGVqT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 17:46:19 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:45915 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932994Ab2FGVqR (ORCPT
+	id S933055Ab2FGVxK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 17:53:10 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:33925 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757756Ab2FGVxI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 17:46:17 -0400
-Date: Thu, 07 Jun 2012 14:46:16 -0700 (PDT)
-Message-Id: <20120607.144616.2224976714259476349.davem@davemloft.net>
-To: Julia.Lawall@lip6.fr
-Cc: kernel-janitors@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, joe@perches.com, julia@diku.dk
-Subject: Re: [PATCH 1/7] drivers/ide/ide-cs.c: adjust suspicious bit
- operation
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1339018901-28439-2-git-send-email-Julia.Lawall@lip6.fr>
-References: <1339018901-28439-1-git-send-email-Julia.Lawall@lip6.fr>
-	<1339018901-28439-2-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: Mew version 6.5 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Thu, 7 Jun 2012 17:53:08 -0400
+Date: Thu, 7 Jun 2012 22:53:05 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH] gpiolib: wm8994: Pay attention to the value set when
+ enabling as output
+Message-ID: <20120607215305.GA19760@sirena.org.uk>
+References: <1338916327-3958-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <CACRpkdY379kHbaMhGD4Q9y=Nkv2NPey+n1zUuTLAE-j7f8gadA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdY379kHbaMhGD4Q9y=Nkv2NPey+n1zUuTLAE-j7f8gadA@mail.gmail.com>
+X-Cookie: Is there life before breakfast?
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-Date: Wed,  6 Jun 2012 23:41:35 +0200
+On Thu, Jun 07, 2012 at 01:11:20PM +0200, Linus Walleij wrote:
+> <broonie@opensource.wolfsonmicro.com> wrote:
 
-> -	if (!(pdev->resource[0]->flags & IO_DATA_PATH_WIDTH_8)) {
-> +	if ((p1dev->resource[0]->flags & IO_DATA_PATH_WIDTH)
+> > + ? ? ? if (value)
+> > + ? ? ? ? ? ? ? value = WM8994_GPN_LVL;
 
-I'm really surprised someone as thorough as yourself did not
-compile test this.
+> > ? ? ? ?return wm8994_set_bits(wm8994, WM8994_GPIO_1 + offset,
+> > - ? ? ? ? ? ? ? ? ? ? ? ? ? ? ?WM8994_GPN_DIR, 0);
+> > + ? ? ? ? ? ? ? ? ? ? ? ? ? ? ?WM8994_GPN_DIR | WM8994_GPN_LVL, value);
+> > ?}
 
-This is just more proof that it's absolutely pointless to make any
-changes at all to the old IDE layer.  Nobody really cares, and the
-risk %99.999 of the time is purely to introduce regressions rather
-than make forward progress.
+> The commit message is so terse compared to what the code does that
+> I cannot claim to understand what this patch is doing.
+
+> Could you elaborate on the problem ans symptoms, just for a nice
+> commit log?
+
+I'm not really sure what more there is to say...  previously we were
+ignoring the value that's set as part of setting output mode so if
+someone wanted to set a value different to the one the chip happened to
+have that wouldn't happen.  Ignoring the vaue that the user is trying to
+set seems like an obvious enough bug in itself.
