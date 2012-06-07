@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932739Ab2FGETh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 00:19:37 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:63657 "EHLO
+	id S932793Ab2FGETq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 00:19:46 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:59627 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932696Ab2FGETd (ORCPT
+	with ESMTP id S932768Ab2FGETn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 00:19:33 -0400
-Message-Id: <20120607040344.157249077@linuxfoundation.org>
+	Thu, 7 Jun 2012 00:19:43 -0400
+Message-Id: <20120607040343.713385544@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Thu, 07 Jun 2012 13:04:30 +0900
+Date: Thu, 07 Jun 2012 13:04:27 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        Kun Jiang <kunx.jiang@intel.com>, Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 54/82] ipv4: fix the rcu race between free_fib_info and ip_route_output_slow
+        alan@lxorguk.ukuu.org.uk, Thomas Hellstrom <thellstrom@vmware.com>,
+        Jakob Bornecrantz <jakob@vmware.com>, Dave Airlie <airlied@redhat.com>
+Subject: [ 51/82] drm/ttm: Fix spinlock imbalance
 In-Reply-To: <20120607041406.GA13233@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,89 +25,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Thomas Hellstrom <thellstrom@vmware.com>
 
-From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+commit a8ff3ee211fccf708e1911bbc096625453ebf759 upstream.
 
-[ Upstream commit e49cc0da7283088c5e03d475ffe2fdcb24a6d5b1 ]
+This imbalance may cause hangs when TTM is trying to swap out a buffer
+that is already on the delayed delete list.
 
-We hit a kernel OOPS.
-
-<3>[23898.789643] BUG: sleeping function called from invalid context at
-/data/buildbot/workdir/ics/hardware/intel/linux-2.6/arch/x86/mm/fault.c:1103
-<3>[23898.862215] in_atomic(): 0, irqs_disabled(): 0, pid: 10526, name:
-Thread-6683
-<4>[23898.967805] HSU serial 0000:00:05.1: 0000:00:05.2:HSU serial prevented me
-to suspend...
-<4>[23899.258526] Pid: 10526, comm: Thread-6683 Tainted: G        W
-3.0.8-137685-ge7742f9 #1
-<4>[23899.357404] HSU serial 0000:00:05.1: 0000:00:05.2:HSU serial prevented me
-to suspend...
-<4>[23899.904225] Call Trace:
-<4>[23899.989209]  [<c1227f50>] ? pgtable_bad+0x130/0x130
-<4>[23900.000416]  [<c1238c2a>] __might_sleep+0x10a/0x110
-<4>[23900.007357]  [<c1228021>] do_page_fault+0xd1/0x3c0
-<4>[23900.013764]  [<c18e9ba9>] ? restore_all+0xf/0xf
-<4>[23900.024024]  [<c17c007b>] ? napi_complete+0x8b/0x690
-<4>[23900.029297]  [<c1227f50>] ? pgtable_bad+0x130/0x130
-<4>[23900.123739]  [<c1227f50>] ? pgtable_bad+0x130/0x130
-<4>[23900.128955]  [<c18ea0c3>] error_code+0x5f/0x64
-<4>[23900.133466]  [<c1227f50>] ? pgtable_bad+0x130/0x130
-<4>[23900.138450]  [<c17f6298>] ? __ip_route_output_key+0x698/0x7c0
-<4>[23900.144312]  [<c17f5f8d>] ? __ip_route_output_key+0x38d/0x7c0
-<4>[23900.150730]  [<c17f63df>] ip_route_output_flow+0x1f/0x60
-<4>[23900.156261]  [<c181de58>] ip4_datagram_connect+0x188/0x2b0
-<4>[23900.161960]  [<c18e981f>] ? _raw_spin_unlock_bh+0x1f/0x30
-<4>[23900.167834]  [<c18298d6>] inet_dgram_connect+0x36/0x80
-<4>[23900.173224]  [<c14f9e88>] ? _copy_from_user+0x48/0x140
-<4>[23900.178817]  [<c17ab9da>] sys_connect+0x9a/0xd0
-<4>[23900.183538]  [<c132e93c>] ? alloc_file+0xdc/0x240
-<4>[23900.189111]  [<c123925d>] ? sub_preempt_count+0x3d/0x50
-
-Function free_fib_info resets nexthop_nh->nh_dev to NULL before releasing
-fi. Other cpu might be accessing fi. Fixing it by delaying the releasing.
-
-With the patch, we ran MTBF testing on Android mobile for 12 hours
-and didn't trigger the issue.
-
-Thank Eric for very detailed review/checking the issue.
-
-Signed-off-by: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Signed-off-by: Kun Jiang <kunx.jiang@intel.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
+Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv4/fib_semantics.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/net/ipv4/fib_semantics.c
-+++ b/net/ipv4/fib_semantics.c
-@@ -145,6 +145,12 @@ static void free_fib_info_rcu(struct rcu
- {
- 	struct fib_info *fi = container_of(head, struct fib_info, rcu);
- 
-+	change_nexthops(fi) {
-+		if (nexthop_nh->nh_dev)
-+			dev_put(nexthop_nh->nh_dev);
-+	} endfor_nexthops(fi);
-+
-+	release_net(fi->fib_net);
- 	if (fi->fib_metrics != (u32 *) dst_default_metrics)
- 		kfree(fi->fib_metrics);
- 	kfree(fi);
-@@ -156,13 +162,7 @@ void free_fib_info(struct fib_info *fi)
- 		pr_warn("Freeing alive fib_info %p\n", fi);
- 		return;
- 	}
--	change_nexthops(fi) {
--		if (nexthop_nh->nh_dev)
--			dev_put(nexthop_nh->nh_dev);
--		nexthop_nh->nh_dev = NULL;
--	} endfor_nexthops(fi);
- 	fib_info_cnt--;
--	release_net(fi->fib_net);
- 	call_rcu(&fi->rcu, free_fib_info_rcu);
- }
+---
+ drivers/gpu/drm/ttm/ttm_bo.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/drivers/gpu/drm/ttm/ttm_bo.c
++++ b/drivers/gpu/drm/ttm/ttm_bo.c
+@@ -1821,6 +1821,7 @@ static int ttm_bo_swapout(struct ttm_mem
+ 			spin_unlock(&glob->lru_lock);
+ 			(void) ttm_bo_cleanup_refs(bo, false, false, false);
+ 			kref_put(&bo->list_kref, ttm_bo_release_list);
++			spin_lock(&glob->lru_lock);
+ 			continue;
+ 		}
  
 
 
