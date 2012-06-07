@@ -1,81 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757920Ab2FGCv1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 22:51:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7535 "EHLO mx1.redhat.com"
+	id S1757396Ab2FGC7z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 22:59:55 -0400
+Received: from mga09.intel.com ([134.134.136.24]:37831 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754024Ab2FGCv0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 22:51:26 -0400
-Date: Wed, 6 Jun 2012 22:51:17 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: axboe@kernel.dk
-Subject: vmsplice triggering bug in kfree.
-Message-ID: <20120607025117.GA28261@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, axboe@kernel.dk
+	id S1752038Ab2FGC7y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 22:59:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="149193715"
+Message-ID: <4FD01896.1010506@intel.com>
+Date: Thu, 07 Jun 2012 10:57:26 +0800
+From: ShuoX Liu <shuox.liu@intel.com>
+Reply-To: shuox.liu@intel.com
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Borislav Petkov <bp@alien8.de>,
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: [PATCH v7 1/2] printk: add interface for disabling recursion check
+References: <4FC2E944.6060903@intel.com> <20120604171202.GA8533@x1.osrc.amd.com> <1338856360.14538.220.camel@ymzhang.sh.intel.com> <20120605081448.GA7097@liondog.tnic> <4FCDD72A.9030701@intel.com> <4FCDD78A.3070106@intel.com> <20120605151542.GA10669@x1.osrc.amd.com> <1338942965.14538.233.camel@ymzhang.sh.intel.com> <4FCF155B.3090705@intel.com> <4FCF160D.8010404@intel.com> <20120606152238.GA3874@x1.osrc.amd.com>
+In-Reply-To: <20120606152238.GA3874@x1.osrc.amd.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kernel BUG at mm/slub.c:3474!
-invalid opcode: 0000 [#1] PREEMPT SMP 
-CPU 7 
-Modules linked in: ipt_ULOG tun fuse binfmt_misc nfnetlink caif_socket caif phonet bluetooth rfkill can llc2 pppoe pppox ppp_generic slhc irda crc_ccitt rds af_key decnet rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables kvm_intel kvm crc32c_intel ghash_clmulni_intel microcode usb_debug serio_raw pcspkr i2c_i801 e1000e nfsd nfs_acl auth_rpcgss lockd sunrpc i915 video i2c_algo_bit drm_kms_helper drm i2c_core [last unloaded: scsi_wait_scan]
-Pid: 21252, comm: trinity-child7 Not tainted 3.5.0-rc1+ #74
-RIP: 0010:[<ffffffff811945ce>]  [<ffffffff811945ce>] kfree+0x26e/0x270
-RSP: 0018:ffff880104065c48  EFLAGS: 00010246
-RAX: 0020000000000000 RBX: ffff880104065d18 RCX: 0000000000000000
-RDX: ffffffff7fffffff RSI: ffff880104065cf0 RDI: ffff880104065d18
-RBP: ffff880104065c78 R08: 00000000fffffff2 R09: 0000000000000000
-R10: ffffffff821e2d00 R11: 0000000000000001 R12: 0000000000000ffc
-R13: ffffea0004101940 R14: 0000000000000000 R15: ffff880104065d98
-FS:  00007f5baafd3740(0000) GS:ffff880148a00000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 0000000000000ffc CR3: 0000000107181000 CR4: 00000000001407e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process trinity-child7 (pid: 21252, threadinfo ffff880104064000, task ffff8801080acd60)
-Stack:
- 0000000000000010 ffff880104065cf0 0000000000000ffc fffffffffffffff2
- 0000000000000000 ffff880104065d98 ffff880104065c98 ffffffff811dc9ef
- 0000000000000018 0000000000000161 ffff880104065ec8 ffffffff811dcc4c
-Call Trace:
- [<ffffffff811dc9ef>] splice_shrink_spd+0x1f/0x30
- [<ffffffff811dcc4c>] vmsplice_to_pipe+0x24c/0x290
- [<ffffffff811db920>] ? page_cache_pipe_buf_release+0x30/0x30
- [<ffffffff810b1e7e>] ? put_lock_stats.isra.23+0xe/0x40
- [<ffffffff8164dee8>] ? _raw_spin_unlock_irqrestore+0x38/0x80
- [<ffffffff8108cd97>] ? local_clock+0x47/0x60
- [<ffffffff81078daa>] ? __hrtimer_start_range_ns+0x14a/0x530
- [<ffffffff810b1ac8>] ? trace_hardirqs_off_caller+0x28/0xc0
- [<ffffffff81078daa>] ? __hrtimer_start_range_ns+0x14a/0x530
- [<ffffffff810b1e7e>] ? put_lock_stats.isra.23+0xe/0x40
- [<ffffffff8164dee8>] ? _raw_spin_unlock_irqrestore+0x38/0x80
- [<ffffffff8108cd97>] ? local_clock+0x47/0x60
- [<ffffffff81050e0c>] ? do_setitimer+0x1cc/0x310
- [<ffffffff810b1ac8>] ? trace_hardirqs_off_caller+0x28/0xc0
- [<ffffffff81086f91>] ? get_parent_ip+0x11/0x50
- [<ffffffff81651919>] ? sub_preempt_count+0x79/0xd0
- [<ffffffff811ad4da>] ? fget_light+0x3ca/0x500
- [<ffffffff811dd90d>] sys_vmsplice+0x9d/0x210
- [<ffffffff81655937>] ? sysret_check+0x1b/0x56
- [<ffffffff81326f3e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
- [<ffffffff81655912>] system_call_fastpath+0x16/0x1b
-Code: e8 58 ac fb ff e9 a8 fe ff ff 0f 0b 4d 8b 6d 30 e9 fe fd ff ff 4c 89 f1 48 89 da 4c 89 ee 4c 89 e7 e8 91 fd 4a 00 e9 87 fe ff ff <0f> 0b 55 48 89 e5 53 48 83 ec 08 66 66 66 66 90 48 89 fb 48 8b 
-RIP  [<ffffffff811945ce>] kfree+0x26e/0x270
- RSP <ffff880104065c48>
----[ end trace 77573bf4cc1dedea ]---
+From: ShuoX Liu <shuox.liu@intel.com>
 
+With some special scenario, such as Machine Check Exception happened
+in printk, we want to bypass printk recursion check to printk some
+important information. So we add these interfaces of printk.
 
-That's...
+1) printk_recursion_check_disable() for disabling recursion check
+2) printk_recursion_check_enable() for enabling recursion check
 
+Signed-off-by: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+Signed-off-by: ShuoX Liu <shuox.liu@intel.com>
+---
+ include/linux/printk.h |    3 +++
+ kernel/printk.c        |   17 ++++++++++++++++-
+ 2 files changed, 19 insertions(+), 1 deletions(-)
 
-3473         if (unlikely(!PageSlab(page))) {
-3474                 BUG_ON(!PageCompound(page));
-
+diff --git a/include/linux/printk.h b/include/linux/printk.h
+index 1bec2f7..da48ec7 100644
+--- a/include/linux/printk.h
++++ b/include/linux/printk.h
+@@ -42,6 +42,9 @@ static inline void console_verbose(void)
+ 		console_loglevel = 15;
+ }
+ 
++void printk_recursion_check_disable(void);
++void printk_recursion_check_enable(void);
++
+ struct va_format {
+ 	const char *fmt;
+ 	va_list *va;
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 32462d2..0580f67 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -78,6 +78,19 @@ int console_printk[4] = {
+ int oops_in_progress;
+ EXPORT_SYMBOL(oops_in_progress);
+ 
++static atomic_t recursion_check_disabled = ATOMIC_INIT(0);
++
++void printk_recursion_check_disable(void)
++{
++	atomic_inc(&recursion_check_disabled);
++}
++
++void printk_recursion_check_enable(void)
++{
++	WARN_ON(atomic_read(&recursion_check_disabled) < 1);
++	atomic_dec(&recursion_check_disabled);
++}
++
+ /*
+  * console_sem protects the console_drivers list, and also
+  * provides serialisation for access to the entire console
+@@ -1295,7 +1308,9 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 		 * recursion and return - but flag the recursion so that
+ 		 * it can be printed at the next appropriate moment:
+ 		 */
+-		if (!oops_in_progress && !lockdep_recursing(current)) {
++		if (!atomic_read(&recursion_check_disabled)
++			&& !oops_in_progress
++			&& !lockdep_recursing(current)) {
+ 			recursion_bug = 1;
+ 			goto out_restore_irqs;
+ 		}
+-- 
+1.7.1
 
