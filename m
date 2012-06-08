@@ -1,51 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759403Ab2FHBF0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 21:05:26 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:52339 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757319Ab2FHBFZ (ORCPT
+	id S1759451Ab2FHBGt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 21:06:49 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:61700 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757319Ab2FHBGs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 21:05:25 -0400
-Date: Fri, 8 Jun 2012 03:05:20 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: akpm@linux-foundation.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, khlebnikov@openvz.org, hughd@google.com,
-        kamezawa.hiroyu@jp.fujitsu.com, oleg@redhat.com,
-        stable@vger.kernel.org
-Subject: Re: [patch 12/12] mm: correctly synchronize rss-counters at exit/exec
-Message-ID: <20120608010520.GA25317@x4>
-References: <20120607212114.E4F5AA02F8@akpm.mtv.corp.google.com>
- <CA+55aFxOWR_h1vqRLAd_h5_woXjFBLyBHP--P8F7WsYrciXdmA@mail.gmail.com>
- <CA+55aFyQUBXhjVLJH6Fhz9xnpfXZ=9Mej5ujt6ss7VUqT1g9Jg@mail.gmail.com>
+	Thu, 7 Jun 2012 21:06:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFyQUBXhjVLJH6Fhz9xnpfXZ=9Mej5ujt6ss7VUqT1g9Jg@mail.gmail.com>
+In-Reply-To: <20120608010008.GA7191@redhat.com>
+References: <20120608002451.GA821@redhat.com> <CA+55aFzivM8Z1Bjk3Qo2vtnQhCQ7fQ4rf_a+EXY7noXQcxL_CA@mail.gmail.com>
+ <20120608010008.GA7191@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 7 Jun 2012 18:06:27 -0700
+X-Google-Sender-Auth: zMIcz8e_tsTNrsx3rYFP1ubgErg
+Message-ID: <CA+55aFxwVWiVwxj39DoJmMTknh7JKvCxzxyu-cMQZwd53jOmgQ@mail.gmail.com>
+Subject: Re: a whole bunch of crashes since todays -mm merge.
+To: Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012.06.07 at 17:25 -0700, Linus Torvalds wrote:
-> Ugh, looking more at the patch, I'm getting more and more convinces
-> that it is pure and utter garbage.
-> 
-> It does "sync_mm_rss(mm);" in mmput(), _after_ it has done the
-> possibly final mmdrop(). WTF?
-> 
-> This is crap, guys. Seriously. Stop playing russian rulette with this
-> code. I think we need to revert *all* of the crazy rss games, unless
-> Konstantin can show us some truly obviously correct fix.
-> 
-> Sadly, I merged and pushed out the crap before I had rebooted and
-> noticed this problem, so now it's in the wild. Can somebody please
-> take a look at this asap?
+On Thu, Jun 7, 2012 at 6:00 PM, Dave Jones <davej@redhat.com> wrote:
+>
+> Or I might just be getting lucky..
 
-You've somehow merged the wrong patch.
-The correct version can be found here:
-http://marc.info/?l=linux-kernel&m=133848759505805
+Do you have SPLIT_RSS_COUNTING enabled?
 
--- 
-Markus
+Do you see multiple "BUG: Bad rss-counter state" messages?
+
+The sync_mm_rss() thing could basically overwrite an already-free'd
+piece of memory, so it could cause pretty random stuff. But I think
+you need to be unlucky to hit the window.
+
+                Linus
