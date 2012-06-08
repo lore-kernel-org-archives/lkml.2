@@ -1,137 +1,405 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762040Ab2FHQ0X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 12:26:23 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:38462 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756885Ab2FHQ0V convert rfc822-to-8bit (ORCPT
+	id S1762026Ab2FHQ2G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 12:28:06 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:45219 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761337Ab2FHQ2C convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 12:26:21 -0400
+	Fri, 8 Jun 2012 12:28:02 -0400
 MIME-Version: 1.0
-In-Reply-To: <1339051157.26966.97.camel@edumazet-glaptop>
-References: <CAHFgRy9jgxOrF=b=oQd-zK5CKxDacOKdBAX_BEuyW+R+sK_GyQ@mail.gmail.com>
-	<1339051157.26966.97.camel@edumazet-glaptop>
-Date: Fri, 8 Jun 2012 12:26:20 -0400
-Message-ID: <CAHFgRy-u3Xh=1XjrZi2x+=6bBdQ=Ve8i6jer9ppjYEWun70hxQ@mail.gmail.com>
-Subject: Re: 3.5.0+ - Linus GIT - WARNING: at net/sched/sch_generic.c:255 dev_watchdog+0xeb/0x15f()
-From: Miles Lane <miles.lane@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Wim Van Sebroeck <wim@iguana.be>, Jay Cliburn <jcliburn@gmail.com>,
-        Chris Snook <chris.snook@gmail.com>, netdev <netdev@vger.kernel.org>,
-        Huang Xiong <xiong@qca.qualcomm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1339161972.2507.13.camel@laptop>
+References: <20120607071531.GA4849@quad>
+	<1339064319.23343.13.camel@twins>
+	<CABPqkBQ+p5rcuxpXCTLMXPM+awAHhQ6mP9-WzVh5GWtn2GyfrA@mail.gmail.com>
+	<1339065932.23343.18.camel@twins>
+	<CABPqkBQ=tLXXsgvzQx+i01Owm4MM8m=6cEVVi4ab64gOiTTBYQ@mail.gmail.com>
+	<1339067757.23343.21.camel@twins>
+	<20120608093513.GA22520@gmail.com>
+	<1339149613.23343.52.camel@twins>
+	<1339161972.2507.13.camel@laptop>
+Date: Fri, 8 Jun 2012 18:28:00 +0200
+Message-ID: <CABPqkBTXfri3jNhv=XuW+EK5dX727HfdbPriaE92qMpzBD0irQ@mail.gmail.com>
+Subject: Re: [PATCH] perf/x86: check ucode before disabling PEBS on SandyBridge
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        andi@firstfloor.org, mingo@elte.hu, ming.m.lin@intel.com,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Dimitri Sivanich <sivanich@sgi.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 7, 2012 at 2:39 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> On Thu, 2012-06-07 at 02:16 -0400, Miles Lane wrote:
->> WARNING: at net/sched/sch_generic.c:255 dev_watchdog+0xeb/0x15f()
->> Hardware name: UL50VT
->> NETDEV WATCHDOG: eth0 (atl1c): transmit queue 0 timed out
->> Modules linked in: hfsplus hfs vfat msdos fat snd_hrtimer ipv6
->> snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep
->> snd_pcm_oss snd_seq_dummy snd_mixer_oss uvcvideo videobuf2_core
->> snd_pcm videodev snd_seq_oss snd_seq_midi snd_rawmidi media
->> snd_seq_midi_event acpi_cpufreq videobuf2_vmalloc videobuf2_memops
->> snd_seq iwlwifi snd_timer snd_seq_device asus_laptop mac80211
->> sparse_keymap snd cfg80211 coretemp soundcore psmouse snd_page_alloc
->> rtc_cmos mperf processor evdev rfkill battery led_class input_polldev
->> ac i915 nouveau sr_mod cdrom sd_mod ehci_hcd atl1c uhci_hcd intel_agp
->> ttm usbcore intel_gtt usb_common drm_kms_helper thermal video
->> thermal_sys hwmon button
->> Pid: 3025, comm: hud-service Not tainted 3.5.0-rc1+ #128
->> Call Trace:
->> �<IRQ> �[<ffffffff8102d42f>] warn_slowpath_common+0x7e/0x97
->> �[<ffffffff8102d4dc>] warn_slowpath_fmt+0x41/0x43
->> �[<ffffffff81360f1c>] dev_watchdog+0xeb/0x15f
->> �[<ffffffff8103af44>] run_timer_softirq+0x20e/0x356
->> �[<ffffffff8103ae7e>] ? run_timer_softirq+0x148/0x356
->> �[<ffffffff81360e31>] ? netif_tx_unlock+0x57/0x57
->> �[<ffffffff810344f8>] __do_softirq+0x103/0x239
->> �[<ffffffff8107122a>] ? clockevents_program_event+0x9c/0xb9
->> �[<ffffffff8140a4cc>] call_softirq+0x1c/0x30
->> �[<ffffffff81003bb9>] do_softirq+0x37/0x82
->> �[<ffffffff81034888>] irq_exit+0x4c/0xb1
->> �[<ffffffff8101ba71>] smp_apic_timer_interrupt+0x76/0x84
->> �[<ffffffff81409adc>] apic_timer_interrupt+0x6c/0x80
->> �<EOI> �[<ffffffff81105161>] ? fget_raw_light+0x4c/0x7d
->> �[<ffffffff81105161>] ? fget_raw_light+0x4c/0x7d
->> �[<ffffffff8111153b>] sys_fcntl+0x23/0x53b
->> �[<ffffffff81004b68>] ? print_context_stack+0x44/0xb1
->> �[<ffffffff81408fe2>] system_call_fastpath+0x16/0x1b
->> ---[ end trace c1f284d9c873031d ]---
+On Fri, Jun 8, 2012 at 3:26 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Fri, 2012-06-08 at 12:00 +0200, Peter Zijlstra wrote:
+>> > > Or we could put a hook in the ucode loader.
+>> >
+>> > I'd really suggest the latter - I doubt this will be our only
+>> > ucode dependent quirk, going forward ...
+>>
+>> Yeah, am in the middle of writing that..
 >
-> CC netdev and Huang Xiong
+> OK so the micro-code stuff is a complete trainwreck.
 >
-> Atheros drivers are known to have buggy tx completion, its incredible...
+> The very worst is that it does per-cpu micro-code updates, not machine
+> wide. This results in it being able to have different revisions on
+> different cpus. This in turn makes the below O(n^2) :/
 >
-> You could try following patch, not a 'perfect' solution, but a fix.
+> The biggest problem is finding when the minimum revision changes, at
+> best this is a n log n sorting problem due to the per-cpu setup, but I
+> couldn't be arsed to implement a tree or anything fancy since it all
+> stinks anyway.
 >
-> Thanks
+> Why do we have per-cpu firmware anyway?
 >
-> diff --git a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-> index 9cc1570..31224f3 100644
-> --- a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-> +++ b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-> @@ -1551,10 +1551,12 @@ static bool atl1c_clean_tx_irq(struct atl1c_adapter *adapter,
-> � � � � � � � �atomic_set(&tpd_ring->next_to_clean, next_to_clean);
-> � � � �}
+> Anyway, I have the below in two patches, but I thought to first post the
+> entire mess since if anybody has a better idea I'm all ears.
 >
-> + � � � spin_lock(&adapter->tx_lock);
-> � � � �if (netif_queue_stopped(adapter->netdev) &&
-> � � � � � � � � � � � �netif_carrier_ok(adapter->netdev)) {
-> � � � � � � � �netif_wake_queue(adapter->netdev);
-> � � � �}
-> + � � � spin_unlock(&adapter->tx_lock);
+> It does work though..
 >
-> � � � �return true;
-> �}
+> ---
+>  arch/x86/include/asm/microcode.h       |   12 ++++++
+>  arch/x86/kernel/cpu/perf_event.c       |   14 +++----
+>  arch/x86/kernel/cpu/perf_event.h       |    2 +-
+>  arch/x86/kernel/cpu/perf_event_intel.c |   63 ++++++++++++++++++++++++++++++--
+>  arch/x86/kernel/microcode_amd.c        |    1 +
+>  arch/x86/kernel/microcode_core.c       |   53 +++++++++++++++++++++++----
+>  arch/x86/kernel/microcode_intel.c      |    1 +
+>  arch/x86/kernel/setup.c                |    5 +++
+>  8 files changed, 132 insertions(+), 19 deletions(-)
 >
+> diff --git a/arch/x86/include/asm/microcode.h b/arch/x86/include/asm/microcode.h
+> index 4ebe157..1cd2dc5 100644
+> --- a/arch/x86/include/asm/microcode.h
+> +++ b/arch/x86/include/asm/microcode.h
+> @@ -32,6 +32,7 @@ struct microcode_ops {
 >
+>  struct ucode_cpu_info {
+>        struct cpu_signature    cpu_sig;
+> +       int                     new_rev;
+>        int                     valid;
+>        void                    *mc;
+>  };
+> @@ -63,4 +64,15 @@ static inline struct microcode_ops * __init init_amd_microcode(void)
+>  static inline void __exit exit_amd_microcode(void) {}
+>  #endif
 >
+> +extern struct blocking_notifier_head microcode_notifier;
+> +
+> +#define MICROCODE_CAN_UPDATE   0x01
+> +#define MICROCODE_UPDATED      0x02
+> +
+> +#define microcode_notifier(fn)                                         \
+> +do {                                                                   \
+> +       static struct notifier_block fn##_nb ={ .notifier_call = fn };  \
+> +       blocking_notifier_chain_register(&microcode_notifier, &fn##_nb);\
+> +} while (0)
+> +
+>  #endif /* _ASM_X86_MICROCODE_H */
+> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+> index 000a474..d3ef86c1 100644
+> --- a/arch/x86/kernel/cpu/perf_event.c
+> +++ b/arch/x86/kernel/cpu/perf_event.c
+> @@ -377,7 +377,7 @@ int x86_pmu_hw_config(struct perf_event *event)
+>                int precise = 0;
 >
+>                /* Support for constant skid */
+> -               if (x86_pmu.pebs_active) {
+> +               if (x86_pmu.pebs_active && !x86_pmu.pebs_broken) {
+>                        precise++;
+>
+>                        /* Support for IP fixup */
+> @@ -1677,9 +1677,9 @@ static struct pmu pmu = {
+>        .pmu_enable             = x86_pmu_enable,
+>        .pmu_disable            = x86_pmu_disable,
+>
+> -       .attr_groups    = x86_pmu_attr_groups,
+> +       .attr_groups            = x86_pmu_attr_groups,
+>
+> -       .event_init     = x86_pmu_event_init,
+> +       .event_init             = x86_pmu_event_init,
+>
+>        .add                    = x86_pmu_add,
+>        .del                    = x86_pmu_del,
+> @@ -1687,11 +1687,11 @@ static struct pmu pmu = {
+>        .stop                   = x86_pmu_stop,
+>        .read                   = x86_pmu_read,
+>
+> -       .start_txn      = x86_pmu_start_txn,
+> -       .cancel_txn     = x86_pmu_cancel_txn,
+> -       .commit_txn     = x86_pmu_commit_txn,
+> +       .start_txn              = x86_pmu_start_txn,
+> +       .cancel_txn             = x86_pmu_cancel_txn,
+> +       .commit_txn             = x86_pmu_commit_txn,
+>
+> -       .event_idx      = x86_pmu_event_idx,
+> +       .event_idx              = x86_pmu_event_idx,
+>        .flush_branch_stack     = x86_pmu_flush_branch_stack,
+>  };
+>
+> diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+> index 3df3de9..a5ecfe8 100644
+> --- a/arch/x86/kernel/cpu/perf_event.h
+> +++ b/arch/x86/kernel/cpu/perf_event.h
+> @@ -373,7 +373,7 @@ struct x86_pmu {
+>         * Intel DebugStore bits
+>         */
+>        int             bts, pebs;
+> -       int             bts_active, pebs_active;
+> +       int             bts_active, pebs_active, pebs_broken;
+>        int             pebs_record_size;
+>        void            (*drain_pebs)(struct pt_regs *regs);
+>        struct event_constraint *pebs_constraints;
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+> index 5ec146c..bde86cf 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
+> @@ -15,6 +15,7 @@
+>
+>  #include <asm/hardirq.h>
+>  #include <asm/apic.h>
+> +#include <asm/microcode.h>
+>
+>  #include "perf_event.h"
+>
+> @@ -1714,11 +1715,67 @@ static __init void intel_clovertown_quirk(void)
+>        x86_pmu.pebs_constraints = NULL;
+>  }
+>
+> +static const u32 snb_ucode_rev = 0x28;
+> +
+> +static void intel_snb_verify_ucode(void)
+> +{
+> +       u32 rev = UINT_MAX;
+> +       int pebs_broken = 0;
+> +       int cpu;
+> +
+> +       get_online_cpus();
+> +       /*
+> +        * Because the microcode loader is bloody stupid and allows different
+> +        * revisions per cpu and does strictly per-cpu loading, we now have to
+> +        * check all cpus to determine the minimally installed revision.
+> +        *
+> +        * This makes updating the microcode O(n^2) in the number of CPUs :/
+> +        */
+> +       for_each_online_cpu(cpu)
+> +               rev = min(cpu_data(cpu).microcode, rev);
+> +       put_online_cpus();
+> +
+> +       pebs_broken = (rev < snb_ucode_rev);
+> +
+> +       if (pebs_broken == x86_pmu.pebs_broken)
+> +               return;
+> +
+> +       /*
+> +        * Serialized by the microcode lock..
+> +        */
+> +       if (x86_pmu.pebs_broken) {
+> +               pr_info("PEBS enabled due to micro-code update\n");
+> +               x86_pmu.pebs_broken = 0;
+> +       } else {
+> +               pr_info("PEBS disabled due to CPU errata, "
+> +                       "please upgrade micro-code to at least %x (current: %x)\n",
+> +                       snb_ucode_rev, rev);
+> +               x86_pmu.pebs_broken = 1;
+> +       }
+> +}
+> +
+> +static int intel_snb_ucode_notifier(struct notifier_block *self,
+> +                                  unsigned long action, void *_uci)
+> +{
+> +       /*
+> +        * Since ucode cannot be down-graded, and no future ucode revision
+> +        * is known to break PEBS again, we're ok with MICROCODE_CAN_UPDATE.
+> +        */
+> +
+> +       if (action == MICROCODE_UPDATED)
+> +               intel_snb_verify_ucode();
+> +
+> +       return NOTIFY_DONE;
+> +}
+> +
+>  static __init void intel_sandybridge_quirk(void)
+>  {
+> -       pr_warn("PEBS disabled due to CPU errata\n");
+> -       x86_pmu.pebs = 0;
+> -       x86_pmu.pebs_constraints = NULL;
+> +       intel_snb_verify_ucode();
+> +       /*
+> +        * we're still single threaded, so while there's a hole here,
+> +        * you can't trigger it.
+> +        */
+> +       microcode_notifier(intel_snb_ucode_notifier);
+>  }
+>
+>  static const struct { int id; char *name; } intel_arch_events_map[] __initconst = {
+> diff --git a/arch/x86/kernel/microcode_amd.c b/arch/x86/kernel/microcode_amd.c
+> index 8a2ce8f..265831e 100644
+> --- a/arch/x86/kernel/microcode_amd.c
+> +++ b/arch/x86/kernel/microcode_amd.c
+> @@ -294,6 +294,7 @@ generic_load_microcode(int cpu, const u8 *data, size_t size)
+>        }
+>
+>  out_ok:
+> +       uci->new_rev = new_rev;
+>        uci->mc = new_mc;
+>        state = UCODE_OK;
+>        pr_debug("CPU%d update ucode (0x%08x -> 0x%08x)\n",
+> diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/microcode_core.c
+> index fbdfc69..a6cad81 100644
+> --- a/arch/x86/kernel/microcode_core.c
+> +++ b/arch/x86/kernel/microcode_core.c
+> @@ -167,15 +167,43 @@ static void apply_microcode_local(void *arg)
+>        ctx->err = microcode_ops->apply_microcode(smp_processor_id());
+>  }
+>
+> +/*
+> + * Call the notifier chain before we update to verify we can indeed
+> + * update to the desired revision.
+> + */
+> +
+> +static int microcode_notifier_check(struct ucode_cpu_info *uci)
+> +{
+> +       int ret = blocking_notifier_call_chain(&microcode_notifier,
+> +                       MICROCODE_CAN_UPDATE, uci);
+> +       return notifier_to_errno(ret);
+> +}
+> +
+> +/*
+> + * Call the notifier chain after we've updated to
+> + */
+> +
+> +static void microcode_notifier_done(void)
+> +{
+> +       blocking_notifier_call_chain(&microcode_notifier, MICROCODE_UPDATED, NULL);
+> +}
+> +
+>  static int apply_microcode_on_target(int cpu)
+>  {
+>        struct apply_microcode_ctx ctx = { .err = 0 };
+>        int ret;
+>
+> +       ret = microcode_notifier_check(ucode_cpu_info + cpu);
+> +       if (ret)
+> +               return ret;
+> +
+>        ret = smp_call_function_single(cpu, apply_microcode_local, &ctx, 1);
+>        if (!ret)
+>                ret = ctx.err;
+>
+> +       if (!ret)
+> +               microcode_notifier_done();
+> +
+I suspect you want to do this here and not after the update() has completed over
+all CPU (for_each_online_cpu()), because you want to prevent a race condition
+with perf_event users trying PEBS at the same time. If not, then why not move
+the callback after all the smp_call() are done.
 
-I tested this patch as well and got the following (identical to the
-warning with the other patch you sent):
-
-[  704.534177] atl1c 0000:04:00.0: atl1c: eth0 NIC Link is Up<100 Mbps
-Full Duplex>
-[  714.346649] ------------[ cut here ]------------
-[  714.346670] WARNING: at net/sched/sch_generic.c:255 dev_watchdog+0xeb/0x15f()
-[  714.346674] Hardware name: UL50VT
-[  714.346679] NETDEV WATCHDOG: eth0 (atl1c): transmit queue 0 timed out
-[  714.346854] Modules linked in: snd_hrtimer ipv6
-snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep
-snd_pcm_oss snd_mixer_oss snd_pcm snd_seq_dummy snd_seq_oss
-snd_seq_midi snd_rawmidi snd_seq_midi_event acpi_cpufreq snd_seq
-iwlwifi uvcvideo snd_timer videobuf2_core snd_seq_device mac80211
-videodev snd media videobuf2_vmalloc videobuf2_memops coretemp psmouse
-cfg80211 soundcore snd_page_alloc rtc_cmos ac mperf battery processor
-asus_laptop evdev sparse_keymap rfkill led_class input_polldev
-acpi_call(O) i915 nouveau ttm fbcon tileblit font bitblit softcursor
-drm_kms_helper drm fb fbdev intel_agp sr_mod cdrom ehci_hcd uhci_hcd
-sd_mod cfbcopyarea i2c_algo_bit intel_gtt agpgart i2c_core mxm_wmi
-atl1c usbcore cfbimgblt cfbfillrect usb_common thermal video backlight
-thermal_sys hwmon wmi button
-[  714.346864] Pid: 3230, comm: unity-panel-ser Tainted: G           O
-3.5.0-rc1+ #132
-[  714.346867] Call Trace:
-[  714.346882]  <IRQ>  [<ffffffff8102d42f>] warn_slowpath_common+0x7e/0x97
-[  714.346890]  [<ffffffff8102d4dc>] warn_slowpath_fmt+0x41/0x43
-[  714.346914]  [<ffffffff81302028>] dev_watchdog+0xeb/0x15f
-[  714.346923]  [<ffffffff8103af44>] run_timer_softirq+0x20e/0x356
-[  714.346930]  [<ffffffff8103ae7e>] ? run_timer_softirq+0x148/0x356
-[  714.346938]  [<ffffffff81301f3d>] ? netif_tx_unlock+0x57/0x57
-[  714.346946]  [<ffffffff810344f8>] __do_softirq+0x103/0x239
-[  714.346954]  [<ffffffff81071246>] ? clockevents_program_event+0x9c/0xb9
-[  714.346964]  [<ffffffff813ab38c>] call_softirq+0x1c/0x30
-[  714.346971]  [<ffffffff81003bb9>] do_softirq+0x37/0x82
-[  714.346977]  [<ffffffff81034888>] irq_exit+0x4c/0xb1
-[  714.346987]  [<ffffffff8101ba71>] smp_apic_timer_interrupt+0x76/0x84
-[  714.346994]  [<ffffffff813aa99c>] apic_timer_interrupt+0x6c/0x80
-[  714.347006]  <EOI>  [<ffffffff813a9ec7>] ? sysret_check+0x1b/0x56
-[  714.347011] ---[ end trace 8a2db16274f46b16 ]---
+>        return ret;
+>  }
+>
+> @@ -196,8 +224,11 @@ static int do_microcode_update(const void __user *buf, size_t size)
+>                if (ustate == UCODE_ERROR) {
+>                        error = -1;
+>                        break;
+> -               } else if (ustate == UCODE_OK)
+> -                       apply_microcode_on_target(cpu);
+> +               } else if (ustate == UCODE_OK) {
+> +                       error = apply_microcode_on_target(cpu);
+> +                       if (error)
+> +                               break;
+> +               }
+>        }
+>
+>        return error;
+> @@ -282,11 +313,12 @@ static int reload_for_cpu(int cpu)
+>                enum ucode_state ustate;
+>
+>                ustate = microcode_ops->request_microcode_fw(cpu, &microcode_pdev->dev);
+> -               if (ustate == UCODE_OK)
+> -                       apply_microcode_on_target(cpu);
+> -               else
+> +               if (ustate == UCODE_OK) {
+> +                       err = apply_microcode_on_target(cpu);
+> +               } else {
+>                        if (ustate == UCODE_ERROR)
+>                                err = -EINVAL;
+> +               }
+>        }
+>        mutex_unlock(&microcode_mutex);
+>
+> @@ -361,14 +393,15 @@ static void microcode_fini_cpu(int cpu)
+>  static enum ucode_state microcode_resume_cpu(int cpu)
+>  {
+>        struct ucode_cpu_info *uci = ucode_cpu_info + cpu;
+> +       int err;
+>
+>        if (!uci->mc)
+>                return UCODE_NFOUND;
+>
+>        pr_debug("CPU%d updated upon resume\n", cpu);
+> -       apply_microcode_on_target(cpu);
+> +       err = apply_microcode_on_target(cpu);
+>
+> -       return UCODE_OK;
+> +       return !err ? UCODE_OK : UCODE_ERROR;
+>  }
+>
+>  static enum ucode_state microcode_init_cpu(int cpu)
+> @@ -385,8 +418,12 @@ static enum ucode_state microcode_init_cpu(int cpu)
+>        ustate = microcode_ops->request_microcode_fw(cpu, &microcode_pdev->dev);
+>
+>        if (ustate == UCODE_OK) {
+> +               int err;
+> +
+>                pr_debug("CPU%d updated upon init\n", cpu);
+> -               apply_microcode_on_target(cpu);
+> +               err = apply_microcode_on_target(cpu);
+> +               if (err)
+> +                       ustate = UCODE_ERROR;
+>        }
+>
+>        return ustate;
+> diff --git a/arch/x86/kernel/microcode_intel.c b/arch/x86/kernel/microcode_intel.c
+> index 0327e2b..6b87bd5 100644
+> --- a/arch/x86/kernel/microcode_intel.c
+> +++ b/arch/x86/kernel/microcode_intel.c
+> @@ -391,6 +391,7 @@ static enum ucode_state generic_load_microcode(int cpu, void *data, size_t size,
+>        }
+>
+>        vfree(uci->mc);
+> +       uci->new_rev = new_rev;
+>        uci->mc = (struct microcode_intel *)new_mc;
+>
+>        pr_debug("CPU%d found a matching microcode update with version 0x%x (current=0x%x)\n",
+> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+> index f4b9b80..98b5b5c 100644
+> --- a/arch/x86/kernel/setup.c
+> +++ b/arch/x86/kernel/setup.c
+> @@ -68,6 +68,7 @@
+>  #include <linux/percpu.h>
+>  #include <linux/crash_dump.h>
+>  #include <linux/tboot.h>
+> +#include <linux/notifier.h>
+>
+>  #include <video/edid.h>
+>
+> @@ -205,6 +206,10 @@ struct cpuinfo_x86 boot_cpu_data __read_mostly = {
+>  EXPORT_SYMBOL(boot_cpu_data);
+>  #endif
+>
+> +/*
+> + * Lives here because the microcode stuff is modular.
+> + */
+> +struct atomic_notifier_head microcode_notifier;
+>
+>  #if !defined(CONFIG_X86_PAE) || defined(CONFIG_X86_64)
+>  unsigned long mmu_cr4_features;
+>
+>
