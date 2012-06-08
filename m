@@ -1,69 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933468Ab2FHQA6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 12:00:58 -0400
-Received: from mga11.intel.com ([192.55.52.93]:36858 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932388Ab2FHQA4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 12:00:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="162933420"
-Date: Sat, 9 Jun 2012 01:00:51 +0900
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: sedat.dilek@gmail.com
-Cc: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: writeback: bad unlock balance detected in 3.5-rc1
-Message-ID: <20120608160051.GA1111@localhost>
-References: <E1Sd0IP-0005nh-AJ@tytso-glaptop.cam.corp.google.com>
- <20120608150736.GF21080@quack.suse.cz>
- <20120608154535.GA887@localhost>
- <CA+icZUVC86sBLNND08rNn6xhWqagfWdM7WvrvG+fcW+FHoFjbw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+icZUVC86sBLNND08rNn6xhWqagfWdM7WvrvG+fcW+FHoFjbw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933711Ab2FHQCw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 12:02:52 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:35077 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933048Ab2FHQCt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 12:02:49 -0400
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+To: lenb@kernel.org
+Cc: linux-pm@lists.linux-foundation.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org
+Subject: [RFC 1/4] cpuidle: define the enter function in the driver structure
+Date: Fri,  8 Jun 2012 18:02:42 +0200
+Message-Id: <1339171365-4098-1-git-send-email-daniel.lezcano@linaro.org>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 08, 2012 at 05:51:48PM +0200, Sedat Dilek wrote:
-> On Fri, Jun 8, 2012 at 5:45 PM, Fengguang Wu <fengguang.wu@intel.com> wrote:
-> > On Fri, Jun 08, 2012 at 05:07:36PM +0200, Jan Kara wrote:
-> >> On Fri 08-06-12 10:36:13, Ted Tso wrote:
-> >> >
-> >> > I can reproduce this fairly easily by using ext4 w/o a journal, running
-> >> > under KVM with 1024megs memory, with fsstress (xfstests #13):
-> >
-> > Good catch, thanks!
-> >
-> >>   Argh, I wonder how come I didn't hit this. Does attached patch fix the
-> >> problem?
-> >
-> >> diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-> >> index 8d2fb8c..41a3ccf 100644
-> >> --- a/fs/fs-writeback.c
-> >> +++ b/fs/fs-writeback.c
-> >> @@ -664,6 +664,7 @@ static long writeback_sb_inodes(struct super_block *sb,
-> >>                       /* Wait for I_SYNC. This function drops i_lock... */
-> >>                       inode_sleep_on_writeback(inode);
-> >>                       /* Inode may be gone, start again */
-> >> +                     spin_lock(&wb->list_lock);
-> >>                       continue;
-> >>               }
-> >
-> > That looks like the fix. So I pushed it to writeback-for-next.
-> > Thanks for the quick fixing!
-> >
-> 
-> s/writeback-for-next/writeback-for-linus ?
+We have the state index passed as parameter to the 'enter' function.
+Most of the drivers assign their 'enter' functions several times in
+the cpuidle_state structure, as we have the index, we can delegate
+to the driver to handle their own callback array.
 
-I use the same branch for next and linus.. Before sending git pull
-requests, I add a tag somewhere in the branch and ask Linus to pull
-that tag :)
+That will have the benefit of removing multiple lines of code in the
+different drivers.
 
-Thanks,
-Fengguang
+In order to smoothly modify the driver, the 'enter' function are in
+the driver structure and in the cpuidle state structure. That will
+let the time to modify the different drivers one by one.
+So the 'cpuidle_enter' function checks if the 'enter' callback is
+assigned in the driver structure and use it, otherwise it invokes
+the 'enter' assigned to the cpuidle_state.
+
+Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+---
+ drivers/cpuidle/cpuidle.c |    4 +++-
+ include/linux/cpuidle.h   |    1 +
+ 2 files changed, 4 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+index d90519c..155dee7 100644
+--- a/drivers/cpuidle/cpuidle.c
++++ b/drivers/cpuidle/cpuidle.c
+@@ -46,7 +46,9 @@ static inline int cpuidle_enter(struct cpuidle_device *dev,
+ 				struct cpuidle_driver *drv, int index)
+ {
+ 	struct cpuidle_state *target_state = &drv->states[index];
+-	return target_state->enter(dev, drv, index);
++
++	return drv->enter(dev, drv, index) ? drv->enter(dev, drv, index) :
++		target_state->enter(dev, drv, index);
+ }
+ 
+ static inline int cpuidle_enter_tk(struct cpuidle_device *dev,
+diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
+index 6c26a3d..d82e169 100644
+--- a/include/linux/cpuidle.h
++++ b/include/linux/cpuidle.h
+@@ -130,6 +130,7 @@ struct cpuidle_driver {
+ 	struct cpuidle_state	states[CPUIDLE_STATE_MAX];
+ 	int			state_count;
+ 	int			safe_state_index;
++	int (*enter)(struct cpuidle_device *, struct cpuidle_driver *, int);
+ };
+ 
+ #ifdef CONFIG_CPU_IDLE
+-- 
+1.7.5.4
+
