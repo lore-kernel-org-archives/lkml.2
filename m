@@ -1,74 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933672Ab2FHGKt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 02:10:49 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:51283 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932897Ab2FHGKs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 02:10:48 -0400
-Date: Fri, 8 Jun 2012 15:10:37 +0900
-From: Tejun Heo <tj@kernel.org>
-To: Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>,
-        Rus <rus@sfinxsoft.com>, linux-kernel@vger.kernel.org
-Subject: Re: lockdep and kmemcheck
-Message-ID: <20120608061037.GJ21357@google.com>
-References: <CAKgfjTktMLc5bfqhCOKy0evssxggofNQqLT-gQqBkHcBvOgF0g@mail.gmail.com>
- <CAKgfjTnvCAT=3JFxmDTsui_hguiiBfHQfMmErv9wt6QG_30hKA@mail.gmail.com>
- <20120607142459.GB5053@x1.osrc.amd.com>
- <CAKgfjTn3KXmDio0F0M3syeHnDc=ByKZu1ipe7S+75KRcCBy0QA@mail.gmail.com>
- <20120607151352.GA8261@x1.osrc.amd.com>
- <CAKgfjTn67KwR7-+icNZm7e5ZRfjqt1159kWMYD6S83WuhNfprQ@mail.gmail.com>
- <20120607193331.GA20723@liondog.tnic>
- <20120607194516.GB20723@liondog.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120607194516.GB20723@liondog.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933687Ab2FHGRr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 02:17:47 -0400
+Received: from ozlabs.org ([203.10.76.45]:54226 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933517Ab2FHGRq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 02:17:46 -0400
+Message-ID: <1339136264.25573.7.camel@concordia>
+Subject: Re: [PATCH 2/2] [POWERPC] uprobes: powerpc port
+From: Michael Ellerman <michael@ellerman.id.au>
+To: ananth@in.ibm.com
+Cc: Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>, oleg@redhat.com,
+        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
+        Ingo Molnar <mingo@elte.hu>, linuxppc-dev@lists.ozlabs.org
+Date: Fri, 08 Jun 2012 16:17:44 +1000
+In-Reply-To: <20120608060104.GD13409@in.ibm.com>
+References: <20120606091950.GB6745@in.ibm.com>
+	 <20120606092150.GC6745@in.ibm.com> <1338974822.2749.89.camel@twins>
+	 <20120606093541.GA29580@in.ibm.com> <1339006084.3458.25.camel@localhost>
+	 <20120608043605.GB13409@in.ibm.com> <1339134714.25573.4.camel@concordia>
+	 <20120608060104.GD13409@in.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 07, 2012 at 09:45:16PM +0200, Borislav Petkov wrote:
-> static struct worker *create_worker(struct global_cwq *gcwq, bool bind)
-> {
->         bool on_unbound_cpu = gcwq->cpu == WORK_CPU_UNBOUND;
->         struct worker *worker = NULL;
->         int id = -1;
+On Fri, 2012-06-08 at 11:31 +0530, Ananth N Mavinakayanahalli wrote:
+> On Fri, Jun 08, 2012 at 03:51:54PM +1000, Michael Ellerman wrote:
+> > On Fri, 2012-06-08 at 10:06 +0530, Ananth N Mavinakayanahalli wrote:
+> > > On Wed, Jun 06, 2012 at 11:08:04AM -0700, Jim Keniston wrote:
+> > > > On Wed, 2012-06-06 at 15:05 +0530, Ananth N Mavinakayanahalli wrote:
+> > > > > On Wed, Jun 06, 2012 at 11:27:02AM +0200, Peter Zijlstra wrote:
+> > > > > > On Wed, 2012-06-06 at 14:51 +0530, Ananth N Mavinakayanahalli wrote:
+> > > 
+> > > ...
+> > > 
+> > > > > For the kernel, the only ones that are off limits are rfi (return from
+> > > > > interrupt), mtmsr (move to msr). All other instructions can be probed.
+> > > > > 
+> > > > > Both those instructions are supervisor level, so we won't see them in
+> > > > > userspace at all; so we should be able to probe all user level
+> > > > > instructions.
+> > > > 
+> > > > Presumably rfi or mtmsr could show up in the instruction stream via an
+> > > > erroneous or mischievous asm statement.  It'd be good to verify that you
+> > > > handle that gracefully.
+> > > 
+> > > That'd be flagged elsewhere, by the architecture itself -- you'd get a
+> > > privileged instruciton exception if you try execute any instruction not
+> > > part of the UISA. I therefore don't think its a necessary check in the
+> > > uprobes code.
+> > 
+> > But you're not executing the instruction, you're passing it to
+> > emulate_step(). Or am I missing something?
 > 
->         spin_lock_irq(&gcwq->lock);
->         while (ida_get_new(&gcwq->worker_ida, &id)) {
->                 spin_unlock_irq(&gcwq->lock);
->                 if (!ida_pre_get(&gcwq->worker_ida, GFP_KERNEL))
-> 
-> and GFP_KERNEL has __GFP_FS.
-> 
-> > >  [<ffffffff81ae441d>] init_workqueues+0x1f2/0x393
-> > >  [<ffffffff81ae422b>] ? usermodehelper_init+0x36/0x36
-> > >  [<ffffffff81ae422b>] ? usermodehelper_init+0x36/0x36
-> > >  [<ffffffff81002122>] do_one_initcall+0x122/0x180
-> > >  [<ffffffff81acbc7a>] kernel_init+0x9b/0x1f6
-> > >  [<ffffffff815c1f74>] kernel_thread_helper+0x4/0x10
-> > >  [<ffffffff815c0274>] ? retint_restore_args+0x13/0x13
-> > >  [<ffffffff81acbbdf>] ? start_kernel+0x3d2/0x3d2
-> > >  [<ffffffff815c1f70>] ? gs_change+0x13/0x13
-> > > ---[ end trace 6d450e935ee1897c ]---
-> > > MCE: In-kernel MCE decoding enabled.
-> > > NMI watchdog: enabled, takes one hw-pmu counter.
-> 
-> Let's add some more people to CC.
-> 
-> Tejun, this create_worker() uses ida_pre_get() with GFP_KERNEL mask
-> but lockdep complains about __GFP_FS allocations with IRQs off in
-> __lockdep_trace_alloc. What's up?
+> But MSR_PR=1 and hence emulate_step() will return -1 and hence we will
+> end up single-stepping using user_enable_single_step(). Same with rfid.
 
-The GFP_KERNEL allocation is right after spin_unlock_irq().  I suppose
-this is from early boot before IRQs are brought online, right?  My
-memory is very fuzzy now but ISTR irq debug code and lockdep having
-workarounds for early boot.  Peter?
+Right. But that was exactly Jim's point, you may be asked to emulate
+those instructions even though you wouldn't expect to see them in
+userspace code, so you need to handle it.
 
-Thanks.
+Luckily it looks like emulate_step() will do the right thing for you.
+It'd be good to test it to make 100% sure.
 
--- 
-tejun
+cheers
+
