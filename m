@@ -1,60 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964781Ab2FHUgQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 16:36:16 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:47973 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754102Ab2FHUgP (ORCPT
+	id S964821Ab2FHUgl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 16:36:41 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:62487 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934438Ab2FHUgk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 16:36:15 -0400
-Date: Fri, 8 Jun 2012 22:27:01 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Dave Jones <davej@redhat.com>, Marc Dionne <marc.c.dionne@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: NOHZ: local_softirq_pending 08
-Message-ID: <20120608202701.GA26175@electric-eye.fr.zoreil.com>
-References: <alpine.LFD.2.02.1205310938080.3231@ionos> <20120601225754.GA25281@electric-eye.fr.zoreil.com> <CAB9dFdvWoc1onyWyy4BVmhpjeb5K2d10re0NcW-_NQCbfRC0hw@mail.gmail.com> <20120605231550.GA20981@electric-eye.fr.zoreil.com> <20120606014656.GA24870@redhat.com> <20120606054251.GA24467@electric-eye.fr.zoreil.com> <20120608023420.GD7191@redhat.com> <alpine.LFD.2.02.1206080954440.3086@ionos> <20120608142333.GB1711@redhat.com> <alpine.LFD.2.02.1206081641040.3086@ionos>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1206081641040.3086@ionos>
-User-Agent: Mutt/1.4.2.2i
-X-Organisation: Land of Sunshine Inc.
+	Fri, 8 Jun 2012 16:36:40 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAOJsxLG2H_G3CrmqNSxEnYRB+mACRyeG4dOQZ6wasXV1V0vGYg@mail.gmail.com>
+References: <1339182919-11432-1-git-send-email-levinsasha928@gmail.com>
+ <1339182919-11432-3-git-send-email-levinsasha928@gmail.com> <CAOJsxLG2H_G3CrmqNSxEnYRB+mACRyeG4dOQZ6wasXV1V0vGYg@mail.gmail.com>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Fri, 8 Jun 2012 22:36:14 +0200
+Message-ID: <CA+1xoqdUpcXdPHaFgjJOdLC2rm=WoVktuNkV_82QR4QaPg=CnA@mail.gmail.com>
+Subject: Re: [PATCH v2 02/10] mm: frontswap: trivial coding convention issues
+To: Pekka Enberg <penberg@kernel.org>
+Cc: dan.magenheimer@oracle.com, konrad.wilk@oracle.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas Gleixner <tglx@linutronix.de> :
-[...]
-> I can't find the point where the warning is issued, but I think I
-> found the cause of the problem.
-> 
-> static void rtl_slow_event_work(struct rtl8169_private *tp)
-> {
-> 	.....
-> 	napi_schedule(&tp->napi);
-> 	  --> __napi_schedule();
-> 	      -->	list_add_tail(&napi->poll_list, &sd->poll_list);
-> 	              __raise_softirq_irqoff(NET_RX_SOFTIRQ);
-> 
-> 		      This merily sets the softirq bit.
-> 
-> 
-> So this code is really wrong. It's called from full preemptible
-> context of the workqueue. And if the next thing is a context switch to
-> idle then the pending softirq check will trigger.
+On Fri, Jun 8, 2012 at 10:16 PM, Pekka Enberg <penberg@kernel.org> wrote:
+> On Fri, Jun 8, 2012 at 10:15 PM, Sasha Levin <levinsasha928@gmail.com> wrote:
+>> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+>> ---
+>>  mm/frontswap.c |    5 +++--
+>>  1 files changed, 3 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/mm/frontswap.c b/mm/frontswap.c
+>> index 557e8af4..b619d29 100644
+>> --- a/mm/frontswap.c
+>> +++ b/mm/frontswap.c
+>> @@ -150,6 +150,7 @@ int __frontswap_store(struct page *page)
+>>                inc_frontswap_failed_stores();
+>>        } else
+>>                inc_frontswap_failed_stores();
+>> +       }
+>
+> This looks wrong. Did you compile it?
 
-void __napi_schedule(struct napi_struct *n)
-{
-        unsigned long flags;
+gah... yes, I've had an error in the merge resolution, but since that
+code is completely changed in next couple of patches I didn't notice
+it when building the final version. I really should build after each
+merge failure...
 
-        local_irq_save(flags);
-        ____napi_schedule(&__get_cpu_var(softnet_data), n);
-        local_irq_restore(flags);
-}
-
-Are you saying that this stuff should be considered "preemptible" ?
-
--- 
-Ueimor
+Konrad, would it be ok if I send just a new version of this patch (if
+everything else is fine)?
