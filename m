@@ -1,72 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759132Ab2FHMZe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 08:25:34 -0400
-Received: from smtp.nokia.com ([147.243.1.47]:28929 "EHLO mgw-sa01.nokia.com"
+	id S1760940Ab2FHM0z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 08:26:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55555 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756337Ab2FHMZc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 08:25:32 -0400
-From: <leonid.moiseichuk@nokia.com>
-To: <anton.vorontsov@linaro.org>
-CC: <kosaki.motohiro@gmail.com>, <penberg@kernel.org>,
-        <b.zolnierkie@samsung.com>, <john.stultz@linaro.org>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <linaro-kernel@lists.linaro.org>, <patches@linaro.org>,
-        <kernel-team@android.com>
-Subject: RE: [PATCH 2/5] vmevent: Convert from deferred timer to deferred
- work
-Thread-Topic: [PATCH 2/5] vmevent: Convert from deferred timer to deferred
- work
-Thread-Index: AQHNP/HM8KMmZkc4xkKq2ZDXaeCP2Zbvq0sAgAA7gACAACLOoP//7gqAgAAk2GD//+b9AIAAJPtQ///62gAABLpu8P//9bUA///cm3A=
-Date: Fri, 8 Jun 2012 12:25:11 +0000
-Message-ID: <84FF21A720B0874AA94B46D76DB98269045F7D2B@008-AM1MPN1-004.mgdnok.nokia.com>
-References: <1338553446-22292-2-git-send-email-anton.vorontsov@linaro.org>
- <4FD170AA.10705@gmail.com> <20120608065828.GA1515@lizard>
- <84FF21A720B0874AA94B46D76DB98269045F7890@008-AM1MPN1-004.mgdnok.nokia.com>
- <20120608075844.GA6362@lizard>
- <84FF21A720B0874AA94B46D76DB98269045F7A24@008-AM1MPN1-004.mgdnok.nokia.com>
- <20120608084105.GA9883@lizard>
- <84FF21A720B0874AA94B46D76DB98269045F7B01@008-AM1MPN1-004.mgdnok.nokia.com>
- <20120608103501.GA15827@lizard>
- <84FF21A720B0874AA94B46D76DB98269045F7C35@008-AM1MPN1-004.mgdnok.nokia.com>
- <20120608121334.GA20772@lizard>
-In-Reply-To: <20120608121334.GA20772@lizard>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.22.0.61]
-Content-Type: text/plain; charset="utf-8"
+	id S1756337Ab2FHM0x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 08:26:53 -0400
+Date: Fri, 8 Jun 2012 14:24:59 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Hugh Dickins <hughd@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        "kamezawa.hiroyu@jp.fujitsu.com" <kamezawa.hiroyu@jp.fujitsu.com>,
+        "markus@trippelsdorf.de" <markus@trippelsdorf.de>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: Re: [patch 12/12] mm: correctly synchronize rss-counters at
+	exit/exec
+Message-ID: <20120608122459.GB23147@redhat.com>
+References: <20120607212114.E4F5AA02F8@akpm.mtv.corp.google.com> <CA+55aFxOWR_h1vqRLAd_h5_woXjFBLyBHP--P8F7WsYrciXdmA@mail.gmail.com> <CA+55aFyQUBXhjVLJH6Fhz9xnpfXZ=9Mej5ujt6ss7VUqT1g9Jg@mail.gmail.com> <alpine.LSU.2.00.1206071759050.1291@eggly.anvils> <4FD1D1F7.2090503@openvz.org>
 MIME-Version: 1.0
-X-OriginalArrivalTime: 08 Jun 2012 12:25:12.0420 (UTC) FILETIME=[C0579A40:01CD4571]
-X-Nokia-AV: Clean
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FD1D1F7.2090503@openvz.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q58CPdCY025995
 
-> -----Original Message-----
-> From: ext Anton Vorontsov [mailto:anton.vorontsov@linaro.org]
-> Sent: 08 June, 2012 15:14
-> To: Moiseichuk Leonid (Nokia-MP/Espoo)
-...
-> Hm. I would expect that avg value for meminfo will be much worse than
-> vmstat (meminfo grabs some locks).
-> 
-> OK, if we consider 100ms interval, then this would be like 0.1% overhead?
-> Not great, but still better than memcg:
-> 
-> http://lkml.org/lkml/2011/12/21/487
+On 06/08, Konstantin Khlebnikov wrote:
+>
+> As result you can see "BUG: Bad rss-counter state mm:ffff88040783a680 idx:1 val:-1" in dmesg
+>
+> There left only one problem: nobody calls sync_mm_rss() after put_user() in mm_release().
 
-That is difficult to win over memcg :)
-But in comparison to one syscall like read() for small structure for particular device the generation of meminfo is about 1000x times more expensive.
+Both callers call sync_mm_rss() to make check_mm() happy. But please
+see the changelog, I think we should move it into mm_release(). See
+the patch below (on top of v2 I sent). I need to recheck.
 
-> So, I guess the right approach would be to find ways to not depend on
-> frequent vm_stat updates (and thus reads).
+As for xacct_add_tsk(), yes it can "miss" that put_user(). But this
+is what we have now, I think we do not care.
 
-Agree.
+Oleg.
 
-> userland deferred timers (and infrequent reads from vmstat) + "userland vm
-> pressure notifications" looks promising for the userland solution.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+--- x/fs/exec.c
++++ x/fs/exec.c
+@@ -822,7 +822,6 @@ static int exec_mmap(struct mm_struct *m
+ 	mm_release(tsk, old_mm);
+ 
+ 	if (old_mm) {
+-		sync_mm_rss(old_mm);
+ 		/*
+ 		 * Make sure that if there is a core dump in progress
+ 		 * for the old mm, we get out and die instead of going
+--- x/kernel/exit.c
++++ x/kernel/exit.c
+@@ -656,7 +656,6 @@ static void exit_mm(struct task_struct *
+ 	if (!mm)
+ 		return;
+ 
+-	sync_mm_rss(mm);
+ 	/*
+ 	 * Serialize with any possible pending coredump.
+ 	 * We must hold mmap_sem around checking core_state
+--- x/kernel/taskstats.c
++++ x/kernel/taskstats.c
+@@ -630,8 +630,7 @@ void taskstats_exit(struct task_struct *
+ 	if (!stats)
+ 		goto err;
+ 
+-	if (tsk->mm)
+-		sync_mm_rss(tsk->mm);
++	sync_mm_rss(tsk->mm);
+ 	fill_stats(tsk, stats);
+ 
+ 	/*
+--- x/kernel/exit.c
++++ x/kernel/exit.c
+@@ -656,7 +656,6 @@ static void exit_mm(struct task_struct *
+ 	if (!mm)
+ 		return;
+ 
+-	sync_mm_rss(mm);
+ 	/*
+ 	 * Serialize with any possible pending coredump.
+ 	 * We must hold mmap_sem around checking core_state
+
