@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933615Ab2FHFsp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 01:48:45 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:36765 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933490Ab2FHFso (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 01:48:44 -0400
-Date: Fri, 8 Jun 2012 06:48:38 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>, Jan Kara <jack@suse.cz>,
-        Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
-        "J. Bruce Fields" <bfields@redhat.com>, Sage Weil <sage@newdream.net>
-Subject: Re: processes hung after sys_renameat, and 'missing' processes
-Message-ID: <20120608054838.GO30000@ZenIV.linux.org.uk>
-References: <20120607002914.GB22223@redhat.com>
- <CA+55aFyp2GUbc218eb5BDyAqz+cOPTJMVcb4ptk+f1_RBB+-mg@mail.gmail.com>
- <20120607011915.GA17566@redhat.com>
- <20120607012900.GE30000@ZenIV.linux.org.uk>
- <20120607193607.GI30000@ZenIV.linux.org.uk>
- <873966n2c2.fsf@xmission.com>
- <CA+55aFxxS3+NmZacr76qNmEu9=-=aw61gW1Ebugg8hdMNgKiJA@mail.gmail.com>
- <20120608003604.GK30000@ZenIV.linux.org.uk>
- <20120608005935.GL30000@ZenIV.linux.org.uk>
- <87bokugysl.fsf@xmission.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87bokugysl.fsf@xmission.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933609Ab2FHFwA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 01:52:00 -0400
+Received: from ozlabs.org ([203.10.76.45]:33578 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933119Ab2FHFv7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 01:51:59 -0400
+Message-ID: <1339134714.25573.4.camel@concordia>
+Subject: Re: [PATCH 2/2] [POWERPC] uprobes: powerpc port
+From: Michael Ellerman <michael@ellerman.id.au>
+To: ananth@in.ibm.com
+Cc: Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, oleg@redhat.com,
+        lkml <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Anton Blanchard <anton@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        linuxppc-dev@lists.ozlabs.org
+Date: Fri, 08 Jun 2012 15:51:54 +1000
+In-Reply-To: <20120608043605.GB13409@in.ibm.com>
+References: <20120606091950.GB6745@in.ibm.com>
+	 <20120606092150.GC6745@in.ibm.com> <1338974822.2749.89.camel@twins>
+	 <20120606093541.GA29580@in.ibm.com> <1339006084.3458.25.camel@localhost>
+	 <20120608043605.GB13409@in.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 07, 2012 at 10:25:46PM -0700, Eric W. Biederman wrote:
+On Fri, 2012-06-08 at 10:06 +0530, Ananth N Mavinakayanahalli wrote:
+> On Wed, Jun 06, 2012 at 11:08:04AM -0700, Jim Keniston wrote:
+> > On Wed, 2012-06-06 at 15:05 +0530, Ananth N Mavinakayanahalli wrote:
+> > > On Wed, Jun 06, 2012 at 11:27:02AM +0200, Peter Zijlstra wrote:
+> > > > On Wed, 2012-06-06 at 14:51 +0530, Ananth N Mavinakayanahalli wrote:
+> 
+> ...
+> 
+> > > For the kernel, the only ones that are off limits are rfi (return from
+> > > interrupt), mtmsr (move to msr). All other instructions can be probed.
+> > > 
+> > > Both those instructions are supervisor level, so we won't see them in
+> > > userspace at all; so we should be able to probe all user level
+> > > instructions.
+> > 
+> > Presumably rfi or mtmsr could show up in the instruction stream via an
+> > erroneous or mischievous asm statement.  It'd be good to verify that you
+> > handle that gracefully.
+> 
+> That'd be flagged elsewhere, by the architecture itself -- you'd get a
+> privileged instruciton exception if you try execute any instruction not
+> part of the UISA. I therefore don't think its a necessary check in the
+> uprobes code.
 
-> I am still learly of d_materialise_unique as it allows to create alias's
-> on non-directories.  It isn't a functional problem as d_revalidate will
-> catch the issue and make it look like we have a unlink/link pair instead
-> of a proper rename.  However since it is possible I would like to aim
-> for the higher quality of implemntation and use show renames as renames.
+But you're not executing the instruction, you're passing it to
+emulate_step(). Or am I missing something?
 
-???
+cheers
 
-Please, explain.  link/unlink pair in which sense?  If you are thinking
-of inotify and its ilk and tie some of that to dentry eviction, you
-have far worse problem.  What stream of events do you expect if you
-do
-	some action that triggers sysfs_rename()
-	stat(2) on old pathname
-	stat(2) on new pathname
-No matter what we do in lookup at the new pathname, the second step will
-be "failed revalidate".  If you tie something (presumably unlink side of
-your link/unlink pair) to that event, you'll get a very lousy series of
-events, no matter what you do on the third step.
-
-I don't see what kind of *notify hookup do you have in mind.  Anything that
-treats "dentry failed revalidation or got evicted by memory pressure" as
-"unlink" is completely nuts, IMO.
