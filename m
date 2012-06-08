@@ -1,46 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932368Ab2FHPPk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 11:15:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51083 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753336Ab2FHPPj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 11:15:39 -0400
-Date: Fri, 8 Jun 2012 17:15:32 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [PATCH 7/8] x86/apic: Make cpu_mask_to_apicid() operations
- return error code
-Message-ID: <20120608151531.GD4777@dhcp-26-207.brq.redhat.com>
-References: <20120605112353.GA11457@dhcp-26-207.brq.redhat.com>
- <20120606082231.GD5991@gmail.com>
- <20120607131559.GF4759@dhcp-26-207.brq.redhat.com>
- <1339107848.28766.104.camel@sbsiddha-desk.sc.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339107848.28766.104.camel@sbsiddha-desk.sc.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1760181Ab2FHPQM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 11:16:12 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:42586 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753336Ab2FHPQK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 11:16:10 -0400
+From: Will Deacon <will.deacon@arm.com>
+To: linux-kernel@vger.kernel.org
+Cc: Will Deacon <will.deacon@arm.com>, Matt Fleming <matt@console-pimps.org>,
+        Robert Richter <robert.richter@amd.com>
+Subject: [PATCH] oprofile: perf: use NR_CPUS instead or nr_cpumask_bits for static array
+Date: Fri,  8 Jun 2012 16:16:04 +0100
+Message-Id: <1339168564-30008-1-git-send-email-will.deacon@arm.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 07, 2012 at 03:24:05PM -0700, Suresh Siddha wrote:
-> On Thu, 2012-06-07 at 15:15 +0200, Alexander Gordeev wrote:
-> I am ok with these changes. But even better would be to remove the
-> cpu_mask_to_apicid() and just use cpu_mask_to_apicid_and() instead.
-> 
-> Looks like there are only two places cpu_mask_to_apicid() being used
-> anyways. So instead of patches 7 and 8, can you remove
-> cpu_mask_to_apicid() in patch-7 and fixup the return value of
-> cpu_mask_to_apicid_and() in patch-8
+The OProfile perf backend uses a static array to keep track of the
+perf events on the system. When compiling with CONFIG_CPUMASK_OFFSTACK=y
+&& SMP, nr_cpumask_bits is not a compile-time constant and the build
+will fail with:
 
-oops, I was not fast enough - Ingo has pulled 7 and 8
-I will post the update on top of that
+oprofile_perf.c:28: error: variably modified 'perf_events' at file scope
 
+This patch uses NR_CPUs instead of nr_cpumask_bits for the array
+initialisation. If this causes space problems in the future, we can
+always move to dynamic allocation for the events array.
+
+Cc: Matt Fleming <matt@console-pimps.org>
+Cc: Robert Richter <robert.richter@amd.com>
+Reported-by: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+---
+ drivers/oprofile/oprofile_perf.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/oprofile/oprofile_perf.c b/drivers/oprofile/oprofile_perf.c
+index da14432..efc4b7f 100644
+--- a/drivers/oprofile/oprofile_perf.c
++++ b/drivers/oprofile/oprofile_perf.c
+@@ -25,7 +25,7 @@ static int oprofile_perf_enabled;
+ static DEFINE_MUTEX(oprofile_perf_mutex);
+ 
+ static struct op_counter_config *counter_config;
+-static struct perf_event **perf_events[nr_cpumask_bits];
++static struct perf_event **perf_events[NR_CPUS];
+ static int num_counters;
+ 
+ /*
 -- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+1.7.4.1
+
