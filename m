@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762108Ab2FHK7U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 06:59:20 -0400
-Received: from mout2.freenet.de ([195.4.92.92]:49515 "EHLO mout2.freenet.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751276Ab2FHK7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 06:59:19 -0400
-Message-ID: <4FD1DA5B.9040404@01019freenet.de>
-Date: Fri, 08 Jun 2012 12:56:27 +0200
-From: Andreas Hartmann <andihartmann@01019freenet.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120428 Firefox/12.0 SeaMonkey/2.9.1
+	id S1762115Ab2FHLAH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 07:00:07 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:44420 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751276Ab2FHLAE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 07:00:04 -0400
+Message-ID: <4FD1DB30.80307@suse.cz>
+Date: Fri, 08 Jun 2012 13:00:00 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120530 Thunderbird/13.0
 MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: Andreas Hartmann <andihartmann@01019freenet.de>, bhelgaas@google.com,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, jan.kiszka@siemens.com
-Subject: Re: [PATCH] PCI: Add Ralink RT2800 broken INTx masking quirk
-References: <20120606212241.6627.98371.stgit@bling.home>    <4FD047A7.6050602@01019freenet.de> <1339088741.26976.19.camel@ul30vt>   <201206072101.q57L1LqG003192@mail.maya.org>  <1339104327.26976.45.camel@ul30vt> <4FD1205D.8070501@01019freenet.de> <1339106941.26976.51.camel@ul30vt> <4FD15BE1.40004@01019freenet.de>
-In-Reply-To: <4FD15BE1.40004@01019freenet.de>
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] delete seven tty headers
+References: <1339145808.25798.28.camel@x61.thuisdomein>
+In-Reply-To: <1339145808.25798.28.camel@x61.thuisdomein>
 X-Enigmail-Version: 1.4.2
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
@@ -25,31 +26,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andreas Hartmann wrote:
-> Alex Williamson wrote:
-[...]
->> I just pushed a vfio-3.4 branch to my tree at
->> git://github.com/awilliam/linux-vfio.git.  Please let me know what you
->> find with this.
+On 06/08/2012 10:56 AM, Paul Bolle wrote:
+> 0) Tested with "git grep" only (by grepping on the file names). I
+> haven't grepped on the many things these headers provide (mostly named
+> constants). Some of these looked rather generic. Most of these headers
+> were relevant for builds I don't have the toolchains for at hand. And,
+> finally, I couldn't think of a way the things these headers provide
+> could still actually be used in the tree. 
 > 
-> Works fine :-) vfio and fglrx and PCIe passthrough.
+> But would you prefer further tests?
 
-I rebuild the vfio patch on base of your vfio-3.4 branch and applied it
-with the additional quirks patch to the opensuse kernel 3.4.1 (desktop
-flavor). Now it's working fine with opensuse, too (PCIe passthrough, PCI
-passthrouh and fglrx with a board with AMD chipset 990X)! There have
-been slight differences in the two different ways of creating the
-complete patch for 3.4 which raised the problem.
+Nope, it's enough to know nobody in the kernel includes them.
 
-Downside is (as you already mentioned), that a lot of devices have to be
-unbind to get it working. Would be great, if this could be optimized :-).
+> 1) cdk.h, comstats.h, istallion.h, and stallion.h are still referenced
+> in Documentation/ioctl/ioctl-number.txt and
+> Documentation/magic-number.txt. Should those references be deleted too?
 
-Your vfio-3.4 branch helped me a lot!
+Yes, please.
 
-BTW:
-If anybody is interested, I could attach a complete vfio patch for 3.4.
+> --- a/include/linux/Kbuild
+> +++ b/include/linux/Kbuild
+> @@ -84,7 +84,6 @@ header-y += capability.h
+>  header-y += capi.h
+>  header-y += cciss_defs.h
+>  header-y += cciss_ioctl.h
+> -header-y += cdk.h
+>  header-y += cdrom.h
+>  header-y += cgroupstats.h
+>  header-y += chio.h
+> @@ -93,7 +92,6 @@ header-y += cn_proc.h
+>  header-y += coda.h
+>  header-y += coda_psdev.h
+>  header-y += coff.h
+> -header-y += comstats.h
+>  header-y += connector.h
+>  header-y += const.h
+>  header-y += cramfs_fs.h
+
+NACK for these two files. I rather prefer going through the
+deprecate-wait_years-delete path (removal of __KERNEL__ parts, if there
+are any, is OK). I doubt there are any users at all, but we still should
+gave them a chance to fix their builds (remove those #include's and
+potentially used defined/structs) and not introduce a userspace build
+breakage.
+
+The rest is OK to be removed.
+
+thanks,
+-- 
+js
+suse labs
 
 
-
-Thanks for your great support and patience,
-Andreas
