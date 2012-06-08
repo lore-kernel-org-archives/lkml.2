@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761304Ab2FHP3L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 11:29:11 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:36194 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755579Ab2FHP3I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 11:29:08 -0400
-X-IronPort-AV: E=Sophos;i="4.75,738,1330934400"; 
-   d="scan'208";a="654199246"
-Message-ID: <4FD21A32.8050400@netapp.com>
-Date: Fri, 08 Jun 2012 11:28:50 -0400
-From: Bryan Schumaker <bjschuma@netapp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: Joerg Roedel <joro@8bytes.org>
-CC: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: NFS regression in v3.5-rc1: mount.nfs yells about incorrect mount
- option
-References: <20120607150456.GO12795@8bytes.org> <4FD0C4C2.8020605@netapp.com> <20120607155006.GR12795@8bytes.org> <4FD0CEB0.9040804@netapp.com> <20120608130352.GU12795@8bytes.org> <4FD1FC02.2000608@netapp.com> <20120608133317.GW12795@8bytes.org> <4FD1FFFD.3020301@netapp.com> <20120608134905.GX12795@8bytes.org>
-In-Reply-To: <20120608134905.GX12795@8bytes.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1761289Ab2FHPeA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 11:34:00 -0400
+Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:1684 "EHLO
+	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757781Ab2FHPd7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 11:33:59 -0400
+Message-ID: <1339169631.30984.2.camel@x61.thuisdomein>
+Subject: [PATCH] Remove lib/mpi/generic_mpi-asm-defs.h
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Fri, 08 Jun 2012 17:33:51 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-OriginalArrivalTime: 08 Jun 2012 15:33:51.0998 (UTC) FILETIME=[1B5621E0:01CD458C]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/08/2012 09:49 AM, Joerg Roedel wrote:
-> On Fri, Jun 08, 2012 at 09:37:01AM -0400, Bryan Schumaker wrote:
->> On 06/08/2012 09:33 AM, Joerg Roedel wrote:
-> 
->>> Your other patch only touched the nfs4 path, but in my setup nfs3 was in
->>> use. Therefore the patch didn't help. I just figured out that
->>> nfs_fs_mount is shared between nfs23 and nfs4, so the first patch
->>> probably breaks nfs4. I send another one which takes this into account.
->>
->> Would something like this work? (I haven't tried it yet).  Setting it
->> in nfs_alloc_parsed_mount_data() might work too...
->>
->> diff --git a/fs/nfs/super.c b/fs/nfs/super.c
->> index bdd6731..906f09c 100644
->> --- a/fs/nfs/super.c
->> +++ b/fs/nfs/super.c
->> @@ -1867,6 +1867,7 @@ static int nfs23_validate_mount_data(void *options,
->>         if (data == NULL)
->>                 goto out_no_data;
->>  
->> +       args->version = NFS_DEFAULT_VERSION;
->>         switch (data->version) {
->>         case 1:
->>                 data->namlen = 0;
->> --
-> 
-> Yes, this works too (tested). Doing it in nfs_alloc_parsed_mount_data()
-> need to take into account that the function is also called for nfs4.
-> This is basically what my second revert-patch does.
+This header got added by commit 7e8dec918ef8e0f68b4937c3c50fa57002077a4d
+("crypto: GnuPG based MPI lib - additional sources (part 4)"). Nothing
+includes it.
 
-Thanks for testing!  The patch I sent you yesterday sets up "args->version = 4" if it gets into the v4 parsing code, so the v4 case should already be taken care of.
+The sole named constant it defines is BYTES_PER_MPI_LIMB. That named
+constant is already provided by <linux/mpi.h> (which is made available
+to the files in lib/mpi via mpi-internal.h). In this header that define
+depends on the undefined macro SIZEOF_UNSIGNED_LONG.
 
-- Bryan
-> 
-> 
-> 	Joerg
-> 
-> 
+So this header is unused, unneeded and broken. It can safely be removed.
 
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+This patch is, once again, tested only with "git grep".
+
+ lib/mpi/generic_mpi-asm-defs.h |    4 ----
+ 1 files changed, 0 insertions(+), 4 deletions(-)
+ delete mode 100644 lib/mpi/generic_mpi-asm-defs.h
+
+diff --git a/lib/mpi/generic_mpi-asm-defs.h b/lib/mpi/generic_mpi-asm-defs.h
+deleted file mode 100644
+index 047d1f5..0000000
+--- a/lib/mpi/generic_mpi-asm-defs.h
++++ /dev/null
+@@ -1,4 +0,0 @@
+-/* This file defines some basic constants for the MPI machinery.  We
+- * need to define the types on a per-CPU basis, so it is done with
+- * this file here.  */
+-#define BYTES_PER_MPI_LIMB  (SIZEOF_UNSIGNED_LONG)
+-- 
+1.7.7.6
 
