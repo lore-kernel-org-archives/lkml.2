@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760287Ab2FHCSO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 22:18:14 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:47383 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760077Ab2FHCSN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 22:18:13 -0400
-Date: Fri, 8 Jun 2012 03:18:09 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>, Jan Kara <jack@suse.cz>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-fsdevel@vger.kernel.org, "J. Bruce Fields" <bfields@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Sage Weil <sage@newdream.net>
-Subject: Re: processes hung after sys_renameat, and 'missing' processes
-Message-ID: <20120608021809.GM30000@ZenIV.linux.org.uk>
-References: <20120606194233.GA1537@redhat.com>
- <CA+55aFwxFVLPk4-dp73uccKXepKwjpGFgh0NW1u8d0zYzr=hBA@mail.gmail.com>
- <20120606230040.GA18089@redhat.com>
- <CA+55aFx_oREEd2XS_aG7PJ7dwzWjgx689V_uRPGWpVS01_++6A@mail.gmail.com>
- <20120606235403.GC30000@ZenIV.linux.org.uk>
- <20120607002914.GB22223@redhat.com>
- <CA+55aFyp2GUbc218eb5BDyAqz+cOPTJMVcb4ptk+f1_RBB+-mg@mail.gmail.com>
- <20120607011915.GA17566@redhat.com>
- <20120607012900.GE30000@ZenIV.linux.org.uk>
- <20120607193607.GI30000@ZenIV.linux.org.uk>
+	id S1760317Ab2FHCWv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 22:22:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62904 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760089Ab2FHCWt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 22:22:49 -0400
+Date: Thu, 7 Jun 2012 22:22:41 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: Re: a whole bunch of crashes since todays -mm merge.
+Message-ID: <20120608022240.GC7191@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+	Konstantin Khlebnikov <khlebnikov@openvz.org>,
+	Oleg Nesterov <oleg@redhat.com>
+References: <20120608002451.GA821@redhat.com>
+ <CA+55aFzivM8Z1Bjk3Qo2vtnQhCQ7fQ4rf_a+EXY7noXQcxL_CA@mail.gmail.com>
+ <20120607180515.4afffc89.akpm@linux-foundation.org>
+ <CA+55aFz12eeNHGt5GV_w=brPVed3Ga9HjYy73dbusEyPpX39OQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20120607193607.GI30000@ZenIV.linux.org.uk>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+55aFz12eeNHGt5GV_w=brPVed3Ga9HjYy73dbusEyPpX39OQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 07, 2012 at 08:36:07PM +0100, Al Viro wrote:
+On Thu, Jun 07, 2012 at 06:09:20PM -0700, Linus Torvalds wrote:
+ > On Thu, Jun 7, 2012 at 6:05 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
+ > >
+ > > It appears this is due to me fat-fingering conflict resolution last
+ > > week.  That hunk is supposed to be in mm_release(), not mmput().
+ > 
+ > Ahh. That would indeed make more sense. The mmput() placement is
+ > insane for so many reasons.
+ > 
+ > I reverted it and pushed it out, because it clearly was horrible. Even
+ > if it is possible that Dave's problems are due to something else (but
+ > if they started with the mm merge, I don't see anything else nearly as
+ > scary in there)
 
-> Other callers of d_move():
-> 	* debugfs_rename() - imitates what vfs_rename() is doing.  Same
-> locking environment.  BTW,
->         trap = lock_rename(new_dir, old_dir);
->         /* Source or destination directories don't exist? */
->         if (!old_dir->d_inode || !new_dir->d_inode)
->                 goto exit;
-> is bogus - lock_rename() is taking ->i_mutex on these inodes, for fsck sake!
-> If this can be called with old_dir or new_dir negative, it's buggered.
+Spooky. With that reverted, I don't see those weird oopses any more,
+even with the potentially suspect 8169 tracing patch reapplied. So uh, I dunno.
 
-It's worse, actually.  If we _ever_ do cross-directory debugfs_rename()
-without external serialization, we are in trouble.  It does imitate
-vfs_rename() (actually - its callers), but there's an unpleasant difference:
-instead of "lock parents with lock_rename(), then do lookups and we are
-guaranteed nobody will change ->d_parent of children we are working with"
-it's "lock the new parent and whatever happens to be the current parent
-of the object given to us; do lookup for target, pray that the old parent
-still was the parent of our object by the time we got the locks".
+	Dave
 
-AFAICS, there's only one caller doing cross-directory moves (__clk_reparent())
-and currently all callers are serialized by a mutex in there, but that's
-not documented anywhere - not for __clk_reparent(), not for debugfs_rename().
