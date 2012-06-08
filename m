@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759561Ab2FHWYE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 18:24:04 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:49191 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752252Ab2FHWX6 (ORCPT
+	id S1756065Ab2FHWYz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 18:24:55 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:51399 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750817Ab2FHWYx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 18:23:58 -0400
-Date: Fri, 8 Jun 2012 23:23:37 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Boaz Harrosh <bharrosh@panasas.com>, Tao Ma <boyu.mt@taobao.com>,
-        Nick Piggin <npiggin@kernel.dk>, "Dmitry V. Levin" <ldv@altlinux.org>,
-        v9fs-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-afs@lists.infradead.org,
-        linux-btrfs@vger.kernel.org, ceph-devel@vger.kernel.org,
-        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
-        codalist@TELEMANN.coda.cs.cmu.edu, ecryptfs@vger.kernel.org,
-        osd-dev@open-osd.org, linux-ext4@vger.kernel.org,
-        fuse-devel@lists.sourceforge.net, linux-mtd@lists.infradead.org,
-        jfs-discussion@lists.sourceforge.net, logfs@logfs.org,
-        linux-nfs@vger.kernel.org, linux-nilfs@vger.kernel.org,
-        linux-ntfs-dev@lists.sourceforge.net, ocfs2-devel@oss.oracle.com,
-        reiserfs-devel@vger.kernel.org
-Subject: Re: [RFC, PATCH, RESEND] fs: push rcu_barrier() from
- deactivate_locked_super() to filesystems
-Message-ID: <20120608222337.GR30000@ZenIV.linux.org.uk>
-References: <1339191663-17693-1-git-send-email-kirill.shutemov@linux.intel.com>
- <20120608150253.e42464a6.akpm@linux-foundation.org>
- <20120608221446.GA18250@otc-wbsnb-06>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120608221446.GA18250@otc-wbsnb-06>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 8 Jun 2012 18:24:53 -0400
+From: mathieu.poirier@linaro.org
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, mathieu.poirier@linaro.org
+Subject: [PATCH 0/6] drivers: randconfig patches for kernel 3.5
+Date: Fri,  8 Jun 2012 16:24:34 -0600
+Message-Id: <1339194280-27475-1-git-send-email-mathieu.poirier@linaro.org>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 09, 2012 at 01:14:46AM +0300, Kirill A. Shutemov wrote:
-> > The implementation would be less unpleasant if we could do the
-> > rcu_barrier() in kmem_cache_destroy().  I can't see a way of doing that
-> > without adding a dedicated slab flag, which would require editing all
-> > the filesystems anyway.
-> 
-> I think rcu_barrier() for all kmem_cache_destroy() would be too expensive.
+From: Mathieu Poirier <mathieu.poirier@linaro.org>
 
-You've got to be kidding.  Please, show us the codepath that would be hot
-enough to make that too expensive and would contain kmem_cache_destroy().
-Note that module unload is *not* a hot path - not on any even remotely sane
-use.
+These patches fix miscellaneous problems when working
+with make randconfig.  They were discovered on kernel
+3.1-rc4 and sent out during the 3.4 cycle but were not
+ack'ed.  
+
+Sending out again for completeness.
+
+Arnd Bergmann (6):
+  drivers/video: use correct __devexit_p annotation
+  mg_disk: use readb/writeb instead of inb/outb
+  video/ili9320: do not mark exported functions __devexit
+  video/console: automatically select a font
+  drivers/savagefb: use mdelay instead of udelay
+  drivers/tosa: driver needs I2C and SPI to compile
+
+ drivers/block/mg_disk.c                |   78 ++++++++++++++++----------------
+ drivers/video/backlight/Kconfig        |    2 +-
+ drivers/video/backlight/ili9320.c      |    2 +-
+ drivers/video/broadsheetfb.c           |    2 +-
+ drivers/video/console/Kconfig          |   14 ++++++
+ drivers/video/mbx/mbxfb.c              |    2 +-
+ drivers/video/savage/savagefb_driver.c |   10 ++--
+ 7 files changed, 62 insertions(+), 48 deletions(-)
+
+-- 
+1.7.5.4
+
