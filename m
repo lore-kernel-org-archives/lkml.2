@@ -1,62 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758065Ab2FHD4g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 23:56:36 -0400
-Received: from dalsmrelay2.nai.com ([205.227.136.216]:56526 "EHLO
-	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755881Ab2FHD4e (ORCPT
+	id S1758813Ab2FHD4m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 23:56:42 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:60498 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758241Ab2FHD4i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 23:56:34 -0400
-Message-ID: <4FD176AE.9030903@snapgear.com>
-Date: Fri, 8 Jun 2012 13:51:10 +1000
-From: Greg Ungerer <gerg@snapgear.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: <linux-m68k@vger.kernel.org>, Greg Ungerer <gerg@uclinux.org>,
-        Philippe De Muyter <phdm@macqel.be>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/5] m68k: CPU32 does not support unaligned accesses
-References: <1339094827-12349-1-git-send-email-geert@linux-m68k.org> <1339094827-12349-5-git-send-email-geert@linux-m68k.org>
-In-Reply-To: <1339094827-12349-5-git-send-email-geert@linux-m68k.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 7 Jun 2012 23:56:38 -0400
+Date: Fri, 8 Jun 2012 13:56:23 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        AnilKumar Ch <anilkumar@ti.com>, David Miller <davem@davemloft.net>,
+        <netdev@vger.kernel.org>, Marc Kleine-Budde <mkl@pengutronix.de>,
+        Viresh Kumar <viresh.kumar@st.com>
+Subject: linux-next: manual merge of the akpm tree with the net-next tree
+Message-Id: <20120608135623.0771d422608209264d4c3ef5@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__8_Jun_2012_13_56_23_+1000_.QQKrYWL2EHZtje/"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/06/12 04:47, Geert Uytterhoeven wrote:
-> Hence select CPU_HAS_NO_UNALIGNED
->
-> Reported-by: Philippe De Muyter<phdm@macqel.be>
-> Signed-off-by: Geert Uytterhoeven<geert@linux-m68k.org>
+--Signature=_Fri__8_Jun_2012_13_56_23_+1000_.QQKrYWL2EHZtje/
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Acked-by: Greg Ungerer<gerg@uclinux.org>
+Hi Andrew,
 
-Regards
-Greg
+Today's linux-next merge of the akpm tree got a conflict in
+drivers/net/can/c_can/c_can_platform.c between commit 33f810097769 ("can:
+c_can: Move overlay structure to array with offset as index") from the
+net-next tree and commit "net/c_can: remove conditional compilation of
+clk code" from the akpm tree.
 
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> ---
->   arch/m68k/Kconfig.cpu |    1 +
->   1 files changed, 1 insertions(+), 0 deletions(-)
->
-> diff --git a/arch/m68k/Kconfig.cpu b/arch/m68k/Kconfig.cpu
-> index c4ed650..d4f3a98 100644
-> --- a/arch/m68k/Kconfig.cpu
-> +++ b/arch/m68k/Kconfig.cpu
-> @@ -50,6 +50,7 @@ config M68000
->   config MCPU32
->   	bool
->   	select CPU_HAS_NO_BITFIELDS
-> +	select CPU_HAS_NO_UNALIGNED
->   	help
->   	  The Freescale (was then Motorola) CPU32 is a CPU core that is
->   	  based on the 68020 processor. For the most part it is used in
+diff --cc drivers/net/can/c_can/c_can_platform.c
+index f0921d1,7ec9316..0000000
+--- a/drivers/net/can/c_can/c_can_platform.c
++++ b/drivers/net/can/c_can/c_can_platform.c
+@@@ -71,10 -71,8 +71,9 @@@ static int __devinit c_can_plat_probe(s
+  	void __iomem *addr;
+  	struct net_device *dev;
+  	struct c_can_priv *priv;
+ +	const struct platform_device_id *id;
+  	struct resource *mem;
+  	int irq;
+- #ifdef CONFIG_HAVE_CLK
+  	struct clk *clk;
+ =20
+  	/* get the appropriate clk */
+@@@ -138,18 -129,8 +136,16 @@@
+  		priv->read_reg =3D c_can_plat_read_reg_aligned_to_16bit;
+  		priv->write_reg =3D c_can_plat_write_reg_aligned_to_16bit;
+  		break;
+ +	default:
+ +		ret =3D -EINVAL;
+ +		goto exit_free_device;
+  	}
+ =20
+ +	dev->irq =3D irq;
+ +	priv->base =3D addr;
+- #ifdef CONFIG_HAVE_CLK
+ +	priv->can.clock.freq =3D clk_get_rate(clk);
+ +	priv->priv =3D clk;
+- #endif
+ +
+  	platform_set_drvdata(pdev, dev);
+  	SET_NETDEV_DEV(dev, &pdev->dev);
+ =20
 
+--Signature=_Fri__8_Jun_2012_13_56_23_+1000_.QQKrYWL2EHZtje/
+Content-Type: application/pgp-signature
 
--- 
-------------------------------------------------------------------------
-Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
-SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
-8 Gardner Close                             FAX:         +61 7 3217 5323
-Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJP0XfnAAoJEECxmPOUX5FEh1cP/j32krsuzCEAsWMTcZt6P/JD
+L93AAMdNomyrL+islkawj5WxoI26OxbQuIRvQAyTfDmPToBjFqF/N3MTRrpXYk4t
+e6ZM1qqUiSd9tIsC314u9H0oBWNw9Af6Hbt9dUIY8Fani2L492KHk3WsFpK7lsFS
+UK8p2Iv65xPSWSNSZUK++djs8mpbBVTj97XhgucnFcA0iKD3AsiWkHPJA25DEPeM
+aRLg5CzesyZ2UrpKX7f8+O//c8ZQDnNoFW7FRZel1rwJqNOhVxJZxp+KEDaZhA+c
+QcQ5cQKwi7uK6iV7VgexPFg1ytywN2Qc0s0yhiqLvXcALKLw4QN+n+iya7mp+lvr
+O1FxAD9ieRk4dhZUjCIscIHeAXjMqVAcPiPLfJsKMk3NL2r2OIpitNzRoGkiYT3I
+uOtVLUJ2d+4v6r2RC4jCQwpJD3WJ6sYlOM5r7bAmP4EYyJWwdowAWp/l2pPE837p
+vEV0s06Buvdgs2CXMCg4IvDK3OX7ikllR3gfZR9h3RS2EznqTyIWJfjgcDNChpbA
+29nhXELnCnZH4EQUTAyEjjnPrPMoyZkNdMWHJJIQ5VoQ07VI7JG6O13KwTQn3X+q
+SwbVCNYDaWrl16bfE42Otw5bzaOJ6DZV/izXxUvE+qAuh5P7tnj3h2S3rz6N+Qws
+zvf9zRz8RWIHV73yGAF0
+=p5Hn
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__8_Jun_2012_13_56_23_+1000_.QQKrYWL2EHZtje/--
