@@ -1,326 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757138Ab2FHGjo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 02:39:44 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:55823 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754492Ab2FHGjl (ORCPT
+	id S1759953Ab2FHGj7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 02:39:59 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:58529 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756769Ab2FHGjz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 02:39:41 -0400
-X-AuditID: 9c930179-b7bb9ae000000ea5-28-4fd19e253255
-From: Minchan Kim <minchan@kernel.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>
-Subject: [PATCH] zram: remove special handle of uncompressed page
-Date: Fri,  8 Jun 2012 15:39:27 +0900
-Message-Id: <1339137567-29656-3-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1339137567-29656-1-git-send-email-minchan@kernel.org>
-References: <1339137567-29656-1-git-send-email-minchan@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Fri, 8 Jun 2012 02:39:55 -0400
+Message-ID: <4FD19E37.3020309@gmail.com>
+Date: Fri, 08 Jun 2012 02:39:51 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: John Stultz <john.stultz@linaro.org>
+CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
+        Andrea Righi <andrea@betterlinux.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Taras Glek <tgek@mozilla.com>, Mike Hommey <mh@glandium.org>,
+        Jan Kara <jack@suse.cz>
+Subject: Re: [PATCH 3/3] [RFC] tmpfs: Add FALLOC_FL_MARK_VOLATILE/UNMARK_VOLATILE
+ handlers
+References: <1338575387-26972-1-git-send-email-john.stultz@linaro.org> <1338575387-26972-4-git-send-email-john.stultz@linaro.org> <4FC9235F.5000402@gmail.com> <4FC92E30.4000906@linaro.org> <4FC9360B.4020401@gmail.com> <4FC937AD.8040201@linaro.org> <4FC9438B.1000403@gmail.com> <4FC94F61.20305@linaro.org> <4FCFB4F6.6070308@gmail.com> <4FCFEE36.3010902@linaro.org>
+In-Reply-To: <4FCFEE36.3010902@linaro.org>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-xvmalloc can't handle PAGE_SIZE page so that zram have to
-handle it specially but zsmalloc can do it so let's remove
-unnecessary special handling code.
+(6/6/12 7:56 PM), John Stultz wrote:
+> On 06/06/2012 12:52 PM, KOSAKI Motohiro wrote:
+>>> The key point is we want volatile ranges to be purged in the order they
+>>> were marked volatile.
+>>> If we use the page lru via shmem_writeout to trigger range purging, we
+>>> wouldn't necessarily get this desired behavior.
+>> Ok, so can you please explain your ideal order to reclaim. your last mail
+>> described old and new volatiled region. but I'm not sure regular tmpfs pages
+>> vs volatile pages vs regular file cache order. That said, when using shrink_slab(),
+>> we choose random order to drop against page cache. I'm not sure why you sure
+>> it is ideal.
+> 
+> So I'm not totally sure its ideal, but I can tell you what make sense to
+> me. If there is a more ideal order, I'm open to suggestions.
+> 
+> So volatile ranges should be purged first-in-first-out. So the first
+> range marked volatile should be purged first. Since volatile ranges
+> might have different costs depending on what filesystem the file is
+> backed by, this LRU order is per-filesystem.
+> 
+> It seems that if we have tmpfs volatile ranges, we should purge them
+> before we swap out any regular tmpfs pages. Thus why I'm purging any
+> available ranges on shmem_writepage before swapping, rather then using a
+> shrinker now (I'm hoping you saw the updated patchset I sent out friday).
+> 
+> Does that make sense?
+> 
+>> And, now I guess you think nobody touch volatiled page, yes? because otherwise
+>> volatile marking order is silly choice. If yes, what's happen if anyone touch
+>> a patch which volatiled. no-op? SIGBUS?
+> 
+> So more of a noop. If you read a page that has been marked volatile, it
+> may return the data that was there, or it may return an empty nulled page.
+> 
+> I guess we could throw a signal to help avoid developers making
+> programming mistakes, but I'm not sure what the extra cost would be to
+> set up and tare that down each time. One important aspect of this is
+> that in order to make it attractive for an application to mark ranges as
+> volatile, it has to be very cheap to mark and unmark ranges.
 
-Quote from Nitin
-"I think page vs handle distinction was added since xvmalloc could not
-handle full page allocation. Now that zsmalloc allows full page
-allocation, we can just use it for both cases. This would also allow
-removing the ZRAM_UNCOMPRESSED flag. The only downside will be slightly
-slower code path for full page allocation but this event is anyways
-supposed to be rare, so should be fine."
+ok, i agree we don't need to pay any extra cost.
 
-1. This patch reduces code very much.
+>> Which worklord didn't work. Usually, anon pages reclaim are only
+>> happen when 1) tmpfs streaming io workload or 2) heavy vm pressure.
+>> So, this scenario are not so inaccurate to me.
+> 
+> So it was more of a theoretical issue in my discussions, but once it was
+> brought up, ashmems' global range lru made more sense.
 
- drivers/staging/zram/zram_drv.c   |  104 +++++--------------------------------
- drivers/staging/zram/zram_drv.h   |   17 +-----
- drivers/staging/zram/zram_sysfs.c |    6 +--
- 3 files changed, 15 insertions(+), 112 deletions(-)
+No. Every global lru is evil. Please don't introduce numa unaware code for 
+a new feature. That's a legacy and poor performance.
 
-2. change pages_expand with bad_compress so it can count
-   bad compression(above 75%) ratio.
 
-3. remove zobj_header which is for back-reference for defragmentation
-   because firstly, it's not used at the moment and zsmalloc can't handle
-   bigger size than PAGE_SIZE so zram can't do it any more without redesign.
+> I think the workload we're mostly concerned with here is heavy vm pressure.
 
-Cc: Nitin Gupta <ngupta@vflare.org>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
- drivers/staging/zram/zram_drv.c   |  104 +++++--------------------------------
- drivers/staging/zram/zram_drv.h   |   17 +-----
- drivers/staging/zram/zram_sysfs.c |    6 +--
- 3 files changed, 15 insertions(+), 112 deletions(-)
+I don't admit it. but note, when under heavy workload, shrink_slab() behave 
+stupid seriously.
 
-diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index 0cdc303..2036a90 100644
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -136,6 +136,7 @@ static void zram_set_disksize(struct zram *zram, size_t totalram_bytes)
- static void zram_free_page(struct zram *zram, size_t index)
- {
- 	unsigned long handle = zram->table[index].handle;
-+	u16 size = zram->table[index].size;
- 
- 	if (unlikely(!handle)) {
- 		/*
-@@ -149,19 +150,14 @@ static void zram_free_page(struct zram *zram, size_t index)
- 		return;
- 	}
- 
--	if (unlikely(zram_test_flag(zram, index, ZRAM_UNCOMPRESSED))) {
--		__free_page((struct page *)handle);
--		zram_clear_flag(zram, index, ZRAM_UNCOMPRESSED);
--		zram_stat_dec(&zram->stats.pages_expand);
--		goto out;
--	}
-+	if (unlikely(size > max_zpage_size))
-+		zram_stat_dec(&zram->stats.bad_compress);
- 
- 	zs_free(zram->mem_pool, handle);
- 
--	if (zram->table[index].size <= PAGE_SIZE / 2)
-+	if (size <= PAGE_SIZE / 2)
- 		zram_stat_dec(&zram->stats.good_compress);
- 
--out:
- 	zram_stat64_sub(zram, &zram->stats.compr_size,
- 			zram->table[index].size);
- 	zram_stat_dec(&zram->stats.pages_stored);
-@@ -182,22 +178,6 @@ static void handle_zero_page(struct bio_vec *bvec)
- 	flush_dcache_page(page);
- }
- 
--static void handle_uncompressed_page(struct zram *zram, struct bio_vec *bvec,
--				     u32 index, int offset)
--{
--	struct page *page = bvec->bv_page;
--	unsigned char *user_mem, *cmem;
--
--	user_mem = kmap_atomic(page);
--	cmem = kmap_atomic((struct page *)zram->table[index].handle);
--
--	memcpy(user_mem + bvec->bv_offset, cmem + offset, bvec->bv_len);
--	kunmap_atomic(cmem);
--	kunmap_atomic(user_mem);
--
--	flush_dcache_page(page);
--}
--
- static inline int is_partial_io(struct bio_vec *bvec)
- {
- 	return bvec->bv_len != PAGE_SIZE;
-@@ -209,7 +189,6 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
- 	int ret;
- 	size_t clen;
- 	struct page *page;
--	struct zobj_header *zheader;
- 	unsigned char *user_mem, *cmem, *uncmem = NULL;
- 
- 	page = bvec->bv_page;
-@@ -227,12 +206,6 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
- 		return 0;
- 	}
- 
--	/* Page is stored uncompressed since it's incompressible */
--	if (unlikely(zram_test_flag(zram, index, ZRAM_UNCOMPRESSED))) {
--		handle_uncompressed_page(zram, bvec, index, offset);
--		return 0;
--	}
--
- 	if (is_partial_io(bvec)) {
- 		/* Use  a temporary buffer to decompress the page */
- 		uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
-@@ -249,8 +222,7 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
- 
- 	cmem = zs_map_object(zram->mem_pool, zram->table[index].handle);
- 
--	ret = lzo1x_decompress_safe(cmem + sizeof(*zheader),
--				    zram->table[index].size,
-+	ret = lzo1x_decompress_safe(cmem, zram->table[index].size,
- 				    uncmem, &clen);
- 
- 	if (is_partial_io(bvec)) {
-@@ -278,7 +250,6 @@ static int zram_read_before_write(struct zram *zram, char *mem, u32 index)
- {
- 	int ret;
- 	size_t clen = PAGE_SIZE;
--	struct zobj_header *zheader;
- 	unsigned char *cmem;
- 	unsigned long handle = zram->table[index].handle;
- 
-@@ -287,18 +258,8 @@ static int zram_read_before_write(struct zram *zram, char *mem, u32 index)
- 		return 0;
- 	}
- 
--	/* Page is stored uncompressed since it's incompressible */
--	if (unlikely(zram_test_flag(zram, index, ZRAM_UNCOMPRESSED))) {
--		char *src = kmap_atomic((struct page *)handle);
--		memcpy(mem, src, PAGE_SIZE);
--		kunmap_atomic(src);
--		return 0;
--	}
--
- 	cmem = zs_map_object(zram->mem_pool, handle);
--
--	ret = lzo1x_decompress_safe(cmem + sizeof(*zheader),
--				    zram->table[index].size,
-+	ret = lzo1x_decompress_safe(cmem, zram->table[index].size,
- 				    mem, &clen);
- 	zs_unmap_object(zram->mem_pool, handle);
- 
-@@ -316,11 +277,9 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 			   int offset)
- {
- 	int ret;
--	u32 store_offset;
- 	size_t clen;
- 	unsigned long handle;
--	struct zobj_header *zheader;
--	struct page *page, *page_store;
-+	struct page *page;
- 	unsigned char *user_mem, *cmem, *src, *uncmem = NULL;
- 
- 	page = bvec->bv_page;
-@@ -382,31 +341,10 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 		goto out;
- 	}
- 
--	/*
--	 * Page is incompressible. Store it as-is (uncompressed)
--	 * since we do not want to return too many disk write
--	 * errors which has side effect of hanging the system.
--	 */
--	if (unlikely(clen > max_zpage_size)) {
--		clen = PAGE_SIZE;
--		page_store = alloc_page(GFP_NOIO | __GFP_HIGHMEM);
--		if (unlikely(!page_store)) {
--			pr_info("Error allocating memory for "
--				"incompressible page: %u\n", index);
--			ret = -ENOMEM;
--			goto out;
--		}
-+	if (unlikely(clen > max_zpage_size))
-+		zram_stat_inc(&zram->stats.bad_compress);
- 
--		store_offset = 0;
--		zram_set_flag(zram, index, ZRAM_UNCOMPRESSED);
--		zram_stat_inc(&zram->stats.pages_expand);
--		handle = (unsigned long)page_store;
--		src = kmap_atomic(page);
--		cmem = kmap_atomic(page_store);
--		goto memstore;
--	}
--
--	handle = zs_malloc(zram->mem_pool, clen + sizeof(*zheader));
-+	handle = zs_malloc(zram->mem_pool, clen);
- 	if (!handle) {
- 		pr_info("Error allocating memory for compressed "
- 			"page: %u, size=%zu\n", index, clen);
-@@ -415,24 +353,9 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 	}
- 	cmem = zs_map_object(zram->mem_pool, handle);
- 
--memstore:
--#if 0
--	/* Back-reference needed for memory defragmentation */
--	if (!zram_test_flag(zram, index, ZRAM_UNCOMPRESSED)) {
--		zheader = (struct zobj_header *)cmem;
--		zheader->table_idx = index;
--		cmem += sizeof(*zheader);
--	}
--#endif
--
- 	memcpy(cmem, src, clen);
- 
--	if (unlikely(zram_test_flag(zram, index, ZRAM_UNCOMPRESSED))) {
--		kunmap_atomic(cmem);
--		kunmap_atomic(src);
--	} else {
--		zs_unmap_object(zram->mem_pool, handle);
--	}
-+	zs_unmap_object(zram->mem_pool, handle);
- 
- 	zram->table[index].handle = handle;
- 	zram->table[index].size = clen;
-@@ -597,10 +520,7 @@ void __zram_reset_device(struct zram *zram)
- 		if (!handle)
- 			continue;
- 
--		if (unlikely(zram_test_flag(zram, index, ZRAM_UNCOMPRESSED)))
--			__free_page((struct page *)handle);
--		else
--			zs_free(zram->mem_pool, handle);
-+		zs_free(zram->mem_pool, handle);
- 	}
- 
- 	vfree(zram->table);
-diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
-index 7a7e256..9711d1e 100644
---- a/drivers/staging/zram/zram_drv.h
-+++ b/drivers/staging/zram/zram_drv.h
-@@ -26,18 +26,6 @@
-  */
- static const unsigned max_num_devices = 32;
- 
--/*
-- * Stored at beginning of each compressed object.
-- *
-- * It stores back-reference to table entry which points to this
-- * object. This is required to support memory defragmentation.
-- */
--struct zobj_header {
--#if 0
--	u32 table_idx;
--#endif
--};
--
- /*-- Configurable parameters */
- 
- /* Default zram disk size: 25% of total RAM */
-@@ -68,9 +56,6 @@ static const size_t max_zpage_size = PAGE_SIZE / 4 * 3;
- 
- /* Flags for zram pages (table[page_no].flags) */
- enum zram_pageflags {
--	/* Page is stored uncompressed */
--	ZRAM_UNCOMPRESSED,
--
- 	/* Page consists entirely of zeros */
- 	ZRAM_ZERO,
- 
-@@ -98,7 +83,7 @@ struct zram_stats {
- 	u32 pages_zero;		/* no. of zero filled pages */
- 	u32 pages_stored;	/* no. of pages currently stored */
- 	u32 good_compress;	/* % of pages with compression ratio<=50% */
--	u32 pages_expand;	/* % of incompressible pages */
-+	u32 bad_compress;	/* % of pages with compression ratio>=75% */
- };
- 
- struct zram {
-diff --git a/drivers/staging/zram/zram_sysfs.c b/drivers/staging/zram/zram_sysfs.c
-index a7f3771..edb0ed4 100644
---- a/drivers/staging/zram/zram_sysfs.c
-+++ b/drivers/staging/zram/zram_sysfs.c
-@@ -186,10 +186,8 @@ static ssize_t mem_used_total_show(struct device *dev,
- 	u64 val = 0;
- 	struct zram *zram = dev_to_zram(dev);
- 
--	if (zram->init_done) {
--		val = zs_get_total_size_bytes(zram->mem_pool) +
--			((u64)(zram->stats.pages_expand) << PAGE_SHIFT);
--	}
-+	if (zram->init_done)
-+		val = zs_get_total_size_bytes(zram->mem_pool);
- 
- 	return sprintf(buf, "%llu\n", val);
- }
--- 
-1.7.9.5
+
+
+>>> That's when I added the LRU tracking at the volatile range level (which
+>>> reverted back to the behavior ashmem has always used), and have been
+>>> using that model sense.
+>>>
+>>> Hopefully this clarifies things. My apologies if I don't always use the
+>>> correct terminology, as I'm still a newbie when it comes to VM code.
+>> I think your code is enough clean. But I'm still not sure your background
+>> design. Please help me to understand clearly.
+> Hopefully the above helps. But let me know where you'd like more
+> clarification.
+> 
+> 
+>> btw, Why do you choice fallocate instead of fadvise? As far as I skimmed,
+>> fallocate() is an operation of a disk layout, not of a cache. And, why
+>> did you choice fadvise() instead of madvise() at initial version. vma
+>> hint might be useful than fadvise() because it can be used for anonymous
+>> pages too.
+> I actually started with madvise, but quickly moved to fadvise when
+> feeling that the fd based ranges made more sense. With ashmem, fds are
+> often shared, and coordinating volatile ranges on a shared fd made more
+> sense on a (fd, offset, len) tuple, rather then on an offset and length
+> on an mmapped region.
+> 
+> I moved to fallocate at Dave Chinner's request. In short, it allows
+> non-tmpfs filesystems to implement volatile range semantics allowing
+> them to zap rather then writeout dirty volatile pages. And since the
+> volatile ranges are very similar to a delayed/cancel-able hole-punch, it
+> made sense to use a similar interface to FALLOC_FL_HOLE_PUNCH.
+> 
+> You can read the details of DaveC's suggestion here:
+> https://lkml.org/lkml/2012/4/30/441
+
+Hmmm...
+
+I'm sorry. I can't imagine how to integrate FALLOCATE_VOLATILE into regular
+file systems. do you have any idea?
+
 
