@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761129Ab2FHW0R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 18:26:17 -0400
-Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:1603 "EHLO
-	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759313Ab2FHW0O (ORCPT
+	id S1761228Ab2FHW0y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 18:26:54 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:51399 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757319Ab2FHWY6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 18:26:14 -0400
-Message-ID: <1339194367.30984.18.camel@x61.thuisdomein>
-Subject: [PATCH] crypto: s390 - clean up DES code a bit more
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com
-Cc: linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Sat, 09 Jun 2012 00:26:07 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-OriginalArrivalTime: 08 Jun 2012 22:26:09.0990 (UTC) FILETIME=[B4542660:01CD45C5]
-X-RcptDomain: vger.kernel.org
+	Fri, 8 Jun 2012 18:24:58 -0400
+From: mathieu.poirier@linaro.org
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, mathieu.poirier@linaro.org
+Subject: [PATCH RESEND 4/6] video/console: automatically select a font
+Date: Fri,  8 Jun 2012 16:24:38 -0600
+Message-Id: <1339194280-27475-5-git-send-email-mathieu.poirier@linaro.org>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1339194280-27475-1-git-send-email-mathieu.poirier@linaro.org>
+References: <1339194280-27475-1-git-send-email-mathieu.poirier@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 98971f8439b1bb9a61682fe24a865ddd25167a6b ("crypto: s390 - cleanup
-DES code") should have also removed crypto_des.h. That file is unused
-and unneeded since that commit. So let's clean up that file too.
+From: Arnd Bergmann <arnd@arndb.de>
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+The frame buffer console needs at least one font to be built into
+the kernel, so add the necessary Kconfig magic to guarantee that
+one of the available font is always on. If a user accidentally
+disables all fonts manually, the 8x16 font will be selected
+anyway.
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
 ---
-Untested. Ought to be correct.
+ drivers/video/console/Kconfig |   14 ++++++++++++++
+ 1 files changed, 14 insertions(+), 0 deletions(-)
 
- arch/s390/crypto/crypto_des.h |   18 ------------------
- 1 files changed, 0 insertions(+), 18 deletions(-)
- delete mode 100644 arch/s390/crypto/crypto_des.h
-
-diff --git a/arch/s390/crypto/crypto_des.h b/arch/s390/crypto/crypto_des.h
-deleted file mode 100644
-index 6210457..0000000
---- a/arch/s390/crypto/crypto_des.h
-+++ /dev/null
-@@ -1,18 +0,0 @@
--/*
-- * Cryptographic API.
-- *
-- * Function for checking keys for the DES and Tripple DES Encryption
-- * algorithms.
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License as published by
-- * the Free Software Foundation; either version 2 of the License, or
-- * (at your option) any later version.
-- *
-- */
--#ifndef __CRYPTO_DES_H__
--#define __CRYPTO_DES_H__
--
--extern int crypto_des_check_key(const u8*, unsigned int, u32*);
--
--#endif /*__CRYPTO_DES_H__*/
+diff --git a/drivers/video/console/Kconfig b/drivers/video/console/Kconfig
+index c2d11fe..e2c96d0 100644
+--- a/drivers/video/console/Kconfig
++++ b/drivers/video/console/Kconfig
+@@ -224,5 +224,19 @@ config FONT_10x18
+ 	  big letters. It fits between the sun 12x22 and the normal 8x16 font.
+ 	  If other fonts are too big or too small for you, say Y, otherwise say N.
+ 
++config FONT_AUTOSELECT
++	def_bool y
++	depends on FRAMEBUFFER_CONSOLE || SGI_NEWPORT_CONSOLE || STI_CONSOLE || USB_SISUSBVGA_CON
++	depends on !FONT_8x8
++	depends on !FONT_6x11
++	depends on !FONT_7x14
++	depends on !FONT_PEARL_8x8
++	depends on !FONT_ACORN_8x8
++	depends on !FONT_MINI_4x6
++	depends on !FONT_SUN8x16
++	depends on !FONT_SUN12x22
++	depends on !FONT_10x18
++	select FONT_8x16
++
+ endmenu
+ 
 -- 
-1.7.7.6
+1.7.5.4
 
