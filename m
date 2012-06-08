@@ -1,109 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933716Ab2FHOPe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 10:15:34 -0400
-Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:57838
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932082Ab2FHOPc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 10:15:32 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -5
-X-BigFish: VPS-5(z1823lz98dI936eI179dN1432Izz1202hzzz2dh668h839h944hd25hf0ah)
-X-WSS-ID: 0M5AY9M-01-24D-02
-X-M-MSG: 
-Date: Fri, 8 Jun 2012 16:15:43 +0200
-From: Borislav Petkov <borislav.petkov@amd.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Borislav Petkov <borislav.petkov@amd.com>, Ingo Molnar <mingo@kernel.org>,
-        Stephane Eranian <eranian@google.com>, <linux-kernel@vger.kernel.org>,
-        <andi@firstfloor.org>, <mingo@elte.hu>, <ming.m.lin@intel.com>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Dimitri Sivanich <sivanich@sgi.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>
-Subject: Re: [PATCH] perf/x86: check ucode before disabling PEBS on
- SandyBridge
-Message-ID: <20120608141543.GD31359@aftab.osrc.amd.com>
-References: <1339064319.23343.13.camel@twins>
- <CABPqkBQ+p5rcuxpXCTLMXPM+awAHhQ6mP9-WzVh5GWtn2GyfrA@mail.gmail.com>
- <1339065932.23343.18.camel@twins>
- <CABPqkBQ=tLXXsgvzQx+i01Owm4MM8m=6cEVVi4ab64gOiTTBYQ@mail.gmail.com>
- <1339067757.23343.21.camel@twins>
- <20120608093513.GA22520@gmail.com>
- <1339149613.23343.52.camel@twins>
- <1339161972.2507.13.camel@laptop>
- <20120608135117.GB31359@aftab.osrc.amd.com>
- <1339163669.2507.16.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1339163669.2507.16.camel@laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+	id S934287Ab2FHOQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 10:16:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51699 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755424Ab2FHOQ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 10:16:57 -0400
+Message-ID: <1339165009.26976.60.camel@ul30vt>
+Subject: Re: [PATCH] uio_pci_generic does not export memory resources
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Jan Kiszka <jan.kiszka@siemens.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>,
+        Dominic Eschweiler <eschweiler@fias.uni-frankfurt.de>,
+        "Hans J. Koch" <hjk@hansjkoch.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 08 Jun 2012 08:16:49 -0600
+In-Reply-To: <4FD1FB49.3020905@siemens.com>
+References: <1339156616.3870.9.camel@blech>
+	 <20120608130351.GB1964@redhat.com> <4FD1FB49.3020905@siemens.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 08, 2012 at 03:54:29PM +0200, Peter Zijlstra wrote:
-> On Fri, 2012-06-08 at 15:51 +0200, Borislav Petkov wrote:
-> > Reportedly, there are some obscure systems which need different
-> > microcode versions per CPU:
+On Fri, 2012-06-08 at 15:16 +0200, Jan Kiszka wrote:
+> On 2012-06-08 15:03, Michael S. Tsirkin wrote:
+> >> +    /* set master */
+> >> +	pci_set_master(pdev);
+> >> +
+> >> +    /* set DMA mask */
+> >> +	err = pci_set_dma_mask(pdev, DMA_BIT_MASK(64));
 > > 
-> > http://lkml.indiana.edu/hypermail/linux/kernel/1105.3/01010.html
-> 
-> *groan*,.. ok.
-
-Tell me about it - if we didn't have to support this, we could've killed
-a lot of code from the thing.
-
-> > > The biggest problem is finding when the minimum revision changes, at
-> > > best this is a n log n sorting problem due to the per-cpu setup, but I
-> > > couldn't be arsed to implement a tree or anything fancy since it all
-> > > stinks anyway.
+> > uio currently only supports devices which do not
+> > do DMA.
 > > 
-> > I know. Can't you just iterate over all CPUs and collect the lowest
-> > ucode version? Provided, of course, newer microcode versions means a
-> > higher version number. 
+> > DMA from uio controlled devices is a no no unless
+> > it's behind an IOMMU which can protect us from
+> > random memory corruptions this could cause.
+> > 
+> > In the later case it's OK but we need some code
+> > to check this and program the IOMMU appropriately.
 > 
-> That's what I do.. but that's O(n) per cpu, so if you update all cpus,
-> that's O(n^2).
+> AKA: VFIO. :)
 > 
-> You don't know when userspace is done updating the 'last' cpu, so you
-> have to scan all cpus for every cpu.
-> 
-> I'm sure the SGI people with their silly CPU counts aren't too thrilled
-> to have this.
+> Dominic, maybe you want to have a look at Alex's work:
+> https://github.com/awilliam/linux-vfio
 
-Ok, hmm, I don't have a bright idea right now except maybe a stupid one:
+Yes, thanks Jan.  This is exactly what VFIO does.  VFIO provides secure
+config space access, resource access, DMA mapping services, and full
+interrupt support to userspace.  I'm currently working to get this
+upstream, probably targeting 3.6 at this point, and would love to have
+more users to help make that happen.  Please take a look at the vfio-3.4
+branch in the tree above.  See this tree for Qemu's usage of VFIO for
+device assignment:
+https://github.com/awilliam/qemu-vfio (vfio-ng)
 
-have a variable which gets initialized to the number of all CPUs and
-each time ->apply_microcode() finishes by returning 0, we decrement it
-once.
+Look forward to your feedback.  Thanks,
 
-"Finishes by returning 0" means ucode successfully updated.
-
-When it has reached 0, microcode_notifier_done() says
-MICROCODE_SUCCESSFULLY_UPDATED_ON_ALL_CPUS and only then you run
-intel_snb_verify_ucode().
-
-However(!),
-
-* what do you do when you boot the box with less CPUs than present? All
-the offline CPUs cannot get to userspace to get the chance to update
-ucode. In that case, counter stays !0 and bo PEBS, tough luck.
-
-* hotplug: we don't care about it because once we ONLINE a CPU again, it
-automatically gets the ucode applied.
-
-Hmm, I'm probably missing some obscure case.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+Alex
 
