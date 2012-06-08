@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932703Ab2FHTOr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 15:14:47 -0400
+	id S933177Ab2FHTO4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 15:14:56 -0400
 Received: from mail-ob0-f174.google.com ([209.85.214.174]:62667 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758011Ab2FHTOo (ORCPT
+	with ESMTP id S932895Ab2FHTOt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 15:14:44 -0400
+	Fri, 8 Jun 2012 15:14:49 -0400
 From: Sasha Levin <levinsasha928@gmail.com>
 To: dan.magenheimer@oracle.com, konrad.wilk@oracle.com
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Sasha Levin <levinsasha928@gmail.com>
-Subject: [PATCH v2 02/10] mm: frontswap: trivial coding convention issues
-Date: Fri,  8 Jun 2012 21:15:11 +0200
-Message-Id: <1339182919-11432-3-git-send-email-levinsasha928@gmail.com>
+Subject: [PATCH v2 04/10] mm: frontswap: split out __frontswap_unuse_pages
+Date: Fri,  8 Jun 2012 21:15:13 +0200
+Message-Id: <1339182919-11432-5-git-send-email-levinsasha928@gmail.com>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1339182919-11432-1-git-send-email-levinsasha928@gmail.com>
 References: <1339182919-11432-1-git-send-email-levinsasha928@gmail.com>
@@ -21,35 +21,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+An attempt at making frontswap_shrink shorter and more readable. This patch
+splits out walking through the swap list to find an entry with enough
+pages to unuse.
+
 Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
 ---
- mm/frontswap.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+ mm/frontswap.c |   59 +++++++++++++++++++++++++++++++++++++-------------------
+ 1 files changed, 39 insertions(+), 20 deletions(-)
 
 diff --git a/mm/frontswap.c b/mm/frontswap.c
-index 557e8af4..b619d29 100644
+index 37277e6..5d9ed36 100644
 --- a/mm/frontswap.c
 +++ b/mm/frontswap.c
-@@ -150,6 +150,7 @@ int __frontswap_store(struct page *page)
- 		inc_frontswap_failed_stores();
- 	} else
- 		inc_frontswap_failed_stores();
-+	}
- 	if (frontswap_writethrough_enabled)
- 		/* report failure so swap also writes to swap device */
- 		ret = -1;
-@@ -250,9 +251,9 @@ void frontswap_shrink(unsigned long target_pages)
- 	for (type = swap_list.head; type >= 0; type = si->next) {
- 		si = swap_info[type];
- 		si_frontswap_pages = atomic_read(&si->frontswap_pages);
--		if (total_pages_to_unuse < si_frontswap_pages)
+@@ -230,6 +230,41 @@ static unsigned long __frontswap_curr_pages(void)
+ 	return totalpages;
+ }
+ 
++static int __frontswap_unuse_pages(unsigned long total, unsigned long *unused,
++					int *swapid)
++{
++	int ret = -EINVAL;
++	struct swap_info_struct *si = NULL;
++	int si_frontswap_pages;
++	unsigned long total_pages_to_unuse = total;
++	unsigned long pages = 0, pages_to_unuse = 0;
++	int type;
++
++	lockdep_assert_held(&swap_lock);
++	for (type = swap_list.head; type >= 0; type = si->next) {
++		si = swap_info[type];
++		si_frontswap_pages = atomic_read(&si->frontswap_pages);
 +		if (total_pages_to_unuse < si_frontswap_pages) {
- 			pages = pages_to_unuse = total_pages_to_unuse;
--		else {
++			pages = pages_to_unuse = total_pages_to_unuse;
 +		} else {
- 			pages = si_frontswap_pages;
- 			pages_to_unuse = 0; /* unuse all */
- 		}
++			pages = si_frontswap_pages;
++			pages_to_unuse = 0; /* unuse all */
++		}
++		/* ensure there is enough RAM to fetch pages from frontswap */
++		if (security_vm_enough_memory_mm(current->mm, pages)) {
++			ret = -ENOMEM;
++			continue;
++		}
++		vm_unacct_memory(pages);
++		*unused = pages_to_unuse;
++		*swapid = type;
++		ret = 0;
++		break;
++	}
++
++	return ret;
++}
++
+ /*
+  * Frontswap, like a true swap device, may unnecessarily retain pages
+  * under certain circumstances; "shrink" frontswap is essentially a
+@@ -240,11 +275,9 @@ static unsigned long __frontswap_curr_pages(void)
+  */
+ void frontswap_shrink(unsigned long target_pages)
+ {
+-	struct swap_info_struct *si = NULL;
+-	int si_frontswap_pages;
+ 	unsigned long total_pages = 0, total_pages_to_unuse;
+-	unsigned long pages = 0, pages_to_unuse = 0;
+-	int type;
++	unsigned long pages_to_unuse = 0;
++	int type, ret;
+ 	bool locked = false;
+ 
+ 	/*
+@@ -258,22 +291,8 @@ void frontswap_shrink(unsigned long target_pages)
+ 	if (total_pages <= target_pages)
+ 		goto out;
+ 	total_pages_to_unuse = total_pages - target_pages;
+-	for (type = swap_list.head; type >= 0; type = si->next) {
+-		si = swap_info[type];
+-		si_frontswap_pages = atomic_read(&si->frontswap_pages);
+-		if (total_pages_to_unuse < si_frontswap_pages) {
+-			pages = pages_to_unuse = total_pages_to_unuse;
+-		} else {
+-			pages = si_frontswap_pages;
+-			pages_to_unuse = 0; /* unuse all */
+-		}
+-		/* ensure there is enough RAM to fetch pages from frontswap */
+-		if (security_vm_enough_memory_mm(current->mm, pages))
+-			continue;
+-		vm_unacct_memory(pages);
+-		break;
+-	}
+-	if (type < 0)
++	ret = __frontswap_unuse_pages(total_pages_to_unuse, &pages_to_unuse, &type);
++	if (ret < 0)
+ 		goto out;
+ 	locked = false;
+ 	spin_unlock(&swap_lock);
 -- 
 1.7.8.6
 
