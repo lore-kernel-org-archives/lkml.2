@@ -1,65 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964880Ab2FHVDj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 17:03:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29230 "EHLO mx1.redhat.com"
+	id S934526Ab2FHVDa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 17:03:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63964 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964860Ab2FHVDg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 17:03:36 -0400
-Date: Fri, 8 Jun 2012 17:03:30 -0400
-From: Dave Jones <davej@redhat.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: oomkillers gone wild.
-Message-ID: <20120608210330.GA21010@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	David Rientjes <rientjes@google.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-References: <20120604152710.GA1710@redhat.com>
- <alpine.DEB.2.00.1206041629500.7769@chino.kir.corp.google.com>
- <20120605174454.GA23867@redhat.com>
- <alpine.DEB.2.00.1206081313000.19054@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1206081313000.19054@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S964835Ab2FHVDV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 17:03:21 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, nzimmer@sgi.com,
+        joe@perches.com, Don Zickus <dzickus@redhat.com>
+Subject: [PATCH v2] watchdog: Quiet down the boot messages
+Date: Fri,  8 Jun 2012 17:03:09 -0400
+Message-Id: <1339189389-731-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 08, 2012 at 01:15:50PM -0700, David Rientjes wrote:
- > On Tue, 5 Jun 2012, Dave Jones wrote:
- > 
- > > Still doesn't seem right..
- > > 
- > > eg..
- > > 
- > > [42309.542776] [ pid ]   uid  tgid total_vm      rss cpu oom_adj oom_score_adj name
- > > ..
- > > [42309.553933] [  500]    81   500     5435        1   4     -13          -900 dbus-daemon
- > > ..
- > > [42309.597531] [ 9054]  1000  9054   528677    14540   3       0             0 trinity-child3
- > > ..
- > > 
- > > [42309.643057] Out of memory: Kill process 500 (dbus-daemon) score 511952 or sacrifice child
- > > [42309.643620] Killed process 500 (dbus-daemon) total-vm:21740kB, anon-rss:0kB, file-rss:4kB
- > > 
- > > and a slew of similar 'wrong process' death spiral kills follows..
- > > 
- > 
- > On a system not under oom conditions, i.e. before you start trinity, can 
- > you send the output of
- > 
- > 	cat /proc/$(pidof dbus-daemon)/oom_score{_adj,}
- > 	grep RSS /proc/$(pidof dbus-daemon)/status
+A bunch of bugzillas have complained how noisy the nmi_watchdog is during
+boot-up especially with its expected failure cases (like virt and bios
+resource contention).
 
-# cat /proc/$(pidof dbus-daemon)/oom_score{_adj,}
--900
-7441500919753
-# grep RSS /proc/$(pidof dbus-daemon)/status
-VmRSS:	    1660 kB
+This is my attempt to quiet them down and keep it less confusing for the end
+user.  What I did is print the message for cpu0 and save it for future
+comparisons.  If future cpus have an identical message as cpu0, then don't
+print the redundant info.  However, if a future cpu has a different message,
+happily print that loudly.
 
+Before the change, you would see something like:
 
+    ..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
+    CPU0: Intel(R) Core(TM)2 Quad CPU    Q9550  @ 2.83GHz stepping 0a
+    Performance Events: PEBS fmt0+, Core2 events, Intel PMU driver.
+    ... version:                2
+    ... bit width:              40
+    ... generic registers:      2
+    ... value mask:             000000ffffffffff
+    ... max period:             000000007fffffff
+    ... fixed-purpose events:   3
+    ... event mask:             0000000700000003
+    NMI watchdog enabled, takes one hw-pmu counter.
+    Booting Node   0, Processors  #1
+    NMI watchdog enabled, takes one hw-pmu counter.
+     #2
+    NMI watchdog enabled, takes one hw-pmu counter.
+     #3 Ok.
+    NMI watchdog enabled, takes one hw-pmu counter.
+    Brought up 4 CPUs
+    Total of 4 processors activated (22607.24 BogoMIPS).
 
-	Dave
+After the change, it is simplified to:
+
+    ..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
+    CPU0: Intel(R) Core(TM)2 Quad CPU    Q9550  @ 2.83GHz stepping 0a
+    Performance Events: PEBS fmt0+, Core2 events, Intel PMU driver.
+    ... version:                2
+    ... bit width:              40
+    ... generic registers:      2
+    ... value mask:             000000ffffffffff
+    ... max period:             000000007fffffff
+    ... fixed-purpose events:   3
+    ... event mask:             0000000700000003
+    NMI watchdog enabled, takes one hw-pmu counter.
+    Booting Node   0, Processors  #1 #2 #3 Ok.
+    Brought up 4 CPUs
+
+V2: little changes based on Joe Perches' feedback
+
+Reported-and-tested-by: Nathan Zimmer <nzimmer@sgi.com>
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+---
+ kernel/watchdog.c |   19 ++++++++++++++++++-
+ 1 files changed, 18 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index e5e1d85..6affa65 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -377,6 +377,13 @@ static int watchdog_nmi_enable(int cpu)
+ 	struct perf_event_attr *wd_attr;
+ 	struct perf_event *event = per_cpu(watchdog_ev, cpu);
+ 
++	/*
++	 * People like the simple clean cpu node info on boot.
++	 * Reduce the watchdog noise by only printing messages
++	 * that are different from what cpu0 displayed.
++	 */
++	static unsigned long cpu0_err;
++
+ 	/* is it already setup and enabled? */
+ 	if (event && event->state > PERF_EVENT_STATE_OFF)
+ 		goto out;
+@@ -390,11 +397,21 @@ static int watchdog_nmi_enable(int cpu)
+ 
+ 	/* Try to register using hardware perf events */
+ 	event = perf_event_create_kernel_counter(wd_attr, cpu, NULL, watchdog_overflow_callback, NULL);
++
++	/* save cpu0 error for future comparision */
++	if (cpu == 0 && IS_ERR(event))
++		cpu0_err = PTR_ERR(event);
++
+ 	if (!IS_ERR(event)) {
+-		pr_info("enabled, takes one hw-pmu counter.\n");
++		/* only print for cpu0 or different than cpu0 */
++		if (cpu ==0 || cpu0_err)
++			pr_info("enabled, takes one hw-pmu counter.\n");
+ 		goto out_save;
+ 	}
+ 
++	/* skip displaying the same error again */
++	if (cpu > 0 && (PTR_ERR(event) == cpu0_err))
++		return PTR_ERR(event);
+ 
+ 	/* vary the KERN level based on the returned errno */
+ 	if (PTR_ERR(event) == -EOPNOTSUPP)
+-- 
+1.7.7.6
+
