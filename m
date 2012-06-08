@@ -1,53 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754977Ab2FHM7b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 08:59:31 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:47944 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751557Ab2FHM73 (ORCPT
+	id S1754928Ab2FHND5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 09:03:57 -0400
+Received: from 8bytes.org ([85.214.48.195]:57309 "EHLO
+	h2027444.stratoserver.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751822Ab2FHNDz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 08:59:29 -0400
-Date: Fri, 8 Jun 2012 15:58:59 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Joe Perches <joe@perches.com>
-Cc: Julia Lawall <julia.lawall@lip6.fr>,
-        Sergei Shtylyov <sshtylyov@mvista.com>, Felipe Balbi <balbi@ti.com>,
-        kernel-janitors@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Julia Lawall <julia@diku.dk>
-Subject: Re: [PATCH 3/7] drivers/usb/gadget/pch_udc.c: adjust suspicious bit
- operation
-Message-ID: <20120608125859.GO4400@mwanda>
-References: <1339018901-28439-1-git-send-email-Julia.Lawall@lip6.fr>
- <1339018901-28439-4-git-send-email-Julia.Lawall@lip6.fr>
- <4FD0A5F9.9050405@mvista.com>
- <alpine.DEB.2.02.1206071622350.1807@hadrien>
- <1339081544.6009.44.camel@joe2Laptop>
+	Fri, 8 Jun 2012 09:03:55 -0400
+Date: Fri, 8 Jun 2012 15:03:52 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Bryan Schumaker <bjschuma@netapp.com>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: NFS regression in v3.5-rc1: mount.nfs yells about incorrect
+ mount option
+Message-ID: <20120608130352.GU12795@8bytes.org>
+References: <20120607150456.GO12795@8bytes.org>
+ <4FD0C4C2.8020605@netapp.com>
+ <20120607155006.GR12795@8bytes.org>
+ <4FD0CEB0.9040804@netapp.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1339081544.6009.44.camel@joe2Laptop>
+In-Reply-To: <4FD0CEB0.9040804@netapp.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Fri Jun  8 15:03:52 2012
+X-DSPAM-Confidence: 0.9989
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 4fd1f83828384052114951
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 07, 2012 at 08:05:44AM -0700, Joe Perches wrote:
-> On Thu, 2012-06-07 at 16:23 +0200, Julia Lawall wrote:
-> > Oops, thanks for noticing that.  I'll send a corrected version.
+On Thu, Jun 07, 2012 at 11:54:24AM -0400, Bryan Schumaker wrote:
+> On 06/07/2012 11:50 AM, Joerg Roedel wrote:
+> > mount -o nfsvers=3 ...
 > 
-> Hi Julia.
-> 
-> I should have let you know that I already submitted
-> a patch series for a simple treewide
-> "s/if (value | UC_CONSTANT)/if (value & UC_CONSTANT)/"
-> https://lkml.org/lkml/2012/5/30/625
-> 
+> What about `mount -o vers=4 ...`?  I'm compiling a kernel right now to
+> see if I can reproduce this, what NFS .config options do you have set?
+> (`cat .config | grep CONFIG_NFS_` should be good enough).
 
-You could CC them to kernel-janitors@vger.kernel.org.  Julia and I
-used to tread on each other's toes until we hijacked the k-j list.
+Okay, I tracked it down somewhat. The problem is that the nfs-version
+is not set in my case so that data->version in nfs_init_server is 0. The
+function returns -EPROTONOSUPPORT in this case which causes the mount
+to fail. The evil commit is db8333519 and reverting it fixes the issue
+for me. Patch attached.
 
-regards,
-dan carpenter
+Regards,
+
+	Joerg
+
+From: Joerg Roedel <joerg.roedel@amd.com>
+Date: Fri, 8 Jun 2012 14:51:01 +0200
+Subject: [PATCH] Revert "NFS: Let mount data parsing set the NFS version"
+
+This reverts commit db8333519187d5974cf2ff33910c893bf8727d9f.
+
+The original commit message says, that the version field is
+"unconditionally set while parsing mount data".
+Unfortunatly this is not the case and the version field may
+stay 0 so that nfs_init_server returns -EPROTONOSUPPORT
+causing the mount to fail.  Reverting this commit fixes the
+issue.
+
+Conflicts:
+
+	fs/nfs/super.c
+
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+---
+ fs/nfs/super.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/fs/nfs/super.c b/fs/nfs/super.c
+index ff656c0..2fd4ce5 100644
+--- a/fs/nfs/super.c
++++ b/fs/nfs/super.c
+@@ -948,7 +948,7 @@ static void nfs_umount_begin(struct super_block *sb)
+ 		rpc_killall_tasks(rpc);
+ }
+ 
+-static struct nfs_parsed_mount_data *nfs_alloc_parsed_mount_data(void)
++static struct nfs_parsed_mount_data *nfs_alloc_parsed_mount_data(unsigned int version)
+ {
+ 	struct nfs_parsed_mount_data *data;
+ 
+@@ -963,6 +963,7 @@ static struct nfs_parsed_mount_data *nfs_alloc_parsed_mount_data(void)
+ 		data->nfs_server.protocol = XPRT_TRANSPORT_TCP;
+ 		data->auth_flavors[0]	= RPC_AUTH_UNIX;
+ 		data->auth_flavor_len	= 1;
++		data->version		= version;
+ 		data->minorversion	= 0;
+ 		data->need_mount	= true;
+ 		data->net		= current->nsproxy->net_ns;
+@@ -2479,7 +2480,7 @@ static struct dentry *nfs_fs_mount(struct file_system_type *fs_type,
+ 	struct dentry *mntroot = ERR_PTR(-ENOMEM);
+ 	int error;
+ 
+-	mount_info.parsed = nfs_alloc_parsed_mount_data();
++	mount_info.parsed = nfs_alloc_parsed_mount_data(NFS_DEFAULT_VERSION);
+ 	mount_info.mntfh = nfs_alloc_fhandle();
+ 	if (mount_info.parsed == NULL || mount_info.mntfh == NULL)
+ 		goto out;
+-- 
+1.7.9.5
+
+
