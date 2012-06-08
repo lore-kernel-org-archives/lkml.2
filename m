@@ -1,109 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754928Ab2FHND5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 09:03:57 -0400
-Received: from 8bytes.org ([85.214.48.195]:57309 "EHLO
-	h2027444.stratoserver.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751822Ab2FHNDz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 09:03:55 -0400
-Date: Fri, 8 Jun 2012 15:03:52 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Bryan Schumaker <bjschuma@netapp.com>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org,
+	id S1755219Ab2FHNEH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 09:04:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39297 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755043Ab2FHNED (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 09:04:03 -0400
+Date: Fri, 8 Jun 2012 16:03:51 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Dominic Eschweiler <eschweiler@fias.uni-frankfurt.de>
+Cc: "Hans J. Koch" <hjk@hansjkoch.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, kvm@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: NFS regression in v3.5-rc1: mount.nfs yells about incorrect
- mount option
-Message-ID: <20120608130352.GU12795@8bytes.org>
-References: <20120607150456.GO12795@8bytes.org>
- <4FD0C4C2.8020605@netapp.com>
- <20120607155006.GR12795@8bytes.org>
- <4FD0CEB0.9040804@netapp.com>
+Subject: Re: [PATCH] uio_pci_generic does not export memory resources
+Message-ID: <20120608130351.GB1964@redhat.com>
+References: <1339156616.3870.9.camel@blech>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4FD0CEB0.9040804@netapp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Fri Jun  8 15:03:52 2012
-X-DSPAM-Confidence: 0.9989
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 4fd1f83828384052114951
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1339156616.3870.9.camel@blech>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 07, 2012 at 11:54:24AM -0400, Bryan Schumaker wrote:
-> On 06/07/2012 11:50 AM, Joerg Roedel wrote:
-> > mount -o nfsvers=3 ...
+On Fri, Jun 08, 2012 at 01:56:56PM +0200, Dominic Eschweiler wrote:
+> Hello,
 > 
-> What about `mount -o vers=4 ...`?  I'm compiling a kernel right now to
-> see if I can reproduce this, what NFS .config options do you have set?
-> (`cat .config | grep CONFIG_NFS_` should be good enough).
+> the current version of the uio_pci_generic module does not export memory
+> resources, such as BARs. As far as I can see, the related module does
+> only support interrupts, which is not really useful. My suggestion in
+> this case would be to either fix this issue, or to completely remove it.
+> The latter would not be an option for us, since we need this
+> functionality at some stuff at CERN.
+> 
+> Therefore, here is a patch that fixes the issue. Please give me further
+> advice, since I'm doing this the first time ...
 
-Okay, I tracked it down somewhat. The problem is that the nfs-version
-is not set in my case so that data->version in nfs_init_server is 0. The
-function returns -EPROTONOSUPPORT in this case which causes the mount
-to fail. The evil commit is db8333519 and reverting it fixes the issue
-for me. Patch attached.
+Why is this needed?
+What's wrong with mapping resources through
+ /sys/bus/pci/devices/XXXXXresourceX
+?
 
-Regards,
+> 
+> Signed-off-by: Dominic Eschweiler <eschweiler@fias.uni-frankfurt.de>
+> ---
+> diff -uNr linux-3.4_old/drivers/uio/uio_pci_generic.c
+> linux-3.4_new/drivers/uio/uio_pci_generic.c
+> --- linux-3.4_old/drivers/uio/uio_pci_generic.c	2012-05-21
+> 00:29:13.000000000 +0200
+> +++ linux-3.4_new/drivers/uio/uio_pci_generic.c	2012-06-08
+> 13:01:12.000000000 +0200
+> @@ -25,10 +25,12 @@
+>  #include <linux/slab.h>
+>  #include <linux/uio_driver.h>
+>  
+> -#define DRIVER_VERSION	"0.01.0"
+> +#define DRIVER_VERSION	"0.02.0"
+>  #define DRIVER_AUTHOR	"Michael S. Tsirkin <mst@redhat.com>"
+>  #define DRIVER_DESC	"Generic UIO driver for PCI 2.3 devices"
+>  
+> +#define DRV_NAME "uio_pci_generic"
+> +
+>  struct uio_pci_generic_dev {
+>  	struct uio_info info;
+>  	struct pci_dev *pdev;
+> @@ -58,6 +60,7 @@
+>  {
+>  	struct uio_pci_generic_dev *gdev;
+>  	int err;
+> +	int i;
+>  
+>  	err = pci_enable_device(pdev);
+>  	if (err) {
+> @@ -66,9 +69,33 @@
+>  		return err;
+>  	}
+>  
+> +    /* set master */
+> +	pci_set_master(pdev);
+> +
+> +    /* set DMA mask */
+> +	err = pci_set_dma_mask(pdev, DMA_BIT_MASK(64));
 
-	Joerg
+uio currently only supports devices which do not
+do DMA.
 
-From: Joerg Roedel <joerg.roedel@amd.com>
-Date: Fri, 8 Jun 2012 14:51:01 +0200
-Subject: [PATCH] Revert "NFS: Let mount data parsing set the NFS version"
+DMA from uio controlled devices is a no no unless
+it's behind an IOMMU which can protect us from
+random memory corruptions this could cause.
 
-This reverts commit db8333519187d5974cf2ff33910c893bf8727d9f.
+In the later case it's OK but we need some code
+to check this and program the IOMMU appropriately.
 
-The original commit message says, that the version field is
-"unconditionally set while parsing mount data".
-Unfortunatly this is not the case and the version field may
-stay 0 so that nfs_init_server returns -EPROTONOSUPPORT
-causing the mount to fail.  Reverting this commit fixes the
-issue.
-
-Conflicts:
-
-	fs/nfs/super.c
-
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
----
- fs/nfs/super.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/fs/nfs/super.c b/fs/nfs/super.c
-index ff656c0..2fd4ce5 100644
---- a/fs/nfs/super.c
-+++ b/fs/nfs/super.c
-@@ -948,7 +948,7 @@ static void nfs_umount_begin(struct super_block *sb)
- 		rpc_killall_tasks(rpc);
- }
- 
--static struct nfs_parsed_mount_data *nfs_alloc_parsed_mount_data(void)
-+static struct nfs_parsed_mount_data *nfs_alloc_parsed_mount_data(unsigned int version)
- {
- 	struct nfs_parsed_mount_data *data;
- 
-@@ -963,6 +963,7 @@ static struct nfs_parsed_mount_data *nfs_alloc_parsed_mount_data(void)
- 		data->nfs_server.protocol = XPRT_TRANSPORT_TCP;
- 		data->auth_flavors[0]	= RPC_AUTH_UNIX;
- 		data->auth_flavor_len	= 1;
-+		data->version		= version;
- 		data->minorversion	= 0;
- 		data->need_mount	= true;
- 		data->net		= current->nsproxy->net_ns;
-@@ -2479,7 +2480,7 @@ static struct dentry *nfs_fs_mount(struct file_system_type *fs_type,
- 	struct dentry *mntroot = ERR_PTR(-ENOMEM);
- 	int error;
- 
--	mount_info.parsed = nfs_alloc_parsed_mount_data();
-+	mount_info.parsed = nfs_alloc_parsed_mount_data(NFS_DEFAULT_VERSION);
- 	mount_info.mntfh = nfs_alloc_fhandle();
- 	if (mount_info.parsed == NULL || mount_info.mntfh == NULL)
- 		goto out;
--- 
-1.7.9.5
-
+> +	if (err) {
+> +		dev_warn(&pdev->dev, "Warning: couldn't set 64-bit PCI DMA mask.\n");
+> +		err = pci_set_dma_mask(pdev, DMA_BIT_MASK(32));
+> +		if (err) {
+> +			dev_err(&pdev->dev, "Can't set PCI DMA mask, aborting\n");
+> +			return -ENODEV;
+> +		}
+> +	}
+> +
+> +	/* set consistent DMA mask */
+> +	err = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(64));
+> +	if (err) {
+> +		dev_warn(&pdev->dev, "Warning: couldn't set 64-bit consistent PCI DMA
+> mask.\n");
+> +		err = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(32));
+> +		if (err) {
+> +			dev_err(&pdev->dev, "Can't set consistent PCI DMA mask, aborting
+> \n");
+> +			return -ENODEV;
+> +		}
+> +	}
+> +
+>  	if (!pdev->irq) {
+> -		dev_warn(&pdev->dev, "No IRQ assigned to device: "
+> -			 "no support for interrupts?\n");
+> +		dev_warn(&pdev->dev, "No IRQ assigned to device: no support for
+> interrupts?\n");
+>  		pci_disable_device(pdev);
+>  		return -ENODEV;
+>  	}
+> @@ -91,10 +118,40 @@
+>  	gdev->info.handler = irqhandler;
+>  	gdev->pdev = pdev;
+>  
+> +	/* request regions */
+> +	err = pci_request_regions(pdev, DRV_NAME);
+> +	if (err) {
+> +		dev_err(&pdev->dev, "Couldn't get PCI resources, aborting\n");
+> +		return err;
+> +	}
+> +
+> +	/* create attributes for BAR mappings */
+> +	for (i = 0; i < PCI_NUM_RESOURCES; i++) {
+> +		if (pdev->resource[i].flags &&
+> +		(pdev->resource[i].flags & IORESOURCE_IO)) {
+> +			gdev->info.port[i].size = 0;
+> +			gdev->info.port[i].porttype = UIO_PORT_OTHER;
+> +			#ifdef CONFIG_X86
+> +			gdev->info.port[i].porttype = UIO_PORT_X86;
+> +			#endif
+> +		}
+> +
+> +	if (pdev->resource[i].flags &&
+> +	(pdev->resource[i].flags & IORESOURCE_MEM)) {
+> +		gdev->info.mem[i].addr = pci_resource_start(pdev, i);
+> +		gdev->info.mem[i].size = pci_resource_len(pdev, i);
+> +		gdev->info.mem[i].internal_addr = NULL;
+> +		gdev->info.mem[i].memtype = UIO_MEM_PHYS;
+> +		}
+> +	}
+> +
+>  	if (uio_register_device(&pdev->dev, &gdev->info))
+>  		goto err_register;
+>  	pci_set_drvdata(pdev, gdev);
+>  
+> +	pr_info("UIO_PCI_GENERIC : initialized new device (%x %x)\n",
+> +	pdev->vendor, pdev->device);
+> +
+>  	return 0;
+>  err_register:
+>  	kfree(gdev);
+> @@ -107,17 +164,21 @@
+>  static void remove(struct pci_dev *pdev)
+>  {
+>  	struct uio_pci_generic_dev *gdev = pci_get_drvdata(pdev);
+> -
+>  	uio_unregister_device(&gdev->info);
+> +
+> +	pci_release_regions(pdev);
+>  	pci_disable_device(pdev);
+>  	kfree(gdev);
+> +
+> +	pr_info("UIO_PCI_GENERIC : removed device (%x %x)\n",
+> +	pdev->vendor, pdev->device);
+>  }
+>  
+>  static struct pci_driver driver = {
+> -	.name = "uio_pci_generic",
+> +	.name     = DRV_NAME,
+>  	.id_table = NULL, /* only dynamic id's */
+> -	.probe = probe,
+> -	.remove = remove,
+> +	.probe    = probe,
+> +	.remove   = remove,
+>  };
+>  
+>  static int __init init(void)
+> 
+> 
+> -- 
+> Gruß
+>   Dominic
+> 
+> Frankfurt Institute for Advanced Studies (FIAS)
+> Ruth-Moufang-Straße 1
+> D-60438 Frankfurt am Main
+> Germany
+> 
+> Phone:  +49 69 79844114
 
