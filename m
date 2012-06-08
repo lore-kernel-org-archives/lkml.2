@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932340Ab2FHFOW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 01:14:22 -0400
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:57100 "EHLO
-	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1761509Ab2FHFOQ (ORCPT
+	id S933007Ab2FHFOw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 01:14:52 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43287 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1761466Ab2FHFH2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 01:14:16 -0400
-X-IronPort-AV: E=Sophos;i="4.75,734,1330902000"; 
-   d="scan'208,223";a="161856950"
-Date: Fri, 8 Jun 2012 07:14:03 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: David Miller <davem@davemloft.net>
-cc: kernel-janitors@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, joe@perches.com
-Subject: Re: [PATCH 1/7] drivers/ide/ide-cs.c: adjust suspicious bit
- operation
-In-Reply-To: <20120607.144616.2224976714259476349.davem@davemloft.net>
-Message-ID: <alpine.DEB.2.02.1206080712510.1793@hadrien>
-References: <1339018901-28439-1-git-send-email-Julia.Lawall@lip6.fr> <1339018901-28439-2-git-send-email-Julia.Lawall@lip6.fr> <20120607.144616.2224976714259476349.davem@davemloft.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	Fri, 8 Jun 2012 01:07:28 -0400
+Message-Id: <20120608041847.673229768@decadent.org.uk>
+User-Agent: quilt/0.60-1
+Date: Fri, 08 Jun 2012 05:19:31 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Frank Svendsboe <frank.svendsboe@gmail.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        David Woodhouse <David.Woodhouse@intel.com>
+Subject: [ 51/82] mtd: of_parts: fix breakage in Kconfig
+In-Reply-To: <20120608041840.861504477@decadent.org.uk>
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From nobody Wed Jun  6 21:48:37 CEST 2012
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: linux-ide@vger.kernel.org,linux-kernel@vger.kernel.org,joe@perches.com
-Subject: [PATCH 1/7] drivers/ide/ide-cs.c: adjust suspicious bit operation
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+------------------
 
-IO_DATA_PATH_WIDTH_8 is 0, so a bit-and with it is always false.  The
-value IO_DATA_PATH_WIDTH covers the bits of the IO_DATA_PATH constants, so
-first pick those bits and then make the test using !=.
+From: Frank Svendsboe <frank.svendsboe@gmail.com>
 
-This problem was found using Coccinelle (http://coccinelle.lip6.fr/).
+commit 2e929d001e85126d9267de373d4b76014789661d upstream.
 
-Signed-off-by: Julia Lawall <julia@diku.dk>
+MTD_OF_PARTS and the default setting is not working due to using 'Y'
+instead of 'y', introduced in commit
+d6137badeff1ef64b4e0092ec249ebdeaeb3ff37. This made our board, and
+possibly other boards using DTS defined partitions and not having
+CONFIG_MTD_OF_PARTS=y defined in the defconfig, fail to mount root.
 
+Signed-off-by: Frank Svendsboe <frank.svendsboe@gmail.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
-  drivers/ide/ide-cs.c |    3 ++-
-  1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/mtd/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/ide/ide-cs.c b/drivers/ide/ide-cs.c
-index 28e344e..f1e922e 100644
---- a/drivers/ide/ide-cs.c
-+++ b/drivers/ide/ide-cs.c
-@@ -167,7 +167,8 @@ static int pcmcia_check_one_config(struct pcmcia_device *pdev, void *priv_data)
-  {
-  	int *is_kme = priv_data;
+diff --git a/drivers/mtd/Kconfig b/drivers/mtd/Kconfig
+index 5760c1a..27143e0 100644
+--- a/drivers/mtd/Kconfig
++++ b/drivers/mtd/Kconfig
+@@ -128,7 +128,7 @@ config MTD_AFS_PARTS
+ 
+ config MTD_OF_PARTS
+ 	tristate "OpenFirmware partitioning information support"
+-	default Y
++	default y
+ 	depends on OF
+ 	help
+ 	  This provides a partition parsing function which derives
 
--	if (!(pdev->resource[0]->flags & IO_DATA_PATH_WIDTH_8)) {
-+	if ((pdev->resource[0]->flags & IO_DATA_PATH_WIDTH)
-+	    != IO_DATA_PATH_WIDTH_8) {
-  		pdev->resource[0]->flags &= ~IO_DATA_PATH_WIDTH;
-  		pdev->resource[0]->flags |= IO_DATA_PATH_WIDTH_AUTO;
-  	}
+
