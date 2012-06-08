@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761772Ab2FHGfN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 02:35:13 -0400
-Received: from na3sys009aog120.obsmtp.com ([74.125.149.140]:45640 "EHLO
-	na3sys009aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751145Ab2FHGfK (ORCPT
+	id S1755962Ab2FHGfo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 02:35:44 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64888 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752746Ab2FHGfm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 02:35:10 -0400
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Samuel Ortiz <sameo@linux.intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-kernel@vger.kernel.org, linux-next@vger.kernel.org, t-kristo@ti.com,
-        Randy Dunlap <rdunlap@xenotime.net>, peter.ujfalusi@ti.com
-Subject: [PATCH] MFD: twl6040: Update Kconfig to avoid build breakage
-Date: Fri,  8 Jun 2012 09:35:00 +0300
-Message-Id: <1339137300-16546-1-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.7.8.6
+	Fri, 8 Jun 2012 02:35:42 -0400
+Message-ID: <1339137332.16616.0.camel@phoenix>
+Subject: [PATCH] regulator: tps62360: Simplify tps62360_set_voltage_time_sel
+ implementation
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Laxman Dewangan <ldewangan@nvidia.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Fri, 08 Jun 2012 14:35:32 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-twl6040 needs CONFIG_IRQ_DOMAIN to compile, without this we have:
-drivers/mfd/twl6040-irq.c: In function 'twl6040_irq_init':
-drivers/mfd/twl6040-irq.c:164:2: error: implicit declaration of function 'irq_domain_add_legacy'
-drivers/mfd/twl6040-irq.c:165:11: error: 'irq_domain_simple_ops' undeclared (first use in this function)
-drivers/mfd/twl6040-irq.c:165:11: note: each undeclared identifier is reported only once for each function it appears in
+For linear mappings, we can use below equation to get the voltage difference
+between new_selector and old_selector:
 
-Reported by: Randy Dunlap <rdunlap@xenotime.net>
+abs(new_selector - old_selector) * rdev->desc->uV_step
 
-At the same time limit the twl6040 availability to ARM architecture since
-it is unlikely that this chip is going to be used on other architectures.
-
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- drivers/mfd/Kconfig |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ drivers/regulator/tps62360-regulator.c |   13 +++----------
+ 1 file changed, 3 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index e129c82..b6af334 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -283,9 +283,10 @@ config TWL6030_PWM
+diff --git a/drivers/regulator/tps62360-regulator.c b/drivers/regulator/tps62360-regulator.c
+index e534269..d044a58 100644
+--- a/drivers/regulator/tps62360-regulator.c
++++ b/drivers/regulator/tps62360-regulator.c
+@@ -179,17 +179,10 @@ static int tps62360_set_voltage_time_sel(struct regulator_dev *rdev,
+ 		unsigned int old_selector, unsigned int new_selector)
+ {
+ 	struct tps62360_chip *tps = rdev_get_drvdata(rdev);
+-	int old_uV, new_uV;
  
- config TWL6040_CORE
- 	bool "Support for TWL6040 audio codec"
--	depends on I2C=y && GENERIC_HARDIRQS
-+	depends on I2C=y && GENERIC_HARDIRQS && ARM
- 	select MFD_CORE
- 	select REGMAP_I2C
-+	select IRQ_DOMAIN
- 	default n
- 	help
- 	  Say yes here if you want support for Texas Instruments TWL6040 audio
+-	old_uV = regulator_list_voltage_linear(rdev, old_selector);
+-	if (old_uV < 0)
+-		return old_uV;
+-
+-	new_uV = regulator_list_voltage_linear(rdev, new_selector);
+-	if (new_uV < 0)
+-		return new_uV;
+-
+-	return DIV_ROUND_UP(abs(old_uV - new_uV), tps->change_uv_per_us);
++	return DIV_ROUND_UP(abs(new_selector - old_selector) *
++			    rdev->desc->uV_step,
++			    tps->change_uv_per_us);
+ }
+ 
+ static int tps62360_set_mode(struct regulator_dev *rdev, unsigned int mode)
 -- 
-1.7.8.6
+1.7.9.5
+
+
 
