@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933453Ab2FHF1r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 01:27:47 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43189 "EHLO
+	id S933515Ab2FHF1u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 01:27:50 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43170 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760570Ab2FHFHP (ORCPT
+	by vger.kernel.org with ESMTP id S1760125Ab2FHFHP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Jun 2012 01:07:15 -0400
-Message-Id: <20120608041845.013957176@decadent.org.uk>
+Message-Id: <20120608041843.953139177@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 08 Jun 2012 05:19:11 +0100
+Date: Fri, 08 Jun 2012 05:19:03 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Minchan Kim <minchan@kernel.org>,
-        David Rientjes <rientjes@google.com>
-Subject: [ 31/82] mm/vmalloc.c: change void* into explict vm_struct*
+        alan@lxorguk.ukuu.org.uk, Grazvydas Ignotas <notasas@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 23/82] wl1251: fix oops on early interrupt
 In-Reply-To: <20120608041840.861504477@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,62 +28,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Minchan Kim <minchan@kernel.org>
+From: Grazvydas Ignotas <notasas@gmail.com>
 
-commit db1aecafef58b5dda39c4228debe2c845e4a27ab upstream.
+commit f380f2c4a12e913356bd49f8790ec1063c4fe9f8 upstream.
 
-vmap_area->private is void* but we don't use the field for various purpose
-but use only for vm_struct.  So change it to a vm_struct* with naming to
-improve for readability and type checking.
+This driver disables interrupt just after requesting it and enables it
+later, after interface is up. However currently there is a time window
+between request_irq() and disable_irq() where if interrupt arrives, the
+driver oopses because it's not yet ready to process it. This can be
+reproduced by inserting the module, associating and removing the module
+multiple times.
 
-Signed-off-by: Minchan Kim <minchan@kernel.org>
-Acked-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Eliminate this race by setting IRQF_NOAUTOEN flag before request_irq().
+
+Signed-off-by: Grazvydas Ignotas <notasas@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+[bwh: Backported to 3.2: adjust filename]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- mm/vmalloc.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/net/wireless/wl1251/sdio.c |    2 +-
+ drivers/net/wireless/wl1251/spi.c  |    3 +--
+ 2 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index 21fdf46..877ca04 100644
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -256,7 +256,7 @@ struct vmap_area {
- 	struct rb_node rb_node;		/* address sorted rbtree */
- 	struct list_head list;		/* address sorted list */
- 	struct list_head purge_list;	/* "lazy purge" list */
--	void *private;
-+	struct vm_struct *vm;
- 	struct rcu_head rcu_head;
- };
+diff --git a/drivers/net/wireless/wl1251/sdio.c b/drivers/net/wireless/wl1251/sdio.c
+index 1b851f6..e2750a1 100644
+--- a/drivers/net/wireless/wl1251/sdio.c
++++ b/drivers/net/wireless/wl1251/sdio.c
+@@ -260,6 +260,7 @@ static int wl1251_sdio_probe(struct sdio_func *func,
+ 	}
  
-@@ -1285,7 +1285,7 @@ static void setup_vmalloc_vm(struct vm_struct *vm, struct vmap_area *va,
- 	vm->addr = (void *)va->va_start;
- 	vm->size = va->va_end - va->va_start;
- 	vm->caller = caller;
--	va->private = vm;
-+	va->vm = vm;
- 	va->flags |= VM_VM_AREA;
- }
+ 	if (wl->irq) {
++		irq_set_status_flags(wl->irq, IRQ_NOAUTOEN);
+ 		ret = request_irq(wl->irq, wl1251_line_irq, 0, "wl1251", wl);
+ 		if (ret < 0) {
+ 			wl1251_error("request_irq() failed: %d", ret);
+@@ -267,7 +268,6 @@ static int wl1251_sdio_probe(struct sdio_func *func,
+ 		}
  
-@@ -1408,7 +1408,7 @@ static struct vm_struct *find_vm_area(const void *addr)
+ 		irq_set_irq_type(wl->irq, IRQ_TYPE_EDGE_RISING);
+-		disable_irq(wl->irq);
  
- 	va = find_vmap_area((unsigned long)addr);
- 	if (va && va->flags & VM_VM_AREA)
--		return va->private;
-+		return va->vm;
+ 		wl1251_sdio_ops.enable_irq = wl1251_enable_line_irq;
+ 		wl1251_sdio_ops.disable_irq = wl1251_disable_line_irq;
+diff --git a/drivers/net/wireless/wl1251/spi.c b/drivers/net/wireless/wl1251/spi.c
+index 6248c35..87f6305 100644
+--- a/drivers/net/wireless/wl1251/spi.c
++++ b/drivers/net/wireless/wl1251/spi.c
+@@ -281,6 +281,7 @@ static int __devinit wl1251_spi_probe(struct spi_device *spi)
  
- 	return NULL;
- }
-@@ -1427,7 +1427,7 @@ struct vm_struct *remove_vm_area(const void *addr)
+ 	wl->use_eeprom = pdata->use_eeprom;
  
- 	va = find_vmap_area((unsigned long)addr);
- 	if (va && va->flags & VM_VM_AREA) {
--		struct vm_struct *vm = va->private;
-+		struct vm_struct *vm = va->vm;
++	irq_set_status_flags(wl->irq, IRQ_NOAUTOEN);
+ 	ret = request_irq(wl->irq, wl1251_irq, 0, DRIVER_NAME, wl);
+ 	if (ret < 0) {
+ 		wl1251_error("request_irq() failed: %d", ret);
+@@ -289,8 +290,6 @@ static int __devinit wl1251_spi_probe(struct spi_device *spi)
  
- 		if (!(vm->flags & VM_UNLIST)) {
- 			struct vm_struct *tmp, **p;
+ 	irq_set_irq_type(wl->irq, IRQ_TYPE_EDGE_RISING);
+ 
+-	disable_irq(wl->irq);
+-
+ 	ret = wl1251_init_ieee80211(wl);
+ 	if (ret)
+ 		goto out_irq;
 
 
