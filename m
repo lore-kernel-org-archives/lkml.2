@@ -1,20 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755962Ab2FHGfo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 02:35:44 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64888 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752746Ab2FHGfm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 02:35:42 -0400
-Message-ID: <1339137332.16616.0.camel@phoenix>
-Subject: [PATCH] regulator: tps62360: Simplify tps62360_set_voltage_time_sel
- implementation
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Laxman Dewangan <ldewangan@nvidia.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Fri, 08 Jun 2012 14:35:32 +0800
+	id S1753923Ab2FHGiT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 02:38:19 -0400
+Received: from ozlabs.org ([203.10.76.45]:58405 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750988Ab2FHGiS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 02:38:18 -0400
+Message-ID: <1339137497.25573.9.camel@concordia>
+Subject: Re: [PATCH 2/2] [POWERPC] uprobes: powerpc port
+From: Michael Ellerman <michael@ellerman.id.au>
+To: ananth@in.ibm.com
+Cc: Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, oleg@redhat.com,
+        lkml <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Anton Blanchard <anton@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        linuxppc-dev@lists.ozlabs.org
+Date: Fri, 08 Jun 2012 16:38:17 +1000
+In-Reply-To: <20120608061954.GE13409@in.ibm.com>
+References: <20120606091950.GB6745@in.ibm.com>
+	 <20120606092150.GC6745@in.ibm.com> <1338974822.2749.89.camel@twins>
+	 <20120606093541.GA29580@in.ibm.com> <1339006084.3458.25.camel@localhost>
+	 <20120608043605.GB13409@in.ibm.com> <1339134714.25573.4.camel@concordia>
+	 <20120608060104.GD13409@in.ibm.com> <1339136264.25573.7.camel@concordia>
+	 <20120608061954.GE13409@in.ibm.com>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
@@ -23,43 +32,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For linear mappings, we can use below equation to get the voltage difference
-between new_selector and old_selector:
+On Fri, 2012-06-08 at 11:49 +0530, Ananth N Mavinakayanahalli wrote:
+> On Fri, Jun 08, 2012 at 04:17:44PM +1000, Michael Ellerman wrote:
+> > On Fri, 2012-06-08 at 11:31 +0530, Ananth N Mavinakayanahalli wrote:
+> > > On Fri, Jun 08, 2012 at 03:51:54PM +1000, Michael Ellerman wrote:
+> > > > On Fri, 2012-06-08 at 10:06 +0530, Ananth N Mavinakayanahalli wrote:
+> > > 
+> > > But MSR_PR=1 and hence emulate_step() will return -1 and hence we will
+> > > end up single-stepping using user_enable_single_step(). Same with rfid.
+> > 
+> > Right. But that was exactly Jim's point, you may be asked to emulate
+> > those instructions even though you wouldn't expect to see them in
+> > userspace code, so you need to handle it.
+> > 
+> > Luckily it looks like emulate_step() will do the right thing for you.
+> > It'd be good to test it to make 100% sure.
+> 
+> Sure. Will add that check and send v2.
 
-abs(new_selector - old_selector) * rdev->desc->uV_step
+Sorry I didn't mean add a test in the code, I meant construct a test
+case to confirm that it works as expected.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/tps62360-regulator.c |   13 +++----------
- 1 file changed, 3 insertions(+), 10 deletions(-)
-
-diff --git a/drivers/regulator/tps62360-regulator.c b/drivers/regulator/tps62360-regulator.c
-index e534269..d044a58 100644
---- a/drivers/regulator/tps62360-regulator.c
-+++ b/drivers/regulator/tps62360-regulator.c
-@@ -179,17 +179,10 @@ static int tps62360_set_voltage_time_sel(struct regulator_dev *rdev,
- 		unsigned int old_selector, unsigned int new_selector)
- {
- 	struct tps62360_chip *tps = rdev_get_drvdata(rdev);
--	int old_uV, new_uV;
- 
--	old_uV = regulator_list_voltage_linear(rdev, old_selector);
--	if (old_uV < 0)
--		return old_uV;
--
--	new_uV = regulator_list_voltage_linear(rdev, new_selector);
--	if (new_uV < 0)
--		return new_uV;
--
--	return DIV_ROUND_UP(abs(old_uV - new_uV), tps->change_uv_per_us);
-+	return DIV_ROUND_UP(abs(new_selector - old_selector) *
-+			    rdev->desc->uV_step,
-+			    tps->change_uv_per_us);
- }
- 
- static int tps62360_set_mode(struct regulator_dev *rdev, unsigned int mode)
--- 
-1.7.9.5
-
+cheers
 
 
