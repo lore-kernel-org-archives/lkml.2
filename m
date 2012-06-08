@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759356Ab2FHBEf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 21:04:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55596 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757319Ab2FHBEe (ORCPT
+	id S1759403Ab2FHBF0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 21:05:26 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:52339 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757319Ab2FHBFZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 21:04:34 -0400
-Date: Thu, 7 Jun 2012 18:05:15 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
+	Thu, 7 Jun 2012 21:05:25 -0400
+Date: Fri, 8 Jun 2012 03:05:20 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org, Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: Re: a whole bunch of crashes since todays -mm merge.
-Message-Id: <20120607180515.4afffc89.akpm@linux-foundation.org>
-In-Reply-To: <CA+55aFzivM8Z1Bjk3Qo2vtnQhCQ7fQ4rf_a+EXY7noXQcxL_CA@mail.gmail.com>
-References: <20120608002451.GA821@redhat.com>
-	<CA+55aFzivM8Z1Bjk3Qo2vtnQhCQ7fQ4rf_a+EXY7noXQcxL_CA@mail.gmail.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Cc: akpm@linux-foundation.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, khlebnikov@openvz.org, hughd@google.com,
+        kamezawa.hiroyu@jp.fujitsu.com, oleg@redhat.com,
+        stable@vger.kernel.org
+Subject: Re: [patch 12/12] mm: correctly synchronize rss-counters at exit/exec
+Message-ID: <20120608010520.GA25317@x4>
+References: <20120607212114.E4F5AA02F8@akpm.mtv.corp.google.com>
+ <CA+55aFxOWR_h1vqRLAd_h5_woXjFBLyBHP--P8F7WsYrciXdmA@mail.gmail.com>
+ <CA+55aFyQUBXhjVLJH6Fhz9xnpfXZ=9Mej5ujt6ss7VUqT1g9Jg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFyQUBXhjVLJH6Fhz9xnpfXZ=9Mej5ujt6ss7VUqT1g9Jg@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 7 Jun 2012 17:52:52 -0700 Linus Torvalds <torvalds@linux-foundation.org> wrote:
+On 2012.06.07 at 17:25 -0700, Linus Torvalds wrote:
+> Ugh, looking more at the patch, I'm getting more and more convinces
+> that it is pure and utter garbage.
+> 
+> It does "sync_mm_rss(mm);" in mmput(), _after_ it has done the
+> possibly final mmdrop(). WTF?
+> 
+> This is crap, guys. Seriously. Stop playing russian rulette with this
+> code. I think we need to revert *all* of the crazy rss games, unless
+> Konstantin can show us some truly obviously correct fix.
+> 
+> Sadly, I merged and pushed out the crap before I had rebooted and
+> noticed this problem, so now it's in the wild. Can somebody please
+> take a look at this asap?
 
-> On Thu, Jun 7, 2012 at 5:24 PM, Dave Jones <davej@redhat.com> wrote:
-> > I just started seeing crashes while doing simple things, like logging on a console..
-> 
-> I'm looking at it right now, and the sync_mm_rss() patch is pure
-> garbage. In many ways.
-> 
-> You can't do sync_mm_rss() from mmdrop(), because there's no reason to
-> believe that the task that does mmdrop() does it on its own active_mm.
-> And even if you *could* do it there, it's still horribly wrong,
-> because it does it at the end *after* it already freed the mm!
-> 
-> Does it go away if you revert that (commit 40af1bbdca47). I wish I
-> hadn't merged it, or that I had noticed how horrible it was before I
-> pushed out.
-> 
+You've somehow merged the wrong patch.
+The correct version can be found here:
+http://marc.info/?l=linux-kernel&m=133848759505805
 
-It appears this is due to me fat-fingering conflict resolution last
-week.  That hunk is supposed to be in mm_release(), not mmput().    
-
-It's probably best to throw the patch away for now - we'll try again.
+-- 
+Markus
