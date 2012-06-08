@@ -1,173 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934266Ab2FHUTR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 16:19:17 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:34970 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933430Ab2FHUTQ (ORCPT
+	id S934445Ab2FHUUK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 16:20:10 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:42583 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933473Ab2FHUUI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 16:19:16 -0400
+	Fri, 8 Jun 2012 16:20:08 -0400
+Date: Fri, 8 Jun 2012 21:20:00 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Miklos Szeredi <mszeredi@suse.cz>, Jan Kara <jack@suse.cz>,
+        Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
+        "J. Bruce Fields" <bfields@redhat.com>, Sage Weil <sage@newdream.net>
+Subject: Re: processes hung after sys_renameat, and 'missing' processes
+Message-ID: <20120608202000.GP30000@ZenIV.linux.org.uk>
+References: <20120607011915.GA17566@redhat.com>
+ <20120607012900.GE30000@ZenIV.linux.org.uk>
+ <20120607193607.GI30000@ZenIV.linux.org.uk>
+ <873966n2c2.fsf@xmission.com>
+ <CA+55aFxxS3+NmZacr76qNmEu9=-=aw61gW1Ebugg8hdMNgKiJA@mail.gmail.com>
+ <20120608003604.GK30000@ZenIV.linux.org.uk>
+ <20120608005935.GL30000@ZenIV.linux.org.uk>
+ <87bokugysl.fsf@xmission.com>
+ <20120608054838.GO30000@ZenIV.linux.org.uk>
+ <87pq9a9r3b.fsf@xmission.com>
 MIME-Version: 1.0
-Date: Fri, 8 Jun 2012 13:19:15 -0700
-Message-ID: <CAH5vBdLPhd8Q4ZwFP7Zy_yLfNEezRGrkeFJeO1eyh+dcF+oYsw@mail.gmail.com>
-Subject: 67 kworker threads ?
-From: cheng renquan <crquan@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87pq9a9r3b.fsf@xmission.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have kernel v3.4.0 up & running over 2 weeks on a 4-cores typical
-lenovo laptop,
-with suspend & resume only, every day; have just found after a resume the kernel
-may spawn too many kworker threads, totally 67 kworker threads now,
-I think this is abnormal
+On Fri, Jun 08, 2012 at 12:54:00AM -0700, Eric W. Biederman wrote:
+> > Please, explain.  link/unlink pair in which sense? 
+> 
+> In the sense that if we don't use d_move.  A rename will look to
+> userspace like a pair of sys_link and sys_unlink operations.
+> 
+> If I happen to have a file open with the old name and the dentry passes
+> through d_drop.  The /proc/self/fd/N will show the filename as
+> "...(deleted)".
 
-$ ps fu -e |awk 'NR <=2 || /[k]worker/'
-USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
-root         2  0.0  0.0      0     0 ?        S    Jun07   0:00 [kthreadd]
-root     10271  0.0  0.0      0     0 ?        S    11:35   0:00  \_
-[kworker/0:3]
-root     11683  0.0  0.0      0     0 ?        S    11:46   0:00  \_
-[kworker/u:0]
-root     14364  0.0  0.0      0     0 ?        S    12:08   0:01  \_
-[kworker/0:0]
-root     14965  0.1  0.0      0     0 ?        S    12:13   0:03  \_
-[kworker/u:1]
-root     17154  0.0  0.0      0     0 ?        S    12:31   0:00  \_
-[kworker/u:2]
-root     17937  0.0  0.0      0     0 ?        S    12:38   0:00  \_
-[kworker/u:3]
-root     18286  0.0  0.0      0     0 ?        S    12:39   0:00  \_
-[kworker/u:4]
-root     18287  0.0  0.0      0     0 ?        S    12:39   0:00  \_
-[kworker/u:5]
-root     18288  0.0  0.0      0     0 ?        S    12:39   0:00  \_
-[kworker/u:6]
-root     18289  0.0  0.0      0     0 ?        S    12:39   0:00  \_
-[kworker/u:7]
-root     18290  0.0  0.0      0     0 ?        S    12:39   0:00  \_
-[kworker/u:8]
-root     18291  0.0  0.0      0     0 ?        S    12:39   0:00  \_
-[kworker/u:9]
-root     18292  0.0  0.0      0     0 ?        S    12:39   0:00  \_
-[kworker/u:10]
-root     18300  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/1:2]
-root     18303  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/2:2]
-root     18306  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/3:0]
-root     18320  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:11]
-root     18321  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:12]
-root     18322  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:13]
-root     18323  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:14]
-root     18324  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:15]
-root     18325  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:16]
-root     18326  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:17]
-root     18327  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:18]
-root     18328  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:19]
-root     18329  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:20]
-root     18330  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:21]
-root     18331  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:22]
-root     18332  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:23]
-root     18333  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:24]
-root     18334  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:25]
-root     18335  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:26]
-root     18336  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:27]
-root     18337  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:28]
-root     18338  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:29]
-root     18339  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:30]
-root     18340  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:31]
-root     18341  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:32]
-root     18342  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:33]
-root     18343  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:34]
-root     18344  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:35]
-root     18345  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:36]
-root     18346  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:37]
-root     18347  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:38]
-root     18348  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:39]
-root     18349  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:40]
-root     18350  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:41]
-root     18351  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:42]
-root     18352  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:43]
-root     18353  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:44]
-root     18354  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:45]
-root     18355  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:46]
-root     18356  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:47]
-root     18357  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:48]
-root     18358  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:49]
-root     18359  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:50]
-root     18360  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:51]
-root     18361  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:52]
-root     18362  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:53]
-root     18363  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:54]
-root     18364  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:55]
-root     18365  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:56]
-root     18366  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:57]
-root     18367  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:58]
-root     18368  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/u:59]
-root     18369  0.9  0.0      0     0 ?        S    13:05   0:01  \_
-[kworker/3:1]
-root     18370  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/0:1]
-root     18374  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/0:2]
-root     18380  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/1:0]
-root     18393  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/2:0]
-root     18506  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/3:2]
-root     18571  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-[kworker/2:1]
+Um... reality check, please - you were talking about symlinks until now.  Sure,
+these days we *can* open them (with O_PATH), but...  And unless I'm misreading
+something, none of those sysfs_rename() callers are acting on regular files.
+
+In any case, symlinks or no symlinks, what do you expect to happen if
+something in userland does lookup at the old location before anyone gets
+around to lookup at the new one?  It's not as if that had been under
+kernel control...
+
+> In the little corner case user visible details the current state of vfs
+> support for distributed filesystems looks nuts to me, especially where
+> we can't apply an appropriate d_move onto a renamed dentry.
+
+Reread your own code, please.  You are *not* guaranteed that lookup triggering
+that d_move() of yours will come before ->d_revalidate().  In other words,
+the current scheme is not any different in that respect.  And nothing in
+userland really cares - scenario is too convoluted.
+
+> Speaking of I just found a small unhandled case in __d_unalias.  We need
+> to deny renaming of mount points.
+
+Umm...  Agreed, fix pushed into the same branch.
