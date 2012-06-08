@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761228Ab2FHW0y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 18:26:54 -0400
+	id S1761354Ab2FHW1Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 18:27:16 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:51399 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757319Ab2FHWY6 (ORCPT
+	with ESMTP id S1750817Ab2FHWY5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 18:24:58 -0400
+	Fri, 8 Jun 2012 18:24:57 -0400
 From: mathieu.poirier@linaro.org
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, mathieu.poirier@linaro.org
-Subject: [PATCH RESEND 4/6] video/console: automatically select a font
-Date: Fri,  8 Jun 2012 16:24:38 -0600
-Message-Id: <1339194280-27475-5-git-send-email-mathieu.poirier@linaro.org>
+Subject: [PATCH RESEND 3/6] video/ili9320: do not mark exported functions __devexit
+Date: Fri,  8 Jun 2012 16:24:37 -0600
+Message-Id: <1339194280-27475-4-git-send-email-mathieu.poirier@linaro.org>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1339194280-27475-1-git-send-email-mathieu.poirier@linaro.org>
 References: <1339194280-27475-1-git-send-email-mathieu.poirier@linaro.org>
@@ -22,41 +22,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnd Bergmann <arnd@arndb.de>
 
-The frame buffer console needs at least one font to be built into
-the kernel, so add the necessary Kconfig magic to guarantee that
-one of the available font is always on. If a user accidentally
-disables all fonts manually, the 8x16 font will be selected
-anyway.
+No symbol can be exported when the section is discarded - the only
+solution I could think of is not to mark symbols as __devexit
+when they are exported.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
 ---
- drivers/video/console/Kconfig |   14 ++++++++++++++
- 1 files changed, 14 insertions(+), 0 deletions(-)
+ drivers/video/backlight/ili9320.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/video/console/Kconfig b/drivers/video/console/Kconfig
-index c2d11fe..e2c96d0 100644
---- a/drivers/video/console/Kconfig
-+++ b/drivers/video/console/Kconfig
-@@ -224,5 +224,19 @@ config FONT_10x18
- 	  big letters. It fits between the sun 12x22 and the normal 8x16 font.
- 	  If other fonts are too big or too small for you, say Y, otherwise say N.
+diff --git a/drivers/video/backlight/ili9320.c b/drivers/video/backlight/ili9320.c
+index 6c93993..9327cd1 100644
+--- a/drivers/video/backlight/ili9320.c
++++ b/drivers/video/backlight/ili9320.c
+@@ -263,7 +263,7 @@ int __devinit ili9320_probe_spi(struct spi_device *spi,
  
-+config FONT_AUTOSELECT
-+	def_bool y
-+	depends on FRAMEBUFFER_CONSOLE || SGI_NEWPORT_CONSOLE || STI_CONSOLE || USB_SISUSBVGA_CON
-+	depends on !FONT_8x8
-+	depends on !FONT_6x11
-+	depends on !FONT_7x14
-+	depends on !FONT_PEARL_8x8
-+	depends on !FONT_ACORN_8x8
-+	depends on !FONT_MINI_4x6
-+	depends on !FONT_SUN8x16
-+	depends on !FONT_SUN12x22
-+	depends on !FONT_10x18
-+	select FONT_8x16
-+
- endmenu
+ EXPORT_SYMBOL_GPL(ili9320_probe_spi);
+ 
+-int __devexit ili9320_remove(struct ili9320 *ili)
++int ili9320_remove(struct ili9320 *ili)
+ {
+ 	ili9320_power(ili, FB_BLANK_POWERDOWN);
  
 -- 
 1.7.5.4
