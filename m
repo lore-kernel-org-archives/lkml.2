@@ -1,50 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756202Ab2FHNhy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 09:37:54 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:50697 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751176Ab2FHNhw (ORCPT
+	id S1756286Ab2FHNkc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 09:40:32 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:36319 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752032Ab2FHNka (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 09:37:52 -0400
+	Fri, 8 Jun 2012 09:40:30 -0400
+Date: Fri, 8 Jun 2012 09:40:29 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Ming Lei <ming.lei@canonical.com>
+cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <stable@vger.kernel.org>
+Subject: Re: [PATCH] driver core: fix shutdown races with probe/remove(v1)
+In-Reply-To: <1339133929-30679-1-git-send-email-ming.lei@canonical.com>
+Message-ID: <Pine.LNX.4.44L0.1206080938400.1360-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Date: Fri, 8 Jun 2012 21:37:51 +0800
-Message-ID: <CAJd=RBDWg9Wa_4s7NBeyXy23wh4CFyKzoF83EBEm1a6w=v+KUw@mail.gmail.com>
-Subject: [patch] BFS 421: remove global runqueue lock in running tick
-From: Hillf Danton <dhillf@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>, Hillf Danton <dhillf@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We simply deschedule current, with no bother grabbing global lock, since IPI,
-if triggered by preempt, could not change our result, like no schedule when
-preempt enabled.
+On Fri, 8 Jun 2012, Ming Lei wrote:
 
-	preempt_enable_no_resched();
-	if (unlikely(need_resched()))
-		goto need_resched;
+> Firstly, .shutdown callback may touch a uninitialized hardware
+> if dev->driver is set and .probe is not completed.
+> 
+> Secondly, device_shutdown() may dereference a null pointer to cause
+> oops when dev->driver is cleared after it is checked in
+> device_shutdown().
+> 
+> So just hold device lock and its parent lock if it has to fix the
+> races.
+> 
+> Cc: Alan Stern <stern@rowland.harvard.edu>
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Ming Lei <ming.lei@canonical.com>
+> ---
+>  drivers/base/core.c |    8 ++++++++
+>  1 file changed, 8 insertions(+)
+> 
+> diff --git a/drivers/base/core.c b/drivers/base/core.c
+> index 346be8b..cbc8bd2 100644
+> --- a/drivers/base/core.c
+> +++ b/drivers/base/core.c
+> @@ -1820,6 +1820,11 @@ void device_shutdown(void)
+>  		list_del_init(&dev->kobj.entry);
+>  		spin_unlock(&devices_kset->list_lock);
+>  
+> +		/*hold lock[s] to avoid races with .probe/.release*/
+> +		if (dev->parent)
+> +			device_lock(dev->parent);
+> +		device_lock(dev);
 
+Would you prefer to use device_trylock in a loop?  I guess this comes 
+down to which you prefer: a hang during shutdown, or a crash.  :-)
 
---- a/kernel/sched/bfs.c	Wed Jun  6 21:02:50 2012
-+++ b/kernel/sched/bfs.c	Fri Jun  8 21:17:24 2012
-@@ -2784,11 +2784,13 @@ static void task_running_tick(struct rq
- 	} else if (rq->rq_time_slice >= RESCHED_US)
- 			return;
+Alan Stern
 
--	/* p->time_slice < RESCHED_US. We only modify task_struct under grq lock */
-+	/*
-+	 * With irq disabled, current is descheduled without global lock
-+	 * held and IPI cared.
-+	 */
- 	p = rq->curr;
--	grq_lock();
--	set_tsk_need_resched(p);
--	grq_unlock();
-+	if (!test_tsk_need_resched(p))
-+		set_tsk_need_resched(p);
- }
-
-
---
