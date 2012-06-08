@@ -1,74 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761371Ab2FHPjS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 11:39:18 -0400
-Received: from [194.90.113.100] ([194.90.113.100]:35236 "EHLO mx1.jungo.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1761278Ab2FHPjQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 11:39:16 -0400
-X-Greylist: delayed 571 seconds by postgrey-1.27 at vger.kernel.org; Fri, 08 Jun 2012 11:39:15 EDT
-Date: Fri, 8 Jun 2012 18:29:06 +0300
-From: Shmulik Ladkani <shmulik@jungo.com>
-To: David Woodhouse <dwmw2@infradead.org>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Cc: linux-mtd@lists.infradead.org, Mike Dunn <mikedunn@newsguy.com>,
-        linux-kernel@vger.kernel.org, Sascha Hauer <s.hauer@pengutronix.de>,
-        Ivan Djelic <ivan.djelic@parrot.com>
-Subject: [PATCH] mtd: nand: Properly initialize 'mtd->bitflip_threshold'
- prior 'scan_bbt()' is invoked
-Message-ID: <20120608182906.57b4844a@halley>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; i686-pc-linux-gnu)
+	id S1761412Ab2FHPlK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 11:41:10 -0400
+Received: from kanga.kvack.org ([205.233.56.17]:35597 "EHLO kanga.kvack.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761323Ab2FHPlI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 11:41:08 -0400
+Date: Fri, 8 Jun 2012 11:41:06 -0400
+From: Benjamin LaHaise <bcrl@kvack.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Francois Romieu <romieu@fr.zoreil.com>,
+        Denys Fedoryshchenko <denys@visp.net.lb>, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Deadlock, L2TP over IP are not working, 3.4.1
+Message-ID: <20120608154106.GD5024@kvack.org>
+References: <7ed49f446365ac625437702d92946add@visp.net.lb> <20120607205356.GA2491@electric-eye.fr.zoreil.com> <1339104606.6001.4.camel@edumazet-glaptop> <20120607223752.GA4475@electric-eye.fr.zoreil.com> <1339134438.6001.13.camel@edumazet-glaptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Antivirus: avast! (VPS 120227-0, 02/27/2012), Outbound message
-X-Antivirus-Status: Clean
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339134438.6001.13.camel@edumazet-glaptop>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As of edbc454 [mtd: driver _read() returns max_bitflips; mtd_read()
-returns -EUCLEAN], 'mtd->bitflip_threshold' must be set for mtd devices
-having ECC, prior any 'mtd_read()' call.
-Otherwise, 'mtd_read()' will falsely return -EUCLEAN.
+On Fri, Jun 08, 2012 at 07:47:18AM +0200, Eric Dumazet wrote:
+> I have no idea how many l2tp_eth devices are setup at once in typical
+> conf.
 
-Normally, 'mtd->bitflip_threshold' is initialized when the MTD is added.
+Depends on the usage scenario.  L2TP is commonly used for terminating 
+customer connections by wholesale ISPs.  In that kind of edge routing 
+use-case, tens of thousands of interfaces are easily possible.
 
-However, this is too late for NAND MTDs, as 'scan_bbt()' is invoked
-prior the existing initialization of 'mtd->bitflip_threshold'.
-
-This is a problem since 'scan_bbt()' calls 'mtd_read()', in the case
-of a flash-based bad block table.
-It resulted in a falsely reported bitflips indication during BBT read,
-which lead to constant scrubbing of the flash BBT blocks.
-
-Initialize 'mtd->bitflip_threshold' to its default value (if not already
-set by the driver), prior invocation of 'scan_bbt()'.
-
-Reported-by: Sascha Hauer <s.hauer@pengutronix.de>
-Signed-off-by: Shmulik Ladkani <shmulik.ladkani@gmail.com>
----
-- The issue was introduced in 3.5-rc1 and needs to be merged before 3.5
-- Sascha, I've credited you as the reporter, is that ok?
-- Sascha, care to test and verify it works for your system?
-
-diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
-index 61805e7..0a8724e 100644
---- a/drivers/mtd/nand/nand_base.c
-+++ b/drivers/mtd/nand/nand_base.c
-@@ -3484,6 +3484,13 @@ int nand_scan_tail(struct mtd_info *mtd)
- 	/* propagate ecc info to mtd_info */
- 	mtd->ecclayout = chip->ecc.layout;
- 	mtd->ecc_strength = chip->ecc.strength;
-+	/*
-+	 * Initialize bitflip_threshold to its default prior scan_bbt() call.
-+	 * scan_bbt() might invoke mtd_read(), thus bitflip_threshold must be
-+	 * properly set.
-+	 */
-+	if (!mtd->bitflip_threshold)
-+		mtd->bitflip_threshold = mtd->ecc_strength;
- 
- 	/* Check, if we should skip the bad block table scan */
- 	if (chip->options & NAND_SKIP_BBTSCAN)
+		-ben
 -- 
-1.7.5.4
+"Thought is the essence of where you are now."
