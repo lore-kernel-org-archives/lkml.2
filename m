@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755065Ab2FHNNh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 09:13:37 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:40755 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751952Ab2FHNNg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 09:13:36 -0400
+	id S1755371Ab2FHNRJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 09:17:09 -0400
+Received: from david.siemens.de ([192.35.17.14]:32700 "EHLO david.siemens.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754512Ab2FHNRF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 09:17:05 -0400
+Message-ID: <4FD1FB49.3020905@siemens.com>
+Date: Fri, 08 Jun 2012 15:16:57 +0200
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-In-Reply-To: <CAOvdn6UV1b89+wp4cfyj7ofU6T0=sdhNEoMZinPW=-AZWBOmSA@mail.gmail.com>
-References: <CAOvdn6VWdOy1nNM+x3ogCCFXy8FExZjTJaV-s6SR7kbGu+REOA@mail.gmail.com>
-	<20120607164034.GQ9472@phenom.dumpdata.com>
-	<CAOvdn6WJ+Ub+LbhHKKQJi3AzsbCqX6-ksWhoxnZS5_OH=hkghQ@mail.gmail.com>
-	<20120607174815.GU9472@phenom.dumpdata.com>
-	<CAOvdn6VtmWyMo4SEAWT+ipJTHBTwPm+DZ1TXZT4q3UobFv=2DA@mail.gmail.com>
-	<20120607180156.GX9472@phenom.dumpdata.com>
-	<CAOvdn6UV1b89+wp4cfyj7ofU6T0=sdhNEoMZinPW=-AZWBOmSA@mail.gmail.com>
-Date: Fri, 8 Jun 2012 09:13:34 -0400
-X-Google-Sender-Auth: x2qQtogGon5tj5ZToeofwShnXm4
-Message-ID: <CAOvdn6VNhi0O9fo7KUOV4Lrux=KBJ75hJOhhtozMPsp0FGB=Hg@mail.gmail.com>
-Subject: Re: [Xen-devel] [PATCH] xen/hvc: Fix polling mode to work with kdb/kgdb
-From: Ben Guthro <ben@guthro.net>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
+To: "Michael S. Tsirkin" <mst@redhat.com>,
+        Dominic Eschweiler <eschweiler@fias.uni-frankfurt.de>
+CC: "Hans J. Koch" <hjk@hansjkoch.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Alex Williamson <alex.williamson@redhat.com>
+Subject: Re: [PATCH] uio_pci_generic does not export memory resources
+References: <1339156616.3870.9.camel@blech> <20120608130351.GB1964@redhat.com>
+In-Reply-To: <20120608130351.GB1964@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 7, 2012 at 4:07 PM, Ben Guthro <ben@guthro.net> wrote:
+On 2012-06-08 15:03, Michael S. Tsirkin wrote:
+>> +    /* set master */
+>> +	pci_set_master(pdev);
+>> +
+>> +    /* set DMA mask */
+>> +	err = pci_set_dma_mask(pdev, DMA_BIT_MASK(64));
+> 
+> uio currently only supports devices which do not
+> do DMA.
+> 
+> DMA from uio controlled devices is a no no unless
+> it's behind an IOMMU which can protect us from
+> random memory corruptions this could cause.
+> 
+> In the later case it's OK but we need some code
+> to check this and program the IOMMU appropriately.
 
-<snip>
+AKA: VFIO. :)
 
-> +#ifndef CONFIG_XEN
->        /*
->         * Wait for the other CPUs to be notified and be waiting for us:
->         */
->        while (kgdb_do_roundup && (atomic_read(&masters_in_kgdb) +
->                                atomic_read(&slaves_in_kgdb)) != online_cpus)
->                cpu_relax();
-> +#endif
->
->        /*
->         * At this point the primary processor is completely
+Dominic, maybe you want to have a look at Alex's work:
+https://github.com/awilliam/linux-vfio
 
+Jan
 
-The cpu roundup seems to not be working as expected here.
-While I get into the kgdb exception code on the master cpu - none of
-the slave cpus ever get into the code that is counting them up.
-
-Ignoring this CPU roundup is useful to get into the kdb code, but
-probably not correct.
-
-Does you have any thoughts as to why I might not be getting into this
-code under Xen?
+-- 
+Siemens AG, Corporate Technology, CT T DE IT 1
+Corporate Competence Center Embedded Linux
