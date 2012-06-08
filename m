@@ -1,109 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761854Ab2FHFON (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 01:14:13 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43323 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759475Ab2FHFH3 (ORCPT
+	id S932340Ab2FHFOW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 01:14:22 -0400
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:57100 "EHLO
+	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1761509Ab2FHFOQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 01:07:29 -0400
-Message-Id: <20120608041850.268176446@decadent.org.uk>
-User-Agent: quilt/0.60-1
-Date: Fri, 08 Jun 2012 05:19:50 +0100
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Julien Ducourthial <jducourt@free.fr>,
-        Francois Romieu <romieu@fr.zoreil.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 70/82] r8169: fix unsigned int wraparound with TSO
-In-Reply-To: <20120608041840.861504477@decadent.org.uk>
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Fri, 8 Jun 2012 01:14:16 -0400
+X-IronPort-AV: E=Sophos;i="4.75,734,1330902000"; 
+   d="scan'208,223";a="161856950"
+Date: Fri, 8 Jun 2012 07:14:03 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: David Miller <davem@davemloft.net>
+cc: kernel-janitors@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, joe@perches.com
+Subject: Re: [PATCH 1/7] drivers/ide/ide-cs.c: adjust suspicious bit
+ operation
+In-Reply-To: <20120607.144616.2224976714259476349.davem@davemloft.net>
+Message-ID: <alpine.DEB.2.02.1206080712510.1793@hadrien>
+References: <1339018901-28439-1-git-send-email-Julia.Lawall@lip6.fr> <1339018901-28439-2-git-send-email-Julia.Lawall@lip6.fr> <20120607.144616.2224976714259476349.davem@davemloft.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+>From nobody Wed Jun  6 21:48:37 CEST 2012
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: linux-ide@vger.kernel.org,linux-kernel@vger.kernel.org,joe@perches.com
+Subject: [PATCH 1/7] drivers/ide/ide-cs.c: adjust suspicious bit operation
 
-------------------
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-From: Julien Ducourthial <jducourt@free.fr>
+IO_DATA_PATH_WIDTH_8 is 0, so a bit-and with it is always false.  The
+value IO_DATA_PATH_WIDTH covers the bits of the IO_DATA_PATH constants, so
+first pick those bits and then make the test using !=.
 
-[ Upstream commit 477206a018f902895bfcd069dd820bfe94c187b1 ]
+This problem was found using Coccinelle (http://coccinelle.lip6.fr/).
 
-The r8169 may get stuck or show bad behaviour after activating TSO :
-the net_device is not stopped when it has no more TX descriptors.
-This problem comes from TX_BUFS_AVAIL which may reach -1 when all
-transmit descriptors are in use. The patch simply tries to keep positive
-values.
+Signed-off-by: Julia Lawall <julia@diku.dk>
 
-Tested with 8111d(onboard) on a D510MO, and with 8111e(onboard) on a
-Zotac 890GXITX.
-
-Signed-off-by: Julien Ducourthial <jducourt@free.fr>
-Acked-by: Francois Romieu <romieu@fr.zoreil.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/ethernet/realtek/r8169.c |   16 ++++++++++------
- 1 file changed, 10 insertions(+), 6 deletions(-)
+  drivers/ide/ide-cs.c |    3 ++-
+  1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index 5f3fa32..cc2565c 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -62,8 +62,12 @@
- #define R8169_MSG_DEFAULT \
- 	(NETIF_MSG_DRV | NETIF_MSG_PROBE | NETIF_MSG_IFUP | NETIF_MSG_IFDOWN)
- 
--#define TX_BUFFS_AVAIL(tp) \
--	(tp->dirty_tx + NUM_TX_DESC - tp->cur_tx - 1)
-+#define TX_SLOTS_AVAIL(tp) \
-+	(tp->dirty_tx + NUM_TX_DESC - tp->cur_tx)
-+
-+/* A skbuff with nr_frags needs nr_frags+1 entries in the tx queue */
-+#define TX_FRAGS_READY_FOR(tp,nr_frags) \
-+	(TX_SLOTS_AVAIL(tp) >= (nr_frags + 1))
- 
- /* Maximum number of multicast addresses to filter (vs. Rx-all-multicast).
-    The RTL chips use a 64 element hash table based on the Ethernet CRC. */
-@@ -5512,7 +5516,7 @@ static netdev_tx_t rtl8169_start_xmit(struct sk_buff *skb,
- 	u32 opts[2];
- 	int frags;
- 
--	if (unlikely(TX_BUFFS_AVAIL(tp) < skb_shinfo(skb)->nr_frags)) {
-+	if (unlikely(!TX_FRAGS_READY_FOR(tp, skb_shinfo(skb)->nr_frags))) {
- 		netif_err(tp, drv, dev, "BUG! Tx Ring full when queue awake!\n");
- 		goto err_stop_0;
- 	}
-@@ -5560,7 +5564,7 @@ static netdev_tx_t rtl8169_start_xmit(struct sk_buff *skb,
- 
- 	RTL_W8(TxPoll, NPQ);
- 
--	if (TX_BUFFS_AVAIL(tp) < MAX_SKB_FRAGS) {
-+	if (!TX_FRAGS_READY_FOR(tp, MAX_SKB_FRAGS)) {
- 		/* Avoid wrongly optimistic queue wake-up: rtl_tx thread must
- 		 * not miss a ring update when it notices a stopped queue.
- 		 */
-@@ -5574,7 +5578,7 @@ static netdev_tx_t rtl8169_start_xmit(struct sk_buff *skb,
- 		 * can't.
- 		 */
- 		smp_mb();
--		if (TX_BUFFS_AVAIL(tp) >= MAX_SKB_FRAGS)
-+		if (TX_FRAGS_READY_FOR(tp, MAX_SKB_FRAGS))
- 			netif_wake_queue(dev);
- 	}
- 
-@@ -5683,7 +5687,7 @@ static void rtl8169_tx_interrupt(struct net_device *dev,
- 		 */
- 		smp_mb();
- 		if (netif_queue_stopped(dev) &&
--		    (TX_BUFFS_AVAIL(tp) >= MAX_SKB_FRAGS)) {
-+		    TX_FRAGS_READY_FOR(tp, MAX_SKB_FRAGS)) {
- 			netif_wake_queue(dev);
- 		}
- 		/*
+diff --git a/drivers/ide/ide-cs.c b/drivers/ide/ide-cs.c
+index 28e344e..f1e922e 100644
+--- a/drivers/ide/ide-cs.c
++++ b/drivers/ide/ide-cs.c
+@@ -167,7 +167,8 @@ static int pcmcia_check_one_config(struct pcmcia_device *pdev, void *priv_data)
+  {
+  	int *is_kme = priv_data;
 
-
+-	if (!(pdev->resource[0]->flags & IO_DATA_PATH_WIDTH_8)) {
++	if ((pdev->resource[0]->flags & IO_DATA_PATH_WIDTH)
++	    != IO_DATA_PATH_WIDTH_8) {
+  		pdev->resource[0]->flags &= ~IO_DATA_PATH_WIDTH;
+  		pdev->resource[0]->flags |= IO_DATA_PATH_WIDTH_AUTO;
+  	}
