@@ -1,275 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761662Ab2FHPuW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 11:50:22 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:57254 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932242Ab2FHPuT convert rfc822-to-8bit (ORCPT
+	id S1761467Ab2FHPvu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 11:51:50 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:58258 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759518Ab2FHPvs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 11:50:19 -0400
+	Fri, 8 Jun 2012 11:51:48 -0400
 MIME-Version: 1.0
-In-Reply-To: <1339053257.26966.100.camel@edumazet-glaptop>
-References: <CAHFgRy9jgxOrF=b=oQd-zK5CKxDacOKdBAX_BEuyW+R+sK_GyQ@mail.gmail.com>
-	<1339051157.26966.97.camel@edumazet-glaptop>
-	<1339053257.26966.100.camel@edumazet-glaptop>
-Date: Fri, 8 Jun 2012 11:50:17 -0400
-Message-ID: <CAHFgRy-qB8c_NtR3ixTfYzHcHAN-xJRPSSqJb_7uKRM-NkztJA@mail.gmail.com>
-Subject: Re: 3.5.0+ - Linus GIT - WARNING: at net/sched/sch_generic.c:255 dev_watchdog+0xeb/0x15f()
-From: Miles Lane <miles.lane@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Wim Van Sebroeck <wim@iguana.be>, Jay Cliburn <jcliburn@gmail.com>,
-        Chris Snook <chris.snook@gmail.com>, netdev <netdev@vger.kernel.org>,
-        Huang Xiong <xiong@qca.qualcomm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20120608154535.GA887@localhost>
+References: <E1Sd0IP-0005nh-AJ@tytso-glaptop.cam.corp.google.com>
+	<20120608150736.GF21080@quack.suse.cz>
+	<20120608154535.GA887@localhost>
+Date: Fri, 8 Jun 2012 17:51:48 +0200
+Message-ID: <CA+icZUVC86sBLNND08rNn6xhWqagfWdM7WvrvG+fcW+FHoFjbw@mail.gmail.com>
+Subject: Re: writeback: bad unlock balance detected in 3.5-rc1
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 7, 2012 at 3:14 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> On Thu, 2012-06-07 at 08:39 +0200, Eric Dumazet wrote:
->> On Thu, 2012-06-07 at 02:16 -0400, Miles Lane wrote:
->> > WARNING: at net/sched/sch_generic.c:255 dev_watchdog+0xeb/0x15f()
->> > Hardware name: UL50VT
->> > NETDEV WATCHDOG: eth0 (atl1c): transmit queue 0 timed out
->> > Modules linked in: hfsplus hfs vfat msdos fat snd_hrtimer ipv6
->> > snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep
->> > snd_pcm_oss snd_seq_dummy snd_mixer_oss uvcvideo videobuf2_core
->> > snd_pcm videodev snd_seq_oss snd_seq_midi snd_rawmidi media
->> > snd_seq_midi_event acpi_cpufreq videobuf2_vmalloc videobuf2_memops
->> > snd_seq iwlwifi snd_timer snd_seq_device asus_laptop mac80211
->> > sparse_keymap snd cfg80211 coretemp soundcore psmouse snd_page_alloc
->> > rtc_cmos mperf processor evdev rfkill battery led_class input_polldev
->> > ac i915 nouveau sr_mod cdrom sd_mod ehci_hcd atl1c uhci_hcd intel_agp
->> > ttm usbcore intel_gtt usb_common drm_kms_helper thermal video
->> > thermal_sys hwmon button
->> > Pid: 3025, comm: hud-service Not tainted 3.5.0-rc1+ #128
->> > Call Trace:
->> >  <IRQ>  [<ffffffff8102d42f>] warn_slowpath_common+0x7e/0x97
->> >  [<ffffffff8102d4dc>] warn_slowpath_fmt+0x41/0x43
->> >  [<ffffffff81360f1c>] dev_watchdog+0xeb/0x15f
->> >  [<ffffffff8103af44>] run_timer_softirq+0x20e/0x356
->> >  [<ffffffff8103ae7e>] ? run_timer_softirq+0x148/0x356
->> >  [<ffffffff81360e31>] ? netif_tx_unlock+0x57/0x57
->> >  [<ffffffff810344f8>] __do_softirq+0x103/0x239
->> >  [<ffffffff8107122a>] ? clockevents_program_event+0x9c/0xb9
->> >  [<ffffffff8140a4cc>] call_softirq+0x1c/0x30
->> >  [<ffffffff81003bb9>] do_softirq+0x37/0x82
->> >  [<ffffffff81034888>] irq_exit+0x4c/0xb1
->> >  [<ffffffff8101ba71>] smp_apic_timer_interrupt+0x76/0x84
->> >  [<ffffffff81409adc>] apic_timer_interrupt+0x6c/0x80
->> >  <EOI>  [<ffffffff81105161>] ? fget_raw_light+0x4c/0x7d
->> >  [<ffffffff81105161>] ? fget_raw_light+0x4c/0x7d
->> >  [<ffffffff8111153b>] sys_fcntl+0x23/0x53b
->> >  [<ffffffff81004b68>] ? print_context_stack+0x44/0xb1
->> >  [<ffffffff81408fe2>] system_call_fastpath+0x16/0x1b
->> > ---[ end trace c1f284d9c873031d ]---
->>
->> CC netdev and Huang Xiong
->>
->> Atheros drivers are known to have buggy tx completion, its incredible...
->>
->> You could try following patch, not a 'perfect' solution, but a fix.
+On Fri, Jun 8, 2012 at 5:45 PM, Fengguang Wu <fengguang.wu@intel.com> wrote:
+> On Fri, Jun 08, 2012 at 05:07:36PM +0200, Jan Kara wrote:
+>> On Fri 08-06-12 10:36:13, Ted Tso wrote:
+>> >
+>> > I can reproduce this fairly easily by using ext4 w/o a journal, running
+>> > under KVM with 1024megs memory, with fsstress (xfstests #13):
 >
-> And if you feel lucky, you could try the following one as well, a step
-> into right direction :
+> Good catch, thanks!
 >
->  drivers/net/ethernet/atheros/atl1c/atl1c_main.c |   86 ++++----------
->  1 file changed, 30 insertions(+), 56 deletions(-)
+>> Â  Argh, I wonder how come I didn't hit this. Does attached patch fix the
+>> problem?
 >
-> diff --git a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-> index 9cc1570..44940f4 100644
-> --- a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-> +++ b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-> @@ -1528,6 +1528,16 @@ static inline void atl1c_clear_phy_int(struct atl1c_adapter *adapter)
->        spin_unlock(&adapter->mdio_lock);
->  }
+>> diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+>> index 8d2fb8c..41a3ccf 100644
+>> --- a/fs/fs-writeback.c
+>> +++ b/fs/fs-writeback.c
+>> @@ -664,6 +664,7 @@ static long writeback_sb_inodes(struct super_block *sb,
+>> Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  /* Wait for I_SYNC. This function drops i_lock... */
+>> Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  inode_sleep_on_writeback(inode);
+>> Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  /* Inode may be gone, start again */
+>> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  spin_lock(&wb->list_lock);
+>> Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  continue;
+>> Â  Â  Â  Â  Â  Â  Â  }
 >
-> +static inline u16 atl1c_tpd_avail(const struct atl1c_tpd_ring *tpd_ring)
-> +{
-> +       u16 next_to_use = tpd_ring->next_to_use;
-> +       u16 next_to_clean = atomic_read(&tpd_ring->next_to_clean);
-> +
-> +       return (u16)(next_to_clean > next_to_use) ?
-> +               (next_to_clean - next_to_use - 1) :
-> +               (tpd_ring->count + next_to_clean - next_to_use - 1);
-> +}
-> +
->  static bool atl1c_clean_tx_irq(struct atl1c_adapter *adapter,
->                                enum atl1c_trans_queue type)
->  {
-> @@ -1551,10 +1561,14 @@ static bool atl1c_clean_tx_irq(struct atl1c_adapter *adapter,
->                atomic_set(&tpd_ring->next_to_clean, next_to_clean);
->        }
->
-> +       spin_lock(&adapter->tx_lock);
-> +
->        if (netif_queue_stopped(adapter->netdev) &&
-> -                       netif_carrier_ok(adapter->netdev)) {
-> +           netif_carrier_ok(adapter->netdev) &&
-> +           atl1c_tpd_avail(tpd_ring) >= tpd_ring->count / 4)
->                netif_wake_queue(adapter->netdev);
-> -       }
-> +
-> +       spin_unlock(&adapter->tx_lock);
->
->        return true;
->  }
-> @@ -1856,20 +1870,6 @@ static void atl1c_netpoll(struct net_device *netdev)
->  }
->  #endif
->
-> -static inline u16 atl1c_tpd_avail(struct atl1c_adapter *adapter, enum atl1c_trans_queue type)
-> -{
-> -       struct atl1c_tpd_ring *tpd_ring = &adapter->tpd_ring[type];
-> -       u16 next_to_use = 0;
-> -       u16 next_to_clean = 0;
-> -
-> -       next_to_clean = atomic_read(&tpd_ring->next_to_clean);
-> -       next_to_use   = tpd_ring->next_to_use;
-> -
-> -       return (u16)(next_to_clean > next_to_use) ?
-> -               (next_to_clean - next_to_use - 1) :
-> -               (tpd_ring->count + next_to_clean - next_to_use - 1);
-> -}
-> -
->  /*
->  * get next usable tpd
->  * Note: should call atl1c_tdp_avail to make sure
-> @@ -1899,24 +1899,6 @@ atl1c_get_tx_buffer(struct atl1c_adapter *adapter, struct atl1c_tpd_desc *tpd)
->                        (struct atl1c_tpd_desc *)tpd_ring->desc];
->  }
->
-> -/* Calculate the transmit packet descript needed*/
-> -static u16 atl1c_cal_tpd_req(const struct sk_buff *skb)
-> -{
-> -       u16 tpd_req;
-> -       u16 proto_hdr_len = 0;
-> -
-> -       tpd_req = skb_shinfo(skb)->nr_frags + 1;
-> -
-> -       if (skb_is_gso(skb)) {
-> -               proto_hdr_len = skb_transport_offset(skb) + tcp_hdrlen(skb);
-> -               if (proto_hdr_len < skb_headlen(skb))
-> -                       tpd_req++;
-> -               if (skb_shinfo(skb)->gso_type & SKB_GSO_TCPV6)
-> -                       tpd_req++;
-> -       }
-> -       return tpd_req;
-> -}
-> -
->  static int atl1c_tso_csum(struct atl1c_adapter *adapter,
->                          struct sk_buff *skb,
->                          struct atl1c_tpd_desc **tpd,
-> @@ -2099,10 +2081,10 @@ static void atl1c_tx_map(struct atl1c_adapter *adapter,
->        buffer_info->skb = skb;
->  }
->
-> -static void atl1c_tx_queue(struct atl1c_adapter *adapter, struct sk_buff *skb,
-> -                          struct atl1c_tpd_desc *tpd, enum atl1c_trans_queue type)
-> +static void atl1c_tx_queue(const struct atl1c_adapter *adapter,
-> +                          const struct atl1c_tpd_ring *tpd_ring,
-> +                          enum atl1c_trans_queue type)
->  {
-> -       struct atl1c_tpd_ring *tpd_ring = &adapter->tpd_ring[type];
->        u16 reg;
->
->        reg = type == atl1c_trans_high ? REG_TPD_PRI1_PIDX : REG_TPD_PRI0_PIDX;
-> @@ -2113,35 +2095,19 @@ static netdev_tx_t atl1c_xmit_frame(struct sk_buff *skb,
->                                          struct net_device *netdev)
->  {
->        struct atl1c_adapter *adapter = netdev_priv(netdev);
-> -       unsigned long flags;
-> -       u16 tpd_req = 1;
->        struct atl1c_tpd_desc *tpd;
->        enum atl1c_trans_queue type = atl1c_trans_normal;
-> +       const struct atl1c_tpd_ring *tpd_ring = &adapter->tpd_ring[type];
->
->        if (test_bit(__AT_DOWN, &adapter->flags)) {
->                dev_kfree_skb_any(skb);
->                return NETDEV_TX_OK;
->        }
->
-> -       tpd_req = atl1c_cal_tpd_req(skb);
-> -       if (!spin_trylock_irqsave(&adapter->tx_lock, flags)) {
-> -               if (netif_msg_pktdata(adapter))
-> -                       dev_info(&adapter->pdev->dev, "tx locked\n");
-> -               return NETDEV_TX_LOCKED;
-> -       }
-> -
-> -       if (atl1c_tpd_avail(adapter, type) < tpd_req) {
-> -               /* no enough descriptor, just stop queue */
-> -               netif_stop_queue(netdev);
-> -               spin_unlock_irqrestore(&adapter->tx_lock, flags);
-> -               return NETDEV_TX_BUSY;
-> -       }
-> -
->        tpd = atl1c_get_tpd(adapter, type);
->
->        /* do TSO and check sum */
->        if (atl1c_tso_csum(adapter, skb, &tpd, type) != 0) {
-> -               spin_unlock_irqrestore(&adapter->tx_lock, flags);
->                dev_kfree_skb_any(skb);
->                return NETDEV_TX_OK;
->        }
-> @@ -2160,9 +2126,17 @@ static netdev_tx_t atl1c_xmit_frame(struct sk_buff *skb,
->                tpd->word1 |= 1 << TPD_ETH_TYPE_SHIFT; /* Ethernet frame */
->
->        atl1c_tx_map(adapter, skb, tpd, type);
-> -       atl1c_tx_queue(adapter, skb, tpd, type);
-> +       atl1c_tx_queue(adapter, tpd_ring, type);
-> +
-> +       if (atl1c_tpd_avail(tpd_ring) < MAX_SKB_FRAGS + 4) {
-> +               unsigned long flags;
-> +
-> +               spin_lock_irqsave(&adapter->tx_lock, flags);
-> +               if (atl1c_tpd_avail(tpd_ring) < MAX_SKB_FRAGS + 4)
-> +                       netif_stop_queue(netdev);
-> +               spin_unlock_irqrestore(&adapter->tx_lock, flags);
-> +       }
->
-> -       spin_unlock_irqrestore(&adapter->tx_lock, flags);
->        return NETDEV_TX_OK;
->  }
->
->
+> That looks like the fix. So I pushed it to writeback-for-next.
+> Thanks for the quick fixing!
 >
 
-With this patch applied to Linus' GIT tree (updated last night), I get
-this warning:
+s/writeback-for-next/writeback-for-linus ?
 
-[  187.346706] WARNING: at net/sched/sch_generic.c:255 dev_watchdog+0xeb/0x15f()
-[  187.346709] Hardware name: UL50VT
-[  187.346712] NETDEV WATCHDOG: eth0 (atl1c): transmit queue 0 timed out
-[  187.346825] Modules linked in: snd_hrtimer ipv6
-snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep
-snd_pcm_oss snd_mixer_oss snd_pcm snd_seq_dummy snd_seq_oss
-snd_seq_midi snd_rawmidi uvcvideo videobuf2_core videodev acpi_cpufreq
-media snd_seq_midi_event iwlwifi videobuf2_vmalloc snd_seq mac80211
-asus_laptop rtc_cmos cfg80211 videobuf2_memops sparse_keymap snd_timer
-snd_seq_device mperf battery ac led_class psmouse snd input_polldev
-coretemp processor soundcore snd_page_alloc rfkill evdev acpi_call(O)
-i915 nouveau fbcon tileblit ttm font bitblit softcursor drm_kms_helper
-intel_agp intel_gtt drm agpgart sd_mod sr_mod cdrom uhci_hcd fb fbdev
-i2c_algo_bit ehci_hcd i2c_core cfbcopyarea atl1c usbcore mxm_wmi
-cfbimgblt usb_common cfbfillrect thermal video backlight thermal_sys
-hwmon wmi button
-[  187.346832] Pid: 2899, comm: compiz Tainted: G           O 3.5.0-rc1+ #131
-[  187.346834] Call Trace:
-[  187.346843]  <IRQ>  [<ffffffff8102d42f>] warn_slowpath_common+0x7e/0x97
-[  187.346847]  [<ffffffff8102d4dc>] warn_slowpath_fmt+0x41/0x43
-[  187.346863]  [<ffffffff81302028>] dev_watchdog+0xeb/0x15f
-[  187.346869]  [<ffffffff8103af44>] run_timer_softirq+0x20e/0x356
-[  187.346873]  [<ffffffff8103ae7e>] ? run_timer_softirq+0x148/0x356
-[  187.346878]  [<ffffffff81301f3d>] ? netif_tx_unlock+0x57/0x57
-[  187.346883]  [<ffffffff810344f8>] __do_softirq+0x103/0x239
-[  187.346889]  [<ffffffff8107123a>] ? clockevents_program_event+0x9c/0xb9
-[  187.346894]  [<ffffffff813ab38c>] call_softirq+0x1c/0x30
-[  187.346899]  [<ffffffff81003bb9>] do_softirq+0x37/0x82
-[  187.346903]  [<ffffffff81034888>] irq_exit+0x4c/0xb1
-[  187.346909]  [<ffffffff8101ba71>] smp_apic_timer_interrupt+0x76/0x84
-[  187.346914]  [<ffffffff813aa99c>] apic_timer_interrupt+0x6c/0x80
-[  187.346921]  <EOI>  [<ffffffff813a9ec7>] ? sysret_check+0x1b/0x56
-[  187.346925] ---[ end trace 954b24373ae625e3 ]---
+- Sedat -
+
+> I'm yet to setup and run xfstests regularly, so as to catch such kind
+> of problems earlier in future.
+>
+> Thanks,
+> Fengguang
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at Â http://vger.kernel.org/majordomo-info.html
