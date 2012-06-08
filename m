@@ -1,55 +1,279 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934228Ab2FHKGE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 06:06:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51688 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754344Ab2FHKGD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 06:06:03 -0400
-Date: Fri, 8 Jun 2012 12:03:58 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] uprobes: write_opcode()->__replace_page() can race
-	with try_to_unmap()
-Message-ID: <20120608100358.GA19131@redhat.com>
-References: <20120607165942.GA31966@redhat.com> <20120607170041.GC31974@redhat.com> <1339145227.23343.42.camel@twins>
+	id S934260Ab2FHKGm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 06:06:42 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:50216 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754344Ab2FHKGj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 06:06:39 -0400
+X-IronPort-AV: E=Sophos;i="4.75,737,1330905600"; 
+   d="scan'208";a="12905440"
+Date: Fri, 8 Jun 2012 11:06:20 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "axboe@kernel.dk" <axboe@kernel.dk>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jan Beulich <JBeulich@suse.com>
+Subject: Re: [Xen-devel] [PATCH 2/2] xen/blkfront: Add BUG_ON to deal with
+ misbehaving backends.
+In-Reply-To: <20120607215942.GA13592@phenom.dumpdata.com>
+Message-ID: <alpine.DEB.2.02.1206081106080.14957@kaball.uk.xensource.com>
+References: <1337982603-15692-1-git-send-email-konrad.wilk@oracle.com> <1337982603-15692-3-git-send-email-konrad.wilk@oracle.com> <alpine.DEB.2.00.1205281111460.26786@kaball-desktop> <4FC4A10F0200007800086842@nat28.tlf.novell.com> <20120531181712.GA19700@phenom.dumpdata.com>
+ <alpine.DEB.2.00.1206011111590.26786@kaball-desktop> <20120607215942.GA13592@phenom.dumpdata.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339145227.23343.42.camel@twins>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/08, Peter Zijlstra wrote:
->
-> On Thu, 2012-06-07 at 19:00 +0200, Oleg Nesterov wrote:
-> > write_opcode() gets old_page via get_user_pages() and then calls
-> > __replace_page() which assumes that this old_page is still mapped
-> > after pte_offset_map_lock().
-> >
-> > This is not true if this old_page was already try_to_unmap()'ed,
-> > and in this case everything __replace_page() does with old_page
-> > is wrong. Just for example, put_page() is not balanced.
-> >
-> > I think it is possible to teach __replace_page() to handle this
-> > unlikely case correctly, but this patch simply changes it to use
-> > page_check_address() and return -EAGAIN if it fails. The caller
-> > should notice this error code and retry.
->
-> Note that replace_page() was nicked from ksm, does that suffer a similar
-> problem?
+On Thu, 7 Jun 2012, Konrad Rzeszutek Wilk wrote:
+> On Fri, Jun 01, 2012 at 11:16:29AM +0100, Stefano Stabellini wrote:
+> > On Thu, 31 May 2012, Konrad Rzeszutek Wilk wrote:
+> > > The blkfront_remove part is .. that is going to take some surgery to do
+> > > and I don't think I am going to be able to attempt that within the next couple
+> > > of weeks. So lets put that on the TODO list and just do this one?
+> > 
+> > OK
+> > 
+> > > >From 4aabb5b44778fc0c0b8d4f5a2e2cd8e8490064d7 Mon Sep 17 00:00:00 2001
+> > > From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > > Date: Fri, 25 May 2012 17:34:51 -0400
+> > > Subject: [PATCH] xen/blkfront: Add WARN to deal with misbehaving backends.
+> > > 
+> > > Part of the ring structure is the 'id' field which is under
+> > > control of the frontend. The frontend stamps it with "some"
+> > > value (this some in this implementation being a value less
+> > > than BLK_RING_SIZE), and when it gets a response expects
+> > > said value to be in the response structure. We have a check
+> > > for the id field when spolling new requests but not when
+> > > de-spolling responses.
+> > > 
+> > > We also add an extra check in add_id_to_freelist to make
+> > > sure that the 'struct request' was not NULL - as we cannot
+> > > pass a NULL to __blk_end_request_all, otherwise that crashes
+> > > (and all the operations that the response is dealing with
+> > > end up with __blk_end_request_all).
+> > > 
+> > > Lastly we also print the name of the operation that failed.
+> > > 
+> > > [v1: s/BUG/WARN/ suggested by Stefano]
+> > > [v2: Add extra check in add_id_to_freelist]
+> > > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > > ---
+> > >  drivers/block/xen-blkfront.c |   39 +++++++++++++++++++++++++++++----------
+> > >  1 files changed, 29 insertions(+), 10 deletions(-)
+> > > 
+> > > diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
+> > > index 60eed4b..c7ef8a4 100644
+> > > --- a/drivers/block/xen-blkfront.c
+> > > +++ b/drivers/block/xen-blkfront.c
+> > > @@ -144,11 +144,22 @@ static int get_id_from_freelist(struct blkfront_info *info)
+> > >  static void add_id_to_freelist(struct blkfront_info *info,
+> > >  			       unsigned long id)
+> > >  {
+> > > +	BUG_ON(info->shadow[id].req.u.rw.id != id);
+> > >  	info->shadow[id].req.u.rw.id  = info->shadow_free;
+> > > +	BUG_ON(info->shadow[id].request == NULL);
+> > >  	info->shadow[id].request = NULL;
+> > >  	info->shadow_free = id;
+> > >  }
+> > 
+> > Like Jan said, it would be best to change the two BUG_ON into WARN_ON
+> > and return an error.
+> 
+> Yes. I missed that.
+> > 
+> > 
+> > > +static const char *op_name(int op)
+> > > +{
+> > > +	const char *names[BLKIF_OP_DISCARD+1] = {
+> > > +		"read" , "write", "barrier", "flush", "reserved", "discard"};
+> > > +
+> > > +	if (op > BLKIF_OP_DISCARD)
+> > > +		return "unknown";
+> > > +	return names[op];
+> > > +}
+> > 
+> > Considering that op is an int, shoudn't we check for negative values
+> > too?
+> 
+> Yes! I also converted this per Jan's excellent idea.
+> 
+> Please see:
+> 
+> 
+> >From 3877611c3096423a7741e99e9c9b9e63a9f2e557 Mon Sep 17 00:00:00 2001
+> From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Date: Fri, 25 May 2012 17:34:51 -0400
+> Subject: [PATCH] xen/blkfront: Add WARN to deal with misbehaving backends.
+> 
+> Part of the ring structure is the 'id' field which is under
+> control of the frontend. The frontend stamps it with "some"
+> value (this some in this implementation being a value less
+> than BLK_RING_SIZE), and when it gets a response expects
+> said value to be in the response structure. We have a check
+> for the id field when spolling new requests but not when
+> de-spolling responses.
+> 
+> We also add an extra check in add_id_to_freelist to make
+> sure that the 'struct request' was not NULL - as we cannot
+> pass a NULL to __blk_end_request_all, otherwise that crashes
+> (and all the operations that the response is dealing with
+> end up with __blk_end_request_all).
+> 
+> Lastly we also print the name of the operation that failed.
+> 
+> [v1: s/BUG/WARN/ suggested by Stefano]
+> [v2: Add extra check in add_id_to_freelist]
+> [v3: Redid op_name per Jan's suggestion]
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-Yes, I looked at replace_page() too. Afaics it looks fine, it does the
-additional pte_same(pte, orig_pte) check.
+Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-Oleg.
 
+>  drivers/block/xen-blkfront.c     |   58 +++++++++++++++++++++++++++++--------
+>  include/xen/interface/io/blkif.h |    6 ++++
+>  2 files changed, 51 insertions(+), 13 deletions(-)
+> 
+> diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
+> index 2f22874..ae8e3b7 100644
+> --- a/drivers/block/xen-blkfront.c
+> +++ b/drivers/block/xen-blkfront.c
+> @@ -141,14 +141,33 @@ static int get_id_from_freelist(struct blkfront_info *info)
+>  	return free;
+>  }
+>  
+> -static void add_id_to_freelist(struct blkfront_info *info,
+> +static int add_id_to_freelist(struct blkfront_info *info,
+>  			       unsigned long id)
+>  {
+> +	if (info->shadow[id].req.u.rw.id != id)
+> +		return -EINVAL;
+> +	if (info->shadow[id].request == NULL)
+> +		return -EINVAL;
+>  	info->shadow[id].req.u.rw.id  = info->shadow_free;
+>  	info->shadow[id].request = NULL;
+>  	info->shadow_free = id;
+> +	return 0;
+>  }
+>  
+> +static const char *op_name(int op)
+> +{
+> +	static const char *names[] = {
+> +		[BLKIF_OP_READ] = "read",
+> +		[BLKIF_OP_WRITE] = "write",
+> +		[BLKIF_OP_WRITE_BARRIER] = "barrier",
+> +		[BLKIF_OP_FLUSH_DISKCACHE] = "flush",
+> +		[BLKIF_OP_RESERVED_1] = "reserved",
+> +		[BLKIF_OP_DISCARD] = "discard" };
+> +
+> +	if (op < 0 || op >= ARRAY_SIZE(names))
+> +		return "unknown";
+> +	return names[op];
+> +}
+>  static int xlbd_reserve_minors(unsigned int minor, unsigned int nr)
+>  {
+>  	unsigned int end = minor + nr;
+> @@ -744,20 +763,31 @@ static irqreturn_t blkif_interrupt(int irq, void *dev_id)
+>  
+>  		bret = RING_GET_RESPONSE(&info->ring, i);
+>  		id   = bret->id;
+> +		/*
+> +		 * The backend has messed up and given us an id that we would
+> +		 * never have given to it (we stamp it up to BLK_RING_SIZE -
+> +		 * look in get_id_from_freelist.
+> +		 */
+> +		if (id >= BLK_RING_SIZE)
+> +			/* We can't safely get the 'struct request' as
+> +			 * the id is busted. So limp along. */
+> +			goto err_out;
+> +
+>  		req  = info->shadow[id].request;
+>  
+>  		if (bret->operation != BLKIF_OP_DISCARD)
+>  			blkif_completion(&info->shadow[id]);
+>  
+> -		add_id_to_freelist(info, id);
+> +		if (add_id_to_freelist(info, id))
+> +			goto err_out;
+>  
+>  		error = (bret->status == BLKIF_RSP_OKAY) ? 0 : -EIO;
+>  		switch (bret->operation) {
+>  		case BLKIF_OP_DISCARD:
+>  			if (unlikely(bret->status == BLKIF_RSP_EOPNOTSUPP)) {
+>  				struct request_queue *rq = info->rq;
+> -				printk(KERN_WARNING "blkfront: %s: discard op failed\n",
+> -					   info->gd->disk_name);
+> +				printk(KERN_WARNING "blkfront: %s: %s op failed\n",
+> +					   info->gd->disk_name, op_name(bret->operation));
+>  				error = -EOPNOTSUPP;
+>  				info->feature_discard = 0;
+>  				info->feature_secdiscard = 0;
+> @@ -769,18 +799,14 @@ static irqreturn_t blkif_interrupt(int irq, void *dev_id)
+>  		case BLKIF_OP_FLUSH_DISKCACHE:
+>  		case BLKIF_OP_WRITE_BARRIER:
+>  			if (unlikely(bret->status == BLKIF_RSP_EOPNOTSUPP)) {
+> -				printk(KERN_WARNING "blkfront: %s: write %s op failed\n",
+> -				       info->flush_op == BLKIF_OP_WRITE_BARRIER ?
+> -				       "barrier" :  "flush disk cache",
+> -				       info->gd->disk_name);
+> +				printk(KERN_WARNING "blkfront: %s: %s op failed\n",
+> +				       info->gd->disk_name, op_name(bret->operation));
+>  				error = -EOPNOTSUPP;
+>  			}
+>  			if (unlikely(bret->status == BLKIF_RSP_ERROR &&
+>  				     info->shadow[id].req.u.rw.nr_segments == 0)) {
+> -				printk(KERN_WARNING "blkfront: %s: empty write %s op failed\n",
+> -				       info->flush_op == BLKIF_OP_WRITE_BARRIER ?
+> -				       "barrier" :  "flush disk cache",
+> -				       info->gd->disk_name);
+> +				printk(KERN_WARNING "blkfront: %s: empty %s op failed\n",
+> +				       info->gd->disk_name, op_name(bret->operation));
+>  				error = -EOPNOTSUPP;
+>  			}
+>  			if (unlikely(error)) {
+> @@ -813,12 +839,18 @@ static irqreturn_t blkif_interrupt(int irq, void *dev_id)
+>  			goto again;
+>  	} else
+>  		info->ring.sring->rsp_event = i + 1;
+> -
+>  	kick_pending_request_queues(info);
+>  
+>  	spin_unlock_irqrestore(&blkif_io_lock, flags);
+>  
+>  	return IRQ_HANDLED;
+> +err_out:
+> +	WARN(1, "%s: response to %s has incorrect id\n",
+> +	     info->gd->disk_name, op_name(bret->operation));
+> +
+> +	spin_unlock_irqrestore(&info->io_lock, flags);
+> +
+> +	return IRQ_HANDLED;
+>  }
+>  
+>  
+> diff --git a/include/xen/interface/io/blkif.h b/include/xen/interface/io/blkif.h
+> index ee338bf..bc75c75 100644
+> --- a/include/xen/interface/io/blkif.h
+> +++ b/include/xen/interface/io/blkif.h
+> @@ -59,6 +59,12 @@ typedef uint64_t blkif_sector_t;
+>  #define BLKIF_OP_FLUSH_DISKCACHE   3
+>  
+>  /*
+> + * Used in SLES sources for device specific command packet
+> + * contained within the request. Reserved for that purpose.
+> + */
+> +#define BLKIF_OP_RESERVED_1        4
+> +
+> +/*
+>   * Recognised only if "feature-discard" is present in backend xenbus info.
+>   * The "feature-discard" node contains a boolean indicating whether trim
+>   * (ATA) or unmap (SCSI) - conviently called discard requests are likely
+> -- 
+> 1.7.7.6
+> 
