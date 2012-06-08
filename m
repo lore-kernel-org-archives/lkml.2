@@ -1,81 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757173Ab2FHAPA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 20:15:00 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:48918 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756186Ab2FHAO7 (ORCPT
+	id S1756246Ab2FHAZm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 20:25:42 -0400
+Received: from mail132.messagelabs.com ([216.82.242.115]:49941 "EHLO
+	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751161Ab2FHAZl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 20:14:59 -0400
-Message-ID: <1339114489.4310.1.camel@phoenix>
-Subject: [PATCH v2] regulator: isl6271a: Use regulator_list_voltage_linear
- for isl_fixed_ops
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Marek Vasut <marek.vasut@gmail.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Fri, 08 Jun 2012 08:14:49 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Thu, 7 Jun 2012 20:25:41 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-14.tower-132.messagelabs.com!1339115139!14021512!1
+X-Originating-IP: [216.166.12.69]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] staging: comedi: pcl816: if test should use logical OR not bitwise OR
+Date: Thu, 7 Jun 2012 17:25:35 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Content-Disposition: inline
+Message-ID: <201206071725.35720.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+This quiets a couple sparse warnings about:
+
+warning: dubious: !x | !y
+warning: dubious: x | !y
+
+Also, remove the unnecessary parentheses abound the variables.
+
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Mori Hess <fmhess@users.sourceforge.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
-This is v2 of
-regulator: isl6271a: Use regulator_[list|map]_voltage_linear for isl_fixed_ops.
-I changed the subject line because map_voltage_linear is not used in this patch.
 
- drivers/regulator/isl6271a-regulator.c |   13 ++++---------
- 1 file changed, 4 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/regulator/isl6271a-regulator.c b/drivers/regulator/isl6271a-regulator.c
-index 56d273f..1d145a0 100644
---- a/drivers/regulator/isl6271a-regulator.c
-+++ b/drivers/regulator/isl6271a-regulator.c
-@@ -75,19 +75,12 @@ static struct regulator_ops isl_core_ops = {
+diff --git a/drivers/staging/comedi/drivers/pcl816.c b/drivers/staging/comedi/drivers/pcl816.c
+index 277a23e..845039c 100644
+--- a/drivers/staging/comedi/drivers/pcl816.c
++++ b/drivers/staging/comedi/drivers/pcl816.c
+@@ -414,8 +414,8 @@ static irqreturn_t interrupt_pcl816(int irq, void *d)
+ 	}
  
- static int isl6271a_get_fixed_voltage(struct regulator_dev *dev)
- {
--	int id = rdev_get_id(dev);
--	return (id == 1) ? 1100000 : 1300000;
--}
--
--static int isl6271a_list_fixed_voltage(struct regulator_dev *dev, unsigned selector)
--{
--	int id = rdev_get_id(dev);
--	return (id == 1) ? 1100000 : 1300000;
-+	return dev->desc->min_uV;
- }
- 
- static struct regulator_ops isl_fixed_ops = {
- 	.get_voltage	= isl6271a_get_fixed_voltage,
--	.list_voltage	= isl6271a_list_fixed_voltage,
-+	.list_voltage	= regulator_list_voltage_linear,
- };
- 
- static const struct regulator_desc isl_rd[] = {
-@@ -107,6 +100,7 @@ static const struct regulator_desc isl_rd[] = {
- 		.ops		= &isl_fixed_ops,
- 		.type		= REGULATOR_VOLTAGE,
- 		.owner		= THIS_MODULE,
-+		.min_uV		= 1100000,
- 	}, {
- 		.name		= "LDO2",
- 		.id		= 2,
-@@ -114,6 +108,7 @@ static const struct regulator_desc isl_rd[] = {
- 		.ops		= &isl_fixed_ops,
- 		.type		= REGULATOR_VOLTAGE,
- 		.owner		= THIS_MODULE,
-+		.min_uV		= 1300000,
- 	},
- };
- 
--- 
-1.7.9.5
-
-
-
+ 	outb(0, dev->iobase + PCL816_CLRINT);	/* clear INT request */
+-	if ((!dev->irq) | (!devpriv->irq_free) | (!devpriv->irq_blocked) |
+-	    (!devpriv->int816_mode)) {
++	if (!dev->irq || !devpriv->irq_free || !devpriv->irq_blocked ||
++	    !devpriv->int816_mode) {
+ 		if (devpriv->irq_was_now_closed) {
+ 			devpriv->irq_was_now_closed = 0;
+ 			/*  comedi_error(dev,"last IRQ.."); */
