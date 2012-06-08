@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761937Ab2FHFVV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 01:21:21 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43175 "EHLO
+	id S1761990Ab2FHFVw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 01:21:52 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43186 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760208Ab2FHFHW (ORCPT
+	by vger.kernel.org with ESMTP id S1760563Ab2FHFHV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 01:07:22 -0400
-Message-Id: <20120608041847.143900866@decadent.org.uk>
+	Fri, 8 Jun 2012 01:07:21 -0400
+Message-Id: <20120608041842.105860133@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 08 Jun 2012 05:19:27 +0100
+Date: Fri, 08 Jun 2012 05:18:49 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 47/82] drm/radeon: properly program gart on rv740, juniper, cypress, barts,
- hemlock
+        alan@lxorguk.ukuu.org.uk, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Peter Ross <pross@xvid.org>, Paulo Zanoni <paulo.r.zanoni@intel.com>
+Subject: [ 09/82] drm/i915: properly handle interlaced bit for sdvo dtd conversion
 In-Reply-To: <20120608041840.861504477@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,77 +28,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 0b8c30bc4943137a4a36b9cb059b1cc684f5d702 upstream.
+commit 59d92bfa5f0cdf57f82f5181b0ad6af75c3fdf41 upstream.
 
-Need to program an additional VM register.  This doesn't not currently
-cause any problems, but allows us to program the proper backend
-map in a subsequent patch which should improve performance on these
-asics.
+We've simply ignored this, which isn't too great. With this, interlaced
+1080i works on my HDMI screen connected through sdvo. For no apparent
+reason anything else still doesn't work as it should.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+While at it, give these magic numbers in the dtd proper names and
+add a comment that they match with EDID detailed timings.
+
+v2: Actually use the right bit for interlaced.
+
+Tested-by: Peter Ross <pross@xvid.org>
+Reviewed-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
+Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/radeon/evergreen.c  |    5 +++++
- drivers/gpu/drm/radeon/evergreend.h |    1 +
- drivers/gpu/drm/radeon/rv770.c      |    2 ++
- drivers/gpu/drm/radeon/rv770d.h     |    1 +
- 4 files changed, 9 insertions(+)
+ drivers/gpu/drm/i915/intel_sdvo.c      |   12 ++++++++----
+ drivers/gpu/drm/i915/intel_sdvo_regs.h |    5 +++++
+ 2 files changed, 13 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/evergreen.c b/drivers/gpu/drm/radeon/evergreen.c
-index 5d9c2c6..0408ac2 100644
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -1029,6 +1029,11 @@ int evergreen_pcie_gart_enable(struct radeon_device *rdev)
- 		WREG32(MC_VM_MD_L1_TLB0_CNTL, tmp);
- 		WREG32(MC_VM_MD_L1_TLB1_CNTL, tmp);
- 		WREG32(MC_VM_MD_L1_TLB2_CNTL, tmp);
-+		if ((rdev->family == CHIP_JUNIPER) ||
-+		    (rdev->family == CHIP_CYPRESS) ||
-+		    (rdev->family == CHIP_HEMLOCK) ||
-+		    (rdev->family == CHIP_BARTS))
-+			WREG32(MC_VM_MD_L1_TLB3_CNTL, tmp);
- 	}
- 	WREG32(MC_VM_MB_L1_TLB0_CNTL, tmp);
- 	WREG32(MC_VM_MB_L1_TLB1_CNTL, tmp);
-diff --git a/drivers/gpu/drm/radeon/evergreend.h b/drivers/gpu/drm/radeon/evergreend.h
-index 79130bf..3dd43e7 100644
---- a/drivers/gpu/drm/radeon/evergreend.h
-+++ b/drivers/gpu/drm/radeon/evergreend.h
-@@ -452,6 +452,7 @@
- #define	MC_VM_MD_L1_TLB0_CNTL				0x2654
- #define	MC_VM_MD_L1_TLB1_CNTL				0x2658
- #define	MC_VM_MD_L1_TLB2_CNTL				0x265C
-+#define	MC_VM_MD_L1_TLB3_CNTL				0x2698
+diff --git a/drivers/gpu/drm/i915/intel_sdvo.c b/drivers/gpu/drm/i915/intel_sdvo.c
+index 125228e..a658207 100644
+--- a/drivers/gpu/drm/i915/intel_sdvo.c
++++ b/drivers/gpu/drm/i915/intel_sdvo.c
+@@ -783,10 +783,12 @@ static void intel_sdvo_get_dtd_from_mode(struct intel_sdvo_dtd *dtd,
+ 		((v_sync_len & 0x30) >> 4);
  
- #define	FUS_MC_VM_MD_L1_TLB0_CNTL			0x265C
- #define	FUS_MC_VM_MD_L1_TLB1_CNTL			0x2660
-diff --git a/drivers/gpu/drm/radeon/rv770.c b/drivers/gpu/drm/radeon/rv770.c
-index c824d49..c12349d 100644
---- a/drivers/gpu/drm/radeon/rv770.c
-+++ b/drivers/gpu/drm/radeon/rv770.c
-@@ -151,6 +151,8 @@ int rv770_pcie_gart_enable(struct radeon_device *rdev)
- 	WREG32(MC_VM_MD_L1_TLB0_CNTL, tmp);
- 	WREG32(MC_VM_MD_L1_TLB1_CNTL, tmp);
- 	WREG32(MC_VM_MD_L1_TLB2_CNTL, tmp);
-+	if (rdev->family == CHIP_RV740)
-+		WREG32(MC_VM_MD_L1_TLB3_CNTL, tmp);
- 	WREG32(MC_VM_MB_L1_TLB0_CNTL, tmp);
- 	WREG32(MC_VM_MB_L1_TLB1_CNTL, tmp);
- 	WREG32(MC_VM_MB_L1_TLB2_CNTL, tmp);
-diff --git a/drivers/gpu/drm/radeon/rv770d.h b/drivers/gpu/drm/radeon/rv770d.h
-index 9c549f7..7addbef 100644
---- a/drivers/gpu/drm/radeon/rv770d.h
-+++ b/drivers/gpu/drm/radeon/rv770d.h
-@@ -174,6 +174,7 @@
- #define	MC_VM_MD_L1_TLB0_CNTL				0x2654
- #define	MC_VM_MD_L1_TLB1_CNTL				0x2658
- #define	MC_VM_MD_L1_TLB2_CNTL				0x265C
-+#define	MC_VM_MD_L1_TLB3_CNTL				0x2698
- #define	MC_VM_SYSTEM_APERTURE_DEFAULT_ADDR		0x203C
- #define	MC_VM_SYSTEM_APERTURE_HIGH_ADDR			0x2038
- #define	MC_VM_SYSTEM_APERTURE_LOW_ADDR			0x2034
+ 	dtd->part2.dtd_flags = 0x18;
++	if (mode->flags & DRM_MODE_FLAG_INTERLACE)
++		dtd->part2.dtd_flags |= DTD_FLAG_INTERLACE;
+ 	if (mode->flags & DRM_MODE_FLAG_PHSYNC)
+-		dtd->part2.dtd_flags |= 0x2;
++		dtd->part2.dtd_flags |= DTD_FLAG_HSYNC_POSITIVE;
+ 	if (mode->flags & DRM_MODE_FLAG_PVSYNC)
+-		dtd->part2.dtd_flags |= 0x4;
++		dtd->part2.dtd_flags |= DTD_FLAG_VSYNC_POSITIVE;
+ 
+ 	dtd->part2.sdvo_flags = 0;
+ 	dtd->part2.v_sync_off_high = v_sync_offset & 0xc0;
+@@ -820,9 +822,11 @@ static void intel_sdvo_get_mode_from_dtd(struct drm_display_mode * mode,
+ 	mode->clock = dtd->part1.clock * 10;
+ 
+ 	mode->flags &= ~(DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_PVSYNC);
+-	if (dtd->part2.dtd_flags & 0x2)
++	if (dtd->part2.dtd_flags & DTD_FLAG_INTERLACE)
++		mode->flags |= DRM_MODE_FLAG_INTERLACE;
++	if (dtd->part2.dtd_flags & DTD_FLAG_HSYNC_POSITIVE)
+ 		mode->flags |= DRM_MODE_FLAG_PHSYNC;
+-	if (dtd->part2.dtd_flags & 0x4)
++	if (dtd->part2.dtd_flags & DTD_FLAG_VSYNC_POSITIVE)
+ 		mode->flags |= DRM_MODE_FLAG_PVSYNC;
+ }
+ 
+diff --git a/drivers/gpu/drm/i915/intel_sdvo_regs.h b/drivers/gpu/drm/i915/intel_sdvo_regs.h
+index 6b7b22f..9d03014 100644
+--- a/drivers/gpu/drm/i915/intel_sdvo_regs.h
++++ b/drivers/gpu/drm/i915/intel_sdvo_regs.h
+@@ -61,6 +61,11 @@ struct intel_sdvo_caps {
+ 	u16 output_flags;
+ } __attribute__((packed));
+ 
++/* Note: SDVO detailed timing flags match EDID misc flags. */
++#define DTD_FLAG_HSYNC_POSITIVE (1 << 1)
++#define DTD_FLAG_VSYNC_POSITIVE (1 << 2)
++#define DTD_FLAG_INTERLACE	(1 << 7)
++
+ /** This matches the EDID DTD structure, more or less */
+ struct intel_sdvo_dtd {
+ 	struct {
 
 
