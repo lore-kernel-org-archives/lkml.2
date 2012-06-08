@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761556Ab2FHFHi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 01:07:38 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43120 "EHLO
+	id S1761577Ab2FHFHw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 01:07:52 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43239 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751811Ab2FHFHJ (ORCPT
+	by vger.kernel.org with ESMTP id S1761241Ab2FHFHj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 01:07:09 -0400
-Message-Id: <20120608041843.557206006@decadent.org.uk>
+	Fri, 8 Jun 2012 01:07:39 -0400
+Message-Id: <20120608041844.883222044@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 08 Jun 2012 05:19:00 +0100
+Date: Fri, 08 Jun 2012 05:19:10 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, James Bottomley <JBottomley@Parallels.com>,
-        Helge Deller <deller@gmx.de>
-Subject: [ 20/82] [PARISC] fix TLB fault path on PA2.0 narrow systems
+        alan@lxorguk.ukuu.org.uk, Dave Hansen <dave@linux.vnet.ibm.com>
+Subject: [ 30/82] hugetlb: fix resv_map leak in error path
 In-Reply-To: <20120608041840.861504477@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,141 +27,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Bottomley <JBottomley@Parallels.com>
+From: Dave Hansen <dave@linux.vnet.ibm.com>
 
-commit 2f649c1f6f0fef445ce79a19b79e5ce8fe9d7f19 upstream.
+commit c50ac050811d6485616a193eb0f37bfbd191cc89 upstream.
 
-commit 5e185581d7c46ddd33cd9c01106d1fc86efb9376
-Author: James Bottomley <JBottomley@Parallels.com>
+When called for anonymous (non-shared) mappings, hugetlb_reserve_pages()
+does a resv_map_alloc().  It depends on code in hugetlbfs's
+vm_ops->close() to release that allocation.
 
-    [PARISC] fix PA1.1 oops on boot
+However, in the mmap() failure path, we do a plain unmap_region() without
+the remove_vma() which actually calls vm_ops->close().
 
-Didn't quite fix the crash on boot.  It moved it from PA1.1 processors to
-PA2.0 narrow kernels.  The final fix is to make sure the [id]tlb_miss_20 paths
-also work.  Even on narrow systems, these paths require using the wide
-instructions becuase the tlb insertion format is wide.  Fix this by
-conditioning the dep[wd],z on whether we're being called from _11 or _20[w]
-paths.
+This is a decent fix.  This leak could get reintroduced if new code (say,
+after hugetlb_reserve_pages() in hugetlbfs_file_mmap()) decides to return
+an error.  But, I think it would have to unroll the reservation anyway.
 
-Tested-by: Helge Deller <deller@gmx.de>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Christoph's test case:
+
+	http://marc.info/?l=linux-mm&m=133728900729735
+
+Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
+[Christoph Lameter: I have rediffed the patch against 2.6.32 and 3.2.0.]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/parisc/kernel/entry.S |   30 +++++++++++++++++-------------
- 1 file changed, 17 insertions(+), 13 deletions(-)
+ mm/hugetlb.c |   28 ++++++++++++++++++++++------
+ 1 file changed, 22 insertions(+), 6 deletions(-)
 
-diff --git a/arch/parisc/kernel/entry.S b/arch/parisc/kernel/entry.S
-index 5350342..07ef351 100644
---- a/arch/parisc/kernel/entry.S
-+++ b/arch/parisc/kernel/entry.S
-@@ -552,7 +552,7 @@
- 	 * entry (identifying the physical page) and %r23 up with
- 	 * the from tlb entry (or nothing if only a to entry---for
- 	 * clear_user_page_asm) */
--	.macro		do_alias	spc,tmp,tmp1,va,pte,prot,fault
-+	.macro		do_alias	spc,tmp,tmp1,va,pte,prot,fault,patype
- 	cmpib,COND(<>),n 0,\spc,\fault
- 	ldil		L%(TMPALIAS_MAP_START),\tmp
- #if defined(CONFIG_64BIT) && (TMPALIAS_MAP_START >= 0x80000000)
-@@ -581,11 +581,15 @@
- 	 */
- 	cmpiclr,=	0x01,\tmp,%r0
- 	ldi		(_PAGE_DIRTY|_PAGE_READ|_PAGE_WRITE),\prot
--#ifdef CONFIG_64BIT
-+.ifc \patype,20
- 	depd,z		\prot,8,7,\prot
--#else
-+.else
-+.ifc \patype,11
- 	depw,z		\prot,8,7,\prot
--#endif
-+.else
-+	.error "undefined PA type to do_alias"
-+.endif
-+.endif
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -2068,6 +2068,15 @@
+ 		kref_get(&reservations->refs);
+ }
+ 
++static void resv_map_put(struct vm_area_struct *vma)
++{
++	struct resv_map *reservations = vma_resv_map(vma);
++
++	if (!reservations)
++		return;
++	kref_put(&reservations->refs, resv_map_release);
++}
++
+ static void hugetlb_vm_op_close(struct vm_area_struct *vma)
+ {
+ 	struct hstate *h = hstate_vma(vma);
+@@ -2083,7 +2092,7 @@
+ 		reserve = (end - start) -
+ 			region_count(&reservations->regions, start, end);
+ 
+-		kref_put(&reservations->refs, resv_map_release);
++		resv_map_put(vma);
+ 
+ 		if (reserve) {
+ 			hugetlb_acct_memory(h, -reserve);
+@@ -2884,12 +2893,16 @@
+ 		set_vma_resv_flags(vma, HPAGE_RESV_OWNER);
+ 	}
+ 
+-	if (chg < 0)
+-		return chg;
++	if (chg < 0) {
++		ret = chg;
++		goto out_err;
++	}
+ 
+ 	/* There must be enough filesystem quota for the mapping */
+-	if (hugetlb_get_quota(inode->i_mapping, chg))
+-		return -ENOSPC;
++	if (hugetlb_get_quota(inode->i_mapping, chg)) {
++		ret = -ENOSPC;
++		goto out_err;
++	}
+ 
  	/*
- 	 * OK, it is in the temp alias region, check whether "from" or "to".
- 	 * Check "subtle" note in pacache.S re: r23/r26.
-@@ -1189,7 +1193,7 @@ dtlb_miss_20w:
- 	nop
+ 	 * Check enough hugepages are available for the reservation.
+@@ -2898,7 +2911,7 @@
+ 	ret = hugetlb_acct_memory(h, chg);
+ 	if (ret < 0) {
+ 		hugetlb_put_quota(inode->i_mapping, chg);
+-		return ret;
++		goto out_err;
+ 	}
  
- dtlb_check_alias_20w:
--	do_alias	spc,t0,t1,va,pte,prot,dtlb_fault
-+	do_alias	spc,t0,t1,va,pte,prot,dtlb_fault,20
+ 	/*
+@@ -2915,6 +2928,9 @@
+ 	if (!vma || vma->vm_flags & VM_MAYSHARE)
+ 		region_add(&inode->i_mapping->private_list, from, to);
+ 	return 0;
++out_err:
++	resv_map_put(vma);
++	return ret;
+ }
  
- 	idtlbt          pte,prot
- 
-@@ -1213,7 +1217,7 @@ nadtlb_miss_20w:
- 	nop
- 
- nadtlb_check_alias_20w:
--	do_alias	spc,t0,t1,va,pte,prot,nadtlb_emulate
-+	do_alias	spc,t0,t1,va,pte,prot,nadtlb_emulate,20
- 
- 	idtlbt          pte,prot
- 
-@@ -1245,7 +1249,7 @@ dtlb_miss_11:
- 	nop
- 
- dtlb_check_alias_11:
--	do_alias	spc,t0,t1,va,pte,prot,dtlb_fault
-+	do_alias	spc,t0,t1,va,pte,prot,dtlb_fault,11
- 
- 	idtlba          pte,(va)
- 	idtlbp          prot,(va)
-@@ -1277,7 +1281,7 @@ nadtlb_miss_11:
- 	nop
- 
- nadtlb_check_alias_11:
--	do_alias	spc,t0,t1,va,pte,prot,nadtlb_emulate
-+	do_alias	spc,t0,t1,va,pte,prot,nadtlb_emulate,11
- 
- 	idtlba          pte,(va)
- 	idtlbp          prot,(va)
-@@ -1304,7 +1308,7 @@ dtlb_miss_20:
- 	nop
- 
- dtlb_check_alias_20:
--	do_alias	spc,t0,t1,va,pte,prot,dtlb_fault
-+	do_alias	spc,t0,t1,va,pte,prot,dtlb_fault,20
- 	
- 	idtlbt          pte,prot
- 
-@@ -1330,7 +1334,7 @@ nadtlb_miss_20:
- 	nop
- 
- nadtlb_check_alias_20:
--	do_alias	spc,t0,t1,va,pte,prot,nadtlb_emulate
-+	do_alias	spc,t0,t1,va,pte,prot,nadtlb_emulate,20
- 
- 	idtlbt          pte,prot
- 
-@@ -1457,7 +1461,7 @@ naitlb_miss_20w:
- 	nop
- 
- naitlb_check_alias_20w:
--	do_alias	spc,t0,t1,va,pte,prot,naitlb_fault
-+	do_alias	spc,t0,t1,va,pte,prot,naitlb_fault,20
- 
- 	iitlbt		pte,prot
- 
-@@ -1511,7 +1515,7 @@ naitlb_miss_11:
- 	nop
- 
- naitlb_check_alias_11:
--	do_alias	spc,t0,t1,va,pte,prot,itlb_fault
-+	do_alias	spc,t0,t1,va,pte,prot,itlb_fault,11
- 
- 	iitlba          pte,(%sr0, va)
- 	iitlbp          prot,(%sr0, va)
-@@ -1557,7 +1561,7 @@ naitlb_miss_20:
- 	nop
- 
- naitlb_check_alias_20:
--	do_alias	spc,t0,t1,va,pte,prot,naitlb_fault
-+	do_alias	spc,t0,t1,va,pte,prot,naitlb_fault,20
- 
- 	iitlbt          pte,prot
- 
+ void hugetlb_unreserve_pages(struct inode *inode, long offset, long freed)
 
 
