@@ -1,77 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934214Ab2FHJqu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 05:46:50 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:33016 "EHLO
+	id S1762063Ab2FHJr5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 05:47:57 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:59381 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754344Ab2FHJqs (ORCPT
+	with ESMTP id S1762050Ab2FHJr4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 05:46:48 -0400
-Date: Fri, 8 Jun 2012 02:45:07 -0700
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: leonid.moiseichuk@nokia.com
-Cc: penberg@kernel.org, minchan@kernel.org, kosaki.motohiro@gmail.com,
-        john.stultz@linaro.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: Re: [PATCH 0/5] Some vmevent fixes...
-Message-ID: <20120608094507.GA11963@lizard>
-References: <4FCC7592.9030403@kernel.org>
- <20120604113811.GA4291@lizard>
- <4FCD14F1.1030105@gmail.com>
- <CAOJsxLHR4wSgT2hNfOB=X6ud0rXgYg+h7PTHzAZYCUdLs6Ktug@mail.gmail.com>
- <20120605083921.GA21745@lizard>
- <4FD014D7.6000605@kernel.org>
- <20120608074906.GA27095@lizard>
- <4FD1BB29.1050805@kernel.org>
- <CAOJsxLHPvg=bsv+GakFGHyJwH0BoGA=fmzy5bwqWKNGryYTDtg@mail.gmail.com>
- <84FF21A720B0874AA94B46D76DB98269045F7B42@008-AM1MPN1-004.mgdnok.nokia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <84FF21A720B0874AA94B46D76DB98269045F7B42@008-AM1MPN1-004.mgdnok.nokia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 8 Jun 2012 05:47:56 -0400
+From: Yadwinder Singh Brar <yadi.brar01@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>,
+        Yadwinder Singh Brar <yadi.brar@samsung.com>
+Subject: [PATCH 1/2] regulator: core: Add regulator_set_voltage_time_sel to calculate ramp delay.
+Date: Fri,  8 Jun 2012 15:17:30 +0530
+Message-Id: <1339148851-19289-1-git-send-email-yadi.brar@samsung.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 08, 2012 at 09:12:36AM +0000, leonid.moiseichuk@nokia.com wrote:
-[...]
-> > Exactly. I don't know why people think pushing vmevents to userspace is
-> > going to fix any of the hard problems.
-> > 
-> > Anton, Lenoid, do you see any fundamental issues from userspace point of
-> > view with going forward what Minchan is proposing?
-> 
-> That good proposal but I have to underline that userspace could be interested not only in memory consumption stressed cases (pressure, vm watermarks ON etc.) 
-> but quite relaxed as well e.g. 60% durty pages are consumed - let's do not restart some daemons. In very stressed conditions user-space might be already dead.
+This patch adds regulator_set_voltage_time_sel(), to move the commonly used
+code by drivers to provide the .set_voltage_time_sel callback.It will also
+allow us to configure different ramp delay for different regulators easily.
 
-Indeed. Minchan's proposal is good to get notified that VM is under
-stress.
+Signed-off-by: Yadwinder Singh Brar <yadi.brar@samsung.com>
+---
+ drivers/regulator/core.c         |   24 ++++++++++++++++++++++++
+ include/linux/regulator/driver.h |    5 +++++
+ 2 files changed, 29 insertions(+), 0 deletions(-)
 
-But suppose some app allocates memory slowly (i.e. I scroll a large
-page on my phone, and the page is rendered piece by piece). So, in
-the end we're slowly but surely allocate a lot of memory. In that
-case Minchan's method won't notice that it's actually time to close
-some apps.
-
-Then suppose someone calls me, the "phone" application is now
-starting, but since we're out of 'easy to reclaim' pages, it takes
-forever for the app to load, VM is now under huge stress, and surely
-we're *now* getting notified, but alas, it is too late. Call missed.
-
-
-So, it's like measuring distance, velocity and acceleration. In
-Android case, among other things, we're interested in distance too!
-I.e. "how much exactly 'easy to reclaim' pages left", not only
-"how fast we're getting out of 'easy to reclaim' pages".
-
-> Another interesting question which combination of VM page types could be recognized as interesting for tracking as Minchan correctly stated it depends from area.
-> For me seems weights most likely will be -1, 0 or +1 to calculate resulting values and thesholds e.g. Active = {+1 * Active_Anon; +1 * Active_File}
-> It will extend flexibility a lot.
-
-Exposing VM details to the userland? No good. :-)
-
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 876f5fc..1c320b1 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -2289,6 +2289,30 @@ int regulator_set_voltage_time(struct regulator *regulator,
+ EXPORT_SYMBOL_GPL(regulator_set_voltage_time);
+ 
+ /**
++ *regulator_set_voltage_time_sel - get raise/fall time
++ * @regulator: regulator source
++ * @old_selector: selector for starting voltage
++ * @new_selector: selector for target voltage
++ *
++ * Provided with the starting and target voltage selectors, this function
++ * returns time in microseconds required to rise or fall to this new voltage
++ *
++ * Drivers providing uV_step in their regulator_desc and ramp_delay in
++ * regulation_constraints can use this as their set_voltage_time_sel()
++ * operation.
++ */
++int regulator_set_voltage_time_sel(struct regulator_dev *rdev,
++				   unsigned int old_selector,
++				   unsigned int new_selector)
++{
++	if (rdev->desc->ramp_delay && rdev->desc->uV_step)
++		return DIV_ROUND_UP(rdev->desc->uV_step *
++			abs(new_selector - old_selector),
++			rdev->desc->ramp_delay);
++	return 0;
++}
++
++/**
+  * regulator_sync_voltage - re-apply last regulator output voltage
+  * @regulator: regulator source
+  *
+diff --git a/include/linux/regulator/driver.h b/include/linux/regulator/driver.h
+index 8022638..ae5c253 100644
+--- a/include/linux/regulator/driver.h
++++ b/include/linux/regulator/driver.h
+@@ -170,6 +170,7 @@ enum regulator_type {
+  *
+  * @min_uV: Voltage given by the lowest selector (if linear mapping)
+  * @uV_step: Voltage increase with each selector (if linear mapping)
++ * @ramp_delay: Time to settle down after voltage change (unit: mV/us)
+  * @volt_table: Voltage mapping table (if table based mapping)
+  *
+  * @vsel_reg: Register for selector when using regulator_regmap_X_voltage_
+@@ -189,6 +190,7 @@ struct regulator_desc {
+ 
+ 	unsigned int min_uV;
+ 	unsigned int uV_step;
++	unsigned int ramp_delay;
+ 
+ 	const unsigned int *volt_table;
+ 
+@@ -285,6 +287,9 @@ int regulator_set_voltage_sel_regmap(struct regulator_dev *rdev, unsigned sel);
+ int regulator_is_enabled_regmap(struct regulator_dev *rdev);
+ int regulator_enable_regmap(struct regulator_dev *rdev);
+ int regulator_disable_regmap(struct regulator_dev *rdev);
++int regulator_set_voltage_time_sel(struct regulator_dev *rdev,
++				   unsigned int old_selector,
++				   unsigned int new_selector);
+ 
+ void *regulator_get_init_drvdata(struct regulator_init_data *reg_init_data);
+ 
 -- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+1.7.0.4
+
