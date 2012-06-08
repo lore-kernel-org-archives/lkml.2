@@ -1,67 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751856Ab2FHENV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 00:13:21 -0400
-Received: from ozlabs.org ([203.10.76.45]:45253 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750817Ab2FHENU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 00:13:20 -0400
-Message-ID: <1339128796.3330.7.camel@concordia>
-Subject: Re: [PATCH 1/3][RFC] ftrace/ppc: Have PPC skip updating with
- stop_machine()
-From: Michael Ellerman <michael@ellerman.id.au>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
-Date: Fri, 08 Jun 2012 14:13:16 +1000
-In-Reply-To: <20120426183508.749515835@goodmis.org>
-References: <20120426183116.857877522@goodmis.org>
-	 <20120426183508.749515835@goodmis.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1752089Ab2FHEPe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 00:15:34 -0400
+Received: from dalsmrelay2.nai.com ([205.227.136.216]:61018 "EHLO
+	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750817Ab2FHEPd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 00:15:33 -0400
+Message-ID: <4FD17C08.8030203@snapgear.com>
+Date: Fri, 8 Jun 2012 14:14:00 +1000
+From: Greg Ungerer <gerg@snapgear.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Andreas Schwab <schwab@linux-m68k.org>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Philippe De Muyter <phdm@macqel.be>, Greg Ungerer <gerg@uclinux.org>,
+        <linux-m68k@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] m68k: Use generic strncpy_from_user(), strlen_user(),
+ and strnlen_user()
+References: <1338327216-15309-1-git-send-email-geert@linux-m68k.org> <20120530102226.GA28628@frolo.macqel> <CAMuHMdV5GVZR1BvGD3EncDFfPt=Bt9ndkKE8Mp7euE9KoSaGNQ@mail.gmail.com> <20120530140444.GA10543@frolo.macqel> <CAMuHMdW29QYN6XpBb9F3GGoJ-9frrD-00Wx=FchT9ALqW1LcPg@mail.gmail.com> <4FCEF956.9090603@snapgear.com> <CAMuHMdWg6W4uOm3N-etXJud5Lw-vBkstQ2h7HK=6i+sCLgeksQ@mail.gmail.com> <4FD08C1B.1090107@snapgear.com> <m2bokvw9f1.fsf@igel.home>
+In-Reply-To: <m2bokvw9f1.fsf@igel.home>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-04-26 at 14:31 -0400, Steven Rostedt wrote:
-> plain text document attachment
-> (0001-ftrace-ppc-Have-PPC-skip-updating-with-stop_machine.patch)
-> From: Steven Rostedt <srostedt@redhat.com>
-> 
-> PPC does not have the synchronization issues that x86 has with
-> modifying code on one CPU while another CPU is executing it.
-> The other CPU will either see the old or new code without any
-> issues, unlike x86 which may issue a GPF.
-> 
-> Instead of calling the heavy stop_machine, just update the code.
+On 07/06/12 23:14, Andreas Schwab wrote:
+> Greg Ungerer<gerg@snapgear.com>  writes:
+>
+>> This strikes me as odd. Maybe this has been wrong all along. I need
+>> to check further but in a little testing I did today I think it may
+>> well be that all ColdFire support unaligned reads and writes.
+>
+> The CFPRM doesn't indicate otherwise (the address error exception is
+> only documented to be raised for a word index addressing mode).
 
-This looks nice, but it's giving me this:
+Yeah, I can't find anything that says otherwise in any of the CPU
+specific data sheets either. I suspect the internals of unaligned.h
+have just been carried from the original non-mmu 68k support to
+ColdFire.
 
-arch/powerpc/kernel/ftrace.c:497:13: error: static declaration of 'ftrace_replace_code' follows non-static declaration                                                
-include/linux/ftrace.h:317:13: note: previous declaration of 'ftrace_replace_code' was here
+Testing on the ColdFires I have at hand here shows unaligned reads
+and writes working on all. And that includes testing with a modified
+unaligned.h that allows unaligned accesses.
 
-I think the fix is just to make our ftrace_replace_code() non-static?
+Geert, I'll put a patch together that changes this over. I'll make
+that on top of your recent patch series.
 
-cheers
-
-
-> +static void ftrace_replace_code(int enable)
-> +{
-> +	struct ftrace_rec_iter *iter;
-> +	struct dyn_ftrace *rec;
-> +	int ret;
-> +
-> +	for (iter = ftrace_rec_iter_start(); iter;
-> +	     iter = ftrace_rec_iter_next(iter)) {
-> +		rec = ftrace_rec_iter_record(iter);
-> +		ret = __ftrace_replace_code(rec, enable);
-> +		if (ret) {
-> +			ftrace_bug(ret, rec->ip);
-> +			return;
-> +		}
-> +	}
-> +}
-> +
+Regards
+Greg
 
 
+------------------------------------------------------------------------
+Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
+SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
+8 Gardner Close                             FAX:         +61 7 3217 5323
+Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
