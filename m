@@ -1,74 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758354Ab2FHTaR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 15:30:17 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:12593 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756819Ab2FHTaO (ORCPT
+	id S933126Ab2FHTcC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 15:32:02 -0400
+Received: from mail19g.g19.rapidsite.net ([204.202.242.83]:21561 "HELO
+	mail19g.g19.rapidsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756309Ab2FHTcB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 15:30:14 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 08 Jun 2012 12:28:02 -0700
-Message-ID: <4FD250DB.2090207@nvidia.com>
-Date: Sat, 9 Jun 2012 00:52:03 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Fri, 8 Jun 2012 15:32:01 -0400
+thread-index: Ac1FrV+fatAR9YZWRMq2dWhrt5drjQ==
+Thread-Topic: How To Go From Zero to $863 a Day !... Recommends Advanced Sports to you
+From: <shane@gmail.com>
+To: <linux-kernel@vger.kernel.org>
+Subject: How To Go From Zero to $863 a Day !... Recommends Advanced Sports to you
+Date: Fri, 8 Jun 2012 15:31:59 -0400
+Message-ID: <0B18CC3142CC4B54BB113E5E8065D0EB@g19.win.smewh.net>
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "olof@lixom.net" <olof@lixom.net>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH 2/2] ARM: dt: tegra: cardhu: register core regulator tps65911
-References: <1337691917-15040-1-git-send-email-ldewangan@nvidia.com> <1337691917-15040-2-git-send-email-ldewangan@nvidia.com> <4FBBC192.7030900@wwwdotorg.org> <4FBBC830.2060802@nvidia.com> <4FBBCA8F.3050903@wwwdotorg.org> <4FBBD33C.8020802@nvidia.com> <4FBBDA97.6000006@wwwdotorg.org> <4FBBDE06.5080806@nvidia.com> <4FC916AC.4060804@wwwdotorg.org>
-In-Reply-To: <4FC916AC.4060804@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Type: text/plain
 Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft CDO for Windows 2000
+Content-Class: urn:content-classes:message
+Importance: normal
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4913
+X-Spam: [F=0.2000000000; S=0.200(2010122901); MH=0.500(2012060818)]
+X-MAIL-FROM: <shane@gmail.com>
+X-SOURCE-IP: [199.239.254.58]
+X-SF-Loop: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 02 June 2012 12:53 AM, Stephen Warren wrote:
->
-> We could either augment struct of_regulator_match with an integer ID
-> field for each regulator (which would perhaps make it slightly painful
-> to write the nodes and keep the IDs matched up), or add a new property
-> to each regulator provider node e.g. regulator-id which contained the
-> name that the regulator driver knows the regulator as (which would match
-> struct of_regulator_match.name), since the existing regulator-name
-> property is used for semantically different purposes.
->
-> That would result in:
->
->> tps65911: tps65911@2d {
->> 	compatible = "ti,tps65911";
->> 	reg =<0x2d>;
->>
->> 	#gpio-cells =<2>;
->> 	gpio-controller;
->>
->> 	regulators {
->> 		#address-cells =<1>;
->> 		#size-cells =<0>;
->>
->> 		vdd1_reg: regulator@0 {
->> 			reg =<0>;
->> 			regulator-id = "vdd1"; /* Internal name */
->> 			regulator-name = "vdd_1v2_gen"; /* Signal on schematic */
-> ...
->> 		};
->>
->> 		vdd2_reg: regulator@1 {
->> 			reg =<1>;
->> 			regulator-id = "vdd2";
->> 			regulator-name = "vdd_1v5_gen";
-> ...
+>From         :How To Go From Zero to $863 a Day !...
+Email        :shane@gmail.com
+Friend Name  :Friend
+Friend Email :linux-kernel@vger.kernel.org
+comment      :
+
+Hey Friend,
+
+I am writing to you privately. 
+
+Don't share this email with ANYONE without my permission - 
+that's a polite request, but I'm serious about it.
+
+I want to invite you to earn $863.34 a day. ..
+http://www.x-magic-submitter.com/?code=4fd12d880f3ba <== Click There
+
+You and a small, select group of individuals will undertake a short 
+training - about 12 minutes or so - after which you will get the chance
+to shoot for $863.34 a day, every day, every week, every month.
+
+http://www.x-magic-submitter.com/?code=4fd12d880f3ba  <== Click There
+
+If you are NOT interested in that kind of money, please delete this message right now. 
+Do not forward it to your aunt or your kids or your third cousin's babysitter.
+This is meant for you, and you only.
+
+If you ARE looking to earn $863.34 every day, please click here RIGHT NOW 
+before training slots this week are closed.
+
+http://www.x-magic-submitter.com/?code=4fd12d880f3ba  <== Click There
+
+Thanks.
+Shane
+
+P.S. - When you click on the link, we should prepare you for a surprise. 
+There won't be some angry guy yelling at you about how you're 
+a jerk if you don't buy his product! 
+
+But we will show you exactly - really, exactly - how we have helped 
+our friends earn $863.34 every single day.
+
+P.P.S. - watch the video carefully
+
+http://www.x-magic-submitter.com/?code=4fd12d880f3ba 
 
 
-So is it fine to go on the above binding?
-In this case we need to find the match_regulator based on regulator-id 
-rather than by name.
 
 
