@@ -1,57 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934115Ab2FHJHj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 05:07:39 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:42722 "EHLO mail.mev.co.uk"
+	id S1762025Ab2FHJMz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 05:12:55 -0400
+Received: from smtp.nokia.com ([147.243.128.26]:24000 "EHLO mgw-da02.nokia.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934020Ab2FHJHg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 05:07:36 -0400
-Message-ID: <4FD1C0D2.8060704@mev.co.uk>
-Date: Fri, 8 Jun 2012 10:07:30 +0100
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (Windows NT 5.2; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1759622Ab2FHJMy convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 05:12:54 -0400
+From: <leonid.moiseichuk@nokia.com>
+To: <penberg@kernel.org>, <minchan@kernel.org>
+CC: <anton.vorontsov@linaro.org>, <kosaki.motohiro@gmail.com>,
+        <john.stultz@linaro.org>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, <linaro-kernel@lists.linaro.org>,
+        <patches@linaro.org>, <kernel-team@android.com>
+Subject: RE: [PATCH 0/5] Some vmevent fixes...
+Thread-Topic: [PATCH 0/5] Some vmevent fixes...
+Thread-Index: AQHNP/FOitsSrN1KnkOrXYpeZEkA+pboy3gAgADvzACAADBdAIAAjZ+AgADEMwCAAA6MAIACwKmAgAHoSgCAAA8ogIAAAVQAgAAlvNA=
+Date: Fri, 8 Jun 2012 09:12:36 +0000
+Message-ID: <84FF21A720B0874AA94B46D76DB98269045F7B42@008-AM1MPN1-004.mgdnok.nokia.com>
+References: <CAHGf_=pSLfAue6AR5gi5RQ7xvgTxpZckA=Ja1fO1AkoO1o_DeA@mail.gmail.com>
+	<CAOJsxLG1+zhOKgi2Rg1eSoXSCU8QGvHVED_EefOOLP-6JbMDkg@mail.gmail.com>
+	<20120601122118.GA6128@lizard>
+	<alpine.LFD.2.02.1206032125320.1943@tux.localdomain>
+	<4FCC7592.9030403@kernel.org>	<20120604113811.GA4291@lizard>
+	<4FCD14F1.1030105@gmail.com>
+	<CAOJsxLHR4wSgT2hNfOB=X6ud0rXgYg+h7PTHzAZYCUdLs6Ktug@mail.gmail.com>
+	<20120605083921.GA21745@lizard>	<4FD014D7.6000605@kernel.org>
+	<20120608074906.GA27095@lizard>	<4FD1BB29.1050805@kernel.org>
+ <CAOJsxLHPvg=bsv+GakFGHyJwH0BoGA=fmzy5bwqWKNGryYTDtg@mail.gmail.com>
+In-Reply-To: <CAOJsxLHPvg=bsv+GakFGHyJwH0BoGA=fmzy5bwqWKNGryYTDtg@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.22.0.61]
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: Ian Abbott <ian.abbott@mev.co.uk>,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] staging: comedi: serial2002: quiet NULL pointer sparse
- noise
-References: <201206071714.25934.hartleys@visionengravers.com> <4FD19FBB.4040507@mev.co.uk> <20120608065125.GL4400@mwanda>
-In-Reply-To: <20120608065125.GL4400@mwanda>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 08 Jun 2012 09:12:37.0687 (UTC) FILETIME=[D92F4470:01CD4556]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012/06/08 07:51 AM, Dan Carpenter wrote:
-> On Fri, Jun 08, 2012 at 07:46:19AM +0100, Ian Abbott wrote:
->> On 08/06/12 01:14, H Hartley Sweeten wrote:
->>> Quiet a number of sparse warnings in this file:
->>>
->>> warning: Using plain integer as NULL pointer
->>
->> I wonder why sparse warns about that for a literal, unadorned 0?  I
->> suppose NULL is more explicit, but a plain 0 means the same as NULL
->> in a pointer context (unlike a zero from some random expression).
+> -----Original Message-----
+> From: penberg@gmail.com [mailto:penberg@gmail.com] On Behalf Of ext
+> Pekka Enberg
+> Sent: 08 June, 2012 11:48
+> To: Minchan Kim
+...
 > 
-> http://lwn.net/Articles/93574/
+> On Fri, Jun 8, 2012 at 11:43 AM, Minchan Kim <minchan@kernel.org> wrote:
+> >> So, the solution would be then two-fold:
+> >>
+> >> 1. Use your memory pressure notifications. They must be quite fast
+> >> when
+> >>    we starting to feel the high pressure. (I see the you use
+> >>    zone_page_state() and friends, which is vm_stat, and it is updated
+> >
+> > VM has other information like nr_reclaimed, nr_scanned, nr_congested,
+> > recent_scanned, recent_rotated, too. I hope we can make math by them
+> > and improve as we improve VM reclaimer.
+> >
+> >>    very infrequently, but to get accurate notification we have to
+> >>    update it much more frequently, but this is very expensive. So
+> >>    KOSAKI and Christoph will complain. :-)
+> >
+> >
+> > Reclaimer already have used that and if we need accuracy, we handled
+> > it like zone_watermark_ok_safe. If it's very inaccurate, VM should be fixed,
+> too.
+> 
+> Exactly. I don't know why people think pushing vmevents to userspace is
+> going to fix any of the hard problems.
+> 
+> Anton, Lenoid, do you see any fundamental issues from userspace point of
+> view with going forward what Minchan is proposing?
 
-Thanks for the link.  I understand the intent to make null pointer
-constants easier to recognize.  Still, the text of the sparse warning
-message "Using plain integer as NULL pointer" is technically incorrect
-since 0 is not an integer (plain or otherwise) in a pointer context,
-it's a null pointer constant.
+That good proposal but I have to underline that userspace could be interested not only in memory consumption stressed cases (pressure, vm watermarks ON etc.) 
+but quite relaxed as well e.g. 60% durty pages are consumed - let's do not restart some daemons. In very stressed conditions user-space might be already dead.
 
-I wonder if it also issues that warning for a struct initializer such as
-{0} where the first member of the struct is a pointer, or would it
-expect you to use {NULL} which is more confusing when the struct
-contains a mixture of pointer and non-pointer members?
-
--- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>             )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587              )=-
+Another interesting question which combination of VM page types could be recognized as interesting for tracking as Minchan correctly stated it depends from area.
+For me seems weights most likely will be -1, 0 or +1 to calculate resulting values and thesholds e.g. Active = {+1 * Active_Anon; +1 * Active_File}
+It will extend flexibility a lot.
