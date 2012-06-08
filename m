@@ -1,139 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933723Ab2FHGZV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 02:25:21 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:59272 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933621Ab2FHGZS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 02:25:18 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-Subject: Re: Suspend/resume regressions on Lenovo S10-3
-Date: Fri, 8 Jun 2012 08:30:29 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0+; KDE/4.6.0; x86_64; ; )
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, "Tomas M." <tmezzadra@gmail.com>,
-        Ferenc Wagner <wferi@niif.hu>, Arnd Bergmann <arnd@arndb.de>,
-        Len Brown <len.brown@intel.com>, Kevin Hilman <khilman@ti.com>,
-        Arjan van de Ven <arjan@linux.intel.com>, Jean Pihet <j-pihet@ti.com>,
-        Trinabh Gupta <g.trinabh@gmail.com>,
-        linux-pm@lists.linux-foundation.org,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        preeti@linux.vnet.ibm.com
-References: <4FC2DA8C.7050401@linux.vnet.ibm.com> <201206061543.03537.rjw@sisk.pl> <4FCF8936.5030909@linux.vnet.ibm.com>
-In-Reply-To: <4FCF8936.5030909@linux.vnet.ibm.com>
+	id S1761093Ab2FHGad (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 02:30:33 -0400
+Received: from sncsmrelay2.nai.com ([67.97.80.206]:46892 "EHLO
+	sncsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758387Ab2FHGab (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 02:30:31 -0400
+Message-ID: <4FD19B29.4050904@snapgear.com>
+Date: Fri, 8 Jun 2012 16:26:49 +1000
+From: Greg Ungerer <gerg@snapgear.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>, <linux-m68k@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] m68k: remove six unused headers
+References: <1339059427.25798.3.camel@x61.thuisdomein>
+In-Reply-To: <1339059427.25798.3.camel@x61.thuisdomein>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201206080830.29686.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, June 06, 2012, Deepthi Dharwar wrote:
-> On 06/06/2012 07:13 PM, Rafael J. Wysocki wrote:
-> 
-> > On Wednesday, June 06, 2012, Deepthi Dharwar wrote:
-> >> On 05/28/2012 07:23 AM, Dave Hansen wrote:
-> >>
-> >>> I have a Lenovo S10-3 Atom netbook.  It's always had some amount of
-> >>> trouble working with the intel_idle driver, so I usually compile that
-> >>> out an use the acpi one.  However, just after 3.1, suspend/resume broke.
-> >>>  'echo mem > /sys/power/state' would hang before suspending.  I bisected
-> >>> it down to the commits around:
-> >>>
-> >>> 	e978aa7d7d57d04eb5f88a7507c4fb98577def77 / v3.1-1-ge978aa7
-> >>>
-> >>> by Deepthi.  But, current mainline (v3.4-07644-g07acfc2) hangs with a
-> >>> different symptom: it suspends, but hangs on resume from suspend.  I
-> >>> think _that_ delta in the behavior was caused by:
-> >>>
-> >>> 	3439a8da16bcad6b0982ece938c9f8299bb53584
-> >>>
-> >>>         ACPI / cpuidle: Remove acpi_idle_suspend (to fix suspend
-> >>> 		regression)
-> >>>
-> >>> It's a bit of a pain to bisect these two different things in parallel.
-> >>> I was trying to tell git bisect 'good' on working suspend/resume, 'bad'
-> >>> on the hang during resume, and 'skip' on the hangs _during_ suspend.  83
-> >>> kernels in, I'm not sure that's working very well. :)
-> >>>
-> >>> Deepthi, do you have any idea why your patches broke me in the first
-> >>> place?  Perhaps we should fix that regression first before we go on and
-> >>> try to figure out what changed to let it suspend again, but break later.
-> >>
-> >>
-> >> Hi Dave,
-> >>
-> >> Sorry about my patches breaking your suspend-resume.
-> >>
-> >> I, basically tried out building and booting 3.1 kernel with 
-> >> my patch set to reproduce the failure. I could clearly
-> >> see suspend not happening. It turns out to be 
-> >> a bug with my first patch in global registration
-> >> series submitted earlier.
-> >>
-> >> e978aa7d7d57d04eb5f88a7507c4fb98577def77 / v3.1-1-ge978aa7
-> >>
-> >> The following patch, fixes the suspend issues
-> >> seen on my laptop due to earlier cpuidle cleanup 
-> >> (Lenevo T420 booting with acpi_idle enabled). 
-> >> Can you please give this a try
-> >> on top of my patch set (without Rafael's fix) 
-> >> and see if it fixes the problem for you. 
-> >> I am not reverting acpi_idle_suspend flag and 
-> >> hopefully it should resume fine too. 
-> >>
-> >> ---
-> >>
-> >> This patch fixes suspend-resume issue seen in the kernel 3.1
-> >> series using acpi_idle_driver because of cpuidle global 
-> >> registration cleanup.
-> >> Here, when acpi_idle_suspend flag was set ( during suspend)
-> >> the interrupts were not getting enabled in acpi_idle_enter_bm()
-> >> routine which was causing the system to hang.
-> >>
-> >>
-> >> Signed-off-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-> >>
-> >> ---
-> >>  drivers/acpi/processor_idle.c |    3 ++-
-> >>  1 files changed, 2 insertions(+), 1 deletions(-)
-> >>
-> >> diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
-> >> index 24fe3af..6e35293 100644
-> >> --- a/drivers/acpi/processor_idle.c
-> >> +++ b/drivers/acpi/processor_idle.c
-> >> @@ -895,8 +895,9 @@ static int acpi_idle_enter_bm(struct cpuidle_device *dev,
-> >>  	if (unlikely(!pr))
-> >>  		return -EINVAL;
-> >>  
-> >> -
-> >>  	if (acpi_idle_suspend) {
-> >> +		local_irq_disable();
-> >> +		local_irq_enable();
-> >>  		cpu_relax();
-> >>  		return -EINVAL;
-> >>  	}
-> > 
-> > May I say this is ugly?  Why can't we track the status of interrupts
-> > properly here?
-> 
-> 
-> 
-> I agree. Just the irq_enable call should do the trick.
-> Once the cpu enters idle via cpu_idle call, irqs are disabled. We
-> need to enable them if acpi_idle_suspend is set.
-> Else we'll see a hang during suspend.
-> 
-> The patch that was posted was just for workaround patch.
-> I shall do some more testing with just irq_enable call
-> and then shall post the fix which can be considered
-> for inclusion.
+Hi Paul,
 
-I see.  OK, then, looking forward to seeing the final patch. :-)
+On 07/06/12 18:57, Paul Bolle wrote:
+> There are six entirely unused headers in arch/m68k/include/asm. Nothing
+> includes these headers. And a few tests found no hits for the things
+> they provide (which makes sense).
+>
+> MC68332.h, mac_mouse.h, mcfmbus.h, and mcfne.h are all unused since at
+> least v2.6.12-rc2 (I didn't bother looking further back than that).
 
-Thanks,
-Rafael
+Although mcfne.h has been unused for a while I am working on some patches
+that do use it. No problem for the others.
+
+
+> apollodma.h is unused since v2.6.19: commit
+> 2ed0ce5b57950a620155433c62a5a02a067f1376 ("m68k/Apollo: Remove obsolete
+> arch/m68k/apollo/dma.c") removed the last file interested in that
+> header.
+>
+> And everything interested in<asm/sbus.h>  was removed in the v2.6.28
+> release cycle. The last occurrence of "sbus.h" was deleted with commit
+> 0c0db98b50ed1217c0dbf4051722034ba314d06e ("sparc: Remove
+> Documentation/sparc/sbus_drivers.txt"). I'm not sure whether anything
+> relevant for m68k was included in v2.6.27, but it doesn't really matter.
+>
+> Signed-off-by: Paul Bolle<pebolle@tiscali.nl>
+
+Acked-by: Greg Ungerer<gerg@uclinux.org>
+
+Regards
+Greg
+
+
+
+> ---
+> Tested with "git grep" only. I haven't got the hardware nor the
+> toolchain needed to do anything more thorough.
+>
+>   arch/m68k/include/asm/MC68332.h   |  152 -----------------------
+>   arch/m68k/include/asm/apollodma.h |  248 -------------------------------------
+>   arch/m68k/include/asm/mac_mouse.h |   23 ----
+>   arch/m68k/include/asm/mcfmbus.h   |   77 ------------
+>   arch/m68k/include/asm/mcfne.h     |  242 ------------------------------------
+>   arch/m68k/include/asm/sbus.h      |   45 -------
+>   6 files changed, 0 insertions(+), 787 deletions(-)
+>   delete mode 100644 arch/m68k/include/asm/MC68332.h
+>   delete mode 100644 arch/m68k/include/asm/apollodma.h
+>   delete mode 100644 arch/m68k/include/asm/mac_mouse.h
+>   delete mode 100644 arch/m68k/include/asm/mcfmbus.h
+>   delete mode 100644 arch/m68k/include/asm/mcfne.h
+>   delete mode 100644 arch/m68k/include/asm/sbus.h
+>
+-- 
+------------------------------------------------------------------------
+Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
+SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
+8 Gardner Close                             FAX:         +61 7 3217 5323
+Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
