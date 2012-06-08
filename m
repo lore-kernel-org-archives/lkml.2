@@ -1,54 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934344Ab2FHOXw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 10:23:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43667 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932433Ab2FHOXt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 10:23:49 -0400
-Date: Fri, 8 Jun 2012 10:23:33 -0400
-From: Dave Jones <davej@redhat.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Francois Romieu <romieu@fr.zoreil.com>,
-        Marc Dionne <marc.c.dionne@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: NOHZ: local_softirq_pending 08
-Message-ID: <20120608142333.GB1711@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Francois Romieu <romieu@fr.zoreil.com>,
-	Marc Dionne <marc.c.dionne@gmail.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-References: <20120530214809.GA19223@redhat.com>
- <alpine.LFD.2.02.1205310938080.3231@ionos>
- <20120601225754.GA25281@electric-eye.fr.zoreil.com>
- <CAB9dFdvWoc1onyWyy4BVmhpjeb5K2d10re0NcW-_NQCbfRC0hw@mail.gmail.com>
- <20120605231550.GA20981@electric-eye.fr.zoreil.com>
- <20120606014656.GA24870@redhat.com>
- <20120606054251.GA24467@electric-eye.fr.zoreil.com>
- <20120608023420.GD7191@redhat.com>
- <alpine.LFD.2.02.1206080954440.3086@ionos>
+	id S934349Ab2FHOYa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 10:24:30 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:65226 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932086Ab2FHOY2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 10:24:28 -0400
+Message-ID: <4FD20A1C.1050307@landley.net>
+Date: Fri, 08 Jun 2012 09:20:12 -0500
+From: Rob Landley <rob@landley.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <alpine.LFD.2.02.1206080954440.3086@ionos>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] stable: update references to older 2.6 versions for 3.x
+References: <1338909350-1271-1-git-send-email-paul.gortmaker@windriver.com>
+In-Reply-To: <1338909350-1271-1-git-send-email-paul.gortmaker@windriver.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 08, 2012 at 09:57:03AM +0200, Thomas Gleixner wrote:
- > On Thu, 7 Jun 2012, Dave Jones wrote:
- > > 
- > > The log is still huge though. (68M uncompressed) at
- > > http://www.codemonkey.org.uk/junk/r8169-trace.txt.xz
- > 
- > Following that URL gives me a nice picture.
- > 
- > This is somewhat embarrassing, isn’t it? :)
+On 06/05/2012 10:15 AM, Paul Gortmaker wrote:
+> Also add information on where the respective trees are.
+> 
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Rob Landley <rob@landley.net>
+> Cc: linux-doc@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-indeed ;-) Should be fixed.
+Acked-by: Rob Landley <rob@landley.net>
 
-	Dave
-
+Rob
+-- 
+GNU/Linux isn't: Linux=GPLv2, GNU=GPLv3+, they can't share code.
+Either it's "mere aggregation", or a license violation.  Pick one.
