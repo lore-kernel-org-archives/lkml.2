@@ -1,75 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760227Ab2FHCM7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 22:12:59 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52663 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760077Ab2FHCM6 (ORCPT
+	id S1760259Ab2FHCPr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 22:15:47 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:47858 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759939Ab2FHCPp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 22:12:58 -0400
-Date: Thu, 7 Jun 2012 19:11:16 -0700
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Kees Cook <keescook@chromium.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Colin Cross <ccross@android.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        John Stultz <john.stultz@linaro.org>, Shuah Khan <shuahkhan@gmail.com>,
-        "arve@android.com" <arve@android.com>,
-        Rebecca Schultz Zavin <rebecca@android.com>,
-        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "kernel-team@android.com" <kernel-team@android.com>
-Subject: Re: [PATCH 2/5] pstore: Introduce write_buf backend callback
-Message-ID: <20120608021115.GA29005@lizard>
-References: <20120526133412.GA18001@lizard>
- <1338039549-24498-2-git-send-email-anton.vorontsov@linaro.org>
- <CAGXu5jL0E7ybLPvhFdwNxiHSa==QJr+fX45A-T8Ug7iXLhtW_A@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F192F5FC4@ORSMSX104.amr.corp.intel.com>
+	Thu, 7 Jun 2012 22:15:45 -0400
+X-Sasl-enc: NN46Oss0x3kDp+6F1/D4plxFIdUBOm5arnpLZVLCFdDv 1339121744
+Date: Fri, 8 Jun 2012 11:15:42 +0900
+From: Greg KH <greg@kroah.com>
+To: David Miller <davem@davemloft.net>
+Cc: jeffrey.t.kirsher@intel.com, tarbal@gmail.com, rkagan@parallels.com,
+        stable@vger.kernel.org, jesse.brandeburg@intel.com,
+        bruce.w.allan@intel.com, carolyn.wyborny@intel.com,
+        donald.c.skidmore@intel.com, gregory.v.rose@intel.com,
+        peter.p.waskiewicz.jr@intel.com, alexander.h.duyck@intel.com,
+        john.ronciak@intel.com, dnelson@redhat.com,
+        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] e1000: save skb counts in TX to avoid cache misses
+Message-ID: <20120608021542.GA10112@kroah.com>
+References: <b838d871c0d507787373061e4edd91a624d62475.1339073391.git.rkagan@parallels.com>
+ <4FD11F49.5060805@gmail.com>
+ <20120607.144358.1732928576389957779.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F192F5FC4@ORSMSX104.amr.corp.intel.com>
+In-Reply-To: <20120607.144358.1732928576389957779.davem@davemloft.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 29, 2012 at 06:00:16PM +0000, Luck, Tony wrote:
-> > Hrm, I thought the point of having pstore.buf pre-mapped was to allow
-> > Oopses to be able to write directly to it without needing to hit any
-> > additional kernel code. Maybe I'm misunderstanding this change,
-> > though. I'd like to see Tony's opinion on it.
+On Thu, Jun 07, 2012 at 02:43:58PM -0700, David Miller wrote:
+> From: Jeff Kirsher <tarbal@gmail.com>
+> Date: Thu, 07 Jun 2012 14:38:17 -0700
 > 
-> Yes - the ERST backend needs to have a bunch of header ugliness (with
-> special UUIDs) at the front of the buffer that is stored to non-volatile
-> storage. So it allocates its own buffer with all that junk, and then
-> passes the address of the plain data portion of the buffer on to the
-> pstore layer.
+> > Thanks! I have applied the patch to my queue
 > 
-> As we add more backends, it might be that this is only applicable to
-> ERST, and so it might make sense to have it copy the data from some
-> other buffer into its specially crafted one.  But we should not lose
-> the "no allocations" property ... everything needed should be pre-allocated
-> so we don't have to try to allocate any memory during a panic.
+> Why?
+> 
+> My impression is that this is a patch already in the tree, and it's
+> being submitted for -stable but such minor performance hacks are
+> absolutely not appropriate for -stable submission.
 
-Yep, and everything is still pre-allocated.
+The patch description says it is fixing reported oopses, but the
+Subject: isn't all that helpful there.
 
-The only change is that we can pass different buffers, and in tracing
-case it is allocated on the stack (we can't use pstore.buf for tracing
-as it would require grabbing pstore_lock, which we can't do -- the
-locking operations are traced too, so it would recurse).
+So which is this?  Should I accept it for a stable release or not?
 
-Thanks,
+thanks,
 
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+greg k-h
