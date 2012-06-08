@@ -1,93 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760709Ab2FHWZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 18:25:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35114 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757819Ab2FHWZw (ORCPT
+	id S1761129Ab2FHW0R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 18:26:17 -0400
+Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:1603 "EHLO
+	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759313Ab2FHW0O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 18:25:52 -0400
-Date: Fri, 8 Jun 2012 15:25:50 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Boaz Harrosh <bharrosh@panasas.com>, Tao Ma <boyu.mt@taobao.com>,
-        Nick Piggin <npiggin@kernel.dk>, "Dmitry V. Levin" <ldv@altlinux.org>,
-        v9fs-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-afs@lists.infradead.org,
-        linux-btrfs@vger.kernel.org, ceph-devel@vger.kernel.org,
-        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
-        codalist@TELEMANN.coda.cs.cmu.edu, ecryptfs@vger.kernel.org,
-        osd-dev@open-osd.org, linux-ext4@vger.kernel.org,
-        fuse-devel@lists.sourceforge.net, linux-mtd@lists.infradead.org,
-        jfs-discussion@lists.sourceforge.net, logfs@logfs.org,
-        linux-nfs@vger.kernel.org, linux-nilfs@vger.kernel.org,
-        linux-ntfs-dev@lists.sourceforge.net, ocfs2-devel@oss.oracle.com,
-        reiserfs-devel@vger.kernel.org
-Subject: Re: [RFC, PATCH, RESEND] fs: push rcu_barrier() from
- deactivate_locked_super() to filesystems
-Message-Id: <20120608152550.258d6a30.akpm@linux-foundation.org>
-In-Reply-To: <20120608221446.GA18250@otc-wbsnb-06>
-References: <1339191663-17693-1-git-send-email-kirill.shutemov@linux.intel.com>
-	<20120608150253.e42464a6.akpm@linux-foundation.org>
-	<20120608221446.GA18250@otc-wbsnb-06>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 8 Jun 2012 18:26:14 -0400
+Message-ID: <1339194367.30984.18.camel@x61.thuisdomein>
+Subject: [PATCH] crypto: s390 - clean up DES code a bit more
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com
+Cc: linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Sat, 09 Jun 2012 00:26:07 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-OriginalArrivalTime: 08 Jun 2012 22:26:09.0990 (UTC) FILETIME=[B4542660:01CD45C5]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 9 Jun 2012 01:14:46 +0300
-"Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
+Commit 98971f8439b1bb9a61682fe24a865ddd25167a6b ("crypto: s390 - cleanup
+DES code") should have also removed crypto_des.h. That file is unused
+and unneeded since that commit. So let's clean up that file too.
 
-> On Fri, Jun 08, 2012 at 03:02:53PM -0700, Andrew Morton wrote:
-> > On Sat,  9 Jun 2012 00:41:03 +0300
-> > "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
-> > 
-> > > There's no reason to call rcu_barrier() on every deactivate_locked_super().
-> > > We only need to make sure that all delayed rcu free inodes are flushed
-> > > before we destroy related cache.
-> > > 
-> > > Removing rcu_barrier() from deactivate_locked_super() affects some
-> > > fas paths. E.g. on my machine exit_group() of a last process in IPC
-> > > namespace takes 0.07538s. rcu_barrier() takes 0.05188s of that time.
-> > 
-> > What an unpleasant patch.  Is final-process-exiting-ipc-namespace a
-> > sufficiently high-frequency operation to justify the change?
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Untested. Ought to be correct.
 
-This, please.
+ arch/s390/crypto/crypto_des.h |   18 ------------------
+ 1 files changed, 0 insertions(+), 18 deletions(-)
+ delete mode 100644 arch/s390/crypto/crypto_des.h
 
-> > I don't really understand what's going on here.  Are you saying that
-> > there is some filesystem against which we run deactivate_locked_super()
-> > during exit_group(), and that this filesystem doesn't use rcu-freeing
-> > of inodes?  The description needs this level of detail, please.
+diff --git a/arch/s390/crypto/crypto_des.h b/arch/s390/crypto/crypto_des.h
+deleted file mode 100644
+index 6210457..0000000
+--- a/arch/s390/crypto/crypto_des.h
++++ /dev/null
+@@ -1,18 +0,0 @@
+-/*
+- * Cryptographic API.
+- *
+- * Function for checking keys for the DES and Tripple DES Encryption
+- * algorithms.
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- */
+-#ifndef __CRYPTO_DES_H__
+-#define __CRYPTO_DES_H__
+-
+-extern int crypto_des_check_key(const u8*, unsigned int, u32*);
+-
+-#endif /*__CRYPTO_DES_H__*/
+-- 
+1.7.7.6
 
-You still haven't explained where this deactivate_locked_super() call
-is coming from.  Oh well.
-
-> I think the rcu_barrier() is in wrong place. We need it to safely destroy
-> inode cache. deactivate_locked_super() is part of umount() path, but all
-> filesystems I've checked have inode cache for whole filesystem, not
-> per-mount.
-
-Well from a design perspective, putting the rcu_barrier() in the vfs is
-the *correct* place.  Individual filesystems shouldn't be hard-coding
-knowledge about vfs internal machinery.
-
-A neater implementation might be to add a kmem_cache* argument to
-unregister_filesystem().  If that is non-NULL, unregister_filesystem()
-does the rcu_barrier() and destroys the cache.  That way we get to
-delete (rather than add) a bunch of code from all filesystems and new
-and out-of-tree filesystems cannot forget to perform the rcu_barrier().
-
-> > The implementation would be less unpleasant if we could do the
-> > rcu_barrier() in kmem_cache_destroy().  I can't see a way of doing that
-> > without adding a dedicated slab flag, which would require editing all
-> > the filesystems anyway.
-> 
-> I think rcu_barrier() for all kmem_cache_destroy() would be too expensive.
-
-That is not what I proposed.
