@@ -1,93 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760234Ab2FHOgc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 10:36:32 -0400
-Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:53275
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759909Ab2FHOgY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 10:36:24 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -5
-X-BigFish: VPS-5(z1823lz98dI936eI179dN1432Izz1202hzzz2dh668h839h944hd25hf0ah)
-X-WSS-ID: 0M5AZ8G-02-7UB-02
-X-M-MSG: 
-Date: Fri, 8 Jun 2012 16:36:36 +0200
-From: Borislav Petkov <borislav.petkov@amd.com>
+	id S1760022Ab2FHOik (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 10:38:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41268 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754433Ab2FHOij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 10:38:39 -0400
+Date: Fri, 8 Jun 2012 10:38:29 -0400
+From: Dave Jones <davej@redhat.com>
 To: Peter Zijlstra <peterz@infradead.org>
-CC: Borislav Petkov <borislav.petkov@amd.com>, Ingo Molnar <mingo@kernel.org>,
-        Stephane Eranian <eranian@google.com>, <linux-kernel@vger.kernel.org>,
-        <andi@firstfloor.org>, <mingo@elte.hu>, <ming.m.lin@intel.com>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Dimitri Sivanich <sivanich@sgi.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>
-Subject: Re: [PATCH] perf/x86: check ucode before disabling PEBS on
- SandyBridge
-Message-ID: <20120608143636.GG31359@aftab.osrc.amd.com>
-References: <1339065932.23343.18.camel@twins>
- <CABPqkBQ=tLXXsgvzQx+i01Owm4MM8m=6cEVVi4ab64gOiTTBYQ@mail.gmail.com>
- <1339067757.23343.21.camel@twins>
- <20120608093513.GA22520@gmail.com>
- <1339149613.23343.52.camel@twins>
- <1339161972.2507.13.camel@laptop>
- <20120608135117.GB31359@aftab.osrc.amd.com>
- <1339163669.2507.16.camel@laptop>
- <20120608141543.GD31359@aftab.osrc.amd.com>
- <1339165250.2507.27.camel@laptop>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Miklos Szeredi <mszeredi@suse.cz>, Jan Kara <jack@suse.cz>
+Subject: Re: processes hung after sys_renameat, and 'missing' processes
+Message-ID: <20120608143829.GD1711@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Peter Zijlstra <peterz@infradead.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Al Viro <viro@zeniv.linux.org.uk>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Miklos Szeredi <mszeredi@suse.cz>, Jan Kara <jack@suse.cz>
+References: <CA+55aFwCusEdMq3_3TAXSZ=+kbN7H6AbnngVaagAZw=ZpicckQ@mail.gmail.com>
+ <20120603231709.GP30000@ZenIV.linux.org.uk>
+ <20120603232820.GQ30000@ZenIV.linux.org.uk>
+ <20120606194233.GA1537@redhat.com>
+ <CA+55aFwxFVLPk4-dp73uccKXepKwjpGFgh0NW1u8d0zYzr=hBA@mail.gmail.com>
+ <20120606230040.GA18089@redhat.com>
+ <CA+55aFx_oREEd2XS_aG7PJ7dwzWjgx689V_uRPGWpVS01_++6A@mail.gmail.com>
+ <1339064814.23343.14.camel@twins>
+ <CA+55aFycTypSSvjOB-KXzpK86ALifGbrO2s4HRc69CqyoX=qJA@mail.gmail.com>
+ <1339140698.23343.26.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1339165250.2507.27.camel@laptop>
+In-Reply-To: <1339140698.23343.26.camel@twins>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 08, 2012 at 04:20:50PM +0200, Peter Zijlstra wrote:
-> On Fri, 2012-06-08 at 16:15 +0200, Borislav Petkov wrote:
-> > have a variable which gets initialized to the number of all CPUs and
-> > each time ->apply_microcode() finishes by returning 0, we decrement it
-> > once.
-> 
-> > 
-> > Hmm, I'm probably missing some obscure case. 
-> 
-> Since its all per-cpu sysfs muck, userspace could update a random
-> subsets of cpus.. leaving us hanging.
+On Fri, Jun 08, 2012 at 09:31:38AM +0200, Peter Zijlstra wrote:
 
-I'm afraid I don't understand - when you modprobe microcode.ko,
-it goes and loads /lib/firmware/amd-ucode/microcode_amd.bin (in
-the AMD case) on each CPU when the driver gets regged through
-subsys_interface_register().
+ > > Can you check the compile error that Dave reported for
+ > > your patch, because right now Dave is running without it, afaik, due
+ > > to your lock-instance patch not really working in practice.
+ > 
+ > Oh, missed that in the thread.. yeah here goes.
+ > 
+ > Now also compile tested with CONFIG_LOCK_STAT...
 
-It calls ->add_dev() on each CPU - this should be guaranteed because it
-uses the cpu_subsys from drivers/base/cpu.c which onlines all CPUs, I'd
-assume.
+Doesn't apply against Linus' current tree.
 
-So, I'd say that once subsys_interface_register() returns, we have
-updated ucode on all CPUs, if successful...
+$ cat ../lock| patch -p1
+patching file include/linux/lockdep.h
+Hunk #1 FAILED at 211.
+Hunk #2 FAILED at 254.
+Hunk #3 FAILED at 363.
+Hunk #4 FAILED at 414.
+4 out of 4 hunks FAILED -- saving rejects to file include/linux/lockdep.h.rej
+patching file include/trace/events/lock.h
+Hunk #1 FAILED at 61.
+Hunk #2 FAILED at 78.
+2 out of 2 hunks FAILED -- saving rejects to file include/trace/events/lock.h.rej
+patching file kernel/lockdep.c
+Hunk #1 FAILED at 541.
+Hunk #2 succeeded at 556 with fuzz 2.
+Hunk #3 FAILED at 3093.
+patch: **** malformed patch at line 268: ck,
 
-We probably could run the notifier at that moment, before we do
-put_online_cpus().
 
-> The 'bestestet' idea I came up with is doing the verify thing I have
-> from a delayed work -- say 1 second into the future. That way, when
-> there's lots of cpus they all try and enqueue the one work, which at
-> the end executes only once, provided the entire update scan took less
-> than the second.
-
-You're saying, you want the last CPU that gets to update its microcode
-gets to also run the delayed work...? Probably, I'd assume ucode update
-on a single CPU takes less than a second IIUC.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
-
+	Dave
