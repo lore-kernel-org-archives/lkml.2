@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761907Ab2FHFTr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 01:19:47 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43319 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1761428Ab2FHFHY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1761464Ab2FHFHY (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 8 Jun 2012 01:07:24 -0400
-Message-Id: <20120608041848.199949472@decadent.org.uk>
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43138 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759824Ab2FHFHL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 01:07:11 -0400
+Message-Id: <20120608041844.084930725@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 08 Jun 2012 05:19:35 +0100
+Date: Fri, 08 Jun 2012 05:19:04 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Jo=C3=A3o=20Paulo=20Rechi=20Vita?= 
-	<jprvita@openbossa.org>,
-        "Gustavo F. Padovan" <padovan@profusion.mobi>,
-        Johan Hedberg <johan.hedberg@intel.com>
-Subject: [ 55/82] Bluetooth: btusb: Add USB device ID "0a5c 21e8"
+        alan@lxorguk.ukuu.org.uk, Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 24/82] NFSv4: Map NFS4ERR_SHARE_DENIED into an EACCES error instead of EIO
 In-Reply-To: <20120608041840.861504477@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,43 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: João Paulo Rechi Vita <jprvita@openbossa.org>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 6dfc326f0605fd87e4c10ccde10de0ce4280d72d upstream.
+commit fb13bfa7e1bcfdcfdece47c24b62f1a1cad957e9 upstream.
 
-One more vendor-specific ID for BCM20702A0.
+If a file OPEN is denied due to a share lock, the resulting
+NFS4ERR_SHARE_DENIED is currently mapped to the default EIO.
+This patch adds a more appropriate mapping, and brings Linux
+into line with what Solaris 10 does.
 
-T:  Bus=01 Lev=03 Prnt=05 Port=02 Cnt=01 Dev#=  9 Spd=12  MxCh= 0
-D:  Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=0a5c ProdID=21e8 Rev=01.12
-S:  Manufacturer=Broadcom Corp
-S:  Product=BCM20702A0
-S:  SerialNumber=00027221F4E2
-C:  #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=0mA
-I:  If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
-I:  If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
-I:  If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-I:  If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
+See https://bugzilla.kernel.org/show_bug.cgi?id=43286
 
-Signed-off-by: João Paulo Rechi Vita <jprvita@openbossa.org>
-Acked-by: Gustavo F. Padovan <padovan@profusion.mobi>
-Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/bluetooth/btusb.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/nfs/nfs4proc.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-index 480cad9..b633854 100644
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -103,6 +103,7 @@ static struct usb_device_id btusb_table[] = {
- 	/* Broadcom BCM20702A0 */
- 	{ USB_DEVICE(0x0a5c, 0x21e3) },
- 	{ USB_DEVICE(0x0a5c, 0x21e6) },
-+	{ USB_DEVICE(0x0a5c, 0x21e8) },
- 	{ USB_DEVICE(0x0a5c, 0x21f3) },
- 	{ USB_DEVICE(0x413c, 0x8197) },
- 
+diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
+index af2db2c..42d9e9c 100644
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -103,6 +103,8 @@ static int nfs4_map_errors(int err)
+ 	case -NFS4ERR_BADOWNER:
+ 	case -NFS4ERR_BADNAME:
+ 		return -EINVAL;
++	case -NFS4ERR_SHARE_DENIED:
++		return -EACCES;
+ 	default:
+ 		dprintk("%s could not handle NFSv4 error %d\n",
+ 				__func__, -err);
 
 
