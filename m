@@ -1,49 +1,1988 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933983Ab2FHIye (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 04:54:34 -0400
-Received: from na3sys009aog122.obsmtp.com ([74.125.149.147]:37678 "EHLO
-	na3sys009aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933075Ab2FHIya (ORCPT
+	id S934005Ab2FHI5B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 04:57:01 -0400
+Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:1677 "EHLO
+	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932431Ab2FHI4w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 04:54:30 -0400
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Samuel Ortiz <sameo@linux.intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-kernel@vger.kernel.org, linux-next@vger.kernel.org, t-kristo@ti.com,
-        Randy Dunlap <rdunlap@xenotime.net>, peter.ujfalusi@ti.com
-Subject: [PATCH v2] MFD: twl6040: Update Kconfig to avoid build breakage
-Date: Fri,  8 Jun 2012 11:54:21 +0300
-Message-Id: <1339145661-25333-1-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.7.8.6
+	Fri, 8 Jun 2012 04:56:52 -0400
+Message-ID: <1339145808.25798.28.camel@x61.thuisdomein>
+Subject: [PATCH] delete seven tty headers
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org
+Date: Fri, 08 Jun 2012 10:56:48 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-OriginalArrivalTime: 08 Jun 2012 08:56:48.0709 (UTC) FILETIME=[A38CB750:01CD4554]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-twl6040 needs CONFIG_IRQ_DOMAIN to compile, without this we have:
-drivers/mfd/twl6040-irq.c: In function 'twl6040_irq_init':
-drivers/mfd/twl6040-irq.c:164:2: error: implicit declaration of function 'irq_domain_add_legacy'
-drivers/mfd/twl6040-irq.c:165:11: error: 'irq_domain_simple_ops' undeclared (first use in this function)
-drivers/mfd/twl6040-irq.c:165:11: note: each undeclared identifier is reported only once for each function it appears in
+Commit 51c9d654c2def97827395a7fbfd0c6f865c26544 ("Staging: delete tty
+drivers") left seven headers unused: nothing in the tree includes them
+anymore. Two of those headers were still exported, but since nothing in
+the kernel actually uses the things those two headers provide, that
+seems pointless. Delete these seven tty headers too.
 
-Reported-by: Randy Dunlap <rdunlap@xenotime.net>
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 ---
- drivers/mfd/Kconfig |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+0) Tested with "git grep" only (by grepping on the file names). I
+haven't grepped on the many things these headers provide (mostly named
+constants). Some of these looked rather generic. Most of these headers
+were relevant for builds I don't have the toolchains for at hand. And,
+finally, I couldn't think of a way the things these headers provide
+could still actually be used in the tree. 
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index e129c82..92144ed 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -286,6 +286,7 @@ config TWL6040_CORE
- 	depends on I2C=y && GENERIC_HARDIRQS
- 	select MFD_CORE
- 	select REGMAP_I2C
-+	select IRQ_DOMAIN
- 	default n
- 	help
- 	  Say yes here if you want support for Texas Instruments TWL6040 audio
+But would you prefer further tests?
+
+1) cdk.h, comstats.h, istallion.h, and stallion.h are still referenced
+in Documentation/ioctl/ioctl-number.txt and
+Documentation/magic-number.txt. Should those references be deleted too?
+
+ include/linux/Kbuild      |    2 -
+ include/linux/cd1400.h    |  292 -------------------------
+ include/linux/cdk.h       |  486 -----------------------------------------
+ include/linux/comstats.h  |  119 ----------
+ include/linux/istallion.h |  123 -----------
+ include/linux/sc26198.h   |  533 ---------------------------------------------
+ include/linux/serial167.h |  157 -------------
+ include/linux/stallion.h  |  147 -------------
+ 8 files changed, 0 insertions(+), 1859 deletions(-)
+ delete mode 100644 include/linux/cd1400.h
+ delete mode 100644 include/linux/cdk.h
+ delete mode 100644 include/linux/comstats.h
+ delete mode 100644 include/linux/istallion.h
+ delete mode 100644 include/linux/sc26198.h
+ delete mode 100644 include/linux/serial167.h
+ delete mode 100644 include/linux/stallion.h
+
+diff --git a/include/linux/Kbuild b/include/linux/Kbuild
+index 8760be3..0a8bcb6 100644
+--- a/include/linux/Kbuild
++++ b/include/linux/Kbuild
+@@ -84,7 +84,6 @@ header-y += capability.h
+ header-y += capi.h
+ header-y += cciss_defs.h
+ header-y += cciss_ioctl.h
+-header-y += cdk.h
+ header-y += cdrom.h
+ header-y += cgroupstats.h
+ header-y += chio.h
+@@ -93,7 +92,6 @@ header-y += cn_proc.h
+ header-y += coda.h
+ header-y += coda_psdev.h
+ header-y += coff.h
+-header-y += comstats.h
+ header-y += connector.h
+ header-y += const.h
+ header-y += cramfs_fs.h
+diff --git a/include/linux/cd1400.h b/include/linux/cd1400.h
+deleted file mode 100644
+index 1dc3ab0..0000000
+--- a/include/linux/cd1400.h
++++ /dev/null
+@@ -1,292 +0,0 @@
+-/*****************************************************************************/
+-
+-/*
+- *	cd1400.h  -- cd1400 UART hardware info.
+- *
+- *	Copyright (C) 1996-1998  Stallion Technologies
+- *	Copyright (C) 1994-1996  Greg Ungerer.
+- *
+- *	This program is free software; you can redistribute it and/or modify
+- *	it under the terms of the GNU General Public License as published by
+- *	the Free Software Foundation; either version 2 of the License, or
+- *	(at your option) any later version.
+- *
+- *	This program is distributed in the hope that it will be useful,
+- *	but WITHOUT ANY WARRANTY; without even the implied warranty of
+- *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- *	GNU General Public License for more details.
+- *
+- *	You should have received a copy of the GNU General Public License
+- *	along with this program; if not, write to the Free Software
+- *	Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+- */
+-
+-/*****************************************************************************/
+-#ifndef	_CD1400_H
+-#define	_CD1400_H
+-/*****************************************************************************/
+-
+-/*
+- *	Define the number of async ports per cd1400 uart chip.
+- */
+-#define	CD1400_PORTS		4
+-
+-/*
+- *	Define the cd1400 uarts internal FIFO sizes.
+- */
+-#define	CD1400_TXFIFOSIZE	12
+-#define	CD1400_RXFIFOSIZE	12
+-
+-/*
+- *	Local RX FIFO thresh hold level. Also define the RTS thresh hold
+- *	based on the RX thresh hold.
+- */
+-#define	FIFO_RXTHRESHOLD	6
+-#define	FIFO_RTSTHRESHOLD	7
+-
+-/*****************************************************************************/
+-
+-/*
+- *	Define the cd1400 register addresses. These are all the valid
+- *	registers with the cd1400. Some are global, some virtual, some
+- *	per port.
+- */
+-#define	GFRCR		0x40
+-#define	CAR		0x68
+-#define	GCR		0x4b
+-#define	SVRR		0x67
+-#define	RICR		0x44
+-#define	TICR		0x45
+-#define	MICR		0x46
+-#define	RIR		0x6b
+-#define	TIR		0x6a
+-#define	MIR		0x69
+-#define	PPR		0x7e
+-
+-#define	RIVR		0x43
+-#define	TIVR		0x42
+-#define	MIVR		0x41
+-#define	TDR		0x63
+-#define	RDSR		0x62
+-#define	MISR		0x4c
+-#define	EOSRR		0x60
+-
+-#define	LIVR		0x18
+-#define	CCR		0x05
+-#define	SRER		0x06
+-#define	COR1		0x08
+-#define	COR2		0x09
+-#define	COR3		0x0a
+-#define	COR4		0x1e
+-#define	COR5		0x1f
+-#define	CCSR		0x0b
+-#define	RDCR		0x0e
+-#define	SCHR1		0x1a
+-#define	SCHR2		0x1b
+-#define	SCHR3		0x1c
+-#define	SCHR4		0x1d
+-#define	SCRL		0x22
+-#define	SCRH		0x23
+-#define	LNC		0x24
+-#define	MCOR1		0x15
+-#define	MCOR2		0x16
+-#define	RTPR		0x21
+-#define	MSVR1		0x6c
+-#define	MSVR2		0x6d
+-#define	PSVR		0x6f
+-#define	RBPR		0x78
+-#define	RCOR		0x7c
+-#define	TBPR		0x72
+-#define	TCOR		0x76
+-
+-/*****************************************************************************/
+-
+-/*
+- *	Define the set of baud rate clock divisors.
+- */
+-#define	CD1400_CLK0	8
+-#define	CD1400_CLK1	32
+-#define	CD1400_CLK2	128
+-#define	CD1400_CLK3	512
+-#define	CD1400_CLK4	2048
+-
+-#define	CD1400_NUMCLKS	5
+-
+-/*****************************************************************************/
+-
+-/*
+- *	Define the clock pre-scalar value to be a 5 ms clock. This should be
+- *	OK for now. It would probably be better to make it 10 ms, but we
+- *	can't fit that divisor into 8 bits!
+- */
+-#define	PPR_SCALAR	244
+-
+-/*****************************************************************************/
+-
+-/*
+- *	Define values used to set character size options.
+- */
+-#define	COR1_CHL5	0x00
+-#define	COR1_CHL6	0x01
+-#define	COR1_CHL7	0x02
+-#define	COR1_CHL8	0x03
+-
+-/*
+- *	Define values used to set the number of stop bits.
+- */
+-#define	COR1_STOP1	0x00
+-#define	COR1_STOP15	0x04
+-#define	COR1_STOP2	0x08
+-
+-/*
+- *	Define values used to set the parity scheme in use.
+- */
+-#define	COR1_PARNONE	0x00
+-#define	COR1_PARFORCE	0x20
+-#define	COR1_PARENB	0x40
+-#define	COR1_PARIGNORE	0x10
+-
+-#define	COR1_PARODD	0x80
+-#define	COR1_PAREVEN	0x00
+-
+-#define	COR2_IXM	0x80
+-#define	COR2_TXIBE	0x40
+-#define	COR2_ETC	0x20
+-#define	COR2_LLM	0x10
+-#define	COR2_RLM	0x08
+-#define	COR2_RTSAO	0x04
+-#define	COR2_CTSAE	0x02
+-
+-#define	COR3_SCDRNG	0x80
+-#define	COR3_SCD34	0x40
+-#define	COR3_FCT	0x20
+-#define	COR3_SCD12	0x10
+-
+-/*
+- *	Define values used by COR4.
+- */
+-#define	COR4_BRKINT	0x08
+-#define	COR4_IGNBRK	0x18
+-
+-/*****************************************************************************/
+-
+-/*
+- *	Define the modem control register values.
+- *	Note that the actual hardware is a little different to the conventional
+- *	pin names on the cd1400.
+- */
+-#define	MSVR1_DTR	0x01
+-#define	MSVR1_DSR	0x10
+-#define	MSVR1_RI	0x20
+-#define	MSVR1_CTS	0x40
+-#define	MSVR1_DCD	0x80
+-
+-#define	MSVR2_RTS	0x02
+-#define	MSVR2_DSR	0x10
+-#define	MSVR2_RI	0x20
+-#define	MSVR2_CTS	0x40
+-#define	MSVR2_DCD	0x80
+-
+-#define	MCOR1_DCD	0x80
+-#define	MCOR1_CTS	0x40
+-#define	MCOR1_RI	0x20
+-#define	MCOR1_DSR	0x10
+-
+-#define	MCOR2_DCD	0x80
+-#define	MCOR2_CTS	0x40
+-#define	MCOR2_RI	0x20
+-#define	MCOR2_DSR	0x10
+-
+-/*****************************************************************************/
+-
+-/*
+- *	Define the bits used with the service (interrupt) enable register.
+- */
+-#define	SRER_NNDT	0x01
+-#define	SRER_TXEMPTY	0x02
+-#define	SRER_TXDATA	0x04
+-#define	SRER_RXDATA	0x10
+-#define	SRER_MODEM	0x80
+-
+-/*****************************************************************************/
+-
+-/*
+- *	Define operational commands for the command register.
+- */
+-#define	CCR_RESET	0x80
+-#define	CCR_CORCHANGE	0x4e
+-#define	CCR_SENDCH	0x20
+-#define	CCR_CHANCTRL	0x10
+-
+-#define	CCR_TXENABLE	(CCR_CHANCTRL | 0x08)
+-#define	CCR_TXDISABLE	(CCR_CHANCTRL | 0x04)
+-#define	CCR_RXENABLE	(CCR_CHANCTRL | 0x02)
+-#define	CCR_RXDISABLE	(CCR_CHANCTRL | 0x01)
+-
+-#define	CCR_SENDSCHR1	(CCR_SENDCH | 0x01)
+-#define	CCR_SENDSCHR2	(CCR_SENDCH | 0x02)
+-#define	CCR_SENDSCHR3	(CCR_SENDCH | 0x03)
+-#define	CCR_SENDSCHR4	(CCR_SENDCH | 0x04)
+-
+-#define	CCR_RESETCHAN	(CCR_RESET | 0x00)
+-#define	CCR_RESETFULL	(CCR_RESET | 0x01)
+-#define	CCR_TXFLUSHFIFO	(CCR_RESET | 0x02)
+-
+-#define	CCR_MAXWAIT	10000
+-
+-/*****************************************************************************/
+-
+-/*
+- *	Define the valid acknowledgement types (for hw ack cycle).
+- */
+-#define	ACK_TYPMASK	0x07
+-#define	ACK_TYPTX	0x02
+-#define	ACK_TYPMDM	0x01
+-#define	ACK_TYPRXGOOD	0x03
+-#define	ACK_TYPRXBAD	0x07
+-
+-#define	SVRR_RX		0x01
+-#define	SVRR_TX		0x02
+-#define	SVRR_MDM	0x04
+-
+-#define	ST_OVERRUN	0x01
+-#define	ST_FRAMING	0x02
+-#define	ST_PARITY	0x04
+-#define	ST_BREAK	0x08
+-#define	ST_SCHAR1	0x10
+-#define	ST_SCHAR2	0x20
+-#define	ST_SCHAR3	0x30
+-#define	ST_SCHAR4	0x40
+-#define	ST_RANGE	0x70
+-#define	ST_SCHARMASK	0x70
+-#define	ST_TIMEOUT	0x80
+-
+-#define	MISR_DCD	0x80
+-#define	MISR_CTS	0x40
+-#define	MISR_RI		0x20
+-#define	MISR_DSR	0x10
+-
+-/*****************************************************************************/
+-
+-/*
+- *	Defines for the CCSR status register.
+- */
+-#define	CCSR_RXENABLED	0x80
+-#define	CCSR_RXFLOWON	0x40
+-#define	CCSR_RXFLOWOFF	0x20
+-#define	CCSR_TXENABLED	0x08
+-#define	CCSR_TXFLOWON	0x04
+-#define	CCSR_TXFLOWOFF	0x02
+-
+-/*****************************************************************************/
+-
+-/*
+- *	Define the embedded commands.
+- */
+-#define	ETC_CMD		0x00
+-#define	ETC_STARTBREAK	0x81
+-#define	ETC_DELAY	0x82
+-#define	ETC_STOPBREAK	0x83
+-
+-/*****************************************************************************/
+-#endif
+diff --git a/include/linux/cdk.h b/include/linux/cdk.h
+deleted file mode 100644
+index 80093a8..0000000
+--- a/include/linux/cdk.h
++++ /dev/null
+@@ -1,486 +0,0 @@
+-/*****************************************************************************/
+-
+-/*
+- *	cdk.h  -- CDK interface definitions.
+- *
+- *	Copyright (C) 1996-1998  Stallion Technologies
+- *	Copyright (C) 1994-1996  Greg Ungerer.
+- *
+- *	This program is free software; you can redistribute it and/or modify
+- *	it under the terms of the GNU General Public License as published by
+- *	the Free Software Foundation; either version 2 of the License, or
+- *	(at your option) any later version.
+- *
+- *	This program is distributed in the hope that it will be useful,
+- *	but WITHOUT ANY WARRANTY; without even the implied warranty of
+- *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- *	GNU General Public License for more details.
+- *
+- *	You should have received a copy of the GNU General Public License
+- *	along with this program; if not, write to the Free Software
+- *	Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+- */
+-
+-/*****************************************************************************/
+-#ifndef	_CDK_H
+-#define	_CDK_H
+-/*****************************************************************************/
+-
+-#pragma	pack(2)
+-
+-/*
+- *	The following set of definitions is used to communicate with the
+- *	shared memory interface of the Stallion intelligent multiport serial
+- *	boards. The definitions in this file are taken directly from the
+- *	document titled "Generic Stackable Interface, Downloader and
+- *	Communications Development Kit".
+- */
+-
+-/*
+- *	Define the set of important shared memory addresses. These are
+- *	required to initialize the board and get things started. All of these
+- *	addresses are relative to the start of the shared memory.
+- */
+-#define	CDK_SIGADDR	0x200
+-#define	CDK_FEATADDR	0x280
+-#define	CDK_CDKADDR	0x300
+-#define	CDK_RDYADDR	0x262
+-
+-#define	CDK_ALIVEMARKER	13
+-
+-/*
+- *	On hardware power up the ROMs located on the EasyConnection 8/64 will
+- *	fill out the following signature information into shared memory. This
+- *	way the host system can quickly determine that the board is present
+- *	and is operational.
+- */
+-typedef struct cdkecpsig {
+-	unsigned long	magic;
+-	unsigned short	romver;
+-	unsigned short	cputype;
+-	unsigned char	panelid[8];
+-} cdkecpsig_t;
+-
+-#define	ECP_MAGIC	0x21504345
+-
+-/*
+- *	On hardware power up the ROMs located on the ONboard, Stallion and
+- *	Brumbys will fill out the following signature information into shared
+- *	memory. This way the host system can quickly determine that the board
+- *	is present and is operational.
+- */
+-typedef struct cdkonbsig {
+-	unsigned short	magic0;
+-	unsigned short	magic1;
+-	unsigned short	magic2;
+-	unsigned short	magic3;
+-	unsigned short	romver;
+-	unsigned short	memoff;
+-	unsigned short	memseg;
+-	unsigned short	amask0;
+-	unsigned short	pic;
+-	unsigned short	status;
+-	unsigned short	btype;
+-	unsigned short	clkticks;
+-	unsigned short	clkspeed;
+-	unsigned short	amask1;
+-	unsigned short	amask2;
+-} cdkonbsig_t;
+-
+-#define	ONB_MAGIC0	0xf2a7
+-#define	ONB_MAGIC1	0xa149
+-#define	ONB_MAGIC2	0x6352
+-#define	ONB_MAGIC3	0xf121
+-
+-/*
+- *	Define the feature area structure. The feature area is the set of
+- *	startup parameters used by the slave image when it starts executing.
+- *	They allow for the specification of buffer sizes, debug trace, etc.
+- */
+-typedef struct cdkfeature {
+-	unsigned long	debug;
+-	unsigned long	banner;
+-	unsigned long	etype;
+-	unsigned long	nrdevs;
+-	unsigned long	brdspec;
+-	unsigned long	txrqsize;
+-	unsigned long	rxrqsize;
+-	unsigned long	flags;
+-} cdkfeature_t;
+-
+-#define	ETYP_DDK	0
+-#define	ETYP_CDK	1
+-
+-/*
+- *	Define the CDK header structure. This is the info that the slave
+- *	environment sets up after it has been downloaded and started. It
+- *	essentially provides a memory map for the shared memory interface.
+- */
+-typedef struct cdkhdr {
+-	unsigned short	command;
+-	unsigned short	status;
+-	unsigned short	port;
+-	unsigned short	mode;
+-	unsigned long	cmd_buf[14];
+-	unsigned short	alive_cnt;
+-	unsigned short	intrpt_mode;
+-	unsigned char	intrpt_id[8];
+-	unsigned char	ver_release;
+-	unsigned char	ver_modification;
+-	unsigned char	ver_fix;
+-	unsigned char	deadman_restart;
+-	unsigned short	deadman;
+-	unsigned short	nrdevs;
+-	unsigned long	memp;
+-	unsigned long	hostp;
+-	unsigned long	slavep;
+-	unsigned char	hostreq;
+-	unsigned char	slavereq;
+-	unsigned char	cmd_reserved[30];
+-} cdkhdr_t;
+-
+-#define	MODE_DDK	0
+-#define	MODE_CDK	1
+-
+-#define	IMD_INTR	0x0
+-#define	IMD_PPINTR	0x1
+-#define	IMD_POLL	0xff
+-
+-/*
+- *	Define the memory mapping structure. This structure is pointed to by
+- *	the memp field in the stlcdkhdr struct. As many as these structures
+- *	as required are laid out in shared memory to define how the rest of
+- *	shared memory is divided up. There will be one for each port.
+- */
+-typedef struct cdkmem {
+-	unsigned short	dtype;
+-	unsigned long	offset;
+-} cdkmem_t;
+-
+-#define	TYP_UNDEFINED	0x0
+-#define	TYP_ASYNCTRL	0x1
+-#define	TYP_ASYNC	0x20
+-#define	TYP_PARALLEL	0x40
+-#define	TYP_SYNCX21	0x60
+-
+-/*****************************************************************************/
+-
+-/*
+- *	Following is a set of defines and structures used to actually deal
+- *	with the serial ports on the board. Firstly is the set of commands
+- *	that can be applied to ports.
+- */
+-#define	ASYCMD		(((unsigned long) 'a') << 8)
+-
+-#define	A_NULL		(ASYCMD | 0)
+-#define	A_FLUSH		(ASYCMD | 1)
+-#define	A_BREAK		(ASYCMD | 2)
+-#define	A_GETPORT	(ASYCMD | 3)
+-#define	A_SETPORT	(ASYCMD | 4)
+-#define	A_SETPORTF	(ASYCMD | 5)
+-#define	A_SETPORTFTX	(ASYCMD | 6)
+-#define	A_SETPORTFRX	(ASYCMD | 7)
+-#define	A_GETSIGNALS	(ASYCMD | 8)
+-#define	A_SETSIGNALS	(ASYCMD | 9)
+-#define	A_SETSIGNALSF	(ASYCMD | 10)
+-#define	A_SETSIGNALSFTX	(ASYCMD | 11)
+-#define	A_SETSIGNALSFRX	(ASYCMD | 12)
+-#define	A_GETNOTIFY	(ASYCMD | 13)
+-#define	A_SETNOTIFY	(ASYCMD | 14)
+-#define	A_NOTIFY	(ASYCMD | 15)
+-#define	A_PORTCTRL	(ASYCMD | 16)
+-#define	A_GETSTATS	(ASYCMD | 17)
+-#define	A_RQSTATE	(ASYCMD | 18)
+-#define	A_FLOWSTATE	(ASYCMD | 19)
+-#define	A_CLEARSTATS	(ASYCMD | 20)
+-
+-/*
+- *	Define those arguments used for simple commands.
+- */
+-#define	FLUSHRX		0x1
+-#define	FLUSHTX		0x2
+-
+-#define	BREAKON		-1
+-#define	BREAKOFF	-2
+-
+-/*
+- *	Define the port setting structure, and all those defines that go along
+- *	with it. Basically this structure defines the characteristics of this
+- *	port: baud rate, chars, parity, input/output char cooking etc.
+- */
+-typedef struct asyport {
+-	unsigned long	baudout;
+-	unsigned long	baudin;
+-	unsigned long	iflag;
+-	unsigned long	oflag;
+-	unsigned long	lflag;
+-	unsigned long	pflag;
+-	unsigned long	flow;
+-	unsigned long	spare1;
+-	unsigned short	vtime;
+-	unsigned short	vmin;
+-	unsigned short	txlo;
+-	unsigned short	txhi;
+-	unsigned short	rxlo;
+-	unsigned short	rxhi;
+-	unsigned short	rxhog;
+-	unsigned short	spare2;
+-	unsigned char	csize;
+-	unsigned char	stopbs;
+-	unsigned char	parity;
+-	unsigned char	stopin;
+-	unsigned char	startin;
+-	unsigned char	stopout;
+-	unsigned char	startout;
+-	unsigned char	parmark;
+-	unsigned char	brkmark;
+-	unsigned char	cc[11];
+-} asyport_t;
+-
+-#define	PT_STOP1	0x0
+-#define	PT_STOP15	0x1
+-#define	PT_STOP2	0x2
+-
+-#define	PT_NOPARITY	0x0
+-#define	PT_ODDPARITY	0x1
+-#define	PT_EVENPARITY	0x2
+-#define	PT_MARKPARITY	0x3
+-#define	PT_SPACEPARITY	0x4
+-
+-#define	F_NONE		0x0
+-#define	F_IXON		0x1
+-#define	F_IXOFF		0x2
+-#define	F_IXANY		0x4
+-#define	F_IOXANY	0x8
+-#define	F_RTSFLOW	0x10
+-#define	F_CTSFLOW	0x20
+-#define	F_DTRFLOW	0x40
+-#define	F_DCDFLOW	0x80
+-#define	F_DSROFLOW	0x100
+-#define	F_DSRIFLOW	0x200
+-
+-#define	FI_NORX		0x1
+-#define	FI_RAW		0x2
+-#define	FI_ISTRIP	0x4
+-#define	FI_UCLC		0x8
+-#define	FI_INLCR	0x10
+-#define	FI_ICRNL	0x20
+-#define	FI_IGNCR	0x40
+-#define	FI_IGNBREAK	0x80
+-#define	FI_DSCRDBREAK	0x100
+-#define	FI_1MARKBREAK	0x200
+-#define	FI_2MARKBREAK	0x400
+-#define	FI_XCHNGBREAK	0x800
+-#define	FI_IGNRXERRS	0x1000
+-#define	FI_DSCDRXERRS	0x2000
+-#define	FI_1MARKRXERRS	0x4000
+-#define	FI_2MARKRXERRS	0x8000
+-#define	FI_XCHNGRXERRS	0x10000
+-#define	FI_DSCRDNULL	0x20000
+-
+-#define	FO_OLCUC	0x1
+-#define	FO_ONLCR	0x2
+-#define	FO_OOCRNL	0x4
+-#define	FO_ONOCR	0x8
+-#define	FO_ONLRET	0x10
+-#define	FO_ONL		0x20
+-#define	FO_OBS		0x40
+-#define	FO_OVT		0x80
+-#define	FO_OFF		0x100
+-#define	FO_OTAB1	0x200
+-#define	FO_OTAB2	0x400
+-#define	FO_OTAB3	0x800
+-#define	FO_OCR1		0x1000
+-#define	FO_OCR2		0x2000
+-#define	FO_OCR3		0x4000
+-#define	FO_OFILL	0x8000
+-#define	FO_ODELL	0x10000
+-
+-#define	P_RTSLOCK	0x1
+-#define	P_CTSLOCK	0x2
+-#define	P_MAPRTS	0x4
+-#define	P_MAPCTS	0x8
+-#define	P_LOOPBACK	0x10
+-#define	P_DTRFOLLOW	0x20
+-#define	P_FAKEDCD	0x40
+-
+-#define	P_RXIMIN	0x10000
+-#define	P_RXITIME	0x20000
+-#define	P_RXTHOLD	0x40000
+-
+-/*
+- *	Define a structure to communicate serial port signal and data state
+- *	information.
+- */
+-typedef struct asysigs {
+-	unsigned long	data;
+-	unsigned long	signal;
+-	unsigned long	sigvalue;
+-} asysigs_t;
+-
+-#define	DT_TXBUSY	0x1
+-#define	DT_TXEMPTY	0x2
+-#define	DT_TXLOW	0x4
+-#define	DT_TXHIGH	0x8
+-#define	DT_TXFULL	0x10
+-#define	DT_TXHOG	0x20
+-#define	DT_TXFLOWED	0x40
+-#define	DT_TXBREAK	0x80
+-
+-#define	DT_RXBUSY	0x100
+-#define	DT_RXEMPTY	0x200
+-#define	DT_RXLOW	0x400
+-#define	DT_RXHIGH	0x800
+-#define	DT_RXFULL	0x1000
+-#define	DT_RXHOG	0x2000
+-#define	DT_RXFLOWED	0x4000
+-#define	DT_RXBREAK	0x8000
+-
+-#define	SG_DTR		0x1
+-#define	SG_DCD		0x2
+-#define	SG_RTS		0x4
+-#define	SG_CTS		0x8
+-#define	SG_DSR		0x10
+-#define	SG_RI		0x20
+-
+-/*
+- *	Define the notification setting structure. This is used to tell the
+- *	port what events we want to be informed about. Fields here use the
+- *	same defines as for the asysigs structure above.
+- */
+-typedef struct asynotify {
+-	unsigned long	ctrl;
+-	unsigned long	data;
+-	unsigned long	signal;
+-	unsigned long	sigvalue;
+-} asynotify_t;
+-
+-/*
+- *	Define the port control structure. It is used to do fine grain
+- *	control operations on the port.
+- */
+-typedef struct {
+-	unsigned long	rxctrl;
+-	unsigned long	txctrl;
+-	char		rximdch;
+-	char		tximdch;
+-	char		spare1;
+-	char		spare2;
+-} asyctrl_t;
+-
+-#define	CT_ENABLE	0x1
+-#define	CT_DISABLE	0x2
+-#define	CT_STOP		0x4
+-#define	CT_START	0x8
+-#define	CT_STARTFLOW	0x10
+-#define	CT_STOPFLOW	0x20
+-#define	CT_SENDCHR	0x40
+-
+-/*
+- *	Define the stats structure kept for each port. This is a useful set
+- *	of data collected for each port on the slave. The A_GETSTATS command
+- *	is used to retrieve this data from the slave.
+- */
+-typedef struct asystats {
+-	unsigned long	opens;
+-	unsigned long	txchars;
+-	unsigned long	rxchars;
+-	unsigned long	txringq;
+-	unsigned long	rxringq;
+-	unsigned long	txmsgs;
+-	unsigned long	rxmsgs;
+-	unsigned long	txflushes;
+-	unsigned long	rxflushes;
+-	unsigned long	overruns;
+-	unsigned long	framing;
+-	unsigned long	parity;
+-	unsigned long	ringover;
+-	unsigned long	lost;
+-	unsigned long	rxstart;
+-	unsigned long	rxstop;
+-	unsigned long	txstart;
+-	unsigned long	txstop;
+-	unsigned long	dcdcnt;
+-	unsigned long	dtrcnt;
+-	unsigned long	ctscnt;
+-	unsigned long	rtscnt;
+-	unsigned long	dsrcnt;
+-	unsigned long	ricnt;
+-	unsigned long	txbreaks;
+-	unsigned long	rxbreaks;
+-	unsigned long	signals;
+-	unsigned long	state;
+-	unsigned long	hwid;
+-} asystats_t;
+-
+-/*****************************************************************************/
+-
+-/*
+- *	All command and control communication with a device on the slave is
+- *	via a control block in shared memory. Each device has its own control
+- *	block, defined by the following structure. The control block allows
+- *	the host to open, close and control the device on the slave.
+- */
+-typedef struct cdkctrl {
+-	unsigned char	open;
+-	unsigned char	close;
+-	unsigned long	openarg;
+-	unsigned long	closearg;
+-	unsigned long	cmd;
+-	unsigned long	status;
+-	unsigned long	args[32];
+-} cdkctrl_t;
+-
+-/*
+- *	Each device on the slave passes data to and from the host via a ring
+- *	queue in shared memory. Define a ring queue structure to hold the
+- *	vital information about each ring queue. Two ring queues will be
+- *	allocated for each port, one for receive data and one for transmit
+- *	data.
+- */
+-typedef struct cdkasyrq {
+-	unsigned long	offset;
+-	unsigned short	size;
+-	unsigned short	head;
+-	unsigned short	tail;
+-} cdkasyrq_t;
+-
+-/*
+- *	Each asynchronous port is defined in shared memory by the following
+- *	structure. It contains a control block to command a device, and also
+- *	the necessary data channel information as well.
+- */
+-typedef struct cdkasy {
+-	cdkctrl_t	ctrl;
+-	unsigned short	notify;
+-	asynotify_t	changed;
+-	unsigned short	receive;
+-	cdkasyrq_t	rxq;
+-	unsigned short	transmit;
+-	cdkasyrq_t	txq;
+-} cdkasy_t;
+-
+-#pragma	pack()
+-
+-/*****************************************************************************/
+-
+-/*
+- *	Define the set of ioctls used by the driver to do special things
+- *	to the board. These include interrupting it, and initializing
+- *	the driver after board startup and shutdown.
+- */
+-#include <linux/ioctl.h>
+-
+-#define	STL_BINTR	_IO('s',20)
+-#define	STL_BSTART	_IO('s',21)
+-#define	STL_BSTOP	_IO('s',22)
+-#define	STL_BRESET	_IO('s',23)
+-
+-/*
+- *	Define a set of ioctl extensions, used to get at special stuff.
+- */
+-#define	STL_GETPFLAG	_IO('s',80)
+-#define	STL_SETPFLAG	_IO('s',81)
+-
+-/*****************************************************************************/
+-#endif
+diff --git a/include/linux/comstats.h b/include/linux/comstats.h
+deleted file mode 100644
+index 3f5ea8e..0000000
+--- a/include/linux/comstats.h
++++ /dev/null
+@@ -1,119 +0,0 @@
+-/*****************************************************************************/
+-
+-/*
+- *	comstats.h  -- Serial Port Stats.
+- *
+- *	Copyright (C) 1996-1998  Stallion Technologies
+- *	Copyright (C) 1994-1996  Greg Ungerer.
+- *
+- *	This program is free software; you can redistribute it and/or modify
+- *	it under the terms of the GNU General Public License as published by
+- *	the Free Software Foundation; either version 2 of the License, or
+- *	(at your option) any later version.
+- *
+- *	This program is distributed in the hope that it will be useful,
+- *	but WITHOUT ANY WARRANTY; without even the implied warranty of
+- *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- *	GNU General Public License for more details.
+- *
+- *	You should have received a copy of the GNU General Public License
+- *	along with this program; if not, write to the Free Software
+- *	Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+- */
+-
+-/*****************************************************************************/
+-#ifndef	_COMSTATS_H
+-#define	_COMSTATS_H
+-/*****************************************************************************/
+-
+-/*
+- *	Serial port stats structure. The structure itself is UART
+- *	independent, but some fields may be UART/driver specific (for
+- *	example state).
+- */
+-
+-typedef struct {
+-	unsigned long	brd;
+-	unsigned long	panel;
+-	unsigned long	port;
+-	unsigned long	hwid;
+-	unsigned long	type;
+-	unsigned long	txtotal;
+-	unsigned long	rxtotal;
+-	unsigned long	txbuffered;
+-	unsigned long	rxbuffered;
+-	unsigned long	rxoverrun;
+-	unsigned long	rxparity;
+-	unsigned long	rxframing;
+-	unsigned long	rxlost;
+-	unsigned long	txbreaks;
+-	unsigned long	rxbreaks;
+-	unsigned long	txxon;
+-	unsigned long	txxoff;
+-	unsigned long	rxxon;
+-	unsigned long	rxxoff;
+-	unsigned long	txctson;
+-	unsigned long	txctsoff;
+-	unsigned long	rxrtson;
+-	unsigned long	rxrtsoff;
+-	unsigned long	modem;
+-	unsigned long	state;
+-	unsigned long	flags;
+-	unsigned long	ttystate;
+-	unsigned long	cflags;
+-	unsigned long	iflags;
+-	unsigned long	oflags;
+-	unsigned long	lflags;
+-	unsigned long	signals;
+-} comstats_t;
+-
+-
+-/*
+- *	Board stats structure. Returns useful info about the board.
+- */
+-
+-#define	COM_MAXPANELS	8
+-
+-typedef struct {
+-	unsigned long	panel;
+-	unsigned long	type;
+-	unsigned long	hwid;
+-	unsigned long	nrports;
+-} companel_t;
+-
+-typedef struct {
+-	unsigned long	brd;
+-	unsigned long	type;
+-	unsigned long	hwid;
+-	unsigned long	state;
+-	unsigned long	ioaddr;
+-	unsigned long	ioaddr2;
+-	unsigned long	memaddr;
+-	unsigned long	irq;
+-	unsigned long	nrpanels;
+-	unsigned long	nrports;
+-	companel_t	panels[COM_MAXPANELS];
+-} combrd_t;
+-
+-
+-/*
+- *	Define the ioctl operations for stats stuff.
+- */
+-#include <linux/ioctl.h>
+-
+-#define	COM_GETPORTSTATS	_IO('c',30)
+-#define	COM_CLRPORTSTATS	_IO('c',31)
+-#define	COM_GETBRDSTATS		_IO('c',32)
+-
+-
+-/*
+- *	Define the set of ioctls that give user level access to the
+- *	private port, panel and board structures. The argument required
+- *	will be driver dependent!  
+- */
+-#define	COM_READPORT		_IO('c',40)
+-#define	COM_READBOARD		_IO('c',41)
+-#define	COM_READPANEL		_IO('c',42)
+-
+-/*****************************************************************************/
+-#endif
+diff --git a/include/linux/istallion.h b/include/linux/istallion.h
+deleted file mode 100644
+index ad700a6..0000000
+--- a/include/linux/istallion.h
++++ /dev/null
+@@ -1,123 +0,0 @@
+-/*****************************************************************************/
+-
+-/*
+- *	istallion.h  -- stallion intelligent multiport serial driver.
+- *
+- *	Copyright (C) 1996-1998  Stallion Technologies
+- *	Copyright (C) 1994-1996  Greg Ungerer.
+- *
+- *	This program is free software; you can redistribute it and/or modify
+- *	it under the terms of the GNU General Public License as published by
+- *	the Free Software Foundation; either version 2 of the License, or
+- *	(at your option) any later version.
+- *
+- *	This program is distributed in the hope that it will be useful,
+- *	but WITHOUT ANY WARRANTY; without even the implied warranty of
+- *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- *	GNU General Public License for more details.
+- *
+- *	You should have received a copy of the GNU General Public License
+- *	along with this program; if not, write to the Free Software
+- *	Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+- */
+-
+-/*****************************************************************************/
+-#ifndef	_ISTALLION_H
+-#define	_ISTALLION_H
+-/*****************************************************************************/
+-
+-/*
+- *	Define important driver constants here.
+- */
+-#define	STL_MAXBRDS		4
+-#define	STL_MAXPANELS		4
+-#define	STL_MAXPORTS		64
+-#define	STL_MAXCHANS		(STL_MAXPORTS + 1)
+-#define	STL_MAXDEVS		(STL_MAXBRDS * STL_MAXPORTS)
+-
+-
+-/*
+- *	Define a set of structures to hold all the board/panel/port info
+- *	for our ports. These will be dynamically allocated as required at
+- *	driver initialization time.
+- */
+-
+-/*
+- *	Port and board structures to hold status info about each object.
+- *	The board structure contains pointers to structures for each port
+- *	connected to it. Panels are not distinguished here, since
+- *	communication with the slave board will always be on a per port
+- *	basis.
+- */
+-struct stliport {
+-	unsigned long		magic;
+-	struct tty_port		port;
+-	unsigned int		portnr;
+-	unsigned int		panelnr;
+-	unsigned int		brdnr;
+-	unsigned long		state;
+-	unsigned int		devnr;
+-	int			baud_base;
+-	int			custom_divisor;
+-	int			closing_wait;
+-	int			rc;
+-	int			argsize;
+-	void			*argp;
+-	unsigned int		rxmarkmsk;
+-	wait_queue_head_t	raw_wait;
+-	struct asysigs		asig;
+-	unsigned long		addr;
+-	unsigned long		rxoffset;
+-	unsigned long		txoffset;
+-	unsigned long		sigs;
+-	unsigned long		pflag;
+-	unsigned int		rxsize;
+-	unsigned int		txsize;
+-	unsigned char		reqbit;
+-	unsigned char		portidx;
+-	unsigned char		portbit;
+-};
+-
+-/*
+- *	Use a structure of function pointers to do board level operations.
+- *	These include, enable/disable, paging shared memory, interrupting, etc.
+- */
+-struct stlibrd {
+-	unsigned long	magic;
+-	unsigned int	brdnr;
+-	unsigned int	brdtype;
+-	unsigned long	state;
+-	unsigned int	nrpanels;
+-	unsigned int	nrports;
+-	unsigned int	nrdevs;
+-	unsigned int	iobase;
+-	int		iosize;
+-	unsigned long	memaddr;
+-	void		__iomem *membase;
+-	unsigned long	memsize;
+-	int		pagesize;
+-	int		hostoffset;
+-	int		slaveoffset;
+-	int		bitsize;
+-	int		enabval;
+-	unsigned int	panels[STL_MAXPANELS];
+-	int		panelids[STL_MAXPANELS];
+-	void		(*init)(struct stlibrd *brdp);
+-	void		(*enable)(struct stlibrd *brdp);
+-	void		(*reenable)(struct stlibrd *brdp);
+-	void		(*disable)(struct stlibrd *brdp);
+-	void		__iomem *(*getmemptr)(struct stlibrd *brdp, unsigned long offset, int line);
+-	void		(*intr)(struct stlibrd *brdp);
+-	void		(*reset)(struct stlibrd *brdp);
+-	struct stliport	*ports[STL_MAXPORTS];
+-};
+-
+-
+-/*
+- *	Define MAGIC numbers used for above structures.
+- */
+-#define	STLI_PORTMAGIC	0xe671c7a1
+-#define	STLI_BOARDMAGIC	0x4bc6c825
+-
+-/*****************************************************************************/
+-#endif
+diff --git a/include/linux/sc26198.h b/include/linux/sc26198.h
+deleted file mode 100644
+index 7ca35ab..0000000
+--- a/include/linux/sc26198.h
++++ /dev/null
+@@ -1,533 +0,0 @@
+-/*****************************************************************************/
+-
+-/*
+- *	sc26198.h  -- SC26198 UART hardware info.
+- *
+- *	Copyright (C) 1995-1998  Stallion Technologies
+- *
+- *	This program is free software; you can redistribute it and/or modify
+- *	it under the terms of the GNU General Public License as published by
+- *	the Free Software Foundation; either version 2 of the License, or
+- *	(at your option) any later version.
+- *
+- *	This program is distributed in the hope that it will be useful,
+- *	but WITHOUT ANY WARRANTY; without even the implied warranty of
+- *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- *	GNU General Public License for more details.
+- *
+- *	You should have received a copy of the GNU General Public License
+- *	along with this program; if not, write to the Free Software
+- *	Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+- */
+-
+-/*****************************************************************************/
+-#ifndef	_SC26198_H
+-#define	_SC26198_H
+-/*****************************************************************************/
+-
+-/*
+- *	Define the number of async ports per sc26198 uart device.
+- */
+-#define	SC26198_PORTS		8
+-
+-/*
+- *	Baud rate timing clocks. All derived from a master 14.7456 MHz clock.
+- */
+-#define	SC26198_MASTERCLOCK	14745600L
+-#define	SC26198_DCLK		(SC26198_MASTERCLOCK)
+-#define	SC26198_CCLK		(SC26198_MASTERCLOCK / 2)
+-#define	SC26198_BCLK		(SC26198_MASTERCLOCK / 4)
+-
+-/*
+- *	Define internal FIFO sizes for the 26198 ports.
+- */
+-#define	SC26198_TXFIFOSIZE	16
+-#define	SC26198_RXFIFOSIZE	16
+-
+-/*****************************************************************************/
+-
+-/*
+- *	Global register definitions. These registers are global to each 26198
+- *	device, not specific ports on it.
+- */
+-#define	TSTR		0x0d
+-#define	GCCR		0x0f
+-#define	ICR		0x1b
+-#define	WDTRCR		0x1d
+-#define	IVR		0x1f
+-#define	BRGTRUA		0x84
+-#define	GPOSR		0x87
+-#define	GPOC		0x8b
+-#define	UCIR		0x8c
+-#define	CIR		0x8c
+-#define	BRGTRUB		0x8d
+-#define	GRXFIFO		0x8e
+-#define	GTXFIFO		0x8e
+-#define	GCCR2		0x8f
+-#define	BRGTRLA		0x94
+-#define	GPOR		0x97
+-#define	GPOD		0x9b
+-#define	BRGTCR		0x9c
+-#define	GICR		0x9c
+-#define	BRGTRLB		0x9d
+-#define	GIBCR		0x9d
+-#define	GITR		0x9f
+-
+-/*
+- *	Per port channel registers. These are the register offsets within
+- *	the port address space, so need to have the port address (0 to 7)
+- *	inserted in bit positions 4:6.
+- */
+-#define	MR0		0x00
+-#define	MR1		0x01
+-#define	IOPCR		0x02
+-#define	BCRBRK		0x03
+-#define	BCRCOS		0x04
+-#define	BCRX		0x06
+-#define	BCRA		0x07
+-#define	XONCR		0x08
+-#define	XOFFCR		0x09
+-#define	ARCR		0x0a
+-#define	RXCSR		0x0c
+-#define	TXCSR		0x0e
+-#define	MR2		0x80
+-#define	SR		0x81
+-#define SCCR		0x81
+-#define	ISR		0x82
+-#define	IMR		0x82
+-#define	TXFIFO		0x83
+-#define	RXFIFO		0x83
+-#define	IPR		0x84
+-#define	IOPIOR		0x85
+-#define	XISR		0x86
+-
+-/*
+- *	For any given port calculate the address to use to access a specified
+- *	register. This is only used for unusual access, mostly this is done
+- *	through the assembler access routines.
+- */
+-#define	SC26198_PORTREG(port,reg)	((((port) & 0x07) << 4) | (reg))
+-
+-/*****************************************************************************/
+-
+-/*
+- *	Global configuration control register bit definitions.
+- */
+-#define	GCCR_NOACK		0x00
+-#define	GCCR_IVRACK		0x02
+-#define	GCCR_IVRCHANACK		0x04
+-#define	GCCR_IVRTYPCHANACK	0x06
+-#define	GCCR_ASYNCCYCLE		0x00
+-#define	GCCR_SYNCCYCLE		0x40
+-
+-/*****************************************************************************/
+-
+-/*
+- *	Mode register 0 bit definitions.
+- */
+-#define	MR0_ADDRNONE		0x00
+-#define	MR0_AUTOWAKE		0x01
+-#define	MR0_AUTODOZE		0x02
+-#define	MR0_AUTOWAKEDOZE	0x03
+-#define	MR0_SWFNONE		0x00
+-#define	MR0_SWFTX		0x04
+-#define	MR0_SWFRX		0x08
+-#define	MR0_SWFRXTX		0x0c
+-#define	MR0_TXMASK		0x30
+-#define	MR0_TXEMPTY		0x00
+-#define	MR0_TXHIGH		0x10
+-#define	MR0_TXHALF		0x20
+-#define	MR0_TXRDY		0x00
+-#define	MR0_ADDRNT		0x00
+-#define	MR0_ADDRT		0x40
+-#define	MR0_SWFNT		0x00
+-#define	MR0_SWFT		0x80
+-
+-/*
+- *	Mode register 1 bit definitions.
+- */
+-#define	MR1_CS5			0x00
+-#define	MR1_CS6			0x01
+-#define	MR1_CS7			0x02
+-#define	MR1_CS8			0x03
+-#define	MR1_PAREVEN		0x00
+-#define	MR1_PARODD		0x04
+-#define	MR1_PARENB		0x00
+-#define	MR1_PARFORCE		0x08
+-#define	MR1_PARNONE		0x10
+-#define	MR1_PARSPECIAL		0x18
+-#define	MR1_ERRCHAR		0x00
+-#define	MR1_ERRBLOCK		0x20
+-#define	MR1_ISRUNMASKED		0x00
+-#define	MR1_ISRMASKED		0x40
+-#define	MR1_AUTORTS		0x80
+-
+-/*
+- *	Mode register 2 bit definitions.
+- */
+-#define	MR2_STOP1		0x00
+-#define	MR2_STOP15		0x01
+-#define	MR2_STOP2		0x02
+-#define	MR2_STOP916		0x03
+-#define	MR2_RXFIFORDY		0x00
+-#define	MR2_RXFIFOHALF		0x04
+-#define	MR2_RXFIFOHIGH		0x08
+-#define	MR2_RXFIFOFULL		0x0c
+-#define	MR2_AUTOCTS		0x10
+-#define	MR2_TXRTS		0x20
+-#define	MR2_MODENORM		0x00
+-#define	MR2_MODEAUTOECHO	0x40
+-#define	MR2_MODELOOP		0x80
+-#define	MR2_MODEREMECHO		0xc0
+-
+-/*****************************************************************************/
+-
+-/*
+- *	Baud Rate Generator (BRG) selector values.
+- */
+-#define	BRG_50			0x00
+-#define	BRG_75			0x01
+-#define	BRG_150			0x02
+-#define	BRG_200			0x03
+-#define	BRG_300			0x04
+-#define	BRG_450			0x05
+-#define	BRG_600			0x06
+-#define	BRG_900			0x07
+-#define	BRG_1200		0x08
+-#define	BRG_1800		0x09
+-#define	BRG_2400		0x0a
+-#define	BRG_3600		0x0b
+-#define	BRG_4800		0x0c
+-#define	BRG_7200		0x0d
+-#define	BRG_9600		0x0e
+-#define	BRG_14400		0x0f
+-#define	BRG_19200		0x10
+-#define	BRG_28200		0x11
+-#define	BRG_38400		0x12
+-#define	BRG_57600		0x13
+-#define	BRG_115200		0x14
+-#define	BRG_230400		0x15
+-#define	BRG_GIN0		0x16
+-#define	BRG_GIN1		0x17
+-#define	BRG_CT0			0x18
+-#define	BRG_CT1			0x19
+-#define	BRG_RX2TX316		0x1b
+-#define	BRG_RX2TX31		0x1c
+-
+-#define	SC26198_MAXBAUD		921600
+-
+-/*****************************************************************************/
+-
+-/*
+- *	Command register command definitions.
+- */
+-#define	CR_NULL			0x04
+-#define	CR_ADDRNORMAL		0x0c
+-#define	CR_RXRESET		0x14
+-#define	CR_TXRESET		0x1c
+-#define	CR_CLEARRXERR		0x24
+-#define	CR_BREAKRESET		0x2c
+-#define	CR_TXSTARTBREAK		0x34
+-#define	CR_TXSTOPBREAK		0x3c
+-#define	CR_RTSON		0x44
+-#define	CR_RTSOFF		0x4c
+-#define	CR_ADDRINIT		0x5c
+-#define	CR_RXERRBLOCK		0x6c
+-#define	CR_TXSENDXON		0x84
+-#define	CR_TXSENDXOFF		0x8c
+-#define	CR_GANGXONSET		0x94
+-#define	CR_GANGXOFFSET		0x9c
+-#define	CR_GANGXONINIT		0xa4
+-#define	CR_GANGXOFFINIT		0xac
+-#define	CR_HOSTXON		0xb4
+-#define	CR_HOSTXOFF		0xbc
+-#define	CR_CANCELXOFF		0xc4
+-#define	CR_ADDRRESET		0xdc
+-#define	CR_RESETALLPORTS	0xf4
+-#define	CR_RESETALL		0xfc
+-
+-#define	CR_RXENABLE		0x01
+-#define	CR_TXENABLE		0x02
+-
+-/*****************************************************************************/
+-
+-/*
+- *	Channel status register.
+- */
+-#define	SR_RXRDY		0x01
+-#define	SR_RXFULL		0x02
+-#define	SR_TXRDY		0x04
+-#define	SR_TXEMPTY		0x08
+-#define	SR_RXOVERRUN		0x10
+-#define	SR_RXPARITY		0x20
+-#define	SR_RXFRAMING		0x40
+-#define	SR_RXBREAK		0x80
+-
+-#define	SR_RXERRS		(SR_RXPARITY | SR_RXFRAMING | SR_RXOVERRUN)
+-
+-/*****************************************************************************/
+-
+-/*
+- *	Interrupt status register and interrupt mask register bit definitions.
+- */
+-#define	IR_TXRDY		0x01
+-#define	IR_RXRDY		0x02
+-#define	IR_RXBREAK		0x04
+-#define	IR_XONXOFF		0x10
+-#define	IR_ADDRRECOG		0x20
+-#define	IR_RXWATCHDOG		0x40
+-#define	IR_IOPORT		0x80
+-
+-/*****************************************************************************/
+-
+-/*
+- *	Interrupt vector register field definitions.
+- */
+-#define	IVR_CHANMASK		0x07
+-#define	IVR_TYPEMASK		0x18
+-#define	IVR_CONSTMASK		0xc0
+-
+-#define	IVR_RXDATA		0x10
+-#define	IVR_RXBADDATA		0x18
+-#define	IVR_TXDATA		0x08
+-#define	IVR_OTHER		0x00
+-
+-/*****************************************************************************/
+-
+-/*
+- *	BRG timer control register bit definitions.
+- */
+-#define	BRGCTCR_DISABCLK0	0x00
+-#define	BRGCTCR_ENABCLK0	0x08
+-#define	BRGCTCR_DISABCLK1	0x00
+-#define	BRGCTCR_ENABCLK1	0x80
+-
+-#define	BRGCTCR_0SCLK16		0x00
+-#define	BRGCTCR_0SCLK32		0x01
+-#define	BRGCTCR_0SCLK64		0x02
+-#define	BRGCTCR_0SCLK128	0x03
+-#define	BRGCTCR_0X1		0x04
+-#define	BRGCTCR_0X12		0x05
+-#define	BRGCTCR_0IO1A		0x06
+-#define	BRGCTCR_0GIN0		0x07
+-
+-#define	BRGCTCR_1SCLK16		0x00
+-#define	BRGCTCR_1SCLK32		0x10
+-#define	BRGCTCR_1SCLK64		0x20
+-#define	BRGCTCR_1SCLK128	0x30
+-#define	BRGCTCR_1X1		0x40
+-#define	BRGCTCR_1X12		0x50
+-#define	BRGCTCR_1IO1B		0x60
+-#define	BRGCTCR_1GIN1		0x70
+-
+-/*****************************************************************************/
+-
+-/*
+- *	Watch dog timer enable register.
+- */
+-#define	WDTRCR_ENABALL		0xff
+-
+-/*****************************************************************************/
+-
+-/*
+- *	XON/XOFF interrupt status register.
+- */
+-#define	XISR_TXCHARMASK		0x03
+-#define	XISR_TXCHARNORMAL	0x00
+-#define	XISR_TXWAIT		0x01
+-#define	XISR_TXXOFFPEND		0x02
+-#define	XISR_TXXONPEND		0x03
+-
+-#define	XISR_TXFLOWMASK		0x0c
+-#define	XISR_TXNORMAL		0x00
+-#define	XISR_TXSTOPPEND		0x04
+-#define	XISR_TXSTARTED		0x08
+-#define	XISR_TXSTOPPED		0x0c
+-
+-#define	XISR_RXFLOWMASK		0x30
+-#define	XISR_RXFLOWNONE		0x00
+-#define	XISR_RXXONSENT		0x10
+-#define	XISR_RXXOFFSENT		0x20
+-
+-#define	XISR_RXXONGOT		0x40
+-#define	XISR_RXXOFFGOT		0x80
+-
+-/*****************************************************************************/
+-
+-/*
+- *	Current interrupt register.
+- */
+-#define	CIR_TYPEMASK		0xc0
+-#define	CIR_TYPEOTHER		0x00
+-#define	CIR_TYPETX		0x40
+-#define	CIR_TYPERXGOOD		0x80
+-#define	CIR_TYPERXBAD		0xc0
+-
+-#define	CIR_RXDATA		0x80
+-#define	CIR_RXBADDATA		0x40
+-#define	CIR_TXDATA		0x40
+-
+-#define	CIR_CHANMASK		0x07
+-#define	CIR_CNTMASK		0x38
+-
+-#define	CIR_SUBTYPEMASK		0x38
+-#define	CIR_SUBNONE		0x00
+-#define	CIR_SUBCOS		0x08
+-#define	CIR_SUBADDR		0x10
+-#define	CIR_SUBXONXOFF		0x18
+-#define	CIR_SUBBREAK		0x28
+-
+-/*****************************************************************************/
+-
+-/*
+- *	Global interrupting channel register.
+- */
+-#define	GICR_CHANMASK		0x07
+-
+-/*****************************************************************************/
+-
+-/*
+- *	Global interrupting byte count register.
+- */
+-#define	GICR_COUNTMASK		0x0f
+-
+-/*****************************************************************************/
+-
+-/*
+- *	Global interrupting type register.
+- */
+-#define	GITR_RXMASK		0xc0
+-#define	GITR_RXNONE		0x00
+-#define	GITR_RXBADDATA		0x80
+-#define	GITR_RXGOODDATA		0xc0
+-#define	GITR_TXDATA		0x20
+-
+-#define	GITR_SUBTYPEMASK	0x07
+-#define	GITR_SUBNONE		0x00
+-#define	GITR_SUBCOS		0x01
+-#define	GITR_SUBADDR		0x02
+-#define	GITR_SUBXONXOFF		0x03
+-#define	GITR_SUBBREAK		0x05
+-
+-/*****************************************************************************/
+-
+-/*
+- *	Input port change register.
+- */
+-#define	IPR_CTS			0x01
+-#define	IPR_DTR			0x02
+-#define	IPR_RTS			0x04
+-#define	IPR_DCD			0x08
+-#define	IPR_CTSCHANGE		0x10
+-#define	IPR_DTRCHANGE		0x20
+-#define	IPR_RTSCHANGE		0x40
+-#define	IPR_DCDCHANGE		0x80
+-
+-#define	IPR_CHANGEMASK		0xf0
+-
+-/*****************************************************************************/
+-
+-/*
+- *	IO port interrupt and output register.
+- */
+-#define	IOPR_CTS		0x01
+-#define	IOPR_DTR		0x02
+-#define	IOPR_RTS		0x04
+-#define	IOPR_DCD		0x08
+-#define	IOPR_CTSCOS		0x10
+-#define	IOPR_DTRCOS		0x20
+-#define	IOPR_RTSCOS		0x40
+-#define	IOPR_DCDCOS		0x80
+-
+-/*****************************************************************************/
+-
+-/*
+- *	IO port configuration register.
+- */
+-#define	IOPCR_SETCTS		0x00
+-#define	IOPCR_SETDTR		0x04
+-#define	IOPCR_SETRTS		0x10
+-#define	IOPCR_SETDCD		0x00
+-
+-#define	IOPCR_SETSIGS		(IOPCR_SETRTS | IOPCR_SETRTS | IOPCR_SETDTR | IOPCR_SETDCD)
+-
+-/*****************************************************************************/
+-
+-/*
+- *	General purpose output select register.
+- */
+-#define	GPORS_TXC1XA		0x08
+-#define	GPORS_TXC16XA		0x09
+-#define	GPORS_RXC16XA		0x0a
+-#define	GPORS_TXC16XB		0x0b
+-#define	GPORS_GPOR3		0x0c
+-#define	GPORS_GPOR2		0x0d
+-#define	GPORS_GPOR1		0x0e
+-#define	GPORS_GPOR0		0x0f
+-
+-/*****************************************************************************/
+-
+-/*
+- *	General purpose output register.
+- */
+-#define	GPOR_0			0x01
+-#define	GPOR_1			0x02
+-#define	GPOR_2			0x04
+-#define	GPOR_3			0x08
+-
+-/*****************************************************************************/
+-
+-/*
+- *	General purpose output clock register.
+- */
+-#define	GPORC_0NONE		0x00
+-#define	GPORC_0GIN0		0x01
+-#define	GPORC_0GIN1		0x02
+-#define	GPORC_0IO3A		0x02
+-
+-#define	GPORC_1NONE		0x00
+-#define	GPORC_1GIN0		0x04
+-#define	GPORC_1GIN1		0x08
+-#define	GPORC_1IO3C		0x0c
+-
+-#define	GPORC_2NONE		0x00
+-#define	GPORC_2GIN0		0x10
+-#define	GPORC_2GIN1		0x20
+-#define	GPORC_2IO3E		0x20
+-
+-#define	GPORC_3NONE		0x00
+-#define	GPORC_3GIN0		0x40
+-#define	GPORC_3GIN1		0x80
+-#define	GPORC_3IO3G		0xc0
+-
+-/*****************************************************************************/
+-
+-/*
+- *	General purpose output data register.
+- */
+-#define	GPOD_0MASK		0x03
+-#define	GPOD_0SET1		0x00
+-#define	GPOD_0SET0		0x01
+-#define	GPOD_0SETR0		0x02
+-#define	GPOD_0SETIO3B		0x03
+-
+-#define	GPOD_1MASK		0x0c
+-#define	GPOD_1SET1		0x00
+-#define	GPOD_1SET0		0x04
+-#define	GPOD_1SETR0		0x08
+-#define	GPOD_1SETIO3D		0x0c
+-
+-#define	GPOD_2MASK		0x30
+-#define	GPOD_2SET1		0x00
+-#define	GPOD_2SET0		0x10
+-#define	GPOD_2SETR0		0x20
+-#define	GPOD_2SETIO3F		0x30
+-
+-#define	GPOD_3MASK		0xc0
+-#define	GPOD_3SET1		0x00
+-#define	GPOD_3SET0		0x40
+-#define	GPOD_3SETR0		0x80
+-#define	GPOD_3SETIO3H		0xc0
+-
+-/*****************************************************************************/
+-#endif
+diff --git a/include/linux/serial167.h b/include/linux/serial167.h
+deleted file mode 100644
+index 59c81b7..0000000
+--- a/include/linux/serial167.h
++++ /dev/null
+@@ -1,157 +0,0 @@
+-/*
+- * serial167.h
+- *
+- * Richard Hirst [richard@sleepie.demon.co.uk]
+- *
+- * Based on cyclades.h
+- */
+-
+-struct cyclades_monitor {
+-        unsigned long           int_count;
+-        unsigned long           char_count;
+-        unsigned long           char_max;
+-        unsigned long           char_last;
+-};
+-
+-/*
+- * This is our internal structure for each serial port's state.
+- * 
+- * Many fields are paralleled by the structure used by the serial_struct
+- * structure.
+- *
+- * For definitions of the flags field, see tty.h
+- */
+-
+-struct cyclades_port {
+-	int                     magic;
+-	int                     type;
+-	int			card;
+-	int			line;
+-	int			flags; 		/* defined in tty.h */
+-	struct tty_struct 	*tty;
+-	int			read_status_mask;
+-	int			timeout;
+-	int			xmit_fifo_size;
+-	int                     cor1,cor2,cor3,cor4,cor5,cor6,cor7;
+-	int                     tbpr,tco,rbpr,rco;
+-	int			ignore_status_mask;
+-	int			close_delay;
+-	int			IER; 	/* Interrupt Enable Register */
+-	unsigned long		last_active;
+-	int			count;	/* # of fd on device */
+-	int                     x_char; /* to be pushed out ASAP */
+-	int                     x_break;
+-	int			blocked_open; /* # of blocked opens */
+-	unsigned char 		*xmit_buf;
+-	int			xmit_head;
+-	int			xmit_tail;
+-	int			xmit_cnt;
+-        int                     default_threshold;
+-        int                     default_timeout;
+-	wait_queue_head_t	open_wait;
+-	wait_queue_head_t	close_wait;
+-        struct cyclades_monitor mon;
+-};
+-
+-#define CYCLADES_MAGIC  0x4359
+-
+-#define CYGETMON                0x435901
+-#define CYGETTHRESH             0x435902
+-#define CYSETTHRESH             0x435903
+-#define CYGETDEFTHRESH          0x435904
+-#define CYSETDEFTHRESH          0x435905
+-#define CYGETTIMEOUT            0x435906
+-#define CYSETTIMEOUT            0x435907
+-#define CYGETDEFTIMEOUT         0x435908
+-#define CYSETDEFTIMEOUT         0x435909
+-
+-#define CyMaxChipsPerCard 1
+-
+-/**** cd2401 registers ****/
+-
+-#define CyGFRCR         (0x81)
+-#define CyCCR		(0x13)
+-#define      CyCLR_CHAN		(0x40)
+-#define      CyINIT_CHAN	(0x20)
+-#define      CyCHIP_RESET	(0x10)
+-#define      CyENB_XMTR		(0x08)
+-#define      CyDIS_XMTR		(0x04)
+-#define      CyENB_RCVR		(0x02)
+-#define      CyDIS_RCVR		(0x01)
+-#define CyCAR		(0xee)
+-#define CyIER		(0x11)
+-#define      CyMdmCh		(0x80)
+-#define      CyRxExc		(0x20)
+-#define      CyRxData		(0x08)
+-#define      CyTxMpty		(0x02)
+-#define      CyTxRdy		(0x01)
+-#define CyLICR		(0x26)
+-#define CyRISR		(0x89)
+-#define      CyTIMEOUT		(0x80)
+-#define      CySPECHAR		(0x70)
+-#define      CyOVERRUN		(0x08)
+-#define      CyPARITY		(0x04)
+-#define      CyFRAME		(0x02)
+-#define      CyBREAK		(0x01)
+-#define CyREOIR		(0x84)
+-#define CyTEOIR		(0x85)
+-#define CyMEOIR		(0x86)
+-#define      CyNOTRANS		(0x08)
+-#define CyRFOC		(0x30)
+-#define CyRDR		(0xf8)
+-#define CyTDR		(0xf8)
+-#define CyMISR		(0x8b)
+-#define CyRISR		(0x89)
+-#define CyTISR		(0x8a)
+-#define CyMSVR1		(0xde)
+-#define CyMSVR2		(0xdf)
+-#define      CyDSR		(0x80)
+-#define      CyDCD		(0x40)
+-#define      CyCTS		(0x20)
+-#define      CyDTR		(0x02)
+-#define      CyRTS		(0x01)
+-#define CyRTPRL		(0x25)
+-#define CyRTPRH		(0x24)
+-#define CyCOR1		(0x10)
+-#define      CyPARITY_NONE	(0x00)
+-#define      CyPARITY_E		(0x40)
+-#define      CyPARITY_O		(0xC0)
+-#define      Cy_5_BITS		(0x04)
+-#define      Cy_6_BITS		(0x05)
+-#define      Cy_7_BITS		(0x06)
+-#define      Cy_8_BITS		(0x07)
+-#define CyCOR2		(0x17)
+-#define      CyETC		(0x20)
+-#define      CyCtsAE		(0x02)
+-#define CyCOR3		(0x16)
+-#define      Cy_1_STOP		(0x02)
+-#define      Cy_2_STOP		(0x04)
+-#define CyCOR4		(0x15)
+-#define      CyREC_FIFO		(0x0F)  /* Receive FIFO threshold */
+-#define CyCOR5		(0x14)
+-#define CyCOR6		(0x18)
+-#define CyCOR7		(0x07)
+-#define CyRBPR		(0xcb)
+-#define CyRCOR		(0xc8)
+-#define CyTBPR		(0xc3)
+-#define CyTCOR		(0xc0)
+-#define CySCHR1		(0x1f)
+-#define CySCHR2 	(0x1e)
+-#define CyTPR		(0xda)
+-#define CyPILR1		(0xe3)
+-#define CyPILR2		(0xe0)
+-#define CyPILR3		(0xe1)
+-#define CyCMR		(0x1b)
+-#define      CyASYNC		(0x02)
+-#define CyLICR          (0x26)
+-#define CyLIVR          (0x09)
+-#define CySCRL		(0x23)
+-#define CySCRH		(0x22)
+-#define CyTFTC		(0x80)
+-
+-
+-/* max number of chars in the FIFO */
+-
+-#define CyMAX_CHAR_FIFO	12
+-
+-/***************************************************************************/
+diff --git a/include/linux/stallion.h b/include/linux/stallion.h
+deleted file mode 100644
+index 336af33c..0000000
+--- a/include/linux/stallion.h
++++ /dev/null
+@@ -1,147 +0,0 @@
+-/*****************************************************************************/
+-
+-/*
+- *	stallion.h  -- stallion multiport serial driver.
+- *
+- *	Copyright (C) 1996-1998  Stallion Technologies
+- *	Copyright (C) 1994-1996  Greg Ungerer.
+- *
+- *	This program is free software; you can redistribute it and/or modify
+- *	it under the terms of the GNU General Public License as published by
+- *	the Free Software Foundation; either version 2 of the License, or
+- *	(at your option) any later version.
+- *
+- *	This program is distributed in the hope that it will be useful,
+- *	but WITHOUT ANY WARRANTY; without even the implied warranty of
+- *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- *	GNU General Public License for more details.
+- *
+- *	You should have received a copy of the GNU General Public License
+- *	along with this program; if not, write to the Free Software
+- *	Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+- */
+-
+-/*****************************************************************************/
+-#ifndef	_STALLION_H
+-#define	_STALLION_H
+-/*****************************************************************************/
+-
+-/*
+- *	Define important driver constants here.
+- */
+-#define	STL_MAXBRDS		4
+-#define	STL_MAXPANELS		4
+-#define	STL_MAXBANKS		8
+-#define	STL_PORTSPERPANEL	16
+-#define	STL_MAXPORTS		64
+-#define	STL_MAXDEVS		(STL_MAXBRDS * STL_MAXPORTS)
+-
+-
+-/*
+- *	Define a set of structures to hold all the board/panel/port info
+- *	for our ports. These will be dynamically allocated as required.
+- */
+-
+-/*
+- *	Define a ring queue structure for each port. This will hold the
+- *	TX data waiting to be output. Characters are fed into this buffer
+- *	from the line discipline (or even direct from user space!) and
+- *	then fed into the UARTs during interrupts. Will use a classic ring
+- *	queue here for this. The good thing about this type of ring queue
+- *	is that the head and tail pointers can be updated without interrupt
+- *	protection - since "write" code only needs to change the head, and
+- *	interrupt code only needs to change the tail.
+- */
+-struct stlrq {
+-	char	*buf;
+-	char	*head;
+-	char	*tail;
+-};
+-
+-/*
+- *	Port, panel and board structures to hold status info about each.
+- *	The board structure contains pointers to structures for each panel
+- *	connected to it, and in turn each panel structure contains pointers
+- *	for each port structure for each port on that panel. Note that
+- *	the port structure also contains the board and panel number that it
+- *	is associated with, this makes it (fairly) easy to get back to the
+- *	board/panel info for a port.
+- */
+-struct stlport {
+-	unsigned long		magic;
+-	struct tty_port		port;
+-	unsigned int		portnr;
+-	unsigned int		panelnr;
+-	unsigned int		brdnr;
+-	int			ioaddr;
+-	int			uartaddr;
+-	unsigned int		pagenr;
+-	unsigned long		istate;
+-	int			baud_base;
+-	int			custom_divisor;
+-	int			close_delay;
+-	int			closing_wait;
+-	int			openwaitcnt;
+-	int			brklen;
+-	unsigned int		sigs;
+-	unsigned int		rxignoremsk;
+-	unsigned int		rxmarkmsk;
+-	unsigned int		imr;
+-	unsigned int		crenable;
+-	unsigned long		clk;
+-	unsigned long		hwid;
+-	void			*uartp;
+-	comstats_t		stats;
+-	struct stlrq		tx;
+-};
+-
+-struct stlpanel {
+-	unsigned long	magic;
+-	unsigned int	panelnr;
+-	unsigned int	brdnr;
+-	unsigned int	pagenr;
+-	unsigned int	nrports;
+-	int		iobase;
+-	void		*uartp;
+-	void		(*isr)(struct stlpanel *panelp, unsigned int iobase);
+-	unsigned int	hwid;
+-	unsigned int	ackmask;
+-	struct stlport	*ports[STL_PORTSPERPANEL];
+-};
+-
+-struct stlbrd {
+-	unsigned long	magic;
+-	unsigned int	brdnr;
+-	unsigned int	brdtype;
+-	unsigned int	state;
+-	unsigned int	nrpanels;
+-	unsigned int	nrports;
+-	unsigned int	nrbnks;
+-	int		irq;
+-	int		irqtype;
+-	int		(*isr)(struct stlbrd *brdp);
+-	unsigned int	ioaddr1;
+-	unsigned int	ioaddr2;
+-	unsigned int	iosize1;
+-	unsigned int	iosize2;
+-	unsigned int	iostatus;
+-	unsigned int	ioctrl;
+-	unsigned int	ioctrlval;
+-	unsigned int	hwid;
+-	unsigned long	clk;
+-	unsigned int	bnkpageaddr[STL_MAXBANKS];
+-	unsigned int	bnkstataddr[STL_MAXBANKS];
+-	struct stlpanel	*bnk2panel[STL_MAXBANKS];
+-	struct stlpanel	*panels[STL_MAXPANELS];
+-};
+-
+-
+-/*
+- *	Define MAGIC numbers used for above structures.
+- */
+-#define	STL_PORTMAGIC	0x5a7182c9
+-#define	STL_PANELMAGIC	0x7ef621a1
+-#define	STL_BOARDMAGIC	0xa2267f52
+-
+-/*****************************************************************************/
+-#endif
 -- 
-1.7.8.6
+1.7.7.6
+
+
 
