@@ -1,107 +1,409 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933233Ab2FHOpc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 10:45:32 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45551 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751799Ab2FHOpb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 10:45:31 -0400
-Subject: Re: [PATCH] perf/x86: check ucode before disabling PEBS on
- SandyBridge
-From: Peter Zijlstra <peterz@infradead.org>
-To: Borislav Petkov <borislav.petkov@amd.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Stephane Eranian <eranian@google.com>,
-        linux-kernel@vger.kernel.org, andi@firstfloor.org, mingo@elte.hu,
-        ming.m.lin@intel.com, Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Dimitri Sivanich <sivanich@sgi.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>
-In-Reply-To: <20120608143636.GG31359@aftab.osrc.amd.com>
-References: <1339065932.23343.18.camel@twins>
-	 <CABPqkBQ=tLXXsgvzQx+i01Owm4MM8m=6cEVVi4ab64gOiTTBYQ@mail.gmail.com>
-	 <1339067757.23343.21.camel@twins> <20120608093513.GA22520@gmail.com>
-	 <1339149613.23343.52.camel@twins> <1339161972.2507.13.camel@laptop>
-	 <20120608135117.GB31359@aftab.osrc.amd.com>
-	 <1339163669.2507.16.camel@laptop>
-	 <20120608141543.GD31359@aftab.osrc.amd.com>
-	 <1339165250.2507.27.camel@laptop>
-	 <20120608143636.GG31359@aftab.osrc.amd.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 08 Jun 2012 16:45:18 +0200
-Message-ID: <1339166718.2507.37.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S934310Ab2FHOqQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 10:46:16 -0400
+Received: from fieldses.org ([174.143.236.118]:46236 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751799Ab2FHOqO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 10:46:14 -0400
+Date: Fri, 8 Jun 2012 10:46:02 -0400
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Miklos Szeredi <mszeredi@suse.cz>, Jan Kara <jack@suse.cz>
+Subject: Re: processes hung after sys_renameat, and 'missing' processes
+Message-ID: <20120608144602.GA17251@fieldses.org>
+References: <CA+55aFwCusEdMq3_3TAXSZ=+kbN7H6AbnngVaagAZw=ZpicckQ@mail.gmail.com>
+ <20120603231709.GP30000@ZenIV.linux.org.uk>
+ <20120603232820.GQ30000@ZenIV.linux.org.uk>
+ <20120606194233.GA1537@redhat.com>
+ <CA+55aFwxFVLPk4-dp73uccKXepKwjpGFgh0NW1u8d0zYzr=hBA@mail.gmail.com>
+ <20120606230040.GA18089@redhat.com>
+ <CA+55aFx_oREEd2XS_aG7PJ7dwzWjgx689V_uRPGWpVS01_++6A@mail.gmail.com>
+ <1339064814.23343.14.camel@twins>
+ <CA+55aFycTypSSvjOB-KXzpK86ALifGbrO2s4HRc69CqyoX=qJA@mail.gmail.com>
+ <1339140698.23343.26.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339140698.23343.26.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-06-08 at 16:36 +0200, Borislav Petkov wrote:
-> On Fri, Jun 08, 2012 at 04:20:50PM +0200, Peter Zijlstra wrote:
-> > On Fri, 2012-06-08 at 16:15 +0200, Borislav Petkov wrote:
-> > > have a variable which gets initialized to the number of all CPUs and
-> > > each time ->apply_microcode() finishes by returning 0, we decrement it
-> > > once.
+On Fri, Jun 08, 2012 at 09:31:38AM +0200, Peter Zijlstra wrote:
+> On Thu, 2012-06-07 at 08:30 -0700, Linus Torvalds wrote:
+> > On Thu, Jun 7, 2012 at 3:26 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > > On Wed, 2012-06-06 at 16:31 -0700, Linus Torvalds wrote:
+> > >> PeterZ - the fact that we use mutex_lock_nested with
+> > >> I_MUTEX_PARENT/I_MUTEX_CHILD/nothing hopefully doesn't screw us up in
+> > >> case we get it wrong, right?
+> > >
+> > > Sadly, if you get that annotation wrong you can annotate an actual
+> > > deadlock away.
+
+What's a (contrived as you want) example where that happens?
+
+> > > This the reason you have to be very careful when
+> > > annotating stuff.
+
+Or alternatively--what do I need to check before I call
+mutex_lock_nested?
+
+--b.
+
 > > 
-> > > 
-> > > Hmm, I'm probably missing some obscure case. 
-> > 
-> > Since its all per-cpu sysfs muck, userspace could update a random
-> > subsets of cpus.. leaving us hanging.
+> > Is that true even if you can see an actual deadlock on the lock *instances*?
 > 
-> I'm afraid I don't understand - when you modprobe microcode.ko,
-> it goes and loads /lib/firmware/amd-ucode/microcode_amd.bin (in
-> the AMD case) on each CPU when the driver gets regged through
-> subsys_interface_register().
+> Yep.. :/
 > 
-> It calls ->add_dev() on each CPU - this should be guaranteed because it
-> uses the cpu_subsys from drivers/base/cpu.c which onlines all CPUs, I'd
-> assume.
+> > The point of the locking classes (to me) was always that you could see
+> > the deadlock even if it didn't *actually* happen, just *potentially*
+> > happened. If the lock classes then mean that that hides an actual
+> > deadlock information, that's a big downside.
 > 
-> So, I'd say that once subsys_interface_register() returns, we have
-> updated ucode on all CPUs, if successful...
+> Right, so in order to report a deadlock on instances we'd have to do a
+> full lock graph walk on every contended lock acquisition. This is quite
+> expensive.
 > 
-> We probably could run the notifier at that moment, before we do
-> put_online_cpus().
-
-I was thinking about reload_store(), that seems to only reload ucode for
-a single cpu.
-
-> > The 'bestestet' idea I came up with is doing the verify thing I have
-> > from a delayed work -- say 1 second into the future. That way, when
-> > there's lots of cpus they all try and enqueue the one work, which at
-> > the end executes only once, provided the entire update scan took less
-> > than the second.
+> Although I can look into doing that from say the NMI watchdog and/or
+> some sysrq key.
 > 
-> You're saying, you want the last CPU that gets to update its microcode
-> gets to also run the delayed work...? Probably, I'd assume ucode update
-> on a single CPU takes less than a second IIUC.
-
-Nah.. it'll probably be the first. But it doesn't matter which cpu does
-it. So the idea was:
-
-static void intel_snb_verify_work(struct work_struct *work)
-{
-	/* do the verify thing.. */
-}
-
-static DECLARE_DELAYED_WORK(intel_snb_delayed_work, intel_snb_verify_ucode);
-
-static int intel_snb_ucode_notifier(struct notifier_block *self,
-                                   unsigned long action, void *_uci)
-{
-        /*
-         * Since ucode cannot be down-graded, and no future ucode revision
-         * is known to break PEBS again, we're ok with MICROCODE_CAN_UPDATE.
-         */
-
-        if (action == MICROCODE_UPDATED)
-		schedule_delayed_work(&intel_snb_delayed_work, HZ);
-
-        return NOTIFY_DONE;
-}
-
-Thus it will queue the delayed work when the work isn't already queued
-for execution. Resulting in the work only happening once a second (at
-most). 
-
+> > And yeah, that really means that we absolutely *have* to get the
+> > instance data in the lock debug printout, since we can't see deadlocks
+> > any other way. 
+> 
+> Well, typically deadlocks aren't that hard to find once you trigger
+> them. The current case of course being the exception to that rule.. 
+> 
+> > Can you check the compile error that Dave reported for
+> > your patch, because right now Dave is running without it, afaik, due
+> > to your lock-instance patch not really working in practice.
+> 
+> Oh, missed that in the thread.. yeah here goes.
+> 
+> 
+> Now also compile tested with CONFIG_LOCK_STAT...
+> 
+> ---
+>  include/linux/lockdep.h     |   44 ++++++++-------
+>  include/trace/events/lock.h |    3 -
+>  kernel/lockdep.c            |  128 ++++++++++++++++++++++++++++----------------
+>  3 files changed, 107 insertions(+), 68 deletions(-)
+> 
+> --- a/include/linux/lockdep.h
+> +++ b/include/linux/lockdep.h
+> @@ -211,6 +211,13 @@ struct lock_chain {
+>   */
+>  #define MAX_LOCKDEP_KEYS		((1UL << MAX_LOCKDEP_KEYS_BITS) - 1)
+>  
+> +enum held_lock_state {
+> +	hls_unheld = 0,
+> +	hls_acquiring,
+> +	hls_contended,
+> +	hls_acquired,
+> +};
+> +
+>  struct held_lock {
+>  	/*
+>  	 * One-way hash of the dependency chain up to this point. We
+> @@ -254,7 +261,10 @@ struct held_lock {
+>  	unsigned int read:2;        /* see lock_acquire() comment */
+>  	unsigned int check:2;       /* see lock_acquire() comment */
+>  	unsigned int hardirqs_off:1;
+> -	unsigned int references:11;					/* 32 bits */
+> +	unsigned int state:2;	    /* see held_lock_state */
+> +									/* 9 bit hole */
+> +	unsigned int references:16;
+> +									/* 16 bit hole */
+>  };
+>  
+>  /*
+> @@ -363,6 +373,18 @@ extern void lockdep_trace_alloc(gfp_t ma
+>  
+>  #define lockdep_recursing(tsk)	((tsk)->lockdep_recursion)
+>  
+> +extern void lock_contended(struct lockdep_map *lock, unsigned long ip);
+> +extern void lock_acquired(struct lockdep_map *lock, unsigned long ip);
+> +
+> +#define LOCK_CONTENDED(_lock, try, lock)			\
+> +do {								\
+> +	if (!try(_lock)) {					\
+> +		lock_contended(&(_lock)->dep_map, _RET_IP_);	\
+> +		lock(_lock);					\
+> +	}							\
+> +	lock_acquired(&(_lock)->dep_map, _RET_IP_);			\
+> +} while (0)
+> +
+>  #else /* !LOCKDEP */
+>  
+>  static inline void lockdep_off(void)
+> @@ -414,31 +436,13 @@ struct lock_class_key { };
+>  
+>  #define lockdep_recursing(tsk)			(0)
+>  
+> -#endif /* !LOCKDEP */
+> -
+> -#ifdef CONFIG_LOCK_STAT
+> -
+> -extern void lock_contended(struct lockdep_map *lock, unsigned long ip);
+> -extern void lock_acquired(struct lockdep_map *lock, unsigned long ip);
+> -
+> -#define LOCK_CONTENDED(_lock, try, lock)			\
+> -do {								\
+> -	if (!try(_lock)) {					\
+> -		lock_contended(&(_lock)->dep_map, _RET_IP_);	\
+> -		lock(_lock);					\
+> -	}							\
+> -	lock_acquired(&(_lock)->dep_map, _RET_IP_);			\
+> -} while (0)
+> -
+> -#else /* CONFIG_LOCK_STAT */
+> -
+>  #define lock_contended(lockdep_map, ip) do {} while (0)
+>  #define lock_acquired(lockdep_map, ip) do {} while (0)
+>  
+>  #define LOCK_CONTENDED(_lock, try, lock) \
+>  	lock(_lock)
+>  
+> -#endif /* CONFIG_LOCK_STAT */
+> +#endif /* !LOCKDEP */
+>  
+>  #ifdef CONFIG_LOCKDEP
+>  
+> --- a/include/trace/events/lock.h
+> +++ b/include/trace/events/lock.h
+> @@ -61,8 +61,6 @@ DEFINE_EVENT(lock, lock_release,
+>  	TP_ARGS(lock, ip)
+>  );
+>  
+> -#ifdef CONFIG_LOCK_STAT
+> -
+>  DEFINE_EVENT(lock, lock_contended,
+>  
+>  	TP_PROTO(struct lockdep_map *lock, unsigned long ip),
+> @@ -78,7 +76,6 @@ DEFINE_EVENT(lock, lock_acquired,
+>  );
+>  
+>  #endif
+> -#endif
+>  
+>  #endif /* _TRACE_LOCK_H */
+>  
+> --- a/kernel/lockdep.c
+> +++ b/kernel/lockdep.c
+> @@ -541,10 +541,23 @@ static void print_lockdep_cache(struct l
+>  	printk("%s", name);
+>  }
+>  
+> +static void print_lock_state(struct held_lock *hlock)
+> +{
+> +	switch (hlock->state) {
+> +	/* holding an unheld lock is fail!  */
+> +	case hls_unheld:	printk("FAIL:    "); break;
+> +
+> +	case hls_acquiring:	/* fall-through */
+> +	case hls_contended:	printk("blocked: "); break;
+> +	case hls_acquired:	printk("held:    "); break;
+> +	};
+> +}
+> +
+>  static void print_lock(struct held_lock *hlock)
+>  {
+> +	print_lock_state(hlock);
+>  	print_lock_name(hlock_class(hlock));
+> -	printk(", at: ");
+> +	printk(", instance: %p, at: ", hlock->instance);
+>  	print_ip_sym(hlock->acquire_ip);
+>  }
+>  
+> @@ -556,7 +569,7 @@ static void lockdep_print_held_locks(str
+>  		printk("no locks held by %s/%d.\n", curr->comm, task_pid_nr(curr));
+>  		return;
+>  	}
+> -	printk("%d lock%s held by %s/%d:\n",
+> +	printk("%d lock%s on stack by %s/%d:\n",
+>  		depth, depth > 1 ? "s" : "", curr->comm, task_pid_nr(curr));
+>  
+>  	for (i = 0; i < depth; i++) {
+> @@ -3093,6 +3106,7 @@ static int __lock_acquire(struct lockdep
+>  	hlock->check = check;
+>  	hlock->hardirqs_off = !!hardirqs_off;
+>  	hlock->references = references;
+> +	hlock->state = hls_acquiring;
+>  #ifdef CONFIG_LOCK_STAT
+>  	hlock->waittime_stamp = 0;
+>  	hlock->holdtime_stamp = lockstat_clock();
+> @@ -3607,7 +3621,6 @@ void lockdep_clear_current_reclaim_state
+>  	current->lockdep_reclaim_gfp = 0;
+>  }
+>  
+> -#ifdef CONFIG_LOCK_STAT
+>  static int
+>  print_lock_contention_bug(struct task_struct *curr, struct lockdep_map *lock,
+>  			   unsigned long ip)
+> @@ -3637,14 +3650,73 @@ print_lock_contention_bug(struct task_st
+>  	return 0;
+>  }
+>  
+> +#ifdef CONFIG_LOCK_STAT
+> +
+> +static void lockstat_contended(struct held_lock *hlock, unsigned long ip)
+> +{
+> +	struct lockdep_map *lock = hlock->instance;
+> +	int contention_point, contending_point;
+> +	struct lock_class_stats *stats;
+> +
+> +	hlock->waittime_stamp = lockstat_clock();
+> +
+> +	contention_point = lock_point(hlock_class(hlock)->contention_point, ip);
+> +	contending_point = lock_point(hlock_class(hlock)->contending_point,
+> +				      lock->ip);
+> +
+> +	stats = get_lock_stats(hlock_class(hlock));
+> +	if (contention_point < LOCKSTAT_POINTS)
+> +		stats->contention_point[contention_point]++;
+> +	if (contending_point < LOCKSTAT_POINTS)
+> +		stats->contending_point[contending_point]++;
+> +	if (lock->cpu != smp_processor_id())
+> +		stats->bounces[bounce_contended + !!hlock->read]++;
+> +	put_lock_stats(stats);
+> +}
+> +
+> +static void lockstat_acquired(struct held_lock *hlock, unsigned long ip)
+> +{
+> +	struct lockdep_map *lock = hlock->instance;
+> +	struct lock_class_stats *stats;
+> +	u64 now, waittime = 0;
+> +	int cpu;
+> +
+> +	cpu = smp_processor_id();
+> +	if (hlock->waittime_stamp) {
+> +		now = lockstat_clock();
+> +		waittime = now - hlock->waittime_stamp;
+> +		hlock->holdtime_stamp = now;
+> +	}
+> +
+> +	stats = get_lock_stats(hlock_class(hlock));
+> +	if (waittime) {
+> +		if (hlock->read)
+> +			lock_time_inc(&stats->read_waittime, waittime);
+> +		else
+> +			lock_time_inc(&stats->write_waittime, waittime);
+> +	}
+> +	if (lock->cpu != cpu)
+> +		stats->bounces[bounce_acquired + !!hlock->read]++;
+> +	put_lock_stats(stats);
+> +
+> +	lock->cpu = cpu;
+> +	lock->ip = ip;
+> +}
+> +
+> +#else /* CONFIG_LOCK_STAT */
+> +
+> +static inline void lockstat_contended(struct held_lock *hlock, unsigned long ip) { }
+> +static inline void lockstat_acquired(struct held_lock *hlock, unsigned long ip) { }
+> +
+> +#endif /* CONFIG_LOCK_STAT */
+> +
+>  static void
+>  __lock_contended(struct lockdep_map *lock, unsigned long ip)
+>  {
+>  	struct task_struct *curr = current;
+>  	struct held_lock *hlock, *prev_hlock;
+> -	struct lock_class_stats *stats;
+>  	unsigned int depth;
+> -	int i, contention_point, contending_point;
+> +	int i;
+>  
+>  	depth = curr->lockdep_depth;
+>  	/*
+> @@ -3673,20 +3745,8 @@ __lock_contended(struct lockdep_map *loc
+>  	if (hlock->instance != lock)
+>  		return;
+>  
+> -	hlock->waittime_stamp = lockstat_clock();
+> -
+> -	contention_point = lock_point(hlock_class(hlock)->contention_point, ip);
+> -	contending_point = lock_point(hlock_class(hlock)->contending_point,
+> -				      lock->ip);
+> -
+> -	stats = get_lock_stats(hlock_class(hlock));
+> -	if (contention_point < LOCKSTAT_POINTS)
+> -		stats->contention_point[contention_point]++;
+> -	if (contending_point < LOCKSTAT_POINTS)
+> -		stats->contending_point[contending_point]++;
+> -	if (lock->cpu != smp_processor_id())
+> -		stats->bounces[bounce_contended + !!hlock->read]++;
+> -	put_lock_stats(stats);
+> +	hlock->state = hls_contended;
+> +	lockstat_contended(hlock, ip);
+>  }
+>  
+>  static void
+> @@ -3694,10 +3754,8 @@ __lock_acquired(struct lockdep_map *lock
+>  {
+>  	struct task_struct *curr = current;
+>  	struct held_lock *hlock, *prev_hlock;
+> -	struct lock_class_stats *stats;
+>  	unsigned int depth;
+> -	u64 now, waittime = 0;
+> -	int i, cpu;
+> +	int i;
+>  
+>  	depth = curr->lockdep_depth;
+>  	/*
+> @@ -3726,28 +3784,8 @@ __lock_acquired(struct lockdep_map *lock
+>  	if (hlock->instance != lock)
+>  		return;
+>  
+> -	cpu = smp_processor_id();
+> -	if (hlock->waittime_stamp) {
+> -		now = lockstat_clock();
+> -		waittime = now - hlock->waittime_stamp;
+> -		hlock->holdtime_stamp = now;
+> -	}
+> -
+> -	trace_lock_acquired(lock, ip);
+> -
+> -	stats = get_lock_stats(hlock_class(hlock));
+> -	if (waittime) {
+> -		if (hlock->read)
+> -			lock_time_inc(&stats->read_waittime, waittime);
+> -		else
+> -			lock_time_inc(&stats->write_waittime, waittime);
+> -	}
+> -	if (lock->cpu != cpu)
+> -		stats->bounces[bounce_acquired + !!hlock->read]++;
+> -	put_lock_stats(stats);
+> -
+> -	lock->cpu = cpu;
+> -	lock->ip = ip;
+> +	hlock->state = hls_acquired;
+> +	lockstat_acquired(hlock, ip);
+>  }
+>  
+>  void lock_contended(struct lockdep_map *lock, unsigned long ip)
+> @@ -3783,12 +3821,12 @@ void lock_acquired(struct lockdep_map *l
+>  	raw_local_irq_save(flags);
+>  	check_flags(flags);
+>  	current->lockdep_recursion = 1;
+> +	trace_lock_acquired(lock, ip);
+>  	__lock_acquired(lock, ip);
+>  	current->lockdep_recursion = 0;
+>  	raw_local_irq_restore(flags);
+>  }
+>  EXPORT_SYMBOL_GPL(lock_acquired);
+> -#endif
+>  
+>  /*
+>   * Used by the testsuite, sanitize the validator state
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
