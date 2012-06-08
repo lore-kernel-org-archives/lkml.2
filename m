@@ -1,117 +1,286 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964845Ab2FHVSg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 17:18:36 -0400
-Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:23944
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752256Ab2FHVSe (ORCPT
+	id S1759949Ab2FHVSt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 17:18:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34520 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753651Ab2FHVSf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 17:18:34 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 2
-X-BigFish: VPS2(z1823lz98dI1432Izz1202hzzz2dh668h839h944hd25hf0ah)
-X-WSS-ID: 0M5BHUS-01-2W5-02
-X-M-MSG: 
-Date: Fri, 8 Jun 2012 23:16:08 +0200
-From: Borislav Petkov <borislav.petkov@amd.com>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Stephane Eranian <eranian@google.com>, <linux-kernel@vger.kernel.org>,
-        <andi@firstfloor.org>, <mingo@elte.hu>, <ming.m.lin@intel.com>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Dimitri Sivanich <sivanich@sgi.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>
-Subject: Re: [PATCH] perf/x86: check ucode before disabling PEBS on
- SandyBridge
-Message-ID: <20120608211608.GE5220@aftab.osrc.amd.com>
-References: <1339064319.23343.13.camel@twins>
- <CABPqkBQ+p5rcuxpXCTLMXPM+awAHhQ6mP9-WzVh5GWtn2GyfrA@mail.gmail.com>
- <1339065932.23343.18.camel@twins>
- <CABPqkBQ=tLXXsgvzQx+i01Owm4MM8m=6cEVVi4ab64gOiTTBYQ@mail.gmail.com>
- <1339067757.23343.21.camel@twins>
- <20120608093513.GA22520@gmail.com>
- <1339149613.23343.52.camel@twins>
- <1339161972.2507.13.camel@laptop>
- <20120608135117.GB31359@aftab.osrc.amd.com>
- <20120608210239.GB16470@khazad-dum.debian.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20120608210239.GB16470@khazad-dum.debian.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+	Fri, 8 Jun 2012 17:18:35 -0400
+Date: Fri, 8 Jun 2012 14:18:33 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Dave Jones <davej@redhat.com>, Cong Wang <amwang@redhat.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+        Rik van Riel <riel@redhat.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH v10] mm: compaction: handle incorrect MIGRATE_UNMOVABLE
+ type pageblocks
+Message-Id: <20120608141833.d105153e.akpm@linux-foundation.org>
+In-Reply-To: <201206081046.32382.b.zolnierkie@samsung.com>
+References: <201206081046.32382.b.zolnierkie@samsung.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 08, 2012 at 06:02:39PM -0300, Henrique de Moraes Holschuh wrote:
-> > Reportedly, there are some obscure systems which need different
-> > microcode versions per CPU:
-> > 
-> > http://lkml.indiana.edu/hypermail/linux/kernel/1105.3/01010.html
+On Fri, 08 Jun 2012 10:46:32 +0200
+Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com> wrote:
+
 > 
-> I wrote that email you linked above.  All it means is that you can have
-> more than one microcode *type* per system, because you can have more
-> than one processor type per system.
-
-I know ;).
-
-Btw, with microcode type you mean two or more different versions of
-microcode which the respective CPUs need, right?
-
-> The lack of per-system microcode handling is, as far as I am concerned,
-> a rather annoying misfeature, plain and simple.  A per-core interface
-> that lets you have mismatched microcode across cores of the same type
-> (i.e. that take the same microcode) is, IMO, a bottomless pit of pain
-> and suffering which should diediediediedie as soon as possible.
-
-Yeah, but we need to support your use case where you have mixed
-processor revisions and you want them to get the microcode suitable for
-each one of them.
-
-Otherwise, I'm all for making it per-system too. Or are you saying you
-want to have one per-system interface and not per-CPU like what we have
-now?
-
-/sys/devices/system/cpu/cpu0/microcode
-/sys/devices/system/cpu/cpu1/microcode
-...
-
-> It just means the firmware core has to do a per-cpu job, not that we
-> should have mismatched microcodes across the same type of cpus, or
-> even that we should have the required per-cpu handling of firmware
-> exposed to the rest of the kernel and the worst of it all, exposed to
-> userspace.
-
-Yeah.
-
-> > Actually, the deal here is that you could have received microcode
-> > already from BIOS and you won't have to necessarily load ucode from
-> > userspace with the Linux ucode loader.
+> Hi,
 > 
-> Or from an enhanced bootloader.  Yes.
-
-Yeah, I'd like to see that too.
-
-> > Btw, this is why we wanted to load ucode as early as possible but
-> > there's no progress on the whole thing right now...
+> This version is much simpler as it just uses __count_immobile_pages()
+> instead of using its own open coded version and it integrates changes
+> from Minchan Kim (without page_count change as it doesn't seem correct
+> and __count_immobile_pages() does the check in the standard way; if it
+> still is a problem I think that removing 1st phase check altogether
+> would be better instead of adding more locking complexity).
 > 
-> Which is a pity.
+> The patch also adds compact_rescued_unmovable_blocks vmevent to vmstats
+> to make it possible to easily check if the code is working in practice.
+> 
+> Best regards,
+> --
+> Bartlomiej Zolnierkiewicz
+> Samsung Poland R&D Center
+> 
+> 
+> From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> Subject: [PATCH v10] mm: compaction: handle incorrect MIGRATE_UNMOVABLE type pageblocks
+> 
+> When MIGRATE_UNMOVABLE pages are freed from MIGRATE_UNMOVABLE
+> type pageblock (and some MIGRATE_MOVABLE pages are left in it)
+> waiting until an allocation takes ownership of the block may
+> take too long.  The type of the pageblock remains unchanged
+> so the pageblock cannot be used as a migration target during
+> compaction.
+> 
+> Fix it by:
+> 
+> * Adding enum compact_mode (COMPACT_ASYNC_[MOVABLE,UNMOVABLE],
+>   and COMPACT_SYNC) and then converting sync field in struct
+>   compact_control to use it.
+> 
+> * Adding nr_pageblocks_skipped field to struct compact_control
+>   and tracking how many destination pageblocks were of
+>   MIGRATE_UNMOVABLE type.  If COMPACT_ASYNC_MOVABLE mode compaction
+>   ran fully in try_to_compact_pages() (COMPACT_COMPLETE) it implies
+>   that there is not a suitable page for allocation.  In this case
+>   then check how if there were enough MIGRATE_UNMOVABLE pageblocks
+>   to try a second pass in COMPACT_ASYNC_UNMOVABLE mode.
+> 
+> * Scanning the MIGRATE_UNMOVABLE pageblocks (during COMPACT_SYNC
+>   and COMPACT_ASYNC_UNMOVABLE compaction modes) and building
+>   a count based on finding PageBuddy pages, page_count(page) == 0
+>   or PageLRU pages.  If all pages within the MIGRATE_UNMOVABLE
+>   pageblock are in one of those three sets change the whole
+>   pageblock type to MIGRATE_MOVABLE.
+> 
+> My particular test case (on a ARM EXYNOS4 device with 512 MiB,
+> which means 131072 standard 4KiB pages in 'Normal' zone) is to:
+> - allocate 95000 pages for kernel's usage
+> - free every second page (47500 pages) of memory just allocated
+> - allocate and use 60000 pages from user space
+> - free remaining 60000 pages of kernel memory
+> (now we have fragmented memory occupied mostly by user space pages)
+> - try to allocate 100 order-9 (2048 KiB) pages for kernel's usage
+> 
+> The results:
+> - with compaction disabled I get 10 successful allocations
+> - with compaction enabled - 11 successful allocations
+> - with this patch I'm able to get 25 successful allocations
+> 
+> NOTE: If we can make kswapd aware of order-0 request during
+> compaction, we can enhance kswapd with changing mode to
+> COMPACT_ASYNC_FULL (COMPACT_ASYNC_MOVABLE + COMPACT_ASYNC_UNMOVABLE).
+> Please see the following thread:
+> 
+> 	http://marc.info/?l=linux-mm&m=133552069417068&w=2
+> 
+>
+> ...
+>
+> --- a/include/linux/compaction.h	2012-06-08 09:01:32.041681656 +0200
+> +++ b/include/linux/compaction.h	2012-06-08 09:01:35.697681651 +0200
+> @@ -1,6 +1,8 @@
+>  #ifndef _LINUX_COMPACTION_H
+>  #define _LINUX_COMPACTION_H
+>  
+> +#include <linux/node.h>
 
-Well, there was this other effort with ACPI tables passed on as blobs
-through the initrd and it was an interesting one because we don't have
-to change the bootloaders but it kinda died out too.
+Why was this addition needed?  (I think I asked this before)
 
-I know how this is going to happen: some hw vendor will really need to
-load ucode very early and will have to code the thing up :-).
+>  /* Return values for compact_zone() and try_to_compact_pages() */
+>  /* compaction didn't start as it was not possible or direct reclaim was more suitable */
+>  #define COMPACT_SKIPPED		0
+>
+> ...
+>
+> +static bool can_rescue_unmovable_pageblock(struct page *page)
+> +{
+> +	struct zone *zone;
+> +	unsigned long pfn, start_pfn, end_pfn;
+> +	struct page *start_page;
+> +
+> +	zone = page_zone(page);
+> +	pfn = page_to_pfn(page);
+> +	start_pfn = pfn & ~(pageblock_nr_pages - 1);
+> +	start_page = pfn_to_page(start_pfn);
+> +
+> +	/*
+> +	 * Race with page allocator/reclaimer can happen so that it can
+> +	 * deceive unmovable block to migratable type on this pageblock.
+> +	 * It could regress on anti-fragmentation but it's rare and not
+> +	 * critical.
+> +	 */
 
--- 
-Regards/Gruss,
-Boris.
+This is quite ungramattical and needs a rewrite, please.  Suggest the
+use of well-understood terms MIGRATE_UNMOVABLE, MIGRATE_MOVABLE etc
+rather than "unmovable block", etc.
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+Please explain "could regress" and also explain why it is "not critical".
+
+> +	return __count_immobile_pages(zone, start_page, 0);
+> +}
+> +
+> +static void rescue_unmovable_pageblock(struct page *page)
+> +{
+> +	set_pageblock_migratetype(page, MIGRATE_MOVABLE);
+> +	move_freepages_block(page_zone(page), page, MIGRATE_MOVABLE);
+> +
+> +	count_vm_event(COMPACT_RESCUED_UNMOVABLE_BLOCKS);
+> +}
+> +
+> +/*
+> + * MIGRATE_TARGET : good for migration target
+> + * RESCUE_UNMOVABLE_TARTET : good only if we can rescue the unmovable pageblock.
+
+s/TARTET/TARGET/
+
+> + * UNMOVABLE_TARGET : can't migrate because it's a page in unmovable pageblock.
+> + * SKIP_TARGET : can't migrate by another reasons.
+> + */
+> +enum smt_result {
+> +	MIGRATE_TARGET,
+> +	RESCUE_UNMOVABLE_TARGET,
+> +	UNMOVABLE_TARGET,
+> +	SKIP_TARGET,
+> +};
+>  
+>
+> ...
+>
+> @@ -5476,8 +5476,7 @@ void set_pageblock_flags_group(struct pa
+>   * page allocater never alloc memory from ISOLATE block.
+>   */
+>  
+> -static int
+> -__count_immobile_pages(struct zone *zone, struct page *page, int count)
+> +int __count_immobile_pages(struct zone *zone, struct page *page, int count)
+
+We may as well fix the return type of this while we're in there.  It
+should be bool.
+
+Also, the comment over __count_immobile_pages() is utter rubbish.  Can
+we please cook up a new one?  Something human-readable which also
+describes the return value.
+
+>  {
+>  	unsigned long pfn, iter, found;
+>  	int mt;
+> @@ -5500,6 +5499,11 @@ __count_immobile_pages(struct zone *zone
+>  			continue;
+>  
+>  		page = pfn_to_page(check);
+> +
+> +		/* Do not deal with pageblocks that overlap zones */
+> +		if (page_zone(page) != zone)
+> +			return false;
+
+I don't really understand this bit.  Wasn't it wrong to walk across
+zones in the original code?  Did you do something which will newly
+cause this to walk between zones?  It doesn't seem to be changelogged,
+and the comment commits the common mistake of explaining "what" but not
+"why".
+
+
+>  		if (!page_count(page)) {
+>  			if (PageBuddy(page))
+>  				iter += (1 << page_order(page)) - 1;
+>
+> ...
+>
+
+A few tweaks:
+
+--- a/mm/compaction.c~mm-compaction-handle-incorrect-migrate_unmovable-type-pageblocks-fix
++++ a/mm/compaction.c
+@@ -394,10 +394,10 @@ static void rescue_unmovable_pageblock(s
+ }
+ 
+ /*
+- * MIGRATE_TARGET : good for migration target
+- * RESCUE_UNMOVABLE_TARTET : good only if we can rescue the unmovable pageblock.
+- * UNMOVABLE_TARGET : can't migrate because it's a page in unmovable pageblock.
+- * SKIP_TARGET : can't migrate by another reasons.
++ * MIGRATE_TARGET: good for migration target
++ * RESCUE_UNMOVABLE_TARGET: good only if we can rescue the unmovable pageblock.
++ * UNMOVABLE_TARGET: can't migrate because it's a page in unmovable pageblock.
++ * SKIP_TARGET: can't migrate by another reasons.
+  */
+ enum smt_result {
+ 	MIGRATE_TARGET,
+@@ -407,9 +407,9 @@ enum smt_result {
+ };
+ 
+ /*
+- * Returns MIGRATE_TARGET if the page is within a block
+- * suitable for migration to, UNMOVABLE_TARGET if the page
+- * is within a MIGRATE_UNMOVABLE block, SKIP_TARGET otherwise.
++ * Returns MIGRATE_TARGET if the page is within a block suitable for migration
++ * to, UNMOVABLE_TARGET if the page is within a MIGRATE_UNMOVABLE block,
++ * SKIP_TARGET otherwise.
+  */
+ static enum smt_result suitable_migration_target(struct page *page,
+ 			      struct compact_control *cc)
+--- a/mm/internal.h~mm-compaction-handle-incorrect-migrate_unmovable-type-pageblocks-fix
++++ a/mm/internal.h
+@@ -97,7 +97,7 @@ extern void putback_lru_page(struct page
+ extern void set_pageblock_migratetype(struct page *page, int migratetype);
+ extern int move_freepages_block(struct zone *zone, struct page *page,
+ 				int migratetype);
+-extern int __count_immobile_pages(struct zone *zone, struct page *page,
++extern bool __count_immobile_pages(struct zone *zone, struct page *page,
+ 				  int count);
+ extern void __free_pages_bootmem(struct page *page, unsigned int order);
+ extern void prep_compound_page(struct page *page, unsigned long order);
+--- a/mm/page_alloc.c~mm-compaction-handle-incorrect-migrate_unmovable-type-pageblocks-fix
++++ a/mm/page_alloc.c
+@@ -221,7 +221,6 @@ int page_group_by_mobility_disabled __re
+ 
+ void set_pageblock_migratetype(struct page *page, int migratetype)
+ {
+-
+ 	if (unlikely(page_group_by_mobility_disabled))
+ 		migratetype = MIGRATE_UNMOVABLE;
+ 
+@@ -5472,7 +5471,7 @@ void set_pageblock_flags_group(struct pa
+  * page allocater never alloc memory from ISOLATE block.
+  */
+ 
+-int __count_immobile_pages(struct zone *zone, struct page *page, int count)
++bool __count_immobile_pages(struct zone *zone, struct page *page, int count)
+ {
+ 	unsigned long pfn, iter, found;
+ 	int mt;
 
