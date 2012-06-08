@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934243Ab2FHJtP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 05:49:15 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:42987 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932665Ab2FHJtG (ORCPT
+	id S1762059Ab2FHKAc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 06:00:32 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:47717 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750991Ab2FHKAb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 05:49:06 -0400
-Date: Fri, 8 Jun 2012 12:48:42 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Ian Abbott <abbotti@mev.co.uk>
-Cc: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
-        Ian Abbott <ian.abbott@mev.co.uk>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        H Hartley Sweeten <hartleys@visionengravers.com>
-Subject: Re: [PATCH] staging: comedi: serial2002: quiet NULL pointer sparse
- noise
-Message-ID: <20120608094842.GM4400@mwanda>
-References: <201206071714.25934.hartleys@visionengravers.com>
- <4FD19FBB.4040507@mev.co.uk>
- <20120608065125.GL4400@mwanda>
- <4FD1C0D2.8060704@mev.co.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FD1C0D2.8060704@mev.co.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Fri, 8 Jun 2012 06:00:31 -0400
+Message-ID: <1339149613.23343.52.camel@twins>
+Subject: Re: [PATCH] perf/x86: check ucode before disabling PEBS on
+ SandyBridge
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
+        andi@firstfloor.org, mingo@elte.hu, ming.m.lin@intel.com
+Date: Fri, 08 Jun 2012 12:00:13 +0200
+In-Reply-To: <20120608093513.GA22520@gmail.com>
+References: <20120607071531.GA4849@quad> <1339064319.23343.13.camel@twins>
+	 <CABPqkBQ+p5rcuxpXCTLMXPM+awAHhQ6mP9-WzVh5GWtn2GyfrA@mail.gmail.com>
+	 <1339065932.23343.18.camel@twins>
+	 <CABPqkBQ=tLXXsgvzQx+i01Owm4MM8m=6cEVVi4ab64gOiTTBYQ@mail.gmail.com>
+	 <1339067757.23343.21.camel@twins> <20120608093513.GA22520@gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 08, 2012 at 10:07:30AM +0100, Ian Abbott wrote:
-> I wonder if it also issues that warning for a struct initializer such as
-> {0} where the first member of the struct is a pointer, or would it
-> expect you to use {NULL} which is more confusing when the struct
-> contains a mixture of pointer and non-pointer members?
+On Fri, 2012-06-08 at 11:35 +0200, Ingo Molnar wrote:
+> * Peter Zijlstra <peterz@infradead.org> wrote:
 > 
+> > On Thu, 2012-06-07 at 12:48 +0200, Stephane Eranian wrote:
+> > > >> The warning could also be done on boot. But the check has to be done
+> > > >>  when the event is created.
+> > > >
+> > > > Is this because of the ucode loader not having done its thing yet etc..?
+> > 
+> > Ah, its because you can update ucode at runtime of course.
+> > 
+> > A quick look at the ucode loader doesn't show it having a 
+> > notifier either, so then yeah we need to check on every event 
+> > creation :/
+> > 
+> > Or we could put a hook in the ucode loader.
+> 
+> I'd really suggest the latter - I doubt this will be our only 
+> ucode dependent quirk, going forward ...
 
-It does warn about that.  The fix is to just say:
-
-	struct foo bar = {};
-
-regards,
-dan carpenter
+Yeah, am in the middle of writing that..
