@@ -1,32 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964969Ab2FHVz6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 17:55:58 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:57169 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934536Ab2FHVzz (ORCPT
+	id S964943Ab2FHVyw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 17:54:52 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56232 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761297Ab2FHVxr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 17:55:55 -0400
-Date: Fri, 8 Jun 2012 23:55:49 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Stephane Eranian <eranian@google.com>, jolsa@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: perf user tool precise attribute broken in 3.5rc1+
-Message-ID: <20120608215549.GF27374@one.firstfloor.org>
-References: <20120607202355.GQ27374@one.firstfloor.org> <CABPqkBQ99PTsET6c_NPuioLUr_yto4x=6EBQ1K73N4ratHz48A@mail.gmail.com> <20120607205836.GT27374@one.firstfloor.org> <20120607212759.GD30641@infradead.org> <20120608031009.GV27374@one.firstfloor.org> <20120608154814.GA21250@infradead.org> <20120608165319.GC27374@one.firstfloor.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120608165319.GC27374@one.firstfloor.org>
-User-Agent: Mutt/1.4.2.2i
+	Fri, 8 Jun 2012 17:53:47 -0400
+From: mathieu.poirier@linaro.org
+To: linux-scsi@vger.kernel.org
+Cc: JBottomley@parallels.com, linux-kernel@vger.kernel.org, arnd@arndb.de,
+        mathieu.poirier@linaro.org
+Subject: [PATCH RESEND 4/7] scsi/advansys: do not build on ARM
+Date: Fri,  8 Jun 2012 15:53:33 -0600
+Message-Id: <1339192416-27026-5-git-send-email-mathieu.poirier@linaro.org>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1339192416-27026-1-git-send-email-mathieu.poirier@linaro.org>
+References: <1339192416-27026-1-git-send-email-mathieu.poirier@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Arnd Bergmann <arnd@arndb.de>
 
-Hmm, the problem disappeared after a make clean. 
-Sorry for the noise.
+The advansys driver uses the dma_cache_sync interface
+which is impossible to support on ARM.
 
--Andi
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+---
+ drivers/scsi/Kconfig |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/scsi/Kconfig b/drivers/scsi/Kconfig
+index ec8cc9a..b43d72e 100644
+--- a/drivers/scsi/Kconfig
++++ b/drivers/scsi/Kconfig
+@@ -585,6 +585,7 @@ config SCSI_ADVANSYS
+ 	tristate "AdvanSys SCSI support"
+ 	depends on SCSI && VIRT_TO_BUS
+ 	depends on ISA || EISA || PCI
++	depends on !ARM # no support for DMA_CACHE_SYNC
+ 	help
+ 	  This is a driver for all SCSI host adapters manufactured by
+ 	  AdvanSys. It is documented in the kernel source in
+-- 
+1.7.5.4
+
