@@ -1,59 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759167Ab2FHH2m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 03:28:42 -0400
-Received: from smtp.nokia.com ([147.243.128.26]:47567 "EHLO mgw-da02.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752177Ab2FHH2k convert rfc822-to-8bit (ORCPT
+	id S1756011Ab2FHH35 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 03:29:57 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58436 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750842Ab2FHH3z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 03:28:40 -0400
-From: <leonid.moiseichuk@nokia.com>
-To: <kosaki.motohiro@gmail.com>
-CC: <anton.vorontsov@linaro.org>, <penberg@kernel.org>,
-        <b.zolnierkie@samsung.com>, <john.stultz@linaro.org>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <linaro-kernel@lists.linaro.org>, <patches@linaro.org>,
-        <kernel-team@android.com>
-Subject: RE: [PATCH 2/5] vmevent: Convert from deferred timer to deferred
- work
-Thread-Topic: [PATCH 2/5] vmevent: Convert from deferred timer to deferred
- work
-Thread-Index: AQHNP/HM8KMmZkc4xkKq2ZDXaeCP2Zbvq0sAgAA7gACAACLOoP//4JWAgAAi/oD//+B6AIAAIckQ
-Date: Fri, 8 Jun 2012 07:28:18 +0000
-Message-ID: <84FF21A720B0874AA94B46D76DB98269045F7918@008-AM1MPN1-004.mgdnok.nokia.com>
-References: <20120601122118.GA6128@lizard>
- <1338553446-22292-2-git-send-email-anton.vorontsov@linaro.org>
- <4FD170AA.10705@gmail.com> <20120608065828.GA1515@lizard>
- <84FF21A720B0874AA94B46D76DB98269045F7890@008-AM1MPN1-004.mgdnok.nokia.com>
- <CAHGf_=rHGotkPYJt65wv+ZDNeO2x+3c5sA8oJmGJX8ehsMHqoA@mail.gmail.com>
- <84FF21A720B0874AA94B46D76DB98269045F78E1@008-AM1MPN1-004.mgdnok.nokia.com>
- <CAHGf_=pNJAQP4GhTwtOkBxUDYU4n_-CKmKU7T4PzszwdL9Ju6Q@mail.gmail.com>
-In-Reply-To: <CAHGf_=pNJAQP4GhTwtOkBxUDYU4n_-CKmKU7T4PzszwdL9Ju6Q@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.162.61.214]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 8 Jun 2012 03:29:55 -0400
+Message-ID: <4FD1A9E8.9060608@vflare.org>
+Date: Fri, 08 Jun 2012 00:29:44 -0700
+From: Nitin Gupta <ngupta@vflare.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-X-OriginalArrivalTime: 08 Jun 2012 07:28:19.0010 (UTC) FILETIME=[46B8F220:01CD4548]
-X-Nokia-AV: Clean
+To: Minchan Kim <minchan@kernel.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>
+Subject: Re: [PATCH] zram: remove special handle of uncompressed page
+References: <1339137567-29656-1-git-send-email-minchan@kernel.org> <1339137567-29656-3-git-send-email-minchan@kernel.org>
+In-Reply-To: <1339137567-29656-3-git-send-email-minchan@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: ext KOSAKI Motohiro [mailto:kosaki.motohiro@gmail.com]
-> Sent: 08 June, 2012 10:23
-...
-> > If you wakeup only by signal when memory situation changed you can be
-> not mlocked.
-> > Mlocking uses memory very inefficient way and usually cannot be applied
-> for apps which wants to be notified due to resources restrictions.
-> 
-> That's your choice. If you don't need to care cache dropping, We don't
-> enforce it. I only pointed out your explanation was technically incorrect.
+On 06/07/2012 11:39 PM, Minchan Kim wrote:
 
-My explanation is correct. That is an overhead you have to pay if start to use API based on polling from user-space and this overhead narrows API applicability.
-Moving all times/tracking to kernel avoid useless wakeups in user-space.
+> xvmalloc can't handle PAGE_SIZE page so that zram have to
+> handle it specially but zsmalloc can do it so let's remove
+> unnecessary special handling code.
+> 
+> Quote from Nitin
+> "I think page vs handle distinction was added since xvmalloc could not
+> handle full page allocation. Now that zsmalloc allows full page
+> allocation, we can just use it for both cases. This would also allow
+> removing the ZRAM_UNCOMPRESSED flag. The only downside will be slightly
+> slower code path for full page allocation but this event is anyways
+> supposed to be rare, so should be fine."
+> 
+> 1. This patch reduces code very much.
+> 
+>  drivers/staging/zram/zram_drv.c   |  104 +++++--------------------------------
+>  drivers/staging/zram/zram_drv.h   |   17 +-----
+>  drivers/staging/zram/zram_sysfs.c |    6 +--
+>  3 files changed, 15 insertions(+), 112 deletions(-)
+> 
+> 2. change pages_expand with bad_compress so it can count
+>    bad compression(above 75%) ratio.
+> 
+> 3. remove zobj_header which is for back-reference for defragmentation
+>    because firstly, it's not used at the moment and zsmalloc can't handle
+>    bigger size than PAGE_SIZE so zram can't do it any more without redesign.
+> 
+> Cc: Nitin Gupta <ngupta@vflare.org>
+> Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> ---
+>  drivers/staging/zram/zram_drv.c   |  104 +++++--------------------------------
+>  drivers/staging/zram/zram_drv.h   |   17 +-----
+>  drivers/staging/zram/zram_sysfs.c |    6 +--
+>  3 files changed, 15 insertions(+), 112 deletions(-)
+> 
+
+
+I tried hard to figure out if these three things could be separated out
+as separate patches but looks like that would make individual patches
+unnecessarily messy.
+
+Perhaps we should also add a fastpath for PAGE_SIZE'd objects in
+zsmalloc but that's probably something for future work.
+
+
+Acked-by: Nitin Gupta <ngupta@vflare.org>
+
+Thanks,
+Nitin
