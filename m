@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760316Ab2FHHtd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 03:49:33 -0400
-Received: from smtp.nokia.com ([147.243.128.26]:50232 "EHLO mgw-da02.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759597Ab2FHHtb convert rfc822-to-8bit (ORCPT
+	id S1760582Ab2FHHto (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 03:49:44 -0400
+Received: from www.linutronix.de ([62.245.132.108]:57468 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760432Ab2FHHtl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 03:49:31 -0400
-From: <leonid.moiseichuk@nokia.com>
-To: <kosaki.motohiro@gmail.com>
-CC: <anton.vorontsov@linaro.org>, <penberg@kernel.org>,
-        <b.zolnierkie@samsung.com>, <john.stultz@linaro.org>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <linaro-kernel@lists.linaro.org>, <patches@linaro.org>,
-        <kernel-team@android.com>
-Subject: RE: [PATCH 2/5] vmevent: Convert from deferred timer to deferred
- work
-Thread-Topic: [PATCH 2/5] vmevent: Convert from deferred timer to deferred
- work
-Thread-Index: AQHNP/HM8KMmZkc4xkKq2ZDXaeCP2Zbvq0sAgAA7gACAACLOoP//4JWAgAAi/oD//+B6AIAAIckQ///hF4AABKRTEA==
-Date: Fri, 8 Jun 2012 07:49:06 +0000
-Message-ID: <84FF21A720B0874AA94B46D76DB98269045F7956@008-AM1MPN1-004.mgdnok.nokia.com>
-References: <20120601122118.GA6128@lizard>
- <1338553446-22292-2-git-send-email-anton.vorontsov@linaro.org>
- <4FD170AA.10705@gmail.com> <20120608065828.GA1515@lizard>
- <84FF21A720B0874AA94B46D76DB98269045F7890@008-AM1MPN1-004.mgdnok.nokia.com>
- <CAHGf_=rHGotkPYJt65wv+ZDNeO2x+3c5sA8oJmGJX8ehsMHqoA@mail.gmail.com>
- <84FF21A720B0874AA94B46D76DB98269045F78E1@008-AM1MPN1-004.mgdnok.nokia.com>
- <CAHGf_=pNJAQP4GhTwtOkBxUDYU4n_-CKmKU7T4PzszwdL9Ju6Q@mail.gmail.com>
- <84FF21A720B0874AA94B46D76DB98269045F7918@008-AM1MPN1-004.mgdnok.nokia.com>
- <4FD1AABD.7010602@gmail.com>
-In-Reply-To: <4FD1AABD.7010602@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.162.61.214]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 8 Jun 2012 03:49:41 -0400
+Date: Fri, 8 Jun 2012 09:49:35 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Chen Gong <gong.chen@linux.intel.com>
+cc: LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
+        Borislav Petkov <borislav.petkov@amd.com>, x86@kernel.org,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [patch 0/5] x86: mce: Bugfixes, cleanups and a new CMCI poll
+ version
+In-Reply-To: <4FD07D8F.5020303@linux.intel.com>
+Message-ID: <alpine.LFD.2.02.1206080940360.3086@ionos>
+References: <20120606214941.104735929@linutronix.de> <4FD07D8F.5020303@linux.intel.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-X-OriginalArrivalTime: 08 Jun 2012 07:49:08.0299 (UTC) FILETIME=[2F5B51B0:01CD454B]
-X-Nokia-AV: Clean
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: ext KOSAKI Motohiro [mailto:kosaki.motohiro@gmail.com]
-> Sent: 08 June, 2012 10:33
-> To: Moiseichuk Leonid (Nokia-MP/Espoo)
-.. 
-> Wrong. CPU don't realized the running code belong to userspace or kernel.
-> Every code just consume a power. That's why polling timer is wrong from
-> point of power consumption view.
-???
-We are talking about different things.
-User-space code could be dropped, distributed between several applications and has not deferred timers support.
-For polling API the user-space code has to be executed quite often.
-Localizing this code in kernel additionally allows to avoid vmsat/meminfo generation and parsing overhead as well.
+On Thu, 7 Jun 2012, Chen Gong wrote:
+> 
+> But during the CPU online/offline test I found an issue. After *STORM*
+> mode is entered, it can't come back from *STORM* mode to normal
+> interrupt mode. At least there exists such an issue: when *STORM* is
+> entered, in the meanwhile, one CPU is offline during this period,
+> which means *cmci_storm_on_cpus* can't decrease to 0 because there
+> is one bit stuck on this offlined CPU. So we should detect such
+> situation and decrease on *cmci_storm_on_cpus* at proper time.
+
+Yes, we need to reset the storm state as well I think.
+
+> BTW, even I online the *CPU* in above situation, the normal CMCI
+> still doesn't come back, strange.
+
+That's weird.
+ 
+> I still have another question: When we handle following case:
+> mce_cpu_callback(struct notifier_block *
+> 		mce_device_remove(cpu);
+> 		break;
+> 	case CPU_DOWN_PREPARE:
+> -		del_timer_sync(t);
+> 		smp_call_function_single(cpu, mce_disable_cpu, &action, 1);
+> + 		del_timer_sync(t);
+> 		break;
+> 
+> Where we add this timer back? I can't find it in "case CPU_ONLINE".
+
+The timer gets added back via mcheck_cpu_init(), which is called on
+the newly onlined cpu from smp_callin().
+
+Thanks,
+
+	tglx
+
