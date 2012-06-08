@@ -1,48 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758106Ab2FHSb3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 14:31:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45542 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753003Ab2FHSb2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 14:31:28 -0400
-Date: Fri, 8 Jun 2012 14:04:18 -0400
-From: Dave Jones <davej@redhat.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, axboe@kernel.dk,
-        Tom Herbert <therbert@google.com>
-Subject: Re: vmsplice triggering bug in kfree.
-Message-ID: <20120608180418.GA2338@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Eric Dumazet <eric.dumazet@gmail.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, axboe@kernel.dk,
-	Tom Herbert <therbert@google.com>
-References: <20120607025117.GA28261@redhat.com>
- <1339043263.26966.79.camel@edumazet-glaptop>
- <1339044013.26966.80.camel@edumazet-glaptop>
- <1339048365.26966.89.camel@edumazet-glaptop>
+	id S933116Ab2FHSbj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 14:31:39 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:64300 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754230Ab2FHSbf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 14:31:35 -0400
+Message-ID: <4FD24503.7070608@landley.net>
+Date: Fri, 08 Jun 2012 13:31:31 -0500
+From: Rob Landley <rob@landley.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339048365.26966.89.camel@edumazet-glaptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Masanari Iida <standby24x7@gmail.com>
+CC: linux-kernel@vger.kernel.org, trivial@kernel.org
+Subject: Re: [PATCH] [trivial] Documentation: Fix typo in devicetree/bindings
+References: <1339170418-9999-1-git-send-email-standby24x7@gmail.com>
+In-Reply-To: <1339170418-9999-1-git-send-email-standby24x7@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 07, 2012 at 07:52:45AM +0200, Eric Dumazet wrote:
- > On Thu, 2012-06-07 at 06:40 +0200, Eric Dumazet wrote:
- > > On Thu, 2012-06-07 at 06:27 +0200, Eric Dumazet wrote:
- > > 
- > > > Thanks Dave, I'll take a look today on this report.
- > > > 
- > > 
- > > OK, trivial bug, I am testing a fix, thanks again.
- > > 
- > 
- > Not sure if you can reproduce this bug easily, if so could you test
- > following patch ?
+On 06/08/2012 10:46 AM, Masanari Iida wrote:
+> Correct spelling typo in Documentation/devicetree/bindings
+> 
+> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
 
-haven't seen this reoccur since applying this patch, so it looks good to me.
+Acked-by: Rob Landley <rob@landley.net>
 
-Tested-by: Dave Jones <davej@redhat.com>
+Although:
+
+> --- a/Documentation/devicetree/bindings/powerpc/4xx/emac.txt
+> +++ b/Documentation/devicetree/bindings/powerpc/4xx/emac.txt
+> @@ -1,7 +1,7 @@
+>      4xx/Axon EMAC ethernet nodes
+>  
+>      The EMAC ethernet controller in IBM and AMCC 4xx chips, and also
+> -    the Axon bridge.  To operate this needs to interact with a ths
+> +    the Axon bridge.  To operate this needs to interact with a this
+>      special McMAL DMA controller, and sometimes an RGMII or ZMII
+>      interface.  In addition to the nodes and properties described
+>      below, the node for the OPB bus on which the EMAC sits must have a
+
+interact with a this special?
+
+Possibly "ths" means something else here?
+
+Rob
+-- 
+GNU/Linux isn't: Linux=GPLv2, GNU=GPLv3+, they can't share code.
+Either it's "mere aggregation", or a license violation.  Pick one.
