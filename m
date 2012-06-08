@@ -1,60 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761558Ab2FHIUf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 04:20:35 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:33557 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761946Ab2FHIU0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 04:20:26 -0400
+	id S933580Ab2FHI3e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 04:29:34 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58127 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932177Ab2FHI3b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 04:29:31 -0400
+Date: Fri, 8 Jun 2012 10:29:24 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Stefan Achatz <erazor_de@users.sourceforge.net>
+Cc: Rob Landley <rob@landley.net>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] HID: roccat: Renamed roccat_common functions to
+ roccat_common2
+In-Reply-To: <1337546704.19878.32.camel@neuromancer.tessier-ashpool>
+Message-ID: <alpine.LNX.2.00.1206081029180.12208@pobox.suse.cz>
+References: <1337546704.19878.32.camel@neuromancer.tessier-ashpool>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-X-Originating-IP: [2001:470:8656:0:71a4:7cae:c1cb:99e8]
-In-Reply-To: <CAK5ve-+3rKjeQA-WMQWvT48roFx-3Y-jNLZ3ciyOuH42x4Nu9A@mail.gmail.com>
-References: <CAK5ve-JuZcjdbw_tV8vcriHWxOq1KFHm2mZBm6z3_j7hpPw-eA@mail.gmail.com>
-	<CAK5ve-+3rKjeQA-WMQWvT48roFx-3Y-jNLZ3ciyOuH42x4Nu9A@mail.gmail.com>
-Date: Fri, 8 Jun 2012 01:20:25 -0700
-Message-ID: <CAOesGMgav2dqvUk623u_1ZuAE82drg2tF7rMpKMCZN4_Oq12_A@mail.gmail.com>
-Subject: Re: [GIT PULL] LED CPU trigger driver and ARM LED code consolidation
-From: Olof Johansson <olof@lixom.net>
-To: Bryan Wu <bryan.wu@canonical.com>
-Cc: Arnd Bergmann <arnd.bergmann@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, 20 May 2012, Stefan Achatz wrote:
 
-On Wed, Jun 6, 2012 at 11:12 PM, Bryan Wu <bryan.wu@canonical.com> wrote:
-> Hi Arnd and Olof,
->
-> Is there any chance to pull this LED code into ARM SoC tree?
->
-> Thanks,
-> -Bryan
->
-> On Mon, Jun 4, 2012 at 3:25 PM, Bryan Wu <bryan.wu@canonical.com> wrote:
->> Hi Arnd and Olof,
->>
->> Please consider to pull my branch for LED CPU trigger driver and ARM
->> LED code consolidation, which is based on 3.5-rc1:
->>
->> The following changes since commit f8f5701bdaf9134b1f90e5044a82c66324d2073f:
->>
->>  Linux 3.5-rc1 (2012-06-02 18:29:26 -0700)
->>
->> are available in the git repository at:
->>
->>  git://git.kernel.org/pub/scm/linux/kernel/git/cooloney/linux-leds.git
->> for-arm-soc
+> Did this to illustrate my understanding of the firmware generations:
+> Valo and Kone were 1st generation
+> Arvo was externaly developed and lies in the middle
+> All others until now are considered 2nd generation
+> 
+> Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
+> ---
+>  drivers/hid/hid-roccat-arvo.c     |   16 ++++++++--------
+>  drivers/hid/hid-roccat-common.c   |   34 +++++++++++++++++-----------------
+>  drivers/hid/hid-roccat-common.h   |   10 +++++-----
+>  drivers/hid/hid-roccat-isku.c     |    6 +++---
+>  drivers/hid/hid-roccat-koneplus.c |   24 ++++++++++++------------
+>  drivers/hid/hid-roccat-kovaplus.c |   20 ++++++++++----------
+>  drivers/hid/hid-roccat-pyra.c     |   20 ++++++++++----------
+>  drivers/hid/hid-roccat-savu.c     |    4 ++--
+>  8 files changed, 67 insertions(+), 67 deletions(-)
+> 
+> diff --git a/drivers/hid/hid-roccat-arvo.c b/drivers/hid/hid-roccat-arvo.c
+> index 093bfad..327f9b8 100644
+> --- a/drivers/hid/hid-roccat-arvo.c
+> +++ b/drivers/hid/hid-roccat-arvo.c
+> @@ -39,7 +39,7 @@ static ssize_t arvo_sysfs_show_mode_key(struct device *dev,
+>  	int retval;
+>  
+>  	mutex_lock(&arvo->arvo_lock);
+> -	retval = roccat_common_receive(usb_dev, ARVO_COMMAND_MODE_KEY,
+> +	retval = roccat_common2_receive(usb_dev, ARVO_COMMAND_MODE_KEY,
 
-Pulled into arm-soc as devel/led-driver in next/drivers.
-
+Could you please give it some more descriptive name, that will clearly 
+illustrate that the differentiating factor is the firmware 
+version/generation?
 
 Thanks,
 
--Olof
+-- 
+Jiri Kosina
+SUSE Labs
