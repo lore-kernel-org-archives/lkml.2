@@ -1,76 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933555Ab2FHF2w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 01:28:52 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63357 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933462Ab2FHF2t (ORCPT
+	id S933573Ab2FHF3W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 01:29:22 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43143 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759881Ab2FHFHL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 01:28:49 -0400
-Date: Thu, 7 Jun 2012 22:28:17 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: akpm@linux-foundation.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, khlebnikov@openvz.org,
-        kamezawa.hiroyu@jp.fujitsu.com, markus@trippelsdorf.de,
-        oleg@redhat.com, stable@vger.kernel.org
-Subject: Re: [patch 12/12] mm: correctly synchronize rss-counters at
- exit/exec
-In-Reply-To: <CA+55aFw7y5FBJm6pxiHHsoiPaVQG3A+4u6J9=4DGd8kVPjmzGQ@mail.gmail.com>
-Message-ID: <alpine.LSU.2.00.1206072220200.1738@eggly.anvils>
-References: <20120607212114.E4F5AA02F8@akpm.mtv.corp.google.com> <CA+55aFxOWR_h1vqRLAd_h5_woXjFBLyBHP--P8F7WsYrciXdmA@mail.gmail.com> <CA+55aFyQUBXhjVLJH6Fhz9xnpfXZ=9Mej5ujt6ss7VUqT1g9Jg@mail.gmail.com> <alpine.LSU.2.00.1206071759050.1291@eggly.anvils>
- <CA+55aFw7y5FBJm6pxiHHsoiPaVQG3A+4u6J9=4DGd8kVPjmzGQ@mail.gmail.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323584-2106132903-1339133305=:1738"
+	Fri, 8 Jun 2012 01:07:11 -0400
+Message-Id: <20120608041844.216102992@decadent.org.uk>
+User-Agent: quilt/0.60-1
+Date: Fri, 08 Jun 2012 05:19:05 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
+        Mehdi Aqadjani Memar <m.aqadjanimemar@student.ru.nl>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 25/82] drm/radeon: fix XFX quirk
+In-Reply-To: <20120608041840.861504477@decadent.org.uk>
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
---8323584-2106132903-1339133305=:1738
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+------------------
 
-On Thu, 7 Jun 2012, Linus Torvalds wrote:
-> No, this is apparently that same "almost there" patch from Oleg. I
-> guarantee that it's wrong.
->=20
->                 Linus
->=20
-> ---
->=20
-> [ This part, to be exact: ]
->=20
-> On Thu, Jun 7, 2012 at 6:16 PM, Hugh Dickins <hughd@google.com> wrote:
-> > --- a/kernel/tsacct.c
-> > +++ b/kernel/tsacct.c
-> > @@ -91,6 +91,7 @@ void xacct_add_tsk(struct taskstats *stats, struct ta=
-sk_struct *p)
-> > =A0 =A0 =A0 =A0stats->virtmem =3D p->acct_vm_mem1 * PAGE_SIZE / MB;
-> > =A0 =A0 =A0 =A0mm =3D get_task_mm(p);
-> > =A0 =A0 =A0 =A0if (mm) {
-> > + =A0 =A0 =A0 =A0 =A0 =A0 =A0 sync_mm_rss(mm);
-> > =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0/* adjust to KB unit */
-> > =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0stats->hiwater_rss =A0 =3D get_mm_hiwate=
-r_rss(mm) * PAGE_SIZE / KB;
-> > =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0stats->hiwater_vm =A0 =A0=3D get_mm_hiwa=
-ter_vm(mm) =A0* PAGE_SIZE / KB;
-> > --
+From: Alex Deucher <alexander.deucher@amd.com>
 
-Yup.
+commit 1ebf169ad4dc68f18cc0dab35163b0f324fc6c41 upstream.
 
-It does look as if Oleg's intent (last chance to update xacct stats
-from dying current task) would be well served by changing that to
+Only override the ddc bus if the connector doesn't have
+a valid one.  The existing code overrode the ddc bus for
+all connectors even if it had ddc bus.
 
-=09=09if (p =3D=3D current)
-=09=09=09sync_mm_rss(mm);
+Fixes ddc on another XFX card with the same pci ids that
+was broken by the quirk overwriting the correct ddc bus.
 
-but I've made too many hurried decisions recently to sign off on that.
+Reported-by: Mehdi Aqadjani Memar <m.aqadjanimemar@student.ru.nl>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/gpu/drm/radeon/radeon_atombios.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-Hugh
---8323584-2106132903-1339133305=:1738--
+diff --git a/drivers/gpu/drm/radeon/radeon_atombios.c b/drivers/gpu/drm/radeon/radeon_atombios.c
+index f6e69b8..b1e3820 100644
+--- a/drivers/gpu/drm/radeon/radeon_atombios.c
++++ b/drivers/gpu/drm/radeon/radeon_atombios.c
+@@ -444,7 +444,9 @@ static bool radeon_atom_apply_quirks(struct drm_device *dev,
+ 	 */
+ 	if ((dev->pdev->device == 0x9498) &&
+ 	    (dev->pdev->subsystem_vendor == 0x1682) &&
+-	    (dev->pdev->subsystem_device == 0x2452)) {
++	    (dev->pdev->subsystem_device == 0x2452) &&
++	    (i2c_bus->valid == false) &&
++	    !(supported_device & (ATOM_DEVICE_TV_SUPPORT | ATOM_DEVICE_CV_SUPPORT))) {
+ 		struct radeon_device *rdev = dev->dev_private;
+ 		*i2c_bus = radeon_lookup_i2c_gpio(rdev, 0x93);
+ 	}
+
+
