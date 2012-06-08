@@ -1,66 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760582Ab2FHHto (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 03:49:44 -0400
-Received: from www.linutronix.de ([62.245.132.108]:57468 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760432Ab2FHHtl (ORCPT
+	id S1760517Ab2FHHuu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 03:50:50 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44801 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759984Ab2FHHus (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 03:49:41 -0400
-Date: Fri, 8 Jun 2012 09:49:35 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Chen Gong <gong.chen@linux.intel.com>
-cc: LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
-        Borislav Petkov <borislav.petkov@amd.com>, x86@kernel.org,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [patch 0/5] x86: mce: Bugfixes, cleanups and a new CMCI poll
- version
-In-Reply-To: <4FD07D8F.5020303@linux.intel.com>
-Message-ID: <alpine.LFD.2.02.1206080940360.3086@ionos>
-References: <20120606214941.104735929@linutronix.de> <4FD07D8F.5020303@linux.intel.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Fri, 8 Jun 2012 03:50:48 -0400
+Date: Fri, 8 Jun 2012 00:49:06 -0700
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Pekka Enberg <penberg@kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Subject: Re: [PATCH 0/5] Some vmevent fixes...
+Message-ID: <20120608074906.GA27095@lizard>
+References: <CAHGf_=pSLfAue6AR5gi5RQ7xvgTxpZckA=Ja1fO1AkoO1o_DeA@mail.gmail.com>
+ <CAOJsxLG1+zhOKgi2Rg1eSoXSCU8QGvHVED_EefOOLP-6JbMDkg@mail.gmail.com>
+ <20120601122118.GA6128@lizard>
+ <alpine.LFD.2.02.1206032125320.1943@tux.localdomain>
+ <4FCC7592.9030403@kernel.org>
+ <20120604113811.GA4291@lizard>
+ <4FCD14F1.1030105@gmail.com>
+ <CAOJsxLHR4wSgT2hNfOB=X6ud0rXgYg+h7PTHzAZYCUdLs6Ktug@mail.gmail.com>
+ <20120605083921.GA21745@lizard>
+ <4FD014D7.6000605@kernel.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <4FD014D7.6000605@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 7 Jun 2012, Chen Gong wrote:
-> 
-> But during the CPU online/offline test I found an issue. After *STORM*
-> mode is entered, it can't come back from *STORM* mode to normal
-> interrupt mode. At least there exists such an issue: when *STORM* is
-> entered, in the meanwhile, one CPU is offline during this period,
-> which means *cmci_storm_on_cpus* can't decrease to 0 because there
-> is one bit stuck on this offlined CPU. So we should detect such
-> situation and decrease on *cmci_storm_on_cpus* at proper time.
+On Thu, Jun 07, 2012 at 11:41:27AM +0900, Minchan Kim wrote:
+[...]
+> How about this?
 
-Yes, we need to reset the storm state as well I think.
+So, basically this is just another shrinker callback (well, it's
+very close to), but only triggered after some magic index crosses
+a threshold.
 
-> BTW, even I online the *CPU* in above situation, the normal CMCI
-> still doesn't come back, strange.
+Some information beforehand: current ALMK is broken in the regard
+that it does not do what it is supposed to do according to its
+documentation. It uses shrinker notifiers (alike to your code), but
+kernel calls shrinker when there is already pressure on the memory,
+and ALMK's original idea was to start killing processes when there
+is [yet] no pressure at all, so ALMK was supposed to act in advance,
+e.g. "kill unneeded apps when there's say 64 MB free memory left,
+irrespective of the current pressure". ALMK doesn't do this
+currently, it only reacts to the shrinker.
 
-That's weird.
- 
-> I still have another question: When we handle following case:
-> mce_cpu_callback(struct notifier_block *
-> 		mce_device_remove(cpu);
-> 		break;
-> 	case CPU_DOWN_PREPARE:
-> -		del_timer_sync(t);
-> 		smp_call_function_single(cpu, mce_disable_cpu, &action, 1);
-> + 		del_timer_sync(t);
-> 		break;
-> 
-> Where we add this timer back? I can't find it in "case CPU_ONLINE".
+So, the solution would be then two-fold:
 
-The timer gets added back via mcheck_cpu_init(), which is called on
-the newly onlined cpu from smp_callin().
+1. Use your memory pressure notifications. They must be quite fast when
+   we starting to feel the high pressure. (I see the you use
+   zone_page_state() and friends, which is vm_stat, and it is updated
+   very infrequently, but to get accurate notification we have to
+   update it much more frequently, but this is very expensive. So
+   KOSAKI and Christoph will complain. :-)
+2. Plus use deferred timers to monitor /proc/vmstat, we don't have to
+   be fast here. But I see Pekka and Leonid don't like it already,
+   so we're stuck.
 
 Thanks,
 
-	tglx
+> It's totally pseudo code just I want to show my intention and even it's not a math.
+> Totally we need more fine-grained some expression to standardize memory pressure.
+> For it, we can use VM's several parameter, nr_scanned, nr_reclaimed, order, dirty page scanning ratio
+> and so on. Also, we can aware of zone, node so we can pass lots of information to user space if they
+> want it. For making lowmem notifier general, they are must, I think.
+> We can have a plenty of tools for it.
+> 
+> And later as further step, we could replace it with memcg-aware after memcg reclaim work is
+> totally unified with global page reclaim. Many memcg guys have tried it so I expect it works
+> sooner or later but I'm not sure memcg really need it because memcg's goal is limit memory resource
+> among several process groups. If some process feel bad about latency due to short of free memory
+> and it's critical, I think it would be better to create new memcg group has tighter limit for
+> latency and put the process into the group.
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index eeb3bc9..eae3d2e 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -2323,6 +2323,32 @@ static bool sleeping_prematurely(pg_data_t *pgdat, int order, long remaining,
+>  }
+>  
+>  /*
+> + * higher dirty pages, higher pressure
+> + * higher nr_scanned, higher pressure
+> + * higher nr_reclaimed, lower pressure
+> + * higher unmapped pages, lower pressure
+> + *
+> + * index toward 0 implies memory pressure is heavy.
+> + */
+> +int lowmem_index(struct zone *zone, struct scan_control *sc)
+> +{
+> +       int pressure = (1000 * (sc->nr_scanned * (zone_page_state(zone, NR_FILE_DIRTY) 
+> +                       * dirty_weight + 1) - sc->nr_reclaimed -
+> +                       zone_unmapped_file_pages(zone))) /
+> +                       zone_reclaimable_page(zone);
+> +
+> +       return 1000 - pressure;
+> +}
+> +
+> +void lowmem_notifier(struct zone *zone, int index)
+> +{
+> +       if (lowmem_has_interested_zone(zone)) {
+> +               if (index < sysctl_lowmem_threshold)
+> +                       notify(numa_node_id(), zone, index);
+> +       }
+> +}
+> +
+> +/*
+>   * For kswapd, balance_pgdat() will work across all this node's zones until
+>   * they are all at high_wmark_pages(zone).
+>   *
+> @@ -2494,6 +2520,7 @@ loop_again:
+>                                     !zone_watermark_ok_safe(zone, testorder,
+>                                         high_wmark_pages(zone) + balance_gap,
+>                                         end_zone, 0)) {
+> +                               int index;
+>                                 shrink_zone(zone, &sc);
+>  
+>                                 reclaim_state->reclaimed_slab = 0;
+> @@ -2503,6 +2530,9 @@ loop_again:
+>  
+>                                 if (nr_slab == 0 && !zone_reclaimable(zone))
+>                                         zone->all_unreclaimable = 1;
+> +
+> +                               index = lowmem_index(zone, &sc);
+> +                               lowmem_notifier(zone, index);
+> 
+> > 
+> 
+> > p.s. http://git.infradead.org/users/cbou/ulmkd.git
+> >      I haven't updated it for new vmevent changes, but still,
+> >      its idea should be clear enough.
+> > 
+> 
+> 
+> -- 
+> Kind regards,
+> Minchan Kim
 
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
