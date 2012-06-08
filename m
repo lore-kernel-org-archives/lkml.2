@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761656Ab2FHFId (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 01:08:33 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43281 "EHLO
+	id S1761633Ab2FHFIb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 01:08:31 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43311 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758979Ab2FHFHh (ORCPT
+	by vger.kernel.org with ESMTP id S1761489Ab2FHFHh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Jun 2012 01:07:37 -0400
-Message-Id: <20120608041851.525164014@decadent.org.uk>
+Message-Id: <20120608041849.413054855@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 08 Jun 2012 05:19:59 +0100
+Date: Fri, 08 Jun 2012 05:19:44 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 79/82] drm/radeon/kms: add new BTC PCI ids
+        alan@lxorguk.ukuu.org.uk, Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+        Kun Jiang <kunx.jiang@intel.com>, Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 64/82] ipv4: fix the rcu race between free_fib_info and  ip_route_output_slow
 In-Reply-To: <20120608041840.861504477@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,36 +29,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
 
-commit a2bef8ce826dd1e787fd8ad9b6e0566ba59dab43 upstream.
+[ Upstream commit e49cc0da7283088c5e03d475ffe2fdcb24a6d5b1 ]
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+We hit a kernel OOPS.
+
+<3>[23898.789643] BUG: sleeping function called from invalid context at
+/data/buildbot/workdir/ics/hardware/intel/linux-2.6/arch/x86/mm/fault.c:1103
+<3>[23898.862215] in_atomic(): 0, irqs_disabled(): 0, pid: 10526, name:
+Thread-6683
+<4>[23898.967805] HSU serial 0000:00:05.1: 0000:00:05.2:HSU serial prevented me
+to suspend...
+<4>[23899.258526] Pid: 10526, comm: Thread-6683 Tainted: G        W
+3.0.8-137685-ge7742f9 #1
+<4>[23899.357404] HSU serial 0000:00:05.1: 0000:00:05.2:HSU serial prevented me
+to suspend...
+<4>[23899.904225] Call Trace:
+<4>[23899.989209]  [<c1227f50>] ? pgtable_bad+0x130/0x130
+<4>[23900.000416]  [<c1238c2a>] __might_sleep+0x10a/0x110
+<4>[23900.007357]  [<c1228021>] do_page_fault+0xd1/0x3c0
+<4>[23900.013764]  [<c18e9ba9>] ? restore_all+0xf/0xf
+<4>[23900.024024]  [<c17c007b>] ? napi_complete+0x8b/0x690
+<4>[23900.029297]  [<c1227f50>] ? pgtable_bad+0x130/0x130
+<4>[23900.123739]  [<c1227f50>] ? pgtable_bad+0x130/0x130
+<4>[23900.128955]  [<c18ea0c3>] error_code+0x5f/0x64
+<4>[23900.133466]  [<c1227f50>] ? pgtable_bad+0x130/0x130
+<4>[23900.138450]  [<c17f6298>] ? __ip_route_output_key+0x698/0x7c0
+<4>[23900.144312]  [<c17f5f8d>] ? __ip_route_output_key+0x38d/0x7c0
+<4>[23900.150730]  [<c17f63df>] ip_route_output_flow+0x1f/0x60
+<4>[23900.156261]  [<c181de58>] ip4_datagram_connect+0x188/0x2b0
+<4>[23900.161960]  [<c18e981f>] ? _raw_spin_unlock_bh+0x1f/0x30
+<4>[23900.167834]  [<c18298d6>] inet_dgram_connect+0x36/0x80
+<4>[23900.173224]  [<c14f9e88>] ? _copy_from_user+0x48/0x140
+<4>[23900.178817]  [<c17ab9da>] sys_connect+0x9a/0xd0
+<4>[23900.183538]  [<c132e93c>] ? alloc_file+0xdc/0x240
+<4>[23900.189111]  [<c123925d>] ? sub_preempt_count+0x3d/0x50
+
+Function free_fib_info resets nexthop_nh->nh_dev to NULL before releasing
+fi. Other cpu might be accessing fi. Fixing it by delaying the releasing.
+
+With the patch, we ran MTBF testing on Android mobile for 12 hours
+and didn't trigger the issue.
+
+Thank Eric for very detailed review/checking the issue.
+
+Signed-off-by: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+Signed-off-by: Kun Jiang <kunx.jiang@intel.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/drm/drm_pciids.h |    2 ++
- 1 file changed, 2 insertions(+)
+ net/ipv4/fib_semantics.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/include/drm/drm_pciids.h b/include/drm/drm_pciids.h
-index c5b0d8c..86c4cf9 100644
---- a/include/drm/drm_pciids.h
-+++ b/include/drm/drm_pciids.h
-@@ -181,6 +181,7 @@
- 	{0x1002, 0x6747, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TURKS|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6748, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TURKS|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6749, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TURKS|RADEON_NEW_MEMMAP}, \
-+	{0x1002, 0x674A, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TURKS|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6750, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TURKS|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6751, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TURKS|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6758, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TURKS|RADEON_NEW_MEMMAP}, \
-@@ -198,6 +199,7 @@
- 	{0x1002, 0x6767, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CAICOS|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6768, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CAICOS|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6770, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CAICOS|RADEON_NEW_MEMMAP}, \
-+	{0x1002, 0x6771, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CAICOS|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6772, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CAICOS|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6778, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CAICOS|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6779, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CAICOS|RADEON_NEW_MEMMAP}, \
+diff --git a/net/ipv4/fib_semantics.c b/net/ipv4/fib_semantics.c
+index 80106d8..d01f9c6 100644
+--- a/net/ipv4/fib_semantics.c
++++ b/net/ipv4/fib_semantics.c
+@@ -146,6 +146,12 @@ static void free_fib_info_rcu(struct rcu_head *head)
+ {
+ 	struct fib_info *fi = container_of(head, struct fib_info, rcu);
+ 
++	change_nexthops(fi) {
++		if (nexthop_nh->nh_dev)
++			dev_put(nexthop_nh->nh_dev);
++	} endfor_nexthops(fi);
++
++	release_net(fi->fib_net);
+ 	if (fi->fib_metrics != (u32 *) dst_default_metrics)
+ 		kfree(fi->fib_metrics);
+ 	kfree(fi);
+@@ -157,13 +163,7 @@ void free_fib_info(struct fib_info *fi)
+ 		pr_warning("Freeing alive fib_info %p\n", fi);
+ 		return;
+ 	}
+-	change_nexthops(fi) {
+-		if (nexthop_nh->nh_dev)
+-			dev_put(nexthop_nh->nh_dev);
+-		nexthop_nh->nh_dev = NULL;
+-	} endfor_nexthops(fi);
+ 	fib_info_cnt--;
+-	release_net(fi->fib_net);
+ 	call_rcu(&fi->rcu, free_fib_info_rcu);
+ }
+ 
 
 
