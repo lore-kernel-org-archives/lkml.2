@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761633Ab2FHFIb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 01:08:31 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43311 "EHLO
+	id S1761608Ab2FHFIa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 01:08:30 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43254 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1761489Ab2FHFHh (ORCPT
+	by vger.kernel.org with ESMTP id S1761288Ab2FHFHh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Jun 2012 01:07:37 -0400
-Message-Id: <20120608041849.413054855@decadent.org.uk>
+Message-Id: <20120608041848.992351426@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 08 Jun 2012 05:19:44 +0100
+Date: Fri, 08 Jun 2012 05:19:41 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        Kun Jiang <kunx.jiang@intel.com>, Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 64/82] ipv4: fix the rcu race between free_fib_info and  ip_route_output_slow
+        alan@lxorguk.ukuu.org.uk, Michael Gruetzner <mgruetzn@gmx.de>,
+        Gustavo Padovan <gustavo@padovan.org>
+Subject: [ 61/82] Bluetooth: Add support for Foxconn/Hon Hai AR5BBU22 0489:E03C
 In-Reply-To: <20120608041840.861504477@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,90 +28,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+From: Michael Gruetzner <mgruetzn@gmx.de>
 
-[ Upstream commit e49cc0da7283088c5e03d475ffe2fdcb24a6d5b1 ]
+commit 85d59726c5c66016a507f1f4a60db8e374dd284d upstream.
 
-We hit a kernel OOPS.
+Add Foxconn/Hon Hai AR5BBU22 Bluetooth Module( 0x489:0xE03C) to
+the blacklist of btusb module and add it to the ath3k module to properly
+load the firmware in Kernel 3.3.4
+The device is integrated in  e.g. some  Acer Aspire 7750G.
 
-<3>[23898.789643] BUG: sleeping function called from invalid context at
-/data/buildbot/workdir/ics/hardware/intel/linux-2.6/arch/x86/mm/fault.c:1103
-<3>[23898.862215] in_atomic(): 0, irqs_disabled(): 0, pid: 10526, name:
-Thread-6683
-<4>[23898.967805] HSU serial 0000:00:05.1: 0000:00:05.2:HSU serial prevented me
-to suspend...
-<4>[23899.258526] Pid: 10526, comm: Thread-6683 Tainted: G        W
-3.0.8-137685-ge7742f9 #1
-<4>[23899.357404] HSU serial 0000:00:05.1: 0000:00:05.2:HSU serial prevented me
-to suspend...
-<4>[23899.904225] Call Trace:
-<4>[23899.989209]  [<c1227f50>] ? pgtable_bad+0x130/0x130
-<4>[23900.000416]  [<c1238c2a>] __might_sleep+0x10a/0x110
-<4>[23900.007357]  [<c1228021>] do_page_fault+0xd1/0x3c0
-<4>[23900.013764]  [<c18e9ba9>] ? restore_all+0xf/0xf
-<4>[23900.024024]  [<c17c007b>] ? napi_complete+0x8b/0x690
-<4>[23900.029297]  [<c1227f50>] ? pgtable_bad+0x130/0x130
-<4>[23900.123739]  [<c1227f50>] ? pgtable_bad+0x130/0x130
-<4>[23900.128955]  [<c18ea0c3>] error_code+0x5f/0x64
-<4>[23900.133466]  [<c1227f50>] ? pgtable_bad+0x130/0x130
-<4>[23900.138450]  [<c17f6298>] ? __ip_route_output_key+0x698/0x7c0
-<4>[23900.144312]  [<c17f5f8d>] ? __ip_route_output_key+0x38d/0x7c0
-<4>[23900.150730]  [<c17f63df>] ip_route_output_flow+0x1f/0x60
-<4>[23900.156261]  [<c181de58>] ip4_datagram_connect+0x188/0x2b0
-<4>[23900.161960]  [<c18e981f>] ? _raw_spin_unlock_bh+0x1f/0x30
-<4>[23900.167834]  [<c18298d6>] inet_dgram_connect+0x36/0x80
-<4>[23900.173224]  [<c14f9e88>] ? _copy_from_user+0x48/0x140
-<4>[23900.178817]  [<c17ab9da>] sys_connect+0x9a/0xd0
-<4>[23900.183538]  [<c132e93c>] ? alloc_file+0xdc/0x240
-<4>[23900.189111]  [<c123925d>] ? sub_preempt_count+0x3d/0x50
+Output from /sys/kernel/debug/usb/devices:
 
-Function free_fib_info resets nexthop_nh->nh_dev to NULL before releasing
-fi. Other cpu might be accessing fi. Fixing it by delaying the releasing.
+T:  Bus=01 Lev=02 Prnt=02 Port=05 Cnt=02 Dev#=  6 Spd=12   MxCh= 0
+D:  Ver= 2.00 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=0489 ProdID=e03c Rev= 0.02
+S:  Manufacturer=Atheros Communications
+S:  Product=Bluetooth USB Host Controller
+S:  SerialNumber=Alaska Day 2006
+C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
+E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+I:  If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
 
-With the patch, we ran MTBF testing on Android mobile for 12 hours
-and didn't trigger the issue.
-
-Thank Eric for very detailed review/checking the issue.
-
-Signed-off-by: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Signed-off-by: Kun Jiang <kunx.jiang@intel.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Michael Gruetzner <mgruetzn@gmx.de>
+Signed-off-by: Gustavo Padovan <gustavo@padovan.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/ipv4/fib_semantics.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/bluetooth/ath3k.c |    6 ++++++
+ drivers/bluetooth/btusb.c |    3 +++
+ 2 files changed, 9 insertions(+)
 
-diff --git a/net/ipv4/fib_semantics.c b/net/ipv4/fib_semantics.c
-index 80106d8..d01f9c6 100644
---- a/net/ipv4/fib_semantics.c
-+++ b/net/ipv4/fib_semantics.c
-@@ -146,6 +146,12 @@ static void free_fib_info_rcu(struct rcu_head *head)
- {
- 	struct fib_info *fi = container_of(head, struct fib_info, rcu);
+diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
+index 57fd867..aba22b2 100644
+--- a/drivers/bluetooth/ath3k.c
++++ b/drivers/bluetooth/ath3k.c
+@@ -81,6 +81,9 @@ static struct usb_device_id ath3k_table[] = {
+ 	/* Atheros AR5BBU12 with sflash firmware */
+ 	{ USB_DEVICE(0x0489, 0xE02C) },
  
-+	change_nexthops(fi) {
-+		if (nexthop_nh->nh_dev)
-+			dev_put(nexthop_nh->nh_dev);
-+	} endfor_nexthops(fi);
++	/* Atheros AR5BBU22 with sflash firmware */
++	{ USB_DEVICE(0x0489, 0xE03C) },
 +
-+	release_net(fi->fib_net);
- 	if (fi->fib_metrics != (u32 *) dst_default_metrics)
- 		kfree(fi->fib_metrics);
- 	kfree(fi);
-@@ -157,13 +163,7 @@ void free_fib_info(struct fib_info *fi)
- 		pr_warning("Freeing alive fib_info %p\n", fi);
- 		return;
- 	}
--	change_nexthops(fi) {
--		if (nexthop_nh->nh_dev)
--			dev_put(nexthop_nh->nh_dev);
--		nexthop_nh->nh_dev = NULL;
--	} endfor_nexthops(fi);
- 	fib_info_cnt--;
--	release_net(fi->fib_net);
- 	call_rcu(&fi->rcu, free_fib_info_rcu);
- }
+ 	{ }	/* Terminating entry */
+ };
  
+@@ -99,6 +102,9 @@ static struct usb_device_id ath3k_blist_tbl[] = {
+ 	{ USB_DEVICE(0x13d3, 0x3362), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0xe004), .driver_info = BTUSB_ATH3012 },
+ 
++	/* Atheros AR5BBU22 with sflash firmware */
++	{ USB_DEVICE(0x0489, 0xE03C), .driver_info = BTUSB_ATH3012 },
++
+ 	{ }	/* Terminating entry */
+ };
+ 
+diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+index de17121..cb480f1 100644
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -143,6 +143,9 @@ static struct usb_device_id blacklist_table[] = {
+ 	/* Atheros AR5BBU12 with sflash firmware */
+ 	{ USB_DEVICE(0x0489, 0xe02c), .driver_info = BTUSB_IGNORE },
+ 
++	/* Atheros AR5BBU12 with sflash firmware */
++	{ USB_DEVICE(0x0489, 0xe03c), .driver_info = BTUSB_ATH3012 },
++
+ 	/* Broadcom BCM2035 */
+ 	{ USB_DEVICE(0x0a5c, 0x2035), .driver_info = BTUSB_WRONG_SCO_MTU },
+ 	{ USB_DEVICE(0x0a5c, 0x200a), .driver_info = BTUSB_WRONG_SCO_MTU },
 
 
