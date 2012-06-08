@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933337Ab2FHFQs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 01:16:48 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43276 "EHLO
+	id S1761685Ab2FHFQx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 01:16:53 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43198 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1761330Ab2FHFH0 (ORCPT
+	by vger.kernel.org with ESMTP id S1761056Ab2FHFH0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Jun 2012 01:07:26 -0400
-Message-Id: <20120608041845.680203839@decadent.org.uk>
+Message-Id: <20120608041847.408670148@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 08 Jun 2012 05:19:16 +0100
+Date: Fri, 08 Jun 2012 05:19:29 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Joonsoo Kim <js1304@gmail.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>
-Subject: [ 36/82] slub: fix a memory leak in get_partial_node()
+        alan@lxorguk.ukuu.org.uk, Thomas Hellstrom <thellstrom@vmware.com>,
+        Jakob Bornecrantz <jakob@vmware.com>, Dave Airlie <airlied@redhat.com>
+Subject: [ 49/82] drm/ttm: Fix spinlock imbalance
 In-Reply-To: <20120608041840.861504477@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,83 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joonsoo Kim <js1304@gmail.com>
+From: Thomas Hellstrom <thellstrom@vmware.com>
 
-commit 02d7633fa567be7bf55a993b79d2a31b95ce2227 upstream.
+commit a8ff3ee211fccf708e1911bbc096625453ebf759 upstream.
 
-In the case which is below,
+This imbalance may cause hangs when TTM is trying to swap out a buffer
+that is already on the delayed delete list.
 
-1. acquire slab for cpu partial list
-2. free object to it by remote cpu
-3. page->freelist = t
-
-then memory leak is occurred.
-
-Change acquire_slab() not to zap freelist when it works for cpu partial list.
-I think it is a sufficient solution for fixing a memory leak.
-
-Below is output of 'slabinfo -r kmalloc-256'
-when './perf stat -r 30 hackbench 50 process 4000 > /dev/null' is done.
-
-***Vanilla***
-Sizes (bytes)     Slabs              Debug                Memory
-------------------------------------------------------------------------
-Object :     256  Total  :     468   Sanity Checks : Off  Total: 3833856
-SlabObj:     256  Full   :     111   Redzoning     : Off  Used : 2004992
-SlabSiz:    8192  Partial:     302   Poisoning     : Off  Loss : 1828864
-Loss   :       0  CpuSlab:      55   Tracking      : Off  Lalig:       0
-Align  :       8  Objects:      32   Tracing       : Off  Lpadd:       0
-
-***Patched***
-Sizes (bytes)     Slabs              Debug                Memory
-------------------------------------------------------------------------
-Object :     256  Total  :     300   Sanity Checks : Off  Total: 2457600
-SlabObj:     256  Full   :     204   Redzoning     : Off  Used : 2348800
-SlabSiz:    8192  Partial:      33   Poisoning     : Off  Loss :  108800
-Loss   :       0  CpuSlab:      63   Tracking      : Off  Lalig:       0
-Align  :       8  Objects:      32   Tracing       : Off  Lpadd:       0
-
-Total and loss number is the impact of this patch.
-
-Acked-by: Christoph Lameter <cl@linux.com>
-Signed-off-by: Joonsoo Kim <js1304@gmail.com>
-Signed-off-by: Pekka Enberg <penberg@kernel.org>
+Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
+Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- mm/slub.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/ttm/ttm_bo.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -1506,15 +1506,19 @@
- 		freelist = page->freelist;
- 		counters = page->counters;
- 		new.counters = counters;
--		if (mode)
-+		if (mode) {
- 			new.inuse = page->objects;
-+			new.freelist = NULL;
-+		} else {
-+			new.freelist = freelist;
-+		}
- 
- 		VM_BUG_ON(new.frozen);
- 		new.frozen = 1;
- 
- 	} while (!__cmpxchg_double_slab(s, page,
- 			freelist, counters,
--			NULL, new.counters,
-+			new.freelist, new.counters,
- 			"lock and freeze"));
- 
- 	remove_partial(n, page);
-@@ -1556,7 +1560,6 @@
- 			object = t;
- 			available =  page->objects - page->inuse;
- 		} else {
--			page->freelist = t;
- 			available = put_cpu_partial(s, page, 0);
+diff --git a/drivers/gpu/drm/ttm/ttm_bo.c b/drivers/gpu/drm/ttm/ttm_bo.c
+index 36792bd..b67cfca 100644
+--- a/drivers/gpu/drm/ttm/ttm_bo.c
++++ b/drivers/gpu/drm/ttm/ttm_bo.c
+@@ -1834,6 +1834,7 @@ static int ttm_bo_swapout(struct ttm_mem_shrink *shrink)
+ 			spin_unlock(&glob->lru_lock);
+ 			(void) ttm_bo_cleanup_refs(bo, false, false, false);
+ 			kref_put(&bo->list_kref, ttm_bo_release_list);
++			spin_lock(&glob->lru_lock);
+ 			continue;
  		}
- 		if (kmem_cache_debug(s) || available > s->cpu_partial / 2)
+ 
 
 
