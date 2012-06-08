@@ -1,56 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760317Ab2FHCWv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 22:22:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62904 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760089Ab2FHCWt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 22:22:49 -0400
-Date: Thu, 7 Jun 2012 22:22:41 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: Re: a whole bunch of crashes since todays -mm merge.
-Message-ID: <20120608022240.GC7191@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-	Konstantin Khlebnikov <khlebnikov@openvz.org>,
-	Oleg Nesterov <oleg@redhat.com>
-References: <20120608002451.GA821@redhat.com>
- <CA+55aFzivM8Z1Bjk3Qo2vtnQhCQ7fQ4rf_a+EXY7noXQcxL_CA@mail.gmail.com>
- <20120607180515.4afffc89.akpm@linux-foundation.org>
- <CA+55aFz12eeNHGt5GV_w=brPVed3Ga9HjYy73dbusEyPpX39OQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+55aFz12eeNHGt5GV_w=brPVed3Ga9HjYy73dbusEyPpX39OQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1760370Ab2FHC15 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 22:27:57 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:38313 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752671Ab2FHC14 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 22:27:56 -0400
+Message-ID: <1339122469.5794.2.camel@phoenix>
+Subject: [PATCH RFT 1/2] regulator: ab8500: Use
+ regulator_list_voltage_linear for ab8500_regulator_fixed_ops
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Lee Jones <lee.jones@linaro.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Date: Fri, 08 Jun 2012 10:27:49 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 07, 2012 at 06:09:20PM -0700, Linus Torvalds wrote:
- > On Thu, Jun 7, 2012 at 6:05 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
- > >
- > > It appears this is due to me fat-fingering conflict resolution last
- > > week.  That hunk is supposed to be in mm_release(), not mmput().
- > 
- > Ahh. That would indeed make more sense. The mmput() placement is
- > insane for so many reasons.
- > 
- > I reverted it and pushed it out, because it clearly was horrible. Even
- > if it is possible that Dave's problems are due to something else (but
- > if they started with the mm merge, I don't see anything else nearly as
- > scary in there)
+Also removes set_voltage_time_sel callback from ab8500_regulator_fixed_ops
+because the voltage won't change. ( And ab8500_regulator_fixed_ops does not
+implement get_voltage_sel so set_voltage_time_sel won't be called )
 
-Spooky. With that reverted, I don't see those weird oopses any more,
-even with the potentially suspect 8169 tracing patch reapplied. So uh, I dunno.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/ab8500.c |   41 +++++++++--------------------------------
+ 1 file changed, 9 insertions(+), 32 deletions(-)
 
-	Dave
+diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
+index 290c289..c931c7c 100644
+--- a/drivers/regulator/ab8500.c
++++ b/drivers/regulator/ab8500.c
+@@ -32,7 +32,6 @@
+  * @regulator_dev: regulator device
+  * @max_uV: maximum voltage (for variable voltage supplies)
+  * @min_uV: minimum voltage (for variable voltage supplies)
+- * @fixed_uV: typical voltage (for fixed voltage supplies)
+  * @update_bank: bank to control on/off
+  * @update_reg: register to control on/off
+  * @update_mask: mask to enable/disable regulator
+@@ -48,7 +47,6 @@ struct ab8500_regulator_info {
+ 	struct regulator_dev	*regulator;
+ 	int max_uV;
+ 	int min_uV;
+-	int fixed_uV;
+ 	u8 update_bank;
+ 	u8 update_reg;
+ 	u8 update_mask;
+@@ -271,29 +269,9 @@ static struct regulator_ops ab8500_regulator_ops = {
+ 	.set_voltage_time_sel = ab8500_regulator_set_voltage_time_sel,
+ };
+ 
+-static int ab8500_fixed_list_voltage(struct regulator_dev *rdev,
+-				     unsigned selector)
+-{
+-	struct ab8500_regulator_info *info = rdev_get_drvdata(rdev);
+-
+-	if (info == NULL) {
+-		dev_err(rdev_get_dev(rdev), "regulator info null pointer\n");
+-		return -EINVAL;
+-	}
+-
+-	return info->fixed_uV;
+-}
+-
+ static int ab8500_fixed_get_voltage(struct regulator_dev *rdev)
+ {
+-	struct ab8500_regulator_info *info = rdev_get_drvdata(rdev);
+-
+-	if (info == NULL) {
+-		dev_err(rdev_get_dev(rdev), "regulator info null pointer\n");
+-		return -EINVAL;
+-	}
+-
+-	return info->fixed_uV;
++	return rdev->desc->min_uV;
+ }
+ 
+ static struct regulator_ops ab8500_regulator_fixed_ops = {
+@@ -301,9 +279,8 @@ static struct regulator_ops ab8500_regulator_fixed_ops = {
+ 	.disable	= ab8500_regulator_disable,
+ 	.is_enabled	= ab8500_regulator_is_enabled,
+ 	.get_voltage	= ab8500_fixed_get_voltage,
+-	.list_voltage	= ab8500_fixed_list_voltage,
++	.list_voltage	= regulator_list_voltage_linear,
+ 	.enable_time	= ab8500_regulator_enable_time,
+-	.set_voltage_time_sel = ab8500_regulator_set_voltage_time_sel,
+ };
+ 
+ static struct ab8500_regulator_info
+@@ -408,9 +385,9 @@ static struct ab8500_regulator_info
+ 			.id		= AB8500_LDO_TVOUT,
+ 			.owner		= THIS_MODULE,
+ 			.n_voltages	= 1,
++			.min_uV		= 2000000,
+ 		},
+ 		.delay			= 10000,
+-		.fixed_uV		= 2000000,
+ 		.update_bank		= 0x03,
+ 		.update_reg		= 0x80,
+ 		.update_mask		= 0x82,
+@@ -424,8 +401,8 @@ static struct ab8500_regulator_info
+ 			.id             = AB8500_LDO_USB,
+ 			.owner          = THIS_MODULE,
+ 			.n_voltages     = 1,
++			.min_uV		= 3300000,
+ 		},
+-		.fixed_uV               = 3300000,
+ 		.update_bank            = 0x03,
+ 		.update_reg             = 0x82,
+ 		.update_mask            = 0x03,
+@@ -439,8 +416,8 @@ static struct ab8500_regulator_info
+ 			.id		= AB8500_LDO_AUDIO,
+ 			.owner		= THIS_MODULE,
+ 			.n_voltages	= 1,
++			.min_uV		= 2000000,
+ 		},
+-		.fixed_uV		= 2000000,
+ 		.update_bank		= 0x03,
+ 		.update_reg		= 0x83,
+ 		.update_mask		= 0x02,
+@@ -454,8 +431,8 @@ static struct ab8500_regulator_info
+ 			.id		= AB8500_LDO_ANAMIC1,
+ 			.owner		= THIS_MODULE,
+ 			.n_voltages	= 1,
++			.min_uV		= 2050000,
+ 		},
+-		.fixed_uV		= 2050000,
+ 		.update_bank		= 0x03,
+ 		.update_reg		= 0x83,
+ 		.update_mask		= 0x08,
+@@ -469,8 +446,8 @@ static struct ab8500_regulator_info
+ 			.id		= AB8500_LDO_ANAMIC2,
+ 			.owner		= THIS_MODULE,
+ 			.n_voltages	= 1,
++			.min_uV		= 2050000,
+ 		},
+-		.fixed_uV		= 2050000,
+ 		.update_bank		= 0x03,
+ 		.update_reg		= 0x83,
+ 		.update_mask		= 0x10,
+@@ -484,8 +461,8 @@ static struct ab8500_regulator_info
+ 			.id		= AB8500_LDO_DMIC,
+ 			.owner		= THIS_MODULE,
+ 			.n_voltages	= 1,
++			.min_uV		= 1800000,
+ 		},
+-		.fixed_uV		= 1800000,
+ 		.update_bank		= 0x03,
+ 		.update_reg		= 0x83,
+ 		.update_mask		= 0x04,
+@@ -499,8 +476,8 @@ static struct ab8500_regulator_info
+ 			.id		= AB8500_LDO_ANA,
+ 			.owner		= THIS_MODULE,
+ 			.n_voltages	= 1,
++			.min_uV		= 1200000,
+ 		},
+-		.fixed_uV		= 1200000,
+ 		.update_bank		= 0x04,
+ 		.update_reg		= 0x06,
+ 		.update_mask		= 0x0c,
+-- 
+1.7.9.5
+
+
 
