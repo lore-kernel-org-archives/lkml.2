@@ -1,65 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757520Ab2FHDpz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 23:45:55 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:53164 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756562Ab2FHDpn (ORCPT
+	id S1756792Ab2FHDtp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 23:49:45 -0400
+Received: from dalsmrelay2.nai.com ([205.227.136.216]:52864 "EHLO
+	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754285Ab2FHDto (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 23:45:43 -0400
-Message-ID: <4FD17564.9060209@gmail.com>
-Date: Thu, 07 Jun 2012 23:45:40 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Thu, 7 Jun 2012 23:49:44 -0400
+Message-ID: <4FD17600.4010707@snapgear.com>
+Date: Fri, 8 Jun 2012 13:48:16 +1000
+From: Greg Ungerer <gerg@snapgear.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Minchan Kim <minchan@kernel.org>, Pekka Enberg <penberg@kernel.org>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: Re: [PATCH 0/5] Some vmevent fixes...
-References: <CAOJsxLHQcDZSHJZg+zbptqmT9YY0VTkPd+gG_zgMzs+HaV_cyA@mail.gmail.com> <CAHGf_=q1nbu=3cnfJ4qXwmngMPB-539kg-DFN2FJGig8+dRaNw@mail.gmail.com> <CAOJsxLFAavdDbiLnYRwe+QiuEHSD62+Sz6LJTk+c3J9gnLVQ_w@mail.gmail.com> <CAHGf_=pSLfAue6AR5gi5RQ7xvgTxpZckA=Ja1fO1AkoO1o_DeA@mail.gmail.com> <CAOJsxLG1+zhOKgi2Rg1eSoXSCU8QGvHVED_EefOOLP-6JbMDkg@mail.gmail.com> <20120601122118.GA6128@lizard> <alpine.LFD.2.02.1206032125320.1943@tux.localdomain> <4FCC7592.9030403@kernel.org> <20120604113811.GA4291@lizard> <4FCD14F1.1030105@gmail.com> <20120604223951.GA20591@lizard>
-In-Reply-To: <20120604223951.GA20591@lizard>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: <linux-m68k@vger.kernel.org>, Greg Ungerer <gerg@uclinux.org>,
+        Philippe De Muyter <phdm@macqel.be>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/5] m68k: delay, muldi3 - Use CONFIG_CPU_HAS_NO_MULDIV64
+References: <1339094827-12349-1-git-send-email-geert@linux-m68k.org> <1339094827-12349-3-git-send-email-geert@linux-m68k.org>
+In-Reply-To: <1339094827-12349-3-git-send-email-geert@linux-m68k.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(6/4/12 6:39 PM), Anton Vorontsov wrote:
-> On Mon, Jun 04, 2012 at 04:05:05PM -0400, KOSAKI Motohiro wrote:
-> [...]
->>> Yes, nobody throws Android lowmemory killer away. And recently I fixed
->>> a bunch of issues in its tasks traversing and killing code. Now it's
->>> just time to "fix" statistics gathering and interpretation issues,
->>> and I see vmevent as a good way to do just that, and then we
->>> can either turn Android lowmemory killer driver to use the vmevent
->>> in-kernel API (so it will become just a "glue" between notifications
->>> and killing functions), or use userland daemon.
->>
->> Huh? No? android lowmem killer is a "killer". it doesn't make any notification,
->> it only kill memory hogging process. I don't think we can merge them.
+On 08/06/12 04:47, Geert Uytterhoeven wrote:
+> instead of open coding CONFIG_M68000 || CONFIG_COLDFIRE
 >
-> KOSAKI, you don't read what I write. I didn't ever say that low memory
-> killer makes any notifications, that's not what I was saying. I said
-> that once we'll have a good "low memory" notification mechanism (e.g.
-> vmevent), Android low memory killer would just use this mechanism. Be
-> it userland notifications or in-kernel, doesn't matter much.
+> Signed-off-by: Geert Uytterhoeven<geert@linux-m68k.org>
 
-I don't disagree this. But this was not my point. I have to note why
-current android killer is NOT notification.
+Acked-by: Greg Ungerer<gerg@uclinux.org>
 
-In fact, notification is a mere notification. There is no guarantee to
-success to kill. There are various reason to fail to kill. e.g. 1) Any
-shrinking activity need more memory. (that's the reason why now we only
-have memcg oom notification) 2) userland memory returning activity is not
-atomic nor fast. kernel might find another memory shortage before finishing
-memory returning. 3) system thrashing may bring userland process stucking
-4) ... and userland bugs.
+Regards
+Greg
 
-So, big design choice here. 1) vmevent is a just notification. it can't guarantee
-to prevent oom. or 2) to implement some trick (e.g. reserved memory for vmevent
-processes, kernel activity blocking until finish memory returing, etc)
 
+>   arch/m68k/include/asm/delay.h |    2 +-
+>   arch/m68k/lib/muldi3.c        |    2 +-
+>   2 files changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/arch/m68k/include/asm/delay.h b/arch/m68k/include/asm/delay.h
+> index 9c09bec..12d8fe4 100644
+> --- a/arch/m68k/include/asm/delay.h
+> +++ b/arch/m68k/include/asm/delay.h
+> @@ -43,7 +43,7 @@ static inline void __delay(unsigned long loops)
+>   extern void __bad_udelay(void);
+>
+>
+> -#if defined(CONFIG_M68000) || defined(CONFIG_COLDFIRE)
+> +#ifdef CONFIG_CPU_HAS_NO_MULDIV64
+>   /*
+>    * The simpler m68k and ColdFire processors do not have a 32*32->64
+>    * multiply instruction. So we need to handle them a little differently.
+> diff --git a/arch/m68k/lib/muldi3.c b/arch/m68k/lib/muldi3.c
+> index 79e928a..ee5f0b1 100644
+> --- a/arch/m68k/lib/muldi3.c
+> +++ b/arch/m68k/lib/muldi3.c
+> @@ -19,7 +19,7 @@ along with GNU CC; see the file COPYING.  If not, write to
+>   the Free Software Foundation, 59 Temple Place - Suite 330,
+>   Boston, MA 02111-1307, USA.  */
+>
+> -#if defined(CONFIG_M68000) || defined(CONFIG_COLDFIRE)
+> +#ifdef CONFIG_CPU_HAS_NO_MULDIV64
+>
+>   #define SI_TYPE_SIZE 32
+>   #define __BITS4 (SI_TYPE_SIZE / 4)
+
+
+-- 
+------------------------------------------------------------------------
+Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
+SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
+8 Gardner Close                             FAX:         +61 7 3217 5323
+Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
