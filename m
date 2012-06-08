@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934329Ab2FHOTU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 10:19:20 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:38659 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933679Ab2FHOTS (ORCPT
+	id S1759734Ab2FHOVE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 10:21:04 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45073 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757246Ab2FHOVC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 10:19:18 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Gustavo Padovan <gustavo@padovan.org>
-Cc: Manoj Iyer <manoj.iyer@canonical.com>, linux-kernel@vger.kernel.org,
-        linux-bluetooth@vger.kernel.org,
-        Johan Hedberg <johan.hedberg@intel.com>,
-        Marcel Holtmann <marcel@holtmann.org>
-Subject: Re: [PATCH] Bluetooth: btusb: Add vendor specific ID (0a5c:21f4) BCM20702A0
-References: <1334169563-2948-1-git-send-email-manoj.iyer@canonical.com>
-	<1334169563-2948-2-git-send-email-manoj.iyer@canonical.com>
-	<20120413214817.GB1680@joana>
-Date: Fri, 08 Jun 2012 15:19:14 +0100
-In-Reply-To: <20120413214817.GB1680@joana> (Gustavo Padovan's message of "Fri,
-	13 Apr 2012 18:48:17 -0300")
-Message-ID: <87lijxyjh9.fsf@canonical.com>
-User-Agent: Gnus/5.130006 (Ma Gnus v0.6) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Fri, 8 Jun 2012 10:21:02 -0400
+Subject: Re: [PATCH] perf/x86: check ucode before disabling PEBS on
+ SandyBridge
+From: Peter Zijlstra <peterz@infradead.org>
+To: Borislav Petkov <borislav.petkov@amd.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Stephane Eranian <eranian@google.com>,
+        linux-kernel@vger.kernel.org, andi@firstfloor.org, mingo@elte.hu,
+        ming.m.lin@intel.com, Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Dimitri Sivanich <sivanich@sgi.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>
+In-Reply-To: <20120608141543.GD31359@aftab.osrc.amd.com>
+References: <1339064319.23343.13.camel@twins>
+	 <CABPqkBQ+p5rcuxpXCTLMXPM+awAHhQ6mP9-WzVh5GWtn2GyfrA@mail.gmail.com>
+	 <1339065932.23343.18.camel@twins>
+	 <CABPqkBQ=tLXXsgvzQx+i01Owm4MM8m=6cEVVi4ab64gOiTTBYQ@mail.gmail.com>
+	 <1339067757.23343.21.camel@twins> <20120608093513.GA22520@gmail.com>
+	 <1339149613.23343.52.camel@twins> <1339161972.2507.13.camel@laptop>
+	 <20120608135117.GB31359@aftab.osrc.amd.com>
+	 <1339163669.2507.16.camel@laptop>
+	 <20120608141543.GD31359@aftab.osrc.amd.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 08 Jun 2012 16:20:50 +0200
+Message-ID: <1339165250.2507.27.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gustavo,
+On Fri, 2012-06-08 at 16:15 +0200, Borislav Petkov wrote:
+> have a variable which gets initialized to the number of all CPUs and
+> each time ->apply_microcode() finishes by returning 0, we decrement it
+> once.
 
-Gustavo Padovan <gustavo@padovan.org> writes:
+> 
+> Hmm, I'm probably missing some obscure case. 
 
-> Hi Manoj,
->
-> * Manoj Iyer <manoj.iyer@canonical.com> [2012-04-11 13:39:23 -0500]:
->
->> usb-devices:
->> T:  Bus=01 Lev=02 Prnt=02 Port=03 Cnt=02 Dev#=  4 Spd=12  MxCh= 0
->> D:  Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
->> P:  Vendor=0a5c ProdID=21f4 Rev=01.12
->> S:  Manufacturer=Broadcom Corp
->> S:  Product=BCM20702A0
->> S:  SerialNumber=E4D53DF15584
->> C:  #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=0mA
->> I:  If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
->> I:  If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
->> I:  If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
->> I:  If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
->
-> You need to give the usb-devices for the non-working case. I know it
-> works but we need to document this right in the commit message.
+Since its all per-cpu sysfs muck, userspace could update a random
+subsets of cpus.. leaving us hanging.
 
-I was wondering whether there has been any progress with this patch.
-Is there something still pending?
+The 'bestestet' idea I came up with is doing the verify thing I have
+from a delayed work -- say 1 second into the future. That way, when
+there's lots of cpus they all try and enqueue the one work, which at the
+end executes only once, provided the entire update scan took less than
+the second.
 
-I'll try to get the patch tested as we have a bug open to support this
-hardware.
+But yuck..
 
-Cheers,
---
-Luis
