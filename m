@@ -1,114 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757419Ab2FHA0f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 20:26:35 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35197 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756777Ab2FHAZr (ORCPT
+	id S1758598Ab2FHA0g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 20:26:36 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:56011 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756951Ab2FHAZ4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 20:25:47 -0400
-Message-ID: <1339115141.4310.3.camel@phoenix>
-Subject: [PATCH RFT 1/2] regulator: max1586: Convert max1586_v3_ops to
- regulator_list_voltage_linear
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Robert Jarzmik <robert.jarzmik@free.fr>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Fri, 08 Jun 2012 08:25:41 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 7 Jun 2012 20:25:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFxOWR_h1vqRLAd_h5_woXjFBLyBHP--P8F7WsYrciXdmA@mail.gmail.com>
+References: <20120607212114.E4F5AA02F8@akpm.mtv.corp.google.com> <CA+55aFxOWR_h1vqRLAd_h5_woXjFBLyBHP--P8F7WsYrciXdmA@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 7 Jun 2012 17:25:34 -0700
+X-Google-Sender-Auth: 7niTGYInoy2lfbboguVnLgM8ZT0
+Message-ID: <CA+55aFyQUBXhjVLJH6Fhz9xnpfXZ=9Mej5ujt6ss7VUqT1g9Jg@mail.gmail.com>
+Subject: Re: [patch 12/12] mm: correctly synchronize rss-counters at exit/exec
+To: akpm@linux-foundation.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>
+Cc: khlebnikov@openvz.org, hughd@google.com, kamezawa.hiroyu@jp.fujitsu.com,
+        markus@trippelsdorf.de, oleg@redhat.com, stable@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/max1586.c |   32 +++++++++++---------------------
- 1 file changed, 11 insertions(+), 21 deletions(-)
+Ugh, looking more at the patch, I'm getting more and more convinces
+that it is pure and utter garbage.
 
-diff --git a/drivers/regulator/max1586.c b/drivers/regulator/max1586.c
-index 126c7d8..a54771e 100644
---- a/drivers/regulator/max1586.c
-+++ b/drivers/regulator/max1586.c
-@@ -63,14 +63,6 @@ static int v6_voltages_uv[] = { 1, 1800000, 2500000, 3000000 };
-  * R24 and R25=100kOhm as described in the data sheet.
-  * The gain is approximately: 1 + R24/R25 + R24/185.5kOhm
-  */
--static int max1586_v3_calc_voltage(struct max1586_data *max1586,
--	unsigned selector)
--{
--	unsigned range_uV = max1586->max_uV - max1586->min_uV;
--
--	return max1586->min_uV + (selector * range_uV / MAX1586_V3_MAX_VSEL);
--}
--
- static int max1586_v3_set(struct regulator_dev *rdev, int min_uV, int max_uV,
- 			  unsigned *selector)
- {
-@@ -86,25 +78,16 @@ static int max1586_v3_set(struct regulator_dev *rdev, int min_uV, int max_uV,
- 
- 	*selector = DIV_ROUND_UP((min_uV - max1586->min_uV) *
- 				 MAX1586_V3_MAX_VSEL, range_uV);
--	if (max1586_v3_calc_voltage(max1586, *selector) > max_uV)
-+	if (regulator_list_voltage_linear(rdev, *selector) > max_uV)
- 		return -EINVAL;
- 
- 	dev_dbg(&client->dev, "changing voltage v3 to %dmv\n",
--		max1586_v3_calc_voltage(max1586, *selector) / 1000);
-+		regulator_list_voltage_linear(rdev, *selector) / 1000);
- 
- 	v3_prog = I2C_V3_SELECT | (u8) *selector;
- 	return i2c_smbus_write_byte(client, v3_prog);
- }
- 
--static int max1586_v3_list(struct regulator_dev *rdev, unsigned selector)
--{
--	struct max1586_data *max1586 = rdev_get_drvdata(rdev);
--
--	if (selector > MAX1586_V3_MAX_VSEL)
--		return -EINVAL;
--	return max1586_v3_calc_voltage(max1586, selector);
--}
--
- static int max1586_v6_set_voltage_sel(struct regulator_dev *rdev,
- 				      unsigned int selector)
- {
-@@ -124,7 +107,7 @@ static int max1586_v6_set_voltage_sel(struct regulator_dev *rdev,
-  */
- static struct regulator_ops max1586_v3_ops = {
- 	.set_voltage = max1586_v3_set,
--	.list_voltage = max1586_v3_list,
-+	.list_voltage = regulator_list_voltage_linear,
- };
- 
- static struct regulator_ops max1586_v6_ops = {
-@@ -132,7 +115,7 @@ static struct regulator_ops max1586_v6_ops = {
- 	.list_voltage = regulator_list_voltage_table,
- };
- 
--static const struct regulator_desc max1586_reg[] = {
-+static struct regulator_desc max1586_reg[] = {
- 	{
- 		.name = "Output_V3",
- 		.id = MAX1586_V3,
-@@ -185,6 +168,13 @@ static int __devinit max1586_pmic_probe(struct i2c_client *client,
- 			goto err;
- 		}
- 
-+		if (id == MAX1586_V3) {
-+			max1586_reg[id].min_uV = max1586->min_uV;
-+			max1586_reg[id].uV_step =
-+					(max1586->max_uV - max1586->min_uV) /
-+					MAX1586_V3_MAX_VSEL;
-+		}
-+
- 		config.dev = &client->dev;
- 		config.init_data = pdata->subdevs[i].platform_data;
- 		config.driver_data = max1586;
--- 
-1.7.9.5
+It does "sync_mm_rss(mm);" in mmput(), _after_ it has done the
+possibly final mmdrop(). WTF?
 
+This is crap, guys. Seriously. Stop playing russian rulette with this
+code. I think we need to revert *all* of the crazy rss games, unless
+Konstantin can show us some truly obviously correct fix.
 
+Sadly, I merged and pushed out the crap before I had rebooted and
+noticed this problem, so now it's in the wild. Can somebody please
+take a look at this asap?
 
+             Linus
+
+On Thu, Jun 7, 2012 at 5:17 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> This patch actually seems to have made the
+>
+>  BUG: Bad rss-counter state ..
+>
+> problem *much* worse. It triggers all the time for me now - I've got
+> 408 of those messages on my macbook air within a minute of booting it.
+>
+> Not good. Especially not good when it's marked for stable too.
