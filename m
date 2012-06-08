@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759831Ab2FHU1N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 16:27:13 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:34601 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753884Ab2FHU1L (ORCPT
+	id S934460Ab2FHU2c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 16:28:32 -0400
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:33457 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933473Ab2FHU2b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 16:27:11 -0400
+	Fri, 8 Jun 2012 16:28:31 -0400
 MIME-Version: 1.0
 X-Originating-IP: [41.212.116.88]
-In-Reply-To: <CAH3drwZF6H4VCB_o1445sbtfTshiwzxBGSg=gDpPpA=eHfDCzQ@mail.gmail.com>
+In-Reply-To: <CAH3drwa430bUfY4ZHfn583JsDU5Sv=Y5WNaWWXm=a1XpJV1iSw@mail.gmail.com>
 References: <CAHVUoiQywo=iHKsXQbsVE7coc1FL9A9qy_a71SK94MKNV0GrKA@mail.gmail.com>
  <CAHVUoiTZmzT3vquaDC65AJfCFZX-qS5GjgjP2-+=0R7skurW5g@mail.gmail.com>
  <CAHVUoiQgcAMr874d_yPfm9ssUBOoX+dNLy9JNCOCYwOCrAKXFQ@mail.gmail.com>
@@ -18,10 +18,10 @@ References: <CAHVUoiQywo=iHKsXQbsVE7coc1FL9A9qy_a71SK94MKNV0GrKA@mail.gmail.com>
  <CAH3drwY61Pqd1MXxgSYcHRPJF5pNr2FO7vrM_ULsRvMbYjAhOQ@mail.gmail.com>
  <CAHVUoiTfooPSXyVpcg_Khc0rzYcnmvAbGgfko42hOxqukc91_A@mail.gmail.com>
  <CAHVUoiT4FgEpWDLtzfTUaCTZR-rFx76E3MRdU8u9swjmt74ZQg@mail.gmail.com>
- <CAHVUoiQ_csZeh_FEHaCkqmJvHO+Q=UF2Va7V19G-3C=xuSYTPw@mail.gmail.com> <CAH3drwZF6H4VCB_o1445sbtfTshiwzxBGSg=gDpPpA=eHfDCzQ@mail.gmail.com>
+ <CAHVUoiQ_csZeh_FEHaCkqmJvHO+Q=UF2Va7V19G-3C=xuSYTPw@mail.gmail.com> <CAH3drwa430bUfY4ZHfn583JsDU5Sv=Y5WNaWWXm=a1XpJV1iSw@mail.gmail.com>
 From: Brian Gitonga Marete <marete@toshnix.com>
-Date: Fri, 8 Jun 2012 23:26:50 +0300
-Message-ID: <CAHVUoiQvXaySahcONu6MnpPNyd0LbbkB2pAnbR4yjMjuvDR-_A@mail.gmail.com>
+Date: Fri, 8 Jun 2012 23:28:10 +0300
+Message-ID: <CAHVUoiSc3mzrgXFo5-T=8HiYYUBTMhBz0TqUwZSek=VgfhEoyA@mail.gmail.com>
 Subject: Re: [Regression] [Radeon] Stream command failures and render problems
  in Evergreen (Radeon HD 5600) in kernel 3.4
 To: Jerome Glisse <j.glisse@gmail.com>
@@ -33,7 +33,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 8, 2012 at 5:51 PM, Jerome Glisse <j.glisse@gmail.com> wrote:
+On Fri, Jun 8, 2012 at 10:56 PM, Jerome Glisse <j.glisse@gmail.com> wrote:
 > On Fri, Jun 8, 2012 at 6:13 AM, Brian Gitonga Marete <marete@toshnix.com> wrote:
 >> On Fri, Jun 8, 2012 at 12:56 AM, Brian Gitonga Marete
 >> <marete@toshnix.com> wrote:
@@ -95,11 +95,12 @@ On Fri, Jun 8, 2012 at 5:51 PM, Jerome Glisse <j.glisse@gmail.com> wrote:
 >>
 >> BGM.
 >
-> Well i still need to find out what's wrong with 6.14.0, what your
-> screen resolution ?
-
-1366 x 768. I am happy to run whatever tests you would like to debug.
-
+> Brian can you please test patch below on 6.14.0 ddx and old mesa (ie
+> revert to ubuntu mesa & ddx) and report if it fix your issue. Thanks
+>
+> http://people.freedesktop.org/~glisse/0001-drm-radeon-fix-tiling-and-command-stream-checking-on.patch
+>
+ OK. Will test and report back. Thanks!
 
 -- 
 Brian Gitonga Marete
