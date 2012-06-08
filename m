@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761728Ab2FHFK2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 01:10:28 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43273 "EHLO
+	id S1761704Ab2FHFK0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 01:10:26 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43278 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759724Ab2FHFHe (ORCPT
+	by vger.kernel.org with ESMTP id S1761449Ab2FHFHe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Jun 2012 01:07:34 -0400
-Message-Id: <20120608041849.701476797@decadent.org.uk>
+Message-Id: <20120608041847.804505961@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 08 Jun 2012 05:19:46 +0100
+Date: Fri, 08 Jun 2012 05:19:32 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Gao feng <gaofeng@cn.fujitsu.com>,
+        alan@lxorguk.ukuu.org.uk, Stephan Gatzka <stephan@gatzka.org>,
+        Richard Cochran <richardcochran@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 66/82] ipv6: fix incorrect ipsec fragment
+Subject: [ 52/82] fec_mpc52xx: fix timestamp filtering
 In-Reply-To: <20120608041840.861504477@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,180 +29,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gao feng <gaofeng@cn.fujitsu.com>
+From: Stephan Gatzka <stephan@gatzka.org>
 
-[ Upstream commit 0c1833797a5a6ec23ea9261d979aa18078720b74 ]
+commit 9ca3cc6f3026946ba655e863ca2096339e667639 upstream.
 
-Since commit ad0081e43a
-"ipv6: Fragment locally generated tunnel-mode IPSec6 packets as needed"
-the fragment of packets is incorrect.
-because tunnel mode needs IPsec headers and trailer for all fragments,
-while on transport mode it is sufficient to add the headers to the
-first fragment and the trailer to the last.
+skb_defer_rx_timestamp was called with a freshly allocated skb but must
+be called with rskb instead.
 
-so modify mtu and maxfraglen base on ipsec mode and if fragment is first
-or last.
-
-with my test,it work well(every fragment's size is the mtu)
-and does not trigger slow fragment path.
-
-Changes from v1:
-	though optimization, mtu_prev and maxfraglen_prev can be delete.
-	replace xfrm mode codes with dst_entry's new frag DST_XFRM_TUNNEL.
-	add fuction ip6_append_data_mtu to make codes clearer.
-
-Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
+Signed-off-by: Stephan Gatzka <stephan@gatzka.org>
+Acked-by: Richard Cochran <richardcochran@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/net/dst.h      |    1 +
- net/ipv6/ip6_output.c  |   68 +++++++++++++++++++++++++++++++++++-------------
- net/xfrm/xfrm_policy.c |    3 +++
- 3 files changed, 54 insertions(+), 18 deletions(-)
+ drivers/net/ethernet/freescale/fec_mpc52xx.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/include/net/dst.h b/include/net/dst.h
-index 65bca65..16010d1 100644
---- a/include/net/dst.h
-+++ b/include/net/dst.h
-@@ -55,6 +55,7 @@ struct dst_entry {
- #define DST_NOCOUNT		0x0020
- #define DST_NOPEER		0x0040
- #define DST_FAKE_RTABLE		0x0080
-+#define DST_XFRM_TUNNEL		0x0100
+diff --git a/drivers/net/ethernet/freescale/fec_mpc52xx.c b/drivers/net/ethernet/freescale/fec_mpc52xx.c
+index 97f947b..2933d08 100644
+--- a/drivers/net/ethernet/freescale/fec_mpc52xx.c
++++ b/drivers/net/ethernet/freescale/fec_mpc52xx.c
+@@ -437,7 +437,7 @@ static irqreturn_t mpc52xx_fec_rx_interrupt(int irq, void *dev_id)
+ 		length = status & BCOM_FEC_RX_BD_LEN_MASK;
+ 		skb_put(rskb, length - 4);	/* length without CRC32 */
+ 		rskb->protocol = eth_type_trans(rskb, dev);
+-		if (!skb_defer_rx_timestamp(skb))
++		if (!skb_defer_rx_timestamp(rskb))
+ 			netif_rx(rskb);
  
- 	short			error;
- 	short			obsolete;
-diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
-index f7f07e2..ae98e09 100644
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -1178,6 +1178,29 @@ static inline struct ipv6_rt_hdr *ip6_rthdr_dup(struct ipv6_rt_hdr *src,
- 	return src ? kmemdup(src, (src->hdrlen + 1) * 8, gfp) : NULL;
- }
- 
-+static void ip6_append_data_mtu(int *mtu,
-+				int *maxfraglen,
-+				unsigned int fragheaderlen,
-+				struct sk_buff *skb,
-+				struct rt6_info *rt)
-+{
-+	if (!(rt->dst.flags & DST_XFRM_TUNNEL)) {
-+		if (skb == NULL) {
-+			/* first fragment, reserve header_len */
-+			*mtu = *mtu - rt->dst.header_len;
-+
-+		} else {
-+			/*
-+			 * this fragment is not first, the headers
-+			 * space is regarded as data space.
-+			 */
-+			*mtu = dst_mtu(rt->dst.path);
-+		}
-+		*maxfraglen = ((*mtu - fragheaderlen) & ~7)
-+			      + fragheaderlen - sizeof(struct frag_hdr);
-+	}
-+}
-+
- int ip6_append_data(struct sock *sk, int getfrag(void *from, char *to,
- 	int offset, int len, int odd, struct sk_buff *skb),
- 	void *from, int length, int transhdrlen,
-@@ -1187,7 +1210,7 @@ int ip6_append_data(struct sock *sk, int getfrag(void *from, char *to,
- 	struct inet_sock *inet = inet_sk(sk);
- 	struct ipv6_pinfo *np = inet6_sk(sk);
- 	struct inet_cork *cork;
--	struct sk_buff *skb;
-+	struct sk_buff *skb, *skb_prev = NULL;
- 	unsigned int maxfraglen, fragheaderlen;
- 	int exthdrlen;
- 	int dst_exthdrlen;
-@@ -1245,8 +1268,12 @@ int ip6_append_data(struct sock *sk, int getfrag(void *from, char *to,
- 		inet->cork.fl.u.ip6 = *fl6;
- 		np->cork.hop_limit = hlimit;
- 		np->cork.tclass = tclass;
--		mtu = np->pmtudisc == IPV6_PMTUDISC_PROBE ?
--		      rt->dst.dev->mtu : dst_mtu(&rt->dst);
-+		if (rt->dst.flags & DST_XFRM_TUNNEL)
-+			mtu = np->pmtudisc == IPV6_PMTUDISC_PROBE ?
-+			      rt->dst.dev->mtu : dst_mtu(&rt->dst);
-+		else
-+			mtu = np->pmtudisc == IPV6_PMTUDISC_PROBE ?
-+			      rt->dst.dev->mtu : dst_mtu(rt->dst.path);
- 		if (np->frag_size < mtu) {
- 			if (np->frag_size)
- 				mtu = np->frag_size;
-@@ -1342,25 +1369,27 @@ int ip6_append_data(struct sock *sk, int getfrag(void *from, char *to,
- 			unsigned int fraglen;
- 			unsigned int fraggap;
- 			unsigned int alloclen;
--			struct sk_buff *skb_prev;
- alloc_new_skb:
--			skb_prev = skb;
--
- 			/* There's no room in the current skb */
--			if (skb_prev)
--				fraggap = skb_prev->len - maxfraglen;
-+			if (skb)
-+				fraggap = skb->len - maxfraglen;
- 			else
- 				fraggap = 0;
-+			/* update mtu and maxfraglen if necessary */
-+			if (skb == NULL || skb_prev == NULL)
-+				ip6_append_data_mtu(&mtu, &maxfraglen,
-+						    fragheaderlen, skb, rt);
-+
-+			skb_prev = skb;
- 
- 			/*
- 			 * If remaining data exceeds the mtu,
- 			 * we know we need more fragment(s).
- 			 */
- 			datalen = length + fraggap;
--			if (datalen > (cork->length <= mtu && !(cork->flags & IPCORK_ALLFRAG) ? mtu : maxfraglen) - fragheaderlen)
--				datalen = maxfraglen - fragheaderlen;
- 
--			fraglen = datalen + fragheaderlen;
-+			if (datalen > (cork->length <= mtu && !(cork->flags & IPCORK_ALLFRAG) ? mtu : maxfraglen) - fragheaderlen)
-+				datalen = maxfraglen - fragheaderlen - rt->dst.trailer_len;
- 			if ((flags & MSG_MORE) &&
- 			    !(rt->dst.dev->features&NETIF_F_SG))
- 				alloclen = mtu;
-@@ -1369,13 +1398,16 @@ alloc_new_skb:
- 
- 			alloclen += dst_exthdrlen;
- 
--			/*
--			 * The last fragment gets additional space at tail.
--			 * Note: we overallocate on fragments with MSG_MODE
--			 * because we have no idea if we're the last one.
--			 */
--			if (datalen == length + fraggap)
--				alloclen += rt->dst.trailer_len;
-+			if (datalen != length + fraggap) {
-+				/*
-+				 * this is not the last fragment, the trailer
-+				 * space is regarded as data space.
-+				 */
-+				datalen += rt->dst.trailer_len;
-+			}
-+
-+			alloclen += rt->dst.trailer_len;
-+			fraglen = datalen + fragheaderlen;
- 
- 			/*
- 			 * We just reserve space for fragment header.
-diff --git a/net/xfrm/xfrm_policy.c b/net/xfrm/xfrm_policy.c
-index 9049a5c..0174034 100644
---- a/net/xfrm/xfrm_policy.c
-+++ b/net/xfrm/xfrm_policy.c
-@@ -1919,6 +1919,9 @@ no_transform:
- 	}
- ok:
- 	xfrm_pols_put(pols, drop_pols);
-+	if (dst && dst->xfrm &&
-+	    dst->xfrm->props.mode == XFRM_MODE_TUNNEL)
-+		dst->flags |= DST_XFRM_TUNNEL;
- 	return dst;
- 
- nopol:
+ 		spin_lock(&priv->lock);
 
 
