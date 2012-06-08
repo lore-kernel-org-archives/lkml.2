@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933480Ab2FHFZi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 01:25:38 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43200 "EHLO
+	id S1761953Ab2FHFZg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 01:25:36 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43265 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1761120Ab2FHFHR (ORCPT
+	by vger.kernel.org with ESMTP id S1761312Ab2FHFHR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Jun 2012 01:07:17 -0400
-Message-Id: <20120608041847.540026866@decadent.org.uk>
+Message-Id: <20120608041846.747688192@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 08 Jun 2012 05:19:30 +0100
+Date: Fri, 08 Jun 2012 05:19:24 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Thomas Hellstrom <thellstrom@vmware.com>,
-        Jakob Bornecrantz <jakob@vmware.com>, Dave Airlie <airlied@redhat.com>
-Subject: [ 50/82] drm/vmwgfx: Fix nasty write past alloced memory area
+        alan@lxorguk.ukuu.org.uk, Salman Qazi <sqazi@google.com>,
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [ 44/82] ext4: add ext4_mb_unload_buddy in the error path
 In-Reply-To: <20120608041840.861504477@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,30 +28,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Hellstrom <thellstrom@vmware.com>
+From: Salman Qazi <sqazi@google.com>
 
-commit 0824db38e515644f8d1bfd64adbd7cb2c6ea7c62 upstream.
+commit 02b7831019ea4e7994968c84b5826fa8b248ffc8 upstream.
 
-Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
-Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+ext4_free_blocks fails to pair an ext4_mb_load_buddy with a matching
+ext4_mb_unload_buddy when it fails a memory allocation.
+
+Signed-off-by: Salman Qazi <sqazi@google.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/vmwgfx/vmwgfx_gmr.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ext4/mballoc.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_gmr.c b/drivers/gpu/drm/vmwgfx/vmwgfx_gmr.c
-index 51c9ba5..21ee782 100644
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_gmr.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_gmr.c
-@@ -66,7 +66,7 @@ static int vmw_gmr2_bind(struct vmw_private *dev_priv,
- 	cmd += sizeof(remap_cmd) / sizeof(uint32);
- 
- 	for (i = 0; i < num_pages; ++i) {
--		if (VMW_PPN_SIZE > 4)
-+		if (VMW_PPN_SIZE <= 4)
- 			*cmd = page_to_pfn(*pages++);
- 		else
- 			*((uint64_t *)cmd) = page_to_pfn(*pages++);
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -4693,6 +4693,7 @@
+ 		 */
+ 		new_entry = kmem_cache_alloc(ext4_free_ext_cachep, GFP_NOFS);
+ 		if (!new_entry) {
++			ext4_mb_unload_buddy(&e4b);
+ 			err = -ENOMEM;
+ 			goto error_return;
+ 		}
 
 
