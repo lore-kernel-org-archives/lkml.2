@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932515Ab2FHPo5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 11:44:57 -0400
-Received: from fias.uni-frankfurt.de ([141.2.248.1]:47517 "EHLO
-	fias.uni-frankfurt.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757781Ab2FHPo4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 11:44:56 -0400
-Message-ID: <1339170312.26423.6.camel@tesla>
-Subject: Re: [PATCH] uio_pci_generic does not export memory resources
-From: Dominic Eschweiler <eschweiler@fias.uni-frankfurt.de>
-To: "Hans J. Koch" <hjk@hansjkoch.de>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 08 Jun 2012 17:45:12 +0200
-In-Reply-To: <20120608151843.GA9705@local>
-References: <1339156616.3870.9.camel@blech>
-	 <20120608130351.GB1964@redhat.com> <1339165738.3870.18.camel@blech>
-	 <20120608151843.GA9705@local>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 8BIT
-Mime-Version: 1.0
+	id S1761398Ab2FHPqG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 11:46:06 -0400
+Received: from mga01.intel.com ([192.55.52.88]:16703 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753983Ab2FHPqE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 11:46:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="162926148"
+Date: Sat, 9 Jun 2012 00:45:35 +0900
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Jan Kara <jack@suse.cz>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: writeback: bad unlock balance detected in 3.5-rc1
+Message-ID: <20120608154535.GA887@localhost>
+References: <E1Sd0IP-0005nh-AJ@tytso-glaptop.cam.corp.google.com>
+ <20120608150736.GF21080@quack.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120608150736.GF21080@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, den 08.06.2012, 17:18 +0200 schrieb Hans J. Koch:
-> Then there's something fundamentally wrong in your driver. Check the
-> return value of uio_register_device().
-> 
-I'm talking about the uio_pci_generic module, not about UIO in general.
+On Fri, Jun 08, 2012 at 05:07:36PM +0200, Jan Kara wrote:
+> On Fri 08-06-12 10:36:13, Ted Tso wrote:
+> > 
+> > I can reproduce this fairly easily by using ext4 w/o a journal, running
+> > under KVM with 1024megs memory, with fsstress (xfstests #13):
 
-> > I was very confused when I tried UIO the first time
-> > and it did not behave like it is described in the documentation.
-> 
-> UIO is the mainline since 2007, and I can assure you it works like
-> described. Lots of people use it.
-> 
-I know and I really don't have a problem with UIO itself. The
-uio_pci_generic module does not export correctly, maybe you take a look
-on its code? My guess is, that the uio_pci_generic module isn't commonly
-used and therefore the problem wasn't reported before.
+Good catch, thanks!
 
--- 
-Gruß
-  Dominic
+>   Argh, I wonder how come I didn't hit this. Does attached patch fix the
+> problem?
 
-Frankfurt Institute for Advanced Studies (FIAS)
-Ruth-Moufang-Straße 1
-D-60438 Frankfurt am Main
-Germany
+> diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+> index 8d2fb8c..41a3ccf 100644
+> --- a/fs/fs-writeback.c
+> +++ b/fs/fs-writeback.c
+> @@ -664,6 +664,7 @@ static long writeback_sb_inodes(struct super_block *sb,
+>  			/* Wait for I_SYNC. This function drops i_lock... */
+>  			inode_sleep_on_writeback(inode);
+>  			/* Inode may be gone, start again */
+> +			spin_lock(&wb->list_lock);
+>  			continue;
+>  		}
 
-Phone:  +49 (0)
+That looks like the fix. So I pushed it to writeback-for-next.
+Thanks for the quick fixing!
 
+I'm yet to setup and run xfstests regularly, so as to catch such kind
+of problems earlier in future.
+
+Thanks,
+Fengguang
