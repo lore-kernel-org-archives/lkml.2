@@ -1,75 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965023Ab2FHWEc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 18:04:32 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:46765 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964922Ab2FHWEb (ORCPT
+	id S965057Ab2FHWGu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 18:06:50 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:51716 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964922Ab2FHWGo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 18:04:31 -0400
-Date: Fri, 8 Jun 2012 18:04:24 -0400
-From: Konrad Rzeszutek Wilk <konrad@darnok.org>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: dan.magenheimer@oracle.com, konrad.wilk@oracle.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 00/10] minor frontswap cleanups and tracing support
-Message-ID: <20120608220422.GA15294@localhost.localdomain>
-References: <1339182919-11432-1-git-send-email-levinsasha928@gmail.com>
+	Fri, 8 Jun 2012 18:06:44 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339182919-11432-1-git-send-email-levinsasha928@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120608220049.GA18024@otc-wbsnb-06>
+References: <1339191663-17693-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <20120608220049.GA18024@otc-wbsnb-06>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 8 Jun 2012 15:06:20 -0700
+X-Google-Sender-Auth: rHFluJhVNBqsLJDbi8l-3Mizp8Q
+Message-ID: <CA+55aFxbEk0k0jYtkn-H-sT0m4Fy5pH_OQZiPwCtwMvh22-3-w@mail.gmail.com>
+Subject: Re: [RFC, PATCH] fs: push rcu_barrier() from deactivate_locked_super()
+ to filesystems
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Boaz Harrosh <bharrosh@panasas.com>, Tao Ma <boyu.mt@taobao.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nick Piggin <npiggin@kernel.dk>, "Dmitry V. Levin" <ldv@altlinux.org>,
+        v9fs-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-afs@lists.infradead.org,
+        linux-btrfs@vger.kernel.org, ceph-devel@vger.kernel.org,
+        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
+        codalist@TELEMANN.coda.cs.cmu.edu, ecryptfs@vger.kernel.org,
+        osd-dev@open-osd.org, linux-ext4@vger.kernel.org,
+        fuse-devel@lists.sourceforge.net, linux-mtd@lists.infradead.org,
+        jfs-discussion@lists.sourceforge.net, logfs@logfs.org,
+        linux-nfs@vger.kernel.org, linux-nilfs@vger.kernel.org,
+        linux-ntfs-dev@lists.sourceforge.net, ocfs2-devel@oss.oracle.com,
+        reiserfs-devel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 08, 2012 at 09:15:09PM +0200, Sasha Levin wrote:
-> Most of these patches are minor cleanups to the mm/frontswap.c code, the big
-> chunk of new code can be attributed to the new tracing support.
-> 
-> 
-> Changes in v2:
->  - Rebase to current version
->  - Address Konrad's comments
+On Fri, Jun 8, 2012 at 3:00 PM, Kirill A. Shutemov
+<kirill.shutemov@linux.intel.com> wrote:
+>
+> IIUC, moving rcu_barrier() up should help, but I can't say that I fully
+> understand SLAB_DESTROY_BY_RCU semantics.
 
-There was one comment that I am not sure if it was emailed and that
-was about adding the "lockdep_assert_held(&swap_lock);".
+.. hmm. I think you may be right. Even if we do move it up, we
+probably shouldn't use it.
 
-You added that in two patches, while the git commit only talks about
-"move that code" . Please remove it out of the "move the code" patches
-and add it as a seperate git commit with an explanation of why it
-is added.
+We don't even want SLAB_DESTROY_BY_RCU, since we do the delayed RCU
+free for other reasons anyway, so it would duplicate the RCU delaying
+and cause problems. I forgot about that little complication.
 
-Otherwise (well, the compile issue that was spotted) the patches
-look great. Could you repost them with those two fixes please?
+We could have a separate "RCU_BARRIER_ON_DESTROY" thing, but that's
+just silly too.
 
-> 
-> Sasha Levin (10):
->   mm: frontswap: remove casting from function calls through ops
->     structure
->   mm: frontswap: trivial coding convention issues
->   mm: frontswap: split out __frontswap_curr_pages
->   mm: frontswap: split out __frontswap_unuse_pages
->   mm: frontswap: split frontswap_shrink further to simplify locking
->   mm: frontswap: make all branches of if statement in put page
->     consistent
->   mm: frontswap: remove unnecessary check during initialization
->   mm: frontswap: add tracing support
->   mm: frontswap: split out function to clear a page out
->   mm: frontswap: remove unneeded headers
-> 
->  include/trace/events/frontswap.h |  167 ++++++++++++++++++++++++++++++++++++++
->  mm/frontswap.c                   |  162 +++++++++++++++++++++++-------------
->  2 files changed, 270 insertions(+), 59 deletions(-)
->  create mode 100644 include/trace/events/frontswap.h
-> 
-> -- 
-> 1.7.8.6
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
+Maybe your patch is the right thing.
+
+            Linus
