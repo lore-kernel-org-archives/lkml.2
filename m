@@ -1,96 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932903Ab2FHN6y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 09:58:54 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:61434 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932339Ab2FHN6w (ORCPT
+	id S932816Ab2FHN77 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 09:59:59 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44653 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755230Ab2FHN75 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 09:58:52 -0400
-X-AuditID: 9c93016f-b7c3cae000001954-70-4fd205193264
-From: "Kim, Jong-Sung" <neidhard.kim@lge.com>
-To: "'Minchan Kim'" <minchan@kernel.org>,
-        "'Russell King'" <linux@arm.linux.org.uk>
-Cc: "'Nicolas Pitre'" <nico@linaro.org>,
-        "'Catalin Marinas'" <catalin.marinas@arm.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        "'Chanho Min'" <chanho.min@lge.com>, <linux-mm@kvack.org>
-References: <1338880312-17561-1-git-send-email-minchan@kernel.org>
-In-Reply-To: <1338880312-17561-1-git-send-email-minchan@kernel.org>
-Subject: RE: [PATCH] [RESEND] arm: limit memblock base address for early_pte_alloc
-Date: Fri, 8 Jun 2012 22:58:50 +0900
-Message-ID: <025701cd457e$d5065410$7f12fc30$@lge.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
+	Fri, 8 Jun 2012 09:59:57 -0400
+Subject: Re: [PATCH] perf/x86: check ucode before disabling PEBS on
+ SandyBridge
+From: Peter Zijlstra <peterz@infradead.org>
+To: Borislav Petkov <borislav.petkov@amd.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Stephane Eranian <eranian@google.com>,
+        linux-kernel@vger.kernel.org, andi@firstfloor.org, mingo@elte.hu,
+        ming.m.lin@intel.com, Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Dimitri Sivanich <sivanich@sgi.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>
+In-Reply-To: <20120608135117.GB31359@aftab.osrc.amd.com>
+References: <20120607071531.GA4849@quad> <1339064319.23343.13.camel@twins>
+	 <CABPqkBQ+p5rcuxpXCTLMXPM+awAHhQ6mP9-WzVh5GWtn2GyfrA@mail.gmail.com>
+	 <1339065932.23343.18.camel@twins>
+	 <CABPqkBQ=tLXXsgvzQx+i01Owm4MM8m=6cEVVi4ab64gOiTTBYQ@mail.gmail.com>
+	 <1339067757.23343.21.camel@twins> <20120608093513.GA22520@gmail.com>
+	 <1339149613.23343.52.camel@twins> <1339161972.2507.13.camel@laptop>
+	 <20120608135117.GB31359@aftab.osrc.amd.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 08 Jun 2012 15:59:46 +0200
+Message-ID: <1339163986.2507.19.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQLyw5u255N8mX4sZ4V+/prpc6IPupSlZIqQ
-Content-Language: ko
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Minchan Kim [mailto:minchan@kernel.org]
-> Sent: Tuesday, June 05, 2012 4:12 PM
-> 
-> If we do arm_memblock_steal with a page which is not aligned with section
-> size, panic can happen during boot by page fault in map_lowmem.
-> 
-> Detail:
-> 
-> 1) mdesc->reserve can steal a page which is allocated at 0x1ffff000 by
-> memblock
->    which prefers tail pages of regions.
-> 2) map_lowmem maps 0x00000000 - 0x1fe00000
-> 3) map_lowmem try to map 0x1fe00000 but it's not aligned by section due to
-1.
-> 4) calling alloc_init_pte allocates a new page for new pte by
-memblock_alloc
-> 5) allocated memory for pte is 0x1fffe000 -> it's not mapped yet.
-> 6) memset(ptr, 0, sz) in early_alloc_aligned got PANICed!
+On Fri, 2012-06-08 at 15:51 +0200, Borislav Petkov wrote:
+> Provided, of course, newer microcode versions means a
+> higher version number. 
 
-May I suggest another simple approach? The first continuous couples of
-sections are always safely section-mapped inside alloc_init_section funtion.
-So, by limiting memblock_alloc to the end of the first continuous couples of
-sections at the start of map_lowmem, map_lowmem can safely memblock_alloc &
-memset even if we have one or more section-unaligned memory regions. The
-limit can be extended back to arm_lowmem_limit after the map_lowmem is done.
-
-diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
-index e5dad60..edf1e2d 100644
---- a/arch/arm/mm/mmu.c
-+++ b/arch/arm/mm/mmu.c
-@@ -1094,6 +1094,11 @@ static void __init kmap_init(void)
- static void __init map_lowmem(void)
- {
- 	struct memblock_region *reg;
-+	phys_addr_t pmd_map_end;
-+
-+	pmd_map_end = (memblock.memory.regions[0].base +
-+	               memblock.memory.regions[0].size) & PMD_MASK;
-+	memblock_set_current_limit(pmd_map_end);
- 
- 	/* Map all the lowmem memory banks. */
- 	for_each_memblock(memory, reg) {
-@@ -1113,6 +1118,8 @@ static void __init map_lowmem(void)
- 
- 		create_mapping(&map);
- 	}
-+
-+	memblock_set_current_limit(arm_lowmem_limit);
- }
- 
- /*
-@@ -1123,8 +1130,6 @@ void __init paging_init(struct machine_desc *mdesc)
- {
- 	void *zero_page;
- 
--	memblock_set_current_limit(arm_lowmem_limit);
--
- 	build_mem_type_table();
- 	prepare_page_table();
- 	map_lowmem();
-
+Fair enough, I assumed this.. is this true?
 
