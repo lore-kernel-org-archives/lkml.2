@@ -1,66 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762033Ab2FHJWS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 05:22:18 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:42353 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760567Ab2FHJWR (ORCPT
+	id S934104Ab2FHJ1Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 05:27:24 -0400
+Received: from mga03.intel.com ([143.182.124.21]:25686 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762003Ab2FHJ1W convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 05:22:17 -0400
-Message-ID: <1339147304.5216.1.camel@phoenix>
-Subject: [PATCH RFT] regulator: max77686: Fix the delay time for
- set_voltage_time_sel
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Chiwoong Byun <woong.byun@samsung.com>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Yadwinder Singh Brar <yadi.brar@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Date: Fri, 08 Jun 2012 17:21:44 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 8 Jun 2012 05:27:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="153409155"
+From: "Liu, Jinsong" <jinsong.liu@intel.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "Luck, Tony" <tony.luck@intel.com>,
+        "'xen-devel@lists.xensource.com'" <xen-devel@lists.xensource.com>,
+        Borislav Petkov <bp@amd64.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
+Subject: RE: [Xen-devel] [PATCH 1/2] xen/mce: Add mcelog support for Xen
+ platform
+Thread-Topic: [Xen-devel] [PATCH 1/2] xen/mce: Add mcelog support for Xen
+ platform
+Thread-Index: AQHNRNHcM9HNPWGJrkGbs3SSikmUqJbwJzvA
+Date: Fri, 8 Jun 2012 09:27:19 +0000
+Message-ID: <DE8DF0795D48FD4CA783C40EC829233522160D@SHSMSX101.ccr.corp.intel.com>
+References: <DE8DF0795D48FD4CA783C40EC82923351FEE7C@SHSMSX101.ccr.corp.intel.com>
+ <20120606205523.GA10891@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC829233521AF4B@SHSMSX101.ccr.corp.intel.com>
+ <20120607172039.GR9472@phenom.dumpdata.com>
+In-Reply-To: <20120607172039.GR9472@phenom.dumpdata.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rdev->desc->uV_step * abs(new_selector - old_selector) returns uV.
-The unit of ramp_rate is mV/us.
-Thus 1000 should be multiplied.
+Konrad Rzeszutek Wilk wrote:
+> On Thu, Jun 07, 2012 at 06:45:39AM +0000, Liu, Jinsong wrote:
+>> Konrad Rzeszutek Wilk wrote:
+>>> On Thu, May 31, 2012 at 12:57:44PM +0000, Liu, Jinsong wrote:
+>>>>> From 1a7951d6ca01d7f2c9dd2bdb6de5f8e7fdcb8bbd Mon Sep 17 00:00:00
+>>>>> 2001
+>>>> From: root <root@ljsromley.bj.intel.com>
+>>>> Date: Fri, 1 Jun 2012 03:12:51 +0800
+>>>> Subject: [PATCH 1/2] xen/mce: Add mcelog support for Xen platform
+>>>> 
+>>>> When MCA error occurs, it would be handled by Xen hypervisor first,
+>>>> and then the error information would be sent to initial domain for
+>>>> logging. 
+>>>> 
+>>>> This patch gets error information from Xen hypervisor and convert
+>>>> Xen format error into Linux format mcelog. This logic is basically
+>>>> self-contained, not touching other kernel components.
+>>>> 
+>>>> By using tools like mcelog tool users could read specific error
+>>>> information, like what they did under native Linux.
+>>>> 
+>>>> To test follow directions outlined in
+>>>> Documentation/acpi/apei/einj.txt
+>>> 
+>>> [   53.264610] switch: port 1(eth0) entered forwarding state
+>>> [ 1058.051938] BUG: sleeping function called from invalid context at
+>>> /home/konrad/linux/include/linux/kernel.h:199 [ 1058.052066]
+>>> in_atomic(): 1, irqs_disabled(): 0, pid: 4552, name: mcelog [
+>>> 1058.052130] Pid: 4552, comm: mcelog Tainted: G           O
+>>> 3.5.0-rc1upstream-00041-ga16e594-dirty #2 [ 1058.052235] Call Trace:
+>>> [ 1058.052291]  [<ffffffff8109ad9a>] __might_sleep+0xda/0x100 [
+>>> 1058.052349]  [<ffffffff8132a55b>] xen_mce_chrdev_read+0xab/0x140 [
+>>> 1058.052408]  [<ffffffff81148d85>] vfs_read+0xc5/0x190 [
+>>> 1058.052461] [<ffffffff81148f4c>] sys_read+0x4c/0x90 [ 1058.052515]
+>>> [<ffffffff815bdd79>] system_call_fastpath+0x16/0x1
+>>> 
+>>> ?
+>> 
+>> I will debug it. Would you tell me the steps to reproduce the bug,
+>> and your .config file? 
+> 
+> 
+> # echo 0x00000008 > error_type
+> # echo 1 > error_inject
+> (XEN) CMCI: send CMCI to DOM0 through virq
+> [  214.207962] BUG: sleeping function called from invalid context at
+> /home/konradinux/kernel.h:199 [  214.208129] in_atomic(): 1,
+> irqs_disabled(): 0, pid: 4581, name: mcelog [  214.208242] Pid: 4581,
+> comm: mcelog Tainted: G           O
+> 3.5.0-rc1upstream-00003-g149000b-dirty #1 # [  214.208384] Call
+> Trace: [  214.208490]  [<ffffffff8109ad9a>] __might_sleep+0xda/0x100
+> [  214.208606]  [<ffffffff81329b0b>] xen_mce_chrdev_read+0xab/0x140 [
+> 214.208715]  [<ffffffff81148945>] vfs_read+0xc5/0x190 [  214.208816] 
+> [<ffffffff81148b0c>] sys_read+0x4c/0x90 [  214.208923] 
+> [<ffffffff815bd039>] system_call_fastpath+0x16/0x1b 
+> 
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/max77686.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Thanks! it caused by copy_to_user (might sleep) in an atomic spinlock context.
+Send patch to fix it later, draft test OK.
 
-diff --git a/drivers/regulator/max77686.c b/drivers/regulator/max77686.c
-index b76a038..10bf65a 100644
---- a/drivers/regulator/max77686.c
-+++ b/drivers/regulator/max77686.c
-@@ -78,7 +78,7 @@ static int max77686_set_dvs_voltage_time_sel(struct regulator_dev *rdev,
- 
- 	return DIV_ROUND_UP(rdev->desc->uV_step *
- 			    abs(new_selector - old_selector),
--			    ramp_rate[max77686->ramp_delay]);
-+			    ramp_rate[max77686->ramp_delay] * 1000);
- }
- 
- static int max77686_set_voltage_time_sel(struct regulator_dev *rdev,
-@@ -86,7 +86,7 @@ static int max77686_set_voltage_time_sel(struct regulator_dev *rdev,
- {
- 	/* Unconditionally 100 mV/us */
- 	return DIV_ROUND_UP(rdev->desc->uV_step *
--			    abs(new_selector - old_selector), 100);
-+			    abs(new_selector - old_selector), 100 * 1000);
- }
- 
- static struct regulator_ops max77686_ops = {
--- 
-1.7.9.5
-
-
-
+Regards,
+Jinsong
