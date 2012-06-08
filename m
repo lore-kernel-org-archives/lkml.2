@@ -1,82 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760403Ab2FHCeb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 22:34:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60627 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753856Ab2FHCea (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 22:34:30 -0400
-Date: Thu, 7 Jun 2012 22:34:20 -0400
-From: Dave Jones <davej@redhat.com>
-To: Francois Romieu <romieu@fr.zoreil.com>
-Cc: Marc Dionne <marc.c.dionne@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: NOHZ: local_softirq_pending 08
-Message-ID: <20120608023420.GD7191@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Francois Romieu <romieu@fr.zoreil.com>,
-	Marc Dionne <marc.c.dionne@gmail.com>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-References: <20120530214809.GA19223@redhat.com>
- <alpine.LFD.2.02.1205310938080.3231@ionos>
- <20120601225754.GA25281@electric-eye.fr.zoreil.com>
- <CAB9dFdvWoc1onyWyy4BVmhpjeb5K2d10re0NcW-_NQCbfRC0hw@mail.gmail.com>
- <20120605231550.GA20981@electric-eye.fr.zoreil.com>
- <20120606014656.GA24870@redhat.com>
- <20120606054251.GA24467@electric-eye.fr.zoreil.com>
+	id S1760450Ab2FHChs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 22:37:48 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:41717 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753884Ab2FHChq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 22:37:46 -0400
+Date: Fri, 8 Jun 2012 03:37:42 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Miklos Szeredi <mszeredi@suse.cz>, Jan Kara <jack@suse.cz>,
+        Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
+        "J. Bruce Fields" <bfields@redhat.com>, Sage Weil <sage@newdream.net>
+Subject: Re: processes hung after sys_renameat, and 'missing' processes
+Message-ID: <20120608023742.GN30000@ZenIV.linux.org.uk>
+References: <20120606235403.GC30000@ZenIV.linux.org.uk>
+ <20120607002914.GB22223@redhat.com>
+ <CA+55aFyp2GUbc218eb5BDyAqz+cOPTJMVcb4ptk+f1_RBB+-mg@mail.gmail.com>
+ <20120607011915.GA17566@redhat.com>
+ <20120607012900.GE30000@ZenIV.linux.org.uk>
+ <20120607193607.GI30000@ZenIV.linux.org.uk>
+ <873966n2c2.fsf@xmission.com>
+ <CA+55aFxxS3+NmZacr76qNmEu9=-=aw61gW1Ebugg8hdMNgKiJA@mail.gmail.com>
+ <20120608003604.GK30000@ZenIV.linux.org.uk>
+ <87mx4eimij.fsf@xmission.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120606054251.GA24467@electric-eye.fr.zoreil.com>
+In-Reply-To: <87mx4eimij.fsf@xmission.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 06, 2012 at 07:42:51AM +0200, Francois Romieu wrote:
+On Thu, Jun 07, 2012 at 07:08:04PM -0700, Eric W. Biederman wrote:
+> > +	dentry->d_fsdata = sysfs_get(sd);
+> > +	ret = d_materialise_unique(dentry, inode);
+> 
+> I have a small problem with d_materialise_unique.  For renames of files
+> d_materialise_unique calls __d_instantiate_unique. __d_instantiate_unique
+> does not detect renames of files.  Which at least misses the rename
+> of sysfs symlinks.
 
- > My sequence was:
- > 
- > echo 0 > tracing_on
- > echo nop > current_tracer
- > echo 10000 > buffer_size_kb
- > echo function > current_tracer
- > echo rtl* > set_ftrace_filter
- > echo r8169* >> set_ftrace_filter
- > echo tick_nohz_stop_sched_tick >> set_ftrace_filter
- > 
- > I only enabled tracing_on right before 'ip link ... up'.
+Er... yes, but why do we care?  It's not as if you had a hardwired
+reference to dentry from your objects, after all (can't, with multiple
+superblocks).  So you get old stale dentry at the old location and
+a new one where we'd moved that sucker.  They have the same inode
+and each holds a reference to the same sd; ->d_revalidate() at the
+old location must invalidate the old instance anyway, since you are
+not guaranteed that lookup at the new one will happen before repeated
+lookup at the old one.
 
-Ok. This was a bit of a pain to trace, as I can't trigger the NOHZ message
-when I bring up/down the interface by hand. It only seems to happen
-during boot now for some reason. So I modified the networking ifup scripts
-to start/stop the logging. It's still a pain, because there are two NICs
-in the affected machine, so everything happens twice.
-It also seems to have started too early & finished too late.. oh well.
-hopefully you can get something interesting out of it.
+Directories *are* special in that respect, but symlinks are trivial...
+VFS doesn't care if you have extra dentries for those and neither does
+sysfs, AFAICS.
 
- > tick_nohz_stop_sched_tick fills the log rather fast.
-
-I don't have that symbol for some reason.
-
-The log is still huge though. (68M uncompressed) at http://www.codemonkey.org.uk/junk/r8169-trace.txt.xz
-
-Here's the order of events on that boot...
-
-[   53.086040] r8169 0000:01:00.0: eth0: link down
-[   53.086441] r8169 0000:01:00.0: eth0: link down
-[   53.086545] NOHZ: local_softirq_pending 08
-[   53.113025] IPv6: ADDRCONF(NETDEV_UP): eth0: link is not ready
-[   54.773637] r8169 0000:01:00.0: eth0: link up
-[   54.783210] IPv6: ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready
-[   64.941664] r8169 0000:05:00.0: eth1: link down
-[   64.941748] r8169 0000:05:00.0: eth1: link down
-[   64.941792] NOHZ: local_softirq_pending 08
-[   64.968326] IPv6: ADDRCONF(NETDEV_UP): eth1: link is not ready
-[   67.948677] r8169 0000:05:00.0: eth1: link up
-[   67.961872] IPv6: ADDRCONF(NETDEV_CHANGE): eth1: link becomes ready
-
-
-	Dave
+It's not that we couldn't teach d_materialise_unique() about those (e.g.
+introduce a new dentry flag and treat dentries with it as directories
+for d_materialise_unique() purposes); I would like to understand the
+reasons for doing that, though.
