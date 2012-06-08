@@ -1,95 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762159Ab2FHQmG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 12:42:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50514 "EHLO mx1.redhat.com"
+	id S1762146Ab2FHQoY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 12:44:24 -0400
+Received: from mga09.intel.com ([134.134.136.24]:27551 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751931Ab2FHQmB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 12:42:01 -0400
-Message-ID: <1339173706.26976.91.camel@ul30vt>
-Subject: Re: [PATCH] uio_pci_generic does not export memory resources
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Andreas Hartmann <andihartmann@01019freenet.de>
-Cc: Dominic Eschweiler <eschweiler@fias.uni-frankfurt.de>,
-        Jan Kiszka <jan.kiszka@siemens.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        "Hans J. Koch" <hjk@hansjkoch.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 08 Jun 2012 10:41:46 -0600
-In-Reply-To: <4FD22552.6090609@01019freenet.de>
-References: <1339156616.3870.9.camel@blech>
-	  <20120608130351.GB1964@redhat.com> <4FD1FB49.3020905@siemens.com>
-	  <1339165009.26976.60.camel@ul30vt> <1339166867.3870.29.camel@blech>
-	 <4FD22552.6090609@01019freenet.de>
+	id S1751931Ab2FHQoW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 12:44:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="154958825"
+Subject: Re: Does perf inject preserve call chain data?
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: David Ahern <dsahern@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, ak@linux.intel.com,
+        Stephane Eranian <eranian@google.com>
+In-Reply-To: <20120608143843.GA9954@infradead.org>
+References: <1337712585.3796.186.camel@schen9-DESK>
+	 <4FBC0C10.8010801@gmail.com>  <20120608143843.GA9954@infradead.org>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Date: Fri, 08 Jun 2012 09:44:56 -0700
+Message-ID: <1339173896.3796.230.camel@schen9-DESK>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-06-08 at 18:16 +0200, Andreas Hartmann wrote:
-> Hi Dominic,
-> 
-> Dominic Eschweiler wrote:
-> > Am Freitag, den 08.06.2012, 08:16 -0600 schrieb Alex Williamson:
-> >> Yes, thanks Jan.  This is exactly what VFIO does.  VFIO provides
-> >> secure config space access, resource access, DMA mapping services, and
-> >> full interrupt support to userspace.  
+On Fri, 2012-06-08 at 11:38 -0300, Arnaldo Carvalho de Melo wrote:
+> Em Tue, May 22, 2012 at 03:58:40PM -0600, David Ahern escreveu:
+> > On 5/22/12 12:49 PM, Tim Chen wrote:
+> > >Arnaldo,
+> > >
+> > >Wonder if perf inject munged the call chain data from perf record?
+> > >
+> > >When I do
+> > >perf record -a -g -o - sleep 5 |perf inject -v -b  | perf report  -g -i -
+> > >I get a complain from perf report
+> > >
+> > >Warning:
+> > >Selected -g but no callchain data. Did you call 'perf record' without -g?
+> > >
 > > 
-> > I know about VFIO, but we need some support for that stuff relatively
-> > soon. That's the reason why I'm currently working on it to make UIO DMA
-> > capable. My extensions probably do not play well with IOMMUs and they
-> > therefore won't make it to mainline anyhow (i learned that today ;-).
+> > I believe the root cause is that the event list is not written to
+> > the pipe. Using Arnaldo's git repo as of today (has fixes from
+> > Stephane) this hack shows the info is there and can be processed.
 > 
-> I'm not sure if vfio covers your needs completely, but I tested it here
-> very successfully. I was able to create a patch, which can be applied to
-> opensuse 3.4.1 kernel and which seams to run well.
+> How things stand here? Tim, did this fix things for you? If so, David,
+> please resend with a proper subject line and a Tested-by: Tim, ok?
 > 
-> I even managed to integrate it into libvirt :-). So it is usable as
-> every other traditional VM, too.
+> Thanks,
+> 
+> - Arnaldo
+>  
 
-Oh, please post the patch for libvirt!
+It didn't fix things for me when I was testing on a westmere-ex machine.
+I got
 
-> Besides the problem with AMD IOMMU, which requires to unbind a whole
-> group of devices in some cases (PCI passthrough - not PCIe), it's really
-> cool! And it's usable now!
+# ./perf record -a -g -o - sleep 5 |perf inject -v -b  | perf report -g  -i -
+incompatible file format
+incompatible file formatincompatible file formatselected -g but no callchain data. Did you call perf record without -g?
 
-If you're feeling adventurous (and know that this may not make it
-upstream), you can do something like this:
+Testing was done on 3.5.0-rc1.
 
-diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index ab0dba0..5c26804 100644
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -3161,11 +3161,22 @@ struct pci_dev *pci_get_dma_source(struct pci_dev *dev)
-        return pci_dev_get(dev);
- }
- 
-+static int pci_func_supports_acs(struct pci_dev *dev, u16 acs_flags)
-+{
-+       return 1;
-+}
-+
- static const struct pci_dev_acs_enabled {
-        u16 vendor;
-        u16 device;
-        int (*acs_enabled)(struct pci_dev *dev, u16 acs_flags);
- } pci_dev_acs_enabled[] = {
-+       { 0x1002, 0x4385, pci_func_supports_acs },
-+       { 0x1002, 0x439c, pci_func_supports_acs },
-+       { 0x1002, 0x4383, pci_func_supports_acs },
-+       { 0x1002, 0x439d, pci_func_supports_acs },
-+       { 0x1002, 0x4384, pci_func_supports_acs },
-+       { 0x1002, 0x4399, pci_func_supports_acs },
-        { 0 }
- };
+Tim
 
-Hmm, I wonder if we should make a kernel boot parameter that allows
-whitelisting some devices.  I think it would have to taint the kernel
-but there's probably sufficient interest for usability vs
-supportability.  Thanks,
+> > 
+> > diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+> > index d58e414..60f3f17 100644
+> > --- a/tools/perf/builtin-report.c
+> > +++ b/tools/perf/builtin-report.c
+> > @@ -256,7 +257,7 @@ static int perf_report__setup_sample_type(struct
+> > perf_report *rep)
+> >                     "'perf record' without -g?\n");
+> >             return -EINVAL;
+> >         }
+> > -       if (symbol_conf.use_callchain) {
+> > +       if (!self->fd_pipe && symbol_conf.use_callchain) {
+> >             ui__warning("Selected -g but no callchain data. Did "
+> >                     "you call 'perf record' without -g?\n");
+> >             return -1;
+> > 
+> > A proper solution is needed.
+> > 
+> > David
 
-Alex
 
