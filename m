@@ -1,104 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934104Ab2FHJ1Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 05:27:24 -0400
-Received: from mga03.intel.com ([143.182.124.21]:25686 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762003Ab2FHJ1W convert rfc822-to-8bit (ORCPT
+	id S934137Ab2FHJdR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 05:33:17 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:36681 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932554Ab2FHJdP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 05:27:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="153409155"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "Luck, Tony" <tony.luck@intel.com>,
-        "'xen-devel@lists.xensource.com'" <xen-devel@lists.xensource.com>,
-        Borislav Petkov <bp@amd64.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-Subject: RE: [Xen-devel] [PATCH 1/2] xen/mce: Add mcelog support for Xen
- platform
-Thread-Topic: [Xen-devel] [PATCH 1/2] xen/mce: Add mcelog support for Xen
- platform
-Thread-Index: AQHNRNHcM9HNPWGJrkGbs3SSikmUqJbwJzvA
-Date: Fri, 8 Jun 2012 09:27:19 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC829233522160D@SHSMSX101.ccr.corp.intel.com>
-References: <DE8DF0795D48FD4CA783C40EC82923351FEE7C@SHSMSX101.ccr.corp.intel.com>
- <20120606205523.GA10891@phenom.dumpdata.com>
- <DE8DF0795D48FD4CA783C40EC829233521AF4B@SHSMSX101.ccr.corp.intel.com>
- <20120607172039.GR9472@phenom.dumpdata.com>
-In-Reply-To: <20120607172039.GR9472@phenom.dumpdata.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 8 Jun 2012 05:33:15 -0400
+Date: Fri, 8 Jun 2012 15:02:57 +0530
+From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+To: linuxppc-dev@lists.ozlabs.org, lkml <linux-kernel@vger.kernel.org>
+Cc: michael@ellerman.id.au, antonb@thinktux.localdomain,
+        Paul Mackerras <paulus@samba.org>, benh@kernel.crashing.org,
+        Ingo Molnar <mingo@elte.hu>, peterz@infradead.org,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Jim Keniston <jkenisto@us.ibm.com>, oleg@redhat.com
+Subject: [PATCH v2 1/2] uprobes: Pass probed vaddr to
+	arch_uprobe_analyze_insn()
+Message-ID: <20120608093257.GG13409@in.ibm.com>
+Reply-To: ananth@in.ibm.com
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.17 (2007-11-01)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12060809-5518-0000-0000-00000504624C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Konrad Rzeszutek Wilk wrote:
-> On Thu, Jun 07, 2012 at 06:45:39AM +0000, Liu, Jinsong wrote:
->> Konrad Rzeszutek Wilk wrote:
->>> On Thu, May 31, 2012 at 12:57:44PM +0000, Liu, Jinsong wrote:
->>>>> From 1a7951d6ca01d7f2c9dd2bdb6de5f8e7fdcb8bbd Mon Sep 17 00:00:00
->>>>> 2001
->>>> From: root <root@ljsromley.bj.intel.com>
->>>> Date: Fri, 1 Jun 2012 03:12:51 +0800
->>>> Subject: [PATCH 1/2] xen/mce: Add mcelog support for Xen platform
->>>> 
->>>> When MCA error occurs, it would be handled by Xen hypervisor first,
->>>> and then the error information would be sent to initial domain for
->>>> logging. 
->>>> 
->>>> This patch gets error information from Xen hypervisor and convert
->>>> Xen format error into Linux format mcelog. This logic is basically
->>>> self-contained, not touching other kernel components.
->>>> 
->>>> By using tools like mcelog tool users could read specific error
->>>> information, like what they did under native Linux.
->>>> 
->>>> To test follow directions outlined in
->>>> Documentation/acpi/apei/einj.txt
->>> 
->>> [   53.264610] switch: port 1(eth0) entered forwarding state
->>> [ 1058.051938] BUG: sleeping function called from invalid context at
->>> /home/konrad/linux/include/linux/kernel.h:199 [ 1058.052066]
->>> in_atomic(): 1, irqs_disabled(): 0, pid: 4552, name: mcelog [
->>> 1058.052130] Pid: 4552, comm: mcelog Tainted: G           O
->>> 3.5.0-rc1upstream-00041-ga16e594-dirty #2 [ 1058.052235] Call Trace:
->>> [ 1058.052291]  [<ffffffff8109ad9a>] __might_sleep+0xda/0x100 [
->>> 1058.052349]  [<ffffffff8132a55b>] xen_mce_chrdev_read+0xab/0x140 [
->>> 1058.052408]  [<ffffffff81148d85>] vfs_read+0xc5/0x190 [
->>> 1058.052461] [<ffffffff81148f4c>] sys_read+0x4c/0x90 [ 1058.052515]
->>> [<ffffffff815bdd79>] system_call_fastpath+0x16/0x1
->>> 
->>> ?
->> 
->> I will debug it. Would you tell me the steps to reproduce the bug,
->> and your .config file? 
-> 
-> 
-> # echo 0x00000008 > error_type
-> # echo 1 > error_inject
-> (XEN) CMCI: send CMCI to DOM0 through virq
-> [  214.207962] BUG: sleeping function called from invalid context at
-> /home/konradinux/kernel.h:199 [  214.208129] in_atomic(): 1,
-> irqs_disabled(): 0, pid: 4581, name: mcelog [  214.208242] Pid: 4581,
-> comm: mcelog Tainted: G           O
-> 3.5.0-rc1upstream-00003-g149000b-dirty #1 # [  214.208384] Call
-> Trace: [  214.208490]  [<ffffffff8109ad9a>] __might_sleep+0xda/0x100
-> [  214.208606]  [<ffffffff81329b0b>] xen_mce_chrdev_read+0xab/0x140 [
-> 214.208715]  [<ffffffff81148945>] vfs_read+0xc5/0x190 [  214.208816] 
-> [<ffffffff81148b0c>] sys_read+0x4c/0x90 [  214.208923] 
-> [<ffffffff815bd039>] system_call_fastpath+0x16/0x1b 
-> 
+From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
 
-Thanks! it caused by copy_to_user (might sleep) in an atomic spinlock context.
-Send patch to fix it later, draft test OK.
+On RISC architectures like powerpc, instructions are fixed size.
+Instruction analysis on such platforms is just a matter of (insn % 4).
+Pass the vaddr at which the uprobe is to be inserted so that
+arch_uprobe_analyze_insn() can flag misaligned registration requests.
 
-Regards,
-Jinsong
+Changes in V2:
+Pass (unsigned long)addr instead of (loff_t)vaddr to
+arch_uprobe_analyze_insn(). We need the loff_t vaddr to take care of
+the offset of inode:offset pair for large file sizes on 32bit.
+
+Signed-off-by: Ananth N Mavinakaynahalli <ananth@in.ibm.com>
+---
+ arch/x86/include/asm/uprobes.h |    2 +-
+ arch/x86/kernel/uprobes.c      |    3 ++-
+ kernel/events/uprobes.c        |    2 +-
+ 3 files changed, 4 insertions(+), 3 deletions(-)
+
+Index: linux-3.5-rc1/arch/x86/include/asm/uprobes.h
+===================================================================
+--- linux-3.5-rc1.orig/arch/x86/include/asm/uprobes.h
++++ linux-3.5-rc1/arch/x86/include/asm/uprobes.h
+@@ -48,7 +48,7 @@ struct arch_uprobe_task {
+ #endif
+ };
+ 
+-extern int  arch_uprobe_analyze_insn(struct arch_uprobe *aup, struct mm_struct *mm);
++extern int  arch_uprobe_analyze_insn(struct arch_uprobe *aup, struct mm_struct *mm, unsigned long addr);
+ extern int  arch_uprobe_pre_xol(struct arch_uprobe *aup, struct pt_regs *regs);
+ extern int  arch_uprobe_post_xol(struct arch_uprobe *aup, struct pt_regs *regs);
+ extern bool arch_uprobe_xol_was_trapped(struct task_struct *tsk);
+Index: linux-3.5-rc1/arch/x86/kernel/uprobes.c
+===================================================================
+--- linux-3.5-rc1.orig/arch/x86/kernel/uprobes.c
++++ linux-3.5-rc1/arch/x86/kernel/uprobes.c
+@@ -409,9 +409,10 @@ static int validate_insn_bits(struct arc
+  * arch_uprobe_analyze_insn - instruction analysis including validity and fixups.
+  * @mm: the probed address space.
+  * @arch_uprobe: the probepoint information.
++ * @addr: virtual address at which to install the probepoint
+  * Return 0 on success or a -ve number on error.
+  */
+-int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm)
++int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm, unsigned long addr)
+ {
+ 	int ret;
+ 	struct insn insn;
+Index: linux-3.5-rc1/kernel/events/uprobes.c
+===================================================================
+--- linux-3.5-rc1.orig/kernel/events/uprobes.c
++++ linux-3.5-rc1/kernel/events/uprobes.c
+@@ -697,7 +697,7 @@ install_breakpoint(struct uprobe *uprobe
+ 		if (is_swbp_insn((uprobe_opcode_t *)uprobe->arch.insn))
+ 			return -EEXIST;
+ 
+-		ret = arch_uprobe_analyze_insn(&uprobe->arch, mm);
++		ret = arch_uprobe_analyze_insn(&uprobe->arch, mm, addr);
+ 		if (ret)
+ 			return ret;
+ 
+
