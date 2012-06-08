@@ -1,56 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933599Ab2FHFr1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 01:47:27 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:45161 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933363Ab2FHFrZ (ORCPT
+	id S933615Ab2FHFsp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 01:48:45 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:36765 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933490Ab2FHFso (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 01:47:25 -0400
-Subject: Re: Deadlock, L2TP over IP are not working, 3.4.1
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Francois Romieu <romieu@fr.zoreil.com>
-Cc: Denys Fedoryshchenko <denys@visp.net.lb>, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20120607223752.GA4475@electric-eye.fr.zoreil.com>
-References: <7ed49f446365ac625437702d92946add@visp.net.lb>
-	 <20120607205356.GA2491@electric-eye.fr.zoreil.com>
-	 <1339104606.6001.4.camel@edumazet-glaptop>
-	 <20120607223752.GA4475@electric-eye.fr.zoreil.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 08 Jun 2012 07:47:18 +0200
-Message-ID: <1339134438.6001.13.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 8 Jun 2012 01:48:44 -0400
+Date: Fri, 8 Jun 2012 06:48:38 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Miklos Szeredi <mszeredi@suse.cz>, Jan Kara <jack@suse.cz>,
+        Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
+        "J. Bruce Fields" <bfields@redhat.com>, Sage Weil <sage@newdream.net>
+Subject: Re: processes hung after sys_renameat, and 'missing' processes
+Message-ID: <20120608054838.GO30000@ZenIV.linux.org.uk>
+References: <20120607002914.GB22223@redhat.com>
+ <CA+55aFyp2GUbc218eb5BDyAqz+cOPTJMVcb4ptk+f1_RBB+-mg@mail.gmail.com>
+ <20120607011915.GA17566@redhat.com>
+ <20120607012900.GE30000@ZenIV.linux.org.uk>
+ <20120607193607.GI30000@ZenIV.linux.org.uk>
+ <873966n2c2.fsf@xmission.com>
+ <CA+55aFxxS3+NmZacr76qNmEu9=-=aw61gW1Ebugg8hdMNgKiJA@mail.gmail.com>
+ <20120608003604.GK30000@ZenIV.linux.org.uk>
+ <20120608005935.GL30000@ZenIV.linux.org.uk>
+ <87bokugysl.fsf@xmission.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87bokugysl.fsf@xmission.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-06-08 at 00:37 +0200, Francois Romieu wrote:
-> Eric Dumazet <eric.dumazet@gmail.com> :
-> [...]
-> > If LLTX is used, this means several cpus can execute this code at the
-> > same time.
-> > 
-> > You need percpu stats, or use atomic primitives.
-> 
-> Would adding percpu stats not be frown upon ?
-> 
+On Thu, Jun 07, 2012 at 10:25:46PM -0700, Eric W. Biederman wrote:
 
-I have no idea how many l2tp_eth devices are setup at once in typical
-conf.
+> I am still learly of d_materialise_unique as it allows to create alias's
+> on non-directories.  It isn't a functional problem as d_revalidate will
+> catch the issue and make it look like we have a unlink/link pair instead
+> of a proper rename.  However since it is possible I would like to aim
+> for the higher quality of implemntation and use show renames as renames.
 
-> As atomic will defeat the 64 bits stats on 32 bits, I should probably stick
-> to plain bh disabling lock.
-> 
+???
 
-Not sure what you mean by "atomic will defeat the 64 bits stats on 32
-bits", since you also need atomic for "32 bits stats" or "64 bits stats
-on 64 bit arches"
+Please, explain.  link/unlink pair in which sense?  If you are thinking
+of inotify and its ilk and tie some of that to dentry eviction, you
+have far worse problem.  What stream of events do you expect if you
+do
+	some action that triggers sysfs_rename()
+	stat(2) on old pathname
+	stat(2) on new pathname
+No matter what we do in lookup at the new pathname, the second step will
+be "failed revalidate".  If you tie something (presumably unlink side of
+your link/unlink pair) to that event, you'll get a very lousy series of
+events, no matter what you do on the third step.
 
-I personally would just use "unsigned long". If people want 64bit stats
-for their l2tp_eth, they certainly can use a 64bit host.
-
-
-
+I don't see what kind of *notify hookup do you have in mind.  Anything that
+treats "dentry failed revalidation or got evicted by memory pressure" as
+"unlink" is completely nuts, IMO.
