@@ -1,462 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934064Ab2FHJHR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 05:07:17 -0400
-Received: from mail.df.lth.se ([194.47.250.12]:9628 "EHLO mail.df.lth.se"
+	id S934095Ab2FHJHY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 05:07:24 -0400
+Received: from mail.df.lth.se ([194.47.250.12]:9630 "EHLO mail.df.lth.se"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933075Ab2FHJHP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 05:07:15 -0400
+	id S933075Ab2FHJHV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 05:07:21 -0400
 From: Linus Walleij <linus.walleij@linaro.org>
 To: linux-kernel@vger.kernel.org
 Cc: swarren@wwwdotorg.org, Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 1/2] pinctrl/nomadik: add STn8815 ASIC support
-Date: Fri,  8 Jun 2012 11:07:06 +0200
-Message-Id: <1339146426-20697-1-git-send-email-linus.walleij@linaro.org>
+Subject: [PATCH 2/2] ARM: nomadik: configure Nomadik for pin control
+Date: Fri,  8 Jun 2012 11:07:16 +0200
+Message-Id: <1339146436-20735-1-git-send-email-linus.walleij@linaro.org>
 X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds support for the STN8815 ASIC for the Nomadik pin
-controller.
+This converts the Nomadik to using pin control using the
+driver for the STN8815 ASIC.
 
 Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/pinctrl/Kconfig                   |    4 +
- drivers/pinctrl/Makefile                  |    1 +
- drivers/pinctrl/pinctrl-nomadik-stn8815.c |  357 +++++++++++++++++++++++++++++
- drivers/pinctrl/pinctrl-nomadik.c         |    2 +
- drivers/pinctrl/pinctrl-nomadik.h         |   13 +
- 5 files changed, 377 insertions(+), 0 deletions(-)
- create mode 100644 drivers/pinctrl/pinctrl-nomadik-stn8815.c
+ arch/arm/Kconfig                      |    1 +
+ arch/arm/mach-nomadik/board-nhk8815.c |   35 +++++++++++++++++++++++++++++++++
+ arch/arm/mach-nomadik/cpu-8815.c      |   13 ++++++++++++
+ 3 files changed, 49 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
-index c6e6ae0..d6d1bdd 100644
---- a/drivers/pinctrl/Kconfig
-+++ b/drivers/pinctrl/Kconfig
-@@ -86,6 +86,10 @@ config PINCTRL_NOMADIK
- 	select PINMUX
- 	select PINCONF
- 
-+config PINCTRL_STN8815
-+	bool "STN8815 pin controller driver"
-+	depends on PINCTRL_NOMADIK && ARCH_NOMADIK
-+
- config PINCTRL_DB8500
- 	bool "DB8500 pin controller driver"
- 	depends on PINCTRL_NOMADIK && ARCH_U8500
-diff --git a/drivers/pinctrl/Makefile b/drivers/pinctrl/Makefile
-index 8c07437..9ba790c 100644
---- a/drivers/pinctrl/Makefile
-+++ b/drivers/pinctrl/Makefile
-@@ -19,6 +19,7 @@ obj-$(CONFIG_PINCTRL_MXS)	+= pinctrl-mxs.o
- obj-$(CONFIG_PINCTRL_IMX23)	+= pinctrl-imx23.o
- obj-$(CONFIG_PINCTRL_IMX28)	+= pinctrl-imx28.o
- obj-$(CONFIG_PINCTRL_NOMADIK)	+= pinctrl-nomadik.o
-+obj-$(CONFIG_PINCTRL_STN8815)	+= pinctrl-nomadik-stn8815.o
- obj-$(CONFIG_PINCTRL_DB8500)	+= pinctrl-nomadik-db8500.o
- obj-$(CONFIG_PINCTRL_PXA168)	+= pinctrl-pxa168.o
- obj-$(CONFIG_PINCTRL_PXA910)	+= pinctrl-pxa910.o
-diff --git a/drivers/pinctrl/pinctrl-nomadik-stn8815.c b/drivers/pinctrl/pinctrl-nomadik-stn8815.c
-new file mode 100644
-index 0000000..7d432c3
---- /dev/null
-+++ b/drivers/pinctrl/pinctrl-nomadik-stn8815.c
-@@ -0,0 +1,357 @@
-+#include <linux/kernel.h>
-+#include <linux/pinctrl/pinctrl.h>
-+#include "pinctrl-nomadik.h"
-+
-+/* All the pins that can be used for GPIO and some other functions */
-+#define _GPIO(offset)		(offset)
-+
-+#define STN8815_PIN_B4		_GPIO(0)
-+#define STN8815_PIN_D5		_GPIO(1)
-+#define STN8815_PIN_C5		_GPIO(2)
-+#define STN8815_PIN_A4		_GPIO(3)
-+#define STN8815_PIN_B5		_GPIO(4)
-+#define STN8815_PIN_D6		_GPIO(5)
-+#define STN8815_PIN_C6		_GPIO(6)
-+#define STN8815_PIN_B6		_GPIO(7)
-+#define STN8815_PIN_B10		_GPIO(8)
-+#define STN8815_PIN_A10		_GPIO(9)
-+#define STN8815_PIN_C11		_GPIO(10)
-+#define STN8815_PIN_B11		_GPIO(11)
-+#define STN8815_PIN_A11		_GPIO(12)
-+#define STN8815_PIN_C12		_GPIO(13)
-+#define STN8815_PIN_B12		_GPIO(14)
-+#define STN8815_PIN_A12		_GPIO(15)
-+#define STN8815_PIN_C13		_GPIO(16)
-+#define STN8815_PIN_B13		_GPIO(17)
-+#define STN8815_PIN_A13		_GPIO(18)
-+#define STN8815_PIN_D13		_GPIO(19)
-+#define STN8815_PIN_C14		_GPIO(20)
-+#define STN8815_PIN_B14		_GPIO(21)
-+#define STN8815_PIN_A14		_GPIO(22)
-+#define STN8815_PIN_D15		_GPIO(23)
-+#define STN8815_PIN_C15		_GPIO(24)
-+#define STN8815_PIN_B15		_GPIO(25)
-+#define STN8815_PIN_A15		_GPIO(26)
-+#define STN8815_PIN_C16		_GPIO(27)
-+#define STN8815_PIN_B16		_GPIO(28)
-+#define STN8815_PIN_A16		_GPIO(29)
-+#define STN8815_PIN_D17		_GPIO(30)
-+#define STN8815_PIN_C17		_GPIO(31)
-+#define STN8815_PIN_AB6		_GPIO(32)
-+#define STN8815_PIN_AA6		_GPIO(33)
-+#define STN8815_PIN_Y6		_GPIO(34)
-+#define STN8815_PIN_Y5		_GPIO(35)
-+#define STN8815_PIN_AA5		_GPIO(36)
-+#define STN8815_PIN_AB5		_GPIO(37)
-+#define STN8815_PIN_AB4		_GPIO(38)
-+#define STN8815_PIN_Y4		_GPIO(39)
-+#define STN8815_PIN_R1		_GPIO(40)
-+#define STN8815_PIN_R2		_GPIO(41)
-+#define STN8815_PIN_R3		_GPIO(42)
-+#define STN8815_PIN_P1		_GPIO(43)
-+#define STN8815_PIN_P2		_GPIO(44)
-+#define STN8815_PIN_P3		_GPIO(45)
-+#define STN8815_PIN_N1		_GPIO(46)
-+#define STN8815_PIN_N2		_GPIO(47)
-+#define STN8815_PIN_N3		_GPIO(48)
-+#define STN8815_PIN_M1		_GPIO(49)
-+#define STN8815_PIN_M3		_GPIO(50)
-+#define STN8815_PIN_M2		_GPIO(51)
-+#define STN8815_PIN_L1		_GPIO(52)
-+#define STN8815_PIN_L4		_GPIO(53)
-+#define STN8815_PIN_L3		_GPIO(54)
-+#define STN8815_PIN_L2		_GPIO(55)
-+#define STN8815_PIN_F3		_GPIO(56)
-+#define STN8815_PIN_F2		_GPIO(57)
-+#define STN8815_PIN_E1		_GPIO(58)
-+#define STN8815_PIN_E3		_GPIO(59)
-+#define STN8815_PIN_E2		_GPIO(60)
-+#define STN8815_PIN_E4		_GPIO(61)
-+#define STN8815_PIN_D3		_GPIO(62)
-+#define STN8815_PIN_D2		_GPIO(63)
-+#define STN8815_PIN_F21		_GPIO(64)
-+#define STN8815_PIN_F20		_GPIO(65)
-+#define STN8815_PIN_E22		_GPIO(66)
-+#define STN8815_PIN_D22		_GPIO(67)
-+#define STN8815_PIN_E21		_GPIO(68)
-+#define STN8815_PIN_E20		_GPIO(69)
-+#define STN8815_PIN_C22		_GPIO(70)
-+#define STN8815_PIN_D21		_GPIO(71)
-+#define STN8815_PIN_D20		_GPIO(72)
-+#define STN8815_PIN_C21		_GPIO(73)
-+#define STN8815_PIN_C20		_GPIO(74)
-+#define STN8815_PIN_C19		_GPIO(75)
-+#define STN8815_PIN_B20		_GPIO(76)
-+#define STN8815_PIN_B8		_GPIO(77)
-+#define STN8815_PIN_A8		_GPIO(78)
-+#define STN8815_PIN_C9		_GPIO(79)
-+#define STN8815_PIN_B9		_GPIO(80)
-+#define STN8815_PIN_A9		_GPIO(81)
-+#define STN8815_PIN_C10		_GPIO(82)
-+#define STN8815_PIN_K1		_GPIO(83)
-+#define STN8815_PIN_K3		_GPIO(84)
-+#define STN8815_PIN_K2		_GPIO(85)
-+#define STN8815_PIN_J1		_GPIO(86)
-+#define STN8815_PIN_J3		_GPIO(87)
-+#define STN8815_PIN_J2		_GPIO(88)
-+#define STN8815_PIN_H1		_GPIO(89)
-+#define STN8815_PIN_H3		_GPIO(90)
-+#define STN8815_PIN_H2		_GPIO(91)
-+#define STN8815_PIN_G1		_GPIO(92)
-+#define STN8815_PIN_G3		_GPIO(93)
-+#define STN8815_PIN_G2		_GPIO(94)
-+#define STN8815_PIN_F1		_GPIO(95)
-+#define STN8815_PIN_T20		_GPIO(96)
-+#define STN8815_PIN_R21		_GPIO(97)
-+#define STN8815_PIN_R20		_GPIO(98)
-+#define STN8815_PIN_U22		_GPIO(99)
-+#define STN8815_PIN_N21		_GPIO(100)
-+#define STN8815_PIN_N20		_GPIO(101)
-+#define STN8815_PIN_P22		_GPIO(102)
-+#define STN8815_PIN_N22		_GPIO(103)
-+#define STN8815_PIN_V22		_GPIO(104)
-+#define STN8815_PIN_V21		_GPIO(105)
-+#define STN8815_PIN_K22		_GPIO(106)
-+#define STN8815_PIN_K21		_GPIO(107)
-+#define STN8815_PIN_H20		_GPIO(108)
-+#define STN8815_PIN_G20		_GPIO(109)
-+#define STN8815_PIN_L21		_GPIO(110)
-+#define STN8815_PIN_H21		_GPIO(111)
-+#define STN8815_PIN_J21		_GPIO(112)
-+#define STN8815_PIN_H22		_GPIO(113)
-+#define STN8815_PIN_K20		_GPIO(114)
-+#define STN8815_PIN_L22		_GPIO(115)
-+#define STN8815_PIN_G21		_GPIO(116)
-+#define STN8815_PIN_J20		_GPIO(117)
-+#define STN8815_PIN_G22		_GPIO(118)
-+#define STN8815_PIN_U19		_GPIO(119)
-+#define STN8815_PIN_G19		_GPIO(120)
-+#define STN8815_PIN_M22		_GPIO(121)
-+#define STN8815_PIN_M19		_GPIO(122)
-+#define STN8815_PIN_J22		_GPIO(123)
-+/* GPIOs 124-127 not routed to pins */
-+
-+/*
-+ * The names of the pins are denoted by GPIO number and ball name, even
-+ * though they can be used for other things than GPIO, this is the first
-+ * column in the table of the data sheet and often used on schematics and
-+ * such.
-+ */
-+static const struct pinctrl_pin_desc nmk_stn8815_pins[] = {
-+	PINCTRL_PIN(STN8815_PIN_B4, "GPIO0_B4"),
-+	PINCTRL_PIN(STN8815_PIN_D5, "GPIO1_D5"),
-+	PINCTRL_PIN(STN8815_PIN_C5, "GPIO2_C5"),
-+	PINCTRL_PIN(STN8815_PIN_A4, "GPIO3_A4"),
-+	PINCTRL_PIN(STN8815_PIN_B5, "GPIO4_B5"),
-+	PINCTRL_PIN(STN8815_PIN_D6, "GPIO5_D6"),
-+	PINCTRL_PIN(STN8815_PIN_C6, "GPIO6_C6"),
-+	PINCTRL_PIN(STN8815_PIN_B6, "GPIO7_B6"),
-+	PINCTRL_PIN(STN8815_PIN_B10, "GPIO8_B10"),
-+	PINCTRL_PIN(STN8815_PIN_A10, "GPIO9_A10"),
-+	PINCTRL_PIN(STN8815_PIN_C11, "GPIO10_C11"),
-+	PINCTRL_PIN(STN8815_PIN_B11, "GPIO11_B11"),
-+	PINCTRL_PIN(STN8815_PIN_A11, "GPIO12_A11"),
-+	PINCTRL_PIN(STN8815_PIN_C12, "GPIO13_C12"),
-+	PINCTRL_PIN(STN8815_PIN_B12, "GPIO14_B12"),
-+	PINCTRL_PIN(STN8815_PIN_A12, "GPIO15_A12"),
-+	PINCTRL_PIN(STN8815_PIN_C13, "GPIO16_C13"),
-+	PINCTRL_PIN(STN8815_PIN_B13, "GPIO17_B13"),
-+	PINCTRL_PIN(STN8815_PIN_A13, "GPIO18_A13"),
-+	PINCTRL_PIN(STN8815_PIN_D13, "GPIO19_D13"),
-+	PINCTRL_PIN(STN8815_PIN_C14, "GPIO20_C14"),
-+	PINCTRL_PIN(STN8815_PIN_B14, "GPIO21_B14"),
-+	PINCTRL_PIN(STN8815_PIN_A14, "GPIO22_A14"),
-+	PINCTRL_PIN(STN8815_PIN_D15, "GPIO23_D15"),
-+	PINCTRL_PIN(STN8815_PIN_C15, "GPIO24_C15"),
-+	PINCTRL_PIN(STN8815_PIN_B15, "GPIO25_B15"),
-+	PINCTRL_PIN(STN8815_PIN_A15, "GPIO26_A15"),
-+	PINCTRL_PIN(STN8815_PIN_C16, "GPIO27_C16"),
-+	PINCTRL_PIN(STN8815_PIN_B16, "GPIO28_B16"),
-+	PINCTRL_PIN(STN8815_PIN_A16, "GPIO29_A16"),
-+	PINCTRL_PIN(STN8815_PIN_D17, "GPIO30_D17"),
-+	PINCTRL_PIN(STN8815_PIN_C17, "GPIO31_C17"),
-+	PINCTRL_PIN(STN8815_PIN_AB6, "GPIO32_AB6"),
-+	PINCTRL_PIN(STN8815_PIN_AA6, "GPIO33_AA6"),
-+	PINCTRL_PIN(STN8815_PIN_Y6, "GPIO34_Y6"),
-+	PINCTRL_PIN(STN8815_PIN_Y5, "GPIO35_Y5"),
-+	PINCTRL_PIN(STN8815_PIN_AA5, "GPIO36_AA5"),
-+	PINCTRL_PIN(STN8815_PIN_AB5, "GPIO37_AB5"),
-+	PINCTRL_PIN(STN8815_PIN_AB4, "GPIO38_AB4"),
-+	PINCTRL_PIN(STN8815_PIN_Y4, "GPIO39_Y4"),
-+	PINCTRL_PIN(STN8815_PIN_R1, "GPIO40_R1"),
-+	PINCTRL_PIN(STN8815_PIN_R2, "GPIO41_R2"),
-+	PINCTRL_PIN(STN8815_PIN_R3, "GPIO42_R3"),
-+	PINCTRL_PIN(STN8815_PIN_P1, "GPIO43_P1"),
-+	PINCTRL_PIN(STN8815_PIN_P2, "GPIO44_P2"),
-+	PINCTRL_PIN(STN8815_PIN_P3, "GPIO45_P3"),
-+	PINCTRL_PIN(STN8815_PIN_N1, "GPIO46_N1"),
-+	PINCTRL_PIN(STN8815_PIN_N2, "GPIO47_N2"),
-+	PINCTRL_PIN(STN8815_PIN_N3, "GPIO48_N3"),
-+	PINCTRL_PIN(STN8815_PIN_M1, "GPIO49_M1"),
-+	PINCTRL_PIN(STN8815_PIN_M3, "GPIO50_M3"),
-+	PINCTRL_PIN(STN8815_PIN_M2, "GPIO51_M2"),
-+	PINCTRL_PIN(STN8815_PIN_L1, "GPIO52_L1"),
-+	PINCTRL_PIN(STN8815_PIN_L4, "GPIO53_L4"),
-+	PINCTRL_PIN(STN8815_PIN_L3, "GPIO54_L3"),
-+	PINCTRL_PIN(STN8815_PIN_L2, "GPIO55_L2"),
-+	PINCTRL_PIN(STN8815_PIN_F3, "GPIO56_F3"),
-+	PINCTRL_PIN(STN8815_PIN_F2, "GPIO57_F2"),
-+	PINCTRL_PIN(STN8815_PIN_E1, "GPIO58_E1"),
-+	PINCTRL_PIN(STN8815_PIN_E3, "GPIO59_E3"),
-+	PINCTRL_PIN(STN8815_PIN_E2, "GPIO60_E2"),
-+	PINCTRL_PIN(STN8815_PIN_E4, "GPIO61_E4"),
-+	PINCTRL_PIN(STN8815_PIN_D3, "GPIO62_D3"),
-+	PINCTRL_PIN(STN8815_PIN_D2, "GPIO63_D2"),
-+	PINCTRL_PIN(STN8815_PIN_F21, "GPIO64_F21"),
-+	PINCTRL_PIN(STN8815_PIN_F20, "GPIO65_F20"),
-+	PINCTRL_PIN(STN8815_PIN_E22, "GPIO66_E22"),
-+	PINCTRL_PIN(STN8815_PIN_D22, "GPIO67_D22"),
-+	PINCTRL_PIN(STN8815_PIN_E21, "GPIO68_E21"),
-+	PINCTRL_PIN(STN8815_PIN_E20, "GPIO69_E20"),
-+	PINCTRL_PIN(STN8815_PIN_C22, "GPIO70_C22"),
-+	PINCTRL_PIN(STN8815_PIN_D21, "GPIO71_D21"),
-+	PINCTRL_PIN(STN8815_PIN_D20, "GPIO72_D20"),
-+	PINCTRL_PIN(STN8815_PIN_C21, "GPIO73_C21"),
-+	PINCTRL_PIN(STN8815_PIN_C20, "GPIO74_C20"),
-+	PINCTRL_PIN(STN8815_PIN_C19, "GPIO75_C19"),
-+	PINCTRL_PIN(STN8815_PIN_B20, "GPIO76_B20"),
-+	PINCTRL_PIN(STN8815_PIN_B8, "GPIO77_B8"),
-+	PINCTRL_PIN(STN8815_PIN_A8, "GPIO78_A8"),
-+	PINCTRL_PIN(STN8815_PIN_C9, "GPIO79_C9"),
-+	PINCTRL_PIN(STN8815_PIN_B9, "GPIO80_B9"),
-+	PINCTRL_PIN(STN8815_PIN_A9, "GPIO81_A9"),
-+	PINCTRL_PIN(STN8815_PIN_C10, "GPIO82_C10"),
-+	PINCTRL_PIN(STN8815_PIN_K1, "GPIO83_K1"),
-+	PINCTRL_PIN(STN8815_PIN_K3, "GPIO84_K3"),
-+	PINCTRL_PIN(STN8815_PIN_K2, "GPIO85_K2"),
-+	PINCTRL_PIN(STN8815_PIN_J1, "GPIO86_J1"),
-+	PINCTRL_PIN(STN8815_PIN_J3, "GPIO87_J3"),
-+	PINCTRL_PIN(STN8815_PIN_J2, "GPIO88_J2"),
-+	PINCTRL_PIN(STN8815_PIN_H1, "GPIO89_H1"),
-+	PINCTRL_PIN(STN8815_PIN_H3, "GPIO90_H3"),
-+	PINCTRL_PIN(STN8815_PIN_H2, "GPIO91_H2"),
-+	PINCTRL_PIN(STN8815_PIN_G1, "GPIO92_G1"),
-+	PINCTRL_PIN(STN8815_PIN_G3, "GPIO93_G3"),
-+	PINCTRL_PIN(STN8815_PIN_G2, "GPIO94_G2"),
-+	PINCTRL_PIN(STN8815_PIN_F1, "GPIO95_F1"),
-+	PINCTRL_PIN(STN8815_PIN_T20, "GPIO96_T20"),
-+	PINCTRL_PIN(STN8815_PIN_R21, "GPIO97_R21"),
-+	PINCTRL_PIN(STN8815_PIN_R20, "GPIO98_R20"),
-+	PINCTRL_PIN(STN8815_PIN_U22, "GPIO99_U22"),
-+	PINCTRL_PIN(STN8815_PIN_N21, "GPIO100_N21"),
-+	PINCTRL_PIN(STN8815_PIN_N20, "GPIO101_N20"),
-+	PINCTRL_PIN(STN8815_PIN_P22, "GPIO102_P22"),
-+	PINCTRL_PIN(STN8815_PIN_N22, "GPIO103_N22"),
-+	PINCTRL_PIN(STN8815_PIN_V22, "GPIO104_V22"),
-+	PINCTRL_PIN(STN8815_PIN_V21, "GPIO105_V21"),
-+	PINCTRL_PIN(STN8815_PIN_K22, "GPIO106_K22"),
-+	PINCTRL_PIN(STN8815_PIN_K21, "GPIO107_K21"),
-+	PINCTRL_PIN(STN8815_PIN_H20, "GPIO108_H20"),
-+	PINCTRL_PIN(STN8815_PIN_G20, "GPIO109_G20"),
-+	PINCTRL_PIN(STN8815_PIN_L21, "GPIO110_L21"),
-+	PINCTRL_PIN(STN8815_PIN_H21, "GPIO111_H21"),
-+	PINCTRL_PIN(STN8815_PIN_J21, "GPIO112_J21"),
-+	PINCTRL_PIN(STN8815_PIN_H22, "GPIO113_H22"),
-+	PINCTRL_PIN(STN8815_PIN_K20, "GPIO114_K20"),
-+	PINCTRL_PIN(STN8815_PIN_L22, "GPIO115_L22"),
-+	PINCTRL_PIN(STN8815_PIN_G21, "GPIO116_G21"),
-+	PINCTRL_PIN(STN8815_PIN_J20, "GPIO117_J20"),
-+	PINCTRL_PIN(STN8815_PIN_G22, "GPIO118_G22"),
-+	PINCTRL_PIN(STN8815_PIN_U19, "GPIO119_U19"),
-+	PINCTRL_PIN(STN8815_PIN_G19, "GPIO120_G19"),
-+	PINCTRL_PIN(STN8815_PIN_M22, "GPIO121_M22"),
-+	PINCTRL_PIN(STN8815_PIN_M19, "GPIO122_M19"),
-+	PINCTRL_PIN(STN8815_PIN_J22, "GPIO123_J22"),
-+};
-+
-+#define STN8815_GPIO_RANGE(a, b, c) { .name = "STN8815", .id = a, .base = b, \
-+			.pin_base = b, .npins = c }
-+
-+/*
-+ * This matches the 32-pin gpio chips registered by the GPIO portion. This
-+ * cannot be const since we assign the struct gpio_chip * pointer at runtime.
-+ */
-+static struct pinctrl_gpio_range nmk_stn8815_ranges[] = {
-+	STN8815_GPIO_RANGE(0, 0, 32),
-+	STN8815_GPIO_RANGE(1, 32, 32),
-+	STN8815_GPIO_RANGE(2, 64, 32),
-+	STN8815_GPIO_RANGE(3, 96, 28),
-+};
-+
-+/*
-+ * Read the pin group names like this:
-+ * u0_a_1    = first groups of pins for uart0 on alt function a
-+ * i2c2_b_2  = second group of pins for i2c2 on alt function b
-+ */
-+
-+/* Altfunction A */
-+static const unsigned u0_a_1_pins[] = { STN8815_PIN_B4, STN8815_PIN_D5,
-+	STN8815_PIN_C5, STN8815_PIN_A4, STN8815_PIN_B5, STN8815_PIN_D6,
-+	STN8815_PIN_C6, STN8815_PIN_B6 };
-+static const unsigned mmcsd_a_1_pins[] = { STN8815_PIN_B10, STN8815_PIN_A10,
-+	STN8815_PIN_C11, STN8815_PIN_B11, STN8815_PIN_A11, STN8815_PIN_C12,
-+	STN8815_PIN_B12, STN8815_PIN_A12, STN8815_PIN_C13, STN8815_PIN_C15 };
-+static const unsigned u1_a_1_pins[] = { STN8815_PIN_M2, STN8815_PIN_L1,
-+					STN8815_PIN_F3, STN8815_PIN_F2 };
-+static const unsigned i2c1_a_1_pins[] = { STN8815_PIN_L4, STN8815_PIN_L3 };
-+static const unsigned i2c0_a_1_pins[] = { STN8815_PIN_D3, STN8815_PIN_D2 };
-+/* Altfunction B */
-+static const unsigned u1_b_1_pins[] = { STN8815_PIN_B16, STN8815_PIN_A16 };
-+static const unsigned i2cusb_b_1_pins[] = { STN8815_PIN_C21, STN8815_PIN_C20 };
-+
-+#define STN8815_PIN_GROUP(a,b) { .name = #a, .pins = a##_pins,		\
-+			.npins = ARRAY_SIZE(a##_pins), .altsetting = b }
-+
-+static const struct nmk_pingroup nmk_stn8815_groups[] = {
-+	STN8815_PIN_GROUP(u0_a_1, NMK_GPIO_ALT_A),
-+	STN8815_PIN_GROUP(mmcsd_a_1, NMK_GPIO_ALT_A),
-+	STN8815_PIN_GROUP(u1_a_1, NMK_GPIO_ALT_A),
-+	STN8815_PIN_GROUP(i2c1_a_1, NMK_GPIO_ALT_A),
-+	STN8815_PIN_GROUP(i2c0_a_1, NMK_GPIO_ALT_A),
-+	STN8815_PIN_GROUP(u1_b_1, NMK_GPIO_ALT_B),
-+	STN8815_PIN_GROUP(i2cusb_b_1, NMK_GPIO_ALT_B),
-+};
-+
-+/* We use this macro to define the groups applicable to a function */
-+#define STN8815_FUNC_GROUPS(a, b...)	   \
-+static const char * const a##_groups[] = { b };
-+
-+STN8815_FUNC_GROUPS(u0, "u0_a_1");
-+STN8815_FUNC_GROUPS(mmcsd, "mmcsd_a_1");
-+STN8815_FUNC_GROUPS(u1, "u1_a_1", "u1_b_1");
-+STN8815_FUNC_GROUPS(i2c1, "i2c1_a_1");
-+STN8815_FUNC_GROUPS(i2c0, "i2c0_a_1");
-+STN8815_FUNC_GROUPS(i2cusb, "i2cusb_b_1");
-+
-+#define FUNCTION(fname)					\
-+	{						\
-+		.name = #fname,				\
-+		.groups = fname##_groups,		\
-+		.ngroups = ARRAY_SIZE(fname##_groups),	\
-+	}
-+
-+static const struct nmk_function nmk_stn8815_functions[] = {
-+	FUNCTION(u0),
-+	FUNCTION(mmcsd),
-+	FUNCTION(u1),
-+	FUNCTION(i2c1),
-+	FUNCTION(i2c0),
-+	FUNCTION(i2cusb),
-+};
-+
-+static const struct nmk_pinctrl_soc_data nmk_stn8815_soc = {
-+	.gpio_ranges = nmk_stn8815_ranges,
-+	.gpio_num_ranges = ARRAY_SIZE(nmk_stn8815_ranges),
-+	.pins = nmk_stn8815_pins,
-+	.npins = ARRAY_SIZE(nmk_stn8815_pins),
-+	.functions = nmk_stn8815_functions,
-+	.nfunctions = ARRAY_SIZE(nmk_stn8815_functions),
-+	.groups = nmk_stn8815_groups,
-+	.ngroups = ARRAY_SIZE(nmk_stn8815_groups),
-+};
-+
-+void __devinit
-+nmk_pinctrl_stn8815_init(const struct nmk_pinctrl_soc_data **soc)
-+{
-+	*soc = &nmk_stn8815_soc;
-+}
-diff --git a/drivers/pinctrl/pinctrl-nomadik.c b/drivers/pinctrl/pinctrl-nomadik.c
-index ba7122f..d3e9945 100644
---- a/drivers/pinctrl/pinctrl-nomadik.c
-+++ b/drivers/pinctrl/pinctrl-nomadik.c
-@@ -1717,6 +1717,8 @@ static int __devinit nmk_pinctrl_probe(struct platform_device *pdev)
- 			of_match_device(nmk_pinctrl_match, &pdev->dev)->data;
- 
- 	/* Poke in other ASIC variants here */
-+	if (version == PINCTRL_NMK_STN8815)
-+		nmk_pinctrl_stn8815_init(&npct->soc);
- 	if (version == PINCTRL_NMK_DB8500)
- 		nmk_pinctrl_db8500_init(&npct->soc);
- 
-diff --git a/drivers/pinctrl/pinctrl-nomadik.h b/drivers/pinctrl/pinctrl-nomadik.h
-index bc91aed..e10735b 100644
---- a/drivers/pinctrl/pinctrl-nomadik.h
-+++ b/drivers/pinctrl/pinctrl-nomadik.h
-@@ -61,6 +61,19 @@ struct nmk_pinctrl_soc_data {
- 	unsigned ngroups;
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index e58bda6..e154bfd 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -915,6 +915,7 @@ config ARCH_NOMADIK
+ 	select COMMON_CLK
+ 	select GENERIC_CLOCKEVENTS
+ 	select PINCTRL
++	select PINCTRL_STN8815
+ 	select MIGHT_HAVE_CACHE_L2X0
+ 	select ARCH_REQUIRE_GPIOLIB
+ 	help
+diff --git a/arch/arm/mach-nomadik/board-nhk8815.c b/arch/arm/mach-nomadik/board-nhk8815.c
+index 1169a12..3eccef6 100644
+--- a/arch/arm/mach-nomadik/board-nhk8815.c
++++ b/arch/arm/mach-nomadik/board-nhk8815.c
+@@ -23,6 +23,7 @@
+ #include <linux/mtd/partitions.h>
+ #include <linux/i2c.h>
+ #include <linux/io.h>
++#include <linux/pinctrl/machine.h>
+ #include <asm/hardware/vic.h>
+ #include <asm/sizes.h>
+ #include <asm/mach-types.h>
+@@ -292,8 +293,42 @@ static struct i2c_board_info __initdata nhk8815_i2c2_devices[] = {
+ 	},
  };
  
-+#ifdef CONFIG_PINCTRL_STN8815
++static unsigned long out_low[] = { PIN_OUTPUT_LOW };
++static unsigned long out_high[] = { PIN_OUTPUT_HIGH };
++static unsigned long in_nopull[] = { PIN_INPUT_NOPULL };
++static unsigned long in_pullup[] = { PIN_INPUT_PULLUP };
 +
-+void nmk_pinctrl_stn8815_init(const struct nmk_pinctrl_soc_data **soc);
++static struct pinctrl_map __initdata nhk8815_pinmap[] = {
++	PIN_MAP_MUX_GROUP_DEFAULT("uart0", "pinctrl-stn8815", "u0_a_1", "u0"),
++	PIN_MAP_MUX_GROUP_DEFAULT("uart1", "pinctrl-stn8815", "u1_a_1", "u1"),
++	/* Hog in MMC/SD card mux */
++	PIN_MAP_MUX_GROUP_HOG_DEFAULT("pinctrl-stn8815", "mmcsd_a_1", "mmcsd"),
++	/* MCCLK */
++	PIN_MAP_CONFIGS_PIN_HOG_DEFAULT("pinctrl-stn8815", "GPIO8_B10", out_low),
++	/* MCCMD */
++	PIN_MAP_CONFIGS_PIN_HOG_DEFAULT("pinctrl-stn8815", "GPIO9_A10", in_pullup),
++	/* MCCMDDIR */
++	PIN_MAP_CONFIGS_PIN_HOG_DEFAULT("pinctrl-stn8815", "GPIO10_C11", out_high),
++	/* MCDAT3-0 */
++	PIN_MAP_CONFIGS_PIN_HOG_DEFAULT("pinctrl-stn8815", "GPIO11_B11", in_pullup),
++	PIN_MAP_CONFIGS_PIN_HOG_DEFAULT("pinctrl-stn8815", "GPIO12_A11", in_pullup),
++	PIN_MAP_CONFIGS_PIN_HOG_DEFAULT("pinctrl-stn8815", "GPIO13_C12", in_pullup),
++	PIN_MAP_CONFIGS_PIN_HOG_DEFAULT("pinctrl-stn8815", "GPIO14_B12", in_pullup),
++	/* MCDAT0DIR */
++	PIN_MAP_CONFIGS_PIN_HOG_DEFAULT("pinctrl-stn8815", "GPIO15_A12", out_high),
++	/* MCDAT31DIR */
++	PIN_MAP_CONFIGS_PIN_HOG_DEFAULT("pinctrl-stn8815", "GPIO16_C13", out_high),
++	/* MCMSFBCLK */
++	PIN_MAP_CONFIGS_PIN_HOG_DEFAULT("pinctrl-stn8815", "GPIO24_C15", in_pullup),
++	/* CD input GPIO */
++	PIN_MAP_CONFIGS_PIN_HOG_DEFAULT("pinctrl-stn8815", "GPIO111_H21", in_nopull),
++	/* CD bias drive */
++	PIN_MAP_CONFIGS_PIN_HOG_DEFAULT("pinctrl-stn8815", "GPIO112_J21", out_low),
++};
 +
-+#else
-+
+ static void __init nhk8815_platform_init(void)
+ {
++	pinctrl_register_mappings(nhk8815_pinmap, ARRAY_SIZE(nhk8815_pinmap));
+ 	cpu8815_platform_init();
+ 	nhk8815_onenand_init();
+ 	platform_add_devices(nhk8815_platform_devices,
+diff --git a/arch/arm/mach-nomadik/cpu-8815.c b/arch/arm/mach-nomadik/cpu-8815.c
+index 6fd8e46..b617eae 100644
+--- a/arch/arm/mach-nomadik/cpu-8815.c
++++ b/arch/arm/mach-nomadik/cpu-8815.c
+@@ -83,6 +83,18 @@ void cpu8815_add_gpios(resource_size_t *base, int num, int irq,
+ 	}
+ }
+ 
 +static inline void
-+nmk_pinctrl_stn8815_init(const struct nmk_pinctrl_soc_data **soc)
++cpu8815_add_pinctrl(struct device *parent, const char *name)
 +{
++	struct platform_device_info pdevinfo = {
++		.parent = parent,
++		.name = name,
++		.id = -1,
++	};
++
++	platform_device_register_full(&pdevinfo);
 +}
 +
-+#endif
-+
- #ifdef CONFIG_PINCTRL_DB8500
+ static int __init cpu8815_init(void)
+ {
+ 	struct nmk_gpio_platform_data pdata = {
+@@ -91,6 +103,7 @@ static int __init cpu8815_init(void)
  
- void nmk_pinctrl_db8500_init(const struct nmk_pinctrl_soc_data **soc);
+ 	cpu8815_add_gpios(cpu8815_gpio_base, ARRAY_SIZE(cpu8815_gpio_base),
+ 			  IRQ_GPIO0, &pdata);
++	cpu8815_add_pinctrl(NULL, "pinctrl-stn8815");
+ 	amba_apb_device_add(NULL, "rng", NOMADIK_RNG_BASE, SZ_4K, 0, 0, NULL, 0);
+ 	amba_apb_device_add(NULL, "rtc-pl031", NOMADIK_RTC_BASE, SZ_4K, IRQ_RTC_RTT, 0, NULL, 0);
+ 	return 0;
 -- 
 1.7.7.6
 
