@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760724Ab2FHOxy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 10:53:54 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59637 "EHLO
+	id S1760616Ab2FHOyq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 10:54:46 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59661 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757735Ab2FHOxv (ORCPT
+	with ESMTP id S1755824Ab2FHOyo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 10:53:51 -0400
-Date: Fri, 8 Jun 2012 07:53:41 -0700
-From: tip-bot for Cliff Wickman <cpw@sgi.com>
-Message-ID: <tip-d5d2d2eea84b0d8450b082edbc3dbde41fb8bfd8@git.kernel.org>
+	Fri, 8 Jun 2012 10:54:44 -0400
+Date: Fri, 8 Jun 2012 07:54:33 -0700
+From: tip-bot for Stephen Boyd <sboyd@codeaurora.org>
+Message-ID: <tip-eab309494ae2b9e15f85520f00de3893162c2e43@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        stable@kernel.org, cpw@sgi.com, tglx@linutronix.de
+        tj@kernel.org, tglx@linutronix.de, sboyd@codeaurora.org
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        stable@kernel.org, cpw@sgi.com, tglx@linutronix.de
-In-Reply-To: <E1SccoO-0002Lh-Cb@eag09.americas.sgi.com>
-References: <E1SccoO-0002Lh-Cb@eag09.americas.sgi.com>
+        tj@kernel.org, tglx@linutronix.de, sboyd@codeaurora.org
+In-Reply-To: <1337845521-32755-1-git-send-email-sboyd@codeaurora.org>
+References: <1337845521-32755-1-git-send-email-sboyd@codeaurora.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/uv: Fix UV2 BAU legacy mode
-Git-Commit-ID: d5d2d2eea84b0d8450b082edbc3dbde41fb8bfd8
+Subject: [tip:core/urgent] memblock: Document memblock_is_region_{memory,
+ reserved}()
+Git-Commit-ID: eab309494ae2b9e15f85520f00de3893162c2e43
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -27,60 +28,74 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 08 Jun 2012 07:53:47 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 08 Jun 2012 07:54:39 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d5d2d2eea84b0d8450b082edbc3dbde41fb8bfd8
-Gitweb:     http://git.kernel.org/tip/d5d2d2eea84b0d8450b082edbc3dbde41fb8bfd8
-Author:     Cliff Wickman <cpw@sgi.com>
-AuthorDate: Thu, 7 Jun 2012 08:31:40 -0500
+Commit-ID:  eab309494ae2b9e15f85520f00de3893162c2e43
+Gitweb:     http://git.kernel.org/tip/eab309494ae2b9e15f85520f00de3893162c2e43
+Author:     Stephen Boyd <sboyd@codeaurora.org>
+AuthorDate: Thu, 24 May 2012 00:45:21 -0700
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 8 Jun 2012 11:48:28 +0200
+CommitDate: Fri, 8 Jun 2012 11:59:46 +0200
 
-x86/uv: Fix UV2 BAU legacy mode
+memblock: Document memblock_is_region_{memory,reserved}()
 
-The SGI Altix UV2 BAU (Broadcast Assist Unit) as used for
-tlb-shootdown (selective broadcast mode) always uses UV2
-broadcast descriptor format. There is no need to clear the
-'legacy' (UV1) mode, because the hardware always uses UV2 mode
-for selective broadcast.
+At first glance one would think that memblock_is_region_memory()
+and memblock_is_region_reserved() would be implemented in the
+same way. Unfortunately they aren't and the former returns
+whether the region specified is a subset of a memory bank while
+the latter returns whether the region specified intersects with
+reserved memory.
 
-But the BIOS uses general broadcast and legacy mode, and the
-hardware pays attention to the legacy mode bit for general
-broadcast. So the kernel must not clear that mode bit.
+Document the two functions so that users aren't tempted to
+make the implementation the same between them and to clarify the
+purpose of the functions.
 
-Signed-off-by: Cliff Wickman <cpw@sgi.com>
-Cc: <stable@kernel.org>
-Link: http://lkml.kernel.org/r/E1SccoO-0002Lh-Cb@eag09.americas.sgi.com
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Tejun Heo <tj@kernel.org>
+Link: http://lkml.kernel.org/r/1337845521-32755-1-git-send-email-sboyd@codeaurora.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/include/asm/uv/uv_bau.h |    1 -
- arch/x86/platform/uv/tlb_uv.c    |    1 -
- 2 files changed, 0 insertions(+), 2 deletions(-)
+ mm/memblock.c |   20 ++++++++++++++++++++
+ 1 files changed, 20 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/uv/uv_bau.h b/arch/x86/include/asm/uv/uv_bau.h
-index becf47b..6149b47 100644
---- a/arch/x86/include/asm/uv/uv_bau.h
-+++ b/arch/x86/include/asm/uv/uv_bau.h
-@@ -149,7 +149,6 @@
- /* 4 bits of software ack period */
- #define UV2_ACK_MASK			0x7UL
- #define UV2_ACK_UNITS_SHFT		3
--#define UV2_LEG_SHFT UV2H_LB_BAU_MISC_CONTROL_USE_LEGACY_DESCRIPTOR_FORMATS_SHFT
- #define UV2_EXT_SHFT UV2H_LB_BAU_MISC_CONTROL_ENABLE_EXTENDED_SB_STATUS_SHFT
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 952123e..32a0a5e 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -867,6 +867,16 @@ int __init_memblock memblock_is_memory(phys_addr_t addr)
+ 	return memblock_search(&memblock.memory, addr) != -1;
+ }
  
- /*
-diff --git a/arch/x86/platform/uv/tlb_uv.c b/arch/x86/platform/uv/tlb_uv.c
-index 3ae0e61..59880af 100644
---- a/arch/x86/platform/uv/tlb_uv.c
-+++ b/arch/x86/platform/uv/tlb_uv.c
-@@ -1295,7 +1295,6 @@ static void __init enable_timeouts(void)
- 		 */
- 		mmr_image |= (1L << SOFTACK_MSHIFT);
- 		if (is_uv2_hub()) {
--			mmr_image &= ~(1L << UV2_LEG_SHFT);
- 			mmr_image |= (1L << UV2_EXT_SHFT);
- 		}
- 		write_mmr_misc_control(pnode, mmr_image);
++/**
++ * memblock_is_region_memory - check if a region is a subset of memory
++ * @base: base of region to check
++ * @size: size of region to check
++ *
++ * Check if the region [@base, @base+@size) is a subset of a memory block.
++ *
++ * RETURNS:
++ * 0 if false, non-zero if true
++ */
+ int __init_memblock memblock_is_region_memory(phys_addr_t base, phys_addr_t size)
+ {
+ 	int idx = memblock_search(&memblock.memory, base);
+@@ -879,6 +889,16 @@ int __init_memblock memblock_is_region_memory(phys_addr_t base, phys_addr_t size
+ 		 memblock.memory.regions[idx].size) >= end;
+ }
+ 
++/**
++ * memblock_is_region_reserved - check if a region intersects reserved memory
++ * @base: base of region to check
++ * @size: size of region to check
++ *
++ * Check if the region [@base, @base+@size) intersects a reserved memory block.
++ *
++ * RETURNS:
++ * 0 if false, non-zero if true
++ */
+ int __init_memblock memblock_is_region_reserved(phys_addr_t base, phys_addr_t size)
+ {
+ 	memblock_cap_size(base, &size);
