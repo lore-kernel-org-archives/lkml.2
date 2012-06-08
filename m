@@ -1,71 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762096Ab2FHXrQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 19:47:16 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:64318 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761647Ab2FHXrL (ORCPT
+	id S1762259Ab2FHXsL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 19:48:11 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:56779 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761737Ab2FHXsJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 19:47:11 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120608163751.7a8ec2bc.akpm@linux-foundation.org>
-References: <1339191663-17693-1-git-send-email-kirill.shutemov@linux.intel.com>
- <20120608150253.e42464a6.akpm@linux-foundation.org> <20120608221446.GA18250@otc-wbsnb-06>
- <20120608152550.258d6a30.akpm@linux-foundation.org> <20120608222734.GT30000@ZenIV.linux.org.uk>
- <20120608153120.b722d7c3.akpm@linux-foundation.org> <20120608233127.GB18981@otc-wbsnb-06>
- <20120608163751.7a8ec2bc.akpm@linux-foundation.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 8 Jun 2012 16:46:47 -0700
-X-Google-Sender-Auth: ayEs9p7SdMS5Pe0uNtvZ3ravDos
-Message-ID: <CA+55aFw5k3daxeoZb9H1HGcOCWjPF+d7inSbf0QHmG-atp4reQ@mail.gmail.com>
-Subject: Re: [RFC, PATCH, RESEND] fs: push rcu_barrier() from
- deactivate_locked_super() to filesystems
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Boaz Harrosh <bharrosh@panasas.com>,
-        Tao Ma <boyu.mt@taobao.com>, Nick Piggin <npiggin@kernel.dk>,
-        "Dmitry V. Levin" <ldv@altlinux.org>,
-        v9fs-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-afs@lists.infradead.org,
-        linux-btrfs@vger.kernel.org, ceph-devel@vger.kernel.org,
-        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
-        codalist@telemann.coda.cs.cmu.edu, ecryptfs@vger.kernel.org,
-        osd-dev@open-osd.org, linux-ext4@vger.kernel.org,
-        fuse-devel@lists.sourceforge.net, linux-mtd@lists.infradead.org,
-        jfs-discussion@lists.sourceforge.net, logfs@logfs.org,
-        linux-nfs@vger.kernel.org, linux-nilfs@vger.kernel.org,
-        linux-ntfs-dev@lists.sourceforge.net, ocfs2-devel@oss.oracle.com,
-        reiserfs-devel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 8 Jun 2012 19:48:09 -0400
+Message-ID: <1339199282.15067.3.camel@phoenix>
+Subject: [PATCH] ARM: plat-versatile: Make PLAT_VERSATILE_LEDS depend on
+ LEDS_CLASS=y
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Bryan Wu <bryan.wu@canonical.com>, Richard Purdie <rpurdie@rpsys.net>,
+        linux-leds@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Date: Sat, 09 Jun 2012 07:48:02 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 8, 2012 at 4:37 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
->
-> So how about open-coding the rcu_barrier() in btrfs and gfs2 for the
-> non-inode caches (which is the appropriate place), and hand the inode
-> cache over to the vfs for treatment (which is the appropriate place).
+config PLAT_VERSATILE_LEDS needs LEDS_CLASS=y, otherwise I got below build
+error when CONFIG_LEDS_CLASS=m.
 
-The thing is, none of the inode caches are really up to the VFS. They
-are per-filesystem caches, that just *embed* an inode as part of the
-bigger ext4_inode or whatever. But apart from the fact that the
-embedded inode requires them to then use the proper "call_rcu()" stuff
-to do the delayed free, they really are pretty much filesystem data
-structures. The VFS layer can neither free them or allocate them,
-since the VFS layer doesn't even know how big the structures are, or
-where the inodes are embedded, or how to initialize them (or even when
-to allocate them).
+  LD      init/built-in.o
+arch/arm/plat-versatile/built-in.o: In function `versatile_leds_init':
+sched-clock.c:(.init.text+0x190): undefined reference to `led_classdev_register'
+make: *** [vmlinux] Error 1
 
-Of course, if you just mean having a VFS wrapper that does
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ arch/arm/plat-versatile/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-    static void vfs_inode_kmem_cache_destroy(struct kmem_cache *cachep)
-    {
-        rcu_barrier();
-        kmem_cache_destroy(cachep);
-    }
+diff --git a/arch/arm/plat-versatile/Kconfig b/arch/arm/plat-versatile/Kconfig
+index 81ee7cc..62ffdc7 100644
+--- a/arch/arm/plat-versatile/Kconfig
++++ b/arch/arm/plat-versatile/Kconfig
+@@ -13,7 +13,7 @@ config PLAT_VERSATILE_FPGA_IRQ_NR
+        depends on PLAT_VERSATILE_FPGA_IRQ
+ 
+ config PLAT_VERSATILE_LEDS
+-	def_bool y if LEDS_CLASS
++	def_bool y if LEDS_CLASS=y
+ 	depends on ARCH_REALVIEW || ARCH_VERSATILE
+ 
+ config PLAT_VERSATILE_SCHED_CLOCK
+-- 
+1.7.9.5
 
-then we could do that. Not much better than what Kirill's patch did,
-but at least we could have that comment in just one single place.
 
-                Linus
+
