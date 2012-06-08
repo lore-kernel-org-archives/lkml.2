@@ -1,71 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934468Ab2FHUVa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 16:21:30 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56078 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933473Ab2FHUV3 (ORCPT
+	id S1759831Ab2FHU1N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 16:27:13 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:34601 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753884Ab2FHU1L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 16:21:29 -0400
-Date: Fri, 8 Jun 2012 13:21:26 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-cc: Oleg Nesterov <oleg@redhat.com>, Dave Jones <davej@redhat.com>,
-        Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org
-Subject: [patch for-3.5-rc1] mm, oom: fix badness score underflow
-In-Reply-To: <20120608150437.GA31091@redhat.com>
-Message-ID: <alpine.DEB.2.00.1206081317120.19054@chino.kir.corp.google.com>
-References: <20120607165942.GA31966@redhat.com> <20120608140328.GA26650@redhat.com> <20120608142625.GC1711@redhat.com> <20120608150437.GA31091@redhat.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 8 Jun 2012 16:27:11 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Originating-IP: [41.212.116.88]
+In-Reply-To: <CAH3drwZF6H4VCB_o1445sbtfTshiwzxBGSg=gDpPpA=eHfDCzQ@mail.gmail.com>
+References: <CAHVUoiQywo=iHKsXQbsVE7coc1FL9A9qy_a71SK94MKNV0GrKA@mail.gmail.com>
+ <CAHVUoiTZmzT3vquaDC65AJfCFZX-qS5GjgjP2-+=0R7skurW5g@mail.gmail.com>
+ <CAHVUoiQgcAMr874d_yPfm9ssUBOoX+dNLy9JNCOCYwOCrAKXFQ@mail.gmail.com>
+ <CAH3drwacayQEZHOidbKKuJ3KjgMvnYzT0S0csXV2QwSmC8nMxg@mail.gmail.com>
+ <CAHVUoiSP7SiWCtYPvKS_1RuAV0upWmT06iN7PR1OE6NAtToirQ@mail.gmail.com>
+ <CAH3drwY61Pqd1MXxgSYcHRPJF5pNr2FO7vrM_ULsRvMbYjAhOQ@mail.gmail.com>
+ <CAHVUoiTfooPSXyVpcg_Khc0rzYcnmvAbGgfko42hOxqukc91_A@mail.gmail.com>
+ <CAHVUoiT4FgEpWDLtzfTUaCTZR-rFx76E3MRdU8u9swjmt74ZQg@mail.gmail.com>
+ <CAHVUoiQ_csZeh_FEHaCkqmJvHO+Q=UF2Va7V19G-3C=xuSYTPw@mail.gmail.com> <CAH3drwZF6H4VCB_o1445sbtfTshiwzxBGSg=gDpPpA=eHfDCzQ@mail.gmail.com>
+From: Brian Gitonga Marete <marete@toshnix.com>
+Date: Fri, 8 Jun 2012 23:26:50 +0300
+Message-ID: <CAHVUoiQvXaySahcONu6MnpPNyd0LbbkB2pAnbR4yjMjuvDR-_A@mail.gmail.com>
+Subject: Re: [Regression] [Radeon] Stream command failures and render problems
+ in Evergreen (Radeon HD 5600) in kernel 3.4
+To: Jerome Glisse <j.glisse@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, David Airlie <airlied@linux.ie>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Jerome Glisse <jglisse@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the privileges given to root threads (3% of allowable memory) or a 
-negative value of /proc/pid/oom_score_adj happen to exceed the amount of 
-rss of a thread, its badness score overflows as a result of a7f638f999ff 
-("mm, oom: normalize oom scores to oom_score_adj scale only for 
-userspace").
+On Fri, Jun 8, 2012 at 5:51 PM, Jerome Glisse <j.glisse@gmail.com> wrote:
+> On Fri, Jun 8, 2012 at 6:13 AM, Brian Gitonga Marete <marete@toshnix.com> wrote:
+>> On Fri, Jun 8, 2012 at 12:56 AM, Brian Gitonga Marete
+>> <marete@toshnix.com> wrote:
+>>> On Fri, Jun 8, 2012 at 12:44 AM, Brian Gitonga Marete
+>>> <marete@toshnix.com> wrote:
+>>>> On Thu, Jun 7, 2012 at 11:20 PM, Jerome Glisse <j.glisse@gmail.com> wrote:
+>>>>> On Thu, Jun 7, 2012 at 3:59 PM, Brian Gitonga Marete <marete@toshnix.com> wrote:
+>>>>>> On Thu, Jun 7, 2012 at 5:25 PM, Jerome Glisse <j.glisse@gmail.com> wrote:
+>>>>>>>
+>>>>>>> Update your libdrm to libdrm from git should fix your issue.
+>>>>>>
+>>>>>> Hello Jerome,
+>>>>>>
+>>>>>> Thanks for looking into this.
+>>>>>>
+>>>>>> I am afraid that even with the very latest libdrm (git 93a5117d), the
+>>>>>> rendering is still broken.
+>>>>>>
+>>>>>> What else should I try? I would revert the patch that git-bisect
+>>>>>> fingered (your patch, git 285484e2d, Linux mainline) but there are
+>>>>>> merge problems when I try to do that, which I have not yet looked
+>>>>>> into. Perhaps you can see if you can help me revert that patch so that
+>>>>>> we can see if the problem then goes away?
+>>>>>>
+>>>>> What happen if you upgrade to xf86-video-ati from git ?
+>>>>
+>>>> Hello Jerome,
+>>>>
+>>>> Once again, thanks a lot for your help.
+>>>>
+>>>> Some progress but also a setback: Upgrading to the latest
+>>>> xf86-video-ati git gets rid of the stream command failures - No more
+>>>> error messages in dmesg(8). But then, now, rendering is completely
+>>>> messed up. Previously, it was mostly the window boundaries that were
+>>>> blurred/messed but now also entire windows and text so that you can't
+>>>> read anything from the desktop. (For example, the previous render
+>>>> problems would still allow me to use gnome-terminal even though its
+>>>> frames were completely blurred. Now the text withing gnome-terminal is
+>>>> also blurred/smudged)
+>>>>
+>>>
+>>> I should add that in this case rendering is completely messed up in
+>>> _both_ 3.3.x and 3.4. But the stream command failures in 3.4 go away
+>>> upon upgrading to the latext xf86-video-ati git HEAD.
+>>
+>> Ok. All is fixed in kernel v3.4 if I additionally upgrade Mesa to the
+>> latest git. Jerome, many thanks for your help on this!
+>>
+>> So to summarize, the 3.4 breakage in Ubuntu 11.04 (and probably other
+>> distributions released around the same time) is fixed by:
+>>
+>> a) Upgrade libdrm to latest GIT as of this writing (93a5117d5)
+>> b) Upgrade xf86-video-ati to latest GIT as of this writing (5888371)
+>> c) Upgrade mesa to latest GIT as of this writing (529476b)
+>>
+>> Now kernel 3.4 works on my laptop.
+>>
+>> Thanks!
+>>
+>> BGM.
+>
+> Well i still need to find out what's wrong with 6.14.0, what your
+> screen resolution ?
 
-Fix this by making the type signed and return 1, meaning the thread is 
-still eligible for kill, if the value is negative.
+1366 x 768. I am happy to run whatever tests you would like to debug.
 
-Reported-by: Dave Jones <davej@redhat.com>
-Acked-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- mm/oom_kill.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -183,7 +183,7 @@ static bool oom_unkillable_task(struct task_struct *p,
- unsigned long oom_badness(struct task_struct *p, struct mem_cgroup *memcg,
- 			  const nodemask_t *nodemask, unsigned long totalpages)
- {
--	unsigned long points;
-+	long points;
- 
- 	if (oom_unkillable_task(p, memcg, nodemask))
- 		return 0;
-@@ -223,7 +223,7 @@ unsigned long oom_badness(struct task_struct *p, struct mem_cgroup *memcg,
- 	 * Never return 0 for an eligible task regardless of the root bonus and
- 	 * oom_score_adj (oom_score_adj can't be OOM_SCORE_ADJ_MIN here).
- 	 */
--	return points ? points : 1;
-+	return points > 0 ? points : 1;
- }
- 
- /*
+-- 
+Brian Gitonga Marete
+Toshnix Systems - http://toshnix.com
