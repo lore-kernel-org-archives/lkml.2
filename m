@@ -1,67 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759928Ab2FHBVL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 21:21:11 -0400
-Received: from nm24-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.226]:36544 "HELO
-	nm24-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1759763Ab2FHBVJ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 21:21:09 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 19114.58981.bm@omp1052.mail.sp2.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=0AhYeBRNaU68Ty3AqnLij9EX+utbNQKwDFeuKRCnnePYVaDsryfAX9LxZBOfgBeOPEQmn5apyY+AR4BmLXNXOGopux2pDOGWZz9UjSZkjcsKbZ0gvGtlFBBBuVKV7Erz2x1eziR6pxzT5Ms167F3+2X9DcSjVSUAX4hFwB4WZfo=;
-X-YMail-OSG: c4rEE4YVM1m2a.42bTsuWxMjFHhqDKwpLXnL7ujmU1yRZcX
- xoLlFjcf3nhLn27ru7SS8T4UZtyj11dG9gPeG1BbNhn0fOH5ZDlUgSN8VrPP
- if3c2O2Cnju5_xChdypGTcDWR5LaKWUAcwYEaNrCasjHIIvBb7jz9C6P8eVJ
- mZYEjS7NVT5dobeQNoA6gPU.TcQGFEijfccTcJnIhMIe8ppFy50T4CGNtmKA
- YcRUSDDkC61ayuSs_rehPsii1pRmM4GMOKoNcJycwW_2xpkV4dtDEyzxt.zn
- 7Rdu3pjwiLu43l8W7vXhOHIKaMRZj0EhvNinWzr9ew2AdDqMIhQ2Ny_A17AF
- oMFyOkc0RHoNv4jjUNuTsshACGZrKm8Pu8ubkC7z7Oy4fYp6RiSBPxpHW9P2
- 8XXOuJdlJVrOlKQ3gyFpPy_Oe3zJZHW_xKf0VkmWQogQ._ZpqTods0PeZPPK
- UhBEJluj5FxaoVqWpOoMNPR4T8GcvHGjHuNvsSjIIHubZ4_zA40UGmb1s6jq
- XB8TyMWc8XYWQahsHHEWs8vJsgO8M395v.yc9hKLhJ7wfum0WqeLYoKdgytR
- O2FFlYC0yOx8RS_CrzvO3haEa6BEtjKpXwX_EAxrKRbZiLAiECsfagTQjENA
- 1Hp58rExDURR.MYvf69b80UDvcNC3Of214YLWvmBiQLz2OzHsQK.m.bGJ8hQ
- 603EvIAVR1iiyhm3pOIJ_c3WDLN5renTafxxWujXX7bfmUJmwphsSKZxdKFG
- o
-X-Mailer: YahooMailWebService/0.8.118.349524
-Message-ID: <1339118347.78794.YahooMailNeo@web112018.mail.gq1.yahoo.com>
-Date: Thu, 7 Jun 2012 18:19:07 -0700 (PDT)
-From: Ron Chen <ron_chen_123@yahoo.com>
-Reply-To: Ron Chen <ron_chen_123@yahoo.com>
-Subject: memcg cgroup controller & sbrk interaction
-To: Linux Mailing List <linux-kernel@vger.kernel.org>
+	id S1759971Ab2FHBYP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 21:24:15 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64835 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759762Ab2FHBYL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 21:24:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+In-Reply-To: <20120607225654.GA14247@mcarlson.broadcom.com>
+References: <alpine.DEB.2.01.1206041546070.5568@trent.utfs.org>
+	<20120606010255.GA9991@mcarlson.broadcom.com>
+	<CABawtvPE_xuamH2ysL8x0WsJMXdFV5oXPrWjMT-EC-DF_kCxxw@mail.gmail.com>
+	<20120606021436.GA10714@mcarlson.broadcom.com>
+	<CABawtvNVKkxAgrQqJS7FJGoswQ9ZVyJcHcNwbSJQk4yscTn8gw@mail.gmail.com>
+	<1338955977.2760.3603.camel@edumazet-glaptop>
+	<CABawtvOBJQ-oajFQmviOdgKCub-4n06kRW+x7nE2uyiWnoky9Q@mail.gmail.com>
+	<20120607225654.GA14247@mcarlson.broadcom.com>
+Date: Fri, 8 Jun 2012 09:24:11 +0800
+Message-ID: <CABawtvPpaNCb00KQ1yuX2ytAhEeZ8DrYsK6VqfGo=ZOz66bMOA@mail.gmail.com>
+Subject: Re: tg3: transmit timed out, resetting
+From: Ethan Zhao <ethan.kernel@gmail.com>
+To: Matt Carlson <mcarlson@broadcom.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Christian Kujau <lists@nerdbynature.de>,
+        LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We are from the Open Grid Scheduler, which is the official Open Source Grid Engine. Open Grid Scheduler/
-Grid Engine ( http://gridscheduler.sourceforge.net ) is used by many compute farms & HPC sites for job scheduling.
+Matt,
+   I notice there are some AER errors ( UnsupReq+,RxErr+) with the tg3
+from Christian'  lspci output,  do you know why and how to clear them ?
 
-In the next release, we are using cgroups to define a Job Container interface for batch jobs:
+UESta:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF-
+MalfTLP- ECRC- UnsupReq+ ACSViol-
+CESta:  RxErr+ BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr+
 
-http://blogs.scalablelogic.com/2012/05/grid-engine-cgroups-integration.html
+Thanks,
+Ethan
 
-
-However, not only us, but others have found that the memcg controller does not cause sbrk(2) or mmap(2) to
-return error when the cgroup is under high memory pressure. Further, when the amount of free memory is
-really low, the Linux Kernel OOM killer picks something and kills it.
-
-http://www.spinics.net/lists/cgroups/msg02622.html
-
-
-We also would like to see if it is technically possible for the Virtual Memory Manager to interact with the
-memory controller properly and give us the semantics of setrlimit(2). So basically if the current address
-space usage exceeds the "memory.memsw.limit_in_bytes" limit defined by the administrator, then the
-memory allocation system calls (example: mmap(2), sbrk(2), etc) will return error such that the OOM
-killer is not invoked.
-
-Thanks in advance.
-
- -Ron
+On Fri, Jun 8, 2012 at 6:56 AM, Matt Carlson <mcarlson@broadcom.com> wrote:
+> On Wed, Jun 06, 2012 at 12:52:32PM +0800, ethan zhao wrote:
+>> Eric,
+>>   That is ask for confirmation from Matt Carlson of Broadcom.
+>>
+>> Ethan
+>>
+>> On Wed, Jun 6, 2012 at 12:12 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+>> > On Wed, 2012-06-06 at 10:29 +0800, ethan zhao wrote:
+>> >> So no way to fix it via firmware update or Linux driver ? :<
+>> >
+>> > Yes, but you need to cooperate, or else it might take more time than
+>> > necessary.
+>> >
+>> > Asking questions like that on lkml is not going to help very much.
+>> >
+>> > So, once again, we kindly ask you try a recent kernel and post
+>> > register dump and some additional information when transmit timeouts
+>> > happen.
+>> >
+>> > The 'latest kernel' is either linux-3.5.rc1, or one of David Miller
+>> > tree :
+>> >
+>> > http://git.kernel.org/?p=linux/kernel/git/davem/net-next.git;a=summary
+>> >
+>> > or
+>> >
+>> > http://git.kernel.org/?p=linux/kernel/git/davem/net.git;a=summary
+>> >
+>> > Thanks
+>
+> Does the following patch fix your problem?
+>
+>
+> [PATCH] tg3: Apply short DMA frag workaround to 5906
+>
+> 5906 devices also need the short DMA fragment workaround.  This patch
+> makes the necessary change.
+>
+> Signed-off-by: Matt Carlson <mcarlson@broadcom.com>
+> ---
+>  drivers/net/ethernet/broadcom/tg3.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
+> index d55df32..2db4d70 100644
+> --- a/drivers/net/ethernet/broadcom/tg3.c
+> +++ b/drivers/net/ethernet/broadcom/tg3.c
+> @@ -14275,7 +14275,8 @@ static int __devinit tg3_get_invariants(struct tg3 *tp)
+>                }
+>        }
+>
+> -       if (tg3_flag(tp, 5755_PLUS))
+> +       if (tg3_flag(tp, 5755_PLUS) ||
+> +           GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5906)
+>                tg3_flag_set(tp, SHORT_DMA_BUG);
+>
+>        if (GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5719)
+> --
+> 1.7.3.4
+>
+>
