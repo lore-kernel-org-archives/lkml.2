@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761466Ab2FHFQv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 01:16:51 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43308 "EHLO
+	id S933430Ab2FHFQt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 01:16:49 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43326 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1761384Ab2FHFH0 (ORCPT
+	by vger.kernel.org with ESMTP id S1761445Ab2FHFH0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Jun 2012 01:07:26 -0400
-Message-Id: <20120608041849.860434443@decadent.org.uk>
+Message-Id: <20120608041846.208742839@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 08 Jun 2012 05:19:47 +0100
+Date: Fri, 08 Jun 2012 05:19:20 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, James Chapman <jchapman@katalix.com>,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: [ 67/82] l2tp: fix oops in L2TP IP sockets for connect()  AF_UNSPEC case
+        alan@lxorguk.ukuu.org.uk, Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
+        Mimi Zohar <zohar@us.ibm.com>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: [ 40/82] vfs: increment iversion when a file is truncated
 In-Reply-To: <20120608041840.861504477@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,111 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Chapman <jchapman@katalix.com>
+From: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
 
-[ Upstream commit c51ce49735c183ef2592db70f918ee698716276b ]
+commit 799243a389bde0de10fa21ca1ca453d2fe538b85 upstream.
 
-An application may call connect() to disconnect a socket using an
-address with family AF_UNSPEC. The L2TP IP sockets were not handling
-this case when the socket is not bound and an attempt to connect()
-using AF_UNSPEC in such cases would result in an oops. This patch
-addresses the problem by protecting the sk_prot->disconnect() call
-against trying to unhash the socket before it is bound.
+When a file is truncated with truncate()/ftruncate() and then closed,
+iversion is not updated.  This patch uses ATTR_SIZE flag as an indication
+to increment iversion.
 
-The patch also adds more checks that the sockaddr supplied to bind()
-and connect() calls is valid.
+Mimi said:
 
- RIP: 0010:[<ffffffff82e133b0>]  [<ffffffff82e133b0>] inet_unhash+0x50/0xd0
- RSP: 0018:ffff88001989be28  EFLAGS: 00010293
- Stack:
-  ffff8800407a8000 0000000000000000 ffff88001989be78 ffffffff82e3a249
-  ffffffff82e3a050 ffff88001989bec8 ffff88001989be88 ffff8800407a8000
-  0000000000000010 ffff88001989bec8 ffff88001989bea8 ffffffff82e42639
- Call Trace:
- [<ffffffff82e3a249>] udp_disconnect+0x1f9/0x290
- [<ffffffff82e42639>] inet_dgram_connect+0x29/0x80
- [<ffffffff82d012fc>] sys_connect+0x9c/0x100
+On fput(), i_version is used to detect and flag files that have changed
+and need to be re-measured in the IMA measurement policy.  When a file
+is truncated with truncate()/ftruncate() and then closed, i_version is
+not updated.  As a result, although the file has changed, it will not be
+re-measured and added to the IMA measurement list on subsequent access.
 
-Reported-by: Sasha Levin <levinsasha928@gmail.com>
-Signed-off-by: James Chapman <jchapman@katalix.com>
+Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+Acked-by: Mimi Zohar <zohar@us.ibm.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/l2tp/l2tp_ip.c |   30 ++++++++++++++++++++++++------
- 1 file changed, 24 insertions(+), 6 deletions(-)
+ fs/attr.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/net/l2tp/l2tp_ip.c b/net/l2tp/l2tp_ip.c
-index 2a2a3e7..2fbbe1f 100644
---- a/net/l2tp/l2tp_ip.c
-+++ b/net/l2tp/l2tp_ip.c
-@@ -251,9 +251,16 @@ static int l2tp_ip_bind(struct sock *sk, struct sockaddr *uaddr, int addr_len)
- {
- 	struct inet_sock *inet = inet_sk(sk);
- 	struct sockaddr_l2tpip *addr = (struct sockaddr_l2tpip *) uaddr;
--	int ret = -EINVAL;
-+	int ret;
- 	int chk_addr_ret;
+--- a/fs/attr.c
++++ b/fs/attr.c
+@@ -176,6 +176,11 @@
+ 			return -EPERM;
+ 	}
  
-+	if (!sock_flag(sk, SOCK_ZAPPED))
-+		return -EINVAL;
-+	if (addr_len < sizeof(struct sockaddr_l2tpip))
-+		return -EINVAL;
-+	if (addr->l2tp_family != AF_INET)
-+		return -EINVAL;
++	if ((ia_valid & ATTR_SIZE) && IS_I_VERSION(inode)) {
++		if (attr->ia_size != inode->i_size)
++			inode_inc_iversion(inode);
++	}
 +
- 	ret = -EADDRINUSE;
- 	read_lock_bh(&l2tp_ip_lock);
- 	if (__l2tp_ip_bind_lookup(&init_net, addr->l2tp_addr.s_addr, sk->sk_bound_dev_if, addr->l2tp_conn_id))
-@@ -283,6 +290,8 @@ static int l2tp_ip_bind(struct sock *sk, struct sockaddr *uaddr, int addr_len)
- 	sk_del_node_init(sk);
- 	write_unlock_bh(&l2tp_ip_lock);
- 	ret = 0;
-+	sock_reset_flag(sk, SOCK_ZAPPED);
-+
- out:
- 	release_sock(sk);
- 
-@@ -303,13 +312,14 @@ static int l2tp_ip_connect(struct sock *sk, struct sockaddr *uaddr, int addr_len
- 	__be32 saddr;
- 	int oif, rc;
- 
--	rc = -EINVAL;
-+	if (sock_flag(sk, SOCK_ZAPPED)) /* Must bind first - autobinding does not work */
-+		return -EINVAL;
-+
- 	if (addr_len < sizeof(*lsa))
--		goto out;
-+		return -EINVAL;
- 
--	rc = -EAFNOSUPPORT;
- 	if (lsa->l2tp_family != AF_INET)
--		goto out;
-+		return -EAFNOSUPPORT;
- 
- 	lock_sock(sk);
- 
-@@ -363,6 +373,14 @@ out:
- 	return rc;
- }
- 
-+static int l2tp_ip_disconnect(struct sock *sk, int flags)
-+{
-+	if (sock_flag(sk, SOCK_ZAPPED))
-+		return 0;
-+
-+	return udp_disconnect(sk, flags);
-+}
-+
- static int l2tp_ip_getname(struct socket *sock, struct sockaddr *uaddr,
- 			   int *uaddr_len, int peer)
- {
-@@ -598,7 +616,7 @@ static struct proto l2tp_ip_prot = {
- 	.close		   = l2tp_ip_close,
- 	.bind		   = l2tp_ip_bind,
- 	.connect	   = l2tp_ip_connect,
--	.disconnect	   = udp_disconnect,
-+	.disconnect	   = l2tp_ip_disconnect,
- 	.ioctl		   = udp_ioctl,
- 	.destroy	   = l2tp_ip_destroy_sock,
- 	.setsockopt	   = ip_setsockopt,
+ 	if ((ia_valid & ATTR_MODE)) {
+ 		mode_t amode = attr->ia_mode;
+ 		/* Flag setting protected by i_mutex */
 
 
