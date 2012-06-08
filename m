@@ -1,68 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964824Ab2FHUvu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 16:51:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13879 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759707Ab2FHUvt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 16:51:49 -0400
-Date: Fri, 8 Jun 2012 16:51:38 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Li Zhong <zhong@linux.vnet.ibm.com>
-Cc: Jan Beulich <JBeulich@suse.com>, x86@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86,nmi: Fix section mismatch warnings on 32-bit
-Message-ID: <20120608205138.GA29664@redhat.com>
-References: <1338839763-11140-1-git-send-email-dzickus@redhat.com>
- <4FCDDB7D0200007800088390@nat28.tlf.novell.com>
- <20120605144734.GU32472@redhat.com>
- <4FCE44FC0200007800088524@nat28.tlf.novell.com>
- <20120605183539.GA32472@redhat.com>
- <4FCF57B902000078000887EA@nat28.tlf.novell.com>
- <20120606140357.GB32472@redhat.com>
- <1339055005.18639.11.camel@ThinkPad-T420>
- <20120607124800.GH32472@redhat.com>
+	id S964832Ab2FHVCq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 17:02:46 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:36066 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754601Ab2FHVCo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 17:02:44 -0400
+X-Sasl-enc: tUJak5GbssvxrifyL2EtfES1LpdGFvzo4+kQ1kzIE6GJ 1339189363
+Date: Fri, 8 Jun 2012 18:02:39 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Borislav Petkov <borislav.petkov@amd.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
+        andi@firstfloor.org, mingo@elte.hu, ming.m.lin@intel.com,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Dimitri Sivanich <sivanich@sgi.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>
+Subject: Re: [PATCH] perf/x86: check ucode before disabling PEBS on
+ SandyBridge
+Message-ID: <20120608210239.GB16470@khazad-dum.debian.net>
+References: <20120607071531.GA4849@quad>
+ <1339064319.23343.13.camel@twins>
+ <CABPqkBQ+p5rcuxpXCTLMXPM+awAHhQ6mP9-WzVh5GWtn2GyfrA@mail.gmail.com>
+ <1339065932.23343.18.camel@twins>
+ <CABPqkBQ=tLXXsgvzQx+i01Owm4MM8m=6cEVVi4ab64gOiTTBYQ@mail.gmail.com>
+ <1339067757.23343.21.camel@twins>
+ <20120608093513.GA22520@gmail.com>
+ <1339149613.23343.52.camel@twins>
+ <1339161972.2507.13.camel@laptop>
+ <20120608135117.GB31359@aftab.osrc.amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120607124800.GH32472@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120608135117.GB31359@aftab.osrc.amd.com>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 07, 2012 at 08:48:00AM -0400, Don Zickus wrote:
-> On Thu, Jun 07, 2012 at 03:43:25PM +0800, Li Zhong wrote:
-> > On Wed, 2012-06-06 at 10:03 -0400, Don Zickus wrote:
-> > > On Wed, Jun 06, 2012 at 12:14:33PM +0100, Jan Beulich wrote:
-> > > > > I didn't think it would be compiler dependent as I do not know what
-> > > > > compiler the reporter was using.  I used a RHEL-6 4.4.4 compiler (which
-> > > > > you probably don't have :^) ).
+On Fri, 08 Jun 2012, Borislav Petkov wrote:
+> On Fri, Jun 08, 2012 at 03:26:12PM +0200, Peter Zijlstra wrote:
+> > On Fri, 2012-06-08 at 12:00 +0200, Peter Zijlstra wrote:
+> > > > > Or we could put a hook in the ucode loader.
 > > > > 
-> > > > Indeed, somehow I failed to see the obvious - it's commit
-> > > > 72b3fb24713755cf9740b403e95aa67ceedf3509 that causes
-> > > > these problems. Instantiating static data like this just doesn't
-> > > > play with any of the pointers passed being into .init.*.
-> > > > 
-> > > > I'd suggest either open coding register_nmi_handler() (with
-> > > > the static data put into __initdata), or further abstracting it
-> > > > by allowing an optional fifth argument (specifying the section
-> > > > annotation if needed).
+> > > > I'd really suggest the latter - I doubt this will be our only 
+> > > > ucode dependent quirk, going forward ...
 > > > 
-> > > Ah.  Thanks for figuring that out!!  I will post a patch opencoding it.
-> > > 
+> > > Yeah, am in the middle of writing that.. 
 > > 
-> > Hi Don, 
+> > OK so the micro-code stuff is a complete trainwreck.
 > > 
-> > How about the following patch, adding an optional fifth argument as Jan
-> > mentioned? We don't need change other users of register_nmi_handler(). 
+> > The very worst is that it does per-cpu micro-code updates, not machine
+> > wide. This results in it being able to have different revisions on
+> > different cpus. This in turn makes the below O(n^2) :/
 > 
-> Ah, ok.  I forgot about the variable args syntax.  That works too.  I give
-> a quick test.
+> Reportedly, there are some obscure systems which need different
+> microcode versions per CPU:
+> 
+> http://lkml.indiana.edu/hypermail/linux/kernel/1105.3/01010.html
 
-Apparently I was too slow.  Ingo committed my other patch.  I can ask him
-to revert it and use your smaller/cleaner patch instead?  Or is it big
-deal to keep the other one?
+I wrote that email you linked above.  All it means is that you can have
+more than one microcode *type* per system, because you can have more
+than one processor type per system.
 
-Cheers,
-Don
+The lack of per-system microcode handling is, as far as I am concerned,
+a rather annoying misfeature, plain and simple.  A per-core interface
+that lets you have mismatched microcode across cores of the same type
+(i.e. that take the same microcode) is, IMO, a bottomless pit of pain
+and suffering which should diediediediedie as soon as possible.
+
+> > Why do we have per-cpu firmware anyway?
+> 
+> See above.
+
+It just means the firmware core has to do a per-cpu job, not that we
+should have mismatched microcodes across the same type of cpus, or even
+that we should have the required per-cpu handling of firmware exposed to
+the rest of the kernel and the worst of it all, exposed to userspace.
+
+> Actually, the deal here is that you could have received microcode
+> already from BIOS and you won't have to necessarily load ucode from
+> userspace with the Linux ucode loader.
+
+Or from an enhanced bootloader.  Yes.
+
+> Btw, this is why we wanted to load ucode as early as possible but
+> there's no progress on the whole thing right now...
+
+Which is a pity.
+
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
