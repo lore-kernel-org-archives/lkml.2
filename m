@@ -1,100 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934303Ab2FHKmQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 06:42:16 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:41454 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934247Ab2FHKmO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 06:42:14 -0400
-Date: Fri, 8 Jun 2012 19:42:04 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: leonid.moiseichuk@nokia.com, penberg@kernel.org, minchan@kernel.org,
-        kosaki.motohiro@gmail.com, john.stultz@linaro.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: Re: [PATCH 0/5] Some vmevent fixes...
-Message-ID: <20120608104204.GA2185@barrios>
-References: <20120604113811.GA4291@lizard>
- <4FCD14F1.1030105@gmail.com>
- <CAOJsxLHR4wSgT2hNfOB=X6ud0rXgYg+h7PTHzAZYCUdLs6Ktug@mail.gmail.com>
- <20120605083921.GA21745@lizard>
- <4FD014D7.6000605@kernel.org>
- <20120608074906.GA27095@lizard>
- <4FD1BB29.1050805@kernel.org>
- <CAOJsxLHPvg=bsv+GakFGHyJwH0BoGA=fmzy5bwqWKNGryYTDtg@mail.gmail.com>
- <84FF21A720B0874AA94B46D76DB98269045F7B42@008-AM1MPN1-004.mgdnok.nokia.com>
- <20120608094507.GA11963@lizard>
+	id S1762078Ab2FHKwY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 06:52:24 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:35430 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752602Ab2FHKwV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 06:52:21 -0400
+From: Sourav Poddar <sourav.poddar@ti.com>
+To: <devicetree-discuss@lists.ozlabs.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-input@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <sourav.poddar@ti.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>, Felipe Balbi <balbi@ti.com>,
+        Dmitry Torokhov <dtor@mail.ru>
+Subject: [RESEND/PATCHv5 2/2] arm/dts: omap4-sdp: Add keypad data
+Date: Fri, 8 Jun 2012 16:23:00 +0530
+Message-ID: <1339152780-25301-2-git-send-email-sourav.poddar@ti.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1339152780-25301-1-git-send-email-sourav.poddar@ti.com>
+References: <1339152780-25301-1-git-send-email-sourav.poddar@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120608094507.GA11963@lizard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 08, 2012 at 02:45:07AM -0700, Anton Vorontsov wrote:
-> On Fri, Jun 08, 2012 at 09:12:36AM +0000, leonid.moiseichuk@nokia.com wrote:
-> [...]
-> > > Exactly. I don't know why people think pushing vmevents to userspace is
-> > > going to fix any of the hard problems.
-> > > 
-> > > Anton, Lenoid, do you see any fundamental issues from userspace point of
-> > > view with going forward what Minchan is proposing?
-> > 
-> > That good proposal but I have to underline that userspace could be interested not only in memory consumption stressed cases (pressure, vm watermarks ON etc.) 
-> > but quite relaxed as well e.g. 60% durty pages are consumed - let's do not restart some daemons. In very stressed conditions user-space might be already dead.
-> 
-> Indeed. Minchan's proposal is good to get notified that VM is under
-> stress.
-> 
-> But suppose some app allocates memory slowly (i.e. I scroll a large
-> page on my phone, and the page is rendered piece by piece). So, in
-> the end we're slowly but surely allocate a lot of memory. In that
-> case Minchan's method won't notice that it's actually time to close
-> some apps.
+Add keypad data node in omap4 device tree file.
+Also fill the device tree binding parameters
+with the required value in "omap4-sdp" dts file.
 
-I can't understand. Why can't the approach catch the situation?
-Let's think about it.
+Tested on omap4430 sdp with dmitry's 'next' branch.
 
-There is 40M in CleanCache LRU which has easy-reclaimable pages and
-there is 10M free pages and 5M high watermark in system.
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Benoit Cousson <b-cousson@ti.com>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Felipe Balbi <balbi@ti.com>
+Cc: Dmitry Torokhov <dtor@mail.ru>
+Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
+---
+ arch/arm/boot/dts/omap4-sdp.dts |   63 +++++++++++++++++++++++++++++++++++++++
+ arch/arm/boot/dts/omap4.dtsi    |    5 +++
+ 2 files changed, 68 insertions(+), 0 deletions(-)
 
-Your application start to consume free pages very slowly.
-So when your application consumed 5M, VM start to reclaim. So far, it's okay
-because we have 40M easy-reclaimable pages. And low memory notifier can start
-to notify so your dameon can do some action to get free pages.
+diff --git a/arch/arm/boot/dts/omap4-sdp.dts b/arch/arm/boot/dts/omap4-sdp.dts
+index 63c6b2b..0c9b3bf 100644
+--- a/arch/arm/boot/dts/omap4-sdp.dts
++++ b/arch/arm/boot/dts/omap4-sdp.dts
+@@ -17,4 +17,67 @@
+ 		device_type = "memory";
+ 		reg = <0x80000000 0x40000000>; /* 1 GB */
+ 	};
++
++	keypad@4ae1c000 {
++		keypad,num-rows = <8>;
++		keypad,num-columns = <8>;
++		linux,keymap = < 0x00000012
++			0x00010013
++			0x00020014
++			0x00030066
++			0x0004003f
++			0x00060017
++			0x0007002a
++			0x01000020
++			0x01010021
++			0x01020022
++			0x01030054
++			0x01040040
++			0x01060025
++			0x0107001c
++			0x0200002d
++			0x0201002e
++			0x0202002f
++			0x0203006b
++			0x02040041
++			0x02060034
++			0x0207003a
++			0x0300002c
++			0x0301004e
++			0x03020030
++			0x0303003b
++			0x03040042
++			0x03060018
++			0x03070039
++			0x04000011
++			0x04010015
++			0x04020016
++			0x0403003c
++			0x04040073
++			0x04060026
++			0x04070069
++			0x0500001f
++			0x05010023
++			0x05020024
++			0x0503003d
++			0x05040043
++			0x05050072
++			0x05060032
++			0x0507006a
++			0x06000010
++			0x0601001e
++			0x06020031
++			0x0603005c
++			0x0604000e
++			0x06060019
++			0x06070067
++			0x07000094
++			0x07010095
++			0x070200ca
++			0x070300cb
++			0x0704003e
++			0x07060160
++			0x0707006c >;
++		linux,input-no-autorepeat;
++	};
+ };
+diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
+index 3d35559..e0f678a 100644
+--- a/arch/arm/boot/dts/omap4.dtsi
++++ b/arch/arm/boot/dts/omap4.dtsi
+@@ -156,4 +156,9 @@
+ 			ti,hwmods = "i2c4";
+ 		};
+ 	};
++
++	keypad@4ae1c000 {
++		compatible = "ti,omap4-keypad";
++		ti,hwmods = "kbd";
++	};
+ };
+-- 
+1.7.1
 
-I think it's not so late.
-
-sidenote:
-It seems I live in the complete opposite place because
-you guys always start discussion when I am about going out of office.
-Please understand my late response.
-Maybe I will come back after weekend. :)
-
-Thanks.
-
-> 
-> Then suppose someone calls me, the "phone" application is now
-> starting, but since we're out of 'easy to reclaim' pages, it takes
-> forever for the app to load, VM is now under huge stress, and surely
-> we're *now* getting notified, but alas, it is too late. Call missed.
-> 
-> 
-> So, it's like measuring distance, velocity and acceleration. In
-> Android case, among other things, we're interested in distance too!
-> I.e. "how much exactly 'easy to reclaim' pages left", not only
-> "how fast we're getting out of 'easy to reclaim' pages".
-> 
-> > Another interesting question which combination of VM page types could be recognized as interesting for tracking as Minchan correctly stated it depends from area.
-> > For me seems weights most likely will be -1, 0 or +1 to calculate resulting values and thesholds e.g. Active = {+1 * Active_Anon; +1 * Active_File}
-> > It will extend flexibility a lot.
-> 
-> Exposing VM details to the userland? No good. :-)
-> 
-> -- 
-> Anton Vorontsov
-> Email: cbouatmailru@gmail.com
