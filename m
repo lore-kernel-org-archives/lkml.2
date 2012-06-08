@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964975Ab2FHVy4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 17:54:56 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56232 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934538Ab2FHVxv (ORCPT
+	id S964958Ab2FHVyy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 17:54:54 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:49628 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934520Ab2FHVxt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 17:53:51 -0400
+	Fri, 8 Jun 2012 17:53:49 -0400
 From: mathieu.poirier@linaro.org
 To: linux-scsi@vger.kernel.org
 Cc: JBottomley@parallels.com, linux-kernel@vger.kernel.org, arnd@arndb.de,
         mathieu.poirier@linaro.org
-Subject: [PATCH RESEND 7/7] drivers/scsi: some ISA drivers need ISA_DMA_API
-Date: Fri,  8 Jun 2012 15:53:36 -0600
-Message-Id: <1339192416-27026-8-git-send-email-mathieu.poirier@linaro.org>
+Subject: [PATCH RESEND 5/7] scsi/atp870u: use mdelay instead of large udelay
+Date: Fri,  8 Jun 2012 15:53:34 -0600
+Message-Id: <1339192416-27026-6-git-send-email-mathieu.poirier@linaro.org>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1339192416-27026-1-git-send-email-mathieu.poirier@linaro.org>
 References: <1339192416-27026-1-git-send-email-mathieu.poirier@linaro.org>
@@ -23,47 +23,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnd Bergmann <arnd@arndb.de>
 
-The two options are separate, and some platforms (e.g. arm pxa)
-have ISA slots but no ISA dma controller, so they cannot build
-drivers using the enable_dma etc functions.
+Some architectures like ARM cannot handle large numbers as
+arguments to udelay, so the drivers should use mdelay when
+delaying for multiple miliseconds.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
 ---
- drivers/scsi/Kconfig |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/scsi/atp870u.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/scsi/Kconfig b/drivers/scsi/Kconfig
-index b43d72e..c97c418 100644
---- a/drivers/scsi/Kconfig
-+++ b/drivers/scsi/Kconfig
-@@ -1042,7 +1042,7 @@ config SCSI_IZIP_SLOW_CTR
- 
- config SCSI_NCR53C406A
- 	tristate "NCR53c406a SCSI support"
--	depends on ISA && SCSI
-+	depends on ISA && SCSI && ISA_DMA_API
- 	help
- 	  This is support for the NCR53c406a SCSI host adapter.  For user
- 	  configurable parameters, check out <file:drivers/scsi/NCR53c406a.c>
-@@ -1310,7 +1310,7 @@ config SCSI_NCR53C8XX_NO_DISCONNECT
- 
- config SCSI_PAS16
- 	tristate "PAS16 SCSI support"
--	depends on ISA && SCSI
-+	depends on ISA && ISA_DMA_API && SCSI
- 	select SCSI_SPI_ATTRS
- 	---help---
- 	  This is support for a SCSI host adapter.  It is explained in section
-@@ -1324,7 +1324,7 @@ config SCSI_PAS16
- 
- config SCSI_QLOGIC_FAS
- 	tristate "Qlogic FAS SCSI support"
--	depends on ISA && SCSI
-+	depends on ISA && SCSI && ISA_DMA_API
- 	---help---
- 	  This is a driver for the ISA, VLB, and PCMCIA versions of the Qlogic
- 	  FastSCSI! cards as well as any other card based on the FASXX chip
+diff --git a/drivers/scsi/atp870u.c b/drivers/scsi/atp870u.c
+index 68ce085..86ad079 100644
+--- a/drivers/scsi/atp870u.c
++++ b/drivers/scsi/atp870u.c
+@@ -1173,7 +1173,7 @@ wait_io1:
+ 	outw(val, tmport);
+ 	outb(2, 0x80);
+ TCM_SYNC:
+-	udelay(0x800);
++	mdelay(2);
+ 	if ((inb(tmport) & 0x80) == 0x00) {	/* bsy ? */
+ 		outw(0, tmport--);
+ 		outb(0, tmport);
 -- 
 1.7.5.4
 
