@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932866Ab2FHFOu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 01:14:50 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43327 "EHLO
+	id S932791Ab2FHFOt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 01:14:49 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43333 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1761434Ab2FHFH2 (ORCPT
+	by vger.kernel.org with ESMTP id S1760087Ab2FHFH2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Jun 2012 01:07:28 -0400
-Message-Id: <20120608041844.750619357@decadent.org.uk>
+Message-Id: <20120608041850.539990060@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 08 Jun 2012 05:19:09 +0100
+Date: Fri, 08 Jun 2012 05:19:52 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>
-Subject: [ 29/82] mm: consider all swapped back pages in used-once logic
+        alan@lxorguk.ukuu.org.uk, Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        Vlad Yaseivch <vyasevich@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 72/82] sctp: check cached dst before using it
 In-Reply-To: <20120608041840.861504477@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,64 +29,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Hocko <mhocko@suse.cz>
+From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
 
-commit e48982734ea0500d1eba4f9d96195acc5406cad6 upstream.
+[ Upstream commit e0268868ba064980488fc8c194db3d8e9fb2959c ]
 
-Commit 645747462435 ("vmscan: detect mapped file pages used only once")
-made mapped pages have another round in inactive list because they might
-be just short lived and so we could consider them again next time.  This
-heuristic helps to reduce pressure on the active list with a streaming
-IO worklods.
+dst_check() will take care of SA (and obsolete field), hence
+IPsec rekeying scenario is taken into account.
 
-This patch fixes a regression introduced by this commit for heavy shmem
-based workloads because unlike Anon pages, which are excluded from this
-heuristic because they are usually long lived, shmem pages are handled
-as a regular page cache.
-
-This doesn't work quite well, unfortunately, if the workload is mostly
-backed by shmem (in memory database sitting on 80% of memory) with a
-streaming IO in the background (backup - up to 20% of memory).  Anon
-inactive list is full of (dirty) shmem pages when watermarks are hit.
-Shmem pages are kept in the inactive list (they are referenced) in the
-first round and it is hard to reclaim anything else so we reach lower
-scanning priorities very quickly which leads to an excessive swap out.
-
-Let's fix this by excluding all swap backed pages (they tend to be long
-lived wrt.  the regular page cache anyway) from used-once heuristic and
-rather activate them if they are referenced.
-
-The customer's workload is shmem backed database (80% of RAM) and they
-are measuring transactions/s with an IO in the background (20%).
-Transactions touch more or less random rows in the table.  The
-transaction rate fell by a factor of 3 (in the worst case) because of
-commit 64574746.  This patch restores the previous numbers.
-
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Acked-by: Vlad Yaseivch <vyasevich@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- mm/vmscan.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/net/sctp/sctp.h |   13 +++++++++++++
+ net/sctp/output.c       |    4 +---
+ net/sctp/transport.c    |   17 -----------------
+ 3 files changed, 14 insertions(+), 20 deletions(-)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 44f0436..67a4fd4 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -657,7 +657,7 @@ static enum page_references page_check_references(struct page *page,
- 		return PAGEREF_RECLAIM;
+diff --git a/include/net/sctp/sctp.h b/include/net/sctp/sctp.h
+index 6a72a58..ad03988 100644
+--- a/include/net/sctp/sctp.h
++++ b/include/net/sctp/sctp.h
+@@ -703,4 +703,17 @@ static inline void sctp_v4_map_v6(union sctp_addr *addr)
+ 	addr->v6.sin6_addr.s6_addr32[2] = htonl(0x0000ffff);
+ }
  
- 	if (referenced_ptes) {
--		if (PageAnon(page))
-+		if (PageSwapBacked(page))
- 			return PAGEREF_ACTIVATE;
- 		/*
- 		 * All mapped pages start out with page table
++/* The cookie is always 0 since this is how it's used in the
++ * pmtu code.
++ */
++static inline struct dst_entry *sctp_transport_dst_check(struct sctp_transport *t)
++{
++	if (t->dst && !dst_check(t->dst, 0)) {
++		dst_release(t->dst);
++		t->dst = NULL;
++	}
++
++	return t->dst;
++}
++
+ #endif /* __net_sctp_h__ */
+diff --git a/net/sctp/output.c b/net/sctp/output.c
+index 817174e..8fc4dcd 100644
+--- a/net/sctp/output.c
++++ b/net/sctp/output.c
+@@ -377,9 +377,7 @@ int sctp_packet_transmit(struct sctp_packet *packet)
+ 	 */
+ 	skb_set_owner_w(nskb, sk);
+ 
+-	/* The 'obsolete' field of dst is set to 2 when a dst is freed. */
+-	if (!dst || (dst->obsolete > 1)) {
+-		dst_release(dst);
++	if (!sctp_transport_dst_check(tp)) {
+ 		sctp_transport_route(tp, NULL, sctp_sk(sk));
+ 		if (asoc && (asoc->param_flags & SPP_PMTUD_ENABLE)) {
+ 			sctp_assoc_sync_pmtu(asoc);
+diff --git a/net/sctp/transport.c b/net/sctp/transport.c
+index 394c57c..8da4481 100644
+--- a/net/sctp/transport.c
++++ b/net/sctp/transport.c
+@@ -226,23 +226,6 @@ void sctp_transport_pmtu(struct sctp_transport *transport, struct sock *sk)
+ 		transport->pathmtu = SCTP_DEFAULT_MAXSEGMENT;
+ }
+ 
+-/* this is a complete rip-off from __sk_dst_check
+- * the cookie is always 0 since this is how it's used in the
+- * pmtu code
+- */
+-static struct dst_entry *sctp_transport_dst_check(struct sctp_transport *t)
+-{
+-	struct dst_entry *dst = t->dst;
+-
+-	if (dst && dst->obsolete && dst->ops->check(dst, 0) == NULL) {
+-		dst_release(t->dst);
+-		t->dst = NULL;
+-		return NULL;
+-	}
+-
+-	return dst;
+-}
+-
+ void sctp_transport_update_pmtu(struct sctp_transport *t, u32 pmtu)
+ {
+ 	struct dst_entry *dst;
 
 
