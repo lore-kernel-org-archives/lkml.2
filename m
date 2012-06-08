@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761874Ab2FHFSV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 01:18:21 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43255 "EHLO
+	id S1761806Ab2FHFST (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 01:18:19 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43251 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1761283Ab2FHFHZ (ORCPT
+	by vger.kernel.org with ESMTP id S1761205Ab2FHFHZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Jun 2012 01:07:25 -0400
-Message-Id: <20120608041846.480646831@decadent.org.uk>
+Message-Id: <20120608041845.945062242@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 08 Jun 2012 05:19:22 +0100
+Date: Fri, 08 Jun 2012 05:19:18 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Theodore Tso <tytso@mit.edu>,
-        Ken Sumrall <ksumrall@google.com>
-Subject: [ 42/82] ext4: add missing save_error_info() to ext4_error()
+        alan@lxorguk.ukuu.org.uk, Andreas Dilger <adilger@dilger.ca>,
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [ 38/82] ext4: disallow hard-linked directory in ext4_lookup
 In-Reply-To: <20120608041840.861504477@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,35 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Andreas Dilger <adilger@dilger.ca>
 
-commit f3fc0210c0fc91900766c995f089c39170e68305 upstream.
+commit 7e936b737211e6b54e34b71a827e56b872e958d8 upstream.
 
-The ext4_error() function is missing a call to save_error_info().
-Since this is the function which marks the file system as containing
-an error, this oversight (which was introduced in 2.6.36) is quite
-significant, and should be backported to older stable kernels with
-high urgency.
+A hard-linked directory to its parent can cause the VFS to deadlock,
+and is a sign of a corrupted file system.  So detect this case in
+ext4_lookup(), before the rmdir() lockup scenario can take place.
 
-Reported-by: Ken Sumrall <ksumrall@google.com>
+Signed-off-by: Andreas Dilger <adilger@dilger.ca>
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Cc: ksumrall@google.com
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/ext4/super.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/ext4/namei.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index 9f1ae6b..b8d5fc1 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -539,6 +539,7 @@ void __ext4_error(struct super_block *sb, const char *function,
- 	printk(KERN_CRIT "EXT4-fs error (device %s): %s:%d: comm %s: %pV\n",
- 	       sb->s_id, function, line, current->comm, &vaf);
- 	va_end(args);
-+	save_error_info(sb, function, line);
- 
- 	ext4_handle_error(sb);
- }
+diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
+index a9fd5f4..daf8260 100644
+--- a/fs/ext4/namei.c
++++ b/fs/ext4/namei.c
+@@ -1330,6 +1330,12 @@ static struct dentry *ext4_lookup(struct inode *dir, struct dentry *dentry, stru
+ 			EXT4_ERROR_INODE(dir, "bad inode number: %u", ino);
+ 			return ERR_PTR(-EIO);
+ 		}
++		if (unlikely(ino == dir->i_ino)) {
++			EXT4_ERROR_INODE(dir, "'%.*s' linked to parent dir",
++					 dentry->d_name.len,
++					 dentry->d_name.name);
++			return ERR_PTR(-EIO);
++		}
+ 		inode = ext4_iget(dir->i_sb, ino);
+ 		if (inode == ERR_PTR(-ESTALE)) {
+ 			EXT4_ERROR_INODE(dir,
 
 
