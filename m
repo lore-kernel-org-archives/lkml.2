@@ -1,81 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934484Ab2FHUl6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 16:41:58 -0400
-Received: from www.linutronix.de ([62.245.132.108]:59830 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759176Ab2FHUl5 (ORCPT
+	id S934496Ab2FHUm6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 16:42:58 -0400
+Received: from db3ehsobe002.messaging.microsoft.com ([213.199.154.140]:32097
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759538Ab2FHUm4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 16:41:57 -0400
-Date: Fri, 8 Jun 2012 22:41:54 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Francois Romieu <romieu@fr.zoreil.com>
-cc: Dave Jones <davej@redhat.com>, Marc Dionne <marc.c.dionne@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: NOHZ: local_softirq_pending 08
-In-Reply-To: <20120608202701.GA26175@electric-eye.fr.zoreil.com>
-Message-ID: <alpine.LFD.2.02.1206082238120.3086@ionos>
-References: <alpine.LFD.2.02.1205310938080.3231@ionos> <20120601225754.GA25281@electric-eye.fr.zoreil.com> <CAB9dFdvWoc1onyWyy4BVmhpjeb5K2d10re0NcW-_NQCbfRC0hw@mail.gmail.com> <20120605231550.GA20981@electric-eye.fr.zoreil.com> <20120606014656.GA24870@redhat.com>
- <20120606054251.GA24467@electric-eye.fr.zoreil.com> <20120608023420.GD7191@redhat.com> <alpine.LFD.2.02.1206080954440.3086@ionos> <20120608142333.GB1711@redhat.com> <alpine.LFD.2.02.1206081641040.3086@ionos>
- <20120608202701.GA26175@electric-eye.fr.zoreil.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Fri, 8 Jun 2012 16:42:56 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 3
+X-BigFish: VPS3(z1823lz98dIzz1202hzzz2dh668h839h944hd25hf0ah)
+X-WSS-ID: 0M5BG7B-02-9F7-02
+X-M-MSG: 
+Date: Fri, 8 Jun 2012 22:38:28 +0200
+From: Borislav Petkov <borislav.petkov@amd.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@kernel.org>, Stephane Eranian <eranian@google.com>,
+        <linux-kernel@vger.kernel.org>, <andi@firstfloor.org>, <mingo@elte.hu>,
+        <ming.m.lin@intel.com>, Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Dimitri Sivanich <sivanich@sgi.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>
+Subject: Re: [PATCH] perf/x86: check ucode before disabling PEBS on
+ SandyBridge
+Message-ID: <20120608203828.GA5220@aftab.osrc.amd.com>
+References: <1339064319.23343.13.camel@twins>
+ <CABPqkBQ+p5rcuxpXCTLMXPM+awAHhQ6mP9-WzVh5GWtn2GyfrA@mail.gmail.com>
+ <1339065932.23343.18.camel@twins>
+ <CABPqkBQ=tLXXsgvzQx+i01Owm4MM8m=6cEVVi4ab64gOiTTBYQ@mail.gmail.com>
+ <1339067757.23343.21.camel@twins>
+ <20120608093513.GA22520@gmail.com>
+ <1339149613.23343.52.camel@twins>
+ <1339161972.2507.13.camel@laptop>
+ <20120608180505.GA4171@aftab.osrc.amd.com>
+ <1339181537.30462.7.camel@twins>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1339181537.30462.7.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 8 Jun 2012, Francois Romieu wrote:
+On Fri, Jun 08, 2012 at 08:52:17PM +0200, Peter Zijlstra wrote:
+> Checking a bitmap of n bits for being all zero is O(n), so the total is
+> still O(n^2). Still, probably faster than the for_each_online_cpu() scan
+> I do now.
 
-> Thomas Gleixner <tglx@linutronix.de> :
-> [...]
-> > I can't find the point where the warning is issued, but I think I
-> > found the cause of the problem.
-> > 
-> > static void rtl_slow_event_work(struct rtl8169_private *tp)
-> > {
-> > 	.....
-> > 	napi_schedule(&tp->napi);
-> > 	  --> __napi_schedule();
-> > 	      -->	list_add_tail(&napi->poll_list, &sd->poll_list);
-> > 	              __raise_softirq_irqoff(NET_RX_SOFTIRQ);
-> > 
-> > 		      This merily sets the softirq bit.
-> > 
-> > 
-> > So this code is really wrong. It's called from full preemptible
-> > context of the workqueue. And if the next thing is a context switch to
-> > idle then the pending softirq check will trigger.
-> 
-> void __napi_schedule(struct napi_struct *n)
-> {
->         unsigned long flags;
-> 
->         local_irq_save(flags);
->         ____napi_schedule(&__get_cpu_var(softnet_data), n);
->         local_irq_restore(flags);
-> }
-> 
-> Are you saying that this stuff should be considered "preemptible" ?
+Ok, here's what I mean:
 
-Gah, crap. Looked at the wrong ___________underscore level. I _____so
-__love _that.
+On init you do:
 
-Though the problem is, that it is neither called in interrupt context
-nor with bh disabled, so nothing invokes the softirq before it reaches
-idle.
+	cpumask_copy(ucode_mask, cpu_online_mask);
 
-In hard interrupt context the pending flag is evaluated in irq_exit()
-and the softirqs are invoked from there. If you call that from thread
-context, then a bh_disable/enable pair will make sure that the pending
-softirq is invoked. Did I miss some more ___underscore magic which
-does that ?
+In the notifier:
 
-Thanks,
+	cpumask_clear_cpu(this_cpu, ucode_mask);
 
-	tglx
+	if (cpumask_empty(ucode_mask))
+		verify_pebs();
 
+So, on each cpu you do cpumask_clear_cpu() which should be O(k) for some
+constant k.
+
+And ok, cpumask_empty() aka __bitmap_empty() iterates over
+nbits/BITS_PER_LONG, so here's the O(n), I see what you mean.
+
+Well, you could probably replace cpumask_empty() with cpumask_weight()
+which should use POPCNT in newer hardware and should be almost for free.
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
 
