@@ -1,141 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762134Ab2FHQmA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 12:42:00 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13766 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751931Ab2FHQl7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 12:41:59 -0400
-X-Authority-Analysis: v=2.0 cv=eIiRfQV1 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=szWgSEt-72UA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=rF0AoRXoRm3dCDsfetUA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1339173716.13377.50.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 2/3] x86: Remove cmpxchg from i386 NMI nesting code
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Fri, 08 Jun 2012 12:41:56 -0400
-In-Reply-To: <4FD223E1.1090707@zytor.com>
-References: <20120608135200.371649691@goodmis.org>
-	 <20120608135603.699156773@goodmis.org> <4FD223E1.1090707@zytor.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1+b1 
+	id S1762159Ab2FHQmG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 12:42:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50514 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751931Ab2FHQmB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 12:42:01 -0400
+Message-ID: <1339173706.26976.91.camel@ul30vt>
+Subject: Re: [PATCH] uio_pci_generic does not export memory resources
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Andreas Hartmann <andihartmann@01019freenet.de>
+Cc: Dominic Eschweiler <eschweiler@fias.uni-frankfurt.de>,
+        Jan Kiszka <jan.kiszka@siemens.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        "Hans J. Koch" <hjk@hansjkoch.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 08 Jun 2012 10:41:46 -0600
+In-Reply-To: <4FD22552.6090609@01019freenet.de>
+References: <1339156616.3870.9.camel@blech>
+	  <20120608130351.GB1964@redhat.com> <4FD1FB49.3020905@siemens.com>
+	  <1339165009.26976.60.camel@ul30vt> <1339166867.3870.29.camel@blech>
+	 <4FD22552.6090609@01019freenet.de>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-06-08 at 09:10 -0700, H. Peter Anvin wrote:
-
-> Okay, slight interrupt here.
-
-Pun intended?
-
+On Fri, 2012-06-08 at 18:16 +0200, Andreas Hartmann wrote:
+> Hi Dominic,
 > 
-> The cost of this on real hardware better be zero (which I cannot
-> immediately judge.)
-
-Is dec_and_test cheaper than cmpxchg? I would think so.
-
+> Dominic Eschweiler wrote:
+> > Am Freitag, den 08.06.2012, 08:16 -0600 schrieb Alex Williamson:
+> >> Yes, thanks Jan.  This is exactly what VFIO does.  VFIO provides
+> >> secure config space access, resource access, DMA mapping services, and
+> >> full interrupt support to userspace.  
+> > 
+> > I know about VFIO, but we need some support for that stuff relatively
+> > soon. That's the reason why I'm currently working on it to make UIO DMA
+> > capable. My extensions probably do not play well with IOMMUs and they
+> > therefore won't make it to mainline anyhow (i learned that today ;-).
 > 
-> Why?  Because cmpxchg has been in every CPU since the i486, the i386 is
-> royally crippled on Linux anyway (due to minor architectural defects,
-> the main one being the write protect issue) and NMI is almost never used
-> on i386 as anything other than a fatal error indication.
+> I'm not sure if vfio covers your needs completely, but I tested it here
+> very successfully. I was able to create a patch, which can be applied to
+> opensuse 3.4.1 kernel and which seams to run well.
 > 
-> Most "real" NMI users generate the NMI from the local APIC, but the i386
-> has no local APIC, and unlike the i486 cannot even have an external
-> local APIC to the best of my knowledge.
+> I even managed to integrate it into libvirt :-). So it is usable as
+> every other traditional VM, too.
 
-Yeah, this is why I didn't rush to do this change. But it does seem to
-make the code simpler and it may actually speed things up. It replaces a
-cmpxchg with a local_dec_and_test, which, I believe, doesn't even lock
-the cachelines.
+Oh, please post the patch for libvirt!
 
-So lets look at the patch in detail, shall we?
+> Besides the problem with AMD IOMMU, which requires to unbind a whole
+> group of devices in some cases (PCI passthrough - not PCIe), it's really
+> cool! And it's usable now!
 
+If you're feeling adventurous (and know that this may not make it
+upstream), you can do something like this:
 
->  enum nmi_states {
-> -       NMI_NOT_RUNNING,
-> +       NMI_NOT_RUNNING = 0,
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+index ab0dba0..5c26804 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -3161,11 +3161,22 @@ struct pci_dev *pci_get_dma_source(struct pci_dev *dev)
+        return pci_dev_get(dev);
+ }
+ 
++static int pci_func_supports_acs(struct pci_dev *dev, u16 acs_flags)
++{
++       return 1;
++}
++
+ static const struct pci_dev_acs_enabled {
+        u16 vendor;
+        u16 device;
+        int (*acs_enabled)(struct pci_dev *dev, u16 acs_flags);
+ } pci_dev_acs_enabled[] = {
++       { 0x1002, 0x4385, pci_func_supports_acs },
++       { 0x1002, 0x439c, pci_func_supports_acs },
++       { 0x1002, 0x4383, pci_func_supports_acs },
++       { 0x1002, 0x439d, pci_func_supports_acs },
++       { 0x1002, 0x4384, pci_func_supports_acs },
++       { 0x1002, 0x4399, pci_func_supports_acs },
+        { 0 }
+ };
 
-This change was done more for documenting that the first element must be
-zero. Even though C guarantees this. I wanted to point out that we
-expect it to be zero and that it being zero really does matter. No
-functionality change whats-so-ever.
+Hmm, I wonder if we should make a kernel boot parameter that allows
+whitelisting some devices.  I think it would have to taint the kernel
+but there's probably sufficient interest for usability vs
+supportability.  Thanks,
 
->         NMI_EXECUTING,
->         NMI_LATCHED,
->  };
-> -static DEFINE_PER_CPU(enum nmi_states, nmi_state);
-> +static DEFINE_PER_CPU(local_t, nmi_state);
-
-local_t is is just an atomic_long_t, which on i386 is nothing different
-than what an enum would be.
-
->  
->  #define nmi_nesting_preprocess(regs)                                   \
->         do {                                                            \
-> -               if (__get_cpu_var(nmi_state) != NMI_NOT_RUNNING) {      \
-> -                       __get_cpu_var(nmi_state) = NMI_LATCHED;         \
-> +               local_t *__state = &__get_cpu_var(nmi_state);           \
-> +               if (local_read(__state) != NMI_NOT_RUNNING) {           \
-> +                       local_set(__state, NMI_LATCHED);                \
-
-The above change is probably a little bit of a speed up because we
-remove the double '__get_cpu_var()' and replace it with a pointer that
-is reused. I haven't looked at the assembly for this, but it is either
-the same or better with the patch.
-
-Sure, we could improve this by using this_cpu_var() which may make it
-better than the patch. But the patch is currently the same or better
-than what is there now.
-
->                         return;                                         \
->                 }                                                       \
-> -       nmi_restart:                                                    \
-> -               __get_cpu_var(nmi_state) = NMI_EXECUTING;               \
-> -       } while (0)
-> +               local_set(__state, NMI_EXECUTING);                      \
-> +       } while (0);                                                    \
-> +       nmi_restart:
-
-Here it's better or the same than what is there now as we again remove
-the reference to getting the pointer. In case gcc doesn't optimize it
-nicely. But again we could have switched to this_cpu_write() which could
-be better.
-
-The movement of nmi_restart does help too. I'll explain that below.
-
->  
->  #define nmi_nesting_postprocess()                                      \
->         do {                                                            \
-> -               if (cmpxchg(&__get_cpu_var(nmi_state),                  \
-> -                   NMI_EXECUTING, NMI_NOT_RUNNING) != NMI_EXECUTING)   \
-> +               if (!local_dec_and_test(&__get_cpu_var(nmi_state)))     \
-
-Now this is where I think the patch helps. I'm almost certain that
-local_dec_and_test is faster than a cmpxchg by many cycles. Especially
-on i386.
-
->                         goto nmi_restart;                               \
-
-And now that the local_dec_and_test on failure set the state to
-NMI_EXECUTING, we can simply jump back to the new location of
-nmi_restart instead of having to reset it above.
-
-This also removes the race in case another NMI comes in at this moment
-and we lose the latch. But this is a small problem, as we are about to
-repeat the NMI anyway, and it would be the same as HW if the NMI came in
-just before we finished the last NMI. We only repeat once. This is just
-changing where we consider the start of the repeated NMI is (where a new
-latch can happen). But functionality wise, it's no different.
-
--- Steve
-
->         } while (0)
+Alex
 
