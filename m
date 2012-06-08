@@ -1,47 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760574Ab2FHOlA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 10:41:00 -0400
-Received: from gmmr7.centrum.cz ([46.255.225.249]:52561 "EHLO gmmr7.centrum.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753568Ab2FHOk4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 10:40:56 -0400
-X-Greylist: delayed 402 seconds by postgrey-1.27 at vger.kernel.org; Fri, 08 Jun 2012 10:40:55 EDT
-Subject: BUSINESS CO-OPERATION!
-Date: Fri, 08 Jun 2012 16:34:12 +0200
-From: "Mr Kirsten Nematandani" <businessinvestment4@gmail.com>
-References: <20120524122731.B39AA28E@centrum.cz>, <20120525144011.BD4C6E4F@centrum.cz>, <20120528155954.20A7CC30@centrum.cz>, <20120528160017.CF35C952@centrum.cz>, <20120528160043.DCC18377@centrum.cz>, <20120528160127.FD8B0523@centrum.cz>, <20120529171642.CEC84AB8@centrum.cz>, <20120529171704.9D280886@centrum.cz>, <20120529171728.3EA4ED17@centrum.cz>, <20120529171753.908362AA@centrum.cz>, <20120530180222.43339214@centrum.cz>, <20120530180241.699EBDE4@centrum.cz>, <20120530180302.8F703EAB@centrum.cz>, <20120530180322.B4EB095C@centrum.cz>, <20120531180854.BA84BDE4@centrum.cz>, <20120531180914.05888429@centrum.cz>, <20120531180935.D3A94CD3@centrum.cz>, <20120531180957.4FBAC552@centrum.cz>, <20120602125326.2AD09D33@centrum.cz>, <20120602125349.FBA0064A@centrum.cz>, <20120602125412.2E3CA619@centrum.cz>, <20120602125436.F43C5B37@centrum.cz>, <20120604113707.0BE1756B@centrum.cz>, <20120604113727.EE6C8FCC@centrum.cz>, <20120604113752.FFE374D7@centrum.cz>, <20120604113812.7E38D524@cen
- trum.cz>, <20120605120153.AB8A4605@centrum.cz>, <20120605120214.38C736D3@centrum.cz>, <20120605120238.CA276D2C@centrum.cz>, <20120605120302.156ECD36@centrum.cz>, <20120606152413.BE702661@centrum.cz>, <20120606152434.5A514263@centrum.cz>, <20120606152453.B3AFE9E4@centrum.cz>, <20120606152515.28121B9A@centrum.cz>, <20120607163036.FE0775B0@centrum.cz>, <20120607163053.BA772B43@centrum.cz>, <20120607163119.993CC891@centrum.cz> <20120607163138.CF42D3F2@centrum.cz>
-In-Reply-To: <20120607163138.CF42D3F2@centrum.cz>
-X-Mailer: Centrum Email 5.3
-X-Priority: 3
-MIME-Version: 1.0
-Message-Id: <20120608163412.7E288E9C@centrum.cz>
-X-Maser: oho
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-To: unlisted-recipients:; (no To-header on input)
+	id S933233Ab2FHOpc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 10:45:32 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45551 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751799Ab2FHOpb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 10:45:31 -0400
+Subject: Re: [PATCH] perf/x86: check ucode before disabling PEBS on
+ SandyBridge
+From: Peter Zijlstra <peterz@infradead.org>
+To: Borislav Petkov <borislav.petkov@amd.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Stephane Eranian <eranian@google.com>,
+        linux-kernel@vger.kernel.org, andi@firstfloor.org, mingo@elte.hu,
+        ming.m.lin@intel.com, Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Dimitri Sivanich <sivanich@sgi.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>
+In-Reply-To: <20120608143636.GG31359@aftab.osrc.amd.com>
+References: <1339065932.23343.18.camel@twins>
+	 <CABPqkBQ=tLXXsgvzQx+i01Owm4MM8m=6cEVVi4ab64gOiTTBYQ@mail.gmail.com>
+	 <1339067757.23343.21.camel@twins> <20120608093513.GA22520@gmail.com>
+	 <1339149613.23343.52.camel@twins> <1339161972.2507.13.camel@laptop>
+	 <20120608135117.GB31359@aftab.osrc.amd.com>
+	 <1339163669.2507.16.camel@laptop>
+	 <20120608141543.GD31359@aftab.osrc.amd.com>
+	 <1339165250.2507.27.camel@laptop>
+	 <20120608143636.GG31359@aftab.osrc.amd.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 08 Jun 2012 16:45:18 +0200
+Message-ID: <1339166718.2507.37.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2012-06-08 at 16:36 +0200, Borislav Petkov wrote:
+> On Fri, Jun 08, 2012 at 04:20:50PM +0200, Peter Zijlstra wrote:
+> > On Fri, 2012-06-08 at 16:15 +0200, Borislav Petkov wrote:
+> > > have a variable which gets initialized to the number of all CPUs and
+> > > each time ->apply_microcode() finishes by returning 0, we decrement it
+> > > once.
+> > 
+> > > 
+> > > Hmm, I'm probably missing some obscure case. 
+> > 
+> > Since its all per-cpu sysfs muck, userspace could update a random
+> > subsets of cpus.. leaving us hanging.
+> 
+> I'm afraid I don't understand - when you modprobe microcode.ko,
+> it goes and loads /lib/firmware/amd-ucode/microcode_amd.bin (in
+> the AMD case) on each CPU when the driver gets regged through
+> subsys_interface_register().
+> 
+> It calls ->add_dev() on each CPU - this should be guaranteed because it
+> uses the cpu_subsys from drivers/base/cpu.c which onlines all CPUs, I'd
+> assume.
+> 
+> So, I'd say that once subsys_interface_register() returns, we have
+> updated ucode on all CPUs, if successful...
+> 
+> We probably could run the notifier at that moment, before we do
+> put_online_cpus().
 
- 
-Hello!
+I was thinking about reload_store(), that seems to only reload ucode for
+a single cpu.
 
-My name is Mr Kirsten Nematandani, I'm the President of South African Football Association and we hosted 2010 world cup here in South Africa as you may be aware.
- 
-I’m consulting you for my personal investment plan which I would like to discuss with you and know the possibility of how we can co-operate and  work together to carry it out without jeopardizing my position, which I  believe will be beneficial to both parties if handled with honesty.
- 
-There is some fund I realized as a result of my position from the award  of contracts to prospective contractors building stadiums and other  projects which I would like to transfer abroad for investment purposes in your country. The total sum is USD $11 Million Dollars and it is securely deposited  abroad.
- 
-If you can assist me to receive the fund and further invest it for me in  any kind of profitable business in your country, kindly contact me (businessinvestment@contractor.net), in other for us to discuss on how to achieve this effectively.
- 
-As soon as  your reply, I will then call you and discuss with  you on further steps to be taken to achieve this. I'm willing to offer  you 20% of the total fund for your kind assistance.
- 
-Kindly include your full names, mobile/Office telephone numbers while replying to enable me give you a call as soon as I've received your e-mail.
- 
-Thanks as I await for your urgent and swift response.
- 
-Regards,
-Mr Kirsten Nematandani.
+> > The 'bestestet' idea I came up with is doing the verify thing I have
+> > from a delayed work -- say 1 second into the future. That way, when
+> > there's lots of cpus they all try and enqueue the one work, which at
+> > the end executes only once, provided the entire update scan took less
+> > than the second.
+> 
+> You're saying, you want the last CPU that gets to update its microcode
+> gets to also run the delayed work...? Probably, I'd assume ucode update
+> on a single CPU takes less than a second IIUC.
+
+Nah.. it'll probably be the first. But it doesn't matter which cpu does
+it. So the idea was:
+
+static void intel_snb_verify_work(struct work_struct *work)
+{
+	/* do the verify thing.. */
+}
+
+static DECLARE_DELAYED_WORK(intel_snb_delayed_work, intel_snb_verify_ucode);
+
+static int intel_snb_ucode_notifier(struct notifier_block *self,
+                                   unsigned long action, void *_uci)
+{
+        /*
+         * Since ucode cannot be down-graded, and no future ucode revision
+         * is known to break PEBS again, we're ok with MICROCODE_CAN_UPDATE.
+         */
+
+        if (action == MICROCODE_UPDATED)
+		schedule_delayed_work(&intel_snb_delayed_work, HZ);
+
+        return NOTIFY_DONE;
+}
+
+Thus it will queue the delayed work when the work isn't already queued
+for execution. Resulting in the work only happening once a second (at
+most). 
+
