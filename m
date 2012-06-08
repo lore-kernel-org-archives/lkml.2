@@ -1,72 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932369Ab2FHNtL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 09:49:11 -0400
-Received: from 8bytes.org ([85.214.48.195]:57392 "EHLO
-	h2027444.stratoserver.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756555Ab2FHNtJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 09:49:09 -0400
-Date: Fri, 8 Jun 2012 15:49:05 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Bryan Schumaker <bjschuma@netapp.com>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: NFS regression in v3.5-rc1: mount.nfs yells about incorrect
- mount option
-Message-ID: <20120608134905.GX12795@8bytes.org>
-References: <20120607150456.GO12795@8bytes.org>
- <4FD0C4C2.8020605@netapp.com>
- <20120607155006.GR12795@8bytes.org>
- <4FD0CEB0.9040804@netapp.com>
- <20120608130352.GU12795@8bytes.org>
- <4FD1FC02.2000608@netapp.com>
- <20120608133317.GW12795@8bytes.org>
- <4FD1FFFD.3020301@netapp.com>
+	id S932474Ab2FHNts (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 09:49:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3222 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932193Ab2FHNtq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 09:49:46 -0400
+Date: Fri, 8 Jun 2012 09:49:41 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Joe Perches <joe@perches.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, nzimmer@sgi.com
+Subject: Re: [PATCH] watchdog: Quiet down the boot messages
+Message-ID: <20120608134941.GP32472@redhat.com>
+References: <1339121736-22574-1-git-send-email-dzickus@redhat.com>
+ <1339123274.14838.35.camel@joe2Laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4FD1FFFD.3020301@netapp.com>
+In-Reply-To: <1339123274.14838.35.camel@joe2Laptop>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Fri Jun  8 15:49:06 2012
-X-DSPAM-Confidence: 0.9982
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 4fd202d228388073069913
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 08, 2012 at 09:37:01AM -0400, Bryan Schumaker wrote:
-> On 06/08/2012 09:33 AM, Joerg Roedel wrote:
-
-> > Your other patch only touched the nfs4 path, but in my setup nfs3 was in
-> > use. Therefore the patch didn't help. I just figured out that
-> > nfs_fs_mount is shared between nfs23 and nfs4, so the first patch
-> > probably breaks nfs4. I send another one which takes this into account.
+On Thu, Jun 07, 2012 at 07:41:14PM -0700, Joe Perches wrote:
+> On Thu, 2012-06-07 at 22:15 -0400, Don Zickus wrote:
+> > A bunch of bugzillas have complained how noisy the nmi_watchdog is during
+> > boot-up especially with its expected failure cases (like virt and bios
+> > resource contention).
 > 
-> Would something like this work? (I haven't tried it yet).  Setting it
-> in nfs_alloc_parsed_mount_data() might work too...
+> Hi Don, this seems nicer.
 > 
-> diff --git a/fs/nfs/super.c b/fs/nfs/super.c
-> index bdd6731..906f09c 100644
-> --- a/fs/nfs/super.c
-> +++ b/fs/nfs/super.c
-> @@ -1867,6 +1867,7 @@ static int nfs23_validate_mount_data(void *options,
->         if (data == NULL)
->                 goto out_no_data;
->  
-> +       args->version = NFS_DEFAULT_VERSION;
->         switch (data->version) {
->         case 1:
->                 data->namlen = 0;
-> --
+> Just some trivial comments below:
 
-Yes, this works too (tested). Doing it in nfs_alloc_parsed_mount_data()
-need to take into account that the function is also called for nfs4.
-This is basically what my second revert-patch does.
+I like the feedback.  I'll respin the patch and include them.
 
+Thanks,
+Don
 
-	Joerg
-
-
+> 
+> > This is my attempt to quiet them down and keep it less confusing for the end
+> > user.  What I did is print the message for cpu0 and save it for future
+> > comparisions.
+> 
+> comparisons
+> 
+> []
+> > After the change, it is simlified to:
+> 
+> simplified
+> 
+> > diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+> []
+> > @@ -377,6 +377,14 @@ static int watchdog_nmi_enable(int cpu)
+> >  	struct perf_event_attr *wd_attr;
+> >  	struct perf_event *event = per_cpu(watchdog_ev, cpu);
+> >  
+> > +	/*
+> > +	 * People like the simple clean cpu node info
+> > +	 * on boot.  Simplify the noise from the watchdog
+> > +	 * by only printing messages that are different than
+> > +	 * what cpu0 displayed
+> > +	 */
+> 
+> This comment could be shortened by a line
+> 	/*
+> 	 * People like simple and clean cpu node info on boot.
+> 	 * Reduce the watchdog noise by only printing messages
+> 	 * that are different from what cpu0 displayed.
+> 	 */
+> 
+> > +	static unsigned long err0 = 0;
+> 
+> Strictly, this doesn't need initialization.
+> I think the err0 name is unclear.  Maybe cpu0_err instead;
+> 
+> I think the use of !cpu and cpu is unclear.
+> It's still a cpu, just index 0.
+> !cpu should be cpu == 0 and
+> cpu should be cpu != 0 too.
+> 
+> 
+> > @@ -390,11 +398,21 @@ static int watchdog_nmi_enable(int cpu)
+> >  
+> >  	/* Try to register using hardware perf events */
+> >  	event = perf_event_create_kernel_counter(wd_attr, cpu, NULL, watchdog_overflow_callback, NULL);
+> > +
+> > +	/* save cpu0 error for future comparision */
+> > +	if (!cpu)
+> > +		err0 = (IS_ERR(event) ? PTR_ERR(event) : 0);
+> 
+> 	if (cpu == 0 && IS_ERR(event))
+> 		cpu0_err = PTR_ERR(event);
+> 
+> > +
+> >  	if (!IS_ERR(event)) {
+> > -		pr_info("enabled, takes one hw-pmu counter.\n");
+> > +		/* only print for cpu0 or different than cpu0 */
+> 
+> 	or if
+> 
+> > +		if (!cpu || err0)
+> 
+> 		if (cpu == 0 || cpu0_err)
+> 
+> > +			pr_info("enabled, takes one hw-pmu counter.\n");
+> >  		goto out_save;
+> >  	}
+> >  
+> > +	/* skip displaying the same error again */
+> > +	if ((PTR_ERR(event) == err0) && cpu)
+> 
+> 	if (cpu > 0 && PTR_ERR(event))
+> > +		return PTR_ERR(event);
+> >  
+> >  	/* vary the KERN level based on the returned errno */
+> >  	if (PTR_ERR(event) == -EOPNOTSUPP)
+> 
+> cheers, Joe
+> 
