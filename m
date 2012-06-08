@@ -1,46 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759989Ab2FHB0J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 21:26:09 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:59021 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759762Ab2FHB0G (ORCPT
+	id S1760016Ab2FHBfy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 21:35:54 -0400
+Received: from dalsmrelay2.nai.com ([205.227.136.216]:11708 "EHLO
+	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759827Ab2FHBfv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 21:26:06 -0400
+	Thu, 7 Jun 2012 21:35:51 -0400
+Message-ID: <4FD15678.3050401@snapgear.com>
+Date: Fri, 8 Jun 2012 11:33:44 +1000
+From: Greg Ungerer <gerg@snapgear.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120608011215.GB7191@redhat.com>
-References: <20120608002451.GA821@redhat.com> <CA+55aFzivM8Z1Bjk3Qo2vtnQhCQ7fQ4rf_a+EXY7noXQcxL_CA@mail.gmail.com>
- <20120608010008.GA7191@redhat.com> <CA+55aFxwVWiVwxj39DoJmMTknh7JKvCxzxyu-cMQZwd53jOmgQ@mail.gmail.com>
- <20120608011215.GB7191@redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 7 Jun 2012 18:25:45 -0700
-X-Google-Sender-Auth: rMTPx5BpdoEWi8aVj_GwMOxxPqo
-Message-ID: <CA+55aFyxN8vQo7UXwJ0V1jZyE137aX2ZwtXVvGhNFTz4NjxvDg@mail.gmail.com>
-Subject: Re: a whole bunch of crashes since todays -mm merge.
-To: Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: <linux-m68k@vger.kernel.org>, Greg Ungerer <gerg@uclinux.org>,
+        Philippe De Muyter <phdm@macqel.be>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/5] m68k: Remove duplicate FPU config option
+References: <1339094827-12349-1-git-send-email-geert@linux-m68k.org>
+In-Reply-To: <1339094827-12349-1-git-send-email-geert@linux-m68k.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 7, 2012 at 6:12 PM, Dave Jones <davej@redhat.com> wrote:
+On 08/06/12 04:47, Geert Uytterhoeven wrote:
+> It's also defined in arch/m68k/Kconfig.cpu
+
+Yep :-)
+
+
+> Signed-off-by: Geert Uytterhoeven<geert@linux-m68k.org>
+
+Acked-by: Greg Ungerer<gerg@uclinux.org>
+
+Thanks
+Greg
+
+
+>   arch/m68k/Kconfig |    3 ---
+>   1 files changed, 0 insertions(+), 3 deletions(-)
 >
-> I don't think so ? I have CONFIG_SPLIT_PTLOCK_CPUS=999999,
-> so it looks like that never gets defined unless I'm missing something obvious.
+> diff --git a/arch/m68k/Kconfig b/arch/m68k/Kconfig
+> index 1471201..bc8cc50 100644
+> --- a/arch/m68k/Kconfig
+> +++ b/arch/m68k/Kconfig
+> @@ -62,9 +62,6 @@ config CPU_HAS_NO_MULDIV64
+>   config CPU_HAS_ADDRESS_SPACES
+>   	bool
+>
+> -config FPU
+> -	bool
+> -
+>   config HZ
+>   	int
+>   	default 1000 if CLEOPATRA
 
-Yeah, I think you're right. And in that case I don't think the
-sync_mm_rss() patch should matter. Although it does move mm_release()
-around, which makes me nervous - that could cause independent issues.
-I never got that far in analyzing the patch, because I got hung up on
-the obvious problems and decided to revert it as obviously broken and
-untested.
 
-Btw, I really wish we didn't do that complicated USE_SPLIT_PTLOCKS ->
-SPLIT_RSS_COUNTING stuff hidden in the header files. I suspect we
-should do it in the mm/Kconfig file instead, and make them normal
-config options. I think that makes it easier to grep for.
-
-              Linus
+-- 
+------------------------------------------------------------------------
+Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
+SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
+8 Gardner Close                             FAX:         +61 7 3217 5323
+Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
