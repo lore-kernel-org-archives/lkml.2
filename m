@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761974Ab2FHFX6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 01:23:58 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43243 "EHLO
+	id S1761169Ab2FHFX4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 01:23:56 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43235 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1761257Ab2FHFHT (ORCPT
+	by vger.kernel.org with ESMTP id S1761237Ab2FHFHT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Jun 2012 01:07:19 -0400
-Message-Id: <20120608041849.268516783@decadent.org.uk>
+Message-Id: <20120608041848.068976742@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 08 Jun 2012 05:19:43 +0100
+Date: Fri, 08 Jun 2012 05:19:34 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "David S. Miller" <davem@davemloft.net>,
-        Yevgen Pronenko <yevgen.pronenko@sonymobile.com>
-Subject: [ 63/82] ipv4: Do not use dead fib_info entries.
+        alan@lxorguk.ukuu.org.uk, "James M. Leddy" <james.leddy@canonical.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Johan Hedberg <johan.hedberg@intel.com>
+Subject: [ 54/82] Bluetooth: btusb: add support for BCM20702A0 [0a5c:21e6]
 In-Reply-To: <20120608041840.861504477@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,35 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "David S. Miller" <davem@davemloft.net>
+From: "James M. Leddy" <james.leddy@canonical.com>
 
-[ Upstream commit dccd9ecc374462e5d6a5b8f8110415a86c2213d8 ]
+commit 0a4eaeeb993658a4d6cff054a863241f32d3d2fb upstream.
 
-Due to RCU lookups and RCU based release, fib_info objects can
-be found during lookup which have fi->fib_dead set.
+Add another vendor specific ID for BCM20702A0.  This has been tested and
+works on hardware with this device.
 
-We must ignore these entries, otherwise we risk dereferencing
-the parts of the entry which are being torn down.
+output of usb-devices:
+T: Bus=01 Lev=02 Prnt=02 Port=03 Cnt=04 Dev#= 6 Spd=12 MxCh= 0
+D: Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs= 1
+P: Vendor=0a5c ProdID=21e6 Rev=01.12
+S: Manufacturer=Broadcom Corp
+S: Product=BCM20702A0
+S: SerialNumber=D0DF9AFB227B
+C: #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=0mA
+I: If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
+I: If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
+I: If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+I: If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
 
-Reported-by: Yevgen Pronenko <yevgen.pronenko@sonymobile.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: James M. Leddy <james.leddy@canonical.com>
+Acked-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/ipv4/fib_trie.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/bluetooth/btusb.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/net/ipv4/fib_trie.c b/net/ipv4/fib_trie.c
-index 3ce23f9..cd2d639 100644
---- a/net/ipv4/fib_trie.c
-+++ b/net/ipv4/fib_trie.c
-@@ -1372,6 +1372,8 @@ static int check_leaf(struct fib_table *tb, struct trie *t, struct leaf *l,
+diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+index c5606ef..22f695e 100644
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -102,6 +102,7 @@ static struct usb_device_id btusb_table[] = {
  
- 			if (fa->fa_tos && fa->fa_tos != flp->flowi4_tos)
- 				continue;
-+			if (fi->fib_dead)
-+				continue;
- 			if (fa->fa_info->fib_scope < flp->flowi4_scope)
- 				continue;
- 			fib_alias_accessed(fa);
+ 	/* Broadcom BCM20702A0 */
+ 	{ USB_DEVICE(0x0a5c, 0x21e3) },
++	{ USB_DEVICE(0x0a5c, 0x21e6) },
+ 	{ USB_DEVICE(0x0a5c, 0x21f3) },
+ 	{ USB_DEVICE(0x413c, 0x8197) },
+ 
 
 
