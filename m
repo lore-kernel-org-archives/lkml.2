@@ -1,151 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760970Ab2FHO7N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 10:59:13 -0400
-Received: from hosting.visp.net.lb ([194.146.153.11]:56095 "EHLO
-	hosting.visp.net.lb" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752400Ab2FHO7M (ORCPT
+	id S1761045Ab2FHPAH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 11:00:07 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59739 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753860Ab2FHPAE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 10:59:12 -0400
+	Fri, 8 Jun 2012 11:00:04 -0400
+Date: Fri, 8 Jun 2012 07:58:02 -0700
+From: tip-bot for Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Message-ID: <tip-7eb9ba5ed312ec6ed9d22259c5da1acb7cf4bd29@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
+        mingo@kernel.org, jkenisto@us.ibm.com, ananth@in.ibm.com,
+        srikar@linux.vnet.ibm.com, tglx@linutronix.de
+Reply-To: ananth@in.ibm.com, mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, jkenisto@us.ibm.com,
+        srikar@linux.vnet.ibm.com, tglx@linutronix.de
+In-Reply-To: <20120608093257.GG13409@in.ibm.com>
+References: <20120608093257.GG13409@in.ibm.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] uprobes:
+  Pass probed vaddr to arch_uprobe_analyze_insn()
+Git-Commit-ID: 7eb9ba5ed312ec6ed9d22259c5da1acb7cf4bd29
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Fri, 08 Jun 2012 17:59:01 +0300
-From: Denys Fedoryshchenko <denys@visp.net.lb>
-To: <jeffrey.t.kirsher@intel.com>, <rkagan@parallels.com>,
-        <stable@vger.kernel.org>, <jesse.brandeburg@intel.com>,
-        <bruce.w.allan@intel.com>, <carolyn.wyborny@intel.com>,
-        <donald.c.skidmore@intel.com>, <gregory.v.rose@intel.com>,
-        <peter.p.waskiewicz.jr@intel.com>, <alexander.h.duyck@intel.com>,
-        <john.ronciak@intel.com>, <dnelson@redhat.com>,
-        <e1000-devel@lists.sourceforge.net>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: e1000e, 3.4.1, , jumbo frames are not working
-Message-ID: <87ed034d58606650514bdd3b88b0b002@visp.net.lb>
-User-Agent: VISP Webmail/0.7.1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 08 Jun 2012 07:58:08 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just tried to enable larger mtu on interface, and failed, even i try to 
-disable both of mentioned in dmesg offloads.
+Commit-ID:  7eb9ba5ed312ec6ed9d22259c5da1acb7cf4bd29
+Gitweb:     http://git.kernel.org/tip/7eb9ba5ed312ec6ed9d22259c5da1acb7cf4bd29
+Author:     Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+AuthorDate: Fri, 8 Jun 2012 15:02:57 +0530
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Fri, 8 Jun 2012 12:22:27 +0200
 
-05:00.0 Ethernet controller: Intel Corporation 80003ES2LAN Gigabit 
-Ethernet Controller (Copper) (rev 01)
-05:00.1 Ethernet controller: Intel Corporation 80003ES2LAN Gigabit 
-Ethernet Controller (Copper) (rev 01)
+uprobes: Pass probed vaddr to arch_uprobe_analyze_insn()
 
-L2TP ~ # ethtool -i eth0
-driver: e1000e
-version: 1.9.5-k
-firmware-version: 1.0-0
-bus-info: 0000:05:00.0
-supports-statistics: yes
-supports-test: yes
-supports-eeprom-access: yes
-supports-register-dump: yes
+On RISC architectures like powerpc, instructions are fixed size.
+Instruction analysis on such platforms is just a matter of
+(insn % 4). Pass the vaddr at which the uprobe is to be inserted so
+that arch_uprobe_analyze_insn() can flag misaligned registration
+requests.
 
-Here is what i did:
-ifconfig eth1 mtu 2000
-got dmesg:
-[ 9160.679354] e1000e 0000:05:00.0: eth0: Jumbo frames cannot be 
-enabled when both receive checksum offload and receive hashing are 
-enabled.  Disable one of the receive offload features before enabling 
-jumbos.
-
-ethtool -K eth1 rxhash off
-dmesg:
-[ 9194.208856] e1000e 0000:05:00.1: eth1: Reset adapter
-[ 9197.295425] e1000e: eth1 NIC Link is Up 1000 Mbps Full Duplex, Flow 
-Control: None
-
-Lost connectivity for few seconds, then again i tried to:
-ifconfig eth1 mtu 2000
-
-dmesg:
-[ 9207.797616] e1000e 0000:05:00.0: eth0: Jumbo frames cannot be 
-enabled when both receive checksum offload and receive hashing are 
-enabled.  Disable one of the receive offload features before enabling 
-jumbos.
-
-ethtool -K eth1 rx off
-[ 9222.398034] e1000e 0000:05:00.1: eth1: Reset adapter
-[ 9225.497550] e1000e: eth1 NIC Link is Up 1000 Mbps Full Duplex, Flow 
-Control: None
-
-Again, tried: ifconfig eth1 mtu 2000
-dmesg:
-[ 9254.795445] e1000e 0000:05:00.0: eth0: Jumbo frames cannot be 
-enabled when both receive checksum offload and receive hashing are 
-enabled.  Disable one of the receive offload features before enabling 
-jumbos.
-
-L2TP ~ # ethtool -k eth1
-Offload parameters for eth1:
-rx-checksumming: off
-tx-checksumming: on
-scatter-gather: on
-tcp-segmentation-offload: on
-udp-fragmentation-offload: off
-generic-segmentation-offload: on
-generic-receive-offload: on
-large-receive-offload: off
-rx-vlan-offload: on
-tx-vlan-offload: on
-ntuple-filters: off
-receive-hashing: off
-
-L2TP ~ # ethtool -d eth1
-MAC Registers
--------------
-0x00000: CTRL (Device control register)  0x40144241
-       Endian mode (buffers):             little
-       Link reset:                        normal
-       Set link up:                       1
-       Invert Loss-Of-Signal:             no
-       Receive flow control:              disabled
-       Transmit flow control:             disabled
-       VLAN mode:                         enabled
-       Auto speed detect:                 disabled
-       Speed select:                      1000Mb/s
-       Force speed:                       no
-       Force duplex:                      no
-0x00008: STATUS (Device status register) 0x02080787
-       Duplex:                            full
-       Link up:                           link config
-       TBI mode:                          disabled
-       Link speed:                        1000Mb/s
-       Bus type:                          PCI Express
-       Port number:                       1
-0x00100: RCTL (Receive control register) 0x04008002
-       Receiver:                          enabled
-       Store bad packets:                 disabled
-       Unicast promiscuous:               disabled
-       Multicast promiscuous:             disabled
-       Long packet:                       disabled
-       Descriptor minimum threshold size: 1/2
-       Broadcast accept mode:             accept
-       VLAN filter:                       disabled
-       Canonical form indicator:          disabled
-       Discard pause frames:              filtered
-       Pass MAC control frames:           don't pass
-       Receive buffer size:               2048
-0x02808: RDLEN (Receive desc length)     0x00001000
-0x02810: RDH   (Receive desc head)       0x00000046
-0x02818: RDT   (Receive desc tail)       0x00000040
-0x02820: RDTR  (Receive delay timer)     0x00000020
-0x00400: TCTL (Transmit ctrl register)   0x3103F0FA
-       Transmitter:                       enabled
-       Pad short packets:                 enabled
-       Software XOFF Transmission:        disabled
-       Re-transmit on late collision:     enabled
-0x03808: TDLEN (Transmit desc length)    0x00001000
-0x03810: TDH   (Transmit desc head)      0x00000098
-0x03818: TDT   (Transmit desc tail)      0x00000099
-0x03820: TIDV  (Transmit delay timer)    0x00000008
-PHY type:                                unknown
-
-
+Signed-off-by: Ananth N Mavinakaynahalli <ananth@in.ibm.com>
+Cc: michael@ellerman.id.au
+Cc: antonb@thinktux.localdomain
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: benh@kernel.crashing.org
+Cc: peterz@infradead.org
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Jim Keniston <jkenisto@us.ibm.com>
+Cc: oleg@redhat.com
+Cc: linuxppc-dev@lists.ozlabs.org
+Link: http://lkml.kernel.org/r/20120608093257.GG13409@in.ibm.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
-Denys Fedoryshchenko, Network Engineer, Virtual ISP S.A.L.
+ arch/x86/include/asm/uprobes.h |    2 +-
+ arch/x86/kernel/uprobes.c      |    3 ++-
+ kernel/events/uprobes.c        |    2 +-
+ 3 files changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/arch/x86/include/asm/uprobes.h b/arch/x86/include/asm/uprobes.h
+index 1e9bed1..f3971bb 100644
+--- a/arch/x86/include/asm/uprobes.h
++++ b/arch/x86/include/asm/uprobes.h
+@@ -48,7 +48,7 @@ struct arch_uprobe_task {
+ #endif
+ };
+ 
+-extern int  arch_uprobe_analyze_insn(struct arch_uprobe *aup, struct mm_struct *mm);
++extern int  arch_uprobe_analyze_insn(struct arch_uprobe *aup, struct mm_struct *mm, unsigned long addr);
+ extern int  arch_uprobe_pre_xol(struct arch_uprobe *aup, struct pt_regs *regs);
+ extern int  arch_uprobe_post_xol(struct arch_uprobe *aup, struct pt_regs *regs);
+ extern bool arch_uprobe_xol_was_trapped(struct task_struct *tsk);
+diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
+index dc4e910..36fd420 100644
+--- a/arch/x86/kernel/uprobes.c
++++ b/arch/x86/kernel/uprobes.c
+@@ -409,9 +409,10 @@ static int validate_insn_bits(struct arch_uprobe *auprobe, struct mm_struct *mm,
+  * arch_uprobe_analyze_insn - instruction analysis including validity and fixups.
+  * @mm: the probed address space.
+  * @arch_uprobe: the probepoint information.
++ * @addr: virtual address at which to install the probepoint
+  * Return 0 on success or a -ve number on error.
+  */
+-int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm)
++int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm, unsigned long addr)
+ {
+ 	int ret;
+ 	struct insn insn;
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index 8c5e043..b52376d 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -706,7 +706,7 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
+ 		if (is_swbp_insn((uprobe_opcode_t *)uprobe->arch.insn))
+ 			return -EEXIST;
+ 
+-		ret = arch_uprobe_analyze_insn(&uprobe->arch, mm);
++		ret = arch_uprobe_analyze_insn(&uprobe->arch, mm, addr);
+ 		if (ret)
+ 			return ret;
+ 
