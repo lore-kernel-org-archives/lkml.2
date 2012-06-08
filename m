@@ -1,69 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932291Ab2FHNqF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 09:46:05 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:36331 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756775Ab2FHNqE (ORCPT
+	id S932369Ab2FHNtL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 09:49:11 -0400
+Received: from 8bytes.org ([85.214.48.195]:57392 "EHLO
+	h2027444.stratoserver.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756555Ab2FHNtJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 09:46:04 -0400
-Date: Fri, 8 Jun 2012 09:46:03 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Stefani Seibold <stefani@seibold.net>
-cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>, <oneukum@suse.de>,
-        <alan@lxorguk.ukuu.org.uk>, <linux-usb@vger.kernel.org>
-Subject: Re: RFC: remove usb_device pointer from usb_skeleton.c
-In-Reply-To: <1339139935.16819.5.camel@wall-e>
-Message-ID: <Pine.LNX.4.44L0.1206080943170.1360-100000@iolanthe.rowland.org>
+	Fri, 8 Jun 2012 09:49:09 -0400
+Date: Fri, 8 Jun 2012 15:49:05 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Bryan Schumaker <bjschuma@netapp.com>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: NFS regression in v3.5-rc1: mount.nfs yells about incorrect
+ mount option
+Message-ID: <20120608134905.GX12795@8bytes.org>
+References: <20120607150456.GO12795@8bytes.org>
+ <4FD0C4C2.8020605@netapp.com>
+ <20120607155006.GR12795@8bytes.org>
+ <4FD0CEB0.9040804@netapp.com>
+ <20120608130352.GU12795@8bytes.org>
+ <4FD1FC02.2000608@netapp.com>
+ <20120608133317.GW12795@8bytes.org>
+ <4FD1FFFD.3020301@netapp.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FD1FFFD.3020301@netapp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Fri Jun  8 15:49:06 2012
+X-DSPAM-Confidence: 0.9982
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 4fd202d228388073069913
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 8 Jun 2012, Stefani Seibold wrote:
+On Fri, Jun 08, 2012 at 09:37:01AM -0400, Bryan Schumaker wrote:
+> On 06/08/2012 09:33 AM, Joerg Roedel wrote:
 
-> Hi,
+> > Your other patch only touched the nfs4 path, but in my setup nfs3 was in
+> > use. Therefore the patch didn't help. I just figured out that
+> > nfs_fs_mount is shared between nfs23 and nfs4, so the first patch
+> > probably breaks nfs4. I send another one which takes this into account.
 > 
-> what do you think about this solution for removing the usb_device
-> pointer from the struct usb_skel in the usb_skeleton driver?
-
-There's nothing wrong with keeping the pointer there.  Why do you want 
-to remove it?
-
-> @@ -73,9 +73,12 @@ static struct usb_driver skel_driver;
->  static void skel_delete(struct kref *kref)
->  {
->  	struct usb_skel *dev = to_skel_dev(kref);
-> +	struct usb_interface *interface = dev->interface;
-> +	struct usb_device *udev = usb_get_dev(interface_to_usbdev(interface));
+> Would something like this work? (I haven't tried it yet).  Setting it
+> in nfs_alloc_parsed_mount_data() might work too...
+> 
+> diff --git a/fs/nfs/super.c b/fs/nfs/super.c
+> index bdd6731..906f09c 100644
+> --- a/fs/nfs/super.c
+> +++ b/fs/nfs/super.c
+> @@ -1867,6 +1867,7 @@ static int nfs23_validate_mount_data(void *options,
+>         if (data == NULL)
+>                 goto out_no_data;
 >  
->  	usb_free_urb(dev->bulk_in_urb);
-> -	usb_put_dev(dev->udev);
-> +	usb_put_dev(udev);
+> +       args->version = NFS_DEFAULT_VERSION;
+>         switch (data->version) {
+>         case 1:
+>                 data->namlen = 0;
+> --
 
-On the other hand, this usb_put_dev call is useless.  Why do you want 
-to keep it?
+Yes, this works too (tested). Doing it in nfs_alloc_parsed_mount_data()
+need to take into account that the function is also called for nfs4.
+This is basically what my second revert-patch does.
 
-> +	usb_put_intf(interface);
 
-If you get rid of the usb_put_dev then this call is also useless.
+	Joerg
 
->  	kfree(dev->bulk_in_buffer);
->  	kfree(dev);
->  }
-> @@ -128,7 +131,7 @@ static int skel_release(struct inode *inode, struct file *file)
->  
->  	/* allow the device to be autosuspended */
->  	mutex_lock(&dev->io_mutex);
-> -	if (dev->interface)
-> +	if (dev->connected)
-
-There's nothing really wrong with adding a "disconnected" flag.  But 
-setting dev->interface to NULL works just as well, in my opinion.  It's 
-a matter of taste.
-
-Alan Stern
 
