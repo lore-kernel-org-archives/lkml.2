@@ -1,52 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760833Ab2FHViG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 17:38:06 -0400
-Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:1684 "EHLO
-	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760208Ab2FHViF (ORCPT
+	id S964872Ab2FHVjb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 17:39:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34942 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751091Ab2FHVj3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 17:38:05 -0400
-Message-ID: <1339191479.30984.14.camel@x61.thuisdomein>
-Subject: [PATCH] h8300: delete target_time.h
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Yoshinori Sato <ysato@users.sourceforge.jp>
-Cc: linux-kernel@vger.kernel.org
-Date: Fri, 08 Jun 2012 23:37:59 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
+	Fri, 8 Jun 2012 17:39:29 -0400
+Date: Fri, 8 Jun 2012 14:39:28 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Don Zickus <dzickus@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, nzimmer@sgi.com, joe@perches.com
+Subject: Re: [PATCH v2] watchdog: Quiet down the boot messages
+Message-Id: <20120608143928.f84822cc.akpm@linux-foundation.org>
+In-Reply-To: <1339189389-731-1-git-send-email-dzickus@redhat.com>
+References: <1339189389-731-1-git-send-email-dzickus@redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-OriginalArrivalTime: 08 Jun 2012 21:37:58.0997 (UTC) FILETIME=[F929A050:01CD45BE]
-X-RcptDomain: vger.kernel.org
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 81d423e280d193d351f41eacdb3f82c3bb9610c1 ("h8300: update timer
-handler - misc update") deleted the last #include of target_time.h.
-Commit 4b6aba51fb64071e22dad7b971c73af61916a48b ("h8300: update timer
-handler - delete files") deleted the definitions of the functions that
-target_time.h declares. This header is unused and can safely be deleted.
+On Fri,  8 Jun 2012 17:03:09 -0400
+Don Zickus <dzickus@redhat.com> wrote:
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Tested mainly with "git grep". Obviously correct. 
+> A bunch of bugzillas have complained how noisy the nmi_watchdog is during
+> boot-up especially with its expected failure cases (like virt and bios
+> resource contention).
+> 
+> This is my attempt to quiet them down and keep it less confusing for the end
+> user.  What I did is print the message for cpu0 and save it for future
+> comparisons.  If future cpus have an identical message as cpu0, then don't
+> print the redundant info.  However, if a future cpu has a different message,
+> happily print that loudly.
+> 
+> Before the change, you would see something like:
+> 
+>     ..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
+>     CPU0: Intel(R) Core(TM)2 Quad CPU    Q9550  @ 2.83GHz stepping 0a
+>     Performance Events: PEBS fmt0+, Core2 events, Intel PMU driver.
+>     ... version:                2
+>     ... bit width:              40
+>     ... generic registers:      2
+>     ... value mask:             000000ffffffffff
+>     ... max period:             000000007fffffff
+>     ... fixed-purpose events:   3
+>     ... event mask:             0000000700000003
+>     NMI watchdog enabled, takes one hw-pmu counter.
+>     Booting Node   0, Processors  #1
+>     NMI watchdog enabled, takes one hw-pmu counter.
+>      #2
+>     NMI watchdog enabled, takes one hw-pmu counter.
+>      #3 Ok.
+>     NMI watchdog enabled, takes one hw-pmu counter.
+>     Brought up 4 CPUs
+>     Total of 4 processors activated (22607.24 BogoMIPS).
+> 
+> After the change, it is simplified to:
+> 
+>     ..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
+>     CPU0: Intel(R) Core(TM)2 Quad CPU    Q9550  @ 2.83GHz stepping 0a
+>     Performance Events: PEBS fmt0+, Core2 events, Intel PMU driver.
+>     ... version:                2
+>     ... bit width:              40
+>     ... generic registers:      2
+>     ... value mask:             000000ffffffffff
+>     ... max period:             000000007fffffff
+>     ... fixed-purpose events:   3
+>     ... event mask:             0000000700000003
+>     NMI watchdog enabled, takes one hw-pmu counter.
+>     Booting Node   0, Processors  #1 #2 #3 Ok.
+>     Brought up 4 CPUs
 
- arch/h8300/include/asm/target_time.h |    4 ----
- 1 files changed, 0 insertions(+), 4 deletions(-)
- delete mode 100644 arch/h8300/include/asm/target_time.h
+What is the behaviour of this change at suspend/resume time?
 
-diff --git a/arch/h8300/include/asm/target_time.h b/arch/h8300/include/asm/target_time.h
-deleted file mode 100644
-index 9f2a9aa..0000000
---- a/arch/h8300/include/asm/target_time.h
-+++ /dev/null
-@@ -1,4 +0,0 @@
--extern int platform_timer_setup(void (*timer_int)(int, void *, struct pt_regs *));
--extern void platform_timer_eoi(void);
--extern void platform_gettod(unsigned int *year, unsigned int *mon, unsigned int *day, 
--                            unsigned int *hour, unsigned int *min, unsigned int *sec);
--- 
-1.7.7.6
+> +		if (cpu ==0 || cpu0_err)
+
+Please use checkpatch.  It's free!
+
 
