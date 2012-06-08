@@ -1,178 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762272Ab2FHRZv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 13:25:51 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44869 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762199Ab2FHRZE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 13:25:04 -0400
-From: Joonsoo Kim <js1304@gmail.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Christoph Lameter <cl@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Joonsoo Kim <js1304@gmail.com>
-Subject: [PATCH 3/4] slub: refactoring unfreeze_partials()
-Date: Sat,  9 Jun 2012 02:23:16 +0900
-Message-Id: <1339176197-13270-3-git-send-email-js1304@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1339176197-13270-1-git-send-email-js1304@gmail.com>
-References: <yes>
- <1339176197-13270-1-git-send-email-js1304@gmail.com>
+	id S1762240Ab2FHR2d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 13:28:33 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60841 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759228Ab2FHR2c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 13:28:32 -0400
+Message-ID: <4FD23626.4020802@zytor.com>
+Date: Fri, 08 Jun 2012 10:28:06 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 2/3] x86: Remove cmpxchg from i386 NMI nesting code
+References: <20120608135200.371649691@goodmis.org>  <20120608135603.699156773@goodmis.org> <4FD223E1.1090707@zytor.com> <1339173716.13377.50.camel@gandalf.stny.rr.com>
+In-Reply-To: <1339173716.13377.50.camel@gandalf.stny.rr.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current implementation of unfreeze_partials() is so complicated,
-but benefit from it is insignificant. In addition many code in
-do {} while loop have a bad influence to a fail rate of cmpxchg_double_slab.
-Under current implementation which test status of cpu partial slab
-and acquire list_lock in do {} while loop,
-we don't need to acquire a list_lock and gain a little benefit
-when front of the cpu partial slab is to be discarded, but this is a rare case.
-In case that add_partial is performed and cmpxchg_double_slab is failed,
-remove_partial should be called case by case.
+On 06/08/2012 09:41 AM, Steven Rostedt wrote:
+>>
+>> The cost of this on real hardware better be zero (which I cannot
+>> immediately judge.)
+> 
+> Is dec_and_test cheaper than cmpxchg? I would think so.
+> 
 
-I think that these are disadvantages of current implementation,
-so I do refactoring unfreeze_partials().
+Should be more or less the same (but see below w.r.t. _local).
 
-Minimizing code in do {} while loop introduce a reduced fail rate
-of cmpxchg_double_slab. Below is output of 'slabinfo -r kmalloc-256'
-when './perf stat -r 33 hackbench 50 process 4000 > /dev/null' is done.
+>>
+>> Why?  Because cmpxchg has been in every CPU since the i486, the i386 is
+>> royally crippled on Linux anyway (due to minor architectural defects,
+>> the main one being the write protect issue) and NMI is almost never used
+>> on i386 as anything other than a fatal error indication.
+>>
+>> Most "real" NMI users generate the NMI from the local APIC, but the i386
+>> has no local APIC, and unlike the i486 cannot even have an external
+>> local APIC to the best of my knowledge.
+> 
+> Yeah, this is why I didn't rush to do this change. But it does seem to
+> make the code simpler and it may actually speed things up. It replaces a
+> cmpxchg with a local_dec_and_test, which, I believe, doesn't even lock
+> the cachelines.
+> 
 
-** before **
-Cmpxchg_double Looping
-------------------------
-Locked Cmpxchg Double redos   182685
-Unlocked Cmpxchg Double redos 0
+Yeah, the cmpxchg here rather than cmpxchg_local seems like it just was
+a plain bug, no?
 
-** after **
-Cmpxchg_double Looping
-------------------------
-Locked Cmpxchg Double redos   177995
-Unlocked Cmpxchg Double redos 1
+> So lets look at the patch in detail, shall we?
+> 
+> 
+>>  enum nmi_states {
+>> -       NMI_NOT_RUNNING,
+>> +       NMI_NOT_RUNNING = 0,
+> 
+> This change was done more for documenting that the first element must be
+> zero. Even though C guarantees this. I wanted to point out that we
+> expect it to be zero and that it being zero really does matter. No
+> functionality change whats-so-ever.
+> 
 
-We can see cmpxchg_double_slab fail rate is improved slightly.
+Yes, that makes sense.
 
-Bolow is output of './perf stat -r 30 hackbench 50 process 4000 > /dev/null'.
+>>         NMI_EXECUTING,
+>>         NMI_LATCHED,
+>>  };
+>> -static DEFINE_PER_CPU(enum nmi_states, nmi_state);
+>> +static DEFINE_PER_CPU(local_t, nmi_state);
+> 
+> local_t is is just an atomic_long_t, which on i386 is nothing different
+> than what an enum would be.
+> 
+>>  
+>>  #define nmi_nesting_preprocess(regs)                                   \
+>>         do {                                                            \
+>> -               if (__get_cpu_var(nmi_state) != NMI_NOT_RUNNING) {      \
+>> -                       __get_cpu_var(nmi_state) = NMI_LATCHED;         \
+>> +               local_t *__state = &__get_cpu_var(nmi_state);           \
+>> +               if (local_read(__state) != NMI_NOT_RUNNING) {           \
+>> +                       local_set(__state, NMI_LATCHED);                \
+> 
+> The above change is probably a little bit of a speed up because we
+> remove the double '__get_cpu_var()' and replace it with a pointer that
+> is reused. I haven't looked at the assembly for this, but it is either
+> the same or better with the patch.
+> 
+> Sure, we could improve this by using this_cpu_var() which may make it
+> better than the patch. But the patch is currently the same or better
+> than what is there now.
 
-** before **
- Performance counter stats for './hackbench 50 process 4000' (30 runs):
+But yes, if you're going to modify this use this_cpu_read() and
+this_cpu_write() and avoid the pointer completely.
 
-     108517.190463 task-clock                #    7.926 CPUs utilized            ( +-  0.24% )
-         2,919,550 context-switches          #    0.027 M/sec                    ( +-  3.07% )
-           100,774 CPU-migrations            #    0.929 K/sec                    ( +-  4.72% )
-           124,201 page-faults               #    0.001 M/sec                    ( +-  0.15% )
-   401,500,234,387 cycles                    #    3.700 GHz                      ( +-  0.24% )
-   <not supported> stalled-cycles-frontend
-   <not supported> stalled-cycles-backend
-   250,576,913,354 instructions              #    0.62  insns per cycle          ( +-  0.13% )
-    45,934,956,860 branches                  #  423.297 M/sec                    ( +-  0.14% )
-       188,219,787 branch-misses             #    0.41% of all branches          ( +-  0.56% )
+>>                         return;                                         \
+>>                 }                                                       \
+>> -       nmi_restart:                                                    \
+>> -               __get_cpu_var(nmi_state) = NMI_EXECUTING;               \
+>> -       } while (0)
+>> +               local_set(__state, NMI_EXECUTING);                      \
+>> +       } while (0);                                                    \
+>> +       nmi_restart:
+> 
+> Here it's better or the same than what is there now as we again remove
+> the reference to getting the pointer. In case gcc doesn't optimize it
+> nicely. But again we could have switched to this_cpu_write() which could
+> be better.
+> 
+> The movement of nmi_restart does help too. I'll explain that below.
+> 
+>>  
+>>  #define nmi_nesting_postprocess()                                      \
+>>         do {                                                            \
+>> -               if (cmpxchg(&__get_cpu_var(nmi_state),                  \
+>> -                   NMI_EXECUTING, NMI_NOT_RUNNING) != NMI_EXECUTING)   \
+>> +               if (!local_dec_and_test(&__get_cpu_var(nmi_state)))     \
+> 
+> Now this is where I think the patch helps. I'm almost certain that
+> local_dec_and_test is faster than a cmpxchg by many cycles. Especially
+> on i386.
+> 
 
-      13.691837307 seconds time elapsed                                          ( +-  0.24% )
+On i386 it's infinite, but again, I don't think the code will ever be
+exercised on i386.  I'm much more concerned about performance on current
+processors.
 
-** after **
- Performance counter stats for './hackbench 50 process 4000' (30 runs):
+But yes, local_dec_and_test should at least not be more expensive.  Even
+better, use this_cpu_dec_return().
 
-     107784.479767 task-clock                #    7.928 CPUs utilized            ( +-  0.22% )
-         2,834,781 context-switches          #    0.026 M/sec                    ( +-  2.33% )
-            93,083 CPU-migrations            #    0.864 K/sec                    ( +-  3.45% )
-           123,967 page-faults               #    0.001 M/sec                    ( +-  0.15% )
-   398,781,421,836 cycles                    #    3.700 GHz                      ( +-  0.22% )
-   <not supported> stalled-cycles-frontend
-   <not supported> stalled-cycles-backend
-   250,189,160,419 instructions              #    0.63  insns per cycle          ( +-  0.09% )
-    45,855,370,128 branches                  #  425.436 M/sec                    ( +-  0.10% )
-       169,881,248 branch-misses             #    0.37% of all branches          ( +-  0.43% )
+	-hpa
 
-      13.596272341 seconds time elapsed                                          ( +-  0.22% )
-
-No regression is found, but rather we can see slightly better result.
-
-Acked-by: Christoph Lameter <cl@linux.com>
-Signed-off-by: Joonsoo Kim <js1304@gmail.com>
-
-diff --git a/mm/slub.c b/mm/slub.c
-index 686ed90..b5f2108 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -1886,18 +1886,24 @@ redo:
-  */
- static void unfreeze_partials(struct kmem_cache *s)
- {
--	struct kmem_cache_node *n = NULL;
-+	struct kmem_cache_node *n = NULL, *n2 = NULL;
- 	struct kmem_cache_cpu *c = this_cpu_ptr(s->cpu_slab);
- 	struct page *page, *discard_page = NULL;
- 
- 	while ((page = c->partial)) {
--		enum slab_modes { M_PARTIAL, M_FREE };
--		enum slab_modes l, m;
- 		struct page new;
- 		struct page old;
- 
- 		c->partial = page->next;
--		l = M_FREE;
-+
-+		n2 = get_node(s, page_to_nid(page));
-+		if (n != n2) {
-+			if (n)
-+				spin_unlock(&n->list_lock);
-+
-+			n = n2;
-+			spin_lock(&n->list_lock);
-+		}
- 
- 		do {
- 
-@@ -1910,43 +1916,17 @@ static void unfreeze_partials(struct kmem_cache *s)
- 
- 			new.frozen = 0;
- 
--			if (!new.inuse && (!n || n->nr_partial > s->min_partial))
--				m = M_FREE;
--			else {
--				struct kmem_cache_node *n2 = get_node(s,
--							page_to_nid(page));
--
--				m = M_PARTIAL;
--				if (n != n2) {
--					if (n)
--						spin_unlock(&n->list_lock);
--
--					n = n2;
--					spin_lock(&n->list_lock);
--				}
--			}
--
--			if (l != m) {
--				if (l == M_PARTIAL) {
--					remove_partial(n, page);
--					stat(s, FREE_REMOVE_PARTIAL);
--				} else {
--					add_partial(n, page,
--						DEACTIVATE_TO_TAIL);
--					stat(s, FREE_ADD_PARTIAL);
--				}
--
--				l = m;
--			}
--
- 		} while (!__cmpxchg_double_slab(s, page,
- 				old.freelist, old.counters,
- 				new.freelist, new.counters,
- 				"unfreezing slab"));
- 
--		if (m == M_FREE) {
-+		if (unlikely(!new.inuse && n->nr_partial > s->min_partial)) {
- 			page->next = discard_page;
- 			discard_page = page;
-+		} else {
-+			add_partial(n, page, DEACTIVATE_TO_TAIL);
-+			stat(s, FREE_ADD_PARTIAL);
- 		}
- 	}
- 
 -- 
-1.7.9.5
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
