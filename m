@@ -1,42 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754814Ab2FHN1w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 09:27:52 -0400
-Received: from www.hma.cl ([200.72.22.114]:54552 "EHLO www.hma.cl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751176Ab2FHN1v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 09:27:51 -0400
-X-Greylist: delayed 520 seconds by postgrey-1.27 at vger.kernel.org; Fri, 08 Jun 2012 09:27:50 EDT
-X-Amavis-Alert: BAD HEADER SECTION, Improper use of control character (char 0D
-	hex): Subject: ...3=ADmite=20de=20almacen?=\r\n =?UTF-8?Q?ami[...]
-To: undisclosed-recipients:;
-Subject: Su =?UTF-8?Q?buz=C3=B3n=20ha=20superado=20el=20l=C3=ADmite=20de=20almacen?=
- =?UTF-8?Q?amiento=20de=20=32GB?=
+	id S1755851Ab2FHN3K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 09:29:10 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:45492 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752703Ab2FHN3I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 09:29:08 -0400
+Message-ID: <4FD1FE20.40600@openvz.org>
+Date: Fri, 08 Jun 2012 17:29:04 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120517 Firefox/10.0.4 Iceape/2.7.4
 MIME-Version: 1.0
-Date: Fri, 08 Jun 2012 09:19:06 -0400
-From: =?UTF-8?Q?sistema_de_administraci=C3=B3n_de_correo_web?= 
-	<mvergaraa@fmachile.org>
-Organization: =?UTF-8?Q?sistema_de_administraci=C3=B3n_de_correo_web?=
-Message-ID: <000c848c448046bfff41fd350922d76d@localhost>
-User-Agent: RoundCube Webmail/0.3.1
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Hugh Dickins <hughd@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        "kamezawa.hiroyu@jp.fujitsu.com" <kamezawa.hiroyu@jp.fujitsu.com>,
+        "markus@trippelsdorf.de" <markus@trippelsdorf.de>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: Re: [patch 12/12] mm: correctly synchronize rss-counters at exit/exec
+References: <20120607212114.E4F5AA02F8@akpm.mtv.corp.google.com> <CA+55aFxOWR_h1vqRLAd_h5_woXjFBLyBHP--P8F7WsYrciXdmA@mail.gmail.com> <CA+55aFyQUBXhjVLJH6Fhz9xnpfXZ=9Mej5ujt6ss7VUqT1g9Jg@mail.gmail.com> <alpine.LSU.2.00.1206071759050.1291@eggly.anvils> <4FD1D1F7.2090503@openvz.org> <20120608122459.GB23147@redhat.com>
+In-Reply-To: <20120608122459.GB23147@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Oleg Nesterov wrote:
+> On 06/08, Konstantin Khlebnikov wrote:
+>>
+>> As result you can see "BUG: Bad rss-counter state mm:ffff88040783a680 idx:1 val:-1" in dmesg
+>>
+>> There left only one problem: nobody calls sync_mm_rss() after put_user() in mm_release().
+>
+> Both callers call sync_mm_rss() to make check_mm() happy. But please
+> see the changelog, I think we should move it into mm_release(). See
+> the patch below (on top of v2 I sent). I need to recheck.
 
+Patch below broken: it removes one hunk from kernel/exit.c twice.
+And it does not add anything into mm_release().
 
+>
+> As for xacct_add_tsk(), yes it can "miss" that put_user(). But this
+> is what we have now, I think we do not care.
+>
+> Oleg.
+>
+> --- x/fs/exec.c
+> +++ x/fs/exec.c
+> @@ -822,7 +822,6 @@ static int exec_mmap(struct mm_struct *m
+>   	mm_release(tsk, old_mm);
+>
+>   	if (old_mm) {
+> -		sync_mm_rss(old_mm);
+>   		/*
+>   		 * Make sure that if there is a core dump in progress
+>   		 * for the old mm, we get out and die instead of going
+> --- x/kernel/exit.c
+> +++ x/kernel/exit.c
+> @@ -656,7 +656,6 @@ static void exit_mm(struct task_struct *
+>   	if (!mm)
+>   		return;
+>
+> -	sync_mm_rss(mm);
+>   	/*
+>   	 * Serialize with any possible pending coredump.
+>   	 * We must hold mmap_sem around checking core_state
+> --- x/kernel/taskstats.c
+> +++ x/kernel/taskstats.c
+> @@ -630,8 +630,7 @@ void taskstats_exit(struct task_struct *
+>   	if (!stats)
+>   		goto err;
+>
+> -	if (tsk->mm)
+> -		sync_mm_rss(tsk->mm);
+> +	sync_mm_rss(tsk->mm);
+>   	fill_stats(tsk, stats);
+>
+>   	/*
+> --- x/kernel/exit.c
+> +++ x/kernel/exit.c
+> @@ -656,7 +656,6 @@ static void exit_mm(struct task_struct *
+>   	if (!mm)
+>   		return;
+>
+> -	sync_mm_rss(mm);
+>   	/*
+>   	 * Serialize with any possible pending coredump.
+>   	 * We must hold mmap_sem around checking core_state
+>
 
--- 
-Su buzón ha superado el límite de almacenamiento de 2GB que es como se
-establece por su administrador, se están ejecutando actualmente en 2.30GB,
-no puede ser capaz de enviar o recibir correo nuevo hasta que vuelva a
-validar su buzón de correo. Para 
-
-volver a validar su buzón de correo. haga clic en el enlace de abajo:
-
-https://docs.google.com/spreadsheet/viewform?formkey=dEVPYXA2XzhFaDMwRDJ3a2pYMGhLeHc6MQ
-
-Gracias
-Administrador del sistema
