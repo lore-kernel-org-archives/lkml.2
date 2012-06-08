@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761987Ab2FHF0y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 01:26:54 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43179 "EHLO
+	id S933453Ab2FHF1r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 01:27:47 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43189 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760232Ab2FHFHQ (ORCPT
+	by vger.kernel.org with ESMTP id S1760570Ab2FHFHP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 01:07:16 -0400
-Message-Id: <20120608041847.276867984@decadent.org.uk>
+	Fri, 8 Jun 2012 01:07:15 -0400
+Message-Id: <20120608041845.013957176@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 08 Jun 2012 05:19:28 +0100
+Date: Fri, 08 Jun 2012 05:19:11 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jerome Glisse <jglisse@redhat.com>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 48/82] drm/radeon: fix HD6790, HD6570 backend programming
+        alan@lxorguk.ukuu.org.uk, Minchan Kim <minchan@kernel.org>,
+        David Rientjes <rientjes@google.com>
+Subject: [ 31/82] mm/vmalloc.c: change void* into explict vm_struct*
 In-Reply-To: <20120608041840.861504477@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,43 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jerome Glisse <jglisse@redhat.com>
+From: Minchan Kim <minchan@kernel.org>
 
-commit 95c4b23ec4e2fa5604df229ddf134e31d7b3b378 upstream.
+commit db1aecafef58b5dda39c4228debe2c845e4a27ab upstream.
 
-Without this bit sets we get broken rendering and
-lockups.
+vmap_area->private is void* but we don't use the field for various purpose
+but use only for vm_struct.  So change it to a vm_struct* with naming to
+improve for readability and type checking.
 
-fglrx sets this bit.
-
-Bugs that should be fixed by this patch :
-https://bugs.freedesktop.org/show_bug.cgi?id=49792
-https://bugzilla.kernel.org/show_bug.cgi?id=43207
-https://bugs.freedesktop.org/show_bug.cgi?id=39282
-
-Signed-off-by: Jerome Glisse <jglisse@redhat.com>
-Acked-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+Acked-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/radeon/evergreen.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ mm/vmalloc.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/evergreen.c b/drivers/gpu/drm/radeon/evergreen.c
-index 0408ac2..6a57f0d 100644
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -2178,9 +2178,9 @@ static void evergreen_gpu_init(struct radeon_device *rdev)
- 		WREG32(CC_SYS_RB_BACKEND_DISABLE, rb);
- 		WREG32(GC_USER_RB_BACKEND_DISABLE, rb);
- 		WREG32(CC_GC_SHADER_PIPE_CONFIG, sp);
--        }
-+	}
+diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+index 21fdf46..877ca04 100644
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -256,7 +256,7 @@ struct vmap_area {
+ 	struct rb_node rb_node;		/* address sorted rbtree */
+ 	struct list_head list;		/* address sorted list */
+ 	struct list_head purge_list;	/* "lazy purge" list */
+-	void *private;
++	struct vm_struct *vm;
+ 	struct rcu_head rcu_head;
+ };
  
--	grbm_gfx_index |= SE_BROADCAST_WRITES;
-+	grbm_gfx_index = INSTANCE_BROADCAST_WRITES | SE_BROADCAST_WRITES;
- 	WREG32(GRBM_GFX_INDEX, grbm_gfx_index);
- 	WREG32(RLC_GFX_INDEX, grbm_gfx_index);
+@@ -1285,7 +1285,7 @@ static void setup_vmalloc_vm(struct vm_struct *vm, struct vmap_area *va,
+ 	vm->addr = (void *)va->va_start;
+ 	vm->size = va->va_end - va->va_start;
+ 	vm->caller = caller;
+-	va->private = vm;
++	va->vm = vm;
+ 	va->flags |= VM_VM_AREA;
+ }
  
+@@ -1408,7 +1408,7 @@ static struct vm_struct *find_vm_area(const void *addr)
+ 
+ 	va = find_vmap_area((unsigned long)addr);
+ 	if (va && va->flags & VM_VM_AREA)
+-		return va->private;
++		return va->vm;
+ 
+ 	return NULL;
+ }
+@@ -1427,7 +1427,7 @@ struct vm_struct *remove_vm_area(const void *addr)
+ 
+ 	va = find_vmap_area((unsigned long)addr);
+ 	if (va && va->flags & VM_VM_AREA) {
+-		struct vm_struct *vm = va->private;
++		struct vm_struct *vm = va->vm;
+ 
+ 		if (!(vm->flags & VM_UNLIST)) {
+ 			struct vm_struct *tmp, **p;
 
 
