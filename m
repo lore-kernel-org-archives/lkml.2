@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934205Ab2FHKD5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 06:03:57 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:54310 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754503Ab2FHKDz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 06:03:55 -0400
-MIME-Version: 1.0
-In-Reply-To: <1339149613.23343.52.camel@twins>
-References: <20120607071531.GA4849@quad>
-	<1339064319.23343.13.camel@twins>
-	<CABPqkBQ+p5rcuxpXCTLMXPM+awAHhQ6mP9-WzVh5GWtn2GyfrA@mail.gmail.com>
-	<1339065932.23343.18.camel@twins>
-	<CABPqkBQ=tLXXsgvzQx+i01Owm4MM8m=6cEVVi4ab64gOiTTBYQ@mail.gmail.com>
-	<1339067757.23343.21.camel@twins>
-	<20120608093513.GA22520@gmail.com>
-	<1339149613.23343.52.camel@twins>
-Date: Fri, 8 Jun 2012 12:03:49 +0200
-Message-ID: <CABPqkBSFgyJS4QEg6MmrF=96GFeH=z_4GvuC2nCHQ8RJaw298w@mail.gmail.com>
-Subject: Re: [PATCH] perf/x86: check ucode before disabling PEBS on SandyBridge
-From: Stephane Eranian <eranian@google.com>
+	id S934228Ab2FHKGE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 06:06:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51688 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754344Ab2FHKGD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 06:06:03 -0400
+Date: Fri, 8 Jun 2012 12:03:58 +0200
+From: Oleg Nesterov <oleg@redhat.com>
 To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        andi@firstfloor.org, mingo@elte.hu, ming.m.lin@intel.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Cc: Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] uprobes: write_opcode()->__replace_page() can race
+	with try_to_unmap()
+Message-ID: <20120608100358.GA19131@redhat.com>
+References: <20120607165942.GA31966@redhat.com> <20120607170041.GC31974@redhat.com> <1339145227.23343.42.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339145227.23343.42.camel@twins>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 8, 2012 at 12:00 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Fri, 2012-06-08 at 11:35 +0200, Ingo Molnar wrote:
->> * Peter Zijlstra <peterz@infradead.org> wrote:
->>
->> > On Thu, 2012-06-07 at 12:48 +0200, Stephane Eranian wrote:
->> > > >> The warning could also be done on boot. But the check has to be done
->> > > >>  when the event is created.
->> > > >
->> > > > Is this because of the ucode loader not having done its thing yet etc..?
->> >
->> > Ah, its because you can update ucode at runtime of course.
->> >
->> > A quick look at the ucode loader doesn't show it having a
->> > notifier either, so then yeah we need to check on every event
->> > creation :/
->> >
->> > Or we could put a hook in the ucode loader.
->>
->> I'd really suggest the latter - I doubt this will be our only
->> ucode dependent quirk, going forward ...
+On 06/08, Peter Zijlstra wrote:
 >
-> Yeah, am in the middle of writing that..
+> On Thu, 2012-06-07 at 19:00 +0200, Oleg Nesterov wrote:
+> > write_opcode() gets old_page via get_user_pages() and then calls
+> > __replace_page() which assumes that this old_page is still mapped
+> > after pte_offset_map_lock().
+> >
+> > This is not true if this old_page was already try_to_unmap()'ed,
+> > and in this case everything __replace_page() does with old_page
+> > is wrong. Just for example, put_page() is not balanced.
+> >
+> > I think it is possible to teach __replace_page() to handle this
+> > unlikely case correctly, but this patch simply changes it to use
+> > page_check_address() and return -EAGAIN if it fails. The caller
+> > should notice this error code and retry.
+>
+> Note that replace_page() was nicked from ksm, does that suffer a similar
+> problem?
 
-I am fine with that. As I found out yesterday, the reality is that the
-ucode version for SNB vs. SNB-EP differ, so with this mechanism
-we could customize the callback per CPU model number more easily.
+Yes, I looked at replace_page() too. Afaics it looks fine, it does the
+additional pte_same(pte, orig_pte) check.
+
+Oleg.
+
