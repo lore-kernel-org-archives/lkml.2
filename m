@@ -1,82 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934496Ab2FHUm6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 16:42:58 -0400
-Received: from db3ehsobe002.messaging.microsoft.com ([213.199.154.140]:32097
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759538Ab2FHUm4 (ORCPT
+	id S934503Ab2FHUnb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 16:43:31 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:42826 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933473Ab2FHUna convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 16:42:56 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VPS3(z1823lz98dIzz1202hzzz2dh668h839h944hd25hf0ah)
-X-WSS-ID: 0M5BG7B-02-9F7-02
-X-M-MSG: 
-Date: Fri, 8 Jun 2012 22:38:28 +0200
-From: Borislav Petkov <borislav.petkov@amd.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@kernel.org>, Stephane Eranian <eranian@google.com>,
-        <linux-kernel@vger.kernel.org>, <andi@firstfloor.org>, <mingo@elte.hu>,
-        <ming.m.lin@intel.com>, Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Dimitri Sivanich <sivanich@sgi.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>
-Subject: Re: [PATCH] perf/x86: check ucode before disabling PEBS on
- SandyBridge
-Message-ID: <20120608203828.GA5220@aftab.osrc.amd.com>
-References: <1339064319.23343.13.camel@twins>
- <CABPqkBQ+p5rcuxpXCTLMXPM+awAHhQ6mP9-WzVh5GWtn2GyfrA@mail.gmail.com>
- <1339065932.23343.18.camel@twins>
- <CABPqkBQ=tLXXsgvzQx+i01Owm4MM8m=6cEVVi4ab64gOiTTBYQ@mail.gmail.com>
- <1339067757.23343.21.camel@twins>
- <20120608093513.GA22520@gmail.com>
- <1339149613.23343.52.camel@twins>
- <1339161972.2507.13.camel@laptop>
- <20120608180505.GA4171@aftab.osrc.amd.com>
- <1339181537.30462.7.camel@twins>
+	Fri, 8 Jun 2012 16:43:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1339181537.30462.7.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+In-Reply-To: <CAHVUoiSc3mzrgXFo5-T=8HiYYUBTMhBz0TqUwZSek=VgfhEoyA@mail.gmail.com>
+References: <CAHVUoiQywo=iHKsXQbsVE7coc1FL9A9qy_a71SK94MKNV0GrKA@mail.gmail.com>
+	<CAHVUoiTZmzT3vquaDC65AJfCFZX-qS5GjgjP2-+=0R7skurW5g@mail.gmail.com>
+	<CAHVUoiQgcAMr874d_yPfm9ssUBOoX+dNLy9JNCOCYwOCrAKXFQ@mail.gmail.com>
+	<CAH3drwacayQEZHOidbKKuJ3KjgMvnYzT0S0csXV2QwSmC8nMxg@mail.gmail.com>
+	<CAHVUoiSP7SiWCtYPvKS_1RuAV0upWmT06iN7PR1OE6NAtToirQ@mail.gmail.com>
+	<CAH3drwY61Pqd1MXxgSYcHRPJF5pNr2FO7vrM_ULsRvMbYjAhOQ@mail.gmail.com>
+	<CAHVUoiTfooPSXyVpcg_Khc0rzYcnmvAbGgfko42hOxqukc91_A@mail.gmail.com>
+	<CAHVUoiT4FgEpWDLtzfTUaCTZR-rFx76E3MRdU8u9swjmt74ZQg@mail.gmail.com>
+	<CAHVUoiQ_csZeh_FEHaCkqmJvHO+Q=UF2Va7V19G-3C=xuSYTPw@mail.gmail.com>
+	<CAH3drwa430bUfY4ZHfn583JsDU5Sv=Y5WNaWWXm=a1XpJV1iSw@mail.gmail.com>
+	<CAHVUoiSc3mzrgXFo5-T=8HiYYUBTMhBz0TqUwZSek=VgfhEoyA@mail.gmail.com>
+Date: Fri, 8 Jun 2012 16:43:29 -0400
+Message-ID: <CAH3drwaBpnicWa=pLnKgxsOb4t4pe_kHsYZW4Ei3q-wKYCA=Rw@mail.gmail.com>
+Subject: Re: [Regression] [Radeon] Stream command failures and render problems
+ in Evergreen (Radeon HD 5600) in kernel 3.4
+From: Jerome Glisse <j.glisse@gmail.com>
+To: Brian Gitonga Marete <marete@toshnix.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, David Airlie <airlied@linux.ie>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Jerome Glisse <jglisse@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 08, 2012 at 08:52:17PM +0200, Peter Zijlstra wrote:
-> Checking a bitmap of n bits for being all zero is O(n), so the total is
-> still O(n^2). Still, probably faster than the for_each_online_cpu() scan
-> I do now.
+On Fri, Jun 8, 2012 at 4:28 PM, Brian Gitonga Marete <marete@toshnix.com> wrote:
+> On Fri, Jun 8, 2012 at 10:56 PM, Jerome Glisse <j.glisse@gmail.com> wrote:
+>> On Fri, Jun 8, 2012 at 6:13 AM, Brian Gitonga Marete <marete@toshnix.com> wrote:
+>>> On Fri, Jun 8, 2012 at 12:56 AM, Brian Gitonga Marete
+>>> <marete@toshnix.com> wrote:
+>>>> On Fri, Jun 8, 2012 at 12:44 AM, Brian Gitonga Marete
+>>>> <marete@toshnix.com> wrote:
+>>>>> On Thu, Jun 7, 2012 at 11:20 PM, Jerome Glisse <j.glisse@gmail.com> wrote:
+>>>>>> On Thu, Jun 7, 2012 at 3:59 PM, Brian Gitonga Marete <marete@toshnix.com> wrote:
+>>>>>>> On Thu, Jun 7, 2012 at 5:25 PM, Jerome Glisse <j.glisse@gmail.com> wrote:
+>>>>>>>>
+>>>>>>>> Update your libdrm to libdrm from git should fix your issue.
+>>>>>>>
+>>>>>>> Hello Jerome,
+>>>>>>>
+>>>>>>> Thanks for looking into this.
+>>>>>>>
+>>>>>>> I am afraid that even with the very latest libdrm (git 93a5117d), the
+>>>>>>> rendering is still broken.
+>>>>>>>
+>>>>>>> What else should I try? I would revert the patch that git-bisect
+>>>>>>> fingered (your patch, git 285484e2d, Linux mainline) but there are
+>>>>>>> merge problems when I try to do that, which I have not yet looked
+>>>>>>> into. Perhaps you can see if you can help me revert that patch so that
+>>>>>>> we can see if the problem then goes away?
+>>>>>>>
+>>>>>> What happen if you upgrade to xf86-video-ati from git ?
+>>>>>
+>>>>> Hello Jerome,
+>>>>>
+>>>>> Once again, thanks a lot for your help.
+>>>>>
+>>>>> Some progress but also a setback: Upgrading to the latest
+>>>>> xf86-video-ati git gets rid of the stream command failures - No more
+>>>>> error messages in dmesg(8). But then, now, rendering is completely
+>>>>> messed up. Previously, it was mostly the window boundaries that were
+>>>>> blurred/messed but now also entire windows and text so that you can't
+>>>>> read anything from the desktop. (For example, the previous render
+>>>>> problems would still allow me to use gnome-terminal even though its
+>>>>> frames were completely blurred. Now the text withing gnome-terminal is
+>>>>> also blurred/smudged)
+>>>>>
+>>>>
+>>>> I should add that in this case rendering is completely messed up in
+>>>> _both_ 3.3.x and 3.4. But the stream command failures in 3.4 go away
+>>>> upon upgrading to the latext xf86-video-ati git HEAD.
+>>>
+>>> Ok. All is fixed in kernel v3.4 if I additionally upgrade Mesa to the
+>>> latest git. Jerome, many thanks for your help on this!
+>>>
+>>> So to summarize, the 3.4 breakage in Ubuntu 11.04 (and probably other
+>>> distributions released around the same time) is fixed by:
+>>>
+>>> a) Upgrade libdrm to latest GIT as of this writing (93a5117d5)
+>>> b) Upgrade xf86-video-ati to latest GIT as of this writing (5888371)
+>>> c) Upgrade mesa to latest GIT as of this writing (529476b)
+>>>
+>>> Now kernel 3.4 works on my laptop.
+>>>
+>>> Thanks!
+>>>
+>>> BGM.
+>>
+>> Brian can you please test patch below on 6.14.0 ddx and old mesa (ie
+>> revert to ubuntu mesa & ddx) and report if it fix your issue. Thanks
+>>
+>> http://people.freedesktop.org/~glisse/0001-drm-radeon-fix-tiling-and-command-stream-checking-on.patch
+>>
+>  OK. Will test and report back. Thanks!
+>
+> --
+> Brian Gitonga Marete
+> Toshnix Systems - http://toshnix.com
 
-Ok, here's what I mean:
+I uploaded a v3 version same url, the v2 won't work for you. v3 should
+work (at least according to my local testing with same gpu as you and
+same use case)
 
-On init you do:
-
-	cpumask_copy(ucode_mask, cpu_online_mask);
-
-In the notifier:
-
-	cpumask_clear_cpu(this_cpu, ucode_mask);
-
-	if (cpumask_empty(ucode_mask))
-		verify_pebs();
-
-So, on each cpu you do cpumask_clear_cpu() which should be O(k) for some
-constant k.
-
-And ok, cpumask_empty() aka __bitmap_empty() iterates over
-nbits/BITS_PER_LONG, so here's the O(n), I see what you mean.
-
-Well, you could probably replace cpumask_empty() with cpumask_weight()
-which should use POPCNT in newer hardware and should be almost for free.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
-
+Cheers,
+Jerome
