@@ -1,146 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756436Ab2FHN36 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 09:29:58 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:60297 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754133Ab2FHN35 (ORCPT
+	id S932144Ab2FHNaw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 09:30:52 -0400
+Received: from 8bytes.org ([85.214.48.195]:57352 "EHLO
+	h2027444.stratoserver.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755267Ab2FHNau (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 09:29:57 -0400
-X-Nat-Received: from [202.181.97.72]:52987 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1339162181.22955
-To: linux-kernel@vger.kernel.org
-Cc: oleg@redhat.com, rusty@rustcorp.com.au, arjan@linux.intel.com,
-        tj@kernel.org, akpm@linux-foundation.org
-Subject: [PATCH] kmod: avoid deadlock from recursive kmod call
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <201202090049.FIE64562.tFLFQFSVOHOMJO@I-love.SAKURA.ne.jp>
-	<20120208163349.GA18478@redhat.com>
-	<201202092058.DAJ60973.VOSOFHQFtLFJMO@I-love.SAKURA.ne.jp>
-	<201202101956.GFB43786.MLFHQJOFFtOSOV@I-love.SAKURA.ne.jp>
-	<20120531130856.c0a5f913.akpm@linux-foundation.org>
-In-Reply-To: <20120531130856.c0a5f913.akpm@linux-foundation.org>
-Message-Id: <201206082229.BFC64035.HQOSLtMFFVOJFO@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Fri, 8 Jun 2012 22:29:39 +0900
-Mime-Version: 1.0
+	Fri, 8 Jun 2012 09:30:50 -0400
+Date: Fri, 8 Jun 2012 15:30:47 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Bryan Schumaker <bjschuma@netapp.com>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: NFS regression in v3.5-rc1: mount.nfs yells about incorrect
+ mount option
+Message-ID: <20120608133047.GV12795@8bytes.org>
+References: <20120607150456.GO12795@8bytes.org>
+ <4FD0C4C2.8020605@netapp.com>
+ <20120607155006.GR12795@8bytes.org>
+ <4FD0CEB0.9040804@netapp.com>
+ <20120608130352.GU12795@8bytes.org>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 08062012 #8157230, status: clean
+Content-Disposition: inline
+In-Reply-To: <20120608130352.GU12795@8bytes.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Fri Jun  8 15:30:48 2012
+X-DSPAM-Confidence: 0.9990
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 4fd1fe8828381155230587
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 75ab995a2b57e183ed9772221dc62ff3a22ad92a Mon Sep 17 00:00:00 2001
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Date: Fri, 8 Jun 2012 21:33:55 +0900
-Subject: [PATCH] kmod: avoid deadlock from recursive kmod call
+On Fri, Jun 08, 2012 at 03:03:52PM +0200, Joerg Roedel wrote:
+> Patch attached.
 
-The system deadlocks (at least since 2.6.10) when
-call_usermodehelper(UMH_WAIT_EXEC) request triggered
-call_usermodehelper(UMH_WAIT_PROC) request.
+Hmm, since nfs_fs_mount is now shared between nfs23 and nfs4, a better
+"revert" is probably this one:
 
-This is because "khelper thread is waiting for the worker thread at
-wait_for_completion() in do_fork() since the worker thread was created
-with CLONE_VFORK flag" and "the worker thread cannot call complete()
-because do_execve() is blocked at UMH_WAIT_PROC request" and "the khelper
-thread cannot start processing UMH_WAIT_PROC request because the khelper
-thread is waiting for the worker thread at wait_for_completion() in
-do_fork()".
+>From 3517158fc3bc5d778dcba987ac73eea6bb7a889a Mon Sep 17 00:00:00 2001
+From: Joerg Roedel <joerg.roedel@amd.com>
+Date: Fri, 8 Jun 2012 14:51:01 +0200
+Subject: [PATCH] Revert "NFS: Let mount data parsing set the NFS version"
 
-The easiest example to observe this deadlock is to use a corrupted
-/sbin/hotplug binary (like shown below).
+This reverts commit db8333519187d5974cf2ff33910c893bf8727d9f.
 
-  # : > /tmp/dummy
-  # chmod 755 /tmp/dummy
-  # echo /tmp/dummy > /proc/sys/kernel/hotplug
-  # modprobe whatever
+The original commit message says, that the version field is
+"unconditionally set while parsing mount data".
+Unfortunatly this is not the case and the version field may
+stay 0 so that nfs_init_server returns -EPROTONOSUPPORT
+causing the mount to fail.  Reverting this commit fixes the
+issue.
 
-call_usermodehelper("/tmp/dummy", UMH_WAIT_EXEC) is called from
-kobject_uevent_env() in lib/kobject_uevent.c upon loading/unloading a module.
-do_execve("/tmp/dummy") triggers a call to request_module("binfmt-0000") from
-search_binary_handler() which in turn calls call_usermodehelper(UMH_WAIT_PROC).
+Conflicts:
 
-In order to avoid deadlock, as a for-now and easy-to-backport solution, do not
-try to call wait_for_completion() in call_usermodehelper_exec() if the worker
-thread was created by khelper thread with CLONE_VFORK flag.
-Future and fundamental solution might be replacing singleton khelper thread
-with some workqueue so that recursive calls up to max_active dependency loop
-can be handled without deadlock.
+	fs/nfs/super.c
 
-[akpm@linux-foundation.org: add comment to kmod_thread_locker]
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Tejun Heo <tj@kernel.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- kernel/kmod.c |   31 +++++++++++++++++++++++++++++--
- 1 files changed, 29 insertions(+), 2 deletions(-)
+ fs/nfs/super.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/kmod.c b/kernel/kmod.c
-index ff2c7cb..5bf7a5e 100644
---- a/kernel/kmod.c
-+++ b/kernel/kmod.c
-@@ -45,6 +45,13 @@ extern int max_threads;
- 
- static struct workqueue_struct *khelper_wq;
- 
-+/*
-+ * kmod_thread_locker is used for deadlock avoidance.  There is no explicit
-+ * locking to protect this global - it is private to the singleton khelper
-+ * thread and should only ever be modified by that thread.
-+ */
-+static const struct task_struct *kmod_thread_locker;
-+
- #define CAP_BSET	(void *)1
- #define CAP_PI		(void *)2
- 
-@@ -221,6 +228,13 @@ fail:
- 	return 0;
+diff --git a/fs/nfs/super.c b/fs/nfs/super.c
+index ff656c0..d7a237d 100644
+--- a/fs/nfs/super.c
++++ b/fs/nfs/super.c
+@@ -948,7 +948,7 @@ static void nfs_umount_begin(struct super_block *sb)
+ 		rpc_killall_tasks(rpc);
  }
  
-+static int call_helper(void *data)
-+{
-+	/* Worker thread started blocking khelper thread. */
-+	kmod_thread_locker = current;
-+	return ____call_usermodehelper(data);
-+}
-+
- static void call_usermodehelper_freeinfo(struct subprocess_info *info)
+-static struct nfs_parsed_mount_data *nfs_alloc_parsed_mount_data(void)
++static struct nfs_parsed_mount_data *nfs_alloc_parsed_mount_data(unsigned int version)
  {
- 	if (info->cleanup)
-@@ -295,9 +309,12 @@ static void __call_usermodehelper(struct work_struct *work)
- 	if (wait == UMH_WAIT_PROC)
- 		pid = kernel_thread(wait_for_helper, sub_info,
- 				    CLONE_FS | CLONE_FILES | SIGCHLD);
--	else
--		pid = kernel_thread(____call_usermodehelper, sub_info,
-+	else {
-+		pid = kernel_thread(call_helper, sub_info,
- 				    CLONE_VFORK | SIGCHLD);
-+		/* Worker thread stopped blocking khelper thread. */
-+		kmod_thread_locker = NULL;
-+	}
+ 	struct nfs_parsed_mount_data *data;
  
- 	switch (wait) {
- 	case UMH_NO_WAIT:
-@@ -548,6 +565,16 @@ int call_usermodehelper_exec(struct subprocess_info *sub_info, int wait)
- 		retval = -EBUSY;
+@@ -963,6 +963,7 @@ static struct nfs_parsed_mount_data *nfs_alloc_parsed_mount_data(void)
+ 		data->nfs_server.protocol = XPRT_TRANSPORT_TCP;
+ 		data->auth_flavors[0]	= RPC_AUTH_UNIX;
+ 		data->auth_flavor_len	= 1;
++		data->version		= version;
+ 		data->minorversion	= 0;
+ 		data->need_mount	= true;
+ 		data->net		= current->nsproxy->net_ns;
+@@ -2472,6 +2473,7 @@ error_splat_bdi:
+ static struct dentry *nfs_fs_mount(struct file_system_type *fs_type,
+ 	int flags, const char *dev_name, void *raw_data)
+ {
++	int version = (fs_type == &nfs_fs_type) ? NFS_DEFAULT_VERSION : 4;
+ 	struct nfs_mount_info mount_info = {
+ 		.fill_super = nfs_fill_super,
+ 		.set_security = nfs_set_sb_security,
+@@ -2479,7 +2481,7 @@ static struct dentry *nfs_fs_mount(struct file_system_type *fs_type,
+ 	struct dentry *mntroot = ERR_PTR(-ENOMEM);
+ 	int error;
+ 
+-	mount_info.parsed = nfs_alloc_parsed_mount_data();
++	mount_info.parsed = nfs_alloc_parsed_mount_data(version);
+ 	mount_info.mntfh = nfs_alloc_fhandle();
+ 	if (mount_info.parsed == NULL || mount_info.mntfh == NULL)
  		goto out;
- 	}
-+	/*
-+	 * Worker thread must not wait for khelper thread at below
-+	 * wait_for_completion() if the thread was created with CLONE_VFORK
-+	 * flag, for khelper thread is already waiting for the thread at
-+	 * wait_for_completion() in do_fork().
-+	 */
-+	if (wait != UMH_NO_WAIT && current == kmod_thread_locker) {
-+		retval = -EBUSY;
-+		goto out;
-+	}
- 
- 	sub_info->complete = &done;
- 	sub_info->wait = wait;
 -- 
-1.7.1
+1.7.9.5
+
+
