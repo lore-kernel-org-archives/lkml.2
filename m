@@ -1,63 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932731Ab2FHMcU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 08:32:20 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:27967 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756314Ab2FHMcS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 08:32:18 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX190qBbJoEJmH+h/K7gDZB3J
-Date: Fri, 8 Jun 2012 05:32:13 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Thomas Abraham <thomas.abraham@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, grant.likely@secretlab.ca,
-        kgene.kim@samsung.com, kyungmin.park@samsung.com, patches@linaro.org,
-        Stephen Warren <swarren@wwwdotorg.org>
-Subject: Re: [PATCH 1/3] pinctrl: add samsung pinctrl and gpiolib driver
-Message-ID: <20120608123213.GP12766@atomide.com>
-References: <1337816857-14694-1-git-send-email-thomas.abraham@linaro.org>
- <1337816857-14694-2-git-send-email-thomas.abraham@linaro.org>
- <CACRpkdZDnFW4-bDsHN5BOr2e5NLGzouSBY7ngf-VsoPn-SyxAA@mail.gmail.com>
+	id S933250Ab2FHMeH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 08:34:07 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:59793 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756167Ab2FHMeD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 08:34:03 -0400
+Date: Fri, 8 Jun 2012 14:34:02 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: ShuoX Liu <shuox.liu@intel.com>, Andrew Morton <akpm@linux-foundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH v7 2/2] x86 mce: use new printk recursion disabling
+ interface
+Message-ID: <20120608123402.GB10978@x1.osrc.amd.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	ShuoX Liu <shuox.liu@intel.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+	"Luck, Tony" <tony.luck@intel.com>,
+	"andi@firstfloor.org" <andi@firstfloor.org>,
+	Ingo Molnar <mingo@elte.hu>
+References: <20120605081448.GA7097@liondog.tnic>
+ <4FCDD72A.9030701@intel.com>
+ <4FCDD78A.3070106@intel.com>
+ <20120605151542.GA10669@x1.osrc.amd.com>
+ <1338942965.14538.233.camel@ymzhang.sh.intel.com>
+ <4FCF155B.3090705@intel.com>
+ <4FCF160D.8010404@intel.com>
+ <20120606152238.GA3874@x1.osrc.amd.com>
+ <4FD01896.1010506@intel.com>
+ <4FD01933.7070000@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CACRpkdZDnFW4-bDsHN5BOr2e5NLGzouSBY7ngf-VsoPn-SyxAA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4FD01933.7070000@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Linus Walleij <linus.walleij@linaro.org> [120531 18:40]:
-> On Thu, May 24, 2012 at 7:47 AM, Thomas Abraham
-> <thomas.abraham@linaro.org> wrote:
+On Thu, Jun 07, 2012 at 11:00:03AM +0800, ShuoX Liu wrote:
+> From: ShuoX Liu <shuox.liu@intel.com>
 > 
-> > diff --git a/Documentation/devicetree/bindings/pinctrl/samsung-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/samsung-pinctrl.txt
+> On x86 machines, some times MCE happens just when kernel calls printk
+> to output some log info to serial console, while usually MCE module in
+> kernel is used to print out some hardware error information, such like
+> bad cache or bad memory bank. That causes printk recursion and printk
+> would omit MCE printk output.
 > 
-> It would be nice if some DT person could review the bindings, but if
-> nothing happens
-> I will accept them as-is.
+> We hit it when running MTBF testing on Android ATOM mobiles.
+> 
+> Here in print_mce, we choose to disable printk recursion to make sure
+> MCE logs printed out.
+> 
+> Signed-off-by: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+> Signed-off-by: ShuoX Liu <shuox.liu@intel.com>
 
-Looks OK to me, that's a bit slower way of parsing pins compared to
-just register value pairs but allows naming them. And it was agreed
-that it's up to the driver to define it's binding.
- 
-> This driver is special since it seems to keep all pin, group and
-> function information
-> in the device tree, but not like Tony is doing it in pinctrl-simple,
-> if I understand
-> correctly?
+Ok,
 
-Looks like it's using static arrays which I was too using earlier.
-That too should be OK for now, then at some point we can probably
-have something generic to manage the pins for at least some drivers.
+those patches have to go in hand in hand and since the first one touches
+generic code, maybe Andrew is the right guy for the job of picking them
+up, provided there are no other objections against them.
 
-Regards,
+Acked-by: Borislav Petkov <borislav.petkov@amd.com>
 
-Tony
- 
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
