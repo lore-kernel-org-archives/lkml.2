@@ -1,136 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759953Ab2FHGj7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 02:39:59 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:58529 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756769Ab2FHGjz (ORCPT
+	id S932590Ab2FHGkW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 02:40:22 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:55823 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752777Ab2FHGjk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 02:39:55 -0400
-Message-ID: <4FD19E37.3020309@gmail.com>
-Date: Fri, 08 Jun 2012 02:39:51 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: John Stultz <john.stultz@linaro.org>
-CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
-        Andrea Righi <andrea@betterlinux.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Taras Glek <tgek@mozilla.com>, Mike Hommey <mh@glandium.org>,
-        Jan Kara <jack@suse.cz>
-Subject: Re: [PATCH 3/3] [RFC] tmpfs: Add FALLOC_FL_MARK_VOLATILE/UNMARK_VOLATILE
- handlers
-References: <1338575387-26972-1-git-send-email-john.stultz@linaro.org> <1338575387-26972-4-git-send-email-john.stultz@linaro.org> <4FC9235F.5000402@gmail.com> <4FC92E30.4000906@linaro.org> <4FC9360B.4020401@gmail.com> <4FC937AD.8040201@linaro.org> <4FC9438B.1000403@gmail.com> <4FC94F61.20305@linaro.org> <4FCFB4F6.6070308@gmail.com> <4FCFEE36.3010902@linaro.org>
-In-Reply-To: <4FCFEE36.3010902@linaro.org>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	Fri, 8 Jun 2012 02:39:40 -0400
+X-AuditID: 9c930179-b7bb9ae000000ea5-1c-4fd19e2462a0
+From: Minchan Kim <minchan@kernel.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Jerome Marchand <jmarchan@redhat.com>
+Subject: [PATCH] zram: fix random data read
+Date: Fri,  8 Jun 2012 15:39:26 +0900
+Message-Id: <1339137567-29656-2-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1339137567-29656-1-git-send-email-minchan@kernel.org>
+References: <1339137567-29656-1-git-send-email-minchan@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(6/6/12 7:56 PM), John Stultz wrote:
-> On 06/06/2012 12:52 PM, KOSAKI Motohiro wrote:
->>> The key point is we want volatile ranges to be purged in the order they
->>> were marked volatile.
->>> If we use the page lru via shmem_writeout to trigger range purging, we
->>> wouldn't necessarily get this desired behavior.
->> Ok, so can you please explain your ideal order to reclaim. your last mail
->> described old and new volatiled region. but I'm not sure regular tmpfs pages
->> vs volatile pages vs regular file cache order. That said, when using shrink_slab(),
->> we choose random order to drop against page cache. I'm not sure why you sure
->> it is ideal.
-> 
-> So I'm not totally sure its ideal, but I can tell you what make sense to
-> me. If there is a more ideal order, I'm open to suggestions.
-> 
-> So volatile ranges should be purged first-in-first-out. So the first
-> range marked volatile should be purged first. Since volatile ranges
-> might have different costs depending on what filesystem the file is
-> backed by, this LRU order is per-filesystem.
-> 
-> It seems that if we have tmpfs volatile ranges, we should purge them
-> before we swap out any regular tmpfs pages. Thus why I'm purging any
-> available ranges on shmem_writepage before swapping, rather then using a
-> shrinker now (I'm hoping you saw the updated patchset I sent out friday).
-> 
-> Does that make sense?
-> 
->> And, now I guess you think nobody touch volatiled page, yes? because otherwise
->> volatile marking order is silly choice. If yes, what's happen if anyone touch
->> a patch which volatiled. no-op? SIGBUS?
-> 
-> So more of a noop. If you read a page that has been marked volatile, it
-> may return the data that was there, or it may return an empty nulled page.
-> 
-> I guess we could throw a signal to help avoid developers making
-> programming mistakes, but I'm not sure what the extra cost would be to
-> set up and tare that down each time. One important aspect of this is
-> that in order to make it attractive for an application to mark ranges as
-> volatile, it has to be very cheap to mark and unmark ranges.
+fd1a30de makes a bug that it uses (struct page *) as zsmalloc's handle
+although it's a uncompressed page so that it can access random page,
+return random data or even crashed by get_first_page in zs_map_object.
 
-ok, i agree we don't need to pay any extra cost.
+Cc: Nitin Gupta <ngupta@vflare.org>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Jerome Marchand <jmarchan@redhat.com>
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+---
+ drivers/staging/zram/zram_drv.c |   15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
 
->> Which worklord didn't work. Usually, anon pages reclaim are only
->> happen when 1) tmpfs streaming io workload or 2) heavy vm pressure.
->> So, this scenario are not so inaccurate to me.
-> 
-> So it was more of a theoretical issue in my discussions, but once it was
-> brought up, ashmems' global range lru made more sense.
-
-No. Every global lru is evil. Please don't introduce numa unaware code for 
-a new feature. That's a legacy and poor performance.
-
-
-> I think the workload we're mostly concerned with here is heavy vm pressure.
-
-I don't admit it. but note, when under heavy workload, shrink_slab() behave 
-stupid seriously.
-
-
-
->>> That's when I added the LRU tracking at the volatile range level (which
->>> reverted back to the behavior ashmem has always used), and have been
->>> using that model sense.
->>>
->>> Hopefully this clarifies things. My apologies if I don't always use the
->>> correct terminology, as I'm still a newbie when it comes to VM code.
->> I think your code is enough clean. But I'm still not sure your background
->> design. Please help me to understand clearly.
-> Hopefully the above helps. But let me know where you'd like more
-> clarification.
-> 
-> 
->> btw, Why do you choice fallocate instead of fadvise? As far as I skimmed,
->> fallocate() is an operation of a disk layout, not of a cache. And, why
->> did you choice fadvise() instead of madvise() at initial version. vma
->> hint might be useful than fadvise() because it can be used for anonymous
->> pages too.
-> I actually started with madvise, but quickly moved to fadvise when
-> feeling that the fd based ranges made more sense. With ashmem, fds are
-> often shared, and coordinating volatile ranges on a shared fd made more
-> sense on a (fd, offset, len) tuple, rather then on an offset and length
-> on an mmapped region.
-> 
-> I moved to fallocate at Dave Chinner's request. In short, it allows
-> non-tmpfs filesystems to implement volatile range semantics allowing
-> them to zap rather then writeout dirty volatile pages. And since the
-> volatile ranges are very similar to a delayed/cancel-able hole-punch, it
-> made sense to use a similar interface to FALLOC_FL_HOLE_PUNCH.
-> 
-> You can read the details of DaveC's suggestion here:
-> https://lkml.org/lkml/2012/4/30/441
-
-Hmmm...
-
-I'm sorry. I can't imagine how to integrate FALLOCATE_VOLATILE into regular
-file systems. do you have any idea?
-
+diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+index abd69d1..0cdc303 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -280,26 +280,27 @@ static int zram_read_before_write(struct zram *zram, char *mem, u32 index)
+ 	size_t clen = PAGE_SIZE;
+ 	struct zobj_header *zheader;
+ 	unsigned char *cmem;
++	unsigned long handle = zram->table[index].handle;
+ 
+-	if (zram_test_flag(zram, index, ZRAM_ZERO) ||
+-	    !zram->table[index].handle) {
++	if (zram_test_flag(zram, index, ZRAM_ZERO) || !handle) {
+ 		memset(mem, 0, PAGE_SIZE);
+ 		return 0;
+ 	}
+ 
+-	cmem = zs_map_object(zram->mem_pool, zram->table[index].handle);
+-
+ 	/* Page is stored uncompressed since it's incompressible */
+ 	if (unlikely(zram_test_flag(zram, index, ZRAM_UNCOMPRESSED))) {
+-		memcpy(mem, cmem, PAGE_SIZE);
+-		kunmap_atomic(cmem);
++		char *src = kmap_atomic((struct page *)handle);
++		memcpy(mem, src, PAGE_SIZE);
++		kunmap_atomic(src);
+ 		return 0;
+ 	}
+ 
++	cmem = zs_map_object(zram->mem_pool, handle);
++
+ 	ret = lzo1x_decompress_safe(cmem + sizeof(*zheader),
+ 				    zram->table[index].size,
+ 				    mem, &clen);
+-	zs_unmap_object(zram->mem_pool, zram->table[index].handle);
++	zs_unmap_object(zram->mem_pool, handle);
+ 
+ 	/* Should NEVER happen. Return bio error if it does. */
+ 	if (unlikely(ret != LZO_E_OK)) {
+-- 
+1.7.9.5
 
