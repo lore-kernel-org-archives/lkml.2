@@ -1,58 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760766Ab2FHOvy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 10:51:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51171 "EHLO mx2.suse.de"
+	id S1760800Ab2FHOwH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 10:52:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55074 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760583Ab2FHOvu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 10:51:50 -0400
-Date: Fri, 8 Jun 2012 16:51:47 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Ron Chen <ron_chen_123@yahoo.com>
-Cc: Linux Mailing List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        cgroups mailinglist <cgroups@vger.kernel.org>
-Subject: Re: memcg cgroup controller & sbrk interaction
-Message-ID: <20120608145147.GA15332@tiehlicka.suse.cz>
-References: <1339118347.78794.YahooMailNeo@web112018.mail.gq1.yahoo.com>
+	id S1760705Ab2FHOvx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 10:51:53 -0400
+From: Paul Moore <pmoore@redhat.com>
+To: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Cc: libseccomp-discuss@lists.sourceforge.net
+Subject: ANN: libseccomp 0.1.0 released
+Date: Fri, 08 Jun 2012 10:51:38 -0400
+Message-ID: <1485416.ktZgn4r1kg@sifl>
+Organization: Red Hat
+User-Agent: KMail/4.8.3 (Linux/3.3.7-gentoo; KDE/4.8.3; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1339118347.78794.YahooMailNeo@web112018.mail.gq1.yahoo.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 07-06-12 18:19:07, Ron Chen wrote:
-[...]
-> However, not only us, but others have found that the memcg controller
-> does not cause sbrk(2) or mmap(2) to return error when the cgroup is
-> under high memory pressure.
+With the release of Linux 3.5-rc1 and the inclusion of the enhanced seccomp 
+patches (seccomp mode 2), I'd like to announce the first release of the 
+libseccomp library. As mentioned previously here, and on LWN.net[1], the 
+libseccomp library provides an easy to use, platform independent, interface to 
+Linux's syscall filtering mechanism.
 
-Yes, because memory controller tracks the allocated memory (with page
-granularity) rather than address space. So the memory is accounted when
-it is faulted in.
+ * http://sourceforge.net/projects/libseccomp
+ * http://downloads.sf.net/project/libseccomp/libseccomp-0.1.0.tar.gz
 
-> Further, when the amount of free memory is really low, the Linux
-> Kernel OOM killer picks something and kills it.
+Thanks to everyone who has submitted suggestions, provided testing help, and 
+contributed code to the project.
 
-Yes, this is the result of the design when the memory is tracked during
-page faults.
-
-> http://www.spinics.net/lists/cgroups/msg02622.html
-> 
-> 
-> We also would like to see if it is technically possible for the
-> Virtual Memory Manager to interact with the memory controller
-> properly and give us the semantics of setrlimit(2).
-
-What prevents you from using setrlimit from inside the group?
+[1] http://lwn.net/Articles/494252
 
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+paul moore
+security and virtualization @ redhat
+
