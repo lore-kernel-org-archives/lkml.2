@@ -1,81 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934250Ab2FHKgs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 06:36:48 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:54073 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751276Ab2FHKgm (ORCPT
+	id S934264Ab2FHKiM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 06:38:12 -0400
+Received: from nm14-vm0.access.bullet.mail.sp2.yahoo.com ([98.139.44.162]:45045
+	"HELO nm14-vm0.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751276Ab2FHKiK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 06:36:42 -0400
-Date: Fri, 8 Jun 2012 03:35:02 -0700
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: leonid.moiseichuk@nokia.com
-Cc: kosaki.motohiro@gmail.com, penberg@kernel.org, b.zolnierkie@samsung.com,
-        john.stultz@linaro.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: Re: [PATCH 2/5] vmevent: Convert from deferred timer to deferred work
-Message-ID: <20120608103501.GA15827@lizard>
-References: <20120601122118.GA6128@lizard>
- <1338553446-22292-2-git-send-email-anton.vorontsov@linaro.org>
- <4FD170AA.10705@gmail.com>
- <20120608065828.GA1515@lizard>
- <84FF21A720B0874AA94B46D76DB98269045F7890@008-AM1MPN1-004.mgdnok.nokia.com>
- <20120608075844.GA6362@lizard>
- <84FF21A720B0874AA94B46D76DB98269045F7A24@008-AM1MPN1-004.mgdnok.nokia.com>
- <20120608084105.GA9883@lizard>
- <84FF21A720B0874AA94B46D76DB98269045F7B01@008-AM1MPN1-004.mgdnok.nokia.com>
+	Fri, 8 Jun 2012 06:38:10 -0400
+X-Greylist: delayed 638 seconds by postgrey-1.27 at vger.kernel.org; Fri, 08 Jun 2012 06:38:10 EDT
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 556195.48437.bm@omp1027.access.mail.sp2.yahoo.com
+X-YMail-OSG: qk8E8KwVM1mryGp.pZpSXT5XUNmZH2JQghR5bT2Cwdx_p7.
+ VvAjr9P4lsDBGY18z0A7.uljaNgf9j8Jas9QCfgVLoO1qOeNCLvIsrriybzU
+ B0gFNJG0k6e2NhrIRKLt3xXVcqkI3TFmi5NUMsDQPCZD11ZUEZkol_ZIWILT
+ _JpnW.B.0mmxuB6sKi6wVI7gCY3JxEIlXdTGTtQcWPAWrTA2RItDKHRmszeK
+ i7S_oCDOLyM0kDSvjdjGOxNKAyFoz6kXbXfIrUhgF70aqhyIxbmem4ae3Au1
+ oS5mbXB4My_G1vywAKCTse0GxSSCIgHFRA20zDBpLnqrpCHyu.B5EI5PUM3e
+ ul.uK8KX6abu_UMpGI56DI1A83EjjTj65goJbm5apUPsFDPA54tQ91Z0dpre
+ YRhKSCZInibkYTSCzXiylV0eGmR0T6vmErOkaR2saowQf_kivDex66f9za4T
+ hvewvWwef
+X-RocketYMMF: webokoza151
+X-Mailer: YahooMailClassic/15.0.6 YahooMailWebService/0.8.118.349524
+Message-ID: <1339151116.34284.YahooMailClassic@web2810.biz.mail.ne1.yahoo.com>
+Date: Fri, 8 Jun 2012 03:25:16 -0700 (PDT)
+From: SANTANA <henry_santana2002@hotmail.com>
+Reply-To: hen_drietta2008@gala.net
+Subject: INTERNATIONAL     INVESTOR
+To: undisclosed recipients:;
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <84FF21A720B0874AA94B46D76DB98269045F7B01@008-AM1MPN1-004.mgdnok.nokia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/mixed; boundary="778264460-621298810-1339151116=:34284"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 08, 2012 at 08:57:13AM +0000, leonid.moiseichuk@nokia.com wrote:
-> > -----Original Message-----
-> > From: ext Anton Vorontsov [mailto:anton.vorontsov@linaro.org]
-> > Sent: 08 June, 2012 11:41
-> ...
-> > > Right. It but it has drawbacks as well e.g. ensure that daemon scheduled
-> > properly and propagate reaction decision outside ulmkd.
-> > 
-> > No, ulmkd itself propagates the decision (i.e. it kills processes).
-> 
-> That is a decision "select & kill" :)
-> Propagation of this decision required time. Not all processes could be killed. You may stuck in killing in some cases.
+--778264460-621298810-1339151116=:34284
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Yeah. But since we have plenty of free memory (i.e. we're getting
-notified in advance), it's OK to be not super-fast.
+=0AOPEN=A0 ATTACHMENT=A0 AND=A0 SEE=A0 MORE=A0 DETAILS=A0 ABOUT=A0 THIS=0A=
+=0A
+--778264460-621298810-1339151116=:34284
+Content-Type: application/rtf; name=Fidelity
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="Fidelity Investments International.rtf"
 
-And if we're losing control, OOMK will help us. (Btw, we can
-introduce "thrash killer" in-kernel driver. This would also help
-desktop use case, when the system is thrashing so hard that it
-becomes unresponsive, we'd better do something about it. When
-browser goes crazy on my laptop, I wish I had such a driver. :-)
-It takes forever to get OOM condition w/ 2GB swap space, slow
-hard drive and CPU all busy w/ moving pages back and forward.)
+e1xydGYxXGFuc2lcYW5zaWNwZzEyNTJcZGVmZjBcZGVmbGFuZzEwMzN7XGZv
+bnR0Ymx7XGYwXGZzd2lzc1xmY2hhcnNldDAgQXJpYWw7fX0NCntcKlxnZW5l
+cmF0b3IgTXNmdGVkaXQgNS40MS4xNS4xNTA3O31cdmlld2tpbmQ0XHVjMVxw
+YXJkXGYwXGZzMjAgSGVucnkgU2FudGFuYVxwYXINCjI4IE94Zm9yZCBSb2Fk
+XHBhcg0KSm9oYW5uZXNidXJnXHBhcg0KU291dGggQWZyaWNhXHBhcg0KaGVu
+cnlfc2FudGFuYTIwMDJAdG9wbWFpbC5jby56YVxwYXINClxwYXINCkdvb2Qg
+ZGF5LCAgICAgICAgICAgUGxlYXNlICBDb250YWN0IFRocm91Z2ggUHJpdmF0
+ZSAgZS1lbWFpbFxwYXINClxwYXINCkkgYW0gSGVucnkgIFNhbnRhbmEsIGEg
+ZmluYW5jaWFsIGNvbnN1bHRhbnQgYXR0YWNoZWQgdG8gZmlkZWxpdHlccGFy
+DQppbnZlc3RtZW50cyBpbnRlcm5hdGlvbmFsLCBhIGZ1bmQgbWFuYWdlbWVu
+dCBjb21wYW55IHdpdGggb3ZlclxwYXINClVTJDIsMDAwLDAwMCwwMDAuMDAg
+KFR3byBCaWxsaW9uIFVuaXRlZCBTdGF0ZXMgRG9sbGFycykgY2FwaXRhbCBp
+bnZlc3RtZW50ICBmdW5kLiBJIGhhbmRsZSBhbGwgb3VyIGludmVzdG9yJ3Mg
+ZGlyZWN0IGNhcGl0YWwgZnVuZHMgYW5kIGV4dHJhY3RzIDEuMiUgIEV4Y2Vz
+cyBNYXhpbXVtIFJldHVybiBDYXBpdGFsIFByb2ZpdCAoRU1SQ1ApIHBlciBh
+bm51bCBvbiBlYWNoIG9mIHRoZSBJbnZlc3RvcidzIE1hcmdpbmFsIENhcGl0
+YWwgRnVuZC4gQXMgYW4gZXhwZXJ0IGluIHRoaXMgcHJvZmVzc2lvbiwgSSBo
+YXZlIGZ1bmRzIGFtb3VudGluZyB0b1xwYXINClxwYXINClxwYXINClVTJDM1
+LDAwMCwwMDAuMDAgKFR3ZW50eS1GaXZlIE1pbGxpb24gVW5pdGVkIFN0YXRl
+cyBEb2xsYXJzKSBmcm9tIHRoZVxwYXINCkludmVzdG9yJ3MgRU1SQ1AgYW5k
+IGhlcmVieSBsb29raW5nIGZvciBzb21lb25lIHRvIHRydXN0IHdobyB3aWxs
+IHN0YW5kIGFzIGFuIEludmVzdG9yIHRvIHJlY2VpdmUgdGhlIGZ1bmQgYXMg
+QW5udWFsIEludmVzdG1lbnQgUHJvY2VlZHMgZnJvbSBGaWRlbGl0eSBNYXJn
+aW5hbCBDYXBpdGFsIEZ1bmQgZm9yIG91ciBvd24gcGFydG5lcnNoaXAgYnVz
+aW5lc3MgaW52ZXN0bWVudCBpbiBoaXMvaGVyIGNvdW50cnkuXHBhcg0KXHBh
+cg0KXHBhcg0KQWxsIGNvbmZvcm1hYmxlIGRvY3VtZW50cyB0byBzdXBwb3J0
+IHRoaXMgSW52ZXN0bWVudCBGdW5kIHdpbGwgYmUgbWFkZSBhdmFpbGFibGUg
+dG8geW91LiBNZWFud2hpbGUsIEkgaGF2ZSB3b3JrZWQgb3V0IHRoZSBtb2Rh
+bGl0aWVzIGFuZCB0ZWNobmljYWxpdGllcyBzbyB0aGF0IHRoZSBmdW5kcyBj
+YW4gYmUgY2xhaW1lZCBpbiBhbnkgb2Ygb3VyIHNpeCBjbGVhcmluZ1xwYXIN
+ClxwYXINClxwYXINCmhvdXNlcyB3aXRob3V0IGFueSBoaXRjaGVzLiBBbGwg
+SSByZXF1aXJlIGlzIHlvdXIgaG9uZXN0IGNvLW9wZXJhdGlvbi4gSVxwYXIN
+Cmd1YXJhbnRlZSB0aGF0IHRoaXMgd2lsbCBiZSBleGVjdXRlZCB1bmRlciBh
+IGxlZ2l0aW1hdGUgYXJyYW5nZW1lbnQgYW5kIG5vIGdvdmVybm1lbnQgaW52
+b2x2ZW1lbnQgYXQgYWxsLlxwYXINClxwYXINClxwYXINCkl0IGlzIHZlcnkg
+aW1wb3J0YW50IHlvdSBpbmNsdWRlIHlvdXIgY29udGFjdCBhZGRyZXNzLCB0
+ZWxlcGhvbmUgYW5kIGZheCBudW1iZXIgZm9yIGVhc3kgY29tbXVuaWNhdGlv
+bi4gSG9wZSB0byBoZWFyIGZyb20geW91IHNvb24uIEVtYWlsIHlvdXIgcmVz
+cG9uc2UgdG86ICAgaGVucnlfc2FudGFuYTIwMDJAdG9wbWFpbC5jby56YVxw
+YXINCjI3ODM0MjExNTU2XHBhcg0KUmVnYXJkcyxccGFyDQpNci5IZW5yeSAg
+U2FudGFuYVxwYXINCkZpZGVsaXR5IGludmVzdG1lbnRzIGludGVybmF0aW9u
+YWxccGFyDQpccGFyDQpccGFyDQpccGFyDQpccGFyDQpccGFyDQpccGFyDQpc
+cGFyDQpccGFyDQpccGFyDQpccGFyDQpccGFyDQpccGFyDQpccGFyDQpccGFy
+DQp9DQoA
 
-> > If we start "polling" on /proc/vmstat via userland deferred timers, that would
-> > be a single timer, just like in vmevent case. So, I'm not sure what is the
-> > difference?..
-> 
-> Context switches, parsing, activity in userspace even memory situation is not changed.
-
-Sure, there is some additional overhead. I'm just saying that it is
-not drastic. It would be like 100 sprintfs + 100 sscanfs + 2 context
-switches? Well, it is unfortunate... but come on, today's phones are
-running X11 and Java. :-)
-
-> In kernel space you can use sliding timer (increasing interval) + shinker.
-
-Well, w/ Minchan's idea, we can get shrinker notifications into the
-userland, so the sliding timer thing would be still possible.
-
-Thanks,
-
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+--778264460-621298810-1339151116=:34284--
