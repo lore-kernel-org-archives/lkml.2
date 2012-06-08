@@ -1,128 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761109Ab2FHHzM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 03:55:12 -0400
-Received: from david.siemens.de ([192.35.17.14]:31318 "EHLO david.siemens.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760468Ab2FHHzK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 03:55:10 -0400
-Message-ID: <4FD1AFD5.70808@siemens.com>
-Date: Fri, 08 Jun 2012 09:55:01 +0200
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
-MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Avi Kivity <avi@redhat.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "mtosatti@redhat.com" <mtosatti@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "yongjie.ren@intel.com" <yongjie.ren@intel.com>
-Subject: Re: [PATCH] KVM: Use IRQF_ONESHOT for assigned device MSI interrupts
-References: <20120601161521.26935.25606.stgit@bling.home> <4FC8F042.5050600@siemens.com> <1338570192.23475.25.camel@bling.home> <4FC8F867.7080103@siemens.com> <1338573558.23475.41.camel@bling.home> <4FC90961.8030701@siemens.com> <4FCB2359.9020505@redhat.com> <alpine.LFD.2.02.1206041235540.3086@ionos> <4FCC9EAC.9090007@siemens.com> <20120608074744.GA524@redhat.com>
-In-Reply-To: <20120608074744.GA524@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1761365Ab2FHHzj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 03:55:39 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:39468 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760497Ab2FHHzh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 03:55:37 -0400
+Message-ID: <1339142120.23343.28.camel@twins>
+Subject: Re: lockdep and kmemcheck
+From: Peter Zijlstra <peterz@infradead.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Borislav Petkov <bp@alien8.de>, Rus <rus@sfinxsoft.com>,
+        linux-kernel@vger.kernel.org
+Date: Fri, 08 Jun 2012 09:55:20 +0200
+In-Reply-To: <20120608061037.GJ21357@google.com>
+References: <CAKgfjTktMLc5bfqhCOKy0evssxggofNQqLT-gQqBkHcBvOgF0g@mail.gmail.com>
+	 <CAKgfjTnvCAT=3JFxmDTsui_hguiiBfHQfMmErv9wt6QG_30hKA@mail.gmail.com>
+	 <20120607142459.GB5053@x1.osrc.amd.com>
+	 <CAKgfjTn3KXmDio0F0M3syeHnDc=ByKZu1ipe7S+75KRcCBy0QA@mail.gmail.com>
+	 <20120607151352.GA8261@x1.osrc.amd.com>
+	 <CAKgfjTn67KwR7-+icNZm7e5ZRfjqt1159kWMYD6S83WuhNfprQ@mail.gmail.com>
+	 <20120607193331.GA20723@liondog.tnic> <20120607194516.GB20723@liondog.tnic>
+	 <20120608061037.GJ21357@google.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-06-08 09:47, Michael S. Tsirkin wrote:
-> On Mon, Jun 04, 2012 at 01:40:28PM +0200, Jan Kiszka wrote:
->> On 2012-06-04 13:21, Thomas Gleixner wrote:
->>> On Sun, 3 Jun 2012, Avi Kivity wrote:
->>>
->>>> On 06/01/2012 09:26 PM, Jan Kiszka wrote:
->>>>>
->>>>>> you suggesting we need a request_edge_threaded_only_irq() API?  Thanks,
->>>>>
->>>>> I'm just wondering if that restriction for threaded IRQs is really
->>>>> necessary for all use cases we have. Threaded MSIs do not appear to me
->>>>> like have to be handled that conservatively, but maybe I'm missing some
->>>>> detail.
->>>>>
->>>>
->>>> btw, I'm hoping we can unthread assigned MSIs.  If the delivery is
->>>> unicast, we can precalculate everything and all the handler has to do is
->>>> set the IRR, KVM_REQ_EVENT, and kick the vcpu.  All of these can be done
->>>> from interrupt context with just RCU locking.
->>>
->>> There is really no need to run MSI/MSI-X interrupts threaded for
->>> KVM. I'm running the patch below for quite some time and it works like
->>> a charm.
->>>
->>> Thanks,
->>>
->>> 	tglx
->>> ----
->>> Index: linux-2.6/virt/kvm/assigned-dev.c
->>> ===================================================================
->>> --- linux-2.6.orig/virt/kvm/assigned-dev.c
->>> +++ linux-2.6/virt/kvm/assigned-dev.c
->>> @@ -105,7 +105,7 @@ static irqreturn_t kvm_assigned_dev_thre
->>>  }
->>>  
->>>  #ifdef __KVM_HAVE_MSI
->>> -static irqreturn_t kvm_assigned_dev_thread_msi(int irq, void *dev_id)
->>> +static irqreturn_t kvm_assigned_dev_msi_handler(int irq, void *dev_id)
->>>  {
->>>  	struct kvm_assigned_dev_kernel *assigned_dev = dev_id;
->>>  
->>> @@ -117,7 +117,7 @@ static irqreturn_t kvm_assigned_dev_thre
->>>  #endif
->>>  
->>>  #ifdef __KVM_HAVE_MSIX
->>> -static irqreturn_t kvm_assigned_dev_thread_msix(int irq, void *dev_id)
->>> +static irqreturn_t kvm_assigned_dev_msix_handler(int irq, void *dev_id)
->>>  {
->>>  	struct kvm_assigned_dev_kernel *assigned_dev = dev_id;
->>>  	int index = find_index_from_host_irq(assigned_dev, irq);
->>> @@ -346,9 +346,8 @@ static int assigned_device_enable_host_m
->>>  	}
->>>  
->>>  	dev->host_irq = dev->dev->irq;
->>> -	if (request_threaded_irq(dev->host_irq, NULL,
->>> -				 kvm_assigned_dev_thread_msi, 0,
->>> -				 dev->irq_name, dev)) {
->>> +	if (request_irq(dev->host_irq, kvm_assigned_dev_msi_handler, 0,
->>> +			dev->irq_name, dev)) {
->>>  		pci_disable_msi(dev->dev);
->>>  		return -EIO;
->>>  	}
->>> @@ -373,9 +372,9 @@ static int assigned_device_enable_host_m
->>>  		return r;
->>>  
->>>  	for (i = 0; i < dev->entries_nr; i++) {
->>> -		r = request_threaded_irq(dev->host_msix_entries[i].vector,
->>> -					 NULL, kvm_assigned_dev_thread_msix,
->>> -					 0, dev->irq_name, dev);
->>> +		r = request_irq(dev->host_msix_entries[i].vector,
->>> +				kvm_assigned_dev_msix_handler, 0,
->>> +				dev->irq_name, dev);
->>>  		if (r)
->>>  			goto err;
->>>  	}
->>
->> This may work in practice but has two conceptual problems:
->>  - we do not want to run a potential broadcast to all VCPUs to run in
->>    a host IRQ handler
->>  - crazy user space could have configured the route to end up in the
->>    PIC or IOAPIC, and both are not hard-IRQ safe (this should probably
->>    be caught on setup)
->>
->> So this shortcut requires some checks before being applied to a specific
->> MSI/MSI-X vector.
+On Fri, 2012-06-08 at 15:10 +0900, Tejun Heo wrote:
+> On Thu, Jun 07, 2012 at 09:45:16PM +0200, Borislav Petkov wrote:
+> > static struct worker *create_worker(struct global_cwq *gcwq, bool bind)
+> > {
+> >         bool on_unbound_cpu = gcwq->cpu == WORK_CPU_UNBOUND;
+> >         struct worker *worker = NULL;
+> >         int id = -1;
+> > 
+> >         spin_lock_irq(&gcwq->lock);
+> >         while (ida_get_new(&gcwq->worker_ida, &id)) {
+> >                 spin_unlock_irq(&gcwq->lock);
+> >                 if (!ida_pre_get(&gcwq->worker_ida, GFP_KERNEL))
+> > 
+> > and GFP_KERNEL has __GFP_FS.
+> > 
+> > > >  [<ffffffff81ae441d>] init_workqueues+0x1f2/0x393
+> > > >  [<ffffffff81ae422b>] ? usermodehelper_init+0x36/0x36
+> > > >  [<ffffffff81ae422b>] ? usermodehelper_init+0x36/0x36
+> > > >  [<ffffffff81002122>] do_one_initcall+0x122/0x180
+> > > >  [<ffffffff81acbc7a>] kernel_init+0x9b/0x1f6
+> > > >  [<ffffffff815c1f74>] kernel_thread_helper+0x4/0x10
+> > > >  [<ffffffff815c0274>] ? retint_restore_args+0x13/0x13
+> > > >  [<ffffffff81acbbdf>] ? start_kernel+0x3d2/0x3d2
+> > > >  [<ffffffff815c1f70>] ? gs_change+0x13/0x13
+> > > > ---[ end trace 6d450e935ee1897c ]---
+> > > > MCE: In-kernel MCE decoding enabled.
+> > > > NMI watchdog: enabled, takes one hw-pmu counter.
+> > 
+> > Let's add some more people to CC.
+> > 
+> > Tejun, this create_worker() uses ida_pre_get() with GFP_KERNEL mask
+> > but lockdep complains about __GFP_FS allocations with IRQs off in
+> > __lockdep_trace_alloc. What's up?
 > 
-> I did this in the past:
-> https://lkml.org/lkml/2012/1/18/287
-> 
-> Have no hw to test this atm but if there are any takers
-> wanting to play with it I can update and post.
+> The GFP_KERNEL allocation is right after spin_unlock_irq().  I suppose
+> this is from early boot before IRQs are brought online, right?  My
+> memory is very fuzzy now but ISTR irq debug code and lockdep having
+> workarounds for early boot.  Peter?
 
-Just add check that allow only unicasts, and this should be fine.
-
-Jan
-
--- 
-Siemens AG, Corporate Technology, CT T DE IT 1
-Corporate Competence Center Embedded Linux
+early_boot_irqs_disabled, but kernel_init() is way past that, that's
+where we've forked the first thread and are fully scheduling already.
