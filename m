@@ -1,95 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756816Ab2FHMPW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 08:15:22 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:53536 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755637Ab2FHMPU (ORCPT
+	id S1758628Ab2FHMQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 08:16:27 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46614 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755892Ab2FHMQ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 08:15:20 -0400
-Date: Fri, 8 Jun 2012 05:13:34 -0700
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: leonid.moiseichuk@nokia.com
-Cc: kosaki.motohiro@gmail.com, penberg@kernel.org, b.zolnierkie@samsung.com,
-        john.stultz@linaro.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: Re: [PATCH 2/5] vmevent: Convert from deferred timer to deferred work
-Message-ID: <20120608121334.GA20772@lizard>
-References: <1338553446-22292-2-git-send-email-anton.vorontsov@linaro.org>
- <4FD170AA.10705@gmail.com>
- <20120608065828.GA1515@lizard>
- <84FF21A720B0874AA94B46D76DB98269045F7890@008-AM1MPN1-004.mgdnok.nokia.com>
- <20120608075844.GA6362@lizard>
- <84FF21A720B0874AA94B46D76DB98269045F7A24@008-AM1MPN1-004.mgdnok.nokia.com>
- <20120608084105.GA9883@lizard>
- <84FF21A720B0874AA94B46D76DB98269045F7B01@008-AM1MPN1-004.mgdnok.nokia.com>
- <20120608103501.GA15827@lizard>
- <84FF21A720B0874AA94B46D76DB98269045F7C35@008-AM1MPN1-004.mgdnok.nokia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <84FF21A720B0874AA94B46D76DB98269045F7C35@008-AM1MPN1-004.mgdnok.nokia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 8 Jun 2012 08:16:26 -0400
+Message-ID: <1339157775.21665.115.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [ 31/82] mm/vmalloc.c: change void* into explict vm_struct*
+From: Ben Hutchings <ben@decadent.org.uk>
+To: David Rientjes <rientjes@google.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Minchan Kim <minchan@kernel.org>
+Date: Fri, 08 Jun 2012 13:16:15 +0100
+In-Reply-To: <alpine.DEB.2.00.1206080341050.4994@chino.kir.corp.google.com>
+References: <20120608041845.013957176@decadent.org.uk>
+	 <alpine.DEB.2.00.1206080341050.4994@chino.kir.corp.google.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-wO8VPZYG9RM2X2CtNlPg"
+X-Mailer: Evolution 3.2.2-1+b1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 08, 2012 at 11:03:29AM +0000, leonid.moiseichuk@nokia.com wrote:
-> > -----Original Message-----
-> > From: ext Anton Vorontsov [mailto:cbouatmailru@gmail.com]
-> > Sent: 08 June, 2012 13:35
-> ...
-> > > Context switches, parsing, activity in userspace even memory situation is
-> > not changed.
-> > 
-> > Sure, there is some additional overhead. I'm just saying that it is not drastic. It
-> > would be like 100 sprintfs + 100 sscanfs + 2 context switches? Well, it is
-> > unfortunate... but come on, today's phones are running X11 and Java. :-)
-> 
-> Vmstat generation is not so trivial. Meminfo has even higher overhead. I just checked generation time using idling device and open/read test:
-> - vmstat min 30, avg 94 max 2746 uSeconds
-> - meminfo min 30, average 65 max 15961 uSeconds
-> 
-> In comparison /proc/version for the same conditions: min 30, average 41, max 1505 uSeconds
 
-Hm. I would expect that avg value for meminfo will be much worse
-than vmstat (meminfo grabs some locks).
+--=-wO8VPZYG9RM2X2CtNlPg
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-OK, if we consider 100ms interval, then this would be like 0.1%
-overhead? Not great, but still better than memcg:
+On Fri, 2012-06-08 at 03:41 -0700, David Rientjes wrote:
+> On Fri, 8 Jun 2012, Ben Hutchings wrote:
+>=20
+> > 3.2-stable review patch.  If anyone has any objections, please let me k=
+now.
+> >=20
+> > ------------------
+> >=20
+> > From: Minchan Kim <minchan@kernel.org>
+> >=20
+> > commit db1aecafef58b5dda39c4228debe2c845e4a27ab upstream.
+> >=20
+> > vmap_area->private is void* but we don't use the field for various purp=
+ose
+> > but use only for vm_struct.  So change it to a vm_struct* with naming t=
+o
+> > improve for readability and type checking.
+> >=20
+> > Signed-off-by: Minchan Kim <minchan@kernel.org>
+> > Acked-by: David Rientjes <rientjes@google.com>
+> > Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> > Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+> > Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+>=20
+> I'm not sure this is stable material and it wasn't annotated as such when=
+=20
+> it was commited, why should someone need to upgrade their 3.2 for a patch=
+=20
+> like this?
 
-http://lkml.org/lkml/2011/12/21/487 
+It allows the next one (commit dbda591d920b4c7692725b13e3f68ecb251e9080,
+'mm: fix faulty initialization in vmalloc_init()') apply cleanly.  So,
+unless it causes some harm, I'll keep it.
 
-:-)
+Ben.
 
-Personally? I'm all for saving these 0.1% tho, I'm all for vmevent.
-But, for example, it's still broken for SMP as it is costly to
-update vm_stat. And I see no way to fix this.
+--=20
+Ben Hutchings
+I haven't lost my mind; it's backed up on tape somewhere.
 
-So, I guess the right approach would be to find ways to not depend on
-frequent vm_stat updates (and thus reads).
+--=-wO8VPZYG9RM2X2CtNlPg
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-userland deferred timers (and infrequent reads from vmstat) +
-"userland vm pressure notifications" looks promising for the userland
-solution.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-For in-kernel solution it is all the same, a deferred timer that
-reads vm_stat occasionally (no pressure case) + in-kernel shrinker
-notifications for fast reaction under pressure.
+iQIVAwUAT9HtD+e/yOyVhhEJAQqDrxAAzty1VhYgLhEkSo0uB66y3Kj/WJA0FGlY
+KGPUdFHfC8iJaGtIUJXtfQRNt4W0SaV33wiGavh51Ua4YQ6ck5go3eDhCyjKQk8S
+QTj/vrE7ocj7SYuJVotRTidHW0wHv5jiCqc7MoC6nZS85REKpNfa5ryrIJs8Mp9T
+IKYhmtd/r851yFl+Py0UEV1N3extuRv8vIIWWn8JAv1hai3JQRuuJZqcas3DrAwf
+SK96EF1Iy7nEvXPULy+KVFIahAZnWUDYy6czLfb6ZG/3l/d0gt8mmTW9rQlOdXLu
+gReuATJUi3GWutcDL6braQcKUWs2Uy31b8fESD1NGOx/VK0HoHHGorT6wsOCTukL
+CPLIYk1ejhtQW0/Lie+f7f9/HHlfULrDjtlhPpyTigj4OH37QbXxPuFTd9A/GooY
+tfWIlOXJWeSRYkhBNccj3z0OCdTROadPTQUu5x2qTmcm96kjT0vtzXF3z7ASqgHR
++wTvhn92xte4aA2NABFnHaeswWxVpjhc2jm+EDogQbeWmgRAyvkjIXmoGyTrgNuw
+aw4uwRgVJp2zqk51pPC3ZRxfS2k0LovFizfWO8mevZiff+53Cp3bDF4ftvOorkcF
+YlPQU6nzua8qU40r/rsEXzcDBCE1JYfTviNxW8u9NTFcp+HsSywlZgDIbdTDZN0I
+l0onwI6LDX0=
+=f4oJ
+-----END PGP SIGNATURE-----
 
-> > > In kernel space you can use sliding timer (increasing interval) + shinker.
-> > 
-> > Well, w/ Minchan's idea, we can get shrinker notifications into the userland,
-> > so the sliding timer thing would be still possible.
-> 
-> Only as a post-schrinker actions. In case of memory stressing or
-> close-to-stressing conditions shrinkers called very often, I saw up to
-> 50 times per second.
-
-Well, yes. But in userland you would just poll/select on the shrinker
-notification fd, you won't get more than you can (or want to) process.
-
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+--=-wO8VPZYG9RM2X2CtNlPg--
