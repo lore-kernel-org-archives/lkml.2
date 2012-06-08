@@ -1,42 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932816Ab2FHN77 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 09:59:59 -0400
-Received: from casper.infradead.org ([85.118.1.10]:44653 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755230Ab2FHN75 (ORCPT
+	id S933034Ab2FHOCa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 10:02:30 -0400
+Received: from na3sys009aog130.obsmtp.com ([74.125.149.143]:38599 "EHLO
+	na3sys009aog130.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757180Ab2FHOC2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 09:59:57 -0400
-Subject: Re: [PATCH] perf/x86: check ucode before disabling PEBS on
- SandyBridge
-From: Peter Zijlstra <peterz@infradead.org>
-To: Borislav Petkov <borislav.petkov@amd.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Stephane Eranian <eranian@google.com>,
-        linux-kernel@vger.kernel.org, andi@firstfloor.org, mingo@elte.hu,
-        ming.m.lin@intel.com, Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Dimitri Sivanich <sivanich@sgi.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>
-In-Reply-To: <20120608135117.GB31359@aftab.osrc.amd.com>
-References: <20120607071531.GA4849@quad> <1339064319.23343.13.camel@twins>
-	 <CABPqkBQ+p5rcuxpXCTLMXPM+awAHhQ6mP9-WzVh5GWtn2GyfrA@mail.gmail.com>
-	 <1339065932.23343.18.camel@twins>
-	 <CABPqkBQ=tLXXsgvzQx+i01Owm4MM8m=6cEVVi4ab64gOiTTBYQ@mail.gmail.com>
-	 <1339067757.23343.21.camel@twins> <20120608093513.GA22520@gmail.com>
-	 <1339149613.23343.52.camel@twins> <1339161972.2507.13.camel@laptop>
-	 <20120608135117.GB31359@aftab.osrc.amd.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 08 Jun 2012 15:59:46 +0200
-Message-ID: <1339163986.2507.19.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Fri, 8 Jun 2012 10:02:28 -0400
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Russell King <linux@arm.linux.org.uk>, Benoit Cousson <b-cousson@ti.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-omap@vger.kernel.org,
+        Rajendra Nayak <rnayak@ti.com>, Liam Girdwood <lrg@ti.com>
+Subject: [PATCH 2/7] arm/dts: omap4: Add entry for OMAP DMIC IP
+Date: Fri,  8 Jun 2012 17:02:00 +0300
+Message-Id: <1339164125-32534-3-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.7.8.6
+In-Reply-To: <1339164125-32534-1-git-send-email-peter.ujfalusi@ti.com>
+References: <1339164125-32534-1-git-send-email-peter.ujfalusi@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-06-08 at 15:51 +0200, Borislav Petkov wrote:
-> Provided, of course, newer microcode versions means a
-> higher version number. 
+DMIC IP is used to connect up to 6 digital microphones directly to OMAP.
 
-Fair enough, I assumed this.. is this true?
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+---
+ arch/arm/boot/dts/omap4.dtsi |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
+index 4c43f3b..fb0287d 100644
+--- a/arch/arm/boot/dts/omap4.dtsi
++++ b/arch/arm/boot/dts/omap4.dtsi
+@@ -281,5 +281,14 @@
+ 			interrupt-parent = <&gic>;
+ 			ti,hwmods = "mcpdm";
+ 		};
++
++		dmic: dmic@4012e000 {
++			compatible = "ti,omap4-dmic";
++			reg = <0x4012e000 0x7f>, /* MPU private access */
++			      <0x4902e000 0x7f>; /* L3 Interconnect */
++			interrupts = <0 114 0x4>;
++			interrupt-parent = <&gic>;
++			ti,hwmods = "dmic";
++		};
+ 	};
+ };
+-- 
+1.7.8.6
 
