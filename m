@@ -1,50 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762155Ab2FHQpH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 12:45:07 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:56997 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751931Ab2FHQpF (ORCPT
+	id S1762161Ab2FHQqb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 12:46:31 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:45832 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751931Ab2FHQqa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 12:45:05 -0400
-Date: Fri, 8 Jun 2012 18:44:59 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Andi Kleen <ak@linux.intel.com>, Andi Kleen <andi@firstfloor.org>,
-        linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu
-Subject: Re: [PATCH 1/2] perf, x86: Add basic Ivy Bridge support
-Message-ID: <20120608164459.GA27374@one.firstfloor.org>
-References: <1339108157-30021-1-git-send-email-andi@firstfloor.org> <CABPqkBSEknXdTQWCrxeeeFgREX02ARRzxJ8bj6uh+0yOi0nAjg@mail.gmail.com> <20120607224303.GN28225@tassilo.jf.intel.com> <CABPqkBTQMGX8qcy_HapkjabWUS_2hs4kVeEDputL5Kjk1kjMLg@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBTQMGX8qcy_HapkjabWUS_2hs4kVeEDputL5Kjk1kjMLg@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
+	Fri, 8 Jun 2012 12:46:30 -0400
+Message-ID: <4FD22C60.4030903@gmail.com>
+Date: Fri, 08 Jun 2012 19:46:24 +0300
+From: Nikos Chantziaras <realnc@gmail.com>
+Organization: Lucas Barks
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120607 Thunderbird/13.0
+MIME-Version: 1.0
+To: Dave Jones <davej@redhat.com>
+CC: Eric Dumazet <eric.dumazet@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: NOHZ: local_softirq_pending 08
+References: <20120530214809.GA19223@redhat.com> <alpine.LFD.2.02.1205310938080.3231@ionos> <1338450985.2760.1270.camel@edumazet-glaptop> <20120531140432.GC1749@redhat.com>
+In-Reply-To: <20120531140432.GC1749@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 08, 2012 at 09:42:42AM +0200, Stephane Eranian wrote:
-> Also IVB needs its own pebs_constraint table as there is a new PEBS
-> event (0xd3):
+On 31/05/12 17:04, Dave Jones wrote:
+> On Thu, May 31, 2012 at 09:56:25AM +0200, Eric Dumazet wrote:
+>   > On Thu, 2012-05-31 at 09:52 +0200, Thomas Gleixner wrote:
+>   > > Dave,
+>   > >
+>   > > On Wed, 30 May 2012, Dave Jones wrote:
+>   > >
+>   > > > May 30 17:43:04 [ 1095.335659] NOHZ: local_softirq_pending 08
+>   > > >
+>   > > > According to git, you ratelimited this back in 2007 with the message
+>   > > > "until we found the root cause of that problem."
+>   > > >
+>   > > > Is this an old problem that has returned ?
+>   > >
+>   > > Looks like.
+>   > >
+>   > > > Maybe interesting note: Both machines I see this on regularly are Atom cpus,
+>   > > > and it's always '08'.
+>   > >
+>   > > So it goes idle with NET_RX softirq pending. That really should not
+>   > > happen. I fear you need to fire up the tracer :)
+>   >
+>   > It might be a bug in the network driver, a race with NAPI completion.
+>   >
+>   > Dave, which net drivers run on these machines ?
+>
+> r8169.
+>
+> I got an email from someone else asking if I used Realtek drivers, which I thought
+> was an uncanny guess.
 
-Ok. Will add.
+Same thing happens here (kernel 3.4.1, also happened with 3.4.0):
 
--Andi
-
-> 
-> +struct event_constraint intel_ivb_pebs_event_constraints[] = {
-> +       INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.ALL */
-> +       INTEL_EVENT_CONSTRAINT(0xc2, 0xf),    /* UOPS_RETIRED.* */
-> +       INTEL_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
-> +       INTEL_EVENT_CONSTRAINT(0xc5, 0xf),    /* BR_MISP_RETIRED.* */
-> +       INTEL_EVENT_CONSTRAINT(0xcd, 0x8),    /* MEM_TRANS_RETIRED.* */
-> +       INTEL_EVENT_CONSTRAINT(0xd0, 0xf),    /* MEM_UOP_RETIRED.* */
-> +       INTEL_EVENT_CONSTRAINT(0xd1, 0xf),    /* MEM_LOAD_UOPS_RETIRED.* */
-> +       INTEL_EVENT_CONSTRAINT(0xd2, 0xf),    /*
-> MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
-> +       INTEL_EVENT_CONSTRAINT(0xd3, 0xf), /*
-> MEM_LOAD_UOPS_LLC_MISS.LOCAL_DRAM */
-> +       EVENT_CONSTRAINT_END
-> +};
-> +
+r8169 0000:06:00.0: eth0: link down
+r8169 0000:06:00.0: eth0: link down
+NOHZ: local_softirq_pending 08
+NOHZ: local_softirq_pending 08
+NOHZ: local_softirq_pending 08
+r8169 0000:06:00.0: eth0: link up
