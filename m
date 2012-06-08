@@ -1,51 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964958Ab2FHVyy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 17:54:54 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:49628 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934520Ab2FHVxt (ORCPT
+	id S964969Ab2FHVz6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 17:55:58 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:57169 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934536Ab2FHVzz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 17:53:49 -0400
-From: mathieu.poirier@linaro.org
-To: linux-scsi@vger.kernel.org
-Cc: JBottomley@parallels.com, linux-kernel@vger.kernel.org, arnd@arndb.de,
-        mathieu.poirier@linaro.org
-Subject: [PATCH RESEND 5/7] scsi/atp870u: use mdelay instead of large udelay
-Date: Fri,  8 Jun 2012 15:53:34 -0600
-Message-Id: <1339192416-27026-6-git-send-email-mathieu.poirier@linaro.org>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1339192416-27026-1-git-send-email-mathieu.poirier@linaro.org>
-References: <1339192416-27026-1-git-send-email-mathieu.poirier@linaro.org>
+	Fri, 8 Jun 2012 17:55:55 -0400
+Date: Fri, 8 Jun 2012 23:55:49 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Stephane Eranian <eranian@google.com>, jolsa@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: perf user tool precise attribute broken in 3.5rc1+
+Message-ID: <20120608215549.GF27374@one.firstfloor.org>
+References: <20120607202355.GQ27374@one.firstfloor.org> <CABPqkBQ99PTsET6c_NPuioLUr_yto4x=6EBQ1K73N4ratHz48A@mail.gmail.com> <20120607205836.GT27374@one.firstfloor.org> <20120607212759.GD30641@infradead.org> <20120608031009.GV27374@one.firstfloor.org> <20120608154814.GA21250@infradead.org> <20120608165319.GC27374@one.firstfloor.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120608165319.GC27374@one.firstfloor.org>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnd Bergmann <arnd@arndb.de>
 
-Some architectures like ARM cannot handle large numbers as
-arguments to udelay, so the drivers should use mdelay when
-delaying for multiple miliseconds.
+Hmm, the problem disappeared after a make clean. 
+Sorry for the noise.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
----
- drivers/scsi/atp870u.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/scsi/atp870u.c b/drivers/scsi/atp870u.c
-index 68ce085..86ad079 100644
---- a/drivers/scsi/atp870u.c
-+++ b/drivers/scsi/atp870u.c
-@@ -1173,7 +1173,7 @@ wait_io1:
- 	outw(val, tmport);
- 	outb(2, 0x80);
- TCM_SYNC:
--	udelay(0x800);
-+	mdelay(2);
- 	if ((inb(tmport) & 0x80) == 0x00) {	/* bsy ? */
- 		outw(0, tmport--);
- 		outb(0, tmport);
--- 
-1.7.5.4
-
+-Andi
