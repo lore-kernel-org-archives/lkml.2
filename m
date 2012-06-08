@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761700Ab2FHFLp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 01:11:45 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43258 "EHLO
+	id S1761733Ab2FHFMH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 01:12:07 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43229 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1761297Ab2FHFHd (ORCPT
+	by vger.kernel.org with ESMTP id S1761217Ab2FHFHc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 01:07:33 -0400
-Message-Id: <20120608041841.708907420@decadent.org.uk>
+	Fri, 8 Jun 2012 01:07:32 -0400
+Message-Id: <20120608041850.409185509@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 08 Jun 2012 05:18:46 +0100
+Date: Fri, 08 Jun 2012 05:19:51 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Shirish Pargaonkar <shirishpargaonkar@gmail.com>,
-        Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@us.ibm.com>
-Subject: [ 06/82] cifs: fix oops while traversing open file list (try #4)
+        alan@lxorguk.ukuu.org.uk, "David S. Miller" <davem@davemloft.net>
+Subject: [ 71/82] Revert "net: maintain namespace isolation between vlan  and real device"
 In-Reply-To: <20120608041840.861504477@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,139 +27,136 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
+From: "David S. Miller" <davem@davemloft.net>
 
-commit 2c0c2a08bed7a3b791f88d09d16ace56acb3dd98 upstream.
+[ Upstream commit 59b9997baba5242997ddc7bd96b1391f5275a5a4 ]
 
-While traversing the linked list of open file handles, if the identfied
-file handle is invalid, a reopen is attempted and if it fails, we
-resume traversing where we stopped and cifs can oops while accessing
-invalid next element, for list might have changed.
+This reverts commit 8a83a00b0735190384a348156837918271034144.
 
-So mark the invalid file handle and attempt reopen if no
-valid file handle is found in rest of the list.
-If reopen fails, move the invalid file handle to the end of the list
-and start traversing the list again from the begining.
-Repeat this four times before giving up and returning an error if
-file reopen keeps failing.
+It causes regressions for S390 devices, because it does an
+unconditional DST drop on SKBs for vlans and the QETH device
+needs the neighbour entry hung off the DST for certain things
+on transmit.
 
-Signed-off-by: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
-Reviewed-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <sfrench@us.ibm.com>
+Arnd can't remember exactly why he even needed this change.
+
+Conflicts:
+
+	drivers/net/macvlan.c
+	net/8021q/vlan_dev.c
+	net/core/dev.c
+
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/cifs/cifsglob.h |    1 +
- fs/cifs/file.c     |   57 ++++++++++++++++++++++++++++++----------------------
- 2 files changed, 34 insertions(+), 24 deletions(-)
+ drivers/net/macvlan.c     |    2 +-
+ include/linux/netdevice.h |    9 ---------
+ net/8021q/vlan_dev.c      |    2 +-
+ net/core/dev.c            |   36 +++++-------------------------------
+ 4 files changed, 7 insertions(+), 42 deletions(-)
 
-diff --git a/fs/cifs/cifsglob.h b/fs/cifs/cifsglob.h
-index c0a027e..20350a9 100644
---- a/fs/cifs/cifsglob.h
-+++ b/fs/cifs/cifsglob.h
-@@ -43,6 +43,7 @@
+diff --git a/drivers/net/macvlan.c b/drivers/net/macvlan.c
+index 959d448..97f342e 100644
+--- a/drivers/net/macvlan.c
++++ b/drivers/net/macvlan.c
+@@ -258,7 +258,7 @@ static int macvlan_queue_xmit(struct sk_buff *skb, struct net_device *dev)
  
- #define CIFS_MIN_RCV_POOL 4
- 
-+#define MAX_REOPEN_ATT	5 /* these many maximum attempts to reopen a file */
- /*
-  * default attribute cache timeout (jiffies)
-  */
-diff --git a/fs/cifs/file.c b/fs/cifs/file.c
-index ed9b5a8..253170d 100644
---- a/fs/cifs/file.c
-+++ b/fs/cifs/file.c
-@@ -1565,10 +1565,11 @@ struct cifsFileInfo *find_readable_file(struct cifsInodeInfo *cifs_inode,
- struct cifsFileInfo *find_writable_file(struct cifsInodeInfo *cifs_inode,
- 					bool fsuid_only)
- {
--	struct cifsFileInfo *open_file;
-+	struct cifsFileInfo *open_file, *inv_file = NULL;
- 	struct cifs_sb_info *cifs_sb;
- 	bool any_available = false;
- 	int rc;
-+	unsigned int refind = 0;
- 
- 	/* Having a null inode here (because mapping->host was set to zero by
- 	the VFS or MM) should not happen but we had reports of on oops (due to
-@@ -1588,40 +1589,25 @@ struct cifsFileInfo *find_writable_file(struct cifsInodeInfo *cifs_inode,
- 
- 	spin_lock(&cifs_file_list_lock);
- refind_writable:
-+	if (refind > MAX_REOPEN_ATT) {
-+		spin_unlock(&cifs_file_list_lock);
-+		return NULL;
-+	}
- 	list_for_each_entry(open_file, &cifs_inode->openFileList, flist) {
- 		if (!any_available && open_file->pid != current->tgid)
- 			continue;
- 		if (fsuid_only && open_file->uid != current_fsuid())
- 			continue;
- 		if (OPEN_FMODE(open_file->f_flags) & FMODE_WRITE) {
--			cifsFileInfo_get(open_file);
--
- 			if (!open_file->invalidHandle) {
- 				/* found a good writable file */
-+				cifsFileInfo_get(open_file);
- 				spin_unlock(&cifs_file_list_lock);
- 				return open_file;
-+			} else {
-+				if (!inv_file)
-+					inv_file = open_file;
- 			}
--
--			spin_unlock(&cifs_file_list_lock);
--
--			/* Had to unlock since following call can block */
--			rc = cifs_reopen_file(open_file, false);
--			if (!rc)
--				return open_file;
--
--			/* if it fails, try another handle if possible */
--			cFYI(1, "wp failed on reopen file");
--			cifsFileInfo_put(open_file);
--
--			spin_lock(&cifs_file_list_lock);
--
--			/* else we simply continue to the next entry. Thus
--			   we do not loop on reopen errors.  If we
--			   can not reopen the file, for example if we
--			   reconnected to a server with another client
--			   racing to delete or lock the file we would not
--			   make progress if we restarted before the beginning
--			   of the loop here. */
- 		}
- 	}
- 	/* couldn't find useable FH with same pid, try any available */
-@@ -1629,7 +1615,30 @@ refind_writable:
- 		any_available = true;
- 		goto refind_writable;
- 	}
-+
-+	if (inv_file) {
-+		any_available = false;
-+		cifsFileInfo_get(inv_file);
-+	}
-+
- 	spin_unlock(&cifs_file_list_lock);
-+
-+	if (inv_file) {
-+		rc = cifs_reopen_file(inv_file, false);
-+		if (!rc)
-+			return inv_file;
-+		else {
-+			spin_lock(&cifs_file_list_lock);
-+			list_move_tail(&inv_file->flist,
-+					&cifs_inode->openFileList);
-+			spin_unlock(&cifs_file_list_lock);
-+			cifsFileInfo_put(inv_file);
-+			spin_lock(&cifs_file_list_lock);
-+			++refind;
-+			goto refind_writable;
-+		}
-+	}
-+
- 	return NULL;
+ xmit_world:
+ 	skb->ip_summed = ip_summed;
+-	skb_set_dev(skb, vlan->lowerdev);
++	skb->dev = vlan->lowerdev;
+ 	return dev_queue_xmit(skb);
  }
  
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index cbeb586..cb52340 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -1420,15 +1420,6 @@ static inline bool netdev_uses_dsa_tags(struct net_device *dev)
+ 	return 0;
+ }
+ 
+-#ifndef CONFIG_NET_NS
+-static inline void skb_set_dev(struct sk_buff *skb, struct net_device *dev)
+-{
+-	skb->dev = dev;
+-}
+-#else /* CONFIG_NET_NS */
+-void skb_set_dev(struct sk_buff *skb, struct net_device *dev);
+-#endif
+-
+ static inline bool netdev_uses_trailer_tags(struct net_device *dev)
+ {
+ #ifdef CONFIG_NET_DSA_TAG_TRAILER
+diff --git a/net/8021q/vlan_dev.c b/net/8021q/vlan_dev.c
+index bc25286..0cccca8 100644
+--- a/net/8021q/vlan_dev.c
++++ b/net/8021q/vlan_dev.c
+@@ -156,7 +156,7 @@ static netdev_tx_t vlan_dev_hard_start_xmit(struct sk_buff *skb,
+ 		skb = __vlan_hwaccel_put_tag(skb, vlan_tci);
+ 	}
+ 
+-	skb_set_dev(skb, vlan_dev_info(dev)->real_dev);
++	skb->dev = vlan_dev_info(dev)->real_dev;
+ 	len = skb->len;
+ 	ret = dev_queue_xmit(skb);
+ 
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 61a7baa..1cbddc9 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -1607,10 +1607,14 @@ int dev_forward_skb(struct net_device *dev, struct sk_buff *skb)
+ 		kfree_skb(skb);
+ 		return NET_RX_DROP;
+ 	}
+-	skb_set_dev(skb, dev);
++	skb->dev = dev;
++	skb_dst_drop(skb);
+ 	skb->tstamp.tv64 = 0;
+ 	skb->pkt_type = PACKET_HOST;
+ 	skb->protocol = eth_type_trans(skb, dev);
++	skb->mark = 0;
++	secpath_reset(skb);
++	nf_reset(skb);
+ 	return netif_rx(skb);
+ }
+ EXPORT_SYMBOL_GPL(dev_forward_skb);
+@@ -1865,36 +1869,6 @@ void netif_device_attach(struct net_device *dev)
+ }
+ EXPORT_SYMBOL(netif_device_attach);
+ 
+-/**
+- * skb_dev_set -- assign a new device to a buffer
+- * @skb: buffer for the new device
+- * @dev: network device
+- *
+- * If an skb is owned by a device already, we have to reset
+- * all data private to the namespace a device belongs to
+- * before assigning it a new device.
+- */
+-#ifdef CONFIG_NET_NS
+-void skb_set_dev(struct sk_buff *skb, struct net_device *dev)
+-{
+-	skb_dst_drop(skb);
+-	if (skb->dev && !net_eq(dev_net(skb->dev), dev_net(dev))) {
+-		secpath_reset(skb);
+-		nf_reset(skb);
+-		skb_init_secmark(skb);
+-		skb->mark = 0;
+-		skb->priority = 0;
+-		skb->nf_trace = 0;
+-		skb->ipvs_property = 0;
+-#ifdef CONFIG_NET_SCHED
+-		skb->tc_index = 0;
+-#endif
+-	}
+-	skb->dev = dev;
+-}
+-EXPORT_SYMBOL(skb_set_dev);
+-#endif /* CONFIG_NET_NS */
+-
+ /*
+  * Invalidate hardware checksum when packet is to be mangled, and
+  * complete checksum manually on outgoing path.
 
 
