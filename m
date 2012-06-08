@@ -1,60 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761840Ab2FHIQj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 04:16:39 -0400
-Received: from smtp.nokia.com ([147.243.1.48]:34432 "EHLO mgw-sa02.nokia.com"
+	id S1761994Ab2FHITg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 04:19:36 -0400
+Received: from mga03.intel.com ([143.182.124.21]:63154 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757826Ab2FHIQ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 04:16:28 -0400
-From: <leonid.moiseichuk@nokia.com>
-To: <anton.vorontsov@linaro.org>
-CC: <kosaki.motohiro@gmail.com>, <penberg@kernel.org>,
-        <b.zolnierkie@samsung.com>, <john.stultz@linaro.org>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <linaro-kernel@lists.linaro.org>, <patches@linaro.org>,
-        <kernel-team@android.com>
-Subject: RE: [PATCH 2/5] vmevent: Convert from deferred timer to deferred
- work
-Thread-Topic: [PATCH 2/5] vmevent: Convert from deferred timer to deferred
- work
-Thread-Index: AQHNP/HM8KMmZkc4xkKq2ZDXaeCP2Zbvq0sAgAA7gACAACLOoP//7gqAgAAk2GA=
-Date: Fri, 8 Jun 2012 08:16:04 +0000
-Message-ID: <84FF21A720B0874AA94B46D76DB98269045F7A24@008-AM1MPN1-004.mgdnok.nokia.com>
-References: <20120601122118.GA6128@lizard>
- <1338553446-22292-2-git-send-email-anton.vorontsov@linaro.org>
- <4FD170AA.10705@gmail.com> <20120608065828.GA1515@lizard>
- <84FF21A720B0874AA94B46D76DB98269045F7890@008-AM1MPN1-004.mgdnok.nokia.com>
- <20120608075844.GA6362@lizard>
-In-Reply-To: <20120608075844.GA6362@lizard>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.22.0.61]
-Content-Type: text/plain; charset="utf-8"
+	id S1761558Ab2FHITd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 04:19:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="153382296"
+Date: Fri, 8 Jun 2012 10:30:03 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org, t-kristo@ti.com,
+        Randy Dunlap <rdunlap@xenotime.net>
+Subject: Re: [PATCH] MFD: twl6040: Update Kconfig to avoid build breakage
+Message-ID: <20120608083003.GI22557@sortiz-mobl>
+References: <1339137300-16546-1-git-send-email-peter.ujfalusi@ti.com>
 MIME-Version: 1.0
-X-OriginalArrivalTime: 08 Jun 2012 08:16:06.0070 (UTC) FILETIME=[F39F9560:01CD454E]
-X-Nokia-AV: Clean
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339137300-16546-1-git-send-email-peter.ujfalusi@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q588Gqbe024883
 
-> -----Original Message-----
-> From: ext Anton Vorontsov [mailto:anton.vorontsov@linaro.org]
-> Sent: 08 June, 2012 10:59
-... 
-> a) Two more context swtiches;
-> b) Serialization/deserialization of /proc/vmstat.
-> 
-> > It also will cause page trashing because user-space code could be pushed
-> out from cache if VM decide.
-> 
-> This can solved by moving a "watcher" to a separate (daemon) process, and
-> mlocking it. We do this in ulmkd.
+Hi Peter,
 
-Right. It but it has drawbacks as well e.g. ensure that daemon scheduled properly and propagate reaction decision outside ulmkd.
-Also I understand your statement about "watcher" as probably you use one timer for daemon. 
-Btw, in my variant (memnotify.c) I used only one timer, it is enough.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+On Fri, Jun 08, 2012 at 09:35:00AM +0300, Peter Ujfalusi wrote:
+> twl6040 needs CONFIG_IRQ_DOMAIN to compile, without this we have:
+> drivers/mfd/twl6040-irq.c: In function 'twl6040_irq_init':
+> drivers/mfd/twl6040-irq.c:164:2: error: implicit declaration of function 'irq_domain_add_legacy'
+> drivers/mfd/twl6040-irq.c:165:11: error: 'irq_domain_simple_ops' undeclared (first use in this function)
+> drivers/mfd/twl6040-irq.c:165:11: note: each undeclared identifier is reported only once for each function it appears in
+> 
+> Reported by: Randy Dunlap <rdunlap@xenotime.net>
+> 
+> At the same time limit the twl6040 availability to ARM architecture since
+> it is unlikely that this chip is going to be used on other architectures.
+Right, but you're losing a lot of the linux-next build coverage.
+With a dependency on ARM, we may have missed the above build error for
+example. Would you mind removing that dependency ?
+
+Cheers,
+Samuel.
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
