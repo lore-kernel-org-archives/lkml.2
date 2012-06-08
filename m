@@ -1,97 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933416Ab2FHTQr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 15:16:47 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:62667 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933026Ab2FHTOv (ORCPT
+	id S932718Ab2FHTWV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 15:22:21 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:55937 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755983Ab2FHTWT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 15:14:51 -0400
-From: Sasha Levin <levinsasha928@gmail.com>
-To: dan.magenheimer@oracle.com, konrad.wilk@oracle.com
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: [PATCH v2 05/10] mm: frontswap: split frontswap_shrink further to simplify locking
-Date: Fri,  8 Jun 2012 21:15:14 +0200
-Message-Id: <1339182919-11432-6-git-send-email-levinsasha928@gmail.com>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1339182919-11432-1-git-send-email-levinsasha928@gmail.com>
-References: <1339182919-11432-1-git-send-email-levinsasha928@gmail.com>
+	Fri, 8 Jun 2012 15:22:19 -0400
+From: Devendra Naga <devendra.aaru@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Dong Aisheng <aisheng.dong@freescale.com>,
+        linux-kernel@vger.kernel.org
+Cc: Devendra Naga <devendra.aaru@gmail.com>
+Subject: [PATCH 1/2] pinctrl: pinctrl-imx: free allocated pinctrl_map structure only once and use kernel facilities for IMX_PMX_DUMP
+Date: Sat,  9 Jun 2012 00:52:11 +0530
+Message-Id: <1339183331-4108-1-git-send-email-devendra.aaru@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split frontswap_shrink to simplify the locking in the original code.
+a) as we allocate the pinctrl_map structure at imx_dt_node_to_map at  line 167, anyway
+   if its an element, or a num_elements * (sizeof(type)) elements allocated to one single
+   pointer must be freed only once.
 
-Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+CASE. A)
+
+as new_map is not moved and allocated like,
+
+for (i = 0; i < MAX_ELEMS; i++) {
+    new_map[i] = kmalloc(numelems * size, GFP_KERNEL);
+}
+
+its freed as
+
+for (i = 0; i < MAX_ELEMS; i++) {
+    kfree(new_map[i]);
+}
+
+CASE. B)
+and its allocated like
+        new_map = kmalloc(numelems * size, GFP_KERNEL);
+
+it just needs kfree not as case A's.
+
+b) use KERN_DEBUG facility for the IMX_PMX_DUMP macro.
+
+Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
+Acked-by: Dong Aisheng <dong.aisheng@linaro.org>
 ---
- mm/frontswap.c |   36 +++++++++++++++++++++---------------
- 1 files changed, 21 insertions(+), 15 deletions(-)
+ drivers/pinctrl/pinctrl-imx.c |   28 ++++++++++++----------------
+ 1 file changed, 12 insertions(+), 16 deletions(-)
 
-diff --git a/mm/frontswap.c b/mm/frontswap.c
-index 5d9ed36..1f1af0e 100644
---- a/mm/frontswap.c
-+++ b/mm/frontswap.c
-@@ -265,6 +265,24 @@ static int __frontswap_unuse_pages(unsigned long total, unsigned long *unused,
- 	return ret;
+diff --git a/drivers/pinctrl/pinctrl-imx.c b/drivers/pinctrl/pinctrl-imx.c
+index f6e7c67..09f3a30 100644
+--- a/drivers/pinctrl/pinctrl-imx.c
++++ b/drivers/pinctrl/pinctrl-imx.c
+@@ -27,16 +27,16 @@
+ #include "core.h"
+ #include "pinctrl-imx.h"
+ 
+-#define IMX_PMX_DUMP(info, p, m, c, n)		\
+-{						\
+-	int i, j;				\
+-	printk("Format: Pin Mux Config\n");	\
+-	for (i = 0; i < n; i++) {		\
+-		j = p[i];			\
+-		printk("%s %d 0x%lx\n",		\
+-			info->pins[j].name,	\
+-			m[i], c[i]);		\
+-	}					\
++#define IMX_PMX_DUMP(info, p, m, c, n)			\
++{							\
++	int i, j;					\
++	printk(KERN_DEBUG "Format: Pin Mux Config\n");	\
++	for (i = 0; i < n; i++) {			\
++		j = p[i];				\
++		printk(KERN_DEBUG "%s %d 0x%lx\n",	\
++			info->pins[j].name,		\
++			m[i], c[i]);			\
++	}						\
  }
  
-+static int __frontswap_shrink(unsigned long target_pages,
-+				unsigned long *pages_to_unuse,
-+				int *type)
-+{
-+	unsigned long total_pages = 0, total_pages_to_unuse;
-+
-+	lockdep_assert_held(&swap_lock);
-+
-+	total_pages = __frontswap_curr_pages();
-+	if (total_pages <= target_pages) {
-+		/* Nothing to do */
-+		*pages_to_unuse = 0;
-+		return 0;
-+	}
-+	total_pages_to_unuse = total_pages - target_pages;
-+	return __frontswap_unuse_pages(total_pages_to_unuse, pages_to_unuse, type);
-+}
-+
- /*
-  * Frontswap, like a true swap device, may unnecessarily retain pages
-  * under certain circumstances; "shrink" frontswap is essentially a
-@@ -275,10 +293,8 @@ static int __frontswap_unuse_pages(unsigned long total, unsigned long *unused,
-  */
- void frontswap_shrink(unsigned long target_pages)
+ /* The bits in CONFIG cell defined in binding doc*/
+@@ -201,10 +201,7 @@ static int imx_dt_node_to_map(struct pinctrl_dev *pctldev,
+ static void imx_dt_free_map(struct pinctrl_dev *pctldev,
+ 				struct pinctrl_map *map, unsigned num_maps)
  {
--	unsigned long total_pages = 0, total_pages_to_unuse;
- 	unsigned long pages_to_unuse = 0;
- 	int type, ret;
--	bool locked = false;
- 
- 	/*
- 	 * we don't want to hold swap_lock while doing a very
-@@ -286,20 +302,10 @@ void frontswap_shrink(unsigned long target_pages)
- 	 * so restart scan from swap_list.head each time
- 	 */
- 	spin_lock(&swap_lock);
--	locked = true;
--	total_pages = __frontswap_curr_pages();
--	if (total_pages <= target_pages)
--		goto out;
--	total_pages_to_unuse = total_pages - target_pages;
--	ret = __frontswap_unuse_pages(total_pages_to_unuse, &pages_to_unuse, &type);
--	if (ret < 0)
--		goto out;
--	locked = false;
-+	ret = __frontswap_shrink(target_pages, &pages_to_unuse, &type);
- 	spin_unlock(&swap_lock);
--	try_to_unuse(type, true, pages_to_unuse);
--out:
--	if (locked)
--		spin_unlock(&swap_lock);
-+	if (ret == 0 && pages_to_unuse)
-+		try_to_unuse(type, true, pages_to_unuse);
- 	return;
+-	int i;
+-
+-	for (i = 0; i < num_maps; i++)
+-		kfree(map);
++	kfree(map);
  }
- EXPORT_SYMBOL(frontswap_shrink);
+ 
+ static struct pinctrl_ops imx_pctrl_ops = {
+@@ -475,9 +472,8 @@ static int __devinit imx_pinctrl_parse_groups(struct device_node *np,
+ 		grp->configs[j] = config & ~IMX_PAD_SION;
+ 	}
+ 
+-#ifdef DEBUG
+ 	IMX_PMX_DUMP(info, grp->pins, grp->mux_mode, grp->configs, grp->npins);
+-#endif
++
+ 	return 0;
+ }
+ 
 -- 
-1.7.8.6
+1.7.9.5
 
