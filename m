@@ -1,118 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760306Ab2FHCQA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 22:16:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49380 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759939Ab2FHCP6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 22:15:58 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, nzimmer@sgi.com,
-        Don Zickus <dzickus@redhat.com>
-Subject: [PATCH] watchdog: Quiet down the boot messages
-Date: Thu,  7 Jun 2012 22:15:36 -0400
-Message-Id: <1339121736-22574-1-git-send-email-dzickus@redhat.com>
+	id S1760287Ab2FHCSO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 22:18:14 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:47383 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760077Ab2FHCSN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 22:18:13 -0400
+Date: Fri, 8 Jun 2012 03:18:09 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Miklos Szeredi <mszeredi@suse.cz>, Jan Kara <jack@suse.cz>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-fsdevel@vger.kernel.org, "J. Bruce Fields" <bfields@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Sage Weil <sage@newdream.net>
+Subject: Re: processes hung after sys_renameat, and 'missing' processes
+Message-ID: <20120608021809.GM30000@ZenIV.linux.org.uk>
+References: <20120606194233.GA1537@redhat.com>
+ <CA+55aFwxFVLPk4-dp73uccKXepKwjpGFgh0NW1u8d0zYzr=hBA@mail.gmail.com>
+ <20120606230040.GA18089@redhat.com>
+ <CA+55aFx_oREEd2XS_aG7PJ7dwzWjgx689V_uRPGWpVS01_++6A@mail.gmail.com>
+ <20120606235403.GC30000@ZenIV.linux.org.uk>
+ <20120607002914.GB22223@redhat.com>
+ <CA+55aFyp2GUbc218eb5BDyAqz+cOPTJMVcb4ptk+f1_RBB+-mg@mail.gmail.com>
+ <20120607011915.GA17566@redhat.com>
+ <20120607012900.GE30000@ZenIV.linux.org.uk>
+ <20120607193607.GI30000@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120607193607.GI30000@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A bunch of bugzillas have complained how noisy the nmi_watchdog is during
-boot-up especially with its expected failure cases (like virt and bios
-resource contention).
+On Thu, Jun 07, 2012 at 08:36:07PM +0100, Al Viro wrote:
 
-This is my attempt to quiet them down and keep it less confusing for the end
-user.  What I did is print the message for cpu0 and save it for future
-comparisions.  If future cpus have an identical message as cpu0, then don't
-print the redundant info.  However, if a future cpu has a different message,
-happily print that loudly.
+> Other callers of d_move():
+> 	* debugfs_rename() - imitates what vfs_rename() is doing.  Same
+> locking environment.  BTW,
+>         trap = lock_rename(new_dir, old_dir);
+>         /* Source or destination directories don't exist? */
+>         if (!old_dir->d_inode || !new_dir->d_inode)
+>                 goto exit;
+> is bogus - lock_rename() is taking ->i_mutex on these inodes, for fsck sake!
+> If this can be called with old_dir or new_dir negative, it's buggered.
 
-Before the change, you would see something like:
+It's worse, actually.  If we _ever_ do cross-directory debugfs_rename()
+without external serialization, we are in trouble.  It does imitate
+vfs_rename() (actually - its callers), but there's an unpleasant difference:
+instead of "lock parents with lock_rename(), then do lookups and we are
+guaranteed nobody will change ->d_parent of children we are working with"
+it's "lock the new parent and whatever happens to be the current parent
+of the object given to us; do lookup for target, pray that the old parent
+still was the parent of our object by the time we got the locks".
 
-    ..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
-    CPU0: Intel(R) Core(TM)2 Quad CPU    Q9550  @ 2.83GHz stepping 0a
-    Performance Events: PEBS fmt0+, Core2 events, Intel PMU driver.
-    ... version:                2
-    ... bit width:              40
-    ... generic registers:      2
-    ... value mask:             000000ffffffffff
-    ... max period:             000000007fffffff
-    ... fixed-purpose events:   3
-    ... event mask:             0000000700000003
-    NMI watchdog enabled, takes one hw-pmu counter.
-    Booting Node   0, Processors  #1
-    NMI watchdog enabled, takes one hw-pmu counter.
-     #2
-    NMI watchdog enabled, takes one hw-pmu counter.
-     #3 Ok.
-    NMI watchdog enabled, takes one hw-pmu counter.
-    Brought up 4 CPUs
-    Total of 4 processors activated (22607.24 BogoMIPS).
-
-After the change, it is simlified to:
-
-    ..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
-    CPU0: Intel(R) Core(TM)2 Quad CPU    Q9550  @ 2.83GHz stepping 0a
-    Performance Events: PEBS fmt0+, Core2 events, Intel PMU driver.
-    ... version:                2
-    ... bit width:              40
-    ... generic registers:      2
-    ... value mask:             000000ffffffffff
-    ... max period:             000000007fffffff
-    ... fixed-purpose events:   3
-    ... event mask:             0000000700000003
-    NMI watchdog enabled, takes one hw-pmu counter.
-    Booting Node   0, Processors  #1 #2 #3 Ok.
-    Brought up 4 CPUs
-
-Reported-and-tested-by: Nathan Zimmer <nzimmer@sgi.com>
-Signed-off-by: Don Zickus <dzickus@redhat.com>
----
- kernel/watchdog.c |   20 +++++++++++++++++++-
- 1 files changed, 19 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index e5e1d85..79ff671 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -377,6 +377,14 @@ static int watchdog_nmi_enable(int cpu)
- 	struct perf_event_attr *wd_attr;
- 	struct perf_event *event = per_cpu(watchdog_ev, cpu);
- 
-+	/*
-+	 * People like the simple clean cpu node info
-+	 * on boot.  Simplify the noise from the watchdog
-+	 * by only printing messages that are different than
-+	 * what cpu0 displayed
-+	 */
-+	static unsigned long err0 = 0;
-+
- 	/* is it already setup and enabled? */
- 	if (event && event->state > PERF_EVENT_STATE_OFF)
- 		goto out;
-@@ -390,11 +398,21 @@ static int watchdog_nmi_enable(int cpu)
- 
- 	/* Try to register using hardware perf events */
- 	event = perf_event_create_kernel_counter(wd_attr, cpu, NULL, watchdog_overflow_callback, NULL);
-+
-+	/* save cpu0 error for future comparision */
-+	if (!cpu)
-+		err0 = (IS_ERR(event) ? PTR_ERR(event) : 0);
-+
- 	if (!IS_ERR(event)) {
--		pr_info("enabled, takes one hw-pmu counter.\n");
-+		/* only print for cpu0 or different than cpu0 */
-+		if (!cpu || err0)
-+			pr_info("enabled, takes one hw-pmu counter.\n");
- 		goto out_save;
- 	}
- 
-+	/* skip displaying the same error again */
-+	if ((PTR_ERR(event) == err0) && cpu)
-+		return PTR_ERR(event);
- 
- 	/* vary the KERN level based on the returned errno */
- 	if (PTR_ERR(event) == -EOPNOTSUPP)
--- 
-1.7.7.6
-
+AFAICS, there's only one caller doing cross-directory moves (__clk_reparent())
+and currently all callers are serialized by a mutex in there, but that's
+not documented anywhere - not for __clk_reparent(), not for debugfs_rename().
