@@ -1,127 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757162Ab2FHTY3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 15:24:29 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:57778 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755178Ab2FHTY1 convert rfc822-to-8bit (ORCPT
+	id S1758354Ab2FHTaR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 15:30:17 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:12593 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756819Ab2FHTaO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 15:24:27 -0400
+	Fri, 8 Jun 2012 15:30:14 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Fri, 08 Jun 2012 12:28:02 -0700
+Message-ID: <4FD250DB.2090207@nvidia.com>
+Date: Sat, 9 Jun 2012 00:52:03 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <1339183331-4108-1-git-send-email-devendra.aaru@gmail.com>
-References: <1339183331-4108-1-git-send-email-devendra.aaru@gmail.com>
-Date: Sat, 9 Jun 2012 00:54:27 +0530
-Message-ID: <CAHdPZaOKFfVfr+7Cn3VpmhcgsR9m6eoZn4NrhSoV4YONPt0Qag@mail.gmail.com>
-Subject: Re: [PATCH 1/2] pinctrl: pinctrl-imx: free allocated pinctrl_map
- structure only once and use kernel facilities for IMX_PMX_DUMP
-From: "devendra.aaru" <devendra.aaru@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Dong Aisheng <aisheng.dong@freescale.com>,
-        linux-kernel@vger.kernel.org
-Cc: Devendra Naga <devendra.aaru@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "olof@lixom.net" <olof@lixom.net>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH 2/2] ARM: dt: tegra: cardhu: register core regulator tps65911
+References: <1337691917-15040-1-git-send-email-ldewangan@nvidia.com> <1337691917-15040-2-git-send-email-ldewangan@nvidia.com> <4FBBC192.7030900@wwwdotorg.org> <4FBBC830.2060802@nvidia.com> <4FBBCA8F.3050903@wwwdotorg.org> <4FBBD33C.8020802@nvidia.com> <4FBBDA97.6000006@wwwdotorg.org> <4FBBDE06.5080806@nvidia.com> <4FC916AC.4060804@wwwdotorg.org>
+In-Reply-To: <4FC916AC.4060804@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dong, Linus,
+On Saturday 02 June 2012 12:53 AM, Stephen Warren wrote:
+>
+> We could either augment struct of_regulator_match with an integer ID
+> field for each regulator (which would perhaps make it slightly painful
+> to write the nodes and keep the IDs matched up), or add a new property
+> to each regulator provider node e.g. regulator-id which contained the
+> name that the regulator driver knows the regulator as (which would match
+> struct of_regulator_match.name), since the existing regulator-name
+> property is used for semantically different purposes.
+>
+> That would result in:
+>
+>> tps65911: tps65911@2d {
+>> 	compatible = "ti,tps65911";
+>> 	reg =<0x2d>;
+>>
+>> 	#gpio-cells =<2>;
+>> 	gpio-controller;
+>>
+>> 	regulators {
+>> 		#address-cells =<1>;
+>> 		#size-cells =<0>;
+>>
+>> 		vdd1_reg: regulator@0 {
+>> 			reg =<0>;
+>> 			regulator-id = "vdd1"; /* Internal name */
+>> 			regulator-name = "vdd_1v2_gen"; /* Signal on schematic */
+> ...
+>> 		};
+>>
+>> 		vdd2_reg: regulator@1 {
+>> 			reg =<1>;
+>> 			regulator-id = "vdd2";
+>> 			regulator-name = "vdd_1v5_gen";
+> ...
 
-i sent a second patch previously which applies actually on top this
-patch , so not sending it.
 
-You want me to send it again?
+So is it fine to go on the above binding?
+In this case we need to find the match_regulator based on regulator-id 
+rather than by name.
 
-Thanks,
-Devendra.
 
-On Sat, Jun 9, 2012 at 12:52 AM, Devendra Naga <devendra.aaru@gmail.com> wrote:
-> a) as we allocate the pinctrl_map structure at imx_dt_node_to_map at  line 167, anyway
->   if its an element, or a num_elements * (sizeof(type)) elements allocated to one single
->   pointer must be freed only once.
->
-> CASE. A)
->
-> as new_map is not moved and allocated like,
->
-> for (i = 0; i < MAX_ELEMS; i++) {
->    new_map[i] = kmalloc(numelems * size, GFP_KERNEL);
-> }
->
-> its freed as
->
-> for (i = 0; i < MAX_ELEMS; i++) {
->    kfree(new_map[i]);
-> }
->
-> CASE. B)
-> and its allocated like
->        new_map = kmalloc(numelems * size, GFP_KERNEL);
->
-> it just needs kfree not as case A's.
->
-> b) use KERN_DEBUG facility for the IMX_PMX_DUMP macro.
->
-> Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
-> Acked-by: Dong Aisheng <dong.aisheng@linaro.org>
-> ---
->  drivers/pinctrl/pinctrl-imx.c |   28 ++++++++++++----------------
->  1 file changed, 12 insertions(+), 16 deletions(-)
->
-> diff --git a/drivers/pinctrl/pinctrl-imx.c b/drivers/pinctrl/pinctrl-imx.c
-> index f6e7c67..09f3a30 100644
-> --- a/drivers/pinctrl/pinctrl-imx.c
-> +++ b/drivers/pinctrl/pinctrl-imx.c
-> @@ -27,16 +27,16 @@
->  #include "core.h"
->  #include "pinctrl-imx.h"
->
-> -#define IMX_PMX_DUMP(info, p, m, c, n)         \
-> -{                                              \
-> -       int i, j;                               \
-> -       printk("Format: Pin Mux Config\n");     \
-> -       for (i = 0; i < n; i++) {               \
-> -               j = p[i];                       \
-> -               printk("%s %d 0x%lx\n",         \
-> -                       info->pins[j].name,     \
-> -                       m[i], c[i]);            \
-> -       }                                       \
-> +#define IMX_PMX_DUMP(info, p, m, c, n)                 \
-> +{                                                      \
-> +       int i, j;                                       \
-> +       printk(KERN_DEBUG "Format: Pin Mux Config\n");  \
-> +       for (i = 0; i < n; i++) {                       \
-> +               j = p[i];                               \
-> +               printk(KERN_DEBUG "%s %d 0x%lx\n",      \
-> +                       info->pins[j].name,             \
-> +                       m[i], c[i]);                    \
-> +       }                                               \
->  }
->
->  /* The bits in CONFIG cell defined in binding doc*/
-> @@ -201,10 +201,7 @@ static int imx_dt_node_to_map(struct pinctrl_dev *pctldev,
->  static void imx_dt_free_map(struct pinctrl_dev *pctldev,
->                                struct pinctrl_map *map, unsigned num_maps)
->  {
-> -       int i;
-> -
-> -       for (i = 0; i < num_maps; i++)
-> -               kfree(map);
-> +       kfree(map);
->  }
->
->  static struct pinctrl_ops imx_pctrl_ops = {
-> @@ -475,9 +472,8 @@ static int __devinit imx_pinctrl_parse_groups(struct device_node *np,
->                grp->configs[j] = config & ~IMX_PAD_SION;
->        }
->
-> -#ifdef DEBUG
->        IMX_PMX_DUMP(info, grp->pins, grp->mux_mode, grp->configs, grp->npins);
-> -#endif
-> +
->        return 0;
->  }
->
-> --
-> 1.7.9.5
->
