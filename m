@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762009Ab2FHF04 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 01:26:56 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43163 "EHLO
+	id S1761987Ab2FHF0y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 01:26:54 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43179 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760278Ab2FHFHQ (ORCPT
+	by vger.kernel.org with ESMTP id S1760232Ab2FHFHQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Jun 2012 01:07:16 -0400
-Message-Id: <20120608041843.688487854@decadent.org.uk>
+Message-Id: <20120608041847.276867984@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 08 Jun 2012 05:19:01 +0100
+Date: Fri, 08 Jun 2012 05:19:28 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Meenakshi Venkataraman <meenakshi.venkataraman@intel.com>,
-        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 21/82] iwlwifi: update BT traffic load states correctly
+        alan@lxorguk.ukuu.org.uk, Jerome Glisse <jglisse@redhat.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 48/82] drm/radeon: fix HD6790, HD6570 backend programming
 In-Reply-To: <20120608041840.861504477@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,42 +29,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Meenakshi Venkataraman <meenakshi.venkataraman@intel.com>
+From: Jerome Glisse <jglisse@redhat.com>
 
-commit 882dde8eb0d49ce0f853f8f4084dde56a21fe55f upstream.
+commit 95c4b23ec4e2fa5604df229ddf134e31d7b3b378 upstream.
 
-When BT traffic load changes from its
-previous state, a new LQ command needs to be
-sent down to the firmware. This needs to
-be done only once per change. The state
-variable that keeps track of this change is
-last_bt_traffic_load. However, it was not
-being updated when the change had been
-handled. Not updating this variable was
-causing a flood of advanced BT config
-commands to be sent to the firmware. Fix
-this.
+Without this bit sets we get broken rendering and
+lockups.
 
-Signed-off-by: Meenakshi Venkataraman <meenakshi.venkataraman@intel.com>
-Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+fglrx sets this bit.
+
+Bugs that should be fixed by this patch :
+https://bugs.freedesktop.org/show_bug.cgi?id=49792
+https://bugzilla.kernel.org/show_bug.cgi?id=43207
+https://bugs.freedesktop.org/show_bug.cgi?id=39282
+
+Signed-off-by: Jerome Glisse <jglisse@redhat.com>
+Acked-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/iwlwifi/iwl-agn-rs.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/gpu/drm/radeon/evergreen.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/wireless/iwlwifi/iwl-agn-rs.c b/drivers/net/wireless/iwlwifi/iwl-agn-rs.c
-index 51e1a69..8cebd7c 100644
---- a/drivers/net/wireless/iwlwifi/iwl-agn-rs.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-agn-rs.c
-@@ -884,6 +884,7 @@ static void rs_bt_update_lq(struct iwl_priv *priv, struct iwl_rxon_context *ctx,
- 	if ((priv->bt_traffic_load != priv->last_bt_traffic_load) ||
- 	    (priv->bt_full_concurrent != full_concurrent)) {
- 		priv->bt_full_concurrent = full_concurrent;
-+		priv->last_bt_traffic_load = priv->bt_traffic_load;
+diff --git a/drivers/gpu/drm/radeon/evergreen.c b/drivers/gpu/drm/radeon/evergreen.c
+index 0408ac2..6a57f0d 100644
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -2178,9 +2178,9 @@ static void evergreen_gpu_init(struct radeon_device *rdev)
+ 		WREG32(CC_SYS_RB_BACKEND_DISABLE, rb);
+ 		WREG32(GC_USER_RB_BACKEND_DISABLE, rb);
+ 		WREG32(CC_GC_SHADER_PIPE_CONFIG, sp);
+-        }
++	}
  
- 		/* Update uCode's rate table. */
- 		tbl = &(lq_sta->lq_info[lq_sta->active_tbl]);
+-	grbm_gfx_index |= SE_BROADCAST_WRITES;
++	grbm_gfx_index = INSTANCE_BROADCAST_WRITES | SE_BROADCAST_WRITES;
+ 	WREG32(GRBM_GFX_INDEX, grbm_gfx_index);
+ 	WREG32(RLC_GFX_INDEX, grbm_gfx_index);
+ 
 
 
