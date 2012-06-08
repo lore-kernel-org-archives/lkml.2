@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934341Ab2FHO0J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 10:26:09 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:61665 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932242Ab2FHO0G (ORCPT
+	id S934360Ab2FHO0k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 10:26:40 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:51196 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932242Ab2FHO0j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 10:26:06 -0400
+	Fri, 8 Jun 2012 10:26:39 -0400
 MIME-Version: 1.0
-In-Reply-To: <1339165501.2507.30.camel@laptop>
+In-Reply-To: <1339165390.2507.28.camel@laptop>
 References: <20120607071531.GA4849@quad>
 	<1339064319.23343.13.camel@twins>
 	<CABPqkBQ+p5rcuxpXCTLMXPM+awAHhQ6mP9-WzVh5GWtn2GyfrA@mail.gmail.com>
@@ -19,9 +19,9 @@ References: <20120607071531.GA4849@quad>
 	<1339149613.23343.52.camel@twins>
 	<1339161972.2507.13.camel@laptop>
 	<CABPqkBQprykpCH=A4VQhNAc2j8JQm3Z0d_EV=Nb3bV1QZ_++nw@mail.gmail.com>
-	<1339165501.2507.30.camel@laptop>
-Date: Fri, 8 Jun 2012 16:26:04 +0200
-Message-ID: <CABPqkBRrpTbe0JOmqq1bNerm5T9739u6Qvuy_x_4acYyzuhdrg@mail.gmail.com>
+	<1339165390.2507.28.camel@laptop>
+Date: Fri, 8 Jun 2012 16:26:37 +0200
+Message-ID: <CABPqkBSfkoYyYZgbFwDL_wjLUB5d_9mAocuiAcV0bsgz4P8piw@mail.gmail.com>
 Subject: Re: [PATCH] perf/x86: check ucode before disabling PEBS on SandyBridge
 From: Stephane Eranian <eranian@google.com>
 To: Peter Zijlstra <peterz@infradead.org>
@@ -37,18 +37,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 8, 2012 at 4:25 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+On Fri, Jun 8, 2012 at 4:23 PM, Peter Zijlstra <peterz@infradead.org> wrote:
 > On Fri, 2012-06-08 at 16:07 +0200, Stephane Eranian wrote:
->> > +static const u32 snb_ucode_rev = 0x28;
+>> > +extern struct blocking_notifier_head microcode_notifier;
 >> > +
->>
->> That needs to be a per CPU model value. It
->> is not the same for SNB vs. SNB-EP. On EP
->> it may even depends on stepping.
+>> That is a problem because microcode can be compiled as a module.
+>> When I tried compiling your patch I got undefined for this notifier because
+>> I have microcode update as a module...
 >
-> Yeah, you said, easiest is removing the const and putting some
-> assignments to the thing somewhere in our model switch.
+> Ah, no, setup.c needs an EXPORT_SYMBOL_GPL(microcode_notifier);. Then it
+> all builds again.
 >
-> Do you know what values for what chip we should use?
->
-Checking on that.
+
+Yes, it works with this now!
+Thanks.
