@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761426Ab2FHFHV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 01:07:21 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43132 "EHLO
+	id S932826Ab2FHFWw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 01:22:52 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43220 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759724Ab2FHFHK (ORCPT
+	by vger.kernel.org with ESMTP id S1761164Ab2FHFHU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 01:07:10 -0400
-Message-Id: <20120608041843.424970197@decadent.org.uk>
+	Fri, 8 Jun 2012 01:07:20 -0400
+Message-Id: <20120608041845.548668887@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 08 Jun 2012 05:18:59 +0100
+Date: Fri, 08 Jun 2012 05:19:15 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, John David Anglin <dave.anglin@bell.net>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 19/82] [PARISC] fix boot failure on 32-bit systems caused by branch stubs
- placed before .text
+        alan@lxorguk.ukuu.org.uk, Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Andre Przywara <andre.przywara@amd.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [ 35/82] x86, amd, xen: Avoid NULL pointer paravirt references
 In-Reply-To: <20120608041840.861504477@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,47 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John David Anglin <dave.anglin@bell.net>
+From: Konrad Rzeszutek Wilk <konrad@darnok.org>
 
-commit ed5fb2471b7060767957fb964eb1aaec71533ab1 upstream.
+commit 1ab46fd319bcf1fcd9fb6311727d532b580e4eba upstream.
 
-In certain configurations, the resulting kernel becomes too large to boot
-because the linker places the long branch stubs for the merged .text section
-at the very start of the image.  As a result, the initial transfer of control
-jumps to an unexpected location.  Fix this by placing the head text in a
-separate section so the stubs for .text are not at the start of the image.
+Stub out MSR methods that aren't actually needed.  This fixes a crash
+as Xen Dom0 on AMD Trinity systems.  A bigger patch should be added to
+remove the paravirt machinery completely for the methods which
+apparently have no users!
 
-Signed-off-by: John David Anglin <dave.anglin@bell.net>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Reported-by: Andre Przywara <andre.przywara@amd.com>
+Link: http://lkml.kernel.org/r/20120530222356.GA28417@andromeda.dapyr.net
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/parisc/kernel/vmlinux.lds.S |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ arch/x86/xen/enlighten.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/arch/parisc/kernel/vmlinux.lds.S b/arch/parisc/kernel/vmlinux.lds.S
-index fa6f2b8..64a9998 100644
---- a/arch/parisc/kernel/vmlinux.lds.S
-+++ b/arch/parisc/kernel/vmlinux.lds.S
-@@ -50,8 +50,10 @@ SECTIONS
- 	. = KERNEL_BINARY_TEXT_START;
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index 75f33b2..e74df95 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -1116,7 +1116,10 @@ static const struct pv_cpu_ops xen_cpu_ops __initconst = {
+ 	.wbinvd = native_wbinvd,
  
- 	_text = .;		/* Text and read-only data */
--	.text ALIGN(16) : {
-+	.head ALIGN(16) : {
- 		HEAD_TEXT
-+	} = 0
-+	.text ALIGN(16) : {
- 		TEXT_TEXT
- 		SCHED_TEXT
- 		LOCK_TEXT
-@@ -65,7 +67,7 @@ SECTIONS
- 		*(.fixup)
- 		*(.lock.text)		/* out-of-line lock text */
- 		*(.gnu.warning)
--	} = 0
-+	}
- 	/* End of text section */
- 	_etext = .;
+ 	.read_msr = native_read_msr_safe,
++	.rdmsr_regs = native_rdmsr_safe_regs,
+ 	.write_msr = xen_write_msr_safe,
++	.wrmsr_regs = native_wrmsr_safe_regs,
++
+ 	.read_tsc = native_read_tsc,
+ 	.read_pmc = native_read_pmc,
  
 
 
