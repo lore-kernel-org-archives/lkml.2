@@ -1,48 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934028Ab2FHI7r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 04:59:47 -0400
-Received: from bar.sig21.net ([80.81.252.164]:49507 "EHLO bar.sig21.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932177Ab2FHI7q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 04:59:46 -0400
-X-Greylist: delayed 1574 seconds by postgrey-1.27 at vger.kernel.org; Fri, 08 Jun 2012 04:59:46 EDT
-Date: Fri, 8 Jun 2012 10:32:47 +0200
-From: Johannes Stezenbach <js@sig21.net>
-To: Dave Jones <davej@redhat.com>
-Cc: Francois Romieu <romieu@fr.zoreil.com>,
-        Marc Dionne <marc.c.dionne@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: NOHZ: local_softirq_pending 08
-Message-ID: <20120608083247.GA16529@sig21.net>
-References: <20120530214809.GA19223@redhat.com>
- <alpine.LFD.2.02.1205310938080.3231@ionos>
- <20120601225754.GA25281@electric-eye.fr.zoreil.com>
- <CAB9dFdvWoc1onyWyy4BVmhpjeb5K2d10re0NcW-_NQCbfRC0hw@mail.gmail.com>
- <20120605231550.GA20981@electric-eye.fr.zoreil.com>
- <20120606014656.GA24870@redhat.com>
- <20120606054251.GA24467@electric-eye.fr.zoreil.com>
- <20120608023420.GD7191@redhat.com>
+	id S934045Ab2FHJE0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 05:04:26 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:33025 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933075Ab2FHJEX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 05:04:23 -0400
+Date: Fri, 8 Jun 2012 11:04:17 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        darren@dvhart.com, fweisbec@gmail.com, patches@linaro.org
+Subject: Re: [PATCH tip/core/rcu 0/7] RCU_FAST_NO_HZ changes for 3.6
+Message-ID: <20120608090417.GA10841@gmail.com>
+References: <20120608042632.GA1250@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120608023420.GD7191@redhat.com>
+In-Reply-To: <20120608042632.GA1250@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-21-Score: -2.9 (--)
-X-Spam-21-Report: No, score=-2.9 required=8.0 tests=ALL_TRUSTED=-1,BAYES_00=-1.9 autolearn=ham
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 07, 2012 at 10:34:20PM -0400, Dave Jones wrote:
-> Ok. This was a bit of a pain to trace, as I can't trigger the NOHZ message
-> when I bring up/down the interface by hand. It only seems to happen
-> during boot now for some reason.
 
-The message is only printed 10 times on each boot due to
-the "ratelimit" in tick_nohz_stop_sched_tick.  I once debugged
-an issue with rt2x00 (20ed3166c) and found that fairly confusing at first.
+* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
 
-HTH
-Johannes
+> Hello!
+> 
+> This patch series provides more adjustments to the (relatively) new
+> large-system-safe implementation for RCU_FAST_NO_HZ:
+> 
+> 1.	Remove RCU_FAST_NO_HZ dependency on stop_machine() nature of
+> 	CPU hotplug.
+> 2.	Make RCU_FAST_NO_HZ tracing distinguish between short and
+> 	long idle intervals.
+> 3.	Move RCU_FAST_NO_HZ per-CPU state variables to the rcu_dynticks
+> 	per-CPU structure.
+> 4.	Precompute RCU_FAST_NO_HZ timer offsets so that the timers
+> 	will actually be paid attention to.  This fixes the slow-boot
+> 	problem that hit a few people.
+> 5.	Convert ftrace_dump() calls in idle entry and idle exit from
+> 	DUMP_ALL to DUMP_ORIG.
+> 6.	Fix erroneous TINY_PREEMPT_RCU assumption that rcu_preempt_needs_cpu()
+> 	is a quiescent state (it is not).
+> 7.	Round RCU_FAST_NO_HZ lazy timeout to nearest second to conserve
+> 	power on systems with synchronized scheduler-clock interrupts.
+> 
+> I am considering pushing #1-#4 into 3.5 for the slow-boot regression.
+> If you object, please let me know.
+
+Sure, that's sensible - could get this to me ASAP so that we can 
+send it to Linus before -rc2? #3 and #4 are pretty large so we 
+want them upstream ASAP.
+
+Thanks,
+
+	Ingo
