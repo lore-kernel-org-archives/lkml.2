@@ -1,28 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934551Ab2FHVpr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 17:45:47 -0400
+	id S964910Ab2FHVp5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 17:45:57 -0400
 Received: from mga09.intel.com ([134.134.136.24]:14373 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934490Ab2FHVpp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 17:45:45 -0400
+	id S934508Ab2FHVpq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 17:45:46 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="150325265"
+   d="scan'208";a="150325266"
 From: Andi Kleen <andi@firstfloor.org>
 To: mingo@elte.hu
-Cc: eranian@google.com, linux-kernel@vger.kernel.org
-Subject: Updated Ivybridge perf patchkit for tip perf/core
-Date: Fri,  8 Jun 2012 14:45:26 -0700
-Message-Id: <1339191928-13223-1-git-send-email-andi@firstfloor.org>
+Cc: eranian@google.com, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 1/2] perf, x86: Add basic Ivy Bridge support v2
+Date: Fri,  8 Jun 2012 14:45:27 -0700
+Message-Id: <1339191928-13223-2-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1339191928-13223-1-git-send-email-andi@firstfloor.org>
+References: <1339191928-13223-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-- ported to tip perf/core
-- fixed some comments
-- Extra PEBS event not added so far because there's some doubt on the 
-SDM version.
+From: Andi Kleen <ak@linux.intel.com>
 
--Andi
+Very similar to Sandy Bridge, but there is no PEBS problem.
+
+As Stephane pointed out .code=0xb1, .umask=0x01 is gone, so don't
+do a generic backend stall event on IvyBridge.
+
+v2: Remove stall event
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+
+Conflicts:
+
+	arch/x86/kernel/cpu/perf_event_intel.c
+---
+ arch/x86/kernel/cpu/perf_event_intel.c |   16 ++++++++++++++--
+ 1 files changed, 14 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index e23e71f..4d6188d 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1767,6 +1767,7 @@ __init int intel_pmu_init(void)
+ 	union cpuid10_ebx ebx;
+ 	unsigned int unused;
+ 	int version;
++	char *name;
+ 
+ 	if (!cpu_has(&boot_cpu_data, X86_FEATURE_ARCH_PERFMON)) {
+ 		switch (boot_cpu_data.x86) {
+@@ -1910,10 +1911,21 @@ __init int intel_pmu_init(void)
+ 		pr_cont("Westmere events, ");
+ 		break;
+ 
++	case 58: /* IvyBridge */
++		name = "Ivy";
++		/* No backend stall event */
++		goto snb_ivb_common;
++
+ 	case 42: /* SandyBridge */
+ 	case 45: /* SandyBridge, "Romely-EP" */
+ 		x86_add_quirk(intel_sandybridge_quirk);
+-	case 58: /* IvyBridge */
++		name = "Sandy";
++
++		/* UOPS_DISPATCHED.THREAD,c=1,i=1 to count stall cycles*/
++		intel_perfmon_event_map[PERF_COUNT_HW_STALLED_CYCLES_BACKEND] =
++			X86_CONFIG(.event=0xb1, .umask=0x01, .inv=1, .cmask=1);
++
++	snb_ivb_common:
+ 		memcpy(hw_cache_event_ids, snb_hw_cache_event_ids,
+ 		       sizeof(hw_cache_event_ids));
+ 
+@@ -1934,7 +1946,7 @@ __init int intel_pmu_init(void)
+ 		intel_perfmon_event_map[PERF_COUNT_HW_STALLED_CYCLES_BACKEND] =
+ 			X86_CONFIG(.event=0xb1, .umask=0x01, .inv=1, .cmask=1);
+ 
+-		pr_cont("SandyBridge events, ");
++		pr_cont("%sBridge events, ", name);
+ 		break;
+ 
+ 	default:
+-- 
+1.7.7.6
+
