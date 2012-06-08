@@ -1,154 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934558Ab2FHV5z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 17:57:55 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:63565 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760172Ab2FHV5x convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 17:57:53 -0400
+	id S964954Ab2FHV7k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 17:59:40 -0400
+Received: from mga02.intel.com ([134.134.136.20]:16122 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934518Ab2FHV7g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 17:59:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="asc'?scan'208";a="155072265"
+Date: Sat, 9 Jun 2012 01:00:49 +0300
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Boaz Harrosh <bharrosh@panasas.com>, Tao Ma <boyu.mt@taobao.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nick Piggin <npiggin@kernel.dk>, "Dmitry V. Levin" <ldv@altlinux.org>,
+        v9fs-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-afs@lists.infradead.org,
+        linux-btrfs@vger.kernel.org, ceph-devel@vger.kernel.org,
+        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
+        codalist@TELEMANN.coda.cs.cmu.edu, ecryptfs@vger.kernel.org,
+        osd-dev@open-osd.org, linux-ext4@vger.kernel.org,
+        fuse-devel@lists.sourceforge.net, linux-mtd@lists.infradead.org,
+        jfs-discussion@lists.sourceforge.net, logfs@logfs.org,
+        linux-nfs@vger.kernel.org, linux-nilfs@vger.kernel.org,
+        linux-ntfs-dev@lists.sourceforge.net, ocfs2-devel@oss.oracle.com,
+        reiserfs-devel@vger.kernel.org
+Subject: Re: [RFC, PATCH] fs: push rcu_barrier() from
+ deactivate_locked_super() to filesystems
+Message-ID: <20120608220049.GA18024@otc-wbsnb-06>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1206080952010.15272@skynet.skynet.ie>
-References: <alpine.DEB.2.00.1206080952010.15272@skynet.skynet.ie>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 8 Jun 2012 14:57:31 -0700
-X-Google-Sender-Auth: 5aKpA7_eLzHa3cfJaJOwT_SINTo
-Message-ID: <CA+55aFyASr5Jfok7vVKXg9=n_pBGyjLZf3MmRik90y8qXRNo3g@mail.gmail.com>
-Subject: Re: [git pull] drm intel + exynos fixes
-To: Dave Airlie <airlied@linux.ie>, Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="dDRMvlgZJXvWKvBx"
+Content-Disposition: inline
+In-Reply-To: <1339191663-17693-1-git-send-email-kirill.shutemov@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This breaks things for me. Bisect says:
 
-9e612a008fa7fe493a473454def56aa321479495 is the first bad commit
-commit 9e612a008fa7fe493a473454def56aa321479495
-Author: Chris Wilson <chris@chris-wilson.co.uk>
-Date:   Thu May 31 13:08:53 2012 +0100
+--dDRMvlgZJXvWKvBx
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-    drm/i915/crt: Do not rely upon the HPD presence pin
+On Fri, Jun 08, 2012 at 02:43:58PM -0700, Linus Torvalds wrote:
+> On Fri, Jun 8, 2012 at 2:28 PM, Kirill A. Shutemov
+> <kirill.shutemov@linux.intel.com> wrote:
+> > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> >
+> > There's no reason to call rcu_barrier() on every deactivate_locked_supe=
+r().
+> > We only need to make sure that all delayed rcu free inodes are flushed
+> > before we destroy related cache.
+> >
+> > Removing rcu_barrier() from deactivate_locked_super() affects some
+> > fas paths. E.g. on my machine exit_group() of a last process in IPC
+> > namespace takes 0.07538s. rcu_barrier() takes 0.05188s of that time.
+>=20
+> I think we should just delete it.
+>=20
+> kmem_cache_destroy() (at least for SLUB) already has:
+>=20
+>                 if (s->flags & SLAB_DESTROY_BY_RCU)
+>                         rcu_barrier();
+>=20
+> in it. But I think it's too late - it gets called *after* we do
+> kmem_cache_close(), and I get the feeling that we should do it before.
+>=20
+> Shouldn't that be sufficient? And if other slab allocators don't have
+> this, we should add it to them too.
+>=20
+> Hmm?
 
-    Whilst most monitors do wire up the HPD presence pin, it seems quite a
-    few KVM do not. Therefore if we simply rely on the HPD pin being
-    asserted to indicate a connected monitor we fail miserable, so fall back
-    to performing a DCC query for the EDID.
+When I tried SLAB_DESTROY_BY_RCU I've got problem:
 
-    Reported-and-tested-by: Matthieu LAVIE <boiteamadmax@hotmail.com>
-    Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=50501
-    Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-    Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+[   36.687999] Pid: 3455, comm: rmmod Not tainted 3.5.0-rc1-00130-g48d212a-=
+dirty #40
+[   36.688001] Call Trace:
+[   36.688012]  [<ffffffff8113367a>] slab_err+0xaa/0xd0
+[   36.688020]  [<ffffffff8113515a>] ? __kmalloc+0x10a/0x110
+[   36.688026]  [<ffffffff8113647d>] kmem_cache_destroy+0x1dd/0x420
+[   36.688056]  [<ffffffffa00f0f25>] btrfs_destroy_cachep+0x15/0x60 [btrfs]
+[   36.688076]  [<ffffffffa013cac3>] exit_btrfs_fs+0x9/0x3a [btrfs]
+[   36.688083]  [<ffffffff810c324e>] sys_delete_module+0x16e/0x2f0
+[   36.688090]  [<ffffffff8128cf29>] ? lockdep_sys_exit_thunk+0x35/0x67
+[   36.688097]  [<ffffffff8161eba6>] system_call_fastpath+0x1a/0x1f
+[   36.688111] Pid: 3455, comm: rmmod Not tainted 3.5.0-rc1-00130-g48d212a-=
+dirty #40
+[   36.688114] Call Trace:
+[   36.688119]  [<ffffffff811365ee>] kmem_cache_destroy+0x34e/0x420
+[   36.688143]  [<ffffffffa00f0f25>] btrfs_destroy_cachep+0x15/0x60 [btrfs]
+[   36.688162]  [<ffffffffa013cac3>] exit_btrfs_fs+0x9/0x3a [btrfs]
+[   36.688168]  [<ffffffff810c324e>] sys_delete_module+0x16e/0x2f0
+[   36.688174]  [<ffffffff8128cf29>] ? lockdep_sys_exit_thunk+0x35/0x67
+[   36.688179]  [<ffffffff8161eba6>] system_call_fastpath+0x1a/0x1f
 
-And the symptoms are that it boots in what appears to be the correct
-mode for my monitor (1920x1200), but when X starts it changes to
-1024x768 mode.
+IIUC, moving rcu_barrier() up should help, but I can't say that I fully
+understand SLAB_DESTROY_BY_RCU semantics.
 
-Which is not good, and not useful.
+--=20
+ Kirill A. Shutemov
 
-The bad kernel has this in Xorg.0.log:
+--dDRMvlgZJXvWKvBx
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
- [    12.796] (II) intel(0): EDID for output VGA1
- [    12.796] (II) intel(0): Printing probed modes for output VGA1
- [    12.796] (II) intel(0): Modeline "1024x768"x60.0   65.00  1024
-1048 1184 1344  768 771 777 806 -hsync -vsync (48.4 kHz e)
- [    12.796] (II) intel(0): Modeline "800x600"x60.3   40.00  800 840
-968 1056  600 601 605 628 +hsync +vsync (37.9 kHz e)
- [    12.796] (II) intel(0): Modeline "800x600"x56.2   36.00  800 824
-896 1024  600 601 603 625 +hsync +vsync (35.2 kHz e)
- [    12.796] (II) intel(0): Modeline "848x480"x60.0   33.75  848 864
-976 1088  480 486 494 517 +hsync +vsync (31.0 kHz e)
- [    12.796] (II) intel(0): Modeline "640x480"x59.9   25.18  640 656
-752 800  480 489 492 525 -hsync -vsync (31.5 kHz e)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-which is pure and utter garbage. I think it's the "default modes" for
-the non-EDID case, and has nothing to do with actual hardware.
+iQIcBAEBAgAGBQJP0nYQAAoJEAd+omnVudOMbF0QAKpg3Zcvr4yESZua/Bv1bnzX
+jkOHQHWJ3NunwtuR7SOhvXfvXXDS7jVfVjlpR6gjF1LmsRqrE/aTCFsz73npYIFc
+s9ne9/pjA7kewL3jOQqv1ujZ4s4JGXo/4fWL6vOlvYio4+x8UlaKH5z2vI1brc/K
+ASQ/WqoO5ndxoUOE3RrssnSlkvII6PAQlno44mCberhpplOm1F7r3+BWNB3e6h9b
+ItpmSAYpBqSOhjBl1Ek/TQElCvDIJddQJ3E++UaDQlm6JyABzRUHOCuzXiVYMVES
+8MdIDpn35/gywY3KYxwxweX7F8H/GtmY/swn/Bujb9phKud9Xh/hw7td+aWJcrDU
+6AvAS+BMAWLrZi5cSvWn3JnGZNzC6/FJE47nUUn/7mjYNyE5YnVMyNjZA1a3PPu+
+VW0LZdKGjq30hGjhth1HzPGNFUHP6H/ks7H8LU2ycXeuc+CDN0OdOFjCJTWlWnBj
+FxspDEQhlYzBt4WUwF8pq47i4HBZYJjGSaR9CHFVB/Uw1DiX/asLEyBNq3r/F0Kq
+PW97ykg0bYVl++5ImfPJiLvd1uPUMltyS0KUGb5U7h9UyC/AndHLGVgGt4g3cSju
+QVpqUCxCEcU4R2HiDJ44YiO0x9pJeZ1Z70B5zi/Fhx5sCKB0j1CoD/WYlTOrFxqA
+es9Jc2r5bucrvbquOhCb
+=1MlR
+-----END PGP SIGNATURE-----
 
-The good kernel doesn't have those incorrect and bogus probed modes,
-and just has the correct HDMI1 (that the bad kernel *also* has, of
-course).
-
-I have reverted that commit as obviously broken, since I'm not going
-to release an -rc2 that doesn't even work for me (and since it *is*
-obviously broken).
-
-                      Linus
-
-On Fri, Jun 8, 2012 at 1:53 AM, Dave Airlie <airlied@linux.ie> wrote:
->
-> Hi Linus,
->
-> a bunch of fixes for Intel and exynos, nothing too major, a new intel PCI
-> Id, and a fix for CRT detection.
->
-> Dave.
->
-> The following changes since commit 7aaa61b3476462b69f1ac7669fcca8d608ce3cb5:
->
->  drm/radeon/kms: add new SI PCI ids (2012-06-05 15:11:12 +0100)
->
-> are available in the git repository at:
->
->  git://people.freedesktop.org/~airlied/linux drm-fixes
->
-> for you to fetch changes up to 2d5c7cd35f1addb812e0b1709b3c727f1a58ca9c:
->
->  Merge branch 'exynos-drm-fixes' of git://git.infradead.org/users/kmpark/linux-samsung into drm-fixes (2012-06-08 09:42:51 +0100)
->
-> ----------------------------------------------------------------
->
-> Adam Jackson (1):
->      drm/i915: pch_irq_handler -> {ibx, cpt}_irq_handler
->
-> Chris Wilson (3):
->      drm/i915: Reset last_retired_head when resetting ring
->      drm/i915/crt: Do not rely upon the HPD presence pin
->      drm/i915: Mark the ringbuffers as being in the GTT domain
->
-> Daniel Vetter (2):
->      drm/i915: hold forcewake around ring hw init
->      drm/i915: fix up ivb plane 3 pageflips
->
-> Dave Airlie (2):
->      Merge branch 'drm-intel-fixes' of git://people.freedesktop.org/~danvet/drm-intel into drm-fixes
->      Merge branch 'exynos-drm-fixes' of git://git.infradead.org/users/kmpark/linux-samsung into drm-fixes
->
-> Eugeni Dodonov (1):
->      char/agp: add another Ironlake host bridge
->
-> Inki Dae (1):
->      drm/exynos: fixed size type.
->
-> Laurent Pinchart (4):
->      drm/exynos: DRIVER_BUS_PLATFORM is not a driver feature
->      drm/exynos: Don't cast GEM object to Exynos GEM object when not needed
->      drm/exynos: Keep a reference to frame buffer GEM objects
->      drm/exynos: Remove dummy encoder get_crtc operation implementation
->
-> Seung-Woo Kim (1):
->      drm/exynos: fixed blending for hdmi graphic layer
->
-> Ville Syrjälä (1):
->      drm/exynos: Use DRM_FORMAT_{NV12, YUV420} instead of DRM_FORMAT_{NV12M, YUV420M}
->
->  drivers/char/agp/intel-agp.c                |    1 +
->  drivers/char/agp/intel-agp.h                |    1 +
->  drivers/gpu/drm/exynos/exynos_drm_drv.c     |    4 +--
->  drivers/gpu/drm/exynos/exynos_drm_encoder.c |    7 -----
->  drivers/gpu/drm/exynos/exynos_drm_fb.c      |   19 ++++++++----
->  drivers/gpu/drm/exynos/exynos_drm_fb.h      |    4 +--
->  drivers/gpu/drm/exynos/exynos_drm_gem.c     |    9 ++----
->  drivers/gpu/drm/exynos/exynos_mixer.c       |   12 ++++----
->  drivers/gpu/drm/i915/i915_drv.c             |   13 +++++---
->  drivers/gpu/drm/i915/i915_drv.h             |    3 ++
->  drivers/gpu/drm/i915/i915_irq.c             |   38 +++++++++++++++++++++--
->  drivers/gpu/drm/i915/i915_reg.h             |   43 +++++++++++++++++++++++++--
->  drivers/gpu/drm/i915/intel_crt.c            |    8 +++--
->  drivers/gpu/drm/i915/intel_display.c        |   19 +++++++++++-
->  drivers/gpu/drm/i915/intel_ringbuffer.c     |   21 +++++++++++--
->  include/drm/exynos_drm.h                    |    4 ++-
->  16 files changed, 161 insertions(+), 45 deletions(-)
+--dDRMvlgZJXvWKvBx--
