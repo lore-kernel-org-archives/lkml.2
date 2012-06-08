@@ -1,55 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760259Ab2FHCPr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 22:15:47 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:47858 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759939Ab2FHCPp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 22:15:45 -0400
-X-Sasl-enc: NN46Oss0x3kDp+6F1/D4plxFIdUBOm5arnpLZVLCFdDv 1339121744
-Date: Fri, 8 Jun 2012 11:15:42 +0900
-From: Greg KH <greg@kroah.com>
-To: David Miller <davem@davemloft.net>
-Cc: jeffrey.t.kirsher@intel.com, tarbal@gmail.com, rkagan@parallels.com,
-        stable@vger.kernel.org, jesse.brandeburg@intel.com,
-        bruce.w.allan@intel.com, carolyn.wyborny@intel.com,
-        donald.c.skidmore@intel.com, gregory.v.rose@intel.com,
-        peter.p.waskiewicz.jr@intel.com, alexander.h.duyck@intel.com,
-        john.ronciak@intel.com, dnelson@redhat.com,
-        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] e1000: save skb counts in TX to avoid cache misses
-Message-ID: <20120608021542.GA10112@kroah.com>
-References: <b838d871c0d507787373061e4edd91a624d62475.1339073391.git.rkagan@parallels.com>
- <4FD11F49.5060805@gmail.com>
- <20120607.144358.1732928576389957779.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120607.144358.1732928576389957779.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1760306Ab2FHCQA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 22:16:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49380 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759939Ab2FHCP6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 22:15:58 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, nzimmer@sgi.com,
+        Don Zickus <dzickus@redhat.com>
+Subject: [PATCH] watchdog: Quiet down the boot messages
+Date: Thu,  7 Jun 2012 22:15:36 -0400
+Message-Id: <1339121736-22574-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 07, 2012 at 02:43:58PM -0700, David Miller wrote:
-> From: Jeff Kirsher <tarbal@gmail.com>
-> Date: Thu, 07 Jun 2012 14:38:17 -0700
-> 
-> > Thanks! I have applied the patch to my queue
-> 
-> Why?
-> 
-> My impression is that this is a patch already in the tree, and it's
-> being submitted for -stable but such minor performance hacks are
-> absolutely not appropriate for -stable submission.
+A bunch of bugzillas have complained how noisy the nmi_watchdog is during
+boot-up especially with its expected failure cases (like virt and bios
+resource contention).
 
-The patch description says it is fixing reported oopses, but the
-Subject: isn't all that helpful there.
+This is my attempt to quiet them down and keep it less confusing for the end
+user.  What I did is print the message for cpu0 and save it for future
+comparisions.  If future cpus have an identical message as cpu0, then don't
+print the redundant info.  However, if a future cpu has a different message,
+happily print that loudly.
 
-So which is this?  Should I accept it for a stable release or not?
+Before the change, you would see something like:
 
-thanks,
+    ..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
+    CPU0: Intel(R) Core(TM)2 Quad CPU    Q9550  @ 2.83GHz stepping 0a
+    Performance Events: PEBS fmt0+, Core2 events, Intel PMU driver.
+    ... version:                2
+    ... bit width:              40
+    ... generic registers:      2
+    ... value mask:             000000ffffffffff
+    ... max period:             000000007fffffff
+    ... fixed-purpose events:   3
+    ... event mask:             0000000700000003
+    NMI watchdog enabled, takes one hw-pmu counter.
+    Booting Node   0, Processors  #1
+    NMI watchdog enabled, takes one hw-pmu counter.
+     #2
+    NMI watchdog enabled, takes one hw-pmu counter.
+     #3 Ok.
+    NMI watchdog enabled, takes one hw-pmu counter.
+    Brought up 4 CPUs
+    Total of 4 processors activated (22607.24 BogoMIPS).
 
-greg k-h
+After the change, it is simlified to:
+
+    ..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
+    CPU0: Intel(R) Core(TM)2 Quad CPU    Q9550  @ 2.83GHz stepping 0a
+    Performance Events: PEBS fmt0+, Core2 events, Intel PMU driver.
+    ... version:                2
+    ... bit width:              40
+    ... generic registers:      2
+    ... value mask:             000000ffffffffff
+    ... max period:             000000007fffffff
+    ... fixed-purpose events:   3
+    ... event mask:             0000000700000003
+    NMI watchdog enabled, takes one hw-pmu counter.
+    Booting Node   0, Processors  #1 #2 #3 Ok.
+    Brought up 4 CPUs
+
+Reported-and-tested-by: Nathan Zimmer <nzimmer@sgi.com>
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+---
+ kernel/watchdog.c |   20 +++++++++++++++++++-
+ 1 files changed, 19 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index e5e1d85..79ff671 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -377,6 +377,14 @@ static int watchdog_nmi_enable(int cpu)
+ 	struct perf_event_attr *wd_attr;
+ 	struct perf_event *event = per_cpu(watchdog_ev, cpu);
+ 
++	/*
++	 * People like the simple clean cpu node info
++	 * on boot.  Simplify the noise from the watchdog
++	 * by only printing messages that are different than
++	 * what cpu0 displayed
++	 */
++	static unsigned long err0 = 0;
++
+ 	/* is it already setup and enabled? */
+ 	if (event && event->state > PERF_EVENT_STATE_OFF)
+ 		goto out;
+@@ -390,11 +398,21 @@ static int watchdog_nmi_enable(int cpu)
+ 
+ 	/* Try to register using hardware perf events */
+ 	event = perf_event_create_kernel_counter(wd_attr, cpu, NULL, watchdog_overflow_callback, NULL);
++
++	/* save cpu0 error for future comparision */
++	if (!cpu)
++		err0 = (IS_ERR(event) ? PTR_ERR(event) : 0);
++
+ 	if (!IS_ERR(event)) {
+-		pr_info("enabled, takes one hw-pmu counter.\n");
++		/* only print for cpu0 or different than cpu0 */
++		if (!cpu || err0)
++			pr_info("enabled, takes one hw-pmu counter.\n");
+ 		goto out_save;
+ 	}
+ 
++	/* skip displaying the same error again */
++	if ((PTR_ERR(event) == err0) && cpu)
++		return PTR_ERR(event);
+ 
+ 	/* vary the KERN level based on the returned errno */
+ 	if (PTR_ERR(event) == -EOPNOTSUPP)
+-- 
+1.7.7.6
+
