@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753255Ab2FHWXi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 18:23:38 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:39822 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757598Ab2FHWXg (ORCPT
+	id S1759561Ab2FHWYE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 18:24:04 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:49191 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752252Ab2FHWX6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 18:23:36 -0400
+	Fri, 8 Jun 2012 18:23:58 -0400
+Date: Fri, 8 Jun 2012 23:23:37 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Boaz Harrosh <bharrosh@panasas.com>, Tao Ma <boyu.mt@taobao.com>,
+        Nick Piggin <npiggin@kernel.dk>, "Dmitry V. Levin" <ldv@altlinux.org>,
+        v9fs-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-afs@lists.infradead.org,
+        linux-btrfs@vger.kernel.org, ceph-devel@vger.kernel.org,
+        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
+        codalist@TELEMANN.coda.cs.cmu.edu, ecryptfs@vger.kernel.org,
+        osd-dev@open-osd.org, linux-ext4@vger.kernel.org,
+        fuse-devel@lists.sourceforge.net, linux-mtd@lists.infradead.org,
+        jfs-discussion@lists.sourceforge.net, logfs@logfs.org,
+        linux-nfs@vger.kernel.org, linux-nilfs@vger.kernel.org,
+        linux-ntfs-dev@lists.sourceforge.net, ocfs2-devel@oss.oracle.com,
+        reiserfs-devel@vger.kernel.org
+Subject: Re: [RFC, PATCH, RESEND] fs: push rcu_barrier() from
+ deactivate_locked_super() to filesystems
+Message-ID: <20120608222337.GR30000@ZenIV.linux.org.uk>
+References: <1339191663-17693-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <20120608150253.e42464a6.akpm@linux-foundation.org>
+ <20120608221446.GA18250@otc-wbsnb-06>
 MIME-Version: 1.0
-In-Reply-To: <1339193608_596134@CP5-2952>
-References: <alpine.DEB.2.00.1206080952010.15272@skynet.skynet.ie>
- <CA+55aFyASr5Jfok7vVKXg9=n_pBGyjLZf3MmRik90y8qXRNo3g@mail.gmail.com> <1339193608_596134@CP5-2952>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 8 Jun 2012 15:23:15 -0700
-X-Google-Sender-Auth: C29cD-oIk0irDspwJMSr28-N4-o
-Message-ID: <CA+55aFxQn_KJcHztPyUptOb=s-+n5-4mDs+dGL1XiN4QbAv2mg@mail.gmail.com>
-Subject: Re: [git pull] drm intel + exynos fixes
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Dave Airlie <airlied@linux.ie>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120608221446.GA18250@otc-wbsnb-06>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 8, 2012 at 3:12 PM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
->
->           So it falls back to
-> load-detection, which in your case it cannot do since all the available
-> pipes are assigned and so it just reports the VGA connection as unknown.
+On Sat, Jun 09, 2012 at 01:14:46AM +0300, Kirill A. Shutemov wrote:
+> > The implementation would be less unpleasant if we could do the
+> > rcu_barrier() in kmem_cache_destroy().  I can't see a way of doing that
+> > without adding a dedicated slab flag, which would require editing all
+> > the filesystems anyway.
+> 
+> I think rcu_barrier() for all kmem_cache_destroy() would be too expensive.
 
-Btw, it's a singularly stupid decision to say "Ok, I *know* I have a
-monitor on output X, and I have no clue what-so-ever what I have on
-output Y, and no indication there is anything even there, so let me
-just degrade the output on output Y just in case".
-
-Which is basically what you are arguing for. In addition to the
-idiotic of argument that "ok, it used to work right, but we broke it
-on *purpose*, really".
-
-I'd suggest that if you see no other connectors at all, *then* you
-might say "ok, let's assume that we have a VGA monitor behind a broken
-KVM switch". At that point, at least that assumption doesn't make
-things worse for anything else that you know is there.
-
-And if people have truly undetectable VGA hardware in addition to
-another (detectable) output, I would suggest that you tell them to
-force it with xrandr. Again, there's no way in hell I will accept the
-idiotic argument that my old working single-monitor setup should be
-broken because the i915 driver decided that I *might* have a second
-monitor on VGA despite everything else saying that is not the case.
-
-                    Linus
+You've got to be kidding.  Please, show us the codepath that would be hot
+enough to make that too expensive and would contain kmem_cache_destroy().
+Note that module unload is *not* a hot path - not on any even remotely sane
+use.
