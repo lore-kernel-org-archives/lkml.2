@@ -1,74 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757069Ab2FHEuY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 00:50:24 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:52469 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754002Ab2FHEuW (ORCPT
+	id S1759097Ab2FHFGr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 01:06:47 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43112 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756728Ab2FHFGo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 00:50:22 -0400
-Message-ID: <4FD1848B.7040102@gmail.com>
-Date: Fri, 08 Jun 2012 00:50:19 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: John Stultz <john.stultz@linaro.org>
-CC: Dave Hansen <dave@linux.vnet.ibm.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
-        Andrea Righi <andrea@betterlinux.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Taras Glek <tgek@mozilla.com>, Mike Hommey <mh@glandium.org>,
-        Jan Kara <jack@suse.cz>
-Subject: Re: [PATCH 3/3] [RFC] tmpfs: Add FALLOC_FL_MARK_VOLATILE/UNMARK_VOLATILE
- handlers
-References: <1338575387-26972-1-git-send-email-john.stultz@linaro.org> <1338575387-26972-4-git-send-email-john.stultz@linaro.org> <4FC9235F.5000402@gmail.com>	<4FC92E30.4000906@linaro.org> <4FC9360B.4020401@gmail.com>	<4FC937AD.8040201@linaro.org> <4FC9438B.1000403@gmail.com>	<4FC94F61.20305@linaro.org> <4FCFB4F6.6070308@gmail.com>	<4FCFEE36.3010902@linaro.org> <CAO6Zf6D++8hOz19BmUwQ8iwbQknQRNsF4npP4r-830j04vbj=g@mail.gmail.com> <4FD13C30.2030401@linux.vnet.ibm.com> <4FD16B6E.8000307@linaro.org>
-In-Reply-To: <4FD16B6E.8000307@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 8 Jun 2012 01:06:44 -0400
+Message-Id: <20120608041841.051049112@decadent.org.uk>
+User-Agent: quilt/0.60-1
+Date: Fri, 08 Jun 2012 05:18:41 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Joerg Roedel <joerg.roedel@amd.com>
+Subject: [ 01/82] iommu/amd: Add workaround for event log erratum
+In-Reply-To: <20120608041840.861504477@decadent.org.uk>
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(6/7/12 11:03 PM), John Stultz wrote:
-> On 06/07/2012 04:41 PM, Dave Hansen wrote:
->> On 06/07/2012 03:55 AM, Dmitry Adamushko wrote:
->>> but maybe we should also purge them before we swap out some non-tmpfs
->>> pages or drop some file-backed pages?
->>
->> Sure... I guess we could kick that from either direct reclaim or from
->> kswapd. But, then we're basically back to the places where
->> shrink_slab() is called.
->>
->> I think that means that we think it's preferable to integrate this more
->> directly in the VM instead of sticking it off in the corner of tmpfs
->> only, or pretending it's a slab.
->>
->> Dunno... The slab shrinker one isn't looking _so_ bad at the moment.
->
-> Dave also pointed out to me on irc that on a system without swap,
->shmem_writepage doesn't even get called, which kills the utility of
->triggering volatile purging from writepage.
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-Ah, right you are. swap-less system never try to reclaim anon pages. So,
-volatile pages is no longer swap backed. swap backed lru is no longer suitable
-place.
+------------------
 
-  
-> So I'm falling back to using a shrinker for now, but I think Dmitry's
->point is an interesting one, and am interested in finding a better
->place to trigger purging volatile ranges from the mm code. If anyone has any
->suggestions, let me know, otherwise I'll go back to trying to better grok the mm code.
+From: Joerg Roedel <joerg.roedel@amd.com>
 
-I hate vm feature to abuse shrink_slab(). because of, it was not designed generic callback.
-it was designed for shrinking filesystem metadata. Therefore, vm keeping a balance between
-page scanning and slab scanning. then, a lot of shrink_slab misuse may lead to break balancing
-logic. i.e. drop icache/dcache too many and makes perfomance impact.
+commit 3d06fca8d2aa3543030e40b95f1d62f9f5a03540 upstream.
 
-As far as a code impact is small, I'm prefer to connect w/ vm reclaim code directly.
+Due to a recent erratum it can happen that the head pointer
+of the event-log is updated before the actual event-log
+entry is written. This patch implements the recommended
+workaround.
+
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/iommu/amd_iommu.c |   29 +++++++++++++++++++++++------
+ 1 file changed, 23 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
+index 08f3eec..d90a421 100644
+--- a/drivers/iommu/amd_iommu.c
++++ b/drivers/iommu/amd_iommu.c
+@@ -450,12 +450,27 @@ static void dump_command(unsigned long phys_addr)
+ 
+ static void iommu_print_event(struct amd_iommu *iommu, void *__evt)
+ {
+-	u32 *event = __evt;
+-	int type  = (event[1] >> EVENT_TYPE_SHIFT)  & EVENT_TYPE_MASK;
+-	int devid = (event[0] >> EVENT_DEVID_SHIFT) & EVENT_DEVID_MASK;
+-	int domid = (event[1] >> EVENT_DOMID_SHIFT) & EVENT_DOMID_MASK;
+-	int flags = (event[1] >> EVENT_FLAGS_SHIFT) & EVENT_FLAGS_MASK;
+-	u64 address = (u64)(((u64)event[3]) << 32) | event[2];
++	int type, devid, domid, flags;
++	volatile u32 *event = __evt;
++	int count = 0;
++	u64 address;
++
++retry:
++	type    = (event[1] >> EVENT_TYPE_SHIFT)  & EVENT_TYPE_MASK;
++	devid   = (event[0] >> EVENT_DEVID_SHIFT) & EVENT_DEVID_MASK;
++	domid   = (event[1] >> EVENT_DOMID_SHIFT) & EVENT_DOMID_MASK;
++	flags   = (event[1] >> EVENT_FLAGS_SHIFT) & EVENT_FLAGS_MASK;
++	address = (u64)(((u64)event[3]) << 32) | event[2];
++
++	if (type == 0) {
++		/* Did we hit the erratum? */
++		if (++count == LOOP_TIMEOUT) {
++			pr_err("AMD-Vi: No event written to event log\n");
++			return;
++		}
++		udelay(1);
++		goto retry;
++	}
+ 
+ 	printk(KERN_ERR "AMD-Vi: Event logged [");
+ 
+@@ -508,6 +523,8 @@ static void iommu_print_event(struct amd_iommu *iommu, void *__evt)
+ 	default:
+ 		printk(KERN_ERR "UNKNOWN type=0x%02x]\n", type);
+ 	}
++
++	memset(__evt, 0, 4 * sizeof(u32));
+ }
+ 
+ static void iommu_poll_events(struct amd_iommu *iommu)
+
+
