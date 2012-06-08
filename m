@@ -1,88 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758330Ab2FHAfo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 20:35:44 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:43291 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755447Ab2FHAfn (ORCPT
+	id S1758764Ab2FHAgN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 20:36:13 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:42716 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758537Ab2FHAgL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 20:35:43 -0400
-Message-ID: <1339115737.4310.7.camel@phoenix>
-Subject: [PATCH 2/2] mfd: max77693: fix irq leak and wrong kfree call
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Chanwoo Choi <cw00.choi@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Date: Fri, 08 Jun 2012 08:35:37 +0800
-In-Reply-To: <1339115669.4310.6.camel@phoenix>
-References: <1339115669.4310.6.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 7 Jun 2012 20:36:11 -0400
+Date: Fri, 8 Jun 2012 01:36:04 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Miklos Szeredi <mszeredi@suse.cz>, Jan Kara <jack@suse.cz>,
+        Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
+        "J. Bruce Fields" <bfields@redhat.com>, Sage Weil <sage@newdream.net>
+Subject: Re: processes hung after sys_renameat, and 'missing' processes
+Message-ID: <20120608003604.GK30000@ZenIV.linux.org.uk>
+References: <20120606230040.GA18089@redhat.com>
+ <CA+55aFx_oREEd2XS_aG7PJ7dwzWjgx689V_uRPGWpVS01_++6A@mail.gmail.com>
+ <20120606235403.GC30000@ZenIV.linux.org.uk>
+ <20120607002914.GB22223@redhat.com>
+ <CA+55aFyp2GUbc218eb5BDyAqz+cOPTJMVcb4ptk+f1_RBB+-mg@mail.gmail.com>
+ <20120607011915.GA17566@redhat.com>
+ <20120607012900.GE30000@ZenIV.linux.org.uk>
+ <20120607193607.GI30000@ZenIV.linux.org.uk>
+ <873966n2c2.fsf@xmission.com>
+ <CA+55aFxxS3+NmZacr76qNmEu9=-=aw61gW1Ebugg8hdMNgKiJA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFxxS3+NmZacr76qNmEu9=-=aw61gW1Ebugg8hdMNgKiJA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need to call max77693_irq_exit() in max77693_i2c_probe error patch and
-max77693_i2c_remove.
+On Thu, Jun 07, 2012 at 04:57:13PM -0700, Linus Torvalds wrote:
 
-Current code already uses devm_kzalloc() to allocate memory for max77693.
-Thus we should not call kfree(max77693), otherwise we got double free.
+> Any per-filesystem mutex should do, so if sysfs always holds the
+> sysfs_mutex - and never allows user-initiated renames - it should be
+> safe.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/mfd/max77693.c |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+Frankly, I would very much prefer to have the same locking rules wherever
+possible.  The locking system is already overcomplicated and making its
+analysis fs-dependent as well... <shudder>  Sure, we can do that, and that
+might even work, until we find out that some piece of code that started
+as a helper to some function never called on sysfs dentries had been
+reused on the path that *is* reachable on sysfs.  At which point we are
+suddenly in trouble.
 
-diff --git a/drivers/mfd/max77693.c b/drivers/mfd/max77693.c
-index 4055bc2..4251757 100644
---- a/drivers/mfd/max77693.c
-+++ b/drivers/mfd/max77693.c
-@@ -122,7 +122,7 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
- 	max77693->regmap = devm_regmap_init_i2c(i2c, &max77693_regmap_config);
- 	if (IS_ERR(max77693->regmap)) {
- 		ret = PTR_ERR(max77693->regmap);
--		dev_err(max77693->dev,"failed to allocate register map: %d\n",
-+		dev_err(max77693->dev, "failed to allocate register map: %d\n",
- 				ret);
- 		goto err_regmap;
- 	}
-@@ -154,7 +154,7 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
- 
- 	ret = max77693_irq_init(max77693);
- 	if (ret < 0)
--		goto err_mfd;
-+		goto err_irq;
- 
- 	pm_runtime_set_active(max77693->dev);
- 
-@@ -168,11 +168,11 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
- 	return ret;
- 
- err_mfd:
-+	max77693_irq_exit(max77693);
-+err_irq:
- 	i2c_unregister_device(max77693->muic);
- 	i2c_unregister_device(max77693->haptic);
- err_regmap:
--	kfree(max77693);
--
- 	return ret;
+I wouldn't be bothered so much if the overall picture had been simpler;
+unfortunately, it isn't.
+
+Eric, how about this - if nothing else, that makes code in there simpler
+and less dependent on details of VFS guts:
+
+diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
+index e6bb9b2..5579826 100644
+--- a/fs/sysfs/dir.c
++++ b/fs/sysfs/dir.c
+@@ -363,7 +363,7 @@ static void sysfs_dentry_iput(struct dentry *dentry, struct inode *inode)
+ 	iput(inode);
  }
  
-@@ -181,6 +181,7 @@ static int max77693_i2c_remove(struct i2c_client *i2c)
- 	struct max77693_dev *max77693 = i2c_get_clientdata(i2c);
+-static const struct dentry_operations sysfs_dentry_ops = {
++const struct dentry_operations sysfs_dentry_ops = {
+ 	.d_revalidate	= sysfs_dentry_revalidate,
+ 	.d_delete	= sysfs_dentry_delete,
+ 	.d_iput		= sysfs_dentry_iput,
+@@ -795,16 +795,8 @@ static struct dentry * sysfs_lookup(struct inode *dir, struct dentry *dentry,
+ 	}
  
- 	mfd_remove_devices(max77693->dev);
-+	max77693_irq_exit(max77693);
- 	i2c_unregister_device(max77693->muic);
- 	i2c_unregister_device(max77693->haptic);
+ 	/* instantiate and hash dentry */
+-	ret = d_find_alias(inode);
+-	if (!ret) {
+-		d_set_d_op(dentry, &sysfs_dentry_ops);
+-		dentry->d_fsdata = sysfs_get(sd);
+-		d_add(dentry, inode);
+-	} else {
+-		d_move(ret, dentry);
+-		iput(inode);
+-	}
+-
++	dentry->d_fsdata = sysfs_get(sd);
++	ret = d_materialise_unique(dentry, inode);
+  out_unlock:
+ 	mutex_unlock(&sysfs_mutex);
+ 	return ret;
+diff --git a/fs/sysfs/mount.c b/fs/sysfs/mount.c
+index 52c3bdb..c15a7a3 100644
+--- a/fs/sysfs/mount.c
++++ b/fs/sysfs/mount.c
+@@ -68,6 +68,7 @@ static int sysfs_fill_super(struct super_block *sb, void *data, int silent)
+ 	}
+ 	root->d_fsdata = &sysfs_root;
+ 	sb->s_root = root;
++	sb->s_d_op = &sysfs_dentry_ops;
+ 	return 0;
+ }
  
--- 
-1.7.9.5
-
-
-
+diff --git a/fs/sysfs/sysfs.h b/fs/sysfs/sysfs.h
+index 661a963..d73c093 100644
+--- a/fs/sysfs/sysfs.h
++++ b/fs/sysfs/sysfs.h
+@@ -157,6 +157,7 @@ extern struct kmem_cache *sysfs_dir_cachep;
+  */
+ extern struct mutex sysfs_mutex;
+ extern spinlock_t sysfs_assoc_lock;
++extern const struct dentry_operations sysfs_dentry_ops;
+ 
+ extern const struct file_operations sysfs_dir_operations;
+ extern const struct inode_operations sysfs_dir_inode_operations;
