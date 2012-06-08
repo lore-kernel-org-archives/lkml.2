@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760705Ab2FHOxF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 10:53:05 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59629 "EHLO
+	id S1760724Ab2FHOxy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 10:53:54 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59637 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757145Ab2FHOxA (ORCPT
+	with ESMTP id S1757735Ab2FHOxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 10:53:00 -0400
-Date: Fri, 8 Jun 2012 07:52:49 -0700
-From: tip-bot for Alexander Gordeev <agordeev@redhat.com>
-Message-ID: <tip-4988a40c3981212fa8c64da68722affc1cb6697a@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, agordeev@redhat.com, hpa@zytor.com,
-        mingo@kernel.org, yinghai@kernel.org, suresh.b.siddha@intel.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, agordeev@redhat.com,
-        linux-kernel@vger.kernel.org, yinghai@kernel.org,
-        suresh.b.siddha@intel.com, tglx@linutronix.de
-In-Reply-To: <20120607131624.GG4759@dhcp-26-207.brq.redhat.com>
-References: <20120607131624.GG4759@dhcp-26-207.brq.redhat.com>
+	Fri, 8 Jun 2012 10:53:51 -0400
+Date: Fri, 8 Jun 2012 07:53:41 -0700
+From: tip-bot for Cliff Wickman <cpw@sgi.com>
+Message-ID: <tip-d5d2d2eea84b0d8450b082edbc3dbde41fb8bfd8@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        stable@kernel.org, cpw@sgi.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        stable@kernel.org, cpw@sgi.com, tglx@linutronix.de
+In-Reply-To: <E1SccoO-0002Lh-Cb@eag09.americas.sgi.com>
+References: <E1SccoO-0002Lh-Cb@eag09.americas.sgi.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86/apic: Make cpu_mask_to_apicid()
-  operations check cpu_online_mask
-Git-Commit-ID: 4988a40c3981212fa8c64da68722affc1cb6697a
+Subject: [tip:x86/urgent] x86/uv: Fix UV2 BAU legacy mode
+Git-Commit-ID: d5d2d2eea84b0d8450b082edbc3dbde41fb8bfd8
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,147 +27,60 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 08 Jun 2012 07:52:55 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 08 Jun 2012 07:53:47 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4988a40c3981212fa8c64da68722affc1cb6697a
-Gitweb:     http://git.kernel.org/tip/4988a40c3981212fa8c64da68722affc1cb6697a
-Author:     Alexander Gordeev <agordeev@redhat.com>
-AuthorDate: Thu, 7 Jun 2012 15:16:25 +0200
+Commit-ID:  d5d2d2eea84b0d8450b082edbc3dbde41fb8bfd8
+Gitweb:     http://git.kernel.org/tip/d5d2d2eea84b0d8450b082edbc3dbde41fb8bfd8
+Author:     Cliff Wickman <cpw@sgi.com>
+AuthorDate: Thu, 7 Jun 2012 08:31:40 -0500
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 8 Jun 2012 11:44:30 +0200
+CommitDate: Fri, 8 Jun 2012 11:48:28 +0200
 
-x86/apic: Make cpu_mask_to_apicid() operations check cpu_online_mask
+x86/uv: Fix UV2 BAU legacy mode
 
-Currently cpu_mask_to_apicid() should not get a offline CPU with
-the cpumask. Otherwise some apic drivers might try to access
-non-existent per-cpu variables (i.e. x2apic). In that regard
-cpu_mask_to_apicid() and cpu_mask_to_apicid_and() operations are
-inconsistent.
+The SGI Altix UV2 BAU (Broadcast Assist Unit) as used for
+tlb-shootdown (selective broadcast mode) always uses UV2
+broadcast descriptor format. There is no need to clear the
+'legacy' (UV1) mode, because the hardware always uses UV2 mode
+for selective broadcast.
 
-This fix makes the two operations do not rely on calling
-functions and always return the apicid for only online CPUs. As
-result, the meaning and implementations of cpu_mask_to_apicid()
-and cpu_mask_to_apicid_and() operations become straight.
+But the BIOS uses general broadcast and legacy mode, and the
+hardware pays attention to the legacy mode bit for general
+broadcast. So the kernel must not clear that mode bit.
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Link: http://lkml.kernel.org/r/20120607131624.GG4759@dhcp-26-207.brq.redhat.com
+Signed-off-by: Cliff Wickman <cpw@sgi.com>
+Cc: <stable@kernel.org>
+Link: http://lkml.kernel.org/r/E1SccoO-0002Lh-Cb@eag09.americas.sgi.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/include/asm/apic.h           |    6 ++----
- arch/x86/kernel/apic/apic.c           |    2 +-
- arch/x86/kernel/apic/es7000_32.c      |    3 +--
- arch/x86/kernel/apic/summit_32.c      |    3 +--
- arch/x86/kernel/apic/x2apic_cluster.c |    2 +-
- arch/x86/kernel/apic/x2apic_uv_x.c    |    2 +-
- 6 files changed, 7 insertions(+), 11 deletions(-)
+ arch/x86/include/asm/uv/uv_bau.h |    1 -
+ arch/x86/platform/uv/tlb_uv.c    |    1 -
+ 2 files changed, 0 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
-index ae91f9c..1ed3eea 100644
---- a/arch/x86/include/asm/apic.h
-+++ b/arch/x86/include/asm/apic.h
-@@ -596,7 +596,7 @@ static inline int default_phys_pkg_id(int cpuid_apic, int index_msb)
- static inline int
- __flat_cpu_mask_to_apicid(unsigned long cpu_mask, unsigned int *apicid)
- {
--	cpu_mask &= APIC_ALL_CPUS;
-+	cpu_mask = cpu_mask & APIC_ALL_CPUS & cpumask_bits(cpu_online_mask)[0];
- 	if (likely(cpu_mask)) {
- 		*apicid = (unsigned int)cpu_mask;
- 		return 0;
-@@ -619,9 +619,7 @@ flat_cpu_mask_to_apicid_and(const struct cpumask *cpumask,
- {
- 	unsigned long mask1 = cpumask_bits(cpumask)[0];
- 	unsigned long mask2 = cpumask_bits(andmask)[0];
--	unsigned long mask3 = cpumask_bits(cpu_online_mask)[0];
--
--	return __flat_cpu_mask_to_apicid(mask1 & mask2 & mask3, apicid);
-+	return __flat_cpu_mask_to_apicid(mask1 & mask2, apicid);
- }
+diff --git a/arch/x86/include/asm/uv/uv_bau.h b/arch/x86/include/asm/uv/uv_bau.h
+index becf47b..6149b47 100644
+--- a/arch/x86/include/asm/uv/uv_bau.h
++++ b/arch/x86/include/asm/uv/uv_bau.h
+@@ -149,7 +149,6 @@
+ /* 4 bits of software ack period */
+ #define UV2_ACK_MASK			0x7UL
+ #define UV2_ACK_UNITS_SHFT		3
+-#define UV2_LEG_SHFT UV2H_LB_BAU_MISC_CONTROL_USE_LEGACY_DESCRIPTOR_FORMATS_SHFT
+ #define UV2_EXT_SHFT UV2H_LB_BAU_MISC_CONTROL_ENABLE_EXTENDED_SB_STATUS_SHFT
  
- extern int
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index b8d9260..7e9bbe7 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -2136,7 +2136,7 @@ static inline int __default_cpu_to_apicid(int cpu, unsigned int *apicid)
- int default_cpu_mask_to_apicid(const struct cpumask *cpumask,
- 			       unsigned int *apicid)
- {
--	int cpu = cpumask_first(cpumask);
-+	int cpu = cpumask_first_and(cpumask, cpu_online_mask);
- 	return __default_cpu_to_apicid(cpu, apicid);
- }
- 
-diff --git a/arch/x86/kernel/apic/es7000_32.c b/arch/x86/kernel/apic/es7000_32.c
-index 515ebb0..b35cfb9 100644
---- a/arch/x86/kernel/apic/es7000_32.c
-+++ b/arch/x86/kernel/apic/es7000_32.c
-@@ -534,7 +534,7 @@ es7000_cpu_mask_to_apicid(const struct cpumask *cpumask, unsigned int *dest_id)
- 	/*
- 	 * The cpus in the mask must all be on the apic cluster.
- 	 */
--	for_each_cpu(cpu, cpumask) {
-+	for_each_cpu_and(cpu, cpumask, cpu_online_mask) {
- 		int new_apicid = early_per_cpu(x86_cpu_to_logical_apicid, cpu);
- 
- 		if (round && APIC_CLUSTER(apicid) != APIC_CLUSTER(new_apicid)) {
-@@ -561,7 +561,6 @@ es7000_cpu_mask_to_apicid_and(const struct cpumask *inmask,
- 		return 0;
- 
- 	cpumask_and(cpumask, inmask, andmask);
--	cpumask_and(cpumask, cpumask, cpu_online_mask);
- 	es7000_cpu_mask_to_apicid(cpumask, apicid);
- 
- 	free_cpumask_var(cpumask);
-diff --git a/arch/x86/kernel/apic/summit_32.c b/arch/x86/kernel/apic/summit_32.c
-index 5766d84..79d360f 100644
---- a/arch/x86/kernel/apic/summit_32.c
-+++ b/arch/x86/kernel/apic/summit_32.c
-@@ -272,7 +272,7 @@ summit_cpu_mask_to_apicid(const struct cpumask *cpumask, unsigned int *dest_id)
- 	/*
- 	 * The cpus in the mask must all be on the apic cluster.
- 	 */
--	for_each_cpu(cpu, cpumask) {
-+	for_each_cpu_and(cpu, cpumask, cpu_online_mask) {
- 		int new_apicid = early_per_cpu(x86_cpu_to_logical_apicid, cpu);
- 
- 		if (round && APIC_CLUSTER(apicid) != APIC_CLUSTER(new_apicid)) {
-@@ -298,7 +298,6 @@ summit_cpu_mask_to_apicid_and(const struct cpumask *inmask,
- 		return 0;
- 
- 	cpumask_and(cpumask, inmask, andmask);
--	cpumask_and(cpumask, cpumask, cpu_online_mask);
- 	summit_cpu_mask_to_apicid(cpumask, apicid);
- 
- 	free_cpumask_var(cpumask);
-diff --git a/arch/x86/kernel/apic/x2apic_cluster.c b/arch/x86/kernel/apic/x2apic_cluster.c
-index 5f86f79..23a46cf 100644
---- a/arch/x86/kernel/apic/x2apic_cluster.c
-+++ b/arch/x86/kernel/apic/x2apic_cluster.c
-@@ -99,7 +99,7 @@ static void x2apic_send_IPI_all(int vector)
- static int
- x2apic_cpu_mask_to_apicid(const struct cpumask *cpumask, unsigned int *apicid)
- {
--	int cpu = cpumask_first(cpumask);
-+	int cpu = cpumask_first_and(cpumask, cpu_online_mask);
- 	int i;
- 
- 	if (cpu >= nr_cpu_ids)
-diff --git a/arch/x86/kernel/apic/x2apic_uv_x.c b/arch/x86/kernel/apic/x2apic_uv_x.c
-index 2f3030f..307aa07 100644
---- a/arch/x86/kernel/apic/x2apic_uv_x.c
-+++ b/arch/x86/kernel/apic/x2apic_uv_x.c
-@@ -286,7 +286,7 @@ uv_cpu_mask_to_apicid(const struct cpumask *cpumask, unsigned int *apicid)
- 	 * We're using fixed IRQ delivery, can only return one phys APIC ID.
- 	 * May as well be the first.
- 	 */
--	int cpu = cpumask_first(cpumask);
-+	int cpu = cpumask_first_and(cpumask, cpu_online_mask);
- 	return __uv_cpu_to_apicid(cpu, apicid);
- }
- 
+ /*
+diff --git a/arch/x86/platform/uv/tlb_uv.c b/arch/x86/platform/uv/tlb_uv.c
+index 3ae0e61..59880af 100644
+--- a/arch/x86/platform/uv/tlb_uv.c
++++ b/arch/x86/platform/uv/tlb_uv.c
+@@ -1295,7 +1295,6 @@ static void __init enable_timeouts(void)
+ 		 */
+ 		mmr_image |= (1L << SOFTACK_MSHIFT);
+ 		if (is_uv2_hub()) {
+-			mmr_image &= ~(1L << UV2_LEG_SHFT);
+ 			mmr_image |= (1L << UV2_EXT_SHFT);
+ 		}
+ 		write_mmr_misc_control(pnode, mmr_image);
