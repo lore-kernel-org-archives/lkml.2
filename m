@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761745Ab2FHFKb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 01:10:31 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43203 "EHLO
+	id S1761728Ab2FHFK2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 01:10:28 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43273 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1761154Ab2FHFHe (ORCPT
+	by vger.kernel.org with ESMTP id S1759724Ab2FHFHe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Jun 2012 01:07:34 -0400
-Message-Id: <20120608041842.237707277@decadent.org.uk>
+Message-Id: <20120608041849.701476797@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 08 Jun 2012 05:18:50 +0100
+Date: Fri, 08 Jun 2012 05:19:46 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Vincent Frentzel <zcecc22@gmail.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [ 10/82] drm/i915: enable vdd when switching off the eDP panel
+        alan@lxorguk.ukuu.org.uk, Gao feng <gaofeng@cn.fujitsu.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 66/82] ipv6: fix incorrect ipsec fragment
 In-Reply-To: <20120608041840.861504477@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,94 +28,180 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Gao feng <gaofeng@cn.fujitsu.com>
 
-commit 6cb49835da0426f69a2931bc2a0a8156344b0e41 upstream.
+[ Upstream commit 0c1833797a5a6ec23ea9261d979aa18078720b74 ]
 
-We have one bug report from a validation team that we get the eDP
-panel sequencing still somewhat wrong: We need to enable VDD while
-switching off the panel and backlight. Unfortunately that reporter
-seems to have fallen off the earth :(
+Since commit ad0081e43a
+"ipv6: Fragment locally generated tunnel-mode IPSec6 packets as needed"
+the fragment of packets is incorrect.
+because tunnel mode needs IPsec headers and trailer for all fragments,
+while on transport mode it is sufficient to add the headers to the
+first fragment and the trailer to the last.
 
-For another reporter this actually fixes a black panel issue because
-without this the backlight/panel gets confused and doesn't light up
-again.
+so modify mtu and maxfraglen base on ipsec mode and if fragment is first
+or last.
 
-v2: I've forgotten to remove the vdd_off call in panel_off which is
-now bogus. This essentially reverts
+with my test,it work well(every fragment's size is the mtu)
+and does not trigger slow fragment path.
 
-commit 17038de5f16569a25343cf68668f3b657eafb00e
-Author: Chris Wilson <chris@chris-wilson.co.uk>
-Date:   Mon Apr 16 22:43:42 2012 +0100
+Changes from v1:
+	though optimization, mtu_prev and maxfraglen_prev can be delete.
+	replace xfrm mode codes with dst_entry's new frag DST_XFRM_TUNNEL.
+	add fuction ip6_append_data_mtu to make codes clearer.
 
-    drm/i915/dp: Flush any outstanding work to turn the VDD off
-
-v3: the current panel_off code forces off the vdd power, too. Which is
-bogus and resulted in some funny warnings later on when we've tried to
-do aux channel communications with just the vdd forced on. Fix this,
-too.
-
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=46312
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=43163
-Tested-by: Vincent Frentzel <zcecc22@gmail.com>
-Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-[bwh: Backported to 3.2: nothing to revert here]
+Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/i915/intel_dp.c |   18 ++++++++----------
- 1 file changed, 8 insertions(+), 10 deletions(-)
+ include/net/dst.h      |    1 +
+ net/ipv6/ip6_output.c  |   68 +++++++++++++++++++++++++++++++++++-------------
+ net/xfrm/xfrm_policy.c |    3 +++
+ 3 files changed, 54 insertions(+), 18 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_dp.c
-+++ b/drivers/gpu/drm/i915/intel_dp.c
-@@ -1149,10 +1149,10 @@
+diff --git a/include/net/dst.h b/include/net/dst.h
+index 65bca65..16010d1 100644
+--- a/include/net/dst.h
++++ b/include/net/dst.h
+@@ -55,6 +55,7 @@ struct dst_entry {
+ #define DST_NOCOUNT		0x0020
+ #define DST_NOPEER		0x0040
+ #define DST_FAKE_RTABLE		0x0080
++#define DST_XFRM_TUNNEL		0x0100
  
- 	DRM_DEBUG_KMS("Turn eDP power off\n");
- 
--	WARN(intel_dp->want_panel_vdd, "Cannot turn power off while VDD is on\n");
-+	WARN(!intel_dp->want_panel_vdd, "Need VDD to turn off panel\n");
- 
- 	pp = ironlake_get_pp_control(dev_priv);
--	pp &= ~(POWER_TARGET_ON | EDP_FORCE_VDD | PANEL_POWER_RESET | EDP_BLC_ENABLE);
-+	pp &= ~(POWER_TARGET_ON | PANEL_POWER_RESET | EDP_BLC_ENABLE);
- 	I915_WRITE(PCH_PP_CONTROL, pp);
- 	POSTING_READ(PCH_PP_CONTROL);
- 
-@@ -1260,18 +1260,16 @@
- {
- 	struct intel_dp *intel_dp = enc_to_intel_dp(encoder);
- 
-+
-+	/* Make sure the panel is off before trying to change the mode. But also
-+	 * ensure that we have vdd while we switch off the panel. */
-+	ironlake_edp_panel_vdd_on(intel_dp);
- 	ironlake_edp_backlight_off(intel_dp);
- 	ironlake_edp_panel_off(intel_dp);
- 
--	/* Wake up the sink first */
--	ironlake_edp_panel_vdd_on(intel_dp);
- 	intel_dp_sink_dpms(intel_dp, DRM_MODE_DPMS_ON);
- 	intel_dp_link_down(intel_dp);
- 	ironlake_edp_panel_vdd_off(intel_dp, false);
--
--	/* Make sure the panel is off before trying to
--	 * change the mode
--	 */
+ 	short			error;
+ 	short			obsolete;
+diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
+index f7f07e2..ae98e09 100644
+--- a/net/ipv6/ip6_output.c
++++ b/net/ipv6/ip6_output.c
+@@ -1178,6 +1178,29 @@ static inline struct ipv6_rt_hdr *ip6_rthdr_dup(struct ipv6_rt_hdr *src,
+ 	return src ? kmemdup(src, (src->hdrlen + 1) * 8, gfp) : NULL;
  }
  
- static void intel_dp_commit(struct drm_encoder *encoder)
-@@ -1303,10 +1301,11 @@
- 	uint32_t dp_reg = I915_READ(intel_dp->output_reg);
++static void ip6_append_data_mtu(int *mtu,
++				int *maxfraglen,
++				unsigned int fragheaderlen,
++				struct sk_buff *skb,
++				struct rt6_info *rt)
++{
++	if (!(rt->dst.flags & DST_XFRM_TUNNEL)) {
++		if (skb == NULL) {
++			/* first fragment, reserve header_len */
++			*mtu = *mtu - rt->dst.header_len;
++
++		} else {
++			/*
++			 * this fragment is not first, the headers
++			 * space is regarded as data space.
++			 */
++			*mtu = dst_mtu(rt->dst.path);
++		}
++		*maxfraglen = ((*mtu - fragheaderlen) & ~7)
++			      + fragheaderlen - sizeof(struct frag_hdr);
++	}
++}
++
+ int ip6_append_data(struct sock *sk, int getfrag(void *from, char *to,
+ 	int offset, int len, int odd, struct sk_buff *skb),
+ 	void *from, int length, int transhdrlen,
+@@ -1187,7 +1210,7 @@ int ip6_append_data(struct sock *sk, int getfrag(void *from, char *to,
+ 	struct inet_sock *inet = inet_sk(sk);
+ 	struct ipv6_pinfo *np = inet6_sk(sk);
+ 	struct inet_cork *cork;
+-	struct sk_buff *skb;
++	struct sk_buff *skb, *skb_prev = NULL;
+ 	unsigned int maxfraglen, fragheaderlen;
+ 	int exthdrlen;
+ 	int dst_exthdrlen;
+@@ -1245,8 +1268,12 @@ int ip6_append_data(struct sock *sk, int getfrag(void *from, char *to,
+ 		inet->cork.fl.u.ip6 = *fl6;
+ 		np->cork.hop_limit = hlimit;
+ 		np->cork.tclass = tclass;
+-		mtu = np->pmtudisc == IPV6_PMTUDISC_PROBE ?
+-		      rt->dst.dev->mtu : dst_mtu(&rt->dst);
++		if (rt->dst.flags & DST_XFRM_TUNNEL)
++			mtu = np->pmtudisc == IPV6_PMTUDISC_PROBE ?
++			      rt->dst.dev->mtu : dst_mtu(&rt->dst);
++		else
++			mtu = np->pmtudisc == IPV6_PMTUDISC_PROBE ?
++			      rt->dst.dev->mtu : dst_mtu(rt->dst.path);
+ 		if (np->frag_size < mtu) {
+ 			if (np->frag_size)
+ 				mtu = np->frag_size;
+@@ -1342,25 +1369,27 @@ int ip6_append_data(struct sock *sk, int getfrag(void *from, char *to,
+ 			unsigned int fraglen;
+ 			unsigned int fraggap;
+ 			unsigned int alloclen;
+-			struct sk_buff *skb_prev;
+ alloc_new_skb:
+-			skb_prev = skb;
+-
+ 			/* There's no room in the current skb */
+-			if (skb_prev)
+-				fraggap = skb_prev->len - maxfraglen;
++			if (skb)
++				fraggap = skb->len - maxfraglen;
+ 			else
+ 				fraggap = 0;
++			/* update mtu and maxfraglen if necessary */
++			if (skb == NULL || skb_prev == NULL)
++				ip6_append_data_mtu(&mtu, &maxfraglen,
++						    fragheaderlen, skb, rt);
++
++			skb_prev = skb;
  
- 	if (mode != DRM_MODE_DPMS_ON) {
-+		/* Switching the panel off requires vdd. */
-+		ironlake_edp_panel_vdd_on(intel_dp);
- 		ironlake_edp_backlight_off(intel_dp);
- 		ironlake_edp_panel_off(intel_dp);
+ 			/*
+ 			 * If remaining data exceeds the mtu,
+ 			 * we know we need more fragment(s).
+ 			 */
+ 			datalen = length + fraggap;
+-			if (datalen > (cork->length <= mtu && !(cork->flags & IPCORK_ALLFRAG) ? mtu : maxfraglen) - fragheaderlen)
+-				datalen = maxfraglen - fragheaderlen;
  
--		ironlake_edp_panel_vdd_on(intel_dp);
- 		intel_dp_sink_dpms(intel_dp, mode);
- 		intel_dp_link_down(intel_dp);
- 		ironlake_edp_panel_vdd_off(intel_dp, false);
+-			fraglen = datalen + fragheaderlen;
++			if (datalen > (cork->length <= mtu && !(cork->flags & IPCORK_ALLFRAG) ? mtu : maxfraglen) - fragheaderlen)
++				datalen = maxfraglen - fragheaderlen - rt->dst.trailer_len;
+ 			if ((flags & MSG_MORE) &&
+ 			    !(rt->dst.dev->features&NETIF_F_SG))
+ 				alloclen = mtu;
+@@ -1369,13 +1398,16 @@ alloc_new_skb:
+ 
+ 			alloclen += dst_exthdrlen;
+ 
+-			/*
+-			 * The last fragment gets additional space at tail.
+-			 * Note: we overallocate on fragments with MSG_MODE
+-			 * because we have no idea if we're the last one.
+-			 */
+-			if (datalen == length + fraggap)
+-				alloclen += rt->dst.trailer_len;
++			if (datalen != length + fraggap) {
++				/*
++				 * this is not the last fragment, the trailer
++				 * space is regarded as data space.
++				 */
++				datalen += rt->dst.trailer_len;
++			}
++
++			alloclen += rt->dst.trailer_len;
++			fraglen = datalen + fragheaderlen;
+ 
+ 			/*
+ 			 * We just reserve space for fragment header.
+diff --git a/net/xfrm/xfrm_policy.c b/net/xfrm/xfrm_policy.c
+index 9049a5c..0174034 100644
+--- a/net/xfrm/xfrm_policy.c
++++ b/net/xfrm/xfrm_policy.c
+@@ -1919,6 +1919,9 @@ no_transform:
+ 	}
+ ok:
+ 	xfrm_pols_put(pols, drop_pols);
++	if (dst && dst->xfrm &&
++	    dst->xfrm->props.mode == XFRM_MODE_TUNNEL)
++		dst->flags |= DST_XFRM_TUNNEL;
+ 	return dst;
+ 
+ nopol:
 
 
