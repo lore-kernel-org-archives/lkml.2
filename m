@@ -1,99 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964832Ab2FHVCq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 17:02:46 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:36066 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754601Ab2FHVCo (ORCPT
+	id S964856Ab2FHVDd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 17:03:33 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:40141 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934509Ab2FHVDX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 17:02:44 -0400
-X-Sasl-enc: tUJak5GbssvxrifyL2EtfES1LpdGFvzo4+kQ1kzIE6GJ 1339189363
-Date: Fri, 8 Jun 2012 18:02:39 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Borislav Petkov <borislav.petkov@amd.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
-        andi@firstfloor.org, mingo@elte.hu, ming.m.lin@intel.com,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Dimitri Sivanich <sivanich@sgi.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>
-Subject: Re: [PATCH] perf/x86: check ucode before disabling PEBS on
- SandyBridge
-Message-ID: <20120608210239.GB16470@khazad-dum.debian.net>
-References: <20120607071531.GA4849@quad>
- <1339064319.23343.13.camel@twins>
- <CABPqkBQ+p5rcuxpXCTLMXPM+awAHhQ6mP9-WzVh5GWtn2GyfrA@mail.gmail.com>
- <1339065932.23343.18.camel@twins>
- <CABPqkBQ=tLXXsgvzQx+i01Owm4MM8m=6cEVVi4ab64gOiTTBYQ@mail.gmail.com>
- <1339067757.23343.21.camel@twins>
- <20120608093513.GA22520@gmail.com>
- <1339149613.23343.52.camel@twins>
- <1339161972.2507.13.camel@laptop>
- <20120608135117.GB31359@aftab.osrc.amd.com>
+	Fri, 8 Jun 2012 17:03:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120608135117.GB31359@aftab.osrc.amd.com>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Fri, 8 Jun 2012 14:03:22 -0700
+Message-ID: <CAH5vBdJ3ZHkK5qoW9Wj+jp=rgZ2Hio4fCdJMLR2cTuMAi6eVCA@mail.gmail.com>
+Subject: [migration/0] used 90% of CPU ?
+From: cheng renquan <crquan@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 08 Jun 2012, Borislav Petkov wrote:
-> On Fri, Jun 08, 2012 at 03:26:12PM +0200, Peter Zijlstra wrote:
-> > On Fri, 2012-06-08 at 12:00 +0200, Peter Zijlstra wrote:
-> > > > > Or we could put a hook in the ucode loader.
-> > > > 
-> > > > I'd really suggest the latter - I doubt this will be our only 
-> > > > ucode dependent quirk, going forward ...
-> > > 
-> > > Yeah, am in the middle of writing that.. 
-> > 
-> > OK so the micro-code stuff is a complete trainwreck.
-> > 
-> > The very worst is that it does per-cpu micro-code updates, not machine
-> > wide. This results in it being able to have different revisions on
-> > different cpus. This in turn makes the below O(n^2) :/
-> 
-> Reportedly, there are some obscure systems which need different
-> microcode versions per CPU:
-> 
-> http://lkml.indiana.edu/hypermail/linux/kernel/1105.3/01010.html
+with v3.4.0; happening after resume, but not immediately, maybe 10
+minutes after resume,
+I'm not sure if it's related after resuming;
 
-I wrote that email you linked above.  All it means is that you can have
-more than one microcode *type* per system, because you can have more
-than one processor type per system.
+$ ps fu -e |awk 'NR <=2 || /[m]igration/'
+USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+root         2  0.0  0.0      0     0 ?        S    Jun07   0:00 [kthreadd]
+root         6 90.7  0.0      0     0 ?        S    Jun07 1133:40  \_
+[migration/0]
+root     18299  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+[migration/1]
+root     18302  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+[migration/2]
+root     18305  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+[migration/3]
 
-The lack of per-system microcode handling is, as far as I am concerned,
-a rather annoying misfeature, plain and simple.  A per-core interface
-that lets you have mismatched microcode across cores of the same type
-(i.e. that take the same microcode) is, IMO, a bottomless pit of pain
-and suffering which should diediediediedie as soon as possible.
+$ ps f -o uid,pid,%cpu,rss,stat,bsdstart,bsdtime,wchan:18,cmd -p
+1,2,6,18299,18302,18305,$$
+  UID   PID %CPU   RSS STAT  START   TIME WCHAN              CMD
+ 1000 24855  0.0  2508 Ss    13:52   0:00 wait               -bash
+    0     2  0.0     0 S     17:04   0:00 kthreadd           [kthreadd]
+    0     6 90.7     0 S     17:04 1133:40 cpu_stopper_thread  \_ [migration/0]
+    0 18299  0.0     0 S     13:05   0:00 cpu_stopper_thread  \_ [migration/1]
+    0 18302  0.0     0 S     13:05   0:00 cpu_stopper_thread  \_ [migration/2]
+    0 18305  0.0     0 S     13:05   0:00 cpu_stopper_thread  \_ [migration/3]
+    0     1  0.0   720 Ss    17:04   0:01 poll_schedule_time init [5]
 
-> > Why do we have per-cpu firmware anyway?
-> 
-> See above.
 
-It just means the firmware core has to do a per-cpu job, not that we
-should have mismatched microcodes across the same type of cpus, or even
-that we should have the required per-cpu handling of firmware exposed to
-the rest of the kernel and the worst of it all, exposed to userspace.
+I think the reason here is why pid:6 [migration/0]'s stime becomes 6802075 ?
 
-> Actually, the deal here is that you could have received microcode
-> already from BIOS and you won't have to necessarily load ucode from
-> userspace with the Linux ucode loader.
+some seconds ago, it was still a few hundreds, like suddenly increased
+to 6802075,
+equals 1133 minutes, 90% of the system uptime;
 
-Or from an enhanced bootloader.  Yes.
+              stime %lu   Amount of time that this process has been  scheduled
+                          in  kernel  mode, measured in clock ticks (divide by
+                          sysconf(_SC_CLK_TCK).
 
-> Btw, this is why we wanted to load ucode as early as possible but
-> there's no progress on the whole thing right now...
 
-Which is a pity.
-
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+$ cat /proc/{1,2,6,18299,18302,18305,$$}/stat |cut -d ' ' -f-17
+1 (init) S 0 1 1 0 -1 4202752 258 1364571 14 769 18 82 76381 27261
+2 (kthreadd) S 0 0 0 0 -1 2129984 0 0 0 0 0 2 0 0
+6 (migration/0) S 2 0 0 0 -1 69238848 0 0 0 0 0 6802075 0 0
+18299 (migration/1) S 2 0 0 0 -1 69238848 0 0 0 0 0 0 0 0
+18302 (migration/2) S 2 0 0 0 -1 69238848 0 0 0 0 0 0 0 0
+18305 (migration/3) S 2 0 0 0 -1 69238848 0 0 0 0 0 0 0 0
+24855 (bash) S 2574 24855 24855 34820 25116 4202496 1435 5803 0 1 8 0 7 8
