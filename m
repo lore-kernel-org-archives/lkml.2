@@ -1,26 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761484Ab2FHWyj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 18:54:39 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50937 "EHLO
+	id S1761433Ab2FHXB1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 19:01:27 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50991 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755620Ab2FHWyU (ORCPT
+	by vger.kernel.org with ESMTP id S1752748Ab2FHXB0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 18:54:20 -0400
-Message-ID: <1339196050.21665.128.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [ 00/82] 3.2.20-stable review
+	Fri, 8 Jun 2012 19:01:26 -0400
+Message-ID: <1339196476.21665.130.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [ 64/82] ext4: dont trash state flags in EXT4_IOC_SETFLAGS
 From: Ben Hutchings <ben@decadent.org.uk>
-To: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+To: "Ted Ts'o" <tytso@mit.edu>
 Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Date: Fri, 08 Jun 2012 23:54:10 +0100
-In-Reply-To: <1339164246.21665.119.camel@deadeye.wl.decadent.org.uk>
-References: <20120608041840.861504477@decadent.org.uk>
-	 <4FD2012F.60309@gmail.com>
-	 <1339164246.21665.119.camel@deadeye.wl.decadent.org.uk>
+        alan@lxorguk.ukuu.org.uk, Tao Ma <boyu.mt@taobao.com>,
+        Greg KH <gregkh@linuxfoundation.org>
+Date: Sat, 09 Jun 2012 00:01:16 +0100
+In-Reply-To: <20120608200553.GA1704@thunk.org>
+References: <20120607040345.775333506@linuxfoundation.org>
+	 <1339124589.21665.106.camel@deadeye.wl.decadent.org.uk>
+	 <20120608031144.GA9722@thunk.org>
+	 <1339125708.21665.108.camel@deadeye.wl.decadent.org.uk>
+	 <20120608200553.GA1704@thunk.org>
 Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-xRuF1WiDgl0OsxiQxtA+"
+	protocol="application/pgp-signature"; boundary="=-kvygyiOPzBs1juBwfL/F"
 X-Mailer: Evolution 3.2.2-1+b1 
 Mime-Version: 1.0
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
@@ -31,47 +34,22 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-xRuF1WiDgl0OsxiQxtA+
+--=-kvygyiOPzBs1juBwfL/F
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-On Fri, 2012-06-08 at 15:04 +0100, Ben Hutchings wrote:
-> On Fri, 2012-06-08 at 15:42 +0200, Maarten Lankhorst wrote:
-> > Hey,
+On Fri, 2012-06-08 at 16:05 -0400, Ted Ts'o wrote:
+> On Fri, Jun 08, 2012 at 04:21:48AM +0100, Ben Hutchings wrote:
 > >=20
-> > Op 08-06-12 06:18, Ben Hutchings schreef:
-> > > This is the start of the stable review cycle for the 3.2.20 release.
-> > > There are 82 patches in this series, which will be posted as response=
-s
-> > > to this one.  If anyone has any issues with these being applied, plea=
-se
-> > > let me know.
-> > >
-> > > Responses should be made by Sun Jun 10 13:00:00 UTC 2012.
-> > > Anything received after that time might be too late.
-> > >
-> > > A combined patch relative to 3.2.19 will be posted as an additional
-> > > response to this, and the diffstat can be found below.
-> > Is it too late to nominate patches?
-> [...]
+> > It's not harmless because the user is no longer restricted to changing
+> > EXT4_FL_USER_MODIFIABLE.
 >=20
-> It's too late for this time, unless there's something really urgent or
-> needed to avoid some other change in the rc causing a regression.
->=20
-> I'll queue these up after 3.2.20.
+> Um, very good point.  So we should either drop this commit and wait
+> until the next stable release, or also pull commit b22b1f178f6 in as
+> well.  Basically, this commit and b22b1f178f6 should appear in the
+> same stable release.
 
-I'm sorry, I see you already requested these earlier.  So I should have
-queued them, but anyway it turns out that the last one (commit
-a6a17859f1bdf607650ee055101f54c5f207762b, 'drm/nouveau/disp: fix
-dithering not being enabled on some eDP macbooks') breaks the build:
-
-  CC [M]  drivers/gpu/drm/nouveau/nouveau_connector.o
-drivers/gpu/drm/nouveau/nouveau_connector.c: In function =E2=80=98nouveau_c=
-onnector_detect_depth=E2=80=99:
-drivers/gpu/drm/nouveau/nouveau_connector.c:620:18: error: =E2=80=98struct =
-nouveau_connector=E2=80=99 has no member named =E2=80=98type=E2=80=99
-
-So you'll need to provide a backported version of that.
+I've (re-)queued them both for 3.2.20.
 
 Ben.
 
@@ -79,26 +57,26 @@ Ben.
 Ben Hutchings
 I haven't lost my mind; it's backed up on tape somewhere.
 
---=-xRuF1WiDgl0OsxiQxtA+
+--=-kvygyiOPzBs1juBwfL/F
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: This is a digitally signed message part
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIVAwUAT9KCkue/yOyVhhEJAQqp6RAAwT3hhZ4xodSeyl0tGde8nZ7OBg01431B
-DLG7jXGEYZAf+8+zcRIz3wc5id1DvhoDoJCqMH9hjXMv9+yPQh7uSa66H9sS7JSI
-o6sWWaPj/7QjCjmLYRAqdyRhw7+XfQXM5YiB3jKXZeu7XVYxpt/puM0X7JZqKJQA
-xHchjZDIsk5nhnQuzKnXbglhT/5k8TY9Of0ibMA32SqDORrRgnyF2VWlatLoYPaz
-/2FAI15wxNIVjcYxUhlVF0d6L5cec4NJwNlDDdj3wt70gMIspPw7lGjYzeCOmOMK
-y+Nq32xkhhbTphK3dqZ2goX7HeHQ0P0YQY+ZGDRQS9YDzxU7lw2nGMecy35vVXpa
-ByEFzjyEb2D/QS0ojY+QO2hiwuDmsZL8WfOyGQ/roiPYeAxwSEg2o9t+1XAwtlOz
-j0Dpt0aZBa4xUp5wZPdZJoTDlAGmrMsIkDgO7uem95UUUsVHD3+ZibVjJ+AQ0ho7
-/f3TrPwRPsyzC/B1pZBdTlf3OiOIDroU8rc2wU12bPoRptKsQE+/dfajeq3MOCS4
-IkMf/Et4sXBKUT/w0/TexmpbjJ+BA8EeEFZbFvNSu9QiSPu5WPs7gnqErIAUQ59i
-jKySO+57YaKgaaRLEQVCtfy0YKPOVoD0RZCrvLwFkEKzeOHPRvkMDNpy2XdUIQJd
-0ofbjxn4HpM=
-=iMMQ
+iQIVAwUAT9KEPOe/yOyVhhEJAQqVFxAA0AjGP42CYCc5WEmHB6UzeC9gltc8m9Za
+bPSr3+peIjE1UiSGtIEysOeUFFn72nAUZx8xWG/nMZH7klzjwYb4KyDdJSB6v+vi
+LK0bUJGHTIJDEKezg53UAPYZX6pM9XZ2E82s6V3k1fMsSX4FCGaMmz2ezEvh9KOG
+aRW8VHITyN/2SNPH3Z2rFe5eaCRPzkc5iZd562ToNIBkn41NOmi9ZsyL2zM6+FCi
+yS+l3qdG4jp0ZYjWc6vVDPB/3KaaeV4go5JNCj3hYFUOsl+RfplDC05a5m8BfOzx
+vY/eqgoAqsmP4Xoq7GwzG5jmOF+N1DlJGt0Ii9O4pdGttNaGcMD8LBcXnIaljFXV
+GjniUgBHTn0FRmdLHUGcr+af1EITW3XTh995R6C3f2ED6HnsYIRqBSlohg8jW7yT
+/+drtAjl3qdCpHJx799wRNP/y6cZWl95gXj55JdpzRgqlxWhQOoGph3CjL0gdVGG
+VAmHqiOiEN4QV+MzhvbR/n+1uU1wBWTJeaFBbq4hQmYUr8YsuoTU93Fn3j416qcZ
++TrW6HL/ObIabKa7bCydQbSm8an0nN6O14nkYpeb6jMMdqZbF0rbbKeIbysKuwjK
+iKjUNbeHFaZVn/fAZ6E/cqRdji6mJuBDuceL02HeNba8UTr57LQtK4Xeq+NK9Lrp
+y/SPYm7iBu8=
+=C/9k
 -----END PGP SIGNATURE-----
 
---=-xRuF1WiDgl0OsxiQxtA+--
+--=-kvygyiOPzBs1juBwfL/F--
