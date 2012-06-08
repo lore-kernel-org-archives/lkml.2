@@ -1,90 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759682Ab2FHBM4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 21:12:56 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:60810 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759529Ab2FHBMy (ORCPT
+	id S1759702Ab2FHBO4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 21:14:56 -0400
+Received: from mga01.intel.com ([192.55.52.88]:26652 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759472Ab2FHBOz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 21:12:54 -0400
-Message-ID: <4FD15193.8080800@gmail.com>
-Date: Thu, 07 Jun 2012 20:12:51 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Thu, 7 Jun 2012 21:14:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="176462661"
+From: "Allan, Bruce W" <bruce.w.allan@intel.com>
+To: David Miller <davem@davemloft.net>,
+        "joe.jin@oracle.com" <joe.jin@oracle.com>
+CC: "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "guru.anbalagane@oracle.com" <guru.anbalagane@oracle.com>,
+        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
+        "adnan.misherfi@oracle.com" <adnan.misherfi@oracle.com>,
+        "Ronciak, John" <john.ronciak@intel.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [E1000-devel] [PATCH] e1000e: disable rxhash when try to enable
+ jumbo frame also rxhash and rxcsum have enabled
+Thread-Topic: [E1000-devel] [PATCH] e1000e: disable rxhash when try to
+ enable jumbo frame also rxhash and rxcsum have enabled
+Thread-Index: AQHNRRMTaJPCft258ECC6040LRbWF5bwEoeA//+K+wA=
+Date: Fri, 8 Jun 2012 01:14:38 +0000
+Message-ID: <804857E1F29AAC47BF68C404FC60A18428445A22@ORSMSX102.amr.corp.intel.com>
+References: <4FD15020.7090709@oracle.com>
+ <20120607.181143.231727418873766540.davem@davemloft.net>
+In-Reply-To: <20120607.181143.231727418873766540.davem@davemloft.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-CC: linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Doug Thompson <dougthompson@xmission.com>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH 1/2] edac: add support for Calxeda highbank memory controller
-References: <1339020125-20198-1-git-send-email-robherring2@gmail.com> <1339020125-20198-2-git-send-email-robherring2@gmail.com> <4FCFDB12.3090403@redhat.com>
-In-Reply-To: <4FCFDB12.3090403@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mauro,
-
-On 06/06/2012 05:34 PM, Mauro Carvalho Chehab wrote:
-> Hi Rob,
+> -----Original Message-----
+> From: David Miller [mailto:davem@davemloft.net]
+> Sent: Thursday, June 07, 2012 6:12 PM
+> To: joe.jin@oracle.com
+> Cc: e1000-devel@lists.sourceforge.net; guru.anbalagane@oracle.com;
+> Allan, Bruce W; Brandeburg, Jesse; adnan.misherfi@oracle.com; Ronciak,
+> John; netdev@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: Re: [E1000-devel] [PATCH] e1000e: disable rxhash when try to
+> enable jumbo frame also rxhash and rxcsum have enabled
 > 
-> Em 06-06-2012 19:02, Rob Herring escreveu:
->> From: Rob Herring <rob.herring@calxeda.com>
->>
->> Add support for memory controller on Calxeda Highbank platforms. Highbank
->> platforms support a single 4GB mini-DIMM with 1-bit correction and 2-bit
->> detection.
->>
->> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
->> ---
->>  .../devicetree/bindings/arm/calxeda/mem-ctrlr.txt  |   17 ++
->>  arch/arm/boot/dts/highbank.dts                     |    6 +
->>  drivers/edac/Kconfig                               |    9 +-
->>  drivers/edac/Makefile                              |    2 +
->>  drivers/edac/highbank_mc_edac.c                    |  238 ++++++++++++++++++++
->>  5 files changed, 271 insertions(+), 1 deletion(-)
->>  create mode 100644 Documentation/devicetree/bindings/arm/calxeda/mem-ctrlr.txt
->>  create mode 100644 drivers/edac/highbank_mc_edac.c
-
-[snip]
-
->> +
->> +static struct mcidev_sysfs_attribute highbank_mc_sysfs_attributes[] = {
->> +	{
->> +	 .attr = {
->> +		  .name = "inject_ctrl",
->> +		  .mode = (S_IRUGO | S_IWUSR)
->> +		  },
->> +	 .store = highbank_mc_inject_ctrl_store,
->> +	},
->> +	{
->> +	 .attr = {.name = NULL} /* End of list */
->> +	}
->> +};
+> From: Joe Jin <joe.jin@oracle.com>
+> Date: Fri, 08 Jun 2012 09:06:40 +0800
 > 
-> This won't work after the kobj->struct device conversion patches that are at
-> -next tree, as this struct will not exist anymore.
+> > Upstream commit 70495a5 check if both rxhash and rxcsum enabled when
+> enabling
+> > jumbo frames and disallowed all of them enabled at the same time.
+> >
+> > Since jumbo frame widely be used in real world, so when try to
+> enable jumbo
+> > frames but rxhash and rxcsum have enabled, change the default
+> behavior to
+> > disable receive hashing.
+> >
+> > Signed-off-by: Joe Jin <joe.jin@oracle.com>
+> > Signed-off-by: Guru Anbalagane <guru.anbalagane@oracle.com>
+> > Acked-by: Adnan Misherfi <adnan.misherfi@oracle.com>
 > 
-> Also, as this is for error injection, the better is to use debugfs.
+> If I were the Intel developers I would not apply this patch, it sets
+> a very bad precedence.
 > 
-> It shouldn't be hard to change it to use debugfs. If you want an example, you
-> can take a look on this patch:
+> The tool tells you that the combination you're attempting to use is
+> invalid, and the kernel log message tells you exactly why.
 > 
-> 	http://git.kernel.org/?p=linux/kernel/git/mchehab/linux-edac.git;a=commitdiff;h=303f3e2113d81d49feef9c0803c2958d41513f14
-> 
+> The driver should never automatically change configuration settings
+> not actually requested by the user.
 
-I've got this working, but don't really like the resulting debugfs
-layout. I end-up with something like this (using dev_name() of platform
-driver):
+I've been working on another patch that removes the issue with disabling
+one feature over another altogether, so this patch would be moot.  It will
+be pushed to our internal testing organization in the next day or two.
 
-/mc0/fake*
-/fff00000.memory-controller/inject_ctrl
-
-It would be nice if there was a top level edac directory and any entries
-I add are added under mcX. I can do that for the next version if that's
-okay.
-
-Rob
