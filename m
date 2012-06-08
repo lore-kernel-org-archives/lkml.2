@@ -1,73 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760022Ab2FHOik (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 10:38:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41268 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754433Ab2FHOij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 10:38:39 -0400
-Date: Fri, 8 Jun 2012 10:38:29 -0400
-From: Dave Jones <davej@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>, Jan Kara <jack@suse.cz>
-Subject: Re: processes hung after sys_renameat, and 'missing' processes
-Message-ID: <20120608143829.GD1711@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Peter Zijlstra <peterz@infradead.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Al Viro <viro@zeniv.linux.org.uk>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Miklos Szeredi <mszeredi@suse.cz>, Jan Kara <jack@suse.cz>
-References: <CA+55aFwCusEdMq3_3TAXSZ=+kbN7H6AbnngVaagAZw=ZpicckQ@mail.gmail.com>
- <20120603231709.GP30000@ZenIV.linux.org.uk>
- <20120603232820.GQ30000@ZenIV.linux.org.uk>
- <20120606194233.GA1537@redhat.com>
- <CA+55aFwxFVLPk4-dp73uccKXepKwjpGFgh0NW1u8d0zYzr=hBA@mail.gmail.com>
- <20120606230040.GA18089@redhat.com>
- <CA+55aFx_oREEd2XS_aG7PJ7dwzWjgx689V_uRPGWpVS01_++6A@mail.gmail.com>
- <1339064814.23343.14.camel@twins>
- <CA+55aFycTypSSvjOB-KXzpK86ALifGbrO2s4HRc69CqyoX=qJA@mail.gmail.com>
- <1339140698.23343.26.camel@twins>
+	id S1760386Ab2FHOix (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 10:38:53 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:58773 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760066Ab2FHOiu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 10:38:50 -0400
+Date: Fri, 8 Jun 2012 11:38:43 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: David Ahern <dsahern@gmail.com>
+Cc: Tim Chen <tim.c.chen@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, ak@linux.intel.com,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: Does perf inject preserve call chain data?
+Message-ID: <20120608143843.GA9954@infradead.org>
+References: <1337712585.3796.186.camel@schen9-DESK>
+ <4FBC0C10.8010801@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1339140698.23343.26.camel@twins>
+In-Reply-To: <4FBC0C10.8010801@gmail.com>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 08, 2012 at 09:31:38AM +0200, Peter Zijlstra wrote:
+Em Tue, May 22, 2012 at 03:58:40PM -0600, David Ahern escreveu:
+> On 5/22/12 12:49 PM, Tim Chen wrote:
+> >Arnaldo,
+> >
+> >Wonder if perf inject munged the call chain data from perf record?
+> >
+> >When I do
+> >perf record -a -g -o - sleep 5 |perf inject -v -b  | perf report  -g -i -
+> >I get a complain from perf report
+> >
+> >Warning:
+> >Selected -g but no callchain data. Did you call 'perf record' without -g?
+> >
+> 
+> I believe the root cause is that the event list is not written to
+> the pipe. Using Arnaldo's git repo as of today (has fixes from
+> Stephane) this hack shows the info is there and can be processed.
 
- > > Can you check the compile error that Dave reported for
- > > your patch, because right now Dave is running without it, afaik, due
- > > to your lock-instance patch not really working in practice.
- > 
- > Oh, missed that in the thread.. yeah here goes.
- > 
- > Now also compile tested with CONFIG_LOCK_STAT...
+How things stand here? Tim, did this fix things for you? If so, David,
+please resend with a proper subject line and a Tested-by: Tim, ok?
 
-Doesn't apply against Linus' current tree.
+Thanks,
 
-$ cat ../lock| patch -p1
-patching file include/linux/lockdep.h
-Hunk #1 FAILED at 211.
-Hunk #2 FAILED at 254.
-Hunk #3 FAILED at 363.
-Hunk #4 FAILED at 414.
-4 out of 4 hunks FAILED -- saving rejects to file include/linux/lockdep.h.rej
-patching file include/trace/events/lock.h
-Hunk #1 FAILED at 61.
-Hunk #2 FAILED at 78.
-2 out of 2 hunks FAILED -- saving rejects to file include/trace/events/lock.h.rej
-patching file kernel/lockdep.c
-Hunk #1 FAILED at 541.
-Hunk #2 succeeded at 556 with fuzz 2.
-Hunk #3 FAILED at 3093.
-patch: **** malformed patch at line 268: ck,
-
-
-	Dave
+- Arnaldo
+ 
+> 
+> diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+> index d58e414..60f3f17 100644
+> --- a/tools/perf/builtin-report.c
+> +++ b/tools/perf/builtin-report.c
+> @@ -256,7 +257,7 @@ static int perf_report__setup_sample_type(struct
+> perf_report *rep)
+>                     "'perf record' without -g?\n");
+>             return -EINVAL;
+>         }
+> -       if (symbol_conf.use_callchain) {
+> +       if (!self->fd_pipe && symbol_conf.use_callchain) {
+>             ui__warning("Selected -g but no callchain data. Did "
+>                     "you call 'perf record' without -g?\n");
+>             return -1;
+> 
+> A proper solution is needed.
+> 
+> David
