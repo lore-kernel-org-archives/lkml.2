@@ -1,68 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760708Ab2FHFjL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 01:39:11 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59962 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756636Ab2FHFjI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 01:39:08 -0400
-From: Ming Lei <ming.lei@canonical.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ming Lei <ming.lei@canonical.com>,
-        Alan Stern <stern@rowland.harvard.edu>, stable@vger.kernel.org
-Subject: [PATCH] driver core: fix shutdown races with probe/remove(v1)
-Date: Fri,  8 Jun 2012 13:38:49 +0800
-Message-Id: <1339133929-30679-1-git-send-email-ming.lei@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S933503Ab2FHFkm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 01:40:42 -0400
+Received: from mga11.intel.com ([192.55.52.93]:20774 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758468Ab2FHFkk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 01:40:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="176561416"
+Subject: Re: [PATCH V5 2/2] dma: tegra: add dmaengine based dma driver
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: dan.j.williams@intel.com, grant.likely@secretlab.ca,
+        linux-kernel@vger.kernel.org, swarren@wwwdotorg.org, olof@lixom.net,
+        linux-tegra@vger.kernel.org
+In-Reply-To: <1338960327-31453-2-git-send-email-ldewangan@nvidia.com>
+References: <1338960327-31453-1-git-send-email-ldewangan@nvidia.com>
+	 <1338960327-31453-2-git-send-email-ldewangan@nvidia.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 08 Jun 2012 11:03:46 +0530
+Message-ID: <1339133626.1927.1173.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Firstly, .shutdown callback may touch a uninitialized hardware
-if dev->driver is set and .probe is not completed.
+On Wed, 2012-06-06 at 10:55 +0530, Laxman Dewangan wrote:
+> Add dmaengine based NVIDIA's Tegra APB DMA driver.
+> This driver support the slave mode of data transfer from
+> peripheral to memory and vice versa.
+> The driver supports for the cyclic and non-cyclic mode
+> of data transfer.
+> 
+> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+Applied, both Thanks
 
-Secondly, device_shutdown() may dereference a null pointer to cause
-oops when dev->driver is cleared after it is checked in
-device_shutdown().
 
-So just hold device lock and its parent lock if it has to fix the
-races.
-
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Cc: stable@vger.kernel.org
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
----
- drivers/base/core.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
-
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index 346be8b..cbc8bd2 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -1820,6 +1820,11 @@ void device_shutdown(void)
- 		list_del_init(&dev->kobj.entry);
- 		spin_unlock(&devices_kset->list_lock);
- 
-+		/*hold lock[s] to avoid races with .probe/.release*/
-+		if (dev->parent)
-+			device_lock(dev->parent);
-+		device_lock(dev);
-+
- 		/* Don't allow any more runtime suspends */
- 		pm_runtime_get_noresume(dev);
- 		pm_runtime_barrier(dev);
-@@ -1831,6 +1836,9 @@ void device_shutdown(void)
- 			dev_dbg(dev, "shutdown\n");
- 			dev->driver->shutdown(dev);
- 		}
-+		device_unlock(dev);
-+		if (dev->parent)
-+			device_unlock(dev->parent);
- 		put_device(dev);
- 
- 		spin_lock(&devices_kset->list_lock);
 -- 
-1.7.9.5
+~Vinod
 
