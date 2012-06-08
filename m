@@ -1,56 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762102Ab2FHKzT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 06:55:19 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54449 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760459Ab2FHKzR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 06:55:17 -0400
-Date: Fri, 8 Jun 2012 19:55:07 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Minchan Kim <minchan@kernel.org>
-Subject: Re: [ 31/82] mm/vmalloc.c: change void* into explict vm_struct*
-Message-ID: <20120608105506.GB2185@barrios>
-References: <20120608041845.013957176@decadent.org.uk>
- <alpine.DEB.2.00.1206080341050.4994@chino.kir.corp.google.com>
+	id S1762108Ab2FHK7U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 06:59:20 -0400
+Received: from mout2.freenet.de ([195.4.92.92]:49515 "EHLO mout2.freenet.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751276Ab2FHK7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 06:59:19 -0400
+Message-ID: <4FD1DA5B.9040404@01019freenet.de>
+Date: Fri, 08 Jun 2012 12:56:27 +0200
+From: Andreas Hartmann <andihartmann@01019freenet.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120428 Firefox/12.0 SeaMonkey/2.9.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1206080341050.4994@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: Andreas Hartmann <andihartmann@01019freenet.de>, bhelgaas@google.com,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, jan.kiszka@siemens.com
+Subject: Re: [PATCH] PCI: Add Ralink RT2800 broken INTx masking quirk
+References: <20120606212241.6627.98371.stgit@bling.home>    <4FD047A7.6050602@01019freenet.de> <1339088741.26976.19.camel@ul30vt>   <201206072101.q57L1LqG003192@mail.maya.org>  <1339104327.26976.45.camel@ul30vt> <4FD1205D.8070501@01019freenet.de> <1339106941.26976.51.camel@ul30vt> <4FD15BE1.40004@01019freenet.de>
+In-Reply-To: <4FD15BE1.40004@01019freenet.de>
+X-Enigmail-Version: 1.4.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 08, 2012 at 03:41:57AM -0700, David Rientjes wrote:
-> On Fri, 8 Jun 2012, Ben Hutchings wrote:
+Andreas Hartmann wrote:
+> Alex Williamson wrote:
+[...]
+>> I just pushed a vfio-3.4 branch to my tree at
+>> git://github.com/awilliam/linux-vfio.git.  Please let me know what you
+>> find with this.
 > 
-> > 3.2-stable review patch.  If anyone has any objections, please let me know.
-> > 
-> > ------------------
-> > 
-> > From: Minchan Kim <minchan@kernel.org>
-> > 
-> > commit db1aecafef58b5dda39c4228debe2c845e4a27ab upstream.
-> > 
-> > vmap_area->private is void* but we don't use the field for various purpose
-> > but use only for vm_struct.  So change it to a vm_struct* with naming to
-> > improve for readability and type checking.
-> > 
-> > Signed-off-by: Minchan Kim <minchan@kernel.org>
-> > Acked-by: David Rientjes <rientjes@google.com>
-> > Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> > Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-> > Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-> 
-> I'm not sure this is stable material and it wasn't annotated as such when 
-> it was commited, why should someone need to upgrade their 3.2 for a patch 
-> like this?
+> Works fine :-) vfio and fglrx and PCIe passthrough.
 
-I agree. It's not a stable material.
-Thanks.
+I rebuild the vfio patch on base of your vfio-3.4 branch and applied it
+with the additional quirks patch to the opensuse kernel 3.4.1 (desktop
+flavor). Now it's working fine with opensuse, too (PCIe passthrough, PCI
+passthrouh and fglrx with a board with AMD chipset 990X)! There have
+been slight differences in the two different ways of creating the
+complete patch for 3.4 which raised the problem.
+
+Downside is (as you already mentioned), that a lot of devices have to be
+unbind to get it working. Would be great, if this could be optimized :-).
+
+Your vfio-3.4 branch helped me a lot!
+
+BTW:
+If anybody is interested, I could attach a complete vfio patch for 3.4.
+
+
+
+Thanks for your great support and patience,
+Andreas
