@@ -1,92 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934239Ab2FHKNy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 06:13:54 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:51437 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750991Ab2FHKNw (ORCPT
+	id S1762066Ab2FHKUw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 06:20:52 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:37889 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751276Ab2FHKUu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 06:13:52 -0400
+	Fri, 8 Jun 2012 06:20:50 -0400
+Message-ID: <4FD1D1F7.2090503@openvz.org>
+Date: Fri, 08 Jun 2012 14:20:39 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120517 Firefox/10.0.4 Iceape/2.7.4
 MIME-Version: 1.0
-X-Originating-IP: [41.212.116.88]
-In-Reply-To: <CAHVUoiT4FgEpWDLtzfTUaCTZR-rFx76E3MRdU8u9swjmt74ZQg@mail.gmail.com>
-References: <CAHVUoiQywo=iHKsXQbsVE7coc1FL9A9qy_a71SK94MKNV0GrKA@mail.gmail.com>
- <CAHVUoiTZmzT3vquaDC65AJfCFZX-qS5GjgjP2-+=0R7skurW5g@mail.gmail.com>
- <CAHVUoiQgcAMr874d_yPfm9ssUBOoX+dNLy9JNCOCYwOCrAKXFQ@mail.gmail.com>
- <CAH3drwacayQEZHOidbKKuJ3KjgMvnYzT0S0csXV2QwSmC8nMxg@mail.gmail.com>
- <CAHVUoiSP7SiWCtYPvKS_1RuAV0upWmT06iN7PR1OE6NAtToirQ@mail.gmail.com>
- <CAH3drwY61Pqd1MXxgSYcHRPJF5pNr2FO7vrM_ULsRvMbYjAhOQ@mail.gmail.com>
- <CAHVUoiTfooPSXyVpcg_Khc0rzYcnmvAbGgfko42hOxqukc91_A@mail.gmail.com> <CAHVUoiT4FgEpWDLtzfTUaCTZR-rFx76E3MRdU8u9swjmt74ZQg@mail.gmail.com>
-From: Brian Gitonga Marete <marete@toshnix.com>
-Date: Fri, 8 Jun 2012 13:13:30 +0300
-Message-ID: <CAHVUoiQ_csZeh_FEHaCkqmJvHO+Q=UF2Va7V19G-3C=xuSYTPw@mail.gmail.com>
-Subject: Re: [Regression] [Radeon] Stream command failures and render problems
- in Evergreen (Radeon HD 5600) in kernel 3.4
-To: Jerome Glisse <j.glisse@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, David Airlie <airlied@linux.ie>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Jerome Glisse <jglisse@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Hugh Dickins <hughd@google.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        "kamezawa.hiroyu@jp.fujitsu.com" <kamezawa.hiroyu@jp.fujitsu.com>,
+        "markus@trippelsdorf.de" <markus@trippelsdorf.de>,
+        "oleg@redhat.com" <oleg@redhat.com>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: Re: [patch 12/12] mm: correctly synchronize rss-counters at exit/exec
+References: <20120607212114.E4F5AA02F8@akpm.mtv.corp.google.com> <CA+55aFxOWR_h1vqRLAd_h5_woXjFBLyBHP--P8F7WsYrciXdmA@mail.gmail.com> <CA+55aFyQUBXhjVLJH6Fhz9xnpfXZ=9Mej5ujt6ss7VUqT1g9Jg@mail.gmail.com> <alpine.LSU.2.00.1206071759050.1291@eggly.anvils>
+In-Reply-To: <alpine.LSU.2.00.1206071759050.1291@eggly.anvils>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 8, 2012 at 12:56 AM, Brian Gitonga Marete
-<marete@toshnix.com> wrote:
-> On Fri, Jun 8, 2012 at 12:44 AM, Brian Gitonga Marete
-> <marete@toshnix.com> wrote:
->> On Thu, Jun 7, 2012 at 11:20 PM, Jerome Glisse <j.glisse@gmail.com> wrote:
->>> On Thu, Jun 7, 2012 at 3:59 PM, Brian Gitonga Marete <marete@toshnix.com> wrote:
->>>> On Thu, Jun 7, 2012 at 5:25 PM, Jerome Glisse <j.glisse@gmail.com> wrote:
->>>>>
->>>>> Update your libdrm to libdrm from git should fix your issue.
->>>>
->>>> Hello Jerome,
->>>>
->>>> Thanks for looking into this.
->>>>
->>>> I am afraid that even with the very latest libdrm (git 93a5117d), the
->>>> rendering is still broken.
->>>>
->>>> What else should I try? I would revert the patch that git-bisect
->>>> fingered (your patch, git 285484e2d, Linux mainline) but there are
->>>> merge problems when I try to do that, which I have not yet looked
->>>> into. Perhaps you can see if you can help me revert that patch so that
->>>> we can see if the problem then goes away?
->>>>
->>> What happen if you upgrade to xf86-video-ati from git ?
->>
->> Hello Jerome,
->>
->> Once again, thanks a lot for your help.
->>
->> Some progress but also a setback: Upgrading to the latest
->> xf86-video-ati git gets rid of the stream command failures - No more
->> error messages in dmesg(8). But then, now, rendering is completely
->> messed up. Previously, it was mostly the window boundaries that were
->> blurred/messed but now also entire windows and text so that you can't
->> read anything from the desktop. (For example, the previous render
->> problems would still allow me to use gnome-terminal even though its
->> frames were completely blurred. Now the text withing gnome-terminal is
->> also blurred/smudged)
->>
+Hugh Dickins wrote:
+> On Thu, 7 Jun 2012, Linus Torvalds wrote:
 >
-> I should add that in this case rendering is completely messed up in
-> _both_ 3.3.x and 3.4. But the stream command failures in 3.4 go away
-> upon upgrading to the latext xf86-video-ati git HEAD.
+>> Ugh, looking more at the patch, I'm getting more and more convinces
+>> that it is pure and utter garbage.
+>>
+>> It does "sync_mm_rss(mm);" in mmput(), _after_ it has done the
+>> possibly final mmdrop(). WTF?
+>>
+>> This is crap, guys. Seriously. Stop playing russian rulette with this
+>> code. I think we need to revert *all* of the crazy rss games, unless
+>> Konstantin can show us some truly obviously correct fix.
+>>
+>> Sadly, I merged and pushed out the crap before I had rebooted and
+>> noticed this problem, so now it's in the wild. Can somebody please
+>> take a look at this asap?
+>>
+>>               Linus
+>>
+>> On Thu, Jun 7, 2012 at 5:17 PM, Linus Torvalds
+>> <torvalds@linux-foundation.org>  wrote:
+>>> This patch actually seems to have made the
+>>>
+>>>   BUG: Bad rss-counter state ..
+>>>
+>>> problem *much* worse. It triggers all the time for me now - I've got
+>>> 408 of those messages on my macbook air within a minute of booting it.
+>>>
+>>> Not good. Especially not good when it's marked for stable too.
+>
+> I'm on the Cc, but I've not been following closely, I've not been able
+> to reproduce the issue with Konstantin's commit in just now, and I've
+> not even tried Oleg's version: so, don't trust me an inch.
 
-Ok. All is fixed in kernel v3.4 if I additionally upgrade Mesa to the
-latest git. Jerome, many thanks for your help on this!
+Easiest way to reproduce this:
 
-So to summarize, the 3.4 breakage in Ubuntu 11.04 (and probably other
-distributions released around the same time) is fixed by:
+#define _GNU_SOURCE
+#include <stdlib.h>
+#include <sched.h>
+#include <sys/mman.h>
 
-a) Upgrade libdrm to latest GIT as of this writing (93a5117d5)
-b) Upgrade xf86-video-ati to latest GIT as of this writing (5888371)
-c) Upgrade mesa to latest GIT as of this writing (529476b)
+int child(void *arg)
+{
+	return 0;
+}
 
-Now kernel 3.4 works on my laptop.
+char stack[4096];
 
-Thanks!
+int main(int argc, char **argv)
+{
+	void *page;
 
-BGM.
+	page = mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+	clone(child, stack + sizeof(stack), CLONE_VFORK | CLONE_VM | CLONE_CHILD_CLEARTID, NULL, NULL, NULL, page);
+	return 0;
+}
+
+As result you can see "BUG: Bad rss-counter state mm:ffff88040783a680 idx:1 val:-1" in dmesg
+
+There left only one problem: nobody calls sync_mm_rss() after put_user() in mm_release().
+
+My patch is really messy, so please ignore it.
+Oleg's http://marc.info/?l=linux-kernel&m=133848759505805 version much simpler and changes only sync_mm_rss() calls.
+
+>
+> But I was surprised that that patch went to you, I thought Konstantin
+> and Oleg had just reached agreement that Oleg's version (reposted this
+> morning in the "3.4-rc7: BUG: Bad rss-counter state" thread) was nicer.
+>
+> And it looks like it does not do anything offensive in mmput().
+> Doing things after something called "mm_release" sounds equally
+> bad, but IIRC that's not so.
+>
+> You probably want to revert Konstantin's, try out Oleg's on your Air,
+> and maybe wait for Konstantin and Oleg to confirm the below.
+>
+> Offline for a few hours,
+> Hugh
+>
+> [PATCH] correctly synchronize rss-counters at exit/exec
+>
+> From: Oleg Nesterov<oleg@redhat.com>
+>
+> A simplified version of Konstantin Khlebnikov's patch.
+>
+> do_exit() and exec_mmap() call sync_mm_rss() before mm_release()
+> does put_user(clear_child_tid) which can update task->rss_stat
+> and thus make mm->rss_stat inconsistent. This triggers the "BUG:"
+> printk in check_mm().
+>
+> - Move the final sync_mm_rss() from do_exit() to exit_mm(), and
+>    change exec_mmap() to call sync_mm_rss() after mm_release() to
+>    make check_mm() happy.
+>
+>    Perhaps we should simply move it into mm_release() and call it
+>    unconditionally to catch the "task->rss_stat != 0&&  !task->mm"
+>    bugs.
+>
+> - Since taskstats_exit() is called before exit_mm(), add another
+>    sync_mm_rss() into xacct_add_tsk() who actually uses rss_stat.
+>
+>    Probably we should also shift acct_update_integrals().
+>
+> Reported-by: Markus Trippelsdorf<markus@trippelsdorf.de>
+> Tested-by: Martin Mokrejs<mmokrejs@fold.natur.cuni.cz>
+> Signed-off-by: Oleg Nesterov<oleg@redhat.com>
+> Acked-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
+> ---
+>   fs/exec.c       |    2 +-
+>   kernel/exit.c   |    5 ++---
+>   kernel/tsacct.c |    1 +
+>   3 files changed, 4 insertions(+), 4 deletions(-)
+>
+> diff --git a/fs/exec.c b/fs/exec.c
+> index 52c9e2f..e49e3c2 100644
+> --- a/fs/exec.c
+> +++ b/fs/exec.c
+> @@ -823,10 +823,10 @@ static int exec_mmap(struct mm_struct *mm)
+>   	/* Notify parent that we're no longer interested in the old VM */
+>   	tsk = current;
+>   	old_mm = current->mm;
+> -	sync_mm_rss(old_mm);
+>   	mm_release(tsk, old_mm);
+>
+>   	if (old_mm) {
+> +		sync_mm_rss(old_mm);
+>   		/*
+>   		 * Make sure that if there is a core dump in progress
+>   		 * for the old mm, we get out and die instead of going
+> diff --git a/kernel/exit.c b/kernel/exit.c
+> index ab972a7..b3a84b5 100644
+> --- a/kernel/exit.c
+> +++ b/kernel/exit.c
+> @@ -655,6 +655,8 @@ static void exit_mm(struct task_struct * tsk)
+>   	mm_release(tsk, mm);
+>   	if (!mm)
+>   		return;
+> +
+> +	sync_mm_rss(mm);
+>   	/*
+>   	 * Serialize with any possible pending coredump.
+>   	 * We must hold mmap_sem around checking core_state
+> @@ -965,9 +967,6 @@ void do_exit(long code)
+>   				preempt_count());
+>
+>   	acct_update_integrals(tsk);
+> -	/* sync mm's RSS info before statistics gathering */
+> -	if (tsk->mm)
+> -		sync_mm_rss(tsk->mm);
+>   	group_dead = atomic_dec_and_test(&tsk->signal->live);
+>   	if (group_dead) {
+>   		hrtimer_cancel(&tsk->signal->real_timer);
+> diff --git a/kernel/tsacct.c b/kernel/tsacct.c
+> index 23b4d78..a64ee90 100644
+> --- a/kernel/tsacct.c
+> +++ b/kernel/tsacct.c
+> @@ -91,6 +91,7 @@ void xacct_add_tsk(struct taskstats *stats, struct task_struct *p)
+>   	stats->virtmem = p->acct_vm_mem1 * PAGE_SIZE / MB;
+>   	mm = get_task_mm(p);
+>   	if (mm) {
+> +		sync_mm_rss(mm);
+>   		/* adjust to KB unit */
+>   		stats->hiwater_rss   = get_mm_hiwater_rss(mm) * PAGE_SIZE / KB;
+>   		stats->hiwater_vm    = get_mm_hiwater_vm(mm)  * PAGE_SIZE / KB;
+
