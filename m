@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933298Ab2FHFPt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 01:15:49 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43225 "EHLO
+	id S933238Ab2FHFPs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 01:15:48 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43267 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1761171Ab2FHFH1 (ORCPT
+	by vger.kernel.org with ESMTP id S1761250Ab2FHFH1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Jun 2012 01:07:27 -0400
-Message-Id: <20120608041848.596234292@decadent.org.uk>
+Message-Id: <20120608041846.878941960@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 08 Jun 2012 05:19:38 +0100
+Date: Fri, 08 Jun 2012 05:19:25 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, AceLan Kao <acelan.kao@canonical.com>,
-        Johan Hedberg <johan.hedberg@intel.com>
-Subject: [ 58/82] Bluetooth: Add support for Atheros [13d3:3362]
+        alan@lxorguk.ukuu.org.uk, Salman Qazi <sqazi@google.com>,
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [ 45/82] ext4: remove mb_groups before tearing down the buddy_cache
 In-Reply-To: <20120608041840.861504477@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,63 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: AceLan Kao <acelan.kao@canonical.com>
+From: Salman Qazi <sqazi@google.com>
 
-commit 87522a433ba6886b5ccbb497e0a7cb8097def64e upstream.
+commit 95599968d19db175829fb580baa6b68939b320fb upstream.
 
-Add another vendor specific ID for Atheros AR3012 device.
-This chip is wrapped by IMC Networks.
+We can't have references held on pages in the s_buddy_cache while we are
+trying to truncate its pages and put the inode.  All the pages must be
+gone before we reach clear_inode.  This can only be gauranteed if we
+can prevent new users from grabbing references to s_buddy_cache's pages.
 
-output of usb-devices:
-T:  Bus=01 Lev=02 Prnt=02 Port=00 Cnt=01 Dev#=  5 Spd=12  MxCh= 0
-D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=13d3 ProdID=3362 Rev=00.02
-S:  Manufacturer=Atheros Communications
-S:  Product=Bluetooth USB Host Controller
-S:  SerialNumber=Alaska Day 2006
-C:  #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
-I:  If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-I:  If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+The original bug can be reproduced and the bug fix can be verified by:
 
-Signed-off-by: AceLan Kao <acelan.kao@canonical.com>
-Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+while true; do mount -t ext4 /dev/ram0 /export/hda3/ram0; \
+	umount /export/hda3/ram0; done &
+
+while true; do cat /proc/fs/ext4/ram0/mb_groups; done
+
+Signed-off-by: Salman Qazi <sqazi@google.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/bluetooth/ath3k.c |    2 ++
- drivers/bluetooth/btusb.c |    1 +
- 2 files changed, 3 insertions(+)
+ fs/ext4/mballoc.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
-index ae9edca..639a161 100644
---- a/drivers/bluetooth/ath3k.c
-+++ b/drivers/bluetooth/ath3k.c
-@@ -75,6 +75,7 @@ static struct usb_device_id ath3k_table[] = {
- 	{ USB_DEVICE(0x0CF3, 0x311D) },
- 	{ USB_DEVICE(0x13d3, 0x3375) },
- 	{ USB_DEVICE(0x04CA, 0x3005) },
-+	{ USB_DEVICE(0x13d3, 0x3362) },
+diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
+index 3d9277c..1cd6994 100644
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -2517,6 +2517,9 @@ int ext4_mb_release(struct super_block *sb)
+ 	struct ext4_sb_info *sbi = EXT4_SB(sb);
+ 	struct kmem_cache *cachep = get_groupinfo_cache(sb->s_blocksize_bits);
  
- 	/* Atheros AR5BBU12 with sflash firmware */
- 	{ USB_DEVICE(0x0489, 0xE02C) },
-@@ -94,6 +95,7 @@ static struct usb_device_id ath3k_blist_tbl[] = {
- 	{ USB_DEVICE(0x0cf3, 0x311D), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x04ca, 0x3005), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x13d3, 0x3362), .driver_info = BTUSB_ATH3012 },
++	if (sbi->s_proc)
++		remove_proc_entry("mb_groups", sbi->s_proc);
++
+ 	if (sbi->s_group_info) {
+ 		for (i = 0; i < ngroups; i++) {
+ 			grinfo = ext4_get_group_info(sb, i);
+@@ -2564,8 +2567,6 @@ int ext4_mb_release(struct super_block *sb)
+ 	}
  
- 	{ }	/* Terminating entry */
- };
-diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-index 9af450a..a497544 100644
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -134,6 +134,7 @@ static struct usb_device_id blacklist_table[] = {
- 	{ USB_DEVICE(0x0cf3, 0x311d), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x04ca, 0x3005), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x13d3, 0x3362), .driver_info = BTUSB_ATH3012 },
+ 	free_percpu(sbi->s_locality_groups);
+-	if (sbi->s_proc)
+-		remove_proc_entry("mb_groups", sbi->s_proc);
  
- 	/* Atheros AR5BBU12 with sflash firmware */
- 	{ USB_DEVICE(0x0489, 0xe02c), .driver_info = BTUSB_IGNORE },
+ 	return 0;
+ }
 
 
