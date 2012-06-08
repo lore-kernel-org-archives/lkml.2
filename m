@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933091Ab2FHFXv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 01:23:51 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43232 "EHLO
+	id S1761974Ab2FHFX6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 01:23:58 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43243 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1761222Ab2FHFHT (ORCPT
+	by vger.kernel.org with ESMTP id S1761257Ab2FHFHT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Jun 2012 01:07:19 -0400
-Message-Id: <20120608041846.614544095@decadent.org.uk>
+Message-Id: <20120608041849.268516783@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 08 Jun 2012 05:19:23 +0100
+Date: Fri, 08 Jun 2012 05:19:43 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Clemens Ladisch <clemens@ladisch.de>,
-        "Alexander E. Patrakov" <patrakov@gmail.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 43/82] ALSA: usb-audio: fix rate_list memory leak
+        alan@lxorguk.ukuu.org.uk, "David S. Miller" <davem@davemloft.net>,
+        Yevgen Pronenko <yevgen.pronenko@sonymobile.com>
+Subject: [ 63/82] ipv4: Do not use dead fib_info entries.
 In-Reply-To: <20120608041840.861504477@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,34 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: "David S. Miller" <davem@davemloft.net>
 
-commit 5cd5d7c44990658df6ab49f6253c39617c53b03d upstream.
+[ Upstream commit dccd9ecc374462e5d6a5b8f8110415a86c2213d8 ]
 
-The array of sample rates is reallocated every time when opening
-the PCM device, but was freed only once when unplugging the device.
+Due to RCU lookups and RCU based release, fib_info objects can
+be found during lookup which have fi->fib_dead set.
 
-Reported-by: "Alexander E. Patrakov" <patrakov@gmail.com>
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+We must ignore these entries, otherwise we risk dereferencing
+the parts of the entry which are being torn down.
+
+Reported-by: Yevgen Pronenko <yevgen.pronenko@sonymobile.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/usb/pcm.c |    3 +++
- 1 file changed, 3 insertions(+)
+ net/ipv4/fib_trie.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/sound/usb/pcm.c b/sound/usb/pcm.c
-index 24839d9..cdf8b76 100644
---- a/sound/usb/pcm.c
-+++ b/sound/usb/pcm.c
-@@ -788,6 +788,9 @@ static int snd_usb_pcm_check_knot(struct snd_pcm_runtime *runtime,
- 	int count = 0, needs_knot = 0;
- 	int err;
+diff --git a/net/ipv4/fib_trie.c b/net/ipv4/fib_trie.c
+index 3ce23f9..cd2d639 100644
+--- a/net/ipv4/fib_trie.c
++++ b/net/ipv4/fib_trie.c
+@@ -1372,6 +1372,8 @@ static int check_leaf(struct fib_table *tb, struct trie *t, struct leaf *l,
  
-+	kfree(subs->rate_list.list);
-+	subs->rate_list.list = NULL;
-+
- 	list_for_each_entry(fp, &subs->fmt_list, list) {
- 		if (fp->rates & SNDRV_PCM_RATE_CONTINUOUS)
- 			return 0;
+ 			if (fa->fa_tos && fa->fa_tos != flp->flowi4_tos)
+ 				continue;
++			if (fi->fib_dead)
++				continue;
+ 			if (fa->fa_info->fib_scope < flp->flowi4_scope)
+ 				continue;
+ 			fib_alias_accessed(fa);
 
 
