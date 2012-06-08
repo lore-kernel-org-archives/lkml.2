@@ -1,90 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756337Ab2FHOvK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 10:51:10 -0400
-Received: from david.siemens.de ([192.35.17.14]:17056 "EHLO david.siemens.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752539Ab2FHOvH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 10:51:07 -0400
-Message-ID: <4FD21151.9090608@siemens.com>
-Date: Fri, 08 Jun 2012 16:50:57 +0200
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
-MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>, Avi Kivity <avi@redhat.com>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "mtosatti@redhat.com" <mtosatti@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "yongjie.ren@intel.com" <yongjie.ren@intel.com>
-Subject: Re: [PATCH] KVM: Use IRQF_ONESHOT for assigned device MSI interrupts
-References: <20120601161521.26935.25606.stgit@bling.home> <4FC8F042.5050600@siemens.com> <1338570192.23475.25.camel@bling.home> <4FC8F867.7080103@siemens.com> <1338573558.23475.41.camel@bling.home> <4FC90961.8030701@siemens.com> <4FCB2359.9020505@redhat.com> <alpine.LFD.2.02.1206041235540.3086@ionos> <4FCC9EAC.9090007@siemens.com> <20120608143927.GA4949@redhat.com>
-In-Reply-To: <20120608143927.GA4949@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757483Ab2FHOvR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 10:51:17 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45655 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755602Ab2FHOvJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 10:51:09 -0400
+Subject: Re: processes hung after sys_renameat, and 'missing' processes
+From: Peter Zijlstra <peterz@infradead.org>
+To: Dave Jones <davej@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Miklos Szeredi <mszeredi@suse.cz>, Jan Kara <jack@suse.cz>
+In-Reply-To: <20120608143829.GD1711@redhat.com>
+References: <CA+55aFwCusEdMq3_3TAXSZ=+kbN7H6AbnngVaagAZw=ZpicckQ@mail.gmail.com>
+	 <20120603231709.GP30000@ZenIV.linux.org.uk>
+	 <20120603232820.GQ30000@ZenIV.linux.org.uk>
+	 <20120606194233.GA1537@redhat.com>
+	 <CA+55aFwxFVLPk4-dp73uccKXepKwjpGFgh0NW1u8d0zYzr=hBA@mail.gmail.com>
+	 <20120606230040.GA18089@redhat.com>
+	 <CA+55aFx_oREEd2XS_aG7PJ7dwzWjgx689V_uRPGWpVS01_++6A@mail.gmail.com>
+	 <1339064814.23343.14.camel@twins>
+	 <CA+55aFycTypSSvjOB-KXzpK86ALifGbrO2s4HRc69CqyoX=qJA@mail.gmail.com>
+	 <1339140698.23343.26.camel@twins>  <20120608143829.GD1711@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 08 Jun 2012 16:51:05 +0200
+Message-ID: <1339167065.2507.38.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-06-08 16:39, Michael S. Tsirkin wrote:
-> On Mon, Jun 04, 2012 at 01:40:28PM +0200, Jan Kiszka wrote:
->> On 2012-06-04 13:21, Thomas Gleixner wrote:
->>> On Sun, 3 Jun 2012, Avi Kivity wrote:
->>>
->>>> On 06/01/2012 09:26 PM, Jan Kiszka wrote:
->>>>>
->>>>>> you suggesting we need a request_edge_threaded_only_irq() API?  Thanks,
->>>>>
->>>>> I'm just wondering if that restriction for threaded IRQs is really
->>>>> necessary for all use cases we have. Threaded MSIs do not appear to me
->>>>> like have to be handled that conservatively, but maybe I'm missing some
->>>>> detail.
->>>>>
->>>>
->>>> btw, I'm hoping we can unthread assigned MSIs.  If the delivery is
->>>> unicast, we can precalculate everything and all the handler has to do is
->>>> set the IRR, KVM_REQ_EVENT, and kick the vcpu.  All of these can be done
->>>> from interrupt context with just RCU locking.
->>>
->>> There is really no need to run MSI/MSI-X interrupts threaded for
->>> KVM. I'm running the patch below for quite some time and it works like
->>> a charm.
->>>
->>> Thanks,
->>>
->>> 	tglx
->>> ----
+On Fri, 2012-06-08 at 10:38 -0400, Dave Jones wrote:
+> On Fri, Jun 08, 2012 at 09:31:38AM +0200, Peter Zijlstra wrote:
 > 
+>  > > Can you check the compile error that Dave reported for
+>  > > your patch, because right now Dave is running without it, afaik, due
+>  > > to your lock-instance patch not really working in practice.
+>  > 
+>  > Oh, missed that in the thread.. yeah here goes.
+>  > 
+>  > Now also compile tested with CONFIG_LOCK_STAT...
 > 
-> ....
+> Doesn't apply against Linus' current tree.
 > 
->>
->> This may work in practice but has two conceptual problems:
->>  - we do not want to run a potential broadcast to all VCPUs to run in
->>    a host IRQ handler
-> 
-> I'm not sure why this one is a problem: injecting an interrupt
-> once you know the vcpu seems really cheap.
-> It's true that scanning vcpus might take a bit more time
-> when there are lots of them but it's a single
-> linear scan that we do anyway.
-> 
-> And we also inject msi from irqfd callback with interrupts
-> disabled which seems equivalent.
+> $ cat ../lock| patch -p1
+> patching file include/linux/lockdep.h
+> Hunk #1 FAILED at 211.
+> Hunk #2 FAILED at 254.
+> Hunk #3 FAILED at 363.
+> Hunk #4 FAILED at 414.
+> 4 out of 4 hunks FAILED -- saving rejects to file include/linux/lockdep.h.rej
+> patching file include/trace/events/lock.h
+> Hunk #1 FAILED at 61.
+> Hunk #2 FAILED at 78.
+> 2 out of 2 hunks FAILED -- saving rejects to file include/trace/events/lock.h.rej
+> patching file kernel/lockdep.c
+> Hunk #1 FAILED at 541.
+> Hunk #2 succeeded at 556 with fuzz 2.
+> Hunk #3 FAILED at 3093.
+> patch: **** malformed patch at line 268: ck,
 
-Interesting, need to check.
+weird:
 
-> 
-> Pls correct me if I'm wrong.
+root@laptop:/usr/src/linux-2.6# git checkout -f origin/master
+HEAD is now at 48d212a... Revert "mm: correctly synchronize rss-counters at exit/exec"
+root@laptop:/usr/src/linux-2.6# quilt push
+Applying patch patches/peter_zijlstra-re-processes_hung_after_sys_renameat_and__missing__processes.patch
+patching file include/linux/lockdep.h
+patching file include/trace/events/lock.h
+patching file kernel/lockdep.c
 
-Well, IIRC, the "don't loop over all vcpus with IRQs or preemption
-disabled" was one argument against direct legacy interrupt injection as
-well. That's what I kept in mind from those discussions. Maybe Avi can
-comment on the current position.
+Now at patch patches/peter_zijlstra-re-processes_hung_after_sys_renameat_and__missing__processes.patch
+root@laptop:/usr/src/linux-2.6# git describe
+v3.5-rc1-130-g48d212a
 
-Jan
 
--- 
-Siemens AG, Corporate Technology, CT T DE IT 1
-Corporate Competence Center Embedded Linux
+
