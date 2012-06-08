@@ -1,77 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933697Ab2FHGU3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 02:20:29 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:56463 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933652Ab2FHGU2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 02:20:28 -0400
-Date: Fri, 8 Jun 2012 11:49:55 +0530
-From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-To: Michael Ellerman <michael@ellerman.id.au>
-Cc: Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>, oleg@redhat.com,
-        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
-        Ingo Molnar <mingo@elte.hu>, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH 2/2] [POWERPC] uprobes: powerpc port
-Message-ID: <20120608061954.GE13409@in.ibm.com>
-Reply-To: ananth@in.ibm.com
-References: <20120606091950.GB6745@in.ibm.com> <20120606092150.GC6745@in.ibm.com> <1338974822.2749.89.camel@twins> <20120606093541.GA29580@in.ibm.com> <1339006084.3458.25.camel@localhost> <20120608043605.GB13409@in.ibm.com> <1339134714.25573.4.camel@concordia> <20120608060104.GD13409@in.ibm.com> <1339136264.25573.7.camel@concordia>
+	id S933723Ab2FHGZV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 02:25:21 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:59272 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933621Ab2FHGZS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 02:25:18 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+Subject: Re: Suspend/resume regressions on Lenovo S10-3
+Date: Fri, 8 Jun 2012 08:30:29 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0+; KDE/4.6.0; x86_64; ; )
+Cc: Dave Hansen <dave@linux.vnet.ibm.com>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, "Tomas M." <tmezzadra@gmail.com>,
+        Ferenc Wagner <wferi@niif.hu>, Arnd Bergmann <arnd@arndb.de>,
+        Len Brown <len.brown@intel.com>, Kevin Hilman <khilman@ti.com>,
+        Arjan van de Ven <arjan@linux.intel.com>, Jean Pihet <j-pihet@ti.com>,
+        Trinabh Gupta <g.trinabh@gmail.com>,
+        linux-pm@lists.linux-foundation.org,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        preeti@linux.vnet.ibm.com
+References: <4FC2DA8C.7050401@linux.vnet.ibm.com> <201206061543.03537.rjw@sisk.pl> <4FCF8936.5030909@linux.vnet.ibm.com>
+In-Reply-To: <4FCF8936.5030909@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339136264.25573.7.camel@concordia>
-User-Agent: Mutt/1.5.17 (2007-11-01)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12060806-7408-0000-0000-000005AE4315
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201206080830.29686.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 08, 2012 at 04:17:44PM +1000, Michael Ellerman wrote:
-> On Fri, 2012-06-08 at 11:31 +0530, Ananth N Mavinakayanahalli wrote:
-> > On Fri, Jun 08, 2012 at 03:51:54PM +1000, Michael Ellerman wrote:
-> > > On Fri, 2012-06-08 at 10:06 +0530, Ananth N Mavinakayanahalli wrote:
-> > > > On Wed, Jun 06, 2012 at 11:08:04AM -0700, Jim Keniston wrote:
-> > > > > On Wed, 2012-06-06 at 15:05 +0530, Ananth N Mavinakayanahalli wrote:
-> > > > > > On Wed, Jun 06, 2012 at 11:27:02AM +0200, Peter Zijlstra wrote:
-> > > > > > > On Wed, 2012-06-06 at 14:51 +0530, Ananth N Mavinakayanahalli wrote:
-> > > > 
-> > > > ...
-> > > > 
-> > > > > > For the kernel, the only ones that are off limits are rfi (return from
-> > > > > > interrupt), mtmsr (move to msr). All other instructions can be probed.
-> > > > > > 
-> > > > > > Both those instructions are supervisor level, so we won't see them in
-> > > > > > userspace at all; so we should be able to probe all user level
-> > > > > > instructions.
-> > > > > 
-> > > > > Presumably rfi or mtmsr could show up in the instruction stream via an
-> > > > > erroneous or mischievous asm statement.  It'd be good to verify that you
-> > > > > handle that gracefully.
-> > > > 
-> > > > That'd be flagged elsewhere, by the architecture itself -- you'd get a
-> > > > privileged instruciton exception if you try execute any instruction not
-> > > > part of the UISA. I therefore don't think its a necessary check in the
-> > > > uprobes code.
-> > > 
-> > > But you're not executing the instruction, you're passing it to
-> > > emulate_step(). Or am I missing something?
+On Wednesday, June 06, 2012, Deepthi Dharwar wrote:
+> On 06/06/2012 07:13 PM, Rafael J. Wysocki wrote:
+> 
+> > On Wednesday, June 06, 2012, Deepthi Dharwar wrote:
+> >> On 05/28/2012 07:23 AM, Dave Hansen wrote:
+> >>
+> >>> I have a Lenovo S10-3 Atom netbook.  It's always had some amount of
+> >>> trouble working with the intel_idle driver, so I usually compile that
+> >>> out an use the acpi one.  However, just after 3.1, suspend/resume broke.
+> >>>  'echo mem > /sys/power/state' would hang before suspending.  I bisected
+> >>> it down to the commits around:
+> >>>
+> >>> 	e978aa7d7d57d04eb5f88a7507c4fb98577def77 / v3.1-1-ge978aa7
+> >>>
+> >>> by Deepthi.  But, current mainline (v3.4-07644-g07acfc2) hangs with a
+> >>> different symptom: it suspends, but hangs on resume from suspend.  I
+> >>> think _that_ delta in the behavior was caused by:
+> >>>
+> >>> 	3439a8da16bcad6b0982ece938c9f8299bb53584
+> >>>
+> >>>         ACPI / cpuidle: Remove acpi_idle_suspend (to fix suspend
+> >>> 		regression)
+> >>>
+> >>> It's a bit of a pain to bisect these two different things in parallel.
+> >>> I was trying to tell git bisect 'good' on working suspend/resume, 'bad'
+> >>> on the hang during resume, and 'skip' on the hangs _during_ suspend.  83
+> >>> kernels in, I'm not sure that's working very well. :)
+> >>>
+> >>> Deepthi, do you have any idea why your patches broke me in the first
+> >>> place?  Perhaps we should fix that regression first before we go on and
+> >>> try to figure out what changed to let it suspend again, but break later.
+> >>
+> >>
+> >> Hi Dave,
+> >>
+> >> Sorry about my patches breaking your suspend-resume.
+> >>
+> >> I, basically tried out building and booting 3.1 kernel with 
+> >> my patch set to reproduce the failure. I could clearly
+> >> see suspend not happening. It turns out to be 
+> >> a bug with my first patch in global registration
+> >> series submitted earlier.
+> >>
+> >> e978aa7d7d57d04eb5f88a7507c4fb98577def77 / v3.1-1-ge978aa7
+> >>
+> >> The following patch, fixes the suspend issues
+> >> seen on my laptop due to earlier cpuidle cleanup 
+> >> (Lenevo T420 booting with acpi_idle enabled). 
+> >> Can you please give this a try
+> >> on top of my patch set (without Rafael's fix) 
+> >> and see if it fixes the problem for you. 
+> >> I am not reverting acpi_idle_suspend flag and 
+> >> hopefully it should resume fine too. 
+> >>
+> >> ---
+> >>
+> >> This patch fixes suspend-resume issue seen in the kernel 3.1
+> >> series using acpi_idle_driver because of cpuidle global 
+> >> registration cleanup.
+> >> Here, when acpi_idle_suspend flag was set ( during suspend)
+> >> the interrupts were not getting enabled in acpi_idle_enter_bm()
+> >> routine which was causing the system to hang.
+> >>
+> >>
+> >> Signed-off-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+> >>
+> >> ---
+> >>  drivers/acpi/processor_idle.c |    3 ++-
+> >>  1 files changed, 2 insertions(+), 1 deletions(-)
+> >>
+> >> diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
+> >> index 24fe3af..6e35293 100644
+> >> --- a/drivers/acpi/processor_idle.c
+> >> +++ b/drivers/acpi/processor_idle.c
+> >> @@ -895,8 +895,9 @@ static int acpi_idle_enter_bm(struct cpuidle_device *dev,
+> >>  	if (unlikely(!pr))
+> >>  		return -EINVAL;
+> >>  
+> >> -
+> >>  	if (acpi_idle_suspend) {
+> >> +		local_irq_disable();
+> >> +		local_irq_enable();
+> >>  		cpu_relax();
+> >>  		return -EINVAL;
+> >>  	}
 > > 
-> > But MSR_PR=1 and hence emulate_step() will return -1 and hence we will
-> > end up single-stepping using user_enable_single_step(). Same with rfid.
+> > May I say this is ugly?  Why can't we track the status of interrupts
+> > properly here?
 > 
-> Right. But that was exactly Jim's point, you may be asked to emulate
-> those instructions even though you wouldn't expect to see them in
-> userspace code, so you need to handle it.
 > 
-> Luckily it looks like emulate_step() will do the right thing for you.
-> It'd be good to test it to make 100% sure.
+> 
+> I agree. Just the irq_enable call should do the trick.
+> Once the cpu enters idle via cpu_idle call, irqs are disabled. We
+> need to enable them if acpi_idle_suspend is set.
+> Else we'll see a hang during suspend.
+> 
+> The patch that was posted was just for workaround patch.
+> I shall do some more testing with just irq_enable call
+> and then shall post the fix which can be considered
+> for inclusion.
 
-Sure. Will add that check and send v2.
+I see.  OK, then, looking forward to seeing the final patch. :-)
 
-Ananth
-
+Thanks,
+Rafael
