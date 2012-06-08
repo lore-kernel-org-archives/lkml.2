@@ -1,52 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761007Ab2FHMbm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 08:31:42 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:43592 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757483Ab2FHMbk (ORCPT
+	id S932731Ab2FHMcU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 08:32:20 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:27967 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756314Ab2FHMcS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 08:31:40 -0400
-Date: Fri, 8 Jun 2012 15:31:28 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Lars Ellenberg <drbd-dev@lists.linbit.com>
-Cc: drbd-user@lists.linbit.com, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [patch -resend] drbd: fix resync_dump_detail() output
-Message-ID: <20120608123128.GA18293@elgon.mountain>
+	Fri, 8 Jun 2012 08:32:18 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX190qBbJoEJmH+h/K7gDZB3J
+Date: Fri, 8 Jun 2012 05:32:13 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Thomas Abraham <thomas.abraham@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, grant.likely@secretlab.ca,
+        kgene.kim@samsung.com, kyungmin.park@samsung.com, patches@linaro.org,
+        Stephen Warren <swarren@wwwdotorg.org>
+Subject: Re: [PATCH 1/3] pinctrl: add samsung pinctrl and gpiolib driver
+Message-ID: <20120608123213.GP12766@atomide.com>
+References: <1337816857-14694-1-git-send-email-thomas.abraham@linaro.org>
+ <1337816857-14694-2-git-send-email-thomas.abraham@linaro.org>
+ <CACRpkdZDnFW4-bDsHN5BOr2e5NLGzouSBY7ngf-VsoPn-SyxAA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <CACRpkdZDnFW4-bDsHN5BOr2e5NLGzouSBY7ngf-VsoPn-SyxAA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The tests here aren't correct.  It should be doing a shift before doing
-the bitwise AND.  (bme->flags & BME_NO_WRITES) is always false and
-(bme->flags & BME_LOCKED) checks for BME_NO_WRITES instead of checking
-for locked.
+* Linus Walleij <linus.walleij@linaro.org> [120531 18:40]:
+> On Thu, May 24, 2012 at 7:47 AM, Thomas Abraham
+> <thomas.abraham@linaro.org> wrote:
+> 
+> > diff --git a/Documentation/devicetree/bindings/pinctrl/samsung-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/samsung-pinctrl.txt
+> 
+> It would be nice if some DT person could review the bindings, but if
+> nothing happens
+> I will accept them as-is.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
----
-I sent this to the drbd-user list in March, but never recieved a
-response.
-
-diff --git a/drivers/block/drbd/drbd_proc.c b/drivers/block/drbd/drbd_proc.c
-index 2959cdf..ffe1ee4 100644
---- a/drivers/block/drbd/drbd_proc.c
-+++ b/drivers/block/drbd/drbd_proc.c
-@@ -187,8 +187,10 @@ static void resync_dump_detail(struct seq_file *seq, struct lc_element *e)
- 	struct bm_extent *bme = lc_entry(e, struct bm_extent, lce);
+Looks OK to me, that's a bit slower way of parsing pins compared to
+just register value pairs but allows naming them. And it was agreed
+that it's up to the driver to define it's binding.
  
- 	seq_printf(seq, "%5d %s %s\n", bme->rs_left,
--		   bme->flags & BME_NO_WRITES ? "NO_WRITES" : "---------",
--		   bme->flags & BME_LOCKED ? "LOCKED" : "------"
-+		   test_bit(BME_NO_WRITES, &bme->flags) ?
-+			"NO_WRITES" : "---------",
-+		   test_bit(BME_LOCKED, &bme->flags) ?
-+			"LOCKED" : "------"
- 		   );
- }
+> This driver is special since it seems to keep all pin, group and
+> function information
+> in the device tree, but not like Tony is doing it in pinctrl-simple,
+> if I understand
+> correctly?
+
+Looks like it's using static arrays which I was too using earlier.
+That too should be OK for now, then at some point we can probably
+have something generic to manage the pins for at least some drivers.
+
+Regards,
+
+Tony
  
