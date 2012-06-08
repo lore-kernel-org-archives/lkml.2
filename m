@@ -1,92 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934264Ab2FHKiM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 06:38:12 -0400
-Received: from nm14-vm0.access.bullet.mail.sp2.yahoo.com ([98.139.44.162]:45045
-	"HELO nm14-vm0.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751276Ab2FHKiK (ORCPT
+	id S934280Ab2FHKmC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 06:42:02 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:41454 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751276Ab2FHKl7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 06:38:10 -0400
-X-Greylist: delayed 638 seconds by postgrey-1.27 at vger.kernel.org; Fri, 08 Jun 2012 06:38:10 EDT
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 556195.48437.bm@omp1027.access.mail.sp2.yahoo.com
-X-YMail-OSG: qk8E8KwVM1mryGp.pZpSXT5XUNmZH2JQghR5bT2Cwdx_p7.
- VvAjr9P4lsDBGY18z0A7.uljaNgf9j8Jas9QCfgVLoO1qOeNCLvIsrriybzU
- B0gFNJG0k6e2NhrIRKLt3xXVcqkI3TFmi5NUMsDQPCZD11ZUEZkol_ZIWILT
- _JpnW.B.0mmxuB6sKi6wVI7gCY3JxEIlXdTGTtQcWPAWrTA2RItDKHRmszeK
- i7S_oCDOLyM0kDSvjdjGOxNKAyFoz6kXbXfIrUhgF70aqhyIxbmem4ae3Au1
- oS5mbXB4My_G1vywAKCTse0GxSSCIgHFRA20zDBpLnqrpCHyu.B5EI5PUM3e
- ul.uK8KX6abu_UMpGI56DI1A83EjjTj65goJbm5apUPsFDPA54tQ91Z0dpre
- YRhKSCZInibkYTSCzXiylV0eGmR0T6vmErOkaR2saowQf_kivDex66f9za4T
- hvewvWwef
-X-RocketYMMF: webokoza151
-X-Mailer: YahooMailClassic/15.0.6 YahooMailWebService/0.8.118.349524
-Message-ID: <1339151116.34284.YahooMailClassic@web2810.biz.mail.ne1.yahoo.com>
-Date: Fri, 8 Jun 2012 03:25:16 -0700 (PDT)
-From: SANTANA <henry_santana2002@hotmail.com>
-Reply-To: hen_drietta2008@gala.net
-Subject: INTERNATIONAL     INVESTOR
-To: undisclosed recipients:;
+	Fri, 8 Jun 2012 06:41:59 -0400
+Date: Fri, 8 Jun 2012 03:41:57 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Ben Hutchings <ben@decadent.org.uk>
+cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Minchan Kim <minchan@kernel.org>
+Subject: Re: [ 31/82] mm/vmalloc.c: change void* into explict vm_struct*
+In-Reply-To: <20120608041845.013957176@decadent.org.uk>
+Message-ID: <alpine.DEB.2.00.1206080341050.4994@chino.kir.corp.google.com>
+References: <20120608041845.013957176@decadent.org.uk>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="778264460-621298810-1339151116=:34284"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---778264460-621298810-1339151116=:34284
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Fri, 8 Jun 2012, Ben Hutchings wrote:
 
-=0AOPEN=A0 ATTACHMENT=A0 AND=A0 SEE=A0 MORE=A0 DETAILS=A0 ABOUT=A0 THIS=0A=
-=0A
---778264460-621298810-1339151116=:34284
-Content-Type: application/rtf; name=Fidelity
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="Fidelity Investments International.rtf"
+> 3.2-stable review patch.  If anyone has any objections, please let me know.
+> 
+> ------------------
+> 
+> From: Minchan Kim <minchan@kernel.org>
+> 
+> commit db1aecafef58b5dda39c4228debe2c845e4a27ab upstream.
+> 
+> vmap_area->private is void* but we don't use the field for various purpose
+> but use only for vm_struct.  So change it to a vm_struct* with naming to
+> improve for readability and type checking.
+> 
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> Acked-by: David Rientjes <rientjes@google.com>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 
-e1xydGYxXGFuc2lcYW5zaWNwZzEyNTJcZGVmZjBcZGVmbGFuZzEwMzN7XGZv
-bnR0Ymx7XGYwXGZzd2lzc1xmY2hhcnNldDAgQXJpYWw7fX0NCntcKlxnZW5l
-cmF0b3IgTXNmdGVkaXQgNS40MS4xNS4xNTA3O31cdmlld2tpbmQ0XHVjMVxw
-YXJkXGYwXGZzMjAgSGVucnkgU2FudGFuYVxwYXINCjI4IE94Zm9yZCBSb2Fk
-XHBhcg0KSm9oYW5uZXNidXJnXHBhcg0KU291dGggQWZyaWNhXHBhcg0KaGVu
-cnlfc2FudGFuYTIwMDJAdG9wbWFpbC5jby56YVxwYXINClxwYXINCkdvb2Qg
-ZGF5LCAgICAgICAgICAgUGxlYXNlICBDb250YWN0IFRocm91Z2ggUHJpdmF0
-ZSAgZS1lbWFpbFxwYXINClxwYXINCkkgYW0gSGVucnkgIFNhbnRhbmEsIGEg
-ZmluYW5jaWFsIGNvbnN1bHRhbnQgYXR0YWNoZWQgdG8gZmlkZWxpdHlccGFy
-DQppbnZlc3RtZW50cyBpbnRlcm5hdGlvbmFsLCBhIGZ1bmQgbWFuYWdlbWVu
-dCBjb21wYW55IHdpdGggb3ZlclxwYXINClVTJDIsMDAwLDAwMCwwMDAuMDAg
-KFR3byBCaWxsaW9uIFVuaXRlZCBTdGF0ZXMgRG9sbGFycykgY2FwaXRhbCBp
-bnZlc3RtZW50ICBmdW5kLiBJIGhhbmRsZSBhbGwgb3VyIGludmVzdG9yJ3Mg
-ZGlyZWN0IGNhcGl0YWwgZnVuZHMgYW5kIGV4dHJhY3RzIDEuMiUgIEV4Y2Vz
-cyBNYXhpbXVtIFJldHVybiBDYXBpdGFsIFByb2ZpdCAoRU1SQ1ApIHBlciBh
-bm51bCBvbiBlYWNoIG9mIHRoZSBJbnZlc3RvcidzIE1hcmdpbmFsIENhcGl0
-YWwgRnVuZC4gQXMgYW4gZXhwZXJ0IGluIHRoaXMgcHJvZmVzc2lvbiwgSSBo
-YXZlIGZ1bmRzIGFtb3VudGluZyB0b1xwYXINClxwYXINClxwYXINClVTJDM1
-LDAwMCwwMDAuMDAgKFR3ZW50eS1GaXZlIE1pbGxpb24gVW5pdGVkIFN0YXRl
-cyBEb2xsYXJzKSBmcm9tIHRoZVxwYXINCkludmVzdG9yJ3MgRU1SQ1AgYW5k
-IGhlcmVieSBsb29raW5nIGZvciBzb21lb25lIHRvIHRydXN0IHdobyB3aWxs
-IHN0YW5kIGFzIGFuIEludmVzdG9yIHRvIHJlY2VpdmUgdGhlIGZ1bmQgYXMg
-QW5udWFsIEludmVzdG1lbnQgUHJvY2VlZHMgZnJvbSBGaWRlbGl0eSBNYXJn
-aW5hbCBDYXBpdGFsIEZ1bmQgZm9yIG91ciBvd24gcGFydG5lcnNoaXAgYnVz
-aW5lc3MgaW52ZXN0bWVudCBpbiBoaXMvaGVyIGNvdW50cnkuXHBhcg0KXHBh
-cg0KXHBhcg0KQWxsIGNvbmZvcm1hYmxlIGRvY3VtZW50cyB0byBzdXBwb3J0
-IHRoaXMgSW52ZXN0bWVudCBGdW5kIHdpbGwgYmUgbWFkZSBhdmFpbGFibGUg
-dG8geW91LiBNZWFud2hpbGUsIEkgaGF2ZSB3b3JrZWQgb3V0IHRoZSBtb2Rh
-bGl0aWVzIGFuZCB0ZWNobmljYWxpdGllcyBzbyB0aGF0IHRoZSBmdW5kcyBj
-YW4gYmUgY2xhaW1lZCBpbiBhbnkgb2Ygb3VyIHNpeCBjbGVhcmluZ1xwYXIN
-ClxwYXINClxwYXINCmhvdXNlcyB3aXRob3V0IGFueSBoaXRjaGVzLiBBbGwg
-SSByZXF1aXJlIGlzIHlvdXIgaG9uZXN0IGNvLW9wZXJhdGlvbi4gSVxwYXIN
-Cmd1YXJhbnRlZSB0aGF0IHRoaXMgd2lsbCBiZSBleGVjdXRlZCB1bmRlciBh
-IGxlZ2l0aW1hdGUgYXJyYW5nZW1lbnQgYW5kIG5vIGdvdmVybm1lbnQgaW52
-b2x2ZW1lbnQgYXQgYWxsLlxwYXINClxwYXINClxwYXINCkl0IGlzIHZlcnkg
-aW1wb3J0YW50IHlvdSBpbmNsdWRlIHlvdXIgY29udGFjdCBhZGRyZXNzLCB0
-ZWxlcGhvbmUgYW5kIGZheCBudW1iZXIgZm9yIGVhc3kgY29tbXVuaWNhdGlv
-bi4gSG9wZSB0byBoZWFyIGZyb20geW91IHNvb24uIEVtYWlsIHlvdXIgcmVz
-cG9uc2UgdG86ICAgaGVucnlfc2FudGFuYTIwMDJAdG9wbWFpbC5jby56YVxw
-YXINCjI3ODM0MjExNTU2XHBhcg0KUmVnYXJkcyxccGFyDQpNci5IZW5yeSAg
-U2FudGFuYVxwYXINCkZpZGVsaXR5IGludmVzdG1lbnRzIGludGVybmF0aW9u
-YWxccGFyDQpccGFyDQpccGFyDQpccGFyDQpccGFyDQpccGFyDQpccGFyDQpc
-cGFyDQpccGFyDQpccGFyDQpccGFyDQpccGFyDQpccGFyDQpccGFyDQpccGFy
-DQp9DQoA
-
---778264460-621298810-1339151116=:34284--
+I'm not sure this is stable material and it wasn't annotated as such when 
+it was commited, why should someone need to upgrade their 3.2 for a patch 
+like this?
