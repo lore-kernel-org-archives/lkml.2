@@ -1,100 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934514Ab2FHUuf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 16:50:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41832 "EHLO mx2.suse.de"
+	id S964824Ab2FHUvu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 16:51:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13879 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754525Ab2FHUud (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 16:50:33 -0400
-Date: Fri, 8 Jun 2012 22:50:31 +0200
-From: Jan Kara <jack@suse.cz>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: writeback: bad unlock balance detected in 3.5-rc1
-Message-ID: <20120608205031.GG21080@quack.suse.cz>
-References: <E1Sd0IP-0005nh-AJ@tytso-glaptop.cam.corp.google.com>
- <20120608150736.GF21080@quack.suse.cz>
- <20120608154535.GA887@localhost>
+	id S1759707Ab2FHUvt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 16:51:49 -0400
+Date: Fri, 8 Jun 2012 16:51:38 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Li Zhong <zhong@linux.vnet.ibm.com>
+Cc: Jan Beulich <JBeulich@suse.com>, x86@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86,nmi: Fix section mismatch warnings on 32-bit
+Message-ID: <20120608205138.GA29664@redhat.com>
+References: <1338839763-11140-1-git-send-email-dzickus@redhat.com>
+ <4FCDDB7D0200007800088390@nat28.tlf.novell.com>
+ <20120605144734.GU32472@redhat.com>
+ <4FCE44FC0200007800088524@nat28.tlf.novell.com>
+ <20120605183539.GA32472@redhat.com>
+ <4FCF57B902000078000887EA@nat28.tlf.novell.com>
+ <20120606140357.GB32472@redhat.com>
+ <1339055005.18639.11.camel@ThinkPad-T420>
+ <20120607124800.GH32472@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="XMCwj5IQnwKtuyBG"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120608154535.GA887@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120607124800.GH32472@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---XMCwj5IQnwKtuyBG
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Sat 09-06-12 00:45:35, Wu Fengguang wrote:
-> On Fri, Jun 08, 2012 at 05:07:36PM +0200, Jan Kara wrote:
-> > On Fri 08-06-12 10:36:13, Ted Tso wrote:
+On Thu, Jun 07, 2012 at 08:48:00AM -0400, Don Zickus wrote:
+> On Thu, Jun 07, 2012 at 03:43:25PM +0800, Li Zhong wrote:
+> > On Wed, 2012-06-06 at 10:03 -0400, Don Zickus wrote:
+> > > On Wed, Jun 06, 2012 at 12:14:33PM +0100, Jan Beulich wrote:
+> > > > > I didn't think it would be compiler dependent as I do not know what
+> > > > > compiler the reporter was using.  I used a RHEL-6 4.4.4 compiler (which
+> > > > > you probably don't have :^) ).
+> > > > 
+> > > > Indeed, somehow I failed to see the obvious - it's commit
+> > > > 72b3fb24713755cf9740b403e95aa67ceedf3509 that causes
+> > > > these problems. Instantiating static data like this just doesn't
+> > > > play with any of the pointers passed being into .init.*.
+> > > > 
+> > > > I'd suggest either open coding register_nmi_handler() (with
+> > > > the static data put into __initdata), or further abstracting it
+> > > > by allowing an optional fifth argument (specifying the section
+> > > > annotation if needed).
 > > > 
-> > > I can reproduce this fairly easily by using ext4 w/o a journal, running
-> > > under KVM with 1024megs memory, with fsstress (xfstests #13):
+> > > Ah.  Thanks for figuring that out!!  I will post a patch opencoding it.
+> > > 
+> > 
+> > Hi Don, 
+> > 
+> > How about the following patch, adding an optional fifth argument as Jan
+> > mentioned? We don't need change other users of register_nmi_handler(). 
 > 
-> Good catch, thanks!
-> 
-> >   Argh, I wonder how come I didn't hit this. Does attached patch fix the
-> > problem?
-> 
-> > diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-> > index 8d2fb8c..41a3ccf 100644
-> > --- a/fs/fs-writeback.c
-> > +++ b/fs/fs-writeback.c
-> > @@ -664,6 +664,7 @@ static long writeback_sb_inodes(struct super_block *sb,
-> >  			/* Wait for I_SYNC. This function drops i_lock... */
-> >  			inode_sleep_on_writeback(inode);
-> >  			/* Inode may be gone, start again */
-> > +			spin_lock(&wb->list_lock);
-> >  			continue;
-> >  		}
-> 
-> That looks like the fix. So I pushed it to writeback-for-next.
-> Thanks for the quick fixing!
-  Attached is a version with proper sign-off and changelog. Just in case
-you didn't create one yourself already.
+> Ah, ok.  I forgot about the variable args syntax.  That works too.  I give
+> a quick test.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Apparently I was too slow.  Ingo committed my other patch.  I can ask him
+to revert it and use your smaller/cleaner patch instead?  Or is it big
+deal to keep the other one?
 
---XMCwj5IQnwKtuyBG
-Content-Type: text/x-patch; charset=us-ascii
-Content-Disposition: attachment; filename="0001-writeback-Fix-lock-imbalance-in-writeback_sb_inodes.patch"
-
->From 98fecbcb9edf39b4ab6aab8a85342f77665cac4d Mon Sep 17 00:00:00 2001
-From: Jan Kara <jack@suse.cz>
-Date: Fri, 8 Jun 2012 17:08:03 +0200
-Subject: [PATCH] writeback: Fix lock imbalance in writeback_sb_inodes()
-
-Fix bug introduced by 169ebd90.  We have to have wb_list_lock locked when
-restarting writeback loop after having waited for inode writeback.
-
-Signed-off-by: Jan Kara <jack@suse.cz>
----
- fs/fs-writeback.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index 8d2fb8c..41a3ccf 100644
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -664,6 +664,7 @@ static long writeback_sb_inodes(struct super_block *sb,
- 			/* Wait for I_SYNC. This function drops i_lock... */
- 			inode_sleep_on_writeback(inode);
- 			/* Inode may be gone, start again */
-+			spin_lock(&wb->list_lock);
- 			continue;
- 		}
- 		inode->i_state |= I_SYNC;
--- 
-1.7.1
-
-
---XMCwj5IQnwKtuyBG--
+Cheers,
+Don
