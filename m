@@ -1,50 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934280Ab2FHKmC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 06:42:02 -0400
+	id S934303Ab2FHKmQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 06:42:16 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:41454 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751276Ab2FHKl7 (ORCPT
+	with ESMTP id S934247Ab2FHKmO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 06:41:59 -0400
-Date: Fri, 8 Jun 2012 03:41:57 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Ben Hutchings <ben@decadent.org.uk>
-cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Minchan Kim <minchan@kernel.org>
-Subject: Re: [ 31/82] mm/vmalloc.c: change void* into explict vm_struct*
-In-Reply-To: <20120608041845.013957176@decadent.org.uk>
-Message-ID: <alpine.DEB.2.00.1206080341050.4994@chino.kir.corp.google.com>
-References: <20120608041845.013957176@decadent.org.uk>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 8 Jun 2012 06:42:14 -0400
+Date: Fri, 8 Jun 2012 19:42:04 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: leonid.moiseichuk@nokia.com, penberg@kernel.org, minchan@kernel.org,
+        kosaki.motohiro@gmail.com, john.stultz@linaro.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Subject: Re: [PATCH 0/5] Some vmevent fixes...
+Message-ID: <20120608104204.GA2185@barrios>
+References: <20120604113811.GA4291@lizard>
+ <4FCD14F1.1030105@gmail.com>
+ <CAOJsxLHR4wSgT2hNfOB=X6ud0rXgYg+h7PTHzAZYCUdLs6Ktug@mail.gmail.com>
+ <20120605083921.GA21745@lizard>
+ <4FD014D7.6000605@kernel.org>
+ <20120608074906.GA27095@lizard>
+ <4FD1BB29.1050805@kernel.org>
+ <CAOJsxLHPvg=bsv+GakFGHyJwH0BoGA=fmzy5bwqWKNGryYTDtg@mail.gmail.com>
+ <84FF21A720B0874AA94B46D76DB98269045F7B42@008-AM1MPN1-004.mgdnok.nokia.com>
+ <20120608094507.GA11963@lizard>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120608094507.GA11963@lizard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 8 Jun 2012, Ben Hutchings wrote:
+On Fri, Jun 08, 2012 at 02:45:07AM -0700, Anton Vorontsov wrote:
+> On Fri, Jun 08, 2012 at 09:12:36AM +0000, leonid.moiseichuk@nokia.com wrote:
+> [...]
+> > > Exactly. I don't know why people think pushing vmevents to userspace is
+> > > going to fix any of the hard problems.
+> > > 
+> > > Anton, Lenoid, do you see any fundamental issues from userspace point of
+> > > view with going forward what Minchan is proposing?
+> > 
+> > That good proposal but I have to underline that userspace could be interested not only in memory consumption stressed cases (pressure, vm watermarks ON etc.) 
+> > but quite relaxed as well e.g. 60% durty pages are consumed - let's do not restart some daemons. In very stressed conditions user-space might be already dead.
+> 
+> Indeed. Minchan's proposal is good to get notified that VM is under
+> stress.
+> 
+> But suppose some app allocates memory slowly (i.e. I scroll a large
+> page on my phone, and the page is rendered piece by piece). So, in
+> the end we're slowly but surely allocate a lot of memory. In that
+> case Minchan's method won't notice that it's actually time to close
+> some apps.
 
-> 3.2-stable review patch.  If anyone has any objections, please let me know.
-> 
-> ------------------
-> 
-> From: Minchan Kim <minchan@kernel.org>
-> 
-> commit db1aecafef58b5dda39c4228debe2c845e4a27ab upstream.
-> 
-> vmap_area->private is void* but we don't use the field for various purpose
-> but use only for vm_struct.  So change it to a vm_struct* with naming to
-> improve for readability and type checking.
-> 
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> Acked-by: David Rientjes <rientjes@google.com>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+I can't understand. Why can't the approach catch the situation?
+Let's think about it.
 
-I'm not sure this is stable material and it wasn't annotated as such when 
-it was commited, why should someone need to upgrade their 3.2 for a patch 
-like this?
+There is 40M in CleanCache LRU which has easy-reclaimable pages and
+there is 10M free pages and 5M high watermark in system.
+
+Your application start to consume free pages very slowly.
+So when your application consumed 5M, VM start to reclaim. So far, it's okay
+because we have 40M easy-reclaimable pages. And low memory notifier can start
+to notify so your dameon can do some action to get free pages.
+
+I think it's not so late.
+
+sidenote:
+It seems I live in the complete opposite place because
+you guys always start discussion when I am about going out of office.
+Please understand my late response.
+Maybe I will come back after weekend. :)
+
+Thanks.
+
+> 
+> Then suppose someone calls me, the "phone" application is now
+> starting, but since we're out of 'easy to reclaim' pages, it takes
+> forever for the app to load, VM is now under huge stress, and surely
+> we're *now* getting notified, but alas, it is too late. Call missed.
+> 
+> 
+> So, it's like measuring distance, velocity and acceleration. In
+> Android case, among other things, we're interested in distance too!
+> I.e. "how much exactly 'easy to reclaim' pages left", not only
+> "how fast we're getting out of 'easy to reclaim' pages".
+> 
+> > Another interesting question which combination of VM page types could be recognized as interesting for tracking as Minchan correctly stated it depends from area.
+> > For me seems weights most likely will be -1, 0 or +1 to calculate resulting values and thesholds e.g. Active = {+1 * Active_Anon; +1 * Active_File}
+> > It will extend flexibility a lot.
+> 
+> Exposing VM details to the userland? No good. :-)
+> 
+> -- 
+> Anton Vorontsov
+> Email: cbouatmailru@gmail.com
