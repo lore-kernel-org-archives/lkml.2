@@ -1,286 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759949Ab2FHVSt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 17:18:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34520 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753651Ab2FHVSf (ORCPT
+	id S1760391Ab2FHVfE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 17:35:04 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:41682 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751701Ab2FHVfB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 17:18:35 -0400
-Date: Fri, 8 Jun 2012 14:18:33 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Dave Jones <davej@redhat.com>, Cong Wang <amwang@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
-        Rik van Riel <riel@redhat.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH v10] mm: compaction: handle incorrect MIGRATE_UNMOVABLE
- type pageblocks
-Message-Id: <20120608141833.d105153e.akpm@linux-foundation.org>
-In-Reply-To: <201206081046.32382.b.zolnierkie@samsung.com>
-References: <201206081046.32382.b.zolnierkie@samsung.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 8 Jun 2012 17:35:01 -0400
+Message-ID: <4FD27000.7000208@linaro.org>
+Date: Fri, 08 Jun 2012 23:34:56 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+CC: lenb@kernel.org, linux-acpi@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org, linaro-dev@lists.linaro.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [linux-pm] [RFC 1/4] cpuidle: define the enter function in the
+ driver structure
+References: <1339171365-4098-1-git-send-email-daniel.lezcano@linaro.org> <4FD23752.6090101@linux.vnet.ibm.com>
+In-Reply-To: <4FD23752.6090101@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 08 Jun 2012 10:46:32 +0200
-Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com> wrote:
+On 06/08/2012 07:33 PM, Deepthi Dharwar wrote:
+> Hi Daniel,
 
-> 
-> Hi,
-> 
-> This version is much simpler as it just uses __count_immobile_pages()
-> instead of using its own open coded version and it integrates changes
-> from Minchan Kim (without page_count change as it doesn't seem correct
-> and __count_immobile_pages() does the check in the standard way; if it
-> still is a problem I think that removing 1st phase check altogether
-> would be better instead of adding more locking complexity).
-> 
-> The patch also adds compact_rescued_unmovable_blocks vmevent to vmstats
-> to make it possible to easily check if the code is working in practice.
-> 
-> Best regards,
-> --
-> Bartlomiej Zolnierkiewicz
-> Samsung Poland R&D Center
-> 
-> 
-> From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> Subject: [PATCH v10] mm: compaction: handle incorrect MIGRATE_UNMOVABLE type pageblocks
-> 
-> When MIGRATE_UNMOVABLE pages are freed from MIGRATE_UNMOVABLE
-> type pageblock (and some MIGRATE_MOVABLE pages are left in it)
-> waiting until an allocation takes ownership of the block may
-> take too long.  The type of the pageblock remains unchanged
-> so the pageblock cannot be used as a migration target during
-> compaction.
-> 
-> Fix it by:
-> 
-> * Adding enum compact_mode (COMPACT_ASYNC_[MOVABLE,UNMOVABLE],
->   and COMPACT_SYNC) and then converting sync field in struct
->   compact_control to use it.
-> 
-> * Adding nr_pageblocks_skipped field to struct compact_control
->   and tracking how many destination pageblocks were of
->   MIGRATE_UNMOVABLE type.  If COMPACT_ASYNC_MOVABLE mode compaction
->   ran fully in try_to_compact_pages() (COMPACT_COMPLETE) it implies
->   that there is not a suitable page for allocation.  In this case
->   then check how if there were enough MIGRATE_UNMOVABLE pageblocks
->   to try a second pass in COMPACT_ASYNC_UNMOVABLE mode.
-> 
-> * Scanning the MIGRATE_UNMOVABLE pageblocks (during COMPACT_SYNC
->   and COMPACT_ASYNC_UNMOVABLE compaction modes) and building
->   a count based on finding PageBuddy pages, page_count(page) == 0
->   or PageLRU pages.  If all pages within the MIGRATE_UNMOVABLE
->   pageblock are in one of those three sets change the whole
->   pageblock type to MIGRATE_MOVABLE.
-> 
-> My particular test case (on a ARM EXYNOS4 device with 512 MiB,
-> which means 131072 standard 4KiB pages in 'Normal' zone) is to:
-> - allocate 95000 pages for kernel's usage
-> - free every second page (47500 pages) of memory just allocated
-> - allocate and use 60000 pages from user space
-> - free remaining 60000 pages of kernel memory
-> (now we have fragmented memory occupied mostly by user space pages)
-> - try to allocate 100 order-9 (2048 KiB) pages for kernel's usage
-> 
-> The results:
-> - with compaction disabled I get 10 successful allocations
-> - with compaction enabled - 11 successful allocations
-> - with this patch I'm able to get 25 successful allocations
-> 
-> NOTE: If we can make kswapd aware of order-0 request during
-> compaction, we can enhance kswapd with changing mode to
-> COMPACT_ASYNC_FULL (COMPACT_ASYNC_MOVABLE + COMPACT_ASYNC_UNMOVABLE).
-> Please see the following thread:
-> 
-> 	http://marc.info/?l=linux-mm&m=133552069417068&w=2
-> 
->
-> ...
->
-> --- a/include/linux/compaction.h	2012-06-08 09:01:32.041681656 +0200
-> +++ b/include/linux/compaction.h	2012-06-08 09:01:35.697681651 +0200
-> @@ -1,6 +1,8 @@
->  #ifndef _LINUX_COMPACTION_H
->  #define _LINUX_COMPACTION_H
->  
-> +#include <linux/node.h>
+Hi Deepthi,
 
-Why was this addition needed?  (I think I asked this before)
+> On 06/08/2012 09:32 PM, Daniel Lezcano wrote:
+> 
+>> We have the state index passed as parameter to the 'enter' function.
+>> Most of the drivers assign their 'enter' functions several times in
+>> the cpuidle_state structure, as we have the index, we can delegate
+>> to the driver to handle their own callback array.
+>>
+>> That will have the benefit of removing multiple lines of code in the
+>> different drivers.
+>>
+>> In order to smoothly modify the driver, the 'enter' function are in
+>> the driver structure and in the cpuidle state structure. That will
+>> let the time to modify the different drivers one by one.
+>> So the 'cpuidle_enter' function checks if the 'enter' callback is
+>> assigned in the driver structure and use it, otherwise it invokes
+>> the 'enter' assigned to the cpuidle_state.
+> 
+> 
+> Currently, the backend driver initializes
+> all the cpuidle states supported on the platform,
+> and each state can have its own enter routine
+> which can be unique This is a clean approach.
 
->  /* Return values for compact_zone() and try_to_compact_pages() */
->  /* compaction didn't start as it was not possible or direct reclaim was more suitable */
->  #define COMPACT_SKIPPED		0
->
-> ...
->
-> +static bool can_rescue_unmovable_pageblock(struct page *page)
-> +{
-> +	struct zone *zone;
-> +	unsigned long pfn, start_pfn, end_pfn;
-> +	struct page *start_page;
-> +
-> +	zone = page_zone(page);
-> +	pfn = page_to_pfn(page);
-> +	start_pfn = pfn & ~(pageblock_nr_pages - 1);
-> +	start_page = pfn_to_page(start_pfn);
-> +
-> +	/*
-> +	 * Race with page allocator/reclaimer can happen so that it can
-> +	 * deceive unmovable block to migratable type on this pageblock.
-> +	 * It could regress on anti-fragmentation but it's rare and not
-> +	 * critical.
-> +	 */
+Yes, I perfectly understood the purpose of this field but as clean it is
+it does not make sense as it is not used in this way. If it is supposed
+to be done in the way you are describing here, we should have the same
+number of states and enter functions. Here it is how it is used:
 
-This is quite ungramattical and needs a rewrite, please.  Suggest the
-use of well-understood terms MIGRATE_UNMOVABLE, MIGRATE_MOVABLE etc
-rather than "unmovable block", etc.
-
-Please explain "could regress" and also explain why it is "not critical".
-
-> +	return __count_immobile_pages(zone, start_page, 0);
-> +}
-> +
-> +static void rescue_unmovable_pageblock(struct page *page)
-> +{
-> +	set_pageblock_migratetype(page, MIGRATE_MOVABLE);
-> +	move_freepages_block(page_zone(page), page, MIGRATE_MOVABLE);
-> +
-> +	count_vm_event(COMPACT_RESCUED_UNMOVABLE_BLOCKS);
-> +}
-> +
-> +/*
-> + * MIGRATE_TARGET : good for migration target
-> + * RESCUE_UNMOVABLE_TARTET : good only if we can rescue the unmovable pageblock.
-
-s/TARTET/TARGET/
-
-> + * UNMOVABLE_TARGET : can't migrate because it's a page in unmovable pageblock.
-> + * SKIP_TARGET : can't migrate by another reasons.
-> + */
-> +enum smt_result {
-> +	MIGRATE_TARGET,
-> +	RESCUE_UNMOVABLE_TARGET,
-> +	UNMOVABLE_TARGET,
-> +	SKIP_TARGET,
-> +};
->  
->
-> ...
->
-> @@ -5476,8 +5476,7 @@ void set_pageblock_flags_group(struct pa
->   * page allocater never alloc memory from ISOLATE block.
->   */
->  
-> -static int
-> -__count_immobile_pages(struct zone *zone, struct page *page, int count)
-> +int __count_immobile_pages(struct zone *zone, struct page *page, int count)
-
-We may as well fix the return type of this while we're in there.  It
-should be bool.
-
-Also, the comment over __count_immobile_pages() is utter rubbish.  Can
-we please cook up a new one?  Something human-readable which also
-describes the return value.
-
->  {
->  	unsigned long pfn, iter, found;
->  	int mt;
-> @@ -5500,6 +5499,11 @@ __count_immobile_pages(struct zone *zone
->  			continue;
->  
->  		page = pfn_to_page(check);
-> +
-> +		/* Do not deal with pageblocks that overlap zones */
-> +		if (page_zone(page) != zone)
-> +			return false;
-
-I don't really understand this bit.  Wasn't it wrong to walk across
-zones in the original code?  Did you do something which will newly
-cause this to walk between zones?  It doesn't seem to be changelogged,
-and the comment commits the common mistake of explaining "what" but not
-"why".
+ --------------------------------------------------
+| Arch             | nr states | nr enter function |
+ --------------------------------------------------
+| x86 (nehalem)    |    3      |         1         |
+ --------------------------------------------------
+| x86 (snb)        |    4      |         1         |
+ --------------------------------------------------
+| x86 (atom)       |    4      |         1         |
+ --------------------------------------------------
+| ARM tegra        |    1      |         1         |
+ --------------------------------------------------
+| ARM omap3        |    7      |         2         |
+ --------------------------------------------------
+| ARM omap4        |    3      |         1         |
+ --------------------------------------------------
+| ARM ux500        |    2      |         1         |
+ --------------------------------------------------
+| ARM shmobile     |    1      |         1         |
+ --------------------------------------------------
+| ARM davinci      |    2      |         1         |
+ --------------------------------------------------
+| ARM at91         |    2      |         1         |
+ --------------------------------------------------
+| ARM s3c64xx      |    1      |         1         |
+ --------------------------------------------------
+| ARM exynos       |    2      |         1         |
+ --------------------------------------------------
+| ARM kirkwood     |    2      |         1         |
+ --------------------------------------------------
+| SH               |    3      |         1         |
+ --------------------------------------------------
+| PPC              |    2      |         2         |
+ --------------------------------------------------
+|                  |           |                   |
+| TOTAL            |    39     |        17         |
+|                  |           |                   |
+ --------------------------------------------------
 
 
->  		if (!page_count(page)) {
->  			if (PageBuddy(page))
->  				iter += (1 << page_order(page)) - 1;
->
-> ...
->
+As you can see most of the enter functions are only used as one.
+The Omap3 cpuidle driver enter function for C2 calls the enter function
+of C1. Other arch, already use a table of callbacks or the index.
 
-A few tweaks:
+> By moving the enter routine into the driver,
+> we are enforcing in having only one enter state.
+> There is unnecessary overhead involved
+> in calling a wrapper routine just to
+> index into the right idle state routine
+> for many platforms at runtime.
 
---- a/mm/compaction.c~mm-compaction-handle-incorrect-migrate_unmovable-type-pageblocks-fix
-+++ a/mm/compaction.c
-@@ -394,10 +394,10 @@ static void rescue_unmovable_pageblock(s
- }
- 
- /*
-- * MIGRATE_TARGET : good for migration target
-- * RESCUE_UNMOVABLE_TARTET : good only if we can rescue the unmovable pageblock.
-- * UNMOVABLE_TARGET : can't migrate because it's a page in unmovable pageblock.
-- * SKIP_TARGET : can't migrate by another reasons.
-+ * MIGRATE_TARGET: good for migration target
-+ * RESCUE_UNMOVABLE_TARGET: good only if we can rescue the unmovable pageblock.
-+ * UNMOVABLE_TARGET: can't migrate because it's a page in unmovable pageblock.
-+ * SKIP_TARGET: can't migrate by another reasons.
-  */
- enum smt_result {
- 	MIGRATE_TARGET,
-@@ -407,9 +407,9 @@ enum smt_result {
- };
- 
- /*
-- * Returns MIGRATE_TARGET if the page is within a block
-- * suitable for migration to, UNMOVABLE_TARGET if the page
-- * is within a MIGRATE_UNMOVABLE block, SKIP_TARGET otherwise.
-+ * Returns MIGRATE_TARGET if the page is within a block suitable for migration
-+ * to, UNMOVABLE_TARGET if the page is within a MIGRATE_UNMOVABLE block,
-+ * SKIP_TARGET otherwise.
-  */
- static enum smt_result suitable_migration_target(struct page *page,
- 			      struct compact_control *cc)
---- a/mm/internal.h~mm-compaction-handle-incorrect-migrate_unmovable-type-pageblocks-fix
-+++ a/mm/internal.h
-@@ -97,7 +97,7 @@ extern void putback_lru_page(struct page
- extern void set_pageblock_migratetype(struct page *page, int migratetype);
- extern int move_freepages_block(struct zone *zone, struct page *page,
- 				int migratetype);
--extern int __count_immobile_pages(struct zone *zone, struct page *page,
-+extern bool __count_immobile_pages(struct zone *zone, struct page *page,
- 				  int count);
- extern void __free_pages_bootmem(struct page *page, unsigned int order);
- extern void prep_compound_page(struct page *page, unsigned long order);
---- a/mm/page_alloc.c~mm-compaction-handle-incorrect-migrate_unmovable-type-pageblocks-fix
-+++ a/mm/page_alloc.c
-@@ -221,7 +221,6 @@ int page_group_by_mobility_disabled __re
- 
- void set_pageblock_migratetype(struct page *page, int migratetype)
- {
--
- 	if (unlikely(page_group_by_mobility_disabled))
- 		migratetype = MIGRATE_UNMOVABLE;
- 
-@@ -5472,7 +5471,7 @@ void set_pageblock_flags_group(struct pa
-  * page allocater never alloc memory from ISOLATE block.
-  */
- 
--int __count_immobile_pages(struct zone *zone, struct page *page, int count)
-+bool __count_immobile_pages(struct zone *zone, struct page *page, int count)
- {
- 	unsigned long pfn, iter, found;
- 	int mt;
+I don't agree. For the sake of encapsulated code, we duplicate n-times a
+field and that is not used in this way. It is quite easy to have in the
+driver specific code a common enter function to ventilate to the right
+routine without adding extra overhead and let the common code use a
+single enter routine (which is already the case today).
+
 
