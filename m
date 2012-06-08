@@ -1,50 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760157Ab2FHCEv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 22:04:51 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:50813 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759900Ab2FHCEt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 22:04:49 -0400
-Message-ID: <1339121082.5794.0.camel@phoenix>
-Subject: [PATCH] regulator: isl6271a: Remove setting map_voltage callback
- for isl_fixed_ops
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Marek Vasut <marek.vasut@gmail.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Fri, 08 Jun 2012 10:04:42 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1760167Ab2FHCHP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jun 2012 22:07:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36769 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759900Ab2FHCHN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jun 2012 22:07:13 -0400
+Date: Thu, 7 Jun 2012 22:06:54 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Jan Beulich <JBeulich@suse.com>, x86@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86,nmi: Fix section mismatch warnings on 32-bit
+Message-ID: <20120608020654.GA18530@redhat.com>
+References: <1338839763-11140-1-git-send-email-dzickus@redhat.com>
+ <4FCDDB7D0200007800088390@nat28.tlf.novell.com>
+ <20120605144734.GU32472@redhat.com>
+ <20120605161318.GA29751@merkur.ravnborg.org>
+ <4FCE4D800200007800088546@nat28.tlf.novell.com>
+ <20120605172208.GA29862@merkur.ravnborg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120605172208.GA29862@merkur.ravnborg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-isl_fixed_ops does not implement set_voltage_sel callback, adding map_voltage
-here is misleading.
+On Tue, Jun 05, 2012 at 07:22:08PM +0200, Sam Ravnborg wrote:
+> > >> I do not know enough about behind the scene compiler magic to track this
+> > >> down correctly.  So any insight/help is greatly appreciated. :-)
+> > > 
+> > > We register a function annotated __init. And the normal use of this 
+> > > register()
+> > > is for functions that survive the init phase.
+> > > So drop the __init annotation on the function we register and the mismatch 
+> > > is fixed.
+> > 
+> > But in the case here the function really is being used at init time
+> > only.
+> This is only for testing. Ando nly if CONFIG_DEBUG_NMI_SELFTEST is set.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/isl6271a-regulator.c |    1 -
- 1 file changed, 1 deletion(-)
+Hi Sam,
 
-diff --git a/drivers/regulator/isl6271a-regulator.c b/drivers/regulator/isl6271a-regulator.c
-index 4a11b82..1d145a0 100644
---- a/drivers/regulator/isl6271a-regulator.c
-+++ b/drivers/regulator/isl6271a-regulator.c
-@@ -81,7 +81,6 @@ static int isl6271a_get_fixed_voltage(struct regulator_dev *dev)
- static struct regulator_ops isl_fixed_ops = {
- 	.get_voltage	= isl6271a_get_fixed_voltage,
- 	.list_voltage	= regulator_list_voltage_linear,
--	.map_voltage	= regulator_map_voltage_linear,
- };
- 
- static const struct regulator_desc isl_rd[] = {
--- 
-1.7.9.5
+Sorry for ignoring your responses before.  Somehow your emails were not
+hitting my inbox for some reason, but I found them in my lkml folder.
 
+So I am confused on the right way to fix this.
 
+Sam is saying drop the __init and Jan is suggesting add __initdata for
+these two special cases.
 
+Anyone want to break the tie? :-)
+
+Cheers,
+Don
