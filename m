@@ -1,48 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759674Ab2FHWZZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 18:25:25 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:51399 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756092Ab2FHWZA (ORCPT
+	id S1760287Ab2FHWZp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 18:25:45 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:49211 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757816Ab2FHWZj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 18:25:00 -0400
-From: mathieu.poirier@linaro.org
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, mathieu.poirier@linaro.org
-Subject: [PATCH RESEND 6/6] drivers/tosa: driver needs I2C and SPI to compile
-Date: Fri,  8 Jun 2012 16:24:40 -0600
-Message-Id: <1339194280-27475-7-git-send-email-mathieu.poirier@linaro.org>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1339194280-27475-1-git-send-email-mathieu.poirier@linaro.org>
-References: <1339194280-27475-1-git-send-email-mathieu.poirier@linaro.org>
+	Fri, 8 Jun 2012 18:25:39 -0400
+Date: Fri, 8 Jun 2012 23:25:33 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Boaz Harrosh <bharrosh@panasas.com>, Tao Ma <boyu.mt@taobao.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nick Piggin <npiggin@kernel.dk>, "Dmitry V. Levin" <ldv@altlinux.org>,
+        v9fs-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-afs@lists.infradead.org,
+        linux-btrfs@vger.kernel.org, ceph-devel@vger.kernel.org,
+        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
+        codalist@TELEMANN.coda.cs.cmu.edu, ecryptfs@vger.kernel.org,
+        osd-dev@open-osd.org, linux-ext4@vger.kernel.org,
+        fuse-devel@lists.sourceforge.net, linux-mtd@lists.infradead.org,
+        jfs-discussion@lists.sourceforge.net, logfs@logfs.org,
+        linux-nfs@vger.kernel.org, linux-nilfs@vger.kernel.org,
+        linux-ntfs-dev@lists.sourceforge.net, ocfs2-devel@oss.oracle.com,
+        reiserfs-devel@vger.kernel.org
+Subject: Re: [RFC, PATCH] fs: push rcu_barrier() from
+ deactivate_locked_super() to filesystems
+Message-ID: <20120608222533.GS30000@ZenIV.linux.org.uk>
+References: <1339191663-17693-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <20120608220049.GA18024@otc-wbsnb-06>
+ <CA+55aFxbEk0k0jYtkn-H-sT0m4Fy5pH_OQZiPwCtwMvh22-3-w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFxbEk0k0jYtkn-H-sT0m4Fy5pH_OQZiPwCtwMvh22-3-w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnd Bergmann <arnd@arndb.de>
+On Fri, Jun 08, 2012 at 03:06:20PM -0700, Linus Torvalds wrote:
+> .. hmm. I think you may be right. Even if we do move it up, we
+> probably shouldn't use it.
+> 
+> We don't even want SLAB_DESTROY_BY_RCU, since we do the delayed RCU
+> free for other reasons anyway, so it would duplicate the RCU delaying
+> and cause problems. I forgot about that little complication.
+> 
+> We could have a separate "RCU_BARRIER_ON_DESTROY" thing, but that's
+> just silly too.
 
-This driver requires both SPI and I2C to build.
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
----
- drivers/video/backlight/Kconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/video/backlight/Kconfig b/drivers/video/backlight/Kconfig
-index fa2b037..2979292 100644
---- a/drivers/video/backlight/Kconfig
-+++ b/drivers/video/backlight/Kconfig
-@@ -88,7 +88,7 @@ config LCD_PLATFORM
- 
- config LCD_TOSA
- 	tristate "Sharp SL-6000 LCD Driver"
--	depends on SPI && MACH_TOSA
-+	depends on I2C && SPI && MACH_TOSA
- 	help
- 	  If you have an Sharp SL-6000 Zaurus say Y to enable a driver
- 	  for its LCD.
--- 
-1.7.5.4
-
+Why not make that rcu_barrier() in there unconditional?  Where are
+we creating/destroying caches often enough for that to become a problem?
