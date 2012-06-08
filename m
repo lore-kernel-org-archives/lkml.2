@@ -1,54 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964894Ab2FHVou (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 17:44:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34955 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934508Ab2FHVot (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 17:44:49 -0400
-Date: Fri, 8 Jun 2012 14:44:47 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-Cc: Sameer Nanda <snanda@chromium.org>, mingo@redhat.com, peterz@infradead.org,
-        len.brown@intel.com, pavel@ucw.cz, rjw@sisk.pl, dzickus@redhat.com,
-        msb@chromium.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, olofj@chromium.org,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [PATCH v2] watchdog: fix for lockup detector breakage on resume
-Message-Id: <20120608144447.b8e2d146.akpm@linux-foundation.org>
-In-Reply-To: <4FA74089.4080204@linux.vnet.ibm.com>
-References: <1335550240-17765-1-git-send-email-snanda@chromium.org>
-	<1335892956-30606-1-git-send-email-snanda@chromium.org>
-	<4FA74089.4080204@linux.vnet.ibm.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S964905Ab2FHVpc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 17:45:32 -0400
+Received: from mga11.intel.com ([192.55.52.93]:26213 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964837Ab2FHVpa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 17:45:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="177087499"
+From: Andi Kleen <andi@firstfloor.org>
+To: mingo@elte.hu
+Cc: eranian@google.com, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 2/2] perf, x86: Enable PDIR precise instruction profiling on IvyBridge
+Date: Fri,  8 Jun 2012 14:45:28 -0700
+Message-Id: <1339191928-13223-3-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1339191928-13223-1-git-send-email-andi@firstfloor.org>
+References: <1339191928-13223-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 07 May 2012 08:54:57 +0530
-Anshuman Khandual <khandual@linux.vnet.ibm.com> wrote:
+From: Andi Kleen <ak@linux.intel.com>
 
-> On Tuesday 01 May 2012 10:52 PM, Sameer Nanda wrote:
-> 
-> > On the suspend/resume path the boot CPU does not go though an
-> > offline->online transition.  This breaks the NMI detector
-> > post-resume since it depends on PMU state that is lost when
-> > the system gets suspended.
-> 
-> 
-> We should not have allowed the PMU to go with events counting on it across the suspend/resume transition
-> and find out that the state has been lost. This patch solves the problem of the NMI detector as we restart the
-> counter again when the boot cpu comes back online during resume. But the original cause (PMU going with
-> counters into the suspend state) which triggered this problem is still there. May be we should have called
-> perf_event_exit() on the boot cpu before going into the suspend state. 
-> 
+Even with precise profiling Intel CPUs have a "skid". The sample
+triggers a few cycles later than the instruction, so in some
+cases there can be systematic errors where expensive instructions never
+show up in the profile log.
 
-That sounds like a nicer solution.
+Sandy Bridge added a new PDIR instruction retired event that randomizes
+the sampling slightly. This corrects for systematic errors, so that
+you should in most cases see the correct instruction getting profile hits.
 
-An implementation would be nice ;) I'll keep the original patch on life
-support until we get all this nailed down.
+Unfortunately the SandyBridge version could only work with a otherwise
+quiescent CPU and was difficult to use. But now on IvyBridge this
+restriction is gone and can be more widely used.
+
+This only works for retired instructions.
+
+I enabled it -- somewhat arbitarily -- for two 'p's or more.
+
+To use it
+
+perf record -e instructions:pp ...
+
+This provides a more precise alternative to the usual cycles:pp,
+however it will not account for expensive instructions.
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel.c |   24 ++++++++++++++++++++++++
+ 1 files changed, 24 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 4d6188d..f17b8f6 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1425,6 +1425,29 @@ static int intel_pmu_hw_config(struct perf_event *event)
+ 	return 0;
+ }
+ 
++static int pdir_hw_config(struct perf_event *event)
++{
++	int err = intel_pmu_hw_config(event);
++
++	if (err)
++		return err;
++
++	/*
++	 * Use the PDIR instruction retired counter for two 'p's.
++	 * This will randomize samples slightly and avoid some systematic
++	 * measurement errors.
++	 * Only works for retired instructions.
++	 */
++	if (event->attr.precise_ip >= 2 &&
++	    (event->hw.config & X86_RAW_EVENT_MASK) == 0xc0) {
++		u64 pdir_event = X86_CONFIG(.event=0xc0, .umask=1);
++		event->hw.config = pdir_event |
++				(event->hw.config & ~X86_RAW_EVENT_MASK);
++	}
++
++	return 0;
++}
++
+ struct perf_guest_switch_msr *perf_guest_get_msrs(int *nr)
+ {
+ 	if (x86_pmu.guest_get_msrs)
+@@ -1914,6 +1937,7 @@ __init int intel_pmu_init(void)
+ 	case 58: /* IvyBridge */
+ 		name = "Ivy";
+ 		/* No backend stall event */
++		x86_pmu.hw_config = pdir_hw_config;
+ 		goto snb_ivb_common;
+ 
+ 	case 42: /* SandyBridge */
+-- 
+1.7.7.6
 
