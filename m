@@ -1,84 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761093Ab2FHGad (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 02:30:33 -0400
-Received: from sncsmrelay2.nai.com ([67.97.80.206]:46892 "EHLO
-	sncsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758387Ab2FHGab (ORCPT
+	id S1761772Ab2FHGfN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 02:35:13 -0400
+Received: from na3sys009aog120.obsmtp.com ([74.125.149.140]:45640 "EHLO
+	na3sys009aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751145Ab2FHGfK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 02:30:31 -0400
-Message-ID: <4FD19B29.4050904@snapgear.com>
-Date: Fri, 8 Jun 2012 16:26:49 +1000
-From: Greg Ungerer <gerg@snapgear.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: Geert Uytterhoeven <geert@linux-m68k.org>, <linux-m68k@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] m68k: remove six unused headers
-References: <1339059427.25798.3.camel@x61.thuisdomein>
-In-Reply-To: <1339059427.25798.3.camel@x61.thuisdomein>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 8 Jun 2012 02:35:10 -0400
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Samuel Ortiz <sameo@linux.intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-kernel@vger.kernel.org, linux-next@vger.kernel.org, t-kristo@ti.com,
+        Randy Dunlap <rdunlap@xenotime.net>, peter.ujfalusi@ti.com
+Subject: [PATCH] MFD: twl6040: Update Kconfig to avoid build breakage
+Date: Fri,  8 Jun 2012 09:35:00 +0300
+Message-Id: <1339137300-16546-1-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+twl6040 needs CONFIG_IRQ_DOMAIN to compile, without this we have:
+drivers/mfd/twl6040-irq.c: In function 'twl6040_irq_init':
+drivers/mfd/twl6040-irq.c:164:2: error: implicit declaration of function 'irq_domain_add_legacy'
+drivers/mfd/twl6040-irq.c:165:11: error: 'irq_domain_simple_ops' undeclared (first use in this function)
+drivers/mfd/twl6040-irq.c:165:11: note: each undeclared identifier is reported only once for each function it appears in
 
-On 07/06/12 18:57, Paul Bolle wrote:
-> There are six entirely unused headers in arch/m68k/include/asm. Nothing
-> includes these headers. And a few tests found no hits for the things
-> they provide (which makes sense).
->
-> MC68332.h, mac_mouse.h, mcfmbus.h, and mcfne.h are all unused since at
-> least v2.6.12-rc2 (I didn't bother looking further back than that).
+Reported by: Randy Dunlap <rdunlap@xenotime.net>
 
-Although mcfne.h has been unused for a while I am working on some patches
-that do use it. No problem for the others.
+At the same time limit the twl6040 availability to ARM architecture since
+it is unlikely that this chip is going to be used on other architectures.
 
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+---
+ drivers/mfd/Kconfig |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-> apollodma.h is unused since v2.6.19: commit
-> 2ed0ce5b57950a620155433c62a5a02a067f1376 ("m68k/Apollo: Remove obsolete
-> arch/m68k/apollo/dma.c") removed the last file interested in that
-> header.
->
-> And everything interested in<asm/sbus.h>  was removed in the v2.6.28
-> release cycle. The last occurrence of "sbus.h" was deleted with commit
-> 0c0db98b50ed1217c0dbf4051722034ba314d06e ("sparc: Remove
-> Documentation/sparc/sbus_drivers.txt"). I'm not sure whether anything
-> relevant for m68k was included in v2.6.27, but it doesn't really matter.
->
-> Signed-off-by: Paul Bolle<pebolle@tiscali.nl>
-
-Acked-by: Greg Ungerer<gerg@uclinux.org>
-
-Regards
-Greg
-
-
-
-> ---
-> Tested with "git grep" only. I haven't got the hardware nor the
-> toolchain needed to do anything more thorough.
->
->   arch/m68k/include/asm/MC68332.h   |  152 -----------------------
->   arch/m68k/include/asm/apollodma.h |  248 -------------------------------------
->   arch/m68k/include/asm/mac_mouse.h |   23 ----
->   arch/m68k/include/asm/mcfmbus.h   |   77 ------------
->   arch/m68k/include/asm/mcfne.h     |  242 ------------------------------------
->   arch/m68k/include/asm/sbus.h      |   45 -------
->   6 files changed, 0 insertions(+), 787 deletions(-)
->   delete mode 100644 arch/m68k/include/asm/MC68332.h
->   delete mode 100644 arch/m68k/include/asm/apollodma.h
->   delete mode 100644 arch/m68k/include/asm/mac_mouse.h
->   delete mode 100644 arch/m68k/include/asm/mcfmbus.h
->   delete mode 100644 arch/m68k/include/asm/mcfne.h
->   delete mode 100644 arch/m68k/include/asm/sbus.h
->
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index e129c82..b6af334 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -283,9 +283,10 @@ config TWL6030_PWM
+ 
+ config TWL6040_CORE
+ 	bool "Support for TWL6040 audio codec"
+-	depends on I2C=y && GENERIC_HARDIRQS
++	depends on I2C=y && GENERIC_HARDIRQS && ARM
+ 	select MFD_CORE
+ 	select REGMAP_I2C
++	select IRQ_DOMAIN
+ 	default n
+ 	help
+ 	  Say yes here if you want support for Texas Instruments TWL6040 audio
 -- 
-------------------------------------------------------------------------
-Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
-SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
-8 Gardner Close                             FAX:         +61 7 3217 5323
-Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
+1.7.8.6
+
