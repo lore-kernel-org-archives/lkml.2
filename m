@@ -1,103 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758813Ab2FHD4m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jun 2012 23:56:42 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:60498 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758241Ab2FHD4i (ORCPT
+	id S1750875Ab2FHEDP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 00:03:15 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:62993 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750718Ab2FHEDO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jun 2012 23:56:38 -0400
-Date: Fri, 8 Jun 2012 13:56:23 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        AnilKumar Ch <anilkumar@ti.com>, David Miller <davem@davemloft.net>,
-        <netdev@vger.kernel.org>, Marc Kleine-Budde <mkl@pengutronix.de>,
-        Viresh Kumar <viresh.kumar@st.com>
-Subject: linux-next: manual merge of the akpm tree with the net-next tree
-Message-Id: <20120608135623.0771d422608209264d4c3ef5@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	Fri, 8 Jun 2012 00:03:14 -0400
+Message-ID: <1339128184.8259.1.camel@phoenix>
+Subject: [PATCH] regulator: max77686: Check pdata->num_regulators earlier
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Chiwoong Byun <woong.byun@samsung.com>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Yadwinder Singh Brar <yadi.brar@samsung.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Date: Fri, 08 Jun 2012 12:03:04 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__8_Jun_2012_13_56_23_+1000_.QQKrYWL2EHZtje/"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__8_Jun_2012_13_56_23_+1000_.QQKrYWL2EHZtje/
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+If this driver only works when pdata->num_regulators == MAX77686_REGULATORS,
+let's check it earlier.
 
-Hi Andrew,
+Also remove unused num_regulators from struct max77686_data.
 
-Today's linux-next merge of the akpm tree got a conflict in
-drivers/net/can/c_can/c_can_platform.c between commit 33f810097769 ("can:
-c_can: Move overlay structure to array with offset as index") from the
-net-next tree and commit "net/c_can: remove conditional compilation of
-clk code" from the akpm tree.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/max77686.c |   43 +++++++++++++++++++-----------------------
+ 1 file changed, 19 insertions(+), 24 deletions(-)
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+diff --git a/drivers/regulator/max77686.c b/drivers/regulator/max77686.c
+index b76a038..b0c146d 100644
+--- a/drivers/regulator/max77686.c
++++ b/drivers/regulator/max77686.c
+@@ -65,7 +65,6 @@ enum max77686_ramp_rate {
+ struct max77686_data {
+ 	struct device *dev;
+ 	struct max77686_dev *iodev;
+-	int num_regulators;
+ 	struct regulator_dev **rdev;
+ 	int ramp_delay; /* in mV/us */
+ };
+@@ -235,6 +234,12 @@ static __devinit int max77686_pmic_probe(struct platform_device *pdev)
+ 
+ 	dev_dbg(&pdev->dev, "%s\n", __func__);
+ 
++	if (!pdata || pdata->num_regulators != MAX77686_REGULATORS) {
++		dev_err(&pdev->dev,
++			"Invalid initial data for regulator's initialiation\n");
++		return -EINVAL;
++	}
++
+ 	max77686 = devm_kzalloc(&pdev->dev, sizeof(struct max77686_data),
+ 				GFP_KERNEL);
+ 	if (!max77686)
+@@ -248,8 +253,6 @@ static __devinit int max77686_pmic_probe(struct platform_device *pdev)
+ 	rdev = max77686->rdev;
+ 	max77686->dev = &pdev->dev;
+ 	max77686->iodev = iodev;
+-	if (pdata)
+-		max77686->num_regulators = pdata->num_regulators;
+ 	platform_set_drvdata(pdev, max77686);
+ 
+ 	max77686->ramp_delay = RAMP_RATE_NO_CTRL; /* Set 0x3 for RAMP */
+@@ -263,34 +266,26 @@ static __devinit int max77686_pmic_probe(struct platform_device *pdev)
+ 			MAX77686_REG_BUCK4CTRL1, MAX77686_RAMP_RATE_MASK,
+ 			max77686->ramp_delay << 6);
+ 
+-	if (pdata->num_regulators == MAX77686_REGULATORS) {
+-		for (i = 0; i < MAX77686_REGULATORS; i++) {
+-			config.dev = max77686->dev;
+-			config.regmap = iodev->regmap;
+-			config.driver_data = max77686;
+-			config.init_data = pdata->regulators[i].initdata;
+-
+-			rdev[i] = regulator_register(&regulators[i], &config);
+-
+-			if (IS_ERR(rdev[i])) {
+-				ret = PTR_ERR(rdev[i]);
+-				dev_err(max77686->dev,
++	for (i = 0; i < MAX77686_REGULATORS; i++) {
++		config.dev = max77686->dev;
++		config.regmap = iodev->regmap;
++		config.driver_data = max77686;
++		config.init_data = pdata->regulators[i].initdata;
++
++		rdev[i] = regulator_register(&regulators[i], &config);
++		if (IS_ERR(rdev[i])) {
++			ret = PTR_ERR(rdev[i]);
++			dev_err(max77686->dev,
+ 				"regulator init failed for %d\n", i);
+ 				rdev[i] = NULL;
+ 				goto err;
+-			}
+ 		}
+-	} else {
+-		dev_err(max77686->dev,
+-			 "Lack of initial data for regulator's initialiation\n");
+-		return -EINVAL;
+ 	}
++
+ 	return 0;
+ err:
+-	for (i = 0; i < MAX77686_REGULATORS; i++) {
+-		if (rdev[i])
+-			regulator_unregister(rdev[i]);
+-	}
++	while (--i >= 0)
++		regulator_unregister(rdev[i]);
+ 	return ret;
+ }
+ 
+-- 
+1.7.9.5
 
-diff --cc drivers/net/can/c_can/c_can_platform.c
-index f0921d1,7ec9316..0000000
---- a/drivers/net/can/c_can/c_can_platform.c
-+++ b/drivers/net/can/c_can/c_can_platform.c
-@@@ -71,10 -71,8 +71,9 @@@ static int __devinit c_can_plat_probe(s
-  	void __iomem *addr;
-  	struct net_device *dev;
-  	struct c_can_priv *priv;
- +	const struct platform_device_id *id;
-  	struct resource *mem;
-  	int irq;
-- #ifdef CONFIG_HAVE_CLK
-  	struct clk *clk;
- =20
-  	/* get the appropriate clk */
-@@@ -138,18 -129,8 +136,16 @@@
-  		priv->read_reg =3D c_can_plat_read_reg_aligned_to_16bit;
-  		priv->write_reg =3D c_can_plat_write_reg_aligned_to_16bit;
-  		break;
- +	default:
- +		ret =3D -EINVAL;
- +		goto exit_free_device;
-  	}
- =20
- +	dev->irq =3D irq;
- +	priv->base =3D addr;
-- #ifdef CONFIG_HAVE_CLK
- +	priv->can.clock.freq =3D clk_get_rate(clk);
- +	priv->priv =3D clk;
-- #endif
- +
-  	platform_set_drvdata(pdev, dev);
-  	SET_NETDEV_DEV(dev, &pdev->dev);
- =20
 
---Signature=_Fri__8_Jun_2012_13_56_23_+1000_.QQKrYWL2EHZtje/
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJP0XfnAAoJEECxmPOUX5FEh1cP/j32krsuzCEAsWMTcZt6P/JD
-L93AAMdNomyrL+islkawj5WxoI26OxbQuIRvQAyTfDmPToBjFqF/N3MTRrpXYk4t
-e6ZM1qqUiSd9tIsC314u9H0oBWNw9Af6Hbt9dUIY8Fani2L492KHk3WsFpK7lsFS
-UK8p2Iv65xPSWSNSZUK++djs8mpbBVTj97XhgucnFcA0iKD3AsiWkHPJA25DEPeM
-aRLg5CzesyZ2UrpKX7f8+O//c8ZQDnNoFW7FRZel1rwJqNOhVxJZxp+KEDaZhA+c
-QcQ5cQKwi7uK6iV7VgexPFg1ytywN2Qc0s0yhiqLvXcALKLw4QN+n+iya7mp+lvr
-O1FxAD9ieRk4dhZUjCIscIHeAXjMqVAcPiPLfJsKMk3NL2r2OIpitNzRoGkiYT3I
-uOtVLUJ2d+4v6r2RC4jCQwpJD3WJ6sYlOM5r7bAmP4EYyJWwdowAWp/l2pPE837p
-vEV0s06Buvdgs2CXMCg4IvDK3OX7ikllR3gfZR9h3RS2EznqTyIWJfjgcDNChpbA
-29nhXELnCnZH4EQUTAyEjjnPrPMoyZkNdMWHJJIQ5VoQ07VI7JG6O13KwTQn3X+q
-SwbVCNYDaWrl16bfE42Otw5bzaOJ6DZV/izXxUvE+qAuh5P7tnj3h2S3rz6N+Qws
-zvf9zRz8RWIHV73yGAF0
-=p5Hn
------END PGP SIGNATURE-----
-
---Signature=_Fri__8_Jun_2012_13_56_23_+1000_.QQKrYWL2EHZtje/--
