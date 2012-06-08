@@ -1,89 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964910Ab2FHVp5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 17:45:57 -0400
-Received: from mga09.intel.com ([134.134.136.24]:14373 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934508Ab2FHVpq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 17:45:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="150325266"
-From: Andi Kleen <andi@firstfloor.org>
-To: mingo@elte.hu
-Cc: eranian@google.com, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 1/2] perf, x86: Add basic Ivy Bridge support v2
-Date: Fri,  8 Jun 2012 14:45:27 -0700
-Message-Id: <1339191928-13223-2-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1339191928-13223-1-git-send-email-andi@firstfloor.org>
-References: <1339191928-13223-1-git-send-email-andi@firstfloor.org>
+	id S934517Ab2FHVxp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 17:53:45 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:59500 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759981Ab2FHVxn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 17:53:43 -0400
+From: mathieu.poirier@linaro.org
+To: linux-scsi@vger.kernel.org
+Cc: JBottomley@parallels.com, linux-kernel@vger.kernel.org, arnd@arndb.de,
+        mathieu.poirier@linaro.org
+Subject: [PATCH RESEND 0/7] drivers/scsi: randconfig patches for kernel 3.5
+Date: Fri,  8 Jun 2012 15:53:29 -0600
+Message-Id: <1339192416-27026-1-git-send-email-mathieu.poirier@linaro.org>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+From: Mathieu Poirier <mathieu.poirier@linaro.org>
 
-Very similar to Sandy Bridge, but there is no PEBS problem.
+These patches fix miscellaneous problems when working
+with make randconfig.  They were discovered on kernel
+3.1-rc4 and have been reformatted for 3.5.
 
-As Stephane pointed out .code=0xb1, .umask=0x01 is gone, so don't
-do a generic backend stall event on IvyBridge.
+Arnd Bergmann (7):
+  scsi: mark SCSI_SRP as experimental
+  scsi/nsp32: don't pass large values into udelay
+  drivers/scsi: use correct __devexit_p annotation
+  scsi/advansys: do not build on ARM
+  scsi/atp870u: use mdelay instead of large udelay
+  scsi/megaraid: fix sparse warnings
+  drivers/scsi: some ISA drivers need ISA_DMA_API
 
-v2: Remove stall event
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
+ drivers/scsi/Kconfig                        |   10 ++-
+ drivers/scsi/atp870u.c                      |    2 +-
+ drivers/scsi/megaraid/megaraid_sas.h        |   39 ++++++++++
+ drivers/scsi/megaraid/megaraid_sas_base.c   |   46 +++---------
+ drivers/scsi/megaraid/megaraid_sas_fp.c     |  105 ++++++++++++++-------------
+ drivers/scsi/megaraid/megaraid_sas_fp.h     |   22 ++++++
+ drivers/scsi/megaraid/megaraid_sas_fusion.c |   86 ++++++----------------
+ drivers/scsi/megaraid/megaraid_sas_fusion.h |    9 +++
+ drivers/scsi/nsp32.c                        |    3 +-
+ drivers/scsi/nsp32.h                        |    2 +-
+ drivers/scsi/pmcraid.c                      |    2 +-
+ drivers/scsi/qla4xxx/ql4_os.c               |    2 +-
+ 12 files changed, 170 insertions(+), 158 deletions(-)
+ create mode 100644 drivers/scsi/megaraid/megaraid_sas_fp.h
 
-Conflicts:
-
-	arch/x86/kernel/cpu/perf_event_intel.c
----
- arch/x86/kernel/cpu/perf_event_intel.c |   16 ++++++++++++++--
- 1 files changed, 14 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index e23e71f..4d6188d 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1767,6 +1767,7 @@ __init int intel_pmu_init(void)
- 	union cpuid10_ebx ebx;
- 	unsigned int unused;
- 	int version;
-+	char *name;
- 
- 	if (!cpu_has(&boot_cpu_data, X86_FEATURE_ARCH_PERFMON)) {
- 		switch (boot_cpu_data.x86) {
-@@ -1910,10 +1911,21 @@ __init int intel_pmu_init(void)
- 		pr_cont("Westmere events, ");
- 		break;
- 
-+	case 58: /* IvyBridge */
-+		name = "Ivy";
-+		/* No backend stall event */
-+		goto snb_ivb_common;
-+
- 	case 42: /* SandyBridge */
- 	case 45: /* SandyBridge, "Romely-EP" */
- 		x86_add_quirk(intel_sandybridge_quirk);
--	case 58: /* IvyBridge */
-+		name = "Sandy";
-+
-+		/* UOPS_DISPATCHED.THREAD,c=1,i=1 to count stall cycles*/
-+		intel_perfmon_event_map[PERF_COUNT_HW_STALLED_CYCLES_BACKEND] =
-+			X86_CONFIG(.event=0xb1, .umask=0x01, .inv=1, .cmask=1);
-+
-+	snb_ivb_common:
- 		memcpy(hw_cache_event_ids, snb_hw_cache_event_ids,
- 		       sizeof(hw_cache_event_ids));
- 
-@@ -1934,7 +1946,7 @@ __init int intel_pmu_init(void)
- 		intel_perfmon_event_map[PERF_COUNT_HW_STALLED_CYCLES_BACKEND] =
- 			X86_CONFIG(.event=0xb1, .umask=0x01, .inv=1, .cmask=1);
- 
--		pr_cont("SandyBridge events, ");
-+		pr_cont("%sBridge events, ", name);
- 		break;
- 
- 	default:
 -- 
-1.7.7.6
+1.7.5.4
 
