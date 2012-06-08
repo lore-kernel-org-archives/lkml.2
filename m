@@ -1,60 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760672Ab2FHWb0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 18:31:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35134 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754730Ab2FHWbW (ORCPT
+	id S1760598Ab2FHWdM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 18:33:12 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:47770 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754593Ab2FHWdK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 18:31:22 -0400
-Date: Fri, 8 Jun 2012 15:31:20 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Boaz Harrosh <bharrosh@panasas.com>, Tao Ma <boyu.mt@taobao.com>,
-        Nick Piggin <npiggin@kernel.dk>, "Dmitry V. Levin" <ldv@altlinux.org>,
-        v9fs-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-afs@lists.infradead.org,
-        linux-btrfs@vger.kernel.org, ceph-devel@vger.kernel.org,
-        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
-        codalist@TELEMANN.coda.cs.cmu.edu, ecryptfs@vger.kernel.org,
-        osd-dev@open-osd.org, linux-ext4@vger.kernel.org,
-        fuse-devel@lists.sourceforge.net, linux-mtd@lists.infradead.org,
-        jfs-discussion@lists.sourceforge.net, logfs@logfs.org,
-        linux-nfs@vger.kernel.org, linux-nilfs@vger.kernel.org,
-        linux-ntfs-dev@lists.sourceforge.net, ocfs2-devel@oss.oracle.com,
-        reiserfs-devel@vger.kernel.org
-Subject: Re: [RFC, PATCH, RESEND] fs: push rcu_barrier() from
- deactivate_locked_super() to filesystems
-Message-Id: <20120608153120.b722d7c3.akpm@linux-foundation.org>
-In-Reply-To: <20120608222734.GT30000@ZenIV.linux.org.uk>
-References: <1339191663-17693-1-git-send-email-kirill.shutemov@linux.intel.com>
-	<20120608150253.e42464a6.akpm@linux-foundation.org>
-	<20120608221446.GA18250@otc-wbsnb-06>
-	<20120608152550.258d6a30.akpm@linux-foundation.org>
-	<20120608222734.GT30000@ZenIV.linux.org.uk>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 8 Jun 2012 18:33:10 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120608215328.GB26175@electric-eye.fr.zoreil.com>
+References: <CAB9dFdvWoc1onyWyy4BVmhpjeb5K2d10re0NcW-_NQCbfRC0hw@mail.gmail.com>
+	<20120605231550.GA20981@electric-eye.fr.zoreil.com>
+	<20120606014656.GA24870@redhat.com>
+	<20120606054251.GA24467@electric-eye.fr.zoreil.com>
+	<20120608023420.GD7191@redhat.com>
+	<alpine.LFD.2.02.1206080954440.3086@ionos>
+	<20120608142333.GB1711@redhat.com>
+	<alpine.LFD.2.02.1206081641040.3086@ionos>
+	<20120608202701.GA26175@electric-eye.fr.zoreil.com>
+	<alpine.LFD.2.02.1206082238120.3086@ionos>
+	<20120608215328.GB26175@electric-eye.fr.zoreil.com>
+Date: Fri, 8 Jun 2012 18:33:09 -0400
+Message-ID: <CAB9dFdvXz85hc0p_Yanir4N6jJf9Q26crgU6a1r8VjWh8LXeHg@mail.gmail.com>
+Subject: Re: NOHZ: local_softirq_pending 08
+From: Marc Dionne <marc.c.dionne@gmail.com>
+To: Francois Romieu <romieu@fr.zoreil.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 8 Jun 2012 23:27:34 +0100
-Al Viro <viro@ZenIV.linux.org.uk> wrote:
+On Fri, Jun 8, 2012 at 5:53 PM, Francois Romieu <romieu@fr.zoreil.com> wrote:
+> Thomas Gleixner <tglx@linutronix.de> :
+> [...]
+>> Though the problem is, that it is neither called in interrupt context
+>> nor with bh disabled, so nothing invokes the softirq before it reaches
+>> idle.
+>>
+>> In hard interrupt context the pending flag is evaluated in irq_exit()
+>> and the softirqs are invoked from there. If you call that from thread
+>> context, then a bh_disable/enable pair will make sure that the pending
+>> softirq is invoked. Did I miss some more ___underscore magic which
+>> does that ?
+>
+> No. You _are_ right.
+>
+> That's why 98ddf986fca17840e46e070354b7e2cd2169da15 triggered the
+> message: it removed the last bh lock in the r8169 slow work context.
+>
+> /me slaps head...
+>
+> The whole thing is probably moot. Dave, can you apply the patch
+> below on top of a fresh kernel tree ?
+>
+> diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+> index 4a05b68..d452441 100644
+> --- a/drivers/net/ethernet/realtek/r8169.c
+> +++ b/drivers/net/ethernet/realtek/r8169.c
+> @@ -5934,11 +5934,7 @@ static void rtl_slow_event_work(struct rtl8169_private *tp)
+>        if (status & LinkChg)
+>                __rtl8169_check_link_status(dev, tp, tp->mmio_addr, true);
+>
+> -       napi_disable(&tp->napi);
+> -       rtl_irq_disable(tp);
+> -
+> -       napi_enable(&tp->napi);
+> -       napi_schedule(&tp->napi);
+> +       rtl_irq_enable_all(tp);
+>  }
+>
+>  static void rtl_task(struct work_struct *work)
 
-> On Fri, Jun 08, 2012 at 03:25:50PM -0700, Andrew Morton wrote:
-> 
-> > A neater implementation might be to add a kmem_cache* argument to
-> > unregister_filesystem().  If that is non-NULL, unregister_filesystem()
-> > does the rcu_barrier() and destroys the cache.  That way we get to
-> > delete (rather than add) a bunch of code from all filesystems and new
-> > and out-of-tree filesystems cannot forget to perform the rcu_barrier().
-> 
-> There's often enough more than one cache, so that one is no-go.
+That works for me - no warnings after several reboots and bringing the
+interface up/down many times.
 
-kmem_cache** ;)
-
-Which filesystems have multiple inode caches?
+Marc
