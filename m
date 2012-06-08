@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761758Ab2FHFR6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 01:17:58 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43241 "EHLO
+	id S1761856Ab2FHFSU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 01:18:20 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43213 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1761258Ab2FHFH0 (ORCPT
+	by vger.kernel.org with ESMTP id S1761139Ab2FHFHZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 01:07:26 -0400
-Message-Id: <20120608041843.028768207@decadent.org.uk>
+	Fri, 8 Jun 2012 01:07:25 -0400
+Message-Id: <20120608041848.726920883@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 08 Jun 2012 05:18:56 +0100
+Date: Fri, 08 Jun 2012 05:19:39 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Joe Bloggsian <joebloggsian@gmail.com>,
-        Eugeni Dodonov <eugeni.dodonov@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 16/82] drm/i915: always use RPNSWREQ for turbo change requests
+        alan@lxorguk.ukuu.org.uk, AceLan Kao <acelan.kao@canonical.com>,
+        Marcel Holtmann <marcel@holtmann.org>
+Subject: [ 59/82] Bluetooth: Add support for AR3012 [0cf3:e004]
 In-Reply-To: <20120608041840.861504477@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,35 +28,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
+From: AceLan Kao <acelan.kao@canonical.com>
 
-commit 89ba829e38bd500f438bc08af4229204c8ed7f35 upstream.
+commit ac71311e65e2c4c2dbac76db698fecbee755b016 upstream.
 
-Media turbo requests can either use RPVSWREQ or RPNSWREQ to indicate
-what the interrupt handler should do.  Since we only deal with the
-latter in our turbo code, make the media engine use that for turbo
-requests.
+Add another vendor specific ID for Atheros AR3012
 
-Tested-by: Joe Bloggsian <joebloggsian@gmail.com>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Reviewed-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-[bwh: Backported to 3.2: adjust filename]
+output of usb-devices:
+T:  Bus=02 Lev=02 Prnt=02 Port=04 Cnt=01 Dev#=  4 Spd=12  MxCh= 0
+D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=0cf3 ProdID=e004 Rev=00.02
+S:  Manufacturer=Atheros Communications
+S:  Product=Bluetooth USB Host Controller
+S:  SerialNumber=Alaska Day 2006
+C:  #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+I:  If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+I:  If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+
+BugLink: https://bugs.launchpad.net/bugs/922715
+
+Signed-off-by: AceLan Kao <acelan.kao@canonical.com>
+Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/i915/intel_display.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/bluetooth/ath3k.c |    2 ++
+ drivers/bluetooth/btusb.c |    1 +
+ 2 files changed, 3 insertions(+)
 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -8005,7 +8005,7 @@
- 	I915_WRITE(GEN6_RP_IDLE_HYSTERSIS, 10);
- 	I915_WRITE(GEN6_RP_CONTROL,
- 		   GEN6_RP_MEDIA_TURBO |
--		   GEN6_RP_MEDIA_HW_MODE |
-+		   GEN6_RP_MEDIA_HW_NORMAL_MODE |
- 		   GEN6_RP_MEDIA_IS_GFX |
- 		   GEN6_RP_ENABLE |
- 		   GEN6_RP_UP_BUSY_AVG |
+diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
+index 639a161..57fd867 100644
+--- a/drivers/bluetooth/ath3k.c
++++ b/drivers/bluetooth/ath3k.c
+@@ -76,6 +76,7 @@ static struct usb_device_id ath3k_table[] = {
+ 	{ USB_DEVICE(0x13d3, 0x3375) },
+ 	{ USB_DEVICE(0x04CA, 0x3005) },
+ 	{ USB_DEVICE(0x13d3, 0x3362) },
++	{ USB_DEVICE(0x0CF3, 0xE004) },
+ 
+ 	/* Atheros AR5BBU12 with sflash firmware */
+ 	{ USB_DEVICE(0x0489, 0xE02C) },
+@@ -96,6 +97,7 @@ static struct usb_device_id ath3k_blist_tbl[] = {
+ 	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x04ca, 0x3005), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3362), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x0cf3, 0xe004), .driver_info = BTUSB_ATH3012 },
+ 
+ 	{ }	/* Terminating entry */
+ };
+diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+index a497544..93cc828 100644
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -135,6 +135,7 @@ static struct usb_device_id blacklist_table[] = {
+ 	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x04ca, 0x3005), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3362), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x0cf3, 0xe004), .driver_info = BTUSB_ATH3012 },
+ 
+ 	/* Atheros AR5BBU12 with sflash firmware */
+ 	{ USB_DEVICE(0x0489, 0xe02c), .driver_info = BTUSB_IGNORE },
 
 
