@@ -1,46 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933640Ab2FHGJm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 02:09:42 -0400
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:59714 "EHLO
-	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932897Ab2FHGJl (ORCPT
+	id S933672Ab2FHGKt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 02:10:49 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:51283 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932897Ab2FHGKs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 02:09:41 -0400
-Date: Fri, 08 Jun 2012 02:09:34 -0400 (EDT)
-From: Zhouping Liu <zliu@redhat.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Hillf Danton <dhillf@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: AutoNUMA15
-Message-ID: <130cc6e8-9077-455a-9e88-3a7b5cde8aff@zmail13.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <20120607193747.GH21339@redhat.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	Fri, 8 Jun 2012 02:10:48 -0400
+Date: Fri, 8 Jun 2012 15:10:37 +0900
+From: Tejun Heo <tj@kernel.org>
+To: Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>,
+        Rus <rus@sfinxsoft.com>, linux-kernel@vger.kernel.org
+Subject: Re: lockdep and kmemcheck
+Message-ID: <20120608061037.GJ21357@google.com>
+References: <CAKgfjTktMLc5bfqhCOKy0evssxggofNQqLT-gQqBkHcBvOgF0g@mail.gmail.com>
+ <CAKgfjTnvCAT=3JFxmDTsui_hguiiBfHQfMmErv9wt6QG_30hKA@mail.gmail.com>
+ <20120607142459.GB5053@x1.osrc.amd.com>
+ <CAKgfjTn3KXmDio0F0M3syeHnDc=ByKZu1ipe7S+75KRcCBy0QA@mail.gmail.com>
+ <20120607151352.GA8261@x1.osrc.amd.com>
+ <CAKgfjTn67KwR7-+icNZm7e5ZRfjqt1159kWMYD6S83WuhNfprQ@mail.gmail.com>
+ <20120607193331.GA20723@liondog.tnic>
+ <20120607194516.GB20723@liondog.tnic>
 MIME-Version: 1.0
-X-Originating-IP: [10.66.12.116]
-X-Mailer: Zimbra 7.1.2_GA_3268 (ZimbraWebClient - FF3.0 (Linux)/7.1.2_GA_3268)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120607194516.GB20723@liondog.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-> > 
-> > Thanks! but the Linus tree I tested has contained the patch,
-> > also I tested it in autunuma15 with the patch just now, and
-> > the panic is still alive, so maybe it's a new issues...
+On Thu, Jun 07, 2012 at 09:45:16PM +0200, Borislav Petkov wrote:
+> static struct worker *create_worker(struct global_cwq *gcwq, bool bind)
+> {
+>         bool on_unbound_cpu = gcwq->cpu == WORK_CPU_UNBOUND;
+>         struct worker *worker = NULL;
+>         int id = -1;
 > 
-> I guess this 74a5ce20e6eeeb3751340b390e7ac1d1d07bbf55 or this
-> 8e7fbcbc22c12414bcc9dfdd683637f58fb32759 may have introduced a
-> problem
-> with sgp->power being null.
+>         spin_lock_irq(&gcwq->lock);
+>         while (ida_get_new(&gcwq->worker_ida, &id)) {
+>                 spin_unlock_irq(&gcwq->lock);
+>                 if (!ida_pre_get(&gcwq->worker_ida, GFP_KERNEL))
+> 
+> and GFP_KERNEL has __GFP_FS.
+> 
+> > >  [<ffffffff81ae441d>] init_workqueues+0x1f2/0x393
+> > >  [<ffffffff81ae422b>] ? usermodehelper_init+0x36/0x36
+> > >  [<ffffffff81ae422b>] ? usermodehelper_init+0x36/0x36
+> > >  [<ffffffff81002122>] do_one_initcall+0x122/0x180
+> > >  [<ffffffff81acbc7a>] kernel_init+0x9b/0x1f6
+> > >  [<ffffffff815c1f74>] kernel_thread_helper+0x4/0x10
+> > >  [<ffffffff815c0274>] ? retint_restore_args+0x13/0x13
+> > >  [<ffffffff81acbbdf>] ? start_kernel+0x3d2/0x3d2
+> > >  [<ffffffff815c1f70>] ? gs_change+0x13/0x13
+> > > ---[ end trace 6d450e935ee1897c ]---
+> > > MCE: In-kernel MCE decoding enabled.
+> > > NMI watchdog: enabled, takes one hw-pmu counter.
+> 
+> Let's add some more people to CC.
+> 
+> Tejun, this create_worker() uses ida_pre_get() with GFP_KERNEL mask
+> but lockdep complains about __GFP_FS allocations with IRQs off in
+> __lockdep_trace_alloc. What's up?
 
-I have tested the kernel after removing the two commit 74a5ce20e6ee & 8e7fbcbc22c1241,
-but unluckily, the panic is still alive, so I think it's maybe not
-related to the two commit, and I will do more investigating to check
-what introduced the panic, please let me know if you need me to test
-the special commit.
+The GFP_KERNEL allocation is right after spin_unlock_irq().  I suppose
+this is from early boot before IRQs are brought online, right?  My
+memory is very fuzzy now but ISTR irq debug code and lockdep having
+workarounds for early boot.  Peter?
 
-Thanks,
-Zhouping
+Thanks.
+
+-- 
+tejun
