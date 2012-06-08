@@ -1,317 +1,326 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754513Ab2FHGjk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 02:39:40 -0400
+	id S1757138Ab2FHGjo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 02:39:44 -0400
 Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:55823 "EHLO
 	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751695Ab2FHGji (ORCPT
+	with ESMTP id S1754492Ab2FHGjl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 02:39:38 -0400
-X-AuditID: 9c930179-b7bb9ae000000ea5-1a-4fd19e24eb25
+	Fri, 8 Jun 2012 02:39:41 -0400
+X-AuditID: 9c930179-b7bb9ae000000ea5-28-4fd19e253255
 From: Minchan Kim <minchan@kernel.org>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>
-Subject: [PATCH v3] zsmalloc: zsmalloc: use unsigned long instead of void *
-Date: Fri,  8 Jun 2012 15:39:25 +0900
-Message-Id: <1339137567-29656-1-git-send-email-minchan@kernel.org>
+        Seth Jennings <sjenning@linux.vnet.ibm.com>
+Subject: [PATCH] zram: remove special handle of uncompressed page
+Date: Fri,  8 Jun 2012 15:39:27 +0900
+Message-Id: <1339137567-29656-3-git-send-email-minchan@kernel.org>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1339137567-29656-1-git-send-email-minchan@kernel.org>
+References: <1339137567-29656-1-git-send-email-minchan@kernel.org>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We should use unsigned long as handle instead of void * to avoid any
-confusion. Without this, users may just treat zs_malloc return value as
-a pointer and try to deference it.
+xvmalloc can't handle PAGE_SIZE page so that zram have to
+handle it specially but zsmalloc can do it so let's remove
+unnecessary special handling code.
 
-This patch passed compile test(zram, zcache and ramster) and zram is
-tested on qemu.
+Quote from Nitin
+"I think page vs handle distinction was added since xvmalloc could not
+handle full page allocation. Now that zsmalloc allows full page
+allocation, we can just use it for both cases. This would also allow
+removing the ZRAM_UNCOMPRESSED flag. The only downside will be slightly
+slower code path for full page allocation but this event is anyways
+supposed to be rare, so should be fine."
 
-changelog
-  * from v2
-	- remove hval pointed out by Nitin
-	- based on next-20120607
-  * from v1
-	- change zcache's zv_create return value
-	- baesd on next-20120604
+1. This patch reduces code very much.
+
+ drivers/staging/zram/zram_drv.c   |  104 +++++--------------------------------
+ drivers/staging/zram/zram_drv.h   |   17 +-----
+ drivers/staging/zram/zram_sysfs.c |    6 +--
+ 3 files changed, 15 insertions(+), 112 deletions(-)
+
+2. change pages_expand with bad_compress so it can count
+   bad compression(above 75%) ratio.
+
+3. remove zobj_header which is for back-reference for defragmentation
+   because firstly, it's not used at the moment and zsmalloc can't handle
+   bigger size than PAGE_SIZE so zram can't do it any more without redesign.
 
 Cc: Nitin Gupta <ngupta@vflare.org>
-Cc: Dan Magenheimer <dan.magenheimer@oracle.com>
-Acked-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>
 Signed-off-by: Minchan Kim <minchan@kernel.org>
 ---
- drivers/staging/zcache/zcache-main.c     |   12 ++++++------
- drivers/staging/zram/zram_drv.c          |   16 ++++++++--------
- drivers/staging/zram/zram_drv.h          |    2 +-
- drivers/staging/zsmalloc/zsmalloc-main.c |   28 +++++++++++++---------------
- drivers/staging/zsmalloc/zsmalloc.h      |    8 ++++----
- 5 files changed, 32 insertions(+), 34 deletions(-)
+ drivers/staging/zram/zram_drv.c   |  104 +++++--------------------------------
+ drivers/staging/zram/zram_drv.h   |   17 +-----
+ drivers/staging/zram/zram_sysfs.c |    6 +--
+ 3 files changed, 15 insertions(+), 112 deletions(-)
 
-diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
-index 784c796..03f690b 100644
---- a/drivers/staging/zcache/zcache-main.c
-+++ b/drivers/staging/zcache/zcache-main.c
-@@ -693,14 +693,14 @@ static unsigned int zv_max_mean_zsize = (PAGE_SIZE / 8) * 5;
- static atomic_t zv_curr_dist_counts[NCHUNKS];
- static atomic_t zv_cumul_dist_counts[NCHUNKS];
- 
--static struct zv_hdr *zv_create(struct zs_pool *pool, uint32_t pool_id,
-+static unsigned long zv_create(struct zs_pool *pool, uint32_t pool_id,
- 				struct tmem_oid *oid, uint32_t index,
- 				void *cdata, unsigned clen)
- {
- 	struct zv_hdr *zv;
- 	u32 size = clen + sizeof(struct zv_hdr);
- 	int chunks = (size + (CHUNK_SIZE - 1)) >> CHUNK_SHIFT;
--	void *handle = NULL;
-+	unsigned long handle = 0;
- 
- 	BUG_ON(!irqs_disabled());
- 	BUG_ON(chunks >= NCHUNKS);
-@@ -721,7 +721,7 @@ out:
- 	return handle;
- }
- 
--static void zv_free(struct zs_pool *pool, void *handle)
-+static void zv_free(struct zs_pool *pool, unsigned long handle)
- {
- 	unsigned long flags;
- 	struct zv_hdr *zv;
-@@ -743,7 +743,7 @@ static void zv_free(struct zs_pool *pool, void *handle)
- 	local_irq_restore(flags);
- }
- 
--static void zv_decompress(struct page *page, void *handle)
-+static void zv_decompress(struct page *page, unsigned long handle)
- {
- 	unsigned int clen = PAGE_SIZE;
- 	char *to_va;
-@@ -1247,7 +1247,7 @@ static int zcache_pampd_get_data(char *data, size_t *bufsize, bool raw,
- 	int ret = 0;
- 
- 	BUG_ON(is_ephemeral(pool));
--	zv_decompress((struct page *)(data), pampd);
-+	zv_decompress((struct page *)(data), (unsigned long)pampd);
- 	return ret;
- }
- 
-@@ -1282,7 +1282,7 @@ static void zcache_pampd_free(void *pampd, struct tmem_pool *pool,
- 		atomic_dec(&zcache_curr_eph_pampd_count);
- 		BUG_ON(atomic_read(&zcache_curr_eph_pampd_count) < 0);
- 	} else {
--		zv_free(cli->zspool, pampd);
-+		zv_free(cli->zspool, (unsigned long)pampd);
- 		atomic_dec(&zcache_curr_pers_pampd_count);
- 		BUG_ON(atomic_read(&zcache_curr_pers_pampd_count) < 0);
- 	}
 diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index 685d612..abd69d1 100644
+index 0cdc303..2036a90 100644
 --- a/drivers/staging/zram/zram_drv.c
 +++ b/drivers/staging/zram/zram_drv.c
-@@ -135,7 +135,7 @@ static void zram_set_disksize(struct zram *zram, size_t totalram_bytes)
- 
+@@ -136,6 +136,7 @@ static void zram_set_disksize(struct zram *zram, size_t totalram_bytes)
  static void zram_free_page(struct zram *zram, size_t index)
  {
--	void *handle = zram->table[index].handle;
-+	unsigned long handle = zram->table[index].handle;
+ 	unsigned long handle = zram->table[index].handle;
++	u16 size = zram->table[index].size;
  
  	if (unlikely(!handle)) {
  		/*
-@@ -150,7 +150,7 @@ static void zram_free_page(struct zram *zram, size_t index)
+@@ -149,19 +150,14 @@ static void zram_free_page(struct zram *zram, size_t index)
+ 		return;
  	}
  
- 	if (unlikely(zram_test_flag(zram, index, ZRAM_UNCOMPRESSED))) {
--		__free_page(handle);
-+		__free_page((struct page *)handle);
- 		zram_clear_flag(zram, index, ZRAM_UNCOMPRESSED);
- 		zram_stat_dec(&zram->stats.pages_expand);
- 		goto out;
-@@ -166,7 +166,7 @@ out:
+-	if (unlikely(zram_test_flag(zram, index, ZRAM_UNCOMPRESSED))) {
+-		__free_page((struct page *)handle);
+-		zram_clear_flag(zram, index, ZRAM_UNCOMPRESSED);
+-		zram_stat_dec(&zram->stats.pages_expand);
+-		goto out;
+-	}
++	if (unlikely(size > max_zpage_size))
++		zram_stat_dec(&zram->stats.bad_compress);
+ 
+ 	zs_free(zram->mem_pool, handle);
+ 
+-	if (zram->table[index].size <= PAGE_SIZE / 2)
++	if (size <= PAGE_SIZE / 2)
+ 		zram_stat_dec(&zram->stats.good_compress);
+ 
+-out:
+ 	zram_stat64_sub(zram, &zram->stats.compr_size,
  			zram->table[index].size);
  	zram_stat_dec(&zram->stats.pages_stored);
- 
--	zram->table[index].handle = NULL;
-+	zram->table[index].handle = 0;
- 	zram->table[index].size = 0;
+@@ -182,22 +178,6 @@ static void handle_zero_page(struct bio_vec *bvec)
+ 	flush_dcache_page(page);
  }
  
-@@ -189,7 +189,7 @@ static void handle_uncompressed_page(struct zram *zram, struct bio_vec *bvec,
- 	unsigned char *user_mem, *cmem;
- 
- 	user_mem = kmap_atomic(page);
--	cmem = kmap_atomic(zram->table[index].handle);
-+	cmem = kmap_atomic((struct page *)zram->table[index].handle);
- 
- 	memcpy(user_mem + bvec->bv_offset, cmem + offset, bvec->bv_len);
- 	kunmap_atomic(cmem);
-@@ -317,7 +317,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+-static void handle_uncompressed_page(struct zram *zram, struct bio_vec *bvec,
+-				     u32 index, int offset)
+-{
+-	struct page *page = bvec->bv_page;
+-	unsigned char *user_mem, *cmem;
+-
+-	user_mem = kmap_atomic(page);
+-	cmem = kmap_atomic((struct page *)zram->table[index].handle);
+-
+-	memcpy(user_mem + bvec->bv_offset, cmem + offset, bvec->bv_len);
+-	kunmap_atomic(cmem);
+-	kunmap_atomic(user_mem);
+-
+-	flush_dcache_page(page);
+-}
+-
+ static inline int is_partial_io(struct bio_vec *bvec)
+ {
+ 	return bvec->bv_len != PAGE_SIZE;
+@@ -209,7 +189,6 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
  	int ret;
- 	u32 store_offset;
  	size_t clen;
--	void *handle;
-+	unsigned long handle;
- 	struct zobj_header *zheader;
- 	struct page *page, *page_store;
- 	unsigned char *user_mem, *cmem, *src, *uncmem = NULL;
-@@ -399,7 +399,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 		store_offset = 0;
- 		zram_set_flag(zram, index, ZRAM_UNCOMPRESSED);
- 		zram_stat_inc(&zram->stats.pages_expand);
--		handle = page_store;
-+		handle = (unsigned long)page_store;
- 		src = kmap_atomic(page);
- 		cmem = kmap_atomic(page_store);
- 		goto memstore;
-@@ -592,12 +592,12 @@ void __zram_reset_device(struct zram *zram)
+ 	struct page *page;
+-	struct zobj_header *zheader;
+ 	unsigned char *user_mem, *cmem, *uncmem = NULL;
  
- 	/* Free all pages that are still in this zram device */
- 	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
--		void *handle = zram->table[index].handle;
-+		unsigned long handle = zram->table[index].handle;
+ 	page = bvec->bv_page;
+@@ -227,12 +206,6 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
+ 		return 0;
+ 	}
+ 
+-	/* Page is stored uncompressed since it's incompressible */
+-	if (unlikely(zram_test_flag(zram, index, ZRAM_UNCOMPRESSED))) {
+-		handle_uncompressed_page(zram, bvec, index, offset);
+-		return 0;
+-	}
+-
+ 	if (is_partial_io(bvec)) {
+ 		/* Use  a temporary buffer to decompress the page */
+ 		uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
+@@ -249,8 +222,7 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
+ 
+ 	cmem = zs_map_object(zram->mem_pool, zram->table[index].handle);
+ 
+-	ret = lzo1x_decompress_safe(cmem + sizeof(*zheader),
+-				    zram->table[index].size,
++	ret = lzo1x_decompress_safe(cmem, zram->table[index].size,
+ 				    uncmem, &clen);
+ 
+ 	if (is_partial_io(bvec)) {
+@@ -278,7 +250,6 @@ static int zram_read_before_write(struct zram *zram, char *mem, u32 index)
+ {
+ 	int ret;
+ 	size_t clen = PAGE_SIZE;
+-	struct zobj_header *zheader;
+ 	unsigned char *cmem;
+ 	unsigned long handle = zram->table[index].handle;
+ 
+@@ -287,18 +258,8 @@ static int zram_read_before_write(struct zram *zram, char *mem, u32 index)
+ 		return 0;
+ 	}
+ 
+-	/* Page is stored uncompressed since it's incompressible */
+-	if (unlikely(zram_test_flag(zram, index, ZRAM_UNCOMPRESSED))) {
+-		char *src = kmap_atomic((struct page *)handle);
+-		memcpy(mem, src, PAGE_SIZE);
+-		kunmap_atomic(src);
+-		return 0;
+-	}
+-
+ 	cmem = zs_map_object(zram->mem_pool, handle);
+-
+-	ret = lzo1x_decompress_safe(cmem + sizeof(*zheader),
+-				    zram->table[index].size,
++	ret = lzo1x_decompress_safe(cmem, zram->table[index].size,
+ 				    mem, &clen);
+ 	zs_unmap_object(zram->mem_pool, handle);
+ 
+@@ -316,11 +277,9 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 			   int offset)
+ {
+ 	int ret;
+-	u32 store_offset;
+ 	size_t clen;
+ 	unsigned long handle;
+-	struct zobj_header *zheader;
+-	struct page *page, *page_store;
++	struct page *page;
+ 	unsigned char *user_mem, *cmem, *src, *uncmem = NULL;
+ 
+ 	page = bvec->bv_page;
+@@ -382,31 +341,10 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 		goto out;
+ 	}
+ 
+-	/*
+-	 * Page is incompressible. Store it as-is (uncompressed)
+-	 * since we do not want to return too many disk write
+-	 * errors which has side effect of hanging the system.
+-	 */
+-	if (unlikely(clen > max_zpage_size)) {
+-		clen = PAGE_SIZE;
+-		page_store = alloc_page(GFP_NOIO | __GFP_HIGHMEM);
+-		if (unlikely(!page_store)) {
+-			pr_info("Error allocating memory for "
+-				"incompressible page: %u\n", index);
+-			ret = -ENOMEM;
+-			goto out;
+-		}
++	if (unlikely(clen > max_zpage_size))
++		zram_stat_inc(&zram->stats.bad_compress);
+ 
+-		store_offset = 0;
+-		zram_set_flag(zram, index, ZRAM_UNCOMPRESSED);
+-		zram_stat_inc(&zram->stats.pages_expand);
+-		handle = (unsigned long)page_store;
+-		src = kmap_atomic(page);
+-		cmem = kmap_atomic(page_store);
+-		goto memstore;
+-	}
+-
+-	handle = zs_malloc(zram->mem_pool, clen + sizeof(*zheader));
++	handle = zs_malloc(zram->mem_pool, clen);
+ 	if (!handle) {
+ 		pr_info("Error allocating memory for compressed "
+ 			"page: %u, size=%zu\n", index, clen);
+@@ -415,24 +353,9 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 	}
+ 	cmem = zs_map_object(zram->mem_pool, handle);
+ 
+-memstore:
+-#if 0
+-	/* Back-reference needed for memory defragmentation */
+-	if (!zram_test_flag(zram, index, ZRAM_UNCOMPRESSED)) {
+-		zheader = (struct zobj_header *)cmem;
+-		zheader->table_idx = index;
+-		cmem += sizeof(*zheader);
+-	}
+-#endif
+-
+ 	memcpy(cmem, src, clen);
+ 
+-	if (unlikely(zram_test_flag(zram, index, ZRAM_UNCOMPRESSED))) {
+-		kunmap_atomic(cmem);
+-		kunmap_atomic(src);
+-	} else {
+-		zs_unmap_object(zram->mem_pool, handle);
+-	}
++	zs_unmap_object(zram->mem_pool, handle);
+ 
+ 	zram->table[index].handle = handle;
+ 	zram->table[index].size = clen;
+@@ -597,10 +520,7 @@ void __zram_reset_device(struct zram *zram)
  		if (!handle)
  			continue;
  
- 		if (unlikely(zram_test_flag(zram, index, ZRAM_UNCOMPRESSED)))
--			__free_page(handle);
-+			__free_page((struct page *)handle);
- 		else
- 			zs_free(zram->mem_pool, handle);
+-		if (unlikely(zram_test_flag(zram, index, ZRAM_UNCOMPRESSED)))
+-			__free_page((struct page *)handle);
+-		else
+-			zs_free(zram->mem_pool, handle);
++		zs_free(zram->mem_pool, handle);
  	}
+ 
+ 	vfree(zram->table);
 diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
-index fbe8ac9..7a7e256 100644
+index 7a7e256..9711d1e 100644
 --- a/drivers/staging/zram/zram_drv.h
 +++ b/drivers/staging/zram/zram_drv.h
-@@ -81,7 +81,7 @@ enum zram_pageflags {
- 
- /* Allocated for each disk page */
- struct table {
--	void *handle;
-+	unsigned long handle;
- 	u16 size;	/* object size (excluding header) */
- 	u8 count;	/* object ref count (not yet used) */
- 	u8 flags;
-diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
-index 4496737..8e830ee 100644
---- a/drivers/staging/zsmalloc/zsmalloc-main.c
-+++ b/drivers/staging/zsmalloc/zsmalloc-main.c
-@@ -247,13 +247,11 @@ static void *obj_location_to_handle(struct page *page, unsigned long obj_idx)
- }
- 
- /* Decode <page, obj_idx> pair from the given object handle */
--static void obj_handle_to_location(void *handle, struct page **page,
-+static void obj_handle_to_location(unsigned long handle, struct page **page,
- 				unsigned long *obj_idx)
- {
--	unsigned long hval = (unsigned long)handle;
--
--	*page = pfn_to_page(hval >> OBJ_INDEX_BITS);
--	*obj_idx = hval & OBJ_INDEX_MASK;
-+	*page = pfn_to_page(handle >> OBJ_INDEX_BITS);
-+	*obj_idx = handle & OBJ_INDEX_MASK;
- }
- 
- static unsigned long obj_idx_to_offset(struct page *page,
-@@ -568,12 +566,12 @@ EXPORT_SYMBOL_GPL(zs_destroy_pool);
-  * @size: size of block to allocate
-  *
-  * On success, handle to the allocated object is returned,
-- * otherwise NULL.
-+ * otherwise 0.
-  * Allocation requests with size > ZS_MAX_ALLOC_SIZE will fail.
+@@ -26,18 +26,6 @@
   */
--void *zs_malloc(struct zs_pool *pool, size_t size)
-+unsigned long zs_malloc(struct zs_pool *pool, size_t size)
- {
--	void *obj;
-+	unsigned long obj;
- 	struct link_free *link;
- 	int class_idx;
- 	struct size_class *class;
-@@ -582,7 +580,7 @@ void *zs_malloc(struct zs_pool *pool, size_t size)
- 	unsigned long m_objidx, m_offset;
+ static const unsigned max_num_devices = 32;
  
- 	if (unlikely(!size || size > ZS_MAX_ALLOC_SIZE))
--		return NULL;
-+		return 0;
+-/*
+- * Stored at beginning of each compressed object.
+- *
+- * It stores back-reference to table entry which points to this
+- * object. This is required to support memory defragmentation.
+- */
+-struct zobj_header {
+-#if 0
+-	u32 table_idx;
+-#endif
+-};
+-
+ /*-- Configurable parameters */
  
- 	class_idx = get_size_class_index(size);
- 	class = &pool->size_class[class_idx];
-@@ -595,14 +593,14 @@ void *zs_malloc(struct zs_pool *pool, size_t size)
- 		spin_unlock(&class->lock);
- 		first_page = alloc_zspage(class, pool->flags);
- 		if (unlikely(!first_page))
--			return NULL;
-+			return 0;
+ /* Default zram disk size: 25% of total RAM */
+@@ -68,9 +56,6 @@ static const size_t max_zpage_size = PAGE_SIZE / 4 * 3;
  
- 		set_zspage_mapping(first_page, class->index, ZS_EMPTY);
- 		spin_lock(&class->lock);
- 		class->pages_allocated += class->pages_per_zspage;
- 	}
+ /* Flags for zram pages (table[page_no].flags) */
+ enum zram_pageflags {
+-	/* Page is stored uncompressed */
+-	ZRAM_UNCOMPRESSED,
+-
+ 	/* Page consists entirely of zeros */
+ 	ZRAM_ZERO,
  
--	obj = first_page->freelist;
-+	obj = (unsigned long)first_page->freelist;
- 	obj_handle_to_location(obj, &m_page, &m_objidx);
- 	m_offset = obj_idx_to_offset(m_page, m_objidx, class->size);
+@@ -98,7 +83,7 @@ struct zram_stats {
+ 	u32 pages_zero;		/* no. of zero filled pages */
+ 	u32 pages_stored;	/* no. of pages currently stored */
+ 	u32 good_compress;	/* % of pages with compression ratio<=50% */
+-	u32 pages_expand;	/* % of incompressible pages */
++	u32 bad_compress;	/* % of pages with compression ratio>=75% */
+ };
  
-@@ -621,7 +619,7 @@ void *zs_malloc(struct zs_pool *pool, size_t size)
+ struct zram {
+diff --git a/drivers/staging/zram/zram_sysfs.c b/drivers/staging/zram/zram_sysfs.c
+index a7f3771..edb0ed4 100644
+--- a/drivers/staging/zram/zram_sysfs.c
++++ b/drivers/staging/zram/zram_sysfs.c
+@@ -186,10 +186,8 @@ static ssize_t mem_used_total_show(struct device *dev,
+ 	u64 val = 0;
+ 	struct zram *zram = dev_to_zram(dev);
+ 
+-	if (zram->init_done) {
+-		val = zs_get_total_size_bytes(zram->mem_pool) +
+-			((u64)(zram->stats.pages_expand) << PAGE_SHIFT);
+-	}
++	if (zram->init_done)
++		val = zs_get_total_size_bytes(zram->mem_pool);
+ 
+ 	return sprintf(buf, "%llu\n", val);
  }
- EXPORT_SYMBOL_GPL(zs_malloc);
- 
--void zs_free(struct zs_pool *pool, void *obj)
-+void zs_free(struct zs_pool *pool, unsigned long obj)
- {
- 	struct link_free *link;
- 	struct page *first_page, *f_page;
-@@ -648,7 +646,7 @@ void zs_free(struct zs_pool *pool, void *obj)
- 							+ f_offset);
- 	link->next = first_page->freelist;
- 	kunmap_atomic(link);
--	first_page->freelist = obj;
-+	first_page->freelist = (void *)obj;
- 
- 	first_page->inuse--;
- 	fullness = fix_fullness_group(pool, first_page);
-@@ -672,7 +670,7 @@ EXPORT_SYMBOL_GPL(zs_free);
-  * this function. When done with the object, it must be unmapped using
-  * zs_unmap_object
- */
--void *zs_map_object(struct zs_pool *pool, void *handle)
-+void *zs_map_object(struct zs_pool *pool, unsigned long handle)
- {
- 	struct page *page;
- 	unsigned long obj_idx, off;
-@@ -712,7 +710,7 @@ void *zs_map_object(struct zs_pool *pool, void *handle)
- }
- EXPORT_SYMBOL_GPL(zs_map_object);
- 
--void zs_unmap_object(struct zs_pool *pool, void *handle)
-+void zs_unmap_object(struct zs_pool *pool, unsigned long handle)
- {
- 	struct page *page;
- 	unsigned long obj_idx, off;
-diff --git a/drivers/staging/zsmalloc/zsmalloc.h b/drivers/staging/zsmalloc/zsmalloc.h
-index 949384e..485cbb1 100644
---- a/drivers/staging/zsmalloc/zsmalloc.h
-+++ b/drivers/staging/zsmalloc/zsmalloc.h
-@@ -20,11 +20,11 @@ struct zs_pool;
- struct zs_pool *zs_create_pool(const char *name, gfp_t flags);
- void zs_destroy_pool(struct zs_pool *pool);
- 
--void *zs_malloc(struct zs_pool *pool, size_t size);
--void zs_free(struct zs_pool *pool, void *obj);
-+unsigned long zs_malloc(struct zs_pool *pool, size_t size);
-+void zs_free(struct zs_pool *pool, unsigned long obj);
- 
--void *zs_map_object(struct zs_pool *pool, void *handle);
--void zs_unmap_object(struct zs_pool *pool, void *handle);
-+void *zs_map_object(struct zs_pool *pool, unsigned long handle);
-+void zs_unmap_object(struct zs_pool *pool, unsigned long handle);
- 
- u64 zs_get_total_size_bytes(struct zs_pool *pool);
- 
 -- 
 1.7.9.5
 
