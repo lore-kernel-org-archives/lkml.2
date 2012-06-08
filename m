@@ -1,43 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762163Ab2FHQr7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 12:47:59 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:54913 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751931Ab2FHQr5 (ORCPT
+	id S933161Ab2FHQuS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 12:50:18 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:57010 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751931Ab2FHQuQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 12:47:57 -0400
-Date: Fri, 8 Jun 2012 18:47:55 +0200
-From: Heinz Diehl <htd@fancy-poultry.org>
-To: linux-kernel@vger.kernel.org
-Subject: Re: [patch] BFS 421: remove global runqueue lock in running tick
-Message-ID: <20120608164755.GA17413@fancy-poultry.org>
-References: <CAJd=RBDWg9Wa_4s7NBeyXy23wh4CFyKzoF83EBEm1a6w=v+KUw@mail.gmail.com>
- <CANQmPXhJEDwO97RBRb-XC+s_FMF6WSJjajj9CO4+wr8UqL5=Rg@mail.gmail.com>
-MIME-Version: 1.0
+	Fri, 8 Jun 2012 12:50:16 -0400
+Date: Fri, 8 Jun 2012 18:50:14 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Stephane Eranian <eranian@google.com>,
+        linux-kernel@vger.kernel.org, andi@firstfloor.org, mingo@elte.hu,
+        ming.m.lin@intel.com, Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Dimitri Sivanich <sivanich@sgi.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>
+Subject: Re: [PATCH] perf/x86: check ucode before disabling PEBS on SandyBridge
+Message-ID: <20120608165014.GB27374@one.firstfloor.org>
+References: <20120607071531.GA4849@quad> <1339064319.23343.13.camel@twins> <CABPqkBQ+p5rcuxpXCTLMXPM+awAHhQ6mP9-WzVh5GWtn2GyfrA@mail.gmail.com> <1339065932.23343.18.camel@twins> <CABPqkBQ=tLXXsgvzQx+i01Owm4MM8m=6cEVVi4ab64gOiTTBYQ@mail.gmail.com> <1339067757.23343.21.camel@twins> <20120608093513.GA22520@gmail.com> <1339149613.23343.52.camel@twins> <1339161972.2507.13.camel@laptop>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CANQmPXhJEDwO97RBRb-XC+s_FMF6WSJjajj9CO4+wr8UqL5=Rg@mail.gmail.com>
-Organization: private site
-X-OpenPGP-KeyID: 0x898F89DE
-X-OpenPGP-Fingerprint: 0815 20AD E896 A2B7 488F  4659 4C7B 8951 898F 89DE
-X-OpenPGP-URL: http://www.fritha.org/htd.asc
-User-Agent: Mutt/1.5.21+56 (0488deb39a35) (2011-07-01)
-X-Provags-ID: V02:K0:KPMGGXhcGigDfaU30Dm9tkJivlDrJth/IKrRLO2vPcI
- JSS3ysc0mCfT2ZhUOZX3wr0KRLl6A2c+vGB/pj2hJ3V07FWcJd
- gT5iIfFcrjeQ47wwbLPL1sfkL1e56ttL6XN9WV+Lzi9Qt20aB/
- eiJjY8ydu1LgGjdRKHm0au/7JduRYoiTwthTPQcaPL0nNqtV70
- OFrV/YS2Yd9thMtMASZmmISXehWtm7SJrZLgPfiu4ENbGCJCJb
- LtNQAz2pszA9M8mTvO4Gpqx9d85IVNoxl4ikQ0Vkqjr6b525fr
- 9jZOoTT3cnCzVo+i8Jg8+0962vYReeul9l0oAUE0SHZQTEORCG
- wtkPAqI0VWWs0c8XOwsd4HcSTypWFij8UNV5OBvYi
+In-Reply-To: <1339161972.2507.13.camel@laptop>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08.06.2012, Chen wrote: 
+> Why do we have per-cpu firmware anyway?
 
-> Still, you haven't produced any usable patch. LOL
+Consider CPU hotplug.  A newly plugged CPU is not updated yet, but will
+be after hotplug.
 
-...and Con Kolivas released BFS 4.22 some days ago..
+However i suppose it would be possible to do the update early in the 
+boot up sequence before others can use it. That would avoid this problem.
 
+-Andi
