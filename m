@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761673Ab2FHFIe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 01:08:34 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43305 "EHLO
+	id S1761656Ab2FHFId (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 01:08:33 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43281 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759790Ab2FHFHh (ORCPT
+	by vger.kernel.org with ESMTP id S1758979Ab2FHFHh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Jun 2012 01:07:37 -0400
-Message-Id: <20120608041848.331055810@decadent.org.uk>
+Message-Id: <20120608041851.525164014@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 08 Jun 2012 05:19:36 +0100
+Date: Fri, 08 Jun 2012 05:19:59 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Don Zickus <dzickus@redhat.com>,
-        Oliver Neukum <oliver@neukum.org>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Johan Hedberg <johan.hedberg@intel.com>
-Subject: [ 56/82] Bluetooth: btusb: typo in Broadcom SoftSailing id
+        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 79/82] drm/radeon/kms: add new BTC PCI ids
 In-Reply-To: <20120608041840.861504477@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,65 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Don Zickus <dzickus@redhat.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 2e8b506310f6433d5558387fd568d4bfb1d6a799 upstream.
+commit a2bef8ce826dd1e787fd8ad9b6e0566ba59dab43 upstream.
 
-I was trying to backport the following commit to RHEL-6
-
-    From 0cea73465cd22373c5cd43a3edd25fbd4bb532ef Mon Sep 17 00:00:00 2001
-    From: Oliver Neukum <oliver@neukum.org>
-    Date: Wed, 21 Sep 2011 11:37:15 +0200
-    Subject: [PATCH] btusb: add device entry for Broadcom SoftSailing
-
-and noticed it wasn't working on an HP Elitebook.  Looking into the patch I
-noticed a very subtle typo in the ids.  The patch has '0x05ac' instead of
-'0x0a5c'.  A snippet of the lsusb -v output also shows this:
-
-Bus 002 Device 003: ID 0a5c:21e1 Broadcom Corp.
-Device Descriptor:
-  bLength                18
-  bDescriptorType         1
-  bcdUSB               2.00
-  bDeviceClass          255 Vendor Specific Class
-  bDeviceSubClass         1
-  bDeviceProtocol         1
-  bMaxPacketSize0        64
-  idVendor           0x0a5c Broadcom Corp.
-  idProduct          0x21e1
-  bcdDevice            1.12
-  iManufacturer           1 Broadcom Corp
-  iProduct                2 BCM20702A0
-  iSerial                 3 60D819F0338C
-  bNumConfigurations      1
-
-Looking at other Broadcom ids, the fix matches them whereas the original patch
-matches Apple's ids.
-
-Tested on an HP Elitebook 8760w.  The btusb binds and the userspace stuff loads
-correctly.
-
-Cc: Oliver Neukum <oliver@neukum.org>
-Signed-off-by: Don Zickus <dzickus@redhat.com>
-Acked-by: Marcel Holtmann <marcel@holtmann.org>
-Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/bluetooth/btusb.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/drm/drm_pciids.h |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-index ba89cd0..3311b81 100644
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -61,7 +61,7 @@ static struct usb_device_id btusb_table[] = {
- 	{ USB_DEVICE_INFO(0xe0, 0x01, 0x01) },
- 
- 	/* Broadcom SoftSailing reporting vendor specific */
--	{ USB_DEVICE(0x05ac, 0x21e1) },
-+	{ USB_DEVICE(0x0a5c, 0x21e1) },
- 
- 	/* Apple MacBookPro 7,1 */
- 	{ USB_DEVICE(0x05ac, 0x8213) },
+diff --git a/include/drm/drm_pciids.h b/include/drm/drm_pciids.h
+index c5b0d8c..86c4cf9 100644
+--- a/include/drm/drm_pciids.h
++++ b/include/drm/drm_pciids.h
+@@ -181,6 +181,7 @@
+ 	{0x1002, 0x6747, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TURKS|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6748, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TURKS|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6749, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TURKS|RADEON_NEW_MEMMAP}, \
++	{0x1002, 0x674A, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TURKS|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6750, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TURKS|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6751, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TURKS|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6758, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TURKS|RADEON_NEW_MEMMAP}, \
+@@ -198,6 +199,7 @@
+ 	{0x1002, 0x6767, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CAICOS|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6768, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CAICOS|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6770, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CAICOS|RADEON_NEW_MEMMAP}, \
++	{0x1002, 0x6771, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CAICOS|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6772, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CAICOS|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6778, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CAICOS|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6779, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CAICOS|RADEON_NEW_MEMMAP}, \
 
 
