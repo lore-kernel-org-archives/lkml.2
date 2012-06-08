@@ -1,64 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934287Ab2FHOQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 10:16:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51699 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755424Ab2FHOQ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 10:16:57 -0400
-Message-ID: <1339165009.26976.60.camel@ul30vt>
-Subject: Re: [PATCH] uio_pci_generic does not export memory resources
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Jan Kiszka <jan.kiszka@siemens.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        Dominic Eschweiler <eschweiler@fias.uni-frankfurt.de>,
-        "Hans J. Koch" <hjk@hansjkoch.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 08 Jun 2012 08:16:49 -0600
-In-Reply-To: <4FD1FB49.3020905@siemens.com>
-References: <1339156616.3870.9.camel@blech>
-	 <20120608130351.GB1964@redhat.com> <4FD1FB49.3020905@siemens.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S934322Ab2FHORQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 10:17:16 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:22795
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932916Ab2FHOQ6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 10:16:58 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(z1823lz98dI9371I936eI1432Izz1202hzz8275dhz2dh668h839h944hd25hf0ah)
+X-WSS-ID: 0M5AYC3-02-6HK-02
+X-M-MSG: 
+Date: Fri, 8 Jun 2012 16:17:14 +0200
+From: Borislav Petkov <borislav.petkov@amd.com>
+To: Stephane Eranian <eranian@google.com>, "H. Peter Anvin" <hpa@zytor.com>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Ingo Molnar <mingo@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <andi@firstfloor.org>, <mingo@elte.hu>, <ming.m.lin@intel.com>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Dimitri Sivanich <sivanich@sgi.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>
+Subject: Re: [PATCH] perf/x86: check ucode before disabling PEBS on
+ SandyBridge
+Message-ID: <20120608141714.GE31359@aftab.osrc.amd.com>
+References: <CABPqkBQ+p5rcuxpXCTLMXPM+awAHhQ6mP9-WzVh5GWtn2GyfrA@mail.gmail.com>
+ <1339065932.23343.18.camel@twins>
+ <CABPqkBQ=tLXXsgvzQx+i01Owm4MM8m=6cEVVi4ab64gOiTTBYQ@mail.gmail.com>
+ <1339067757.23343.21.camel@twins>
+ <20120608093513.GA22520@gmail.com>
+ <1339149613.23343.52.camel@twins>
+ <1339161972.2507.13.camel@laptop>
+ <20120608135117.GB31359@aftab.osrc.amd.com>
+ <1339163986.2507.19.camel@laptop>
+ <CABPqkBSAO_7W_pN+uq0uy-vaciBEE57oNF9Q6s_o39SBVWbc3Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <CABPqkBSAO_7W_pN+uq0uy-vaciBEE57oNF9Q6s_o39SBVWbc3Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-06-08 at 15:16 +0200, Jan Kiszka wrote:
-> On 2012-06-08 15:03, Michael S. Tsirkin wrote:
-> >> +    /* set master */
-> >> +	pci_set_master(pdev);
-> >> +
-> >> +    /* set DMA mask */
-> >> +	err = pci_set_dma_mask(pdev, DMA_BIT_MASK(64));
-> > 
-> > uio currently only supports devices which do not
-> > do DMA.
-> > 
-> > DMA from uio controlled devices is a no no unless
-> > it's behind an IOMMU which can protect us from
-> > random memory corruptions this could cause.
-> > 
-> > In the later case it's OK but we need some code
-> > to check this and program the IOMMU appropriately.
-> 
-> AKA: VFIO. :)
-> 
-> Dominic, maybe you want to have a look at Alex's work:
-> https://github.com/awilliam/linux-vfio
+On Fri, Jun 08, 2012 at 04:03:38PM +0200, Stephane Eranian wrote:
+> On Fri, Jun 8, 2012 at 3:59 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Fri, 2012-06-08 at 15:51 +0200, Borislav Petkov wrote:
+> >> Provided, of course, newer microcode versions means a
+> >> higher version number.
+> >
+> > Fair enough, I assumed this.. is this true?
+> >
+> I would think so, otherwise it gets even messier!
 
-Yes, thanks Jan.  This is exactly what VFIO does.  VFIO provides secure
-config space access, resource access, DMA mapping services, and full
-interrupt support to userspace.  I'm currently working to get this
-upstream, probably targeting 3.6 at this point, and would love to have
-more users to help make that happen.  Please take a look at the vfio-3.4
-branch in the tree above.  See this tree for Qemu's usage of VFIO for
-device assignment:
-https://github.com/awilliam/qemu-vfio (vfio-ng)
+Need to get Intel folk to say something here, hpa?
 
-Look forward to your feedback.  Thanks,
+-- 
+Regards/Gruss,
+Boris.
 
-Alex
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
 
