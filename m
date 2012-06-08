@@ -1,100 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762278Ab2FHRdU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 13:33:20 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:55227 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762258Ab2FHRdO (ORCPT
+	id S1762293Ab2FHRgT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 13:36:19 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13916 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761315Ab2FHRgQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 13:33:14 -0400
-Message-ID: <4FD23752.6090101@linux.vnet.ibm.com>
-Date: Fri, 08 Jun 2012 23:03:06 +0530
-From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-CC: lenb@kernel.org, linux-acpi@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org, linaro-dev@lists.linaro.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [linux-pm] [RFC 1/4] cpuidle: define the enter function in the
- driver structure
-References: <1339171365-4098-1-git-send-email-daniel.lezcano@linaro.org>
-In-Reply-To: <1339171365-4098-1-git-send-email-daniel.lezcano@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 8 Jun 2012 13:36:16 -0400
+X-Authority-Analysis: v=2.0 cv=eIiRfQV1 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=szWgSEt-72UA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=zzfQi_QIN5kw_pGKZdIA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1339176975.13377.56.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 2/3] x86: Remove cmpxchg from i386 NMI nesting code
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Fri, 08 Jun 2012 13:36:15 -0400
+In-Reply-To: <4FD23626.4020802@zytor.com>
+References: <20120608135200.371649691@goodmis.org>
+	  <20120608135603.699156773@goodmis.org> <4FD223E1.1090707@zytor.com>
+	 <1339173716.13377.50.camel@gandalf.stny.rr.com>
+	 <4FD23626.4020802@zytor.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1+b1 
 Content-Transfer-Encoding: 7bit
-x-cbid: 12060817-3864-0000-0000-0000033FF625
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
-
-On 06/08/2012 09:32 PM, Daniel Lezcano wrote:
-
-> We have the state index passed as parameter to the 'enter' function.
-> Most of the drivers assign their 'enter' functions several times in
-> the cpuidle_state structure, as we have the index, we can delegate
-> to the driver to handle their own callback array.
+On Fri, 2012-06-08 at 10:28 -0700, H. Peter Anvin wrote:
+> On 06/08/2012 09:41 AM, Steven Rostedt wrote:
+>  
+> >>  
+> >>  #define nmi_nesting_postprocess()                                      \
+> >>         do {                                                            \
+> >> -               if (cmpxchg(&__get_cpu_var(nmi_state),                  \
+> >> -                   NMI_EXECUTING, NMI_NOT_RUNNING) != NMI_EXECUTING)   \
+> >> +               if (!local_dec_and_test(&__get_cpu_var(nmi_state)))     \
+> > 
+> > Now this is where I think the patch helps. I'm almost certain that
+> > local_dec_and_test is faster than a cmpxchg by many cycles. Especially
+> > on i386.
+> > 
 > 
-> That will have the benefit of removing multiple lines of code in the
-> different drivers.
+> On i386 it's infinite, but again, I don't think the code will ever be
+> exercised on i386.  I'm much more concerned about performance on current
+> processors.
+
+I'm not worried about non i386 here. Some context missing from the patch
+is that this code is surrounded by:
+
+#ifdef CONFIG_X86_32
+
+[...]
+
+#else
+
+The '#else' part does something completely different, as this work is
+done in the assembly handler on x86_64.
+
+And yes, this code is executed on i386 (well when I boot my x86_64 into
+an i386 kernel it does).
+
+
 > 
-> In order to smoothly modify the driver, the 'enter' function are in
-> the driver structure and in the cpuidle state structure. That will
-> let the time to modify the different drivers one by one.
-> So the 'cpuidle_enter' function checks if the 'enter' callback is
-> assigned in the driver structure and use it, otherwise it invokes
-> the 'enter' assigned to the cpuidle_state.
+> But yes, local_dec_and_test should at least not be more expensive.  Even
+> better, use this_cpu_dec_return().
+
+Oh! That would make this much better! I'll update the patch set.
+
+Thanks!
+
+-- Steve
 
 
-Currently, the backend driver initializes
-all the cpuidle states supported on the platform,
-and each state can have its own enter routine
-which can be unique  This is a clean approach.
 
-By moving the enter routine into the driver,
-we are enforcing in having only one enter state.
-There is unnecessary overhead involved
-in calling a wrapper routine just to
-index into the right idle state routine
-for many platforms at runtime.
-
-
-> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-> ---
->  drivers/cpuidle/cpuidle.c |    4 +++-
->  include/linux/cpuidle.h   |    1 +
->  2 files changed, 4 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
-> index d90519c..155dee7 100644
-> --- a/drivers/cpuidle/cpuidle.c
-> +++ b/drivers/cpuidle/cpuidle.c
-> @@ -46,7 +46,9 @@ static inline int cpuidle_enter(struct cpuidle_device *dev,
->  				struct cpuidle_driver *drv, int index)
->  {
->  	struct cpuidle_state *target_state = &drv->states[index];
-> -	return target_state->enter(dev, drv, index);
-> +
-> +	return drv->enter(dev, drv, index) ? drv->enter(dev, drv, index) :
-> +		target_state->enter(dev, drv, index);
->  }
-> 
->  static inline int cpuidle_enter_tk(struct cpuidle_device *dev,
-> diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
-> index 6c26a3d..d82e169 100644
-> --- a/include/linux/cpuidle.h
-> +++ b/include/linux/cpuidle.h
-> @@ -130,6 +130,7 @@ struct cpuidle_driver {
->  	struct cpuidle_state	states[CPUIDLE_STATE_MAX];
->  	int			state_count;
->  	int			safe_state_index;
-> +	int (*enter)(struct cpuidle_device *, struct cpuidle_driver *, int);
->  };
-> 
->  #ifdef CONFIG_CPU_IDLE
-
-
-Cheers,
-Deepthi
 
