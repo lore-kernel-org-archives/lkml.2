@@ -1,91 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756310Ab2FHWNd (ORCPT <rfc822;w@1wt.eu>);
+	id S1759067Ab2FHWNk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 18:13:40 -0400
+Received: from mga11.intel.com ([192.55.52.93]:12309 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752234Ab2FHWNd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Jun 2012 18:13:33 -0400
-Received: from smtp.fireflyinternet.com ([109.228.6.236]:46799 "EHLO
-	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750795Ab2FHWNc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 18:13:32 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.66.37;
-From: Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: [git pull] drm intel + exynos fixes
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Airlie <airlied@linux.ie>, Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <CA+55aFyASr5Jfok7vVKXg9=n_pBGyjLZf3MmRik90y8qXRNo3g@mail.gmail.com>
-References: <alpine.DEB.2.00.1206080952010.15272@skynet.skynet.ie> <CA+55aFyASr5Jfok7vVKXg9=n_pBGyjLZf3MmRik90y8qXRNo3g@mail.gmail.com>
-Date: Fri, 08 Jun 2012 23:12:30 +0100
-X-Originating-IP: 78.156.66.37
-Message-ID: <1339193608_596134@CP5-2952>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="asc'?scan'208";a="177109752"
+Date: Sat, 9 Jun 2012 01:14:46 +0300
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Boaz Harrosh <bharrosh@panasas.com>, Tao Ma <boyu.mt@taobao.com>,
+        Nick Piggin <npiggin@kernel.dk>, "Dmitry V. Levin" <ldv@altlinux.org>,
+        v9fs-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-afs@lists.infradead.org,
+        linux-btrfs@vger.kernel.org, ceph-devel@vger.kernel.org,
+        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
+        codalist@TELEMANN.coda.cs.cmu.edu, ecryptfs@vger.kernel.org,
+        osd-dev@open-osd.org, linux-ext4@vger.kernel.org,
+        fuse-devel@lists.sourceforge.net, linux-mtd@lists.infradead.org,
+        jfs-discussion@lists.sourceforge.net, logfs@logfs.org,
+        linux-nfs@vger.kernel.org, linux-nilfs@vger.kernel.org,
+        linux-ntfs-dev@lists.sourceforge.net, ocfs2-devel@oss.oracle.com,
+        reiserfs-devel@vger.kernel.org
+Subject: Re: [RFC, PATCH, RESEND] fs: push rcu_barrier() from
+ deactivate_locked_super() to filesystems
+Message-ID: <20120608221446.GA18250@otc-wbsnb-06>
+References: <1339191663-17693-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <20120608150253.e42464a6.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="fdj2RfSjLxBAspz7"
+Content-Disposition: inline
+In-Reply-To: <20120608150253.e42464a6.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 8 Jun 2012 14:57:31 -0700, Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> This breaks things for me. Bisect says:
-> 
-> 9e612a008fa7fe493a473454def56aa321479495 is the first bad commit
-> commit 9e612a008fa7fe493a473454def56aa321479495
-> Author: Chris Wilson <chris@chris-wilson.co.uk>
-> Date:   Thu May 31 13:08:53 2012 +0100
-> 
->     drm/i915/crt: Do not rely upon the HPD presence pin
-> 
->     Whilst most monitors do wire up the HPD presence pin, it seems quite a
->     few KVM do not. Therefore if we simply rely on the HPD pin being
->     asserted to indicate a connected monitor we fail miserable, so fall back
->     to performing a DCC query for the EDID.
-> 
->     Reported-and-tested-by: Matthieu LAVIE <boiteamadmax@hotmail.com>
->     Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=50501
->     Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
->     Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-> 
-> And the symptoms are that it boots in what appears to be the correct
-> mode for my monitor (1920x1200), but when X starts it changes to
-> 1024x768 mode.
-> 
-> Which is not good, and not useful.
-> 
-> The bad kernel has this in Xorg.0.log:
-> 
->  [    12.796] (II) intel(0): EDID for output VGA1
->  [    12.796] (II) intel(0): Printing probed modes for output VGA1
->  [    12.796] (II) intel(0): Modeline "1024x768"x60.0   65.00  1024
-> 1048 1184 1344  768 771 777 806 -hsync -vsync (48.4 kHz e)
->  [    12.796] (II) intel(0): Modeline "800x600"x60.3   40.00  800 840
-> 968 1056  600 601 605 628 +hsync +vsync (37.9 kHz e)
->  [    12.796] (II) intel(0): Modeline "800x600"x56.2   36.00  800 824
-> 896 1024  600 601 603 625 +hsync +vsync (35.2 kHz e)
->  [    12.796] (II) intel(0): Modeline "848x480"x60.0   33.75  848 864
-> 976 1088  480 486 494 517 +hsync +vsync (31.0 kHz e)
->  [    12.796] (II) intel(0): Modeline "640x480"x59.9   25.18  640 656
-> 752 800  480 489 492 525 -hsync -vsync (31.5 kHz e)
-> 
-> which is pure and utter garbage. I think it's the "default modes" for
-> the non-EDID case, and has nothing to do with actual hardware.
-> 
-> The good kernel doesn't have those incorrect and bogus probed modes,
-> and just has the correct HDMI1 (that the bad kernel *also* has, of
-> course).
-> 
-> I have reverted that commit as obviously broken, since I'm not going
-> to release an -rc2 that doesn't even work for me (and since it *is*
-> obviously broken).
 
-Shock, horror, that's how it is meant to work when we cannot determine
-whether or not there is actually an output attached to the VGA. The hw
-autodetect falsely declares some VGA connections, notably through KVM
-switches, as disconnected and so we need to do a manual probe to confirm
-the flaky hw. The first phase of that probe is to request the EDID from
-the monitor, not all monitors supply one and less through a KVM switch,
-so we cannot rely on a negative result from that test. (Absence of
-evidence is not evidence of absence and all that.) So it falls back to
-load-detection, which in your case it cannot do since all the available
-pipes are assigned and so it just reports the VGA connection as unknown.
--Chris
+--fdj2RfSjLxBAspz7
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
+On Fri, Jun 08, 2012 at 03:02:53PM -0700, Andrew Morton wrote:
+> On Sat,  9 Jun 2012 00:41:03 +0300
+> "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
+>=20
+> > There's no reason to call rcu_barrier() on every deactivate_locked_supe=
+r().
+> > We only need to make sure that all delayed rcu free inodes are flushed
+> > before we destroy related cache.
+> >=20
+> > Removing rcu_barrier() from deactivate_locked_super() affects some
+> > fas paths. E.g. on my machine exit_group() of a last process in IPC
+> > namespace takes 0.07538s. rcu_barrier() takes 0.05188s of that time.
+>=20
+> What an unpleasant patch.  Is final-process-exiting-ipc-namespace a
+> sufficiently high-frequency operation to justify the change?
+=20
+> I don't really understand what's going on here.  Are you saying that
+> there is some filesystem against which we run deactivate_locked_super()
+> during exit_group(), and that this filesystem doesn't use rcu-freeing
+> of inodes?  The description needs this level of detail, please.
+
+I think the rcu_barrier() is in wrong place. We need it to safely destroy
+inode cache. deactivate_locked_super() is part of umount() path, but all
+filesystems I've checked have inode cache for whole filesystem, not
+per-mount.
+
+> The implementation would be less unpleasant if we could do the
+> rcu_barrier() in kmem_cache_destroy().  I can't see a way of doing that
+> without adding a dedicated slab flag, which would require editing all
+> the filesystems anyway.
+
+I think rcu_barrier() for all kmem_cache_destroy() would be too expensive.
+=20
+=20
+> (kmem_cache_destroy() already has an rcu_barrier().  Can we do away
+> with the private rcu games in the vfs and switch to
+> SLAB_DESTROY_BY_RCU?)
+
+--=20
+ Kirill A. Shutemov
+
+--fdj2RfSjLxBAspz7
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP0nlWAAoJEAd+omnVudOMmbEP/13S9Evr5LclYc6Vfqwj8xrb
+jk/Q93iEc0pcUv+/wkCpJZ/FyU3MY/GAKzIKjtYnHInou17Eq1SFI7MFeAFH+foP
+PKgfXij3cTzBAHe1qJMfYHFveiXxUxrjXN8ki3RL9Ogv9Vv9QmgDH5qBV6uE+Tb7
+mYJH3Vlze6j3AI6d0jxh3wxLYtYQ4SWGp7YYO+CgXyzxDnc+ve6OaJI//GSsy3L0
+Aapqi5e2nBwM3WiDSc/EbHsqWG/MmFqv5A0qeE2invTbgfh8r174KWk/vSq2G65I
+2S4nJae/sk5iTeRbs83su+yj7Ku9wxFOW/0T6tDueF+hzGKJ92xaXt13oHuf8vOX
+nMeEVuN+tLi+rAjhx0HULAXcd3X4Go2T5r6AxtgUZyuJTCdHEI22E8/kxhJh+9vJ
+GrPJRdFJ6f5SCdTNZc7CJK8jG0PACl1qhdfceNIMDgQfA88QptuDvcBFxLYVyuh2
+urkoMg/bf30rEWYf5wGyEeP3zb/CIxh0VtRbXOzfRvTUZoQcMHLZKttrxnkDNPTP
+y7aenO8Efy5X8BTnYbW4jjNAPw7EWcCLfgrtMMgb4ZmfRS98yCtEJEawDFSOEas2
+r0Tr/9L8ukjVDPisNEMj1op02KhGJmfB+++m1bTnpkjIr0P7BxBzoQFTBI6lDMo/
+R2eRrtK96/pv3fX/bA5P
+=XBsY
+-----END PGP SIGNATURE-----
+
+--fdj2RfSjLxBAspz7--
