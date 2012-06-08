@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761467Ab2FHPvu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 11:51:50 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:58258 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759518Ab2FHPvs convert rfc822-to-8bit (ORCPT
+	id S933096Ab2FHP4V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 11:56:21 -0400
+Received: from hosting.visp.net.lb ([194.146.153.11]:47558 "EHLO
+	hosting.visp.net.lb" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932388Ab2FHP4T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 11:51:48 -0400
+	Fri, 8 Jun 2012 11:56:19 -0400
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20120608154535.GA887@localhost>
-References: <E1Sd0IP-0005nh-AJ@tytso-glaptop.cam.corp.google.com>
-	<20120608150736.GF21080@quack.suse.cz>
-	<20120608154535.GA887@localhost>
-Date: Fri, 8 Jun 2012 17:51:48 +0200
-Message-ID: <CA+icZUVC86sBLNND08rNn6xhWqagfWdM7WvrvG+fcW+FHoFjbw@mail.gmail.com>
-Subject: Re: writeback: bad unlock balance detected in 3.5-rc1
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Fri, 08 Jun 2012 18:56:12 +0300
+From: Denys Fedoryshchenko <denys@visp.net.lb>
+To: Benjamin LaHaise <bcrl@kvack.org>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Francois Romieu <romieu@fr.zoreil.com>, <davem@davemloft.net>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: Deadlock, L2TP over IP are not working, 3.4.1
+In-Reply-To: <20120608154106.GD5024@kvack.org>
+References: <7ed49f446365ac625437702d92946add@visp.net.lb>
+ <20120607205356.GA2491@electric-eye.fr.zoreil.com>
+ <1339104606.6001.4.camel@edumazet-glaptop>
+ <20120607223752.GA4475@electric-eye.fr.zoreil.com>
+ <1339134438.6001.13.camel@edumazet-glaptop>
+ <20120608154106.GD5024@kvack.org>
+Message-ID: <67d8beaf421874815145fdefc69b3366@visp.net.lb>
+User-Agent: VISP Webmail/0.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 8, 2012 at 5:45 PM, Fengguang Wu <fengguang.wu@intel.com> wrote:
-> On Fri, Jun 08, 2012 at 05:07:36PM +0200, Jan Kara wrote:
->> On Fri 08-06-12 10:36:13, Ted Tso wrote:
->> >
->> > I can reproduce this fairly easily by using ext4 w/o a journal, running
->> > under KVM with 1024megs memory, with fsstress (xfstests #13):
+On 2012-06-08 18:41, Benjamin LaHaise wrote:
+> On Fri, Jun 08, 2012 at 07:47:18AM +0200, Eric Dumazet wrote:
+>> I have no idea how many l2tp_eth devices are setup at once in 
+>> typical
+>> conf.
 >
-> Good catch, thanks!
+> Depends on the usage scenario.  L2TP is commonly used for terminating
+> customer connections by wholesale ISPs.  In that kind of edge routing
+> use-case, tens of thousands of interfaces are easily possible.
 >
->>   Argh, I wonder how come I didn't hit this. Does attached patch fix the
->> problem?
->
->> diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
->> index 8d2fb8c..41a3ccf 100644
->> --- a/fs/fs-writeback.c
->> +++ b/fs/fs-writeback.c
->> @@ -664,6 +664,7 @@ static long writeback_sb_inodes(struct super_block *sb,
->>                       /* Wait for I_SYNC. This function drops i_lock... */
->>                       inode_sleep_on_writeback(inode);
->>                       /* Inode may be gone, start again */
->> +                     spin_lock(&wb->list_lock);
->>                       continue;
->>               }
->
-> That looks like the fix. So I pushed it to writeback-for-next.
-> Thanks for the quick fixing!
->
+> 		-ben
+In my case it is few hundreds. I am not sure it is typical case, but i 
+really will like if this setup
+will give me good performance. Since Linux usually used on the PC's, i 
+don't think they will scale more
+than 2-3 Gbps. Also L2TP pseudowire (l2tp_eth) usually done not 
+directly to end-users, but to LAC's, so i think
+it is up to thousand.
 
-s/writeback-for-next/writeback-for-linus ?
+Right now i am routing around 700Mbps over there, and noticed some 
+problem with pskb_expand_head,
+but that's separate question i will ask, if i will not be able to sort 
+it out by myself.
 
-- Sedat -
 
-> I'm yet to setup and run xfstests regularly, so as to catch such kind
-> of problems earlier in future.
->
-> Thanks,
-> Fengguang
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+---
+Denys Fedoryshchenko, Network Engineer, Virtual ISP S.A.L.
