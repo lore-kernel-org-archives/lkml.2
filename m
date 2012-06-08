@@ -1,64 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933580Ab2FHI3e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 04:29:34 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58127 "EHLO mx2.suse.de"
+	id S933735Ab2FHIbV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 04:31:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58433 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932177Ab2FHI3b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 04:29:31 -0400
-Date: Fri, 8 Jun 2012 10:29:24 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Stefan Achatz <erazor_de@users.sourceforge.net>
-Cc: Rob Landley <rob@landley.net>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] HID: roccat: Renamed roccat_common functions to
- roccat_common2
-In-Reply-To: <1337546704.19878.32.camel@neuromancer.tessier-ashpool>
-Message-ID: <alpine.LNX.2.00.1206081029180.12208@pobox.suse.cz>
-References: <1337546704.19878.32.camel@neuromancer.tessier-ashpool>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S932177Ab2FHIbS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 04:31:18 -0400
+From: Oliver Neukum <oneukum@suse.de>
+Organization: SUSE
+To: Stefani Seibold <stefani@seibold.net>
+Subject: Re: RFC: remove usb_device pointer from usb_skeleton.c
+Date: Fri, 8 Jun 2012 10:28:07 +0200
+User-Agent: KMail/1.13.5 (Linux/3.3.0-12-desktop+; KDE/4.4.4; x86_64; ; )
+Cc: "linux-kernel" <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        linux-usb@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>
+References: <1339139935.16819.5.camel@wall-e>
+In-Reply-To: <1339139935.16819.5.camel@wall-e>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201206081028.07229.oneukum@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 20 May 2012, Stefan Achatz wrote:
+Am Freitag, 8. Juni 2012, 09:18:55 schrieb Stefani Seibold:
+> The connected flag could be also replaced by a "intf->condition ==
+> USB_INTERFACE_BOUND", which can be hided by a macro.
 
-> Did this to illustrate my understanding of the firmware generations:
-> Valo and Kone were 1st generation
-> Arvo was externaly developed and lies in the middle
-> All others until now are considered 2nd generation
-> 
-> Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
-> ---
->  drivers/hid/hid-roccat-arvo.c     |   16 ++++++++--------
->  drivers/hid/hid-roccat-common.c   |   34 +++++++++++++++++-----------------
->  drivers/hid/hid-roccat-common.h   |   10 +++++-----
->  drivers/hid/hid-roccat-isku.c     |    6 +++---
->  drivers/hid/hid-roccat-koneplus.c |   24 ++++++++++++------------
->  drivers/hid/hid-roccat-kovaplus.c |   20 ++++++++++----------
->  drivers/hid/hid-roccat-pyra.c     |   20 ++++++++++----------
->  drivers/hid/hid-roccat-savu.c     |    4 ++--
->  8 files changed, 67 insertions(+), 67 deletions(-)
-> 
-> diff --git a/drivers/hid/hid-roccat-arvo.c b/drivers/hid/hid-roccat-arvo.c
-> index 093bfad..327f9b8 100644
-> --- a/drivers/hid/hid-roccat-arvo.c
-> +++ b/drivers/hid/hid-roccat-arvo.c
-> @@ -39,7 +39,7 @@ static ssize_t arvo_sysfs_show_mode_key(struct device *dev,
->  	int retval;
->  
->  	mutex_lock(&arvo->arvo_lock);
-> -	retval = roccat_common_receive(usb_dev, ARVO_COMMAND_MODE_KEY,
-> +	retval = roccat_common2_receive(usb_dev, ARVO_COMMAND_MODE_KEY,
+No, I am sorry, it cannot. You'd know the interface is bound, but not necessarily
+to your driver or even the same "incarnation" of your driver. The fundamental
+problem is that we have no data structure describing the binding between a device
+and a driver so we cannot refcount that.
 
-Could you please give it some more descriptive name, that will clearly 
-illustrate that the differentiating factor is the firmware 
-version/generation?
+As a consequence all refcounting just ensures that the device and interface
+data structures stay in memory, but we can make only very limited (read-only)
+use of them after a disconnection.
 
-Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs
+	Regards
+		Oliver
