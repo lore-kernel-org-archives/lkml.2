@@ -1,87 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755986Ab2FHNEV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 09:04:21 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:53090 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755043Ab2FHNES (ORCPT
+	id S1756597Ab2FHNEy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 09:04:54 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:49393 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754903Ab2FHNEw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 09:04:18 -0400
-From: Pawel Moll <pawel.moll@arm.com>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Pawel Moll <pawel.moll@arm.com>
-Subject: [PATCH] clk: Check parent for NULL in clk_change_rate
-Date: Fri,  8 Jun 2012 14:04:06 +0100
-Message-Id: <1339160646-32664-1-git-send-email-pawel.moll@arm.com>
-X-Mailer: git-send-email 1.7.9.5
-X-OriginalArrivalTime: 08 Jun 2012 13:04:43.0254 (UTC) FILETIME=[45782960:01CD4577]
-X-MC-Unique: 112060814041607501
-Content-Type: text/plain; charset=WINDOWS-1252
+	Fri, 8 Jun 2012 09:04:52 -0400
+MIME-Version: 1.0
+In-Reply-To: <130cc6e8-9077-455a-9e88-3a7b5cde8aff@zmail13.collab.prod.int.phx2.redhat.com>
+References: <20120607193747.GH21339@redhat.com>
+	<130cc6e8-9077-455a-9e88-3a7b5cde8aff@zmail13.collab.prod.int.phx2.redhat.com>
+Date: Fri, 8 Jun 2012 21:04:50 +0800
+Message-ID: <CAJd=RBAMWejBbHvBk5a_9vyL2MzTSpBqhOR8pM4uW3wRY17hSw@mail.gmail.com>
+Subject: Re: AutoNUMA15
+From: Hillf Danton <dhillf@gmail.com>
+To: Zhouping Liu <zliu@redhat.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id q58D4QNN026139
 
-clk_change_rate() is accessing parent's rate without checking
-if the parent exists at all. In case of root clocks this will
-cause NULL pointer dereference.
+On Fri, Jun 8, 2012 at 2:09 PM, Zhouping Liu <zliu@redhat.com> wrote:
+>
+> I have tested the kernel after removing the two commit 74a5ce20e6ee & 8e7fbcbc22c1241,
+> but unluckily, the panic is still alive, so I think it's maybe not
+> related to the two commit, and I will do more investigating to check
+>
 
-This patch follows what clk_calc_new_rates() does in such
-situation.
+I see three reverts at
 
-Signed-off-by: Pawel Moll <pawel.moll@arm.com>
----
+http://git.kernel.org/?p=linux/kernel/git/andrea/aa.git;a=log;h=refs/heads/autonuma
 
-Hi Mike,
+74a5ce20e Revert "sched: Fix SD_OVERLAP"
+9f646389a Revert "sched/x86: Use cpu_llc_shared_mask(cpu) for coregroup_mask"
+8e7fbcbc2 Revert "sched: Remove stale power aware scheduling remnants and
+			dysfunctional knobs"
 
-This is something I had to workaround to get Versatile Express
-working with the common clock framework - my root clocks aren't
-are variable (as in: non fixed).
+Would you please take revert of 9f646389a also into account?
 
-I'm told that this might have been already fixed - if that's the
-case simply ignore this patch. Also I'm not saying it's the best
-way of solving the issue :-)
-
-Cheers!
-
-Pawel
-
- drivers/clk/clk.c |   11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 687b00d..cf53069 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -850,18 +850,21 @@ static void clk_change_rate(struct clk *clk)
- {
- 	struct clk *child;
- 	unsigned long old_rate;
-+	unsigned long best_parent_rate = 0;
- 	struct hlist_node *tmp;
- 
- 	old_rate = clk->rate;
- 
-+	if (clk->parent)
-+		best_parent_rate = clk->parent->rate;
-+
- 	if (clk->ops->set_rate)
--		clk->ops->set_rate(clk->hw, clk->new_rate, clk->parent->rate);
-+		clk->ops->set_rate(clk->hw, clk->new_rate, best_parent_rate);
- 
- 	if (clk->ops->recalc_rate)
--		clk->rate = clk->ops->recalc_rate(clk->hw,
--				clk->parent->rate);
-+		clk->rate = clk->ops->recalc_rate(clk->hw, best_parent_rate);
- 	else
--		clk->rate = clk->parent->rate;
-+		clk->rate = best_parent_rate;
- 
- 	if (clk->notifier_count && old_rate != clk->rate)
- 		__clk_notify(clk, POST_RATE_CHANGE, old_rate, clk->rate);
--- 
-1.7.9.5
-
-
+Good Weekend
+Hillf
