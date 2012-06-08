@@ -1,191 +1,325 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934159Ab2FHJhU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 05:37:20 -0400
-Received: from mga03.intel.com ([143.182.124.21]:40040 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759779Ab2FHJhS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 05:37:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208,223";a="109492289"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Borislav Petkov <bp@amd64.org>, "Luck, Tony" <tony.luck@intel.com>,
-        "'xen-devel@lists.xensource.com'" <xen-devel@lists.xensource.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] xen/mce: Add mutex lock and buffer to avoid sleep in atomic
- context
-Thread-Topic: [PATCH] xen/mce: Add mutex lock and buffer to avoid sleep in
- atomic context
-Thread-Index: Ac1FWkRWxEyD+XUzS/eqorQpXCRDrw==
-Date: Fri, 8 Jun 2012 09:37:06 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC8292335221654@SHSMSX101.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: multipart/mixed;
-	boundary="_002_DE8DF0795D48FD4CA783C40EC8292335221654SHSMSX101ccrcorpi_"
-MIME-Version: 1.0
+	id S934199Ab2FHJhl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 05:37:41 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:62310 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759779Ab2FHJhh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 05:37:37 -0400
+X-AuditID: cbfee61a-b7f9f6d0000016a8-32-4fd1c7e0bea2
+From: Seungwon Jeon <tgih.jun@samsung.com>
+To: "'Maya Erez'" <merez@codeaurora.org>, linux-mmc@vger.kernel.org
+Cc: linux-arm-msm@vger.kernel.org,
+        "'open list:DOCUMENTATION'" <linux-doc@vger.kernel.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>
+References: <1338576911-17089-1-git-send-email-merez@codeaurora.org>
+ <1338576911-17089-2-git-send-email-merez@codeaurora.org>
+In-reply-to: <1338576911-17089-2-git-send-email-merez@codeaurora.org>
+Subject: RE: [PATCH v2 1/1] mmc: block: Add write packing control
+Date: Fri, 08 Jun 2012 18:37:35 +0900
+Message-id: <007c01cd455a$56392050$02ab60f0$%jun@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=ks_c_5601-1987
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac1AKDSpDY8lDJf8RFy4764o7toy3gFHEsFA
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDLMWRmVeSWpSXmKPExsVy+t9jAd0Hxy/6G5z9x2kxcf9ZdouFbUtY
+	LC7vmsNmceR/P6MDi8fnTXIBjFFcNimpOZllqUX6dglcGY929TAV7AqoaP15jqmBscWxi5GT
+	Q0LARGL5hEdMELaYxIV769m6GLk4hAQWMUq07LnFCuH8YZSYPv8MM0gVm4CWxN83b8BsEQFH
+	iQkTVrODFDELdDFK/Jy2lrGLkQOoo17i27k8kBpOAVeJz93nWEBsYaD6H+vmsILYLAKqEs/n
+	fWIDsXkFbCUO7XzGDGELSvyYfA+snlnAQOL9rD5WCFteYvOat8wg4yUE1CUe/dWFOMFIomPL
+	Z0aIEhGJfS/eMU5gFJqFZNIsJJNmIZk0C0nLAkaWVYyiqQXJBcVJ6bmGesWJucWleel6yfm5
+	mxjBYf5MagfjygaLQ4wCHIxKPLzhxy76C7EmlhVX5h5ilOBgVhLhFYoACvGmJFZWpRblxxeV
+	5qQWH2KU5mBREudtsr7gLySQnliSmp2aWpBaBJNl4uCUamC0nPfj9rK67Yu4eaw4Gg/eP7Qj
+	5eGnrN1s/Aq9O780RzFetLfqnsT6NlNHY8Utvf6FXAu/LSs2kekOPzPFyU25YEOn3XT9O5PU
+	+4Xs3dZPjyv2WaCzUjYwQFaz8z9nkpasUNS7LtHfG8KtUnPFX9jEyrn06S9/d3mSbVfIrsb1
+	1xzFL57JZVBiKc5INNRiLipOBADNVTsKbwIAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---_002_DE8DF0795D48FD4CA783C40EC8292335221654SHSMSX101ccrcorpi_
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
->From a9c5f29330a056291356b912816b5b2e0e061a30 Mon Sep 17 00:00:00 2001
-From: Liu, Jinsong <jinsong.liu@intel.com>
-Date: Sat, 9 Jun 2012 00:56:46 +0800
-Subject: [PATCH] xen/mce: Add mutex lock and buffer to avoid sleep in atomi=
-c context
+How can we check the effect?
+Do you have any result?
+Please check the several comment below.
 
-copy_to_user might sleep and print a stack trace if it is executed
-in an atomic spinlock context. This patch add a mutex lock and a
-buffer to avoid the case.
+Maya Erez <merez@codeaurora.org> wrote:
+> The write packing control will ensure that read requests latency is
+> not increased due to long write packed commands.
+> 
+> The trigger for enabling the write packing is managing to pack several
+> write requests. The number of potential packed requests that will trigger
+> the packing can be configured via sysfs by writing the required value to:
+> /sys/block/<block_dev_name>/num_wr_reqs_to_start_packing.
+> The trigger for disabling the write packing is fetching a read request.
+> 
+> ---
+>  Documentation/mmc/mmc-dev-attrs.txt |   17 ++++++
+>  drivers/mmc/card/block.c            |  100 ++++++++++++++++++++++++++++++++++-
+>  drivers/mmc/card/queue.c            |    8 +++
+>  drivers/mmc/card/queue.h            |    3 +
+>  include/linux/mmc/host.h            |    1 +
+>  5 files changed, 128 insertions(+), 1 deletions(-)
+> 
+> diff --git a/Documentation/mmc/mmc-dev-attrs.txt b/Documentation/mmc/mmc-dev-attrs.txt
+> index 22ae844..08f7312 100644
+> --- a/Documentation/mmc/mmc-dev-attrs.txt
+> +++ b/Documentation/mmc/mmc-dev-attrs.txt
+> @@ -8,6 +8,23 @@ The following attributes are read/write.
+> 
+>  	force_ro		Enforce read-only access even if write protect switch is off.
+> 
+> +	num_wr_reqs_to_start_packing 	This attribute is used to determine
+> +	the trigger for activating the write packing, in case the write
+> +	packing control feature is enabled.
+> +
+> +	When the MMC manages to reach a point where num_wr_reqs_to_start_packing
+> +	write requests could be packed, it enables the write packing feature.
+> +	This allows us to start the write packing only when it is beneficial
+> +	and has minimum affect on the read latency.
+> +
+> +	The number of potential packed requests that will trigger the packing
+> +	can be configured via sysfs by writing the required value to:
+> +	/sys/block/<block_dev_name>/num_wr_reqs_to_start_packing.
+> +
+> +	The default value of num_wr_reqs_to_start_packing was determined by
+> +	running parallel lmdd write and lmdd read operations and calculating
+> +	the max number of packed writes requests.
+> +
+>  SD and MMC Device Attributes
+>  ============================
+> 
+> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
+> index 2785fd4..ef192fb 100644
+> --- a/drivers/mmc/card/block.c
+> +++ b/drivers/mmc/card/block.c
+> @@ -114,6 +114,7 @@ struct mmc_blk_data {
+>  	struct device_attribute force_ro;
+>  	struct device_attribute power_ro_lock;
+>  	int	area_type;
+> +	struct device_attribute num_wr_reqs_to_start_packing;
+>  };
+> 
+>  static DEFINE_MUTEX(open_lock);
+> @@ -281,6 +282,38 @@ out:
+>  	return ret;
+>  }
+> 
+> +static ssize_t
+> +num_wr_reqs_to_start_packing_show(struct device *dev,
+> +				  struct device_attribute *attr, char *buf)
+> +{
+> +	struct mmc_blk_data *md = mmc_blk_get(dev_to_disk(dev));
+> +	int num_wr_reqs_to_start_packing;
+> +	int ret;
+> +
+> +	num_wr_reqs_to_start_packing = md->queue.num_wr_reqs_to_start_packing;
+> +
+> +	ret = snprintf(buf, PAGE_SIZE, "%d\n", num_wr_reqs_to_start_packing);
+> +
+> +	mmc_blk_put(md);
+> +	return ret;
+> +}
+> +
+> +static ssize_t
+> +num_wr_reqs_to_start_packing_store(struct device *dev,
+> +				 struct device_attribute *attr,
+> +				 const char *buf, size_t count)
+> +{
+> +	int value;
+> +	struct mmc_blk_data *md = mmc_blk_get(dev_to_disk(dev));
+> +
+> +	sscanf(buf, "%d", &value);
+> +	if (value >= 0)
+> +		md->queue.num_wr_reqs_to_start_packing = value;
+> +
+> +	mmc_blk_put(md);
+> +	return count;
+> +}
+> +
+>  static int mmc_blk_open(struct block_device *bdev, fmode_t mode)
+>  {
+>  	struct mmc_blk_data *md = mmc_blk_get(bdev->bd_disk);
+> @@ -1313,6 +1346,48 @@ static void mmc_blk_rw_rq_prep(struct mmc_queue_req *mqrq,
+>  	mmc_queue_bounce_pre(mqrq);
+>  }
+> 
+> +static void mmc_blk_write_packing_control(struct mmc_queue *mq,
+> +					  struct request *req)
+> +{
+> +	struct mmc_host *host = mq->card->host;
+> +	int data_dir;
+> +
+> +	if (!(host->caps2 & MMC_CAP2_PACKED_WR))
+> +		return;
+> +
+> +	/*
+> +	 * In case the packing control is not supported by the host, it should
+> +	 * not have an effect on the write packing. Therefore we have to enable
+> +	 * the write packing
+> +	 */
+> +	if (!(host->caps2 & MMC_CAP2_PACKED_WR_CONTROL)) {
+> +		mq->wr_packing_enabled = true;
+> +		return;
+> +	}
+> +
+> +	if (!req || (req && (req->cmd_flags & REQ_FLUSH))) {
+> +		if (mq->num_of_potential_packed_wr_reqs >
+> +				mq->num_wr_reqs_to_start_packing)
+> +			mq->wr_packing_enabled = true;
+> +		return;
+> +	}
+> +
+> +	data_dir = rq_data_dir(req);
+> +
+> +	if (data_dir == READ) {
+> +		mq->num_of_potential_packed_wr_reqs = 0;
+> +		mq->wr_packing_enabled = false;
+> +		return;
+> +	} else if (data_dir == WRITE) {
+> +		mq->num_of_potential_packed_wr_reqs++;
+> +	}
+> +
+> +	if (mq->num_of_potential_packed_wr_reqs >
+> +			mq->num_wr_reqs_to_start_packing)
+> +		mq->wr_packing_enabled = true;
+Write Packing is available only if continuing write requests are over num_wr_reqs_to_start_packing?
+That means individual request(1...17) will be issued with non-packing.
+Could you explain your policy more?
+> +
+> +}
+> +
+>  static u8 mmc_blk_prep_packed_list(struct mmc_queue *mq, struct request *req)
+>  {
+>  	struct request_queue *q = mq->queue;
+> @@ -1332,6 +1407,9 @@ static u8 mmc_blk_prep_packed_list(struct mmc_queue *mq, struct request *req)
+>  			!card->ext_csd.packed_event_en)
+>  		goto no_packed;
+> 
+> +	if (!mq->wr_packing_enabled)
+> +		goto no_packed;
+If wr_packing_enabled is set to true, several write requests can be packed.
+We don't need to consider read request since packed write?
 
-Reported-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Liu, Jinsong <jinsong.liu@intel.com>
----
- drivers/xen/mcelog.c |   20 ++++++++++++++++----
- 1 files changed, 16 insertions(+), 4 deletions(-)
+Thanks,
+Seungwon Jeon
+> +
+>  	if ((rq_data_dir(cur) == WRITE) &&
+>  			(card->host->caps2 & MMC_CAP2_PACKED_WR))
+>  		max_packed_rw = card->ext_csd.max_packed_writes;
+> @@ -1396,6 +1474,8 @@ static u8 mmc_blk_prep_packed_list(struct mmc_queue *mq, struct request *req)
+>  			break;
+>  		}
+> 
+> +		if (rq_data_dir(next) == WRITE)
+> +			mq->num_of_potential_packed_wr_reqs++;
+>  		list_add_tail(&next->queuelist, &mq->mqrq_cur->packed_list);
+>  		cur = next;
+>  		reqs++;
+> @@ -1780,7 +1860,9 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
+>  		goto out;
+>  	}
+> 
+> -	if (req && req->cmd_flags & REQ_DISCARD) {
+> +	mmc_blk_write_packing_control(mq, req);
+> +
+> +	if (req && req->cmd_flags & REQ_DISCARD) {
+>  		/* complete ongoing async transfer before issuing discard */
+>  		if (card->host->areq)
+>  			mmc_blk_issue_rw_rq(mq, NULL);
+> @@ -2010,6 +2092,8 @@ static void mmc_blk_remove_req(struct mmc_blk_data *md)
+> 
+>  	if (md) {
+>  		card = md->queue.card;
+> +		device_remove_file(disk_to_dev(md->disk),
+> +				   &md->num_wr_reqs_to_start_packing);
+>  		if (md->disk->flags & GENHD_FL_UP) {
+>  			device_remove_file(disk_to_dev(md->disk), &md->force_ro);
+>  			if ((md->area_type & MMC_BLK_DATA_AREA_BOOT) &&
+> @@ -2076,6 +2160,20 @@ static int mmc_add_disk(struct mmc_blk_data *md)
+>  		if (ret)
+>  			goto power_ro_lock_fail;
+>  	}
+> +
+> +	md->num_wr_reqs_to_start_packing.show =
+> +		num_wr_reqs_to_start_packing_show;
+> +	md->num_wr_reqs_to_start_packing.store =
+> +		num_wr_reqs_to_start_packing_store;
+> +	sysfs_attr_init(&md->num_wr_reqs_to_start_packing.attr);
+> +	md->num_wr_reqs_to_start_packing.attr.name =
+> +		"num_wr_reqs_to_start_packing";
+> +	md->num_wr_reqs_to_start_packing.attr.mode = S_IRUGO | S_IWUSR;
+> +	ret = device_create_file(disk_to_dev(md->disk),
+> +				 &md->num_wr_reqs_to_start_packing);
+> +	if (ret)
+> +		goto power_ro_lock_fail;
+> +
+>  	return ret;
+> 
+>  power_ro_lock_fail:
+> diff --git a/drivers/mmc/card/queue.c b/drivers/mmc/card/queue.c
+> index 165d85a..79ef91b 100644
+> --- a/drivers/mmc/card/queue.c
+> +++ b/drivers/mmc/card/queue.c
+> @@ -25,6 +25,13 @@
+>  #define MMC_QUEUE_SUSPENDED	(1 << 0)
+> 
+>  /*
+> + * Based on benchmark tests the default num of requests to trigger the write
+> + * packing was determined, to keep the read latency as low as possible and
+> + * manage to keep the high write throughput.
+> + */
+> +#define DEFAULT_NUM_REQS_TO_START_PACK 17
+> +
+> +/*
+>   * Prepare a MMC request. This just filters out odd stuff.
+>   */
+>  static int mmc_prep_request(struct request_queue *q, struct request *req)
+> @@ -181,6 +188,7 @@ int mmc_init_queue(struct mmc_queue *mq, struct mmc_card *card,
+>  	mq->mqrq_cur = mqrq_cur;
+>  	mq->mqrq_prev = mqrq_prev;
+>  	mq->queue->queuedata = mq;
+> +	mq->num_wr_reqs_to_start_packing = DEFAULT_NUM_REQS_TO_START_PACK;
+> 
+>  	blk_queue_prep_rq(mq->queue, mmc_prep_request);
+>  	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, mq->queue);
+> diff --git a/drivers/mmc/card/queue.h b/drivers/mmc/card/queue.h
+> index d761bf1..6c29e0e 100644
+> --- a/drivers/mmc/card/queue.h
+> +++ b/drivers/mmc/card/queue.h
+> @@ -44,6 +44,9 @@ struct mmc_queue {
+>  	struct mmc_queue_req	mqrq[2];
+>  	struct mmc_queue_req	*mqrq_cur;
+>  	struct mmc_queue_req	*mqrq_prev;
+> +	bool			wr_packing_enabled;
+> +	int			num_of_potential_packed_wr_reqs;
+> +	int			num_wr_reqs_to_start_packing;
+>  };
+> 
+>  extern int mmc_init_queue(struct mmc_queue *, struct mmc_card *, spinlock_t *,
+> diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
+> index 9d0d946..0eb6c7b 100644
+> --- a/include/linux/mmc/host.h
+> +++ b/include/linux/mmc/host.h
+> @@ -242,6 +242,7 @@ struct mmc_host {
+>  #define MMC_CAP2_PACKED_WR	(1 << 11)	/* Allow packed write */
+>  #define MMC_CAP2_PACKED_CMD	(MMC_CAP2_PACKED_RD | \
+>  				 MMC_CAP2_PACKED_WR) /* Allow packed commands */
+> +#define MMC_CAP2_PACKED_WR_CONTROL (1 << 12) /* Allow write packing control */
+> 
+>  	mmc_pm_flag_t		pm_caps;	/* supported pm features */
+>  	unsigned int        power_notify_type;
+> --
+> 1.7.3.3
+> --
+> Sent by a consultant of the Qualcomm Innovation Center, Inc.
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-diff --git a/drivers/xen/mcelog.c b/drivers/xen/mcelog.c
-index 72e87d2..4046f01 100644
---- a/drivers/xen/mcelog.c
-+++ b/drivers/xen/mcelog.c
-@@ -56,12 +56,14 @@ static struct mcinfo_logical_cpu *g_physinfo;
- static uint32_t ncpus;
-=20
- static DEFINE_SPINLOCK(mcelog_lock);
-+static DEFINE_MUTEX(xen_mce_chrdev_read_mutex);
-=20
- static struct xen_mce_log xen_mcelog =3D {
- 	.signature	=3D XEN_MCE_LOG_SIGNATURE,
- 	.len		=3D XEN_MCE_LOG_LEN,
- 	.recordlen	=3D sizeof(struct xen_mce),
- };
-+static struct xen_mce_log xen_mcelog_u;
-=20
- static DEFINE_SPINLOCK(xen_mce_chrdev_state_lock);
- static int xen_mce_chrdev_open_count;	/* #times opened */
-@@ -99,6 +101,10 @@ static int xen_mce_chrdev_release(struct inode *inode, =
-struct file *file)
- 	return 0;
- }
-=20
-+/*
-+ * copy_to_user might sleep and print a stack trace
-+ * if it is executed in an atomic spinlock context
-+ */
- static ssize_t xen_mce_chrdev_read(struct file *filp, char __user *ubuf,
- 				size_t usize, loff_t *off)
- {
-@@ -106,9 +112,15 @@ static ssize_t xen_mce_chrdev_read(struct file *filp, =
-char __user *ubuf,
- 	unsigned num;
- 	int i, err;
-=20
-+	mutex_lock(&xen_mce_chrdev_read_mutex);
-+
- 	spin_lock(&mcelog_lock);
-+	memcpy(&xen_mcelog_u, &xen_mcelog, sizeof(struct xen_mce_log));
-=20
- 	num =3D xen_mcelog.next;
-+	memset(xen_mcelog.entry, 0, num * sizeof(struct xen_mce));
-+	xen_mcelog.next =3D 0;
-+	spin_unlock(&mcelog_lock);
-=20
- 	/* Only supports full reads right now */
- 	err =3D -EINVAL;
-@@ -117,20 +129,20 @@ static ssize_t xen_mce_chrdev_read(struct file *filp,=
- char __user *ubuf,
-=20
- 	err =3D 0;
- 	for (i =3D 0; i < num; i++) {
--		struct xen_mce *m =3D &xen_mcelog.entry[i];
-+		struct xen_mce *m =3D &xen_mcelog_u.entry[i];
-=20
- 		err |=3D copy_to_user(buf, m, sizeof(*m));
- 		buf +=3D sizeof(*m);
- 	}
-=20
--	memset(xen_mcelog.entry, 0, num * sizeof(struct xen_mce));
--	xen_mcelog.next =3D 0;
-+	memset(xen_mcelog_u.entry, 0, num * sizeof(struct xen_mce));
-+	xen_mcelog_u.next =3D 0;
-=20
- 	if (err)
- 		err =3D -EFAULT;
-=20
- out:
--	spin_unlock(&mcelog_lock);
-+	mutex_unlock(&xen_mce_chrdev_read_mutex);
-=20
- 	return err ? err : buf - ubuf;
- }
---=20
-1.7.1
-
---_002_DE8DF0795D48FD4CA783C40EC8292335221654SHSMSX101ccrcorpi_
-Content-Type: application/octet-stream;
-	name="0001-xen-mce-Add-mutex-lock-and-buffer-to-avoid-sleep-in-.patch"
-Content-Description: 0001-xen-mce-Add-mutex-lock-and-buffer-to-avoid-sleep-in-.patch
-Content-Disposition: attachment;
-	filename="0001-xen-mce-Add-mutex-lock-and-buffer-to-avoid-sleep-in-.patch";
-	size=2676; creation-date="Fri, 08 Jun 2012 09:28:53 GMT";
-	modification-date="Fri, 08 Jun 2012 17:07:04 GMT"
-Content-Transfer-Encoding: base64
-
-RnJvbSBhOWM1ZjI5MzMwYTA1NjI5MTM1NmI5MTI4MTZiNWIyZTBlMDYxYTMwIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBMaXUsIEppbnNvbmcgPGppbnNvbmcubGl1QGludGVsLmNvbT4K
-RGF0ZTogU2F0LCA5IEp1biAyMDEyIDAwOjU2OjQ2ICswODAwClN1YmplY3Q6IFtQQVRDSF0geGVu
-L21jZTogQWRkIG11dGV4IGxvY2sgYW5kIGJ1ZmZlciB0byBhdm9pZCBzbGVlcCBpbiBhdG9taWMg
-Y29udGV4dAoKY29weV90b191c2VyIG1pZ2h0IHNsZWVwIGFuZCBwcmludCBhIHN0YWNrIHRyYWNl
-IGlmIGl0IGlzIGV4ZWN1dGVkCmluIGFuIGF0b21pYyBzcGlubG9jayBjb250ZXh0LiBUaGlzIHBh
-dGNoIGFkZCBhIG11dGV4IGxvY2sgYW5kIGEKYnVmZmVyIHRvIGF2b2lkIHRoZSBjYXNlLgoKUmVw
-b3J0ZWQtYnk6IEtvbnJhZCBSemVzenV0ZWsgV2lsayA8a29ucmFkLndpbGtAb3JhY2xlLmNvbT4K
-U2lnbmVkLW9mZi1ieTogTGl1LCBKaW5zb25nIDxqaW5zb25nLmxpdUBpbnRlbC5jb20+Ci0tLQog
-ZHJpdmVycy94ZW4vbWNlbG9nLmMgfCAgIDIwICsrKysrKysrKysrKysrKystLS0tCiAxIGZpbGVz
-IGNoYW5nZWQsIDE2IGluc2VydGlvbnMoKyksIDQgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEv
-ZHJpdmVycy94ZW4vbWNlbG9nLmMgYi9kcml2ZXJzL3hlbi9tY2Vsb2cuYwppbmRleCA3MmU4N2Qy
-Li40MDQ2ZjAxIDEwMDY0NAotLS0gYS9kcml2ZXJzL3hlbi9tY2Vsb2cuYworKysgYi9kcml2ZXJz
-L3hlbi9tY2Vsb2cuYwpAQCAtNTYsMTIgKzU2LDE0IEBAIHN0YXRpYyBzdHJ1Y3QgbWNpbmZvX2xv
-Z2ljYWxfY3B1ICpnX3BoeXNpbmZvOwogc3RhdGljIHVpbnQzMl90IG5jcHVzOwogCiBzdGF0aWMg
-REVGSU5FX1NQSU5MT0NLKG1jZWxvZ19sb2NrKTsKK3N0YXRpYyBERUZJTkVfTVVURVgoeGVuX21j
-ZV9jaHJkZXZfcmVhZF9tdXRleCk7CiAKIHN0YXRpYyBzdHJ1Y3QgeGVuX21jZV9sb2cgeGVuX21j
-ZWxvZyA9IHsKIAkuc2lnbmF0dXJlCT0gWEVOX01DRV9MT0dfU0lHTkFUVVJFLAogCS5sZW4JCT0g
-WEVOX01DRV9MT0dfTEVOLAogCS5yZWNvcmRsZW4JPSBzaXplb2Yoc3RydWN0IHhlbl9tY2UpLAog
-fTsKK3N0YXRpYyBzdHJ1Y3QgeGVuX21jZV9sb2cgeGVuX21jZWxvZ191OwogCiBzdGF0aWMgREVG
-SU5FX1NQSU5MT0NLKHhlbl9tY2VfY2hyZGV2X3N0YXRlX2xvY2spOwogc3RhdGljIGludCB4ZW5f
-bWNlX2NocmRldl9vcGVuX2NvdW50OwkvKiAjdGltZXMgb3BlbmVkICovCkBAIC05OSw2ICsxMDEs
-MTAgQEAgc3RhdGljIGludCB4ZW5fbWNlX2NocmRldl9yZWxlYXNlKHN0cnVjdCBpbm9kZSAqaW5v
-ZGUsIHN0cnVjdCBmaWxlICpmaWxlKQogCXJldHVybiAwOwogfQogCisvKgorICogY29weV90b191
-c2VyIG1pZ2h0IHNsZWVwIGFuZCBwcmludCBhIHN0YWNrIHRyYWNlCisgKiBpZiBpdCBpcyBleGVj
-dXRlZCBpbiBhbiBhdG9taWMgc3BpbmxvY2sgY29udGV4dAorICovCiBzdGF0aWMgc3NpemVfdCB4
-ZW5fbWNlX2NocmRldl9yZWFkKHN0cnVjdCBmaWxlICpmaWxwLCBjaGFyIF9fdXNlciAqdWJ1ZiwK
-IAkJCQlzaXplX3QgdXNpemUsIGxvZmZfdCAqb2ZmKQogewpAQCAtMTA2LDkgKzExMiwxNSBAQCBz
-dGF0aWMgc3NpemVfdCB4ZW5fbWNlX2NocmRldl9yZWFkKHN0cnVjdCBmaWxlICpmaWxwLCBjaGFy
-IF9fdXNlciAqdWJ1ZiwKIAl1bnNpZ25lZCBudW07CiAJaW50IGksIGVycjsKIAorCW11dGV4X2xv
-Y2soJnhlbl9tY2VfY2hyZGV2X3JlYWRfbXV0ZXgpOworCiAJc3Bpbl9sb2NrKCZtY2Vsb2dfbG9j
-ayk7CisJbWVtY3B5KCZ4ZW5fbWNlbG9nX3UsICZ4ZW5fbWNlbG9nLCBzaXplb2Yoc3RydWN0IHhl
-bl9tY2VfbG9nKSk7CiAKIAludW0gPSB4ZW5fbWNlbG9nLm5leHQ7CisJbWVtc2V0KHhlbl9tY2Vs
-b2cuZW50cnksIDAsIG51bSAqIHNpemVvZihzdHJ1Y3QgeGVuX21jZSkpOworCXhlbl9tY2Vsb2cu
-bmV4dCA9IDA7CisJc3Bpbl91bmxvY2soJm1jZWxvZ19sb2NrKTsKIAogCS8qIE9ubHkgc3VwcG9y
-dHMgZnVsbCByZWFkcyByaWdodCBub3cgKi8KIAllcnIgPSAtRUlOVkFMOwpAQCAtMTE3LDIwICsx
-MjksMjAgQEAgc3RhdGljIHNzaXplX3QgeGVuX21jZV9jaHJkZXZfcmVhZChzdHJ1Y3QgZmlsZSAq
-ZmlscCwgY2hhciBfX3VzZXIgKnVidWYsCiAKIAllcnIgPSAwOwogCWZvciAoaSA9IDA7IGkgPCBu
-dW07IGkrKykgewotCQlzdHJ1Y3QgeGVuX21jZSAqbSA9ICZ4ZW5fbWNlbG9nLmVudHJ5W2ldOwor
-CQlzdHJ1Y3QgeGVuX21jZSAqbSA9ICZ4ZW5fbWNlbG9nX3UuZW50cnlbaV07CiAKIAkJZXJyIHw9
-IGNvcHlfdG9fdXNlcihidWYsIG0sIHNpemVvZigqbSkpOwogCQlidWYgKz0gc2l6ZW9mKCptKTsK
-IAl9CiAKLQltZW1zZXQoeGVuX21jZWxvZy5lbnRyeSwgMCwgbnVtICogc2l6ZW9mKHN0cnVjdCB4
-ZW5fbWNlKSk7Ci0JeGVuX21jZWxvZy5uZXh0ID0gMDsKKwltZW1zZXQoeGVuX21jZWxvZ191LmVu
-dHJ5LCAwLCBudW0gKiBzaXplb2Yoc3RydWN0IHhlbl9tY2UpKTsKKwl4ZW5fbWNlbG9nX3UubmV4
-dCA9IDA7CiAKIAlpZiAoZXJyKQogCQllcnIgPSAtRUZBVUxUOwogCiBvdXQ6Ci0Jc3Bpbl91bmxv
-Y2soJm1jZWxvZ19sb2NrKTsKKwltdXRleF91bmxvY2soJnhlbl9tY2VfY2hyZGV2X3JlYWRfbXV0
-ZXgpOwogCiAJcmV0dXJuIGVyciA/IGVyciA6IGJ1ZiAtIHVidWY7CiB9Ci0tIAoxLjcuMQoK
-
---_002_DE8DF0795D48FD4CA783C40EC8292335221654SHSMSX101ccrcorpi_--
