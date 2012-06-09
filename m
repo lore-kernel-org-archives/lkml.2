@@ -1,58 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755962Ab2FIJo7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jun 2012 05:44:59 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:42701 "EHLO zene.cmpxchg.org"
+	id S1751495Ab2FIKnN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jun 2012 06:43:13 -0400
+Received: from mga14.intel.com ([143.182.124.37]:6073 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751985Ab2FIJo5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jun 2012 05:44:57 -0400
-Date: Sat, 9 Jun 2012 11:44:44 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
-        rientjes@google.com, mhocko@suse.cz, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH -V8 05/16] hugetlb: avoid taking i_mmap_mutex in
- unmap_single_vma() for hugetlb
-Message-ID: <20120609094444.GG1761@cmpxchg.org>
-References: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <1339232401-14392-6-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339232401-14392-6-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	id S1750884Ab2FIKnM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Jun 2012 06:43:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="110021131"
+Date: Sat, 9 Jun 2012 11:59:02 +0100
+From: Alan Cox <alan@linux.intel.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-serial@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] serial: fix kernel-doc warnings in 8250.c
+Message-ID: <20120609115902.65fe131e@bob.linux.org.uk>
+In-Reply-To: <4FD2AC1B.6070500@xenotime.net>
+References: <4FD2AC1B.6070500@xenotime.net>
+Organization: Intel
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
+ Registered office Pipers Way, Swindon, SN3 1RJ
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 09, 2012 at 02:29:50PM +0530, Aneesh Kumar K.V wrote:
-> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-> 
-> i_mmap_mutex lock was added in unmap_single_vma by 502717f4e ("hugetlb:
-> fix linked list corruption in unmap_hugepage_range()") but we don't use
-> page->lru in unmap_hugepage_range any more.  Also the lock was taken
-> higher up in the stack in some code path.  That would result in deadlock.
-> 
-> unmap_mapping_range (i_mmap_mutex)
->  -> unmap_mapping_range_tree
->     -> unmap_mapping_range_vma
->        -> zap_page_range_single
->          -> unmap_single_vma
-> 	      -> unmap_hugepage_range (i_mmap_mutex)
-> 
-> For shared pagetable support for huge pages, since pagetable pages are ref
-> counted we don't need any lock during huge_pmd_unshare.  We do take
-> i_mmap_mutex in huge_pmd_share while walking the vma_prio_tree in mapping.
-> (39dde65c9940c97f ("shared page table for hugetlb page")).
-> 
-> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+On Fri, 08 Jun 2012 18:51:23 -0700
+Randy Dunlap <rdunlap@xenotime.net> wrote:
 
-This patch (together with the previous one) seems like a bugfix that's
-not really related to the hugetlb controller, unless I miss something.
+> From: Randy Dunlap <rdunlap@xenotime.net>
+> 
+> Fix kernel-doc warnings in drivers/tty/serial/8250/8250.c:
+> 
+> Warning(drivers/tty/serial/8250/8250.c:3128): No description found
+> for parameter 'up' Warning(drivers/tty/serial/8250/8250.c:3128):
+> Excess function parameter 'port' description in
+> 'serial8250_register_8250_port'
+> 
+> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
 
-Could you please submit the fix separately?
-
-Maybe also fold the two patches into one and make it a single bugfix
-change that gets rid of the lock by switching away from page->lru.
-
-Thanks
+Acked-by: Alan Cox <alan@linux.intel.com>
