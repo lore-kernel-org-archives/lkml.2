@@ -1,37 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754804Ab2FIJOc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jun 2012 05:14:32 -0400
-Received: from linux-sh.org ([111.68.239.195]:45238 "EHLO linux-sh.org"
+	id S1755044Ab2FIJXR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jun 2012 05:23:17 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:42682 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751798Ab2FIJOa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jun 2012 05:14:30 -0400
-Date: Sat, 9 Jun 2012 18:14:26 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Ezequiel Garcia <elezegarcia@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        <linux-sh@vger.kernel.org>
-Subject: Re: [PATCH 1/6] sh: fix compiler warning by properly inlining
- flat_set_persistent()
-Message-ID: <20120609091426.GA10170@linux-sh.org>
-References: <1339229611-2326-1-git-send-email-elezegarcia@gmail.com>
+	id S1751936Ab2FIJXP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Jun 2012 05:23:15 -0400
+Date: Sat, 9 Jun 2012 11:23:01 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
+        rientjes@google.com, mhocko@suse.cz, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH -V8 14/16] hugetlb/cgroup: add charge/uncharge calls for
+ HugeTLB alloc/free
+Message-ID: <20120609092301.GF1761@cmpxchg.org>
+References: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <1339232401-14392-15-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1339229611-2326-1-git-send-email-elezegarcia@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1339232401-14392-15-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 09, 2012 at 05:13:26AM -0300, Ezequiel Garcia wrote:
-> This patch removes the following warning:
-> fs/binfmt_flat.c:752: warning: unused variable ???persistent???
-> There is neither change in functionality, nor extra code generated.
+On Sat, Jun 09, 2012 at 02:29:59PM +0530, Aneesh Kumar K.V wrote:
+> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 > 
-> Cc: Paul Mundt <lethal@linux-sh.org>
-> Cc: <linux-sh@vger.kernel.org>
-> Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
+> This adds necessary charge/uncharge calls in the HugeTLB code.  We do
+> hugetlb cgroup charge in page alloc and uncharge in compound page destructor.
+> 
+> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+> ---
+>  mm/hugetlb.c        |   16 +++++++++++++++-
+>  mm/hugetlb_cgroup.c |    7 +------
+>  2 files changed, 16 insertions(+), 7 deletions(-)
+> 
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index bf79131..4ca92a9 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -628,6 +628,8 @@ static void free_huge_page(struct page *page)
+>  	BUG_ON(page_mapcount(page));
+>  
+>  	spin_lock(&hugetlb_lock);
+> +	hugetlb_cgroup_uncharge_page(hstate_index(h),
+> +				     pages_per_huge_page(h), page);
 
-That's what the cast was for, with what gcc version did that stop
-working?
+hugetlb_cgroup_uncharge_page() takes the hugetlb_lock, no?
+
+It's quite hard to review code that is split up like this.  Please
+always keep the introduction of new functions in the same patch that
+adds the callsite(s).
