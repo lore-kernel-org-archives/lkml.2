@@ -1,58 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762259Ab2FHXsL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 19:48:11 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:56779 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761737Ab2FHXsJ (ORCPT
+	id S932410Ab2FIAKe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 20:10:34 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:64550 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761343Ab2FIAKc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 19:48:09 -0400
-Message-ID: <1339199282.15067.3.camel@phoenix>
-Subject: [PATCH] ARM: plat-versatile: Make PLAT_VERSATILE_LEDS depend on
- LEDS_CLASS=y
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Bryan Wu <bryan.wu@canonical.com>, Richard Purdie <rpurdie@rpsys.net>,
-        linux-leds@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Date: Sat, 09 Jun 2012 07:48:02 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 8 Jun 2012 20:10:32 -0400
+MIME-Version: 1.0
+Date: Fri, 8 Jun 2012 17:10:31 -0700
+Message-ID: <CAFR8uecFzcrAYSy2ieJM5vWjNLSO3bjg20cy+B4cimHZ4RLktA@mail.gmail.com>
+Subject: [PATCH UPDATED] block: In blk_execute_rq_nowait, init rq->end_io
+ before checking for dead queue.
+From: Muthu Kumar <muthu.lkml@gmail.com>
+To: Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
+        Jej B <James.Bottomley@hansenpartnership.com>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Content-Type: multipart/mixed; boundary=20cf3079ba3af095eb04c1fef149
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-config PLAT_VERSATILE_LEDS needs LEDS_CLASS=y, otherwise I got below build
-error when CONFIG_LEDS_CLASS=m.
+--20cf3079ba3af095eb04c1fef149
+Content-Type: text/plain; charset=ISO-8859-1
 
-  LD      init/built-in.o
-arch/arm/plat-versatile/built-in.o: In function `versatile_leds_init':
-sched-clock.c:(.init.text+0x190): undefined reference to `led_classdev_register'
-make: *** [vmlinux] Error 1
+Since the queue->lock case is taken care of in the following patch:
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- arch/arm/plat-versatile/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+(http://www.spinics.net/lists/linux-scsi/msg59845.html [PATCH 1/4]
+block: Fix race on request_queue.end_io invocations)
 
-diff --git a/arch/arm/plat-versatile/Kconfig b/arch/arm/plat-versatile/Kconfig
-index 81ee7cc..62ffdc7 100644
---- a/arch/arm/plat-versatile/Kconfig
-+++ b/arch/arm/plat-versatile/Kconfig
-@@ -13,7 +13,7 @@ config PLAT_VERSATILE_FPGA_IRQ_NR
-        depends on PLAT_VERSATILE_FPGA_IRQ
- 
- config PLAT_VERSATILE_LEDS
--	def_bool y if LEDS_CLASS
-+	def_bool y if LEDS_CLASS=y
- 	depends on ARCH_REALVIEW || ARCH_VERSATILE
- 
- config PLAT_VERSATILE_SCHED_CLOCK
--- 
-1.7.9.5
+Updated the patch with just the end_io assignment before dead queue check.
 
 
+-------------
+blk-exec.c: In blk_execute_rq_nowait(), if the queue is dead, call to
+done() routine is not made. That will result in blk_execute_rq() stuck
+in wait_for_completion(). Avoid this by initializing rq->end_io to
+done() routine before we check for dead queue.
 
+Signed-off-by: Muthukumar Ratty <muthur@gmail.com>
+CC: Tejun Heo <tj@kernel.org>
+CC: Jens Axboe <axboe@kernel.dk>
+CC: James Bottomley <James.Bottomley@hansenpartnership.com>
+
+-------------
+diff --git a/block/blk-exec.c b/block/blk-exec.c
+index fb2cbd5..f8b00c7 100644
+--- a/block/blk-exec.c
++++ b/block/blk-exec.c
+@@ -53,6 +53,9 @@ void blk_execute_rq_nowait(struct request_queue *q,
+struct gendisk *bd_disk,
+        WARN_ON(irqs_disabled());
+        spin_lock_irq(q->queue_lock);
+
++       rq->rq_disk = bd_disk;
++       rq->end_io = done;
++
+        if (unlikely(blk_queue_dead(q))) {
+                spin_unlock_irq(q->queue_lock);
+                rq->errors = -ENXIO;
+@@ -61,8 +64,6 @@ void blk_execute_rq_nowait(struct request_queue *q,
+struct gendisk *bd_disk,
+                return;
+        }
+
+--20cf3079ba3af095eb04c1fef149
+Content-Type: application/octet-stream; 
+	name="blk-exec-assign-endio-before-queue-dead-check.patch"
+Content-Disposition: attachment; 
+	filename="blk-exec-assign-endio-before-queue-dead-check.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h35nsn5w0
+
+Ci0tLS0tLS0tLS0tLS0KYmxrLWV4ZWMuYzogSW4gYmxrX2V4ZWN1dGVfcnFfbm93YWl0KCksIGlm
+IHRoZSBxdWV1ZSBpcyBkZWFkLCBjYWxsIHRvCmRvbmUoKSByb3V0aW5lIGlzIG5vdCBtYWRlLiBU
+aGF0IHdpbGwgcmVzdWx0IGluIGJsa19leGVjdXRlX3JxKCkgc3R1Y2sKaW4gd2FpdF9mb3JfY29t
+cGxldGlvbigpLiBBdm9pZCB0aGlzIGJ5IGluaXRpYWxpemluZyBycS0+ZW5kX2lvIHRvCmRvbmUo
+KSByb3V0aW5lIGJlZm9yZSB3ZSBjaGVjayBmb3IgZGVhZCBxdWV1ZS4KClNpZ25lZC1vZmYtYnk6
+IE11dGh1a3VtYXIgUmF0dHkgPG11dGh1ckBnbWFpbC5jb20+CkNDOiBUZWp1biBIZW8gPHRqQGtl
+cm5lbC5vcmc+CkNDOiBKZW5zIEF4Ym9lIDxheGJvZUBrZXJuZWwuZGs+CkNDOiBKYW1lcyBCb3R0
+b21sZXkgPEphbWVzLkJvdHRvbWxleUBoYW5zZW5wYXJ0bmVyc2hpcC5jb20+CgotLS0tLS0tLS0t
+LS0tCmRpZmYgLS1naXQgYS9ibG9jay9ibGstZXhlYy5jIGIvYmxvY2svYmxrLWV4ZWMuYwppbmRl
+eCBmYjJjYmQ1Li5mOGIwMGM3IDEwMDY0NAotLS0gYS9ibG9jay9ibGstZXhlYy5jCisrKyBiL2Js
+b2NrL2Jsay1leGVjLmMKQEAgLTUzLDYgKzUzLDkgQEAgdm9pZCBibGtfZXhlY3V0ZV9ycV9ub3dh
+aXQoc3RydWN0IHJlcXVlc3RfcXVldWUgKnEsIHN0cnVjdCBnZW5kaXNrICpiZF9kaXNrLAogCVdB
+Uk5fT04oaXJxc19kaXNhYmxlZCgpKTsKIAlzcGluX2xvY2tfaXJxKHEtPnF1ZXVlX2xvY2spOwog
+CisJcnEtPnJxX2Rpc2sgPSBiZF9kaXNrOworCXJxLT5lbmRfaW8gPSBkb25lOworCiAJaWYgKHVu
+bGlrZWx5KGJsa19xdWV1ZV9kZWFkKHEpKSkgewogCQlzcGluX3VubG9ja19pcnEocS0+cXVldWVf
+bG9jayk7CiAJCXJxLT5lcnJvcnMgPSAtRU5YSU87CkBAIC02MSw4ICs2NCw2IEBAIHZvaWQgYmxr
+X2V4ZWN1dGVfcnFfbm93YWl0KHN0cnVjdCByZXF1ZXN0X3F1ZXVlICpxLCBzdHJ1Y3QgZ2VuZGlz
+ayAqYmRfZGlzaywKIAkJcmV0dXJuOwogCX0KIAotCXJxLT5ycV9kaXNrID0gYmRfZGlzazsKLQly
+cS0+ZW5kX2lvID0gZG9uZTsKIAlfX2Vsdl9hZGRfcmVxdWVzdChxLCBycSwgd2hlcmUpOwogCV9f
+YmxrX3J1bl9xdWV1ZShxKTsKIAkvKiB0aGUgcXVldWUgaXMgc3RvcHBlZCBzbyBpdCB3b24ndCBi
+ZSBydW4gKi8KLS0tLS0tLS0tLS0tLQoK
+--20cf3079ba3af095eb04c1fef149--
