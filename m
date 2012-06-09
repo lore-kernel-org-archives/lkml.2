@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754754Ab2FKOJA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 10:09:00 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:40270 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753883Ab2FKOI7 (ORCPT
+	id S1754801Ab2FKOJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 10:09:28 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:62745 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754717Ab2FKOJ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 10:08:59 -0400
-Date: Mon, 11 Jun 2012 11:08:52 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Dmitry Antipov <dmitry.antipov@linaro.org>, Ingo Molnar <mingo@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org
-Subject: Re: [PATCH] perf sched replay: fix event lookup
-Message-ID: <20120611140852.GB2202@infradead.org>
-References: <1339232758-920-1-git-send-email-dmitry.antipov@linaro.org>
- <87pq96pfj9.fsf@sejong.aot.lge.com>
+	Mon, 11 Jun 2012 10:09:27 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Subject: Re: [PATCH 0/6] drivers: randconfig patches for kernel 3.5
+Date: Sat, 9 Jun 2012 21:28:44 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: mathieu.poirier@linaro.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        unsik Kim <donari75@gmail.com>
+References: <1339194280-27475-1-git-send-email-mathieu.poirier@linaro.org> <201206090013.27149.arnd@arndb.de> <4FD3482B.5050004@gmx.de>
+In-Reply-To: <4FD3482B.5050004@gmx.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87pq96pfj9.fsf@sejong.aot.lge.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201206092128.45064.arnd@arndb.de>
+X-Provags-ID: V02:K0:24RLZxJVPcu9g+ztmKIrn5RkZ6Q5K9FCPY85oV6+0if
+ K9VnKAmTMtq+JZY+QixBz4qT5W2xtLkL6jSPJdgCCVPgKNtZHw
+ sYXDRyFbYJSqhO2FJ2A9QQvcgU6snaAGT82CE2XtqlPNUrmY1e
+ aP/olfltSQLmxQjIP0AvflmyJTCI820QPxx+GLhxkmme5mGw/3
+ 0XdqoHUsyB2lIWSHt1m5xj986X9w3UM9LPeTybWSNWmFZkTwBR
+ BC1XW8YXfb2ATo2NFACpcp9GljmRpzSJI74QdHmCMMk3hKrnq8
+ 8xfZ+tLnsqRohRBO8E/OJi8JBrYDOfHIu/F0aVkCEY2vBvM7EQ
+ 0gOr+vbLXBNMOJt2le6o=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Jun 11, 2012 at 02:46:02PM +0900, Namhyung Kim escreveu:
-> On Sat,  9 Jun 2012 13:05:58 +0400, Dmitry Antipov wrote:
-> > Use new function trace_find_event_by_name to lookup events before
-> > looking through /sys files. This helps 'perf sched replay' to map
-> > event names to IDs correctly when processing perf.data recorded
-> > on another machine.
+On Saturday 09 June 2012, Florian Tobias Schandinat wrote:
+> > 
+> > I just realized that most of these are for the same subsystem
+> > (framebuffer), so you should have kept the respective mailing list
+> > and maintainer on Cc (added now). 
+> > 
+> > The mg_disk driver is not listed in the MAINTAINERS file but
+> > has an author email listed in the file itself.
+> > 
+> > I can take the mg_disk patch into the arm-soc tree as a fix,
+> > but I'd prefer the other patches to go through the framebuffer
+> > tree.
 > 
-> Basically the same approach with the previous reply, please put this
-> into trace_event__id(). And minor nits below..
+> Applied all (including the backlight patches which are usually handled
+> by Andrew Morton) but the mg_disk patch.
 
-Well, trace_event__id() is private to evlist and evlist so far is a
-local thing, i.e. it doesn't know anything about perf.data files.
+Ok, Thanks a lot!
 
-So I think we should have a per perf.data (perf_session) method that
-knows that it shouldn't look _at all_ to /sys, but just at what came in
-the perf.data file.
+	Arnd
 
-As well when we want something that is on the running machine, even if
-we're dealing somehow with a perf.data file, we shouldn't use what is in
-it.
-
-- Arnaldo
