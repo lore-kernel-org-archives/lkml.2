@@ -1,256 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755824Ab2FIJBy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jun 2012 05:01:54 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:50766 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755216Ab2FIJAv (ORCPT
+	id S1755528Ab2FIJCb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jun 2012 05:02:31 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:59264 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754840Ab2FIJAo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jun 2012 05:00:51 -0400
+	Sat, 9 Jun 2012 05:00:44 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
         rientjes@google.com, mhocko@suse.cz, akpm@linux-foundation.org,
         hannes@cmpxchg.org
 Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -V8 13/16] hugetlb/cgroup: add hugetlb cgroup control files
-Date: Sat,  9 Jun 2012 14:29:58 +0530
-Message-Id: <1339232401-14392-14-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V8 11/16] hugetlb/cgroup: Add charge/uncharge routines for hugetlb cgroup
+Date: Sat,  9 Jun 2012 14:29:56 +0530
+Message-Id: <1339232401-14392-12-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-x-cbid: 12060909-2674-0000-0000-000004D70E9B
+x-cbid: 12060909-4790-0000-0000-00000327C662
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-Add the control files for hugetlb controller
+This patchset add the charge and uncharge routines for hugetlb cgroup.
+This will be used in later patches when we allocate/free HugeTLB
+pages.
 
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- include/linux/hugetlb.h        |    5 ++
- include/linux/hugetlb_cgroup.h |    6 ++
- mm/hugetlb.c                   |    8 +++
- mm/hugetlb_cgroup.c            |  130 ++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 149 insertions(+)
+ mm/hugetlb_cgroup.c |   87 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 87 insertions(+)
 
-diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-index 4aca057..9650bb1 100644
---- a/include/linux/hugetlb.h
-+++ b/include/linux/hugetlb.h
-@@ -4,6 +4,7 @@
- #include <linux/mm_types.h>
- #include <linux/fs.h>
- #include <linux/hugetlb_inline.h>
-+#include <linux/cgroup.h>
- 
- struct ctl_table;
- struct user_struct;
-@@ -221,6 +222,10 @@ struct hstate {
- 	unsigned int nr_huge_pages_node[MAX_NUMNODES];
- 	unsigned int free_huge_pages_node[MAX_NUMNODES];
- 	unsigned int surplus_huge_pages_node[MAX_NUMNODES];
-+#ifdef CONFIG_CGROUP_HUGETLB_RES_CTLR
-+	/* cgroup control files */
-+	struct cftype cgroup_files[5];
-+#endif
- 	char name[HSTATE_NAME_LEN];
- };
- 
-diff --git a/include/linux/hugetlb_cgroup.h b/include/linux/hugetlb_cgroup.h
-index ceff1d5..ba4836f 100644
---- a/include/linux/hugetlb_cgroup.h
-+++ b/include/linux/hugetlb_cgroup.h
-@@ -62,6 +62,7 @@ extern void hugetlb_cgroup_uncharge_page(int idx, unsigned long nr_pages,
- 					 struct page *page);
- extern void hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
- 					   struct hugetlb_cgroup *h_cg);
-+extern int hugetlb_cgroup_file_init(int idx) __init;
- #else
- static inline struct hugetlb_cgroup *hugetlb_cgroup_from_page(struct page *page)
- {
-@@ -106,5 +107,10 @@ hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
- {
- 	return;
- }
-+
-+static inline int __init hugetlb_cgroup_file_init(int idx)
-+{
-+	return 0;
-+}
- #endif  /* CONFIG_MEM_RES_CTLR_HUGETLB */
- #endif
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 1ca2d8f..bf79131 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -30,6 +30,7 @@
- #include <linux/hugetlb.h>
- #include <linux/hugetlb_cgroup.h>
- #include <linux/node.h>
-+#include <linux/hugetlb_cgroup.h>
- #include "internal.h"
- 
- const unsigned long hugetlb_zero = 0, hugetlb_infinity = ~0UL;
-@@ -1916,6 +1917,13 @@ void __init hugetlb_add_hstate(unsigned order)
- 	h->next_nid_to_free = first_node(node_states[N_HIGH_MEMORY]);
- 	snprintf(h->name, HSTATE_NAME_LEN, "hugepages-%lukB",
- 					huge_page_size(h)/1024);
-+	/*
-+	 * Add cgroup control files only if the huge page consists
-+	 * of more than two normal pages. This is because we use
-+	 * page[2].lru.next for storing cgoup details.
-+	 */
-+	if (order >= 2)
-+		hugetlb_cgroup_file_init(hugetlb_max_hstate - 1);
- 
- 	parsed_hstate = h;
- }
 diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
-index 9458fe3..2a4881d 100644
+index 20a32c5..48efd5a 100644
 --- a/mm/hugetlb_cgroup.c
 +++ b/mm/hugetlb_cgroup.c
-@@ -18,6 +18,11 @@
- #include <linux/hugetlb.h>
- #include <linux/hugetlb_cgroup.h>
- 
-+/* lifted from mem control */
-+#define MEMFILE_PRIVATE(x, val)	(((x) << 16) | (val))
-+#define MEMFILE_IDX(val)	(((val) >> 16) & 0xffff)
-+#define MEMFILE_ATTR(val)	((val) & 0xffff)
-+
- struct cgroup_subsys hugetlb_subsys __read_mostly;
- struct hugetlb_cgroup *root_h_cgroup __read_mostly;
- 
-@@ -269,6 +274,131 @@ void hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
- 	return;
+@@ -105,6 +105,93 @@ static int hugetlb_cgroup_pre_destroy(struct cgroup *cgroup)
+ 	   return -EBUSY;
  }
  
-+static ssize_t hugetlb_cgroup_read(struct cgroup *cgroup, struct cftype *cft,
-+				   struct file *file, char __user *buf,
-+				   size_t nbytes, loff_t *ppos)
++int hugetlb_cgroup_charge_page(int idx, unsigned long nr_pages,
++			       struct hugetlb_cgroup **ptr)
 +{
-+	u64 val;
-+	char str[64];
-+	int idx, name, len;
-+	struct hugetlb_cgroup *h_cg = hugetlb_cgroup_from_cgroup(cgroup);
++	int ret = 0;
++	struct res_counter *fail_res;
++	struct hugetlb_cgroup *h_cg = NULL;
++	unsigned long csize = nr_pages * PAGE_SIZE;
 +
-+	idx = MEMFILE_IDX(cft->private);
-+	name = MEMFILE_ATTR(cft->private);
++	if (hugetlb_cgroup_disabled())
++		goto done;
++	/*
++	 * We don't charge any cgroup if the compound page have less
++	 * than 3 pages.
++	 */
++	if (hstates[idx].order < 2)
++		goto done;
++again:
++	rcu_read_lock();
++	h_cg = hugetlb_cgroup_from_task(current);
++	if (!h_cg)
++		h_cg = root_h_cgroup;
 +
-+	val = res_counter_read_u64(&h_cg->hugepage[idx], name);
-+	len = scnprintf(str, sizeof(str), "%llu\n", (unsigned long long)val);
-+	return simple_read_from_buffer(buf, nbytes, ppos, str, len);
-+}
-+
-+static int hugetlb_cgroup_write(struct cgroup *cgroup, struct cftype *cft,
-+				const char *buffer)
-+{
-+	int idx, name, ret;
-+	unsigned long long val;
-+	struct hugetlb_cgroup *h_cg = hugetlb_cgroup_from_cgroup(cgroup);
-+
-+	idx = MEMFILE_IDX(cft->private);
-+	name = MEMFILE_ATTR(cft->private);
-+
-+	switch (name) {
-+	case RES_LIMIT:
-+		if (hugetlb_cgroup_is_root(h_cg)) {
-+			/* Can't set limit on root */
-+			ret = -EINVAL;
-+			break;
-+		}
-+		/* This function does all necessary parse...reuse it */
-+		ret = res_counter_memparse_write_strategy(buffer, &val);
-+		if (ret)
-+			break;
-+		ret = res_counter_set_limit(&h_cg->hugepage[idx], val);
-+		break;
-+	default:
-+		ret = -EINVAL;
-+		break;
++	if (!css_tryget(&h_cg->css)) {
++		rcu_read_unlock();
++		goto again;
 +	}
++	rcu_read_unlock();
++
++	ret = res_counter_charge(&h_cg->hugepage[idx], csize, &fail_res);
++	css_put(&h_cg->css);
++done:
++	*ptr = h_cg;
 +	return ret;
 +}
 +
-+static int hugetlb_cgroup_reset(struct cgroup *cgroup, unsigned int event)
++void hugetlb_cgroup_commit_charge(int idx, unsigned long nr_pages,
++				  struct hugetlb_cgroup *h_cg,
++				  struct page *page)
 +{
-+	int idx, name, ret = 0;
-+	struct hugetlb_cgroup *h_cg = hugetlb_cgroup_from_cgroup(cgroup);
++	if (hugetlb_cgroup_disabled() || !h_cg)
++		return;
 +
-+	idx = MEMFILE_IDX(event);
-+	name = MEMFILE_ATTR(event);
-+
-+	switch (name) {
-+	case RES_MAX_USAGE:
-+		res_counter_reset_max(&h_cg->hugepage[idx]);
-+		break;
-+	case RES_FAILCNT:
-+		res_counter_reset_failcnt(&h_cg->hugepage[idx]);
-+		break;
-+	default:
-+		ret = -EINVAL;
-+		break;
++	spin_lock(&hugetlb_lock);
++	if (hugetlb_cgroup_from_page(page)) {
++		hugetlb_cgroup_uncharge_cgroup(idx, nr_pages, h_cg);
++		goto done;
 +	}
-+	return ret;
++	set_hugetlb_cgroup(page, h_cg);
++done:
++	spin_unlock(&hugetlb_lock);
++	return;
 +}
 +
-+static char *mem_fmt(char *buf, int size, unsigned long hsize)
++void hugetlb_cgroup_uncharge_page(int idx, unsigned long nr_pages,
++				  struct page *page)
 +{
-+	if (hsize >= (1UL << 30))
-+		snprintf(buf, size, "%luGB", hsize >> 30);
-+	else if (hsize >= (1UL << 20))
-+		snprintf(buf, size, "%luMB", hsize >> 20);
-+	else
-+		snprintf(buf, size, "%luKB", hsize >> 10);
-+	return buf;
++	struct hugetlb_cgroup *h_cg;
++	unsigned long csize = nr_pages * PAGE_SIZE;
++
++	if (hugetlb_cgroup_disabled())
++		return;
++
++	spin_lock(&hugetlb_lock);
++	h_cg = hugetlb_cgroup_from_page(page);
++	if (unlikely(!h_cg)) {
++		spin_unlock(&hugetlb_lock);
++		return;
++	}
++	set_hugetlb_cgroup(page, NULL);
++	spin_unlock(&hugetlb_lock);
++
++	res_counter_uncharge(&h_cg->hugepage[idx], csize);
++	return;
 +}
 +
-+int __init hugetlb_cgroup_file_init(int idx)
++void hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
++				    struct hugetlb_cgroup *h_cg)
 +{
-+	char buf[32];
-+	struct cftype *cft;
-+	struct hstate *h = &hstates[idx];
++	unsigned long csize = nr_pages * PAGE_SIZE;
 +
-+	/* format the size */
-+	mem_fmt(buf, 32, huge_page_size(h));
++	if (hugetlb_cgroup_disabled() || !h_cg)
++		return;
 +
-+	/* Add the limit file */
-+	cft = &h->cgroup_files[0];
-+	snprintf(cft->name, MAX_CFTYPE_NAME, "%s.limit_in_bytes", buf);
-+	cft->private = MEMFILE_PRIVATE(idx, RES_LIMIT);
-+	cft->read = hugetlb_cgroup_read;
-+	cft->write_string = hugetlb_cgroup_write;
-+
-+	/* Add the usage file */
-+	cft = &h->cgroup_files[1];
-+	snprintf(cft->name, MAX_CFTYPE_NAME, "%s.usage_in_bytes", buf);
-+	cft->private = MEMFILE_PRIVATE(idx, RES_USAGE);
-+	cft->read = hugetlb_cgroup_read;
-+
-+	/* Add the MAX usage file */
-+	cft = &h->cgroup_files[2];
-+	snprintf(cft->name, MAX_CFTYPE_NAME, "%s.max_usage_in_bytes", buf);
-+	cft->private = MEMFILE_PRIVATE(idx, RES_MAX_USAGE);
-+	cft->trigger = hugetlb_cgroup_reset;
-+	cft->read = hugetlb_cgroup_read;
-+
-+	/* Add the failcntfile */
-+	cft = &h->cgroup_files[3];
-+	snprintf(cft->name, MAX_CFTYPE_NAME, "%s.failcnt", buf);
-+	cft->private  = MEMFILE_PRIVATE(idx, RES_FAILCNT);
-+	cft->trigger  = hugetlb_cgroup_reset;
-+	cft->read = hugetlb_cgroup_read;
-+
-+	/* NULL terminate the last cft */
-+	cft = &h->cgroup_files[4];
-+	memset(cft, 0, sizeof(*cft));
-+
-+	WARN_ON(cgroup_add_cftypes(&hugetlb_subsys, h->cgroup_files));
-+
-+	return 0;
++	res_counter_uncharge(&h_cg->hugepage[idx], csize);
++	return;
 +}
 +
  struct cgroup_subsys hugetlb_subsys = {
