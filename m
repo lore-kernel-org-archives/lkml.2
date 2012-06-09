@@ -1,130 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755636Ab2FIJDr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jun 2012 05:03:47 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:60680 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751045Ab2FIJAe (ORCPT
+	id S1755969Ab2FIJDv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jun 2012 05:03:51 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:51813 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755896Ab2FIJDr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jun 2012 05:00:34 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
-        rientjes@google.com, mhocko@suse.cz, akpm@linux-foundation.org,
-        hannes@cmpxchg.org
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -V8 07/16] hugetlb: add a list for tracking in-use HugeTLB pages
-Date: Sat,  9 Jun 2012 14:29:52 +0530
-Message-Id: <1339232401-14392-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-References: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-x-cbid: 12060909-8256-0000-0000-000002DBADFC
+	Sat, 9 Jun 2012 05:03:47 -0400
+From: Dmitry Antipov <dmitry.antipov@linaro.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        patches@linaro.org, Dmitry Antipov <dmitry.antipov@linaro.org>
+Subject: [PATCH] perf sched replay: fix event lookup
+Date: Sat,  9 Jun 2012 13:05:58 +0400
+Message-Id: <1339232758-920-1-git-send-email-dmitry.antipov@linaro.org>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Use new function trace_find_event_by_name to lookup events before
+looking through /sys files. This helps 'perf sched replay' to map
+event names to IDs correctly when processing perf.data recorded
+on another machine.
 
-hugepage_activelist will be used to track currently used HugeTLB pages.
-We need to find the in-use HugeTLB pages to support HugeTLB cgroup removal.
-On cgroup removal we update the page's HugeTLB cgroup to point to parent
-cgroup.
-
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Signed-off-by: Dmitry Antipov <dmitry.antipov@linaro.org>
 ---
- include/linux/hugetlb.h |    1 +
- mm/hugetlb.c            |   12 +++++++-----
- 2 files changed, 8 insertions(+), 5 deletions(-)
+ tools/perf/util/evlist.c            |   18 ++++++++++++++++--
+ tools/perf/util/trace-event-parse.c |    4 ++++
+ tools/perf/util/trace-event.h       |    1 +
+ 3 files changed, 21 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-index 0f23c18..ed550d8 100644
---- a/include/linux/hugetlb.h
-+++ b/include/linux/hugetlb.h
-@@ -211,6 +211,7 @@ struct hstate {
- 	unsigned long resv_huge_pages;
- 	unsigned long surplus_huge_pages;
- 	unsigned long nr_overcommit_huge_pages;
-+	struct list_head hugepage_activelist;
- 	struct list_head hugepage_freelists[MAX_NUMNODES];
- 	unsigned int nr_huge_pages_node[MAX_NUMNODES];
- 	unsigned int free_huge_pages_node[MAX_NUMNODES];
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index e54b695..b5b6e15 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -510,7 +510,7 @@ void copy_huge_page(struct page *dst, struct page *src)
- static void enqueue_huge_page(struct hstate *h, struct page *page)
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 4ac5f5a..7ebb9c5 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -17,6 +17,7 @@
+ #include <unistd.h>
+ 
+ #include "parse-events.h"
++#include "trace-event.h"
+ 
+ #include <sys/mman.h>
+ 
+@@ -231,12 +232,25 @@ int perf_evlist__set_tracepoints_handlers(struct perf_evlist *evlist,
+ 					  const struct perf_evsel_str_handler *assocs,
+ 					  size_t nr_assocs)
  {
- 	int nid = page_to_nid(page);
--	list_add(&page->lru, &h->hugepage_freelists[nid]);
-+	list_move(&page->lru, &h->hugepage_freelists[nid]);
- 	h->free_huge_pages++;
- 	h->free_huge_pages_node[nid]++;
++	struct event_format *event;
+ 	struct perf_evsel *evsel;
++	char *p, *sys, *name;
+ 	int err;
+-	size_t i;
++	size_t i, off;
+ 
+ 	for (i = 0; i < nr_assocs; i++) {
+-		err = trace_event__id(assocs[i].name);
++		err = -ENOENT;
++		p = strchr(assocs[i].name, ':');
++		if (!p)
++			goto out;
++		off = p - assocs[i].name;
++		sys = malloc(off + 1);
++		memcpy(sys, assocs[i].name, off);
++		sys[off] = '\0';
++		name = p + 1;
++		event = trace_find_event_by_name(sys, name);
++		err = event ? event->id : trace_event__id(assocs[i].name);
++		free(sys);
+ 		if (err < 0)
+ 			goto out;
+ 
+diff --git a/tools/perf/util/trace-event-parse.c b/tools/perf/util/trace-event-parse.c
+index df2fddb..44cbb40 100644
+--- a/tools/perf/util/trace-event-parse.c
++++ b/tools/perf/util/trace-event-parse.c
+@@ -176,6 +176,10 @@ struct event_format *trace_find_event(int type)
+ 	return pevent_find_event(pevent, type);
  }
-@@ -522,7 +522,7 @@ static struct page *dequeue_huge_page_node(struct hstate *h, int nid)
- 	if (list_empty(&h->hugepage_freelists[nid]))
- 		return NULL;
- 	page = list_entry(h->hugepage_freelists[nid].next, struct page, lru);
--	list_del(&page->lru);
-+	list_move(&page->lru, &h->hugepage_activelist);
- 	set_page_refcounted(page);
- 	h->free_huge_pages--;
- 	h->free_huge_pages_node[nid]--;
-@@ -626,10 +626,11 @@ static void free_huge_page(struct page *page)
- 	page->mapping = NULL;
- 	BUG_ON(page_count(page));
- 	BUG_ON(page_mapcount(page));
--	INIT_LIST_HEAD(&page->lru);
  
- 	spin_lock(&hugetlb_lock);
- 	if (h->surplus_huge_pages_node[nid] && huge_page_order(h) < MAX_ORDER) {
-+		/* remove the page from active list */
-+		list_del(&page->lru);
- 		update_and_free_page(h, page);
- 		h->surplus_huge_pages--;
- 		h->surplus_huge_pages_node[nid]--;
-@@ -642,6 +643,7 @@ static void free_huge_page(struct page *page)
++struct event_format *trace_find_event_by_name(const char *sys, const char *name)
++{
++	return pevent_find_event_by_name(pevent, sys, name);
++}
  
- static void prep_new_huge_page(struct hstate *h, struct page *page, int nid)
+ void print_trace_event(int cpu, void *data, int size)
  {
-+	INIT_LIST_HEAD(&page->lru);
- 	set_compound_page_dtor(page, free_huge_page);
- 	spin_lock(&hugetlb_lock);
- 	h->nr_huge_pages++;
-@@ -890,6 +892,7 @@ static struct page *alloc_buddy_huge_page(struct hstate *h, int nid)
+diff --git a/tools/perf/util/trace-event.h b/tools/perf/util/trace-event.h
+index 639852a..66f83a0 100644
+--- a/tools/perf/util/trace-event.h
++++ b/tools/perf/util/trace-event.h
+@@ -40,6 +40,7 @@ int parse_event_file(char *buf, unsigned long size, char *sys);
  
- 	spin_lock(&hugetlb_lock);
- 	if (page) {
-+		INIT_LIST_HEAD(&page->lru);
- 		r_nid = page_to_nid(page);
- 		set_compound_page_dtor(page, free_huge_page);
- 		/*
-@@ -994,7 +997,6 @@ retry:
- 	list_for_each_entry_safe(page, tmp, &surplus_list, lru) {
- 		if ((--needed) < 0)
- 			break;
--		list_del(&page->lru);
- 		/*
- 		 * This page is now managed by the hugetlb allocator and has
- 		 * no users -- drop the buddy allocator's reference.
-@@ -1009,7 +1011,6 @@ free:
- 	/* Free unnecessary surplus pages to the buddy allocator */
- 	if (!list_empty(&surplus_list)) {
- 		list_for_each_entry_safe(page, tmp, &surplus_list, lru) {
--			list_del(&page->lru);
- 			put_page(page);
- 		}
- 	}
-@@ -1909,6 +1910,7 @@ void __init hugetlb_add_hstate(unsigned order)
- 	h->free_huge_pages = 0;
- 	for (i = 0; i < MAX_NUMNODES; ++i)
- 		INIT_LIST_HEAD(&h->hugepage_freelists[i]);
-+	INIT_LIST_HEAD(&h->hugepage_activelist);
- 	h->next_nid_to_alloc = first_node(node_states[N_HIGH_MEMORY]);
- 	h->next_nid_to_free = first_node(node_states[N_HIGH_MEMORY]);
- 	snprintf(h->name, HSTATE_NAME_LEN, "hugepages-%lukB",
+ struct pevent_record *trace_peek_data(int cpu);
+ struct event_format *trace_find_event(int type);
++struct event_format *trace_find_event_by_name(const char *sys, const char *name);
+ 
+ unsigned long long
+ raw_field_value(struct event_format *event, const char *name, void *data);
 -- 
-1.7.10
+1.7.7.6
 
