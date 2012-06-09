@@ -1,55 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754980Ab2FII3R (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jun 2012 04:29:17 -0400
-Received: from he.sipsolutions.net ([78.46.109.217]:57997 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752676Ab2FII3N (ORCPT
+	id S1752568Ab2FIJAW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jun 2012 05:00:22 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:48411 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751626Ab2FIJAS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jun 2012 04:29:13 -0400
-Message-ID: <1339230544.4539.21.camel@jlt3.sipsolutions.net>
-Subject: Re: iwlwifi: kernel panic during boot due to module load order
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: donald.h.fry@intel.com, emmanuel.grumbach@intel.com,
-        linville@tuxdriver.com, wey-yi.w.guy@intel.com, ilw@linux.intel.com,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Sat, 09 Jun 2012 10:29:04 +0200
-In-Reply-To: <1339072491.3279.6.camel@lappy> (sfid-20120607_143403_120928_12961A9D)
-References: <1339072491.3279.6.camel@lappy>
-	 (sfid-20120607_143403_120928_12961A9D)
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2-1+b1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sat, 9 Jun 2012 05:00:18 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
+        rientjes@google.com, mhocko@suse.cz, akpm@linux-foundation.org,
+        hannes@cmpxchg.org
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: [PATCH -V8 00/16] hugetlb: Add HugeTLB controller to control HugeTLB allocation
+Date: Sat,  9 Jun 2012 14:29:45 +0530
+Message-Id: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.10
+x-cbid: 12060909-2000-0000-0000-000007DBE087
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-06-07 at 14:34 +0200, Sasha Levin wrote:
-> Hi all,
-> 
-> Commit cc5f7e397 ("iwlwifi: implement dynamic opmode loading") causes a
-> kernel panic during boot in the following scenario:
-> 
-> 1. All drivers are built-in.
-> 2. Due to their build order, iwl_init gets called before iwl_drv_init.
-> 3. iwl_init will call iwl_opmode_register which will iterate the new op
-> list, and cause a NULL ptr deref when trying to list_for_each_entry the
-> dev list, which won't be empty since it wasn't initialized (iwl_drv_init
-> wasn't called yet).
-> 
-> While it's possible to easily fix the actual deref, I suspect that the
-> init function call order is wrong. I've looked at getting it right in
-> the Makefile, but it seems to have specific ordering behind it, so I'd
-> rather not try patching it myself.
+Hi,
 
-Yeah, looks like we forgot about this part.
+This patchset implements a cgroup resource controller for HugeTLB
+pages. The controller allows to limit the HugeTLB usage per control
+group and enforces the controller limit during page fault. Since
+HugeTLB doesn't support page reclaim, enforcing the limit at page
+fault time implies that, the application will get SIGBUS signal if
+it tries to access HugeTLB pages beyond its limit. This requires
+the application to know beforehand how much HugeTLB pages it would
+require for its use.
 
-I think Don said he had a fix, my suggestion would be to try to just
-reorder the dvm line in the iwlwifi/Makefile to the bottom of the
-Makefile, or at least after obj-$(...) += iwlwifi.o.
+The goal is to control how many HugeTLB pages a group of task can
+allocate. It can be looked at as an extension of the existing quota
+interface which limits the number of HugeTLB pages per hugetlbfs
+superblock. HPC job scheduler requires jobs to specify their resource
+requirements in the job file. Once their requirements can be met,
+job schedulers like (SLURM) will schedule the job. We need to make sure
+that the jobs won't consume more resources than requested. If they do
+we should either error out or kill the application.
 
-johannes
+Changes from V7:
+  * Remove dependency on page cgroup.
+  * Use page[2].lru.next to store HugeTLB cgroup information.
+
+Changes from V6:
+ * Implement the controller as a seperate HugeTLB cgroup.
+ * Folded fixup patches in -mm to the original patches
+
+Changes from V5:
+ * Address review feedback.
+
+Changes from V4:
+ * Add support for charge/uncharge during page migration
+ * Drop the usage of page->lru in unmap_hugepage_range.
+
+Changes from v3:
+ * Address review feedback.
+ * Fix a bug in cgroup removal related parent charging with use_hierarchy set
+
+Changes from V2:
+* Changed the implementation to limit the HugeTLB usage during page
+  fault time. This simplifies the extension and keep it closer to
+  memcg design. This also allows to support cgroup removal with less
+  complexity. Only caveat is the application should ensure its HugeTLB
+  usage doesn't cross the cgroup limit.
+
+Changes from V1:
+* Changed the implementation as a memcg extension. We still use
+  the same logic to track the cgroup and range.
+
+Changes from RFC post:
+* Added support for HugeTLB cgroup hierarchy
+* Added support for task migration
+* Added documentation patch
+* Other bug fixes
+
+-aneesh
+
 
