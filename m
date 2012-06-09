@@ -1,54 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751860Ab2FIStw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jun 2012 14:49:52 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:43763 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751090Ab2FIStu (ORCPT
+	id S1752391Ab2FIT2o (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jun 2012 15:28:44 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:33191 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751479Ab2FIT2m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jun 2012 14:49:50 -0400
-Message-ID: <4FD39A7F.9020106@mvista.com>
-Date: Sat, 09 Jun 2012 22:48:31 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Sat, 9 Jun 2012 15:28:42 -0400
 MIME-Version: 1.0
-To: Anil Nair <anilcoll90@gmail.com>
-CC: prasannatsmkumar <prasannatsmkumar@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: Break point not hit while debugging linux kernel with kgdb
-References: <CANc+2y48M+K4jvGEes_srYO7rCQcPt4pvcxcvm-Hd+7kKJr6BQ@mail.gmail.com> <CAHkwNT=3dGTZTDWi+r7m=K=Pqgv6Txi-xKcpN_pNUJ_WbUaD4w@mail.gmail.com>
-In-Reply-To: <CAHkwNT=3dGTZTDWi+r7m=K=Pqgv6Txi-xKcpN_pNUJ_WbUaD4w@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1339232401-14392-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+References: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <1339232401-14392-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Sat, 9 Jun 2012 15:28:21 -0400
+Message-ID: <CAHGf_=oPLXvgPzeAn0Cn5Pni0NrdOzZ=hNTmAg5QACCzuv7z9A@mail.gmail.com>
+Subject: Re: [PATCH -V8 02/16] hugetlb: don't use ERR_PTR with VM_FAULT* values
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
+        rientjes@google.com, mhocko@suse.cz, akpm@linux-foundation.org,
+        hannes@cmpxchg.org, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Sat, Jun 9, 2012 at 4:59 AM, Aneesh Kumar K.V
+<aneesh.kumar@linux.vnet.ibm.com> wrote:
+> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+>
+> The current use of VM_FAULT_* codes with ERR_PTR requires us to ensure
+> VM_FAULT_* values will not exceed MAX_ERRNO value. Decouple the
+> VM_FAULT_* values from MAX_ERRNO.
+>
+> Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 
-On 06/09/2012 10:23 PM, Anil Nair wrote:
+I like this much.
 
->> Hi,
-
->> I tried to debug the linux kernel with kgdb (over serial port).
-
-> The Maintainers would never recommend the use of a debugger, it
-> results in poorly fixed patches.
-
-    Yeah, KGDB was accepted into kernel exactly for more "poorly fixed patches" 
-to appear. :-)
-
->> I have
->> configured the host and target machines and I am able to connect, step
->> in the kernel code. In gdb I gave "break usb_register_dev" and "break
->> usb_deregister_dev" and continued the execution (continue in gdb).
->> Once the desktop is up, I connected a USB device (first tried with USB
->> keyboard). Break point was not hit. I tried some more functions and
->> break points are never hit. What should I do for it? Am I missing
->> something?
-
-> You have to use gdbserver
-
-    gdbserver is only good for debugging the applications.
-
-WBR, Sergei
+ Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
