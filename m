@@ -1,189 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754642Ab2FINGC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jun 2012 09:06:02 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:42243 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753124Ab2FINGA (ORCPT
+	id S1754843Ab2FINJh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jun 2012 09:09:37 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:34905 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753662Ab2FINJf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jun 2012 09:06:00 -0400
-Message-ID: <4FD349FF.7060305@linux.vnet.ibm.com>
-Date: Sat, 09 Jun 2012 18:35:03 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
+	Sat, 9 Jun 2012 09:09:35 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
+        rientjes@google.com, mhocko@suse.cz, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH -V8 14/16] hugetlb/cgroup: add charge/uncharge calls for HugeTLB alloc/free
+In-Reply-To: <20120609092301.GF1761@cmpxchg.org>
+References: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1339232401-14392-15-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20120609092301.GF1761@cmpxchg.org>User-Agent: Notmuch/0.11.1+346~g13d19c3 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Sat, 09 Jun 2012 18:39:06 +0530
+Message-ID: <87pq98ljil.fsf@skywalker.in.ibm.com>
 MIME-Version: 1.0
-To: cheng renquan <crquan@gmail.com>
-CC: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-Subject: Re: 67 kworker threads ?
-References: <CAH5vBdLPhd8Q4ZwFP7Zy_yLfNEezRGrkeFJeO1eyh+dcF+oYsw@mail.gmail.com>
-In-Reply-To: <CAH5vBdLPhd8Q4ZwFP7Zy_yLfNEezRGrkeFJeO1eyh+dcF+oYsw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12060903-3568-0000-0000-000001F25819
+Content-Type: text/plain; charset=us-ascii
+x-cbid: 12060902-9264-0000-0000-000001AC7F41
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/09/2012 01:49 AM, cheng renquan wrote:
+Johannes Weiner <hannes@cmpxchg.org> writes:
 
-> I have kernel v3.4.0 up & running over 2 weeks on a 4-cores typical
-> lenovo laptop,
-> with suspend & resume only, every day; have just found after a resume the kernel
-> may spawn too many kworker threads, totally 67 kworker threads now,
-> I think this is abnormal
-> 
-> $ ps fu -e |awk 'NR <=2 || /[k]worker/'
-> USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
-> root         2  0.0  0.0      0     0 ?        S    Jun07   0:00 [kthreadd]
-> root     10271  0.0  0.0      0     0 ?        S    11:35   0:00  \_
-> [kworker/0:3]
-> root     11683  0.0  0.0      0     0 ?        S    11:46   0:00  \_
-> [kworker/u:0]
-> root     14364  0.0  0.0      0     0 ?        S    12:08   0:01  \_
-> [kworker/0:0]
-> root     14965  0.1  0.0      0     0 ?        S    12:13   0:03  \_
-> [kworker/u:1]
-> root     17154  0.0  0.0      0     0 ?        S    12:31   0:00  \_
-> [kworker/u:2]
-> root     17937  0.0  0.0      0     0 ?        S    12:38   0:00  \_
-> [kworker/u:3]
-> root     18286  0.0  0.0      0     0 ?        S    12:39   0:00  \_
-> [kworker/u:4]
-> root     18287  0.0  0.0      0     0 ?        S    12:39   0:00  \_
-> [kworker/u:5]
-> root     18288  0.0  0.0      0     0 ?        S    12:39   0:00  \_
-> [kworker/u:6]
-> root     18289  0.0  0.0      0     0 ?        S    12:39   0:00  \_
-> [kworker/u:7]
-> root     18290  0.0  0.0      0     0 ?        S    12:39   0:00  \_
-> [kworker/u:8]
-> root     18291  0.0  0.0      0     0 ?        S    12:39   0:00  \_
-> [kworker/u:9]
-> root     18292  0.0  0.0      0     0 ?        S    12:39   0:00  \_
-> [kworker/u:10]
-> root     18300  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/1:2]
-> root     18303  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/2:2]
-> root     18306  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/3:0]
-> root     18320  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:11]
-> root     18321  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:12]
-> root     18322  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:13]
-> root     18323  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:14]
-> root     18324  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:15]
-> root     18325  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:16]
-> root     18326  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:17]
-> root     18327  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:18]
-> root     18328  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:19]
-> root     18329  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:20]
-> root     18330  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:21]
-> root     18331  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:22]
-> root     18332  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:23]
-> root     18333  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:24]
-> root     18334  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:25]
-> root     18335  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:26]
-> root     18336  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:27]
-> root     18337  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:28]
-> root     18338  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:29]
-> root     18339  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:30]
-> root     18340  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:31]
-> root     18341  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:32]
-> root     18342  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:33]
-> root     18343  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:34]
-> root     18344  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:35]
-> root     18345  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:36]
-> root     18346  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:37]
-> root     18347  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:38]
-> root     18348  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:39]
-> root     18349  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:40]
-> root     18350  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:41]
-> root     18351  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:42]
-> root     18352  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:43]
-> root     18353  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:44]
-> root     18354  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:45]
-> root     18355  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:46]
-> root     18356  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:47]
-> root     18357  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:48]
-> root     18358  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:49]
-> root     18359  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:50]
-> root     18360  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:51]
-> root     18361  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:52]
-> root     18362  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:53]
-> root     18363  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:54]
-> root     18364  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:55]
-> root     18365  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:56]
-> root     18366  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:57]
-> root     18367  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:58]
-> root     18368  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/u:59]
-> root     18369  0.9  0.0      0     0 ?        S    13:05   0:01  \_
-> [kworker/3:1]
-> root     18370  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/0:1]
-> root     18374  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/0:2]
-> root     18380  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/1:0]
-> root     18393  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/2:0]
-> root     18506  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/3:2]
-> root     18571  0.0  0.0      0     0 ?        S    13:05   0:00  \_
-> [kworker/2:1]
+> On Sat, Jun 09, 2012 at 02:29:59PM +0530, Aneesh Kumar K.V wrote:
+>> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+>> 
+>> This adds necessary charge/uncharge calls in the HugeTLB code.  We do
+>> hugetlb cgroup charge in page alloc and uncharge in compound page destructor.
+>> 
+>> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+>> ---
+>>  mm/hugetlb.c        |   16 +++++++++++++++-
+>>  mm/hugetlb_cgroup.c |    7 +------
+>>  2 files changed, 16 insertions(+), 7 deletions(-)
+>> 
+>> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+>> index bf79131..4ca92a9 100644
+>> --- a/mm/hugetlb.c
+>> +++ b/mm/hugetlb.c
+>> @@ -628,6 +628,8 @@ static void free_huge_page(struct page *page)
+>>  	BUG_ON(page_mapcount(page));
+>>  
+>>  	spin_lock(&hugetlb_lock);
+>> +	hugetlb_cgroup_uncharge_page(hstate_index(h),
+>> +				     pages_per_huge_page(h), page);
+>
+> hugetlb_cgroup_uncharge_page() takes the hugetlb_lock, no?
+
+Yes, But this patch also modifies it to not take the lock, because we
+hold spin_lock just below in the call site. I didn't want to drop the
+lock and take it again.
+
+>
+> It's quite hard to review code that is split up like this.  Please
+> always keep the introduction of new functions in the same patch that
+> adds the callsite(s).
+
+One of the reason I split the charge/uncharge routines and the callers
+in separate patches is to make it easier for review. Irrespective of
+the call site charge/uncharge routines should be correct with respect
+to locking and other details. What I did in this patch is a small
+optimization of avoiding dropping and taking the lock again. May be the
+right approach would have been to name it __hugetlb_cgroup_uncharge_page
+and make sure the hugetlb_cgroup_uncharge_page still takes spin_lock.
+But then we don't have any callers for that.
+
+-aneesh
 
 
-Can you share your .config please?
-
-Regards,
-Srivatsa S. Bhat
 
