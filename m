@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934597Ab2FIAwH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 20:52:07 -0400
+	id S934643Ab2FIAwZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 20:52:25 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:50988 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934452Ab2FIAvM (ORCPT
+	with ESMTP id S934543Ab2FIAv1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 20:51:12 -0400
+	Fri, 8 Jun 2012 20:51:27 -0400
 From: Akinobu Mita <akinobu.mita@gmail.com>
 To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, linux-media@vger.kernel.org
-Subject: [PATCH v3 5/9] video/uvc: use memweight()
-Date: Sat,  9 Jun 2012 09:50:34 +0900
-Message-Id: <1339203038-13069-5-git-send-email-akinobu.mita@gmail.com>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org
+Subject: [PATCH v3 9/9] ext4: use memweight()
+Date: Sat,  9 Jun 2012 09:50:38 +0900
+Message-Id: <1339203038-13069-9-git-send-email-akinobu.mita@gmail.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1339203038-13069-1-git-send-email-akinobu.mita@gmail.com>
 References: <1339203038-13069-1-git-send-email-akinobu.mita@gmail.com>
@@ -20,40 +21,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use memweight() to count the total number of bits set in memory area.
+Convert ext4_count_free() to use memweight() instead of table lookup
+based counting clear bits implementation.  This change only affects
+the code segments enabled by EXT4FS_DEBUG.
+
+Note that this memweight() call can't be replaced with a single
+bitmap_weight() call, although the pointer to the memory area is
+aligned to long-word boundary.  Because the size of the memory area
+may not be a multiple of BITS_PER_LONG, then it returns wrong value on
+big-endian architecture.
+
+This also includes the following change.
+
+- Remove unnecessary map == NULL check in ext4_count_free() which
+  always takes non-null pointer as the memory area.
 
 Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: linux-media@vger.kernel.org
+Cc: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Andreas Dilger <adilger.kernel@dilger.ca>
+Cc: linux-ext4@vger.kernel.org
 ---
-No changes from v1
+v3: rewrite to keep ext4_count_free() as a wrapper for memweight()
+v2: don't remove bitmap.c which now has other than ext4_count_free()
 
- drivers/media/video/uvc/uvc_ctrl.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+ fs/ext4/bitmap.c |   11 +----------
+ 1 files changed, 1 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/media/video/uvc/uvc_ctrl.c b/drivers/media/video/uvc/uvc_ctrl.c
-index af26bbe..f7061a5 100644
---- a/drivers/media/video/uvc/uvc_ctrl.c
-+++ b/drivers/media/video/uvc/uvc_ctrl.c
-@@ -2083,7 +2083,7 @@ int uvc_ctrl_init_device(struct uvc_device *dev)
- 	/* Walk the entities list and instantiate controls */
- 	list_for_each_entry(entity, &dev->entities, list) {
- 		struct uvc_control *ctrl;
--		unsigned int bControlSize = 0, ncontrols = 0;
-+		unsigned int bControlSize = 0, ncontrols;
- 		__u8 *bmControls = NULL;
+diff --git a/fs/ext4/bitmap.c b/fs/ext4/bitmap.c
+index b319721..ff53d5d 100644
+--- a/fs/ext4/bitmap.c
++++ b/fs/ext4/bitmap.c
+@@ -13,18 +13,9 @@
  
- 		if (UVC_ENTITY_TYPE(entity) == UVC_VC_EXTENSION_UNIT) {
-@@ -2101,8 +2101,7 @@ int uvc_ctrl_init_device(struct uvc_device *dev)
- 		uvc_ctrl_prune_entity(dev, entity);
+ #ifdef EXT4FS_DEBUG
  
- 		/* Count supported controls and allocate the controls array */
--		for (i = 0; i < bControlSize; ++i)
--			ncontrols += hweight8(bmControls[i]);
-+		ncontrols = memweight(bmControls, bControlSize);
- 		if (ncontrols == 0)
- 			continue;
+-static const int nibblemap[] = {4, 3, 3, 2, 3, 2, 2, 1, 3, 2, 2, 1, 2, 1, 1, 0};
+-
+ unsigned int ext4_count_free(struct buffer_head *map, unsigned int numchars)
+ {
+-	unsigned int i, sum = 0;
+-
+-	if (!map)
+-		return 0;
+-	for (i = 0; i < numchars; i++)
+-		sum += nibblemap[map->b_data[i] & 0xf] +
+-			nibblemap[(map->b_data[i] >> 4) & 0xf];
+-	return sum;
++	return numchars * BITS_PER_BYTE - memweight(map->b_data, numchars);
+ }
  
+ #endif  /*  EXT4FS_DEBUG  */
 -- 
 1.7.7.6
 
