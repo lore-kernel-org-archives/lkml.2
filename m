@@ -1,29 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756133Ab2FISqD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jun 2012 14:46:03 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:45393 "EHLO
+	id S1751860Ab2FIStw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jun 2012 14:49:52 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:43763 "EHLO
 	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754962Ab2FISqA (ORCPT
+	by vger.kernel.org with ESMTP id S1751090Ab2FIStu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jun 2012 14:46:00 -0400
-Message-ID: <4FD39998.4020903@mvista.com>
-Date: Sat, 09 Jun 2012 22:44:40 +0400
+	Sat, 9 Jun 2012 14:49:50 -0400
+Message-ID: <4FD39A7F.9020106@mvista.com>
+Date: Sat, 09 Jun 2012 22:48:31 +0400
 From: Sergei Shtylyov <sshtylyov@mvista.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Namjae Jeon <linkinjeon@gmail.com>
-CC: James.Bottomley@HansenPartnership.com, gregkh@linuxfoundation.org,
-        mdharm-usb@one-eyed-alien.net, stern@rowland.harvard.edu,
-        bvanassche@acm.org, linux-usb@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Pankaj Kumar <pankaj.km@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [PATCH v3 3/3] usb: storage: update usb devices for write cache
- quirk in quirk list.
-References: <1339263678-4075-1-git-send-email-linkinjeon@gmail.com>
-In-Reply-To: <1339263678-4075-1-git-send-email-linkinjeon@gmail.com>
+To: Anil Nair <anilcoll90@gmail.com>
+CC: prasannatsmkumar <prasannatsmkumar@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: Break point not hit while debugging linux kernel with kgdb
+References: <CANc+2y48M+K4jvGEes_srYO7rCQcPt4pvcxcvm-Hd+7kKJr6BQ@mail.gmail.com> <CAHkwNT=3dGTZTDWi+r7m=K=Pqgv6Txi-xKcpN_pNUJ_WbUaD4w@mail.gmail.com>
+In-Reply-To: <CAHkwNT=3dGTZTDWi+r7m=K=Pqgv6Txi-xKcpN_pNUJ_WbUaD4w@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -32,51 +26,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hello.
 
-On 06/09/2012 09:41 PM, Namjae Jeon wrote:
+On 06/09/2012 10:23 PM, Anil Nair wrote:
 
-> Update information of Seagate Portable HDD and WD My Passport HDD in
-> quirk list.
+>> Hi,
 
-> Signed-off-by: Namjae Jeon<namjae.jeon@samsung.com>
-> Signed-off-by: Pankaj Kumar<pankaj.km@samsung.com>
-> Signed-off-by: Amit Sahrawat<a.sahrawat@samsung.com>
-> ---
->   drivers/usb/storage/unusual_devs.h |   24 ++++++++++++++++++++++++
->   1 file changed, 24 insertions(+)
+>> I tried to debug the linux kernel with kgdb (over serial port).
 
-> diff --git a/drivers/usb/storage/unusual_devs.h b/drivers/usb/storage/unusual_devs.h
-> index 1719886..64f0369 100644
-> --- a/drivers/usb/storage/unusual_devs.h
-> +++ b/drivers/usb/storage/unusual_devs.h
-> @@ -1267,6 +1267,18 @@ UNUSUAL_DEV( 0x0af0, 0xd357, 0x0000, 0x0000,
->   		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
->   		0 ),
->
-> +/* Reported by Namjae Jeon<namjae.jeon@samsung.com>
-> + * Even though write cache is enabled by default,
-> + * SCSI driver assume that cache is not enabled
-> + * which in turn might lead loss of data
-                               ^ to the
+> The Maintainers would never recommend the use of a debugger, it
+> results in poorly fixed patches.
 
-> + * since data still will be in cache.
-> + * So this entry is needed for assuming that cache is enabled.
-> + */
-> +UNUSUAL_DEV(0x0bc2, 0x2300, 0x0000, 0x9999,
-> +		"Seagate",
-> +		"Portable HDD",
-> +		USB_SC_DEVICE, USB_PR_DEVICE, NULL, US_FL_WRITE_CACHE),
-> +
->   /* Reported by Ben Efros<ben@pc-doctor.com>  */
->   UNUSUAL_DEV( 0x0bc2, 0x3010, 0x0000, 0x0000,
->   		"Seagate",
-> @@ -1468,6 +1480,18 @@ UNUSUAL_DEV(  0x1058, 0x0704, 0x0000, 0x9999,
->   		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
->   		US_FL_SANE_SENSE),
->
-> +/* Reported by Namjae Jeon<namjae.jeon@samsung.com>
-> + * Even though write cache is enabled by default,
-> + * SCSI driver assume that cache is not enabled
-> + * which in turn might lead loss of data
-                               ^ to the
+    Yeah, KGDB was accepted into kernel exactly for more "poorly fixed patches" 
+to appear. :-)
+
+>> I have
+>> configured the host and target machines and I am able to connect, step
+>> in the kernel code. In gdb I gave "break usb_register_dev" and "break
+>> usb_deregister_dev" and continued the execution (continue in gdb).
+>> Once the desktop is up, I connected a USB device (first tried with USB
+>> keyboard). Break point was not hit. I tried some more functions and
+>> break points are never hit. What should I do for it? Am I missing
+>> something?
+
+> You have to use gdbserver
+
+    gdbserver is only good for debugging the applications.
 
 WBR, Sergei
