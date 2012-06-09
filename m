@@ -1,90 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754202Ab2FIM4e (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jun 2012 08:56:34 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56438 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753080Ab2FIM4c (ORCPT
+	id S1754371Ab2FIM5Y (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jun 2012 08:57:24 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:40340 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753389Ab2FIM5W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jun 2012 08:56:32 -0400
-Message-ID: <1339246581.21665.150.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [ 64/82] ext4: dont trash state flags in EXT4_IOC_SETFLAGS
-From: Ben Hutchings <ben@decadent.org.uk>
-To: "Ted Ts'o" <tytso@mit.edu>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Tao Ma <boyu.mt@taobao.com>,
-        Greg KH <gregkh@linuxfoundation.org>
-Date: Sat, 09 Jun 2012 13:56:21 +0100
-In-Reply-To: <20120609023017.GB14153@thunk.org>
-References: <20120607040345.775333506@linuxfoundation.org>
-	 <1339124589.21665.106.camel@deadeye.wl.decadent.org.uk>
-	 <20120608031144.GA9722@thunk.org>
-	 <1339125708.21665.108.camel@deadeye.wl.decadent.org.uk>
-	 <20120608200553.GA1704@thunk.org>
-	 <1339196476.21665.130.camel@deadeye.wl.decadent.org.uk>
-	 <20120609023017.GB14153@thunk.org>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-wvBLwyRsmcgJA+Xkp+ph"
-X-Mailer: Evolution 3.2.2-1+b1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sat, 9 Jun 2012 08:57:22 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX19kkVATRsJk/XzwzlmWZivu67CCpaldvbVdEBY9EB
+	XcdpTn2zpfKOQb
+Message-ID: <4FD3482B.5050004@gmx.de>
+Date: Sat, 09 Jun 2012 12:57:15 +0000
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120506 Icedove/3.0.11
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: mathieu.poirier@linaro.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        unsik Kim <donari75@gmail.com>
+Subject: Re: [PATCH 0/6] drivers: randconfig patches for kernel 3.5
+References: <1339194280-27475-1-git-send-email-mathieu.poirier@linaro.org> <201206090013.27149.arnd@arndb.de>
+In-Reply-To: <201206090013.27149.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Arnd, Mathieu,
 
---=-wvBLwyRsmcgJA+Xkp+ph
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On 06/09/2012 12:13 AM, Arnd Bergmann wrote:
+> On Friday 08 June 2012, mathieu.poirier@linaro.org wrote:
+>> From: Mathieu Poirier <mathieu.poirier@linaro.org>
+>>
+>> These patches fix miscellaneous problems when working
+>> with make randconfig.  They were discovered on kernel
+>> 3.1-rc4 and sent out during the 3.4 cycle but were not
+>> ack'ed.  
+>>
+>> Sending out again for completeness.
+> 
+> Hi Mathieu,
+> 
+> I just realized that most of these are for the same subsystem
+> (framebuffer), so you should have kept the respective mailing list
+> and maintainer on Cc (added now). 
+> 
+> The mg_disk driver is not listed in the MAINTAINERS file but
+> has an author email listed in the file itself.
+> 
+> I can take the mg_disk patch into the arm-soc tree as a fix,
+> but I'd prefer the other patches to go through the framebuffer
+> tree.
 
-On Fri, 2012-06-08 at 22:30 -0400, Ted Ts'o wrote:
-> On Sat, Jun 09, 2012 at 12:01:16AM +0100, Ben Hutchings wrote:
-> > > Um, very good point.  So we should either drop this commit and wait
-> > > until the next stable release, or also pull commit b22b1f178f6 in as
-> > > well.  Basically, this commit and b22b1f178f6 should appear in the
-> > > same stable release.
-> >=20
-> > I've (re-)queued them both for 3.2.20.
->=20
-> Hey Ben,
->=20
-> If you haven't also queued b0dd6b70f0 (ext4: fix the free blocks
-> calculation for ext3 file systems w/ uninit_bg) could you do me a
-> favor and also include that in 3.2.20?  I'd really like to get that
-> into various distro kernels as quickly as possible.  (i.e., Debian,
-> et. al.)
+Applied all (including the backlight patches which are usually handled
+by Andrew Morton) but the mg_disk patch.
 
-Hmm, OK, that looks pretty serious.
 
-Ben.
+Thanks,
 
---=20
-Ben Hutchings
-73.46% of all statistics are made up.
+Florian Tobias Schandinat
 
---=-wvBLwyRsmcgJA+Xkp+ph
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+> 
+> 	Arnd
+> 
+>> Arnd Bergmann (6):
+>>   drivers/video: use correct __devexit_p annotation
+>>   mg_disk: use readb/writeb instead of inb/outb
+>>   video/ili9320: do not mark exported functions __devexit
+>>   video/console: automatically select a font
+>>   drivers/savagefb: use mdelay instead of udelay
+>>   drivers/tosa: driver needs I2C and SPI to compile
+>>
+>>  drivers/block/mg_disk.c                |   78 ++++++++++++++++----------------
+>>  drivers/video/backlight/Kconfig        |    2 +-
+>>  drivers/video/backlight/ili9320.c      |    2 +-
+>>  drivers/video/broadsheetfb.c           |    2 +-
+>>  drivers/video/console/Kconfig          |   14 ++++++
+>>  drivers/video/mbx/mbxfb.c              |    2 +-
+>>  drivers/video/savage/savagefb_driver.c |   10 ++--
+>>  7 files changed, 62 insertions(+), 48 deletions(-)
+> 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAT9NH9ee/yOyVhhEJAQrQxA/+JPK9SFm4MXwcZ6Y5ldec5Pxxq1ZSX4zn
-lHn52VQ3GT4hA/zsA0zhcF9X3aX8h0BN1PWTYz00DFpQRdu871kYQayCC1xbBQNa
-1Iq596SDfUYZ0lFH9vBpYJ/9iyHSbSE7ebzZwLikktxAPak+IKKKjsDafsE7QPWG
-TtottTlmzuIuL+Vsj2bDpqqJwEhbO2gNiLd7Zxo1Zwf7g59hJSBre91ktjV3U0Fi
-Egdd2K3Th0JxY0LiDqFvD8hsdSoMnjHLbYr3QF4z3R4HyJm6nH67VrG7ji1it8vY
-vXbv5uU3cmJX7HGijrwXmlrLUn2m8YUWkIlJaViY+v1SiJe4Vflr5FslLJPKtnMg
-+MPXfBg8QsHxsIdoF3MpURiGsV5CzWh16pruNzEbHKT1PlOdUKaEKC7GqcQacUnd
-2Tcbw4g026EhtICIUky5ipRRH+D9BzbsYT2dE8iOP+Q3QRYH3Z0w6v9QmVfZ1yog
-z/Zm0vP2sgRTP1uctKkuSaeuyaArvxWKuYsA2ZniT6hpwm0bc30J+qxfis7kV8v1
-ibDDAkUSN9mpcJe+3lHD4Lm/4IicT2YQh+mmibgbY8xPnyvS++kWIgy/N1Oim6vG
-hKgXO4lOHmwduWa71LvdVpiaTVwo8LB11DSWGS0s9GCZDCKBV2IAZaCESEM0XEpW
-jC6Gs3wQyJs=
-=HMm9
------END PGP SIGNATURE-----
-
---=-wvBLwyRsmcgJA+Xkp+ph--
