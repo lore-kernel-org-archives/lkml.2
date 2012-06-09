@@ -1,55 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755044Ab2FIJXR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jun 2012 05:23:17 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:42682 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751936Ab2FIJXP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jun 2012 05:23:15 -0400
-Date: Sat, 9 Jun 2012 11:23:01 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
-        rientjes@google.com, mhocko@suse.cz, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH -V8 14/16] hugetlb/cgroup: add charge/uncharge calls for
- HugeTLB alloc/free
-Message-ID: <20120609092301.GF1761@cmpxchg.org>
-References: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <1339232401-14392-15-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	id S1755622Ab2FIJfj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jun 2012 05:35:39 -0400
+Received: from mail1.bemta12.messagelabs.com ([216.82.250.242]:49436 "EHLO
+	mail1.bemta12.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751470Ab2FIJfh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Jun 2012 05:35:37 -0400
+X-Greylist: delayed 389 seconds by postgrey-1.27 at vger.kernel.org; Sat, 09 Jun 2012 05:35:37 EDT
+X-Env-Sender: satendra.pratap@mindspeed.com
+X-Msg-Ref: server-10.tower-137.messagelabs.com!1339234148!8358468!1
+X-Originating-IP: [199.33.64.93]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+To: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339232401-14392-15-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: dmatest to use synopsys dma driver (dw_dmac.c)
+X-KeepSent: A47B3090:4F32E90D-65257A18:003404DE;
+ type=4; flags=0; name=$KeepSent
+X-Mailer: Lotus Notes Release 8.5.2FP3 July 11, 2011
+Message-ID: <OFA47B3090.4F32E90D-ON65257A18.003404DE-65257A18.00341A63@mindspeed.com>
+From: satendra.pratap@mindspeed.com
+Date: Sat, 9 Jun 2012 14:59:06 +0530
+X-MIMETrack: Serialize by Router on IDCLNM1/Server/Mindspeed(Release 8.5.2FP3|July 10, 2011) at
+ 06/09/2012 02:59:07 PM,
+	Serialize complete at 06/09/2012 02:59:07 PM,
+	Itemize by SMTP Server on NPBLNH1/Server/Mindspeed(Release 8.5.2FP3|July 10, 2011) at
+ 06/09/2012 02:29:07 AM,
+	Serialize by Router on NPBLNH1/Server/Mindspeed(Release 8.5.2FP3|July 10, 2011) at
+ 06/09/2012 02:29:08 AM,
+	Serialize complete at 06/09/2012 02:29:08 AM
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 09, 2012 at 02:29:59PM +0530, Aneesh Kumar K.V wrote:
-> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-> 
-> This adds necessary charge/uncharge calls in the HugeTLB code.  We do
-> hugetlb cgroup charge in page alloc and uncharge in compound page destructor.
-> 
-> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-> ---
->  mm/hugetlb.c        |   16 +++++++++++++++-
->  mm/hugetlb_cgroup.c |    7 +------
->  2 files changed, 16 insertions(+), 7 deletions(-)
-> 
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index bf79131..4ca92a9 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -628,6 +628,8 @@ static void free_huge_page(struct page *page)
->  	BUG_ON(page_mapcount(page));
->  
->  	spin_lock(&hugetlb_lock);
-> +	hugetlb_cgroup_uncharge_page(hstate_index(h),
-> +				     pages_per_huge_page(h), page);
+Hi,
 
-hugetlb_cgroup_uncharge_page() takes the hugetlb_lock, no?
+We have Synopsys DMAC controller on our SoC and are trying to use open 
+source
+dw_dmac.c driver. We are using linux-3.2.2 kernel but it seems dw_dmac.c 
+does not have any support for command DMA_SLAVE_CONFIG. Later I checked 
+out that its been added in later versions of dw_dmac.c so I backported 
+dw_dmac from linux-3.4 to linux-3.2.2.
+I have tried using dmatest to validate dw_dmac.c driver. I just compile 
+kernel with dw_dmac.c and with dmatest support then I test it. (I think I 
+need not to modify dmatest in order to work with dw_dmac).
+While testing I get crashes with the ported driver (from linux-3.4 to 
+linux-3.2.2) but with the original driver in linux-3.2.2 I get no crashes 
+but "test timed out"
 
-It's quite hard to review code that is split up like this.  Please
-always keep the introduction of new functions in the same patch that
-adds the callsite(s).
+Below are the logs:
+
+1. dmatest with ported dw_dmac.c (from linux-3.4 to linux-3.2.2):
+
+dmatest started automatically and tries test with all registered 8
+channels of our dma engine but we get crashes with every channel as shown
+below:
+
+=============================================================
+
+[    0.830000] private_candidate: Checking for channel=0
+[    0.830000] private_candidate: Got channel=0
+[    0.840000] dmatest: Started 1 threads using dma0chan0
+[    0.840000] Unable to handle kernel NULL pointer dereference at virtual
+address 00000000
+[    0.840000] pgd = c0004000
+[    0.840000] [00000000] *pgd=00000000
+[    0.840000] Internal error: Oops: 5 [#1] SMP
+[    0.840000] Modules linked in:
+[    0.840000] CPU: 1    Not tainted  (3.2.2+ #176)
+[    0.840000] PC is at dwc_prep_dma_memcpy+0x60/0x1d0
+[    0.840000] LR is at dmatest_func+0x660/0xc1c
+[    0.840000] pc : [<c0188720>]    lr : [<c018622c>]    psr: 60000013
+[    0.840000] sp : df9a9e98  ip : df9a9ed8  fp : df9a9ed4
+[    0.840000] r10: 000017c7  r9 : df8a308c  r8 : 00000000
+[    0.840000] r7 : 000021c0  r6 : df8a308c  r5 : 00000000  r4 : 00000000
+[    0.840000] r3 : 000017c7  r2 : 00000000  r1 : c02f69a1  r0 : df8a308c
+[    0.840000] Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM 
+ Segment
+kernel
+[    0.840000] Control: 10c53c7d  Table: 0000404a  DAC: 00000015
+[    0.840000] Process dma0chan0-copy0 (pid: 240, stack limit = 
+0xdf9a8270)
+[    0.840000] Stack: (0xdf9a9e98 to 0xdf9aa000)
+[    0.840000] 9e80:                                                      
+00000000 003f3f00
+[    0.840000] 9ea0: 1f9f61c0 1f9fa1da c000f960 dfa01220 000017c7 00000001
+000021c0 00000000
+[    0.840000] 9ec0: 000021da df8a308c df9a9fbc df9a9ed8 c018622c c01886cc
+0000001b 00000001
+[    0.840000] 9ee0: c03ef6a8 00000000 1f9f8000 df9a9ef8 c0186664 c0043b84
+1f9f61c0 df9a8000
+[    0.840000] 9f00: df9a9fac df9a9f10 c02df464 c001d7bc df9a9f7c df9a9f20
+c0843f00 df9a9f6c
+[    0.840000] 9f20: 00000010 df9a9f08 df9a9ef8 00000001 00000004 df9a9ee8
+00000000 000017c7
+[    0.840000] 9f40: df9a9ef8 df9a9eec df96e644 00000000 df9a9ef8 00000000
+00000001 00000001
+[    0.840000] 9f60: df9a9ee8 df8a3000 00000000 df82def8 00000013 df82def4
+00000013 00000001
+[    0.840000] 9f80: 00000000 df82dee4 dfa01220 c0185bcc 00000013 df82dee4
+dfa01220 c0185bcc
+[    0.840000] 9fa0: 00000013 00000000 00000000 00000000 df9a9ff4 df9a9fc0
+c0043f80 c0185bd8
+[    0.840000] 9fc0: 00000000 dfa01220 00000000 00000000 df9a9fd0 df9a9fd0
+00000000 df82dee4
+[    0.840000] 9fe0: c0043ef0 c0029f18 00000000 df9a9ff8 c0029f18 c0043efc
+7ddfd75b effffffd
+[    0.840000] Backtrace:
+[    0.840000] [<c01886c0>] (dwc_prep_dma_memcpy+0x0/0x1d0) from 
+[<c018622c>]
+(dmatest_func+0x660/0x
+c1c)
+[    0.840000] [<c0185bcc>] (dmatest_func+0x0/0xc1c) from [<c0043f80>]
+(kthread+0x90/0x98)
+[    0.840000] [<c0043ef0>] (kthread+0x0/0x98) from [<c0029f18>]
+(do_exit+0x0/0x6d8)
+[    0.840000]  r6:c0029f18 r5:c0043ef0 r4:df82dee4
+[    0.840000] Code: e1a09006 e59f116c e3540000 e1a02004 (e5943000)
+[    0.840000] ---[ end trace cfbc40eba3a6e5e5 ]---
+[    1.070000] private_candidate: Checking for channel=0
+[    1.080000] private_candidate: Checking for channel=1
+[    1.080000] private_candidate: Got channel=1
+[    1.090000] dmatest: Started 1 threads using dma0chan1
+[    1.090000] Unable to handle kernel NULL pointer dereference at virtual
+address 00000000
+[    1.090000] pgd = c0004000
+[    1.090000] [00000000] *pgd=00000000
+[    1.090000] Internal error: Oops: 5 [#2] SMP
+[    1.090000] Modules linked in:
+[    1.090000] CPU: 1    Tainted: G      D       (3.2.2+ #176)
+[    1.090000] PC is at dwc_prep_dma_memcpy+0x60/0x1d0
+[    1.090000] LR is at dmatest_func+0x660/0xc1c
+[    1.090000] pc : [<c0188720>]    lr : [<c018622c>]    psr: 60000013
+[    1.090000] sp : df951e98  ip : df951ed8  fp : df951ed4
+[    1.090000] r10: 00001c5a  r9 : df8a3108  r8 : 00000000
+[    1.090000] r7 : 000000e7  r6 : df8a3108  r5 : 00000000  r4 : 00000000
+[    1.090000] r3 : 00001c5a  r2 : 00000000  r1 : c02f69a1  r0 : df8a3108
+[    1.090000] Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM 
+ Segment
+kernel
+[    1.090000] Control: 10c53c7d  Table: 0000404a  DAC: 00000015
+[    1.090000] Process dma0chan1-copy0 (pid: 242, stack limit = 
+0xdf950270)
+[    1.090000] Stack: (0xdf951e98 to 0xdf952000)
+[    1.090000] 1e80:                                                      
+00000000 003f3f80
+[    1.090000] 1ea0: 1f9f00e7 1f9fcc98 c000f960 dfa011e0 00001c5a 00000001
+000000e7 00000000
+[    1.090000] 1ec0: 00000c98 df8a3108 df951fbc df951ed8 c018622c c01886cc
+0000001b 00000001
+[    1.090000] 1ee0: c03ef6a8 00000000 1f9fc000 df951ef8 c0186664 c0043b84
+1f9f00e7 df950000
+[    1.090000] 1f00: df951fac df951f10 c02df464 c001d7bc df951f7c df951f20
+c0843f80 df951f6c
+[    1.090000] 1f20: 00000010 df951f08 df951ef8 00000001 00000004 df951ee8
+00000000 00001c5a
+[    1.090000] 1f40: df951ef8 df951eec dfa0fd64 00000000 df951ef8 00000000
+00000001 00000001
+[    1.090000] 1f60: df951ee8 df8a3000 00000000 df82def8 00000013 df82def4
+00000013 00000001
+[    1.090000] 1f80: 00000000 df82dee4 dfa011e0 c0185bcc 00000013 df82dee4
+dfa011e0 c0185bcc
+[    1.090000] 1fa0: 00000013 00000000 00000000 00000000 df951ff4 df951fc0
+c0043f80 c0185bd8
+[    1.090000] 1fc0: 00000000 dfa011e0 00000000 00000000 df951fd0 df951fd0
+00000000 df82dee4
+[    1.090000] 1fe0: c0043ef0 c0029f18 00000000 df951ff8 c0029f18 c0043efc
+7ddfd77b effdffdd
+[    1.090000] Backtrace:
+[    1.090000] [<c01886c0>] (dwc_prep_dma_memcpy+0x0/0x1d0) from 
+[<c018622c>]
+(dmatest_func+0x660/0x
+c1c)
+[    1.090000] [<c0185bcc>] (dmatest_func+0x0/0xc1c) from [<c0043f80>]
+(kthread+0x90/0x98)
+[    1.090000] [<c0043ef0>] (kthread+0x0/0x98) from [<c0029f18>]
+(do_exit+0x0/0x6d8)
+[    1.090000]  r6:c0029f18 r5:c0043ef0 r4:df82dee4
+[    1.090000] Code: e1a09006 e59f116c e3540000 e1a02004 (e5943000)
+[    1.090000] ---[ end trace cfbc40eba3a6e5e6 ]---
+
+
+2. dmatest with original dw_dma.c in linux-3.2.2:
+
+I tried using dmatest with the original (linux-3.2.2) dma driver 
+(dw_dmac.c)
+and got the below results (timeout for tests):
+
+[    0.800000] Bridge firewalling registered
+[    0.810000] 8021q: 802.1Q VLAN Support v1.8
+[    0.810000] dmatest: Started 1 threads using dma0chan0
+[    0.820000] dmatest: Started 1 threads using dma0chan1
+[    0.820000] dmatest: Started 1 threads using dma0chan2
+[    0.830000] dmatest: Started 1 threads using dma0chan3
+[    0.830000] dmatest: Started 1 threads using dma0chan4
+[    0.840000] dmatest: Started 1 threads using dma0chan5
+[    0.840000] dmatest: Started 1 threads using dma0chan6
+[    0.850000] dmatest: Started 1 threads using dma0chan7
+[    3.810000] dma0chan0-copy0: #0: test timed out
+[    3.820000] dma0chan1-copy0: #0: test timed out
+[    3.820000] dma0chan2-copy0: #0: test timed out
+[    3.830000] dma0chan3-copy0: #0: test timed out
+[    3.830000] dma0chan4-copy0: #0: test timed out
+[    3.840000] dma0chan5-copy0: #0: test timed out
+
+Any help is greatly appreciated. It would be of very much help is some one 
+could share their code to use dw_dmac.c.
+
+Thanks,
+Satendra
