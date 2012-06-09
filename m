@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751975Ab2FILyU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jun 2012 07:54:20 -0400
-Received: from mga11.intel.com ([192.55.52.93]:48216 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751396Ab2FILyS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jun 2012 07:54:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="163365806"
-Date: Sat, 9 Jun 2012 19:54:13 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Wanpeng Li <liwp.linux@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Wanpeng Li <liwp@linux.vnet.ibm.com>
-Subject: Re: [PATCH] mm/page-writeback.c: fix comments error in
- page-writeback.c
-Message-ID: <20120609115413.GA15811@localhost>
-References: <1339242333-3080-1-git-send-email-liwp.linux@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339242333-3080-1-git-send-email-liwp.linux@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752095Ab2FIMBe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jun 2012 08:01:34 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:61415 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751192Ab2FIMBd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Jun 2012 08:01:33 -0400
+From: Devendra Naga <devendra.aaru@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
+Cc: Devendra Naga <devendra.aaru@gmail.com>
+Subject: [PATCH 1/2] pinctrl: pinctrl-mxs: Take care of frees if the kzalloc fails
+Date: Sat,  9 Jun 2012 17:31:23 +0530
+Message-Id: <1339243283-28068-1-git-send-email-devendra.aaru@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 09, 2012 at 07:45:33PM +0800, Wanpeng Li wrote:
-> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
-> 
-> Signed-off-by: Wanpeng Li <liwp@linux.vnet.ibm.com>
-> ---
->  mm/page-writeback.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-> index 93d8d2f..c833bf0 100644
-> --- a/mm/page-writeback.c
-> +++ b/mm/page-writeback.c
-> @@ -930,7 +930,7 @@ static void bdi_update_dirty_ratelimit(struct backing_dev_info *bdi,
->  	 */
->  
->  	/*
-> -	 * dirty_ratelimit will follow balanced_dirty_ratelimit iff
-> +	 * dirty_ratelimit will follow balanced_dirty_ratelimit if
+if there is no purecfg , the group pointer is allocated using kzalloc and if it
+fails to allocate, we wont free the new_map,
 
-That 'iff' means 'if and only if'.
+if config is true, we call kmemdup and if it
+fails to do so we wont free the allocated group if there is no purecfg.
 
->  	 * task_ratelimit is on the same side of dirty_ratelimit, too.
->  	 * For example, when
->  	 * - dirty_ratelimit > balanced_dirty_ratelimit
-> @@ -941,7 +941,7 @@ static void bdi_update_dirty_ratelimit(struct backing_dev_info *bdi,
->  	 * feel and care are stable dirty rate and small position error.
->  	 *
->  	 * |task_ratelimit - dirty_ratelimit| is used to limit the step size
-> -	 * and filter out the sigular points of balanced_dirty_ratelimit. Which
-> +	 * and filter out the singular points of balanced_dirty_ratelimit. Which
->  	 * keeps jumping around randomly and can even leap far away at times
->  	 * due to the small 200ms estimation period of dirty_rate (we want to
->  	 * keep that period small to reduce time lags).
+fix this by doing the frees of new_map pointer and group pointers.
 
-I'll fold the above chunk into the previous patch.
+Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
+---
+ drivers/pinctrl/pinctrl-mxs.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
-Thanks,
-Fengguang
+diff --git a/drivers/pinctrl/pinctrl-mxs.c b/drivers/pinctrl/pinctrl-mxs.c
+index 556e45a..9d46303 100644
+--- a/drivers/pinctrl/pinctrl-mxs.c
++++ b/drivers/pinctrl/pinctrl-mxs.c
+@@ -107,8 +107,10 @@ static int mxs_dt_node_to_map(struct pinctrl_dev *pctldev,
+ 
+ 		/* Compose group name */
+ 		group = kzalloc(length, GFP_KERNEL);
+-		if (!group)
+-			return -ENOMEM;
++		if (!group) {
++			ret = -ENOMEM;
++			goto free;
++		}
+ 		snprintf(group, length, "%s.%d", np->name, reg);
+ 		new_map[i].data.mux.group = group;
+ 		i++;
+@@ -118,7 +120,7 @@ static int mxs_dt_node_to_map(struct pinctrl_dev *pctldev,
+ 		pconfig = kmemdup(&config, sizeof(config), GFP_KERNEL);
+ 		if (!pconfig) {
+ 			ret = -ENOMEM;
+-			goto free;
++			goto free_group;
+ 		}
+ 
+ 		new_map[i].type = PIN_MAP_TYPE_CONFIGS_GROUP;
+@@ -133,6 +135,9 @@ static int mxs_dt_node_to_map(struct pinctrl_dev *pctldev,
+ 
+ 	return 0;
+ 
++free_group:
++	if (!purecfg)
++		free(group);
+ free:
+ 	kfree(new_map);
+ 	return ret;
+-- 
+1.7.9.5
+
