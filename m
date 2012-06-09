@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753968Ab2FIP75 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jun 2012 11:59:57 -0400
-Received: from smtp.newsguy.com ([74.209.136.69]:62537 "EHLO smtp.newsguy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752798Ab2FIP7z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jun 2012 11:59:55 -0400
-X-Greylist: delayed 703 seconds by postgrey-1.27 at vger.kernel.org; Sat, 09 Jun 2012 11:59:55 EDT
-Message-ID: <4FD37014.90109@newsguy.com>
-Date: Sat, 09 Jun 2012 08:47:32 -0700
-From: Mike Dunn <mikedunn@newsguy.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120606 Thunderbird/10.0.4
+	id S1754210Ab2FIQFy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jun 2012 12:05:54 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:57085 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752260Ab2FIQFw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Jun 2012 12:05:52 -0400
+Date: Sat, 9 Jun 2012 13:05:47 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Tim Chen <tim.c.chen@linux.intel.com>, David Ahern <dsahern@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: Does perf inject preserve call chain data?
+Message-ID: <20120609160547.GB9954@infradead.org>
+References: <1337712585.3796.186.camel@schen9-DESK>
+ <4FBC0C10.8010801@gmail.com>
+ <20120608143843.GA9954@infradead.org>
+ <1339173896.3796.230.camel@schen9-DESK>
+ <4FD232B7.7080905@gmail.com>
+ <1339175828.3796.232.camel@schen9-DESK>
+ <20120608195215.GO28225@tassilo.jf.intel.com>
 MIME-Version: 1.0
-To: Shmulik Ladkani <shmulik@jungo.com>
-CC: David Woodhouse <dwmw2@infradead.org>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Ivan Djelic <ivan.djelic@parrot.com>
-Subject: Re: [PATCH] mtd: nand: Properly initialize 'mtd->bitflip_threshold'
- prior 'scan_bbt()' is invoked
-References: <20120608182906.57b4844a@halley>
-In-Reply-To: <20120608182906.57b4844a@halley>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120608195215.GO28225@tassilo.jf.intel.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/08/2012 08:29 AM, Shmulik Ladkani wrote:
-> As of edbc454 [mtd: driver _read() returns max_bitflips; mtd_read()
-> returns -EUCLEAN], 'mtd->bitflip_threshold' must be set for mtd devices
-> having ECC, prior any 'mtd_read()' call.
-> Otherwise, 'mtd_read()' will falsely return -EUCLEAN.
-> 
-> Normally, 'mtd->bitflip_threshold' is initialized when the MTD is added.
-> 
-> However, this is too late for NAND MTDs, as 'scan_bbt()' is invoked
-> prior the existing initialization of 'mtd->bitflip_threshold'.
-> 
-> This is a problem since 'scan_bbt()' calls 'mtd_read()', in the case
-> of a flash-based bad block table.
-> It resulted in a falsely reported bitflips indication during BBT read,
-> which lead to constant scrubbing of the flash BBT blocks.
-> 
-> Initialize 'mtd->bitflip_threshold' to its default value (if not already
-> set by the driver), prior invocation of 'scan_bbt()'.
-> 
+Em Fri, Jun 08, 2012 at 12:52:15PM -0700, Andi Kleen escreveu:
+> > > > # ./perf record -a -g -o - sleep 5 |perf inject -v -b  | perf report -g  -i -
+ 
+> Since this is a common pattern with files, but files are often slow
+> and too big, it would be nice if perf had a standard alias that
+> started this pipeline.
 
-Reviewed-by: Mike Dunn <mikedunn@newsguy.com>
-(FWIW).
+I think this is just a variation for perf top, no? I.e. something like:
 
-Thanks again Shmulik!
+# perf top -a -G sleep 5
 
-I do think that the patch to the bad block management code that I sent yesterday
-should be merged as well.  That would also fix the problem, but it is really a
-separate issue.  Currently ecc errors are ignored during the BBT creation for
-some configurations but not for others (like that of the mxc_nand controller).
-It looks like an oversight that they are not ignored, and it makes sense to
-ignore them, since there's not much you can do about them at that time, and the
-functions higher up the call stack don't try to.
+Where it would figure out that since a workload was specified, it should
+just not be refreshing the screen every N seconds but wait till the
+workload to finish and then present the results, without setting up any
+perf.data files.
 
-Thanks,
-Mike
+It could as well show intermediate results every N seconds, but not decay
+the older samples, which should be even nicer.
+
+For workloads where there is output it could spawn another term, in the
+background perhaps, that the user could switch to to see the samples
+collected while the workload runs.
+
+That looks like a step in the direction of more integration of the
+tools, i.e. record + report (top being report+refreshes) + annotate.
+
+- Arnaldo
