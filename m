@@ -1,52 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753705Ab2FIQd0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jun 2012 12:33:26 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:58417 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750806Ab2FIQdZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jun 2012 12:33:25 -0400
+	id S1754662Ab2FIQrz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jun 2012 12:47:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39607 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750994Ab2FIQry (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Jun 2012 12:47:54 -0400
+Date: Sat, 9 Jun 2012 13:47:42 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Stephane Eranian <eranian@google.com>, jolsa@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: perf user tool precise attribute broken in 3.5rc1+
+Message-ID: <20120609164742.GD21250@infradead.org>
+References: <20120607202355.GQ27374@one.firstfloor.org>
+ <CABPqkBQ99PTsET6c_NPuioLUr_yto4x=6EBQ1K73N4ratHz48A@mail.gmail.com>
+ <20120607205836.GT27374@one.firstfloor.org>
+ <20120607212759.GD30641@infradead.org>
+ <20120608031009.GV27374@one.firstfloor.org>
+ <20120608154814.GA21250@infradead.org>
+ <20120608165319.GC27374@one.firstfloor.org>
+ <20120608215549.GF27374@one.firstfloor.org>
 MIME-Version: 1.0
-X-Originating-IP: [41.212.116.88]
-In-Reply-To: <CAPM=9tzWypx7Q49YZW4C9oHre47GEAfh=bhsCSREr2U=rAwobA@mail.gmail.com>
-References: <CAHVUoiQywo=iHKsXQbsVE7coc1FL9A9qy_a71SK94MKNV0GrKA@mail.gmail.com>
- <CAHVUoiTZmzT3vquaDC65AJfCFZX-qS5GjgjP2-+=0R7skurW5g@mail.gmail.com>
- <CAHVUoiQgcAMr874d_yPfm9ssUBOoX+dNLy9JNCOCYwOCrAKXFQ@mail.gmail.com>
- <CAH3drwacayQEZHOidbKKuJ3KjgMvnYzT0S0csXV2QwSmC8nMxg@mail.gmail.com>
- <CAHVUoiSP7SiWCtYPvKS_1RuAV0upWmT06iN7PR1OE6NAtToirQ@mail.gmail.com>
- <CAH3drwY61Pqd1MXxgSYcHRPJF5pNr2FO7vrM_ULsRvMbYjAhOQ@mail.gmail.com>
- <CAHVUoiTfooPSXyVpcg_Khc0rzYcnmvAbGgfko42hOxqukc91_A@mail.gmail.com>
- <CAHVUoiT4FgEpWDLtzfTUaCTZR-rFx76E3MRdU8u9swjmt74ZQg@mail.gmail.com>
- <CAHVUoiQ_csZeh_FEHaCkqmJvHO+Q=UF2Va7V19G-3C=xuSYTPw@mail.gmail.com>
- <CAH3drwa430bUfY4ZHfn583JsDU5Sv=Y5WNaWWXm=a1XpJV1iSw@mail.gmail.com>
- <CAHVUoiSc3mzrgXFo5-T=8HiYYUBTMhBz0TqUwZSek=VgfhEoyA@mail.gmail.com>
- <CAH3drwaBpnicWa=pLnKgxsOb4t4pe_kHsYZW4Ei3q-wKYCA=Rw@mail.gmail.com>
- <CAHVUoiS-rCKnpodhq+8ptg3cVzm2wvtiGf7y4pamnGmz82BDEw@mail.gmail.com> <CAPM=9tzWypx7Q49YZW4C9oHre47GEAfh=bhsCSREr2U=rAwobA@mail.gmail.com>
-From: Brian Gitonga Marete <marete@toshnix.com>
-Date: Sat, 9 Jun 2012 19:33:04 +0300
-Message-ID: <CAHVUoiQWX-shQHYahxh3pqcyKyeiLLj6X9bG_0DVShBr8qDwUQ@mail.gmail.com>
-Subject: Re: [Regression] [Radeon] Stream command failures and render problems
- in Evergreen (Radeon HD 5600) in kernel 3.4
-To: Dave Airlie <airlied@gmail.com>
-Cc: Jerome Glisse <j.glisse@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        David Airlie <airlied@linux.ie>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Jerome Glisse <jglisse@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120608215549.GF27374@one.firstfloor.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 9, 2012 at 7:29 PM, Dave Airlie <airlied@gmail.com> wrote:
->>
->> OK. I actually hadn't gotten around to testing yet. Will do so later
->> today. About libdrm, should I test against git or the Ubuntu version?
->
-> The Ubuntu version please.
+Em Fri, Jun 08, 2012 at 11:55:49PM +0200, Andi Kleen escreveu:
+> Hmm, the problem disappeared after a make clean. 
+> Sorry for the noise.
 
-OK.Will report results in a couple of hours :)
+Thanks for the feedback!
 
--- 
-Brian Gitonga Marete
-Toshnix Systems - http://toshnix.com
+- Arnaldo
