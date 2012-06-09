@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934618Ab2FIAwP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 20:52:15 -0400
+	id S934631Ab2FIAwV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 20:52:21 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:59124 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934538Ab2FIAvU (ORCPT
+	with ESMTP id S934539Ab2FIAvZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 20:51:20 -0400
+	Fri, 8 Jun 2012 20:51:25 -0400
 From: Akinobu Mita <akinobu.mita@gmail.com>
 To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
 Cc: Akinobu Mita <akinobu.mita@gmail.com>, Jan Kara <jack@suse.cz>,
-        linux-ext4@vger.kernel.org
-Subject: [PATCH v3 7/9] ext2: use memweight()
-Date: Sat,  9 Jun 2012 09:50:36 +0900
-Message-Id: <1339203038-13069-7-git-send-email-akinobu.mita@gmail.com>
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org
+Subject: [PATCH v3 8/9] ext3: use memweight()
+Date: Sat,  9 Jun 2012 09:50:37 +0900
+Message-Id: <1339203038-13069-8-git-send-email-akinobu.mita@gmail.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1339203038-13069-1-git-send-email-akinobu.mita@gmail.com>
 References: <1339203038-13069-1-git-send-email-akinobu.mita@gmail.com>
@@ -21,9 +21,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert ext2_count_free() to use memweight() instead of table lookup
+Convert ext3_count_free() to use memweight() instead of table lookup
 based counting clear bits implementation.  This change only affects
-the code segments enabled by EXT2FS_DEBUG.
+the code segments enabled by EXT3FS_DEBUG.
 
 Note that this memweight() call can't be replaced with a single
 bitmap_weight() call, although the pointer to the memory area is
@@ -33,33 +33,47 @@ big-endian architecture.
 
 This also includes the following changes.
 
-- Remove unnecessary map == NULL check in ext2_count_free() which
+- Remove unnecessary map == NULL check in ext3_count_free() which
   always takes non-null pointer as the memory area.
 
-- Fix printk format warning that only reveals with EXT2FS_DEBUG.
+- Fix printk format warning that only reveals with EXT3FS_DEBUG.
 
 Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
 Cc: Jan Kara <jack@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andreas Dilger <adilger.kernel@dilger.ca>
 Cc: linux-ext4@vger.kernel.org
 ---
-v3: rewrite to keep ext2_count_free() as a wrapper for memweight()
+v3: rewrite to keep ext3_count_free() as a wrapper for memweight()
 
- fs/ext2/balloc.c |   14 ++------------
- fs/ext2/ialloc.c |    1 +
- 2 files changed, 3 insertions(+), 12 deletions(-)
+ fs/ext3/balloc.c |    2 +-
+ fs/ext3/bitmap.c |   12 +-----------
+ 2 files changed, 2 insertions(+), 12 deletions(-)
 
-diff --git a/fs/ext2/balloc.c b/fs/ext2/balloc.c
-index 1c36139..376aa77 100644
---- a/fs/ext2/balloc.c
-+++ b/fs/ext2/balloc.c
-@@ -1444,19 +1444,9 @@ ext2_fsblk_t ext2_new_block(struct inode *inode, unsigned long goal, int *errp)
+diff --git a/fs/ext3/balloc.c b/fs/ext3/balloc.c
+index 25cd608..90d901f 100644
+--- a/fs/ext3/balloc.c
++++ b/fs/ext3/balloc.c
+@@ -1813,7 +1813,7 @@ ext3_fsblk_t ext3_count_free_blocks(struct super_block *sb)
+ 	brelse(bitmap_bh);
+ 	printk("ext3_count_free_blocks: stored = "E3FSBLK
+ 		", computed = "E3FSBLK", "E3FSBLK"\n",
+-	       le32_to_cpu(es->s_free_blocks_count),
++	       (ext3_fsblk_t)le32_to_cpu(es->s_free_blocks_count),
+ 		desc_count, bitmap_count);
+ 	return bitmap_count;
+ #else
+diff --git a/fs/ext3/bitmap.c b/fs/ext3/bitmap.c
+index 909d13e..ef9c643 100644
+--- a/fs/ext3/bitmap.c
++++ b/fs/ext3/bitmap.c
+@@ -11,19 +11,9 @@
  
- #ifdef EXT2FS_DEBUG
+ #ifdef EXT3FS_DEBUG
  
 -static const int nibblemap[] = {4, 3, 3, 2, 3, 2, 2, 1, 3, 2, 2, 1, 2, 1, 1, 0};
 -
--unsigned long ext2_count_free (struct buffer_head * map, unsigned int numchars)
-+unsigned long ext2_count_free(struct buffer_head *map, unsigned int numchars)
+ unsigned long ext3_count_free (struct buffer_head * map, unsigned int numchars)
  {
 -	unsigned int i;
 -	unsigned long sum = 0;
@@ -73,19 +87,7 @@ index 1c36139..376aa77 100644
 +	return numchars * BITS_PER_BYTE - memweight(map->b_data, numchars);
  }
  
- #endif  /*  EXT2FS_DEBUG  */
-diff --git a/fs/ext2/ialloc.c b/fs/ext2/ialloc.c
-index c13eb7b..8f370e01 100644
---- a/fs/ext2/ialloc.c
-+++ b/fs/ext2/ialloc.c
-@@ -644,6 +644,7 @@ unsigned long ext2_count_free_inodes (struct super_block * sb)
- 	}
- 	brelse(bitmap_bh);
- 	printk("ext2_count_free_inodes: stored = %lu, computed = %lu, %lu\n",
-+		(unsigned long)
- 		percpu_counter_read(&EXT2_SB(sb)->s_freeinodes_counter),
- 		desc_count, bitmap_count);
- 	return desc_count;
+ #endif  /*  EXT3FS_DEBUG  */
 -- 
 1.7.7.6
 
