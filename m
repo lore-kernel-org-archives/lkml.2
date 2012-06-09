@@ -1,96 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932410Ab2FIAKe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 20:10:34 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:64550 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761343Ab2FIAKc (ORCPT
+	id S932826Ab2FIANj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 20:13:39 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:59529 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932084Ab2FIANh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 20:10:32 -0400
+	Fri, 8 Jun 2012 20:13:37 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: mathieu.poirier@linaro.org
+Subject: Re: [PATCH 0/6] drivers: randconfig patches for kernel 3.5
+Date: Sat, 9 Jun 2012 00:13:27 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-fbdev@vger.kernel.org,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        unsik Kim <donari75@gmail.com>
+References: <1339194280-27475-1-git-send-email-mathieu.poirier@linaro.org>
+In-Reply-To: <1339194280-27475-1-git-send-email-mathieu.poirier@linaro.org>
 MIME-Version: 1.0
-Date: Fri, 8 Jun 2012 17:10:31 -0700
-Message-ID: <CAFR8uecFzcrAYSy2ieJM5vWjNLSO3bjg20cy+B4cimHZ4RLktA@mail.gmail.com>
-Subject: [PATCH UPDATED] block: In blk_execute_rq_nowait, init rq->end_io
- before checking for dead queue.
-From: Muthu Kumar <muthu.lkml@gmail.com>
-To: Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
-        Jej B <James.Bottomley@hansenpartnership.com>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Content-Type: multipart/mixed; boundary=20cf3079ba3af095eb04c1fef149
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201206090013.27149.arnd@arndb.de>
+X-Provags-ID: V02:K0:vfmqRqdEfgoj3dw1zuh4I3Vhq3iesjhcNdEMMDhkRjJ
+ kNo76yVG1hJvQobX5+fF7zrqhGzsxIXBDzTBNNF+eHy+vAP8f+
+ xWwJx8AQOmUOweYU6YDyqFPT85FpQq8slLQmv5UmH/ec6vsBeq
+ uozvEjPeQdIo+qlGZ2E8zEqFfuMzZTdkmBPtlR2xDCax9l3EXy
+ OUq1jH8AogQjs0zzg1Sb873NIbkND7D8AHDPpwN7LjEp2nvLgT
+ AiGmuXrXBQv+pMkjrBB8huWuePvXrsRLacptyft4wweE++WUYQ
+ ZhNU9HOY0jA6ekiDOhzCsonkKhal8vlRuIvDy0oBVqX7gpCAS0
+ 50+36EgRmTHBpokkqR8M=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---20cf3079ba3af095eb04c1fef149
-Content-Type: text/plain; charset=ISO-8859-1
+On Friday 08 June 2012, mathieu.poirier@linaro.org wrote:
+> From: Mathieu Poirier <mathieu.poirier@linaro.org>
+> 
+> These patches fix miscellaneous problems when working
+> with make randconfig.  They were discovered on kernel
+> 3.1-rc4 and sent out during the 3.4 cycle but were not
+> ack'ed.  
+> 
+> Sending out again for completeness.
 
-Since the queue->lock case is taken care of in the following patch:
+Hi Mathieu,
 
-(http://www.spinics.net/lists/linux-scsi/msg59845.html [PATCH 1/4]
-block: Fix race on request_queue.end_io invocations)
+I just realized that most of these are for the same subsystem
+(framebuffer), so you should have kept the respective mailing list
+and maintainer on Cc (added now). 
 
-Updated the patch with just the end_io assignment before dead queue check.
+The mg_disk driver is not listed in the MAINTAINERS file but
+has an author email listed in the file itself.
 
+I can take the mg_disk patch into the arm-soc tree as a fix,
+but I'd prefer the other patches to go through the framebuffer
+tree.
 
--------------
-blk-exec.c: In blk_execute_rq_nowait(), if the queue is dead, call to
-done() routine is not made. That will result in blk_execute_rq() stuck
-in wait_for_completion(). Avoid this by initializing rq->end_io to
-done() routine before we check for dead queue.
+	Arnd
 
-Signed-off-by: Muthukumar Ratty <muthur@gmail.com>
-CC: Tejun Heo <tj@kernel.org>
-CC: Jens Axboe <axboe@kernel.dk>
-CC: James Bottomley <James.Bottomley@hansenpartnership.com>
-
--------------
-diff --git a/block/blk-exec.c b/block/blk-exec.c
-index fb2cbd5..f8b00c7 100644
---- a/block/blk-exec.c
-+++ b/block/blk-exec.c
-@@ -53,6 +53,9 @@ void blk_execute_rq_nowait(struct request_queue *q,
-struct gendisk *bd_disk,
-        WARN_ON(irqs_disabled());
-        spin_lock_irq(q->queue_lock);
-
-+       rq->rq_disk = bd_disk;
-+       rq->end_io = done;
-+
-        if (unlikely(blk_queue_dead(q))) {
-                spin_unlock_irq(q->queue_lock);
-                rq->errors = -ENXIO;
-@@ -61,8 +64,6 @@ void blk_execute_rq_nowait(struct request_queue *q,
-struct gendisk *bd_disk,
-                return;
-        }
-
---20cf3079ba3af095eb04c1fef149
-Content-Type: application/octet-stream; 
-	name="blk-exec-assign-endio-before-queue-dead-check.patch"
-Content-Disposition: attachment; 
-	filename="blk-exec-assign-endio-before-queue-dead-check.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h35nsn5w0
-
-Ci0tLS0tLS0tLS0tLS0KYmxrLWV4ZWMuYzogSW4gYmxrX2V4ZWN1dGVfcnFfbm93YWl0KCksIGlm
-IHRoZSBxdWV1ZSBpcyBkZWFkLCBjYWxsIHRvCmRvbmUoKSByb3V0aW5lIGlzIG5vdCBtYWRlLiBU
-aGF0IHdpbGwgcmVzdWx0IGluIGJsa19leGVjdXRlX3JxKCkgc3R1Y2sKaW4gd2FpdF9mb3JfY29t
-cGxldGlvbigpLiBBdm9pZCB0aGlzIGJ5IGluaXRpYWxpemluZyBycS0+ZW5kX2lvIHRvCmRvbmUo
-KSByb3V0aW5lIGJlZm9yZSB3ZSBjaGVjayBmb3IgZGVhZCBxdWV1ZS4KClNpZ25lZC1vZmYtYnk6
-IE11dGh1a3VtYXIgUmF0dHkgPG11dGh1ckBnbWFpbC5jb20+CkNDOiBUZWp1biBIZW8gPHRqQGtl
-cm5lbC5vcmc+CkNDOiBKZW5zIEF4Ym9lIDxheGJvZUBrZXJuZWwuZGs+CkNDOiBKYW1lcyBCb3R0
-b21sZXkgPEphbWVzLkJvdHRvbWxleUBoYW5zZW5wYXJ0bmVyc2hpcC5jb20+CgotLS0tLS0tLS0t
-LS0tCmRpZmYgLS1naXQgYS9ibG9jay9ibGstZXhlYy5jIGIvYmxvY2svYmxrLWV4ZWMuYwppbmRl
-eCBmYjJjYmQ1Li5mOGIwMGM3IDEwMDY0NAotLS0gYS9ibG9jay9ibGstZXhlYy5jCisrKyBiL2Js
-b2NrL2Jsay1leGVjLmMKQEAgLTUzLDYgKzUzLDkgQEAgdm9pZCBibGtfZXhlY3V0ZV9ycV9ub3dh
-aXQoc3RydWN0IHJlcXVlc3RfcXVldWUgKnEsIHN0cnVjdCBnZW5kaXNrICpiZF9kaXNrLAogCVdB
-Uk5fT04oaXJxc19kaXNhYmxlZCgpKTsKIAlzcGluX2xvY2tfaXJxKHEtPnF1ZXVlX2xvY2spOwog
-CisJcnEtPnJxX2Rpc2sgPSBiZF9kaXNrOworCXJxLT5lbmRfaW8gPSBkb25lOworCiAJaWYgKHVu
-bGlrZWx5KGJsa19xdWV1ZV9kZWFkKHEpKSkgewogCQlzcGluX3VubG9ja19pcnEocS0+cXVldWVf
-bG9jayk7CiAJCXJxLT5lcnJvcnMgPSAtRU5YSU87CkBAIC02MSw4ICs2NCw2IEBAIHZvaWQgYmxr
-X2V4ZWN1dGVfcnFfbm93YWl0KHN0cnVjdCByZXF1ZXN0X3F1ZXVlICpxLCBzdHJ1Y3QgZ2VuZGlz
-ayAqYmRfZGlzaywKIAkJcmV0dXJuOwogCX0KIAotCXJxLT5ycV9kaXNrID0gYmRfZGlzazsKLQly
-cS0+ZW5kX2lvID0gZG9uZTsKIAlfX2Vsdl9hZGRfcmVxdWVzdChxLCBycSwgd2hlcmUpOwogCV9f
-YmxrX3J1bl9xdWV1ZShxKTsKIAkvKiB0aGUgcXVldWUgaXMgc3RvcHBlZCBzbyBpdCB3b24ndCBi
-ZSBydW4gKi8KLS0tLS0tLS0tLS0tLQoK
---20cf3079ba3af095eb04c1fef149--
+> Arnd Bergmann (6):
+>   drivers/video: use correct __devexit_p annotation
+>   mg_disk: use readb/writeb instead of inb/outb
+>   video/ili9320: do not mark exported functions __devexit
+>   video/console: automatically select a font
+>   drivers/savagefb: use mdelay instead of udelay
+>   drivers/tosa: driver needs I2C and SPI to compile
+> 
+>  drivers/block/mg_disk.c                |   78 ++++++++++++++++----------------
+>  drivers/video/backlight/Kconfig        |    2 +-
+>  drivers/video/backlight/ili9320.c      |    2 +-
+>  drivers/video/broadsheetfb.c           |    2 +-
+>  drivers/video/console/Kconfig          |   14 ++++++
+>  drivers/video/mbx/mbxfb.c              |    2 +-
+>  drivers/video/savage/savagefb_driver.c |   10 ++--
+>  7 files changed, 62 insertions(+), 48 deletions(-)
