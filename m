@@ -1,99 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755051Ab2FIJE0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jun 2012 05:04:26 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:42184 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751853Ab2FIJAV (ORCPT
+	id S1753818Ab2FIJKl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jun 2012 05:10:41 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:45173 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751045Ab2FIJKj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jun 2012 05:00:21 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
-        rientjes@google.com, mhocko@suse.cz, akpm@linux-foundation.org,
-        hannes@cmpxchg.org
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -V8 01/16] hugetlb: rename max_hstate to hugetlb_max_hstate
-Date: Sat,  9 Jun 2012 14:29:46 +0530
-Message-Id: <1339232401-14392-2-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-References: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-x-cbid: 12060909-5564-0000-0000-000003223EB4
+	Sat, 9 Jun 2012 05:10:39 -0400
+Date: Sat, 9 Jun 2012 12:10:19 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: David Howells <dhowells@redhat.com>, Nick Cheng <nick.cheng@areca.com.tw>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [patch] [SCSI] arcmsr: fix misuse of | instead of &
+Message-ID: <20120609091018.GC877@elgon.mountain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+ARCMSR_ARC1880_DiagWrite_ENABLE is 0x00000080 so (x | 0x00000080) is
+never zero.  The intent here was to test that loop until
+ARCMSR_ARC1880_DiagWrite_ENABLE was turned on, but because the test was
+wrong, we would do five loops regardless of whether it succeed or not.
 
-Rename max_hstate to hugetlb_max_hstate. We will be using this from other
-subsystems like hugetlb controller in later patches.
+Also I simplified the condition a little by removing the unused
+assignement.
 
-Acked-by: David Rientjes <rientjes@google.com>
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Acked-by: Hillf Danton <dhillf@gmail.com>
-Acked-by: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 ---
- mm/hugetlb.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+Static checker stuff.  I do not own this hardware.
 
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index e198831..c868309 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -34,7 +34,7 @@ const unsigned long hugetlb_zero = 0, hugetlb_infinity = ~0UL;
- static gfp_t htlb_alloc_mask = GFP_HIGHUSER;
- unsigned long hugepages_treat_as_movable;
- 
--static int max_hstate;
-+static int hugetlb_max_hstate;
- unsigned int default_hstate_idx;
- struct hstate hstates[HUGE_MAX_HSTATE];
- 
-@@ -46,7 +46,7 @@ static unsigned long __initdata default_hstate_max_huge_pages;
- static unsigned long __initdata default_hstate_size;
- 
- #define for_each_hstate(h) \
--	for ((h) = hstates; (h) < &hstates[max_hstate]; (h)++)
-+	for ((h) = hstates; (h) < &hstates[hugetlb_max_hstate]; (h)++)
- 
- /*
-  * Protects updates to hugepage_freelists, nr_huge_pages, and free_huge_pages
-@@ -1897,9 +1897,9 @@ void __init hugetlb_add_hstate(unsigned order)
- 		printk(KERN_WARNING "hugepagesz= specified twice, ignoring\n");
- 		return;
- 	}
--	BUG_ON(max_hstate >= HUGE_MAX_HSTATE);
-+	BUG_ON(hugetlb_max_hstate >= HUGE_MAX_HSTATE);
- 	BUG_ON(order == 0);
--	h = &hstates[max_hstate++];
-+	h = &hstates[hugetlb_max_hstate++];
- 	h->order = order;
- 	h->mask = ~((1ULL << (order + PAGE_SHIFT)) - 1);
- 	h->nr_huge_pages = 0;
-@@ -1920,10 +1920,10 @@ static int __init hugetlb_nrpages_setup(char *s)
- 	static unsigned long *last_mhp;
- 
- 	/*
--	 * !max_hstate means we haven't parsed a hugepagesz= parameter yet,
-+	 * !hugetlb_max_hstate means we haven't parsed a hugepagesz= parameter yet,
- 	 * so this hugepages= parameter goes to the "default hstate".
- 	 */
--	if (!max_hstate)
-+	if (!hugetlb_max_hstate)
- 		mhp = &default_hstate_max_huge_pages;
- 	else
- 		mhp = &parsed_hstate->max_huge_pages;
-@@ -1942,7 +1942,7 @@ static int __init hugetlb_nrpages_setup(char *s)
- 	 * But we need to allocate >= MAX_ORDER hstates here early to still
- 	 * use the bootmem allocator.
- 	 */
--	if (max_hstate && parsed_hstate->order >= MAX_ORDER)
-+	if (hugetlb_max_hstate && parsed_hstate->order >= MAX_ORDER)
- 		hugetlb_hstate_alloc_pages(parsed_hstate);
- 
- 	last_mhp = mhp;
--- 
-1.7.10
-
+diff --git a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
+index cbde1dc..def24a1 100644
+--- a/drivers/scsi/arcmsr/arcmsr_hba.c
++++ b/drivers/scsi/arcmsr/arcmsr_hba.c
+@@ -2821,7 +2821,7 @@ static void arcmsr_hardware_reset(struct AdapterControlBlock *acb)
+ 	int i, count = 0;
+ 	struct MessageUnit_A __iomem *pmuA = acb->pmuA;
+ 	struct MessageUnit_C __iomem *pmuC = acb->pmuC;
+-	u32 temp = 0;
++
+ 	/* backup pci config data */
+ 	printk(KERN_NOTICE "arcmsr%d: executing hw bus reset .....\n", acb->host->host_no);
+ 	for (i = 0; i < 64; i++) {
+@@ -2839,7 +2839,7 @@ static void arcmsr_hardware_reset(struct AdapterControlBlock *acb)
+ 			writel(0x2, &pmuC->write_sequence);
+ 			writel(0x7, &pmuC->write_sequence);
+ 			writel(0xD, &pmuC->write_sequence);
+-		} while ((((temp = readl(&pmuC->host_diagnostic)) | ARCMSR_ARC1880_DiagWrite_ENABLE) == 0) && (count < 5));
++		} while (((readl(&pmuC->host_diagnostic) & ARCMSR_ARC1880_DiagWrite_ENABLE) == 0) && (count < 5));
+ 		writel(ARCMSR_ARC1880_RESET_ADAPTER, &pmuC->host_diagnostic);
+ 	} else {
+ 		pci_write_config_byte(acb->pdev, 0x84, 0x20);
