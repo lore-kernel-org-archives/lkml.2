@@ -1,42 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754969Ab2FICXM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 22:23:12 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59094 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752081Ab2FICXL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 22:23:11 -0400
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, Jiri Kosina <trivial@kernel.org>
-Subject: [PATCH] lib: correct link to the original source for div64_u64
-Date: Sat,  9 Jun 2012 11:22:47 +0900
-Message-Id: <1339208567-18089-1-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
+	id S1756925Ab2FICX7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 22:23:59 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:48663 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755811Ab2FICXc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 22:23:32 -0400
+Date: Fri, 8 Jun 2012 22:23:26 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Chris Jones <chrisjones@spin.net.au>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Kernel version numbering plans
+Message-ID: <20120609022326.GA14153@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Chris Jones <chrisjones@spin.net.au>, linux-kernel@vger.kernel.org
+References: <4FD2AA36.5010308@spin.net.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FD2AA36.5010308@spin.net.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Jiri Kosina <trivial@kernel.org>
----
- lib/div64.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+On Sat, Jun 09, 2012 at 11:43:18AM +1000, Chris Jones wrote:
+> What's the plan when we approach kernel version 4.0?
+> 
+> Will we be moving in to version 4.x or staying in the 3.x numbers
+> for the time being?
 
-diff --git a/lib/div64.c b/lib/div64.c
-index 3ea2490..a163b6c 100644
---- a/lib/div64.c
-+++ b/lib/div64.c
-@@ -87,7 +87,7 @@ EXPORT_SYMBOL(div_s64_rem);
-  * by the book 'Hacker's Delight'.  The original source and full proof
-  * can be found here and is available for use without restriction.
-  *
-- * 'http://www.hackersdelight.org/HDcode/newCode/divDouble.c'
-+ * 'http://www.hackersdelight.org/HDcode/newCode/divDouble.c.txt'
-  */
- #ifndef div64_u64
- u64 div64_u64(u64 dividend, u64 divisor)
--- 
-1.7.7.6
+The default is that we would stay with 3.x --- I don't see any reason
+why we would go to 4.x any time in the near future.
 
+       	     	       	   	       - Ted
