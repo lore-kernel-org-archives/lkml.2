@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752971Ab2FIGa4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jun 2012 02:30:56 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37293 "EHLO mail.zytor.com"
+	id S1753112Ab2FIGcn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jun 2012 02:32:43 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:37306 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752439Ab2FIGaq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jun 2012 02:30:46 -0400
-Message-ID: <4FD2ED7B.3020002@zytor.com>
-Date: Fri, 08 Jun 2012 23:30:19 -0700
+	id S1751861Ab2FIGcm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Jun 2012 02:32:42 -0400
+Message-ID: <4FD2EDFD.1060508@zytor.com>
+Date: Fri, 08 Jun 2012 23:32:29 -0700
 From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
@@ -41,10 +41,11 @@ On 06/08/2012 07:58 PM, Steven Rostedt wrote:
 > FYI, I based this off of tip/x86/debug.
 > 
 
-No, you didn't... you based it on an ancient (pre-v3.3) version of
-tip/x86/debug...
+Hm... actually it looks more like you reused an old branch and forgot to
+actually push it out.
 
 	-hpa
+
 
 -- 
 H. Peter Anvin, Intel Open Source Technology Center
