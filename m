@@ -1,133 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754855Ab2FIJAn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jun 2012 05:00:43 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:38548 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753709Ab2FIJAh (ORCPT
+	id S1755098Ab2FIJCv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jun 2012 05:02:51 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:48409 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754610Ab2FIJAk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jun 2012 05:00:37 -0400
+	Sat, 9 Jun 2012 05:00:40 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
         rientjes@google.com, mhocko@suse.cz, akpm@linux-foundation.org,
         hannes@cmpxchg.org
 Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -V8 03/16] hugetlb: add an inline helper for finding hstate index
-Date: Sat,  9 Jun 2012 14:29:48 +0530
-Message-Id: <1339232401-14392-4-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V8 10/16] hugetlb/cgroup: Add the cgroup pointer to page lru
+Date: Sat,  9 Jun 2012 14:29:55 +0530
+Message-Id: <1339232401-14392-11-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-x-cbid: 12060909-8878-0000-0000-000002D541B5
+x-cbid: 12060909-9574-0000-0000-0000031B75C5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-Add an inline helper and use it in the code.
+Add the hugetlb cgroup pointer to 3rd page lru.next. This limit
+the usage to hugetlb cgroup to only hugepages with 3 or more
+normal pages. I guess that is an acceptable limitation.
 
-Acked-by: David Rientjes <rientjes@google.com>
-Acked-by: Michal Hocko <mhocko@suse.cz>
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- include/linux/hugetlb.h |    6 ++++++
- mm/hugetlb.c            |   20 +++++++++++---------
- 2 files changed, 17 insertions(+), 9 deletions(-)
+ include/linux/hugetlb_cgroup.h |   31 +++++++++++++++++++++++++++++++
+ mm/hugetlb.c                   |    4 ++++
+ 2 files changed, 35 insertions(+)
 
-diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-index d5d6bbe..217f528 100644
---- a/include/linux/hugetlb.h
-+++ b/include/linux/hugetlb.h
-@@ -302,6 +302,11 @@ static inline unsigned hstate_index_to_shift(unsigned index)
- 	return hstates[index].order + PAGE_SHIFT;
- }
+diff --git a/include/linux/hugetlb_cgroup.h b/include/linux/hugetlb_cgroup.h
+index 5794be4..ceff1d5 100644
+--- a/include/linux/hugetlb_cgroup.h
++++ b/include/linux/hugetlb_cgroup.h
+@@ -26,6 +26,26 @@ struct hugetlb_cgroup {
+ };
  
-+static inline int hstate_index(struct hstate *h)
+ #ifdef CONFIG_CGROUP_HUGETLB_RES_CTLR
++static inline struct hugetlb_cgroup *hugetlb_cgroup_from_page(struct page *page)
 +{
-+	return h - hstates;
++	if (!PageHuge(page))
++		return NULL;
++	if (compound_order(page) < 3)
++		return NULL;
++	return (struct hugetlb_cgroup *)page[2].lru.next;
 +}
 +
++static inline
++int set_hugetlb_cgroup(struct page *page, struct hugetlb_cgroup *h_cg)
++{
++	if (!PageHuge(page))
++		return -1;
++	if (compound_order(page) < 3)
++		return -1;
++	page[2].lru.next = (void *)h_cg;
++	return 0;
++}
++
+ static inline bool hugetlb_cgroup_disabled(void)
+ {
+ 	if (hugetlb_subsys.disabled)
+@@ -43,6 +63,17 @@ extern void hugetlb_cgroup_uncharge_page(int idx, unsigned long nr_pages,
+ extern void hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
+ 					   struct hugetlb_cgroup *h_cg);
  #else
- struct hstate {};
- #define alloc_huge_page_node(h, nid) NULL
-@@ -320,6 +325,7 @@ static inline unsigned int pages_per_huge_page(struct hstate *h)
- 	return 1;
- }
- #define hstate_index_to_shift(index) 0
-+#define hstate_index(h) 0
- #endif
- 
- #endif /* _LINUX_HUGETLB_H */
++static inline struct hugetlb_cgroup *hugetlb_cgroup_from_page(struct page *page)
++{
++	return NULL;
++}
++
++static inline
++int set_hugetlb_cgroup(struct page *page, struct hugetlb_cgroup *h_cg)
++{
++	return 0;
++}
++
+ static inline bool hugetlb_cgroup_disabled(void)
+ {
+ 	return true;
 diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 34a7e23..b1e0ed1 100644
+index e899a2d..1ca2d8f 100644
 --- a/mm/hugetlb.c
 +++ b/mm/hugetlb.c
-@@ -1646,7 +1646,7 @@ static int hugetlb_sysfs_add_hstate(struct hstate *h, struct kobject *parent,
- 				    struct attribute_group *hstate_attr_group)
- {
- 	int retval;
--	int hi = h - hstates;
-+	int hi = hstate_index(h);
+@@ -28,6 +28,7 @@
  
- 	hstate_kobjs[hi] = kobject_create_and_add(h->name, parent);
- 	if (!hstate_kobjs[hi])
-@@ -1741,11 +1741,13 @@ void hugetlb_unregister_node(struct node *node)
- 	if (!nhs->hugepages_kobj)
- 		return;		/* no hstate attributes */
+ #include <linux/io.h>
+ #include <linux/hugetlb.h>
++#include <linux/hugetlb_cgroup.h>
+ #include <linux/node.h>
+ #include "internal.h"
  
--	for_each_hstate(h)
--		if (nhs->hstate_kobjs[h - hstates]) {
--			kobject_put(nhs->hstate_kobjs[h - hstates]);
--			nhs->hstate_kobjs[h - hstates] = NULL;
-+	for_each_hstate(h) {
-+		int idx = hstate_index(h);
-+		if (nhs->hstate_kobjs[idx]) {
-+			kobject_put(nhs->hstate_kobjs[idx]);
-+			nhs->hstate_kobjs[idx] = NULL;
- 		}
-+	}
- 
- 	kobject_put(nhs->hugepages_kobj);
- 	nhs->hugepages_kobj = NULL;
-@@ -1848,7 +1850,7 @@ static void __exit hugetlb_exit(void)
- 	hugetlb_unregister_all_nodes();
- 
- 	for_each_hstate(h) {
--		kobject_put(hstate_kobjs[h - hstates]);
-+		kobject_put(hstate_kobjs[hstate_index(h)]);
+@@ -591,6 +592,7 @@ static void update_and_free_page(struct hstate *h, struct page *page)
+ 				1 << PG_active | 1 << PG_reserved |
+ 				1 << PG_private | 1 << PG_writeback);
  	}
- 
- 	kobject_put(hugepages_kobj);
-@@ -1869,7 +1871,7 @@ static int __init hugetlb_init(void)
- 		if (!size_to_hstate(default_hstate_size))
- 			hugetlb_add_hstate(HUGETLB_PAGE_ORDER);
- 	}
--	default_hstate_idx = size_to_hstate(default_hstate_size) - hstates;
-+	default_hstate_idx = hstate_index(size_to_hstate(default_hstate_size));
- 	if (default_hstate_max_huge_pages)
- 		default_hstate.max_huge_pages = default_hstate_max_huge_pages;
- 
-@@ -2687,7 +2689,7 @@ retry:
++	BUG_ON(hugetlb_cgroup_from_page(page));
+ 	set_compound_page_dtor(page, NULL);
+ 	set_page_refcounted(page);
+ 	arch_release_hugepage(page);
+@@ -643,6 +645,7 @@ static void prep_new_huge_page(struct hstate *h, struct page *page, int nid)
+ 	INIT_LIST_HEAD(&page->lru);
+ 	set_compound_page_dtor(page, free_huge_page);
+ 	spin_lock(&hugetlb_lock);
++	set_hugetlb_cgroup(page, NULL);
+ 	h->nr_huge_pages++;
+ 	h->nr_huge_pages_node[nid]++;
+ 	spin_unlock(&hugetlb_lock);
+@@ -892,6 +895,7 @@ static struct page *alloc_buddy_huge_page(struct hstate *h, int nid)
+ 		INIT_LIST_HEAD(&page->lru);
+ 		r_nid = page_to_nid(page);
+ 		set_compound_page_dtor(page, free_huge_page);
++		set_hugetlb_cgroup(page, NULL);
+ 		/*
+ 		 * We incremented the global counters already
  		 */
- 		if (unlikely(PageHWPoison(page))) {
- 			ret = VM_FAULT_HWPOISON |
--			      VM_FAULT_SET_HINDEX(h - hstates);
-+				VM_FAULT_SET_HINDEX(hstate_index(h));
- 			goto backout_unlocked;
- 		}
- 	}
-@@ -2760,7 +2762,7 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 			return 0;
- 		} else if (unlikely(is_hugetlb_entry_hwpoisoned(entry)))
- 			return VM_FAULT_HWPOISON_LARGE |
--			       VM_FAULT_SET_HINDEX(h - hstates);
-+				VM_FAULT_SET_HINDEX(hstate_index(h));
- 	}
- 
- 	ptep = huge_pte_alloc(mm, address, huge_page_size(h));
 -- 
 1.7.10
 
