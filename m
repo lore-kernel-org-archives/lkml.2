@@ -1,83 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753825Ab2FIMlv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jun 2012 08:41:51 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:33470 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752491Ab2FIMlt (ORCPT
+	id S1753965Ab2FIMoP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jun 2012 08:44:15 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23142 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752335Ab2FIMoO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jun 2012 08:41:49 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX1+Y0YolJrKYNWl6OjAqkKI3GeXL+kk9t1AC4hso1N
-	sCQcppQe7WBSLJ
-Message-ID: <4FD3448B.2050806@gmx.de>
-Date: Sat, 09 Jun 2012 12:41:47 +0000
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120506 Icedove/3.0.11
-MIME-Version: 1.0
-To: Emil Goode <emilgoode@gmail.com>
-CC: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] video: bfin_adv7393fb: Convert to kstrtouint_from_user
-References: <1338310620-6886-1-git-send-email-emilgoode@gmail.com>
-In-Reply-To: <1338310620-6886-1-git-send-email-emilgoode@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 9 Jun 2012 08:44:14 -0400
+X-Authority-Analysis: v=2.0 cv=eIiRfQV1 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=NfCaXVXfj-EA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=VwQbUJbxAAAA:8 a=SVpVqYEkgjDRaienuYwA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1339245852.13377.71.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 0/3 v2] [GIT PULL][3.6] x86: cr2 and cmpxchg issues of
+ NMI
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Sat, 09 Jun 2012 08:44:12 -0400
+In-Reply-To: <4FD2EDFD.1060508@zytor.com>
+References: <20120609020257.248773533@goodmis.org>
+	 <1339210729.13377.68.camel@gandalf.stny.rr.com>
+	 <4FD2EDFD.1060508@zytor.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1+b1 
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/29/2012 04:57 PM, Emil Goode wrote:
-> This patch removes a call to the deprecated simple_strtoul function
-> and simplifies the code by replacing two function calls with one
-> call to kstrtouint_from_user.
-> 
-> -Simplify the adv7393_write_proc function by replacing the
->  simple_strtoul and copy_from_user calls with one call
->  to kstrtouint_from_user.
-> 
-> -Change the count parameter from unsigned long to size_t as
->  this is the type that the kstrtouint_from_user function expects.
->  (size_t is what will be passed to the adv7393_write_proc function
->  by the proc write handler function proc_file_write anyway)
-> 
-> Signed-off-by: Emil Goode <emilgoode@gmail.com>
+On Fri, 2012-06-08 at 23:32 -0700, H. Peter Anvin wrote:
 
-Applied.
+> Hm... actually it looks more like you reused an old branch and forgot to
+> actually push it out.
 
+Actully, I pushed it out, I just forgot to check to see if it succeeded:
+
+error: failed to push some refs to 'gitolite@ra.kernel.org:/pub/scm/linux/kernel/git/rostedt/linux-trace.git'
+To prevent you from losing history, non-fast-forward updates were rejected
+Merge the remote changes (e.g. 'git pull') before pushing again.  See the
+'Note about fast-forwards' section of 'git push --help' for details.
+
+This is also why I include the HEAD SHA1 in my pull messages ;-)
+
+Force pushed just made.
 
 Thanks,
 
-Florian Tobias Schandinat
+-- Steve
 
-> ---
->  drivers/video/bfin_adv7393fb.c |    6 ++----
->  1 file changed, 2 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/video/bfin_adv7393fb.c b/drivers/video/bfin_adv7393fb.c
-> index 1a268a2..8c6edfd 100644
-> --- a/drivers/video/bfin_adv7393fb.c
-> +++ b/drivers/video/bfin_adv7393fb.c
-> @@ -353,18 +353,16 @@ adv7393_read_proc(char *page, char **start, off_t off,
->  
->  static int
->  adv7393_write_proc(struct file *file, const char __user * buffer,
-> -		   unsigned long count, void *data)
-> +		   size_t count, void *data)
->  {
->  	struct adv7393fb_device *fbdev = data;
-> -	char line[8];
->  	unsigned int val;
->  	int ret;
->  
-> -	ret = copy_from_user(line, buffer, count);
-> +	ret = kstrtouint_from_user(buffer, count, 0, &val);
->  	if (ret)
->  		return -EFAULT;
->  
-> -	val = simple_strtoul(line, NULL, 0);
->  	adv7393_write(fbdev->client, val >> 8, val & 0xff);
->  
->  	return count;
 
