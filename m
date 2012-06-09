@@ -1,39 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756925Ab2FICX7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 22:23:59 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:48663 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755811Ab2FICXc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 22:23:32 -0400
-Date: Fri, 8 Jun 2012 22:23:26 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Chris Jones <chrisjones@spin.net.au>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Kernel version numbering plans
-Message-ID: <20120609022326.GA14153@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Chris Jones <chrisjones@spin.net.au>, linux-kernel@vger.kernel.org
-References: <4FD2AA36.5010308@spin.net.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FD2AA36.5010308@spin.net.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1756141Ab2FICZc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 22:25:32 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62270 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751467Ab2FICZa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Jun 2012 22:25:30 -0400
+From: Wanpeng Li <liwp.linux@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Gavin Shan <shangw@linux.vnet.ibm.com>,
+        Wanpeng Li <liwp.linux@gmail.com>,
+        Wanpeng Li <liwp@linux.vnet.ibm.com>
+Subject: [PATCH] mm:fix kernel-doc warnings
+Date: Sat,  9 Jun 2012 10:24:56 +0800
+Message-Id: <1339208696-7429-1-git-send-email-liwp.linux@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 09, 2012 at 11:43:18AM +1000, Chris Jones wrote:
-> What's the plan when we approach kernel version 4.0?
-> 
-> Will we be moving in to version 4.x or staying in the 3.x numbers
-> for the time being?
+From: Wanpeng Li <liwp@linux.vnet.ibm.com>
 
-The default is that we would stay with 3.x --- I don't see any reason
-why we would go to 4.x any time in the near future.
+fix kernel-doc warnings just like this one:
 
-       	     	       	   	       - Ted
+Warning(../mm/page_cgroup.c:432): No description found for parameter 'id'
+Warning(../mm/page_cgroup.c:432): Excess function parameter 'mem' description in 'swap_cgroup_record'
+
+Signed-off-by: Wanpeng Li <liwp@linux.vnet.ibm.com>
+---
+ mm/memblock.c    |   12 ++++++------
+ mm/memcontrol.c  |    4 ++--
+ mm/oom_kill.c    |    2 +-
+ mm/page_cgroup.c |    4 ++--
+ mm/pagewalk.c    |    1 -
+ mm/percpu-vm.c   |    1 -
+ 6 files changed, 11 insertions(+), 13 deletions(-)
+
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 952123e..b84f258 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -540,9 +540,9 @@ int __init_memblock memblock_reserve(phys_addr_t base, phys_addr_t size)
+  * __next_free_mem_range - next function for for_each_free_mem_range()
+  * @idx: pointer to u64 loop variable
+  * @nid: nid: node selector, %MAX_NUMNODES for all nodes
+- * @p_start: ptr to phys_addr_t for start address of the range, can be %NULL
+- * @p_end: ptr to phys_addr_t for end address of the range, can be %NULL
+- * @p_nid: ptr to int for nid of the range, can be %NULL
++ * @out_start: ptr to phys_addr_t for start address of the range, can be %NULL
++ * @out_end: ptr to phys_addr_t for end address of the range, can be %NULL
++ * @out_nid: ptr to int for nid of the range, can be %NULL
+  *
+  * Find the first free area from *@idx which matches @nid, fill the out
+  * parameters, and update *@idx for the next iteration.  The lower 32bit of
+@@ -616,9 +616,9 @@ void __init_memblock __next_free_mem_range(u64 *idx, int nid,
+  * __next_free_mem_range_rev - next function for for_each_free_mem_range_reverse()
+  * @idx: pointer to u64 loop variable
+  * @nid: nid: node selector, %MAX_NUMNODES for all nodes
+- * @p_start: ptr to phys_addr_t for start address of the range, can be %NULL
+- * @p_end: ptr to phys_addr_t for end address of the range, can be %NULL
+- * @p_nid: ptr to int for nid of the range, can be %NULL
++ * @out_start: ptr to phys_addr_t for start address of the range, can be %NULL
++ * @out_end: ptr to phys_addr_t for end address of the range, can be %NULL
++ * @out_nid: ptr to int for nid of the range, can be %NULL
+  *
+  * Reverse of __next_free_mem_range().
+  */
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index ac35bcc..a9c3d01 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1234,7 +1234,7 @@ int mem_cgroup_inactive_file_is_low(struct lruvec *lruvec)
+ 
+ /**
+  * mem_cgroup_margin - calculate chargeable space of a memory cgroup
+- * @mem: the memory cgroup
++ * @memcg: the memory cgroup
+  *
+  * Returns the maximum amount of memory @mem can be charged with, in
+  * pages.
+@@ -1508,7 +1508,7 @@ static unsigned long mem_cgroup_reclaim(struct mem_cgroup *memcg,
+ 
+ /**
+  * test_mem_cgroup_node_reclaimable
+- * @mem: the target memcg
++ * @memcg: the target memcg
+  * @nid: the node ID to be checked.
+  * @noswap : specify true here if the user wants flle only information.
+  *
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index ed0e196..57b3ac9 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -366,7 +366,7 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
+ 
+ /**
+  * dump_tasks - dump current memory state of all system tasks
+- * @mem: current's memory controller, if constrained
++ * @memcg: current's memory controller, if constrained
+  * @nodemask: nodemask passed to page allocator for mempolicy ooms
+  *
+  * Dumps the current memory state of all eligible tasks.  Tasks not in the same
+diff --git a/mm/page_cgroup.c b/mm/page_cgroup.c
+index 1ccbd71..eb750f8 100644
+--- a/mm/page_cgroup.c
++++ b/mm/page_cgroup.c
+@@ -392,7 +392,7 @@ static struct swap_cgroup *lookup_swap_cgroup(swp_entry_t ent,
+ 
+ /**
+  * swap_cgroup_cmpxchg - cmpxchg mem_cgroup's id for this swp_entry.
+- * @end: swap entry to be cmpxchged
++ * @ent: swap entry to be cmpxchged
+  * @old: old id
+  * @new: new id
+  *
+@@ -422,7 +422,7 @@ unsigned short swap_cgroup_cmpxchg(swp_entry_t ent,
+ /**
+  * swap_cgroup_record - record mem_cgroup for this swp_entry.
+  * @ent: swap entry to be recorded into
+- * @mem: mem_cgroup to be recorded
++ * @id: mem_cgroup to be recorded
+  *
+  * Returns old value at success, 0 at failure.
+  * (Of course, old value can be 0.)
+diff --git a/mm/pagewalk.c b/mm/pagewalk.c
+index aa9701e..6c118d0 100644
+--- a/mm/pagewalk.c
++++ b/mm/pagewalk.c
+@@ -162,7 +162,6 @@ static int walk_hugetlb_range(struct vm_area_struct *vma,
+ 
+ /**
+  * walk_page_range - walk a memory map's page tables with a callback
+- * @mm: memory map to walk
+  * @addr: starting address
+  * @end: ending address
+  * @walk: set of callbacks to invoke for each level of the tree
+diff --git a/mm/percpu-vm.c b/mm/percpu-vm.c
+index 405d331..3707c71 100644
+--- a/mm/percpu-vm.c
++++ b/mm/percpu-vm.c
+@@ -360,7 +360,6 @@ err_free:
+  * @chunk: chunk to depopulate
+  * @off: offset to the area to depopulate
+  * @size: size of the area to depopulate in bytes
+- * @flush: whether to flush cache and tlb or not
+  *
+  * For each cpu, depopulate and unmap pages [@page_start,@page_end)
+  * from @chunk.  If @flush is true, vcache is flushed before unmapping
+-- 
+1.7.9.5
+
