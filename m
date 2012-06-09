@@ -1,67 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932967Ab2FIA2C (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 20:28:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35630 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932112Ab2FIA16 (ORCPT
+	id S934447Ab2FIAu7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 20:50:59 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:59124 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932668Ab2FIAu4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 20:27:58 -0400
-Date: Fri, 8 Jun 2012 17:28:42 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Boaz Harrosh <bharrosh@panasas.com>,
-        Tao Ma <boyu.mt@taobao.com>, Nick Piggin <npiggin@kernel.dk>,
-        "Dmitry V. Levin" <ldv@altlinux.org>,
-        v9fs-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-afs@lists.infradead.org,
-        linux-btrfs@vger.kernel.org, ceph-devel@vger.kernel.org,
-        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
-        codalist@telemann.coda.cs.cmu.edu, ecryptfs@vger.kernel.org,
-        osd-dev@open-osd.org, linux-ext4@vger.kernel.org,
-        fuse-devel@lists.sourceforge.net, linux-mtd@lists.infradead.org,
-        jfs-discussion@lists.sourceforge.net, logfs@logfs.org,
-        linux-nfs@vger.kernel.org, linux-nilfs@vger.kernel.org,
-        linux-ntfs-dev@lists.sourceforge.net, ocfs2-devel@oss.oracle.com,
-        reiserfs-devel@vger.kernel.org
-Subject: Re: [RFC, PATCH, RESEND] fs: push rcu_barrier() from
- deactivate_locked_super() to filesystems
-Message-Id: <20120608172842.9826b5cd.akpm@linux-foundation.org>
-In-Reply-To: <CA+55aFw5k3daxeoZb9H1HGcOCWjPF+d7inSbf0QHmG-atp4reQ@mail.gmail.com>
-References: <1339191663-17693-1-git-send-email-kirill.shutemov@linux.intel.com>
-	<20120608150253.e42464a6.akpm@linux-foundation.org>
-	<20120608221446.GA18250@otc-wbsnb-06>
-	<20120608152550.258d6a30.akpm@linux-foundation.org>
-	<20120608222734.GT30000@ZenIV.linux.org.uk>
-	<20120608153120.b722d7c3.akpm@linux-foundation.org>
-	<20120608233127.GB18981@otc-wbsnb-06>
-	<20120608163751.7a8ec2bc.akpm@linux-foundation.org>
-	<CA+55aFw5k3daxeoZb9H1HGcOCWjPF+d7inSbf0QHmG-atp4reQ@mail.gmail.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 8 Jun 2012 20:50:56 -0400
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Cc: Akinobu Mita <akinobu.mita@gmail.com>
+Subject: [PATCH v3 2/9] qnx4fs: use memweight()
+Date: Sat,  9 Jun 2012 09:50:31 +0900
+Message-Id: <1339203038-13069-2-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1339203038-13069-1-git-send-email-akinobu.mita@gmail.com>
+References: <1339203038-13069-1-git-send-email-akinobu.mita@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 8 Jun 2012 16:46:47 -0700 Linus Torvalds <torvalds@linux-foundation.org> wrote:
+Use memweight() to count the total number of bits clear in memory area.
 
-> Of course, if you just mean having a VFS wrapper that does
-> 
->     static void vfs_inode_kmem_cache_destroy(struct kmem_cache *cachep)
->     {
->         rcu_barrier();
->         kmem_cache_destroy(cachep);
->     }
-> 
-> then we could do that. Not much better than what Kirill's patch did,
-> but at least we could have that comment in just one single place.
+Note that this memweight() call can't be replaced with a single
+bitmap_weight() call, although the pointer to the memory area is
+aligned to long-word boundary.  Because the size of the memory area
+may not be a multiple of BITS_PER_LONG, then it returns wrong value on
+big-endian architecture.
 
-That's conceptually what I meant.  But it has the problem that new and
-out-of-tree filesystems might forget to do it.  Which is why I suggest
-adding a kmem_cache* argument to unregister_filesystem() for this.
+Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+Acked-by: Anders Larsen <al@alarsen.net>
+---
+v3: add note in the patch description
+v2: put whitespace before '-'
 
-It's a bit awkward, and the fs can pass in NULL if it knows what it's
-doing.  But it's reliable.
+ fs/qnx4/bitmap.c |   24 +++++-------------------
+ 1 files changed, 5 insertions(+), 19 deletions(-)
+
+diff --git a/fs/qnx4/bitmap.c b/fs/qnx4/bitmap.c
+index 22e0d60..76a7a69 100644
+--- a/fs/qnx4/bitmap.c
++++ b/fs/qnx4/bitmap.c
+@@ -17,23 +17,6 @@
+ #include <linux/bitops.h>
+ #include "qnx4.h"
+ 
+-static void count_bits(register const char *bmPart, register int size,
+-		       int *const tf)
+-{
+-	char b;
+-	int tot = *tf;
+-
+-	if (size > QNX4_BLOCK_SIZE) {
+-		size = QNX4_BLOCK_SIZE;
+-	}
+-	do {
+-		b = *bmPart++;
+-		tot += 8 - hweight8(b);
+-		size--;
+-	} while (size != 0);
+-	*tf = tot;
+-}
+-
+ unsigned long qnx4_count_free_blocks(struct super_block *sb)
+ {
+ 	int start = le32_to_cpu(qnx4_sb(sb)->BitMap->di_first_xtnt.xtnt_blk) - 1;
+@@ -44,13 +27,16 @@ unsigned long qnx4_count_free_blocks(struct super_block *sb)
+ 	struct buffer_head *bh;
+ 
+ 	while (total < size) {
++		int bytes = min(size - total, QNX4_BLOCK_SIZE);
++
+ 		if ((bh = sb_bread(sb, start + offset)) == NULL) {
+ 			printk(KERN_ERR "qnx4: I/O error in counting free blocks\n");
+ 			break;
+ 		}
+-		count_bits(bh->b_data, size - total, &total_free);
++		total_free += bytes * BITS_PER_BYTE -
++				memweight(bh->b_data, bytes);
+ 		brelse(bh);
+-		total += QNX4_BLOCK_SIZE;
++		total += bytes;
+ 		offset++;
+ 	}
+ 
+-- 
+1.7.7.6
+
