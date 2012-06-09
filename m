@@ -1,50 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752833Ab2FILRz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jun 2012 07:17:55 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:48732 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750929Ab2FILRx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jun 2012 07:17:53 -0400
-Date: Sat, 9 Jun 2012 07:17:47 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: writeback: bad unlock balance detected in 3.5-rc1
-Message-ID: <20120609111747.GA21259@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Fengguang Wu <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-	linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-References: <E1Sd0IP-0005nh-AJ@tytso-glaptop.cam.corp.google.com>
- <20120608150736.GF21080@quack.suse.cz>
- <20120608202840.GB1704@thunk.org>
- <20120608233728.GA7691@localhost>
- <20120609023804.GC14153@thunk.org>
- <20120609110731.GB14726@localhost>
+	id S1753163Ab2FILTx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jun 2012 07:19:53 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:63170 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750929Ab2FILTv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Jun 2012 07:19:51 -0400
+Date: Sat, 9 Jun 2012 07:19:47 -0400
+From: Konrad Rzeszutek Wilk <konrad@darnok.org>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
+        rientjes@google.com, mhocko@suse.cz, akpm@linux-foundation.org,
+        hannes@cmpxchg.org, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org
+Subject: Re: [PATCH -V8 13/16] hugetlb/cgroup: add hugetlb cgroup control
+ files
+Message-ID: <20120609111946.GC16034@localhost.localdomain>
+References: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <1339232401-14392-14-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120609110731.GB14726@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <1339232401-14392-14-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 09, 2012 at 07:07:31PM +0800, Fengguang Wu wrote:
+>  const unsigned long hugetlb_zero = 0, hugetlb_infinity = ~0UL;
+> @@ -1916,6 +1917,13 @@ void __init hugetlb_add_hstate(unsigned order)
+>  	h->next_nid_to_free = first_node(node_states[N_HIGH_MEMORY]);
+>  	snprintf(h->name, HSTATE_NAME_LEN, "hugepages-%lukB",
+>  					huge_page_size(h)/1024);
+> +	/*
+> +	 * Add cgroup control files only if the huge page consists
+> +	 * of more than two normal pages. This is because we use
+
+Not three? I thought the earlier patches said three?
+> +	 * page[2].lru.next for storing cgoup details.
+
+cgoup?
+> +	 */
+> +	if (order >= 2)
+> +		hugetlb_cgroup_file_init(hugetlb_max_hstate - 1);
+>  
+>  	parsed_hstate = h;
+>  }
+> diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
+> index 9458fe3..2a4881d 100644
+> --- a/mm/hugetlb_cgroup.c
+> +++ b/mm/hugetlb_cgroup.c
+> @@ -18,6 +18,11 @@
+>  #include <linux/hugetlb.h>
+>  #include <linux/hugetlb_cgroup.h>
+>  
+> +/* lifted from mem control */
+
+And you can also life the comment from mem control explaining
+what these defines are good for.
+
+> +#define MEMFILE_PRIVATE(x, val)	(((x) << 16) | (val))
+> +#define MEMFILE_IDX(val)	(((val) >> 16) & 0xffff)
+> +#define MEMFILE_ATTR(val)	((val) & 0xffff)
+> +
+>  struct cgroup_subsys hugetlb_subsys __read_mostly;
+>  struct hugetlb_cgroup *root_h_cgroup __read_mostly;
+>  
+> @@ -269,6 +274,131 @@ void hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
+>  	return;
+>  }
+>  
+> +static ssize_t hugetlb_cgroup_read(struct cgroup *cgroup, struct cftype *cft,
+> +				   struct file *file, char __user *buf,
+> +				   size_t nbytes, loff_t *ppos)
+> +{
+> +	u64 val;
+> +	char str[64];
+
+Why no #define? Wait a minute - didn't I provide a similar comment last
+time? So why the reason to stick without the #define's?
+
+> +	int idx, name, len;
+> +	struct hugetlb_cgroup *h_cg = hugetlb_cgroup_from_cgroup(cgroup);
+> +
+> +	idx = MEMFILE_IDX(cft->private);
+> +	name = MEMFILE_ATTR(cft->private);
+> +
+> +	val = res_counter_read_u64(&h_cg->hugepage[idx], name);
+> +	len = scnprintf(str, sizeof(str), "%llu\n", (unsigned long long)val);
+> +	return simple_read_from_buffer(buf, nbytes, ppos, str, len);
+> +}
+> +
+> +static int hugetlb_cgroup_write(struct cgroup *cgroup, struct cftype *cft,
+> +				const char *buffer)
+> +{
+> +	int idx, name, ret;
+> +	unsigned long long val;
+> +	struct hugetlb_cgroup *h_cg = hugetlb_cgroup_from_cgroup(cgroup);
+> +
+> +	idx = MEMFILE_IDX(cft->private);
+> +	name = MEMFILE_ATTR(cft->private);
+> +
+> +	switch (name) {
+> +	case RES_LIMIT:
+> +		if (hugetlb_cgroup_is_root(h_cg)) {
+> +			/* Can't set limit on root */
+> +			ret = -EINVAL;
+> +			break;
+> +		}
+> +		/* This function does all necessary parse...reuse it */
+> +		ret = res_counter_memparse_write_strategy(buffer, &val);
+> +		if (ret)
+> +			break;
+> +		ret = res_counter_set_limit(&h_cg->hugepage[idx], val);
+> +		break;
+> +	default:
+> +		ret = -EINVAL;
+> +		break;
+> +	}
+> +	return ret;
+> +}
+> +
+> +static int hugetlb_cgroup_reset(struct cgroup *cgroup, unsigned int event)
+> +{
+> +	int idx, name, ret = 0;
+> +	struct hugetlb_cgroup *h_cg = hugetlb_cgroup_from_cgroup(cgroup);
+> +
+> +	idx = MEMFILE_IDX(event);
+> +	name = MEMFILE_ATTR(event);
+> +
+> +	switch (name) {
+> +	case RES_MAX_USAGE:
+> +		res_counter_reset_max(&h_cg->hugepage[idx]);
+> +		break;
+> +	case RES_FAILCNT:
+> +		res_counter_reset_failcnt(&h_cg->hugepage[idx]);
+> +		break;
+> +	default:
+> +		ret = -EINVAL;
+> +		break;
+> +	}
+> +	return ret;
+> +}
+> +
+> +static char *mem_fmt(char *buf, int size, unsigned long hsize)
+> +{
+> +	if (hsize >= (1UL << 30))
+> +		snprintf(buf, size, "%luGB", hsize >> 30);
+> +	else if (hsize >= (1UL << 20))
+> +		snprintf(buf, size, "%luMB", hsize >> 20);
+> +	else
+> +		snprintf(buf, size, "%luKB", hsize >> 10);
+> +	return buf;
+> +}
+> +
+> +int __init hugetlb_cgroup_file_init(int idx)
+> +{
+> +	char buf[32];
+
+Ditto.
+
+> +	struct cftype *cft;
+> +	struct hstate *h = &hstates[idx];
+> +
+> +	/* format the size */
+> +	mem_fmt(buf, 32, huge_page_size(h));
+
+Ditto.
+
+> +
+> +	/* Add the limit file */
+> +	cft = &h->cgroup_files[0];
+
+Can't this be just:
+	cfg = &h->cgroup_files;
+
+> +	snprintf(cft->name, MAX_CFTYPE_NAME, "%s.limit_in_bytes", buf);
+> +	cft->private = MEMFILE_PRIVATE(idx, RES_LIMIT);
+> +	cft->read = hugetlb_cgroup_read;
+> +	cft->write_string = hugetlb_cgroup_write;
+> +
+> +	/* Add the usage file */
+> +	cft = &h->cgroup_files[1];
+and this be:
+	cft++;
+
+> +	snprintf(cft->name, MAX_CFTYPE_NAME, "%s.usage_in_bytes", buf);
+> +	cft->private = MEMFILE_PRIVATE(idx, RES_USAGE);
+> +	cft->read = hugetlb_cgroup_read;
+> +
+> +	/* Add the MAX usage file */
+> +	cft = &h->cgroup_files[2];
+> +	snprintf(cft->name, MAX_CFTYPE_NAME, "%s.max_usage_in_bytes", buf);
+> +	cft->private = MEMFILE_PRIVATE(idx, RES_MAX_USAGE);
+> +	cft->trigger = hugetlb_cgroup_reset;
+> +	cft->read = hugetlb_cgroup_read;
+> +
+> +	/* Add the failcntfile */
+> +	cft = &h->cgroup_files[3];
+
+and so for this one.
+> +	snprintf(cft->name, MAX_CFTYPE_NAME, "%s.failcnt", buf);
+> +	cft->private  = MEMFILE_PRIVATE(idx, RES_FAILCNT);
+> +	cft->trigger  = hugetlb_cgroup_reset;
+> +	cft->read = hugetlb_cgroup_read;
+> +
+> +	/* NULL terminate the last cft */
+> +	cft = &h->cgroup_files[4];
+
+and for that one?
+
+> +	memset(cft, 0, sizeof(*cft));
+> +
+> +	WARN_ON(cgroup_add_cftypes(&hugetlb_subsys, h->cgroup_files));
+> +
+> +	return 0;
+> +}
+> +
+>  struct cgroup_subsys hugetlb_subsys = {
+>  	.name = "hugetlb",
+>  	.create     = hugetlb_cgroup_create,
+> -- 
+> 1.7.10
 > 
-> 1MB memory? How do you manage to boot it? Recently I tried running a
-> big fat kernel (with almost everything built in) that can easily OOM
-> (at boot time, before swapon) even given 256MB memory...
-
-Sorry, I was confused; it was megs.  That'll teach me to send e-mails
-when I'm really tired.  I normally run with half that (to really
-stress the paging/writeback systems), and I was thinking that a gig of
-memory was way more than I normally use.  I think I was running into
-some failures at 512m, which is why it got bumped to 1024.  I'll have
-to try it again at 512 and see if it blows up or not.
-
-     	      	       	     	    - Ted
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
