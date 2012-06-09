@@ -1,70 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754849Ab2FIQwu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jun 2012 12:52:50 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:63961 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750994Ab2FIQws convert rfc822-to-8bit (ORCPT
+	id S1755119Ab2FIQ6A (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jun 2012 12:58:00 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32343 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750994Ab2FIQ56 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jun 2012 12:52:48 -0400
-MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1206091131040.11334-100000@netrider.rowland.org>
-References: <1339243754-2150-1-git-send-email-linkinjeon@gmail.com>
-	<Pine.LNX.4.44L0.1206091131040.11334-100000@netrider.rowland.org>
-Date: Sat, 9 Jun 2012 12:52:46 -0400
-Message-ID: <CAKYAXd-UEz03dEvNj3TGexOFL4TXzW+AEbGB3iiz0boCZzvGsA@mail.gmail.com>
-Subject: Re: [PATCH v2 3/4] usb: storage: update usb devices for write cache
- quirk in quirk list.
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: James.Bottomley@hansenpartnership.com, gregkh@linuxfoundation.org,
-        mdharm-usb@one-eyed-alien.net, sshtylyov@mvista.com,
-        linux-usb@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Pankaj Kumar <pankaj.km@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sat, 9 Jun 2012 12:57:58 -0400
+X-Authority-Analysis: v=2.0 cv=D8PF24tj c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=_41qGextLBQA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=yPCof4ZbAAAA:8 a=xkiObRbeV-6RiUeizzEA:9 a=PUjeQqilurYA:10 a=7DSvI1NPTFQA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1339261076.13377.90.camel@gandalf.stny.rr.com>
+Subject: Re: [patch] ftrace: clear bits properly in reset_iter_read()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Date: Sat, 09 Jun 2012 12:57:56 -0400
+In-Reply-To: <20120609161027.GD6488@elgon.mountain>
+References: <20120609161027.GD6488@elgon.mountain>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1+b1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/6/9 Alan Stern <stern@rowland.harvard.edu>:
-> On Sat, 9 Jun 2012, Namjae Jeon wrote:
->
->> Update information of Segate Portable HDD and WD My Passport HDD in
->> quirk list.
->>
->> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
->> Signed-off-by: Pankaj Kumar <pankaj.km@samsung.com>
->> Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
->> ---
->>  drivers/usb/storage/unusual_devs.h |   10 ++++++++++
->>  1 file changed, 10 insertions(+)
->>
->> diff --git a/drivers/usb/storage/unusual_devs.h b/drivers/usb/storage/unusual_devs.h
->> index 1719886..1d895f4 100644
->> --- a/drivers/usb/storage/unusual_devs.h
->> +++ b/drivers/usb/storage/unusual_devs.h
->> @@ -2025,6 +2025,16 @@ UNUSUAL_DEV( 0xed10, 0x7636, 0x0001, 0x0001,
->>               "Digital MP3 Audio Player",
->>               USB_SC_DEVICE, USB_PR_DEVICE, NULL, US_FL_NOT_LOCKABLE ),
->>
->> +UNUSUAL_DEV(0x1058, 0x070A, 0x0000, 0x9999,
->> +             "Western Digital",
->> +             "My Passport HDD",
->> +             USB_SC_DEVICE, USB_PR_DEVICE, NULL, US_FL_WRITE_CACHE),
->> +
->> +UNUSUAL_DEV(0x0BC2, 0x2300, 0x0000, 0x9999,
->> +             "Seagate",
->> +             "Portable HDD",
->> +             USB_SC_DEVICE, USB_PR_DEVICE, NULL, US_FL_WRITE_CACHE),
->> +
->
-> Entries must be sorted by Vendor ID and then Product ID.  Please put
-> your new entries in the correct spot.
-Okay, I will resend th patch after moving code.
-Thanks.
->
-> Alan Stern
->
+On Sat, 2012-06-09 at 19:10 +0300, Dan Carpenter wrote:
+> There is a typo here where '&' is used instead of '|' and it turns the
+> statement into a noop.  The original code is equivalent to:
+> 
+> 	iter->flags &= ~((1 << 2) & (1 << 4));
+> 
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> ---
+> This is a static checker fix and I'm not super familiar with ftrace.
+> Please review carefully.
+> 
+> diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+> index a008663..97da2dc 100644
+> --- a/kernel/trace/ftrace.c
+> +++ b/kernel/trace/ftrace.c
+> @@ -2358,7 +2358,7 @@ static void reset_iter_read(struct ftrace_iterator *iter)
+>  {
+>  	iter->pos = 0;
+>  	iter->func_pos = 0;
+> -	iter->flags &= ~(FTRACE_ITER_PRINTALL & FTRACE_ITER_HASH);
+> +	iter->flags &= ~(FTRACE_ITER_PRINTALL | FTRACE_ITER_HASH);
+
+Thanks! This is a real minor bug, but as it is a simple fix I will
+probably queue it up for 3.5 and stable. The reason that it has gone
+unnoticed for so long is that this would only show up if you did a lseek
+on the function list file. Which is not a common operation to do.
+
+I checked the code and if someone were to do an lseek with these flags
+set then they would just get the hash list again (and not the function
+list). It's a bug, yes, but not a big one.
+
+I'll queue it up on Monday.
+
+-- Steve
+
+
+>  }
+>  
+>  static void *t_start(struct seq_file *m, loff_t *pos)
+
+
