@@ -1,142 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752718Ab2FILOR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jun 2012 07:14:17 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:49008 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750884Ab2FILOQ (ORCPT
+	id S1752801Ab2FILQS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jun 2012 07:16:18 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:64241 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750884Ab2FILQQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jun 2012 07:14:16 -0400
-Date: Sat, 9 Jun 2012 07:14:11 -0400
-From: Konrad Rzeszutek Wilk <konrad@darnok.org>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
-        rientjes@google.com, mhocko@suse.cz, akpm@linux-foundation.org,
-        hannes@cmpxchg.org, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org
-Subject: Re: [PATCH -V8 10/16] hugetlb/cgroup: Add the cgroup pointer to page
- lru
-Message-ID: <20120609111411.GB16034@localhost.localdomain>
-References: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <1339232401-14392-11-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	Sat, 9 Jun 2012 07:16:16 -0400
+Message-ID: <4FD3305E.1040803@mvista.com>
+Date: Sat, 09 Jun 2012 15:15:42 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339232401-14392-11-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Namjae Jeon <linkinjeon@gmail.com>
+CC: James.Bottomley@HansenPartnership.com, gregkh@linuxfoundation.org,
+        mdharm-usb@one-eyed-alien.net, stern@rowland.harvard.edu,
+        linux-usb@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Pankaj Kumar <pankaj.km@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: Re: [PATCH v2 3/4] usb: storage: update usb devices for write cache
+ quirk in quirk list.
+References: <1339211540-10315-1-git-send-email-linkinjeon@gmail.com>
+In-Reply-To: <1339211540-10315-1-git-send-email-linkinjeon@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 09, 2012 at 02:29:55PM +0530, Aneesh Kumar K.V wrote:
-> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-> 
-> Add the hugetlb cgroup pointer to 3rd page lru.next. This limit
-> the usage to hugetlb cgroup to only hugepages with 3 or more
-> normal pages. I guess that is an acceptable limitation.
+Hello.
 
-Can you explain in a bit more detail the reasoning behind this
-please? Either in the code in the hugetlb_cgroup_from_page
-or in the git commit (or better - in both).
+On 09-06-2012 7:12, Namjae Jeon wrote:
 
-> 
-> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+> Update information of Segate Portable HDD and WD My Passport HDD in
+> quirk list.
+
+> Signed-off-by: Namjae Jeon<namjae.jeon@samsung.com>
+> Signed-off-by: Pankaj Kumar<pankaj.km@samsung.com>
+> Signed-off-by: Amit Sahrawat<a.sahrawat@samsung.com>
 > ---
->  include/linux/hugetlb_cgroup.h |   31 +++++++++++++++++++++++++++++++
->  mm/hugetlb.c                   |    4 ++++
->  2 files changed, 35 insertions(+)
-> 
-> diff --git a/include/linux/hugetlb_cgroup.h b/include/linux/hugetlb_cgroup.h
-> index 5794be4..ceff1d5 100644
-> --- a/include/linux/hugetlb_cgroup.h
-> +++ b/include/linux/hugetlb_cgroup.h
-> @@ -26,6 +26,26 @@ struct hugetlb_cgroup {
->  };
->  
->  #ifdef CONFIG_CGROUP_HUGETLB_RES_CTLR
-> +static inline struct hugetlb_cgroup *hugetlb_cgroup_from_page(struct page *page)
-> +{
-> +	if (!PageHuge(page))
-> +		return NULL;
-> +	if (compound_order(page) < 3)
-> +		return NULL;
-> +	return (struct hugetlb_cgroup *)page[2].lru.next;
-> +}
-> +
-> +static inline
-> +int set_hugetlb_cgroup(struct page *page, struct hugetlb_cgroup *h_cg)
-> +{
-> +	if (!PageHuge(page))
-> +		return -1;
-> +	if (compound_order(page) < 3)
-> +		return -1;
-> +	page[2].lru.next = (void *)h_cg;
-> +	return 0;
-> +}
-> +
->  static inline bool hugetlb_cgroup_disabled(void)
->  {
->  	if (hugetlb_subsys.disabled)
-> @@ -43,6 +63,17 @@ extern void hugetlb_cgroup_uncharge_page(int idx, unsigned long nr_pages,
->  extern void hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
->  					   struct hugetlb_cgroup *h_cg);
->  #else
-> +static inline struct hugetlb_cgroup *hugetlb_cgroup_from_page(struct page *page)
-> +{
-> +	return NULL;
-> +}
-> +
-> +static inline
-> +int set_hugetlb_cgroup(struct page *page, struct hugetlb_cgroup *h_cg)
-> +{
-> +	return 0;
-> +}
-> +
->  static inline bool hugetlb_cgroup_disabled(void)
->  {
->  	return true;
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index e899a2d..1ca2d8f 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -28,6 +28,7 @@
->  
->  #include <linux/io.h>
->  #include <linux/hugetlb.h>
-> +#include <linux/hugetlb_cgroup.h>
->  #include <linux/node.h>
->  #include "internal.h"
->  
-> @@ -591,6 +592,7 @@ static void update_and_free_page(struct hstate *h, struct page *page)
->  				1 << PG_active | 1 << PG_reserved |
->  				1 << PG_private | 1 << PG_writeback);
->  	}
-> +	BUG_ON(hugetlb_cgroup_from_page(page));
->  	set_compound_page_dtor(page, NULL);
->  	set_page_refcounted(page);
->  	arch_release_hugepage(page);
-> @@ -643,6 +645,7 @@ static void prep_new_huge_page(struct hstate *h, struct page *page, int nid)
->  	INIT_LIST_HEAD(&page->lru);
->  	set_compound_page_dtor(page, free_huge_page);
->  	spin_lock(&hugetlb_lock);
-> +	set_hugetlb_cgroup(page, NULL);
->  	h->nr_huge_pages++;
->  	h->nr_huge_pages_node[nid]++;
->  	spin_unlock(&hugetlb_lock);
-> @@ -892,6 +895,7 @@ static struct page *alloc_buddy_huge_page(struct hstate *h, int nid)
->  		INIT_LIST_HEAD(&page->lru);
->  		r_nid = page_to_nid(page);
->  		set_compound_page_dtor(page, free_huge_page);
-> +		set_hugetlb_cgroup(page, NULL);
->  		/*
->  		 * We incremented the global counters already
->  		 */
-> -- 
-> 1.7.10
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
+>   drivers/usb/storage/unusual_devs.h |   10 ++++++++++
+>   1 file changed, 10 insertions(+)
+
+> diff --git a/drivers/usb/storage/unusual_devs.h b/drivers/usb/storage/unusual_devs.h
+> index 1719886..1d895f4 100644
+> --- a/drivers/usb/storage/unusual_devs.h
+> +++ b/drivers/usb/storage/unusual_devs.h
+> @@ -2025,6 +2025,16 @@ UNUSUAL_DEV( 0xed10, 0x7636, 0x0001, 0x0001,
+>   		"Digital MP3 Audio Player",
+>   		USB_SC_DEVICE, USB_PR_DEVICE, NULL, US_FL_NOT_LOCKABLE ),
+>
+> +UNUSUAL_DEV(0x1058, 0x070A, 0x0000, 0x9999,
+> +		"Westron Digital",
+
+    Maybe "Western"? :-)
+
+> +		"My Passport HDD",
+> +		USB_SC_DEVICE, USB_PR_DEVICE, NULL, US_FL_WRITE_CACHE),
+
+WBR, Sergei
