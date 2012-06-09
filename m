@@ -1,48 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934565Ab2FIBvg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 21:51:36 -0400
-Received: from oproxy9.bluehost.com ([69.89.24.6]:52533 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S933112Ab2FIBvf (ORCPT
+	id S1761388Ab2FICDn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 22:03:43 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:60385 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752335Ab2FICDl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 21:51:35 -0400
-Message-ID: <4FD2AC1B.6070500@xenotime.net>
-Date: Fri, 08 Jun 2012 18:51:23 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Fri, 8 Jun 2012 22:03:41 -0400
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>, linux-serial@vger.kernel.org
-CC: Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH] serial: fix kernel-doc warnings in 8250.c
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 8 Jun 2012 19:03:19 -0700
+X-Google-Sender-Auth: htBsLYlUVrUEFzt_lqaxsLNNyvQ
+Message-ID: <CA+55aFz0sGcCw2W2r4z673_xhe0Ej94Yqi_VZDtY1Qzovz4qfA@mail.gmail.com>
+Subject: Linux 3.5-rc2
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
+Ok, it's been only 6 days, but as noted earlier I'm going to be
+traveling starting tomorrow, and I wanted to make the -rc2 release
+before I left.
 
-Fix kernel-doc warnings in drivers/tty/serial/8250/8250.c:
+I'll have internet access, but looking at my schedule I probably won't
+have much time, so you might as well consider me MIA for a week. If
+it's not really critical, don't bother asking me to pull, in other
+words. Think of it as one of those weeks when I try to be hardnosed
+about things, and get bitchy when people send me irrelevant small
+stuff that isn't some major oops-fix.
 
-Warning(drivers/tty/serial/8250/8250.c:3128): No description found for parameter 'up'
-Warning(drivers/tty/serial/8250/8250.c:3128): Excess function parameter 'port' description in 'serial8250_register_8250_port'
+That said, I think -rc2 is in fairly good shape, and I've been trying
+to fairly aggressively revert things that caused problems (and
+sometimes things that were only *suspected* to be the cause of
+problems).
 
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
----
- drivers/tty/serial/8250/8250.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+We have the usual assortment of fixes: drivers (gpu, i2c, acpi,
+clocksource), architectures (mostly x86 perf, but some trivial powerpc
+and parsic stuff), filesystems (fuse, cifs, ext4, ubifs) along with VM
+updates and some documentation updates. And timer, irq and scheduler
+fixes.
 
---- lnx-35-rc1.orig/drivers/tty/serial/8250/8250.c
-+++ lnx-35-rc1/drivers/tty/serial/8250/8250.c
-@@ -3113,7 +3113,7 @@ static struct uart_8250_port *serial8250
- 
- /**
-  *	serial8250_register_8250_port - register a serial port
-- *	@port: serial port template
-+ *	@up: serial port template
-  *
-  *	Configure the serial port specified by the request. If the
-  *	port exists and is in use, it is hung up and unregistered
+Go forth and test,
+                      Linus
