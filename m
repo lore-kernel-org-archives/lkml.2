@@ -1,50 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755598Ab2FIS16 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jun 2012 14:27:58 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:33513 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753306Ab2FIS15 (ORCPT
+	id S1755920Ab2FISnf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jun 2012 14:43:35 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:60612 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754742Ab2FISnd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jun 2012 14:27:57 -0400
+	Sat, 9 Jun 2012 14:43:33 -0400
+Message-ID: <4FD39904.2010808@mvista.com>
+Date: Sat, 09 Jun 2012 22:42:12 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <CANc+2y6uTcQxjRTAfBGvBJBUNh-SEtM_0s+7DBrSr=yULws1OA@mail.gmail.com>
-References: <CANc+2y41rDOrAijbgOAgWiTPzGeyMW+EXSxmu+zTv2ZqG=TxFA@mail.gmail.com>
-	<20120525062120.GA4445@kroah.com>
-	<CAHkwNTmpDTe-jOvR1t4tKo6uR-oEOMk2Sj2p_v6JsVtQCF2zEg@mail.gmail.com>
-	<CANc+2y5WXX1n8Hugej-STfVra_Pjhjpb_OvT6Tf-K8=-hxaH=g@mail.gmail.com>
-	<CAHkwNTnVgGt6J9gb2gZSpYra1HHPibgj+W9X_rEHjAyDnDL+Jg@mail.gmail.com>
-	<CANc+2y6uTcQxjRTAfBGvBJBUNh-SEtM_0s+7DBrSr=yULws1OA@mail.gmail.com>
-Date: Sat, 9 Jun 2012 23:57:56 +0530
-Message-ID: <CAHkwNT=U58520GpkNLtBcJVtujh=wN8-+uEXXkFJZSoByvUj7w@mail.gmail.com>
-Subject: Re: Code flow from device connection to device node in /dev creation
-From: Anil Nair <anilcoll90@gmail.com>
-To: prasannatsmkumar <prasannatsmkumar@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Namjae Jeon <linkinjeon@gmail.com>
+CC: James.Bottomley@HansenPartnership.com, gregkh@linuxfoundation.org,
+        mdharm-usb@one-eyed-alien.net, stern@rowland.harvard.edu,
+        bvanassche@acm.org, linux-usb@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Pankaj Kumar <pankaj.km@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: Re: [PATCH v3 2/4] usb: storage: add support for write cache quirk
+ on usb hdd
+References: <1339263660-4039-1-git-send-email-linkinjeon@gmail.com>
+In-Reply-To: <1339263660-4039-1-git-send-email-linkinjeon@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Prasanna,
+Hello.
 
-On Sun, May 27, 2012 at 10:19 AM, prasannatsmkumar
-<prasannatsmkumar@gmail.com> wrote:
+On 06/09/2012 09:41 PM, Namjae Jeon wrote:
 
-> If I open a device file (say a printer device) who determines the
-> correct driver and sends the call? How subsequent calls get processed
-> etc. Yes I know the init function will be called while the driver is
-> loaded (while running insmod driver.ko). How a open or write call
-> comes to the driver from user space? Who keeps track of the driver's
-> internal data (*dev) and sends that while calling methods in the
-> driver? I am more interested in things like that.
+> Add support for write cache quirk on usb hdd. scsi driver will be set to wce
+> by detecting write cache quirk in quirk list when plugging usb hdd.
 
-Drivers work in kernel address space. The implementation of the USB in
-userspace is through the library libusb, i guess you have visited its
-thread in mailing list. You will require a serious reading before
-jumping into coding.
-Sorry if you have done the required reading. :).
+> Signed-off-by: Namjae Jeon<namjae.jeon@samsung.com>
+> Signed-off-by: Pankaj Kumar<pankaj.km@samsung.com>
+> Signed-off-by: Amit Sahrawat<a.sahrawat@samsung.com>
+> ---
+>   drivers/usb/storage/scsiglue.c |    5 +++++
+>   drivers/usb/storage/usb.c      |    5 ++++-
+>   include/linux/usb_usual.h      |    4 +++-
+>   3 files changed, 12 insertions(+), 2 deletions(-)
 
--- 
-Regards,
-Anil Nair
+> diff --git a/drivers/usb/storage/scsiglue.c b/drivers/usb/storage/scsiglue.c
+> index a324a5d..fe42547 100644
+> --- a/drivers/usb/storage/scsiglue.c
+> +++ b/drivers/usb/storage/scsiglue.c
+[...]
+> @@ -529,6 +529,9 @@ static void adjust_quirks(struct us_data *us)
+>   		case 'o':
+>   			f |= US_FL_CAPACITY_OK;
+>   			break;
+> +		case 'p':
+> +			f |= US_FL_WRITE_CACHE;
+> +			break;
+>   		case 'r':
+>   			f |= US_FL_IGNORE_RESIDUE;
+>   			break;
+
+    You probably should unite this chunk with the documentation update patch.
+
+> diff --git a/include/linux/usb_usual.h b/include/linux/usb_usual.h
+> index 17df360..96fc152 100644
+> --- a/include/linux/usb_usual.h
+> +++ b/include/linux/usb_usual.h
+> @@ -64,7 +64,9 @@
+>   	US_FLAG(NO_READ_CAPACITY_16,	0x00080000)		\
+>   		/* cannot handle READ_CAPACITY_16 */		\
+>   	US_FLAG(INITIAL_READ10,	0x00100000)			\
+> -		/* Initial READ(10) (and others) must be retried */
+> +		/* Initial READ(10) (and others) must be retried */	\
+> +	US_FLAG(WRITE_CACHE, 0x00200000)		\
+
+    You've been already told to keep '\' at the same level with the above '\' 
+and you're continuing to ignore this.
+
+> +		/* Write Cache status is not available */
+>
+>   #define US_FLAG(name, value)	US_FL_##name = value ,
+>   enum { US_DO_ALL_FLAGS };
+
+WBR, Sergei
