@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752801Ab2FILQS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jun 2012 07:16:18 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:64241 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750884Ab2FILQQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jun 2012 07:16:16 -0400
-Message-ID: <4FD3305E.1040803@mvista.com>
-Date: Sat, 09 Jun 2012 15:15:42 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1752833Ab2FILRz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jun 2012 07:17:55 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:48732 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750929Ab2FILRx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Jun 2012 07:17:53 -0400
+Date: Sat, 9 Jun 2012 07:17:47 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: writeback: bad unlock balance detected in 3.5-rc1
+Message-ID: <20120609111747.GA21259@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Fengguang Wu <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+	linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+References: <E1Sd0IP-0005nh-AJ@tytso-glaptop.cam.corp.google.com>
+ <20120608150736.GF21080@quack.suse.cz>
+ <20120608202840.GB1704@thunk.org>
+ <20120608233728.GA7691@localhost>
+ <20120609023804.GC14153@thunk.org>
+ <20120609110731.GB14726@localhost>
 MIME-Version: 1.0
-To: Namjae Jeon <linkinjeon@gmail.com>
-CC: James.Bottomley@HansenPartnership.com, gregkh@linuxfoundation.org,
-        mdharm-usb@one-eyed-alien.net, stern@rowland.harvard.edu,
-        linux-usb@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Pankaj Kumar <pankaj.km@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [PATCH v2 3/4] usb: storage: update usb devices for write cache
- quirk in quirk list.
-References: <1339211540-10315-1-git-send-email-linkinjeon@gmail.com>
-In-Reply-To: <1339211540-10315-1-git-send-email-linkinjeon@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120609110731.GB14726@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Sat, Jun 09, 2012 at 07:07:31PM +0800, Fengguang Wu wrote:
+> 
+> 1MB memory? How do you manage to boot it? Recently I tried running a
+> big fat kernel (with almost everything built in) that can easily OOM
+> (at boot time, before swapon) even given 256MB memory...
 
-On 09-06-2012 7:12, Namjae Jeon wrote:
+Sorry, I was confused; it was megs.  That'll teach me to send e-mails
+when I'm really tired.  I normally run with half that (to really
+stress the paging/writeback systems), and I was thinking that a gig of
+memory was way more than I normally use.  I think I was running into
+some failures at 512m, which is why it got bumped to 1024.  I'll have
+to try it again at 512 and see if it blows up or not.
 
-> Update information of Segate Portable HDD and WD My Passport HDD in
-> quirk list.
-
-> Signed-off-by: Namjae Jeon<namjae.jeon@samsung.com>
-> Signed-off-by: Pankaj Kumar<pankaj.km@samsung.com>
-> Signed-off-by: Amit Sahrawat<a.sahrawat@samsung.com>
-> ---
->   drivers/usb/storage/unusual_devs.h |   10 ++++++++++
->   1 file changed, 10 insertions(+)
-
-> diff --git a/drivers/usb/storage/unusual_devs.h b/drivers/usb/storage/unusual_devs.h
-> index 1719886..1d895f4 100644
-> --- a/drivers/usb/storage/unusual_devs.h
-> +++ b/drivers/usb/storage/unusual_devs.h
-> @@ -2025,6 +2025,16 @@ UNUSUAL_DEV( 0xed10, 0x7636, 0x0001, 0x0001,
->   		"Digital MP3 Audio Player",
->   		USB_SC_DEVICE, USB_PR_DEVICE, NULL, US_FL_NOT_LOCKABLE ),
->
-> +UNUSUAL_DEV(0x1058, 0x070A, 0x0000, 0x9999,
-> +		"Westron Digital",
-
-    Maybe "Western"? :-)
-
-> +		"My Passport HDD",
-> +		USB_SC_DEVICE, USB_PR_DEVICE, NULL, US_FL_WRITE_CACHE),
-
-WBR, Sergei
+     	      	       	     	    - Ted
