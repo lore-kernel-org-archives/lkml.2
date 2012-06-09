@@ -1,49 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752085Ab2FIFgZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jun 2012 01:36:25 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:45097 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751499Ab2FIFfq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jun 2012 01:35:46 -0400
-From: Fabio Estevam <festevam@gmail.com>
-To: sameo@linux.intel.com
-Cc: linux-kernel@vger.kernel.org, broonie@opensource.wolfsonmicro.com,
-        u.kleine-koenig@pengutronix.de,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: [PATCH 1/2] mfd: mc13xxx-i2c: Convert to devm_regmap_init_i2c()
-Date: Sat,  9 Jun 2012 02:35:30 -0300
-Message-Id: <1339220131-24189-1-git-send-email-festevam@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	id S1752971Ab2FIGa4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jun 2012 02:30:56 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:37293 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752439Ab2FIGaq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Jun 2012 02:30:46 -0400
+Message-ID: <4FD2ED7B.3020002@zytor.com>
+Date: Fri, 08 Jun 2012 23:30:19 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 0/3 v2] [GIT PULL][3.6] x86: cr2 and cmpxchg issues of
+ NMI
+References: <20120609020257.248773533@goodmis.org> <1339210729.13377.68.camel@gandalf.stny.rr.com>
+In-Reply-To: <1339210729.13377.68.camel@gandalf.stny.rr.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fabio Estevam <fabio.estevam@freescale.com>
+On 06/08/2012 07:58 PM, Steven Rostedt wrote:
+> On Fri, 2012-06-08 at 22:02 -0400, Steven Rostedt wrote:
+>> Ingo,
+>>
+>> This is the version 2 with the updates suggested by H. Peter Anvin.
+>>
+>> Please pull the latest tip/x86/core-2 tree, which can be found at:
+>>
+>>   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+>> tip/x86/core-2
+>>
+> 
+> FYI, I based this off of tip/x86/debug.
+> 
 
-Current code misses a "regmap_exit(mc13xxx->regmap)" in the error and remove paths.
+No, you didn't... you based it on an ancient (pre-v3.3) version of
+tip/x86/debug...
 
-Converting to devm_regmap_init_i2c() makes the regmap_exit unnecessary.
+	-hpa
 
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
----
- drivers/mfd/mc13xxx-i2c.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/mfd/mc13xxx-i2c.c b/drivers/mfd/mc13xxx-i2c.c
-index d22501d..0e38672 100644
---- a/drivers/mfd/mc13xxx-i2c.c
-+++ b/drivers/mfd/mc13xxx-i2c.c
-@@ -72,7 +72,7 @@ static int mc13xxx_i2c_probe(struct i2c_client *client,
- 	mc13xxx->dev = &client->dev;
- 	mutex_init(&mc13xxx->lock);
- 
--	mc13xxx->regmap = regmap_init_i2c(client, &mc13xxx_regmap_i2c_config);
-+	mc13xxx->regmap = devm_regmap_init_i2c(client, &mc13xxx_regmap_i2c_config);
- 	if (IS_ERR(mc13xxx->regmap)) {
- 		ret = PTR_ERR(mc13xxx->regmap);
- 		dev_err(mc13xxx->dev, "Failed to initialize register map: %d\n",
 -- 
-1.7.1
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
