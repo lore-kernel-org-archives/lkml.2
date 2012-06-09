@@ -1,213 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755622Ab2FIJfj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jun 2012 05:35:39 -0400
-Received: from mail1.bemta12.messagelabs.com ([216.82.250.242]:49436 "EHLO
-	mail1.bemta12.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751470Ab2FIJfh (ORCPT
+	id S1755887Ab2FIJkd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jun 2012 05:40:33 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:54691 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752946Ab2FIJkb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jun 2012 05:35:37 -0400
-X-Greylist: delayed 389 seconds by postgrey-1.27 at vger.kernel.org; Sat, 09 Jun 2012 05:35:37 EDT
-X-Env-Sender: satendra.pratap@mindspeed.com
-X-Msg-Ref: server-10.tower-137.messagelabs.com!1339234148!8358468!1
-X-Originating-IP: [199.33.64.93]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-To: linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Subject: dmatest to use synopsys dma driver (dw_dmac.c)
-X-KeepSent: A47B3090:4F32E90D-65257A18:003404DE;
- type=4; flags=0; name=$KeepSent
-X-Mailer: Lotus Notes Release 8.5.2FP3 July 11, 2011
-Message-ID: <OFA47B3090.4F32E90D-ON65257A18.003404DE-65257A18.00341A63@mindspeed.com>
-From: satendra.pratap@mindspeed.com
-Date: Sat, 9 Jun 2012 14:59:06 +0530
-X-MIMETrack: Serialize by Router on IDCLNM1/Server/Mindspeed(Release 8.5.2FP3|July 10, 2011) at
- 06/09/2012 02:59:07 PM,
-	Serialize complete at 06/09/2012 02:59:07 PM,
-	Itemize by SMTP Server on NPBLNH1/Server/Mindspeed(Release 8.5.2FP3|July 10, 2011) at
- 06/09/2012 02:29:07 AM,
-	Serialize by Router on NPBLNH1/Server/Mindspeed(Release 8.5.2FP3|July 10, 2011) at
- 06/09/2012 02:29:08 AM,
-	Serialize complete at 06/09/2012 02:29:08 AM
-Content-Type: text/plain; charset="US-ASCII"
+	Sat, 9 Jun 2012 05:40:31 -0400
+From: David Mackey <tdmackey@twitter.com>
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Cc: rientjes@google.com, Andi Kleen <ak@linux.intel.com>, penberg@kernel.org,
+        cl@linux.com, David Mackey <tdmackey@twitter.com>
+Subject: [PATCH v5] slab/mempolicy: always use local policy from interrupt context
+Date: Sat,  9 Jun 2012 02:40:03 -0700
+Message-Id: <1339234803-21106-1-git-send-email-tdmackey@twitter.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1338438844-5022-1-git-send-email-andi@firstfloor.org>
+References: <1338438844-5022-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Andi Kleen <ak@linux.intel.com>
 
-We have Synopsys DMAC controller on our SoC and are trying to use open 
-source
-dw_dmac.c driver. We are using linux-3.2.2 kernel but it seems dw_dmac.c 
-does not have any support for command DMA_SLAVE_CONFIG. Later I checked 
-out that its been added in later versions of dw_dmac.c so I backported 
-dw_dmac from linux-3.4 to linux-3.2.2.
-I have tried using dmatest to validate dw_dmac.c driver. I just compile 
-kernel with dw_dmac.c and with dmatest support then I test it. (I think I 
-need not to modify dmatest in order to work with dw_dmac).
-While testing I get crashes with the ported driver (from linux-3.4 to 
-linux-3.2.2) but with the original driver in linux-3.2.2 I get no crashes 
-but "test timed out"
+From: Andi Kleen <ak@linux.intel.com>
 
-Below are the logs:
+slab_node() could access current->mempolicy from interrupt context.
+However there's a race condition during exit where the mempolicy
+is first freed and then the pointer zeroed.
 
-1. dmatest with ported dw_dmac.c (from linux-3.4 to linux-3.2.2):
+Using this from interrupts seems bogus anyways. The interrupt
+will interrupt a random process and therefore get a random
+mempolicy. Many times, this will be idle's, which noone can change.
 
-dmatest started automatically and tries test with all registered 8
-channels of our dma engine but we get crashes with every channel as shown
-below:
+Just disable this here and always use local for slab
+from interrupts. I also cleaned up the callers of slab_node a bit
+which always passed the same argument.
 
-=============================================================
+I believe the original mempolicy code did that in fact,
+so it's likely a regression.
 
-[    0.830000] private_candidate: Checking for channel=0
-[    0.830000] private_candidate: Got channel=0
-[    0.840000] dmatest: Started 1 threads using dma0chan0
-[    0.840000] Unable to handle kernel NULL pointer dereference at virtual
-address 00000000
-[    0.840000] pgd = c0004000
-[    0.840000] [00000000] *pgd=00000000
-[    0.840000] Internal error: Oops: 5 [#1] SMP
-[    0.840000] Modules linked in:
-[    0.840000] CPU: 1    Not tainted  (3.2.2+ #176)
-[    0.840000] PC is at dwc_prep_dma_memcpy+0x60/0x1d0
-[    0.840000] LR is at dmatest_func+0x660/0xc1c
-[    0.840000] pc : [<c0188720>]    lr : [<c018622c>]    psr: 60000013
-[    0.840000] sp : df9a9e98  ip : df9a9ed8  fp : df9a9ed4
-[    0.840000] r10: 000017c7  r9 : df8a308c  r8 : 00000000
-[    0.840000] r7 : 000021c0  r6 : df8a308c  r5 : 00000000  r4 : 00000000
-[    0.840000] r3 : 000017c7  r2 : 00000000  r1 : c02f69a1  r0 : df8a308c
-[    0.840000] Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM 
- Segment
-kernel
-[    0.840000] Control: 10c53c7d  Table: 0000404a  DAC: 00000015
-[    0.840000] Process dma0chan0-copy0 (pid: 240, stack limit = 
-0xdf9a8270)
-[    0.840000] Stack: (0xdf9a9e98 to 0xdf9aa000)
-[    0.840000] 9e80:                                                      
-00000000 003f3f00
-[    0.840000] 9ea0: 1f9f61c0 1f9fa1da c000f960 dfa01220 000017c7 00000001
-000021c0 00000000
-[    0.840000] 9ec0: 000021da df8a308c df9a9fbc df9a9ed8 c018622c c01886cc
-0000001b 00000001
-[    0.840000] 9ee0: c03ef6a8 00000000 1f9f8000 df9a9ef8 c0186664 c0043b84
-1f9f61c0 df9a8000
-[    0.840000] 9f00: df9a9fac df9a9f10 c02df464 c001d7bc df9a9f7c df9a9f20
-c0843f00 df9a9f6c
-[    0.840000] 9f20: 00000010 df9a9f08 df9a9ef8 00000001 00000004 df9a9ee8
-00000000 000017c7
-[    0.840000] 9f40: df9a9ef8 df9a9eec df96e644 00000000 df9a9ef8 00000000
-00000001 00000001
-[    0.840000] 9f60: df9a9ee8 df8a3000 00000000 df82def8 00000013 df82def4
-00000013 00000001
-[    0.840000] 9f80: 00000000 df82dee4 dfa01220 c0185bcc 00000013 df82dee4
-dfa01220 c0185bcc
-[    0.840000] 9fa0: 00000013 00000000 00000000 00000000 df9a9ff4 df9a9fc0
-c0043f80 c0185bd8
-[    0.840000] 9fc0: 00000000 dfa01220 00000000 00000000 df9a9fd0 df9a9fd0
-00000000 df82dee4
-[    0.840000] 9fe0: c0043ef0 c0029f18 00000000 df9a9ff8 c0029f18 c0043efc
-7ddfd75b effffffd
-[    0.840000] Backtrace:
-[    0.840000] [<c01886c0>] (dwc_prep_dma_memcpy+0x0/0x1d0) from 
-[<c018622c>]
-(dmatest_func+0x660/0x
-c1c)
-[    0.840000] [<c0185bcc>] (dmatest_func+0x0/0xc1c) from [<c0043f80>]
-(kthread+0x90/0x98)
-[    0.840000] [<c0043ef0>] (kthread+0x0/0x98) from [<c0029f18>]
-(do_exit+0x0/0x6d8)
-[    0.840000]  r6:c0029f18 r5:c0043ef0 r4:df82dee4
-[    0.840000] Code: e1a09006 e59f116c e3540000 e1a02004 (e5943000)
-[    0.840000] ---[ end trace cfbc40eba3a6e5e5 ]---
-[    1.070000] private_candidate: Checking for channel=0
-[    1.080000] private_candidate: Checking for channel=1
-[    1.080000] private_candidate: Got channel=1
-[    1.090000] dmatest: Started 1 threads using dma0chan1
-[    1.090000] Unable to handle kernel NULL pointer dereference at virtual
-address 00000000
-[    1.090000] pgd = c0004000
-[    1.090000] [00000000] *pgd=00000000
-[    1.090000] Internal error: Oops: 5 [#2] SMP
-[    1.090000] Modules linked in:
-[    1.090000] CPU: 1    Tainted: G      D       (3.2.2+ #176)
-[    1.090000] PC is at dwc_prep_dma_memcpy+0x60/0x1d0
-[    1.090000] LR is at dmatest_func+0x660/0xc1c
-[    1.090000] pc : [<c0188720>]    lr : [<c018622c>]    psr: 60000013
-[    1.090000] sp : df951e98  ip : df951ed8  fp : df951ed4
-[    1.090000] r10: 00001c5a  r9 : df8a3108  r8 : 00000000
-[    1.090000] r7 : 000000e7  r6 : df8a3108  r5 : 00000000  r4 : 00000000
-[    1.090000] r3 : 00001c5a  r2 : 00000000  r1 : c02f69a1  r0 : df8a3108
-[    1.090000] Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM 
- Segment
-kernel
-[    1.090000] Control: 10c53c7d  Table: 0000404a  DAC: 00000015
-[    1.090000] Process dma0chan1-copy0 (pid: 242, stack limit = 
-0xdf950270)
-[    1.090000] Stack: (0xdf951e98 to 0xdf952000)
-[    1.090000] 1e80:                                                      
-00000000 003f3f80
-[    1.090000] 1ea0: 1f9f00e7 1f9fcc98 c000f960 dfa011e0 00001c5a 00000001
-000000e7 00000000
-[    1.090000] 1ec0: 00000c98 df8a3108 df951fbc df951ed8 c018622c c01886cc
-0000001b 00000001
-[    1.090000] 1ee0: c03ef6a8 00000000 1f9fc000 df951ef8 c0186664 c0043b84
-1f9f00e7 df950000
-[    1.090000] 1f00: df951fac df951f10 c02df464 c001d7bc df951f7c df951f20
-c0843f80 df951f6c
-[    1.090000] 1f20: 00000010 df951f08 df951ef8 00000001 00000004 df951ee8
-00000000 00001c5a
-[    1.090000] 1f40: df951ef8 df951eec dfa0fd64 00000000 df951ef8 00000000
-00000001 00000001
-[    1.090000] 1f60: df951ee8 df8a3000 00000000 df82def8 00000013 df82def4
-00000013 00000001
-[    1.090000] 1f80: 00000000 df82dee4 dfa011e0 c0185bcc 00000013 df82dee4
-dfa011e0 c0185bcc
-[    1.090000] 1fa0: 00000013 00000000 00000000 00000000 df951ff4 df951fc0
-c0043f80 c0185bd8
-[    1.090000] 1fc0: 00000000 dfa011e0 00000000 00000000 df951fd0 df951fd0
-00000000 df82dee4
-[    1.090000] 1fe0: c0043ef0 c0029f18 00000000 df951ff8 c0029f18 c0043efc
-7ddfd77b effdffdd
-[    1.090000] Backtrace:
-[    1.090000] [<c01886c0>] (dwc_prep_dma_memcpy+0x0/0x1d0) from 
-[<c018622c>]
-(dmatest_func+0x660/0x
-c1c)
-[    1.090000] [<c0185bcc>] (dmatest_func+0x0/0xc1c) from [<c0043f80>]
-(kthread+0x90/0x98)
-[    1.090000] [<c0043ef0>] (kthread+0x0/0x98) from [<c0029f18>]
-(do_exit+0x0/0x6d8)
-[    1.090000]  r6:c0029f18 r5:c0043ef0 r4:df82dee4
-[    1.090000] Code: e1a09006 e59f116c e3540000 e1a02004 (e5943000)
-[    1.090000] ---[ end trace cfbc40eba3a6e5e6 ]---
+v2: send version with correct logic
+v3: simplify. fix typo.
+Reported-by: Arun Sharma <asharma@fb.com>
+Cc: penberg@kernel.org
+Cc: cl@linux.com
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+[tdmackey@twitter.com: Rework control flow based on feedback from
+cl@linux.com, fix logic, and cleanup current task_struct reference]
+Signed-off-by: David Mackey <tdmackey@twitter.com>
+---
+ include/linux/mempolicy.h |    2 +-
+ mm/mempolicy.c            |    8 +++++++-
+ mm/slab.c                 |    4 ++--
+ mm/slub.c                 |    2 +-
+ 4 files changed, 11 insertions(+), 5 deletions(-)
 
+diff --git a/include/linux/mempolicy.h b/include/linux/mempolicy.h
+index 4aa4273..95b738c 100644
+--- a/include/linux/mempolicy.h
++++ b/include/linux/mempolicy.h
+@@ -215,7 +215,7 @@ extern struct zonelist *huge_zonelist(struct vm_area_struct *vma,
+ extern bool init_nodemask_of_mempolicy(nodemask_t *mask);
+ extern bool mempolicy_nodemask_intersects(struct task_struct *tsk,
+ 				const nodemask_t *mask);
+-extern unsigned slab_node(struct mempolicy *policy);
++extern unsigned slab_node(void);
+ 
+ extern enum zone_type policy_zone;
+ 
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index f15c1b2..cb0b230 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -1602,8 +1602,14 @@ static unsigned interleave_nodes(struct mempolicy *policy)
+  * task can change it's policy.  The system default policy requires no
+  * such protection.
+  */
+-unsigned slab_node(struct mempolicy *policy)
++unsigned slab_node(void)
+ {
++	struct mempolicy *policy;
++
++	if (in_interrupt())
++		return numa_node_id();
++
++	policy = current->mempolicy;
+ 	if (!policy || policy->flags & MPOL_F_LOCAL)
+ 		return numa_node_id();
+ 
+diff --git a/mm/slab.c b/mm/slab.c
+index e901a36..af3b405 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -3336,7 +3336,7 @@ static void *alternate_node_alloc(struct kmem_cache *cachep, gfp_t flags)
+ 	if (cpuset_do_slab_mem_spread() && (cachep->flags & SLAB_MEM_SPREAD))
+ 		nid_alloc = cpuset_slab_spread_node();
+ 	else if (current->mempolicy)
+-		nid_alloc = slab_node(current->mempolicy);
++		nid_alloc = slab_node();
+ 	if (nid_alloc != nid_here)
+ 		return ____cache_alloc_node(cachep, flags, nid_alloc);
+ 	return NULL;
+@@ -3368,7 +3368,7 @@ static void *fallback_alloc(struct kmem_cache *cache, gfp_t flags)
+ 
+ retry_cpuset:
+ 	cpuset_mems_cookie = get_mems_allowed();
+-	zonelist = node_zonelist(slab_node(current->mempolicy), flags);
++	zonelist = node_zonelist(slab_node(), flags);
+ 
+ retry:
+ 	/*
+diff --git a/mm/slub.c b/mm/slub.c
+index 8c691fa..0d9241a 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -1617,7 +1617,7 @@ static void *get_any_partial(struct kmem_cache *s, gfp_t flags,
+ 
+ 	do {
+ 		cpuset_mems_cookie = get_mems_allowed();
+-		zonelist = node_zonelist(slab_node(current->mempolicy), flags);
++		zonelist = node_zonelist(slab_node(), flags);
+ 		for_each_zone_zonelist(zone, z, zonelist, high_zoneidx) {
+ 			struct kmem_cache_node *n;
+ 
+-- 
+1.7.4.1
 
-2. dmatest with original dw_dma.c in linux-3.2.2:
-
-I tried using dmatest with the original (linux-3.2.2) dma driver 
-(dw_dmac.c)
-and got the below results (timeout for tests):
-
-[    0.800000] Bridge firewalling registered
-[    0.810000] 8021q: 802.1Q VLAN Support v1.8
-[    0.810000] dmatest: Started 1 threads using dma0chan0
-[    0.820000] dmatest: Started 1 threads using dma0chan1
-[    0.820000] dmatest: Started 1 threads using dma0chan2
-[    0.830000] dmatest: Started 1 threads using dma0chan3
-[    0.830000] dmatest: Started 1 threads using dma0chan4
-[    0.840000] dmatest: Started 1 threads using dma0chan5
-[    0.840000] dmatest: Started 1 threads using dma0chan6
-[    0.850000] dmatest: Started 1 threads using dma0chan7
-[    3.810000] dma0chan0-copy0: #0: test timed out
-[    3.820000] dma0chan1-copy0: #0: test timed out
-[    3.820000] dma0chan2-copy0: #0: test timed out
-[    3.830000] dma0chan3-copy0: #0: test timed out
-[    3.830000] dma0chan4-copy0: #0: test timed out
-[    3.840000] dma0chan5-copy0: #0: test timed out
-
-Any help is greatly appreciated. It would be of very much help is some one 
-could share their code to use dw_dmac.c.
-
-Thanks,
-Satendra
