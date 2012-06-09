@@ -1,74 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756060Ab2FIJnk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jun 2012 05:43:40 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:59237 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754282Ab2FIJni (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jun 2012 05:43:38 -0400
-Subject: [PATCH] mm: correctly synchronize rss-counters at exit/exec
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Hugh Dickins <hughd@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        stable@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com,
-        akpm@linux-foundation.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>
-Date: Sat, 09 Jun 2012 13:43:32 +0400
-Message-ID: <20120609094332.5636.91441.stgit@zurg>
-In-Reply-To: <20120608170152.GA30975@redhat.com>
-References: <20120608170152.GA30975@redhat.com>
-User-Agent: StGit/0.15
+	id S1755962Ab2FIJo7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jun 2012 05:44:59 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:42701 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751985Ab2FIJo5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Jun 2012 05:44:57 -0400
+Date: Sat, 9 Jun 2012 11:44:44 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
+        rientjes@google.com, mhocko@suse.cz, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH -V8 05/16] hugetlb: avoid taking i_mmap_mutex in
+ unmap_single_vma() for hugetlb
+Message-ID: <20120609094444.GG1761@cmpxchg.org>
+References: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <1339232401-14392-6-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339232401-14392-6-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-do_exit() and exec_mmap() call sync_mm_rss() before mm_release()
-does put_user(clear_child_tid) which can update task->rss_stat
-and thus make mm->rss_stat inconsistent. This triggers the "BUG:"
-printk in check_mm().
+On Sat, Jun 09, 2012 at 02:29:50PM +0530, Aneesh Kumar K.V wrote:
+> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+> 
+> i_mmap_mutex lock was added in unmap_single_vma by 502717f4e ("hugetlb:
+> fix linked list corruption in unmap_hugepage_range()") but we don't use
+> page->lru in unmap_hugepage_range any more.  Also the lock was taken
+> higher up in the stack in some code path.  That would result in deadlock.
+> 
+> unmap_mapping_range (i_mmap_mutex)
+>  -> unmap_mapping_range_tree
+>     -> unmap_mapping_range_vma
+>        -> zap_page_range_single
+>          -> unmap_single_vma
+> 	      -> unmap_hugepage_range (i_mmap_mutex)
+> 
+> For shared pagetable support for huge pages, since pagetable pages are ref
+> counted we don't need any lock during huge_pmd_unshare.  We do take
+> i_mmap_mutex in huge_pmd_share while walking the vma_prio_tree in mapping.
+> (39dde65c9940c97f ("shared page table for hugetlb page")).
+> 
+> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 
-Let's fix this bug in the safest way, and optimize/cleanup this later.
+This patch (together with the previous one) seems like a bugfix that's
+not really related to the hugetlb controller, unless I miss something.
 
-Reported-by: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
----
- fs/exec.c     |    2 +-
- kernel/exit.c |    1 +
- 2 files changed, 2 insertions(+), 1 deletion(-)
+Could you please submit the fix separately?
 
-diff --git a/fs/exec.c b/fs/exec.c
-index a79786a..da27b91 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -819,10 +819,10 @@ static int exec_mmap(struct mm_struct *mm)
- 	/* Notify parent that we're no longer interested in the old VM */
- 	tsk = current;
- 	old_mm = current->mm;
--	sync_mm_rss(old_mm);
- 	mm_release(tsk, old_mm);
- 
- 	if (old_mm) {
-+		sync_mm_rss(old_mm);
- 		/*
- 		 * Make sure that if there is a core dump in progress
- 		 * for the old mm, we get out and die instead of going
-diff --git a/kernel/exit.c b/kernel/exit.c
-index 34867cc..c0277d3 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -643,6 +643,7 @@ static void exit_mm(struct task_struct * tsk)
- 	mm_release(tsk, mm);
- 	if (!mm)
- 		return;
-+	sync_mm_rss(mm);
- 	/*
- 	 * Serialize with any possible pending coredump.
- 	 * We must hold mmap_sem around checking core_state
+Maybe also fold the two patches into one and make it a single bugfix
+change that gets rid of the lock by switching away from page->lru.
 
+Thanks
