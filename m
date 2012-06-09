@@ -1,82 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752568Ab2FIJAW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jun 2012 05:00:22 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:48411 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751626Ab2FIJAS (ORCPT
+	id S1753426Ab2FIJA1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jun 2012 05:00:27 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:60635 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752463Ab2FIJAX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jun 2012 05:00:18 -0400
+	Sat, 9 Jun 2012 05:00:23 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
         rientjes@google.com, mhocko@suse.cz, akpm@linux-foundation.org,
         hannes@cmpxchg.org
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: [PATCH -V8 00/16] hugetlb: Add HugeTLB controller to control HugeTLB allocation
-Date: Sat,  9 Jun 2012 14:29:45 +0530
-Message-Id: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V8 02/16] hugetlb: don't use ERR_PTR with VM_FAULT* values
+Date: Sat,  9 Jun 2012 14:29:47 +0530
+Message-Id: <1339232401-14392-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.10
-x-cbid: 12060909-2000-0000-0000-000007DBE087
+In-Reply-To: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+References: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+x-cbid: 12060909-8256-0000-0000-000002DBADE0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-This patchset implements a cgroup resource controller for HugeTLB
-pages. The controller allows to limit the HugeTLB usage per control
-group and enforces the controller limit during page fault. Since
-HugeTLB doesn't support page reclaim, enforcing the limit at page
-fault time implies that, the application will get SIGBUS signal if
-it tries to access HugeTLB pages beyond its limit. This requires
-the application to know beforehand how much HugeTLB pages it would
-require for its use.
+The current use of VM_FAULT_* codes with ERR_PTR requires us to ensure
+VM_FAULT_* values will not exceed MAX_ERRNO value. Decouple the
+VM_FAULT_* values from MAX_ERRNO.
 
-The goal is to control how many HugeTLB pages a group of task can
-allocate. It can be looked at as an extension of the existing quota
-interface which limits the number of HugeTLB pages per hugetlbfs
-superblock. HPC job scheduler requires jobs to specify their resource
-requirements in the job file. Once their requirements can be met,
-job schedulers like (SLURM) will schedule the job. We need to make sure
-that the jobs won't consume more resources than requested. If they do
-we should either error out or kill the application.
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+---
+ mm/hugetlb.c |   18 +++++++++++++-----
+ 1 file changed, 13 insertions(+), 5 deletions(-)
 
-Changes from V7:
-  * Remove dependency on page cgroup.
-  * Use page[2].lru.next to store HugeTLB cgroup information.
-
-Changes from V6:
- * Implement the controller as a seperate HugeTLB cgroup.
- * Folded fixup patches in -mm to the original patches
-
-Changes from V5:
- * Address review feedback.
-
-Changes from V4:
- * Add support for charge/uncharge during page migration
- * Drop the usage of page->lru in unmap_hugepage_range.
-
-Changes from v3:
- * Address review feedback.
- * Fix a bug in cgroup removal related parent charging with use_hierarchy set
-
-Changes from V2:
-* Changed the implementation to limit the HugeTLB usage during page
-  fault time. This simplifies the extension and keep it closer to
-  memcg design. This also allows to support cgroup removal with less
-  complexity. Only caveat is the application should ensure its HugeTLB
-  usage doesn't cross the cgroup limit.
-
-Changes from V1:
-* Changed the implementation as a memcg extension. We still use
-  the same logic to track the cgroup and range.
-
-Changes from RFC post:
-* Added support for HugeTLB cgroup hierarchy
-* Added support for task migration
-* Added documentation patch
-* Other bug fixes
-
--aneesh
-
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index c868309..34a7e23 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -1123,10 +1123,10 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+ 	 */
+ 	chg = vma_needs_reservation(h, vma, addr);
+ 	if (chg < 0)
+-		return ERR_PTR(-VM_FAULT_OOM);
++		return ERR_PTR(-ENOMEM);
+ 	if (chg)
+ 		if (hugepage_subpool_get_pages(spool, chg))
+-			return ERR_PTR(-VM_FAULT_SIGBUS);
++			return ERR_PTR(-ENOSPC);
+ 
+ 	spin_lock(&hugetlb_lock);
+ 	page = dequeue_huge_page_vma(h, vma, addr, avoid_reserve);
+@@ -1136,7 +1136,7 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+ 		page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
+ 		if (!page) {
+ 			hugepage_subpool_put_pages(spool, chg);
+-			return ERR_PTR(-VM_FAULT_SIGBUS);
++			return ERR_PTR(-ENOSPC);
+ 		}
+ 	}
+ 
+@@ -2496,6 +2496,7 @@ retry_avoidcopy:
+ 	new_page = alloc_huge_page(vma, address, outside_reserve);
+ 
+ 	if (IS_ERR(new_page)) {
++		long err = PTR_ERR(new_page);
+ 		page_cache_release(old_page);
+ 
+ 		/*
+@@ -2524,7 +2525,10 @@ retry_avoidcopy:
+ 
+ 		/* Caller expects lock to be held */
+ 		spin_lock(&mm->page_table_lock);
+-		return -PTR_ERR(new_page);
++		if (err == -ENOMEM)
++			return VM_FAULT_OOM;
++		else
++			return VM_FAULT_SIGBUS;
+ 	}
+ 
+ 	/*
+@@ -2642,7 +2646,11 @@ retry:
+ 			goto out;
+ 		page = alloc_huge_page(vma, address, 0);
+ 		if (IS_ERR(page)) {
+-			ret = -PTR_ERR(page);
++			ret = PTR_ERR(page);
++			if (ret == -ENOMEM)
++				ret = VM_FAULT_OOM;
++			else
++				ret = VM_FAULT_SIGBUS;
+ 			goto out;
+ 		}
+ 		clear_huge_page(page, address, pages_per_huge_page(h));
+-- 
+1.7.10
 
