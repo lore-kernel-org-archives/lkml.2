@@ -1,69 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934586Ab2FIAv5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 20:51:57 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:50988 "EHLO
+	id S934543Ab2FIAzP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 20:55:15 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34690 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933129Ab2FIAu6 (ORCPT
+	with ESMTP id S932992Ab2FIAzL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 20:50:58 -0400
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, Alasdair Kergon <agk@redhat.com>,
-        dm-devel@redhat.com
-Subject: [PATCH v3 3/9] dm: use memweight()
-Date: Sat,  9 Jun 2012 09:50:32 +0900
-Message-Id: <1339203038-13069-3-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1339203038-13069-1-git-send-email-akinobu.mita@gmail.com>
-References: <1339203038-13069-1-git-send-email-akinobu.mita@gmail.com>
+	Fri, 8 Jun 2012 20:55:11 -0400
+From: Wanpeng Li <liwp.linux@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, Wanpeng Li <liwp.linux@gmail.com>,
+        Gavin Shan <shangw@linux.vent.ibm.com>,
+        Wanpeng Li <liwp@linux.vnet.ibm.com>
+Subject: [PATCH] Fix some comments error in writeback subsystem
+Date: Sat,  9 Jun 2012 08:54:54 +0800
+Message-Id: <1339203294-5488-1-git-send-email-liwp.linux@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use memweight() to count the total number of bits set in memory area.
+From: Wanpeng Li <liwp@linux.vnet.ibm.com>
 
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Alasdair Kergon <agk@redhat.com>
-Cc: dm-devel@redhat.com
+Signed-off-by: Wanpeng Li <liwp@linux.vnet.ibm.com>
 ---
-v3: no changes from v2
-v2: change patch title s/dm-log:/dm:/
+ fs/fs-writeback.c |    4 ++--
+ fs/super.c        |    2 +-
+ fs/sync.c         |    2 +-
+ 3 files changed, 4 insertions(+), 4 deletions(-)
 
- drivers/md/dm-log.c |   13 ++-----------
- 1 files changed, 2 insertions(+), 11 deletions(-)
-
-diff --git a/drivers/md/dm-log.c b/drivers/md/dm-log.c
-index 65ebaeb..627d191 100644
---- a/drivers/md/dm-log.c
-+++ b/drivers/md/dm-log.c
-@@ -571,16 +571,6 @@ static void disk_dtr(struct dm_dirty_log *log)
- 	destroy_log_context(lc);
+diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+index 8d2fb8c..d462fe7 100644
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -628,8 +628,8 @@ static long writeback_sb_inodes(struct super_block *sb,
+ 		}
+ 
+ 		/*
+-		 * Don't bother with new inodes or inodes beeing freed, first
+-		 * kind does not need peridic writeout yet, and for the latter
++		 * Don't bother with new inodes or inodes being freed, first
++		 * kind does not need periodic writeout yet, and for the latter
+ 		 * kind writeout is handled by the freer.
+ 		 */
+ 		spin_lock(&inode->i_lock);
+diff --git a/fs/super.c b/fs/super.c
+index cf00177..3d65443 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -318,7 +318,7 @@ static int grab_super(struct super_block *s) __releases(sb_lock)
+ 
+ /*
+  *	grab_super_passive - acquire a passive reference
+- *	@s: reference we are trying to grab
++ *	@sb: reference we are trying to grab
+  *
+  *	Tries to acquire a passive reference. This is used in places where we
+  *	cannot take an active reference but we need to ensure that the
+diff --git a/fs/sync.c b/fs/sync.c
+index 11e3d1c..1830704 100644
+--- a/fs/sync.c
++++ b/fs/sync.c
+@@ -92,7 +92,7 @@ static void sync_filesystems(int wait)
  }
  
--static int count_bits32(uint32_t *addr, unsigned size)
--{
--	int count = 0, i;
--
--	for (i = 0; i < size; i++) {
--		count += hweight32(*(addr+i));
--	}
--	return count;
--}
--
- static void fail_log_device(struct log_c *lc)
- {
- 	if (lc->log_dev_failed)
-@@ -629,7 +619,8 @@ static int disk_resume(struct dm_dirty_log *log)
- 
- 	/* copy clean across to sync */
- 	memcpy(lc->sync_bits, lc->clean_bits, size);
--	lc->sync_count = count_bits32(lc->clean_bits, lc->bitset_uint32_count);
-+	lc->sync_count = memweight(lc->clean_bits,
-+				lc->bitset_uint32_count * sizeof(uint32_t));
- 	lc->sync_search = 0;
- 
- 	/* set the correct number of regions in the header */
+ /*
+- * sync everything.  Start out by waking pdflush, because that writes back
++ * sync everything.  Start out by waking flusher, because that writes back
+  * all queues in parallel.
+  */
+ SYSCALL_DEFINE0(sync)
 -- 
-1.7.7.6
+1.7.9.5
 
