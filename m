@@ -1,88 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755601Ab2FIJA7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jun 2012 05:00:59 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:60773 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755460Ab2FIJAz (ORCPT
+	id S1755814Ab2FIJBW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jun 2012 05:01:22 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:54835 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754660Ab2FIJAw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jun 2012 05:00:55 -0400
+	Sat, 9 Jun 2012 05:00:52 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
         rientjes@google.com, mhocko@suse.cz, akpm@linux-foundation.org,
         hannes@cmpxchg.org
 Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -V8 16/16] hugetlb/cgroup: add HugeTLB controller documentation
-Date: Sat,  9 Jun 2012 14:30:01 +0530
-Message-Id: <1339232401-14392-17-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V8 15/16] hugetlb/cgroup: migrate hugetlb cgroup info from oldpage to new page during migration
+Date: Sat,  9 Jun 2012 14:30:00 +0530
+Message-Id: <1339232401-14392-16-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-x-cbid: 12060909-8256-0000-0000-000002DBAE3D
+x-cbid: 12060909-3864-0000-0000-00000341A850
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
+With HugeTLB pages, hugetlb cgroup is uncharged in compound page destructor.  Since
+we are holding a hugepage reference, we can be sure that old page won't
+get uncharged till the last put_page().
+
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- Documentation/cgroups/hugetlb.txt |   45 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 45 insertions(+)
- create mode 100644 Documentation/cgroups/hugetlb.txt
+ include/linux/hugetlb_cgroup.h |    8 ++++++++
+ mm/hugetlb_cgroup.c            |   21 +++++++++++++++++++++
+ mm/migrate.c                   |    5 +++++
+ 3 files changed, 34 insertions(+)
 
-diff --git a/Documentation/cgroups/hugetlb.txt b/Documentation/cgroups/hugetlb.txt
-new file mode 100644
-index 0000000..a9faaca
---- /dev/null
-+++ b/Documentation/cgroups/hugetlb.txt
-@@ -0,0 +1,45 @@
-+HugeTLB Controller
-+-------------------
+diff --git a/include/linux/hugetlb_cgroup.h b/include/linux/hugetlb_cgroup.h
+index ba4836f..b64d067 100644
+--- a/include/linux/hugetlb_cgroup.h
++++ b/include/linux/hugetlb_cgroup.h
+@@ -63,6 +63,8 @@ extern void hugetlb_cgroup_uncharge_page(int idx, unsigned long nr_pages,
+ extern void hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
+ 					   struct hugetlb_cgroup *h_cg);
+ extern int hugetlb_cgroup_file_init(int idx) __init;
++extern void hugetlb_cgroup_migrate(struct page *oldhpage,
++				   struct page *newhpage);
+ #else
+ static inline struct hugetlb_cgroup *hugetlb_cgroup_from_page(struct page *page)
+ {
+@@ -112,5 +114,11 @@ static inline int __init hugetlb_cgroup_file_init(int idx)
+ {
+ 	return 0;
+ }
 +
-+The HugeTLB controller allows to limit the HugeTLB usage per control group and
-+enforces the controller limit during page fault. Since HugeTLB doesn't
-+support page reclaim, enforcing the limit at page fault time implies that,
-+the application will get SIGBUS signal if it tries to access HugeTLB pages
-+beyond its limit. This requires the application to know beforehand how much
-+HugeTLB pages it would require for its use.
++static inline void hugetlb_cgroup_migrate(struct page *oldhpage,
++					  struct page *newhpage)
++{
++	return;
++}
+ #endif  /* CONFIG_MEM_RES_CTLR_HUGETLB */
+ #endif
+diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
+index c2b7b8e..2d384fe 100644
+--- a/mm/hugetlb_cgroup.c
++++ b/mm/hugetlb_cgroup.c
+@@ -394,6 +394,27 @@ int __init hugetlb_cgroup_file_init(int idx)
+ 	return 0;
+ }
+ 
++void hugetlb_cgroup_migrate(struct page *oldhpage, struct page *newhpage)
++{
++	struct hugetlb_cgroup *h_cg;
 +
-+HugeTLB controller can be created by first mounting the cgroup filesystem.
++	VM_BUG_ON(!PageHuge(oldhpage));
 +
-+# mount -t cgroup -o hugetlb none /sys/fs/cgroup
++	if (hugetlb_cgroup_disabled())
++		return;
 +
-+With the above step, the initial or the parent HugeTLB group becomes
-+visible at /sys/fs/cgroup. At bootup, this group includes all the tasks in
-+the system. /sys/fs/cgroup/tasks lists the tasks in this cgroup.
++	spin_lock(&hugetlb_lock);
++	h_cg = hugetlb_cgroup_from_page(oldhpage);
++	set_hugetlb_cgroup(oldhpage, NULL);
++	cgroup_exclude_rmdir(&h_cg->css);
 +
-+New groups can be created under the parent group /sys/fs/cgroup.
++	/* move the h_cg details to new cgroup */
++	set_hugetlb_cgroup(newhpage, h_cg);
++	spin_unlock(&hugetlb_lock);
++	cgroup_release_and_wakeup_rmdir(&h_cg->css);
++	return;
++}
 +
-+# cd /sys/fs/cgroup
-+# mkdir g1
-+# echo $$ > g1/tasks
+ struct cgroup_subsys hugetlb_subsys = {
+ 	.name = "hugetlb",
+ 	.create     = hugetlb_cgroup_create,
+diff --git a/mm/migrate.c b/mm/migrate.c
+index fdce3a2..6c37c51 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -33,6 +33,7 @@
+ #include <linux/memcontrol.h>
+ #include <linux/syscalls.h>
+ #include <linux/hugetlb.h>
++#include <linux/hugetlb_cgroup.h>
+ #include <linux/gfp.h>
+ 
+ #include <asm/tlbflush.h>
+@@ -931,6 +932,10 @@ static int unmap_and_move_huge_page(new_page_t get_new_page,
+ 
+ 	if (anon_vma)
+ 		put_anon_vma(anon_vma);
 +
-+The above steps create a new group g1 and move the current shell
-+process (bash) into it.
++	if (!rc)
++		hugetlb_cgroup_migrate(hpage, new_hpage);
 +
-+Brief summary of control files
-+
-+ hugetlb.<hugepagesize>.limit_in_bytes     # set/show limit of "hugepagesize" hugetlb usage
-+ hugetlb.<hugepagesize>.max_usage_in_bytes # show max "hugepagesize" hugetlb  usage recorded
-+ hugetlb.<hugepagesize>.usage_in_bytes     # show current res_counter usage for "hugepagesize" hugetlb
-+ hugetlb.<hugepagesize>.failcnt		   # show the number of allocation failure due to HugeTLB limit
-+
-+For a system supporting two hugepage size (16M and 16G) the control
-+files include:
-+
-+hugetlb.16GB.limit_in_bytes
-+hugetlb.16GB.max_usage_in_bytes
-+hugetlb.16GB.usage_in_bytes
-+hugetlb.16GB.failcnt
-+hugetlb.16MB.limit_in_bytes
-+hugetlb.16MB.max_usage_in_bytes
-+hugetlb.16MB.usage_in_bytes
-+hugetlb.16MB.failcnt
+ 	unlock_page(hpage);
+ out:
+ 	put_page(new_hpage);
 -- 
 1.7.10
 
