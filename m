@@ -1,38 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754121Ab2FIP4o (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jun 2012 11:56:44 -0400
-Received: from mailout-us.gmx.com ([74.208.5.67]:37307 "HELO
-	mailout-us.gmx.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753649Ab2FIP4f (ORCPT
+	id S1754163Ab2FIP5u (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jun 2012 11:57:50 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:61284 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753649Ab2FIP5s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jun 2012 11:56:35 -0400
-Cc: kernel@kolivas.org, mblue@gmx.us
-Content-Type: text/plain; charset="utf-8"
-Date: Sat, 09 Jun 2012 11:56:31 -0400
-From: "Micheal Blue" <mblue@gmx.us>
-Message-ID: <20120609155632.153780@gmx.com>
+	Sat, 9 Jun 2012 11:57:48 -0400
 MIME-Version: 1.0
-Subject: =?utf-8?Q?=5BBUG=5D_sysload_accounting_broken_in_bfs_v0=2E422=E2=80=8F?=
-To: linux-kernel@vger.kernel.org
-X-Authenticated: #135695170
-X-Flags: 0001
-X-Mailer: GMX.com Web Mailer
-x-registered: 0
-Content-Transfer-Encoding: 8bit
-X-GMX-UID: Zxehb3Zd3zOlNSPofXwhBmJ+IGRvb0Du
+In-Reply-To: <alpine.DEB.2.00.1206081401090.28466@router.home>
+References: <1339176197-13270-1-git-send-email-js1304@gmail.com>
+	<alpine.DEB.2.00.1206081401090.28466@router.home>
+Date: Sun, 10 Jun 2012 00:57:48 +0900
+Message-ID: <CAAmzW4Nt2ev-M_Mw=xTaJEsRgKxrPNnz=rXrJenNA-6bEvZKtQ@mail.gmail.com>
+Subject: Re: [PATCH 1/4] slub: change declare of get_slab() to inline at all times
+From: JoonSoo Kim <js1304@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bug to report with bfs v0.422: no sysload even when compiling on a quad core with 4 threads.  This bug also affects htop.
+2012/6/9 Christoph Lameter <cl@linux.com>:
+> On Sat, 9 Jun 2012, Joonsoo Kim wrote:
+>
+>> -static struct kmem_cache *get_slab(size_t size, gfp_t flags)
+>> +static __always_inline struct kmem_cache *get_slab(size_t size, gfp_t flags)
+>
+> I thought that the compiler felt totally free to inline static functions
+> at will? This may be a matter of compiler optimization settings. I can
+> understand the use of always_inline in a header file but why in a .c file?
 
-$ uptime
-15:58:10 up 7:52, 2 users, load average: 0.00, 0.00, 0.00
-
-$ cat /proc/loadavg 
-0.00 0.00 0.00 6/336 31689
-
-Link to bfs patch: http://ck.kolivas.org/patches/bfs/3.4.0/3.4-sched-bfs-422.patch
-
-I think this is a long standing bug with bfs actually.
+Yes, but the compiler with -O2 doesn't inline get_slab() which
+declared just 'static'.
+I think that inlining get_slab() have a performance benefit, so add
+'__always_inline' to declare of get_slab().
+Other functions like slab_alloc, slab_free also use 'always_inline' in
+.c file (slub.c)
