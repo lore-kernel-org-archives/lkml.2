@@ -1,123 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933348Ab2FIAu6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 20:50:58 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:50988 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932201Ab2FIAuz (ORCPT
+	id S933094Ab2FIAwB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 20:52:01 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:59124 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934451Ab2FIAvF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 20:50:55 -0400
+	Fri, 8 Jun 2012 20:51:05 -0400
 From: Akinobu Mita <akinobu.mita@gmail.com>
 To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, Anders Larsen <al@alarsen.net>,
-        Alasdair Kergon <agk@redhat.com>, dm-devel@redhat.com,
-        linux-fsdevel@vger.kernel.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-media@vger.kernel.org, Mark Fasheh <mfasheh@suse.com>,
-        Joel Becker <jlbec@evilplan.org>, ocfs2-devel@oss.oracle.com,
-        Jan Kara <jack@suse.cz>, linux-ext4@vger.kernel.org,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        "Theodore Ts'o" <tytso@mit.edu>, Matthew Wilcox <matthew@wil.cx>
-Subject: [PATCH v3 1/9] string: introduce memweight
-Date: Sat,  9 Jun 2012 09:50:30 +0900
-Message-Id: <1339203038-13069-1-git-send-email-akinobu.mita@gmail.com>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, linux-fsdevel@vger.kernel.org
+Subject: [PATCH v3 4/9] affs: use memweight()
+Date: Sat,  9 Jun 2012 09:50:33 +0900
+Message-Id: <1339203038-13069-4-git-send-email-akinobu.mita@gmail.com>
 X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1339203038-13069-1-git-send-email-akinobu.mita@gmail.com>
+References: <1339203038-13069-1-git-send-email-akinobu.mita@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-memweight() is the function that counts the total number of bits set
-in memory area.  Unlike bitmap_weight(), memweight() takes pointer
-and size in bytes to specify a memory area which does not need to be
-aligned to long-word boundary.
+Use memweight() to count the total number of bits set in memory area.
 
 Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Anders Larsen <al@alarsen.net>
-Cc: Alasdair Kergon <agk@redhat.com>
-Cc: dm-devel@redhat.com
 Cc: linux-fsdevel@vger.kernel.org
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: linux-media@vger.kernel.org
-Cc: Mark Fasheh <mfasheh@suse.com>
-Cc: Joel Becker <jlbec@evilplan.org>
-Cc: ocfs2-devel@oss.oracle.com
-Cc: Jan Kara <jack@suse.cz>
-Cc: linux-ext4@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andreas Dilger <adilger.kernel@dilger.ca>
-Cc: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Matthew Wilcox <matthew@wil.cx>
 ---
-v3: add comment for the last loop, adviced by Jan Kara
-v2: simplify memweight(), adviced by Jan Kara
+No changes from v1
 
- include/linux/string.h |    3 +++
- lib/string.c           |   36 ++++++++++++++++++++++++++++++++++++
- 2 files changed, 39 insertions(+), 0 deletions(-)
+ fs/affs/bitmap.c |   28 ++--------------------------
+ 1 files changed, 2 insertions(+), 26 deletions(-)
 
-diff --git a/include/linux/string.h b/include/linux/string.h
-index e033564..ffe0442 100644
---- a/include/linux/string.h
-+++ b/include/linux/string.h
-@@ -145,4 +145,7 @@ static inline bool strstarts(const char *str, const char *prefix)
- 	return strncmp(str, prefix, strlen(prefix)) == 0;
- }
- #endif
-+
-+extern size_t memweight(const void *ptr, size_t bytes);
-+
- #endif /* _LINUX_STRING_H_ */
-diff --git a/lib/string.c b/lib/string.c
-index e5878de..e467186 100644
---- a/lib/string.c
-+++ b/lib/string.c
-@@ -26,6 +26,7 @@
- #include <linux/export.h>
- #include <linux/bug.h>
- #include <linux/errno.h>
-+#include <linux/bitmap.h>
+diff --git a/fs/affs/bitmap.c b/fs/affs/bitmap.c
+index 3e26271..3dfdcd2 100644
+--- a/fs/affs/bitmap.c
++++ b/fs/affs/bitmap.c
+@@ -10,30 +10,6 @@
+ #include <linux/slab.h>
+ #include "affs.h"
  
- #ifndef __HAVE_ARCH_STRNICMP
- /**
-@@ -824,3 +825,38 @@ void *memchr_inv(const void *start, int c, size_t bytes)
- 	return check_bytes8(start, value, bytes % 8);
- }
- EXPORT_SYMBOL(memchr_inv);
-+
-+/**
-+ * memweight - count the total number of bits set in memory area
-+ * @ptr: pointer to the start of the area
-+ * @bytes: the size of the area
-+ */
-+size_t memweight(const void *ptr, size_t bytes)
-+{
-+	size_t w = 0;
-+	size_t longs;
-+	const unsigned char *bitmap = ptr;
-+
-+	for (; bytes > 0 && ((unsigned long)bitmap) % sizeof(long);
-+			bytes--, bitmap++)
-+		w += hweight8(*bitmap);
-+
-+	longs = bytes / sizeof(long);
-+	if (longs) {
-+		BUG_ON(longs >= INT_MAX / BITS_PER_LONG);
-+		w += bitmap_weight((unsigned long *)bitmap,
-+				longs * BITS_PER_LONG);
-+		bytes -= longs * sizeof(long);
-+		bitmap += longs * sizeof(long);
-+	}
-+	/*
-+	 * The reason that this last loop is distinct from the preceding
-+	 * bitmap_weight() call is to compute 1-bits in the last region smaller
-+	 * than sizeof(long) properly on big-endian systems.
-+	 */
-+	for (; bytes > 0; bytes--, bitmap++)
-+		w += hweight8(*bitmap);
-+
-+	return w;
-+}
-+EXPORT_SYMBOL(memweight);
+-/* This is, of course, shamelessly stolen from fs/minix */
+-
+-static const int nibblemap[] = { 0,1,1,2,1,2,2,3,1,2,2,3,2,3,3,4 };
+-
+-static u32
+-affs_count_free_bits(u32 blocksize, const void *data)
+-{
+-	const u32 *map;
+-	u32 free;
+-	u32 tmp;
+-
+-	map = data;
+-	free = 0;
+-	for (blocksize /= 4; blocksize > 0; blocksize--) {
+-		tmp = *map++;
+-		while (tmp) {
+-			free += nibblemap[tmp & 0xf];
+-			tmp >>= 4;
+-		}
+-	}
+-
+-	return free;
+-}
+-
+ u32
+ affs_count_free_blocks(struct super_block *sb)
+ {
+@@ -317,7 +293,7 @@ int affs_init_bitmap(struct super_block *sb, int *flags)
+ 			goto out;
+ 		}
+ 		pr_debug("AFFS: read bitmap block %d: %d\n", blk, bm->bm_key);
+-		bm->bm_free = affs_count_free_bits(sb->s_blocksize - 4, bh->b_data + 4);
++		bm->bm_free = memweight(bh->b_data + 4, sb->s_blocksize - 4);
+ 
+ 		/* Don't try read the extension if this is the last block,
+ 		 * but we also need the right bm pointer below
+@@ -367,7 +343,7 @@ int affs_init_bitmap(struct super_block *sb, int *flags)
+ 
+ 	/* recalculate bitmap count for last block */
+ 	bm--;
+-	bm->bm_free = affs_count_free_bits(sb->s_blocksize - 4, bh->b_data + 4);
++	bm->bm_free = memweight(bh->b_data + 4, sb->s_blocksize - 4);
+ 
+ out:
+ 	affs_brelse(bh);
 -- 
 1.7.7.6
 
