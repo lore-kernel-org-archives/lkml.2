@@ -1,57 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753227Ab2FIW7D (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jun 2012 18:59:03 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:45884 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751899Ab2FIW7B (ORCPT
+	id S1753487Ab2FIX52 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jun 2012 19:57:28 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:42742 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750843Ab2FIX51 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jun 2012 18:59:01 -0400
-Date: Sun, 10 Jun 2012 00:58:56 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@ti.com>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 0/2] rcu: Extended quiescent state for adaptive nohz
-Message-ID: <20120609225852.GC31957@somewhere.redhat.com>
-References: <1338811708-18819-1-git-send-email-fweisbec@gmail.com>
- <20120604181313.GL2490@linux.vnet.ibm.com>
- <CAFTL4hzqa1z4icSBwEqZXLjCrVsG+axm2TaGSaaMXkjazT0Qfw@mail.gmail.com>
- <20120604210709.GO2490@linux.vnet.ibm.com>
- <20120605103055.GA4553@somewhere.redhat.com>
- <20120605234640.GY2388@linux.vnet.ibm.com>
- <20120607142101.GI19842@somewhere.redhat.com>
- <20120607224508.GX19601@linux.vnet.ibm.com>
+	Sat, 9 Jun 2012 19:57:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120607224508.GX19601@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4FD345DC.6020405@acm.org>
+References: <CAFR8uecFzcrAYSy2ieJM5vWjNLSO3bjg20cy+B4cimHZ4RLktA@mail.gmail.com>
+	<4FD345DC.6020405@acm.org>
+Date: Sat, 9 Jun 2012 16:57:26 -0700
+Message-ID: <CAFR8ueca-MQWRipE+3OQSpqmJ40HKJEY7jWt6PQ+zTCQ9Bh=5Q@mail.gmail.com>
+Subject: Re: [PATCH UPDATED] block: In blk_execute_rq_nowait, init rq->end_io
+ before checking for dead queue.
+From: Muthu Kumar <muthu.lkml@gmail.com>
+To: Bart Van Assche <bvanassche@acm.org>
+Cc: Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
+        Jej B <James.Bottomley@hansenpartnership.com>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Content-Type: multipart/mixed; boundary=20cf3079ba3af5576304c212e069
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 07, 2012 at 03:45:08PM -0700, Paul E. McKenney wrote:
-> > I can see you've implemented a version for TinyRCU. Nohz cpusets only work on
-> > SMP right now because there must be at least one CPU running with the tick
-> > to maintain the timekeeping. I'm pretty confident that one day we'll remove
-> > the jiffies and we'll be able to do the whole timekeeping by using the TSC
-> > or so. There is quite a way before we reach that though.
-> 
-> In the meantime, would it make sense to slow the tick rate by a factor
-> of 10 or so on that one CPU when nothing else is going on?  Or does
-> timekeeping absolutely require running the tick at full speed?
+--20cf3079ba3af5576304c212e069
+Content-Type: text/plain; charset=ISO-8859-1
 
-I'm not sure of the possible consequences of that.
+On Sat, Jun 9, 2012 at 5:47 AM, Bart Van Assche <bvanassche@acm.org> wrote:
+> On 06/09/12 00:10, Muthu Kumar wrote:
+>
+>> Since the queue->lock case is taken care of in the following patch:
+>>
+>> (http://www.spinics.net/lists/linux-scsi/msg59845.html [PATCH 1/4]
+>> block: Fix race on request_queue.end_io invocations)
+>>
+>> Updated the patch with just the end_io assignment before dead queue check.
+>>
+>>
+>
+>
+> This patch does not apply since it's line-wrapped and a part is missing
+> in the second hunk. However, if I had overlooked your original patch
+> then I want to apologize.
+>
+
+Please use the attached file since gmail messes with the line wraps.
+
+> If you can resend your original patch including the locking changes then
+> I'll test it further.
+>
+
+Locking change is the one you posted already (the link above). Anyway,
+I have the attached patch *including* the locking change. Original
+mail has attachment without locking change. Please use whatever you
+need.
+Thanks for testing.
+
+Regards,
+Muthu
+
+
+> Bart.
+
+--20cf3079ba3af5576304c212e069
+Content-Type: text/x-diff; charset=US-ASCII; name="blk-exec-patch-to-bart.patch"
+Content-Disposition: attachment; filename="blk-exec-patch-to-bart.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h39cda0y0
+
+ZGlmZiAtLWdpdCBhL2Jsb2NrL2Jsay1leGVjLmMgYi9ibG9jay9ibGstZXhlYy5jCmluZGV4IGZi
+MmNiZDUuLjI4NGJmNTYgMTAwNjQ0Ci0tLSBhL2Jsb2NrL2Jsay1leGVjLmMKKysrIGIvYmxvY2sv
+YmxrLWV4ZWMuYwpAQCAtNTMsMTYgKzUzLDE3IEBAIHZvaWQgYmxrX2V4ZWN1dGVfcnFfbm93YWl0
+KHN0cnVjdCByZXF1ZXN0X3F1ZXVlICpxLCBzdHJ1Y3QgZ2VuZGlzayAqYmRfZGlzaywKIAlXQVJO
+X09OKGlycXNfZGlzYWJsZWQoKSk7CiAJc3Bpbl9sb2NrX2lycShxLT5xdWV1ZV9sb2NrKTsKIAor
+CXJxLT5ycV9kaXNrID0gYmRfZGlzazsKKwlycS0+ZW5kX2lvID0gZG9uZTsKKwogCWlmICh1bmxp
+a2VseShibGtfcXVldWVfZGVhZChxKSkpIHsKLQkJc3Bpbl91bmxvY2tfaXJxKHEtPnF1ZXVlX2xv
+Y2spOwogCQlycS0+ZXJyb3JzID0gLUVOWElPOwogCQlpZiAocnEtPmVuZF9pbykKIAkJCXJxLT5l
+bmRfaW8ocnEsIHJxLT5lcnJvcnMpOworCQlzcGluX3VubG9ja19pcnEocS0+cXVldWVfbG9jayk7
+CiAJCXJldHVybjsKIAl9CiAKLQlycS0+cnFfZGlzayA9IGJkX2Rpc2s7Ci0JcnEtPmVuZF9pbyA9
+IGRvbmU7CiAJX19lbHZfYWRkX3JlcXVlc3QocSwgcnEsIHdoZXJlKTsKIAlfX2Jsa19ydW5fcXVl
+dWUocSk7CiAJLyogdGhlIHF1ZXVlIGlzIHN0b3BwZWQgc28gaXQgd29uJ3QgYmUgcnVuICovCg==
+--20cf3079ba3af5576304c212e069--
