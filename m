@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934631Ab2FIAwV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 20:52:21 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:59124 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934539Ab2FIAvZ (ORCPT
+	id S934586Ab2FIAv5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 20:51:57 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50988 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933129Ab2FIAu6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 20:51:25 -0400
+	Fri, 8 Jun 2012 20:50:58 -0400
 From: Akinobu Mita <akinobu.mita@gmail.com>
 To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, Jan Kara <jack@suse.cz>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org
-Subject: [PATCH v3 8/9] ext3: use memweight()
-Date: Sat,  9 Jun 2012 09:50:37 +0900
-Message-Id: <1339203038-13069-8-git-send-email-akinobu.mita@gmail.com>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, Alasdair Kergon <agk@redhat.com>,
+        dm-devel@redhat.com
+Subject: [PATCH v3 3/9] dm: use memweight()
+Date: Sat,  9 Jun 2012 09:50:32 +0900
+Message-Id: <1339203038-13069-3-git-send-email-akinobu.mita@gmail.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1339203038-13069-1-git-send-email-akinobu.mita@gmail.com>
 References: <1339203038-13069-1-git-send-email-akinobu.mita@gmail.com>
@@ -21,73 +21,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert ext3_count_free() to use memweight() instead of table lookup
-based counting clear bits implementation.  This change only affects
-the code segments enabled by EXT3FS_DEBUG.
-
-Note that this memweight() call can't be replaced with a single
-bitmap_weight() call, although the pointer to the memory area is
-aligned to long-word boundary.  Because the size of the memory area
-may not be a multiple of BITS_PER_LONG, then it returns wrong value on
-big-endian architecture.
-
-This also includes the following changes.
-
-- Remove unnecessary map == NULL check in ext3_count_free() which
-  always takes non-null pointer as the memory area.
-
-- Fix printk format warning that only reveals with EXT3FS_DEBUG.
+Use memweight() to count the total number of bits set in memory area.
 
 Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andreas Dilger <adilger.kernel@dilger.ca>
-Cc: linux-ext4@vger.kernel.org
+Cc: Alasdair Kergon <agk@redhat.com>
+Cc: dm-devel@redhat.com
 ---
-v3: rewrite to keep ext3_count_free() as a wrapper for memweight()
+v3: no changes from v2
+v2: change patch title s/dm-log:/dm:/
 
- fs/ext3/balloc.c |    2 +-
- fs/ext3/bitmap.c |   12 +-----------
- 2 files changed, 2 insertions(+), 12 deletions(-)
+ drivers/md/dm-log.c |   13 ++-----------
+ 1 files changed, 2 insertions(+), 11 deletions(-)
 
-diff --git a/fs/ext3/balloc.c b/fs/ext3/balloc.c
-index 25cd608..90d901f 100644
---- a/fs/ext3/balloc.c
-+++ b/fs/ext3/balloc.c
-@@ -1813,7 +1813,7 @@ ext3_fsblk_t ext3_count_free_blocks(struct super_block *sb)
- 	brelse(bitmap_bh);
- 	printk("ext3_count_free_blocks: stored = "E3FSBLK
- 		", computed = "E3FSBLK", "E3FSBLK"\n",
--	       le32_to_cpu(es->s_free_blocks_count),
-+	       (ext3_fsblk_t)le32_to_cpu(es->s_free_blocks_count),
- 		desc_count, bitmap_count);
- 	return bitmap_count;
- #else
-diff --git a/fs/ext3/bitmap.c b/fs/ext3/bitmap.c
-index 909d13e..ef9c643 100644
---- a/fs/ext3/bitmap.c
-+++ b/fs/ext3/bitmap.c
-@@ -11,19 +11,9 @@
- 
- #ifdef EXT3FS_DEBUG
- 
--static const int nibblemap[] = {4, 3, 3, 2, 3, 2, 2, 1, 3, 2, 2, 1, 2, 1, 1, 0};
--
- unsigned long ext3_count_free (struct buffer_head * map, unsigned int numchars)
- {
--	unsigned int i;
--	unsigned long sum = 0;
--
--	if (!map)
--		return (0);
--	for (i = 0; i < numchars; i++)
--		sum += nibblemap[map->b_data[i] & 0xf] +
--			nibblemap[(map->b_data[i] >> 4) & 0xf];
--	return (sum);
-+	return numchars * BITS_PER_BYTE - memweight(map->b_data, numchars);
+diff --git a/drivers/md/dm-log.c b/drivers/md/dm-log.c
+index 65ebaeb..627d191 100644
+--- a/drivers/md/dm-log.c
++++ b/drivers/md/dm-log.c
+@@ -571,16 +571,6 @@ static void disk_dtr(struct dm_dirty_log *log)
+ 	destroy_log_context(lc);
  }
  
- #endif  /*  EXT3FS_DEBUG  */
+-static int count_bits32(uint32_t *addr, unsigned size)
+-{
+-	int count = 0, i;
+-
+-	for (i = 0; i < size; i++) {
+-		count += hweight32(*(addr+i));
+-	}
+-	return count;
+-}
+-
+ static void fail_log_device(struct log_c *lc)
+ {
+ 	if (lc->log_dev_failed)
+@@ -629,7 +619,8 @@ static int disk_resume(struct dm_dirty_log *log)
+ 
+ 	/* copy clean across to sync */
+ 	memcpy(lc->sync_bits, lc->clean_bits, size);
+-	lc->sync_count = count_bits32(lc->clean_bits, lc->bitset_uint32_count);
++	lc->sync_count = memweight(lc->clean_bits,
++				lc->bitset_uint32_count * sizeof(uint32_t));
+ 	lc->sync_search = 0;
+ 
+ 	/* set the correct number of regions in the header */
 -- 
 1.7.7.6
 
