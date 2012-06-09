@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755920Ab2FISnf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jun 2012 14:43:35 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:60612 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754742Ab2FISnd (ORCPT
+	id S1756133Ab2FISqD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jun 2012 14:46:03 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:45393 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754962Ab2FISqA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jun 2012 14:43:33 -0400
-Message-ID: <4FD39904.2010808@mvista.com>
-Date: Sat, 09 Jun 2012 22:42:12 +0400
+	Sat, 9 Jun 2012 14:46:00 -0400
+Message-ID: <4FD39998.4020903@mvista.com>
+Date: Sat, 09 Jun 2012 22:44:40 +0400
 From: Sergei Shtylyov <sshtylyov@mvista.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
@@ -20,10 +20,10 @@ CC: James.Bottomley@HansenPartnership.com, gregkh@linuxfoundation.org,
         Namjae Jeon <namjae.jeon@samsung.com>,
         Pankaj Kumar <pankaj.km@samsung.com>,
         Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [PATCH v3 2/4] usb: storage: add support for write cache quirk
- on usb hdd
-References: <1339263660-4039-1-git-send-email-linkinjeon@gmail.com>
-In-Reply-To: <1339263660-4039-1-git-send-email-linkinjeon@gmail.com>
+Subject: Re: [PATCH v3 3/3] usb: storage: update usb devices for write cache
+ quirk in quirk list.
+References: <1339263678-4075-1-git-send-email-linkinjeon@gmail.com>
+In-Reply-To: <1339263678-4075-1-git-send-email-linkinjeon@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -34,54 +34,49 @@ Hello.
 
 On 06/09/2012 09:41 PM, Namjae Jeon wrote:
 
-> Add support for write cache quirk on usb hdd. scsi driver will be set to wce
-> by detecting write cache quirk in quirk list when plugging usb hdd.
+> Update information of Seagate Portable HDD and WD My Passport HDD in
+> quirk list.
 
 > Signed-off-by: Namjae Jeon<namjae.jeon@samsung.com>
 > Signed-off-by: Pankaj Kumar<pankaj.km@samsung.com>
 > Signed-off-by: Amit Sahrawat<a.sahrawat@samsung.com>
 > ---
->   drivers/usb/storage/scsiglue.c |    5 +++++
->   drivers/usb/storage/usb.c      |    5 ++++-
->   include/linux/usb_usual.h      |    4 +++-
->   3 files changed, 12 insertions(+), 2 deletions(-)
+>   drivers/usb/storage/unusual_devs.h |   24 ++++++++++++++++++++++++
+>   1 file changed, 24 insertions(+)
 
-> diff --git a/drivers/usb/storage/scsiglue.c b/drivers/usb/storage/scsiglue.c
-> index a324a5d..fe42547 100644
-> --- a/drivers/usb/storage/scsiglue.c
-> +++ b/drivers/usb/storage/scsiglue.c
-[...]
-> @@ -529,6 +529,9 @@ static void adjust_quirks(struct us_data *us)
->   		case 'o':
->   			f |= US_FL_CAPACITY_OK;
->   			break;
-> +		case 'p':
-> +			f |= US_FL_WRITE_CACHE;
-> +			break;
->   		case 'r':
->   			f |= US_FL_IGNORE_RESIDUE;
->   			break;
-
-    You probably should unite this chunk with the documentation update patch.
-
-> diff --git a/include/linux/usb_usual.h b/include/linux/usb_usual.h
-> index 17df360..96fc152 100644
-> --- a/include/linux/usb_usual.h
-> +++ b/include/linux/usb_usual.h
-> @@ -64,7 +64,9 @@
->   	US_FLAG(NO_READ_CAPACITY_16,	0x00080000)		\
->   		/* cannot handle READ_CAPACITY_16 */		\
->   	US_FLAG(INITIAL_READ10,	0x00100000)			\
-> -		/* Initial READ(10) (and others) must be retried */
-> +		/* Initial READ(10) (and others) must be retried */	\
-> +	US_FLAG(WRITE_CACHE, 0x00200000)		\
-
-    You've been already told to keep '\' at the same level with the above '\' 
-and you're continuing to ignore this.
-
-> +		/* Write Cache status is not available */
+> diff --git a/drivers/usb/storage/unusual_devs.h b/drivers/usb/storage/unusual_devs.h
+> index 1719886..64f0369 100644
+> --- a/drivers/usb/storage/unusual_devs.h
+> +++ b/drivers/usb/storage/unusual_devs.h
+> @@ -1267,6 +1267,18 @@ UNUSUAL_DEV( 0x0af0, 0xd357, 0x0000, 0x0000,
+>   		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
+>   		0 ),
 >
->   #define US_FLAG(name, value)	US_FL_##name = value ,
->   enum { US_DO_ALL_FLAGS };
+> +/* Reported by Namjae Jeon<namjae.jeon@samsung.com>
+> + * Even though write cache is enabled by default,
+> + * SCSI driver assume that cache is not enabled
+> + * which in turn might lead loss of data
+                               ^ to the
+
+> + * since data still will be in cache.
+> + * So this entry is needed for assuming that cache is enabled.
+> + */
+> +UNUSUAL_DEV(0x0bc2, 0x2300, 0x0000, 0x9999,
+> +		"Seagate",
+> +		"Portable HDD",
+> +		USB_SC_DEVICE, USB_PR_DEVICE, NULL, US_FL_WRITE_CACHE),
+> +
+>   /* Reported by Ben Efros<ben@pc-doctor.com>  */
+>   UNUSUAL_DEV( 0x0bc2, 0x3010, 0x0000, 0x0000,
+>   		"Seagate",
+> @@ -1468,6 +1480,18 @@ UNUSUAL_DEV(  0x1058, 0x0704, 0x0000, 0x9999,
+>   		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
+>   		US_FL_SANE_SENSE),
+>
+> +/* Reported by Namjae Jeon<namjae.jeon@samsung.com>
+> + * Even though write cache is enabled by default,
+> + * SCSI driver assume that cache is not enabled
+> + * which in turn might lead loss of data
+                               ^ to the
 
 WBR, Sergei
