@@ -1,43 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934249Ab2FIBoH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 21:44:07 -0400
-Received: from smtp.syd.comcen.com.au ([203.23.236.77]:4252 "EHLO
-	smtp.syd.comcen.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932121Ab2FIBoF (ORCPT
+	id S934565Ab2FIBvg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 21:51:36 -0400
+Received: from oproxy9.bluehost.com ([69.89.24.6]:52533 "HELO
+	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S933112Ab2FIBvf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 21:44:05 -0400
-Message-ID: <4FD2AA36.5010308@spin.net.au>
-Date: Sat, 09 Jun 2012 11:43:18 +1000
-From: Chris Jones <chrisjones@spin.net.au>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120422 Firefox/12.0 SeaMonkey/2.9
+	Fri, 8 Jun 2012 21:51:35 -0400
+Message-ID: <4FD2AC1B.6070500@xenotime.net>
+Date: Fri, 08 Jun 2012 18:51:23 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Kernel version numbering plans
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: LKML <linux-kernel@vger.kernel.org>, linux-serial@vger.kernel.org
+CC: Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH] serial: fix kernel-doc warnings in 8250.c
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-comcen-MailScanner-Information: Please contact the ISP for more information
-X-comcen-MailScanner: Found to be clean
-X-comcen-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
-	score=-2.123, required 4, AWL 0.38, BAYES_00 -2.60, RDNS_NONE 0.10)
-X-comcen-MailScanner-From: chrisjones@spin.net.au
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-What's the plan when we approach kernel version 4.0?
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-Will we be moving in to version 4.x or staying in the 3.x numbers for 
-the time being?
+Fix kernel-doc warnings in drivers/tty/serial/8250/8250.c:
 
+Warning(drivers/tty/serial/8250/8250.c:3128): No description found for parameter 'up'
+Warning(drivers/tty/serial/8250/8250.c:3128): Excess function parameter 'port' description in 'serial8250_register_8250_port'
 
-Regards
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+---
+ drivers/tty/serial/8250/8250.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
--- 
-		Chris Jones
-
-OpenSUSE Linux x86_64 (PC)|Android (Smartphone)|Windows x86 (Gaming!)
-Kernel developer|Lead Developer of SDL|Lead Developer of Nest Linux|Gamer and Emulator nut|Web Services|Digital Imaging Services
-Controllers: Logitech Precision|PS3 controller|XB360 controller|Logitech Attack 3 j/stick
-Emulators: Fusion|Gens|ZSNES|Project64|PCSX-R|Stella|WinVICE|WinUAE
-
+--- lnx-35-rc1.orig/drivers/tty/serial/8250/8250.c
++++ lnx-35-rc1/drivers/tty/serial/8250/8250.c
+@@ -3113,7 +3113,7 @@ static struct uart_8250_port *serial8250
+ 
+ /**
+  *	serial8250_register_8250_port - register a serial port
+- *	@port: serial port template
++ *	@up: serial port template
+  *
+  *	Configure the serial port specified by the request. If the
+  *	port exists and is in use, it is hung up and unregistered
