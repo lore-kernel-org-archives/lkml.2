@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758110Ab2FIDJZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Jun 2012 23:09:25 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:52511 "EHLO
+	id S1758223Ab2FIDLP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Jun 2012 23:11:15 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:52840 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755627Ab2FIDJY (ORCPT
+	with ESMTP id S1752106Ab2FIDLN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Jun 2012 23:09:24 -0400
+	Fri, 8 Jun 2012 23:11:13 -0400
 From: Wanpeng Li <liwp.linux@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Fengguang Wu <fengguang.wu@intel.com>,
@@ -15,13 +15,15 @@ Cc: Fengguang Wu <fengguang.wu@intel.com>,
         Gavin Shan <shangw@linux.vnet.ibm.com>,
         Wanpeng Li <liwp.linux@gmail.com>,
         Wanpeng Li <liwp@linux.vnet.ibm.com>
-Subject: [PATCH] From: Wanpeng Li <liwp@linux.vnet.ibm.com>
-Date: Sat,  9 Jun 2012 11:09:05 +0800
-Message-Id: <1339211345-9054-1-git-send-email-liwp.linux@gmail.com>
+Subject: [PATCH] Fix some comments error in writeback subsystem
+Date: Sat,  9 Jun 2012 11:10:55 +0800
+Message-Id: <1339211455-9228-1-git-send-email-liwp.linux@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+From: Wanpeng Li <liwp@linux.vnet.ibm.com>
 
 Signed-off-by: Wanpeng Li <liwp@linux.vnet.ibm.com>
 ---
