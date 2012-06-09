@@ -1,366 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751496Ab2FIEyI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jun 2012 00:54:08 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:39686 "EHLO
+	id S1751653Ab2FIFWp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jun 2012 01:22:45 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:55538 "EHLO
 	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750813Ab2FIEyG (ORCPT
+	with ESMTP id S1750813Ab2FIFWn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jun 2012 00:54:06 -0400
-Date: Sat, 9 Jun 2012 05:54:04 +0100
+	Sat, 9 Jun 2012 01:22:43 -0400
+Date: Sat, 9 Jun 2012 06:22:42 +0100
 From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Luk?? Czerner <lczerner@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        mbroz@redhat.com
-Subject: Re: [PATCH 1/2] vfs: Do not allow mnt_longterm to go negative
-Message-ID: <20120609045404.GV30000@ZenIV.linux.org.uk>
-References: <1337959776-16564-1-git-send-email-lczerner@redhat.com>
- <alpine.LFD.2.00.1205290807350.2144@dhcp-1-248.brq.redhat.com>
- <20120530020134.GA20448@ZenIV.linux.org.uk>
+To: Eric Van Hensbergen <ericvh@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: seq_file dangerous assumption?
+Message-ID: <20120609052242.GW30000@ZenIV.linux.org.uk>
+References: <CAFkjPTkmgMY_TkUHvCmN0iQ9Hx4ADBVCLXGrQB8uMyoF0xMj0g@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120530020134.GA20448@ZenIV.linux.org.uk>
+In-Reply-To: <CAFkjPTkmgMY_TkUHvCmN0iQ9Hx4ADBVCLXGrQB8uMyoF0xMj0g@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 30, 2012 at 03:01:34AM +0100, Al Viro wrote:
-> instead and that's all it takes.  Alternatively, we can just turn the
-> code in mntput_no_expire() into
-> 	if (likely(mnt->mnt_ns || atomic_read(...))
-> and get rid of longterm/shortterm logics around ->mnt_ns completely.
-> Short-term, pardon the bad pun, I'm going with the first variant; it's
-> less intrusive.  Longer term I think we want to get rid of playing with
-> mnt_longterm in there and just check ->mnt_ns as well when deciding to
-> go for the fast path in mntput_no_expire().
+On Mon, Jun 04, 2012 at 02:32:02PM -0500, Eric Van Hensbergen wrote:
 
-Probably not, actually - mnt_make_shortterm() is called often enough (any
-chdir moving you to another fs) and practically always it's done with
-longterm reference from being mounted remaining there.  We want that to
-be fast path.  And that's exactly what we have with the current logics;
-we don't grab vfsmount_lock unless ->mnt_longterm was about to reach 0.
-We need to make sure that transition to "no longterm references left"
-would happen only under vfsmount_lock.  As it is (with the fix in 3.5-rc
-and -stable) we have this:
-	mnt->mnt_longterm == number of references to mnt in some
-fs_struct->{root,pwd}.mnt + (is it a kernel-internal vfsmount ? 1 : 0) +
-(mnt->mnt_ns != NULL ? 1 : 0)
-and getting rid of the third part would make life consider more painful
-for chdir et.al. - we can use atomic_add_unless() for lockless path
-when dropping a pwd/root reference with the current scheme and get away
-with that in almost all cases.  Doing an equivalent with separate checks
-for mnt->mnt_ns != NULL or atomic_read(&mnt->mnt_longterm) > 0 would be
-hard and it wouldn't have won us anything.
+> In other words, if something is in file->private_data, then we must
+> have already allocated and put our structure there.  In the case of
+> this driver, file->private_data was already populated (with a pointer
+> to the device structure) -- so the call to seq_open zero'd a portion
+> of the device structure and then corrupted it with a seq_file
+> structure.
+> 
+> So, an obvious solution is, don't use seq_file with a character device
+> -- but shouldn't there also be a fingerprint or something in the
+> seq_file structure as a sanity check so foolish developers don't trip
+> over it and corrupt their kernel memory?
 
-IOW, I'm an idiot.  Especially since there is a much simpler solution:
-	* lose ->mnt_longterm manipulations for root/pwd
-	* lose ->mnt_longterm manipulations for places where we assign
-->mnt_ns now
-	* turn that check on the fast path of mntput_no_expire() into
-	if (likely(mnt->mnt_ns))
-	* turn manipulations with ->mnt_longterm in kern_mount_data/kern_umount
-into setting ->mnt_ns to something distinct (ERR_PTR(-EINVAL)) and clearing it.
-	* lose ->mnt_longterm completely, along with the helpers for
-modifying it.
-	* new helper - is_mounted(mnt); checks if ->mnt_ns points to some
-mnt_namespace (i.e. what used to be ->mnt_ns != NULL; now !IS_ERR_OR_NULL())
-	* switch prepend_path() to use of that helper instead of direct
-check of ->mnt_ns != NULl.
+So embed seq_file into whatever struct you have there, set ->private_data
+to that field and use container_of() to get to it in ->show() and iterator.
+seq_open() sets ->private_data only if you have left it NULL; it's perfectly
+OK to set it to struct seq_file - seq_open() will initialize and use it.
 
-Somebody with pwd on lazy-umounted vfsmount will have costlier mntput() of
-that pwd.  Everything else loses a bunch of atomic operations on fairly
-hot paths, not to mention the loss of extra atomic_t in struct vfsmount
-on SMP kernels.  BTW, looking at that thing... I really wonder if int is
-enough for mnt_count.  On boxen with a lot of RAM it might be possible to
-overflow; you are probably fucked anyway if that happens (things that
-hold struct vfsmount * are not particulary small), but still...  I suspect
-that it, and probably mnt_writers as well, should be long.  Anyway, that's
-a separate story; how about the following for ->mnt_longterm?
+IOW, seq_file use is compatible with having driver-specific data object
+reachable via ->private_data.  Not a problem...
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index 4046904..44acb5b 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -2622,7 +2622,7 @@ global_root:
- 	if (!slash)
- 		error = prepend(buffer, buflen, "/", 1);
- 	if (!error)
--		error = real_mount(vfsmnt)->mnt_ns ? 1 : 2;
-+		error = is_mounted(vfsmnt) ? 1 : 2;
- 	goto out;
- }
- 
-diff --git a/fs/fs_struct.c b/fs/fs_struct.c
-index e159e68..5df4775 100644
---- a/fs/fs_struct.c
-+++ b/fs/fs_struct.c
-@@ -6,18 +6,6 @@
- #include <linux/fs_struct.h>
- #include "internal.h"
- 
--static inline void path_get_longterm(struct path *path)
--{
--	path_get(path);
--	mnt_make_longterm(path->mnt);
--}
--
--static inline void path_put_longterm(struct path *path)
--{
--	mnt_make_shortterm(path->mnt);
--	path_put(path);
--}
--
- /*
-  * Replace the fs->{rootmnt,root} with {mnt,dentry}. Put the old values.
-  * It can block.
-@@ -26,7 +14,7 @@ void set_fs_root(struct fs_struct *fs, struct path *path)
- {
- 	struct path old_root;
- 
--	path_get_longterm(path);
-+	path_get(path);
- 	spin_lock(&fs->lock);
- 	write_seqcount_begin(&fs->seq);
- 	old_root = fs->root;
-@@ -34,7 +22,7 @@ void set_fs_root(struct fs_struct *fs, struct path *path)
- 	write_seqcount_end(&fs->seq);
- 	spin_unlock(&fs->lock);
- 	if (old_root.dentry)
--		path_put_longterm(&old_root);
-+		path_put(&old_root);
- }
- 
- /*
-@@ -45,7 +33,7 @@ void set_fs_pwd(struct fs_struct *fs, struct path *path)
- {
- 	struct path old_pwd;
- 
--	path_get_longterm(path);
-+	path_get(path);
- 	spin_lock(&fs->lock);
- 	write_seqcount_begin(&fs->seq);
- 	old_pwd = fs->pwd;
-@@ -54,7 +42,7 @@ void set_fs_pwd(struct fs_struct *fs, struct path *path)
- 	spin_unlock(&fs->lock);
- 
- 	if (old_pwd.dentry)
--		path_put_longterm(&old_pwd);
-+		path_put(&old_pwd);
- }
- 
- static inline int replace_path(struct path *p, const struct path *old, const struct path *new)
-@@ -84,7 +72,7 @@ void chroot_fs_refs(struct path *old_root, struct path *new_root)
- 			write_seqcount_end(&fs->seq);
- 			while (hits--) {
- 				count++;
--				path_get_longterm(new_root);
-+				path_get(new_root);
- 			}
- 			spin_unlock(&fs->lock);
- 		}
-@@ -92,13 +80,13 @@ void chroot_fs_refs(struct path *old_root, struct path *new_root)
- 	} while_each_thread(g, p);
- 	read_unlock(&tasklist_lock);
- 	while (count--)
--		path_put_longterm(old_root);
-+		path_put(old_root);
- }
- 
- void free_fs_struct(struct fs_struct *fs)
- {
--	path_put_longterm(&fs->root);
--	path_put_longterm(&fs->pwd);
-+	path_put(&fs->root);
-+	path_put(&fs->pwd);
- 	kmem_cache_free(fs_cachep, fs);
- }
- 
-@@ -132,9 +120,9 @@ struct fs_struct *copy_fs_struct(struct fs_struct *old)
- 
- 		spin_lock(&old->lock);
- 		fs->root = old->root;
--		path_get_longterm(&fs->root);
-+		path_get(&fs->root);
- 		fs->pwd = old->pwd;
--		path_get_longterm(&fs->pwd);
-+		path_get(&fs->pwd);
- 		spin_unlock(&old->lock);
- 	}
- 	return fs;
-diff --git a/fs/internal.h b/fs/internal.h
-index 18bc216..d2a23ff6 100644
---- a/fs/internal.h
-+++ b/fs/internal.h
-@@ -50,8 +50,6 @@ extern int copy_mount_string(const void __user *, char **);
- extern struct vfsmount *lookup_mnt(struct path *);
- extern int finish_automount(struct vfsmount *, struct path *);
- 
--extern void mnt_make_longterm(struct vfsmount *);
--extern void mnt_make_shortterm(struct vfsmount *);
- extern int sb_prepare_remount_readonly(struct super_block *);
- 
- extern void __init mnt_init(void);
+Mind you, I wanted to point you to fs/proc_namespace.c for the example of
+use, but it's horribly convoluted.  Let me clean it up a bit; hopefully
+that'll make it more understandable:
+    
+don't rely on proc_mounts->m being the first field; container_of()
+is there for purpose.  No need to bother with ->private, while
+we are at it - the same container_of will do nicely.
+    
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+
 diff --git a/fs/mount.h b/fs/mount.h
-index 4ef36d9..05a2a11 100644
+index 05a2a11..4f291f9 100644
 --- a/fs/mount.h
 +++ b/fs/mount.h
-@@ -22,7 +22,6 @@ struct mount {
- 	struct vfsmount mnt;
- #ifdef CONFIG_SMP
- 	struct mnt_pcp __percpu *mnt_pcp;
--	atomic_t mnt_longterm;		/* how many of the refs are longterm */
- #else
- 	int mnt_count;
- 	int mnt_writers;
-@@ -49,6 +48,8 @@ struct mount {
- 	int mnt_ghosts;
+@@ -74,10 +74,12 @@ static inline void get_mnt_ns(struct mnt_namespace *ns)
+ }
+ 
+ struct proc_mounts {
+-	struct seq_file m; /* must be the first element */
++	struct seq_file m;
+ 	struct mnt_namespace *ns;
+ 	struct path root;
+ 	int (*show)(struct seq_file *, struct vfsmount *);
  };
  
-+#define MNT_NS_INTERNAL ERR_PTR(-EINVAL) /* distinct from any mnt_namespace */
++#define proc_mounts(p) (container_of((p), struct proc_mounts, m))
 +
- static inline struct mount *real_mount(struct vfsmount *mnt)
- {
- 	return container_of(mnt, struct mount, mnt);
-@@ -59,6 +60,12 @@ static inline int mnt_has_parent(struct mount *mnt)
- 	return mnt != mnt->mnt_parent;
- }
- 
-+static inline int is_mounted(struct vfsmount *mnt)
-+{
-+	/* neither detached nor internal? */
-+	return !IS_ERR_OR_NULL(real_mount(mnt));
-+}
-+
- extern struct mount *__lookup_mnt(struct vfsmount *, struct dentry *, int);
- 
- static inline void get_mnt_ns(struct mnt_namespace *ns)
+ extern const struct seq_operations mounts_op;
 diff --git a/fs/namespace.c b/fs/namespace.c
-index 1e4a5fe..a524ea4 100644
+index a524ea4..8f412ab 100644
 --- a/fs/namespace.c
 +++ b/fs/namespace.c
-@@ -621,21 +621,6 @@ static void attach_mnt(struct mount *mnt, struct path *path)
- 	list_add_tail(&mnt->mnt_child, &real_mount(path->mnt)->mnt_mounts);
- }
- 
--static inline void __mnt_make_longterm(struct mount *mnt)
--{
--#ifdef CONFIG_SMP
--	atomic_inc(&mnt->mnt_longterm);
--#endif
--}
--
--/* needs vfsmount lock for write */
--static inline void __mnt_make_shortterm(struct mount *mnt)
--{
--#ifdef CONFIG_SMP
--	atomic_dec(&mnt->mnt_longterm);
--#endif
--}
--
- /*
-  * vfsmount lock must be held for write
-  */
-@@ -649,10 +634,8 @@ static void commit_tree(struct mount *mnt)
- 	BUG_ON(parent == mnt);
- 
- 	list_add_tail(&head, &mnt->mnt_list);
--	list_for_each_entry(m, &head, mnt_list) {
-+	list_for_each_entry(m, &head, mnt_list)
- 		m->mnt_ns = n;
--		__mnt_make_longterm(m);
--	}
- 
- 	list_splice(&head, n->list.prev);
- 
-@@ -804,7 +787,8 @@ static void mntput_no_expire(struct mount *mnt)
- put_again:
- #ifdef CONFIG_SMP
- 	br_read_lock(&vfsmount_lock);
--	if (likely(atomic_read(&mnt->mnt_longterm))) {
-+	if (likely(mnt->mnt_ns)) {
-+		/* shouldn't be the last one */
- 		mnt_add_count(mnt, -1);
- 		br_read_unlock(&vfsmount_lock);
- 		return;
-@@ -1074,8 +1058,6 @@ void umount_tree(struct mount *mnt, int propagate, struct list_head *kill)
- 		list_del_init(&p->mnt_expire);
- 		list_del_init(&p->mnt_list);
- 		__touch_mnt_namespace(p->mnt_ns);
--		if (p->mnt_ns)
--			__mnt_make_shortterm(p);
- 		p->mnt_ns = NULL;
- 		list_del_init(&p->mnt_child);
- 		if (mnt_has_parent(p)) {
-@@ -2209,23 +2191,6 @@ static struct mnt_namespace *alloc_mnt_ns(void)
- 	return new_ns;
- }
- 
--void mnt_make_longterm(struct vfsmount *mnt)
--{
--	__mnt_make_longterm(real_mount(mnt));
--}
--
--void mnt_make_shortterm(struct vfsmount *m)
--{
--#ifdef CONFIG_SMP
--	struct mount *mnt = real_mount(m);
--	if (atomic_add_unless(&mnt->mnt_longterm, -1, 1))
--		return;
--	br_write_lock(&vfsmount_lock);
--	atomic_dec(&mnt->mnt_longterm);
--	br_write_unlock(&vfsmount_lock);
--#endif
--}
--
- /*
-  * Allocate a new namespace structure and populate it with contents
-  * copied from the namespace of the passed in task structure.
-@@ -2265,18 +2230,13 @@ static struct mnt_namespace *dup_mnt_ns(struct mnt_namespace *mnt_ns,
- 	q = new;
- 	while (p) {
- 		q->mnt_ns = new_ns;
--		__mnt_make_longterm(q);
- 		if (fs) {
- 			if (&p->mnt == fs->root.mnt) {
- 				fs->root.mnt = mntget(&q->mnt);
--				__mnt_make_longterm(q);
--				mnt_make_shortterm(&p->mnt);
- 				rootmnt = &p->mnt;
- 			}
- 			if (&p->mnt == fs->pwd.mnt) {
- 				fs->pwd.mnt = mntget(&q->mnt);
--				__mnt_make_longterm(q);
--				mnt_make_shortterm(&p->mnt);
- 				pwdmnt = &p->mnt;
- 			}
- 		}
-@@ -2320,7 +2280,6 @@ static struct mnt_namespace *create_mnt_ns(struct vfsmount *m)
- 	if (!IS_ERR(new_ns)) {
- 		struct mount *mnt = real_mount(m);
- 		mnt->mnt_ns = new_ns;
--		__mnt_make_longterm(mnt);
- 		new_ns->root = mnt;
- 		list_add(&new_ns->list, &mnt->mnt_list);
- 	} else {
-@@ -2615,7 +2574,7 @@ struct vfsmount *kern_mount_data(struct file_system_type *type, void *data)
- 		 * it is a longterm mount, don't release mnt until
- 		 * we unmount before file sys is unregistered
- 		*/
--		mnt_make_longterm(mnt);
-+		real_mount(mnt)->mnt_ns = MNT_NS_INTERNAL;
- 	}
- 	return mnt;
- }
-@@ -2625,7 +2584,9 @@ void kern_unmount(struct vfsmount *mnt)
+@@ -923,7 +923,7 @@ EXPORT_SYMBOL(replace_mount_options);
+ /* iterator; we want it to have access to namespace_sem, thus here... */
+ static void *m_start(struct seq_file *m, loff_t *pos)
  {
- 	/* release long term mount so mount point can be released */
- 	if (!IS_ERR_OR_NULL(mnt)) {
--		mnt_make_shortterm(mnt);
-+		br_write_lock(&vfsmount_lock);
-+		real_mount(mnt)->mnt_ns = NULL;
-+		br_write_unlock(&vfsmount_lock);
- 		mntput(mnt);
- 	}
+-	struct proc_mounts *p = container_of(m, struct proc_mounts, m);
++	struct proc_mounts *p = proc_mounts(m);
+ 
+ 	down_read(&namespace_sem);
+ 	return seq_list_start(&p->ns->list, *pos);
+@@ -931,7 +931,7 @@ static void *m_start(struct seq_file *m, loff_t *pos)
+ 
+ static void *m_next(struct seq_file *m, void *v, loff_t *pos)
+ {
+-	struct proc_mounts *p = container_of(m, struct proc_mounts, m);
++	struct proc_mounts *p = proc_mounts(m);
+ 
+ 	return seq_list_next(v, &p->ns->list, pos);
  }
+@@ -943,7 +943,7 @@ static void m_stop(struct seq_file *m, void *v)
+ 
+ static int m_show(struct seq_file *m, void *v)
+ {
+-	struct proc_mounts *p = container_of(m, struct proc_mounts, m);
++	struct proc_mounts *p = proc_mounts(m);
+ 	struct mount *r = list_entry(v, struct mount, mnt_list);
+ 	return p->show(m, &r->mnt);
+ }
+diff --git a/fs/proc_namespace.c b/fs/proc_namespace.c
+index 5e289a7..5fe34c3 100644
+--- a/fs/proc_namespace.c
++++ b/fs/proc_namespace.c
+@@ -17,7 +17,7 @@
+ 
+ static unsigned mounts_poll(struct file *file, poll_table *wait)
+ {
+-	struct proc_mounts *p = file->private_data;
++	struct proc_mounts *p = proc_mounts(file->private_data);
+ 	struct mnt_namespace *ns = p->ns;
+ 	unsigned res = POLLIN | POLLRDNORM;
+ 
+@@ -121,7 +121,7 @@ out:
+ 
+ static int show_mountinfo(struct seq_file *m, struct vfsmount *mnt)
+ {
+-	struct proc_mounts *p = m->private;
++	struct proc_mounts *p = proc_mounts(m);
+ 	struct mount *r = real_mount(mnt);
+ 	struct super_block *sb = mnt->mnt_sb;
+ 	struct path mnt_path = { .dentry = mnt->mnt_root, .mnt = mnt };
+@@ -268,7 +268,6 @@ static int mounts_open_common(struct inode *inode, struct file *file,
+ 	if (ret)
+ 		goto err_free;
+ 
+-	p->m.private = p;
+ 	p->ns = ns;
+ 	p->root = root;
+ 	p->m.poll_event = ns->event;
+@@ -288,7 +287,7 @@ static int mounts_open_common(struct inode *inode, struct file *file,
+ 
+ static int mounts_release(struct inode *inode, struct file *file)
+ {
+-	struct proc_mounts *p = file->private_data;
++	struct proc_mounts *p = proc_mounts(file->private_data);
+ 	path_put(&p->root);
+ 	put_mnt_ns(p->ns);
+ 	return seq_release(inode, file);
