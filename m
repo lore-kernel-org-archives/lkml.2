@@ -1,67 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754523Ab2FINDt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jun 2012 09:03:49 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:42971 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753602Ab2FINDr (ORCPT
+	id S1754642Ab2FINGC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jun 2012 09:06:02 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:42243 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753124Ab2FINGA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jun 2012 09:03:47 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
-        rientjes@google.com, mhocko@suse.cz, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH -V8 05/16] hugetlb: avoid taking i_mmap_mutex in unmap_single_vma() for hugetlb
-In-Reply-To: <20120609094444.GG1761@cmpxchg.org>
-References: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1339232401-14392-6-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20120609094444.GG1761@cmpxchg.org>User-Agent: Notmuch/0.11.1+346~g13d19c3 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Sat, 09 Jun 2012 18:33:05 +0530
-Message-ID: <87sje4ljsm.fsf@skywalker.in.ibm.com>
+	Sat, 9 Jun 2012 09:06:00 -0400
+Message-ID: <4FD349FF.7060305@linux.vnet.ibm.com>
+Date: Sat, 09 Jun 2012 18:35:03 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-x-cbid: 12060902-1618-0000-0000-000001CB4213
+To: cheng renquan <crquan@gmail.com>
+CC: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>
+Subject: Re: 67 kworker threads ?
+References: <CAH5vBdLPhd8Q4ZwFP7Zy_yLfNEezRGrkeFJeO1eyh+dcF+oYsw@mail.gmail.com>
+In-Reply-To: <CAH5vBdLPhd8Q4ZwFP7Zy_yLfNEezRGrkeFJeO1eyh+dcF+oYsw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12060903-3568-0000-0000-000001F25819
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Johannes Weiner <hannes@cmpxchg.org> writes:
+On 06/09/2012 01:49 AM, cheng renquan wrote:
 
-> On Sat, Jun 09, 2012 at 02:29:50PM +0530, Aneesh Kumar K.V wrote:
->> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
->> 
->> i_mmap_mutex lock was added in unmap_single_vma by 502717f4e ("hugetlb:
->> fix linked list corruption in unmap_hugepage_range()") but we don't use
->> page->lru in unmap_hugepage_range any more.  Also the lock was taken
->> higher up in the stack in some code path.  That would result in deadlock.
->> 
->> unmap_mapping_range (i_mmap_mutex)
->>  -> unmap_mapping_range_tree
->>     -> unmap_mapping_range_vma
->>        -> zap_page_range_single
->>          -> unmap_single_vma
->> 	      -> unmap_hugepage_range (i_mmap_mutex)
->> 
->> For shared pagetable support for huge pages, since pagetable pages are ref
->> counted we don't need any lock during huge_pmd_unshare.  We do take
->> i_mmap_mutex in huge_pmd_share while walking the vma_prio_tree in mapping.
->> (39dde65c9940c97f ("shared page table for hugetlb page")).
->> 
->> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
->
-> This patch (together with the previous one) seems like a bugfix that's
-> not really related to the hugetlb controller, unless I miss something.
->
-> Could you please submit the fix separately?
+> I have kernel v3.4.0 up & running over 2 weeks on a 4-cores typical
+> lenovo laptop,
+> with suspend & resume only, every day; have just found after a resume the kernel
+> may spawn too many kworker threads, totally 67 kworker threads now,
+> I think this is abnormal
+> 
+> $ ps fu -e |awk 'NR <=2 || /[k]worker/'
+> USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+> root         2  0.0  0.0      0     0 ?        S    Jun07   0:00 [kthreadd]
+> root     10271  0.0  0.0      0     0 ?        S    11:35   0:00  \_
+> [kworker/0:3]
+> root     11683  0.0  0.0      0     0 ?        S    11:46   0:00  \_
+> [kworker/u:0]
+> root     14364  0.0  0.0      0     0 ?        S    12:08   0:01  \_
+> [kworker/0:0]
+> root     14965  0.1  0.0      0     0 ?        S    12:13   0:03  \_
+> [kworker/u:1]
+> root     17154  0.0  0.0      0     0 ?        S    12:31   0:00  \_
+> [kworker/u:2]
+> root     17937  0.0  0.0      0     0 ?        S    12:38   0:00  \_
+> [kworker/u:3]
+> root     18286  0.0  0.0      0     0 ?        S    12:39   0:00  \_
+> [kworker/u:4]
+> root     18287  0.0  0.0      0     0 ?        S    12:39   0:00  \_
+> [kworker/u:5]
+> root     18288  0.0  0.0      0     0 ?        S    12:39   0:00  \_
+> [kworker/u:6]
+> root     18289  0.0  0.0      0     0 ?        S    12:39   0:00  \_
+> [kworker/u:7]
+> root     18290  0.0  0.0      0     0 ?        S    12:39   0:00  \_
+> [kworker/u:8]
+> root     18291  0.0  0.0      0     0 ?        S    12:39   0:00  \_
+> [kworker/u:9]
+> root     18292  0.0  0.0      0     0 ?        S    12:39   0:00  \_
+> [kworker/u:10]
+> root     18300  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/1:2]
+> root     18303  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/2:2]
+> root     18306  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/3:0]
+> root     18320  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:11]
+> root     18321  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:12]
+> root     18322  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:13]
+> root     18323  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:14]
+> root     18324  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:15]
+> root     18325  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:16]
+> root     18326  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:17]
+> root     18327  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:18]
+> root     18328  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:19]
+> root     18329  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:20]
+> root     18330  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:21]
+> root     18331  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:22]
+> root     18332  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:23]
+> root     18333  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:24]
+> root     18334  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:25]
+> root     18335  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:26]
+> root     18336  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:27]
+> root     18337  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:28]
+> root     18338  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:29]
+> root     18339  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:30]
+> root     18340  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:31]
+> root     18341  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:32]
+> root     18342  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:33]
+> root     18343  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:34]
+> root     18344  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:35]
+> root     18345  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:36]
+> root     18346  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:37]
+> root     18347  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:38]
+> root     18348  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:39]
+> root     18349  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:40]
+> root     18350  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:41]
+> root     18351  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:42]
+> root     18352  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:43]
+> root     18353  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:44]
+> root     18354  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:45]
+> root     18355  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:46]
+> root     18356  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:47]
+> root     18357  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:48]
+> root     18358  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:49]
+> root     18359  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:50]
+> root     18360  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:51]
+> root     18361  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:52]
+> root     18362  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:53]
+> root     18363  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:54]
+> root     18364  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:55]
+> root     18365  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:56]
+> root     18366  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:57]
+> root     18367  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:58]
+> root     18368  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/u:59]
+> root     18369  0.9  0.0      0     0 ?        S    13:05   0:01  \_
+> [kworker/3:1]
+> root     18370  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/0:1]
+> root     18374  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/0:2]
+> root     18380  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/1:0]
+> root     18393  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/2:0]
+> root     18506  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/3:2]
+> root     18571  0.0  0.0      0     0 ?        S    13:05   0:00  \_
+> [kworker/2:1]
 
-Patches upto 6 can really got in a separate series. I was not sure
-whether I should split them. I will post that as a separate series now
 
->
-> Maybe also fold the two patches into one and make it a single bugfix
-> change that gets rid of the lock by switching away from page->lru.
+Can you share your .config please?
 
-I wanted to make sure the patch that drop i_mmap_mutex is a separate one
-so that we understand and document the locking details separately
-
--aneesh
+Regards,
+Srivatsa S. Bhat
 
