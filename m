@@ -1,21 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755567Ab2FISXm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jun 2012 14:23:42 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:61751 "EHLO
+	id S1755598Ab2FIS16 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jun 2012 14:27:58 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:33513 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753417Ab2FISXl (ORCPT
+	with ESMTP id S1753306Ab2FIS15 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jun 2012 14:23:41 -0400
+	Sat, 9 Jun 2012 14:27:57 -0400
 MIME-Version: 1.0
-In-Reply-To: <CANc+2y48M+K4jvGEes_srYO7rCQcPt4pvcxcvm-Hd+7kKJr6BQ@mail.gmail.com>
-References: <CANc+2y48M+K4jvGEes_srYO7rCQcPt4pvcxcvm-Hd+7kKJr6BQ@mail.gmail.com>
-Date: Sat, 9 Jun 2012 23:53:40 +0530
-Message-ID: <CAHkwNT=3dGTZTDWi+r7m=K=Pqgv6Txi-xKcpN_pNUJ_WbUaD4w@mail.gmail.com>
-Subject: Re: Break point not hit while debugging linux kernel with kgdb
+In-Reply-To: <CANc+2y6uTcQxjRTAfBGvBJBUNh-SEtM_0s+7DBrSr=yULws1OA@mail.gmail.com>
+References: <CANc+2y41rDOrAijbgOAgWiTPzGeyMW+EXSxmu+zTv2ZqG=TxFA@mail.gmail.com>
+	<20120525062120.GA4445@kroah.com>
+	<CAHkwNTmpDTe-jOvR1t4tKo6uR-oEOMk2Sj2p_v6JsVtQCF2zEg@mail.gmail.com>
+	<CANc+2y5WXX1n8Hugej-STfVra_Pjhjpb_OvT6Tf-K8=-hxaH=g@mail.gmail.com>
+	<CAHkwNTnVgGt6J9gb2gZSpYra1HHPibgj+W9X_rEHjAyDnDL+Jg@mail.gmail.com>
+	<CANc+2y6uTcQxjRTAfBGvBJBUNh-SEtM_0s+7DBrSr=yULws1OA@mail.gmail.com>
+Date: Sat, 9 Jun 2012 23:57:56 +0530
+Message-ID: <CAHkwNT=U58520GpkNLtBcJVtujh=wN8-+uEXXkFJZSoByvUj7w@mail.gmail.com>
+Subject: Re: Code flow from device connection to device node in /dev creation
 From: Anil Nair <anilcoll90@gmail.com>
 To: prasannatsmkumar <prasannatsmkumar@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,27 +28,22 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Prasanna,
 
-On Mon, May 28, 2012 at 3:46 PM, prasannatsmkumar
+On Sun, May 27, 2012 at 10:19 AM, prasannatsmkumar
 <prasannatsmkumar@gmail.com> wrote:
-> Hi,
->
-> I tried to debug the linux kernel with kgdb (over serial port).
 
-The Maintainers would never recommend the use of a debugger, it
-results in poorly fixed patches.
+> If I open a device file (say a printer device) who determines the
+> correct driver and sends the call? How subsequent calls get processed
+> etc. Yes I know the init function will be called while the driver is
+> loaded (while running insmod driver.ko). How a open or write call
+> comes to the driver from user space? Who keeps track of the driver's
+> internal data (*dev) and sends that while calling methods in the
+> driver? I am more interested in things like that.
 
-> I have
-> configured the host and target machines and I am able to connect, step
-> in the kernel code. In gdb I gave "break usb_register_dev" and "break
-> usb_deregister_dev" and continued the execution (continue in gdb).
-> Once the desktop is up, I connected a USB device (first tried with USB
-> keyboard). Break point was not hit. I tried some more functions and
-> break points are never hit. What should I do for it? Am I missing
-> something?
-
-You have to use gdbserver for connecting target and host systems i
-guess. You may find many tutorials about it on the internet.
-
+Drivers work in kernel address space. The implementation of the USB in
+userspace is through the library libusb, i guess you have visited its
+thread in mailing list. You will require a serious reading before
+jumping into coding.
+Sorry if you have done the required reading. :).
 
 -- 
 Regards,
