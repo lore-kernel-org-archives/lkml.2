@@ -1,84 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755796Ab2FJLoL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jun 2012 07:44:11 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:45465 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751556Ab2FJLoJ (ORCPT
+	id S1754012Ab2FJMFK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jun 2012 08:05:10 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:60653 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751981Ab2FJMFI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jun 2012 07:44:09 -0400
-Message-ID: <4FD4887B.1050901@panasas.com>
-Date: Sun, 10 Jun 2012 14:43:55 +0300
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
+	Sun, 10 Jun 2012 08:05:08 -0400
 MIME-Version: 1.0
-To: Joerg Platte <jplatte@naasa.net>
-CC: <linux-kernel@vger.kernel.org>, NFS list <linux-nfs@vger.kernel.org>
-Subject: Re: Kernel 3.4.X NFS regression
-References: <4FD47D4E.9070307@naasa.net>
-In-Reply-To: <4FD47D4E.9070307@naasa.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [89.139.19.137]
+In-Reply-To: <1338989907-25360-2-git-send-email-sjur.brandeland@stericsson.com>
+References: <1338989907-25360-1-git-send-email-sjur.brandeland@stericsson.com> <1338989907-25360-2-git-send-email-sjur.brandeland@stericsson.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Sun, 10 Jun 2012 15:04:47 +0300
+Message-ID: <CAK=WgbbCYmGDATEG-cQFphcvhjZszpW7=mD3qd6q4VN-gZusDg@mail.gmail.com>
+Subject: Re: [PATCH 1/7] remoteproc: fix print format warnings
+To: sjur.brandeland@stericsson.com
+Cc: Loic PALLARDY <loic.pallardy@stericsson.com>,
+        Ludovic BARRE <ludovic.barre@stericsson.com>,
+        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjurbren@gmail.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Forwarding to Linux-NFS ML
+On Wed, Jun 6, 2012 at 4:38 PM, <sjur.brandeland@stericsson.com> wrote:
+> From: Sjur Brændeland <sjur.brandeland@stericsson.com>
+>
+> Fix compile warnings from GCC 4.6.1 when printing values of type size_t.
+>
+> drivers/remoteproc/remoteproc_core.c:251:6:
+> warning: format ‘%x’ expects argument of type ‘unsigned int’,
+> but argument 4 has type ‘size_t’ [-Wformat]
+> drivers/remoteproc/remoteproc_core.c:938:9:
+> warning: format ‘%u’ expects argument of type ‘unsigned int’,
+> but argument 4 has type ‘size_t’ [-Wformat]
+> drivers/remoteproc/remoteproc_core.c:1023:2:
+> warning: format ‘%d’ expects argument of type ‘int’,
+> but argument 4 has type ‘size_t’ [-Wformat]
+>
+> Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
 
-On 06/10/2012 01:56 PM, Joerg Platte wrote:
+Cc'ed stable, applied and pushed to remoteproc's fixes branch.
 
-> All 3.4 kernels I tried so far (3.4, 3.4.1 and 3.4.2) suffer from the 
-> same NFS related problem:
-> 
-> Jun 10 09:23:36 coco kernel: INFO: task kworker/u:1:8 blocked for more 
-> than 120 seconds.
-> Jun 10 09:23:36 coco kernel: "echo 0 > 
-> /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-> Jun 10 09:23:36 coco kernel: kworker/u:1     D 002ba28c     0     8 
->   2 0x00000000
-> Jun 10 09:23:36 coco kernel:  df465ec0 00000046 00000005 002ba28c 
-> 00000000 0000000a 00000282 df465e70
-> Jun 10 09:23:36 coco kernel:  df465ec0 df44d2b0 ffff6b60 df465e84 
-> df44d2b0 e33fa6b3 00000282 de764ae0
-> Jun 10 09:23:36 coco kernel:  ffffffff d78bcfb8 df465e8c c012e0f6 
-> df465ea4 c013610c 00000000 d78bcf80
-> Jun 10 09:23:36 coco kernel: Call Trace:
-> Jun 10 09:23:36 coco kernel:  [<c012e0f6>] ? add_timer+0x11/0x17
-> Jun 10 09:23:36 coco kernel:  [<c013610c>] ? queue_delayed_work_on+0x74/0xf0
-> Jun 10 09:23:36 coco kernel:  [<c0136ba4>] ? queue_delayed_work+0x1b/0x28
-> Jun 10 09:23:36 coco kernel:  [<c0350f5b>] schedule+0x1d/0x4c
-> Jun 10 09:23:36 coco kernel:  [<e0cda5f1>] cld_pipe_upcall+0x4e/0x75 [nfsd]
-> Jun 10 09:23:36 coco kernel:  [<e0cda678>] 
-> nfsd4_cld_grace_done+0x60/0x99 [nfsd]
-> Jun 10 09:23:36 coco kernel:  [<e0cd9cb5>] 
-> nfsd4_record_grace_done+0x10/0x12 [nfsd]
-> Jun 10 09:23:36 coco kernel:  [<e0cd6696>] laundromat_main+0x291/0x2d8 
-> [nfsd]
-> Jun 10 09:23:36 coco kernel:  [<c0136d2f>] process_one_work+0xff/0x325
-> Jun 10 09:23:36 coco kernel:  [<c0134bec>] ? start_worker+0x20/0x23
-> Jun 10 09:23:36 coco kernel:  [<e0cd6405>] ? 
-> nfsd4_process_open1+0x32b/0x32b [nfsd]
-> Jun 10 09:23:36 coco kernel:  [<c013727a>] worker_thread+0xf4/0x39a
-> Jun 10 09:23:36 coco kernel:  [<c0137186>] ? rescuer_thread+0x231/0x231
-> Jun 10 09:23:36 coco kernel:  [<c013a556>] kthread+0x6c/0x6e
-> Jun 10 09:23:36 coco kernel:  [<c013a4ea>] ? kthreadd+0xe8/0xe8
-> Jun 10 09:23:36 coco kernel:  [<c035263e>] kernel_thread_helper+0x6/0xd
-> 
-> A kworker task is stuck in D state and nfs mounts from other clients do 
-> not work at all. This happens only on one machine, another one with the 
-> same kernel (same self compiled Debian package) works. All previous 3.3 
-> kernels work as well.
-> 
-> Since this machine is remote it is not that easy to bisect to find the 
-> bad commit. Are there any other things I can try?
-> 
-> regards,
-> Joerg
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
-
+Thanks,
+Ohad.
