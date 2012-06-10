@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754975Ab2FJJVf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jun 2012 05:21:35 -0400
+	id S1755353Ab2FJJVt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jun 2012 05:21:49 -0400
 Received: from mail-we0-f174.google.com ([74.125.82.174]:33612 "EHLO
 	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754304Ab2FJJVc (ORCPT
+	with ESMTP id S1754686Ab2FJJVp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jun 2012 05:21:32 -0400
-Message-ID: <4FD46595.80201@gmail.com>
-Date: Sun, 10 Jun 2012 11:15:01 +0200
+	Sun, 10 Jun 2012 05:21:45 -0400
+Message-ID: <4FD465A4.3000409@gmail.com>
+Date: Sun, 10 Jun 2012 11:15:16 +0200
 From: Marco Stornelli <marco.stornelli@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120421 Thunderbird/12.0
 MIME-Version: 1.0
-To: Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 08/17] pramfs: headers
+To: Linux FS Devel <linux-fsdevel@vger.kernel.org>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 09/17] pramfs: dir operations
 Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -23,18 +23,18 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Marco Stornelli <marco.stornelli@gmail.com>
 
-Definitions for the PRAMFS filesystem.
+File operations for directories.
 
 Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
 ---
-diff -Nurp linux-3.5-rc2-orig/fs/pramfs/pram.h linux-3.5-rc2/fs/pramfs/pram.h
---- linux-3.5-rc2-orig/fs/pramfs/pram.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-3.5-rc2/fs/pramfs/pram.h	2012-06-10 10:08:28.000000000 +0200
-@@ -0,0 +1,283 @@
+diff -Nurp linux-3.5-rc2-orig/fs/pramfs/dir.c linux-3.5-rc2/fs/pramfs/dir.c
+--- linux-3.5-rc2-orig/fs/pramfs/dir.c	1970-01-01 01:00:00.000000000 +0100
++++ linux-3.5-rc2/fs/pramfs/dir.c	2012-06-10 10:08:28.000000000 +0200
+@@ -0,0 +1,221 @@
 +/*
 + * BRIEF DESCRIPTION
 + *
-+ * Definitions for the PRAMFS filesystem.
++ * File operations for directories.
 + *
 + * Copyright 2009-2011 Marco Stornelli <marco.stornelli@gmail.com>
 + * Copyright 2003 Sony Corporation
@@ -44,486 +44,211 @@ diff -Nurp linux-3.5-rc2-orig/fs/pramfs/pram.h linux-3.5-rc2/fs/pramfs/pram.h
 + * License version 2. This program is licensed "as is" without any
 + * warranty of any kind, whether express or implied.
 + */
-+#ifndef __PRAM_H
-+#define __PRAM_H
 +
-+#include <linux/buffer_head.h>
-+#include <linux/pram_fs.h>
-+#include <linux/pram_fs_sb.h>
-+#include <linux/crc16.h>
-+#include <linux/mutex.h>
-+#include <linux/rcupdate.h>
-+#include <linux/types.h>
-+#include "wprotect.h"
++#include <linux/fs.h>
++#include <linux/pagemap.h>
++#include "pram.h"
 +
 +/*
-+ * Debug code
++ *	Parent is locked.
 + */
-+#ifdef pr_fmt
-+#undef pr_fmt
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+#endif
-+
-+#define pram_dbg(s, args...)		pr_debug(s, ## args)
-+#define pram_err(sb, s, args...)	pram_error_mng(sb, s, ## args)
-+#define pram_warn(s, args...)		pr_warning(s, ## args)
-+#define pram_info(s, args...)		pr_info(s, ## args)
-+
-+#define pram_set_bit			__test_and_set_bit_le
-+#define pram_clear_bit			__test_and_clear_bit_le
-+#define pram_find_next_zero_bit		find_next_zero_bit_le
-+
-+#define clear_opt(o, opt)	(o &= ~PRAM_MOUNT_##opt)
-+#define set_opt(o, opt)		(o |= PRAM_MOUNT_##opt)
-+#define test_opt(sb, opt)	(PRAM_SB(sb)->s_mount_opt & PRAM_MOUNT_##opt)
-+
-+/*
-+ * Pram inode flags
-+ *
-+ * PRAM_EOFBLOCKS_FL	There are blocks allocated beyond eof
-+ */
-+#define PRAM_EOFBLOCKS_FL	0x20000000
-+/* Flags that should be inherited by new inodes from their parent. */
-+#define PRAM_FL_INHERITED (FS_SECRM_FL | FS_UNRM_FL | FS_COMPR_FL |\
-+			   FS_SYNC_FL | FS_NODUMP_FL | FS_NOATIME_FL | \
-+			   FS_COMPRBLK_FL | FS_NOCOMP_FL | FS_JOURNAL_DATA_FL |\
-+			   FS_NOTAIL_FL | FS_DIRSYNC_FL)
-+/* Flags that are appropriate for regular files (all but dir-specific ones). */
-+#define PRAM_REG_FLMASK (~(FS_DIRSYNC_FL | FS_TOPDIR_FL))
-+/* Flags that are appropriate for non-directories/regular files. */
-+#define PRAM_OTHER_FLMASK (FS_NODUMP_FL | FS_NOATIME_FL)
-+#define PRAM_FL_USER_VISIBLE (FS_FL_USER_VISIBLE | PRAM_EOFBLOCKS_FL)
-+
-+/* Function Prototypes */
-+extern void pram_error_mng(struct super_block *sb, const char *fmt, ...);
-+
-+/* file.c */
-+extern ssize_t pram_direct_IO(int rw, struct kiocb *iocb,
-+			  const struct iovec *iov,
-+			  loff_t offset, unsigned long nr_segs);
-+extern int pram_mmap(struct file *file, struct vm_area_struct *vma);
-+
-+/* balloc.c */
-+extern void pram_init_bitmap(struct super_block *sb);
-+extern void pram_free_block(struct super_block *sb, unsigned long blocknr);
-+extern int pram_new_block(struct super_block *sb, unsigned long *blocknr,
-+			  int zero);
-+extern unsigned long pram_count_free_blocks(struct super_block *sb);
-+
-+/* dir.c */
-+extern int pram_add_link(struct dentry *dentry, struct inode *inode);
-+extern int pram_remove_link(struct inode *inode);
-+
-+/* namei.c */
-+extern struct dentry *pram_get_parent(struct dentry *child);
-+
-+/* inode.c */
-+extern int pram_alloc_blocks(struct inode *inode, int file_blocknr,
-+			     unsigned int num);
-+extern u64 pram_find_data_block(struct inode *inode,
-+				unsigned long file_blocknr);
-+
-+extern struct inode *pram_iget(struct super_block *sb, unsigned long ino);
-+extern void pram_put_inode(struct inode *inode);
-+extern void pram_evict_inode(struct inode *inode);
-+extern struct inode *pram_new_inode(struct inode *dir, umode_t mode,
-+					const struct qstr *qstr);
-+extern int pram_update_inode(struct inode *inode);
-+extern int pram_write_inode(struct inode *inode, struct writeback_control *wbc);
-+extern void pram_dirty_inode(struct inode *inode, int flags);
-+extern int pram_notify_change(struct dentry *dentry, struct iattr *attr);
-+extern void pram_set_inode_flags(struct inode *inode, struct pram_inode *pi);
-+extern void pram_get_inode_flags(struct inode *inode, struct pram_inode *pi);
-+extern int pram_find_region(struct inode *inode, loff_t *offset, int hole);
-+
-+/* ioctl.c */
-+extern long pram_ioctl(struct file *filp, unsigned int cmd, unsigned long arg);
-+#ifdef CONFIG_COMPAT
-+extern long pram_compat_ioctl(struct file *file, unsigned int cmd,
-+			      unsigned long arg);
-+#endif
-+
-+/* super.c */
-+#ifdef CONFIG_PRAMFS_TEST
-+extern struct pram_super_block *get_pram_super(void);
-+#endif
-+extern struct super_block *pram_read_super(struct super_block *sb,
-+					      void *data,
-+					      int silent);
-+extern int pram_statfs(struct dentry *d, struct kstatfs *buf);
-+extern int pram_remount(struct super_block *sb, int *flags, char *data);
-+
-+/* symlink.c */
-+extern int pram_block_symlink(struct inode *inode,
-+			       const char *symname, int len);
-+
-+/* Inline functions start here */
-+
-+/* Mask out flags that are inappropriate for the given type of inode. */
-+static inline __be32 pram_mask_flags(umode_t mode, __be32 flags)
++int pram_add_link(struct dentry *dentry, struct inode *inode)
 +{
-+	flags &= cpu_to_be32(PRAM_FL_INHERITED);
-+	if (S_ISDIR(mode))
-+		return flags;
-+	else if (S_ISREG(mode))
-+		return flags & cpu_to_be32(PRAM_REG_FLMASK);
-+	else
-+		return flags & cpu_to_be32(PRAM_OTHER_FLMASK);
++	struct inode *dir = dentry->d_parent->d_inode;
++	struct pram_inode *pidir, *pi, *pitail = NULL;
++	u64 tail_ino, prev_ino;
++
++	const char *name = dentry->d_name.name;
++
++	int namelen = min_t(unsigned int, dentry->d_name.len, PRAM_NAME_LEN);
++
++	pidir = pram_get_inode(dir->i_sb, dir->i_ino);
++
++	mutex_lock(&PRAM_I(dir)->i_link_mutex);
++
++	pi = pram_get_inode(dir->i_sb, inode->i_ino);
++
++	dir->i_mtime = dir->i_ctime = CURRENT_TIME;
++
++	tail_ino = be64_to_cpu(pidir->i_type.dir.tail);
++	if (tail_ino != 0) {
++		pitail = pram_get_inode(dir->i_sb, tail_ino);
++		pram_memunlock_inode(dir->i_sb, pitail);
++		pitail->i_d.d_next = cpu_to_be64(inode->i_ino);
++		pram_memlock_inode(dir->i_sb, pitail);
++
++		prev_ino = tail_ino;
++
++		pram_memunlock_inode(dir->i_sb, pidir);
++		pidir->i_type.dir.tail = cpu_to_be64(inode->i_ino);
++		pidir->i_mtime = cpu_to_be32(dir->i_mtime.tv_sec);
++		pidir->i_ctime = cpu_to_be32(dir->i_ctime.tv_sec);
++		pram_memlock_inode(dir->i_sb, pidir);
++	} else {
++		/* the directory is empty */
++		prev_ino = 0;
++
++		pram_memunlock_inode(dir->i_sb, pidir);
++		pidir->i_type.dir.tail = cpu_to_be64(inode->i_ino);
++		pidir->i_type.dir.head = cpu_to_be64(inode->i_ino);
++		pidir->i_mtime = cpu_to_be32(dir->i_mtime.tv_sec);
++		pidir->i_ctime = cpu_to_be32(dir->i_ctime.tv_sec);
++		pram_memlock_inode(dir->i_sb, pidir);
++	}
++
++
++	pram_memunlock_inode(dir->i_sb, pi);
++	pi->i_d.d_prev = cpu_to_be64(prev_ino);
++	pi->i_d.d_parent = cpu_to_be64(dir->i_ino);
++	memcpy(pi->i_d.d_name, name, namelen);
++	pi->i_d.d_name[namelen] = '\0';
++	pram_memlock_inode(dir->i_sb, pi);
++	mutex_unlock(&PRAM_I(dir)->i_link_mutex);
++	return 0;
 +}
 +
-+static inline int pram_calc_checksum(u8 *data, int n)
++int pram_remove_link(struct inode *inode)
 +{
-+	u16 crc = 0;
-+	crc = crc16(~0, (__u8 *)data + sizeof(__be16), n - sizeof(__be16));
-+	if (*((__be16 *)data) == cpu_to_be16(crc))
++	struct super_block *sb = inode->i_sb;
++	struct pram_inode *prev = NULL;
++	struct pram_inode *next = NULL;
++	struct pram_inode *pidir, *pi;
++	struct inode *dir = NULL;
++
++	pi = pram_get_inode(sb, inode->i_ino);
++	pidir = pram_get_inode(sb, be64_to_cpu(pi->i_d.d_parent));
++	if (!pidir)
++		return -EACCES;
++
++	dir = pram_iget(inode->i_sb, be64_to_cpu(pi->i_d.d_parent));
++	if (IS_ERR(dir))
++		return -EACCES;
++	mutex_lock(&PRAM_I(dir)->i_link_mutex);
++
++	if (inode->i_ino == be64_to_cpu(pidir->i_type.dir.head)) {
++		/* first inode in directory */
++		next = pram_get_inode(sb, be64_to_cpu(pi->i_d.d_next));
++
++		if (next) {
++			pram_memunlock_inode(sb, next);
++			next->i_d.d_prev = 0;
++			pram_memlock_inode(sb, next);
++
++			pram_memunlock_inode(sb, pidir);
++			pidir->i_type.dir.head = pi->i_d.d_next;
++		} else {
++			pram_memunlock_inode(sb, pidir);
++			pidir->i_type.dir.head = 0;
++			pidir->i_type.dir.tail = 0;
++		}
++		pram_memlock_inode(sb, pidir);
++	} else if (inode->i_ino == be64_to_cpu(pidir->i_type.dir.tail)) {
++		/* last inode in directory */
++		prev = pram_get_inode(sb, be64_to_cpu(pi->i_d.d_prev));
++
++		pram_memunlock_inode(sb, prev);
++		prev->i_d.d_next = 0;
++		pram_memlock_inode(sb, prev);
++
++		pram_memunlock_inode(sb, pidir);
++		pidir->i_type.dir.tail = pi->i_d.d_prev;
++		pram_memlock_inode(sb, pidir);
++	} else {
++		/* somewhere in the middle */
++		prev = pram_get_inode(sb, be64_to_cpu(pi->i_d.d_prev));
++		next = pram_get_inode(sb, be64_to_cpu(pi->i_d.d_next));
++
++		if (prev && next) {
++			pram_memunlock_inode(sb, prev);
++			prev->i_d.d_next = pi->i_d.d_next;
++			pram_memlock_inode(sb, prev);
++
++			pram_memunlock_inode(sb, next);
++			next->i_d.d_prev = pi->i_d.d_prev;
++			pram_memlock_inode(sb, next);
++		}
++	}
++
++	pram_memunlock_inode(sb, pi);
++	pi->i_d.d_next = 0;
++	pi->i_d.d_prev = 0;
++	pi->i_d.d_parent = 0;
++	pram_memlock_inode(sb, pi);
++	mutex_unlock(&PRAM_I(dir)->i_link_mutex);
++	iput(dir);
++
++	return 0;
++}
++
++#define DT2IF(dt) (((dt) << 12) & S_IFMT)
++#define IF2DT(sif) (((sif) & S_IFMT) >> 12)
++
++static int pram_readdir(struct file *filp, void *dirent, filldir_t filldir)
++{
++	struct inode *inode = filp->f_dentry->d_inode;
++	struct super_block *sb = inode->i_sb;
++	struct pram_inode *pi;
++	int namelen, ret = 0;
++	char *name;
++	ino_t ino;
++
++	pi = pram_get_inode(sb, inode->i_ino);
++
++	switch ((unsigned long)filp->f_pos) {
++	case 0:
++		ret = filldir(dirent, ".", 1, 0, inode->i_ino, DT_DIR);
++		filp->f_pos++;
++		return ret;
++	case 1:
++		ret = filldir(dirent, "..", 2, 1, be64_to_cpu(pi->i_d.d_parent),
++			      DT_DIR);
++		ino = be64_to_cpu(pi->i_type.dir.head);
++		filp->f_pos = ino ? ino : 2;
++		return ret;
++	case 2:
++		ino = be64_to_cpu(pi->i_type.dir.head);
++		if (ino) {
++			filp->f_pos = ino;
++			pi = pram_get_inode(sb, ino);
++			break;
++		} else {
++			/* the directory is empty */
++			filp->f_pos = 2;
++			return 0;
++		}
++	case 3:
 +		return 0;
-+	else
-+		return 1;
++	default:
++		ino = filp->f_pos;
++		pi = pram_get_inode(sb, ino);
++		break;
++	}
++
++	while (pi && !be16_to_cpu(pi->i_links_count)) {
++		ino = filp->f_pos = be64_to_cpu(pi->i_d.d_next);
++		pi = pram_get_inode(sb, ino);
++	}
++
++	if (pi) {
++		name = pi->i_d.d_name;
++		namelen = strlen(name);
++
++		ret = filldir(dirent, name, namelen,
++			      filp->f_pos, ino,
++			      IF2DT(be16_to_cpu(pi->i_mode)));
++		filp->f_pos = pi->i_d.d_next ? be64_to_cpu(pi->i_d.d_next) : 3;
++	} else
++		filp->f_pos = 3;
++
++	return ret;
 +}
 +
-+struct pram_inode_vfs {
-+#ifdef CONFIG_PRAMFS_XATTR
-+	/*
-+	 * Extended attributes can be read independently of the main file
-+	 * data. Taking i_mutex even when reading would cause contention
-+	 * between readers of EAs and writers of regular file data, so
-+	 * instead we synchronize on xattr_sem when reading or changing
-+	 * EAs.
-+	 */
-+	struct rw_semaphore xattr_sem;
-+#endif
-+	struct mutex i_meta_mutex;
-+	struct mutex i_link_mutex;
-+	struct inode vfs_inode;
-+};
-+
-+static inline struct pram_sb_info *PRAM_SB(struct super_block *sb)
-+{
-+	return sb->s_fs_info;
-+}
-+
-+static inline struct pram_inode_vfs *PRAM_I(struct inode *inode)
-+{
-+	return container_of(inode, struct pram_inode_vfs, vfs_inode);
-+}
-+
-+/* If this is part of a read-modify-write of the super block,
-+   pram_memunlock_super() before calling! */
-+static inline struct pram_super_block *
-+pram_get_super(struct super_block *sb)
-+{
-+	struct pram_sb_info *sbi = PRAM_SB(sb);
-+	return (struct pram_super_block *)sbi->virt_addr;
-+}
-+
-+static inline struct pram_super_block *
-+pram_get_redund_super(struct super_block *sb)
-+{
-+	struct pram_sb_info *sbi = PRAM_SB(sb);
-+	return (struct pram_super_block *)(sbi->virt_addr + PRAM_SB_SIZE);
-+}
-+
-+static inline void *
-+pram_get_bitmap(struct super_block *sb)
-+{
-+	struct pram_super_block *ps = pram_get_super(sb);
-+	return (void *)ps + be64_to_cpu(ps->s_bitmap_start);
-+}
-+
-+/* If this is part of a read-modify-write of the inode metadata,
-+   pram_memunlock_inode() before calling! */
-+static inline struct pram_inode *
-+pram_get_inode(struct super_block *sb, u64 ino)
-+{
-+	struct pram_super_block *ps = pram_get_super(sb);
-+	return ino ? (struct pram_inode *)((void *)ps + ino) : NULL;
-+}
-+
-+static inline ino_t
-+pram_get_inodenr(struct super_block *sb, struct pram_inode *pi)
-+{
-+	struct pram_super_block *ps = pram_get_super(sb);
-+	return (ino_t)((unsigned long)pi - (unsigned long)ps);
-+}
-+
-+static inline u64
-+pram_get_block_off(struct super_block *sb, unsigned long blocknr)
-+{
-+	struct pram_super_block *ps = pram_get_super(sb);
-+	return (u64)(be64_to_cpu(ps->s_bitmap_start) +
-+			     (blocknr << sb->s_blocksize_bits));
-+}
-+
-+static inline unsigned long
-+pram_get_blocknr(struct super_block *sb, u64 block)
-+{
-+	struct pram_super_block *ps = pram_get_super(sb);
-+	return (block - be64_to_cpu(ps->s_bitmap_start)) >>
-+							   sb->s_blocksize_bits;
-+}
-+
-+/* If this is part of a read-modify-write of the block,
-+   pram_memunlock_block() before calling! */
-+static inline void *
-+pram_get_block(struct super_block *sb, u64 block)
-+{
-+	struct pram_super_block *ps = pram_get_super(sb);
-+	return block ? ((void *)ps + block) : NULL;
-+}
-+
-+static inline unsigned long
-+pram_get_pfn(struct super_block *sb, u64 block)
-+{
-+	return (PRAM_SB(sb)->phys_addr + block) >> PAGE_SHIFT;
-+}
-+
-+static inline void check_eof_blocks(struct inode *inode, loff_t size)
-+{
-+	struct pram_inode *pi = pram_get_inode(inode->i_sb, inode->i_ino);
-+	if (unlikely(!pi))
-+		return;
-+	if ((pi->i_flags & cpu_to_be32(PRAM_EOFBLOCKS_FL)) &&
-+		size + inode->i_sb->s_blocksize >=
-+		(inode->i_blocks << inode->i_sb->s_blocksize_bits))
-+		pi->i_flags &= cpu_to_be32(~PRAM_EOFBLOCKS_FL);
-+}
-+
-+/*
-+ * Inodes and files operations
-+ */
-+
-+/* dir.c */
-+extern const struct file_operations pram_dir_operations;
-+
-+/* file.c */
-+extern const struct inode_operations pram_file_inode_operations;
-+extern const struct file_operations pram_file_operations;
-+extern const struct file_operations pram_xip_file_operations;
-+
-+/* inode.c */
-+extern const struct address_space_operations pram_aops;
-+extern const struct address_space_operations pram_aops_xip;
-+
-+/* namei.c */
-+extern const struct inode_operations pram_dir_inode_operations;
-+extern const struct inode_operations pram_special_inode_operations;
-+
-+/* symlink.c */
-+extern const struct inode_operations pram_symlink_inode_operations;
-+
-+extern struct backing_dev_info pram_backing_dev_info;
-+
-+#endif	/* __PRAM_H */
-diff -Nurp linux-3.5-rc2-orig/include/linux/magic.h linux-3.5-rc2/include/linux/magic.h
---- linux-3.5-rc2-orig/include/linux/magic.h	2012-06-09 03:40:09.000000000 +0200
-+++ linux-3.5-rc2/include/linux/magic.h	2012-06-10 10:08:28.000000000 +0200
-@@ -38,6 +38,7 @@
- #define NCP_SUPER_MAGIC		0x564c		/* Guess, what 0x564c is :-) */
- #define NFS_SUPER_MAGIC		0x6969
- #define OPENPROM_SUPER_MAGIC	0x9fa1
-+#define PRAM_SUPER_MAGIC	0xEFFA
- #define QNX4_SUPER_MAGIC	0x002f		/* qnx4 fs detection */
- #define QNX6_SUPER_MAGIC	0x68191122	/* qnx6 fs detection */
-
-diff -Nurp linux-3.5-rc2-orig/include/linux/pram_fs.h linux-3.5-rc2/include/linux/pram_fs.h
---- linux-3.5-rc2-orig/include/linux/pram_fs.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-3.5-rc2/include/linux/pram_fs.h	2012-06-10 10:08:28.000000000 +0200
-@@ -0,0 +1,130 @@
-+/*
-+ * FILE NAME include/linux/pram_fs.h
-+ *
-+ * BRIEF DESCRIPTION
-+ *
-+ * Definitions for the PRAMFS filesystem.
-+ *
-+ * Copyright 2009-2011 Marco Stornelli <marco.stornelli@gmail.com>
-+ * Copyright 2003 Sony Corporation
-+ * Copyright 2003 Matsushita Electric Industrial Co., Ltd.
-+ * 2003-2004 (c) MontaVista Software, Inc. , Steve Longerbeam
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2. This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+#ifndef _LINUX_PRAM_FS_H
-+#define _LINUX_PRAM_FS_H
-+
-+#include <linux/types.h>
-+#include <linux/magic.h>
-+
-+/*
-+ * The PRAM filesystem constants/structures
-+ */
-+
-+/*
-+ * Mount flags
-+ */
-+#define PRAM_MOUNT_PROTECT		0x000001  /* Use memory protection */
-+#define PRAM_MOUNT_XATTR_USER		0x000002  /* Extended user attributes */
-+#define PRAM_MOUNT_POSIX_ACL		0x000004  /* POSIX ACL */
-+#define PRAM_MOUNT_XIP			0x000008  /* Execute in place */
-+#define PRAM_MOUNT_ERRORS_CONT		0x000010  /* Continue on errors */
-+#define PRAM_MOUNT_ERRORS_RO		0x000020  /* Remount fs ro on errors */
-+#define PRAM_MOUNT_ERRORS_PANIC		0x000040  /* Panic on errors */
-+
-+/*
-+ * Maximal count of links to a file
-+ */
-+#define PRAM_LINK_MAX		32000
-+
-+#define PRAM_MIN_BLOCK_SIZE 512
-+#define PRAM_MAX_BLOCK_SIZE 4096
-+#define PRAM_DEF_BLOCK_SIZE 2048
-+
-+#define PRAM_INODE_SIZE 128 /* must be power of two */
-+#define PRAM_INODE_BITS   7
-+
-+/*
-+ * Structure of a directory entry in PRAMFS.
-+ * Offsets are to the inode that holds the referenced dentry.
-+ */
-+struct pram_dentry {
-+	__be64	d_next;     /* next dentry in this directory */
-+	__be64	d_prev;     /* previous dentry in this directory */
-+	__be64	d_parent;   /* parent directory */
-+	char	d_name[0];
-+};
-+
-+
-+/*
-+ * Structure of an inode in PRAMFS
-+ */
-+struct pram_inode {
-+	__be16	i_sum;          /* checksum of this inode */
-+	__be32	i_uid;		/* Owner Uid */
-+	__be32	i_gid;		/* Group Id */
-+	__be16	i_mode;		/* File mode */
-+	__be16	i_links_count;	/* Links count */
-+	__be32	i_blocks;	/* Blocks count */
-+	__be32	i_size;		/* Size of data in bytes */
-+	__be32	i_atime;	/* Access time */
-+	__be32	i_ctime;	/* Creation time */
-+	__be32	i_mtime;	/* Modification time */
-+	__be32	i_dtime;	/* Deletion Time */
-+	__be64	i_xattr;	/* Extended attribute block */
-+	__be32	i_generation;	/* File version (for NFS) */
-+	__be32	i_flags;	/* Inode flags */
-+
-+	union {
-+		struct {
-+			/*
-+			 * ptr to row block of 2D block pointer array,
-+			 * file block #'s 0 to (blocksize/8)^2 - 1.
-+			 */
-+			__be64 row_block;
-+		} reg;   /* regular file or symlink inode */
-+		struct {
-+			__be64 head; /* first entry in this directory */
-+			__be64 tail; /* last entry in this directory */
-+		} dir;
-+		struct {
-+			__be32 rdev; /* major/minor # */
-+		} dev;   /* device inode */
-+	} i_type;
-+
-+	struct pram_dentry i_d;
-+};
-+
-+#define PRAM_NAME_LEN \
-+	(PRAM_INODE_SIZE - offsetof(struct pram_inode, i_d.d_name) - 1)
-+
-+
-+#define PRAM_SB_SIZE 128 /* must be power of two */
-+
-+/*
-+ * Structure of the super block in PRAMFS
-+ */
-+struct pram_super_block {
-+	__be16	s_sum;          /* checksum of this sb, including padding */
-+	__be64	s_size;         /* total size of fs in bytes */
-+	__be32	s_blocksize;    /* blocksize in bytes */
-+	__be32	s_inodes_count;	/* total inodes count (used or free) */
-+	__be32	s_free_inodes_count;/* free inodes count */
-+	__be32	s_free_inode_hint;  /* start hint for locating free inodes */
-+	__be32	s_blocks_count;	/* total data blocks count (used or free) */
-+	__be32	s_free_blocks_count;/* free data blocks count */
-+	__be32	s_free_blocknr_hint;/* free data blocks count */
-+	__be64	s_bitmap_start; /* data block in-use bitmap location */
-+	__be32	s_bitmap_blocks;/* size of bitmap in number of blocks */
-+	__be32	s_mtime;	/* Mount time */
-+	__be32	s_wtime;	/* Write time */
-+	__be16	s_magic;	/* Magic signature */
-+	char	s_volume_name[16]; /* volume name */
-+};
-+
-+/* The root inode follows immediately after the redundant super block */
-+#define PRAM_ROOT_INO (PRAM_SB_SIZE*2)
-+
-+#endif	/* _LINUX_PRAM_FS_H */
-diff -Nurp linux-3.5-rc2-orig/include/linux/pram_fs_sb.h linux-3.5-rc2/include/linux/pram_fs_sb.h
---- linux-3.5-rc2-orig/include/linux/pram_fs_sb.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-3.5-rc2/include/linux/pram_fs_sb.h	2012-06-10 10:08:28.000000000 +0200
-@@ -0,0 +1,45 @@
-+/*
-+ * BRIEF DESCRIPTION
-+ *
-+ * Definitions for the PRAM filesystem.
-+ *
-+ * Copyright 2009-2011 Marco Stornelli <marco.stornelli@gmail.com>
-+ * Copyright 2003 Sony Corporation
-+ * Copyright 2003 Matsushita Electric Industrial Co., Ltd.
-+ * 2003-2004 (c) MontaVista Software, Inc. , Steve Longerbeam
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2. This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+#ifndef _LINUX_PRAM_FS_SB
-+#define _LINUX_PRAM_FS_SB
-+
-+/*
-+ * PRAM filesystem super-block data in memory
-+ */
-+struct pram_sb_info {
-+	/*
-+	 * base physical and virtual address of PRAMFS (which is also
-+	 * the pointer to the super block)
-+	 */
-+	phys_addr_t phys_addr;
-+	void *virt_addr;
-+
-+	/* Mount options */
-+	unsigned long bpi;
-+	unsigned long num_inodes;
-+	unsigned long blocksize;
-+	unsigned long initsize;
-+	unsigned long s_mount_opt;
-+	kuid_t uid;		    /* Mount uid for root directory */
-+	kgid_t gid;		    /* Mount gid for root directory */
-+	umode_t mode;		    /* Mount mode for root directory */
-+	atomic_t next_generation;
-+#ifdef CONFIG_PRAMFS_XATTR
-+	struct rb_root desc_tree;
-+	spinlock_t desc_tree_lock;
++const struct file_operations pram_dir_operations = {
++	.read		= generic_read_dir,
++	.readdir	= pram_readdir,
++	.fsync		= noop_fsync,
++	.unlocked_ioctl	= pram_ioctl,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl	= pram_compat_ioctl,
 +#endif
 +};
-+
-+#endif	/* _LINUX_PRAM_FS_SB */
-diff -Nurp linux-3.5-rc2-orig/include/linux/fs.h linux-3.5-rc2/include/linux/fs.h
---- linux-3.5-rc2-orig/include/linux/fs.h	2012-06-09 03:40:09.000000000 +0200
-+++ linux-3.5-rc2/include/linux/fs.h	2012-06-10 10:08:28.000000000 +0200
-@@ -424,6 +424,7 @@ struct kobject;
- struct pipe_inode_info;
- struct poll_table_struct;
- struct kstatfs;
-+struct vm_fault;
- struct vm_area_struct;
- struct vfsmount;
- struct cred;
-@@ -2445,6 +2446,7 @@ extern int nonseekable_open(struct inode
- #ifdef CONFIG_FS_XIP
- extern ssize_t xip_file_read(struct file *filp, char __user *buf, size_t len,
- 			     loff_t *ppos);
-+extern int xip_file_fault(struct vm_area_struct *vma, struct vm_fault *vmf);
- extern int xip_file_mmap(struct file * file, struct vm_area_struct * vma);
- extern ssize_t xip_file_write(struct file *filp, const char __user *buf,
- 			      size_t len, loff_t *ppos);
