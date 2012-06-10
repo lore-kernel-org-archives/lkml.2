@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753923Ab2FJJT4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jun 2012 05:19:56 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:50875 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753561Ab2FJJTw (ORCPT
+	id S1754049Ab2FJJUL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jun 2012 05:20:11 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:49320 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753171Ab2FJJUF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jun 2012 05:19:52 -0400
-Message-ID: <4FD46530.7060407@gmail.com>
-Date: Sun, 10 Jun 2012 11:13:20 +0200
+	Sun, 10 Jun 2012 05:20:05 -0400
+Message-ID: <4FD4653E.7040503@gmail.com>
+Date: Sun, 10 Jun 2012 11:13:34 +0200
 From: Marco Stornelli <marco.stornelli@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120421 Thunderbird/12.0
 MIME-Version: 1.0
 To: Linux FS Devel <linux-fsdevel@vger.kernel.org>
 CC: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 01/17] pramfs: documentation
+Subject: [PATCH 02/17] pramfs: super operations
 Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -23,202 +23,993 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Marco Stornelli <marco.stornelli@gmail.com>
 
-Documentation for PRAMFS.
+Super block operations.
 
 Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
 ---
-diff -Nurp linux-3.5-rc2-orig/Documentation/filesystems/pramfs.txt linux-3.5-rc2/Documentation/filesystems/pramfs.txt
---- linux-3.5-rc2-orig/Documentation/filesystems/pramfs.txt	1970-01-01 01:00:00.000000000 +0100
-+++ linux-3.5-rc2/Documentation/filesystems/pramfs.txt	2012-06-10 10:08:28.000000000 +0200
-@@ -0,0 +1,179 @@
+diff -Nurp linux-3.5-rc2-orig/fs/pramfs/super.c linux-3.5-rc2/fs/pramfs/super.c
+--- linux-3.5-rc2-orig/fs/pramfs/super.c	1970-01-01 01:00:00.000000000 +0100
++++ linux-3.5-rc2/fs/pramfs/super.c	2012-06-10 10:08:28.000000000 +0200
+@@ -0,0 +1,982 @@
++/*
++ * BRIEF DESCRIPTION
++ *
++ * Super block operations.
++ *
++ * Copyright 2009-2011 Marco Stornelli <marco.stornelli@gmail.com>
++ * Copyright 2003 Sony Corporation
++ * Copyright 2003 Matsushita Electric Industrial Co., Ltd.
++ * 2003-2004 (c) MontaVista Software, Inc. , Steve Longerbeam
++ * This file is licensed under the terms of the GNU General Public
++ * License version 2. This program is licensed "as is" without any
++ * warranty of any kind, whether express or implied.
++ */
 +
-+PRAMFS Overview
-+===============
++#include <linux/module.h>
++#include <linux/string.h>
++#include <linux/slab.h>
++#include <linux/init.h>
++#include <linux/parser.h>
++#include <linux/vfs.h>
++#include <linux/uaccess.h>
++#include <linux/io.h>
++#include <linux/seq_file.h>
++#include <linux/mount.h>
++#include <linux/mm.h>
++#include <linux/ctype.h>
++#include <linux/bitops.h>
++#include <linux/magic.h>
++#include <linux/exportfs.h>
++#include <linux/random.h>
++#include <linux/cred.h>
++#include <linux/backing-dev.h>
++#include <linux/ioport.h>
++#include "xattr.h"
++#include "pram.h"
 +
-+Many embedded systems have a block of non-volatile RAM separate from
-+normal system memory, i.e. of which the kernel maintains no memory page
-+descriptors. For such systems it would be beneficial to mount a
-+fast read/write filesystem over this "I/O memory", for storing frequently
-+accessed data that must survive system reboots and power cycles or volatile
-+data avoiding to write on a disk or flash. An example usage might be system
-+logs under /var/log or debug information of a flight-recorder.
++static struct super_operations pram_sops;
++static const struct export_operations pram_export_ops;
++static struct kmem_cache *pram_inode_cachep;
 +
-+Linux traditionally had no support for a persistent, non-volatile RAM-based
-+filesystem, persistent meaning the filesystem survives a system reboot
-+or power cycle intact. The RAM-based filesystems such as tmpfs and ramfs
-+have no actual backing store but exist entirely in the page and buffer
-+caches, hence the filesystem disappears after a system reboot or
-+power cycle.
++#ifdef CONFIG_PRAMFS_TEST
++static void *first_pram_super;
 +
-+A relatively straightforward solution is to write a simple block driver
-+for the non-volatile RAM, and mount over it any disk-based filesystem such
-+as ext2, ext3, ext4, etc.
++struct pram_super_block *get_pram_super(void)
++{
++	return (struct pram_super_block *)first_pram_super;
++}
++EXPORT_SYMBOL(get_pram_super);
++#endif
 +
-+But the disk-based fs over non-volatile RAM block driver approach has
-+some drawbacks:
++void pram_error_mng(struct super_block *sb, const char *fmt, ...)
++{
++	va_list args;
 +
-+1. Complexity of disk-based fs: disk-based filesystems such as ext2/ext3/ext4
-+   were designed for optimum performance on spinning disk media, so they
-+   implement features such as block groups, which attempts to group inode data
-+   into a contiguous set of data blocks to minimize disk seeking when accessing
-+   files. For RAM there is no such concern; a file's data blocks can be
-+   scattered throughout the media with no access speed penalty at all. So block
-+   groups in a filesystem mounted over RAM just adds unnecessary
-+   complexity. A better approach is to use a filesystem specifically
-+   tailored to RAM media which does away with these disk-based features.
-+   This increases the efficient use of space on the media, i.e. more
-+   space is dedicated to actual file data storage and less to meta-data
-+   needed to maintain that file data.
++	va_start(args, fmt);
++	printk(KERN_ERR "pramfs error: ");
++	vprintk(fmt, args);
++	printk("\n");
++	va_end(args);
 +
-+2. Different problems between disks and RAM: Because PRAMFS attempts to avoid
-+   filesystem corruption caused by kernel bugs, dirty pages in the page cache
-+   are not allowed to be written back to the backing-store RAM. This way, an
-+   errant write into the page cache will not get written back to the filesystem.
-+   However, if the backing-store RAM is comparable in access speed to system
-+   memory, the penalty of not using caching is minimal. With this consideration
-+   it's better to move file data directly between the user buffers and the backing
-+   store RAM, i.e. use direct I/O. This prevents the unnecessary populating of
-+   the page cache with dirty pages. However direct I/O has to be enabled at
-+   every file open. To enable direct I/O at all times for all regular files
-+   requires either that applications be modified to include the O_DIRECT flag on
-+   all file opens, or that the filesystem used performs direct I/O by default.
++	if (test_opt(sb, ERRORS_PANIC))
++		panic("pramfs: panic from previous error\n");
++	if (test_opt(sb, ERRORS_RO)) {
++		printk(KERN_CRIT "pramfs err: remounting filesystem read-only");
++		sb->s_flags |= MS_RDONLY;
++	}
++}
 +
-+The Persistent/Protected RAM Special Filesystem (PRAMFS) is a read/write
-+filesystem that has been designed to address these issues. PRAMFS is targeted
-+to fast I/O memory, and if the memory is non-volatile, the filesystem will be
-+persistent.
++static void pram_set_blocksize(struct super_block *sb, unsigned long size)
++{
++	int bits;
 +
-+In PRAMFS, direct I/O is enabled across all files in the filesystem, in other
-+words the O_DIRECT flag is forced on every open of a PRAMFS file. Also, file
-+I/O in the PRAMFS is always synchronous. There is no need to block the current
-+process while the transfer to/from the PRAMFS is in progress, since one of
-+the requirements of the PRAMFS is that the filesystem exists in fast RAM. So
-+file I/O in PRAMFS is always direct, synchronous, and never blocks.
++	/*
++	 * We've already validated the user input and the value here must be
++	 * between PRAM_MAX_BLOCK_SIZE and PRAM_MIN_BLOCK_SIZE
++	 * and it must be a power of 2.
++	 */
++	bits = fls(size) - 1;
++	sb->s_blocksize_bits = bits;
++	sb->s_blocksize = (1<<bits);
++}
 +
-+The data organization in PRAMFS can be thought of as an extremely simplified
-+version of ext2, such that the ratio of data to meta-data is very high.
++static inline void *pram_ioremap(phys_addr_t phys_addr, ssize_t size,
++				 bool protect)
++{
++	void *retval;
 +
-+PRAMFS supports the execute-in-place. With XIP, instead of keeping data in the
-+page cache, the need to have a page cache copy is eliminated completely.
-+Read&write type operations are performed directly from/to the memory. For file
-+mappings, the RAM itself is mapped directly into userspace. XIP, in addition,
-+speed up the applications start-up time because it removes the needs of any
-+copies.
++	/*
++	 * NOTE: Userland may not map this resource, we will mark the region so
++	 * /dev/mem and the sysfs MMIO access will not be allowed. This
++	 * restriction depends on STRICT_DEVMEM option. If this option is
++	 * disabled or not available we mark the region only as busy.
++	 */
++	retval = request_mem_region_exclusive(phys_addr, size, "pramfs");
++	if (!retval)
++		goto fail;
 +
-+PRAMFS is write protected. The page table entries that map the backing-store
-+RAM are normally marked read-only. Write operations into the filesystem
-+temporarily mark the affected pages as writeable, the write operation is
-+carried out with locks held, and then the page table entries is
-+marked read-only again.
-+This feature provides protection against filesystem corruption caused by errant
-+writes into the RAM due to kernel bugs for instance. In case there are systems
-+where the write protection is not possible (for instance the RAM cannot be
-+mapped with page tables), this feature can be disabled via the
-+CONFIG_PRAMFS_WRITE_PROTECT config option.
++	retval = (__force void *)ioremap_nocache(phys_addr, size);
 +
-+PRAMFS supports extended attributes, ACLs and security labels.
++	if (retval && protect)
++		pram_writeable(retval, size, 0);
++fail:
++	return retval;
++}
 +
-+In summary, PRAMFS is a light-weight, space-efficient special filesystem that
-+is ideal for systems with a block of fast non-volatile RAM that need to access
-+data on it using a standard filesytem interface.
++static loff_t pram_max_size(int bits)
++{
++	loff_t res;
++	res = (1ULL << (3*bits - 6)) - 1;
 +
-+Supported mount options
-+=======================
++	if (res > MAX_LFS_FILESIZE)
++		res = MAX_LFS_FILESIZE;
 +
-+The PRAMFS currently requires one mount option, and there are several
-+optional mount options:
++	pram_info("max file size %llu bytes\n", res);
++	return res;
++}
 +
-+physaddr=	Required. It tells PRAMFS the physical address of the
-+		start of the RAM that makes up the filesystem. The
-+		physical address must be located on a page boundary.
++enum {
++	Opt_addr, Opt_bpi, Opt_size,
++	Opt_num_inodes, Opt_mode, Opt_uid,
++	Opt_gid, Opt_blocksize, Opt_user_xattr,
++	Opt_nouser_xattr, Opt_noprotect,
++	Opt_acl, Opt_noacl, Opt_xip,
++	Opt_err_cont, Opt_err_panic, Opt_err_ro,
++	Opt_err
++};
 +
-+init=		Optional. It is used to initialize the memory to an
-+		empty filesystem. Any data in an existing filesystem
-+		will be lost if this option is given. The parameter to
-+		"init=" is the RAM in kilo/mega/giga bytes.
++static const match_table_t tokens = {
++	{Opt_bpi,		"physaddr=%x"},
++	{Opt_bpi,		"bpi=%u"},
++	{Opt_size,		"init=%s"},
++	{Opt_num_inodes,	"N=%u"},
++	{Opt_mode,		"mode=%o"},
++	{Opt_uid,		"uid=%u"},
++	{Opt_gid,		"gid=%u"},
++	{Opt_blocksize,		"bs=%s"},
++	{Opt_user_xattr,	"user_xattr"},
++	{Opt_user_xattr,	"nouser_xattr"},
++	{Opt_noprotect,		"noprotect"},
++	{Opt_acl,		"acl"},
++	{Opt_acl,		"noacl"},
++	{Opt_xip,		"xip"},
++	{Opt_err_cont,		"errors=continue"},
++	{Opt_err_panic,		"errors=panic"},
++	{Opt_err_ro,		"errors=remount-ro"},
++	{Opt_err,		NULL},
++};
 +
-+bs=		Optional. It is used to specify a block size. It is
-+		ignored if the "init=" option is not specified, since
-+		otherwise the block size is read from the PRAMFS
-+		super-block. The default blocksize is 2048 bytes,
-+		and the allowed block sizes are 512, 1024, 2048, and
-+		4096.
++static phys_addr_t get_phys_addr(void **data)
++{
++	phys_addr_t phys_addr;
++	char *options = (char *) *data;
++	unsigned long long ulltmp;
++	char *end;
++	char org_end;
++	int err;
 +
-+bpi=		Optional. It is used to specify the bytes per inode
-+		ratio, i.e. for every N bytes in the filesystem, an
-+		inode will be created. This behaves the same as the "-i"
-+		option to mke2fs. It is ignored if the "init=" option is
-+		not specified.
++	if (!options || strncmp(options, "physaddr=", 9) != 0)
++		return (phys_addr_t)ULLONG_MAX;
++	options += 9;
++	end = strchr(options, ',') ?: options + strlen(options);
++	org_end = *end;
++	*end = '\0';
++	err = kstrtoull(options, 0, &ulltmp);
++	*end = org_end;
++	options = end;
++	phys_addr = (phys_addr_t)ulltmp;
++	if (err) {
++		printk(KERN_ERR "Invalid phys addr specification: %s\n",
++		       (char *) *data);
++		return (phys_addr_t)ULLONG_MAX;
++	}
++	if (phys_addr & (PAGE_SIZE - 1)) {
++		printk(KERN_ERR "physical address 0x%16llx for pramfs isn't "
++			  "aligned to a page boundary\n",
++			  (u64)phys_addr);
++		return (phys_addr_t)ULLONG_MAX;
++	}
++	if (*options == ',')
++		options++;
++	*data = (void *) options;
++	return phys_addr;
++}
 +
-+N=		Optional. It is used to specify the number of inodes to
-+		allocate in the inode table. If the option is not
-+		specified, the bytes-per-inode ratio is used to
-+		calculate the number of inodes. If neither the "N=" or
-+		"bpi=" options are specified, the default behavior is to
-+		reserve 5% of the total space in the filesystem for the
-+		inode table. This option behaves the same as the "-N"
-+		option to mke2fs. It is ignored if the "init=" option is
-+		not specified.
++static int pram_parse_options(char *options, struct pram_sb_info *sbi,
++			      bool remount)
++{
++	char *p, *rest;
++	substring_t args[MAX_OPT_ARGS];
++	int option;
 +
-+errors=		Optional. It can be "cont", "remount-ro" and "panic". With the
-+		first value no action is done in case of error. With the second
-+		one the fs is mounted read-only. with the third one a kernel
-+		panic happens. Default action is to continue on error.
++	if (!options)
++		return 0;
 +
-+acl,noacl	Optional. Enable/disable the support for access control lists
-+		(disabled by default).
++	while ((p = strsep(&options, ",")) != NULL) {
++		int token;
++		if (!*p)
++			continue;
 +
-+user_xattr,	Optional. Enable/disable the support for the user extended
-+user_noxattr	attributes (disabled by default).
++		token = match_token(p, tokens, args);
++		switch (token) {
++		case Opt_addr:
++			if (remount)
++				goto bad_opt;
++			/* physaddr managed in get_phys_addr() */
++			break;
++		case Opt_bpi:
++			if (remount)
++				goto bad_opt;
++			if (match_int(&args[0], &option))
++				goto bad_val;
++			sbi->bpi = option;
++			break;
++		case Opt_uid:
++			if (remount)
++				goto bad_opt;
++			if (match_int(&args[0], &option))
++				goto bad_val;
++			sbi->uid = make_kuid(current_user_ns(), option);
++			if (!uid_valid(sbi->uid))
++				goto bad_val;
++			break;
++		case Opt_gid:
++			if (match_int(&args[0], &option))
++				goto bad_val;
++			sbi->gid = make_kgid(current_user_ns(), option);
++			if (!gid_valid(sbi->gid))
++				goto bad_val;
++			break;
++		case Opt_mode:
++			if (match_octal(&args[0], &option))
++				goto bad_val;
++			sbi->mode = option & 01777U;
++			break;
++		case Opt_size:
++			if (remount)
++				goto bad_opt;
++			/* memparse() will accept a K/M/G without a digit */
++			if (!isdigit(*args[0].from))
++				goto bad_val;
++			sbi->initsize = memparse(args[0].from, &rest);
++			break;
++		case Opt_num_inodes:
++			if (remount)
++				goto bad_opt;
++			if (match_int(&args[0], &option))
++				goto bad_val;
++				sbi->num_inodes = option;
++				break;
++		case Opt_blocksize:
++			if (remount)
++				goto bad_opt;
++			/* memparse() will accept a K/M/G without a digit */
++			if (!isdigit(*args[0].from))
++				goto bad_val;
++			sbi->blocksize = memparse(args[0].from, &rest);
++			if (sbi->blocksize < PRAM_MIN_BLOCK_SIZE ||
++				sbi->blocksize > PRAM_MAX_BLOCK_SIZE ||
++				!is_power_of_2(sbi->blocksize))
++				goto bad_val;
++			break;
++		case Opt_err_panic:
++			clear_opt(sbi->s_mount_opt, ERRORS_CONT);
++			clear_opt(sbi->s_mount_opt, ERRORS_RO);
++			set_opt(sbi->s_mount_opt, ERRORS_PANIC);
++			break;
++		case Opt_err_ro:
++			clear_opt(sbi->s_mount_opt, ERRORS_CONT);
++			clear_opt(sbi->s_mount_opt, ERRORS_PANIC);
++			set_opt(sbi->s_mount_opt, ERRORS_RO);
++			break;
++		case Opt_err_cont:
++			clear_opt(sbi->s_mount_opt, ERRORS_RO);
++			clear_opt(sbi->s_mount_opt, ERRORS_PANIC);
++			set_opt(sbi->s_mount_opt, ERRORS_CONT);
++			break;
++		case Opt_noprotect:
++#ifdef CONFIG_PRAMFS_WRITE_PROTECT
++			if (remount)
++				goto bad_opt;
++			clear_opt(sbi->s_mount_opt, PROTECT);
++#endif
++			break;
++#ifdef CONFIG_PRAMFS_XATTR
++		case Opt_user_xattr:
++			set_opt(sbi->s_mount_opt, XATTR_USER);
++			break;
++		case Opt_nouser_xattr:
++			clear_opt(sbi->s_mount_opt, XATTR_USER);
++			break;
++#else
++		case Opt_user_xattr:
++		case Opt_nouser_xattr:
++			pram_info("(no)user_xattr options not supported\n");
++			break;
++#endif
++#ifdef CONFIG_PRAMFS_POSIX_ACL
++		case Opt_acl:
++			set_opt(sbi->s_mount_opt, POSIX_ACL);
++			break;
++		case Opt_noacl:
++			clear_opt(sbi->s_mount_opt, POSIX_ACL);
++			break;
++#else
++		case Opt_acl:
++		case Opt_noacl:
++			pram_info("(no)acl options not supported\n");
++			break;
++#endif
++		case Opt_xip:
++#ifdef CONFIG_PRAMFS_XIP
++			if (remount)
++				goto bad_opt;
++			set_opt(sbi->s_mount_opt, XIP);
++			break;
++#else
++			pram_info("xip option not supported\n");
++			break;
++#endif
++		default: {
++			goto bad_opt;
++		}
++		}
++	}
 +
-+noprotect	Optional. Disable the memory protection (enabled by default).
++	return 0;
 +
-+xip		Optional. Enable the execute-in-place (disabled by default).
++bad_val:
++	printk(KERN_ERR "Bad value '%s' for mount option '%s'\n", args[0].from,
++	       p);
++	return -EINVAL;
++bad_opt:
++	printk(KERN_ERR "Bad mount option: \"%s\"\n", p);
++	return -EINVAL;
++}
 +
-+Examples:
++static struct pram_inode *pram_init(struct super_block *sb, unsigned long size)
++{
++	unsigned long bpi, num_inodes, bitmap_size, blocksize, num_blocks;
++	u64 bitmap_start;
++	struct pram_inode *root_i;
++	struct pram_super_block *super;
++	struct pram_sb_info *sbi = PRAM_SB(sb);
 +
-+mount -t pramfs -o physaddr=0x20000000,init=1M,bs=1k none /mnt/pram
++	pram_info("creating an empty pramfs of size %lu\n", size);
++	sbi->virt_addr = pram_ioremap(sbi->phys_addr, size,
++							pram_is_protected(sb));
 +
-+This example locates the filesystem at physical address 0x20000000, and
-+also requests an empty filesystem be initialized, of total size of one
-+megabyte and blocksize of one kilobyte. The mount point is /mnt/pram.
++	if (!sbi->virt_addr) {
++		printk(KERN_ERR "ioremap of the pramfs image failed\n");
++		return ERR_PTR(-EINVAL);
++	}
 +
-+mount -t pramfs -o physaddr=0x20000000 none /mnt/pram
++#ifdef CONFIG_PRAMFS_TEST
++	if (!first_pram_super)
++		first_pram_super = sbi->virt_addr;
++#endif
 +
-+This example locates the filesystem at physical address 0x20000000 as in
-+the first example, but uses the intact filesystem that already exists.
++	if (!sbi->blocksize)
++		blocksize = PRAM_DEF_BLOCK_SIZE;
++	else
++		blocksize = sbi->blocksize;
 +
-+Current Limitations
-+===================
++	pram_set_blocksize(sb, blocksize);
++	blocksize = sb->s_blocksize;
 +
-+- The RAM used for PRAMFS must be directly addressable.
++	if (sbi->blocksize && sbi->blocksize != blocksize)
++		sbi->blocksize = blocksize;
 +
-+- PRAMFS does not support hard links.
++	if (size < blocksize) {
++		printk(KERN_ERR "size smaller then block size\n");
++		return ERR_PTR(-EINVAL);
++	}
 +
-+- PRAMFS supports only private memory mappings. This allows most
-+  executables to run, but programs that attempt shared memory
-+  mappings, such as X apps that use X shared memory, will fail.
++	if (!sbi->bpi)
++		/*
++		 * default is that 5% of the filesystem is
++		 * devoted to the inode table
++		 */
++		bpi = 20 * PRAM_INODE_SIZE;
++	else
++		bpi = sbi->bpi;
 +
-+- PRAMFS does not support quota settings.
++	if (!sbi->num_inodes)
++		num_inodes = size / bpi;
++	else
++		num_inodes = sbi->num_inodes;
 +
-+Further Documentation
-+=====================
++	/*
++	 * up num_inodes such that the end of the inode table
++	 * (and start of bitmap) is on a block boundary
++	 */
++	bitmap_start = (PRAM_SB_SIZE*2) + (num_inodes<<PRAM_INODE_BITS);
++	if (bitmap_start & (blocksize - 1))
++		bitmap_start = (bitmap_start + blocksize) &
++			~(blocksize-1);
++	num_inodes = (bitmap_start - (PRAM_SB_SIZE*2)) >> PRAM_INODE_BITS;
 +
-+If you are interested in the internal design of PRAMFS, there is
-+documentation available at the Sourceforge PRAMFS home page at
-+http://pramfs.sourceforge.net/.
++	if (sbi->num_inodes && num_inodes != sbi->num_inodes)
++		sbi->num_inodes = num_inodes;
 +
-+Please send bug reports/comments/feedback to the pramfs development
-+list at sourceforge: pramfs-devel@lists.sourceforge.net.
-diff -Nurp linux-3.5-rc2-orig/Documentation/filesystems/xip.txt linux-3.5-rc2/Documentation/filesystems/xip.txt
---- linux-3.5-rc2-orig/Documentation/filesystems/xip.txt	2012-06-09 03:40:09.000000000 +0200
-+++ linux-3.5-rc2/Documentation/filesystems/xip.txt	2012-06-10 10:08:28.000000000 +0200
-@@ -48,6 +48,8 @@ blocks if needed.
- This address space operation is mutually exclusive with readpage&writepage that
- do page cache read/write operations.
- The following filesystems support it as of today:
-+- pramfs: persistent and protected RAM filesystem, see
-+  Documentation/filesystems/pramfs.txt
- - ext2: the second extended filesystem, see Documentation/filesystems/ext2.txt
-
- A set of file operations that do utilize get_xip_page can be found in
++	num_blocks = (size - bitmap_start) >> sb->s_blocksize_bits;
++
++	if (!num_blocks) {
++		printk(KERN_ERR "num blocks equals to zero\n");
++		return ERR_PTR(-EINVAL);
++	}
++
++	/* calc the data blocks in-use bitmap size in bytes */
++	if (num_blocks & 7)
++		bitmap_size = ((num_blocks + 8) & ~7) >> 3;
++	else
++		bitmap_size = num_blocks >> 3;
++	/* round it up to the nearest blocksize boundary */
++	if (bitmap_size & (blocksize - 1))
++		bitmap_size = (bitmap_size + blocksize) & ~(blocksize-1);
++
++	pram_info("blocksize %lu, num inodes %lu, num blocks %lu\n",
++		  blocksize, num_inodes, num_blocks);
++	pram_dbg("bitmap start 0x%08x, bitmap size %lu\n",
++		 (unsigned int)bitmap_start, bitmap_size);
++	pram_dbg("max name length %d\n", (unsigned int)PRAM_NAME_LEN);
++
++	super = pram_get_super(sb);
++	pram_memunlock_range(sb, super, bitmap_start + bitmap_size);
++
++	/* clear out super-block and inode table */
++	memset(super, 0, bitmap_start);
++	super->s_size = cpu_to_be64(size);
++	super->s_blocksize = cpu_to_be32(blocksize);
++	super->s_inodes_count = cpu_to_be32(num_inodes);
++	super->s_blocks_count = cpu_to_be32(num_blocks);
++	super->s_free_inodes_count = cpu_to_be32(num_inodes - 1);
++	super->s_bitmap_blocks = cpu_to_be32(bitmap_size >>
++							  sb->s_blocksize_bits);
++	super->s_free_blocks_count =
++		cpu_to_be32(num_blocks - be32_to_cpu(super->s_bitmap_blocks));
++	super->s_free_inode_hint = cpu_to_be32(1);
++	super->s_bitmap_start = cpu_to_be64(bitmap_start);
++	super->s_magic = cpu_to_be16(PRAM_SUPER_MAGIC);
++	pram_sync_super(super);
++
++	root_i = pram_get_inode(sb, PRAM_ROOT_INO);
++
++	root_i->i_mode = cpu_to_be16(sbi->mode | S_IFDIR);
++	root_i->i_uid = cpu_to_be32(sbi->uid);
++	root_i->i_gid = cpu_to_be32(sbi->gid);
++	root_i->i_links_count = cpu_to_be16(2);
++	root_i->i_d.d_parent = cpu_to_be64(PRAM_ROOT_INO);
++	pram_sync_inode(root_i);
++
++	pram_init_bitmap(sb);
++
++	pram_memlock_range(sb, super, bitmap_start + bitmap_size);
++
++	return root_i;
++}
++
++static inline void set_default_opts(struct pram_sb_info *sbi)
++{
++	set_opt(sbi->s_mount_opt, PROTECT);
++	set_opt(sbi->s_mount_opt, ERRORS_CONT);
++}
++
++static void pram_root_check(struct super_block *sb, struct pram_inode *root_pi)
++{
++	pram_memunlock_inode(sb, root_pi);
++
++	if (root_pi->i_d.d_next) {
++		pram_warn("root->next not NULL, trying to fix\n");
++		goto fail1;
++	}
++
++	if (!S_ISDIR(be16_to_cpu(root_pi->i_mode))) {
++		pram_warn("root is not a directory, trying to fix\n");
++		goto fail2;
++	}
++
++	if (pram_calc_checksum((u8 *)root_pi, PRAM_INODE_SIZE)) {
++		pram_warn("checksum error in root inode, trying to fix\n");
++		goto fail3;
++	}
++ fail1:
++	root_pi->i_d.d_next = 0;
++ fail2:
++	root_pi->i_mode = cpu_to_be16(S_IRWXUGO|S_ISVTX|S_IFDIR);
++ fail3:
++	root_pi->i_d.d_parent = cpu_to_be64(PRAM_ROOT_INO);
++	pram_memlock_inode(sb, root_pi);
++}
++
++static int pram_fill_super(struct super_block *sb, void *data, int silent)
++{
++	struct pram_super_block *super, *super_redund;
++	struct pram_inode *root_pi;
++	struct pram_sb_info *sbi = NULL;
++	struct inode *root_i = NULL;
++	unsigned long blocksize, initsize = 0;
++	u32 random = 0;
++	int retval = -EINVAL;
++
++	BUILD_BUG_ON(sizeof(struct pram_super_block) > PRAM_SB_SIZE);
++	BUILD_BUG_ON(sizeof(struct pram_inode) > PRAM_INODE_SIZE);
++
++	sbi = kzalloc(sizeof(struct pram_sb_info), GFP_KERNEL);
++	if (!sbi)
++		return -ENOMEM;
++	sb->s_fs_info = sbi;
++
++	set_default_opts(sbi);
++
++#ifdef CONFIG_PRAMFS_XATTR
++	spin_lock_init(&sbi->desc_tree_lock);
++	sbi->desc_tree.rb_node = NULL;
++#endif
++
++	sbi->phys_addr = get_phys_addr(&data);
++	if (sbi->phys_addr == (phys_addr_t)ULLONG_MAX)
++		goto out;
++
++	get_random_bytes(&random, sizeof(u32));
++	atomic_set(&sbi->next_generation, random);
++
++	/* Init with default values */
++	sbi->mode = (S_IRWXUGO | S_ISVTX);
++	sbi->uid = current_fsuid();
++	sbi->gid = current_fsgid();
++
++	if (pram_parse_options(data, sbi, 0))
++		goto out;
++
++	if (test_opt(sb, XIP) && test_opt(sb, PROTECT)) {
++		printk(KERN_ERR "xip and protect options both enabled\n");
++		goto out;
++	}
++
++	if (test_opt(sb, XIP) && sbi->blocksize != PAGE_SIZE) {
++		printk(KERN_ERR "blocksize not equal to page size "
++							 "and xip enabled\n");
++		goto out;
++	}
++
++	initsize = sbi->initsize;
++
++	/* Init a new pramfs instance */
++	if (initsize) {
++		root_pi = pram_init(sb, initsize);
++
++		if (IS_ERR(root_pi))
++			goto out;
++
++		super = pram_get_super(sb);
++
++		goto setup_sb;
++	}
++
++	pram_dbg("checking physical address 0x%016llx for pramfs image\n",
++		   (u64)sbi->phys_addr);
++
++	/* Map only one page for now. Will remap it when fs size is known. */
++	initsize = PAGE_SIZE;
++	sbi->virt_addr = pram_ioremap(sbi->phys_addr, initsize,
++							pram_is_protected(sb));
++	if (!sbi->virt_addr) {
++		printk(KERN_ERR "ioremap of the pramfs image failed\n");
++		goto out;
++	}
++
++	super = pram_get_super(sb);
++	super_redund = pram_get_redund_super(sb);
++
++	/* Do sanity checks on the superblock */
++	if (be16_to_cpu(super->s_magic) != PRAM_SUPER_MAGIC) {
++		if (be16_to_cpu(super_redund->s_magic) != PRAM_SUPER_MAGIC) {
++			if (!silent)
++				printk(KERN_ERR "Can't find a valid pramfs "
++								"partition\n");
++			goto out;
++		} else {
++			pram_warn("Error in super block: try to repair it with "
++							  "the redundant copy");
++			/* Try to auto-recover the super block */
++			pram_memunlock_super(sb, super);
++			memcpy(super, super_redund, PRAM_SB_SIZE);
++			pram_memlock_super(sb, super);
++		}
++	}
++
++	/* Read the superblock */
++	if (pram_calc_checksum((u8 *)super, PRAM_SB_SIZE)) {
++		if (pram_calc_checksum((u8 *)super_redund, PRAM_SB_SIZE)) {
++			printk(KERN_ERR "checksum error in super block\n");
++			goto out;
++		} else {
++			pram_warn("Error in super block: try to repair it with "
++							  "the redundant copy");
++			/* Try to auto-recover the super block */
++			pram_memunlock_super(sb, super);
++			memcpy(super, super_redund, PRAM_SB_SIZE);
++			pram_memlock_super(sb, super);
++		}
++	}
++
++	blocksize = be32_to_cpu(super->s_blocksize);
++	pram_set_blocksize(sb, blocksize);
++
++	initsize = be64_to_cpu(super->s_size);
++	pram_info("pramfs image appears to be %lu KB in size\n", initsize>>10);
++	pram_info("blocksize %lu\n", blocksize);
++
++	/* Read the root inode */
++	root_pi = pram_get_inode(sb, PRAM_ROOT_INO);
++
++	/* Check that the root inode is in a sane state */
++	pram_root_check(sb, root_pi);
++
++	/* Remap the whole filesystem now */
++	if (pram_is_protected(sb))
++		pram_writeable(sbi->virt_addr, PAGE_SIZE, 1);
++	iounmap((void __iomem *)sbi->virt_addr);
++	release_mem_region(sbi->phys_addr, PAGE_SIZE);
++	sbi->virt_addr = pram_ioremap(sbi->phys_addr, initsize,
++							pram_is_protected(sb));
++	if (!sbi->virt_addr) {
++		printk(KERN_ERR "ioremap of the pramfs image failed\n");
++		goto out;
++	}
++	super = pram_get_super(sb);
++
++#ifdef CONFIG_PRAMFS_TEST
++	if (!first_pram_super)
++		first_pram_super = sbi->virt_addr;
++#endif
++
++	/* Set it all up.. */
++ setup_sb:
++	sb->s_magic = be16_to_cpu(super->s_magic);
++	sb->s_op = &pram_sops;
++	sb->s_maxbytes = pram_max_size(sb->s_blocksize_bits);
++	sb->s_max_links = PRAM_LINK_MAX;
++	sb->s_time_gran = 1;
++	sb->s_export_op = &pram_export_ops;
++	sb->s_xattr = pram_xattr_handlers;
++#ifdef	CONFIG_PRAMFS_POSIX_ACL
++	sb->s_flags = (sb->s_flags & ~MS_POSIXACL) |
++		(sbi->s_mount_opt & PRAM_MOUNT_POSIX_ACL) ?
++		 MS_POSIXACL : 0;
++#endif
++	sb->s_flags |= MS_NOSEC;
++	root_i = pram_iget(sb, PRAM_ROOT_INO);
++	if (IS_ERR(root_i)) {
++		retval = PTR_ERR(root_i);
++		goto out;
++	}
++
++	sb->s_root = d_make_root(root_i);
++	if (!sb->s_root) {
++		printk(KERN_ERR "get pramfs root inode failed\n");
++		retval = -ENOMEM;
++		goto out;
++	}
++
++	retval = 0;
++	return retval;
++ out:
++	if (sbi->virt_addr) {
++		if (pram_is_protected(sb))
++			pram_writeable(sbi->virt_addr, initsize, 1);
++		iounmap((void __iomem *)sbi->virt_addr);
++		release_mem_region(sbi->phys_addr, initsize);
++	}
++
++	kfree(sbi);
++	return retval;
++}
++
++int pram_statfs(struct dentry *d, struct kstatfs *buf)
++{
++	struct super_block *sb = d->d_sb;
++	struct pram_super_block *ps = pram_get_super(sb);
++
++	buf->f_type = PRAM_SUPER_MAGIC;
++	buf->f_bsize = sb->s_blocksize;
++	buf->f_blocks = be32_to_cpu(ps->s_blocks_count);
++	buf->f_bfree = buf->f_bavail = pram_count_free_blocks(sb);
++	buf->f_files = be32_to_cpu(ps->s_inodes_count);
++	buf->f_ffree = be32_to_cpu(ps->s_free_inodes_count);
++	buf->f_namelen = PRAM_NAME_LEN;
++	return 0;
++}
++
++static int pram_show_options(struct seq_file *seq, struct dentry *root)
++{
++	struct pram_sb_info *sbi = PRAM_SB(root->d_sb);
++
++	seq_printf(seq, ",physaddr=0x%016llx", (u64)sbi->phys_addr);
++	if (sbi->initsize)
++		seq_printf(seq, ",init=%luk", sbi->initsize >> 10);
++	if (sbi->blocksize)
++		seq_printf(seq, ",bs=%lu", sbi->blocksize);
++	if (sbi->bpi)
++		seq_printf(seq, ",bpi=%lu", sbi->bpi);
++	if (sbi->num_inodes)
++		seq_printf(seq, ",N=%lu", sbi->num_inodes);
++	if (sbi->mode != (S_IRWXUGO | S_ISVTX))
++		seq_printf(seq, ",mode=%03o", sbi->mode);
++	if (!uid_eq(sbi->uid, GLOBAL_ROOT_UID))
++		seq_printf(seq, ",uid=%u",
++				from_kuid_munged(&init_user_ns, sbi->uid));
++	if (!gid_eq(sbi->gid, GLOBAL_ROOT_GID))
++		seq_printf(seq, ",gid=%u",
++				from_kgid_munged(&init_user_ns, sbi->gid));
++	if (test_opt(root->d_sb, ERRORS_RO))
++		seq_puts(seq, ",errors=remount-ro");
++	if (test_opt(root->d_sb, ERRORS_PANIC))
++		seq_puts(seq, ",errors=panic");
++#ifdef CONFIG_PRAMFS_WRITE_PROTECT
++	/* memory protection enabled by default */
++	if (!test_opt(root->d_sb, PROTECT))
++		seq_puts(seq, ",noprotect");
++#else
++	/*
++	 * If it's not compiled say to the user that there
++	 * isn't the protection.
++	 */
++	seq_puts(seq, ",noprotect");
++#endif
++
++#ifdef CONFIG_PRAMFS_XATTR
++	/* user xattr not enabled by default */
++	if (test_opt(root->d_sb, XATTR_USER))
++		seq_puts(seq, ",user_xattr");
++#endif
++
++#ifdef CONFIG_PRAMFS_POSIX_ACL
++	/* acl not enabled by default */
++	if (test_opt(root->d_sb, POSIX_ACL))
++		seq_puts(seq, ",acl");
++#endif
++
++#ifdef CONFIG_PRAMFS_XIP
++	/* xip not enabled by default */
++	if (test_opt(root->d_sb, XIP))
++		seq_puts(seq, ",xip");
++#endif
++
++	return 0;
++}
++
++int pram_remount(struct super_block *sb, int *mntflags, char *data)
++{
++	unsigned long old_sb_flags;
++	unsigned long old_mount_opt;
++	struct pram_super_block *ps;
++	struct pram_sb_info *sbi = PRAM_SB(sb);
++	int ret = -EINVAL;
++
++	/* Store the old options */
++	lock_super(sb);
++	old_sb_flags = sb->s_flags;
++	old_mount_opt = sbi->s_mount_opt;
++
++	if (pram_parse_options(data, sbi, 1))
++		goto restore_opt;
++
++	sb->s_flags = (sb->s_flags & ~MS_POSIXACL) |
++		((sbi->s_mount_opt & PRAM_MOUNT_POSIX_ACL) ? MS_POSIXACL : 0);
++
++	if ((*mntflags & MS_RDONLY) != (sb->s_flags & MS_RDONLY)) {
++		ps = pram_get_super(sb);
++		pram_memunlock_super(sb, ps);
++		/* update mount time */
++		ps->s_mtime = cpu_to_be32(get_seconds());
++		pram_memlock_super(sb, ps);
++	}
++
++	unlock_super(sb);
++	ret = 0;
++	return ret;
++
++ restore_opt:
++	sb->s_flags = old_sb_flags;
++	sbi->s_mount_opt = old_mount_opt;
++	unlock_super(sb);
++	return ret;
++}
++
++static void pram_put_super(struct super_block *sb)
++{
++	struct pram_sb_info *sbi = PRAM_SB(sb);
++	struct pram_super_block *ps = pram_get_super(sb);
++	u64 size = be64_to_cpu(ps->s_size);
++
++#ifdef CONFIG_PRAMFS_TEST
++	if (first_pram_super == sbi->virt_addr)
++		first_pram_super = NULL;
++#endif
++
++	pram_xattr_put_super(sb);
++	/* It's unmount time, so unmap the pramfs memory */
++	if (sbi->virt_addr) {
++		if (pram_is_protected(sb))
++			pram_writeable(sbi->virt_addr, size, 1);
++		iounmap(sbi->virt_addr);
++		sbi->virt_addr = NULL;
++		release_mem_region(sbi->phys_addr, size);
++	}
++
++	sb->s_fs_info = NULL;
++	kfree(sbi);
++}
++
++static struct inode *pram_alloc_inode(struct super_block *sb)
++{
++	struct pram_inode_vfs *vi = (struct pram_inode_vfs *)
++				kmem_cache_alloc(pram_inode_cachep, GFP_NOFS);
++	if (!vi)
++		return NULL;
++	vi->vfs_inode.i_version = 1;
++	return &vi->vfs_inode;
++}
++
++static void pram_i_callback(struct rcu_head *head)
++{
++	struct inode *inode = container_of(head, struct inode, i_rcu);
++	kmem_cache_free(pram_inode_cachep, PRAM_I(inode));
++}
++
++static void pram_destroy_inode(struct inode *inode)
++{
++	call_rcu(&inode->i_rcu, pram_i_callback);
++}
++
++static void init_once(void *foo)
++{
++	struct pram_inode_vfs *vi = (struct pram_inode_vfs *) foo;
++
++#ifdef CONFIG_PRAMFS_XATTR
++	init_rwsem(&vi->xattr_sem);
++#endif
++	mutex_init(&vi->i_meta_mutex);
++	mutex_init(&vi->i_link_mutex);
++	inode_init_once(&vi->vfs_inode);
++}
++
++static int __init init_inodecache(void)
++{
++	pram_inode_cachep = kmem_cache_create("pram_inode_cache",
++					     sizeof(struct pram_inode_vfs),
++					     0, (SLAB_RECLAIM_ACCOUNT|
++						SLAB_MEM_SPREAD),
++					     init_once);
++	if (pram_inode_cachep == NULL)
++		return -ENOMEM;
++	return 0;
++}
++
++static void destroy_inodecache(void)
++{
++	kmem_cache_destroy(pram_inode_cachep);
++}
++
++/*
++ * the super block writes are all done "on the fly", so the
++ * super block is never in a "dirty" state, so there's no need
++ * for write_super.
++ */
++static struct super_operations pram_sops = {
++	.alloc_inode	= pram_alloc_inode,
++	.destroy_inode	= pram_destroy_inode,
++	.write_inode	= pram_write_inode,
++	.dirty_inode	= pram_dirty_inode,
++	.evict_inode	= pram_evict_inode,
++	.put_super	= pram_put_super,
++	.statfs		= pram_statfs,
++	.remount_fs	= pram_remount,
++	.show_options	= pram_show_options,
++};
++
++static struct dentry *pram_mount(struct file_system_type *fs_type,
++	int flags, const char *dev_name, void *data)
++{
++	return mount_nodev(fs_type, flags, data, pram_fill_super);
++}
++
++static struct file_system_type pram_fs_type = {
++	.owner          = THIS_MODULE,
++	.name           = "pramfs",
++	.mount          = pram_mount,
++	.kill_sb        = kill_anon_super,
++};
++
++static struct inode *pram_nfs_get_inode(struct super_block *sb,
++		u64 ino, u32 generation)
++{
++	struct pram_super_block *ps = pram_get_super(sb);
++	struct inode *inode;
++
++	if (ino < PRAM_ROOT_INO)
++		return ERR_PTR(-ESTALE);
++	if (((ino - PRAM_ROOT_INO) >> PRAM_INODE_BITS) >
++	  be32_to_cpu(ps->s_inodes_count))
++		return ERR_PTR(-ESTALE);
++
++	inode = pram_iget(sb, ino);
++	if (IS_ERR(inode))
++		return ERR_CAST(inode);
++	if (generation && inode->i_generation != generation) {
++		/* we didn't find the right inode.. */
++		iput(inode);
++		return ERR_PTR(-ESTALE);
++	}
++	return inode;
++}
++
++static struct dentry *
++pram_fh_to_dentry(struct super_block *sb, struct fid *fid, int fh_len,
++		   int fh_type)
++{
++	return generic_fh_to_dentry(sb, fid, fh_len, fh_type,
++				    pram_nfs_get_inode);
++}
++
++static struct dentry *
++pram_fh_to_parent(struct super_block *sb, struct fid *fid, int fh_len,
++		   int fh_type)
++{
++	return generic_fh_to_parent(sb, fid, fh_len, fh_type,
++				    pram_nfs_get_inode);
++}
++
++static const struct export_operations pram_export_ops = {
++	.fh_to_dentry = pram_fh_to_dentry,
++	.fh_to_parent = pram_fh_to_parent,
++	.get_parent = pram_get_parent,
++};
++
++static int __init init_pram_fs(void)
++{
++	int rc = 0;
++
++	rc = init_pram_xattr();
++	if (rc)
++		return rc;
++
++	rc = init_inodecache();
++	if (rc)
++		goto out1;
++
++	rc = bdi_init(&pram_backing_dev_info);
++	if (rc)
++		goto out2;
++
++	rc = register_filesystem(&pram_fs_type);
++	if (rc)
++		goto out3;
++
++	return 0;
++
++out3:
++	bdi_destroy(&pram_backing_dev_info);
++out2:
++	destroy_inodecache();
++out1:
++	exit_pram_xattr();
++	return rc;
++}
++
++static void __exit exit_pram_fs(void)
++{
++	unregister_filesystem(&pram_fs_type);
++	bdi_destroy(&pram_backing_dev_info);
++	destroy_inodecache();
++	exit_pram_xattr();
++}
++
++MODULE_AUTHOR("Marco Stornelli <marco.stornelli@gmail.com>");
++MODULE_DESCRIPTION("Protected/Persistent RAM Filesystem");
++MODULE_LICENSE("GPL");
++
++module_init(init_pram_fs)
++module_exit(exit_pram_fs)
