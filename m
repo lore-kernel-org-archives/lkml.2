@@ -1,121 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753500Ab2FJRJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jun 2012 13:09:26 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:53721 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752453Ab2FJRJY convert rfc822-to-8bit (ORCPT
+	id S1753989Ab2FJRSl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jun 2012 13:18:41 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:53391 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752723Ab2FJRSk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jun 2012 13:09:24 -0400
+	Sun, 10 Jun 2012 13:18:40 -0400
+From: =?UTF-8?q?Tomasz=20Mo=C5=84?= <desowin@gmail.com>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Hans de Goede <hdegoede@redhat.com>, linux-media@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Tomasz=20Mo=C5=84?= <desowin@gmail.com>
+Subject: [PATCH 1/1] v4l: mem2mem_testdev: Add horizontal and vertical flip.
+Date: Sun, 10 Jun 2012 21:18:03 +0200
+Message-Id: <1339355883-4249-1-git-send-email-desowin@gmail.com>
+X-Mailer: git-send-email 1.7.10
 MIME-Version: 1.0
-X-Originating-IP: [89.139.19.137]
-In-Reply-To: <1338989907-25360-7-git-send-email-sjur.brandeland@stericsson.com>
-References: <1338989907-25360-1-git-send-email-sjur.brandeland@stericsson.com> <1338989907-25360-7-git-send-email-sjur.brandeland@stericsson.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Sun, 10 Jun 2012 20:09:03 +0300
-Message-ID: <CAK=Wgbbtins7WD8nPrn_psWyWiOdm7zysmJBz6kYFew6TM0dAQ@mail.gmail.com>
-Subject: Re: [PATCH 6/7] remoteproc: Support custom firmware handlers
-To: sjur.brandeland@stericsson.com
-Cc: Loic PALLARDY <loic.pallardy@stericsson.com>,
-        Ludovic BARRE <ludovic.barre@stericsson.com>,
-        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjurbren@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sjur,
 
-On Wed, Jun 6, 2012 at 4:38 PM,  <sjur.brandeland@stericsson.com> wrote:
-> From: Sjur Brændeland <sjur.brandeland@stericsson.com>
->
-> Firmware handling is made customizable.
-> This is done by creating a separate ops structure for the
-> firmware functions that depends on a particular firmware
-> format (such as ELF). The ELF specific functions are exported
-> by the structure rproc_elf_fw_ops.
->
-> Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
-> ---
-> @@ -171,6 +171,7 @@ static struct rproc_ops omap_rproc_ops = {
->        .start          = omap_rproc_start,
->        .stop           = omap_rproc_stop,
->        .kick           = omap_rproc_kick,
-> +       .fw             = &rproc_elf_fw_ops
+Signed-off-by: Tomasz MoÅ„ <desowin@gmail.com>
+---
+ drivers/media/video/mem2mem_testdev.c |  135 ++++++++++++++++++++++++++++++---
+ 1 file changed, 124 insertions(+), 11 deletions(-)
 
-It might be more appropriate to provide the binary format handlers as
-a separate argument to rproc_alloc, instead of adding it to the
-rproc_ops struct (rproc_ops is dedicated to platform-specific handlers
-that are implemented by the low-level driver).
+diff --git a/drivers/media/video/mem2mem_testdev.c b/drivers/media/video/mem2mem_testdev.c
+index d2dec58..e1b66e9 100644
+--- a/drivers/media/video/mem2mem_testdev.c
++++ b/drivers/media/video/mem2mem_testdev.c
+@@ -60,6 +60,10 @@ MODULE_VERSION("0.1.1");
+ #define MEM2MEM_COLOR_STEP	(0xff >> 4)
+ #define MEM2MEM_NUM_TILES	8
+ 
++/* Flags that indicate processing mode */
++#define MEM2MEM_HFLIP	(1 << 0)
++#define MEM2MEM_VFLIP	(1 << 1)
++
+ #define dprintk(dev, fmt, arg...) \
+ 	v4l2_dbg(1, 1, &dev->v4l2_dev, "%s: " fmt, __func__, ## arg)
+ 
+@@ -131,6 +135,24 @@ static struct m2mtest_q_data *get_q_data(enum v4l2_buf_type type)
+ 
+ static struct v4l2_queryctrl m2mtest_ctrls[] = {
+ 	{
++		.id		= V4L2_CID_HFLIP,
++		.type		= V4L2_CTRL_TYPE_BOOLEAN,
++		.name		= "Mirror",
++		.minimum	= 0,
++		.maximum	= 1,
++		.step		= 1,
++		.default_value	= 0,
++		.flags		= 0,
++	}, {
++		.id		= V4L2_CID_VFLIP,
++		.type		= V4L2_CTRL_TYPE_BOOLEAN,
++		.name		= "Vertical Mirror",
++		.minimum	= 0,
++		.maximum	= 1,
++		.step		= 1,
++		.default_value	= 0,
++		.flags		= 0,
++	}, {
+ 		.id		= V4L2_CID_TRANS_TIME_MSEC,
+ 		.type		= V4L2_CTRL_TYPE_INTEGER,
+ 		.name		= "Transaction time (msec)",
+@@ -197,6 +219,9 @@ struct m2mtest_ctx {
+ 	/* Abort requested by m2m */
+ 	int			aborting;
+ 
++	/* Processing mode */
++	int			mode;
++
+ 	struct v4l2_m2m_ctx	*m2m_ctx;
+ };
+ 
+@@ -247,19 +272,84 @@ static int device_process(struct m2mtest_ctx *ctx,
+ 	bytes_left = bytesperline - tile_w * MEM2MEM_NUM_TILES;
+ 	w = 0;
+ 
+-	for (y = 0; y < height; ++y) {
+-		for (t = 0; t < MEM2MEM_NUM_TILES; ++t) {
+-			if (w & 0x1) {
+-				for (x = 0; x < tile_w; ++x)
+-					*p_out++ = *p_in++ + MEM2MEM_COLOR_STEP;
+-			} else {
+-				for (x = 0; x < tile_w; ++x)
+-					*p_out++ = *p_in++ - MEM2MEM_COLOR_STEP;
++	switch (ctx->mode) {
++	case MEM2MEM_HFLIP | MEM2MEM_VFLIP:
++		p_out += bytesperline * height - bytes_left;
++		for (y = 0; y < height; ++y) {
++			for (t = 0; t < MEM2MEM_NUM_TILES; ++t) {
++				if (w & 0x1) {
++					for (x = 0; x < tile_w; ++x)
++						*--p_out = *p_in++ +
++							MEM2MEM_COLOR_STEP;
++				} else {
++					for (x = 0; x < tile_w; ++x)
++						*--p_out = *p_in++ -
++							MEM2MEM_COLOR_STEP;
++				}
++				++w;
+ 			}
+-			++w;
++			p_in += bytes_left;
++			p_out -= bytes_left;
++		}
++		break;
++
++	case MEM2MEM_HFLIP:
++		for (y = 0; y < height; ++y) {
++			p_out += MEM2MEM_NUM_TILES * tile_w;
++			for (t = 0; t < MEM2MEM_NUM_TILES; ++t) {
++				if (w & 0x01) {
++					for (x = 0; x < tile_w; ++x)
++						*--p_out = *p_in++ +
++							MEM2MEM_COLOR_STEP;
++				} else {
++					for (x = 0; x < tile_w; ++x)
++						*--p_out = *p_in++ -
++							MEM2MEM_COLOR_STEP;
++				}
++				++w;
++			}
++			p_in += bytes_left;
++			p_out += bytesperline;
++		}
++		break;
++
++	case MEM2MEM_VFLIP:
++		p_out += bytesperline * (height - 1);
++		for (y = 0; y < height; ++y) {
++			for (t = 0; t < MEM2MEM_NUM_TILES; ++t) {
++				if (w & 0x1) {
++					for (x = 0; x < tile_w; ++x)
++						*p_out++ = *p_in++ +
++							MEM2MEM_COLOR_STEP;
++				} else {
++					for (x = 0; x < tile_w; ++x)
++						*p_out++ = *p_in++ -
++							MEM2MEM_COLOR_STEP;
++				}
++				++w;
++			}
++			p_in += bytes_left;
++			p_out += bytes_left - 2 * bytesperline;
++		}
++		break;
++
++	default:
++		for (y = 0; y < height; ++y) {
++			for (t = 0; t < MEM2MEM_NUM_TILES; ++t) {
++				if (w & 0x1) {
++					for (x = 0; x < tile_w; ++x)
++						*p_out++ = *p_in++ +
++							MEM2MEM_COLOR_STEP;
++				} else {
++					for (x = 0; x < tile_w; ++x)
++						*p_out++ = *p_in++ -
++							MEM2MEM_COLOR_STEP;
++				}
++				++w;
++			}
++			p_in += bytes_left;
++			p_out += bytes_left;
+ 		}
+-		p_in += bytes_left;
+-		p_out += bytes_left;
+ 	}
+ 
+ 	return 0;
+@@ -646,6 +736,14 @@ static int vidioc_g_ctrl(struct file *file, void *priv,
+ 	struct m2mtest_ctx *ctx = priv;
+ 
+ 	switch (ctrl->id) {
++	case V4L2_CID_HFLIP:
++		ctrl->value = (ctx->mode & MEM2MEM_HFLIP) ? 1 : 0;
++		break;
++
++	case V4L2_CID_VFLIP:
++		ctrl->value = (ctx->mode & MEM2MEM_VFLIP) ? 1 : 0;
++		break;
++
+ 	case V4L2_CID_TRANS_TIME_MSEC:
+ 		ctrl->value = ctx->transtime;
+ 		break;
+@@ -689,6 +787,20 @@ static int vidioc_s_ctrl(struct file *file, void *priv,
+ 		return ret;
+ 
+ 	switch (ctrl->id) {
++	case V4L2_CID_HFLIP:
++		if (ctrl->value)
++			ctx->mode |= MEM2MEM_HFLIP;
++		else
++			ctx->mode &= ~MEM2MEM_HFLIP;
++		break;
++
++	case V4L2_CID_VFLIP:
++		if (ctrl->value)
++			ctx->mode |= MEM2MEM_VFLIP;
++		else
++			ctx->mode &= ~MEM2MEM_VFLIP;
++		break;
++
+ 	case V4L2_CID_TRANS_TIME_MSEC:
+ 		ctx->transtime = ctrl->value;
+ 		break;
+@@ -859,6 +971,7 @@ static int m2mtest_open(struct file *file)
+ 	ctx->translen = MEM2MEM_DEF_TRANSLEN;
+ 	ctx->transtime = MEM2MEM_DEF_TRANSTIME;
+ 	ctx->num_processed = 0;
++	ctx->mode = 0;
+ 
+ 	ctx->m2m_ctx = v4l2_m2m_ctx_init(dev->m2m_dev, ctx, &queue_init);
+ 
+-- 
+1.7.10
 
->
->        rproc = kzalloc(sizeof(struct rproc) + len, GFP_KERNEL);
-> diff --git a/drivers/remoteproc/remoteproc_elf_loader.c b/drivers/remoteproc/remoteproc_elf_loader.c
-> index 2017ae3..9a53871 100644
-> --- a/drivers/remoteproc/remoteproc_elf_loader.c
-> +++ b/drivers/remoteproc/remoteproc_elf_loader.c
-> @@ -33,8 +33,8 @@
->  #include "remoteproc_internal.h"
->
->  /* make sure this fw image is sane */
-> -int
-> -rproc_fw_sanity_check(struct rproc *rproc, const struct firmware *fw)
-> +static int
-> +elf_sanity_check(struct rproc *rproc, const struct firmware *fw)
-
-Do we want to keep the "rproc" prefix for the function names (e.g.
-rproc_elf_sanity_check) ? we'll be better namespace citizens that way.
-
-> -int
-> -rproc_load_segments(struct rproc *rproc, const struct firmware *fw);
-> -struct resource_table *
-> -rproc_find_rsc_table(struct rproc *rproc, const struct firmware *fw,
-> -                                                               int *tablesz);
-> -int
-> -rproc_fw_sanity_check(struct rproc *rproc, const struct firmware *fw);
-> -void rproc_set_boot_addr(struct rproc *rproc, const struct firmware *fw);
-
-Oh, great, you removed those. In that case we don't really care they'd
-stay in remoteproc.h for the transition.. (but that probably doesn't
-apply to rproc_da_to_va).
-
-> +static inline int
-> +rproc_fw_sanity_check(struct rproc *rproc, const struct firmware *fw)
-> +{
-> +       if (rproc->ops->fw_ops->sanity_check)
-> +               return rproc->ops->fw_ops->sanity_check(rproc, fw);
-> +       return 0;
-> +}
-> +
-> +static inline
-> +void rproc_set_boot_addr(struct rproc *rproc, const struct firmware *fw)
-> +{
-> +       if (rproc->ops->fw_ops->set_boot_addr)
-> +               rproc->ops->fw_ops->set_boot_addr(rproc, fw);
-> +}
-> +
-> +static inline int
-> +rproc_load_segments(struct rproc *rproc, const struct firmware *fw)
-> +{
-> +       if (rproc->ops->fw_ops->load)
-> +               return rproc->ops->fw_ops->load(rproc, fw);
-> +       return -EINVAL;
-> +}
-> +static inline struct resource_table *
-> +rproc_find_rsc_table(struct rproc *rproc, const struct firmware *fw,
-> +                                                       int *tablesz)
-> +{
-> +       if (rproc->ops->fw_ops->find_rsc_table)
-> +               return rproc->ops->fw_ops->find_rsc_table(rproc, fw, tablesz);
-> +       return NULL;
-> +}
-> +
-> +extern struct rproc_fw_ops rproc_elf_fw_ops;
-
-I'd keep those too in remoteproc_internal.h, so they won't be
-accessible to code outside of drivers/remoteproc.
-
-Thanks!
-Ohad.
