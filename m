@@ -1,71 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753536Ab2FJQJm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jun 2012 12:09:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8030 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752597Ab2FJQJl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jun 2012 12:09:41 -0400
-Message-ID: <1339344566.26976.272.camel@ul30vt>
-Subject: Re: [PATCH] uio_pci_generic does not export memory resources
-From: Alex Williamson <alex.williamson@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: "Hans J. Koch" <hjk@hansjkoch.de>,
-        Andreas Hartmann <andihartmann@01019freenet.de>,
-        Dominic Eschweiler <eschweiler@fias.uni-frankfurt.de>,
-        Jan Kiszka <jan.kiszka@siemens.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Sun, 10 Jun 2012 10:09:26 -0600
-In-Reply-To: <20120610141759.GB8922@redhat.com>
-References: <1339156616.3870.9.camel@blech>
-	 <20120608130351.GB1964@redhat.com> <4FD1FB49.3020905@siemens.com>
-	 <1339165009.26976.60.camel@ul30vt> <1339166867.3870.29.camel@blech>
-	 <4FD22552.6090609@01019freenet.de> <20120608164426.GE9705@local>
-	 <1339175476.26976.102.camel@ul30vt> <20120610141759.GB8922@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753347Ab2FJQgV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jun 2012 12:36:21 -0400
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:55349 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752597Ab2FJQgS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Jun 2012 12:36:18 -0400
+MIME-Version: 1.0
+In-Reply-To: <cover.1338220457.git.rubini@gnudd.com>
+References: <cover.1338220457.git.rubini@gnudd.com>
+Date: Sun, 10 Jun 2012 18:36:17 +0200
+Message-ID: <CACRpkdbPtR5MDjd1YZ5GhOdp61HQe2PJusudNPOhDQHUAt1kJA@mail.gmail.com>
+Subject: Re: [PATCH V2 0/6] Bridging PCI to amba
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Alessandro Rubini <rubini@gnudd.com>
+Cc: linux-kernel@vger.kernel.org, Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
+        Alan Cox <alan@linux.intel.com>, Russell King <linux@arm.linux.org.uk>,
+        x86@kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-serial@vger.kernel.org, linux-arch@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-06-10 at 17:18 +0300, Michael S. Tsirkin wrote:
-> On Fri, Jun 08, 2012 at 11:11:16AM -0600, Alex Williamson wrote:
-> > On Fri, 2012-06-08 at 18:44 +0200, Hans J. Koch wrote:
-> > > On Fri, Jun 08, 2012 at 06:16:18PM +0200, Andreas Hartmann wrote:
-> > > > Hi Dominic,
-> > > > 
-> > > > Dominic Eschweiler wrote:
-> > > > > Am Freitag, den 08.06.2012, 08:16 -0600 schrieb Alex Williamson:
-> > > > >> Yes, thanks Jan.  This is exactly what VFIO does.  VFIO provides
-> > > > >> secure config space access, resource access, DMA mapping services, and
-> > > > >> full interrupt support to userspace.  
-> > > 
-> > > VFIO is not a "better UIO". It *requires* an IOMMU. Dominic didn't say on
-> > > what CPU he's working, so it's not clear if he can use VFIO at all.
-> > > 
-> > > UIO is intended for general use with devices that have mappable registers
-> > > and don't fit into any other subsystem. No more, no less.
-> > 
-> > VFIO is a secure UIO.
-> 
-> A secure UIO *for VFs*. I think that's why it's called VFIO :).
-> Other stuff sometimes also works but no real guarantees, though
-> VFIO tries to make sure you don't burn yourself too badly
-> if it breaks.
+On Mon, May 28, 2012 at 6:36 PM, Alessandro Rubini <rubini@gnudd.com> wrote:
 
-We do a little better than that.  Multifunction devices that don't
-explicitly report ACS support are grouped together, so we have security
-for multifunction devices as well.  Either single of multifunction PFs
-can have an option ROM, but since there's no defined mechanism to
-program the ROM, we can't protect it.  Secure boot actually helps us
-here since the ROM loaded by the host BIOS or drivers would need to
-verify the ROM before using it.  Note that secure boot will likely close
-off the pci-sysfs path uio_pci and KVM device assignment use to get
-resources since it allows unprotected access to the system.  VFIO
-provides an interface where we control secure access, so should be
-compatible with secure boot.  Thanks,
+> V2: accepted comments I got on V1; rewritten the driver to be generic;
+>    made it tristate instead of boolean. Rebased on new next.
 
-Alex
+This looks good to me.
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
+I think this patch set could go through Arnd as arch maintainer?
+It's fun with these cross-arch things. You'll need an ACK from
+Russell first.
+
+Yours,
+Linus Walleij
