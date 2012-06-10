@@ -1,112 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755052Ab2FJKYr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jun 2012 06:24:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7671 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752594Ab2FJKYq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jun 2012 06:24:46 -0400
-Date: Sun, 10 Jun 2012 13:25:12 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Jason Wang <jasowang@redhat.com>, netdev@vger.kernel.org,
-        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Stephen Hemminger <shemminger@vyatta.com>
-Subject: Re: [PATCH] virtio-net: fix a race on 32bit arches
-Message-ID: <20120610102512.GB6793@redhat.com>
-References: <1338971724.2760.3913.camel@edumazet-glaptop>
+	id S1756340Ab2FJK13 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jun 2012 06:27:29 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:44117 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754754Ab2FJK11 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Jun 2012 06:27:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1338971724.2760.3913.camel@edumazet-glaptop>
+In-Reply-To: <alpine.DEB.2.00.1206081403380.28466@router.home>
+References: <1339176197-13270-1-git-send-email-js1304@gmail.com>
+	<1339176197-13270-4-git-send-email-js1304@gmail.com>
+	<alpine.DEB.2.00.1206081403380.28466@router.home>
+Date: Sun, 10 Jun 2012 19:27:27 +0900
+Message-ID: <CAAmzW4OuyCJVEHd823LvN3+uz=MN-4HGYyw8pbSUvhBN79wSjQ@mail.gmail.com>
+Subject: Re: [PATCH 4/4] slub: deactivate freelist of kmem_cache_cpu all at
+ once in deactivate_slab()
+From: JoonSoo Kim <js1304@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 06, 2012 at 10:35:24AM +0200, Eric Dumazet wrote:
-> From: Eric Dumazet <edumazet@google.com>
-> 
-> commit 3fa2a1df909 (virtio-net: per cpu 64 bit stats (v2)) added a race
-> on 32bit arches.
-> 
-> We must use separate syncp for rx and tx path as they can be run at the
-> same time on different cpus. Thus one sequence increment can be lost and
-> readers spin forever.
-> 
-> Signed-off-by: Eric Dumazet <edumazet@google.com>
-> Cc: Stephen Hemminger <shemminger@vyatta.com>
-> Cc: Michael S. Tsirkin <mst@redhat.com>
-> Cc: Jason Wang <jasowang@redhat.com>
+2012/6/9 Christoph Lameter <cl@linux.com>:
+> On Sat, 9 Jun 2012, Joonsoo Kim wrote:
+>
+>> Current implementation of deactivate_slab() which deactivate
+>> freelist of kmem_cache_cpu one by one is inefficient.
+>> This patch changes it to deactivate freelist all at once.
+>> But, there is no overall performance benefit,
+>> because deactivate_slab() is invoked infrequently.
+>
+> Hmm, deactivate freelist can race with slab_free. Need to look at this in
+> detail.
 
-I'm still thinking about moving tx to take a xmit lock long term,
-meanwhile this fix appears appropriate for 3.5.
+Implemented logic is nearly same as previous one.
+I just merge first step of previous deactivate_slab() with second one.
+In case of failure of cmpxchg_double_slab(), reloading page->freelist,
+page->counters and recomputing inuse
+ensure that race with slab_free() cannot be possible.
+In case that we need a lock, try to get a lock before invoking
+cmpxchg_double_slab(),
+so race with slab_free cannot be occured too.
 
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-
-Dave, can you pick this up pls?
-
-> ---
->  drivers/net/virtio_net.c |   19 ++++++++++++-------
->  1 file changed, 12 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> index 5214b1e..f18149a 100644
-> --- a/drivers/net/virtio_net.c
-> +++ b/drivers/net/virtio_net.c
-> @@ -42,7 +42,8 @@ module_param(gso, bool, 0444);
->  #define VIRTNET_DRIVER_VERSION "1.0.0"
->  
->  struct virtnet_stats {
-> -	struct u64_stats_sync syncp;
-> +	struct u64_stats_sync tx_syncp;
-> +	struct u64_stats_sync rx_syncp;
->  	u64 tx_bytes;
->  	u64 tx_packets;
->  
-> @@ -300,10 +301,10 @@ static void receive_buf(struct net_device *dev, void *buf, unsigned int len)
->  
->  	hdr = skb_vnet_hdr(skb);
->  
-> -	u64_stats_update_begin(&stats->syncp);
-> +	u64_stats_update_begin(&stats->rx_syncp);
->  	stats->rx_bytes += skb->len;
->  	stats->rx_packets++;
-> -	u64_stats_update_end(&stats->syncp);
-> +	u64_stats_update_end(&stats->rx_syncp);
->  
->  	if (hdr->hdr.flags & VIRTIO_NET_HDR_F_NEEDS_CSUM) {
->  		pr_debug("Needs csum!\n");
-> @@ -565,10 +566,10 @@ static unsigned int free_old_xmit_skbs(struct virtnet_info *vi)
->  	while ((skb = virtqueue_get_buf(vi->svq, &len)) != NULL) {
->  		pr_debug("Sent skb %p\n", skb);
->  
-> -		u64_stats_update_begin(&stats->syncp);
-> +		u64_stats_update_begin(&stats->tx_syncp);
->  		stats->tx_bytes += skb->len;
->  		stats->tx_packets++;
-> -		u64_stats_update_end(&stats->syncp);
-> +		u64_stats_update_end(&stats->tx_syncp);
->  
->  		tot_sgs += skb_vnet_hdr(skb)->num_sg;
->  		dev_kfree_skb_any(skb);
-> @@ -703,12 +704,16 @@ static struct rtnl_link_stats64 *virtnet_stats(struct net_device *dev,
->  		u64 tpackets, tbytes, rpackets, rbytes;
->  
->  		do {
-> -			start = u64_stats_fetch_begin(&stats->syncp);
-> +			start = u64_stats_fetch_begin(&stats->tx_syncp);
->  			tpackets = stats->tx_packets;
->  			tbytes   = stats->tx_bytes;
-> +		} while (u64_stats_fetch_retry(&stats->tx_syncp, start));
-> +
-> +		do {
-> +			start = u64_stats_fetch_begin(&stats->rx_syncp);
->  			rpackets = stats->rx_packets;
->  			rbytes   = stats->rx_bytes;
-> -		} while (u64_stats_fetch_retry(&stats->syncp, start));
-> +		} while (u64_stats_fetch_retry(&stats->rx_syncp, start));
->  
->  		tot->rx_packets += rpackets;
->  		tot->tx_packets += tpackets;
-> 
+Above is my humble opinion, please give me some comments.
