@@ -1,61 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756030Ab2FJTQm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jun 2012 15:16:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59784 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754901Ab2FJTQk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jun 2012 15:16:40 -0400
-Date: Sun, 10 Jun 2012 22:16:54 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: "Hans J. Koch" <hjk@hansjkoch.de>
-Cc: Alex Williamson <alex.williamson@redhat.com>,
-        Andreas Hartmann <andihartmann@01019freenet.de>,
-        Dominic Eschweiler <eschweiler@fias.uni-frankfurt.de>,
-        Jan Kiszka <jan.kiszka@siemens.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] uio_pci_generic does not export memory resources
-Message-ID: <20120610191654.GE10523@redhat.com>
-References: <1339166867.3870.29.camel@blech>
- <4FD22552.6090609@01019freenet.de>
- <20120608164426.GE9705@local>
- <1339175476.26976.102.camel@ul30vt>
- <20120610141759.GB8922@redhat.com>
- <1339344566.26976.272.camel@ul30vt>
- <20120610164429.GB9879@redhat.com>
- <1339349905.26976.306.camel@ul30vt>
- <20120610190036.GD10523@redhat.com>
- <20120610191130.GC2629@local>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120610191130.GC2629@local>
+	id S1756332Ab2FJToo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jun 2012 15:44:44 -0400
+Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:1709 "EHLO
+	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754901Ab2FJTom (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Jun 2012 15:44:42 -0400
+Message-ID: <1339357475.30984.49.camel@x61.thuisdomein>
+Subject: [PATCH] tile: remove unused header
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Sun, 10 Jun 2012 21:44:35 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-OriginalArrivalTime: 10 Jun 2012 19:44:35.0421 (UTC) FILETIME=[76BDD0D0:01CD4741]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 10, 2012 at 09:11:30PM +0200, Hans J. Koch wrote:
-> On Sun, Jun 10, 2012 at 10:00:36PM +0300, Michael S. Tsirkin wrote:
-> > 
-> > One thing I stand corrected on: assigning a PF that does DMA with VFIO
-> > *might* be secure, and sometimes, maybe often, is.
-> > There's just no way to make sure.
-> > This is unlike uio_pci_generic where it would always be insecure.
-> 
-> You need to be root to access a UIO device, and if you're root, you can
-> compromise a system in many ways. Before UIO, people used /dev/mem for
-> similar purposes, and UIO is certainly a seccurity improvement over that.
-> 
-> But of course, UIO presents security risks. Like many other things below
-> /dev, you need to know what you're doing, and who gets access to /dev/uioX.
-> 
-> Thanks,
-> Hans
+Nothing includes memprof.h. Nothing uses the macros it defines. It seems
+it is just a remnant of the proposed memprof functionality, which got
+dropped before the Tilera architecture got added to the tree. This
+header can safely be removed.
 
-Sorry I might not have explained myself clearly.  uio_pci_generic would
-be insecure if used with a device doing DMA. I am not speaking
-about UIO in general at all.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) Dropping the memprof functionality was briefly discussed in
+https://lkml.org/lkml/2010/5/26/606 .
 
+1) Tested only by using various git commands on the (history of the)
+tree.
+
+ arch/tile/include/asm/memprof.h |   33 ---------------------------------
+ 1 files changed, 0 insertions(+), 33 deletions(-)
+ delete mode 100644 arch/tile/include/asm/memprof.h
+
+diff --git a/arch/tile/include/asm/memprof.h b/arch/tile/include/asm/memprof.h
+deleted file mode 100644
+index 359949b..0000000
+--- a/arch/tile/include/asm/memprof.h
++++ /dev/null
+@@ -1,33 +0,0 @@
+-/*
+- * Copyright 2010 Tilera Corporation. All Rights Reserved.
+- *
+- *   This program is free software; you can redistribute it and/or
+- *   modify it under the terms of the GNU General Public License
+- *   as published by the Free Software Foundation, version 2.
+- *
+- *   This program is distributed in the hope that it will be useful, but
+- *   WITHOUT ANY WARRANTY; without even the implied warranty of
+- *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
+- *   NON INFRINGEMENT.  See the GNU General Public License for
+- *   more details.
+- *
+- * The hypervisor's memory controller profiling infrastructure allows
+- * the programmer to find out what fraction of the available memory
+- * bandwidth is being consumed at each memory controller.  The
+- * profiler provides start, stop, and clear operations to allows
+- * profiling over a specific time window, as well as an interface for
+- * reading the most recent profile values.
+- *
+- * This header declares IOCTL codes necessary to control memprof.
+- */
+-#ifndef _ASM_TILE_MEMPROF_H
+-#define _ASM_TILE_MEMPROF_H
+-
+-#include <linux/ioctl.h>
+-
+-#define MEMPROF_IOCTL_TYPE 0xB4
+-#define MEMPROF_IOCTL_START _IO(MEMPROF_IOCTL_TYPE, 0)
+-#define MEMPROF_IOCTL_STOP _IO(MEMPROF_IOCTL_TYPE, 1)
+-#define MEMPROF_IOCTL_CLEAR _IO(MEMPROF_IOCTL_TYPE, 2)
+-
+-#endif /* _ASM_TILE_MEMPROF_H */
 -- 
-MST
+1.7.7.6
+
