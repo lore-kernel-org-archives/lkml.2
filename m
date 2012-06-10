@@ -1,87 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752082Ab2FJHS7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jun 2012 03:18:59 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:53915 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751090Ab2FJHS5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jun 2012 03:18:57 -0400
+	id S1751840Ab2FJHYZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jun 2012 03:24:25 -0400
+Received: from mga11.intel.com ([192.55.52.93]:55977 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751090Ab2FJHYY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Jun 2012 03:24:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="163720963"
+Date: Sun, 10 Jun 2012 15:24:14 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Wanpeng Li <liwp.linux@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        PeterZijlstra <a.p.zijlstra@chello.nl>,
+        Johannes Weiner <jweiner@redhat.com>, linux-mm@kvack.org,
+        Gavin Shan <shangw@linux.vnet.ibm.com>,
+        Wanpeng Li <liwp@linux.vnet.ibm.com>
+Subject: Re: [PATCH] page-writeback.c: fix update bandwidth time judgment
+ error
+Message-ID: <20120610072414.GA11283@localhost>
+References: <1339302005-366-1-git-send-email-liwp.linux@gmail.com>
+ <20120610043641.GA10355@localhost>
+ <20120610045300.GA29336@kernel>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1206100258400.15651@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1206100258400.15651@swampdragon.chaosbits.net>
-Date: Sun, 10 Jun 2012 12:48:56 +0530
-Message-ID: <CAK9yfHysOb+FU-uppaRDYSWGJ=KEK6YhFifz9iS57ZFQDWc66Q@mail.gmail.com>
-Subject: Re: [PATCH] [SCSI] qla2xxx: Get rid of unneeded includes of version.h
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-driver@qlogic.com, Andrew Vasquez <andrew.vasquez@qlogic.com>,
-        trivial@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120610045300.GA29336@kernel>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jesper,
+On Sun, Jun 10, 2012 at 12:54:03PM +0800, Wanpeng Li wrote:
+> On Sun, Jun 10, 2012 at 12:36:41PM +0800, Fengguang Wu wrote:
+> >Wanpeng,
+> >
+> >Sorry this I won't take this: it don't really improve anything.  Even
+> >with the changed test, the real intervals are still some random values
+> >above (and not far away from) 200ms.. We are saying about 200ms
+> >intervals just for convenience.
+> >
+> But some parts like:
+> 
+> __bdi_update_bandwidth which bdi_update_bandwidth will call:
+> 
+> if(elapsed < BANDWIDTH_INTERVAL)
+> 	return;
+> 
+> or
+> 
+> global_update_bandwidth:
+> 
+> if(time_before(now, update_time + BANDWIDTH_INTERVAL))
+> 	return;
+> 
+> You me just ignore this disunion ?
 
-I have already submitted a similar patch for this:
+Not a problem for me. But if that consistency makes you feel happy,
+you might revise the changelog and resend. But it's not that simple
+for the below reason..
 
-http://www.spinics.net/lists/linux-scsi/msg59815.html
+> >On Sun, Jun 10, 2012 at 12:20:05PM +0800, Wanpeng Li wrote:
+> >> From: Wanpneg Li <liwp@linux.vnet.ibm.com>
+> >> 
+> >> Since bdi_update_bandwidth function  should estimate write bandwidth at 200ms intervals,
 
+The above line represents a wrong assumption. It's normal for the
+re-estimate intervals to be >= 200ms.
 
+> >> so the time is bdi->bw_time_stamp + BANDWIDTH_INTERVAL == jiffies, but
+> >> if use time_is_after_eq_jiffies intervals will be bdi->bw_time_stamp +
+> >> BANDWIDTH_INTERVAL + 1.
 
-On 10 June 2012 06:29, Jesper Juhl <jj@chaosbits.net> wrote:
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> ---
->  drivers/scsi/qla2xxx/qla_target.c |    1 -
->  drivers/scsi/qla2xxx/qla_target.h |    2 --
->  2 files changed, 3 deletions(-)
->
-> diff --git a/drivers/scsi/qla2xxx/qla_target.c b/drivers/scsi/qla2xxx/qla_target.c
-> index 04f80eb..f7a49e4 100644
-> --- a/drivers/scsi/qla2xxx/qla_target.c
-> +++ b/drivers/scsi/qla2xxx/qla_target.c
-> @@ -26,7 +26,6 @@
->  #include <linux/module.h>
->  #include <linux/init.h>
->  #include <linux/types.h>
-> -#include <linux/version.h>
->  #include <linux/blkdev.h>
->  #include <linux/interrupt.h>
->  #include <linux/pci.h>
-> diff --git a/drivers/scsi/qla2xxx/qla_target.h b/drivers/scsi/qla2xxx/qla_target.h
-> index 9ec19bc..7df4df5 100644
-> --- a/drivers/scsi/qla2xxx/qla_target.h
-> +++ b/drivers/scsi/qla2xxx/qla_target.h
-> @@ -919,8 +919,6 @@ struct qla_tgt_srr_ctio {
->  #define QLA_TGT_XMIT_STATUS            2
->  #define QLA_TGT_XMIT_ALL               (QLA_TGT_XMIT_STATUS|QLA_TGT_XMIT_DATA)
->
-> -#include <linux/version.h>
-> -
->  extern struct qla_tgt_data qla_target;
->  /*
->  * Internal function prototypes
-> --
-> 1.7.10.4
->
->
-> --
-> Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-> Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-> Plain text mails only, please.
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Strictly speaking, to ensure that ">= 200ms" is true, we'll have to
+skip the "jiffies == bw_time_stamp + BANDWIDTH_INTERVAL" case. For
+example, when HZ=100, the bw_time_stamp may actually be recorded in
+the very last ms of a 10ms range, and jiffies may be in the very first
+ms of the current 10ms range. So if using ">=" comparisons, it may
+actually let less than 200ms intervals go though.
 
+We can only reliably ensure "> 200ms", but no way for ">= 200ms".
 
+Thanks,
+Fengguang
 
--- 
-With warm regards,
-Sachin
+> >> Signed-off-by: Wanpeng Li <liwp@linux.vnet.ibm.com>
+> >> ---
+> >>  mm/page-writeback.c |    2 +-
+> >>  1 file changed, 1 insertion(+), 1 deletion(-)
+> >> 
+> >> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+> >> index c833bf0..099e225 100644
+> >> --- a/mm/page-writeback.c
+> >> +++ b/mm/page-writeback.c
+> >> @@ -1032,7 +1032,7 @@ static void bdi_update_bandwidth(struct backing_dev_info *bdi,
+> >>  				 unsigned long bdi_dirty,
+> >>  				 unsigned long start_time)
+> >>  {
+> >> -	if (time_is_after_eq_jiffies(bdi->bw_time_stamp + BANDWIDTH_INTERVAL))
+> >> +	if (time_is_after_jiffies(bdi->bw_time_stamp + BANDWIDTH_INTERVAL))
+> >>  		return;
+> >>  	spin_lock(&bdi->wb.list_lock);
+> >>  	__bdi_update_bandwidth(bdi, thresh, bg_thresh, dirty,
+> >> -- 
+> >> 1.7.9.5
