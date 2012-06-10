@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756078Ab2FJLLB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jun 2012 07:11:01 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:48016 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753594Ab2FJLK7 (ORCPT
+	id S1756166Ab2FJLUe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jun 2012 07:20:34 -0400
+Received: from smtp3.mundo-r.com ([212.51.32.191]:53588 "EHLO
+	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751387Ab2FJLUd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jun 2012 07:10:59 -0400
-Date: Sun, 10 Jun 2012 12:10:56 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org, torvalds@linux-foundation.org, dhowells@redhat.com,
-        mszeredi@suse.cz
-Subject: Re: [PATCH 00/21] vfs: atomic open v6 (part 2)
-Message-ID: <20120610111056.GD30000@ZenIV.linux.org.uk>
-References: <1338901832-14049-1-git-send-email-miklos@szeredi.hu>
- <20120610034921.GB30000@ZenIV.linux.org.uk>
+	Sun, 10 Jun 2012 07:20:33 -0400
+X-Greylist: delayed 452 seconds by postgrey-1.27 at vger.kernel.org; Sun, 10 Jun 2012 07:20:32 EDT
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av4EANqB1E9bdWOb/2dsb2JhbABFtFqBB4IYAQEFeAEQCxUDCRYPCQMCAQIBRQcMAQUCAogLt1CLJ4VpA5Uej3uCYg
+X-IronPort-AV: E=Sophos;i="4.77,384,1336341600"; 
+   d="scan'208";a="918719274"
+Message-ID: <4FD4843F.6070602@igalia.com>
+Date: Sun, 10 Jun 2012 13:25:51 +0200
+From: =?ISO-8859-1?Q?Javier_Mu=F1oz?= <jmunhoz@igalia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120610034921.GB30000@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: gregkh@linuxfoundation.org, teddy.wang@siliconmotion.com.cn
+CC: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] staging: sm7xxfb: sm7xx becomes sm7xxfb
+References: <1339326744-17507-1-git-send-email-jmunhoz@igalia.com> <1339326744-17507-4-git-send-email-jmunhoz@igalia.com>
+In-Reply-To: <1339326744-17507-4-git-send-email-jmunhoz@igalia.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 10, 2012 at 04:49:21AM +0100, Al Viro wrote:
+On 06/10/2012 01:12 PM, Javier M. Mellid wrote:
+> From: "Javier M. Mellid" <jmunhoz@igalia.com>
+> 
+> Rename sm7xx driver to sm7xxfb. Fix Kconfig and Makefile to fit the new
+> change.
+> 
+> Changes are coherent with the rest of stable framebuffer drivers. TODO
+> updated.
 
-> So the only remaining reason for having that thing is this: what if we
-> call ->atomic_open(), but it doesn't call finish_open()?  Then we need
-> to free that unused struct file.  If finish_open() failed, we wouldn't.
-> Same if it succeeded and something *after* it in ->atomic_open() failed
-> (then we need to fput() that file - your code in ceph leaks it, BTW).
-> Fair enough.  So we need to add one more helper that would discard that
-> half-set-up struct file as we want it to be discarded.  That's all.
+Just one doubt. I am using 'git mv' here and it works Ok. 'git log
+--follow' would be the way to see the whole history after this commit.
+Should I follow another approach? I am using a 'similar approach' to
+ed16648eb5b86917f0b90bdcdbc857202da72f90 commit to rename.
 
-Actually, I take that back - that code in ceph is unreachable when
-finish_open() succeeds.
+Please, let me know if I should redo this patch.
 
-Anyway, see vfs.git#atomic_open; it's a port of your queue + COMPLETELY
-UNTESTED followups massaging it along the following lines:
-	* ->atomic_open() takes struct file * instead of struct opendata *
-	* it return int instead of struct file * - 0 for succeess, -E...
-for error, 1 for "here's your sodding dentry, do it yourself".  Said
-dentry is returned via file->f_path.dentry.
-	* the same had been done to atomic_open()/lookup_open()/do_last()
-	* finish_open() takes struct file and returns an int
-	* it *also* takes int * - used to keep track of whether we'd done
-successful do_dentry_open(), instead of "has opendata->filp been cleared?"
-as in your variant.  Said int * is what your bool *created of ->atomic_open()
-and friends has been turned into.  So the check in path_openat() is
-	if (!(opened & FILE_OPENED)) {
-		BUG_ON(!error);
-		put_filp(file);
-	}
-which is as explicit as it gets, IMO.
+Thanks.
 
-The forest of failure exits in do_last() got cleaned up a bit, BTW.  Probably
-can be cleaned up some more...
-
-WARNING: I haven't even tried to boot it.  It builds, but this is all I can
-promise at the moment.  I'm about to fall down (it's 7am here already ;-/),
-will give it some beating when I get up.  It almost certainly has bugs, so
-consider that as call for review and not much more.
+Javier
