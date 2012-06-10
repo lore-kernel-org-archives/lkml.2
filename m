@@ -1,41 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755485Ab2FJMGG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jun 2012 08:06:06 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:44347 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754752Ab2FJMFr convert rfc822-to-8bit (ORCPT
+	id S1755060Ab2FJMOJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jun 2012 08:14:09 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:34561 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752238Ab2FJMOH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jun 2012 08:05:47 -0400
+	Sun, 10 Jun 2012 08:14:07 -0400
 MIME-Version: 1.0
-X-Originating-IP: [89.139.19.137]
-In-Reply-To: <1338989907-25360-3-git-send-email-sjur.brandeland@stericsson.com>
-References: <1338989907-25360-1-git-send-email-sjur.brandeland@stericsson.com> <1338989907-25360-3-git-send-email-sjur.brandeland@stericsson.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Sun, 10 Jun 2012 15:05:26 +0300
-Message-ID: <CAK=WgbavwO5_u7RPCcCRE0oJdHYZM2Z3sXm76yHz9+Upz-c_4w@mail.gmail.com>
-Subject: Re: [PATCH 2/7] remoteproc: Fix missing fault indication in error-path
-To: sjur.brandeland@stericsson.com
-Cc: Loic PALLARDY <loic.pallardy@stericsson.com>,
-        Ludovic BARRE <ludovic.barre@stericsson.com>,
-        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjurbren@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1339171495.6001.118.camel@edumazet-glaptop>
+References: <7ed49f446365ac625437702d92946add@visp.net.lb>
+	<20120607205356.GA2491@electric-eye.fr.zoreil.com>
+	<1339104606.6001.4.camel@edumazet-glaptop>
+	<20120607223752.GA4475@electric-eye.fr.zoreil.com>
+	<1339134438.6001.13.camel@edumazet-glaptop>
+	<20120608154106.GD5024@kvack.org>
+	<67d8beaf421874815145fdefc69b3366@visp.net.lb>
+	<1339171495.6001.118.camel@edumazet-glaptop>
+Date: Sun, 10 Jun 2012 20:14:05 +0800
+Message-ID: <CAA7+ByWEZDqzZhzH0FZoapqfUrujUrxyjwp6qb1SSfWBTZ=4AA@mail.gmail.com>
+Subject: Re: Deadlock, L2TP over IP are not working, 3.4.1
+From: Hong zhi guo <honkiko@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>, davem@davemloft.net
+Cc: Denys Fedoryshchenko <denys@visp.net.lb>,
+        Benjamin LaHaise <bcrl@kvack.org>,
+        Francois Romieu <romieu@fr.zoreil.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 6, 2012 at 4:38 PM,  <sjur.brandeland@stericsson.com> wrote:
-> From: Sjur Brændeland <sjur.brandeland@stericsson.com>
->
-> If rproc_find_rsc_table() fails, rproc_fw_boot() must set
-> return-value before jumping to clean_up label. Otherwise no
-> error value is returned.
->
-> Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
+Is there any conclusion about the problem?  Will bh_lock_sock_nested
+fix the lockdep violation?
 
-Cc'ed stable, applied and pushed to remoteproc's fixes branch.
+On Sat, Jun 9, 2012 at 12:04 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> On Fri, 2012-06-08 at 18:56 +0300, Denys Fedoryshchenko wrote:
+>
+>> Right now i am routing around 700Mbps over there, and noticed some
+>> problem with pskb_expand_head,
+>> but that's separate question i will ask, if i will not be able to sort
+>> it out by myself.
+>>
+>
+> Before spending too much time on this, make sure you use a kernel
+> including commit 617c8c11236 ( skb: avoid unnecessary reallocations in
+> __skb_cow )
+>
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at Â http://vger.kernel.org/majordomo-info.html
 
-Thanks,
-Ohad.
+
+
+-- 
+best regards
+hong zhi guo
