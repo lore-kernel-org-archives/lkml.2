@@ -1,36 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751424Ab2FJEVx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jun 2012 00:21:53 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:32956 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750804Ab2FJEVv (ORCPT
+	id S1751126Ab2FJEaQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jun 2012 00:30:16 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:60548 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750796Ab2FJEaO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jun 2012 00:21:51 -0400
-Date: Sat, 09 Jun 2012 21:21:47 -0700 (PDT)
-Message-Id: <20120609.212147.1738198233131370927.davem@davemloft.net>
-To: wfg@linux.intel.com
-Cc: netdev@vger.kernel.org, gaofeng@cn.fujitsu.com,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] inet: Initialize per-netns inetpeer roots in
- net/ipv{4,6}/route.c
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120610031634.GA10032@localhost>
-References: <20120610015832.GA9175@localhost>
-	<20120609.190451.182034193302304295.davem@davemloft.net>
-	<20120610031634.GA10032@localhost>
-X-Mailer: Mew version 6.5 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Sun, 10 Jun 2012 00:30:14 -0400
+MIME-Version: 1.0
+In-Reply-To: <4FD39A7F.9020106@mvista.com>
+References: <CANc+2y48M+K4jvGEes_srYO7rCQcPt4pvcxcvm-Hd+7kKJr6BQ@mail.gmail.com>
+	<CAHkwNT=3dGTZTDWi+r7m=K=Pqgv6Txi-xKcpN_pNUJ_WbUaD4w@mail.gmail.com>
+	<4FD39A7F.9020106@mvista.com>
+Date: Sun, 10 Jun 2012 10:00:14 +0530
+Message-ID: <CAHkwNT=DLCm_gfubGV=_SahM5njpA=Z_miA=SEkVeYA9cHMdmA@mail.gmail.com>
+Subject: Re: Break point not hit while debugging linux kernel with kgdb
+From: Anil Nair <anilcoll90@gmail.com>
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+Cc: prasannatsmkumar <prasannatsmkumar@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fengguang Wu <wfg@linux.intel.com>
-Date: Sun, 10 Jun 2012 11:16:34 +0800
+Hello Sergei,
 
-> In long run, such build-fix patches can also be auto tested and
-> reported, somehow in this way. You just create a temporary branch
+On Sun, Jun 10, 2012 at 12:18 AM, Sergei Shtylyov <sshtylyov@mvista.com> wrote:
 
-Sorry, no.
+>   Yeah, KGDB was accepted into kernel exactly for more "poorly fixed
+> patches" to appear. :-)
+
+I was under the impression that maintainers would never recommend
+kgdb, so never learned to use it.
+If you could guide me and Prasanna on how to use kgdb that would be
+helpful :). If you were saying it sarcastically, then i failed to
+understand it . :P.
+
+>> You have to use gdbserver
+>   gdbserver is only good for debugging the applications.
+
+I never knew that..!.
+
+-- 
+Regards,
+Anil Nair
