@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756349Ab2FJVuy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jun 2012 17:50:54 -0400
-Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:1725 "EHLO
-	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752803Ab2FJVux (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jun 2012 17:50:53 -0400
-Message-ID: <1339365045.30984.78.camel@x61.thuisdomein>
-Subject: blackfin: how is the I-pipe code supposed to be built?
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Mike Frysinger <vapier@gentoo.org>
-Cc: uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
-Date: Sun, 10 Jun 2012 23:50:45 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-OriginalArrivalTime: 10 Jun 2012 21:50:45.0547 (UTC) FILETIME=[16E35FB0:01CD4753]
-X-RcptDomain: vger.kernel.org
+	id S1753074Ab2FJWPg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jun 2012 18:15:36 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:43933 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752494Ab2FJWPf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Jun 2012 18:15:35 -0400
+Date: Mon, 11 Jun 2012 00:15:16 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] memcg: fix use_hierarchy css_is_ancestor oops regression
+Message-ID: <20120610221516.GJ1761@cmpxchg.org>
+References: <alpine.LSU.2.00.1206101150230.4239@eggly.anvils>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.00.1206101150230.4239@eggly.anvils>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-0) While working my way through the stack of apparently unused headers I
-also looked at arch/blackfin/include/asm/ipipe_base.h, as nothing seems
-to include that header. The last include of that file got removed in
-commit 1353d050facf5efd8dc05ba6c4d7852fcb423b15 ("Blackfin/ipipe:
-restore pipeline bits in irqflags"). So that header is unused since
-v2.6.39.
+On Sun, Jun 10, 2012 at 11:54:47AM -0700, Hugh Dickins wrote:
+> If use_hierarchy is set, reclaim testing soon oopses in css_is_ancestor()
+> called from __mem_cgroup_same_or_subtree() called from page_referenced():
+> when processes are exiting, it's easy for mm_match_cgroup() to pass along
+> a NULL memcg coming from a NULL mm->owner.
+> 
+> Check for that in __mem_cgroup_same_or_subtree().  Return true or false?
+> False because we cannot know if it was in the hierarchy, but also false
+> because it's better not to count a reference from an exiting process.
+> 
+> Signed-off-by: Hugh Dickins <hughd@google.com>
 
-1) Before submitting the (possibly trivial) patch to remove that header
-I did some further research, because I wanted to be sure that removing
-this header was a reasonable thing to do.
+Looks like an older version of the patch that introduced it slipped
+into the tree, Konstantin noted this problem during review.  The final
+version did
 
-2) I learned that arch/blackfin/include/asm/ipipe_base.h got added to
-the tree in commit 6a01f230339321292cf065551f8cf55361052461 ("Blackfin
-arch: merge adeos blackfin part to arch/blackfin/"). That commit also
-introduced the macro CONFIG_IPIPE. But it did not introduce the Kconfig
-symbol IPIPE. (Neither did it add code that defines a macro
-CONFIG_IPIPE.) So to me it looks like the I-pipe code got added to
-v2.6.29 without proper Kbuild support.
+	match = memcg && __mem_cgroup_same_or_subtree(root, memcg);
 
-3) And this is currently still the case. There seem to be no Kconfig
-symbols IPIPE, IPIPE_DEBUG, IPIPE_DEBUG_CONTEXT, or IPIPE_TRACE_IRQSOFF.
-(Neither seems there to be code that defines the macros CONFIG_IPIPE,
-CONFIG_IPIPE_DEBUG, CONFIG_IPIPE_DEBUG_CONTEXT, or
-CONFIG_IPIPE_TRACE_IRQSOFF.)
+in the caller because of it.
 
-4) Whether or not arch/blackfin/include/asm/ipipe_base.h should be
-removed isn't very interesting. What is more interesting is how the
-blackfin I-pipe code is supposed to be built. How can this code be built
-from what currently is in mainline?
+Do you think it would be cleaner this way, since this is also the
+place where that memcg is looked up, and so the "can return NULL"
+handling after mem_cgroup_from_task() would be in the same place?
 
+But either way,
 
-Paul Bolle
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
 
+Thanks, Hugh!
