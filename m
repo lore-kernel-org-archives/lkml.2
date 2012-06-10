@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756212Ab2FJJXf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jun 2012 05:23:35 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:44841 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755955Ab2FJJXc (ORCPT
+	id S1756226Ab2FJJXs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jun 2012 05:23:48 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:50509 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754626Ab2FJJXp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jun 2012 05:23:32 -0400
-Message-ID: <4FD4660F.2000908@gmail.com>
-Date: Sun, 10 Jun 2012 11:17:03 +0200
+	Sun, 10 Jun 2012 05:23:45 -0400
+Message-ID: <4FD4661C.1060809@gmail.com>
+Date: Sun, 10 Jun 2012 11:17:16 +0200
 From: Marco Stornelli <marco.stornelli@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120421 Thunderbird/12.0
 MIME-Version: 1.0
 To: Linux FS Devel <linux-fsdevel@vger.kernel.org>
 CC: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 16/17] pramfs: ioctl operations
+Subject: [PATCH 17/17] pramfs: makefile and Kconfig
 Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -23,138 +23,182 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Marco Stornelli <marco.stornelli@gmail.com>
 
-Ioctl operations.
+Makefile and Kconfig.
 
 Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
 ---
-diff -Nurp linux-3.5-rc2-orig/fs/pramfs/ioctl.c linux-3.5-rc2/fs/pramfs/ioctl.c
---- linux-3.5-rc2-orig/fs/pramfs/ioctl.c	1970-01-01 01:00:00.000000000 +0100
-+++ linux-3.5-rc2/fs/pramfs/ioctl.c	2012-06-10 10:08:28.000000000 +0200
-@@ -0,0 +1,127 @@
-+/*
-+ * BRIEF DESCRIPTION
-+ *
-+ * Ioctl operations.
-+ *
-+ * Copyright 2010-2011 Marco Stornelli <marco.stornelli@gmail.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2. This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
+diff -Nurp linux-3.5.rc2-orig/arch/Kconfig linux-3.5-rc2/arch/Kconfig
+--- linux-3.5-rc2-orig/arch/Kconfig	2012-06-09 03:40:09.000000000 +0200
++++ linux-3.5-rc2/arch/Kconfig	2012-06-10 10:08:27.000000000 +0200
+@@ -129,6 +129,9 @@ config USER_RETURN_NOTIFIER
+ config HAVE_IOREMAP_PROT
+ 	bool
+
++config HAVE_SET_MEMORY_RO
++	bool
 +
-+#include <linux/capability.h>
-+#include <linux/time.h>
-+#include <linux/sched.h>
-+#include <linux/compat.h>
-+#include <linux/mount.h>
-+#include "pram.h"
+ config HAVE_KPROBES
+ 	bool
+
+diff -Nurp linux-3.5-rc2-orig/fs/Kconfig linux-3.5-rc2/fs/Kconfig
+--- linux-3.5-rc2-orig/fs/Kconfig	2012-06-09 03:40:09.000000000 +0200
++++ linux-3.5-rc2/fs/Kconfig	2012-06-10 10:08:27.000000000 +0200
+@@ -17,7 +17,7 @@ source "fs/ext4/Kconfig"
+ config FS_XIP
+ # execute in place
+ 	bool
+-	depends on EXT2_FS_XIP
++	depends on EXT2_FS_XIP || PRAMFS_XIP
+ 	default y
+
+ source "fs/jbd/Kconfig"
+@@ -29,7 +29,8 @@ config FS_MBCACHE
+ 	default y if EXT2_FS=y && EXT2_FS_XATTR
+ 	default y if EXT3_FS=y && EXT3_FS_XATTR
+ 	default y if EXT4_FS=y && EXT4_FS_XATTR
+-	default m if EXT2_FS_XATTR || EXT3_FS_XATTR || EXT4_FS_XATTR
++	default y if PRAMFS=y && PRAMFS_XATTR
++	default m if EXT2_FS_XATTR || EXT3_FS_XATTR || EXT4_FS_XATTR || PRAMFS_XATTR
+
+ source "fs/reiserfs/Kconfig"
+ source "fs/jfs/Kconfig"
+@@ -219,6 +220,7 @@ source "fs/romfs/Kconfig"
+ source "fs/pstore/Kconfig"
+ source "fs/sysv/Kconfig"
+ source "fs/ufs/Kconfig"
++source "fs/pramfs/Kconfig"
+ source "fs/exofs/Kconfig"
+
+ endif # MISC_FILESYSTEMS
+diff -Nurp linux-3.5-rc2-orig/fs/Makefile linux-3.5-rc2/fs/Makefile
+--- linux-3.5-rc2-orig/fs/Makefile	2012-06-09 03:40:09.000000000 +0200
++++ linux-3.5-rc2/fs/Makefile	2012-06-10 10:08:28.000000000 +0200
+@@ -125,3 +125,4 @@ obj-$(CONFIG_GFS2_FS)           += gfs2/
+ obj-y				+= exofs/ # Multiple modules
+ obj-$(CONFIG_CEPH_FS)		+= ceph/
+ obj-$(CONFIG_PSTORE)		+= pstore/
++obj-$(CONFIG_PRAMFS)		+= pramfs/
+diff -Nurp linux-3.5-rc2-orig/fs/pramfs/Kconfig linux-3.5-rc2/fs/pramfs/Kconfig
+--- linux-3.5-rc2-orig/fs/pramfs/Kconfig	1970-01-01 01:00:00.000000000 +0100
++++ linux-3.5-rc2/fs/pramfs/Kconfig	2012-06-10 10:08:28.000000000 +0200
+@@ -0,0 +1,72 @@
++config PRAMFS
++	tristate "Persistent and Protected RAM file system support"
++	depends on HAS_IOMEM && EXPERIMENTAL
++	select CRC16
++	help
++	   If your system has a block of fast (comparable in access speed to
++	   system memory) and non-volatile RAM and you wish to mount a
++	   light-weight, full-featured, and space-efficient filesystem over it,
++	   say Y here, and read <file:Documentation/filesystems/pramfs.txt>.
 +
-+long pram_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
-+{
-+	struct inode *inode = filp->f_dentry->d_inode;
-+	struct pram_inode *pi;
-+	unsigned int flags;
-+	int ret;
++	   To compile this as a module,  choose M here: the module will be
++	   called pramfs.
 +
-+	pi = pram_get_inode(inode->i_sb, inode->i_ino);
-+	if (!pi)
-+		return -EACCES;
++config PRAMFS_XIP
++	bool "Execute-in-place in PRAMFS"
++	depends on PRAMFS && BLOCK
++	help
++	   Say Y here to enable XIP feature of PRAMFS.
 +
-+	switch (cmd) {
-+	case FS_IOC_GETFLAGS:
-+		flags = be32_to_cpu(pi->i_flags) & PRAM_FL_USER_VISIBLE;
-+		return put_user(flags, (int __user *) arg);
-+	case FS_IOC_SETFLAGS: {
-+		unsigned int oldflags;
++config PRAMFS_WRITE_PROTECT
++	bool "PRAMFS write protection"
++	depends on PRAMFS && MMU && HAVE_SET_MEMORY_RO
++	default y
++	help
++	   Say Y here to enable the write protect feature of PRAMFS.
 +
-+		ret = mnt_want_write_file(filp);
-+		if (ret)
-+			return ret;
++config PRAMFS_XATTR
++	bool "PRAMFS extended attributes"
++	depends on PRAMFS && BLOCK
++	help
++	  Extended attributes are name:value pairs associated with inodes by
++	  the kernel or by users (see the attr(5) manual page, or visit
++	  <http://acl.bestbits.at/> for details).
 +
-+		if (!inode_owner_or_capable(inode)) {
-+			ret = -EPERM;
-+			goto flags_out;
-+		}
++	  If unsure, say N.
 +
-+		if (get_user(flags, (int __user *) arg)) {
-+			ret = -EFAULT;
-+			goto flags_out;
-+		}
++config PRAMFS_POSIX_ACL
++	bool "PRAMFS POSIX Access Control Lists"
++	depends on PRAMFS_XATTR
++	select FS_POSIX_ACL
++	help
++	  Posix Access Control Lists (ACLs) support permissions for users and
++	  groups beyond the owner/group/world scheme.
 +
-+		mutex_lock(&inode->i_mutex);
-+		oldflags = be32_to_cpu(pi->i_flags);
++	  To learn more about Access Control Lists, visit the Posix ACLs for
++	  Linux website <http://acl.bestbits.at/>.
 +
-+		if ((flags ^ oldflags) & (FS_APPEND_FL | FS_IMMUTABLE_FL)) {
-+			if (!capable(CAP_LINUX_IMMUTABLE)) {
-+				mutex_unlock(&inode->i_mutex);
-+				ret = -EPERM;
-+				goto flags_out;
-+			}
-+		}
++	  If you don't know what Access Control Lists are, say N.
 +
-+		if (!S_ISDIR(inode->i_mode))
-+			flags &= ~FS_DIRSYNC_FL;
++config PRAMFS_SECURITY
++	bool "PRAMFS Security Labels"
++	depends on PRAMFS_XATTR
++	help
++	  Security labels support alternative access control models
++	  implemented by security modules like SELinux.  This option
++	  enables an extended attribute handler for file security
++	  labels in the pram filesystem.
 +
-+		flags = flags & FS_FL_USER_MODIFIABLE;
-+		flags |= oldflags & ~FS_FL_USER_MODIFIABLE;
-+		pram_memunlock_inode(inode->i_sb, pi);
-+		pi->i_flags = cpu_to_be32(flags);
-+		inode->i_ctime = CURRENT_TIME_SEC;
-+		pi->i_ctime = cpu_to_be32(inode->i_ctime.tv_sec);
-+		pram_set_inode_flags(inode, pi);
-+		pram_memlock_inode(inode->i_sb, pi);
-+		mutex_unlock(&inode->i_mutex);
-+flags_out:
-+		mnt_drop_write_file(filp);
-+		return ret;
-+	}
-+	case FS_IOC_GETVERSION:
-+		return put_user(inode->i_generation, (int __user *) arg);
-+	case FS_IOC_SETVERSION: {
-+		__u32 generation;
-+		if (!inode_owner_or_capable(inode))
-+			return -EPERM;
-+		ret = mnt_want_write_file(filp);
-+		if (ret)
-+			return ret;
-+		if (get_user(generation, (int __user *) arg)) {
-+			ret = -EFAULT;
-+			goto setversion_out;
-+		}
-+		mutex_lock(&inode->i_mutex);
-+		inode->i_ctime = CURRENT_TIME_SEC;
-+		inode->i_generation = generation;
-+		pram_update_inode(inode);
-+		mutex_unlock(&inode->i_mutex);
-+setversion_out:
-+		mnt_drop_write_file(filp);
-+		return ret;
-+	}
-+	default:
-+		return -ENOTTY;
-+	}
-+}
++	  If you are not using a security module that requires using
++	  extended attributes for file security labels, say N.
 +
-+#ifdef CONFIG_COMPAT
-+long pram_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
-+{
-+	switch (cmd) {
-+	case FS_IOC32_GETFLAGS:
-+		cmd = FS_IOC_GETFLAGS;
-+		break;
-+	case FS_IOC32_SETFLAGS:
-+		cmd = FS_IOC_SETFLAGS;
-+		break;
-+	case FS_IOC32_GETVERSION:
-+		cmd = FS_IOC_GETVERSION;
-+		break;
-+	case FS_IOC32_SETVERSION:
-+		cmd = FS_IOC_SETVERSION;
-+		break;
-+	default:
-+		return -ENOIOCTLCMD;
-+	}
-+	return pram_ioctl(file, cmd, (unsigned long) compat_ptr(arg));
-+}
-+#endif
++config PRAMFS_TEST
++	boolean
++	depends on PRAMFS
++
++config PRAMFS_TEST_MODULE
++	tristate "PRAMFS Test"
++	depends on PRAMFS && PRAMFS_WRITE_PROTECT && m
++	select PRAMFS_TEST
++	help
++	  Say Y here to build a simple module to test the protection of
++	  PRAMFS. The module will be called pramfs_test.
+diff -Nurp linux-3.0.29-orig/fs/pramfs/Makefile linux-3.0.29/fs/pramfs/Makefile
+--- linux-3.0.29-orig/fs/pramfs/Makefile	1970-01-01 01:00:00.000000000 +0100
++++ linux-3.0.29/fs/pramfs/Makefile	2012-04-30 10:16:36.000000000 +0200
+@@ -0,0 +1,14 @@
++#
++# Makefile for the linux pram-filesystem routines.
++#
++
++obj-$(CONFIG_PRAMFS) += pramfs.o
++obj-$(CONFIG_PRAMFS_TEST_MODULE) += pramfs_test.o
++
++pramfs-y := balloc.o dir.o file.o inode.o namei.o super.o symlink.o ioctl.o
++
++pramfs-$(CONFIG_PRAMFS_WRITE_PROTECT) += wprotect.o
++pramfs-$(CONFIG_PRAMFS_XIP) += xip.o
++pramfs-$(CONFIG_PRAMFS_XATTR) += xattr.o xattr_user.o xattr_trusted.o desctree.o
++pramfs-$(CONFIG_PRAMFS_POSIX_ACL) += acl.o
++pramfs-$(CONFIG_PRAMFS_SECURITY) += xattr_security.o
+diff -Nurp linux-3.5.rc2-orig/arch/x86/Kconfig linux-3.5-rc2/arch/x86/Kconfig
+--- linux-3.5-rc2-orig/arch/x86/Kconfig	2012-06-09 03:40:09.000000000 +0200
++++ linux-3.5-rc2/arch/x86/Kconfig	2012-06-10 10:08:27.000000000 +0200
+@@ -24,6 +24,7 @@ config X86
+ 	select HAVE_PCSPKR_PLATFORM
+ 	select HAVE_PERF_EVENTS
+ 	select HAVE_IRQ_WORK
++	select HAVE_SET_MEMORY_RO
+ 	select HAVE_IOREMAP_PROT
+ 	select HAVE_KPROBES
+ 	select HAVE_MEMBLOCK
+diff -Nurp linux-3.5.rc2-orig/MAINTAINERS linux-3.5-rc2/MAINTAINERS
+--- linux-3.5-rc2-orig/MAINTAINERS	2012-06-09 03:40:09.000000000 +0200
++++ linux-3.5-rc2/MAINTAINERS	2012-06-10 10:08:28.000000000 +0200
+@@ -5407,6 +5407,15 @@ S:	Maintained
+ F:	drivers/net/ppp/pptp.c
+ W:	http://sourceforge.net/projects/accel-pptp
+
++PRAM FILE SYSTEM
++M:	Marco Stornelli <marco.stornelli@gmail.com>
++W:	http://pramfs.sourceforge.net
++L:	pramfs-devel@lists.sourceforge.net (subscribers-only)
++S:	Maintained
++F:	Documentation/filesystems/pramfs.txt
++F:	fs/pramfs/
++F:	include/linux/pram*
++
+ PREEMPTIBLE KERNEL
+ M:	Robert Love <rml@tech9.net>
+ L:	kpreempt-tech@lists.sourceforge.net
