@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756259Ab2FJOgv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jun 2012 10:36:51 -0400
-Received: from georges.telenet-ops.be ([195.130.137.68]:58001 "EHLO
-	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755343Ab2FJOgt (ORCPT
+	id S1756247Ab2FJOhy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jun 2012 10:37:54 -0400
+Received: from juliette.telenet-ops.be ([195.130.137.74]:58468 "EHLO
+	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755183Ab2FJOhx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jun 2012 10:36:49 -0400
+	Sun, 10 Jun 2012 10:37:53 -0400
 From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: linux-m68k@vger.kernel.org
+To: David Howells <dhowells@redhat.com>
 Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH 2/2] m68k: Use asm-generic version of <asm/sections.h>
-Date: Sun, 10 Jun 2012 16:36:38 +0200
-Message-Id: <1339338998-24629-2-git-send-email-geert@linux-m68k.org>
+Subject: [PATCH 1/2] frv: Fix use of extinct _sbss and _ebss in debug code
+Date: Sun, 10 Jun 2012 16:37:49 +0200
+Message-Id: <1339339070-24688-1-git-send-email-geert@linux-m68k.org>
 X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1339338998-24629-1-git-send-email-geert@linux-m68k.org>
-References: <1339338998-24629-1-git-send-email-geert@linux-m68k.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Nowadays it should probably use __bss_start and __bss_stop
+
 Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 ---
- arch/m68k/include/asm/Kbuild     |    1 +
- arch/m68k/include/asm/sections.h |    6 ------
- 2 files changed, 1 insertions(+), 6 deletions(-)
- delete mode 100644 arch/m68k/include/asm/sections.h
+ arch/frv/kernel/setup.c |    2 +-
+ arch/frv/mm/init.c      |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/m68k/include/asm/Kbuild b/arch/m68k/include/asm/Kbuild
-index 064f867..a74e5d9 100644
---- a/arch/m68k/include/asm/Kbuild
-+++ b/arch/m68k/include/asm/Kbuild
-@@ -20,6 +20,7 @@ generic-y += mutex.h
- generic-y += percpu.h
- generic-y += resource.h
- generic-y += scatterlist.h
-+generic-y += sections.h
- generic-y += siginfo.h
- generic-y += statfs.h
- generic-y += topology.h
-diff --git a/arch/m68k/include/asm/sections.h b/arch/m68k/include/asm/sections.h
-deleted file mode 100644
-index d64967e..0000000
---- a/arch/m68k/include/asm/sections.h
-+++ /dev/null
-@@ -1,6 +0,0 @@
--#ifndef _ASM_M68K_SECTIONS_H
--#define _ASM_M68K_SECTIONS_H
--
--#include <asm-generic/sections.h>
--
--#endif /* _ASM_M68K_SECTIONS_H */
+diff --git a/arch/frv/kernel/setup.c b/arch/frv/kernel/setup.c
+index 75cf7f4..1294fdf 100644
+--- a/arch/frv/kernel/setup.c
++++ b/arch/frv/kernel/setup.c
+@@ -815,7 +815,7 @@ void __init setup_arch(char **cmdline_p)
+ 	printk("KERNEL -> TEXT=0x%06x-0x%06x DATA=0x%06x-0x%06x BSS=0x%06x-0x%06x\n",
+ 	       (int) &_stext, (int) &_etext,
+ 	       (int) &_sdata, (int) &_edata,
+-	       (int) &_sbss, (int) &_ebss);
++	       (int) &__bss_start, (int) &__bss_stop);
+ #endif
+ 
+ #ifdef CONFIG_VT
+diff --git a/arch/frv/mm/init.c b/arch/frv/mm/init.c
+index a19effc..92e97b0 100644
+--- a/arch/frv/mm/init.c
++++ b/arch/frv/mm/init.c
+@@ -146,7 +146,7 @@ void __init mem_init(void)
+ 
+ #else
+ 	codek = (_etext - _stext) >> 10;
+-	datak = 0; //(_ebss - _sdata) >> 10;
++	datak = 0; //(__bss_stop - _sdata) >> 10;
+ #endif
+ 
+ 	tmp = nr_free_pages() << PAGE_SHIFT;
 -- 
 1.7.0.4
 
