@@ -1,85 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753487Ab2FIX52 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jun 2012 19:57:28 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:42742 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750843Ab2FIX51 (ORCPT
+	id S1753586Ab2FJAEf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jun 2012 20:04:35 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:42617 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751693Ab2FJAEe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jun 2012 19:57:27 -0400
+	Sat, 9 Jun 2012 20:04:34 -0400
+Message-ID: <4FD3E47F.4070903@vflare.org>
+Date: Sat, 09 Jun 2012 17:04:15 -0700
+From: Nitin Gupta <ngupta@vflare.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <4FD345DC.6020405@acm.org>
-References: <CAFR8uecFzcrAYSy2ieJM5vWjNLSO3bjg20cy+B4cimHZ4RLktA@mail.gmail.com>
-	<4FD345DC.6020405@acm.org>
-Date: Sat, 9 Jun 2012 16:57:26 -0700
-Message-ID: <CAFR8ueca-MQWRipE+3OQSpqmJ40HKJEY7jWt6PQ+zTCQ9Bh=5Q@mail.gmail.com>
-Subject: Re: [PATCH UPDATED] block: In blk_execute_rq_nowait, init rq->end_io
- before checking for dead queue.
-From: Muthu Kumar <muthu.lkml@gmail.com>
-To: Bart Van Assche <bvanassche@acm.org>
-Cc: Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
-        Jej B <James.Bottomley@hansenpartnership.com>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Content-Type: multipart/mixed; boundary=20cf3079ba3af5576304c212e069
+To: Konrad Rzeszutek Wilk <konrad@darnok.org>
+CC: Greg KH <greg@kroah.com>, Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Minchan Kim <minchan.kim@gmail.com>, linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] zsmalloc documentation
+References: <1338754805-1733-1-git-send-email-ngupta@vflare.org> <20120609112934.GE16034@localhost.localdomain>
+In-Reply-To: <20120609112934.GE16034@localhost.localdomain>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---20cf3079ba3af5576304c212e069
-Content-Type: text/plain; charset=ISO-8859-1
+On 06/09/2012 04:29 AM, Konrad Rzeszutek Wilk wrote:
 
-On Sat, Jun 9, 2012 at 5:47 AM, Bart Van Assche <bvanassche@acm.org> wrote:
-> On 06/09/12 00:10, Muthu Kumar wrote:
->
->> Since the queue->lock case is taken care of in the following patch:
+> On Sun, Jun 03, 2012 at 01:20:05PM -0700, Nitin Gupta wrote:
+>> Signed-off-by: Nitin Gupta <ngupta@vflare.org>
+>> ---
+>>  drivers/staging/zsmalloc/zsmalloc-main.c |   49 ++++++++++++++++++++++++++++++
+>>  1 file changed, 49 insertions(+)
 >>
->> (http://www.spinics.net/lists/linux-scsi/msg59845.html [PATCH 1/4]
->> block: Fix race on request_queue.end_io invocations)
->>
->> Updated the patch with just the end_io assignment before dead queue check.
->>
->>
->
->
-> This patch does not apply since it's line-wrapped and a part is missing
-> in the second hunk. However, if I had overlooked your original patch
-> then I want to apologize.
->
+>> diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
+>> index 4496737..f80f2fd 100644
+>> --- a/drivers/staging/zsmalloc/zsmalloc-main.c
+>> +++ b/drivers/staging/zsmalloc/zsmalloc-main.c
+>> @@ -10,6 +10,55 @@
+>>   * Released under the terms of GNU General Public License Version 2.0
+>>   */
+>>  
+>> +
+>> +/*
+>> + * This allocator is designed for use with zcache and zram. Thus, the
+>> + * allocator is supposed to work well under low memory conditions. In
+>> + * particular, it never attempts higher order page allocation which is
+>> + * very likely to fail under memory pressure. On the other hand, if we
+>> + * just use single (0-order) pages, it would suffer from very high
+>> + * fragmentation -- any object of size PAGE_SIZE/2 or larger would occupy
+>> + * an entire page. This was one of the major issues with its predecessor
+>> + * (xvmalloc).
+>> + *
+>> + * To overcome these issues, zsmalloc allocates a bunch of 0-order pages
+>> + * and links them together using various 'struct page' fields. These linked
+>> + * pages act as a single higher-order page i.e. an object can span 0-order
+>> + * page boundaries. The code refers to these linked pages as a single entity
+>> + * called zspage.
+>> + *
+>> + * Following is how we use various fields and flags of underlying
+>> + * struct page(s) to form a zspage.
+>> + *
+>> + * Usage of struct page fields:
+> 
+> I took your definition and grouped them a bit differently:
+> Not sure if it is more easier to read?
+> 
+> page->first_page: points to the first component (0-order) page
+> page->index (union with page->freelist): offset of the first object
+> 	starting in this page. For the first page, this is
+> 	always 0, so we use this field (aka freelist) to point
+> 	to the first free object in zspage.
+> page->lru: links together all component pages (except the first page)
+> 	of a zspage
+> 
+> For _first_ page only:
+> 
+> page->private (union with page->first_page): refers to the
+> 	component page after the first page
+> page->freelist: points to the first free object in zspage.
+> 	Free objects are linked together using in-place
+> 	metadata.
+> page->objects: maximum number of objects we can store in this
+> 	zspage (class->zspage_order * PAGE_SIZE / class->size)
+> page->lru: links together first pages of various zspages.
+> 	Basically forming list of zspages in a fullness group.
+> page->mapping: class index and fullness group of the zspage
 
-Please use the attached file since gmail messes with the line wraps.
 
-> If you can resend your original patch including the locking changes then
-> I'll test it further.
->
+This regrouping indeed looks cleaner. I will send the revised patch soon.
 
-Locking change is the one you posted already (the link above). Anyway,
-I have the attached patch *including* the locking change. Original
-mail has attachment without locking change. Please use whatever you
-need.
-Thanks for testing.
-
-Regards,
-Muthu
-
-
-> Bart.
-
---20cf3079ba3af5576304c212e069
-Content-Type: text/x-diff; charset=US-ASCII; name="blk-exec-patch-to-bart.patch"
-Content-Disposition: attachment; filename="blk-exec-patch-to-bart.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h39cda0y0
-
-ZGlmZiAtLWdpdCBhL2Jsb2NrL2Jsay1leGVjLmMgYi9ibG9jay9ibGstZXhlYy5jCmluZGV4IGZi
-MmNiZDUuLjI4NGJmNTYgMTAwNjQ0Ci0tLSBhL2Jsb2NrL2Jsay1leGVjLmMKKysrIGIvYmxvY2sv
-YmxrLWV4ZWMuYwpAQCAtNTMsMTYgKzUzLDE3IEBAIHZvaWQgYmxrX2V4ZWN1dGVfcnFfbm93YWl0
-KHN0cnVjdCByZXF1ZXN0X3F1ZXVlICpxLCBzdHJ1Y3QgZ2VuZGlzayAqYmRfZGlzaywKIAlXQVJO
-X09OKGlycXNfZGlzYWJsZWQoKSk7CiAJc3Bpbl9sb2NrX2lycShxLT5xdWV1ZV9sb2NrKTsKIAor
-CXJxLT5ycV9kaXNrID0gYmRfZGlzazsKKwlycS0+ZW5kX2lvID0gZG9uZTsKKwogCWlmICh1bmxp
-a2VseShibGtfcXVldWVfZGVhZChxKSkpIHsKLQkJc3Bpbl91bmxvY2tfaXJxKHEtPnF1ZXVlX2xv
-Y2spOwogCQlycS0+ZXJyb3JzID0gLUVOWElPOwogCQlpZiAocnEtPmVuZF9pbykKIAkJCXJxLT5l
-bmRfaW8ocnEsIHJxLT5lcnJvcnMpOworCQlzcGluX3VubG9ja19pcnEocS0+cXVldWVfbG9jayk7
-CiAJCXJldHVybjsKIAl9CiAKLQlycS0+cnFfZGlzayA9IGJkX2Rpc2s7Ci0JcnEtPmVuZF9pbyA9
-IGRvbmU7CiAJX19lbHZfYWRkX3JlcXVlc3QocSwgcnEsIHdoZXJlKTsKIAlfX2Jsa19ydW5fcXVl
-dWUocSk7CiAJLyogdGhlIHF1ZXVlIGlzIHN0b3BwZWQgc28gaXQgd29uJ3QgYmUgcnVuICovCg==
---20cf3079ba3af5576304c212e069--
+Thanks,
+Nitin
