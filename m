@@ -1,55 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756131Ab2FJOtE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jun 2012 10:49:04 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:42657 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751392Ab2FJOtC (ORCPT
+	id S1756249Ab2FJOuX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jun 2012 10:50:23 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:48652 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753054Ab2FJOuW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jun 2012 10:49:02 -0400
-X-Sasl-enc: +OxMzDGGyhRtySz29RTJs2R7YHFeE5M/jwnL3A1Sb4IC 1339339740
-Date: Sun, 10 Jun 2012 11:48:58 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Vsevolod Kozlov <zaba@wybt.net>
-Cc: linux-kernel@vger.kernel.org, ibm-acpi-devel@lists.sourceforge.net
-Subject: Re: thinkpad_acpi: Saving bluetooth state to NVRAM problem and fix
-Message-ID: <20120610144858.GB11169@khazad-dum.debian.net>
-References: <20120610091840.GA4960@scharfenberg>
+	Sun, 10 Jun 2012 10:50:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120610091840.GA4960@scharfenberg>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Originating-IP: [89.139.19.137]
+In-Reply-To: <1338989907-25360-4-git-send-email-sjur.brandeland@stericsson.com>
+References: <1338989907-25360-1-git-send-email-sjur.brandeland@stericsson.com> <1338989907-25360-4-git-send-email-sjur.brandeland@stericsson.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Sun, 10 Jun 2012 17:50:01 +0300
+Message-ID: <CAK=WgbaAyAJBW85C43EMf_gDTOOh=MDML_PvJXGVagN8n19SNg@mail.gmail.com>
+Subject: Re: [PATCH 3/7] remoteproc: Pass struct fw to load_segments and find_rsc_table.
+To: sjur.brandeland@stericsson.com
+Cc: Loic PALLARDY <loic.pallardy@stericsson.com>,
+        Ludovic BARRE <ludovic.barre@stericsson.com>,
+        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjurbren@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 10 Jun 2012, Vsevolod Kozlov wrote:
-> thinkpad_acpi normally fails to save Bluetooth state to NVRAM on my system
-> (ThinkPad X120e).  However, a small change in the code fixes the functionality:
-> 
-> --- a/drivers/platform/x86/thinkpad_acpi.c
-> +++ b/drivers/platform/x86/thinkpad_acpi.c
-> @@ -3999,7 +3999,7 @@ static const struct tpacpi_rfk_ops bluetooth_tprfk_ops = {
->  static void bluetooth_shutdown(void)
->  {
->  	/* Order firmware to save current state to NVRAM */
-> -	if (!acpi_evalf(NULL, NULL, "\\BLTH", "vd",
-> +	if (!acpi_evalf(NULL, NULL, "\\_SB.BLTH", "vd",
->  			TP_ACPI_BLTH_SAVE_STATE))
->  		pr_notice("failed to save bluetooth state to NVRAM\n");
->  	else
-> 
-> I can't tell whether this breaks the functionality on other ThinkPad systems
-> because I don't have any, though.
+On Wed, Jun 6, 2012 at 4:38 PM,  <sjur.brandeland@stericsson.com> wrote:
+> From: Sjur Brændeland <sjur.brandeland@stericsson.com>
+>
+> Prepare for introduction of custom firmware loaders by changing
+> the functions rproc_find_rcs_table() and rproc_load_segments()
+> to use struct firmware as parameter.
+>
+> When the custom loader framework is introduced all calls into
+> the firmware specific function must use struct firmware as
+> parameter.
+>
+> Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
 
-Yes, it would break other systems.  But I can write a fix that supports both
-systems with the data you supplied.
+Looks good, just a small typo below:
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+> + * @fw: the  the ELF firmware image
