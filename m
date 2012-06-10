@@ -1,84 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756332Ab2FJToo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jun 2012 15:44:44 -0400
-Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:1709 "EHLO
-	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754901Ab2FJTom (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jun 2012 15:44:42 -0400
-Message-ID: <1339357475.30984.49.camel@x61.thuisdomein>
-Subject: [PATCH] tile: remove unused header
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: linux-kernel@vger.kernel.org
-Date: Sun, 10 Jun 2012 21:44:35 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-OriginalArrivalTime: 10 Jun 2012 19:44:35.0421 (UTC) FILETIME=[76BDD0D0:01CD4741]
-X-RcptDomain: vger.kernel.org
+	id S1756438Ab2FJTra (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jun 2012 15:47:30 -0400
+Received: from mail.pr.hu ([87.242.0.5]:34471 "EHLO mail.pr.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756202Ab2FJTr3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Jun 2012 15:47:29 -0400
+X-Greylist: delayed 1380 seconds by postgrey-1.27 at vger.kernel.org; Sun, 10 Jun 2012 15:47:29 EDT
+Message-ID: <4FD4F45D.5050103@pr.hu>
+Date: Sun, 10 Jun 2012 21:24:13 +0200
+From: Boszormenyi Zoltan <zboszor@pr.hu>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+Subject: AMD FX CPU bug, not fixed by latest microcode?
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Spam-Score: -2.8 (--)
+X-Scan-Signature: 642093ab6d8c10dc6804d9159895b1ad
+X-Spam-Tracer: backend.mail.pr.hu -2.8 20120610192347Z
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nothing includes memprof.h. Nothing uses the macros it defines. It seems
-it is just a remnant of the proposed memprof functionality, which got
-dropped before the Tilera architecture got added to the tree. This
-header can safely be removed.
+Hi,
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-0) Dropping the memprof functionality was briefly discussed in
-https://lkml.org/lkml/2010/5/26/606 .
+I have an AMD FX-8120 boxed CPU in an ASUS M5A99X-EVO mainboard
+with 32GB DDR3/1600 memory, running Fedora 17, upgraded from 16.
+memtest86+ show no problems.
 
-1) Tested only by using various git commands on the (history of the)
-tree.
+Still, I get occasional crashes and signal 11 during kernel compilation even
+with single-job make. Sometimes the compiler jumps out with a strange
+error message, like "stray \NNN character in the source". When re-running
+make, the error doesn't happen in the same file and the source file doesn't
+contain the character being complained about when inspecting with
+an editor or hexdump.
 
- arch/tile/include/asm/memprof.h |   33 ---------------------------------
- 1 files changed, 0 insertions(+), 33 deletions(-)
- delete mode 100644 arch/tile/include/asm/memprof.h
+Now, a few minutes ago I was able to catch this bug when I copied the
+kernel GIT tree to apply a patch manually and did "git commit -a".
+Strangely, the commit contained one extra file that I didn't touch.
+git diff showed this for the extra file:
 
-diff --git a/arch/tile/include/asm/memprof.h b/arch/tile/include/asm/memprof.h
-deleted file mode 100644
-index 359949b..0000000
---- a/arch/tile/include/asm/memprof.h
-+++ /dev/null
-@@ -1,33 +0,0 @@
--/*
-- * Copyright 2010 Tilera Corporation. All Rights Reserved.
-- *
-- *   This program is free software; you can redistribute it and/or
-- *   modify it under the terms of the GNU General Public License
-- *   as published by the Free Software Foundation, version 2.
-- *
-- *   This program is distributed in the hope that it will be useful, but
-- *   WITHOUT ANY WARRANTY; without even the implied warranty of
-- *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-- *   NON INFRINGEMENT.  See the GNU General Public License for
-- *   more details.
-- *
-- * The hypervisor's memory controller profiling infrastructure allows
-- * the programmer to find out what fraction of the available memory
-- * bandwidth is being consumed at each memory controller.  The
-- * profiler provides start, stop, and clear operations to allows
-- * profiling over a specific time window, as well as an interface for
-- * reading the most recent profile values.
-- *
-- * This header declares IOCTL codes necessary to control memprof.
-- */
--#ifndef _ASM_TILE_MEMPROF_H
--#define _ASM_TILE_MEMPROF_H
--
--#include <linux/ioctl.h>
--
--#define MEMPROF_IOCTL_TYPE 0xB4
--#define MEMPROF_IOCTL_START _IO(MEMPROF_IOCTL_TYPE, 0)
--#define MEMPROF_IOCTL_STOP _IO(MEMPROF_IOCTL_TYPE, 1)
--#define MEMPROF_IOCTL_CLEAR _IO(MEMPROF_IOCTL_TYPE, 2)
--
--#endif /* _ASM_TILE_MEMPROF_H */
--- 
-1.7.7.6
+==============================
+--- a/drivers/usb/gadget/fsl_usb2_udc.h
++++ b/drivers/usb/gadget/fsl_usb2_udc.h
+@@ -427,7 +427,7 @@ struct ep_td_struct {
+  #define  DTD_ADDR_MASK                        0xFFFFFFE0
+  #define  DTD_PACKET_SIZE                      0x7FFF0000
+  #define  DTD_LENGTH_BIT_POS                   16
+-#define  DTD_ERROR_MASK                       (DTD_STATUS_HALTED | \
++#define  DTD_ERROR_MASK                       (DTD_STATUS_HALTED | ^Z
+                                                 DTD_STATUS_DATA_BUFF_ERR | \
+                                                 DTD_STATUS_TRANSACTION_ERR)
+  /* Alignment requirements; must be a power of two */
+==============================
+
+The "^Z" is a 0-character in the file and is not present in the
+original source tree, only in the copy.
+
+Similar errors happened during copying large files on the same
+machine but it seems it's enough to trigger if the total amount
+of data read is large enough.
+
+The mainboard has the latest (UEFI) firmware flashed which
+contains the latest AMD microcode, so microcode_ctl doesn't
+need to apply it anymore. Previously, I used amd-ucode-2012-01-17.tar
+from www.amd64.org/support/microcode.html which is now
+part of microcode_ctl in Fedora.
+
+Since the error happens during compiling a source file and not only
+copying, the bug seems to happens during *reading* data.
+
+Does anyone know whether it's a known problem in AMD FX CPUs?
+Does AMD have a newer microcode to fix this bug, or should I apply
+for warranty?
+
+Thanks in advance,
+Zoltán Böszörményi
 
