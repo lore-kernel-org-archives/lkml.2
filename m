@@ -1,80 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756438Ab2FJTra (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jun 2012 15:47:30 -0400
-Received: from mail.pr.hu ([87.242.0.5]:34471 "EHLO mail.pr.hu"
+	id S1753872Ab2FJULH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jun 2012 16:11:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61829 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756202Ab2FJTr3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jun 2012 15:47:29 -0400
-X-Greylist: delayed 1380 seconds by postgrey-1.27 at vger.kernel.org; Sun, 10 Jun 2012 15:47:29 EDT
-Message-ID: <4FD4F45D.5050103@pr.hu>
-Date: Sun, 10 Jun 2012 21:24:13 +0200
-From: Boszormenyi Zoltan <zboszor@pr.hu>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1750879Ab2FJULG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Jun 2012 16:11:06 -0400
+Date: Sun, 10 Jun 2012 16:10:56 -0400
+From: Dave Jones <davej@redhat.com>
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: David Rientjes <rientjes@google.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: oomkillers gone wild.
+Message-ID: <20120610201055.GA27662@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+	David Rientjes <rientjes@google.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+References: <20120604152710.GA1710@redhat.com>
+ <alpine.DEB.2.00.1206041629500.7769@chino.kir.corp.google.com>
+ <20120605174454.GA23867@redhat.com>
+ <alpine.DEB.2.00.1206081313000.19054@chino.kir.corp.google.com>
+ <20120608210330.GA21010@redhat.com>
+ <alpine.DEB.2.00.1206091920140.7832@chino.kir.corp.google.com>
+ <4FD412CB.9060809@gmail.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: AMD FX CPU bug, not fixed by latest microcode?
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Spam-Score: -2.8 (--)
-X-Scan-Signature: 642093ab6d8c10dc6804d9159895b1ad
-X-Spam-Tracer: backend.mail.pr.hu -2.8 20120610192347Z
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FD412CB.9060809@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sat, Jun 09, 2012 at 11:21:47PM -0400, KOSAKI Motohiro wrote:
+ > (6/9/12 10:21 PM), David Rientjes wrote:
+ > > On Fri, 8 Jun 2012, Dave Jones wrote:
+ > >
+ > >>   >  On a system not under oom conditions, i.e. before you start trinity, can
+ > >>   >  you send the output of
+ > >>   >
+ > >>   >  	cat /proc/$(pidof dbus-daemon)/oom_score{_adj,}
+ > >>   >  	grep RSS /proc/$(pidof dbus-daemon)/status
+ > >>
+ > >> # cat /proc/$(pidof dbus-daemon)/oom_score{_adj,}
+ > >> -900
+ > >> 7441500919753
+ > >> # grep RSS /proc/$(pidof dbus-daemon)/status
+ > >> VmRSS:	    1660 kB
+ > >
+ > > I'm suspecting you don't have my patch that changes the type of the
+ > > automatic variable in oom_badness() to signed.  Could you retry this with
+ > > that patch or pull 3.5-rc2 which already includes it?
 
-I have an AMD FX-8120 boxed CPU in an ASUS M5A99X-EVO mainboard
-with 32GB DDR3/1600 memory, running Fedora 17, upgraded from 16.
-memtest86+ show no problems.
+that was with the unsigned long -> long patch.
 
-Still, I get occasional crashes and signal 11 during kernel compilation even
-with single-job make. Sometimes the compiler jumps out with a strange
-error message, like "stray \NNN character in the source". When re-running
-make, the error doesn't happen in the same file and the source file doesn't
-contain the character being complained about when inspecting with
-an editor or hexdump.
+ > Yes. Dave (Jones), As far as parsed your log, you are using x86_64, right?
 
-Now, a few minutes ago I was able to catch this bug when I copied the
-kernel GIT tree to apply a patch manually and did "git commit -a".
-Strangely, the commit contained one extra file that I didn't touch.
-git diff showed this for the extra file:
+yes.
 
-==============================
---- a/drivers/usb/gadget/fsl_usb2_udc.h
-+++ b/drivers/usb/gadget/fsl_usb2_udc.h
-@@ -427,7 +427,7 @@ struct ep_td_struct {
-  #define  DTD_ADDR_MASK                        0xFFFFFFE0
-  #define  DTD_PACKET_SIZE                      0x7FFF0000
-  #define  DTD_LENGTH_BIT_POS                   16
--#define  DTD_ERROR_MASK                       (DTD_STATUS_HALTED | \
-+#define  DTD_ERROR_MASK                       (DTD_STATUS_HALTED | ^Z
-                                                 DTD_STATUS_DATA_BUFF_ERR | \
-                                                 DTD_STATUS_TRANSACTION_ERR)
-  /* Alignment requirements; must be a power of two */
-==============================
+ > As far as my testing, current linus tree works fine at least normal case.
+ > please respin.
 
-The "^Z" is a 0-character in the file and is not present in the
-original source tree, only in the copy.
+To double check, here it is in rc2 (which has that patch)..
 
-Similar errors happened during copying large files on the same
-machine but it seems it's enough to trigger if the total amount
-of data read is large enough.
-
-The mainboard has the latest (UEFI) firmware flashed which
-contains the latest AMD microcode, so microcode_ctl doesn't
-need to apply it anymore. Previously, I used amd-ucode-2012-01-17.tar
-from www.amd64.org/support/microcode.html which is now
-part of microcode_ctl in Fedora.
-
-Since the error happens during compiling a source file and not only
-copying, the bug seems to happens during *reading* data.
-
-Does anyone know whether it's a known problem in AMD FX CPUs?
-Does AMD have a newer microcode to fix this bug, or should I apply
-for warranty?
-
-Thanks in advance,
-Zoltán Böszörményi
+$ uname -r
+3.5.0-rc2+
+$ cat /proc/$(pidof dbus-daemon)/oom_score{_adj,}
+-900
+7441500919753
+$ grep RSS /proc/$(pidof dbus-daemon)/status
+VmRSS:	    1604 kB
 
