@@ -1,50 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756166Ab2FJLUe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jun 2012 07:20:34 -0400
-Received: from smtp3.mundo-r.com ([212.51.32.191]:53588 "EHLO
-	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751387Ab2FJLUd (ORCPT
+	id S1756256Ab2FJLVQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jun 2012 07:21:16 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:51471 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755386Ab2FJLVO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jun 2012 07:20:33 -0400
-X-Greylist: delayed 452 seconds by postgrey-1.27 at vger.kernel.org; Sun, 10 Jun 2012 07:20:32 EDT
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av4EANqB1E9bdWOb/2dsb2JhbABFtFqBB4IYAQEFeAEQCxUDCRYPCQMCAQIBRQcMAQUCAogLt1CLJ4VpA5Uej3uCYg
-X-IronPort-AV: E=Sophos;i="4.77,384,1336341600"; 
-   d="scan'208";a="918719274"
-Message-ID: <4FD4843F.6070602@igalia.com>
-Date: Sun, 10 Jun 2012 13:25:51 +0200
-From: =?ISO-8859-1?Q?Javier_Mu=F1oz?= <jmunhoz@igalia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
-MIME-Version: 1.0
-To: gregkh@linuxfoundation.org, teddy.wang@siliconmotion.com.cn
-CC: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] staging: sm7xxfb: sm7xx becomes sm7xxfb
-References: <1339326744-17507-1-git-send-email-jmunhoz@igalia.com> <1339326744-17507-4-git-send-email-jmunhoz@igalia.com>
-In-Reply-To: <1339326744-17507-4-git-send-email-jmunhoz@igalia.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 10 Jun 2012 07:21:14 -0400
+Date: Sun, 10 Jun 2012 12:24:35 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: dbaryshkov@gmail.com, slapin@ossfans.org, davem@davemloft.net,
+        linux-zigbee-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ieee802154: verify packet size before trying to
+ allocate it
+Message-ID: <20120610122435.7d5c8fa7@pyramind.ukuu.org.uk>
+In-Reply-To: <1339326619-1753-1-git-send-email-levinsasha928@gmail.com>
+References: <1339326619-1753-1-git-send-email-levinsasha928@gmail.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/10/2012 01:12 PM, Javier M. Mellid wrote:
-> From: "Javier M. Mellid" <jmunhoz@igalia.com>
+On Sun, 10 Jun 2012 13:10:19 +0200
+Sasha Levin <levinsasha928@gmail.com> wrote:
+
+> Currently when sending data over datagram, the send function will attempt to
+> allocate any size passed on from the userspace.
 > 
-> Rename sm7xx driver to sm7xxfb. Fix Kconfig and Makefile to fit the new
-> change.
+> We should make sure that this size is checked and limited. The maximum size
+> of an IP packet seemed like the safest limit here.
 > 
-> Changes are coherent with the rest of stable framebuffer drivers. TODO
-> updated.
+> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> ---
+> 
+> Change in v2:
+>  - Limit by maximum size the protocol supports.
+> 
+>  net/ieee802154/dgram.c |    5 +++++
+>  1 files changed, 5 insertions(+), 0 deletions(-)
+> 
+> diff --git a/net/ieee802154/dgram.c b/net/ieee802154/dgram.c
+> index 6fbb2ad..628498c 100644
+> --- a/net/ieee802154/dgram.c
+> +++ b/net/ieee802154/dgram.c
+> @@ -232,6 +232,11 @@ static int dgram_sendmsg(struct kiocb *iocb, struct sock *sk,
+>  
+>  	hlen = LL_RESERVED_SPACE(dev);
+>  	tlen = dev->needed_tailroom;
+> +	if (hlen + tlen + size > IEEE802154_MTU) {
+> +		err = -EMSGSIZE;
+> +		goto out;
 
-Just one doubt. I am using 'git mv' here and it works Ok. 'git log
---follow' would be the way to see the whole history after this commit.
-Should I follow another approach? I am using a 'similar approach' to
-ed16648eb5b86917f0b90bdcdbc857202da72f90 commit to rename.
+What stops an overflow at this point. We'll then pass a small value to
+sock_alloc_send_skb/sock_alloc_send_pskb and copy a large number of bytes
+into it.
 
-Please, let me know if I should redo this patch.
+This does seem to be already broken, and not fixed by the patch ?
 
-Thanks.
-
-Javier
+Alan
