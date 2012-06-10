@@ -1,48 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753359Ab2FJW1u (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jun 2012 18:27:50 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:36608 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752834Ab2FJW1t (ORCPT
+	id S1756321Ab2FJWxk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jun 2012 18:53:40 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:36676 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753127Ab2FJWxj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jun 2012 18:27:49 -0400
-Date: Sun, 10 Jun 2012 23:27:45 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org, torvalds@linux-foundation.org, dhowells@redhat.com,
-        mszeredi@suse.cz
-Subject: Re: [PATCH 00/21] vfs: atomic open v6 (part 2)
-Message-ID: <20120610222745.GG30000@ZenIV.linux.org.uk>
-References: <1338901832-14049-1-git-send-email-miklos@szeredi.hu>
- <20120610034921.GB30000@ZenIV.linux.org.uk>
- <20120610111056.GD30000@ZenIV.linux.org.uk>
- <20120610175605.GE30000@ZenIV.linux.org.uk>
+	Sun, 10 Jun 2012 18:53:39 -0400
+Date: Sun, 10 Jun 2012 15:53:10 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Johannes Weiner <hannes@cmpxchg.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] memcg: fix use_hierarchy css_is_ancestor oops
+ regression
+In-Reply-To: <20120610221516.GJ1761@cmpxchg.org>
+Message-ID: <alpine.LSU.2.00.1206101547390.16184@eggly.anvils>
+References: <alpine.LSU.2.00.1206101150230.4239@eggly.anvils> <20120610221516.GJ1761@cmpxchg.org>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120610175605.GE30000@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 10, 2012 at 06:56:05PM +0100, Al Viro wrote:
-> On Sun, Jun 10, 2012 at 12:10:56PM +0100, Al Viro wrote:
+On Mon, 11 Jun 2012, Johannes Weiner wrote:
+> On Sun, Jun 10, 2012 at 11:54:47AM -0700, Hugh Dickins wrote:
+> > If use_hierarchy is set, reclaim testing soon oopses in css_is_ancestor()
+> > called from __mem_cgroup_same_or_subtree() called from page_referenced():
+> > when processes are exiting, it's easy for mm_match_cgroup() to pass along
+> > a NULL memcg coming from a NULL mm->owner.
+> > 
+> > Check for that in __mem_cgroup_same_or_subtree().  Return true or false?
+> > False because we cannot know if it was in the hierarchy, but also false
+> > because it's better not to count a reference from an exiting process.
+> > 
+> > Signed-off-by: Hugh Dickins <hughd@google.com>
 > 
-> > WARNING: I haven't even tried to boot it.  It builds, but this is all I can
-> > promise at the moment.  I'm about to fall down (it's 7am here already ;-/),
-> > will give it some beating when I get up.  It almost certainly has bugs, so
-> > consider that as call for review and not much more.
+> Looks like an older version of the patch that introduced it slipped
+> into the tree, Konstantin noted this problem during review.  The final
+> version did
 > 
-> OK, it boots, mounts NFS and even manages to build a kernel on it.  Which
-> probably would meet Linus' "it's perfect, ship it" criteria, so go ahead
-> and beat it up, folks.
+> 	match = memcg && __mem_cgroup_same_or_subtree(root, memcg);
+> 
+> in the caller because of it.
+> 
+> Do you think it would be cleaner this way, since this is also the
+> place where that memcg is looked up, and so the "can return NULL"
+> handling after mem_cgroup_from_task() would be in the same place?
 
-And in vfs.git#master there's a followup to that.  ->d_revalidate(),
-->lookup() and ->create() are nameidata-free now.  IOW, open intents
-crap is well and truly dead.  Good riddance.
+I don't mind, either way.
 
-Miklos, if I see you at Kernel Summit (or anywhere else, for that matter),
-I owe you a bottle of booze of your choice.
+It depends on whether we add more such uses which could receive a NULL
+memcg.  I tend to prefer dealing with rare conditions (which this is)
+inside the callee, but common conditions before calling from the caller.
+
+But let's let others decide.
+
+> 
+> But either way,
+> 
+> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+> 
+> Thanks, Hugh!
+
+And thank you, Hannes!
+
+Hugh
