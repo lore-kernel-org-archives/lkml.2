@@ -1,107 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755231Ab2FJCCJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jun 2012 22:02:09 -0400
-Received: from nm25.access.bullet.mail.sp2.yahoo.com ([98.139.44.152]:24436
-	"HELO nm25.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754616Ab2FJCCI (ORCPT
+	id S1755420Ab2FJCDl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jun 2012 22:03:41 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:48029 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754922Ab2FJCDj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jun 2012 22:02:08 -0400
-X-Yahoo-Newman-Id: 65997.70315.bm@omp1010.access.mail.sp2.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: DqDgysAVM1nAbFaIGKK04hmnoUk9EDzY7oc1nOVnbdc0Sq2
- e4WsluZcABKErhc62veiIQHa6sGqNCj_N7WJ7EUJtNbWFsAZXNX7ga9H1SGW
- 2iP99rpBHuDFGmt45PmhCbp1KNCb3ANembPsyPH5ecEyA_QbKlPtdaeGenHh
- bbiflZMj_ucMTnA_vnKv4jtgNB7G2pMUKQmxo6OVb.U1dvweYMieIF0FTwn4
- UG0WVbeeCrGJj.a4LPG8.keHB9bWqSNnZzSgU4llad8tfX_8t45X9bm61pZZ
- MhTSWBH_6I9Ym3PQQAaDSfLbgw0ZoagH7v552fm1sZ7IL5WQoJkodjxlKgTE
- ZSa6iI_Mh9k_Jrrs.r2NKyf2ZB2NjnuV0PjmH6HK_sCMTt1IZvfNQjByULBX
- l1Xa1zQ--
-X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
-Message-ID: <4FD40024.9070407@att.net>
-Date: Sat, 09 Jun 2012 21:02:12 -0500
-From: Daniel Santos <danielfsantos@att.net>
-Reply-To: daniel.santos@pobox.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120502 Thunderbird/10.0.4
+	Sat, 9 Jun 2012 22:03:39 -0400
+Date: Sat, 9 Jun 2012 22:03:31 -0400
+From: Konrad Rzeszutek Wilk <konrad@darnok.org>
+To: Andrea Arcangeli <aarcange@redhat.com>, drjones@redhat.com
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg KH <gregkh@linuxfoundation.org>, 676360@bugs.debian.org,
+        xen-devel@lists.xensource.com, Jonathan Nieder <jrnieder@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        "linux-mm@kvack.org Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        stable@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
+        Ulrich Obergfell <uobergfe@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Hugh Dickins <hughd@google.com>, Larry Woodman <lwoodman@redhat.com>,
+        Petr Matousek <pmatouse@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Jan Beulich <jbeulich@suse.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Subject: Re: [PATCH] thp: avoid atomic64_read in pmd_read_atomic for 32bit
+ PAE\
+Message-ID: <20120610020331.GA26100@localhost.localdomain>
+References: <20120607190414.GF21339@redhat.com>
+ <1339102833-12358-2-git-send-email-aarcange@redhat.com>
 MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drivers/mtd/ubi/wl.c: optimization for in_wl_tree()
-References: <1339293473-29444-1-git-send-email-daniel.santos@pobox.com>
-In-Reply-To: <1339293473-29444-1-git-send-email-daniel.santos@pobox.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339102833-12358-2-git-send-email-aarcange@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oh, and I forgot to mention that I haven't tested it (don't have this
-device), but it does compile.
+On Thu, Jun 07, 2012 at 11:00:33PM +0200, Andrea Arcangeli wrote:
+> In the x86 32bit PAE CONFIG_TRANSPARENT_HUGEPAGE=y case while holding
+> the mmap_sem for reading, cmpxchg8b cannot be used to read pmd
+> contents under Xen.
+> 
+> So instead of dealing only with "consistent" pmdvals in
+> pmd_none_or_trans_huge_or_clear_bad() (which would be conceptually
+> simpler) we let pmd_none_or_trans_huge_or_clear_bad() deal with pmdvals
+> where the low 32bit and high 32bit could be inconsistent (to avoid
+> having to use cmpxchg8b).
 
-On 06/09/2012 08:57 PM, Daniel Santos wrote:
-> Essentially, instead of performing a search through the tree from the
-> top down, like we would when doing a lookup, we can just search from the
-> node up and then check to see if the root of the tree that the node is
-> in is the same as the one supplied.  Note that if you call this passing
-> a ubi_wl_entry who's u.rb member has not been inited with rb_init_node()
-> or added to a tree, the results are undefined.
->
-> This should be a little faster, but mostly, it'll be smaller.
+<nods>
+> 
+> The only guarantee we get from pmd_read_atomic is that if the low part
+> of the pmd was found null, the high part will be null too (so the pmd
+> will be considered unstable). And if the low part of the pmd is found
+> "stable" later, then it means the whole pmd was read atomically
+> (because after a pmd is stable, neither MADV_DONTNEED nor page faults
+> can alter it anymore, and we read the high part after the low part).
+> 
+> In the 32bit PAE x86 case, it is enough to read the low part of the
+> pmdval atomically to declare the pmd as "stable" and that's true for
+> THP and no THP, furthermore in the THP case we also have a barrier()
+> that will prevent any inconsistent pmdvals to be cached by a later
+> re-read of the *pmd.
+
+Nice. Andrew, any chane you could test this patch on the affected
+Xen hypervisors? Was it as easy to reproduce this on a RHEL5 (U1?)
+hypervisor or is it really only on Linode and Amazon EC2?
+
+> 
+> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 > ---
->  drivers/mtd/ubi/wl.c |   32 ++++++++------------------------
->  1 files changed, 8 insertions(+), 24 deletions(-)
->
-> diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
-> index 9df100a..d415011 100644
-> --- a/drivers/mtd/ubi/wl.c
-> +++ b/drivers/mtd/ubi/wl.c
-> @@ -287,33 +287,17 @@ static int produce_free_peb(struct ubi_device *ubi)
+>  arch/x86/include/asm/pgtable-3level.h |   30 +++++++++++++++++-------------
+>  include/asm-generic/pgtable.h         |   10 ++++++++++
+>  2 files changed, 27 insertions(+), 13 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/pgtable-3level.h b/arch/x86/include/asm/pgtable-3level.h
+> index 43876f1..cb00ccc 100644
+> --- a/arch/x86/include/asm/pgtable-3level.h
+> +++ b/arch/x86/include/asm/pgtable-3level.h
+> @@ -47,16 +47,26 @@ static inline void native_set_pte(pte_t *ptep, pte_t pte)
+>   * they can run pmd_offset_map_lock or pmd_trans_huge or other pmd
+>   * operations.
+>   *
+> - * Without THP if the mmap_sem is hold for reading, the
+> - * pmd can only transition from null to not null while pmd_read_atomic runs.
+> - * So there's no need of literally reading it atomically.
+> + * Without THP if the mmap_sem is hold for reading, the pmd can only
+> + * transition from null to not null while pmd_read_atomic runs. So
+> + * we can always return atomic pmd values with this function.
+>   *
+>   * With THP if the mmap_sem is hold for reading, the pmd can become
+> - * THP or null or point to a pte (and in turn become "stable") at any
+> - * time under pmd_read_atomic, so it's mandatory to read it atomically
+> - * with cmpxchg8b.
+> + * trans_huge or none or point to a pte (and in turn become "stable")
+> + * at any time under pmd_read_atomic. We could read it really
+> + * atomically here with a atomic64_read for the THP enabled case (and
+> + * it would be a whole lot simpler), but to avoid using cmpxchg8b we
+> + * only return an atomic pmdval if the low part of the pmdval is later
+> + * found stable (i.e. pointing to a pte). And we're returning a none
+> + * pmdval if the low part of the pmd is none. In some cases the high
+> + * and low part of the pmdval returned may not be consistent if THP is
+> + * enabled (the low part may point to previously mapped hugepage,
+> + * while the high part may point to a more recently mapped hugepage),
+> + * but pmd_none_or_trans_huge_or_clear_bad() only needs the low part
+> + * of the pmd to be read atomically to decide if the pmd is unstable
+> + * or not, with the only exception of when the low part of the pmd is
+> + * zero in which case we return a none pmd.
 >   */
->  static int in_wl_tree(struct ubi_wl_entry *e, struct rb_root *root)
+> -#ifndef CONFIG_TRANSPARENT_HUGEPAGE
+>  static inline pmd_t pmd_read_atomic(pmd_t *pmdp)
 >  {
-> -	struct rb_node *p;
-> -
-> -	p = root->rb_node;
-> -	while (p) {
-> -		struct ubi_wl_entry *e1;
-> +	struct rb_node *p = &e->u.rb, *parent = rb_parent(&e->u.rb);
+>  	pmdval_t ret;
+> @@ -74,12 +84,6 @@ static inline pmd_t pmd_read_atomic(pmd_t *pmdp)
 >  
-> -		e1 = rb_entry(p, struct ubi_wl_entry, u.rb);
-> -
-> -		if (e->pnum == e1->pnum) {
-> -			ubi_assert(e == e1);
-> -			return 1;
-> -		}
-> +	if (parent == p)
-> +		return 0;
->  
-> -		if (e->ec < e1->ec)
-> -			p = p->rb_left;
-> -		else if (e->ec > e1->ec)
-> -			p = p->rb_right;
-> -		else {
-> -			ubi_assert(e->pnum != e1->pnum);
-> -			if (e->pnum < e1->pnum)
-> -				p = p->rb_left;
-> -			else
-> -				p = p->rb_right;
-> -		}
-> -	}
-> +	do {
-> +		p = parent;
-> +		parent = rb_parent(parent);
-> +	} while (parent);
->  
-> -	return 0;
-> +	return p == root->rb_node;
+>  	return (pmd_t) { ret };
 >  }
+> -#else /* CONFIG_TRANSPARENT_HUGEPAGE */
+> -static inline pmd_t pmd_read_atomic(pmd_t *pmdp)
+> -{
+> -	return (pmd_t) { atomic64_read((atomic64_t *)pmdp) };
+> -}
+> -#endif /* CONFIG_TRANSPARENT_HUGEPAGE */
 >  
->  /**
-
--- 
-Daniel
-
-"Just because you go to church on Sunday, it doesn't absolve you from
-where you put your dick during the week" -- Michele Q.
-
+>  static inline void native_set_pte_atomic(pte_t *ptep, pte_t pte)
+>  {
+> diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
+> index ae39c4b..0ff87ec 100644
+> --- a/include/asm-generic/pgtable.h
+> +++ b/include/asm-generic/pgtable.h
+> @@ -484,6 +484,16 @@ static inline int pmd_none_or_trans_huge_or_clear_bad(pmd_t *pmd)
+>  	/*
+>  	 * The barrier will stabilize the pmdval in a register or on
+>  	 * the stack so that it will stop changing under the code.
+> +	 *
+> +	 * When CONFIG_TRANSPARENT_HUGEPAGE=y on x86 32bit PAE,
+> +	 * pmd_read_atomic is allowed to return a not atomic pmdval
+> +	 * (for example pointing to an hugepage that has never been
+> +	 * mapped in the pmd). The below checks will only care about
+> +	 * the low part of the pmd with 32bit PAE x86 anyway, with the
+> +	 * exception of pmd_none(). So the important thing is that if
+> +	 * the low part of the pmd is found null, the high part will
+> +	 * be also null or the pmd_none() check below would be
+> +	 * confused.
+>  	 */
+>  #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+>  	barrier();
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
