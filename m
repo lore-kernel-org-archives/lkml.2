@@ -1,66 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756256Ab2FJLVQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jun 2012 07:21:16 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:51471 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755386Ab2FJLVO (ORCPT
+	id S1756418Ab2FJLVW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jun 2012 07:21:22 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:61326 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756294Ab2FJLVT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jun 2012 07:21:14 -0400
-Date: Sun, 10 Jun 2012 12:24:35 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: dbaryshkov@gmail.com, slapin@ossfans.org, davem@davemloft.net,
-        linux-zigbee-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ieee802154: verify packet size before trying to
- allocate it
-Message-ID: <20120610122435.7d5c8fa7@pyramind.ukuu.org.uk>
-In-Reply-To: <1339326619-1753-1-git-send-email-levinsasha928@gmail.com>
-References: <1339326619-1753-1-git-send-email-levinsasha928@gmail.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Sun, 10 Jun 2012 07:21:19 -0400
+Message-ID: <4FD48317.50706@ontolinux.com>
+Date: Sun, 10 Jun 2012 13:20:55 +0200
+From: Christian Stroetmann <stroetmann@ontolinux.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Marco Stornelli <marco.stornelli@gmail.com>
+CC: Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/17] pramfs: persistent and protected RAM filesystem
+References: <4FD46521.5070900@gmail.com>
+In-Reply-To: <4FD46521.5070900@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:f0GWA7yIeZJUnXtCZ7gIOm+vX44NfEPENhPB8jbwWch
+ LtiEl7YBYbKf/aRc39njh3+4e7P0sNGiIcO+91y7qLEWt/MXQZ
+ ZHINm7PqUrtqxc7wbU1QcREuA4q8xDGNzyJVRFuMIy0PytIOEK
+ 3vKDTu6X/MIGsxmiUrGkqg4F5ZD/L32zW9cLdJEWBTAz7R3Iwi
+ 89e/teYGbyL4XmeF478rcNqYwg06DUR/7kvsNIFRCSli+loFRp
+ 2PIhc4xVlBCvTbVU8PuY+FdzJydejCyvU+gzaxfdNz7kCaLkSH
+ wBpIhfkKBi3smBM1s/+ceWfUsr0L4/L4EyHZaKQBTPTi/Eqbn2
+ 7h4IHg6nHGisT+R5OAlE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 10 Jun 2012 13:10:19 +0200
-Sasha Levin <levinsasha928@gmail.com> wrote:
+On Sun, June 10, 2012 Marco Stornelli wrote:
+> Hi all,
+>
+> after the merge of pramfs in the LTSI kernel and after the "hot topic" 
+> NVM Mapping API, here a new submission of pramfs code. Even if the 
+> code won't be in mainline the review is really useful to me, so any 
+> comment is welcome.
+Hello
 
-> Currently when sending data over datagram, the send function will attempt to
-> allocate any size passed on from the userspace.
-> 
-> We should make sure that this size is checked and limited. The maximum size
-> of an IP packet seemed like the safest limit here.
-> 
-> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-> ---
-> 
-> Change in v2:
->  - Limit by maximum size the protocol supports.
-> 
->  net/ieee802154/dgram.c |    5 +++++
->  1 files changed, 5 insertions(+), 0 deletions(-)
-> 
-> diff --git a/net/ieee802154/dgram.c b/net/ieee802154/dgram.c
-> index 6fbb2ad..628498c 100644
-> --- a/net/ieee802154/dgram.c
-> +++ b/net/ieee802154/dgram.c
-> @@ -232,6 +232,11 @@ static int dgram_sendmsg(struct kiocb *iocb, struct sock *sk,
->  
->  	hlen = LL_RESERVED_SPACE(dev);
->  	tlen = dev->needed_tailroom;
-> +	if (hlen + tlen + size > IEEE802154_MTU) {
-> +		err = -EMSGSIZE;
-> +		goto out;
+I think we have here two cases:
+1. "A block of non-volatile RAM separate for normal system memory", 
+[documentation Pramfs] and
+2. The whole RAM is non-volatile and so the whole situation is changed, 
+and an NVM Mapping API is needed and "hotly" discussed.
 
-What stops an overflow at this point. We'll then pass a small value to
-sock_alloc_send_skb/sock_alloc_send_pskb and copy a large number of bytes
-into it.
+For 1. your solution is a very good concept that is getting around 
+issues solely related with specific optimizations for disc-based file 
+systems, like the 2 problems described in the documentation of Pramfs, but
+for 2. there is no need for a file system anymore, as we use it today 
+while working with a computer system, because data needs not to be 
+written to a file system at all, and so the file system will become 
+something like a backup system in the most common use cases of a 
+computing device, if I should describe it a little bit too provocative. 
+In this case your approach taken to handle the 2 problems mentioned in 
+the documentation of Pramfs would have to be driven further by focusing 
+more on the management of the RAM, the power, and the long-term data 
+storage (backup) for harmonizing Pramfs with them. A further point is to 
+make Pramfs bootable, if this not already possible somehow.
+>
+>
+> The patch series is based on 3.5-rc2.
+>
+> Pramfs documentation:
+>
+> http://pramfs.sourceforge.net
+>
+> Git repo:
+>
+> git://pramfs.git.sourceforge.net/gitroot/pramfs/pramfs
+>
+> Marco
 
-This does seem to be already broken, and not fixed by the patch ?
-
-Alan
+Have fun
+Christian Stroetmann
