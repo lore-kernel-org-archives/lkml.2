@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754463Ab2FJJUk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jun 2012 05:20:40 -0400
+	id S1754750Ab2FJJUv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jun 2012 05:20:51 -0400
 Received: from mail-wi0-f172.google.com ([209.85.212.172]:58491 "EHLO
 	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753131Ab2FJJUe (ORCPT
+	with ESMTP id S1753936Ab2FJJUs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jun 2012 05:20:34 -0400
-Message-ID: <4FD4655D.6080602@gmail.com>
-Date: Sun, 10 Jun 2012 11:14:05 +0200
+	Sun, 10 Jun 2012 05:20:48 -0400
+Message-ID: <4FD4656B.1070303@gmail.com>
+Date: Sun, 10 Jun 2012 11:14:19 +0200
 From: Marco Stornelli <marco.stornelli@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120421 Thunderbird/12.0
 MIME-Version: 1.0
 To: Linux FS Devel <linux-fsdevel@vger.kernel.org>
 CC: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 04/17] pramfs: file operations
+Subject: [PATCH 05/17] pramfs: block operations
 Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -23,18 +23,18 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Marco Stornelli <marco.stornelli@gmail.com>
 
-File operations.
+Block allocation operations.
 
 Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
 ---
-diff -Nurp linux-3.5-rc2-orig/fs/pramfs/file.c linux-3.5-rc2/fs/pramfs/file.c
---- linux-3.5-rc2-orig/fs/pramfs/file.c	1970-01-01 01:00:00.000000000 +0100
-+++ linux-3.5-rc2/fs/pramfs/file.c	2012-06-10 10:08:28.000000000 +0200
-@@ -0,0 +1,439 @@
+diff -Nurp linux-3.5-rc2-orig/fs/pramfs/balloc.c linux-3.5-rc2/fs/pramfs/balloc.c
+--- linux-3.5-rc2-orig/fs/pramfs/balloc.c	1970-01-01 01:00:00.000000000 +0100
++++ linux-3.5-rc2/fs/pramfs/balloc.c	2012-06-10 10:08:28.000000000 +0200
+@@ -0,0 +1,160 @@
 +/*
 + * BRIEF DESCRIPTION
 + *
-+ * File operations for files.
++ * The blocks allocation and deallocation routines.
 + *
 + * Copyright 2009-2011 Marco Stornelli <marco.stornelli@gmail.com>
 + * Copyright 2003 Sony Corporation
@@ -46,427 +46,148 @@ diff -Nurp linux-3.5-rc2-orig/fs/pramfs/file.c linux-3.5-rc2/fs/pramfs/file.c
 + */
 +
 +#include <linux/fs.h>
-+#include <linux/sched.h>
-+#include <linux/slab.h>
-+#include <linux/uio.h>
-+#include <linux/mm.h>
-+#include <linux/uaccess.h>
-+#include <linux/falloc.h>
++#include <linux/bitops.h>
 +#include "pram.h"
-+#include "acl.h"
-+#include "xip.h"
-+#include "xattr.h"
++
++void pram_bitmap_fill(unsigned long *dst, int nbits)
++{
++	size_t nlongs = BITS_TO_LONGS(nbits);
++	if (!small_const_nbits(nbits)) {
++		int len = (nlongs - 1) * sizeof(unsigned long);
++		memset(dst, 0xff,  len);
++	}
++	if (BITS_PER_LONG == 64)
++		dst[nlongs - 1] = cpu_to_le64(BITMAP_LAST_WORD_MASK(nbits));
++	else
++		dst[nlongs - 1] = cpu_to_le32(BITMAP_LAST_WORD_MASK(nbits));
++}
 +
 +/*
-+ * The following functions are helper routines to copy to/from
-+ * user space and iter over io vectors (mainly for readv/writev).
-+ * They are used in the direct IO path.
++ * This just marks in-use the blocks that make up the bitmap.
++ * The bitmap must be writeable before calling.
 + */
-+static size_t __pram_iov_copy_from(char *vaddr,
-+			const struct iovec *iov, size_t base, size_t bytes)
++void pram_init_bitmap(struct super_block *sb)
 +{
-+	size_t copied = 0, left = 0;
++	struct pram_super_block *ps = pram_get_super(sb);
++	unsigned long *bitmap = pram_get_bitmap(sb);
++	int blocks = be32_to_cpu(ps->s_bitmap_blocks);
 +
-+	while (bytes) {
-+		char __user *buf = iov->iov_base + base;
-+		int copy = min(bytes, iov->iov_len - base);
++	memset(bitmap, 0, blocks << sb->s_blocksize_bits);
 +
-+		base = 0;
-+		left = __copy_from_user(vaddr, buf, copy);
-+		copied += copy;
-+		bytes -= copy;
-+		vaddr += copy;
-+		iov++;
-+
-+		if (unlikely(left))
-+			break;
-+	}
-+	return copied - left;
++	pram_bitmap_fill(bitmap, blocks);
 +}
 +
-+static size_t __pram_iov_copy_to(char *vaddr,
-+			const struct iovec *iov, size_t base, size_t bytes)
++
++/* Free absolute blocknr */
++void pram_free_block(struct super_block *sb, unsigned long blocknr)
 +{
-+	size_t copied = 0, left = 0;
++	struct pram_super_block *ps;
++	u64 bitmap_block;
++	unsigned long bitmap_bnr;
++	void *bitmap;
++	void *bp;
 +
-+	while (bytes) {
-+		char __user *buf = iov->iov_base + base;
-+		int copy = min(bytes, iov->iov_len - base);
++	lock_super(sb);
 +
-+		base = 0;
-+		left = __copy_to_user(buf, vaddr, copy);
-+		copied += copy;
-+		bytes -= copy;
-+		vaddr += copy;
-+		iov++;
-+
-+		if (unlikely(left))
-+			break;
-+	}
-+	return copied - left;
-+}
-+
-+static size_t pram_iov_copy_from(void *to, struct iov_iter *i, size_t bytes)
-+{
-+	size_t copied;
-+
-+	if (likely(i->nr_segs == 1)) {
-+		int left;
-+		char __user *buf = i->iov->iov_base + i->iov_offset;
-+		left = __copy_from_user(to, buf, bytes);
-+		copied = bytes - left;
-+	} else {
-+		copied = __pram_iov_copy_from(to, i->iov, i->iov_offset, bytes);
-+	}
-+
-+	return copied;
-+}
-+
-+static size_t pram_iov_copy_to(void *from, struct iov_iter *i, size_t bytes)
-+{
-+	size_t copied;
-+
-+	if (likely(i->nr_segs == 1)) {
-+		int left;
-+		char __user *buf = i->iov->iov_base + i->iov_offset;
-+		left = __copy_to_user(buf, from, bytes);
-+		copied = bytes - left;
-+	} else {
-+		copied = __pram_iov_copy_to(from, i->iov, i->iov_offset, bytes);
-+	}
-+
-+	return copied;
-+}
-+
-+static size_t __pram_clear_user(const struct iovec *iov, size_t base,
-+				size_t bytes)
-+{
-+	size_t claened = 0, left = 0;
-+
-+	while (bytes) {
-+		char __user *buf = iov->iov_base + base;
-+		int clear = min(bytes, iov->iov_len - base);
-+
-+		base = 0;
-+		left = __clear_user(buf, clear);
-+		claened += clear;
-+		bytes -= clear;
-+		iov++;
-+
-+		if (unlikely(left))
-+			break;
-+	}
-+	return claened - left;
-+}
-+
-+static size_t pram_clear_user(struct iov_iter *i, size_t bytes)
-+{
-+	size_t clear;
-+
-+	if (likely(i->nr_segs == 1)) {
-+		int left;
-+		char __user *buf = i->iov->iov_base + i->iov_offset;
-+		left = __clear_user(buf, bytes);
-+		clear = bytes - left;
-+	} else {
-+		clear = __pram_clear_user(i->iov, i->iov_offset, bytes);
-+	}
-+
-+	return clear;
-+}
-+
-+static int pram_open_file(struct inode *inode, struct file *filp)
-+{
-+	filp->f_flags |= O_DIRECT;
-+	return generic_file_open(inode, filp);
-+}
-+
-+ssize_t pram_direct_IO(int rw, struct kiocb *iocb,
-+		   const struct iovec *iov,
-+		   loff_t offset, unsigned long nr_segs)
-+{
-+	struct file *file = iocb->ki_filp;
-+	struct inode *inode = file->f_mapping->host;
-+	struct super_block *sb = inode->i_sb;
-+	int progress = 0, hole = 0, alloc_once = 1;
-+	ssize_t retval = 0;
-+	void *tmp = NULL;
-+	unsigned long blocknr, blockoff, blocknr_start;
-+	struct iov_iter iter;
-+	unsigned int num_blocks;
-+	size_t length = iov_length(iov, nr_segs);
-+	loff_t size;
-+
++	bitmap = pram_get_bitmap(sb);
 +	/*
-+	 * If we are in the write path we are under i_mutex but no lock held
-+	 * in the read, so we need to be sync with truncate to avoid race
-+	 * conditions.
++	 * find the block within the bitmap that contains the inuse bit
++	 * for the block we need to free. We need to unlock this bitmap
++	 * block to clear the inuse bit.
 +	 */
-+	if (rw == READ)
-+		rcu_read_lock();
++	bitmap_bnr = blocknr >> (3 + sb->s_blocksize_bits);
++	bitmap_block = pram_get_block_off(sb, bitmap_bnr);
++	bp = pram_get_block(sb, bitmap_block);
 +
-+	size = i_size_read(inode);
++	pram_memunlock_block(sb, bp);
++	pram_clear_bit(blocknr, bitmap); /* mark the block free */
++	pram_memlock_block(sb, bp);
 +
-+	if (length < 0) {
-+		retval = -EINVAL;
-+		goto out;
-+	}
-+	if ((rw == READ) && (offset + length > size))
-+		length = size - offset;
-+	if (!length)
-+		goto out;
++	ps = pram_get_super(sb);
++	pram_memunlock_super(sb, ps);
 +
-+	/* find starting block number to access */
-+	blocknr = offset >> sb->s_blocksize_bits;
-+	/* find starting offset within starting block */
-+	blockoff = offset & (sb->s_blocksize - 1);
-+	/* find number of blocks to access */
-+	num_blocks = (blockoff + length + sb->s_blocksize - 1) >>
-+							sb->s_blocksize_bits;
-+	blocknr_start = blocknr;
++	if (blocknr < be32_to_cpu(ps->s_free_blocknr_hint))
++		ps->s_free_blocknr_hint = cpu_to_be32(blocknr);
++	be32_add_cpu(&ps->s_free_blocks_count, 1);
++	pram_memlock_super(sb, ps);
 +
-+	if (rw == WRITE) {
-+		/* prepare a temporary buffer to hold a user data block
-+		   for writing. */
-+		tmp = kmalloc(sb->s_blocksize, GFP_KERNEL);
-+		if (!tmp) {
-+			retval = -ENOMEM;
-+			goto out;
-+		}
-+	}
++	unlock_super(sb);
++}
 +
-+	iov_iter_init(&iter, iov, nr_segs, length, 0);
 +
-+	while (length) {
-+		int count;
-+		u8 *bp = NULL;
-+		u64 block = pram_find_data_block(inode, blocknr);
-+		if (!block) {
-+			if (alloc_once && rw == WRITE) {
-+				/*
-+				 * Allocate the data blocks starting from
-+				 * blocknr to the end.
-+				 */
-+				retval = pram_alloc_blocks(inode, blocknr,
-+							num_blocks - (blocknr -
-+								blocknr_start));
-+				if (retval)
-+					goto fail;
-+				/* retry....*/
-+				block = pram_find_data_block(inode, blocknr);
-+				BUG_ON(!block);
-+				alloc_once = 0;
-+			} else if (unlikely(rw == READ)) {
-+				/* We are falling in a hole */
-+				hole = 1;
-+				goto hole;
-+			}
-+		}
-+		bp = (u8 *)pram_get_block(sb, block);
-+		if (!bp) {
-+			retval = -EACCES;
++/*
++ * allocate a block and return it's absolute blocknr. Zeroes out the
++ * block if zero set.
++ */
++int pram_new_block(struct super_block *sb, unsigned long *blocknr, int zero)
++{
++	struct pram_super_block *ps;
++	u64 bitmap_block;
++	unsigned long bnr, bitmap_bnr;
++	int errval;
++	void *bitmap;
++	void *bp;
++
++	lock_super(sb);
++	ps = pram_get_super(sb);
++	bitmap = pram_get_bitmap(sb);
++
++	if (ps->s_free_blocks_count) {
++		/* find the oldest unused block */
++		bnr = pram_find_next_zero_bit(bitmap,
++					 be32_to_cpu(ps->s_blocks_count),
++					 be32_to_cpu(ps->s_free_blocknr_hint));
++
++		if (bnr < be32_to_cpu(ps->s_bitmap_blocks) ||
++				bnr >= be32_to_cpu(ps->s_blocks_count)) {
++			pram_dbg("no free blocks found!\n");
++			errval = -ENOSPC;
 +			goto fail;
 +		}
-+ hole:
-+		++blocknr;
 +
-+		count = blockoff + length > sb->s_blocksize ?
-+			sb->s_blocksize - blockoff : length;
-+
-+		if (rw == READ) {
-+			if (unlikely(hole)) {
-+				retval = pram_clear_user(&iter, count);
-+				if (retval != count) {
-+					retval = -EFAULT;
-+					goto fail;
-+				}
-+			} else {
-+				retval = pram_iov_copy_to(&bp[blockoff], &iter,
-+							  count);
-+				if (retval != count) {
-+					retval = -EFAULT;
-+					goto fail;
-+				}
-+			}
-+		} else {
-+			retval = pram_iov_copy_from(tmp, &iter, count);
-+			if (retval != count) {
-+				retval = -EFAULT;
-+				goto fail;
-+			}
-+
-+			pram_memunlock_block(inode->i_sb, bp);
-+			memcpy(&bp[blockoff], tmp, count);
-+			pram_memlock_block(inode->i_sb, bp);
-+		}
-+
-+		progress += count;
-+		iov_iter_advance(&iter, count);
-+		length -= count;
-+		blockoff = 0;
-+		hole = 0;
++		pram_memunlock_super(sb, ps);
++		be32_add_cpu(&ps->s_free_blocks_count, -1);
++		if (bnr < (be32_to_cpu(ps->s_blocks_count)-1))
++			ps->s_free_blocknr_hint = cpu_to_be32(bnr+1);
++		else
++			ps->s_free_blocknr_hint = 0;
++		pram_memlock_super(sb, ps);
++	} else {
++		pram_dbg("all blocks allocated\n");
++		errval = -ENOSPC;
++		goto fail;
 +	}
 +
-+	retval = progress;
 +	/*
-+	 * Check for the flag EOFBLOCKS is still valid after the extending
-+	 * write.
++	 * find the block within the bitmap that contains the inuse bit
++	 * for the unused block we just found. We need to unlock it to
++	 * set the inuse bit.
 +	 */
-+	if (rw == WRITE && (offset + length >= size))
-+		check_eof_blocks(inode, size + retval);
++	bitmap_bnr = bnr >> (3 + sb->s_blocksize_bits);
++	bitmap_block = pram_get_block_off(sb, bitmap_bnr);
++	bp = pram_get_block(sb, bitmap_block);
++
++	pram_memunlock_block(sb, bp);
++	pram_set_bit(bnr, bitmap); /* mark the new block in use */
++	pram_memlock_block(sb, bp);
++
++	if (zero) {
++		bp = pram_get_block(sb, pram_get_block_off(sb, bnr));
++		pram_memunlock_block(sb, bp);
++		memset(bp, 0, sb->s_blocksize);
++		pram_memlock_block(sb, bp);
++	}
++
++	*blocknr = bnr;
++	pram_dbg("allocated blocknr %lu", bnr);
++	errval = 0;
 + fail:
-+	kfree(tmp);
-+ out:
-+	if (rw == READ)
-+		rcu_read_unlock();
-+	return retval;
++	unlock_super(sb);
++	return errval;
 +}
 +
-+static int pram_check_flags(int flags)
++unsigned long pram_count_free_blocks(struct super_block *sb)
 +{
-+	if (!(flags & O_DIRECT))
-+		return -EINVAL;
-+
-+	return 0;
++	struct pram_super_block *ps = pram_get_super(sb);
++	return be32_to_cpu(ps->s_free_blocks_count);
 +}
-+
-+static long pram_fallocate(struct file *file, int mode, loff_t offset,
-+			   loff_t len)
-+{
-+	struct inode *inode = file->f_path.dentry->d_inode;
-+	long ret = 0;
-+	unsigned long blocknr, blockoff;
-+	int num_blocks, blocksize_mask;
-+	struct pram_inode *pi;
-+	loff_t new_size;
-+
-+	/* We only support the FALLOC_FL_KEEP_SIZE mode */
-+	if (mode & ~FALLOC_FL_KEEP_SIZE)
-+		return -EOPNOTSUPP;
-+
-+	if (S_ISDIR(inode->i_mode))
-+		return -ENODEV;
-+
-+	mutex_lock(&inode->i_mutex);
-+
-+	new_size = len + offset;
-+	if (!(mode & FALLOC_FL_KEEP_SIZE) && new_size > inode->i_size) {
-+		ret = inode_newsize_ok(inode, new_size);
-+		if (ret)
-+			goto out;
-+	}
-+
-+	blocksize_mask = (1 << inode->i_sb->s_blocksize_bits) - 1;
-+	blocknr = offset >> inode->i_sb->s_blocksize_bits;
-+	blockoff = offset & blocksize_mask;
-+	num_blocks = (blockoff + len + blocksize_mask) >>
-+						inode->i_sb->s_blocksize_bits;
-+	ret = pram_alloc_blocks(inode, blocknr, num_blocks);
-+	if (ret)
-+		goto out;
-+
-+	if (mode & FALLOC_FL_KEEP_SIZE) {
-+		pi = pram_get_inode(inode->i_sb, inode->i_ino);
-+		if (!pi) {
-+			ret = -EACCES;
-+			goto out;
-+		}
-+		pram_memunlock_inode(inode->i_sb, pi);
-+		pi->i_flags |= cpu_to_be32(PRAM_EOFBLOCKS_FL);
-+		pram_memlock_inode(inode->i_sb, pi);
-+	}
-+
-+	inode->i_mtime = inode->i_ctime = CURRENT_TIME_SEC;
-+	if (!(mode & FALLOC_FL_KEEP_SIZE) && new_size > inode->i_size)
-+		inode->i_size = new_size;
-+	ret = pram_update_inode(inode);
-+ out:
-+	mutex_unlock(&inode->i_mutex);
-+	return ret;
-+}
-+
-+loff_t pram_llseek(struct file *file, loff_t offset, int origin)
-+{
-+	struct inode *inode = file->f_path.dentry->d_inode;
-+	int retval;
-+
-+	if (origin != SEEK_DATA && origin != SEEK_HOLE)
-+		return generic_file_llseek(file, offset, origin);
-+
-+	mutex_lock(&inode->i_mutex);
-+	switch (origin) {
-+	case SEEK_DATA:
-+		retval = pram_find_region(inode, &offset, 0);
-+		if (retval) {
-+			mutex_unlock(&inode->i_mutex);
-+			return retval;
-+		}
-+		break;
-+	case SEEK_HOLE:
-+		retval = pram_find_region(inode, &offset, 1);
-+		if (retval) {
-+			mutex_unlock(&inode->i_mutex);
-+			return retval;
-+		}
-+		break;
-+	}
-+
-+	if ((offset < 0 && !(file->f_mode & FMODE_UNSIGNED_OFFSET)) ||
-+			offset > inode->i_sb->s_maxbytes) {
-+		mutex_unlock(&inode->i_mutex);
-+		return -EINVAL;
-+	}
-+
-+	if (offset != file->f_pos) {
-+		file->f_pos = offset;
-+		file->f_version = 0;
-+	}
-+
-+	mutex_unlock(&inode->i_mutex);
-+	return offset;
-+}
-+
-+const struct file_operations pram_file_operations = {
-+	.llseek		= pram_llseek,
-+	.read		= do_sync_read,
-+	.write		= do_sync_write,
-+	.aio_read	= generic_file_aio_read,
-+	.aio_write	= generic_file_aio_write,
-+	.mmap		= generic_file_readonly_mmap,
-+	.open		= pram_open_file,
-+	.fsync		= noop_fsync,
-+	.check_flags	= pram_check_flags,
-+	.unlocked_ioctl	= pram_ioctl,
-+	.splice_read	= generic_file_splice_read,
-+	.fallocate	= pram_fallocate,
-+#ifdef CONFIG_COMPAT
-+	.compat_ioctl	= pram_compat_ioctl,
-+#endif
-+};
-+
-+#ifdef CONFIG_PRAMFS_XIP
-+const struct file_operations pram_xip_file_operations = {
-+	.llseek		= pram_llseek,
-+	.read		= pram_xip_file_read,
-+	.write		= xip_file_write,
-+	.mmap		= pram_xip_file_mmap,
-+	.open		= generic_file_open,
-+	.fsync		= noop_fsync,
-+	.unlocked_ioctl	= pram_ioctl,
-+	.fallocate	= pram_fallocate,
-+#ifdef CONFIG_COMPAT
-+	.compat_ioctl	= pram_compat_ioctl,
-+#endif
-+};
-+#endif
-+
-+const struct inode_operations pram_file_inode_operations = {
-+#ifdef CONFIG_PRAMFS_XATTR
-+	.setxattr	= generic_setxattr,
-+	.getxattr	= generic_getxattr,
-+	.listxattr	= pram_listxattr,
-+	.removexattr	= generic_removexattr,
-+#endif
-+	.setattr	= pram_notify_change,
-+	.get_acl	= pram_get_acl,
-+};
