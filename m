@@ -1,81 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755010Ab2FJBbd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jun 2012 21:31:33 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:46297 "EHLO
+	id S1755154Ab2FJBze (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jun 2012 21:55:34 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:50925 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754919Ab2FJBa7 (ORCPT
+	with ESMTP id S1753936Ab2FJBzc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jun 2012 21:30:59 -0400
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: James.Bottomley@HansenPartnership.com, gregkh@linuxfoundation.org,
-        mdharm-usb@one-eyed-alien.net, stern@rowland.harvard.edu,
-        sshtylyov@mvista.com, bvanassche@acm.org
-Cc: linux-usb@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Pankaj Kumar <pankaj.km@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: [PATCH v3 3/3] usb: storage: update usb devices for write cache quirk in quirk list.
-Date: Sat,  9 Jun 2012 21:30:48 -0400
-Message-Id: <1339291848-2583-1-git-send-email-linkinjeon@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sat, 9 Jun 2012 21:55:32 -0400
+Date: Sat, 9 Jun 2012 18:55:30 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        mgorman@suse.de, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        dhillf@gmail.com, aarcange@redhat.com, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        Michal Hocko <mhocko@suse.cz>, Ying Han <yinghan@google.com>
+Subject: Re: [PATCH -V6 07/14] memcg: Add HugeTLB extension
+In-Reply-To: <87zk8cfu3v.fsf@skywalker.in.ibm.com>
+Message-ID: <alpine.DEB.2.00.1206091853580.7832@chino.kir.corp.google.com>
+References: <1334573091-18602-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1334573091-18602-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <alpine.DEB.2.00.1205241436180.24113@chino.kir.corp.google.com> <20120527202848.GC7631@skywalker.linux.vnet.ibm.com>
+ <87lik920h8.fsf@skywalker.in.ibm.com> <20120608160612.dea6d1ce.akpm@linux-foundation.org>User-Agent: Notmuch/0.11.1+346~g13d19c3 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu) <87zk8cfu3v.fsf@skywalker.in.ibm.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update information of Seagate Portable HDD and WD My Passport HDD in
-quirk list.
+On Sat, 9 Jun 2012, Aneesh Kumar K.V wrote:
 
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-Signed-off-by: Pankaj Kumar <pankaj.km@samsung.com>
-Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
----
- drivers/usb/storage/unusual_devs.h |   24 ++++++++++++++++++++++++
- 1 file changed, 24 insertions(+)
+> David Rientjes didn't like HugetTLB limit to be a memcg extension and
+> wanted this to be a separate controller. I posted a v7 version that did
+> HugeTLB limit as a separate controller and used page cgroup to track
+> HugeTLB cgroup. Kamezawa Hiroyuki didn't like the usage of page_cgroup
+> in HugeTLB controller( http://mid.gmane.org/4FCD648E.90709@jp.fujitsu.com )
+> 
 
-diff --git a/drivers/usb/storage/unusual_devs.h b/drivers/usb/storage/unusual_devs.h
-index 1719886..64f0369 100644
---- a/drivers/usb/storage/unusual_devs.h
-+++ b/drivers/usb/storage/unusual_devs.h
-@@ -1267,6 +1267,18 @@ UNUSUAL_DEV( 0x0af0, 0xd357, 0x0000, 0x0000,
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
- 		0 ),
- 
-+/* Reported by Namjae Jeon <namjae.jeon@samsung.com>
-+ * Even though write cache is enabled by default,
-+ * SCSI driver assume that cache is not enabled
-+ * which in turn might lead to the loss of data
-+ * since data still will be in cache.
-+ * So this entry is needed for assuming that cache is enabled.
-+ */
-+UNUSUAL_DEV(0x0bc2, 0x2300, 0x0000, 0x9999,
-+		"Seagate",
-+		"Portable HDD",
-+		USB_SC_DEVICE, USB_PR_DEVICE, NULL, US_FL_WRITE_CACHE),
-+
- /* Reported by Ben Efros <ben@pc-doctor.com> */
- UNUSUAL_DEV( 0x0bc2, 0x3010, 0x0000, 0x0000,
- 		"Seagate",
-@@ -1468,6 +1480,18 @@ UNUSUAL_DEV(  0x1058, 0x0704, 0x0000, 0x9999,
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
- 		US_FL_SANE_SENSE),
- 
-+/* Reported by Namjae Jeon <namjae.jeon@samsung.com>
-+ * Even though write cache is enabled by default,
-+ * SCSI driver assume that cache is not enabled
-+ * which in turn might lead to the loss of data
-+ * since data still will be in cache.
-+ * So this entry is needed for assuming that cache is enabled.
-+ */
-+UNUSUAL_DEV(0x1058, 0x070a, 0x0000, 0x9999,
-+		"Western Digital",
-+		"My Passport HDD",
-+		USB_SC_DEVICE, USB_PR_DEVICE, NULL, US_FL_WRITE_CACHE),
-+
- /* Reported by Fabio Venturi <f.venturi@tdnet.it>
-  * The device reports a vendor-specific bDeviceClass.
-  */
--- 
-1.7.9.5
+Yes, and thank you very much for working on v8 to remove the dependency on 
+page_cgroup and to seperate this out.  I think it will benefit users who 
+don't want to enable all of memcg but still want to account and restrict 
+hugetlb page usage, and I think the code seperation is much cleaner 
+internally.
 
+I'll review that patchset and suggest that the old hugetlb extension in 
+-mm be dropped in the interim.
