@@ -1,154 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755420Ab2FJCDl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jun 2012 22:03:41 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:48029 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754922Ab2FJCDj (ORCPT
+	id S1755526Ab2FJCEE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jun 2012 22:04:04 -0400
+Received: from smtp.syd.comcen.com.au ([203.23.236.77]:3964 "EHLO
+	smtp.syd.comcen.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754923Ab2FJCEC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jun 2012 22:03:39 -0400
-Date: Sat, 9 Jun 2012 22:03:31 -0400
-From: Konrad Rzeszutek Wilk <konrad@darnok.org>
-To: Andrea Arcangeli <aarcange@redhat.com>, drjones@redhat.com
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg KH <gregkh@linuxfoundation.org>, 676360@bugs.debian.org,
-        xen-devel@lists.xensource.com, Jonathan Nieder <jrnieder@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        "linux-mm@kvack.org Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        stable@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
-        Ulrich Obergfell <uobergfe@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Hugh Dickins <hughd@google.com>, Larry Woodman <lwoodman@redhat.com>,
-        Petr Matousek <pmatouse@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Jan Beulich <jbeulich@suse.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Subject: Re: [PATCH] thp: avoid atomic64_read in pmd_read_atomic for 32bit
- PAE\
-Message-ID: <20120610020331.GA26100@localhost.localdomain>
-References: <20120607190414.GF21339@redhat.com>
- <1339102833-12358-2-git-send-email-aarcange@redhat.com>
+	Sat, 9 Jun 2012 22:04:02 -0400
+Message-ID: <4FD40035.2020200@spin.net.au>
+Date: Sun, 10 Jun 2012 12:02:29 +1000
+From: Chris Jones <chrisjones@spin.net.au>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120422 Firefox/12.0 SeaMonkey/2.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339102833-12358-2-git-send-email-aarcange@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org
+Subject: gcc compiler modification to cater for new programming language
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-comcen-MailScanner-Information: Please contact the ISP for more information
+X-comcen-MailScanner: Found to be clean
+X-comcen-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
+	score=-2.13, required 4, AWL 0.37, BAYES_00 -2.60, RDNS_NONE 0.10)
+X-comcen-MailScanner-From: chrisjones@spin.net.au
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 07, 2012 at 11:00:33PM +0200, Andrea Arcangeli wrote:
-> In the x86 32bit PAE CONFIG_TRANSPARENT_HUGEPAGE=y case while holding
-> the mmap_sem for reading, cmpxchg8b cannot be used to read pmd
-> contents under Xen.
-> 
-> So instead of dealing only with "consistent" pmdvals in
-> pmd_none_or_trans_huge_or_clear_bad() (which would be conceptually
-> simpler) we let pmd_none_or_trans_huge_or_clear_bad() deal with pmdvals
-> where the low 32bit and high 32bit could be inconsistent (to avoid
-> having to use cmpxchg8b).
+Is it possible to modify the source code of gcc to enable to compilation 
+of a completely new programming language, as yet unrecognized? How much 
+of a big job would I be looking at for such a task?
 
-<nods>
-> 
-> The only guarantee we get from pmd_read_atomic is that if the low part
-> of the pmd was found null, the high part will be null too (so the pmd
-> will be considered unstable). And if the low part of the pmd is found
-> "stable" later, then it means the whole pmd was read atomically
-> (because after a pmd is stable, neither MADV_DONTNEED nor page faults
-> can alter it anymore, and we read the high part after the low part).
-> 
-> In the 32bit PAE x86 case, it is enough to read the low part of the
-> pmdval atomically to declare the pmd as "stable" and that's true for
-> THP and no THP, furthermore in the THP case we also have a barrier()
-> that will prevent any inconsistent pmdvals to be cached by a later
-> re-read of the *pmd.
 
-Nice. Andrew, any chane you could test this patch on the affected
-Xen hypervisors? Was it as easy to reproduce this on a RHEL5 (U1?)
-hypervisor or is it really only on Linode and Amazon EC2?
+Regards
 
-> 
-> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-> ---
->  arch/x86/include/asm/pgtable-3level.h |   30 +++++++++++++++++-------------
->  include/asm-generic/pgtable.h         |   10 ++++++++++
->  2 files changed, 27 insertions(+), 13 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/pgtable-3level.h b/arch/x86/include/asm/pgtable-3level.h
-> index 43876f1..cb00ccc 100644
-> --- a/arch/x86/include/asm/pgtable-3level.h
-> +++ b/arch/x86/include/asm/pgtable-3level.h
-> @@ -47,16 +47,26 @@ static inline void native_set_pte(pte_t *ptep, pte_t pte)
->   * they can run pmd_offset_map_lock or pmd_trans_huge or other pmd
->   * operations.
->   *
-> - * Without THP if the mmap_sem is hold for reading, the
-> - * pmd can only transition from null to not null while pmd_read_atomic runs.
-> - * So there's no need of literally reading it atomically.
-> + * Without THP if the mmap_sem is hold for reading, the pmd can only
-> + * transition from null to not null while pmd_read_atomic runs. So
-> + * we can always return atomic pmd values with this function.
->   *
->   * With THP if the mmap_sem is hold for reading, the pmd can become
-> - * THP or null or point to a pte (and in turn become "stable") at any
-> - * time under pmd_read_atomic, so it's mandatory to read it atomically
-> - * with cmpxchg8b.
-> + * trans_huge or none or point to a pte (and in turn become "stable")
-> + * at any time under pmd_read_atomic. We could read it really
-> + * atomically here with a atomic64_read for the THP enabled case (and
-> + * it would be a whole lot simpler), but to avoid using cmpxchg8b we
-> + * only return an atomic pmdval if the low part of the pmdval is later
-> + * found stable (i.e. pointing to a pte). And we're returning a none
-> + * pmdval if the low part of the pmd is none. In some cases the high
-> + * and low part of the pmdval returned may not be consistent if THP is
-> + * enabled (the low part may point to previously mapped hugepage,
-> + * while the high part may point to a more recently mapped hugepage),
-> + * but pmd_none_or_trans_huge_or_clear_bad() only needs the low part
-> + * of the pmd to be read atomically to decide if the pmd is unstable
-> + * or not, with the only exception of when the low part of the pmd is
-> + * zero in which case we return a none pmd.
->   */
-> -#ifndef CONFIG_TRANSPARENT_HUGEPAGE
->  static inline pmd_t pmd_read_atomic(pmd_t *pmdp)
->  {
->  	pmdval_t ret;
-> @@ -74,12 +84,6 @@ static inline pmd_t pmd_read_atomic(pmd_t *pmdp)
->  
->  	return (pmd_t) { ret };
->  }
-> -#else /* CONFIG_TRANSPARENT_HUGEPAGE */
-> -static inline pmd_t pmd_read_atomic(pmd_t *pmdp)
-> -{
-> -	return (pmd_t) { atomic64_read((atomic64_t *)pmdp) };
-> -}
-> -#endif /* CONFIG_TRANSPARENT_HUGEPAGE */
->  
->  static inline void native_set_pte_atomic(pte_t *ptep, pte_t pte)
->  {
-> diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
-> index ae39c4b..0ff87ec 100644
-> --- a/include/asm-generic/pgtable.h
-> +++ b/include/asm-generic/pgtable.h
-> @@ -484,6 +484,16 @@ static inline int pmd_none_or_trans_huge_or_clear_bad(pmd_t *pmd)
->  	/*
->  	 * The barrier will stabilize the pmdval in a register or on
->  	 * the stack so that it will stop changing under the code.
-> +	 *
-> +	 * When CONFIG_TRANSPARENT_HUGEPAGE=y on x86 32bit PAE,
-> +	 * pmd_read_atomic is allowed to return a not atomic pmdval
-> +	 * (for example pointing to an hugepage that has never been
-> +	 * mapped in the pmd). The below checks will only care about
-> +	 * the low part of the pmd with 32bit PAE x86 anyway, with the
-> +	 * exception of pmd_none(). So the important thing is that if
-> +	 * the low part of the pmd is found null, the high part will
-> +	 * be also null or the pmd_none() check below would be
-> +	 * confused.
->  	 */
->  #ifdef CONFIG_TRANSPARENT_HUGEPAGE
->  	barrier();
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
+-- 
+		Chris Jones
+
+OpenSUSE Linux x86_64 (PC)|Android (Smartphone)|Windows x86 (Gaming!)
+Kernel developer|Lead Developer of SDL|Lead Developer of Nest Linux|Gamer and Emulator nut|Web Services|Digital Imaging Services
+Controllers: Logitech Precision|PS3 controller|XB360 controller|Logitech Attack 3 j/stick
+Emulators: Fusion|Gens|ZSNES|Project64|PCSX-R|Stella|WinVICE|WinUAE
+
