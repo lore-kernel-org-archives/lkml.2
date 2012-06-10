@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755929Ab2FJJWt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jun 2012 05:22:49 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:47602 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754626Ab2FJJWr (ORCPT
+	id S1756048Ab2FJJXD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jun 2012 05:23:03 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:50509 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755375Ab2FJJXA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jun 2012 05:22:47 -0400
-Message-ID: <4FD465E1.4060808@gmail.com>
-Date: Sun, 10 Jun 2012 11:16:17 +0200
+	Sun, 10 Jun 2012 05:23:00 -0400
+Message-ID: <4FD465EE.8060603@gmail.com>
+Date: Sun, 10 Jun 2012 11:16:30 +0200
 From: Marco Stornelli <marco.stornelli@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120421 Thunderbird/12.0
 MIME-Version: 1.0
-To: Linux FS Devel <linux-fsdevel@vger.kernel.org>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 13/17] pramfs: ext attributes desc tree
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+CC: Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Subject: [PATCH 14/17] pramfs: write protection
 Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -23,240 +23,209 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Marco Stornelli <marco.stornelli@gmail.com>
 
-Extended attributes block descriptors tree.
+Memory write protection.
 
 Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
 ---
-diff -Nurp linux-3.5-rc2-orig/fs/pramfs/desctree.c linux-3.5-rc2/fs/pramfs/desctree.c
---- linux-3.5-rc2-orig/fs/pramfs/desctree.c	1970-01-01 01:00:00.000000000 +0100
-+++ linux-3.5-rc2/fs/pramfs/desctree.c	2012-06-10 10:08:28.000000000 +0200
-@@ -0,0 +1,181 @@
+diff -Nurp linux-3.5-rc2-orig/fs/pramfs/wprotect.c linux-3.5-rc2/fs/pramfs/wprotect.c
+--- linux-3.5-rc2-orig/fs/pramfs/wprotect.c	1970-01-01 01:00:00.000000000 +0100
++++ linux-3.5-rc2/fs/pramfs/wprotect.c	2012-06-10 10:08:28.000000000 +0200
+@@ -0,0 +1,41 @@
 +/*
 + * BRIEF DESCRIPTION
 + *
-+ * Extended attributes block descriptors tree.
++ * Write protection for the filesystem pages.
 + *
-+ * Copyright 2010-2011 Marco Stornelli <marco.stornelli@gmail.com>
-+ *
++ * Copyright 2009-2011 Marco Stornelli <marco.stornelli@gmail.com>
++ * Copyright 2003 Sony Corporation
++ * Copyright 2003 Matsushita Electric Industrial Co., Ltd.
++ * 2003-2004 (c) MontaVista Software, Inc. , Steve Longerbeam
 + * This file is licensed under the terms of the GNU General Public
 + * License version 2. This program is licensed "as is" without any
 + * warranty of any kind, whether express or implied.
 + */
 +
-+#include <linux/spinlock.h>
-+#include "desctree.h"
++#include <linux/module.h>
++#include <linux/fs.h>
++#include <linux/mm.h>
++#include <linux/io.h>
 +#include "pram.h"
 +
-+/* xblock_desc_init_always()
-+ *
-+ * These are initializations that need to be done on every
-+ * descriptor allocation as the fields are not initialised
-+ * by slab allocation.
-+ */
-+void xblock_desc_init_always(struct pram_xblock_desc *desc)
++DEFINE_SPINLOCK(writeable_lock);
++
++void pram_writeable(void *vaddr, unsigned long size, int rw)
 +{
-+	atomic_set(&desc->refcount, 0);
-+	desc->blocknr = 0;
-+	desc->flags = 0;
++	int ret = 0;
++	unsigned long nrpages = size >> PAGE_SHIFT;
++	unsigned long addr = (unsigned long)vaddr;
++
++	/* Page aligned */
++	addr &= PAGE_MASK;
++
++	if (size & (PAGE_SIZE - 1))
++		nrpages++;
++
++	if (rw)
++		ret = set_memory_rw(addr, nrpages);
++	else
++		ret = set_memory_ro(addr, nrpages);
++
++	BUG_ON(ret);
 +}
-+
-+/* xblock_desc_init_once()
-+ *
-+ * These are initializations that only need to be done
-+ * once, because the fields are idempotent across use
-+ * of the descriptor, so let the slab aware of that.
-+ */
-+void xblock_desc_init_once(struct pram_xblock_desc *desc)
-+{
-+	mutex_init(&desc->lock);
-+}
-+
-+/* __insert_xblock_desc()
-+ *
-+ * Insert a new descriptor in the tree.
-+ */
-+static void __insert_xblock_desc(struct pram_sb_info *sbi,
-+				 unsigned long blocknr, struct rb_node *node)
-+{
-+	struct rb_node **p = &(sbi->desc_tree.rb_node);
-+	struct rb_node *parent = NULL;
-+	struct pram_xblock_desc *desc;
-+
-+	while (*p) {
-+		parent = *p;
-+		desc = rb_entry(parent, struct pram_xblock_desc, node);
-+
-+		if (blocknr < desc->blocknr)
-+			p = &(*p)->rb_left;
-+		else if (blocknr > desc->blocknr)
-+			p = &(*p)->rb_right;
-+		else
-+			/* Oops...an other descriptor for the same block ? */
-+			BUG();
-+	}
-+
-+	rb_link_node(node, parent, p);
-+	rb_insert_color(node, &sbi->desc_tree);
-+}
-+
-+void insert_xblock_desc(struct pram_sb_info *sbi, struct pram_xblock_desc *desc)
-+{
-+	spin_lock(&sbi->desc_tree_lock);
-+	__insert_xblock_desc(sbi, desc->blocknr, &desc->node);
-+	spin_unlock(&sbi->desc_tree_lock);
-+};
-+
-+/* __lookup_xblock_desc()
-+ *
-+ * Search an extended attribute descriptor in the tree via the
-+ * block number. It returns the descriptor if it's found or
-+ * NULL. If not found it creates a new descriptor if create is not 0.
-+ */
-+static struct pram_xblock_desc *__lookup_xblock_desc(struct pram_sb_info *sbi,
-+					    unsigned long blocknr,
-+					    struct kmem_cache *cache,
-+					    int create)
-+{
-+	struct rb_node *n = sbi->desc_tree.rb_node;
-+	struct pram_xblock_desc *desc = NULL;
-+
-+	while (n) {
-+		desc = rb_entry(n, struct pram_xblock_desc, node);
-+
-+		if (blocknr < desc->blocknr)
-+			n = n->rb_left;
-+		else if (blocknr > desc->blocknr)
-+			n = n->rb_right;
-+		else {
-+			atomic_inc(&desc->refcount);
-+			goto out;
-+		}
-+	}
-+
-+	/* not found */
-+	if (create) {
-+		desc = kmem_cache_alloc(cache, GFP_NOFS);
-+		if (!desc)
-+			return ERR_PTR(-ENOMEM);
-+		xblock_desc_init_always(desc);
-+		atomic_set(&desc->refcount, 1);
-+		desc->blocknr = blocknr;
-+		__insert_xblock_desc(sbi, desc->blocknr, &desc->node);
-+	}
-+out:
-+	return desc;
-+}
-+
-+struct pram_xblock_desc *lookup_xblock_desc(struct pram_sb_info *sbi,
-+					    unsigned long blocknr,
-+					    struct kmem_cache *cache,
-+					    int create)
-+{
-+	struct pram_xblock_desc *desc = NULL;
-+
-+	spin_lock(&sbi->desc_tree_lock);
-+	desc = __lookup_xblock_desc(sbi, blocknr, cache, create);
-+	spin_unlock(&sbi->desc_tree_lock);
-+	return desc;
-+}
-+
-+/* put_xblock_desc()
-+ *
-+ * Decrement the reference count and if it reaches zero and the
-+ * desciptor has been marked to be free, then we free it.
-+ * It returns 0 if the descriptor has been deleted and 1 otherwise.
-+ */
-+int put_xblock_desc(struct pram_sb_info *sbi, struct pram_xblock_desc *desc)
-+{
-+	int ret = 1;
-+	if (!desc)
-+		return ret;
-+
-+	if (atomic_dec_and_lock(&desc->refcount, &sbi->desc_tree_lock)) {
-+		if (test_bit(FREEING, &desc->flags)) {
-+			rb_erase(&desc->node, &sbi->desc_tree);
-+			pram_dbg("erasing desc for block %lu\n", desc->blocknr);
-+			ret = 0;
-+		}
-+		spin_unlock(&sbi->desc_tree_lock);
-+	}
-+	return ret;
-+};
-+
-+/* mark_free_desc()
-+ *
-+ * Mark free a descriptor. The descriptor will be deleted later in the
-+ * put_xblock_desc().
-+ */
-+void mark_free_desc(struct pram_xblock_desc *desc)
-+{
-+	set_bit(FREEING, &desc->flags);
-+}
-+
-+/* erase_tree()
-+ *
-+ * Free all objects in the tree.
-+ */
-+void erase_tree(struct pram_sb_info *sbi, struct kmem_cache *cachep)
-+{
-+	struct rb_node *n;
-+	struct pram_xblock_desc *desc;
-+
-+	spin_lock(&sbi->desc_tree_lock);
-+	n = rb_first(&sbi->desc_tree);
-+	while (n) {
-+		desc = rb_entry(n, struct pram_xblock_desc, node);
-+		rb_erase(n, &sbi->desc_tree);
-+		kmem_cache_free(cachep, desc);
-+		n = rb_next(n);
-+	}
-+	spin_unlock(&sbi->desc_tree_lock);
-+}
-diff -Nurp linux-3.5-rc2-orig/fs/pramfs/desctree.h linux-3.5-rc2/fs/pramfs/desctree.h
---- linux-3.5-rc2-orig/fs/pramfs/desctree.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-3.5-rc2/fs/pramfs/desctree.h	2012-06-10 10:08:28.000000000 +0200
-@@ -0,0 +1,44 @@
+diff -Nurp linux-3.5-rc2-orig/fs/pramfs/wprotect.h linux-3.5-rc2/fs/pramfs/wprotect.h
+--- linux-3.5-rc2-orig/fs/pramfs/wprotect.h	1970-01-01 01:00:00.000000000 +0100
++++ linux-3.5-rc2/fs/pramfs/wprotect.h	2012-06-10 10:08:28.000000000 +0200
+@@ -0,0 +1,153 @@
 +/*
 + * BRIEF DESCRIPTION
 + *
-+ * Extended attributes block descriptors tree.
++ * Memory protection definitions for the PRAMFS filesystem.
 + *
 + * Copyright 2010-2011 Marco Stornelli <marco.stornelli@gmail.com>
-+ *
 + * This file is licensed under the terms of the GNU General Public
 + * License version 2. This program is licensed "as is" without any
 + * warranty of any kind, whether express or implied.
 + */
 +
-+#include <linux/atomic.h>
-+#include <linux/slab.h>
-+#include "pram.h"
++#ifndef __WPROTECT_H
++#define __WPROTECT_H
 +
-+struct pram_xblock_desc {
-+#define FREEING (1UL << 1)
-+	unsigned long flags;	/* descriptor flags */
-+	atomic_t refcount;	/* users count of this descriptor */
-+	unsigned long blocknr;	/* absolute block number */
-+	struct mutex lock;	/* block lock */
-+	struct rb_node node;	/* node in the rb tree */
-+};
++#include <linux/pram_fs.h>
 +
-+extern struct pram_xblock_desc *lookup_xblock_desc(struct pram_sb_info *sbi,
-+						   unsigned long blocknr,
-+						   struct kmem_cache *, int);
-+extern void insert_xblock_desc(struct pram_sb_info *sbi,
-+			       struct pram_xblock_desc *desc);
-+extern void mark_free_desc(struct pram_xblock_desc *desc);
-+extern int put_xblock_desc(struct pram_sb_info *sbi,
-+			   struct pram_xblock_desc *desc);
-+extern void xblock_desc_init_always(struct pram_xblock_desc *desc);
-+extern void xblock_desc_init_once(struct pram_xblock_desc *desc);
-+extern void erase_tree(struct pram_sb_info *sbi,
-+		       struct kmem_cache *);
-+
-+static inline void xblock_desc_init(struct pram_xblock_desc *desc)
++/* pram_memunlock_super() before calling! */
++static inline void pram_sync_super(struct pram_super_block *ps)
 +{
-+	xblock_desc_init_always(desc);
-+	xblock_desc_init_once(desc);
-+};
++	u16 crc = 0;
++	ps->s_wtime = cpu_to_be32(get_seconds());
++	ps->s_sum = 0;
++	crc = crc16(~0, (__u8 *)ps + sizeof(__be16), PRAM_SB_SIZE -
++								sizeof(__be16));
++	ps->s_sum = cpu_to_be16(crc);
++	/* Keep sync redundant super block */
++	memcpy((void *)ps + PRAM_SB_SIZE, (void *)ps, PRAM_SB_SIZE);
++}
 +
++/* pram_memunlock_inode() before calling! */
++static inline void pram_sync_inode(struct pram_inode *pi)
++{
++	u16 crc = 0;
++	pi->i_sum = 0;
++	crc = crc16(~0, (__u8 *)pi + sizeof(__be16), PRAM_INODE_SIZE -
++								sizeof(__be16));
++	pi->i_sum = cpu_to_be16(crc);
++}
++
++#ifdef CONFIG_PRAMFS_WRITE_PROTECT
++extern void pram_writeable(void *vaddr, unsigned long size, int rw);
++extern spinlock_t writeable_lock;
++static inline int pram_is_protected(struct super_block *sb)
++{
++	struct pram_sb_info *sbi = (struct pram_sb_info *)sb->s_fs_info;
++	return sbi->s_mount_opt & PRAM_MOUNT_PROTECT;
++}
++
++static inline void __pram_memunlock_range(void *p, unsigned long len)
++{
++	/*
++	 * NOTE: Ideally we should lock all the kernel to be memory safe
++	 * and avoid to write in the protected memory,
++	 * obviously it's not possible, so we only serialize
++	 * the operations at fs level. We can't disable the interrupts
++	 * because we could have a deadlock in this path.
++	 */
++	spin_lock(&writeable_lock);
++	pram_writeable(p, len, 1);
++}
++
++static inline void __pram_memlock_range(void *p, unsigned long len)
++{
++	pram_writeable(p, len, 0);
++	spin_unlock(&writeable_lock);
++}
++
++static inline void pram_memunlock_range(struct super_block *sb, void *p,
++					unsigned long len)
++{
++	if (pram_is_protected(sb))
++		__pram_memunlock_range(p, len);
++}
++
++static inline void pram_memlock_range(struct super_block *sb, void *p,
++					unsigned long len)
++{
++	if (pram_is_protected(sb))
++		__pram_memlock_range(p, len);
++}
++
++static inline void pram_memunlock_super(struct super_block *sb,
++					struct pram_super_block *ps)
++{
++	if (pram_is_protected(sb))
++		__pram_memunlock_range(ps, PRAM_SB_SIZE);
++}
++
++static inline void pram_memlock_super(struct super_block *sb,
++					struct pram_super_block *ps)
++{
++	pram_sync_super(ps);
++	if (pram_is_protected(sb))
++		__pram_memlock_range(ps, PRAM_SB_SIZE);
++}
++
++static inline void pram_memunlock_inode(struct super_block *sb,
++					struct pram_inode *pi)
++{
++	if (pram_is_protected(sb))
++		__pram_memunlock_range(pi, PRAM_SB_SIZE);
++}
++
++static inline void pram_memlock_inode(struct super_block *sb,
++					struct pram_inode *pi)
++{
++	pram_sync_inode(pi);
++	if (pram_is_protected(sb))
++		__pram_memlock_range(pi, PRAM_SB_SIZE);
++}
++
++static inline void pram_memunlock_block(struct super_block *sb,
++					void *bp)
++{
++	if (pram_is_protected(sb))
++		__pram_memunlock_range(bp, sb->s_blocksize);
++}
++
++static inline void pram_memlock_block(struct super_block *sb,
++					void *bp)
++{
++	if (pram_is_protected(sb))
++		__pram_memlock_range(bp, sb->s_blocksize);
++}
++
++#else
++#define pram_is_protected(sb)	0
++#define pram_writeable(vaddr, size, rw) do {} while (0)
++static inline void pram_memunlock_range(struct super_block *sb, void *p,
++					unsigned long len) {}
++static inline void pram_memlock_range(struct super_block *sb, void *p,
++					unsigned long len) {}
++static inline void pram_memunlock_super(struct super_block *sb,
++					struct pram_super_block *ps) {}
++static inline void pram_memlock_super(struct super_block *sb,
++					struct pram_super_block *ps)
++{
++	pram_sync_super(ps);
++}
++static inline void pram_memunlock_inode(struct super_block *sb,
++					struct pram_inode *pi) {}
++static inline void pram_memlock_inode(struct super_block *sb,
++					struct pram_inode *pi)
++{
++	pram_sync_inode(pi);
++}
++static inline void pram_memunlock_block(struct super_block *sb,
++					void *bp) {}
++static inline void pram_memlock_block(struct super_block *sb,
++					void *bp) {}
++
++#endif /* CONFIG PRAMFS_WRITE_PROTECT */
++#endif
