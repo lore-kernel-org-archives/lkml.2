@@ -1,48 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751126Ab2FJEaQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jun 2012 00:30:16 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:60548 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750796Ab2FJEaO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jun 2012 00:30:14 -0400
+	id S1751316Ab2FJEgt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jun 2012 00:36:49 -0400
+Received: from mga01.intel.com ([192.55.52.88]:40950 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750845Ab2FJEgs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Jun 2012 00:36:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="163698501"
+Date: Sun, 10 Jun 2012 12:36:41 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Wanpeng Li <liwp.linux@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Johannes Weiner <jweiner@redhat.com>, linux-mm@kvack.org,
+        Gavin Shan <shangw@linux.vnet.ibm.com>,
+        Wanpeng Li <liwp@linux.vnet.ibm.com>
+Subject: Re: [PATCH] page-writeback.c: fix update bandwidth time judgment
+ error
+Message-ID: <20120610043641.GA10355@localhost>
+References: <1339302005-366-1-git-send-email-liwp.linux@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <4FD39A7F.9020106@mvista.com>
-References: <CANc+2y48M+K4jvGEes_srYO7rCQcPt4pvcxcvm-Hd+7kKJr6BQ@mail.gmail.com>
-	<CAHkwNT=3dGTZTDWi+r7m=K=Pqgv6Txi-xKcpN_pNUJ_WbUaD4w@mail.gmail.com>
-	<4FD39A7F.9020106@mvista.com>
-Date: Sun, 10 Jun 2012 10:00:14 +0530
-Message-ID: <CAHkwNT=DLCm_gfubGV=_SahM5njpA=Z_miA=SEkVeYA9cHMdmA@mail.gmail.com>
-Subject: Re: Break point not hit while debugging linux kernel with kgdb
-From: Anil Nair <anilcoll90@gmail.com>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-Cc: prasannatsmkumar <prasannatsmkumar@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339302005-366-1-git-send-email-liwp.linux@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Sergei,
+Wanpeng,
 
-On Sun, Jun 10, 2012 at 12:18 AM, Sergei Shtylyov <sshtylyov@mvista.com> wrote:
+Sorry this I won't take this: it don't really improve anything.  Even
+with the changed test, the real intervals are still some random values
+above (and not far away from) 200ms.. We are saying about 200ms
+intervals just for convenience.
 
->   Yeah, KGDB was accepted into kernel exactly for more "poorly fixed
-> patches" to appear. :-)
+Thanks,
+Fengguang
 
-I was under the impression that maintainers would never recommend
-kgdb, so never learned to use it.
-If you could guide me and Prasanna on how to use kgdb that would be
-helpful :). If you were saying it sarcastically, then i failed to
-understand it . :P.
-
->> You have to use gdbserver
->   gdbserver is only good for debugging the applications.
-
-I never knew that..!.
-
--- 
-Regards,
-Anil Nair
+On Sun, Jun 10, 2012 at 12:20:05PM +0800, Wanpeng Li wrote:
+> From: Wanpneg Li <liwp@linux.vnet.ibm.com>
+> 
+> Since bdi_update_bandwidth function  should estimate write bandwidth at 200ms intervals,
+> so the time is bdi->bw_time_stamp + BANDWIDTH_INTERVAL == jiffies, but
+> if use time_is_after_eq_jiffies intervals will be bdi->bw_time_stamp +
+> BANDWIDTH_INTERVAL + 1.
+> 
+> Signed-off-by: Wanpeng Li <liwp@linux.vnet.ibm.com>
+> ---
+>  mm/page-writeback.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+> index c833bf0..099e225 100644
+> --- a/mm/page-writeback.c
+> +++ b/mm/page-writeback.c
+> @@ -1032,7 +1032,7 @@ static void bdi_update_bandwidth(struct backing_dev_info *bdi,
+>  				 unsigned long bdi_dirty,
+>  				 unsigned long start_time)
+>  {
+> -	if (time_is_after_eq_jiffies(bdi->bw_time_stamp + BANDWIDTH_INTERVAL))
+> +	if (time_is_after_jiffies(bdi->bw_time_stamp + BANDWIDTH_INTERVAL))
+>  		return;
+>  	spin_lock(&bdi->wb.list_lock);
+>  	__bdi_update_bandwidth(bdi, thresh, bg_thresh, dirty,
+> -- 
+> 1.7.9.5
