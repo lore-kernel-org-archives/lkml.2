@@ -1,233 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751986Ab2FJGDd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jun 2012 02:03:33 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:34055 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750852Ab2FJGDb (ORCPT
+	id S1751660Ab2FJGfW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jun 2012 02:35:22 -0400
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:54650 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750895Ab2FJGfV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jun 2012 02:03:31 -0400
-From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
-        JJ Ding <dgdunix@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: [PATCH] input: gpio_keys_polled: convert to dt
-Date: Sun, 10 Jun 2012 03:02:58 -0300
-Message-Id: <1339308178-10807-1-git-send-email-aletes.xgr@gmail.com>
-X-Mailer: git-send-email 1.7.10
+	Sun, 10 Jun 2012 02:35:21 -0400
+MIME-Version: 1.0
+In-Reply-To: <4FD2C6C5.1070900@linaro.org>
+References: <1338575387-26972-1-git-send-email-john.stultz@linaro.org>
+	<1338575387-26972-4-git-send-email-john.stultz@linaro.org>
+	<4FC9235F.5000402@gmail.com>
+	<4FC92E30.4000906@linaro.org>
+	<4FC9360B.4020401@gmail.com>
+	<4FC937AD.8040201@linaro.org>
+	<4FC9438B.1000403@gmail.com>
+	<4FC94F61.20305@linaro.org>
+	<4FCFB4F6.6070308@gmail.com>
+	<4FCFEE36.3010902@linaro.org>
+	<CAO6Zf6D++8hOz19BmUwQ8iwbQknQRNsF4npP4r-830j04vbj=g@mail.gmail.com>
+	<4FD13C30.2030401@linux.vnet.ibm.com>
+	<4FD16B6E.8000307@linaro.org>
+	<4FD1848B.7040102@gmail.com>
+	<4FD2C6C5.1070900@linaro.org>
+Date: Sun, 10 Jun 2012 08:35:20 +0200
+Message-ID: <CAO6Zf6A_vbuEjPtZEKoUXK83Y_TwE426k-gz41hDJXSvjuwUkw@mail.gmail.com>
+Subject: Re: [PATCH 3/3] [RFC] tmpfs: Add FALLOC_FL_MARK_VOLATILE/UNMARK_VOLATILE
+ handlers
+From: Dmitry Adamushko <dmitry.adamushko@gmail.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
+        Andrea Righi <andrea@betterlinux.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Taras Glek <tgek@mozilla.com>, Mike Hommey <mh@glandium.org>,
+        Jan Kara <jack@suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add device tree support to gpio_keys_polled.c
+>
+> So maybe the right appraoch give up the per-fs volatile range lru, and try a
+> varient of what DaveC and DaveH have suggested: Letting the page based lru
+> reclamation handle the selection on a physical page basis, but then zapping
+> the entirety of the neighboring range if any one page is reclaimed.  In
+> order to try to preserve the range based LRU behavior, activate all the
+> pages in the range together when the range is marked volatile.  Since we
+> assume ranges are un-touched when volatile, that should preserve LRU purging
+> behavior on single node systems and on multi-node systems it will
+> approximate fairly closely.
+>
+> My main concern with this approach is marking and unmarking volatile ranges
+> needs to be fast, so I'm worried about the additional overhead of activating
+> each of the containing pages on mark_volatile.
 
-Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
----
- drivers/input/keyboard/gpio_keys_polled.c |  121 +++++++++++++++++++++++++++--
- 1 file changed, 113 insertions(+), 8 deletions(-)
+(for my education) just to be sure that I got it right. So what you suggest is
 
-diff --git a/drivers/input/keyboard/gpio_keys_polled.c b/drivers/input/keyboard/gpio_keys_polled.c
-index 20c8ab1..a64b361 100644
---- a/drivers/input/keyboard/gpio_keys_polled.c
-+++ b/drivers/input/keyboard/gpio_keys_polled.c
-@@ -25,6 +25,8 @@
- #include <linux/platform_device.h>
- #include <linux/gpio.h>
- #include <linux/gpio_keys.h>
-+#include <linux/of_platform.h>
-+#include <linux/of_gpio.h>
- 
- #define DRV_NAME	"gpio-keys-polled"
- 
-@@ -38,7 +40,7 @@ struct gpio_keys_button_data {
- struct gpio_keys_polled_dev {
- 	struct input_polled_dev *poll_dev;
- 	struct device *dev;
--	struct gpio_keys_platform_data *pdata;
-+	struct gpio_keys_platform_data pdata;
- 	struct gpio_keys_button_data data[0];
- };
- 
-@@ -67,11 +69,11 @@ static void gpio_keys_polled_check_state(struct input_dev *input,
- static void gpio_keys_polled_poll(struct input_polled_dev *dev)
- {
- 	struct gpio_keys_polled_dev *bdev = dev->private;
--	struct gpio_keys_platform_data *pdata = bdev->pdata;
-+	struct gpio_keys_platform_data *pdata = &bdev->pdata;
- 	struct input_dev *input = dev->input;
- 	int i;
- 
--	for (i = 0; i < bdev->pdata->nbuttons; i++) {
-+	for (i = 0; i < pdata->nbuttons; i++) {
- 		struct gpio_keys_button_data *bdata = &bdev->data[i];
- 
- 		if (bdata->count < bdata->threshold)
-@@ -85,7 +87,7 @@ static void gpio_keys_polled_poll(struct input_polled_dev *dev)
- static void gpio_keys_polled_open(struct input_polled_dev *dev)
- {
- 	struct gpio_keys_polled_dev *bdev = dev->private;
--	struct gpio_keys_platform_data *pdata = bdev->pdata;
-+	struct gpio_keys_platform_data *pdata = &bdev->pdata;
- 
- 	if (pdata->enable)
- 		pdata->enable(bdev->dev);
-@@ -94,23 +96,125 @@ static void gpio_keys_polled_open(struct input_polled_dev *dev)
- static void gpio_keys_polled_close(struct input_polled_dev *dev)
- {
- 	struct gpio_keys_polled_dev *bdev = dev->private;
--	struct gpio_keys_platform_data *pdata = bdev->pdata;
-+	struct gpio_keys_platform_data *pdata = &bdev->pdata;
- 
- 	if (pdata->disable)
- 		pdata->disable(bdev->dev);
- }
-+#ifdef CONFIG_OF
-+static int gpio_keys_polled_get_devtree_pdata(struct device *dev,
-+			    struct gpio_keys_platform_data *pdata)
-+{
-+	struct device_node *node, *pp;
-+	int i;
-+	struct gpio_keys_button *buttons;
-+	u32 reg;
-+
-+	node = dev->of_node;
-+	if (node == NULL)
-+		return -ENODEV;
-+
-+	memset(pdata, 0, sizeof *pdata);
-+
-+	pdata->rep = !!of_get_property(node, "autorepeat", NULL);
-+
-+	if (of_property_read_u32(node, "poll-interval", &reg) == 0)
-+		pdata->poll_interval = reg;
-+
-+	/* First count the subnodes */
-+	pdata->nbuttons = 0;
-+	pp = NULL;
-+	while ((pp = of_get_next_child(node, pp)))
-+		pdata->nbuttons++;
-+
-+	if (pdata->nbuttons == 0)
-+		return -ENODEV;
-+
-+	buttons = kzalloc(pdata->nbuttons * (sizeof *buttons), GFP_KERNEL);
-+	if (!buttons)
-+		return -ENOMEM;
-+
-+	pp = NULL;
-+	i = 0;
-+	while ((pp = of_get_next_child(node, pp))) {
-+		enum of_gpio_flags flags;
-+
-+		if (!of_find_property(pp, "gpios", NULL)) {
-+			pdata->nbuttons--;
-+			dev_warn(dev, "Found button without gpios\n");
-+			continue;
-+		}
-+		buttons[i].gpio = of_get_gpio_flags(pp, 0, &flags);
-+		buttons[i].active_low = flags & OF_GPIO_ACTIVE_LOW;
-+
-+		if (of_property_read_u32(pp, "linux,code", &reg)) {
-+			dev_err(dev, "Button without keycode: 0x%x\n", buttons[i].gpio);
-+			goto out_fail;
-+		}
-+		buttons[i].code = reg;
-+
-+		buttons[i].desc = of_get_property(pp, "label", NULL);
-+
-+		if (of_property_read_u32(pp, "linux,input-type", &reg) == 0)
-+			buttons[i].type = reg;
-+		else
-+			buttons[i].type = EV_KEY;
-+
-+		buttons[i].wakeup = !!of_get_property(pp, "gpio-key,wakeup", NULL);
-+
-+		if (of_property_read_u32(pp, "debounce-interval", &reg) == 0)
-+			buttons[i].debounce_interval = reg;
-+		else
-+			buttons[i].debounce_interval = 5;
-+
-+		i++;
-+	}
-+
-+	pdata->buttons = buttons;
-+
-+	return 0;
-+
-+out_fail:
-+	kfree(buttons);
-+	return -ENODEV;
-+}
-+
-+static struct of_device_id gpio_keys_polled_of_match[] = {
-+	{ .compatible = "gpio-keys-polled", },
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(of, gpio_keys_polled_of_match);
-+#else
-+
-+static int gpio_keys_polled_get_devtree_pdata(struct device *dev,
-+			    struct gpio_keys_platform_data *altp)
-+{
-+	return -ENODEV;
-+}
-+
-+#define gpio_keys_polled_of_match NULL
-+
-+#endif
- 
- static int __devinit gpio_keys_polled_probe(struct platform_device *pdev)
- {
- 	struct gpio_keys_platform_data *pdata = pdev->dev.platform_data;
- 	struct device *dev = &pdev->dev;
-+	struct gpio_keys_platform_data alt_pdata;
- 	struct gpio_keys_polled_dev *bdev;
- 	struct input_polled_dev *poll_dev;
- 	struct input_dev *input;
- 	int error;
- 	int i;
- 
--	if (!pdata || !pdata->poll_interval)
-+	if (!pdata) {
-+	    error = gpio_keys_polled_get_devtree_pdata(dev, &alt_pdata);
-+		if (error)
-+			return error;
-+		pdata = &alt_pdata;
-+	}
-+
-+	if (!pdata->poll_interval)
- 		return -EINVAL;
- 
- 	bdev = kzalloc(sizeof(struct gpio_keys_polled_dev) +
-@@ -184,7 +288,7 @@ static int __devinit gpio_keys_polled_probe(struct platform_device *pdev)
- 
- 	bdev->poll_dev = poll_dev;
- 	bdev->dev = dev;
--	bdev->pdata = pdata;
-+	bdev->pdata = *pdata;
- 	platform_set_drvdata(pdev, bdev);
- 
- 	error = input_register_polled_device(poll_dev);
-@@ -217,7 +321,7 @@ err_free_bdev:
- static int __devexit gpio_keys_polled_remove(struct platform_device *pdev)
- {
- 	struct gpio_keys_polled_dev *bdev = platform_get_drvdata(pdev);
--	struct gpio_keys_platform_data *pdata = bdev->pdata;
-+	struct gpio_keys_platform_data *pdata = &bdev->pdata;
- 	int i;
- 
- 	input_unregister_polled_device(bdev->poll_dev);
-@@ -239,6 +343,7 @@ static struct platform_driver gpio_keys_polled_driver = {
- 	.driver	= {
- 		.name	= DRV_NAME,
- 		.owner	= THIS_MODULE,
-+		.of_match_table = gpio_keys_polled_of_match,
- 	},
- };
- module_platform_driver(gpio_keys_polled_driver);
--- 
-1.7.10
+(1) to 'deactivate-page' for all the pages in the range upon
+mark_volatile. Hence, the pages from the same volatile range are
+placed in clusters within their original LRU lists [a] and so
 
+(1.1) the standard per-page reclaim mechanism is more likely to
+discard them together;
+(1.2) they are also (LRU-style) ordered wrt other volatile ranges (clusters)
+
+[a] it's LRU_INACTIVE_FILE for tmpfs, right? also, the pages can be
+from different zones (otoh, at least on x86 HIGH_MEM is likely).
+
+or
+
+(2) somehow remove all the pages from the standard LRU lists (or do
+something else) to make sure that that the normal per-page reclaim
+procedure can't see them. Then we introduce LRU_VOLATILE (where we
+keep whole volatile ranges, not pages) and find the appropriate place
+to process it in the reclaim code.
+
+Also, I had another idea (it looks quite hacky though). For (1) above,
+we don't necessarily need to touch all the pages... what we can do is
+as follows:
+- take the first page of the range (or even create a (hacky-hacky) virtual one);
+- we need to mark it somehow as belonging to the volatile-reclaim
+(modifying page->mapping ?);
+- we place it at the beginning of the corresponding LRU_INACTIVE_*
+list (hm, more complex if different zones);
+  the idea here, is that the standard per-page reclaim code should see
+this page before seeing any other page from its range
+- once the per-page reclaim code encounters such a page (heh, should
+be a low cost check though) - we call into volatile-reclaim...
+
+now, this volatile-reclaim can even purge another volatile range,
+because by placing "the page at the beginning of the corresponding
+LRU_INACTIVE_* list)" we broke LRU-like behavior for volatile ranges.
+
+>
+> The other question I have with this approach is if we're on a system that
+> doesn't have swap, it *seems* (not totally sure I understand it yet) the
+> tmpfs file pages will be skipped over when we call shrink_lruvec.  So it
+> seems we may need to add a new lru_list enum and nr[] entry (maybe
+> LRU_VOLATILE?).   So then it may be that when we mark a range as volatile,
+> instead of just activating it, we move it to the volatile lru, and then when
+> we shrink from that list, we call back to the filesystem to trigger the
+> entire range purging.
+>
+
+Kind of what I meant with (2) above?
+
+[ I was in a bit of hurry while writing this, so I apologize for
+possible confusion... I can elaborate on it more in details later on ]
+
+Thanks,
+
+-- Dmitry
