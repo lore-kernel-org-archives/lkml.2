@@ -1,63 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756250Ab2FJOiH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jun 2012 10:38:07 -0400
-Received: from jacques.telenet-ops.be ([195.130.132.50]:56892 "EHLO
-	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755909Ab2FJOhx (ORCPT
+	id S1756157Ab2FJOis (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jun 2012 10:38:48 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:62202 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751780Ab2FJOir convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jun 2012 10:37:53 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: David Howells <dhowells@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH 2/2] frv: Properly use the declarations provided by <asm/sections.h>
-Date: Sun, 10 Jun 2012 16:37:50 +0200
-Message-Id: <1339339070-24688-2-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1339339070-24688-1-git-send-email-geert@linux-m68k.org>
-References: <1339339070-24688-1-git-send-email-geert@linux-m68k.org>
+	Sun, 10 Jun 2012 10:38:47 -0400
+MIME-Version: 1.0
+Reply-To: axel.lin@gmail.com
+In-Reply-To: <1339220131-24189-1-git-send-email-festevam@gmail.com>
+References: <1339220131-24189-1-git-send-email-festevam@gmail.com>
+From: Axel Lin <axel.lin@gmail.com>
+Date: Sun, 10 Jun 2012 22:38:26 +0800
+Message-ID: <CAF+7xWki5XXViroUUeZtwyRubDRAd7Okf3nLfjN8CpsKTrd30A@mail.gmail.com>
+Subject: Re: [PATCH 1/2] mfd: mc13xxx-i2c: Convert to devm_regmap_init_i2c()
+To: Fabio Estevam <festevam@gmail.com>
+Cc: sameo@linux.intel.com, linux-kernel@vger.kernel.org,
+        broonie@opensource.wolfsonmicro.com, u.kleine-koenig@pengutronix.de,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  - Remove the superfluous address-of ('&') operators,
-  - Remove the unneeded casts, use %p to format pointers instead.
+2012/6/9 Fabio Estevam <festevam@gmail.com>:
+> From: Fabio Estevam <fabio.estevam@freescale.com>
+>
+> Current code misses a "regmap_exit(mc13xxx->regmap)" in the error and remove paths.
+>
+> Converting to devm_regmap_init_i2c() makes the regmap_exit unnecessary.
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- arch/frv/kernel/setup.c |   12 +++++-------
- 1 files changed, 5 insertions(+), 7 deletions(-)
+This is already included in this patch: (although it is not yet upstream)
+http://www.spinics.net/lists/kernel/msg1346844.html
 
-diff --git a/arch/frv/kernel/setup.c b/arch/frv/kernel/setup.c
-index 1294fdf..16a6ac9 100644
---- a/arch/frv/kernel/setup.c
-+++ b/arch/frv/kernel/setup.c
-@@ -802,9 +802,9 @@ void __init setup_arch(char **cmdline_p)
- 
- 	BUG_ON(memory_start == memory_end);
- 
--	init_mm.start_code = (unsigned long) &_stext;
--	init_mm.end_code = (unsigned long) &_etext;
--	init_mm.end_data = (unsigned long) &_edata;
-+	init_mm.start_code = (unsigned long) _stext;
-+	init_mm.end_code = (unsigned long) _etext;
-+	init_mm.end_data = (unsigned long) _edata;
- #if 0 /* DAVIDM - don't set brk just incase someone decides to use it */
- 	init_mm.brk = (unsigned long) &_end;
- #else
-@@ -812,10 +812,8 @@ void __init setup_arch(char **cmdline_p)
- #endif
- 
- #ifdef DEBUG
--	printk("KERNEL -> TEXT=0x%06x-0x%06x DATA=0x%06x-0x%06x BSS=0x%06x-0x%06x\n",
--	       (int) &_stext, (int) &_etext,
--	       (int) &_sdata, (int) &_edata,
--	       (int) &__bss_start, (int) &__bss_stop);
-+	printk("KERNEL -> TEXT=0x%p-0x%p DATA=0x%p-0x%p BSS=0x%p-0x%p\n",
-+	       _stext, _etext, _sdata, _edata, __bss_start, __bss_stop);
- #endif
- 
- #ifdef CONFIG_VT
--- 
-1.7.0.4
+>
+> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+> ---
+>  drivers/mfd/mc13xxx-i2c.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/mfd/mc13xxx-i2c.c b/drivers/mfd/mc13xxx-i2c.c
+> index d22501d..0e38672 100644
+> --- a/drivers/mfd/mc13xxx-i2c.c
+> +++ b/drivers/mfd/mc13xxx-i2c.c
+> @@ -72,7 +72,7 @@ static int mc13xxx_i2c_probe(struct i2c_client *client,
+>        mc13xxx->dev = &client->dev;
+>        mutex_init(&mc13xxx->lock);
+>
+> -       mc13xxx->regmap = regmap_init_i2c(client, &mc13xxx_regmap_i2c_config);
+> +       mc13xxx->regmap = devm_regmap_init_i2c(client, &mc13xxx_regmap_i2c_config);
+To convert to devm_regmap_init_i2c(), you also need to remove the
+regmap_exit() call
+in mc13xxx_common_cleanup().
 
+Axel
