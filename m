@@ -1,50 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756182Ab2FJMiB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jun 2012 08:38:01 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:38370 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755439Ab2FJMiA (ORCPT
+	id S1756162Ab2FJMkN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jun 2012 08:40:13 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:52185 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752892Ab2FJMkM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jun 2012 08:38:00 -0400
+	Sun, 10 Jun 2012 08:40:12 -0400
+Message-ID: <4FD4959A.4060907@atmel.com>
+Date: Sun, 10 Jun 2012 14:39:54 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <4FD48744.3000602@free.fr>
-References: <4FD4837B.5040200@free.fr>
-	<20120610123420.52af4e1a@pyramind.ukuu.org.uk>
-	<4FD48744.3000602@free.fr>
-Date: Sun, 10 Jun 2012 14:37:58 +0200
-Message-ID: <CAFLxGvwtCDCdWoXCBr2nytm93Kyei-pLoioGGxhu_+TMFfdNzQ@mail.gmail.com>
-Subject: Re: Linux 3.2.19 kernel panic does not enter KDB
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: eric.valette@free.fr
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Felipe Balbi <balbi@ti.com>
+CC: <trivial@kernel.org>, Linux Kernel list <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>
+Subject: Re: [PATCH] trivial: treewide: remove extra semicolon added by module_init/exit
+References: <1338990069-6627-1-git-send-email-balbi@ti.com>
+In-Reply-To: <1338990069-6627-1-git-send-email-balbi@ti.com>
+X-Enigmail-Version: 1.5pre
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.24.49.60]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 10, 2012 at 1:38 PM, Eric Valette <eric.valette@free.fr> wrote:
-> On 10/06/2012 13:34, Alan Cox wrote:
->
->>
->> I think you are on the wrong list. Nvidia have kernel source code, we
->> don't have code to their proprietary stuff. Only they can help you.
->>
->> It's quite possible the box is hanging so hard that kdb can't help you.
->> In that case you'll again need someone with their proprietary Nvidia
->> source to help you.
->
->
-> Maybe you are still annoyed by the picture linus has posted but that type of
-> answer helps nothing. I know nobody there is going to debug nvidia driver
-> but I'm not even sure its not something else. Neither are you.
->
-> So the bug is still that KDB is not entered.
+(Not putting everybody in copy, but still replying)
 
-The problem with proprietary code is that *anything* can happen.
-If the crash happened within the Nvidia binary blob you are toasted...
+Felipe,
 
+On 06/06/2012 03:41 PM, Felipe Balbi :
+> The definition of module_init() and module_exit()
+> already added the final semicolon creating a situation
+> where most of our drivers end up with two semicolons
+> at the end of every module_init()/module_exit() call.
+> 
+> To fix that, we add missing semicolons to the places
+> which didn't have them and remove the semicolons from
+> the definition of module_init/module_exit.
+> 
+> Patch generated with the following sed script:
+> 
+> $ sed -i 's/^module_\(init\|exit\)\s*\((\w\+)\)$/module_\1\2;/g' \
+> 	$(git ls-files)
+> 
+> Signed-off-by: Felipe Balbi <balbi@ti.com>
+> ---
+> 
+> compile tested with allyesconfig, allnoconfig and allmodconfig on
+> x86 only.
+> 
+> Unfortunately I couldn't Cc everybody on get_maintainer.pl's output
+> due to recipient limits on TI's mail server.
+
+[..]
+
+>  drivers/net/ethernet/cadence/at91_ether.c             |    4 ++--
+
+[..]
+
+
+> diff --git a/drivers/net/ethernet/cadence/at91_ether.c b/drivers/net/ethernet/cadence/at91_ether.c
+> index 7788419..b107e7f 100644
+> --- a/drivers/net/ethernet/cadence/at91_ether.c
+> +++ b/drivers/net/ethernet/cadence/at91_ether.c
+> @@ -1290,8 +1290,8 @@ static void __exit at91ether_exit(void)
+>  	platform_driver_unregister(&at91ether_driver);
+>  }
+>  
+> -module_init(at91ether_init)
+> -module_exit(at91ether_exit)
+> +module_init(at91ether_init);
+> +module_exit(at91ether_exit);
+>  
+>  MODULE_LICENSE("GPL");
+>  MODULE_DESCRIPTION("AT91RM9200 EMAC Ethernet driver");
+
+For this Atmel network driver, you can add my:
+
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+
+Best regards,
 -- 
-Thanks,
-//richard
+Nicolas Ferre
