@@ -1,66 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756109Ab2FJO2Q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jun 2012 10:28:16 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:44554 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751392Ab2FJO2P convert rfc822-to-8bit (ORCPT
+	id S1756156Ab2FJOdX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jun 2012 10:33:23 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:22400 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754901Ab2FJOdV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jun 2012 10:28:15 -0400
+	Sun, 10 Jun 2012 10:33:21 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 188.77.103.10
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+4k0EmxecK/2yvjyL9Izyr
+Date: Sun, 10 Jun 2012 16:27:25 +0200
+From: =?iso-8859-1?Q?Llu=EDs?= Batlle i Rossell <viric@viric.name>
+To: reiserfs-devel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: More reiserfs hangs, easy to reproduce (Sheevaplug)
+Message-ID: <20120610142724.GA2039@vicerveza.homeunix.net>
 MIME-Version: 1.0
-In-Reply-To: <CAHVUoiRt0PBxNvgRazSPCE1=gGtDBTdQ4kmXhUvkfeJAMWcq3w@mail.gmail.com>
-References: <CAHVUoiQywo=iHKsXQbsVE7coc1FL9A9qy_a71SK94MKNV0GrKA@mail.gmail.com>
-	<CAHVUoiTZmzT3vquaDC65AJfCFZX-qS5GjgjP2-+=0R7skurW5g@mail.gmail.com>
-	<CAHVUoiQgcAMr874d_yPfm9ssUBOoX+dNLy9JNCOCYwOCrAKXFQ@mail.gmail.com>
-	<CAH3drwacayQEZHOidbKKuJ3KjgMvnYzT0S0csXV2QwSmC8nMxg@mail.gmail.com>
-	<CAHVUoiSP7SiWCtYPvKS_1RuAV0upWmT06iN7PR1OE6NAtToirQ@mail.gmail.com>
-	<CAH3drwY61Pqd1MXxgSYcHRPJF5pNr2FO7vrM_ULsRvMbYjAhOQ@mail.gmail.com>
-	<CAHVUoiTfooPSXyVpcg_Khc0rzYcnmvAbGgfko42hOxqukc91_A@mail.gmail.com>
-	<CAHVUoiT4FgEpWDLtzfTUaCTZR-rFx76E3MRdU8u9swjmt74ZQg@mail.gmail.com>
-	<CAHVUoiQ_csZeh_FEHaCkqmJvHO+Q=UF2Va7V19G-3C=xuSYTPw@mail.gmail.com>
-	<CAH3drwa430bUfY4ZHfn583JsDU5Sv=Y5WNaWWXm=a1XpJV1iSw@mail.gmail.com>
-	<CAHVUoiSc3mzrgXFo5-T=8HiYYUBTMhBz0TqUwZSek=VgfhEoyA@mail.gmail.com>
-	<CAH3drwaBpnicWa=pLnKgxsOb4t4pe_kHsYZW4Ei3q-wKYCA=Rw@mail.gmail.com>
-	<CAHVUoiS-rCKnpodhq+8ptg3cVzm2wvtiGf7y4pamnGmz82BDEw@mail.gmail.com>
-	<CAPM=9tzWypx7Q49YZW4C9oHre47GEAfh=bhsCSREr2U=rAwobA@mail.gmail.com>
-	<CAHVUoiQWX-shQHYahxh3pqcyKyeiLLj6X9bG_0DVShBr8qDwUQ@mail.gmail.com>
-	<CAHVUoiRt0PBxNvgRazSPCE1=gGtDBTdQ4kmXhUvkfeJAMWcq3w@mail.gmail.com>
-Date: Sun, 10 Jun 2012 15:28:14 +0100
-Message-ID: <CAPM=9tx5-A_SumZ+8Y0xk9NT1p0v-wmqnbgKN+nmSV-J1NCFcg@mail.gmail.com>
-Subject: Re: [Regression] [Radeon] Stream command failures and render problems
- in Evergreen (Radeon HD 5600) in kernel 3.4
-From: Dave Airlie <airlied@gmail.com>
-To: Brian Gitonga Marete <marete@toshnix.com>
-Cc: Jerome Glisse <j.glisse@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        David Airlie <airlied@linux.ie>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Jerome Glisse <jglisse@redhat.com>
-Content-Type: text/plain; charset=windows-1252
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+X-Accept-Language: ca, es, eo, ru, en, jbo, tokipona
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 10, 2012 at 12:24 PM, Brian Gitonga Marete
-<marete@toshnix.com> wrote:
-> On Sat, Jun 9, 2012 at 7:33 PM, Brian Gitonga Marete <marete@toshnix.com> wrote:
->> On Sat, Jun 9, 2012 at 7:29 PM, Dave Airlie <airlied@gmail.com> wrote:
->>>>
->>>> OK. I actually hadn't gotten around to testing yet. Will do so later
->>>> today. About libdrm, should I test against git or the Ubuntu version?
->>>
->>> The Ubuntu version please.
->>
->> OK.Will report results in a couple of hours :)
->
-> Hello. Got around to this after some delay and after applying v3 of
-> them patch to 3.4, where it applied cleanly, I get this during build:
->
-> drivers/gpu/drm/radeon/evergreen_cs.c: In function
-> ‘evergreen_cs_track_validate_cb’:
-> drivers/gpu/drm/radeon/evergreen_cs.c:447:28: error: request for
-> member ‘ptr’ in something not a structure or union
+Hello,
 
-Can you change the -> to a . on that line
+I had since the latest 2.6 kernels lockups in a sheevaplug computer (without
+swap), when it reached OOMK conditions. The machine was in such a deadlock that
+it only answered to sysrq request through the serial console. Almost every OOMK
+caused this, so once you reproduce an OOMK, I think it will almost sure hang the
+system. The lock looks related to swapping in read-only pages of programs.
 
-Dave.
+As I recently experienced reiserfs lockups in a desktop pc
+(http://www.spinics.net/lists/reiserfs-devel/msg03157.html), I wondered if those
+OOMK lockups could happen due to the reiserfs of /.  So I moved / to ext4, and
+all locks disappeared. OOMK works fine now.
+
+So I'm definitely leaving reiserfs due to the deadlocks; a pity, because it
+served very well to me for many years. I'd be glad to use it again with fixed
+deadlock troubles.
+
+If it's of help of anyone, here is the log (since just before the OOMK) taken by
+netconsole, linux 3.4.1, and with some sysrq dumps. Since the OOMK message
+appears, the machine answers to nothing but sysrq requests.
+
+The log:
+http://viric.name/tmp/hang/sheevaplug-hang1.txt.gz
+
+Regards,
+Lluís.
