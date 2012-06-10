@@ -1,193 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753819Ab2FJIsV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jun 2012 04:48:21 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:63100 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752594Ab2FJIsP (ORCPT
+	id S1753264Ab2FJIvz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jun 2012 04:51:55 -0400
+Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:3489 "EHLO
+	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751451Ab2FJIvx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jun 2012 04:48:15 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6737"; a="199547839"
-From: Yaniv Gardi <ygardi@codeaurora.org>
-To: linux-mmc@vger.kernel.org, ygardi@codeaurora.org
-Cc: linux-arm-msm@vger.kernel.org, Maya Erez <merez@codeaurora.org>,
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH v7 2/2] mmc: card: Adding support for sanitize in eMMC 4.5
-Date: Sun, 10 Jun 2012 11:47:49 +0300
-Message-Id: <1339318069-11428-3-git-send-email-ygardi@codeaurora.org>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1339318069-11428-1-git-send-email-ygardi@codeaurora.org>
-References: <1339318069-11428-1-git-send-email-ygardi@codeaurora.org>
+	Sun, 10 Jun 2012 04:51:53 -0400
+Message-ID: <1339318307.30984.27.camel@x61.thuisdomein>
+Subject: [PATCH] sparc: remove two unused headers
+From: Paul Bolle <pebolle@tiscali.nl>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Sun, 10 Jun 2012 10:51:47 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-OriginalArrivalTime: 10 Jun 2012 08:51:48.0062 (UTC) FILETIME=[452D1FE0:01CD46E6]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This feature delete the unmap memory region of the eMMC card,
-by writing to a specific register in the EXT_CSD
-unmap region is the memory region that were previously deleted
-(by erase, trim or discard operation)
+Nothing includes these two headers. None of the macros they define are
+used anywhere in the tree. This was also the case in v2.6.12-rc2 and,
+presumably, every release in between. These two headers can safely be
+removed.
 
-Signed-off-by: Yaniv Gardi <ygardi@codeaurora.org>
-Signed-off-by: Maya Erez <merez@codeaurora.org>
-Signed-off-by: Yaniv Gardi <ygardi@codeaurora.org>
-
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 ---
- drivers/mmc/card/block.c |   72 +++++++++++++++++++++++++++++++++-------------
- drivers/mmc/card/queue.c |   10 ++++++-
- include/linux/mmc/host.h |    1 +
- 3 files changed, 62 insertions(+), 21 deletions(-)
+Tested by prodding at the (history of the) tree with various git
+commands.
 
-diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
-index dd2d374..139971e 100644
---- a/drivers/mmc/card/block.c
-+++ b/drivers/mmc/card/block.c
-@@ -874,10 +874,10 @@ static int mmc_blk_issue_secdiscard_rq(struct mmc_queue *mq,
- {
- 	struct mmc_blk_data *md = mq->data;
- 	struct mmc_card *card = md->queue.card;
--	unsigned int from, nr, arg, trim_arg, erase_arg;
-+	unsigned int from, nr, arg;
- 	int err = 0, type = MMC_BLK_SECDISCARD;
- 
--	if (!(mmc_can_secure_erase_trim(card) || mmc_can_sanitize(card))) {
-+	if (!(mmc_can_secure_erase_trim(card))) {
- 		err = -EOPNOTSUPP;
- 		goto out;
- 	}
-@@ -885,23 +885,10 @@ static int mmc_blk_issue_secdiscard_rq(struct mmc_queue *mq,
- 	from = blk_rq_pos(req);
- 	nr = blk_rq_sectors(req);
- 
--	/* The sanitize operation is supported at v4.5 only */
--	if (mmc_can_sanitize(card)) {
--		erase_arg = MMC_ERASE_ARG;
--		trim_arg = MMC_TRIM_ARG;
--	} else {
--		erase_arg = MMC_SECURE_ERASE_ARG;
--		trim_arg = MMC_SECURE_TRIM1_ARG;
--	}
+ arch/sparc/include/asm/cmt.h    |   59 ----------------------------------
+ arch/sparc/include/asm/mpmbox.h |   67 ---------------------------------------
+ 2 files changed, 0 insertions(+), 126 deletions(-)
+ delete mode 100644 arch/sparc/include/asm/cmt.h
+ delete mode 100644 arch/sparc/include/asm/mpmbox.h
+
+diff --git a/arch/sparc/include/asm/cmt.h b/arch/sparc/include/asm/cmt.h
+deleted file mode 100644
+index 870db59..0000000
+--- a/arch/sparc/include/asm/cmt.h
++++ /dev/null
+@@ -1,59 +0,0 @@
+-#ifndef _SPARC64_CMT_H
+-#define _SPARC64_CMT_H
 -
--	if (mmc_erase_group_aligned(card, from, nr))
--		arg = erase_arg;
--	else if (mmc_can_trim(card))
--		arg = trim_arg;
--	else {
--		err = -EINVAL;
--		goto out;
--	}
-+	if (mmc_can_trim(card) && !mmc_erase_group_aligned(card, from, nr))
-+		arg = MMC_SECURE_TRIM1_ARG;
-+	else
-+		arg = MMC_SECURE_ERASE_ARG;
- retry:
- 	if (card->quirks & MMC_QUIRK_INAND_CMD38) {
- 		err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
-@@ -953,6 +940,46 @@ out:
- 	return err ? 0 : 1;
- }
- 
-+static int mmc_blk_issue_sanitize_rq(struct mmc_queue *mq,
-+				      struct request *req)
-+{
-+	struct mmc_blk_data *md = mq->data;
-+	struct mmc_card *card = md->queue.card;
-+	int err = 0;
-+
-+	BUG_ON(!card);
-+	BUG_ON(!card->host);
-+
-+	if (!(mmc_can_sanitize(card) &&
-+	     (card->host->caps2 & MMC_CAP2_SANITIZE))) {
-+			pr_warning("%s: %s - SANITIZE is not supported\n",
-+				   mmc_hostname(card->host), __func__);
-+			err = -EOPNOTSUPP;
-+			goto out;
-+	}
-+
-+	pr_debug("%s: %s - SANITIZE IN PROGRESS...\n",
-+		mmc_hostname(card->host), __func__);
-+
-+	err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
-+					 EXT_CSD_SANITIZE_START, 1, 0);
-+
-+	if (err)
-+		pr_err("%s: %s - mmc_switch() with "
-+		       "EXT_CSD_SANITIZE_START failed. err=%d\n",
-+		       mmc_hostname(card->host), __func__, err);
-+
-+	pr_debug("%s: %s - SANITIZE COMPLETED\n", mmc_hostname(card->host),
-+					     __func__);
-+
-+out:
-+	spin_lock_irq(&md->lock);
-+	__blk_end_request(req, err, blk_rq_bytes(req));
-+	spin_unlock_irq(&md->lock);
-+
-+	return err ? 0 : 1;
-+}
-+
- static int mmc_blk_issue_flush(struct mmc_queue *mq, struct request *req)
- {
- 	struct mmc_blk_data *md = mq->data;
-@@ -1437,7 +1464,12 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
- 		goto out;
- 	}
- 
--	if (req && req->cmd_flags & REQ_DISCARD) {
-+	if (req && req->cmd_flags & REQ_SANITIZE) {
-+		/* complete ongoing async transfer before issuing sanitize */
-+		if (card->host && card->host->areq)
-+			mmc_blk_issue_rw_rq(mq, NULL);
-+		ret = mmc_blk_issue_sanitize_rq(mq, req);
-+	} else if (req && req->cmd_flags & REQ_DISCARD) {
- 		/* complete ongoing async transfer before issuing discard */
- 		if (card->host->areq)
- 			mmc_blk_issue_rw_rq(mq, NULL);
-diff --git a/drivers/mmc/card/queue.c b/drivers/mmc/card/queue.c
-index e360a97..4f3250e 100644
---- a/drivers/mmc/card/queue.c
-+++ b/drivers/mmc/card/queue.c
-@@ -145,10 +145,15 @@ static void mmc_queue_setup_discard(struct request_queue *q,
- 	/* granularity must not be greater than max. discard */
- 	if (card->pref_erase > max_discard)
- 		q->limits.discard_granularity = 0;
--	if (mmc_can_secure_erase_trim(card) || mmc_can_sanitize(card))
-+	if (mmc_can_secure_erase_trim(card))
- 		queue_flag_set_unlocked(QUEUE_FLAG_SECDISCARD, q);
- }
- 
-+static void mmc_queue_setup_sanitize(struct request_queue *q)
-+{
-+	queue_flag_set_unlocked(QUEUE_FLAG_SANITIZE, q);
-+}
-+
- /**
-  * mmc_init_queue - initialise a queue structure.
-  * @mq: mmc queue
-@@ -184,6 +189,9 @@ int mmc_init_queue(struct mmc_queue *mq, struct mmc_card *card,
- 	if (mmc_can_erase(card))
- 		mmc_queue_setup_discard(mq->queue, card);
- 
-+	if ((mmc_can_sanitize(card) && (host->caps2 & MMC_CAP2_SANITIZE)))
-+		mmc_queue_setup_sanitize(mq->queue);
-+
- #ifdef CONFIG_MMC_BLOCK_BOUNCE
- 	if (host->max_segs == 1) {
- 		unsigned int bouncesz;
-diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
-index 0707d22..be2b89f 100644
---- a/include/linux/mmc/host.h
-+++ b/include/linux/mmc/host.h
-@@ -238,6 +238,7 @@ struct mmc_host {
- #define MMC_CAP2_BROKEN_VOLTAGE	(1 << 7)	/* Use the broken voltage */
- #define MMC_CAP2_DETECT_ON_ERR	(1 << 8)	/* On I/O err check card removal */
- #define MMC_CAP2_HC_ERASE_SZ	(1 << 9)	/* High-capacity erase size */
-+#define MMC_CAP2_SANITIZE	(1 << 10)		/* Support Sanitize */
- 
- 	mmc_pm_flag_t		pm_caps;	/* supported pm features */
- 	unsigned int        power_notify_type;
+-/* cmt.h: Chip Multi-Threading register definitions
+- *
+- * Copyright (C) 2004 David S. Miller (davem@redhat.com)
+- */
+-
+-/* ASI_CORE_ID - private */
+-#define LP_ID		0x0000000000000010UL
+-#define  LP_ID_MAX	0x00000000003f0000UL
+-#define  LP_ID_ID	0x000000000000003fUL
+-
+-/* ASI_INTR_ID - private */
+-#define LP_INTR_ID	0x0000000000000000UL
+-#define  LP_INTR_ID_ID	0x00000000000003ffUL
+-
+-/* ASI_CESR_ID - private */
+-#define CESR_ID		0x0000000000000040UL
+-#define  CESR_ID_ID	0x00000000000000ffUL
+-
+-/* ASI_CORE_AVAILABLE - shared */
+-#define LP_AVAIL	0x0000000000000000UL
+-#define  LP_AVAIL_1	0x0000000000000002UL
+-#define  LP_AVAIL_0	0x0000000000000001UL
+-
+-/* ASI_CORE_ENABLE_STATUS - shared */
+-#define LP_ENAB_STAT	0x0000000000000010UL
+-#define  LP_ENAB_STAT_1	0x0000000000000002UL
+-#define  LP_ENAB_STAT_0	0x0000000000000001UL
+-
+-/* ASI_CORE_ENABLE - shared */
+-#define LP_ENAB		0x0000000000000020UL
+-#define  LP_ENAB_1	0x0000000000000002UL
+-#define  LP_ENAB_0	0x0000000000000001UL
+-
+-/* ASI_CORE_RUNNING - shared */
+-#define LP_RUNNING_RW	0x0000000000000050UL
+-#define LP_RUNNING_W1S	0x0000000000000060UL
+-#define LP_RUNNING_W1C	0x0000000000000068UL
+-#define  LP_RUNNING_1	0x0000000000000002UL
+-#define  LP_RUNNING_0	0x0000000000000001UL
+-
+-/* ASI_CORE_RUNNING_STAT - shared */
+-#define LP_RUN_STAT	0x0000000000000058UL
+-#define  LP_RUN_STAT_1	0x0000000000000002UL
+-#define  LP_RUN_STAT_0	0x0000000000000001UL
+-
+-/* ASI_XIR_STEERING - shared */
+-#define LP_XIR_STEER	0x0000000000000030UL
+-#define  LP_XIR_STEER_1	0x0000000000000002UL
+-#define  LP_XIR_STEER_0	0x0000000000000001UL
+-
+-/* ASI_CMT_ERROR_STEERING - shared */
+-#define CMT_ER_STEER	0x0000000000000040UL
+-#define  CMT_ER_STEER_1	0x0000000000000002UL
+-#define  CMT_ER_STEER_0	0x0000000000000001UL
+-
+-#endif /* _SPARC64_CMT_H */
+diff --git a/arch/sparc/include/asm/mpmbox.h b/arch/sparc/include/asm/mpmbox.h
+deleted file mode 100644
+index f842303..0000000
+--- a/arch/sparc/include/asm/mpmbox.h
++++ /dev/null
+@@ -1,67 +0,0 @@
+-/*
+- * mpmbox.h:  Interface and defines for the OpenProm mailbox
+- *               facilities for MP machines under Linux.
+- *
+- * Copyright (C) 1995 David S. Miller (davem@caip.rutgers.edu)
+- */
+-
+-#ifndef _SPARC_MPMBOX_H
+-#define _SPARC_MPMBOX_H
+-
+-/* The prom allocates, for each CPU on the machine an unsigned
+- * byte in physical ram.  You probe the device tree prom nodes
+- * for these values.  The purpose of this byte is to be able to
+- * pass messages from one cpu to another.
+- */
+-
+-/* These are the main message types we have to look for in our
+- * Cpu mailboxes, based upon these values we decide what course
+- * of action to take.
+- */
+-
+-/* The CPU is executing code in the kernel. */
+-#define MAILBOX_ISRUNNING     0xf0
+-
+-/* Another CPU called romvec->pv_exit(), you should call
+- * prom_stopcpu() when you see this in your mailbox.
+- */
+-#define MAILBOX_EXIT          0xfb
+-
+-/* Another CPU called romvec->pv_enter(), you should call
+- * prom_cpuidle() when this is seen.
+- */
+-#define MAILBOX_GOSPIN        0xfc
+-
+-/* Another CPU has hit a breakpoint either into kadb or the prom
+- * itself.  Just like MAILBOX_GOSPIN, you should call prom_cpuidle()
+- * at this point.
+- */
+-#define MAILBOX_BPT_SPIN      0xfd
+-
+-/* Oh geese, some other nitwit got a damn watchdog reset.  The party's
+- * over so go call prom_stopcpu().
+- */
+-#define MAILBOX_WDOG_STOP     0xfe
+-
+-#ifndef __ASSEMBLY__
+-
+-/* Handy macro's to determine a cpu's state. */
+-
+-/* Is the cpu still in Power On Self Test? */
+-#define MBOX_POST_P(letter)  ((letter) >= 0x00 && (letter) <= 0x7f)
+-
+-/* Is the cpu at the 'ok' prompt of the PROM? */
+-#define MBOX_PROMPROMPT_P(letter) ((letter) >= 0x80 && (letter) <= 0x8f)
+-
+-/* Is the cpu spinning in the PROM? */
+-#define MBOX_PROMSPIN_P(letter) ((letter) >= 0x90 && (letter) <= 0xef)
+-
+-/* Sanity check... This is junk mail, throw it out. */
+-#define MBOX_BOGON_P(letter) ((letter) >= 0xf1 && (letter) <= 0xfa)
+-
+-/* Is the cpu actively running an application/kernel-code? */
+-#define MBOX_RUNNING_P(letter) ((letter) == MAILBOX_ISRUNNING)
+-
+-#endif /* !(__ASSEMBLY__) */
+-
+-#endif /* !(_SPARC_MPMBOX_H) */
 -- 
-1.7.6
--- 
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum
+1.7.7.6
+
