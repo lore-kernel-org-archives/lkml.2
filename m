@@ -1,134 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753454Ab2FJQhy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jun 2012 12:37:54 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:64112 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752149Ab2FJQhw (ORCPT
+	id S1753557Ab2FJQjR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jun 2012 12:39:17 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:38458 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752149Ab2FJQjQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jun 2012 12:37:52 -0400
-Date: Sun, 10 Jun 2012 17:38:13 +0100
-From: "Carlos R. Mafra" <crmafra@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Len Brown <len.brown@intel.com>,
-        Igor Murzov <intergalactic.anonymous@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: 3.5.0-rc2 bisected regression: Can't change brightness on Vaio laptop
-Message-ID: <20120610163813.GA5721@Pilar.maths.private.cam.ac.uk>
+	Sun, 10 Jun 2012 12:39:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1339113369-27045-1-git-send-email-swarren@wwwdotorg.org>
+References: <1339113369-27045-1-git-send-email-swarren@wwwdotorg.org>
+Date: Sun, 10 Jun 2012 18:39:15 +0200
+Message-ID: <CACRpkdYxTs8sbBfVFL3Et4T3hgXfnUQ_7th8byC+TUGHu4RC7Q@mail.gmail.com>
+Subject: Re: [PATCH] gpio: export devm_gpio_request_one
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit ea9f8856bd6d4 ("ACPI video: Harden video bus adding") breaks the
-backlight controls on my Vaio laptop.
+On Fri, Jun 8, 2012 at 1:56 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
 
-After this patch the folder /sys/class/backlight becomes empty and
-I can't change the lcd brightness anymore.
+> From: Stephen Warren <swarren@nvidia.com>
+>
+> Without this, modules can't use this API, leading to build failures.
+>
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
 
-This regression is present in v3.4.2 as well as in the current
-v3.5.0-rc2. 
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-I tried to manually revert that commit from v3.5.0-rc2, and the resulting
-patch below fixes the issue for me.
-
-My config is here:
-http://www.damtp.cam.ac.uk/user/crm66/config-3.5-rc1
-
-and the dmesg of v3.5.0-rc2 plus the patch below is here:
-http://www.damtp.cam.ac.uk/user/crm66/dmesg_v3.5-rc2+patch.txt
-
-diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
-index a576575..4612b1c 100644
---- a/drivers/acpi/video.c
-+++ b/drivers/acpi/video.c
-@@ -548,27 +548,27 @@ acpi_video_device_EDID(struct acpi_video_device *device,
-  *		1. 	The system BIOS should NOT automatically control the brightness 
-  *			level of the LCD when the power changes from AC to DC.
-  * Return Value:
-- *		-EINVAL	wrong arg.
-+ * 		-1	wrong arg.
-  */
- 
- static int
- acpi_video_bus_DOS(struct acpi_video_bus *video, int bios_flag, int lcd_flag)
- {
--	acpi_status status;
-+	u64 status = 0;
- 	union acpi_object arg0 = { ACPI_TYPE_INTEGER };
- 	struct acpi_object_list args = { 1, &arg0 };
- 
- 
--	if (bios_flag < 0 || bios_flag > 3 || lcd_flag < 0 || lcd_flag > 1)
--		return -EINVAL;
-+	if (bios_flag < 0 || bios_flag > 3 || lcd_flag < 0 || lcd_flag > 1) {
-+		status = -1;
-+		goto Failed;
-+	}
- 	arg0.integer.value = (lcd_flag << 2) | bios_flag;
- 	video->dos_setting = arg0.integer.value;
--	status = acpi_evaluate_object(video->device->handle, "_DOS",
--		&args, NULL);
--	if (ACPI_FAILURE(status))
--		return -EIO;
-+	acpi_evaluate_object(video->device->handle, "_DOS", &args, NULL);
- 
--	return 0;
-+      Failed:
-+	return status;
- }
- 
- /*
-@@ -1343,17 +1343,15 @@ static int
- acpi_video_bus_get_devices(struct acpi_video_bus *video,
- 			   struct acpi_device *device)
- {
--	int status;
-+	int status = 0;
- 	struct acpi_device *dev;
- 
--	status = acpi_video_device_enumerate(video);
--	if (status)
--		return status;
-+	acpi_video_device_enumerate(video);
- 
- 	list_for_each_entry(dev, &device->children, node) {
- 
- 		status = acpi_video_bus_get_one_device(dev, video);
--		if (status) {
-+		if (ACPI_FAILURE(status)) {
- 			printk(KERN_WARNING PREFIX
- 					"Can't attach device\n");
- 			continue;
-@@ -1655,9 +1653,8 @@ static int acpi_video_bus_add(struct acpi_device *device)
- 	mutex_init(&video->device_list_lock);
- 	INIT_LIST_HEAD(&video->video_device_list);
- 
--	error = acpi_video_bus_get_devices(video, device);
--	if (error)
--		goto err_free_video;
-+	acpi_video_bus_get_devices(video, device);
-+	acpi_video_bus_start_devices(video);
- 
- 	video->input = input = input_allocate_device();
- 	if (!input) {
-@@ -1695,13 +1692,9 @@ static int acpi_video_bus_add(struct acpi_device *device)
- 
- 	video->pm_nb.notifier_call = acpi_video_resume;
- 	video->pm_nb.priority = 0;
--	error = register_pm_notifier(&video->pm_nb);
--	if (error)
--		goto err_stop_video;
- 
--	error = input_register_device(input);
--	if (error)
--		goto err_unregister_pm_notifier;
-+	register_pm_notifier(&video->pm_nb);
-+	input_register_device(input);
- 
- 	return 0;
- 
-
+Yours,
+Linus Walleij
