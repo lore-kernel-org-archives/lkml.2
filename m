@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751852Ab2FJEtk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jun 2012 00:49:40 -0400
-Received: from mga11.intel.com ([192.55.52.93]:64989 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751021Ab2FJEtj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jun 2012 00:49:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="163699730"
-Date: Sun, 10 Jun 2012 12:49:34 +0800
-From: Fengguang Wu <wfg@linux.intel.com>
-To: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, gaofeng@cn.fujitsu.com,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] inet: Initialize per-netns inetpeer roots in
- net/ipv{4,6}/route.c
-Message-ID: <20120610044934.GA10507@localhost>
-References: <20120610015832.GA9175@localhost>
- <20120609.190451.182034193302304295.davem@davemloft.net>
- <20120610031634.GA10032@localhost>
- <20120609.212147.1738198233131370927.davem@davemloft.net>
- <20120610044339.GA10436@localhost>
+	id S1752451Ab2FJEul (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jun 2012 00:50:41 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:51254 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752011Ab2FJEuj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Jun 2012 00:50:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120610044339.GA10436@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAHkwNT=DLCm_gfubGV=_SahM5njpA=Z_miA=SEkVeYA9cHMdmA@mail.gmail.com>
+References: <CANc+2y48M+K4jvGEes_srYO7rCQcPt4pvcxcvm-Hd+7kKJr6BQ@mail.gmail.com>
+	<CAHkwNT=3dGTZTDWi+r7m=K=Pqgv6Txi-xKcpN_pNUJ_WbUaD4w@mail.gmail.com>
+	<4FD39A7F.9020106@mvista.com>
+	<CAHkwNT=DLCm_gfubGV=_SahM5njpA=Z_miA=SEkVeYA9cHMdmA@mail.gmail.com>
+Date: Sun, 10 Jun 2012 10:20:37 +0530
+Message-ID: <CANc+2y7dMRQ2C-oTU94gBA11CDrwZFthzOvM4wffV77_wMnchQ@mail.gmail.com>
+Subject: Re: Break point not hit while debugging linux kernel with kgdb
+From: prasannatsmkumar <prasannatsmkumar@gmail.com>
+To: Anil Nair <anilcoll90@gmail.com>
+Cc: Sergei Shtylyov <sshtylyov@mvista.com>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 10, 2012 at 12:43:39PM +0800, Fengguang Wu wrote:
-> On Sat, Jun 09, 2012 at 09:21:47PM -0700, David Miller wrote:
-> > From: Fengguang Wu <wfg@linux.intel.com>
-> > Date: Sun, 10 Jun 2012 11:16:34 +0800
-> > 
-> > > In long run, such build-fix patches can also be auto tested and
-> > > reported, somehow in this way. You just create a temporary branch
-> > 
-> > Sorry, no.
-> 
-> That's fine. Then how about including some text "fix build errors" or
-> "fix build warnings" or paste the original gcc error/warning messages,
-> somewhere in the changelog or subject?
-> 
-> That will also allow me recognize that it's a build fix commit and to
-> make it unconditionally report back any build results.
+On Sun, Jun 10, 2012 at 10:00 AM, Anil Nair <anilcoll90@gmail.com> wrote:
+> Hello Sergei,
+>
+> On Sun, Jun 10, 2012 at 12:18 AM, Sergei Shtylyov <sshtylyov@mvista.com> wrote:
+>
+>>   Yeah, KGDB was accepted into kernel exactly for more "poorly fixed
+>> patches" to appear. :-)
+>
+> I was under the impression that maintainers would never recommend
+> kgdb, so never learned to use it.
+> If you could guide me and Prasanna on how to use kgdb that would be
+> helpful :). If you were saying it sarcastically, then i failed to
+> understand it . :P.
+>
+>>> You have to use gdbserver
+>>   gdbserver is only good for debugging the applications.
+>
+> I never knew that..!.
+>
+> --
+> Regards,
+> Anil Nair
 
-Or better, simply include a 
+In one of the machines I am facing a scenario:
+I recompiled Ubuntu linux kernel (with the default config taken from
+/boot) and the newly compiled kernel does not boot. After detecting
+the hard disk (SCSI device) it panics. I am able to see only a part of
+the kernel stack trace due to low resolution so I am in a situation
+where I cannot do anything further. In this situation kgdb seems to be
+the only way.
 
-        Reported-by: Fengguang Wu <wfg@linux.intel.com>
-
-line in the commit. Then I can reliably detect that it actually tries
-to fix some build error/waring reported by me, and verbosely report
-back whether the commit actually fix things up.
-
-Thanks,
-Fengguang
+Note: The case I mentioned in my first mail is different from this case.
