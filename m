@@ -1,63 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756227Ab2FJLZI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jun 2012 07:25:08 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:46954 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753694Ab2FJLZG convert rfc822-to-8bit (ORCPT
+	id S1756439Ab2FJLZe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jun 2012 07:25:34 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:43328 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753694Ab2FJLZb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jun 2012 07:25:06 -0400
+	Sun, 10 Jun 2012 07:25:31 -0400
+Date: Sun, 10 Jun 2012 13:25:40 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Sameer Nanda <snanda@chromium.org>
+Cc: rob@landley.net, len.brown@intel.com, rjw@sisk.pl,
+        gregkh@linuxfoundation.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH v2] power: add knob for printing device resume times
+Message-ID: <20120610112540.GB9919@elf.ucw.cz>
+References: <20120522202453.GA30723@kroah.com>
+ <1337791532-15820-1-git-send-email-snanda@chromium.org>
+ <CANMivWbRM+VvJaAHjz0Tr0SpqN3-OFp7DpXhtiDssJMNRX+5YA@mail.gmail.com>
 MIME-Version: 1.0
-X-Originating-IP: [41.212.116.88]
-In-Reply-To: <CAHVUoiQWX-shQHYahxh3pqcyKyeiLLj6X9bG_0DVShBr8qDwUQ@mail.gmail.com>
-References: <CAHVUoiQywo=iHKsXQbsVE7coc1FL9A9qy_a71SK94MKNV0GrKA@mail.gmail.com>
- <CAHVUoiTZmzT3vquaDC65AJfCFZX-qS5GjgjP2-+=0R7skurW5g@mail.gmail.com>
- <CAHVUoiQgcAMr874d_yPfm9ssUBOoX+dNLy9JNCOCYwOCrAKXFQ@mail.gmail.com>
- <CAH3drwacayQEZHOidbKKuJ3KjgMvnYzT0S0csXV2QwSmC8nMxg@mail.gmail.com>
- <CAHVUoiSP7SiWCtYPvKS_1RuAV0upWmT06iN7PR1OE6NAtToirQ@mail.gmail.com>
- <CAH3drwY61Pqd1MXxgSYcHRPJF5pNr2FO7vrM_ULsRvMbYjAhOQ@mail.gmail.com>
- <CAHVUoiTfooPSXyVpcg_Khc0rzYcnmvAbGgfko42hOxqukc91_A@mail.gmail.com>
- <CAHVUoiT4FgEpWDLtzfTUaCTZR-rFx76E3MRdU8u9swjmt74ZQg@mail.gmail.com>
- <CAHVUoiQ_csZeh_FEHaCkqmJvHO+Q=UF2Va7V19G-3C=xuSYTPw@mail.gmail.com>
- <CAH3drwa430bUfY4ZHfn583JsDU5Sv=Y5WNaWWXm=a1XpJV1iSw@mail.gmail.com>
- <CAHVUoiSc3mzrgXFo5-T=8HiYYUBTMhBz0TqUwZSek=VgfhEoyA@mail.gmail.com>
- <CAH3drwaBpnicWa=pLnKgxsOb4t4pe_kHsYZW4Ei3q-wKYCA=Rw@mail.gmail.com>
- <CAHVUoiS-rCKnpodhq+8ptg3cVzm2wvtiGf7y4pamnGmz82BDEw@mail.gmail.com>
- <CAPM=9tzWypx7Q49YZW4C9oHre47GEAfh=bhsCSREr2U=rAwobA@mail.gmail.com> <CAHVUoiQWX-shQHYahxh3pqcyKyeiLLj6X9bG_0DVShBr8qDwUQ@mail.gmail.com>
-From: Brian Gitonga Marete <marete@toshnix.com>
-Date: Sun, 10 Jun 2012 14:24:43 +0300
-Message-ID: <CAHVUoiRt0PBxNvgRazSPCE1=gGtDBTdQ4kmXhUvkfeJAMWcq3w@mail.gmail.com>
-Subject: Re: [Regression] [Radeon] Stream command failures and render problems
- in Evergreen (Radeon HD 5600) in kernel 3.4
-To: Dave Airlie <airlied@gmail.com>
-Cc: Jerome Glisse <j.glisse@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        David Airlie <airlied@linux.ie>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Jerome Glisse <jglisse@redhat.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CANMivWbRM+VvJaAHjz0Tr0SpqN3-OFp7DpXhtiDssJMNRX+5YA@mail.gmail.com>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 9, 2012 at 7:33 PM, Brian Gitonga Marete <marete@toshnix.com> wrote:
-> On Sat, Jun 9, 2012 at 7:29 PM, Dave Airlie <airlied@gmail.com> wrote:
->>>
->>> OK. I actually hadn't gotten around to testing yet. Will do so later
->>> today. About libdrm, should I test against git or the Ubuntu version?
->>
->> The Ubuntu version please.
->
-> OK.Will report results in a couple of hours :)
+Hi!
 
-Hello. Got around to this after some delay and after applying v3 of
-them patch to 3.4, where it applied cleanly, I get this during build:
+> >  #ifdef CONFIG_DEBUG_FS
+> > @@ -411,6 +444,7 @@ static struct attribute * g[] = {
+> >        &wakeup_count_attr.attr,
+> >  #ifdef CONFIG_PM_DEBUG
+> >        &pm_test_attr.attr,
+> > +       &pm_print_times_attr.attr,
+> >  #endif
+> >  #endif
+> >        NULL,
+> > --
+> > 1.7.7.3
+> >
+> 
+> Greg KH, Rafael: any feedback on this patch?  Questions I can help
+> answer to help push this along?
 
-drivers/gpu/drm/radeon/evergreen_cs.c: In function
-‘evergreen_cs_track_validate_cb’:
-drivers/gpu/drm/radeon/evergreen_cs.c:447:28: error: request for
-member ‘ptr’ in something not a structure or union
-
+Yes; it should be possible to use something like module_parm() to make
+this one-liner...
+									Pavel
 -- 
-Brian Gitonga Marete
-Toshnix Systems - http://toshnix.com
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
