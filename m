@@ -1,52 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754530Ab2FJBCk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jun 2012 21:02:40 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:25303 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753279Ab2FJBCj (ORCPT
+	id S1754897Ab2FJBal (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jun 2012 21:30:41 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54974 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754370Ab2FJBaj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jun 2012 21:02:39 -0400
-Date: Sun, 10 Jun 2012 03:02:38 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: alsa-devel@alsa-project.org, Takashi Iwai <tiwai@suse.de>,
-        Jaroslav Kysela <perex@perex.cz>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, M R Swami Reddy <mr.swami.reddy@ti.com>,
-        trivial@kernel.org
-Subject: [PATCH] ASoC: lm49453: Remove a unneeded version.h include 
-Message-ID: <alpine.LNX.2.00.1206100301120.15651@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sat, 9 Jun 2012 21:30:39 -0400
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: James.Bottomley@HansenPartnership.com, gregkh@linuxfoundation.org,
+        mdharm-usb@one-eyed-alien.net, stern@rowland.harvard.edu,
+        sshtylyov@mvista.com, bvanassche@acm.org
+Cc: linux-usb@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Pankaj Kumar <pankaj.km@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: [PATCH v3 2/4] usb: storage: add support for write cache quirk on usb hdd
+Date: Sat,  9 Jun 2012 21:30:26 -0400
+Message-Id: <1339291826-2547-1-git-send-email-linkinjeon@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+Add support for write cache quirk on usb hdd. scsi driver will be set to wce
+by detecting write cache quirk in quirk list when plugging usb hdd.
+
+Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+Signed-off-by: Pankaj Kumar <pankaj.km@samsung.com>
+Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
 ---
- sound/soc/codecs/lm49453.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/usb/storage/scsiglue.c |    5 +++++
+ drivers/usb/storage/usb.c      |    5 ++++-
+ include/linux/usb_usual.h      |    4 +++-
+ 3 files changed, 12 insertions(+), 2 deletions(-)
 
-diff --git a/sound/soc/codecs/lm49453.c b/sound/soc/codecs/lm49453.c
-index 802b9f1..c1bc945 100644
---- a/sound/soc/codecs/lm49453.c
-+++ b/sound/soc/codecs/lm49453.c
-@@ -12,7 +12,6 @@
+diff --git a/drivers/usb/storage/scsiglue.c b/drivers/usb/storage/scsiglue.c
+index a324a5d..fe42547 100644
+--- a/drivers/usb/storage/scsiglue.c
++++ b/drivers/usb/storage/scsiglue.c
+@@ -230,6 +230,11 @@ static int slave_configure(struct scsi_device *sdev)
+ 					US_FL_SCM_MULT_TARG)) &&
+ 				us->protocol == USB_PR_BULK)
+ 			us->use_last_sector_hacks = 1;
++
++		/* Check if write cache default on flag is set or not */
++		if (us->fflags & US_FL_WRITE_CACHE)
++			sdev->wce_default_on = 1;
++
+ 	} else {
  
- #include <linux/module.h>
- #include <linux/moduleparam.h>
--#include <linux/version.h>
- #include <linux/kernel.h>
- #include <linux/init.h>
- #include <linux/delay.h>
+ 		/* Non-disk-type devices don't need to blacklist any pages
+diff --git a/drivers/usb/storage/usb.c b/drivers/usb/storage/usb.c
+index e23c30a..d012fe4 100644
+--- a/drivers/usb/storage/usb.c
++++ b/drivers/usb/storage/usb.c
+@@ -473,7 +473,7 @@ static void adjust_quirks(struct us_data *us)
+ 			US_FL_CAPACITY_OK | US_FL_IGNORE_RESIDUE |
+ 			US_FL_SINGLE_LUN | US_FL_NO_WP_DETECT |
+ 			US_FL_NO_READ_DISC_INFO | US_FL_NO_READ_CAPACITY_16 |
+-			US_FL_INITIAL_READ10);
++			US_FL_INITIAL_READ10 | US_FL_WRITE_CACHE);
+ 
+ 	p = quirks;
+ 	while (*p) {
+@@ -529,6 +529,9 @@ static void adjust_quirks(struct us_data *us)
+ 		case 'o':
+ 			f |= US_FL_CAPACITY_OK;
+ 			break;
++		case 'p':
++			f |= US_FL_WRITE_CACHE;
++			break;
+ 		case 'r':
+ 			f |= US_FL_IGNORE_RESIDUE;
+ 			break;
+diff --git a/include/linux/usb_usual.h b/include/linux/usb_usual.h
+index 17df360..96fc152 100644
+--- a/include/linux/usb_usual.h
++++ b/include/linux/usb_usual.h
+@@ -64,7 +64,9 @@
+ 	US_FLAG(NO_READ_CAPACITY_16,	0x00080000)		\
+ 		/* cannot handle READ_CAPACITY_16 */		\
+ 	US_FLAG(INITIAL_READ10,	0x00100000)			\
+-		/* Initial READ(10) (and others) must be retried */
++		/* Initial READ(10) (and others) must be retried */	\
++	US_FLAG(WRITE_CACHE,	0x00200000)			\
++		/* Write Cache status is not available */
+ 
+ #define US_FLAG(name, value)	US_FL_##name = value ,
+ enum { US_DO_ALL_FLAGS };
 -- 
-1.7.10.4
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+1.7.9.5
 
