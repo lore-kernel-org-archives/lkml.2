@@ -1,41 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753450Ab2FJJTh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jun 2012 05:19:37 -0400
+	id S1753923Ab2FJJT4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jun 2012 05:19:56 -0400
 Received: from mail-wg0-f44.google.com ([74.125.82.44]:50875 "EHLO
 	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752139Ab2FJJTf (ORCPT
+	with ESMTP id S1753561Ab2FJJTw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jun 2012 05:19:35 -0400
-Message-ID: <4FD46521.5070900@gmail.com>
-Date: Sun, 10 Jun 2012 11:13:05 +0200
+	Sun, 10 Jun 2012 05:19:52 -0400
+Message-ID: <4FD46530.7060407@gmail.com>
+Date: Sun, 10 Jun 2012 11:13:20 +0200
 From: Marco Stornelli <marco.stornelli@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120421 Thunderbird/12.0
 MIME-Version: 1.0
 To: Linux FS Devel <linux-fsdevel@vger.kernel.org>
 CC: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 00/17] pramfs: persistent and protected RAM filesystem
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Subject: [PATCH 01/17] pramfs: documentation
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+From: Marco Stornelli <marco.stornelli@gmail.com>
 
-after the merge of pramfs in the LTSI kernel and after the "hot topic" 
-NVM Mapping API, here a new submission of pramfs code. Even if the code 
-won't be in mainline the review is really useful to me, so any comment 
-is welcome.
+Documentation for PRAMFS.
 
-The patch series is based on 3.5-rc2.
+Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
+---
+diff -Nurp linux-3.5-rc2-orig/Documentation/filesystems/pramfs.txt linux-3.5-rc2/Documentation/filesystems/pramfs.txt
+--- linux-3.5-rc2-orig/Documentation/filesystems/pramfs.txt	1970-01-01 01:00:00.000000000 +0100
++++ linux-3.5-rc2/Documentation/filesystems/pramfs.txt	2012-06-10 10:08:28.000000000 +0200
+@@ -0,0 +1,179 @@
++
++PRAMFS Overview
++===============
++
++Many embedded systems have a block of non-volatile RAM separate from
++normal system memory, i.e. of which the kernel maintains no memory page
++descriptors. For such systems it would be beneficial to mount a
++fast read/write filesystem over this "I/O memory", for storing frequently
++accessed data that must survive system reboots and power cycles or volatile
++data avoiding to write on a disk or flash. An example usage might be system
++logs under /var/log or debug information of a flight-recorder.
++
++Linux traditionally had no support for a persistent, non-volatile RAM-based
++filesystem, persistent meaning the filesystem survives a system reboot
++or power cycle intact. The RAM-based filesystems such as tmpfs and ramfs
++have no actual backing store but exist entirely in the page and buffer
++caches, hence the filesystem disappears after a system reboot or
++power cycle.
++
++A relatively straightforward solution is to write a simple block driver
++for the non-volatile RAM, and mount over it any disk-based filesystem such
++as ext2, ext3, ext4, etc.
++
++But the disk-based fs over non-volatile RAM block driver approach has
++some drawbacks:
++
++1. Complexity of disk-based fs: disk-based filesystems such as ext2/ext3/ext4
++   were designed for optimum performance on spinning disk media, so they
++   implement features such as block groups, which attempts to group inode data
++   into a contiguous set of data blocks to minimize disk seeking when accessing
++   files. For RAM there is no such concern; a file's data blocks can be
++   scattered throughout the media with no access speed penalty at all. So block
++   groups in a filesystem mounted over RAM just adds unnecessary
++   complexity. A better approach is to use a filesystem specifically
++   tailored to RAM media which does away with these disk-based features.
++   This increases the efficient use of space on the media, i.e. more
++   space is dedicated to actual file data storage and less to meta-data
++   needed to maintain that file data.
++
++2. Different problems between disks and RAM: Because PRAMFS attempts to avoid
++   filesystem corruption caused by kernel bugs, dirty pages in the page cache
++   are not allowed to be written back to the backing-store RAM. This way, an
++   errant write into the page cache will not get written back to the filesystem.
++   However, if the backing-store RAM is comparable in access speed to system
++   memory, the penalty of not using caching is minimal. With this consideration
++   it's better to move file data directly between the user buffers and the backing
++   store RAM, i.e. use direct I/O. This prevents the unnecessary populating of
++   the page cache with dirty pages. However direct I/O has to be enabled at
++   every file open. To enable direct I/O at all times for all regular files
++   requires either that applications be modified to include the O_DIRECT flag on
++   all file opens, or that the filesystem used performs direct I/O by default.
++
++The Persistent/Protected RAM Special Filesystem (PRAMFS) is a read/write
++filesystem that has been designed to address these issues. PRAMFS is targeted
++to fast I/O memory, and if the memory is non-volatile, the filesystem will be
++persistent.
++
++In PRAMFS, direct I/O is enabled across all files in the filesystem, in other
++words the O_DIRECT flag is forced on every open of a PRAMFS file. Also, file
++I/O in the PRAMFS is always synchronous. There is no need to block the current
++process while the transfer to/from the PRAMFS is in progress, since one of
++the requirements of the PRAMFS is that the filesystem exists in fast RAM. So
++file I/O in PRAMFS is always direct, synchronous, and never blocks.
++
++The data organization in PRAMFS can be thought of as an extremely simplified
++version of ext2, such that the ratio of data to meta-data is very high.
++
++PRAMFS supports the execute-in-place. With XIP, instead of keeping data in the
++page cache, the need to have a page cache copy is eliminated completely.
++Read&write type operations are performed directly from/to the memory. For file
++mappings, the RAM itself is mapped directly into userspace. XIP, in addition,
++speed up the applications start-up time because it removes the needs of any
++copies.
++
++PRAMFS is write protected. The page table entries that map the backing-store
++RAM are normally marked read-only. Write operations into the filesystem
++temporarily mark the affected pages as writeable, the write operation is
++carried out with locks held, and then the page table entries is
++marked read-only again.
++This feature provides protection against filesystem corruption caused by errant
++writes into the RAM due to kernel bugs for instance. In case there are systems
++where the write protection is not possible (for instance the RAM cannot be
++mapped with page tables), this feature can be disabled via the
++CONFIG_PRAMFS_WRITE_PROTECT config option.
++
++PRAMFS supports extended attributes, ACLs and security labels.
++
++In summary, PRAMFS is a light-weight, space-efficient special filesystem that
++is ideal for systems with a block of fast non-volatile RAM that need to access
++data on it using a standard filesytem interface.
++
++Supported mount options
++=======================
++
++The PRAMFS currently requires one mount option, and there are several
++optional mount options:
++
++physaddr=	Required. It tells PRAMFS the physical address of the
++		start of the RAM that makes up the filesystem. The
++		physical address must be located on a page boundary.
++
++init=		Optional. It is used to initialize the memory to an
++		empty filesystem. Any data in an existing filesystem
++		will be lost if this option is given. The parameter to
++		"init=" is the RAM in kilo/mega/giga bytes.
++
++bs=		Optional. It is used to specify a block size. It is
++		ignored if the "init=" option is not specified, since
++		otherwise the block size is read from the PRAMFS
++		super-block. The default blocksize is 2048 bytes,
++		and the allowed block sizes are 512, 1024, 2048, and
++		4096.
++
++bpi=		Optional. It is used to specify the bytes per inode
++		ratio, i.e. for every N bytes in the filesystem, an
++		inode will be created. This behaves the same as the "-i"
++		option to mke2fs. It is ignored if the "init=" option is
++		not specified.
++
++N=		Optional. It is used to specify the number of inodes to
++		allocate in the inode table. If the option is not
++		specified, the bytes-per-inode ratio is used to
++		calculate the number of inodes. If neither the "N=" or
++		"bpi=" options are specified, the default behavior is to
++		reserve 5% of the total space in the filesystem for the
++		inode table. This option behaves the same as the "-N"
++		option to mke2fs. It is ignored if the "init=" option is
++		not specified.
++
++errors=		Optional. It can be "cont", "remount-ro" and "panic". With the
++		first value no action is done in case of error. With the second
++		one the fs is mounted read-only. with the third one a kernel
++		panic happens. Default action is to continue on error.
++
++acl,noacl	Optional. Enable/disable the support for access control lists
++		(disabled by default).
++
++user_xattr,	Optional. Enable/disable the support for the user extended
++user_noxattr	attributes (disabled by default).
++
++noprotect	Optional. Disable the memory protection (enabled by default).
++
++xip		Optional. Enable the execute-in-place (disabled by default).
++
++Examples:
++
++mount -t pramfs -o physaddr=0x20000000,init=1M,bs=1k none /mnt/pram
++
++This example locates the filesystem at physical address 0x20000000, and
++also requests an empty filesystem be initialized, of total size of one
++megabyte and blocksize of one kilobyte. The mount point is /mnt/pram.
++
++mount -t pramfs -o physaddr=0x20000000 none /mnt/pram
++
++This example locates the filesystem at physical address 0x20000000 as in
++the first example, but uses the intact filesystem that already exists.
++
++Current Limitations
++===================
++
++- The RAM used for PRAMFS must be directly addressable.
++
++- PRAMFS does not support hard links.
++
++- PRAMFS supports only private memory mappings. This allows most
++  executables to run, but programs that attempt shared memory
++  mappings, such as X apps that use X shared memory, will fail.
++
++- PRAMFS does not support quota settings.
++
++Further Documentation
++=====================
++
++If you are interested in the internal design of PRAMFS, there is
++documentation available at the Sourceforge PRAMFS home page at
++http://pramfs.sourceforge.net/.
++
++Please send bug reports/comments/feedback to the pramfs development
++list at sourceforge: pramfs-devel@lists.sourceforge.net.
+diff -Nurp linux-3.5-rc2-orig/Documentation/filesystems/xip.txt linux-3.5-rc2/Documentation/filesystems/xip.txt
+--- linux-3.5-rc2-orig/Documentation/filesystems/xip.txt	2012-06-09 03:40:09.000000000 +0200
++++ linux-3.5-rc2/Documentation/filesystems/xip.txt	2012-06-10 10:08:28.000000000 +0200
+@@ -48,6 +48,8 @@ blocks if needed.
+ This address space operation is mutually exclusive with readpage&writepage that
+ do page cache read/write operations.
+ The following filesystems support it as of today:
++- pramfs: persistent and protected RAM filesystem, see
++  Documentation/filesystems/pramfs.txt
+ - ext2: the second extended filesystem, see Documentation/filesystems/ext2.txt
 
-Pramfs documentation:
-
-http://pramfs.sourceforge.net
-
-Git repo:
-
-git://pramfs.git.sourceforge.net/gitroot/pramfs/pramfs
-
-Marco
+ A set of file operations that do utilize get_xip_page can be found in
