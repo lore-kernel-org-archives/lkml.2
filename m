@@ -1,43 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755695Ab2FJKpy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jun 2012 06:45:54 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:63168 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751387Ab2FJKpx convert rfc822-to-8bit (ORCPT
+	id S1756046Ab2FJKuE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jun 2012 06:50:04 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:64361 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755355Ab2FJKuC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jun 2012 06:45:53 -0400
-MIME-Version: 1.0
-Date: Sun, 10 Jun 2012 18:45:52 +0800
-Message-ID: <CAFNq8R5D2Y8pxk=fajdAWv1v5L_r8kY7HfVh2gOLaNHq4SAOmA@mail.gmail.com>
-Subject: When switch_mm with thread migration, Why flush instruction cache on
- ARM platform?
-From: Li Haifeng <omycle@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Sun, 10 Jun 2012 06:50:02 -0400
+From: Sasha Levin <levinsasha928@gmail.com>
+To: dan.magenheimer@oracle.com, konrad.wilk@oracle.com
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Sasha Levin <levinsasha928@gmail.com>
+Subject: [PATCH v3 00/10] minor frontswap cleanups and tracing support
+Date: Sun, 10 Jun 2012 12:50:58 +0200
+Message-Id: <1339325468-30614-1-git-send-email-levinsasha928@gmail.com>
+X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Can someone tell me why flush instruction cache @118 Line below, when
-switch_mm with thread migration from other ARM core.
+Most of these patches are minor cleanups to the mm/frontswap.c code, the big
+chunk of new code can be attributed to the new tracing support.
 
-107 static inline void
-108 switch_mm(struct mm_struct *prev, struct mm_struct *next,
-109           struct task_struct *tsk)
-110 {
-111 #ifdef CONFIG_MMU
-112         unsigned int cpu = smp_processor_id();
-113
-114 #ifdef CONFIG_SMP
-115         /* check for possible thread migration */
-116         if (!cpumask_empty(mm_cpumask(next)) &&
-117             !cpumask_test_cpu(cpu, mm_cpumask(next)))
-118                 __flush_icache_all();
-119 #endif
-...
-130 #endif
-131 }
+Changes in v3:
+ - Fix merge error
+ - Commenct about new spinlock assertions
 
-Thanks.
+Changes in v2:
+ - Rebase to current version
+ - Address Konrad's comments
+
+Sasha Levin (10):
+  mm: frontswap: remove casting from function calls through ops
+    structure
+  mm: frontswap: trivial coding convention issues
+  mm: frontswap: split out __frontswap_curr_pages
+  mm: frontswap: split out __frontswap_unuse_pages
+  mm: frontswap: split frontswap_shrink further to simplify locking
+  mm: frontswap: make all branches of if statement in put page
+    consistent
+  mm: frontswap: remove unnecessary check during initialization
+  mm: frontswap: add tracing support
+  mm: frontswap: split out function to clear a page out
+  mm: frontswap: remove unneeded headers
+
+ include/trace/events/frontswap.h |  167 ++++++++++++++++++++++++++++++++++++++
+ mm/frontswap.c                   |  162 +++++++++++++++++++++++-------------
+ 2 files changed, 270 insertions(+), 59 deletions(-)
+ create mode 100644 include/trace/events/frontswap.h
+
+-- 
+1.7.8.6
+
