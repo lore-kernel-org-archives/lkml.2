@@ -1,42 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755526Ab2FJCEE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jun 2012 22:04:04 -0400
-Received: from smtp.syd.comcen.com.au ([203.23.236.77]:3964 "EHLO
-	smtp.syd.comcen.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754923Ab2FJCEC (ORCPT
+	id S1755583Ab2FJCNT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jun 2012 22:13:19 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:36418 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753936Ab2FJCNS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jun 2012 22:04:02 -0400
-Message-ID: <4FD40035.2020200@spin.net.au>
-Date: Sun, 10 Jun 2012 12:02:29 +1000
-From: Chris Jones <chrisjones@spin.net.au>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120422 Firefox/12.0 SeaMonkey/2.9
+	Sat, 9 Jun 2012 22:13:18 -0400
+Date: Sat, 9 Jun 2012 19:13:15 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>, Dave Jones <davej@redhat.com>
+cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Sasha Levin <levinsasha928@gmail.com>
+Subject: Re: kernel BUG at mm/memory.c:1228!
+In-Reply-To: <20120606165330.GA27744@redhat.com>
+Message-ID: <alpine.DEB.2.00.1206091904030.7832@chino.kir.corp.google.com>
+References: <20120606165330.GA27744@redhat.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: gcc compiler modification to cater for new programming language
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-comcen-MailScanner-Information: Please contact the ISP for more information
-X-comcen-MailScanner: Found to be clean
-X-comcen-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
-	score=-2.13, required 4, AWL 0.37, BAYES_00 -2.60, RDNS_NONE 0.10)
-X-comcen-MailScanner-From: chrisjones@spin.net.au
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Is it possible to modify the source code of gcc to enable to compilation 
-of a completely new programming language, as yet unrecognized? How much 
-of a big job would I be looking at for such a task?
+On Wed, 6 Jun 2012, Dave Jones wrote:
+
+> I hit this in overnight testing..
+> 
+> ------------[ cut here ]------------
+> kernel BUG at mm/memory.c:1228!
+
+Looks like a duplicate of the "mm: kernel BUG at mm/memory.c:1230" thread 
+at http://marc.info/?t=133788420400003
+
+Andrea suggested adding a printk of addr, end, vma->vm_start, and 
+vma->vm_end to debug it.
+
+Since it's been reported a few different times, perhaps this should be 
+merged?
 
 
-Regards
+mm, thp: print useful information when mmap_sem is unlocked in zap_pmd_range
 
--- 
-		Chris Jones
+Andrea asked for addr, end, vma->vm_start, and vma->vm_end to be emitted 
+when !rwsem_is_locked(&tlb->mm->mmap_sem).  Otherwise, debugging the 
+underlying issue is more difficult.
 
-OpenSUSE Linux x86_64 (PC)|Android (Smartphone)|Windows x86 (Gaming!)
-Kernel developer|Lead Developer of SDL|Lead Developer of Nest Linux|Gamer and Emulator nut|Web Services|Digital Imaging Services
-Controllers: Logitech Precision|PS3 controller|XB360 controller|Logitech Attack 3 j/stick
-Emulators: Fusion|Gens|ZSNES|Project64|PCSX-R|Stella|WinVICE|WinUAE
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ mm/memory.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
+diff --git a/mm/memory.c b/mm/memory.c
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -1225,7 +1225,15 @@ static inline unsigned long zap_pmd_range(struct mmu_gather *tlb,
+ 		next = pmd_addr_end(addr, end);
+ 		if (pmd_trans_huge(*pmd)) {
+ 			if (next - addr != HPAGE_PMD_SIZE) {
+-				VM_BUG_ON(!rwsem_is_locked(&tlb->mm->mmap_sem));
++#ifdef CONFIG_DEBUG_VM
++				if (!rwsem_is_locked(&tlb->mm->mmap_sem)) {
++					pr_err("%s: mmap_sem is unlocked! addr=%lu end=%lu vma->vm_start=%lu vma->vm_end=%lu\n",
++						__func__, addr, end,
++						vma->vm_start,
++						vma->vm_end);
++					BUG();
++				}
++#endif
+ 				split_huge_page_pmd(vma->vm_mm, pmd);
+ 			} else if (zap_huge_pmd(tlb, vma, pmd, addr))
+ 				goto next;
