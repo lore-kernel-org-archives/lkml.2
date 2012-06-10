@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755583Ab2FJCNT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Jun 2012 22:13:19 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:36418 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753936Ab2FJCNS (ORCPT
+	id S1755654Ab2FJCPs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Jun 2012 22:15:48 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:55639 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753936Ab2FJCPr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Jun 2012 22:13:18 -0400
-Date: Sat, 9 Jun 2012 19:13:15 -0700 (PDT)
+	Sat, 9 Jun 2012 22:15:47 -0400
+Date: Sat, 9 Jun 2012 19:15:45 -0700 (PDT)
 From: David Rientjes <rientjes@google.com>
 X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>, Dave Jones <davej@redhat.com>
-cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: Re: kernel BUG at mm/memory.c:1228!
-In-Reply-To: <20120606165330.GA27744@redhat.com>
-Message-ID: <alpine.DEB.2.00.1206091904030.7832@chino.kir.corp.google.com>
-References: <20120606165330.GA27744@redhat.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org
+Subject: Re: oomkillers gone wild.
+In-Reply-To: <alpine.LFD.2.02.1206082232570.3086@ionos>
+Message-ID: <alpine.DEB.2.00.1206091914560.7832@chino.kir.corp.google.com>
+References: <20120604152710.GA1710@redhat.com> <alpine.DEB.2.00.1206041629500.7769@chino.kir.corp.google.com> <20120605174454.GA23867@redhat.com> <20120605185239.GA28172@redhat.com> <alpine.DEB.2.00.1206081256330.19054@chino.kir.corp.google.com>
+ <alpine.LFD.2.02.1206082232570.3086@ionos>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -25,51 +25,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Jun 2012, Dave Jones wrote:
+On Fri, 8 Jun 2012, Thomas Gleixner wrote:
 
-> I hit this in overnight testing..
+> > If we're leaking task_struct's, meaning that put_task_struct() isn't 
+> > actually freeing them when the refcount goes to 0, then it's certainly not 
+> > because of the oom killer which only sends a SIGKILL to the selected 
+> > process.
 > 
-> ------------[ cut here ]------------
-> kernel BUG at mm/memory.c:1228!
+> I rather suspect, that this is a asymetry between get_ and
+> put_task_struct and refcount just doesn't go to zero.
+> 
 
-Looks like a duplicate of the "mm: kernel BUG at mm/memory.c:1230" thread 
-at http://marc.info/?t=133788420400003
-
-Andrea suggested adding a printk of addr, end, vma->vm_start, and 
-vma->vm_end to debug it.
-
-Since it's been reported a few different times, perhaps this should be 
-merged?
-
-
-mm, thp: print useful information when mmap_sem is unlocked in zap_pmd_range
-
-Andrea asked for addr, end, vma->vm_start, and vma->vm_end to be emitted 
-when !rwsem_is_locked(&tlb->mm->mmap_sem).  Otherwise, debugging the 
-underlying issue is more difficult.
-
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- mm/memory.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
-
-diff --git a/mm/memory.c b/mm/memory.c
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -1225,7 +1225,15 @@ static inline unsigned long zap_pmd_range(struct mmu_gather *tlb,
- 		next = pmd_addr_end(addr, end);
- 		if (pmd_trans_huge(*pmd)) {
- 			if (next - addr != HPAGE_PMD_SIZE) {
--				VM_BUG_ON(!rwsem_is_locked(&tlb->mm->mmap_sem));
-+#ifdef CONFIG_DEBUG_VM
-+				if (!rwsem_is_locked(&tlb->mm->mmap_sem)) {
-+					pr_err("%s: mmap_sem is unlocked! addr=%lu end=%lu vma->vm_start=%lu vma->vm_end=%lu\n",
-+						__func__, addr, end,
-+						vma->vm_start,
-+						vma->vm_end);
-+					BUG();
-+				}
-+#endif
- 				split_huge_page_pmd(vma->vm_mm, pmd);
- 			} else if (zap_huge_pmd(tlb, vma, pmd, addr))
- 				goto next;
+We found an actual task_struct leak within put_task_struct() because of 
+the free task notifiers during the 3.4 -rc cycle, so if kmemleak doesn't 
+show anything then would it be possible to bisect the problem Dave?
