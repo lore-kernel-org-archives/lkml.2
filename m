@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755909Ab2FJOrB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jun 2012 10:47:01 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:60727 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751392Ab2FJOrA (ORCPT
+	id S1756131Ab2FJOtE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jun 2012 10:49:04 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:42657 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751392Ab2FJOtC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jun 2012 10:47:00 -0400
+	Sun, 10 Jun 2012 10:49:02 -0400
+X-Sasl-enc: +OxMzDGGyhRtySz29RTJs2R7YHFeE5M/jwnL3A1Sb4IC 1339339740
+Date: Sun, 10 Jun 2012 11:48:58 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Vsevolod Kozlov <zaba@wybt.net>
+Cc: linux-kernel@vger.kernel.org, ibm-acpi-devel@lists.sourceforge.net
+Subject: Re: thinkpad_acpi: Saving bluetooth state to NVRAM problem and fix
+Message-ID: <20120610144858.GB11169@khazad-dum.debian.net>
+References: <20120610091840.GA4960@scharfenberg>
 MIME-Version: 1.0
-X-Originating-IP: [89.139.19.137]
-In-Reply-To: <1338989907-25360-1-git-send-email-sjur.brandeland@stericsson.com>
-References: <1338989907-25360-1-git-send-email-sjur.brandeland@stericsson.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Sun, 10 Jun 2012 17:46:39 +0300
-Message-ID: <CAK=WgbZ+KcbQL4cuZjzcmYVUAt1AVyt6Uh6xJJ8yeW90Zt65zg@mail.gmail.com>
-Subject: Re: [PATCH 0/7] remoteproc: Custom firmware handling.
-To: sjur.brandeland@stericsson.com
-Cc: Loic PALLARDY <loic.pallardy@stericsson.com>,
-        Ludovic BARRE <ludovic.barre@stericsson.com>,
-        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjurbren@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120610091840.GA4960@scharfenberg>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sjur,
+On Sun, 10 Jun 2012, Vsevolod Kozlov wrote:
+> thinkpad_acpi normally fails to save Bluetooth state to NVRAM on my system
+> (ThinkPad X120e).  However, a small change in the code fixes the functionality:
+> 
+> --- a/drivers/platform/x86/thinkpad_acpi.c
+> +++ b/drivers/platform/x86/thinkpad_acpi.c
+> @@ -3999,7 +3999,7 @@ static const struct tpacpi_rfk_ops bluetooth_tprfk_ops = {
+>  static void bluetooth_shutdown(void)
+>  {
+>  	/* Order firmware to save current state to NVRAM */
+> -	if (!acpi_evalf(NULL, NULL, "\\BLTH", "vd",
+> +	if (!acpi_evalf(NULL, NULL, "\\_SB.BLTH", "vd",
+>  			TP_ACPI_BLTH_SAVE_STATE))
+>  		pr_notice("failed to save bluetooth state to NVRAM\n");
+>  	else
+> 
+> I can't tell whether this breaks the functionality on other ThinkPad systems
+> because I don't have any, though.
 
-On Wed, Jun 6, 2012 at 4:38 PM,  <sjur.brandeland@stericsson.com> wrote:
-> I think I have addressed most of your review comments
+Yes, it would break other systems.  But I can write a fix that supports both
+systems with the data you supplied.
 
-Thanks! The patches look fairly good, I'm pretty sure we could merge
-them very soon.
-
-> except dynamic detection of firmware format.
-
-It could be really nice to have that so we don't have to couple
-platforms with specific binary formats.
-
-Is it possible to dynamically detect the STE binary format ? Do you
-have some magic string in the header of the file or something ?
-
-> Warning: I have not been able to test this properly,
-> I don't yet have a proper test environment running.
-
-Ok, please let me know when you're satisfied with the testing and
-would like me to go ahead and do my own pre-merging tests.
-
-Thanks,
-Ohad.
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
