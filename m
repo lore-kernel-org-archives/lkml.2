@@ -1,88 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755743Ab2FJNjf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jun 2012 09:39:35 -0400
-Received: from nebuchadnezzar.smejdil.cz ([195.122.194.203]:55663 "EHLO
-	nebuchadnezzar.smejdil.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751780Ab2FJNje (ORCPT
+	id S1756028Ab2FJNkd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jun 2012 09:40:33 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:37553 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753934Ab2FJNkc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jun 2012 09:39:34 -0400
-X-Greylist: delayed 432 seconds by postgrey-1.27 at vger.kernel.org; Sun, 10 Jun 2012 09:39:34 EDT
-From: cijoml@volny.cz
-To: linux-kernel@vger.kernel.org
-Subject: OOPS firmware not loaded
-Date: Sun, 10 Jun 2012 15:32:18 +0200
-Mime-Version: 1.0
-Content-Type: text/plain; charset="utf-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-Message-Id: <20120610133218.591D0B836@nebuchadnezzar.smejdil.cz>
+	Sun, 10 Jun 2012 09:40:32 -0400
+From: "Camuso, Tony" <Tony.Camuso@hp.com>
+To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Abrams, Melissa" <melissa.abrams@hp.com>,
+        "Rusk, Mark" <mark.rusk@hp.com>
+Date: Sun, 10 Jun 2012 14:39:20 +0100
+Subject: Re: misc: hpilo patch for increasing max channels
+Thread-Topic: Re: misc: hpilo patch for increasing max channels
+Thread-Index: Ac1HDnCp8tK2RRQbRPuGoEWpjoR+Zw==
+Message-ID: <B9407FD6893A644D9D6B72C30268E7A94AF2791602@GVW0538EXC.americas.hpqcorp.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys, 
+In-reply-to: http://marc.info/?i=20120216000741.GA21792%20()%20kroah%20!%20com
 
-after upgrade to the 3.4.X kernel my dongle does not resume correctly. 
-Firmware is in its place and when I remove and plug it again into USB slot, 
-firmware is loaded.
-There is one more long lasting problem, when I suspend with DVB stream 
-playing, computer freezes completely! 
+Hi, Greg.
 
-Thank you for fix. 
+Here is the corrected patch. Applies to 3.5.0-rc2 without complaint.
 
-PM: resume of devices complete after 1944.596 msecs
-dvb-usb: found a 'Leadtek Winfast DTV Dongle (STK7700P based)' in cold 
-state, will try to load a firmware
- ------------[ cut here ]------------
-WARNING: at drivers/base/firmware_class.c:597 request_firmware+0x45/0xae()
-Hardware name: 901
-Modules linked in: rndis_host cdc_ether usbnet mii i915 drm_kms_helper 
-cfbcopyarea cfbimgblt cfbfillrect rfcomm bnep aes_i586 aes_generic loop 
-rc_dib0700_rc5 dvb_usb_dib0700 dib0090 dib7000p dib7000m dib0070 dvb_usb 
-dib8000 mt2266 tuner_xc2028 dib3000mc mxl5007t xc5000 s5h1411 mt2060 
-lgdt3305 dvb_core rc_core xc4000 dibx000_common usbhid hid cryptomgr aead 
-btusb bluetooth arc4 crypto_algapi snd_hda_codec_realtek snd_hda_intel 
-snd_hda_codec snd_hwdep snd_pcm_oss snd_mixer_oss snd_pcm snd_seq_oss 
-snd_seq_midi_event snd_seq rtl8192ce rtl8192c_common rtlwifi snd_timer 
-snd_seq_device mac80211 coretemp uhci_hcd psmouse cfg80211 ehci_hcd snd 
-video eeepc_laptop sparse_keymap hwmon rfkill pci_hotplug atl1e 
-snd_page_alloc
-Pid: 7691, comm: pm-suspend Tainted: G        W    3.4.1 #1
-Call Trace:
- [<c1022639>] ? warn_slowpath_common+0x7c/0x8f
- [<c11e0777>] ? request_firmware+0x45/0xae
- [<c11e0777>] ? request_firmware+0x45/0xae
- [<c1022667>] ? warn_slowpath_null+0x1b/0x1e
- [<c11e0777>] ? request_firmware+0x45/0xae
- [<f880db3d>] ? dib0700_identify_state+0x81/0x89 [dvb_usb_dib0700]
- [<f87ae245>] ? dvb_usb_download_firmware+0x21/0xa4 [dvb_usb]
- [<f880dabc>] ? dib0700_probe+0xa2/0xa2 [dvb_usb_dib0700]
- [<f880dabc>] ? dib0700_probe+0xa2/0xa2 [dvb_usb_dib0700]
- [<f87ae52f>] ? dvb_usb_device_init+0x157/0x518 [dvb_usb]
- [<f880da4f>] ? dib0700_probe+0x35/0xa2 [dvb_usb_dib0700]
- [<c1214d6d>] ? usb_match_one_id+0x19/0x6e
- [<c12154c1>] ? usb_probe_interface+0xa6/0xe7
- [<c10e06d2>] ? sysfs_create_link+0xf/0x11
- [<c11d9b7d>] ? driver_probe_device+0x86/0x167
- [<c1214f61>] ? usb_device_match+0x31/0x54
- [<c11d8a02>] ? bus_for_each_drv+0x37/0x5f
- [<c11d9d4e>] ? device_attach+0x52/0x69
- [<c11d9cb9>] ? __driver_attach+0x5b/0x5b
- [<c121588e>] ? usb_rebind_intf+0x25/0x42
- [<c12158d3>] ? usb_resume_complete+0x28/0x36
- [<c11dd983>] ? dpm_complete+0xb7/0x111
- [<c10463bc>] ? suspend_devices_and_enter+0x164/0x189
- [<c10464fb>] ? pm_suspend+0x11a/0x137
- [<c1045c59>] ? state_store+0x75/0x90
- [<c1045be4>] ? pm_async_store+0x2f/0x2f
- [<c1146abe>] ? kobj_attr_store+0x1a/0x22
- [<c10def7b>] ? sysfs_write_file+0xbd/0xe9
- [<c10deebe>] ? sysfs_open_file+0x1c5/0x1c5
- [<c109fd03>] ? vfs_write+0x7a/0xad
- [<c109fdd6>] ? sys_write+0x41/0x67
- [<c12a850c>] ? sysenter_do_call+0x12/0x22
- ---[ end trace 7632ba16109d1440 ]---
-usb 2-2.3: firmware: dvb-usb-dib0700-1.20.fw will not be loaded
-dvb-usb: did not find the firmware file. (dvb-usb-dib0700-1.20.fw) Please 
-see linux/Documentation/dvb/ for more details on firmware-problems. (-11)
-Restarting tasks ... done.
+---
+
+Increase number of supported channels from 8 to 24.
+Make the number of channels configurable via module parameter max_ccb.
+
+Signed-off-by: Mark Rusk <mark.rusk@hp.com>
+Signed-off-by: Tony Camuso <tony.camuso@hp.com>
+---
+ drivers/misc/hpilo.c |   33 +++++++++++++++++++++------------
+ drivers/misc/hpilo.h |    4 +++-
+ 2 files changed, 24 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/misc/hpilo.c b/drivers/misc/hpilo.c
+index fffc227..6df0da4 100644
+--- a/drivers/misc/hpilo.c
++++ b/drivers/misc/hpilo.c
+@@ -30,6 +30,7 @@
+ 
+ static struct class *ilo_class;
+ static unsigned int ilo_major;
++static unsigned int max_ccb = MIN_CCB;
+ static char ilo_hwdev[MAX_ILO_DEV];
+ 
+ static inline int get_entry_id(int entry)
+@@ -424,7 +425,7 @@ static void ilo_set_reset(struct ilo_hwinfo *hw)
+ 	 * Mapped memory is zeroed on ilo reset, so set a per ccb flag
+ 	 * to indicate that this ccb needs to be closed and reopened.
+ 	 */
+-	for (slot = 0; slot < MAX_CCB; slot++) {
++	for (slot = 0; slot < max_ccb; slot++) {
+ 		if (!hw->ccb_alloc[slot])
+ 			continue;
+ 		set_channel_reset(&hw->ccb_alloc[slot]->driver_ccb);
+@@ -535,7 +536,7 @@ static int ilo_close(struct inode *ip, struct file *fp)
+ 	struct ilo_hwinfo *hw;
+ 	unsigned long flags;
+ 
+-	slot = iminor(ip) % MAX_CCB;
++	slot = iminor(ip) % max_ccb;
+ 	hw = container_of(ip->i_cdev, struct ilo_hwinfo, cdev);
+ 
+ 	spin_lock(&hw->open_lock);
+@@ -566,7 +567,7 @@ static int ilo_open(struct inode *ip, struct file *fp)
+ 	struct ilo_hwinfo *hw;
+ 	unsigned long flags;
+ 
+-	slot = iminor(ip) % MAX_CCB;
++	slot = iminor(ip) % max_ccb;
+ 	hw = container_of(ip->i_cdev, struct ilo_hwinfo, cdev);
+ 
+ 	/* new ccb allocation */
+@@ -663,7 +664,7 @@ static irqreturn_t ilo_isr(int irq, void *data)
+ 		ilo_set_reset(hw);
+ 	}
+ 
+-	for (i = 0; i < MAX_CCB; i++) {
++	for (i = 0; i < max_ccb; i++) {
+ 		if (!hw->ccb_alloc[i])
+ 			continue;
+ 		if (pending & (1 << i))
+@@ -697,14 +698,14 @@ static int __devinit ilo_map_device(struct pci_dev *pdev, struct ilo_hwinfo *hw)
+ 	}
+ 
+ 	/* map the adapter shared memory region */
+-	hw->ram_vaddr = pci_iomap(pdev, 2, MAX_CCB * ILOHW_CCB_SZ);
++	hw->ram_vaddr = pci_iomap(pdev, 2, max_ccb * ILOHW_CCB_SZ);
+ 	if (hw->ram_vaddr == NULL) {
+ 		dev_err(&pdev->dev, "Error mapping shared mem\n");
+ 		goto mmio_free;
+ 	}
+ 
+ 	/* map the doorbell aperture */
+-	hw->db_vaddr = pci_iomap(pdev, 3, MAX_CCB * ONE_DB_SIZE);
++	hw->db_vaddr = pci_iomap(pdev, 3, max_ccb * ONE_DB_SIZE);
+ 	if (hw->db_vaddr == NULL) {
+ 		dev_err(&pdev->dev, "Error mapping doorbell\n");
+ 		goto ram_free;
+@@ -727,7 +728,7 @@ static void ilo_remove(struct pci_dev *pdev)
+ 	clear_device(ilo_hw);
+ 
+ 	minor = MINOR(ilo_hw->cdev.dev);
+-	for (i = minor; i < minor + MAX_CCB; i++)
++	for (i = minor; i < minor + max_ccb; i++)
+ 		device_destroy(ilo_class, MKDEV(ilo_major, i));
+ 
+ 	cdev_del(&ilo_hw->cdev);
+@@ -737,7 +738,7 @@ static void ilo_remove(struct pci_dev *pdev)
+ 	pci_release_regions(pdev);
+ 	pci_disable_device(pdev);
+ 	kfree(ilo_hw);
+-	ilo_hwdev[(minor / MAX_CCB)] = 0;
++	ilo_hwdev[(minor / max_ccb)] = 0;
+ }
+ 
+ static int __devinit ilo_probe(struct pci_dev *pdev,
+@@ -746,6 +747,11 @@ static int __devinit ilo_probe(struct pci_dev *pdev,
+ 	int devnum, minor, start, error;
+ 	struct ilo_hwinfo *ilo_hw;
+ 
++	if (max_ccb > MAX_CCB)
++		max_ccb = MAX_CCB;
++	else if (max_ccb < MIN_CCB)
++		max_ccb = MIN_CCB;
++
+ 	/* find a free range for device files */
+ 	for (devnum = 0; devnum < MAX_ILO_DEV; devnum++) {
+ 		if (ilo_hwdev[devnum] == 0) {
+@@ -795,14 +801,14 @@ static int __devinit ilo_probe(struct pci_dev *pdev,
+ 
+ 	cdev_init(&ilo_hw->cdev, &ilo_fops);
+ 	ilo_hw->cdev.owner = THIS_MODULE;
+-	start = devnum * MAX_CCB;
+-	error = cdev_add(&ilo_hw->cdev, MKDEV(ilo_major, start), MAX_CCB);
++	start = devnum * max_ccb;
++	error = cdev_add(&ilo_hw->cdev, MKDEV(ilo_major, start), max_ccb);
+ 	if (error) {
+ 		dev_err(&pdev->dev, "Could not add cdev\n");
+ 		goto remove_isr;
+ 	}
+ 
+-	for (minor = 0 ; minor < MAX_CCB; minor++) {
++	for (minor = 0 ; minor < max_ccb; minor++) {
+ 		struct device *dev;
+ 		dev = device_create(ilo_class, &pdev->dev,
+ 				    MKDEV(ilo_major, minor), NULL,
+@@ -879,11 +885,14 @@ static void __exit ilo_exit(void)
+ 	class_destroy(ilo_class);
+ }
+ 
+-MODULE_VERSION("1.2");
++MODULE_VERSION("1.3");
+ MODULE_ALIAS(ILO_NAME);
+ MODULE_DESCRIPTION(ILO_NAME);
+ MODULE_AUTHOR("David Altobelli <david.altobelli@hp.com>");
+ MODULE_LICENSE("GPL v2");
+ 
++module_param(max_ccb, uint, 0444);
++MODULE_PARM_DESC(max_ccb, "Maximum number of HP iLO channels to attach (8)");
++
+ module_init(ilo_init);
+ module_exit(ilo_exit);
+diff --git a/drivers/misc/hpilo.h b/drivers/misc/hpilo.h
+index 54e43ad..b97672e 100644
+--- a/drivers/misc/hpilo.h
++++ b/drivers/misc/hpilo.h
+@@ -14,7 +14,9 @@
+ #define ILO_NAME "hpilo"
+ 
+ /* max number of open channel control blocks per device, hw limited to 32 */
+-#define MAX_CCB		8
++#define MAX_CCB	       24
++/* min number of open channel control blocks per device, hw limited to 32 */
++#define MIN_CCB		8
+ /* max number of supported devices */
+ #define MAX_ILO_DEV	1
+ /* max number of files */
+-- 
+1.7.10.2
+
