@@ -1,182 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753264Ab2FJIvz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jun 2012 04:51:55 -0400
-Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:3489 "EHLO
-	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751451Ab2FJIvx (ORCPT
+	id S1753235Ab2FJJEY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jun 2012 05:04:24 -0400
+Received: from audible.transient.net ([216.254.12.79]:53181 "HELO
+	audible.transient.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752828Ab2FJJEW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jun 2012 04:51:53 -0400
-Message-ID: <1339318307.30984.27.camel@x61.thuisdomein>
-Subject: [PATCH] sparc: remove two unused headers
-From: Paul Bolle <pebolle@tiscali.nl>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Sun, 10 Jun 2012 10:51:47 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-OriginalArrivalTime: 10 Jun 2012 08:51:48.0062 (UTC) FILETIME=[452D1FE0:01CD46E6]
-X-RcptDomain: vger.kernel.org
+	Sun, 10 Jun 2012 05:04:22 -0400
+Date: Sun, 10 Jun 2012 09:03:42 +0000
+From: Jamie Heilman <jamie@audible.transient.net>
+To: "J. Bruce Fields" <bfields@redhat.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: NFSv4 regression, kernel BUG at fs/nfsd/nfs4state.c:1044!
+Message-ID: <20120610090342.GA5076@cucamonga.audible.transient.net>
+Mail-Followup-To: "J. Bruce Fields" <bfields@redhat.com>,
+	linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nothing includes these two headers. None of the macros they define are
-used anywhere in the tree. This was also the case in v2.6.12-rc2 and,
-presumably, every release in between. These two headers can safely be
-removed.
+Upgrading my NFSv4 server from 3.3.8 to 3.4.2 I've managed to
+reproduce this reliably:
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Tested by prodding at the (history of the) tree with various git
-commands.
+------------[ cut here ]------------
+kernel BUG at fs/nfsd/nfs4state.c:1044!
+invalid opcode: 0000 [#1] 
+Modules linked in: md5 cpufreq_conservative cpufreq_stats cpufreq_powersave cpufreq_ondemand autofs4 quota_v2 quota_tree nfsd nfs_acl exportfs nfs lockd fscache auth_rpcgss sunrpc xt_mark xt_dscp cls_fw sch_htb iptable_nat nf_nat ipt_REJECT xt_multiport xt_mac xt_tcpudp iptable_mangle nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack xt_LOG xt_limit iptable_filter ip_tables x_tables dm_crypt dm_mod snd_hda_codec_via tpm_tis tpm via_rhine snd_hda_intel snd_hda_codec tpm_bios mii via_velocity snd_hwdep snd_pcm snd_timer snd soundcore snd_page_alloc evdev crc_ccitt via_agp agpgart button
 
- arch/sparc/include/asm/cmt.h    |   59 ----------------------------------
- arch/sparc/include/asm/mpmbox.h |   67 ---------------------------------------
- 2 files changed, 0 insertions(+), 126 deletions(-)
- delete mode 100644 arch/sparc/include/asm/cmt.h
- delete mode 100644 arch/sparc/include/asm/mpmbox.h
+Pid: 1804, comm: nfsd Not tainted 3.4.2 #3 To Be Filled By O.E.M. To Be Filled By O.E.M./To be filled by O.E.M.
+EIP: 0060:[<f86ac683>] EFLAGS: 00010246 CPU: 0
+EIP is at free_client.isra.47+0x3/0x5 [nfsd]
+EAX: 00000000 EBX: e9d48800 ECX: e9d48030 EDX: f86b20f8
+ESI: e9d48810 EDI: e9cf9ec0 EBP: e9cf9eb4 ESP: e9cf9eb4
+ DS: 007b ES: 007b FS: 0000 GS: 00e0 SS: 0068
+CR0: 8005003b CR2: b760bee0 CR3: 34d04000 CR4: 000006b0
+DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+DR6: ffff0ff0 DR7: 00000400
+Process nfsd (pid: 1804, ti=e9cf8000 task=e9cf4000 task.ti=e9cf8000)
+Stack:
+ e9cf9ed4 f86a6c00 e9d48828 e9cf9ec0 e9cf9ec0 e9d48800 e9d48000 00000000
+ e9cf9f00 f86a6d36 00000000 000555c0 f53c0001 4fd43f69 00000001 7ad0b2a0
+ f4c45000 f4c44060 00000360 e9cf9f3c f869f63c f86aff20 e9cb9000 00000000
+Call Trace:
+ [<f86a6c00>] expire_client+0xb1/0xb9 [nfsd]
+ [<f86a6d36>] nfsd4_setclientid_confirm+0x12e/0x1c7 [nfsd]
+ [<f869f63c>] nfsd4_proc_compound+0x1fd/0x354 [nfsd]
+ [<f86946e3>] nfsd_dispatch+0x89/0x134 [nfsd]
+ [<f86c6d64>] svc_process+0x327/0x4e3 [sunrpc]
+ [<f86940d2>] nfsd+0xd2/0x10b [nfsd]
+ [<f8694000>] ? 0xf8693fff
+ [<c102d53a>] kthread+0x66/0x6b
+ [<c102d4d4>] ? flush_kthread_worker+0x74/0x74
+ [<c123193e>] kernel_thread_helper+0x6/0xd
+Code: 01 80 3e 00 74 04 89 f2 eb a2 8b 4d e8 8b 55 ec 8b 45 f0 0f c8 89 19 89 02 31 c0 83 c4 18 5b 5e 5f 5d c3 55 89 e5 0f 0b 55 89 e5 <0f> 0b 55 89 e5 57 56 89 d6 53 89 c3 8b 78 34 89 d0 e8 b4 8f ff 
+EIP: [<f86ac683>] free_client.isra.47+0x3/0x5 [nfsd] SS:ESP 0068:e9cf9eb4
+---[ end trace bf1613e00e6f3bbe ]---
 
-diff --git a/arch/sparc/include/asm/cmt.h b/arch/sparc/include/asm/cmt.h
-deleted file mode 100644
-index 870db59..0000000
---- a/arch/sparc/include/asm/cmt.h
-+++ /dev/null
-@@ -1,59 +0,0 @@
--#ifndef _SPARC64_CMT_H
--#define _SPARC64_CMT_H
--
--/* cmt.h: Chip Multi-Threading register definitions
-- *
-- * Copyright (C) 2004 David S. Miller (davem@redhat.com)
-- */
--
--/* ASI_CORE_ID - private */
--#define LP_ID		0x0000000000000010UL
--#define  LP_ID_MAX	0x00000000003f0000UL
--#define  LP_ID_ID	0x000000000000003fUL
--
--/* ASI_INTR_ID - private */
--#define LP_INTR_ID	0x0000000000000000UL
--#define  LP_INTR_ID_ID	0x00000000000003ffUL
--
--/* ASI_CESR_ID - private */
--#define CESR_ID		0x0000000000000040UL
--#define  CESR_ID_ID	0x00000000000000ffUL
--
--/* ASI_CORE_AVAILABLE - shared */
--#define LP_AVAIL	0x0000000000000000UL
--#define  LP_AVAIL_1	0x0000000000000002UL
--#define  LP_AVAIL_0	0x0000000000000001UL
--
--/* ASI_CORE_ENABLE_STATUS - shared */
--#define LP_ENAB_STAT	0x0000000000000010UL
--#define  LP_ENAB_STAT_1	0x0000000000000002UL
--#define  LP_ENAB_STAT_0	0x0000000000000001UL
--
--/* ASI_CORE_ENABLE - shared */
--#define LP_ENAB		0x0000000000000020UL
--#define  LP_ENAB_1	0x0000000000000002UL
--#define  LP_ENAB_0	0x0000000000000001UL
--
--/* ASI_CORE_RUNNING - shared */
--#define LP_RUNNING_RW	0x0000000000000050UL
--#define LP_RUNNING_W1S	0x0000000000000060UL
--#define LP_RUNNING_W1C	0x0000000000000068UL
--#define  LP_RUNNING_1	0x0000000000000002UL
--#define  LP_RUNNING_0	0x0000000000000001UL
--
--/* ASI_CORE_RUNNING_STAT - shared */
--#define LP_RUN_STAT	0x0000000000000058UL
--#define  LP_RUN_STAT_1	0x0000000000000002UL
--#define  LP_RUN_STAT_0	0x0000000000000001UL
--
--/* ASI_XIR_STEERING - shared */
--#define LP_XIR_STEER	0x0000000000000030UL
--#define  LP_XIR_STEER_1	0x0000000000000002UL
--#define  LP_XIR_STEER_0	0x0000000000000001UL
--
--/* ASI_CMT_ERROR_STEERING - shared */
--#define CMT_ER_STEER	0x0000000000000040UL
--#define  CMT_ER_STEER_1	0x0000000000000002UL
--#define  CMT_ER_STEER_0	0x0000000000000001UL
--
--#endif /* _SPARC64_CMT_H */
-diff --git a/arch/sparc/include/asm/mpmbox.h b/arch/sparc/include/asm/mpmbox.h
-deleted file mode 100644
-index f842303..0000000
---- a/arch/sparc/include/asm/mpmbox.h
-+++ /dev/null
-@@ -1,67 +0,0 @@
--/*
-- * mpmbox.h:  Interface and defines for the OpenProm mailbox
-- *               facilities for MP machines under Linux.
-- *
-- * Copyright (C) 1995 David S. Miller (davem@caip.rutgers.edu)
-- */
--
--#ifndef _SPARC_MPMBOX_H
--#define _SPARC_MPMBOX_H
--
--/* The prom allocates, for each CPU on the machine an unsigned
-- * byte in physical ram.  You probe the device tree prom nodes
-- * for these values.  The purpose of this byte is to be able to
-- * pass messages from one cpu to another.
-- */
--
--/* These are the main message types we have to look for in our
-- * Cpu mailboxes, based upon these values we decide what course
-- * of action to take.
-- */
--
--/* The CPU is executing code in the kernel. */
--#define MAILBOX_ISRUNNING     0xf0
--
--/* Another CPU called romvec->pv_exit(), you should call
-- * prom_stopcpu() when you see this in your mailbox.
-- */
--#define MAILBOX_EXIT          0xfb
--
--/* Another CPU called romvec->pv_enter(), you should call
-- * prom_cpuidle() when this is seen.
-- */
--#define MAILBOX_GOSPIN        0xfc
--
--/* Another CPU has hit a breakpoint either into kadb or the prom
-- * itself.  Just like MAILBOX_GOSPIN, you should call prom_cpuidle()
-- * at this point.
-- */
--#define MAILBOX_BPT_SPIN      0xfd
--
--/* Oh geese, some other nitwit got a damn watchdog reset.  The party's
-- * over so go call prom_stopcpu().
-- */
--#define MAILBOX_WDOG_STOP     0xfe
--
--#ifndef __ASSEMBLY__
--
--/* Handy macro's to determine a cpu's state. */
--
--/* Is the cpu still in Power On Self Test? */
--#define MBOX_POST_P(letter)  ((letter) >= 0x00 && (letter) <= 0x7f)
--
--/* Is the cpu at the 'ok' prompt of the PROM? */
--#define MBOX_PROMPROMPT_P(letter) ((letter) >= 0x80 && (letter) <= 0x8f)
--
--/* Is the cpu spinning in the PROM? */
--#define MBOX_PROMSPIN_P(letter) ((letter) >= 0x90 && (letter) <= 0xef)
--
--/* Sanity check... This is junk mail, throw it out. */
--#define MBOX_BOGON_P(letter) ((letter) >= 0xf1 && (letter) <= 0xfa)
--
--/* Is the cpu actively running an application/kernel-code? */
--#define MBOX_RUNNING_P(letter) ((letter) == MAILBOX_ISRUNNING)
--
--#endif /* !(__ASSEMBLY__) */
--
--#endif /* !(_SPARC_MPMBOX_H) */
+System is a 32-bit Via C7; to reproduce I need only establish a NFSv4
+mount from a client, then reboot the client.  The BUG happens when the
+client attempts to reconnect.  At this point nfs service on the server
+becomes something of a lost cause.  Userspace is Debian stable
+(nfs-utils 1.2.2 based).  I haven't had a chance to bisect the issue
+yet, I'll give that shot in the coming week if nobody knows of any
+obvious fixes.  Let me know if there's any other info I can provide
+that's useful.
+
 -- 
-1.7.7.6
-
+Jamie Heilman                     http://audible.transient.net/~jamie/
