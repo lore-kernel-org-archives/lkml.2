@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754241Ab2FKG2Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 02:28:24 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:44810 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754115Ab2FKG2W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 02:28:22 -0400
+	id S1754150Ab2FKG3w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 02:29:52 -0400
+Received: from vps.mortis.eu ([79.99.135.181]:51512 "EHLO vps.mortis.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751144Ab2FKG3u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 02:29:50 -0400
+X-Greylist: delayed 546 seconds by postgrey-1.27 at vger.kernel.org; Mon, 11 Jun 2012 02:29:50 EDT
+Date: Mon, 11 Jun 2012 08:20:41 +0200
+From: Giel van Schijndel <me@mortis.eu>
+To: Justin Wheeler <jwheeler@datademons.com>
+Cc: Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Patch for f71808e_wdt.c.
+Message-ID: <20120611062041.GD11604@salidar.me.mortis.eu>
+References: <alpine.DEB.2.00.1206110101290.1027@newbox.vps>
 MIME-Version: 1.0
-In-Reply-To: <4FD48317.50706@ontolinux.com>
-References: <4FD46521.5070900@gmail.com>
-	<4FD48317.50706@ontolinux.com>
-Date: Mon, 11 Jun 2012 08:28:20 +0200
-Message-ID: <CANGUGtBjH+gfSkNtkfb91zziodBvyejpB3D7emNnFwUj8ZB=wQ@mail.gmail.com>
-Subject: Re: [PATCH 00/17] pramfs: persistent and protected RAM filesystem
-From: Marco Stornelli <marco.stornelli@gmail.com>
-To: Christian Stroetmann <stroetmann@ontolinux.com>
-Cc: Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="HWvPVVuAAfuRc6SZ"
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1206110101290.1027@newbox.vps>
+OpenPGP: id=CEE5E742; url=http://gpg.mortis.eu/me.asc
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/6/10 Christian Stroetmann <stroetmann@ontolinux.com>:
-> On Sun, June 10, 2012 Marco Stornelli wrote:
->>
->> Hi all,
->>
->> after the merge of pramfs in the LTSI kernel and after the "hot topic" NVM
->> Mapping API, here a new submission of pramfs code. Even if the code won't be
->> in mainline the review is really useful to me, so any comment is welcome.
->
-> Hello
->
-> I think we have here two cases:
-> 1. "A block of non-volatile RAM separate for normal system memory",
-> [documentation Pramfs] and
-> 2. The whole RAM is non-volatile and so the whole situation is changed, and
-> an NVM Mapping API is needed and "hotly" discussed.
->
-> For 1. your solution is a very good concept that is getting around issues
-> solely related with specific optimizations for disc-based file systems, like
-> the 2 problems described in the documentation of Pramfs, but
-> for 2. there is no need for a file system anymore, as we use it today while
-> working with a computer system, because data needs not to be written to a
-> file system at all, and so the file system will become something like a
-> backup system in the most common use cases of a computing device, if I
-> should describe it a little bit too provocative. In this case your approach
-> taken to handle the 2 problems mentioned in the documentation of Pramfs
-> would have to be driven further by focusing more on the management of the
-> RAM, the power, and the long-term data storage (backup) for harmonizing
-> Pramfs with them. A further point is to make Pramfs bootable, if this not
-> already possible somehow.
->
 
-I have to say that this submission doesn't want to be a complete
-answer to the "NVM Mapping API", no way, but eventually only part of
-the solution. Pramfs was bootable, but the support was removed,
-however the modification would be easy.
+--HWvPVVuAAfuRc6SZ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Marco
+On Mon, Jun 11, 2012 at 01:07:58 -0400, Justin Wheeler wrote:
+> I have a Jetway JNF99 motherboard, featuring the F71869 SuperIO chip, but=
+ its
+> watchdog chipset ID appears to be 1007 (as opposed to 0814).  Some testing
+> confirmed it behaves the exact same as 0814.  The short attached patch ad=
+ds
+> that chipset ID to the module's ID list so that the Fintek watchdog drive=
+r can
+> correctly identify and access it.
+
+Acked-by: Giel van Schijndel <me@mortis.eu>
+
+--=20
+Met vriendelijke groet,
+With kind regards,
+Giel van Schijndel
+--
+"If debugging is the process of removing software bugs, then programming
+ must be the process of putting them in."
+  -- Edsger Dijkstra
+
+--HWvPVVuAAfuRc6SZ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAk/VjjcACgkQZBYm/87l50K9CACfe1rUbnhJ81eGXl/tugta4dPS
+iSAAn2h/Z7tOkXCLUJbOFmTk21zIt4R+
+=0ecz
+-----END PGP SIGNATURE-----
+
+--HWvPVVuAAfuRc6SZ--
