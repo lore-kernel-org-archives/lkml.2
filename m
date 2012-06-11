@@ -1,314 +1,422 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752382Ab2FKGMl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 02:12:41 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:42199 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750711Ab2FKGMj (ORCPT
+	id S1753513Ab2FKGNU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 02:13:20 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:54613 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750711Ab2FKGNS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 02:12:39 -0400
-X-AuditID: 9c930197-b7b5dae000004b23-ee-4fd58c56e15e
-Message-ID: <4FD58C54.7050504@kernel.org>
-Date: Mon, 11 Jun 2012 15:12:36 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
-To: Sasha Levin <levinsasha928@gmail.com>
-CC: dan.magenheimer@oracle.com, konrad.wilk@oracle.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 08/10] mm: frontswap: add tracing support
-References: <1339325468-30614-1-git-send-email-levinsasha928@gmail.com> <1339325468-30614-9-git-send-email-levinsasha928@gmail.com>
-In-Reply-To: <1339325468-30614-9-git-send-email-levinsasha928@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 11 Jun 2012 02:13:18 -0400
+From: Heiko Schocher <hs@denx.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Heiko Schocher <hs@denx.de>, Igor Lisitsin <igor@emcraft.com>,
+        Wolfgang Denk <wd@denx.de>, Grant Erickson <gerickson@nuovations.com>,
+        linux-kernel@vger.kernel.org, Tim Bird <tim.bird@am.sony.com>,
+        CE Linux Developers List <celinux-dev@lists.celinuxforum.org>,
+        Kay Sievers <kay@vrfy.org>
+Subject: [RFC] kernel, logbuf: add support for external log buffer
+Date: Mon, 11 Jun 2012 08:13:08 +0200
+Message-Id: <1339395188-10166-1-git-send-email-hs@denx.de>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/10/2012 07:51 PM, Sasha Levin wrote:
+This merges support for the previously DENX-only kernel
+feature of specifying an alternative, "external" buffer
+for kernel printk messages and their associated metadata.
+This patch is based on DENX-only kernel commit:
 
-> Add tracepoints to frontswap API.
-> 
-> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+commit 212f61c7fd3b952a81d1459dd32a86a32ddfd4ce
+Author: Igor Lisitsin <igor@emcraft.com>
+Date:   Wed Apr 18 14:55:19 2007 +0400
 
+Add support for external log buffer.
 
-Normally, adding new tracepoint isn't easy without special reason.
-I'm not sure all of frontswap function tracing would be valuable.
-Shsha, Why do you want to add tracing?
-What's scenario you want to use tracing?
+Add support for external log buffer, for example passed by U-Boot,
+which may already contain messages (from the boot loader and/or POST).
 
-> ---
->  include/trace/events/frontswap.h |  167 ++++++++++++++++++++++++++++++++++++++
->  mm/frontswap.c                   |   14 +++
->  2 files changed, 181 insertions(+), 0 deletions(-)
->  create mode 100644 include/trace/events/frontswap.h
-> 
-> diff --git a/include/trace/events/frontswap.h b/include/trace/events/frontswap.h
-> new file mode 100644
-> index 0000000..2e5efab
-> --- /dev/null
-> +++ b/include/trace/events/frontswap.h
-> @@ -0,0 +1,167 @@
-> +#undef TRACE_SYSTEM
-> +#define TRACE_SYSTEM frontswap
-> +
-> +#if !defined(_TRACE_FRONTSWAP_H) || defined(TRACE_HEADER_MULTI_READ)
-> +#define _TRACE_FRONTSWAP_H
-> +
-> +#include <linux/tracepoint.h>
-> +
-> +struct frontswap_ops;
-> +
-> +TRACE_EVENT(frontswap_init,
-> +	TP_PROTO(unsigned int type, void *sis, void *frontswap_map),
-> +	TP_ARGS(type, sis, frontswap_map),
-> +
-> +	TP_STRUCT__entry(
-> +		__field(	unsigned int,	type		)
-> +		__field(	void *,		sis		)
-> +		__field(	void *,		frontswap_map	)
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__entry->type		= type;
-> +		__entry->sis		= sis;
-> +		__entry->frontswap_map	= frontswap_map;
-> +	),
-> +
-> +	TP_printk("type: %u sis: %p frontswap_map: %p",
-> +		  __entry->type, __entry->sis, __entry->frontswap_map)
-> +);
-> +
-> +TRACE_EVENT(frontswap_register_ops,
-> +	TP_PROTO(struct frontswap_ops *old, struct frontswap_ops *new),
-> +	TP_ARGS(old, new),
-> +
-> +	TP_STRUCT__entry(
-> +		__field(struct frontswap_ops *,		old		)
-> +		__field(struct frontswap_ops *,		new		)
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__entry->old		= old;
-> +		__entry->new		= new;
-> +	),
-> +
-> +	TP_printk("old: {init=%p store=%p load=%p invalidate_page=%p invalidate_area=%p}"
-> +		" new: {init=%p store=%p load=%p invalidate_page=%p invalidate_area=%p}",
-> +		__entry->old->init,__entry->old->store,__entry->old->load,
-> +		__entry->old->invalidate_page,__entry->old->invalidate_area,__entry->new->init,
-> +		__entry->new->store,__entry->new->load,__entry->new->invalidate_page,
-> +		__entry->new->invalidate_area)
-> +);
-> +
-> +TRACE_EVENT(frontswap_store,
-> +	TP_PROTO(void *page, int dup, int ret),
-> +	TP_ARGS(page, dup, ret),
-> +
-> +	TP_STRUCT__entry(
-> +		__field(	int,		dup		)
-> +		__field(	int,		ret		)
-> +		__field(	void *,		page		)
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__entry->dup		= dup;
-> +		__entry->ret		= ret;
-> +		__entry->page		= page;
-> +	),
-> +
-> +	TP_printk("page: %p dup: %d ret: %d",
-> +		  __entry->page, __entry->dup, __entry->ret)
-> +);
-> +
-> +TRACE_EVENT(frontswap_load,
-> +	TP_PROTO(void *page, int ret),
-> +	TP_ARGS(page, ret),
-> +
-> +	TP_STRUCT__entry(
-> +		__field(	int,		ret		)
-> +		__field(	void *,		page		)
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__entry->ret		= ret;
-> +		__entry->page		= page;
-> +	),
-> +
-> +	TP_printk("page: %p ret: %d",
-> +		  __entry->page, __entry->ret)
-> +);
-> +
-> +TRACE_EVENT(frontswap_invalidate_page,
-> +	TP_PROTO(int type, unsigned long offset, void *sis, int test),
-> +	TP_ARGS(type, offset, sis, test),
-> +
-> +	TP_STRUCT__entry(
-> +		__field(	int,		type		)
-> +		__field(	unsigned long,	offset		)
-> +		__field(	void *,		sis		)
-> +		__field(	int,		test		)
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__entry->type		= type;
-> +		__entry->offset		= offset;
-> +		__entry->sis		= sis;
-> +		__entry->test		= test;
-> +	),
-> +
-> +	TP_printk("type: %d offset: %lu sys: %p frontswap_test: %d",
-> +		  __entry->type, __entry->offset, __entry->sis, __entry->test)
-> +);
-> +
-> +TRACE_EVENT(frontswap_invalidate_area,
-> +	TP_PROTO(int type, void *sis, void *map),
-> +	TP_ARGS(type, sis, map),
-> +
-> +	TP_STRUCT__entry(
-> +		__field(	int,		type		)
-> +		__field(	void *,		map		)
-> +		__field(	void *,		sis		)
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__entry->type		= type;
-> +		__entry->sis		= sis;
-> +		__entry->map		= map;
-> +	),
-> +
-> +	TP_printk("type: %d sys: %p map: %p",
-> +		  __entry->type, __entry->sis, __entry->map)
-> +);
-> +
-> +TRACE_EVENT(frontswap_curr_pages,
-> +	TP_PROTO(unsigned long totalpages),
-> +	TP_ARGS(totalpages),
-> +
-> +	TP_STRUCT__entry(
-> +		__field(unsigned long,		totalpages	)
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__entry->totalpages	= totalpages;
-> +	),
-> +
-> +	TP_printk("total pages: %lu",
-> +		  __entry->totalpages)
-> +);
-> +
-> +TRACE_EVENT(frontswap_shrink,
-> +	TP_PROTO(unsigned long target_pages),
-> +	TP_ARGS(target_pages),
-> +
-> +	TP_STRUCT__entry(
-> +		__field(unsigned long,		target_pages	)
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__entry->target_pages	= target_pages;
-> +	),
-> +
-> +	TP_printk("target pages: %lu",
-> +		  __entry->target_pages)
-> +);
-> +
-> +#endif /* _TRACE_FRONTSWAP_H */
-> +
-> +#include <trace/define_trace.h>
-> diff --git a/mm/frontswap.c b/mm/frontswap.c
-> index 7c26e89..7da55a3 100644
-> --- a/mm/frontswap.c
-> +++ b/mm/frontswap.c
-> @@ -11,6 +11,7 @@
->   * This work is licensed under the terms of the GNU GPL, version 2.
->   */
->  
-> +#define CREATE_TRACE_POINTS
->  #include <linux/mm.h>
->  #include <linux/mman.h>
->  #include <linux/swap.h>
-> @@ -23,6 +24,7 @@
->  #include <linux/debugfs.h>
->  #include <linux/frontswap.h>
->  #include <linux/swapfile.h>
-> +#include <trace/events/frontswap.h>
->  
->  /*
->   * frontswap_ops is set by frontswap_register_ops to contain the pointers
-> @@ -85,6 +87,7 @@ struct frontswap_ops frontswap_register_ops(struct frontswap_ops *ops)
->  {
->  	struct frontswap_ops old = frontswap_ops;
->  
-> +	trace_frontswap_register_ops(&old, ops);
->  	frontswap_ops = *ops;
->  	frontswap_enabled = true;
->  	return old;
-> @@ -108,6 +111,9 @@ void __frontswap_init(unsigned type)
->  	struct swap_info_struct *sis = swap_info[type];
->  
->  	BUG_ON(sis == NULL);
-> +
-> +	trace_frontswap_init(type, sis, sis->frontswap_map);
-> +
->  	if (sis->frontswap_map == NULL)
->  		return;
->  	frontswap_ops.init(type);
-> @@ -134,6 +140,7 @@ int __frontswap_store(struct page *page)
->  	if (frontswap_test(sis, offset))
->  		dup = 1;
->  	ret = frontswap_ops.store(type, offset, page);
-> +	trace_frontswap_store(page, dup, ret);
->  	if (ret == 0) {
->  		frontswap_set(sis, offset);
->  		inc_frontswap_succ_stores();
-> @@ -174,6 +181,7 @@ int __frontswap_load(struct page *page)
->  	BUG_ON(sis == NULL);
->  	if (frontswap_test(sis, offset))
->  		ret = frontswap_ops.load(type, offset, page);
-> +	trace_frontswap_load(page, ret);
->  	if (ret == 0)
->  		inc_frontswap_loads();
->  	return ret;
-> @@ -189,6 +197,7 @@ void __frontswap_invalidate_page(unsigned type, pgoff_t offset)
->  	struct swap_info_struct *sis = swap_info[type];
->  
->  	BUG_ON(sis == NULL);
-> +	trace_frontswap_invalidate_page(type, offset, sis, frontswap_test(sis, offset));
->  	if (frontswap_test(sis, offset)) {
->  		frontswap_ops.invalidate_page(type, offset);
->  		atomic_dec(&sis->frontswap_pages);
-> @@ -207,6 +216,7 @@ void __frontswap_invalidate_area(unsigned type)
->  	struct swap_info_struct *sis = swap_info[type];
->  
->  	BUG_ON(sis == NULL);
-> +	trace_frontswap_invalidate_area(type, sis, sis->frontswap_map);
->  	if (sis->frontswap_map == NULL)
->  		return;
->  	frontswap_ops.invalidate_area(type);
-> @@ -295,6 +305,8 @@ void frontswap_shrink(unsigned long target_pages)
->  	unsigned long pages_to_unuse = 0;
->  	int type, ret;
->  
-> +	trace_frontswap_shrink(target_pages);
-> +
->  	/*
->  	 * we don't want to hold swap_lock while doing a very
->  	 * lengthy try_to_unuse, but swap_list may change
-> @@ -322,6 +334,8 @@ unsigned long frontswap_curr_pages(void)
->  	totalpages = __frontswap_curr_pages();
->  	spin_unlock(&swap_lock);
->  
-> +	trace_frontswap_curr_pages(totalpages);
-> +
->  	return totalpages;
->  }
->  EXPORT_SYMBOL(frontswap_curr_pages);
+Signed-off-by: Igor Lisitsin <igor@emcraft.com>
 
+see:
+http://git.denx.de/?p=linux-denx.git;a=commit;h=212f61c7fd3b952a81d1459dd32a86a32ddfd4ce
 
+When this option is enabled, an architecture- or machine-specific log
+buffer is used for all printk messages. This allows entities such as
+boot loaders (e.g. U-Boot) to place printk-compatible messages into
+this buffer and for the kernel to coalesce them with its normal
+messages. This patch support this feature for arch/arm based
+boards.
 
+Signed-off-by: Heiko Schocher <hs@denx.de>
+Cc: Wolfgang Denk <wd@denx.de>
+Cc: Igor Lisitsin <igor@emcraft.com>
+Cc: Grant Erickson <gerickson@nuovations.com>
+Cc: linux-kernel@vger.kernel.org
+Cc: Tim Bird <tim.bird@am.sony.com>
+Cc: CE Linux Developers List <celinux-dev@lists.celinuxforum.org>
+Cc: Kay Sievers <kay@vrfy.org>
+
+---
+restage prior discussion from lkml:
+
+https://lkml.org/lkml/2009/1/21/250
+
+Discussion stopped, and I want to reanimate it, also there is a
+Project Proposal on the "CE Linux Developers List" for such a feature,
+see here:
+
+http://www.mail-archive.com/celinux-dev@lists.celinuxforum.org/msg00103.html
+
+Maybe it is now the time to discuss this again?
+
+Is it worth to try to get this old code in current kernel, or
+should we investigate Kay Sievers proposal for a structured logging
+system, which will alter the format of the messages as they are
+stored in the log buffer, and discuss for this a "logbuffer support"?
+
+See this discussion here:
+
+http://thread.gmane.org/gmane.linux.kernel/1277619
+
+ arch/arm/mm/init.c      |   25 ++++++++++
+ include/linux/logbuff.h |   51 ++++++++++++++++++++
+ init/Kconfig            |   12 +++++
+ init/main.c             |    5 ++
+ kernel/printk.c         |  117 +++++++++++++++++++++++++++++++++++++++++++++--
+ 5 files changed, 206 insertions(+), 4 deletions(-)
+ create mode 100644 include/linux/logbuff.h
+
+diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+index 8f5813b..9609a8e 100644
+--- a/arch/arm/mm/init.c
++++ b/arch/arm/mm/init.c
+@@ -20,6 +20,7 @@
+ #include <linux/highmem.h>
+ #include <linux/gfp.h>
+ #include <linux/memblock.h>
++#include <linux/logbuff.h>
+ 
+ #include <asm/mach-types.h>
+ #include <asm/memblock.h>
+@@ -38,6 +39,10 @@
+ static unsigned long phys_initrd_start __initdata = 0;
+ static unsigned long phys_initrd_size __initdata = 0;
+ 
++#ifdef CONFIG_LOGBUFFER
++static unsigned long ext_logbuff __initdata;
++#endif
++
+ static int __init early_initrd(char *p)
+ {
+ 	unsigned long start, size;
+@@ -325,6 +330,9 @@ phys_addr_t __init arm_memblock_steal(phys_addr_t size, phys_addr_t align)
+ void __init arm_memblock_init(struct meminfo *mi, struct machine_desc *mdesc)
+ {
+ 	int i;
++#ifdef CONFIG_LOGBUFFER
++	unsigned long	log_buf_base;
++#endif
+ 
+ 	for (i = 0; i < mi->nr_banks; i++)
+ 		memblock_add(mi->bank[i].start, mi->bank[i].size);
+@@ -356,6 +364,16 @@ void __init arm_memblock_init(struct meminfo *mi, struct machine_desc *mdesc)
+ 		initrd_end = initrd_start + phys_initrd_size;
+ 	}
+ #endif
++#ifdef CONFIG_LOGBUFFER
++	log_buf_base = memblock_end_of_DRAM() - LOGBUFF_RESERVE;
++	if (memblock_is_region_reserved(log_buf_base, LOGBUFF_RESERVE)) {
++		pr_err("LOGBUF: could not use addr: %lx for logbuf support -" \
++			" disabling logbuf support\n", log_buf_base);
++	} else {
++		memblock_reserve(log_buf_base, LOGBUFF_RESERVE);
++		ext_logbuff = __phys_to_virt(log_buf_base);
++	}
++#endif
+ 
+ 	arm_mm_memblock_reserve();
+ 	arm_dt_memblock_reserve();
+@@ -409,6 +427,13 @@ void __init bootmem_init(void)
+ 	max_pfn = max_high - PHYS_PFN_OFFSET;
+ }
+ 
++#ifdef CONFIG_LOGBUFFER
++void * __init setup_ext_logbuff_mem(void)
++{
++	return (void *)ext_logbuff;
++}
++#endif
++
+ static inline int free_area(unsigned long pfn, unsigned long end, char *s)
+ {
+ 	unsigned int pages = 0, size = (end - pfn) << (PAGE_SHIFT - 10);
+diff --git a/include/linux/logbuff.h b/include/linux/logbuff.h
+new file mode 100644
+index 0000000..3c8ceff
+--- /dev/null
++++ b/include/linux/logbuff.h
+@@ -0,0 +1,51 @@
++/*
++ * (C) Copyright 2007
++ * Wolfgang Denk, DENX Software Engineering, wd@denx.de.
++ *
++ * See file CREDITS for list of people who contributed to this
++ * project.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation; either version 2 of
++ * the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
++ * MA 02111-1307 USA
++ */
++#ifndef _LOGBUFF_H_
++#define _LOGBUFF_H_
++
++#ifdef CONFIG_LOGBUFFER
++
++#define LOGBUFF_MAGIC		0xc0de4ced
++#define LOGBUFF_LEN		16384
++#define LOGBUFF_OVERHEAD	4096
++#define LOGBUFF_RESERVE		(LOGBUFF_LEN + LOGBUFF_OVERHEAD)
++
++/*
++ * The mapping used here has to be the same as in logbuff_init_ptrs ()
++ * in u-boot/common/cmd_log.c
++ */
++struct logbuff {
++	unsigned long	tag;
++	unsigned long	start;
++	unsigned long	con;	/* next char to be sent to consoles	*/
++	unsigned long	end;
++	unsigned long	chars;
++	unsigned char	buf[0];
++};
++
++extern void setup_ext_logbuff(void);
++extern void *setup_ext_logbuff_mem(void); /* arch specific */
++
++#endif /* CONFIG_LOGBUFFER */
++
++#endif /* _LOGBUFF_H_ */
+diff --git a/init/Kconfig b/init/Kconfig
+index 6cfd71d..0badc3c 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -1031,6 +1031,18 @@ config PRINTK
+ 	  very difficult to diagnose system problems, saying N here is
+ 	  strongly discouraged.
+ 
++config LOGBUFFER
++	bool "External logbuffer" if PRINTK
++	default n
++	depends on ARM
++	help
++	  This option enables support for an alternative, "external"
++	  printk log buffer. When enabled, an architecture- or machine-
++	  specific log buffer is used for all printk messages. This
++	  allows entities such as boot loaders to place printk-compatible
++	  messages into this buffer and for the kernel to coalesce them
++	  with its normal messages.
++
+ config BUG
+ 	bool "BUG() support" if EXPERT
+ 	default y
+diff --git a/init/main.c b/init/main.c
+index 44b2433..608e0b2 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -68,6 +68,7 @@
+ #include <linux/shmem_fs.h>
+ #include <linux/slab.h>
+ #include <linux/perf_event.h>
++#include <linux/logbuff.h>
+ 
+ #include <asm/io.h>
+ #include <asm/bugs.h>
+@@ -492,6 +493,7 @@ asmlinkage void __init start_kernel(void)
+ 	tick_init();
+ 	boot_cpu_init();
+ 	page_address_init();
++
+ 	printk(KERN_NOTICE "%s", linux_banner);
+ 	setup_arch(&command_line);
+ 	mm_init_owner(&init_mm, &init_task);
+@@ -522,6 +524,9 @@ asmlinkage void __init start_kernel(void)
+ 	sort_main_extable();
+ 	trap_init();
+ 	mm_init();
++#ifdef CONFIG_LOGBUFFER
++	setup_ext_logbuff();
++#endif
+ 
+ 	/*
+ 	 * Set up the scheduler prior starting any interrupts (such as the
+diff --git a/kernel/printk.c b/kernel/printk.c
+index b663c2c..7e3086e 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -41,6 +41,8 @@
+ #include <linux/cpu.h>
+ #include <linux/notifier.h>
+ #include <linux/rculist.h>
++#include <linux/jiffies.h>
++#include <linux/logbuff.h>
+ 
+ #include <asm/uaccess.h>
+ 
+@@ -112,15 +114,42 @@ static DEFINE_RAW_SPINLOCK(logbuf_lock);
+  * The indices into log_buf are not constrained to log_buf_len - they
+  * must be masked before subscripting
+  */
+-static unsigned log_start;	/* Index into log_buf: next char to be read by syslog() */
+-static unsigned con_start;	/* Index into log_buf: next char to be sent to consoles */
+-static unsigned log_end;	/* Index into log_buf: most-recently-written-char + 1 */
+ 
+ /*
+  * If exclusive_console is non-NULL then only this console is to be printed to.
+  */
+ static struct console *exclusive_console;
+ 
++#ifdef CONFIG_LOGBUFFER
++/* Indexes to the local log buffer */
++static unsigned long _log_start;
++static unsigned long _con_start;
++static unsigned long _log_end;
++static unsigned long _logged_chars;
++/* These will be switched to the external log buffer */
++static unsigned long *ext_log_start = &_log_start;
++static unsigned long *ext_con_start = &_con_start;
++static unsigned long *ext_log_end = &_log_end;
++static unsigned long *ext_logged_chars = &_logged_chars;
++#define log_start	(*ext_log_start)
++#define con_start	(*ext_con_start)
++#define log_end		(*ext_log_end)
++#define logged_chars	(*ext_logged_chars)
++#else
++static unsigned long log_start;	/*
++				 * Index into log_buf: next char to be
++				 * read by syslog()
++				 */
++static unsigned long con_start;	/*
++				 * Index into log_buf: next char to be
++				 * sent to consoles
++				 */
++static unsigned long log_end;	/*
++				 * Index into log_buf: most-recently-
++				 * written-char + 1
++				 */
++#endif /* CONFIG_LOGBUFFER */
++
+ /*
+  *	Array of consoles built from command line options (console=)
+  */
+@@ -150,8 +179,83 @@ static int console_may_schedule;
+ static char __log_buf[__LOG_BUF_LEN];
+ static char *log_buf = __log_buf;
+ static int log_buf_len = __LOG_BUF_LEN;
+-static unsigned logged_chars; /* Number of chars produced since last read+clear operation */
+ static int saved_console_loglevel = -1;
++#ifndef CONFIG_LOGBUFFER
++/* Number of chars produced since last read+clear operation */
++static unsigned long logged_chars;
++#endif
++
++#ifdef CONFIG_LOGBUFFER
++void __init setup_ext_logbuff(void)
++{
++	char *extbuf;
++	struct logbuff *log;
++	unsigned long start, dest_idx, offset;
++	unsigned long count = 0;
++	unsigned long flags;
++
++	extbuf = setup_ext_logbuff_mem();
++	if (!extbuf) {
++		printk(KERN_NOTICE "Failed to setup external logbuffer - " \
++			"ignoring it\n");
++		return;
++	}
++	log = (struct logbuff *)(extbuf + LOGBUFF_OVERHEAD) - 1;
++
++	/* When no properly setup buffer is found, reset pointers */
++	if (log->tag != LOGBUFF_MAGIC) {
++		log->start = log->end = 0;
++		printk(KERN_NOTICE "Properly setup external logbuffer " \
++			"not found - using it anyway!\n");
++	}
++	raw_spin_lock_irqsave(&logbuf_lock, flags);
++
++	/* Limit pointers */
++	if (log->end - log->start > LOGBUFF_LEN)
++		log->start = log->end - LOGBUFF_LEN;
++
++	if (log->end - log->con > LOGBUFF_LEN)
++		log->con = log->end - LOGBUFF_LEN;
++
++	log->chars = logged_chars + log->end - log->start;
++	if (log->chars > LOGBUFF_LEN)
++		log->chars = LOGBUFF_LEN;
++
++	/*
++	 * Chars passed by the boot loader will appear before
++	 * those we already have in the local buffer
++	 */
++	offset = log->end - log->start;
++	start = min_t(long, con_start, log_start);
++	dest_idx = log->end;
++	while (start != log_end) {
++		log->buf[dest_idx & (LOGBUFF_LEN - 1)] = LOG_BUF(start);
++		start++;
++		dest_idx++;
++		count++;
++	}
++	log->end += count;
++	if (log->end - log->start > log_buf_len)
++		log->start = log->end - log_buf_len;
++	log->con = log->start;
++	log->chars = count + offset;
++	if (log->chars > LOGBUFF_LEN)
++		log->chars = LOGBUFF_LEN;
++
++	/* Switch to the external log buffer */
++	ext_log_start = &log->start;
++	ext_con_start = &log->con;
++	ext_log_end = &log->end;
++	ext_logged_chars = &log->chars;
++
++	log_buf = log->buf;
++	log_buf_len = LOGBUFF_LEN;
++
++	raw_spin_unlock_irqrestore(&logbuf_lock, flags);
++
++	printk("Kernel logbuffer at 0x%p\n", log->buf);
++}
++#endif /* CONFIG_LOGBUFFER */
+ 
+ #ifdef CONFIG_KEXEC
+ /*
+@@ -179,6 +283,11 @@ static int __init log_buf_len_setup(char *str)
+ {
+ 	unsigned size = memparse(str, &str);
+ 
++#ifdef CONFIG_LOGBUFFER
++	/* Log buffer size is LOGBUFF_LEN bytes */
++	printk(KERN_NOTICE "Ignoring log_buf_len param\n");
++	return 1;
++#endif
+ 	if (size)
+ 		size = roundup_pow_of_two(size);
+ 	if (size > log_buf_len)
 -- 
-Kind regards,
-Minchan Kim
+1.7.7.6
+
