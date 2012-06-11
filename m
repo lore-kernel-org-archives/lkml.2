@@ -1,69 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754123Ab2FKNvq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 09:51:46 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:34746 "EHLO mail.skyhub.de"
+	id S1754436Ab2FKNvv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 09:51:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14622 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751821Ab2FKNvp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 09:51:45 -0400
-Date: Mon, 11 Jun 2012 15:51:40 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Zhouping Liu <zliu@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Hillf Danton <dhillf@gmail.com>, hi3766691@gmail.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>
-Subject: Re: Kernel panic - not syncing: Attempted to kill the idle task!
-Message-ID: <20120611135140.GA3913@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Peter Zijlstra <a.p.zijlstra@chello.nl>,
-	Zhouping Liu <zliu@redhat.com>,
-	Andrea Arcangeli <aarcange@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Hillf Danton <dhillf@gmail.com>, hi3766691@gmail.com,
-	LKML <linux-kernel@vger.kernel.org>,
-	Andreas Herrmann <andreas.herrmann3@amd.com>
-References: <cfc29313-7fe7-4140-b9e6-053d925b4897@zmail13.collab.prod.int.phx2.redhat.com>
- <1339421268.30462.15.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1339421268.30462.15.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754155Ab2FKNvs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 09:51:48 -0400
+Date: Mon, 11 Jun 2012 09:51:32 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: bfields <bfields@fieldses.org>, Steve Dickson <steved@redhat.com>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Joerg Platte <jplatte@naasa.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Hans de Bruin <jmdebruin@xmsnet.nl>
+Subject: Re: Kernel 3.4.X NFS server regression
+Message-ID: <20120611095132.045a8d09@corrin.poochiereds.net>
+In-Reply-To: <4FD5F35A.3000903@panasas.com>
+References: <4FD47D4E.9070307@naasa.net>
+	<1339340441.4751.1.camel@lade.trondhjem.org>
+	<20120611121634.GB7654@fieldses.org>
+	<20120611083932.24e27e39@corrin.poochiereds.net>
+	<4FD5F35A.3000903@panasas.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 11, 2012 at 03:27:48PM +0200, Peter Zijlstra wrote:
-> On Fri, 2012-06-08 at 21:38 -0400, Zhouping Liu wrote:
-> > # cat /sys/devices/system/node/node*/distance
-> > 10 17 17 24 24 24 30 30
-> > 18 10 30 18 18 24 24 24
-> > 18 24 10 24 24 17 30 30
-> > 24 18 23 10 24 17 17 30
-> > 24 17 24 24 10 18 30 18
-> > 31 24 17 18 18 10 24 24
-> > 30 24 30 17 24 24 10 18
-> > 30 24 30 24 17 24 17 10 
+On Mon, 11 Jun 2012 16:32:10 +0300
+Boaz Harrosh <bharrosh@panasas.com> wrote:
+
+> On 06/11/2012 03:39 PM, Jeff Layton wrote:
 > 
-> You have to be kidding me right? That thing is a complete trainwreck,
-> what idiot vendor did this?
+> > On Mon, 11 Jun 2012 08:16:34 -0400
+> > bfields <bfields@fieldses.org> wrote:
+> > 
+> >> On Sun, Jun 10, 2012 at 03:00:42PM +0000, Myklebust, Trond wrote:
+> >>> Cc: linux-nfs@vger.kernel.org + bfields and changing title to label it
+> >>> as a server regression since that is what the trace appears to imply.
+> >>>
+> >>> On Sun, 2012-06-10 at 12:56 +0200, Joerg Platte wrote:
+> >>>> All 3.4 kernels I tried so far (3.4, 3.4.1 and 3.4.2) suffer from the 
+> >>>> same NFS related problem:
+> >>>>
+> >>>> Jun 10 09:23:36 coco kernel: INFO: task kworker/u:1:8 blocked for more 
+> >>>> than 120 seconds.
+> >>>> Jun 10 09:23:36 coco kernel: "echo 0 > 
+> >>>> /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> >>>> Jun 10 09:23:36 coco kernel: kworker/u:1     D 002ba28c     0     8 
+> >>>>   2 0x00000000
+> >>>> Jun 10 09:23:36 coco kernel:  df465ec0 00000046 00000005 002ba28c 
+> >>>> 00000000 0000000a 00000282 df465e70
+> >>>> Jun 10 09:23:36 coco kernel:  df465ec0 df44d2b0 ffff6b60 df465e84 
+> >>>> df44d2b0 e33fa6b3 00000282 de764ae0
+> >>>> Jun 10 09:23:36 coco kernel:  ffffffff d78bcfb8 df465e8c c012e0f6 
+> >>>> df465ea4 c013610c 00000000 d78bcf80
+> >>>> Jun 10 09:23:36 coco kernel: Call Trace:
+> >>>> Jun 10 09:23:36 coco kernel:  [<c012e0f6>] ? add_timer+0x11/0x17
+> >>>> Jun 10 09:23:36 coco kernel:  [<c013610c>] ? queue_delayed_work_on+0x74/0xf0
+> >>>> Jun 10 09:23:36 coco kernel:  [<c0136ba4>] ? queue_delayed_work+0x1b/0x28
+> >>>> Jun 10 09:23:36 coco kernel:  [<c0350f5b>] schedule+0x1d/0x4c
+> >>>> Jun 10 09:23:36 coco kernel:  [<e0cda5f1>] cld_pipe_upcall+0x4e/0x75 [nfsd]
+> >>>> Jun 10 09:23:36 coco kernel:  [<e0cda678>] 
+> >>>> nfsd4_cld_grace_done+0x60/0x99 [nfsd]
+> >>>> Jun 10 09:23:36 coco kernel:  [<e0cd9cb5>] 
+> >>>> nfsd4_record_grace_done+0x10/0x12 [nfsd]
+> >>>> Jun 10 09:23:36 coco kernel:  [<e0cd6696>] laundromat_main+0x291/0x2d8 
+> >>>> [nfsd]
+> >>>> Jun 10 09:23:36 coco kernel:  [<c0136d2f>] process_one_work+0xff/0x325
+> >>>> Jun 10 09:23:36 coco kernel:  [<c0134bec>] ? start_worker+0x20/0x23
+> >>>> Jun 10 09:23:36 coco kernel:  [<e0cd6405>] ? 
+> >>>> nfsd4_process_open1+0x32b/0x32b [nfsd]
+> >>>> Jun 10 09:23:36 coco kernel:  [<c013727a>] worker_thread+0xf4/0x39a
+> >>>> Jun 10 09:23:36 coco kernel:  [<c0137186>] ? rescuer_thread+0x231/0x231
+> >>>> Jun 10 09:23:36 coco kernel:  [<c013a556>] kthread+0x6c/0x6e
+> >>>> Jun 10 09:23:36 coco kernel:  [<c013a4ea>] ? kthreadd+0xe8/0xe8
+> >>>> Jun 10 09:23:36 coco kernel:  [<c035263e>] kernel_thread_helper+0x6/0xd
+> >>>>
+> >>>> A kworker task is stuck in D state and nfs mounts from other clients do 
+> >>>> not work at all. This happens only on one machine, another one with the 
+> >>>> same kernel (same self compiled Debian package) works. All previous 3.3 
+> >>>> kernels work as well.
+> >>>>
+> >>>> Since this machine is remote it is not that easy to bisect to find the 
+> >>>> bad commit. Are there any other things I can try?
+> >>
+> >> If you create a directory named /var/lib/nfs/v4recovery/, does the
+> >> problem go away?
+> >>
+> >> My guess would be that it's trying to upcall to the new reboot-recovery
+> >> state daemon, and you don't have that running.
+> >>
+> >> Before the addition of that upcall state was kept in
+> >> /var/lib/nfs/v4recovery.  So we decide whether to use the old method or
+> >> the new one by checking for the existance of that path.
+> >>
+> >> But I'm guessing we were wrong to assume that existing setups that
+> >> people perceived as working would have that path, because the failures
+> >> in the absence of that path were probably less obvious.
+> >>
+> >> --b.
+> > 
+> > This sounds like the same problem that Hans reported as well. I've not
+> > been able to reproduce that so far. Here's what I get when I start nfsd
+> > with no v4recoverdir and nfsdcld isn't running:
+> > 
+> > [  109.715080] NFSD: starting 90-second grace period
+> > [  229.984220] NFSD: Unable to end grace period: -110
+> > 
+> > What I don't quite understand is why the queue_timeout job isn't
+> > getting run here. What should happen is that 30s after upcall,
+> > rpc_timeout_upcall_queue should run. The message will be found to be
+> > still sitting on the , so it should set its status to -ETIMEDOUT
+> > and wake up the caller.
+> > 
+> > I can only assume that the queue_timeout job isn't getting run for some
+> > reason, but I'm unclear on why that would be.
+> > 
+> 
+> 
+> Regression fixing aside. I would consider changing the all mechanism to
+> a call_usermodehelper mechanism. Not only it cuts the in-kernel code
+> to 1/3, it also cuts user-mode code to 1/3. And specially it relives you
+> of any special daemon setup dependency. All you do is run an app/script
+> that does what it does when it does it, directly without anyone waiting
+> and/or any kind of handshake.
+> 
 
-HP ProLiant DL785 G6
-
-http://www.sanweiying.org/download/debug_kernel/kernel_panic_48d212a2eecaca
-
-contains dmesg and there's some serious fun with how the box boots:
-
-node 0, cpus: 0, 8, 16...
-node 1, cpus: 1, 9, 17...
-
-> If you boot that machine again, does it have the same stupid table or
-> are we staring at white-noise?
-
-I'll bet it does.
+That was considered here, but the problem with the usermode helper is
+that you can't pass anything back to the kernel but a simple status
+code (and that's assuming that you wait for it to exit). In the near
+future, we'll need to pass back more info to the kernel for this, so
+the usermode helper callout wasn't suitable.
 
 -- 
-Regards/Gruss,
-Boris.
+Jeff Layton <jlayton@redhat.com>
