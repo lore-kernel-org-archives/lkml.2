@@ -1,79 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752922Ab2FKFFi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 01:05:38 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:58016 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752447Ab2FKFFh (ORCPT
+	id S1753370Ab2FKFPj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 01:15:39 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48027 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753020Ab2FKFO7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 01:05:37 -0400
-X-Greylist: delayed 314 seconds by postgrey-1.27 at vger.kernel.org; Mon, 11 Jun 2012 01:05:36 EDT
-Message-ID: <4FD57B23.8080409@huawei.com>
-Date: Mon, 11 Jun 2012 12:59:15 +0800
-From: "Peter Huang(Peng)" <peter.huangpeng@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: <linux-kernel@vger.kernel.org>
-Subject: _spin_unlock_irqrestore() has very high sampling rate when using
- oprofile tool.
-Content-Type: text/plain; charset="ISO-8859-1"
+	Mon, 11 Jun 2012 01:14:59 -0400
+Message-ID: <1339391690.6612.1.camel@phoenix>
+Subject: [PATCH] regulator: core: Return correct delay time in
+ regulator_set_voltage_time_sel
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Yadwinder Singh Brar <yadi.brar@samsung.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Mon, 11 Jun 2012 13:14:50 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.166.90.111]
-X-CFilter-Loop: Reflected
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During TPC-C testing on IA64 platform, we binded LGWR process to 1 cpu, and find
- that sys% is over 50%.
-With oprofile we find that _spin_unlock_irqrestore() rated over 31%, and try_to_wake_up()
-caused this.
-I don't understand why unlock operation has high sampling rate, is there anybody know about
-this?
+rdev->desc->uV_step * abs(new_selector - old_selector) returns uV.
+The unit of ramp_delay is mV/us.
 
-Thanks.
+Current code multiples 1000 at wrong place.
 
--sampling result
-CPU: Itanium 2, speed 1.598e+06 MHz (estimated)
-Counted CPU_CYCLES events (CPU Cycles) with a unit mask of 0x00 (No unit mask) count 75000
-samples  %        app name                 symbol name
-53204    31.4940  vmlinux                  _spin_unlock_irqrestore
-19788    11.7135  oracle                   kcrfw_redo_write
-12804     7.5793  oracle                   $_1$kslpstevent$TAG$GLOB
-12004     7.1057  vmlinux                  search_module_extables
-8859      5.2441  vmlinux                  search_extable
-8150      4.8244  vmlinux                  try_atomic_semop
-6121      3.6233  vmlinux                  update_queue
-4402      2.6058  scsi_mod                 /scsi_mod
-3698      2.1890  vmlinux                  ring_buffer_consume
-3069      1.8167  vmlinux                  default_idle
-2122      1.2561  oprofile                 /oprofile
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/core.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
--callgraph
-CPU: Itanium 2, speed 1.598e+06 MHz (estimated)
-Counted CPU_CYCLES events (CPU Cycles) with a unit mask of 0x00 (No unit mask) count 75000
-samples  %        image name               app name                 symbol name
--------------------------------------------------------------------------------
-  1         0.0021  vmlinux                  vmlinux                  cpufreq_cpu_get
-  1         0.0021  vmlinux                  vmlinux                  sys_pfm_start
-  1         0.0021  vmlinux                  vmlinux                  try_to_del_timer_sync
-  1         0.0021  vmlinux                  vmlinux                  prepare_to_wait
-  2         0.0041  vmlinux                  vmlinux                  set_cpus_allowed_ptr
-  3         0.0062  vmlinux                  vmlinux                  cpu_quiet_msk
-  3         0.0062  vmlinux                  vmlinux                  delayacct_end
-  3         0.0062  vmlinux                  vmlinux                  __wake_up
-  4         0.0082  vmlinux                  vmlinux                  rcu_process_gp_end
-  4         0.0082  vmlinux                  vmlinux                  credit_entropy_bits
-  6         0.0123  vmlinux                  vmlinux                  __queue_work
-  6         0.0123  vmlinux                  vmlinux                  mod_timer
-  23        0.0472  vmlinux                  vmlinux                  dio_bio_end_aio
-  26        0.0534  vmlinux                  vmlinux                  __blockdev_direct_IO
-  37        0.0760  vmlinux                  vmlinux                  dio_bio_submit
-  38        0.0780  vmlinux                  vmlinux                  add_wait_queue_exclusive
-  44        0.0903  vmlinux                  vmlinux                  remove_wait_queue
-  165       0.3388  vmlinux                  vmlinux                  blk_run_queue
-  529       1.0862  vmlinux                  vmlinux                  mix_pool_bytes_extract
-  697       1.4312  vmlinux                  vmlinux                  blk_end_bidi_request
-  783       1.6077  vmlinux                  vmlinux                  aio_complete
-  46325    95.1193  vmlinux                  vmlinux                  try_to_wake_up
-53204    31.4940  vmlinux                  vmlinux                  _spin_unlock_irqrestore
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index f4c056a..63507a5 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -2308,7 +2308,7 @@ int regulator_set_voltage_time_sel(struct regulator_dev *rdev,
+ 	if (rdev->desc->ramp_delay && rdev->desc->uV_step)
+ 		return DIV_ROUND_UP(rdev->desc->uV_step *
+ 			abs(new_selector - old_selector),
+-			rdev->desc->ramp_delay) * 1000;
++			rdev->desc->ramp_delay * 1000);
+ 	return 0;
+ }
+ 
+-- 
+1.7.9.5
+
+
+
