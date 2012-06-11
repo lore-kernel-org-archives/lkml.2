@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752678Ab2FKWY4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 18:24:56 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:54146 "EHLO
+	id S1752634Ab2FKWZh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 18:25:37 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:35650 "EHLO
 	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751710Ab2FKWYz (ORCPT
+	with ESMTP id S1751957Ab2FKWZg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 18:24:55 -0400
+	Mon, 11 Jun 2012 18:25:36 -0400
 MIME-Version: 1.0
-In-Reply-To: <1339412537-24485-15-git-send-email-stigge@antcom.de>
+In-Reply-To: <1339412537-24485-14-git-send-email-stigge@antcom.de>
 References: <1339412537-24485-1-git-send-email-stigge@antcom.de>
-	<1339412537-24485-15-git-send-email-stigge@antcom.de>
-Date: Mon, 11 Jun 2012 19:24:54 -0300
-Message-ID: <CAAAP30FkJPvBFquQmoBFjohzeo-NoOCup8+TGZf+w8FNs1jaJA@mail.gmail.com>
-Subject: Re: [PATCH 14/14] ARM: LPC32xx: Remove mach specific ARCH_NR_GPIOS,
- use default
+	<1339412537-24485-14-git-send-email-stigge@antcom.de>
+Date: Mon, 11 Jun 2012 19:25:35 -0300
+Message-ID: <CAAAP30F3TyQi_zouCuxGvOXroAxHTgypD1NFZEpadPmjFFYEPA@mail.gmail.com>
+Subject: Re: [PATCH 13/14] ARM: LPC32xx: High Speed UART configuration via DT
 From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
 To: Roland Stigge <stigge@antcom.de>
 Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -26,10 +25,9 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Mon, Jun 11, 2012 at 8:02 AM, Roland Stigge <stigge@antcom.de> wrote:
-> ARCH_NR_GPIOS was defined statically to include exactly all SoC specific GPIOs.
-> Now if additional GPIOs need to be added dynamically, e.g. via DT, none are
-> available. Removing the mach specific setting, leaving ARCH_NR_GPIOS to the
-> default of 256 (currently in include/asm-generic/gpio.h).
+> This patch fixes the DTS files for the High Speed UARTs 1, 2 and 7 of the
+> LPC32xx SoC, adjusting the compatible strings, adding interrupts and status
+> configuration. On the PHY3250 reference board, UART2 is enabled.
 >
 > Signed-off-by: Roland Stigge <stigge@antcom.de>
 
