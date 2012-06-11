@@ -1,59 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752829Ab2FKK2A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 06:28:00 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:60263 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752591Ab2FKK16 (ORCPT
+	id S1752591Ab2FKK3X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 06:29:23 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:34759 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751431Ab2FKK3V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 06:27:58 -0400
-Message-ID: <4FD5C829.2090408@linaro.org>
-Date: Mon, 11 Jun 2012 11:27:53 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	Mon, 11 Jun 2012 06:29:21 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
+        rientjes@google.com, akpm@linux-foundation.org, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH -V8 14/16] hugetlb/cgroup: add charge/uncharge calls for HugeTLB alloc/free
+In-Reply-To: <20120611092133.GI12402@tiehlicka.suse.cz>
+References: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1339232401-14392-15-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20120611092133.GI12402@tiehlicka.suse.cz>
+User-Agent: Notmuch/0.13.2+35~g0ff57e7 (http://notmuchmail.org) Emacs/24.1.50.1 (x86_64-unknown-linux-gnu)
+Date: Mon, 11 Jun 2012 15:59:11 +0530
+Message-ID: <8762ay5eh4.fsf@skywalker.in.ibm.com>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Chris Ball <cjb@laptop.org>, Linus Walleij <linus.walleij@stericsson.com>,
-        Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
-        Mattias WALLIN <mattias.wallin@stericsson.com>,
-        linux-arm-kernel@lists.infradead.org, sameo@linux.intel.com,
-        grant.likely@secretlab.ca, linux-kernel@vger.kernel.org, arnd@arndb.de,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 08/22] regulator: Change ab8500 match names to reflect
- Device Tree
-References: <20120530100302.GD9947@opensource.wolfsonmicro.com> <CAF2Aj3gZMF9ev9B46rBM+aY-srwthef09ad2CWfuXXFHmqqAjA@mail.gmail.com> <20120530121547.GJ9947@opensource.wolfsonmicro.com> <4FC63632.4030504@linaro.org> <20120530151119.GN9947@opensource.wolfsonmicro.com> <4FC63B39.6040905@linaro.org> <20120530164152.GP9947@opensource.wolfsonmicro.com> <4FC846CC.20801@linaro.org> <20120601084850.GJ24139@opensource.wolfsonmicro.com> <4FCDDFFC.3000902@linaro.org> <20120605103846.GQ23408@opensource.wolfsonmicro.com>
-In-Reply-To: <20120605103846.GQ23408@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
+x-cbid: 12061110-8256-0000-0000-000002E080DB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/06/12 11:38, Mark Brown wrote:
-> On Tue, Jun 05, 2012 at 11:31:24AM +0100, Lee Jones wrote:
->> On 01/06/12 09:48, Mark Brown wrote:
->
->>> What makes you say the two are equivalent?  The former is a reference
->> >from a consumer device to a named regulator while the latter is a
->>> reference from a regulator to a named consumer.
->
->> I mean they both link regulator<->consumer and apply the name "vmmc"
->> to the supply, or am I missing something / getting confused?
->
-> You're missing something - note what I say above about the direction the
-> mapping is done in, and consider what happens if we've got two of the
-> same PMIC down in a system.
+Michal Hocko <mhocko@suse.cz> writes:
 
-I'm still not seeing how this would cause an issue. The only Device Tree 
-nodes which will be parsed are the ones which are specified by a 
-particular driver's compatible string, meaning that any other nodes 
-referencing similar regulator/supply names would be ignored. In case I 
-am still missing a critical point here, would you be kind enough to 
-provide an example that we can work though together?
+> On Sat 09-06-12 14:29:59, Aneesh Kumar K.V wrote:
+>> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+>> 
+>> This adds necessary charge/uncharge calls in the HugeTLB code.  We do
+>> hugetlb cgroup charge in page alloc and uncharge in compound page destructor.
+>> 
+>> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+>> ---
+>>  mm/hugetlb.c        |   16 +++++++++++++++-
+>>  mm/hugetlb_cgroup.c |    7 +------
+>>  2 files changed, 16 insertions(+), 7 deletions(-)
+>> 
+>> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+>> index bf79131..4ca92a9 100644
+>> --- a/mm/hugetlb.c
+>> +++ b/mm/hugetlb.c
+>> @@ -628,6 +628,8 @@ static void free_huge_page(struct page *page)
+>>  	BUG_ON(page_mapcount(page));
+>>  
+>>  	spin_lock(&hugetlb_lock);
+>> +	hugetlb_cgroup_uncharge_page(hstate_index(h),
+>> +				     pages_per_huge_page(h), page);
+>>  	if (h->surplus_huge_pages_node[nid] && huge_page_order(h) < MAX_ORDER) {
+>>  		/* remove the page from active list */
+>>  		list_del(&page->lru);
+>> @@ -1116,7 +1118,10 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+>>  	struct hstate *h = hstate_vma(vma);
+>>  	struct page *page;
+>>  	long chg;
+>> +	int ret, idx;
+>> +	struct hugetlb_cgroup *h_cg;
+>>  
+>> +	idx = hstate_index(h);
+>>  	/*
+>>  	 * Processes that did not create the mapping will have no
+>>  	 * reserves and will not have accounted against subpool
+>> @@ -1132,6 +1137,11 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+>>  		if (hugepage_subpool_get_pages(spool, chg))
+>>  			return ERR_PTR(-ENOSPC);
+>>  
+>> +	ret = hugetlb_cgroup_charge_page(idx, pages_per_huge_page(h), &h_cg);
+>
+> So we do not have any page yet and hugetlb_cgroup_charge_cgroup sound
+> more appropriate
+>
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-M: +44 77 88 633 515
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Will do
+
+-aneesh
+
