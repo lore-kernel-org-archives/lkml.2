@@ -1,103 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754884Ab2FKQVA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 12:21:00 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:46037 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754611Ab2FKQU6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 12:20:58 -0400
-Date: Tue, 12 Jun 2012 00:20:41 +0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>, "olof@lixom.net" <olof@lixom.net>,
-        Stephen Warren <swarren@nvidia.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Message-ID: <20120611162040.GB4194@opensource.wolfsonmicro.com>
-References: <4FBBCA8F.3050903@wwwdotorg.org>
- <4FBBD33C.8020802@nvidia.com>
- <4FBBDA97.6000006@wwwdotorg.org>
- <4FBBDE06.5080806@nvidia.com>
- <4FC916AC.4060804@wwwdotorg.org>
- <4FD250DB.2090207@nvidia.com>
- <20120609030608.GF3924@opensource.wolfsonmicro.com>
- <4FD2CFE6.9070500@wwwdotorg.org>
- <20120611025717.GE28211@opensource.wolfsonmicro.com>
- <4FD6151E.8010405@wwwdotorg.org>
+	id S1754895Ab2FKQXP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 12:23:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58801 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751384Ab2FKQXN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 12:23:13 -0400
+Message-ID: <4FD61B6D.7040405@redhat.com>
+Date: Mon, 11 Jun 2012 13:23:09 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ZoaI/ZTpAVc4A5k6"
-Content-Disposition: inline
-In-Reply-To: <4FD6151E.8010405@wwwdotorg.org>
-X-Cookie: Give him an evasive answer.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 116.228.53.169
-X-SA-Exim-Mail-From: broonie@opensource.wolfsonmicro.com
-Subject: Re: [PATCH 2/2] ARM: dt: tegra: cardhu: register core regulator
- tps65911
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Borislav Petkov <borislav.petkov@amd.com>
+CC: edac-devel <linux-edac@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] edac: rewrite the sysfs code to use struct device
+References: <20120608125219.GA31359@aftab.osrc.amd.com>
+In-Reply-To: <20120608125219.GA31359@aftab.osrc.amd.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Em 08-06-2012 09:52, Borislav Petkov escreveu:
+>  From c0d119126e1b6daf9fe71614971233ffc90a873a Mon Sep 17 00:00:00 2001
+> From: Mauro Carvalho Chehab <mchehab@redhat.com>
+> Date: Mon, 16 Apr 2012 16:41:11 -0300
+> Subject: [PATCH] edac: rewrite the sysfs code to use struct device
+> MIME-Version: 1.0
+> Content-Type: text/plain; charset=UTF-8
+> Content-Transfer-Encoding: 8bit
+> 
 
---ZoaI/ZTpAVc4A5k6
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+<skip/>
 
-On Mon, Jun 11, 2012 at 09:56:14AM -0600, Stephen Warren wrote:
+[will check the UTF-8 issue later]
 
-> * Each regulator-id/regulator-compatible value identifies a specific
-> individual regulator within the chip that contains it. There is only one
-> of each named regulator, since that's what exists in HW. So, this is
-> about configuring HW that we know exists (because it's part of the HW
-> represented by the parent node for the chip) rather than defining which
-> HW is present on unprobeable busses, as the device-level compatible does.
+> 
+> Hrrm,
+> 
+> this patch doesn't build here, ontop of 3.5-rc1, config attached.
+> 
+> In file included from arch/x86/kernel/nmi.c:23:0:
+> include/linux/edac.h:452:16: error: field ‘dev’ has incomplete type
+> include/linux/edac.h:488:16: error: field ‘dev’ has incomplete type
+> include/linux/edac.h:498:16: error: field ‘dev’ has incomplete type
+> include/linux/edac.h:553:18: error: field ‘dev’ has incomplete type
+> include/linux/edac.h:554:20: error: field ‘bus’ has incomplete type
+> make[2]: *** [arch/x86/kernel/nmi.o] Error 1
+> make[1]: *** [arch/x86/kernel] Error 2
+> make[1]: *** Waiting for unfinished jobs....
+> In file included from drivers/edac/edac_stub.c:16:0:
+> include/linux/edac.h:452:16: error: field ‘dev’ has incomplete type
+> include/linux/edac.h:488:16: error: field ‘dev’ has incomplete type
+> include/linux/edac.h:498:16: error: field ‘dev’ has incomplete type
+> include/linux/edac.h:553:18: error: field ‘dev’ has incomplete type
+> include/linux/edac.h:554:20: error: field ‘bus’ has incomplete type
+> make[2]: *** [drivers/edac/edac_stub.o] Error 1
+> make[1]: *** [drivers/edac] Error 2
+> make[1]: *** Waiting for unfinished jobs....
+> make: *** [arch/x86] Error 2
+> make: *** Waiting for unfinished jobs....
+> 
 
-> Given those differences, I really think that using "compatible" in the
-> name of the property is just going to cause confusion.
+I'll fold the enclosed patch. It should fix this issue.
 
-This doesn't seem terribly different to me especially in some of the
-cases people want to use this for where we try to describe the
-subfunctions of the chip using this mechanism.  You have a fixed set of
-regulators that might exist in a superset device (possibly with some
-incompatibilities, or with additional properties providing more data on
-the hardware) and then you mix and match what's in the system based
-on the nodes you register for the subset device you're using.  This sort
-of thing is actually much more idiomatic with DT than it is with
-platform data (look at how people want to put device nodes in for the
-MFD subfunctions all the time...).
-
-Really all compatible is saying to me is "here's how you understand
-this, handle it like an X" and this feels exactly the same.
-
-Of course, if someone could just fix the DT to actually be able to do
-key/value pairs, or allow us to do something useful with the
-"regulator" string we need to put in there...
-
---ZoaI/ZTpAVc4A5k6
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJP1hrRAAoJEBus8iNuMP3d1MMQAJtqihNjR043SWYSWFqvAAWJ
-uUWCiSzu1eXPx3V+fHTk8D0x8nXpIS1I+0+BveGb3MIhE26ghFK66hMxvUlQXl/Y
-GMER0RP8aujorK/tHXVsfuZ9OJh+4NIbsrgThTUHBydP3RXlQZLUdNPRT7Okhvbw
-nZhxDlkBzUHJPnMEG/HlFfTEw1ue9LENcwuYprB3H+DC6Q7JaoiCJUGDvPrqmDvk
-oc4Br+PjFN0eqh2Fnm3u+t6Jl9w5TGzoBNfcyBIa/iiNzbp3GF0ZhHRBpTx6gIvG
-v9R4DikztBzB+RLBG81LSYWm+/zYtWHuyV6fu0bJ8saV1R8Je36R8YK1oO8/BhQ9
-UU5A45y/ejRJcwfjQhD+feLgTo9+raipdRpw9oLyXztJ7tPMnAYsHxOTd/FunPeL
-uhsOzg35XMo4xZAKd5wt8QIAFiETM8oIYhi3VYSb800D+StgBIaD62XcJAgcEJQl
-wmtor2Bo7eCtbmZGI55o/LU0YJehw+peGdnA3utoLPutVvZ8hFewO97EuSeel+wW
-Fa0llrs1wRyvkUdztu59i0Ml+YREkKuIR8/xi2d1adiJaZXLxFV7M6ANX2NWXZ8b
-wL1BZ2ZyrOMc+4Njvmo3mYmJX5cG1lJOIkSyx/6C75cHy1SI7CUExi8JydlbklZL
-PCPntsdDbq2JQhcolziq
-=plzL
------END PGP SIGNATURE-----
-
---ZoaI/ZTpAVc4A5k6--
+diff --git a/include/linux/edac.h b/include/linux/edac.h
+index aeaafd0..a2b0b6f 100644
+--- a/include/linux/edac.h
++++ b/include/linux/edac.h
+@@ -13,6 +13,7 @@
+ #define _LINUX_EDAC_H_
+ 
+ #include <linux/atomic.h>
++#include <linux/device.h>
+ #include <linux/kobject.h>
+ #include <linux/completion.h>
+ #include <linux/workqueue.h>
