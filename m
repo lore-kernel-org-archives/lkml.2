@@ -1,90 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754900Ab2FKOTf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 10:19:35 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:50496 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754323Ab2FKOTd (ORCPT
+	id S1754939Ab2FKOU4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 10:20:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19811 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754717Ab2FKOUy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 10:19:33 -0400
-Date: Mon, 11 Jun 2012 10:19:32 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Namjae Jeon <linkinjeon@gmail.com>
-cc: James.Bottomley@HansenPartnership.com, <gregkh@linuxfoundation.org>,
-        <mdharm-usb@one-eyed-alien.net>, <sshtylyov@mvista.com>,
-        <bvanassche@acm.org>, <linux-usb@vger.kernel.org>,
-        <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Pankaj Kumar <pankaj.km@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [PATCH v4 3/3] usb: storage: update usb devices for write cache
- quirk in quirk list.
-In-Reply-To: <1339421351-2971-1-git-send-email-linkinjeon@gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1206111018040.1607-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 11 Jun 2012 10:20:54 -0400
+Date: Mon, 11 Jun 2012 10:20:16 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: =?UTF-8?B?SsO2cmc=?= Platte <jplatte@naasa.net>
+Cc: bfields <bfields@fieldses.org>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Hans de Bruin <jmdebruin@xmsnet.nl>
+Subject: Re: Kernel 3.4.X NFS server regression
+Message-ID: <20120611102016.3114349d@corrin.poochiereds.net>
+In-Reply-To: <E49E5D8F-3647-4B3D-989E-FE4476D37607@naasa.net>
+References: <4FD47D4E.9070307@naasa.net>
+	<1339340441.4751.1.camel@lade.trondhjem.org>
+	<20120611121634.GB7654@fieldses.org>
+	<20120611083932.24e27e39@corrin.poochiereds.net>
+	<20120611091338.1c88e6d0@corrin.poochiereds.net>
+	<E49E5D8F-3647-4B3D-989E-FE4476D37607@naasa.net>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 11 Jun 2012, Namjae Jeon wrote:
+On Mon, 11 Jun 2012 15:25:55 +0200
+Jörg Platte <jplatte@naasa.net> wrote:
 
-> Update information of Seagate Portable HDD and WD My Passport HDD in
-> quirk list.
+> Am 11.06.2012 um 15:13 schrieb Jeff Layton <jlayton@redhat.com>:
 > 
-> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-> Signed-off-by: Pankaj Kumar <pankaj.km@samsung.com>
-> Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
-> ---
->  drivers/usb/storage/unusual_devs.h |   24 ++++++++++++++++++++++++
->  1 file changed, 24 insertions(+)
+> > 
+> > Ahh, I think I see the bug. From rpc_timeout_upcall_queue:
+> > 
+> > -----------------------[snip]--------------------------
+> >        dentry = dget(pipe->dentry);
+> >        spin_unlock(&pipe->lock);
+> >        if (dentry) {
+> >                rpc_purge_list(&RPC_I(dentry->d_inode)->waitq,
+> >                               &free_list, destroy_msg, -ETIMEDOUT);
+> >                dput(dentry);
+> >        }
+> > -----------------------[snip]--------------------------
+> > 
+> > ...when there is no dentry (as there wouldn't be when rpc_pipefs isn't
+> > mounted), then the rpc_purge_list won't run. FWIW, you'd probably see
+> > similar problems if you attempted a sec=krb5 mount without having
+> > rpc_pipefs mounted.
+> > 
+> > I'm still looking at the code to see what the right fix is. For now,
+> > making sure you have a /var/lib/nfs/v4recoverydir is probably the
+> > easiest workaround.
+> > 
+> > -- 
+> > Jeff Layton <jlayton@redhat.com>
 > 
-> diff --git a/drivers/usb/storage/unusual_devs.h b/drivers/usb/storage/unusual_devs.h
-> index 1719886..64f0369 100644
-> --- a/drivers/usb/storage/unusual_devs.h
-> +++ b/drivers/usb/storage/unusual_devs.h
-> @@ -1267,6 +1267,18 @@ UNUSUAL_DEV( 0x0af0, 0xd357, 0x0000, 0x0000,
->  		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
->  		0 ),
->  
-> +/* Reported by Namjae Jeon <namjae.jeon@samsung.com>
-> + * Even though write cache is enabled by default,
-> + * SCSI driver assume that cache is not enabled
-> + * which in turn might lead to the loss of data
-> + * since data still will be in cache.
-> + * So this entry is needed for assuming that cache is enabled.
-> + */
+> On my computer that shows the bug there is indeed no v4recovery directory. There is one on the other machine that does not show this bug. I'll test the latest kernel with this directory created  today afternoon. 
+> 
+> Thank you for the analysis!
+> 
 
-Please remove everything except the "Reported by" line.  The rest is 
-obvious when we see the US_FL_WRITE_CACHE flag.
+No problem. One possibility for the difference is that rpc_pipefs is
+mounted on the machine that doesn't show the problem, but isn't mouted
+on the machine that does.
 
-> +UNUSUAL_DEV(0x0bc2, 0x2300, 0x0000, 0x9999,
-> +		"Seagate",
-> +		"Portable HDD",
-> +		USB_SC_DEVICE, USB_PR_DEVICE, NULL, US_FL_WRITE_CACHE),
-> +
->  /* Reported by Ben Efros <ben@pc-doctor.com> */
->  UNUSUAL_DEV( 0x0bc2, 0x3010, 0x0000, 0x0000,
->  		"Seagate",
-> @@ -1468,6 +1480,18 @@ UNUSUAL_DEV(  0x1058, 0x0704, 0x0000, 0x9999,
->  		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
->  		US_FL_SANE_SENSE),
->  
-> +/* Reported by Namjae Jeon <namjae.jeon@samsung.com>
-> + * Even though write cache is enabled by default,
-> + * SCSI driver assume that cache is not enabled
-> + * which in turn might lead to the loss of data
-> + * since data still will be in cache.
-> + * So this entry is needed for assuming that cache is enabled.
-> + */
-
-Same here.
-
-> +UNUSUAL_DEV(0x1058, 0x070a, 0x0000, 0x9999,
-> +		"Western Digital",
-> +		"My Passport HDD",
-> +		USB_SC_DEVICE, USB_PR_DEVICE, NULL, US_FL_WRITE_CACHE),
-
-Alan Stern
-
+-- 
+Jeff Layton <jlayton@redhat.com>
