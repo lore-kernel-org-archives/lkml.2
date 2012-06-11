@@ -1,112 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754699Ab2FKQ01 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 12:26:27 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:48521 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753478Ab2FKQ00 (ORCPT
+	id S1755125Ab2FKQ2O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 12:28:14 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:41999 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754789Ab2FKQ2M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 12:26:26 -0400
-Message-ID: <4FD61C15.3060601@panasas.com>
-Date: Mon, 11 Jun 2012 19:25:57 +0300
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
+	Mon, 11 Jun 2012 12:28:12 -0400
+Date: Mon, 11 Jun 2012 18:28:07 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: sonic.zhang@analog.com
+Cc: Ben Dooks <ben-linux@fluff.org>, linux-i2c@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        uclinux-dist-devel@blackfin.uclinux.org
+Subject: Re: [PATCH 2/8] i2c: i2c-bfin-twi: Stop receiving operation
+ immediately in last rx interrupt.
+Message-ID: <20120611162807.GC3887@pengutronix.de>
+References: <1337152826-9850-1-git-send-email-sonic.zhang@analog.com>
+ <1337152826-9850-2-git-send-email-sonic.zhang@analog.com>
 MIME-Version: 1.0
-To: bfields <bfields@fieldses.org>
-CC: Jeff Layton <jlayton@redhat.com>, Steve Dickson <steved@redhat.com>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Joerg Platte <jplatte@naasa.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Hans de Bruin <jmdebruin@xmsnet.nl>
-Subject: Re: Kernel 3.4.X NFS server regression
-References: <4FD47D4E.9070307@naasa.net> <1339340441.4751.1.camel@lade.trondhjem.org> <20120611121634.GB7654@fieldses.org> <20120611083932.24e27e39@corrin.poochiereds.net> <4FD5F35A.3000903@panasas.com> <4FD5F629.1070508@panasas.com> <20120611102947.229cf077@corrin.poochiereds.net> <4FD60839.3000508@panasas.com> <20120611151511.GH7654@fieldses.org>
-In-Reply-To: <20120611151511.GH7654@fieldses.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Fig2xvG2VGoz8o/s"
+Content-Disposition: inline
+In-Reply-To: <1337152826-9850-2-git-send-email-sonic.zhang@analog.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2012 06:15 PM, bfields wrote:
 
-> On Mon, Jun 11, 2012 at 06:01:13PM +0300, Boaz Harrosh wrote:
->> On 06/11/2012 05:29 PM, Jeff Layton wrote:
->>
->>> On Mon, 11 Jun 2012 16:44:09 +0300
->>> Boaz Harrosh <bharrosh@panasas.com> wrote:
->>>
->>>> On 06/11/2012 04:32 PM, Boaz Harrosh wrote:
->>>>
->>>>> On 06/11/2012 03:39 PM, Jeff Layton wrote:
->>>>>
->>>>>>>
->>>>>>> But I'm guessing we were wrong to assume that existing setups that
->>>>>>> people perceived as working would have that path, because the failures
->>>>>>> in the absence of that path were probably less obvious.
->>>>>>>
->>>>
->>>>
->>>> One more thing, the most important one. We have already fixed that in the
->>>> past and I was hoping the lesson was learned. Apparently it was not, and
->>>> we are doomed to do this mistake for ever!!
->>>>
->>>> What ever crap fails times out and crashes, in the recovery code, we don't
->>>> give a dam. It should never affect any Server-client communication.
->>>>
->>>> When the grace periods ends the clients gates opens period. *Any* error
->>>> return from state recovery code must be carefully ignored and normal
->>>> operations resumed. At most on error, we move into a mode where any
->>>> recovery request from client is accepted, since we don't have any better
->>>> data to verify it.
->>>>
->>>> Please comb recovery code to make sure any catastrophe is safely ignored.
->>>> We already did that before and it used to work.
->>>>
->>>
->>> That's not the case, and hasn't ever been AFAICT. The code has changed
->>> a bit recently, but the existing behavior in this regard was preserved.
->>> From nfs4_check_open_reclaim:
->>>
->>>         return nfsd4_client_record_check(clp) ? nfserr_reclaim_bad : nfs_ok;
->>>
->>> ...if there is no client record, then the reclaim request fails. Doesn't
->>> the RFC mandate that?
->>>
->>
->>
->> Regardless of what RFC mandates and what is returned to client, (Which sounds
->> very unrobust to me) I'm sure the client handles nfserr_reclaim_bad just
->> fine.
->>
->> It's the server that's getting stuck in its own feet and stops responding.
->> That's what I meant. We should always resume normal operations after
->> the grace period ends.
->>
->> I did not see any reports of client getting into trouble because of
->> unexpected nfserr_reclaim_bad, did you?
-> 
-> We did have a few bugs in that area, and as far as I know they're fixed
-> (and have stayed fixed!).
-> 
-> The one other thing we've seen at testing events is clients not sending
-> reclaim_complete: not only is it mandatory (with state to reclaim or
-> not), it's actually mandatory for servers to fail further operations
-> until it's sent.  However the problems were all seen with unreleased
-> client code that the implementors said they'd fix.
-> 
+--Fig2xvG2VGoz8o/s
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Wed, May 16, 2012 at 03:20:20PM +0800, sonic.zhang@analog.com wrote:
+> From: Sonic Zhang <sonic.zhang@analog.com>
+>=20
+> Also wake up waiting process when transfer completes.
 
-Yep, I agree. And additionally the bug Jeff fixed (At the other part of this
-thread) where the recovery code managed to tromp all over the laundromat thread
-and cause the Server to freeze.
+The description says what you do, but not why it is needed. What bug was
+experienced and why is this change proper? Patch 5/8 does that quite
+good.
 
-I guess it's unavoidable. Bugs will always exist with new code. We should just
-re audit  the state recovery code in parts where it shares resources with regular
-code, that errors are handled cleanly, like in Jeff's patch above.
+>=20
+> Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
+>=20
+> git-svn-id: svn://localhost/svn/linux-kernel/trunk@9105 526b6c2d-f592-453=
+2-a319-5dd88ccb003d
 
-> --b.
+Please remove this line.
 
+> ---
+>  drivers/i2c/busses/i2c-bfin-twi.c |   43 ++++++++++++++++++++-----------=
+-----
+>  1 files changed, 24 insertions(+), 19 deletions(-)
+>=20
+> diff --git a/drivers/i2c/busses/i2c-bfin-twi.c b/drivers/i2c/busses/i2c-b=
+fin-twi.c
+> index e6dd3c9..376e331 100644
+> --- a/drivers/i2c/busses/i2c-bfin-twi.c
+> +++ b/drivers/i2c/busses/i2c-bfin-twi.c
+> @@ -130,21 +130,25 @@ static void bfin_twi_handle_interrupt(struct bfin_t=
+wi_iface *iface,
+>  			}
+>  			iface->transPtr++;
+>  			iface->readNum--;
+> -		} else if (iface->manual_stop) {
+> -			/* Avoid possible bus stall -
+> -			 * Flush FIFO before issuing the STOP condition
+> -			 */
+> -			read_RCV_DATA16(iface);
+> -			write_MASTER_CTL(iface,
+> -				read_MASTER_CTL(iface) | STOP);
+> -		} else if (iface->cur_mode =3D=3D TWI_I2C_MODE_REPEAT &&
+> -		           iface->cur_msg + 1 < iface->msg_num) {
+> -			if (iface->pmsg[iface->cur_msg + 1].flags & I2C_M_RD)
+> -				write_MASTER_CTL(iface,
+> -					read_MASTER_CTL(iface) | RSTART | MDIR);
+> -			else
+> +		}
+> +
+> +		if (iface->readNum =3D=3D 0) {
+> +			if (iface->manual_stop) {
+> +				/* Avoid possible bus stall -
+> +				 * Flush FIFO before issuing the STOP condition
+> +				 */
+> +				read_RCV_DATA16(iface);
+>  				write_MASTER_CTL(iface,
+> -					(read_MASTER_CTL(iface) | RSTART) & ~MDIR);
+> +					read_MASTER_CTL(iface) | STOP);
+> +			} else if (iface->cur_mode =3D=3D TWI_I2C_MODE_REPEAT &&
+> +					iface->cur_msg + 1 < iface->msg_num) {
+> +				if (iface->pmsg[iface->cur_msg + 1].flags & I2C_M_RD)
+> +					write_MASTER_CTL(iface,
+> +						read_MASTER_CTL(iface) | RSTART | MDIR);
+> +				else
+> +					write_MASTER_CTL(iface,
+> +						(read_MASTER_CTL(iface) | RSTART) & ~MDIR);
+> +			}
+>  		}
+>  	}
+>  	if (twi_int_status & MERR) {
+> @@ -245,12 +249,13 @@ static void bfin_twi_handle_interrupt(struct bfin_t=
+wi_iface *iface,
+>  				}
+>  			}
+> =20
+> -			if (iface->pmsg[iface->cur_msg].len <=3D 255)
+> -					write_MASTER_CTL(iface,
+> +			if (iface->pmsg[iface->cur_msg].len <=3D 255) {
+> +				write_MASTER_CTL(iface,
+>  					(read_MASTER_CTL(iface) &
+>  					(~(0xff << 6))) |
+> -				(iface->pmsg[iface->cur_msg].len << 6));
+> -			else {
+> +					(iface->pmsg[iface->cur_msg].len << 6));
+> +				iface->manual_stop =3D 0;
+> +			} else {
+>  				write_MASTER_CTL(iface,
+>  					(read_MASTER_CTL(iface) |
+>  					(0xff << 6)));
+> @@ -264,8 +269,8 @@ static void bfin_twi_handle_interrupt(struct bfin_twi=
+_iface *iface,
+>  			write_INT_MASK(iface, 0);
+>  			write_MASTER_CTL(iface, 0);
+>  		}
+> +		complete(&iface->complete);
+>  	}
+> -	complete(&iface->complete);
+>  }
+> =20
+>  /* Interrupt handler */
+> --=20
+> 1.7.0.4
+>=20
+>=20
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-i2c" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Thanks
-Boaz
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--Fig2xvG2VGoz8o/s
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAk/WHJcACgkQD27XaX1/VRtkOwCgviKToQ+wjUNtXEDIfk7a2Q1m
+HtMAoMtDb3eB8mISunlJnxUx5pkO87kQ
+=WqQA
+-----END PGP SIGNATURE-----
+
+--Fig2xvG2VGoz8o/s--
