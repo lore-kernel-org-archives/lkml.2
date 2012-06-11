@@ -1,57 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754173Ab2FKGc2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 02:32:28 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:64929 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753129Ab2FKGc1 (ORCPT
+	id S1752762Ab2FKGoI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 02:44:08 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40683 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752139Ab2FKGoG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 02:32:27 -0400
-X-AuditID: 9c930179-b7bb9ae000000ea5-f2-4fd590f99791
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH] tools lib traceevent: Replace malloc_or_die to plain malloc in alloc_event()
-Date: Mon, 11 Jun 2012 15:28:53 +0900
-Message-Id: <1339396133-9839-1-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.10.2
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 11 Jun 2012 02:44:06 -0400
+Message-ID: <1339397037.18866.1.camel@phoenix>
+Subject: [PATCH RFT] regulator: pcf50633: Convert to
+ regulator_set_voltage_sel_regmap and map_voltage
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Lars-Peter Clausen <lars@metafoo.de>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Mon, 11 Jun 2012 14:43:57 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
-
-Because the only caller of the alloc_event()
-(pevent_parse_event) checks return value properly,
-it can be changed to use plain malloc.
-
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- tools/lib/traceevent/event-parse.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/regulator/pcf50633-regulator.c |   20 ++++++--------------
+ 1 file changed, 6 insertions(+), 14 deletions(-)
 
-diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index c471075e4974..a6b5bcdc5580 100644
---- a/tools/lib/traceevent/event-parse.c
-+++ b/tools/lib/traceevent/event-parse.c
-@@ -621,7 +621,9 @@ static struct event_format *alloc_event(void)
+diff --git a/drivers/regulator/pcf50633-regulator.c b/drivers/regulator/pcf50633-regulator.c
+index 3c9d14c..092e5cb 100644
+--- a/drivers/regulator/pcf50633-regulator.c
++++ b/drivers/regulator/pcf50633-regulator.c
+@@ -100,13 +100,12 @@ static unsigned int ldo_voltage_value(u8 bits)
+ 	return 900 + (bits * 100);
+ }
+ 
+-static int pcf50633_regulator_set_voltage(struct regulator_dev *rdev,
+-					  int min_uV, int max_uV,
+-					  unsigned *selector)
++static int pcf50633_regulator_map_voltage(struct regulator_dev *rdev,
++					  int min_uV, int max_uV)
  {
- 	struct event_format *event;
+ 	struct pcf50633 *pcf;
+ 	int regulator_id, millivolts;
+-	u8 volt_bits, regnr;
++	u8 volt_bits;
  
--	event = malloc_or_die(sizeof(*event));
-+	event = malloc(sizeof(*event));
-+	if (!event)
-+		return NULL;
- 	memset(event, 0, sizeof(*event));
+ 	pcf = rdev_get_drvdata(rdev);
  
- 	return event;
+@@ -116,15 +115,11 @@ static int pcf50633_regulator_set_voltage(struct regulator_dev *rdev,
+ 
+ 	millivolts = min_uV / 1000;
+ 
+-	regnr = rdev->desc->vsel_reg;
+-
+ 	switch (regulator_id) {
+ 	case PCF50633_REGULATOR_AUTO:
+ 		volt_bits = auto_voltage_bits(millivolts);
+ 		break;
+ 	case PCF50633_REGULATOR_DOWN1:
+-		volt_bits = down_voltage_bits(millivolts);
+-		break;
+ 	case PCF50633_REGULATOR_DOWN2:
+ 		volt_bits = down_voltage_bits(millivolts);
+ 		break;
+@@ -142,9 +137,7 @@ static int pcf50633_regulator_set_voltage(struct regulator_dev *rdev,
+ 		return -EINVAL;
+ 	}
+ 
+-	*selector = volt_bits;
+-
+-	return pcf50633_reg_write(pcf, regnr, volt_bits);
++	return volt_bits;
+ }
+ 
+ static int pcf50633_regulator_list_voltage(struct regulator_dev *rdev,
+@@ -159,8 +152,6 @@ static int pcf50633_regulator_list_voltage(struct regulator_dev *rdev,
+ 		millivolts = auto_voltage_value(index);
+ 		break;
+ 	case PCF50633_REGULATOR_DOWN1:
+-		millivolts = down_voltage_value(index);
+-		break;
+ 	case PCF50633_REGULATOR_DOWN2:
+ 		millivolts = down_voltage_value(index);
+ 		break;
+@@ -182,9 +173,10 @@ static int pcf50633_regulator_list_voltage(struct regulator_dev *rdev,
+ }
+ 
+ static struct regulator_ops pcf50633_regulator_ops = {
+-	.set_voltage = pcf50633_regulator_set_voltage,
++	.set_voltage_sel = regulator_set_voltage_sel_regmap,
+ 	.get_voltage_sel = regulator_get_voltage_sel_regmap,
+ 	.list_voltage = pcf50633_regulator_list_voltage,
++	.map_voltage = pcf50633_regulator_map_voltage,
+ 	.enable = regulator_enable_regmap,
+ 	.disable = regulator_disable_regmap,
+ 	.is_enabled = regulator_is_enabled_regmap,
 -- 
-1.7.10.2
+1.7.9.5
+
+
 
