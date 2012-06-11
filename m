@@ -1,45 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752248Ab2FKVOe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 17:14:34 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47855 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751110Ab2FKVOc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 17:14:32 -0400
-Date: Mon, 11 Jun 2012 14:14:28 -0700
-From: gregkh <gregkh@linuxfoundation.org>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Alex Shi <alex.shi@intel.com>, "Sharp, Sarah A" <sarah.a.sharp@intel.com>,
-        Alan stern <stern@rowland.harvard.edu>, Felipe Balbi <balbi@ti.com>,
-        linux-usb <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb/xhci: unify parameter of xhci_msi_irq
-Message-ID: <20120611211428.GB24904@kroah.com>
-References: <1331787186.2979.71.camel@debian>
- <20120315145743.GA7928@kroah.com>
- <4F6204B7.5010908@intel.com>
- <20120315175608.GA6077@xanatos>
- <4FC5D04E.5040907@intel.com>
- <4FD59AD8.1050109@intel.com>
- <20120611204709.GC5742@xanatos>
+	id S1752268Ab2FKVPU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 17:15:20 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34351 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751110Ab2FKVPT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 17:15:19 -0400
+Message-ID: <4FD65FD4.4060705@zytor.com>
+Date: Mon, 11 Jun 2012 14:15:00 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120611204709.GC5742@xanatos>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Wen Congyang <wency@cn.fujitsu.com>
+CC: rob@landley.net, tglx@linutronix.de, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        bhelgaas@google.com
+Subject: Re: [PATCH 1/2 v2] x86: add max_addr boot option
+References: <4FD5AFF2.3040306@cn.fujitsu.com>
+In-Reply-To: <4FD5AFF2.3040306@cn.fujitsu.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 11, 2012 at 01:47:09PM -0700, Sarah Sharp wrote:
-> Hi Alex,
+On 06/11/2012 01:44 AM, Wen Congyang wrote:
+> Currently, the boot option max_addr is only supported on ia64 platform.
+> We also need it on x86 platform.
+> For example:
+> There are two nodes:
+>  NODE#0  address range 0x00000000 00000000 - 0x00010000 00000000
+>  NODE#1  address range 0x00010000 00000000 - 0x00020000 00000000
+> If we only want to use node0, we can specify the max_addr. The boot
+> option "mem=" can do the same thing now. But the boot option "mem="
+> means the total memory used by the system. If we tell the user
+> that the boot option "mem=" can do this, it will confuse the user.
+> So we need an new boot option "max_addr" on x86 platform.
 > 
-> This got lost in the 3.5 push, but I think it's a good candidate for
-> 3.6.  I think Greg is accepting 3.6 patches now, and I'll send this off
-> to him.
 
-Yes, I am taking 3.6 stuff now.  In the future, once -rc1 is out, I can
-take patches for the next release at that point in time.
+I fail to see what this does that cannot be done with the
+since-long-existing memmap= option.  Could you address why memmap=
+doesn't match your needs?
 
-greg k-h
+	-hpa
+
