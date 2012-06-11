@@ -1,129 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751160Ab2FKIti (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 04:49:38 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:60242 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750731Ab2FKIth (ORCPT
+	id S1751822Ab2FKIvB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 04:51:01 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:39982 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750731Ab2FKIu7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 04:49:37 -0400
-Date: Mon, 11 Jun 2012 10:49:31 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Clemens Ladisch <clemens@ladisch.de>, Bjorn Helgaas <bhelgaas@google.com>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>, x86 <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [GIT PULL] AMD thresholding fixes for 3.6
-Message-ID: <20120611084930.GI31556@gmail.com>
-References: <20120607123259.GB11153@aftab.osrc.amd.com>
+	Mon, 11 Jun 2012 04:50:59 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FD5B0F0.8080606@jp.fujitsu.com>
+Date: Mon, 11 Jun 2012 17:48:48 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120607123259.GB11153@aftab.osrc.amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrea Arcangeli <aarcange@redhat.com>
+CC: Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>
+Subject: Re: [PATCH] mm: do not use page_count without a page pin
+References: <1339373872-31969-1-git-send-email-minchan@kernel.org> <4FD59C31.6000606@jp.fujitsu.com> <20120611074440.GI3094@redhat.com>
+In-Reply-To: <20120611074440.GI3094@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(2012/06/11 16:44), Andrea Arcangeli wrote:
+> Hi,
+>
+> On Mon, Jun 11, 2012 at 04:20:17PM +0900, Kamezawa Hiroyuki wrote:
+>> (2012/06/11 9:17), Minchan Kim wrote:
+>>> d179e84ba fixed the problem[1] in vmscan.c but same problem is here.
+>>> Let's fix it.
+>>>
+>>> [1] http://comments.gmane.org/gmane.linux.kernel.mm/65844
+>>>
+>>> I copy and paste d179e84ba's contents for description.
+>>>
+>>> "It is unsafe to run page_count during the physical pfn scan because
+>>> compound_head could trip on a dangling pointer when reading
+>>> page->first_page if the compound page is being freed by another CPU."
+>>>
+>>> Cc: Andrea Arcangeli<aarcange@redhat.com>
+>>> Cc: Mel Gorman<mgorman@suse.de>
+>>> Cc: Michal Hocko<mhocko@suse.cz>
+>>> Cc: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
+>>> Signed-off-by: Minchan Kim<minchan@kernel.org>
+>>> ---
+>>>    mm/page_alloc.c |    6 +++++-
+>>>    1 file changed, 5 insertions(+), 1 deletion(-)
+>>>
+>>> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+>>> index 266f267..019c4fe 100644
+>>> --- a/mm/page_alloc.c
+>>> +++ b/mm/page_alloc.c
+>>> @@ -5496,7 +5496,11 @@ __count_immobile_pages(struct zone *zone, struct page *page, int count)
+>>>    			continue;
+>>>
+>>>    		page = pfn_to_page(check);
+>>> -		if (!page_count(page)) {
+>>> +		/*
+>>> +		 * We can't use page_count withou pin a page
+>>> +		 * because another CPU can free compound page.
+>>> +		 */
+>>> +		if (!atomic_read(&page->_count)) {
+>>>    			if (PageBuddy(page))
+>>>    				iter += (1<<   page_order(page)) - 1;
+>>>    			continue;
+>> Nice Catch.
+>
+> Agreed!
+>
+>> Other than the comment fix already pointed out..
+>> Hmm...BTW, it seems this __count_xxx doesn't have any code for THP/Hugepage..
+>> so, we need more fixes for better code, I think.
+>> Hmm, Don't we need !PageTail() check and 'skip thp' code ?
+>
+> So the page->_count for tail pages is guaranteed zero at all times
+> (tail page refcounting is done on _mapcount).
+>
+> We could add a comment that "this check already skips compound tails
+> of THP because their page->_count is zero at all times".
+>
 
-* Borislav Petkov <bp@amd64.org> wrote:
+Thank you for clarification.
 
-> Hi Ingo,
-> 
-> those didn't make it in time for the merge window so I'm sending them
-> now so at they can spend their quality time in linux-next.
-> 
-> Please pull, thanks.
-> 
-> The following changes since commit f8f5701bdaf9134b1f90e5044a82c66324d2073f:
-> 
->   Linux 3.5-rc1 (2012-06-02 18:29:26 -0700)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git tags/amd-thresholding-fixes-for-3.6
-> 
-> for you to fetch changes up to 11122570193a429f72014703ce6b849640f8d7e5:
-> 
->   x86, MCE, AMD: Update copyrights and boilerplate (2012-06-07 12:43:50 +0200)
-> 
-> ----------------------------------------------------------------
-> AMD thresholding fixes for 3.6
-> 
-> Those are a bunch of patches which give the MCE thresholding code a
-> hard look and a scrubbing to remove a couple of annoyances like sysfs
-> warnings when running CPU off-/online tests and the threshold_bank4 node
-> under /sys/devices/system/machinecheck/ is a symlink.
-> 
-> It also gives proper names to the thresholding banks instead of simply
-> enumerating them, like this:
-> 
->      /sys/devices/system/machinecheck/machinecheck0/
->      |-- bank0
->      |-- bank1
->      |-- bank2
->      |-- bank3
->      |-- bank4
->      |-- bank5
->      |-- bank6
->      |-- check_interval
->      |-- cmci_disabled
->      |-- combined_unit
->      |   |-- combined_unit
->      |       |-- error_count
->      |       |-- threshold_limit
->      |-- dont_log_ce
->      |-- execution_unit
->      |   |-- execution_unit
->      |       |-- error_count
->      |       |-- threshold_limit
->      |-- ignore_ce
->      |-- insn_fetch
->      |   |-- insn_fetch
->      |       |-- error_count
->      |       |-- threshold_limit
->      |-- load_store
->      |   |-- load_store
->      |       |-- error_count
->      |       |-- threshold_limit
->      |-- monarch_timeout
->      |-- northbridge
->      |   |-- dram
->      |   |   |-- error_count
->      |   |   |-- interrupt_enable
->      |   |   |-- threshold_limit
->      |   |-- ht_links
->      |   |   |-- error_count
->      |   |   |-- interrupt_enable
->      |   |   |-- threshold_limit
->      |   |-- l3_cache
->      |       |-- error_count
->      |       |-- interrupt_enable
->      |       |-- threshold_limit
->     ...
-> 
-> It is tested on all our families >= K8.
-> 
-> ----------------------------------------------------------------
-> Borislav Petkov (9):
->       x86, amd_nb: Export model 0x10 and later PCI id
->       x86, MCE, AMD: Remove shared banks sysfs linking
->       x86, MCE, AMD: Remove local_allocate_... wrapper
->       x86, MCE, AMD: Move shared bank to node descriptor
->       x86, MCE, AMD: Print decimal thresholding values
->       x86, MCE, AMD: Cleanup reading of error_count
->       x86, MCE, AMD: Make error_count read only
->       x86, MCE, AMD: Give proper names to the thresholding banks
->       x86, MCE, AMD: Update copyrights and boilerplate
-> 
->  arch/x86/include/asm/amd_nb.h        |  21 +++
->  arch/x86/kernel/amd_nb.c             |   1 +
->  arch/x86/kernel/cpu/mcheck/mce_amd.c | 264 ++++++++++++++++-------------------
->  drivers/hwmon/k10temp.c              |   5 +-
->  include/linux/pci_ids.h              |   1 +
->  5 files changed, 147 insertions(+), 145 deletions(-)
+I'll look into this later. Fortunately, our team has memory-hotplug
+team again for our next server and should revisit this :)
+I'll give an input to them.
 
-Pulled, thanks Boris!
+Thanks,
+-Kame
 
-	Ingo
+> Instead of a comment we could consider defining an inline function
+> with a special name that does atomic_read(&page->_count) and use it
+> when we intend to the regular or compound head count and return 0 on
+> tails. It would make it easier to identify these places later if we
+> ever want to change the refcounting mechanism, but it may be overkill,
+> it's up to you.
+>
+> Tail pages also can't be PageLRU.
+>
+> The code after the patch should already skip thp tails fine (it won't
+> skip heads but I believe that's intentional, but one problem that
+> remains is that the heads should increase found by more than 1...).
+>
+> Thanks,
+> Andrea
+
+
