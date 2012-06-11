@@ -1,74 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753789Ab2FKLQm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 07:16:42 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:50949 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751745Ab2FKLQl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 07:16:41 -0400
-Date: Mon, 11 Jun 2012 19:16:25 +0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Jonghwa Lee <jonghwa3.lee@samsung.com>
-Cc: linux-kernel@vger.kernel.org, Mike Turquette <mturquette@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Hartley Sweeten <hsweeten@visionengravers.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Message-ID: <20120611111624.GJ11439@opensource.wolfsonmicro.com>
-References: <1339412480-7558-1-git-send-email-jonghwa3.lee@samsung.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="YPJ8CVbwFUtL7OFW"
-Content-Disposition: inline
-In-Reply-To: <1339412480-7558-1-git-send-email-jonghwa3.lee@samsung.com>
-X-Cookie: You are always busy.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 116.228.53.169
-X-SA-Exim-Mail-From: broonie@opensource.wolfsonmicro.com
-Subject: Re: [PATCH v3] clock: max77686: Add driver for Maxim 77686 32KHz
- crystal oscillator
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	id S1753809Ab2FKLRa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 07:17:30 -0400
+Received: from mga01.intel.com ([192.55.52.88]:52595 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753211Ab2FKLR2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 07:17:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="asc'?scan'208";a="164102011"
+Message-ID: <1339413676.2401.5.camel@sauron.fi.intel.com>
+Subject: Re: writeback: bad unlock balance detected in 3.5-rc1
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Date: Mon, 11 Jun 2012 14:21:16 +0300
+In-Reply-To: <20120608154535.GA887@localhost>
+References: <E1Sd0IP-0005nh-AJ@tytso-glaptop.cam.corp.google.com>
+	 <20120608150736.GF21080@quack.suse.cz> <20120608154535.GA887@localhost>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-ZqTF0oRjrxhZ7zpSItFi"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---YPJ8CVbwFUtL7OFW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+--=-ZqTF0oRjrxhZ7zpSItFi
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-On Mon, Jun 11, 2012 at 08:01:20PM +0900, Jonghwa Lee wrote:
+On Sat, 2012-06-09 at 00:45 +0900, Fengguang Wu wrote:
+> I'm yet to setup and run xfstests regularly, so as to catch such kind
+> of problems earlier in future.
 
-> v3
->  - Add mutex to the max77686_clk structure to make atomic execution of enable/disable function.
+You definitely need to do this before merging anything upstream. I'd
+recommend to use test at least with ext4 and xfs. Probably btrfs, but I
+never tested it with xfstests.
 
-No, you've not understood the issue.  As I said on my previous review
-these need to be prepare() and unprepare() since enable() and disable()
-execute in atomic context - that means you can't do I2C I/O and you
-can't take mutexes.
+--=20
+Best Regards,
+Artem Bityutskiy
 
---YPJ8CVbwFUtL7OFW
+--=-ZqTF0oRjrxhZ7zpSItFi
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJP1dOBAAoJEBus8iNuMP3dEdUP/26Cv0rjWZz5OdB38elTL4+K
-tNI5DViHif2x1yj5svFUHMJt30XwskklObVOY2ZFjl1vBnL8wB+jt3RtsxOd2YsH
-k3uo6K2FGcSjIg7yBwXJTx+7S08Sf8eERc4C5jNPz9zWosDoEcqSOoXI2K4ZgajO
-3XgC+pnn+WlYqdW/X4HKd8GWfL5lp3VXC/UuhcMHpi+c/7bNbN9TozR04CRia1AX
-K9eJuVqfInIPhlzk5IOVBGqpJwTSGL7UHV6Cm3jxQAPdzfR6mGgjY6YKleJumz8P
-skP7WIopl/fJ4XVBWiY3UJMR4LvJGDdicZPuu11tnLsNCuWmDCfHkZusDWf/xzoW
-Du9F9zM5Axm2ZqkIS6Xm972uAMIeT7aP9pOh3SIznyd4TyI4+oZyOb4vqLX3pYiR
-Lckh8O/Vpp7nKt0qclUPNHm4CTl5yVazjDaO3EO9cYcuhSd5Q9gT/Q9G43r2x0nv
-G67w3jYed0cs0eviEbj8xOViNjUh8c3FU4YU7UMGCn0d8te2z8MrWqDZgGNBWOfz
-RgDx+gD+EGHTq1VY7EuzbD2QtmrHa7/GN+mV+NX2C18o2rEFCZ3J28CZdrFy67jz
-xQ3zE9CTaTuY66yTXn9ECaP/luFbhf5gzTzagUsaoW0b9BiDBSFIF83Tt5eJcHJN
-2JjTuZ9i6q5IhCgduEz2
-=yBLB
+iQIcBAABAgAGBQJP1dSsAAoJECmIfjd9wqK04HQP/0ztUXrMLlVp9hDrWpd3jP2+
++DL1Vs/D9JuI9lParYooTiF3uQ+PzEQsQDMHtPpKQ+y3eEMgt4FBDB6LcIdBSvn9
+Qeobx8YLexMgwrQ05Sg/ca18HFv4UJphrlvAG6Syg7IsZb5oBnJ2zd3FH3X8oS0h
+0soVfc6lcZfMPXdOEmu5Vjh8uRiyW4H0r1xu7OOShCvNtLg6m2V2pzKLxRxOCP/I
+OfBzwi9YwgwWR+xmyCFxtko1l3eWQt7TS309jDQf3ANepJJC0COQTkws52GbpeHm
+tnCLdx2zfVBtffkOYwyXTmFqKSsGzUhWQz2gcZAmG1STHYNfm9NlR5JEWwxGRmVH
+R8zjoVpNvDS/iIa0lkoIw2WNQRTW99Pdoskhd2f1rCJblimNYkh8vmse38mUAtMZ
+pwDg6LOt2BaJLVx0XoiCYk8atSreCRKhq8kjm9yDgnJ/JT8o2OXOcPZXFim9qrXf
+VLKcnyUWcehn5ANX+MO9NipLVua0LOmpaOn0DlDeAk9GH2MLJwgGjN4zgYM+MIvX
+OA6FcdSrqdbIowDGfOXu6jKtSSH9DYZXDGUPMpln63e7zZroSMzN3JTBPeqpWOeq
+gp7+P0gDreoOPGfvrXJWYeY7ehg5t8HQLlzjhFjTY5uOCXva++NnEfmCPCMqvqz7
+bErH7JUCBtaM4U0jUzyh
+=qD0F
 -----END PGP SIGNATURE-----
 
---YPJ8CVbwFUtL7OFW--
+--=-ZqTF0oRjrxhZ7zpSItFi--
+
