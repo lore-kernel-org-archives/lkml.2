@@ -1,77 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751368Ab2FKEWR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 00:22:17 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:46429 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750711Ab2FKEWQ (ORCPT
+	id S1751513Ab2FKEXN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 00:23:13 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54953 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750712Ab2FKEXM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 00:22:16 -0400
-Date: Mon, 11 Jun 2012 12:21:38 +0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Yadwinder Singh Brar <yadi.brar01@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
-        Yadwinder Singh Brar <yadi.brar@samsung.com>
-Message-ID: <20120611042136.GK4218@opensource.wolfsonmicro.com>
-References: <1339148851-19289-1-git-send-email-yadi.brar@samsung.com>
- <20120611033701.GC4218@opensource.wolfsonmicro.com>
- <CAKew6eW4QgXDEG9XM9-sjw1_D7GrMeZYo81AEQyfkCE5qsLHXw@mail.gmail.com>
+	Mon, 11 Jun 2012 00:23:12 -0400
+Date: Sun, 10 Jun 2012 21:22:50 -0700
+From: tip-bot for Steven Rostedt <srostedt@redhat.com>
+Message-ID: <tip-7fbb98c5cb07563d3ee08714073a8e5452a96be2@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        brgerst@gmail.com, torvalds@linux-foundation.org, rostedt@goodmis.org,
+        srostedt@redhat.com, tglx@linutronix.de, avi@redhat.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        rostedt@goodmis.org, torvalds@linux-foundation.org, brgerst@gmail.com,
+        srostedt@redhat.com, tglx@linutronix.de, avi@redhat.com
+In-Reply-To: <1337763411.13348.140.camel@gandalf.stny.rr.com>
+References: <4FBB8C40.6080304@redhat.com>
+	<1337763411.13348.140.camel@gandalf.stny.rr.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/debug] x86:
+  Save cr2 in NMI in case NMIs take a page fault
+Git-Commit-ID: 7fbb98c5cb07563d3ee08714073a8e5452a96be2
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="enGqbSaueFq5omEL"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <CAKew6eW4QgXDEG9XM9-sjw1_D7GrMeZYo81AEQyfkCE5qsLHXw@mail.gmail.com>
-X-Cookie: Reply hazy, ask again later.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 116.228.53.169
-X-SA-Exim-Mail-From: broonie@opensource.wolfsonmicro.com
-Subject: Re: [PATCH 1/2] regulator: core: Add regulator_set_voltage_time_sel
- to calculate ramp delay.
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 10 Jun 2012 21:22:57 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  7fbb98c5cb07563d3ee08714073a8e5452a96be2
+Gitweb:     http://git.kernel.org/tip/7fbb98c5cb07563d3ee08714073a8e5452a96be2
+Author:     Steven Rostedt <srostedt@redhat.com>
+AuthorDate: Thu, 7 Jun 2012 10:21:21 -0400
+Committer:  Steven Rostedt <rostedt@goodmis.org>
+CommitDate: Thu, 7 Jun 2012 10:21:21 -0400
 
---enGqbSaueFq5omEL
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+x86: Save cr2 in NMI in case NMIs take a page fault
 
-On Mon, Jun 11, 2012 at 09:49:39AM +0530, Yadwinder Singh Brar wrote:
+Avi Kivity reported that page faults in NMIs could cause havic if
+the NMI preempted another page fault handler:
 
->=20
-> Actaully I had posted V2 for this patch with a little correction
-> (i.e. converting ramp_delay to uV/us before using for
-> DIV_ROUND_UP)
-> +                       rdev->desc->ramp_delay * 1000);
+   The recent changes to NMI allow exceptions to take place in NMI
+   handlers, but I think that a #PF (say, due to access to vmalloc space)
+   is still problematic.  Consider the sequence
 
-> I missed to write it in patch summary.
+    #PF  (cr2 set by processor)
+      NMI
+        ...
+        #PF (cr2 clobbered)
+          do_page_fault()
+          IRET
+        ...
+        IRET
+      do_page_fault()
+        address = read_cr2()
 
-Yeah, I did actually apply that version but picked the wrong one to
-reply to when clearing out of my inbox.
+   The last line reads the overwritten cr2 value.
 
---enGqbSaueFq5omEL
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Originally I wrote a patch to solve this by saving the cr2 on the stack.
+Brian Gerst suggested to save it in the r12 register as both r12 and rbx
+are saved by the do_nmi handler as required by the C standard. But rbx
+is already used for saving if swapgs needs to be run on exit of the NMI
+handler.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Link: http://lkml.kernel.org/r/4FBB8C40.6080304@redhat.com
+Link: http://lkml.kernel.org/r/1337763411.13348.140.camel@gandalf.stny.rr.com
 
-iQIcBAEBAgAGBQJP1XIaAAoJEBus8iNuMP3dKeEP/16SOjEyeTppUdC9eSSUeD/a
-fkGeEPEVaJZEkfVdCeIn8Z9ifQorqF+Amb6fa8/jO71+w55MRthEYXk2rkPngtYQ
-Gk5kpZTtJaNl2v1YIrzrEt3ksi+1QEOvgNT7jyx+RV1nkf0PLv85BlD4etxVjF5M
-NNqYVJmjUL7J3xcGhpwf1HO1BI8fivzjIJV+0bKO+rJLt7+heBSHNob/DaTfnCQ2
-vFvdwBa/xnjCv00WY2wG965oE7dufPzGvqhGAYILZ8EQFzBQapXz0UVK+NsTnwR6
-MwDlJ2jSWXlv489AKcyjfOOZghUTfh6sUJVjAqLb+kSO9rLchf37mWudVY1ynWiN
-vLcn0NhNGGxcV0FGWHRzNVO0bPn1Zlv8QuLsTB8A9HTfs3bPRNumJA/xhydfOidI
-d3aPH6hB4atj2VO+xtYB2jS2frJ82W7Vg4HbwWqblEGJI7q91G58orho2slOAVNK
-PU/e6CfVzge3IoPg3dTMOpBsxqWXd6n3aimTmsFOT6irL/qlXZTbfxXF20BR20Fk
-d6DDiuJKpbHEXK+yO74cqvNz6vGREKmTS6i3LkgjBh93XKNV1yRhLMYYsYcW46/r
-hfiWCvC+KcDzm8q76sd/daUEqn8MePcsOdQ704Ydc6lYKEQ9Jgxz95S/wbuhAhDa
-R+Y8JoP5Ywu5DyFTeFMg
-=1N/i
------END PGP SIGNATURE-----
+Reported-by: Avi Kivity <avi@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Suggested-by: Brian Gerst <brgerst@gmail.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ arch/x86/kernel/entry_64.S |   20 ++++++++++++++++++++
+ 1 files changed, 20 insertions(+), 0 deletions(-)
 
---enGqbSaueFq5omEL--
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 7d65133..111f6bb 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -1758,10 +1758,30 @@ end_repeat_nmi:
+ 	 */
+ 	call save_paranoid
+ 	DEFAULT_FRAME 0
++
++	/*
++	 * Save off the CR2 register. If we take a page fault in the NMI then
++	 * it could corrupt the CR2 value. If the NMI preempts a page fault
++	 * handler before it was able to read the CR2 register, and then the
++	 * NMI itself takes a page fault, the page fault that was preempted
++	 * will read the information from the NMI page fault and not the
++	 * origin fault. Save it off and restore it if it changes.
++	 * Use the r12 callee-saved register.
++	 */
++	movq %cr2, %r12
++
+ 	/* paranoidentry do_nmi, 0; without TRACE_IRQS_OFF */
+ 	movq %rsp,%rdi
+ 	movq $-1,%rsi
+ 	call do_nmi
++
++	/* Did the NMI take a page fault? Restore cr2 if it did */
++	movq %cr2, %rcx
++	cmpq %rcx, %r12
++	je 1f
++	movq %r12, %cr2
++1:
++	
+ 	testl %ebx,%ebx				/* swapgs needed? */
+ 	jnz nmi_restore
+ nmi_swapgs:
