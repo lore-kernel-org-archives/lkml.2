@@ -1,145 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752339Ab2FKUrM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 16:47:12 -0400
-Received: from mga09.intel.com ([134.134.136.24]:28785 "EHLO mga09.intel.com"
+	id S1751369Ab2FKUsM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 16:48:12 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:59760 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751640Ab2FKUrK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 16:47:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="151548832"
-Date: Mon, 11 Jun 2012 13:47:09 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Alex Shi <alex.shi@intel.com>
-Cc: gregkh <gregkh@linuxfoundation.org>,
-        "Sharp, Sarah A" <sarah.a.sharp@intel.com>,
-        Alan stern <stern@rowland.harvard.edu>, Felipe Balbi <balbi@ti.com>,
-        linux-usb <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb/xhci: unify parameter of xhci_msi_irq
-Message-ID: <20120611204709.GC5742@xanatos>
-References: <1331787186.2979.71.camel@debian>
- <20120315145743.GA7928@kroah.com>
- <4F6204B7.5010908@intel.com>
- <20120315175608.GA6077@xanatos>
- <4FC5D04E.5040907@intel.com>
- <4FD59AD8.1050109@intel.com>
+	id S1750891Ab2FKUsJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 16:48:09 -0400
+Date: Mon, 11 Jun 2012 22:48:04 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: wallak@free.fr
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: File copy is very slow on linux-3.4.2 (or linux-3.3x) on a
+ specific hardware: AMD FX-8150 + 990FX
+Message-ID: <20120611204804.GA18967@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>, wallak@free.fr,
+	linux-kernel@vger.kernel.org
+References: <1108815600.134531433.1339443818361.JavaMail.root@zimbra44-e7.priv.proxad.net>
+ <437497008.134549481.1339444456294.JavaMail.root@zimbra44-e7.priv.proxad.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <4FD59AD8.1050109@intel.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <437497008.134549481.1339444456294.JavaMail.root@zimbra44-e7.priv.proxad.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alex,
+There's something very wrong with this mail
 
-This got lost in the 3.5 push, but I think it's a good candidate for
-3.6.  I think Greg is accepting 3.6 patches now, and I'll send this off
-to him.
+On Mon, Jun 11, 2012 at 09:54:16PM +0200, wallak@free.fr wrote:
+> 
+> I've a very annoying issue on recent kernel (linux-3.4.2-SMP) with my main motherboard (AMD FX-8150 + 990FX - 8 cores 4.1GHz), file copy is very slow (see below). The same kernel works flawlessly on an AMD E450 2 cores motherboard.
+> 
+> Linux-3.2.20 works properly on this hardware.
+> hdparm -t gives good results on both kernels.
+> 
+> I've no idea where this bug come from. Do you have this issue on your hardware ? A patch is available ?
+> 
+> 
+> *linux-3.4.2
+> dd if=../in/file_8gb.tmp of=tmp.tmp bs=1024k count=100
+> 100+0 records in
+> 100+0 records out
+> 104857600 bytes (105 MB) copied, 132.884 s, 789 kB/s
+> 
+> 
+> *linux-3.2.20
+> dd if=../in/file_8gb.tmp of=tmp.tmp bs=1024k count=100
+> 100+0 records in
+> 100+0 records out
+> 104857600 bytes (105 MB) copied, 3.30793 s, 31.7 MB/sa
 
-Sarah Sharp
+First of all, the above shows that 3.4.2 is roughly 20 times better than
+3.2.20.
 
-On Mon, Jun 11, 2012 at 03:14:32PM +0800, Alex Shi wrote:
-> On 05/30/2012 03:46 PM, Alex Shi wrote:
-> 
-> > 
-> >>>> Is this needed in my -next tree now?  Or is it something for later?
-> >>>
-> >>>
-> >>> Appreciate if it can be in -next tree. :)
-> >>>
-> >>>>
-> >>>> Any reason you did not put Sarah on the To: line here?  She's the one
-> >>>> that needs to ack it before I can accept it.
-> >>>
-> >>>
-> >>> Sarah, would you like to give some comments here?
-> >>
-> >> Looks fine.  I'll send a pull request to Greg with this patch after I
-> >> verify it doesn't generate new warnings.
-> >>
-> > 
-> > 
-> > Sarah, any further comments for this patch? :)
-> 
-> 
-> 
-> 
-> 
-> Just try on 3.5-rc2 kernel, find it still works.
-> Sarah, do you mind to give some comments for this?
-> 
-> -------------
-> 
-> 
-> From 6ae1b9e71f9b14be5774ae9c1b4cf57cd4e747ac Mon Sep 17 00:00:00 2001
-> From: Alex Shi <alex.shi@intel.com>
-> Date: Mon, 11 Jun 2012 15:10:18 +0800
-> Subject: [PATCH] usb/xhci: unify parameter of xhci_msi_irq
-> 
-> According to Felipe and Alan's comments the second parameter of irq
-> handler should be 'void *' not a specific structure pointer.
-> So fix it.
-> 
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
-> Acked-by: Felipe Balbi <balbi@ti.com>
-> ---
->  drivers/usb/host/xhci-ring.c |    2 +-
->  drivers/usb/host/xhci.c      |    4 ++--
->  drivers/usb/host/xhci.h      |    2 +-
->  3 files changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
-> index 23b4aef..cc8a52f 100644
-> --- a/drivers/usb/host/xhci-ring.c
-> +++ b/drivers/usb/host/xhci-ring.c
-> @@ -2479,7 +2479,7 @@ hw_died:
->  	return IRQ_HANDLED;
->  }
->  
-> -irqreturn_t xhci_msi_irq(int irq, struct usb_hcd *hcd)
-> +irqreturn_t xhci_msi_irq(int irq, void *hcd)
->  {
->  	return xhci_irq(hcd);
->  }
-> diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-> index afdc73e..f7d40c1 100644
-> --- a/drivers/usb/host/xhci.c
-> +++ b/drivers/usb/host/xhci.c
-> @@ -215,7 +215,7 @@ static int xhci_setup_msi(struct xhci_hcd *xhci)
->  		return ret;
->  	}
->  
-> -	ret = request_irq(pdev->irq, (irq_handler_t)xhci_msi_irq,
-> +	ret = request_irq(pdev->irq, xhci_msi_irq,
->  				0, "xhci_hcd", xhci_to_hcd(xhci));
->  	if (ret) {
->  		xhci_dbg(xhci, "disable MSI interrupt\n");
-> @@ -287,7 +287,7 @@ static int xhci_setup_msix(struct xhci_hcd *xhci)
->  
->  	for (i = 0; i < xhci->msix_count; i++) {
->  		ret = request_irq(xhci->msix_entries[i].vector,
-> -				(irq_handler_t)xhci_msi_irq,
-> +				xhci_msi_irq,
->  				0, "xhci_hcd", xhci_to_hcd(xhci));
->  		if (ret)
->  			goto disable_msix;
-> diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
-> index de3d6e3..737ef54 100644
-> --- a/drivers/usb/host/xhci.h
-> +++ b/drivers/usb/host/xhci.h
-> @@ -1710,7 +1710,7 @@ int xhci_resume(struct xhci_hcd *xhci, bool hibernated);
->  
->  int xhci_get_frame(struct usb_hcd *hcd);
->  irqreturn_t xhci_irq(struct usb_hcd *hcd);
-> -irqreturn_t xhci_msi_irq(int irq, struct usb_hcd *hcd);
-> +irqreturn_t xhci_msi_irq(int irq, void *hcd);
->  int xhci_alloc_dev(struct usb_hcd *hcd, struct usb_device *udev);
->  void xhci_free_dev(struct usb_hcd *hcd, struct usb_device *udev);
->  int xhci_alloc_tt_info(struct xhci_hcd *xhci,
-> -- 
-> 1.7.5.4
-> 
+But even if that were so, this is a wrong test to do since once you
+run it for the first time, the 100MB land in the page cache and every
+subsequent time you run the same thing, the same 100MB will come from
+memory so no I/O at all.
+
+What are you trying to achieve actually?
+
+And, if I assume you've sent the right config below, then there are some
+major issues with it:
+
+> #
+> # Automatically generated file; DO NOT EDIT.
+> # Linux/i386 3.4.2 Kernel Configuration
+> #
+> # CONFIG_64BIT is not set
+> CONFIG_X86_32=y
+> # CONFIG_X86_64 is not set
+
+Why in the hell are you using 32-bit kernel on an AMD64 processor? Any
+real reason?
+
+> CONFIG_X86=y
+> CONFIG_INSTRUCTION_DECODER=y
+> CONFIG_OUTPUT_FORMAT="elf32-i386"
+> CONFIG_ARCH_DEFCONFIG="arch/x86/configs/i386_defconfig"
+> CONFIG_GENERIC_CMOS_UPDATE=y
+> CONFIG_CLOCKSOURCE_WATCHDOG=y
+> CONFIG_GENERIC_CLOCKEVENTS=y
+> CONFIG_GENERIC_CLOCKEVENTS_BROADCAST=y
+> CONFIG_LOCKDEP_SUPPORT=y
+> CONFIG_STACKTRACE_SUPPORT=y
+> CONFIG_HAVE_LATENCYTOP_SUPPORT=y
+> CONFIG_MMU=y
+
+[ … ]
+
+> #
+> # Processor type and features
+> #
+> CONFIG_ZONE_DMA=y
+> CONFIG_TICK_ONESHOT=y
+> # CONFIG_NO_HZ is not set
+> CONFIG_HIGH_RES_TIMERS=y
+> CONFIG_GENERIC_CLOCKEVENTS_BUILD=y
+> CONFIG_GENERIC_CLOCKEVENTS_MIN_ADJUST=y
+> CONFIG_SMP=y
+> CONFIG_X86_MPPARSE=y
+> # CONFIG_X86_BIGSMP is not set
+> CONFIG_X86_EXTENDED_PLATFORM=y
+> # CONFIG_X86_WANT_INTEL_MID is not set
+> # CONFIG_X86_RDC321X is not set
+> # CONFIG_X86_32_NON_STANDARD is not set
+> CONFIG_X86_SUPPORTS_MEMORY_FAILURE=y
+> # CONFIG_X86_32_IRIS is not set
+> CONFIG_SCHED_OMIT_FRAME_POINTER=y
+> # CONFIG_PARAVIRT_GUEST is not set
+> CONFIG_NO_BOOTMEM=y
+> # CONFIG_MEMTEST is not set
+> # CONFIG_M386 is not set
+> # CONFIG_M486 is not set
+> # CONFIG_M586 is not set
+> # CONFIG_M586TSC is not set
+> # CONFIG_M586MMX is not set
+> # CONFIG_M686 is not set
+> # CONFIG_MPENTIUMII is not set
+> # CONFIG_MPENTIUMIII is not set
+> # CONFIG_MPENTIUMM is not set
+> # CONFIG_MPENTIUM4 is not set
+> # CONFIG_MK6 is not set
+> # CONFIG_MK7 is not set
+> # CONFIG_MK8 is not set
+> # CONFIG_MCRUSOE is not set
+> # CONFIG_MEFFICEON is not set
+> # CONFIG_MWINCHIPC6 is not set
+> # CONFIG_MWINCHIP3D is not set
+> # CONFIG_MELAN is not set
+> # CONFIG_MGEODEGX1 is not set
+> # CONFIG_MGEODE_LX is not set
+> # CONFIG_MCYRIXIII is not set
+> # CONFIG_MVIAC3_2 is not set
+> # CONFIG_MVIAC7 is not set
+> # CONFIG_MCORE2 is not set
+> CONFIG_MATOM=y
+
+You have a 64-bit AMD processor but you're enabling 32-bit Intel Atom
+optimizations, wtf?
+
+Why not CONFIG_MK8?
+
+Also, I noticed below you have IDE stuff enabled. Why? Why not AHCI and
+the corresponding ATA_SFF options?
+
+...
+
+> # CONFIG_X86_GENERIC is not set
+> CONFIG_X86_INTERNODE_CACHE_SHIFT=6
+> CONFIG_X86_CMPXCHG=y
+> CONFIG_X86_L1_CACHE_SHIFT=6
+> CONFIG_X86_XADD=y
+> CONFIG_X86_WP_WORKS_OK=y
+> CONFIG_X86_INVLPG=y
+> CONFIG_X86_BSWAP=y
+> CONFIG_X86_POPAD_OK=y
+> CONFIG_X86_USE_PPRO_CHECKSUM=y
+> CONFIG_X86_TSC=y
+> CONFIG_X86_CMPXCHG64=y
+> CONFIG_X86_CMOV=y
+> CONFIG_X86_MINIMUM_CPU_FAMILY=5
+> CONFIG_X86_DEBUGCTLMSR=y
+> CONFIG_CPU_SUP_INTEL=y
+> CONFIG_CPU_SUP_AMD=y
+> CONFIG_CPU_SUP_CENTAUR=y
+> CONFIG_CPU_SUP_TRANSMETA_32=y
+> CONFIG_HPET_TIMER=y
+> CONFIG_HPET_EMULATE_RTC=y
+> CONFIG_DMI=y
+> # CONFIG_IOMMU_HELPER is not set
+> CONFIG_NR_CPUS=8
+> # CONFIG_SCHED_SMT is not set
+> CONFIG_SCHED_MC=y
+> # CONFIG_IRQ_TIME_ACCOUNTING is not set
+> CONFIG_PREEMPT_NONE=y
+> # CONFIG_PREEMPT_VOLUNTARY is not set
+> # CONFIG_PREEMPT is not set
+> CONFIG_X86_LOCAL_APIC=y
+> CONFIG_X86_IO_APIC=y
+> # CONFIG_X86_REROUTE_FOR_BROKEN_BOOT_IRQS is not set
+> CONFIG_X86_MCE=y
+> CONFIG_X86_MCE_INTEL=y
+> CONFIG_X86_MCE_AMD=y
+> # CONFIG_X86_ANCIENT_MCE is not set
+> CONFIG_X86_MCE_THRESHOLD=y
+> # CONFIG_X86_MCE_INJECT is not set
+> CONFIG_X86_THERMAL_VECTOR=y
+> CONFIG_VM86=y
+> # CONFIG_TOSHIBA is not set
+> CONFIG_I8K=m
+> # CONFIG_X86_REBOOTFIXUPS is not set
+> CONFIG_MICROCODE=y
+> CONFIG_MICROCODE_INTEL=y
+> CONFIG_MICROCODE_AMD=y
+
+This should be =m because otherwise you can't load microcode from
+userspace.
+
+All I'm saying is, take some time to configure your kernel properly by
+reading the help text of every option and enable only the ones you need.
+
+And search the net for more info on how to configure your kernel
+properly.
+
+HTH.
+
+-- 
+Regards/Gruss,
+    Boris.
