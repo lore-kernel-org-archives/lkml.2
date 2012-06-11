@@ -1,84 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752718Ab2FKWuG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 18:50:06 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:53162 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752366Ab2FKWuE (ORCPT
+	id S1752540Ab2FKW7W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 18:59:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58184 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751664Ab2FKW7V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 18:50:04 -0400
-MIME-Version: 1.0
-In-Reply-To: <4FD626C1.1010507@mvista.com>
-References: <1339263660-4039-1-git-send-email-linkinjeon@gmail.com>
-	<4FD39904.2010808@mvista.com>
-	<CAKYAXd9EUqxUBw1YWr2FnBrg1K=uGWiaEFYtSgu-J3nZ9sLvuQ@mail.gmail.com>
-	<4FD626C1.1010507@mvista.com>
-Date: Tue, 12 Jun 2012 07:50:01 +0900
-Message-ID: <CAKYAXd88oU_vu4Ko4x+OAi3=w8CLSD0GEA787-3CMVfXL6CLQg@mail.gmail.com>
-Subject: Re: [PATCH v3 2/4] usb: storage: add support for write cache quirk on
- usb hdd
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-Cc: James.Bottomley@hansenpartnership.com, gregkh@linuxfoundation.org,
-        mdharm-usb@one-eyed-alien.net, stern@rowland.harvard.edu,
-        bvanassche@acm.org, linux-usb@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Pankaj Kumar <pankaj.km@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 11 Jun 2012 18:59:21 -0400
+Date: Mon, 11 Jun 2012 15:59:19 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: arnd@arndb.de, linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] include: Fix compile warning in include/linux/bitops.h
+Message-Id: <20120611155919.7decee80.akpm@linux-foundation.org>
+In-Reply-To: <1339211730-10398-1-git-send-email-linkinjeon@gmail.com>
+References: <1339211730-10398-1-git-send-email-linkinjeon@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/6/12, Sergei Shtylyov <sshtylyov@mvista.com>:
-> Hello.
->
-> On 10-06-2012 4:30, Namjae Jeon wrote:
->
->>>> Add support for write cache quirk on usb hdd. scsi driver will be set
->>>> to
->>>> wce
->>>> by detecting write cache quirk in quirk list when plugging usb hdd.
->
->>>> Signed-off-by: Namjae Jeon<namjae.jeon@samsung.com>
->>>> Signed-off-by: Pankaj Kumar<pankaj.km@samsung.com>
->>>> Signed-off-by: Amit Sahrawat<a.sahrawat@samsung.com>
->>>> ---
->>>>    drivers/usb/storage/scsiglue.c |    5 +++++
->>>>    drivers/usb/storage/usb.c      |    5 ++++-
->>>>    include/linux/usb_usual.h      |    4 +++-
->>>>    3 files changed, 12 insertions(+), 2 deletions(-)
->
->>>> diff --git a/drivers/usb/storage/scsiglue.c
->>>> b/drivers/usb/storage/scsiglue.c
->>>> index a324a5d..fe42547 100644
->>>> --- a/drivers/usb/storage/scsiglue.c
->>>> +++ b/drivers/usb/storage/scsiglue.c
->>> [...]
->>>> @@ -529,6 +529,9 @@ static void adjust_quirks(struct us_data *us)
->>>>    		case 'o':
->>>>    			f |= US_FL_CAPACITY_OK;
->>>>    			break;
->>>> +		case 'p':
->>>> +			f |= US_FL_WRITE_CACHE;
->>>> +			break;
->>>>    		case 'r':
->>>>    			f |= US_FL_IGNORE_RESIDUE;
->>>>    			break;
->>>
->>>      You probably should unite this chunk with the documentation update
->>> patch.
->
->> Hi Sergei.
->> I tried to post documentation update patch(4/4) for this chunk.
->> Do I misunderstand ?
->
->     I mean that the documenation should be updated in the same patch where
-> you
-> add the new value.
-Okay, I changed it on the latest patch also.
-Sergei, Thanks a lot.
->
-> WBR, Sergei
->
+On Fri,  8 Jun 2012 23:15:30 -0400
+Namjae Jeon <linkinjeon@gmail.com> wrote:
+
+> The compile warning is caused by __const_hweight8 when using
+> hweight_long with -Wsign-compare option.
+> The reason is that the default return value of this macro is signed.
+> So need type casting to remove warning.
+
+um, what warning?
+
+Please always quote the compiler messages when fixing build warnings or
+errors.
+
+> index fa2a50b..3ad0dae 100644
+> --- a/include/asm-generic/bitops/const_hweight.h
+> +++ b/include/asm-generic/bitops/const_hweight.h
+> @@ -4,7 +4,7 @@
+>  /*
+>   * Compile time versions of __arch_hweightN()
+>   */
+> -#define __const_hweight8(w)		\
+> +#define __const_hweight8(w)	(unsigned long)	\
+>        (	(!!((w) & (1ULL << 0))) +	\
+>  	(!!((w) & (1ULL << 1))) +	\
+>  	(!!((w) & (1ULL << 2))) +	\
+
