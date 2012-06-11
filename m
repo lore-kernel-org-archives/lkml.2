@@ -1,76 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751538Ab2FKTjY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 15:39:24 -0400
-Received: from mga02.intel.com ([134.134.136.20]:2267 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750891Ab2FKTjW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 15:39:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="156292265"
-Date: Mon, 11 Jun 2012 21:49:46 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Dave Jones <davej@redhat.com>, Sasha Levin <levinsasha928@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        David Miller <davem@davemloft.net>, lauro.venancio@openbossa.org,
-        aloisio.almeida@openbossa.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        linux-wireless <linux-wireless@vger.kernel.org>
-Subject: Re: net: nfc: BUG and panic in accept() on 3.5-rc2
-Message-ID: <20120611194946.GA22557@sortiz-mobl>
-References: <1339423241.4999.53.camel@lappy>
- <20120611144134.GX22557@sortiz-mobl>
- <1339425693.6001.2268.camel@edumazet-glaptop>
- <20120611145700.GY22557@sortiz-mobl>
- <1339426778.6001.2312.camel@edumazet-glaptop>
- <20120611152007.GZ22557@sortiz-mobl>
- <1339433810.4999.65.camel@lappy>
- <20120611172545.GA1776@redhat.com>
+	id S1751519Ab2FKTlR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 15:41:17 -0400
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:40214 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751110Ab2FKTlQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 15:41:16 -0400
+Message-ID: <4FD649CF.5020300@fb.com>
+Date: Mon, 11 Jun 2012 12:41:03 -0700
+From: Arun Sharma <asharma@fb.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120611172545.GA1776@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Stephane Eranian <eranian@google.com>, <linux-kernel@vger.kernel.org>,
+        <mingo@elte.hu>
+Subject: Re: [PATCH] perf/x86: fix broken LBR fixup code
+References: <20120611134426.GA7542@quad> <1339422464.30462.17.camel@twins>
+In-Reply-To: <1339422464.30462.17.camel@twins>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.18.252]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.260,0.0.0000
+ definitions=2012-06-11_04:2012-06-11,2012-06-11,1970-01-01 signatures=0
+X-Proofpoint-Spam-Reason: safe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
+On 6/11/12 6:47 AM, Peter Zijlstra wrote:
+> On Mon, 2012-06-11 at 15:44 +0200, Stephane Eranian wrote:
+>> I noticed that the LBR fixups were not working anymore
+>> on programs where they used to. I tracked this down to
+>> a recent change to copy_from_user_nmi().
+>>
+>> commit db0dc75d6403b6663c0eab4c6ccb672eb9b2ed72
+>> Author: Arun Sharma<asharma@fb.com>
+>> Date:   Fri Apr 20 15:41:36 2012 -0700
+>>
+>>      perf/x86: Check user address explicitly in copy_from_user_nmi()
+>>
+>> This commit added a call to __range_not_ok() to the
+>> copy_from_user_nmi() routine. The problem is that the logic
+>> of the test must be reversed. __range_not_ok() returns 0 if the
+>> range is VALID. We want to return early from copy_from_user_nmi()
+>> if the range is NOT valid.
+>
+> D'0h.. Thanks!
 
-On Mon, Jun 11, 2012 at 01:25:45PM -0400, Dave Jones wrote:
-> On Mon, Jun 11, 2012 at 06:56:50PM +0200, Sasha Levin wrote:
-> 
->  > > > > > > What's trinity ?
->  > > > > > > Also, if this one is reproducible, would you mind sharing some details about
->  > > > > > > how we could reproduce it ?
->  > > > > > 
->  > > > > > Well, bugfix should be trivial enough ;)
->  > > > > Yep, I looked at the code only after looking at Sasha's report.
->  > > > > 
->  > > > > Thanks for the patch, do you mind if I add your SOB to it ?
->  > > > 
->  > > > I  would prefer making sure it fixes the bug first ;)
->  > > Sure, although your patch makes sense regardless of that :)
->  > > I'll still wait for Sasha to confirm that it fixes his crash.
->  > 
->  > I don't have a direct way of reproducing it, but I've put it in the test
->  > vm and the fuzzer is running, I'll let you know tomorrow if it happened
->  > again.
-> 
-> You might be able to trigger it faster by using -P PF_NFC, which will 
-> force trinity to only use NFC sockets.
-> 
-> sidenote: most protocols trigger the module to be auto-loaded when a socket
-> is created. This doesn't seem to happen with nfc, making me need to manually
-> modprobe it first. Intentional ?
-No, I'm missing the MODULE_ALIAS_NETPROTO() call for NFC. Thanks for the
-report.
+My bad. I was fooled by all the kernel addresses that were unwound 
+properly. Didn't notice the broken unwinding in user space before I sent 
+the patch. The fix looks good. Thanks.
 
-Cheers,
-Samuel.
-
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+  -Arun
