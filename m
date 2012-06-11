@@ -1,103 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753468Ab2FKNj3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 09:39:29 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:34384 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751371Ab2FKNj2 (ORCPT
+	id S1753822Ab2FKNkR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 09:40:17 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:57386 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752364Ab2FKNkP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 09:39:28 -0400
-Date: Mon, 11 Jun 2012 22:39:16 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Dave Jones <davej@redhat.com>, Cong Wang <amwang@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH v10] mm: compaction: handle incorrect MIGRATE_UNMOVABLE
- type pageblocks
-Message-ID: <20120611133916.GB2340@barrios>
-References: <201206081046.32382.b.zolnierkie@samsung.com>
- <4FD54959.6060500@kernel.org>
- <201206111243.14379.b.zolnierkie@samsung.com>
+	Mon, 11 Jun 2012 09:40:15 -0400
+Date: Mon, 11 Jun 2012 06:39:53 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Mike Galbraith <mgalbraith@novell.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: rcu: endless stalls
+Message-ID: <20120611133953.GI2425@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1339409176.7350.26.camel@marge.simpson.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201206111243.14379.b.zolnierkie@samsung.com>
+In-Reply-To: <1339409176.7350.26.camel@marge.simpson.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12061113-7606-0000-0000-0000010652BA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 11, 2012 at 12:43:14PM +0200, Bartlomiej Zolnierkiewicz wrote:
-> On Monday 11 June 2012 03:26:49 Minchan Kim wrote:
-> > Hi Bartlomiej,
-> > 
-> > On 06/08/2012 05:46 PM, Bartlomiej Zolnierkiewicz wrote:
-> > 
-> > > 
-> > > Hi,
-> > > 
-> > > This version is much simpler as it just uses __count_immobile_pages()
-> > > instead of using its own open coded version and it integrates changes
-> > 
-> > 
-> > That's a good idea. I don't have noticed that function is there.
-> > When I look at the function, it has a problem, too.
-> > Please, look at this.
-> > 
-> > https://lkml.org/lkml/2012/6/10/180
-> > 
-> > If reviewer is okay that patch, I would like to resend your patch based on that. 
+On Mon, Jun 11, 2012 at 12:06:16PM +0200, Mike Galbraith wrote:
+> Greetings,
 > 
-> Ok, I would later merge all changes into v11 and rebase on top of your patch.
-> 
-> > > from Minchan Kim (without page_count change as it doesn't seem correct
-> > 
-> > 
-> > Why do you think so?
-> > If it isn't correct, how can you prevent racing with THP page freeing?
-> 
-> After seeing the explanation for the previous fix it is all clear now.
-> 
-> > > and __count_immobile_pages() does the check in the standard way; if it
-> > > still is a problem I think that removing 1st phase check altogether
-> > > would be better instead of adding more locking complexity).
-> > > 
-> > > The patch also adds compact_rescued_unmovable_blocks vmevent to vmstats
-> > > to make it possible to easily check if the code is working in practice.
-> > 
-> > 
-> > I think that part should be another patch.
-> > 
-> > 1. Adding new vmstat would be arguable so it might interrupt this patch merging.
-> 
-> Why would it be arguable?  It seems non-intrusive and obvious to me.
+> I received a report of a 48 core UV box hitting a gripe, taking longer
+> than timeout to emit same, so box griped endlessly, forcing reboot.
 
-Once you add new vmstat, someone can make another dependent code in userspace.
-It means your new vmstat would become a new ABI so we should be careful.
+So it took minutes to print an RCU CPU stall warning?  On only 48 CPUs?
 
+If so, yow!!!
+
+My guess is that rcu_cpu_stall_suppress must be manipulated atomically
+for this to work reliably, for example, using xchg().
+
+							Thanx, Paul
+
+> The below might prevent that.. and bust other stuff for free :)
 > 
-> > 2. New vmstat adding is just for this patch is effective or not in real practice
-> >    so if we prove it in future, let's revert the vmstat. Separating it would make it
-> >    easily.
+> rcu: one gripe at a time please
 > 
-> I would like to add this vmstat permanently, not only for the testing period..
-
-"I would like to add this vmstat permanently" isn't logical at all.
-You should mention why we need such vmstat and how administrator can parse it/
-handle it if he needs.
-
-If we have Documentation/vmstat.txt, you should have written it down. Sigh.
-
+> Not-compiled-by:
+> Not-signed-off-by:
+> Not-etc-by:
 > 
-> Best regards,
-> --
-> Bartlomiej Zolnierkiewicz
-> Samsung Poland R&D Center
+> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> index 0da7b88..6462056d6 100644
+> --- a/kernel/rcutree.c
+> +++ b/kernel/rcutree.c
+> @@ -818,10 +818,25 @@ static void print_cpu_stall(struct rcu_state *rsp)
+>  	set_need_resched();  /* kick ourselves to get things going. */
+>  }
+> 
+> +/**
+> + * rcu_cpu_stall_reset - prevent further stall warnings in current grace period
+> + *
+> + * Set the stall-warning timeout way off into the future, thus preventing
+> + * any RCU CPU stall-warning messages from appearing in the current set of
+> + * RCU grace periods.
+> + *
+> + * The caller must disable hard irqs.
+> + */
+> +void rcu_cpu_stall_reset(void)
+> +{
+> +	rcu_sched_state.jiffies_stall = jiffies + ULONG_MAX / 2;
+> +	rcu_bh_state.jiffies_stall = jiffies + ULONG_MAX / 2;
+> +	rcu_preempt_stall_reset();
+> +}
+> +
+>  static void check_cpu_stall(struct rcu_state *rsp, struct rcu_data *rdp)
+>  {
+> -	unsigned long j;
+> -	unsigned long js;
+> +	unsigned long j, js, flags;
+>  	struct rcu_node *rnp;
+> 
+>  	if (rcu_cpu_stall_suppress)
+> @@ -832,13 +847,23 @@ static void check_cpu_stall(struct rcu_state *rsp, struct rcu_data *rdp)
+>  	if ((ACCESS_ONCE(rnp->qsmask) & rdp->grpmask) && ULONG_CMP_GE(j, js)) {
+> 
+>  		/* We haven't checked in, so go dump stack. */
+> +		rcu_cpu_stall_suppress = 1;
+>  		print_cpu_stall(rsp);
+> +		local_irq_save(flags);
+> +		rcu_cpu_stall_reset();
+> +		local_irq_restore(flags);
+> +		rcu_cpu_stall_suppress = 0;
+> 
+>  	} else if (rcu_gp_in_progress(rsp) &&
+>  		   ULONG_CMP_GE(j, js + RCU_STALL_RAT_DELAY)) {
+> 
+>  		/* They had a few time units to dump stack, so complain. */
+> +		rcu_cpu_stall_suppress = 1;
+>  		print_other_cpu_stall(rsp);
+> +		local_irq_save(flags);
+> +		rcu_cpu_stall_reset();
+> +		local_irq_restore(flags);
+> +		rcu_cpu_stall_suppress = 0;
+>  	}
+>  }
+> 
+> @@ -848,22 +873,6 @@ static int rcu_panic(struct notifier_block *this, unsigned long ev, void *ptr)
+>  	return NOTIFY_DONE;
+>  }
+> 
+> -/**
+> - * rcu_cpu_stall_reset - prevent further stall warnings in current grace period
+> - *
+> - * Set the stall-warning timeout way off into the future, thus preventing
+> - * any RCU CPU stall-warning messages from appearing in the current set of
+> - * RCU grace periods.
+> - *
+> - * The caller must disable hard irqs.
+> - */
+> -void rcu_cpu_stall_reset(void)
+> -{
+> -	rcu_sched_state.jiffies_stall = jiffies + ULONG_MAX / 2;
+> -	rcu_bh_state.jiffies_stall = jiffies + ULONG_MAX / 2;
+> -	rcu_preempt_stall_reset();
+> -}
+> -
+>  static struct notifier_block rcu_panic_block = {
+>  	.notifier_call = rcu_panic,
+>  };
+> 
+> 
+
