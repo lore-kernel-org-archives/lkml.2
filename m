@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755543Ab2FKPZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 11:25:29 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:34353 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755444Ab2FKPZ0 (ORCPT
+	id S1755718Ab2FKPZn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 11:25:43 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:35147 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755682Ab2FKPZk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 11:25:26 -0400
+	Mon, 11 Jun 2012 11:25:40 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: linus.walleij@stericsson.com, arnd@arndb.de, grant.likely@secretlab.ca,
-        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
-Subject: [PATCH 04/14] mfd: Remove redundant Kconfig entry
-Date: Mon, 11 Jun 2012 16:24:57 +0100
-Message-Id: <1339428307-3850-5-git-send-email-lee.jones@linaro.org>
+        Lee Jones <lee.jones@linaro.org>, linux-i2c@vger.kernel.org
+Subject: [PATCH 09/14] i2c: Add Device Tree support to the Nomadik I2C driver
+Date: Mon, 11 Jun 2012 16:25:02 +0100
+Message-Id: <1339428307-3850-10-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1339428307-3850-1-git-send-email-lee.jones@linaro.org>
 References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org>
@@ -21,36 +21,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During ab8500-core clean-up the Kconfig entry for AB8500_I2C_CORE
-was left remnant. This patch simply removes it.
+Here we move the i2c-nomadik's default settings into the driver
+rather than specifying them from platform code. At the time of
+this writing we only have one user, the u8500. As new users are
+added, it is expected that they will be Device Tree compliant.
+If this is the case, we will look up their initialisation values
+by compatible entry, then apply them forthwith.
 
-Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-i2c@vger.kernel.org
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mfd/Kconfig |   10 ----------
- 1 file changed, 10 deletions(-)
+ drivers/i2c/busses/i2c-nomadik.c |   40 +++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 39 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index e129c82..170072e 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -703,16 +703,6 @@ config AB8500_CORE
- 	  the irq_chip parts for handling the Mixed Signal chip events.
- 	  This chip embeds various other multimedia funtionalities as well.
+diff --git a/drivers/i2c/busses/i2c-nomadik.c b/drivers/i2c/busses/i2c-nomadik.c
+index a92440d..1ffdf67 100644
+--- a/drivers/i2c/busses/i2c-nomadik.c
++++ b/drivers/i2c/busses/i2c-nomadik.c
+@@ -23,6 +23,7 @@
+ #include <linux/io.h>
+ #include <linux/regulator/consumer.h>
+ #include <linux/pm_runtime.h>
++#include <linux/of_device.h>
  
--config AB8500_I2C_CORE
--	bool "AB8500 register access via PRCMU I2C"
--	depends on AB8500_CORE && MFD_DB8500_PRCMU
--	default y
--	help
--	  This enables register access to the AB8500 chip via PRCMU I2C.
--	  The AB8500 chip can be accessed via SPI or I2C. On DB8500 hardware
--	  the I2C bus is connected to the Power Reset
--	  and Mangagement Unit, PRCMU.
--
- config AB8500_DEBUG
-        bool "Enable debug info via debugfs"
-        depends on AB8500_CORE && DEBUG_FS
+ #include <plat/i2c.h>
+ 
+@@ -899,15 +900,51 @@ static const struct i2c_algorithm nmk_i2c_algo = {
+ 	.functionality	= nmk_i2c_functionality
+ };
+ 
++static struct nmk_i2c_controller u8500_i2c = {
++       /*
++        * slave data setup time, which is
++        * 250 ns,100ns,10ns which is 14,6,2
++        * respectively for a 48 Mhz
++        * i2c clock
++        */
++       .slsu           = 0xe,
++       /* Tx FIFO threshold */
++       .tft            = 1,
++       /* Rx FIFO threshold */
++       .rft            = 8,
++       /* std. mode operation */
++       .clk_freq       = 100000,
++       /* Slave response timeout(ms) */
++       .timeout        = 200,
++       .sm             = I2C_FREQ_MODE_FAST,
++};
++
++
++static const struct of_device_id nmk_gpio_match[] = {
++	{ .compatible = "st,nomadik-i2c", .data = &u8500_i2c, },
++	{}
++};
++
+ static int __devinit nmk_i2c_probe(struct platform_device *pdev)
+ {
+ 	int ret = 0;
+ 	struct resource *res;
+-	struct nmk_i2c_controller *pdata =
++	const struct nmk_i2c_controller *pdata =
+ 			pdev->dev.platform_data;
++        const struct of_device_id *of_id =
++                        of_match_device(nmk_gpio_match, &pdev->dev);
+ 	struct nmk_i2c_dev	*dev;
+ 	struct i2c_adapter *adap;
+ 
++	if (!pdata) {
++		if (of_id && of_id->data)
++			/* Looks like we're booting via Device Tree. */
++			pdata = of_id->data;
++		else
++			/* No i2c configuration found, using the default. */
++			pdata = &u8500_i2c;
++	}
++
+ 	dev = kzalloc(sizeof(struct nmk_i2c_dev), GFP_KERNEL);
+ 	if (!dev) {
+ 		dev_err(&pdev->dev, "cannot allocate memory\n");
+@@ -1043,6 +1080,7 @@ static struct platform_driver nmk_i2c_driver = {
+ 		.owner = THIS_MODULE,
+ 		.name = DRIVER_NAME,
+ 		.pm = &nmk_i2c_pm,
++		.of_match_table = nmk_gpio_match,
+ 	},
+ 	.probe = nmk_i2c_probe,
+ 	.remove = __devexit_p(nmk_i2c_remove),
 -- 
 1.7.9.5
 
