@@ -1,44 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753702Ab2FKN14 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 09:27:56 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:42843 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751842Ab2FKN1z convert rfc822-to-8bit (ORCPT
+	id S1754258Ab2FKN23 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 09:28:29 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44853 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751842Ab2FKN21 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 09:27:55 -0400
-Message-ID: <1339421268.30462.15.camel@twins>
-Subject: Re: Kernel panic - not syncing: Attempted to kill the idle task!
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Zhouping Liu <zliu@redhat.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Hillf Danton <dhillf@gmail.com>, hi3766691@gmail.com,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 11 Jun 2012 15:27:48 +0200
-In-Reply-To: <cfc29313-7fe7-4140-b9e6-053d925b4897@zmail13.collab.prod.int.phx2.redhat.com>
-References: <cfc29313-7fe7-4140-b9e6-053d925b4897@zmail13.collab.prod.int.phx2.redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Mon, 11 Jun 2012 09:28:27 -0400
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: James.Bottomley@HansenPartnership.com, gregkh@linuxfoundation.org,
+        mdharm-usb@one-eyed-alien.net, stern@rowland.harvard.edu,
+        sshtylyov@mvista.com, bvanassche@acm.org
+Cc: linux-usb@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>
+Subject: [PATCH v4 0/3] scsi: fix internal write cache issue on usb hdd.
+Date: Mon, 11 Jun 2012 09:27:58 -0400
+Message-Id: <1339421278-2863-1-git-send-email-linkinjeon@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-06-08 at 21:38 -0400, Zhouping Liu wrote:
-> # cat /sys/devices/system/node/node*/distance
-> 10 17 17 24 24 24 30 30
-> 18 10 30 18 18 24 24 24
-> 18 24 10 24 24 17 30 30
-> 24 18 23 10 24 17 17 30
-> 24 17 24 24 10 18 30 18
-> 31 24 17 18 18 10 24 24
-> 30 24 30 17 24 24 10 18
-> 30 24 30 24 17 24 17 10 
+The numbers of USB HDDs(All USB HDD I checked) does not respond
+correctly to scsi mode sense command for retrieving the write cache
+page status. Even though write cache is enabled by default, due to
+scsi driver assume that cache is not enabled which in turn might lead
+to loss of data since data still will be in cache.
+This result that all filesystems is not stable on USB HDD when the
+device is unplugged abruptly, even though these are having journaling
+feature. Our first trying is that scsi driver send ATA command
+(ATA Pass through, #58) to USB HDD after failure from normal routine to
+know write cache enable.
+We have known it is dangerous after testing several USB HDD. some of
+HDD is stalled by this command(A-DATA HDD). So we tried to make the
+patch James's suggestion(usb quirk) on version 2 that add product ID
+and verdor ID of USB HDD to USB quirk list after checking write cache.
+All filesystem will be stable on USB HDD registered in quirk list.
+And it will be updated continuously.
 
-You have to be kidding me right? That thing is a complete trainwreck,
-what idiot vendor did this?
+	scsi: set to WCE if usb cache quirk is present.
+	usb: storage: add support for write cache quirk on usb hdd.
+	usb: storage: update usb devices for write cache quirk in quirk.
 
-If you boot that machine again, does it have the same stupid table or
-are we staring at white-noise?
+ drivers/scsi/sd.c          |    9 +++++++--
+ include/scsi/scsi_device.h |    1 +
+ drivers/usb/storage/scsiglue.c |    5 +++++
+ drivers/usb/storage/usb.c      |    5 ++++-
+ include/linux/usb_usual.h      |    4 +++-
+ drivers/usb/storage/unusual_devs.h |   24 ++++++++++++++++++++++++
+ Documentation/kernel-parameters.txt |    2 ++
+ 7 files changed, 46 insertions(+), 4 deletions(-)
+-- 
+1.7.9.5
+
