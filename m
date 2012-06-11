@@ -1,55 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752695Ab2FKW0l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 18:26:41 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:39845 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751321Ab2FKW0k (ORCPT
+	id S1752754Ab2FKW37 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 18:29:59 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:36058 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751321Ab2FKW36 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 18:26:40 -0400
-Date: Mon, 11 Jun 2012 15:26:36 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Sam Hansen <sam@meebo-inc.com>
+	Mon, 11 Jun 2012 18:29:58 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120611222636.GA22569@kroah.com>
+References: <1339100404-18773-1-git-send-email-solid.se7en@gmail.com>
+	<1339110229-19383-4-git-send-email-solid.se7en@gmail.com>
+	<20120611160438.GA24331@kroah.com>
+	<CALJ0CeiibyAAJQC4kVxMLTEx=6dzZdzivpfHi4b3W-dst3Ha6w@mail.gmail.com>
+	<20120611222636.GA22569@kroah.com>
+Date: Mon, 11 Jun 2012 15:29:58 -0700
+Message-ID: <CALJ0CejkxXVxtQvx_Uzy-A6EDTvyUyAAofwoBxy99XWkc5+qpA@mail.gmail.com>
+Subject: Re: [PATCH V2 3/3] staging: zram: conventions, line splitting
+From: Sam Hansen <sam@meebo-inc.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: devel@driverdev.osuosl.org, Seth Jennings <sjenning@linux.vnet.ibm.com>,
         Jerome Marchand <jmarchan@redhat.com>, linux-kernel@vger.kernel.org,
         Nitin Gupta <ngupta@vflare.org>
-Subject: Re: [PATCH V2 3/3] staging: zram: conventions, line splitting
-Message-ID: <20120611222636.GA22569@kroah.com>
-References: <1339100404-18773-1-git-send-email-solid.se7en@gmail.com>
- <1339110229-19383-4-git-send-email-solid.se7en@gmail.com>
- <20120611160438.GA24331@kroah.com>
- <CALJ0CeiibyAAJQC4kVxMLTEx=6dzZdzivpfHi4b3W-dst3Ha6w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CALJ0CeiibyAAJQC4kVxMLTEx=6dzZdzivpfHi4b3W-dst3Ha6w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 11, 2012 at 03:08:13PM -0700, Sam Hansen wrote:
-> >  drivers/staging/zram/zram_drv.c |    8 ++++----
-> >  1 files changed, 4 insertions(+), 4 deletions(-)
-> >
-> > This patch no longer applies to the tree :(
-> 
-> Hi Greg,
-> I wrote the patch against Linus' tree
-> <http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git>.
-> Is it more appropriate to write code against your staging tree
-> <http://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git>?
-> 
-> Have I been writing code against the wrong tree?  If so,  I'm a huge
-> tool and sorry for the confusion :p
+> Problem is, other zram changes just went into my tree, so they probably
+> conflicted with your changes as well.
 
-Problem is, other zram changes just went into my tree, so they probably
-conflicted with your changes as well.
+Ok cool.  I was assuming me and someone else simply clobbered each
+others work.  I try and keep an eye on the mailing lists to avoid
+duplicating work and causing a merge conflict.  Thanks for the
+feedback, it's appreciated!
 
-So yes, it's best to work against my staging-next branch for coding
-style cleanups, or the linux-next tree, either should be fine.
-
-thanks,
-
-greg k-h
+-sam
