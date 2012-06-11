@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753423Ab2FKKud (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 06:50:33 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:52448 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751806Ab2FKKuc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 06:50:32 -0400
-Date: Mon, 11 Jun 2012 11:54:14 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: eric.valette@free.fr
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.2.19 kernel panic does not enter KDB
-Message-ID: <20120611115414.06759ae3@pyramind.ukuu.org.uk>
-In-Reply-To: <4FD48744.3000602@free.fr>
-References: <4FD4837B.5040200@free.fr>
-	<20120610123420.52af4e1a@pyramind.ukuu.org.uk>
-	<4FD48744.3000602@free.fr>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753531Ab2FKKvU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 06:51:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30091 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753236Ab2FKKvS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 06:51:18 -0400
+Date: Mon, 11 Jun 2012 12:51:11 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [PATCH] x86/apic: Eliminate cpu_mask_to_apicid() operation
+Message-ID: <20120611105110.GB3383@dhcp-26-207.brq.redhat.com>
+References: <20120605112353.GA11457@dhcp-26-207.brq.redhat.com>
+ <20120606082231.GD5991@gmail.com>
+ <20120607131559.GF4759@dhcp-26-207.brq.redhat.com>
+ <1339107848.28766.104.camel@sbsiddha-desk.sc.intel.com>
+ <20120608165330.GE4777@dhcp-26-207.brq.redhat.com>
+ <20120611082249.GC31556@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120611082249.GC31556@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> type of answer helps nothing. I know nobody there is going to debug 
-> nvidia driver but I'm not even sure its not something else. Neither are you.
+On Mon, Jun 11, 2012 at 10:22:49AM +0200, Ingo Molnar wrote:
+> > @@ -2151,7 +2134,12 @@ int default_cpu_mask_to_apicid_and(const struct cpumask *cpumask,
+> >  			break;
+> >  	}
+> >  
+> > -	return __default_cpu_to_apicid(cpu, apicid);
+> > +	if (likely((unsigned int)cpu < nr_cpu_ids)) {
+> > +		*apicid = per_cpu(x86_cpu_to_apicid, cpu);
+> > +		return 0;
+> > +	} else {
+> > +		return -EINVAL;
+> > +	}
 > 
-> So the bug is still that KDB is not entered.
+> The type cast is rather ugly - why not change the cpu type to 
+> unsigned int?
 
-There are lots of ways kdb may not get entered on a driver crash.
-This is especially true from complex DMA capable hardware than can do
-anything. For a lot of stuff you'd run it under something like qemu so
-you could debug that way but for graphics drivers that doesn't really
-work.
+Tried to preserve in changelog as much original code as possible.
+Suppose, it has been int to match cpumask_* functions.
 
-So to debug it you'd start by commenting out bits of the driver code to
-see if it still does it if those parts are not executed. You can't do
-that with the Nvidia blob so you'll have to get Nvidia to do the work.
+> Also, the else block is superfluous, just make it a return 
+> -EINVAL?
 
-If it was occurring with the Nouveau driver you'd be able to comment
-stuff out and try and work out which particular paths triggered the
-problem.
+What about posting a separate patch, with the rest of apic drivers that have
+the same branch/cast fixed, altogether?
 
-kdb not getting entered is not itself a bug - its a limitation.
+> 
+> Thanks,
+> 
+> 	Ingo
 
-Alan
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
