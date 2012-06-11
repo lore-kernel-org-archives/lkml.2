@@ -1,93 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754257Ab2FKMQk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 08:16:40 -0400
-Received: from fieldses.org ([174.143.236.118]:37474 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754118Ab2FKMQi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 08:16:38 -0400
-Date: Mon, 11 Jun 2012 08:16:34 -0400
-From: bfields <bfields@fieldses.org>
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-Cc: Joerg Platte <jplatte@naasa.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        jlayton@redhat.com
-Subject: Re: Kernel 3.4.X NFS server regression
-Message-ID: <20120611121634.GB7654@fieldses.org>
-References: <4FD47D4E.9070307@naasa.net>
- <1339340441.4751.1.camel@lade.trondhjem.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339340441.4751.1.camel@lade.trondhjem.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754337Ab2FKMQs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 08:16:48 -0400
+Received: from 124-248-200-89.sunnyvision.com ([124.248.200.89]:55594 "EHLO
+	teamb02.edmhongkong.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1754283Ab2FKMQq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 08:16:46 -0400
+X-Greylist: delayed 1521 seconds by postgrey-1.27 at vger.kernel.org; Mon, 11 Jun 2012 08:16:46 EDT
+X-DKIM: OpenDKIM Filter v2.4.1 teamb02.edmhongkong.com 958E4500CA
+X-DKIM: OpenDKIM Filter v2.4.1 teamb01.edmhongkong.com 10E2C4FB0A
+Message-ID: <EtM1p@party.seed.net.tw>
+From: borislamsv2@gmail.com
+Subject: Server Rental & datacenter rack rental service in Hong Kong
+X-Mailer: NUMhNHbNCAkxIE86IS6n
+Content-Type: text/plain;
+X-Priority: 3
+X-MSMail-Priority: Normal
+Date: Mon, 11 Jun 2012 19:51:03 +0800 (HKT)
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from Quoted-Printable to 8bit by nfs id q5BCGtNS009196
 
-On Sun, Jun 10, 2012 at 03:00:42PM +0000, Myklebust, Trond wrote:
-> Cc: linux-nfs@vger.kernel.org + bfields and changing title to label it
-> as a server regression since that is what the trace appears to imply.
-> 
-> On Sun, 2012-06-10 at 12:56 +0200, Joerg Platte wrote:
-> > All 3.4 kernels I tried so far (3.4, 3.4.1 and 3.4.2) suffer from the 
-> > same NFS related problem:
-> > 
-> > Jun 10 09:23:36 coco kernel: INFO: task kworker/u:1:8 blocked for more 
-> > than 120 seconds.
-> > Jun 10 09:23:36 coco kernel: "echo 0 > 
-> > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-> > Jun 10 09:23:36 coco kernel: kworker/u:1     D 002ba28c     0     8 
-> >   2 0x00000000
-> > Jun 10 09:23:36 coco kernel:  df465ec0 00000046 00000005 002ba28c 
-> > 00000000 0000000a 00000282 df465e70
-> > Jun 10 09:23:36 coco kernel:  df465ec0 df44d2b0 ffff6b60 df465e84 
-> > df44d2b0 e33fa6b3 00000282 de764ae0
-> > Jun 10 09:23:36 coco kernel:  ffffffff d78bcfb8 df465e8c c012e0f6 
-> > df465ea4 c013610c 00000000 d78bcf80
-> > Jun 10 09:23:36 coco kernel: Call Trace:
-> > Jun 10 09:23:36 coco kernel:  [<c012e0f6>] ? add_timer+0x11/0x17
-> > Jun 10 09:23:36 coco kernel:  [<c013610c>] ? queue_delayed_work_on+0x74/0xf0
-> > Jun 10 09:23:36 coco kernel:  [<c0136ba4>] ? queue_delayed_work+0x1b/0x28
-> > Jun 10 09:23:36 coco kernel:  [<c0350f5b>] schedule+0x1d/0x4c
-> > Jun 10 09:23:36 coco kernel:  [<e0cda5f1>] cld_pipe_upcall+0x4e/0x75 [nfsd]
-> > Jun 10 09:23:36 coco kernel:  [<e0cda678>] 
-> > nfsd4_cld_grace_done+0x60/0x99 [nfsd]
-> > Jun 10 09:23:36 coco kernel:  [<e0cd9cb5>] 
-> > nfsd4_record_grace_done+0x10/0x12 [nfsd]
-> > Jun 10 09:23:36 coco kernel:  [<e0cd6696>] laundromat_main+0x291/0x2d8 
-> > [nfsd]
-> > Jun 10 09:23:36 coco kernel:  [<c0136d2f>] process_one_work+0xff/0x325
-> > Jun 10 09:23:36 coco kernel:  [<c0134bec>] ? start_worker+0x20/0x23
-> > Jun 10 09:23:36 coco kernel:  [<e0cd6405>] ? 
-> > nfsd4_process_open1+0x32b/0x32b [nfsd]
-> > Jun 10 09:23:36 coco kernel:  [<c013727a>] worker_thread+0xf4/0x39a
-> > Jun 10 09:23:36 coco kernel:  [<c0137186>] ? rescuer_thread+0x231/0x231
-> > Jun 10 09:23:36 coco kernel:  [<c013a556>] kthread+0x6c/0x6e
-> > Jun 10 09:23:36 coco kernel:  [<c013a4ea>] ? kthreadd+0xe8/0xe8
-> > Jun 10 09:23:36 coco kernel:  [<c035263e>] kernel_thread_helper+0x6/0xd
-> > 
-> > A kworker task is stuck in D state and nfs mounts from other clients do 
-> > not work at all. This happens only on one machine, another one with the 
-> > same kernel (same self compiled Debian package) works. All previous 3.3 
-> > kernels work as well.
-> > 
-> > Since this machine is remote it is not that easy to bisect to find the 
-> > bad commit. Are there any other things I can try?
+Dear All,
 
-If you create a directory named /var/lib/nfs/v4recovery/, does the
-problem go away?
+We have our own datacenter in Hong Kong & provide email/application/web rental service to clients.We are APNIC member & provide clean IP to clients.
 
-My guess would be that it's trying to upcall to the new reboot-recovery
-state daemon, and you don't have that running.
+Dell? PowerEdge? EnterpriseRack Mount Server
+-Intel(R) Xeon(R) E3-1240 Processor (3.3GHz, 8M Cache, Turbo, 4C/8T, 80W)
+-8GB RAM, 2x4GB, 1333MHz, DDR-3, Dual Ranked UDIMMs
+-500GB, 3.5", 6Gbps SAS x 2
+-Raid 1 Mirroring Protection
+-Remote KVM (iDRAC6 Enterprise)
 
-Before the addition of that upcall state was kept in
-/var/lib/nfs/v4recovery.  So we decide whether to use the old method or
-the new one by checking for the existance of that path.
+Every Dedicated Server Hosting Solution Also Includes: 
+ 
+Software Specification 
+- CentOS / Fedora / Debian / FreeBSD / Ubuntu / Redhat Linux 
+- Full root-level access 
+- Data Center Facilities 
+- Shared Local & International Bandwidth 
+- 2 IP Addresses Allocation 
+- Un-interruptible Power Supply (UPS) backed up by private diesel generator 
+- FM200¡§based fire suppression system 
+- 24x7 CRAC Air Conditioning and Humidity Control 
+- 24x7 Security Control 
+- 24x7 Remote Hand Service 
 
-But I'm guessing we were wrong to assume that existing setups that
-people perceived as working would have that path, because the failures
-in the absence of that path were probably less obvious.
+Pls send us email for further information.Thanks,
 
---b.
+Boris 
+boris@dedicatedserver.com.hk
+
+(852)94088762
+
+If you do not wish to further receive this event message, email "borislamsv2@gmail.com" to unsubscribe this message or remove your email from the list.
+
+
