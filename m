@@ -1,61 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752240Ab2FKRK3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 13:10:29 -0400
-Received: from smarthost02.digicable.hu ([94.21.128.7]:47755 "EHLO
-	smarthost02.digicable.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751449Ab2FKRK0 (ORCPT
+	id S1752335Ab2FKRML (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 13:12:11 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:48771 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751422Ab2FKRMJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 13:10:26 -0400
-Message-ID: <4FD62645.6090501@freemail.hu>
-Date: Mon, 11 Jun 2012 19:09:25 +0200
-From: =?UTF-8?B?TsOpbWV0aCBNw6FydG9u?= <nm127@freemail.hu>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; hu-HU; rv:1.8.1.21) Gecko/20090402 SeaMonkey/1.1.16
+	Mon, 11 Jun 2012 13:12:09 -0400
+Message-ID: <4FD626C1.1010507@mvista.com>
+Date: Mon, 11 Jun 2012 21:11:29 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: David Airlie <airlied@linux.ie>, Dave Airlie <airlied@redhat.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Jesper Juhl <jj@chaosbits.net>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        dri-devel@lists.freedesktop.org
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] drm sis: initialize object_idr
-References: <4FD5142B.2080809@freemail.hu> <20120611071713.GA4695@phenom.ffwll.local>
-In-Reply-To: <20120611071713.GA4695@phenom.ffwll.local>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Original: 188.143.106.138
-X-Original: 92.249.128.185
+To: Namjae Jeon <linkinjeon@gmail.com>
+CC: James.Bottomley@hansenpartnership.com, gregkh@linuxfoundation.org,
+        mdharm-usb@one-eyed-alien.net, stern@rowland.harvard.edu,
+        bvanassche@acm.org, linux-usb@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Pankaj Kumar <pankaj.km@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: Re: [PATCH v3 2/4] usb: storage: add support for write cache quirk
+ on usb hdd
+References: <1339263660-4039-1-git-send-email-linkinjeon@gmail.com> <4FD39904.2010808@mvista.com> <CAKYAXd9EUqxUBw1YWr2FnBrg1K=uGWiaEFYtSgu-J3nZ9sLvuQ@mail.gmail.com>
+In-Reply-To: <CAKYAXd9EUqxUBw1YWr2FnBrg1K=uGWiaEFYtSgu-J3nZ9sLvuQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Márton Németh <nm127@freemail.hu>
+Hello.
 
-The filed object_idr of struct drm_sis_private was introduced with
-commit http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=6de8a748881f1cd9d795454da2b6db616d5ca3d7 .
+On 10-06-2012 4:30, Namjae Jeon wrote:
 
-The idr_init(&dev->object_name_idr) is called instead of
-idr_init(&dev_priv->object_idr) by mistake, leaving object_idr
-uninitialized. Correct this.
+>>> Add support for write cache quirk on usb hdd. scsi driver will be set to
+>>> wce
+>>> by detecting write cache quirk in quirk list when plugging usb hdd.
 
-This patch was not tested because of lack of hardware.
+>>> Signed-off-by: Namjae Jeon<namjae.jeon@samsung.com>
+>>> Signed-off-by: Pankaj Kumar<pankaj.km@samsung.com>
+>>> Signed-off-by: Amit Sahrawat<a.sahrawat@samsung.com>
+>>> ---
+>>>    drivers/usb/storage/scsiglue.c |    5 +++++
+>>>    drivers/usb/storage/usb.c      |    5 ++++-
+>>>    include/linux/usb_usual.h      |    4 +++-
+>>>    3 files changed, 12 insertions(+), 2 deletions(-)
 
-Signed-off-by: Márton Németh <nm127@freemail.hu>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
----
-diff --git a/drivers/gpu/drm/sis/sis_drv.c b/drivers/gpu/drm/sis/sis_drv.c
-index 30d98d1..dd14cd1 100644
---- a/drivers/gpu/drm/sis/sis_drv.c
-+++ b/drivers/gpu/drm/sis/sis_drv.c
-@@ -47,9 +47,9 @@ static int sis_driver_load(struct drm_device *dev, unsigned long chipset)
- 	if (dev_priv == NULL)
- 		return -ENOMEM;
+>>> diff --git a/drivers/usb/storage/scsiglue.c
+>>> b/drivers/usb/storage/scsiglue.c
+>>> index a324a5d..fe42547 100644
+>>> --- a/drivers/usb/storage/scsiglue.c
+>>> +++ b/drivers/usb/storage/scsiglue.c
+>> [...]
+>>> @@ -529,6 +529,9 @@ static void adjust_quirks(struct us_data *us)
+>>>    		case 'o':
+>>>    			f |= US_FL_CAPACITY_OK;
+>>>    			break;
+>>> +		case 'p':
+>>> +			f |= US_FL_WRITE_CACHE;
+>>> +			break;
+>>>    		case 'r':
+>>>    			f |= US_FL_IGNORE_RESIDUE;
+>>>    			break;
+>>
+>>      You probably should unite this chunk with the documentation update
+>> patch.
 
-+	idr_init(&dev_priv->object_idr);
- 	dev->dev_private = (void *)dev_priv;
- 	dev_priv->chipset = chipset;
--	idr_init(&dev->object_name_idr);
+> Hi Sergei.
+> I tried to post documentation update patch(4/4) for this chunk.
+> Do I misunderstand ?
 
- 	return 0;
- }
+    I mean that the documenation should be updated in the same patch where you 
+add the new value.
+
+WBR, Sergei
