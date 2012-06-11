@@ -1,127 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754638Ab2FKNay (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 09:30:54 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49780 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754431Ab2FKNaw (ORCPT
+	id S1754663Ab2FKNcW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 09:32:22 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:41507 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754491Ab2FKNcU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 09:30:52 -0400
-Date: Mon, 11 Jun 2012 22:30:43 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>
-Subject: Re: [PATCH] mm: do not use page_count without a page pin
-Message-ID: <20120611133043.GA2340@barrios>
-References: <1339373872-31969-1-git-send-email-minchan@kernel.org>
- <4FD59C31.6000606@jp.fujitsu.com>
- <20120611074440.GI3094@redhat.com>
+	Mon, 11 Jun 2012 09:32:20 -0400
+Message-ID: <4FD5F329.2090302@linux.vnet.ibm.com>
+Date: Mon, 11 Jun 2012 19:01:21 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120611074440.GI3094@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+CC: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, "Tomas M." <tmezzadra@gmail.com>,
+        Ferenc Wagner <wferi@niif.hu>, Arnd Bergmann <arnd@arndb.de>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>,
+        Kevin Hilman <khilman@ti.com>,
+        Arjan van de Ven <arjan@linux.intel.com>, Jean Pihet <j-pihet@ti.com>,
+        Trinabh Gupta <g.trinabh@gmail.com>,
+        linux-pm@lists.linux-foundation.org, preeti@linux.vnet.ibm.com
+Subject: Re: Suspend/resume regressions on Lenovo S10-3
+References: <4FC2DA8C.7050401@linux.vnet.ibm.com> <4FCF5249.2070600@linux.vnet.ibm.com>
+In-Reply-To: <4FCF5249.2070600@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12061103-7014-0000-0000-0000015AB68A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrea,
+Hi Dave,
 
-On Mon, Jun 11, 2012 at 09:44:40AM +0200, Andrea Arcangeli wrote:
-> Hi,
+On 06/06/2012 06:21 PM, Deepthi Dharwar wrote:
+
+> On 05/28/2012 07:23 AM, Dave Hansen wrote:
 > 
-> On Mon, Jun 11, 2012 at 04:20:17PM +0900, Kamezawa Hiroyuki wrote:
-> > (2012/06/11 9:17), Minchan Kim wrote:
-> > > d179e84ba fixed the problem[1] in vmscan.c but same problem is here.
-> > > Let's fix it.
-> > > 
-> > > [1] http://comments.gmane.org/gmane.linux.kernel.mm/65844
-> > > 
-> > > I copy and paste d179e84ba's contents for description.
-> > > 
-> > > "It is unsafe to run page_count during the physical pfn scan because
-> > > compound_head could trip on a dangling pointer when reading
-> > > page->first_page if the compound page is being freed by another CPU."
-> > > 
-> > > Cc: Andrea Arcangeli<aarcange@redhat.com>
-> > > Cc: Mel Gorman<mgorman@suse.de>
-> > > Cc: Michal Hocko<mhocko@suse.cz>
-> > > Cc: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
-> > > Signed-off-by: Minchan Kim<minchan@kernel.org>
-> > > ---
-> > >   mm/page_alloc.c |    6 +++++-
-> > >   1 file changed, 5 insertions(+), 1 deletion(-)
-> > > 
-> > > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> > > index 266f267..019c4fe 100644
-> > > --- a/mm/page_alloc.c
-> > > +++ b/mm/page_alloc.c
-> > > @@ -5496,7 +5496,11 @@ __count_immobile_pages(struct zone *zone, struct page *page, int count)
-> > >   			continue;
-> > > 
-> > >   		page = pfn_to_page(check);
-> > > -		if (!page_count(page)) {
-> > > +		/*
-> > > +		 * We can't use page_count withou pin a page
-> > > +		 * because another CPU can free compound page.
-> > > +		 */
-> > > +		if (!atomic_read(&page->_count)) {
-> > >   			if (PageBuddy(page))
-> > >   				iter += (1<<  page_order(page)) - 1;
-> > >   			continue;
-> > Nice Catch.
+>> I have a Lenovo S10-3 Atom netbook.  It's always had some amount of
+>> trouble working with the intel_idle driver, so I usually compile that
+>> out an use the acpi one.
+
+
+What problem did you face with intel_idle driver? Is it suspend/resume
+related?
+
+I see a comment in drivers/idle/intel_idle.c such as:
+
+/*
+ * Known limitations
+ * [...]
+ *
+ * ACPI has a .suspend hack to turn off deep c-statees during suspend
+ * to avoid complications with the lapic timer workaround.
+ * Have not seen issues with suspend, but may need same workaround here.
+ *
+ */
+
+So, if you are facing suspend issues with the intel_idle driver, we probably
+need to add that same workaround here as well, to make it work.
+
+Please let us know what problem you are facing.
+
+Regards,
+Srivatsa S. Bhat
+
+>>  However, just after 3.1, suspend/resume broke.
+>>  'echo mem > /sys/power/state' would hang before suspending.  I bisected
+>> it down to the commits around:
+>>
+>> 	e978aa7d7d57d04eb5f88a7507c4fb98577def77 / v3.1-1-ge978aa7
+>>
+>> by Deepthi.  But, current mainline (v3.4-07644-g07acfc2) hangs with a
+>> different symptom: it suspends, but hangs on resume from suspend.  I
+>> think _that_ delta in the behavior was caused by:
+>>
+>> 	3439a8da16bcad6b0982ece938c9f8299bb53584
+>>
+>>         ACPI / cpuidle: Remove acpi_idle_suspend (to fix suspend
+>> 		regression)
+>>
+>> It's a bit of a pain to bisect these two different things in parallel.
+>> I was trying to tell git bisect 'good' on working suspend/resume, 'bad'
+>> on the hang during resume, and 'skip' on the hangs _during_ suspend.  83
+>> kernels in, I'm not sure that's working very well. :)
+>>
+>> Deepthi, do you have any idea why your patches broke me in the first
+>> place?  Perhaps we should fix that regression first before we go on and
+>> try to figure out what changed to let it suspend again, but break later.
 > 
-> Agreed!
 > 
-> > Other than the comment fix already pointed out..
-> > Hmm...BTW, it seems this __count_xxx doesn't have any code for THP/Hugepage..
-> > so, we need more fixes for better code, I think.
-> > Hmm, Don't we need !PageTail() check and 'skip thp' code ?
+> Hi Dave,
 > 
-> So the page->_count for tail pages is guaranteed zero at all times
-> (tail page refcounting is done on _mapcount).
-
-Sure.
-
+> Sorry about my patches breaking your suspend-resume.
 > 
-> We could add a comment that "this check already skips compound tails
-> of THP because their page->_count is zero at all times".
-
-No problem.
-
+> I, basically tried out building and booting 3.1 kernel with 
+> my patch set to reproduce the failure. I could clearly
+> see suspend not happening. It turns out to be 
+> a bug with my first patch in global registration
+> series submitted earlier.
 > 
-> Instead of a comment we could consider defining an inline function
-> with a special name that does atomic_read(&page->_count) and use it
-> when we intend to the regular or compound head count and return 0 on
-> tails. It would make it easier to identify these places later if we
-> ever want to change the refcounting mechanism, but it may be overkill,
-> it's up to you.
-
-That's a good idea but it's not proper time because I don't have much time
-for it and other patch[1] is pended by this.
-
-I hope it could be another nice clean up patch later. :)
-
-[1] https://lkml.org/lkml/2012/6/11/169
-
+> e978aa7d7d57d04eb5f88a7507c4fb98577def77 / v3.1-1-ge978aa7
 > 
-> Tail pages also can't be PageLRU.
+> The following patch, fixes the suspend issues
+> seen on my laptop due to earlier cpuidle cleanup 
+> (Lenevo T420 booting with acpi_idle enabled). 
+> Can you please give this a try
+> on top of my patch set (without Rafael's fix) 
+> and see if it fixes the problem for you. 
+> I am not reverting acpi_idle_suspend flag and 
+> hopefully it should resume fine too. 
 > 
-> The code after the patch should already skip thp tails fine (it won't
-> skip heads but I believe that's intentional, but one problem that
-> remains is that the heads should increase found by more than 1...).
+> ---
+> 
+> This patch fixes suspend-resume issue seen in the kernel 3.1
+> series using acpi_idle_driver because of cpuidle global 
+> registration cleanup.
+> Here, when acpi_idle_suspend flag was set ( during suspend)
+> the interrupts were not getting enabled in acpi_idle_enter_bm()
+> routine which was causing the system to hang.
+> 
+> 
+> Signed-off-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+> 
+> ---
+>  drivers/acpi/processor_idle.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
+> index 24fe3af..6e35293 100644
+> --- a/drivers/acpi/processor_idle.c
+> +++ b/drivers/acpi/processor_idle.c
+> @@ -895,8 +895,9 @@ static int acpi_idle_enter_bm(struct cpuidle_device *dev,
+>  	if (unlikely(!pr))
+>  		return -EINVAL;
+> 
+> -
+>  	if (acpi_idle_suspend) {
+> +		local_irq_disable();
+> +		local_irq_enable();
+>  		cpu_relax();
+>  		return -EINVAL;
+>  	}
+> 
+> Cheers,
+> Deepthi
+> 
 
-I can't fail to parse your last sentense.
-Could you elaborate it more?
 
-AFAIUC, you mean we have to increase reference count of head page?
-If so, it's not in __count_immobile_pages because it is already race-likely function
-so it shouldn't be critical although race happens.
 
-If I miss something, please let me know it.
-
+-- 
+Regards,
+Srivatsa S. Bhat
+IBM Linux Technology Center
 
