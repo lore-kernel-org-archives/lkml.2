@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752443Ab2FKA31 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jun 2012 20:29:27 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64880 "EHLO
+	id S1752702Ab2FKAb2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jun 2012 20:31:28 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38957 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751233Ab2FKA3Y (ORCPT
+	with ESMTP id S1751233Ab2FKAb0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jun 2012 20:29:24 -0400
+	Sun, 10 Jun 2012 20:31:26 -0400
 From: Wanpeng Li <liwp.linux@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Wu Fengguang <fengguang.wu@intel.com>, Rob Landley <rob@landley.net>,
@@ -24,8 +24,8 @@ Cc: Wu Fengguang <fengguang.wu@intel.com>, Rob Landley <rob@landley.net>,
         Wanpeng Li <liwp.linux@gmail.com>,
         Wanpeng Li <liwp@linux.vnet.ibm.com>
 Subject: [PATCH v5] remove no longer use of pdflush interface
-Date: Mon, 11 Jun 2012 08:29:03 +0800
-Message-Id: <1339374543-2681-1-git-send-email-liwp.linux@gmail.com>
+Date: Mon, 11 Jun 2012 08:31:10 +0800
+Message-Id: <1339374670-2821-1-git-send-email-liwp.linux@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -36,7 +36,7 @@ From: Wanpeng Li <liwp@linux.vnet.ibm.com>
 Since per-BDI flusher introduced to linux 2.6, pdflush mechanism is not
 used any more, but the old interface of pdflush exported through /proc/sys/vm/
 is still existing and obviously useless. In order for back-compatibility,
-printk warning information and return 0 to notify the users that the
+printk warning information and return 2 to notify the users that the
 interface is removed.
 
 Signed-off-by: Wanpeng Li <liwp@linux.vnet.ibm.com>
@@ -242,7 +242,7 @@ index dd8e2aa..e9caa10 100644
 +
 +	*lenp = 2;
 +	*ppos += *lenp;
-+	return 0;
++	return 2;
 +}
 -- 
 1.7.9.5
