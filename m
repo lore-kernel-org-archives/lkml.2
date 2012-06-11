@@ -1,92 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752168Ab2FKJAi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 05:00:38 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:44288 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750905Ab2FKJAg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 05:00:36 -0400
-Date: Mon, 11 Jun 2012 11:00:31 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Vlad Zolotarov <vlad@scalemp.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, Shai@scalemp.com,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH v4 0/2] Move x86_cpu_to_apicid to the __read_mostly
- section
-Message-ID: <20120611090031.GM31556@gmail.com>
-References: <1744141.b5asW8k6jC@vlad>
- <5555210.ryZGheQWJb@vlad>
- <1415723.ntIHEoaamI@vlad>
- <6799312.MzsZpBJbVB@vlad>
+	id S1752272Ab2FKJCi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 05:02:38 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40742 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751131Ab2FKJCh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 05:02:37 -0400
+Date: Mon, 11 Jun 2012 11:02:34 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
+        rientjes@google.com, akpm@linux-foundation.org, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH -V8 13/16] hugetlb/cgroup: add hugetlb cgroup control
+ files
+Message-ID: <20120611090234.GE12402@tiehlicka.suse.cz>
+References: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <1339232401-14392-14-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <6799312.MzsZpBJbVB@vlad>
+In-Reply-To: <1339232401-14392-14-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Vlad Zolotarov <vlad@scalemp.com> wrote:
-
-> On Wednesday 23 May 2012 12:16:29 Vlad Zolotarov wrote:
-> > On Tuesday, May 22, 2012 18:55:41 Vlad Zolotarov wrote:
-> > > > > I have no fundamental prefer to either approach, but the
-> > > > > direction taken should be justified explicitly, with numbers,
-> > > > > arguments, etc. - also a short blurb somewhere in the headers
-> > > > > that explains when they should be used, so that others can be
-> > > > > aware of vSMP's special needs here.
-> > > > 
-> > > > I.e. *numbers* are needed: roughly how many percpu variables in
-> > > > a defconfig of one type versus the other type. This settles the
-> > > > question whether we want to identify read-mostly or
-> > > > write-frequently variables, to address this particular problem
-> > > > ...
-> > 
-> > Ingo, here is the proposal to the patch (series) description:
-> > 
-> > ----------------------------------------------------------------------------
-> > -------------------- Added "read-mostly" qualifier to the following
-> > variables in smp.h: - cpu_sibling_map
-> >  - cpu_core_map
-> >  - cpu_llc_shared_map
-> >  - cpu_llc_id
-> >  - cpu_number
-> >  - x86_cpu_to_apicid
-> >  - x86_bios_cpu_apicid
-> >  - x86_cpu_to_logical_apicid
-> > 
-> > As long as all the variables above are only written during the
-> > initialization, this change is meant to prevent the false sharing. More
-> > specifically, on vSMP Foundation platform x86_cpu_to_apicid shared the same
-> > internode_cache_line with frequently written lapic_events.
-> > 
-> > From the analysis of the first 33 per_cpu variables  out of 219 (memories
-> > they describe, to be more specific) the 8 have read_mostly nature
-> > (tlb_vector_offset, cpu_loops_per_jiffy, xen_debug_irq, etc.) and 25 are
-> > frequently written (irq_stack_union, gdt_page, exception_stacks, idt_desc,
-> > etc.). Assuming that the spread of the rest of the per_cpu variables is
-> > similar, identifying the read mostly memories will make more sense in terms
-> > of long-term code maintenance comparing to identifying frequently written
-> > memories.
-> > ----------------------------------------------------------------------------
-> > -----------------------
-> > 
-> > Pls., tell me if the above looks satisfactory to u in light of all your
-> > previous remarks.
-> > 
-> > If yes - I'll respin the series with the description above.
+On Sat 09-06-12 14:29:58, Aneesh Kumar K.V wrote:
+> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 > 
-> Ingo, sorry for bothering. Could u, pls., tell if the above 
-> description is ok? We'd like to move on with this patch 
-> series.
+> Add the control files for hugetlb controller
+> 
+> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+> ---
+[...]
+> +int __init hugetlb_cgroup_file_init(int idx)
+> +{
+> +	char buf[32];
+> +	struct cftype *cft;
+> +	struct hstate *h = &hstates[idx];
+> +
+> +	/* format the size */
+> +	mem_fmt(buf, 32, huge_page_size(h));
+> +
+> +	/* Add the limit file */
+> +	cft = &h->cgroup_files[0];
+> +	snprintf(cft->name, MAX_CFTYPE_NAME, "%s.limit_in_bytes", buf);
+> +	cft->private = MEMFILE_PRIVATE(idx, RES_LIMIT);
+> +	cft->read = hugetlb_cgroup_read;
+> +	cft->write_string = hugetlb_cgroup_write;
+> +
+> +	/* Add the usage file */
+> +	cft = &h->cgroup_files[1];
+> +	snprintf(cft->name, MAX_CFTYPE_NAME, "%s.usage_in_bytes", buf);
+> +	cft->private = MEMFILE_PRIVATE(idx, RES_USAGE);
+> +	cft->read = hugetlb_cgroup_read;
+> +
+> +	/* Add the MAX usage file */
+> +	cft = &h->cgroup_files[2];
+> +	snprintf(cft->name, MAX_CFTYPE_NAME, "%s.max_usage_in_bytes", buf);
+> +	cft->private = MEMFILE_PRIVATE(idx, RES_MAX_USAGE);
+> +	cft->trigger = hugetlb_cgroup_reset;
+> +	cft->read = hugetlb_cgroup_read;
+> +
+> +	/* Add the failcntfile */
+> +	cft = &h->cgroup_files[3];
+> +	snprintf(cft->name, MAX_CFTYPE_NAME, "%s.failcnt", buf);
+> +	cft->private  = MEMFILE_PRIVATE(idx, RES_FAILCNT);
+> +	cft->trigger  = hugetlb_cgroup_reset;
+> +	cft->read = hugetlb_cgroup_read;
+> +
+> +	/* NULL terminate the last cft */
+> +	cft = &h->cgroup_files[4];
+> +	memset(cft, 0, sizeof(*cft));
+> +
+> +	WARN_ON(cgroup_add_cftypes(&hugetlb_subsys, h->cgroup_files));
+> +
+> +	return 0;
+> +}
+> +
 
-Yeah, that description and analysis looks good and sensible.
-
-Mind resending the updated patches in a new thread?
-
-Thanks,
-
-	Ingo
+I am not so familiar with the recent changes in the generic cgroup
+infrastructure but isn't this somehow automated?
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
