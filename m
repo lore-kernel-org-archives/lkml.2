@@ -1,62 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754189Ab2FKNZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 09:25:59 -0400
-Received: from ferdi.naasa.net ([87.106.227.76]:49495 "EHLO ferdi.naasa.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754089Ab2FKNZ5 convert rfc822-to-8bit (ORCPT
+	id S1753702Ab2FKN14 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 09:27:56 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:42843 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751842Ab2FKN1z convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 09:25:57 -0400
-References: <4FD47D4E.9070307@naasa.net> <1339340441.4751.1.camel@lade.trondhjem.org> <20120611121634.GB7654@fieldses.org> <20120611083932.24e27e39@corrin.poochiereds.net> <20120611091338.1c88e6d0@corrin.poochiereds.net>
-In-Reply-To: <20120611091338.1c88e6d0@corrin.poochiereds.net>
-Mime-Version: 1.0 (1.0)
-Content-Type: text/plain;
-	charset=utf-8
-Message-Id: <E49E5D8F-3647-4B3D-989E-FE4476D37607@naasa.net>
-Content-Transfer-Encoding: 8BIT
-Cc: bfields <bfields@fieldses.org>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Hans de Bruin <jmdebruin@xmsnet.nl>
-X-Mailer: iPad Mail (9B206)
-From: =?utf-8?Q?J=C3=B6rg_Platte?= <jplatte@naasa.net>
-Subject: Re: Kernel 3.4.X NFS server regression
-Date: Mon, 11 Jun 2012 15:25:55 +0200
-To: Jeff Layton <jlayton@redhat.com>
+	Mon, 11 Jun 2012 09:27:55 -0400
+Message-ID: <1339421268.30462.15.camel@twins>
+Subject: Re: Kernel panic - not syncing: Attempted to kill the idle task!
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Zhouping Liu <zliu@redhat.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Hillf Danton <dhillf@gmail.com>, hi3766691@gmail.com,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 11 Jun 2012 15:27:48 +0200
+In-Reply-To: <cfc29313-7fe7-4140-b9e6-053d925b4897@zmail13.collab.prod.int.phx2.redhat.com>
+References: <cfc29313-7fe7-4140-b9e6-053d925b4897@zmail13.collab.prod.int.phx2.redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 11.06.2012 um 15:13 schrieb Jeff Layton <jlayton@redhat.com>:
+On Fri, 2012-06-08 at 21:38 -0400, Zhouping Liu wrote:
+> # cat /sys/devices/system/node/node*/distance
+> 10 17 17 24 24 24 30 30
+> 18 10 30 18 18 24 24 24
+> 18 24 10 24 24 17 30 30
+> 24 18 23 10 24 17 17 30
+> 24 17 24 24 10 18 30 18
+> 31 24 17 18 18 10 24 24
+> 30 24 30 17 24 24 10 18
+> 30 24 30 24 17 24 17 10 
 
-> 
-> Ahh, I think I see the bug. From rpc_timeout_upcall_queue:
-> 
-> -----------------------[snip]--------------------------
->        dentry = dget(pipe->dentry);
->        spin_unlock(&pipe->lock);
->        if (dentry) {
->                rpc_purge_list(&RPC_I(dentry->d_inode)->waitq,
->                               &free_list, destroy_msg, -ETIMEDOUT);
->                dput(dentry);
->        }
-> -----------------------[snip]--------------------------
-> 
-> ...when there is no dentry (as there wouldn't be when rpc_pipefs isn't
-> mounted), then the rpc_purge_list won't run. FWIW, you'd probably see
-> similar problems if you attempted a sec=krb5 mount without having
-> rpc_pipefs mounted.
-> 
-> I'm still looking at the code to see what the right fix is. For now,
-> making sure you have a /var/lib/nfs/v4recoverydir is probably the
-> easiest workaround.
-> 
-> -- 
-> Jeff Layton <jlayton@redhat.com>
+You have to be kidding me right? That thing is a complete trainwreck,
+what idiot vendor did this?
 
-On my computer that shows the bug there is indeed no v4recovery directory. There is one on the other machine that does not show this bug. I'll test the latest kernel with this directory created  today afternoon. 
-
-Thank you for the analysis!
-
-Jörg 
+If you boot that machine again, does it have the same stupid table or
+are we staring at white-noise?
