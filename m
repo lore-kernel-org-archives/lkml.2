@@ -1,84 +1,314 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753864Ab2FKLSG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 07:18:06 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:45353 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752204Ab2FKLSC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 07:18:02 -0400
+	id S1754009Ab2FKLSS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 07:18:18 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:50341 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753475Ab2FKLSE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 07:18:04 -0400
+Message-ID: <4FD5D3CE.2010307@linux.vnet.ibm.com>
+Date: Mon, 11 Jun 2012 16:47:34 +0530
+From: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120611110517.GE11168@n2100.arm.linux.org.uk>
-References: <1339376810-8247-1-git-send-email-Ying.Liu@freescale.com>
-	<20120611095102.GD11168@n2100.arm.linux.org.uk>
-	<CA+8Hj81L9-NC=08_dvV2u_eM0NdssJsjduAgTbH37nusu56Avw@mail.gmail.com>
-	<20120611110517.GE11168@n2100.arm.linux.org.uk>
-Date: Mon, 11 Jun 2012 19:18:00 +0800
-Message-ID: <CA+8Hj83+Jqv3Bs0mTKYpdsH4ZbOMEQkRpsiCUPVwpeqvWg8jyA@mail.gmail.com>
-Subject: Re: [PATCH 1/3] mx3fb: do not support panning with fb blanked
-From: Liu Ying <liu.y.victor@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Liu Ying <Ying.Liu@freescale.com>, g.liakhovetski@gmx.de,
-        linux-fbdev@vger.kernel.org, FlorianSchandinat@gmx.de,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+To: acme@infradead.org, Dave Martin <dave.martin@linaro.org>
+CC: peterz@infradead.org, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, ananth@in.ibm.com,
+        jkenisto@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, oleg@redhat.com, andi@firstfloor.org,
+        hch@infradead.org, rostedt@goodmis.org,
+        masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de, anton@redhat.com,
+        srikar@linux.vnet.ibm.com, linux-perf-users@vger.kernel.org,
+        mingo@elte.hu
+Subject: Fwd: [PATCH-V2] perf symbols: fix symbol offset breakage with separated
+ debug info
+References: <4FA0DBEE.3040909@linux.vnet.ibm.com>
+In-Reply-To: <4FA0DBEE.3040909@linux.vnet.ibm.com>
+X-Forwarded-Message-Id: <4FA0DBEE.3040909@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12061111-6078-0000-0000-00000BF522F9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/6/11, Russell King - ARM Linux <linux@arm.linux.org.uk>:
-> On Mon, Jun 11, 2012 at 06:46:14PM +0800, Liu Ying wrote:
->> 2012/6/11, Russell King - ARM Linux <linux@arm.linux.org.uk>:
->> > On Mon, Jun 11, 2012 at 09:06:48AM +0800, Liu Ying wrote:
->> >> This patch checks if framebuffer is unblanked before
->> >> we actually trigger panning in custom pan display
->> >> function.
->> >>
->> >> Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
->> >> ---
->> >>  drivers/video/mx3fb.c |    5 +++++
->> >>  1 files changed, 5 insertions(+), 0 deletions(-)
->> >>
->> >> diff --git a/drivers/video/mx3fb.c b/drivers/video/mx3fb.c
->> >> index e3406ab..d53db60 100644
->> >> --- a/drivers/video/mx3fb.c
->> >> +++ b/drivers/video/mx3fb.c
->> >> @@ -1063,6 +1063,11 @@ static int mx3fb_pan_display(struct
->> >> fb_var_screeninfo *var,
->> >>  	dev_dbg(fbi->device, "%s [%c]\n", __func__,
->> >>  		list_empty(&mx3_fbi->idmac_channel->queue) ? '-' : '+');
->> >>
->> >> +	if (mx3_fbi->blank != FB_BLANK_UNBLANK) {
->> >> +		dev_dbg(fbi->device, "panning with fb blanked not supported\n");
->> >> +		return -EFAULT;
->> >> +	}
->> >
->> > Why is this an error, and why return -EFAULT?  What userspace access
->> > failed?
->> >
->> Hi, Russell,
->>
->> IMHO, panning with framebuffer blanked is meaningless, at least, it is
->> not a common usecase.
->
-> Yes, but why should anything in userspace care whether the display is
-> blanked or not?
->
-> For example, we may pan the display when a user program produces output,
-> and we're on the last line of the display.  We don't fail that just
-> because the screen happens to be blank.  So I don't see why we should
-> actively fail an explicit userspace pan request just because the console
-> happened to be blanked.
->
-> What I'm basically saying is that as far as _userspace_ is concerned,
-> all the standard APIs should just work as normal whether the display is
-> blanked or not.
->
+Dave/Arnaldo,
+Let me know if you have any comments on this patch so that I can address them.
 
-Ok, understand your point. I am ok to drop this patch.
+-------- Original Message --------
+Subject: [PATCH-V2] perf symbols: fix symbol offset breakage with separated debug info
+Date: Wed, 02 May 2012 12:32:06 +0530
+From: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
+To: peterz@infradead.org, mingo@elte.hu
+CC: akpm@linux-foundation.org, torvalds@linux-foundation.org,  ananth@in.ibm.com, jkenisto@linux.vnet.ibm.com,  linux-kernel@vger.kernel.org, linux-mm@kvack.org, oleg@redhat.com,  andi@firstfloor.org, hch@infradead.org, rostedt@goodmis.org,  acme@infradead.org, masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de,  anton@redhat.com, srikar@linux.vnet.ibm.com, dave.martin@linaro.org,  linux-perf-users@vger.kernel.org
 
-Thanks.
+From: Dave Martin <dave.martin@linaro.org>
 
--- 
-Best Regards,
-Liu Ying
+perf resolves symbols to wrong offsets when debug info is separated
+from the lib/executable.
+
+This patch is based on Dave Martin's initial work first published at
+https://lkml.org/lkml/2010/11/22/137
+
+This patch loads the ELF section headers from a separate file if
+necessary, to avoid getting confused by the different section file
+offsets seen in debug images.  Invalid section headers are detected by
+checking for the presence of non-writable SHT_NOBITS sections, which
+don't make sense under normal circumstances.
+
+In particular, this allows symbols in ET_EXEC images to get fixed up
+correctly in the presence of separated debug images.
+
+v2 addresses review comments (to remove asserts) from Dave Martin.
+
+Signed-off-by: Dave Martin <dave.martin@linaro.org>
+Signed-off-by: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
+---
+
+ tools/perf/util/symbol.c |  168 +++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 164 insertions(+), 4 deletions(-)
+
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index caaf75a..a6ad4b1 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -1158,8 +1158,105 @@ static size_t elf_addr_to_index(Elf *elf, GElf_Addr addr)
+ 	return -1;
+ }
+ 
++/**
++ * Read all section headers, copying them into a separate array so they survive
++ * elf_end.
++ *
++ * @elf: the libelf instance to operate on.
++ * @ehdr: the elf header: this must already have been read with gelf_getehdr().
++ * @count: the number of headers read is assigned to *count on successful
++ *	return.  count must not be NULL.
++ *
++ * Returns a pointer to the allocated headers, which should be deallocated with
++ * free() when no longer needed.
++ */
++static GElf_Shdr *elf_get_all_shdrs(Elf *elf, GElf_Ehdr const *ehdr,
++				    unsigned *count)
++{
++	GElf_Shdr *shdrs;
++	Elf_Scn *scn;
++	unsigned max_index = 0;
++	unsigned i;
++
++	shdrs = malloc(ehdr->e_shnum * sizeof *shdrs);
++	if (!shdrs)
++		return NULL;
++
++	for (i = 0; i < ehdr->e_shnum; i++)
++		shdrs[i].sh_type = SHT_NULL;
++
++	for (scn = NULL; (scn = elf_nextscn(elf, scn)); ) {
++		size_t j;
++
++		/*
++		 * Just assuming we get section 0, 1, ... in sequence may lead
++		 * to wrong section indices.  Check the index explicitly:
++		 */
++		j = elf_ndxscn(scn);
++		if (j > max_index)
++			max_index = j;
++
++		if (!gelf_getshdr(scn, &shdrs[j]))
++			goto error;
++	}
++
++	*count = max_index + 1;
++	return shdrs;
++
++error:
++	free(shdrs);
++	return NULL;
++}
++
++/**
++ * Check that the section headers @shdrs reflect accurately the file data
++ * layout of the image that was loaded during perf record.  This is generally
++ * not true for separated debug images generated with e.g.,
++ * objcopy --only-keep-debug.
++ *
++ * We identify invalid files by checking for non-empty sections which are
++ * declared as having no file data (SHT_NOBITS) but are not writable.
++ *
++ * @shdrs: the full set of section headers, as loaded by elf_get_all_shdrs().
++ * @count: the number of headers present in @shdrs.
++ *
++ * Returns 1 for valid headers, 0 otherwise.
++ */
++static int elf_check_shdrs_valid(GElf_Shdr const *shdrs, unsigned count)
++{
++	unsigned i;
++
++	for (i = 0; i < count; i++) {
++		if (shdrs[i].sh_type == SHT_NOBITS &&
++		    !(shdrs[i].sh_flags & SHF_WRITE) &&
++		    shdrs[i].sh_size != 0)
++			return 0;
++	}
++
++	return 1;
++}
++
++/*
++ * Notes:
++ *
++ * If saved_shdrs is non-NULL, the section headers will be read if found, and
++ * will be used for address fixups.  saved_shdrs_count must also be non-NULL in
++ * this case.  This may be needed for separated debug images, since the section
++ * headers and symbols may need to come from separate images in that case.
++ *
++ * Note: irrespective of whether this function returns successfully,
++ * *saved_shdrs may get initialised if saved_shdrs is non-NULL.  It is the
++ * caller's responsibility to free() it when non longer needed.
++ *
++ * If want_symtab == 1, this function will only load symbols from .symtab
++ * sections.  Otherwise (want_symtab == 0), .dynsym or .symtab symbols are
++ * loaded.  This feature is used by dso__load() to search for the best image
++ * to load.
++ */
++
+ static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
+ 			 int fd, symbol_filter_t filter, int kmodule,
++			 GElf_Shdr **saved_shdrs, unsigned *saved_shdrs_count,
+ 			 int want_symtab)
+ {
+ 	struct kmap *kmap = dso->kernel ? map__kmap(map) : NULL;
+@@ -1178,6 +1275,17 @@ static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
+ 	int nr = 0;
+ 	size_t opdidx = 0;
+ 
++	if (saved_shdrs != NULL && saved_shdrs_count == NULL) {
++		/*
++		 * If you trigger this check, you're calling this function
++		 * incorrectly.  Refer to the notes above for details.
++		 */
++		pr_debug("%s: warning: saved_shdrs_count == NULL: "
++			 "ignoring the saved section headers.\n",
++			 __func__);
++		saved_shdrs = NULL;
++	}
++
+ 	elf = elf_begin(fd, PERF_ELF_C_READ_MMAP, NULL);
+ 	if (elf == NULL) {
+ 		pr_debug("%s: cannot read %s ELF file.\n", __func__, name);
+@@ -1200,6 +1308,36 @@ static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
+ 			goto out_elf_end;
+ 	}
+ 
++	/*
++	 * Copy all section headers from the image if requested and if not
++	 * already loaded.
++	 */
++	if (saved_shdrs != NULL && *saved_shdrs == NULL) {
++		GElf_Shdr *shdrs;
++		unsigned count;
++
++		shdrs = elf_get_all_shdrs(elf, &ehdr, &count);
++		if (shdrs == NULL)
++			goto out_elf_end;
++
++		/*
++		 * Only keep the headers if they reflect the actual run-time
++		 * image's file layout:
++		 */
++		if (elf_check_shdrs_valid(shdrs, count)) {
++			*saved_shdrs = shdrs;
++			*saved_shdrs_count = count;
++		} else
++			free(shdrs);
++	}
++
++	/*
++	 * If no genuine ELF headers are available yet, give up: we can't
++	 * adjust symbols correctly in that case:
++	 */
++	if (saved_shdrs != NULL && *saved_shdrs == NULL)
++		goto out_elf_end;
++
+ 	sec = elf_section_by_name(elf, &ehdr, &shdr, ".symtab", NULL);
+ 	if (sec == NULL) {
+ 		if (want_symtab)
+@@ -1344,12 +1482,25 @@ static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
+ 			goto new_symbol;
+ 		}
+ 
++		/*
++		 * Currently, symbols for shared objects and PIE executables
++		 * (i.e., ET_DYN) do not seem to get adjusted.  This might need
++		 * to change if file offset == virtual address is not actually
++		 * guaranteed for these images.  ELF doesn't provide this
++		 * guarantee natively.
++		 */
+ 		if (curr_dso->adjust_symbols) {
+ 			pr_debug4("%s: adjusting symbol: st_value: %#" PRIx64 " "
+ 				  "sh_addr: %#" PRIx64 " sh_offset: %#" PRIx64 "\n", __func__,
+ 				  (u64)sym.st_value, (u64)shdr.sh_addr,
+ 				  (u64)shdr.sh_offset);
+-			sym.st_value -= shdr.sh_addr - shdr.sh_offset;
++			if (saved_shdrs && *saved_shdrs &&
++			    sym.st_shndx < *saved_shdrs_count)
++				sym.st_value -=
++					(*saved_shdrs)[sym.st_shndx].sh_addr -
++					(*saved_shdrs)[sym.st_shndx].sh_offset;
++			else
++				sym.st_value -= shdr.sh_addr - shdr.sh_offset;
+ 		}
+ 		/*
+ 		 * We need to figure out if the object was created from C++ sources
+@@ -1590,6 +1741,8 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
+ 	struct machine *machine;
+ 	const char *root_dir;
+ 	int want_symtab;
++	GElf_Shdr *saved_shdrs = NULL;
++	unsigned saved_shdrs_count;
+ 
+ 	dso__set_loaded(dso, map->type);
+ 
+@@ -1692,6 +1845,7 @@ restart:
+ 			continue;
+ 
+ 		ret = dso__load_sym(dso, map, name, fd, filter, 0,
++				    &saved_shdrs, &saved_shdrs_count,
+ 				    want_symtab);
+ 		close(fd);
+ 
+@@ -1713,14 +1867,19 @@ restart:
+ 
+ 	/*
+ 	 * If we wanted a full symtab but no image had one,
+-	 * relax our requirements and repeat the search.
++	 * relax our requirements and repeat the search,
++	 * provided we saw some valid section headers:
+ 	 */
+-	if (ret <= 0 && want_symtab) {
++	if (ret <= 0 && want_symtab && saved_shdrs != NULL) {
+ 		want_symtab = 0;
+ 		goto restart;
+ 	}
+ 
+ 	free(name);
++
++	if (saved_shdrs)
++		free(saved_shdrs);
++
+ 	if (ret < 0 && strstr(dso->name, " (deleted)") != NULL)
+ 		return 0;
+ 	return ret;
+@@ -1989,7 +2148,8 @@ int dso__load_vmlinux(struct dso *dso, struct map *map,
+ 
+ 	dso__set_long_name(dso, (char *)vmlinux);
+ 	dso__set_loaded(dso, map->type);
+-	err = dso__load_sym(dso, map, symfs_vmlinux, fd, filter, 0, 0);
++	err = dso__load_sym(dso, map, symfs_vmlinux, fd, filter, 0,
++			    NULL, NULL, 0);
+ 	close(fd);
+ 
+ 	if (err > 0)
+
+
