@@ -1,129 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755342Ab2FKOzx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 10:55:53 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:44972 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752221Ab2FKOzw (ORCPT
+	id S1755269Ab2FKO5J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 10:57:09 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:61552 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754909Ab2FKO5G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 10:55:52 -0400
-X-AuditID: cbfee61b-b7fcc6d000003a7a-17-4fd606d99019
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH v10] mm: compaction: handle incorrect MIGRATE_UNMOVABLE
- type pageblocks
-Date: Mon, 11 Jun 2012 16:54:48 +0200
-User-Agent: KMail/1.13.2 (Linux/3.2.6; KDE/4.4.5; i686; ; )
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Dave Jones <davej@redhat.com>, Cong Wang <amwang@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-References: <201206081046.32382.b.zolnierkie@samsung.com>
- <201206111243.14379.b.zolnierkie@samsung.com> <20120611133916.GB2340@barrios>
-In-reply-to: <20120611133916.GB2340@barrios>
-MIME-version: 1.0
-Message-id: <201206111654.48701.b.zolnierkie@samsung.com>
-Content-type: Text/Plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrNLMWRmVeSWpSXmKPExsVy+t9jAd2bbNf8DT6vNba4vGsOmwOjx+dN
-	cgGMUVw2Kak5mWWpRfp2CVwZjS8nMhZck6o4PvEjewPjZZEuRk4OCQETicWXp7JC2GISF+6t
-	Z+ti5OIQEljEKNHzbgE7SEJIYDWTxNttdSA2m4CVxMT2VYwgtoiAisSfp//AbGGBWIkd6/aA
-	DWIRUJW4270TrFdUwFri6IV7jCBDmQXeMkus/fieGWJDJ6PEtN89YN2cAjoSm/vbwbp5BQQl
-	fky+xwJhW0rM+bUDbBKzgJZE85tNjBC2vMTmNW+ZJzAKzELSMgtJ2SwkZQsYmVcxiqYWJBcU
-	J6XnGukVJ+YWl+al6yXn525iBAfhM+kdjKsaLA4xCnAwKvHwzmC95i/EmlhWXJl7iFGCg1lJ
-	hHfDj6v+QrwpiZVVqUX58UWlOanFhxilOViUxHmbrC/4CwmkJ5akZqemFqQWwWSZODilGhi5
-	e54tKNOQDC9T+532cVXqP61aY6+91TZdOy29bp5z28D2xTbSom6mTObi9udHlD3VF2eoxXd1
-	Ji8qLS1+fYfr3YOaXZezTnr/q2Pul2/4VDCXaU9f0SKpCdyfz/e+1rZ9fMT+4I3fh7mObDrB
-	tnS/VGNoZsuSPnWtiti/IWLVk+wEGU71pymxFGckGmoxFxUnAgC6jplAPgIAAA==
-X-TM-AS-MML: No
+	Mon, 11 Jun 2012 10:57:06 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Roland Stigge <stigge@antcom.de>
+Subject: Re: [PATCH 11/14] ARM: LPC32xx: DTS adjustment for using pl18x primecell
+Date: Mon, 11 Jun 2012 14:57:00 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
+        srinivas.bakki@nxp.com, aletes.xgr@gmail.com
+References: <1339412537-24485-1-git-send-email-stigge@antcom.de> <201206111414.14264.arnd@arndb.de> <4FD60096.7050603@antcom.de>
+In-Reply-To: <4FD60096.7050603@antcom.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201206111457.00845.arnd@arndb.de>
+X-Provags-ID: V02:K0:rxpvT1nFkvIrj9G0iJZ79LsRZ0TNwJyTpA1HkVfGj39
+ C/TXkGvr919axvQq4/95ykDpuESM2Xqu+4FXTVhIR25ouZjzYK
+ lvNcfPW3fKrDM8/29sVd7GeLDibRC8btdHYS3scO90oKNfXRUZ
+ nBfGwz37vk4BViaqi+iH7gzHJVS+sxGB9gShVzZx7DnOPcseGR
+ mIBdjPOhhw7lbqg5LE03AHA+QDJc5p4zdMISZONpooJmAdKTEQ
+ Fg4fxYh0OOqAYkwvS9+Iy5gBEk18pYo0X/iOyEF/K1xl9lC4CA
+ 69eq9FFpAjkKgldUYXaZ9zZ2osYHx7qu+Rl1OEjDsIZQat3AvR
+ jAmwNX7at8xBOcGAiIXE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 11 June 2012 15:39:16 Minchan Kim wrote:
-> On Mon, Jun 11, 2012 at 12:43:14PM +0200, Bartlomiej Zolnierkiewicz wrote:
-> > On Monday 11 June 2012 03:26:49 Minchan Kim wrote:
-> > > Hi Bartlomiej,
-> > > 
-> > > On 06/08/2012 05:46 PM, Bartlomiej Zolnierkiewicz wrote:
-> > > 
-> > > > 
-> > > > Hi,
-> > > > 
-> > > > This version is much simpler as it just uses __count_immobile_pages()
-> > > > instead of using its own open coded version and it integrates changes
-> > > 
-> > > 
-> > > That's a good idea. I don't have noticed that function is there.
-> > > When I look at the function, it has a problem, too.
-> > > Please, look at this.
-> > > 
-> > > https://lkml.org/lkml/2012/6/10/180
-> > > 
-> > > If reviewer is okay that patch, I would like to resend your patch based on that. 
-> > 
-> > Ok, I would later merge all changes into v11 and rebase on top of your patch.
-> > 
-> > > > from Minchan Kim (without page_count change as it doesn't seem correct
-> > > 
-> > > 
-> > > Why do you think so?
-> > > If it isn't correct, how can you prevent racing with THP page freeing?
-> > 
-> > After seeing the explanation for the previous fix it is all clear now.
-> > 
-> > > > and __count_immobile_pages() does the check in the standard way; if it
-> > > > still is a problem I think that removing 1st phase check altogether
-> > > > would be better instead of adding more locking complexity).
-> > > > 
-> > > > The patch also adds compact_rescued_unmovable_blocks vmevent to vmstats
-> > > > to make it possible to easily check if the code is working in practice.
-> > > 
-> > > 
-> > > I think that part should be another patch.
-> > > 
-> > > 1. Adding new vmstat would be arguable so it might interrupt this patch merging.
-> > 
-> > Why would it be arguable?  It seems non-intrusive and obvious to me.
+On Monday 11 June 2012, Roland Stigge wrote:
+> Thanks for the note!
 > 
-> Once you add new vmstat, someone can make another dependent code in userspace.
-> It means your new vmstat would become a new ABI so we should be careful.
-
-I know about it but I doubt that it will be ever used by the user-space
-for other purpose than showing kernel statistics (even that is unlikely).
-
-> > 
-> > > 2. New vmstat adding is just for this patch is effective or not in real practice
-> > >    so if we prove it in future, let's revert the vmstat. Separating it would make it
-> > >    easily.
-> > 
-> > I would like to add this vmstat permanently, not only for the testing period..
+> Funnily, I always did it this way. Looks like initially, I copied from
+> somewhere else (wrongly). Indeed, we have lots of "disable", see also:
 > 
-> "I would like to add this vmstat permanently" isn't logical at all.
-> You should mention why we need such vmstat and how administrator can parse it/
-> handle it if he needs.
+> omap3-beagle.dts
+> omap4-panda.dts
+> omap4-sdp.dts
+> tegra20.dtsi
+> tegra30.dtsi
 
-I quickly went through vmstat history and I see rationales like this:
-"Optional patch, but useful for development and understanding the system."
-for adding new vmstat counters.  The new counter falls into this category.
+Ah, right. Note that the kernel checks only for "ok" and "okay" strings,
+anything else is interpreted as "disabled". We should use the correct
+string anyway of course.
 
-compact_rescued_unmovable_blocks shows the number of MIGRATE_UNMOVABLE
-pageblocks converted back to MIGRATE_MOVABLE type by the memory compaction
-code.  Non-zero values indicate that large kernel-originated allocations
-of MIGRATE_UNMOVABLE type happen in the system and need special handling 
-from the memory compaction code.
-
-> If we have Documentation/vmstat.txt, you should have written it down. Sigh.
-
-But we don't have vmstat.txt even though we have a lot of vmstat counters. :(
-
-Best regards,
---
-Bartlomiej Zolnierkiewicz
-Samsung Poland R&D Center
+	Arnd
