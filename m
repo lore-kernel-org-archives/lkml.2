@@ -1,131 +1,360 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754140Ab2FKMwR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 08:52:17 -0400
+	id S1754505Ab2FKMw2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 08:52:28 -0400
 Received: from mail-ee0-f46.google.com ([74.125.83.46]:45915 "EHLO
 	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751193Ab2FKMwP (ORCPT
+	with ESMTP id S1754174Ab2FKMwY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 08:52:15 -0400
+	Mon, 11 Jun 2012 08:52:24 -0400
 From: Michal Nazarewicz <mina86@mina86.com>
 To: Felipe Balbi <balbi@ti.com>, Alan Stern <stern@rowland.harvard.edu>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 2/3] usb: gadget: mass_storage: remove unused options
-Date: Mon, 11 Jun 2012 14:52:01 +0200
-Message-Id: <861e01f52f2b3ed8884f308226fd8dd2fcae26ea.1339418799.git.mina86@mina86.com>
+Subject: =?UTF-8?q?=5BPATCH=203/3=5D=20usb=3A=20gadget=3A=20mass=5Fstorage=3A=20add=20documentation?=
+Date: Mon, 11 Jun 2012 14:52:02 +0200
+Message-Id: <e74fd04096bc39d3a183a1ef523115782f9bbdbd.1339418799.git.mina86@mina86.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <cover.1339418799.git.mina86@mina86.com>
 References: <cover.1339418799.git.mina86@mina86.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit removes thread_name and lun_name_format fields from the
-fsg_config structure.  Those fields are not used by any in-tree code
-and their usefulness is rather theoretical.
+This commit adds Documentation/usb/mass-storage.txt file.  It contains
+description of how to use the mass storage gadget from user space.  It
+elaborates on madule parameters and sysfs interface more then it was
+written in the comments in the source code.
 
 Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
 ---
- drivers/usb/gadget/f_mass_storage.c |   50 +++++++----------------------------
- 1 files changed, 10 insertions(+), 40 deletions(-)
+ Documentation/usb/mass-storage.txt  |  219 +++++++++++++++++++++++++++++++++++
+ drivers/usb/gadget/f_mass_storage.c |   69 +----------
+ 2 files changed, 226 insertions(+), 62 deletions(-)
+ create mode 100644 Documentation/usb/mass-storage.txt
 
+diff --git a/Documentation/usb/mass-storage.txt b/Documentation/usb/mass-storage.txt
+new file mode 100644
+index 0000000..1c2fff9
+--- /dev/null
++++ b/Documentation/usb/mass-storage.txt
+@@ -0,0 +1,219 @@
++                                                                   -*- org -*-
++
++* Overview
++
++  Mass Storage Gadget (or MSG) acts as a USB Mass Storage device,
++  appearing to the host as a disk or a CD-ROM drive.  It supports
++  multiple logical units (LUNs).  Backing storage for each LUN is
++  provided by a regular file or a block device, access can be limited
++  to read-only, and gadget can indicate that it is removable and/or
++  CD-ROM (the latter implies read-only access).
++
++  Its requirements are modest; only a bulk-in and a bulk-out endpoint
++  are needed.  The memory requirement amounts to two 16K buffers.
++  Support is included for full-speed, high-speed and super-speed
++  operation.
++
++  Note that the driver is slightly non-portable in that it assumes
++  a single memory/DMA buffer will be useable for bulk-in and bulk-out
++  endpoints.  With most device controllers this is not an issue, but
++  there may be some with hardware restrictions that prevent a buffer
++  from being used by more than one endpoint.
++
++  This document describes how to use the gadget from user space, its
++  relation to mass storage function (or MSF) and different gadgets
++  using it, as well as and how does it differ from File Storage Gadget
++  (or FSG).  It will talk only briefly about how to use MSF within
++  composite gadgets.
++
++* Module parameters
++
++  The mass storage gadget accepts the following mass storage specific
++  module parameters:
++
++  - file=filename[,filename...]
++
++    This parameter lists paths to files or block devices used for
++    backing storage for each logical unit.  There may be at most
++    FSG_MAX_LUNS (8) LUNs set.  If more files are specified, they will
++    be silently ignored.  See also “luns” parameter.
++
++    *BEWARE* that if a file is used as a backing storage, it may not
++    be modified by any other process.  This is because host assumes
++    the data does not change without its knowledge.  It may by read,
++    but (if the logical unit is writable) due to buffering on the host
++    side, the contents are not well defined.
++
++    The size of the logical unit will be rounded down to full logical
++    block.  A logical block size is 2048 for LUNs simulating CD-ROM,
++    block size of a device if the device is the backing file, or 512
++    bytes otherwise.
++
++  - removable=b[,b...]
++
++    This parameter specifies whether each logical unit should be
++    removable.  “b” here is either “y”, “Y” or “1” for true or “n”,
++    “N” or “0” for false.
++
++    If this option is set for a logical unit, gadget will accept an
++    “eject” SCSI request (Start/Stop Unit).  When it is sent, the
++    backing file will be released to simulate ejection and the logical
++    unit will not be mountable by the host until a new backing file is
++    specified by userspace on the device (see “sysfs entries”
++    section).
++
++    If logical unit is not removable (the default), backing file must
++    be specified for it with the “file” as the module is loaded.  The
++    same applies if the module is built in, no exceptions.
++
++    The default value of the flag is false, *HOWEVER* it used to be
++    true.  This has been changed to better match File Storage Gadget
++    and because it seems like a saner default after all.  Thus to
++    maintain compatibility with older kernels, it's best to specify
++    the default values.  Also, if one relied on old default, explicit
++    “n” needs to be specified now.
++
++  - cdrom=b[,b...]
++
++    This parameter specifies whether each logical unit should simulate
++    CD-ROM.  The default is false.
++
++  - ro=b[,b...]
++
++    This parameter specifies whether each logical unit should be
++    reported as read only.  This will prevent host from modifying the
++    backing files.
++
++    Note that if this flag for given logical unit is false but the
++    backing file could not be opened in read/write mode, the gadget
++    will fall back to read only mode anyway.
++
++    The default value for each logical unit is false.
++
++  - nofua=b[,b...]
++
++    This parameter specifies whether FUA flag should be ignored in SCSI
++    Write10 and Write12 commands sent to given logical units.
++
++    MS Windows mounts removable storage in “Removal optimised mode” by
++    default.  All the writes to the media are synchronous which is
++    achieved by setting FUA (Force Unit Access) bit in SCSI
++    Write(10,12) commands.  This prevents I/O requests aggregation in
++    block layer dramatically decreasing performance.
++
++    Note that this may mean that if the device is powered from USB and
++    user unplugs the device without unmounting (which at lest some
++    Windows users do), the data may be lost.
++
++    The default value is false.
++
++  - luns=N
++
++    This parameter specifies number of logical units the gadget will
++    have.  It is limited by FSG_MAX_LUNS (8) and higher value will be
++    capped.
++
++    If this parameter is provided, and the number of files specified
++    in “file” argument is greater then the value of “luns”, all excess
++    files will be ignored.
++
++    If this parameter is not present, the number of logical units will
++    be deducted from the number of files specified in the “file”
++    parameter.  If the file parameter is missing as well, one is
++    assumed.
++
++  - stall=b
++
++    Specifies whether the gadget is allowed to halt bulk endpoints.
++    The default is determined according to the type of USB device
++    controller, but usually true.
++
++  In addition to the above, the gadget also accepts the following
++  parameters defined by the composite framework (they are common to
++  all composite gadgets so just a quick listing):
++
++  - idVendor      -- USB Vendor ID (16 bit integer)
++  - idProduct     -- USB Product ID (16 bit integer)
++  - bcdDevice     -- USB Device version (BCD) (16 bit integer)
++  - iManufacturer -- USB Manufacturer string (string)
++  - iProduct      -- USB Product string (string)
++  - iSerialNumber -- SerialNumber string (sting)
++
++* sysfs entries
++
++  For each logical unit, the gadget creates a directory in the sysfs
++  hierarchy.  Inside of it the following three files are created:
++
++  - file
++
++    When read it returns the path to the backing file for given
++    logical unit.  If there is no backing file (possible only if
++    logical unit is removable), the content is empty.
++
++    When written into, it changes the backing file for given logical
++    unit.  This change can be performed even if given logical unit is
++    not specified as removable (but that may look strange to the
++    host).  It may fail, however, if host disallowed medium removal
++    with Allow Medium Removal SCSI command.
++
++  - ro
++
++    Reflects the state of ro flag for given logical unit.  It can be
++    read any time, and written to when there is no backing file open
++    for given logical unit.
++
++  - nofua
++
++    Reflects the state of nofua flag for given logical unit.  It can
++    be read and written to change it.
++
++  Other then those, as usual, the values of modules parameters can be
++  read from /sys/module/g_mass_storage/parameters/* files.
++
++* Other gadgets using mass storage function
++
++  The Mass Storage Gadget uses the Mass Storage Function to handle
++  mass storage protocol.  As a composite function, MSF may be used by
++  other gadgets as well (eg. g_multi and acm_ms).
++
++  All of the information in previous sections are valid for other
++  gadgets using MSF, except that support for mass storage related
++  module parameters may be missing, or the parameters may have
++  a prefix.  To figure out whether any of this is true one needs to
++  consult gadget's documentation or its source code.
++
++  For examples of how to include mass storage function in gadgets, one
++  may take a look at mass_storage.c, acm_ms.c and multi.c (sorted by
++  complexity).
++
++* Relation to file storage gadget
++
++  The Mass Storage Function and thus the Mass Storage Gadget has been
++  based on the File Storage Gadget.  The difference between the two is
++  that MSG is a composite gadget (ie. uses the composite framework)
++  while file storage gadget is a traditional gadget.  From userspace
++  point of view this distinction does not really matter, but from
++  kernel hacker's point of view, this means that (i) MSG does not
++  duplicate code needed for handling basic USB protocol commands and
++  (ii) MSF can be used in any other composite gadget.
++
++  Because of that, File Storage Gadget has been deprecated and
++  scheduled to be removed in Linux 3.8.  All users need to transition
++  to the Mass Storage Gadget by that time.  The two gadgets behave
++  mostly the same from the outside except:
++
++  1. In FSG the “removable” and “cdrom” module parameters set the flag
++     for all logical units whereas in MSG they accept a list of y/n
++     values for each logical unit.  If one uses only a single logical
++     unit this does not matter, but if there are more, the y/n value
++     needs to be repeated for each logical unit.
++
++  2. FSG's “serial”, “vendor”, “product” and “release” module
++     parameters are handled in MSG by the composite layer's parameters
++     named respectively: “iSerialnumber”, “idVendor”, “idProduct” and
++     “bcdDevice”.
++
++  3. MSG does not support FSG's test mode, thus “transport”,
++     “protocol” and “buflen” FSG's module parameters are not
++     supported.  MSG always uses SCSI protocol with bulk only
++     transport mode and 16 KiB buffers.
 diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
-index 6b6355c..3b2293f 100644
+index 3b2293f..71ce550 100644
 --- a/drivers/usb/gadget/f_mass_storage.c
 +++ b/drivers/usb/gadget/f_mass_storage.c
-@@ -75,25 +75,6 @@
-  *	->nofua		Flag specifying that FUA flag in SCSI WRITE(10,12)
-  *				commands for this LUN shall be ignored.
+@@ -44,12 +44,12 @@
+  * function for a USB device, it also illustrates a technique of
+  * double-buffering for increased throughput.
   *
-- *	lun_name_format	A printf-like format for names of the LUN
-- *				devices.  This determines how the
-- *				directory in sysfs will be named.
-- *				Unless you are using several MSFs in
-- *				a single gadget (as opposed to single
-- *				MSF in many configurations) you may
-- *				leave it as NULL (in which case
-- *				"lun%d" will be used).  In the format
-- *				you can use "%d" to index LUNs for
-- *				MSF's with more than one LUN.  (Beware
-- *				that there is only one integer given
-- *				as an argument for the format and
-- *				specifying invalid format may cause
-- *				unspecified behaviour.)
-- *	thread_name	Name of the kernel thread process used by the
-- *				MSF.  You can safely set it to NULL
-- *				(in which case default "file-storage"
-- *				will be used).
+- * Function supports multiple logical units (LUNs).  Backing storage
+- * for each LUN is provided by a regular file or a block device.
+- * Access for each LUN can be limited to read-only.  Moreover, the
+- * function can indicate that LUN is removable and/or CD-ROM.  (The
+- * later implies read-only access.)
 - *
-  *	vendor_name
-  *	product_name
-  *	release		Information used as a reply to INQUIRY
-@@ -155,15 +136,14 @@
-  * a buffer from being used by more than one endpoint.
++ * For more information about MSF and in particular its module
++ * parameters and sysfs interface read the
++ * <Documentation/usb/mass-storage.txt> file.
++ */
++
++/*
+  * MSF is configured by specifying a fsg_config structure.  It has the
+  * following fields:
   *
+@@ -95,61 +95,6 @@
+  * data track and no audio tracks; hence there need be only one
+  * backing file per LUN.
   *
-- * The pathnames of the backing files and the ro settings are
-- * available in the attribute files "file" and "ro" in the lun<n> (or
-- * to be more precise in a directory which name comes from
-- * "lun_name_format" option!) subdirectory of the gadget's sysfs
-- * directory.  If the "removable" option is set, writing to these
-- * files will simulate ejecting/loading the medium (writing an empty
-- * line means eject) and adjusting a write-enable tab.  Changes to the
-- * ro setting are not allowed when the medium is loaded or if CD-ROM
-- * emulation is being used.
-+ * The pathnames of the backing files, the ro settings and nofua
-+ * settings are available in the attribute files "file", "ro" and
-+ * "nofua" in the lun<n> subdirectory of the gadget's sysfs directory.
-+ * If the "removable" option is set, writing to these files will
-+ * simulate ejecting/loading the medium (writing an empty line means
-+ * eject) and adjusting a write-enable tab.  Changes to the ro setting
-+ * are not allowed when the medium is loaded or if CD-ROM emulation is
-+ * being used.
+- *
+- * MSF includes support for module parameters.  If gadget using it
+- * decides to use it, the following module parameters will be
+- * available:
+- *
+- *	file=filename[,filename...]
+- *			Names of the files or block devices used for
+- *				backing storage.
+- *	ro=b[,b...]	Default false, boolean for read-only access.
+- *	removable=b[,b...]
+- *			Default false, boolean for removable media.
+- *	cdrom=b[,b...]	Default false, boolean for whether to emulate
+- *				a CD-ROM drive.
+- *	nofua=b[,b...]	Default false, booleans for ignore FUA flag
+- *				in SCSI WRITE(10,12) commands
+- *	luns=N		Default N = number of filenames, number of
+- *				LUNs to support.
+- *	stall		Default determined according to the type of
+- *				USB device controller (usually true),
+- *				boolean to permit the driver to halt
+- *				bulk endpoints.
+- *
+- * The module parameters may be prefixed with some string.  You need
+- * to consult gadget's documentation or source to verify whether it is
+- * using those module parameters and if it does what are the prefixes
+- * (look for FSG_MODULE_PARAMETERS() macro usage, what's inside it is
+- * the prefix).
+- *
+- *
+- * Requirements are modest; only a bulk-in and a bulk-out endpoint are
+- * needed.  The memory requirement amounts to two 16K buffers, size
+- * configurable by a parameter.  Support is included for both
+- * full-speed and high-speed operation.
+- *
+- * Note that the driver is slightly non-portable in that it assumes a
+- * single memory/DMA buffer will be useable for bulk-in, bulk-out, and
+- * interrupt-in endpoints.  With most device controllers this isn't an
+- * issue, but there may be some with hardware restrictions that prevent
+- * a buffer from being used by more than one endpoint.
+- *
+- *
+- * The pathnames of the backing files, the ro settings and nofua
+- * settings are available in the attribute files "file", "ro" and
+- * "nofua" in the lun<n> subdirectory of the gadget's sysfs directory.
+- * If the "removable" option is set, writing to these files will
+- * simulate ejecting/loading the medium (writing an empty line means
+- * eject) and adjusting a write-enable tab.  Changes to the ro setting
+- * are not allowed when the medium is loaded or if CD-ROM emulation is
+- * being used.
+- *
+- * When a LUN receive an "eject" SCSI request (Start/Stop Unit),
+- * if the LUN is removable, the backing file is released to simulate
+- * ejection.
+- *
+- *
+  * This function is heavily based on "File-backed Storage Gadget" by
+  * Alan Stern which in turn is heavily based on "Gadget Zero" by David
+  * Brownell.  The driver's SCSI command interface was based on the
+@@ -191,7 +136,7 @@
+  * In normal operation the main thread is started during the gadget's
+  * fsg_bind() callback and stopped during fsg_unbind().  But it can
+  * also exit when it receives a signal, and there's no point leaving
+- * the gadget running when the thread is dead.  At of this moment, MSF
++ * the gadget running when the thread is dead.  As of this moment, MSF
+  * provides no way to deregister the gadget when thread dies -- maybe
+  * a callback functions is needed.
   *
-  * When a LUN receive an "eject" SCSI request (Start/Stop Unit),
-  * if the LUN is removable, the backing file is released to simulate
-@@ -417,9 +397,6 @@ struct fsg_config {
- 		char nofua;
- 	} luns[FSG_MAX_LUNS];
- 
--	const char		*lun_name_format;
--	const char		*thread_name;
--
- 	/* Callback functions. */
- 	const struct fsg_operations	*ops;
- 	/* Gadget's private data. */
-@@ -2792,11 +2769,7 @@ static struct fsg_common *fsg_common_init(struct fsg_common *common,
- 		curlun->dev.parent = &gadget->dev;
- 		/* curlun->dev.driver = &fsg_driver.driver; XXX */
- 		dev_set_drvdata(&curlun->dev, &common->filesem);
--		dev_set_name(&curlun->dev,
--			     cfg->lun_name_format
--			   ? cfg->lun_name_format
--			   : "lun%d",
--			     i);
-+		dev_set_name(&curlun->dev, "lun%d", i);
- 
- 		rc = device_register(&curlun->dev);
- 		if (rc) {
-@@ -2878,8 +2851,7 @@ buffhds_first_it:
- 
- 	/* Tell the thread to start working */
- 	common->thread_task =
--		kthread_create(fsg_main_thread, common,
--			       cfg->thread_name ?: "file-storage");
-+		kthread_create(fsg_main_thread, common, "file-storage");
- 	if (IS_ERR(common->thread_task)) {
- 		rc = PTR_ERR(common->thread_task);
- 		goto error_release;
-@@ -3175,8 +3147,6 @@ fsg_config_from_params(struct fsg_config *cfg,
- 	}
- 
- 	/* Let MSF use defaults */
--	cfg->lun_name_format = 0;
--	cfg->thread_name = 0;
- 	cfg->vendor_name = 0;
- 	cfg->product_name = 0;
- 	cfg->release = 0xffff;
 -- 
 1.7.7.3
 
