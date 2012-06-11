@@ -1,127 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754306Ab2FKD5h (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jun 2012 23:57:37 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:43090 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753244Ab2FKD5g (ORCPT
+	id S1754770Ab2FKD75 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jun 2012 23:59:57 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:49468 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753244Ab2FKD7z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jun 2012 23:57:36 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FD56C19.4060307@jp.fujitsu.com>
-Date: Mon, 11 Jun 2012 12:55:05 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Sun, 10 Jun 2012 23:59:55 -0400
+Date: Mon, 11 Jun 2012 11:59:21 +0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Philip Rakity <philipspatches@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+        Philip Rakity <prakity@marvell.com>
+Message-ID: <20120611035918.GH4218@opensource.wolfsonmicro.com>
+References: <1339270755-2503-1-git-send-email-prakity@marvell.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        mgorman@suse.de, dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
-        hannes@cmpxchg.org, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, Ying Han <yinghan@google.com>
-Subject: Re: [PATCH -V6 07/14] memcg: Add HugeTLB extension
-References: <1334573091-18602-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1334573091-18602-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <alpine.DEB.2.00.1205241436180.24113@chino.kir.corp.google.com> <20120527202848.GC7631@skywalker.linux.vnet.ibm.com> <87lik920h8.fsf@skywalker.in.ibm.com> <20120608160612.dea6d1ce.akpm@linux-foundation.org>
-In-Reply-To: <20120608160612.dea6d1ce.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="pfTAc8Cvt8L6I27a"
+Content-Disposition: inline
+In-Reply-To: <1339270755-2503-1-git-send-email-prakity@marvell.com>
+X-Cookie: Reply hazy, ask again later.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 116.228.53.169
+X-SA-Exim-Mail-From: broonie@opensource.wolfsonmicro.com
+Subject: Re: [PATCH] regulator: pass voltage when calling notifier for change
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/06/09 8:06), Andrew Morton wrote:
-> On Wed, 30 May 2012 20:13:31 +0530
-> "Aneesh Kumar K.V"<aneesh.kumar@linux.vnet.ibm.com>  wrote:
->
->>>>
->>>>   - code: seperating hugetlb bits out from memcg bits to avoid growing
->>>>     mm/memcontrol.c beyond its current 5650 lines, and
->>>>
->>>
->>> I can definitely look at spliting mm/memcontrol.c
->>>
->>>
->>>>   - performance: not incurring any overhead of enabling memcg for per-
->>>>     page tracking that is unnecessary if users only want to limit hugetlb
->>>>     pages.
->>>>
->>
->> Since Andrew didn't sent the patchset to Linus because of this
->> discussion, I looked at reworking the patchset as a seperate
->> controller. The patchset I sent here
->>
->> http://thread.gmane.org/gmane.linux.kernel.mm/79230
->>
->> have seen minimal testing. I also folded the fixup patches
->> Andrew had in -mm to original patchset.
->>
->> Let me know if the changes looks good.
->
-> This is starting to be a problem.  I'm still sitting on the old version
-> of this patchset and it will start to get in the way of other work.
->
-> We now have this new version of the patchset which implements a
-> separate controller but it is unclear to me which way we want to go.
->
-> Can the memcg developers please drop everything else and make a
-> decision here?
 
-Following is a summary in my point of view.
-I think there are several topics.
+--pfTAc8Cvt8L6I27a
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-  - overheads.
-   (A) IMHO, runtime overhead will be negligible because...
-      - if hugetlb is used, anonymous memory accouning doesn't add much overheads
-        because they're not used.
-      - when it comes to file-cache accounting, I/O dominates performance rather
-        than memcg..
-      - but you may see some overheads with 100+ cpu system...I'm not sure.
+On Sat, Jun 09, 2012 at 12:39:15PM -0700, Philip Rakity wrote:
 
-   (B) memory space overhead will not be negligible.
-      - now, memcg uses 16bytes per page....4GB/1TB.
-        This may be an obvious overhead to the system if working set size are
-        quite big and the apps want to use huge size memory.
+> -	trace_regulator_set_voltage_complete(rdev_get_name(rdev), selector);
+> +		voltage =3D _regulator_get_voltage(rdev);
+> +		if (voltage >=3D 0)
+> +			_notifier_call_chain(rdev,
+> +					REGULATOR_EVENT_VOLTAGE_CHANGE,
+> +					(void *)voltage);
+> +	}
+> +	trace_regulator_set_voltage_complete(rdev_get_name(rdev), ret);
 
-   (C) what hugetlbfs is.
-    - hugetlb is statically allocated. So, they're not usual memory.
-      Then, hugetlb cgroup is better.
+Hrm, I know we discussed this offline but now that I see the actual code
+for the full change here I'm a bit worried about the performance impact
+=66rom calling get_voltage() again with devices that don't cache the
+register map (it'll be negligable for those that do).  Looking a bit at
+the context I think probably what we want to do here is directly call
+list_voltage() for the selector we've just set so that the driver
+doesn't end up going back to the hardware to read the register value.
 
-    - IMHO, hugetlb is memory. And I thought memory.limit_in_bytes should
-      take it into account....
+Another option is to look at the notifier chain to see if there's any
+actual users but that seems more complicated and less abstracted.
 
-   (D) code duplication
-    - memory cgroup and hugetlb cgroup will have similar hooks,codes,UIs.
-    - we need some #ifdef if we have consolidated memory/hugetlb cgroup.
+We definitely do want to pass the voltage out, now that I see this I
+seem to remember that the reason we don't is exactly the performance
+concern above but that all predates the use of selectors here which
+means we should be able to avoid the I/O costs.
 
-   (E) user experience
-    - with independent hugetlb cgroup, users can disable memory cgroup.
-    - with consolidated memcg+hugetlb cgroup, we'll be able to limit
-      usual page + hugetlb usage by a limit.
+--pfTAc8Cvt8L6I27a
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Now, I think...
+iQIcBAEBAgAGBQJP1W0PAAoJEBus8iNuMP3dnuoP/jt4EHxRQg5857ThJdJltyiu
+btZKDBT7Tsqo0tCXm/zzpotcIJkEp8adC6J/+E4Sq08nFSvTbLPj2ISTYgc9lpKF
+pt/Zq/TUE6CS849n7btJ0c6YUMNu1wkJw5un03/kiwh5XSUNRT1Mj6sANOJYclZ8
+28aS9JfxA2fZ4KICOmbei80NcZLjSKkDNkZm7/x2TCH2Lz8UPTQ1HCaamMCNgBny
+NijzXJ6V7YANTF9bn5iywryAwXWUrHmAJFeEjQI8fDSIbQr1F9AbZ7UFhK5DwRNs
+ByZj/TWrwmOpmCEAQgkcPLtNMiOKeJuur4acpkmsOUqJsSnEbzJVPkOAvuV8mtqu
+rzy1oTV+PIZMAlmWRI6yC52CGqYd1vK3kItMRELC5T9lbaCE4jXKrbc+xLyAJ3l8
+rM49XhQHW3vwAM/oSz2riGpFFIbCCG0CZe8KuvPUuYQrKl0GmaVNXsVDinOi8fUf
+UlAoFTe/aLQbjQCfI1Daj8e1K511z2yrLnvtdIB9SYAKmBphYAIR3nvhqHFCJEV9
+GQjijCMz8XTQMSPpUge4OnlrYkd+W6zfJ+0dnQLoIaVy/Ns/hvXeuMUHFUgPwulf
+0232udQ1Ts4qJJkM/JdVu55+lQAx3+aK8enFwHNS3D8ajEDbUkVJapNr5AwGW58f
+yiW+Kr8eoiWH8wfZtdyA
+=X4yC
+-----END PGP SIGNATURE-----
 
-   1. I need to agree that overhead is _not_ negligible.
-
-   2. THP should be the way rather than hugetlb for my main target platform.
-      (shmem/tmpfs should support THP. we need study.)
-      user-experience should be fixed by THP+tmpfs+memcg.
-
-   3. It seems Aneesh decided to have independent hugetlb cgroup.
-
-So, now, I admit to have independent hugetlb cgroup.
-Other opinions ?
-
-Thanks,
--Kame
-
-
-
-
-
-
-
-
-
-
-
-
+--pfTAc8Cvt8L6I27a--
