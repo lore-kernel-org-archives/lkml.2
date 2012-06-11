@@ -1,162 +1,362 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755139Ab2FKPYP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 11:24:15 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:43885 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750891Ab2FKPYO (ORCPT
+	id S1755289Ab2FKPZT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 11:25:19 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:50526 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753883Ab2FKPZQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 11:24:14 -0400
-Message-ID: <4FD60D98.4020807@gmail.com>
-Date: Mon, 11 Jun 2012 11:24:08 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Mon, 11 Jun 2012 11:25:16 -0400
+Date: Mon, 11 Jun 2012 11:25:15 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Michal Nazarewicz <mina86@mina86.com>
+cc: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: =?UTF-8?q?=5BPATCH=203/3=5D=20usb=3A=20gadget=3A=20mass=5Fstorage=3A=20add=20documentation?=
+In-Reply-To: <e74fd04096bc39d3a183a1ef523115782f9bbdbd.1339418799.git.mina86@mina86.com>
+Message-ID: <Pine.LNX.4.44L0.1206111021400.1607-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Ben Hutchings <ben@decadent.org.uk>
-CC: kosaki.motohiro@gmail.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Andrew Morton <akpm@google.com>,
-        Dave Jones <davej@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Christoph Lameter <cl@linux.com>, stable@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Miao Xie <miaox@cn.fujitsu.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 5/6] mempolicy: fix a memory corruption by refcount imbalance
- in alloc_pages_vma()
-References: <1339406250-10169-1-git-send-email-kosaki.motohiro@gmail.com>  <1339406250-10169-6-git-send-email-kosaki.motohiro@gmail.com> <1339421596.4942.10.camel@deadeye.wl.decadent.org.uk>
-In-Reply-To: <1339421596.4942.10.camel@deadeye.wl.decadent.org.uk>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(6/11/12 9:33 AM), Ben Hutchings wrote:
-> On Mon, 2012-06-11 at 05:17 -0400, kosaki.motohiro@gmail.com wrote:
->> From: KOSAKI Motohiro<kosaki.motohiro@jp.fujitsu.com>
->>
->> commit cc9a6c8776 (cpuset: mm: reduce large amounts of memory barrier related
->> damage v3) introduced a memory corruption.
->>
->> shmem_alloc_page() passes pseudo vma and it has one significant unique
->> combination, vma->vm_ops=NULL and (vma->policy->flags&  MPOL_F_SHARED).
->>
->> Now, get_vma_policy() does NOT increase a policy ref when vma->vm_ops=NULL
->> and mpol_cond_put() DOES decrease a policy ref when a policy has MPOL_F_SHARED.
->> Therefore, when alloc_pages_vma() goes 'goto retry_cpuset' path, a policy
->> refcount will be decreased too much and therefore it will make a memory corruption.
-> [...]
->> --- a/mm/mempolicy.c
->> +++ b/mm/mempolicy.c
->> @@ -1544,18 +1544,29 @@ struct mempolicy *get_vma_policy(struct task_struct *task,
->>   		struct vm_area_struct *vma, unsigned long addr)
->>   {
->>   	struct mempolicy *pol = task->mempolicy;
->> +	int got_ref;
->
-> = 0
->
-> And this should really be a bool.
+On Mon, 11 Jun 2012, Michal Nazarewicz wrote:
 
-Good catch. Thanks.
+> This commit adds Documentation/usb/mass-storage.txt file.  It contains
+> description of how to use the mass storage gadget from user space.  It
+> elaborates on madule parameters and sysfs interface more then it was
+> written in the comments in the source code.
+> 
+> Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+> ---
+>  Documentation/usb/mass-storage.txt  |  219 +++++++++++++++++++++++++++++++++++
+>  drivers/usb/gadget/f_mass_storage.c |   69 +----------
+>  2 files changed, 226 insertions(+), 62 deletions(-)
+>  create mode 100644 Documentation/usb/mass-storage.txt
+> 
+> diff --git a/Documentation/usb/mass-storage.txt b/Documentation/usb/mass-storage.txt
+> new file mode 100644
+> index 0000000..1c2fff9
+> --- /dev/null
+> +++ b/Documentation/usb/mass-storage.txt
+> @@ -0,0 +1,219 @@
+> +                                                                   -*- org -*-
 
+What is the purpose of this line?
 
+> +
+> +* Overview
+> +
+> +  Mass Storage Gadget (or MSG) acts as a USB Mass Storage device,
+> +  appearing to the host as a disk or a CD-ROM drive.  It supports
+> +  multiple logical units (LUNs).  Backing storage for each LUN is
+> +  provided by a regular file or a block device, access can be limited
+> +  to read-only, and gadget can indicate that it is removable and/or
+> +  CD-ROM (the latter implies read-only access).
 
- From 6a635a77e7b192413525855e19df7a724c81ae5b Mon Sep 17 00:00:00 2001
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date: Tue, 29 May 2012 22:23:46 -0400
-Subject: [PATCH 5/6] mempolicy: fix a memory corruption by refcount imbalance in alloc_pages_vma()
+Does CD-ROM really imply read-only?  If not, shouldn't it?
 
-commit cc9a6c8776 (cpuset: mm: reduce large amounts of memory barrier related
-damage v3) introduced a memory corruption.
+> +
+> +  Its requirements are modest; only a bulk-in and a bulk-out endpoint
+> +  are needed.  The memory requirement amounts to two 16K buffers.
+> +  Support is included for full-speed, high-speed and super-speed
 
-shmem_alloc_page() passes pseudo vma and it has one significant unique
-combination, vma->vm_ops=NULL and (vma->policy->flags & MPOL_F_SHARED).
+s/super-speed/SuperSpeed/
 
-Now, get_vma_policy() does NOT increase a policy ref when vma->vm_ops=NULL
-and mpol_cond_put() DOES decrease a policy ref when a policy has MPOL_F_SHARED.
-Therefore, when alloc_pages_vma() goes 'goto retry_cpuset' path, a policy
-refcount will be decreased too much and therefore it will make a memory corruption.
+> +  operation.
+> +
+> +  Note that the driver is slightly non-portable in that it assumes
+> +  a single memory/DMA buffer will be useable for bulk-in and bulk-out
+> +  endpoints.  With most device controllers this is not an issue, but
+> +  there may be some with hardware restrictions that prevent a buffer
+> +  from being used by more than one endpoint.
+> +
+> +  This document describes how to use the gadget from user space, its
+> +  relation to mass storage function (or MSF) and different gadgets
+> +  using it, as well as and how does it differ from File Storage Gadget
 
-This patch fixes it.
+s/as well as and how does it differ/and how it differs/
 
-Cc: Dave Jones <davej@redhat.com>,
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Christoph Lameter <cl@linux.com>,
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: <stable@vger.kernel.org>
-Cc: Miao Xie <miaox@cn.fujitsu.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
----
-  mm/mempolicy.c |   13 ++++++++++++-
-  mm/shmem.c     |    9 +++++----
-  2 files changed, 17 insertions(+), 5 deletions(-)
+> +  (or FSG).  It will talk only briefly about how to use MSF within
+> +  composite gadgets.
+> +
+> +* Module parameters
+> +
+> +  The mass storage gadget accepts the following mass storage specific
+> +  module parameters:
+> +
+> +  - file=filename[,filename...]
+> +
+> +    This parameter lists paths to files or block devices used for
+> +    backing storage for each logical unit.  There may be at most
+> +    FSG_MAX_LUNS (8) LUNs set.  If more files are specified, they will
+> +    be silently ignored.  See also “luns” parameter.
+> +
+> +    *BEWARE* that if a file is used as a backing storage, it may not
+> +    be modified by any other process.  This is because host assumes
 
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 7fb7d51..ddde834 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -1544,18 +1544,29 @@ struct mempolicy *get_vma_policy(struct task_struct *task,
-  		struct vm_area_struct *vma, unsigned long addr)
-  {
-  	struct mempolicy *pol = task->mempolicy;
-+	bool got_ref = 0;
-  
-  	if (vma) {
-  		if (vma->vm_ops && vma->vm_ops->get_policy) {
-  			struct mempolicy *vpol = vma->vm_ops->get_policy(vma,
-  									addr);
--			if (vpol)
-+			if (vpol) {
-  				pol = vpol;
-+				got_ref = 1;
-+			}
-  		} else if (vma->vm_policy)
-  			pol = vma->vm_policy;
-  	}
-  	if (!pol)
-  		pol = &default_policy;
-+
-+	/*
-+	 * shmem_alloc_page() passes MPOL_F_SHARED policy with vma->vm_ops=NULL.
-+	 * Thus, we need to take additional ref for avoiding refcount imbalance.
-+	 */
-+	if (!got_ref && mpol_needs_cond_ref(pol))
-+		mpol_get(pol);
-+
-  	return pol;
-  }
-  
-diff --git a/mm/shmem.c b/mm/shmem.c
-index d576b84..eb5f1eb 100644
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -919,6 +919,7 @@ static struct page *shmem_alloc_page(gfp_t gfp,
-  			struct shmem_inode_info *info, pgoff_t index)
-  {
-  	struct vm_area_struct pvma;
-+	struct page *page;
-  
-  	/* Create a pseudo vma that just contains the policy */
-  	pvma.vm_start = 0;
-@@ -926,10 +927,10 @@ static struct page *shmem_alloc_page(gfp_t gfp,
-  	pvma.vm_ops = NULL;
-  	pvma.vm_policy = mpol_shared_policy_lookup(&info->policy, index);
-  
--	/*
--	 * alloc_page_vma() will drop the shared policy reference
--	 */
--	return alloc_page_vma(gfp, &pvma, 0);
-+	page = alloc_page_vma(gfp, &pvma, 0);
-+
-+	mpol_put(pvma.vm_policy);
-+	return page;
-  }
-  #else /* !CONFIG_NUMA */
-  #ifdef CONFIG_TMPFS
--- 
-1.7.1
+s/host/the host/
 
+> +    the data does not change without its knowledge.  It may by read,
+
+s/by/be/
+
+> +    but (if the logical unit is writable) due to buffering on the host
+> +    side, the contents are not well defined.
+> +
+> +    The size of the logical unit will be rounded down to full logical
+
+s/full/a full/
+
+> +    block.  A logical block size is 2048 for LUNs simulating CD-ROM,
+
+s/A/The/
+s/2048/2048 bytes/
+
+> +    block size of a device if the device is the backing file, or 512
+
+s/a device if the device is the backing file/the device if the backing 
+file is a block device/
+
+> +    bytes otherwise.
+> +
+> +  - removable=b[,b...]
+> +
+> +    This parameter specifies whether each logical unit should be
+> +    removable.  “b” here is either “y”, “Y” or “1” for true or “n”,
+> +    “N” or “0” for false.
+
+Add something like this:  Note that "removable" means the logical
+unit's media can be ejected or removed (as is true for a CD-ROM drive
+or a card reader).  It does *not* mean that the entire gadget can be
+unplugged from the host; the proper term for that is "hot-unpluggable".
+
+> +
+> +    If this option is set for a logical unit, gadget will accept an
+> +    “eject” SCSI request (Start/Stop Unit).  When it is sent, the
+> +    backing file will be released to simulate ejection and the logical
+
+s/released/closed/
+
+> +    unit will not be mountable by the host until a new backing file is
+> +    specified by userspace on the device (see “sysfs entries”
+> +    section).
+> +
+> +    If logical unit is not removable (the default), backing file must
+
+s/logical/a logical/
+s/backing file/a backing file/
+
+> +    be specified for it with the “file” as the module is loaded.  The
+
+s/"file"/"file" parameter/
+
+> +    same applies if the module is built in, no exceptions.
+> +
+> +    The default value of the flag is false, *HOWEVER* it used to be
+> +    true.  This has been changed to better match File Storage Gadget
+> +    and because it seems like a saner default after all.  Thus to
+> +    maintain compatibility with older kernels, it's best to specify
+> +    the default values.  Also, if one relied on old default, explicit
+> +    “n” needs to be specified now.
+> +
+> +  - cdrom=b[,b...]
+> +
+> +    This parameter specifies whether each logical unit should simulate
+> +    CD-ROM.  The default is false.
+> +
+> +  - ro=b[,b...]
+> +
+> +    This parameter specifies whether each logical unit should be
+> +    reported as read only.  This will prevent host from modifying the
+> +    backing files.
+> +
+> +    Note that if this flag for given logical unit is false but the
+> +    backing file could not be opened in read/write mode, the gadget
+> +    will fall back to read only mode anyway.
+> +
+> +    The default value for each logical unit is false.
+
+Shouldn't the default be true for logical units that are cdroms?
+
+> +
+> +  - nofua=b[,b...]
+> +
+> +    This parameter specifies whether FUA flag should be ignored in SCSI
+> +    Write10 and Write12 commands sent to given logical units.
+> +
+> +    MS Windows mounts removable storage in “Removal optimised mode” by
+> +    default.  All the writes to the media are synchronous which is
+
+s/synchronous/synchronous,/
+
+> +    achieved by setting FUA (Force Unit Access) bit in SCSI
+
+s/FUA/the FUA/
+
+> +    Write(10,12) commands.  This prevents I/O requests aggregation in
+> +    block layer dramatically decreasing performance.
+
+Actually it forces writes to be done with the O_SYNC flag set.  Not
+only does this prevent request aggregation, it also forces each write
+operation to wait until the data has actually been written out -- 
+dramatically decreasing performance.
+
+> +
+> +    Note that this may mean that if the device is powered from USB and
+> +    user unplugs the device without unmounting (which at lest some
+
+s/user/the user/
+s/unmounting/unmounting it first/
+s/lest/least/
+
+> +    Windows users do), the data may be lost.
+> +
+> +    The default value is false.
+> +
+> +  - luns=N
+> +
+> +    This parameter specifies number of logical units the gadget will
+> +    have.  It is limited by FSG_MAX_LUNS (8) and higher value will be
+> +    capped.
+> +
+> +    If this parameter is provided, and the number of files specified
+> +    in “file” argument is greater then the value of “luns”, all excess
+> +    files will be ignored.
+> +
+> +    If this parameter is not present, the number of logical units will
+> +    be deducted from the number of files specified in the “file”
+
+s/deducted/deduced/
+
+> +    parameter.  If the file parameter is missing as well, one is
+> +    assumed.
+> +
+> +  - stall=b
+> +
+> +    Specifies whether the gadget is allowed to halt bulk endpoints.
+> +    The default is determined according to the type of USB device
+> +    controller, but usually true.
+> +
+> +  In addition to the above, the gadget also accepts the following
+> +  parameters defined by the composite framework (they are common to
+> +  all composite gadgets so just a quick listing):
+> +
+> +  - idVendor      -- USB Vendor ID (16 bit integer)
+> +  - idProduct     -- USB Product ID (16 bit integer)
+> +  - bcdDevice     -- USB Device version (BCD) (16 bit integer)
+> +  - iManufacturer -- USB Manufacturer string (string)
+> +  - iProduct      -- USB Product string (string)
+> +  - iSerialNumber -- SerialNumber string (sting)
+> +
+> +* sysfs entries
+> +
+> +  For each logical unit, the gadget creates a directory in the sysfs
+> +  hierarchy.  Inside of it the following three files are created:
+> +
+> +  - file
+> +
+> +    When read it returns the path to the backing file for given
+
+s/for given/for the given/
+
+> +    logical unit.  If there is no backing file (possible only if
+> +    logical unit is removable), the content is empty.
+
+s/logical/the logical/
+
+> +
+> +    When written into, it changes the backing file for given logical
+> +    unit.  This change can be performed even if given logical unit is
+> +    not specified as removable (but that may look strange to the
+> +    host).  It may fail, however, if host disallowed medium removal
+> +    with Allow Medium Removal SCSI command.
+
+s/Allow/the Prevent-Allow/
+
+> +
+> +  - ro
+> +
+> +    Reflects the state of ro flag for given logical unit.  It can be
+> +    read any time, and written to when there is no backing file open
+> +    for given logical unit.
+
+s/for given/for the given/
+
+> +
+> +  - nofua
+> +
+> +    Reflects the state of nofua flag for given logical unit.  It can
+
+s/for given/for the given/
+
+> +    be read and written to change it.
+
+s/to change it//
+
+> +
+> +  Other then those, as usual, the values of modules parameters can be
+
+s/modules/module/
+
+> +  read from /sys/module/g_mass_storage/parameters/* files.
+> +
+> +* Other gadgets using mass storage function
+> +
+> +  The Mass Storage Gadget uses the Mass Storage Function to handle
+> +  mass storage protocol.  As a composite function, MSF may be used by
+> +  other gadgets as well (eg. g_multi and acm_ms).
+> +
+> +  All of the information in previous sections are valid for other
+> +  gadgets using MSF, except that support for mass storage related
+> +  module parameters may be missing, or the parameters may have
+> +  a prefix.  To figure out whether any of this is true one needs to
+> +  consult gadget's documentation or its source code.
+
+s/gadget's/the gadget's/
+
+> +
+> +  For examples of how to include mass storage function in gadgets, one
+> +  may take a look at mass_storage.c, acm_ms.c and multi.c (sorted by
+> +  complexity).
+> +
+> +* Relation to file storage gadget
+> +
+> +  The Mass Storage Function and thus the Mass Storage Gadget has been
+> +  based on the File Storage Gadget.  The difference between the two is
+> +  that MSG is a composite gadget (ie. uses the composite framework)
+> +  while file storage gadget is a traditional gadget.  From userspace
+> +  point of view this distinction does not really matter, but from
+> +  kernel hacker's point of view, this means that (i) MSG does not
+> +  duplicate code needed for handling basic USB protocol commands and
+> +  (ii) MSF can be used in any other composite gadget.
+> +
+> +  Because of that, File Storage Gadget has been deprecated and
+> +  scheduled to be removed in Linux 3.8.  All users need to transition
+> +  to the Mass Storage Gadget by that time.  The two gadgets behave
+> +  mostly the same from the outside except:
+> +
+> +  1. In FSG the “removable” and “cdrom” module parameters set the flag
+> +     for all logical units whereas in MSG they accept a list of y/n
+> +     values for each logical unit.  If one uses only a single logical
+> +     unit this does not matter, but if there are more, the y/n value
+> +     needs to be repeated for each logical unit.
+> +
+> +  2. FSG's “serial”, “vendor”, “product” and “release” module
+> +     parameters are handled in MSG by the composite layer's parameters
+> +     named respectively: “iSerialnumber”, “idVendor”, “idProduct” and
+> +     “bcdDevice”.
+> +
+> +  3. MSG does not support FSG's test mode, thus “transport”,
+> +     “protocol” and “buflen” FSG's module parameters are not
+> +     supported.  MSG always uses SCSI protocol with bulk only
+> +     transport mode and 16 KiB buffers.
+
+Very good.  When you make the small changes listed above, you can add
+
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 
