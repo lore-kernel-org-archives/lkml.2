@@ -1,78 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753591Ab2FKNOQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 09:14:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53706 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751007Ab2FKNOO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 09:14:14 -0400
-Date: Mon, 11 Jun 2012 15:14:11 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
-        rientjes@google.com, akpm@linux-foundation.org, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH -V8 12/16] hugetlb/cgroup: Add support for cgroup removal
-Message-ID: <20120611131411.GN12402@tiehlicka.suse.cz>
-References: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <1339232401-14392-13-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <20120611085258.GD12402@tiehlicka.suse.cz>
- <87fwa25gqj.fsf@skywalker.in.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87fwa25gqj.fsf@skywalker.in.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753481Ab2FKNO7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 09:14:59 -0400
+Received: from smtp-out-197.synserver.de ([212.40.185.197]:1246 "EHLO
+	smtp-out-192.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752234Ab2FKNO6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 09:14:58 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 29054
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jonathan Cameron <jic23@cam.ac.uk>, Randy Dunlap <rdunlap@xenotime.net>,
+        Michael Hennerich <michael.hennerich@analog.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-iio@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH] staging:iio:ad7298: Fix linker error due to missing IIO kfifo buffer
+Date: Mon, 11 Jun 2012 15:09:21 +0200
+Message-Id: <1339420161-23760-1-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <4FD23340.70108@xenotime.net>
+References: <4FD23340.70108@xenotime.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 11-06-12 15:10:20, Aneesh Kumar K.V wrote:
-> Michal Hocko <mhocko@suse.cz> writes:
-[...]
-> >> +static int hugetlb_cgroup_move_parent(int idx, struct cgroup *cgroup,
-> >> +				      struct page *page)
-> >
-> > deserves a comment about the locking (needs to be called with
-> > hugetlb_lock).
-> 
-> will do
-> 
-> >
-> >> +{
-> >> +	int csize;
-> >> +	struct res_counter *counter;
-> >> +	struct res_counter *fail_res;
-> >> +	struct hugetlb_cgroup *page_hcg;
-> >> +	struct hugetlb_cgroup *h_cg   = hugetlb_cgroup_from_cgroup(cgroup);
-> >> +	struct hugetlb_cgroup *parent = parent_hugetlb_cgroup(cgroup);
-> >> +
-> >> +	if (!get_page_unless_zero(page))
-> >> +		goto out;
-> >> +
-> >> +	page_hcg = hugetlb_cgroup_from_page(page);
-> >> +	/*
-> >> +	 * We can have pages in active list without any cgroup
-> >> +	 * ie, hugepage with less than 3 pages. We can safely
-> >> +	 * ignore those pages.
-> >> +	 */
-> >> +	if (!page_hcg || page_hcg != h_cg)
-> >> +		goto err_out;
-> >
-> > How can we have page_hcg != NULL && page_hcg != h_cg?
-> 
-> pages belonging to other cgroup ?
+The ad7298 drivers buffer implementation uses the IIO kfifo buffer, so it needs
+to select IIO_KFIFO_BUF. Otherwise (if no other driver selects the symbol) the
+following linker error will occur:
 
-OK, I've forgot that you are iterating over all active huge pages in
-hugetlb_cgroup_pre_destroy. What prevents you from doing the filtering
-in the caller? 
-I am also wondering why you need to play with the page reference
-counting here. You are under hugetlb_lock so the page cannot disappear
-in the meantime or am I missing something?
+drivers/built-in.o: In function `ad7298_register_ring_funcs_and_init':
+	(.text+0x245cf2): undefined reference to `iio_kfifo_allocate'
+drivers/built-in.o: In function `ad7298_register_ring_funcs_and_init':
+	(.text+0x245d7d): undefined reference to `iio_kfifo_free'
+drivers/built-in.o: In function `ad7298_ring_cleanup':
+	(.text+0x245dcd): undefined reference to `iio_kfifo_free'
+
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Reported-by: Randy Dunlap <rdunlap@xenotime.net>
+
+---
+The patch is only required for 3.5-rc1+. Versions prior to 3.5-rc1 require a
+different patch (IIO_SW_RING instead of IIO_KFIFO_BUF) which I'll send to stable
+once this patch is in Linus' tree.
+---
+ drivers/staging/iio/adc/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/staging/iio/adc/Kconfig b/drivers/staging/iio/adc/Kconfig
+index 2490dd2..8f1b3af 100644
+--- a/drivers/staging/iio/adc/Kconfig
++++ b/drivers/staging/iio/adc/Kconfig
+@@ -13,6 +13,7 @@ config AD7291
+ config AD7298
+ 	tristate "Analog Devices AD7298 ADC driver"
+ 	depends on SPI
++	select IIO_KFIFO_BUF if IIO_BUFFER
+ 	help
+ 	  Say yes here to build support for Analog Devices AD7298
+ 	  8 Channel ADC with temperature sensor.
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+1.7.10
+
