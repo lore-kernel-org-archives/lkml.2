@@ -1,123 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752514Ab2FKU5H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 16:57:07 -0400
-Received: from mail2.gnudd.com ([213.203.150.91]:57346 "EHLO mail.gnudd.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752399Ab2FKU47 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 16:56:59 -0400
-Date: Mon, 11 Jun 2012 22:56:26 +0200
-From: Alessandro Rubini <rubini@gnudd.com>
-To: linux-kernel@vger.kernel.org
-Cc: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
-        Alan Cox <alan@linux.intel.com>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        STEricsson_nomadik_linux@list.st.com,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jean Delvare <khali@linux-fr.org>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org, linux-i2c@vger.kernel.org,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH V3 1/3] i2c-nomadik: move header to
- <linux/platform_data/i2c-nomadik.h>
-Message-ID: <3389c7a8712e5b550ca89a5da468db2bbde6bff7.1339447570.git.rubini@gnudd.com>
+	id S1752670Ab2FKU6V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 16:58:21 -0400
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:38459 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752194Ab2FKU6S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 16:58:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: GnuDD, Device Drivers, Embedded Systems, Courses
-References: <cover.1339447570.git.rubini@gnudd.com>
-In-Reply-To: <cover.1339447570.git.rubini@gnudd.com>
+In-Reply-To: <1339428307-3850-6-git-send-email-lee.jones@linaro.org>
+References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org>
+	<1339428307-3850-6-git-send-email-lee.jones@linaro.org>
+Date: Mon, 11 Jun 2012 22:58:17 +0200
+Message-ID: <CACRpkdZzHctwtssvtE4HZv0H2mZwBMCYwVv+EA_n7CoV0iKNsg@mail.gmail.com>
+Subject: Re: [PATCH 05/14] mfd: Enable DT probing of the DB8500 PRCMU
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, arnd@arndb.de, grant.likely@secretlab.ca,
+        Samuel Ortiz <sameo@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The header and driver are only used by arm/mach-u8500 (and potentially
-arm/mach-nomadik), but the STA2X11 I/O Hub exports on PCIe a number of
-devices, including i2c-nomadik.  This patch allows compilation of the
-driver under x86.
+On Mon, Jun 11, 2012 at 5:24 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
-Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
-Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
-Tested-by: Linus Walleij <linus.walleij@linaro.org>
----
- arch/arm/mach-ux500/board-mop500.c                 |    2 +-
- arch/arm/mach-ux500/devices-common.h               |    2 +-
- drivers/i2c/busses/i2c-nomadik.c                   |    3 +--
- .../linux/platform_data/i2c-nomadik.h              |    6 +++---
- 4 files changed, 6 insertions(+), 7 deletions(-)
- rename arch/arm/plat-nomadik/include/plat/i2c.h => include/linux/platform_data/i2c-nomadik.h (91%)
+> This patch adds the correct compatible string for use during Device Tree
+> population. Without it the DB8500 PRCMU will not be probed.
+>
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
-index 9c74ac5..0bf24bb 100644
---- a/arch/arm/mach-ux500/board-mop500.c
-+++ b/arch/arm/mach-ux500/board-mop500.c
-@@ -15,6 +15,7 @@
- #include <linux/platform_device.h>
- #include <linux/io.h>
- #include <linux/i2c.h>
-+#include <linux/platform_data/i2c-nomadik.h>
- #include <linux/gpio.h>
- #include <linux/amba/bus.h>
- #include <linux/amba/pl022.h>
-@@ -39,7 +40,6 @@
- #include <asm/mach/arch.h>
- #include <asm/hardware/gic.h>
- 
--#include <plat/i2c.h>
- #include <plat/ste_dma40.h>
- #include <plat/gpio-nomadik.h>
- 
-diff --git a/arch/arm/mach-ux500/devices-common.h b/arch/arm/mach-ux500/devices-common.h
-index 6e47065..23cf734 100644
---- a/arch/arm/mach-ux500/devices-common.h
-+++ b/arch/arm/mach-ux500/devices-common.h
-@@ -12,7 +12,7 @@
- #include <linux/dma-mapping.h>
- #include <linux/sys_soc.h>
- #include <linux/amba/bus.h>
--#include <plat/i2c.h>
-+#include <linux/platform_data/i2c-nomadik.h>
- #include <mach/crypto-ux500.h>
- 
- struct spi_master_cntlr;
-diff --git a/drivers/i2c/busses/i2c-nomadik.c b/drivers/i2c/busses/i2c-nomadik.c
-index 5267ab9..752f1fd 100644
---- a/drivers/i2c/busses/i2c-nomadik.c
-+++ b/drivers/i2c/busses/i2c-nomadik.c
-@@ -23,8 +23,7 @@
- #include <linux/io.h>
- #include <linux/regulator/consumer.h>
- #include <linux/pm_runtime.h>
--
--#include <plat/i2c.h>
-+#include <linux/platform_data/i2c-nomadik.h>
- 
- #define DRIVER_NAME "nmk-i2c"
- 
-diff --git a/arch/arm/plat-nomadik/include/plat/i2c.h b/include/linux/platform_data/i2c-nomadik.h
-similarity index 91%
-rename from arch/arm/plat-nomadik/include/plat/i2c.h
-rename to include/linux/platform_data/i2c-nomadik.h
-index 8ba70ff..c2303c3 100644
---- a/arch/arm/plat-nomadik/include/plat/i2c.h
-+++ b/include/linux/platform_data/i2c-nomadik.h
-@@ -5,8 +5,8 @@
-  * it under the terms of the GNU General Public License version 2, as
-  * published by the Free Software Foundation.
-  */
--#ifndef __PLAT_I2C_H
--#define __PLAT_I2C_H
-+#ifndef __PDATA_I2C_NOMADIK_H
-+#define __PDATA_I2C_NOMADIK_H
- 
- enum i2c_freq_mode {
- 	I2C_FREQ_MODE_STANDARD,		/* up to 100 Kb/s */
-@@ -36,4 +36,4 @@ struct nmk_i2c_controller {
- 	enum i2c_freq_mode	sm;
- };
- 
--#endif	/* __PLAT_I2C_H */
-+#endif	/* __PDATA_I2C_NOMADIK_H */
--- 
-1.7.7.2
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+
+Thanks,
+Linus Walleij
