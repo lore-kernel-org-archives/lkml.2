@@ -1,39 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752426Ab2FKJD5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 05:03:57 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:40969 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751131Ab2FKJD4 (ORCPT
+	id S1752561Ab2FKJEG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 05:04:06 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:43451 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752486Ab2FKJEB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 05:03:56 -0400
-Date: Mon, 11 Jun 2012 02:03:52 -0700 (PDT)
-Message-Id: <20120611.020352.1962768244524496467.davem@davemloft.net>
-To: stigge@antcom.de
-Cc: eric.dumazet@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
-        srinivas.bakki@nxp.com, aletes.xgr@gmail.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/3] net: lpc_eth: Replace WARN() trace with simple
- pr_warn()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4FD5AE1D.9030807@antcom.de>
-References: <1339401793-12258-1-git-send-email-stigge@antcom.de>
-	<1339403108.6001.1697.camel@edumazet-glaptop>
-	<4FD5AE1D.9030807@antcom.de>
-X-Mailer: Mew version 6.5 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Mon, 11 Jun 2012 05:04:01 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
+        rientjes@google.com, akpm@linux-foundation.org, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH -V8 10/16] hugetlb/cgroup: Add the cgroup pointer to page lru
+In-Reply-To: <20120611081653.GB12402@tiehlicka.suse.cz>
+References: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1339232401-14392-11-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20120611081653.GB12402@tiehlicka.suse.cz>
+User-Agent: Notmuch/0.13.2+35~g0ff57e7 (http://notmuchmail.org) Emacs/24.1.50.1 (x86_64-unknown-linux-gnu)
+Date: Mon, 11 Jun 2012 14:33:52 +0530
+Message-ID: <87oboq5ifb.fsf@skywalker.in.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+x-cbid: 12061109-8256-0000-0000-000002E03835
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Roland Stigge <stigge@antcom.de>
-Date: Mon, 11 Jun 2012 10:36:45 +0200
+Michal Hocko <mhocko@suse.cz> writes:
 
-> But maybe this is wrong. Can you please give me a hint how the net
-> subsystem makes sure that this doesn't happen under normal circumstances?
+> On Sat 09-06-12 14:29:55, Aneesh Kumar K.V wrote:
+>> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+>> 
+>> Add the hugetlb cgroup pointer to 3rd page lru.next.
+>
+> Interesting and I really like the idea much more than tracking by
+> page_cgroup.
+>
+>> This limit the usage to hugetlb cgroup to only hugepages with 3 or
+>> more normal pages. I guess that is an acceptable limitation.
+>
+> Agreed.
+>
+>> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+>
+> Other than some nits I like this.
+> Thanks!
+>
+>> ---
+>>  include/linux/hugetlb_cgroup.h |   31 +++++++++++++++++++++++++++++++
+>>  mm/hugetlb.c                   |    4 ++++
+>>  2 files changed, 35 insertions(+)
+>> 
+>> diff --git a/include/linux/hugetlb_cgroup.h b/include/linux/hugetlb_cgroup.h
+>> index 5794be4..ceff1d5 100644
+>> --- a/include/linux/hugetlb_cgroup.h
+>> +++ b/include/linux/hugetlb_cgroup.h
+>> @@ -26,6 +26,26 @@ struct hugetlb_cgroup {
+>>  };
+>>  
+>>  #ifdef CONFIG_CGROUP_HUGETLB_RES_CTLR
+>> +static inline struct hugetlb_cgroup *hugetlb_cgroup_from_page(struct page *page)
+>> +{
+>> +	if (!PageHuge(page))
+>> +		return NULL;
+>> +	if (compound_order(page) < 3)
+>
+> Why 3? I think you wanted 2 here, right?
 
-Well if you are asking this question then you didn't read my feedback,
-because I explained exactly what prevents this.
+Yes that should be 2. I updated that in an earlier. Already in v9
+version I have locally.
+
+>
+>> +		return NULL;
+>> +	return (struct hugetlb_cgroup *)page[2].lru.next;
+>> +}
+>> +
+>> +static inline
+>> +int set_hugetlb_cgroup(struct page *page, struct hugetlb_cgroup *h_cg)
+>> +{
+>> +	if (!PageHuge(page))
+>> +		return -1;
+>> +	if (compound_order(page) < 3)
+>
+> Here as well.
+>
+>> +		return -1;
+>> +	page[2].lru.next = (void *)h_cg;
+>> +	return 0;
+>> +}
+>> +
+>>  static inline bool hugetlb_cgroup_disabled(void)
+>>  {
+>>  	if (hugetlb_subsys.disabled)
+>> @@ -43,6 +63,17 @@ extern void hugetlb_cgroup_uncharge_page(int idx, unsigned long nr_pages,
+>>  extern void hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
+>>  					   struct hugetlb_cgroup *h_cg);
+>>  #else
+>> +static inline struct hugetlb_cgroup *hugetlb_cgroup_from_page(struct page *page)
+>> +{
+>> +	return NULL;
+>> +}
+>> +
+>> +static inline
+>> +int set_hugetlb_cgroup(struct page *page, struct hugetlb_cgroup *h_cg)
+>> +{
+>> +	return 0;
+>> +}
+>> +
+>>  static inline bool hugetlb_cgroup_disabled(void)
+>>  {
+>>  	return true;
+>> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+>> index e899a2d..1ca2d8f 100644
+>> --- a/mm/hugetlb.c
+>> +++ b/mm/hugetlb.c
+>> @@ -28,6 +28,7 @@
+>>  
+>>  #include <linux/io.h>
+>>  #include <linux/hugetlb.h>
+>> +#include <linux/hugetlb_cgroup.h>
+>>  #include <linux/node.h>
+>>  #include "internal.h"
+>>  
+>> @@ -591,6 +592,7 @@ static void update_and_free_page(struct hstate *h, struct page *page)
+>>  				1 << PG_active | 1 << PG_reserved |
+>>  				1 << PG_private | 1 << PG_writeback);
+>>  	}
+>> +	BUG_ON(hugetlb_cgroup_from_page(page));
+>
+> What about VM_BUG_ON?
+
+Will do, So when do one decide to choose VM_BUG_ON against BUG_ON ?
+
+>
+>>  	set_compound_page_dtor(page, NULL);
+>>  	set_page_refcounted(page);
+>>  	arch_release_hugepage(page);
+>> @@ -643,6 +645,7 @@ static void prep_new_huge_page(struct hstate *h, struct page *page, int nid)
+>>  	INIT_LIST_HEAD(&page->lru);
+>>  	set_compound_page_dtor(page, free_huge_page);
+>>  	spin_lock(&hugetlb_lock);
+>> +	set_hugetlb_cgroup(page, NULL);
+>
+> Why inside the spin lock?
+
+All page[2].lru.next update is protected by hugetlb_lock . It should not
+really matter here, because the pages are not yet available to use.
+
+>
+>>  	h->nr_huge_pages++;
+>>  	h->nr_huge_pages_node[nid]++;
+>>  	spin_unlock(&hugetlb_lock);
+>> @@ -892,6 +895,7 @@ static struct page *alloc_buddy_huge_page(struct hstate *h, int nid)
+>>  		INIT_LIST_HEAD(&page->lru);
+>>  		r_nid = page_to_nid(page);
+>>  		set_compound_page_dtor(page, free_huge_page);
+>> +		set_hugetlb_cgroup(page, NULL);
+>>  		/*
+>>  		 * We incremented the global counters already
+>>  		 */
+>> -- 
+
+-aneesh
+
