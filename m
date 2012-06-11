@@ -1,45 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753888Ab2FKGTl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 02:19:41 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:43397 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752161Ab2FKGTk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 02:19:40 -0400
-Date: Mon, 11 Jun 2012 14:19:28 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Richard Zhao <richard.zhao@freescale.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        sameo@linux.intel.com, Richard Zhao <richard.zhao@linaro.org>,
-        grandpaul@gmail.com
-Subject: Re: [PATCH RESEND] mfd: anatop: permit adata be NULL when access
- register
-Message-ID: <20120611061925.GC2552@S2101-09.ap.freescale.net>
-References: <1338774989-4416-1-git-send-email-richard.zhao@freescale.com>
- <20120604021315.GB2857@b20223-02.ap.freescale.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120604021315.GB2857@b20223-02.ap.freescale.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754027Ab2FKGYB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 02:24:01 -0400
+Received: from mga03.intel.com ([143.182.124.21]:62039 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751431Ab2FKGYA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 02:24:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="154590406"
+From: Huang Ying <ying.huang@intel.com>
+To: Len Brown <lenb@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
+        ying.huang@intel.com, linux-acpi@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: [BUGFIX] ACPI, APEI, Avoid too much error reporting in runtime
+Date: Mon, 11 Jun 2012 14:23:42 +0800
+Message-Id: <1339395822-12032-1-git-send-email-ying.huang@intel.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 04, 2012 at 10:13:16AM +0800, Richard Zhao wrote:
-> Cc Paul's other mail address.
-> 
-> On Mon, Jun 04, 2012 at 09:56:29AM +0800, Richard Zhao wrote:
-> > From: Richard Zhao <richard.zhao@linaro.org>
-> > 
-> > It makes anatop register access easier. Anatop has many misc registers,
-> > which may not be a specific driver.
-> > 
-> > There's only one anatop device for a running system, so we use a global
-> > variable to store struct anatop.
-> > 
-> > Signed-off-by: Richard Zhao <richard.zhao@freescale.com>
-> > Cc: Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>
+This patch fixed the following bug.
 
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
+https://bugzilla.kernel.org/show_bug.cgi?id=43282
+
+This is caused by a firmware bug checking (checking generic address
+register provided by firmware) in runtime.  The checking should be
+done in address mapping time instead of runtime to avoid too much
+error reporting in runtime.
+
+Reported-by: Pawel Sikora <pluto@agmk.net>
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+Tested-by: Jean Delvare <khali@linux-fr.org>
+---
+ drivers/acpi/apei/apei-base.c     |   17 +++++++++++++++--
+ drivers/acpi/apei/apei-internal.h |    9 +++++++++
+ drivers/acpi/apei/ghes.c          |    6 +++---
+ 3 files changed, 27 insertions(+), 5 deletions(-)
+
+--- a/drivers/acpi/apei/apei-base.c
++++ b/drivers/acpi/apei/apei-base.c
+@@ -243,7 +243,7 @@ static int pre_map_gar_callback(struct a
+ 	u8 ins = entry->instruction;
+ 
+ 	if (ctx->ins_table[ins].flags & APEI_EXEC_INS_ACCESS_REGISTER)
+-		return acpi_os_map_generic_address(&entry->register_region);
++		return apei_map_generic_address(&entry->register_region);
+ 
+ 	return 0;
+ }
+@@ -276,7 +276,7 @@ static int post_unmap_gar_callback(struc
+ 	u8 ins = entry->instruction;
+ 
+ 	if (ctx->ins_table[ins].flags & APEI_EXEC_INS_ACCESS_REGISTER)
+-		acpi_os_unmap_generic_address(&entry->register_region);
++		apei_unmap_generic_address(&entry->register_region);
+ 
+ 	return 0;
+ }
+@@ -606,6 +606,19 @@ static int apei_check_gar(struct acpi_ge
+ 	return 0;
+ }
+ 
++int apei_map_generic_address(struct acpi_generic_address *reg)
++{
++	int rc;
++	u32 access_bit_width;
++	u64 address;
++
++	rc = apei_check_gar(reg, &address, &access_bit_width);
++	if (rc)
++		return rc;
++	return acpi_os_map_generic_address(reg);
++}
++EXPORT_SYMBOL_GPL(apei_map_generic_address);
++
+ /* read GAR in interrupt (including NMI) or process context */
+ int apei_read(u64 *val, struct acpi_generic_address *reg)
+ {
+--- a/drivers/acpi/apei/apei-internal.h
++++ b/drivers/acpi/apei/apei-internal.h
+@@ -7,6 +7,8 @@
+ #define APEI_INTERNAL_H
+ 
+ #include <linux/cper.h>
++#include <linux/acpi.h>
++#include <linux/acpi_io.h>
+ 
+ struct apei_exec_context;
+ 
+@@ -68,6 +70,13 @@ static inline int apei_exec_run_optional
+ /* IP has been set in instruction function */
+ #define APEI_EXEC_SET_IP	1
+ 
++int apei_map_generic_address(struct acpi_generic_address *reg);
++
++static inline void apei_unmap_generic_address(struct acpi_generic_address *reg)
++{
++	acpi_os_unmap_generic_address(reg);
++}
++
+ int apei_read(u64 *val, struct acpi_generic_address *reg);
+ int apei_write(u64 val, struct acpi_generic_address *reg);
+ 
+--- a/drivers/acpi/apei/ghes.c
++++ b/drivers/acpi/apei/ghes.c
+@@ -301,7 +301,7 @@ static struct ghes *ghes_new(struct acpi
+ 	if (!ghes)
+ 		return ERR_PTR(-ENOMEM);
+ 	ghes->generic = generic;
+-	rc = acpi_os_map_generic_address(&generic->error_status_address);
++	rc = apei_map_generic_address(&generic->error_status_address);
+ 	if (rc)
+ 		goto err_free;
+ 	error_block_length = generic->error_block_length;
+@@ -321,7 +321,7 @@ static struct ghes *ghes_new(struct acpi
+ 	return ghes;
+ 
+ err_unmap:
+-	acpi_os_unmap_generic_address(&generic->error_status_address);
++	apei_unmap_generic_address(&generic->error_status_address);
+ err_free:
+ 	kfree(ghes);
+ 	return ERR_PTR(rc);
+@@ -330,7 +330,7 @@ err_free:
+ static void ghes_fini(struct ghes *ghes)
+ {
+ 	kfree(ghes->estatus);
+-	acpi_os_unmap_generic_address(&ghes->generic->error_status_address);
++	apei_unmap_generic_address(&ghes->generic->error_status_address);
+ }
+ 
+ enum {
