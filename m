@@ -1,81 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752758Ab2FKJ4H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 05:56:07 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35039 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751610Ab2FKJ4F (ORCPT
+	id S1752689Ab2FKJ4l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 05:56:41 -0400
+Received: from orion.tchmachines.com ([208.76.84.200]:44166 "EHLO
+	orion.tchmachines.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751330Ab2FKJ4k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 05:56:05 -0400
-Date: Mon, 11 Jun 2012 02:56:03 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Ben Hutchings <ben@decadent.org.uk>, Steven Rostedt <rostedt@goodmis.org>
-cc: Christoph Lameter <cl@linux.com>, LKML <linux-kernel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [WARNING] lockdep and kmemcheck_alloc_shadow
-In-Reply-To: <alpine.DEB.2.00.1205201405110.10189@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.00.1206110255380.12414@chino.kir.corp.google.com>
-References: <1337449661.32434.4.camel@gandalf.stny.rr.com> <1337485947.4107.295.camel@deadeye> <alpine.DEB.2.00.1205201405110.10189@chino.kir.corp.google.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 11 Jun 2012 05:56:40 -0400
+From: Vlad Zolotarov <vlad@scalemp.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ido Yariv <ido@wizery.com>,
+        "Shai Fultheim (Shai@ScaleMP.com)" <Shai@scalemp.com>
+Subject: [PATCH v5 0/2] Move x86_cpu_to_apicid to the __read_mostly section
+Date: Mon, 11 Jun 2012 12:56:41 +0300
+Message-ID: <2230701.XSbLcxrZ9Q@vlad>
+Organization: ScaleMP Ltd.
+User-Agent: KMail/4.8.3 (Linux/3.2.0-24-generic; KDE/4.8.3; i686; ; )
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - orion.tchmachines.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - scalemp.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 20 May 2012, David Rientjes wrote:
+Pls., consider applying this patch series.
+It contains the following changes:
+ - Adds two new macros DEFINE_EARLY_PER_CPU_READ_MOSTLY() and
+   DECLARE_EARLY_PER_CPU_READ_MOSTLY().
+ - Adds "read-mostly" qualifier to the following variables in smp.h:
+  - cpu_sibling_map
+  - cpu_core_map
+  - cpu_llc_shared_map
+  - cpu_llc_id
+  - cpu_number
+  - x86_cpu_to_apicid
+  - x86_bios_cpu_apicid
+  - x86_cpu_to_logical_apicid
 
-> Agreed, slab handles this correctly and it looks like slub ends up 
-> disabling irqs too early.
-> 
-> Does this fix it?  If so, we'll need to annotate it for stable as Ben 
-> noted.
-> 
+As long as all the variables above are only written during the initialization,
+this change is meant to prevent the false sharing. More specifically, on vSMP 
+Foundation platform x86_cpu_to_apicid shared the same internode_cache_line 
+with frequently written lapic_events.
 
-Steven, did you have a chance to see if this fixes the issue for you?  Can 
-I add your Tested-by?
+>From the analysis of the first 33 per_cpu variables  out of 219 (memories they 
+describe, to be more specific) the 8 have read_mostly nature 
+(tlb_vector_offset, cpu_loops_per_jiffy, xen_debug_irq, etc.) and 25 are 
+frequently written (irq_stack_union, gdt_page, exception_stacks, idt_desc, 
+etc.). Assuming that the spread of the rest of the per_cpu variables is 
+similar, identifying the read mostly memories will make more sense in terms of 
+long-term code maintenance comparing to identifying frequently written 
+memories.
 
-> mm, slub: ensure irqs are not disabled for kmemcheck allocation
-> 
-> kmemcheck_alloc_shadow() cannot be called with irqs disabled, which is
-> possible with __GFP_WAIT.  Ensure we always have them enabled at
-> allocation time like slab does.
-> 
-> Reported-by: Steven Rostedt <rostedt@goodmis.org>
-> Suggested-by: Ben Hutchings <ben@decadent.org.uk>
-> Signed-off-by: David Rientjes <rientjes@google.com>
-> ---
-> diff --git a/mm/slub.c b/mm/slub.c
-> --- a/mm/slub.c
-> +++ b/mm/slub.c
-> @@ -1314,13 +1314,7 @@ static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
->  			stat(s, ORDER_FALLBACK);
->  	}
->  
-> -	if (flags & __GFP_WAIT)
-> -		local_irq_disable();
-> -
-> -	if (!page)
-> -		return NULL;
-> -
-> -	if (kmemcheck_enabled
-> +	if (page && kmemcheck_enabled
->  		&& !(s->flags & (SLAB_NOTRACK | DEBUG_DEFAULT_FLAGS))) {
->  		int pages = 1 << oo_order(oo);
->  
-> @@ -1336,6 +1330,11 @@ static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
->  			kmemcheck_mark_unallocated_pages(page, pages);
->  	}
->  
-> +	if (flags & __GFP_WAIT)
-> +		local_irq_disable();
-> +	if (!page)
-> +		return NULL;
-> +
->  	page->objects = oo_objects(oo);
->  	mod_zone_page_state(page_zone(page),
->  		(s->flags & SLAB_RECLAIM_ACCOUNT) ?
-> 
+v5 changes:
+- Changed the description of the patch series and patch 2:
+  added the analysis of the current per-cpu varibles spread
+  between the read-mostly and frequently written groups.
+
+v4 changes:
+- Fixed the authors signatures in the patches.
+
+v3 changes:
+- Added the missing definitions of DEFINE_EARLY_PER_CPU_READ_MOSTLY()
+  and DECLARE_EARLY_PER_CPU_READ_MOSTLY() macros in the !CONFIG_SMP code
+  path in arch/x86/include/asm/percpu.h.
+
+thanks,
+vlad
+
