@@ -1,111 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752648Ab2FKKdf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 06:33:35 -0400
-Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:9743
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751330Ab2FKKde (ORCPT
+	id S1752831Ab2FKKf3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 06:35:29 -0400
+Received: from mx3-phx2.redhat.com ([209.132.183.24]:53406 "EHLO
+	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751964Ab2FKKf2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 06:33:34 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah)
-X-WSS-ID: 0M5G7ZR-02-3FD-02
-X-M-MSG: 
-From: Hans Rosenfeld <hans.rosenfeld@amd.com>
-To: <hpa@zytor.com>
-CC: <tglx@linutronix.de>, <mingo@elte.hu>, <linux-kernel@vger.kernel.org>,
-        <x86@kernel.org>, Hans Rosenfeld <hans.rosenfeld@amd.com>
-Subject: [PATCH 5/5] x86, cacheinfo, amd: fix reported cache parameters for family 0x10
-Date: Mon, 11 Jun 2012 12:33:16 +0200
-Message-ID: <1339410796-4765-1-git-send-email-hans.rosenfeld@amd.com>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <4FD24173.4060807@zytor.com>
-References: <4FD24173.4060807@zytor.com>
+	Mon, 11 Jun 2012 06:35:28 -0400
+Date: Mon, 11 Jun 2012 06:34:05 -0400 (EDT)
+From: Andrew Jones <drjones@redhat.com>
+To: Konrad Rzeszutek Wilk <konrad@darnok.org>
+Cc: xen-devel@lists.xensource.com, Petr Matousek <pmatouse@redhat.com>,
+        Jan Beulich <jbeulich@suse.com>,
+        "linux-mm@kvack.org Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        Greg KH <gregkh@linuxfoundation.org>, Hugh Dickins <hughd@google.com>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Ulrich Obergfell <uobergfe@redhat.com>,
+        Jonathan Nieder <jrnieder@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        676360@bugs.debian.org, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Larry Woodman <lwoodman@redhat.com>, alan@lxorguk.ukuu.org.uk,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [Xen-devel] [PATCH] thp: avoid atomic64_read in pmd_read_atomic for 32bit PAE\
+Message-ID: <4728e392-7130-4967-aa79-8da12f929191@zmail17.collab.prod.int.phx2.redhat.com>
+In-Reply-To: <20120610020331.GA26100@localhost.localdomain>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+X-Originating-IP: [10.34.1.174]
+X-Mailer: Zimbra 7.1.2_GA_3268 (ZimbraWebClient - FF3.0 (Linux)/7.1.2_GA_3268)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Family 0x10 RevD and later can use a part of the L3 cache as probe
-filter. The size information from CPUID leaf 8000_0006 takes this into
-account, but the reported associativity does not. The result are weird
-values for ways_of_associativity and number_of_sets.
-
-This patch fixes this for the affected models of family 0x10.
-
-Signed-off-by: Hans Rosenfeld <hans.rosenfeld@amd.com>
----
- arch/x86/kernel/cpu/amd_cacheinfo.c |   11 ++++++++++-
- arch/x86/kernel/cpu/cacheinfo.c     |    4 ++--
- arch/x86/kernel/cpu/cacheinfo.h     |    3 ++-
- 3 files changed, 14 insertions(+), 4 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/amd_cacheinfo.c b/arch/x86/kernel/cpu/amd_cacheinfo.c
-index e3fda975..d46db8e 100644
---- a/arch/x86/kernel/cpu/amd_cacheinfo.c
-+++ b/arch/x86/kernel/cpu/amd_cacheinfo.c
-@@ -71,7 +71,8 @@ static const unsigned char __cpuinitconst types[] = { 1, 2, 3, 3 };
- void __cpuinit amd_cpuid4(int leaf,
- 			  union _cpuid_cacheinfo_eax *eax,
- 			  union _cpuid_cacheinfo_ebx *ebx,
--			  union _cpuid_cacheinfo_ecx *ecx)
-+			  union _cpuid_cacheinfo_ecx *ecx,
-+			  struct amd_northbridge *nb)
- {
- 	unsigned dummy;
- 	unsigned line_size, lines_per_tag, assoc, size_in_kb;
-@@ -118,6 +119,14 @@ void __cpuinit amd_cpuid4(int leaf,
- 			size_in_kb = size_in_kb >> 1;
- 			assoc = assoc >> 1;
- 		}
-+		/* reduce associativity by amount used by probe filter */
-+		if (boot_cpu_data.x86 == 0x10 && boot_cpu_data.x86_model >= 8 &&
-+		    nb != NULL) {
-+			unsigned int reg = 0;
-+			pci_read_config_dword(nb->misc, 0x1d4, &reg);
-+			if ((reg & 0x3))
-+				assoc -= 8;
-+		}
- 		break;
- 	default:
- 		return;
-diff --git a/arch/x86/kernel/cpu/cacheinfo.c b/arch/x86/kernel/cpu/cacheinfo.c
-index db04501..9f879bf 100644
---- a/arch/x86/kernel/cpu/cacheinfo.c
-+++ b/arch/x86/kernel/cpu/cacheinfo.c
-@@ -27,12 +27,12 @@ int __cpuinit cpuid_cacheinfo_lookup_regs(int index,
- 
- 	if (boot_cpu_data.x86_vendor == X86_VENDOR_AMD) {
- #if defined(CONFIG_CPU_SUP_AMD)
-+		amd_init_l3_cache(this_leaf, index);
- 		if (cpu_has_topoext)
- 			cpuid_count(0x8000001d, index, &eax.full, &ebx.full,
- 				    &ecx.full, &edx);
- 		else
--			amd_cpuid4(index, &eax, &ebx, &ecx);
--		amd_init_l3_cache(this_leaf, index);
-+			amd_cpuid4(index, &eax, &ebx, &ecx, this_leaf->nb);
- #endif
- 	} else {
- #if defined(CONFIG_CPU_SUP_INTEL)
-diff --git a/arch/x86/kernel/cpu/cacheinfo.h b/arch/x86/kernel/cpu/cacheinfo.h
-index fe39da7..104f818 100644
---- a/arch/x86/kernel/cpu/cacheinfo.h
-+++ b/arch/x86/kernel/cpu/cacheinfo.h
-@@ -66,7 +66,8 @@ struct _cache_attr {
- extern struct attribute ** amd_l3_attrs(struct attribute **);
- extern void amd_cpuid4(int, union _cpuid_cacheinfo_eax *,
- 		       union _cpuid_cacheinfo_ebx *,
--		       union _cpuid_cacheinfo_ecx *);
-+		       union _cpuid_cacheinfo_ecx *,
-+		       struct amd_northbridge *nb);
- extern void amd_init_l3_cache(struct _cpuid_cacheinfo_regs *, int);
- extern void cache_shared_amd_cpu_map_setup(unsigned int, int);
- extern void cache_shared_intel_cpu_map_setup(unsigned int, int);
--- 
-1.7.7
 
 
+----- Original Message -----
+> On Thu, Jun 07, 2012 at 11:00:33PM +0200, Andrea Arcangeli wrote:
+> > In the x86 32bit PAE CONFIG_TRANSPARENT_HUGEPAGE=y case while
+> > holding
+> > the mmap_sem for reading, cmpxchg8b cannot be used to read pmd
+> > contents under Xen.
+> > 
+> > So instead of dealing only with "consistent" pmdvals in
+> > pmd_none_or_trans_huge_or_clear_bad() (which would be conceptually
+> > simpler) we let pmd_none_or_trans_huge_or_clear_bad() deal with
+> > pmdvals
+> > where the low 32bit and high 32bit could be inconsistent (to avoid
+> > having to use cmpxchg8b).
+> 
+> <nods>
+> > 
+> > The only guarantee we get from pmd_read_atomic is that if the low
+> > part
+> > of the pmd was found null, the high part will be null too (so the
+> > pmd
+> > will be considered unstable). And if the low part of the pmd is
+> > found
+> > "stable" later, then it means the whole pmd was read atomically
+> > (because after a pmd is stable, neither MADV_DONTNEED nor page
+> > faults
+> > can alter it anymore, and we read the high part after the low
+> > part).
+> > 
+> > In the 32bit PAE x86 case, it is enough to read the low part of the
+> > pmdval atomically to declare the pmd as "stable" and that's true
+> > for
+> > THP and no THP, furthermore in the THP case we also have a
+> > barrier()
+> > that will prevent any inconsistent pmdvals to be cached by a later
+> > re-read of the *pmd.
+> 
+> Nice. Andrew, any chane you could test this patch on the affected
+> Xen hypervisors? Was it as easy to reproduce this on a RHEL5 (U1?)
+> hypervisor or is it really only on Linode and Amazon EC2?
+> 
+
+Originally, I was able to reproduce the issue easily with a RHEL5
+host. Now, with this patch it's fixed.
+
+Drew
