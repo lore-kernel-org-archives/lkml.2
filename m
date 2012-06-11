@@ -1,53 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755024Ab2FKOVr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 10:21:47 -0400
-Received: from ngcobalt02.manitu.net ([217.11.48.102]:39778 "EHLO
-	ngcobalt02.manitu.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754834Ab2FKOVq (ORCPT
+	id S1755074Ab2FKOWS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 10:22:18 -0400
+Received: from mga03.intel.com ([143.182.124.21]:36660 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754858Ab2FKOWQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 10:21:46 -0400
-X-manitu-Original-Sender-IP: 79.214.40.70
-X-manitu-Original-Receiver-Name: ngcobalt02.manitu.net
-Message-ID: <4FD5FEDF.6020405@grandegger.com>
-Date: Mon, 11 Jun 2012 16:21:19 +0200
-From: Wolfgang Grandegger <wg@grandegger.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Federico Vaga <federico.vaga@gmail.com>
-CC: Bhupesh SHARMA <bhupesh.sharma@st.com>,
-        "rubini@gnudd.com" <rubini@gnudd.com>,
-        "anilkumar@ti.com" <anilkumar@ti.com>,
-        "mkl@pengutronix.de" <mkl@pengutronix.de>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-        Giancarlo ASNAGHI <giancarlo.asnaghi@st.com>,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFC] c_can_pci: generic module for c_can on PCI
-References: <331ABD5ECB02734CA317220B2BBEABC13E9CB18A@DBDE01.ent.ti.com> <4FCE07EE.40003@pengutronix.de> <D5ECB3C7A6F99444980976A8C6D896384FA5EC4DFC@EAPEX1MAIL1.st.com> <4FC135C6.5030206@grandegger.com> <1677842.Pq7naXsvrI@harkonnen> <D5ECB3C7A6F99444980976A8C6D896384FA5EC4B37@EAPEX1MAIL1.st.com> <3650428.HarNR9HfNF@harkonnen> <20120605131337.GA15432@mail.gnudd.com> <20120605133013.GA16108@mail.gnudd.com> <20120605165008.GA21871@mail.gnudd.com> <D5ECB3C7A6F99444980976A8C6D896384FA5EC4E62@EAPEX1MAIL1.st.com> <CAH5GJ0qgQJZwO8xn-zkMA_mMhVM=uCjuCZjd8EbJr0NyE6i+tQ@mail.gmail.com>
-In-Reply-To: <CAH5GJ0qgQJZwO8xn-zkMA_mMhVM=uCjuCZjd8EbJr0NyE6i+tQ@mail.gmail.com>
-X-Enigmail-Version: 1.4.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 11 Jun 2012 10:22:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="110716456"
+Message-ID: <1339424520.29057.49.camel@smile>
+Subject: Re: dmatest to use synopsys dma driver (dw_dmac.c)
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: satendra.pratap@mindspeed.com
+Cc: hskinnemoen@gmail.com, viresh.kumar@st.com, linux-kernel@vger.kernel.org
+Date: Mon, 11 Jun 2012 17:22:00 +0300
+In-Reply-To: <OF45FACB1C.595B6E12-ON65257A1A.003F5069-65257A1A.003FB93D@mindspeed.com>
+References: <OFA47B3090.4F32E90D-ON65257A18.003404DE-65257A18.00341A63@LocalDomain>
+	 <OF45FACB1C.595B6E12-ON65257A1A.003F5069-65257A1A.003FB93D@mindspeed.com>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.2-1+b1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2012 03:18 PM, Federico Vaga wrote:
-> How we proceed?
-> I submit my c_can_pci.c as a separated module, we create a
-> c_can_platform_common.c,
-> or we are thinking about a generic c_can.c as plaftorm driver?
+On Mon, 2012-06-11 at 17:06 +0530, satendra.pratap@mindspeed.com wrote: 
+> >> 1. dmatest with ported dw_dmac.c (from linux-3.4 to linux-3.2.2):
+> 
+> >>dmatest started automatically and tries test with all registered 8
+> >>channels of our dma engine but we get crashes with every channel as 
+> shown
+> >>below:
+> 
+> These crashes are solved but I get same " test timed out" for this ported 
+> driver too
+> as I was getting with original one. After debugging, it seems that after 
+> dma transfer is complete no interrupt is 
+> generated.......I have verified irq number etc , handler registered 
+> properly but I don get any interrupts..
+> I am looking into the code to see whether there is any polling mechanism 
+> is used in the driver ?
 
-I would accept your patch with the remaining fixes especially the new
-register access methods introduced by the D_CAN support patch recently.
+I have few patches to fix this driver for our hardware.
+The dw_dmac has few issues, one of them is impossibility to configure
+some important parts of the IP-block like block_ts or tr_width.
 
-Any further improvements to the device abstraction and a more consistent
-handling of the platform data or register access should be addressed by
-sub-sequent patches.
-
-Wolfgang.
+So, I could send patchset which probably helps you a bit.
 
 
+-- 
+Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Intel Finland Oy
