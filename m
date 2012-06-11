@@ -1,53 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754289Ab2FKODG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 10:03:06 -0400
-Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:22152 "HELO
-	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754251Ab2FKODD (ORCPT
+	id S1754706Ab2FKODy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 10:03:54 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:43792 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752286Ab2FKODx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 10:03:03 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: g.voe6wVM1kTHbVu0eoQtLnY69j5Sgmy_9zvZMmSsoaXYno
- mCcQIADzVxz_y8lfHYWVAxq1mZq0k8P.Kx7JnnASFd0clRYT5.HNq6DpNbV1
- o8FHlMJzkck2Vo30eUprbytyPflhJApsCVTU8USUp5WuPbVwDn73a9arkgyn
- m9gZDiQG9b0PKCLKnb5poirT2g6Gv2wYkSPNSHFNangwld.6mTnQWdWFgIw_
- DmJb1Qw_Qgp5HxYlUR.PIe4ND.oF17FKUJaPJG2BN74TVvbxnrHPpQolC5xu
- Ihmme1LiMRPPmKG7q.NS0lKrJK3wf_tsV505d_ePr7X2jtwhkc2iahnHCftP
- jdb8wCRPBGTCD_jp54FmsSpkbGpneFIa0S.TMG1Yo4a_17UdM4i30Ym8_97o
- P
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Mon, 11 Jun 2012 09:02:56 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: kosaki.motohiro@gmail.com
-cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH] mm: fix protection column misplacing in /proc/zoneinfo
-In-Reply-To: <1339422650-9798-1-git-send-email-kosaki.motohiro@gmail.com>
-Message-ID: <alpine.DEB.2.00.1206110856180.31180@router.home>
-References: <1339422650-9798-1-git-send-email-kosaki.motohiro@gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 11 Jun 2012 10:03:53 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: bfields@fieldses.org, Trond.Myklebust@netapp.com
+Cc: jplatte@naasa.net, linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        jmdebruin@xmsnet.nl
+Subject: [PATCH] rpc_pipefs: allow rpc_purge_list to take a NULL waitq pointer
+Date: Mon, 11 Jun 2012 10:03:42 -0400
+Message-Id: <1339423422-22474-1-git-send-email-jlayton@redhat.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1339340441.4751.1.camel@lade.trondhjem.org>
+References: <1339340441.4751.1.camel@lade.trondhjem.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 11 Jun 2012, kosaki.motohiro@gmail.com wrote:
+In the event that we don't have a dentry for a rpc_pipefs pipe, we still
+need to allow the queue_timeout job to clean out the queue. There's just
+no waitq to wake up in that event.
 
-> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->
-> commit 2244b95a7b (zoned vm counters: basic ZVC (zoned vm counter)
-> implementation) broke protection column. It is a part of "pages"
-> attribute. but not it is showed after vmstats column.
->
-> This patch restores the right position.
+Cc: stable@kernel.org
+Reported-by: Hans de Bruin <jmdebruin@xmsnet.nl>
+Reported-by: Joerg Platte <jplatte@naasa.net>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+---
+ net/sunrpc/rpc_pipe.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-Well this reorders the output. vmstats are also counts of pages. I am not
-sure what the difference is.
-
-You are not worried about breaking something that may scan the zoneinfo
-output with this change? Its been this way for 6 years and its likely that
-tools expect the current layout.
+diff --git a/net/sunrpc/rpc_pipe.c b/net/sunrpc/rpc_pipe.c
+index 0404047..21fde99 100644
+--- a/net/sunrpc/rpc_pipe.c
++++ b/net/sunrpc/rpc_pipe.c
+@@ -71,7 +71,9 @@ static void rpc_purge_list(wait_queue_head_t *waitq, struct list_head *head,
+ 		msg->errno = err;
+ 		destroy_msg(msg);
+ 	} while (!list_empty(head));
+-	wake_up(waitq);
++
++	if (waitq)
++		wake_up(waitq);
+ }
+ 
+ static void
+@@ -91,11 +93,9 @@ rpc_timeout_upcall_queue(struct work_struct *work)
+ 	}
+ 	dentry = dget(pipe->dentry);
+ 	spin_unlock(&pipe->lock);
+-	if (dentry) {
+-		rpc_purge_list(&RPC_I(dentry->d_inode)->waitq,
+-			       &free_list, destroy_msg, -ETIMEDOUT);
+-		dput(dentry);
+-	}
++	rpc_purge_list(dentry ? &RPC_I(dentry->d_inode)->waitq : NULL,
++			&free_list, destroy_msg, -ETIMEDOUT);
++	dput(dentry);
+ }
+ 
+ ssize_t rpc_pipe_generic_upcall(struct file *filp, struct rpc_pipe_msg *msg,
+-- 
+1.7.7.6
 
