@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753152Ab2FKSLM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 14:11:12 -0400
-Received: from smtp-out-208.synserver.de ([212.40.185.208]:1314 "EHLO
+	id S1753040Ab2FKSLL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 14:11:11 -0400
+Received: from smtp-out-208.synserver.de ([212.40.185.208]:1327 "EHLO
 	smtp-out-199.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752586Ab2FKSLJ (ORCPT
+	by vger.kernel.org with ESMTP id S1752068Ab2FKSLJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 11 Jun 2012 14:11:09 -0400
 X-SynServer-TrustedSrc: 1
@@ -18,108 +18,48 @@ Cc: Russell King <linux@arm.linux.org.uk>,
         Shawn Guo <shawn.guo@linaro.org>,
         Mika Westerberg <mika.westerberg@iki.fi>, alsa-devel@alsa-project.org,
         linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH v2 3/3] ASoC: dmaengine-pcm: Add support for querying stream position from DMA driver
-Date: Mon, 11 Jun 2012 20:11:42 +0200
-Message-Id: <1339438302-12417-3-git-send-email-lars@metafoo.de>
+Subject: [PATCH v2 1/3] dmaengine: Add wrapper for device_tx_status callback
+Date: Mon, 11 Jun 2012 20:11:40 +0200
+Message-Id: <1339438302-12417-1-git-send-email-lars@metafoo.de>
 X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1339438302-12417-1-git-send-email-lars@metafoo.de>
-References: <1339438302-12417-1-git-send-email-lars@metafoo.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the sound dmaengine pcm helper functions implement the pcm_pointer
-callback by trying to count the number of elapsed periods. This is done by
-advancing the stream position in the dmaengine callback by one period.
-Unfortunately there is no guarantee that the callback will be called for each
-elapsed period. It may be possible that under high system load it is only called
-once for multiple elapsed periods. This patch addresses the issue by
-implementing support for querying the current stream position directly from the
-dmaengine driver. Since not all dmaengine drivers support reporting the stream
-position yet the old period counting implementation is kept for now.
+This patch adds a small inline wrapper for the devivce_tx_status callback of a
+dma device. This makes the source code of users of this function a bit more
+compact and a bit more legible.
 
-Furthermore the new mechanism allows to report the stream position with a
-sub-period granularity, given that the dmaengine driver supports this.
+E.g.:
+-status = chan->device->device_tx_status(chan, cookie, &state)
++status = dmaengine_tx_status(chan, cookie, &state)
 
 Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 
 ---
-Changes since v1:
-	* Don't implement fallback support in snd_dmaengine_pcm_pointer, instead it
-	  is now moved to its own function. This was done to make it more explicit
-	  that implementing residue reporting for cyclic is required and that this
-	  won't be optional for new drivers.
----
- include/sound/dmaengine_pcm.h |    1 +
- sound/soc/soc-dmaengine-pcm.c |   29 ++++++++++++++++++++++++++++-
- 2 files changed, 29 insertions(+), 1 deletion(-)
+No changes since v1
 
-diff --git a/include/sound/dmaengine_pcm.h b/include/sound/dmaengine_pcm.h
-index ea57915..b877334 100644
---- a/include/sound/dmaengine_pcm.h
-+++ b/include/sound/dmaengine_pcm.h
-@@ -38,6 +38,7 @@ void *snd_dmaengine_pcm_get_data(struct snd_pcm_substream *substream);
- int snd_hwparams_to_dma_slave_config(const struct snd_pcm_substream *substream,
- 	const struct snd_pcm_hw_params *params, struct dma_slave_config *slave_config);
- int snd_dmaengine_pcm_trigger(struct snd_pcm_substream *substream, int cmd);
-+snd_pcm_uframes_t snd_dmaengine_pcm_pointer(struct snd_pcm_substream *substream);
- snd_pcm_uframes_t snd_dmaengine_pcm_pointer_no_residue(struct snd_pcm_substream *substream);
- 
- int snd_dmaengine_pcm_open(struct snd_pcm_substream *substream,
-diff --git a/sound/soc/soc-dmaengine-pcm.c b/sound/soc/soc-dmaengine-pcm.c
-index 7c0877e..2995334 100644
---- a/sound/soc/soc-dmaengine-pcm.c
-+++ b/sound/soc/soc-dmaengine-pcm.c
-@@ -30,6 +30,7 @@
- 
- struct dmaengine_pcm_runtime_data {
- 	struct dma_chan *dma_chan;
-+	dma_cookie_t cookie;
- 
- 	unsigned int pos;
- 
-@@ -153,7 +154,7 @@ static int dmaengine_pcm_prepare_and_submit(struct snd_pcm_substream *substream)
- 
- 	desc->callback = dmaengine_pcm_dma_complete;
- 	desc->callback_param = substream;
--	dmaengine_submit(desc);
-+	prtd->cookie = dmaengine_submit(desc);
- 
- 	return 0;
+---
+ include/linux/dmaengine.h |    6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+index 56377df..cc0756a 100644
+--- a/include/linux/dmaengine.h
++++ b/include/linux/dmaengine.h
+@@ -670,6 +670,12 @@ static inline int dmaengine_resume(struct dma_chan *chan)
+ 	return dmaengine_device_control(chan, DMA_RESUME, 0);
  }
-@@ -213,6 +214,32 @@ snd_pcm_uframes_t snd_dmaengine_pcm_pointer_no_residue(struct snd_pcm_substream
- }
- EXPORT_SYMBOL_GPL(snd_dmaengine_pcm_pointer_no_residue);
  
-+/**
-+ * snd_dmaengine_pcm_pointer - dmaengine based PCM pointer implementation
-+ * @substream: PCM substream
-+ *
-+ * This function can be used as the PCM pointer callback for dmaengine based PCM
-+ * driver implementations.
-+ */
-+snd_pcm_uframes_t snd_dmaengine_pcm_pointer(struct snd_pcm_substream *substream)
++static inline enum dma_status dmaengine_tx_status(struct dma_chan *chan,
++	dma_cookie_t cookie, struct dma_tx_state *state)
 +{
-+	struct dmaengine_pcm_runtime_data *prtd = substream_to_prtd(substream);
-+	struct dma_tx_state state;
-+	enum dma_status status;
-+	unsigned int buf_size;
-+	unsigned int pos = 0;
-+
-+	status = dmaengine_tx_status(prtd->dma_chan, prtd->cookie, &state);
-+	if (status == DMA_IN_PROGRESS || status == DMA_PAUSED) {
-+		buf_size = snd_pcm_lib_buffer_bytes(substream);
-+		if (state.residue > 0 && state.residue <= buf_size)
-+			pos = buf_size - state.residue;
-+	}
-+
-+	return bytes_to_frames(substream->runtime, pos);
++	return chan->device->device_tx_status(chan, cookie, state);
 +}
-+EXPORT_SYMBOL_GPL(snd_dmaengine_pcm_pointer);
 +
- static int dmaengine_pcm_request_channel(struct dmaengine_pcm_runtime_data *prtd,
- 	dma_filter_fn filter_fn, void *filter_data)
+ static inline dma_cookie_t dmaengine_submit(struct dma_async_tx_descriptor *desc)
  {
+ 	return desc->tx_submit(desc);
 -- 
 1.7.10
 
