@@ -1,93 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751175Ab2FKTKH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 15:10:07 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:59737 "EHLO
-	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750711Ab2FKTKF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 15:10:05 -0400
-From: Roland Stigge <stigge@antcom.de>
-To: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, b-cousson@ti.com,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        swarren@wwwdotorg.org, robherring2@gmail.com
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH] ARM: omap: Fix dts files w/ status property: "disable" -> "disabled"
-Date: Mon, 11 Jun 2012 21:09:44 +0200
-Message-Id: <1339441785-14641-1-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 1.7.10
-X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
+	id S1751328Ab2FKTLf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 15:11:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33833 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750849Ab2FKTLd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 15:11:33 -0400
+Date: Mon, 11 Jun 2012 21:09:02 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linuxppc-dev@lists.ozlabs.org, lkml <linux-kernel@vger.kernel.org>,
+        michael@ellerman.id.au, antonb@thinktux.localdomain,
+        Paul Mackerras <paulus@samba.org>, benh@kernel.crashing.org,
+        Ingo Molnar <mingo@elte.hu>, peterz@infradead.org,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Jim Keniston <jkenisto@us.ibm.com>
+Subject: Q: a_ops->readpage() && struct file
+Message-ID: <20120611190902.GA19869@redhat.com>
+References: <20120608093257.GG13409@in.ibm.com> <20120611161215.GA12116@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120611161215.GA12116@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patches fixes some status = "disable" strings to "disabled", the correct
-way of disabling nodes in the devicetree.
+On 06/11, Oleg Nesterov wrote:
+>
+> Note also that we should move this !UPROBE_COPY_INSN from
+> install_breakpoint() to somewhere near alloc_uprobe().
 
-Just the OMAP part here, the rest goes via other patches and trees.
+The main problem is, uprobe_register() doesn't have struct file
+for read_mapping_page().
 
-Signed-off-by: Roland Stigge <stigge@antcom.de>
-Acked-by: Rob Herring <rob.herring@calxeda.com>
+Stupid question. I'm afraid the answer is "no" but I'll ask anyway.
+Is it safe to pass filp == NULL to mapping->readpage()? In fact
+I do not understand why it needs "struct file*" and I do not see
+any example of actual usage. Yes, I didn't try to grep very much
+and I understand that the filesystem can do something special.
+Say it can use file->private_data...
 
----
-Applies to v3.5-rc2
+However. There is read_cache_page_gfp() which does use
+a_ops->readpage(filp => NULL), and the comment says nothing about
+the riskiness.
 
- arch/arm/boot/dts/omap3-beagle.dts |    4 +--
- arch/arm/boot/dts/omap4-panda.dts  |    6 ++---
- arch/arm/boot/dts/omap4-sdp.dts    |    4 +--
- arch/arm/boot/dts/tegra20.dtsi     |   36 +++++++++++++++++------------------
- arch/arm/boot/dts/tegra30.dtsi     |   38 ++++++++++++++++++-------------------
- 5 files changed, 44 insertions(+), 44 deletions(-)
 
---- linux-2.6.orig/arch/arm/boot/dts/omap3-beagle.dts
-+++ linux-2.6/arch/arm/boot/dts/omap3-beagle.dts
-@@ -61,9 +61,9 @@
- };
- 
- &mmc2 {
--	status = "disable";
-+	status = "disabled";
- };
- 
- &mmc3 {
--	status = "disable";
-+	status = "disabled";
- };
---- linux-2.6.orig/arch/arm/boot/dts/omap4-panda.dts
-+++ linux-2.6/arch/arm/boot/dts/omap4-panda.dts
-@@ -74,15 +74,15 @@
- };
- 
- &mmc2 {
--	status = "disable";
-+	status = "disabled";
- };
- 
- &mmc3 {
--	status = "disable";
-+	status = "disabled";
- };
- 
- &mmc4 {
--	status = "disable";
-+	status = "disabled";
- };
- 
- &mmc5 {
---- linux-2.6.orig/arch/arm/boot/dts/omap4-sdp.dts
-+++ linux-2.6/arch/arm/boot/dts/omap4-sdp.dts
-@@ -147,11 +147,11 @@
- };
- 
- &mmc3 {
--	status = "disable";
-+	status = "disabled";
- };
- 
- &mmc4 {
--	status = "disable";
-+	status = "disabled";
- };
- 
- &mmc5 {
+If not, is there any other way
+uprobe_register(struct inode *inode, loff_t offset) can read the
+page at this offset?
+
+
+
+And btw, read_mapping_page() accepts "void *data". Why? it uses
+filler == a_ops->readpage, it shouldn't accept anything but file
+pointer?
+
+
+Please help, I know nothing about vfs.
+
+Oleg.
+
