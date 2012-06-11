@@ -1,66 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753481Ab2FKNO7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 09:14:59 -0400
-Received: from smtp-out-197.synserver.de ([212.40.185.197]:1246 "EHLO
-	smtp-out-192.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752234Ab2FKNO6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 09:14:58 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 29054
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jonathan Cameron <jic23@cam.ac.uk>, Randy Dunlap <rdunlap@xenotime.net>,
-        Michael Hennerich <michael.hennerich@analog.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-iio@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH] staging:iio:ad7298: Fix linker error due to missing IIO kfifo buffer
-Date: Mon, 11 Jun 2012 15:09:21 +0200
-Message-Id: <1339420161-23760-1-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <4FD23340.70108@xenotime.net>
-References: <4FD23340.70108@xenotime.net>
+	id S1753506Ab2FKNPt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 09:15:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53746 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751627Ab2FKNPr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 09:15:47 -0400
+Date: Mon, 11 Jun 2012 15:15:46 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
+        rientjes@google.com, akpm@linux-foundation.org, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH -V8 13/16] hugetlb/cgroup: add hugetlb cgroup control
+ files
+Message-ID: <20120611131546.GO12402@tiehlicka.suse.cz>
+References: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <1339232401-14392-14-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <20120611090234.GE12402@tiehlicka.suse.cz>
+ <87bokq5gl8.fsf@skywalker.in.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87bokq5gl8.fsf@skywalker.in.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ad7298 drivers buffer implementation uses the IIO kfifo buffer, so it needs
-to select IIO_KFIFO_BUF. Otherwise (if no other driver selects the symbol) the
-following linker error will occur:
+On Mon 11-06-12 15:13:31, Aneesh Kumar K.V wrote:
+> Michal Hocko <mhocko@suse.cz> writes:
+> 
+> > On Sat 09-06-12 14:29:58, Aneesh Kumar K.V wrote:
+> >> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+> >> 
+> >> Add the control files for hugetlb controller
+> >> 
+> >> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+> >> ---
+> > [...]
+> >> +int __init hugetlb_cgroup_file_init(int idx)
+> >> +{
+> >> +	char buf[32];
+> >> +	struct cftype *cft;
+> >> +	struct hstate *h = &hstates[idx];
+> >> +
+> >> +	/* format the size */
+> >> +	mem_fmt(buf, 32, huge_page_size(h));
+> >> +
+> >> +	/* Add the limit file */
+> >> +	cft = &h->cgroup_files[0];
+> >> +	snprintf(cft->name, MAX_CFTYPE_NAME, "%s.limit_in_bytes", buf);
+> >> +	cft->private = MEMFILE_PRIVATE(idx, RES_LIMIT);
+> >> +	cft->read = hugetlb_cgroup_read;
+> >> +	cft->write_string = hugetlb_cgroup_write;
+> >> +
+> >> +	/* Add the usage file */
+> >> +	cft = &h->cgroup_files[1];
+> >> +	snprintf(cft->name, MAX_CFTYPE_NAME, "%s.usage_in_bytes", buf);
+> >> +	cft->private = MEMFILE_PRIVATE(idx, RES_USAGE);
+> >> +	cft->read = hugetlb_cgroup_read;
+> >> +
+> >> +	/* Add the MAX usage file */
+> >> +	cft = &h->cgroup_files[2];
+> >> +	snprintf(cft->name, MAX_CFTYPE_NAME, "%s.max_usage_in_bytes", buf);
+> >> +	cft->private = MEMFILE_PRIVATE(idx, RES_MAX_USAGE);
+> >> +	cft->trigger = hugetlb_cgroup_reset;
+> >> +	cft->read = hugetlb_cgroup_read;
+> >> +
+> >> +	/* Add the failcntfile */
+> >> +	cft = &h->cgroup_files[3];
+> >> +	snprintf(cft->name, MAX_CFTYPE_NAME, "%s.failcnt", buf);
+> >> +	cft->private  = MEMFILE_PRIVATE(idx, RES_FAILCNT);
+> >> +	cft->trigger  = hugetlb_cgroup_reset;
+> >> +	cft->read = hugetlb_cgroup_read;
+> >> +
+> >> +	/* NULL terminate the last cft */
+> >> +	cft = &h->cgroup_files[4];
+> >> +	memset(cft, 0, sizeof(*cft));
+> >> +
+> >> +	WARN_ON(cgroup_add_cftypes(&hugetlb_subsys, h->cgroup_files));
+> >> +
+> >> +	return 0;
+> >> +}
+> >> +
+> >
+> > I am not so familiar with the recent changes in the generic cgroup
+> > infrastructure but isn't this somehow automated?
+> 
+> yes for most of the cgroups. But in the hugetlb case we have variable number
+> of control files. We have the above set of control files for each
+> hugetlb size supported by the architecture.
 
-drivers/built-in.o: In function `ad7298_register_ring_funcs_and_init':
-	(.text+0x245cf2): undefined reference to `iio_kfifo_allocate'
-drivers/built-in.o: In function `ad7298_register_ring_funcs_and_init':
-	(.text+0x245d7d): undefined reference to `iio_kfifo_free'
-drivers/built-in.o: In function `ad7298_ring_cleanup':
-	(.text+0x245dcd): undefined reference to `iio_kfifo_free'
+OK, understood.
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Reported-by: Randy Dunlap <rdunlap@xenotime.net>
+> 
+> -aneesh
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
----
-The patch is only required for 3.5-rc1+. Versions prior to 3.5-rc1 require a
-different patch (IIO_SW_RING instead of IIO_KFIFO_BUF) which I'll send to stable
-once this patch is in Linus' tree.
----
- drivers/staging/iio/adc/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/staging/iio/adc/Kconfig b/drivers/staging/iio/adc/Kconfig
-index 2490dd2..8f1b3af 100644
---- a/drivers/staging/iio/adc/Kconfig
-+++ b/drivers/staging/iio/adc/Kconfig
-@@ -13,6 +13,7 @@ config AD7291
- config AD7298
- 	tristate "Analog Devices AD7298 ADC driver"
- 	depends on SPI
-+	select IIO_KFIFO_BUF if IIO_BUFFER
- 	help
- 	  Say yes here to build support for Analog Devices AD7298
- 	  8 Channel ADC with temperature sensor.
 -- 
-1.7.10
-
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
