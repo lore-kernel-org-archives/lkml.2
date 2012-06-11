@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755364Ab2FKO6C (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 10:58:02 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:59891 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755005Ab2FKO6A (ORCPT
+	id S1755440Ab2FKO6N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 10:58:13 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:58188 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755176Ab2FKO6K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 10:58:00 -0400
-Message-ID: <4FD6075F.5010307@linux.vnet.ibm.com>
-Date: Mon, 11 Jun 2012 07:57:35 -0700
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Mon, 11 Jun 2012 10:58:10 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Roland Stigge <stigge@antcom.de>
+Subject: Re: [PATCH 8/14] ARM: LPC32xx: Clock adjustment for key matrix controller
+Date: Mon, 11 Jun 2012 14:58:05 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
+        srinivas.bakki@nxp.com, aletes.xgr@gmail.com
+References: <1339412537-24485-1-git-send-email-stigge@antcom.de> <201206111416.19251.arnd@arndb.de> <4FD60203.8010103@antcom.de>
+In-Reply-To: <4FD60203.8010103@antcom.de>
 MIME-Version: 1.0
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-CC: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, "Tomas M." <tmezzadra@gmail.com>,
-        Ferenc Wagner <wferi@niif.hu>, Arnd Bergmann <arnd@arndb.de>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>,
-        Kevin Hilman <khilman@ti.com>,
-        Arjan van de Ven <arjan@linux.intel.com>, Jean Pihet <j-pihet@ti.com>,
-        Trinabh Gupta <g.trinabh@gmail.com>,
-        linux-pm@lists.linux-foundation.org, preeti@linux.vnet.ibm.com
-Subject: Re: Suspend/resume regressions on Lenovo S10-3
-References: <4FC2DA8C.7050401@linux.vnet.ibm.com> <4FCF5249.2070600@linux.vnet.ibm.com> <4FD5F329.2090302@linux.vnet.ibm.com>
-In-Reply-To: <4FD5F329.2090302@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12061114-7408-0000-0000-000005C08614
+Message-Id: <201206111458.05546.arnd@arndb.de>
+X-Provags-ID: V02:K0:sjxtiFo43uD3+hhmuNleSLEbhZWOxvL9Sdy1ImPe5p0
+ F0ZPcTXj5pfI6edjYyWwlX/Ptrlh6FFlLgP/8oI4P7bxK675Hl
+ qvV/W+9tLn6sR956GcwxoM4OIm0ICQwdLV5dXE7Mx/8tBqQOj4
+ j50Dil4k5QRh6HiiSFrwGCnRgq8Nv9tXYpMIqPZMlYPIqqP3ti
+ 2oDZd+fd2WPNyOG7zFeP4EnUkefudxhBFuV11ILuoK7yy3U9ZI
+ A/TCg8ygWHQ2HH3agwOou7qrMZ9Rp9CXjPNr5QwSFHRm4UCY1L
+ gq1CoFIPY5XtTW/fr/fVEkJ+qlO/Btm36b7Z85f5LMQGIICIKA
+ +qG5klCVTmldE1Itu9Qg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2012 06:31 AM, Srivatsa S. Bhat wrote:
-> Hi Dave,
+On Monday 11 June 2012, Roland Stigge wrote:
+> On 06/11/2012 04:16 PM, Arnd Bergmann wrote:
+> > On Monday 11 June 2012, Roland Stigge wrote:
+> >> The clock.c file needs to be changed to match the automatic device name to its
+> >> clock.
+> >>
+> >> Signed-off-by: Roland Stigge <stigge@antcom.de>
+> >> Acked-by: Rob Herring <rob.herring@calxeda.com>
+> >>
+> > 
+> > Should this not be in the same patch as the one that moves the device over
+> > to DT probing? Otherwise you have a non-working setup if only one patch
+> > is applied.
 > 
-> On 06/06/2012 06:21 PM, Deepthi Dharwar wrote:
+> The actual driver is new for v3.6 (hopefully), DT-only.
 > 
->> On 05/28/2012 07:23 AM, Dave Hansen wrote:
->>
->>> I have a Lenovo S10-3 Atom netbook.  It's always had some amount of
->>> trouble working with the intel_idle driver, so I usually compile that
->>> out an use the acpi one.
-> 
-> 
-> What problem did you face with intel_idle driver? Is it suspend/resume
-> related?
+> Rather than merging the patches, I'd let the key driver go in via input,
+> and the clock.c adjustment via arm-soc.
 
-With intel_idle, sometimes it won't boot, others it won't suspend/resume:
+Ok, makes sense.
 
-  https://bugs.launchpad.net/ubuntu/+source/linux/+bug/674075
-
-I'm actually not sure how it behaves on current kernels.
-
+	Arnd
