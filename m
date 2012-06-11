@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753040Ab2FKSLL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 14:11:11 -0400
-Received: from smtp-out-208.synserver.de ([212.40.185.208]:1327 "EHLO
-	smtp-out-199.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752068Ab2FKSLJ (ORCPT
+	id S1752340Ab2FKSXw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 14:23:52 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53581 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751158Ab2FKSXv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 14:11:09 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 31470
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Vinod Koul <vinod.koul@intel.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Ola Lilja <ola.o.lilja@stericsson.com>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Mika Westerberg <mika.westerberg@iki.fi>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH v2 1/3] dmaengine: Add wrapper for device_tx_status callback
-Date: Mon, 11 Jun 2012 20:11:40 +0200
-Message-Id: <1339438302-12417-1-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.7.10
+	Mon, 11 Jun 2012 14:23:51 -0400
+Message-ID: <4FD637B2.3010100@gmail.com>
+Date: Mon, 11 Jun 2012 12:23:46 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: Tim Chen <tim.c.chen@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, ak@linux.intel.com,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: Does perf inject preserve call chain data?
+References: <1337712585.3796.186.camel@schen9-DESK>  <4FBC0C10.8010801@gmail.com>  <20120608143843.GA9954@infradead.org>  <1339173896.3796.230.camel@schen9-DESK>  <4FD232B7.7080905@gmail.com> <1339175828.3796.232.camel@schen9-DESK>
+In-Reply-To: <1339175828.3796.232.camel@schen9-DESK>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a small inline wrapper for the devivce_tx_status callback of a
-dma device. This makes the source code of users of this function a bit more
-compact and a bit more legible.
+On 6/8/12 11:17 AM, Tim Chen wrote:
+> On Fri, 2012-06-08 at 11:13 -0600, David Ahern wrote:
+>> On 6/8/12 10:44 AM, Tim Chen wrote:
+>>> On Fri, 2012-06-08 at 11:38 -0300, Arnaldo Carvalho de Melo wrote:
+>>>> Em Tue, May 22, 2012 at 03:58:40PM -0600, David Ahern escreveu:
+>>>>> On 5/22/12 12:49 PM, Tim Chen wrote:
+>>>>>> Arnaldo,
+>>>>>>
+>>>>>> Wonder if perf inject munged the call chain data from perf record?
+>>>>>>
+>>>>>> When I do
+>>>>>> perf record -a -g -o - sleep 5 |perf inject -v -b  | perf report  -g -i -
+>>>>>> I get a complain from perf report
+>>>>>>
+>>>>>> Warning:
+>>>>>> Selected -g but no callchain data. Did you call 'perf record' without -g?
+>>>>>>
+>>>>>
+>>>>> I believe the root cause is that the event list is not written to
+>>>>> the pipe. Using Arnaldo's git repo as of today (has fixes from
+>>>>> Stephane) this hack shows the info is there and can be processed.
+>>>>
+>>>> How things stand here? Tim, did this fix things for you? If so, David,
+>>>> please resend with a proper subject line and a Tested-by: Tim, ok?
 
-E.g.:
--status = chan->device->device_tx_status(chan, cookie, &state)
-+status = dmaengine_tx_status(chan, cookie, &state)
+Pipeline is broken by this commit in your urgent (but not yet pushed) tree:
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+commit 47832ad3e101e470a90fab9b4915549aaee03662
+Author: Dmitry Antipov <dmitry.antipov@linaro.org>
+Date:   Fri Jun 8 16:23:27 2012 +0400
 
----
-No changes since v1
+     perf report: Fix event name reporting in cross analysis
 
----
- include/linux/dmaengine.h |    6 ++++++
- 1 file changed, 6 insertions(+)
+     Use trace_find_event to find event name before looking through /sys
+     files. This helps 'perf report' to show real event names instead of
+     'unknown:unknown' when processing perf.data recorded on another 
+machine.
 
-diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-index 56377df..cc0756a 100644
---- a/include/linux/dmaengine.h
-+++ b/include/linux/dmaengine.h
-@@ -670,6 +670,12 @@ static inline int dmaengine_resume(struct dma_chan *chan)
- 	return dmaengine_device_control(chan, DMA_RESUME, 0);
- }
- 
-+static inline enum dma_status dmaengine_tx_status(struct dma_chan *chan,
-+	dma_cookie_t cookie, struct dma_tx_state *state)
-+{
-+	return chan->device->device_tx_status(chan, cookie, state);
-+}
-+
- static inline dma_cookie_t dmaengine_submit(struct dma_async_tx_descriptor *desc)
- {
- 	return desc->tx_submit(desc);
--- 
-1.7.10
 
+pevent might be NULL and pevent_find_event dereferences it causing a crash.
+
+David
