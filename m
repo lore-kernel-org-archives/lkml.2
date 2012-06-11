@@ -1,80 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751573Ab2FKVXZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 17:23:25 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:37727 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751035Ab2FKVXY (ORCPT
+	id S1751660Ab2FKVdN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 17:33:13 -0400
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:50405 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751285Ab2FKVdL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 17:23:24 -0400
+	Mon, 11 Jun 2012 17:33:11 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAFR8uecF0LwbV8FvYob5m34sVbKqafrNoYOrcRUQCEOymGnYRA@mail.gmail.com>
-References: <CAFR8uecFzcrAYSy2ieJM5vWjNLSO3bjg20cy+B4cimHZ4RLktA@mail.gmail.com>
-	<4FD345DC.6020405@acm.org>
-	<CAFR8ueca-MQWRipE+3OQSpqmJ40HKJEY7jWt6PQ+zTCQ9Bh=5Q@mail.gmail.com>
-	<4FD4DC26.5080902@acm.org>
-	<CAFR8uecF0LwbV8FvYob5m34sVbKqafrNoYOrcRUQCEOymGnYRA@mail.gmail.com>
-Date: Mon, 11 Jun 2012 14:23:23 -0700
-Message-ID: <CAFR8uefK+nByiJ8tw5_KF1qEJs4du2mDdU36gg1_2nRNZXN5Fw@mail.gmail.com>
-Subject: Re: [PATCH UPDATED] block: In blk_execute_rq_nowait, init rq->end_io
- before checking for dead queue.
-From: Muthu Kumar <muthu.lkml@gmail.com>
-To: Bart Van Assche <bvanassche@acm.org>
-Cc: Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
-        Jej B <James.Bottomley@hansenpartnership.com>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Content-Type: multipart/mixed; boundary=20cf3071caa6b7634204c238f5dd
+In-Reply-To: <1339428307-3850-9-git-send-email-lee.jones@linaro.org>
+References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org>
+	<1339428307-3850-9-git-send-email-lee.jones@linaro.org>
+Date: Mon, 11 Jun 2012 23:33:10 +0200
+Message-ID: <CACRpkdaZ1OZdaqo=_YvQpyYazpcmhLT8QF4jz1WUQMSAsTM8Sw@mail.gmail.com>
+Subject: Re: [PATCH 08/14] mfd: Add IRQ domain support for the AB8500
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, arnd@arndb.de, grant.likely@secretlab.ca,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Mattias WALLIN <mattias.wallin@stericsson.com>,
+        Michel Jaouen <michel.jaouen@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---20cf3071caa6b7634204c238f5dd
-Content-Type: text/plain; charset=ISO-8859-1
+On Mon, Jun 11, 2012 at 5:25 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
-On Mon, Jun 11, 2012 at 10:33 AM, Muthu Kumar <muthu.lkml@gmail.com> wrote:
-> On Sun, Jun 10, 2012 at 10:40 AM, Bart Van Assche <bvanassche@acm.org> wrote:
->> On 06/09/12 23:57, Muthu Kumar wrote:
->>
->>> Locking change is the one you posted already (the link above). Anyway,
->>> I have the attached patch *including* the locking change. Original
->>> mail has attachment without locking change. Please use whatever you
->>> need.
->>
->>
->> While we are at it ... the rq->rq_disk and rq->end_io assignments can be
->> performed safely before the spinlock is taken, isn't it ?
->>
+> As the AB8500 is an IRQ controller in its own right, here we provide
+> the AB8500 driver with IRQ domain support. This is required if we wish
+> to reference any of its IRQs from a platform's Device Tree.
+
+OK..
+
+> diff --git a/drivers/mfd/ab8500-core.c b/drivers/mfd/ab8500-core.c
+(...)
+> -static int ab8500_irq_init(struct ab8500 *ab8500)
+> +/**
+> + * ab8500_irq_get_virq(): Map an interrupt on a chip to a virtual IRQ
+> + *
+> + * Useful for drivers to request their own IRQs.
+
+Check style against Documentation/kernel-doc-nano-HOWTO.txt
+verbos explanation follows argument documentation.
+
+> + *
+> + * @ab8500: ab8500_irq controller to operate on.
+> + * @irq: index of the interrupt requested in the chip IRQs
+> + */
+> +int ab8500_irq_get_virq(struct ab8500 *ab8500, int irq)
+>  {
+> -       int base = ab8500->irq_base;
+> -       int irq;
+> -       int num_irqs;
+> +       if (!ab8500)
+> +               return -EINVAL;
 >
-> Yes.. that spinlock is to protect the q.
+> -       if (is_ab9540(ab8500))
+> -               num_irqs = AB9540_NR_IRQS;
+> -       else if (is_ab8505(ab8500))
+> -               num_irqs = AB8505_NR_IRQS;
+> -       else
+> -               num_irqs = AB8500_NR_IRQS;
+> +       return irq_create_mapping(ab8500->domain, irq);
+> +}
+> +EXPORT_SYMBOL_GPL(ab8500_irq_get_virq);
+(...)
+> @@ -1233,11 +1256,9 @@ static int __devinit ab8500_probe(struct platform_device *pdev)
 >
+>        if (plat)
+>                ab8500->irq_base = plat->irq_base;
+> -       else if (np)
+> -               ret = of_property_read_u32(np, "stericsson,irq-base", &ab8500->irq_base);
 
-Attached patch with assignment performed before taking the spinlock.
+So if we're not using the irq base thing anymore, should you also
+delete it from the binding document too? (If there is no binding
+doc something is wrong and you need to create it I guess...)
 
+> diff --git a/include/linux/mfd/abx500/ab8500.h b/include/linux/mfd/abx500/ab8500.h
+> index 91dd3ef..48f126c 100644
+> --- a/include/linux/mfd/abx500/ab8500.h
+> +++ b/include/linux/mfd/abx500/ab8500.h
+> @@ -227,6 +227,7 @@ enum ab8500_version {
+>  * @irq_lock: genirq bus lock
+>  * @transfer_ongoing: 0 if no transfer ongoing
+>  * @irq: irq line
+> + * @irq_domain: irq domain
+>  * @version: chip version id (e.g. ab8500 or ab9540)
+>  * @chip_id: chip revision id
+>  * @write: register write
+> @@ -247,6 +248,7 @@ struct ab8500 {
+>        atomic_t        transfer_ongoing;
+>        int             irq_base;
+>        int             irq;
+> +       struct irq_domain  *domain;
 
+Don't you need to forward-declare struct irq_domain?
+I think you're just lucky to have it compiling... (Something
+else included  <linux/irqdomain.h> on the way here.)
 
-
->
->> Bart.
-
---20cf3071caa6b7634204c238f5dd
-Content-Type: application/octet-stream; 
-	name="blk-exec-assign-endio-to-bart-v2.patch"
-Content-Disposition: attachment; 
-	filename="blk-exec-assign-endio-to-bart-v2.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h39s5yoj0
-
-ZGlmZiAtLWdpdCBhL2Jsb2NrL2Jsay1leGVjLmMgYi9ibG9jay9ibGstZXhlYy5jCmluZGV4IGZi
-MmNiZDUuLjAwYTcyZGEgMTAwNjQ0Ci0tLSBhL2Jsb2NrL2Jsay1leGVjLmMKKysrIGIvYmxvY2sv
-YmxrLWV4ZWMuYwpAQCAtNTEsNiArNTEsMTAgQEAgdm9pZCBibGtfZXhlY3V0ZV9ycV9ub3dhaXQo
-c3RydWN0IHJlcXVlc3RfcXVldWUgKnEsIHN0cnVjdCBnZW5kaXNrICpiZF9kaXNrLAogCWludCB3
-aGVyZSA9IGF0X2hlYWQgPyBFTEVWQVRPUl9JTlNFUlRfRlJPTlQgOiBFTEVWQVRPUl9JTlNFUlRf
-QkFDSzsKIAogCVdBUk5fT04oaXJxc19kaXNhYmxlZCgpKTsKKworCXJxLT5ycV9kaXNrID0gYmRf
-ZGlzazsKKwlycS0+ZW5kX2lvID0gZG9uZTsKKwogCXNwaW5fbG9ja19pcnEocS0+cXVldWVfbG9j
-ayk7CiAKIAlpZiAodW5saWtlbHkoYmxrX3F1ZXVlX2RlYWQocSkpKSB7CkBAIC02MSw4ICs2NSw2
-IEBAIHZvaWQgYmxrX2V4ZWN1dGVfcnFfbm93YWl0KHN0cnVjdCByZXF1ZXN0X3F1ZXVlICpxLCBz
-dHJ1Y3QgZ2VuZGlzayAqYmRfZGlzaywKIAkJcmV0dXJuOwogCX0KIAotCXJxLT5ycV9kaXNrID0g
-YmRfZGlzazsKLQlycS0+ZW5kX2lvID0gZG9uZTsKIAlfX2Vsdl9hZGRfcmVxdWVzdChxLCBycSwg
-d2hlcmUpOwogCV9fYmxrX3J1bl9xdWV1ZShxKTsKIAkvKiB0aGUgcXVldWUgaXMgc3RvcHBlZCBz
-byBpdCB3b24ndCBiZSBydW4gKi8K
---20cf3071caa6b7634204c238f5dd--
+Yours,
+Linus Walleij
