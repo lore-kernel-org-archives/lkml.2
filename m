@@ -1,112 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753506Ab2FKNPt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 09:15:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53746 "EHLO mx2.suse.de"
+	id S1753671Ab2FKNS1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 09:18:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49647 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751627Ab2FKNPr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 09:15:47 -0400
-Date: Mon, 11 Jun 2012 15:15:46 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
-        rientjes@google.com, akpm@linux-foundation.org, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH -V8 13/16] hugetlb/cgroup: add hugetlb cgroup control
- files
-Message-ID: <20120611131546.GO12402@tiehlicka.suse.cz>
-References: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <1339232401-14392-14-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <20120611090234.GE12402@tiehlicka.suse.cz>
- <87bokq5gl8.fsf@skywalker.in.ibm.com>
+	id S1751451Ab2FKNSX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 09:18:23 -0400
+Date: Mon, 11 Jun 2012 09:18:04 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: akpm@linux-foundation.org, mm-commits@vger.kernel.org, joe@perches.com,
+        mingo@elte.hu, nzimmer@sgi.com, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: + nmi-watchdog-quiet-down-the-boot-messages.patch added to -mm
+ tree
+Message-ID: <20120611131804.GX32472@redhat.com>
+References: <20120608213709.B320BA022F@akpm.mtv.corp.google.com>
+ <20120611084744.GH31556@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87bokq5gl8.fsf@skywalker.in.ibm.com>
+In-Reply-To: <20120611084744.GH31556@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 11-06-12 15:13:31, Aneesh Kumar K.V wrote:
-> Michal Hocko <mhocko@suse.cz> writes:
+On Mon, Jun 11, 2012 at 10:47:44AM +0200, Ingo Molnar wrote:
+> >     NMI watchdog enabled, takes one hw-pmu counter.
+> >     Booting Node   0, Processors  #1
+> >     NMI watchdog enabled, takes one hw-pmu counter.
+> >      #2
+> >     NMI watchdog enabled, takes one hw-pmu counter.
+> >      #3 Ok.
+> >     NMI watchdog enabled, takes one hw-pmu counter.
+> >     Brought up 4 CPUs
+> >     Total of 4 processors activated (22607.24 BogoMIPS).
 > 
-> > On Sat 09-06-12 14:29:58, Aneesh Kumar K.V wrote:
-> >> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-> >> 
-> >> Add the control files for hugetlb controller
-> >> 
-> >> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-> >> ---
-> > [...]
-> >> +int __init hugetlb_cgroup_file_init(int idx)
-> >> +{
-> >> +	char buf[32];
-> >> +	struct cftype *cft;
-> >> +	struct hstate *h = &hstates[idx];
-> >> +
-> >> +	/* format the size */
-> >> +	mem_fmt(buf, 32, huge_page_size(h));
-> >> +
-> >> +	/* Add the limit file */
-> >> +	cft = &h->cgroup_files[0];
-> >> +	snprintf(cft->name, MAX_CFTYPE_NAME, "%s.limit_in_bytes", buf);
-> >> +	cft->private = MEMFILE_PRIVATE(idx, RES_LIMIT);
-> >> +	cft->read = hugetlb_cgroup_read;
-> >> +	cft->write_string = hugetlb_cgroup_write;
-> >> +
-> >> +	/* Add the usage file */
-> >> +	cft = &h->cgroup_files[1];
-> >> +	snprintf(cft->name, MAX_CFTYPE_NAME, "%s.usage_in_bytes", buf);
-> >> +	cft->private = MEMFILE_PRIVATE(idx, RES_USAGE);
-> >> +	cft->read = hugetlb_cgroup_read;
-> >> +
-> >> +	/* Add the MAX usage file */
-> >> +	cft = &h->cgroup_files[2];
-> >> +	snprintf(cft->name, MAX_CFTYPE_NAME, "%s.max_usage_in_bytes", buf);
-> >> +	cft->private = MEMFILE_PRIVATE(idx, RES_MAX_USAGE);
-> >> +	cft->trigger = hugetlb_cgroup_reset;
-> >> +	cft->read = hugetlb_cgroup_read;
-> >> +
-> >> +	/* Add the failcntfile */
-> >> +	cft = &h->cgroup_files[3];
-> >> +	snprintf(cft->name, MAX_CFTYPE_NAME, "%s.failcnt", buf);
-> >> +	cft->private  = MEMFILE_PRIVATE(idx, RES_FAILCNT);
-> >> +	cft->trigger  = hugetlb_cgroup_reset;
-> >> +	cft->read = hugetlb_cgroup_read;
-> >> +
-> >> +	/* NULL terminate the last cft */
-> >> +	cft = &h->cgroup_files[4];
-> >> +	memset(cft, 0, sizeof(*cft));
-> >> +
-> >> +	WARN_ON(cgroup_add_cftypes(&hugetlb_subsys, h->cgroup_files));
-> >> +
-> >> +	return 0;
-> >> +}
-> >> +
-> >
-> > I am not so familiar with the recent changes in the generic cgroup
-> > infrastructure but isn't this somehow automated?
+> the problem really was that it didn't print which CPU it 
+> referred to - it just repeated the same message over and over 
+> again.
 > 
-> yes for most of the cgroups. But in the hugetlb case we have variable number
-> of control files. We have the above set of control files for each
-> hugetlb size supported by the architecture.
+> If it said:
+> 
+>      NMI watchdog enabled on CPU#0, takes one hw-pmu counter.
+> 
+> it would be far less confusing.
 
-OK, understood.
+Sure.  The problem SGI has with 4096 cpus is the volume.  Specifying which
+cpu the message belongs to, I do not think helps with this problem.
 
 > 
-> -aneesh
+> This:
 > 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> > After the change, it is simplified to:
+> > 
+> >     ..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
+> >     CPU0: Intel(R) Core(TM)2 Quad CPU    Q9550  @ 2.83GHz stepping 0a
+> >     Performance Events: PEBS fmt0+, Core2 events, Intel PMU driver.
+> >     ... version:                2
+> >     ... bit width:              40
+> >     ... generic registers:      2
+> >     ... value mask:             000000ffffffffff
+> >     ... max period:             000000007fffffff
+> >     ... fixed-purpose events:   3
+> >     ... event mask:             0000000700000003
+> >     NMI watchdog enabled, takes one hw-pmu counter.
+> >     Booting Node   0, Processors  #1 #2 #3 Ok.
+> >     Brought up 4 CPUs
+> 
+> Is fine too but should be clarified to something like:
+> 
+>      NMI watchdog enabled on all CPUs, permanently consumes one hw-PMU counter
+> 
+> (Please note the capitalization of 'PMU' as well.)
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Ok.  I can modify that.
+
+Cheers,
+Don
