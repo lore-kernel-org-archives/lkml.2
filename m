@@ -1,74 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754939Ab2FKOU4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 10:20:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19811 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754717Ab2FKOUy convert rfc822-to-8bit (ORCPT
+	id S1755024Ab2FKOVr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 10:21:47 -0400
+Received: from ngcobalt02.manitu.net ([217.11.48.102]:39778 "EHLO
+	ngcobalt02.manitu.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754834Ab2FKOVq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 10:20:54 -0400
-Date: Mon, 11 Jun 2012 10:20:16 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: =?UTF-8?B?SsO2cmc=?= Platte <jplatte@naasa.net>
-Cc: bfields <bfields@fieldses.org>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Hans de Bruin <jmdebruin@xmsnet.nl>
-Subject: Re: Kernel 3.4.X NFS server regression
-Message-ID: <20120611102016.3114349d@corrin.poochiereds.net>
-In-Reply-To: <E49E5D8F-3647-4B3D-989E-FE4476D37607@naasa.net>
-References: <4FD47D4E.9070307@naasa.net>
-	<1339340441.4751.1.camel@lade.trondhjem.org>
-	<20120611121634.GB7654@fieldses.org>
-	<20120611083932.24e27e39@corrin.poochiereds.net>
-	<20120611091338.1c88e6d0@corrin.poochiereds.net>
-	<E49E5D8F-3647-4B3D-989E-FE4476D37607@naasa.net>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 11 Jun 2012 10:21:46 -0400
+X-manitu-Original-Sender-IP: 79.214.40.70
+X-manitu-Original-Receiver-Name: ngcobalt02.manitu.net
+Message-ID: <4FD5FEDF.6020405@grandegger.com>
+Date: Mon, 11 Jun 2012 16:21:19 +0200
+From: Wolfgang Grandegger <wg@grandegger.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Federico Vaga <federico.vaga@gmail.com>
+CC: Bhupesh SHARMA <bhupesh.sharma@st.com>,
+        "rubini@gnudd.com" <rubini@gnudd.com>,
+        "anilkumar@ti.com" <anilkumar@ti.com>,
+        "mkl@pengutronix.de" <mkl@pengutronix.de>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+        Giancarlo ASNAGHI <giancarlo.asnaghi@st.com>,
+        "alan@linux.intel.com" <alan@linux.intel.com>,
+        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFC] c_can_pci: generic module for c_can on PCI
+References: <331ABD5ECB02734CA317220B2BBEABC13E9CB18A@DBDE01.ent.ti.com> <4FCE07EE.40003@pengutronix.de> <D5ECB3C7A6F99444980976A8C6D896384FA5EC4DFC@EAPEX1MAIL1.st.com> <4FC135C6.5030206@grandegger.com> <1677842.Pq7naXsvrI@harkonnen> <D5ECB3C7A6F99444980976A8C6D896384FA5EC4B37@EAPEX1MAIL1.st.com> <3650428.HarNR9HfNF@harkonnen> <20120605131337.GA15432@mail.gnudd.com> <20120605133013.GA16108@mail.gnudd.com> <20120605165008.GA21871@mail.gnudd.com> <D5ECB3C7A6F99444980976A8C6D896384FA5EC4E62@EAPEX1MAIL1.st.com> <CAH5GJ0qgQJZwO8xn-zkMA_mMhVM=uCjuCZjd8EbJr0NyE6i+tQ@mail.gmail.com>
+In-Reply-To: <CAH5GJ0qgQJZwO8xn-zkMA_mMhVM=uCjuCZjd8EbJr0NyE6i+tQ@mail.gmail.com>
+X-Enigmail-Version: 1.4.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 11 Jun 2012 15:25:55 +0200
-Jörg Platte <jplatte@naasa.net> wrote:
+On 06/11/2012 03:18 PM, Federico Vaga wrote:
+> How we proceed?
+> I submit my c_can_pci.c as a separated module, we create a
+> c_can_platform_common.c,
+> or we are thinking about a generic c_can.c as plaftorm driver?
 
-> Am 11.06.2012 um 15:13 schrieb Jeff Layton <jlayton@redhat.com>:
-> 
-> > 
-> > Ahh, I think I see the bug. From rpc_timeout_upcall_queue:
-> > 
-> > -----------------------[snip]--------------------------
-> >        dentry = dget(pipe->dentry);
-> >        spin_unlock(&pipe->lock);
-> >        if (dentry) {
-> >                rpc_purge_list(&RPC_I(dentry->d_inode)->waitq,
-> >                               &free_list, destroy_msg, -ETIMEDOUT);
-> >                dput(dentry);
-> >        }
-> > -----------------------[snip]--------------------------
-> > 
-> > ...when there is no dentry (as there wouldn't be when rpc_pipefs isn't
-> > mounted), then the rpc_purge_list won't run. FWIW, you'd probably see
-> > similar problems if you attempted a sec=krb5 mount without having
-> > rpc_pipefs mounted.
-> > 
-> > I'm still looking at the code to see what the right fix is. For now,
-> > making sure you have a /var/lib/nfs/v4recoverydir is probably the
-> > easiest workaround.
-> > 
-> > -- 
-> > Jeff Layton <jlayton@redhat.com>
-> 
-> On my computer that shows the bug there is indeed no v4recovery directory. There is one on the other machine that does not show this bug. I'll test the latest kernel with this directory created  today afternoon. 
-> 
-> Thank you for the analysis!
-> 
+I would accept your patch with the remaining fixes especially the new
+register access methods introduced by the D_CAN support patch recently.
 
-No problem. One possibility for the difference is that rpc_pipefs is
-mounted on the machine that doesn't show the problem, but isn't mouted
-on the machine that does.
+Any further improvements to the device abstraction and a more consistent
+handling of the platform data or register access should be addressed by
+sub-sequent patches.
 
--- 
-Jeff Layton <jlayton@redhat.com>
+Wolfgang.
+
+
