@@ -1,102 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754981Ab2FKPPV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 11:15:21 -0400
-Received: from fieldses.org ([174.143.236.118]:36688 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754452Ab2FKPPT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 11:15:19 -0400
-Date: Mon, 11 Jun 2012 11:15:11 -0400
-From: bfields <bfields@fieldses.org>
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: Jeff Layton <jlayton@redhat.com>, Steve Dickson <steved@redhat.com>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Joerg Platte <jplatte@naasa.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Hans de Bruin <jmdebruin@xmsnet.nl>
-Subject: Re: Kernel 3.4.X NFS server regression
-Message-ID: <20120611151511.GH7654@fieldses.org>
-References: <4FD47D4E.9070307@naasa.net>
- <1339340441.4751.1.camel@lade.trondhjem.org>
- <20120611121634.GB7654@fieldses.org>
- <20120611083932.24e27e39@corrin.poochiereds.net>
- <4FD5F35A.3000903@panasas.com>
- <4FD5F629.1070508@panasas.com>
- <20120611102947.229cf077@corrin.poochiereds.net>
- <4FD60839.3000508@panasas.com>
+	id S1755296Ab2FKPPd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 11:15:33 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:44438 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755081Ab2FKPPb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 11:15:31 -0400
+Date: Mon, 11 Jun 2012 23:15:00 +0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, arnd@arndb.de,
+        linus.walleij@stericsson.com, grant.likely@secretlab.ca,
+        cjb@laptop.org, sameo@linux.intel.com, linux-kernel@vger.kernel.org
+Message-ID: <20120611151459.GV11439@opensource.wolfsonmicro.com>
+References: <4FCDDE58.5010501@linaro.org>
+ <20120605102900.GP23408@opensource.wolfsonmicro.com>
+ <4FCDE0A4.8070107@linaro.org>
+ <20120605104201.GR23408@opensource.wolfsonmicro.com>
+ <4FD5D49C.6070106@linaro.org>
+ <20120611120820.GN11439@opensource.wolfsonmicro.com>
+ <4FD5F3D2.2050500@linaro.org>
+ <4FD5FBAF.1060002@linaro.org>
+ <20120611142752.GS11439@opensource.wolfsonmicro.com>
+ <4FD605B5.2060300@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="YwTTlJgQ7QoYB9ta"
 Content-Disposition: inline
-In-Reply-To: <4FD60839.3000508@panasas.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4FD605B5.2060300@linaro.org>
+X-Cookie: You are always busy.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 116.228.53.169
+X-SA-Exim-Mail-From: broonie@opensource.wolfsonmicro.com
+Subject: Re: [PATCH 09/22] regulator: Change db8500-prcmu match names to
+ reflect Device Tree
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 11, 2012 at 06:01:13PM +0300, Boaz Harrosh wrote:
-> On 06/11/2012 05:29 PM, Jeff Layton wrote:
-> 
-> > On Mon, 11 Jun 2012 16:44:09 +0300
-> > Boaz Harrosh <bharrosh@panasas.com> wrote:
-> > 
-> >> On 06/11/2012 04:32 PM, Boaz Harrosh wrote:
-> >>
-> >>> On 06/11/2012 03:39 PM, Jeff Layton wrote:
-> >>>
-> >>>>>
-> >>>>> But I'm guessing we were wrong to assume that existing setups that
-> >>>>> people perceived as working would have that path, because the failures
-> >>>>> in the absence of that path were probably less obvious.
-> >>>>>
-> >>
-> >>
-> >> One more thing, the most important one. We have already fixed that in the
-> >> past and I was hoping the lesson was learned. Apparently it was not, and
-> >> we are doomed to do this mistake for ever!!
-> >>
-> >> What ever crap fails times out and crashes, in the recovery code, we don't
-> >> give a dam. It should never affect any Server-client communication.
-> >>
-> >> When the grace periods ends the clients gates opens period. *Any* error
-> >> return from state recovery code must be carefully ignored and normal
-> >> operations resumed. At most on error, we move into a mode where any
-> >> recovery request from client is accepted, since we don't have any better
-> >> data to verify it.
-> >>
-> >> Please comb recovery code to make sure any catastrophe is safely ignored.
-> >> We already did that before and it used to work.
-> >>
-> > 
-> > That's not the case, and hasn't ever been AFAICT. The code has changed
-> > a bit recently, but the existing behavior in this regard was preserved.
-> > From nfs4_check_open_reclaim:
-> > 
-> >         return nfsd4_client_record_check(clp) ? nfserr_reclaim_bad : nfs_ok;
-> > 
-> > ...if there is no client record, then the reclaim request fails. Doesn't
-> > the RFC mandate that?
-> > 
-> 
-> 
-> Regardless of what RFC mandates and what is returned to client, (Which sounds
-> very unrobust to me) I'm sure the client handles nfserr_reclaim_bad just
-> fine.
-> 
-> It's the server that's getting stuck in its own feet and stops responding.
-> That's what I meant. We should always resume normal operations after
-> the grace period ends.
-> 
-> I did not see any reports of client getting into trouble because of
-> unexpected nfserr_reclaim_bad, did you?
 
-We did have a few bugs in that area, and as far as I know they're fixed
-(and have stayed fixed!).
+--YwTTlJgQ7QoYB9ta
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-The one other thing we've seen at testing events is clients not sending
-reclaim_complete: not only is it mandatory (with state to reclaim or
-not), it's actually mandatory for servers to fail further operations
-until it's sent.  However the problems were all seen with unreleased
-client code that the implementors said they'd fix.
+On Mon, Jun 11, 2012 at 03:50:29PM +0100, Lee Jones wrote:
+> On 11/06/12 15:27, Mark Brown wrote:
 
---b.
+> >It'll merge out fine, it's just icky having the same thing appear twice
+> >in history.  Not the end of the world.
+
+> Understood. So does this mean you will to push them into the -rcs?
+
+Yes.
+
+--YwTTlJgQ7QoYB9ta
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP1grnAAoJEBus8iNuMP3d2Z4P/jcU9ZBiWblWVPHQwc9F7HGT
+VVqLr10dJHaM3M3No8bQbzZxEZzXV0NL9mOUa+viqG3f0qiNMZcNja6MDADl8qIV
+K4OmUuwcF3/f59AzHkwTqF00Y/Lwz2f2D+dNorA847GkLIXRQuNhzCOz9WPzA5BZ
+GWbDxzEYoVwrXshnn5aG2YYcqroopTV69WHFAXnAdihFM/CZUHu5Cl8S3knCJXaB
+ISDP0LxGsUaqXF5rArNb6NlSvSZIypfu4e0vtg78PXTGh301/8FJVdBuIgQ4pKwg
+mcT3atI6JPkGFVpcoXPreORUepJLQsXU/be63dkY+IIrPuavidph8EWFAH4NNNhH
+hecHMi6jYyN9as6KHOb6rr4vKzhfkJKwBgwX+mVbH77enDY+zCIjOJ6HZHy0/+Ch
+7ycDgnQgRXXQtOBltkZk8cWtxsDNSd/sHB6EGx3uijtmJEMfga6iagcxIdiDkXkK
+eUSPSPD5KfBr3eRDOjXblw4/ycVLVacylif9yYLPNCPqqNIthsRCXbxulLwZCgzH
+Cc8P395p7El+Cs0qGDqT21qnH4WJcqBeG7L0oPPNtN49GFmSnGK7T468bydSAUC/
+c4zQ6pC5EFjEvqRZR4pTYB3Y3JCwPT2m03dMDukcx8GvJGtxmk94ewRqAxBzG3jv
+S0qfBrVsF7Rw1auWgR8h
+=apsE
+-----END PGP SIGNATURE-----
+
+--YwTTlJgQ7QoYB9ta--
