@@ -1,89 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752069Ab2FKRKX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 13:10:23 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:53439 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751687Ab2FKRKU (ORCPT
+	id S1752240Ab2FKRK3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 13:10:29 -0400
+Received: from smarthost02.digicable.hu ([94.21.128.7]:47755 "EHLO
+	smarthost02.digicable.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751449Ab2FKRK0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 13:10:20 -0400
-Message-ID: <4FD62653.7060206@mvista.com>
-Date: Mon, 11 Jun 2012 21:09:39 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Mon, 11 Jun 2012 13:10:26 -0400
+Message-ID: <4FD62645.6090501@freemail.hu>
+Date: Mon, 11 Jun 2012 19:09:25 +0200
+From: =?UTF-8?B?TsOpbWV0aCBNw6FydG9u?= <nm127@freemail.hu>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; hu-HU; rv:1.8.1.21) Gecko/20090402 SeaMonkey/1.1.16
 MIME-Version: 1.0
-To: Namjae Jeon <linkinjeon@gmail.com>
-CC: James.Bottomley@hansenpartnership.com, gregkh@linuxfoundation.org,
-        mdharm-usb@one-eyed-alien.net, stern@rowland.harvard.edu,
-        bvanassche@acm.org, linux-usb@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Pankaj Kumar <pankaj.km@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [PATCH v3 3/3] usb: storage: update usb devices for write cache
- quirk in quirk list.
-References: <1339263678-4075-1-git-send-email-linkinjeon@gmail.com> <4FD39998.4020903@mvista.com> <CAKYAXd9Evpo6jn+_+bnyNeaX9vmPicVp5Xm-12tp_U4=wb6Pgw@mail.gmail.com>
-In-Reply-To: <CAKYAXd9Evpo6jn+_+bnyNeaX9vmPicVp5Xm-12tp_U4=wb6Pgw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+To: David Airlie <airlied@linux.ie>, Dave Airlie <airlied@redhat.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Jesper Juhl <jj@chaosbits.net>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        dri-devel@lists.freedesktop.org
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] drm sis: initialize object_idr
+References: <4FD5142B.2080809@freemail.hu> <20120611071713.GA4695@phenom.ffwll.local>
+In-Reply-To: <20120611071713.GA4695@phenom.ffwll.local>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Original: 188.143.106.138
+X-Original: 92.249.128.185
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+From: Márton Németh <nm127@freemail.hu>
 
-On 10-06-2012 4:45, Namjae Jeon wrote:
+The filed object_idr of struct drm_sis_private was introduced with
+commit http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=6de8a748881f1cd9d795454da2b6db616d5ca3d7 .
 
->>> Update information of Seagate Portable HDD and WD My Passport HDD in
->>> quirk list.
+The idr_init(&dev->object_name_idr) is called instead of
+idr_init(&dev_priv->object_idr) by mistake, leaving object_idr
+uninitialized. Correct this.
 
->>> Signed-off-by: Namjae Jeon<namjae.jeon@samsung.com>
->>> Signed-off-by: Pankaj Kumar<pankaj.km@samsung.com>
->>> Signed-off-by: Amit Sahrawat<a.sahrawat@samsung.com>
->>> ---
->>>    drivers/usb/storage/unusual_devs.h |   24 ++++++++++++++++++++++++
->>>    1 file changed, 24 insertions(+)
+This patch was not tested because of lack of hardware.
 
->>> diff --git a/drivers/usb/storage/unusual_devs.h
->>> b/drivers/usb/storage/unusual_devs.h
->>> index 1719886..64f0369 100644
->>> --- a/drivers/usb/storage/unusual_devs.h
->>> +++ b/drivers/usb/storage/unusual_devs.h
->>> @@ -1267,6 +1267,18 @@ UNUSUAL_DEV( 0x0af0, 0xd357, 0x0000, 0x0000,
->>>    		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
->>>    		0 ),
->>>
->>> +/* Reported by Namjae Jeon<namjae.jeon@samsung.com>
->>> + * Even though write cache is enabled by default,
->>> + * SCSI driver assume that cache is not enabled
->>> + * which in turn might lead loss of data
->>                                 ^ to the
+Signed-off-by: Márton Németh <nm127@freemail.hu>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+---
+diff --git a/drivers/gpu/drm/sis/sis_drv.c b/drivers/gpu/drm/sis/sis_drv.c
+index 30d98d1..dd14cd1 100644
+--- a/drivers/gpu/drm/sis/sis_drv.c
++++ b/drivers/gpu/drm/sis/sis_drv.c
+@@ -47,9 +47,9 @@ static int sis_driver_load(struct drm_device *dev, unsigned long chipset)
+ 	if (dev_priv == NULL)
+ 		return -ENOMEM;
 
->>> + * since data still will be in cache.
->>> + * So this entry is needed for assuming that cache is enabled.
->>> + */
->>> +UNUSUAL_DEV(0x0bc2, 0x2300, 0x0000, 0x9999,
->>> +		"Seagate",
->>> +		"Portable HDD",
->>> +		USB_SC_DEVICE, USB_PR_DEVICE, NULL, US_FL_WRITE_CACHE),
->>> +
->>>    /* Reported by Ben Efros<ben@pc-doctor.com>   */
->>>    UNUSUAL_DEV( 0x0bc2, 0x3010, 0x0000, 0x0000,
->>>    		"Seagate",
->>> @@ -1468,6 +1480,18 @@ UNUSUAL_DEV(  0x1058, 0x0704, 0x0000, 0x9999,
->>>    		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
->>>    		US_FL_SANE_SENSE),
->>>
->>> +/* Reported by Namjae Jeon<namjae.jeon@samsung.com>
->>> + * Even though write cache is enabled by default,
->>> + * SCSI driver assume that cache is not enabled
->>> + * which in turn might lead loss of data
->>                                 ^ to the
-> to the ? Sorry, I don't understand what you want to change.
-> like this ? "Even though write cache is enabled by default, SCSI
-> driver assume that cache is not enabled and it in turn might lead the
-> loss of data. "
++	idr_init(&dev_priv->object_idr);
+ 	dev->dev_private = (void *)dev_priv;
+ 	dev_priv->chipset = chipset;
+-	idr_init(&dev->object_name_idr);
 
-    Lead to the loss of data.
-
-WBR, Sergei
+ 	return 0;
+ }
