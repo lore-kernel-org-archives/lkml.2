@@ -1,86 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754007Ab2FKHnM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 03:43:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26471 "EHLO mx1.redhat.com"
+	id S1754068Ab2FKHov (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 03:44:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10968 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751916Ab2FKHnK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 03:43:10 -0400
-Date: Mon, 11 Jun 2012 09:44:34 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [Fw: Re: [PATCH] x86, acpi/irq: Minor readability cleanup of
- gsi_to_irq()]
-Message-ID: <20120611074434.GA3383@dhcp-26-207.brq.redhat.com>
+	id S1751916Ab2FKHou (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 03:44:50 -0400
+Date: Mon, 11 Jun 2012 09:44:40 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>
+Subject: Re: [PATCH] mm: do not use page_count without a page pin
+Message-ID: <20120611074440.GI3094@redhat.com>
+References: <1339373872-31969-1-git-send-email-minchan@kernel.org>
+ <4FD59C31.6000606@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4FD59C31.6000606@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+Hi,
 
-This patch probably get lost.
-Should I repost?
+On Mon, Jun 11, 2012 at 04:20:17PM +0900, Kamezawa Hiroyuki wrote:
+> (2012/06/11 9:17), Minchan Kim wrote:
+> > d179e84ba fixed the problem[1] in vmscan.c but same problem is here.
+> > Let's fix it.
+> > 
+> > [1] http://comments.gmane.org/gmane.linux.kernel.mm/65844
+> > 
+> > I copy and paste d179e84ba's contents for description.
+> > 
+> > "It is unsafe to run page_count during the physical pfn scan because
+> > compound_head could trip on a dangling pointer when reading
+> > page->first_page if the compound page is being freed by another CPU."
+> > 
+> > Cc: Andrea Arcangeli<aarcange@redhat.com>
+> > Cc: Mel Gorman<mgorman@suse.de>
+> > Cc: Michal Hocko<mhocko@suse.cz>
+> > Cc: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
+> > Signed-off-by: Minchan Kim<minchan@kernel.org>
+> > ---
+> >   mm/page_alloc.c |    6 +++++-
+> >   1 file changed, 5 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > index 266f267..019c4fe 100644
+> > --- a/mm/page_alloc.c
+> > +++ b/mm/page_alloc.c
+> > @@ -5496,7 +5496,11 @@ __count_immobile_pages(struct zone *zone, struct page *page, int count)
+> >   			continue;
+> > 
+> >   		page = pfn_to_page(check);
+> > -		if (!page_count(page)) {
+> > +		/*
+> > +		 * We can't use page_count withou pin a page
+> > +		 * because another CPU can free compound page.
+> > +		 */
+> > +		if (!atomic_read(&page->_count)) {
+> >   			if (PageBuddy(page))
+> >   				iter += (1<<  page_order(page)) - 1;
+> >   			continue;
+> Nice Catch.
 
------ Forwarded message from "Eric W. Biederman" <ebiederm@xmission.com> -----
+Agreed!
 
-Date: Fri, 30 Mar 2012 00:15:05 -0700
-From: "Eric W. Biederman" <ebiederm@xmission.com>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86, acpi/irq: Minor readability cleanup of gsi_to_irq()
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+> Other than the comment fix already pointed out..
+> Hmm...BTW, it seems this __count_xxx doesn't have any code for THP/Hugepage..
+> so, we need more fixes for better code, I think.
+> Hmm, Don't we need !PageTail() check and 'skip thp' code ?
 
-Alexander Gordeev <agordeev@redhat.com> writes:
+So the page->_count for tail pages is guaranteed zero at all times
+(tail page refcounting is done on _mapcount).
 
-> Init value of 'irq' variable is never used. So do not initialize it.
+We could add a comment that "this check already skips compound tails
+of THP because their page->_count is zero at all times".
 
-Reviewed-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Instead of a comment we could consider defining an inline function
+with a special name that does atomic_read(&page->_count) and use it
+when we intend to the regular or compound head count and return 0 on
+tails. It would make it easier to identify these places later if we
+ever want to change the refcounting mechanism, but it may be overkill,
+it's up to you.
 
-> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> ---
+Tail pages also can't be PageLRU.
 
-Looks good to me.    I was going to ask what idiot wrote that silly
-thing but it appears that idiot was me.    I must have rewritten
-the function and forgotten to cleanup that initial assignment to irq.
+The code after the patch should already skip thp tails fine (it won't
+skip heads but I believe that's intentional, but one problem that
+remains is that the heads should increase found by more than 1...).
 
-That change makes it much clearer what is going on thank you.
-
-Eric
-
->  arch/x86/kernel/acpi/boot.c |   10 ++++------
->  1 files changed, 4 insertions(+), 6 deletions(-)
->
-> diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-> index 406ed77..f148557 100644
-> --- a/arch/x86/kernel/acpi/boot.c
-> +++ b/arch/x86/kernel/acpi/boot.c
-> @@ -103,13 +103,11 @@ static u32 isa_irq_to_gsi[NR_IRQS_LEGACY] __read_mostly = {
->  
->  static unsigned int gsi_to_irq(unsigned int gsi)
->  {
-> -	unsigned int irq = gsi + NR_IRQS_LEGACY;
-> -	unsigned int i;
-> +	unsigned int irq;
->  
-> -	for (i = 0; i < NR_IRQS_LEGACY; i++) {
-> -		if (isa_irq_to_gsi[i] == gsi) {
-> -			return i;
-> -		}
-> +	for (irq = 0; irq < NR_IRQS_LEGACY; irq++) {
-> +		if (isa_irq_to_gsi[irq] == gsi)
-> +			return irq;
->  	}
->  
->  	/* Provide an identity mapping of gsi == irq
-
------ End forwarded message -----
-
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+Thanks,
+Andrea
