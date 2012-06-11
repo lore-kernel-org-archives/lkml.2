@@ -1,138 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753349Ab2FKJY1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 05:24:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41636 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753152Ab2FKJY0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 05:24:26 -0400
-Date: Mon, 11 Jun 2012 11:24:24 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
-        rientjes@google.com, akpm@linux-foundation.org, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH -V8 15/16] hugetlb/cgroup: migrate hugetlb cgroup info
- from oldpage to new page during migration
-Message-ID: <20120611092424.GJ12402@tiehlicka.suse.cz>
-References: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <1339232401-14392-16-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	id S1753144Ab2FKJ0e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 05:26:34 -0400
+Received: from www.linutronix.de ([62.245.132.108]:37433 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751011Ab2FKJ0d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 05:26:33 -0400
+Date: Mon, 11 Jun 2012 11:26:12 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Rusty Russell <rusty@rustcorp.com.au>
+cc: Peter Zijlstra <peterz@infradead.org>, Fenghua Yu <fenghua.yu@intel.com>,
+        Ingo Molnar <mingo@elte.hu>, H Peter Anvin <hpa@zytor.com>,
+        Suresh B Siddha <suresh.b.siddha@intel.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Asit K Mallick <asit.k.mallick@intel.com>,
+        Arjan Dan De Ven <arjan@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>,
+        linux-pm <linux-pm@vger.kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [PATCH] kthread: Implement park/unpark facility
+In-Reply-To: <878vfviv1h.fsf@rustcorp.com.au>
+Message-ID: <alpine.LFD.2.02.1206111124110.3086@ionos>
+References: <1338833876-29721-1-git-send-email-fenghua.yu@intel.com> <alpine.LFD.2.02.1206042203590.3086@ionos> <1338842001.28282.135.camel@twins> <87zk8iioam.fsf@rustcorp.com.au> <alpine.LFD.2.02.1206051135260.3086@ionos> <alpine.LFD.2.02.1206051538280.3086@ionos>
+ <878vfviv1h.fsf@rustcorp.com.au>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339232401-14392-16-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 09-06-12 14:30:00, Aneesh Kumar K.V wrote:
-> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-> 
-> With HugeTLB pages, hugetlb cgroup is uncharged in compound page
-> destructor.  Since we are holding a hugepage reference,
+On Sun, 10 Jun 2012, Rusty Russell wrote:
 
-Who is holding that reference? I do not see anybody calling get_page in
-this patch...
+> On Tue, 5 Jun 2012 15:41:48 +0200 (CEST), Thomas Gleixner <tglx@linutronix.de> wrote:
+> > Subject: kthread: Implement park/unpark facility
+> > From: Thomas Gleixner <tglx@linutronix.de>
+> > Date: Wed, 18 Apr 2012 16:37:40 +0200
+> > 
+> > To avoid the full teardown/setup of per cpu kthreads in the case of
+> > cpu hot(un)plug, provide a facility which allows to put the kthread
+> > into a park position and unpark it when the cpu comes online again.
+> 
+> Like the idea, but the API is awkward.  Now you've made returning from a
+> thread do different things depending on whether it was parked or not.
+> 
+> How about just have the thread call "kthread_parkme()" which only
+> returns if/when the thread is unparked?
+> 
+> So the thread does:
+> 
+>         while (!kthread_should_stop()) {
+>                 if (kthread_should_park()) {
+>                         ... cleanup ...
+>                         kthread_parkme();
+>                         ... restore ...
+>                 }
+>                 ... work ...
+>         }
+> 
+> Threads which never exit have "for (;;)" instead of while
+> (!kthread_should_stop()).
 
-> we can be sure that old page won't get uncharged till the last
-> put_page().
-> 
-> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-> ---
->  include/linux/hugetlb_cgroup.h |    8 ++++++++
->  mm/hugetlb_cgroup.c            |   21 +++++++++++++++++++++
->  mm/migrate.c                   |    5 +++++
->  3 files changed, 34 insertions(+)
-> 
-> diff --git a/include/linux/hugetlb_cgroup.h b/include/linux/hugetlb_cgroup.h
-> index ba4836f..b64d067 100644
-> --- a/include/linux/hugetlb_cgroup.h
-> +++ b/include/linux/hugetlb_cgroup.h
-> @@ -63,6 +63,8 @@ extern void hugetlb_cgroup_uncharge_page(int idx, unsigned long nr_pages,
->  extern void hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
->  					   struct hugetlb_cgroup *h_cg);
->  extern int hugetlb_cgroup_file_init(int idx) __init;
-> +extern void hugetlb_cgroup_migrate(struct page *oldhpage,
-> +				   struct page *newhpage);
->  #else
->  static inline struct hugetlb_cgroup *hugetlb_cgroup_from_page(struct page *page)
->  {
-> @@ -112,5 +114,11 @@ static inline int __init hugetlb_cgroup_file_init(int idx)
->  {
->  	return 0;
->  }
-> +
-> +static inline void hugetlb_cgroup_migrate(struct page *oldhpage,
-> +					  struct page *newhpage)
-> +{
-> +	return;
-> +}
->  #endif  /* CONFIG_MEM_RES_CTLR_HUGETLB */
->  #endif
-> diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
-> index c2b7b8e..2d384fe 100644
-> --- a/mm/hugetlb_cgroup.c
-> +++ b/mm/hugetlb_cgroup.c
-> @@ -394,6 +394,27 @@ int __init hugetlb_cgroup_file_init(int idx)
->  	return 0;
->  }
->  
-> +void hugetlb_cgroup_migrate(struct page *oldhpage, struct page *newhpage)
-> +{
-> +	struct hugetlb_cgroup *h_cg;
-> +
-> +	VM_BUG_ON(!PageHuge(oldhpage));
-> +
-> +	if (hugetlb_cgroup_disabled())
-> +		return;
-> +
-> +	spin_lock(&hugetlb_lock);
-> +	h_cg = hugetlb_cgroup_from_page(oldhpage);
-> +	set_hugetlb_cgroup(oldhpage, NULL);
-> +	cgroup_exclude_rmdir(&h_cg->css);
-> +
-> +	/* move the h_cg details to new cgroup */
-> +	set_hugetlb_cgroup(newhpage, h_cg);
-> +	spin_unlock(&hugetlb_lock);
-> +	cgroup_release_and_wakeup_rmdir(&h_cg->css);
-> +	return;
-> +}
-> +
->  struct cgroup_subsys hugetlb_subsys = {
->  	.name = "hugetlb",
->  	.create     = hugetlb_cgroup_create,
-> diff --git a/mm/migrate.c b/mm/migrate.c
-> index fdce3a2..6c37c51 100644
-> --- a/mm/migrate.c
-> +++ b/mm/migrate.c
-> @@ -33,6 +33,7 @@
->  #include <linux/memcontrol.h>
->  #include <linux/syscalls.h>
->  #include <linux/hugetlb.h>
-> +#include <linux/hugetlb_cgroup.h>
->  #include <linux/gfp.h>
->  
->  #include <asm/tlbflush.h>
-> @@ -931,6 +932,10 @@ static int unmap_and_move_huge_page(new_page_t get_new_page,
->  
->  	if (anon_vma)
->  		put_anon_vma(anon_vma);
-> +
-> +	if (!rc)
-> +		hugetlb_cgroup_migrate(hpage, new_hpage);
-> +
->  	unlock_page(hpage);
->  out:
->  	put_page(new_hpage);
-> -- 
-> 1.7.10
-> 
+Makes sense. Will have a go on that.
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+One other thing what I'm thinking about is to avoid the synchronous
+parking mechanism, i.e. just tell the thread to park and check the
+park state later before going further down.
+
+Thanks,
+
+	tglx
