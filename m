@@ -1,80 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755066Ab2FKO2R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 10:28:17 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:49138 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753887Ab2FKO2Q convert rfc822-to-8bit (ORCPT
+	id S1755128Ab2FKO2Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 10:28:24 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:48511 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754709Ab2FKO2V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 10:28:16 -0400
+	Mon, 11 Jun 2012 10:28:21 -0400
+Date: Mon, 11 Jun 2012 22:27:53 +0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, arnd@arndb.de,
+        linus.walleij@stericsson.com, grant.likely@secretlab.ca,
+        cjb@laptop.org, sameo@linux.intel.com, linux-kernel@vger.kernel.org
+Message-ID: <20120611142752.GS11439@opensource.wolfsonmicro.com>
+References: <1338353260-10097-1-git-send-email-lee.jones@linaro.org>
+ <1338353260-10097-10-git-send-email-lee.jones@linaro.org>
+ <4FCDDE58.5010501@linaro.org>
+ <20120605102900.GP23408@opensource.wolfsonmicro.com>
+ <4FCDE0A4.8070107@linaro.org>
+ <20120605104201.GR23408@opensource.wolfsonmicro.com>
+ <4FD5D49C.6070106@linaro.org>
+ <20120611120820.GN11439@opensource.wolfsonmicro.com>
+ <4FD5F3D2.2050500@linaro.org>
+ <4FD5FBAF.1060002@linaro.org>
 MIME-Version: 1.0
-Message-ID: <e82083d1-af9f-4766-992c-926413f02423@default>
-Date: Mon, 11 Jun 2012 07:27:56 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Sasha Levin <levinsasha928@gmail.com>, Minchan Kim <minchan@kernel.org>
-Cc: Konrad Wilk <konrad.wilk@oracle.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: RE: [PATCH v3 04/10] mm: frontswap: split out __frontswap_unuse_pages
-References: <1339325468-30614-1-git-send-email-levinsasha928@gmail.com>
- <1339325468-30614-5-git-send-email-levinsasha928@gmail.com>
- <4FD5856C.5060708@kernel.org> <1339410650.4999.38.camel@lappy>
-In-Reply-To: <1339410650.4999.38.camel@lappy>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.6  (510070) [OL
- 12.0.6607.1000 (x86)]
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="jesV4P1FjH8FXPjZ"
+Content-Disposition: inline
+In-Reply-To: <4FD5FBAF.1060002@linaro.org>
+X-Cookie: You are always busy.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 116.228.53.169
+X-SA-Exim-Mail-From: broonie@opensource.wolfsonmicro.com
+Subject: Re: [PATCH 09/22] regulator: Change db8500-prcmu match names to
+ reflect Device Tree
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Sasha Levin [mailto:levinsasha928@gmail.com]
-> Subject: Re: [PATCH v3 04/10] mm: frontswap: split out __frontswap_unuse_pages
-> 
-> > > +	assert_spin_locked(&swap_lock);
-> >
-> > Normally, we should use this assertion when we can't find swap_lock is hold or not easily
-> > by complicated call depth or unexpected use-case like general function.
-> > But I expect this function's caller is very limited, not complicated.
-> > Just comment write down isn't enough?
-> 
-> Is there a reason not to do it though? Debugging a case where this
-> function is called without a swaplock and causes corruption won't be
-> easy.
 
-I'm not sure of the correct kernel style but I like the fact
-that assert_spin_locked both documents the lock requirement and tests
-it at runtime.
+--jesV4P1FjH8FXPjZ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I don't know the correct kernel syntax but is it possible
-to make this code be functional when the kernel "debug"
-option is on, but a no-op when "debug" is disabled?
-IMHO, that would be the ideal solution.
- 
-> > > +	for (type = swap_list.head; type >= 0; type = si->next) {
-> > > +		si = swap_info[type];
-> > > +		si_frontswap_pages = atomic_read(&si->frontswap_pages);
-> > > +		if (total_pages_to_unuse < si_frontswap_pages) {
-> > > +			pages = pages_to_unuse = total_pages_to_unuse;
-> > > +		} else {
-> > > +			pages = si_frontswap_pages;
-> > > +			pages_to_unuse = 0; /* unuse all */
-> > > +		}
-> > > +		/* ensure there is enough RAM to fetch pages from frontswap */
-> > > +		if (security_vm_enough_memory_mm(current->mm, pages)) {
-> > > +			ret = -ENOMEM;
-> >
-> >
-> > Nipick:
-> > I am not sure detailed error returning would be good.
-> > Caller doesn't matter it now but it can consider it in future.
-> > Hmm,
-> 
-> Is there a reason to avoid returning a meaningful error when it's pretty
-> easy?
+On Mon, Jun 11, 2012 at 03:07:43PM +0100, Lee Jones wrote:
+> >>Well, I guess I'll end up dulplicating the commits :/
 
-I'm certainly not an expert on kernel style (as this whole series
-of patches demonstrates :-) but I think setting a meaningful
-error code is useful documentation and plans for future users
-that might use the error code.
+> >Duplicating them?
+
+> Ah, you mean that you've already sent them to -next?
+
+Yeah, I've already got them on a branch I don't really want to rebase.
+
+> That's no problem though. Won't Git just sling them out at pull-time?
+
+It'll merge out fine, it's just icky having the same thing appear twice
+in history.  Not the end of the world.
+
+--jesV4P1FjH8FXPjZ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP1gBUAAoJEBus8iNuMP3dwbkP/0rk2tV9JAVznRzEpS2fmBKb
+vsbijoZg25VCSMkbyx9uBVZhfr+xDfs5mz6b4oMyTlGE1FUuPMiAUjRJgPVv4CU/
+JYOdhz1cu91oLjzSgnfyjPhS6ESOVsnKD07l7by6dSuuNe+Hkx7jbGCl0FeI5pLL
+VZ3XPIPpZVFFkB8XAqeIk0QmrXlUrr3XHCpP3ss2cETh15rOIUb/u6lVXDtjzmAX
+yuWgdl2N2YrW2FxoSyZixTSFmyrXCE4NJE72+q9GG6I9ZUlGuPSAxNOWJpy6MXgB
+QwylyP8xu4Ve+xrzTOALIRCCxoWDBNxdkcKbFymE+XxuEzGpPsEEUuS/HaLThKpR
+ag+6hiw44102v7N6Adrfu+g86YzeCgSDk5YrKua4Vv3UubLRY1PXOY218qPWNYzX
+4vQVCkM78Yf1uJJ9iVat4UNPycuwaBEMrl94H64bE7yfRy0K3og2duSkgNokVMV+
+/XyOi7Bw2iq5w4nD+qqSg/1idddovifdIR4ztYp9eG/qDhCgtf2HtusBoUQeUn7L
+yYTqBqYnahJqnAzwySHhsg7GoD1EFbf5Obq85R+1BCGeX5ACMVvINqKt8pYjx7Px
+k7i4LBSLY2a+nCt5Y2TXCwcj6sjdHSCdUeGg3hNBbyT+/hFkBt7mxSYzd2xaNGqG
+JECb/9wCueiKynLAiaDJ
+=zVi8
+-----END PGP SIGNATURE-----
+
+--jesV4P1FjH8FXPjZ--
