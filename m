@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755269Ab2FKO5J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 10:57:09 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:61552 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754909Ab2FKO5G (ORCPT
+	id S1755364Ab2FKO6C (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 10:58:02 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:59891 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755005Ab2FKO6A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 10:57:06 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Roland Stigge <stigge@antcom.de>
-Subject: Re: [PATCH 11/14] ARM: LPC32xx: DTS adjustment for using pl18x primecell
-Date: Mon, 11 Jun 2012 14:57:00 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
-        srinivas.bakki@nxp.com, aletes.xgr@gmail.com
-References: <1339412537-24485-1-git-send-email-stigge@antcom.de> <201206111414.14264.arnd@arndb.de> <4FD60096.7050603@antcom.de>
-In-Reply-To: <4FD60096.7050603@antcom.de>
+	Mon, 11 Jun 2012 10:58:00 -0400
+Message-ID: <4FD6075F.5010307@linux.vnet.ibm.com>
+Date: Mon, 11 Jun 2012 07:57:35 -0700
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+CC: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, "Tomas M." <tmezzadra@gmail.com>,
+        Ferenc Wagner <wferi@niif.hu>, Arnd Bergmann <arnd@arndb.de>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>,
+        Kevin Hilman <khilman@ti.com>,
+        Arjan van de Ven <arjan@linux.intel.com>, Jean Pihet <j-pihet@ti.com>,
+        Trinabh Gupta <g.trinabh@gmail.com>,
+        linux-pm@lists.linux-foundation.org, preeti@linux.vnet.ibm.com
+Subject: Re: Suspend/resume regressions on Lenovo S10-3
+References: <4FC2DA8C.7050401@linux.vnet.ibm.com> <4FCF5249.2070600@linux.vnet.ibm.com> <4FD5F329.2090302@linux.vnet.ibm.com>
+In-Reply-To: <4FD5F329.2090302@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201206111457.00845.arnd@arndb.de>
-X-Provags-ID: V02:K0:rxpvT1nFkvIrj9G0iJZ79LsRZ0TNwJyTpA1HkVfGj39
- C/TXkGvr919axvQq4/95ykDpuESM2Xqu+4FXTVhIR25ouZjzYK
- lvNcfPW3fKrDM8/29sVd7GeLDibRC8btdHYS3scO90oKNfXRUZ
- nBfGwz37vk4BViaqi+iH7gzHJVS+sxGB9gShVzZx7DnOPcseGR
- mIBdjPOhhw7lbqg5LE03AHA+QDJc5p4zdMISZONpooJmAdKTEQ
- Fg4fxYh0OOqAYkwvS9+Iy5gBEk18pYo0X/iOyEF/K1xl9lC4CA
- 69eq9FFpAjkKgldUYXaZ9zZ2osYHx7qu+Rl1OEjDsIZQat3AvR
- jAmwNX7at8xBOcGAiIXE=
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12061114-7408-0000-0000-000005C08614
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 11 June 2012, Roland Stigge wrote:
-> Thanks for the note!
+On 06/11/2012 06:31 AM, Srivatsa S. Bhat wrote:
+> Hi Dave,
 > 
-> Funnily, I always did it this way. Looks like initially, I copied from
-> somewhere else (wrongly). Indeed, we have lots of "disable", see also:
+> On 06/06/2012 06:21 PM, Deepthi Dharwar wrote:
 > 
-> omap3-beagle.dts
-> omap4-panda.dts
-> omap4-sdp.dts
-> tegra20.dtsi
-> tegra30.dtsi
+>> On 05/28/2012 07:23 AM, Dave Hansen wrote:
+>>
+>>> I have a Lenovo S10-3 Atom netbook.  It's always had some amount of
+>>> trouble working with the intel_idle driver, so I usually compile that
+>>> out an use the acpi one.
+> 
+> 
+> What problem did you face with intel_idle driver? Is it suspend/resume
+> related?
 
-Ah, right. Note that the kernel checks only for "ok" and "okay" strings,
-anything else is interpreted as "disabled". We should use the correct
-string anyway of course.
+With intel_idle, sometimes it won't boot, others it won't suspend/resume:
 
-	Arnd
+  https://bugs.launchpad.net/ubuntu/+source/linux/+bug/674075
+
+I'm actually not sure how it behaves on current kernels.
+
