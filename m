@@ -1,36 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752191Ab2FKMuO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 08:50:14 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:40247 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751007Ab2FKMuM (ORCPT
+	id S1753470Ab2FKMwO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 08:52:14 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:60447 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751193Ab2FKMwM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 08:50:12 -0400
+	Mon, 11 Jun 2012 08:52:12 -0400
+From: Michal Nazarewicz <mina86@mina86.com>
+To: Felipe Balbi <balbi@ti.com>, Alan Stern <stern@rowland.harvard.edu>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/4] Minor g_mass_storage improvements.
+Date: Mon, 11 Jun 2012 14:51:59 +0200
+Message-Id: <cover.1339418799.git.mina86@mina86.com>
+X-Mailer: git-send-email 1.7.7.3
 MIME-Version: 1.0
-Date: Mon, 11 Jun 2012 20:50:11 +0800
-Message-ID: <CAJd=RBDfZ4=dLjNV8E0TNk3V=qFfrrFVevP5dBfigaW8GaW5ww@mail.gmail.com>
-Subject: [patch] BFS 421: revert handle CPU_ONLINE
-From: Hillf Danton <dhillf@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>, Hillf Danton <dhillf@gmail.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No reason to change whatever in the __init region, or I have to handle
-why the newly built kernel hangs as early as she could.
+This patchset is based on top of greg/usb-next.
 
+IIRC Felipe has already pulled the first patch in the series, but
+I couldn't find a proper branch on Felipe's tree to base my patchset
+on that would include it, so resending.
 
---- a/kernel/sched/bfs.c	Fri Jun  8 21:34:34 2012
-+++ b/kernel/sched/bfs.c	Mon Jun 11 20:07:46 2012
-@@ -5349,7 +5349,7 @@ migration_call(struct notifier_block *nf
- 		/* Update our root-domain */
- 		grq_lock_irqsave(&flags);
- 		if (rq->rd) {
--			BUG_ON(cpumask_test_cpu(cpu, rq->rd->span));
-+			BUG_ON(!cpumask_test_cpu(cpu, rq->rd->span));
+It would be nice if at least the first and the last patch from the
+series were pulled together to the same Linux version.
 
- 			set_rq_online(rq);
- 		}
---
+Michal Nazarewicz (3):
+  usb: gadget: mass_storage: change default value of the removable
+    parameter
+  usb: gadget: mass_storage: remove unused options
+  usb: gadget: mass_storage: add documentation
+
+ Documentation/usb/mass-storage.txt  |  219 +++++++++++++++++++++++++++++++++++
+ drivers/usb/gadget/f_mass_storage.c |  109 ++----------------
+ 2 files changed, 230 insertions(+), 98 deletions(-)
+ create mode 100644 Documentation/usb/mass-storage.txt
+
+-- 
+1.7.7.3
+
