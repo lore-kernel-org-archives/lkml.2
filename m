@@ -1,50 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754459Ab2FKMb6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 08:31:58 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:51711 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754285Ab2FKMb5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 08:31:57 -0400
-Message-ID: <4FD5E538.4050601@gmail.com>
-Date: Mon, 11 Jun 2012 07:31:52 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1754472Ab2FKMhX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 08:37:23 -0400
+Received: from fieldses.org ([174.143.236.118]:49965 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754186Ab2FKMhV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 08:37:21 -0400
+Date: Mon, 11 Jun 2012 08:37:18 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
+        linux-kernel@vger.kernel.org, devel@openvz.org
+Subject: Re: [PATCH] NFS: hard-code init_net for NFS callback transports
+Message-ID: <20120611123718.GF7654@fieldses.org>
+References: <20120601095424.24427.74720.stgit@localhost.localdomain>
 MIME-Version: 1.0
-To: Wolfram Sang <w.sang@pengutronix.de>
-CC: devicetree-discuss@lists.ozlabs.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] devicetree: bindings: gpio-i2c belongs to i2c not gpio
-References: <1334934487-19201-1-git-send-email-w.sang@pengutronix.de> <20120611122648.GA4407@pengutronix.de>
-In-Reply-To: <20120611122648.GA4407@pengutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120601095424.24427.74720.stgit@localhost.localdomain>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2012 07:26 AM, Wolfram Sang wrote:
-> On Fri, Apr 20, 2012 at 05:08:02PM +0200, Wolfram Sang wrote:
->> gpio-i2c describes an I2C controller (using gpios for data and clock),
->> so it must be described in i2c, not gpio.
->>
->> Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
->> ---
->>  .../{gpio/gpio_i2c.txt => i2c/gpio-i2c.txt}        |    0
->>  1 file changed, 0 insertions(+), 0 deletions(-)
->>  rename Documentation/devicetree/bindings/{gpio/gpio_i2c.txt => i2c/gpio-i2c.txt} (100%)
->>
->> diff --git a/Documentation/devicetree/bindings/gpio/gpio_i2c.txt b/Documentation/devicetree/bindings/i2c/gpio-i2c.txt
->> similarity index 100%
->> rename from Documentation/devicetree/bindings/gpio/gpio_i2c.txt
->> rename to Documentation/devicetree/bindings/i2c/gpio-i2c.txt
+On Fri, Jun 01, 2012 at 01:55:47PM +0400, Stanislav Kinsbursky wrote:
+> This patch set is a bug fix for Bruce's 3.5 branch.
+> I'll rebase this for 3.4 and resend.
+
+Apologies for neglecting this, I'm done with the bakeathon and should be
+back to this soon.
+
+But, I'm a bit confused: you say you'll rebase this, but I've only seen
+two rebased patches for 3.4, and neither looks like a simple rebase of
+this one.
+
+OK, I'll look more closely and probably I'll figure out.  But in
+general, a little more detail in changelogs would help me process
+patches more quickly:
+
+	- Please make sure it's clear whether a given patch is a bug
+	  fix, a new feature, or code reshuffling that isn't intended to
+	  change behavior.  If it's a bug fix, tell me whether we've had
+	  the bug forever or whether it's a recent regression.  And
+	  (relevant here) if it's a recent regression, reference the ID
+	  of the commit that introduced it.
+	- If something is a backport, please reference in the changelog
+	  the commit ID of the backported patch, especially if it's not
+	  obviously the same.
+
+--b.
+	
+
 > 
-> Any objections to me taking the patch via the i2c-tree?
-
-That's fine.
-
-Acked-by: Rob Herring <rob.herring@calxeda.com>
+> In case of destroying mount namespace on child reaper exit, nsproxy is zeroed
+> to the point already. So, dereferencing of it is invalid.
+> This patch hard-code "init_net" for all network namespace references for NFS
+> callback services. This will be fixed with proper NFS callback
+> containerization.
+> 
+> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> ---
+>  fs/nfs/callback.c |   11 +++++------
+>  1 files changed, 5 insertions(+), 6 deletions(-)
+> 
+> diff --git a/fs/nfs/callback.c b/fs/nfs/callback.c
+> index 970659d..23ff18f 100644
+> --- a/fs/nfs/callback.c
+> +++ b/fs/nfs/callback.c
+> @@ -17,7 +17,6 @@
+>  #include <linux/kthread.h>
+>  #include <linux/sunrpc/svcauth_gss.h>
+>  #include <linux/sunrpc/bc_xprt.h>
+> -#include <linux/nsproxy.h>
+>  
+>  #include <net/inet_sock.h>
+>  
+> @@ -107,7 +106,7 @@ nfs4_callback_up(struct svc_serv *serv, struct rpc_xprt *xprt)
+>  {
+>  	int ret;
+>  
+> -	ret = svc_create_xprt(serv, "tcp", xprt->xprt_net, PF_INET,
+> +	ret = svc_create_xprt(serv, "tcp", &init_net, PF_INET,
+>  				nfs_callback_set_tcpport, SVC_SOCK_ANONYMOUS);
+>  	if (ret <= 0)
+>  		goto out_err;
+> @@ -115,7 +114,7 @@ nfs4_callback_up(struct svc_serv *serv, struct rpc_xprt *xprt)
+>  	dprintk("NFS: Callback listener port = %u (af %u)\n",
+>  			nfs_callback_tcpport, PF_INET);
+>  
+> -	ret = svc_create_xprt(serv, "tcp", xprt->xprt_net, PF_INET6,
+> +	ret = svc_create_xprt(serv, "tcp", &init_net, PF_INET6,
+>  				nfs_callback_set_tcpport, SVC_SOCK_ANONYMOUS);
+>  	if (ret > 0) {
+>  		nfs_callback_tcpport6 = ret;
+> @@ -184,7 +183,7 @@ nfs41_callback_up(struct svc_serv *serv, struct rpc_xprt *xprt)
+>  	 * fore channel connection.
+>  	 * Returns the input port (0) and sets the svc_serv bc_xprt on success
+>  	 */
+> -	ret = svc_create_xprt(serv, "tcp-bc", xprt->xprt_net, PF_INET, 0,
+> +	ret = svc_create_xprt(serv, "tcp-bc", &init_net, PF_INET, 0,
+>  			      SVC_SOCK_ANONYMOUS);
+>  	if (ret < 0) {
+>  		rqstp = ERR_PTR(ret);
+> @@ -254,7 +253,7 @@ int nfs_callback_up(u32 minorversion, struct rpc_xprt *xprt)
+>  	char svc_name[12];
+>  	int ret = 0;
+>  	int minorversion_setup;
+> -	struct net *net = current->nsproxy->net_ns;
+> +	struct net *net = &init_net;
+>  
+>  	mutex_lock(&nfs_callback_mutex);
+>  	if (cb_info->users++ || cb_info->task != NULL) {
+> @@ -330,7 +329,7 @@ void nfs_callback_down(int minorversion)
+>  	cb_info->users--;
+>  	if (cb_info->users == 0 && cb_info->task != NULL) {
+>  		kthread_stop(cb_info->task);
+> -		svc_shutdown_net(cb_info->serv, current->nsproxy->net_ns);
+> +		svc_shutdown_net(cb_info->serv, &init_net);
+>  		svc_exit_thread(cb_info->rqst);
+>  		cb_info->serv = NULL;
+>  		cb_info->rqst = NULL;
+> 
