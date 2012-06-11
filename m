@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753740Ab2FKNUt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 09:20:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60802 "EHLO mx1.redhat.com"
+	id S1754146Ab2FKNUx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 09:20:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42677 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751381Ab2FKNUq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 09:20:46 -0400
+	id S1753776Ab2FKNUt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 09:20:49 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
@@ -14,166 +14,246 @@ Cc: eranian@google.com, gorcunov@openvz.org, tzanussi@gmail.com,
         linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
         drepper@gmail.com, asharma@fb.com, benjamin.redelings@nescent.org,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 02/19] perf: Add ability to attach user level registers dump to sample
-Date: Mon, 11 Jun 2012 15:19:57 +0200
-Message-Id: <1339420814-7379-3-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 01/19] perf: Unified API to record selective sets of arch registers
+Date: Mon, 11 Jun 2012 15:19:56 +0200
+Message-Id: <1339420814-7379-2-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1339420814-7379-1-git-send-email-jolsa@redhat.com>
 References: <1339420814-7379-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introducing sample_regs_user bitmask into perf_event_attr
-struct to define the user level registers we want to attach
-to the sample. The dump itself is triggered once the
-sample_regs_user is not empty.
+This brings a new API to help the selective dump of registers on
+event sampling, and its implementation for x86 arch.
 
-Only user level registers are dump at the moment. Meaning the
-register values of the user space context as it was before the
-user entered the kernel for whatever reason (syscall, irq,
-exception, or a PMI happening in userspace).
+Added HAVE_PERF_REGS config option to determine if the architecture
+provides perf registers ABI.
 
-The layout of the sample_regs_user bitmap is described in
-asm/perf_regs.h for archs that support register dump.
+The information about desired registers will be passed in u64 mask.
+It's up to the architecture to map the registers into the mask bits.
 
-This is going to be useful to bring Dwarf CFI based stack
-unwinding on top of samples.
+For the x86 arch implementation, both 32 and 64 bit registers
+bits are defined within single enum to ensure 64 bit system can
+provide register dump for compat task if needed in the future.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- include/linux/perf_event.h |   10 ++++++-
- kernel/events/core.c       |   61 ++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 70 insertions(+), 1 deletions(-)
+ arch/Kconfig                     |    6 +++
+ arch/x86/Kconfig                 |    1 +
+ arch/x86/include/asm/perf_regs.h |   34 ++++++++++++++
+ arch/x86/kernel/Makefile         |    2 +
+ arch/x86/kernel/perf_regs.c      |   91 ++++++++++++++++++++++++++++++++++++++
+ include/linux/perf_regs.h        |   19 ++++++++
+ 6 files changed, 153 insertions(+), 0 deletions(-)
+ create mode 100644 arch/x86/include/asm/perf_regs.h
+ create mode 100644 arch/x86/kernel/perf_regs.c
+ create mode 100644 include/linux/perf_regs.h
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 1ce887a..d66cbeb 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -271,7 +271,13 @@ struct perf_event_attr {
- 		__u64		bp_len;
- 		__u64		config2; /* extension of config1 */
- 	};
--	__u64	branch_sample_type; /* enum branch_sample_type */
-+	__u64	branch_sample_type; /* enum perf_branch_sample_type */
+diff --git a/arch/Kconfig b/arch/Kconfig
+index 8c3d957..32f4873 100644
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@ -222,6 +222,12 @@ config HAVE_PERF_EVENTS_NMI
+ 	  subsystem.  Also has support for calculating CPU cycle events
+ 	  to determine how many clock cycles in a given period.
+ 
++config HAVE_PERF_REGS
++	bool
++	help
++	  Support selective register dumps for perf events. This includes
++	  bit-mapping of each registers and a unique architecture id.
 +
+ config HAVE_ARCH_JUMP_LABEL
+ 	bool
+ 
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index d35438e..457d8d6 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -60,6 +60,7 @@ config X86
+ 	select HAVE_MIXED_BREAKPOINTS_REGS
+ 	select PERF_EVENTS
+ 	select HAVE_PERF_EVENTS_NMI
++	select HAVE_PERF_REGS
+ 	select ANON_INODES
+ 	select HAVE_ALIGNED_STRUCT_PAGE if SLUB && !M386
+ 	select HAVE_CMPXCHG_LOCAL if !M386
+diff --git a/arch/x86/include/asm/perf_regs.h b/arch/x86/include/asm/perf_regs.h
+new file mode 100644
+index 0000000..0397bfc
+--- /dev/null
++++ b/arch/x86/include/asm/perf_regs.h
+@@ -0,0 +1,34 @@
++#ifndef _ASM_X86_PERF_REGS_H
++#define _ASM_X86_PERF_REGS_H
++
++enum perf_event_x86_regs {
++	PERF_REG_X86_AX,
++	PERF_REG_X86_BX,
++	PERF_REG_X86_CX,
++	PERF_REG_X86_DX,
++	PERF_REG_X86_SI,
++	PERF_REG_X86_DI,
++	PERF_REG_X86_BP,
++	PERF_REG_X86_SP,
++	PERF_REG_X86_IP,
++	PERF_REG_X86_FLAGS,
++	PERF_REG_X86_CS,
++	PERF_REG_X86_DS,
++	PERF_REG_X86_ES,
++	PERF_REG_X86_FS,
++	PERF_REG_X86_GS,
++	PERF_REG_X86_R8,
++	PERF_REG_X86_R9,
++	PERF_REG_X86_R10,
++	PERF_REG_X86_R11,
++	PERF_REG_X86_R12,
++	PERF_REG_X86_R13,
++	PERF_REG_X86_R14,
++	PERF_REG_X86_R15,
++	PERF_REG_X86_SS,
++
++	/* non ABI */
++	PERF_REG_X86_64_MAX = PERF_REG_X86_SS + 1,
++	PERF_REG_X86_32_MAX = PERF_REG_X86_GS + 1,
++};
++#endif /* _ASM_X86_PERF_REGS_H */
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index 8215e56..8d7a619 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -100,6 +100,8 @@ obj-$(CONFIG_SWIOTLB)			+= pci-swiotlb.o
+ obj-$(CONFIG_OF)			+= devicetree.o
+ obj-$(CONFIG_UPROBES)			+= uprobes.o
+ 
++obj-$(CONFIG_PERF_EVENTS)		+= perf_regs.o
++
+ ###
+ # 64 bit specific files
+ ifeq ($(CONFIG_X86_64),y)
+diff --git a/arch/x86/kernel/perf_regs.c b/arch/x86/kernel/perf_regs.c
+new file mode 100644
+index 0000000..87f0e81
+--- /dev/null
++++ b/arch/x86/kernel/perf_regs.c
+@@ -0,0 +1,91 @@
++
++#include <linux/kernel.h>
++#include <linux/bug.h>
++#include <linux/stddef.h>
++#include <asm/perf_regs.h>
++#include <asm/ptrace.h>
++
++#ifdef CONFIG_X86_32
++#define PERF_REG_X86_MAX PERF_REG_X86_32_MAX
++#else
++#define PERF_REG_X86_MAX PERF_REG_X86_64_MAX
++#endif
++
++#define PT_REGS_OFFSET(id, r) [id] = offsetof(struct pt_regs, r)
++
++static unsigned int pt_regs_offset[PERF_REG_X86_MAX] = {
++	PT_REGS_OFFSET(PERF_REG_X86_AX, ax),
++	PT_REGS_OFFSET(PERF_REG_X86_BX, bx),
++	PT_REGS_OFFSET(PERF_REG_X86_CX, cx),
++	PT_REGS_OFFSET(PERF_REG_X86_DX, dx),
++	PT_REGS_OFFSET(PERF_REG_X86_SI, si),
++	PT_REGS_OFFSET(PERF_REG_X86_DI, di),
++	PT_REGS_OFFSET(PERF_REG_X86_BP, bp),
++	PT_REGS_OFFSET(PERF_REG_X86_SP, sp),
++	PT_REGS_OFFSET(PERF_REG_X86_IP, ip),
++	PT_REGS_OFFSET(PERF_REG_X86_FLAGS, flags),
++	PT_REGS_OFFSET(PERF_REG_X86_CS, cs),
++#ifdef CONFIG_X86_32
++	PT_REGS_OFFSET(PERF_REG_X86_DS, ds),
++	PT_REGS_OFFSET(PERF_REG_X86_ES, es),
++	PT_REGS_OFFSET(PERF_REG_X86_FS, fs),
++	PT_REGS_OFFSET(PERF_REG_X86_GS, gs),
++#else
 +	/*
-+	 * Defines set of user regs to dump on samples.
-+	 * See asm/perf_regs.h for details.
++	 * The pt_regs struct does not store
++	 * ds, es, fs, gs in 64 bit mode.
 +	 */
-+	__u64	sample_regs_user;
- };
- 
- /*
-@@ -609,6 +615,7 @@ struct perf_guest_info_callbacks {
- #include <linux/static_key.h>
- #include <linux/atomic.h>
- #include <linux/sysfs.h>
-+#include <linux/perf_regs.h>
- #include <asm/local.h>
- 
- struct perf_callchain_entry {
-@@ -1131,6 +1138,7 @@ struct perf_sample_data {
- 	struct perf_callchain_entry	*callchain;
- 	struct perf_raw_record		*raw;
- 	struct perf_branch_stack	*br_stack;
-+	struct pt_regs			*regs_user;
- };
- 
- static inline void perf_sample_data_init(struct perf_sample_data *data,
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index f85c015..e4df59d 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -3750,6 +3750,33 @@ int perf_unregister_guest_info_callbacks(struct perf_guest_info_callbacks *cbs)
- }
- EXPORT_SYMBOL_GPL(perf_unregister_guest_info_callbacks);
- 
-+static void
-+perf_output_sample_regs(struct perf_output_handle *handle,
-+			struct pt_regs *regs, u64 mask)
++	(unsigned int) -1,
++	(unsigned int) -1,
++	(unsigned int) -1,
++	(unsigned int) -1,
++#endif
++#ifdef CONFIG_X86_64
++	PT_REGS_OFFSET(PERF_REG_X86_R8, r8),
++	PT_REGS_OFFSET(PERF_REG_X86_R9, r9),
++	PT_REGS_OFFSET(PERF_REG_X86_R10, r10),
++	PT_REGS_OFFSET(PERF_REG_X86_R11, r11),
++	PT_REGS_OFFSET(PERF_REG_X86_R12, r12),
++	PT_REGS_OFFSET(PERF_REG_X86_R13, r13),
++	PT_REGS_OFFSET(PERF_REG_X86_R14, r14),
++	PT_REGS_OFFSET(PERF_REG_X86_R15, r15),
++	PT_REGS_OFFSET(PERF_REG_X86_SS, ss),
++#endif
++};
++
++u64 perf_reg_value(struct pt_regs *regs, int idx)
 +{
-+	int bit;
++	if (WARN_ON_ONCE(idx > ARRAY_SIZE(pt_regs_offset)))
++		return 0;
 +
-+	for_each_set_bit(bit, (const unsigned long *) &mask,
-+			 sizeof(mask) * BITS_PER_BYTE) {
-+		u64 val;
-+
-+		val = perf_reg_value(regs, bit);
-+		perf_output_put(handle, val);
-+	}
++	return regs_get_register(regs, pt_regs_offset[idx]);
 +}
 +
-+static struct pt_regs *perf_sample_regs_user(struct pt_regs *regs)
-+{
-+	if (!user_mode(regs)) {
-+		if (current->mm)
-+			regs = task_pt_regs(current);
-+		else
-+			regs = NULL;
-+	}
++#define REG_RESERVED (~((1ULL << PERF_REG_X86_MAX) - 1ULL))
 +
-+	return regs;
++#ifdef CONFIG_X86_32
++int perf_reg_validate(u64 mask)
++{
++	if (mask & REG_RESERVED)
++		return -EINVAL;
++
++	return 0;
 +}
 +
- static void __perf_event_header__init_id(struct perf_event_header *header,
- 					 struct perf_sample_data *data,
- 					 struct perf_event *event)
-@@ -4010,6 +4037,23 @@ void perf_output_sample(struct perf_output_handle *handle,
- 			perf_output_put(handle, nr);
- 		}
- 	}
++#else /* CONFIG_X86_64 */
++#define REG_NOSUPPORT ((1ULL << PERF_REG_X86_DS) | \
++		       (1ULL << PERF_REG_X86_ES) | \
++		       (1ULL << PERF_REG_X86_FS) | \
++		       (1ULL << PERF_REG_X86_GS))
 +
-+	if (event->attr.sample_regs_user) {
-+		u64 avail = (data->regs_user != NULL);
++int perf_reg_validate(u64 mask)
++{
++	if (mask & REG_RESERVED)
++		return -EINVAL;
 +
-+		/*
-+		 * If there are no regs to dump, notice it through
-+		 * first u64 being zero.
-+		 */
-+		perf_output_put(handle, avail);
++	if (mask & REG_NOSUPPORT)
++		return -EINVAL;
 +
-+		if (avail) {
-+			u64 mask = event->attr.sample_regs_user;
-+			perf_output_sample_regs(handle,
-+						data->regs_user,
-+						mask);
-+		}
-+	}
- }
- 
- void perf_prepare_sample(struct perf_event_header *header,
-@@ -4061,6 +4105,19 @@ void perf_prepare_sample(struct perf_event_header *header,
- 		}
- 		header->size += size;
- 	}
++	return 0;
++}
++#endif /* CONFIG_X86_32 */
+diff --git a/include/linux/perf_regs.h b/include/linux/perf_regs.h
+new file mode 100644
+index 0000000..a2f1a98
+--- /dev/null
++++ b/include/linux/perf_regs.h
+@@ -0,0 +1,19 @@
++#ifndef _LINUX_PERF_REGS_H
++#define _LINUX_PERF_REGS_H
 +
-+	if (event->attr.sample_regs_user) {
-+		/* regs dump available bool */
-+		int size = sizeof(u64);
++#ifdef CONFIG_HAVE_PERF_REGS
++#include <asm/perf_regs.h>
++u64 perf_reg_value(struct pt_regs *regs, int idx);
++int perf_reg_validate(u64 mask);
++#else
++static inline u64 perf_reg_value(struct pt_regs *regs, int idx)
++{
++	return 0;
++}
 +
-+		data->regs_user = perf_sample_regs_user(regs);
-+		if (data->regs_user) {
-+			u64 mask = event->attr.sample_regs_user;
-+			size += hweight64(mask) * sizeof(u64);
-+		}
-+
-+		header->size += size;
-+	}
- }
- 
- static void perf_event_output(struct perf_event *event,
-@@ -6110,6 +6167,10 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
- 			attr->branch_sample_type = mask;
- 		}
- 	}
-+
-+	if (attr->sample_regs_user)
-+		ret = perf_reg_validate(attr->sample_regs_user);
-+
- out:
- 	return ret;
- 
++static inline int perf_reg_validate(u64 mask)
++{
++	return mask ? -ENOSYS : 0;
++}
++#endif /* CONFIG_HAVE_PERF_REGS */
++#endif /* _LINUX_PERF_REGS_H */
 -- 
 1.7.7.6
 
