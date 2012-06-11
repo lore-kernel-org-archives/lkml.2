@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753828Ab2FKLCp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 07:02:45 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:32657 "EHLO
+	id S1753871Ab2FKLCr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 07:02:47 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:40875 "EHLO
 	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753707Ab2FKLCn (ORCPT
+	with ESMTP id S1753822Ab2FKLCp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 07:02:43 -0400
+	Mon, 11 Jun 2012 07:02:45 -0400
 From: Roland Stigge <stigge@antcom.de>
 To: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
         srinivas.bakki@nxp.com, aletes.xgr@gmail.com
 Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH 8/14] ARM: LPC32xx: Clock adjustment for key matrix controller
-Date: Mon, 11 Jun 2012 13:02:11 +0200
-Message-Id: <1339412537-24485-9-git-send-email-stigge@antcom.de>
+Subject: [PATCH 10/14] ARM: LPC32xx: Add MMC controller support
+Date: Mon, 11 Jun 2012 13:02:13 +0200
+Message-Id: <1339412537-24485-11-git-send-email-stigge@antcom.de>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1339412537-24485-1-git-send-email-stigge@antcom.de>
 References: <1339412537-24485-1-git-send-email-stigge@antcom.de>
@@ -23,24 +23,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The clock.c file needs to be changed to match the automatic device name to its
-clock.
+This patch adds support for the MMC controller of the LPC32xx SoC to the
+platform initialization via the pl08x primecell driver. Lacking more complete
+DT support, done via DT auxdata.
 
 Signed-off-by: Roland Stigge <stigge@antcom.de>
-Acked-by: Rob Herring <rob.herring@calxeda.com>
-
 ---
- arch/arm/mach-lpc32xx/clock.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/mach-lpc32xx/phy3250.c |   43 ++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 39 insertions(+), 4 deletions(-)
 
---- linux-2.6.orig/arch/arm/mach-lpc32xx/clock.c
-+++ linux-2.6/arch/arm/mach-lpc32xx/clock.c
-@@ -1131,7 +1131,7 @@ static struct clk_lookup lookups[] = {
- 	CLKDEV_INIT("31020300.i2c", NULL, &clk_i2c2),
- 	CLKDEV_INIT("dev:ssp0", NULL, &clk_ssp0),
- 	CLKDEV_INIT("dev:ssp1", NULL, &clk_ssp1),
--	CLKDEV_INIT("lpc32xx_keys.0", NULL, &clk_kscan),
-+	CLKDEV_INIT("40050000.key", NULL, &clk_kscan),
- 	CLKDEV_INIT("20020000.flash", NULL, &clk_nand),
- 	CLKDEV_INIT("200a8000.flash", NULL, &clk_nand_mlc),
- 	CLKDEV_INIT("40048000.adc", NULL, &clk_adc),
+--- linux-2.6.orig/arch/arm/mach-lpc32xx/phy3250.c
++++ linux-2.6/arch/arm/mach-lpc32xx/phy3250.c
+@@ -30,12 +30,13 @@
+ #include <linux/amba/bus.h>
+ #include <linux/amba/clcd.h>
+ #include <linux/amba/pl022.h>
++#include <linux/amba/pl08x.h>
++#include <linux/amba/mmci.h>
+ #include <linux/of.h>
+ #include <linux/of_address.h>
+ #include <linux/of_irq.h>
+ #include <linux/of_platform.h>
+ #include <linux/clk.h>
+-#include <linux/amba/pl08x.h>
+ 
+ #include <asm/setup.h>
+ #include <asm/mach-types.h>
+@@ -50,9 +51,12 @@
+ /*
+  * Mapped GPIOLIB GPIOs
+  */
+-#define SPI0_CS_GPIO	LPC32XX_GPIO(LPC32XX_GPIO_P3_GRP, 5)
+-#define LCD_POWER_GPIO	LPC32XX_GPIO(LPC32XX_GPO_P3_GRP, 0)
+-#define BKL_POWER_GPIO	LPC32XX_GPIO(LPC32XX_GPO_P3_GRP, 4)
++#define SPI0_CS_GPIO		LPC32XX_GPIO(LPC32XX_GPIO_P3_GRP, 5)
++#define LCD_POWER_GPIO		LPC32XX_GPIO(LPC32XX_GPO_P3_GRP, 0)
++#define BKL_POWER_GPIO		LPC32XX_GPIO(LPC32XX_GPO_P3_GRP, 4)
++#define MMC_PWR_ENABLE_GPIO	LPC32XX_GPIO(LPC32XX_GPO_P3_GRP, 5)
++#define MMC_CD_GPIO		LPC32XX_GPIO(LPC32XX_GPIO_P3_GRP, 1)
++#define MMC_WP_GPIO		LPC32XX_GPIO(LPC32XX_GPIO_P3_GRP, 0)
+ 
+ /*
+  * AMBA LCD controller
+@@ -259,11 +263,32 @@ static struct pl08x_platform_data pl08x_
+ 	.mem_buses = PL08X_AHB1,
+ };
+ 
++static int mmc_handle_ios(struct device *dev, struct mmc_ios *ios)
++{
++	/* Only on and off are supported */
++	if (ios->power_mode == MMC_POWER_OFF)
++		gpio_set_value(MMC_PWR_ENABLE_GPIO, 0);
++	else
++		gpio_set_value(MMC_PWR_ENABLE_GPIO, 1);
++	return 0;
++}
++
++static struct mmci_platform_data lpc32xx_mmci_data = {
++	.ocr_mask	= MMC_VDD_30_31 | MMC_VDD_31_32 |
++			  MMC_VDD_32_33 | MMC_VDD_33_34,
++	.ios_handler	= mmc_handle_ios,
++	.dma_filter	= NULL,
++	/* No DMA for now since AMBA PL080 dmaengine driver only does scatter
++	 * gather, and the MMCI driver doesn't do it this way */
++};
++
+ static const struct of_dev_auxdata lpc32xx_auxdata_lookup[] __initconst = {
+ 	OF_DEV_AUXDATA("arm,pl022", 0x20084000, "dev:ssp0", &lpc32xx_ssp0_data),
+ 	OF_DEV_AUXDATA("arm,pl022", 0x2008C000, "dev:ssp1", &lpc32xx_ssp1_data),
+ 	OF_DEV_AUXDATA("arm,pl110", 0x31040000, "dev:clcd", &lpc32xx_clcd_data),
+ 	OF_DEV_AUXDATA("arm,pl080", 0x31000000, "pl08xdmac", &pl08x_pd),
++	OF_DEV_AUXDATA("arm,pl18x", 0x20098000, "20098000.sd",
++		       &lpc32xx_mmci_data),
+ 	{ }
+ };
+ 
+@@ -307,6 +332,11 @@ static void __init lpc3250_machine_init(
+ 	 * detection or a data fault will occur, so enable the clocks
+ 	 * here.
+ 	 */
++	tmp = __raw_readl(LPC32XX_CLKPWR_MS_CTRL);
++	tmp |= LPC32XX_CLKPWR_MSCARD_SDCARD_EN |
++		LPC32XX_CLKPWR_MSCARD_MSDIO_PU_EN;
++	__raw_writel(tmp, LPC32XX_CLKPWR_MS_CTRL);
++
+ 	tmp = __raw_readl(LPC32XX_CLKPWR_LCDCLK_CTRL);
+ 	__raw_writel((tmp | LPC32XX_CLKPWR_LCDCTRL_CLK_EN),
+ 		LPC32XX_CLKPWR_LCDCLK_CTRL);
+@@ -334,6 +364,11 @@ static void __init lpc3250_machine_init(
+ 	else if (gpio_direction_output(SPI0_CS_GPIO, 1))
+ 		printk(KERN_ERR "Error setting gpio %u to output",
+ 			SPI0_CS_GPIO);
++
++	if (gpio_request(MMC_PWR_ENABLE_GPIO, "mmc_power_en"))
++		pr_err("Error requesting gpio %u", MMC_PWR_ENABLE_GPIO);
++	else if (gpio_direction_output(MMC_PWR_ENABLE_GPIO, 1))
++		pr_err("Error setting gpio %u to output", MMC_PWR_ENABLE_GPIO);
+ }
+ 
+ static char const *lpc32xx_dt_compat[] __initdata = {
