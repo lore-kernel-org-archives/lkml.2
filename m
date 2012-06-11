@@ -1,42 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752080Ab2FKI6u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 04:58:50 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:37715 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750905Ab2FKI6t (ORCPT
+	id S1752168Ab2FKJAi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 05:00:38 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:44288 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750905Ab2FKJAg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 04:58:49 -0400
-Date: Mon, 11 Jun 2012 10:58:43 +0200
+	Mon, 11 Jun 2012 05:00:36 -0400
+Date: Mon, 11 Jun 2012 11:00:31 +0200
 From: Ingo Molnar <mingo@kernel.org>
-To: Ido Yariv <ido@wizery.com>
-Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, shai@scalemp.com,
-        kiran.thirumalai@gmail.com, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/platform] x86/vsmp: Ignore IOAPIC IRQ affinity if
- possible
-Message-ID: <20120611085843.GL31556@gmail.com>
-References: <1338675095-27260-2-git-send-email-ido@wizery.com>
- <tip-3aabb53ce5849605cee731bbc32f37120b4c4ceb@git.kernel.org>
- <20120608085229.GA10638@gmail.com>
- <20120608154301.GA11242@NoteStation>
+To: Vlad Zolotarov <vlad@scalemp.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, Shai@scalemp.com,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH v4 0/2] Move x86_cpu_to_apicid to the __read_mostly
+ section
+Message-ID: <20120611090031.GM31556@gmail.com>
+References: <1744141.b5asW8k6jC@vlad>
+ <5555210.ryZGheQWJb@vlad>
+ <1415723.ntIHEoaamI@vlad>
+ <6799312.MzsZpBJbVB@vlad>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120608154301.GA11242@NoteStation>
+In-Reply-To: <6799312.MzsZpBJbVB@vlad>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Ido Yariv <ido@wizery.com> wrote:
+* Vlad Zolotarov <vlad@scalemp.com> wrote:
 
-> This seems to break when CONFIG_PARAVIRT is set but CONFIG_SMP 
-> isn't. Since there's little point in optimizing IOAPIC routing 
-> for UP kernels, how about the following fix?
+> On Wednesday 23 May 2012 12:16:29 Vlad Zolotarov wrote:
+> > On Tuesday, May 22, 2012 18:55:41 Vlad Zolotarov wrote:
+> > > > > I have no fundamental prefer to either approach, but the
+> > > > > direction taken should be justified explicitly, with numbers,
+> > > > > arguments, etc. - also a short blurb somewhere in the headers
+> > > > > that explains when they should be used, so that others can be
+> > > > > aware of vSMP's special needs here.
+> > > > 
+> > > > I.e. *numbers* are needed: roughly how many percpu variables in
+> > > > a defconfig of one type versus the other type. This settles the
+> > > > question whether we want to identify read-mostly or
+> > > > write-frequently variables, to address this particular problem
+> > > > ...
+> > 
+> > Ingo, here is the proposal to the patch (series) description:
+> > 
+> > ----------------------------------------------------------------------------
+> > -------------------- Added "read-mostly" qualifier to the following
+> > variables in smp.h: - cpu_sibling_map
+> >  - cpu_core_map
+> >  - cpu_llc_shared_map
+> >  - cpu_llc_id
+> >  - cpu_number
+> >  - x86_cpu_to_apicid
+> >  - x86_bios_cpu_apicid
+> >  - x86_cpu_to_logical_apicid
+> > 
+> > As long as all the variables above are only written during the
+> > initialization, this change is meant to prevent the false sharing. More
+> > specifically, on vSMP Foundation platform x86_cpu_to_apicid shared the same
+> > internode_cache_line with frequently written lapic_events.
+> > 
+> > From the analysis of the first 33 per_cpu variables  out of 219 (memories
+> > they describe, to be more specific) the 8 have read_mostly nature
+> > (tlb_vector_offset, cpu_loops_per_jiffy, xen_debug_irq, etc.) and 25 are
+> > frequently written (irq_stack_union, gdt_page, exception_stacks, idt_desc,
+> > etc.). Assuming that the spread of the rest of the per_cpu variables is
+> > similar, identifying the read mostly memories will make more sense in terms
+> > of long-term code maintenance comparing to identifying frequently written
+> > memories.
+> > ----------------------------------------------------------------------------
+> > -----------------------
+> > 
+> > Pls., tell me if the above looks satisfactory to u in light of all your
+> > previous remarks.
+> > 
+> > If yes - I'll respin the series with the description above.
+> 
+> Ingo, sorry for bothering. Could u, pls., tell if the above 
+> description is ok? We'd like to move on with this patch 
+> series.
 
-Looks good to me, I'll give it some testing.
+Yeah, that description and analysis looks good and sensible.
+
+Mind resending the updated patches in a new thread?
 
 Thanks,
 
