@@ -1,53 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755109Ab2FKOuf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 10:50:35 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:59165 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751369Ab2FKOud (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 10:50:33 -0400
-Message-ID: <4FD605B5.2060300@linaro.org>
-Date: Mon, 11 Jun 2012 15:50:29 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: linux-arm-kernel@lists.infradead.org, arnd@arndb.de,
-        linus.walleij@stericsson.com, grant.likely@secretlab.ca,
-        cjb@laptop.org, sameo@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 09/22] regulator: Change db8500-prcmu match names to reflect
- Device Tree
-References: <1338353260-10097-1-git-send-email-lee.jones@linaro.org> <1338353260-10097-10-git-send-email-lee.jones@linaro.org> <4FCDDE58.5010501@linaro.org> <20120605102900.GP23408@opensource.wolfsonmicro.com> <4FCDE0A4.8070107@linaro.org> <20120605104201.GR23408@opensource.wolfsonmicro.com> <4FD5D49C.6070106@linaro.org> <20120611120820.GN11439@opensource.wolfsonmicro.com> <4FD5F3D2.2050500@linaro.org> <4FD5FBAF.1060002@linaro.org> <20120611142752.GS11439@opensource.wolfsonmicro.com>
-In-Reply-To: <20120611142752.GS11439@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1755293Ab2FKOzd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 10:55:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22336 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755054Ab2FKOzb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 10:55:31 -0400
+Date: Mon, 11 Jun 2012 10:55:15 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: bfields <bfields@fieldses.org>, Steve Dickson <steved@redhat.com>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Joerg Platte <jplatte@naasa.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Hans de Bruin <jmdebruin@xmsnet.nl>
+Subject: Re: Kernel 3.4.X NFS server regression
+Message-ID: <20120611105515.3b99942c@tlielax.poochiereds.net>
+In-Reply-To: <4FD60472.7020207@panasas.com>
+References: <4FD47D4E.9070307@naasa.net>
+	<1339340441.4751.1.camel@lade.trondhjem.org>
+	<20120611121634.GB7654@fieldses.org>
+	<20120611083932.24e27e39@corrin.poochiereds.net>
+	<4FD5F35A.3000903@panasas.com>
+	<20120611095132.045a8d09@corrin.poochiereds.net>
+	<4FD5FB28.4050003@panasas.com>
+	<20120611101141.143fff3c@corrin.poochiereds.net>
+	<4FD60472.7020207@panasas.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06/12 15:27, Mark Brown wrote:
-> On Mon, Jun 11, 2012 at 03:07:43PM +0100, Lee Jones wrote:
->>>> Well, I guess I'll end up dulplicating the commits :/
->
->>> Duplicating them?
->
->> Ah, you mean that you've already sent them to -next?
->
-> Yeah, I've already got them on a branch I don't really want to rebase.
+On Mon, 11 Jun 2012 17:45:06 +0300
+Boaz Harrosh <bharrosh@panasas.com> wrote:
 
-Ah I see. Makes sense.
+> On 06/11/2012 05:11 PM, Jeff Layton wrote:
+> 
+> > On Mon, 11 Jun 2012 17:05:28 +0300
+> > Boaz Harrosh <bharrosh@panasas.com> wrote:
+> > 
+> >> On 06/11/2012 04:51 PM, Jeff Layton wrote:
+> >>
+> >>>
+> >>> That was considered here, but the problem with the usermode helper is
+> >>> that you can't pass anything back to the kernel but a simple status
+> >>> code (and that's assuming that you wait for it to exit). In the near
+> >>> future, we'll need to pass back more info to the kernel for this, so
+> >>> the usermode helper callout wasn't suitable.
+> >>>
+> >>
+> >>
+> >> I have answered that in my mail. Repeated here again. Well you made 
+> >> a simple mistake. Because it is *easy* to pass back any number and
+> >> size of information from user-mode.
+> >>
+> >> You just setup a sysfs entry points where the answers are written
+> >> back to. It's an easy trick to setup a thread safe, way with a
+> >> cookie but 90% of the time you don't have to. Say you set up
+> >> a structure of per-client (identified uniquely) then user mode
+> >> answers back per client, concurrency will not do any harm, since
+> >> you answer to the same question the same answer. ans so on. Each
+> >> problem it's own.
+> >>
+> >> If you want we can talk about this, it would be easy for me to setup
+> >> a toll free conference number we can all use.
+> > 
+> > That helpful advice would have been welcome about 3-4 months ago when I
+> > first proposed this in detail. At that point you're working with
+> > multiple upcall/downcall mechanisms, which was something I was keen to
+> > avoid.
+> > 
+> > I'm not opposed to moving in that direction, but it basically means
+> > you're going to rip out everything I've got here so far and replace it.
+> > 
+> > If you're willing to do that work, I'll be happy to work with you on
+> > it, but I don't have the time or inclination to do that on my own right
+> > now.
+> > 
+> 
+> 
+> No such luck. sorry. I wish I could, but coming from a competing server
+> company, you can imagine the priority of that ever happening.
+> (Even though I use the Linux-Server everyday for my development and
+>  am putting lots of efforts into still, mainly in pnfs)
+> 
+> Hopefully re-examining the code, it could all be salvaged just the
+> same, only lots of code thrown a way.
+> 
+> But mean-while please address my concern below:
+> Boaz Harrosh wrote: 
+> 
+> > One more thing, the most important one. We have already fixed that in the
+> > past and I was hoping the lesson was learned. Apparently it was not, and
+> > we are doomed to do this mistake for ever!!
+> > 
+> > What ever crap fails times out and crashes, in the recovery code, we don't
+> > give a dam. It should never affect any Server-client communication.
+> > 
+> > When the grace periods ends the clients gates opens period. *Any* error
+> > return from state recovery code must be carefully ignored and normal
+> > operations resumed. At most on error, we move into a mode where any
+> > recovery request from client is accepted, since we don't have any better
+> > data to verify it.
+> > 
+> > Please comb recovery code to make sure any catastrophe is safely ignored.
+> > We already did that before and it used to work.
+> 
+> 
+> We should make sure that any state recovery code does not interfere with
+> regular operations. and fails gracefully / shuts up. 
+> 
+> We used to have that, apparently it re-broke. Clients should always be granted
+> access, after grace period. And Server should be made sure not to fail in any
+> situation.
+> 
+> I would look into it but I'm not uptodate anymore, I wish you or Bruce could.
+> 
+> Thanks for your work so far, sorry to be bearer of bad news
+> Boaz
 
->> That's no problem though. Won't Git just sling them out at pull-time?
->
-> It'll merge out fine, it's just icky having the same thing appear twice
-> in history.  Not the end of the world.
+This problem turned out to be a fairly straightforward bug in the
+rpc_pipefs queue timeout mechanism that was causing the laundromat job
+to hang and hence to keep the state lock locked. I just sent a patch
+that should fix it.
 
-Understood. So does this mean you will to push them into the -rcs?
+I guess I'm not clear on what you're saying is broken. Modulo the
+original bug here, clients are allowed access after the grace period
+whether the upcalls are working or not.
+
+What we cannot allow is reclaim requests outside of the grace period,
+since we can't verify whether there was conflicting state in the
+interim period. That's true whether the server has a functioning client
+tracking mechanism or not.
 
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-M: +44 77 88 633 515
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Jeff Layton <jlayton@redhat.com>
