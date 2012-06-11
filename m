@@ -1,82 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753867Ab2FKGPg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 02:15:36 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:38176 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751543Ab2FKGPf (ORCPT
+	id S1753743Ab2FKGQL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 02:16:11 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:50316 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751127Ab2FKGQJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 02:15:35 -0400
-From: Charles Wang <muming.wq@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Charles Wang <muming.wq@taobao.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: [PATCH] sched: parameter "ticks" no longer needed
-Date: Mon, 11 Jun 2012 14:14:29 +0800
-Message-Id: <1339395269-4803-1-git-send-email-muming.wq@taobao.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 11 Jun 2012 02:16:09 -0400
+X-AuditID: 9c930197-b7b5dae000004b23-30-4fd58d28a38e
+Message-ID: <4FD58D28.2030808@kernel.org>
+Date: Mon, 11 Jun 2012 15:16:08 +0900
+From: Minchan Kim <minchan@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
+To: Sasha Levin <levinsasha928@gmail.com>
+CC: dan.magenheimer@oracle.com, konrad.wilk@oracle.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 09/10] mm: frontswap: split out function to clear a
+ page out
+References: <1339325468-30614-1-git-send-email-levinsasha928@gmail.com> <1339325468-30614-10-git-send-email-levinsasha928@gmail.com>
+In-Reply-To: <1339325468-30614-10-git-send-email-levinsasha928@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Parameter "ticks" is not used in calc_global_load now,
-so remove it.
-calc_load_account_active is called from update_cpu_load_active now.
+On 06/10/2012 07:51 PM, Sasha Levin wrote:
 
-Signed-off-by: Charles Wang <muming.wq@taobao.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Ingo Molnar <mingo@redhat.com>
----
+> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> ---
+>  mm/frontswap.c |   15 +++++++++------
+>  1 files changed, 9 insertions(+), 6 deletions(-)
+> 
+> diff --git a/mm/frontswap.c b/mm/frontswap.c
+> index 7da55a3..c056f6e 100644
+> --- a/mm/frontswap.c
+> +++ b/mm/frontswap.c
+> @@ -120,6 +120,12 @@ void __frontswap_init(unsigned type)
+>  }
+>  EXPORT_SYMBOL(__frontswap_init);
+>  
+> +static inline void __frontswap_clear(struct swap_info_struct *sis, pgoff_t offset)
+> +{
+> +	frontswap_clear(sis, offset);
+> +	atomic_dec(&sis->frontswap_pages);
+> +}
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 503511f..db4c715 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -145,7 +145,7 @@ extern unsigned long nr_iowait_cpu(int cpu);
- extern unsigned long this_cpu_load(void);
- 
- 
--extern void calc_global_load(unsigned long ticks);
-+extern void calc_global_load(void);
- extern void update_cpu_load_nohz(void);
- 
- extern unsigned long get_parent_ip(unsigned long addr);
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 98d7da4..ca07ee0 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2368,7 +2368,7 @@ void get_avenrun(unsigned long *loads, unsigned long offset, int shift)
-  * calc_load - update the avenrun load estimates 10 ticks after the
-  * CPUs have updated calc_load_tasks.
-  */
--void calc_global_load(unsigned long ticks)
-+void calc_global_load(void)
- {
- 	long active;
- 
-@@ -2396,7 +2396,7 @@ void calc_global_load(unsigned long ticks)
- }
- 
- /*
-- * Called from update_cpu_load() to periodically update this CPU's
-+ * Called from update_cpu_load_active() to periodically update this CPU's
-  * active count.
-  */
- static void calc_load_account_active(struct rq *this_rq)
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 6f46a00..87be8c2 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -1223,7 +1223,7 @@ void do_timer(unsigned long ticks)
- {
- 	jiffies_64 += ticks;
- 	update_wall_time();
--	calc_global_load(ticks);
-+	calc_global_load();
- }
- 
- /**
+
+Nipick:
+Strange, Normally, NOT underscore function calls underscore function.
+But this is opposite. :(
+
 -- 
-1.7.9.5
-
+Kind regards,
+Minchan Kim
