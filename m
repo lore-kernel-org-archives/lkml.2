@@ -1,105 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752590Ab2FKJIw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 05:08:52 -0400
-Received: from orion.tchmachines.com ([208.76.84.200]:42625 "EHLO
-	orion.tchmachines.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751812Ab2FKJIv (ORCPT
+	id S1752548Ab2FKJKY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 05:10:24 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:30231 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751812Ab2FKJKU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 05:08:51 -0400
-From: Vlad Zolotarov <vlad@scalemp.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, Shai@scalemp.com,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH v4 0/2] Move x86_cpu_to_apicid to the __read_mostly section
-Date: Mon, 11 Jun 2012 12:08:51 +0300
-Message-ID: <28500062.nHPFoziTL1@vlad>
-Organization: ScaleMP Ltd.
-User-Agent: KMail/4.8.3 (Linux/3.2.0-24-generic; KDE/4.8.3; i686; ; )
-In-Reply-To: <20120611090031.GM31556@gmail.com>
-References: <1744141.b5asW8k6jC@vlad> <6799312.MzsZpBJbVB@vlad> <20120611090031.GM31556@gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - orion.tchmachines.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - scalemp.com
+	Mon, 11 Jun 2012 05:10:20 -0400
+X-AuditID: cbfee61a-b7f9f6d0000016a8-cc-4fd5b5fb6d9a
+From: Seungwon Jeon <tgih.jun@samsung.com>
+To: "'Maya Erez'" <merez@codeaurora.org>
+Cc: linux-mmc@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        "'DOCUMENTATION''" <linux-doc@vger.kernel.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>
+References: <1338576911-17089-1-git-send-email-merez@codeaurora.org>
+ <1338576911-17089-2-git-send-email-merez@codeaurora.org>
+ <007c01cd455a$56392050$02ab60f0$%jun@samsung.com>
+ <780c1dad11fe08de17a3ff41b22ba3b8.squirrel@www.codeaurora.org>
+In-reply-to: <780c1dad11fe08de17a3ff41b22ba3b8.squirrel@www.codeaurora.org>
+Subject: RE: [PATCH v2 1/1] mmc: block: Add write packing control
+Date: Mon, 11 Jun 2012 18:10:18 +0900
+Message-id: <000a01cd47b2$05982420$10c86c60$%jun@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=Windows-1252
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac1GTrC6MX7LeiMSTcOimT+oqmjP4QBVlpTA
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLLMWRmVeSWpSXmKPExsVy+t9jAd3fW6/6G5y+xG4xcf9ZdouFbUtY
+	LC7vmsNmceR/P6MDi8fnTXIBjFFcNimpOZllqUX6dglcGVduNDMV7HGqWNfewdzAeNGki5GT
+	Q0LAROLK46tsELaYxIV764FsLg4hgUWMEu93bWeHcP4wSlw4uB6sik1AS+LvmzfMILaIgJrE
+	7ub5LCBFzAKzGCWmntrEAtHxhVGi/cs8VpAqTgFviZf7f7OA2MICjhI/1s0BinNwsAioSqzd
+	lAUS5hWwlZhw6xcLhC0o8WPyPTCbWUBP4uOf24wQtrzE5jVvmUFaJQTUJR791YW4wUji4ZpH
+	UCUiEvtevGOcwCg0C8mkWUgmzUIyaRaSlgWMLKsYRVMLkguKk9JzDfWKE3OLS/PS9ZLzczcx
+	ggP9mdQOxpUNFocYBTgYlXh4G5Ze9RdiTSwrrsw9xCjBwawkwrutAijEm5JYWZValB9fVJqT
+	WnyIUZqDRUmct8n6gr+QQHpiSWp2ampBahFMlomDU6qBceJWpz+FH85tZPm70C86suNRS9OU
+	nXvEnnyeLCUib8Dj+H6B4UEFuxtTb75+6XLSzWGZZ+7uPO2183qOhl/60uvUUvRh/oXS7Git
+	By6rcvzUlW+l2UjHGPFuqGQxjMvmZJmV4c9bsax98oTF/CkLWSel8OVu19RumiXscH31w7dL
+	nIQzp1xcpMRSnJFoqMVcVJwIALpHQQtwAgAA
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 11 June 2012 11:00:31 Ingo Molnar wrote:
-> * Vlad Zolotarov <vlad@scalemp.com> wrote:
-> > On Wednesday 23 May 2012 12:16:29 Vlad Zolotarov wrote:
-> > > On Tuesday, May 22, 2012 18:55:41 Vlad Zolotarov wrote:
-> > > > > > I have no fundamental prefer to either approach, but the
-> > > > > > direction taken should be justified explicitly, with numbers,
-> > > > > > arguments, etc. - also a short blurb somewhere in the headers
-> > > > > > that explains when they should be used, so that others can be
-> > > > > > aware of vSMP's special needs here.
-> > > > > 
-> > > > > I.e. *numbers* are needed: roughly how many percpu variables in
-> > > > > a defconfig of one type versus the other type. This settles the
-> > > > > question whether we want to identify read-mostly or
-> > > > > write-frequently variables, to address this particular problem
-> > > > > ...
-> > > 
-> > > Ingo, here is the proposal to the patch (series) description:
-> > > 
-> > > ------------------------------------------------------------------------
-> > > ---- -------------------- Added "read-mostly" qualifier to the following
-> > > variables in smp.h: - cpu_sibling_map
-> > > 
-> > >  - cpu_core_map
-> > >  - cpu_llc_shared_map
-> > >  - cpu_llc_id
-> > >  - cpu_number
-> > >  - x86_cpu_to_apicid
-> > >  - x86_bios_cpu_apicid
-> > >  - x86_cpu_to_logical_apicid
-> > > 
-> > > As long as all the variables above are only written during the
-> > > initialization, this change is meant to prevent the false sharing. More
-> > > specifically, on vSMP Foundation platform x86_cpu_to_apicid shared the
-> > > same
-> > > internode_cache_line with frequently written lapic_events.
-> > > 
-> > > From the analysis of the first 33 per_cpu variables  out of 219
-> > > (memories
-> > > they describe, to be more specific) the 8 have read_mostly nature
-> > > (tlb_vector_offset, cpu_loops_per_jiffy, xen_debug_irq, etc.) and 25 are
-> > > frequently written (irq_stack_union, gdt_page, exception_stacks,
-> > > idt_desc,
-> > > etc.). Assuming that the spread of the rest of the per_cpu variables is
-> > > similar, identifying the read mostly memories will make more sense in
-> > > terms
-> > > of long-term code maintenance comparing to identifying frequently
-> > > written
-> > > memories.
-> > > ------------------------------------------------------------------------
-> > > ---- -----------------------
-> > > 
-> > > Pls., tell me if the above looks satisfactory to u in light of all your
-> > > previous remarks.
-> > > 
-> > > If yes - I'll respin the series with the description above.
-> > 
-> > Ingo, sorry for bothering. Could u, pls., tell if the above
-> > description is ok? We'd like to move on with this patch
-> > series.
+Maya Erez <merez@codeaurora.org> wrote:
 > 
-> Yeah, that description and analysis looks good and sensible.
+> > Hi,
+> >
+> > How can we check the effect?
+> > Do you have any result?
+> We ran parallel lmdd read and write operations and found out that the
+> write packing causes the read throughput to drop from 24MB/s to 12MB/s.
+> The write packing control managed to increase the read throughput back to
+> the original value.
+> We also examined "real life" scenarios, such as performing a big push
+> operation in parallel to launching several applications. We measured the
+> read latency and found out that with the write packing control the worst
+> case of the read latency was smaller.
 > 
-> Mind resending the updated patches in a new thread?
+> > Please check the several comment below.
+> >
+> > Maya Erez <merez@codeaurora.org> wrote:
+> >> The write packing control will ensure that read requests latency is
+> >> not increased due to long write packed commands.
+> >>
+> >> The trigger for enabling the write packing is managing to pack several
+> >> write requests. The number of potential packed requests that will
+> >> trigger
+> >> the packing can be configured via sysfs by writing the required value
+> >> to:
+> >> /sys/block/<block_dev_name>/num_wr_reqs_to_start_packing.
+> >> The trigger for disabling the write packing is fetching a read request.
+> >>
+> >> ---
+> >>  Documentation/mmc/mmc-dev-attrs.txt |   17 ++++++
+> >>  drivers/mmc/card/block.c            |  100
+> >> ++++++++++++++++++++++++++++++++++-
+> >>  drivers/mmc/card/queue.c            |    8 +++
+> >>  drivers/mmc/card/queue.h            |    3 +
+> >>  include/linux/mmc/host.h            |    1 +
+> >>  5 files changed, 128 insertions(+), 1 deletions(-)
+> >>
+> >> diff --git a/Documentation/mmc/mmc-dev-attrs.txt
+> >> b/Documentation/mmc/mmc-dev-attrs.txt
+> >> index 22ae844..08f7312 100644
+> >> --- a/Documentation/mmc/mmc-dev-attrs.txt
+> >> +++ b/Documentation/mmc/mmc-dev-attrs.txt
+> >> @@ -8,6 +8,23 @@ The following attributes are read/write.
+> >>
+> >>  	force_ro		Enforce read-only access even if write protect switch is
+> >> off.
+> >>
+> >> +	num_wr_reqs_to_start_packing 	This attribute is used to determine
+> >> +	the trigger for activating the write packing, in case the write
+> >> +	packing control feature is enabled.
+> >> +
+> >> +	When the MMC manages to reach a point where
+> >> num_wr_reqs_to_start_packing
+> >> +	write requests could be packed, it enables the write packing feature.
+> >> +	This allows us to start the write packing only when it is beneficial
+> >> +	and has minimum affect on the read latency.
+> >> +
+> >> +	The number of potential packed requests that will trigger the packing
+> >> +	can be configured via sysfs by writing the required value to:
+> >> +	/sys/block/<block_dev_name>/num_wr_reqs_to_start_packing.
+> >> +
+> >> +	The default value of num_wr_reqs_to_start_packing was determined by
+> >> +	running parallel lmdd write and lmdd read operations and calculating
+> >> +	the max number of packed writes requests.
+> >> +
+> >>  SD and MMC Device Attributes
+> >>  ============================
+> >>
+> >> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
+> >> index 2785fd4..ef192fb 100644
+> >> --- a/drivers/mmc/card/block.c
+> >> +++ b/drivers/mmc/card/block.c
+> >> @@ -114,6 +114,7 @@ struct mmc_blk_data {
+> >>  	struct device_attribute force_ro;
+> >>  	struct device_attribute power_ro_lock;
+> >>  	int	area_type;
+> >> +	struct device_attribute num_wr_reqs_to_start_packing;
+> >>  };
+> >>
+> >>  static DEFINE_MUTEX(open_lock);
+> >> @@ -281,6 +282,38 @@ out:
+> >>  	return ret;
+> >>  }
+> >>
+> >> +static ssize_t
+> >> +num_wr_reqs_to_start_packing_show(struct device *dev,
+> >> +				  struct device_attribute *attr, char *buf)
+> >> +{
+> >> +	struct mmc_blk_data *md = mmc_blk_get(dev_to_disk(dev));
+> >> +	int num_wr_reqs_to_start_packing;
+> >> +	int ret;
+> >> +
+> >> +	num_wr_reqs_to_start_packing = md->queue.num_wr_reqs_to_start_packing;
+> >> +
+> >> +	ret = snprintf(buf, PAGE_SIZE, "%d\n", num_wr_reqs_to_start_packing);
+> >> +
+> >> +	mmc_blk_put(md);
+> >> +	return ret;
+> >> +}
+> >> +
+> >> +static ssize_t
+> >> +num_wr_reqs_to_start_packing_store(struct device *dev,
+> >> +				 struct device_attribute *attr,
+> >> +				 const char *buf, size_t count)
+> >> +{
+> >> +	int value;
+> >> +	struct mmc_blk_data *md = mmc_blk_get(dev_to_disk(dev));
+> >> +
+> >> +	sscanf(buf, "%d", &value);
+> >> +	if (value >= 0)
+> >> +		md->queue.num_wr_reqs_to_start_packing = value;
+> >> +
+> >> +	mmc_blk_put(md);
+> >> +	return count;
+> >> +}
+> >> +
+> >>  static int mmc_blk_open(struct block_device *bdev, fmode_t mode)
+> >>  {
+> >>  	struct mmc_blk_data *md = mmc_blk_get(bdev->bd_disk);
+> >> @@ -1313,6 +1346,48 @@ static void mmc_blk_rw_rq_prep(struct
+> >> mmc_queue_req *mqrq,
+> >>  	mmc_queue_bounce_pre(mqrq);
+> >>  }
+> >>
+> >> +static void mmc_blk_write_packing_control(struct mmc_queue *mq,
+> >> +					  struct request *req)
+> >> +{
+> >> +	struct mmc_host *host = mq->card->host;
+> >> +	int data_dir;
+> >> +
+> >> +	if (!(host->caps2 & MMC_CAP2_PACKED_WR))
+> >> +		return;
+> >> +
+> >> +	/*
+> >> +	 * In case the packing control is not supported by the host, it should
+> >> +	 * not have an effect on the write packing. Therefore we have to
+> >> enable
+> >> +	 * the write packing
+> >> +	 */
+> >> +	if (!(host->caps2 & MMC_CAP2_PACKED_WR_CONTROL)) {
+> >> +		mq->wr_packing_enabled = true;
+> >> +		return;
+> >> +	}
+> >> +
+> >> +	if (!req || (req && (req->cmd_flags & REQ_FLUSH))) {
+> >> +		if (mq->num_of_potential_packed_wr_reqs >
+> >> +				mq->num_wr_reqs_to_start_packing)
+> >> +			mq->wr_packing_enabled = true;
+> >> +		return;
+> >> +	}
+> >> +
+> >> +	data_dir = rq_data_dir(req);
+> >> +
+> >> +	if (data_dir == READ) {
+> >> +		mq->num_of_potential_packed_wr_reqs = 0;
+> >> +		mq->wr_packing_enabled = false;
+> >> +		return;
+> >> +	} else if (data_dir == WRITE) {
+> >> +		mq->num_of_potential_packed_wr_reqs++;
+> >> +	}
+> >> +
+> >> +	if (mq->num_of_potential_packed_wr_reqs >
+> >> +			mq->num_wr_reqs_to_start_packing)
+> >> +		mq->wr_packing_enabled = true;
+> > Write Packing is available only if continuing write requests are over
+> > num_wr_reqs_to_start_packing?
+> > That means individual request(1...17) will be issued with non-packing.
+> > Could you explain your policy more?
+> We try to identify the case where there is parallel read and write
+> operations. In our experiments we found out that the number of write
+> requests between read requests in parallel read and write operations
+> doesn't exceed 17 requests. Therefore, we can assume that fetching more
+> than 17 write requests without hitting a read request can indicate that
+> there is no read activity.
+We can apply this experiment regardless I/O scheduler?
+Which I/O scheduler was used with this experiment?
 
-Sure. I'm on it right now, sir. :)
+> You are right that this affects the write throughput a bit but the goal of
+> this algorithm is to make sure the read throughput and latency are not
+> decreased due to write. If this is not the desired result, this algorithm
+> can be disabled.
+> >> +
+> >> +}
+> >> +
+> >>  static u8 mmc_blk_prep_packed_list(struct mmc_queue *mq, struct request
+> >> *req)
+> >>  {
+> >>  	struct request_queue *q = mq->queue;
+> >> @@ -1332,6 +1407,9 @@ static u8 mmc_blk_prep_packed_list(struct
+> >> mmc_queue *mq, struct request *req)
+> >>  			!card->ext_csd.packed_event_en)
+> >>  		goto no_packed;
+> >>
+> >> +	if (!mq->wr_packing_enabled)
+> >> +		goto no_packed;
+> > If wr_packing_enabled is set to true, several write requests can be
+> > packed.
+> > We don't need to consider read request since packed write?
+> I'm not sure I understand the question. We check if there was a read
+> request in the mmc_blk_write_packing_control, and in such a case set
+> mq->wr_packing_enabled to false.
+> If I didn't answer the question, please explain it again.
+Packed write can be possible after exceeding 17 requests.
+Is it assured that read request doesn't follow immediately after packed write?
+I wonder this case.
 
-thanks,
-vlad
-
+Thanks,
+Seungwon Jeon.
+> 
+> >
+> > Thanks,
+> > Seungwon Jeon
 > 
 > Thanks,
+> Maya Erez
+> --
+> Sent by a consultant of the Qualcomm Innovation Center, Inc.
+> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
 > 
-> 	Ingo
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
