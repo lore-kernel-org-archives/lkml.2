@@ -1,141 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752175Ab2FKIn4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 04:43:56 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:47670 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751124Ab2FKInz (ORCPT
+	id S1752224Ab2FKIop (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 04:44:45 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:61767 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750993Ab2FKIom (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 04:43:55 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FD5AF42.3080509@jp.fujitsu.com>
-Date: Mon, 11 Jun 2012 17:41:38 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-CC: linux-mm@kvack.org, dhillf@gmail.com, rientjes@google.com, mhocko@suse.cz,
-        akpm@linux-foundation.org, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH -V8 10/16] hugetlb/cgroup: Add the cgroup pointer to page
- lru
-References: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1339232401-14392-11-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-In-Reply-To: <1339232401-14392-11-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	Mon, 11 Jun 2012 04:44:42 -0400
+X-AuditID: cbfee61a-b7f9f6d0000016a8-70-4fd5aff93b71
+From: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+To: "'Alan Stern'" <stern@rowland.harvard.edu>,
+        "'Randy Dunlap'" <rdunlap@xenotime.net>
+Cc: "'Stephen Rothwell'" <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        "'LKML'" <linux-kernel@vger.kernel.org>,
+        "'USB list'" <linux-usb@vger.kernel.org>, devel@driverdev.osuosl.org,
+        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
+        "'Mike Lockwood'" <lockwood@android.com>
+References: <4FD10A30.50707@xenotime.net>
+ <Pine.LNX.4.44L0.1206071646360.1185-100000@iolanthe.rowland.org>
+In-reply-to: <Pine.LNX.4.44L0.1206071646360.1185-100000@iolanthe.rowland.org>
+Subject: RE: linux-next: Tree for Jun 7 (staging/ccg #2)
+Date: Mon, 11 Jun 2012 10:44:28 +0200
+Message-id: <000001cd47ae$6d482a60$47d87f20$%p@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac1E8Ga7zqjtvh3sRkmIUoN7T+nbAACvboOQ
+Content-language: pl
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGLMWRmVeSWpSXmKPExsVy+t9jAd2f66/6G+zdLWpxedccNouDC9sY
+	LRYta2V2YPb4vEkugDGKyyYlNSezLLVI3y6BK+PLtEusBf/ZKs4c/cXewHiVtYuRk0NCwETi
+	xZN/zBC2mMSFe+vZuhi5OIQEFjFKtK5eywzh/GSUmLSmGayKTcBYYu/BDkYQW0QgVKJhyXKw
+	DmaBqUwSs6ZfYQNJCAnkSPybeRWoiIODU8BX4le3CUhYWMBConFhKytImEVAVWLFYxWQMK+A
+	tUTT3OdMELagxI/J91hAbGYBLYn1O48zQdjyEpvXvGUGaZUQUJd49FcX4gIjiVvHpjNDlIhI
+	3G14zjqBUWgWkkmzkEyahWTSLCQtCxhZVjGKphYkFxQnpeca6hUn5haX5qXrJefnbmIEh/Yz
+	qR2MKxssDjEKcDAq8fA2LL3qL8SaWFZcmXuIUYKDWUmEd1sFUIg3JbGyKrUoP76oNCe1+BCj
+	NAeLkjhvk/UFfyGB9MSS1OzU1ILUIpgsEwenVAMjr/T5vgcR5p8K5RmCnHc/LZ5X9nnPxkm7
+	byqpJTz39DHVnaPlUj2lMXu9bfztiyIFjjkvHz18zrhg72kBry98OzyelU/e5yl71t5V/bic
+	x63K/YXC3gdYFz54u6H3T63wlMv/zzG+CvpTkm13pafqXs1NxZ1ppX5sAVGZFRVbcpPsXj3m
+	kPusxFKckWioxVxUnAgAT4mTQWkCAAA=
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/06/09 17:59), Aneesh Kumar K.V wrote:
-> From: "Aneesh Kumar K.V"<aneesh.kumar@linux.vnet.ibm.com>
+Hello,
+
+On Thursday, June 07, 2012 10:59 PM Alan Stern wrote:
+
+<snip>
 > 
-> Add the hugetlb cgroup pointer to 3rd page lru.next. This limit
-> the usage to hugetlb cgroup to only hugepages with 3 or more
-> normal pages. I guess that is an acceptable limitation.
+> The problems above are caused by the fact that
+> drivers/staging/ccg/Kconfig does not make USB_G_CGG dependent on BLOCK.
+
+@Randy: Thanks for finding it.
+
+@Alan: Thanks for suggesting a solution.
+
 > 
-> Signed-off-by: Aneesh Kumar K.V<aneesh.kumar@linux.vnet.ibm.com>
-
-
-This approach seems much better than using page_cgroup.
-
-
-
-> ---
->   include/linux/hugetlb_cgroup.h |   31 +++++++++++++++++++++++++++++++
->   mm/hugetlb.c                   |    4 ++++
->   2 files changed, 35 insertions(+)
+> > In file included from drivers/staging/ccg/ccg.c:59:0:
+> > drivers/staging/ccg/../../usb/gadget/f_fs.c: At top level:
+> > drivers/staging/ccg/../../usb/gadget/f_fs.c:40:0: warning: "pr_vdebug"
+> redefined
+> > drivers/staging/ccg/../../usb/gadget/u_serial.c:138:0: note: this is the
+> location of the previous definition
 > 
-> diff --git a/include/linux/hugetlb_cgroup.h b/include/linux/hugetlb_cgroup.h
-> index 5794be4..ceff1d5 100644
-> --- a/include/linux/hugetlb_cgroup.h
-> +++ b/include/linux/hugetlb_cgroup.h
-> @@ -26,6 +26,26 @@ struct hugetlb_cgroup {
->   };
+> This could be fixed by adding a #ifndef guard to f_fs.c and u_serial.c.
+> It's a little awkward to combine independent source files this way.
 > 
->   #ifdef CONFIG_CGROUP_HUGETLB_RES_CTLR
-> +static inline struct hugetlb_cgroup *hugetlb_cgroup_from_page(struct page *page)
-> +{
-> +	if (!PageHuge(page))
-> +		return NULL;
-> +	if (compound_order(page)<  3)
-> +		return NULL;
-> +	return (struct hugetlb_cgroup *)page[2].lru.next;
-> +}
+@Randy: Thanks for finding it.
 
-As pointed out by Michal, you can have 4pages with order=2.
+@Alan: Thanks for suggesting a solution.
 
-Thanks,
--Kame
+The patches are on their way.
 
-> +
-> +static inline
-> +int set_hugetlb_cgroup(struct page *page, struct hugetlb_cgroup *h_cg)
-> +{
-> +	if (!PageHuge(page))
-> +		return -1;
-> +	if (compound_order(page)<  3)
-> +		return -1;
-> +	page[2].lru.next = (void *)h_cg;
-> +	return 0;
-> +}
-> +
->   static inline bool hugetlb_cgroup_disabled(void)
->   {
->   	if (hugetlb_subsys.disabled)
-> @@ -43,6 +63,17 @@ extern void hugetlb_cgroup_uncharge_page(int idx, unsigned long nr_pages,
->   extern void hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
->   					   struct hugetlb_cgroup *h_cg);
->   #else
-> +static inline struct hugetlb_cgroup *hugetlb_cgroup_from_page(struct page *page)
-> +{
-> +	return NULL;
-> +}
-> +
-> +static inline
-> +int set_hugetlb_cgroup(struct page *page, struct hugetlb_cgroup *h_cg)
-> +{
-> +	return 0;
-> +}
-> +
->   static inline bool hugetlb_cgroup_disabled(void)
->   {
->   	return true;
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index e899a2d..1ca2d8f 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -28,6 +28,7 @@
-> 
->   #include<linux/io.h>
->   #include<linux/hugetlb.h>
-> +#include<linux/hugetlb_cgroup.h>
->   #include<linux/node.h>
->   #include "internal.h"
-> 
-> @@ -591,6 +592,7 @@ static void update_and_free_page(struct hstate *h, struct page *page)
->   				1<<  PG_active | 1<<  PG_reserved |
->   				1<<  PG_private | 1<<  PG_writeback);
->   	}
-> +	BUG_ON(hugetlb_cgroup_from_page(page));
->   	set_compound_page_dtor(page, NULL);
->   	set_page_refcounted(page);
->   	arch_release_hugepage(page);
-> @@ -643,6 +645,7 @@ static void prep_new_huge_page(struct hstate *h, struct page *page, int nid)
->   	INIT_LIST_HEAD(&page->lru);
->   	set_compound_page_dtor(page, free_huge_page);
->   	spin_lock(&hugetlb_lock);
-> +	set_hugetlb_cgroup(page, NULL);
->   	h->nr_huge_pages++;
->   	h->nr_huge_pages_node[nid]++;
->   	spin_unlock(&hugetlb_lock);
-> @@ -892,6 +895,7 @@ static struct page *alloc_buddy_huge_page(struct hstate *h, int nid)
->   		INIT_LIST_HEAD(&page->lru);
->   		r_nid = page_to_nid(page);
->   		set_compound_page_dtor(page, free_huge_page);
-> +		set_hugetlb_cgroup(page, NULL);
->   		/*
->   		 * We incremented the global counters already
->   		 */
+Andrzej
 
 
