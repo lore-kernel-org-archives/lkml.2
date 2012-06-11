@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755553Ab2FKO64 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 10:58:56 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:46106 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754858Ab2FKO6v (ORCPT
+	id S1755426Ab2FKO7p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 10:59:45 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:38440 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754323Ab2FKO7n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 10:58:51 -0400
+	Mon, 11 Jun 2012 10:59:43 -0400
 Subject: Re: net: nfc: BUG and panic in accept() on 3.5-rc2
 From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, David Miller <davem@davemloft.net>,
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Sasha Levin <levinsasha928@gmail.com>, David Miller <davem@davemloft.net>,
         lauro.venancio@openbossa.org, aloisio.almeida@openbossa.org,
         Dave Jones <davej@redhat.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
         linux-wireless <linux-wireless@vger.kernel.org>
-In-Reply-To: <1339426241.4999.62.camel@lappy>
+In-Reply-To: <20120611145700.GY22557@sortiz-mobl>
 References: <1339423241.4999.53.camel@lappy>
 	 <20120611144134.GX22557@sortiz-mobl>
 	 <1339425693.6001.2268.camel@edumazet-glaptop>
-	 <1339426241.4999.62.camel@lappy>
+	 <20120611145700.GY22557@sortiz-mobl>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 11 Jun 2012 16:58:46 +0200
-Message-ID: <1339426726.6001.2309.camel@edumazet-glaptop>
+Date: Mon, 11 Jun 2012 16:59:38 +0200
+Message-ID: <1339426778.6001.2312.camel@edumazet-glaptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -31,24 +31,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-06-11 at 16:50 +0200, Sasha Levin wrote:
-
-> Eric, Is there something that documents at what state each of the
-> callbacks in the network subsystem can be called? Like a big flow chart
-> of some sorts?
+On Mon, 2012-06-11 at 16:57 +0200, Samuel Ortiz wrote:
+> Hi Eric,
 > 
-> I'm asking because I've looked at this as well before sending this mail,
-> and while the fix does look trivial, I wasn't sure whether it is really
-> the correct fix, or the problem is that this callback wasn't supposed be
-> called at all so something else is broken (we had such issue with
-> namespaces and unshare() not long ago).
+> On Mon, Jun 11, 2012 at 04:41:33PM +0200, Eric Dumazet wrote:
+> > On Mon, 2012-06-11 at 16:41 +0200, Samuel Ortiz wrote:
+> > > Hi Sasha,
+> > > 
+> > > On Mon, Jun 11, 2012 at 04:00:41PM +0200, Sasha Levin wrote:
+> > > > Hi all,
+> > > > 
+> > > > I've stumbled on the following while fuzzing with trinity inside a KVM tools guest, running on 3.5-rc2:
+> > > > 
+> > > Thanks for the report, it could be worth adding this one to
+> > > bugzilla.kernel.org.
+> > > 
+> > > What's trinity ?
+> > > Also, if this one is reproducible, would you mind sharing some details about
+> > > how we could reproduce it ?
+> > 
+> > Well, bugfix should be trivial enough ;)
+> Yep, I looked at the code only after looking at Sasha's report.
 > 
+> Thanks for the patch, do you mind if I add your SOB to it ?
 
-I am not aware of such 'document'.
+I would prefer making sure it fixes the bug first ;)
 
-Things change, and only *good* reference is actual source code.
-
-Now, take a look at sock_graft()/sock_orphan()/inet_release() ...
-
+Thanks
 
 
