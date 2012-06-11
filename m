@@ -1,88 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752854Ab2FKJN2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 05:13:28 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:38783 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752486Ab2FKJN1 (ORCPT
+	id S1752846Ab2FKJOI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 05:14:08 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56765 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751812Ab2FKJOG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 05:13:27 -0400
-Date: Mon, 11 Jun 2012 11:13:15 +0200
-From: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-Subject: [PATCH 2/2] drivers: usb: gadget: add multiple definition guards
-In-reply-to: <Pine.LNX.4.44L0.1206071646360.1185-100000@iolanthe.rowland.org>
-To: linux-usb@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Felipe Balbi <balbi@ti.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mnazarewicz@gmail.com>,
-        Benoit Goby <benoit@android.com>, Mike Lockwood <lockwood@android.com>,
-        Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Message-id: <1339405995-6298-1-git-send-email-andrzej.p@samsung.com>
-X-Mailer: git-send-email 1.7.10
-Content-transfer-encoding: 7BIT
-References: <Pine.LNX.4.44L0.1206071646360.1185-100000@iolanthe.rowland.org>
-X-TM-AS-MML: No
+	Mon, 11 Jun 2012 05:14:06 -0400
+Date: Mon, 11 Jun 2012 02:13:54 -0700
+From: tip-bot for Wanpeng Li <liwp@linux.vnet.ibm.com>
+Message-ID: <tip-9efc31b81d740487fd204fade0913ffa8cc97fc3@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        liwp@linux.vnet.ibm.com, liwp.linux@gmail.com, tglx@linutronix.de,
+        shangw@linux.vnet.ibm.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        liwp@linux.vnet.ibm.com, tglx@linutronix.de, liwp.linux@gmail.com,
+        shangw@linux.vnet.ibm.com
+In-Reply-To: <1339296652-2935-1-git-send-email-liwp.linux@gmail.com>
+References: <1339296652-2935-1-git-send-email-liwp.linux@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86/mm: Fix some kernel-doc warnings
+Git-Commit-ID: 9efc31b81d740487fd204fade0913ffa8cc97fc3
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 11 Jun 2012 02:13:59 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If f_fs.c and u_serial.c are combined together using #include, which has
-been a common practice so far, the pr_vdebug macro is defined multiple
-times. Define it only once.
+Commit-ID:  9efc31b81d740487fd204fade0913ffa8cc97fc3
+Gitweb:     http://git.kernel.org/tip/9efc31b81d740487fd204fade0913ffa8cc97fc3
+Author:     Wanpeng Li <liwp@linux.vnet.ibm.com>
+AuthorDate: Sun, 10 Jun 2012 10:50:52 +0800
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Mon, 11 Jun 2012 10:54:45 +0200
 
-Signed-off-by: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+x86/mm: Fix some kernel-doc warnings
+
+Fix kernel-doc warnings in arch/x86/mm/ioremap.c and
+arch/x86/mm/pageattr.c, just like this one:
+
+  Warning(arch/x86/mm/ioremap.c:204):
+     No description found for parameter 'phys_addr'
+  Warning(arch/x86/mm/ioremap.c:204):
+     Excess function parameter 'offset' description in 'ioremap_nocache'
+
+Signed-off-by: Wanpeng Li <liwp@linux.vnet.ibm.com>
+Cc: Gavin Shan <shangw@linux.vnet.ibm.com>
+Cc: Wanpeng Li <liwp.linux@gmail.com>
+Link: http://lkml.kernel.org/r/1339296652-2935-1-git-send-email-liwp.linux@gmail.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- drivers/usb/gadget/f_fs.c     |    4 ++++
- drivers/usb/gadget/u_serial.c |    4 ++++
- 2 files changed, 8 insertions(+), 0 deletions(-)
+ arch/x86/mm/ioremap.c  |    4 ++--
+ arch/x86/mm/pageattr.c |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
-index dcd1c7f..27c841d 100644
---- a/drivers/usb/gadget/f_fs.c
-+++ b/drivers/usb/gadget/f_fs.c
-@@ -33,11 +33,15 @@
- /* Debugging ****************************************************************/
+diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
+index be1ef57..78fe3f1 100644
+--- a/arch/x86/mm/ioremap.c
++++ b/arch/x86/mm/ioremap.c
+@@ -180,7 +180,7 @@ err_free_memtype:
  
- #ifdef VERBOSE_DEBUG
-+#ifndef pr_vdebug
- #  define pr_vdebug pr_debug
-+#endif /* pr_vdebug */
- #  define ffs_dump_mem(prefix, ptr, len) \
- 	print_hex_dump_bytes(pr_fmt(prefix ": "), DUMP_PREFIX_NONE, ptr, len)
- #else
-+#ifndef pr_vdebug
- #  define pr_vdebug(...)                 do { } while (0)
-+#endif /* pr_vdebug */
- #  define ffs_dump_mem(prefix, ptr, len) do { } while (0)
- #endif /* VERBOSE_DEBUG */
+ /**
+  * ioremap_nocache     -   map bus memory into CPU space
+- * @offset:    bus address of the memory
++ * @phys_addr:    bus address of the memory
+  * @size:      size of the resource to map
+  *
+  * ioremap_nocache performs a platform specific sequence of operations to
+@@ -217,7 +217,7 @@ EXPORT_SYMBOL(ioremap_nocache);
  
-diff --git a/drivers/usb/gadget/u_serial.c b/drivers/usb/gadget/u_serial.c
-index 5b3f5ff..da6d479 100644
---- a/drivers/usb/gadget/u_serial.c
-+++ b/drivers/usb/gadget/u_serial.c
-@@ -132,11 +132,15 @@ static unsigned	n_ports;
+ /**
+  * ioremap_wc	-	map memory into CPU space write combined
+- * @offset:	bus address of the memory
++ * @phys_addr:	bus address of the memory
+  * @size:	size of the resource to map
+  *
+  * This version of ioremap ensures that the memory is marked write combining.
+diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
+index e1ebde3..a718e0d 100644
+--- a/arch/x86/mm/pageattr.c
++++ b/arch/x86/mm/pageattr.c
+@@ -122,7 +122,7 @@ within(unsigned long addr, unsigned long start, unsigned long end)
  
- 
- #ifdef VERBOSE_DEBUG
-+#ifndef pr_vdebug
- #define pr_vdebug(fmt, arg...) \
- 	pr_debug(fmt, ##arg)
-+#endif /* pr_vdebug */
- #else
-+#ifndef pr_vdebig
- #define pr_vdebug(fmt, arg...) \
- 	({ if (0) pr_debug(fmt, ##arg); })
-+#endif /* pr_vdebug */
- #endif
- 
- /*-------------------------------------------------------------------------*/
--- 
-1.7.0.4
-
+ /**
+  * clflush_cache_range - flush a cache range with clflush
+- * @addr:	virtual start address
++ * @vaddr:	virtual start address
+  * @size:	number of bytes to flush
+  *
+  * clflush is an unordered instruction which needs fencing with mfence
