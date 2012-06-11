@@ -1,62 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751976Ab2FKI3g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 04:29:36 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:33313 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751145Ab2FKI3f (ORCPT
+	id S1751273Ab2FKIar (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 04:30:47 -0400
+Received: from mga12.intel.com ([143.182.124.36]:15309 "EHLO
+	azsmga102.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750795Ab2FKIaq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 04:29:35 -0400
-Date: Mon, 11 Jun 2012 11:29:02 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Samuel Iglesias =?iso-8859-1?Q?Gons=E1lvez?= 
-	<siglesias@igalia.com>
-Cc: devel@driverdev.osuosl.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: ipack: remove pr_fmt definition.
-Message-ID: <20120611082902.GU4400@mwanda>
-References: <1339397797-17399-1-git-send-email-siglesias@igalia.com>
- <20120611072500.GT4400@mwanda>
- <20120611072736.GI13539@mwanda>
- <1339400404.3963.7.camel@fourier.local.igalia.com>
+	Mon, 11 Jun 2012 04:30:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1339400404.3963.7.camel@fourier.local.igalia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <8762aziuq6.fsf@rustcorp.com.au>
+References: <87ipf73lsi.fsf@rustcorp.com.au>
+	<20120522230218.24007.3556.stgit@warthog.procyon.org.uk>
+	<26029.1337960539@redhat.com>
+	<18581.1338903356@redhat.com>
+	<8762aziuq6.fsf@rustcorp.com.au>
+Date: Mon, 11 Jun 2012 11:30:33 +0300
+Message-ID: <CALLzPKYCZfYm6cKAoM64jODFJDzZTV7gvHUNpF-jOtdZ=aDMsg@mail.gmail.com>
+Subject: Re: [PATCH 00/23] Crypto keys and module signing
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: David Howells <dhowells@redhat.com>, kyle@mcmartin.ca,
+        zohar@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, keyrings@linux-nfs.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 11, 2012 at 09:40:04AM +0200, Samuel Iglesias Gons�lvez wrote:
-> On Mon, 2012-06-11 at 10:27 +0300, Dan Carpenter wrote:
-> > On Mon, Jun 11, 2012 at 10:25:00AM +0300, Dan Carpenter wrote:
-> > > On Mon, Jun 11, 2012 at 08:56:36AM +0200, Samuel Iglesias Gonsalvez wrote:
-> > > > As there is no pr_* function used here, pr_fmt is not needed.
-> > > > 
-> > > 
-> > > Nah.  What about if we decide to add some?  Also there are actually
-> > > a couple pr_err() calls in there already.
-> > 
-> > Oops.  Sorry my tree is old.  We removed the two calls to pr_err().
-> 
-> Same mistake here. In greg's staging-next the pr_err calls are not
-> present so the patch is totally valid but in linus branch they are there
-> (this is the reason of my error).
-> 
-> So, this patch is valid, unless we want the pr_fmt definition for the
-> future. However, I prefer to delete it.
-> 
+On Sun, Jun 10, 2012 at 8:47 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> On Tue, 05 Jun 2012 14:35:56 +0100, David Howells <dhowells@redhat.com> wrote:
+>> Rusty Russell <rusty@rustcorp.com.au> wrote:
+>>
+>> > > If you prefer to have userspace extract the module signature and pass it in
+>> > > uargs, here's a tree that will do that:
+>> > >
+>> > >   http://git.kernel.org/?p=linux/kernel/git/dhowells/linux-modsign.git;a=shortlog;h=refs/heads/modsign-uarg
+>> >
+>> > OK, there's merit in this approach: it certainly moves the argument
+>> > about how to encode the signature out of my backyard :)
+>>
+>> Not really.  The signature still has to be created by the kernel build.  It's
+>> just that you no longer have to care about the trade off when it comes to
+>> parsing it.
+>
+> Yes, exactly.
+>
+>> > Should we just bite the bullet and create a new syscall:
+>> >
+>> > SYSCALL_DEFINE5(init_module2, void __user *, umod,
+>> >             unsigned long, len, const char __user *, uargs,
+>> >                 unsigned int, siglen, const char __user *, sig)
+>> >
+>> > But I'm easily swayed if you prefer the current approach.
+>>
+>> "The current approach" being to attach signature to the blob?  Or to pass the
+>> signature separately but in the uargs?
+>
+> The former.
+>
+>> I would very much prefer to keep the signature in the blob and have the kernel
+>> extract it as there's no particular need for it to be detached - even if you
+>> are using IMA.
+>>
+>> However, I don't think an extra syscall would hurt particularly - except that
+>> it uses up more space in the syscall table...  It would, however, be smaller
+>> in the signature verification department as the signature neither needs
+>> decoding from uargs nor extracting from the blob.
+>
+> Good.  Let's have init_module2(), and let userspace decide where to get
+> the signature from.
+>
 
-Sure.  I guess everything in staging/ipack/ uses dev_err() type
-print statements and that includes more information than the the
-pr_fmt() macro already.
+Nice.
 
-Acked-by: Dan Carpenter <dan.carpenter@oracle.com>
-
-regards,
-dan carpenter
-
+> Thanks,
+> Rusty.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
