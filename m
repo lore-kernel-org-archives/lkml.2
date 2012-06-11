@@ -1,42 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753451Ab2FKK56 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 06:57:58 -0400
-Received: from mail.pr.hu ([87.242.0.5]:59196 "EHLO mail.pr.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752204Ab2FKK55 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 06:57:57 -0400
-Message-ID: <4FD5CF0A.7000905@pr.hu>
-Date: Mon, 11 Jun 2012 12:57:14 +0200
-From: Boszormenyi Zoltan <zboszor@pr.hu>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1753584Ab2FKK6L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 06:58:11 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:60681 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752374Ab2FKK6A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 06:58:00 -0400
+Message-ID: <4FD5CF1A.40807@panasas.com>
+Date: Mon, 11 Jun 2012 13:57:30 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
 MIME-Version: 1.0
-To: Clemens Ladisch <clemens@ladisch.de>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: AMD FX CPU bug, not fixed by latest microcode?
-References: <4FD4F45D.5050103@pr.hu> <4FD5A3A8.4020305@ladisch.de> <4FD5A89E.1000202@pr.hu> <4FD5C6C6.30000@ladisch.de>
-In-Reply-To: <4FD5C6C6.30000@ladisch.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Spam-Score: -2.1 (--)
-X-Scan-Signature: 3be2f66aaf20b59cd4b0edf337d6e8f4
-X-Spam-Tracer: backend.mail.pr.hu -2.1 20120611105715Z
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Miklos Szeredi <miklos@szeredi.hu>, <linux-fsdevel@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <hch@infradead.org>,
+        <torvalds@linux-foundation.org>, <dhowells@redhat.com>,
+        <mszeredi@suse.cz>
+Subject: Re: [PATCH 00/21] vfs: atomic open v6 (part 2)
+References: <1338901832-14049-1-git-send-email-miklos@szeredi.hu> <20120610034921.GB30000@ZenIV.linux.org.uk> <20120610111056.GD30000@ZenIV.linux.org.uk> <20120610175605.GE30000@ZenIV.linux.org.uk>
+In-Reply-To: <20120610175605.GE30000@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012-06-11 12:21 keltezéssel, Clemens Ladisch írta:
-> All caches and your memory are ECC protected,
->> Unfortunately the memory is not with ECC.
-> Sorry, I misread your mail.
->
-> This means that you cannot rule out bad memory.
+On 06/10/2012 08:56 PM, Al Viro wrote:
 
-And there were two storms recently with lightings that struck nearby. :-(
-I will retest with memtest86+.
+> On Sun, Jun 10, 2012 at 12:10:56PM +0100, Al Viro wrote:
+> 
+>> WARNING: I haven't even tried to boot it.  It builds, but this is all I can
+>> promise at the moment.  I'm about to fall down (it's 7am here already ;-/),
+>> will give it some beating when I get up.  It almost certainly has bugs, so
+>> consider that as call for review and not much more.
+> 
+> OK, it boots, mounts NFS and even manages to build a kernel on it.  Which
+> probably would meet Linus' "it's perfect, ship it" criteria, so go ahead
+> and beat it up, folks.
 
-Thanks for everyone who replied.
 
-Best regards,
-Zoltán Böszörményi
+If the "manages to build a kernel on it" part involves a "git clone" first
+then I agree. From past bug I found that even if xfstest cthon and bunch of
+other testes pass, I still got data-corruption/bugs under 
+"git clone linux, umount, mount, git status". It's my best test so far.
+(It needs to be a very big git tree with lots of history as well, like linux or gcc)
 
+Cheers
+Boaz
