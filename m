@@ -1,59 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752117Ab2FKKV0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 06:21:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34023 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750991Ab2FKKVZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 06:21:25 -0400
-Date: Mon, 11 Jun 2012 13:21:40 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Jan Kiszka <jan.kiszka@siemens.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "mtosatti@redhat.com" <mtosatti@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "yongjie.ren@intel.com" <yongjie.ren@intel.com>
-Subject: Re: [PATCH] KVM: Use IRQF_ONESHOT for assigned device MSI interrupts
-Message-ID: <20120611102139.GA31197@redhat.com>
-References: <1338570192.23475.25.camel@bling.home>
- <4FC8F867.7080103@siemens.com>
- <1338573558.23475.41.camel@bling.home>
- <4FC90961.8030701@siemens.com>
- <4FCB2359.9020505@redhat.com>
- <alpine.LFD.2.02.1206041235540.3086@ionos>
- <4FCC9EAC.9090007@siemens.com>
- <20120608143927.GA4949@redhat.com>
- <4FD21151.9090608@siemens.com>
- <4FD5C205.5070901@redhat.com>
+	id S1752254Ab2FKKWE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 06:22:04 -0400
+Received: from smtprelay03.ispgateway.de ([80.67.31.30]:52326 "EHLO
+	smtprelay03.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751716Ab2FKKWD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 06:22:03 -0400
+Message-ID: <4FD5C6C6.30000@ladisch.de>
+Date: Mon, 11 Jun 2012 12:21:58 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120604 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FD5C205.5070901@redhat.com>
+To: Boszormenyi Zoltan <zboszor@pr.hu>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: AMD FX CPU bug, not fixed by latest microcode?
+References: <4FD4F45D.5050103@pr.hu> <4FD5A3A8.4020305@ladisch.de> <4FD5A89E.1000202@pr.hu>
+In-Reply-To: <4FD5A89E.1000202@pr.hu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+X-Df-Sender: bGludXgta2VybmVsQGNsLmRvbWFpbmZhY3Rvcnkta3VuZGUuZGU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 11, 2012 at 01:01:41PM +0300, Avi Kivity wrote:
-> On 06/08/2012 05:50 PM, Jan Kiszka wrote:
-> > 
-> >> 
-> >> Pls correct me if I'm wrong.
-> > 
-> > Well, IIRC, the "don't loop over all vcpus with IRQs or preemption
-> > disabled" was one argument against direct legacy interrupt injection as
-> > well. That's what I kept in mind from those discussions. Maybe Avi can
-> > comment on the current position.
-> 
-> It's still my position.
-> 
-> IMO we need something like struct gfn_to_hva_cache for interrupts.  If
-> it's in the cache, we fast-path it from the interrupt handler.  If not,
-> fall back to a workqueue and let it refill the cache.
+Boszormenyi Zoltan wrote:
+> 2012-06-11 09:52 keltezéssel, Clemens Ladisch írta:
+>>> Similar errors happened during copying large files on the same
+>>> machine but it seems it's enough to trigger if the total amount
+>>> of data read is large enough.
+>>
+>> Does "large enough" mean "large enough so that they are not in the file
+>> cache"?
+>>
+> "Large enough" means it's usually not in file system cache
 
-And you class the irqfd behaviour of injecting multicast
-with interrupts disabled a bug then?
+If you could see a change while it's in the cache, you could rule
+out the disks.
 
-> -- 
-> error compiling committee.c: too many arguments to function
+>> All caches and your memory are ECC protected,
+>
+> Unfortunately the memory is not with ECC.
+
+Sorry, I misread your mail.
+
+This means that you cannot rule out bad memory.
+
+>> so I think it is unlikely
+>> that the problem is with these.  If I had to guess, I'd point to your
+>> disk (firmware) or the SATA controller.  (A bad or loose SATA cable
+>> would throw CRC errors into the kernel log.  Are there any?)
+>
+> The disks (8 of them) are attached to 3ware 9650SE-8LPML in RAID10.
+> tw_cli reports no problems.
+
+Could you check whether the same happens with some disk connected to
+the on-board SATA controller?  Or while copying around lots of data
+inside a RAM disk?
+
+>> What is the exact offset of the changed byte in the file?  (It might be
+>> at a cacheline, sector, or page boundary.)
+>
+> The bad character is at offset 0x4b74.
+
+That's completely random, i.e., probably an hardware error.
+
+>> http://support.amd.com/us/Processor_TechDocs/48063_15h_Mod_00h-0Fh_Rev_Guide.pdf
+>
+> The "no fix planned" for every errata is saddening...
+
+It's good news, because none of them actually matter.
+
+
+Regards,
+Clemens
