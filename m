@@ -1,65 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753902Ab2FKLCw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 07:02:52 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:59302 "EHLO
-	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753215Ab2FKLCu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 07:02:50 -0400
-From: Roland Stigge <stigge@antcom.de>
-To: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
-        srinivas.bakki@nxp.com, aletes.xgr@gmail.com
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH 11/14] ARM: LPC32xx: DTS adjustment for using pl18x primecell
-Date: Mon, 11 Jun 2012 13:02:14 +0200
-Message-Id: <1339412537-24485-12-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1339412537-24485-1-git-send-email-stigge@antcom.de>
-References: <1339412537-24485-1-git-send-email-stigge@antcom.de>
-X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
+	id S1753931Ab2FKLEE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 07:04:04 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:58629 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753637Ab2FKLEA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 07:04:00 -0400
+Date: Mon, 11 Jun 2012 13:04:00 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: David Rientjes <rientjes@google.com>, Rus <rus@sfinxsoft.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>, Steven Rostedt <rostedt@goodmis.org>,
+        Christoph Lameter <cl@linux.com>, LKML <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [WARNING] lockdep and kmemcheck_alloc_shadow
+Message-ID: <20120611110359.GA17022@x1.osrc.amd.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	David Rientjes <rientjes@google.com>, Rus <rus@sfinxsoft.com>,
+	Ben Hutchings <ben@decadent.org.uk>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	Christoph Lameter <cl@linux.com>,
+	LKML <linux-kernel@vger.kernel.org>,
+	stable <stable@vger.kernel.org>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Peter Zijlstra <peterz@infradead.org>
+References: <1337449661.32434.4.camel@gandalf.stny.rr.com>
+ <1337485947.4107.295.camel@deadeye>
+ <alpine.DEB.2.00.1205201405110.10189@chino.kir.corp.google.com>
+ <alpine.DEB.2.00.1206110255380.12414@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="EeQfGwPcQSOJBaQU"
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1206110255380.12414@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adjusts the dts files to reference the pl18x primecell driver
-correctly.
 
-Signed-off-by: Roland Stigge <stigge@antcom.de>
+--EeQfGwPcQSOJBaQU
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+
+On Mon, Jun 11, 2012 at 02:56:03AM -0700, David Rientjes wrote:
+> On Sun, 20 May 2012, David Rientjes wrote:
+> 
+> > Agreed, slab handles this correctly and it looks like slub ends up 
+> > disabling irqs too early.
+> > 
+> > Does this fix it?  If so, we'll need to annotate it for stable as Ben 
+> > noted.
+> > 
+> 
+> Steven, did you have a chance to see if this fixes the issue for you?  Can 
+> I add your Tested-by?
+
+Hehe,
+
+this got triggered through a different path too:
+http://marc.info/?l=linux-kernel&m=133909780907766
+
+@Rus: Can you pls test David's patch? I'm re-attaching it here.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
+
+--EeQfGwPcQSOJBaQU
+Content-Type: text/x-diff; charset=utf-8
+Content-Disposition: attachment; filename="mm-slub-irq-disable-fix.diff"
+
+From: David Rientjes <rientjes@google.com>
+mm, slub: ensure irqs are not disabled for kmemcheck allocation
+
+kmemcheck_alloc_shadow() cannot be called with irqs disabled, which is
+possible with __GFP_WAIT.  Ensure we always have them enabled at
+allocation time like slab does.
+
+Reported-by: Steven Rostedt <rostedt@goodmis.org>
+Suggested-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: David Rientjes <rientjes@google.com>
 ---
- arch/arm/boot/dts/lpc32xx.dtsi |    3 ++-
- arch/arm/boot/dts/phy3250.dts  |    8 ++++++++
- 2 files changed, 10 insertions(+), 1 deletion(-)
-
---- linux-2.6.orig/arch/arm/boot/dts/lpc32xx.dtsi
-+++ linux-2.6/arch/arm/boot/dts/lpc32xx.dtsi
-@@ -115,9 +115,10 @@
- 			};
+diff --git a/mm/slub.c b/mm/slub.c
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -1314,13 +1314,7 @@ static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
+ 			stat(s, ORDER_FALLBACK);
+ 	}
  
- 			sd@20098000 {
--				compatible = "arm,pl180", "arm,primecell";
-+				compatible = "arm,pl18x", "arm,primecell";
- 				reg = <0x20098000 0x1000>;
- 				interrupts = <0x0f 0>, <0x0d 0>;
-+				status = "disable";
- 			};
+-	if (flags & __GFP_WAIT)
+-		local_irq_disable();
+-
+-	if (!page)
+-		return NULL;
+-
+-	if (kmemcheck_enabled
++	if (page && kmemcheck_enabled
+ 		&& !(s->flags & (SLAB_NOTRACK | DEBUG_DEFAULT_FLAGS))) {
+ 		int pages = 1 << oo_order(oo);
  
- 			i2s1: i2s@2009C000 {
---- linux-2.6.orig/arch/arm/boot/dts/phy3250.dts
-+++ linux-2.6/arch/arm/boot/dts/phy3250.dts
-@@ -129,6 +129,14 @@
- 					compatible = "atmel,at25";
- 				};
- 			};
+@@ -1336,6 +1330,11 @@ static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
+ 			kmemcheck_mark_unallocated_pages(page, pages);
+ 	}
+ 
++	if (flags & __GFP_WAIT)
++		local_irq_disable();
++	if (!page)
++		return NULL;
 +
-+			sd@20098000 {
-+				wp-gpios = <&gpio 3 0 0>;
-+				cd-gpios = <&gpio 3 1 0>;
-+				cd-inverted;
-+				bus-width = <4>;
-+				status = "okay";
-+			};
- 		};
- 
- 		fab {
+ 	page->objects = oo_objects(oo);
+ 	mod_zone_page_state(page_zone(page),
+ 		(s->flags & SLAB_RECLAIM_ACCOUNT) ?
+
+--EeQfGwPcQSOJBaQU--
