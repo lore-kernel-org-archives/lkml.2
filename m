@@ -1,45 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753358Ab2FKNS0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 09:18:26 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:34884 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751007Ab2FKNSX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 09:18:23 -0400
-MIME-Version: 1.0
-In-Reply-To: <D5ECB3C7A6F99444980976A8C6D896384FA5EC4E62@EAPEX1MAIL1.st.com>
-References: <331ABD5ECB02734CA317220B2BBEABC13E9CB18A@DBDE01.ent.ti.com>
- <4FCE07EE.40003@pengutronix.de> <D5ECB3C7A6F99444980976A8C6D896384FA5EC4DFC@EAPEX1MAIL1.st.com>
- <4FC135C6.5030206@grandegger.com> <1677842.Pq7naXsvrI@harkonnen>
- <D5ECB3C7A6F99444980976A8C6D896384FA5EC4B37@EAPEX1MAIL1.st.com>
- <3650428.HarNR9HfNF@harkonnen> <20120605131337.GA15432@mail.gnudd.com>
- <20120605133013.GA16108@mail.gnudd.com> <20120605165008.GA21871@mail.gnudd.com>
- <D5ECB3C7A6F99444980976A8C6D896384FA5EC4E62@EAPEX1MAIL1.st.com>
-From: Federico Vaga <federico.vaga@gmail.com>
-Date: Mon, 11 Jun 2012 15:18:02 +0200
-Message-ID: <CAH5GJ0qgQJZwO8xn-zkMA_mMhVM=uCjuCZjd8EbJr0NyE6i+tQ@mail.gmail.com>
-Subject: Re: [PATCH RFC] c_can_pci: generic module for c_can on PCI
-To: Bhupesh SHARMA <bhupesh.sharma@st.com>
-Cc: "rubini@gnudd.com" <rubini@gnudd.com>,
-        "anilkumar@ti.com" <anilkumar@ti.com>,
-        "mkl@pengutronix.de" <mkl@pengutronix.de>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-        "wg@grandegger.com" <wg@grandegger.com>,
-        Giancarlo ASNAGHI <giancarlo.asnaghi@st.com>,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1753740Ab2FKNUt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 09:20:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60802 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751381Ab2FKNUq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 09:20:46 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
+Cc: eranian@google.com, gorcunov@openvz.org, tzanussi@gmail.com,
+        mhiramat@redhat.com, robert.richter@amd.com, fche@redhat.com,
+        linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
+        drepper@gmail.com, asharma@fb.com, benjamin.redelings@nescent.org,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 02/19] perf: Add ability to attach user level registers dump to sample
+Date: Mon, 11 Jun 2012 15:19:57 +0200
+Message-Id: <1339420814-7379-3-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1339420814-7379-1-git-send-email-jolsa@redhat.com>
+References: <1339420814-7379-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-How we proceed?
-I submit my c_can_pci.c as a separated module, we create a
-c_can_platform_common.c,
-or we are thinking about a generic c_can.c as plaftorm driver?
+Introducing sample_regs_user bitmask into perf_event_attr
+struct to define the user level registers we want to attach
+to the sample. The dump itself is triggered once the
+sample_regs_user is not empty.
 
+Only user level registers are dump at the moment. Meaning the
+register values of the user space context as it was before the
+user entered the kernel for whatever reason (syscall, irq,
+exception, or a PMI happening in userspace).
+
+The layout of the sample_regs_user bitmap is described in
+asm/perf_regs.h for archs that support register dump.
+
+This is going to be useful to bring Dwarf CFI based stack
+unwinding on top of samples.
+
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+---
+ include/linux/perf_event.h |   10 ++++++-
+ kernel/events/core.c       |   61 ++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 70 insertions(+), 1 deletions(-)
+
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 1ce887a..d66cbeb 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -271,7 +271,13 @@ struct perf_event_attr {
+ 		__u64		bp_len;
+ 		__u64		config2; /* extension of config1 */
+ 	};
+-	__u64	branch_sample_type; /* enum branch_sample_type */
++	__u64	branch_sample_type; /* enum perf_branch_sample_type */
++
++	/*
++	 * Defines set of user regs to dump on samples.
++	 * See asm/perf_regs.h for details.
++	 */
++	__u64	sample_regs_user;
+ };
+ 
+ /*
+@@ -609,6 +615,7 @@ struct perf_guest_info_callbacks {
+ #include <linux/static_key.h>
+ #include <linux/atomic.h>
+ #include <linux/sysfs.h>
++#include <linux/perf_regs.h>
+ #include <asm/local.h>
+ 
+ struct perf_callchain_entry {
+@@ -1131,6 +1138,7 @@ struct perf_sample_data {
+ 	struct perf_callchain_entry	*callchain;
+ 	struct perf_raw_record		*raw;
+ 	struct perf_branch_stack	*br_stack;
++	struct pt_regs			*regs_user;
+ };
+ 
+ static inline void perf_sample_data_init(struct perf_sample_data *data,
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index f85c015..e4df59d 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -3750,6 +3750,33 @@ int perf_unregister_guest_info_callbacks(struct perf_guest_info_callbacks *cbs)
+ }
+ EXPORT_SYMBOL_GPL(perf_unregister_guest_info_callbacks);
+ 
++static void
++perf_output_sample_regs(struct perf_output_handle *handle,
++			struct pt_regs *regs, u64 mask)
++{
++	int bit;
++
++	for_each_set_bit(bit, (const unsigned long *) &mask,
++			 sizeof(mask) * BITS_PER_BYTE) {
++		u64 val;
++
++		val = perf_reg_value(regs, bit);
++		perf_output_put(handle, val);
++	}
++}
++
++static struct pt_regs *perf_sample_regs_user(struct pt_regs *regs)
++{
++	if (!user_mode(regs)) {
++		if (current->mm)
++			regs = task_pt_regs(current);
++		else
++			regs = NULL;
++	}
++
++	return regs;
++}
++
+ static void __perf_event_header__init_id(struct perf_event_header *header,
+ 					 struct perf_sample_data *data,
+ 					 struct perf_event *event)
+@@ -4010,6 +4037,23 @@ void perf_output_sample(struct perf_output_handle *handle,
+ 			perf_output_put(handle, nr);
+ 		}
+ 	}
++
++	if (event->attr.sample_regs_user) {
++		u64 avail = (data->regs_user != NULL);
++
++		/*
++		 * If there are no regs to dump, notice it through
++		 * first u64 being zero.
++		 */
++		perf_output_put(handle, avail);
++
++		if (avail) {
++			u64 mask = event->attr.sample_regs_user;
++			perf_output_sample_regs(handle,
++						data->regs_user,
++						mask);
++		}
++	}
+ }
+ 
+ void perf_prepare_sample(struct perf_event_header *header,
+@@ -4061,6 +4105,19 @@ void perf_prepare_sample(struct perf_event_header *header,
+ 		}
+ 		header->size += size;
+ 	}
++
++	if (event->attr.sample_regs_user) {
++		/* regs dump available bool */
++		int size = sizeof(u64);
++
++		data->regs_user = perf_sample_regs_user(regs);
++		if (data->regs_user) {
++			u64 mask = event->attr.sample_regs_user;
++			size += hweight64(mask) * sizeof(u64);
++		}
++
++		header->size += size;
++	}
+ }
+ 
+ static void perf_event_output(struct perf_event *event,
+@@ -6110,6 +6167,10 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
+ 			attr->branch_sample_type = mask;
+ 		}
+ 	}
++
++	if (attr->sample_regs_user)
++		ret = perf_reg_validate(attr->sample_regs_user);
++
+ out:
+ 	return ret;
+ 
 -- 
-Federico Vaga
+1.7.7.6
+
