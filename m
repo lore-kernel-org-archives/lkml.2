@@ -1,62 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755426Ab2FKO7p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 10:59:45 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:38440 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754323Ab2FKO7n (ORCPT
+	id S1755493Ab2FKPBU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 11:01:20 -0400
+Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:39633 "HELO
+	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755292Ab2FKPBT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 10:59:43 -0400
-Subject: Re: net: nfc: BUG and panic in accept() on 3.5-rc2
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>, David Miller <davem@davemloft.net>,
-        lauro.venancio@openbossa.org, aloisio.almeida@openbossa.org,
-        Dave Jones <davej@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        linux-wireless <linux-wireless@vger.kernel.org>
-In-Reply-To: <20120611145700.GY22557@sortiz-mobl>
-References: <1339423241.4999.53.camel@lappy>
-	 <20120611144134.GX22557@sortiz-mobl>
-	 <1339425693.6001.2268.camel@edumazet-glaptop>
-	 <20120611145700.GY22557@sortiz-mobl>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 11 Jun 2012 16:59:38 +0200
-Message-ID: <1339426778.6001.2312.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 11 Jun 2012 11:01:19 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: zmnrykgVM1nygcr8Oryi6BT6bWjFtrKcfESFCnzngdkUoES
+ g.cDHjYwOewY0v53U7WrWix8EshKUdIgf4w.6vKI4C5BXPLCXt_5ISBXdm.k
+ ciXbI6ZRJ3d7hH5XVHHML8PdMCUHgWpeOkemzUMzSq5RwMB9jKPnkiZo6to8
+ 6jhLHNxLCN.a6JXsSsKdjrC0744sWdSZAkmleNU3J.keDlHu8w0maz42RzwZ
+ nOex5G.SKuEEZ6bqW_7GcvsXjn7NmzISibNLSRZmBPnj.jXT8KexOqex4Awx
+ JX9clgZ0U5ufmJ29Wzmfnu4pqu79goH7PqLvxtY_tusEcPyCjKNenNrAwSX0
+ Rx_VyxaI18d.gyJ1i81TFMsi_klIvKylqL3qlJjaR9brjj7NPJiMktkoy4ci
+ IdwRr5W9TdkLnZXZzCYlTrEWX34CJfHPSVR5v
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Mon, 11 Jun 2012 10:01:15 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: kosaki.motohiro@gmail.com
+cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@google.com>, Dave Jones <davej@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, stable@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [PATCH 0/6][resend] mempolicy memory corruption fixlet
+In-Reply-To: <1339406250-10169-1-git-send-email-kosaki.motohiro@gmail.com>
+Message-ID: <alpine.DEB.2.00.1206110934200.31180@router.home>
+References: <1339406250-10169-1-git-send-email-kosaki.motohiro@gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-06-11 at 16:57 +0200, Samuel Ortiz wrote:
-> Hi Eric,
-> 
-> On Mon, Jun 11, 2012 at 04:41:33PM +0200, Eric Dumazet wrote:
-> > On Mon, 2012-06-11 at 16:41 +0200, Samuel Ortiz wrote:
-> > > Hi Sasha,
-> > > 
-> > > On Mon, Jun 11, 2012 at 04:00:41PM +0200, Sasha Levin wrote:
-> > > > Hi all,
-> > > > 
-> > > > I've stumbled on the following while fuzzing with trinity inside a KVM tools guest, running on 3.5-rc2:
-> > > > 
-> > > Thanks for the report, it could be worth adding this one to
-> > > bugzilla.kernel.org.
-> > > 
-> > > What's trinity ?
-> > > Also, if this one is reproducible, would you mind sharing some details about
-> > > how we could reproduce it ?
-> > 
-> > Well, bugfix should be trivial enough ;)
-> Yep, I looked at the code only after looking at Sasha's report.
-> 
-> Thanks for the patch, do you mind if I add your SOB to it ?
+On Mon, 11 Jun 2012, kosaki.motohiro@gmail.com wrote:
 
-I would prefer making sure it fixes the bug first ;)
+> changes from v1: fix some typo of changelogs.
 
-Thanks
+I still have a hard time with the changelogs. Will try to give you
+hopefulyl better ones.
 
+Again you need to CC Andi Kleen on this. He wrote most of the shared
+mempolicy code (long time ago) and then Lee started tinkering with it.
 
