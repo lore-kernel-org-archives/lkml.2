@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752730Ab2FKWUP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 18:20:15 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:47250 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750854Ab2FKWUO (ORCPT
+	id S1752739Ab2FKWUy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 18:20:54 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:42579 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752351Ab2FKWUx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 18:20:14 -0400
+	Mon, 11 Jun 2012 18:20:53 -0400
 MIME-Version: 1.0
-In-Reply-To: <1339412537-24485-6-git-send-email-stigge@antcom.de>
+In-Reply-To: <1339412537-24485-7-git-send-email-stigge@antcom.de>
 References: <1339412537-24485-1-git-send-email-stigge@antcom.de>
-	<1339412537-24485-6-git-send-email-stigge@antcom.de>
-Date: Mon, 11 Jun 2012 19:20:13 -0300
-Message-ID: <CAAAP30GcHpxEEnO0vqROKwooRaMRudjfW7MD2=40VzJ8HGdQQA@mail.gmail.com>
-Subject: Re: [PATCH 5/14] ARM: LPC32xx: Adjust dtsi file for MLC controller configuration
+	<1339412537-24485-7-git-send-email-stigge@antcom.de>
+Date: Mon, 11 Jun 2012 19:20:52 -0300
+Message-ID: <CAAAP30EsrAUR9PEuMwG2FFLhaSETeK4fuV=-zv_NxcynY5rxuQ@mail.gmail.com>
+Subject: Re: [PATCH 6/14] ARM: LPC32xx: Add dts for EA3250 reference board
 From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
 To: Roland Stigge <stigge@antcom.de>
 Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -25,12 +25,10 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Mon, Jun 11, 2012 at 8:02 AM, Roland Stigge <stigge@antcom.de> wrote:
-> This patch takes into account that the MTD NAND MLC controller needs more
-> registers, located actually before the previously allocated memory range,
-> already starting at 200a8000 instead of 200b0000.
->
-> Further, the interrupt for the controller is configured.
+> There is another reference/development board for the LPC32xx SoC (besides the
+> Phytec 3250): The Embedded Artists LPC3250 board. This patch adds a default dts
+> file for it.
 >
 > Signed-off-by: Roland Stigge <stigge@antcom.de>
 
-Tested-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+Acked-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
