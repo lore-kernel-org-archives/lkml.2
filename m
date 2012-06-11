@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753577Ab2FKCsM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jun 2012 22:48:12 -0400
-Received: from mga09.intel.com ([134.134.136.24]:11833 "EHLO mga09.intel.com"
+	id S1754158Ab2FKCsJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jun 2012 22:48:09 -0400
+Received: from mga09.intel.com ([134.134.136.24]:46108 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753402Ab2FKCrU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jun 2012 22:47:20 -0400
+	id S1753396Ab2FKCrT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Jun 2012 22:47:19 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="151117063"
+   d="scan'208";a="151117059"
 From: Huang Ying <ying.huang@intel.com>
 To: Bjorn Helgaas <bhelgaas@google.com>
 Cc: ming.m.lin@intel.com, linux-kernel@vger.kernel.org,
         linux-pci@vger.kernel.org, linux-pm@vger.kernel.org,
         "Rafael J. Wysocki" <rjw@sisk.pl>, Huang Ying <ying.huang@intel.com>,
-        Zheng Yan <zheng.z.yan@intel.com>
-Subject: [PATCH -v5 2/3] PCIe, PM, Add runtime PM support to PCIe port
-Date: Mon, 11 Jun 2012 10:47:12 +0800
-Message-Id: <1339382833-7928-3-git-send-email-ying.huang@intel.com>
+        Zheng Yan <zheng.z.yan@intel.com>, Len Brown <lenb@kernel.org>
+Subject: [PATCH -v5 1/3] ACPI, PM, Specify lowest allowed state for device sleep state
+Date: Mon, 11 Jun 2012 10:47:11 +0800
+Message-Id: <1339382833-7928-2-git-send-email-ying.huang@intel.com>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1339382833-7928-1-git-send-email-ying.huang@intel.com>
 References: <1339382833-7928-1-git-send-email-ying.huang@intel.com>
@@ -25,105 +25,129 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+Lower device sleep state can save more power, but has more exit
+latency too.  Sometimes, to satisfy some power QoS and other
+requirement, we need to constrain the lowest device sleep state.
 
-This patch adds runtime PM support to PCIe port.  This is needed by
-PCIe D3cold support, where PCIe device without ACPI node may be
-powered on/off by PCIe port.
+In this patch, a parameter to specify lowest allowed state for
+acpi_pm_device_sleep_state is added.  So that the caller can enforce
+the constraint via the parameter.
 
-Because runtime suspend is broken for some chipsets, a black list is
-used to disable runtime PM support for these chipsets.
+This is needed by PCIe D3cold support, where the lowest power state
+allowed may be D3_HOT instead of default D3_COLD.
 
-Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
-Reviewed-by: Rafael J. Wysocki <rjw@sisk.pl>
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+Cc: Len Brown <lenb@kernel.org>
 ---
- drivers/pci/pci.c              |   10 ++++++++++
- drivers/pci/pcie/portdrv_pci.c |   24 ++++++++++++++++++++++++
- 2 files changed, 34 insertions(+)
+ drivers/acpi/sleep.c       |   24 +++++++++++++++++++-----
+ drivers/pci/pci-acpi.c     |    3 ++-
+ drivers/pnp/pnpacpi/core.c |    4 ++--
+ include/acpi/acpi_bus.h    |    6 +++---
+ 4 files changed, 26 insertions(+), 11 deletions(-)
 
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -1518,6 +1518,16 @@ static void pci_pme_list_scan(struct wor
- 	if (!list_empty(&pci_pme_list)) {
- 		list_for_each_entry_safe(pme_dev, n, &pci_pme_list, list) {
- 			if (pme_dev->dev->pme_poll) {
-+				struct pci_dev *bridge;
-+
-+				bridge = pme_dev->dev->bus->self;
-+				/*
-+				 * If bridge is in low power state, the
-+				 * configuration space of subordinate devices
-+				 * may be not accessible
-+				 */
-+				if (bridge && bridge->current_state != PCI_D0)
-+					continue;
- 				pci_pme_wakeup(pme_dev->dev, NULL);
- 			} else {
- 				list_del(&pme_dev->list);
---- a/drivers/pci/pcie/portdrv_pci.c
-+++ b/drivers/pci/pcie/portdrv_pci.c
-@@ -11,6 +11,7 @@
- #include <linux/kernel.h>
- #include <linux/errno.h>
- #include <linux/pm.h>
-+#include <linux/pm_runtime.h>
- #include <linux/init.h>
- #include <linux/pcieport_if.h>
- #include <linux/aer.h>
-@@ -99,6 +100,15 @@ static int pcie_port_resume_noirq(struct
- 	return 0;
- }
- 
-+#ifdef CONFIG_PM_RUNTIME
-+static int pcie_port_runtime_pm(struct device *dev)
-+{
-+	return 0;
-+}
-+#else
-+#define pcie_port_runtime_pm	NULL
-+#endif
-+
- static const struct dev_pm_ops pcie_portdrv_pm_ops = {
- 	.suspend	= pcie_port_device_suspend,
- 	.resume		= pcie_port_device_resume,
-@@ -107,6 +117,8 @@ static const struct dev_pm_ops pcie_port
- 	.poweroff	= pcie_port_device_suspend,
- 	.restore	= pcie_port_device_resume,
- 	.resume_noirq	= pcie_port_resume_noirq,
-+	.runtime_suspend = pcie_port_runtime_pm,
-+	.runtime_resume = pcie_port_runtime_pm,
- };
- 
- #define PCIE_PORTDRV_PM_OPS	(&pcie_portdrv_pm_ops)
-@@ -117,6 +129,14 @@ static const struct dev_pm_ops pcie_port
- #endif /* !PM */
- 
- /*
-+ * PCIe port runtime suspend is broken for some chipsets, so use a
-+ * black list to disable runtime PM for these chipsets.
-+ */
-+static const struct pci_device_id port_runtime_pm_black_list[] = {
-+	{ /* end: all zeroes */ }
-+};
-+
-+/*
-  * pcie_portdrv_probe - Probe PCI-Express port devices
-  * @dev: PCI-Express port device being probed
+--- a/drivers/acpi/sleep.c
++++ b/drivers/acpi/sleep.c
+@@ -716,8 +716,9 @@ int acpi_suspend(u32 acpi_state)
+  *	@dev: device to examine; its driver model wakeup flags control
+  *		whether it should be able to wake up the system
+  *	@d_min_p: used to store the upper limit of allowed states range
+- *	Return value: preferred power state of the device on success, -ENODEV on
+- *		failure (ie. if there's no 'struct acpi_device' for @dev)
++ *	@d_max_in: specify the lowest allowed states
++ *	Return value: preferred power state of the device on success, -ENODEV
++ *	(ie. if there's no 'struct acpi_device' for @dev) or -EINVAL on failure
   *
-@@ -144,12 +164,16 @@ static int __devinit pcie_portdrv_probe(
- 		return status;
+  *	Find the lowest power (highest number) ACPI device power state that
+  *	device @dev can be in while the system is in the sleep state represented
+@@ -732,13 +733,15 @@ int acpi_suspend(u32 acpi_state)
+  *	via @wake.
+  */
  
- 	pci_save_state(dev);
-+	if (!pci_match_id(port_runtime_pm_black_list, dev))
-+		pm_runtime_put_noidle(&dev->dev);
- 
- 	return 0;
- }
- 
- static void pcie_portdrv_remove(struct pci_dev *dev)
+-int acpi_pm_device_sleep_state(struct device *dev, int *d_min_p)
++int acpi_pm_device_sleep_state(struct device *dev, int *d_min_p, int d_max_in)
  {
-+	if (!pci_match_id(port_runtime_pm_black_list, dev))
-+		pm_runtime_get_noresume(&dev->dev);
- 	pcie_port_device_remove(dev);
- 	pci_disable_device(dev);
+ 	acpi_handle handle = DEVICE_ACPI_HANDLE(dev);
+ 	struct acpi_device *adev;
+ 	char acpi_method[] = "_SxD";
+ 	unsigned long long d_min, d_max;
+ 
++	if (d_max_in < ACPI_STATE_D0 || d_max_in > ACPI_STATE_D3)
++		return -EINVAL;
+ 	if (!handle || ACPI_FAILURE(acpi_bus_get_device(handle, &adev))) {
+ 		printk(KERN_DEBUG "ACPI handle has no context!\n");
+ 		return -ENODEV;
+@@ -746,8 +749,10 @@ int acpi_pm_device_sleep_state(struct de
+ 
+ 	acpi_method[2] = '0' + acpi_target_sleep_state;
+ 	/*
+-	 * If the sleep state is S0, we will return D3, but if the device has
+-	 * _S0W, we will use the value from _S0W
++	 * If the sleep state is S0, the lowest limit from ACPI is D3,
++	 * but if the device has _S0W, we will use the value from _S0W
++	 * as the lowest limit from ACPI.  Finally, we will constrain
++	 * the lowest limit with the specified one.
+ 	 */
+ 	d_min = ACPI_STATE_D0;
+ 	d_max = ACPI_STATE_D3;
+@@ -791,8 +796,17 @@ int acpi_pm_device_sleep_state(struct de
+ 		}
+ 	}
+ 
++	if (d_max_in < d_min)
++		return -EINVAL;
+ 	if (d_min_p)
+ 		*d_min_p = d_min;
++	/* constrain d_max with specified lowest limit (max number) */
++	if (d_max > d_max_in) {
++		for (d_max = d_max_in; d_max > d_min; d_max--) {
++			if (adev->power.states[d_max].flags.valid)
++				break;
++		}
++	}
+ 	return d_max;
  }
+ #endif /* CONFIG_PM */
+--- a/drivers/pci/pci-acpi.c
++++ b/drivers/pci/pci-acpi.c
+@@ -189,7 +189,8 @@ static pci_power_t acpi_pci_choose_state
+ {
+ 	int acpi_state;
+ 
+-	acpi_state = acpi_pm_device_sleep_state(&pdev->dev, NULL);
++	acpi_state = acpi_pm_device_sleep_state(&pdev->dev, NULL,
++						ACPI_STATE_D3);
+ 	if (acpi_state < 0)
+ 		return PCI_POWER_ERROR;
+ 
+--- a/drivers/pnp/pnpacpi/core.c
++++ b/drivers/pnp/pnpacpi/core.c
+@@ -170,8 +170,8 @@ static int pnpacpi_suspend(struct pnp_de
+ 	}
+ 
+ 	if (acpi_bus_power_manageable(handle)) {
+-		int power_state = acpi_pm_device_sleep_state(&dev->dev, NULL);
+-
++		int power_state = acpi_pm_device_sleep_state(&dev->dev, NULL,
++							     ACPI_STATE_D3);
+ 		if (power_state < 0)
+ 			power_state = (state.event == PM_EVENT_ON) ?
+ 					ACPI_STATE_D0 : ACPI_STATE_D3;
+--- a/include/acpi/acpi_bus.h
++++ b/include/acpi/acpi_bus.h
+@@ -414,13 +414,13 @@ int acpi_enable_wakeup_device_power(stru
+ int acpi_disable_wakeup_device_power(struct acpi_device *dev);
+ 
+ #ifdef CONFIG_PM
+-int acpi_pm_device_sleep_state(struct device *, int *);
++int acpi_pm_device_sleep_state(struct device *, int *, int);
+ #else
+-static inline int acpi_pm_device_sleep_state(struct device *d, int *p)
++static inline int acpi_pm_device_sleep_state(struct device *d, int *p, int m)
+ {
+ 	if (p)
+ 		*p = ACPI_STATE_D0;
+-	return ACPI_STATE_D3;
++	return (m >= ACPI_STATE_D0 && m <= ACPI_STATE_D3) ? m : ACPI_STATE_D0;
+ }
+ #endif
+ 
