@@ -1,48 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754167Ab2FKNoj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 09:44:39 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:54207 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753857Ab2FKNog (ORCPT
+	id S1754368Ab2FKNok (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 09:44:40 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:35013 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753887Ab2FKNoh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 09:44:36 -0400
-Date: Mon, 11 Jun 2012 22:44:09 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>
-Subject: Re: [PATCH] mm: clean up __count_immobile_pages
-Message-ID: <20120611134409.GA2707@barrios>
-References: <1339380442-1137-1-git-send-email-minchan@kernel.org>
- <4FD59952.7020602@jp.fujitsu.com>
+	Mon, 11 Jun 2012 09:44:37 -0400
+Message-ID: <4FD5F629.1070508@panasas.com>
+Date: Mon, 11 Jun 2012 16:44:09 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FD59952.7020602@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jeff Layton <jlayton@redhat.com>, bfields <bfields@fieldses.org>,
+        Steve Dickson <steved@redhat.com>
+CC: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Joerg Platte <jplatte@naasa.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Hans de Bruin <jmdebruin@xmsnet.nl>
+Subject: Re: Kernel 3.4.X NFS server regression
+References: <4FD47D4E.9070307@naasa.net> <1339340441.4751.1.camel@lade.trondhjem.org> <20120611121634.GB7654@fieldses.org> <20120611083932.24e27e39@corrin.poochiereds.net> <4FD5F35A.3000903@panasas.com>
+In-Reply-To: <4FD5F35A.3000903@panasas.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 11, 2012 at 04:08:02PM +0900, Kamezawa Hiroyuki wrote:
-> (2012/06/11 11:07), Minchan Kim wrote:
-> >__count_immobile_pages naming is rather awkward.
-> >This patch clean up the function and add comment.
-> >
-> >Cc: Mel Gorman<mgorman@suse.de>
-> >Cc: Michal Hocko<mhocko@suse.cz>
-> >Cc: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
-> >Signed-off-by: Minchan Kim<minchan@kernel.org>
+On 06/11/2012 04:32 PM, Boaz Harrosh wrote:
+
+> On 06/11/2012 03:39 PM, Jeff Layton wrote:
 > 
-> exchange true<->false caused by renaming ?
+>>>
+>>> But I'm guessing we were wrong to assume that existing setups that
+>>> people perceived as working would have that path, because the failures
+>>> in the absence of that path were probably less obvious.
+>>>
 
-Exactly.
 
-> 
-> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+One more thing, the most important one. We have already fixed that in the
+past and I was hoping the lesson was learned. Apparently it was not, and
+we are doomed to do this mistake for ever!!
 
-Thanks, Kame.
+What ever crap fails times out and crashes, in the recovery code, we don't
+give a dam. It should never affect any Server-client communication.
+
+When the grace periods ends the clients gates opens period. *Any* error
+return from state recovery code must be carefully ignored and normal
+operations resumed. At most on error, we move into a mode where any
+recovery request from client is accepted, since we don't have any better
+data to verify it.
+
+Please comb recovery code to make sure any catastrophe is safely ignored.
+We already did that before and it used to work.
+
+>>> --b.
+
+
+Thanks
+Boaz
 
