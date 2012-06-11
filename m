@@ -1,108 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754712Ab2FKNdc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 09:33:32 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:39133 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753766Ab2FKNda (ORCPT
+	id S1754479Ab2FKNdk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 09:33:40 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47427 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751007Ab2FKNdh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 09:33:30 -0400
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: James.Bottomley@HansenPartnership.com, gregkh@linuxfoundation.org,
-        mdharm-usb@one-eyed-alien.net, stern@rowland.harvard.edu,
-        sshtylyov@mvista.com, bvanassche@acm.org
-Cc: linux-usb@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Pankaj Kumar <pankaj.km@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: [PATCH v4 2/3] usb: storage: add support for write cache quirk on
-Date: Mon, 11 Jun 2012 09:33:19 -0400
-Message-Id: <1339421599-3173-1-git-send-email-linkinjeon@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 11 Jun 2012 09:33:37 -0400
+Message-ID: <1339421596.4942.10.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH 5/6] mempolicy: fix a memory corruption by refcount
+ imbalance in alloc_pages_vma()
+From: Ben Hutchings <ben@decadent.org.uk>
+To: kosaki.motohiro@gmail.com
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@google.com>, Dave Jones <davej@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Christoph Lameter <cl@linux.com>,
+        stable@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Miao Xie <miaox@cn.fujitsu.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Mon, 11 Jun 2012 14:33:16 +0100
+In-Reply-To: <1339406250-10169-6-git-send-email-kosaki.motohiro@gmail.com>
+References: <1339406250-10169-1-git-send-email-kosaki.motohiro@gmail.com>
+	 <1339406250-10169-6-git-send-email-kosaki.motohiro@gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-OODp9vDT+Ck6zlt1wzhi"
+X-Mailer: Evolution 3.2.2-1+b1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for write cache quirk on usb hdd. scsi driver will be set to wce by detecting write cache quirk in quirk list when plugging usb hdd.
 
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-Signed-off-by: Pankaj Kumar <pankaj.km@samsung.com>
-Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
----
- Documentation/kernel-parameters.txt |    2 ++
- drivers/usb/storage/scsiglue.c      |    5 +++++
- drivers/usb/storage/usb.c           |    5 ++++-
- include/linux/usb_usual.h           |    4 +++-
- 4 files changed, 14 insertions(+), 2 deletions(-)
+--=-OODp9vDT+Ck6zlt1wzhi
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 86bdca9..2f88c9c 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -2939,6 +2939,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 					initial READ(10) command);
- 				o = CAPACITY_OK (accept the capacity
- 					reported by the device);
-+				p = WRITE_CACHE (the device cache is ON
-+					by default);
- 				r = IGNORE_RESIDUE (the device reports
- 					bogus residue values);
- 				s = SINGLE_LUN (the device has only one
-diff --git a/drivers/usb/storage/scsiglue.c b/drivers/usb/storage/scsiglue.c
-index a324a5d..fe42547 100644
---- a/drivers/usb/storage/scsiglue.c
-+++ b/drivers/usb/storage/scsiglue.c
-@@ -230,6 +230,11 @@ static int slave_configure(struct scsi_device *sdev)
- 					US_FL_SCM_MULT_TARG)) &&
- 				us->protocol == USB_PR_BULK)
- 			us->use_last_sector_hacks = 1;
-+
-+		/* Check if write cache default on flag is set or not */
-+		if (us->fflags & US_FL_WRITE_CACHE)
-+			sdev->wce_default_on = 1;
-+
- 	} else {
- 
- 		/* Non-disk-type devices don't need to blacklist any pages
-diff --git a/drivers/usb/storage/usb.c b/drivers/usb/storage/usb.c
-index e23c30a..d012fe4 100644
---- a/drivers/usb/storage/usb.c
-+++ b/drivers/usb/storage/usb.c
-@@ -473,7 +473,7 @@ static void adjust_quirks(struct us_data *us)
- 			US_FL_CAPACITY_OK | US_FL_IGNORE_RESIDUE |
- 			US_FL_SINGLE_LUN | US_FL_NO_WP_DETECT |
- 			US_FL_NO_READ_DISC_INFO | US_FL_NO_READ_CAPACITY_16 |
--			US_FL_INITIAL_READ10);
-+			US_FL_INITIAL_READ10 | US_FL_WRITE_CACHE);
- 
- 	p = quirks;
- 	while (*p) {
-@@ -529,6 +529,9 @@ static void adjust_quirks(struct us_data *us)
- 		case 'o':
- 			f |= US_FL_CAPACITY_OK;
- 			break;
-+		case 'p':
-+			f |= US_FL_WRITE_CACHE;
-+			break;
- 		case 'r':
- 			f |= US_FL_IGNORE_RESIDUE;
- 			break;
-diff --git a/include/linux/usb_usual.h b/include/linux/usb_usual.h
-index 17df360..e84e769 100644
---- a/include/linux/usb_usual.h
-+++ b/include/linux/usb_usual.h
-@@ -64,7 +64,9 @@
- 	US_FLAG(NO_READ_CAPACITY_16,	0x00080000)		\
- 		/* cannot handle READ_CAPACITY_16 */		\
- 	US_FLAG(INITIAL_READ10,	0x00100000)			\
--		/* Initial READ(10) (and others) must be retried */
-+		/* Initial READ(10) (and others) must be retried */	\
-+	US_FLAG(WRITE_CACHE,	0x00200000)			\
-+		/* Write Cache status is not available */
- 
- #define US_FLAG(name, value)	US_FL_##name = value ,
- enum { US_DO_ALL_FLAGS };
--- 
-1.7.9.5
+On Mon, 2012-06-11 at 05:17 -0400, kosaki.motohiro@gmail.com wrote:
+> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>=20
+> commit cc9a6c8776 (cpuset: mm: reduce large amounts of memory barrier rel=
+ated
+> damage v3) introduced a memory corruption.
+>=20
+> shmem_alloc_page() passes pseudo vma and it has one significant unique
+> combination, vma->vm_ops=3DNULL and (vma->policy->flags & MPOL_F_SHARED).
+>=20
+> Now, get_vma_policy() does NOT increase a policy ref when vma->vm_ops=3DN=
+ULL
+> and mpol_cond_put() DOES decrease a policy ref when a policy has MPOL_F_S=
+HARED.
+> Therefore, when alloc_pages_vma() goes 'goto retry_cpuset' path, a policy
+> refcount will be decreased too much and therefore it will make a memory c=
+orruption.
+[...]
+> --- a/mm/mempolicy.c
+> +++ b/mm/mempolicy.c
+> @@ -1544,18 +1544,29 @@ struct mempolicy *get_vma_policy(struct task_stru=
+ct *task,
+>  		struct vm_area_struct *vma, unsigned long addr)
+>  {
+>  	struct mempolicy *pol =3D task->mempolicy;
+> +	int got_ref;
 
+=3D 0
+
+And this should really be a bool.
+
+>  	if (vma) {
+>  		if (vma->vm_ops && vma->vm_ops->get_policy) {
+>  			struct mempolicy *vpol =3D vma->vm_ops->get_policy(vma,
+>  									addr);
+> -			if (vpol)
+> +			if (vpol) {
+>  				pol =3D vpol;
+> +				got_ref =3D 1;
+> +			}
+>  		} else if (vma->vm_policy)
+>  			pol =3D vma->vm_policy;
+>  	}
+>  	if (!pol)
+>  		pol =3D &default_policy;
+> +
+> +	/*
+> +	 * shmem_alloc_page() passes MPOL_F_SHARED policy with vma->vm_ops=3DNU=
+LL.
+> +	 * Thus, we need to take additional ref for avoiding refcount imbalance=
+.
+> +	 */
+> +	if (!got_ref && mpol_needs_cond_ref(pol))
+> +		mpol_get(pol);
+> +
+>  	return pol;
+>  }
+> =20
+[...]
+
+--=20
+Ben Hutchings
+Computers are not intelligent.	They only think they are.
+
+--=-OODp9vDT+Ck6zlt1wzhi
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAT9XznOe/yOyVhhEJAQol/A//SF8qBKptkmR0O84ZNb9/Lp5tD94c2u4o
+pcpOXG4oBlHXmKF+C00A3GwSvCIw5tRVGO5E2lbAisxF2J1sZwyqoJ9+6Jy8XwWa
+rP3EijMfwisjzpRVSNCXgDmkwhisrk1g+hOeUeLgsYGUW+I3p3QEUnJrdydEkF1s
+Fg4t9QGWh5kOyPk7Zhqhx70TD+xr/yu1iTmKohNbPcHZfsZgCyGKhy6LKD6aXGGP
+IJL86r/Ux7bJ8TDQuDW0OMwyoDrvsnYuG7WK/bl8VE6WOUJN6tLri6NkO9hnCjR+
+nP8rXizkMLUrLgcEtKH9P2eFjIPZX8qthbtxooCWSXfheLoJleo9gk2mRAU9ca7g
+Jk68GfKsfMWjd3XfwyesY2miHCpcyDQd7ClpXuMD4nQL+NciwiSfk/xIqbinmsSl
+rbdzAEP7W5rUwelyHwB2kSxTcy0MNAQRSqS/X7C7CK/ADR1Cl5CA8p9+2BSJHwOS
+6bwFy7g1n5gRBd7GFkPO2bMW8B4GFign1RvxnsR3JfYIJJVYxde7ieajjQ8WiXs4
+uzAgwgXcD1ne7i8CHRhcQLlfFFEQNitbPgZ5hPf37PUfJh2ZPTSzTdvdC2seXaxp
+ZbrNw34JnMWobwJV9XxD6Lcc127fqQzIctEuEcny/xloOim8qjDodDqxz3VgCkt+
+Pcy5hx3ia78=
+=DPVT
+-----END PGP SIGNATURE-----
+
+--=-OODp9vDT+Ck6zlt1wzhi--
