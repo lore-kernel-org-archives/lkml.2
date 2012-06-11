@@ -1,342 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754879Ab2FKOJs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 10:09:48 -0400
-Received: from ngcobalt02.manitu.net ([217.11.48.102]:39457 "EHLO
-	ngcobalt02.manitu.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754709Ab2FKOJp (ORCPT
+	id S1754882Ab2FKOKG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 10:10:06 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:53909 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754272Ab2FKOJr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 10:09:45 -0400
-X-manitu-Original-Sender-IP: 79.214.40.70
-X-manitu-Original-Receiver-Name: ngcobalt02.manitu.net
-Message-ID: <4FD5FC13.8040800@grandegger.com>
-Date: Mon, 11 Jun 2012 16:09:23 +0200
-From: Wolfgang Grandegger <wg@grandegger.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Mon, 11 Jun 2012 10:09:47 -0400
+Date: Mon, 11 Jun 2012 15:09:31 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Vinod Koul <vinod.koul@intel.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] ASoC: dmaengine-pcm: Add support for querying
+	stream position from DMA device
+Message-ID: <20120611140931.GH11168@n2100.arm.linux.org.uk>
+References: <1339416253-4121-1-git-send-email-lars@metafoo.de> <1339416253-4121-2-git-send-email-lars@metafoo.de> <20120611132409.GG11168@n2100.arm.linux.org.uk> <4FD5FA82.7090107@metafoo.de>
 MIME-Version: 1.0
-To: Federico Vaga <federico.vaga@gmail.com>
-CC: Marc Kleine-Budde <mkl@pengutronix.de>,
-        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
-        Alan Cox <alan@linux.intel.com>, Alessandro Rubini <rubini@gnudd.com>,
-        linux-can@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] c_can_pci: generic module for c_can on PCI
-References: <4FC135C6.5030206@grandegger.com> <1338816766-7089-1-git-send-email-federico.vaga@gmail.com> <1338816766-7089-2-git-send-email-federico.vaga@gmail.com>
-In-Reply-To: <1338816766-7089-2-git-send-email-federico.vaga@gmail.com>
-X-Enigmail-Version: 1.4.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FD5FA82.7090107@metafoo.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Federico,
-
-here comes my late review. Mark and others have already commented and I
-will focus on further improvements...
-
-On 06/04/2012 03:32 PM, Federico Vaga wrote:
-
-A few more words would be nice here.
-
-> Signed-off-by: Federico Vaga <federico.vaga@gmail.com>
-> Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
-> Cc: Alan Cox <alan@linux.intel.com>
-> ---
->  drivers/net/can/c_can/Kconfig     |   11 +-
->  drivers/net/can/c_can/Makefile    |    1 +
->  drivers/net/can/c_can/c_can_pci.c |  221 +++++++++++++++++++++++++++++++++++++
->  3 files changed, 230 insertions(+), 3 deletions(-)
->  create mode 100644 drivers/net/can/c_can/c_can_pci.c
+On Mon, Jun 11, 2012 at 04:02:42PM +0200, Lars-Peter Clausen wrote:
+> On 06/11/2012 03:24 PM, Russell King - ARM Linux wrote:
+> > On Mon, Jun 11, 2012 at 02:04:13PM +0200, Lars-Peter Clausen wrote:
+> >> @@ -202,7 +203,27 @@ EXPORT_SYMBOL_GPL(snd_dmaengine_pcm_trigger);
+> >>  snd_pcm_uframes_t snd_dmaengine_pcm_pointer(struct snd_pcm_substream *substream)
+> >>  {
+> >>  	struct dmaengine_pcm_runtime_data *prtd = substream_to_prtd(substream);
+> >> -	return bytes_to_frames(substream->runtime, prtd->pos);
+> >> +	struct dma_tx_state state;
+> >> +	enum dma_status status;
+> >> +	unsigned int pos;
+> >> +
+> >> +	status = dmaengine_tx_status(prtd->dma_chan, prtd->cookie, &state);
+> >> +	if (status != DMA_IN_PROGRESS && status != DMA_PAUSED) {
+> >> +		pos = 0;
+> >> +	} else if (state.residue == 0) {
+> >> +		/* This should never happen with cyclic transfers, so assume
+> >> +		 * that the dmaengine driver does not support reporting residue
+> >> +		 * and fall back to counting periods. */
+> >> +		pos = prtd->pos;
+> > 
+> > That is an incorrect assumption.
+> > 
+> > The current DMA position is defined by the DMA pointer.  When the DMA
+> > engine has transferred the last few bytes of the DMA, the DMA pointer
+> > will be pointing to the byte _after_ the last byte transferred in the
+> > buffer.
+> > 
+> > Therefore, when you calculate the residue as (buf_start + buf_len -
+> > current_pointer) you end up with zero.
 > 
-> diff --git a/drivers/net/can/c_can/Kconfig b/drivers/net/can/c_can/Kconfig
-> index ffb9773..74ef97d 100644
-> --- a/drivers/net/can/c_can/Kconfig
-> +++ b/drivers/net/can/c_can/Kconfig
-> @@ -2,14 +2,19 @@ menuconfig CAN_C_CAN
->  	tristate "Bosch C_CAN devices"
->  	depends on CAN_DEV && HAS_IOMEM
->  
-> -if CAN_C_CAN
-> -
+> My assumption is that for cyclic DMA it will be pointing to the first byte
+> again after the last byte has been transferred. Something like this:
+> 
+> offset = (offset + 1) % buf_len
+> and current_pointer = buf_start + offset
+> 
+> If this is not true for a particular DMA controller I think we should still
+> make sure in the driver for this controller that residue will never be zero
+> for cyclic transfers, but instead will return the buffer size. This is the
+> only thing that really makes sense. The buffer only has buf_len bytes, if
+> residue can be a value in the interval of [0,buf_len] this means that it has
+> buf_len+1 possible values. Which again means there must be two values which
+> map to the same state. In this case it would be 0 and buf_len.
 
-Please don't change unrelated things. It's done that way also in other
-CAN subdirectories.
+No.  Think about it.  Think about the race conditions which can occur.
+You take a spin lock with IRQs disabled.  The DMA engine then completes
+the final transfer, and stops with the DMA pointer pointing at the byte
+after the last one transferred.  You read the DMA pointer.  Because you're
+holding a spinlock, the interrupt to tell you that the DMA has completed
+can't be delivered.  You perform the calculation I gave, and the value
+will be zero.
 
->  config CAN_C_CAN_PLATFORM
->  	tristate "Generic Platform Bus based C_CAN driver"
-> +	depends on CAN_C_CAN
->  	---help---
->  	  This driver adds support for the C_CAN chips connected to
->  	  the "platform bus" (Linux abstraction for directly to the
->  	  processor attached devices) which can be found on various
->  	  boards from ST Microelectronics (http://www.st.com)
->  	  like the SPEAr1310 and SPEAr320 evaluation boards.
-> -endif
-> +
-> +config CAN_C_CAN_PCI
-> +	tristate "Generic PCI Bus based C_CAN driver"
-> +	depends on CAN_C_CAN
-> +	---help---
-> +	  This driver adds support for the C_CAN chips connected to
-> +	  the PCI bus.
-> diff --git a/drivers/net/can/c_can/Makefile b/drivers/net/can/c_can/Makefile
-> index 9273f6d..ad1cc84 100644
-> --- a/drivers/net/can/c_can/Makefile
-> +++ b/drivers/net/can/c_can/Makefile
-> @@ -4,5 +4,6 @@
->  
->  obj-$(CONFIG_CAN_C_CAN) += c_can.o
->  obj-$(CONFIG_CAN_C_CAN_PLATFORM) += c_can_platform.o
-> +obj-$(CONFIG_CAN_C_CAN_PCI) += c_can_pci.o
->  
->  ccflags-$(CONFIG_CAN_DEBUG_DEVICES) := -DDEBUG
-> diff --git a/drivers/net/can/c_can/c_can_pci.c b/drivers/net/can/c_can/c_can_pci.c
-> new file mode 100644
-> index 0000000..b635375
-> --- /dev/null
-> +++ b/drivers/net/can/c_can/c_can_pci.c
-> @@ -0,0 +1,221 @@
-> +/*
-> + * Platform CAN bus driver for Bosch C_CAN controller
+That's because you need the interrupt to happen in order to restart the
+cyclic DMA.
 
-s /Platform/PCI/ ?
+This _does_ happen with existing drivers.  You can't ignore it.  The whole
+"return 0 if you don't implement it" has always been an absurd idea.  You
+can't reliably use it to detect lack of implementation.
 
-> + *
-> + * Copyright (C) 2012 Federico Vaga <federico.vaga@gmail.com>
-> +  *
-> + * This file is licensed under the terms of the GNU General Public
-> + * License version 2. This program is licensed "as is" without any
-> + * warranty of any kind, whether express or implied.
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/netdevice.h>
-> +#include <linux/clk.h>
-> +#include <linux/pci.h>
-> +#include <linux/can/dev.h>
-> +
-> +#include "c_can.h"
-> +
-> +enum c_can_pci_reg_align {
-> +	C_CAN_REG_ALIGN_16,
-> +	C_CAN_REG_ALIGN_32,
-> +};
-> +
-> +struct c_can_pci_data {
-> +	unsigned int reg_align;	/* Set the register alignment in the memory */
-
-Should be "enum c_can_pci_reg_align" here.
-
-> +	unsigned int freq;	/* Set the frequency if clk is not usable */
-> +};
-> +
-> +/*
-> + * 16-bit c_can registers can be arranged differently in the memory
-> + * architecture of different implementations. For example: 16-bit
-> + * registers can be aligned to a 16-bit boundary or 32-bit boundary etc.
-> + * Handle the same by providing a common read/write interface.
-> + */
-> +static u16 c_can_pci_read_reg_aligned_to_16bit(struct c_can_priv *priv,
-> +						void *reg)
-> +{
-> +	return readw(reg);
-> +}
-> +
-> +static void c_can_pci_write_reg_aligned_to_16bit(struct c_can_priv *priv,
-> +						void *reg, u16 val)
-> +{
-> +	writew(val, reg);
-> +}
-> +
-> +static u16 c_can_pci_read_reg_aligned_to_32bit(struct c_can_priv *priv,
-> +						void *reg)
-> +{
-> +	return readw(reg + (long)reg - (long)priv->regs);
-> +}
-> +
-> +static void c_can_pci_write_reg_aligned_to_32bit(struct c_can_priv *priv,
-> +						void *reg, u16 val)
-> +{
-> +	writew(val, reg + (long)reg - (long)priv->regs);
-> +}
-
-This will look better with the new register access methods.
-
-> +static int __devinit c_can_pci_probe(struct pci_dev *pdev,
-> +				     const struct pci_device_id *ent)
-> +{
-> +	struct c_can_pci_data *c_can_pci_data = (void *)ent->driver_data;
-> +	struct c_can_priv *priv;
-> +	struct net_device *dev;
-> +	void __iomem *addr;
-> +	struct clk *clk;
-> +	int ret;
-> +
-> +	ret = pci_enable_device(pdev);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "pci_enable_device FAILED\n");
-> +		goto out;
-> +	}
-> +
-> +	ret = pci_request_regions(pdev, KBUILD_MODNAME);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "pci_request_regions FAILED\n");
-> +		goto out_disable_device;
-> +	}
-> +
-> +	pci_set_master(pdev);
-> +	pci_enable_msi(pdev);
-> +
-> +	addr = pci_iomap(pdev, 0, pci_resource_len(pdev, 0));
-> +	if (!addr) {
-> +		dev_err(&pdev->dev,
-> +			"device has no PCI memory resources, "
-> +			"failing adapter\n");
-> +		ret = -ENOMEM;
-> +		goto out_release_regions;
-> +	}
-> +
-> +	/* allocate the c_can device */
-> +	dev = alloc_c_can_dev();
-> +	if (!dev) {
-> +		ret = -ENOMEM;
-> +		goto out_iounmap;
-> +	}
-> +
-> +	priv = netdev_priv(dev);
-> +	pci_set_drvdata(pdev, dev);
-> +	SET_NETDEV_DEV(dev, &pdev->dev);
-> +
-> +	dev->irq = pdev->irq;
-> +	priv->regs = addr;
-> +
-> +	if (!c_can_pci_data->freq) {
-> +		/* get the appropriate clk */
-> +		clk = clk_get(&pdev->dev, NULL);
-> +		if (IS_ERR(clk)) {
-> +			dev_err(&pdev->dev, "no clock defined\n");
-> +			ret = -ENODEV;
-> +			goto out_free_c_can;
-> +		}
-> +		priv->can.clock.freq = clk_get_rate(clk);
-> +		priv->priv = clk;
-> +	} else {
-> +		priv->can.clock.freq = c_can_pci_data->freq;
-> +		priv->priv = NULL;
-> +	}
-> +
-> +	switch (c_can_pci_data->reg_align) {
-> +	case C_CAN_REG_ALIGN_32:
-> +		priv->read_reg = c_can_pci_read_reg_aligned_to_32bit;
-> +		priv->write_reg = c_can_pci_write_reg_aligned_to_32bit;
-> +		break;
-> +	case C_CAN_REG_ALIGN_16:
-> +	default:
-> +		priv->read_reg = c_can_pci_read_reg_aligned_to_16bit;
-> +		priv->write_reg = c_can_pci_write_reg_aligned_to_16bit;
-> +		break;
-> +	}
-> +
-> +	ret = register_c_can_dev(dev);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "registering %s failed (err=%d)\n",
-> +			KBUILD_MODNAME, ret);
-> +		goto out_free_clock;
-> +	}
-> +
-> +	dev_info(&pdev->dev, "%s device registered (regs=%p, irq=%d)\n",
-> +		 KBUILD_MODNAME, priv->regs, dev->irq);
-> +
-> +	return 0;
-> +
-> +out_free_clock:
-> +	if (!priv->priv)
-> +		clk_put(priv->priv);
-> +out_free_c_can:
-> +	pci_set_drvdata(pdev, NULL);
-> +	free_c_can_dev(dev);
-> +out_iounmap:
-> +	pci_iounmap(pdev, addr);
-> +out_release_regions:
-> +	pci_disable_msi(pdev);
-> +	pci_clear_master(pdev);
-> +	pci_release_regions(pdev);
-> +out_disable_device:
-> +	/*
-> +	 * do not call pci_disable_device on sta2x11 because it
-> +	 * break all other Bus masters on this EP
-> +	 */
-
-Puh!
-
-> +	if(pdev->vendor == PCI_VENDOR_ID_STMICRO &&
-> +	   pdev->device == PCI_DEVICE_ID_STMICRO_CAN)
-> +		goto out;
-> +	pci_disable_device(pdev);
-> +out:
-> +	return ret;
-> +}
-> +
-> +static void __devexit c_can_pci_remove(struct pci_dev *pdev)
-> +{
-> +	struct net_device *dev = pci_get_drvdata(pdev);
-> +	struct c_can_priv *priv = netdev_priv(dev);
-> +
-> +	pci_set_drvdata(pdev, NULL);
-> +	free_c_can_dev(dev);
-
-Should be moved a few line down.
-
-> +	if (!priv->priv)
-> +		clk_put(priv->priv);
-> +	pci_iounmap(pdev, priv->regs);
-> +	pci_disable_msi(pdev);
-> +	pci_clear_master(pdev);
-> +	pci_release_regions(pdev);
-> +	/*
-> +	 * do not call pci_disable_device on sta2x11 because it
-> +	 * break all other Bus masters on this EP
-> +	 */
-> +	if(pdev->vendor == PCI_VENDOR_ID_STMICRO &&
-> +	   pdev->device == PCI_DEVICE_ID_STMICRO_CAN)
-> +		return;
-> +	pci_disable_device(pdev);
-> +}
-> +
-> +static struct c_can_pci_data c_can_sta2x11= {
-> +	.reg_align = C_CAN_REG_ALIGN_32,
-> +	.freq = 52000000, /* 52 Mhz */
-> +};
-> +
-> +#define C_CAN_ID(_vend, _dev, _driverdata) {		\
-> +	PCI_DEVICE(_vend, _dev),			\
-> +	.driver_data = (unsigned long)&_driverdata,	\
-> +}
-> +DEFINE_PCI_DEVICE_TABLE(c_can_pci_tbl) = {
-> +	C_CAN_ID(PCI_VENDOR_ID_STMICRO, PCI_DEVICE_ID_STMICRO_CAN,
-> +		 c_can_sta2x11),
-> +	{},
-> +};
-> +static struct pci_driver sta2x11_pci_driver = {
-
-Why do you not use a generic name here?
-
-> +	.name = KBUILD_MODNAME,
-> +	.id_table = c_can_pci_tbl,
-> +	.probe = c_can_pci_probe,
-> +	.remove = __devexit_p(c_can_pci_remove),
-> +};
-> +
-> +module_pci_driver(sta2x11_pci_driver);
-> +
-> +MODULE_AUTHOR("Federico Vaga <federico.vaga@gmail.com>");
-> +MODULE_LICENSE("GPL V2");
-> +MODULE_DESCRIPTION("PCI CAN bus driver for Bosch C_CAN controller");
-> +MODULE_DEVICE_TABLE(pci, c_can_pci_tbl);
-
-Thanks for your contribution.
-
-Wolfgang.
-
+The only way to detect it is to note whether the residue is ever non-zero.
+If it becomes non-zero, always assume it is valid.  Otherwise, if it always
+seems to be zero, only then can you make such an assumption.
