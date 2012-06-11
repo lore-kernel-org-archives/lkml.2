@@ -1,48 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751992Ab2FKKRo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 06:17:44 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:46831 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751431Ab2FKKRm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 06:17:42 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
-        rientjes@google.com, akpm@linux-foundation.org, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH -V8 15/16] hugetlb/cgroup: migrate hugetlb cgroup info from oldpage to new page during migration
-In-Reply-To: <20120611092424.GJ12402@tiehlicka.suse.cz>
-References: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1339232401-14392-16-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20120611092424.GJ12402@tiehlicka.suse.cz>
-User-Agent: Notmuch/0.13.2+35~g0ff57e7 (http://notmuchmail.org) Emacs/24.1.50.1 (x86_64-unknown-linux-gnu)
-Date: Mon, 11 Jun 2012 15:47:28 +0530
-Message-ID: <878vfu5f0n.fsf@skywalker.in.ibm.com>
+	id S1752117Ab2FKKV0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 06:21:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34023 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750991Ab2FKKVZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 06:21:25 -0400
+Date: Mon, 11 Jun 2012 13:21:40 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Jan Kiszka <jan.kiszka@siemens.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "mtosatti@redhat.com" <mtosatti@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "yongjie.ren@intel.com" <yongjie.ren@intel.com>
+Subject: Re: [PATCH] KVM: Use IRQF_ONESHOT for assigned device MSI interrupts
+Message-ID: <20120611102139.GA31197@redhat.com>
+References: <1338570192.23475.25.camel@bling.home>
+ <4FC8F867.7080103@siemens.com>
+ <1338573558.23475.41.camel@bling.home>
+ <4FC90961.8030701@siemens.com>
+ <4FCB2359.9020505@redhat.com>
+ <alpine.LFD.2.02.1206041235540.3086@ionos>
+ <4FCC9EAC.9090007@siemens.com>
+ <20120608143927.GA4949@redhat.com>
+ <4FD21151.9090608@siemens.com>
+ <4FD5C205.5070901@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-x-cbid: 12061023-5490-0000-0000-00000191F883
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FD5C205.5070901@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michal Hocko <mhocko@suse.cz> writes:
+On Mon, Jun 11, 2012 at 01:01:41PM +0300, Avi Kivity wrote:
+> On 06/08/2012 05:50 PM, Jan Kiszka wrote:
+> > 
+> >> 
+> >> Pls correct me if I'm wrong.
+> > 
+> > Well, IIRC, the "don't loop over all vcpus with IRQs or preemption
+> > disabled" was one argument against direct legacy interrupt injection as
+> > well. That's what I kept in mind from those discussions. Maybe Avi can
+> > comment on the current position.
+> 
+> It's still my position.
+> 
+> IMO we need something like struct gfn_to_hva_cache for interrupts.  If
+> it's in the cache, we fast-path it from the interrupt handler.  If not,
+> fall back to a workqueue and let it refill the cache.
 
-> On Sat 09-06-12 14:30:00, Aneesh Kumar K.V wrote:
->> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
->> 
->> With HugeTLB pages, hugetlb cgroup is uncharged in compound page
->> destructor.  Since we are holding a hugepage reference,
->
-> Who is holding that reference? I do not see anybody calling get_page in
-> this patch...
->
+And you class the irqfd behaviour of injecting multicast
+with interrupts disabled a bug then?
 
-soft_offline_huge_page takes the reference. It does the final
-put_page(hpage) there.
-
->> we can be sure that old page won't get uncharged till the last
->> put_page().
->> 
-
--aneesh
-
+> -- 
+> error compiling committee.c: too many arguments to function
