@@ -1,83 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752906Ab2FKJOQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 05:14:16 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:39391 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751812Ab2FKJOL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 05:14:11 -0400
-Date: Mon, 11 Jun 2012 17:13:50 +0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Jonghwa Lee <jonghwa3.lee@samsung.com>
-Cc: linux-kernel@vger.kernel.org, Mike Turquette <mturquette@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Hartley Sweeten <hsweeten@visionengravers.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Message-ID: <20120611091349.GE11439@opensource.wolfsonmicro.com>
-References: <1339400131-28980-1-git-send-email-jonghwa3.lee@samsung.com>
+	id S1753019Ab2FKJOw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 05:14:52 -0400
+Received: from mga14.intel.com ([143.182.124.37]:32844 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752698Ab2FKJOr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 05:14:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="asc'?scan'208";a="154651594"
+Date: Mon, 11 Jun 2012 12:16:00 +0300
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Marco Stornelli <marco.stornelli@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Boaz Harrosh <bharrosh@panasas.com>,
+        Tao Ma <boyu.mt@taobao.com>, Nick Piggin <npiggin@kernel.dk>,
+        "Dmitry V. Levin" <ldv@altlinux.org>,
+        v9fs-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-afs@lists.infradead.org,
+        linux-btrfs@vger.kernel.org, ceph-devel@vger.kernel.org,
+        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
+        codalist@telemann.coda.cs.cmu.edu, ecryptfs@vger.kernel.org,
+        osd-dev@open-osd.org, linux-ext4@vger.kernel.org,
+        fuse-devel@lists.sourceforge.net, linux-mtd@lists.infradead.org,
+        jfs-discussion@lists.sourceforge.net, logfs@logfs.org,
+        linux-nfs@vger.kernel.org, linux-nilfs@vger.kernel.org,
+        linux-ntfs-dev@lists.sourceforge.net, ocfs2-devel@oss.oracle.com,
+        reiserfs-devel@vger.kernel.org
+Subject: Re: [RFC, PATCH, RESEND] fs: push rcu_barrier() from
+ deactivate_locked_super() to filesystems
+Message-ID: <20120611091600.GA1122@otc-wbsnb-06>
+References: <20120608221446.GA18250@otc-wbsnb-06>
+ <20120608152550.258d6a30.akpm@linux-foundation.org>
+ <20120608222734.GT30000@ZenIV.linux.org.uk>
+ <20120608153120.b722d7c3.akpm@linux-foundation.org>
+ <20120608233127.GB18981@otc-wbsnb-06>
+ <20120608163751.7a8ec2bc.akpm@linux-foundation.org>
+ <CA+55aFw5k3daxeoZb9H1HGcOCWjPF+d7inSbf0QHmG-atp4reQ@mail.gmail.com>
+ <20120608172842.9826b5cd.akpm@linux-foundation.org>
+ <4FD2F5F4.1000106@gmail.com>
+ <20120609002557.b8aba759.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Oiv9uiLrevHtW1RS"
+	protocol="application/pgp-signature"; boundary="LZvS9be/3tNcYl/X"
 Content-Disposition: inline
-In-Reply-To: <1339400131-28980-1-git-send-email-jonghwa3.lee@samsung.com>
-X-Cookie: You are always busy.
+In-Reply-To: <20120609002557.b8aba759.akpm@linux-foundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 116.228.53.169
-X-SA-Exim-Mail-From: broonie@opensource.wolfsonmicro.com
-Subject: Re: [PATCH v2] clock: max77686: Add driver for Maxim 77686 32KHz
- crystal oscillator
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---Oiv9uiLrevHtW1RS
+--LZvS9be/3tNcYl/X
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Mon, Jun 11, 2012 at 04:35:31PM +0900, Jonghwa Lee wrote:
+On Sat, Jun 09, 2012 at 12:25:57AM -0700, Andrew Morton wrote:
+> And...  it seems that I misread what's going on.  The individual
+> filesystems are doing the rcu freeing of their inodes, so it is
+> appropriate that they also call rcu_barrier() prior to running
+> kmem_cache_free().  Which is what Kirill's patch does.  oops.
 
-> +static int max77686_clk_enable(struct clk_hw *hw)
+Ack? ;)
 
-> +static void max77686_clk_disable(struct clk_hw *hw)
+--=20
+ Kirill A. Shutemov
 
-These need to be prepare() and unprepare() since these operations are
-atomic.
-
-> +{
-> +	struct max77686_clk *max77686 = NULL;
-
-The assignments here are redundant since you assign to the variable
-immadiately.
-
-> +	for ( i = 0; i < MAX77686_CLKS_NUM; i++) {
-
-Coding style with ( i.
-
---Oiv9uiLrevHtW1RS
+--LZvS9be/3tNcYl/X
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJP1bbEAAoJEBus8iNuMP3djKEP/048EorekWZsJ6mO+fulLNBN
-bTwESUu9/naEGckKE5CFdYYV7BG7Ynxh45nLTW+D7YXTKajtAYSbBlGp9iFKEIxu
-FUWAy4NPNs3Gmwf1lQzLbdldr7mC+ghX4xpYJF6xfHDhs6jfiexd3x6GqTHTlWbz
-7RXm1mCKDvh5Fs0G4+JaOLh2gwP3tnuHeIErH6SluCTXm3kznpkt6Piy459OgHyi
-4pVfv3RJYbYVFCJV0ZqrCyab30VrKF5LWTgTyT68nKljfDc3PVPRN22Xy5JKFsBz
-xfPVIRFzK7Av5UMlimm1EkwFNHNtWT98UJFNfi2ElbHHKjCs39jGzD5sj1T8edbR
-90v2KdT9G2Gtf9loI0g6Y+4pxDE+1/n2gyYXN0GHLv0uxGFL7A0f6B50KQq/MsJn
-NlJ/rQae2O2Kv0BT6XKsRm7yWOCJNblcJZHMoeia+TzUuMuYNBkBIRJ9gZc8aLrI
-JFVnfjAhyOkTUzVIHt6LJGsuo/5xe6fijSo8wrZRpiyLsTwWIodXt/k7iqbv2EoE
-XXmQ2fIXgCFaTJPiraWoKVEEzWwVusP0G5omnKciLGQLNY2ne1rds6VnMkFiaqfC
-Cy1IbkYoaxWG1lRaI959w7iRrFo8BYF1zWSjY3MMVRNZieSgHzkBxdUoRADJt5wB
-cZOSnxHELnJ8K7A529Mn
-=wxCQ
+iQIcBAEBAgAGBQJP1bdQAAoJEAd+omnVudOMOWIP/0ggxQY/gopg5nzCYdokfLxR
+gz+eQJznRY+O6tbDMn0QyMJNfwsqKWUKVPxVmBnzrXv2YXiU2s1pdeWcUrkhkGzo
+t+dSzoQYx3IsVY23ViQvCojLacfFODIUvb/fu7h+ZOFN3xkCB9VW7Do7y4JwflUV
+2kEzQc+a6BU660CPnkDsGVLQTj9gw6XSmKazzbHkLg6wAr4IyyKAq7MPvLQfocIo
+ZF9oqOTKx+2K0+YaupJJRzxPPPxOCXUzxPDjbJIAOJHJQ2DtJy2WEME5V4wS9R7K
++9ldJwDN4uu+IpWGVMJFNXCkRQk6UfmKgBLrVv+32Y2+B2VebXeaEj3QECpmqqcG
+vm3vLoQB0TITfjtGTSqojE7WjTJl61jarsFzXEY3bvwdJ3h1XHeUhK5pbBiRVcu2
+v7RkgZH04E5Y+3/FGJVvxWRy+GJafI7ip+G8Rdl2r7aNmuyjmqtkdmBms/VS53Pp
+Oc1bDv+wmVwJjPJzT6z/7gE/A8LHvizvZfvt8ttS2WbWHhTuObLvtSnNd03ayhWu
+ROYpfE7qQ6CTrcGilpOLg9+N5wZOrT1mxn4s8h9d2+mkUdLHkudMFOoM/aTUyR0r
+A+Jq0iCfFYO6+SdhRo4zbecLVf0aihZ+pdOHQJ428Cguf28QPHusRiPlaYYTrsHD
+8zzLHxfwcftJ4IqVR7K4
+=IpC+
 -----END PGP SIGNATURE-----
 
---Oiv9uiLrevHtW1RS--
+--LZvS9be/3tNcYl/X--
