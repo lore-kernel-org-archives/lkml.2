@@ -1,81 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755296Ab2FKPPd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 11:15:33 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:44438 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755081Ab2FKPPb (ORCPT
+	id S1755255Ab2FKPQj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 11:16:39 -0400
+Received: from smtp-out-200.synserver.de ([212.40.185.200]:1642 "EHLO
+	smtp-out-199.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753401Ab2FKPQi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 11:15:31 -0400
-Date: Mon, 11 Jun 2012 23:15:00 +0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, arnd@arndb.de,
-        linus.walleij@stericsson.com, grant.likely@secretlab.ca,
-        cjb@laptop.org, sameo@linux.intel.com, linux-kernel@vger.kernel.org
-Message-ID: <20120611151459.GV11439@opensource.wolfsonmicro.com>
-References: <4FCDDE58.5010501@linaro.org>
- <20120605102900.GP23408@opensource.wolfsonmicro.com>
- <4FCDE0A4.8070107@linaro.org>
- <20120605104201.GR23408@opensource.wolfsonmicro.com>
- <4FD5D49C.6070106@linaro.org>
- <20120611120820.GN11439@opensource.wolfsonmicro.com>
- <4FD5F3D2.2050500@linaro.org>
- <4FD5FBAF.1060002@linaro.org>
- <20120611142752.GS11439@opensource.wolfsonmicro.com>
- <4FD605B5.2060300@linaro.org>
+	Mon, 11 Jun 2012 11:16:38 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 2354
+Message-ID: <4FD60CA9.3070701@metafoo.de>
+Date: Mon, 11 Jun 2012 17:20:09 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="YwTTlJgQ7QoYB9ta"
-Content-Disposition: inline
-In-Reply-To: <4FD605B5.2060300@linaro.org>
-X-Cookie: You are always busy.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 116.228.53.169
-X-SA-Exim-Mail-From: broonie@opensource.wolfsonmicro.com
-Subject: Re: [PATCH 09/22] regulator: Change db8500-prcmu match names to
- reflect Device Tree
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Vinod Koul <vinod.koul@intel.com>, alsa-devel@alsa-project.org,
+        Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
+Subject: Re: [alsa-devel] [PATCH 2/2] ASoC: dmaengine-pcm: Add support for
+ querying stream position from DMA device
+References: <1339416253-4121-1-git-send-email-lars@metafoo.de> <1339416253-4121-2-git-send-email-lars@metafoo.de> <20120611132409.GG11168@n2100.arm.linux.org.uk> <20120611145735.GU11439@opensource.wolfsonmicro.com>
+In-Reply-To: <20120611145735.GU11439@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/11/2012 04:57 PM, Mark Brown wrote:
+> On Mon, Jun 11, 2012 at 02:24:09PM +0100, Russell King - ARM Linux wrote:
+> 
+>> What we need to do is to get rid of this idea that reporting the residue
+>> is optional for DMA engine drivers.  Let's make it absolutely required
+>> in order to support cyclic transfers.
+> 
+> I tend to agree, if we are going to let things not implement this we
+> need to provide an out of bounds way for them to signal that they don't
+> support it and make it an error to use the interface at all.  Otherwise
+> the interface complexity increases as you get into special cases and so
+> on.  We only need to fix the drivers that are used with ASoC immediately
+> and there's not so many of them which is easier than being forced to get
+> every driver upgraded at once.
 
---YwTTlJgQ7QoYB9ta
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I think the previous discussions have made it clear that we don't want to
+make it optional for drivers to implement residue reporting for cyclic
+transfers.
 
-On Mon, Jun 11, 2012 at 03:50:29PM +0100, Lee Jones wrote:
-> On 11/06/12 15:27, Mark Brown wrote:
+Another option is to provide the current implementation of the pcm_pointer
+as a standalone legacy function, which can be used by the old platforms
+until their dmaengine drivers have cached up. And add a new residue-only
+implementation which will be mandatory for new drivers. That would make it
+more explicit that those platforms are sort of broken and need to be fixed.
+After all of them have been fixed the legacy pcm_pointer implementation can
+be removed.
 
-> >It'll merge out fine, it's just icky having the same thing appear twice
-> >in history.  Not the end of the world.
+I still think though that residue should never be reported as 0 for active
+cyclic transfers.
 
-> Understood. So does this mean you will to push them into the -rcs?
-
-Yes.
-
---YwTTlJgQ7QoYB9ta
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJP1grnAAoJEBus8iNuMP3d2Z4P/jcU9ZBiWblWVPHQwc9F7HGT
-VVqLr10dJHaM3M3No8bQbzZxEZzXV0NL9mOUa+viqG3f0qiNMZcNja6MDADl8qIV
-K4OmUuwcF3/f59AzHkwTqF00Y/Lwz2f2D+dNorA847GkLIXRQuNhzCOz9WPzA5BZ
-GWbDxzEYoVwrXshnn5aG2YYcqroopTV69WHFAXnAdihFM/CZUHu5Cl8S3knCJXaB
-ISDP0LxGsUaqXF5rArNb6NlSvSZIypfu4e0vtg78PXTGh301/8FJVdBuIgQ4pKwg
-mcT3atI6JPkGFVpcoXPreORUepJLQsXU/be63dkY+IIrPuavidph8EWFAH4NNNhH
-hecHMi6jYyN9as6KHOb6rr4vKzhfkJKwBgwX+mVbH77enDY+zCIjOJ6HZHy0/+Ch
-7ycDgnQgRXXQtOBltkZk8cWtxsDNSd/sHB6EGx3uijtmJEMfga6iagcxIdiDkXkK
-eUSPSPD5KfBr3eRDOjXblw4/ycVLVacylif9yYLPNCPqqNIthsRCXbxulLwZCgzH
-Cc8P395p7El+Cs0qGDqT21qnH4WJcqBeG7L0oPPNtN49GFmSnGK7T468bydSAUC/
-c4zQ6pC5EFjEvqRZR4pTYB3Y3JCwPT2m03dMDukcx8GvJGtxmk94ewRqAxBzG3jv
-S0qfBrVsF7Rw1auWgR8h
-=apsE
------END PGP SIGNATURE-----
-
---YwTTlJgQ7QoYB9ta--
+- Lars
