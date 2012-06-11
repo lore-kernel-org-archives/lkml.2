@@ -1,64 +1,306 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751861Ab2FKSBd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 14:01:33 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:36380 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751066Ab2FKSBc (ORCPT
+	id S1752260Ab2FKSDG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 14:03:06 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:61405 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751066Ab2FKSDE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 14:01:32 -0400
-Date: Mon, 11 Jun 2012 11:01:12 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Mike Galbraith <mgalbraith@novell.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Miklos Szeredi <mszeredi@suse.cz>
-Subject: Re: rcu: endless stalls
-Message-ID: <20120611180112.GD2521@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1339409176.7350.26.camel@marge.simpson.net>
- <20120611133953.GI2425@linux.vnet.ibm.com>
- <1339424543.7350.101.camel@marge.simpson.net>
- <1339435214.7358.43.camel@marge.simpson.net>
+	Mon, 11 Jun 2012 14:03:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339435214.7358.43.camel@marge.simpson.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12061118-2398-0000-0000-00000767C934
+In-Reply-To: <1339420656-11512-1-git-send-email-shaw500@gmail.com>
+References: <1339420656-11512-1-git-send-email-shaw500@gmail.com>
+Date: Mon, 11 Jun 2012 21:03:02 +0300
+X-Google-Sender-Auth: Nd8J13-7IsHyacdTMhkC62mP9SA
+Message-ID: <CAEnQRZDdtGwMKDurKbriAuT5=J0bydEVyeo5sU3u=mvQRa5bTA@mail.gmail.com>
+Subject: Re: [PATCH] net: socket: fixed coding style issues.
+From: Daniel Baluta <dbaluta@ixiacom.com>
+To: Matthew Shaw <shaw500@gmail.com>
+Cc: davem@emloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 11, 2012 at 07:20:14PM +0200, Mike Galbraith wrote:
-> On Mon, 2012-06-11 at 16:22 +0200, Mike Galbraith wrote: 
-> > On Mon, 2012-06-11 at 06:39 -0700, Paul E. McKenney wrote: 
-> > > On Mon, Jun 11, 2012 at 12:06:16PM +0200, Mike Galbraith wrote:
-> > > > Greetings,
-> > > > 
-> > > > I received a report of a 48 core UV box hitting a gripe, taking longer
-> > > > than timeout to emit same, so box griped endlessly, forcing reboot.
-> > > 
-> > > So it took minutes to print an RCU CPU stall warning?  On only 48 CPUs?
-> > > 
-> > > If so, yow!!!
-> > 
-> > The report was a tad fuzzy on details, but serial console can take a
-> > while at low baud rate, and the box was apparently perma-stalled.
-> 
-> Gee, no wonder it took a while to emit the gripe, there were a few more
-> than 48 CPUs actually.. 4048 more to be precise.
-> 
-> 4096 tasks on 4096 CPUs all hammering wait_lock at once r!pretty.
+On Mon, Jun 11, 2012 at 4:17 PM, Matthew Shaw <shaw500@gmail.com> wrote:
+> Fixed an instance where brances are used but not needed, and some lines
+> in the comments and code that exceed the 80 character limit.
+>
+> Signed-off-by: Matthew Shaw <shaw500@gmail.com>
+> ---
+>  net/socket.c |  137 ++++++++++++++++++++++++++++++++--------------------------
+>  1 file changed, 75 insertions(+), 62 deletions(-)
+>
+> diff --git a/net/socket.c b/net/socket.c
+> index 6e0ccc0..2133040 100644
+> --- a/net/socket.c
+> +++ b/net/socket.c
+> @@ -8,48 +8,48 @@
+>  *             Fred N. van Kempen, <waltje@uWalt.NL.Mugnet.ORG>
+>  *
+>  * Fixes:
+> - *             Anonymous       :       NOTSOCK/BADF cleanup. Error fix in
+> - *                                     shutdown()
+> - *             Alan Cox        :       verify_area() fixes
+> - *             Alan Cox        :       Removed DDI
+> - *             Jonathan Kamens :       SOCK_DGRAM reconnect bug
+> - *             Alan Cox        :       Moved a load of checks to the very
+> - *                                     top level.
+> - *             Alan Cox        :       Move address structures to/from user
+> - *                                     mode above the protocol layers.
+> - *             Rob Janssen     :       Allow 0 length sends.
+> - *             Alan Cox        :       Asynchronous I/O support (cribbed from the
+> - *                                     tty drivers).
+> - *             Niibe Yutaka    :       Asynchronous I/O for writes (4.4BSD style)
+> - *             Jeff Uphoff     :       Made max number of sockets command-line
+> - *                                     configurable.
+> - *             Matti Aarnio    :       Made the number of sockets dynamic,
+> - *                                     to be allocated when needed, and mr.
+> - *                                     Uphoff's max is used as max to be
+> - *                                     allowed to allocate.
+> - *             Linus           :       Argh. removed all the socket allocation
+> - *                                     altogether: it's in the inode now.
+> - *             Alan Cox        :       Made sock_alloc()/sock_release() public
+> - *                                     for NetROM and future kernel nfsd type
+> - *                                     stuff.
+> - *             Alan Cox        :       sendmsg/recvmsg basics.
+> - *             Tom Dyas        :       Export net symbols.
+> - *             Marcin Dalecki  :       Fixed problems with CONFIG_NET="n".
+> - *             Alan Cox        :       Added thread locking to sys_* calls
+> - *                                     for sockets. May have errors at the
+> - *                                     moment.
+> - *             Kevin Buhr      :       Fixed the dumb errors in the above.
+> - *             Andi Kleen      :       Some small cleanups, optimizations,
+> - *                                     and fixed a copy_from_user() bug.
+> - *             Tigran Aivazian :       sys_send(args) calls sys_sendto(args, NULL, 0)
+> - *             Tigran Aivazian :       Made listen(2) backlog sanity checks
+> - *                                     protocol-independent
+> + *     Anonymous       :       NOTSOCK/BADF cleanup. Error fix in
+> + *                             shutdown()
+> + *     Alan Cox        :       verify_area() fixes
+> + *     Alan Cox        :       Removed DDI
+> + *     Jonathan Kamens :       SOCK_DGRAM reconnect bug
+> + *     Alan Cox        :       Moved a load of checks to the very
+> + *                             top level.
+> + *     Alan Cox        :       Move address structures to/from user
+> + *                             mode above the protocol layers.
+> + *     Rob Janssen     :       Allow 0 length sends.
+> + *     Alan Cox        :       Asynchronous I/O support (cribbed from the
+> + *                             tty drivers).
+> + *     Niibe Yutaka    :       Asynchronous I/O for writes (4.4BSD style)
+> + *     Jeff Uphoff     :       Made max number of sockets command-line
+> + *                             configurable.
+> + *     Matti Aarnio    :       Made the number of sockets dynamic,
+> + *                             to be allocated when needed, and mr.
+> + *                             Uphoff's max is used as max to be
+> + *                             allowed to allocate.
+> + *     Linus           :       Argh. removed all the socket allocation
+> + *                             altogether: it's in the inode now.
+> + *     Alan Cox        :       Made sock_alloc()/sock_release() public
+> + *                             for NetROM and future kernel nfsd type
+> + *                             stuff.
+> + *     Alan Cox        :       sendmsg/recvmsg basics.
+> + *     Tom Dyas        :       Export net symbols.
+> + *     Marcin Dalecki  :       Fixed problems with CONFIG_NET="n".
+> + *     Alan Cox        :       Added thread locking to sys_* calls
+> + *                             for sockets. May have errors at the
+> + *                             moment.
+> + *     Kevin Buhr      :       Fixed the dumb errors in the above.
+> + *     Andi Kleen      :       Some small cleanups, optimizations,
+> + *                             and fixed a copy_from_user() bug.
+> + *     Tigran Aivazian :       sys_send(args) calls sys_sendto(args, NULL, 0)
+> + *     Tigran Aivazian :       Made listen(2) backlog sanity checks
+> + *                             protocol-independent
+>  *
+>  *
+> - *             This program is free software; you can redistribute it and/or
+> - *             modify it under the terms of the GNU General Public License
+> - *             as published by the Free Software Foundation; either version
+> - *             2 of the License, or (at your option) any later version.
+> + *     This program is free software; you can redistribute it and/or
+> + *     modify it under the terms of the GNU General Public License
+> + *     as published by the Free Software Foundation; either version
+> + *     2 of the License, or (at your option) any later version.
+>  *
+>  *
+>  *     This module is effectively the top level interface to the BSD socket
+> @@ -128,8 +128,9 @@ static ssize_t sock_splice_read(struct file *file, loff_t *ppos,
+>                                unsigned int flags);
+>
+>  /*
+> - *     Socket files have a set of 'special' operations as well as the generic file ones. These don't appear
+> - *     in the operation structures but are done directly via the socketcall() multiplexor.
+> + *     Socket files have a set of 'special' operations as well as the generic
+> + *      file ones. These don't appear in the operation structures but are done
+> + *      directly via the socketcall() multiplexor.
+>  */
+>
+>  static const struct file_operations socket_file_ops = {
+> @@ -181,7 +182,8 @@ static DEFINE_PER_CPU(int, sockets_in_use);
+>  *     invalid addresses -EFAULT is returned. On a success 0 is returned.
+>  */
+>
+> -int move_addr_to_kernel(void __user *uaddr, int ulen, struct sockaddr_storage *kaddr)
+> +int move_addr_to_kernel(void __user *uaddr, int ulen,
+> +                       struct sockaddr_storage *kaddr)
+>  {
+>        if (ulen < 0 || ulen > sizeof(struct sockaddr_storage))
+>                return -EINVAL;
+> @@ -584,7 +586,8 @@ int sock_sendmsg(struct socket *sock, struct msghdr *msg, size_t size)
+>  }
+>  EXPORT_SYMBOL(sock_sendmsg);
+>
+> -static int sock_sendmsg_nosec(struct socket *sock, struct msghdr *msg, size_t size)
+> +static int sock_sendmsg_nosec(struct socket *sock, struct msghdr *msg,
+> +                             size_t size)
+>  {
+>        struct kiocb iocb;
+>        struct sock_iocb siocb;
+> @@ -711,7 +714,8 @@ void __sock_recv_ts_and_drops(struct msghdr *msg, struct sock *sk,
+>  EXPORT_SYMBOL_GPL(__sock_recv_ts_and_drops);
+>
+>  static inline int __sock_recvmsg_nosec(struct kiocb *iocb, struct socket *sock,
+> -                                      struct msghdr *msg, size_t size, int flags)
+> +                                      struct msghdr *msg, size_t size,
+> +                                      int flags)
+>  {
+>        struct sock_iocb *si = kiocb_to_siocb(iocb);
+>
+> @@ -1158,7 +1162,9 @@ static int sock_fasync(int fd, struct file *filp, int on)
+>        return 0;
+>  }
+>
+> -/* This function may be called only under socket lock or callback_lock or rcu_lock */
+> +/* This function may be called only under socket lock or callback_lock
+> + * or rcu_lock.
+> + */
+>
+>  int sock_wake_async(struct socket *sock, int how, int band)
+>  {
+> @@ -1229,8 +1235,8 @@ int __sock_create(struct net *net, int family, int type, int protocol,
+>
+>        /*
+>         *      Allocate the socket and allow the family to set things up. if
+> -        *      the protocol is 0, the family is instructed to select an appropriate
+> -        *      default.
+> +        *      the protocol is 0, the family is instructed to select an
+> +        *      appropriate default.
+>         */
+>        sock = sock_alloc();
+>        if (!sock) {
+> @@ -1308,7 +1314,8 @@ EXPORT_SYMBOL(__sock_create);
+>
+>  int sock_create(int family, int type, int protocol, struct socket **res)
+>  {
+> -       return __sock_create(current->nsproxy->net_ns, family, type, protocol, res, 0);
+> +       return __sock_create(current->nsproxy->net_ns, family, type, protocol,
+> +                            res, 0);
+>  }
+>  EXPORT_SYMBOL(sock_create);
+>
+> @@ -1928,9 +1935,9 @@ static int __sys_sendmsg(struct socket *sock, struct msghdr __user *msg,
+>        }
+>
+>        /* This will also move the address data into kernel space */
+> -       if (MSG_CMSG_COMPAT & flags) {
+> +       if (MSG_CMSG_COMPAT & flags)
+>                err = verify_compat_iovec(msg_sys, iov, &address, VERIFY_READ);
+> -       } else
+> +       else
+>                err = verify_iovec(msg_sys, iov, &address, VERIFY_READ);
+>        if (err < 0)
+>                goto out_freeiov;
+> @@ -1957,9 +1964,9 @@ static int __sys_sendmsg(struct socket *sock, struct msghdr __user *msg,
+>                }
+>                err = -EFAULT;
+>                /*
+> -                * Careful! Before this, msg_sys->msg_control contains a user pointer.
+> -                * Afterwards, it will be a kernel pointer. Thus the compiler-assisted
+> -                * checking falls down on this.
+> +                * Careful! Before this, msg_sys->msg_control contains a user
+> +                * pointer. Afterwards, it will be a kernel pointer. Thus the
+> +                * compiler-assisted checking falls down on this.
+>                 */
+>                if (copy_from_user(ctl_buf,
+>                                   (void __user __force *)msg_sys->msg_control,
+> @@ -2010,7 +2017,8 @@ out:
+>  *     BSD sendmsg interface
+>  */
+>
+> -SYSCALL_DEFINE3(sendmsg, int, fd, struct msghdr __user *, msg, unsigned int, flags)
+> +SYSCALL_DEFINE3(sendmsg, int, fd, struct msghdr __user *, msg, unsigned int,
+> +               flags)
+>  {
+>        int fput_needed, err;
+>        struct msghdr msg_sys;
+> @@ -2056,7 +2064,8 @@ int __sys_sendmmsg(int fd, struct mmsghdr __user *mmsg, unsigned int vlen,
+>
+>        while (datagrams < vlen) {
+>                if (MSG_CMSG_COMPAT & flags) {
+> -                       err = __sys_sendmsg(sock, (struct msghdr __user *)compat_entry,
+> +                       err = __sys_sendmsg(sock,
+> +                                          (struct msghdr __user *)compat_entry,
+>                                            &msg_sys, flags, &used_address);
+>                        if (err < 0)
+>                                break;
+> @@ -2132,9 +2141,9 @@ static int __sys_recvmsg(struct socket *sock, struct msghdr __user *msg,
+>
+>        uaddr = (__force void __user *)msg_sys->msg_name;
+>        uaddr_len = COMPAT_NAMELEN(msg);
+> -       if (MSG_CMSG_COMPAT & flags) {
+> +       if (MSG_CMSG_COMPAT & flags)
+>                err = verify_compat_iovec(msg_sys, iov, &addr, VERIFY_WRITE);
+> -       } else
+> +       else
+>                err = verify_iovec(msg_sys, iov, &addr, VERIFY_WRITE);
+>        if (err < 0)
+>                goto out_freeiov;
+> @@ -2661,13 +2670,15 @@ static int dev_ifconf(struct net *net, struct compat_ifconf __user *uifc32)
+>                ifc.ifc_req = NULL;
+>                uifc = compat_alloc_user_space(sizeof(struct ifconf));
+>        } else {
+> -               size_t len = ((ifc32.ifc_len / sizeof(struct compat_ifreq)) + 1) *
+> +               size_t len = ((ifc32.ifc_len /
+> +                       sizeof(struct compat_ifreq)) + 1) *
+>                        sizeof(struct ifreq);
+>                uifc = compat_alloc_user_space(sizeof(struct ifconf) + len);
+>                ifc.ifc_len = len;
+>                ifr = ifc.ifc_req = (void __user *)(uifc + 1);
+>                ifr32 = compat_ptr(ifc32.ifcbuf);
+> -               for (i = 0; i < ifc32.ifc_len; i += sizeof(struct compat_ifreq)) {
+> +               for (i = 0; i < ifc32.ifc_len;
+> +                    i += sizeof(struct compat_ifreq)) {
+>                        if (copy_in_user(ifr, ifr32, sizeof(struct compat_ifreq)))
+>                                return -EFAULT;
+>                        ifr++;
+> @@ -2832,7 +2843,8 @@ static int ethtool_ioctl(struct net *net, struct compat_ifreq __user *ifr32)
+>        return 0;
+>  }
+>
+> -static int compat_siocwandev(struct net *net, struct compat_ifreq __user *uifr32)
+> +static int compat_siocwandev(struct net *net,
+> +                            struct compat_ifreq __user *uifr32)
+>  {
+>        void __user *uptr;
+>        compat_uptr_t uptr32;
+> @@ -3000,7 +3012,8 @@ static int compat_sioc_ifmap(struct net *net, unsigned int cmd,
+>        return err;
+>  }
+>
+> -static int compat_siocshwtstamp(struct net *net, struct compat_ifreq __user *uifr32)
+> +static int compat_siocshwtstamp(struct net *net,
+> +                               struct compat_ifreq __user *uifr32)
 
-That would be bad...
+I think that going over the 80 chars limit is acceptable in this kind
+of situations. The code
+looks ugly with the new formatting.
 
-BTW, one other thing on the patch -- it needs to use a separate flag,
-otherwise there are races with sysfs and panic() updates to the flag.
+>  {
+>        void __user *uptr;
+>        compat_uptr_t uptr32;
+> --
+> 1.7.9.5
 
-> 2aa15890 - mm: prevent concurrent unmap_mapping_range() on the same inode
-
-I confess, you lost me on this one.  You believe that this commit is
-the cause of the RCU CPU stall warnings?
-
-							Thanx, Paul
-
+thanks,
+Daniel.
