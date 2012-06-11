@@ -1,119 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752774Ab2FKXR2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 19:17:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58228 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752349Ab2FKXR0 (ORCPT
+	id S1752701Ab2FKXXo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 19:23:44 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:62787 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751664Ab2FKXXn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 19:17:26 -0400
-Date: Mon, 11 Jun 2012 16:17:25 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Anders Larsen <al@alarsen.net>,
-        Alasdair Kergon <agk@redhat.com>, dm-devel@redhat.com,
-        linux-fsdevel@vger.kernel.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-media@vger.kernel.org, Mark Fasheh <mfasheh@suse.com>,
-        Joel Becker <jlbec@evilplan.org>, ocfs2-devel@oss.oracle.com,
-        Jan Kara <jack@suse.cz>, linux-ext4@vger.kernel.org,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        "Theodore Ts'o" <tytso@mit.edu>, Matthew Wilcox <matthew@wil.cx>
-Subject: Re: [PATCH v3 1/9] string: introduce memweight
-Message-Id: <20120611161725.84330925.akpm@linux-foundation.org>
-In-Reply-To: <1339203038-13069-1-git-send-email-akinobu.mita@gmail.com>
-References: <1339203038-13069-1-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 11 Jun 2012 19:23:43 -0400
+X-AuditID: 9c930179-b7bb9ae000000ea5-48-4fd67dfddba3
+Message-ID: <4FD67E00.4040700@kernel.org>
+Date: Tue, 12 Jun 2012 08:23:44 +0900
+From: Minchan Kim <minchan@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH] mm: clean up __count_immobile_pages
+References: <1339380442-1137-1-git-send-email-minchan@kernel.org> <20120611144011.60fd76c8.akpm@linux-foundation.org>
+In-Reply-To: <20120611144011.60fd76c8.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat,  9 Jun 2012 09:50:30 +0900
-Akinobu Mita <akinobu.mita@gmail.com> wrote:
+On 06/12/2012 06:40 AM, Andrew Morton wrote:
 
-> memweight() is the function that counts the total number of bits set
-> in memory area.  Unlike bitmap_weight(), memweight() takes pointer
-> and size in bytes to specify a memory area which does not need to be
-> aligned to long-word boundary.
+> On Mon, 11 Jun 2012 11:07:22 +0900
+> Minchan Kim <minchan@kernel.org> wrote:
 > 
-> ...
->
-> +/**
-> + * memweight - count the total number of bits set in memory area
-> + * @ptr: pointer to the start of the area
-> + * @bytes: the size of the area
-> + */
-> +size_t memweight(const void *ptr, size_t bytes)
-> +{
-> +	size_t w = 0;
+>> __count_immobile_pages naming is rather awkward.
+>> This patch clean up the function and add comment.
+> 
+> This conflicts with
+> mm-compaction-handle-incorrect-migrate_unmovable-type-pageblocks.patch
+> and its fixes.
 
-Calling the return value "ret" is a useful convention and fits well here.
 
-> +	size_t longs;
-> +	const unsigned char *bitmap = ptr;
-> +
-> +	for (; bytes > 0 && ((unsigned long)bitmap) % sizeof(long);
-> +			bytes--, bitmap++)
-> +		w += hweight8(*bitmap);
-> +
-> +	longs = bytes / sizeof(long);
-> +	if (longs) {
-> +		BUG_ON(longs >= INT_MAX / BITS_PER_LONG);
-> +		w += bitmap_weight((unsigned long *)bitmap,
-> +				longs * BITS_PER_LONG);
-> +		bytes -= longs * sizeof(long);
-> +		bitmap += longs * sizeof(long);
-> +	}
-> +	/*
-> +	 * The reason that this last loop is distinct from the preceding
-> +	 * bitmap_weight() call is to compute 1-bits in the last region smaller
-> +	 * than sizeof(long) properly on big-endian systems.
-> +	 */
-> +	for (; bytes > 0; bytes--, bitmap++)
-> +		w += hweight8(*bitmap);
-> +
-> +	return w;
-> +}
-> +EXPORT_SYMBOL(memweight);
+I wanted to revert [1] and friends and merge again based on [2] and this patch.
+Because [1] has still bug I explained in [2]. If it is merged without [2], it simply can
+spread bug from one place(memory hotplug) to two place(memory hotplug and compaction).
 
-diff -puN lib/string.c~string-introduce-memweight-fix lib/string.c
---- a/lib/string.c~string-introduce-memweight-fix
-+++ a/lib/string.c
-@@ -833,18 +833,18 @@ EXPORT_SYMBOL(memchr_inv);
-  */
- size_t memweight(const void *ptr, size_t bytes)
- {
--	size_t w = 0;
-+	size_t ret = 0;
- 	size_t longs;
- 	const unsigned char *bitmap = ptr;
- 
- 	for (; bytes > 0 && ((unsigned long)bitmap) % sizeof(long);
- 			bytes--, bitmap++)
--		w += hweight8(*bitmap);
-+		ret += hweight8(*bitmap);
- 
- 	longs = bytes / sizeof(long);
- 	if (longs) {
- 		BUG_ON(longs >= INT_MAX / BITS_PER_LONG);
--		w += bitmap_weight((unsigned long *)bitmap,
-+		ret += bitmap_weight((unsigned long *)bitmap,
- 				longs * BITS_PER_LONG);
- 		bytes -= longs * sizeof(long);
- 		bitmap += longs * sizeof(long);
-@@ -855,8 +855,8 @@ size_t memweight(const void *ptr, size_t
- 	 * than sizeof(long) properly on big-endian systems.
- 	 */
- 	for (; bytes > 0; bytes--, bitmap++)
--		w += hweight8(*bitmap);
-+		ret += hweight8(*bitmap);
- 
--	return w;
-+	return ret;
- }
- EXPORT_SYMBOL(memweight);
-_
+We discussed real effectiveness of [1] because the patch is rather complicated than
+expectation. I don't want to add unnecessary maintain cost if it doesn't have proved benefit.
 
+KOSAKI and me : doesn't want to merge without proving (https://lkml.org/lkml/2012/6/5/3)
+Mel: Pass the decision to CMA guys (https://lkml.org/lkml/2012/6/11/242)
+Rik: want to test it based on THP alloc ratio (https://lkml.org/lkml/2012/6/11/293)
+
+I guess anyone has no sure for needing it, at least.
+
+Even, [1] added new vmstat "compact_rescued_unmovable_blocks". 
+Why I firstly suggest is just for the proving the effectiveness easily and wanted to
+revert the vmstat later before merging mainline if we prove it.
+(But it seems that KOSAKI doesn't like it - https://lkml.org/lkml/2012/6/5/282)
+But now Bartlomiej want to maintain it permanently in vmstat.
+IMHO, it's not a good idea.
+Anyway, adding new vmstat part should be careful and get a agreement from mm guys.
+
+[1] mm-compaction-handle-incorrect-migrate_unmovable-type-pageblocks.patch
+[2] [PATCH] mm: do not use page_count without a page pin
+
+> 
+>> + * This function can race in PageLRU and MIGRATE_MOVABLE can have unmovable
+>> + * pages so that it might be not exact.
+> 
+> I don't understand this.  Functions race against other functions, not
+> against a page flag.  Can we have another attempt at this description
+
+
+You're right. I meant page flags.
+
+> please?
+
+
+Before that, I would like to clear out how you handle this patch dependencies.
+What should I do? 
+Any tree and any patchset based on for the work?
+
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+
+
+
+-- 
+Kind regards,
+Minchan Kim
