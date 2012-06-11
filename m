@@ -1,87 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755514Ab2FKPCI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 11:02:08 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:37677 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755286Ab2FKPCF (ORCPT
+	id S1755550Ab2FKPCZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 11:02:25 -0400
+Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:39934 "HELO
+	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755033Ab2FKPCV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 11:02:05 -0400
-Message-ID: <4FD60839.3000508@panasas.com>
-Date: Mon, 11 Jun 2012 18:01:13 +0300
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
+	Mon, 11 Jun 2012 11:02:21 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: AJG3d2EVM1lLEiR5w4Id_D4raHQQhRW6_y_RhDp_aCuA9Rm
+ xP3rNY2s_a0Y3.hLxwhSvaoegh.PNv6b1AaJxlBhM3mO9QabpVr8EEEik823
+ pQGGp2vAInG2QpZp8qDJPf0DOFmGkO3gLuK5p4g4E6YAfrM0oYISvp6XHt3N
+ LtY0tdUa3DgDEc.t35TmWT5rv9.ky0A8xwtkujI8Qh74ssa9UXgEstr_1ZCa
+ aeMMNoO4vjX4H2c6g1Pu6cSyWEwM27G9l2lNFEsRA8a8advdPu6ZShFJn3pX
+ PXJ1Ykb92D9a19GTOq0yIbaqNY0BOt5KbTx0iBLEV8SpEPYSMIrx4IGmBFsR
+ GPt.XiCA8R7mk84RvO61xflD3fCEOCPt_886UE3JhpiPodafw.hlmdLmX9vi
+ xDHruVnp_RSeYcxkk5V_wqsbw3Wc2El2sL3aM
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Mon, 11 Jun 2012 10:02:17 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: kosaki.motohiro@gmail.com
+cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@google.com>, Dave Jones <davej@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, stable@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 2/6] mempolicy: remove all mempolicy sharing
+In-Reply-To: <1339406250-10169-3-git-send-email-kosaki.motohiro@gmail.com>
+Message-ID: <alpine.DEB.2.00.1206110944120.31180@router.home>
+References: <1339406250-10169-1-git-send-email-kosaki.motohiro@gmail.com> <1339406250-10169-3-git-send-email-kosaki.motohiro@gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Jeff Layton <jlayton@redhat.com>
-CC: bfields <bfields@fieldses.org>, Steve Dickson <steved@redhat.com>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Joerg Platte <jplatte@naasa.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Hans de Bruin <jmdebruin@xmsnet.nl>
-Subject: Re: Kernel 3.4.X NFS server regression
-References: <4FD47D4E.9070307@naasa.net> <1339340441.4751.1.camel@lade.trondhjem.org> <20120611121634.GB7654@fieldses.org> <20120611083932.24e27e39@corrin.poochiereds.net> <4FD5F35A.3000903@panasas.com> <4FD5F629.1070508@panasas.com> <20120611102947.229cf077@corrin.poochiereds.net>
-In-Reply-To: <20120611102947.229cf077@corrin.poochiereds.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2012 05:29 PM, Jeff Layton wrote:
+Some more attempts to cleanup changelogs:
 
-> On Mon, 11 Jun 2012 16:44:09 +0300
-> Boaz Harrosh <bharrosh@panasas.com> wrote:
-> 
->> On 06/11/2012 04:32 PM, Boaz Harrosh wrote:
->>
->>> On 06/11/2012 03:39 PM, Jeff Layton wrote:
->>>
->>>>>
->>>>> But I'm guessing we were wrong to assume that existing setups that
->>>>> people perceived as working would have that path, because the failures
->>>>> in the absence of that path were probably less obvious.
->>>>>
->>
->>
->> One more thing, the most important one. We have already fixed that in the
->> past and I was hoping the lesson was learned. Apparently it was not, and
->> we are doomed to do this mistake for ever!!
->>
->> What ever crap fails times out and crashes, in the recovery code, we don't
->> give a dam. It should never affect any Server-client communication.
->>
->> When the grace periods ends the clients gates opens period. *Any* error
->> return from state recovery code must be carefully ignored and normal
->> operations resumed. At most on error, we move into a mode where any
->> recovery request from client is accepted, since we don't have any better
->> data to verify it.
->>
->> Please comb recovery code to make sure any catastrophe is safely ignored.
->> We already did that before and it used to work.
->>
-> 
-> That's not the case, and hasn't ever been AFAICT. The code has changed
-> a bit recently, but the existing behavior in this regard was preserved.
-> From nfs4_check_open_reclaim:
-> 
->         return nfsd4_client_record_check(clp) ? nfserr_reclaim_bad : nfs_ok;
-> 
-> ...if there is no client record, then the reclaim request fails. Doesn't
-> the RFC mandate that?
-> 
+> The problem was created by a reference count imbalance. Example, In following case,
+> mbind(addr, len) try to replace mempolicies of vma1 and vma2 and then they will
+> be share the same mempolicy, and the new mempolicy has MPOL_F_SHARED flag.
 
+The bug that we saw <where ? details?> was created by a refcount
+imbalance. If mbind() replaces the memory policies of vma1 and vma and
+they share the same shared mempolicy (MPOL_F_SHARED set) then an imbalance
+may occur.
 
-Regardless of what RFC mandates and what is returned to client, (Which sounds
-very unrobust to me) I'm sure the client handles nfserr_reclaim_bad just
-fine.
+>   +-------------------+-------------------+
+>   |     vma1          |     vma2(shmem)   |
+>   +-------------------+-------------------+
+>   |                                       |
+>  addr                                 addr+len
+>
+> Look at alloc_pages_vma(), it uses get_vma_policy() and mpol_cond_put() pair
+> for maintaining mempolicy refcount. The current rule is, get_vma_policy() does
+> NOT increase a refcount if the policy is not attached shmem vma and mpol_cond_put()
+> DOES decrease a refcount if mpol has MPOL_F_SHARED.
 
-It's the server that's getting stuck in its own feet and stops responding.
-That's what I meant. We should always resume normal operations after
-the grace period ends.
+alloc_pages_vma() uses the two function get_vma_policy() and
+mpol_cond_put() to maintain the refcount on the memory policies. However,
+the current rule is that get_vma_policy() does *not* increase the refcount
+if the policy is not attached to a shm vma. mpol_cond_put *does* decrease
+the refcount if the memory policy has MPOL_F_SHARED set.
 
-I did not see any reports of client getting into trouble because of
-unexpected nfserr_reclaim_bad, did you?
+> In above case, vma1 is not shmem vma and vma->policy has MPOL_F_SHARED! then,
+> get_vma_policy() doesn't increase a refcount and mpol_cond_put() decrease a
+> refcount whenever alloc_page_vma() is called.
+>
+> The bug was introduced by commit 52cd3b0740 (mempolicy: rework mempolicy Reference
+> Counting) at 4 years ago.
+>
+> More unfortunately mempolicy has one another serious broken. Currently,
+> mempolicy rebind logic (it is called from cpuset rebinding) ignore a refcount
+> of mempolicy and override it forcibly. Thus, any mempolicy sharing may
+> cause mempolicy corruption. The bug was introduced by commit 68860ec10b
+> (cpusets: automatic numa mempolicy rebinding) at 7 years ago.
 
-Thanks
-Boaz
+Memory policies have another issue. Currently the mempolicy rebind logic
+used for cpuset rebinding ignores the refcount of memory policies.
+Therefore, any memory policy sharing can cause refcount mismatches. The
+bug was ...
+
+> To disable policy sharing solves user visible breakage and this patch does it.
+> Maybe, we need to rewrite MPOL_F_SHARED and mempolicy rebinding code and aim
+> to proper cow logic eventually, but I think this is good first step.
+
+Disabling policy sharing solves the breakage and that is how this patch
+fixes the issue for now. Rewriting the shared policy handling with proper
+COW logic support will be necessary to cleanly address the
+problem and allow proper sharing of memory policies.
+
