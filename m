@@ -1,53 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755234Ab2FKOb5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 10:31:57 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:38581 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754006Ab2FKObz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 10:31:55 -0400
-Message-ID: <4FD60127.1000805@jp.fujitsu.com>
-Date: Mon, 11 Jun 2012 10:31:03 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1755144Ab2FKOeq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 10:34:46 -0400
+Received: from antcom.de ([188.40.178.216]:40106 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754844Ab2FKOep (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 10:34:45 -0400
+Message-ID: <4FD60203.8010103@antcom.de>
+Date: Mon, 11 Jun 2012 16:34:43 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM IT Research & Development
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
 MIME-Version: 1.0
-To: cl@linux.com
-CC: kosaki.motohiro@gmail.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, kosaki.motohiro@jp.fujitsu.com
-Subject: Re: [PATCH] mm: fix protection column misplacing in /proc/zoneinfo
-References: <1339422650-9798-1-git-send-email-kosaki.motohiro@gmail.com> <alpine.DEB.2.00.1206110856180.31180@router.home>
-In-Reply-To: <alpine.DEB.2.00.1206110856180.31180@router.home>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Arnd Bergmann <arnd@arndb.de>
+CC: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
+        srinivas.bakki@nxp.com, aletes.xgr@gmail.com
+Subject: Re: [PATCH 8/14] ARM: LPC32xx: Clock adjustment for key matrix controller
+References: <1339412537-24485-1-git-send-email-stigge@antcom.de> <1339412537-24485-9-git-send-email-stigge@antcom.de> <201206111416.19251.arnd@arndb.de>
+In-Reply-To: <201206111416.19251.arnd@arndb.de>
+X-Enigmail-Version: 1.4
+OpenPGP: url=subkeys.pgp.net
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/11/2012 10:02 AM, Christoph Lameter wrote:
-> On Mon, 11 Jun 2012, kosaki.motohiro@gmail.com wrote:
-> 
->> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Hi,
+
+On 06/11/2012 04:16 PM, Arnd Bergmann wrote:
+> On Monday 11 June 2012, Roland Stigge wrote:
+>> The clock.c file needs to be changed to match the automatic device name to its
+>> clock.
 >>
->> commit 2244b95a7b (zoned vm counters: basic ZVC (zoned vm counter)
->> implementation) broke protection column. It is a part of "pages"
->> attribute. but not it is showed after vmstats column.
+>> Signed-off-by: Roland Stigge <stigge@antcom.de>
+>> Acked-by: Rob Herring <rob.herring@calxeda.com>
 >>
->> This patch restores the right position.
 > 
-> Well this reorders the output. vmstats are also counts of pages. I am not
-> sure what the difference is.
+> Should this not be in the same patch as the one that moves the device over
+> to DT probing? Otherwise you have a non-working setup if only one patch
+> is applied.
 
-No. In this case, "pages" mean zone attribute. In the other hand, vmevent
-is a statistics.
+The actual driver is new for v3.6 (hopefully), DT-only.
 
+Rather than merging the patches, I'd let the key driver go in via input,
+and the clock.c adjustment via arm-soc.
 
-> You are not worried about breaking something that may scan the zoneinfo
-> output with this change? Its been this way for 6 years and its likely that
-> tools expect the current layout.
-
-I don't worry about this. Because of, /proc/zoneinfo is cray machine unfrinedly
-format and afaik no application uses it.
-
-btw, I believe we should aim /sys/devices/system/node/<node-num>/zones new directory
-and export zone infos as machine readable format.
+Roland
