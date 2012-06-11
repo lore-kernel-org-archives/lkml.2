@@ -1,107 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752256Ab2FKWol (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 18:44:41 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:48753 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750948Ab2FKWok (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 18:44:40 -0400
-Message-ID: <4FD67492.2040102@ti.com>
-Date: Tue, 12 Jun 2012 00:43:30 +0200
-From: "Cousson, Benoit" <b-cousson@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120604 Thunderbird/13.0
+	id S1752468Ab2FKWpV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 18:45:21 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:42530 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750948Ab2FKWpT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 18:45:19 -0400
 MIME-Version: 1.0
-To: Roland Stigge <stigge@antcom.de>
-CC: <arm@kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <grant.likely@secretlab.ca>,
-        <rob.herring@calxeda.com>, <swarren@wwwdotorg.org>,
-        <robherring2@gmail.com>
-Subject: Re: [PATCH] ARM: omap: Fix dts files w/ status property: "disable"
- -> "disabled"
-References: <1339441785-14641-1-git-send-email-stigge@antcom.de>
-In-Reply-To: <1339441785-14641-1-git-send-email-stigge@antcom.de>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <Pine.LNX.4.44L0.1206111018040.1607-100000@iolanthe.rowland.org>
+References: <1339421351-2971-1-git-send-email-linkinjeon@gmail.com>
+	<Pine.LNX.4.44L0.1206111018040.1607-100000@iolanthe.rowland.org>
+Date: Tue, 12 Jun 2012 07:45:17 +0900
+Message-ID: <CAKYAXd_ihMbpAGP=hx_LhPdNpnjQo2--N5Bjd0BiEmB88d7Nqw@mail.gmail.com>
+Subject: Re: [PATCH v4 3/3] usb: storage: update usb devices for write cache
+ quirk in quirk list.
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: James.Bottomley@hansenpartnership.com, gregkh@linuxfoundation.org,
+        mdharm-usb@one-eyed-alien.net, sshtylyov@mvista.com,
+        bvanassche@acm.org, linux-usb@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Pankaj Kumar <pankaj.km@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/11/2012 9:09 PM, Roland Stigge wrote:
-> This patches fixes some status = "disable" strings to "disabled", the correct
-> way of disabling nodes in the devicetree.
+2012/6/11, Alan Stern <stern@rowland.harvard.edu>:
+> On Mon, 11 Jun 2012, Namjae Jeon wrote:
 >
-> Just the OMAP part here, the rest goes via other patches and trees.
+>> Update information of Seagate Portable HDD and WD My Passport HDD in
+>> quirk list.
+>>
+>> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+>> Signed-off-by: Pankaj Kumar <pankaj.km@samsung.com>
+>> Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
+>> ---
+>>  drivers/usb/storage/unusual_devs.h |   24 ++++++++++++++++++++++++
+>>  1 file changed, 24 insertions(+)
+>>
+>> diff --git a/drivers/usb/storage/unusual_devs.h
+>> b/drivers/usb/storage/unusual_devs.h
+>> index 1719886..64f0369 100644
+>> --- a/drivers/usb/storage/unusual_devs.h
+>> +++ b/drivers/usb/storage/unusual_devs.h
+>> @@ -1267,6 +1267,18 @@ UNUSUAL_DEV( 0x0af0, 0xd357, 0x0000, 0x0000,
+>>  		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
+>>  		0 ),
+>>
+>> +/* Reported by Namjae Jeon <namjae.jeon@samsung.com>
+>> + * Even though write cache is enabled by default,
+>> + * SCSI driver assume that cache is not enabled
+>> + * which in turn might lead to the loss of data
+>> + * since data still will be in cache.
+>> + * So this entry is needed for assuming that cache is enabled.
+>> + */
 >
-> Signed-off-by: Roland Stigge <stigge@antcom.de>
-> Acked-by: Rob Herring <rob.herring@calxeda.com>
-
-Acked-by: Benoit Cousson <b-cousson@ti.com>
-
-> Applies to v3.5-rc2
+> Please remove everything except the "Reported by" line.  The rest is
+> obvious when we see the US_FL_WRITE_CACHE flag.
+Okay, I will remove.
+Thanks~
 >
->   arch/arm/boot/dts/omap3-beagle.dts |    4 +--
->   arch/arm/boot/dts/omap4-panda.dts  |    6 ++---
->   arch/arm/boot/dts/omap4-sdp.dts    |    4 +--
->   arch/arm/boot/dts/tegra20.dtsi     |   36 +++++++++++++++++------------------
->   arch/arm/boot/dts/tegra30.dtsi     |   38 ++++++++++++++++++-------------------
-
-Nit: the diffstat does not match that patch, but anyway that will not go 
-into the changelog.
-
->   5 files changed, 44 insertions(+), 44 deletions(-)
+>> +UNUSUAL_DEV(0x0bc2, 0x2300, 0x0000, 0x9999,
+>> +		"Seagate",
+>> +		"Portable HDD",
+>> +		USB_SC_DEVICE, USB_PR_DEVICE, NULL, US_FL_WRITE_CACHE),
+>> +
+>>  /* Reported by Ben Efros <ben@pc-doctor.com> */
+>>  UNUSUAL_DEV( 0x0bc2, 0x3010, 0x0000, 0x0000,
+>>  		"Seagate",
+>> @@ -1468,6 +1480,18 @@ UNUSUAL_DEV(  0x1058, 0x0704, 0x0000, 0x9999,
+>>  		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
+>>  		US_FL_SANE_SENSE),
+>>
+>> +/* Reported by Namjae Jeon <namjae.jeon@samsung.com>
+>> + * Even though write cache is enabled by default,
+>> + * SCSI driver assume that cache is not enabled
+>> + * which in turn might lead to the loss of data
+>> + * since data still will be in cache.
+>> + * So this entry is needed for assuming that cache is enabled.
+>> + */
 >
-> --- linux-2.6.orig/arch/arm/boot/dts/omap3-beagle.dts
-> +++ linux-2.6/arch/arm/boot/dts/omap3-beagle.dts
-> @@ -61,9 +61,9 @@
->   };
+> Same here.
 >
->   &mmc2 {
-> -	status = "disable";
-> +	status = "disabled";
->   };
+>> +UNUSUAL_DEV(0x1058, 0x070a, 0x0000, 0x9999,
+>> +		"Western Digital",
+>> +		"My Passport HDD",
+>> +		USB_SC_DEVICE, USB_PR_DEVICE, NULL, US_FL_WRITE_CACHE),
 >
->   &mmc3 {
-> -	status = "disable";
-> +	status = "disabled";
->   };
-> --- linux-2.6.orig/arch/arm/boot/dts/omap4-panda.dts
-> +++ linux-2.6/arch/arm/boot/dts/omap4-panda.dts
-> @@ -74,15 +74,15 @@
->   };
+> Alan Stern
 >
->   &mmc2 {
-> -	status = "disable";
-> +	status = "disabled";
->   };
 >
->   &mmc3 {
-> -	status = "disable";
-> +	status = "disabled";
->   };
->
->   &mmc4 {
-> -	status = "disable";
-> +	status = "disabled";
->   };
->
->   &mmc5 {
-> --- linux-2.6.orig/arch/arm/boot/dts/omap4-sdp.dts
-> +++ linux-2.6/arch/arm/boot/dts/omap4-sdp.dts
-> @@ -147,11 +147,11 @@
->   };
->
->   &mmc3 {
-> -	status = "disable";
-> +	status = "disabled";
->   };
->
->   &mmc4 {
-> -	status = "disable";
-> +	status = "disabled";
->   };
->
->   &mmc5 {
->
-
-
