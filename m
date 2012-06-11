@@ -1,72 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753809Ab2FKLRa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 07:17:30 -0400
-Received: from mga01.intel.com ([192.55.52.88]:52595 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753211Ab2FKLR2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 07:17:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="164102011"
-Message-ID: <1339413676.2401.5.camel@sauron.fi.intel.com>
-Subject: Re: writeback: bad unlock balance detected in 3.5-rc1
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Date: Mon, 11 Jun 2012 14:21:16 +0300
-In-Reply-To: <20120608154535.GA887@localhost>
-References: <E1Sd0IP-0005nh-AJ@tytso-glaptop.cam.corp.google.com>
-	 <20120608150736.GF21080@quack.suse.cz> <20120608154535.GA887@localhost>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-ZqTF0oRjrxhZ7zpSItFi"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1753864Ab2FKLSG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 07:18:06 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:45353 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752204Ab2FKLSC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 07:18:02 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120611110517.GE11168@n2100.arm.linux.org.uk>
+References: <1339376810-8247-1-git-send-email-Ying.Liu@freescale.com>
+	<20120611095102.GD11168@n2100.arm.linux.org.uk>
+	<CA+8Hj81L9-NC=08_dvV2u_eM0NdssJsjduAgTbH37nusu56Avw@mail.gmail.com>
+	<20120611110517.GE11168@n2100.arm.linux.org.uk>
+Date: Mon, 11 Jun 2012 19:18:00 +0800
+Message-ID: <CA+8Hj83+Jqv3Bs0mTKYpdsH4ZbOMEQkRpsiCUPVwpeqvWg8jyA@mail.gmail.com>
+Subject: Re: [PATCH 1/3] mx3fb: do not support panning with fb blanked
+From: Liu Ying <liu.y.victor@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Liu Ying <Ying.Liu@freescale.com>, g.liakhovetski@gmx.de,
+        linux-fbdev@vger.kernel.org, FlorianSchandinat@gmx.de,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2012/6/11, Russell King - ARM Linux <linux@arm.linux.org.uk>:
+> On Mon, Jun 11, 2012 at 06:46:14PM +0800, Liu Ying wrote:
+>> 2012/6/11, Russell King - ARM Linux <linux@arm.linux.org.uk>:
+>> > On Mon, Jun 11, 2012 at 09:06:48AM +0800, Liu Ying wrote:
+>> >> This patch checks if framebuffer is unblanked before
+>> >> we actually trigger panning in custom pan display
+>> >> function.
+>> >>
+>> >> Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
+>> >> ---
+>> >>  drivers/video/mx3fb.c |    5 +++++
+>> >>  1 files changed, 5 insertions(+), 0 deletions(-)
+>> >>
+>> >> diff --git a/drivers/video/mx3fb.c b/drivers/video/mx3fb.c
+>> >> index e3406ab..d53db60 100644
+>> >> --- a/drivers/video/mx3fb.c
+>> >> +++ b/drivers/video/mx3fb.c
+>> >> @@ -1063,6 +1063,11 @@ static int mx3fb_pan_display(struct
+>> >> fb_var_screeninfo *var,
+>> >>  	dev_dbg(fbi->device, "%s [%c]\n", __func__,
+>> >>  		list_empty(&mx3_fbi->idmac_channel->queue) ? '-' : '+');
+>> >>
+>> >> +	if (mx3_fbi->blank != FB_BLANK_UNBLANK) {
+>> >> +		dev_dbg(fbi->device, "panning with fb blanked not supported\n");
+>> >> +		return -EFAULT;
+>> >> +	}
+>> >
+>> > Why is this an error, and why return -EFAULT?  What userspace access
+>> > failed?
+>> >
+>> Hi, Russell,
+>>
+>> IMHO, panning with framebuffer blanked is meaningless, at least, it is
+>> not a common usecase.
+>
+> Yes, but why should anything in userspace care whether the display is
+> blanked or not?
+>
+> For example, we may pan the display when a user program produces output,
+> and we're on the last line of the display.  We don't fail that just
+> because the screen happens to be blank.  So I don't see why we should
+> actively fail an explicit userspace pan request just because the console
+> happened to be blanked.
+>
+> What I'm basically saying is that as far as _userspace_ is concerned,
+> all the standard APIs should just work as normal whether the display is
+> blanked or not.
+>
 
---=-ZqTF0oRjrxhZ7zpSItFi
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Ok, understand your point. I am ok to drop this patch.
 
-On Sat, 2012-06-09 at 00:45 +0900, Fengguang Wu wrote:
-> I'm yet to setup and run xfstests regularly, so as to catch such kind
-> of problems earlier in future.
+Thanks.
 
-You definitely need to do this before merging anything upstream. I'd
-recommend to use test at least with ext4 and xfs. Probably btrfs, but I
-never tested it with xfstests.
-
---=20
+-- 
 Best Regards,
-Artem Bityutskiy
-
---=-ZqTF0oRjrxhZ7zpSItFi
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJP1dSsAAoJECmIfjd9wqK04HQP/0ztUXrMLlVp9hDrWpd3jP2+
-+DL1Vs/D9JuI9lParYooTiF3uQ+PzEQsQDMHtPpKQ+y3eEMgt4FBDB6LcIdBSvn9
-Qeobx8YLexMgwrQ05Sg/ca18HFv4UJphrlvAG6Syg7IsZb5oBnJ2zd3FH3X8oS0h
-0soVfc6lcZfMPXdOEmu5Vjh8uRiyW4H0r1xu7OOShCvNtLg6m2V2pzKLxRxOCP/I
-OfBzwi9YwgwWR+xmyCFxtko1l3eWQt7TS309jDQf3ANepJJC0COQTkws52GbpeHm
-tnCLdx2zfVBtffkOYwyXTmFqKSsGzUhWQz2gcZAmG1STHYNfm9NlR5JEWwxGRmVH
-R8zjoVpNvDS/iIa0lkoIw2WNQRTW99Pdoskhd2f1rCJblimNYkh8vmse38mUAtMZ
-pwDg6LOt2BaJLVx0XoiCYk8atSreCRKhq8kjm9yDgnJ/JT8o2OXOcPZXFim9qrXf
-VLKcnyUWcehn5ANX+MO9NipLVua0LOmpaOn0DlDeAk9GH2MLJwgGjN4zgYM+MIvX
-OA6FcdSrqdbIowDGfOXu6jKtSSH9DYZXDGUPMpln63e7zZroSMzN3JTBPeqpWOeq
-gp7+P0gDreoOPGfvrXJWYeY7ehg5t8HQLlzjhFjTY5uOCXva++NnEfmCPCMqvqz7
-bErH7JUCBtaM4U0jUzyh
-=qD0F
------END PGP SIGNATURE-----
-
---=-ZqTF0oRjrxhZ7zpSItFi--
-
+Liu Ying
