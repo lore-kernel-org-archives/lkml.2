@@ -1,98 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754068Ab2FKHov (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 03:44:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10968 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751916Ab2FKHou (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 03:44:50 -0400
-Date: Mon, 11 Jun 2012 09:44:40 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>
-Subject: Re: [PATCH] mm: do not use page_count without a page pin
-Message-ID: <20120611074440.GI3094@redhat.com>
-References: <1339373872-31969-1-git-send-email-minchan@kernel.org>
- <4FD59C31.6000606@jp.fujitsu.com>
+	id S1754166Ab2FKHwM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 03:52:12 -0400
+Received: from smtprelay02.ispgateway.de ([80.67.31.40]:58461 "EHLO
+	smtprelay02.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752089Ab2FKHwL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 03:52:11 -0400
+Message-ID: <4FD5A3A8.4020305@ladisch.de>
+Date: Mon, 11 Jun 2012 09:52:08 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120604 Thunderbird/13.0
 MIME-Version: 1.0
+To: Boszormenyi Zoltan <zboszor@pr.hu>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: AMD FX CPU bug, not fixed by latest microcode?
+References: <4FD4F45D.5050103@pr.hu>
+In-Reply-To: <4FD4F45D.5050103@pr.hu>
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FD59C31.6000606@jp.fujitsu.com>
+Content-Transfer-Encoding: 7bit
+X-Df-Sender: bGludXgta2VybmVsQGNsLmRvbWFpbmZhY3Rvcnkta3VuZGUuZGU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Boszormenyi Zoltan wrote:
+> I have an AMD FX-8120 boxed CPU in an ASUS M5A99X-EVO mainboard
+> with 32GB DDR3/1600 memory, running Fedora 17, upgraded from 16.
+>
+> I get occasional crashes and signal 11 during kernel compilation even
+> with single-job make. Sometimes the compiler jumps out with a strange
+> error message, like "stray \NNN character in the source". When re-running
+> make, the error doesn't happen in the same file and the source file doesn't
+> contain the character being complained about when inspecting with
+> an editor or hexdump.
+>
+> Now, a few minutes ago I was able to catch this bug when I copied the
+> kernel GIT tree to apply a patch manually and did "git commit -a".
+> Strangely, the commit contained one extra file that I didn't touch.
+> git diff showed this for the extra file:
+>
+> ==============================
+> --- a/drivers/usb/gadget/fsl_usb2_udc.h
+> +++ b/drivers/usb/gadget/fsl_usb2_udc.h
+> @@ -427,7 +427,7 @@ struct ep_td_struct {
+>  #define  DTD_ADDR_MASK                        0xFFFFFFE0
+>  #define  DTD_PACKET_SIZE                      0x7FFF0000
+>  #define  DTD_LENGTH_BIT_POS                   16
+> -#define  DTD_ERROR_MASK                       (DTD_STATUS_HALTED | \
+> +#define  DTD_ERROR_MASK                       (DTD_STATUS_HALTED | ^Z
+>                                                 DTD_STATUS_DATA_BUFF_ERR | \
+>                                                 DTD_STATUS_TRANSACTION_ERR)
+>  /* Alignment requirements; must be a power of two */
+> ==============================
+>
+> The "^Z" is a 0-character in the file and is not present in the
+> original source tree, only in the copy.
 
-On Mon, Jun 11, 2012 at 04:20:17PM +0900, Kamezawa Hiroyuki wrote:
-> (2012/06/11 9:17), Minchan Kim wrote:
-> > d179e84ba fixed the problem[1] in vmscan.c but same problem is here.
-> > Let's fix it.
-> > 
-> > [1] http://comments.gmane.org/gmane.linux.kernel.mm/65844
-> > 
-> > I copy and paste d179e84ba's contents for description.
-> > 
-> > "It is unsafe to run page_count during the physical pfn scan because
-> > compound_head could trip on a dangling pointer when reading
-> > page->first_page if the compound page is being freed by another CPU."
-> > 
-> > Cc: Andrea Arcangeli<aarcange@redhat.com>
-> > Cc: Mel Gorman<mgorman@suse.de>
-> > Cc: Michal Hocko<mhocko@suse.cz>
-> > Cc: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
-> > Signed-off-by: Minchan Kim<minchan@kernel.org>
-> > ---
-> >   mm/page_alloc.c |    6 +++++-
-> >   1 file changed, 5 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> > index 266f267..019c4fe 100644
-> > --- a/mm/page_alloc.c
-> > +++ b/mm/page_alloc.c
-> > @@ -5496,7 +5496,11 @@ __count_immobile_pages(struct zone *zone, struct page *page, int count)
-> >   			continue;
-> > 
-> >   		page = pfn_to_page(check);
-> > -		if (!page_count(page)) {
-> > +		/*
-> > +		 * We can't use page_count withou pin a page
-> > +		 * because another CPU can free compound page.
-> > +		 */
-> > +		if (!atomic_read(&page->_count)) {
-> >   			if (PageBuddy(page))
-> >   				iter += (1<<  page_order(page)) - 1;
-> >   			continue;
-> Nice Catch.
+Is it always a zero, or other invalids characters?
+(The (number of) changed bits might tell something.)
 
-Agreed!
+> Similar errors happened during copying large files on the same
+> machine but it seems it's enough to trigger if the total amount
+> of data read is large enough.
 
-> Other than the comment fix already pointed out..
-> Hmm...BTW, it seems this __count_xxx doesn't have any code for THP/Hugepage..
-> so, we need more fixes for better code, I think.
-> Hmm, Don't we need !PageTail() check and 'skip thp' code ?
+Does "large enough" mean "large enough so that they are not in the file
+cache"?
 
-So the page->_count for tail pages is guaranteed zero at all times
-(tail page refcounting is done on _mapcount).
+All caches and your memory are ECC protected, so I think it is unlikely
+that the problem is with these.  If I had to guess, I'd point to your
+disk (firmware) or the SATA controller.  (A bad or loose SATA cable
+would throw CRC errors into the kernel log.  Are there any?)
 
-We could add a comment that "this check already skips compound tails
-of THP because their page->_count is zero at all times".
+What is the exact offset of the changed byte in the file?  (It might be
+at a cacheline, sector, or page boundary.)
 
-Instead of a comment we could consider defining an inline function
-with a special name that does atomic_read(&page->_count) and use it
-when we intend to the regular or compound head count and return 0 on
-tails. It would make it easier to identify these places later if we
-ever want to change the refcounting mechanism, but it may be overkill,
-it's up to you.
+> Does anyone know whether it's a known problem in AMD FX CPUs?
 
-Tail pages also can't be PageLRU.
+http://support.amd.com/us/Processor_TechDocs/48063_15h_Mod_00h-0Fh_Rev_Guide.pdf
 
-The code after the patch should already skip thp tails fine (it won't
-skip heads but I believe that's intentional, but one problem that
-remains is that the heads should increase found by more than 1...).
 
-Thanks,
-Andrea
+Regards,
+Clemens
