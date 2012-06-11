@@ -1,82 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753896Ab2FKNZp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 09:25:45 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47372 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752364Ab2FKNZo (ORCPT
+	id S1754189Ab2FKNZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 09:25:59 -0400
+Received: from ferdi.naasa.net ([87.106.227.76]:49495 "EHLO ferdi.naasa.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754089Ab2FKNZ5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 09:25:44 -0400
-Message-ID: <1339421127.4942.8.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [BUGFIX] ACPI, APEI, Avoid too much error reporting in runtime
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
-        Tony Luck <tony.luck@intel.com>, linux-acpi@vger.kernel.org,
-        stable@vger.kernel.org
-Date: Mon, 11 Jun 2012 14:25:27 +0100
-In-Reply-To: <1339395822-12032-1-git-send-email-ying.huang@intel.com>
-References: <1339395822-12032-1-git-send-email-ying.huang@intel.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-0THBtN9EShDtvkUH+b7o"
-X-Mailer: Evolution 3.2.2-1+b1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Mon, 11 Jun 2012 09:25:57 -0400
+References: <4FD47D4E.9070307@naasa.net> <1339340441.4751.1.camel@lade.trondhjem.org> <20120611121634.GB7654@fieldses.org> <20120611083932.24e27e39@corrin.poochiereds.net> <20120611091338.1c88e6d0@corrin.poochiereds.net>
+In-Reply-To: <20120611091338.1c88e6d0@corrin.poochiereds.net>
+Mime-Version: 1.0 (1.0)
+Content-Type: text/plain;
+	charset=utf-8
+Message-Id: <E49E5D8F-3647-4B3D-989E-FE4476D37607@naasa.net>
+Content-Transfer-Encoding: 8BIT
+Cc: bfields <bfields@fieldses.org>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Hans de Bruin <jmdebruin@xmsnet.nl>
+X-Mailer: iPad Mail (9B206)
+From: =?utf-8?Q?J=C3=B6rg_Platte?= <jplatte@naasa.net>
+Subject: Re: Kernel 3.4.X NFS server regression
+Date: Mon, 11 Jun 2012 15:25:55 +0200
+To: Jeff Layton <jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Am 11.06.2012 um 15:13 schrieb Jeff Layton <jlayton@redhat.com>:
 
---=-0THBtN9EShDtvkUH+b7o
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> 
+> Ahh, I think I see the bug. From rpc_timeout_upcall_queue:
+> 
+> -----------------------[snip]--------------------------
+>        dentry = dget(pipe->dentry);
+>        spin_unlock(&pipe->lock);
+>        if (dentry) {
+>                rpc_purge_list(&RPC_I(dentry->d_inode)->waitq,
+>                               &free_list, destroy_msg, -ETIMEDOUT);
+>                dput(dentry);
+>        }
+> -----------------------[snip]--------------------------
+> 
+> ...when there is no dentry (as there wouldn't be when rpc_pipefs isn't
+> mounted), then the rpc_purge_list won't run. FWIW, you'd probably see
+> similar problems if you attempted a sec=krb5 mount without having
+> rpc_pipefs mounted.
+> 
+> I'm still looking at the code to see what the right fix is. For now,
+> making sure you have a /var/lib/nfs/v4recoverydir is probably the
+> easiest workaround.
+> 
+> -- 
+> Jeff Layton <jlayton@redhat.com>
 
-On Mon, 2012-06-11 at 14:23 +0800, Huang Ying wrote:
-> This patch fixed the following bug.
->=20
-> https://bugzilla.kernel.org/show_bug.cgi?id=3D43282
->=20
-> This is caused by a firmware bug checking (checking generic address
-> register provided by firmware) in runtime.  The checking should be
-> done in address mapping time instead of runtime to avoid too much
-> error reporting in runtime.
->=20
-> Reported-by: Pawel Sikora <pluto@agmk.net>
-> Signed-off-by: Huang Ying <ying.huang@intel.com>
-> Tested-by: Jean Delvare <khali@linux-fr.org>
-[...]
+On my computer that shows the bug there is indeed no v4recovery directory. There is one on the other machine that does not show this bug. I'll test the latest kernel with this directory created  today afternoon. 
 
-This is not the correct way to submit a patch for stable.  See
-Documentation/stable_kernel_rules.txt.
+Thank you for the analysis!
 
-Ben.
-
---=20
-Ben Hutchings
-Computers are not intelligent.	They only think they are.
-
---=-0THBtN9EShDtvkUH+b7o
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAT9Xxx+e/yOyVhhEJAQoglA//Yf/gBsgodWbs9DkH7+zPwPpZWtOzQBaD
-O88QIvkcp0tuFgbiAfhEp08mGhfi3NRTRoINO1+9C8jPrdXoiug/P2dvc7bEycCS
-U5zVSW1nJdyweiYag4hwMl1N/3t0VpaohiL0H3EbhQOmXoYDrB9MhbkdL342I7m8
-NwwmLJLw9mDZUJ8oyJKt6xdWebOvcl73p9chCFMdw2bcSaUkFdbaXIxLXSulJ4Wl
-whzRXEQxBq/3sqsnQvWxs4Kvv2NEDAU+C0SGscivhBPXCRjw25Qngp1RUGtcU24q
-fZa4ax+4f9GOApnsxeTPgHfJd4nU/vOjktYXX10MZQEXfUc4QNozg2aiPnbCAOSj
-hsXlsg8YETUhWZtHhgskzelYQx0mmdfSJESJ4jifD+CoDILdRyj9pKCgtJW4Ua3z
-RaMG6BzkcCW13pP+tjv4qFh4iD5DHUu5wMD/YWKovCtfXIIXewqBaW3t51epW0S+
-odMv+SFVzbCHXeuzk3IADsusQ+2JWB0novDhl7IACZ2WIKPbJaiQGlaEeMdR/wWs
-1n71ctI/ETtl9HplkCfxwS96CGbsZB+E6hXxmKNV8eZxYmokwQsvExRZpJWe8prH
-fkILuhZd0urbozK/FzNf2q5Lr7eGZn2eSS5chm2fDUvMArTfzzYasD5zonLBXwew
-KWQEqZE2Urg=
-=UNnm
------END PGP SIGNATURE-----
-
---=-0THBtN9EShDtvkUH+b7o--
+Jörg 
