@@ -1,79 +1,314 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752951Ab2FKGK6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 02:10:58 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:58963 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750948Ab2FKGK4 (ORCPT
+	id S1752382Ab2FKGMl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 02:12:41 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:42199 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750711Ab2FKGMj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 02:10:56 -0400
+	Mon, 11 Jun 2012 02:12:39 -0400
+X-AuditID: 9c930197-b7b5dae000004b23-ee-4fd58c56e15e
+Message-ID: <4FD58C54.7050504@kernel.org>
+Date: Mon, 11 Jun 2012 15:12:36 +0900
+From: Minchan Kim <minchan@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <CAHkwNTnRHLaFS5yixojkgExGcW7XM62C3oHEJjiUYY3BioqVZA@mail.gmail.com>
-References: <CANc+2y48M+K4jvGEes_srYO7rCQcPt4pvcxcvm-Hd+7kKJr6BQ@mail.gmail.com>
-	<CAHkwNT=3dGTZTDWi+r7m=K=Pqgv6Txi-xKcpN_pNUJ_WbUaD4w@mail.gmail.com>
-	<4FD39A7F.9020106@mvista.com>
-	<CAHkwNT=DLCm_gfubGV=_SahM5njpA=Z_miA=SEkVeYA9cHMdmA@mail.gmail.com>
-	<CANc+2y7dMRQ2C-oTU94gBA11CDrwZFthzOvM4wffV77_wMnchQ@mail.gmail.com>
-	<CAHkwNTnRHLaFS5yixojkgExGcW7XM62C3oHEJjiUYY3BioqVZA@mail.gmail.com>
-Date: Mon, 11 Jun 2012 11:40:55 +0530
-Message-ID: <CANc+2y7HHy8R_kDo8=LoJvmHupjpezreEY8sPWFdOGFdeuFhOg@mail.gmail.com>
-Subject: Re: Break point not hit while debugging linux kernel with kgdb
-From: prasannatsmkumar <prasannatsmkumar@gmail.com>
-To: Anil Nair <anilcoll90@gmail.com>
-Cc: Sergei Shtylyov <sshtylyov@mvista.com>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
+To: Sasha Levin <levinsasha928@gmail.com>
+CC: dan.magenheimer@oracle.com, konrad.wilk@oracle.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 08/10] mm: frontswap: add tracing support
+References: <1339325468-30614-1-git-send-email-levinsasha928@gmail.com> <1339325468-30614-9-git-send-email-levinsasha928@gmail.com>
+In-Reply-To: <1339325468-30614-9-git-send-email-levinsasha928@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 11, 2012 at 9:07 AM, Anil Nair <anilcoll90@gmail.com> wrote:
-> Hello Prasanna,
->
-> On Sun, Jun 10, 2012 at 10:20 AM, prasannatsmkumar
-> <prasannatsmkumar@gmail.com> wrote:
->> In one of the machines I am facing a scenario:
->> I recompiled Ubuntu linux kernel (with the default config taken from
->> /boot) and the newly compiled kernel does not boot. After detecting
->> the hard disk (SCSI device) it panics.
->
-> Did you compile the kernel using standard step? Which Ubuntu version
-> you are trying to install your customized kernel? What is the kernel
-> version you are trying to compile? For ubuntu distribution standard
-> steps are given at their site for compiling customized kernel, i
-> followed those steps and was able to compile and install customized
-> kernel. Here is the link for it,
->
-> https://help.ubuntu.com/community/Kernel/Compile
->
->>I am able to see only a part of
->> the kernel stack trace due to low resolution so I am in a situation
->> where I cannot do anything further. In this situation kgdb seems to be
->> the only way.
->
-> Also, i think so the kernel is in panic due to the reason that it
-> couldn't find initial ram disk. Did you create an initial ram disk
-> while compiling and installing the kernel? I came through the same
-> situation that is why i am asking?
-> are you using mkinitramfs command for creating ramdisk? trying using
-> update-initrd command, google for it i forgot its usage.! :). After
-> creating ramdisk move it to the /boot directory and update the grub
-> using the update-grub command.
->
->
-> I hope this may solve you problem. :)
->
-> --
-> Regards,
-> Anil Nair
+On 06/10/2012 07:51 PM, Sasha Levin wrote:
 
-I am using Ubuntu 12.04 64bit. I downloaded the source code of kernel
-available in Ubuntu 12.04 and recompiling it. I recompiled and
-installed the kernel in couple of machines (one ASUS laptop and
-another ASUS desktop) and in those machines it is working fine. I
-recompiled the same kernel in one old machine (the same way I did for
-other machines) and installed it. Initial ram disk is also created but
-I am not able to boot. Everything is set up correctly to my knowledge.
+> Add tracepoints to frontswap API.
+> 
+> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
 
-Thanks,
-Prasanna Kumar
+
+Normally, adding new tracepoint isn't easy without special reason.
+I'm not sure all of frontswap function tracing would be valuable.
+Shsha, Why do you want to add tracing?
+What's scenario you want to use tracing?
+
+> ---
+>  include/trace/events/frontswap.h |  167 ++++++++++++++++++++++++++++++++++++++
+>  mm/frontswap.c                   |   14 +++
+>  2 files changed, 181 insertions(+), 0 deletions(-)
+>  create mode 100644 include/trace/events/frontswap.h
+> 
+> diff --git a/include/trace/events/frontswap.h b/include/trace/events/frontswap.h
+> new file mode 100644
+> index 0000000..2e5efab
+> --- /dev/null
+> +++ b/include/trace/events/frontswap.h
+> @@ -0,0 +1,167 @@
+> +#undef TRACE_SYSTEM
+> +#define TRACE_SYSTEM frontswap
+> +
+> +#if !defined(_TRACE_FRONTSWAP_H) || defined(TRACE_HEADER_MULTI_READ)
+> +#define _TRACE_FRONTSWAP_H
+> +
+> +#include <linux/tracepoint.h>
+> +
+> +struct frontswap_ops;
+> +
+> +TRACE_EVENT(frontswap_init,
+> +	TP_PROTO(unsigned int type, void *sis, void *frontswap_map),
+> +	TP_ARGS(type, sis, frontswap_map),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(	unsigned int,	type		)
+> +		__field(	void *,		sis		)
+> +		__field(	void *,		frontswap_map	)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->type		= type;
+> +		__entry->sis		= sis;
+> +		__entry->frontswap_map	= frontswap_map;
+> +	),
+> +
+> +	TP_printk("type: %u sis: %p frontswap_map: %p",
+> +		  __entry->type, __entry->sis, __entry->frontswap_map)
+> +);
+> +
+> +TRACE_EVENT(frontswap_register_ops,
+> +	TP_PROTO(struct frontswap_ops *old, struct frontswap_ops *new),
+> +	TP_ARGS(old, new),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(struct frontswap_ops *,		old		)
+> +		__field(struct frontswap_ops *,		new		)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->old		= old;
+> +		__entry->new		= new;
+> +	),
+> +
+> +	TP_printk("old: {init=%p store=%p load=%p invalidate_page=%p invalidate_area=%p}"
+> +		" new: {init=%p store=%p load=%p invalidate_page=%p invalidate_area=%p}",
+> +		__entry->old->init,__entry->old->store,__entry->old->load,
+> +		__entry->old->invalidate_page,__entry->old->invalidate_area,__entry->new->init,
+> +		__entry->new->store,__entry->new->load,__entry->new->invalidate_page,
+> +		__entry->new->invalidate_area)
+> +);
+> +
+> +TRACE_EVENT(frontswap_store,
+> +	TP_PROTO(void *page, int dup, int ret),
+> +	TP_ARGS(page, dup, ret),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(	int,		dup		)
+> +		__field(	int,		ret		)
+> +		__field(	void *,		page		)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->dup		= dup;
+> +		__entry->ret		= ret;
+> +		__entry->page		= page;
+> +	),
+> +
+> +	TP_printk("page: %p dup: %d ret: %d",
+> +		  __entry->page, __entry->dup, __entry->ret)
+> +);
+> +
+> +TRACE_EVENT(frontswap_load,
+> +	TP_PROTO(void *page, int ret),
+> +	TP_ARGS(page, ret),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(	int,		ret		)
+> +		__field(	void *,		page		)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->ret		= ret;
+> +		__entry->page		= page;
+> +	),
+> +
+> +	TP_printk("page: %p ret: %d",
+> +		  __entry->page, __entry->ret)
+> +);
+> +
+> +TRACE_EVENT(frontswap_invalidate_page,
+> +	TP_PROTO(int type, unsigned long offset, void *sis, int test),
+> +	TP_ARGS(type, offset, sis, test),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(	int,		type		)
+> +		__field(	unsigned long,	offset		)
+> +		__field(	void *,		sis		)
+> +		__field(	int,		test		)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->type		= type;
+> +		__entry->offset		= offset;
+> +		__entry->sis		= sis;
+> +		__entry->test		= test;
+> +	),
+> +
+> +	TP_printk("type: %d offset: %lu sys: %p frontswap_test: %d",
+> +		  __entry->type, __entry->offset, __entry->sis, __entry->test)
+> +);
+> +
+> +TRACE_EVENT(frontswap_invalidate_area,
+> +	TP_PROTO(int type, void *sis, void *map),
+> +	TP_ARGS(type, sis, map),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(	int,		type		)
+> +		__field(	void *,		map		)
+> +		__field(	void *,		sis		)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->type		= type;
+> +		__entry->sis		= sis;
+> +		__entry->map		= map;
+> +	),
+> +
+> +	TP_printk("type: %d sys: %p map: %p",
+> +		  __entry->type, __entry->sis, __entry->map)
+> +);
+> +
+> +TRACE_EVENT(frontswap_curr_pages,
+> +	TP_PROTO(unsigned long totalpages),
+> +	TP_ARGS(totalpages),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(unsigned long,		totalpages	)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->totalpages	= totalpages;
+> +	),
+> +
+> +	TP_printk("total pages: %lu",
+> +		  __entry->totalpages)
+> +);
+> +
+> +TRACE_EVENT(frontswap_shrink,
+> +	TP_PROTO(unsigned long target_pages),
+> +	TP_ARGS(target_pages),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(unsigned long,		target_pages	)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->target_pages	= target_pages;
+> +	),
+> +
+> +	TP_printk("target pages: %lu",
+> +		  __entry->target_pages)
+> +);
+> +
+> +#endif /* _TRACE_FRONTSWAP_H */
+> +
+> +#include <trace/define_trace.h>
+> diff --git a/mm/frontswap.c b/mm/frontswap.c
+> index 7c26e89..7da55a3 100644
+> --- a/mm/frontswap.c
+> +++ b/mm/frontswap.c
+> @@ -11,6 +11,7 @@
+>   * This work is licensed under the terms of the GNU GPL, version 2.
+>   */
+>  
+> +#define CREATE_TRACE_POINTS
+>  #include <linux/mm.h>
+>  #include <linux/mman.h>
+>  #include <linux/swap.h>
+> @@ -23,6 +24,7 @@
+>  #include <linux/debugfs.h>
+>  #include <linux/frontswap.h>
+>  #include <linux/swapfile.h>
+> +#include <trace/events/frontswap.h>
+>  
+>  /*
+>   * frontswap_ops is set by frontswap_register_ops to contain the pointers
+> @@ -85,6 +87,7 @@ struct frontswap_ops frontswap_register_ops(struct frontswap_ops *ops)
+>  {
+>  	struct frontswap_ops old = frontswap_ops;
+>  
+> +	trace_frontswap_register_ops(&old, ops);
+>  	frontswap_ops = *ops;
+>  	frontswap_enabled = true;
+>  	return old;
+> @@ -108,6 +111,9 @@ void __frontswap_init(unsigned type)
+>  	struct swap_info_struct *sis = swap_info[type];
+>  
+>  	BUG_ON(sis == NULL);
+> +
+> +	trace_frontswap_init(type, sis, sis->frontswap_map);
+> +
+>  	if (sis->frontswap_map == NULL)
+>  		return;
+>  	frontswap_ops.init(type);
+> @@ -134,6 +140,7 @@ int __frontswap_store(struct page *page)
+>  	if (frontswap_test(sis, offset))
+>  		dup = 1;
+>  	ret = frontswap_ops.store(type, offset, page);
+> +	trace_frontswap_store(page, dup, ret);
+>  	if (ret == 0) {
+>  		frontswap_set(sis, offset);
+>  		inc_frontswap_succ_stores();
+> @@ -174,6 +181,7 @@ int __frontswap_load(struct page *page)
+>  	BUG_ON(sis == NULL);
+>  	if (frontswap_test(sis, offset))
+>  		ret = frontswap_ops.load(type, offset, page);
+> +	trace_frontswap_load(page, ret);
+>  	if (ret == 0)
+>  		inc_frontswap_loads();
+>  	return ret;
+> @@ -189,6 +197,7 @@ void __frontswap_invalidate_page(unsigned type, pgoff_t offset)
+>  	struct swap_info_struct *sis = swap_info[type];
+>  
+>  	BUG_ON(sis == NULL);
+> +	trace_frontswap_invalidate_page(type, offset, sis, frontswap_test(sis, offset));
+>  	if (frontswap_test(sis, offset)) {
+>  		frontswap_ops.invalidate_page(type, offset);
+>  		atomic_dec(&sis->frontswap_pages);
+> @@ -207,6 +216,7 @@ void __frontswap_invalidate_area(unsigned type)
+>  	struct swap_info_struct *sis = swap_info[type];
+>  
+>  	BUG_ON(sis == NULL);
+> +	trace_frontswap_invalidate_area(type, sis, sis->frontswap_map);
+>  	if (sis->frontswap_map == NULL)
+>  		return;
+>  	frontswap_ops.invalidate_area(type);
+> @@ -295,6 +305,8 @@ void frontswap_shrink(unsigned long target_pages)
+>  	unsigned long pages_to_unuse = 0;
+>  	int type, ret;
+>  
+> +	trace_frontswap_shrink(target_pages);
+> +
+>  	/*
+>  	 * we don't want to hold swap_lock while doing a very
+>  	 * lengthy try_to_unuse, but swap_list may change
+> @@ -322,6 +334,8 @@ unsigned long frontswap_curr_pages(void)
+>  	totalpages = __frontswap_curr_pages();
+>  	spin_unlock(&swap_lock);
+>  
+> +	trace_frontswap_curr_pages(totalpages);
+> +
+>  	return totalpages;
+>  }
+>  EXPORT_SYMBOL(frontswap_curr_pages);
+
+
+
+-- 
+Kind regards,
+Minchan Kim
