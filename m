@@ -1,66 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755411Ab2FKPg1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 11:36:27 -0400
-Received: from na3sys009aog133.obsmtp.com ([74.125.149.82]:60175 "EHLO
-	na3sys009aog133.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753478Ab2FKPgZ (ORCPT
+	id S1755573Ab2FKPgx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 11:36:53 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:53403 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754176Ab2FKPgv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 11:36:25 -0400
+	Mon, 11 Jun 2012 11:36:51 -0400
+Date: Mon, 11 Jun 2012 23:35:53 +0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Vinod Koul <vinod.koul@intel.com>, alsa-devel@alsa-project.org,
+        Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
+Message-ID: <20120611153550.GW11439@opensource.wolfsonmicro.com>
+References: <1339416253-4121-1-git-send-email-lars@metafoo.de>
+ <1339416253-4121-2-git-send-email-lars@metafoo.de>
+ <20120611132409.GG11168@n2100.arm.linux.org.uk>
+ <20120611145735.GU11439@opensource.wolfsonmicro.com>
+ <4FD60CA9.3070701@metafoo.de>
 MIME-Version: 1.0
-In-Reply-To: <41394741acbaf5451f81382a2f31b44f.squirrel@www.codeaurora.org>
-References: <1339011882-7919-1-git-send-email-merez@codeaurora.org>
- <CANfBPZ8C7YY760yx9ATi1_UJ_itL0N+fVdxx0Lim-55SgGjbng@mail.gmail.com> <41394741acbaf5451f81382a2f31b44f.squirrel@www.codeaurora.org>
-From: "S, Venkatraman" <svenkatr@ti.com>
-Date: Mon, 11 Jun 2012 21:06:01 +0530
-Message-ID: <CANfBPZ9U+b4p5UQbX_oeLba28fTMfUrVONN=bRakn6d2Or=1ew@mail.gmail.com>
-Subject: Re: [PATCH v2 0/1] block: Add test-iosched scheduler
-To: merez@codeaurora.org
-Cc: linux-mmc@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ItroYk2LVxvwOvi/"
+Content-Disposition: inline
+In-Reply-To: <4FD60CA9.3070701@metafoo.de>
+X-Cookie: You are always busy.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 116.228.53.169
+X-SA-Exim-Mail-From: broonie@opensource.wolfsonmicro.com
+Subject: Re: [alsa-devel] [PATCH 2/2] ASoC: dmaengine-pcm: Add support for
+ querying stream position from DMA device
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 9, 2012 at 8:24 PM,  <merez@codeaurora.org> wrote:
->
->> On Thu, Jun 7, 2012 at 1:14 AM, Maya Erez <merez@codeaurora.org> wrote:
->>> The test scheduler allows testing a block device by dispatching
->>> specific requests according to the test case and declare PASS/FAIL
->>> according to the requests completion error code
->>>
->> I can't get the point. Isn't this possible purely from userspace using
->> IOCTLs ?
->> Even otherwise, requiring to modify the scheduler for each test case
->> is definitely not scalable.
-> The main benefit of the test-iosched is the ability to determine the
-> timing of each request that is being dispatched and to put on hold the
-> real FS requests so that they won't affect the tests scenario.
 
-Then a potentially long running test can block any useful work that can
-be done on the device. no-op is not the right scheduler for the example
-you mentioned (eMMC), so such device has to be mounted only for the
-purpose of running the tests.
-So using standard noop + debugfs would be sufficient for 99% of the cases ?
+--ItroYk2LVxvwOvi/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> It also allows each block device to determine pass/fail result taking into
-> account the expected behavior and the actual result.
+On Mon, Jun 11, 2012 at 05:20:09PM +0200, Lars-Peter Clausen wrote:
 
+> Another option is to provide the current implementation of the pcm_pointer
+> as a standalone legacy function, which can be used by the old platforms
+> until their dmaengine drivers have cached up. And add a new residue-only
+> implementation which will be mandatory for new drivers. That would make it
+> more explicit that those platforms are sort of broken and need to be fixed.
+> After all of them have been fixed the legacy pcm_pointer implementation can
+> be removed.
 
-> The scheduler doesn't have to be changed per tests case. What made you
-> think it should be?
-Err.. I misread this section of documentation. I read is as sysfs
-instead of debugfs.
-My mistake..
-<Quote>
-+Each test is exposed via debugfs and can be triggered by writing to
-+the debugfs file. In order to add a new test one should expose a new debugfs
-+file for the new test.
-</Quote>
+This seems like a good approach, yes.
 
-> Currently we use the test-iosched to test the eMMC4.5 features (such as
-> BKOPs, packed commands and sanitize). I hope that after we will release
-> the tests later this week it will be clearer.
->>
-Sure. It'd be useful.
+--ItroYk2LVxvwOvi/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP1hBPAAoJEBus8iNuMP3dBLwP/iO2/LhgFePPUJBpydqbTHfp
+ZxpByLG2lsEHp/c+OiHhNk5Su7Dm7/36XpY/R/7B8/+tqQ4+mbgxb8xb5B2GTdje
+tXpMkc0IHg5+rRBFLClezhPdx34vLJ5jtmYZOCUM9eS2o5VFqsd+i+SXrJ/mkoKH
+f+Tw6VFogeQ8jCqaYoQ13mI+YlZxzGD5Sx48zkZDeotYJwbq6jQFpf1GbUXL2so3
+WiUaQhXA7FgMjlX2+ttksonuIv0Apg2fAxLTJXrGI71TH+8Cphj0K+EVmiGQJjwG
+w9iUnc1g8Wihhe8O/z8Jfk3OiorIpQBcaSg2hczxAxJSog+PCh7ovLav+6Wwa3VE
+Rf2D0OExAK7xWfPCHCIAil7Km1sX/kFlVewDxPxHeiQMfVcsPAqpS6iiOUGV4uoU
+YnJgt05sFPIjqauGMgJQFPJxM+zXDr4mOmvOtKHO9S/nrK3Me5/AsTyRQQBcDKiF
+UJhjA7S7Zpeh6ViOMvdXGeYeUJhNhT0vu4El3oWUJ1uRpTkZPMPiVu63V3aArhZ7
+7mikYGVfRvMpCu1rmoOCUcr4Hiex+JpjmMwvul9KJL/Fj4YwkzyzzxzTRdz8OZsc
+KJN/t3glgiAeUzWWg+FWEt/OdFeG5RYQruDQ9yTqQKaoQxIdvi7A1ZQ+SeajHkmP
+b3iHlc1GODRKLUhEiAUu
+=iW81
+-----END PGP SIGNATURE-----
+
+--ItroYk2LVxvwOvi/--
