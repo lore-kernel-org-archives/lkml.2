@@ -1,117 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755975Ab2FKPmu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 11:42:50 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:47411 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755270Ab2FKPmr convert rfc822-to-8bit (ORCPT
+	id S1756017Ab2FKPnK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 11:43:10 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38130 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755533Ab2FKPnI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 11:42:47 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120611213002.caaf0e05.yoshikawa.takuya@oss.ntt.co.jp>
-References: <20120611212735.f92ea521.yoshikawa.takuya@oss.ntt.co.jp>
-	<20120611213002.caaf0e05.yoshikawa.takuya@oss.ntt.co.jp>
-Date: Mon, 11 Jun 2012 08:42:45 -0700
-Message-ID: <CAP6odjjPAo+y_oZzBVFbOPVn=KkX-Oqycvkjo4CdNuUzNN4zkA@mail.gmail.com>
-Subject: Re: [PATCH 2/4] drivers/net/ethernet/dec/tulip: Add tulip_ prefix to set_bit_le()
-From: Grant Grundler <grantgrundler@gmail.com>
-To: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-Cc: grundler@parisc-linux.org, bhutchings@solarflare.com, arnd@arndb.de,
-        avi@redhat.com, mtosatti@redhat.com, linux-net-drivers@solarflare.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, kvm@vger.kernel.org,
-        takuya.yoshikawa@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 11 Jun 2012 11:43:08 -0400
+Message-ID: <1339429374.30462.54.camel@twins>
+Subject: Re: [PATCH] sched: Folding nohz load accounting more accurate
+From: Peter Zijlstra <peterz@infradead.org>
+To: Charles Wang <muming.wq@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Charles Wang <muming.wq@taobao.com>, Tao Ma <tm@tao.ma>
+Date: Mon, 11 Jun 2012 17:42:54 +0200
+In-Reply-To: <1339239295-18591-1-git-send-email-muming.wq@taobao.com>
+References: <1339239295-18591-1-git-send-email-muming.wq@taobao.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 11, 2012 at 5:30 AM, Takuya Yoshikawa
-<yoshikawa.takuya@oss.ntt.co.jp> wrote:
-> From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
->
-> Needed to introduce generic set_bit_le().
->
-> Signed-off-by: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-> Cc: Grant Grundler <grundler@parisc-linux.org>
+On Sat, 2012-06-09 at 18:54 +0800, Charles Wang wrote:
+> After patch 453494c3d4 (sched: Fix nohz load accounting -- again!), we can fold
+> the idle into calc_load_tasks_idle between the last cpu load calculating and
+> calc_global_load calling. However problem still exits between the first cpu 
+> load calculating and the last cpu load calculating. Every time when we do load 
+> calculating, calc_load_tasks_idle will be added into calc_load_tasks, even if
+> the idle load is caused by calculated cpus. This problem is also described in
+> the following link:
+> 
+> https://lkml.org/lkml/2012/5/24/419
+
+Don't put links in like this, if its useful describe it. As it stands I
+think your paragraph and that link are trying to say the same.
+
+Also, since you found Tao's email, why didn't you CC him?
+
+I find it hard to understand either description.
+
+Are you in fact saying:
+
+
+cpu0		cpu1		cpu2
+
+calc_load_account_active()
+
+		calc_load_account_active()
+		-> idle
+	,----	   calc_load_account_idle()
+	|
+	|			calc_load_account_active()
+	`--------->		  calc_load_fold_idle()
+
+
+That when a cpu goes idle during the per-cpu active folding window
+it might happen that a cpu goes idle after its fold, but before a next
+cpu's fold, so that its calc_load_tasks_idle contribution gets folded
+back in. As per the above picture.
+
+Now _why_ is this a problem? 
+
+All this code tries to do is:
+
+  nr_active = 0;
+  for_each_possible_cpu(cpu)
+	nr_active += cpu_rq(cpu)->nr_running + cpu_rq(cpu)
+
+Without actually iterating all cpus because on large systems that's
+prohibitively expensive.
+
+So instead we do the calc_load_fold_active() thing on each individual
+cpu:
+
+  nr_active = this_rq->nr_running + this_rq->nr_uninterruptible;
+  delta = nr_active - this_rq->calc_load_active;
+  this_rq->calc_load_active = nr_active;
+
+  atomic_long_add(delta, &calc_load_tasks);
+
+The first does a straight sum, the second does a sum of deltas, both
+should give the same number.
+
+
+  \Sum_i x_i(t) = \Sum_i x_i(t) - x_i(t_0) | x_i(t_0) := 0
+                = \Sum_i { \Sum_j=1 x_i(t_j) - x_i(t_j-1) }
+
+The whole NO_HZ thing complicates this a little further in order to not
+have to wake an idle cpu. I'll try and do the above sum with the nohz
+thing in.. maybe something obvious falls out.
+
+Now all this is sampling.. we take a nr_active sample once every
+LOAD_FREQ (5s). Anything that happens inside this doesn't exist.
+
+So how is the above scenario different from the cpu going idle right
+before we take the sample?
+
+> This bug can be found in our work load. The average running processes number 
+> is about 15, but the load only shows about 4.
+
+Right,. still not really sure what the bug is though.
+
+> The patch provides a solution, by taking calculated load cpus' idle away from
+>  real effective idle. 
+
+-ENOPARSE
+
+> First adds a cpumask to record those cpus that alread 
+> calculated their load, and then adds a calc_unmask_cpu_load_idle to record 
+> thoses not marked cpus' go-idle load. Calc_unmask_cpu_load_idle takes place 
+> of calc_load_tasks_idle to be added into calc_load_tasks every 5HZ
+
+5 seconds
+
+>  when cpu 
+> calculate its load. Go-idle load on those cpus which load alread has been calculated 
+> will only be added into calc_load_tasks_idle, no in calc_unmask_cpu_load_idle.
+
+I don't like the solution, keeping that mask is expensive. Also, I still
+don't understand what the problem is.
+
+A few nits on the patch below..
+
 > ---
->  drivers/net/ethernet/dec/tulip/de2104x.c    |    7 +++----
->  drivers/net/ethernet/dec/tulip/tulip_core.c |    7 +++----
->  2 files changed, 6 insertions(+), 8 deletions(-)
->
-> diff --git a/drivers/net/ethernet/dec/tulip/de2104x.c b/drivers/net/ethernet/dec/tulip/de2104x.c
-> index 61cc093..e635f1a 100644
-> --- a/drivers/net/ethernet/dec/tulip/de2104x.c
-> +++ b/drivers/net/ethernet/dec/tulip/de2104x.c
-> @@ -661,8 +661,7 @@ static netdev_tx_t de_start_xmit (struct sk_buff *skb,
->    new frame, not around filling de->setup_frame.  This is non-deterministic
->    when re-entered but still correct. */
->
-> -#undef set_bit_le
-> -#define set_bit_le(i,p) do { ((char *)(p))[(i)/8] |= (1<<((i)%8)); } while(0)
-> +#define tulip_set_bit_le(i,p) do { ((char *)(p))[(i)/8] |= (1<<((i)%8)); } while(0)
+>  include/linux/sched.h     |    1 +
+>  kernel/sched/core.c       |   83 ++++++++++++++++++++++++++++++++++++++++++++-
+>  kernel/time/timekeeping.c |    1 +
+>  3 files changed, 84 insertions(+), 1 deletion(-)
+> 
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index 6029d8c..a2b8df2 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -145,6 +145,7 @@ extern unsigned long this_cpu_load(void);
+>  
+> 
+>  extern void calc_global_load(unsigned long ticks);
+> +extern void prepare_idle_mask(unsigned long ticks);
+>  extern void update_cpu_load_nohz(void);
+>  
+>  extern unsigned long get_parent_ip(unsigned long addr);
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index c46958e..bdfe3c2 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -2164,6 +2164,7 @@ unsigned long this_cpu_load(void)
+>  /* Variables and functions for calc_load */
+>  static atomic_long_t calc_load_tasks;
+>  static unsigned long calc_load_update;
+> +static unsigned long idle_mask_update;
+>  unsigned long avenrun[3];
+>  EXPORT_SYMBOL(avenrun);
+>  
+> @@ -2199,13 +2200,38 @@ calc_load(unsigned long load, unsigned long exp, unsigned long active)
+>   */
+>  static atomic_long_t calc_load_tasks_idle;
+>  
+> +/* 
+> + * Those cpus whose load alread has been calculated in this LOAD_FREQ 
+> + * period will be masked.
+> + */
+> +struct cpumask  cpu_load_update_mask;
 
-I am ok with this patch going in. This code predates the clear
-understanding of bit_ops that we have now and will continue to work
-with this patch.
+This should be a cpumask_var_t and allocated somewhere..
 
-If you have time to follow Arnd's suggestion to use __set_bit_le()
-(and removing both local definitions), that would be better. Either
-way:
+> +
+> +/* 
+> + * Fold unmask cpus' idle load
+> + */
+> +static atomic_long_t calc_unmask_cpu_load_idle;
+> +
+> +
+>  void calc_load_account_idle(struct rq *this_rq)
+>  {
+>  	long delta;
+> +	int cpu = smp_processor_id();
+> +
+>  
+>  	delta = calc_load_fold_active(this_rq);
+>  	if (delta)
+> +	{
 
-Acked-by: Grant Grundler <grundler@parisc-linux.org>
+wrong bracket placement
 
-thanks!
-grant
+>  		atomic_long_add(delta, &calc_load_tasks_idle);
+> +		/*
+> +		 * calc_unmask_cpu_load_idle is only used between the first cpu load accounting
+> +		 * and the last cpu load accounting in every LOAD_FREQ period, and records idle load on
+> +		 * those unmask cpus.
+> +		 */
+> +		if (!cpumask_empty(&cpu_load_update_mask) && !cpumask_test_cpu(cpu, &cpu_load_update_mask))
+> +		{
+> +			atomic_long_add(delta, &calc_unmask_cpu_load_idle);
 
->
->  static void build_setup_frame_hash(u16 *setup_frm, struct net_device *dev)
->  {
-> @@ -673,12 +672,12 @@ static void build_setup_frame_hash(u16 *setup_frm, struct net_device *dev)
->        u16 *eaddrs;
->
->        memset(hash_table, 0, sizeof(hash_table));
-> -       set_bit_le(255, hash_table);                    /* Broadcast entry */
-> +       tulip_set_bit_le(255, hash_table);              /* Broadcast entry */
->        /* This should work on big-endian machines as well. */
->        netdev_for_each_mc_addr(ha, dev) {
->                int index = ether_crc_le(ETH_ALEN, ha->addr) & 0x1ff;
->
-> -               set_bit_le(index, hash_table);
-> +               tulip_set_bit_le(index, hash_table);
->        }
->
->        for (i = 0; i < 32; i++) {
-> diff --git a/drivers/net/ethernet/dec/tulip/tulip_core.c b/drivers/net/ethernet/dec/tulip/tulip_core.c
-> index c4f37ac..3a1ebd02 100644
-> --- a/drivers/net/ethernet/dec/tulip/tulip_core.c
-> +++ b/drivers/net/ethernet/dec/tulip/tulip_core.c
-> @@ -1010,8 +1010,7 @@ static int private_ioctl (struct net_device *dev, struct ifreq *rq, int cmd)
->    new frame, not around filling tp->setup_frame.  This is non-deterministic
->    when re-entered but still correct. */
->
-> -#undef set_bit_le
-> -#define set_bit_le(i,p) do { ((char *)(p))[(i)/8] |= (1<<((i)%8)); } while(0)
-> +#define tulip_set_bit_le(i,p) do { ((char *)(p))[(i)/8] |= (1<<((i)%8)); } while(0)
->
->  static void build_setup_frame_hash(u16 *setup_frm, struct net_device *dev)
->  {
-> @@ -1022,12 +1021,12 @@ static void build_setup_frame_hash(u16 *setup_frm, struct net_device *dev)
->        u16 *eaddrs;
->
->        memset(hash_table, 0, sizeof(hash_table));
-> -       set_bit_le(255, hash_table);                    /* Broadcast entry */
-> +       tulip_set_bit_le(255, hash_table);              /* Broadcast entry */
->        /* This should work on big-endian machines as well. */
->        netdev_for_each_mc_addr(ha, dev) {
->                int index = ether_crc_le(ETH_ALEN, ha->addr) & 0x1ff;
->
-> -               set_bit_le(index, hash_table);
-> +               tulip_set_bit_le(index, hash_table);
->        }
->        for (i = 0; i < 32; i++) {
->                *setup_frm++ = hash_table[i];
-> --
-> 1.7.5.4
->
+lines are too long, brackets are placed wrong and brackets are
+superfluous.
+
+
+> +		}
+> +       }
+>  }
+>  
+
+and many more similar nits.
+
+> diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+> index 6e46cac..afbc06a 100644
+> --- a/kernel/time/timekeeping.c
+> +++ b/kernel/time/timekeeping.c
+> @@ -1222,6 +1222,7 @@ void do_timer(unsigned long ticks)
+>  	jiffies_64 += ticks;
+>  	update_wall_time();
+>  	calc_global_load(ticks);
+> +	prepare_idle_mask(ticks);
+
+Why not add this to calc_global_load() ? 
+
+>  }
+>  
+>  /**
+
