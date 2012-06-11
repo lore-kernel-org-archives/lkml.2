@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755718Ab2FKPZn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 11:25:43 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:35147 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755682Ab2FKPZk (ORCPT
+	id S1755603Ab2FKPZe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 11:25:34 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:61246 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755444Ab2FKPZc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 11:25:40 -0400
+	Mon, 11 Jun 2012 11:25:32 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: linus.walleij@stericsson.com, arnd@arndb.de, grant.likely@secretlab.ca,
-        Lee Jones <lee.jones@linaro.org>, linux-i2c@vger.kernel.org
-Subject: [PATCH 09/14] i2c: Add Device Tree support to the Nomadik I2C driver
-Date: Mon, 11 Jun 2012 16:25:02 +0100
-Message-Id: <1339428307-3850-10-git-send-email-lee.jones@linaro.org>
+        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
+Subject: [PATCH 05/14] mfd: Enable DT probing of the DB8500 PRCMU
+Date: Mon, 11 Jun 2012 16:24:58 +0100
+Message-Id: <1339428307-3850-6-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1339428307-3850-1-git-send-email-lee.jones@linaro.org>
 References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org>
@@ -21,93 +21,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here we move the i2c-nomadik's default settings into the driver
-rather than specifying them from platform code. At the time of
-this writing we only have one user, the u8500. As new users are
-added, it is expected that they will be Device Tree compliant.
-If this is the case, we will look up their initialisation values
-by compatible entry, then apply them forthwith.
+This patch adds the correct compatible string for use during Device Tree
+population. Without it the DB8500 PRCMU will not be probed.
 
-Cc: linux-i2c@vger.kernel.org
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/i2c/busses/i2c-nomadik.c |   40 +++++++++++++++++++++++++++++++++++++-
- 1 file changed, 39 insertions(+), 1 deletion(-)
+ drivers/mfd/db8500-prcmu.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/drivers/i2c/busses/i2c-nomadik.c b/drivers/i2c/busses/i2c-nomadik.c
-index a92440d..1ffdf67 100644
---- a/drivers/i2c/busses/i2c-nomadik.c
-+++ b/drivers/i2c/busses/i2c-nomadik.c
-@@ -23,6 +23,7 @@
- #include <linux/io.h>
- #include <linux/regulator/consumer.h>
- #include <linux/pm_runtime.h>
-+#include <linux/of_device.h>
- 
- #include <plat/i2c.h>
- 
-@@ -899,15 +900,51 @@ static const struct i2c_algorithm nmk_i2c_algo = {
- 	.functionality	= nmk_i2c_functionality
- };
- 
-+static struct nmk_i2c_controller u8500_i2c = {
-+       /*
-+        * slave data setup time, which is
-+        * 250 ns,100ns,10ns which is 14,6,2
-+        * respectively for a 48 Mhz
-+        * i2c clock
-+        */
-+       .slsu           = 0xe,
-+       /* Tx FIFO threshold */
-+       .tft            = 1,
-+       /* Rx FIFO threshold */
-+       .rft            = 8,
-+       /* std. mode operation */
-+       .clk_freq       = 100000,
-+       /* Slave response timeout(ms) */
-+       .timeout        = 200,
-+       .sm             = I2C_FREQ_MODE_FAST,
+diff --git a/drivers/mfd/db8500-prcmu.c b/drivers/mfd/db8500-prcmu.c
+index 50e83dc5..c702f18 100644
+--- a/drivers/mfd/db8500-prcmu.c
++++ b/drivers/mfd/db8500-prcmu.c
+@@ -3004,11 +3004,16 @@ static int __devinit db8500_prcmu_probe(struct platform_device *pdev)
+ no_irq_return:
+ 	return err;
+ }
++static const struct of_device_id db8500_prcmu_match[] = {
++	{ .compatible = "stericsson,db8500-prcmu", },
++	{ },
 +};
-+
-+
-+static const struct of_device_id nmk_gpio_match[] = {
-+	{ .compatible = "st,nomadik-i2c", .data = &u8500_i2c, },
-+	{}
-+};
-+
- static int __devinit nmk_i2c_probe(struct platform_device *pdev)
- {
- 	int ret = 0;
- 	struct resource *res;
--	struct nmk_i2c_controller *pdata =
-+	const struct nmk_i2c_controller *pdata =
- 			pdev->dev.platform_data;
-+        const struct of_device_id *of_id =
-+                        of_match_device(nmk_gpio_match, &pdev->dev);
- 	struct nmk_i2c_dev	*dev;
- 	struct i2c_adapter *adap;
  
-+	if (!pdata) {
-+		if (of_id && of_id->data)
-+			/* Looks like we're booting via Device Tree. */
-+			pdata = of_id->data;
-+		else
-+			/* No i2c configuration found, using the default. */
-+			pdata = &u8500_i2c;
-+	}
-+
- 	dev = kzalloc(sizeof(struct nmk_i2c_dev), GFP_KERNEL);
- 	if (!dev) {
- 		dev_err(&pdev->dev, "cannot allocate memory\n");
-@@ -1043,6 +1080,7 @@ static struct platform_driver nmk_i2c_driver = {
+ static struct platform_driver db8500_prcmu_driver = {
+ 	.driver = {
+ 		.name = "db8500-prcmu",
  		.owner = THIS_MODULE,
- 		.name = DRIVER_NAME,
- 		.pm = &nmk_i2c_pm,
-+		.of_match_table = nmk_gpio_match,
++		.of_match_table = db8500_prcmu_match,
  	},
- 	.probe = nmk_i2c_probe,
- 	.remove = __devexit_p(nmk_i2c_remove),
+ 	.probe = db8500_prcmu_probe,
+ };
 -- 
 1.7.9.5
 
