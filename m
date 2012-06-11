@@ -1,98 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752846Ab2FKJOI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 05:14:08 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56765 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751812Ab2FKJOG (ORCPT
+	id S1752906Ab2FKJOQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 05:14:16 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:39391 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751812Ab2FKJOL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 05:14:06 -0400
-Date: Mon, 11 Jun 2012 02:13:54 -0700
-From: tip-bot for Wanpeng Li <liwp@linux.vnet.ibm.com>
-Message-ID: <tip-9efc31b81d740487fd204fade0913ffa8cc97fc3@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        liwp@linux.vnet.ibm.com, liwp.linux@gmail.com, tglx@linutronix.de,
-        shangw@linux.vnet.ibm.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        liwp@linux.vnet.ibm.com, tglx@linutronix.de, liwp.linux@gmail.com,
-        shangw@linux.vnet.ibm.com
-In-Reply-To: <1339296652-2935-1-git-send-email-liwp.linux@gmail.com>
-References: <1339296652-2935-1-git-send-email-liwp.linux@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/mm: Fix some kernel-doc warnings
-Git-Commit-ID: 9efc31b81d740487fd204fade0913ffa8cc97fc3
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 11 Jun 2012 05:14:11 -0400
+Date: Mon, 11 Jun 2012 17:13:50 +0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Jonghwa Lee <jonghwa3.lee@samsung.com>
+Cc: linux-kernel@vger.kernel.org, Mike Turquette <mturquette@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Hartley Sweeten <hsweeten@visionengravers.com>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Message-ID: <20120611091349.GE11439@opensource.wolfsonmicro.com>
+References: <1339400131-28980-1-git-send-email-jonghwa3.lee@samsung.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Oiv9uiLrevHtW1RS"
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 11 Jun 2012 02:13:59 -0700 (PDT)
+In-Reply-To: <1339400131-28980-1-git-send-email-jonghwa3.lee@samsung.com>
+X-Cookie: You are always busy.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 116.228.53.169
+X-SA-Exim-Mail-From: broonie@opensource.wolfsonmicro.com
+Subject: Re: [PATCH v2] clock: max77686: Add driver for Maxim 77686 32KHz
+ crystal oscillator
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9efc31b81d740487fd204fade0913ffa8cc97fc3
-Gitweb:     http://git.kernel.org/tip/9efc31b81d740487fd204fade0913ffa8cc97fc3
-Author:     Wanpeng Li <liwp@linux.vnet.ibm.com>
-AuthorDate: Sun, 10 Jun 2012 10:50:52 +0800
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 11 Jun 2012 10:54:45 +0200
 
-x86/mm: Fix some kernel-doc warnings
+--Oiv9uiLrevHtW1RS
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Fix kernel-doc warnings in arch/x86/mm/ioremap.c and
-arch/x86/mm/pageattr.c, just like this one:
+On Mon, Jun 11, 2012 at 04:35:31PM +0900, Jonghwa Lee wrote:
 
-  Warning(arch/x86/mm/ioremap.c:204):
-     No description found for parameter 'phys_addr'
-  Warning(arch/x86/mm/ioremap.c:204):
-     Excess function parameter 'offset' description in 'ioremap_nocache'
+> +static int max77686_clk_enable(struct clk_hw *hw)
 
-Signed-off-by: Wanpeng Li <liwp@linux.vnet.ibm.com>
-Cc: Gavin Shan <shangw@linux.vnet.ibm.com>
-Cc: Wanpeng Li <liwp.linux@gmail.com>
-Link: http://lkml.kernel.org/r/1339296652-2935-1-git-send-email-liwp.linux@gmail.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/mm/ioremap.c  |    4 ++--
- arch/x86/mm/pageattr.c |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+> +static void max77686_clk_disable(struct clk_hw *hw)
 
-diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
-index be1ef57..78fe3f1 100644
---- a/arch/x86/mm/ioremap.c
-+++ b/arch/x86/mm/ioremap.c
-@@ -180,7 +180,7 @@ err_free_memtype:
- 
- /**
-  * ioremap_nocache     -   map bus memory into CPU space
-- * @offset:    bus address of the memory
-+ * @phys_addr:    bus address of the memory
-  * @size:      size of the resource to map
-  *
-  * ioremap_nocache performs a platform specific sequence of operations to
-@@ -217,7 +217,7 @@ EXPORT_SYMBOL(ioremap_nocache);
- 
- /**
-  * ioremap_wc	-	map memory into CPU space write combined
-- * @offset:	bus address of the memory
-+ * @phys_addr:	bus address of the memory
-  * @size:	size of the resource to map
-  *
-  * This version of ioremap ensures that the memory is marked write combining.
-diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
-index e1ebde3..a718e0d 100644
---- a/arch/x86/mm/pageattr.c
-+++ b/arch/x86/mm/pageattr.c
-@@ -122,7 +122,7 @@ within(unsigned long addr, unsigned long start, unsigned long end)
- 
- /**
-  * clflush_cache_range - flush a cache range with clflush
-- * @addr:	virtual start address
-+ * @vaddr:	virtual start address
-  * @size:	number of bytes to flush
-  *
-  * clflush is an unordered instruction which needs fencing with mfence
+These need to be prepare() and unprepare() since these operations are
+atomic.
+
+> +{
+> +	struct max77686_clk *max77686 = NULL;
+
+The assignments here are redundant since you assign to the variable
+immadiately.
+
+> +	for ( i = 0; i < MAX77686_CLKS_NUM; i++) {
+
+Coding style with ( i.
+
+--Oiv9uiLrevHtW1RS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP1bbEAAoJEBus8iNuMP3djKEP/048EorekWZsJ6mO+fulLNBN
+bTwESUu9/naEGckKE5CFdYYV7BG7Ynxh45nLTW+D7YXTKajtAYSbBlGp9iFKEIxu
+FUWAy4NPNs3Gmwf1lQzLbdldr7mC+ghX4xpYJF6xfHDhs6jfiexd3x6GqTHTlWbz
+7RXm1mCKDvh5Fs0G4+JaOLh2gwP3tnuHeIErH6SluCTXm3kznpkt6Piy459OgHyi
+4pVfv3RJYbYVFCJV0ZqrCyab30VrKF5LWTgTyT68nKljfDc3PVPRN22Xy5JKFsBz
+xfPVIRFzK7Av5UMlimm1EkwFNHNtWT98UJFNfi2ElbHHKjCs39jGzD5sj1T8edbR
+90v2KdT9G2Gtf9loI0g6Y+4pxDE+1/n2gyYXN0GHLv0uxGFL7A0f6B50KQq/MsJn
+NlJ/rQae2O2Kv0BT6XKsRm7yWOCJNblcJZHMoeia+TzUuMuYNBkBIRJ9gZc8aLrI
+JFVnfjAhyOkTUzVIHt6LJGsuo/5xe6fijSo8wrZRpiyLsTwWIodXt/k7iqbv2EoE
+XXmQ2fIXgCFaTJPiraWoKVEEzWwVusP0G5omnKciLGQLNY2ne1rds6VnMkFiaqfC
+Cy1IbkYoaxWG1lRaI959w7iRrFo8BYF1zWSjY3MMVRNZieSgHzkBxdUoRADJt5wB
+cZOSnxHELnJ8K7A529Mn
+=wxCQ
+-----END PGP SIGNATURE-----
+
+--Oiv9uiLrevHtW1RS--
