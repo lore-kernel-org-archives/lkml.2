@@ -1,102 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755271Ab2FKQ3u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 12:29:50 -0400
-Received: from sh.osrg.net ([192.16.179.4]:60027 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754779Ab2FKQ3s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 12:29:48 -0400
-Date: Tue, 12 Jun 2012 01:29:43 +0900 (JST)
-Message-Id: <20120612.012943.73783083.konishi.ryusuke@lab.ntt.co.jp>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-nilfs@vger.kernel.org
-Subject: [PATCH] nilfs2: ensure proper cache clearing for gc-inodes
-From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-X-Mailer: Mew version 5.2 on Emacs 22.2 / Mule 5.0 (SAKAKI)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.3.7 (sh.osrg.net [192.16.179.4]); Tue, 12 Jun 2012 01:29:44 +0900 (JST)
+	id S1755300Ab2FKQav (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 12:30:51 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:42025 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755083Ab2FKQau (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 12:30:50 -0400
+Date: Mon, 11 Jun 2012 18:30:44 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: sonic.zhang@analog.com
+Cc: Ben Dooks <ben-linux@fluff.org>, linux-i2c@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        uclinux-dist-devel@blackfin.uclinux.org
+Subject: Re: [PATCH 3/8] i2c: i2c-bfin-twi: Break dead waiting loop if i2c
+ device misbehaves.
+Message-ID: <20120611163044.GD3887@pengutronix.de>
+References: <1337152826-9850-1-git-send-email-sonic.zhang@analog.com>
+ <1337152826-9850-3-git-send-email-sonic.zhang@analog.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="llIrKcgUOe3dCx0c"
+Content-Disposition: inline
+In-Reply-To: <1337152826-9850-3-git-send-email-sonic.zhang@analog.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
 
-Please apply the following bug fix and send them upstream via the -mm
-tree, hopefully in this cycle.
+--llIrKcgUOe3dCx0c
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This eliminates a recently found meta-data corruption issue which
-happens under specific conditions during garbage collection.
+On Wed, May 16, 2012 at 03:20:21PM +0800, sonic.zhang@analog.com wrote:
+> From: Sonic Zhang <sonic.zhang@analog.com>
+>=20
+> Some fault i2c device may hold the sda/scl line and cause i2c driver
+> wait in the BUS busy loop. This patch breaks this potential dead
+> loop.
+>=20
+> Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
+>=20
+> git-svn-id: svn://localhost/svn/linux-kernel/trunk@9291 526b6c2d-f592-453=
+2-a319-5dd88ccb003d
 
-The bug is reproducible, and I confirmed that it fixes the issue in
-the latest and prior kernels.
+^
 
-Thanks,
-Ryusuke Konishi
---
-From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+> ---
+>  drivers/i2c/busses/i2c-bfin-twi.c |   14 ++++++++++++--
+>  1 files changed, 12 insertions(+), 2 deletions(-)
+>=20
+> diff --git a/drivers/i2c/busses/i2c-bfin-twi.c b/drivers/i2c/busses/i2c-b=
+fin-twi.c
+> index 376e331..4abaf59 100644
+> --- a/drivers/i2c/busses/i2c-bfin-twi.c
+> +++ b/drivers/i2c/busses/i2c-bfin-twi.c
+> @@ -294,6 +294,8 @@ static irqreturn_t bfin_twi_interrupt_entry(int irq, =
+void *dev_id)
+>  	return IRQ_HANDLED;
+>  }
+> =20
+> +#define BFIN_TWI_BUSY_TIMEOUT	1000
+> +
 
-A gc-inode is a pseudo inode used to buffer the blocks to be moved by
-garbage collection.
+Please use a unit like microseconds for the timeout.
 
-Block caches of gc-inodes must be cleared every time a garbage
-collection function (nilfs_clean_segments) completes.  Otherwise,
-stale blocks buffered in the caches may be wrongly reused in
-successive calls of the GC function.
+>  /*
+>   * One i2c master transfer
+>   */
+> @@ -303,12 +305,16 @@ static int bfin_twi_do_master_xfer(struct i2c_adapt=
+er *adap,
+>  	struct bfin_twi_iface *iface =3D adap->algo_data;
+>  	struct i2c_msg *pmsg;
+>  	int rc =3D 0;
+> +	unsigned int busy_timeout =3D BFIN_TWI_BUSY_TIMEOUT;
+> =20
+>  	if (!(read_CONTROL(iface) & TWI_ENA))
+>  		return -ENXIO;
+> =20
+> -	while (read_MASTER_STAT(iface) & BUSBUSY)
+> +	while (read_MASTER_STAT(iface) & BUSBUSY) {
+> +		if (--busy_timeout =3D=3D 0)
+> +			return -EBUSY;
+>  		yield();
+> +	}
+> =20
+>  	iface->pmsg =3D msgs;
+>  	iface->msg_num =3D num;
+> @@ -403,12 +409,16 @@ int bfin_twi_do_smbus_xfer(struct i2c_adapter *adap=
+, u16 addr,
+>  {
+>  	struct bfin_twi_iface *iface =3D adap->algo_data;
+>  	int rc =3D 0;
+> +	unsigned int busy_timeout =3D BFIN_TWI_BUSY_TIMEOUT;
+> =20
+>  	if (!(read_CONTROL(iface) & TWI_ENA))
+>  		return -ENXIO;
+> =20
+> -	while (read_MASTER_STAT(iface) & BUSBUSY)
+> +	while (read_MASTER_STAT(iface) & BUSBUSY) {
+> +		if (--busy_timeout =3D=3D 0)
+> +			return -EBUSY;
+>  		yield();
+> +	}
+> =20
+>  	iface->writeNum =3D 0;
+>  	iface->readNum =3D 0;
+> --=20
+> 1.7.0.4
+>=20
+>=20
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-i2c" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-For user files, this is not a problem because their gc-inodes are
-distinguished by a checkpoint number as well as an inode number.  They
-never buffer different blocks if either an inode number, a checkpoint
-number, or a block offset differs.
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
 
-However, gc-inodes of sufile, cpfile and DAT file can store different
-data for the same block offset.  Thus, the nilfs_clean_segments
-function can move incorrect block for these meta-data files if an old
-block is cached.  I found this is really causing meta-data corruption
-in nilfs.
+--llIrKcgUOe3dCx0c
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-This fixes the issue by ensuring cache clear of gc-inodes and resolves
-reported GC problems including checkpoint file corruption, b-tree
-corruption, and the following warning during GC.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-  nilfs_palloc_freev: entry number 307234 already freed.
-  ...
+iEYEARECAAYFAk/WHTQACgkQD27XaX1/VRs1wACfcn+k1UIyKSRNoMWTNnzxN8P4
+BEIAn2ejx1vwzuUa3T5Sng67LpnY5f2N
+=nT3+
+-----END PGP SIGNATURE-----
 
-Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Tested-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Cc: <stable@vger.kernel.org> [2.6.37+]
----
- fs/nilfs2/gcinode.c |    2 ++
- fs/nilfs2/segment.c |    2 ++
- 2 files changed, 4 insertions(+)
-
-diff --git a/fs/nilfs2/gcinode.c b/fs/nilfs2/gcinode.c
-index 08a07a2..57ceaf3 100644
---- a/fs/nilfs2/gcinode.c
-+++ b/fs/nilfs2/gcinode.c
-@@ -191,6 +191,8 @@ void nilfs_remove_all_gcinodes(struct the_nilfs *nilfs)
- 	while (!list_empty(head)) {
- 		ii = list_first_entry(head, struct nilfs_inode_info, i_dirty);
- 		list_del_init(&ii->i_dirty);
-+		truncate_inode_pages(&ii->vfs_inode.i_data, 0);
-+		nilfs_btnode_cache_clear(&ii->i_btnode_cache);
- 		iput(&ii->vfs_inode);
- 	}
- }
-diff --git a/fs/nilfs2/segment.c b/fs/nilfs2/segment.c
-index 0e72ad6..88e11fb 100644
---- a/fs/nilfs2/segment.c
-+++ b/fs/nilfs2/segment.c
-@@ -2309,6 +2309,8 @@ nilfs_remove_written_gcinodes(struct the_nilfs *nilfs, struct list_head *head)
- 		if (!test_bit(NILFS_I_UPDATED, &ii->i_state))
- 			continue;
- 		list_del_init(&ii->i_dirty);
-+		truncate_inode_pages(&ii->vfs_inode.i_data, 0);
-+		nilfs_btnode_cache_clear(&ii->i_btnode_cache);
- 		iput(&ii->vfs_inode);
- 	}
- }
--- 
-1.7.9.3
-
+--llIrKcgUOe3dCx0c--
