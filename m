@@ -1,225 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756017Ab2FKPnK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 11:43:10 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38130 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755533Ab2FKPnI convert rfc822-to-8bit (ORCPT
+	id S1755710Ab2FKP4U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 11:56:20 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:47261 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752479Ab2FKP4T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 11:43:08 -0400
-Message-ID: <1339429374.30462.54.camel@twins>
-Subject: Re: [PATCH] sched: Folding nohz load accounting more accurate
-From: Peter Zijlstra <peterz@infradead.org>
-To: Charles Wang <muming.wq@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Charles Wang <muming.wq@taobao.com>, Tao Ma <tm@tao.ma>
-Date: Mon, 11 Jun 2012 17:42:54 +0200
-In-Reply-To: <1339239295-18591-1-git-send-email-muming.wq@taobao.com>
-References: <1339239295-18591-1-git-send-email-muming.wq@taobao.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Mon, 11 Jun 2012 11:56:19 -0400
+Message-ID: <4FD6151E.8010405@wwwdotorg.org>
+Date: Mon, 11 Jun 2012 09:56:14 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Laxman Dewangan <ldewangan@nvidia.com>, "olof@lixom.net" <olof@lixom.net>,
+        Stephen Warren <swarren@nvidia.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH 2/2] ARM: dt: tegra: cardhu: register core regulator tps65911
+References: <4FBBC192.7030900@wwwdotorg.org> <4FBBC830.2060802@nvidia.com> <4FBBCA8F.3050903@wwwdotorg.org> <4FBBD33C.8020802@nvidia.com> <4FBBDA97.6000006@wwwdotorg.org> <4FBBDE06.5080806@nvidia.com> <4FC916AC.4060804@wwwdotorg.org> <4FD250DB.2090207@nvidia.com> <20120609030608.GF3924@opensource.wolfsonmicro.com> <4FD2CFE6.9070500@wwwdotorg.org> <20120611025717.GE28211@opensource.wolfsonmicro.com>
+In-Reply-To: <20120611025717.GE28211@opensource.wolfsonmicro.com>
+X-Enigmail-Version: 1.5pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-06-09 at 18:54 +0800, Charles Wang wrote:
-> After patch 453494c3d4 (sched: Fix nohz load accounting -- again!), we can fold
-> the idle into calc_load_tasks_idle between the last cpu load calculating and
-> calc_global_load calling. However problem still exits between the first cpu 
-> load calculating and the last cpu load calculating. Every time when we do load 
-> calculating, calc_load_tasks_idle will be added into calc_load_tasks, even if
-> the idle load is caused by calculated cpus. This problem is also described in
-> the following link:
+On 06/10/2012 08:57 PM, Mark Brown wrote:
+> On Fri, Jun 08, 2012 at 10:24:06PM -0600, Stephen Warren wrote:
+>> On 06/08/2012 09:06 PM, Mark Brown wrote:
 > 
-> https://lkml.org/lkml/2012/5/24/419
-
-Don't put links in like this, if its useful describe it. As it stands I
-think your paragraph and that link are trying to say the same.
-
-Also, since you found Tao's email, why didn't you CC him?
-
-I find it hard to understand either description.
-
-Are you in fact saying:
-
-
-cpu0		cpu1		cpu2
-
-calc_load_account_active()
-
-		calc_load_account_active()
-		-> idle
-	,----	   calc_load_account_idle()
-	|
-	|			calc_load_account_active()
-	`--------->		  calc_load_fold_idle()
-
-
-That when a cpu goes idle during the per-cpu active folding window
-it might happen that a cpu goes idle after its fold, but before a next
-cpu's fold, so that its calc_load_tasks_idle contribution gets folded
-back in. As per the above picture.
-
-Now _why_ is this a problem? 
-
-All this code tries to do is:
-
-  nr_active = 0;
-  for_each_possible_cpu(cpu)
-	nr_active += cpu_rq(cpu)->nr_running + cpu_rq(cpu)
-
-Without actually iterating all cpus because on large systems that's
-prohibitively expensive.
-
-So instead we do the calc_load_fold_active() thing on each individual
-cpu:
-
-  nr_active = this_rq->nr_running + this_rq->nr_uninterruptible;
-  delta = nr_active - this_rq->calc_load_active;
-  this_rq->calc_load_active = nr_active;
-
-  atomic_long_add(delta, &calc_load_tasks);
-
-The first does a straight sum, the second does a sum of deltas, both
-should give the same number.
-
-
-  \Sum_i x_i(t) = \Sum_i x_i(t) - x_i(t_0) | x_i(t_0) := 0
-                = \Sum_i { \Sum_j=1 x_i(t_j) - x_i(t_j-1) }
-
-The whole NO_HZ thing complicates this a little further in order to not
-have to wake an idle cpu. I'll try and do the above sum with the nohz
-thing in.. maybe something obvious falls out.
-
-Now all this is sampling.. we take a nr_active sample once every
-LOAD_FREQ (5s). Anything that happens inside this doesn't exist.
-
-So how is the above scenario different from the cpu going idle right
-before we take the sample?
-
-> This bug can be found in our work load. The average running processes number 
-> is about 15, but the load only shows about 4.
-
-Right,. still not really sure what the bug is though.
-
-> The patch provides a solution, by taking calculated load cpus' idle away from
->  real effective idle. 
-
--ENOPARSE
-
-> First adds a cpumask to record those cpus that alread 
-> calculated their load, and then adds a calc_unmask_cpu_load_idle to record 
-> thoses not marked cpus' go-idle load. Calc_unmask_cpu_load_idle takes place 
-> of calc_load_tasks_idle to be added into calc_load_tasks every 5HZ
-
-5 seconds
-
->  when cpu 
-> calculate its load. Go-idle load on those cpus which load alread has been calculated 
-> will only be added into calc_load_tasks_idle, no in calc_unmask_cpu_load_idle.
-
-I don't like the solution, keeping that mask is expensive. Also, I still
-don't understand what the problem is.
-
-A few nits on the patch below..
-
-> ---
->  include/linux/sched.h     |    1 +
->  kernel/sched/core.c       |   83 ++++++++++++++++++++++++++++++++++++++++++++-
->  kernel/time/timekeeping.c |    1 +
->  3 files changed, 84 insertions(+), 1 deletion(-)
+>>> If we're going to do this we need to update all the existing DT bindings
+>>> for drivers that use single node regulators like this.  Please also
+>>> change the name used for the property to regulator-compatible to make it
+>>> clear that the idea is the same as normal compatible properties.
 > 
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index 6029d8c..a2b8df2 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -145,6 +145,7 @@ extern unsigned long this_cpu_load(void);
->  
+>> I'm not sure of the logic behind naming the property
+>> "regulator-compatible"; the standard compatible property identifies that
+>> the node is of a particular type/class, whereas the regulator-id in the
+>> example Laxman quoted would indicate the specific identity/object. Those
+>> seem like different things.
 > 
->  extern void calc_global_load(unsigned long ticks);
-> +extern void prepare_idle_mask(unsigned long ticks);
->  extern void update_cpu_load_nohz(void);
->  
->  extern unsigned long get_parent_ip(unsigned long addr);
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index c46958e..bdfe3c2 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -2164,6 +2164,7 @@ unsigned long this_cpu_load(void)
->  /* Variables and functions for calc_load */
->  static atomic_long_t calc_load_tasks;
->  static unsigned long calc_load_update;
-> +static unsigned long idle_mask_update;
->  unsigned long avenrun[3];
->  EXPORT_SYMBOL(avenrun);
->  
-> @@ -2199,13 +2200,38 @@ calc_load(unsigned long load, unsigned long exp, unsigned long active)
->   */
->  static atomic_long_t calc_load_tasks_idle;
->  
-> +/* 
-> + * Those cpus whose load alread has been calculated in this LOAD_FREQ 
-> + * period will be masked.
-> + */
-> +struct cpumask  cpu_load_update_mask;
+> They're both doing the same thing - up until you get the second register
+> compatible device a compatible binding is referencing a specific thing
+> too.  It's just saying "handle this like an X".
 
-This should be a cpumask_var_t and allocated somewhere..
+I believe there's a big semantic difference here.
 
-> +
-> +/* 
-> + * Fold unmask cpus' idle load
-> + */
-> +static atomic_long_t calc_unmask_cpu_load_idle;
-> +
-> +
->  void calc_load_account_idle(struct rq *this_rq)
->  {
->  	long delta;
-> +	int cpu = smp_processor_id();
-> +
->  
->  	delta = calc_load_fold_active(this_rq);
->  	if (delta)
-> +	{
+For every node with compatible="foo", you find a driver for "foo" and
+instantiate it. This will work for any number of nodes with that
+compatible value. The nodes are completely independent and there are no
+particular requirements re: what the parent of those nodes are, beyond
+being a bus of an appropriate type such as any old I2C bus.
 
-wrong bracket placement
+However, with the regulator identifiers, it's almost exactly the opposite:
 
->  		atomic_long_add(delta, &calc_load_tasks_idle);
-> +		/*
-> +		 * calc_unmask_cpu_load_idle is only used between the first cpu load accounting
-> +		 * and the last cpu load accounting in every LOAD_FREQ period, and records idle load on
-> +		 * those unmask cpus.
-> +		 */
-> +		if (!cpumask_empty(&cpu_load_update_mask) && !cpumask_test_cpu(cpu, &cpu_load_update_mask))
-> +		{
-> +			atomic_long_add(delta, &calc_unmask_cpu_load_idle);
+* There's no generic "search all busses in the system for this regulator
+type", but rather once a particular type of regulator chip gets
+instantiated, that chip's HW design defines which specific regulators it
+contains, and nodes for those regulators may exist as children of the
+regulator chip itself, and nowhere else. The individual driver is then
+going to look for child nodes with specific
+regulator-id/regulator-compatible values, not some arbitrary centralized
+table of possible values.
 
-lines are too long, brackets are placed wrong and brackets are
-superfluous.
+* Each regulator-id/regulator-compatible value identifies a specific
+individual regulator within the chip that contains it. There is only one
+of each named regulator, since that's what exists in HW. So, this is
+about configuring HW that we know exists (because it's part of the HW
+represented by the parent node for the chip) rather than defining which
+HW is present on unprobeable busses, as the device-level compatible does.
 
-
-> +		}
-> +       }
->  }
->  
-
-and many more similar nits.
-
-> diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-> index 6e46cac..afbc06a 100644
-> --- a/kernel/time/timekeeping.c
-> +++ b/kernel/time/timekeeping.c
-> @@ -1222,6 +1222,7 @@ void do_timer(unsigned long ticks)
->  	jiffies_64 += ticks;
->  	update_wall_time();
->  	calc_global_load(ticks);
-> +	prepare_idle_mask(ticks);
-
-Why not add this to calc_global_load() ? 
-
->  }
->  
->  /**
-
+Given those differences, I really think that using "compatible" in the
+name of the property is just going to cause confusion.
