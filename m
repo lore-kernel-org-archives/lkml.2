@@ -1,63 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751373Ab2FKVSt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 17:18:49 -0400
-Received: from mailout-eu.gmx.com ([213.165.64.42]:42686 "HELO
-	mailout-eu.gmx.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750854Ab2FKVSs (ORCPT
+	id S1751511Ab2FKVTp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 17:19:45 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:61734 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750988Ab2FKVTo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 17:18:48 -0400
-X-Authenticated: #50610217
-X-Provags-ID: V01U2FsdGVkX196jSAojTB6wdDk8dneKAwDxVMsPtqvdds11WJqws
-	tNQ461eg4T41KP
-Date: Mon, 11 Jun 2012 23:18:42 +0200
-From: Martin Nyhus <martin.nyhus@gmx.com>
-To: Ben Skeggs <bskeggs@redhat.com>
-Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: [bisected] nouveau: "Failed to idle channel x" after resume
-Message-ID: <20120611231842.221bd738@europa>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 11 Jun 2012 17:19:44 -0400
+Message-ID: <4FD660EC.2010608@gmail.com>
+Date: Mon, 11 Jun 2012 17:19:40 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Christoph Lameter <cl@linux.com>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, kosaki.motohiro@gmail.com
+Subject: Re: [PATCH] mm: fix protection column misplacing in /proc/zoneinfo
+References: <1339422650-9798-1-git-send-email-kosaki.motohiro@gmail.com> <alpine.DEB.2.00.1206110856180.31180@router.home> <4FD60127.1000805@jp.fujitsu.com> <alpine.DEB.2.00.1206111336370.4552@chino.kir.corp.google.com> <CAHGf_=rbss0RsoFn7NZ7oFCpCZuEYkPDXaHSW4KHg=Vu8703xA@mail.gmail.com> <alpine.DEB.2.00.1206111602540.9391@router.home>
+In-Reply-To: <alpine.DEB.2.00.1206111602540.9391@router.home>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-after resuming from suspend nouveau starts writing Failed to idle
-channel x (where x is 2 or 3) to the log and X appears to stop and then
-restart only to stop again. Starting Firefox after resuming triggers the
-bugs every time, and bisecting leads to 03bd6efa ("drm/nv50/fifo: use
-hardware channel kickoff functionality").
+(6/11/12 5:04 PM), Christoph Lameter wrote:
+> On Mon, 11 Jun 2012, KOSAKI Motohiro wrote:
+>
+>> Several years, some one added ZVC stat. therefore, hardcoded line
+>
+> You are talking to the "some one".... The aim at that point was not the
+> beauty of the output but the scaling of the counter operations. There was
+> no intention in placing things a certain way. I'd be fine with changes as
+> long as we are sure that they do not break anything.
 
-$ grep -i nouveau .config
-CONFIG_DRM_NOUVEAU=y
-CONFIG_DRM_NOUVEAU_BACKLIGHT=y
-# CONFIG_DRM_NOUVEAU_DEBUG is not set
+Maybe my english was poor. I didn't talk about your change at last mail. I
+talked about some new counters like nr_anon_transparent_hugepages. Hardcoded
+linenuber assumption was break multiple times already. therefore, I don't
+think line number change causes application breakage.
 
-Relevant part of the log (running v3.5-rc2-15-g4e3c8a1):
-[   79.040710] PM: resume of devices complete after 1952.375 msecs
-[   79.041735] PM: Finishing wakeup.
-[   79.064052] Restarting tasks ... done.
-[   79.064064] video LNXVIDEO:00: Restoring backlight state
-[   79.645442] tg3 0000:09:00.0: irq 47 for MSI/MSI-X
-[   79.707851] IPv6: ADDRCONF(NETDEV_UP): p3p1: link is not ready
-[   81.288510] tg3 0000:09:00.0: p3p1: Link is up at 100 Mbps, full duplex
-[   81.288510] tg3 0000:09:00.0: p3p1: Flow control is on for TX and on for RX
-[   81.289824] IPv6: ADDRCONF(NETDEV_CHANGE): p3p1: link becomes ready
-[  376.646417] [drm] nouveau 0000:01:00.0: PFIFO: channel 4 unload timeout
-[  378.649010] [sched_delayed] sched: RT throttling activated
-[  384.677024] [drm] nouveau 0000:01:00.0: Failed to idle channel 2.
-[  384.678012] [drm] nouveau 0000:01:00.0: PFIFO: channel 2 unload timeout
-[  389.685024] [drm] nouveau 0000:01:00.0: Failed to idle channel 3.
-[  389.686012] [drm] nouveau 0000:01:00.0: PFIFO: channel 3 unload timeout
-[  401.534024] [drm] nouveau 0000:01:00.0: Failed to idle channel 2.
-[  401.535012] [drm] nouveau 0000:01:00.0: PFIFO: channel 2 unload timeout
-...
-[  456.688024] [drm] nouveau 0000:01:00.0: Failed to idle channel 3.
-[  456.689013] [drm] nouveau 0000:01:00.0: PFIFO: channel 3 unload timeout
-[  468.372025] [drm] nouveau 0000:01:00.0: Failed to idle channel 2.
-[  468.373013] [drm] nouveau 0000:01:00.0: PFIFO: channel 2 unload timeout
