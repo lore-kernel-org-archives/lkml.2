@@ -1,133 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753822Ab2FKNkR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 09:40:17 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:57386 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752364Ab2FKNkP (ORCPT
+	id S1753651Ab2FKNob (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 09:44:31 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:61213 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751842Ab2FKNo3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 09:40:15 -0400
-Date: Mon, 11 Jun 2012 06:39:53 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Mike Galbraith <mgalbraith@novell.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: rcu: endless stalls
-Message-ID: <20120611133953.GI2425@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1339409176.7350.26.camel@marge.simpson.net>
+	Mon, 11 Jun 2012 09:44:29 -0400
+Date: Mon, 11 Jun 2012 15:44:26 +0200
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, asharma@fb.com, mingo@elte.hu
+Subject: [PATCH] perf/x86: fix broken LBR fixup code
+Message-ID: <20120611134426.GA7542@quad>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1339409176.7350.26.camel@marge.simpson.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12061113-7606-0000-0000-0000010652BA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 11, 2012 at 12:06:16PM +0200, Mike Galbraith wrote:
-> Greetings,
-> 
-> I received a report of a 48 core UV box hitting a gripe, taking longer
-> than timeout to emit same, so box griped endlessly, forcing reboot.
 
-So it took minutes to print an RCU CPU stall warning?  On only 48 CPUs?
+I noticed that the LBR fixups were not working anymore
+on programs where they used to. I tracked this down to
+a recent change to copy_from_user_nmi().
 
-If so, yow!!!
+commit db0dc75d6403b6663c0eab4c6ccb672eb9b2ed72
+Author: Arun Sharma <asharma@fb.com>
+Date:   Fri Apr 20 15:41:36 2012 -0700
 
-My guess is that rcu_cpu_stall_suppress must be manipulated atomically
-for this to work reliably, for example, using xchg().
+    perf/x86: Check user address explicitly in copy_from_user_nmi()
+    
+This commit added a call to __range_not_ok() to the
+copy_from_user_nmi() routine. The problem is that the logic
+of the test must be reversed. __range_not_ok() returns 0 if the
+range is VALID. We want to return early from copy_from_user_nmi()
+if the range is NOT valid.
 
-							Thanx, Paul
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
 
-> The below might prevent that.. and bust other stuff for free :)
-> 
-> rcu: one gripe at a time please
-> 
-> Not-compiled-by:
-> Not-signed-off-by:
-> Not-etc-by:
-> 
-> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> index 0da7b88..6462056d6 100644
-> --- a/kernel/rcutree.c
-> +++ b/kernel/rcutree.c
-> @@ -818,10 +818,25 @@ static void print_cpu_stall(struct rcu_state *rsp)
->  	set_need_resched();  /* kick ourselves to get things going. */
->  }
-> 
-> +/**
-> + * rcu_cpu_stall_reset - prevent further stall warnings in current grace period
-> + *
-> + * Set the stall-warning timeout way off into the future, thus preventing
-> + * any RCU CPU stall-warning messages from appearing in the current set of
-> + * RCU grace periods.
-> + *
-> + * The caller must disable hard irqs.
-> + */
-> +void rcu_cpu_stall_reset(void)
-> +{
-> +	rcu_sched_state.jiffies_stall = jiffies + ULONG_MAX / 2;
-> +	rcu_bh_state.jiffies_stall = jiffies + ULONG_MAX / 2;
-> +	rcu_preempt_stall_reset();
-> +}
-> +
->  static void check_cpu_stall(struct rcu_state *rsp, struct rcu_data *rdp)
->  {
-> -	unsigned long j;
-> -	unsigned long js;
-> +	unsigned long j, js, flags;
->  	struct rcu_node *rnp;
-> 
->  	if (rcu_cpu_stall_suppress)
-> @@ -832,13 +847,23 @@ static void check_cpu_stall(struct rcu_state *rsp, struct rcu_data *rdp)
->  	if ((ACCESS_ONCE(rnp->qsmask) & rdp->grpmask) && ULONG_CMP_GE(j, js)) {
-> 
->  		/* We haven't checked in, so go dump stack. */
-> +		rcu_cpu_stall_suppress = 1;
->  		print_cpu_stall(rsp);
-> +		local_irq_save(flags);
-> +		rcu_cpu_stall_reset();
-> +		local_irq_restore(flags);
-> +		rcu_cpu_stall_suppress = 0;
-> 
->  	} else if (rcu_gp_in_progress(rsp) &&
->  		   ULONG_CMP_GE(j, js + RCU_STALL_RAT_DELAY)) {
-> 
->  		/* They had a few time units to dump stack, so complain. */
-> +		rcu_cpu_stall_suppress = 1;
->  		print_other_cpu_stall(rsp);
-> +		local_irq_save(flags);
-> +		rcu_cpu_stall_reset();
-> +		local_irq_restore(flags);
-> +		rcu_cpu_stall_suppress = 0;
->  	}
->  }
-> 
-> @@ -848,22 +873,6 @@ static int rcu_panic(struct notifier_block *this, unsigned long ev, void *ptr)
->  	return NOTIFY_DONE;
->  }
-> 
-> -/**
-> - * rcu_cpu_stall_reset - prevent further stall warnings in current grace period
-> - *
-> - * Set the stall-warning timeout way off into the future, thus preventing
-> - * any RCU CPU stall-warning messages from appearing in the current set of
-> - * RCU grace periods.
-> - *
-> - * The caller must disable hard irqs.
-> - */
-> -void rcu_cpu_stall_reset(void)
-> -{
-> -	rcu_sched_state.jiffies_stall = jiffies + ULONG_MAX / 2;
-> -	rcu_bh_state.jiffies_stall = jiffies + ULONG_MAX / 2;
-> -	rcu_preempt_stall_reset();
-> -}
-> -
->  static struct notifier_block rcu_panic_block = {
->  	.notifier_call = rcu_panic,
->  };
-> 
-> 
-
+diff --git a/arch/x86/lib/usercopy.c b/arch/x86/lib/usercopy.c
+index 677b1ed..4f74d94 100644
+--- a/arch/x86/lib/usercopy.c
++++ b/arch/x86/lib/usercopy.c
+@@ -22,7 +22,7 @@ copy_from_user_nmi(void *to, const void __user *from, unsigned long n)
+ 	void *map;
+ 	int ret;
+ 
+-	if (__range_not_ok(from, n, TASK_SIZE) == 0)
++	if (__range_not_ok(from, n, TASK_SIZE))
+ 		return len;
+ 
+ 	do {
