@@ -1,29 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753539Ab2FKDGc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jun 2012 23:06:32 -0400
-Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:19896 "EHLO
-	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752373Ab2FKDGb (ORCPT
+	id S1753490Ab2FKDNp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jun 2012 23:13:45 -0400
+Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:10860 "EHLO
+	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752807Ab2FKDNo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jun 2012 23:06:31 -0400
-Message-ID: <1339383989.3025.2.camel@lorien2>
-Subject: Re: [PATCH v2] leds: fix led_brightness_set when soft-blinking
+	Sun, 10 Jun 2012 23:13:44 -0400
+Message-ID: <1339384421.3025.8.camel@lorien2>
+Subject: [PATCH] x86: kernel/cpu/perf_event.c simple_strtoul cleanup
 From: Shuah Khan <shuahkhan@gmail.com>
 Reply-To: shuahkhan@gmail.com
-To: Bryan Wu <bryan.wu@canonical.com>
-Cc: shuahkhan@gmail.com, Fabio Baltieri <fabio.baltieri@gmail.com>,
-        linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Richard Purdie <rpurdie@rpsys.net>
-Date: Sun, 10 Jun 2012 21:06:29 -0600
-In-Reply-To: <CAK5ve-L7UWAMErdVBLXGtJr7esQJ=0TCQfD+pyDbA+qdBVNuqQ@mail.gmail.com>
-References: <20120606070008.GA1494@gmail.com>
-	 <1338967142-6249-1-git-send-email-fabio.baltieri@gmail.com>
-	 <CAK5ve-+gv=83MLAttiq8NYK0d_242UWRjJZftyKHONqMkxWTxQ@mail.gmail.com>
-	 <20120606111007.GA1311@gmail.com>
-	 <CAK5ve-LrnZQqAi2tamFfdN1_upjGQ=TYgpU-xLXnL+8xRv=+Xw@mail.gmail.com>
-	 <20120606191149.GA1376@gmail.com> <1339014612.2763.98.camel@lorien2>
-	 <CAK5ve-L7UWAMErdVBLXGtJr7esQJ=0TCQfD+pyDbA+qdBVNuqQ@mail.gmail.com>
+To: tglx@linutronix.de, hpa@zytor.com
+Cc: shuahkhan@gmail.com, x86@kernel.org, LKML <linux-kernel@vger.kernel.org>
+Date: Sun, 10 Jun 2012 21:13:41 -0600
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
@@ -32,21 +22,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-06-07 at 20:58 +0800, Bryan Wu wrote:
+Change set_attr_rdpmc() to call kstrtoul() instead of calling obsoleted
+simple_strtoul().
 
-> 
-> Hi Fabio, thanks for updating this. I've added use the v3 replace the
-> old one in my for-next and devel branches
-> 
-> Shuah, Thanks for reviewing, if you wanna try this, just grab patches
-> from devel branch.
-> 
+Signed-off-by: Shuah Khan <shuahkhan@gmail.com>
+---
+ arch/x86/kernel/cpu/perf_event.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-Bryan,
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index e049d6d..2e51c82f 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1648,7 +1648,12 @@ static ssize_t set_attr_rdpmc(struct device *cdev,
+ 			      struct device_attribute *attr,
+ 			      const char *buf, size_t count)
+ {
+-	unsigned long val = simple_strtoul(buf, NULL, 0);
++	unsigned long val;
++	ssize_t ret;
++
++	ret = kstrtoul(buf, 0, &val);
++	if (ret)
++		return ret;
+ 
+ 	if (!!val != !!x86_pmu.attr_rdpmc) {
+ 		x86_pmu.attr_rdpmc = !!val;
+-- 
+1.7.9.5
 
-Did some testing on your devel branch. Did back to back timer and
-oneshot trigger activations and didn't see any problems. Looks good to
-me.
 
--- Shuah
 
