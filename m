@@ -1,81 +1,294 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753671Ab2FKNS1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 09:18:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49647 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751451Ab2FKNSX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 09:18:23 -0400
-Date: Mon, 11 Jun 2012 09:18:04 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: akpm@linux-foundation.org, mm-commits@vger.kernel.org, joe@perches.com,
-        mingo@elte.hu, nzimmer@sgi.com, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: + nmi-watchdog-quiet-down-the-boot-messages.patch added to -mm
- tree
-Message-ID: <20120611131804.GX32472@redhat.com>
-References: <20120608213709.B320BA022F@akpm.mtv.corp.google.com>
- <20120611084744.GH31556@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120611084744.GH31556@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753938Ab2FKNSf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 09:18:35 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:50475 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753737Ab2FKNSc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 09:18:32 -0400
+From: Matthew Shaw <shaw500@gmail.com>
+To: davem@emloft.net
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Matthew Shaw <shaw500@gmail.com>
+Subject: [PATCH] net: socket: fixed coding style issues.
+Date: Mon, 11 Jun 2012 14:17:36 +0100
+Message-Id: <1339420656-11512-1-git-send-email-shaw500@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 11, 2012 at 10:47:44AM +0200, Ingo Molnar wrote:
-> >     NMI watchdog enabled, takes one hw-pmu counter.
-> >     Booting Node   0, Processors  #1
-> >     NMI watchdog enabled, takes one hw-pmu counter.
-> >      #2
-> >     NMI watchdog enabled, takes one hw-pmu counter.
-> >      #3 Ok.
-> >     NMI watchdog enabled, takes one hw-pmu counter.
-> >     Brought up 4 CPUs
-> >     Total of 4 processors activated (22607.24 BogoMIPS).
-> 
-> the problem really was that it didn't print which CPU it 
-> referred to - it just repeated the same message over and over 
-> again.
-> 
-> If it said:
-> 
->      NMI watchdog enabled on CPU#0, takes one hw-pmu counter.
-> 
-> it would be far less confusing.
+Fixed an instance where brances are used but not needed, and some lines
+in the comments and code that exceed the 80 character limit.
 
-Sure.  The problem SGI has with 4096 cpus is the volume.  Specifying which
-cpu the message belongs to, I do not think helps with this problem.
+Signed-off-by: Matthew Shaw <shaw500@gmail.com>
+---
+ net/socket.c |  137 ++++++++++++++++++++++++++++++++--------------------------
+ 1 file changed, 75 insertions(+), 62 deletions(-)
 
-> 
-> This:
-> 
-> > After the change, it is simplified to:
-> > 
-> >     ..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
-> >     CPU0: Intel(R) Core(TM)2 Quad CPU    Q9550  @ 2.83GHz stepping 0a
-> >     Performance Events: PEBS fmt0+, Core2 events, Intel PMU driver.
-> >     ... version:                2
-> >     ... bit width:              40
-> >     ... generic registers:      2
-> >     ... value mask:             000000ffffffffff
-> >     ... max period:             000000007fffffff
-> >     ... fixed-purpose events:   3
-> >     ... event mask:             0000000700000003
-> >     NMI watchdog enabled, takes one hw-pmu counter.
-> >     Booting Node   0, Processors  #1 #2 #3 Ok.
-> >     Brought up 4 CPUs
-> 
-> Is fine too but should be clarified to something like:
-> 
->      NMI watchdog enabled on all CPUs, permanently consumes one hw-PMU counter
-> 
-> (Please note the capitalization of 'PMU' as well.)
+diff --git a/net/socket.c b/net/socket.c
+index 6e0ccc0..2133040 100644
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -8,48 +8,48 @@
+  *		Fred N. van Kempen, <waltje@uWalt.NL.Mugnet.ORG>
+  *
+  * Fixes:
+- *		Anonymous	:	NOTSOCK/BADF cleanup. Error fix in
+- *					shutdown()
+- *		Alan Cox	:	verify_area() fixes
+- *		Alan Cox	:	Removed DDI
+- *		Jonathan Kamens	:	SOCK_DGRAM reconnect bug
+- *		Alan Cox	:	Moved a load of checks to the very
+- *					top level.
+- *		Alan Cox	:	Move address structures to/from user
+- *					mode above the protocol layers.
+- *		Rob Janssen	:	Allow 0 length sends.
+- *		Alan Cox	:	Asynchronous I/O support (cribbed from the
+- *					tty drivers).
+- *		Niibe Yutaka	:	Asynchronous I/O for writes (4.4BSD style)
+- *		Jeff Uphoff	:	Made max number of sockets command-line
+- *					configurable.
+- *		Matti Aarnio	:	Made the number of sockets dynamic,
+- *					to be allocated when needed, and mr.
+- *					Uphoff's max is used as max to be
+- *					allowed to allocate.
+- *		Linus		:	Argh. removed all the socket allocation
+- *					altogether: it's in the inode now.
+- *		Alan Cox	:	Made sock_alloc()/sock_release() public
+- *					for NetROM and future kernel nfsd type
+- *					stuff.
+- *		Alan Cox	:	sendmsg/recvmsg basics.
+- *		Tom Dyas	:	Export net symbols.
+- *		Marcin Dalecki	:	Fixed problems with CONFIG_NET="n".
+- *		Alan Cox	:	Added thread locking to sys_* calls
+- *					for sockets. May have errors at the
+- *					moment.
+- *		Kevin Buhr	:	Fixed the dumb errors in the above.
+- *		Andi Kleen	:	Some small cleanups, optimizations,
+- *					and fixed a copy_from_user() bug.
+- *		Tigran Aivazian	:	sys_send(args) calls sys_sendto(args, NULL, 0)
+- *		Tigran Aivazian	:	Made listen(2) backlog sanity checks
+- *					protocol-independent
++ *	Anonymous	:	NOTSOCK/BADF cleanup. Error fix in
++ *				shutdown()
++ *	Alan Cox	:	verify_area() fixes
++ *	Alan Cox	:	Removed DDI
++ *	Jonathan Kamens	:	SOCK_DGRAM reconnect bug
++ *	Alan Cox	:	Moved a load of checks to the very
++ *				top level.
++ *	Alan Cox	:	Move address structures to/from user
++ *				mode above the protocol layers.
++ *	Rob Janssen	:	Allow 0 length sends.
++ *	Alan Cox	:	Asynchronous I/O support (cribbed from the
++ *				tty drivers).
++ *	Niibe Yutaka	:	Asynchronous I/O for writes (4.4BSD style)
++ *	Jeff Uphoff	:	Made max number of sockets command-line
++ *				configurable.
++ *	Matti Aarnio	:	Made the number of sockets dynamic,
++ *				to be allocated when needed, and mr.
++ *				Uphoff's max is used as max to be
++ *				allowed to allocate.
++ *	Linus		:	Argh. removed all the socket allocation
++ *				altogether: it's in the inode now.
++ *	Alan Cox	:	Made sock_alloc()/sock_release() public
++ *				for NetROM and future kernel nfsd type
++ *				stuff.
++ *	Alan Cox	:	sendmsg/recvmsg basics.
++ *	Tom Dyas	:	Export net symbols.
++ *	Marcin Dalecki	:	Fixed problems with CONFIG_NET="n".
++ *	Alan Cox	:	Added thread locking to sys_* calls
++ *				for sockets. May have errors at the
++ *				moment.
++ *	Kevin Buhr	:	Fixed the dumb errors in the above.
++ *	Andi Kleen	:	Some small cleanups, optimizations,
++ *				and fixed a copy_from_user() bug.
++ *	Tigran Aivazian	:	sys_send(args) calls sys_sendto(args, NULL, 0)
++ *	Tigran Aivazian	:	Made listen(2) backlog sanity checks
++ *				protocol-independent
+  *
+  *
+- *		This program is free software; you can redistribute it and/or
+- *		modify it under the terms of the GNU General Public License
+- *		as published by the Free Software Foundation; either version
+- *		2 of the License, or (at your option) any later version.
++ *	This program is free software; you can redistribute it and/or
++ *	modify it under the terms of the GNU General Public License
++ *	as published by the Free Software Foundation; either version
++ *	2 of the License, or (at your option) any later version.
+  *
+  *
+  *	This module is effectively the top level interface to the BSD socket
+@@ -128,8 +128,9 @@ static ssize_t sock_splice_read(struct file *file, loff_t *ppos,
+ 				unsigned int flags);
+ 
+ /*
+- *	Socket files have a set of 'special' operations as well as the generic file ones. These don't appear
+- *	in the operation structures but are done directly via the socketcall() multiplexor.
++ *	Socket files have a set of 'special' operations as well as the generic
++ *      file ones. These don't appear in the operation structures but are done
++ *      directly via the socketcall() multiplexor.
+  */
+ 
+ static const struct file_operations socket_file_ops = {
+@@ -181,7 +182,8 @@ static DEFINE_PER_CPU(int, sockets_in_use);
+  *	invalid addresses -EFAULT is returned. On a success 0 is returned.
+  */
+ 
+-int move_addr_to_kernel(void __user *uaddr, int ulen, struct sockaddr_storage *kaddr)
++int move_addr_to_kernel(void __user *uaddr, int ulen,
++			struct sockaddr_storage *kaddr)
+ {
+ 	if (ulen < 0 || ulen > sizeof(struct sockaddr_storage))
+ 		return -EINVAL;
+@@ -584,7 +586,8 @@ int sock_sendmsg(struct socket *sock, struct msghdr *msg, size_t size)
+ }
+ EXPORT_SYMBOL(sock_sendmsg);
+ 
+-static int sock_sendmsg_nosec(struct socket *sock, struct msghdr *msg, size_t size)
++static int sock_sendmsg_nosec(struct socket *sock, struct msghdr *msg,
++			      size_t size)
+ {
+ 	struct kiocb iocb;
+ 	struct sock_iocb siocb;
+@@ -711,7 +714,8 @@ void __sock_recv_ts_and_drops(struct msghdr *msg, struct sock *sk,
+ EXPORT_SYMBOL_GPL(__sock_recv_ts_and_drops);
+ 
+ static inline int __sock_recvmsg_nosec(struct kiocb *iocb, struct socket *sock,
+-				       struct msghdr *msg, size_t size, int flags)
++				       struct msghdr *msg, size_t size,
++				       int flags)
+ {
+ 	struct sock_iocb *si = kiocb_to_siocb(iocb);
+ 
+@@ -1158,7 +1162,9 @@ static int sock_fasync(int fd, struct file *filp, int on)
+ 	return 0;
+ }
+ 
+-/* This function may be called only under socket lock or callback_lock or rcu_lock */
++/* This function may be called only under socket lock or callback_lock
++ * or rcu_lock.
++ */
+ 
+ int sock_wake_async(struct socket *sock, int how, int band)
+ {
+@@ -1229,8 +1235,8 @@ int __sock_create(struct net *net, int family, int type, int protocol,
+ 
+ 	/*
+ 	 *	Allocate the socket and allow the family to set things up. if
+-	 *	the protocol is 0, the family is instructed to select an appropriate
+-	 *	default.
++	 *	the protocol is 0, the family is instructed to select an
++	 *	appropriate default.
+ 	 */
+ 	sock = sock_alloc();
+ 	if (!sock) {
+@@ -1308,7 +1314,8 @@ EXPORT_SYMBOL(__sock_create);
+ 
+ int sock_create(int family, int type, int protocol, struct socket **res)
+ {
+-	return __sock_create(current->nsproxy->net_ns, family, type, protocol, res, 0);
++	return __sock_create(current->nsproxy->net_ns, family, type, protocol,
++			     res, 0);
+ }
+ EXPORT_SYMBOL(sock_create);
+ 
+@@ -1928,9 +1935,9 @@ static int __sys_sendmsg(struct socket *sock, struct msghdr __user *msg,
+ 	}
+ 
+ 	/* This will also move the address data into kernel space */
+-	if (MSG_CMSG_COMPAT & flags) {
++	if (MSG_CMSG_COMPAT & flags)
+ 		err = verify_compat_iovec(msg_sys, iov, &address, VERIFY_READ);
+-	} else
++	else
+ 		err = verify_iovec(msg_sys, iov, &address, VERIFY_READ);
+ 	if (err < 0)
+ 		goto out_freeiov;
+@@ -1957,9 +1964,9 @@ static int __sys_sendmsg(struct socket *sock, struct msghdr __user *msg,
+ 		}
+ 		err = -EFAULT;
+ 		/*
+-		 * Careful! Before this, msg_sys->msg_control contains a user pointer.
+-		 * Afterwards, it will be a kernel pointer. Thus the compiler-assisted
+-		 * checking falls down on this.
++		 * Careful! Before this, msg_sys->msg_control contains a user
++		 * pointer. Afterwards, it will be a kernel pointer. Thus the
++		 * compiler-assisted checking falls down on this.
+ 		 */
+ 		if (copy_from_user(ctl_buf,
+ 				   (void __user __force *)msg_sys->msg_control,
+@@ -2010,7 +2017,8 @@ out:
+  *	BSD sendmsg interface
+  */
+ 
+-SYSCALL_DEFINE3(sendmsg, int, fd, struct msghdr __user *, msg, unsigned int, flags)
++SYSCALL_DEFINE3(sendmsg, int, fd, struct msghdr __user *, msg, unsigned int,
++		flags)
+ {
+ 	int fput_needed, err;
+ 	struct msghdr msg_sys;
+@@ -2056,7 +2064,8 @@ int __sys_sendmmsg(int fd, struct mmsghdr __user *mmsg, unsigned int vlen,
+ 
+ 	while (datagrams < vlen) {
+ 		if (MSG_CMSG_COMPAT & flags) {
+-			err = __sys_sendmsg(sock, (struct msghdr __user *)compat_entry,
++			err = __sys_sendmsg(sock,
++					   (struct msghdr __user *)compat_entry,
+ 					    &msg_sys, flags, &used_address);
+ 			if (err < 0)
+ 				break;
+@@ -2132,9 +2141,9 @@ static int __sys_recvmsg(struct socket *sock, struct msghdr __user *msg,
+ 
+ 	uaddr = (__force void __user *)msg_sys->msg_name;
+ 	uaddr_len = COMPAT_NAMELEN(msg);
+-	if (MSG_CMSG_COMPAT & flags) {
++	if (MSG_CMSG_COMPAT & flags)
+ 		err = verify_compat_iovec(msg_sys, iov, &addr, VERIFY_WRITE);
+-	} else
++	else
+ 		err = verify_iovec(msg_sys, iov, &addr, VERIFY_WRITE);
+ 	if (err < 0)
+ 		goto out_freeiov;
+@@ -2661,13 +2670,15 @@ static int dev_ifconf(struct net *net, struct compat_ifconf __user *uifc32)
+ 		ifc.ifc_req = NULL;
+ 		uifc = compat_alloc_user_space(sizeof(struct ifconf));
+ 	} else {
+-		size_t len = ((ifc32.ifc_len / sizeof(struct compat_ifreq)) + 1) *
++		size_t len = ((ifc32.ifc_len /
++			sizeof(struct compat_ifreq)) + 1) *
+ 			sizeof(struct ifreq);
+ 		uifc = compat_alloc_user_space(sizeof(struct ifconf) + len);
+ 		ifc.ifc_len = len;
+ 		ifr = ifc.ifc_req = (void __user *)(uifc + 1);
+ 		ifr32 = compat_ptr(ifc32.ifcbuf);
+-		for (i = 0; i < ifc32.ifc_len; i += sizeof(struct compat_ifreq)) {
++		for (i = 0; i < ifc32.ifc_len;
++		     i += sizeof(struct compat_ifreq)) {
+ 			if (copy_in_user(ifr, ifr32, sizeof(struct compat_ifreq)))
+ 				return -EFAULT;
+ 			ifr++;
+@@ -2832,7 +2843,8 @@ static int ethtool_ioctl(struct net *net, struct compat_ifreq __user *ifr32)
+ 	return 0;
+ }
+ 
+-static int compat_siocwandev(struct net *net, struct compat_ifreq __user *uifr32)
++static int compat_siocwandev(struct net *net,
++			     struct compat_ifreq __user *uifr32)
+ {
+ 	void __user *uptr;
+ 	compat_uptr_t uptr32;
+@@ -3000,7 +3012,8 @@ static int compat_sioc_ifmap(struct net *net, unsigned int cmd,
+ 	return err;
+ }
+ 
+-static int compat_siocshwtstamp(struct net *net, struct compat_ifreq __user *uifr32)
++static int compat_siocshwtstamp(struct net *net,
++				struct compat_ifreq __user *uifr32)
+ {
+ 	void __user *uptr;
+ 	compat_uptr_t uptr32;
+-- 
+1.7.9.5
 
-Ok.  I can modify that.
-
-Cheers,
-Don
