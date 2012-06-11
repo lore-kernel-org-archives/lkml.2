@@ -1,57 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756003Ab2FKP2o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 11:28:44 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:53467 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755706Ab2FKP2l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 11:28:41 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH V2 0/6] Bridging PCI to amba
-Date: Mon, 11 Jun 2012 15:28:22 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: Alessandro Rubini <rubini@gnudd.com>, linux-kernel@vger.kernel.org,
-        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
-        Alan Cox <alan@linux.intel.com>, Russell King <linux@arm.linux.org.uk>,
-        x86@kernel.org, "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org,
-        linux-arch@vger.kernel.org
-References: <cover.1338220457.git.rubini@gnudd.com> <CACRpkdbPtR5MDjd1YZ5GhOdp61HQe2PJusudNPOhDQHUAt1kJA@mail.gmail.com>
-In-Reply-To: <CACRpkdbPtR5MDjd1YZ5GhOdp61HQe2PJusudNPOhDQHUAt1kJA@mail.gmail.com>
+	id S1755894Ab2FKP10 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 11:27:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25122 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755817Ab2FKP1X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 11:27:23 -0400
+From: Alex Williamson <alex.williamson@redhat.com>
+Subject: [PATCH v3 0/5] PCI: Prep for VFIO and IOMMU Groups
+To: bhelgaas@google.com, linux-pci@vger.kernel.org
+Cc: benh@kernel.crashing.org, aik@ozlabs.ru, david@gibson.dropbear.id.au,
+        joerg.roedel@amd.com, dwmw2@infradead.org, konrad.wilk@oracle.com,
+        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        ddutile@redhat.com, alex.williamson@redhat.com
+Date: Mon, 11 Jun 2012 09:26:42 -0600
+Message-ID: <20120611152021.25959.71601.stgit@bling.home>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201206111528.23034.arnd@arndb.de>
-X-Provags-ID: V02:K0:KybUt5ODjUI2X+NDDABqTDTbnQKuzkOiLGMDH6cMDcX
- WdWZZxe1W7EQAeBfXyxoUJpr9Ib+M6MRAKUjxLE9YPYMFK1DW2
- UXSuQKxPRaBCjLjbPDZzFPE+zPjMepMnIOhzTYUCJIE8ekeyRx
- uQSiX76CRBHgoJdfiKQrLNw2gbAvZNbq3vb4v8dyyeBao/KLDf
- 8UUL1VAKdo2P6meL7Mci3lRgzUUtteWiKGA79W4hb2/xhafkh5
- JYQG4HkjLTqPATWpiCLZZE/UF9vd0lMxJo4PhpEoJV9jK1v2W8
- ZyHPs4wW6Wkd0OToZpdTnXlDsAXh/Ob+fdE6vWu67u1ajesg6+
- ZBXff9fE/FH7A/xy9pTI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 10 June 2012, Linus Walleij wrote:
-> On Mon, May 28, 2012 at 6:36 PM, Alessandro Rubini <rubini@gnudd.com> wrote:
-> 
-> > V2: accepted comments I got on V1; rewritten the driver to be generic;
-> >    made it tristate instead of boolean. Rebased on new next.
-> 
-> This looks good to me.
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> 
-> I think this patch set could go through Arnd as arch maintainer?
-> It's fun with these cross-arch things. You'll need an ACK from
-> Russell first.
+v3:
+ - Small change to device specific ACS check to allow quirk to
+   support yes/no/pass type functionality. (no change to other
+   patches and no trickle down through IOMMU series)
 
-I don't think it has much to do with code I maintain. Russell
-as the Primecell maintainer is the right person to take it through
-his tree.
+Bjorn, what's needed to get these in?  Thanks,
 
-	Arnd
+Alex
+
+v2:
+ - Test that we're not given func 0 before doing lookup
+ - Fix duplicate ricoh quirk
+ - Rename pci_dma_source() to pci_get_dma_source() and make sure
+   we always take a reference for the returned pci_dev.  Add comment
+
+These last two changes trickle down through the IOMMU series, so
+will generate a v2 there as well.  Thanks,
+
+Alex
+
+v1:
+These are the PCI related patches from the previously submitted
+v2 IOMMU Groups + VFIO series.  I've updated them with Don's
+comments and split them off on their own so that we can hopefully
+make some progress getting these in.  Patches are against 20120529
+linux-next tree.
+
+Patches 1 & 2 provide DMA quirking and ACS checking which will be
+used by IOMMU drivers supporting IOMMU groups.  Patch 3 enables the
+set of pci user config access functions to be called from other
+modules, which will be used by VFIO-pci.  Patch 4 enables a common
+translation of pcibios errors into errno for returning to userspace,
+also to be used by VFIO-pci.  Patch 5 adds additional PCI register
+definitions so we can more easily parse config space for devices in
+VFIO-pci.
+
+These patches, as well as IOMMU group support and VFIO can be
+found in git here:
+
+git://github.com/awilliam/linux-vfio.git (iommu-group-vfio-next-20120529)
+
+Please consider these for 3.5, but I'll settle for any kind of next
+branch.  Thanks,
+
+Alex
+
+---
+
+Alex Williamson (5):
+      pci: Misc pci_reg additions
+      pci: Create common pcibios_err_to_errno
+      pci: export pci_user functions for use by other drivers
+      pci: Add ACS validation utility
+      pci: Add PCI DMA source ID quirk
+
+
+ drivers/pci/access.c                 |    6 +-
+ drivers/pci/pci.c                    |   69 +++++++++++++++++++++
+ drivers/pci/pci.h                    |    7 --
+ drivers/pci/quirks.c                 |   84 +++++++++++++++++++++++++
+ drivers/xen/xen-pciback/conf_space.c |    6 +-
+ include/linux/pci.h                  |   49 ++++++++++++++-
+ include/linux/pci_regs.h             |  113 ++++++++++++++++++++++++++++++----
+ 7 files changed, 309 insertions(+), 25 deletions(-)
