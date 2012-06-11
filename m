@@ -1,73 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752525Ab2FKSI0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 14:08:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54893 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751066Ab2FKSIY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 14:08:24 -0400
-Date: Mon, 11 Jun 2012 13:25:45 -0400
-From: Dave Jones <davej@redhat.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        David Miller <davem@davemloft.net>, lauro.venancio@openbossa.org,
-        aloisio.almeida@openbossa.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        linux-wireless <linux-wireless@vger.kernel.org>
-Subject: Re: net: nfc: BUG and panic in accept() on 3.5-rc2
-Message-ID: <20120611172545.GA1776@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Sasha Levin <levinsasha928@gmail.com>,
-	Samuel Ortiz <sameo@linux.intel.com>,
-	Eric Dumazet <eric.dumazet@gmail.com>,
-	David Miller <davem@davemloft.net>, lauro.venancio@openbossa.org,
-	aloisio.almeida@openbossa.org,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	"netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-	linux-wireless <linux-wireless@vger.kernel.org>
-References: <1339423241.4999.53.camel@lappy>
- <20120611144134.GX22557@sortiz-mobl>
- <1339425693.6001.2268.camel@edumazet-glaptop>
- <20120611145700.GY22557@sortiz-mobl>
- <1339426778.6001.2312.camel@edumazet-glaptop>
- <20120611152007.GZ22557@sortiz-mobl>
- <1339433810.4999.65.camel@lappy>
+	id S1752532Ab2FKSJl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 14:09:41 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:63164 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751320Ab2FKSJj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 14:09:39 -0400
+Date: Mon, 11 Jun 2012 20:09:32 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@ti.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 1/5] nohz: Separate idle sleeping time accounting from
+ nohz logic
+Message-ID: <20120611180928.GC26617@somewhere.redhat.com>
+References: <1339433602-26836-1-git-send-email-fweisbec@gmail.com>
+ <1339433602-26836-2-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1339433810.4999.65.camel@lappy>
+In-Reply-To: <1339433602-26836-2-git-send-email-fweisbec@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 11, 2012 at 06:56:50PM +0200, Sasha Levin wrote:
+On Mon, Jun 11, 2012 at 06:53:18PM +0200, Frederic Weisbecker wrote:
+> +}
+> +
+> +/**
+> + * tick_nohz_idle_exit - restart the idle tick from the idle task
+> + *
+> + * Restart the idle tick when the CPU is woken up from idle
+> + * This also exit the RCU extended quiescent state. The CPU
+> + * can use RCU again after this function is called.
+> + */
+> +void tick_nohz_idle_exit(void)
+> +
+> +{
 
- > > > > > > What's trinity ?
- > > > > > > Also, if this one is reproducible, would you mind sharing some details about
- > > > > > > how we could reproduce it ?
- > > > > > 
- > > > > > Well, bugfix should be trivial enough ;)
- > > > > Yep, I looked at the code only after looking at Sasha's report.
- > > > > 
- > > > > Thanks for the patch, do you mind if I add your SOB to it ?
- > > > 
- > > > I  would prefer making sure it fixes the bug first ;)
- > > Sure, although your patch makes sense regardless of that :)
- > > I'll still wait for Sasha to confirm that it fixes his crash.
- > 
- > I don't have a direct way of reproducing it, but I've put it in the test
- > vm and the fuzzer is running, I'll let you know tomorrow if it happened
- > again.
+Thomas pointed me to the above undesired newline. I fixed that
+in the branch nohz-for-tip-2
 
-You might be able to trigger it faster by using -P PF_NFC, which will 
-force trinity to only use NFC sockets.
-
-sidenote: most protocols trigger the module to be auto-loaded when a socket
-is created. This doesn't seem to happen with nfc, making me need to manually
-modprobe it first. Intentional ?
-
-	Dave
-
+Thanks.
