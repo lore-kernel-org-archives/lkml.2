@@ -1,47 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752023Ab2FKIh0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 04:37:26 -0400
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:50956 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750738Ab2FKIhY (ORCPT
+	id S1752105Ab2FKIhc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 04:37:32 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:57237 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751066Ab2FKIha (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 04:37:24 -0400
-Subject: Re: [PATCH] crypto: s390 - clean up DES code a bit more
-From: Jan Glauber <jang@linux.vnet.ibm.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
-        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1339194367.30984.18.camel@x61.thuisdomein>
-References: <1339194367.30984.18.camel@x61.thuisdomein>
-Content-Type: text/plain; charset="us-ascii"
-Date: Mon, 11 Jun 2012 10:34:39 +0200
-Message-ID: <1339403679.9116.0.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-x-cbid: 12061108-4966-0000-0000-00000295CA79
+	Mon, 11 Jun 2012 04:37:30 -0400
+Date: Mon, 11 Jun 2012 10:37:25 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-kernel@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [Fw: Re: [PATCH] x86, acpi/irq: Minor readability cleanup of
+ gsi_to_irq()]
+Message-ID: <20120611083725.GG31556@gmail.com>
+References: <20120611074434.GA3383@dhcp-26-207.brq.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120611074434.GA3383@dhcp-26-207.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-06-09 at 00:26 +0200, Paul Bolle wrote:
-> Commit 98971f8439b1bb9a61682fe24a865ddd25167a6b ("crypto: s390 - cleanup
-> DES code") should have also removed crypto_des.h. That file is unused
-> and unneeded since that commit. So let's clean up that file too.
+
+* Alexander Gordeev <agordeev@redhat.com> wrote:
+
+> Hi Ingo,
 > 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-> Untested. Ought to be correct.
-> 
->  arch/s390/crypto/crypto_des.h |   18 ------------------
->  1 files changed, 0 insertions(+), 18 deletions(-)
->  delete mode 100644 arch/s390/crypto/crypto_des.h
+> This patch probably get lost.
+> Should I repost?
 
-Looks good!
+Yeah, please do.
 
-Acked-by: Jan Glauber <jang@linux.vnet.ibm.com>
+Btw., it was not missed but is the regular workflow: when 
+there's review feedback and it's resolved via a Reviewed-by 
+somewhere inside the discussion then you should resend the same 
+patch but with the Reviewed-by tag added. (and all reviewers and 
+affected maintainers Cc:-ed.)
 
+Thanks,
+
+	Ingo
