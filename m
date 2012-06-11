@@ -1,167 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751770Ab2FKQ5V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 12:57:21 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:37857 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751069Ab2FKQ5T (ORCPT
+	id S1752069Ab2FKRKX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 13:10:23 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:53439 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751687Ab2FKRKU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 12:57:19 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+o62ME8D+oJ1Zx45M0v1Uwa/cwjIJoyMJSsaHyxt
-	EPC3ORk0FZalEN
-Message-ID: <1339433835.7358.30.camel@marge.simpson.net>
-Subject: [patch v3] sched: fix select_idle_sibling() induced bouncing
-From: Mike Galbraith <efault@gmx.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Paul Turner <pjt@google.com>, Arjan Van De Ven <arjan@linux.intel.com>
-Date: Mon, 11 Jun 2012 18:57:15 +0200
-In-Reply-To: <1338906621.6110.30.camel@marge.simpson.net>
-References: <1337857490.7300.19.camel@marge.simpson.net>
-	 <1337865431.9783.148.camel@laptop>
-	 <1338906621.6110.30.camel@marge.simpson.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	Mon, 11 Jun 2012 13:10:20 -0400
+Message-ID: <4FD62653.7060206@mvista.com>
+Date: Mon, 11 Jun 2012 21:09:39 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Namjae Jeon <linkinjeon@gmail.com>
+CC: James.Bottomley@hansenpartnership.com, gregkh@linuxfoundation.org,
+        mdharm-usb@one-eyed-alien.net, stern@rowland.harvard.edu,
+        bvanassche@acm.org, linux-usb@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Pankaj Kumar <pankaj.km@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: Re: [PATCH v3 3/3] usb: storage: update usb devices for write cache
+ quirk in quirk list.
+References: <1339263678-4075-1-git-send-email-linkinjeon@gmail.com> <4FD39998.4020903@mvista.com> <CAKYAXd9Evpo6jn+_+bnyNeaX9vmPicVp5Xm-12tp_U4=wb6Pgw@mail.gmail.com>
+In-Reply-To: <CAKYAXd9Evpo6jn+_+bnyNeaX9vmPicVp5Xm-12tp_U4=wb6Pgw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v2->v3 delta:
-1. Drop superfluous barriers.  So maybe we do a fallback rq selection in
-a very rare case, who cares.  If it matters, lock it.
+Hello.
 
-2. Put idle_buddy cpus_allowed check that went missing back. 
+On 10-06-2012 4:45, Namjae Jeon wrote:
 
+>>> Update information of Seagate Portable HDD and WD My Passport HDD in
+>>> quirk list.
 
-Traversing an entire package is not only expensive, it also leads to tasks
-bouncing all over a partially idle and possible quite large package.  Fix
-that up by assigning a 'buddy' CPU to try to motivate.  Each buddy may try
-to motivate that one other CPU, if it's busy, tough, it may then try it's
-SMT sibling, but that's all this optimization is allowed to cost.
+>>> Signed-off-by: Namjae Jeon<namjae.jeon@samsung.com>
+>>> Signed-off-by: Pankaj Kumar<pankaj.km@samsung.com>
+>>> Signed-off-by: Amit Sahrawat<a.sahrawat@samsung.com>
+>>> ---
+>>>    drivers/usb/storage/unusual_devs.h |   24 ++++++++++++++++++++++++
+>>>    1 file changed, 24 insertions(+)
 
-Sibling cache buddies are cross-wired to prevent bouncing.
+>>> diff --git a/drivers/usb/storage/unusual_devs.h
+>>> b/drivers/usb/storage/unusual_devs.h
+>>> index 1719886..64f0369 100644
+>>> --- a/drivers/usb/storage/unusual_devs.h
+>>> +++ b/drivers/usb/storage/unusual_devs.h
+>>> @@ -1267,6 +1267,18 @@ UNUSUAL_DEV( 0x0af0, 0xd357, 0x0000, 0x0000,
+>>>    		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
+>>>    		0 ),
+>>>
+>>> +/* Reported by Namjae Jeon<namjae.jeon@samsung.com>
+>>> + * Even though write cache is enabled by default,
+>>> + * SCSI driver assume that cache is not enabled
+>>> + * which in turn might lead loss of data
+>>                                 ^ to the
 
-Signed-off-by: Mike Galbraith <efault@gmx.de>
+>>> + * since data still will be in cache.
+>>> + * So this entry is needed for assuming that cache is enabled.
+>>> + */
+>>> +UNUSUAL_DEV(0x0bc2, 0x2300, 0x0000, 0x9999,
+>>> +		"Seagate",
+>>> +		"Portable HDD",
+>>> +		USB_SC_DEVICE, USB_PR_DEVICE, NULL, US_FL_WRITE_CACHE),
+>>> +
+>>>    /* Reported by Ben Efros<ben@pc-doctor.com>   */
+>>>    UNUSUAL_DEV( 0x0bc2, 0x3010, 0x0000, 0x0000,
+>>>    		"Seagate",
+>>> @@ -1468,6 +1480,18 @@ UNUSUAL_DEV(  0x1058, 0x0704, 0x0000, 0x9999,
+>>>    		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
+>>>    		US_FL_SANE_SENSE),
+>>>
+>>> +/* Reported by Namjae Jeon<namjae.jeon@samsung.com>
+>>> + * Even though write cache is enabled by default,
+>>> + * SCSI driver assume that cache is not enabled
+>>> + * which in turn might lead loss of data
+>>                                 ^ to the
+> to the ? Sorry, I don't understand what you want to change.
+> like this ? "Even though write cache is enabled by default, SCSI
+> driver assume that cache is not enabled and it in turn might lead the
+> loss of data. "
 
----
- include/linux/sched.h |    1 +
- kernel/sched/core.c   |   34 +++++++++++++++++++++++++++++++++-
- kernel/sched/fair.c   |   28 +++++++---------------------
- 3 files changed, 41 insertions(+), 22 deletions(-)
+    Lead to the loss of data.
 
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -955,6 +955,7 @@ struct sched_domain {
- 	unsigned int smt_gain;
- 	int flags;			/* See SD_* */
- 	int level;
-+	int idle_buddy;			/* cpu assigned to select_idle_sibling() */
- 
- 	/* Runtime fields. */
- 	unsigned long last_balance;	/* init to jiffies. units in jiffies */
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -5928,6 +5928,11 @@ static void destroy_sched_domains(struct
-  * SD_SHARE_PKG_RESOURCE set (Last Level Cache Domain) for this
-  * allows us to avoid some pointer chasing select_idle_sibling().
-  *
-+ * Iterate domains and sched_groups upward, assigning CPUs to be
-+ * select_idle_sibling() hw buddy.  Cross-wiring hw makes bouncing
-+ * due to random perturbation self canceling, ie sw buddies pull
-+ * their counterpart to their CPU's hw counterpart.
-+ *
-  * Also keep a unique ID per domain (we use the first cpu number in
-  * the cpumask of the domain), this allows us to quickly tell if
-  * two cpus are in the same cache domain, see cpus_share_cache().
-@@ -5943,8 +5948,35 @@ static void update_domain_cache(int cpu)
- 	int id = cpu;
- 
- 	sd = highest_flag_domain(cpu, SD_SHARE_PKG_RESOURCES);
--	if (sd)
-+	if (sd) {
-+		struct sched_domain *tmp = sd;
-+		struct sched_group *sg, *prev;
-+		bool right;
-+
-+		do {
-+			id = cpumask_first(sched_domain_span(tmp));
-+			prev = sg = tmp->groups;
-+			right = 1;
-+
-+			while (cpumask_first(sched_group_cpus(sg)) != id)
-+				sg = sg->next;
-+
-+			while (!cpumask_test_cpu(cpu, sched_group_cpus(sg))) {
-+				prev = sg;
-+				sg = sg->next;
-+				right = !right;
-+			}
-+
-+			/* A CPU went down, never point back to domain start. */
-+			if (right && cpumask_first(sched_group_cpus(sg->next)) == id)
-+				right = false;
-+
-+			sg = right? sg->next : prev;
-+			tmp->idle_buddy = cpumask_first(sched_group_cpus(sg));
-+		} while ((tmp = tmp->child));
-+
- 		id = cpumask_first(sched_domain_span(sd));
-+	}
- 
- 	rcu_assign_pointer(per_cpu(sd_llc, cpu), sd);
- 	per_cpu(sd_llc_id, cpu) = id;
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -2642,8 +2642,6 @@ static int select_idle_sibling(struct ta
- 	int cpu = smp_processor_id();
- 	int prev_cpu = task_cpu(p);
- 	struct sched_domain *sd;
--	struct sched_group *sg;
--	int i;
- 
- 	/*
- 	 * If the task is going to be woken-up on this cpu and if it is
-@@ -2660,29 +2658,17 @@ static int select_idle_sibling(struct ta
- 		return prev_cpu;
- 
- 	/*
--	 * Otherwise, iterate the domains and find an elegible idle cpu.
-+	 * Otherwise, check assigned siblings to find an elegible idle cpu.
- 	 */
- 	sd = rcu_dereference(per_cpu(sd_llc, target));
-+
- 	for_each_lower_domain(sd) {
--		sg = sd->groups;
--		do {
--			if (!cpumask_intersects(sched_group_cpus(sg),
--						tsk_cpus_allowed(p)))
--				goto next;
--
--			for_each_cpu(i, sched_group_cpus(sg)) {
--				if (!idle_cpu(i))
--					goto next;
--			}
--
--			target = cpumask_first_and(sched_group_cpus(sg),
--					tsk_cpus_allowed(p));
--			goto done;
--next:
--			sg = sg->next;
--		} while (sg != sd->groups);
-+		if (!cpumask_test_cpu(sd->idle_buddy, tsk_cpus_allowed(p)))
-+			continue;
-+		if (idle_cpu(sd->idle_buddy))
-+			return sd->idle_buddy;
- 	}
--done:
-+
- 	return target;
- }
- 
-
-
+WBR, Sergei
