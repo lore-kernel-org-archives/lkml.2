@@ -1,41 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751439Ab2FKILT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 04:11:19 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:40627 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751306Ab2FKILS (ORCPT
+	id S1751477Ab2FKINF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 04:13:05 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:45684 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751069Ab2FKIND (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 04:11:18 -0400
-Date: Mon, 11 Jun 2012 01:11:17 -0700 (PDT)
-Message-Id: <20120611.011117.597888637750902318.davem@davemloft.net>
-To: stigge@antcom.de
-Cc: eric.dumazet@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
-        srinivas.bakki@nxp.com, aletes.xgr@gmail.com,
+	Mon, 11 Jun 2012 04:13:03 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: grant.likely@secretlab.ca, linus.walleij@stericsson.com,
+        rob.herring@calxeda.com, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/3] net: lpc_eth: Increase number of TX descriptors
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1339401793-12258-2-git-send-email-stigge@antcom.de>
-References: <1339401793-12258-1-git-send-email-stigge@antcom.de>
-	<1339401793-12258-2-git-send-email-stigge@antcom.de>
-X-Mailer: Mew version 6.5 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH] gpio: LPC32xx: Driver cleanup
+Date: Mon, 11 Jun 2012 10:12:40 +0200
+Message-Id: <1339402360-12533-1-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.10
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Roland Stigge <stigge@antcom.de>
-Date: Mon, 11 Jun 2012 10:03:12 +0200
+Since LPC32xx is now switched over to devicetree based GPIO, the unused
+lpc32xx_gpio_init() can be removed.
 
-> Since we have enough SRAM, we can increase the number of TX descriptors, so the
-> "BUSY" warning about occupied TX descriptors doesn't need to show up as often.
-> 
-> Signed-off-by: Roland Stigge <stigge@antcom.de>
-> Tested-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+Further, the driver title changed since it referred to the wrong file.
 
-This is way too terse, and as I described in my reply to your first
-patch it is not normal for the transmit function to be invoked when
-there are no TX descriptors available.  That's a bug if it is happening.
+Signed-off-by: Roland Stigge <stigge@antcom.de>
+
+---
+Applies to v3.5-rc2
+
+ drivers/gpio/gpio-lpc32xx.c |    9 +--------
+ 1 file changed, 1 insertion(+), 8 deletions(-)
+
+--- linux-2.6.orig/drivers/gpio/gpio-lpc32xx.c
++++ linux-2.6/drivers/gpio/gpio-lpc32xx.c
+@@ -1,5 +1,5 @@
+ /*
+- * arch/arm/mach-lpc32xx/gpiolib.c
++ * GPIO driver for LPC32xx SoC
+  *
+  * Author: Kevin Wells <kevin.wells@nxp.com>
+  *
+@@ -457,13 +457,6 @@ static struct lpc32xx_gpio_chip lpc32xx_
+ 	},
+ };
+ 
+-/* Empty now, can be removed later when mach-lpc32xx is finally switched over
+- * to DT support
+- */
+-void __init lpc32xx_gpio_init(void)
+-{
+-}
+-
+ static int lpc32xx_of_xlate(struct gpio_chip *gc,
+ 			    const struct of_phandle_args *gpiospec, u32 *flags)
+ {
