@@ -1,67 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753067Ab2FKCGD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jun 2012 22:06:03 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49928 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751977Ab2FKCGA (ORCPT
+	id S1753279Ab2FKCHh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jun 2012 22:07:37 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:55910 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752109Ab2FKCHg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jun 2012 22:06:00 -0400
-Message-ID: <4FD552CE.5020303@gmail.com>
-Date: Mon, 11 Jun 2012 10:07:10 +0800
-From: Shan Wei <shanwei88@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
-        acme@ghostprotocols.net, namhyung.kim@lge.com,
-        Kernel-Maillist <linux-kernel@vger.kernel.org>
-CC: Samuel Liao <samuelliao@tencent.com>
-Subject: Re: [Perf bug-fix] check null of sym pointer before using it
-References: <4FCD95D3.90209@gmail.com>
-In-Reply-To: <4FCD95D3.90209@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Sun, 10 Jun 2012 22:07:36 -0400
+X-AuditID: 9c930197-b7b5dae000004b23-f4-4fd552e45671
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [PATCH] mm: clean up __count_immobile_pages
+Date: Mon, 11 Jun 2012 11:07:22 +0900
+Message-Id: <1339380442-1137-1-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+__count_immobile_pages naming is rather awkward.
+This patch clean up the function and add comment.
 
-ping.....
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+---
+ mm/page_alloc.c |   33 +++++++++++++++++----------------
+ 1 file changed, 17 insertions(+), 16 deletions(-)
 
-It's a obvious function bug.....
-
-Shan Wei said, at 2012/6/5 13:14:
-
-> From: Samuel Liao <samuelliao@tencent.com>
-> 
-> Sometimes, sym will be null that causing perf crash.
-> 
-> Signed-off-by: Shan Wei <davidshan@tencent.com>
-> ---
->  tools/perf/ui/browsers/annotate.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
-> 
-> diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
-> index 4deea6a..50873a8 100644
-> --- a/tools/perf/ui/browsers/annotate.c
-> +++ b/tools/perf/ui/browsers/annotate.c
-> @@ -814,7 +814,7 @@ int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
->  {
->  	struct disasm_line *pos, *n;
->  	struct annotation *notes;
-> -	const size_t size = symbol__size(sym);
-> +	size_t size;
->  	struct map_symbol ms = {
->  		.map = map,
->  		.sym = sym,
-> @@ -834,6 +834,8 @@ int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
->  	if (sym == NULL)
->  		return -1;
->  
-> +	size = symbol__size(sym);
-> +
->  	if (map->dso->annotate_warned)
->  		return -1;
->  
-
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 019c4fe..2c71ac9 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -5467,26 +5467,27 @@ void set_pageblock_flags_group(struct page *page, unsigned long flags,
+ }
+ 
+ /*
+- * This is designed as sub function...plz see page_isolation.c also.
+- * set/clear page block's type to be ISOLATE.
+- * page allocater never alloc memory from ISOLATE block.
++ * This function checks whether pageblock includes unmovable pages or not.
++ * If @count is not zero, it is okay to include less @count unmovable pages
++ *
++ * This function can race in PageLRU and MIGRATE_MOVABLE can have unmovable
++ * pages so that it might be not exact.
+  */
+-
+-static int
+-__count_immobile_pages(struct zone *zone, struct page *page, int count)
++static bool
++__has_unmovable_pages(struct zone *zone, struct page *page, int count)
+ {
+ 	unsigned long pfn, iter, found;
+ 	int mt;
+ 
+ 	/*
+ 	 * For avoiding noise data, lru_add_drain_all() should be called
+-	 * If ZONE_MOVABLE, the zone never contains immobile pages
++	 * If ZONE_MOVABLE, the zone never contains unmovable pages
+ 	 */
+ 	if (zone_idx(zone) == ZONE_MOVABLE)
+-		return true;
++		return false;
+ 	mt = get_pageblock_migratetype(page);
+ 	if (mt == MIGRATE_MOVABLE || is_migrate_cma(mt))
+-		return true;
++		return false;
+ 
+ 	pfn = page_to_pfn(page);
+ 	for (found = 0, iter = 0; iter < pageblock_nr_pages; iter++) {
+@@ -5521,9 +5522,9 @@ __count_immobile_pages(struct zone *zone, struct page *page, int count)
+ 		 * page at boot.
+ 		 */
+ 		if (found > count)
+-			return false;
++			return true;
+ 	}
+-	return true;
++	return false;
+ }
+ 
+ bool is_pageblock_removable_nolock(struct page *page)
+@@ -5547,7 +5548,7 @@ bool is_pageblock_removable_nolock(struct page *page)
+ 			zone->zone_start_pfn + zone->spanned_pages <= pfn)
+ 		return false;
+ 
+-	return __count_immobile_pages(zone, page, 0);
++	return !__has_unmovable_pages(zone, page, 0);
+ }
+ 
+ int set_migratetype_isolate(struct page *page)
+@@ -5586,12 +5587,12 @@ int set_migratetype_isolate(struct page *page)
+ 	 * FIXME: Now, memory hotplug doesn't call shrink_slab() by itself.
+ 	 * We just check MOVABLE pages.
+ 	 */
+-	if (__count_immobile_pages(zone, page, arg.pages_found))
++	if (!__has_unmovable_pages(zone, page, arg.pages_found))
+ 		ret = 0;
+-
+ 	/*
+-	 * immobile means "not-on-lru" paes. If immobile is larger than
+-	 * removable-by-driver pages reported by notifier, we'll fail.
++	 * Unmovable means "not-on-lru" pages. If Unmovable pages are
++	 * larger than removable-by-driver pages reported by notifier,
++	 * we'll fail.
+ 	 */
+ 
+ out:
+-- 
+1.7.9.5
 
