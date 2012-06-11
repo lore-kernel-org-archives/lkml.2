@@ -1,42 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754745Ab2FKOHt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 10:07:49 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:36636 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754452Ab2FKOHs (ORCPT
+	id S1754754Ab2FKOJA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 10:09:00 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:40270 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753883Ab2FKOI7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 10:07:48 -0400
-Message-ID: <4FD5FBAF.1060002@linaro.org>
-Date: Mon, 11 Jun 2012 15:07:43 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	Mon, 11 Jun 2012 10:08:59 -0400
+Date: Mon, 11 Jun 2012 11:08:52 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: Dmitry Antipov <dmitry.antipov@linaro.org>, Ingo Molnar <mingo@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org
+Subject: Re: [PATCH] perf sched replay: fix event lookup
+Message-ID: <20120611140852.GB2202@infradead.org>
+References: <1339232758-920-1-git-send-email-dmitry.antipov@linaro.org>
+ <87pq96pfj9.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: linux-arm-kernel@lists.infradead.org, arnd@arndb.de,
-        linus.walleij@stericsson.com, grant.likely@secretlab.ca,
-        cjb@laptop.org, sameo@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 09/22] regulator: Change db8500-prcmu match names to reflect
- Device Tree
-References: <1338353260-10097-1-git-send-email-lee.jones@linaro.org> <1338353260-10097-10-git-send-email-lee.jones@linaro.org> <4FCDDE58.5010501@linaro.org> <20120605102900.GP23408@opensource.wolfsonmicro.com> <4FCDE0A4.8070107@linaro.org> <20120605104201.GR23408@opensource.wolfsonmicro.com> <4FD5D49C.6070106@linaro.org> <20120611120820.GN11439@opensource.wolfsonmicro.com> <4FD5F3D2.2050500@linaro.org>
-In-Reply-To: <4FD5F3D2.2050500@linaro.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87pq96pfj9.fsf@sejong.aot.lge.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> Well, I guess I'll end up dulplicating the commits :/
->
-> Duplicating them?
+Em Mon, Jun 11, 2012 at 02:46:02PM +0900, Namhyung Kim escreveu:
+> On Sat,  9 Jun 2012 13:05:58 +0400, Dmitry Antipov wrote:
+> > Use new function trace_find_event_by_name to lookup events before
+> > looking through /sys files. This helps 'perf sched replay' to map
+> > event names to IDs correctly when processing perf.data recorded
+> > on another machine.
+> 
+> Basically the same approach with the previous reply, please put this
+> into trace_event__id(). And minor nits below..
 
-Ah, you mean that you've already sent them to -next?
+Well, trace_event__id() is private to evlist and evlist so far is a
+local thing, i.e. it doesn't know anything about perf.data files.
 
-That's no problem though. Won't Git just sling them out at pull-time?
+So I think we should have a per perf.data (perf_session) method that
+knows that it shouldn't look _at all_ to /sys, but just at what came in
+the perf.data file.
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-M: +44 77 88 633 515
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+As well when we want something that is on the running machine, even if
+we're dealing somehow with a perf.data file, we shouldn't use what is in
+it.
+
+- Arnaldo
