@@ -1,69 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755339Ab2FKPf1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 11:35:27 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:46576 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752479Ab2FKPfZ (ORCPT
+	id S1755492Ab2FKPff (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 11:35:35 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:60267 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753482Ab2FKPf0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 11:35:25 -0400
-Message-ID: <4FD6103B.6020901@tilera.com>
-Date: Mon, 11 Jun 2012 11:35:23 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120604 Thunderbird/13.0
+	Mon, 11 Jun 2012 11:35:26 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
+        rientjes@google.com, akpm@linux-foundation.org, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH -V8 12/16] hugetlb/cgroup: Add support for cgroup removal
+In-Reply-To: <20120611131411.GN12402@tiehlicka.suse.cz>
+References: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1339232401-14392-13-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20120611085258.GD12402@tiehlicka.suse.cz> <87fwa25gqj.fsf@skywalker.in.ibm.com> <20120611131411.GN12402@tiehlicka.suse.cz>
+User-Agent: Notmuch/0.13.2+35~g0ff57e7 (http://notmuchmail.org) Emacs/24.1.50.1 (x86_64-unknown-linux-gnu)
+Date: Mon, 11 Jun 2012 21:04:43 +0530
+Message-ID: <87bokpvp4c.fsf@skywalker.in.ibm.com>
 MIME-Version: 1.0
-To: Doug Thompson <dougthompson@xmission.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        <linux-edac@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] edac: Do alignment logic properly in edac_align_ptr()
-References: <201206061723.q56HNgtR016254@farm-0002.internal.tilera.com>
-In-Reply-To: <201206061723.q56HNgtR016254@farm-0002.internal.tilera.com>
-X-Enigmail-Version: 1.4.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+x-cbid: 12061115-8878-0000-0000-000002DA8C60
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/6/2012 1:24 PM, Chris Metcalf wrote:
-> The logic was checking the sizeof the structure being allocated to
-> determine whether an alignment fixup was required.  This isn't right;
-> what we actually care about is the alignment of the actual pointer that's
-> about to be returned.  This became an issue recently because struct
-> edac_mc_layer has a size that is not zero modulo eight, so we were
-> taking the correctly-aligned pointer and forcing it to be misaligned.
-> On Tile this caused an alignment exception.
+Michal Hocko <mhocko@suse.cz> writes:
+
+> On Mon 11-06-12 15:10:20, Aneesh Kumar K.V wrote:
+>> Michal Hocko <mhocko@suse.cz> writes:
+> [...]
+>> >> +static int hugetlb_cgroup_move_parent(int idx, struct cgroup *cgroup,
+>> >> +				      struct page *page)
+>> >
+>> > deserves a comment about the locking (needs to be called with
+>> > hugetlb_lock).
+>> 
+>> will do
+>> 
+>> >
+>> >> +{
+>> >> +	int csize;
+>> >> +	struct res_counter *counter;
+>> >> +	struct res_counter *fail_res;
+>> >> +	struct hugetlb_cgroup *page_hcg;
+>> >> +	struct hugetlb_cgroup *h_cg   = hugetlb_cgroup_from_cgroup(cgroup);
+>> >> +	struct hugetlb_cgroup *parent = parent_hugetlb_cgroup(cgroup);
+>> >> +
+>> >> +	if (!get_page_unless_zero(page))
+>> >> +		goto out;
+>> >> +
+>> >> +	page_hcg = hugetlb_cgroup_from_page(page);
+>> >> +	/*
+>> >> +	 * We can have pages in active list without any cgroup
+>> >> +	 * ie, hugepage with less than 3 pages. We can safely
+>> >> +	 * ignore those pages.
+>> >> +	 */
+>> >> +	if (!page_hcg || page_hcg != h_cg)
+>> >> +		goto err_out;
+>> >
+>> > How can we have page_hcg != NULL && page_hcg != h_cg?
+>> 
+>> pages belonging to other cgroup ?
 >
-> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
-> ---
-> Mauro, I assume you will push this through your tree?  I am also happy
-> to push it through the tile tree.  Let me know!
+> OK, I've forgot that you are iterating over all active huge pages in
+> hugetlb_cgroup_pre_destroy. What prevents you from doing the filtering
+> in the caller? 
+> I am also wondering why you need to play with the page reference
+> counting here. You are under hugetlb_lock so the page cannot disappear
+> in the meantime or am I missing something?
 
-Ping - I see this didn't make it into 3.5-rc2.  I'm happy to push the change
-through the tile tree if that's helpful (and someone wants to give their
-Acked-by).
+That is correct. Updated the patch and also added the below comment to
+the function.
++
++/*
++ * Should be called with hugetlb_lock held.
++ * Since we are holding hugetlb_lock, pages cannot get moved from
++ * active list or uncharged from the cgroup, So no need to get
++ * page reference and test for page active here.
++ */
 
->
->  drivers/edac/edac_mc.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
-> index 10f3750..de5ba86 100644
-> --- a/drivers/edac/edac_mc.c
-> +++ b/drivers/edac/edac_mc.c
-> @@ -164,7 +164,7 @@ void *edac_align_ptr(void **p, unsigned size, int n_elems)
->  	else
->  		return (char *)ptr;
->  
-> -	r = size % align;
-> +	r = (unsigned long)p % align;
->  
->  	if (r == 0)
->  		return (char *)ptr;
-
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
-
-
+-aneesh
 
