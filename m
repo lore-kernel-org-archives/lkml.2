@@ -1,43 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752848Ab2FKSmi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 14:42:38 -0400
-Received: from smtp1-g21.free.fr ([212.27.42.1]:52626 "EHLO smtp1-g21.free.fr"
+	id S1753015Ab2FKSnc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 14:43:32 -0400
+Received: from mga02.intel.com ([134.134.136.20]:59962 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751755Ab2FKSmh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 14:42:37 -0400
-From: Robert Jarzmik <robert.jarzmik@free.fr>
-To: axel.lin@gmail.com
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH RFT 2/2] regulator: max1586: Convert max1586_v3_ops to set_voltage_sel and map_voltage_linear
-References: <1339115141.4310.3.camel@phoenix>
-	<1339115204.4310.4.camel@phoenix> <877gvfvxyd.fsf@free.fr>
-	<CAF+7xWm_C5tZaXPsH3944_f-h4vuvRb1MorPuTB0fWTVhT9RPA@mail.gmail.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
-X-URL: http://belgarath.falguerolles.org/
-Date: Mon, 11 Jun 2012 20:42:28 +0200
-Message-ID: <87sje1vgff.fsf@free.fr>
+	id S1751981Ab2FKSnb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 14:43:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="151502736"
+Message-ID: <4FD63C52.4090003@linux.intel.com>
+Date: Mon, 11 Jun 2012 11:43:30 -0700
+From: Andi Kleen <ak@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: Tim Chen <tim.c.chen@linux.intel.com>, David Ahern <dsahern@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: Does perf inject preserve call chain data?
+References: <1337712585.3796.186.camel@schen9-DESK> <4FBC0C10.8010801@gmail.com> <20120608143843.GA9954@infradead.org> <1339173896.3796.230.camel@schen9-DESK> <4FD232B7.7080905@gmail.com> <1339175828.3796.232.camel@schen9-DESK> <20120608195215.GO28225@tassilo.jf.intel.com> <20120609160547.GB9954@infradead.org>
+In-Reply-To: <20120609160547.GB9954@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Axel Lin <axel.lin@gmail.com> writes:
 
-> 2012/6/11 Robert Jarzmik <robert.jarzmik@free.fr>:
->> Axel Lin <axel.lin@gmail.com> writes:
-> I think all the necessary patches are already in linux-next tree.
-> I have no problem to build it with linux-next 20120608.
 
-OK, my fault, build problem.
-I tested this serie with the PXA VCC-core regulation, it's fine.
+> # perf top -a -G sleep 5
+>
+> Where it would figure out that since a workload was specified, it should
+> just not be refreshing the screen every N seconds but wait till the
+> workload to finish and then present the results, without setting up any
+> perf.data files.
 
-Please have my :
-Acked-by: Robert Jarzmik <robert.jarzmik@free.fr>
+But top does not generate email'able ASCII format like perf report does, 
+doesn't it?
 
-Cheers.
 
--- 
-Robert
+
+-Andi
+
+
