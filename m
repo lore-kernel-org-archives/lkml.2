@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755603Ab2FKPZe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 11:25:34 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:61246 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755444Ab2FKPZc (ORCPT
+	id S1755753Ab2FKPZs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 11:25:48 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:34353 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755726Ab2FKPZp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 11:25:32 -0400
+	Mon, 11 Jun 2012 11:25:45 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: linus.walleij@stericsson.com, arnd@arndb.de, grant.likely@secretlab.ca,
-        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
-Subject: [PATCH 05/14] mfd: Enable DT probing of the DB8500 PRCMU
-Date: Mon, 11 Jun 2012 16:24:58 +0100
-Message-Id: <1339428307-3850-6-git-send-email-lee.jones@linaro.org>
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 12/14] ARM: ux500: Correctly reference IRQs supplied by the AB8500 from Device Tree
+Date: Mon, 11 Jun 2012 16:25:05 +0100
+Message-Id: <1339428307-3850-13-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1339428307-3850-1-git-send-email-lee.jones@linaro.org>
 References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org>
@@ -21,36 +21,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the correct compatible string for use during Device Tree
-population. Without it the DB8500 PRCMU will not be probed.
+The AB8500 driver has now been provided with IRQ domain support. This
+means we can request IRQs from any of it's uses via Device Tree. This
+patch advertises the AB8500 as an Interrupt Controller and provides the
+correct calls in the format the driver expects.
 
-Cc: Samuel Ortiz <sameo@linux.intel.com>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mfd/db8500-prcmu.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ arch/arm/boot/dts/db8500.dtsi |   24 +++++++++++++-----------
+ 1 file changed, 13 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/mfd/db8500-prcmu.c b/drivers/mfd/db8500-prcmu.c
-index 50e83dc5..c702f18 100644
---- a/drivers/mfd/db8500-prcmu.c
-+++ b/drivers/mfd/db8500-prcmu.c
-@@ -3004,11 +3004,16 @@ static int __devinit db8500_prcmu_probe(struct platform_device *pdev)
- no_irq_return:
- 	return err;
- }
-+static const struct of_device_id db8500_prcmu_match[] = {
-+	{ .compatible = "stericsson,db8500-prcmu", },
-+	{ },
-+};
+diff --git a/arch/arm/boot/dts/db8500.dtsi b/arch/arm/boot/dts/db8500.dtsi
+index 01f9a9d..55a36ae 100644
+--- a/arch/arm/boot/dts/db8500.dtsi
++++ b/arch/arm/boot/dts/db8500.dtsi
+@@ -312,24 +312,26 @@
+ 				compatible = "stericsson,ab8500";
+ 				reg = <5>; /* mailbox 5 is i2c */
+ 				interrupts = <0 40 0x4>;
++				interrupt-controller;
++				#interrupt-cells = <2>;
  
- static struct platform_driver db8500_prcmu_driver = {
- 	.driver = {
- 		.name = "db8500-prcmu",
- 		.owner = THIS_MODULE,
-+		.of_match_table = db8500_prcmu_match,
- 	},
- 	.probe = db8500_prcmu_probe,
- };
+ 				ab8500-gpadc {
+ 					compatible = "stericsson,ab8500-gpadc";
+-					interrupts = <0 32 0x4
+-						      0 39 0x4>;
++					interrupts = <32 0x4
++						      39 0x4>;
+ 					interrupt-names = "HW_CONV_END", "SW_CONV_END";
+ 					vddadc-supply = <&ab8500_ldo_tvout_reg>;
+ 				};
+ 
+ 				ab8500-usb {
+ 					compatible = "stericsson,ab8500-usb";
+-					interrupts = < 0 90 0x4
+-						       0 96 0x4
+-						       0 14 0x4
+-						       0 15 0x4
+-						       0 79 0x4
+-						       0 74 0x4
+-						       0 75 0x4>;
++					interrupts = < 90 0x4
++						       96 0x4
++						       14 0x4
++						       15 0x4
++						       79 0x4
++						       74 0x4
++						       75 0x4>;
+ 					interrupt-names = "ID_WAKEUP_R",
+ 							  "ID_WAKEUP_F",
+ 							  "VBUS_DET_F",
+@@ -344,8 +346,8 @@
+ 
+ 				ab8500-ponkey {
+ 					compatible = "stericsson,ab8500-ponkey";
+-					interrupts = <0 6 0x4
+-						      0 7 0x4>;
++					interrupts = <6 0x4
++						      7 0x4>;
+ 					interrupt-names = "ONKEY_DBF", "ONKEY_DBR";
+ 				};
+ 
 -- 
 1.7.9.5
 
