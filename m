@@ -1,123 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754472Ab2FKMhX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 08:37:23 -0400
-Received: from fieldses.org ([174.143.236.118]:49965 "EHLO fieldses.org"
+	id S1754500Ab2FKMju (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 08:39:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17976 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754186Ab2FKMhV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 08:37:21 -0400
-Date: Mon, 11 Jun 2012 08:37:18 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
-        linux-kernel@vger.kernel.org, devel@openvz.org
-Subject: Re: [PATCH] NFS: hard-code init_net for NFS callback transports
-Message-ID: <20120611123718.GF7654@fieldses.org>
-References: <20120601095424.24427.74720.stgit@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120601095424.24427.74720.stgit@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754110Ab2FKMjt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 08:39:49 -0400
+Date: Mon, 11 Jun 2012 08:39:32 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: bfields <bfields@fieldses.org>
+Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Joerg Platte <jplatte@naasa.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Hans de Bruin <jmdebruin@xmsnet.nl>
+Subject: Re: Kernel 3.4.X NFS server regression
+Message-ID: <20120611083932.24e27e39@corrin.poochiereds.net>
+In-Reply-To: <20120611121634.GB7654@fieldses.org>
+References: <4FD47D4E.9070307@naasa.net>
+	<1339340441.4751.1.camel@lade.trondhjem.org>
+	<20120611121634.GB7654@fieldses.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 01, 2012 at 01:55:47PM +0400, Stanislav Kinsbursky wrote:
-> This patch set is a bug fix for Bruce's 3.5 branch.
-> I'll rebase this for 3.4 and resend.
+On Mon, 11 Jun 2012 08:16:34 -0400
+bfields <bfields@fieldses.org> wrote:
 
-Apologies for neglecting this, I'm done with the bakeathon and should be
-back to this soon.
-
-But, I'm a bit confused: you say you'll rebase this, but I've only seen
-two rebased patches for 3.4, and neither looks like a simple rebase of
-this one.
-
-OK, I'll look more closely and probably I'll figure out.  But in
-general, a little more detail in changelogs would help me process
-patches more quickly:
-
-	- Please make sure it's clear whether a given patch is a bug
-	  fix, a new feature, or code reshuffling that isn't intended to
-	  change behavior.  If it's a bug fix, tell me whether we've had
-	  the bug forever or whether it's a recent regression.  And
-	  (relevant here) if it's a recent regression, reference the ID
-	  of the commit that introduced it.
-	- If something is a backport, please reference in the changelog
-	  the commit ID of the backported patch, especially if it's not
-	  obviously the same.
-
---b.
-	
-
+> On Sun, Jun 10, 2012 at 03:00:42PM +0000, Myklebust, Trond wrote:
+> > Cc: linux-nfs@vger.kernel.org + bfields and changing title to label it
+> > as a server regression since that is what the trace appears to imply.
+> > 
+> > On Sun, 2012-06-10 at 12:56 +0200, Joerg Platte wrote:
+> > > All 3.4 kernels I tried so far (3.4, 3.4.1 and 3.4.2) suffer from the 
+> > > same NFS related problem:
+> > > 
+> > > Jun 10 09:23:36 coco kernel: INFO: task kworker/u:1:8 blocked for more 
+> > > than 120 seconds.
+> > > Jun 10 09:23:36 coco kernel: "echo 0 > 
+> > > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> > > Jun 10 09:23:36 coco kernel: kworker/u:1     D 002ba28c     0     8 
+> > >   2 0x00000000
+> > > Jun 10 09:23:36 coco kernel:  df465ec0 00000046 00000005 002ba28c 
+> > > 00000000 0000000a 00000282 df465e70
+> > > Jun 10 09:23:36 coco kernel:  df465ec0 df44d2b0 ffff6b60 df465e84 
+> > > df44d2b0 e33fa6b3 00000282 de764ae0
+> > > Jun 10 09:23:36 coco kernel:  ffffffff d78bcfb8 df465e8c c012e0f6 
+> > > df465ea4 c013610c 00000000 d78bcf80
+> > > Jun 10 09:23:36 coco kernel: Call Trace:
+> > > Jun 10 09:23:36 coco kernel:  [<c012e0f6>] ? add_timer+0x11/0x17
+> > > Jun 10 09:23:36 coco kernel:  [<c013610c>] ? queue_delayed_work_on+0x74/0xf0
+> > > Jun 10 09:23:36 coco kernel:  [<c0136ba4>] ? queue_delayed_work+0x1b/0x28
+> > > Jun 10 09:23:36 coco kernel:  [<c0350f5b>] schedule+0x1d/0x4c
+> > > Jun 10 09:23:36 coco kernel:  [<e0cda5f1>] cld_pipe_upcall+0x4e/0x75 [nfsd]
+> > > Jun 10 09:23:36 coco kernel:  [<e0cda678>] 
+> > > nfsd4_cld_grace_done+0x60/0x99 [nfsd]
+> > > Jun 10 09:23:36 coco kernel:  [<e0cd9cb5>] 
+> > > nfsd4_record_grace_done+0x10/0x12 [nfsd]
+> > > Jun 10 09:23:36 coco kernel:  [<e0cd6696>] laundromat_main+0x291/0x2d8 
+> > > [nfsd]
+> > > Jun 10 09:23:36 coco kernel:  [<c0136d2f>] process_one_work+0xff/0x325
+> > > Jun 10 09:23:36 coco kernel:  [<c0134bec>] ? start_worker+0x20/0x23
+> > > Jun 10 09:23:36 coco kernel:  [<e0cd6405>] ? 
+> > > nfsd4_process_open1+0x32b/0x32b [nfsd]
+> > > Jun 10 09:23:36 coco kernel:  [<c013727a>] worker_thread+0xf4/0x39a
+> > > Jun 10 09:23:36 coco kernel:  [<c0137186>] ? rescuer_thread+0x231/0x231
+> > > Jun 10 09:23:36 coco kernel:  [<c013a556>] kthread+0x6c/0x6e
+> > > Jun 10 09:23:36 coco kernel:  [<c013a4ea>] ? kthreadd+0xe8/0xe8
+> > > Jun 10 09:23:36 coco kernel:  [<c035263e>] kernel_thread_helper+0x6/0xd
+> > > 
+> > > A kworker task is stuck in D state and nfs mounts from other clients do 
+> > > not work at all. This happens only on one machine, another one with the 
+> > > same kernel (same self compiled Debian package) works. All previous 3.3 
+> > > kernels work as well.
+> > > 
+> > > Since this machine is remote it is not that easy to bisect to find the 
+> > > bad commit. Are there any other things I can try?
 > 
-> In case of destroying mount namespace on child reaper exit, nsproxy is zeroed
-> to the point already. So, dereferencing of it is invalid.
-> This patch hard-code "init_net" for all network namespace references for NFS
-> callback services. This will be fixed with proper NFS callback
-> containerization.
+> If you create a directory named /var/lib/nfs/v4recovery/, does the
+> problem go away?
 > 
-> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-> ---
->  fs/nfs/callback.c |   11 +++++------
->  1 files changed, 5 insertions(+), 6 deletions(-)
+> My guess would be that it's trying to upcall to the new reboot-recovery
+> state daemon, and you don't have that running.
 > 
-> diff --git a/fs/nfs/callback.c b/fs/nfs/callback.c
-> index 970659d..23ff18f 100644
-> --- a/fs/nfs/callback.c
-> +++ b/fs/nfs/callback.c
-> @@ -17,7 +17,6 @@
->  #include <linux/kthread.h>
->  #include <linux/sunrpc/svcauth_gss.h>
->  #include <linux/sunrpc/bc_xprt.h>
-> -#include <linux/nsproxy.h>
->  
->  #include <net/inet_sock.h>
->  
-> @@ -107,7 +106,7 @@ nfs4_callback_up(struct svc_serv *serv, struct rpc_xprt *xprt)
->  {
->  	int ret;
->  
-> -	ret = svc_create_xprt(serv, "tcp", xprt->xprt_net, PF_INET,
-> +	ret = svc_create_xprt(serv, "tcp", &init_net, PF_INET,
->  				nfs_callback_set_tcpport, SVC_SOCK_ANONYMOUS);
->  	if (ret <= 0)
->  		goto out_err;
-> @@ -115,7 +114,7 @@ nfs4_callback_up(struct svc_serv *serv, struct rpc_xprt *xprt)
->  	dprintk("NFS: Callback listener port = %u (af %u)\n",
->  			nfs_callback_tcpport, PF_INET);
->  
-> -	ret = svc_create_xprt(serv, "tcp", xprt->xprt_net, PF_INET6,
-> +	ret = svc_create_xprt(serv, "tcp", &init_net, PF_INET6,
->  				nfs_callback_set_tcpport, SVC_SOCK_ANONYMOUS);
->  	if (ret > 0) {
->  		nfs_callback_tcpport6 = ret;
-> @@ -184,7 +183,7 @@ nfs41_callback_up(struct svc_serv *serv, struct rpc_xprt *xprt)
->  	 * fore channel connection.
->  	 * Returns the input port (0) and sets the svc_serv bc_xprt on success
->  	 */
-> -	ret = svc_create_xprt(serv, "tcp-bc", xprt->xprt_net, PF_INET, 0,
-> +	ret = svc_create_xprt(serv, "tcp-bc", &init_net, PF_INET, 0,
->  			      SVC_SOCK_ANONYMOUS);
->  	if (ret < 0) {
->  		rqstp = ERR_PTR(ret);
-> @@ -254,7 +253,7 @@ int nfs_callback_up(u32 minorversion, struct rpc_xprt *xprt)
->  	char svc_name[12];
->  	int ret = 0;
->  	int minorversion_setup;
-> -	struct net *net = current->nsproxy->net_ns;
-> +	struct net *net = &init_net;
->  
->  	mutex_lock(&nfs_callback_mutex);
->  	if (cb_info->users++ || cb_info->task != NULL) {
-> @@ -330,7 +329,7 @@ void nfs_callback_down(int minorversion)
->  	cb_info->users--;
->  	if (cb_info->users == 0 && cb_info->task != NULL) {
->  		kthread_stop(cb_info->task);
-> -		svc_shutdown_net(cb_info->serv, current->nsproxy->net_ns);
-> +		svc_shutdown_net(cb_info->serv, &init_net);
->  		svc_exit_thread(cb_info->rqst);
->  		cb_info->serv = NULL;
->  		cb_info->rqst = NULL;
+> Before the addition of that upcall state was kept in
+> /var/lib/nfs/v4recovery.  So we decide whether to use the old method or
+> the new one by checking for the existance of that path.
 > 
+> But I'm guessing we were wrong to assume that existing setups that
+> people perceived as working would have that path, because the failures
+> in the absence of that path were probably less obvious.
+> 
+> --b.
+
+This sounds like the same problem that Hans reported as well. I've not
+been able to reproduce that so far. Here's what I get when I start nfsd
+with no v4recoverdir and nfsdcld isn't running:
+
+[  109.715080] NFSD: starting 90-second grace period
+[  229.984220] NFSD: Unable to end grace period: -110
+
+What I don't quite understand is why the queue_timeout job isn't
+getting run here. What should happen is that 30s after upcall,
+rpc_timeout_upcall_queue should run. The message will be found to be
+still sitting on the , so it should set its status to -ETIMEDOUT
+and wake up the caller.
+
+I can only assume that the queue_timeout job isn't getting run for some
+reason, but I'm unclear on why that would be.
+
+-- 
+Jeff Layton <jlayton@redhat.com>
