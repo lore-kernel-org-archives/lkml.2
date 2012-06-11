@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754588Ab2FKNVP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 09:21:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45215 "EHLO mx1.redhat.com"
+	id S1754692Ab2FKNVa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 09:21:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11016 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754469Ab2FKNVJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 09:21:09 -0400
+	id S1750825Ab2FKNVZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 09:21:25 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
@@ -14,151 +14,387 @@ Cc: eranian@google.com, gorcunov@openvz.org, tzanussi@gmail.com,
         linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
         drepper@gmail.com, asharma@fb.com, benjamin.redelings@nescent.org,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 08/19] perf, tool: Remove unsused evsel parameter from machine__resolve_callchain
-Date: Mon, 11 Jun 2012 15:20:03 +0200
-Message-Id: <1339420814-7379-9-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 09/19] perf, tool: Factor DSO symtab types to generic binary types
+Date: Mon, 11 Jun 2012 15:20:04 +0200
+Message-Id: <1339420814-7379-10-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1339420814-7379-1-git-send-email-jolsa@redhat.com>
 References: <1339420814-7379-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removing unsused evsel parameter from machine__resolve_callchain
-function. Plus related header file and callers changes.
+Adding interface to access DSOs so it could be used
+from another place.
 
-The evsel parameter is unused since following commit:
-  perf callchain: Make callchain cursors TLS
-  commit 472606458f3e1ced5fe3cc5f04e90a6b5a4732cf
-  Author: Namhyung Kim <namhyung.kim@lge.com>
-  Date:   Thu May 31 14:43:26 2012 +0900
+New DSO binary type is added - making current SYMTAB__*
+types more general:
+   DSO_BINARY_TYPE__* = SYMTAB__*
+
+Folowing function is added to return path based on the specified
+binary type:
+   dso__binary_type_file
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/builtin-report.c |    4 ++--
- tools/perf/builtin-script.c |    4 ++--
- tools/perf/builtin-top.c    |    2 +-
- tools/perf/util/map.h       |    2 +-
- tools/perf/util/session.c   |    7 +++----
- tools/perf/util/session.h   |    4 ++--
- 6 files changed, 11 insertions(+), 12 deletions(-)
+ tools/perf/builtin-top.c   |    2 +-
+ tools/perf/util/annotate.c |    2 +-
+ tools/perf/util/symbol.c   |  181 +++++++++++++++++++++++++++-----------------
+ tools/perf/util/symbol.h   |   32 ++++----
+ 4 files changed, 129 insertions(+), 88 deletions(-)
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 25249f7..d20ef95 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -69,7 +69,7 @@ static int perf_report__add_branch_hist_entry(struct perf_tool *tool,
- 
- 	if ((sort__has_parent || symbol_conf.use_callchain)
- 	    && sample->callchain) {
--		err = machine__resolve_callchain(machine, evsel, al->thread,
-+		err = machine__resolve_callchain(machine, al->thread,
- 						 sample->callchain, &parent);
- 		if (err)
- 			return err;
-@@ -140,7 +140,7 @@ static int perf_evsel__add_hist_entry(struct perf_evsel *evsel,
- 	struct hist_entry *he;
- 
- 	if ((sort__has_parent || symbol_conf.use_callchain) && sample->callchain) {
--		err = machine__resolve_callchain(machine, evsel, al->thread,
-+		err = machine__resolve_callchain(machine, al->thread,
- 						 sample->callchain, &parent);
- 		if (err)
- 			return err;
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index 8e395a5..05aa2bb 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -387,7 +387,7 @@ static void print_sample_bts(union perf_event *event,
- 			printf(" ");
- 		else
- 			printf("\n");
--		perf_event__print_ip(event, sample, machine, evsel,
-+		perf_event__print_ip(event, sample, machine,
- 				     PRINT_FIELD(SYM), PRINT_FIELD(DSO),
- 				     PRINT_FIELD(SYMOFFSET));
- 	}
-@@ -431,7 +431,7 @@ static void process_event(union perf_event *event __unused,
- 			printf(" ");
- 		else
- 			printf("\n");
--		perf_event__print_ip(event, sample, machine, evsel,
-+		perf_event__print_ip(event, sample, machine,
- 				     PRINT_FIELD(SYM), PRINT_FIELD(DSO),
- 				     PRINT_FIELD(SYMOFFSET));
- 	}
 diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 6bb0277..79cabe4 100644
+index 79cabe4..246081a 100644
 --- a/tools/perf/builtin-top.c
 +++ b/tools/perf/builtin-top.c
-@@ -774,7 +774,7 @@ static void perf_event__process_sample(struct perf_tool *tool,
+@@ -125,7 +125,7 @@ static int perf_top__parse_source(struct perf_top *top, struct hist_entry *he)
+ 	/*
+ 	 * We can't annotate with just /proc/kallsyms
+ 	 */
+-	if (map->dso->symtab_type == SYMTAB__KALLSYMS) {
++	if (map->dso->symtab_type == DSO_BINARY_TYPE__KALLSYMS) {
+ 		pr_err("Can't annotate %s: No vmlinux file was found in the "
+ 		       "path\n", sym->name);
+ 		sleep(1);
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index 8069dfb..7d3641f 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -777,7 +777,7 @@ fallback:
+ 		free_filename = false;
+ 	}
  
- 		if ((sort__has_parent || symbol_conf.use_callchain) &&
- 		    sample->callchain) {
--			err = machine__resolve_callchain(machine, evsel, al.thread,
-+			err = machine__resolve_callchain(machine, al.thread,
- 							 sample->callchain, &parent);
- 			if (err)
- 				return;
-diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
-index 81371ba..c14c665 100644
---- a/tools/perf/util/map.h
-+++ b/tools/perf/util/map.h
-@@ -157,7 +157,7 @@ void machine__exit(struct machine *self);
- void machine__delete(struct machine *self);
+-	if (dso->symtab_type == SYMTAB__KALLSYMS) {
++	if (dso->symtab_type == DSO_BINARY_TYPE__KALLSYMS) {
+ 		char bf[BUILD_ID_SIZE * 2 + 16] = " with build id ";
+ 		char *build_id_msg = NULL;
  
- int machine__resolve_callchain(struct machine *machine,
--			       struct perf_evsel *evsel, struct thread *thread,
-+			       struct thread *thread,
- 			       struct ip_callchain *chain,
- 			       struct symbol **parent);
- int maps__set_kallsyms_ref_reloc_sym(struct map **maps, const char *symbol_name,
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 2600916..2785ce8 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -289,7 +289,6 @@ struct branch_info *machine__resolve_bstack(struct machine *self,
- }
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 3e2e5ea..b6c456e 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -48,6 +48,22 @@ struct symbol_conf symbol_conf = {
+ 	.symfs            = "",
+ };
  
- int machine__resolve_callchain(struct machine *self,
--			       struct perf_evsel *evsel __used,
- 			       struct thread *thread,
- 			       struct ip_callchain *chain,
- 			       struct symbol **parent)
-@@ -1480,8 +1479,8 @@ struct perf_evsel *perf_session__find_first_evtype(struct perf_session *session,
- }
- 
- void perf_event__print_ip(union perf_event *event, struct perf_sample *sample,
--			  struct machine *machine, struct perf_evsel *evsel,
--			  int print_sym, int print_dso, int print_symoffset)
-+			  struct machine *machine, int print_sym,
-+			  int print_dso, int print_symoffset)
++static enum dso_binary_type binary_type_symtab[] = {
++	DSO_BINARY_TYPE__KALLSYMS,
++	DSO_BINARY_TYPE__GUEST_KALLSYMS,
++	DSO_BINARY_TYPE__JAVA_JIT,
++	DSO_BINARY_TYPE__BUILD_ID_CACHE,
++	DSO_BINARY_TYPE__FEDORA_DEBUGINFO,
++	DSO_BINARY_TYPE__UBUNTU_DEBUGINFO,
++	DSO_BINARY_TYPE__BUILDID_DEBUGINFO,
++	DSO_BINARY_TYPE__SYSTEM_PATH_DSO,
++	DSO_BINARY_TYPE__GUEST_KMODULE,
++	DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE,
++	DSO_BINARY_TYPE__NOT_FOUND,
++};
++
++#define DSO_BINARY_TYPE__SYMTAB_CNT sizeof(binary_type_symtab)
++
+ int dso__name_len(const struct dso *dso)
  {
- 	struct addr_location al;
- 	struct callchain_cursor_node *node;
-@@ -1495,7 +1494,7 @@ void perf_event__print_ip(union perf_event *event, struct perf_sample *sample,
+ 	if (!dso)
+@@ -318,7 +334,7 @@ struct dso *dso__new(const char *name)
+ 		dso__set_short_name(dso, dso->name);
+ 		for (i = 0; i < MAP__NR_TYPES; ++i)
+ 			dso->symbols[i] = dso->symbol_names[i] = RB_ROOT;
+-		dso->symtab_type = SYMTAB__NOT_FOUND;
++		dso->symtab_type = DSO_BINARY_TYPE__NOT_FOUND;
+ 		dso->loaded = 0;
+ 		dso->sorted_by_name = 0;
+ 		dso->has_build_id = 0;
+@@ -806,9 +822,9 @@ int dso__load_kallsyms(struct dso *dso, const char *filename,
+ 	symbols__fixup_end(&dso->symbols[map->type]);
  
- 	if (symbol_conf.use_callchain && sample->callchain) {
+ 	if (dso->kernel == DSO_TYPE_GUEST_KERNEL)
+-		dso->symtab_type = SYMTAB__GUEST_KALLSYMS;
++		dso->symtab_type = DSO_BINARY_TYPE__GUEST_KALLSYMS;
+ 	else
+-		dso->symtab_type = SYMTAB__KALLSYMS;
++		dso->symtab_type = DSO_BINARY_TYPE__KALLSYMS;
  
--		if (machine__resolve_callchain(machine, evsel, al.thread,
-+		if (machine__resolve_callchain(machine, al.thread,
- 						sample->callchain, NULL) != 0) {
- 			if (verbose)
- 				error("Failed to resolve callchain. Skipping\n");
-diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index 7a5434c..877d781 100644
---- a/tools/perf/util/session.h
-+++ b/tools/perf/util/session.h
-@@ -150,8 +150,8 @@ struct perf_evsel *perf_session__find_first_evtype(struct perf_session *session,
- 					    unsigned int type);
+ 	return dso__split_kallsyms(dso, map, filter);
+ }
+@@ -1593,31 +1609,96 @@ out:
+ char dso__symtab_origin(const struct dso *dso)
+ {
+ 	static const char origin[] = {
+-		[SYMTAB__KALLSYMS]	      = 'k',
+-		[SYMTAB__JAVA_JIT]	      = 'j',
+-		[SYMTAB__BUILD_ID_CACHE]      = 'B',
+-		[SYMTAB__FEDORA_DEBUGINFO]    = 'f',
+-		[SYMTAB__UBUNTU_DEBUGINFO]    = 'u',
+-		[SYMTAB__BUILDID_DEBUGINFO]   = 'b',
+-		[SYMTAB__SYSTEM_PATH_DSO]     = 'd',
+-		[SYMTAB__SYSTEM_PATH_KMODULE] = 'K',
+-		[SYMTAB__GUEST_KALLSYMS]      =  'g',
+-		[SYMTAB__GUEST_KMODULE]	      =  'G',
++		[DSO_BINARY_TYPE__KALLSYMS]		= 'k',
++		[DSO_BINARY_TYPE__JAVA_JIT]		= 'j',
++		[DSO_BINARY_TYPE__BUILD_ID_CACHE]	= 'B',
++		[DSO_BINARY_TYPE__FEDORA_DEBUGINFO]	= 'f',
++		[DSO_BINARY_TYPE__UBUNTU_DEBUGINFO]	= 'u',
++		[DSO_BINARY_TYPE__BUILDID_DEBUGINFO]	= 'b',
++		[DSO_BINARY_TYPE__SYSTEM_PATH_DSO]	= 'd',
++		[DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE]	= 'K',
++		[DSO_BINARY_TYPE__GUEST_KALLSYMS]	= 'g',
++		[DSO_BINARY_TYPE__GUEST_KMODULE]	= 'G',
+ 	};
  
- void perf_event__print_ip(union perf_event *event, struct perf_sample *sample,
--			  struct machine *machine, struct perf_evsel *evsel,
--			  int print_sym, int print_dso, int print_symoffset);
-+			  struct machine *machine, int print_sym,
-+			  int print_dso, int print_symoffset);
+-	if (dso == NULL || dso->symtab_type == SYMTAB__NOT_FOUND)
++	if (dso == NULL || dso->symtab_type == DSO_BINARY_TYPE__NOT_FOUND)
+ 		return '!';
+ 	return origin[dso->symtab_type];
+ }
  
- int perf_session__cpu_bitmap(struct perf_session *session,
- 			     const char *cpu_list, unsigned long *cpu_bitmap);
++int dso__binary_type_file(struct dso *dso, enum dso_binary_type type,
++			  char *root_dir, char *file, size_t size)
++{
++	char build_id_hex[BUILD_ID_SIZE * 2 + 1];
++	int ret = 0;
++
++	switch (type) {
++	case DSO_BINARY_TYPE__BUILD_ID_CACHE:
++		/* skip the locally configured cache if a symfs is given */
++		if (symbol_conf.symfs[0] ||
++		    (dso__build_id_filename(dso, file, size) == NULL))
++			ret = -1;
++		break;
++
++	case DSO_BINARY_TYPE__FEDORA_DEBUGINFO:
++		snprintf(file, size, "%s/usr/lib/debug%s.debug",
++			 symbol_conf.symfs, dso->long_name);
++		break;
++
++	case DSO_BINARY_TYPE__UBUNTU_DEBUGINFO:
++		snprintf(file, size, "%s/usr/lib/debug%s",
++			 symbol_conf.symfs, dso->long_name);
++		break;
++
++	case DSO_BINARY_TYPE__BUILDID_DEBUGINFO:
++		if (!dso->has_build_id) {
++			ret = -1;
++			break;
++		}
++
++		build_id__sprintf(dso->build_id,
++				  sizeof(dso->build_id),
++				  build_id_hex);
++		snprintf(file, size,
++			 "%s/usr/lib/debug/.build-id/%.2s/%s.debug",
++			 symbol_conf.symfs, build_id_hex, build_id_hex + 2);
++		break;
++
++	case DSO_BINARY_TYPE__SYSTEM_PATH_DSO:
++		snprintf(file, size, "%s%s",
++			 symbol_conf.symfs, dso->long_name);
++		break;
++
++	case DSO_BINARY_TYPE__GUEST_KMODULE:
++		snprintf(file, size, "%s%s%s", symbol_conf.symfs,
++			 root_dir, dso->long_name);
++		break;
++
++	case DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE:
++		snprintf(file, size, "%s%s", symbol_conf.symfs,
++			 dso->long_name);
++		break;
++
++	default:
++	case DSO_BINARY_TYPE__KALLSYMS:
++	case DSO_BINARY_TYPE__GUEST_KALLSYMS:
++	case DSO_BINARY_TYPE__JAVA_JIT:
++	case DSO_BINARY_TYPE__NOT_FOUND:
++		ret = -1;
++		break;
++	}
++
++	return ret;
++}
++
+ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
+ {
+-	int size = PATH_MAX;
+ 	char *name;
+ 	int ret = -1;
+ 	int fd;
++	u_int i;
+ 	struct machine *machine;
+-	const char *root_dir;
++	char *root_dir = (char *) "";
+ 	int want_symtab;
+ 
+ 	dso__set_loaded(dso, map->type);
+@@ -1632,7 +1713,7 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
+ 	else
+ 		machine = NULL;
+ 
+-	name = malloc(size);
++	name = malloc(PATH_MAX);
+ 	if (!name)
+ 		return -1;
+ 
+@@ -1651,69 +1732,27 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
+ 		}
+ 
+ 		ret = dso__load_perf_map(dso, map, filter);
+-		dso->symtab_type = ret > 0 ? SYMTAB__JAVA_JIT :
+-					      SYMTAB__NOT_FOUND;
++		dso->symtab_type = ret > 0 ? DSO_BINARY_TYPE__JAVA_JIT :
++					     DSO_BINARY_TYPE__NOT_FOUND;
+ 		return ret;
+ 	}
+ 
++	if (machine)
++		root_dir = machine->root_dir;
++
+ 	/* Iterate over candidate debug images.
+ 	 * On the first pass, only load images if they have a full symtab.
+ 	 * Failing that, do a second pass where we accept .dynsym also
+ 	 */
+ 	want_symtab = 1;
+ restart:
+-	for (dso->symtab_type = SYMTAB__BUILD_ID_CACHE;
+-	     dso->symtab_type != SYMTAB__NOT_FOUND;
+-	     dso->symtab_type++) {
+-		switch (dso->symtab_type) {
+-		case SYMTAB__BUILD_ID_CACHE:
+-			/* skip the locally configured cache if a symfs is given */
+-			if (symbol_conf.symfs[0] ||
+-			    (dso__build_id_filename(dso, name, size) == NULL)) {
+-				continue;
+-			}
+-			break;
+-		case SYMTAB__FEDORA_DEBUGINFO:
+-			snprintf(name, size, "%s/usr/lib/debug%s.debug",
+-				 symbol_conf.symfs, dso->long_name);
+-			break;
+-		case SYMTAB__UBUNTU_DEBUGINFO:
+-			snprintf(name, size, "%s/usr/lib/debug%s",
+-				 symbol_conf.symfs, dso->long_name);
+-			break;
+-		case SYMTAB__BUILDID_DEBUGINFO: {
+-			char build_id_hex[BUILD_ID_SIZE * 2 + 1];
++	for (i = 0; i < DSO_BINARY_TYPE__SYMTAB_CNT; i++) {
+ 
+-			if (!dso->has_build_id)
+-				continue;
++		dso->symtab_type = binary_type_symtab[i];
+ 
+-			build_id__sprintf(dso->build_id,
+-					  sizeof(dso->build_id),
+-					  build_id_hex);
+-			snprintf(name, size,
+-				 "%s/usr/lib/debug/.build-id/%.2s/%s.debug",
+-				 symbol_conf.symfs, build_id_hex, build_id_hex + 2);
+-			}
+-			break;
+-		case SYMTAB__SYSTEM_PATH_DSO:
+-			snprintf(name, size, "%s%s",
+-			     symbol_conf.symfs, dso->long_name);
+-			break;
+-		case SYMTAB__GUEST_KMODULE:
+-			if (map->groups && machine)
+-				root_dir = machine->root_dir;
+-			else
+-				root_dir = "";
+-			snprintf(name, size, "%s%s%s", symbol_conf.symfs,
+-				 root_dir, dso->long_name);
+-			break;
+-
+-		case SYMTAB__SYSTEM_PATH_KMODULE:
+-			snprintf(name, size, "%s%s", symbol_conf.symfs,
+-				 dso->long_name);
+-			break;
+-		default:;
+-		}
++		if (dso__binary_type_file(dso, dso->symtab_type,
++					  root_dir, name, PATH_MAX))
++			continue;
+ 
+ 		/* Name is now the name of the next image to try */
+ 		fd = open(name, O_RDONLY);
+@@ -1930,9 +1969,9 @@ struct map *machine__new_module(struct machine *machine, u64 start,
+ 		return NULL;
+ 
+ 	if (machine__is_host(machine))
+-		dso->symtab_type = SYMTAB__SYSTEM_PATH_KMODULE;
++		dso->symtab_type = DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE;
+ 	else
+-		dso->symtab_type = SYMTAB__GUEST_KMODULE;
++		dso->symtab_type = DSO_BINARY_TYPE__GUEST_KMODULE;
+ 	map_groups__insert(&machine->kmaps, map);
+ 	return map;
+ }
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index af0752b..0dc30f9 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -155,6 +155,20 @@ struct addr_location {
+ 	s32	      cpu;
+ };
+ 
++enum dso_binary_type {
++	DSO_BINARY_TYPE__KALLSYMS = 0,
++	DSO_BINARY_TYPE__GUEST_KALLSYMS,
++	DSO_BINARY_TYPE__JAVA_JIT,
++	DSO_BINARY_TYPE__BUILD_ID_CACHE,
++	DSO_BINARY_TYPE__FEDORA_DEBUGINFO,
++	DSO_BINARY_TYPE__UBUNTU_DEBUGINFO,
++	DSO_BINARY_TYPE__BUILDID_DEBUGINFO,
++	DSO_BINARY_TYPE__SYSTEM_PATH_DSO,
++	DSO_BINARY_TYPE__GUEST_KMODULE,
++	DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE,
++	DSO_BINARY_TYPE__NOT_FOUND,
++};
++
+ enum dso_kernel_type {
+ 	DSO_TYPE_USER = 0,
+ 	DSO_TYPE_KERNEL,
+@@ -173,13 +187,13 @@ struct dso {
+ 	struct rb_root	 symbol_names[MAP__NR_TYPES];
+ 	enum dso_kernel_type	kernel;
+ 	enum dso_swap_type	needs_swap;
++	enum dso_binary_type	symtab_type;
+ 	u8		 adjust_symbols:1;
+ 	u8		 has_build_id:1;
+ 	u8		 hit:1;
+ 	u8		 annotate_warned:1;
+ 	u8		 sname_alloc:1;
+ 	u8		 lname_alloc:1;
+-	unsigned char	 symtab_type;
+ 	u8		 sorted_by_name;
+ 	u8		 loaded;
+ 	u8		 build_id[BUILD_ID_SIZE];
+@@ -253,20 +267,6 @@ size_t dso__fprintf_symbols_by_name(struct dso *dso,
+ 				    enum map_type type, FILE *fp);
+ size_t dso__fprintf(struct dso *dso, enum map_type type, FILE *fp);
+ 
+-enum symtab_type {
+-	SYMTAB__KALLSYMS = 0,
+-	SYMTAB__GUEST_KALLSYMS,
+-	SYMTAB__JAVA_JIT,
+-	SYMTAB__BUILD_ID_CACHE,
+-	SYMTAB__FEDORA_DEBUGINFO,
+-	SYMTAB__UBUNTU_DEBUGINFO,
+-	SYMTAB__BUILDID_DEBUGINFO,
+-	SYMTAB__SYSTEM_PATH_DSO,
+-	SYMTAB__GUEST_KMODULE,
+-	SYMTAB__SYSTEM_PATH_KMODULE,
+-	SYMTAB__NOT_FOUND,
+-};
+-
+ char dso__symtab_origin(const struct dso *dso);
+ void dso__set_long_name(struct dso *dso, char *name);
+ void dso__set_build_id(struct dso *dso, void *build_id);
+@@ -303,4 +303,6 @@ bool symbol_type__is_a(char symbol_type, enum map_type map_type);
+ 
+ size_t machine__fprintf_vmlinux_path(struct machine *machine, FILE *fp);
+ 
++int dso__binary_type_file(struct dso *dso, enum dso_binary_type type,
++			  char *root_dir, char *file, size_t size);
+ #endif /* __PERF_SYMBOL */
 -- 
 1.7.7.6
 
