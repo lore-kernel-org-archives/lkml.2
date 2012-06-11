@@ -1,90 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752491Ab2FKV5p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 17:57:45 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:61202 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751321Ab2FKV5o convert rfc822-to-8bit (ORCPT
+	id S1752528Ab2FKV7T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 17:59:19 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:37818 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751840Ab2FKV7S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 17:57:44 -0400
+	Mon, 11 Jun 2012 17:59:18 -0400
+Date: Mon, 11 Jun 2012 18:59:12 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Tim Chen <tim.c.chen@linux.intel.com>, David Ahern <dsahern@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: Does perf inject preserve call chain data?
+Message-ID: <20120611215912.GA3897@infradead.org>
+References: <1337712585.3796.186.camel@schen9-DESK>
+ <4FBC0C10.8010801@gmail.com>
+ <20120608143843.GA9954@infradead.org>
+ <1339173896.3796.230.camel@schen9-DESK>
+ <4FD232B7.7080905@gmail.com>
+ <1339175828.3796.232.camel@schen9-DESK>
+ <20120608195215.GO28225@tassilo.jf.intel.com>
+ <20120609160547.GB9954@infradead.org>
+ <4FD63C52.4090003@linux.intel.com>
 MIME-Version: 1.0
-X-Originating-IP: [41.80.235.154]
-In-Reply-To: <CAHVUoiSp+o58z_-FX73VXcUPzQg1CHW0=B14PYNb-MHDrWm1Vw@mail.gmail.com>
-References: <CAHVUoiQywo=iHKsXQbsVE7coc1FL9A9qy_a71SK94MKNV0GrKA@mail.gmail.com>
- <CAHVUoiTZmzT3vquaDC65AJfCFZX-qS5GjgjP2-+=0R7skurW5g@mail.gmail.com>
- <CAHVUoiQgcAMr874d_yPfm9ssUBOoX+dNLy9JNCOCYwOCrAKXFQ@mail.gmail.com>
- <CAH3drwacayQEZHOidbKKuJ3KjgMvnYzT0S0csXV2QwSmC8nMxg@mail.gmail.com>
- <CAHVUoiSP7SiWCtYPvKS_1RuAV0upWmT06iN7PR1OE6NAtToirQ@mail.gmail.com>
- <CAH3drwY61Pqd1MXxgSYcHRPJF5pNr2FO7vrM_ULsRvMbYjAhOQ@mail.gmail.com>
- <CAHVUoiTfooPSXyVpcg_Khc0rzYcnmvAbGgfko42hOxqukc91_A@mail.gmail.com>
- <CAHVUoiT4FgEpWDLtzfTUaCTZR-rFx76E3MRdU8u9swjmt74ZQg@mail.gmail.com>
- <CAHVUoiQ_csZeh_FEHaCkqmJvHO+Q=UF2Va7V19G-3C=xuSYTPw@mail.gmail.com>
- <CAH3drwa430bUfY4ZHfn583JsDU5Sv=Y5WNaWWXm=a1XpJV1iSw@mail.gmail.com>
- <CAHVUoiSc3mzrgXFo5-T=8HiYYUBTMhBz0TqUwZSek=VgfhEoyA@mail.gmail.com>
- <CAH3drwaBpnicWa=pLnKgxsOb4t4pe_kHsYZW4Ei3q-wKYCA=Rw@mail.gmail.com>
- <CAHVUoiS-rCKnpodhq+8ptg3cVzm2wvtiGf7y4pamnGmz82BDEw@mail.gmail.com>
- <CAPM=9tzWypx7Q49YZW4C9oHre47GEAfh=bhsCSREr2U=rAwobA@mail.gmail.com>
- <CAHVUoiQWX-shQHYahxh3pqcyKyeiLLj6X9bG_0DVShBr8qDwUQ@mail.gmail.com>
- <CAHVUoiRt0PBxNvgRazSPCE1=gGtDBTdQ4kmXhUvkfeJAMWcq3w@mail.gmail.com>
- <CAPM=9tx5-A_SumZ+8Y0xk9NT1p0v-wmqnbgKN+nmSV-J1NCFcg@mail.gmail.com> <CAHVUoiSp+o58z_-FX73VXcUPzQg1CHW0=B14PYNb-MHDrWm1Vw@mail.gmail.com>
-From: Brian Gitonga Marete <marete@toshnix.com>
-Date: Tue, 12 Jun 2012 00:57:23 +0300
-Message-ID: <CAHVUoiR5O3yt7h20H6=HC61jAswqoLNntvJ1HO307ubgUrvxKw@mail.gmail.com>
-Subject: Re: [Regression] [Radeon] Stream command failures and render problems
- in Evergreen (Radeon HD 5600) in kernel 3.4
-To: Dave Airlie <airlied@gmail.com>
-Cc: Jerome Glisse <j.glisse@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        David Airlie <airlied@linux.ie>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Jerome Glisse <jglisse@redhat.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FD63C52.4090003@linux.intel.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 10, 2012 at 9:28 PM, Brian Gitonga Marete
-<marete@toshnix.com> wrote:
-> On Sun, Jun 10, 2012 at 5:28 PM, Dave Airlie <airlied@gmail.com> wrote:
->> On Sun, Jun 10, 2012 at 12:24 PM, Brian Gitonga Marete
->> <marete@toshnix.com> wrote:
->>> On Sat, Jun 9, 2012 at 7:33 PM, Brian Gitonga Marete <marete@toshnix.com> wrote:
->>>> On Sat, Jun 9, 2012 at 7:29 PM, Dave Airlie <airlied@gmail.com> wrote:
->>>>>>
->>>>>> OK. I actually hadn't gotten around to testing yet. Will do so later
->>>>>> today. About libdrm, should I test against git or the Ubuntu version?
->>>>>
->>>>> The Ubuntu version please.
->>>>
->>>> OK.Will report results in a couple of hours :)
->>>
->>> Hello. Got around to this after some delay and after applying v3 of
->>> them patch to 3.4, where it applied cleanly, I get this during build:
->>>
->>> drivers/gpu/drm/radeon/evergreen_cs.c: In function
->>> ‘evergreen_cs_track_validate_cb’:
->>> drivers/gpu/drm/radeon/evergreen_cs.c:447:28: error: request for
->>> member ‘ptr’ in something not a structure or union
->>
->> Can you change the -> to a . on that line
->
-> Actually, the other way around :) Compilation has now passed that
-> point and will report on test results.
->
->
-> --
-> Brian Gitonga Marete
-> Toshnix Systems - http://toshnix.com
+Em Mon, Jun 11, 2012 at 11:43:30AM -0700, Andi Kleen escreveu:
+> ># perf top -a -G sleep 5
+> >
+> >Where it would figure out that since a workload was specified, it should
+> >just not be refreshing the screen every N seconds but wait till the
+> >workload to finish and then present the results, without setting up any
+> >perf.data files.
+> 
+> But top does not generate email'able ASCII format like perf report
+> does, doesn't it?
 
-Hello. I am happy to report that v3 of Jerome's patch works and fixes
-the regressions. I have tested 3.4 with the patch against Ubuntu's
-stock drm, radeon and mesa-glx packages.
+http://git.kernel.org/?p=linux/kernel/git/acme/linux.git;a=commit;h=a78e5b82e99d8d284afc012ef015ef3332153aaf
 
-A quick reminder that the patch needs the small fix detailed in my
-exchange with David above.
+perf hists browser: Implement printing snapshots to files
 
-Thanks very much to Jerome and David!
+To avoid having to resort to --stdio, that expands everything, instead
+allow the user to go on expanding the relevant callchains and then press
+'P' to print that view.
 
--- 
-Brian Gitonga Marete
-Toshnix Systems - http://toshnix.com
+As the hists browser is used for both static (report) and dynamic (top)
+views, it prints to a 'perf.hists.N' sequence, i.e. multiple snapshots
+can be taken in report and top.
+
+</>
+
+On a v3.6 kernel near you, together with:
+
+http://git.kernel.org/?p=linux/kernel/git/acme/linux.git;a=commit;h=bd622d64e4bb0d10e8f0c2df4de9303ee415ffae
+
+:-)
+
+- Arnaldo
