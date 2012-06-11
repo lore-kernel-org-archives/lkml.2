@@ -1,45 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755261Ab2FKOlr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 10:41:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38272 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752040Ab2FKOlp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 10:41:45 -0400
-Date: Mon, 11 Jun 2012 16:41:32 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>
-Subject: Re: [PATCH] mm: do not use page_count without a page pin
-Message-ID: <20120611144132.GT3094@redhat.com>
-References: <1339373872-31969-1-git-send-email-minchan@kernel.org>
- <4FD59C31.6000606@jp.fujitsu.com>
- <20120611074440.GI3094@redhat.com>
- <20120611133043.GA2340@barrios>
+	id S1755299Ab2FKOnd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 10:43:33 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46740 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755270Ab2FKOn3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 10:43:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120611133043.GA2340@barrios>
+In-Reply-To: <Pine.LNX.4.44L0.1206111014010.1607-100000@iolanthe.rowland.org>
+References: <1339391600-17815-1-git-send-email-ming.lei@canonical.com>
+	<Pine.LNX.4.44L0.1206111014010.1607-100000@iolanthe.rowland.org>
+Date: Mon, 11 Jun 2012 22:43:26 +0800
+Message-ID: <CACVXFVNS2U-t7_8WwVNhQprP29y_xiZX25WwoBD5SRpch-p+7A@mail.gmail.com>
+Subject: Re: [PATCH] driver core: fix shutdown races with probe/remove(v2)
+From: Ming Lei <ming.lei@canonical.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Minchan,
+On Mon, Jun 11, 2012 at 10:16 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
 
-On Mon, Jun 11, 2012 at 10:30:43PM +0900, Minchan Kim wrote:
-> AFAIUC, you mean we have to increase reference count of head page?
-> If so, it's not in __count_immobile_pages because it is already race-likely function
-> so it shouldn't be critical although race happens.
+>> +
+>> +             if (nonlocked)
+>> +                     dev_err(dev, "can't hold %slock for shutdown\n",
+>> +                                     nonlocked == 1 ? "" : "parent ");
+>
+> Even if the parent can't be locked, you should still try to lock the
+> device.
 
-I meant, shouldn't we take into account the full size? If it's in the
-lru the whole thing can be moved away.
+I have considered doing it, but which may consume another 1sec.
 
-  if (!PageLRU(page)) {
-     nr_pages = hpage_nr_pages(page);
-     barrier();
-     found += nr_pages;
-     iter += nr_pages-1;
-  }
+Also if the parent lock has been held, it is very possibly that the
+device can't be probed or removed at the same time, so just logged
+the crazy thing and go ahead.
+
+Thanks,
+--
+Ming Lei
