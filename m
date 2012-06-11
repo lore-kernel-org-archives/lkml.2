@@ -1,145 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755429Ab2FKPFA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 11:05:00 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:37728 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752148Ab2FKPE6 (ORCPT
+	id S1755499Ab2FKPFG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 11:05:06 -0400
+Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:35711 "HELO
+	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752148Ab2FKPFB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 11:04:58 -0400
-Message-ID: <4FD608EC.2050307@panasas.com>
-Date: Mon, 11 Jun 2012 18:04:12 +0300
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
+	Mon, 11 Jun 2012 11:05:01 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: jyKnJEMVM1lqdQJ18xq3Tb2qXzYVog6_rIB2obIHy_jGgxT
+ JVHm4_PKyPdZgYH71A.xQerwaJF9J2qDJT.DXWVFNpX5LUc8Jg7IEP5fTBCs
+ UNQLcUQQL0xKQZgaqd_sUWOqQ3PiF_2nSoxYgw5gmq2aXJl.e_75_8TwtOwb
+ CyOHfQyev9jrpxWhnyLsnQDfRPIj9KMr_8a1C7H4kBtuesmjmbOBeKo20efu
+ iWR_mN7w5ZZoJxgLpBuuM27EWfdjA.SaYcecYzSc1_iXt8XMiJgl51TzjA0p
+ 0mhYuU_o0j3F_4MwSBTdAyODzLoVfAyZPlQdeNvVmTju0KVNWm_yD.qDQX0T
+ iRwIr3xzhsJiazvrCdDrCBoCB9oABE71VMXSKZYruw1gXf8fxAL8bHt8VGkc
+ E29QkPOyoxWdYMWuk4.rPg3ndvgdiKj4SUevf
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Mon, 11 Jun 2012 10:04:58 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: JoonSoo Kim <js1304@gmail.com>
+cc: Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 1/4] slub: change declare of get_slab() to inline at all
+ times
+In-Reply-To: <CAAmzW4Nt2ev-M_Mw=xTaJEsRgKxrPNnz=rXrJenNA-6bEvZKtQ@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1206111004190.31180@router.home>
+References: <1339176197-13270-1-git-send-email-js1304@gmail.com> <alpine.DEB.2.00.1206081401090.28466@router.home> <CAAmzW4Nt2ev-M_Mw=xTaJEsRgKxrPNnz=rXrJenNA-6bEvZKtQ@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Jeff Layton <jlayton@redhat.com>
-CC: bfields <bfields@fieldses.org>, Steve Dickson <steved@redhat.com>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Joerg Platte <jplatte@naasa.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Hans de Bruin <jmdebruin@xmsnet.nl>
-Subject: Re: Kernel 3.4.X NFS server regression
-References: <4FD47D4E.9070307@naasa.net> <1339340441.4751.1.camel@lade.trondhjem.org> <20120611121634.GB7654@fieldses.org> <20120611083932.24e27e39@corrin.poochiereds.net> <4FD5F35A.3000903@panasas.com> <20120611095132.045a8d09@corrin.poochiereds.net> <4FD5FB28.4050003@panasas.com> <20120611101141.143fff3c@corrin.poochiereds.net> <4FD60472.7020207@panasas.com> <20120611105515.3b99942c@tlielax.poochiereds.net>
-In-Reply-To: <20120611105515.3b99942c@tlielax.poochiereds.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2012 05:55 PM, Jeff Layton wrote:
+On Sun, 10 Jun 2012, JoonSoo Kim wrote:
 
-> On Mon, 11 Jun 2012 17:45:06 +0300
-> Boaz Harrosh <bharrosh@panasas.com> wrote:
-> 
->> On 06/11/2012 05:11 PM, Jeff Layton wrote:
->>
->>> On Mon, 11 Jun 2012 17:05:28 +0300
->>> Boaz Harrosh <bharrosh@panasas.com> wrote:
->>>
->>>> On 06/11/2012 04:51 PM, Jeff Layton wrote:
->>>>
->>>>>
->>>>> That was considered here, but the problem with the usermode helper is
->>>>> that you can't pass anything back to the kernel but a simple status
->>>>> code (and that's assuming that you wait for it to exit). In the near
->>>>> future, we'll need to pass back more info to the kernel for this, so
->>>>> the usermode helper callout wasn't suitable.
->>>>>
->>>>
->>>>
->>>> I have answered that in my mail. Repeated here again. Well you made 
->>>> a simple mistake. Because it is *easy* to pass back any number and
->>>> size of information from user-mode.
->>>>
->>>> You just setup a sysfs entry points where the answers are written
->>>> back to. It's an easy trick to setup a thread safe, way with a
->>>> cookie but 90% of the time you don't have to. Say you set up
->>>> a structure of per-client (identified uniquely) then user mode
->>>> answers back per client, concurrency will not do any harm, since
->>>> you answer to the same question the same answer. ans so on. Each
->>>> problem it's own.
->>>>
->>>> If you want we can talk about this, it would be easy for me to setup
->>>> a toll free conference number we can all use.
->>>
->>> That helpful advice would have been welcome about 3-4 months ago when I
->>> first proposed this in detail. At that point you're working with
->>> multiple upcall/downcall mechanisms, which was something I was keen to
->>> avoid.
->>>
->>> I'm not opposed to moving in that direction, but it basically means
->>> you're going to rip out everything I've got here so far and replace it.
->>>
->>> If you're willing to do that work, I'll be happy to work with you on
->>> it, but I don't have the time or inclination to do that on my own right
->>> now.
->>>
->>
->>
->> No such luck. sorry. I wish I could, but coming from a competing server
->> company, you can imagine the priority of that ever happening.
->> (Even though I use the Linux-Server everyday for my development and
->>  am putting lots of efforts into still, mainly in pnfs)
->>
->> Hopefully re-examining the code, it could all be salvaged just the
->> same, only lots of code thrown a way.
->>
->> But mean-while please address my concern below:
->> Boaz Harrosh wrote: 
->>
->>> One more thing, the most important one. We have already fixed that in the
->>> past and I was hoping the lesson was learned. Apparently it was not, and
->>> we are doomed to do this mistake for ever!!
->>>
->>> What ever crap fails times out and crashes, in the recovery code, we don't
->>> give a dam. It should never affect any Server-client communication.
->>>
->>> When the grace periods ends the clients gates opens period. *Any* error
->>> return from state recovery code must be carefully ignored and normal
->>> operations resumed. At most on error, we move into a mode where any
->>> recovery request from client is accepted, since we don't have any better
->>> data to verify it.
->>>
->>> Please comb recovery code to make sure any catastrophe is safely ignored.
->>> We already did that before and it used to work.
->>
->>
->> We should make sure that any state recovery code does not interfere with
->> regular operations. and fails gracefully / shuts up. 
->>
->> We used to have that, apparently it re-broke. Clients should always be granted
->> access, after grace period. And Server should be made sure not to fail in any
->> situation.
->>
->> I would look into it but I'm not uptodate anymore, I wish you or Bruce could.
->>
->> Thanks for your work so far, sorry to be bearer of bad news
->> Boaz
-> 
-> This problem turned out to be a fairly straightforward bug in the
-> rpc_pipefs queue timeout mechanism that was causing the laundromat job
-> to hang and hence to keep the state lock locked. I just sent a patch
-> that should fix it.
-> 
-> I guess I'm not clear on what you're saying is broken. Modulo the
-> original bug here, clients are allowed access after the grace period
-> whether the upcalls are working or not.
-> 
-> What we cannot allow is reclaim requests outside of the grace period,
-> since we can't verify whether there was conflicting state in the
-> interim period. That's true whether the server has a functioning client
-> tracking mechanism or not.
-> 
+> 2012/6/9 Christoph Lameter <cl@linux.com>:
+> > On Sat, 9 Jun 2012, Joonsoo Kim wrote:
+> >
+> >> -static struct kmem_cache *get_slab(size_t size, gfp_t flags)
+> >> +static __always_inline struct kmem_cache *get_slab(size_t size, gfp_t flags)
+> >
+> > I thought that the compiler felt totally free to inline static functions
+> > at will? This may be a matter of compiler optimization settings. I can
+> > understand the use of always_inline in a header file but why in a .c file?
+>
+> Yes, but the compiler with -O2 doesn't inline get_slab() which
+> declared just 'static'.
+> I think that inlining get_slab() have a performance benefit, so add
+> '__always_inline' to declare of get_slab().
+> Other functions like slab_alloc, slab_free also use 'always_inline' in
+> .c file (slub.c)
 
+Yea I thought about removing those since I would think that the compiler
+should be doing the right thing.
 
-I agree. Sorry we keep communicating on two different threads. Dis regard
-the other last mail.
-
-Sounds good then. My point, we should be very defensive with  state recovery
-code not getting in our way.
-
-Thanks
-Boaz
+Does gcc inline with higher optimization settings?
 
