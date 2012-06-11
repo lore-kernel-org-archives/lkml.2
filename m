@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754146Ab2FKNUx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 09:20:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42677 "EHLO mx1.redhat.com"
+	id S1754362Ab2FKNVD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 09:21:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18495 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753776Ab2FKNUt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 09:20:49 -0400
+	id S1754254Ab2FKNVA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 09:21:00 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
@@ -14,246 +14,79 @@ Cc: eranian@google.com, gorcunov@openvz.org, tzanussi@gmail.com,
         linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
         drepper@gmail.com, asharma@fb.com, benjamin.redelings@nescent.org,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 01/19] perf: Unified API to record selective sets of arch registers
-Date: Mon, 11 Jun 2012 15:19:56 +0200
-Message-Id: <1339420814-7379-2-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 05/19] perf: Add perf_output_skip function to skip bytes in sample
+Date: Mon, 11 Jun 2012 15:20:00 +0200
+Message-Id: <1339420814-7379-6-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1339420814-7379-1-git-send-email-jolsa@redhat.com>
 References: <1339420814-7379-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This brings a new API to help the selective dump of registers on
-event sampling, and its implementation for x86 arch.
+Introducing perf_output_skip function to be able to skip
+data within the perf ring buffer.
 
-Added HAVE_PERF_REGS config option to determine if the architecture
-provides perf registers ABI.
+When writing data into perf ring buffer we first reserve needed
+place in ring buffer and then copy the actual data.
 
-The information about desired registers will be passed in u64 mask.
-It's up to the architecture to map the registers into the mask bits.
+There's a possibility we won't be able to fill all the reserved
+size with data, so we need a way to skip the remaining bytes.
 
-For the x86 arch implementation, both 32 and 64 bit registers
-bits are defined within single enum to ensure 64 bit system can
-provide register dump for compat task if needed in the future.
+This is going to be usefull when storing the user stack dump,
+where we might end up with less data than we originally requested.
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- arch/Kconfig                     |    6 +++
- arch/x86/Kconfig                 |    1 +
- arch/x86/include/asm/perf_regs.h |   34 ++++++++++++++
- arch/x86/kernel/Makefile         |    2 +
- arch/x86/kernel/perf_regs.c      |   91 ++++++++++++++++++++++++++++++++++++++
- include/linux/perf_regs.h        |   19 ++++++++
- 6 files changed, 153 insertions(+), 0 deletions(-)
- create mode 100644 arch/x86/include/asm/perf_regs.h
- create mode 100644 arch/x86/kernel/perf_regs.c
- create mode 100644 include/linux/perf_regs.h
+ include/linux/perf_event.h  |    2 ++
+ kernel/events/internal.h    |    4 ++++
+ kernel/events/ring_buffer.c |    6 ++++++
+ 3 files changed, 12 insertions(+), 0 deletions(-)
 
-diff --git a/arch/Kconfig b/arch/Kconfig
-index 8c3d957..32f4873 100644
---- a/arch/Kconfig
-+++ b/arch/Kconfig
-@@ -222,6 +222,12 @@ config HAVE_PERF_EVENTS_NMI
- 	  subsystem.  Also has support for calculating CPU cycle events
- 	  to determine how many clock cycles in a given period.
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 741e997..8960968 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -1297,6 +1297,8 @@ extern int perf_output_begin(struct perf_output_handle *handle,
+ extern void perf_output_end(struct perf_output_handle *handle);
+ extern unsigned int perf_output_copy(struct perf_output_handle *handle,
+ 			     const void *buf, unsigned int len);
++extern unsigned int perf_output_skip(struct perf_output_handle *handle,
++				     unsigned int len);
+ extern int perf_swevent_get_recursion_context(void);
+ extern void perf_swevent_put_recursion_context(int rctx);
+ extern void perf_event_enable(struct perf_event *event);
+diff --git a/kernel/events/internal.h b/kernel/events/internal.h
+index 2206a0f..be1ef29 100644
+--- a/kernel/events/internal.h
++++ b/kernel/events/internal.h
+@@ -114,6 +114,10 @@ static inline int memcpy_common(void *dst, const void *src, size_t n)
  
-+config HAVE_PERF_REGS
-+	bool
-+	help
-+	  Support selective register dumps for perf events. This includes
-+	  bit-mapping of each registers and a unique architecture id.
-+
- config HAVE_ARCH_JUMP_LABEL
- 	bool
+ DEFINE_OUTPUT_COPY(__output_copy, memcpy_common)
  
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index d35438e..457d8d6 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -60,6 +60,7 @@ config X86
- 	select HAVE_MIXED_BREAKPOINTS_REGS
- 	select PERF_EVENTS
- 	select HAVE_PERF_EVENTS_NMI
-+	select HAVE_PERF_REGS
- 	select ANON_INODES
- 	select HAVE_ALIGNED_STRUCT_PAGE if SLUB && !M386
- 	select HAVE_CMPXCHG_LOCAL if !M386
-diff --git a/arch/x86/include/asm/perf_regs.h b/arch/x86/include/asm/perf_regs.h
-new file mode 100644
-index 0000000..0397bfc
---- /dev/null
-+++ b/arch/x86/include/asm/perf_regs.h
-@@ -0,0 +1,34 @@
-+#ifndef _ASM_X86_PERF_REGS_H
-+#define _ASM_X86_PERF_REGS_H
++#define MEMCPY_SKIP(dst, src, n) (n)
 +
-+enum perf_event_x86_regs {
-+	PERF_REG_X86_AX,
-+	PERF_REG_X86_BX,
-+	PERF_REG_X86_CX,
-+	PERF_REG_X86_DX,
-+	PERF_REG_X86_SI,
-+	PERF_REG_X86_DI,
-+	PERF_REG_X86_BP,
-+	PERF_REG_X86_SP,
-+	PERF_REG_X86_IP,
-+	PERF_REG_X86_FLAGS,
-+	PERF_REG_X86_CS,
-+	PERF_REG_X86_DS,
-+	PERF_REG_X86_ES,
-+	PERF_REG_X86_FS,
-+	PERF_REG_X86_GS,
-+	PERF_REG_X86_R8,
-+	PERF_REG_X86_R9,
-+	PERF_REG_X86_R10,
-+	PERF_REG_X86_R11,
-+	PERF_REG_X86_R12,
-+	PERF_REG_X86_R13,
-+	PERF_REG_X86_R14,
-+	PERF_REG_X86_R15,
-+	PERF_REG_X86_SS,
++DEFINE_OUTPUT_COPY(__output_skip, MEMCPY_SKIP)
 +
-+	/* non ABI */
-+	PERF_REG_X86_64_MAX = PERF_REG_X86_SS + 1,
-+	PERF_REG_X86_32_MAX = PERF_REG_X86_GS + 1,
-+};
-+#endif /* _ASM_X86_PERF_REGS_H */
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index 8215e56..8d7a619 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -100,6 +100,8 @@ obj-$(CONFIG_SWIOTLB)			+= pci-swiotlb.o
- obj-$(CONFIG_OF)			+= devicetree.o
- obj-$(CONFIG_UPROBES)			+= uprobes.o
+ #ifndef arch_perf_out_copy_user
+ #define arch_perf_out_copy_user __copy_from_user_inatomic
+ #endif
+diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
+index b4c2ad3..23cb34f 100644
+--- a/kernel/events/ring_buffer.c
++++ b/kernel/events/ring_buffer.c
+@@ -188,6 +188,12 @@ unsigned int perf_output_copy(struct perf_output_handle *handle,
+ 	return __output_copy(handle, buf, len);
+ }
  
-+obj-$(CONFIG_PERF_EVENTS)		+= perf_regs.o
-+
- ###
- # 64 bit specific files
- ifeq ($(CONFIG_X86_64),y)
-diff --git a/arch/x86/kernel/perf_regs.c b/arch/x86/kernel/perf_regs.c
-new file mode 100644
-index 0000000..87f0e81
---- /dev/null
-+++ b/arch/x86/kernel/perf_regs.c
-@@ -0,0 +1,91 @@
-+
-+#include <linux/kernel.h>
-+#include <linux/bug.h>
-+#include <linux/stddef.h>
-+#include <asm/perf_regs.h>
-+#include <asm/ptrace.h>
-+
-+#ifdef CONFIG_X86_32
-+#define PERF_REG_X86_MAX PERF_REG_X86_32_MAX
-+#else
-+#define PERF_REG_X86_MAX PERF_REG_X86_64_MAX
-+#endif
-+
-+#define PT_REGS_OFFSET(id, r) [id] = offsetof(struct pt_regs, r)
-+
-+static unsigned int pt_regs_offset[PERF_REG_X86_MAX] = {
-+	PT_REGS_OFFSET(PERF_REG_X86_AX, ax),
-+	PT_REGS_OFFSET(PERF_REG_X86_BX, bx),
-+	PT_REGS_OFFSET(PERF_REG_X86_CX, cx),
-+	PT_REGS_OFFSET(PERF_REG_X86_DX, dx),
-+	PT_REGS_OFFSET(PERF_REG_X86_SI, si),
-+	PT_REGS_OFFSET(PERF_REG_X86_DI, di),
-+	PT_REGS_OFFSET(PERF_REG_X86_BP, bp),
-+	PT_REGS_OFFSET(PERF_REG_X86_SP, sp),
-+	PT_REGS_OFFSET(PERF_REG_X86_IP, ip),
-+	PT_REGS_OFFSET(PERF_REG_X86_FLAGS, flags),
-+	PT_REGS_OFFSET(PERF_REG_X86_CS, cs),
-+#ifdef CONFIG_X86_32
-+	PT_REGS_OFFSET(PERF_REG_X86_DS, ds),
-+	PT_REGS_OFFSET(PERF_REG_X86_ES, es),
-+	PT_REGS_OFFSET(PERF_REG_X86_FS, fs),
-+	PT_REGS_OFFSET(PERF_REG_X86_GS, gs),
-+#else
-+	/*
-+	 * The pt_regs struct does not store
-+	 * ds, es, fs, gs in 64 bit mode.
-+	 */
-+	(unsigned int) -1,
-+	(unsigned int) -1,
-+	(unsigned int) -1,
-+	(unsigned int) -1,
-+#endif
-+#ifdef CONFIG_X86_64
-+	PT_REGS_OFFSET(PERF_REG_X86_R8, r8),
-+	PT_REGS_OFFSET(PERF_REG_X86_R9, r9),
-+	PT_REGS_OFFSET(PERF_REG_X86_R10, r10),
-+	PT_REGS_OFFSET(PERF_REG_X86_R11, r11),
-+	PT_REGS_OFFSET(PERF_REG_X86_R12, r12),
-+	PT_REGS_OFFSET(PERF_REG_X86_R13, r13),
-+	PT_REGS_OFFSET(PERF_REG_X86_R14, r14),
-+	PT_REGS_OFFSET(PERF_REG_X86_R15, r15),
-+	PT_REGS_OFFSET(PERF_REG_X86_SS, ss),
-+#endif
-+};
-+
-+u64 perf_reg_value(struct pt_regs *regs, int idx)
++unsigned int perf_output_skip(struct perf_output_handle *handle,
++			      unsigned int len)
 +{
-+	if (WARN_ON_ONCE(idx > ARRAY_SIZE(pt_regs_offset)))
-+		return 0;
-+
-+	return regs_get_register(regs, pt_regs_offset[idx]);
++	return __output_skip(handle, NULL, len);
 +}
 +
-+#define REG_RESERVED (~((1ULL << PERF_REG_X86_MAX) - 1ULL))
-+
-+#ifdef CONFIG_X86_32
-+int perf_reg_validate(u64 mask)
-+{
-+	if (mask & REG_RESERVED)
-+		return -EINVAL;
-+
-+	return 0;
-+}
-+
-+#else /* CONFIG_X86_64 */
-+#define REG_NOSUPPORT ((1ULL << PERF_REG_X86_DS) | \
-+		       (1ULL << PERF_REG_X86_ES) | \
-+		       (1ULL << PERF_REG_X86_FS) | \
-+		       (1ULL << PERF_REG_X86_GS))
-+
-+int perf_reg_validate(u64 mask)
-+{
-+	if (mask & REG_RESERVED)
-+		return -EINVAL;
-+
-+	if (mask & REG_NOSUPPORT)
-+		return -EINVAL;
-+
-+	return 0;
-+}
-+#endif /* CONFIG_X86_32 */
-diff --git a/include/linux/perf_regs.h b/include/linux/perf_regs.h
-new file mode 100644
-index 0000000..a2f1a98
---- /dev/null
-+++ b/include/linux/perf_regs.h
-@@ -0,0 +1,19 @@
-+#ifndef _LINUX_PERF_REGS_H
-+#define _LINUX_PERF_REGS_H
-+
-+#ifdef CONFIG_HAVE_PERF_REGS
-+#include <asm/perf_regs.h>
-+u64 perf_reg_value(struct pt_regs *regs, int idx);
-+int perf_reg_validate(u64 mask);
-+#else
-+static inline u64 perf_reg_value(struct pt_regs *regs, int idx)
-+{
-+	return 0;
-+}
-+
-+static inline int perf_reg_validate(u64 mask)
-+{
-+	return mask ? -ENOSYS : 0;
-+}
-+#endif /* CONFIG_HAVE_PERF_REGS */
-+#endif /* _LINUX_PERF_REGS_H */
+ void perf_output_end(struct perf_output_handle *handle)
+ {
+ 	perf_output_put_handle(handle);
 -- 
 1.7.7.6
 
