@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755144Ab2FKOeq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 10:34:46 -0400
-Received: from antcom.de ([188.40.178.216]:40106 "EHLO chuck.antcom.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754844Ab2FKOep (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 10:34:45 -0400
-Message-ID: <4FD60203.8010103@antcom.de>
-Date: Mon, 11 Jun 2012 16:34:43 +0200
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
-        srinivas.bakki@nxp.com, aletes.xgr@gmail.com
-Subject: Re: [PATCH 8/14] ARM: LPC32xx: Clock adjustment for key matrix controller
-References: <1339412537-24485-1-git-send-email-stigge@antcom.de> <1339412537-24485-9-git-send-email-stigge@antcom.de> <201206111416.19251.arnd@arndb.de>
-In-Reply-To: <201206111416.19251.arnd@arndb.de>
-X-Enigmail-Version: 1.4
-OpenPGP: url=subkeys.pgp.net
-Content-Type: text/plain; charset=UTF-8
+	id S1755149Ab2FKOhf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 10:37:35 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:61243 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754006Ab2FKOhd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 10:37:33 -0400
+Message-ID: <1339425523.4999.56.camel@lappy>
+Subject: Re: [PATCH v3 04/10] mm: frontswap: split out
+ __frontswap_unuse_pages
+From: Sasha Levin <levinsasha928@gmail.com>
+To: konrad@darnok.org
+Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Minchan Kim <minchan@kernel.org>, Konrad Wilk <konrad.wilk@oracle.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Date: Mon, 11 Jun 2012 16:38:43 +0200
+In-Reply-To: <CAPbh3ruqk+dU4C8b=mSko+2EjumrswgkO6CUp73=8thvLNAA8A@mail.gmail.com>
+References: <1339325468-30614-1-git-send-email-levinsasha928@gmail.com>
+	 <1339325468-30614-5-git-send-email-levinsasha928@gmail.com>
+	 <4FD5856C.5060708@kernel.org> <1339410650.4999.38.camel@lappy>
+	 <e82083d1-af9f-4766-992c-926413f02423@default>
+	 <CAPbh3ruqk+dU4C8b=mSko+2EjumrswgkO6CUp73=8thvLNAA8A@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 06/11/2012 04:16 PM, Arnd Bergmann wrote:
-> On Monday 11 June 2012, Roland Stigge wrote:
->> The clock.c file needs to be changed to match the automatic device name to its
->> clock.
->>
->> Signed-off-by: Roland Stigge <stigge@antcom.de>
->> Acked-by: Rob Herring <rob.herring@calxeda.com>
->>
+On Mon, 2012-06-11 at 10:31 -0400, Konrad Rzeszutek Wilk wrote:
+> > I'm not sure of the correct kernel style but I like the fact
+> > that assert_spin_locked both documents the lock requirement and tests
+> > it at runtime.
 > 
-> Should this not be in the same patch as the one that moves the device over
-> to DT probing? Otherwise you have a non-working setup if only one patch
-> is applied.
+> The kernel style is to do "
+> 3) Separate your changes.
+> 
+> Separate _logical changes_ into a single patch file.
+> "
+> 
+> So it is fine, but it should be in its own patch. 
 
-The actual driver is new for v3.6 (hopefully), DT-only.
+It is one logical change: I've moved a block of code that has to be
+locked in the swap mutex into it's own function, adding the spinlock
+assertion isn't new code, nor it relates to any new code. It's there to
+assert that what happened before still happens now.
 
-Rather than merging the patches, I'd let the key driver go in via input,
-and the clock.c adjustment via arm-soc.
-
-Roland
