@@ -1,95 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753785Ab2FKNvA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 09:51:00 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:64666 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751687Ab2FKNu7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 09:50:59 -0400
-From: kosaki.motohiro@gmail.com
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux.com>
-Subject: [PATCH] mm: fix protection column misplacing in /proc/zoneinfo
-Date: Mon, 11 Jun 2012 09:50:50 -0400
-Message-Id: <1339422650-9798-1-git-send-email-kosaki.motohiro@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	id S1754123Ab2FKNvq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 09:51:46 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:34746 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751821Ab2FKNvp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 09:51:45 -0400
+Date: Mon, 11 Jun 2012 15:51:40 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Zhouping Liu <zliu@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Hillf Danton <dhillf@gmail.com>, hi3766691@gmail.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+Subject: Re: Kernel panic - not syncing: Attempted to kill the idle task!
+Message-ID: <20120611135140.GA3913@x1.osrc.amd.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	Zhouping Liu <zliu@redhat.com>,
+	Andrea Arcangeli <aarcange@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Hillf Danton <dhillf@gmail.com>, hi3766691@gmail.com,
+	LKML <linux-kernel@vger.kernel.org>,
+	Andreas Herrmann <andreas.herrmann3@amd.com>
+References: <cfc29313-7fe7-4140-b9e6-053d925b4897@zmail13.collab.prod.int.phx2.redhat.com>
+ <1339421268.30462.15.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1339421268.30462.15.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+On Mon, Jun 11, 2012 at 03:27:48PM +0200, Peter Zijlstra wrote:
+> On Fri, 2012-06-08 at 21:38 -0400, Zhouping Liu wrote:
+> > # cat /sys/devices/system/node/node*/distance
+> > 10 17 17 24 24 24 30 30
+> > 18 10 30 18 18 24 24 24
+> > 18 24 10 24 24 17 30 30
+> > 24 18 23 10 24 17 17 30
+> > 24 17 24 24 10 18 30 18
+> > 31 24 17 18 18 10 24 24
+> > 30 24 30 17 24 24 10 18
+> > 30 24 30 24 17 24 17 10 
+> 
+> You have to be kidding me right? That thing is a complete trainwreck,
+> what idiot vendor did this?
 
-commit 2244b95a7b (zoned vm counters: basic ZVC (zoned vm counter)
-implementation) broke protection column. It is a part of "pages"
-attribute. but not it is showed after vmstats column.
+HP ProLiant DL785 G6
 
-This patch restores the right position.
+http://www.sanweiying.org/download/debug_kernel/kernel_panic_48d212a2eecaca
 
-<before>
-  pages free     3965
-        min      32
-        low      40
-        high     48
-        scanned  0
-        spanned  4080
-        present  3909
-    (snip)
-    numa_local   1
-    numa_other   0
-    nr_anon_transparent_hugepages 0
-        protection: (0, 3512, 7867, 7867)
+contains dmesg and there's some serious fun with how the box boots:
 
-<after>
-  pages free     3965
-        min      32
-        low      40
-        high     48
-        scanned  0
-        spanned  4080
-        present  3909
-        protection: (0, 3504, 7851, 7851)
-    nr_free_pages 3965
-    nr_inactive_anon 0
+node 0, cpus: 0, 8, 16...
+node 1, cpus: 1, 9, 17...
 
-Cc: Christoph Lameter <cl@linux.com>
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
----
- mm/vmstat.c |   15 +++++++--------
- 1 files changed, 7 insertions(+), 8 deletions(-)
+> If you boot that machine again, does it have the same stupid table or
+> are we staring at white-noise?
 
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index 1bbbbd9..9f5f2a9 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -987,19 +987,18 @@ static void zoneinfo_show_print(struct seq_file *m, pg_data_t *pgdat,
- 		   zone->pages_scanned,
- 		   zone->spanned_pages,
- 		   zone->present_pages);
--
--	for (i = 0; i < NR_VM_ZONE_STAT_ITEMS; i++)
--		seq_printf(m, "\n    %-12s %lu", vmstat_text[i],
--				zone_page_state(zone, i));
--
- 	seq_printf(m,
- 		   "\n        protection: (%lu",
- 		   zone->lowmem_reserve[0]);
- 	for (i = 1; i < ARRAY_SIZE(zone->lowmem_reserve); i++)
- 		seq_printf(m, ", %lu", zone->lowmem_reserve[i]);
--	seq_printf(m,
--		   ")"
--		   "\n  pagesets");
-+	seq_printf(m, ")");
-+
-+	for (i = 0; i < NR_VM_ZONE_STAT_ITEMS; i++)
-+		seq_printf(m, "\n    %-12s %lu", vmstat_text[i],
-+				zone_page_state(zone, i));
-+
-+	seq_printf(m, "\n  pagesets");
- 	for_each_online_cpu(i) {
- 		struct per_cpu_pageset *pageset;
- 
+I'll bet it does.
+
 -- 
-1.7.1
-
+Regards/Gruss,
+Boris.
