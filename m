@@ -1,91 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752272Ab2FKJCi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 05:02:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40742 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751131Ab2FKJCh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 05:02:37 -0400
-Date: Mon, 11 Jun 2012 11:02:34 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
-        rientjes@google.com, akpm@linux-foundation.org, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH -V8 13/16] hugetlb/cgroup: add hugetlb cgroup control
- files
-Message-ID: <20120611090234.GE12402@tiehlicka.suse.cz>
-References: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <1339232401-14392-14-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339232401-14392-14-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752426Ab2FKJD5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 05:03:57 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:40969 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751131Ab2FKJD4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 05:03:56 -0400
+Date: Mon, 11 Jun 2012 02:03:52 -0700 (PDT)
+Message-Id: <20120611.020352.1962768244524496467.davem@davemloft.net>
+To: stigge@antcom.de
+Cc: eric.dumazet@gmail.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
+        srinivas.bakki@nxp.com, aletes.xgr@gmail.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/3] net: lpc_eth: Replace WARN() trace with simple
+ pr_warn()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4FD5AE1D.9030807@antcom.de>
+References: <1339401793-12258-1-git-send-email-stigge@antcom.de>
+	<1339403108.6001.1697.camel@edumazet-glaptop>
+	<4FD5AE1D.9030807@antcom.de>
+X-Mailer: Mew version 6.5 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 09-06-12 14:29:58, Aneesh Kumar K.V wrote:
-> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-> 
-> Add the control files for hugetlb controller
-> 
-> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-> ---
-[...]
-> +int __init hugetlb_cgroup_file_init(int idx)
-> +{
-> +	char buf[32];
-> +	struct cftype *cft;
-> +	struct hstate *h = &hstates[idx];
-> +
-> +	/* format the size */
-> +	mem_fmt(buf, 32, huge_page_size(h));
-> +
-> +	/* Add the limit file */
-> +	cft = &h->cgroup_files[0];
-> +	snprintf(cft->name, MAX_CFTYPE_NAME, "%s.limit_in_bytes", buf);
-> +	cft->private = MEMFILE_PRIVATE(idx, RES_LIMIT);
-> +	cft->read = hugetlb_cgroup_read;
-> +	cft->write_string = hugetlb_cgroup_write;
-> +
-> +	/* Add the usage file */
-> +	cft = &h->cgroup_files[1];
-> +	snprintf(cft->name, MAX_CFTYPE_NAME, "%s.usage_in_bytes", buf);
-> +	cft->private = MEMFILE_PRIVATE(idx, RES_USAGE);
-> +	cft->read = hugetlb_cgroup_read;
-> +
-> +	/* Add the MAX usage file */
-> +	cft = &h->cgroup_files[2];
-> +	snprintf(cft->name, MAX_CFTYPE_NAME, "%s.max_usage_in_bytes", buf);
-> +	cft->private = MEMFILE_PRIVATE(idx, RES_MAX_USAGE);
-> +	cft->trigger = hugetlb_cgroup_reset;
-> +	cft->read = hugetlb_cgroup_read;
-> +
-> +	/* Add the failcntfile */
-> +	cft = &h->cgroup_files[3];
-> +	snprintf(cft->name, MAX_CFTYPE_NAME, "%s.failcnt", buf);
-> +	cft->private  = MEMFILE_PRIVATE(idx, RES_FAILCNT);
-> +	cft->trigger  = hugetlb_cgroup_reset;
-> +	cft->read = hugetlb_cgroup_read;
-> +
-> +	/* NULL terminate the last cft */
-> +	cft = &h->cgroup_files[4];
-> +	memset(cft, 0, sizeof(*cft));
-> +
-> +	WARN_ON(cgroup_add_cftypes(&hugetlb_subsys, h->cgroup_files));
-> +
-> +	return 0;
-> +}
-> +
+From: Roland Stigge <stigge@antcom.de>
+Date: Mon, 11 Jun 2012 10:36:45 +0200
 
-I am not so familiar with the recent changes in the generic cgroup
-infrastructure but isn't this somehow automated?
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+> But maybe this is wrong. Can you please give me a hint how the net
+> subsystem makes sure that this doesn't happen under normal circumstances?
+
+Well if you are asking this question then you didn't read my feedback,
+because I explained exactly what prevents this.
