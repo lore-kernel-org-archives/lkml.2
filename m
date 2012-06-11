@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752170Ab2FKR37 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 13:29:59 -0400
+	id S1753003Ab2FKRaE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 13:30:04 -0400
 Received: from mail-lb0-f174.google.com ([209.85.217.174]:38807 "EHLO
 	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750942Ab2FKR35 (ORCPT
+	with ESMTP id S1751797Ab2FKR37 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 13:29:57 -0400
+	Mon, 11 Jun 2012 13:29:59 -0400
 From: sjur.brandeland@stericsson.com
 To: Ohad Ben-Cohen <ohad@wizery.com>
 Cc: Loic PALLARDY <loic.pallardy@stericsson.com>,
@@ -15,10 +15,12 @@ Cc: Loic PALLARDY <loic.pallardy@stericsson.com>,
         Linus Walleij <linus.walleij@linaro.org>,
         =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjurbren@gmail.com>,
         =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
-Subject: [PATCHv2 0/5] remoteproc: Custom firmware handling.
-Date: Mon, 11 Jun 2012 19:29:43 +0200
-Message-Id: <1339435788-16283-1-git-send-email-sjur.brandeland@stericsson.com>
+Subject: [PATCHv2 2/5] remoteproc: Add function rproc_get_boot_addr
+Date: Mon, 11 Jun 2012 19:29:45 +0200
+Message-Id: <1339435788-16283-3-git-send-email-sjur.brandeland@stericsson.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1339435788-16283-1-git-send-email-sjur.brandeland@stericsson.com>
+References: <1339435788-16283-1-git-send-email-sjur.brandeland@stericsson.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -28,56 +30,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Sjur Brændeland <sjur.brandeland@stericsson.com>
 
-Hi Ohad,
-Here is a new patch series. I dropped the two bug-fix patches
-since last time, as you already included these. I've tried to
-address all of your review comments since last time, hope I
-didn't miss any.
+Prepare for introduction of custom firmware loaders by
+moving the function operating on ELF data-structures into
+separate functions. Move lookup of the boot_addr in the
+ELF binary to the function rproc_get_boot_addr().
 
-Status:
-I have done a simple simulated test now with the STE firmware
-loader and main-flow seems ok, but I haven't done any negative 
-tests.
+Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
+---
+ drivers/remoteproc/remoteproc_core.c |   24 +++++++++++++++---------
+ 1 files changed, 15 insertions(+), 9 deletions(-)
 
-Changes since V1:
-- Changed rproc_set_boot_addr to rproc_get_boot_addr avoiding
-  firmware handlers to manipulate the rproc structure.
-- Functions in remoteproc_elf_loader are now static and prefixed
-   with _rproc to avoid any namespace issues.
-- Added commit note about rproc_da_to_va() becoming non-static
-  and moved it to remoteproc_internal.h
-- Made the elf handler default.
-- Moved pointer to rproc_fw_ops from the rproc_ops struct to
-  the rproc struct.
-- Fixed typos
-- The fw_ops are no longer exported as symbols.
-- The struct rproc_fw_ops is made const.
-- The inline helper functions are moved from remoteproc.h to
-  remoteproc_internal.h
-- The latest patch is a bit odd. The ste_modem_remoteproc module
-  contains only the firmware handler, and nothing else.
-
-Regards,
-Sjur
-
-Sjur Brændeland (5):
-  remoteproc: Pass struct fw to load_segments and find_rsc_table.
-  remoteproc: Add function rproc_get_boot_addr
-  remoteproc: Move Elf related functions to separate file
-  remoteproc: Support custom firmware handlers
-  remoteproc: Add custom STE-modem firmware loader.
-
- drivers/remoteproc/Kconfig                       |    9 +
- drivers/remoteproc/Makefile                      |    1 +
- drivers/remoteproc/remoteproc_core.c             |  251 +------------------
- drivers/remoteproc/remoteproc_elf_loader.c       |  289 ++++++++++++++++++++++
- drivers/remoteproc/remoteproc_internal.h         |   37 +++
- drivers/remoteproc/remoteproc_ste_modem_loader.c |  179 +++++++++++++
- include/linux/remoteproc.h                       |   23 ++-
- 7 files changed, 546 insertions(+), 243 deletions(-)
- create mode 100644 drivers/remoteproc/remoteproc_elf_loader.c
- create mode 100644 drivers/remoteproc/remoteproc_ste_modem_loader.c
-
+diff --git a/drivers/remoteproc/remoteproc_core.c b/drivers/remoteproc/remoteproc_core.c
+index 3e02f7f..895674d 100644
+--- a/drivers/remoteproc/remoteproc_core.c
++++ b/drivers/remoteproc/remoteproc_core.c
+@@ -1003,6 +1003,20 @@ static int rproc_fw_sanity_check(struct rproc *rproc, const struct firmware *fw)
+ 	return 0;
+ }
+ 
++/**
++ * rproc_get_boot_addr() - Get rproc's boot address.
++ * @fw: the ELF firmware image
++ *
++ * This function reads the ELF entry point address.
++ * Note that the boot address is not a configurable property of all remote
++ * processors. Some will always boot at a specific hard-coded address.
++ */
++u32 rproc_get_boot_addr(struct rproc *rproc, const struct firmware *fw)
++{
++	struct elf32_hdr *ehdr  = (struct elf32_hdr *)fw->data;
++	return ehdr->e_entry;
++}
++
+ /*
+  * take a firmware and boot a remote processor with it.
+  */
+@@ -1010,7 +1024,6 @@ static int rproc_fw_boot(struct rproc *rproc, const struct firmware *fw)
+ {
+ 	struct device *dev = rproc->dev;
+ 	const char *name = rproc->firmware;
+-	struct elf32_hdr *ehdr;
+ 	struct resource_table *table;
+ 	int ret, tablesz;
+ 
+@@ -1018,8 +1031,6 @@ static int rproc_fw_boot(struct rproc *rproc, const struct firmware *fw)
+ 	if (ret)
+ 		return ret;
+ 
+-	ehdr = (struct elf32_hdr *)fw->data;
+-
+ 	dev_info(dev, "Booting fw image %s, size %zd\n", name, fw->size);
+ 
+ 	/*
+@@ -1032,12 +1043,7 @@ static int rproc_fw_boot(struct rproc *rproc, const struct firmware *fw)
+ 		return ret;
+ 	}
+ 
+-	/*
+-	 * The ELF entry point is the rproc's boot addr (though this is not
+-	 * a configurable property of all remote processors: some will always
+-	 * boot at a specific hardcoded address).
+-	 */
+-	rproc->bootaddr = ehdr->e_entry;
++	rproc->bootaddr = rproc_get_boot_addr(rproc, fw);
+ 
+ 	/* look for the resource table */
+ 	table = rproc_find_rsc_table(rproc, fw, &tablesz);
 -- 
 1.7.5.4
 
