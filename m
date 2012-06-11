@@ -1,44 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752190Ab2FKVkP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 17:40:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57724 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751840Ab2FKVkN (ORCPT
+	id S1752138Ab2FKVld (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 17:41:33 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:44801 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751424Ab2FKVlc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 17:40:13 -0400
-Date: Mon, 11 Jun 2012 14:40:11 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH] mm: clean up __count_immobile_pages
-Message-Id: <20120611144011.60fd76c8.akpm@linux-foundation.org>
-In-Reply-To: <1339380442-1137-1-git-send-email-minchan@kernel.org>
-References: <1339380442-1137-1-git-send-email-minchan@kernel.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 11 Jun 2012 17:41:32 -0400
+MIME-Version: 1.0
+In-Reply-To: <1339428307-3850-13-git-send-email-lee.jones@linaro.org>
+References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org>
+	<1339428307-3850-13-git-send-email-lee.jones@linaro.org>
+Date: Mon, 11 Jun 2012 23:41:31 +0200
+Message-ID: <CACRpkdbJ_3Br=RbfbNRBrtz6zc3MH_B6f9E-2aQk=XhMHPnnrA@mail.gmail.com>
+Subject: Re: [PATCH 12/14] ARM: ux500: Correctly reference IRQs supplied by
+ the AB8500 from Device Tree
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, arnd@arndb.de, grant.likely@secretlab.ca
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 11 Jun 2012 11:07:22 +0900
-Minchan Kim <minchan@kernel.org> wrote:
+On Mon, Jun 11, 2012 at 5:25 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
-> __count_immobile_pages naming is rather awkward.
-> This patch clean up the function and add comment.
+> The AB8500 driver has now been provided with IRQ domain support. This
+> means we can request IRQs from any of it's uses via Device Tree. This
+> patch advertises the AB8500 as an Interrupt Controller and provides the
+> correct calls in the format the driver expects.
+>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-This conflicts with
-mm-compaction-handle-incorrect-migrate_unmovable-type-pageblocks.patch
-and its fixes.
+Looks good to me,
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-> + * This function can race in PageLRU and MIGRATE_MOVABLE can have unmovable
-> + * pages so that it might be not exact.
-
-I don't understand this.  Functions race against other functions, not
-against a page flag.  Can we have another attempt at this description
-please?
-
+Yours,
+Linus Walleij
