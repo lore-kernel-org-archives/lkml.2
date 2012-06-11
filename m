@@ -1,79 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752591Ab2FKK3X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 06:29:23 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:34759 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751431Ab2FKK3V (ORCPT
+	id S1752979Ab2FKK3l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 06:29:41 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:41164 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752364Ab2FKK3k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 06:29:21 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
-        rientjes@google.com, akpm@linux-foundation.org, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH -V8 14/16] hugetlb/cgroup: add charge/uncharge calls for HugeTLB alloc/free
-In-Reply-To: <20120611092133.GI12402@tiehlicka.suse.cz>
-References: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1339232401-14392-15-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20120611092133.GI12402@tiehlicka.suse.cz>
-User-Agent: Notmuch/0.13.2+35~g0ff57e7 (http://notmuchmail.org) Emacs/24.1.50.1 (x86_64-unknown-linux-gnu)
-Date: Mon, 11 Jun 2012 15:59:11 +0530
-Message-ID: <8762ay5eh4.fsf@skywalker.in.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-x-cbid: 12061110-8256-0000-0000-000002E080DB
+	Mon, 11 Jun 2012 06:29:40 -0400
+Message-ID: <1339410650.4999.38.camel@lappy>
+Subject: Re: [PATCH v3 04/10] mm: frontswap: split out
+ __frontswap_unuse_pages
+From: Sasha Levin <levinsasha928@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: dan.magenheimer@oracle.com, konrad.wilk@oracle.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 11 Jun 2012 12:30:50 +0200
+In-Reply-To: <4FD5856C.5060708@kernel.org>
+References: <1339325468-30614-1-git-send-email-levinsasha928@gmail.com>
+	 <1339325468-30614-5-git-send-email-levinsasha928@gmail.com>
+	 <4FD5856C.5060708@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michal Hocko <mhocko@suse.cz> writes:
+On Mon, 2012-06-11 at 14:43 +0900, Minchan Kim wrote:
+> On 06/10/2012 07:51 PM, Sasha Levin wrote:
+> 
+> > An attempt at making frontswap_shrink shorter and more readable. This patch
+> > splits out walking through the swap list to find an entry with enough
+> > pages to unuse.
+> > 
+> > Also, assert that the internal __frontswap_unuse_pages is called under swap
+> > lock, since that part of code was previously directly happen inside the lock.
+> > 
+> > Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> > ---
+> >  mm/frontswap.c |   59 +++++++++++++++++++++++++++++++++++++-------------------
+> >  1 files changed, 39 insertions(+), 20 deletions(-)
+> > 
+> > diff --git a/mm/frontswap.c b/mm/frontswap.c
+> > index 5faf840..faa43b7 100644
+> > --- a/mm/frontswap.c
+> > +++ b/mm/frontswap.c
+> > @@ -230,6 +230,41 @@ static unsigned long __frontswap_curr_pages(void)
+> >  	return totalpages;
+> >  }
+> >  
+> > +static int __frontswap_unuse_pages(unsigned long total, unsigned long *unused,
+> > +					int *swapid)
+> 
+> 
+> Normally, we use "unsigned int type" instead of swapid.
+> I admit the naming is rather awkward but that should be another patch.
+> So let's keep consistency with swap subsystem.
 
-> On Sat 09-06-12 14:29:59, Aneesh Kumar K.V wrote:
->> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
->> 
->> This adds necessary charge/uncharge calls in the HugeTLB code.  We do
->> hugetlb cgroup charge in page alloc and uncharge in compound page destructor.
->> 
->> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
->> ---
->>  mm/hugetlb.c        |   16 +++++++++++++++-
->>  mm/hugetlb_cgroup.c |    7 +------
->>  2 files changed, 16 insertions(+), 7 deletions(-)
->> 
->> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
->> index bf79131..4ca92a9 100644
->> --- a/mm/hugetlb.c
->> +++ b/mm/hugetlb.c
->> @@ -628,6 +628,8 @@ static void free_huge_page(struct page *page)
->>  	BUG_ON(page_mapcount(page));
->>  
->>  	spin_lock(&hugetlb_lock);
->> +	hugetlb_cgroup_uncharge_page(hstate_index(h),
->> +				     pages_per_huge_page(h), page);
->>  	if (h->surplus_huge_pages_node[nid] && huge_page_order(h) < MAX_ORDER) {
->>  		/* remove the page from active list */
->>  		list_del(&page->lru);
->> @@ -1116,7 +1118,10 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
->>  	struct hstate *h = hstate_vma(vma);
->>  	struct page *page;
->>  	long chg;
->> +	int ret, idx;
->> +	struct hugetlb_cgroup *h_cg;
->>  
->> +	idx = hstate_index(h);
->>  	/*
->>  	 * Processes that did not create the mapping will have no
->>  	 * reserves and will not have accounted against subpool
->> @@ -1132,6 +1137,11 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
->>  		if (hugepage_subpool_get_pages(spool, chg))
->>  			return ERR_PTR(-ENOSPC);
->>  
->> +	ret = hugetlb_cgroup_charge_page(idx, pages_per_huge_page(h), &h_cg);
->
-> So we do not have any page yet and hugetlb_cgroup_charge_cgroup sound
-> more appropriate
->
+I was staying consistent with the naming in mm/frontswap.c. I'll add an
+extra patch to modify it to be similar to what's being used in the rest
+of the swap subsystem.
 
-Will do
+> > +{
+> > +	int ret = -EINVAL;
+> > +	struct swap_info_struct *si = NULL;
+> > +	int si_frontswap_pages;
+> > +	unsigned long total_pages_to_unuse = total;
+> > +	unsigned long pages = 0, pages_to_unuse = 0;
+> > +	int type;
+> > +
+> > +	assert_spin_locked(&swap_lock);
+> 
+> 
+> Normally, we should use this assertion when we can't find swap_lock is hold or not easily
+> by complicated call depth or unexpected use-case like general function.
+> But I expect this function's caller is very limited, not complicated.
+> Just comment write down isn't enough?
 
--aneesh
+Is there a reason not to do it though? Debugging a case where this
+function is called without a swaplock and causes corruption won't be
+easy.
+
+> > +	for (type = swap_list.head; type >= 0; type = si->next) {
+> > +		si = swap_info[type];
+> > +		si_frontswap_pages = atomic_read(&si->frontswap_pages);
+> > +		if (total_pages_to_unuse < si_frontswap_pages) {
+> > +			pages = pages_to_unuse = total_pages_to_unuse;
+> > +		} else {
+> > +			pages = si_frontswap_pages;
+> > +			pages_to_unuse = 0; /* unuse all */
+> > +		}
+> > +		/* ensure there is enough RAM to fetch pages from frontswap */
+> > +		if (security_vm_enough_memory_mm(current->mm, pages)) {
+> > +			ret = -ENOMEM;
+> 
+> 
+> Nipick:
+> I am not sure detailed error returning would be good.
+> Caller doesn't matter it now but it can consider it in future.
+> Hmm, 
+
+Is there a reason to avoid returning a meaningful error when it's pretty
+easy?
+
 
