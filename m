@@ -1,94 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755550Ab2FKPCZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 11:02:25 -0400
-Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:39934 "HELO
-	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755033Ab2FKPCV (ORCPT
+	id S1755429Ab2FKPFA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 11:05:00 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:37728 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752148Ab2FKPE6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 11:02:21 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: AJG3d2EVM1lLEiR5w4Id_D4raHQQhRW6_y_RhDp_aCuA9Rm
- xP3rNY2s_a0Y3.hLxwhSvaoegh.PNv6b1AaJxlBhM3mO9QabpVr8EEEik823
- pQGGp2vAInG2QpZp8qDJPf0DOFmGkO3gLuK5p4g4E6YAfrM0oYISvp6XHt3N
- LtY0tdUa3DgDEc.t35TmWT5rv9.ky0A8xwtkujI8Qh74ssa9UXgEstr_1ZCa
- aeMMNoO4vjX4H2c6g1Pu6cSyWEwM27G9l2lNFEsRA8a8advdPu6ZShFJn3pX
- PXJ1Ykb92D9a19GTOq0yIbaqNY0BOt5KbTx0iBLEV8SpEPYSMIrx4IGmBFsR
- GPt.XiCA8R7mk84RvO61xflD3fCEOCPt_886UE3JhpiPodafw.hlmdLmX9vi
- xDHruVnp_RSeYcxkk5V_wqsbw3Wc2El2sL3aM
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Mon, 11 Jun 2012 10:02:17 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: kosaki.motohiro@gmail.com
-cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@google.com>, Dave Jones <davej@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, stable@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 2/6] mempolicy: remove all mempolicy sharing
-In-Reply-To: <1339406250-10169-3-git-send-email-kosaki.motohiro@gmail.com>
-Message-ID: <alpine.DEB.2.00.1206110944120.31180@router.home>
-References: <1339406250-10169-1-git-send-email-kosaki.motohiro@gmail.com> <1339406250-10169-3-git-send-email-kosaki.motohiro@gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 11 Jun 2012 11:04:58 -0400
+Message-ID: <4FD608EC.2050307@panasas.com>
+Date: Mon, 11 Jun 2012 18:04:12 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Jeff Layton <jlayton@redhat.com>
+CC: bfields <bfields@fieldses.org>, Steve Dickson <steved@redhat.com>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Joerg Platte <jplatte@naasa.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Hans de Bruin <jmdebruin@xmsnet.nl>
+Subject: Re: Kernel 3.4.X NFS server regression
+References: <4FD47D4E.9070307@naasa.net> <1339340441.4751.1.camel@lade.trondhjem.org> <20120611121634.GB7654@fieldses.org> <20120611083932.24e27e39@corrin.poochiereds.net> <4FD5F35A.3000903@panasas.com> <20120611095132.045a8d09@corrin.poochiereds.net> <4FD5FB28.4050003@panasas.com> <20120611101141.143fff3c@corrin.poochiereds.net> <4FD60472.7020207@panasas.com> <20120611105515.3b99942c@tlielax.poochiereds.net>
+In-Reply-To: <20120611105515.3b99942c@tlielax.poochiereds.net>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some more attempts to cleanup changelogs:
+On 06/11/2012 05:55 PM, Jeff Layton wrote:
 
-> The problem was created by a reference count imbalance. Example, In following case,
-> mbind(addr, len) try to replace mempolicies of vma1 and vma2 and then they will
-> be share the same mempolicy, and the new mempolicy has MPOL_F_SHARED flag.
+> On Mon, 11 Jun 2012 17:45:06 +0300
+> Boaz Harrosh <bharrosh@panasas.com> wrote:
+> 
+>> On 06/11/2012 05:11 PM, Jeff Layton wrote:
+>>
+>>> On Mon, 11 Jun 2012 17:05:28 +0300
+>>> Boaz Harrosh <bharrosh@panasas.com> wrote:
+>>>
+>>>> On 06/11/2012 04:51 PM, Jeff Layton wrote:
+>>>>
+>>>>>
+>>>>> That was considered here, but the problem with the usermode helper is
+>>>>> that you can't pass anything back to the kernel but a simple status
+>>>>> code (and that's assuming that you wait for it to exit). In the near
+>>>>> future, we'll need to pass back more info to the kernel for this, so
+>>>>> the usermode helper callout wasn't suitable.
+>>>>>
+>>>>
+>>>>
+>>>> I have answered that in my mail. Repeated here again. Well you made 
+>>>> a simple mistake. Because it is *easy* to pass back any number and
+>>>> size of information from user-mode.
+>>>>
+>>>> You just setup a sysfs entry points where the answers are written
+>>>> back to. It's an easy trick to setup a thread safe, way with a
+>>>> cookie but 90% of the time you don't have to. Say you set up
+>>>> a structure of per-client (identified uniquely) then user mode
+>>>> answers back per client, concurrency will not do any harm, since
+>>>> you answer to the same question the same answer. ans so on. Each
+>>>> problem it's own.
+>>>>
+>>>> If you want we can talk about this, it would be easy for me to setup
+>>>> a toll free conference number we can all use.
+>>>
+>>> That helpful advice would have been welcome about 3-4 months ago when I
+>>> first proposed this in detail. At that point you're working with
+>>> multiple upcall/downcall mechanisms, which was something I was keen to
+>>> avoid.
+>>>
+>>> I'm not opposed to moving in that direction, but it basically means
+>>> you're going to rip out everything I've got here so far and replace it.
+>>>
+>>> If you're willing to do that work, I'll be happy to work with you on
+>>> it, but I don't have the time or inclination to do that on my own right
+>>> now.
+>>>
+>>
+>>
+>> No such luck. sorry. I wish I could, but coming from a competing server
+>> company, you can imagine the priority of that ever happening.
+>> (Even though I use the Linux-Server everyday for my development and
+>>  am putting lots of efforts into still, mainly in pnfs)
+>>
+>> Hopefully re-examining the code, it could all be salvaged just the
+>> same, only lots of code thrown a way.
+>>
+>> But mean-while please address my concern below:
+>> Boaz Harrosh wrote: 
+>>
+>>> One more thing, the most important one. We have already fixed that in the
+>>> past and I was hoping the lesson was learned. Apparently it was not, and
+>>> we are doomed to do this mistake for ever!!
+>>>
+>>> What ever crap fails times out and crashes, in the recovery code, we don't
+>>> give a dam. It should never affect any Server-client communication.
+>>>
+>>> When the grace periods ends the clients gates opens period. *Any* error
+>>> return from state recovery code must be carefully ignored and normal
+>>> operations resumed. At most on error, we move into a mode where any
+>>> recovery request from client is accepted, since we don't have any better
+>>> data to verify it.
+>>>
+>>> Please comb recovery code to make sure any catastrophe is safely ignored.
+>>> We already did that before and it used to work.
+>>
+>>
+>> We should make sure that any state recovery code does not interfere with
+>> regular operations. and fails gracefully / shuts up. 
+>>
+>> We used to have that, apparently it re-broke. Clients should always be granted
+>> access, after grace period. And Server should be made sure not to fail in any
+>> situation.
+>>
+>> I would look into it but I'm not uptodate anymore, I wish you or Bruce could.
+>>
+>> Thanks for your work so far, sorry to be bearer of bad news
+>> Boaz
+> 
+> This problem turned out to be a fairly straightforward bug in the
+> rpc_pipefs queue timeout mechanism that was causing the laundromat job
+> to hang and hence to keep the state lock locked. I just sent a patch
+> that should fix it.
+> 
+> I guess I'm not clear on what you're saying is broken. Modulo the
+> original bug here, clients are allowed access after the grace period
+> whether the upcalls are working or not.
+> 
+> What we cannot allow is reclaim requests outside of the grace period,
+> since we can't verify whether there was conflicting state in the
+> interim period. That's true whether the server has a functioning client
+> tracking mechanism or not.
+> 
 
-The bug that we saw <where ? details?> was created by a refcount
-imbalance. If mbind() replaces the memory policies of vma1 and vma and
-they share the same shared mempolicy (MPOL_F_SHARED set) then an imbalance
-may occur.
 
->   +-------------------+-------------------+
->   |     vma1          |     vma2(shmem)   |
->   +-------------------+-------------------+
->   |                                       |
->  addr                                 addr+len
->
-> Look at alloc_pages_vma(), it uses get_vma_policy() and mpol_cond_put() pair
-> for maintaining mempolicy refcount. The current rule is, get_vma_policy() does
-> NOT increase a refcount if the policy is not attached shmem vma and mpol_cond_put()
-> DOES decrease a refcount if mpol has MPOL_F_SHARED.
+I agree. Sorry we keep communicating on two different threads. Dis regard
+the other last mail.
 
-alloc_pages_vma() uses the two function get_vma_policy() and
-mpol_cond_put() to maintain the refcount on the memory policies. However,
-the current rule is that get_vma_policy() does *not* increase the refcount
-if the policy is not attached to a shm vma. mpol_cond_put *does* decrease
-the refcount if the memory policy has MPOL_F_SHARED set.
+Sounds good then. My point, we should be very defensive with  state recovery
+code not getting in our way.
 
-> In above case, vma1 is not shmem vma and vma->policy has MPOL_F_SHARED! then,
-> get_vma_policy() doesn't increase a refcount and mpol_cond_put() decrease a
-> refcount whenever alloc_page_vma() is called.
->
-> The bug was introduced by commit 52cd3b0740 (mempolicy: rework mempolicy Reference
-> Counting) at 4 years ago.
->
-> More unfortunately mempolicy has one another serious broken. Currently,
-> mempolicy rebind logic (it is called from cpuset rebinding) ignore a refcount
-> of mempolicy and override it forcibly. Thus, any mempolicy sharing may
-> cause mempolicy corruption. The bug was introduced by commit 68860ec10b
-> (cpusets: automatic numa mempolicy rebinding) at 7 years ago.
-
-Memory policies have another issue. Currently the mempolicy rebind logic
-used for cpuset rebinding ignores the refcount of memory policies.
-Therefore, any memory policy sharing can cause refcount mismatches. The
-bug was ...
-
-> To disable policy sharing solves user visible breakage and this patch does it.
-> Maybe, we need to rewrite MPOL_F_SHARED and mempolicy rebinding code and aim
-> to proper cow logic eventually, but I think this is good first step.
-
-Disabling policy sharing solves the breakage and that is how this patch
-fixes the issue for now. Rewriting the shared policy handling with proper
-COW logic support will be necessary to cleanly address the
-problem and allow proper sharing of memory policies.
+Thanks
+Boaz
 
