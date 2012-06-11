@@ -1,130 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755193Ab2FKQgu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 12:36:50 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:38474 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754108Ab2FKQgs (ORCPT
+	id S1755253Ab2FKQn7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 12:43:59 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:52122 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751972Ab2FKQn6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 12:36:48 -0400
-Date: Mon, 11 Jun 2012 18:36:44 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Shubhrajyoti Datta <omaplinuxkernel@gmail.com>
-Cc: "Zhang, Sonic" <Sonic.Zhang@analog.com>, Ben Dooks <ben-linux@fluff.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "uclinux-dist-devel@blackfin.uclinux.org" 
-	<uclinux-dist-devel@blackfin.uclinux.org>
-Subject: Re: [PATCH 8/8] i2c: i2c-bfin-twi: Move blackfin TWI register access
- Macro to head file.
-Message-ID: <20120611163644.GH3887@pengutronix.de>
-References: <1337152826-9850-1-git-send-email-sonic.zhang@analog.com>
- <1337152826-9850-8-git-send-email-sonic.zhang@analog.com>
- <CAM=Q2csSuQ3R9U=XKwj9F0xijTxx_ULperAiQYD_X3a5GKVjFg@mail.gmail.com>
- <DB904C5425BA6F4E8424B3B51A1414D170230E5ADF@NWD2CMBX1.ad.analog.com>
- <CAM=Q2cveBrYUiNYEbUgXyTnK2JhVD8UyhGgYJ=Zr86YnMMJ6Dg@mail.gmail.com>
- <DB904C5425BA6F4E8424B3B51A1414D170230E5AF6@NWD2CMBX1.ad.analog.com>
- <CAM=Q2cvUVuOMQ+Q=uLUkHN+ioqVtQ=bhPgrcnbyuUavAjES1-g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ZPDwMsyfds7q4mrK"
-Content-Disposition: inline
-In-Reply-To: <CAM=Q2cvUVuOMQ+Q=uLUkHN+ioqVtQ=bhPgrcnbyuUavAjES1-g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Mon, 11 Jun 2012 12:43:58 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        Chris Rattray <crattray@opensource.wolfsonmicro.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Tue, 12 Jun 2012 00:43:35 +0800
+Message-Id: <1339433017-7150-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.10
+X-SA-Exim-Connect-IP: 116.228.53.169
+X-SA-Exim-Mail-From: broonie@opensource.wolfsonmicro.com
+Subject: [PATCH] mfd: wm8994: Restore pin configuration after reset during suspend
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Chris Rattray <crattray@opensource.wolfsonmicro.com>
 
---ZPDwMsyfds7q4mrK
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Ensure that we leave the device with the pins in the expected
+configuration if we leave it in reset over suspend, avoiding any
+interoperation problems with other devices in the system.
 
-On Fri, May 25, 2012 at 03:46:06PM +0530, Shubhrajyoti Datta wrote:
-> On Fri, May 25, 2012 at 3:42 PM, Zhang, Sonic <Sonic.Zhang@analog.com> wr=
-ote:
-> >
-> >
-> >>-----Original Message-----
-> >>From: Shubhrajyoti Datta [mailto:omaplinuxkernel@gmail.com]
-> >>Sent: Friday, May 25, 2012 6:10 PM
-> >>To: Zhang, Sonic
-> >>Cc: Ben Dooks; Wolfram Sang; linux-i2c@vger.kernel.org; LKML; uclinux-d=
-ist-
-> >>devel@blackfin.uclinux.org
-> >>Subject: Re: [PATCH 8/8] i2c: i2c-bfin-twi: Move blackfin TWI register =
-access
-> >>Macro to head file.
-> >>
-> >>Hi ,
-> >>On Fri, May 25, 2012 at 3:24 PM, Zhang, Sonic <Sonic.Zhang@analog.com>
-> >>wrote:
-> >>>
-> >>>
-> >>>>-----Original Message-----
-> >>>>From: Shubhrajyoti Datta [mailto:omaplinuxkernel@gmail.com]
-> >>>>Sent: Friday, May 25, 2012 5:48 PM
-> >>>>To: Zhang, Sonic
-> >>>>Cc: Ben Dooks; Wolfram Sang; linux-i2c@vger.kernel.org; LKML; uclinux=
--dist-
-> >>>>devel@blackfin.uclinux.org
-> >>>>Subject: Re: [PATCH 8/8] i2c: i2c-bfin-twi: Move blackfin TWI registe=
-r access
-> >>>>Macro to head file.
-> >>>>
-> >>>>Hi ,
-> >>>>Some minor comments/ doubts.
-> >>>>On Wed, May 16, 2012 at 12:50 PM, =A0<sonic.zhang@analog.com> wrote:
-> >>>>> From: Sonic Zhang <sonic.zhang@analog.com>
-> >>>>>
-> >>>>
-> >>>>A small description may be helpful.
-> >>>>Also the $SUBJECT says move the patch looks more like the remove.
-> >>>>Am I missing something.
-> >>>
-> >>> The subject says these definitions are moved to a head file by the ot=
-her patch
-> >>for Blackfin architecture.
-> >>
-> >>Got it thanks.
-> >>
-> >>You may want to add a dependency otherwise it might lead to a compilati=
-on break?
-> >>
-> >
-> > That patch for Blackfin architecture has already been merged into mainl=
-ine.
-> Great,
->=20
-> Apologies for the noise.
+Signed-off-by: Chris Rattray <crattray@opensource.wolfsonmicro.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/wm8994-core.c |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
-I don't think this is noise, I agree with you. I'd like to see the
-commit which added that and the reasoning. Usually, encapsulating the
-accesses in the driver is good, because no one else should bother.
+diff --git a/drivers/mfd/wm8994-core.c b/drivers/mfd/wm8994-core.c
+index 1e321d3..f75cdcc 100644
+--- a/drivers/mfd/wm8994-core.c
++++ b/drivers/mfd/wm8994-core.c
+@@ -196,6 +196,7 @@ static int wm8994_suspend(struct device *dev)
+ {
+ 	struct wm8994 *wm8994 = dev_get_drvdata(dev);
+ 	int ret;
++	int gpio_regs[WM8994_NUM_GPIO_REGS];
+ 
+ 	/* Don't actually go through with the suspend if the CODEC is
+ 	 * still active (eg, for audio passthrough from CP. */
+@@ -277,12 +278,24 @@ static int wm8994_suspend(struct device *dev)
+ 				WM8994_LDO1ENA_PD | WM8994_LDO2ENA_PD,
+ 				WM8994_LDO1ENA_PD | WM8994_LDO2ENA_PD);
+ 
++	/* Save GPIO registers before reset */
++	regmap_bulk_read(wm8994->regmap, WM8994_GPIO_1, gpio_regs,
++			 WM8994_NUM_GPIO_REGS);
++
+ 	/* Explicitly put the device into reset in case regulators
+ 	 * don't get disabled in order to ensure consistent restart.
+ 	 */
+ 	wm8994_reg_write(wm8994, WM8994_SOFTWARE_RESET,
+ 			 wm8994_reg_read(wm8994, WM8994_SOFTWARE_RESET));
+ 
++	/* Restore GPIO registers to prevent problems with mismatched
++	 * pin configurations.
++	 */
++	ret = regmap_bulk_write(wm8994->regmap, WM8994_GPIO_1, gpio_regs,
++				WM8994_NUM_GPIO_REGS);
++	if (ret != 0)
++		dev_err(dev, "Failed to restore GPIO registers: %d\n", ret);
++
+ 	regcache_cache_only(wm8994->regmap, true);
+ 	regcache_mark_dirty(wm8994->regmap);
+ 
+-- 
+1.7.10
 
-Thanks,
-
-   Wolfram
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---ZPDwMsyfds7q4mrK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAk/WHpwACgkQD27XaX1/VRuaSQCdGS8EjVlcxO0rSKq21suhuBeX
-y8YAoKMuNQtI/7vHgZ1NhHOzLmLM1dKb
-=ALKQ
------END PGP SIGNATURE-----
-
---ZPDwMsyfds7q4mrK--
