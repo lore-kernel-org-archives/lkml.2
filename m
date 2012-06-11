@@ -1,55 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752529Ab2FKJIG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 05:08:06 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:37903 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751812Ab2FKJIE (ORCPT
+	id S1752590Ab2FKJIw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 05:08:52 -0400
+Received: from orion.tchmachines.com ([208.76.84.200]:42625 "EHLO
+	orion.tchmachines.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751812Ab2FKJIv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 05:08:04 -0400
-Date: Mon, 11 Jun 2012 11:07:58 +0200
-From: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-Subject: [PATCH 1/2] staging: usb: gadget: Configurable Composite Gadget
- depends on BLOCK
-In-reply-to: <Pine.LNX.4.44L0.1206071646360.1185-100000@iolanthe.rowland.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Felipe Balbi <balbi@ti.com>, Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mnazarewicz@gmail.com>,
-        Benoit Goby <benoit@android.com>, Mike Lockwood <lockwood@android.com>,
-        Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Message-id: <1339405678-4834-1-git-send-email-andrzej.p@samsung.com>
-X-Mailer: git-send-email 1.7.10
-Content-transfer-encoding: 7BIT
-References: <Pine.LNX.4.44L0.1206071646360.1185-100000@iolanthe.rowland.org>
-X-TM-AS-MML: No
+	Mon, 11 Jun 2012 05:08:51 -0400
+From: Vlad Zolotarov <vlad@scalemp.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, Shai@scalemp.com,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH v4 0/2] Move x86_cpu_to_apicid to the __read_mostly section
+Date: Mon, 11 Jun 2012 12:08:51 +0300
+Message-ID: <28500062.nHPFoziTL1@vlad>
+Organization: ScaleMP Ltd.
+User-Agent: KMail/4.8.3 (Linux/3.2.0-24-generic; KDE/4.8.3; i686; ; )
+In-Reply-To: <20120611090031.GM31556@gmail.com>
+References: <1744141.b5asW8k6jC@vlad> <6799312.MzsZpBJbVB@vlad> <20120611090031.GM31556@gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - orion.tchmachines.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - scalemp.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- drivers/staging/ccg/Kconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+On Monday 11 June 2012 11:00:31 Ingo Molnar wrote:
+> * Vlad Zolotarov <vlad@scalemp.com> wrote:
+> > On Wednesday 23 May 2012 12:16:29 Vlad Zolotarov wrote:
+> > > On Tuesday, May 22, 2012 18:55:41 Vlad Zolotarov wrote:
+> > > > > > I have no fundamental prefer to either approach, but the
+> > > > > > direction taken should be justified explicitly, with numbers,
+> > > > > > arguments, etc. - also a short blurb somewhere in the headers
+> > > > > > that explains when they should be used, so that others can be
+> > > > > > aware of vSMP's special needs here.
+> > > > > 
+> > > > > I.e. *numbers* are needed: roughly how many percpu variables in
+> > > > > a defconfig of one type versus the other type. This settles the
+> > > > > question whether we want to identify read-mostly or
+> > > > > write-frequently variables, to address this particular problem
+> > > > > ...
+> > > 
+> > > Ingo, here is the proposal to the patch (series) description:
+> > > 
+> > > ------------------------------------------------------------------------
+> > > ---- -------------------- Added "read-mostly" qualifier to the following
+> > > variables in smp.h: - cpu_sibling_map
+> > > 
+> > >  - cpu_core_map
+> > >  - cpu_llc_shared_map
+> > >  - cpu_llc_id
+> > >  - cpu_number
+> > >  - x86_cpu_to_apicid
+> > >  - x86_bios_cpu_apicid
+> > >  - x86_cpu_to_logical_apicid
+> > > 
+> > > As long as all the variables above are only written during the
+> > > initialization, this change is meant to prevent the false sharing. More
+> > > specifically, on vSMP Foundation platform x86_cpu_to_apicid shared the
+> > > same
+> > > internode_cache_line with frequently written lapic_events.
+> > > 
+> > > From the analysis of the first 33 per_cpu variables  out of 219
+> > > (memories
+> > > they describe, to be more specific) the 8 have read_mostly nature
+> > > (tlb_vector_offset, cpu_loops_per_jiffy, xen_debug_irq, etc.) and 25 are
+> > > frequently written (irq_stack_union, gdt_page, exception_stacks,
+> > > idt_desc,
+> > > etc.). Assuming that the spread of the rest of the per_cpu variables is
+> > > similar, identifying the read mostly memories will make more sense in
+> > > terms
+> > > of long-term code maintenance comparing to identifying frequently
+> > > written
+> > > memories.
+> > > ------------------------------------------------------------------------
+> > > ---- -----------------------
+> > > 
+> > > Pls., tell me if the above looks satisfactory to u in light of all your
+> > > previous remarks.
+> > > 
+> > > If yes - I'll respin the series with the description above.
+> > 
+> > Ingo, sorry for bothering. Could u, pls., tell if the above
+> > description is ok? We'd like to move on with this patch
+> > series.
+> 
+> Yeah, that description and analysis looks good and sensible.
+> 
+> Mind resending the updated patches in a new thread?
 
-diff --git a/drivers/staging/ccg/Kconfig b/drivers/staging/ccg/Kconfig
-index ff05e52..1f00d70 100644
---- a/drivers/staging/ccg/Kconfig
-+++ b/drivers/staging/ccg/Kconfig
-@@ -2,7 +2,7 @@ if USB_GADGET
- 
- config USB_G_CCG
- 	tristate "Configurable Composite Gadget (STAGING)"
--	depends on STAGING && !USB_ZERO && !USB_ZERO_HNPTEST && !USB_AUDIO && !GADGET_UAC1 && !USB_ETH && !USB_ETH_RNDIS && !USB_ETH_EEM && !USB_G_NCM && !USB_GADGETFS && !USB_FUNCTIONFS && !USB_FUNCTIONFS_ETH && !USB_FUNCTIONFS_RNDIS && !USB_FUNCTIONFS_GENERIC && !USB_FILE_STORAGE && !USB_FILE_STORAGE_TEST && !USB_MASS_STORAGE && !USB_G_SERIAL && !USB_MIDI_GADGET && !USB_G_PRINTER && !USB_CDC_COMPOSITE && !USB_G_NOKIA && !USB_G_ACM_MS && !USB_G_MULTI && !USB_G_MULTI_RNDIS && !USB_G_MULTI_CDC && !USB_G_HID && !USB_G_DBGP && !USB_G_WEBCAM
-+	depends on STAGING && BLOCK && !USB_ZERO && !USB_ZERO_HNPTEST && !USB_AUDIO && !GADGET_UAC1 && !USB_ETH && !USB_ETH_RNDIS && !USB_ETH_EEM && !USB_G_NCM && !USB_GADGETFS && !USB_FUNCTIONFS && !USB_FUNCTIONFS_ETH && !USB_FUNCTIONFS_RNDIS && !USB_FUNCTIONFS_GENERIC && !USB_FILE_STORAGE && !USB_FILE_STORAGE_TEST && !USB_MASS_STORAGE && !USB_G_SERIAL && !USB_MIDI_GADGET && !USB_G_PRINTER && !USB_CDC_COMPOSITE && !USB_G_NOKIA && !USB_G_ACM_MS && !USB_G_MULTI && !USB_G_MULTI_RNDIS && !USB_G_MULTI_CDC && !USB_G_HID && !USB_G_DBGP && !USB_G_WEBCAM
- 	help
- 	  The Configurable Composite Gadget supports multiple USB
- 	  functions: acm, mass storage, rndis and FunctionFS.
--- 
-1.7.0.4
+Sure. I'm on it right now, sir. :)
 
+thanks,
+vlad
+
+> 
+> Thanks,
+> 
+> 	Ingo
