@@ -1,83 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755145Ab2FKOtj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 10:49:39 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:36616 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753150Ab2FKOti (ORCPT
+	id S1755109Ab2FKOuf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 10:50:35 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:59165 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751369Ab2FKOud (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 10:49:38 -0400
-Message-ID: <1339426241.4999.62.camel@lappy>
-Subject: Re: net: nfc: BUG and panic in accept() on 3.5-rc2
-From: Sasha Levin <levinsasha928@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, David Miller <davem@davemloft.net>,
-        lauro.venancio@openbossa.org, aloisio.almeida@openbossa.org,
-        Dave Jones <davej@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        linux-wireless <linux-wireless@vger.kernel.org>
-Date: Mon, 11 Jun 2012 16:50:41 +0200
-In-Reply-To: <1339425693.6001.2268.camel@edumazet-glaptop>
-References: <1339423241.4999.53.camel@lappy>
-	 <20120611144134.GX22557@sortiz-mobl>
-	 <1339425693.6001.2268.camel@edumazet-glaptop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 11 Jun 2012 10:50:33 -0400
+Message-ID: <4FD605B5.2060300@linaro.org>
+Date: Mon, 11 Jun 2012 15:50:29 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: linux-arm-kernel@lists.infradead.org, arnd@arndb.de,
+        linus.walleij@stericsson.com, grant.likely@secretlab.ca,
+        cjb@laptop.org, sameo@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 09/22] regulator: Change db8500-prcmu match names to reflect
+ Device Tree
+References: <1338353260-10097-1-git-send-email-lee.jones@linaro.org> <1338353260-10097-10-git-send-email-lee.jones@linaro.org> <4FCDDE58.5010501@linaro.org> <20120605102900.GP23408@opensource.wolfsonmicro.com> <4FCDE0A4.8070107@linaro.org> <20120605104201.GR23408@opensource.wolfsonmicro.com> <4FD5D49C.6070106@linaro.org> <20120611120820.GN11439@opensource.wolfsonmicro.com> <4FD5F3D2.2050500@linaro.org> <4FD5FBAF.1060002@linaro.org> <20120611142752.GS11439@opensource.wolfsonmicro.com>
+In-Reply-To: <20120611142752.GS11439@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-06-11 at 16:41 +0200, Eric Dumazet wrote:
-> On Mon, 2012-06-11 at 16:41 +0200, Samuel Ortiz wrote:
-> > Hi Sasha,
-> > 
-> > On Mon, Jun 11, 2012 at 04:00:41PM +0200, Sasha Levin wrote:
-> > > Hi all,
-> > > 
-> > > I've stumbled on the following while fuzzing with trinity inside a KVM tools guest, running on 3.5-rc2:
-> > > 
-> > Thanks for the report, it could be worth adding this one to
-> > bugzilla.kernel.org.
-> > 
-> > What's trinity ?
-> > Also, if this one is reproducible, would you mind sharing some details about
-> > how we could reproduce it ?
-> 
-> Well, bugfix should be trivial enough ;)
-> 
-> diff --git a/net/nfc/rawsock.c b/net/nfc/rawsock.c
-> index ec1134c..208416e 100644
-> --- a/net/nfc/rawsock.c
-> +++ b/net/nfc/rawsock.c
-> @@ -54,11 +54,12 @@ static int rawsock_release(struct socket *sock)
->  {
->  	struct sock *sk = sock->sk;
->  
-> -	pr_debug("sock=%p\n", sock);
-> -
-> -	sock_orphan(sk);
-> -	sock_put(sk);
-> +	pr_debug("sock=%p sk=%p\n", sock, sk);
->  
-> +	if (sk) {
-> +		sock_orphan(sk);
-> +		sock_put(sk);
-> +	}
->  	return 0;
->  }
+On 11/06/12 15:27, Mark Brown wrote:
+> On Mon, Jun 11, 2012 at 03:07:43PM +0100, Lee Jones wrote:
+>>>> Well, I guess I'll end up dulplicating the commits :/
+>
+>>> Duplicating them?
+>
+>> Ah, you mean that you've already sent them to -next?
+>
+> Yeah, I've already got them on a branch I don't really want to rebase.
 
-Eric, Is there something that documents at what state each of the
-callbacks in the network subsystem can be called? Like a big flow chart
-of some sorts?
+Ah I see. Makes sense.
 
-I'm asking because I've looked at this as well before sending this mail,
-and while the fix does look trivial, I wasn't sure whether it is really
-the correct fix, or the problem is that this callback wasn't supposed be
-called at all so something else is broken (we had such issue with
-namespaces and unshare() not long ago).
+>> That's no problem though. Won't Git just sling them out at pull-time?
+>
+> It'll merge out fine, it's just icky having the same thing appear twice
+> in history.  Not the end of the world.
 
+Understood. So does this mean you will to push them into the -rcs?
 
-
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+M: +44 77 88 633 515
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
