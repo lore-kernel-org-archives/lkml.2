@@ -1,82 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751774Ab2FKIjW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 04:39:22 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:56327 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750738Ab2FKIjU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 04:39:20 -0400
-Subject: Re: [PATCH 1/3] net: lpc_eth: Replace WARN() trace with simple
- pr_warn()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Roland Stigge <stigge@antcom.de>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kevin.wells@nxp.com, srinivas.bakki@nxp.com, aletes.xgr@gmail.com,
-        linux-arm-kernel@lists.infradead.org
-In-Reply-To: <1339403108.6001.1697.camel@edumazet-glaptop>
-References: <1339401793-12258-1-git-send-email-stigge@antcom.de>
-	 <1339403108.6001.1697.camel@edumazet-glaptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 11 Jun 2012 10:39:16 +0200
-Message-ID: <1339403956.6001.1731.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1752032Ab2FKIkf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 04:40:35 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:21674 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751131Ab2FKIke (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 04:40:34 -0400
+X-IronPort-AV: E=Sophos;i="4.77,387,1336320000"; 
+   d="scan'208";a="5158153"
+Message-ID: <4FD5AFF2.3040306@cn.fujitsu.com>
+Date: Mon, 11 Jun 2012 16:44:34 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: rob@landley.net, tglx@linutronix.de, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        bhelgaas@google.com
+Subject: [PATCH 1/2 v2] x86: add max_addr boot option
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/06/11 16:41:06,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/06/11 16:41:08,
+	Serialize complete at 2012/06/11 16:41:08
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-06-11 at 10:25 +0200, Eric Dumazet wrote:
-> On Mon, 2012-06-11 at 10:03 +0200, Roland Stigge wrote:
-> > A WARN() trace indicating a "BUG!" was identified as a "normal" case in the
-> > xmit function in case all TX descriptors are occupied already. In this case,
-> > NETDEV_TX_BUSY is returned, nothing buggy at all.
-> > 
-> > Signed-off-by: Roland Stigge <stigge@antcom.de>
-> > Tested-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-> > 
-> > ---
-> >  drivers/net/ethernet/nxp/lpc_eth.c |    2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > --- linux-2.6.orig/drivers/net/ethernet/nxp/lpc_eth.c
-> > +++ linux-2.6/drivers/net/ethernet/nxp/lpc_eth.c
-> > @@ -1114,7 +1114,7 @@ static int lpc_eth_hard_start_xmit(struc
-> >  		   buffers */
-> >  		netif_stop_queue(ndev);
-> >  		spin_unlock_irq(&pldat->lock);
-> > -		WARN(1, "BUG! TX request when no free TX buffers!\n");
-> > +		pr_warn("Note: TX request when no free TX buffers.\n");
-> >  		return NETDEV_TX_BUSY;
-> >  	}
-> >  
-> 
-> Entering this path is a bug, don't hide it...
-> 
-> Please share with us how this bug was identified as a "normal case" ?
-> 
-> 
+Currently, the boot option max_addr is only supported on ia64 platform.
+We also need it on x86 platform.
+For example:
+There are two nodes:
+ NODE#0  address range 0x00000000 00000000 - 0x00010000 00000000
+ NODE#1  address range 0x00010000 00000000 - 0x00020000 00000000
+If we only want to use node0, we can specify the max_addr. The boot
+option "mem=" can do the same thing now. But the boot option "mem="
+means the total memory used by the system. If we tell the user
+that the boot option "mem=" can do this, it will confuse the user.
+So we need an new boot option "max_addr" on x86 platform.
 
+Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+---
+ Documentation/kernel-parameters.txt |    2 +-
+ arch/x86/kernel/e820.c              |   36 +++++++++++++++++++++++++++++++++++
+ 2 files changed, 37 insertions(+), 1 deletions(-)
 
-There is an skb leak in this driver, maybe it's the real problem.
-
-diff --git a/drivers/net/ethernet/nxp/lpc_eth.c b/drivers/net/ethernet/nxp/lpc_eth.c
-index 8d2666f..0d0f4cb 100644
---- a/drivers/net/ethernet/nxp/lpc_eth.c
-+++ b/drivers/net/ethernet/nxp/lpc_eth.c
-@@ -946,10 +946,8 @@ static void __lpc_handle_xmit(struct net_device *ndev)
- 			/* Update stats */
- 			ndev->stats.tx_packets++;
- 			ndev->stats.tx_bytes += skb->len;
--
--			/* Free buffer */
--			dev_kfree_skb_irq(skb);
- 		}
-+		dev_kfree_skb_irq(skb);
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index a92c5eb..034609d 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1441,7 +1441,7 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			 yeeloong laptop.
+ 			Example: machtype=lemote-yeeloong-2f-7inch
  
- 		txcidx = readl(LPC_ENET_TXCONSUMEINDEX(pldat->net_base));
+-	max_addr=nn[KMG]	[KNL,BOOT,ia64] All physical memory greater
++	max_addr=nn[KMG]	[KNL,BOOT,ia64,X86] All physical memory greater
+ 			than or equal to this physical address is ignored.
+ 
+ 	maxcpus=	[SMP] Maximum number of processors that	an SMP kernel
+diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
+index 4185797..cd07226 100644
+--- a/arch/x86/kernel/e820.c
++++ b/arch/x86/kernel/e820.c
+@@ -47,6 +47,7 @@ unsigned long pci_mem_start = 0xaeedbabe;
+ #ifdef CONFIG_PCI
+ EXPORT_SYMBOL(pci_mem_start);
+ #endif
++static u64 max_addr = ~0ULL;
+ 
+ /*
+  * This function checks if any part of the range <start,end> is mapped
+@@ -119,6 +120,20 @@ static void __init __e820_add_region(struct e820map *e820x, u64 start, u64 size,
+ 		return;
  	}
-
-
+ 
++	if (start >= max_addr) {
++		printk(KERN_ERR "e820: ignoring [mem %#010llx-%#010llx]\n",
++		       (unsigned long long)start,
++		       (unsigned long long)(start + size - 1));
++		return;
++	}
++
++	if (max_addr - start < size) {
++		printk(KERN_ERR "e820: ignoring [mem %#010llx-%#010llx]\n",
++		       (unsigned long long)max_addr,
++		       (unsigned long long)(start + size - 1));
++		size = max_addr - start;
++	}
++
+ 	e820x->map[x].addr = start;
+ 	e820x->map[x].size = size;
+ 	e820x->map[x].type = type;
+@@ -835,6 +850,22 @@ static int __init parse_memopt(char *p)
+ }
+ early_param("mem", parse_memopt);
+ 
++static int __init parse_memmax_opt(char *p)
++{
++	char *oldp;
++
++	if (!p)
++		return -EINVAL;
++
++	oldp = p;
++	max_addr = memparse(p, &p);
++	if (p == oldp)
++		return -EINVAL;
++
++	return 0;
++}
++early_param("max_addr", parse_memmax_opt);
++
+ static int __init parse_memmap_opt(char *p)
+ {
+ 	char *oldp;
+@@ -881,6 +912,11 @@ early_param("memmap", parse_memmap_opt);
+ 
+ void __init finish_e820_parsing(void)
+ {
++	if (max_addr != ~0ULL) {
++		userdef = 1;
++		e820_remove_range(max_addr, ULLONG_MAX - max_addr, E820_RAM, 1);
++	}
++
+ 	if (userdef) {
+ 		u32 nr = e820.nr_map;
+ 
+-- 
+1.7.1
 
