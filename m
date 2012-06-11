@@ -1,68 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754706Ab2FKODy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 10:03:54 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:43792 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752286Ab2FKODx (ORCPT
+	id S1754606Ab2FKOFy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 10:05:54 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:36019 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751828Ab2FKOFx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 10:03:53 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: bfields@fieldses.org, Trond.Myklebust@netapp.com
-Cc: jplatte@naasa.net, linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        jmdebruin@xmsnet.nl
-Subject: [PATCH] rpc_pipefs: allow rpc_purge_list to take a NULL waitq pointer
-Date: Mon, 11 Jun 2012 10:03:42 -0400
-Message-Id: <1339423422-22474-1-git-send-email-jlayton@redhat.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1339340441.4751.1.camel@lade.trondhjem.org>
-References: <1339340441.4751.1.camel@lade.trondhjem.org>
+	Mon, 11 Jun 2012 10:05:53 -0400
+Message-ID: <4FD5FB28.4050003@panasas.com>
+Date: Mon, 11 Jun 2012 17:05:28 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
+MIME-Version: 1.0
+To: Jeff Layton <jlayton@redhat.com>
+CC: bfields <bfields@fieldses.org>, Steve Dickson <steved@redhat.com>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Joerg Platte <jplatte@naasa.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Hans de Bruin <jmdebruin@xmsnet.nl>
+Subject: Re: Kernel 3.4.X NFS server regression
+References: <4FD47D4E.9070307@naasa.net> <1339340441.4751.1.camel@lade.trondhjem.org> <20120611121634.GB7654@fieldses.org> <20120611083932.24e27e39@corrin.poochiereds.net> <4FD5F35A.3000903@panasas.com> <20120611095132.045a8d09@corrin.poochiereds.net>
+In-Reply-To: <20120611095132.045a8d09@corrin.poochiereds.net>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the event that we don't have a dentry for a rpc_pipefs pipe, we still
-need to allow the queue_timeout job to clean out the queue. There's just
-no waitq to wake up in that event.
+On 06/11/2012 04:51 PM, Jeff Layton wrote:
 
-Cc: stable@kernel.org
-Reported-by: Hans de Bruin <jmdebruin@xmsnet.nl>
-Reported-by: Joerg Platte <jplatte@naasa.net>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
----
- net/sunrpc/rpc_pipe.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+> 
+> That was considered here, but the problem with the usermode helper is
+> that you can't pass anything back to the kernel but a simple status
+> code (and that's assuming that you wait for it to exit). In the near
+> future, we'll need to pass back more info to the kernel for this, so
+> the usermode helper callout wasn't suitable.
+> 
 
-diff --git a/net/sunrpc/rpc_pipe.c b/net/sunrpc/rpc_pipe.c
-index 0404047..21fde99 100644
---- a/net/sunrpc/rpc_pipe.c
-+++ b/net/sunrpc/rpc_pipe.c
-@@ -71,7 +71,9 @@ static void rpc_purge_list(wait_queue_head_t *waitq, struct list_head *head,
- 		msg->errno = err;
- 		destroy_msg(msg);
- 	} while (!list_empty(head));
--	wake_up(waitq);
-+
-+	if (waitq)
-+		wake_up(waitq);
- }
- 
- static void
-@@ -91,11 +93,9 @@ rpc_timeout_upcall_queue(struct work_struct *work)
- 	}
- 	dentry = dget(pipe->dentry);
- 	spin_unlock(&pipe->lock);
--	if (dentry) {
--		rpc_purge_list(&RPC_I(dentry->d_inode)->waitq,
--			       &free_list, destroy_msg, -ETIMEDOUT);
--		dput(dentry);
--	}
-+	rpc_purge_list(dentry ? &RPC_I(dentry->d_inode)->waitq : NULL,
-+			&free_list, destroy_msg, -ETIMEDOUT);
-+	dput(dentry);
- }
- 
- ssize_t rpc_pipe_generic_upcall(struct file *filp, struct rpc_pipe_msg *msg,
--- 
-1.7.7.6
 
+I have answered that in my mail. Repeated here again. Well you made 
+a simple mistake. Because it is *easy* to pass back any number and
+size of information from user-mode.
+
+You just setup a sysfs entry points where the answers are written
+back to. It's an easy trick to setup a thread safe, way with a
+cookie but 90% of the time you don't have to. Say you set up
+a structure of per-client (identified uniquely) then user mode
+answers back per client, concurrency will not do any harm, since
+you answer to the same question the same answer. ans so on. Each
+problem it's own.
+
+If you want we can talk about this, it would be easy for me to setup
+a toll free conference number we can all use.
+
+Cheers
+Boaz
