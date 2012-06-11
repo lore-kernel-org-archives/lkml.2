@@ -1,57 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755915Ab2FKP11 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 11:27:27 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:35417 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755696Ab2FKPZm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 11:25:42 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: linus.walleij@stericsson.com, arnd@arndb.de, grant.likely@secretlab.ca,
-        Lee Jones <lee.jones@linaro.org>, linux-input@vger.kernel.org
-Subject: [PATCH 10/14] Input: Add Device Tree support to the ab8500-ponkey driver
-Date: Mon, 11 Jun 2012 16:25:03 +0100
-Message-Id: <1339428307-3850-11-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1339428307-3850-1-git-send-email-lee.jones@linaro.org>
-References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org>
+	id S1755928Ab2FKP1d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 11:27:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46792 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751369Ab2FKP1b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 11:27:31 -0400
+From: Alex Williamson <alex.williamson@redhat.com>
+Subject: [PATCH v3 1/5] pci: Add PCI DMA source ID quirk
+To: bhelgaas@google.com, linux-pci@vger.kernel.org
+Cc: benh@kernel.crashing.org, aik@ozlabs.ru, david@gibson.dropbear.id.au,
+        joerg.roedel@amd.com, dwmw2@infradead.org, konrad.wilk@oracle.com,
+        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        ddutile@redhat.com, alex.williamson@redhat.com
+Date: Mon, 11 Jun 2012 09:26:55 -0600
+Message-ID: <20120611152654.25959.42238.stgit@bling.home>
+In-Reply-To: <20120611152021.25959.71601.stgit@bling.home>
+References: <20120611152021.25959.71601.stgit@bling.home>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch will allow the ab8500-ponkey driver to be probed during
-boot when Device Tree is enabled.
+DMA transactions are tagged with the source ID of the device making
+the request.  Occasionally hardware screws this up and uses the
+source ID of a different device (often the wrong function number of
+a multifunction device).  A specific Ricoh multifunction device is
+a prime example of this problem and included in this patch.  The
+purpose of this function is that given a pci_dev, return the pci_dev
+to use as the source ID for DMA.  When hardware works correctly,
+this returns the input device.  For the components of the Ricoh
+multifunction device, return the pci_dev for function 0.
 
-Cc: linux-input@vger.kernel.org
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+This will be used by IOMMU drivers for determining the boundaries
+of IOMMU groups as multiple devices using the same source ID must
+be contained within the same group.  This can also be used by
+existing streaming DMA paths for the same purpose.
+
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 ---
- drivers/input/misc/ab8500-ponkey.c |    6 ++++++
- 1 file changed, 6 insertions(+)
 
-diff --git a/drivers/input/misc/ab8500-ponkey.c b/drivers/input/misc/ab8500-ponkey.c
-index 350fd0c..394aa1f 100644
---- a/drivers/input/misc/ab8500-ponkey.c
-+++ b/drivers/input/misc/ab8500-ponkey.c
-@@ -131,10 +131,16 @@ static int __devexit ab8500_ponkey_remove(struct platform_device *pdev)
- 	return 0;
- }
+ drivers/pci/quirks.c |   51 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/pci.h  |    5 +++++
+ 2 files changed, 56 insertions(+)
+
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+index 2a75216..acd3956 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -3179,3 +3179,54 @@ int pci_dev_specific_reset(struct pci_dev *dev, int probe)
  
-+static const struct of_device_id ab8500_ponkey_match[] = {
-+	{ .compatible = "stericsson,ab8500-ponkey", },
-+	{}
+ 	return -ENOTTY;
+ }
++
++static struct pci_dev *pci_func_0_dma_source(struct pci_dev *dev)
++{
++	if (!PCI_FUNC(dev->devfn))
++		return pci_dev_get(dev);
++
++	return pci_get_slot(dev->bus, PCI_DEVFN(PCI_SLOT(dev->devfn), 0));
++}
++
++static const struct pci_dev_dma_source {
++	u16 vendor;
++	u16 device;
++	struct pci_dev *(*dma_source)(struct pci_dev *dev);
++} pci_dev_dma_source[] = {
++	/*
++	 * https://bugzilla.redhat.com/show_bug.cgi?id=605888
++	 *
++	 * Some Ricoh devices use the function 0 source ID for DMA on
++	 * other functions of a multifunction device.  The DMA devices
++	 * is therefore function 0, which will have implications of the
++	 * iommu grouping of these devices.
++	 */
++	{ PCI_VENDOR_ID_RICOH, 0xe822, pci_func_0_dma_source },
++	{ PCI_VENDOR_ID_RICOH, 0xe230, pci_func_0_dma_source },
++	{ PCI_VENDOR_ID_RICOH, 0xe832, pci_func_0_dma_source },
++	{ PCI_VENDOR_ID_RICOH, 0xe476, pci_func_0_dma_source },
++	{ 0 }
 +};
 +
- static struct platform_driver ab8500_ponkey_driver = {
- 	.driver		= {
- 		.name	= "ab8500-poweron-key",
- 		.owner	= THIS_MODULE,
-+		.of_match_table = ab8500_ponkey_match,
- 	},
- 	.probe		= ab8500_ponkey_probe,
- 	.remove		= __devexit_p(ab8500_ponkey_remove),
--- 
-1.7.9.5
++/*
++ * IOMMUs with isolation capabilities need to be programmed with the
++ * correct source ID of a device.  In most cases, the source ID matches
++ * the device doing the DMA, but sometimes hardware is broken and will
++ * tag the DMA as being sourced from a different device.  This function
++ * allows that translation.  Note that the reference count of the
++ * returned device is incremented on all paths.
++ */
++struct pci_dev *pci_get_dma_source(struct pci_dev *dev)
++{
++	const struct pci_dev_dma_source *i;
++
++	for (i = pci_dev_dma_source; i->dma_source; i++) {
++		if ((i->vendor == dev->vendor ||
++		     i->vendor == (u16)PCI_ANY_ID) &&
++		    (i->device == dev->device ||
++		     i->device == (u16)PCI_ANY_ID))
++			return i->dma_source(dev);
++	}
++
++	return pci_dev_get(dev);
++}
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index d8c379d..6badba3 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -1486,9 +1486,14 @@ enum pci_fixup_pass {
+ 
+ #ifdef CONFIG_PCI_QUIRKS
+ void pci_fixup_device(enum pci_fixup_pass pass, struct pci_dev *dev);
++struct pci_dev *pci_get_dma_source(struct pci_dev *dev);
+ #else
+ static inline void pci_fixup_device(enum pci_fixup_pass pass,
+ 				    struct pci_dev *dev) {}
++static inline struct pci_dev *pci_get_dma_source(struct pci_dev *dev)
++{
++	return pci_dev_get(dev);
++}
+ #endif
+ 
+ void __iomem *pcim_iomap(struct pci_dev *pdev, int bar, unsigned long maxlen);
 
