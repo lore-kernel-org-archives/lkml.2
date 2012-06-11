@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752772Ab2FKRaC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 13:30:02 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:55789 "EHLO
+	id S1753402Ab2FKRa7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 13:30:59 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:38807 "EHLO
 	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751158Ab2FKR37 (ORCPT
+	with ESMTP id S1752733Ab2FKRaD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 13:29:59 -0400
+	Mon, 11 Jun 2012 13:30:03 -0400
 From: sjur.brandeland@stericsson.com
 To: Ohad Ben-Cohen <ohad@wizery.com>
 Cc: Loic PALLARDY <loic.pallardy@stericsson.com>,
@@ -15,9 +15,9 @@ Cc: Loic PALLARDY <loic.pallardy@stericsson.com>,
         Linus Walleij <linus.walleij@linaro.org>,
         =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjurbren@gmail.com>,
         =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
-Subject: [PATCHv2 1/5] remoteproc: Pass struct fw to load_segments and find_rsc_table.
-Date: Mon, 11 Jun 2012 19:29:44 +0200
-Message-Id: <1339435788-16283-2-git-send-email-sjur.brandeland@stericsson.com>
+Subject: [PATCHv2 4/5] remoteproc: Support custom firmware handlers
+Date: Mon, 11 Jun 2012 19:29:47 +0200
+Message-Id: <1339435788-16283-5-git-send-email-sjur.brandeland@stericsson.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1339435788-16283-1-git-send-email-sjur.brandeland@stericsson.com>
 References: <1339435788-16283-1-git-send-email-sjur.brandeland@stericsson.com>
@@ -30,123 +30,223 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Sjur Brændeland <sjur.brandeland@stericsson.com>
 
-Prepare for introduction of custom firmware loaders by changing
-the functions rproc_find_rcs_table() and rproc_load_segments()
-to use struct firmware as parameter.
-
-When the custom loader framework is introduced all calls into
-the firmware specific function must use struct firmware as
-parameter.
+Firmware handling is made customizable.
+This is done by creating a separate ops structure for the
+firmware functions that depends on a particular firmware
+format (such as ELF). The ELF functions are default used
+unless the HW driver explicitly injects another firmware
+handler by calling the function rproc_set_fw_ops().
+The function rproc_da_to_va() is exported, as custom
+firmware handlers may need to use this function.
 
 Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
 ---
- drivers/remoteproc/remoteproc_core.c |   24 ++++++++++++------------
- 1 files changed, 12 insertions(+), 12 deletions(-)
+ drivers/remoteproc/remoteproc_core.c       |    4 +++
+ drivers/remoteproc/remoteproc_elf_loader.c |   27 +++++++++++++--------
+ drivers/remoteproc/remoteproc_internal.h   |   35 ++++++++++++++++++++++++++++
+ include/linux/remoteproc.h                 |   29 ++++++++++++++++------
+ 4 files changed, 77 insertions(+), 18 deletions(-)
 
 diff --git a/drivers/remoteproc/remoteproc_core.c b/drivers/remoteproc/remoteproc_core.c
-index 9d6343d..3e02f7f 100644
+index 682273f..bee4644 100644
 --- a/drivers/remoteproc/remoteproc_core.c
 +++ b/drivers/remoteproc/remoteproc_core.c
-@@ -192,8 +192,7 @@ static void *rproc_da_to_va(struct rproc *rproc, u64 da, int len)
+@@ -188,6 +188,7 @@ void *rproc_da_to_va(struct rproc *rproc, u64 da, int len)
+ 
+ 	return ptr;
+ }
++EXPORT_SYMBOL(rproc_da_to_va);
+ 
+ static int
+ __rproc_handle_vring(struct rproc_vdev *rvdev, struct fw_rsc_vdev *rsc, int i)
+@@ -1254,6 +1255,9 @@ struct rproc *rproc_alloc(struct device *dev, const char *name,
+ 
+ 	atomic_set(&rproc->power, 0);
+ 
++	/* Set ELF as the default fw_ops handler */
++	rproc->fw_ops = &rproc_elf_fw_ops;
++
+ 	kref_init(&rproc->refcount);
+ 
+ 	mutex_init(&rproc->lock);
+diff --git a/drivers/remoteproc/remoteproc_elf_loader.c b/drivers/remoteproc/remoteproc_elf_loader.c
+index 06e35dc..5e8ee06 100644
+--- a/drivers/remoteproc/remoteproc_elf_loader.c
++++ b/drivers/remoteproc/remoteproc_elf_loader.c
+@@ -33,13 +33,13 @@
+ #include "remoteproc_internal.h"
+ 
  /**
-  * rproc_load_segments() - load firmware segments to memory
-  * @rproc: remote processor which will be booted using these fw segments
-- * @elf_data: the content of the ELF firmware image
-- * @len: firmware size (in bytes)
-+ * @fw: the ELF firmware image
+- * rproc_fw_sanity_check() - Sanity Check ELF firmware image
++ * _rproc_sanity_check() - Sanity Check ELF firmware image
+  * @fw: the ELF firmware image
   *
-  * This function loads the firmware segments to memory, where the remote
-  * processor expects them.
-@@ -215,12 +214,13 @@ static void *rproc_da_to_va(struct rproc *rproc, u64 da, int len)
+  * Make sure this fw image is sane.
+  */
+-int
+-rproc_fw_sanity_check(struct rproc *rproc, const struct firmware *fw)
++static int
++_rproc_sanity_check(struct rproc *rproc, const struct firmware *fw)
+ {
+ 	const char *name = rproc->firmware;
+ 	struct device *dev = rproc->dev;
+@@ -99,14 +99,14 @@ rproc_fw_sanity_check(struct rproc *rproc, const struct firmware *fw)
+ }
+ 
+ /**
+- * rproc_get_boot_addr() - Get rproc's boot address.
++ * _rproc_get_boot_addr() - Get rproc's boot address.
+  * @fw: the ELF firmware image
+  *
+  * This function reads the ELF entry point address.
+  * Note that the boot address is not a configurable property of all remote
+  * processors. Some will always boot at a specific hard-coded address.
+  */
+-u32 rproc_get_boot_addr(struct rproc *rproc, const struct firmware *fw)
++static u32 _rproc_get_boot_addr(struct rproc *rproc, const struct firmware *fw)
+ {
+ 	struct elf32_hdr *ehdr  = (struct elf32_hdr *)fw->data;
+ 	return ehdr->e_entry;
+@@ -136,8 +136,8 @@ u32 rproc_get_boot_addr(struct rproc *rproc, const struct firmware *fw)
+  * directly allocate memory for every segment/resource. This is not yet
   * supported, though.
   */
- static int
--rproc_load_segments(struct rproc *rproc, const u8 *elf_data, size_t len)
-+rproc_load_segments(struct rproc *rproc, const struct firmware *fw)
+-int
+-rproc_load_segments(struct rproc *rproc, const struct firmware *fw)
++static int
++_rproc_load_segments(struct rproc *rproc, const struct firmware *fw)
  {
  	struct device *dev = rproc->dev;
  	struct elf32_hdr *ehdr;
- 	struct elf32_phdr *phdr;
- 	int i, ret = 0;
-+	const u8 *elf_data = fw->data;
+@@ -203,7 +203,7 @@ rproc_load_segments(struct rproc *rproc, const struct firmware *fw)
+ }
  
- 	ehdr = (struct elf32_hdr *)elf_data;
- 	phdr = (struct elf32_phdr *)(elf_data + ehdr->e_phoff);
-@@ -246,9 +246,9 @@ rproc_load_segments(struct rproc *rproc, const u8 *elf_data, size_t len)
- 			break;
- 		}
- 
--		if (offset + filesz > len) {
-+		if (offset + filesz > fw->size) {
- 			dev_err(dev, "truncated fw: need 0x%x avail 0x%zx\n",
--					offset + filesz, len);
-+					offset + filesz, fw->size);
- 			ret = -EINVAL;
- 			break;
- 		}
-@@ -824,8 +824,7 @@ rproc_handle_virtio_rsc(struct rproc *rproc, struct resource_table *table, int l
  /**
-  * rproc_find_rsc_table() - find the resource table
+- * rproc_find_rsc_table() - find the resource table
++ * _rproc_find_rsc_table() - find the resource table
   * @rproc: the rproc handle
-- * @elf_data: the content of the ELF firmware image
-- * @len: firmware size (in bytes)
-+ * @fw: the ELF firmware image
+  * @fw: the ELF firmware image
   * @tablesz: place holder for providing back the table size
-  *
-  * This function finds the resource table inside the remote processor's
-@@ -838,7 +837,7 @@ rproc_handle_virtio_rsc(struct rproc *rproc, struct resource_table *table, int l
+@@ -217,8 +217,8 @@ rproc_load_segments(struct rproc *rproc, const struct firmware *fw)
+  * size into @tablesz. If a valid table isn't found, NULL is returned
   * (and @tablesz isn't set).
   */
- static struct resource_table *
--rproc_find_rsc_table(struct rproc *rproc, const u8 *elf_data, size_t len,
-+rproc_find_rsc_table(struct rproc *rproc, const struct firmware *fw,
+-struct resource_table *
+-rproc_find_rsc_table(struct rproc *rproc, const struct firmware *fw,
++static struct resource_table *
++_rproc_find_rsc_table(struct rproc *rproc, const struct firmware *fw,
  							int *tablesz)
  {
  	struct elf32_hdr *ehdr;
-@@ -847,6 +846,7 @@ rproc_find_rsc_table(struct rproc *rproc, const u8 *elf_data, size_t len,
- 	struct device *dev = rproc->dev;
- 	struct resource_table *table = NULL;
- 	int i;
-+	const u8 *elf_data = fw->data;
+@@ -280,3 +280,10 @@ rproc_find_rsc_table(struct rproc *rproc, const struct firmware *fw,
  
- 	ehdr = (struct elf32_hdr *)elf_data;
- 	shdr = (struct elf32_shdr *)(elf_data + ehdr->e_shoff);
-@@ -863,7 +863,7 @@ rproc_find_rsc_table(struct rproc *rproc, const u8 *elf_data, size_t len,
- 		table = (struct resource_table *)(elf_data + offset);
+ 	return table;
+ }
++
++const struct rproc_fw_ops rproc_elf_fw_ops = {
++	.load = _rproc_load_segments,
++	.find_rsc_table = _rproc_find_rsc_table,
++	.sanity_check = _rproc_sanity_check,
++	.get_boot_addr = _rproc_get_boot_addr
++};
+diff --git a/drivers/remoteproc/remoteproc_internal.h b/drivers/remoteproc/remoteproc_internal.h
+index 25e0b91..ddb45de 100644
+--- a/drivers/remoteproc/remoteproc_internal.h
++++ b/drivers/remoteproc/remoteproc_internal.h
+@@ -42,4 +42,39 @@ void rproc_init_debugfs(void);
+ void rproc_exit_debugfs(void);
+ void *rproc_da_to_va(struct rproc *rproc, u64 da, int len);
  
- 		/* make sure we have the entire table */
--		if (offset + size > len) {
-+		if (offset + size > fw->size) {
- 			dev_err(dev, "resource table truncated\n");
- 			return NULL;
- 		}
-@@ -1040,7 +1040,7 @@ static int rproc_fw_boot(struct rproc *rproc, const struct firmware *fw)
- 	rproc->bootaddr = ehdr->e_entry;
++static inline int
++rproc_fw_sanity_check(struct rproc *rproc, const struct firmware *fw)
++{
++	if (rproc->fw_ops->sanity_check)
++		return rproc->fw_ops->sanity_check(rproc, fw);
++	return 0;
++}
++
++static inline
++u32 rproc_get_boot_addr(struct rproc *rproc, const struct firmware *fw)
++{
++	if (rproc->fw_ops->get_boot_addr)
++		return rproc->fw_ops->get_boot_addr(rproc, fw);
++	return 0;
++}
++
++static inline int
++rproc_load_segments(struct rproc *rproc, const struct firmware *fw)
++{
++	if (rproc->fw_ops->load)
++		return rproc->fw_ops->load(rproc, fw);
++	return -EINVAL;
++}
++
++static inline struct resource_table *
++rproc_find_rsc_table(struct rproc *rproc, const struct firmware *fw,
++							int *tablesz)
++{
++	if (rproc->fw_ops->find_rsc_table)
++		return rproc->fw_ops->find_rsc_table(rproc, fw, tablesz);
++	return NULL;
++}
++
++extern const struct rproc_fw_ops rproc_elf_fw_ops;
++
+ #endif /* REMOTEPROC_INTERNAL_H */
+diff --git a/include/linux/remoteproc.h b/include/linux/remoteproc.h
+index d6853da..7790fdd 100644
+--- a/include/linux/remoteproc.h
++++ b/include/linux/remoteproc.h
+@@ -327,14 +327,6 @@ struct rproc_mem_entry {
  
- 	/* look for the resource table */
--	table = rproc_find_rsc_table(rproc, fw->data, fw->size, &tablesz);
-+	table = rproc_find_rsc_table(rproc, fw, &tablesz);
- 	if (!table) {
- 		ret = -EINVAL;
- 		goto clean_up;
-@@ -1054,7 +1054,7 @@ static int rproc_fw_boot(struct rproc *rproc, const struct firmware *fw)
- 	}
+ struct rproc;
  
- 	/* load the ELF segments to memory */
--	ret = rproc_load_segments(rproc, fw->data, fw->size);
-+	ret = rproc_load_segments(rproc, fw);
- 	if (ret) {
- 		dev_err(dev, "Failed to load program segments: %d\n", ret);
- 		goto clean_up;
-@@ -1097,7 +1097,7 @@ static void rproc_fw_config_virtio(const struct firmware *fw, void *context)
- 		goto out;
+-struct resource_table *rproc_find_rsc_table(struct rproc *rproc,
+-						const struct firmware *fw,
+-						int *tablesz);
+-int rproc_load_segments(struct rproc *rproc, const struct firmware *fw);
+-int rproc_fw_sanity_check(struct rproc *rproc, const struct firmware *fw);
+-u32 rproc_get_boot_addr(struct rproc *rproc, const struct firmware *fw);
+-
+-
+ /**
+  * struct rproc_ops - platform-specific device handlers
+  * @start:	power on the device and boot it
+@@ -347,6 +339,26 @@ struct rproc_ops {
+ 	void (*kick)(struct rproc *rproc, int vqid);
+ };
  
- 	/* look for the resource table */
--	table = rproc_find_rsc_table(rproc, fw->data, fw->size, &tablesz);
-+	table = rproc_find_rsc_table(rproc, fw,  &tablesz);
- 	if (!table)
- 		goto out;
- 
++
++/**
++ * struct rproc_fw_ops - firmware format specific operations.
++ *
++ * @find_rsc_table:	finds the resource table inside the firmware image.
++ * @load_fw:		load firmeware to memory, where the remote processor
++ *			expects to find it.
++ * @sanity_check:	sanity check the fw image.
++ * @set_boot_addr:	set boot address to entry point as specified in
++ *			firmware.
++ */
++struct rproc_fw_ops {
++	struct resource_table *(*find_rsc_table) (struct rproc *rproc,
++						const struct firmware *fw,
++						int *tablesz);
++	int (*load)(struct rproc *rproc, const struct firmware *fw);
++	int (*sanity_check)(struct rproc *rproc, const struct firmware *fw);
++	u32 (*get_boot_addr)(struct rproc *rproc, const struct firmware *fw);
++};
++
+ /**
+  * enum rproc_state - remote processor states
+  * @RPROC_OFFLINE:	device is powered off
+@@ -400,6 +412,7 @@ struct rproc {
+ 	const char *firmware;
+ 	void *priv;
+ 	const struct rproc_ops *ops;
++	const struct rproc_fw_ops *fw_ops;
+ 	struct device *dev;
+ 	struct kref refcount;
+ 	atomic_t power;
 -- 
 1.7.5.4
 
