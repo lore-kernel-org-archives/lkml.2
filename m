@@ -1,37 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751986Ab2FKUIo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 16:08:44 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:42579 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750885Ab2FKUIn (ORCPT
+	id S1752086Ab2FKUKc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 16:10:32 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:45763 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750885Ab2FKUKa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 16:08:43 -0400
-Message-ID: <4FD65047.1060401@wwwdotorg.org>
-Date: Mon, 11 Jun 2012 14:08:39 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Roland Stigge <stigge@antcom.de>
-CC: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, b-cousson@ti.com,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        robherring2@gmail.com
-Subject: Re: [PATCH] ARM: tegra: Fix dts files w/ status property: "disable"
- -> "disabled"
-References: <1339441785-14641-1-git-send-email-stigge@antcom.de> <1339441785-14641-2-git-send-email-stigge@antcom.de>
-In-Reply-To: <1339441785-14641-2-git-send-email-stigge@antcom.de>
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 11 Jun 2012 16:10:30 -0400
+Date: Mon, 11 Jun 2012 13:10:29 -0700 (PDT)
+Message-Id: <20120611.131029.1674560821412898381.davem@davemloft.net>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: pull request: wireless 2012-06-11
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120611191718.GD30086@tuxdriver.com>
+References: <20120611191718.GD30086@tuxdriver.com>
+X-Mailer: Mew version 6.5 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2012 01:09 PM, Roland Stigge wrote:
-> This patches fixes some status = "disable" strings to "disabled", the correct
-> way of disabling nodes in the devicetree.
-> 
-> Just the tegra part here. Everything else goes via other patches and trees.
+From: "John W. Linville" <linville@tuxdriver.com>
+Date: Mon, 11 Jun 2012 15:17:18 -0400
 
-Thanks. Applied to Tegra's for-next.
+> Here is another group of fixes intended for 3.5.
+
+Pulled, thanks a lot.
