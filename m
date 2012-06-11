@@ -1,41 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752082Ab2FKVjr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 17:39:47 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:62068 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751840Ab2FKVjq (ORCPT
+	id S1752190Ab2FKVkP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 17:40:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57724 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751840Ab2FKVkN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 17:39:46 -0400
-MIME-Version: 1.0
-In-Reply-To: <1339428307-3850-12-git-send-email-lee.jones@linaro.org>
-References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org>
-	<1339428307-3850-12-git-send-email-lee.jones@linaro.org>
-Date: Mon, 11 Jun 2012 23:39:45 +0200
-Message-ID: <CACRpkdbJzZRXNqy0wSO4cw0eZCys8YiT=5xnN8E61S+7q+obcQ@mail.gmail.com>
-Subject: Re: [PATCH 11/14] usb: otg: Enable probing of the ab8500 during a
- Device Tree boot
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, arnd@arndb.de, grant.likely@secretlab.ca,
-        Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 11 Jun 2012 17:40:13 -0400
+Date: Mon, 11 Jun 2012 14:40:11 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH] mm: clean up __count_immobile_pages
+Message-Id: <20120611144011.60fd76c8.akpm@linux-foundation.org>
+In-Reply-To: <1339380442-1137-1-git-send-email-minchan@kernel.org>
+References: <1339380442-1137-1-git-send-email-minchan@kernel.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 11, 2012 at 5:25 PM, Lee Jones <lee.jones@linaro.org> wrote:
+On Mon, 11 Jun 2012 11:07:22 +0900
+Minchan Kim <minchan@kernel.org> wrote:
 
-> Without this patch, if Device Tree is enabled the AB8500 USB OTG driver
-> wouldn't get probed at all, as there is no reference to it from platform
-> code. This patch ensures the driver is probed during normal DT start-up.
->
-> Cc: Felipe Balbi <balbi@ti.com>
-> Cc: linux-usb@vger.kernel.org
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> __count_immobile_pages naming is rather awkward.
+> This patch clean up the function and add comment.
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+This conflicts with
+mm-compaction-handle-incorrect-migrate_unmovable-type-pageblocks.patch
+and its fixes.
 
-Thanks,
-Linus Walleij
+> + * This function can race in PageLRU and MIGRATE_MOVABLE can have unmovable
+> + * pages so that it might be not exact.
+
+I don't understand this.  Functions race against other functions, not
+against a page flag.  Can we have another attempt at this description
+please?
+
