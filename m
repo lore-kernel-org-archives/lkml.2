@@ -1,42 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751532Ab2FKIdM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 04:33:12 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:38427 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750993Ab2FKIdK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 04:33:10 -0400
+	id S1751884Ab2FKIgu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 04:36:50 -0400
+Received: from antcom.de ([188.40.178.216]:41705 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751066Ab2FKIgt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 04:36:49 -0400
+Message-ID: <4FD5AE1D.9030807@antcom.de>
+Date: Mon, 11 Jun 2012 10:36:45 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM IT Research & Development
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
 MIME-Version: 1.0
-In-Reply-To: <4FD58C54.7050504@kernel.org>
-References: <1339325468-30614-1-git-send-email-levinsasha928@gmail.com>
-	<1339325468-30614-9-git-send-email-levinsasha928@gmail.com>
-	<4FD58C54.7050504@kernel.org>
-Date: Mon, 11 Jun 2012 11:33:09 +0300
-X-Google-Sender-Auth: t5OfJ932b6-eOVTB7JsHpWVMjL0
-Message-ID: <CAOJsxLHRfkoS7ZN8bC1MYdiAWFkWV9bVNgc_hOerfUiKmFkyAg@mail.gmail.com>
-Subject: Re: [PATCH v3 08/10] mm: frontswap: add tracing support
-From: Pekka Enberg <penberg@kernel.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Sasha Levin <levinsasha928@gmail.com>, dan.magenheimer@oracle.com,
-        konrad.wilk@oracle.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kevin.wells@nxp.com, srinivas.bakki@nxp.com, aletes.xgr@gmail.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/3] net: lpc_eth: Replace WARN() trace with simple pr_warn()
+References: <1339401793-12258-1-git-send-email-stigge@antcom.de> <1339403108.6001.1697.camel@edumazet-glaptop>
+In-Reply-To: <1339403108.6001.1697.camel@edumazet-glaptop>
+X-Enigmail-Version: 1.4
+OpenPGP: url=subkeys.pgp.net
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/10/2012 07:51 PM, Sasha Levin wrote:
->> Add tracepoints to frontswap API.
+Hi Dave and Eric,
+
+thanks for your feedback!
+
+On 06/11/2012 10:25 AM, Eric Dumazet wrote:
+> On Mon, 2012-06-11 at 10:03 +0200, Roland Stigge wrote:
+>> A WARN() trace indicating a "BUG!" was identified as a "normal" case in the
+>> xmit function in case all TX descriptors are occupied already. In this case,
+>> NETDEV_TX_BUSY is returned, nothing buggy at all.
 >>
->> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+>> Signed-off-by: Roland Stigge <stigge@antcom.de>
+>> Tested-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+>>
+>> ---
+>>  drivers/net/ethernet/nxp/lpc_eth.c |    2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> --- linux-2.6.orig/drivers/net/ethernet/nxp/lpc_eth.c
+>> +++ linux-2.6/drivers/net/ethernet/nxp/lpc_eth.c
+>> @@ -1114,7 +1114,7 @@ static int lpc_eth_hard_start_xmit(struc
+>>  		   buffers */
+>>  		netif_stop_queue(ndev);
+>>  		spin_unlock_irq(&pldat->lock);
+>> -		WARN(1, "BUG! TX request when no free TX buffers!\n");
+>> +		pr_warn("Note: TX request when no free TX buffers.\n");
+>>  		return NETDEV_TX_BUSY;
+>>  	}
+>>  
+> 
+> Entering this path is a bug, don't hide it...
+> 
+> Please share with us how this bug was identified as a "normal case" ?
 
-On Mon, Jun 11, 2012 at 9:12 AM, Minchan Kim <minchan@kernel.org> wrote:
-> Normally, adding new tracepoint isn't easy without special reason.
-> I'm not sure all of frontswap function tracing would be valuable.
-> Shsha, Why do you want to add tracing?
-> What's scenario you want to use tracing?
+I encountered cases where this happened for me on a custom board under
+heavy load.
 
-Yup, the added tracepoints look more like function tracing. Shouldn't
-you use something like kprobes or ftrace/perf for this?
+I discussed this with Kevin Wells, the original driver author. We
+identified the case of xmit()'s TX request (from .ndo_start_xmit) with
+full TX driver buffers as valid when ethernet is busy.
+
+But maybe this is wrong. Can you please give me a hint how the net
+subsystem makes sure that this doesn't happen under normal circumstances?
+
+Thanks in advance!
+
+Roland
