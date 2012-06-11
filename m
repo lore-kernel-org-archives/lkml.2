@@ -1,116 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754500Ab2FKMju (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 08:39:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17976 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754110Ab2FKMjt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 08:39:49 -0400
-Date: Mon, 11 Jun 2012 08:39:32 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: bfields <bfields@fieldses.org>
-Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Joerg Platte <jplatte@naasa.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Hans de Bruin <jmdebruin@xmsnet.nl>
-Subject: Re: Kernel 3.4.X NFS server regression
-Message-ID: <20120611083932.24e27e39@corrin.poochiereds.net>
-In-Reply-To: <20120611121634.GB7654@fieldses.org>
-References: <4FD47D4E.9070307@naasa.net>
-	<1339340441.4751.1.camel@lade.trondhjem.org>
-	<20120611121634.GB7654@fieldses.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754516Ab2FKMmi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 08:42:38 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:65477 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754390Ab2FKMmh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 08:42:37 -0400
+Message-ID: <4FD5E7B8.1020502@suse.cz>
+Date: Mon, 11 Jun 2012 14:42:32 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120530 Thunderbird/13.0
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Paul Bolle <pebolle@tiscali.nl>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] delete seven tty headers
+References: <1339145808.25798.28.camel@x61.thuisdomein> <4FD1DB30.80307@suse.cz> <1339155706.25798.55.camel@x61.thuisdomein> <201206081403.16608.arnd@arndb.de>
+In-Reply-To: <201206081403.16608.arnd@arndb.de>
+X-Enigmail-Version: 1.4.2
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 11 Jun 2012 08:16:34 -0400
-bfields <bfields@fieldses.org> wrote:
+On 06/08/2012 04:03 PM, Arnd Bergmann wrote:
+> I think we should just apply the patches the way you sent them. We are
+> in the much stricter about binary compatibility than about source level
+> compatibility, and we already broke any potential user space applications
+> that might be using these headers by removing the drivers implementing
+> the kernel side of them, after deciding that they were unused!
 
-> On Sun, Jun 10, 2012 at 03:00:42PM +0000, Myklebust, Trond wrote:
-> > Cc: linux-nfs@vger.kernel.org + bfields and changing title to label it
-> > as a server regression since that is what the trace appears to imply.
-> > 
-> > On Sun, 2012-06-10 at 12:56 +0200, Joerg Platte wrote:
-> > > All 3.4 kernels I tried so far (3.4, 3.4.1 and 3.4.2) suffer from the 
-> > > same NFS related problem:
-> > > 
-> > > Jun 10 09:23:36 coco kernel: INFO: task kworker/u:1:8 blocked for more 
-> > > than 120 seconds.
-> > > Jun 10 09:23:36 coco kernel: "echo 0 > 
-> > > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-> > > Jun 10 09:23:36 coco kernel: kworker/u:1     D 002ba28c     0     8 
-> > >   2 0x00000000
-> > > Jun 10 09:23:36 coco kernel:  df465ec0 00000046 00000005 002ba28c 
-> > > 00000000 0000000a 00000282 df465e70
-> > > Jun 10 09:23:36 coco kernel:  df465ec0 df44d2b0 ffff6b60 df465e84 
-> > > df44d2b0 e33fa6b3 00000282 de764ae0
-> > > Jun 10 09:23:36 coco kernel:  ffffffff d78bcfb8 df465e8c c012e0f6 
-> > > df465ea4 c013610c 00000000 d78bcf80
-> > > Jun 10 09:23:36 coco kernel: Call Trace:
-> > > Jun 10 09:23:36 coco kernel:  [<c012e0f6>] ? add_timer+0x11/0x17
-> > > Jun 10 09:23:36 coco kernel:  [<c013610c>] ? queue_delayed_work_on+0x74/0xf0
-> > > Jun 10 09:23:36 coco kernel:  [<c0136ba4>] ? queue_delayed_work+0x1b/0x28
-> > > Jun 10 09:23:36 coco kernel:  [<c0350f5b>] schedule+0x1d/0x4c
-> > > Jun 10 09:23:36 coco kernel:  [<e0cda5f1>] cld_pipe_upcall+0x4e/0x75 [nfsd]
-> > > Jun 10 09:23:36 coco kernel:  [<e0cda678>] 
-> > > nfsd4_cld_grace_done+0x60/0x99 [nfsd]
-> > > Jun 10 09:23:36 coco kernel:  [<e0cd9cb5>] 
-> > > nfsd4_record_grace_done+0x10/0x12 [nfsd]
-> > > Jun 10 09:23:36 coco kernel:  [<e0cd6696>] laundromat_main+0x291/0x2d8 
-> > > [nfsd]
-> > > Jun 10 09:23:36 coco kernel:  [<c0136d2f>] process_one_work+0xff/0x325
-> > > Jun 10 09:23:36 coco kernel:  [<c0134bec>] ? start_worker+0x20/0x23
-> > > Jun 10 09:23:36 coco kernel:  [<e0cd6405>] ? 
-> > > nfsd4_process_open1+0x32b/0x32b [nfsd]
-> > > Jun 10 09:23:36 coco kernel:  [<c013727a>] worker_thread+0xf4/0x39a
-> > > Jun 10 09:23:36 coco kernel:  [<c0137186>] ? rescuer_thread+0x231/0x231
-> > > Jun 10 09:23:36 coco kernel:  [<c013a556>] kthread+0x6c/0x6e
-> > > Jun 10 09:23:36 coco kernel:  [<c013a4ea>] ? kthreadd+0xe8/0xe8
-> > > Jun 10 09:23:36 coco kernel:  [<c035263e>] kernel_thread_helper+0x6/0xd
-> > > 
-> > > A kworker task is stuck in D state and nfs mounts from other clients do 
-> > > not work at all. This happens only on one machine, another one with the 
-> > > same kernel (same self compiled Debian package) works. All previous 3.3 
-> > > kernels work as well.
-> > > 
-> > > Since this machine is remote it is not that easy to bisect to find the 
-> > > bad commit. Are there any other things I can try?
-> 
-> If you create a directory named /var/lib/nfs/v4recovery/, does the
-> problem go away?
-> 
-> My guess would be that it's trying to upcall to the new reboot-recovery
-> state daemon, and you don't have that running.
-> 
-> Before the addition of that upcall state was kept in
-> /var/lib/nfs/v4recovery.  So we decide whether to use the old method or
-> the new one by checking for the existance of that path.
-> 
-> But I'm guessing we were wrong to assume that existing setups that
-> people perceived as working would have that path, because the failures
-> in the absence of that path were probably less obvious.
-> 
-> --b.
+Yes, but this patch is about breaking builds of toolkits. Some of the
+tools from such toolkits still might work without the removed drivers.
 
-This sounds like the same problem that Hans reported as well. I've not
-been able to reproduce that so far. Here's what I get when I start nfsd
-with no v4recoverdir and nfsdcld isn't running:
+> Building user space code against new kernel headers to run on old
+> kernels is not really supported, because that might rely on new interfaces
+> to be present. The only reason to keep the headers around would be to
+> keep broken user space code building. I would not expect such code to
+> still exist for the two header files, and if it does, then giving
+> it an extra six months before it needs to be fixed is not going to
+> make much of a difference.
 
-[  109.715080] NFSD: starting 90-second grace period
-[  229.984220] NFSD: Unable to end grace period: -110
+I agree (I wrote I doubt there are any users at all). But I would prefer
+going through the deprecation phase (adding a #warning) anyway. Removing
+the headers completely in a year, or maybe sooner is OK then.
 
-What I don't quite understand is why the queue_timeout job isn't
-getting run here. What should happen is that 30s after upcall,
-rpc_timeout_upcall_queue should run. The message will be found to be
-still sitting on the , so it should set its status to -ETIMEDOUT
-and wake up the caller.
+> OTOH, if it turns out that a modern distro still contains a package
+> that relies on these headers, I would advocate putting a minimal
+> header file with a #warning back into the kernel.
 
-I can only assume that the queue_timeout job isn't getting run for some
-reason, but I'm unclear on why that would be.
+I think this is too late. Distros would find this out after months and
+there will be no reason to re-add empty headers and backport them to
+stable trees in between at that time...
 
+> The only reference I could find on the internet to the ioctl commands
+> that are getting removed is in the FreeBSD "stallion" user space,
+> and they ditched the driver four years ago:
+> http://lists.freebsd.org/pipermail/freebsd-questions/2008-April/173526.html
+
+I wish google codesearch was not abandoned...
+
+thanks,
 -- 
-Jeff Layton <jlayton@redhat.com>
+js
+suse labs
+
+
