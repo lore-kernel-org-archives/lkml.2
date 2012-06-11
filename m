@@ -1,358 +1,292 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753149Ab2FKNyc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 09:54:32 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48837 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751369Ab2FKNya (ORCPT
+	id S1753957Ab2FKNzi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 09:55:38 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:34440 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751007Ab2FKNzg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 09:54:30 -0400
-Date: Mon, 11 Jun 2012 10:53:52 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
-Cc: Dave Martin <dave.martin@linaro.org>, peterz@infradead.org,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        ananth@in.ibm.com, jkenisto@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, oleg@redhat.com,
-        andi@firstfloor.org, hch@infradead.org, rostedt@goodmis.org,
-        masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de, anton@redhat.com,
-        srikar@linux.vnet.ibm.com, linux-perf-users@vger.kernel.org,
-        mingo@elte.hu, Roland McGrath <roland@hack.frob.com>
-Subject: Re: Fwd: [PATCH-V2] perf symbols: fix symbol offset breakage with
- separated debug info
-Message-ID: <20120611135352.GA2202@infradead.org>
-References: <4FA0DBEE.3040909@linux.vnet.ibm.com>
- <4FD5D3CE.2010307@linux.vnet.ibm.com>
+	Mon, 11 Jun 2012 09:55:36 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6738"; a="197460351"
+Message-ID: <453f08411c87367450f544d288745bee.squirrel@www.codeaurora.org>
+In-Reply-To: <000a01cd47b2$05982420$10c86c60$%jun@samsung.com>
+References: <1338576911-17089-1-git-send-email-merez@codeaurora.org>
+    <1338576911-17089-2-git-send-email-merez@codeaurora.org>
+    <007c01cd455a$56392050$02ab60f0$%jun@samsung.com>
+    <780c1dad11fe08de17a3ff41b22ba3b8.squirrel@www.codeaurora.org>
+    <000a01cd47b2$05982420$10c86c60$%jun@samsung.com>
+Date: Mon, 11 Jun 2012 06:55:35 -0700 (PDT)
+Subject: RE: [PATCH v2 1/1] mmc: block: Add write packing control
+From: merez@codeaurora.org
+To: "Seungwon Jeon" <tgih.jun@samsung.com>
+Cc: "'Maya Erez'" <merez@codeaurora.org>, linux-mmc@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org,
+        "'DOCUMENTATION''" <linux-doc@vger.kernel.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FD5D3CE.2010307@linux.vnet.ibm.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding Roland to the CC list, perhaps he can help us with these
-debuginfo details :-)
 
-Em Mon, Jun 11, 2012 at 04:47:34PM +0530, Prashanth Nageshappa escreveu:
-> Dave/Arnaldo,
-> Let me know if you have any comments on this patch so that I can address them.
+> Maya Erez <merez@codeaurora.org> wrote:
+>>
+>> > Hi,
+>> >
+>> > How can we check the effect?
+>> > Do you have any result?
+>> We ran parallel lmdd read and write operations and found out that the
+>> write packing causes the read throughput to drop from 24MB/s to 12MB/s.
+>> The write packing control managed to increase the read throughput back
+>> to
+>> the original value.
+>> We also examined "real life" scenarios, such as performing a big push
+>> operation in parallel to launching several applications. We measured the
+>> read latency and found out that with the write packing control the worst
+>> case of the read latency was smaller.
+>>
+>> > Please check the several comment below.
+>> >
+>> > Maya Erez <merez@codeaurora.org> wrote:
+>> >> The write packing control will ensure that read requests latency is
+>> >> not increased due to long write packed commands.
+>> >>
+>> >> The trigger for enabling the write packing is managing to pack
+>> several
+>> >> write requests. The number of potential packed requests that will
+>> >> trigger
+>> >> the packing can be configured via sysfs by writing the required value
+>> >> to:
+>> >> /sys/block/<block_dev_name>/num_wr_reqs_to_start_packing.
+>> >> The trigger for disabling the write packing is fetching a read
+>> request.
+>> >>
+>> >> ---
+>> >>  Documentation/mmc/mmc-dev-attrs.txt |   17 ++++++
+>> >>  drivers/mmc/card/block.c            |  100
+>> >> ++++++++++++++++++++++++++++++++++-
+>> >>  drivers/mmc/card/queue.c            |    8 +++
+>> >>  drivers/mmc/card/queue.h            |    3 +
+>> >>  include/linux/mmc/host.h            |    1 +
+>> >>  5 files changed, 128 insertions(+), 1 deletions(-)
+>> >>
+>> >> diff --git a/Documentation/mmc/mmc-dev-attrs.txt
+>> >> b/Documentation/mmc/mmc-dev-attrs.txt
+>> >> index 22ae844..08f7312 100644
+>> >> --- a/Documentation/mmc/mmc-dev-attrs.txt
+>> >> +++ b/Documentation/mmc/mmc-dev-attrs.txt
+>> >> @@ -8,6 +8,23 @@ The following attributes are read/write.
+>> >>
+>> >>  	force_ro		Enforce read-only access even if write protect switch is
+>> >> off.
+>> >>
+>> >> +	num_wr_reqs_to_start_packing 	This attribute is used to determine
+>> >> +	the trigger for activating the write packing, in case the write
+>> >> +	packing control feature is enabled.
+>> >> +
+>> >> +	When the MMC manages to reach a point where
+>> >> num_wr_reqs_to_start_packing
+>> >> +	write requests could be packed, it enables the write packing
+>> feature.
+>> >> +	This allows us to start the write packing only when it is
+>> beneficial
+>> >> +	and has minimum affect on the read latency.
+>> >> +
+>> >> +	The number of potential packed requests that will trigger the
+>> packing
+>> >> +	can be configured via sysfs by writing the required value to:
+>> >> +	/sys/block/<block_dev_name>/num_wr_reqs_to_start_packing.
+>> >> +
+>> >> +	The default value of num_wr_reqs_to_start_packing was determined by
+>> >> +	running parallel lmdd write and lmdd read operations and
+>> calculating
+>> >> +	the max number of packed writes requests.
+>> >> +
+>> >>  SD and MMC Device Attributes
+>> >>  ============================
+>> >>
+>> >> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
+>> >> index 2785fd4..ef192fb 100644
+>> >> --- a/drivers/mmc/card/block.c
+>> >> +++ b/drivers/mmc/card/block.c
+>> >> @@ -114,6 +114,7 @@ struct mmc_blk_data {
+>> >>  	struct device_attribute force_ro;
+>> >>  	struct device_attribute power_ro_lock;
+>> >>  	int	area_type;
+>> >> +	struct device_attribute num_wr_reqs_to_start_packing;
+>> >>  };
+>> >>
+>> >>  static DEFINE_MUTEX(open_lock);
+>> >> @@ -281,6 +282,38 @@ out:
+>> >>  	return ret;
+>> >>  }
+>> >>
+>> >> +static ssize_t
+>> >> +num_wr_reqs_to_start_packing_show(struct device *dev,
+>> >> +				  struct device_attribute *attr, char *buf)
+>> >> +{
+>> >> +	struct mmc_blk_data *md = mmc_blk_get(dev_to_disk(dev));
+>> >> +	int num_wr_reqs_to_start_packing;
+>> >> +	int ret;
+>> >> +
+>> >> +	num_wr_reqs_to_start_packing =
+>> md->queue.num_wr_reqs_to_start_packing;
+>> >> +
+>> >> +	ret = snprintf(buf, PAGE_SIZE, "%d\n",
+>> num_wr_reqs_to_start_packing);
+>> >> +
+>> >> +	mmc_blk_put(md);
+>> >> +	return ret;
+>> >> +}
+>> >> +
+>> >> +static ssize_t
+>> >> +num_wr_reqs_to_start_packing_store(struct device *dev,
+>> >> +				 struct device_attribute *attr,
+>> >> +				 const char *buf, size_t count)
+>> >> +{
+>> >> +	int value;
+>> >> +	struct mmc_blk_data *md = mmc_blk_get(dev_to_disk(dev));
+>> >> +
+>> >> +	sscanf(buf, "%d", &value);
+>> >> +	if (value >= 0)
+>> >> +		md->queue.num_wr_reqs_to_start_packing = value;
+>> >> +
+>> >> +	mmc_blk_put(md);
+>> >> +	return count;
+>> >> +}
+>> >> +
+>> >>  static int mmc_blk_open(struct block_device *bdev, fmode_t mode)
+>> >>  {
+>> >>  	struct mmc_blk_data *md = mmc_blk_get(bdev->bd_disk);
+>> >> @@ -1313,6 +1346,48 @@ static void mmc_blk_rw_rq_prep(struct
+>> >> mmc_queue_req *mqrq,
+>> >>  	mmc_queue_bounce_pre(mqrq);
+>> >>  }
+>> >>
+>> >> +static void mmc_blk_write_packing_control(struct mmc_queue *mq,
+>> >> +					  struct request *req)
+>> >> +{
+>> >> +	struct mmc_host *host = mq->card->host;
+>> >> +	int data_dir;
+>> >> +
+>> >> +	if (!(host->caps2 & MMC_CAP2_PACKED_WR))
+>> >> +		return;
+>> >> +
+>> >> +	/*
+>> >> +	 * In case the packing control is not supported by the host, it
+>> should
+>> >> +	 * not have an effect on the write packing. Therefore we have to
+>> >> enable
+>> >> +	 * the write packing
+>> >> +	 */
+>> >> +	if (!(host->caps2 & MMC_CAP2_PACKED_WR_CONTROL)) {
+>> >> +		mq->wr_packing_enabled = true;
+>> >> +		return;
+>> >> +	}
+>> >> +
+>> >> +	if (!req || (req && (req->cmd_flags & REQ_FLUSH))) {
+>> >> +		if (mq->num_of_potential_packed_wr_reqs >
+>> >> +				mq->num_wr_reqs_to_start_packing)
+>> >> +			mq->wr_packing_enabled = true;
+>> >> +		return;
+>> >> +	}
+>> >> +
+>> >> +	data_dir = rq_data_dir(req);
+>> >> +
+>> >> +	if (data_dir == READ) {
+>> >> +		mq->num_of_potential_packed_wr_reqs = 0;
+>> >> +		mq->wr_packing_enabled = false;
+>> >> +		return;
+>> >> +	} else if (data_dir == WRITE) {
+>> >> +		mq->num_of_potential_packed_wr_reqs++;
+>> >> +	}
+>> >> +
+>> >> +	if (mq->num_of_potential_packed_wr_reqs >
+>> >> +			mq->num_wr_reqs_to_start_packing)
+>> >> +		mq->wr_packing_enabled = true;
+>> > Write Packing is available only if continuing write requests are over
+>> > num_wr_reqs_to_start_packing?
+>> > That means individual request(1...17) will be issued with non-packing.
+>> > Could you explain your policy more?
+>> We try to identify the case where there is parallel read and write
+>> operations. In our experiments we found out that the number of write
+>> requests between read requests in parallel read and write operations
+>> doesn't exceed 17 requests. Therefore, we can assume that fetching more
+>> than 17 write requests without hitting a read request can indicate that
+>> there is no read activity.
+> We can apply this experiment regardless I/O scheduler?
+> Which I/O scheduler was used with this experiment?
+The experiment was performed with the CFQ scheduler. Since the deadline
+uses a batch of 16 requests it should also fit the deadline scheduler.
+In case another value is required, this value can be changed via sysfs.
+>
+>> You are right that this affects the write throughput a bit but the goal
+>> of
+>> this algorithm is to make sure the read throughput and latency are not
+>> decreased due to write. If this is not the desired result, this
+>> algorithm
+>> can be disabled.
+>> >> +
+>> >> +}
+>> >> +
+>> >>  static u8 mmc_blk_prep_packed_list(struct mmc_queue *mq, struct
+>> request
+>> >> *req)
+>> >>  {
+>> >>  	struct request_queue *q = mq->queue;
+>> >> @@ -1332,6 +1407,9 @@ static u8 mmc_blk_prep_packed_list(struct
+>> >> mmc_queue *mq, struct request *req)
+>> >>  			!card->ext_csd.packed_event_en)
+>> >>  		goto no_packed;
+>> >>
+>> >> +	if (!mq->wr_packing_enabled)
+>> >> +		goto no_packed;
+>> > If wr_packing_enabled is set to true, several write requests can be
+>> > packed.
+>> > We don't need to consider read request since packed write?
+>> I'm not sure I understand the question. We check if there was a read
+>> request in the mmc_blk_write_packing_control, and in such a case set
+>> mq->wr_packing_enabled to false.
+>> If I didn't answer the question, please explain it again.
+> Packed write can be possible after exceeding 17 requests.
+> Is it assured that read request doesn't follow immediately after packed
+> write?
+> I wonder this case.
+Currently in such a case we will send the packed command followed by the
+read request. The latency of this read request will be high due to waiting
+for the completion of the packed write. However, since we will disable the
+write packing, the latency of the following read requests will be low.
+We are working on a solution where the read request will bypass the write
+requests in such a case. This change requires modification of the
+scheduler in order to re-insert the write requests to the scheduler.
+>
+> Thanks,
+> Seungwon Jeon.
+>>
+>> >
+>> > Thanks,
+>> > Seungwon Jeon
+>>
+>> Thanks,
+>> Maya Erez
+>> --
+>> Sent by a consultant of the Qualcomm Innovation Center, Inc.
+>> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+>
 
-> -------- Original Message --------
-> Subject: [PATCH-V2] perf symbols: fix symbol offset breakage with separated debug info
-> Date: Wed, 02 May 2012 12:32:06 +0530
-> From: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
-> To: peterz@infradead.org, mingo@elte.hu
-> CC: akpm@linux-foundation.org, torvalds@linux-foundation.org,  ananth@in.ibm.com, jkenisto@linux.vnet.ibm.com,  linux-kernel@vger.kernel.org, linux-mm@kvack.org, oleg@redhat.com,  andi@firstfloor.org, hch@infradead.org, rostedt@goodmis.org,  acme@infradead.org, masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de,  anton@redhat.com, srikar@linux.vnet.ibm.com, dave.martin@linaro.org,  linux-perf-users@vger.kernel.org
-> 
-> From: Dave Martin <dave.martin@linaro.org>
-> 
-> perf resolves symbols to wrong offsets when debug info is separated
-> from the lib/executable.
-> 
-> This patch is based on Dave Martin's initial work first published at
-> https://lkml.org/lkml/2010/11/22/137
-> 
-> This patch loads the ELF section headers from a separate file if
-> necessary, to avoid getting confused by the different section file
-> offsets seen in debug images.  Invalid section headers are detected by
-> checking for the presence of non-writable SHT_NOBITS sections, which
-> don't make sense under normal circumstances.
-> 
-> In particular, this allows symbols in ET_EXEC images to get fixed up
-> correctly in the presence of separated debug images.
-> 
-> v2 addresses review comments (to remove asserts) from Dave Martin.
-> 
-> Signed-off-by: Dave Martin <dave.martin@linaro.org>
-> Signed-off-by: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
-> ---
-> 
->  tools/perf/util/symbol.c |  168 +++++++++++++++++++++++++++++++++++++++++++++-
->  1 files changed, 164 insertions(+), 4 deletions(-)
-> 
-> diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-> index caaf75a..a6ad4b1 100644
-> --- a/tools/perf/util/symbol.c
-> +++ b/tools/perf/util/symbol.c
-> @@ -1158,8 +1158,105 @@ static size_t elf_addr_to_index(Elf *elf, GElf_Addr addr)
->  	return -1;
->  }
->  
-> +/**
-> + * Read all section headers, copying them into a separate array so they survive
-> + * elf_end.
-> + *
-> + * @elf: the libelf instance to operate on.
-> + * @ehdr: the elf header: this must already have been read with gelf_getehdr().
-> + * @count: the number of headers read is assigned to *count on successful
-> + *	return.  count must not be NULL.
-> + *
-> + * Returns a pointer to the allocated headers, which should be deallocated with
-> + * free() when no longer needed.
-> + */
-> +static GElf_Shdr *elf_get_all_shdrs(Elf *elf, GElf_Ehdr const *ehdr,
-> +				    unsigned *count)
-> +{
-> +	GElf_Shdr *shdrs;
-> +	Elf_Scn *scn;
-> +	unsigned max_index = 0;
-> +	unsigned i;
-> +
-> +	shdrs = malloc(ehdr->e_shnum * sizeof *shdrs);
+Thanks,
+Maya Erez
+Consultant for Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
 
-This could be zalloc so that...
-
-> +	if (!shdrs)
-> +		return NULL;
-> +
-> +	for (i = 0; i < ehdr->e_shnum; i++)
-> +		shdrs[i].sh_type = SHT_NULL;
-
-The loop above can be removed
-
-
-> +	for (scn = NULL; (scn = elf_nextscn(elf, scn)); ) {
-> +		size_t j;
-> +
-> +		/*
-> +		 * Just assuming we get section 0, 1, ... in sequence may lead
-> +		 * to wrong section indices.  Check the index explicitly:
-> +		 */
-> +		j = elf_ndxscn(scn);
-> +		if (j > max_index)
-> +			max_index = j;
-> +
-> +		if (!gelf_getshdr(scn, &shdrs[j]))
-> +			goto error;
-> +	}
-> +
-> +	*count = max_index + 1;
-> +	return shdrs;
-> +
-> +error:
-> +	free(shdrs);
-> +	return NULL;
-> +}
-> +
-> +/**
-> + * Check that the section headers @shdrs reflect accurately the file data
-> + * layout of the image that was loaded during perf record.  This is generally
-> + * not true for separated debug images generated with e.g.,
-> + * objcopy --only-keep-debug.
-> + *
-> + * We identify invalid files by checking for non-empty sections which are
-> + * declared as having no file data (SHT_NOBITS) but are not writable.
-> + *
-> + * @shdrs: the full set of section headers, as loaded by elf_get_all_shdrs().
-> + * @count: the number of headers present in @shdrs.
-> + *
-> + * Returns 1 for valid headers, 0 otherwise.
-> + */
-
-Roland, could you take a look at these ELF/debuginfo aspects?
-
-> +static int elf_check_shdrs_valid(GElf_Shdr const *shdrs, unsigned count)
-> +{
-> +	unsigned i;
-> +
-> +	for (i = 0; i < count; i++) {
-> +		if (shdrs[i].sh_type == SHT_NOBITS &&
-> +		    !(shdrs[i].sh_flags & SHF_WRITE) &&
-> +		    shdrs[i].sh_size != 0)
-> +			return 0;
-> +	}
-> +
-> +	return 1;
-> +}
-> +
-> +/*
-> + * Notes:
-> + *
-> + * If saved_shdrs is non-NULL, the section headers will be read if found, and
-> + * will be used for address fixups.  saved_shdrs_count must also be non-NULL in
-> + * this case.  This may be needed for separated debug images, since the section
-> + * headers and symbols may need to come from separate images in that case.
-> + *
-> + * Note: irrespective of whether this function returns successfully,
-> + * *saved_shdrs may get initialised if saved_shdrs is non-NULL.  It is the
-> + * caller's responsibility to free() it when non longer needed.
-
-I kept deferring looking at this patch because of the added complexity,
-couldn't we try to simplify it somehow?
-
-> + * If want_symtab == 1, this function will only load symbols from .symtab
-> + * sections.  Otherwise (want_symtab == 0), .dynsym or .symtab symbols are
-> + * loaded.  This feature is used by dso__load() to search for the best image
-> + * to load.
-> + */
-> +
->  static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
->  			 int fd, symbol_filter_t filter, int kmodule,
-> +			 GElf_Shdr **saved_shdrs, unsigned *saved_shdrs_count,
->  			 int want_symtab)
->  {
->  	struct kmap *kmap = dso->kernel ? map__kmap(map) : NULL;
-> @@ -1178,6 +1275,17 @@ static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
->  	int nr = 0;
->  	size_t opdidx = 0;
->  
-> +	if (saved_shdrs != NULL && saved_shdrs_count == NULL) {
-> +		/*
-> +		 * If you trigger this check, you're calling this function
-> +		 * incorrectly.  Refer to the notes above for details.
-> +		 */
-> +		pr_debug("%s: warning: saved_shdrs_count == NULL: "
-> +			 "ignoring the saved section headers.\n",
-> +			 __func__);
-> +		saved_shdrs = NULL;
-> +	}
-
-Why check if one of the parameters is null? Perhaps we should have
-something like:
-
-struct saved_shdrs {
-	GElf_Shdr **saved_shdrs;
-	unsigned *saved_shdrs_count;
-}
-
-And pass just one parameter?
-
->  	elf = elf_begin(fd, PERF_ELF_C_READ_MMAP, NULL);
->  	if (elf == NULL) {
->  		pr_debug("%s: cannot read %s ELF file.\n", __func__, name);
-> @@ -1200,6 +1308,36 @@ static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
->  			goto out_elf_end;
->  	}
->  
-> +	/*
-> +	 * Copy all section headers from the image if requested and if not
-> +	 * already loaded.
-> +	 */
-> +	if (saved_shdrs != NULL && *saved_shdrs == NULL) {
-> +		GElf_Shdr *shdrs;
-> +		unsigned count;
-> +
-> +		shdrs = elf_get_all_shdrs(elf, &ehdr, &count);
-> +		if (shdrs == NULL)
-> +			goto out_elf_end;
-> +
-> +		/*
-> +		 * Only keep the headers if they reflect the actual run-time
-> +		 * image's file layout:
-> +		 */
-> +		if (elf_check_shdrs_valid(shdrs, count)) {
-> +			*saved_shdrs = shdrs;
-> +			*saved_shdrs_count = count;
-> +		} else
-> +			free(shdrs);
-> +	}
-> +
-> +	/*
-> +	 * If no genuine ELF headers are available yet, give up: we can't
-> +	 * adjust symbols correctly in that case:
-> +	 */
-> +	if (saved_shdrs != NULL && *saved_shdrs == NULL)
-> +		goto out_elf_end;
-
->  	sec = elf_section_by_name(elf, &ehdr, &shdr, ".symtab", NULL);
->  	if (sec == NULL) {
->  		if (want_symtab)
-> @@ -1344,12 +1482,25 @@ static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
->  			goto new_symbol;
->  		}
->  
-> +		/*
-> +		 * Currently, symbols for shared objects and PIE executables
-> +		 * (i.e., ET_DYN) do not seem to get adjusted.  This might need
-> +		 * to change if file offset == virtual address is not actually
-> +		 * guaranteed for these images.  ELF doesn't provide this
-> +		 * guarantee natively.
-> +		 */
->  		if (curr_dso->adjust_symbols) {
->  			pr_debug4("%s: adjusting symbol: st_value: %#" PRIx64 " "
->  				  "sh_addr: %#" PRIx64 " sh_offset: %#" PRIx64 "\n", __func__,
->  				  (u64)sym.st_value, (u64)shdr.sh_addr,
->  				  (u64)shdr.sh_offset);
-> -			sym.st_value -= shdr.sh_addr - shdr.sh_offset;
-> +			if (saved_shdrs && *saved_shdrs &&
-> +			    sym.st_shndx < *saved_shdrs_count)
-> +				sym.st_value -=
-> +					(*saved_shdrs)[sym.st_shndx].sh_addr -
-> +					(*saved_shdrs)[sym.st_shndx].sh_offset;
-> +			else
-> +				sym.st_value -= shdr.sh_addr - shdr.sh_offset;
-
-All this couldn't be on a separate helper routine?
-
->  		}
->  		/*
->  		 * We need to figure out if the object was created from C++ sources
-> @@ -1590,6 +1741,8 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
->  	struct machine *machine;
->  	const char *root_dir;
->  	int want_symtab;
-> +	GElf_Shdr *saved_shdrs = NULL;
-> +	unsigned saved_shdrs_count;o
-
-Couldn't saved_shdrs be a member of struct dso so that we don't have to
-be passing parameters back and forth.
-
-These questions are more trying to simplify the patch, I haven't deeply
-looked at how to reimplement it to reduce complexity, hope you can try
-to do it.
-
-The symbols code already is complicated, I know there is intrinsic
-complexity here, but we really need to try to avoid making it even more
-complicaed.
-
-- Arnaldo
-
->  
->  	dso__set_loaded(dso, map->type);
->  
-> @@ -1692,6 +1845,7 @@ restart:
->  			continue;
->  
->  		ret = dso__load_sym(dso, map, name, fd, filter, 0,
-> +				    &saved_shdrs, &saved_shdrs_count,
->  				    want_symtab);
->  		close(fd);
->  
-> @@ -1713,14 +1867,19 @@ restart:
->  
->  	/*
->  	 * If we wanted a full symtab but no image had one,
-> -	 * relax our requirements and repeat the search.
-> +	 * relax our requirements and repeat the search,
-> +	 * provided we saw some valid section headers:
->  	 */
-> -	if (ret <= 0 && want_symtab) {
-> +	if (ret <= 0 && want_symtab && saved_shdrs != NULL) {
->  		want_symtab = 0;
->  		goto restart;
->  	}
->  
->  	free(name);
-> +
-> +	if (saved_shdrs)
-> +		free(saved_shdrs);
-> +
->  	if (ret < 0 && strstr(dso->name, " (deleted)") != NULL)
->  		return 0;
->  	return ret;
-> @@ -1989,7 +2148,8 @@ int dso__load_vmlinux(struct dso *dso, struct map *map,
->  
->  	dso__set_long_name(dso, (char *)vmlinux);
->  	dso__set_loaded(dso, map->type);
-> -	err = dso__load_sym(dso, map, symfs_vmlinux, fd, filter, 0, 0);
-> +	err = dso__load_sym(dso, map, symfs_vmlinux, fd, filter, 0,
-> +			    NULL, NULL, 0);
->  	close(fd);
->  
->  	if (err > 0)
-> 
