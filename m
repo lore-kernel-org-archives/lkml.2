@@ -1,85 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754206Ab2FKN7X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 09:59:23 -0400
-Received: from smtp-out-200.synserver.de ([212.40.185.200]:1096 "EHLO
-	smtp-out-178.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751007Ab2FKN7V (ORCPT
+	id S1754640Ab2FKN7e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 09:59:34 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:39370 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754285Ab2FKN7c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 09:59:21 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 19005
-Message-ID: <4FD5FA82.7090107@metafoo.de>
-Date: Mon, 11 Jun 2012 16:02:42 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
-MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Vinod Koul <vinod.koul@intel.com>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] ASoC: dmaengine-pcm: Add support for querying stream
- position from DMA device
-References: <1339416253-4121-1-git-send-email-lars@metafoo.de> <1339416253-4121-2-git-send-email-lars@metafoo.de> <20120611132409.GG11168@n2100.arm.linux.org.uk>
-In-Reply-To: <20120611132409.GG11168@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 11 Jun 2012 09:59:32 -0400
+Message-ID: <1339423241.4999.53.camel@lappy>
+Subject: net: nfc: BUG and panic in accept() on 3.5-rc2
+From: Sasha Levin <levinsasha928@gmail.com>
+To: David Miller <davem@davemloft.net>, lauro.venancio@openbossa.org,
+        aloisio.almeida@openbossa.org, sameo@linux.intel.com
+Cc: Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        linux-wireless <linux-wireless@vger.kernel.org>
+Date: Mon, 11 Jun 2012 16:00:41 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2012 03:24 PM, Russell King - ARM Linux wrote:
-> On Mon, Jun 11, 2012 at 02:04:13PM +0200, Lars-Peter Clausen wrote:
->> @@ -202,7 +203,27 @@ EXPORT_SYMBOL_GPL(snd_dmaengine_pcm_trigger);
->>  snd_pcm_uframes_t snd_dmaengine_pcm_pointer(struct snd_pcm_substream *substream)
->>  {
->>  	struct dmaengine_pcm_runtime_data *prtd = substream_to_prtd(substream);
->> -	return bytes_to_frames(substream->runtime, prtd->pos);
->> +	struct dma_tx_state state;
->> +	enum dma_status status;
->> +	unsigned int pos;
->> +
->> +	status = dmaengine_tx_status(prtd->dma_chan, prtd->cookie, &state);
->> +	if (status != DMA_IN_PROGRESS && status != DMA_PAUSED) {
->> +		pos = 0;
->> +	} else if (state.residue == 0) {
->> +		/* This should never happen with cyclic transfers, so assume
->> +		 * that the dmaengine driver does not support reporting residue
->> +		 * and fall back to counting periods. */
->> +		pos = prtd->pos;
-> 
-> That is an incorrect assumption.
-> 
-> The current DMA position is defined by the DMA pointer.  When the DMA
-> engine has transferred the last few bytes of the DMA, the DMA pointer
-> will be pointing to the byte _after_ the last byte transferred in the
-> buffer.
-> 
-> Therefore, when you calculate the residue as (buf_start + buf_len -
-> current_pointer) you end up with zero.
+Hi all,
 
-My assumption is that for cyclic DMA it will be pointing to the first byte
-again after the last byte has been transferred. Something like this:
+I've stumbled on the following while fuzzing with trinity inside a KVM tools guest, running on 3.5-rc2:
 
-offset = (offset + 1) % buf_len
-and current_pointer = buf_start + offset
+[ 2136.383310] BUG: unable to handle kernel NULL pointer dereference at 00000000000003b0
+[ 2136.384022] IP: [<ffffffff8114e400>] __lock_acquire+0xc0/0x4b0
+[ 2136.384022] PGD 131c4067 PUD 11c0c067 PMD 0 
+[ 2136.388106] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[ 2136.388106] CPU 1 
+[ 2136.388106] Pid: 24855, comm: trinity-child1 Tainted: G        W    3.5.0-rc2-sasha-00015-g7b268f7 #374  
+[ 2136.388106] RIP: 0010:[<ffffffff8114e400>]  [<ffffffff8114e400>] __lock_acquire+0xc0/0x4b0
+[ 2136.388106] RSP: 0018:ffff8800130b3ca8  EFLAGS: 00010046
+[ 2136.388106] RAX: 0000000000000086 RBX: ffff88001186b000 RCX: 0000000000000000
+[ 2136.388106] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000000
+[ 2136.388106] RBP: ffff8800130b3d08 R08: 0000000000000001 R09: 0000000000000000
+[ 2136.388106] R10: 0000000000000000 R11: 0000000000000001 R12: 0000000000000002
+[ 2136.388106] R13: 00000000000003b0 R14: 0000000000000000 R15: 0000000000000000
+[ 2136.388106] FS:  00007fa5b1bd4700(0000) GS:ffff88001b800000(0000) knlGS:0000000000000000
+[ 2136.388106] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[ 2136.388106] CR2: 00000000000003b0 CR3: 0000000011d1f000 CR4: 00000000000406e0
+[ 2136.388106] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[ 2136.388106] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[ 2136.388106] Process trinity-child1 (pid: 24855, threadinfo ffff8800130b2000, task ffff88001186b000)
+[ 2136.388106] Stack:
+[ 2136.388106]  ffff8800130b3cd8 ffffffff81121785 ffffffff81236774 000080d000000001
+[ 2136.388106]  ffff88001b9d6c00 00000000001d6c00 ffffffff130b3d08 ffff88001186b000
+[ 2136.388106]  0000000000000000 0000000000000002 0000000000000000 0000000000000000
+[ 2136.388106] Call Trace:
+[ 2136.388106]  [<ffffffff81121785>] ? sched_clock_local+0x25/0x90
+[ 2136.388106]  [<ffffffff81236774>] ? get_empty_filp+0x74/0x220
+[ 2136.388106]  [<ffffffff8114e97a>] lock_acquire+0x18a/0x1e0
+[ 2136.388106]  [<ffffffff836b37df>] ? rawsock_release+0x4f/0xa0
+[ 2136.388106]  [<ffffffff837c0ef0>] _raw_write_lock_bh+0x40/0x80
+[ 2136.388106]  [<ffffffff836b37df>] ? rawsock_release+0x4f/0xa0
+[ 2136.388106]  [<ffffffff836b37df>] rawsock_release+0x4f/0xa0
+[ 2136.388106]  [<ffffffff8321cfe8>] sock_release+0x18/0x70
+[ 2136.388106]  [<ffffffff8321d069>] sock_close+0x29/0x30
+[ 2136.388106]  [<ffffffff81236bca>] __fput+0x11a/0x2c0
+[ 2136.388106]  [<ffffffff81236d85>] fput+0x15/0x20
+[ 2136.388106]  [<ffffffff8321de34>] sys_accept4+0x1b4/0x200
+[ 2136.388106]  [<ffffffff837c165c>] ? _raw_spin_unlock_irq+0x4c/0x80
+[ 2136.388106]  [<ffffffff837c1669>] ? _raw_spin_unlock_irq+0x59/0x80
+[ 2136.388106]  [<ffffffff837c2565>] ? sysret_check+0x22/0x5d
+[ 2136.388106]  [<ffffffff8321de8b>] sys_accept+0xb/0x10
+[ 2136.388106]  [<ffffffff837c2539>] system_call_fastpath+0x16/0x1b
+[ 2136.388106] Code: ec 04 00 0f 85 ea 03 00 00 be d5 0b 00 00 48 c7 c7 8a c1 40 84 e8 b1 a5 f8 ff 31 c0 e9 d4 03 00 00 66 2e 0f 1f 84 00 00 00 00 00 <49> 81 7d 00 60 73 5e 85 b8 01 00 00 00 44 0f 44 e0 83 fe 01 77 
+[ 2136.388106] RIP  [<ffffffff8114e400>] __lock_acquire+0xc0/0x4b0
+[ 2136.388106]  RSP <ffff8800130b3ca8>
+[ 2136.388106] CR2: 00000000000003b0
+[ 2136.388106] ---[ end trace 6d450e935ee18982 ]---
+[ 2136.388106] Kernel panic - not syncing: Fatal exception in interrupt
 
-If this is not true for a particular DMA controller I think we should still
-make sure in the driver for this controller that residue will never be zero
-for cyclic transfers, but instead will return the buffer size. This is the
-only thing that really makes sense. The buffer only has buf_len bytes, if
-residue can be a value in the interval of [0,buf_len] this means that it has
-buf_len+1 possible values. Which again means there must be two values which
-map to the same state. In this case it would be 0 and buf_len.
-
-> 
-> What we need to do is to get rid of this idea that reporting the residue
-> is optional for DMA engine drivers.  Let's make it absolutely required
-> in order to support cyclic transfers.
-
-While I agree, I don't think we can just rip out the old mechanism until the
-platforms which are currently using this have fixed their dmaengine drivers
-to provide residue.
-
-- Lars
