@@ -1,72 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751799Ab2FKI1f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 04:27:35 -0400
-Received: from mga07.intel.com ([143.182.124.22]:23284 "EHLO
-	azsmga101.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751048Ab2FKI1d convert rfc822-to-8bit (ORCPT
+	id S1751976Ab2FKI3g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 04:29:36 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:33313 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751145Ab2FKI3f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 04:27:33 -0400
+	Mon, 11 Jun 2012 04:29:35 -0400
+Date: Mon, 11 Jun 2012 11:29:02 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Samuel Iglesias =?iso-8859-1?Q?Gons=E1lvez?= 
+	<siglesias@igalia.com>
+Cc: devel@driverdev.osuosl.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: ipack: remove pr_fmt definition.
+Message-ID: <20120611082902.GU4400@mwanda>
+References: <1339397797-17399-1-git-send-email-siglesias@igalia.com>
+ <20120611072500.GT4400@mwanda>
+ <20120611072736.GI13539@mwanda>
+ <1339400404.3963.7.camel@fourier.local.igalia.com>
 MIME-Version: 1.0
-In-Reply-To: <1339169631.30984.2.camel@x61.thuisdomein>
-References: <1339169631.30984.2.camel@x61.thuisdomein>
-Date: Mon, 11 Jun 2012 11:27:32 +0300
-Message-ID: <CALLzPKak-GLPehY84_h-wURdrfnOW1nNeML_hpwdJi7mf-XkcQ@mail.gmail.com>
-Subject: Re: [PATCH] Remove lib/mpi/generic_mpi-asm-defs.h
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1339400404.3963.7.camel@fourier.local.igalia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Mon, Jun 11, 2012 at 09:40:04AM +0200, Samuel Iglesias Gons�lvez wrote:
+> On Mon, 2012-06-11 at 10:27 +0300, Dan Carpenter wrote:
+> > On Mon, Jun 11, 2012 at 10:25:00AM +0300, Dan Carpenter wrote:
+> > > On Mon, Jun 11, 2012 at 08:56:36AM +0200, Samuel Iglesias Gonsalvez wrote:
+> > > > As there is no pr_* function used here, pr_fmt is not needed.
+> > > > 
+> > > 
+> > > Nah.  What about if we decide to add some?  Also there are actually
+> > > a couple pr_err() calls in there already.
+> > 
+> > Oops.  Sorry my tree is old.  We removed the two calls to pr_err().
+> 
+> Same mistake here. In greg's staging-next the pr_err calls are not
+> present so the patch is totally valid but in linus branch they are there
+> (this is the reason of my error).
+> 
+> So, this patch is valid, unless we want the pr_fmt definition for the
+> future. However, I prefer to delete it.
+> 
 
-Indeed like that...
-That patch has been already reverted and unused code removed.
-Changes are available in the #next-queue branch of Linux security tree.
+Sure.  I guess everything in staging/ipack/ uses dev_err() type
+print statements and that includes more information than the the
+pr_fmt() macro already.
 
-Thanks!
+Acked-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-- Dmitry
+regards,
+dan carpenter
 
-On Fri, Jun 8, 2012 at 6:33 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
-> This header got added by commit 7e8dec918ef8e0f68b4937c3c50fa57002077a4d
-> ("crypto: GnuPG based MPI lib - additional sources (part 4)"). Nothing
-> includes it.
->
-> The sole named constant it defines is BYTES_PER_MPI_LIMB. That named
-> constant is already provided by <linux/mpi.h> (which is made available
-> to the files in lib/mpi via mpi-internal.h). In this header that define
-> depends on the undefined macro SIZEOF_UNSIGNED_LONG.
->
-> So this header is unused, unneeded and broken. It can safely be removed.
->
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-> This patch is, once again, tested only with "git grep".
->
->  lib/mpi/generic_mpi-asm-defs.h |    4 ----
->  1 files changed, 0 insertions(+), 4 deletions(-)
->  delete mode 100644 lib/mpi/generic_mpi-asm-defs.h
->
-> diff --git a/lib/mpi/generic_mpi-asm-defs.h b/lib/mpi/generic_mpi-asm-defs.h
-> deleted file mode 100644
-> index 047d1f5..0000000
-> --- a/lib/mpi/generic_mpi-asm-defs.h
-> +++ /dev/null
-> @@ -1,4 +0,0 @@
-> -/* This file defines some basic constants for the MPI machinery.  We
-> - * need to define the types on a per-CPU basis, so it is done with
-> - * this file here.  */
-> -#define BYTES_PER_MPI_LIMB  (SIZEOF_UNSIGNED_LONG)
-> --
-> 1.7.7.6
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
