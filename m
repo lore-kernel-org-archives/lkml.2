@@ -1,166 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753456Ab2FKGJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 02:09:57 -0400
-Received: from mga09.intel.com ([134.134.136.24]:22635 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751144Ab2FKGJ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 02:09:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="156003118"
-Message-ID: <4FD58BB1.7060806@linux.intel.com>
-Date: Mon, 11 Jun 2012 14:09:53 +0800
-From: Chen Gong <gong.chen@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120604 Thunderbird/13.0
+	id S1752951Ab2FKGK6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 02:10:58 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:58963 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750948Ab2FKGK4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 02:10:56 -0400
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
-        Borislav Petkov <borislav.petkov@amd.com>, x86@kernel.org,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [patch 0/5] x86: mce: Bugfixes, cleanups and a new CMCI poll
- version
-References: <20120606214941.104735929@linutronix.de> <4FD07D8F.5020303@linux.intel.com> <alpine.LFD.2.02.1206080940360.3086@ionos>
-In-Reply-To: <alpine.LFD.2.02.1206080940360.3086@ionos>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAHkwNTnRHLaFS5yixojkgExGcW7XM62C3oHEJjiUYY3BioqVZA@mail.gmail.com>
+References: <CANc+2y48M+K4jvGEes_srYO7rCQcPt4pvcxcvm-Hd+7kKJr6BQ@mail.gmail.com>
+	<CAHkwNT=3dGTZTDWi+r7m=K=Pqgv6Txi-xKcpN_pNUJ_WbUaD4w@mail.gmail.com>
+	<4FD39A7F.9020106@mvista.com>
+	<CAHkwNT=DLCm_gfubGV=_SahM5njpA=Z_miA=SEkVeYA9cHMdmA@mail.gmail.com>
+	<CANc+2y7dMRQ2C-oTU94gBA11CDrwZFthzOvM4wffV77_wMnchQ@mail.gmail.com>
+	<CAHkwNTnRHLaFS5yixojkgExGcW7XM62C3oHEJjiUYY3BioqVZA@mail.gmail.com>
+Date: Mon, 11 Jun 2012 11:40:55 +0530
+Message-ID: <CANc+2y7HHy8R_kDo8=LoJvmHupjpezreEY8sPWFdOGFdeuFhOg@mail.gmail.com>
+Subject: Re: Break point not hit while debugging linux kernel with kgdb
+From: prasannatsmkumar <prasannatsmkumar@gmail.com>
+To: Anil Nair <anilcoll90@gmail.com>
+Cc: Sergei Shtylyov <sshtylyov@mvista.com>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I don't know why my reply format is changed in the previous mail, I have
-to resend it again, sorry.
-
-于 2012/6/8 15:49, Thomas Gleixner 写道:
-> On Thu, 7 Jun 2012, Chen Gong wrote:
->>
->> But during the CPU online/offline test I found an issue. After *STORM*
->> mode is entered, it can't come back from *STORM* mode to normal
->> interrupt mode. At least there exists such an issue: when *STORM* is
->> entered, in the meanwhile, one CPU is offline during this period,
->> which means *cmci_storm_on_cpus* can't decrease to 0 because there
->> is one bit stuck on this offlined CPU. So we should detect such
->> situation and decrease on *cmci_storm_on_cpus* at proper time.
+On Mon, Jun 11, 2012 at 9:07 AM, Anil Nair <anilcoll90@gmail.com> wrote:
+> Hello Prasanna,
 >
-> Yes, we need to reset the storm state as well I think.
+> On Sun, Jun 10, 2012 at 10:20 AM, prasannatsmkumar
+> <prasannatsmkumar@gmail.com> wrote:
+>> In one of the machines I am facing a scenario:
+>> I recompiled Ubuntu linux kernel (with the default config taken from
+>> /boot) and the newly compiled kernel does not boot. After detecting
+>> the hard disk (SCSI device) it panics.
 >
->> BTW, even I online the *CPU* in above situation, the normal CMCI
->> still doesn't come back, strange.
+> Did you compile the kernel using standard step? Which Ubuntu version
+> you are trying to install your customized kernel? What is the kernel
+> version you are trying to compile? For ubuntu distribution standard
+> steps are given at their site for compiling customized kernel, i
+> followed those steps and was able to compile and install customized
+> kernel. Here is the link for it,
 >
-> That's weird.
-
-Here is the reason. When CPU offline and then online, the CMCI is
-reenabled, which means it opens a backdoor to enable *CMCI storm detect*
-again. The result is the counter cmci_sotrm_cnt is increased again
-before it decreases to zero. At last, this counter will never be back
-to zero, irrelevant to CPU online. Obviously, we must stop CMCI enabling
-again before CMCI storm ends, even during CPU online/offline. Besides
-this, we still need to remove the count if one CPU is offlined. Like
-below tmp patch I wrote (not guarantee it is OK :-))
-
-diff --git a/arch/x86/kernel/cpu/mcheck/mce-internal.h 
-b/arch/x86/kernel/cpu/mcheck/mce-internal.h
-index 2cd73ce..6a05c1d 100644
---- a/arch/x86/kernel/cpu/mcheck/mce-internal.h
-+++ b/arch/x86/kernel/cpu/mcheck/mce-internal.h
-@@ -31,9 +31,11 @@ extern struct mce_bank *mce_banks;
-  #ifdef CONFIG_X86_MCE_INTEL
-  unsigned long mce_intel_adjust_timer(unsigned long interval);
-  void mce_intel_cmci_poll(void);
-+void mce_intel_hcpu_update(unsigned long cpu);
-  #else
-  # define mce_intel_adjust_timer mce_adjust_timer_default
-  static inline void mce_intel_cmci_poll(void) { }
-+static inline void mce_intel_hcpu_update(unsigned long cpu) { }
-  #endif
-
-  void mce_timer_kick(unsigned long interval);
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c 
-b/arch/x86/kernel/cpu/mcheck/mce.c
-index e3f8b94..5e22d99 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -2306,6 +2306,7 @@ mce_cpu_callback(struct notifier_block *nfb, 
-unsigned long action, void *hcpu)
-  		if (threshold_cpu_callback)
-  			threshold_cpu_callback(action, cpu);
-  		mce_device_remove(cpu);
-+		mce_intel_hcpu_update(cpu);
-  		break;
-  	case CPU_DOWN_PREPARE:
-  		smp_call_function_single(cpu, mce_disable_cpu, &action, 1);
-diff --git a/arch/x86/kernel/cpu/mcheck/mce_intel.c 
-b/arch/x86/kernel/cpu/mcheck/mce_intel.c
-index 92d8b5c..0051b2d 100644
---- a/arch/x86/kernel/cpu/mcheck/mce_intel.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce_intel.c
-@@ -40,6 +40,7 @@ static DEFINE_RAW_SPINLOCK(cmci_discover_lock);
-  static DEFINE_PER_CPU(unsigned long, cmci_time_stamp);
-  static DEFINE_PER_CPU(unsigned int, cmci_storm_cnt);
-  static DEFINE_PER_CPU(unsigned int, cmci_storm_state);
-+static DEFINE_PER_CPU(unsigned long, cmci_storm_hcpu_status);
-
-  enum {
-  	CMCI_STORM_NONE,
-@@ -47,6 +48,11 @@ enum {
-  	CMCI_STORM_SUBSIDED,
-  };
-
-+enum {
-+	CMCI_STORM_HCPU_NONE,
-+	CMCI_STORM_HCPU_ACTIVE,
-+};
-+
-  static atomic_t cmci_storm_on_cpus;
-
-  static int cmci_supported(int *banks)
-@@ -77,6 +83,17 @@ void mce_intel_cmci_poll(void)
-  	machine_check_poll(MCP_TIMESTAMP, &__get_cpu_var(mce_banks_owned));
-  }
-
-+void mce_intel_hcpu_update(unsigned long cpu)
-+{
-+	unsigned long *status = &per_cpu(cmci_storm_hcpu_status, cpu);
-+
-+	if (*status == CMCI_STORM_HCPU_ACTIVE) {
-+		*status = CMCI_STORM_HCPU_NONE;
-+		atomic_dec(&cmci_storm_on_cpus);
-+		per_cpu(cmci_storm_state, cpu) = CMCI_STORM_NONE;
-+	}	
-+}
-+
-  unsigned long mce_intel_adjust_timer(unsigned long interval)
-  {
-  	if (interval < CMCI_POLL_INTERVAL)
-@@ -132,6 +149,7 @@ static bool cmci_storm_detect(void)
-
-  	cmci_clear();
-  	__this_cpu_write(cmci_storm_state, CMCI_STORM_ACTIVE);
-+	__this_cpu_write(cmci_storm_hcpu_status, CMCI_STORM_HCPU_ACTIVE);
-  	atomic_inc(&cmci_storm_on_cpus);
-  	mce_timer_kick(CMCI_POLL_INTERVAL);
-  	return true;
-
+> https://help.ubuntu.com/community/Kernel/Compile
 >
->> I still have another question: When we handle following case:
->> mce_cpu_callback(struct notifier_block *
->> 		mce_device_remove(cpu);
->> 		break;
->> 	case CPU_DOWN_PREPARE:
->> -		del_timer_sync(t);
->> 		smp_call_function_single(cpu, mce_disable_cpu, &action, 1);
->> + 		del_timer_sync(t);
->> 		break;
->>
->> Where we add this timer back? I can't find it in "case CPU_ONLINE".
+>>I am able to see only a part of
+>> the kernel stack trace due to low resolution so I am in a situation
+>> where I cannot do anything further. In this situation kgdb seems to be
+>> the only way.
 >
-> The timer gets added back via mcheck_cpu_init(), which is called on
-> the newly onlined cpu from smp_callin().
+> Also, i think so the kernel is in panic due to the reason that it
+> couldn't find initial ram disk. Did you create an initial ram disk
+> while compiling and installing the kernel? I came through the same
+> situation that is why i am asking?
+> are you using mkinitramfs command for creating ramdisk? trying using
+> update-initrd command, google for it i forgot its usage.! :). After
+> creating ramdisk move it to the /boot directory and update the grub
+> using the update-grub command.
 >
+>
+> I hope this may solve you problem. :)
+>
+> --
+> Regards,
+> Anil Nair
 
-Stupid me! I must too busy that day so that I lost my head. :-(.
-Thanks Tomas for your explanation!
+I am using Ubuntu 12.04 64bit. I downloaded the source code of kernel
+available in Ubuntu 12.04 and recompiling it. I recompiled and
+installed the kernel in couple of machines (one ASUS laptop and
+another ASUS desktop) and in those machines it is working fine. I
+recompiled the same kernel in one old machine (the same way I did for
+other machines) and installed it. Initial ram disk is also created but
+I am not able to boot. Everything is set up correctly to my knowledge.
 
-> Thanks,
->
-> 	tglx
+Thanks,
+Prasanna Kumar
