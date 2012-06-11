@@ -1,94 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752627Ab2FKWro (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 18:47:44 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:58568 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751446Ab2FKWrn (ORCPT
+	id S1752608Ab2FKWtf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 18:49:35 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:46039 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752069Ab2FKWte (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 18:47:43 -0400
+	Mon, 11 Jun 2012 18:49:34 -0400
+X-AuditID: 9c930197-b7b5dae000004b23-8d-4fd675fc297b
+Message-ID: <4FD675FE.1060202@kernel.org>
+Date: Tue, 12 Jun 2012 07:49:34 +0900
+From: Minchan Kim <minchan@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <4FD62653.7060206@mvista.com>
-References: <1339263678-4075-1-git-send-email-linkinjeon@gmail.com>
-	<4FD39998.4020903@mvista.com>
-	<CAKYAXd9Evpo6jn+_+bnyNeaX9vmPicVp5Xm-12tp_U4=wb6Pgw@mail.gmail.com>
-	<4FD62653.7060206@mvista.com>
-Date: Tue, 12 Jun 2012 07:47:41 +0900
-Message-ID: <CAKYAXd_79Rk3f4ft5yH_uSiKOD+gTsQr4UX-by964nEQgxhkRA@mail.gmail.com>
-Subject: Re: [PATCH v3 3/3] usb: storage: update usb devices for write cache
- quirk in quirk list.
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-Cc: James.Bottomley@hansenpartnership.com, gregkh@linuxfoundation.org,
-        mdharm-usb@one-eyed-alien.net, stern@rowland.harvard.edu,
-        bvanassche@acm.org, linux-usb@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Pankaj Kumar <pankaj.km@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
+To: Andrea Arcangeli <aarcange@redhat.com>
+CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>
+Subject: Re: [PATCH] mm: do not use page_count without a page pin
+References: <1339373872-31969-1-git-send-email-minchan@kernel.org> <4FD59C31.6000606@jp.fujitsu.com> <20120611074440.GI3094@redhat.com> <20120611133043.GA2340@barrios> <20120611144132.GT3094@redhat.com>
+In-Reply-To: <20120611144132.GT3094@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/6/12, Sergei Shtylyov <sshtylyov@mvista.com>:
-> Hello.
->
-> On 10-06-2012 4:45, Namjae Jeon wrote:
->
->>>> Update information of Seagate Portable HDD and WD My Passport HDD in
->>>> quirk list.
->
->>>> Signed-off-by: Namjae Jeon<namjae.jeon@samsung.com>
->>>> Signed-off-by: Pankaj Kumar<pankaj.km@samsung.com>
->>>> Signed-off-by: Amit Sahrawat<a.sahrawat@samsung.com>
->>>> ---
->>>>    drivers/usb/storage/unusual_devs.h |   24 ++++++++++++++++++++++++
->>>>    1 file changed, 24 insertions(+)
->
->>>> diff --git a/drivers/usb/storage/unusual_devs.h
->>>> b/drivers/usb/storage/unusual_devs.h
->>>> index 1719886..64f0369 100644
->>>> --- a/drivers/usb/storage/unusual_devs.h
->>>> +++ b/drivers/usb/storage/unusual_devs.h
->>>> @@ -1267,6 +1267,18 @@ UNUSUAL_DEV( 0x0af0, 0xd357, 0x0000, 0x0000,
->>>>    		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
->>>>    		0 ),
->>>>
->>>> +/* Reported by Namjae Jeon<namjae.jeon@samsung.com>
->>>> + * Even though write cache is enabled by default,
->>>> + * SCSI driver assume that cache is not enabled
->>>> + * which in turn might lead loss of data
->>>                                 ^ to the
->
->>>> + * since data still will be in cache.
->>>> + * So this entry is needed for assuming that cache is enabled.
->>>> + */
->>>> +UNUSUAL_DEV(0x0bc2, 0x2300, 0x0000, 0x9999,
->>>> +		"Seagate",
->>>> +		"Portable HDD",
->>>> +		USB_SC_DEVICE, USB_PR_DEVICE, NULL, US_FL_WRITE_CACHE),
->>>> +
->>>>    /* Reported by Ben Efros<ben@pc-doctor.com>   */
->>>>    UNUSUAL_DEV( 0x0bc2, 0x3010, 0x0000, 0x0000,
->>>>    		"Seagate",
->>>> @@ -1468,6 +1480,18 @@ UNUSUAL_DEV(  0x1058, 0x0704, 0x0000, 0x9999,
->>>>    		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
->>>>    		US_FL_SANE_SENSE),
->>>>
->>>> +/* Reported by Namjae Jeon<namjae.jeon@samsung.com>
->>>> + * Even though write cache is enabled by default,
->>>> + * SCSI driver assume that cache is not enabled
->>>> + * which in turn might lead loss of data
->>>                                 ^ to the
->> to the ? Sorry, I don't understand what you want to change.
->> like this ? "Even though write cache is enabled by default, SCSI
->> driver assume that cache is not enabled and it in turn might lead the
->> loss of data. "
->
->     Lead to the loss of data.
-Okay, I changed it on the latest patch.
-Thanks a lot.
->
-> WBR, Sergei
->
+On 06/11/2012 11:41 PM, Andrea Arcangeli wrote:
+
+> Hi Minchan,
+> 
+> On Mon, Jun 11, 2012 at 10:30:43PM +0900, Minchan Kim wrote:
+>> AFAIUC, you mean we have to increase reference count of head page?
+>> If so, it's not in __count_immobile_pages because it is already race-likely function
+>> so it shouldn't be critical although race happens.
+> 
+> I meant, shouldn't we take into account the full size? If it's in the
+> lru the whole thing can be moved away.
+> 
+>   if (!PageLRU(page)) {
+>      nr_pages = hpage_nr_pages(page);
+>      barrier();
+
+
+Could you explain why we need barrier?
+
+>      found += nr_pages;
+>      iter += nr_pages-1;
+>   }
+> 
+
+
+Thanks for the explain.
+
+For the normal pages, the logic accounts it as "non-movable pages" so for the consistency,
+it seems you're right. But let's think about a bit.
+
+If THP page isn't LRU and it's still PageTransHuge, I think it's rather rare and
+although it happens, it means migration/reclaimer is about to split or isolate/putback
+so it ends up making THP page movable pages.
+
+IMHO, it would be better to account it by movable pages.
+What do you think about it?
+
+Thanks.
+-- 
+Kind regards,
+Minchan Kim
