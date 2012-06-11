@@ -1,217 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752812Ab2FKXcm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 19:32:42 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:58522 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751687Ab2FKXck (ORCPT
+	id S1752794Ab2FKXdV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 19:33:21 -0400
+Received: from tru75-7-88-161-131-83.fbx.proxad.net ([88.161.131.83]:45424
+	"EHLO next.fork.zz" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751687Ab2FKXdU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 19:32:40 -0400
-From: "Yaakov (Cygwin/X)" <yselkowitz@users.sourceforge.net>
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH] tools/include: use stdint types for user-space byteshift headers
-Date: Mon, 11 Jun 2012 18:32:34 -0500
-Message-Id: <1339457554-2156-1-git-send-email-yselkowitz@users.sourceforge.net>
-X-Mailer: git-send-email 1.7.9
+	Mon, 11 Jun 2012 19:33:20 -0400
+X-Greylist: delayed 970 seconds by postgrey-1.27 at vger.kernel.org; Mon, 11 Jun 2012 19:33:20 EDT
+Message-ID: <4FD67D09.9010406@free.fr>
+Date: Tue, 12 Jun 2012 01:19:37 +0200
+From: Wallak <wallak@free.fr>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120604 Firefox/12.0 SeaMonkey/2.9.1
+MIME-Version: 1.0
+To: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org
+Subject: Re: File copy is very slow on linux-3.4.2 (or linux-3.3x) on a specific
+ hardware: AMD FX-8150 + 990FX
+References: <1108815600.134531433.1339443818361.JavaMail.root@zimbra44-e7.priv.proxad.net> <437497008.134549481.1339444456294.JavaMail.root@zimbra44-e7.priv.proxad.net> <20120611204804.GA18967@liondog.tnic>
+In-Reply-To: <20120611204804.GA18967@liondog.tnic>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yaakov Selkowitz <yselkowitz@users.sourceforge.net>
+Borislav Petkov wrote:
+> There's something very wrong with this mail
+>
+> On Mon, Jun 11, 2012 at 09:54:16PM +0200, wallak@free.fr wrote:
+>> I've a very annoying issue on recent kernel (linux-3.4.2-SMP) with my 
+>> main motherboard (AMD FX-8150 + 990FX - 8 cores 4.1GHz), file copy is 
+>> very slow (see below). The same kernel works flawlessly on an AMD 
+>> E450 2 cores motherboard.
+>>
+>> Linux-3.2.20 works properly on this hardware.
+>> hdparm -t gives good results on both kernels.
+>>
+>> I've no idea where this bug come from. Do you have this issue on your 
+>> hardware ? A patch is available ?
+>>
+>>
+>> *linux-3.4.2
+>> dd if=../in/file_8gb.tmp of=tmp.tmp bs=1024k count=100
+>> 100+0 records in
+>> 100+0 records out
+>> 104857600 bytes (105 MB) copied, 132.884 s, 789 kB/s
+>>
+>>
+>> *linux-3.2.20
+>> dd if=../in/file_8gb.tmp of=tmp.tmp bs=1024k count=100
+>> 100+0 records in
+>> 100+0 records out
+>> 104857600 bytes (105 MB) copied, 3.30793 s, 31.7 MB/sa
+> First of all, the above shows that 3.4.2 is roughly 20 times better than
+> 3.2.20.
+> But even if that were so, this is a wrong test to do since once you
+> run it for the first time, the 100MB land in the page cache and every
+> subsequent time you run the same thing, the same 100MB will come from
+> memory so no I/O at all.
 
-Commit a07f7672d7cf0ff0d6e548a9feb6e0bd016d9c6c added user-space copies
-of the byteshift headers to be used by hostprogs, changing e.g. u8 to __u8.
-However, in order to cross-compile the kernel from a non-Linux system,
-stdint.h types need to be used instead of linux/types.h types.
+     Kernel 3.4.2 is 40 times slower when duplicating a file. Otherwise 
+hdparm -t /dev/sda is a around 120MB/s, memory cache is probably not the 
+main issue here.
 
-Signed-off-by: Yaakov Selkowitz <yselkowitz@users.sourceforge.net>
----
-Also applies to linux-3.[34].y
+> What are you trying to achieve actually?
+>
+> And, if I assume you've sent the right config below, then there are some
+> major issues with it:
+>
+>> #
+>> # Automatically generated file; DO NOT EDIT.
+>> # Linux/i386 3.4.2 Kernel Configuration
+>> #
+>> # CONFIG_64BIT is not set
+>> CONFIG_X86_32=y
+>> # CONFIG_X86_64 is not set
+> Why in the hell are you using 32-bit kernel on an AMD64 processor? Any
+> real reason?
 
- tools/include/tools/be_byteshift.h |   34 +++++++++++++++++-----------------
- tools/include/tools/le_byteshift.h |   34 +++++++++++++++++-----------------
- 2 files changed, 34 insertions(+), 34 deletions(-)
+     You're right this is a 32 bits mode kernel compiled for test 
+purposes on a 64 bits processor. Nevertheless the AMD E450 motherboard 
+uses a 64 bits processor too, and works fine with this 32 bits kernel, 
+without the IO issue.
 
-diff --git a/tools/include/tools/be_byteshift.h b/tools/include/tools/be_byteshift.h
-index f4912e2..84c17d8 100644
---- a/tools/include/tools/be_byteshift.h
-+++ b/tools/include/tools/be_byteshift.h
-@@ -1,68 +1,68 @@
- #ifndef _TOOLS_BE_BYTESHIFT_H
- #define _TOOLS_BE_BYTESHIFT_H
- 
--#include <linux/types.h>
-+#include <stdint.h>
- 
--static inline __u16 __get_unaligned_be16(const __u8 *p)
-+static inline uint16_t __get_unaligned_be16(const uint8_t *p)
- {
- 	return p[0] << 8 | p[1];
- }
- 
--static inline __u32 __get_unaligned_be32(const __u8 *p)
-+static inline uint32_t __get_unaligned_be32(const uint8_t *p)
- {
- 	return p[0] << 24 | p[1] << 16 | p[2] << 8 | p[3];
- }
- 
--static inline __u64 __get_unaligned_be64(const __u8 *p)
-+static inline uint64_t __get_unaligned_be64(const uint8_t *p)
- {
--	return (__u64)__get_unaligned_be32(p) << 32 |
-+	return (uint64_t)__get_unaligned_be32(p) << 32 |
- 	       __get_unaligned_be32(p + 4);
- }
- 
--static inline void __put_unaligned_be16(__u16 val, __u8 *p)
-+static inline void __put_unaligned_be16(uint16_t val, uint8_t *p)
- {
- 	*p++ = val >> 8;
- 	*p++ = val;
- }
- 
--static inline void __put_unaligned_be32(__u32 val, __u8 *p)
-+static inline void __put_unaligned_be32(uint32_t val, uint8_t *p)
- {
- 	__put_unaligned_be16(val >> 16, p);
- 	__put_unaligned_be16(val, p + 2);
- }
- 
--static inline void __put_unaligned_be64(__u64 val, __u8 *p)
-+static inline void __put_unaligned_be64(uint64_t val, uint8_t *p)
- {
- 	__put_unaligned_be32(val >> 32, p);
- 	__put_unaligned_be32(val, p + 4);
- }
- 
--static inline __u16 get_unaligned_be16(const void *p)
-+static inline uint16_t get_unaligned_be16(const void *p)
- {
--	return __get_unaligned_be16((const __u8 *)p);
-+	return __get_unaligned_be16((const uint8_t *)p);
- }
- 
--static inline __u32 get_unaligned_be32(const void *p)
-+static inline uint32_t get_unaligned_be32(const void *p)
- {
--	return __get_unaligned_be32((const __u8 *)p);
-+	return __get_unaligned_be32((const uint8_t *)p);
- }
- 
--static inline __u64 get_unaligned_be64(const void *p)
-+static inline uint64_t get_unaligned_be64(const void *p)
- {
--	return __get_unaligned_be64((const __u8 *)p);
-+	return __get_unaligned_be64((const uint8_t *)p);
- }
- 
--static inline void put_unaligned_be16(__u16 val, void *p)
-+static inline void put_unaligned_be16(uint16_t val, void *p)
- {
- 	__put_unaligned_be16(val, p);
- }
- 
--static inline void put_unaligned_be32(__u32 val, void *p)
-+static inline void put_unaligned_be32(uint32_t val, void *p)
- {
- 	__put_unaligned_be32(val, p);
- }
- 
--static inline void put_unaligned_be64(__u64 val, void *p)
-+static inline void put_unaligned_be64(uint64_t val, void *p)
- {
- 	__put_unaligned_be64(val, p);
- }
-diff --git a/tools/include/tools/le_byteshift.h b/tools/include/tools/le_byteshift.h
-index c99d45a..8fe9f24 100644
---- a/tools/include/tools/le_byteshift.h
-+++ b/tools/include/tools/le_byteshift.h
-@@ -1,68 +1,68 @@
- #ifndef _TOOLS_LE_BYTESHIFT_H
- #define _TOOLS_LE_BYTESHIFT_H
- 
--#include <linux/types.h>
-+#include <stdint.h>
- 
--static inline __u16 __get_unaligned_le16(const __u8 *p)
-+static inline uint16_t __get_unaligned_le16(const uint8_t *p)
- {
- 	return p[0] | p[1] << 8;
- }
- 
--static inline __u32 __get_unaligned_le32(const __u8 *p)
-+static inline uint32_t __get_unaligned_le32(const uint8_t *p)
- {
- 	return p[0] | p[1] << 8 | p[2] << 16 | p[3] << 24;
- }
- 
--static inline __u64 __get_unaligned_le64(const __u8 *p)
-+static inline uint64_t __get_unaligned_le64(const uint8_t *p)
- {
--	return (__u64)__get_unaligned_le32(p + 4) << 32 |
-+	return (uint64_t)__get_unaligned_le32(p + 4) << 32 |
- 	       __get_unaligned_le32(p);
- }
- 
--static inline void __put_unaligned_le16(__u16 val, __u8 *p)
-+static inline void __put_unaligned_le16(uint16_t val, uint8_t *p)
- {
- 	*p++ = val;
- 	*p++ = val >> 8;
- }
- 
--static inline void __put_unaligned_le32(__u32 val, __u8 *p)
-+static inline void __put_unaligned_le32(uint32_t val, uint8_t *p)
- {
- 	__put_unaligned_le16(val >> 16, p + 2);
- 	__put_unaligned_le16(val, p);
- }
- 
--static inline void __put_unaligned_le64(__u64 val, __u8 *p)
-+static inline void __put_unaligned_le64(uint64_t val, uint8_t *p)
- {
- 	__put_unaligned_le32(val >> 32, p + 4);
- 	__put_unaligned_le32(val, p);
- }
- 
--static inline __u16 get_unaligned_le16(const void *p)
-+static inline uint16_t get_unaligned_le16(const void *p)
- {
--	return __get_unaligned_le16((const __u8 *)p);
-+	return __get_unaligned_le16((const uint8_t *)p);
- }
- 
--static inline __u32 get_unaligned_le32(const void *p)
-+static inline uint32_t get_unaligned_le32(const void *p)
- {
--	return __get_unaligned_le32((const __u8 *)p);
-+	return __get_unaligned_le32((const uint8_t *)p);
- }
- 
--static inline __u64 get_unaligned_le64(const void *p)
-+static inline uint64_t get_unaligned_le64(const void *p)
- {
--	return __get_unaligned_le64((const __u8 *)p);
-+	return __get_unaligned_le64((const uint8_t *)p);
- }
- 
--static inline void put_unaligned_le16(__u16 val, void *p)
-+static inline void put_unaligned_le16(uint16_t val, void *p)
- {
- 	__put_unaligned_le16(val, p);
- }
- 
--static inline void put_unaligned_le32(__u32 val, void *p)
-+static inline void put_unaligned_le32(uint32_t val, void *p)
- {
- 	__put_unaligned_le32(val, p);
- }
- 
--static inline void put_unaligned_le64(__u64 val, void *p)
-+static inline void put_unaligned_le64(uint64_t val, void *p)
- {
- 	__put_unaligned_le64(val, p);
- }
--- 
-1.7.9
+>> CONFIG_X86=y
+>> CONFIG_INSTRUCTION_DECODER=y
+>> CONFIG_OUTPUT_FORMAT="elf32-i386"
+>> CONFIG_ARCH_DEFCONFIG="arch/x86/configs/i386_defconfig"
+>> CONFIG_GENERIC_CMOS_UPDATE=y
+>> CONFIG_CLOCKSOURCE_WATCHDOG=y
+>> CONFIG_GENERIC_CLOCKEVENTS=y
+>> CONFIG_GENERIC_CLOCKEVENTS_BROADCAST=y
+>> CONFIG_LOCKDEP_SUPPORT=y
+>> CONFIG_STACKTRACE_SUPPORT=y
+>> CONFIG_HAVE_LATENCYTOP_SUPPORT=y
+>> CONFIG_MMU=y
+> [ … ]
+>
+>> #
+>> # Processor type and features
+>> #
+>> CONFIG_ZONE_DMA=y
+>> CONFIG_TICK_ONESHOT=y
+>> # CONFIG_NO_HZ is not set
+>> CONFIG_HIGH_RES_TIMERS=y
+>> CONFIG_GENERIC_CLOCKEVENTS_BUILD=y
+>> CONFIG_GENERIC_CLOCKEVENTS_MIN_ADJUST=y
+>> CONFIG_SMP=y
+>> CONFIG_X86_MPPARSE=y
+>> # CONFIG_X86_BIGSMP is not set
+>> CONFIG_X86_EXTENDED_PLATFORM=y
+>> # CONFIG_X86_WANT_INTEL_MID is not set
+>> # CONFIG_X86_RDC321X is not set
+>> # CONFIG_X86_32_NON_STANDARD is not set
+>> CONFIG_X86_SUPPORTS_MEMORY_FAILURE=y
+>> # CONFIG_X86_32_IRIS is not set
+>> CONFIG_SCHED_OMIT_FRAME_POINTER=y
+>> # CONFIG_PARAVIRT_GUEST is not set
+>> CONFIG_NO_BOOTMEM=y
+>> # CONFIG_MEMTEST is not set
+>> # CONFIG_M386 is not set
+>> # CONFIG_M486 is not set
+>> # CONFIG_M586 is not set
+>> # CONFIG_M586TSC is not set
+>> # CONFIG_M586MMX is not set
+>> # CONFIG_M686 is not set
+>> # CONFIG_MPENTIUMII is not set
+>> # CONFIG_MPENTIUMIII is not set
+>> # CONFIG_MPENTIUMM is not set
+>> # CONFIG_MPENTIUM4 is not set
+>> # CONFIG_MK6 is not set
+>> # CONFIG_MK7 is not set
+>> # CONFIG_MK8 is not set
+>> # CONFIG_MCRUSOE is not set
+>> # CONFIG_MEFFICEON is not set
+>> # CONFIG_MWINCHIPC6 is not set
+>> # CONFIG_MWINCHIP3D is not set
+>> # CONFIG_MELAN is not set
+>> # CONFIG_MGEODEGX1 is not set
+>> # CONFIG_MGEODE_LX is not set
+>> # CONFIG_MCYRIXIII is not set
+>> # CONFIG_MVIAC3_2 is not set
+>> # CONFIG_MVIAC7 is not set
+>> # CONFIG_MCORE2 is not set
+>> CONFIG_MATOM=y
+> You have a 64-bit AMD processor but you're enabling 32-bit Intel Atom
+> optimizations, wtf?
+>
+> Why not CONFIG_MK8?
+>
+> Also, I noticed below you have IDE stuff enabled. Why? Why not AHCI and
+> the corresponding ATA_SFF options?
+
+     I share this kernel with two other motherboards.
+     CONFIG_SATA_AHCI is enabled too, the HDD uses this driver.
+> ...
+>
+>> # CONFIG_X86_GENERIC is not set
+>> CONFIG_X86_INTERNODE_CACHE_SHIFT=6
+>> CONFIG_X86_CMPXCHG=y
+>> CONFIG_X86_L1_CACHE_SHIFT=6
+>> CONFIG_X86_XADD=y
+>> CONFIG_X86_WP_WORKS_OK=y
+>> CONFIG_X86_INVLPG=y
+>> CONFIG_X86_BSWAP=y
+>> CONFIG_X86_POPAD_OK=y
+>> CONFIG_X86_USE_PPRO_CHECKSUM=y
+>> CONFIG_X86_TSC=y
+>> CONFIG_X86_CMPXCHG64=y
+>> CONFIG_X86_CMOV=y
+>> CONFIG_X86_MINIMUM_CPU_FAMILY=5
+>> CONFIG_X86_DEBUGCTLMSR=y
+>> CONFIG_CPU_SUP_INTEL=y
+>> CONFIG_CPU_SUP_AMD=y
+>> CONFIG_CPU_SUP_CENTAUR=y
+>> CONFIG_CPU_SUP_TRANSMETA_32=y
+>> CONFIG_HPET_TIMER=y
+>> CONFIG_HPET_EMULATE_RTC=y
+>> CONFIG_DMI=y
+>> # CONFIG_IOMMU_HELPER is not set
+>> CONFIG_NR_CPUS=8
+>> # CONFIG_SCHED_SMT is not set
+>> CONFIG_SCHED_MC=y
+>> # CONFIG_IRQ_TIME_ACCOUNTING is not set
+>> CONFIG_PREEMPT_NONE=y
+>> # CONFIG_PREEMPT_VOLUNTARY is not set
+>> # CONFIG_PREEMPT is not set
+>> CONFIG_X86_LOCAL_APIC=y
+>> CONFIG_X86_IO_APIC=y
+>> # CONFIG_X86_REROUTE_FOR_BROKEN_BOOT_IRQS is not set
+>> CONFIG_X86_MCE=y
+>> CONFIG_X86_MCE_INTEL=y
+>> CONFIG_X86_MCE_AMD=y
+>> # CONFIG_X86_ANCIENT_MCE is not set
+>> CONFIG_X86_MCE_THRESHOLD=y
+>> # CONFIG_X86_MCE_INJECT is not set
+>> CONFIG_X86_THERMAL_VECTOR=y
+>> CONFIG_VM86=y
+>> # CONFIG_TOSHIBA is not set
+>> CONFIG_I8K=m
+>> # CONFIG_X86_REBOOTFIXUPS is not set
+>> CONFIG_MICROCODE=y
+>> CONFIG_MICROCODE_INTEL=y
+>> CONFIG_MICROCODE_AMD=y
+> This should be =m because otherwise you can't load microcode from
+> userspace.
+>
+> All I'm saying is, take some time to configure your kernel properly by
+> reading the help text of every option and enable only the ones you need.
+>
+> And search the net for more info on how to configure your kernel
+> properly.
+>
+> HTH.
+>
+I don't think the issue came from this .config, linux-3.2.20 works fine 
+on this motherboard with a .config quite close.
+This may be an issue on 32 bits mode SMP kernel only ? or something else ?
+
+Is someone else have this issue ?
+
+Best Regards
+Wallak.
 
