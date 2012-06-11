@@ -1,49 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753583Ab2FKDbJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jun 2012 23:31:09 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54655 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752373Ab2FKDbH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jun 2012 23:31:07 -0400
-References: <20120608135200.371649691@goodmis.org> <20120608135603.699156773@goodmis.org> <4FD223E1.1090707@zytor.com> <1339173716.13377.50.camel@gandalf.stny.rr.com> <4FD23626.4020802@zytor.com> <1339176975.13377.56.camel@gandalf.stny.rr.com> <4FD238CD.8000601@zytor.com> <1339177929.13377.66.camel@gandalf.stny.rr.com> <alpine.LFD.2.00.1206110120190.29081@eddie.linux-mips.org> <32f96f44-00a6-4341-a87c-888e0debcebf@email.android.com> <alpine.LFD.2.00.1206110406530.29081@eddie.linux-mips.org>
-User-Agent: K-9 Mail for Android
-In-Reply-To: <alpine.LFD.2.00.1206110406530.29081@eddie.linux-mips.org>
+	id S1753806Ab2FKDhS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jun 2012 23:37:18 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:46352 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752920Ab2FKDhR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Jun 2012 23:37:17 -0400
+Date: Mon, 11 Jun 2012 11:37:02 +0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Yadwinder Singh Brar <yadi.brar01@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
+        Yadwinder Singh Brar <yadi.brar@samsung.com>
+Message-ID: <20120611033701.GC4218@opensource.wolfsonmicro.com>
+References: <1339148851-19289-1-git-send-email-yadi.brar@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH 2/3] x86: Remove cmpxchg from i386 NMI nesting code
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Sun, 10 Jun 2012 20:17:03 -0700
-To: "Maciej W. Rozycki" <macro@linux-mips.org>
-CC: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Message-ID: <a74922ac-af09-4d3b-8a78-d5778cc29ba2@email.android.com>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="VywGB/WGlW4DM4P8"
+Content-Disposition: inline
+In-Reply-To: <1339148851-19289-1-git-send-email-yadi.brar@samsung.com>
+X-Cookie: Reply hazy, ask again later.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 116.228.53.169
+X-SA-Exim-Mail-From: broonie@opensource.wolfsonmicro.com
+Subject: Re: [PATCH 1/2] regulator: core: Add regulator_set_voltage_time_sel
+ to calculate ramp delay.
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-libx86 is used for this.  Of course, when you interpret you can also record...
 
-"Maciej W. Rozycki" <macro@linux-mips.org> wrote:
+--VywGB/WGlW4DM4P8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->On Sun, 10 Jun 2012, H. Peter Anvin wrote:
->
->> Just use a VM or a simulator.
->
-> That wasn't completely serious ;) -- however thanks for the hint.  I 
->wonder actually if any piece of software would let the code run in a 
->"pass-through" mode and record what I/O accesses went past.  I reckon 
->DOSEMU used to support that (and running the VGA BIOS) -- but that
->piece 
->did indeed require vm86.  Then the sequence recorded could be replayed 
->natively.
->
-> Thanks for the food for thought! :)
->
->  Maciej
+On Fri, Jun 08, 2012 at 03:17:30PM +0530, Yadwinder Singh Brar wrote:
+> This patch adds regulator_set_voltage_time_sel(), to move the commonly used
+> code by drivers to provide the .set_voltage_time_sel callback.It will also
+> allow us to configure different ramp delay for different regulators easily.
 
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+Applied, thanks.
+
+--VywGB/WGlW4DM4P8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP1WfTAAoJEBus8iNuMP3dQzIP/25paFB4MvDnKsZCpXKywouS
+yKXV62l5NhBkMaSFjnMFMxbLqDwDJrOhOcNySUONYVQDMuO/eO/BfOAMO4ZIzvr2
+eLsRmDVUvZr4UKYGgzXpuwIHBwa3pqnDrpHHobnYqSGp4BmXmhDV8rfPovdo9a6b
+W6e5GQwz33Eid4Hd3SHC6sE8uk/LXzSg6DhpCnuiN/CmXAmhcnaa4okHthKRlDbG
+7GuG2gchOOhAhH6+wBuMGM/kYqsBMoS9YpqihihQs2hDcb9AaJVvVBRofi7I3qGF
+hPu+eUdpDoj0Pmb6N8ua5aEQhEjADJhieg2aHV7nSGqHfP347+qm3qhTGSuE0AUJ
+tRd+CARrGt/MSfnmM9x0sXEj51KyGxPulJvoa3Wl5U5lBhhjutBqAK0TtMIbeVMo
+VSeqAXDZGTlDTDxjvftmLfPAoh05VK+OAOeLK9XCzk8mr4U3vSaF48CbULaJR18K
+7nZK2Gykx1PnFBrB8JZyAAIatSYzOacBcHM1yfmZigiVjFtzsvGHbX7jsDg/fQOW
+QxdyJZBvG0Ku2MCV34HcOtPnYXzGq7icnD4Kuo/Yr7inUzdRmibn6PFcSg6D+8ST
+eM69pdrACCGjuIQ9Xg/2Wqh1n10jPJHSk7cmQbmiViRlQlexPYKmTXPPYg/Gupye
+IYEAMLKcRp74LqIIW7ZW
+=UOpi
+-----END PGP SIGNATURE-----
+
+--VywGB/WGlW4DM4P8--
