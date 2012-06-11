@@ -1,168 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753999Ab2FKFqb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 01:46:31 -0400
-Received: from mga01.intel.com ([192.55.52.88]:63846 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751287Ab2FKFq3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 01:46:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="163998959"
-Message-ID: <4FD58632.1010903@linux.intel.com>
-Date: Mon, 11 Jun 2012 13:46:26 +0800
-From: Chen Gong <gong.chen@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120604 Thunderbird/13.0
+	id S1753042Ab2FKFtK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 01:49:10 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:65076 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750891Ab2FKFtI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 01:49:08 -0400
+X-AuditID: 9c93016f-b7c3cae000001954-fe-4fd586d20b31
+Message-ID: <4FD586D2.2070803@kernel.org>
+Date: Mon, 11 Jun 2012 14:49:06 +0900
+From: Minchan Kim <minchan@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
-        Borislav Petkov <borislav.petkov@amd.com>, x86@kernel.org,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [patch 0/5] x86: mce: Bugfixes, cleanups and a new CMCI poll
- version
-References: <20120606214941.104735929@linutronix.de> <4FD07D8F.5020303@linux.intel.com> <alpine.LFD.2.02.1206080940360.3086@ionos>
-In-Reply-To: <alpine.LFD.2.02.1206080940360.3086@ionos>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
+To: Sasha Levin <levinsasha928@gmail.com>
+CC: dan.magenheimer@oracle.com, konrad.wilk@oracle.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 05/10] mm: frontswap: split frontswap_shrink further
+ to simplify locking
+References: <1339325468-30614-1-git-send-email-levinsasha928@gmail.com> <1339325468-30614-6-git-send-email-levinsasha928@gmail.com>
+In-Reply-To: <1339325468-30614-6-git-send-email-levinsasha928@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2012/6/8 15:49, Thomas Gleixner 写道:
-> On Thu, 7 Jun 2012, Chen Gong wrote:
->>
->> But during the CPU online/offline test I found an issue. After *STORM*
->> mode is entered, it can't come back from *STORM* mode to normal
->> interrupt mode. At least there exists such an issue: when *STORM* is
->> entered, in the meanwhile, one CPU is offline during this period,
->> which means *cmci_storm_on_cpus* can't decrease to 0 because there
->> is one bit stuck on this offlined CPU. So we should detect such
->> situation and decrease on *cmci_storm_on_cpus* at proper time.
->
-> Yes, we need to reset the storm state as well I think.
->
->> BTW, even I online the *CPU* in above situation, the normal CMCI
->> still doesn't come back, strange.
->
-> That's weird.
+On 06/10/2012 07:51 PM, Sasha Levin wrote:
 
-Here is the reason. When CPU offline and then online, the CMCI is
-reenabled, which means it opens a backdoor to enable *CMCI storm detect*
-again. The result is the counter cmci_sotrm_cnt is increased again
-before it decreases to zero. At last, this counter will never be back
-to zero, irrelevant to CPU online. Obviously, we must stop CMCI enabling
-again before CMCI storm ends, even during CPU online/offline. Besides
-this, we still need to remove the count if one CPU is offlined. Like
-below tmp patch I wrote (not guarantee it is OK :-))
-
-diff --git a/arch/x86/kernel/cpu/mcheck/mce-internal.h 
-b/arch/x86/kernel/cpu/mcheck/mce-internal.h
-index 2cd73ce..6a05c1d 100644
---- a/arch/x86/kernel/cpu/mcheck/mce-internal.h
-+++ b/arch/x86/kernel/cpu/mcheck/mce-internal.h
-@@ -31,9 +31,11 @@ extern struct mce_bank *mce_banks;
-  #ifdef CONFIG_X86_MCE_INTEL
-  unsigned long mce_intel_adjust_timer(unsigned long interval);
-  void mce_intel_cmci_poll(void);
-+void mce_intel_hcpu_update(unsigned long cpu);
-  #else
-  # define mce_intel_adjust_timer mce_adjust_timer_default
-  static inline void mce_intel_cmci_poll(void) { }
-+static inline void mce_intel_hcpu_update(unsigned long cpu) { }
-  #endif
-
-  void mce_timer_kick(unsigned long interval);
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c 
-b/arch/x86/kernel/cpu/mcheck/mce.c
-index e3f8b94..5e22d99 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -2306,6 +2306,7 @@ mce_cpu_callback(struct notifier_block *nfb, 
-unsigned long action, void *hcpu)
-  		if (threshold_cpu_callback)
-  			threshold_cpu_callback(action, cpu);
-  		mce_device_remove(cpu);
-+		mce_intel_hcpu_update(cpu);
-  		break;
-  	case CPU_DOWN_PREPARE:
-  		smp_call_function_single(cpu, mce_disable_cpu, &action, 1);
-diff --git a/arch/x86/kernel/cpu/mcheck/mce_intel.c 
-b/arch/x86/kernel/cpu/mcheck/mce_intel.c
-index 92d8b5c..0051b2d 100644
---- a/arch/x86/kernel/cpu/mcheck/mce_intel.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce_intel.c
-@@ -40,6 +40,7 @@ static DEFINE_RAW_SPINLOCK(cmci_discover_lock);
-  static DEFINE_PER_CPU(unsigned long, cmci_time_stamp);
-  static DEFINE_PER_CPU(unsigned int, cmci_storm_cnt);
-  static DEFINE_PER_CPU(unsigned int, cmci_storm_state);
-+static DEFINE_PER_CPU(unsigned long, cmci_storm_hcpu_status);
-
-  enum {
-  	CMCI_STORM_NONE,
-@@ -47,6 +48,11 @@ enum {
-  	CMCI_STORM_SUBSIDED,
-  };
-
-+enum {
-+	CMCI_STORM_HCPU_NONE,
-+	CMCI_STORM_HCPU_ACTIVE,
-+};
-+
-  static atomic_t cmci_storm_on_cpus;
-
-  static int cmci_supported(int *banks)
-@@ -77,6 +83,17 @@ void mce_intel_cmci_poll(void)
-  	machine_check_poll(MCP_TIMESTAMP, &__get_cpu_var(mce_banks_owned));
-  }
-
-+void mce_intel_hcpu_update(unsigned long cpu)
-+{
-+	unsigned long *status = &per_cpu(cmci_storm_hcpu_status, cpu);
-+
-+	if (*status == CMCI_STORM_HCPU_ACTIVE) {
-+		*status = CMCI_STORM_HCPU_NONE;
-+		atomic_dec(&cmci_storm_on_cpus);
-+		per_cpu(cmci_storm_state, cpu) = CMCI_STORM_NONE;
-+	}	
-+}
-+
-  unsigned long mce_intel_adjust_timer(unsigned long interval)
-  {
-  	if (interval < CMCI_POLL_INTERVAL)
-@@ -132,6 +149,7 @@ static bool cmci_storm_detect(void)
-
-  	cmci_clear();
-  	__this_cpu_write(cmci_storm_state, CMCI_STORM_ACTIVE);
-+	__this_cpu_write(cmci_storm_hcpu_status, CMCI_STORM_HCPU_ACTIVE);
-  	atomic_inc(&cmci_storm_on_cpus);
-  	mce_timer_kick(CMCI_POLL_INTERVAL);
-  	return true;
+> Split frontswap_shrink to simplify the locking in the original code.
+> 
+> Also, assert that the function that was split still runs under the
+> swap spinlock.
+> 
+> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> ---
+>  mm/frontswap.c |   36 +++++++++++++++++++++---------------
+>  1 files changed, 21 insertions(+), 15 deletions(-)
+> 
+> diff --git a/mm/frontswap.c b/mm/frontswap.c
+> index faa43b7..e6353d9 100644
+> --- a/mm/frontswap.c
+> +++ b/mm/frontswap.c
+> @@ -265,6 +265,24 @@ static int __frontswap_unuse_pages(unsigned long total, unsigned long *unused,
+>  	return ret;
+>  }
+>  
+> +static int __frontswap_shrink(unsigned long target_pages,
+> +				unsigned long *pages_to_unuse,
+> +				int *type)
 
 
->
->> I still have another question: When we handle following case:
->> mce_cpu_callback(struct notifier_block *
->> 		mce_device_remove(cpu);
->> 		break;
->> 	case CPU_DOWN_PREPARE:
->> -		del_timer_sync(t);
->> 		smp_call_function_single(cpu, mce_disable_cpu, &action, 1);
->> + 		del_timer_sync(t);
->> 		break;
->>
->> Where we add this timer back? I can't find it in "case CPU_ONLINE".
->
-> The timer gets added back via mcheck_cpu_init(), which is called on
-> the newly onlined cpu from smp_callin().
+__frontswap_shrink isn't good name.
+This function doesn't shrink at all.
 
-Stupid me! I must too busy that day so that I lost my head. :-(.
-Thanks Tomas for your explanation!
-
->
-> Thanks,
->
-> 	tglx
->
->
+How about __frontswap_shrink_pages with description of function?
 
 
+> +{
+> +	unsigned long total_pages = 0, total_pages_to_unuse;
+> +
+> +	assert_spin_locked(&swap_lock);
+
+
+About assertion, it's ditto with my previous reply.
+
+> +
+> +	total_pages = __frontswap_curr_pages();
+> +	if (total_pages <= target_pages) {
+> +		/* Nothing to do */
+> +		*pages_to_unuse = 0;
+> +		return 0;
+> +	}
+> +	total_pages_to_unuse = total_pages - target_pages;
+> +	return __frontswap_unuse_pages(total_pages_to_unuse, pages_to_unuse, type);
+> +}
+> +
+>  /*
+>   * Frontswap, like a true swap device, may unnecessarily retain pages
+>   * under certain circumstances; "shrink" frontswap is essentially a
+> @@ -275,10 +293,8 @@ static int __frontswap_unuse_pages(unsigned long total, unsigned long *unused,
+>   */
+>  void frontswap_shrink(unsigned long target_pages)
+>  {
+> -	unsigned long total_pages = 0, total_pages_to_unuse;
+>  	unsigned long pages_to_unuse = 0;
+>  	int type, ret;
+> -	bool locked = false;
+>  
+>  	/*
+>  	 * we don't want to hold swap_lock while doing a very
+> @@ -286,20 +302,10 @@ void frontswap_shrink(unsigned long target_pages)
+>  	 * so restart scan from swap_list.head each time
+>  	 */
+>  	spin_lock(&swap_lock);
+> -	locked = true;
+> -	total_pages = __frontswap_curr_pages();
+> -	if (total_pages <= target_pages)
+> -		goto out;
+> -	total_pages_to_unuse = total_pages - target_pages;
+> -	ret = __frontswap_unuse_pages(total_pages_to_unuse, &pages_to_unuse, &type);
+> -	if (ret < 0)
+> -		goto out;
+> -	locked = false;
+> +	ret = __frontswap_shrink(target_pages, &pages_to_unuse, &type);
+>  	spin_unlock(&swap_lock);
+> -	try_to_unuse(type, true, pages_to_unuse);
+> -out:
+> -	if (locked)
+> -		spin_unlock(&swap_lock);
+> +	if (ret == 0 && pages_to_unuse)
+> +		try_to_unuse(type, true, pages_to_unuse);
+>  	return;
+>  }
+>  EXPORT_SYMBOL(frontswap_shrink);
+
+
+
+-- 
+Kind regards,
+Minchan Kim
