@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754921Ab2FKOXf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 10:23:35 -0400
-Received: from mail2.gnudd.com ([213.203.150.91]:56396 "EHLO mail.gnudd.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752286Ab2FKOXd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 10:23:33 -0400
-Date: Mon, 11 Jun 2012 16:23:11 +0200
-From: Alessandro Rubini <rubini@gnudd.com>
-To: wg@grandegger.com
-Cc: alan@lxorguk.ukuu.org.uk, federico.vaga@gmail.com, mkl@pengutronix.de,
-        giancarlo.asnaghi@st.com, alan@linux.intel.com,
-        linux-can@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] c_can_pci: generic module for c_can on PCI
-Message-ID: <20120611142311.GA28682@mail.gnudd.com>
+	id S1754972Ab2FKO1A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 10:27:00 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:40446 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753887Ab2FKO07 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 10:26:59 -0400
+Message-ID: <4FD60030.8090700@gmail.com>
+Date: Mon, 11 Jun 2012 09:26:56 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: GnuDD, Device Drivers, Embedded Systems, Courses
-In-Reply-To: <4FD5F7F1.3010602@grandegger.com>
-References: <4FD5F7F1.3010602@grandegger.com>
-  <20120604165619.15ba43bf@pyramind.ukuu.org.uk>
-  <4FC135C6.5030206@grandegger.com>
-  <1338816766-7089-1-git-send-email-federico.vaga@gmail.com>
-  <1338816766-7089-2-git-send-email-federico.vaga@gmail.com>
- <20120604164531.GA22000@mail.gnudd.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] of: export of_platform_populate()
+References: <1339113456-27089-1-git-send-email-swarren@wwwdotorg.org>
+In-Reply-To: <1339113456-27089-1-git-send-email-swarren@wwwdotorg.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> In my opinion, it would be much better to have one less layer and no
->> exports at all. The core driver should be a platform driver, and the
->> pci driver would just build platform data and register the platform
->> device.
+On 06/07/2012 06:57 PM, Stephen Warren wrote:
+> From: Stephen Warren <swarren@nvidia.com>
 > 
-> Do you have examples for that approach? Not sure yet if it really saves
-> code and makes it more readable.
+> Without this, modules can't use this API, leading to build failures.
+> 
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> ---
 
-Maybe the physmap mtd driver is a good example. Everybody's using it
-(but not from PCI). I found drivers/pcmcia/bcm63xx_pcmcia.c that
-registers a platform driver from a pci probe function, but I'm sure
-there are other ones.
+Applied for 3.5.
 
-OTOH, I have another example of how not to do stuff, but I won't point
-fingers now (it's not a CAN thing).
+Rob
 
-I just think the platform bus is there just for this reason: to provide
-data to a generic driver, without module dependencies and such stuff. 
-
-> I would suggest to provide the c_can_pci driver using the *current* API,
-> even if it's not optimal. Federicos patch then already looks quite good.
-> It should use the new register access methods introduced by the D_CAN
-> support patch, though.
-
-Great. When it's in I'll show my proposal as an RFC patch, as time permits,
-so we'll see if it's better or not.
-
-> Any further improvements to the device abstraction and a more consistent
-> handling of the platform data are welcome.
-
-Good to know, thanks a lot
-
-/alessandro
+> This is useful in 3.5.
+> 
+>  drivers/of/platform.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+> index 343ad29..3132ea0 100644
+> --- a/drivers/of/platform.c
+> +++ b/drivers/of/platform.c
+> @@ -462,4 +462,5 @@ int of_platform_populate(struct device_node *root,
+>  	of_node_put(root);
+>  	return rc;
+>  }
+> +EXPORT_SYMBOL_GPL(of_platform_populate);
+>  #endif /* CONFIG_OF_ADDRESS */
