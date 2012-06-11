@@ -1,45 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753206Ab2FKJU1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 05:20:27 -0400
-Received: from mga09.intel.com ([134.134.136.24]:54043 "EHLO mga09.intel.com"
+	id S1753232Ab2FKJVh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 05:21:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41540 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751145Ab2FKJUZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 05:20:25 -0400
+	id S1753003Ab2FKJVf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 05:21:35 -0400
+Date: Mon, 11 Jun 2012 11:21:33 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
+        rientjes@google.com, akpm@linux-foundation.org, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH -V8 14/16] hugetlb/cgroup: add charge/uncharge calls for
+ HugeTLB alloc/free
+Message-ID: <20120611092133.GI12402@tiehlicka.suse.cz>
+References: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <1339232401-14392-15-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <1339404917.30984.82.camel@x61.thuisdomein>
-References: <1339169631.30984.2.camel@x61.thuisdomein>
-	<CALLzPKak-GLPehY84_h-wURdrfnOW1nNeML_hpwdJi7mf-XkcQ@mail.gmail.com>
-	<1339404917.30984.82.camel@x61.thuisdomein>
-Date: Mon, 11 Jun 2012 12:20:24 +0300
-Message-ID: <CALLzPKZW73x-dun6+47_CNJkvXE=_X9HAeeYBmLtUocHOFPCBg@mail.gmail.com>
-Subject: Re: [PATCH] Remove lib/mpi/generic_mpi-asm-defs.h
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339232401-14392-15-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 11, 2012 at 11:55 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
-> Dmitry,
->
-> On Mon, 2012-06-11 at 11:27 +0300, Kasatkin, Dmitry wrote:
->> That patch has been already reverted and unused code removed.
->> Changes are available in the #next-queue branch of Linux security tree.
->
-> That would be commit 9e235dcaf4f63d88a7e9ce5735ba5c2eb2719603 ("Revert
-> "crypto: GnuPG based MPI lib - additional sources (part 4)""). I'll
-> remove this header from the stack of (possibly) unused headers.
->
-> Thanks!
->
+On Sat 09-06-12 14:29:59, Aneesh Kumar K.V wrote:
+> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+> 
+> This adds necessary charge/uncharge calls in the HugeTLB code.  We do
+> hugetlb cgroup charge in page alloc and uncharge in compound page destructor.
+> 
+> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+> ---
+>  mm/hugetlb.c        |   16 +++++++++++++++-
+>  mm/hugetlb_cgroup.c |    7 +------
+>  2 files changed, 16 insertions(+), 7 deletions(-)
+> 
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index bf79131..4ca92a9 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -628,6 +628,8 @@ static void free_huge_page(struct page *page)
+>  	BUG_ON(page_mapcount(page));
+>  
+>  	spin_lock(&hugetlb_lock);
+> +	hugetlb_cgroup_uncharge_page(hstate_index(h),
+> +				     pages_per_huge_page(h), page);
+>  	if (h->surplus_huge_pages_node[nid] && huge_page_order(h) < MAX_ORDER) {
+>  		/* remove the page from active list */
+>  		list_del(&page->lru);
+> @@ -1116,7 +1118,10 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+>  	struct hstate *h = hstate_vma(vma);
+>  	struct page *page;
+>  	long chg;
+> +	int ret, idx;
+> +	struct hugetlb_cgroup *h_cg;
+>  
+> +	idx = hstate_index(h);
+>  	/*
+>  	 * Processes that did not create the mapping will have no
+>  	 * reserves and will not have accounted against subpool
+> @@ -1132,6 +1137,11 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+>  		if (hugepage_subpool_get_pages(spool, chg))
+>  			return ERR_PTR(-ENOSPC);
+>  
+> +	ret = hugetlb_cgroup_charge_page(idx, pages_per_huge_page(h), &h_cg);
 
-Yes, This patch and next one...
+So we do not have any page yet and hugetlb_cgroup_charge_cgroup sound
+more appropriate
 
-Thanks.
-
->
-> Paul Bolle
->
+[...]
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
