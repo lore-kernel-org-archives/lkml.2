@@ -1,86 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752934Ab2FKJdt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 05:33:49 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:43353 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752472Ab2FKJds (ORCPT
+	id S1753195Ab2FKJge (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 05:36:34 -0400
+Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:4098 "EHLO
+	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751011Ab2FKJgc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 05:33:48 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
-        rientjes@google.com, akpm@linux-foundation.org, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH -V8 10/16] hugetlb/cgroup: Add the cgroup pointer to page lru
-In-Reply-To: <20120611091658.GG12402@tiehlicka.suse.cz>
-References: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1339232401-14392-11-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20120611081653.GB12402@tiehlicka.suse.cz> <87oboq5ifb.fsf@skywalker.in.ibm.com> <20120611091658.GG12402@tiehlicka.suse.cz>
-User-Agent: Notmuch/0.13.2+35~g0ff57e7 (http://notmuchmail.org) Emacs/24.1.50.1 (x86_64-unknown-linux-gnu)
-Date: Mon, 11 Jun 2012 15:03:30 +0530
-Message-ID: <87ipey5h1x.fsf@skywalker.in.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-x-cbid: 12061109-2000-0000-0000-000007DFCFF6
+	Mon, 11 Jun 2012 05:36:32 -0400
+Message-ID: <1339407387.30984.87.camel@x61.thuisdomein>
+Subject: [PATCH] MIPS: Remove unused smvp.h
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Date: Mon, 11 Jun 2012 11:36:27 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-OriginalArrivalTime: 11 Jun 2012 09:36:27.0411 (UTC) FILETIME=[AC9B1630:01CD47B5]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michal Hocko <mhocko@suse.cz> writes:
+This header was added in commit 39b8d5254246ac56342b72f812255c8f7a74dca9
+("[MIPS] Add support for MIPS CMP platform."). None of the functions it
+declared were ever included in the tree. The sole file that included it
+got removed, because that file was itself unused, in commit
+cb7f39d2bc5a20615d016dd86fca0fd233c13b5d ("[MIPS] Remove unused
+maltasmp.h.").
 
-> On Mon 11-06-12 14:33:52, Aneesh Kumar K.V wrote:
->> Michal Hocko <mhocko@suse.cz> writes:
->> 
->> > On Sat 09-06-12 14:29:55, Aneesh Kumar K.V wrote:
->> >> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
->> >> 
->> >> Add the hugetlb cgroup pointer to 3rd page lru.next.
->> >
->> > Interesting and I really like the idea much more than tracking by
->> > page_cgroup.
->> >
->> >> This limit the usage to hugetlb cgroup to only hugepages with 3 or
->> >> more normal pages. I guess that is an acceptable limitation.
->> >
->> > Agreed.
->> >
->> >> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
->> >
->> > Other than some nits I like this.
->> > Thanks!
->> >
->> >> ---
->> >>  include/linux/hugetlb_cgroup.h |   31 +++++++++++++++++++++++++++++++
->> >>  mm/hugetlb.c                   |    4 ++++
->> >>  2 files changed, 35 insertions(+)
->> >> 
->> >> diff --git a/include/linux/hugetlb_cgroup.h b/include/linux/hugetlb_cgroup.h
->> >> index 5794be4..ceff1d5 100644
->> >> --- a/include/linux/hugetlb_cgroup.h
->> >> +++ b/include/linux/hugetlb_cgroup.h
->> >> @@ -26,6 +26,26 @@ struct hugetlb_cgroup {
->> >>  };
->> >>  
->> >>  #ifdef CONFIG_CGROUP_HUGETLB_RES_CTLR
->> >> +static inline struct hugetlb_cgroup *hugetlb_cgroup_from_page(struct page *page)
->> >> +{
->> >> +	if (!PageHuge(page))
->> >> +		return NULL;
->> >> +	if (compound_order(page) < 3)
->> >
->> > Why 3? I think you wanted 2 here, right?
->> 
->> Yes that should be 2. I updated that in an earlier. Already in v9
->> version I have locally.
->
-> ohh, I should have read replies to the patch first where you already
-> mentioned that you are aware of that.
-> Maybe it would be worth something like:
-> /* Minimum page order trackable by hugetlb cgroup.
->  * At least 3 pages are necessary for all the tracking information.
->  */
-> #define HUGETLB_CGROUP_MIN_ORDER	2
+This header is unused and unneeded. It can safely be removed.
 
-Excellent will do that.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Tested only by "git grepping" the (history of the) tree in various ways.
 
--aneesh
+ arch/mips/include/asm/smvp.h |   19 -------------------
+ 1 files changed, 0 insertions(+), 19 deletions(-)
+ delete mode 100644 arch/mips/include/asm/smvp.h
+
+diff --git a/arch/mips/include/asm/smvp.h b/arch/mips/include/asm/smvp.h
+deleted file mode 100644
+index 0d0e80a..0000000
+--- a/arch/mips/include/asm/smvp.h
++++ /dev/null
+@@ -1,19 +0,0 @@
+-#ifndef _ASM_SMVP_H
+-#define _ASM_SMVP_H
+-
+-/*
+- * Definitions for SMVP multitasking on MIPS MT cores
+- */
+-struct task_struct;
+-
+-extern void smvp_smp_setup(void);
+-extern void smvp_smp_finish(void);
+-extern void smvp_boot_secondary(int cpu, struct task_struct *t);
+-extern void smvp_init_secondary(void);
+-extern void smvp_smp_finish(void);
+-extern void smvp_cpus_done(void);
+-extern void smvp_prepare_cpus(unsigned int max_cpus);
+-
+-/* This is platform specific */
+-extern void smvp_send_ipi(int cpu, unsigned int action);
+-#endif /*  _ASM_SMVP_H */
+-- 
+1.7.7.6
 
