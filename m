@@ -1,187 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754229Ab2FKHNI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 03:13:08 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:2161 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751483Ab2FKHNG convert rfc822-to-8bit (ORCPT
+	id S1754127Ab2FKHPu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 03:15:50 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:55086 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751431Ab2FKHPs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 03:13:06 -0400
-From: "Kani, Toshimitsu" <toshi.kani@hp.com>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: "lenb@kernel.org" <lenb@kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "shuahkhan@gmail.com" <shuahkhan@gmail.com>,
-        "liuj97@gmail.com" <liuj97@gmail.com>,
-        "andi@firstfloor.org" <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 5/6] ACPI: Add _OST support for ACPI container hotplug
-Thread-Topic: [PATCH v4 5/6] ACPI: Add _OST support for ACPI container
- hotplug
-Thread-Index: AQHNOVT5cF+hicNIk0G8Yx8DSzjdKZbrN9CAgAC3dHSACIidgIAAWJws
-Date: Mon, 11 Jun 2012 07:12:28 +0000
-Message-ID: <DDF4AA7E-2E19-4919-BBEB-9993D0456755@hp.com>
-References: <1337826324-16802-1-git-send-email-toshi.kani@hp.com>
- <1337826324-16802-6-git-send-email-toshi.kani@hp.com>,<4FCD8D95.1060700@jp.fujitsu.com>
- <45D38E03-0465-42A1-AEB3-4D120FFF66DC@hp.com>,<4FD5500F.40404@jp.fujitsu.com>
-In-Reply-To: <4FD5500F.40404@jp.fujitsu.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 11 Jun 2012 03:15:48 -0400
+Date: Mon, 11 Jun 2012 09:17:13 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: =?iso-8859-1?Q?N=E9meth_M=E1rton?= <nm127@freemail.hu>
+Cc: David Airlie <airlied@linux.ie>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Dave Airlie <airlied@redhat.com>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drm via: initialize object_idr
+Message-ID: <20120611071713.GA4695@phenom.ffwll.local>
+Mail-Followup-To: =?iso-8859-1?Q?N=E9meth_M=E1rton?= <nm127@freemail.hu>,
+	David Airlie <airlied@linux.ie>, Dave Airlie <airlied@redhat.com>,
+	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+References: <4FD5142B.2080809@freemail.hu>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4FD5142B.2080809@freemail.hu>
+X-Operating-System: Linux phenom 3.4.0-rc3+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Jun 11, 2012, at 10:55 AM, "Yasuaki Ishimatsu" <isimatu.yasuaki@jp.fujitsu.com> wrote:
+On Sun, Jun 10, 2012 at 11:39:55PM +0200, Németh Márton wrote:
+> From: Márton Németh <nm127@freemail.hu>
+> 
+> The field obejct_idr of struct drm_via_private was introduced with the
+> commit http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=77ee8f3825054f23b17e9c8f728f061defd86cdc .
+> In that patch idr_init(&dev->object_name_idr) was called instead of
+> idr_init(&dev_priv->object_idr) by mistake, leaving the dev_priv->object_idr
+> uninitialized. To be more exact, the object_idr buffer is filled with zeros
+> because of kzalloc(), but the dev_priv->object_idr.lock spinlock can cause
+> system freeze at lib/idr.c:move_to_free_list() when spin_lock_irqsave()
+> is called on this spinlock.
+> 
+> The patch was tested on Clevo D4J, model D410J laptop, on the following
+> hardware, without AGP kernel module loaded:
+> 
+>   # lspci -s 01:00.0 -n
+>   01:00.0 0300: 1106:3108 (rev 01)
+>   # lspci -s 01:00.0 -v
+>   01:00.0 VGA compatible controller: VIA Technologies, Inc. K8M800/K8N800/K8N800A [S3 UniChrome Pro] (rev 01) (prog-if 00 [VGA controller])
+>           Subsystem: CLEVO/KAPOK Computer Device 4702
+>           Flags: bus master, 66MHz, medium devsel, latency 64, IRQ 16
+>           Memory at f0000000 (32-bit, prefetchable) [size=64M]
+>           Memory at d1000000 (32-bit, non-prefetchable) [size=16M]
+>           Expansion ROM at <unassigned> [disabled]
+>           Capabilities: [60] Power Management version 2
+>           Capabilities: [70] AGP version 3.0
+> 
+> Signed-off-by: Márton Németh <nm127@freemail.hu>
 
-> Hi Toshi,
-> 
-> Sorry for late reply.
-> 
-> 2012/06/06 0:36, Kani, Toshimitsu wrote:
->> On Jun 4, 2012, at 9:40 PM, "Yasuaki Ishimatsu"<isimatu.yasuaki@jp.fujitsu.com>  wrote:
->> 
->>> Hi Toshi,
->>> 
->>> 2012/05/24 11:25, Toshi Kani wrote:
->>>> Changed container_notify_cb() to call ACPI _OST method when ACPI
->>>> container hotplug operation has completed. Slightly restructured
->>>> the code with the same logic. The function sets eject_pending bit
->>>> for an eject request since it does not initiate hot-remove operation.
->>>> This bit is checked by the sysfs eject handler to determine if the
->>>> request is originated from an ACPI eject notification.
->>>> 
->>>> Signed-off-by: Toshi Kani<toshi.kani@hp.com>
->>>> ---
->>>>  drivers/acpi/container.c |   43 ++++++++++++++++++++++++++++---------------
->>>>  1 files changed, 28 insertions(+), 15 deletions(-)
->>>> 
->>>> diff --git a/drivers/acpi/container.c b/drivers/acpi/container.c
->>>> index 45cd03b..1f9f7d7 100644
->>>> --- a/drivers/acpi/container.c
->>>> +++ b/drivers/acpi/container.c
->>>> @@ -158,9 +158,7 @@ static void container_notify_cb(acpi_handle handle, u32 type, void *context)
->>>>      int result;
->>>>      int present;
->>>>      acpi_status status;
->>>> -
->>>> -
->>>> -    present = is_device_present(handle);
->>>> +    u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE; /* default */
->>>> 
->>>>      switch (type) {
->>>>      case ACPI_NOTIFY_BUS_CHECK:
->>>> @@ -169,32 +167,47 @@ static void container_notify_cb(acpi_handle handle, u32 type, void *context)
->>>>          printk(KERN_WARNING "Container driver received %s event\n",
->>>>                 (type == ACPI_NOTIFY_BUS_CHECK) ?
->>>>                 "ACPI_NOTIFY_BUS_CHECK" : "ACPI_NOTIFY_DEVICE_CHECK");
->>>> +
->>>> +        present = is_device_present(handle);
->>>>          status = acpi_bus_get_device(handle,&device);
->>>> -        if (present) {
->>>> -            if (ACPI_FAILURE(status) || !device) {
->>>> -                result = container_device_add(&device, handle);
->>>> -                if (!result)
->>>> -                    kobject_uevent(&device->dev.kobj,
->>>> -                               KOBJ_ONLINE);
->>>> -                else
->>>> -                    printk(KERN_WARNING
->>>> -                           "Failed to add container\n");
->>>> -            }
->>>> -        } else {
->>>> +        if (!present) {
->>>>              if (ACPI_SUCCESS(status)) {
->>>>                  /* device exist and this is a remove request */
->>>> +                device->flags.eject_pending = 1;
->>>>                  kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
->>>> +                return;
->>>>              }
->>>> +            break;
->>>> +        }
->>>> +
->>> 
->>>> +        if (!ACPI_FAILURE(status) || device)
->>>> +            break;
->>> 
->>> The logic is not same as previous logic.
->>> I think the following logic is correct.
->>> 
->>>        if (!ACPI_FAILURE(status)&&  device)
->>>            break;
->> 
->> Hi Yasuaki,
->> 
->> Great catch! You are right about that. Now the question is what this code should do when the call failed but the device gets set. This is rather hypothetical case, but I think it is safer to fail a hot add request whenever the device is set. What do you think?
->> 
-> 
-> I think so, too.
-> So there is no comment on your patch.
-> 
+Meh, I fail, thanks for catching this. Although the drm/sis driver has the
+same problem, care to write that patch, too? In any case:
 
-Hi Yasuaki,
+Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: stable@vger.kernel.org
 
-I will update the change log to clarify this change.
-I am traveling now. I will work on the change when I am 
-back on Jun 21.
+-Daniel
 
-Thanks,
--Toshi
+> ---
+> diff --git a/drivers/gpu/drm/via/via_map.c b/drivers/gpu/drm/via/via_map.c
+> index 1f18225..c126182 100644
+> --- a/drivers/gpu/drm/via/via_map.c
+> +++ b/drivers/gpu/drm/via/via_map.c
+> @@ -100,12 +100,11 @@ int via_driver_load(struct drm_device *dev, unsigned long chipset)
+>  	if (dev_priv == NULL)
+>  		return -ENOMEM;
+> 
+> +	idr_init(&dev_priv->object_idr);
+>  	dev->dev_private = (void *)dev_priv;
+> 
+>  	dev_priv->chipset = chipset;
+> 
+> -	idr_init(&dev->object_name_idr);
+> -
+>  	pci_set_master(dev->pdev);
+> 
+>  	ret = drm_vblank_init(dev, 1);
 
-> Thanks,
-> Yasuaki Ishimatsu
-> 
->> Thanks,
->> -Toshi
->> 
->>> Thanks,
->>> Yasuaki Ishimatsu
->>> 
->>>> +
->>>> +        result = container_device_add(&device, handle);
->>>> +        if (result) {
->>>> +            printk(KERN_WARNING "Failed to add container\n");
->>>> +            break;
->>>>          }
->>>> +
->>>> +        kobject_uevent(&device->dev.kobj, KOBJ_ONLINE);
->>>> +        ost_code = ACPI_OST_SC_SUCCESS;
->>>>          break;
->>>> +
->>>>      case ACPI_NOTIFY_EJECT_REQUEST:
->>>>          if (!acpi_bus_get_device(handle,&device)&&   device) {
->>>> +            device->flags.eject_pending = 1;
->>>>              kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
->>>> +            return;
->>>>          }
->>>>          break;
->>>> +
->>>>      default:
->>>> -        break;
->>>> +        /* non-hotplug event; possibly handled by other handler */
->>>> +        return;
->>>>      }
->>>> +
->>>> +    /* Inform firmware that the hotplug operation has completed */
->>>> +    (void) acpi_evaluate_hotplug_ost(handle, type, ost_code, NULL);
->>>>      return;
->>>>  }
->>>> 
->>> 
->>> 
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> 
->> 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
