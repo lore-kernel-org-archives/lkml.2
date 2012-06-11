@@ -1,76 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753144Ab2FKJ0e (ORCPT <rfc822;w@1wt.eu>);
+	id S1753362Ab2FKJ0g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 05:26:36 -0400
+Received: from antcom.de ([188.40.178.216]:48671 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752792Ab2FKJ0e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 11 Jun 2012 05:26:34 -0400
-Received: from www.linutronix.de ([62.245.132.108]:37433 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751011Ab2FKJ0d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 05:26:33 -0400
-Date: Mon, 11 Jun 2012 11:26:12 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Rusty Russell <rusty@rustcorp.com.au>
-cc: Peter Zijlstra <peterz@infradead.org>, Fenghua Yu <fenghua.yu@intel.com>,
-        Ingo Molnar <mingo@elte.hu>, H Peter Anvin <hpa@zytor.com>,
-        Suresh B Siddha <suresh.b.siddha@intel.com>,
-        Tony Luck <tony.luck@intel.com>,
-        Asit K Mallick <asit.k.mallick@intel.com>,
-        Arjan Dan De Ven <arjan@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>,
-        linux-pm <linux-pm@vger.kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [PATCH] kthread: Implement park/unpark facility
-In-Reply-To: <878vfviv1h.fsf@rustcorp.com.au>
-Message-ID: <alpine.LFD.2.02.1206111124110.3086@ionos>
-References: <1338833876-29721-1-git-send-email-fenghua.yu@intel.com> <alpine.LFD.2.02.1206042203590.3086@ionos> <1338842001.28282.135.camel@twins> <87zk8iioam.fsf@rustcorp.com.au> <alpine.LFD.2.02.1206051135260.3086@ionos> <alpine.LFD.2.02.1206051538280.3086@ionos>
- <878vfviv1h.fsf@rustcorp.com.au>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+Message-ID: <4FD5B9C8.4020800@antcom.de>
+Date: Mon, 11 Jun 2012 11:26:32 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM IT Research & Development
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: David Miller <davem@davemloft.net>
+CC: eric.dumazet@gmail.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
+        srinivas.bakki@nxp.com, aletes.xgr@gmail.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/3] net: lpc_eth: Replace WARN() trace with simple pr_warn()
+References: <1339401793-12258-1-git-send-email-stigge@antcom.de> <1339403108.6001.1697.camel@edumazet-glaptop> <4FD5AE1D.9030807@antcom.de> <20120611.020352.1962768244524496467.davem@davemloft.net>
+In-Reply-To: <20120611.020352.1962768244524496467.davem@davemloft.net>
+X-Enigmail-Version: 1.4
+OpenPGP: url=subkeys.pgp.net
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 10 Jun 2012, Rusty Russell wrote:
+Hi!
 
-> On Tue, 5 Jun 2012 15:41:48 +0200 (CEST), Thomas Gleixner <tglx@linutronix.de> wrote:
-> > Subject: kthread: Implement park/unpark facility
-> > From: Thomas Gleixner <tglx@linutronix.de>
-> > Date: Wed, 18 Apr 2012 16:37:40 +0200
-> > 
-> > To avoid the full teardown/setup of per cpu kthreads in the case of
-> > cpu hot(un)plug, provide a facility which allows to put the kthread
-> > into a park position and unpark it when the cpu comes online again.
+On 06/11/2012 11:03 AM, David Miller wrote:
+> From: Roland Stigge <stigge@antcom.de>
+> Date: Mon, 11 Jun 2012 10:36:45 +0200
 > 
-> Like the idea, but the API is awkward.  Now you've made returning from a
-> thread do different things depending on whether it was parked or not.
+>> But maybe this is wrong. Can you please give me a hint how the net
+>> subsystem makes sure that this doesn't happen under normal circumstances?
 > 
-> How about just have the thread call "kthread_parkme()" which only
-> returns if/when the thread is unparked?
-> 
-> So the thread does:
-> 
->         while (!kthread_should_stop()) {
->                 if (kthread_should_park()) {
->                         ... cleanup ...
->                         kthread_parkme();
->                         ... restore ...
->                 }
->                 ... work ...
->         }
-> 
-> Threads which never exit have "for (;;)" instead of while
-> (!kthread_should_stop()).
+> Well if you are asking this question then you didn't read my feedback,
+> because I explained exactly what prevents this.
 
-Makes sense. Will have a go on that.
+Re-reading your feedback, you are right, sorry!
 
-One other thing what I'm thinking about is to avoid the synchronous
-parking mechanism, i.e. just tell the thread to park and check the
-park state later before going further down.
+My question was based on the assumption that the driver is doing
+correctly, which was wrong.
 
-Thanks,
+Thank you and Eric for clarifying!
 
-	tglx
+Eric's second (cumulative) patch works fine for now, and I can't
+reproduce the issue. Will do more test runs now and will reply back
+later with an updated patch set.
+
+Is it sensible at this point to increase the TX buffers anyway? For
+different reasons of course: We have enough SRAM available and TX
+buffers (16->32) are still more than RX buffers (48).
+
+Roland
