@@ -1,55 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753256Ab2FKJXR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 05:23:17 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45836 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753003Ab2FKJXP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 05:23:15 -0400
-Date: Mon, 11 Jun 2012 02:23:13 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        linux-mm@kvack.org, mgorman@suse.de, dhillf@gmail.com,
-        aarcange@redhat.com, mhocko@suse.cz, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        Ying Han <yinghan@google.com>
-Subject: Re: [PATCH -V6 07/14] memcg: Add HugeTLB extension
-In-Reply-To: <4FD56C19.4060307@jp.fujitsu.com>
-Message-ID: <alpine.DEB.2.00.1206110220290.6843@chino.kir.corp.google.com>
-References: <1334573091-18602-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1334573091-18602-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <alpine.DEB.2.00.1205241436180.24113@chino.kir.corp.google.com> <20120527202848.GC7631@skywalker.linux.vnet.ibm.com>
- <87lik920h8.fsf@skywalker.in.ibm.com> <20120608160612.dea6d1ce.akpm@linux-foundation.org> <4FD56C19.4060307@jp.fujitsu.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1753349Ab2FKJY1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 05:24:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41636 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753152Ab2FKJY0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 05:24:26 -0400
+Date: Mon, 11 Jun 2012 11:24:24 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
+        rientjes@google.com, akpm@linux-foundation.org, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH -V8 15/16] hugetlb/cgroup: migrate hugetlb cgroup info
+ from oldpage to new page during migration
+Message-ID: <20120611092424.GJ12402@tiehlicka.suse.cz>
+References: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <1339232401-14392-16-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339232401-14392-16-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 11 Jun 2012, Kamezawa Hiroyuki wrote:
+On Sat 09-06-12 14:30:00, Aneesh Kumar K.V wrote:
+> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+> 
+> With HugeTLB pages, hugetlb cgroup is uncharged in compound page
+> destructor.  Since we are holding a hugepage reference,
 
-> Now, I think...
+Who is holding that reference? I do not see anybody calling get_page in
+this patch...
+
+> we can be sure that old page won't get uncharged till the last
+> put_page().
 > 
->   1. I need to agree that overhead is _not_ negligible.
+> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+> ---
+>  include/linux/hugetlb_cgroup.h |    8 ++++++++
+>  mm/hugetlb_cgroup.c            |   21 +++++++++++++++++++++
+>  mm/migrate.c                   |    5 +++++
+>  3 files changed, 34 insertions(+)
 > 
->   2. THP should be the way rather than hugetlb for my main target platform.
->      (shmem/tmpfs should support THP. we need study.)
->      user-experience should be fixed by THP+tmpfs+memcg.
-> 
->   3. It seems Aneesh decided to have independent hugetlb cgroup.
-> 
-> So, now, I admit to have independent hugetlb cgroup.
-> Other opinions ?
+> diff --git a/include/linux/hugetlb_cgroup.h b/include/linux/hugetlb_cgroup.h
+> index ba4836f..b64d067 100644
+> --- a/include/linux/hugetlb_cgroup.h
+> +++ b/include/linux/hugetlb_cgroup.h
+> @@ -63,6 +63,8 @@ extern void hugetlb_cgroup_uncharge_page(int idx, unsigned long nr_pages,
+>  extern void hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
+>  					   struct hugetlb_cgroup *h_cg);
+>  extern int hugetlb_cgroup_file_init(int idx) __init;
+> +extern void hugetlb_cgroup_migrate(struct page *oldhpage,
+> +				   struct page *newhpage);
+>  #else
+>  static inline struct hugetlb_cgroup *hugetlb_cgroup_from_page(struct page *page)
+>  {
+> @@ -112,5 +114,11 @@ static inline int __init hugetlb_cgroup_file_init(int idx)
+>  {
+>  	return 0;
+>  }
+> +
+> +static inline void hugetlb_cgroup_migrate(struct page *oldhpage,
+> +					  struct page *newhpage)
+> +{
+> +	return;
+> +}
+>  #endif  /* CONFIG_MEM_RES_CTLR_HUGETLB */
+>  #endif
+> diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
+> index c2b7b8e..2d384fe 100644
+> --- a/mm/hugetlb_cgroup.c
+> +++ b/mm/hugetlb_cgroup.c
+> @@ -394,6 +394,27 @@ int __init hugetlb_cgroup_file_init(int idx)
+>  	return 0;
+>  }
+>  
+> +void hugetlb_cgroup_migrate(struct page *oldhpage, struct page *newhpage)
+> +{
+> +	struct hugetlb_cgroup *h_cg;
+> +
+> +	VM_BUG_ON(!PageHuge(oldhpage));
+> +
+> +	if (hugetlb_cgroup_disabled())
+> +		return;
+> +
+> +	spin_lock(&hugetlb_lock);
+> +	h_cg = hugetlb_cgroup_from_page(oldhpage);
+> +	set_hugetlb_cgroup(oldhpage, NULL);
+> +	cgroup_exclude_rmdir(&h_cg->css);
+> +
+> +	/* move the h_cg details to new cgroup */
+> +	set_hugetlb_cgroup(newhpage, h_cg);
+> +	spin_unlock(&hugetlb_lock);
+> +	cgroup_release_and_wakeup_rmdir(&h_cg->css);
+> +	return;
+> +}
+> +
+>  struct cgroup_subsys hugetlb_subsys = {
+>  	.name = "hugetlb",
+>  	.create     = hugetlb_cgroup_create,
+> diff --git a/mm/migrate.c b/mm/migrate.c
+> index fdce3a2..6c37c51 100644
+> --- a/mm/migrate.c
+> +++ b/mm/migrate.c
+> @@ -33,6 +33,7 @@
+>  #include <linux/memcontrol.h>
+>  #include <linux/syscalls.h>
+>  #include <linux/hugetlb.h>
+> +#include <linux/hugetlb_cgroup.h>
+>  #include <linux/gfp.h>
+>  
+>  #include <asm/tlbflush.h>
+> @@ -931,6 +932,10 @@ static int unmap_and_move_huge_page(new_page_t get_new_page,
+>  
+>  	if (anon_vma)
+>  		put_anon_vma(anon_vma);
+> +
+> +	if (!rc)
+> +		hugetlb_cgroup_migrate(hpage, new_hpage);
+> +
+>  	unlock_page(hpage);
+>  out:
+>  	put_page(new_hpage);
+> -- 
+> 1.7.10
 > 
 
-I suggested the seperate controller in the review of the patchset so I 
-obviously agree with your conclusion.  I don't think we should account for 
-hugetlb pages in memory.usage_in_bytes and enforce memory.limit_in_bytes 
-since 512 4K pages is not the same as 1 2M page which may be a sacred 
-resource if fragmentation is high.
-
-Many thanks to Aneesh for continuing to update the patchset and working 
-toward a resolution on this, I love the direction its taking.
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
