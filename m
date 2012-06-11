@@ -1,157 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754663Ab2FKNcW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 09:32:22 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:41507 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754491Ab2FKNcU (ORCPT
+	id S1754721Ab2FKNcm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 09:32:42 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:34745 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751842Ab2FKNcl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 09:32:20 -0400
-Message-ID: <4FD5F329.2090302@linux.vnet.ibm.com>
-Date: Mon, 11 Jun 2012 19:01:21 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
+	Mon, 11 Jun 2012 09:32:41 -0400
+Message-ID: <4FD5F35A.3000903@panasas.com>
+Date: Mon, 11 Jun 2012 16:32:10 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
 MIME-Version: 1.0
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-CC: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, "Tomas M." <tmezzadra@gmail.com>,
-        Ferenc Wagner <wferi@niif.hu>, Arnd Bergmann <arnd@arndb.de>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>,
-        Kevin Hilman <khilman@ti.com>,
-        Arjan van de Ven <arjan@linux.intel.com>, Jean Pihet <j-pihet@ti.com>,
-        Trinabh Gupta <g.trinabh@gmail.com>,
-        linux-pm@lists.linux-foundation.org, preeti@linux.vnet.ibm.com
-Subject: Re: Suspend/resume regressions on Lenovo S10-3
-References: <4FC2DA8C.7050401@linux.vnet.ibm.com> <4FCF5249.2070600@linux.vnet.ibm.com>
-In-Reply-To: <4FCF5249.2070600@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jeff Layton <jlayton@redhat.com>, bfields <bfields@fieldses.org>,
+        Steve Dickson <steved@redhat.com>
+CC: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Joerg Platte <jplatte@naasa.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Hans de Bruin <jmdebruin@xmsnet.nl>
+Subject: Re: Kernel 3.4.X NFS server regression
+References: <4FD47D4E.9070307@naasa.net> <1339340441.4751.1.camel@lade.trondhjem.org> <20120611121634.GB7654@fieldses.org> <20120611083932.24e27e39@corrin.poochiereds.net>
+In-Reply-To: <20120611083932.24e27e39@corrin.poochiereds.net>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 12061103-7014-0000-0000-0000015AB68A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
+On 06/11/2012 03:39 PM, Jeff Layton wrote:
 
-On 06/06/2012 06:21 PM, Deepthi Dharwar wrote:
-
-> On 05/28/2012 07:23 AM, Dave Hansen wrote:
+> On Mon, 11 Jun 2012 08:16:34 -0400
+> bfields <bfields@fieldses.org> wrote:
 > 
->> I have a Lenovo S10-3 Atom netbook.  It's always had some amount of
->> trouble working with the intel_idle driver, so I usually compile that
->> out an use the acpi one.
-
-
-What problem did you face with intel_idle driver? Is it suspend/resume
-related?
-
-I see a comment in drivers/idle/intel_idle.c such as:
-
-/*
- * Known limitations
- * [...]
- *
- * ACPI has a .suspend hack to turn off deep c-statees during suspend
- * to avoid complications with the lapic timer workaround.
- * Have not seen issues with suspend, but may need same workaround here.
- *
- */
-
-So, if you are facing suspend issues with the intel_idle driver, we probably
-need to add that same workaround here as well, to make it work.
-
-Please let us know what problem you are facing.
-
-Regards,
-Srivatsa S. Bhat
-
->>  However, just after 3.1, suspend/resume broke.
->>  'echo mem > /sys/power/state' would hang before suspending.  I bisected
->> it down to the commits around:
+>> On Sun, Jun 10, 2012 at 03:00:42PM +0000, Myklebust, Trond wrote:
+>>> Cc: linux-nfs@vger.kernel.org + bfields and changing title to label it
+>>> as a server regression since that is what the trace appears to imply.
+>>>
+>>> On Sun, 2012-06-10 at 12:56 +0200, Joerg Platte wrote:
+>>>> All 3.4 kernels I tried so far (3.4, 3.4.1 and 3.4.2) suffer from the 
+>>>> same NFS related problem:
+>>>>
+>>>> Jun 10 09:23:36 coco kernel: INFO: task kworker/u:1:8 blocked for more 
+>>>> than 120 seconds.
+>>>> Jun 10 09:23:36 coco kernel: "echo 0 > 
+>>>> /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+>>>> Jun 10 09:23:36 coco kernel: kworker/u:1     D 002ba28c     0     8 
+>>>>   2 0x00000000
+>>>> Jun 10 09:23:36 coco kernel:  df465ec0 00000046 00000005 002ba28c 
+>>>> 00000000 0000000a 00000282 df465e70
+>>>> Jun 10 09:23:36 coco kernel:  df465ec0 df44d2b0 ffff6b60 df465e84 
+>>>> df44d2b0 e33fa6b3 00000282 de764ae0
+>>>> Jun 10 09:23:36 coco kernel:  ffffffff d78bcfb8 df465e8c c012e0f6 
+>>>> df465ea4 c013610c 00000000 d78bcf80
+>>>> Jun 10 09:23:36 coco kernel: Call Trace:
+>>>> Jun 10 09:23:36 coco kernel:  [<c012e0f6>] ? add_timer+0x11/0x17
+>>>> Jun 10 09:23:36 coco kernel:  [<c013610c>] ? queue_delayed_work_on+0x74/0xf0
+>>>> Jun 10 09:23:36 coco kernel:  [<c0136ba4>] ? queue_delayed_work+0x1b/0x28
+>>>> Jun 10 09:23:36 coco kernel:  [<c0350f5b>] schedule+0x1d/0x4c
+>>>> Jun 10 09:23:36 coco kernel:  [<e0cda5f1>] cld_pipe_upcall+0x4e/0x75 [nfsd]
+>>>> Jun 10 09:23:36 coco kernel:  [<e0cda678>] 
+>>>> nfsd4_cld_grace_done+0x60/0x99 [nfsd]
+>>>> Jun 10 09:23:36 coco kernel:  [<e0cd9cb5>] 
+>>>> nfsd4_record_grace_done+0x10/0x12 [nfsd]
+>>>> Jun 10 09:23:36 coco kernel:  [<e0cd6696>] laundromat_main+0x291/0x2d8 
+>>>> [nfsd]
+>>>> Jun 10 09:23:36 coco kernel:  [<c0136d2f>] process_one_work+0xff/0x325
+>>>> Jun 10 09:23:36 coco kernel:  [<c0134bec>] ? start_worker+0x20/0x23
+>>>> Jun 10 09:23:36 coco kernel:  [<e0cd6405>] ? 
+>>>> nfsd4_process_open1+0x32b/0x32b [nfsd]
+>>>> Jun 10 09:23:36 coco kernel:  [<c013727a>] worker_thread+0xf4/0x39a
+>>>> Jun 10 09:23:36 coco kernel:  [<c0137186>] ? rescuer_thread+0x231/0x231
+>>>> Jun 10 09:23:36 coco kernel:  [<c013a556>] kthread+0x6c/0x6e
+>>>> Jun 10 09:23:36 coco kernel:  [<c013a4ea>] ? kthreadd+0xe8/0xe8
+>>>> Jun 10 09:23:36 coco kernel:  [<c035263e>] kernel_thread_helper+0x6/0xd
+>>>>
+>>>> A kworker task is stuck in D state and nfs mounts from other clients do 
+>>>> not work at all. This happens only on one machine, another one with the 
+>>>> same kernel (same self compiled Debian package) works. All previous 3.3 
+>>>> kernels work as well.
+>>>>
+>>>> Since this machine is remote it is not that easy to bisect to find the 
+>>>> bad commit. Are there any other things I can try?
 >>
->> 	e978aa7d7d57d04eb5f88a7507c4fb98577def77 / v3.1-1-ge978aa7
+>> If you create a directory named /var/lib/nfs/v4recovery/, does the
+>> problem go away?
 >>
->> by Deepthi.  But, current mainline (v3.4-07644-g07acfc2) hangs with a
->> different symptom: it suspends, but hangs on resume from suspend.  I
->> think _that_ delta in the behavior was caused by:
+>> My guess would be that it's trying to upcall to the new reboot-recovery
+>> state daemon, and you don't have that running.
 >>
->> 	3439a8da16bcad6b0982ece938c9f8299bb53584
+>> Before the addition of that upcall state was kept in
+>> /var/lib/nfs/v4recovery.  So we decide whether to use the old method or
+>> the new one by checking for the existance of that path.
 >>
->>         ACPI / cpuidle: Remove acpi_idle_suspend (to fix suspend
->> 		regression)
+>> But I'm guessing we were wrong to assume that existing setups that
+>> people perceived as working would have that path, because the failures
+>> in the absence of that path were probably less obvious.
 >>
->> It's a bit of a pain to bisect these two different things in parallel.
->> I was trying to tell git bisect 'good' on working suspend/resume, 'bad'
->> on the hang during resume, and 'skip' on the hangs _during_ suspend.  83
->> kernels in, I'm not sure that's working very well. :)
->>
->> Deepthi, do you have any idea why your patches broke me in the first
->> place?  Perhaps we should fix that regression first before we go on and
->> try to figure out what changed to let it suspend again, but break later.
+>> --b.
 > 
+> This sounds like the same problem that Hans reported as well. I've not
+> been able to reproduce that so far. Here's what I get when I start nfsd
+> with no v4recoverdir and nfsdcld isn't running:
 > 
-> Hi Dave,
+> [  109.715080] NFSD: starting 90-second grace period
+> [  229.984220] NFSD: Unable to end grace period: -110
 > 
-> Sorry about my patches breaking your suspend-resume.
+> What I don't quite understand is why the queue_timeout job isn't
+> getting run here. What should happen is that 30s after upcall,
+> rpc_timeout_upcall_queue should run. The message will be found to be
+> still sitting on the , so it should set its status to -ETIMEDOUT
+> and wake up the caller.
 > 
-> I, basically tried out building and booting 3.1 kernel with 
-> my patch set to reproduce the failure. I could clearly
-> see suspend not happening. It turns out to be 
-> a bug with my first patch in global registration
-> series submitted earlier.
-> 
-> e978aa7d7d57d04eb5f88a7507c4fb98577def77 / v3.1-1-ge978aa7
-> 
-> The following patch, fixes the suspend issues
-> seen on my laptop due to earlier cpuidle cleanup 
-> (Lenevo T420 booting with acpi_idle enabled). 
-> Can you please give this a try
-> on top of my patch set (without Rafael's fix) 
-> and see if it fixes the problem for you. 
-> I am not reverting acpi_idle_suspend flag and 
-> hopefully it should resume fine too. 
-> 
-> ---
-> 
-> This patch fixes suspend-resume issue seen in the kernel 3.1
-> series using acpi_idle_driver because of cpuidle global 
-> registration cleanup.
-> Here, when acpi_idle_suspend flag was set ( during suspend)
-> the interrupts were not getting enabled in acpi_idle_enter_bm()
-> routine which was causing the system to hang.
-> 
-> 
-> Signed-off-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-> 
-> ---
->  drivers/acpi/processor_idle.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
-> index 24fe3af..6e35293 100644
-> --- a/drivers/acpi/processor_idle.c
-> +++ b/drivers/acpi/processor_idle.c
-> @@ -895,8 +895,9 @@ static int acpi_idle_enter_bm(struct cpuidle_device *dev,
->  	if (unlikely(!pr))
->  		return -EINVAL;
-> 
-> -
->  	if (acpi_idle_suspend) {
-> +		local_irq_disable();
-> +		local_irq_enable();
->  		cpu_relax();
->  		return -EINVAL;
->  	}
-> 
-> Cheers,
-> Deepthi
+> I can only assume that the queue_timeout job isn't getting run for some
+> reason, but I'm unclear on why that would be.
 > 
 
 
+Regression fixing aside. I would consider changing the all mechanism to
+a call_usermodehelper mechanism. Not only it cuts the in-kernel code
+to 1/3, it also cuts user-mode code to 1/3. And specially it relives you
+of any special daemon setup dependency. All you do is run an app/script
+that does what it does when it does it, directly without anyone waiting
+and/or any kind of handshake.
 
--- 
-Regards,
-Srivatsa S. Bhat
-IBM Linux Technology Center
+It is easy to pass any kind of parameters from Kernel to user-mode. Passing
+info from user-mode to Kernel is also easy by setting up a sysfs connection
+point.
 
+And most important there are no timeouts in the new-kernel vs old user-mode.
+If the script/app does not exists the call_usermodehelper returns immediately
+and the old behavior can be used.
+
+And lastly if persistent performance is an issue in the steady state. (since
+calling call_usermodehelper in the hot path can be slow at times) Then I
+would consider that the init script ran at startup via call_usermodehelper
+then sets up a faster communication channel like a udev even and/or some
+other event mechanism. In any way the old dual local-RPC channel has proved
+to be a pain in the ass.
+
+(BTW: if you attempt it you will see that so many lines of code where eliminated
+ you might consider it for a Regression fixing to @stable)
+
+Thank to Steve Dickson who suggested this wonderful idea when I had the same
+exact problem. I'm just repeating his suggestion, and in light of the experience
+of implementing both methods.
+
+Just my $0.017
+Boaz
