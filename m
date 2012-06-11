@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753849Ab2FKLEX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 07:04:23 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:36759 "EHLO
-	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753773Ab2FKLCo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753788Ab2FKLCo (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 11 Jun 2012 07:02:44 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:40834 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753658Ab2FKLCk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 07:02:40 -0400
 From: Roland Stigge <stigge@antcom.de>
 To: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
         srinivas.bakki@nxp.com, aletes.xgr@gmail.com
 Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH 9/14] ARM: LPC32xx: Defconfig update
-Date: Mon, 11 Jun 2012 13:02:12 +0200
-Message-Id: <1339412537-24485-10-git-send-email-stigge@antcom.de>
+Subject: [PATCH 6/14] ARM: LPC32xx: Add dts for EA3250 reference board
+Date: Mon, 11 Jun 2012 13:02:09 +0200
+Message-Id: <1339412537-24485-7-git-send-email-stigge@antcom.de>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1339412537-24485-1-git-send-email-stigge@antcom.de>
 References: <1339412537-24485-1-git-send-email-stigge@antcom.de>
@@ -23,106 +23,172 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This defconfig update for the LPC32xx SoC platform adds the new drivers in v3.5
-and drivers typically used in systems with the LPC32xx chip.
+There is another reference/development board for the LPC32xx SoC (besides the
+Phytec 3250): The Embedded Artists LPC3250 board. This patch adds a default dts
+file for it.
 
 Signed-off-by: Roland Stigge <stigge@antcom.de>
 ---
- arch/arm/configs/lpc32xx_defconfig |   22 +++++++++++++++++-----
- 1 file changed, 17 insertions(+), 5 deletions(-)
+ arch/arm/boot/dts/ea3250.dts |  157 +++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 157 insertions(+)
 
---- linux-2.6.orig/arch/arm/configs/lpc32xx_defconfig
-+++ linux-2.6/arch/arm/configs/lpc32xx_defconfig
-@@ -1,5 +1,7 @@
- CONFIG_EXPERIMENTAL=y
- CONFIG_SYSVIPC=y
-+CONFIG_NO_HZ=y
-+CONFIG_HIGH_RES_TIMERS=y
- CONFIG_IKCONFIG=y
- CONFIG_IKCONFIG_PROC=y
- CONFIG_LOG_BUF_SHIFT=16
-@@ -16,8 +18,6 @@ CONFIG_MODULE_UNLOAD=y
- # CONFIG_BLK_DEV_BSG is not set
- CONFIG_PARTITION_ADVANCED=y
- CONFIG_ARCH_LPC32XX=y
--CONFIG_NO_HZ=y
--CONFIG_HIGH_RES_TIMERS=y
- CONFIG_PREEMPT=y
- CONFIG_AEABI=y
- CONFIG_ZBOOT_ROM_TEXT=0x0
-@@ -54,11 +54,14 @@ CONFIG_MTD_CHAR=y
- CONFIG_MTD_BLOCK=y
- CONFIG_MTD_NAND=y
- CONFIG_MTD_NAND_MUSEUM_IDS=y
-+CONFIG_MTD_NAND_SLC_LPC32XX=y
-+CONFIG_MTD_NAND_MLC_LPC32XX=y
- CONFIG_BLK_DEV_LOOP=y
- CONFIG_BLK_DEV_CRYPTOLOOP=y
- CONFIG_BLK_DEV_RAM=y
- CONFIG_BLK_DEV_RAM_COUNT=1
- CONFIG_BLK_DEV_RAM_SIZE=16384
-+CONFIG_EEPROM_AT24=y
- CONFIG_EEPROM_AT25=y
- CONFIG_SCSI=y
- CONFIG_BLK_DEV_SD=y
-@@ -79,16 +82,22 @@ CONFIG_LPC_ENET=y
- # CONFIG_NET_VENDOR_STMICRO is not set
- CONFIG_SMSC_PHY=y
- # CONFIG_WLAN is not set
-+CONFIG_INPUT_MATRIXKMAP=y
- # CONFIG_INPUT_MOUSEDEV_PSAUX is not set
- CONFIG_INPUT_MOUSEDEV_SCREEN_X=240
- CONFIG_INPUT_MOUSEDEV_SCREEN_Y=320
- CONFIG_INPUT_EVDEV=y
-+# CONFIG_KEYBOARD_ATKBD is not set
-+CONFIG_KEYBOARD_LPC32XX=y
- # CONFIG_INPUT_MOUSE is not set
- CONFIG_INPUT_TOUCHSCREEN=y
- CONFIG_TOUCHSCREEN_LPC32XX=y
-+CONFIG_SERIO_LIBPS2=y
- # CONFIG_LEGACY_PTYS is not set
- CONFIG_SERIAL_8250=y
- CONFIG_SERIAL_8250_CONSOLE=y
-+CONFIG_SERIAL_HS_LPC32XX=y
-+CONFIG_SERIAL_OF_PLATFORM=y
- # CONFIG_HW_RANDOM is not set
- CONFIG_I2C=y
- CONFIG_I2C_CHARDEV=y
-@@ -96,7 +105,8 @@ CONFIG_I2C_PNX=y
- CONFIG_SPI=y
- CONFIG_SPI_PL022=y
- CONFIG_GPIO_SYSFS=y
--# CONFIG_HWMON is not set
-+CONFIG_SENSORS_DS620=y
-+CONFIG_SENSORS_MAX6639=y
- CONFIG_WATCHDOG=y
- CONFIG_PNX4008_WATCHDOG=y
- CONFIG_FB=y
-@@ -133,6 +143,8 @@ CONFIG_MMC=y
- CONFIG_MMC_ARMMMCI=y
- CONFIG_NEW_LEDS=y
- CONFIG_LEDS_CLASS=y
-+CONFIG_LEDS_PCA9532=y
-+CONFIG_LEDS_PCA9532_GPIO=y
- CONFIG_LEDS_GPIO=y
- CONFIG_LEDS_TRIGGERS=y
- CONFIG_LEDS_TRIGGER_TIMER=y
-@@ -148,8 +160,9 @@ CONFIG_RTC_DRV_LPC32XX=y
- CONFIG_DMADEVICES=y
- CONFIG_AMBA_PL08X=y
- CONFIG_STAGING=y
--CONFIG_IIO=y
- CONFIG_LPC32XX_ADC=y
-+CONFIG_MAX517=y
-+CONFIG_IIO=y
- CONFIG_EXT2_FS=y
- CONFIG_AUTOFS4_FS=y
- CONFIG_MSDOS_FS=y
-@@ -159,7 +172,6 @@ CONFIG_JFFS2_FS=y
- CONFIG_JFFS2_FS_WBUF_VERIFY=y
- CONFIG_CRAMFS=y
- CONFIG_NFS_FS=y
--CONFIG_NFS_V3=y
- CONFIG_ROOT_NFS=y
- CONFIG_NLS_CODEPAGE_437=y
- CONFIG_NLS_ASCII=y
+--- /dev/null
++++ linux-2.6/arch/arm/boot/dts/ea3250.dts
+@@ -0,0 +1,157 @@
++/*
++ * Embedded Artists LPC3250 board
++ *
++ * Copyright 2012 Roland Stigge <stigge@antcom.de>
++ *
++ * The code contained herein is licensed under the GNU General Public
++ * License. You may obtain a copy of the GNU General Public License
++ * Version 2 or later at the following locations:
++ *
++ * http://www.opensource.org/licenses/gpl-license.html
++ * http://www.gnu.org/copyleft/gpl.html
++ */
++
++/dts-v1/;
++/include/ "lpc32xx.dtsi"
++
++/ {
++	model = "Embedded Artists LPC3250 board based on NXP LPC3250";
++	compatible = "ea,ea3250", "nxp,lpc3250";
++	#address-cells = <1>;
++	#size-cells = <1>;
++
++	memory {
++		device_type = "memory";
++		reg = <0 0x4000000>;
++	};
++
++	ahb {
++		mac: ethernet@31060000 {
++			phy-mode = "rmii";
++			use-iram;
++		};
++
++		/* Here, choose exactly one from: ohci, usbd */
++		ohci@31020000 {
++			transceiver = <&isp1301>;
++			status = "okay";
++		};
++
++/*
++		usbd@31020000 {
++			transceiver = <&isp1301>;
++			status = "okay";
++		};
++*/
++
++		/* 128MB Flash via SLC NAND controller */
++		slc: flash@20020000 {
++			status = "okay";
++			#address-cells = <1>;
++			#size-cells = <1>;
++
++			nxp,wdr-clks = <14>;
++			nxp,wwidth = <260000000>;
++			nxp,whold = <104000000>;
++			nxp,wsetup = <200000000>;
++			nxp,rdr-clks = <14>;
++			nxp,rwidth = <34666666>;
++			nxp,rhold = <104000000>;
++			nxp,rsetup = <200000000>;
++			nand-on-flash-bbt;
++			gpios = <&gpio 5 19 1>; /* GPO_P3 19, active low */
++
++			mtd0@00000000 {
++				label = "ea3250-boot";
++				reg = <0x00000000 0x00080000>;
++				read-only;
++			};
++
++			mtd1@00080000 {
++				label = "ea3250-uboot";
++				reg = <0x00080000 0x000c0000>;
++				read-only;
++			};
++
++			mtd2@00140000 {
++				label = "ea3250-kernel";
++				reg = <0x00140000 0x00400000>;
++			};
++
++			mtd3@00540000 {
++				label = "ea3250-rootfs";
++				reg = <0x00540000 0x07ac0000>;
++			};
++		};
++
++		apb {
++			uart5: serial@40090000 {
++				status = "okay";
++			};
++
++			uart3: serial@40080000 {
++				status = "okay";
++			};
++
++			uart6: serial@40098000 {
++				status = "okay";
++			};
++
++			i2c1: i2c@400A0000 {
++				clock-frequency = <100000>;
++
++				eeprom@50 {
++					compatible = "at,24c256";
++					reg = <0x50>;
++				};
++
++				eeprom@57 {
++					compatible = "at,24c64";
++					reg = <0x57>;
++				};
++
++				uda1380: uda1380@18 {
++					compatible = "nxp,uda1380";
++					reg = <0x18>;
++					power-gpio = <&gpio 0x59 0>;
++					reset-gpio = <&gpio 0x51 0>;
++					dac-clk = "wspll";
++				};
++
++				pca9532: pca9532@60 {
++					compatible = "nxp,pca9532";
++					gpio-controller;
++					#gpio-cells = <2>;
++					reg = <0x60>;
++				};
++			};
++
++			i2c2: i2c@400A8000 {
++				clock-frequency = <100000>;
++			};
++
++			i2cusb: i2c@31020300 {
++				clock-frequency = <100000>;
++
++				isp1301: usb-transceiver@2c {
++					compatible = "nxp,isp1301";
++					reg = <0x2c>;
++				};
++			};
++
++			sd@20098000 {
++				wp-gpios = <&pca9532 5 0>;
++				cd-gpios = <&pca9532 4 0>;
++				cd-inverted;
++				bus-width = <4>;
++				status = "okay";
++			};
++		};
++
++		fab {
++			uart1: serial@40014000 {
++				status = "okay";
++			};
++		};
++	};
++};
