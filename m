@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754460Ab2FKNVI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 09:21:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21428 "EHLO mx1.redhat.com"
+	id S1754622Ab2FKNVV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 09:21:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10348 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754254Ab2FKNVE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 09:21:04 -0400
+	id S1750825Ab2FKNVR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 09:21:17 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
@@ -14,145 +14,191 @@ Cc: eranian@google.com, gorcunov@openvz.org, tzanussi@gmail.com,
         linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
         drepper@gmail.com, asharma@fb.com, benjamin.redelings@nescent.org,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 06/19] perf: Add ability to attach user stack dump to sample
-Date: Mon, 11 Jun 2012 15:20:01 +0200
-Message-Id: <1339420814-7379-7-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 10/19] perf, tool: Add interface to read DSO image data
+Date: Mon, 11 Jun 2012 15:20:05 +0200
+Message-Id: <1339420814-7379-11-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1339420814-7379-1-git-send-email-jolsa@redhat.com>
 References: <1339420814-7379-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introducing sample_stack_user value into the perf_event_attr
-struct to define the size of the user stack dump to be attached
-to the sample. The dump itself is triggered once the
-sample_stack_user is not zero.
+Adding following interface for DSO object to allow
+reading of DSO image data:
 
-Beeing able to dump parts of the user stack, starting from the
-stack pointer, will be useful to make a post mortem dwarf CFI
-based stack unwinding.
+  dso__data_fd
+    - opens DSO and returns file descriptor
+      Binary types are used to locate/open DSO in following order:
+        DSO_BINARY_TYPE__BUILD_ID_CACHE
+        DSO_BINARY_TYPE__SYSTEM_PATH_DSO
+      In other word we first try to open DSO build-id path,
+      and if that fails we try to open DSO system path.
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+  dso__data_read_offset
+    - reads DSO data from specified offset
+
+  dso__data_read_addr
+    - reads DSO data from specified addres/map.
+
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- include/linux/perf_event.h |    5 +++
- kernel/events/core.c       |   66 ++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 71 insertions(+), 0 deletions(-)
+ tools/perf/util/symbol.c |  107 ++++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/symbol.h |    8 +++
+ 2 files changed, 115 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 8960968..8db1655 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -278,6 +278,11 @@ struct perf_event_attr {
- 	 * See asm/perf_regs.h for details.
- 	 */
- 	__u64	sample_regs_user;
-+
-+	/*
-+	 * Defines size of the user stack to dump on samples.
-+	 */
-+	__u64	sample_stack_user;
- };
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index b6c456e..425bea5 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -64,6 +64,14 @@ static enum dso_binary_type binary_type_symtab[] = {
  
- /*
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index e4df59d..c1062a1 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -3765,6 +3765,38 @@ perf_output_sample_regs(struct perf_output_handle *handle,
- 	}
+ #define DSO_BINARY_TYPE__SYMTAB_CNT sizeof(binary_type_symtab)
+ 
++static enum dso_binary_type binary_type_data[] = {
++	DSO_BINARY_TYPE__BUILD_ID_CACHE,
++	DSO_BINARY_TYPE__SYSTEM_PATH_DSO,
++	DSO_BINARY_TYPE__NOT_FOUND,
++};
++
++#define DSO_BINARY_TYPE__DATA_CNT sizeof(binary_type_data)
++
+ int dso__name_len(const struct dso *dso)
+ {
+ 	if (!dso)
+@@ -335,6 +343,7 @@ struct dso *dso__new(const char *name)
+ 		for (i = 0; i < MAP__NR_TYPES; ++i)
+ 			dso->symbols[i] = dso->symbol_names[i] = RB_ROOT;
+ 		dso->symtab_type = DSO_BINARY_TYPE__NOT_FOUND;
++		dso->data_type   = DSO_BINARY_TYPE__NOT_FOUND;
+ 		dso->loaded = 0;
+ 		dso->sorted_by_name = 0;
+ 		dso->has_build_id = 0;
+@@ -2864,3 +2873,101 @@ struct map *dso__new_map(const char *name)
+ 
+ 	return map;
  }
- 
-+static void
-+perf_output_sample_ustack(struct perf_output_handle *handle, u64 dump_size,
-+			  struct pt_regs *regs)
++
++static int open_dso(struct dso *dso, struct machine *machine)
 +{
-+	/* Case of a kernel thread, nothing to dump */
-+	if (!regs) {
-+		u64 size = 0;
-+		perf_output_put(handle, size);
-+	} else {
-+		unsigned long sp;
-+		unsigned int rem;
-+		u64 dyn_size;
++	char *root_dir = (char *) "";
++	char *name;
++	int fd;
 +
-+		/*
-+		 * Static size: we always dump the size
-+		 * requested by the user because most of the
-+		 * time, the top of the user stack is not
-+		 * paged out.
-+		 */
-+		perf_output_put(handle, dump_size);
++	name = malloc(PATH_MAX);
++	if (!name)
++		return -ENOMEM;
 +
-+		sp = user_stack_pointer(regs);
-+		rem = __output_copy_user(handle, (void *) sp, dump_size);
-+		dyn_size = dump_size - rem;
++	if (machine)
++		root_dir = machine->root_dir;
 +
-+		perf_output_skip(handle, rem);
++	if (dso__binary_type_file(dso, dso->data_type,
++				  root_dir, name, PATH_MAX))
++		return -EINVAL;
 +
-+		/* Dynamic size: whole dump - padding. */
-+		perf_output_put(handle, dyn_size);
-+	}
++	fd = open(name, O_RDONLY);
++	free(name);
++	return fd;
 +}
 +
- static struct pt_regs *perf_sample_regs_user(struct pt_regs *regs)
- {
- 	if (!user_mode(regs)) {
-@@ -4054,6 +4086,11 @@ void perf_output_sample(struct perf_output_handle *handle,
- 						mask);
- 		}
- 	}
++int dso__data_fd(struct dso *dso, struct machine *machine)
++{
++	int i = 0;
 +
-+	if (event->attr.sample_stack_user)
-+		perf_output_sample_ustack(handle,
-+					  event->attr.sample_stack_user,
-+					  data->regs_user);
- }
++	if (dso->data_type != DSO_BINARY_TYPE__NOT_FOUND)
++		return open_dso(dso, machine);
++
++	do {
++		int fd;
++
++		dso->data_type = binary_type_data[i++];
++
++		fd = open_dso(dso, machine);
++		if (fd >= 0)
++			return fd;
++
++	} while (dso->data_type != DSO_BINARY_TYPE__NOT_FOUND);
++
++	return -EINVAL;
++}
++
++static ssize_t dso_cache_read(struct dso *dso __used, u64 offset __used,
++			      u8 *data __used, ssize_t size __used)
++{
++	return -EINVAL;
++}
++
++static int dso_cache_add(struct dso *dso __used, u64 offset __used,
++			 u8 *data __used, ssize_t size __used)
++{
++	return 0;
++}
++
++static ssize_t read_dso_data(struct dso *dso, struct machine *machine,
++		     u64 offset, u8 *data, ssize_t size)
++{
++	ssize_t rsize = -1;
++	int fd;
++
++	fd = dso__data_fd(dso, machine);
++	if (fd < 0)
++		return -1;
++
++	do {
++		if (-1 == lseek(fd, offset, SEEK_SET))
++			break;
++
++		rsize = read(fd, data, size);
++		if (-1 == rsize)
++			break;
++
++		if (dso_cache_add(dso, offset, data, size))
++			pr_err("Failed to add data int dso cache.");
++
++	} while (0);
++
++	close(fd);
++	return rsize;
++}
++
++ssize_t dso__data_read_offset(struct dso *dso, struct machine *machine,
++			      u64 offset, u8 *data, ssize_t size)
++{
++	if (dso_cache_read(dso, offset, data, size))
++		return read_dso_data(dso, machine, offset, data, size);
++	return 0;
++}
++
++ssize_t dso__data_read_addr(struct dso *dso, struct map *map,
++			    struct machine *machine, u64 addr,
++			    u8 *data, ssize_t size)
++{
++	u64 offset = map->map_ip(map, addr);
++	return dso__data_read_offset(dso, machine, offset, data, size);
++}
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 0dc30f9..77044cb 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -188,6 +188,7 @@ struct dso {
+ 	enum dso_kernel_type	kernel;
+ 	enum dso_swap_type	needs_swap;
+ 	enum dso_binary_type	symtab_type;
++	enum dso_binary_type	data_type;
+ 	u8		 adjust_symbols:1;
+ 	u8		 has_build_id:1;
+ 	u8		 hit:1;
+@@ -305,4 +306,11 @@ size_t machine__fprintf_vmlinux_path(struct machine *machine, FILE *fp);
  
- void perf_prepare_sample(struct perf_event_header *header,
-@@ -4118,6 +4155,31 @@ void perf_prepare_sample(struct perf_event_header *header,
- 
- 		header->size += size;
- 	}
+ int dso__binary_type_file(struct dso *dso, enum dso_binary_type type,
+ 			  char *root_dir, char *file, size_t size);
 +
-+	if (event->attr.sample_stack_user) {
-+		/*
-+		 * A first field that tells the _static_ size of the
-+		 * dump. 0 if there is nothing to dump (ie: we are in
-+		 * a kernel thread) otherwise the requested size.
-+		 */
-+		int size = sizeof(u64);
-+
-+		if (!data->regs_user)
-+			data->regs_user = perf_sample_regs_user(regs);
-+
-+		/*
-+		 * If there is something to dump, add space for the
-+		 * dump itself and for the field that tells the
-+		 * dynamic size, which is how many have been actually
-+		 * dumped.
-+		 */
-+		if (data->regs_user) {
-+			size += event->attr.sample_stack_user;
-+			size += sizeof(u64);
-+		}
-+
-+		header->size += size;
-+	}
- }
- 
- static void perf_event_output(struct perf_event *event,
-@@ -6171,6 +6233,10 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
- 	if (attr->sample_regs_user)
- 		ret = perf_reg_validate(attr->sample_regs_user);
- 
-+	if (attr->sample_stack_user)
-+		attr->sample_stack_user = round_up(attr->sample_stack_user,
-+						   sizeof(u64));
-+
- out:
- 	return ret;
- 
++int dso__data_fd(struct dso *dso, struct machine *machine);
++ssize_t dso__data_read_offset(struct dso *dso, struct machine *machine,
++			      u64 offset, u8 *data, ssize_t size);
++ssize_t dso__data_read_addr(struct dso *dso, struct map *map,
++			    struct machine *machine, u64 addr,
++			    u8 *data, ssize_t size);
+ #endif /* __PERF_SYMBOL */
 -- 
 1.7.7.6
 
