@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754288Ab2FKA7c (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jun 2012 20:59:32 -0400
-Received: from mail2.gnudd.com ([213.203.150.91]:40545 "EHLO mail.gnudd.com"
+	id S1753530Ab2FKA7a (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jun 2012 20:59:30 -0400
+Received: from mail2.gnudd.com ([213.203.150.91]:40546 "EHLO mail.gnudd.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753396Ab2FKA6b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753402Ab2FKA6b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 10 Jun 2012 20:58:31 -0400
 From: Davide Ciminaghi <dciminaghi@mail.gnudd.com>
 To: linux-kernel@vger.kernel.org
 Cc: sameo@linux.intel.com, rubini@gnudd.com,
         Davide Ciminaghi <ciminaghi@gnudd.com>
-Subject: [PATCH 10/14] sta2x11-mfd : use one lock per device instead of one lock per mfd.
-Date: Mon, 11 Jun 2012 02:57:55 +0200
-Message-Id: <1339376279-16753-11-git-send-email-dciminaghi@mail.gnudd.com>
+Subject: [PATCH 11/14] sta2x11-mfd : add defines for platform devices' names
+Date: Mon, 11 Jun 2012 02:57:56 +0200
+Message-Id: <1339376279-16753-12-git-send-email-dciminaghi@mail.gnudd.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1339376279-16753-1-git-send-email-dciminaghi@mail.gnudd.com>
 References: <1339376279-16753-1-git-send-email-dciminaghi@mail.gnudd.com>
@@ -22,63 +22,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Davide Ciminaghi <ciminaghi@gnudd.com>
 
-The lock is used to implement atomic operations on each platform
-device's registers, so it looks reasonable having one lock per
-device instead of one common lock for all the devices belonging
-to the same sta2x11 instance.
+Since there are now many mfd platform devices, using defines for their
+names seems to be a better solution (avoids wasting time in case of
+typos, makes it easier to change the name of a device, ....).
 
 Signed-off-by: Davide Ciminaghi <ciminaghi@gnudd.com>
 ---
- drivers/mfd/sta2x11-mfd.c |   10 ++++++----
- 1 files changed, 6 insertions(+), 4 deletions(-)
+ include/linux/mfd/sta2x11-mfd.h |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/mfd/sta2x11-mfd.c b/drivers/mfd/sta2x11-mfd.c
-index 110404f..cc20a79 100644
---- a/drivers/mfd/sta2x11-mfd.c
-+++ b/drivers/mfd/sta2x11-mfd.c
-@@ -38,7 +38,7 @@
- /* This describes STA2X11 MFD chip for us, we may have several */
- struct sta2x11_mfd {
- 	struct sta2x11_instance *instance;
--	spinlock_t lock;
-+	spinlock_t lock[sta2x11_n_mfd_plat_devs];
- 	struct list_head list;
- 	void __iomem *regs[sta2x11_n_mfd_plat_devs];
+diff --git a/include/linux/mfd/sta2x11-mfd.h b/include/linux/mfd/sta2x11-mfd.h
+index 4d85879..85b2c20 100644
+--- a/include/linux/mfd/sta2x11-mfd.h
++++ b/include/linux/mfd/sta2x11-mfd.h
+@@ -37,6 +37,14 @@ enum sta2x11_mfd_plat_dev {
+ 	sta2x11_n_mfd_plat_devs,
  };
-@@ -70,6 +70,7 @@ static struct sta2x11_mfd *sta2x11_mfd_find(struct pci_dev *pdev)
  
- static int __devinit sta2x11_mfd_add(struct pci_dev *pdev, gfp_t flags)
- {
-+	int i;
- 	struct sta2x11_mfd *mfd = sta2x11_mfd_find(pdev);
- 	struct sta2x11_instance *instance;
++#define STA2X11_MFD_SCTL_NAME	       "sta2x11-sctl"
++#define STA2X11_MFD_GPIO_NAME	       "sta2x11-gpio"
++#define STA2X11_MFD_SCR_NAME	       "sta2x11-scr"
++#define STA2X11_MFD_TIME_NAME	       "sta2x11-time"
++#define STA2X11_MFD_APBREG_NAME	       "sta2x11-apbreg"
++#define STA2X11_MFD_APB_SOC_REGS_NAME  "sta2x11-apb-soc-regs"
++#define STA2X11_MFD_VIC_NAME	       "sta2x11-vic"
++
+ extern u32
+ __sta2x11_mfd_mask(struct pci_dev *, u32, u32, u32, enum sta2x11_mfd_plat_dev);
  
-@@ -82,7 +83,8 @@ static int __devinit sta2x11_mfd_add(struct pci_dev *pdev, gfp_t flags)
- 	if (!mfd)
- 		return -ENOMEM;
- 	INIT_LIST_HEAD(&mfd->list);
--	spin_lock_init(&mfd->lock);
-+	for (i = 0; i < ARRAY_SIZE(mfd->lock); i++)
-+		spin_lock_init(&mfd->lock[i]);
- 	mfd->instance = instance;
- 	list_add(&mfd->list, &sta2x11_mfd_list);
- 	return 0;
-@@ -116,13 +118,13 @@ u32 __sta2x11_mfd_mask(struct pci_dev *pdev, u32 reg, u32 mask, u32 val,
- 		dev_warn(&pdev->dev, ": system ctl not initialized\n");
- 		return 0;
- 	}
--	spin_lock_irqsave(&mfd->lock, flags);
-+	spin_lock_irqsave(&mfd->lock[index], flags);
- 	r = readl(regs + reg);
- 	r &= ~mask;
- 	r |= val;
- 	if (mask)
- 		writel(r, regs + reg);
--	spin_unlock_irqrestore(&mfd->lock, flags);
-+	spin_unlock_irqrestore(&mfd->lock[index], flags);
- 	return r;
- }
- EXPORT_SYMBOL(__sta2x11_mfd_mask);
 -- 
 1.7.9.1
 
