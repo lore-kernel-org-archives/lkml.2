@@ -1,75 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751884Ab2FKIgu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 04:36:50 -0400
-Received: from antcom.de ([188.40.178.216]:41705 "EHLO chuck.antcom.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751066Ab2FKIgt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 04:36:49 -0400
-Message-ID: <4FD5AE1D.9030807@antcom.de>
-Date: Mon, 11 Jun 2012 10:36:45 +0200
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
-MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kevin.wells@nxp.com, srinivas.bakki@nxp.com, aletes.xgr@gmail.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/3] net: lpc_eth: Replace WARN() trace with simple pr_warn()
-References: <1339401793-12258-1-git-send-email-stigge@antcom.de> <1339403108.6001.1697.camel@edumazet-glaptop>
-In-Reply-To: <1339403108.6001.1697.camel@edumazet-glaptop>
-X-Enigmail-Version: 1.4
-OpenPGP: url=subkeys.pgp.net
-Content-Type: text/plain; charset=UTF-8
+	id S1752023Ab2FKIh0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 04:37:26 -0400
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:50956 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750738Ab2FKIhY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 04:37:24 -0400
+Subject: Re: [PATCH] crypto: s390 - clean up DES code a bit more
+From: Jan Glauber <jang@linux.vnet.ibm.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1339194367.30984.18.camel@x61.thuisdomein>
+References: <1339194367.30984.18.camel@x61.thuisdomein>
+Content-Type: text/plain; charset="us-ascii"
+Date: Mon, 11 Jun 2012 10:34:39 +0200
+Message-ID: <1339403679.9116.0.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
+x-cbid: 12061108-4966-0000-0000-00000295CA79
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave and Eric,
-
-thanks for your feedback!
-
-On 06/11/2012 10:25 AM, Eric Dumazet wrote:
-> On Mon, 2012-06-11 at 10:03 +0200, Roland Stigge wrote:
->> A WARN() trace indicating a "BUG!" was identified as a "normal" case in the
->> xmit function in case all TX descriptors are occupied already. In this case,
->> NETDEV_TX_BUSY is returned, nothing buggy at all.
->>
->> Signed-off-by: Roland Stigge <stigge@antcom.de>
->> Tested-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
->>
->> ---
->>  drivers/net/ethernet/nxp/lpc_eth.c |    2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> --- linux-2.6.orig/drivers/net/ethernet/nxp/lpc_eth.c
->> +++ linux-2.6/drivers/net/ethernet/nxp/lpc_eth.c
->> @@ -1114,7 +1114,7 @@ static int lpc_eth_hard_start_xmit(struc
->>  		   buffers */
->>  		netif_stop_queue(ndev);
->>  		spin_unlock_irq(&pldat->lock);
->> -		WARN(1, "BUG! TX request when no free TX buffers!\n");
->> +		pr_warn("Note: TX request when no free TX buffers.\n");
->>  		return NETDEV_TX_BUSY;
->>  	}
->>  
+On Sat, 2012-06-09 at 00:26 +0200, Paul Bolle wrote:
+> Commit 98971f8439b1bb9a61682fe24a865ddd25167a6b ("crypto: s390 - cleanup
+> DES code") should have also removed crypto_des.h. That file is unused
+> and unneeded since that commit. So let's clean up that file too.
 > 
-> Entering this path is a bug, don't hide it...
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+> Untested. Ought to be correct.
 > 
-> Please share with us how this bug was identified as a "normal case" ?
+>  arch/s390/crypto/crypto_des.h |   18 ------------------
+>  1 files changed, 0 insertions(+), 18 deletions(-)
+>  delete mode 100644 arch/s390/crypto/crypto_des.h
 
-I encountered cases where this happened for me on a custom board under
-heavy load.
+Looks good!
 
-I discussed this with Kevin Wells, the original driver author. We
-identified the case of xmit()'s TX request (from .ndo_start_xmit) with
-full TX driver buffers as valid when ethernet is busy.
+Acked-by: Jan Glauber <jang@linux.vnet.ibm.com>
 
-But maybe this is wrong. Can you please give me a hint how the net
-subsystem makes sure that this doesn't happen under normal circumstances?
-
-Thanks in advance!
-
-Roland
