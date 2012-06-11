@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753788Ab2FKLCo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 07:02:44 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:40834 "EHLO
+	id S1753725Ab2FKLCm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 07:02:42 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:42885 "EHLO
 	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753658Ab2FKLCk (ORCPT
+	with ESMTP id S1753662Ab2FKLCl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 07:02:40 -0400
+	Mon, 11 Jun 2012 07:02:41 -0400
 From: Roland Stigge <stigge@antcom.de>
 To: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
         srinivas.bakki@nxp.com, aletes.xgr@gmail.com
 Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH 6/14] ARM: LPC32xx: Add dts for EA3250 reference board
-Date: Mon, 11 Jun 2012 13:02:09 +0200
-Message-Id: <1339412537-24485-7-git-send-email-stigge@antcom.de>
+Subject: [PATCH 5/14] ARM: LPC32xx: Adjust dtsi file for MLC controller configuration
+Date: Mon, 11 Jun 2012 13:02:08 +0200
+Message-Id: <1339412537-24485-6-git-send-email-stigge@antcom.de>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1339412537-24485-1-git-send-email-stigge@antcom.de>
 References: <1339412537-24485-1-git-send-email-stigge@antcom.de>
@@ -23,172 +23,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is another reference/development board for the LPC32xx SoC (besides the
-Phytec 3250): The Embedded Artists LPC3250 board. This patch adds a default dts
-file for it.
+This patch takes into account that the MTD NAND MLC controller needs more
+registers, located actually before the previously allocated memory range,
+already starting at 200a8000 instead of 200b0000.
+
+Further, the interrupt for the controller is configured.
 
 Signed-off-by: Roland Stigge <stigge@antcom.de>
 ---
- arch/arm/boot/dts/ea3250.dts |  157 +++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 157 insertions(+)
+ arch/arm/boot/dts/lpc32xx.dtsi |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- /dev/null
-+++ linux-2.6/arch/arm/boot/dts/ea3250.dts
-@@ -0,0 +1,157 @@
-+/*
-+ * Embedded Artists LPC3250 board
-+ *
-+ * Copyright 2012 Roland Stigge <stigge@antcom.de>
-+ *
-+ * The code contained herein is licensed under the GNU General Public
-+ * License. You may obtain a copy of the GNU General Public License
-+ * Version 2 or later at the following locations:
-+ *
-+ * http://www.opensource.org/licenses/gpl-license.html
-+ * http://www.gnu.org/copyleft/gpl.html
-+ */
-+
-+/dts-v1/;
-+/include/ "lpc32xx.dtsi"
-+
-+/ {
-+	model = "Embedded Artists LPC3250 board based on NXP LPC3250";
-+	compatible = "ea,ea3250", "nxp,lpc3250";
-+	#address-cells = <1>;
-+	#size-cells = <1>;
-+
-+	memory {
-+		device_type = "memory";
-+		reg = <0 0x4000000>;
-+	};
-+
-+	ahb {
-+		mac: ethernet@31060000 {
-+			phy-mode = "rmii";
-+			use-iram;
-+		};
-+
-+		/* Here, choose exactly one from: ohci, usbd */
-+		ohci@31020000 {
-+			transceiver = <&isp1301>;
-+			status = "okay";
-+		};
-+
-+/*
-+		usbd@31020000 {
-+			transceiver = <&isp1301>;
-+			status = "okay";
-+		};
-+*/
-+
-+		/* 128MB Flash via SLC NAND controller */
-+		slc: flash@20020000 {
-+			status = "okay";
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+
-+			nxp,wdr-clks = <14>;
-+			nxp,wwidth = <260000000>;
-+			nxp,whold = <104000000>;
-+			nxp,wsetup = <200000000>;
-+			nxp,rdr-clks = <14>;
-+			nxp,rwidth = <34666666>;
-+			nxp,rhold = <104000000>;
-+			nxp,rsetup = <200000000>;
-+			nand-on-flash-bbt;
-+			gpios = <&gpio 5 19 1>; /* GPO_P3 19, active low */
-+
-+			mtd0@00000000 {
-+				label = "ea3250-boot";
-+				reg = <0x00000000 0x00080000>;
-+				read-only;
-+			};
-+
-+			mtd1@00080000 {
-+				label = "ea3250-uboot";
-+				reg = <0x00080000 0x000c0000>;
-+				read-only;
-+			};
-+
-+			mtd2@00140000 {
-+				label = "ea3250-kernel";
-+				reg = <0x00140000 0x00400000>;
-+			};
-+
-+			mtd3@00540000 {
-+				label = "ea3250-rootfs";
-+				reg = <0x00540000 0x07ac0000>;
-+			};
-+		};
-+
-+		apb {
-+			uart5: serial@40090000 {
-+				status = "okay";
-+			};
-+
-+			uart3: serial@40080000 {
-+				status = "okay";
-+			};
-+
-+			uart6: serial@40098000 {
-+				status = "okay";
-+			};
-+
-+			i2c1: i2c@400A0000 {
-+				clock-frequency = <100000>;
-+
-+				eeprom@50 {
-+					compatible = "at,24c256";
-+					reg = <0x50>;
-+				};
-+
-+				eeprom@57 {
-+					compatible = "at,24c64";
-+					reg = <0x57>;
-+				};
-+
-+				uda1380: uda1380@18 {
-+					compatible = "nxp,uda1380";
-+					reg = <0x18>;
-+					power-gpio = <&gpio 0x59 0>;
-+					reset-gpio = <&gpio 0x51 0>;
-+					dac-clk = "wspll";
-+				};
-+
-+				pca9532: pca9532@60 {
-+					compatible = "nxp,pca9532";
-+					gpio-controller;
-+					#gpio-cells = <2>;
-+					reg = <0x60>;
-+				};
-+			};
-+
-+			i2c2: i2c@400A8000 {
-+				clock-frequency = <100000>;
-+			};
-+
-+			i2cusb: i2c@31020300 {
-+				clock-frequency = <100000>;
-+
-+				isp1301: usb-transceiver@2c {
-+					compatible = "nxp,isp1301";
-+					reg = <0x2c>;
-+				};
-+			};
-+
-+			sd@20098000 {
-+				wp-gpios = <&pca9532 5 0>;
-+				cd-gpios = <&pca9532 4 0>;
-+				cd-inverted;
-+				bus-width = <4>;
-+				status = "okay";
-+			};
-+		};
-+
-+		fab {
-+			uart1: serial@40014000 {
-+				status = "okay";
-+			};
-+		};
-+	};
-+};
+--- linux-2.6.orig/arch/arm/boot/dts/lpc32xx.dtsi
++++ linux-2.6/arch/arm/boot/dts/lpc32xx.dtsi
+@@ -38,9 +38,10 @@
+ 			status = "disable";
+ 		};
+ 
+-		mlc: flash@200B0000 {
++		mlc: flash@200a8000 {
+ 			compatible = "nxp,lpc3220-mlc";
+-			reg = <0x200B0000 0x1000>;
++			reg = <0x200a8000 0x11000>;
++			interrupts = <11 0>;
+ 			status = "disable";
+ 		};
+ 
