@@ -1,79 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752224Ab2FKIop (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 04:44:45 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:61767 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750993Ab2FKIom (ORCPT
+	id S1752155Ab2FKIrv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 04:47:51 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:56798 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750825Ab2FKIru (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 04:44:42 -0400
-X-AuditID: cbfee61a-b7f9f6d0000016a8-70-4fd5aff93b71
-From: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-To: "'Alan Stern'" <stern@rowland.harvard.edu>,
-        "'Randy Dunlap'" <rdunlap@xenotime.net>
-Cc: "'Stephen Rothwell'" <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        "'LKML'" <linux-kernel@vger.kernel.org>,
-        "'USB list'" <linux-usb@vger.kernel.org>, devel@driverdev.osuosl.org,
-        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
-        "'Mike Lockwood'" <lockwood@android.com>
-References: <4FD10A30.50707@xenotime.net>
- <Pine.LNX.4.44L0.1206071646360.1185-100000@iolanthe.rowland.org>
-In-reply-to: <Pine.LNX.4.44L0.1206071646360.1185-100000@iolanthe.rowland.org>
-Subject: RE: linux-next: Tree for Jun 7 (staging/ccg #2)
-Date: Mon, 11 Jun 2012 10:44:28 +0200
-Message-id: <000001cd47ae$6d482a60$47d87f20$%p@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac1E8Ga7zqjtvh3sRkmIUoN7T+nbAACvboOQ
-Content-language: pl
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGLMWRmVeSWpSXmKPExsVy+t9jAd2f66/6G+zdLWpxedccNouDC9sY
-	LRYta2V2YPb4vEkugDGKyyYlNSezLLVI3y6BK+PLtEusBf/ZKs4c/cXewHiVtYuRk0NCwETi
-	xZN/zBC2mMSFe+vZuhi5OIQEFjFKtK5eywzh/GSUmLSmGayKTcBYYu/BDkYQW0QgVKJhyXKw
-	DmaBqUwSs6ZfYQNJCAnkSPybeRWoiIODU8BX4le3CUhYWMBConFhKytImEVAVWLFYxWQMK+A
-	tUTT3OdMELagxI/J91hAbGYBLYn1O48zQdjyEpvXvGUGaZUQUJd49FcX4gIjiVvHpjNDlIhI
-	3G14zjqBUWgWkkmzkEyahWTSLCQtCxhZVjGKphYkFxQnpeca6hUn5haX5qXrJefnbmIEh/Yz
-	qR2MKxssDjEKcDAq8fA2LL3qL8SaWFZcmXuIUYKDWUmEd1sFUIg3JbGyKrUoP76oNCe1+BCj
-	NAeLkjhvk/UFfyGB9MSS1OzU1ILUIpgsEwenVAMjr/T5vgcR5p8K5RmCnHc/LZ5X9nnPxkm7
-	byqpJTz39DHVnaPlUj2lMXu9bfztiyIFjjkvHz18zrhg72kBry98OzyelU/e5yl71t5V/bic
-	x63K/YXC3gdYFz54u6H3T63wlMv/zzG+CvpTkm13pafqXs1NxZ1ppX5sAVGZFRVbcpPsXj3m
-	kPusxFKckWioxVxUnAgAT4mTQWkCAAA=
-X-TM-AS-MML: No
+	Mon, 11 Jun 2012 04:47:50 -0400
+Date: Mon, 11 Jun 2012 10:47:44 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: akpm@linux-foundation.org, dzickus@redhat.com
+Cc: mm-commits@vger.kernel.org, dzickus@redhat.com, joe@perches.com,
+        mingo@elte.hu, nzimmer@sgi.com, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: + nmi-watchdog-quiet-down-the-boot-messages.patch added to -mm
+ tree
+Message-ID: <20120611084744.GH31556@gmail.com>
+References: <20120608213709.B320BA022F@akpm.mtv.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120608213709.B320BA022F@akpm.mtv.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-On Thursday, June 07, 2012 10:59 PM Alan Stern wrote:
+* akpm@linux-foundation.org <akpm@linux-foundation.org> wrote:
 
-<snip>
+> From: Don Zickus <dzickus@redhat.com>
+> Subject: nmi watchdog: quiet down the boot messages
 > 
-> The problems above are caused by the fact that
-> drivers/staging/ccg/Kconfig does not make USB_G_CGG dependent on BLOCK.
-
-@Randy: Thanks for finding it.
-
-@Alan: Thanks for suggesting a solution.
-
+> A bunch of bugzillas have complained how noisy the nmi_watchdog is during
+> boot-up especially with its expected failure cases (like virt and bios
+> resource contention).
 > 
-> > In file included from drivers/staging/ccg/ccg.c:59:0:
-> > drivers/staging/ccg/../../usb/gadget/f_fs.c: At top level:
-> > drivers/staging/ccg/../../usb/gadget/f_fs.c:40:0: warning: "pr_vdebug"
-> redefined
-> > drivers/staging/ccg/../../usb/gadget/u_serial.c:138:0: note: this is the
-> location of the previous definition
+> This is my attempt to quiet them down and keep it less confusing for the
+> end user.  What I did is print the message for cpu0 and save it for future
+> comparisons.  If future cpus have an identical message as cpu0, then don't
+> print the redundant info.  However, if a future cpu has a different
+> message, happily print that loudly.
 > 
-> This could be fixed by adding a #ifndef guard to f_fs.c and u_serial.c.
-> It's a little awkward to combine independent source files this way.
+> Before the change, you would see something like:
 > 
-@Randy: Thanks for finding it.
+>     ..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
+>     CPU0: Intel(R) Core(TM)2 Quad CPU    Q9550  @ 2.83GHz stepping 0a
+>     Performance Events: PEBS fmt0+, Core2 events, Intel PMU driver.
+>     ... version:                2
+>     ... bit width:              40
+>     ... generic registers:      2
+>     ... value mask:             000000ffffffffff
+>     ... max period:             000000007fffffff
+>     ... fixed-purpose events:   3
+>     ... event mask:             0000000700000003
+>     NMI watchdog enabled, takes one hw-pmu counter.
+>     Booting Node   0, Processors  #1
+>     NMI watchdog enabled, takes one hw-pmu counter.
+>      #2
+>     NMI watchdog enabled, takes one hw-pmu counter.
+>      #3 Ok.
+>     NMI watchdog enabled, takes one hw-pmu counter.
+>     Brought up 4 CPUs
+>     Total of 4 processors activated (22607.24 BogoMIPS).
 
-@Alan: Thanks for suggesting a solution.
+the problem really was that it didn't print which CPU it 
+referred to - it just repeated the same message over and over 
+again.
 
-The patches are on their way.
+If it said:
 
-Andrzej
+     NMI watchdog enabled on CPU#0, takes one hw-pmu counter.
 
+it would be far less confusing.
 
+This:
+
+> After the change, it is simplified to:
+> 
+>     ..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
+>     CPU0: Intel(R) Core(TM)2 Quad CPU    Q9550  @ 2.83GHz stepping 0a
+>     Performance Events: PEBS fmt0+, Core2 events, Intel PMU driver.
+>     ... version:                2
+>     ... bit width:              40
+>     ... generic registers:      2
+>     ... value mask:             000000ffffffffff
+>     ... max period:             000000007fffffff
+>     ... fixed-purpose events:   3
+>     ... event mask:             0000000700000003
+>     NMI watchdog enabled, takes one hw-pmu counter.
+>     Booting Node   0, Processors  #1 #2 #3 Ok.
+>     Brought up 4 CPUs
+
+Is fine too but should be clarified to something like:
+
+     NMI watchdog enabled on all CPUs, permanently consumes one hw-PMU counter
+
+(Please note the capitalization of 'PMU' as well.)
+
+Thanks,
+
+	Ingo
