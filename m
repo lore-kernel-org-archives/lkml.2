@@ -1,54 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753336Ab2FKHkI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 03:40:08 -0400
-Received: from smtp3.mundo-r.com ([212.51.32.191]:53579 "EHLO
-	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750795Ab2FKHkH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 03:40:07 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av4EAIKg1U9bdWOb/2dsb2JhbABFhVevAIEHghgBAQUjVhALGAICJgICVwaIIqU9kX6BI4oEhFeBEgOacYNQhliCYg
-X-IronPort-AV: E=Sophos;i="4.77,387,1336341600"; 
-   d="scan'208";a="1001645199"
-Message-ID: <1339400404.3963.7.camel@fourier.local.igalia.com>
-Subject: Re: [PATCH] Staging: ipack: remove pr_fmt definition.
-From: Samuel Iglesias =?ISO-8859-1?Q?Gons=E1lvez?= 
-	<siglesias@igalia.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Date: Mon, 11 Jun 2012 09:40:04 +0200
-In-Reply-To: <20120611072736.GI13539@mwanda>
-References: <1339397797-17399-1-git-send-email-siglesias@igalia.com>
-	 <20120611072500.GT4400@mwanda> <20120611072736.GI13539@mwanda>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2-1+b1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754007Ab2FKHnM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 03:43:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26471 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751916Ab2FKHnK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 03:43:10 -0400
+Date: Mon, 11 Jun 2012 09:44:34 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: [Fw: Re: [PATCH] x86, acpi/irq: Minor readability cleanup of
+ gsi_to_irq()]
+Message-ID: <20120611074434.GA3383@dhcp-26-207.brq.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-06-11 at 10:27 +0300, Dan Carpenter wrote:
-> On Mon, Jun 11, 2012 at 10:25:00AM +0300, Dan Carpenter wrote:
-> > On Mon, Jun 11, 2012 at 08:56:36AM +0200, Samuel Iglesias Gonsalvez wrote:
-> > > As there is no pr_* function used here, pr_fmt is not needed.
-> > > 
-> > 
-> > Nah.  What about if we decide to add some?  Also there are actually
-> > a couple pr_err() calls in there already.
-> 
-> Oops.  Sorry my tree is old.  We removed the two calls to pr_err().
+Hi Ingo,
 
-Same mistake here. In greg's staging-next the pr_err calls are not
-present so the patch is totally valid but in linus branch they are there
-(this is the reason of my error).
+This patch probably get lost.
+Should I repost?
 
-So, this patch is valid, unless we want the pr_fmt definition for the
-future. However, I prefer to delete it.
+----- Forwarded message from "Eric W. Biederman" <ebiederm@xmission.com> -----
 
-Cheers,
+Date: Fri, 30 Mar 2012 00:15:05 -0700
+From: "Eric W. Biederman" <ebiederm@xmission.com>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86, acpi/irq: Minor readability cleanup of gsi_to_irq()
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 
-Sam
+Alexander Gordeev <agordeev@redhat.com> writes:
 
+> Init value of 'irq' variable is never used. So do not initialize it.
+
+Reviewed-by: "Eric W. Biederman" <ebiederm@xmission.com>
+
+> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> ---
+
+Looks good to me.    I was going to ask what idiot wrote that silly
+thing but it appears that idiot was me.    I must have rewritten
+the function and forgotten to cleanup that initial assignment to irq.
+
+That change makes it much clearer what is going on thank you.
+
+Eric
+
+>  arch/x86/kernel/acpi/boot.c |   10 ++++------
+>  1 files changed, 4 insertions(+), 6 deletions(-)
+>
+> diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+> index 406ed77..f148557 100644
+> --- a/arch/x86/kernel/acpi/boot.c
+> +++ b/arch/x86/kernel/acpi/boot.c
+> @@ -103,13 +103,11 @@ static u32 isa_irq_to_gsi[NR_IRQS_LEGACY] __read_mostly = {
+>  
+>  static unsigned int gsi_to_irq(unsigned int gsi)
+>  {
+> -	unsigned int irq = gsi + NR_IRQS_LEGACY;
+> -	unsigned int i;
+> +	unsigned int irq;
+>  
+> -	for (i = 0; i < NR_IRQS_LEGACY; i++) {
+> -		if (isa_irq_to_gsi[i] == gsi) {
+> -			return i;
+> -		}
+> +	for (irq = 0; irq < NR_IRQS_LEGACY; irq++) {
+> +		if (isa_irq_to_gsi[irq] == gsi)
+> +			return irq;
+>  	}
+>  
+>  	/* Provide an identity mapping of gsi == irq
+
+----- End forwarded message -----
+
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
