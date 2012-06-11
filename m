@@ -1,89 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753726Ab2FKLNp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 07:13:45 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50228 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751745Ab2FKLNo convert rfc822-to-8bit (ORCPT
+	id S1753789Ab2FKLQm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 07:16:42 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:50949 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751745Ab2FKLQl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 07:13:44 -0400
-Message-ID: <1339413213.30462.11.camel@twins>
-Subject: Re: [Patch][perf] Invoke __perf_event_disable without an IPI
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: prasad@linux.vnet.ibm.com
-Cc: Paul Mackerras <paulus@samba.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Edjunior Barbosa Machado <emachado@linux.vnet.ibm.com>,
-        "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-Date: Mon, 11 Jun 2012 13:13:33 +0200
-In-Reply-To: <20120611060242.GA2538@in.ibm.com>
-References: <20120611060242.GA2538@in.ibm.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Mon, 11 Jun 2012 07:16:41 -0400
+Date: Mon, 11 Jun 2012 19:16:25 +0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Jonghwa Lee <jonghwa3.lee@samsung.com>
+Cc: linux-kernel@vger.kernel.org, Mike Turquette <mturquette@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Hartley Sweeten <hsweeten@visionengravers.com>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Message-ID: <20120611111624.GJ11439@opensource.wolfsonmicro.com>
+References: <1339412480-7558-1-git-send-email-jonghwa3.lee@samsung.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="YPJ8CVbwFUtL7OFW"
+Content-Disposition: inline
+In-Reply-To: <1339412480-7558-1-git-send-email-jonghwa3.lee@samsung.com>
+X-Cookie: You are always busy.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 116.228.53.169
+X-SA-Exim-Mail-From: broonie@opensource.wolfsonmicro.com
+Subject: Re: [PATCH v3] clock: max77686: Add driver for Maxim 77686 32KHz
+ crystal oscillator
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-06-11 at 11:32 +0530, K.Prasad wrote:
 
-> While debugging a warning message on PowerPC while using hardware
-> breakpoints, it was discovered that when perf_event_disable is invoked
-> through hw_breakpoint_handler function with interrupts disabled, a
-> subsequent IPI in the code path would trigger a WARN_ON_ONCE message in
-> smp_call_function_single function.
-> 
-> This patch avoids the use of an IPI to invoke __perf_event_disable when
-> it is safe to do so i.e. when the process associated with the perf-event
-> would run on the current CPU and interrupts are disabled on the system.
-> Since interrupts are always disabled before hw_breakpoint_handler in
-> PowerPC, the warning message will no longer be seen.
-> 
-> Reported-by: Edjunior Barbosa Machado <emachado@linux.vnet.ibm.com>
-> Signed-off-by: K.Prasad <prasad@linux.vnet.ibm.com>
-> ---
->  kernel/events/core.c |   12 ++++++++++++
->  1 files changed, 12 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/events/core.c b/kernel/events/core.c
-> index fd126f8..0e2c1eb 100644
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -1302,6 +1302,7 @@ static int __perf_event_disable(void *info)
->   */
->  void perf_event_disable(struct perf_event *event)
->  {
-> +	int ret;
->  	struct perf_event_context *ctx = event->ctx;
->  	struct task_struct *task = ctx->task;
->  
-> @@ -1314,6 +1315,17 @@ void perf_event_disable(struct perf_event *event)
->  	}
->  
->  retry:
-> +	/*
-> +	 * perf_event_disable may be called when interrupts are disabled.
-> +	 * For e.g. hw_breakpoint_handler exception in PowerPC. Hence using
-> +	 * IPIs to invoke __perf_event_disable is not always suitable. When
-> +	 * possible invoke __perf_event_disable directly.
-> +	 */
-> +	if ((task_cpu(task) == smp_processor_id()) && irqs_disabled()) {
+--YPJ8CVbwFUtL7OFW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Urgh.. 
+On Mon, Jun 11, 2012 at 08:01:20PM +0900, Jonghwa Lee wrote:
 
-So what's the callchain for the ppc->hw_bp->perf that triggers this?
+> v3
+>  - Add mutex to the max77686_clk structure to make atomic execution of enable/disable function.
 
+No, you've not understood the issue.  As I said on my previous review
+these need to be prepare() and unprepare() since enable() and disable()
+execute in atomic context - that means you can't do I2C I/O and you
+can't take mutexes.
 
-> +		ret = __perf_event_disable(event);
-> +		if (!ret)
-> +			return;
-> +	}
->  	if (!task_function_call(task, __perf_event_disable, event))
->  		return;
->  
-> 
+--YPJ8CVbwFUtL7OFW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP1dOBAAoJEBus8iNuMP3dEdUP/26Cv0rjWZz5OdB38elTL4+K
+tNI5DViHif2x1yj5svFUHMJt30XwskklObVOY2ZFjl1vBnL8wB+jt3RtsxOd2YsH
+k3uo6K2FGcSjIg7yBwXJTx+7S08Sf8eERc4C5jNPz9zWosDoEcqSOoXI2K4ZgajO
+3XgC+pnn+WlYqdW/X4HKd8GWfL5lp3VXC/UuhcMHpi+c/7bNbN9TozR04CRia1AX
+K9eJuVqfInIPhlzk5IOVBGqpJwTSGL7UHV6Cm3jxQAPdzfR6mGgjY6YKleJumz8P
+skP7WIopl/fJ4XVBWiY3UJMR4LvJGDdicZPuu11tnLsNCuWmDCfHkZusDWf/xzoW
+Du9F9zM5Axm2ZqkIS6Xm972uAMIeT7aP9pOh3SIznyd4TyI4+oZyOb4vqLX3pYiR
+Lckh8O/Vpp7nKt0qclUPNHm4CTl5yVazjDaO3EO9cYcuhSd5Q9gT/Q9G43r2x0nv
+G67w3jYed0cs0eviEbj8xOViNjUh8c3FU4YU7UMGCn0d8te2z8MrWqDZgGNBWOfz
+RgDx+gD+EGHTq1VY7EuzbD2QtmrHa7/GN+mV+NX2C18o2rEFCZ3J28CZdrFy67jz
+xQ3zE9CTaTuY66yTXn9ECaP/luFbhf5gzTzagUsaoW0b9BiDBSFIF83Tt5eJcHJN
+2JjTuZ9i6q5IhCgduEz2
+=yBLB
+-----END PGP SIGNATURE-----
+
+--YPJ8CVbwFUtL7OFW--
