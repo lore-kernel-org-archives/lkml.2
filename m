@@ -1,129 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754479Ab2FKNdk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 09:33:40 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47427 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751007Ab2FKNdh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 09:33:37 -0400
-Message-ID: <1339421596.4942.10.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH 5/6] mempolicy: fix a memory corruption by refcount
- imbalance in alloc_pages_vma()
-From: Ben Hutchings <ben@decadent.org.uk>
-To: kosaki.motohiro@gmail.com
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@google.com>, Dave Jones <davej@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Christoph Lameter <cl@linux.com>,
-        stable@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Miao Xie <miaox@cn.fujitsu.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Mon, 11 Jun 2012 14:33:16 +0100
-In-Reply-To: <1339406250-10169-6-git-send-email-kosaki.motohiro@gmail.com>
-References: <1339406250-10169-1-git-send-email-kosaki.motohiro@gmail.com>
-	 <1339406250-10169-6-git-send-email-kosaki.motohiro@gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-OODp9vDT+Ck6zlt1wzhi"
-X-Mailer: Evolution 3.2.2-1+b1 
+	id S1754670Ab2FKNdz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 09:33:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3815 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752238Ab2FKNdw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 09:33:52 -0400
+Subject: Re: [PATCH] Add seq_vprintf and use in gfs2 (was Re: GFS2: Cache
+ last hash bucket for glock seq_files)
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: cluster-devel@redhat.com, linux-kernel@vger.kernel.org,
+        Al Viro <viro@ZenIV.linux.org.uk>
+In-Reply-To: <1339413164.6001.2046.camel@edumazet-glaptop>
+References: <1339152726.2752.3.camel@menhir>
+	 <1339230731.6001.159.camel@edumazet-glaptop>
+	 <1339403377.2734.7.camel@menhir>
+	 <1339404517.6001.1767.camel@edumazet-glaptop>
+	 <1339410072.2734.17.camel@menhir>
+	 <1339413164.6001.2046.camel@edumazet-glaptop>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Mon, 11 Jun 2012 14:32:42 +0100
+Message-ID: <1339421562.2734.32.camel@menhir>
 Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---=-OODp9vDT+Ck6zlt1wzhi
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Mon, 2012-06-11 at 13:12 +0200, Eric Dumazet wrote:
+> On Mon, 2012-06-11 at 11:21 +0100, Steven Whitehouse wrote:
+> 
+> > Thats true, but are there any arches with a 64k page size? In any case
+> > I'll follow up with another patch for that rather than try to combine it
+> > with this one...
+> 
+> Some arches have page size from 16K to 1MB in size
+> 
+> sh, frv, hexagon, tile, ia64, mips, microblaze, sparc64, ppc64...
+> 
+> 
+> 
+I can't imagine running GFS2 on many of those, sparc64 and/or ppc64
+maybe, but rather unlikely on the others. Nevertheless, here is a patch
+to ensure that we don't land up allocating too much memory. No
+performance impact on x86_64 since the buffer size hasn't changed in
+that case.
 
-On Mon, 2012-06-11 at 05:17 -0400, kosaki.motohiro@gmail.com wrote:
-> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->=20
-> commit cc9a6c8776 (cpuset: mm: reduce large amounts of memory barrier rel=
-ated
-> damage v3) introduced a memory corruption.
->=20
-> shmem_alloc_page() passes pseudo vma and it has one significant unique
-> combination, vma->vm_ops=3DNULL and (vma->policy->flags & MPOL_F_SHARED).
->=20
-> Now, get_vma_policy() does NOT increase a policy ref when vma->vm_ops=3DN=
-ULL
-> and mpol_cond_put() DOES decrease a policy ref when a policy has MPOL_F_S=
-HARED.
-> Therefore, when alloc_pages_vma() goes 'goto retry_cpuset' path, a policy
-> refcount will be decreased too much and therefore it will make a memory c=
-orruption.
-[...]
-> --- a/mm/mempolicy.c
-> +++ b/mm/mempolicy.c
-> @@ -1544,18 +1544,29 @@ struct mempolicy *get_vma_policy(struct task_stru=
-ct *task,
->  		struct vm_area_struct *vma, unsigned long addr)
->  {
->  	struct mempolicy *pol =3D task->mempolicy;
-> +	int got_ref;
+Hopefully this should be the last bit for this set of patches. Many
+thanks for taking the time to look at this - things should be much
+improved from my initial idea and I think that our QE and support teams
+will be happy with the result,
 
-=3D 0
+Steve.
 
-And this should really be a bool.
 
->  	if (vma) {
->  		if (vma->vm_ops && vma->vm_ops->get_policy) {
->  			struct mempolicy *vpol =3D vma->vm_ops->get_policy(vma,
->  									addr);
-> -			if (vpol)
-> +			if (vpol) {
->  				pol =3D vpol;
-> +				got_ref =3D 1;
-> +			}
->  		} else if (vma->vm_policy)
->  			pol =3D vma->vm_policy;
->  	}
->  	if (!pol)
->  		pol =3D &default_policy;
-> +
-> +	/*
-> +	 * shmem_alloc_page() passes MPOL_F_SHARED policy with vma->vm_ops=3DNU=
-LL.
-> +	 * Thus, we need to take additional ref for avoiding refcount imbalance=
-.
-> +	 */
-> +	if (!got_ref && mpol_needs_cond_ref(pol))
-> +		mpol_get(pol);
-> +
->  	return pol;
->  }
-> =20
-[...]
+>From 0fe2f1e929ecabf834f4af2ffd300fe70700f4b3 Mon Sep 17 00:00:00 2001
+From: Steven Whitehouse <swhiteho@redhat.com>
+Date: Mon, 11 Jun 2012 13:49:47 +0100
+Subject: [PATCH] GFS2: Size seq_file buffer more carefully
 
---=20
-Ben Hutchings
-Computers are not intelligent.	They only think they are.
+This places a limit on the buffer size for archs with larger
+PAGE_SIZE.
 
---=-OODp9vDT+Ck6zlt1wzhi
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
+Reported-by: Eric Dumazet <eric.dumazet@gmail.com>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+diff --git a/fs/gfs2/glock.c b/fs/gfs2/glock.c
+index 4d5d63d..1ed81f4 100644
+--- a/fs/gfs2/glock.c
++++ b/fs/gfs2/glock.c
+@@ -1977,6 +1977,8 @@ static const struct seq_operations gfs2_sbstats_seq_ops = {
+ 	.show  = gfs2_sbstats_seq_show,
+ };
+ 
++#define GFS2_SEQ_GOODSIZE min(PAGE_SIZE << PAGE_ALLOC_COSTLY_ORDER, 65536UL)
++
+ static int gfs2_glocks_open(struct inode *inode, struct file *file)
+ {
+ 	int ret = seq_open_private(file, &gfs2_glock_seq_ops,
+@@ -1985,9 +1987,9 @@ static int gfs2_glocks_open(struct inode *inode, struct file *file)
+ 		struct seq_file *seq = file->private_data;
+ 		struct gfs2_glock_iter *gi = seq->private;
+ 		gi->sdp = inode->i_private;
+-		seq->buf = kmalloc(8*PAGE_SIZE, GFP_KERNEL | __GFP_NOWARN);
++		seq->buf = kmalloc(GFS2_SEQ_GOODSIZE, GFP_KERNEL | __GFP_NOWARN);
+ 		if (seq->buf)
+-			seq->size = 8*PAGE_SIZE;
++			seq->size = GFS2_SEQ_GOODSIZE;
+ 	}
+ 	return ret;
+ }
+@@ -2000,9 +2002,9 @@ static int gfs2_glstats_open(struct inode *inode, struct file *file)
+ 		struct seq_file *seq = file->private_data;
+ 		struct gfs2_glock_iter *gi = seq->private;
+ 		gi->sdp = inode->i_private;
+-		seq->buf = kmalloc(8*PAGE_SIZE, GFP_KERNEL | __GFP_NOWARN);
++		seq->buf = kmalloc(GFS2_SEQ_GOODSIZE, GFP_KERNEL | __GFP_NOWARN);
+ 		if (seq->buf)
+-			seq->size = 8*PAGE_SIZE;
++			seq->size = GFS2_SEQ_GOODSIZE;
+ 	}
+ 	return ret;
+ }
+-- 
+1.7.4
 
-iQIVAwUAT9XznOe/yOyVhhEJAQol/A//SF8qBKptkmR0O84ZNb9/Lp5tD94c2u4o
-pcpOXG4oBlHXmKF+C00A3GwSvCIw5tRVGO5E2lbAisxF2J1sZwyqoJ9+6Jy8XwWa
-rP3EijMfwisjzpRVSNCXgDmkwhisrk1g+hOeUeLgsYGUW+I3p3QEUnJrdydEkF1s
-Fg4t9QGWh5kOyPk7Zhqhx70TD+xr/yu1iTmKohNbPcHZfsZgCyGKhy6LKD6aXGGP
-IJL86r/Ux7bJ8TDQuDW0OMwyoDrvsnYuG7WK/bl8VE6WOUJN6tLri6NkO9hnCjR+
-nP8rXizkMLUrLgcEtKH9P2eFjIPZX8qthbtxooCWSXfheLoJleo9gk2mRAU9ca7g
-Jk68GfKsfMWjd3XfwyesY2miHCpcyDQd7ClpXuMD4nQL+NciwiSfk/xIqbinmsSl
-rbdzAEP7W5rUwelyHwB2kSxTcy0MNAQRSqS/X7C7CK/ADR1Cl5CA8p9+2BSJHwOS
-6bwFy7g1n5gRBd7GFkPO2bMW8B4GFign1RvxnsR3JfYIJJVYxde7ieajjQ8WiXs4
-uzAgwgXcD1ne7i8CHRhcQLlfFFEQNitbPgZ5hPf37PUfJh2ZPTSzTdvdC2seXaxp
-ZbrNw34JnMWobwJV9XxD6Lcc127fqQzIctEuEcny/xloOim8qjDodDqxz3VgCkt+
-Pcy5hx3ia78=
-=DPVT
------END PGP SIGNATURE-----
 
---=-OODp9vDT+Ck6zlt1wzhi--
+
+
