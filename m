@@ -1,58 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754606Ab2FKOFy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 10:05:54 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:36019 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751828Ab2FKOFx (ORCPT
+	id S1754745Ab2FKOHt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 10:07:49 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:36636 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754452Ab2FKOHs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 10:05:53 -0400
-Message-ID: <4FD5FB28.4050003@panasas.com>
-Date: Mon, 11 Jun 2012 17:05:28 +0300
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
+	Mon, 11 Jun 2012 10:07:48 -0400
+Message-ID: <4FD5FBAF.1060002@linaro.org>
+Date: Mon, 11 Jun 2012 15:07:43 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: Jeff Layton <jlayton@redhat.com>
-CC: bfields <bfields@fieldses.org>, Steve Dickson <steved@redhat.com>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Joerg Platte <jplatte@naasa.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Hans de Bruin <jmdebruin@xmsnet.nl>
-Subject: Re: Kernel 3.4.X NFS server regression
-References: <4FD47D4E.9070307@naasa.net> <1339340441.4751.1.camel@lade.trondhjem.org> <20120611121634.GB7654@fieldses.org> <20120611083932.24e27e39@corrin.poochiereds.net> <4FD5F35A.3000903@panasas.com> <20120611095132.045a8d09@corrin.poochiereds.net>
-In-Reply-To: <20120611095132.045a8d09@corrin.poochiereds.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: linux-arm-kernel@lists.infradead.org, arnd@arndb.de,
+        linus.walleij@stericsson.com, grant.likely@secretlab.ca,
+        cjb@laptop.org, sameo@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 09/22] regulator: Change db8500-prcmu match names to reflect
+ Device Tree
+References: <1338353260-10097-1-git-send-email-lee.jones@linaro.org> <1338353260-10097-10-git-send-email-lee.jones@linaro.org> <4FCDDE58.5010501@linaro.org> <20120605102900.GP23408@opensource.wolfsonmicro.com> <4FCDE0A4.8070107@linaro.org> <20120605104201.GR23408@opensource.wolfsonmicro.com> <4FD5D49C.6070106@linaro.org> <20120611120820.GN11439@opensource.wolfsonmicro.com> <4FD5F3D2.2050500@linaro.org>
+In-Reply-To: <4FD5F3D2.2050500@linaro.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2012 04:51 PM, Jeff Layton wrote:
+>> Well, I guess I'll end up dulplicating the commits :/
+>
+> Duplicating them?
 
-> 
-> That was considered here, but the problem with the usermode helper is
-> that you can't pass anything back to the kernel but a simple status
-> code (and that's assuming that you wait for it to exit). In the near
-> future, we'll need to pass back more info to the kernel for this, so
-> the usermode helper callout wasn't suitable.
-> 
+Ah, you mean that you've already sent them to -next?
 
+That's no problem though. Won't Git just sling them out at pull-time?
 
-I have answered that in my mail. Repeated here again. Well you made 
-a simple mistake. Because it is *easy* to pass back any number and
-size of information from user-mode.
-
-You just setup a sysfs entry points where the answers are written
-back to. It's an easy trick to setup a thread safe, way with a
-cookie but 90% of the time you don't have to. Say you set up
-a structure of per-client (identified uniquely) then user mode
-answers back per client, concurrency will not do any harm, since
-you answer to the same question the same answer. ans so on. Each
-problem it's own.
-
-If you want we can talk about this, it would be easy for me to setup
-a toll free conference number we can all use.
-
-Cheers
-Boaz
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+M: +44 77 88 633 515
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
