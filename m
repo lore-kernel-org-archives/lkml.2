@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754692Ab2FKNVa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 09:21:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11016 "EHLO mx1.redhat.com"
+	id S1754720Ab2FKNVh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 09:21:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49206 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750825Ab2FKNVZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 09:21:25 -0400
+	id S1750825Ab2FKNVe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 09:21:34 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
@@ -14,387 +14,190 @@ Cc: eranian@google.com, gorcunov@openvz.org, tzanussi@gmail.com,
         linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
         drepper@gmail.com, asharma@fb.com, benjamin.redelings@nescent.org,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 09/19] perf, tool: Factor DSO symtab types to generic binary types
-Date: Mon, 11 Jun 2012 15:20:04 +0200
-Message-Id: <1339420814-7379-10-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 13/19] perf, tool: Add interface to arch registers sets
+Date: Mon, 11 Jun 2012 15:20:08 +0200
+Message-Id: <1339420814-7379-14-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1339420814-7379-1-git-send-email-jolsa@redhat.com>
 References: <1339420814-7379-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding interface to access DSOs so it could be used
-from another place.
+Adding header files to access unified API for arch registers.
+  util/perf_regs.h - global perf_reg declarations
+  arch/x86/include/perf_regs.h - x86 arch specific
 
-New DSO binary type is added - making current SYMTAB__*
-types more general:
-   DSO_BINARY_TYPE__* = SYMTAB__*
-
-Folowing function is added to return path based on the specified
-binary type:
-   dso__binary_type_file
+Adding perf_reg_name function to obtain register name based
+on the API ID value, and PERF_REGS_MASK macro with mask
+definition of all current arch registers (will be used in
+unwind patches).
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/builtin-top.c   |    2 +-
- tools/perf/util/annotate.c |    2 +-
- tools/perf/util/symbol.c   |  181 +++++++++++++++++++++++++++-----------------
- tools/perf/util/symbol.h   |   32 ++++----
- 4 files changed, 129 insertions(+), 88 deletions(-)
+ tools/perf/Makefile                     |   13 +++++-
+ tools/perf/arch/x86/include/perf_regs.h |   80 +++++++++++++++++++++++++++++++
+ tools/perf/util/perf_regs.h             |   14 +++++
+ 3 files changed, 106 insertions(+), 1 deletions(-)
+ create mode 100644 tools/perf/arch/x86/include/perf_regs.h
+ create mode 100644 tools/perf/util/perf_regs.h
 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 79cabe4..246081a 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -125,7 +125,7 @@ static int perf_top__parse_source(struct perf_top *top, struct hist_entry *he)
- 	/*
- 	 * We can't annotate with just /proc/kallsyms
- 	 */
--	if (map->dso->symtab_type == SYMTAB__KALLSYMS) {
-+	if (map->dso->symtab_type == DSO_BINARY_TYPE__KALLSYMS) {
- 		pr_err("Can't annotate %s: No vmlinux file was found in the "
- 		       "path\n", sym->name);
- 		sleep(1);
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index 8069dfb..7d3641f 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -777,7 +777,7 @@ fallback:
- 		free_filename = false;
- 	}
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index e48b969..f412fb1 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -50,13 +50,15 @@ ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
+ 				  -e s/s390x/s390/ -e s/parisc64/parisc/ \
+ 				  -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
+ 				  -e s/sh[234].*/sh/ )
++NO_PERF_REGS := 1
  
--	if (dso->symtab_type == SYMTAB__KALLSYMS) {
-+	if (dso->symtab_type == DSO_BINARY_TYPE__KALLSYMS) {
- 		char bf[BUILD_ID_SIZE * 2 + 16] = " with build id ";
- 		char *build_id_msg = NULL;
+ CC = $(CROSS_COMPILE)gcc
+ AR = $(CROSS_COMPILE)ar
  
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 3e2e5ea..b6c456e 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -48,6 +48,22 @@ struct symbol_conf symbol_conf = {
- 	.symfs            = "",
- };
+ # Additional ARCH settings for x86
+ ifeq ($(ARCH),i386)
+-        ARCH := x86
++	ARCH := x86
++	NO_PERF_REGS := 0
+ endif
+ ifeq ($(ARCH),x86_64)
+ 	ARCH := x86
+@@ -69,6 +71,7 @@ ifeq ($(ARCH),x86_64)
+ 		ARCH_CFLAGS := -DARCH_X86_64
+ 		ARCH_INCLUDE = ../../arch/x86/lib/memcpy_64.S ../../arch/x86/lib/memset_64.S
+ 	endif
++	NO_PERF_REGS := 0
+ endif
  
-+static enum dso_binary_type binary_type_symtab[] = {
-+	DSO_BINARY_TYPE__KALLSYMS,
-+	DSO_BINARY_TYPE__GUEST_KALLSYMS,
-+	DSO_BINARY_TYPE__JAVA_JIT,
-+	DSO_BINARY_TYPE__BUILD_ID_CACHE,
-+	DSO_BINARY_TYPE__FEDORA_DEBUGINFO,
-+	DSO_BINARY_TYPE__UBUNTU_DEBUGINFO,
-+	DSO_BINARY_TYPE__BUILDID_DEBUGINFO,
-+	DSO_BINARY_TYPE__SYSTEM_PATH_DSO,
-+	DSO_BINARY_TYPE__GUEST_KMODULE,
-+	DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE,
-+	DSO_BINARY_TYPE__NOT_FOUND,
-+};
+ # Treat warnings as errors unless directed not to
+@@ -320,6 +323,7 @@ LIB_H += util/cgroup.h
+ LIB_H += $(TRACE_EVENT_DIR)event-parse.h
+ LIB_H += util/target.h
+ LIB_H += util/vdso.h
++LIB_H += util/perf_regs.h
+ 
+ LIB_OBJS += $(OUTPUT)util/abspath.o
+ LIB_OBJS += $(OUTPUT)util/alias.o
+@@ -665,6 +669,13 @@ else
+ 	endif
+ endif
+ 
++ifeq ($(NO_PERF_REGS),0)
++	ifeq ($(ARCH),x86)
++		LIB_H += arch/x86/include/perf_regs.h
++	endif
++else
++	BASIC_CFLAGS += -DNO_PERF_REGS
++endif
+ 
+ ifdef NO_STRLCPY
+ 	BASIC_CFLAGS += -DNO_STRLCPY
+diff --git a/tools/perf/arch/x86/include/perf_regs.h b/tools/perf/arch/x86/include/perf_regs.h
+new file mode 100644
+index 0000000..ee5aff6
+--- /dev/null
++++ b/tools/perf/arch/x86/include/perf_regs.h
+@@ -0,0 +1,80 @@
++#ifndef ARCH_PERF_REGS_H
++#define ARCH_PERF_REGS_H
 +
-+#define DSO_BINARY_TYPE__SYMTAB_CNT sizeof(binary_type_symtab)
++#include <stdlib.h>
++#include "../../util/types.h"
++#include "../../../../../arch/x86/include/asm/perf_regs.h"
 +
- int dso__name_len(const struct dso *dso)
- {
- 	if (!dso)
-@@ -318,7 +334,7 @@ struct dso *dso__new(const char *name)
- 		dso__set_short_name(dso, dso->name);
- 		for (i = 0; i < MAP__NR_TYPES; ++i)
- 			dso->symbols[i] = dso->symbol_names[i] = RB_ROOT;
--		dso->symtab_type = SYMTAB__NOT_FOUND;
-+		dso->symtab_type = DSO_BINARY_TYPE__NOT_FOUND;
- 		dso->loaded = 0;
- 		dso->sorted_by_name = 0;
- 		dso->has_build_id = 0;
-@@ -806,9 +822,9 @@ int dso__load_kallsyms(struct dso *dso, const char *filename,
- 	symbols__fixup_end(&dso->symbols[map->type]);
- 
- 	if (dso->kernel == DSO_TYPE_GUEST_KERNEL)
--		dso->symtab_type = SYMTAB__GUEST_KALLSYMS;
-+		dso->symtab_type = DSO_BINARY_TYPE__GUEST_KALLSYMS;
- 	else
--		dso->symtab_type = SYMTAB__KALLSYMS;
-+		dso->symtab_type = DSO_BINARY_TYPE__KALLSYMS;
- 
- 	return dso__split_kallsyms(dso, map, filter);
- }
-@@ -1593,31 +1609,96 @@ out:
- char dso__symtab_origin(const struct dso *dso)
- {
- 	static const char origin[] = {
--		[SYMTAB__KALLSYMS]	      = 'k',
--		[SYMTAB__JAVA_JIT]	      = 'j',
--		[SYMTAB__BUILD_ID_CACHE]      = 'B',
--		[SYMTAB__FEDORA_DEBUGINFO]    = 'f',
--		[SYMTAB__UBUNTU_DEBUGINFO]    = 'u',
--		[SYMTAB__BUILDID_DEBUGINFO]   = 'b',
--		[SYMTAB__SYSTEM_PATH_DSO]     = 'd',
--		[SYMTAB__SYSTEM_PATH_KMODULE] = 'K',
--		[SYMTAB__GUEST_KALLSYMS]      =  'g',
--		[SYMTAB__GUEST_KMODULE]	      =  'G',
-+		[DSO_BINARY_TYPE__KALLSYMS]		= 'k',
-+		[DSO_BINARY_TYPE__JAVA_JIT]		= 'j',
-+		[DSO_BINARY_TYPE__BUILD_ID_CACHE]	= 'B',
-+		[DSO_BINARY_TYPE__FEDORA_DEBUGINFO]	= 'f',
-+		[DSO_BINARY_TYPE__UBUNTU_DEBUGINFO]	= 'u',
-+		[DSO_BINARY_TYPE__BUILDID_DEBUGINFO]	= 'b',
-+		[DSO_BINARY_TYPE__SYSTEM_PATH_DSO]	= 'd',
-+		[DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE]	= 'K',
-+		[DSO_BINARY_TYPE__GUEST_KALLSYMS]	= 'g',
-+		[DSO_BINARY_TYPE__GUEST_KMODULE]	= 'G',
- 	};
- 
--	if (dso == NULL || dso->symtab_type == SYMTAB__NOT_FOUND)
-+	if (dso == NULL || dso->symtab_type == DSO_BINARY_TYPE__NOT_FOUND)
- 		return '!';
- 	return origin[dso->symtab_type];
- }
- 
-+int dso__binary_type_file(struct dso *dso, enum dso_binary_type type,
-+			  char *root_dir, char *file, size_t size)
++#ifndef ARCH_X86_64
++#define PERF_REGS_MASK ((1ULL << PERF_REG_X86_32_MAX) - 1)
++#else
++#define REG_NOSUPPORT ((1ULL << PERF_REG_X86_DS) | \
++		       (1ULL << PERF_REG_X86_ES) | \
++		       (1ULL << PERF_REG_X86_FS) | \
++		       (1ULL << PERF_REG_X86_GS))
++#define PERF_REGS_MASK (((1ULL << PERF_REG_X86_64_MAX) - 1) & ~REG_NOSUPPORT)
++#endif
++#define PERF_REG_IP PERF_REG_X86_IP
++#define PERF_REG_SP PERF_REG_X86_SP
++
++static inline const char *perf_reg_name(int id)
 +{
-+	char build_id_hex[BUILD_ID_SIZE * 2 + 1];
-+	int ret = 0;
-+
-+	switch (type) {
-+	case DSO_BINARY_TYPE__BUILD_ID_CACHE:
-+		/* skip the locally configured cache if a symfs is given */
-+		if (symbol_conf.symfs[0] ||
-+		    (dso__build_id_filename(dso, file, size) == NULL))
-+			ret = -1;
-+		break;
-+
-+	case DSO_BINARY_TYPE__FEDORA_DEBUGINFO:
-+		snprintf(file, size, "%s/usr/lib/debug%s.debug",
-+			 symbol_conf.symfs, dso->long_name);
-+		break;
-+
-+	case DSO_BINARY_TYPE__UBUNTU_DEBUGINFO:
-+		snprintf(file, size, "%s/usr/lib/debug%s",
-+			 symbol_conf.symfs, dso->long_name);
-+		break;
-+
-+	case DSO_BINARY_TYPE__BUILDID_DEBUGINFO:
-+		if (!dso->has_build_id) {
-+			ret = -1;
-+			break;
-+		}
-+
-+		build_id__sprintf(dso->build_id,
-+				  sizeof(dso->build_id),
-+				  build_id_hex);
-+		snprintf(file, size,
-+			 "%s/usr/lib/debug/.build-id/%.2s/%s.debug",
-+			 symbol_conf.symfs, build_id_hex, build_id_hex + 2);
-+		break;
-+
-+	case DSO_BINARY_TYPE__SYSTEM_PATH_DSO:
-+		snprintf(file, size, "%s%s",
-+			 symbol_conf.symfs, dso->long_name);
-+		break;
-+
-+	case DSO_BINARY_TYPE__GUEST_KMODULE:
-+		snprintf(file, size, "%s%s%s", symbol_conf.symfs,
-+			 root_dir, dso->long_name);
-+		break;
-+
-+	case DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE:
-+		snprintf(file, size, "%s%s", symbol_conf.symfs,
-+			 dso->long_name);
-+		break;
-+
++	switch (id) {
++	case PERF_REG_X86_AX:
++		return "AX";
++	case PERF_REG_X86_BX:
++		return "BX";
++	case PERF_REG_X86_CX:
++		return "CX";
++	case PERF_REG_X86_DX:
++		return "DX";
++	case PERF_REG_X86_SI:
++		return "SI";
++	case PERF_REG_X86_DI:
++		return "DI";
++	case PERF_REG_X86_BP:
++		return "BP";
++	case PERF_REG_X86_SP:
++		return "SP";
++	case PERF_REG_X86_IP:
++		return "IP";
++	case PERF_REG_X86_FLAGS:
++		return "FLAGS";
++	case PERF_REG_X86_CS:
++		return "CS";
++	case PERF_REG_X86_DS:
++		return "DS";
++	case PERF_REG_X86_ES:
++		return "ES";
++	case PERF_REG_X86_FS:
++		return "FS";
++	case PERF_REG_X86_GS:
++		return "GS";
++#ifdef ARCH_X86_64
++	case PERF_REG_X86_R8:
++		return "R8";
++	case PERF_REG_X86_R9:
++		return "R9";
++	case PERF_REG_X86_R10:
++		return "R10";
++	case PERF_REG_X86_R11:
++		return "R11";
++	case PERF_REG_X86_R12:
++		return "R12";
++	case PERF_REG_X86_R13:
++		return "R13";
++	case PERF_REG_X86_R14:
++		return "R14";
++	case PERF_REG_X86_R15:
++		return "R15";
++	case PERF_REG_X86_SS:
++		return "SS";
++#endif /* ARCH_X86_64 */
 +	default:
-+	case DSO_BINARY_TYPE__KALLSYMS:
-+	case DSO_BINARY_TYPE__GUEST_KALLSYMS:
-+	case DSO_BINARY_TYPE__JAVA_JIT:
-+	case DSO_BINARY_TYPE__NOT_FOUND:
-+		ret = -1;
-+		break;
++		return NULL;
 +	}
 +
-+	return ret;
++	return NULL;
 +}
 +
- int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
- {
--	int size = PATH_MAX;
- 	char *name;
- 	int ret = -1;
- 	int fd;
-+	u_int i;
- 	struct machine *machine;
--	const char *root_dir;
-+	char *root_dir = (char *) "";
- 	int want_symtab;
- 
- 	dso__set_loaded(dso, map->type);
-@@ -1632,7 +1713,7 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
- 	else
- 		machine = NULL;
- 
--	name = malloc(size);
-+	name = malloc(PATH_MAX);
- 	if (!name)
- 		return -1;
- 
-@@ -1651,69 +1732,27 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
- 		}
- 
- 		ret = dso__load_perf_map(dso, map, filter);
--		dso->symtab_type = ret > 0 ? SYMTAB__JAVA_JIT :
--					      SYMTAB__NOT_FOUND;
-+		dso->symtab_type = ret > 0 ? DSO_BINARY_TYPE__JAVA_JIT :
-+					     DSO_BINARY_TYPE__NOT_FOUND;
- 		return ret;
- 	}
- 
-+	if (machine)
-+		root_dir = machine->root_dir;
++#endif /* ARCH_PERF_REGS_H */
+diff --git a/tools/perf/util/perf_regs.h b/tools/perf/util/perf_regs.h
+new file mode 100644
+index 0000000..3efb79a
+--- /dev/null
++++ b/tools/perf/util/perf_regs.h
+@@ -0,0 +1,14 @@
++#ifndef __PERF_REGS_H
++#define __PERF_REGS_H
 +
- 	/* Iterate over candidate debug images.
- 	 * On the first pass, only load images if they have a full symtab.
- 	 * Failing that, do a second pass where we accept .dynsym also
- 	 */
- 	want_symtab = 1;
- restart:
--	for (dso->symtab_type = SYMTAB__BUILD_ID_CACHE;
--	     dso->symtab_type != SYMTAB__NOT_FOUND;
--	     dso->symtab_type++) {
--		switch (dso->symtab_type) {
--		case SYMTAB__BUILD_ID_CACHE:
--			/* skip the locally configured cache if a symfs is given */
--			if (symbol_conf.symfs[0] ||
--			    (dso__build_id_filename(dso, name, size) == NULL)) {
--				continue;
--			}
--			break;
--		case SYMTAB__FEDORA_DEBUGINFO:
--			snprintf(name, size, "%s/usr/lib/debug%s.debug",
--				 symbol_conf.symfs, dso->long_name);
--			break;
--		case SYMTAB__UBUNTU_DEBUGINFO:
--			snprintf(name, size, "%s/usr/lib/debug%s",
--				 symbol_conf.symfs, dso->long_name);
--			break;
--		case SYMTAB__BUILDID_DEBUGINFO: {
--			char build_id_hex[BUILD_ID_SIZE * 2 + 1];
-+	for (i = 0; i < DSO_BINARY_TYPE__SYMTAB_CNT; i++) {
- 
--			if (!dso->has_build_id)
--				continue;
-+		dso->symtab_type = binary_type_symtab[i];
- 
--			build_id__sprintf(dso->build_id,
--					  sizeof(dso->build_id),
--					  build_id_hex);
--			snprintf(name, size,
--				 "%s/usr/lib/debug/.build-id/%.2s/%s.debug",
--				 symbol_conf.symfs, build_id_hex, build_id_hex + 2);
--			}
--			break;
--		case SYMTAB__SYSTEM_PATH_DSO:
--			snprintf(name, size, "%s%s",
--			     symbol_conf.symfs, dso->long_name);
--			break;
--		case SYMTAB__GUEST_KMODULE:
--			if (map->groups && machine)
--				root_dir = machine->root_dir;
--			else
--				root_dir = "";
--			snprintf(name, size, "%s%s%s", symbol_conf.symfs,
--				 root_dir, dso->long_name);
--			break;
--
--		case SYMTAB__SYSTEM_PATH_KMODULE:
--			snprintf(name, size, "%s%s", symbol_conf.symfs,
--				 dso->long_name);
--			break;
--		default:;
--		}
-+		if (dso__binary_type_file(dso, dso->symtab_type,
-+					  root_dir, name, PATH_MAX))
-+			continue;
- 
- 		/* Name is now the name of the next image to try */
- 		fd = open(name, O_RDONLY);
-@@ -1930,9 +1969,9 @@ struct map *machine__new_module(struct machine *machine, u64 start,
- 		return NULL;
- 
- 	if (machine__is_host(machine))
--		dso->symtab_type = SYMTAB__SYSTEM_PATH_KMODULE;
-+		dso->symtab_type = DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE;
- 	else
--		dso->symtab_type = SYMTAB__GUEST_KMODULE;
-+		dso->symtab_type = DSO_BINARY_TYPE__GUEST_KMODULE;
- 	map_groups__insert(&machine->kmaps, map);
- 	return map;
- }
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index af0752b..0dc30f9 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -155,6 +155,20 @@ struct addr_location {
- 	s32	      cpu;
- };
- 
-+enum dso_binary_type {
-+	DSO_BINARY_TYPE__KALLSYMS = 0,
-+	DSO_BINARY_TYPE__GUEST_KALLSYMS,
-+	DSO_BINARY_TYPE__JAVA_JIT,
-+	DSO_BINARY_TYPE__BUILD_ID_CACHE,
-+	DSO_BINARY_TYPE__FEDORA_DEBUGINFO,
-+	DSO_BINARY_TYPE__UBUNTU_DEBUGINFO,
-+	DSO_BINARY_TYPE__BUILDID_DEBUGINFO,
-+	DSO_BINARY_TYPE__SYSTEM_PATH_DSO,
-+	DSO_BINARY_TYPE__GUEST_KMODULE,
-+	DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE,
-+	DSO_BINARY_TYPE__NOT_FOUND,
-+};
++#ifndef NO_PERF_REGS_DEFS
++#include <perf_regs.h>
++#else
++#define PERF_REGS_MASK	0
 +
- enum dso_kernel_type {
- 	DSO_TYPE_USER = 0,
- 	DSO_TYPE_KERNEL,
-@@ -173,13 +187,13 @@ struct dso {
- 	struct rb_root	 symbol_names[MAP__NR_TYPES];
- 	enum dso_kernel_type	kernel;
- 	enum dso_swap_type	needs_swap;
-+	enum dso_binary_type	symtab_type;
- 	u8		 adjust_symbols:1;
- 	u8		 has_build_id:1;
- 	u8		 hit:1;
- 	u8		 annotate_warned:1;
- 	u8		 sname_alloc:1;
- 	u8		 lname_alloc:1;
--	unsigned char	 symtab_type;
- 	u8		 sorted_by_name;
- 	u8		 loaded;
- 	u8		 build_id[BUILD_ID_SIZE];
-@@ -253,20 +267,6 @@ size_t dso__fprintf_symbols_by_name(struct dso *dso,
- 				    enum map_type type, FILE *fp);
- size_t dso__fprintf(struct dso *dso, enum map_type type, FILE *fp);
- 
--enum symtab_type {
--	SYMTAB__KALLSYMS = 0,
--	SYMTAB__GUEST_KALLSYMS,
--	SYMTAB__JAVA_JIT,
--	SYMTAB__BUILD_ID_CACHE,
--	SYMTAB__FEDORA_DEBUGINFO,
--	SYMTAB__UBUNTU_DEBUGINFO,
--	SYMTAB__BUILDID_DEBUGINFO,
--	SYMTAB__SYSTEM_PATH_DSO,
--	SYMTAB__GUEST_KMODULE,
--	SYMTAB__SYSTEM_PATH_KMODULE,
--	SYMTAB__NOT_FOUND,
--};
--
- char dso__symtab_origin(const struct dso *dso);
- void dso__set_long_name(struct dso *dso, char *name);
- void dso__set_build_id(struct dso *dso, void *build_id);
-@@ -303,4 +303,6 @@ bool symbol_type__is_a(char symbol_type, enum map_type map_type);
- 
- size_t machine__fprintf_vmlinux_path(struct machine *machine, FILE *fp);
- 
-+int dso__binary_type_file(struct dso *dso, enum dso_binary_type type,
-+			  char *root_dir, char *file, size_t size);
- #endif /* __PERF_SYMBOL */
++static inline const char *perf_reg_name(int id __used)
++{
++	return NULL;
++}
++#endif /* NO_PERF_REGS_DEFS */
++#endif /* __PERF_REGS_H */
 -- 
 1.7.7.6
 
