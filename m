@@ -1,96 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753396Ab2FKGC7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 02:02:59 -0400
-Received: from e24smtp04.br.ibm.com ([32.104.18.25]:53927 "EHLO
-	e24smtp04.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750711Ab2FKGC5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 02:02:57 -0400
-Date: Mon, 11 Jun 2012 11:32:42 +0530
-From: "K.Prasad" <prasad@linux.vnet.ibm.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Edjunior Barbosa Machado <emachado@linux.vnet.ibm.com>,
-        "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-Subject: [Patch][perf] Invoke __perf_event_disable without an IPI
-Message-ID: <20120611060242.GA2538@in.ibm.com>
-Reply-To: prasad@linux.vnet.ibm.com
+	id S1753456Ab2FKGJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 02:09:57 -0400
+Received: from mga09.intel.com ([134.134.136.24]:22635 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751144Ab2FKGJ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 02:09:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="156003118"
+Message-ID: <4FD58BB1.7060806@linux.intel.com>
+Date: Mon, 11 Jun 2012 14:09:53 +0800
+From: Chen Gong <gong.chen@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120604 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12061106-8936-0000-0000-0000070886D0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
+        Borislav Petkov <borislav.petkov@amd.com>, x86@kernel.org,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [patch 0/5] x86: mce: Bugfixes, cleanups and a new CMCI poll
+ version
+References: <20120606214941.104735929@linutronix.de> <4FD07D8F.5020303@linux.intel.com> <alpine.LFD.2.02.1206080940360.3086@ionos>
+In-Reply-To: <alpine.LFD.2.02.1206080940360.3086@ionos>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
-	Please review the following patch, the details of which are
-described in the commit message below.
+I don't know why my reply format is changed in the previous mail, I have
+to resend it again, sorry.
 
-Basic perf commands (and memory tracing event '-e mem') were tested
-to work fine with this patch and can be applied over commit
-b1dab2f0409c478fd2d9e227c2c018524eca9603.
+于 2012/6/8 15:49, Thomas Gleixner 写道:
+> On Thu, 7 Jun 2012, Chen Gong wrote:
+>>
+>> But during the CPU online/offline test I found an issue. After *STORM*
+>> mode is entered, it can't come back from *STORM* mode to normal
+>> interrupt mode. At least there exists such an issue: when *STORM* is
+>> entered, in the meanwhile, one CPU is offline during this period,
+>> which means *cmci_storm_on_cpus* can't decrease to 0 because there
+>> is one bit stuck on this offlined CPU. So we should detect such
+>> situation and decrease on *cmci_storm_on_cpus* at proper time.
+>
+> Yes, we need to reset the storm state as well I think.
+>
+>> BTW, even I online the *CPU* in above situation, the normal CMCI
+>> still doesn't come back, strange.
+>
+> That's weird.
 
-Kindly let me know if there could be a better approach or if there's a
-need for further testing.
+Here is the reason. When CPU offline and then online, the CMCI is
+reenabled, which means it opens a backdoor to enable *CMCI storm detect*
+again. The result is the counter cmci_sotrm_cnt is increased again
+before it decreases to zero. At last, this counter will never be back
+to zero, irrelevant to CPU online. Obviously, we must stop CMCI enabling
+again before CMCI storm ends, even during CPU online/offline. Besides
+this, we still need to remove the count if one CPU is offlined. Like
+below tmp patch I wrote (not guarantee it is OK :-))
 
-Thanks,
-K.Prasad
+diff --git a/arch/x86/kernel/cpu/mcheck/mce-internal.h 
+b/arch/x86/kernel/cpu/mcheck/mce-internal.h
+index 2cd73ce..6a05c1d 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce-internal.h
++++ b/arch/x86/kernel/cpu/mcheck/mce-internal.h
+@@ -31,9 +31,11 @@ extern struct mce_bank *mce_banks;
+  #ifdef CONFIG_X86_MCE_INTEL
+  unsigned long mce_intel_adjust_timer(unsigned long interval);
+  void mce_intel_cmci_poll(void);
++void mce_intel_hcpu_update(unsigned long cpu);
+  #else
+  # define mce_intel_adjust_timer mce_adjust_timer_default
+  static inline void mce_intel_cmci_poll(void) { }
++static inline void mce_intel_hcpu_update(unsigned long cpu) { }
+  #endif
 
----
+  void mce_timer_kick(unsigned long interval);
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c 
+b/arch/x86/kernel/cpu/mcheck/mce.c
+index e3f8b94..5e22d99 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -2306,6 +2306,7 @@ mce_cpu_callback(struct notifier_block *nfb, 
+unsigned long action, void *hcpu)
+  		if (threshold_cpu_callback)
+  			threshold_cpu_callback(action, cpu);
+  		mce_device_remove(cpu);
++		mce_intel_hcpu_update(cpu);
+  		break;
+  	case CPU_DOWN_PREPARE:
+  		smp_call_function_single(cpu, mce_disable_cpu, &action, 1);
+diff --git a/arch/x86/kernel/cpu/mcheck/mce_intel.c 
+b/arch/x86/kernel/cpu/mcheck/mce_intel.c
+index 92d8b5c..0051b2d 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce_intel.c
++++ b/arch/x86/kernel/cpu/mcheck/mce_intel.c
+@@ -40,6 +40,7 @@ static DEFINE_RAW_SPINLOCK(cmci_discover_lock);
+  static DEFINE_PER_CPU(unsigned long, cmci_time_stamp);
+  static DEFINE_PER_CPU(unsigned int, cmci_storm_cnt);
+  static DEFINE_PER_CPU(unsigned int, cmci_storm_state);
++static DEFINE_PER_CPU(unsigned long, cmci_storm_hcpu_status);
 
-While debugging a warning message on PowerPC while using hardware
-breakpoints, it was discovered that when perf_event_disable is invoked
-through hw_breakpoint_handler function with interrupts disabled, a
-subsequent IPI in the code path would trigger a WARN_ON_ONCE message in
-smp_call_function_single function.
+  enum {
+  	CMCI_STORM_NONE,
+@@ -47,6 +48,11 @@ enum {
+  	CMCI_STORM_SUBSIDED,
+  };
 
-This patch avoids the use of an IPI to invoke __perf_event_disable when
-it is safe to do so i.e. when the process associated with the perf-event
-would run on the current CPU and interrupts are disabled on the system.
-Since interrupts are always disabled before hw_breakpoint_handler in
-PowerPC, the warning message will no longer be seen.
++enum {
++	CMCI_STORM_HCPU_NONE,
++	CMCI_STORM_HCPU_ACTIVE,
++};
++
+  static atomic_t cmci_storm_on_cpus;
 
-Reported-by: Edjunior Barbosa Machado <emachado@linux.vnet.ibm.com>
-Signed-off-by: K.Prasad <prasad@linux.vnet.ibm.com>
----
- kernel/events/core.c |   12 ++++++++++++
- 1 files changed, 12 insertions(+), 0 deletions(-)
+  static int cmci_supported(int *banks)
+@@ -77,6 +83,17 @@ void mce_intel_cmci_poll(void)
+  	machine_check_poll(MCP_TIMESTAMP, &__get_cpu_var(mce_banks_owned));
+  }
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index fd126f8..0e2c1eb 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -1302,6 +1302,7 @@ static int __perf_event_disable(void *info)
-  */
- void perf_event_disable(struct perf_event *event)
- {
-+	int ret;
- 	struct perf_event_context *ctx = event->ctx;
- 	struct task_struct *task = ctx->task;
- 
-@@ -1314,6 +1315,17 @@ void perf_event_disable(struct perf_event *event)
- 	}
- 
- retry:
-+	/*
-+	 * perf_event_disable may be called when interrupts are disabled.
-+	 * For e.g. hw_breakpoint_handler exception in PowerPC. Hence using
-+	 * IPIs to invoke __perf_event_disable is not always suitable. When
-+	 * possible invoke __perf_event_disable directly.
-+	 */
-+	if ((task_cpu(task) == smp_processor_id()) && irqs_disabled()) {
-+		ret = __perf_event_disable(event);
-+		if (!ret)
-+			return;
-+	}
- 	if (!task_function_call(task, __perf_event_disable, event))
- 		return;
- 
++void mce_intel_hcpu_update(unsigned long cpu)
++{
++	unsigned long *status = &per_cpu(cmci_storm_hcpu_status, cpu);
++
++	if (*status == CMCI_STORM_HCPU_ACTIVE) {
++		*status = CMCI_STORM_HCPU_NONE;
++		atomic_dec(&cmci_storm_on_cpus);
++		per_cpu(cmci_storm_state, cpu) = CMCI_STORM_NONE;
++	}	
++}
++
+  unsigned long mce_intel_adjust_timer(unsigned long interval)
+  {
+  	if (interval < CMCI_POLL_INTERVAL)
+@@ -132,6 +149,7 @@ static bool cmci_storm_detect(void)
 
+  	cmci_clear();
+  	__this_cpu_write(cmci_storm_state, CMCI_STORM_ACTIVE);
++	__this_cpu_write(cmci_storm_hcpu_status, CMCI_STORM_HCPU_ACTIVE);
+  	atomic_inc(&cmci_storm_on_cpus);
+  	mce_timer_kick(CMCI_POLL_INTERVAL);
+  	return true;
+
+>
+>> I still have another question: When we handle following case:
+>> mce_cpu_callback(struct notifier_block *
+>> 		mce_device_remove(cpu);
+>> 		break;
+>> 	case CPU_DOWN_PREPARE:
+>> -		del_timer_sync(t);
+>> 		smp_call_function_single(cpu, mce_disable_cpu, &action, 1);
+>> + 		del_timer_sync(t);
+>> 		break;
+>>
+>> Where we add this timer back? I can't find it in "case CPU_ONLINE".
+>
+> The timer gets added back via mcheck_cpu_init(), which is called on
+> the newly onlined cpu from smp_callin().
+>
+
+Stupid me! I must too busy that day so that I lost my head. :-(.
+Thanks Tomas for your explanation!
+
+> Thanks,
+>
+> 	tglx
