@@ -1,45 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755299Ab2FKOnd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 10:43:33 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46740 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755270Ab2FKOn3 convert rfc822-to-8bit (ORCPT
+	id S1755335Ab2FKOno (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 10:43:44 -0400
+Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:48957 "HELO
+	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755304Ab2FKOnm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 10:43:29 -0400
+	Mon, 11 Jun 2012 10:43:42 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: b9GW7bEVM1nDmCgLAonFCVHYIBkc59y9uUaz4CKhUdBD0rG
+ WZaJLjeETIb5sS5VxYd43DyLD9PXl7ivevJ4fXdwqDBYgFmdxuqJWSI.LiiY
+ E.uTRTVmvc.hxqL6RsHUyNgCZZS138Q9I4CxsKssovDzIqR3in_L8eqfmmvJ
+ FJkbm.oqSvALutC9T1yeYr6tWz2z9uRJnzT_Xrnjxqb9JYGKDo2ZVNfA56Ws
+ R6OhvKOw0Z6dR7rA4gn0stZLgSgNpKTOhoIUgglMZk1pj2gbVG73LZcoie95
+ PFNqipfR_6rff.KBxnQDnjPNhWKqxdbcP3x0nIjeB1ZiFOXjwPf9UCetMpyU
+ f4vWxj1_w17Zx1NmB268BkmDhm1X3k6AGPf_Q_tZYJFOiDCb29.n_ZODSgEj
+ zrv6NyMnukBIswdm27GJNyd.hd_deRA0IgG7d
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Mon, 11 Jun 2012 09:43:38 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@google.com>, Dave Jones <davej@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, stable@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [PATCH 1/6] Revert "mm: mempolicy: Let vma_merge and vma_split
+ handle vma->vm_policy linkages"
+In-Reply-To: <1339406250-10169-2-git-send-email-kosaki.motohiro@gmail.com>
+Message-ID: <alpine.DEB.2.00.1206110935070.31180@router.home>
+References: <1339406250-10169-1-git-send-email-kosaki.motohiro@gmail.com> <1339406250-10169-2-git-send-email-kosaki.motohiro@gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1206111014010.1607-100000@iolanthe.rowland.org>
-References: <1339391600-17815-1-git-send-email-ming.lei@canonical.com>
-	<Pine.LNX.4.44L0.1206111014010.1607-100000@iolanthe.rowland.org>
-Date: Mon, 11 Jun 2012 22:43:26 +0800
-Message-ID: <CACVXFVNS2U-t7_8WwVNhQprP29y_xiZX25WwoBD5SRpch-p+7A@mail.gmail.com>
-Subject: Re: [PATCH] driver core: fix shutdown races with probe/remove(v2)
-From: Ming Lei <ming.lei@canonical.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 11, 2012 at 10:16 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+On Mon, 11 Jun 2012, kosaki.motohiro@gmail.com wrote:
 
->> +
->> +             if (nonlocked)
->> +                     dev_err(dev, "can't hold %slock for shutdown\n",
->> +                                     nonlocked == 1 ? "" : "parent ");
+> From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
 >
-> Even if the parent can't be locked, you should still try to lock the
-> device.
+> commit 05f144a0d5 "mm: mempolicy: Let vma_merge and vma_split handle
+> vma->vm_policy linkages" removed a vma->vm_policy updates. But it is
+> a primary purpose of mbind_range(). Now, mbind(2) is no-op in several
+> case unintentionally. It is not ideal fix. This patch reverts it.
 
-I have considered doing it, but which may consume another 1sec.
+Rewritten changelog:
 
-Also if the parent lock has been held, it is very possibly that the
-device can't be probed or removed at the same time, so just logged
-the crazy thing and go ahead.
+commit 05f144a0d5 "mm: mempolicy: Let vma_merge and vma_split handle
+vma->vm_policy linkages" removed policy_vma() but the function is
+needed in this patchset.
 
-Thanks,
---
-Ming Lei
+
+(It is not clear to me what the last sentences mean. AFAICT the code for
+policy_vma() still exists in another function prior to this patch)
+
+
