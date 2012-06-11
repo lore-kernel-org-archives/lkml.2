@@ -1,59 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751622Ab2FKIWE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 04:22:04 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:62644 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750731Ab2FKIWB (ORCPT
+	id S1751803Ab2FKIWz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 04:22:55 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:32884 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751011Ab2FKIWx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 04:22:01 -0400
-Subject: Re: [PATCH 2/3] net: lpc_eth: Increase number of TX descriptors
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Roland Stigge <stigge@antcom.de>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kevin.wells@nxp.com, srinivas.bakki@nxp.com, aletes.xgr@gmail.com,
-        linux-arm-kernel@lists.infradead.org
-In-Reply-To: <1339401793-12258-2-git-send-email-stigge@antcom.de>
-References: <1339401793-12258-1-git-send-email-stigge@antcom.de>
-	 <1339401793-12258-2-git-send-email-stigge@antcom.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 11 Jun 2012 10:21:56 +0200
-Message-ID: <1339402916.6001.1688.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 11 Jun 2012 04:22:53 -0400
+Date: Mon, 11 Jun 2012 10:22:49 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [PATCH] x86/apic: Eliminate cpu_mask_to_apicid() operation
+Message-ID: <20120611082249.GC31556@gmail.com>
+References: <20120605112353.GA11457@dhcp-26-207.brq.redhat.com>
+ <20120606082231.GD5991@gmail.com>
+ <20120607131559.GF4759@dhcp-26-207.brq.redhat.com>
+ <1339107848.28766.104.camel@sbsiddha-desk.sc.intel.com>
+ <20120608165330.GE4777@dhcp-26-207.brq.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120608165330.GE4777@dhcp-26-207.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-06-11 at 10:03 +0200, Roland Stigge wrote:
-> Since we have enough SRAM, we can increase the number of TX descriptors, so the
-> "BUSY" warning about occupied TX descriptors doesn't need to show up as often.
-> 
-> Signed-off-by: Roland Stigge <stigge@antcom.de>
-> Tested-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-> 
-> ---
->  drivers/net/ethernet/nxp/lpc_eth.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> --- linux-2.6.orig/drivers/net/ethernet/nxp/lpc_eth.c
-> +++ linux-2.6/drivers/net/ethernet/nxp/lpc_eth.c
-> @@ -56,7 +56,7 @@
+
+* Alexander Gordeev <agordeev@redhat.com> wrote:
+
+> @@ -2151,7 +2134,12 @@ int default_cpu_mask_to_apicid_and(const struct cpumask *cpumask,
+>  			break;
+>  	}
 >  
->  #define ENET_MAXF_SIZE 1536
->  #define ENET_RX_DESC 48
-> -#define ENET_TX_DESC 16
-> +#define ENET_TX_DESC 32
->  
->  #define NAPI_WEIGHT 16
->  
+> -	return __default_cpu_to_apicid(cpu, apicid);
+> +	if (likely((unsigned int)cpu < nr_cpu_ids)) {
+> +		*apicid = per_cpu(x86_cpu_to_apicid, cpu);
+> +		return 0;
+> +	} else {
+> +		return -EINVAL;
+> +	}
 
+The type cast is rather ugly - why not change the cpu type to 
+unsigned int?
 
-Sorry, this is not the right fix.
+Also, the else block is superfluous, just make it a return 
+-EINVAL?
 
-You only lower probability of the bug.
+Thanks,
 
-What is this BUSY warning mentioned in changelog ?
-
-
+	Ingo
