@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752382Ab2FKU4w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 16:56:52 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:44969 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751845Ab2FKU4v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 16:56:51 -0400
-Message-ID: <1339448210.19977.2.camel@joe2Laptop>
-Subject: Re: [PATCH v3] watchdog: Quiet down the boot messages
-From: Joe Perches <joe@perches.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, nzimmer@sgi.com,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Mon, 11 Jun 2012 13:56:50 -0700
-In-Reply-To: <1339445050-29941-1-git-send-email-dzickus@redhat.com>
-References: <1339445050-29941-1-git-send-email-dzickus@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752548Ab2FKU5I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 16:57:08 -0400
+Received: from mail2.gnudd.com ([213.203.150.91]:57345 "EHLO mail.gnudd.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752388Ab2FKU47 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 16:56:59 -0400
+Date: Mon, 11 Jun 2012 22:56:14 +0200
+From: Alessandro Rubini <rubini@gnudd.com>
+To: linux-kernel@vger.kernel.org
+Cc: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
+        Alan Cox <alan@linux.intel.com>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        STEricsson_nomadik_linux@list.st.com,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jean Delvare <khali@linux-fr.org>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org, linux-i2c@vger.kernel.org,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH V3 0/3] i2c-nomadik changes
+Message-ID: <cover.1339447570.git.rubini@gnudd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: GnuDD, Device Drivers, Embedded Systems, Courses
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-06-11 at 16:04 -0400, Don Zickus wrote:
-> A bunch of bugzillas have complained how noisy the nmi_watchdog is during
-> boot-up especially with its expected failure cases (like virt and bios
-> resource contention).
-[]
-> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-[]
-> @@ -390,11 +397,23 @@ static int watchdog_nmi_enable(int cpu)
-[]
->  	if (!IS_ERR(event)) {
-> -		pr_info("enabled, takes one hw-pmu counter.\n");
-> +		/* only print for cpu0 or different than cpu0 */
-> +		if (cpu == 0 || cpu0_err) {
-> +			pr_info("enabled on all CPUs, permanently consumes ");
-> +			pr_cont("one hw-PMU counter.\n");
+V3:
+	- fixed according to Linusw feedback (merged the patch he posted)
+	- added Tested-by: Linusw on his permission
 
-Don't worry about formats exceeding 80 column please.
-Don't break up pr_info into multiple bits either.
-
-			pr_info("enabled on all cpus, permanently consumes one hw-PMU counter\n");
+V2:
+        - use linux/platform_data/i2c-nomadik.h not linux/i2c-nomadik.h
+        - format patch with -M
+        - added lee jones to the Cc: list (for device tree support)
+        - minor rewording of the commit messages
 
 
+Alessandro Rubini (3):
+  i2c-nomadik: move header to <linux/platform_data/i2c-nomadik.h>
+  i2c-nomadik: turn the platform driver to an amba driver
+  i2c-nomadik: depend on ARM_AMBA, not PLAT_NOMADIK
+
+ arch/arm/mach-ux500/board-mop500.c                 |    2 +-
+ arch/arm/mach-ux500/devices-common.h               |   24 +---
+ drivers/i2c/busses/Kconfig                         |    5 +-
+ drivers/i2c/busses/i2c-nomadik.c                   |  145 ++++++++++----------
+ .../linux/platform_data/i2c-nomadik.h              |    6 +-
+ 5 files changed, 87 insertions(+), 95 deletions(-)
+ rename arch/arm/plat-nomadik/include/plat/i2c.h => include/linux/platform_data/i2c-nomadik.h (91%)
+
+-- 
+1.7.7.2
