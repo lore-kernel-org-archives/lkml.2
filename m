@@ -1,60 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751593Ab2FKTmm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 15:42:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52567 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751321Ab2FKTml (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 15:42:41 -0400
-Date: Mon, 11 Jun 2012 21:41:16 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Andrew Jones <drjones@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        xen-devel@lists.xensource.com, Petr Matousek <pmatouse@redhat.com>,
-        676360@bugs.debian.org, Greg KH <gregkh@linuxfoundation.org>,
-        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, Ulrich Obergfell <uobergfe@redhat.com>,
-        Jonathan Nieder <jrnieder@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        Jan Beulich <jbeulich@suse.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Larry Woodman <lwoodman@redhat.com>, alan@lxorguk.ukuu.org.uk
-Subject: Re: [Xen-devel] [PATCH] thp: avoid atomic64_read in pmd_read_atomic
- for 32bit PAE\
-Message-ID: <20120611194113.GH3094@redhat.com>
-References: <20120610020331.GA26100@localhost.localdomain>
- <4728e392-7130-4967-aa79-8da12f929191@zmail17.collab.prod.int.phx2.redhat.com>
- <20120611192738.GM14535@phenom.dumpdata.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120611192738.GM14535@phenom.dumpdata.com>
+	id S1751692Ab2FKTox (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 15:44:53 -0400
+Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:5000 "EHLO
+	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751258Ab2FKTow (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 15:44:52 -0400
+Message-ID: <1339443890.30984.96.camel@x61.thuisdomein>
+Subject: RE: [uclinux-dist-devel] blackfin: how is the I-pipe code supposed
+ to	be built?
+From: Paul Bolle <pebolle@tiscali.nl>
+To: "Zhang, Sonic" <Sonic.Zhang@analog.com>
+Cc: Mike Frysinger <vapier@gentoo.org>,
+        "uclinux-dist-devel@blackfin.uclinux.org" 
+	<uclinux-dist-devel@blackfin.uclinux.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "philippe.gerum@xenomai.org" <philippe.gerum@xenomai.org>
+Date: Mon, 11 Jun 2012 21:44:50 +0200
+In-Reply-To: <DB904C5425BA6F4E8424B3B51A1414D170235830B4@NWD2CMBX1.ad.analog.com>
+References: <1339365045.30984.78.camel@x61.thuisdomein>
+	 <DB904C5425BA6F4E8424B3B51A1414D170235830B4@NWD2CMBX1.ad.analog.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-OriginalArrivalTime: 11 Jun 2012 19:44:51.0363 (UTC) FILETIME=[AAA81F30:01CD480A]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Sonic,
 
-On Mon, Jun 11, 2012 at 03:27:38PM -0400, Konrad Rzeszutek Wilk wrote:
-> > > Nice. Andrew, any chane you could test this patch on the affected
-> > > Xen hypervisors? Was it as easy to reproduce this on a RHEL5 (U1?)
-> > > hypervisor or is it really only on Linode and Amazon EC2?
-> > > 
-> > 
-> > Originally, I was able to reproduce the issue easily with a RHEL5
-> > host. Now, with this patch it's fixed.
-> 
-> OK, so Tested-by: Andrew Jones..
-> and from my perspective it looks good - so Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+On Sun, 2012-06-10 at 23:05 -0400, Zhang, Sonic wrote:
+> The IPIPE patch is part of the ADEOS real time kernel patch. The
+> common part of this patch hasn't been merged into mainline by the
+> maintainer Philippe Gerum, although the Blackfin architecture part
+> was. The relative Kbuild support and Kconfig symbols are defined in
+> the ADOES common patch.
 
-Thanks for testing and reviews.
+What's the point of having code in the mainline tree, for over three
+years, without any Kbuild or Kconfig support?  
 
-> Andrea, any chance you can respin this patch and send it to Linus for 3.5 please?
 
-Andrew merged it in -mm last Friday, so I would expect it to go
-upstream soon through the -mm flow (I assume everyone has been
-rightfully waiting a bit of time for testing and reviews to be sure).
+Paul Bolle
 
-Andrea
