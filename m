@@ -1,49 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754244Ab2FKDpx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Jun 2012 23:45:53 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:59003 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753377Ab2FKDpw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Jun 2012 23:45:52 -0400
+	id S1754456Ab2FKDuL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Jun 2012 23:50:11 -0400
+Received: from linux-sh.org ([111.68.239.195]:49100 "EHLO linux-sh.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753566Ab2FKDuJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Jun 2012 23:50:09 -0400
+Date: Mon, 11 Jun 2012 12:50:05 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Ezequiel Garcia <elezegarcia@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-sh@vger.kernel.org
+Subject: Re: [PATCH 1/6] sh: fix compiler warning by properly inlining
+ flat_set_persistent()
+Message-ID: <20120611035005.GC10170@linux-sh.org>
+References: <1339229611-2326-1-git-send-email-elezegarcia@gmail.com>
+ <20120609091426.GA10170@linux-sh.org>
+ <CALF0-+U-FHtb3Z+JEHoY9Jm9yhgeTasQR0nX5AwVM1Ah1+JKAg@mail.gmail.com>
 MIME-Version: 1.0
-Reply-To: rus@sfinxsoft.com
-From: Rus <rus@sfinxsoft.com>
-Date: Mon, 11 Jun 2012 06:45:11 +0300
-X-Google-Sender-Auth: bru5lpXhyrBsWyIOUyHDLO2Gvok
-Message-ID: <CAKgfjTmCkdDxhfnkscXYxFMKLWZ5o8_70jVe3Lj7UMjThKutnQ@mail.gmail.com>
-Subject: Re: AMD FX CPU bug, not fixed by latest microcode?
-To: zboszor@pr.hu
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALF0-+U-FHtb3Z+JEHoY9Jm9yhgeTasQR0nX5AwVM1Ah1+JKAg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-:Does anyone know whether it's a known problem in AMD FX CPUs?
-:Does AMD have a newer microcode to fix this bug, or should I apply
-:for warranty?
+On Sun, Jun 10, 2012 at 06:33:10PM -0300, Ezequiel Garcia wrote:
+> On Sat, Jun 9, 2012 at 6:14 AM, Paul Mundt <lethal@linux-sh.org> wrote:
+> > On Sat, Jun 09, 2012 at 05:13:26AM -0300, Ezequiel Garcia wrote:
+> >> This patch removes the following warning:
+> >> fs/binfmt_flat.c:752: warning: unused variable ???persistent???
+> >> There is neither change in functionality, nor extra code generated.
+> >>
+> >> Cc: Paul Mundt <lethal@linux-sh.org>
+> >> Cc: <linux-sh@vger.kernel.org>
+> >> Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
+> >
+> > That's what the cast was for, with what gcc version did that stop
+> > working?
+> 
+> I just realized that I should send a v2 (not the whole series just this one)
+> correcting the commit message, since there wasn't a warning to fix
+> in first place.
+> 
+> I'll do this soon.
 
-This is do not related to AMD microcode. The main problem is that Asus
-do not tests their motherboards against supported CPU list. The next
-problem  is m/b BIOS and last problem - ASUS is ignoring Linux users
-and Linux as oficially supported OS on their m/b. I'm having the same
-problems with FX-8150 and M5A97-PRO m/b. This m/b do not work by
-default with FX-* CPU because of wrong power mode selected for this
-CPU by BIOS. To make it work somehow you need to :
-
-1. Flash the latest BIOS
-2. Disable turbo core in BIOS setup
-3. Enable extreme EPU mode in BIOS setup
-4. Disable EPU Power Saving mode in BIOS setup
-5. Use the >= 3.5 kernels (rc1 or rc2 for now)
-6. Play with IOMMU mode in BIOS setup (try enable, try disable)
-
-P.S. I'm not subscribed, so cc.
-
-Rus
-
--- 
-SfinxSoft
-http://sfinxsoft.com
+If there's no warning then the point of the patch eludes me. There's
+nothing wrong with consistency, but attempting to fix that which isn't
+broken in the name of consistency borders a bit too closely on pointless
+busy work for my liking.
