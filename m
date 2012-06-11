@@ -1,406 +1,931 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752023Ab2FKUA1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 16:00:27 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:45678 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751812Ab2FKUAX (ORCPT
+	id S1751997Ab2FKUEc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 16:04:32 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:30222 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751323Ab2FKUE2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 16:00:23 -0400
-From: Ezequiel Garcia <elezegarcia@gmail.com>
-To: <linux-kernel@vger.kernel.org>, alsa-devel@alsa-project.org
-Cc: Ezequiel Garcia <elezegarcia@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Clemens Ladisch <clemens@ladisch.de>
-Subject: [PATCH 3/3] Remove unused include/linux/ac97_codec.h header
-Date: Mon, 11 Jun 2012 16:58:51 -0300
-Message-Id: <1339444731-15678-3-git-send-email-elezegarcia@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1339444731-15678-1-git-send-email-elezegarcia@gmail.com>
-References: <1339444731-15678-1-git-send-email-elezegarcia@gmail.com>
+	Mon, 11 Jun 2012 16:04:28 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: alan@linux.intel.com, gregkh@linuxfoundation.org,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kevin.wells@nxp.com, srinivas.bakki@nxp.com,
+        linux-arm-kernel@lists.infradead.org
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH RESEND v2] serial: Add driver for LPC32xx High Speed UARTs
+Date: Mon, 11 Jun 2012 22:04:12 +0200
+Message-Id: <1339445052-15765-1-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.10
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This file has been superseded by include/sound/ac97_codec.h,
-and has currently no users.
+This patch adds a driver for the 3 High Speed UARTs of the LPC32xx SoC that
+support up to 921600bps. These UARTs are different from the 4 "Standard" UARTs
+of the LPC32xx.
 
-Cc: Jaroslav Kysela <perex@perex.cz>
-Cc: Takashi Iwai <tiwai@suse.de>
-Cc: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
+Signed-off-by: Roland Stigge <stigge@antcom.de>
+
 ---
- include/linux/ac97_codec.h |  362 --------------------------------------------
- 1 files changed, 0 insertions(+), 362 deletions(-)
- delete mode 100644 include/linux/ac97_codec.h
+Applies to v3.5-rc2
 
-diff --git a/include/linux/ac97_codec.h b/include/linux/ac97_codec.h
-deleted file mode 100644
-index 0260c3e..0000000
---- a/include/linux/ac97_codec.h
-+++ /dev/null
-@@ -1,362 +0,0 @@
--#ifndef _AC97_CODEC_H_
--#define _AC97_CODEC_H_
--
--#include <linux/types.h>
--#include <linux/soundcard.h>
--
--/* AC97 1.0 */
--#define  AC97_RESET               0x0000      //
--#define  AC97_MASTER_VOL_STEREO   0x0002      // Line Out
--#define  AC97_HEADPHONE_VOL       0x0004      // 
--#define  AC97_MASTER_VOL_MONO     0x0006      // TAD Output
--#define  AC97_MASTER_TONE         0x0008      //
--#define  AC97_PCBEEP_VOL          0x000a      // none
--#define  AC97_PHONE_VOL           0x000c      // TAD Input (mono)
--#define  AC97_MIC_VOL             0x000e      // MIC Input (mono)
--#define  AC97_LINEIN_VOL          0x0010      // Line Input (stereo)
--#define  AC97_CD_VOL              0x0012      // CD Input (stereo)
--#define  AC97_VIDEO_VOL           0x0014      // none
--#define  AC97_AUX_VOL             0x0016      // Aux Input (stereo)
--#define  AC97_PCMOUT_VOL          0x0018      // Wave Output (stereo)
--#define  AC97_RECORD_SELECT       0x001a      //
--#define  AC97_RECORD_GAIN         0x001c
--#define  AC97_RECORD_GAIN_MIC     0x001e
--#define  AC97_GENERAL_PURPOSE     0x0020
--#define  AC97_3D_CONTROL          0x0022
--#define  AC97_MODEM_RATE          0x0024
--#define  AC97_POWER_CONTROL       0x0026
--
--/* AC'97 2.0 */
--#define AC97_EXTENDED_ID          0x0028       /* Extended Audio ID */
--#define AC97_EXTENDED_STATUS      0x002A       /* Extended Audio Status */
--#define AC97_PCM_FRONT_DAC_RATE   0x002C       /* PCM Front DAC Rate */
--#define AC97_PCM_SURR_DAC_RATE    0x002E       /* PCM Surround DAC Rate */
--#define AC97_PCM_LFE_DAC_RATE     0x0030       /* PCM LFE DAC Rate */
--#define AC97_PCM_LR_ADC_RATE      0x0032       /* PCM LR ADC Rate */
--#define AC97_PCM_MIC_ADC_RATE     0x0034       /* PCM MIC ADC Rate */
--#define AC97_CENTER_LFE_MASTER    0x0036       /* Center + LFE Master Volume */
--#define AC97_SURROUND_MASTER      0x0038       /* Surround (Rear) Master Volume */
--#define AC97_RESERVED_3A          0x003A       /* Reserved in AC '97 < 2.2 */
--
--/* AC'97 2.2 */
--#define AC97_SPDIF_CONTROL        0x003A       /* S/PDIF Control */
--
--/* range 0x3c-0x58 - MODEM */
--#define AC97_EXTENDED_MODEM_ID    0x003C
--#define AC97_EXTEND_MODEM_STAT    0x003E
--#define AC97_LINE1_RATE           0x0040
--#define AC97_LINE2_RATE           0x0042
--#define AC97_HANDSET_RATE         0x0044
--#define AC97_LINE1_LEVEL          0x0046
--#define AC97_LINE2_LEVEL          0x0048
--#define AC97_HANDSET_LEVEL        0x004A
--#define AC97_GPIO_CONFIG          0x004C
--#define AC97_GPIO_POLARITY        0x004E
--#define AC97_GPIO_STICKY          0x0050
--#define AC97_GPIO_WAKE_UP         0x0052
--#define AC97_GPIO_STATUS          0x0054
--#define AC97_MISC_MODEM_STAT      0x0056
--#define AC97_RESERVED_58          0x0058
--
--/* registers 0x005a - 0x007a are vendor reserved */
--
--#define AC97_VENDOR_ID1           0x007c
--#define AC97_VENDOR_ID2           0x007e
--
--/* volume control bit defines */
--#define AC97_MUTE                 0x8000
--#define AC97_MICBOOST             0x0040
--#define AC97_LEFTVOL              0x3f00
--#define AC97_RIGHTVOL             0x003f
--
--/* record mux defines */
--#define AC97_RECMUX_MIC           0x0000
--#define AC97_RECMUX_CD            0x0101
--#define AC97_RECMUX_VIDEO         0x0202
--#define AC97_RECMUX_AUX           0x0303
--#define AC97_RECMUX_LINE          0x0404
--#define AC97_RECMUX_STEREO_MIX    0x0505
--#define AC97_RECMUX_MONO_MIX      0x0606
--#define AC97_RECMUX_PHONE         0x0707
--
--/* general purpose register bit defines */
--#define AC97_GP_LPBK              0x0080       /* Loopback mode */
--#define AC97_GP_MS                0x0100       /* Mic Select 0=Mic1, 1=Mic2 */
--#define AC97_GP_MIX               0x0200       /* Mono output select 0=Mix, 1=Mic */
--#define AC97_GP_RLBK              0x0400       /* Remote Loopback - Modem line codec */
--#define AC97_GP_LLBK              0x0800       /* Local Loopback - Modem Line codec */
--#define AC97_GP_LD                0x1000       /* Loudness 1=on */
--#define AC97_GP_3D                0x2000       /* 3D Enhancement 1=on */
--#define AC97_GP_ST                0x4000       /* Stereo Enhancement 1=on */
--#define AC97_GP_POP               0x8000       /* Pcm Out Path, 0=pre 3D, 1=post 3D */
--
--/* extended audio status and control bit defines */
--#define AC97_EA_VRA               0x0001       /* Variable bit rate enable bit */
--#define AC97_EA_DRA               0x0002       /* Double-rate audio enable bit */
--#define AC97_EA_SPDIF             0x0004       /* S/PDIF Enable bit */
--#define AC97_EA_VRM               0x0008       /* Variable bit rate for MIC enable bit */
--#define AC97_EA_CDAC              0x0040       /* PCM Center DAC is ready (Read only) */
--#define AC97_EA_SDAC              0x0040       /* PCM Surround DACs are ready (Read only) */
--#define AC97_EA_LDAC              0x0080       /* PCM LFE DAC is ready (Read only) */
--#define AC97_EA_MDAC              0x0100       /* MIC ADC is ready (Read only) */
--#define AC97_EA_SPCV              0x0400       /* S/PDIF configuration valid (Read only) */
--#define AC97_EA_PRI               0x0800       /* Turns the PCM Center DAC off */
--#define AC97_EA_PRJ               0x1000       /* Turns the PCM Surround DACs off */
--#define AC97_EA_PRK               0x2000       /* Turns the PCM LFE DAC off */
--#define AC97_EA_PRL               0x4000       /* Turns the MIC ADC off */
--#define AC97_EA_SLOT_MASK         0xffcf       /* Mask for slot assignment bits */
--#define AC97_EA_SPSA_3_4          0x0000       /* Slot assigned to 3 & 4 */
--#define AC97_EA_SPSA_7_8          0x0010       /* Slot assigned to 7 & 8 */
--#define AC97_EA_SPSA_6_9          0x0020       /* Slot assigned to 6 & 9 */
--#define AC97_EA_SPSA_10_11        0x0030       /* Slot assigned to 10 & 11 */
--
--/* S/PDIF control bit defines */
--#define AC97_SC_PRO               0x0001       /* Professional status */
--#define AC97_SC_NAUDIO            0x0002       /* Non audio stream */
--#define AC97_SC_COPY              0x0004       /* Copyright status */
--#define AC97_SC_PRE               0x0008       /* Preemphasis status */
--#define AC97_SC_CC_MASK           0x07f0       /* Category Code mask */
--#define AC97_SC_L                 0x0800       /* Generation Level status */
--#define AC97_SC_SPSR_MASK         0xcfff       /* S/PDIF Sample Rate bits */
--#define AC97_SC_SPSR_44K          0x0000       /* Use 44.1kHz Sample rate */
--#define AC97_SC_SPSR_48K          0x2000       /* Use 48kHz Sample rate */
--#define AC97_SC_SPSR_32K          0x3000       /* Use 32kHz Sample rate */
--#define AC97_SC_DRS               0x4000       /* Double Rate S/PDIF */
--#define AC97_SC_V                 0x8000       /* Validity status */
--
--/* powerdown control and status bit defines */
--
--/* status */
--#define AC97_PWR_MDM              0x0010       /* Modem section ready */
--#define AC97_PWR_REF              0x0008       /* Vref nominal */
--#define AC97_PWR_ANL              0x0004       /* Analog section ready */
--#define AC97_PWR_DAC              0x0002       /* DAC section ready */
--#define AC97_PWR_ADC              0x0001       /* ADC section ready */
--
--/* control */
--#define AC97_PWR_PR0              0x0100       /* ADC and Mux powerdown */
--#define AC97_PWR_PR1              0x0200       /* DAC powerdown */
--#define AC97_PWR_PR2              0x0400       /* Output mixer powerdown (Vref on) */
--#define AC97_PWR_PR3              0x0800       /* Output mixer powerdown (Vref off) */
--#define AC97_PWR_PR4              0x1000       /* AC-link powerdown */
--#define AC97_PWR_PR5              0x2000       /* Internal Clk disable */
--#define AC97_PWR_PR6              0x4000       /* HP amp powerdown */
--#define AC97_PWR_PR7              0x8000       /* Modem off - if supported */
--
--/* extended audio ID register bit defines */
--#define AC97_EXTID_VRA            0x0001
--#define AC97_EXTID_DRA            0x0002
--#define AC97_EXTID_SPDIF          0x0004
--#define AC97_EXTID_VRM            0x0008
--#define AC97_EXTID_DSA0           0x0010
--#define AC97_EXTID_DSA1           0x0020
--#define AC97_EXTID_CDAC           0x0040
--#define AC97_EXTID_SDAC           0x0080
--#define AC97_EXTID_LDAC           0x0100
--#define AC97_EXTID_AMAP           0x0200
--#define AC97_EXTID_REV0           0x0400
--#define AC97_EXTID_REV1           0x0800
--#define AC97_EXTID_ID0            0x4000
--#define AC97_EXTID_ID1            0x8000
--
--/* extended status register bit defines */
--#define AC97_EXTSTAT_VRA          0x0001
--#define AC97_EXTSTAT_DRA          0x0002
--#define AC97_EXTSTAT_SPDIF        0x0004
--#define AC97_EXTSTAT_VRM          0x0008
--#define AC97_EXTSTAT_SPSA0        0x0010
--#define AC97_EXTSTAT_SPSA1        0x0020
--#define AC97_EXTSTAT_CDAC         0x0040
--#define AC97_EXTSTAT_SDAC         0x0080
--#define AC97_EXTSTAT_LDAC         0x0100
--#define AC97_EXTSTAT_MADC         0x0200
--#define AC97_EXTSTAT_SPCV         0x0400
--#define AC97_EXTSTAT_PRI          0x0800
--#define AC97_EXTSTAT_PRJ          0x1000
--#define AC97_EXTSTAT_PRK          0x2000
--#define AC97_EXTSTAT_PRL          0x4000
--
--/* extended audio ID register bit defines */
--#define AC97_EXTID_VRA            0x0001
--#define AC97_EXTID_DRA            0x0002
--#define AC97_EXTID_SPDIF          0x0004
--#define AC97_EXTID_VRM            0x0008
--#define AC97_EXTID_DSA0           0x0010
--#define AC97_EXTID_DSA1           0x0020
--#define AC97_EXTID_CDAC           0x0040
--#define AC97_EXTID_SDAC           0x0080
--#define AC97_EXTID_LDAC           0x0100
--#define AC97_EXTID_AMAP           0x0200
--#define AC97_EXTID_REV0           0x0400
--#define AC97_EXTID_REV1           0x0800
--#define AC97_EXTID_ID0            0x4000
--#define AC97_EXTID_ID1            0x8000
--
--/* extended status register bit defines */
--#define AC97_EXTSTAT_VRA          0x0001
--#define AC97_EXTSTAT_DRA          0x0002
--#define AC97_EXTSTAT_SPDIF        0x0004
--#define AC97_EXTSTAT_VRM          0x0008
--#define AC97_EXTSTAT_SPSA0        0x0010
--#define AC97_EXTSTAT_SPSA1        0x0020
--#define AC97_EXTSTAT_CDAC         0x0040
--#define AC97_EXTSTAT_SDAC         0x0080
--#define AC97_EXTSTAT_LDAC         0x0100
--#define AC97_EXTSTAT_MADC         0x0200
--#define AC97_EXTSTAT_SPCV         0x0400
--#define AC97_EXTSTAT_PRI          0x0800
--#define AC97_EXTSTAT_PRJ          0x1000
--#define AC97_EXTSTAT_PRK          0x2000
--#define AC97_EXTSTAT_PRL          0x4000
--
--/* useful power states */
--#define AC97_PWR_D0               0x0000      /* everything on */
--#define AC97_PWR_D1              AC97_PWR_PR0|AC97_PWR_PR1|AC97_PWR_PR4
--#define AC97_PWR_D2              AC97_PWR_PR0|AC97_PWR_PR1|AC97_PWR_PR2|AC97_PWR_PR3|AC97_PWR_PR4
--#define AC97_PWR_D3              AC97_PWR_PR0|AC97_PWR_PR1|AC97_PWR_PR2|AC97_PWR_PR3|AC97_PWR_PR4
--#define AC97_PWR_ANLOFF          AC97_PWR_PR2|AC97_PWR_PR3  /* analog section off */
--
--/* Total number of defined registers.  */
--#define AC97_REG_CNT 64
--
--
--/* OSS interface to the ac97s.. */
--#define AC97_STEREO_MASK (SOUND_MASK_VOLUME|SOUND_MASK_PCM|\
--	SOUND_MASK_LINE|SOUND_MASK_CD|\
--	SOUND_MASK_ALTPCM|SOUND_MASK_IGAIN|\
--	SOUND_MASK_LINE1|SOUND_MASK_VIDEO)
--
--#define AC97_SUPPORTED_MASK (AC97_STEREO_MASK | \
--	SOUND_MASK_BASS|SOUND_MASK_TREBLE|\
--	SOUND_MASK_SPEAKER|SOUND_MASK_MIC|\
--	SOUND_MASK_PHONEIN|SOUND_MASK_PHONEOUT)
--
--#define AC97_RECORD_MASK (SOUND_MASK_MIC|\
--	SOUND_MASK_CD|SOUND_MASK_IGAIN|SOUND_MASK_VIDEO|\
--	SOUND_MASK_LINE1| SOUND_MASK_LINE|\
--	SOUND_MASK_PHONEIN)
--
--/* original check is not good enough in case FOO is greater than
-- * SOUND_MIXER_NRDEVICES because the supported_mixers has exactly
-- * SOUND_MIXER_NRDEVICES elements.
-- * before matching the given mixer against the bitmask in supported_mixers we
-- * check if mixer number exceeds maximum allowed size which is as mentioned
-- * above SOUND_MIXER_NRDEVICES */
--#define supported_mixer(CODEC,FOO) ((FOO >= 0) && \
--                                    (FOO < SOUND_MIXER_NRDEVICES) && \
--                                    (CODEC)->supported_mixers & (1<<FOO) )
--
--struct ac97_codec {
--	/* Linked list of codecs */
--	struct list_head list;
--
--	/* AC97 controller connected with */
--	void *private_data;
--
--	char *name;
--	int id;
--	int dev_mixer; 
--	int type;
--	u32 model;
--
--	unsigned int modem:1;
--
--	struct ac97_ops *codec_ops;
--
--	/* controller specific lower leverl ac97 accessing routines.
--	   must be re-entrant safe */
--	u16  (*codec_read)  (struct ac97_codec *codec, u8 reg);
--	void (*codec_write) (struct ac97_codec *codec, u8 reg, u16 val);
--
--	/* Wait for codec-ready.  Ok to sleep here.  */
--	void  (*codec_wait)  (struct ac97_codec *codec);
--
--	/* callback used by helper drivers for interesting ac97 setups */
--	void  (*codec_unregister) (struct ac97_codec *codec);
--	
--	struct ac97_driver *driver;
--	void *driver_private;	/* Private data for the driver */
--	
--	spinlock_t lock;
--	
--	/* OSS mixer masks */
--	int modcnt;
--	int supported_mixers;
--	int stereo_mixers;
--	int record_sources;
--
--	/* Property flags */
--	int flags;
--
--	int bit_resolution;
--
--	/* OSS mixer interface */
--	int  (*read_mixer) (struct ac97_codec *codec, int oss_channel);
--	void (*write_mixer)(struct ac97_codec *codec, int oss_channel,
--			    unsigned int left, unsigned int right);
--	int  (*recmask_io) (struct ac97_codec *codec, int rw, int mask);
--	int  (*mixer_ioctl)(struct ac97_codec *codec, unsigned int cmd, unsigned long arg);
--
--	/* saved OSS mixer states */
--	unsigned int mixer_state[SOUND_MIXER_NRDEVICES];
--
--	/* Software Modem interface */
--	int  (*modem_ioctl)(struct ac97_codec *codec, unsigned int cmd, unsigned long arg);
--};
--
--/*
-- *	Operation structures for each known AC97 chip
-- */
-- 
--struct ac97_ops
--{
--	/* Initialise */
--	int (*init)(struct ac97_codec *c);
--	/* Amplifier control */
--	int (*amplifier)(struct ac97_codec *codec, int on);
--	/* Digital mode control */
--	int (*digital)(struct ac97_codec *codec, int slots, int rate, int mode);
--#define AUDIO_DIGITAL		0x8000
--#define AUDIO_PRO		0x4000
--#define AUDIO_DRS		0x2000
--#define AUDIO_CCMASK		0x003F
--	
--#define AC97_DELUDED_MODEM	1	/* Audio codec reports its a modem */
--#define AC97_NO_PCM_VOLUME	2	/* Volume control is missing 	   */
--#define AC97_DEFAULT_POWER_OFF 4 /* Needs warm reset to power up */
--};
--
--extern int ac97_probe_codec(struct ac97_codec *);
--
--extern struct ac97_codec *ac97_alloc_codec(void);
--extern void ac97_release_codec(struct ac97_codec *codec);
--
--struct ac97_driver {
--	struct list_head list;
--	char *name;
--	u32 codec_id;
--	u32 codec_mask;
--	int (*probe) (struct ac97_codec *codec, struct ac97_driver *driver);
--	void (*remove) (struct ac97_codec *codec, struct ac97_driver *driver);
--};
--
--/* quirk types */
--enum {
--	AC97_TUNE_DEFAULT = -1, /* use default from quirk list (not valid in list) */
--	AC97_TUNE_NONE = 0,     /* nothing extra to do */
--	AC97_TUNE_HP_ONLY,      /* headphone (true line-out) control as master only */
--	AC97_TUNE_SWAP_HP,      /* swap headphone and master controls */
--	AC97_TUNE_SWAP_SURROUND, /* swap master and surround controls */
--	AC97_TUNE_AD_SHARING,   /* for AD1985, turn on OMS bit and use headphone */
--	AC97_TUNE_ALC_JACK,     /* for Realtek, enable JACK detection */
--};
--
--struct ac97_quirk {
--	unsigned short vendor;  /* PCI vendor id */
--	unsigned short device;  /* PCI device id */
--	unsigned short mask;    /* device id bit mask, 0 = accept all */
--	const char *name;       /* name shown as info */
--	int type;               /* quirk type above */
--};
--
--#endif /* _AC97_CODEC_H_ */
--- 
-1.7.4.4
+Changes since v1:
+* Remove reference to MAJOR/MINOR numbers, dynamically allocate now
+* Removed tty_schedule_flip() for framing error case
+* Added tty_flip_buffer_push() for rx
+* Use tty_port_tty_get() and tty_kref_put() in case tty is NULL
+* Updated commit description
+* Fixed locking in interrupt handler
+* Write baudrate change (set_termios) back to termios
 
+Thanks to Alan Cox for reviewing!
+
+ Documentation/devicetree/bindings/tty/serial/nxp-lpc32xx-hsuart.txt |   14 
+ drivers/tty/serial/Kconfig                                          |   19 
+ drivers/tty/serial/Makefile                                         |    1 
+ drivers/tty/serial/lpc32xx_hs.c                                     |  823 ++++++++++
+ 4 files changed, 857 insertions(+)
+
+--- /dev/null
++++ linux-2.6/Documentation/devicetree/bindings/tty/serial/nxp-lpc32xx-hsuart.txt
+@@ -0,0 +1,14 @@
++* NXP LPC32xx SoC High Speed UART
++
++Required properties:
++- compatible: Should be "nxp,lpc3220-hsuart"
++- reg: Should contain registers location and length
++- interrupts: Should contain interrupt
++
++Example:
++
++	uart1: serial@40014000 {
++		compatible = "nxp,lpc3220-hsuart";
++		reg = <0x40014000 0x1000>;
++		interrupts = <26 0>;
++	};
+--- linux-2.6.orig/drivers/tty/serial/Kconfig
++++ linux-2.6/drivers/tty/serial/Kconfig
+@@ -704,6 +704,25 @@ config SERIAL_PNX8XXX_CONSOLE
+ 	  If you have a MIPS-based Philips SoC such as PNX8550 or PNX8330
+ 	  and you want to use serial console, say Y. Otherwise, say N.
+ 
++config SERIAL_HS_LPC32XX
++	tristate "LPC32XX high speed serial port support"
++	depends on ARCH_LPC32XX && OF
++	select SERIAL_CORE
++	help
++	  Support for the LPC32XX high speed serial ports (up to 900kbps).
++	  Those are UARTs completely different from the Standard UARTs on the
++	  LPC32XX SoC.
++	  Choose M or Y here to build this driver.
++
++config SERIAL_HS_LPC32XX_CONSOLE
++	bool "Enable LPC32XX high speed UART serial console"
++	depends on SERIAL_HS_LPC32XX
++	select SERIAL_CORE_CONSOLE
++	help
++	  If you would like to be able to use one of the high speed serial
++	  ports on the LPC32XX as the console, you can do so by answering
++	  Y to this option.
++
+ config SERIAL_CORE
+ 	tristate
+ 
+--- linux-2.6.orig/drivers/tty/serial/Makefile
++++ linux-2.6/drivers/tty/serial/Makefile
+@@ -34,6 +34,7 @@ obj-$(CONFIG_SERIAL_MUX) += mux.o
+ obj-$(CONFIG_SERIAL_68328) += 68328serial.o
+ obj-$(CONFIG_SERIAL_MCF) += mcf.o
+ obj-$(CONFIG_SERIAL_PMACZILOG) += pmac_zilog.o
++obj-$(CONFIG_SERIAL_HS_LPC32XX) += lpc32xx_hs.o
+ obj-$(CONFIG_SERIAL_DZ) += dz.o
+ obj-$(CONFIG_SERIAL_ZS) += zs.o
+ obj-$(CONFIG_SERIAL_SH_SCI) += sh-sci.o
+--- /dev/null
++++ linux-2.6/drivers/tty/serial/lpc32xx_hs.c
+@@ -0,0 +1,823 @@
++/*
++ * High Speed Serial Ports on NXP LPC32xx SoC
++ *
++ * Authors: Kevin Wells <kevin.wells@nxp.com>
++ *          Roland Stigge <stigge@antcom.de>
++ *
++ * Copyright (C) 2010 NXP Semiconductors
++ * Copyright (C) 2012 Roland Stigge
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/module.h>
++#include <linux/ioport.h>
++#include <linux/init.h>
++#include <linux/console.h>
++#include <linux/sysrq.h>
++#include <linux/tty.h>
++#include <linux/tty_flip.h>
++#include <linux/serial_core.h>
++#include <linux/serial.h>
++#include <linux/platform_device.h>
++#include <linux/delay.h>
++#include <linux/nmi.h>
++#include <linux/io.h>
++#include <linux/irq.h>
++#include <linux/gpio.h>
++#include <linux/of.h>
++#include <mach/platform.h>
++#include <mach/hardware.h>
++
++/*
++ * High Speed UART register offsets
++ */
++#define LPC32XX_HSUART_FIFO(x)			((x) + 0x00)
++#define LPC32XX_HSUART_LEVEL(x)			((x) + 0x04)
++#define LPC32XX_HSUART_IIR(x)			((x) + 0x08)
++#define LPC32XX_HSUART_CTRL(x)			((x) + 0x0C)
++#define LPC32XX_HSUART_RATE(x)			((x) + 0x10)
++
++#define LPC32XX_HSU_BREAK_DATA			(1 << 10)
++#define LPC32XX_HSU_ERROR_DATA			(1 << 9)
++#define LPC32XX_HSU_RX_EMPTY			(1 << 8)
++
++#define LPC32XX_HSU_TX_LEV(n)			(((n) >> 8) & 0xFF)
++#define LPC32XX_HSU_RX_LEV(n)			((n) & 0xFF)
++
++#define LPC32XX_HSU_TX_INT_SET			(1 << 6)
++#define LPC32XX_HSU_RX_OE_INT			(1 << 5)
++#define LPC32XX_HSU_BRK_INT			(1 << 4)
++#define LPC32XX_HSU_FE_INT			(1 << 3)
++#define LPC32XX_HSU_RX_TIMEOUT_INT		(1 << 2)
++#define LPC32XX_HSU_RX_TRIG_INT			(1 << 1)
++#define LPC32XX_HSU_TX_INT			(1 << 0)
++
++#define LPC32XX_HSU_HRTS_INV			(1 << 21)
++#define LPC32XX_HSU_HRTS_TRIG_8B		(0x0 << 19)
++#define LPC32XX_HSU_HRTS_TRIG_16B		(0x1 << 19)
++#define LPC32XX_HSU_HRTS_TRIG_32B		(0x2 << 19)
++#define LPC32XX_HSU_HRTS_TRIG_48B		(0x3 << 19)
++#define LPC32XX_HSU_HRTS_EN			(1 << 18)
++#define LPC32XX_HSU_TMO_DISABLED		(0x0 << 16)
++#define LPC32XX_HSU_TMO_INACT_4B		(0x1 << 16)
++#define LPC32XX_HSU_TMO_INACT_8B		(0x2 << 16)
++#define LPC32XX_HSU_TMO_INACT_16B		(0x3 << 16)
++#define LPC32XX_HSU_HCTS_INV			(1 << 15)
++#define LPC32XX_HSU_HCTS_EN			(1 << 14)
++#define LPC32XX_HSU_OFFSET(n)			((n) << 9)
++#define LPC32XX_HSU_BREAK			(1 << 8)
++#define LPC32XX_HSU_ERR_INT_EN			(1 << 7)
++#define LPC32XX_HSU_RX_INT_EN			(1 << 6)
++#define LPC32XX_HSU_TX_INT_EN			(1 << 5)
++#define LPC32XX_HSU_RX_TL1B			(0x0 << 2)
++#define LPC32XX_HSU_RX_TL4B			(0x1 << 2)
++#define LPC32XX_HSU_RX_TL8B			(0x2 << 2)
++#define LPC32XX_HSU_RX_TL16B			(0x3 << 2)
++#define LPC32XX_HSU_RX_TL32B			(0x4 << 2)
++#define LPC32XX_HSU_RX_TL48B			(0x5 << 2)
++#define LPC32XX_HSU_TX_TLEMPTY			(0x0 << 0)
++#define LPC32XX_HSU_TX_TL0B			(0x0 << 0)
++#define LPC32XX_HSU_TX_TL4B			(0x1 << 0)
++#define LPC32XX_HSU_TX_TL8B			(0x2 << 0)
++#define LPC32XX_HSU_TX_TL16B			(0x3 << 0)
++
++#define MODNAME "lpc32xx_hsuart"
++
++struct lpc32xx_hsuart_port {
++	struct uart_port port;
++};
++
++#define FIFO_READ_LIMIT 128
++#define MAX_PORTS 3
++#define LPC32XX_TTY_NAME "ttyTX"
++static struct lpc32xx_hsuart_port lpc32xx_hs_ports[MAX_PORTS];
++
++#ifdef CONFIG_SERIAL_HS_LPC32XX_CONSOLE
++static void wait_for_xmit_empty(struct uart_port *port)
++{
++	unsigned int timeout = 10000;
++
++	do {
++		if (LPC32XX_HSU_TX_LEV(readl(LPC32XX_HSUART_LEVEL(
++							port->membase))) == 0)
++			break;
++		if (--timeout == 0)
++			break;
++		udelay(1);
++	} while (1);
++}
++
++static void wait_for_xmit_ready(struct uart_port *port)
++{
++	unsigned int timeout = 10000;
++
++	while (1) {
++		if (LPC32XX_HSU_TX_LEV(readl(LPC32XX_HSUART_LEVEL(
++							port->membase))) < 32)
++			break;
++		if (--timeout == 0)
++			break;
++		udelay(1);
++	}
++}
++
++static void lpc32xx_hsuart_console_putchar(struct uart_port *port, int ch)
++{
++	wait_for_xmit_ready(port);
++	writel((u32)ch, LPC32XX_HSUART_FIFO(port->membase));
++}
++
++static void lpc32xx_hsuart_console_write(struct console *co, const char *s,
++					 unsigned int count)
++{
++	struct lpc32xx_hsuart_port *up = &lpc32xx_hs_ports[co->index];
++	unsigned long flags;
++	int locked = 1;
++
++	touch_nmi_watchdog();
++	local_irq_save(flags);
++	if (up->port.sysrq)
++		locked = 0;
++	else if (oops_in_progress)
++		locked = spin_trylock(&up->port.lock);
++	else
++		spin_lock(&up->port.lock);
++
++	uart_console_write(&up->port, s, count, lpc32xx_hsuart_console_putchar);
++	wait_for_xmit_empty(&up->port);
++
++	if (locked)
++		spin_unlock(&up->port.lock);
++	local_irq_restore(flags);
++}
++
++static int __init lpc32xx_hsuart_console_setup(struct console *co,
++					       char *options)
++{
++	struct uart_port *port;
++	int baud = 115200;
++	int bits = 8;
++	int parity = 'n';
++	int flow = 'n';
++
++	if (co->index >= MAX_PORTS)
++		co->index = 0;
++
++	port = &lpc32xx_hs_ports[co->index].port;
++	if (!port->membase)
++		return -ENODEV;
++
++	if (options)
++		uart_parse_options(options, &baud, &parity, &bits, &flow);
++
++	return uart_set_options(port, co, baud, parity, bits, flow);
++}
++
++static struct uart_driver lpc32xx_hsuart_reg;
++static struct console lpc32xx_hsuart_console = {
++	.name		= LPC32XX_TTY_NAME,
++	.write		= lpc32xx_hsuart_console_write,
++	.device		= uart_console_device,
++	.setup		= lpc32xx_hsuart_console_setup,
++	.flags		= CON_PRINTBUFFER,
++	.index		= -1,
++	.data		= &lpc32xx_hsuart_reg,
++};
++
++static int __init lpc32xx_hsuart_console_init(void)
++{
++	register_console(&lpc32xx_hsuart_console);
++	return 0;
++}
++console_initcall(lpc32xx_hsuart_console_init);
++
++#define LPC32XX_HSUART_CONSOLE (&lpc32xx_hsuart_console)
++#else
++#define LPC32XX_HSUART_CONSOLE NULL
++#endif
++
++static struct uart_driver lpc32xx_hs_reg = {
++	.owner		= THIS_MODULE,
++	.driver_name	= MODNAME,
++	.dev_name	= LPC32XX_TTY_NAME,
++	.nr		= MAX_PORTS,
++	.cons		= LPC32XX_HSUART_CONSOLE,
++};
++static int uarts_registered;
++
++static unsigned int __serial_get_clock_div(unsigned long uartclk,
++					   unsigned long rate)
++{
++	u32 div, goodrate, hsu_rate, l_hsu_rate, comprate;
++	u32 rate_diff;
++
++	/* Find the closest divider to get the desired clock rate */
++	div = uartclk / rate;
++	goodrate = hsu_rate = (div / 14) - 1;
++	if (hsu_rate != 0)
++		hsu_rate--;
++
++	/* Tweak divider */
++	l_hsu_rate = hsu_rate + 3;
++	rate_diff = 0xFFFFFFFF;
++
++	while (hsu_rate < l_hsu_rate) {
++		comprate = uartclk / ((hsu_rate + 1) * 14);
++		if (abs(comprate - rate) < rate_diff) {
++			goodrate = hsu_rate;
++			rate_diff = abs(comprate - rate);
++		}
++
++		hsu_rate++;
++	}
++	if (hsu_rate > 0xFF)
++		hsu_rate = 0xFF;
++
++	return goodrate;
++}
++
++static void __serial_uart_flush(struct uart_port *port)
++{
++	u32 tmp;
++	int cnt = 0;
++
++	while ((readl(LPC32XX_HSUART_LEVEL(port->membase)) > 0) &&
++	       (cnt++ < FIFO_READ_LIMIT))
++		tmp = readl(LPC32XX_HSUART_FIFO(port->membase));
++}
++
++static void __serial_lpc32xx_rx(struct uart_port *port)
++{
++	unsigned int tmp, flag;
++	struct tty_struct *tty = tty_port_tty_get(&port->state->port);
++
++	if (!tty) {
++		/* Discard data: no tty available */
++		while (!(readl(LPC32XX_HSUART_FIFO(port->membase)) &
++			 LPC32XX_HSU_RX_EMPTY))
++			;
++
++		return;
++	}
++
++	/* Read data from FIFO and push into terminal */
++	tmp = readl(LPC32XX_HSUART_FIFO(port->membase));
++	while (!(tmp & LPC32XX_HSU_RX_EMPTY)) {
++		flag = TTY_NORMAL;
++		port->icount.rx++;
++
++		if (tmp & LPC32XX_HSU_ERROR_DATA) {
++			/* Framing error */
++			writel(LPC32XX_HSU_FE_INT,
++			       LPC32XX_HSUART_IIR(port->membase));
++			port->icount.frame++;
++			flag = TTY_FRAME;
++			tty_insert_flip_char(tty, 0, TTY_FRAME);
++		}
++
++		tty_insert_flip_char(tty, (tmp & 0xFF), flag);
++
++		tmp = readl(LPC32XX_HSUART_FIFO(port->membase));
++	}
++	tty_flip_buffer_push(tty);
++	tty_kref_put(tty);
++}
++
++static void __serial_lpc32xx_tx(struct uart_port *port)
++{
++	struct circ_buf *xmit = &port->state->xmit;
++	unsigned int tmp;
++
++	if (port->x_char) {
++		writel((u32)port->x_char, LPC32XX_HSUART_FIFO(port->membase));
++		port->icount.tx++;
++		port->x_char = 0;
++		return;
++	}
++
++	if (uart_circ_empty(xmit) || uart_tx_stopped(port))
++		goto exit_tx;
++
++	/* Transfer data */
++	while (LPC32XX_HSU_TX_LEV(readl(
++		LPC32XX_HSUART_LEVEL(port->membase))) < 64) {
++		writel((u32) xmit->buf[xmit->tail],
++		       LPC32XX_HSUART_FIFO(port->membase));
++		xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
++		port->icount.tx++;
++		if (uart_circ_empty(xmit))
++			break;
++	}
++
++	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS)
++		uart_write_wakeup(port);
++
++exit_tx:
++	if (uart_circ_empty(xmit)) {
++		tmp = readl(LPC32XX_HSUART_CTRL(port->membase));
++		tmp &= ~LPC32XX_HSU_TX_INT_EN;
++		writel(tmp, LPC32XX_HSUART_CTRL(port->membase));
++	}
++}
++
++static irqreturn_t serial_lpc32xx_interrupt(int irq, void *dev_id)
++{
++	struct uart_port *port = dev_id;
++	struct tty_struct *tty = tty_port_tty_get(&port->state->port);
++	u32 status;
++
++	spin_lock(&port->lock);
++
++	/* Read UART status and clear latched interrupts */
++	status = readl(LPC32XX_HSUART_IIR(port->membase));
++
++	if (status & LPC32XX_HSU_BRK_INT) {
++		/* Break received */
++		writel(LPC32XX_HSU_BRK_INT, LPC32XX_HSUART_IIR(port->membase));
++		port->icount.brk++;
++		uart_handle_break(port);
++	}
++
++	/* Framing error */
++	if (status & LPC32XX_HSU_FE_INT)
++		writel(LPC32XX_HSU_FE_INT, LPC32XX_HSUART_IIR(port->membase));
++
++	if (status & LPC32XX_HSU_RX_OE_INT) {
++		/* Receive FIFO overrun */
++		writel(LPC32XX_HSU_RX_OE_INT,
++		       LPC32XX_HSUART_IIR(port->membase));
++		port->icount.overrun++;
++		if (tty) {
++			tty_insert_flip_char(tty, 0, TTY_OVERRUN);
++			tty_schedule_flip(tty);
++		}
++	}
++
++	/* Data received? */
++	if (status & (LPC32XX_HSU_RX_TIMEOUT_INT | LPC32XX_HSU_RX_TRIG_INT)) {
++		__serial_lpc32xx_rx(port);
++		if (tty)
++			tty_flip_buffer_push(tty);
++	}
++
++	/* Transmit data request? */
++	if ((status & LPC32XX_HSU_TX_INT) && (!uart_tx_stopped(port))) {
++		writel(LPC32XX_HSU_TX_INT, LPC32XX_HSUART_IIR(port->membase));
++		__serial_lpc32xx_tx(port);
++	}
++
++	spin_unlock(&port->lock);
++	tty_kref_put(tty);
++
++	return IRQ_HANDLED;
++}
++
++/* port->lock is not held.  */
++static unsigned int serial_lpc32xx_tx_empty(struct uart_port *port)
++{
++	unsigned int ret = 0;
++
++	if (LPC32XX_HSU_TX_LEV(readl(LPC32XX_HSUART_LEVEL(port->membase))) == 0)
++		ret = TIOCSER_TEMT;
++
++	return ret;
++}
++
++/* port->lock held by caller.  */
++static void serial_lpc32xx_set_mctrl(struct uart_port *port,
++				     unsigned int mctrl)
++{
++	/* No signals are supported on HS UARTs */
++}
++
++/* port->lock is held by caller and interrupts are disabled.  */
++static unsigned int serial_lpc32xx_get_mctrl(struct uart_port *port)
++{
++	/* No signals are supported on HS UARTs */
++	return TIOCM_CAR | TIOCM_DSR | TIOCM_CTS;
++}
++
++/* port->lock held by caller.  */
++static void serial_lpc32xx_stop_tx(struct uart_port *port)
++{
++	u32 tmp;
++
++	tmp = readl(LPC32XX_HSUART_CTRL(port->membase));
++	tmp &= ~LPC32XX_HSU_TX_INT_EN;
++	writel(tmp, LPC32XX_HSUART_CTRL(port->membase));
++}
++
++/* port->lock held by caller.  */
++static void serial_lpc32xx_start_tx(struct uart_port *port)
++{
++	u32 tmp;
++
++	__serial_lpc32xx_tx(port);
++	tmp = readl(LPC32XX_HSUART_CTRL(port->membase));
++	tmp |= LPC32XX_HSU_TX_INT_EN;
++	writel(tmp, LPC32XX_HSUART_CTRL(port->membase));
++}
++
++/* port->lock held by caller.  */
++static void serial_lpc32xx_stop_rx(struct uart_port *port)
++{
++	u32 tmp;
++
++	tmp = readl(LPC32XX_HSUART_CTRL(port->membase));
++	tmp &= ~(LPC32XX_HSU_RX_INT_EN | LPC32XX_HSU_ERR_INT_EN);
++	writel(tmp, LPC32XX_HSUART_CTRL(port->membase));
++
++	writel((LPC32XX_HSU_BRK_INT | LPC32XX_HSU_RX_OE_INT |
++		LPC32XX_HSU_FE_INT), LPC32XX_HSUART_IIR(port->membase));
++}
++
++/* port->lock held by caller.  */
++static void serial_lpc32xx_enable_ms(struct uart_port *port)
++{
++	/* Modem status is not supported */
++}
++
++/* port->lock is not held.  */
++static void serial_lpc32xx_break_ctl(struct uart_port *port,
++				     int break_state)
++{
++	unsigned long flags;
++	u32 tmp;
++
++	spin_lock_irqsave(&port->lock, flags);
++	tmp = readl(LPC32XX_HSUART_CTRL(port->membase));
++	if (break_state != 0)
++		tmp |= LPC32XX_HSU_BREAK;
++	else
++		tmp &= ~LPC32XX_HSU_BREAK;
++	writel(tmp, LPC32XX_HSUART_CTRL(port->membase));
++	spin_unlock_irqrestore(&port->lock, flags);
++}
++
++/* LPC3250 Errata HSUART.1: Hang workaround via loopback mode on inactivity */
++static void lpc32xx_loopback_set(resource_size_t mapbase, int state)
++{
++	int bit;
++	u32 tmp;
++
++	switch (mapbase) {
++	case LPC32XX_HS_UART1_BASE:
++		bit = 0;
++		break;
++	case LPC32XX_HS_UART2_BASE:
++		bit = 1;
++		break;
++	case LPC32XX_HS_UART7_BASE:
++		bit = 6;
++		break;
++	default:
++		WARN(1, "lpc32xx_hs: Warning: Unknown port at %08x\n", mapbase);
++		return;
++	}
++
++	tmp = readl(LPC32XX_UARTCTL_CLOOP);
++	if (state)
++		tmp |= (1 << bit);
++	else
++		tmp &= ~(1 << bit);
++	writel(tmp, LPC32XX_UARTCTL_CLOOP);
++}
++
++/* port->lock is not held.  */
++static int serial_lpc32xx_startup(struct uart_port *port)
++{
++	int retval;
++	unsigned long flags;
++	u32 tmp;
++
++	spin_lock_irqsave(&port->lock, flags);
++
++	__serial_uart_flush(port);
++
++	writel((LPC32XX_HSU_TX_INT | LPC32XX_HSU_FE_INT |
++		LPC32XX_HSU_BRK_INT | LPC32XX_HSU_RX_OE_INT),
++	       LPC32XX_HSUART_IIR(port->membase));
++
++	writel(0xFF, LPC32XX_HSUART_RATE(port->membase));
++
++	/*
++	 * Set receiver timeout, HSU offset of 20, no break, no interrupts,
++	 * and default FIFO trigger levels
++	 */
++	tmp = LPC32XX_HSU_TX_TL8B | LPC32XX_HSU_RX_TL32B |
++		LPC32XX_HSU_OFFSET(20) | LPC32XX_HSU_TMO_INACT_4B;
++	writel(tmp, LPC32XX_HSUART_CTRL(port->membase));
++
++	lpc32xx_loopback_set(port->mapbase, 0); /* get out of loopback mode */
++
++	spin_unlock_irqrestore(&port->lock, flags);
++
++	retval = request_irq(port->irq, serial_lpc32xx_interrupt,
++			     0, MODNAME, port);
++	if (!retval)
++		writel((tmp | LPC32XX_HSU_RX_INT_EN | LPC32XX_HSU_ERR_INT_EN),
++		       LPC32XX_HSUART_CTRL(port->membase));
++
++	return retval;
++}
++
++/* port->lock is not held.  */
++static void serial_lpc32xx_shutdown(struct uart_port *port)
++{
++	u32 tmp;
++	unsigned long flags;
++
++	spin_lock_irqsave(&port->lock, flags);
++
++	tmp = LPC32XX_HSU_TX_TL8B | LPC32XX_HSU_RX_TL32B |
++		LPC32XX_HSU_OFFSET(20) | LPC32XX_HSU_TMO_INACT_4B;
++	writel(tmp, LPC32XX_HSUART_CTRL(port->membase));
++
++	lpc32xx_loopback_set(port->mapbase, 1); /* go to loopback mode */
++
++	spin_unlock_irqrestore(&port->lock, flags);
++
++	free_irq(port->irq, port);
++}
++
++/* port->lock is not held.  */
++static void serial_lpc32xx_set_termios(struct uart_port *port,
++				       struct ktermios *termios,
++				       struct ktermios *old)
++{
++	unsigned long flags;
++	unsigned int baud, quot;
++	u32 tmp;
++
++	/* Always 8-bit, no parity, 1 stop bit */
++	termios->c_cflag &= ~(CSIZE | CSTOPB | PARENB | PARODD);
++	termios->c_cflag |= CS8;
++
++	termios->c_cflag &= ~(HUPCL | CMSPAR | CLOCAL | CRTSCTS);
++
++	baud = uart_get_baud_rate(port, termios, old, 0,
++				  port->uartclk / 14);
++
++	quot = __serial_get_clock_div(port->uartclk, baud);
++
++	spin_lock_irqsave(&port->lock, flags);
++
++	/* Ignore characters? */
++	tmp = readl(LPC32XX_HSUART_CTRL(port->membase));
++	if ((termios->c_cflag & CREAD) == 0)
++		tmp &= ~(LPC32XX_HSU_RX_INT_EN | LPC32XX_HSU_ERR_INT_EN);
++	else
++		tmp |= LPC32XX_HSU_RX_INT_EN | LPC32XX_HSU_ERR_INT_EN;
++	writel(tmp, LPC32XX_HSUART_CTRL(port->membase));
++
++	writel(quot, LPC32XX_HSUART_RATE(port->membase));
++
++	uart_update_timeout(port, termios->c_cflag, baud);
++
++	spin_unlock_irqrestore(&port->lock, flags);
++
++	/* Don't rewrite B0 */
++	if (tty_termios_baud_rate(termios))
++		tty_termios_encode_baud_rate(termios, baud, baud);
++}
++
++static const char *serial_lpc32xx_type(struct uart_port *port)
++{
++	return MODNAME;
++}
++
++static void serial_lpc32xx_release_port(struct uart_port *port)
++{
++	if ((port->iotype == UPIO_MEM32) && (port->mapbase)) {
++		if (port->flags & UPF_IOREMAP) {
++			iounmap(port->membase);
++			port->membase = NULL;
++		}
++
++		release_mem_region(port->mapbase, SZ_4K);
++	}
++}
++
++static int serial_lpc32xx_request_port(struct uart_port *port)
++{
++	int ret = -ENODEV;
++
++	if ((port->iotype == UPIO_MEM32) && (port->mapbase)) {
++		ret = 0;
++
++		if (!request_mem_region(port->mapbase, SZ_4K, MODNAME))
++			ret = -EBUSY;
++		else if (port->flags & UPF_IOREMAP) {
++			port->membase = ioremap(port->mapbase, SZ_4K);
++			if (!port->membase) {
++				release_mem_region(port->mapbase, SZ_4K);
++				ret = -ENOMEM;
++			}
++		}
++	}
++
++	return ret;
++}
++
++static void serial_lpc32xx_config_port(struct uart_port *port, int uflags)
++{
++	int ret;
++
++	ret = serial_lpc32xx_request_port(port);
++	if (ret < 0)
++		return;
++	port->type = PORT_UART00;
++	port->fifosize = 64;
++
++	__serial_uart_flush(port);
++
++	writel((LPC32XX_HSU_TX_INT | LPC32XX_HSU_FE_INT |
++		LPC32XX_HSU_BRK_INT | LPC32XX_HSU_RX_OE_INT),
++	       LPC32XX_HSUART_IIR(port->membase));
++
++	writel(0xFF, LPC32XX_HSUART_RATE(port->membase));
++
++	/* Set receiver timeout, HSU offset of 20, no break, no interrupts,
++	   and default FIFO trigger levels */
++	writel(LPC32XX_HSU_TX_TL8B | LPC32XX_HSU_RX_TL32B |
++	       LPC32XX_HSU_OFFSET(20) | LPC32XX_HSU_TMO_INACT_4B,
++	       LPC32XX_HSUART_CTRL(port->membase));
++}
++
++static int serial_lpc32xx_verify_port(struct uart_port *port,
++				      struct serial_struct *ser)
++{
++	int ret = 0;
++
++	if (ser->type != PORT_UART00)
++		ret = -EINVAL;
++
++	return ret;
++}
++
++static struct uart_ops serial_lpc32xx_pops = {
++	.tx_empty	= serial_lpc32xx_tx_empty,
++	.set_mctrl	= serial_lpc32xx_set_mctrl,
++	.get_mctrl	= serial_lpc32xx_get_mctrl,
++	.stop_tx	= serial_lpc32xx_stop_tx,
++	.start_tx	= serial_lpc32xx_start_tx,
++	.stop_rx	= serial_lpc32xx_stop_rx,
++	.enable_ms	= serial_lpc32xx_enable_ms,
++	.break_ctl	= serial_lpc32xx_break_ctl,
++	.startup	= serial_lpc32xx_startup,
++	.shutdown	= serial_lpc32xx_shutdown,
++	.set_termios	= serial_lpc32xx_set_termios,
++	.type		= serial_lpc32xx_type,
++	.release_port	= serial_lpc32xx_release_port,
++	.request_port	= serial_lpc32xx_request_port,
++	.config_port	= serial_lpc32xx_config_port,
++	.verify_port	= serial_lpc32xx_verify_port,
++};
++
++/*
++ * Register a set of serial devices attached to a platform device
++ */
++static int __devinit serial_hs_lpc32xx_probe(struct platform_device *pdev)
++{
++	struct lpc32xx_hsuart_port *p = &lpc32xx_hs_ports[uarts_registered];
++	int ret = 0;
++	struct resource *res;
++
++	if (uarts_registered >= MAX_PORTS) {
++		dev_err(&pdev->dev,
++			"Error: Number of possible ports exceeded (%d)!\n",
++			uarts_registered + 1);
++		return -ENXIO;
++	}
++
++	memset(p, 0, sizeof(*p));
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!res) {
++		dev_err(&pdev->dev,
++			"Error getting mem resource for HS UART port %d\n",
++			uarts_registered);
++		return -ENXIO;
++	}
++	p->port.mapbase = res->start;
++	p->port.membase = NULL;
++
++	p->port.irq = platform_get_irq(pdev, 0);
++	if (p->port.irq < 0) {
++		dev_err(&pdev->dev, "Error getting irq for HS UART port %d\n",
++			uarts_registered);
++		return p->port.irq;
++	}
++
++	p->port.iotype = UPIO_MEM32;
++	p->port.uartclk = LPC32XX_MAIN_OSC_FREQ;
++	p->port.regshift = 2;
++	p->port.flags = UPF_BOOT_AUTOCONF | UPF_FIXED_PORT | UPF_IOREMAP;
++	p->port.dev = &pdev->dev;
++	p->port.ops = &serial_lpc32xx_pops;
++	p->port.line = uarts_registered++;
++	spin_lock_init(&p->port.lock);
++
++	/* send port to loopback mode by default */
++	lpc32xx_loopback_set(p->port.mapbase, 1);
++
++	ret = uart_add_one_port(&lpc32xx_hs_reg, &p->port);
++
++	platform_set_drvdata(pdev, p);
++
++	return ret;
++}
++
++/*
++ * Remove serial ports registered against a platform device.
++ */
++static int __devexit serial_hs_lpc32xx_remove(struct platform_device *pdev)
++{
++	struct lpc32xx_hsuart_port *p = platform_get_drvdata(pdev);
++
++	uart_remove_one_port(&lpc32xx_hs_reg, &p->port);
++
++	return 0;
++}
++
++
++#ifdef CONFIG_PM
++static int serial_hs_lpc32xx_suspend(struct platform_device *pdev,
++				     pm_message_t state)
++{
++	struct lpc32xx_hsuart_port *p = platform_get_drvdata(pdev);
++
++	uart_suspend_port(&lpc32xx_hs_reg, &p->port);
++
++	return 0;
++}
++
++static int serial_hs_lpc32xx_resume(struct platform_device *pdev)
++{
++	struct lpc32xx_hsuart_port *p = platform_get_drvdata(pdev);
++
++	uart_resume_port(&lpc32xx_hs_reg, &p->port);
++
++	return 0;
++}
++#else
++#define serial_hs_lpc32xx_suspend	NULL
++#define serial_hs_lpc32xx_resume	NULL
++#endif
++
++static const struct of_device_id serial_hs_lpc32xx_dt_ids[] = {
++	{ .compatible = "nxp,lpc3220-hsuart" },
++	{ /* sentinel */ }
++};
++
++MODULE_DEVICE_TABLE(of, serial_hs_lpc32xx_dt_ids);
++
++static struct platform_driver serial_hs_lpc32xx_driver = {
++	.probe		= serial_hs_lpc32xx_probe,
++	.remove		= __devexit_p(serial_hs_lpc32xx_remove),
++	.suspend	= serial_hs_lpc32xx_suspend,
++	.resume		= serial_hs_lpc32xx_resume,
++	.driver		= {
++		.name	= MODNAME,
++		.owner	= THIS_MODULE,
++		.of_match_table	= serial_hs_lpc32xx_dt_ids,
++	},
++};
++
++static int __init lpc32xx_hsuart_init(void)
++{
++	int ret;
++
++	ret = uart_register_driver(&lpc32xx_hs_reg);
++	if (ret)
++		return ret;
++
++	ret = platform_driver_register(&serial_hs_lpc32xx_driver);
++	if (ret)
++		uart_unregister_driver(&lpc32xx_hs_reg);
++
++	return ret;
++}
++
++static void __exit lpc32xx_hsuart_exit(void)
++{
++	platform_driver_unregister(&serial_hs_lpc32xx_driver);
++	uart_unregister_driver(&lpc32xx_hs_reg);
++}
++
++module_init(lpc32xx_hsuart_init);
++module_exit(lpc32xx_hsuart_exit);
++
++MODULE_AUTHOR("Kevin Wells <kevin.wells@nxp.com>");
++MODULE_AUTHOR("Roland Stigge <stigge@antcom.de>");
++MODULE_DESCRIPTION("NXP LPC32XX High Speed UART driver");
++MODULE_LICENSE("GPL");
