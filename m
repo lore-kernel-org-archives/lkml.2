@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754622Ab2FKNVV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 09:21:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10348 "EHLO mx1.redhat.com"
+	id S1754588Ab2FKNVP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 09:21:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45215 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750825Ab2FKNVR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 09:21:17 -0400
+	id S1754469Ab2FKNVJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 09:21:09 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
@@ -14,191 +14,151 @@ Cc: eranian@google.com, gorcunov@openvz.org, tzanussi@gmail.com,
         linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
         drepper@gmail.com, asharma@fb.com, benjamin.redelings@nescent.org,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 10/19] perf, tool: Add interface to read DSO image data
-Date: Mon, 11 Jun 2012 15:20:05 +0200
-Message-Id: <1339420814-7379-11-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 08/19] perf, tool: Remove unsused evsel parameter from machine__resolve_callchain
+Date: Mon, 11 Jun 2012 15:20:03 +0200
+Message-Id: <1339420814-7379-9-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1339420814-7379-1-git-send-email-jolsa@redhat.com>
 References: <1339420814-7379-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding following interface for DSO object to allow
-reading of DSO image data:
+Removing unsused evsel parameter from machine__resolve_callchain
+function. Plus related header file and callers changes.
 
-  dso__data_fd
-    - opens DSO and returns file descriptor
-      Binary types are used to locate/open DSO in following order:
-        DSO_BINARY_TYPE__BUILD_ID_CACHE
-        DSO_BINARY_TYPE__SYSTEM_PATH_DSO
-      In other word we first try to open DSO build-id path,
-      and if that fails we try to open DSO system path.
-
-  dso__data_read_offset
-    - reads DSO data from specified offset
-
-  dso__data_read_addr
-    - reads DSO data from specified addres/map.
+The evsel parameter is unused since following commit:
+  perf callchain: Make callchain cursors TLS
+  commit 472606458f3e1ced5fe3cc5f04e90a6b5a4732cf
+  Author: Namhyung Kim <namhyung.kim@lge.com>
+  Date:   Thu May 31 14:43:26 2012 +0900
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/util/symbol.c |  107 ++++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/symbol.h |    8 +++
- 2 files changed, 115 insertions(+), 0 deletions(-)
+ tools/perf/builtin-report.c |    4 ++--
+ tools/perf/builtin-script.c |    4 ++--
+ tools/perf/builtin-top.c    |    2 +-
+ tools/perf/util/map.h       |    2 +-
+ tools/perf/util/session.c   |    7 +++----
+ tools/perf/util/session.h   |    4 ++--
+ 6 files changed, 11 insertions(+), 12 deletions(-)
 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index b6c456e..425bea5 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -64,6 +64,14 @@ static enum dso_binary_type binary_type_symtab[] = {
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 25249f7..d20ef95 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -69,7 +69,7 @@ static int perf_report__add_branch_hist_entry(struct perf_tool *tool,
  
- #define DSO_BINARY_TYPE__SYMTAB_CNT sizeof(binary_type_symtab)
+ 	if ((sort__has_parent || symbol_conf.use_callchain)
+ 	    && sample->callchain) {
+-		err = machine__resolve_callchain(machine, evsel, al->thread,
++		err = machine__resolve_callchain(machine, al->thread,
+ 						 sample->callchain, &parent);
+ 		if (err)
+ 			return err;
+@@ -140,7 +140,7 @@ static int perf_evsel__add_hist_entry(struct perf_evsel *evsel,
+ 	struct hist_entry *he;
  
-+static enum dso_binary_type binary_type_data[] = {
-+	DSO_BINARY_TYPE__BUILD_ID_CACHE,
-+	DSO_BINARY_TYPE__SYSTEM_PATH_DSO,
-+	DSO_BINARY_TYPE__NOT_FOUND,
-+};
-+
-+#define DSO_BINARY_TYPE__DATA_CNT sizeof(binary_type_data)
-+
- int dso__name_len(const struct dso *dso)
- {
- 	if (!dso)
-@@ -335,6 +343,7 @@ struct dso *dso__new(const char *name)
- 		for (i = 0; i < MAP__NR_TYPES; ++i)
- 			dso->symbols[i] = dso->symbol_names[i] = RB_ROOT;
- 		dso->symtab_type = DSO_BINARY_TYPE__NOT_FOUND;
-+		dso->data_type   = DSO_BINARY_TYPE__NOT_FOUND;
- 		dso->loaded = 0;
- 		dso->sorted_by_name = 0;
- 		dso->has_build_id = 0;
-@@ -2864,3 +2873,101 @@ struct map *dso__new_map(const char *name)
+ 	if ((sort__has_parent || symbol_conf.use_callchain) && sample->callchain) {
+-		err = machine__resolve_callchain(machine, evsel, al->thread,
++		err = machine__resolve_callchain(machine, al->thread,
+ 						 sample->callchain, &parent);
+ 		if (err)
+ 			return err;
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index 8e395a5..05aa2bb 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -387,7 +387,7 @@ static void print_sample_bts(union perf_event *event,
+ 			printf(" ");
+ 		else
+ 			printf("\n");
+-		perf_event__print_ip(event, sample, machine, evsel,
++		perf_event__print_ip(event, sample, machine,
+ 				     PRINT_FIELD(SYM), PRINT_FIELD(DSO),
+ 				     PRINT_FIELD(SYMOFFSET));
+ 	}
+@@ -431,7 +431,7 @@ static void process_event(union perf_event *event __unused,
+ 			printf(" ");
+ 		else
+ 			printf("\n");
+-		perf_event__print_ip(event, sample, machine, evsel,
++		perf_event__print_ip(event, sample, machine,
+ 				     PRINT_FIELD(SYM), PRINT_FIELD(DSO),
+ 				     PRINT_FIELD(SYMOFFSET));
+ 	}
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 6bb0277..79cabe4 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -774,7 +774,7 @@ static void perf_event__process_sample(struct perf_tool *tool,
  
- 	return map;
+ 		if ((sort__has_parent || symbol_conf.use_callchain) &&
+ 		    sample->callchain) {
+-			err = machine__resolve_callchain(machine, evsel, al.thread,
++			err = machine__resolve_callchain(machine, al.thread,
+ 							 sample->callchain, &parent);
+ 			if (err)
+ 				return;
+diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
+index 81371ba..c14c665 100644
+--- a/tools/perf/util/map.h
++++ b/tools/perf/util/map.h
+@@ -157,7 +157,7 @@ void machine__exit(struct machine *self);
+ void machine__delete(struct machine *self);
+ 
+ int machine__resolve_callchain(struct machine *machine,
+-			       struct perf_evsel *evsel, struct thread *thread,
++			       struct thread *thread,
+ 			       struct ip_callchain *chain,
+ 			       struct symbol **parent);
+ int maps__set_kallsyms_ref_reloc_sym(struct map **maps, const char *symbol_name,
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 2600916..2785ce8 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -289,7 +289,6 @@ struct branch_info *machine__resolve_bstack(struct machine *self,
  }
-+
-+static int open_dso(struct dso *dso, struct machine *machine)
-+{
-+	char *root_dir = (char *) "";
-+	char *name;
-+	int fd;
-+
-+	name = malloc(PATH_MAX);
-+	if (!name)
-+		return -ENOMEM;
-+
-+	if (machine)
-+		root_dir = machine->root_dir;
-+
-+	if (dso__binary_type_file(dso, dso->data_type,
-+				  root_dir, name, PATH_MAX))
-+		return -EINVAL;
-+
-+	fd = open(name, O_RDONLY);
-+	free(name);
-+	return fd;
-+}
-+
-+int dso__data_fd(struct dso *dso, struct machine *machine)
-+{
-+	int i = 0;
-+
-+	if (dso->data_type != DSO_BINARY_TYPE__NOT_FOUND)
-+		return open_dso(dso, machine);
-+
-+	do {
-+		int fd;
-+
-+		dso->data_type = binary_type_data[i++];
-+
-+		fd = open_dso(dso, machine);
-+		if (fd >= 0)
-+			return fd;
-+
-+	} while (dso->data_type != DSO_BINARY_TYPE__NOT_FOUND);
-+
-+	return -EINVAL;
-+}
-+
-+static ssize_t dso_cache_read(struct dso *dso __used, u64 offset __used,
-+			      u8 *data __used, ssize_t size __used)
-+{
-+	return -EINVAL;
-+}
-+
-+static int dso_cache_add(struct dso *dso __used, u64 offset __used,
-+			 u8 *data __used, ssize_t size __used)
-+{
-+	return 0;
-+}
-+
-+static ssize_t read_dso_data(struct dso *dso, struct machine *machine,
-+		     u64 offset, u8 *data, ssize_t size)
-+{
-+	ssize_t rsize = -1;
-+	int fd;
-+
-+	fd = dso__data_fd(dso, machine);
-+	if (fd < 0)
-+		return -1;
-+
-+	do {
-+		if (-1 == lseek(fd, offset, SEEK_SET))
-+			break;
-+
-+		rsize = read(fd, data, size);
-+		if (-1 == rsize)
-+			break;
-+
-+		if (dso_cache_add(dso, offset, data, size))
-+			pr_err("Failed to add data int dso cache.");
-+
-+	} while (0);
-+
-+	close(fd);
-+	return rsize;
-+}
-+
-+ssize_t dso__data_read_offset(struct dso *dso, struct machine *machine,
-+			      u64 offset, u8 *data, ssize_t size)
-+{
-+	if (dso_cache_read(dso, offset, data, size))
-+		return read_dso_data(dso, machine, offset, data, size);
-+	return 0;
-+}
-+
-+ssize_t dso__data_read_addr(struct dso *dso, struct map *map,
-+			    struct machine *machine, u64 addr,
-+			    u8 *data, ssize_t size)
-+{
-+	u64 offset = map->map_ip(map, addr);
-+	return dso__data_read_offset(dso, machine, offset, data, size);
-+}
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 0dc30f9..77044cb 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -188,6 +188,7 @@ struct dso {
- 	enum dso_kernel_type	kernel;
- 	enum dso_swap_type	needs_swap;
- 	enum dso_binary_type	symtab_type;
-+	enum dso_binary_type	data_type;
- 	u8		 adjust_symbols:1;
- 	u8		 has_build_id:1;
- 	u8		 hit:1;
-@@ -305,4 +306,11 @@ size_t machine__fprintf_vmlinux_path(struct machine *machine, FILE *fp);
  
- int dso__binary_type_file(struct dso *dso, enum dso_binary_type type,
- 			  char *root_dir, char *file, size_t size);
-+
-+int dso__data_fd(struct dso *dso, struct machine *machine);
-+ssize_t dso__data_read_offset(struct dso *dso, struct machine *machine,
-+			      u64 offset, u8 *data, ssize_t size);
-+ssize_t dso__data_read_addr(struct dso *dso, struct map *map,
-+			    struct machine *machine, u64 addr,
-+			    u8 *data, ssize_t size);
- #endif /* __PERF_SYMBOL */
+ int machine__resolve_callchain(struct machine *self,
+-			       struct perf_evsel *evsel __used,
+ 			       struct thread *thread,
+ 			       struct ip_callchain *chain,
+ 			       struct symbol **parent)
+@@ -1480,8 +1479,8 @@ struct perf_evsel *perf_session__find_first_evtype(struct perf_session *session,
+ }
+ 
+ void perf_event__print_ip(union perf_event *event, struct perf_sample *sample,
+-			  struct machine *machine, struct perf_evsel *evsel,
+-			  int print_sym, int print_dso, int print_symoffset)
++			  struct machine *machine, int print_sym,
++			  int print_dso, int print_symoffset)
+ {
+ 	struct addr_location al;
+ 	struct callchain_cursor_node *node;
+@@ -1495,7 +1494,7 @@ void perf_event__print_ip(union perf_event *event, struct perf_sample *sample,
+ 
+ 	if (symbol_conf.use_callchain && sample->callchain) {
+ 
+-		if (machine__resolve_callchain(machine, evsel, al.thread,
++		if (machine__resolve_callchain(machine, al.thread,
+ 						sample->callchain, NULL) != 0) {
+ 			if (verbose)
+ 				error("Failed to resolve callchain. Skipping\n");
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index 7a5434c..877d781 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -150,8 +150,8 @@ struct perf_evsel *perf_session__find_first_evtype(struct perf_session *session,
+ 					    unsigned int type);
+ 
+ void perf_event__print_ip(union perf_event *event, struct perf_sample *sample,
+-			  struct machine *machine, struct perf_evsel *evsel,
+-			  int print_sym, int print_dso, int print_symoffset);
++			  struct machine *machine, int print_sym,
++			  int print_dso, int print_symoffset);
+ 
+ int perf_session__cpu_bitmap(struct perf_session *session,
+ 			     const char *cpu_list, unsigned long *cpu_bitmap);
 -- 
 1.7.7.6
 
