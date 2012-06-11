@@ -1,73 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913Ab2FKLFi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 07:05:38 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:53789 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753619Ab2FKLFf (ORCPT
+	id S1753594Ab2FKLCe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 07:02:34 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:30306 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751842Ab2FKLCd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 07:05:35 -0400
-Date: Mon, 11 Jun 2012 12:05:17 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Liu Ying <liu.y.victor@gmail.com>
-Cc: Liu Ying <Ying.Liu@freescale.com>, g.liakhovetski@gmx.de,
-        linux-fbdev@vger.kernel.org, FlorianSchandinat@gmx.de,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/3] mx3fb: do not support panning with fb blanked
-Message-ID: <20120611110517.GE11168@n2100.arm.linux.org.uk>
-References: <1339376810-8247-1-git-send-email-Ying.Liu@freescale.com> <20120611095102.GD11168@n2100.arm.linux.org.uk> <CA+8Hj81L9-NC=08_dvV2u_eM0NdssJsjduAgTbH37nusu56Avw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+8Hj81L9-NC=08_dvV2u_eM0NdssJsjduAgTbH37nusu56Avw@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Mon, 11 Jun 2012 07:02:33 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
+        srinivas.bakki@nxp.com, aletes.xgr@gmail.com
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH 2/14] ARM: LPC32xx: Clock initialization for NAND controllers
+Date: Mon, 11 Jun 2012 13:02:05 +0200
+Message-Id: <1339412537-24485-3-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <1339412537-24485-1-git-send-email-stigge@antcom.de>
+References: <1339412537-24485-1-git-send-email-stigge@antcom.de>
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 11, 2012 at 06:46:14PM +0800, Liu Ying wrote:
-> 2012/6/11, Russell King - ARM Linux <linux@arm.linux.org.uk>:
-> > On Mon, Jun 11, 2012 at 09:06:48AM +0800, Liu Ying wrote:
-> >> This patch checks if framebuffer is unblanked before
-> >> we actually trigger panning in custom pan display
-> >> function.
-> >>
-> >> Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
-> >> ---
-> >>  drivers/video/mx3fb.c |    5 +++++
-> >>  1 files changed, 5 insertions(+), 0 deletions(-)
-> >>
-> >> diff --git a/drivers/video/mx3fb.c b/drivers/video/mx3fb.c
-> >> index e3406ab..d53db60 100644
-> >> --- a/drivers/video/mx3fb.c
-> >> +++ b/drivers/video/mx3fb.c
-> >> @@ -1063,6 +1063,11 @@ static int mx3fb_pan_display(struct
-> >> fb_var_screeninfo *var,
-> >>  	dev_dbg(fbi->device, "%s [%c]\n", __func__,
-> >>  		list_empty(&mx3_fbi->idmac_channel->queue) ? '-' : '+');
-> >>
-> >> +	if (mx3_fbi->blank != FB_BLANK_UNBLANK) {
-> >> +		dev_dbg(fbi->device, "panning with fb blanked not supported\n");
-> >> +		return -EFAULT;
-> >> +	}
-> >
-> > Why is this an error, and why return -EFAULT?  What userspace access
-> > failed?
-> >
-> Hi, Russell,
-> 
-> IMHO, panning with framebuffer blanked is meaningless, at least, it is
-> not a common usecase.
+This patch adds clock initialization for the MLC NAND controller of the LPC32xx
+SoC and adjusts it for the SLC controller.
 
-Yes, but why should anything in userspace care whether the display is
-blanked or not?
+Signed-off-by: Roland Stigge <stigge@antcom.de>
+---
 
-For example, we may pan the display when a user program produces output,
-and we're on the last line of the display.  We don't fail that just
-because the screen happens to be blank.  So I don't see why we should
-actively fail an explicit userspace pan request just because the console
-happened to be blanked.
+ arch/arm/mach-lpc32xx/clock.c |   16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
 
-What I'm basically saying is that as far as _userspace_ is concerned,
-all the standard APIs should just work as normal whether the display is
-blanked or not.
+--- linux-2.6.orig/arch/arm/mach-lpc32xx/clock.c
++++ linux-2.6/arch/arm/mach-lpc32xx/clock.c
+@@ -691,10 +691,21 @@ static struct clk clk_nand = {
+ 	.parent		= &clk_hclk,
+ 	.enable		= local_onoff_enable,
+ 	.enable_reg	= LPC32XX_CLKPWR_NAND_CLK_CTRL,
+-	.enable_mask	= LPC32XX_CLKPWR_NANDCLK_SLCCLK_EN,
++	.enable_mask	= LPC32XX_CLKPWR_NANDCLK_SLCCLK_EN |
++			  LPC32XX_CLKPWR_NANDCLK_SEL_SLC,
+ 	.get_rate	= local_return_parent_rate,
+ };
+ 
++static struct clk clk_nand_mlc = {
++	.parent         = &clk_hclk,
++	.enable         = local_onoff_enable,
++	.enable_reg     = LPC32XX_CLKPWR_NAND_CLK_CTRL,
++	.enable_mask    = LPC32XX_CLKPWR_NANDCLK_MLCCLK_EN |
++			  LPC32XX_CLKPWR_NANDCLK_DMA_INT |
++			  LPC32XX_CLKPWR_NANDCLK_INTSEL_MLC,
++	.get_rate       = local_return_parent_rate,
++};
++
+ static struct clk clk_i2s0 = {
+ 	.parent		= &clk_hclk,
+ 	.enable		= local_onoff_enable,
+@@ -1121,7 +1132,8 @@ static struct clk_lookup lookups[] = {
+ 	CLKDEV_INIT("dev:ssp0", NULL, &clk_ssp0),
+ 	CLKDEV_INIT("dev:ssp1", NULL, &clk_ssp1),
+ 	CLKDEV_INIT("lpc32xx_keys.0", NULL, &clk_kscan),
+-	CLKDEV_INIT("lpc32xx-nand.0", "nand_ck", &clk_nand),
++	CLKDEV_INIT("20020000.flash", NULL, &clk_nand),
++	CLKDEV_INIT("200a8000.flash", NULL, &clk_nand_mlc),
+ 	CLKDEV_INIT("40048000.adc", NULL, &clk_adc),
+ 	CLKDEV_INIT(NULL, "i2s0_ck", &clk_i2s0),
+ 	CLKDEV_INIT(NULL, "i2s1_ck", &clk_i2s1),
