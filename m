@@ -1,51 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752882Ab2FKRWS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 13:22:18 -0400
-Received: from casper.infradead.org ([85.118.1.10]:56682 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751562Ab2FKRWR convert rfc822-to-8bit (ORCPT
+	id S1752170Ab2FKR37 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 13:29:59 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:38807 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750942Ab2FKR35 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 13:22:17 -0400
-Message-ID: <1339435331.31548.19.camel@twins>
-Subject: Re: [patch v3] sched: fix select_idle_sibling() induced bouncing
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Mike Galbraith <efault@gmx.de>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Paul Turner <pjt@google.com>, Arjan Van De Ven <arjan@linux.intel.com>
-Date: Mon, 11 Jun 2012 19:22:11 +0200
-In-Reply-To: <1339433835.7358.30.camel@marge.simpson.net>
-References: <1337857490.7300.19.camel@marge.simpson.net>
-	 <1337865431.9783.148.camel@laptop>
-	 <1338906621.6110.30.camel@marge.simpson.net>
-	 <1339433835.7358.30.camel@marge.simpson.net>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Mon, 11 Jun 2012 13:29:57 -0400
+From: sjur.brandeland@stericsson.com
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: Loic PALLARDY <loic.pallardy@stericsson.com>,
+        Ludovic BARRE <ludovic.barre@stericsson.com>,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjurbren@gmail.com>,
+        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
+Subject: [PATCHv2 0/5] remoteproc: Custom firmware handling.
+Date: Mon, 11 Jun 2012 19:29:43 +0200
+Message-Id: <1339435788-16283-1-git-send-email-sjur.brandeland@stericsson.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-06-11 at 18:57 +0200, Mike Galbraith wrote:
+From: Sjur Brændeland <sjur.brandeland@stericsson.com>
 
-> Traversing an entire package is not only expensive, it also leads to tasks
-> bouncing all over a partially idle and possible quite large package.  Fix
-> that up by assigning a 'buddy' CPU to try to motivate.  Each buddy may try
-> to motivate that one other CPU, if it's busy, tough, it may then try it's
-> SMT sibling, but that's all this optimization is allowed to cost.
-> 
-> Sibling cache buddies are cross-wired to prevent bouncing.
-> 
-> Signed-off-by: Mike Galbraith <efault@gmx.de>
+Hi Ohad,
+Here is a new patch series. I dropped the two bug-fix patches
+since last time, as you already included these. I've tried to
+address all of your review comments since last time, hope I
+didn't miss any.
 
-The patch could do with a little comment on how you achieve the
-cross-wiring because staring at the code I go cross-eyed again ;-)
+Status:
+I have done a simple simulated test now with the STE firmware
+loader and main-flow seems ok, but I haven't done any negative 
+tests.
 
-Anyway, I think I'll grab it since nobody seems to have any objections
-and the numbers seem good.
+Changes since V1:
+- Changed rproc_set_boot_addr to rproc_get_boot_addr avoiding
+  firmware handlers to manipulate the rproc structure.
+- Functions in remoteproc_elf_loader are now static and prefixed
+   with _rproc to avoid any namespace issues.
+- Added commit note about rproc_da_to_va() becoming non-static
+  and moved it to remoteproc_internal.h
+- Made the elf handler default.
+- Moved pointer to rproc_fw_ops from the rproc_ops struct to
+  the rproc struct.
+- Fixed typos
+- The fw_ops are no longer exported as symbols.
+- The struct rproc_fw_ops is made const.
+- The inline helper functions are moved from remoteproc.h to
+  remoteproc_internal.h
+- The latest patch is a bit odd. The ste_modem_remoteproc module
+  contains only the firmware handler, and nothing else.
 
-PJT any progress on your load-tracking stuff? Arjan is interested in the
-avg runtime estimation it has to make the whole wake an idle thing
-conditional on.
+Regards,
+Sjur
+
+Sjur Brændeland (5):
+  remoteproc: Pass struct fw to load_segments and find_rsc_table.
+  remoteproc: Add function rproc_get_boot_addr
+  remoteproc: Move Elf related functions to separate file
+  remoteproc: Support custom firmware handlers
+  remoteproc: Add custom STE-modem firmware loader.
+
+ drivers/remoteproc/Kconfig                       |    9 +
+ drivers/remoteproc/Makefile                      |    1 +
+ drivers/remoteproc/remoteproc_core.c             |  251 +------------------
+ drivers/remoteproc/remoteproc_elf_loader.c       |  289 ++++++++++++++++++++++
+ drivers/remoteproc/remoteproc_internal.h         |   37 +++
+ drivers/remoteproc/remoteproc_ste_modem_loader.c |  179 +++++++++++++
+ include/linux/remoteproc.h                       |   23 ++-
+ 7 files changed, 546 insertions(+), 243 deletions(-)
+ create mode 100644 drivers/remoteproc/remoteproc_elf_loader.c
+ create mode 100644 drivers/remoteproc/remoteproc_ste_modem_loader.c
+
+-- 
+1.7.5.4
+
