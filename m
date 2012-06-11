@@ -1,86 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752561Ab2FKWGO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 18:06:14 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:56075 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751957Ab2FKWGN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 18:06:13 -0400
-Date: Tue, 12 Jun 2012 00:06:04 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@ti.com>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH v2] rcu: Allow calls to rcu_exit_user_irq from nesting
- irqs
-Message-ID: <20120611220600.GA29503@somewhere.redhat.com>
-References: <1338811708-18819-1-git-send-email-fweisbec@gmail.com>
- <20120604181313.GL2490@linux.vnet.ibm.com>
- <CAFTL4hzqa1z4icSBwEqZXLjCrVsG+axm2TaGSaaMXkjazT0Qfw@mail.gmail.com>
- <20120604210709.GO2490@linux.vnet.ibm.com>
- <20120605103055.GA4553@somewhere.redhat.com>
- <20120605234640.GY2388@linux.vnet.ibm.com>
- <20120609225550.GB31957@somewhere.redhat.com>
- <20120610180659.GD2425@linux.vnet.ibm.com>
- <20120610214722.GE31957@somewhere.redhat.com>
- <20120611215546.GH2521@linux.vnet.ibm.com>
+	id S1752590Ab2FKWHv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 18:07:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65046 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750854Ab2FKWHt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 18:07:49 -0400
+Date: Mon, 11 Jun 2012 19:07:19 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Eric B Munson <emunson@mgebm.net>
+Cc: sedat.dilek@gmail.com, kvm@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
+        Glauber Costa <glommer@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        x86@kernel.org
+Subject: Re: WARNING: at arch/x86/kernel/kvmclock.c:127
+Message-ID: <20120611220719.GA27415@amt.cnet>
+References: <CA+icZUUD+oHPK=L6iHg-FfkpXVCPQTKHuzwDo9EaYYjYmYePCA@mail.gmail.com>
+ <0669740d6e2f3648f1c5c9a50e72f6eb@mgebm.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120611215546.GH2521@linux.vnet.ibm.com>
+In-Reply-To: <0669740d6e2f3648f1c5c9a50e72f6eb@mgebm.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 11, 2012 at 02:55:46PM -0700, Paul E. McKenney wrote:
-> On Sun, Jun 10, 2012 at 11:47:26PM +0200, Frederic Weisbecker wrote:
-> > From: Frederic Weisbecker <fweisbec@gmail.com>
-> > Date: Sat, 9 Jun 2012 14:06:30 +0200
-> > Subject: [PATCH] rcu: Allow calls to rcu_exit_user_irq from nesting irqs
-> > 
-> > rcu_exit_user_irq() which exits RCU idle mode after the current
-> > irq returns has been designed to be called from non nesting irqs
-> > only.
-> > 
-> > However the IPI that restarts the tick and exits RCU user-idle mode
-> > in nohz cpusets can happen anytime. For example it can be a nesting
-> > irq by interrupting a softirq. In this case the stack of RCU API
-> > calls becomes:
-> > 
-> > ==> IRQ
-> >     rcu_irq_enter()
-> >     ....
-> >     do_softirq {
-> > ===== > IRQ (restart tick IPI)
-> >         rcu_irq_enter()
-> >         rcu_exit_user_irq()
-> >         rcu_irq_exit()
-> > <=====
-> >     }
-> >     rcu_irq_exit();
-> > 
-> > Hence we need to make rcu_exit_user_irq() callable from any nesting
-> > level of interrupt.
-> > 
-> > v2: rcu_user_enter_irq() is only called from non nesting irqs though so
-> > the change doesn't need to be propagated to it.
-> 
-> I have queued this on -rcu on branch rcu/idle.  I have also removed
-> the TINY_RCU commits as discussed.  If you ever need them back, the
-> magic branch name is idle.2012.06.06a.
+On Mon, Jun 11, 2012 at 05:47:00PM -0400, Eric B Munson wrote:
+> On Sun, 10 Jun 2012 17:47:24 +0200, Sedat Dilek wrote:
+> >Hi,
+> >
+> >I see the same warning especially when resuming from a suspend (see
+> >timestamps >=30-35sec) between Linux v3.5-rc1..v3.5-rc2.
+> >
+> >$ sudo grep kvmclock.c /var/log/kern.log
+> >Jun  4 21:11:32 fambox kernel: [  784.037237] WARNING: at
+> >arch/x86/kernel/kvmclock.c:127
+> >kvm_check_and_clear_guest_paused+0x52/0x60()
+> >Jun  5 20:35:57 fambox kernel: [ 1928.458060] WARNING: at
+> >arch/x86/kernel/kvmclock.c:127
+> >kvm_check_and_clear_guest_paused+0x52/0x60()
+> >Jun  8 09:35:52 fambox kernel: [ 3290.134637] WARNING: at
+> >arch/x86/kernel/kvmclock.c:127
+> >kvm_check_and_clear_guest_paused+0x52/0x60()
+> >Jun  8 09:35:52 fambox kernel: [ 3290.238592] WARNING: at
+> >arch/x86/kernel/kvmclock.c:127
+> >kvm_check_and_clear_guest_paused+0x52/0x60()
+> >Jun  8 12:11:20 fambox kernel: [ 5777.023571] WARNING: at
+> >arch/x86/kernel/kvmclock.c:127
+> >kvm_check_and_clear_guest_paused+0x52/0x60()
+> >Jun  9 13:32:50 fambox kernel: [ 2778.842695] WARNING: at
+> >arch/x86/kernel/kvmclock.c:127
+> >kvm_check_and_clear_guest_paused+0x52/0x60()
+> >
+> >From [1]:
+> >
+> >"...The warning itself is not required for the check_and_clear
+> >function and can be removed as far as I am concerned."
+> >
+> >From [2] commit 3b5d56b9317fa7b5407dff1aa7b115bf6cdbd494 ("kvmclock:
+> >Add functions to check if the host has stopped the vm")
+> >...
+> >+bool kvm_check_and_clear_guest_paused(void)
+> >+{
+> >+       bool ret = false;
+> >+       struct pvclock_vcpu_time_info *src;
+> >+
+> >+       /*
+> >+        * per_cpu() is safe here because this function is only
+> >called from
+> >+        * timer functions where preemption is already disabled.
+> >+        */
+> >+       WARN_ON(!in_atomic());
+> >+       src = &__get_cpu_var(hv_clock);
+> >+       if ((src->flags & PVCLOCK_GUEST_STOPPED) != 0) {
+> >+               __this_cpu_and(hv_clock.flags,
+> >~PVCLOCK_GUEST_STOPPED);
+> >+               ret = true;
+> >+       }
+> >+
+> >+       return ret;
+> >+}
+> >+EXPORT_SYMBOL_GPL(kvm_check_and_clear_guest_paused);
+> >+
+> >...
+> >( The export macro was dropped in a followup commit. )
+> >
+> >So you mean "WARN_ON(!in_atomic());" can be deleted?
 
-Thanks a lot!
+Yes.
+
+> When I wrote the patch originally, I was under the (incorrect)
+> assumption that the watch dog was only ever reset in an atomic
+> context.  Given that this is not the case, the warning can be
+> removed.  Though before that happens, I have a question: if this is
+> called outside of an atomic context, is the use of __get_cpu_Var()
+> and __this_cpu_and() invalid?
+
+It remains valid because its called with interrupts 
+disabled (see migrate_hrtimers).
+
+
