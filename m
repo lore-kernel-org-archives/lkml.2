@@ -1,72 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752608Ab2FKWtf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 18:49:35 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:46039 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752069Ab2FKWte (ORCPT
+	id S1752718Ab2FKWuG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 18:50:06 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:53162 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752366Ab2FKWuE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 18:49:34 -0400
-X-AuditID: 9c930197-b7b5dae000004b23-8d-4fd675fc297b
-Message-ID: <4FD675FE.1060202@kernel.org>
-Date: Tue, 12 Jun 2012 07:49:34 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Mon, 11 Jun 2012 18:50:04 -0400
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
-To: Andrea Arcangeli <aarcange@redhat.com>
-CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>
-Subject: Re: [PATCH] mm: do not use page_count without a page pin
-References: <1339373872-31969-1-git-send-email-minchan@kernel.org> <4FD59C31.6000606@jp.fujitsu.com> <20120611074440.GI3094@redhat.com> <20120611133043.GA2340@barrios> <20120611144132.GT3094@redhat.com>
-In-Reply-To: <20120611144132.GT3094@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <4FD626C1.1010507@mvista.com>
+References: <1339263660-4039-1-git-send-email-linkinjeon@gmail.com>
+	<4FD39904.2010808@mvista.com>
+	<CAKYAXd9EUqxUBw1YWr2FnBrg1K=uGWiaEFYtSgu-J3nZ9sLvuQ@mail.gmail.com>
+	<4FD626C1.1010507@mvista.com>
+Date: Tue, 12 Jun 2012 07:50:01 +0900
+Message-ID: <CAKYAXd88oU_vu4Ko4x+OAi3=w8CLSD0GEA787-3CMVfXL6CLQg@mail.gmail.com>
+Subject: Re: [PATCH v3 2/4] usb: storage: add support for write cache quirk on
+ usb hdd
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+Cc: James.Bottomley@hansenpartnership.com, gregkh@linuxfoundation.org,
+        mdharm-usb@one-eyed-alien.net, stern@rowland.harvard.edu,
+        bvanassche@acm.org, linux-usb@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Pankaj Kumar <pankaj.km@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2012 11:41 PM, Andrea Arcangeli wrote:
-
-> Hi Minchan,
-> 
-> On Mon, Jun 11, 2012 at 10:30:43PM +0900, Minchan Kim wrote:
->> AFAIUC, you mean we have to increase reference count of head page?
->> If so, it's not in __count_immobile_pages because it is already race-likely function
->> so it shouldn't be critical although race happens.
-> 
-> I meant, shouldn't we take into account the full size? If it's in the
-> lru the whole thing can be moved away.
-> 
->   if (!PageLRU(page)) {
->      nr_pages = hpage_nr_pages(page);
->      barrier();
-
-
-Could you explain why we need barrier?
-
->      found += nr_pages;
->      iter += nr_pages-1;
->   }
-> 
-
-
-Thanks for the explain.
-
-For the normal pages, the logic accounts it as "non-movable pages" so for the consistency,
-it seems you're right. But let's think about a bit.
-
-If THP page isn't LRU and it's still PageTransHuge, I think it's rather rare and
-although it happens, it means migration/reclaimer is about to split or isolate/putback
-so it ends up making THP page movable pages.
-
-IMHO, it would be better to account it by movable pages.
-What do you think about it?
-
-Thanks.
--- 
-Kind regards,
-Minchan Kim
+2012/6/12, Sergei Shtylyov <sshtylyov@mvista.com>:
+> Hello.
+>
+> On 10-06-2012 4:30, Namjae Jeon wrote:
+>
+>>>> Add support for write cache quirk on usb hdd. scsi driver will be set
+>>>> to
+>>>> wce
+>>>> by detecting write cache quirk in quirk list when plugging usb hdd.
+>
+>>>> Signed-off-by: Namjae Jeon<namjae.jeon@samsung.com>
+>>>> Signed-off-by: Pankaj Kumar<pankaj.km@samsung.com>
+>>>> Signed-off-by: Amit Sahrawat<a.sahrawat@samsung.com>
+>>>> ---
+>>>>    drivers/usb/storage/scsiglue.c |    5 +++++
+>>>>    drivers/usb/storage/usb.c      |    5 ++++-
+>>>>    include/linux/usb_usual.h      |    4 +++-
+>>>>    3 files changed, 12 insertions(+), 2 deletions(-)
+>
+>>>> diff --git a/drivers/usb/storage/scsiglue.c
+>>>> b/drivers/usb/storage/scsiglue.c
+>>>> index a324a5d..fe42547 100644
+>>>> --- a/drivers/usb/storage/scsiglue.c
+>>>> +++ b/drivers/usb/storage/scsiglue.c
+>>> [...]
+>>>> @@ -529,6 +529,9 @@ static void adjust_quirks(struct us_data *us)
+>>>>    		case 'o':
+>>>>    			f |= US_FL_CAPACITY_OK;
+>>>>    			break;
+>>>> +		case 'p':
+>>>> +			f |= US_FL_WRITE_CACHE;
+>>>> +			break;
+>>>>    		case 'r':
+>>>>    			f |= US_FL_IGNORE_RESIDUE;
+>>>>    			break;
+>>>
+>>>      You probably should unite this chunk with the documentation update
+>>> patch.
+>
+>> Hi Sergei.
+>> I tried to post documentation update patch(4/4) for this chunk.
+>> Do I misunderstand ?
+>
+>     I mean that the documenation should be updated in the same patch where
+> you
+> add the new value.
+Okay, I changed it on the latest patch also.
+Sergei, Thanks a lot.
+>
+> WBR, Sergei
+>
