@@ -1,80 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754174Ab2FKM77 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 08:59:59 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53093 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750918Ab2FKM76 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 08:59:58 -0400
-Date: Mon, 11 Jun 2012 14:59:52 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
-        rientjes@google.com, akpm@linux-foundation.org, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH -V8 11/16] hugetlb/cgroup: Add charge/uncharge routines
- for hugetlb cgroup
-Message-ID: <20120611125952.GM12402@tiehlicka.suse.cz>
-References: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <1339232401-14392-12-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <20120611083810.GC12402@tiehlicka.suse.cz>
- <87liju5h9u.fsf@skywalker.in.ibm.com>
+	id S1754562Ab2FKNAi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 09:00:38 -0400
+Received: from sting.hengli.com.au ([178.18.18.71]:59093 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752286Ab2FKNAg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 09:00:36 -0400
+Date: Mon, 11 Jun 2012 22:00:27 +0900
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
+Subject: Crypto Fixes for 3.5
+Message-ID: <20120611130027.GA6407@gondor.apana.org.au>
+References: <20100716022648.GA28219@gondor.apana.org.au>
+ <20100722055043.GA25689@gondor.apana.org.au>
+ <20100903060055.GA28915@gondor.apana.org.au>
+ <20100903110722.GA31826@gondor.apana.org.au>
+ <20101215115035.GA25248@gondor.apana.org.au>
+ <20110216053911.GA10999@gondor.apana.org.au>
+ <20110328071322.GA6569@gondor.apana.org.au>
+ <20110629235153.GA16559@gondor.apana.org.au>
+ <20120126024342.GA12492@gondor.apana.org.au>
+ <20120322012046.GA8854@gondor.apana.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87liju5h9u.fsf@skywalker.in.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120322012046.GA8854@gondor.apana.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 11-06-12 14:58:45, Aneesh Kumar K.V wrote:
-> Michal Hocko <mhocko@suse.cz> writes:
-> 
-> > On Sat 09-06-12 14:29:56, Aneesh Kumar K.V wrote:
-> >> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-> >> 
-> >> This patchset add the charge and uncharge routines for hugetlb cgroup.
-> >> This will be used in later patches when we allocate/free HugeTLB
-> >> pages.
-> >
-> > Please describe the locking rules.
-> 
-> All the update happen within hugetlb_lock.
+Hi Linus:
 
-Yes, I figured but it is definitely worth mentioning in the patch
-description.
+This push fixes an unaligned fault on x86-32 with aesni-intel
+and an RNG failure with atmel-rng (repeated bits).
 
-[...]
-> >> +void hugetlb_cgroup_commit_charge(int idx, unsigned long nr_pages,
-> >> +				  struct hugetlb_cgroup *h_cg,
-> >> +				  struct page *page)
-> >> +{
-> >> +	if (hugetlb_cgroup_disabled() || !h_cg)
-> >> +		return;
-> >> +
-> >> +	spin_lock(&hugetlb_lock);
-> >> +	if (hugetlb_cgroup_from_page(page)) {
-> >
-> > How can this happen? Is it possible that two CPUs are trying to charge
-> > one page?
-> 
-> That is why I added that. I looked at the alloc_huge_page, and I
-> don't see we would end with same page from different CPUs but then
-> we have similar checks in memcg, where we drop the charge if we find
-> the page cgroup already used.
 
-Yes but memcg is little bit more complicated than hugetlb which has
-which doesn't have to cope with async charges. Hugetlb allocation is
-serialized by hugetlb_lock so only one caller gets the page.
-I do not think the check is required here or add a comment explaining
-how it can happen.
+Please pull from
 
-[...]
+git://git.kernel.org/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
+
+or
+
+master.kernel.org:/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
+
+
+Mathias Krause (1):
+      crypto: aesni-intel - fix unaligned cbc decrypt for x86-32
+
+Peter Korsgaard (1):
+      hwrng: atmel-rng - fix race condition leading to repeated bits
+
+ arch/x86/crypto/aesni-intel_asm.S  |    6 ++++--
+ drivers/char/hw_random/atmel-rng.c |    7 +++++++
+ 2 files changed, 11 insertions(+), 2 deletions(-)
+
+Thanks,
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
