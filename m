@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753963Ab2FKLGc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 07:06:32 -0400
-Received: from bar.sig21.net ([80.81.252.164]:37391 "EHLO bar.sig21.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752619Ab2FKLGa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 07:06:30 -0400
-Date: Mon, 11 Jun 2012 13:05:57 +0200
-From: Johannes Stezenbach <js@sig21.net>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Boszormenyi Zoltan <zboszor@pr.hu>, linux-kernel@vger.kernel.org,
-        Andreas Herrmann <andreas.herrmann3@amd.com>
-Subject: Re: AMD FX CPU bug, not fixed by latest microcode?
-Message-ID: <20120611110557.GA4599@sig21.net>
-References: <4FD4F45D.5050103@pr.hu>
- <20120611084318.GA1685@liondog.tnic>
- <20120611094905.GA10349@liondog.tnic>
+	id S1753598Ab2FKLKt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 07:10:49 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:53807 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752154Ab2FKLKs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 07:10:48 -0400
+Date: Mon, 11 Jun 2012 12:10:29 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Roland Stigge <stigge@antcom.de>
+Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
+        srinivas.bakki@nxp.com, aletes.xgr@gmail.com
+Subject: Re: [PATCH 4/14] ARM: LPC32xx: Add DMA configuration to platform
+	data
+Message-ID: <20120611111029.GF11168@n2100.arm.linux.org.uk>
+References: <1339412537-24485-1-git-send-email-stigge@antcom.de> <1339412537-24485-5-git-send-email-stigge@antcom.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120611094905.GA10349@liondog.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-21-Score: -2.9 (--)
-X-Spam-21-Report: No, score=-2.9 required=8.0 tests=ALL_TRUSTED=-1,BAYES_00=-1.9 autolearn=ham
+In-Reply-To: <1339412537-24485-5-git-send-email-stigge@antcom.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 11, 2012 at 11:49:05AM +0200, Borislav Petkov wrote:
-> On Mon, Jun 11, 2012 at 10:43:18AM +0200, Borislav Petkov wrote:
-> > On Sun, Jun 10, 2012 at 09:24:13PM +0200, Boszormenyi Zoltan wrote:
-> > > I have an AMD FX-8120 boxed CPU in an ASUS M5A99X-EVO mainboard
-> > > with 32GB DDR3/1600 memory, running Fedora 17, upgraded from 16.
-> > > memtest86+ show no problems.
-> 
-> Ohe other thing: if there's an option in the BIOS to disable the IOMMU,
-> can you do that and try reproducing the issue with IOMMU disabled?
+On Mon, Jun 11, 2012 at 01:02:07PM +0200, Roland Stigge wrote:
+> +static int pl08x_get_signal(struct pl08x_dma_chan *ch)
+> +{
+> +	return ch->cd->min_signal;
+> +}
+> +
+> +static void pl08x_put_signal(struct pl08x_dma_chan *ch)
+> +{
+> +}
 
-Maybe not related, but I had bad memory in my Intel Core-i5
-based system some months ago which resulted in rare crashes,
-usually manifested itself as g++ ICEs when compiling a
-mid-sized  C++ project -- compiling a kernel with make -p4 showed
-no problem.  Also memtest86+ didn't show the issue,
-so I tried memtest86-4.0a which claims to find more errors
-due to SMP support.  An overnight run left me with a screen
-full of garbage and a crashed memtest86-4.0.  I replaced
-the RAM anyway and the box was stable since then.
+These change in my unstable/dma-pl08x branch, patches have been posted
+already, but I don't deem them to be totally stable yet.  Waiting on
+OMAP people to get their mainline kernel restored to a buildable state
+so I can continue my DMA engine work.
 
-memtest86-4.0a is at
-http://memtest86.com/
+> +
+>  static struct pl08x_platform_data pl08x_pd = {
+> +	.slave_channels = &pl08x_slave_channels[0],
+> +	.num_slave_channels = ARRAY_SIZE(pl08x_slave_channels),
+> +	.get_signal = &pl08x_get_signal,
+> +	.put_signal = &pl08x_put_signal,
 
-The page claims:
-  With a single CPU it is not possible to drive multi-channel memory
-  controllers at full speed making it impossible to detect some types of errors
-
-Maybe someone knowledgable could comment if this is true.
-
-
-Johannes
+No need to take the address of a function here.
