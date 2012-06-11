@@ -1,54 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751803Ab2FKIWz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 04:22:55 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:32884 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751011Ab2FKIWx (ORCPT
+	id S1751766Ab2FKIX7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 04:23:59 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:43838 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750795Ab2FKIX5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 04:22:53 -0400
-Date: Mon, 11 Jun 2012 10:22:49 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [PATCH] x86/apic: Eliminate cpu_mask_to_apicid() operation
-Message-ID: <20120611082249.GC31556@gmail.com>
-References: <20120605112353.GA11457@dhcp-26-207.brq.redhat.com>
- <20120606082231.GD5991@gmail.com>
- <20120607131559.GF4759@dhcp-26-207.brq.redhat.com>
- <1339107848.28766.104.camel@sbsiddha-desk.sc.intel.com>
- <20120608165330.GE4777@dhcp-26-207.brq.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120608165330.GE4777@dhcp-26-207.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 11 Jun 2012 04:23:57 -0400
+X-AuditID: cbfee61b-b7fcc6d000003a7a-11-4fd5ab1bfd6e
+From: Seungwon Jeon <tgih.jun@samsung.com>
+To: linux-mmc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, "'Chris Ball'" <cjb@laptop.org>,
+        "'Maya Erez'" <merez@codeaurora.org>,
+        "'Subhash Jadavani'" <subhashj@codeaurora.org>,
+        "'S, Venkatraman'" <svenkatr@ti.com>
+Subject: [PATCH v7 1/3] mmc: core: Add packed command feature of eMMC4.5
+Date: Mon, 11 Jun 2012 17:23:55 +0900
+Message-id: <000601cd47ab$8ad77c50$a08674f0$%jun@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac1Hq4q3IPCsnzD7TQm7bK9qtEJddA==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJLMWRmVeSWpSXmKPExsVy+t9jAV3p1Vf9DY79t7S4vGsOm8WR//2M
+	DkwenzfJBTBGcdmkpOZklqUW6dslcGV0zFzCUtCqVtF56A17A+NruS5GTg4JAROJKVfWMUHY
+	YhIX7q1n62Lk4hASWMQose3pERYI5w+jxMKpvxhBqtgEtCT+vnnDDGKLCMhK/PxzAayDWWAv
+	o8T6c4/AEsICHhJPb2xhA7FZBFQl9u56xA5i8wrYShzYuoUZwhaU+DH5HtAGDqBmdYkpU3JB
+	wswC8hKb17xlBglLAIUf/dWFWKUn8WvjCXaIEhGJfS/eMU5gFJiFZNAshEGzkAyahaRjASPL
+	KkbR1ILkguKk9FwjveLE3OLSvHS95PzcTYzgAH0mvYNxVYPFIUYBDkYlHt6GpVf9hVgTy4or
+	cw8xSnAwK4nwbqsACvGmJFZWpRblxxeV5qQWH2KU5mBREudtsr7gLySQnliSmp2aWpBaBJNl
+	4uCUamAM6n/o0Br0p/bAHuMv8qFFUk19Gq/E3eZ8U2a5z7zpnuqr0mzDFtVneuKvFO8KPGva
+	vEpPbP306ghP0TwxO/3NT1d+zXgnn1x3MvapV3DMKX7HJubUePkrzTeOq92cWC558Lu2o2ez
+	yrditWsMPm1c98+slp/6a9qr1bffSEVuuZNtMfOIercSS3FGoqEWc1FxIgAbCvl8TAIAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch adds packed command feature of eMMC4.5.
+The maximum number for packing read(or write) is offered
+and exception event relevant to packed command which is
+used for error handling is enabled. If host wants to use
+this feature, MMC_CAP2_PACKED_CMD should be set.
 
-* Alexander Gordeev <agordeev@redhat.com> wrote:
+Signed-off-by: Seungwon Jeon <tgih.jun@samsung.com>
+---
+ drivers/mmc/core/mmc.c   |   24 ++++++++++++++++++++++++
+ include/linux/mmc/card.h |    3 +++
+ include/linux/mmc/host.h |    4 ++++
+ include/linux/mmc/mmc.h  |   15 +++++++++++++++
+ 4 files changed, 46 insertions(+), 0 deletions(-)
 
-> @@ -2151,7 +2134,12 @@ int default_cpu_mask_to_apicid_and(const struct cpumask *cpumask,
->  			break;
->  	}
->  
-> -	return __default_cpu_to_apicid(cpu, apicid);
-> +	if (likely((unsigned int)cpu < nr_cpu_ids)) {
-> +		*apicid = per_cpu(x86_cpu_to_apicid, cpu);
-> +		return 0;
-> +	} else {
-> +		return -EINVAL;
-> +	}
+diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
+index 258b203..f9d54b0 100644
+--- a/drivers/mmc/core/mmc.c
++++ b/drivers/mmc/core/mmc.c
+@@ -516,6 +516,11 @@ static int mmc_read_ext_csd(struct mmc_card *card, u8 *ext_csd)
+ 		} else {
+ 			card->ext_csd.data_tag_unit_size = 0;
+ 		}
++
++		card->ext_csd.max_packed_writes =
++			ext_csd[EXT_CSD_MAX_PACKED_WRITES];
++		card->ext_csd.max_packed_reads =
++			ext_csd[EXT_CSD_MAX_PACKED_READS];
+ 	} else {
+ 		card->ext_csd.data_sector_size = 512;
+ 	}
+@@ -1246,6 +1251,25 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
+ 		}
+ 	}
+ 
++	if ((host->caps2 & MMC_CAP2_PACKED_CMD) &&
++			((card->ext_csd.max_packed_writes > 0) ||
++			(card->ext_csd.max_packed_reads > 0))) {
++		err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
++				EXT_CSD_EXP_EVENTS_CTRL,
++				EXT_CSD_PACKED_EVENT_EN,
++				card->ext_csd.generic_cmd6_time);
++		if (err && err != -EBADMSG)
++			goto free_card;
++		if (err) {
++			pr_warning("%s: Enabling packed event failed\n",
++					mmc_hostname(card->host));
++			card->ext_csd.packed_event_en = 0;
++			err = 0;
++		} else {
++			card->ext_csd.packed_event_en = 1;
++		}
++	}
++
+ 	if (!oldcard)
+ 		host->card = card;
+ 
+diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
+index d76513b..4aeb4e9 100644
+--- a/include/linux/mmc/card.h
++++ b/include/linux/mmc/card.h
+@@ -53,6 +53,9 @@ struct mmc_ext_csd {
+ 	u8			part_config;
+ 	u8			cache_ctrl;
+ 	u8			rst_n_function;
++	u8			max_packed_writes;
++	u8			max_packed_reads;
++	u8			packed_event_en;
+ 	unsigned int		part_time;		/* Units: ms */
+ 	unsigned int		sa_timeout;		/* Units: 100ns */
+ 	unsigned int		generic_cmd6_time;	/* Units: 10ms */
+diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
+index 0707d22..9d0d946 100644
+--- a/include/linux/mmc/host.h
++++ b/include/linux/mmc/host.h
+@@ -238,6 +238,10 @@ struct mmc_host {
+ #define MMC_CAP2_BROKEN_VOLTAGE	(1 << 7)	/* Use the broken voltage */
+ #define MMC_CAP2_DETECT_ON_ERR	(1 << 8)	/* On I/O err check card removal */
+ #define MMC_CAP2_HC_ERASE_SZ	(1 << 9)	/* High-capacity erase size */
++#define MMC_CAP2_PACKED_RD	(1 << 10)	/* Allow packed read */
++#define MMC_CAP2_PACKED_WR	(1 << 11)	/* Allow packed write */
++#define MMC_CAP2_PACKED_CMD	(MMC_CAP2_PACKED_RD | \
++				 MMC_CAP2_PACKED_WR) /* Allow packed commands */
+ 
+ 	mmc_pm_flag_t		pm_caps;	/* supported pm features */
+ 	unsigned int        power_notify_type;
+diff --git a/include/linux/mmc/mmc.h b/include/linux/mmc/mmc.h
+index d425cab..254901a 100644
+--- a/include/linux/mmc/mmc.h
++++ b/include/linux/mmc/mmc.h
+@@ -139,6 +139,7 @@ static inline bool mmc_op_multi(u32 opcode)
+ #define R1_CURRENT_STATE(x)	((x & 0x00001E00) >> 9)	/* sx, b (4 bits) */
+ #define R1_READY_FOR_DATA	(1 << 8)	/* sx, a */
+ #define R1_SWITCH_ERROR		(1 << 7)	/* sx, c */
++#define R1_EXP_EVENT		(1 << 6)	/* sr, a */
+ #define R1_APP_CMD		(1 << 5)	/* sr, c */
+ 
+ #define R1_STATE_IDLE	0
+@@ -274,6 +275,10 @@ struct _mmc_csd {
+ #define EXT_CSD_FLUSH_CACHE		32      /* W */
+ #define EXT_CSD_CACHE_CTRL		33      /* R/W */
+ #define EXT_CSD_POWER_OFF_NOTIFICATION	34	/* R/W */
++#define EXT_CSD_PACKED_FAILURE_INDEX	35	/* RO */
++#define EXT_CSD_PACKED_CMD_STATUS	36	/* RO */
++#define EXT_CSD_EXP_EVENTS_STATUS	54	/* RO, 2 bytes */
++#define EXT_CSD_EXP_EVENTS_CTRL	56	/* R/W, 2 bytes */
+ #define EXT_CSD_DATA_SECTOR_SIZE	61	/* R */
+ #define EXT_CSD_GP_SIZE_MULT		143	/* R/W */
+ #define EXT_CSD_PARTITION_ATTRIBUTE	156	/* R/W */
+@@ -318,6 +323,8 @@ struct _mmc_csd {
+ #define EXT_CSD_CACHE_SIZE		249	/* RO, 4 bytes */
+ #define EXT_CSD_TAG_UNIT_SIZE		498	/* RO */
+ #define EXT_CSD_DATA_TAG_SUPPORT	499	/* RO */
++#define EXT_CSD_MAX_PACKED_WRITES	500	/* RO */
++#define EXT_CSD_MAX_PACKED_READS	501	/* RO */
+ #define EXT_CSD_HPI_FEATURES		503	/* RO */
+ 
+ /*
+@@ -377,6 +384,14 @@ struct _mmc_csd {
+ #define EXT_CSD_PWR_CL_4BIT_MASK	0x0F	/* 8 bit PWR CLS */
+ #define EXT_CSD_PWR_CL_8BIT_SHIFT	4
+ #define EXT_CSD_PWR_CL_4BIT_SHIFT	0
++
++#define EXT_CSD_PACKED_EVENT_EN	(1 << 3)
++
++#define EXT_CSD_PACKED_FAILURE	(1 << 3)
++
++#define EXT_CSD_PACKED_GENERIC_ERROR	(1 << 0)
++#define EXT_CSD_PACKED_INDEXED_ERROR	(1 << 1)
++
+ /*
+  * MMC_SWITCH access modes
+  */
+-- 
+1.7.0.4
 
-The type cast is rather ugly - why not change the cpu type to 
-unsigned int?
 
-Also, the else block is superfluous, just make it a return 
--EINVAL?
-
-Thanks,
-
-	Ingo
