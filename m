@@ -1,49 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755355Ab2FKPSF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 11:18:05 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:59656 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754006Ab2FKPSC (ORCPT
+	id S1755461Ab2FKPSZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 11:18:25 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:51286 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755400Ab2FKPSY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 11:18:02 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org, torvalds@linux-foundation.org, dhowells@redhat.com
-Subject: Re: [PATCH 00/21] vfs: atomic open v6 (part 2)
-References: <1338901832-14049-1-git-send-email-miklos@szeredi.hu>
-	<20120610034921.GB30000@ZenIV.linux.org.uk>
-Date: Mon, 11 Jun 2012 17:18:46 +0200
-In-Reply-To: <20120610034921.GB30000@ZenIV.linux.org.uk> (Al Viro's message of
-	"Sun, 10 Jun 2012 04:49:21 +0100")
-Message-ID: <877gvdho6h.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Mon, 11 Jun 2012 11:18:24 -0400
+Message-ID: <4FD60C3A.1070703@linaro.org>
+Date: Mon, 11 Jun 2012 16:18:18 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: linux-arm-kernel@lists.infradead.org, arnd@arndb.de,
+        linus.walleij@stericsson.com, grant.likely@secretlab.ca,
+        cjb@laptop.org, sameo@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 09/22] regulator: Change db8500-prcmu match names to reflect
+ Device Tree
+References: <4FCDDE58.5010501@linaro.org> <20120605102900.GP23408@opensource.wolfsonmicro.com> <4FCDE0A4.8070107@linaro.org> <20120605104201.GR23408@opensource.wolfsonmicro.com> <4FD5D49C.6070106@linaro.org> <20120611120820.GN11439@opensource.wolfsonmicro.com> <4FD5F3D2.2050500@linaro.org> <4FD5FBAF.1060002@linaro.org> <20120611142752.GS11439@opensource.wolfsonmicro.com> <4FD605B5.2060300@linaro.org> <20120611151459.GV11439@opensource.wolfsonmicro.com>
+In-Reply-To: <20120611151459.GV11439@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Al Viro <viro@ZenIV.linux.org.uk> writes:
-
+On 11/06/12 16:15, Mark Brown wrote:
+> On Mon, Jun 11, 2012 at 03:50:29PM +0100, Lee Jones wrote:
+>> On 11/06/12 15:27, Mark Brown wrote:
 >
-> I'm more or less OK with that; one major exception is your struct opendata.
-> I think it needs to go.  Really.  You are using it to store three references -
-> file, vfsmount and dentry.
+>>> It'll merge out fine, it's just icky having the same thing appear twice
+>>> in history.  Not the end of the world.
+>
+>> Understood. So does this mean you will to push them into the -rcs?
+>
+> Yes.
 
-That's not the real purpose.  We can store those in struct file, I can
-see that.
+Thanks Mark. Appreciate it.
 
-The real reason I went with a separate and opaque type there is that
-that thing is simply not an open file.  If it was a struct file and the
-filesystem would do an fput() on it by accident it would lead to really
-ugly problems, and the complier would have no chance at detecting it.
+Were you happy with my answer on the other email too?
 
-If it's a separate type (and it can have just that struct file embedded
-into it) then such mistakes are instantly detected by the compiler
-
-So I really don't see the downsides of having a new type for that.
-
-Thanks,
-Miklos
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+M: +44 77 88 633 515
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
