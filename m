@@ -1,97 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752701Ab2FKXXo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 19:23:44 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:62787 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751664Ab2FKXXn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 19:23:43 -0400
-X-AuditID: 9c930179-b7bb9ae000000ea5-48-4fd67dfddba3
-Message-ID: <4FD67E00.4040700@kernel.org>
-Date: Tue, 12 Jun 2012 08:23:44 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1752758Ab2FKXcb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 19:32:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34340 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751664Ab2FKXc3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 19:32:29 -0400
+Date: Mon, 11 Jun 2012 20:32:12 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v6 5/9] KVM: MMU: introduce SPTE_MMU_WRITEABLE bit
+Message-ID: <20120611233212.GA29573@amt.cnet>
+References: <4FC470C7.5040700@linux.vnet.ibm.com>
+ <4FC4716A.8030304@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH] mm: clean up __count_immobile_pages
-References: <1339380442-1137-1-git-send-email-minchan@kernel.org> <20120611144011.60fd76c8.akpm@linux-foundation.org>
-In-Reply-To: <20120611144011.60fd76c8.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FC4716A.8030304@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/12/2012 06:40 AM, Andrew Morton wrote:
+On Tue, May 29, 2012 at 02:49:14PM +0800, Xiao Guangrong wrote:
+> This bit indicates whether the spte can be writable on MMU, that means
+> the corresponding gpte is writable and the corresponding gfn is not
+> protected by shadow page protection
 
-> On Mon, 11 Jun 2012 11:07:22 +0900
-> Minchan Kim <minchan@kernel.org> wrote:
-> 
->> __count_immobile_pages naming is rather awkward.
->> This patch clean up the function and add comment.
-> 
-> This conflicts with
-> mm-compaction-handle-incorrect-migrate_unmovable-type-pageblocks.patch
-> and its fixes.
+Why is this still necessary, now that only sptes of direct shadow pages 
+are updated locklessly? 
 
-
-I wanted to revert [1] and friends and merge again based on [2] and this patch.
-Because [1] has still bug I explained in [2]. If it is merged without [2], it simply can
-spread bug from one place(memory hotplug) to two place(memory hotplug and compaction).
-
-We discussed real effectiveness of [1] because the patch is rather complicated than
-expectation. I don't want to add unnecessary maintain cost if it doesn't have proved benefit.
-
-KOSAKI and me : doesn't want to merge without proving (https://lkml.org/lkml/2012/6/5/3)
-Mel: Pass the decision to CMA guys (https://lkml.org/lkml/2012/6/11/242)
-Rik: want to test it based on THP alloc ratio (https://lkml.org/lkml/2012/6/11/293)
-
-I guess anyone has no sure for needing it, at least.
-
-Even, [1] added new vmstat "compact_rescued_unmovable_blocks". 
-Why I firstly suggest is just for the proving the effectiveness easily and wanted to
-revert the vmstat later before merging mainline if we prove it.
-(But it seems that KOSAKI doesn't like it - https://lkml.org/lkml/2012/6/5/282)
-But now Bartlomiej want to maintain it permanently in vmstat.
-IMHO, it's not a good idea.
-Anyway, adding new vmstat part should be careful and get a agreement from mm guys.
-
-[1] mm-compaction-handle-incorrect-migrate_unmovable-type-pageblocks.patch
-[2] [PATCH] mm: do not use page_count without a page pin
-
-> 
->> + * This function can race in PageLRU and MIGRATE_MOVABLE can have unmovable
->> + * pages so that it might be not exact.
-> 
-> I don't understand this.  Functions race against other functions, not
-> against a page flag.  Can we have another attempt at this description
-
-
-You're right. I meant page flags.
-
-> please?
-
-
-Before that, I would like to clear out how you handle this patch dependencies.
-What should I do? 
-Any tree and any patchset based on for the work?
-
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
-
-
-
--- 
-Kind regards,
-Minchan Kim
