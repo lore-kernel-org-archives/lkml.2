@@ -1,70 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753852Ab2FLRWc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 13:22:32 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:54628 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751437Ab2FLRWa convert rfc822-to-8bit (ORCPT
+	id S1753838Ab2FLRXd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 13:23:33 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:58410 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751640Ab2FLRXc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 13:22:30 -0400
+	Tue, 12 Jun 2012 13:23:32 -0400
+Date: Tue, 12 Jun 2012 19:23:52 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Borislav Petkov <bp@amd64.org>, Stephane Eranian <eranian@google.com>,
+        Robert Richter <robert.richter@amd.com>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        andi@firstfloor.org, mingo@elte.hu, ming.m.lin@intel.com,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Dimitri Sivanich <sivanich@sgi.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>
+Subject: Re: [PATCH] perf/x86: check ucode before disabling PEBS on
+ SandyBridge
+Message-ID: <20120612172352.GA4802@aftab.osrc.amd.com>
+References: <CABPqkBQ=tLXXsgvzQx+i01Owm4MM8m=6cEVVi4ab64gOiTTBYQ@mail.gmail.com>
+ <1339067757.23343.21.camel@twins>
+ <20120608093513.GA22520@gmail.com>
+ <1339149613.23343.52.camel@twins>
+ <1339161972.2507.13.camel@laptop>
+ <20120612170725.GE5046@erda.amd.com>
+ <CABPqkBRJAA7yRcswM1iYESSwhiGD4SEbir=q=ouQSevi7OAxqQ@mail.gmail.com>
+ <1339521203.31548.92.camel@twins>
+ <20120612171734.GI8404@aftab.osrc.amd.com>
+ <1339521493.31548.93.camel@twins>
 MIME-Version: 1.0
-Date: Tue, 12 Jun 2012 13:22:29 -0400
-Message-ID: <CAATkVEzTxT6d5nzt_qwCuFWM-WcN8hdhjGxFRPXJ4=L35wKbGw@mail.gmail.com>
-Subject: Bug in net/ipv6/ip6_fib.c:fib6_dump_table()
-From: Debabrata Banerjee <dbavatar@gmail.com>
-To: netdev@vger.kernel.org, davem@davemloft.net, kaber@trash.net,
-        yoshfuji@linux-ipv6.org, jmorris@namei.org, pekkas@netcore.fi,
-        kuznet@ms2.inr.ac.ru
-Cc: linux-kernel@vger.kernel.org, eric.dumazet@gmail.com,
-        Joshua Hunt <johunt@akamai.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339521493.31548.93.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks like commit 2bec5a369ee79576a3eea2c23863325089785a2c "ipv6: fib:
-fix crash when changing large fib while dumping" is the culprit. The
-result of this code is that if there is a tree addition while a dump
-has suspended because the netlink skb is full, it will simply go back
-to the top of the tree and you end up with duplicate/triplicate/etc
-routes. It looks like the code attempts to count nodes, but it's a
-linear count and the data structure is a tree so that's a big problem.
-The net result is potentially DOSable, since if route table updates
-happen often enough in proportion to table size, a dump will attempt
-to return an infinite amount of routes (observed). So this commit
-should be reverted. However I am interested in the problem that commit
-tried to solve, if anyone has more information on that. My assumption
-is the fib tree gets corrupted and eventually it crashes in
-fib6_dump_table(), which I assume can still happen.
+On Tue, Jun 12, 2012 at 07:18:13PM +0200, Peter Zijlstra wrote:
+> But the ucode loader can be (ab)used to only update one of the many
+> CPUs.
 
-I can easily demonstrate the bug by adding cloned/cache routes while I
-check the results of fib6_dump_table:
+Not if you don't support mixed ucode revisions. In that case, you want
+the same ucode patch applied to _all_ cores on the system. Otherwise,
+random freezes, explosions and other cataclysmic events can happen.
 
-root@a172-25-43-12.deploy.akamaitechnologies.com:~# ip -6 -o route
-show table cache |tee tmp | wc -l; sort tmp | uniq -u | wc -l
-593
-189
-root@a172-25-43-12.deploy.akamaitechnologies.com:~# ip -6 -o route
-show table cache |tee tmp | wc -l; sort tmp | uniq -u | wc -l
-884
-16
-root@a172-25-43-12.deploy.akamaitechnologies.com:~# ip -6 -o route
-show table cache |tee tmp | wc -l; sort tmp | uniq -u | wc -l
-888
-78
-root@a172-25-43-12.deploy.akamaitechnologies.com:~# ip -6 -o route
-show table cache |tee tmp | wc -l; sort tmp | uniq -u | wc -l
-507
-507
-root@a172-25-43-12.deploy.akamaitechnologies.com:~# ip -6 -o route
-show table cache |tee tmp | wc -l; sort tmp | uniq -u | wc -l
-533
-533
-root@a172-25-43-12.deploy.akamaitechnologies.com:~# ip -6 -o route
-show table cache |tee tmp | wc -l; sort tmp | uniq -u | wc -l
-571
-571
+-- 
+Regards/Gruss,
+Boris.
 
-Thanks,
-Debabrata
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
