@@ -1,145 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753459Ab2FLNZA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 09:25:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49315 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753343Ab2FLNXl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 09:23:41 -0400
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH EDAC 1/5] amd64_edac: Don't pass driver name as an error parameter
-Date: Tue, 12 Jun 2012 10:23:27 -0300
-Message-Id: <075f30901e32feefd3641e6c5537611fd7e27b59.1339507095.git.mchehab@redhat.com>
-In-Reply-To: <cover.1339507094.git.mchehab@redhat.com>
-References: <cover.1339507094.git.mchehab@redhat.com>
-To: unlisted-recipients:; (no To-header on input)
+	id S1753348Ab2FLN3z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 09:29:55 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45958 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753275Ab2FLN3x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 09:29:53 -0400
+Message-ID: <4FD74447.2090906@redhat.com>
+Date: Tue, 12 Jun 2012 15:29:43 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+MIME-Version: 1.0
+To: Wen Congyang <wency@cn.fujitsu.com>
+CC: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Avi Kivity <avi@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
+Subject: Re: [PATCH 3/3] deal with guest panicked event
+References: <4FB9E4CE.8060709@cn.fujitsu.com> <4FB9E5CB.2020208@cn.fujitsu.com>
+In-Reply-To: <4FB9E5CB.2020208@cn.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The EDAC driver name doesn't help to handle EDAC errors. So,
-remove it from the EDAC error messages, preserving only the
-error_message.
+Il 21/05/2012 08:50, Wen Congyang ha scritto:
+> +DEF("onpanic", HAS_ARG, QEMU_OPTION_onpanic, \
+> +    "-onpanic report|pause|quit\n" \
+> +    "                action when the guest is panicked [default=report]",
+> +    QEMU_ARCH_ALL)
+> +STEXI
+> +@item -onpanic @var{action}
+> +
+> +The @var{action} controls what QEmu will do when the guest is panicked.
+> +The default is @code{report} (emit QEVENT_GUEST_PANICKED only).
 
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
----
- drivers/edac/amd64_edac.c |   25 +++++++++++++------------
- 1 file changed, 13 insertions(+), 12 deletions(-)
+-watchdog-action just calls this "none".
 
-diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
-index b475295..811d3e8 100644
---- a/drivers/edac/amd64_edac.c
-+++ b/drivers/edac/amd64_edac.c
-@@ -1049,8 +1049,8 @@ static void k8_map_sysaddr_to_csrow(struct mem_ctl_info *mci, u64 sys_addr,
- 		edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci,
- 				     page, offset, syndrome,
- 				     -1, -1, -1,
--				     EDAC_MOD_STR,
- 				     "failed to map error addr to a node",
-+				     "",
- 				     NULL);
- 		return;
- 	}
-@@ -1061,8 +1061,8 @@ static void k8_map_sysaddr_to_csrow(struct mem_ctl_info *mci, u64 sys_addr,
- 		edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci,
- 				     page, offset, syndrome,
- 				     -1, -1, -1,
--				     EDAC_MOD_STR,
- 				     "failed to map error addr to a csrow",
-+				     "",
- 				     NULL);
- 		return;
- 	}
-@@ -1082,8 +1082,8 @@ static void k8_map_sysaddr_to_csrow(struct mem_ctl_info *mci, u64 sys_addr,
- 			edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci,
- 					     page, offset, syndrome,
- 					     csrow, -1, -1,
--					     EDAC_MOD_STR,
- 					     "unknown syndrome - possible error reporting race",
-+					     "",
- 					     NULL);
- 			return;
- 		}
-@@ -1102,7 +1102,7 @@ static void k8_map_sysaddr_to_csrow(struct mem_ctl_info *mci, u64 sys_addr,
- 	edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, src_mci,
- 			     page, offset, syndrome,
- 			     csrow, channel, -1,
--			     EDAC_MOD_STR, "", NULL);
-+			     "", "", NULL);
- }
- 
- static int ddr2_cs_size(unsigned i, bool dct_width)
-@@ -1614,8 +1614,8 @@ static void f1x_map_sysaddr_to_csrow(struct mem_ctl_info *mci, u64 sys_addr,
- 		edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci,
- 				     page, offset, syndrome,
- 				     -1, -1, -1,
--				     EDAC_MOD_STR,
- 				     "failed to map error addr to a csrow",
-+				     "",
- 				     NULL);
- 		return;
- 	}
-@@ -1631,7 +1631,7 @@ static void f1x_map_sysaddr_to_csrow(struct mem_ctl_info *mci, u64 sys_addr,
- 	edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci,
- 			     page, offset, syndrome,
- 			     csrow, chan, -1,
--			     EDAC_MOD_STR, "", NULL);
-+			     "", "", NULL);
- }
- 
- /*
-@@ -1916,8 +1916,8 @@ static void amd64_handle_ce(struct mem_ctl_info *mci, struct mce *m)
- 		edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci,
- 				     0, 0, 0,
- 				     -1, -1, -1,
--				     EDAC_MOD_STR,
- 				     "HW has no ERROR_ADDRESS available",
-+				     "",
- 				     NULL);
- 		return;
- 	}
-@@ -1945,8 +1945,8 @@ static void amd64_handle_ue(struct mem_ctl_info *mci, struct mce *m)
- 		edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci,
- 				     0, 0, 0,
- 				     -1, -1, -1,
--				     EDAC_MOD_STR,
- 				     "HW has no ERROR_ADDRESS available",
-+				     "",
- 				     NULL);
- 		return;
- 	}
-@@ -1965,8 +1965,9 @@ static void amd64_handle_ue(struct mem_ctl_info *mci, struct mce *m)
- 		edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci,
- 				     page, offset, 0,
- 				     -1, -1, -1,
--				     EDAC_MOD_STR,
--				     "ERROR ADDRESS NOT mapped to a MC", NULL);
-+				     "ERROR ADDRESS NOT mapped to a MC",
-+				     "",
-+				     NULL);
- 		return;
- 	}
- 
-@@ -1979,14 +1980,14 @@ static void amd64_handle_ue(struct mem_ctl_info *mci, struct mce *m)
- 		edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci,
- 				     page, offset, 0,
- 				     -1, -1, -1,
--				     EDAC_MOD_STR,
- 				     "ERROR ADDRESS NOT mapped to CS",
-+				     "",
- 				     NULL);
- 	} else {
- 		edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci,
- 				     page, offset, 0,
- 				     csrow, -1, -1,
--				     EDAC_MOD_STR, "", NULL);
-+				     "", "", NULL);
- 	}
- }
- 
--- 
-1.7.10.2
+> +Other possible actions are:
+> +@code{pause} (emit QEVENT_GUEST_PANICKED and pause VM),
+> +@code{quit} (emit QEVENT_GUEST_PANICKED and quit VM).
 
+Rather than just "quit", there should be choices for "shutdown",
+"poweroff" and "reset" for consistency with -watchdog-action.
+
+Also, this option should also be accessible from "-machine", please.
+
+Paolo
+
+> +ETEXI
+> +
+>  HXCOMM This is the last statement. Insert new options before this line!
+>  STEXI
+>  @end table
