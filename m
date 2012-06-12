@@ -1,66 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753383Ab2FLRPH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 13:15:07 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:58327 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751306Ab2FLRPF (ORCPT
+	id S1753771Ab2FLRPO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 13:15:14 -0400
+Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:45948 "EHLO
+	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753445Ab2FLRPK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 13:15:05 -0400
-Date: Tue, 12 Jun 2012 19:15:24 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Robert Richter <robert.richter@amd.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org, andi@firstfloor.org, mingo@elte.hu,
-        ming.m.lin@intel.com, Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Dimitri Sivanich <sivanich@sgi.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>
-Subject: Re: [PATCH] perf/x86: check ucode before disabling PEBS on
- SandyBridge
-Message-ID: <20120612171524.GH8404@aftab.osrc.amd.com>
-References: <1339064319.23343.13.camel@twins>
- <CABPqkBQ+p5rcuxpXCTLMXPM+awAHhQ6mP9-WzVh5GWtn2GyfrA@mail.gmail.com>
- <1339065932.23343.18.camel@twins>
- <CABPqkBQ=tLXXsgvzQx+i01Owm4MM8m=6cEVVi4ab64gOiTTBYQ@mail.gmail.com>
- <1339067757.23343.21.camel@twins>
- <20120608093513.GA22520@gmail.com>
- <1339149613.23343.52.camel@twins>
- <1339161972.2507.13.camel@laptop>
- <20120612170725.GE5046@erda.amd.com>
- <CABPqkBRJAA7yRcswM1iYESSwhiGD4SEbir=q=ouQSevi7OAxqQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBRJAA7yRcswM1iYESSwhiGD4SEbir=q=ouQSevi7OAxqQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 12 Jun 2012 13:15:10 -0400
+Message-ID: <1339521308.2628.13.camel@lorien2>
+Subject: Re: [PATCH] leds: use led_brightness_set in led_trigger_event
+From: Shuah Khan <shuahkhan@gmail.com>
+Reply-To: shuahkhan@gmail.com
+To: Bryan Wu <bryan.wu@canonical.com>
+Cc: shuahkhan@gmail.com, Fabio Baltieri <fabio.baltieri@gmail.com>,
+        linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Richard Purdie <rpurdie@rpsys.net>
+Date: Tue, 12 Jun 2012 11:15:08 -0600
+In-Reply-To: <CAK5ve-+D7vPO1U4gZDHRBmafJtF5T_EYBPCSAT2YOXjbc_u4zQ@mail.gmail.com>
+References: <1339448260-1733-1-git-send-email-fabio.baltieri@gmail.com>
+	 <1339450705.23857.16.camel@lorien2> <20120612071649.GA1306@gmail.com>
+	 <CAK5ve-+D7vPO1U4gZDHRBmafJtF5T_EYBPCSAT2YOXjbc_u4zQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 12, 2012 at 07:09:19PM +0200, Stephane Eranian wrote:
-> > Instead of registering a microcode notifier, why not checking the
-> > availability of pebs dynamically with each syscall in
-> > intel_pmu_hw_config()? It looks like intel_snb_verify_ucode() is not
-> > that much expensive. We can perform the check only if the event could
-> > be for pebs and if pebs is broken. The check could be repeated when
-> > setting up a new event after ucode could potentially has been updated
-> > (e.g. after bringing a cpu online or so).
 
-Yes, this will obviate the need for touching the microcode driver at all.
+> 
+> Thanks for catching this. It's a good idea we sort out those confusing name.
+> Probably __led_set_bringness() is more conventional than _led_set_brightness().
+> 
+> And might also need to revisit other function names.
+> 
+> >> I can volunteer to make this change if we agree that this will be a good
+> >> one to clear this naming confusion.
+> >
+> 
+> OK, good Shuah, please go ahead and submit patches and I will hold
+> this patch for a while and wait for the final fixing.
+> 
 
-> That's what I had in my original version.
+Thanks. __led_set_brightness() sounds good. Will base patches off of
+linux-leds devel unless that is not the right one.
 
-... and you decided not to do it like that because... ?
+-- Shuah
 
-Thanks.
 
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
