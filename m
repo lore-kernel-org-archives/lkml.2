@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752603Ab2FLJJn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 05:09:43 -0400
+	id S1752698Ab2FLJJz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 05:09:55 -0400
 Received: from mga01.intel.com ([192.55.52.88]:22878 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752480Ab2FLJJk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 05:09:40 -0400
+	id S1752644Ab2FLJJt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 05:09:49 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="178775623"
+   d="scan'208";a="178775679"
 From: Alex Shi <alex.shi@intel.com>
 To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, arnd@arndb.de,
         rostedt@goodmis.org, fweisbec@gmail.com
@@ -20,9 +20,9 @@ Cc: jeremy@goop.org, seto.hidetoshi@jp.fujitsu.com, borislav.petkov@amd.com,
         cpw@sgi.com, penberg@kernel.org, steiner@sgi.com,
         viro@zeniv.linux.org.uk, kamezawa.hiroyu@jp.fujitsu.com,
         aarcange@redhat.com, rientjes@google.com, linux-kernel@vger.kernel.org
-Subject: [PATCH v8 4/8] x86/tlb: add tlb_flushall_shift for specific CPU
-Date: Tue, 12 Jun 2012 17:06:41 +0800
-Message-Id: <1339492005-20241-5-git-send-email-alex.shi@intel.com>
+Subject: [PATCH v8 6/8] x86/tlb: enable tlb flush range support for generic mmu and x86
+Date: Tue, 12 Jun 2012 17:06:43 +0800
+Message-Id: <1339492005-20241-7-git-send-email-alex.shi@intel.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1339492005-20241-1-git-send-email-alex.shi@intel.com>
 References: <1339492005-20241-1-git-send-email-alex.shi@intel.com>
@@ -30,173 +30,285 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Testing show different CPU type(micro architectures and NUMA mode) has
-different balance points between the TLB flush all and multiple invlpg.
-And there also has cases the tlb flush change has no any help.
+Not every tlb_flush execution moment is really need to evacuate all
+TLB entries, like in munmap, just few 'invlpg' is better for whole
+process performance, since it leaves most of TLB entries for later
+accessing.
 
-This patch give a interface to let x86 vendor developers have a chance
-to set different shift for different CPU type.
+All of tlb interfaces in mm/memory.c are reused by all architectures
+except few of them for generic mmu_gather were protected under
+HAVE_GENERIC_MMU_GATHER. So, add flush range start/end under
+HAVE_GENERIC_MMU_GATHER for generic mmu implementation.
+For x86, just need to re-implement tlb_flush().
 
-like some machine in my hands, balance points is 16 entries on
-Romely-EP; while it is at 8 entries on Bloomfield NHM-EP; and is 256 on
-IVB mobile CPU. but on model 15 core2 Xeon using invlpg has nothing
-help.
+This patch also rewrite flush_tlb_range for 2 purposes:
+1, split it out to get flush_blt_mm_range function.
+2, clean up to reduce line breaking, thanks for Borislav's input.
 
-For untested machine, do a conservative optimization, same as NHM CPU.
+My macro benchmark 'mummap' http://lkml.org/lkml/2012/5/17/59
+show that the random memory access on other CPU has 0~50% speed up
+on a 2P * 4cores * HT NHM EP while do 'munmap'.
+
+Thanks for Peter Zijlstra time and time reminder for multiple
+architecture code safe!
 
 Signed-off-by: Alex Shi <alex.shi@intel.com>
 ---
- arch/x86/include/asm/processor.h |    2 ++
- arch/x86/kernel/cpu/common.c     |   14 ++++++++++++--
- arch/x86/kernel/cpu/intel.c      |   34 ++++++++++++++++++++++++++++++++++
- arch/x86/mm/tlb.c                |    7 +++----
- include/asm-generic/tlb.h        |    3 ++-
- 5 files changed, 53 insertions(+), 7 deletions(-)
+ arch/x86/include/asm/tlb.h      |    9 +++-
+ arch/x86/include/asm/tlbflush.h |   17 +++++-
+ arch/x86/mm/tlb.c               |  112 ++++++++++++++++-----------------------
+ include/asm-generic/tlb.h       |    2 +
+ mm/memory.c                     |    9 +++
+ 5 files changed, 79 insertions(+), 70 deletions(-)
 
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index 39b2bd4..d048cad 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -72,6 +72,8 @@ extern u16 __read_mostly tlb_lli_4m[NR_INFO];
- extern u16 __read_mostly tlb_lld_4k[NR_INFO];
- extern u16 __read_mostly tlb_lld_2m[NR_INFO];
- extern u16 __read_mostly tlb_lld_4m[NR_INFO];
-+extern s8  __read_mostly tlb_flushall_shift;
+diff --git a/arch/x86/include/asm/tlb.h b/arch/x86/include/asm/tlb.h
+index 829215f..4fef207 100644
+--- a/arch/x86/include/asm/tlb.h
++++ b/arch/x86/include/asm/tlb.h
+@@ -4,7 +4,14 @@
+ #define tlb_start_vma(tlb, vma) do { } while (0)
+ #define tlb_end_vma(tlb, vma) do { } while (0)
+ #define __tlb_remove_tlb_entry(tlb, ptep, address) do { } while (0)
+-#define tlb_flush(tlb) flush_tlb_mm((tlb)->mm)
 +
- /*
-  *  CPU type and hardware bug flags. Kept separately for each CPU.
-  *  Members of this structure are referenced in head.S, so think twice
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index 41acb77..39a6b01 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -459,16 +459,26 @@ u16 __read_mostly tlb_lld_4k[NR_INFO];
- u16 __read_mostly tlb_lld_2m[NR_INFO];
- u16 __read_mostly tlb_lld_4m[NR_INFO];
++#define tlb_flush(tlb)							\
++{									\
++	if (tlb->fullmm == 0)						\
++		flush_tlb_mm_range(tlb->mm, tlb->start, tlb->end, 0UL);	\
++	else								\
++		flush_tlb_mm_range(tlb->mm, 0UL, TLB_FLUSH_ALL, 0UL);	\
++}
  
-+/*
-+ * tlb_flushall_shift shows the balance point in replacing cr3 write
-+ * with multiple 'invlpg'. It will do this replacement when
-+ *   flush_tlb_lines <= active_lines/2^tlb_flushall_shift.
-+ * If tlb_flushall_shift is -1, means the replacement will be disabled.
-+ */
-+s8  __read_mostly tlb_flushall_shift = -1;
-+
- void __cpuinit cpu_detect_tlb(struct cpuinfo_x86 *c)
- {
- 	if (c->x86_vendor == X86_VENDOR_INTEL)
- 		intel_cpu_detect_tlb(c);
+ #include <asm-generic/tlb.h>
  
- 	printk(KERN_INFO "Last level iTLB entries: 4KB %d, 2MB %d, 4MB %d\n" \
--		"Last level dTLB entries: 4KB %d, 2MB %d, 4MB %d\n",
-+		"Last level dTLB entries: 4KB %d, 2MB %d, 4MB %d\n"	     \
-+		"tlb_flushall_shift is 0x%x\n",
- 		tlb_lli_4k[ENTRIES], tlb_lli_2m[ENTRIES],
- 		tlb_lli_4m[ENTRIES], tlb_lld_4k[ENTRIES],
--		tlb_lld_2m[ENTRIES], tlb_lld_4m[ENTRIES]);
-+		tlb_lld_2m[ENTRIES], tlb_lld_4m[ENTRIES],
-+		tlb_flushall_shift);
+diff --git a/arch/x86/include/asm/tlbflush.h b/arch/x86/include/asm/tlbflush.h
+index 33608d9..008043d 100644
+--- a/arch/x86/include/asm/tlbflush.h
++++ b/arch/x86/include/asm/tlbflush.h
+@@ -105,6 +105,13 @@ static inline void flush_tlb_range(struct vm_area_struct *vma,
+ 		__flush_tlb();
  }
  
- void __cpuinit detect_ht(struct cpuinfo_x86 *c)
-diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-index 28ecd1b..bb90754 100644
---- a/arch/x86/kernel/cpu/intel.c
-+++ b/arch/x86/kernel/cpu/intel.c
-@@ -610,6 +610,39 @@ static void __cpuinit intel_tlb_lookup(const unsigned char desc)
- 	}
- }
- 
-+static void __cpuinit intel_tlb_flushall_shift_set(struct cpuinfo_x86 *c)
++static inline void flush_tlb_mm_range(struct vm_area_struct *vma,
++	   unsigned long start, unsigned long end, unsigned long vmflag)
 +{
-+	if (!cpu_has_invlpg) {
-+		tlb_flushall_shift = -1;
-+		return;
-+	}
-+	switch ((c->x86 << 8) + c->x86_model) {
-+	case 0x60f: /* original 65 nm celeron/pentium/core2/xeon, "Merom"/"Conroe" */
-+	case 0x616: /* single-core 65 nm celeron/core2solo "Merom-L"/"Conroe-L" */
-+	case 0x617: /* current 45 nm celeron/core2/xeon "Penryn"/"Wolfdale" */
-+	case 0x61d: /* six-core 45 nm xeon "Dunnington" */
-+		tlb_flushall_shift = -1;
-+		break;
-+	case 0x61a: /* 45 nm nehalem, "Bloomfield" */
-+	case 0x61e: /* 45 nm nehalem, "Lynnfield" */
-+	case 0x625: /* 32 nm nehalem, "Clarkdale" */
-+	case 0x62c: /* 32 nm nehalem, "Gulftown" */
-+	case 0x62e: /* 45 nm nehalem-ex, "Beckton" */
-+	case 0x62f: /* 32 nm Xeon E7 */
-+		tlb_flushall_shift = 6;
-+		break;
-+	case 0x62a: /* SandyBridge */
-+	case 0x62d: /* SandyBridge, "Romely-EP" */
-+		tlb_flushall_shift = 5;
-+		break;
-+	case 0x63a: /* Ivybridge */
-+		tlb_flushall_shift = 1;
-+		break;
-+	default:
-+		tlb_flushall_shift = 6;
-+	}
++	if (mm == current->active_mm)
++		__flush_tlb();
 +}
 +
- void __cpuinit intel_cpu_detect_tlb(struct cpuinfo_x86 *c)
- {
- 	int i, j, n;
-@@ -630,6 +663,7 @@ void __cpuinit intel_cpu_detect_tlb(struct cpuinfo_x86 *c)
- 		for (j = 1 ; j < 16 ; j++)
- 			intel_tlb_lookup(desc[j]);
- 	}
-+	intel_tlb_flushall_shift_set(c);
- }
+ static inline void native_flush_tlb_others(const struct cpumask *cpumask,
+ 					   struct mm_struct *mm,
+ 					   unsigned long start,
+@@ -122,12 +129,16 @@ static inline void reset_lazy_tlbstate(void)
  
- static const struct cpu_dev __cpuinitconst intel_cpu_dev = {
+ #define local_flush_tlb() __flush_tlb()
+ 
++#define flush_tlb_mm(mm)	flush_tlb_mm_range(mm, 0UL, TLB_FLUSH_ALL, 0UL)
++
++#define flush_tlb_range(vma, start, end)	\
++		flush_tlb_mm_range(vma->vm_mm, start, end, vma->vm_flags)
++
+ extern void flush_tlb_all(void);
+ extern void flush_tlb_current_task(void);
+-extern void flush_tlb_mm(struct mm_struct *);
+ extern void flush_tlb_page(struct vm_area_struct *, unsigned long);
+-extern void flush_tlb_range(struct vm_area_struct *vma,
+-				   unsigned long start, unsigned long end);
++extern void flush_tlb_mm_range(struct mm_struct *mm, unsigned long start,
++				unsigned long end, unsigned long vmflag);
+ 
+ #define flush_tlb()	flush_tlb_current_task()
+ 
 diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
-index 184a02a..2939f2f 100644
+index 5911f61..481737d 100644
 --- a/arch/x86/mm/tlb.c
 +++ b/arch/x86/mm/tlb.c
-@@ -316,8 +316,6 @@ void flush_tlb_mm(struct mm_struct *mm)
+@@ -301,23 +301,10 @@ void flush_tlb_current_task(void)
  	preempt_enable();
  }
  
--#define FLUSHALL_BAR	16
+-void flush_tlb_mm(struct mm_struct *mm)
+-{
+-	preempt_disable();
 -
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+-	if (current->active_mm == mm) {
+-		if (current->mm)
+-			local_flush_tlb();
+-		else
+-			leave_mm(smp_processor_id());
+-	}
+-	if (cpumask_any_but(mm_cpumask(mm), smp_processor_id()) < nr_cpu_ids)
+-		flush_tlb_others(mm_cpumask(mm), mm, 0UL, TLB_FLUSH_ALL);
+-
+-	preempt_enable();
+-}
+-
+-#ifdef CONFIG_TRANSPARENT_HUGEPAGE
++/*
++ * It can find out the THP large page, or
++ * HUGETLB page in tlb_flush when THP disabled
++ */
  static inline unsigned long has_large_page(struct mm_struct *mm,
  				 unsigned long start, unsigned long end)
-@@ -352,7 +350,7 @@ void flush_tlb_range(struct vm_area_struct *vma,
  {
- 	struct mm_struct *mm;
+@@ -339,68 +326,61 @@ static inline unsigned long has_large_page(struct mm_struct *mm,
+ 	}
+ 	return 0;
+ }
+-#else
+-static inline unsigned long has_large_page(struct mm_struct *mm,
+-				 unsigned long start, unsigned long end)
+-{
+-	return 0;
+-}
+-#endif
+-void flush_tlb_range(struct vm_area_struct *vma,
+-				   unsigned long start, unsigned long end)
+-{
+-	struct mm_struct *mm;
  
--	if (!cpu_has_invlpg || vma->vm_flags & VM_HUGETLB) {
-+	if (vma->vm_flags & VM_HUGETLB || tlb_flushall_shift == -1) {
- flush_all:
- 		flush_tlb_mm(vma->vm_mm);
- 		return;
-@@ -373,7 +371,8 @@ flush_all:
- 			act_entries = tlb_entries > mm->total_vm ?
- 					mm->total_vm : tlb_entries;
+-	if (vma->vm_flags & VM_HUGETLB || tlb_flushall_shift == -1) {
+-flush_all:
+-		flush_tlb_mm(vma->vm_mm);
+-		return;
+-	}
++void flush_tlb_mm_range(struct mm_struct *mm, unsigned long start,
++				unsigned long end, unsigned long vmflag)
++{
++	unsigned long addr;
++	unsigned act_entries, tlb_entries = 0;
  
--			if ((end - start)/PAGE_SIZE > act_entries/FLUSHALL_BAR)
-+			if ((end - start) >> PAGE_SHIFT >
-+					act_entries >> tlb_flushall_shift)
- 				local_flush_tlb();
- 			else {
- 				if (has_large_page(mm, start, end)) {
+ 	preempt_disable();
+-	mm = vma->vm_mm;
+-	if (current->active_mm == mm) {
+-		if (current->mm) {
+-			unsigned long addr, vmflag = vma->vm_flags;
+-			unsigned act_entries, tlb_entries = 0;
++	if (current->active_mm != mm)
++		goto flush_all;
+ 
+-			if (vmflag & VM_EXEC)
+-				tlb_entries = tlb_lli_4k[ENTRIES];
+-			else
+-				tlb_entries = tlb_lld_4k[ENTRIES];
+-
+-			act_entries = tlb_entries > mm->total_vm ?
+-					mm->total_vm : tlb_entries;
++	if (!current->mm) {
++		leave_mm(smp_processor_id());
++		goto flush_all;
++	}
+ 
+-			if ((end - start) >> PAGE_SHIFT >
+-					act_entries >> tlb_flushall_shift)
+-				local_flush_tlb();
+-			else {
+-				if (has_large_page(mm, start, end)) {
+-					preempt_enable();
+-					goto flush_all;
+-				}
+-				for (addr = start; addr < end;
+-						addr += PAGE_SIZE)
+-					__flush_tlb_single(addr);
++	if (end == TLB_FLUSH_ALL || tlb_flushall_shift == -1
++					|| vmflag == VM_HUGETLB) {
++		local_flush_tlb();
++		goto flush_all;
++	}
+ 
+-				if (cpumask_any_but(mm_cpumask(mm),
+-					smp_processor_id()) < nr_cpu_ids)
+-					flush_tlb_others(mm_cpumask(mm), mm,
+-								start, end);
+-				preempt_enable();
+-				return;
+-			}
+-		} else {
+-			leave_mm(smp_processor_id());
++	/* In modern CPU, last level tlb used for both data/ins */
++	if (vmflag & VM_EXEC)
++		tlb_entries = tlb_lli_4k[ENTRIES];
++	else
++		tlb_entries = tlb_lld_4k[ENTRIES];
++	/* Assume all of TLB entries was occupied by this task */
++	act_entries = mm->total_vm > tlb_entries ? tlb_entries : mm->total_vm;
++
++	/* tlb_flushall_shift is on balance point, details in commit log */
++	if ((end - start) >> PAGE_SHIFT > act_entries >> tlb_flushall_shift)
++		local_flush_tlb();
++	else {
++		if (has_large_page(mm, start, end)) {
++			local_flush_tlb();
++			goto flush_all;
+ 		}
++		/* flush range by one by one 'invlpg' */
++		for (addr = start; addr < end;	addr += PAGE_SIZE)
++			__flush_tlb_single(addr);
++
++		if (cpumask_any_but(mm_cpumask(mm),
++				smp_processor_id()) < nr_cpu_ids)
++			flush_tlb_others(mm_cpumask(mm), mm, start, end);
++		preempt_enable();
++		return;
+ 	}
++
++flush_all:
+ 	if (cpumask_any_but(mm_cpumask(mm), smp_processor_id()) < nr_cpu_ids)
+ 		flush_tlb_others(mm_cpumask(mm), mm, 0UL, TLB_FLUSH_ALL);
+ 	preempt_enable();
+ }
+ 
+-
+ void flush_tlb_page(struct vm_area_struct *vma, unsigned long start)
+ {
+ 	struct mm_struct *mm = vma->vm_mm;
 diff --git a/include/asm-generic/tlb.h b/include/asm-generic/tlb.h
-index f96a5b5..75e888b 100644
+index 75e888b..ed6642a 100644
 --- a/include/asm-generic/tlb.h
 +++ b/include/asm-generic/tlb.h
-@@ -113,7 +113,8 @@ static inline int tlb_fast_mode(struct mmu_gather *tlb)
+@@ -86,6 +86,8 @@ struct mmu_gather {
+ #ifdef CONFIG_HAVE_RCU_TABLE_FREE
+ 	struct mmu_table_batch	*batch;
+ #endif
++	unsigned long		start;
++	unsigned long		end;
+ 	unsigned int		need_flush : 1,	/* Did free PTEs */
+ 				fast_mode  : 1; /* No batching   */
  
- void tlb_gather_mmu(struct mmu_gather *tlb, struct mm_struct *mm, bool fullmm);
- void tlb_flush_mmu(struct mmu_gather *tlb);
--void tlb_finish_mmu(struct mmu_gather *tlb, unsigned long start, unsigned long end);
-+void tlb_finish_mmu(struct mmu_gather *tlb, unsigned long start,
-+							unsigned long end);
- int __tlb_remove_page(struct mmu_gather *tlb, struct page *page);
+diff --git a/mm/memory.c b/mm/memory.c
+index 1b7dc66..32c9943 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -206,6 +206,8 @@ void tlb_gather_mmu(struct mmu_gather *tlb, struct mm_struct *mm, bool fullmm)
+ 	tlb->mm = mm;
  
- /* tlb_remove_page
+ 	tlb->fullmm     = fullmm;
++	tlb->start	= -1UL;
++	tlb->end	= 0;
+ 	tlb->need_flush = 0;
+ 	tlb->fast_mode  = (num_possible_cpus() == 1);
+ 	tlb->local.next = NULL;
+@@ -248,6 +250,8 @@ void tlb_finish_mmu(struct mmu_gather *tlb, unsigned long start, unsigned long e
+ {
+ 	struct mmu_gather_batch *batch, *next;
+ 
++	tlb->start = start;
++	tlb->end   = end;
+ 	tlb_flush_mmu(tlb);
+ 
+ 	/* keep the page table cache within bounds */
+@@ -1204,6 +1208,11 @@ again:
+ 	 */
+ 	if (force_flush) {
+ 		force_flush = 0;
++
++#ifdef HAVE_GENERIC_MMU_GATHER
++		tlb->start = addr;
++		tlb->end = end;
++#endif
+ 		tlb_flush_mmu(tlb);
+ 		if (addr != end)
+ 			goto again;
 -- 
 1.7.5.4
 
