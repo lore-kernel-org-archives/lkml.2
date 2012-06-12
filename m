@@ -1,70 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753632Ab2FLSZY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 14:25:24 -0400
-Received: from sd-mail-sa-02.sanoma.fi ([158.127.18.162]:44915 "EHLO
-	sd-mail-sa-02.sanoma.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752262Ab2FLSZW (ORCPT
+	id S1753935Ab2FLS1N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 14:27:13 -0400
+Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:35017 "EHLO
+	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751455Ab2FLS1L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 14:25:22 -0400
-Message-ID: <20120612212518.22246qw5kuyn2osg@www.81.fi>
-Date: Tue, 12 Jun 2012 21:25:18 +0300
-From: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: linux-crypto@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] crypto: aes - make assembler implementation default
- for i386 and x86-64
-References: <20120530215333.32995tjzj9dr4jwo@www.81.fi>
- <20120609145055.12766.42439.stgit@localhost6.localdomain6>
- <20120612082651.GA13419@gondor.apana.org.au>
-In-Reply-To: <20120612082651.GA13419@gondor.apana.org.au>
+	Tue, 12 Jun 2012 14:27:11 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH] mfd: ab3100-core: use devm allocation
+Date: Tue, 12 Jun 2012 20:26:58 +0200
+Message-ID: <1339525618-8318-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.9.2
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.7)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Herbert Xu <herbert@gondor.apana.org.au>:
+From: Linus Walleij <linus.walleij@linaro.org>
 
-> On Sat, Jun 09, 2012 at 05:50:55PM +0300, Jussi Kivilinna wrote:
->> AES is often built-in and therefore implementations other than aes-generic
->> don't get autoloaded by module-aliases. This is solved for aes-ni by cpuid
->> autoloading, but for x86-64/i586 assembler implementation cpuid matching
->> does not make much sense (aes-generic built-in but overridden by x86-64/i586
->> assembler implementation module). Instead change Kconfig so that assembler
->> implementation is default on x86-64 and i386.
->>
->> This patch also splits common parts exported to assembler implementations
->> from aes-generic to new module aes-common.
->>
->> Patch tested on x86-64, compile tested on i386 and arm.
->>
->> Signed-off-by: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
->
-> I like the idea but I'm not sure about where we draw the line.
-> E.g., why not enable padlock, or for that matter every single
-> hardware implementation of AES?
->
-> This can get unwieldy very quickly.
->
+Allocate memory and irq for device state using devm_*
+helpers to simplify memory accounting.
 
-Well, how about letting arch specific assembler implementations  
-replace aes-generic
-completely.. in this case add "depends on !X86" on CRYPTO_AES_GENERIC.  
-Hardware
-modules get autoloaded (cpuid/pci/platform/etc) but generic assembler  
-implementation
-might as well be replacement as it cannot autoload depending on  
-hardware support (or
-it can, but will be always loaded).
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/mfd/ab3100-core.c |   23 +++++++----------------
+ 1 file changed, 7 insertions(+), 16 deletions(-)
 
--Jussi
-
+diff --git a/drivers/mfd/ab3100-core.c b/drivers/mfd/ab3100-core.c
+index 1efad20..4276aab 100644
+--- a/drivers/mfd/ab3100-core.c
++++ b/drivers/mfd/ab3100-core.c
+@@ -867,7 +867,7 @@ static int __devinit ab3100_probe(struct i2c_client *client,
+ 	int err;
+ 	int i;
+ 
+-	ab3100 = kzalloc(sizeof(struct ab3100), GFP_KERNEL);
++	ab3100 = devm_kzalloc(&client->dev, sizeof(struct ab3100), GFP_KERNEL);
+ 	if (!ab3100) {
+ 		dev_err(&client->dev, "could not allocate AB3100 device\n");
+ 		return -ENOMEM;
+@@ -921,7 +921,7 @@ static int __devinit ab3100_probe(struct i2c_client *client,
+ 
+ 	/* Attach a second dummy i2c_client to the test register address */
+ 	ab3100->testreg_client = i2c_new_dummy(client->adapter,
+-						     client->addr + 1);
++					       client->addr + 1);
+ 	if (!ab3100->testreg_client) {
+ 		err = -ENOMEM;
+ 		goto exit_no_testreg_client;
+@@ -931,13 +931,13 @@ static int __devinit ab3100_probe(struct i2c_client *client,
+ 	if (err)
+ 		goto exit_no_setup;
+ 
+-	err = request_threaded_irq(client->irq, NULL, ab3100_irq_handler,
+-				IRQF_ONESHOT, "ab3100-core", ab3100);
+-	/* This real unpredictable IRQ is of course sampled for entropy */
+-	rand_initialize_irq(client->irq);
+-
++	err = devm_request_threaded_irq(&client->dev,
++					client->irq, NULL, ab3100_irq_handler,
++					IRQF_ONESHOT, "ab3100-core", ab3100);
+ 	if (err)
+ 		goto exit_no_irq;
++	/* This real unpredictable IRQ is of course sampled for entropy */
++	rand_initialize_irq(client->irq);
+ 
+ 	err = abx500_register_ops(&client->dev, &ab3100_ops);
+ 	if (err)
+@@ -962,7 +962,6 @@ static int __devinit ab3100_probe(struct i2c_client *client,
+ 	i2c_unregister_device(ab3100->testreg_client);
+  exit_no_testreg_client:
+  exit_no_detect:
+-	kfree(ab3100);
+ 	return err;
+ }
+ 
+@@ -972,16 +971,8 @@ static int __devexit ab3100_remove(struct i2c_client *client)
+ 
+ 	/* Unregister subdevices */
+ 	mfd_remove_devices(&client->dev);
+-
+ 	ab3100_remove_debugfs();
+ 	i2c_unregister_device(ab3100->testreg_client);
+-
+-	/*
+-	 * At this point, all subscribers should have unregistered
+-	 * their notifiers so deactivate IRQ
+-	 */
+-	free_irq(client->irq, ab3100);
+-	kfree(ab3100);
+ 	return 0;
+ }
+ 
+-- 
+1.7.9.2
 
