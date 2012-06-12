@@ -1,68 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753603Ab2FLQRt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 12:17:49 -0400
-Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:44171 "HELO
-	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753481Ab2FLQRq (ORCPT
+	id S1753669Ab2FLQSR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 12:18:17 -0400
+Received: from mailfw02.zoner.fi ([84.34.147.249]:38067 "EHLO
+	mailfw02.zoner.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752720Ab2FLQSO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 12:17:46 -0400
-Message-ID: <4FD76B9B.3080100@xenotime.net>
-Date: Tue, 12 Jun 2012 09:17:31 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Felipe Balbi <balbi@ti.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mnazarewicz@gmail.com>,
-        Benoit Goby <benoit@android.com>, Mike Lockwood <lockwood@android.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH 1/2 RESEND] staging: usb: gadget: Configurable Composite
- Gadget depends on BLOCK
-References: <Pine.LNX.4.44L0.1206071646360.1185-100000@iolanthe.rowland.org> <1339405919-5845-1-git-send-email-andrzej.p@samsung.com>
-In-Reply-To: <1339405919-5845-1-git-send-email-andrzej.p@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 12 Jun 2012 12:18:14 -0400
+Date: Tue, 12 Jun 2012 19:18:04 +0300
+From: Lasse Collin <lasse.collin@tukaani.org>
+To: T Makphaibulchoke <tmac@hp.com>
+Cc: linux@arm.linux.org.uk, schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
+        linux390@de.ibm.com, lethal@linux-sh.org, hpa@zytor.com,
+        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+        kaloz@openwrt.org, nicolas.pitre@linaro.org, jj@chaosbits.net,
+        matt.fleming@intel.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
+        linux-sh@vger.kernel.org
+Subject: Re: [PATCH v2] lib/decompress_unxz.c: removing all memory helper
+ functions
+Message-ID: <20120612191804.4211462a@tukaani.org>
+In-Reply-To: <1339470307-28223-1-git-send-email-tmac@hp.com>
+References: <1339470307-28223-1-git-send-email-tmac@hp.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+X-Antivirus-Scanner: Clean mail though you should still use an Antivirus
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2012 02:11 AM, Andrzej Pietrasiewicz wrote:
+On 2012-06-11 T Makphaibulchoke wrote:
+> --- /dev/null
+> +++ b/lib/boot/mem.c
+> @@ -0,0 +1,58 @@
+> +/*
+> + * Small subset of simple memory helper functions required by different
+> + * compressors for preboot environment.
+> + */
+> +
+> +#include <linux/string.h>
+> +
+> +#ifndef __HAVE_PREBOOT_ARCH_MEMCPY
+> +void *memcpy(void *__dest, __const void *__src, size_t __n)
+> +{
+> +	return __builtin_memcpy(__dest, __src, __n);
+> +}
+> +#endif
 
-> Signed-off-by: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+GCC will replace __builtin_memcpy above with a call to memcpy, creating
+an infinite loop. I confirmed this on x86_64 by first uncommenting the
+memcpy from arch/x86/boot/compressed/string.c.
 
+You need to provide a memcpy implementation yourself without using
+__builtin functions. For example, copy the memcpy implementation from
+lib/string.c.
 
-Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+> +#ifndef __HAVE_PREBOOT_ARCH_MEMMOVE
+> +void *memmove(void *__dest, __const void *__src, size_t count)
+> +{
+> +	unsigned char *d = __dest;
+> +	const unsigned char *s = __src;
+> +
+> +	if (__dest == __src)
+> +		return __dest;
+> +
+> +	if (__dest < __src)
+> +		return memcpy(__dest, __src, count);
+> +
+> +	while (count--)
+> +		d[count] = s[count];
+> +	return __dest;
+> +}
+> +#endif
 
-Thanks.
-
-> ---
->  drivers/staging/ccg/Kconfig |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/staging/ccg/Kconfig b/drivers/staging/ccg/Kconfig
-> index ff05e52..1f00d70 100644
-> --- a/drivers/staging/ccg/Kconfig
-> +++ b/drivers/staging/ccg/Kconfig
-> @@ -2,7 +2,7 @@ if USB_GADGET
->  
->  config USB_G_CCG
->  	tristate "Configurable Composite Gadget (STAGING)"
-> -	depends on STAGING && !USB_ZERO && !USB_ZERO_HNPTEST && !USB_AUDIO && !GADGET_UAC1 && !USB_ETH && !USB_ETH_RNDIS && !USB_ETH_EEM && !USB_G_NCM && !USB_GADGETFS && !USB_FUNCTIONFS && !USB_FUNCTIONFS_ETH && !USB_FUNCTIONFS_RNDIS && !USB_FUNCTIONFS_GENERIC && !USB_FILE_STORAGE && !USB_FILE_STORAGE_TEST && !USB_MASS_STORAGE && !USB_G_SERIAL && !USB_MIDI_GADGET && !USB_G_PRINTER && !USB_CDC_COMPOSITE && !USB_G_NOKIA && !USB_G_ACM_MS && !USB_G_MULTI && !USB_G_MULTI_RNDIS && !USB_G_MULTI_CDC && !USB_G_HID && !USB_G_DBGP && !USB_G_WEBCAM
-> +	depends on STAGING && BLOCK && !USB_ZERO && !USB_ZERO_HNPTEST && !USB_AUDIO && !GADGET_UAC1 && !USB_ETH && !USB_ETH_RNDIS && !USB_ETH_EEM && !USB_G_NCM && !USB_GADGETFS && !USB_FUNCTIONFS && !USB_FUNCTIONFS_ETH && !USB_FUNCTIONFS_RNDIS && !USB_FUNCTIONFS_GENERIC && !USB_FILE_STORAGE && !USB_FILE_STORAGE_TEST && !USB_MASS_STORAGE && !USB_G_SERIAL && !USB_MIDI_GADGET && !USB_G_PRINTER && !USB_CDC_COMPOSITE && !USB_G_NOKIA && !USB_G_ACM_MS && !USB_G_MULTI && !USB_G_MULTI_RNDIS && !USB_G_MULTI_CDC && !USB_G_HID && !USB_G_DBGP && !USB_G_WEBCAM
->  	help
->  	  The Configurable Composite Gadget supports multiple USB
->  	  functions: acm, mass storage, rndis and FunctionFS.
-
-
+The use of memcpy when __dest < __src is OK with some memcpy
+implementations, but in a generic case it isn't guaranteed to work.
+I think it would be better to just copy memmove from lib/string.c.
 
 -- 
-~Randy
+Lasse Collin  |  IRC: Larhzu @ IRCnet & Freenode
