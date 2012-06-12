@@ -1,61 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753470Ab2FLOmq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 10:42:46 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:39737 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752372Ab2FLOmM (ORCPT
+	id S1753451Ab2FLOmo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 10:42:44 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:37180 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752299Ab2FLOmm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 10:42:12 -0400
-From: Rob Herring <robherring2@gmail.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Cc: Grant Likely <grant.likely@secretlab.ca>, mturquette@linaro.org,
-        sboyd@codeaurora.org, skannan@codeaurora.org, shawn.guo@linaro.org,
-        s.hauer@pengutronix.de, Rob Herring <rob.herring@calxeda.com>
-Subject: [PATCH v3 3/4] dt: add clock binding doc to primecell bindings
-Date: Tue, 12 Jun 2012 09:41:50 -0500
-Message-Id: <1339512111-11172-4-git-send-email-robherring2@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1339512111-11172-1-git-send-email-robherring2@gmail.com>
-References: <1339512111-11172-1-git-send-email-robherring2@gmail.com>
+	Tue, 12 Jun 2012 10:42:42 -0400
+Message-ID: <1339512147.2099.3.camel@sysadmin.euractiv.com>
+Subject: Re: What is the right practice to get new code upstream( was Fwd:
+ [patch] a simple hardware detector for latency as well as throughput ver.
+ 0.1.0)
+From: Jimmy Thrasibule <thrasibule.jimmy@gmail.com>
+To: Luming Yu <luming.yu@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 12 Jun 2012 16:42:27 +0200
+In-Reply-To: <CAJRGBZw2TctmBxRuA-byaGNCs=1v+M-1PXSm+OuwWApSqu7UjA@mail.gmail.com>
+References: <CAJRGBZw2TctmBxRuA-byaGNCs=1v+M-1PXSm+OuwWApSqu7UjA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.1 (3.4.1-2.fc17) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Herring <rob.herring@calxeda.com>
+On Tue, 2012-06-12 at 20:57 +0800, Luming Yu wrote:
+> Hi All,
+> 
+> I must have forgotten cc key persons. Sorry to make noise again.
+> I need to know what the right practice is to get your attention to
+> accept a new tool upstream like this one.
+Might good to have a look at the following:
 
-Add clock binding information for primecell peripherals. For most, a
-clock input name of "apb_pclk" is required. Any primecell peripherals
-which are different will need to be documented separately.
+http://www.kernel.org/doc/Documentation/SubmittingPatches
+http://www.kernel.org/doc/Documentation/SubmitChecklist
+http://www.linuxfoundation.org/content/how-participate-linux-community
 
-Signed-off-by: Rob Herring <rob.herring@calxeda.com>
----
- .../devicetree/bindings/arm/primecell.txt          |    6 ++++++
- 1 file changed, 6 insertions(+)
-
-diff --git a/Documentation/devicetree/bindings/arm/primecell.txt b/Documentation/devicetree/bindings/arm/primecell.txt
-index 951ca46..64fc82b 100644
---- a/Documentation/devicetree/bindings/arm/primecell.txt
-+++ b/Documentation/devicetree/bindings/arm/primecell.txt
-@@ -13,11 +13,17 @@ Required properties:
- Optional properties:
- 
- - arm,primecell-periphid : Value to override the h/w value with
-+- clocks : From common clock binding. First clock is phandle to clock for apb
-+	pclk. Additional clocks are optional and specific to those peripherals.
-+- clock-names : From common clock binding. Shall be "apb_pclk" for first clock.
- 
- Example:
- 
- serial@fff36000 {
- 	compatible = "arm,pl011", "arm,primecell";
- 	arm,primecell-periphid = <0x00341011>;
-+	clocks = <&pclk>;
-+	clock-names = "apb_pclk";
-+	
- };
- 
--- 
-1.7.9.5
+Regards,
+Jimmy
 
