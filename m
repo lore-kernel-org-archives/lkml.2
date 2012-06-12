@@ -1,119 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754027Ab2FLTXk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 15:23:40 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:12970 "EHLO
-	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752061Ab2FLTXi (ORCPT
+	id S1753859Ab2FLTZB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 15:25:01 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:41465 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752061Ab2FLTZA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 15:23:38 -0400
-Message-ID: <1339529010.2711.5.camel@bwh-desktop.uk.solarflarecom.com>
-Subject: [PATCH] sfc: Use standard __{clear,set}_bit_le() functions
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-CC: <grundler@parisc-linux.org>, <arnd@arndb.de>, <avi@redhat.com>,
-        <mtosatti@redhat.com>, <linux-net-drivers@solarflare.com>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arch@vger.kernel.org>, <kvm@vger.kernel.org>,
-        <takuya.yoshikawa@gmail.com>
-Date: Tue, 12 Jun 2012 20:23:30 +0100
-In-Reply-To: <20120611212901.2b4d0a17.yoshikawa.takuya@oss.ntt.co.jp>
-References: <20120611212735.f92ea521.yoshikawa.takuya@oss.ntt.co.jp>
-	 <20120611212901.2b4d0a17.yoshikawa.takuya@oss.ntt.co.jp>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
+	Tue, 12 Jun 2012 15:25:00 -0400
+Date: Tue, 12 Jun 2012 22:23:59 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Ben Chan <benchan@chromium.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, Sage Ahn <syahn@gctsemi.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: gdm72xx: Fix spinlock recursion on
+ gdm_usb_send_complete
+Message-ID: <20120612192359.GY4400@mwanda>
+References: <1339048886-11956-1-git-send-email-benchan@chromium.org>
 MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-18964.005
-X-TM-AS-Result: No--12.127200-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339048886-11956-1-git-send-email-benchan@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are now standard functions for dealing with little-endian bit
-arrays, so use them instead of our own implementations.
+On Wed, Jun 06, 2012 at 11:01:26PM -0700, Ben Chan wrote:
+> This patch fixes a spinlock recursion bug on several call sites of
+> gdm_usb_send_complete by not calling spin_lock_irqsave on
+> urb->context->tx_cxt->lock when the lock has already been acquired.
+> 
+> Signed-off-by: Ben Chan <benchan@chromium.org>
+> Cc: Sage Ahn <syahn@gctsemi.com>
+> ---
 
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
----
-Please use this version instead.
+Ben doesn't want this patch appied.  He sent a version 2 in a later
+thread.
 
-Ben.
-
- drivers/net/ethernet/sfc/efx.c        |    4 ++--
- drivers/net/ethernet/sfc/net_driver.h |   12 ------------
- drivers/net/ethernet/sfc/nic.c        |    4 ++--
- 3 files changed, 4 insertions(+), 16 deletions(-)
-
-diff --git a/drivers/net/ethernet/sfc/efx.c b/drivers/net/ethernet/sfc/efx.c
-index b95f2e1..ca2a348 100644
---- a/drivers/net/ethernet/sfc/efx.c
-+++ b/drivers/net/ethernet/sfc/efx.c
-@@ -1976,14 +1976,14 @@ static void efx_set_rx_mode(struct net_device *net_dev)
- 		netdev_for_each_mc_addr(ha, net_dev) {
- 			crc = ether_crc_le(ETH_ALEN, ha->addr);
- 			bit = crc & (EFX_MCAST_HASH_ENTRIES - 1);
--			set_bit_le(bit, mc_hash->byte);
-+			__set_bit_le(bit, mc_hash);
- 		}
- 
- 		/* Broadcast packets go through the multicast hash filter.
- 		 * ether_crc_le() of the broadcast address is 0xbe2612ff
- 		 * so we always add bit 0xff to the mask.
- 		 */
--		set_bit_le(0xff, mc_hash->byte);
-+		__set_bit_le(0xff, mc_hash);
- 	}
- 
- 	if (efx->port_enabled)
-diff --git a/drivers/net/ethernet/sfc/net_driver.h b/drivers/net/ethernet/sfc/net_driver.h
-index 0e57535..6f1a7f7 100644
---- a/drivers/net/ethernet/sfc/net_driver.h
-+++ b/drivers/net/ethernet/sfc/net_driver.h
-@@ -1080,18 +1080,6 @@ static inline struct efx_rx_buffer *efx_rx_buffer(struct efx_rx_queue *rx_queue,
- 	return &rx_queue->buffer[index];
- }
- 
--/* Set bit in a little-endian bitfield */
--static inline void set_bit_le(unsigned nr, unsigned char *addr)
--{
--	addr[nr / 8] |= (1 << (nr % 8));
--}
--
--/* Clear bit in a little-endian bitfield */
--static inline void clear_bit_le(unsigned nr, unsigned char *addr)
--{
--	addr[nr / 8] &= ~(1 << (nr % 8));
--}
--
- 
- /**
-  * EFX_MAX_FRAME_LEN - calculate maximum frame length
-diff --git a/drivers/net/ethernet/sfc/nic.c b/drivers/net/ethernet/sfc/nic.c
-index 4a9a5be..bb0172d 100644
---- a/drivers/net/ethernet/sfc/nic.c
-+++ b/drivers/net/ethernet/sfc/nic.c
-@@ -473,9 +473,9 @@ void efx_nic_init_tx(struct efx_tx_queue *tx_queue)
- 
- 		efx_reado(efx, &reg, FR_AA_TX_CHKSM_CFG);
- 		if (tx_queue->queue & EFX_TXQ_TYPE_OFFLOAD)
--			clear_bit_le(tx_queue->queue, (void *)&reg);
-+			__clear_bit_le(tx_queue->queue, &reg);
- 		else
--			set_bit_le(tx_queue->queue, (void *)&reg);
-+			__set_bit_le(tx_queue->queue, &reg);
- 		efx_writeo(efx, &reg, FR_AA_TX_CHKSM_CFG);
- 	}
- 
--- 
-1.7.7.6
-
-
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
+regards,
+dan carpenter
