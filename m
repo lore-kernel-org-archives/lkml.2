@@ -1,196 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751836Ab2FLHQx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 03:16:53 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:61470 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751125Ab2FLHQv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 03:16:51 -0400
-X-AuditID: 9c93016f-b7c3cae000001954-30-4fd6ecde924b
-Message-ID: <4FD6ECE2.6070901@kernel.org>
-Date: Tue, 12 Jun 2012 16:16:50 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1751919Ab2FLHTL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 03:19:11 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:20402 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751125Ab2FLHTJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 03:19:09 -0400
+X-IronPort-AV: E=Sophos;i="4.77,394,1336320000"; 
+   d="scan'208";a="5167240"
+Message-ID: <4FD6EE5F.60206@cn.fujitsu.com>
+Date: Tue, 12 Jun 2012 15:23:11 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel
-To: John Stultz <john.stultz@linaro.org>
-CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
-        Andrea Righi <andrea@betterlinux.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Taras Glek <tgek@mozilla.com>, Mike Hommey <mh@glandium.org>,
-        Jan Kara <jack@suse.cz>, "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 3/3] [RFC] tmpfs: Add FALLOC_FL_MARK_VOLATILE/UNMARK_VOLATILE
- handlers
-References: <1338575387-26972-1-git-send-email-john.stultz@linaro.org> <1338575387-26972-4-git-send-email-john.stultz@linaro.org> <4FC9235F.5000402@gmail.com>	<4FC92E30.4000906@linaro.org> <4FC9360B.4020401@gmail.com>	<4FC937AD.8040201@linaro.org> <4FC9438B.1000403@gmail.com>	<4FC94F61.20305@linaro.org> <4FCFB4F6.6070308@gmail.com>	<4FCFEE36.3010902@linaro.org> <CAO6Zf6D++8hOz19BmUwQ8iwbQknQRNsF4npP4r-830j04vbj=g@mail.gmail.com> <4FD13C30.2030401@linux.vnet.ibm.com> <4FD16B6E.8000307@linaro.org> <4FD1848B.7040102@gmail.com> <4FD2C6C5.1070900@linaro.org>
-In-Reply-To: <4FD2C6C5.1070900@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Luiz Capitulino <lcapitulino@redhat.com>
+CC: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Avi Kivity <avi@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
+Subject: Re: [Qemu-devel] [PATCH 1/3] start vm after reseting it
+References: <4FB9E4CE.8060709@cn.fujitsu.com>	<4FB9E57C.5040003@cn.fujitsu.com> <20120530161720.7c9b88b9@doriath.home>
+In-Reply-To: <20120530161720.7c9b88b9@doriath.home>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/06/12 15:19:41,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/06/12 15:19:43,
+	Serialize complete at 2012/06/12 15:19:43
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please, Cced linux-mm.
-
-On 06/09/2012 12:45 PM, John Stultz wrote:
-
-> On 06/07/2012 09:50 PM, KOSAKI Motohiro wrote:
->> (6/7/12 11:03 PM), John Stultz wrote:
+At 05/31/2012 03:17 AM, Luiz Capitulino Wrote:
+> On Mon, 21 May 2012 14:49:32 +0800
+> Wen Congyang <wency@cn.fujitsu.com> wrote:
+> 
+>> The guest should run after reseting it, but it does not
+>> run if its old state is RUN_STATE_INTERNAL_ERROR or RUN_STATE_PAUSED.
 >>
->>> So I'm falling back to using a shrinker for now, but I think Dmitry's
->>> point is an interesting one, and am interested in finding a better
->>> place to trigger purging volatile ranges from the mm code. If anyone
->>> has any
->>> suggestions, let me know, otherwise I'll go back to trying to better
->>> grok the mm code.
+>> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+>> ---
+>>  vl.c |    1 +
+>>  1 files changed, 1 insertions(+), 0 deletions(-)
 >>
->> I hate vm feature to abuse shrink_slab(). because of, it was not
->> designed generic callback.
->> it was designed for shrinking filesystem metadata. Therefore, vm
->> keeping a balance between
->> page scanning and slab scanning. then, a lot of shrink_slab misuse may
->> lead to break balancing
->> logic. i.e. drop icache/dcache too many and makes perfomance impact.
->>
->> As far as a code impact is small, I'm prefer to connect w/ vm reclaim
->> code directly.
+>> diff --git a/vl.c b/vl.c
+>> index 23ab3a3..7f5fed8 100644
+>> --- a/vl.c
+>> +++ b/vl.c
+>> @@ -1539,6 +1539,7 @@ static bool main_loop_should_exit(void)
+>>          if (runstate_check(RUN_STATE_INTERNAL_ERROR) ||
+>>              runstate_check(RUN_STATE_SHUTDOWN)) {
+>>              runstate_set(RUN_STATE_PAUSED);
+>> +            vm_start();
 > 
-> I can see your concern about mis-using the shrinker code. Also your
-> other email's point about the problem of having LRU range purging
-> behavior on a NUMA system makes some sense too.  Unfortunately I'm not
-> yet familiar enough with the reclaim core to sort out how to best track
-> and connect the volatile range purging in the vm's reclaim core yet.
-> 
-> So for now, I've moved the code back to using the shrinker (along with
-> fixing a few bugs along the way).
-> Thus, currently we manage the ranges as so:
->     [per fs volatile range lru head] -> [volatile range] -> [volatile
-> range] -> [volatile range]
-> With the per-fs shrinker zaping the volatile ranges from the lru.
-> 
-> I *think* ideally, the pages in a volatile range should be similar to
-> non-dirty file-backed pages.  There is a cost to restore them, but
-> freeing them is very cheap.  The trick is that volatile ranges
-> introduces a new relationship between pages. Since the neighboring
-> virtual pages in a volatile range are in effect tied together, purging
-> one effectively ruins the value of keeping the others, regardless of
-> which zone they are physically.
-> 
-> So maybe the right appraoch give up the per-fs volatile range lru, and
-> try a varient of what DaveC and DaveH have suggested: Letting the page
-> based lru reclamation handle the selection on a physical page basis, but
-> then zapping the entirety of the neighboring range if any one page is
-> reclaimed.  In order to try to preserve the range based LRU behavior,
-> activate all the pages in the range together when the range is marked
+> Please, drop the runstate_set() call. I think you also have to
+> to call bdrv_iostatus_reset(), as qmp_cont() does.
 
+I am not sure whether we should call it here. I think you may be right,
+so I will do it as you suggested.
 
-You mean deactivation for fast reclaiming, not activation when memory pressure happen?
-
-> volatile.  Since we assume ranges are un-touched when volatile, that
-> should preserve LRU purging behavior on single node systems and on
-> multi-node systems it will approximate fairly closely.
-> 
-> My main concern with this approach is marking and unmarking volatile
-> ranges needs to be fast, so I'm worried about the additional overhead of
-> activating each of the containing pages on mark_volatile.
-
-
-Yes. it could be a problem if range is very large and populated already.
-Why can't we make new hooks?
-
-Just concept for showing my intention..
-
-+int shrink_volatile_pages(struct zone *zone)
-+{
-+       int ret = 0;
-+       if (zone_page_state(zone, NR_ZONE_VOLATILE))
-+               ret = shmem_purge_one_volatile_range();
-+       return ret;
-+}
-+
- static void shrink_zone(struct zone *zone, struct scan_control *sc)
- {
-        struct mem_cgroup *root = sc->target_mem_cgroup;
-@@ -1827,6 +1835,18 @@ static void shrink_zone(struct zone *zone, struct scan_control *sc)
-                .priority = sc->priority,
-        };
-        struct mem_cgroup *memcg;
-+       int ret;
-+
-+       /*
-+        * Before we dive into trouble maker, let's look at easy-
-+        * reclaimable pages and avoid costly-reclaim if possible.
-+        */
-+       do {
-+               ret = shrink_volatile_pages();
-+               if (ret)
-+                       zone_watermark_ok(zone, sc->order, xxx);
-+                               return;
-+       } while(ret)
-
-Off-topic:
-
-I want to drive low memory notification level-triggering instead of raw vmstat trigger.
-(It's rather long thread https://lkml.org/lkml/2012/5/1/97)
-
-level 1: out-of-easy reclaimable pages (NR_VOLATILE + NR_UNMAPPED_CLEAN_PAGE)
-level 2 (more sever VM pressure than level 1): level2 + reclaimable dirty pages
-
-When it is out of easy-reclaimable pages, it might be good indication for
-low memory notification.
-
+Thanks
+Wen Congyang
 
 > 
-> The other question I have with this approach is if we're on a system
-> that doesn't have swap, it *seems* (not totally sure I understand it
-> yet) the tmpfs file pages will be skipped over when we call
-> shrink_lruvec.  So it seems we may need to add a new lru_list enum and
-> nr[] entry (maybe LRU_VOLATILE?).   So then it may be that when we mark
-> a range as volatile, instead of just activating it, we move it to the
-> volatile lru, and then when we shrink from that list, we call back to
-> the filesystem to trigger the entire range purging.
-
-
-Adding new LRU idea might make very slow fallocate(VOLATILE) so I hope we can avoid that if possible.
-
-Off-topic: 
-But I'm not sure because I might try to make new easy-reclaimable LRU list for low memory notification.
-That LRU list would contain non-mapped clean cache page and volatile pages if I decide adding it.
-Both pages has a common characteristic that recreating page is less costly.
-It's true for eMMC/SSD like device, at least.
-
+>>          }
+>>      }
+>>      if (qemu_powerdown_requested()) {
 > 
-> Does that sound reasonable?  Any other suggested approaches?  I'll think
-> some more about it this weekend and try to get a patch scratched out
-> early next week.
-> 
-> thanks
-> -john
-> 
-> 
-> 
-> 
-> 
-> 
-> 
-> 
-> 
-> 
-> 
-> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 > 
 
-
-
--- 
-Kind regards,
-Minchan Kim
