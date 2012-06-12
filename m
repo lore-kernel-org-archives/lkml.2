@@ -1,74 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752641Ab2FLLVd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 07:21:33 -0400
-Received: from mga11.intel.com ([192.55.52.93]:62475 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751916Ab2FLLVc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 07:21:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="164580635"
-Date: Tue, 12 Jun 2012 19:21:29 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Wanpeng Li <liwp.linux@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Wanpeng Li <liswp@linux.vnet.ibm.com>
-Subject: Re: [PATCH] writeback: avoid race when update bandwidth
-Message-ID: <20120612112129.GA16639@localhost>
-References: <1339496803-2885-1-git-send-email-liwp.linux@gmail.com>
+	id S1752614Ab2FLL2l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 07:28:41 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:65383 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751445Ab2FLL2j convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 07:28:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339496803-2885-1-git-send-email-liwp.linux@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4FD22ABA.6010607@wwwdotorg.org>
+References: <1339146426-20697-1-git-send-email-linus.walleij@linaro.org>
+	<4FD22ABA.6010607@wwwdotorg.org>
+Date: Tue, 12 Jun 2012 13:28:38 +0200
+Message-ID: <CACRpkdZyirEvBH7yDXCW2h54oEKueJh4fnmDrPLPH2B00m=YSg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] pinctrl/nomadik: add STn8815 ASIC support
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 12, 2012 at 06:26:43PM +0800, Wanpeng Li wrote:
-> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
+On Fri, Jun 8, 2012 at 6:39 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 06/08/2012 03:07 AM, Linus Walleij wrote:
+>> This adds support for the STN8815 ASIC for the Nomadik pin
+>> controller.
+>
+>> diff --git a/drivers/pinctrl/pinctrl-nomadik.c b/drivers/pinctrl/pinctrl-nomadik.c
+>
+>> @@ -1717,6 +1717,8 @@ static int __devinit nmk_pinctrl_probe(struct platform_device *pdev)
+>>                       of_match_device(nmk_pinctrl_match, &pdev->dev)->data;
+>>
+>>       /* Poke in other ASIC variants here */
+>> +     if (version == PINCTRL_NMK_STN8815)
+>> +             nmk_pinctrl_stn8815_init(&npct->soc);
+>>       if (version == PINCTRL_NMK_DB8500)
+>>               nmk_pinctrl_db8500_init(&npct->soc);
+>
+> One comment that came up in other reviews is that we shouldn't have a
+> single driver that switches on the SoC type it's running on and then
+> dispatches to different ${soc}_init() functions, but rather should have
+> multiple separate drivers, where each probe calls some utility function
+> with the appropriate SoC parameterization structures/tables.
 
-That email address is no longer in use?
+I discussed this with Arnd, the patch doesn't give the context of where this
+identifier comes from:
 
-> Since bdi->wb.list_lock is used to protect the b_* lists,
-> so the flushers who call wb_writeback to writeback pages will
-> stuck when bandwidth update policy holds this lock. In order
-> to avoid this race we can introduce a new bandwidth_lock who
-> is responsible for protecting bandwidth update policy.
+static const struct platform_device_id nmk_pinctrl_id[] = {
+        { "pinctrl-stn8815", PINCTRL_NMK_STN8815 },
+        { "pinctrl-db8500", PINCTRL_NMK_DB8500 },
+};
 
-This looks good to me. wb.list_lock could be contended and it's better
-for bdi_update_bandwidth() to use a standalone and hardly contended
-lock.
+static struct platform_driver nmk_pinctrl_driver = {
+        .driver = {
+                .owner = THIS_MODULE,
+                .name = "pinctrl-nomadik",
+                .of_match_table = nmk_pinctrl_match,
+        },
+        .probe = nmk_pinctrl_probe,
+        .id_table = nmk_pinctrl_id,
+};
 
-btw, with this change, the dirty_lock in global_update_bandwidth() can
-be eliminated.
+And the probe looks like so:
 
-> Signed-off-by: Wanpeng Li <liswp@linux.vnet.ibm.com>
-> ---
->  mm/page-writeback.c |    6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
-> 
-> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-> index c8945e0..b3b08fb 100644
-> --- a/mm/page-writeback.c
-> +++ b/mm/page-writeback.c
-> @@ -1032,12 +1032,14 @@ static void bdi_update_bandwidth(struct backing_dev_info *bdi,
->  				 unsigned long bdi_dirty,
->  				 unsigned long start_time)
->  {
-> +	static DEFINE_SPINLOCK(bandwidth_lock);
-> +
->  	if (time_is_after_eq_jiffies(bdi->bw_time_stamp + BANDWIDTH_INTERVAL))
->  		return;
-> -	spin_lock(&bdi->wb.list_lock);
-> +	spin_lock(&bandwidth_lock);
->  	__bdi_update_bandwidth(bdi, thresh, bg_thresh, dirty,
->  			       bdi_thresh, bdi_dirty, start_time);
-> -	spin_unlock(&bdi->wb.list_lock);
-> +	spin_unlock(&bandwidth_lock);
->  }
->  
->  /*
-> -- 
-> 1.7.9.5
+static int __devinit nmk_pinctrl_probe(struct platform_device *pdev)
+{
+        const struct platform_device_id *platid = platform_get_device_id(pdev);
+(...)
+        if (platid)
+                version = platid->driver_data;
+
+So the same driver handles several platform device names, then
+the name is used to select a variant. IIRC I asked Arnd about this
+and he preferred this, and I was told by Mark Brown in the past
+to do things this way (c.f. drivers/mfs/ab8500-core.c).
+
+Doing it the other way is also possible but leads to a proliferation
+of probe() calls and struct platform_driver blocks, and result in
+more lines of code.
+
+Both ways have precedents in the kernel so I actually think both
+are OK, there is two ways to skin this cat simply and I'm not that
+sensitive to which one is used.
+
+Yours,
+Linus Walleij
