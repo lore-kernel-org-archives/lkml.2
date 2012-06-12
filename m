@@ -1,73 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753320Ab2FLBmp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 21:42:45 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:48137 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753236Ab2FLBmo (ORCPT
+	id S1753277Ab2FLBo0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 21:44:26 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49020 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753153Ab2FLBoZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 21:42:44 -0400
-Date: Mon, 11 Jun 2012 18:42:39 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
-        "abbotti@mev.co.uk" <abbotti@mev.co.uk>
-Subject: Re: [PATCH] staging: comedi: cleanup alloc_subdevices
-Message-ID: <20120612014239.GA32087@kroah.com>
-References: <201206071508.15674.hartleys@visionengravers.com>
- <20120611235657.GA26721@kroah.com>
- <ADE657CA350FB648AAC2C43247A983F0020698DBC4A9@AUSP01VMBX24.collaborationhost.net>
- <20120612004421.GA30997@kroah.com>
- <ADE657CA350FB648AAC2C43247A983F0020698DBC4B9@AUSP01VMBX24.collaborationhost.net>
+	Mon, 11 Jun 2012 21:44:25 -0400
+Date: Mon, 11 Jun 2012 18:44:20 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
+        Tony Luck <tony.luck@intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        John Stultz <john.stultz@linaro.org>, Shuah Khan <shuahkhan@gmail.com>,
+        arve@android.com, Rebecca Schultz Zavin <rebecca@android.com>,
+        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Subject: Re: [PATCH 0/5] Some pstore/ramoops fixes
+Message-ID: <20120612014420.GC32087@kroah.com>
+References: <20120526130650.GA6242@lizard>
+ <20120612010050.GA21674@lizard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <ADE657CA350FB648AAC2C43247A983F0020698DBC4B9@AUSP01VMBX24.collaborationhost.net>
+In-Reply-To: <20120612010050.GA21674@lizard>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 11, 2012 at 07:49:46PM -0500, H Hartley Sweeten wrote:
-> On Monday, June 11, 2012 5:44 PM, Greg KH wrote:
-> > On Mon, Jun 11, 2012 at 07:07:41PM -0500, H Hartley Sweeten wrote:
-> >> 2, 3, and 4 probably go together. They all deal with the 'num_subdevices'
-> >> 
-> >> 1 can be a separate patch as long as I don't do the rename.
-> >> 
-> >> 5, 6, and 7 could all go together with the final rename of the function.
-> >> 
-> >> Does that sound ok?
-> >
-> > No, why not just break it up into 7 different patches?  You are doing
-> > different things, which would you rather review for correctness, 7
-> > simple, tiny patches, or some that do multiple things at the same time
-> > that are bigger?
+On Mon, Jun 11, 2012 at 06:00:51PM -0700, Anton Vorontsov wrote:
+> On Sat, May 26, 2012 at 06:06:50AM -0700, Anton Vorontsov wrote:
+> > In the light of Linus' response, and I said this to Colin already, I'll
+> > just zap a prz at boot time for pstore/console interface, which means
+> > that nowadays there shouldn't be any objections to this bunch of fixes.
+> > 
+> > These are valid fixes for v3.5, they restore old pstore's behavior
+> > nuances, which I changed accidentaly.
+> > 
+> > Except for the last patch, which is just a fix I happened to make when
+> > I got bored of the warning. :-) Not a regression fix, though.
+> > 
+> > Thanks,
+> > 
+> > ---
+> >  fs/pstore/inode.c          |    2 +-
+> >  fs/pstore/ram.c            |    3 +++
+> >  fs/pstore/ram_core.c       |   27 +++++++++++++++++----------
+> >  include/linux/pstore_ram.h |    2 ++
+> >  4 files changed, 23 insertions(+), 11 deletions(-)
 > 
-> Ok. I just posted the first one. It's still pretty big since it hits every
-> comedi driver file.
+> Hi Greg,
 > 
-> Please ignore the first post. I fat-fingered the prototype in the header.
-> v2 is correct.
-> 
-> Also, I have never done local commits to my Linux-next tree so I'm not
-> sure how to proceed with the incremental patches. If it's ok with you
-> I'll just wait for each patch to go into staging.
+> Have you had a chance to look into these? Plus into
+> "[PATCH v5 0/11] Merge ram_console into pstore" series, I believe
+> there were no objections as well.
 
-Create a brach from the one you are working on:
-	git branch -b my_branch
-make a change and commit it
-commit another one
-and so on.
-then create the patches:
-	git format-patch original_branch_name..my_branch
-and use git send-email to send them off in order.
+I'm getting there, give me this week to get through them all...
 
-Otherwise we are going to take 7 weeks when I apply one of your patches
-a week :)
-
-thanks,
-
-greg k-h
