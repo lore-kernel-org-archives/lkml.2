@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753908Ab2FLUpF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 16:45:05 -0400
-Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:53745 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754202Ab2FLUpB (ORCPT
+	id S1754420Ab2FLUrK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 16:47:10 -0400
+Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:35886 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754206Ab2FLUpE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 16:45:01 -0400
+	Tue, 12 Jun 2012 16:45:04 -0400
 From: "Andrew Stiegmann (stieg)" <astiegmann@vmware.com>
 To: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
         vm-crosstalk@vmware.com
 Cc: gregkh@linuxfoundation.org, cschamp@vmware.com, dtor@vmware.com,
         acking@vmware.com, dsouders@vmware.com,
         "Andrew Stiegmann (stieg)" <astiegmann@vmware.com>
-Subject: [vmw_vmci RFCv2 02/11] Apply VMCI datagram code
-Date: Tue, 12 Jun 2012 13:44:21 -0700
-Message-Id: <1339533870-24187-3-git-send-email-astiegmann@vmware.com>
+Subject: [vmw_vmci RFCv2 05/11] Apply VMCI event code
+Date: Tue, 12 Jun 2012 13:44:24 -0700
+Message-Id: <1339533870-24187-6-git-send-email-astiegmann@vmware.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1339533870-24187-1-git-send-email-astiegmann@vmware.com>
 References: <1339533870-24187-1-git-send-email-astiegmann@vmware.com>
@@ -23,23 +23,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implements datagrams to allow data to be sent between host
-and guest.
+Code that manages event handlers and handles callbacks when
+specific events fire.
 
 Signed-off-by: Andrew Stiegmann (stieg) <astiegmann@vmware.com>
 ---
- drivers/misc/vmw_vmci/vmci_datagram.c |  586 +++++++++++++++++++++++++++++++++
- drivers/misc/vmw_vmci/vmci_datagram.h |   56 ++++
- 2 files changed, 642 insertions(+), 0 deletions(-)
- create mode 100644 drivers/misc/vmw_vmci/vmci_datagram.c
- create mode 100644 drivers/misc/vmw_vmci/vmci_datagram.h
+ drivers/misc/vmw_vmci/vmci_event.c |  453 ++++++++++++++++++++++++++++++++++++
+ drivers/misc/vmw_vmci/vmci_event.h |   29 +++
+ 2 files changed, 482 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/misc/vmw_vmci/vmci_event.c
+ create mode 100644 drivers/misc/vmw_vmci/vmci_event.h
 
-diff --git a/drivers/misc/vmw_vmci/vmci_datagram.c b/drivers/misc/vmw_vmci/vmci_datagram.c
+diff --git a/drivers/misc/vmw_vmci/vmci_event.c b/drivers/misc/vmw_vmci/vmci_event.c
 new file mode 100644
-index 0000000..a804f99
+index 0000000..be7e8d9
 --- /dev/null
-+++ b/drivers/misc/vmw_vmci/vmci_datagram.c
-@@ -0,0 +1,586 @@
++++ b/drivers/misc/vmw_vmci/vmci_event.c
+@@ -0,0 +1,453 @@
 +/*
 + * VMware VMCI Driver
 + *
@@ -59,579 +59,446 @@ index 0000000..a804f99
 + * 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
 + */
 +
-+#include <linux/bug.h>
 +#include <linux/module.h>
++#include <linux/list.h>
 +#include <linux/sched.h>
 +#include <linux/vmw_vmci_api.h>
 +#include <linux/vmw_vmci_defs.h>
 +
-+#include "vmci_common_int.h"
-+#include "vmci_context.h"
-+#include "vmci_datagram.h"
-+#include "vmci_driver.h"
 +#include "vmci_event.h"
-+#include "vmci_hash_table.h"
-+#include "vmci_resource.h"
-+#include "vmci_route.h"
++#include "vmci_driver.h"
 +
-+/*
-+ * struct datagram_entry describes the datagram entity. It is used for datagram
-+ * entities created only on the host.
-+ */
-+struct datagram_entry {
-+	struct vmci_resource resource;
-+	uint32_t flags;
++#define EVENT_MAGIC 0xEABE0000
++#define VMCI_EVENT_MAX_ATTEMPTS 10
++
++struct vmci_subscription {
++	uint32_t id;
++	int refCount;
 +	bool runDelayed;
-+	VMCIDatagramRecvCB recvCB;
-+	void *clientData;
 +	wait_queue_head_t destroyEvent;
-+	uint32_t privFlags;
++	uint32_t event;
++	VMCI_EventCB callback;
++	void *callbackData;
++	struct list_head subscriberListItem;
 +};
 +
-+struct delayed_datagram_info {
-+	bool inDGHostQueue;
-+	struct datagram_entry *entry;
-+	struct vmci_dg msg;
++static struct list_head subscriberArray[VMCI_EVENT_MAX];
++static spinlock_t subscriberLock;
++
++struct delayed_event_info {
++	struct vmci_subscription *sub;
++	uint8_t eventPayload[sizeof(struct vmci_event_data_max)];
 +};
 +
-+static atomic_t delayedDGHostQueueSize;
++struct event_ref {
++	struct vmci_subscription *sub;
++	struct list_head listItem;
++};
 +
-+static void dg_free_cb(void *clientData)
++int __init vmci_event_init(void)
 +{
-+	struct datagram_entry *entry = (struct datagram_entry *)clientData;
-+	ASSERT(entry);
++	int i;
 +
-+	/*
-+	 * Entry is freed in VMCIDatagram_DestroyHnd, who waits for
-+	 * the signal.
-+	 */
-+	wake_up(&entry->destroyEvent);
++	for (i = 0; i < VMCI_EVENT_MAX; i++)
++		INIT_LIST_HEAD(&subscriberArray[i]);
++
++	spin_lock_init(&subscriberLock);
++	return VMCI_SUCCESS;
 +}
 +
-+static int dg_release_cb(void *clientData)
++void vmci_event_exit(void)
 +{
-+	struct datagram_entry *entry = (struct datagram_entry *)clientData;
++	int e;
++
++	/* We free all memory at exit. */
++	for (e = 0; e < VMCI_EVENT_MAX; e++) {
++		struct vmci_subscription *cur, *p2;
++		list_for_each_entry_safe(cur, p2, &subscriberArray[e],
++					 subscriberListItem) {
++
++			/*
++			 * We should never get here because all events
++			 * should have been unregistered before we try
++			 * to unload the driver module.  Also, delayed
++			 * callbacks could still be firing so this
++			 * cleanup would not be safe.  Still it is
++			 * better to free the memory than not ... so
++			 * we leave this code in just in case....
++			 */
++			pr_warn("Unexpected free events occuring.");
++			kfree(cur);
++		}
++	}
++
++}
++
++/*
++ * Gets a reference to the given VMCISubscription.
++ */
++static void event_get(struct vmci_subscription *entry)
++{
 +	ASSERT(entry);
-+	vmci_resource_release(&entry->resource);
++
++	entry->refCount++;
++}
++
++/*
++ * Releases the given VMCISubscription.
++ * Fires the destroy event if the reference count has gone to zero.
++ */
++static void event_release(struct vmci_subscription *entry)
++{
++	ASSERT(entry);
++	ASSERT(entry->refCount > 0);
++
++	entry->refCount--;
++	if (entry->refCount == 0)
++		wake_up(&entry->destroyEvent);
++}
++
++/*
++ * Callback to release the event entry reference. It is called by the
++ * VMCI_WaitOnEvent function before it blocks.
++ */
++static int event_release_cb(void *clientData)
++{
++	struct vmci_subscription *sub = (struct vmci_subscription *)clientData;
++
++	ASSERT(sub);
++
++	spin_lock_bh(&subscriberLock);
++	event_release(sub);
++	spin_unlock_bh(&subscriberLock);
++
 +	return 0;
 +}
 +
 +/*
-+ * Create a datagram entry given a handle pointer.
++ * Find entry. Assumes lock is held.
++ * Increments the VMCISubscription refcount if an entry is found.
 + */
-+static int dg_create_handle(uint32_t resourceID,
-+			    uint32_t flags,
-+			    uint32_t privFlags,
-+			    VMCIDatagramRecvCB recvCB,
-+			    void *clientData,
-+			    struct vmci_handle *outHandle)
++static struct vmci_subscription *event_find(uint32_t subID)
 +{
-+	int result;
-+	uint32_t contextID;
-+	struct vmci_handle handle;
-+	struct datagram_entry *entry;
++	int e;
 +
-+	ASSERT(recvCB != NULL);
-+	ASSERT(outHandle != NULL);
-+	ASSERT(!(privFlags & ~VMCI_PRIVILEGE_ALL_FLAGS));
-+
-+	if ((flags & VMCI_FLAG_WELLKNOWN_DG_HND) != 0) {
-+		return VMCI_ERROR_INVALID_ARGS;
-+	} else {
-+		if ((flags & VMCI_FLAG_ANYCID_DG_HND) != 0) {
-+			contextID = VMCI_INVALID_ID;
-+		} else {
-+			contextID = VMCI_GetContextID();
-+			if (contextID == VMCI_INVALID_ID)
-+				return VMCI_ERROR_NO_RESOURCES;
++	for (e = 0; e < VMCI_EVENT_MAX; e++) {
++		struct vmci_subscription *cur;
++		list_for_each_entry(cur, &subscriberArray[e],
++				    subscriberListItem) {
++			if (cur->id == subID) {
++				event_get(cur);
++				return cur;
++			}
 +		}
-+
-+		if (resourceID == VMCI_INVALID_ID) {
-+			resourceID = vmci_resource_get_id(contextID);
-+			if (resourceID == VMCI_INVALID_ID)
-+				return VMCI_ERROR_NO_HANDLE;
-+		}
-+
-+		handle = vmci_make_handle(contextID, resourceID);
 +	}
-+
-+	entry = kmalloc(sizeof *entry, GFP_KERNEL);
-+	if (entry == NULL) {
-+		pr_warn("Failed allocating memory for datagram entry.");
-+		return VMCI_ERROR_NO_MEM;
-+	}
-+
-+	entry->runDelayed = (flags & VMCI_FLAG_DG_DELAYED_CB) ? true : false;
-+	entry->flags = flags;
-+	entry->recvCB = recvCB;
-+	entry->clientData = clientData;
-+	init_waitqueue_head(&entry->destroyEvent);
-+	entry->privFlags = privFlags;
-+
-+	/* Make datagram resource live. */
-+	result = vmci_resource_add(&entry->resource,
-+				   VMCI_RESOURCE_TYPE_DATAGRAM,
-+				   handle, dg_free_cb, entry);
-+	if (result != VMCI_SUCCESS) {
-+		pr_warn("Failed to add new resource (handle=0x%x:0x%x).",
-+			handle.context, handle.resource);
-+		kfree(entry);
-+		return result;
-+	}
-+	*outHandle = handle;
-+
-+	return VMCI_SUCCESS;
-+}
-+
-+int __init vmci_dg_init(void)
-+{
-+	atomic_set(&delayedDGHostQueueSize, 0);
-+	return VMCI_SUCCESS;
-+}
-+
-+/*
-+ * Internal utilility function with the same purpose as
-+ * vmci_dg_get_priv_flags that also takes a contextID.
-+ */
-+static int vmci_dg_get_priv_flags(uint32_t contextID,
-+				  struct vmci_handle handle,
-+				  uint32_t *privFlags)
-+{
-+	ASSERT(privFlags);
-+	ASSERT(contextID != VMCI_INVALID_ID);
-+
-+	if (contextID == VMCI_HOST_CONTEXT_ID) {
-+		struct datagram_entry *srcEntry;
-+		struct vmci_resource *resource;
-+
-+		resource =
-+			vmci_resource_get(handle, VMCI_RESOURCE_TYPE_DATAGRAM);
-+		if (resource == NULL)
-+			return VMCI_ERROR_INVALID_ARGS;
-+
-+		srcEntry = container_of(resource, struct datagram_entry,
-+					resource);
-+		*privFlags = srcEntry->privFlags;
-+		vmci_resource_release(resource);
-+	} else if (contextID == VMCI_HYPERVISOR_CONTEXT_ID) {
-+		*privFlags = VMCI_MAX_PRIVILEGE_FLAGS;
-+	} else {
-+		*privFlags = VMCIContext_GetPrivFlags(contextID);
-+	}
-+
-+	return VMCI_SUCCESS;
++	return NULL;
 +}
 +
 +/*
 + * Calls the specified callback in a delayed context.
 + */
-+static void dg_delayed_dispatch_cb(void *data)
++static void event_delayed_dispatch_cb(void *data)
 +{
-+	bool inDGHostQueue;
-+	struct delayed_datagram_info *dgInfo =
-+		(struct delayed_datagram_info *)data;
++	struct delayed_event_info *eventInfo;
++	struct vmci_subscription *sub;
++	struct vmci_event_data *ed;
 +
-+	ASSERT(data);
++	eventInfo = data;
 +
-+	dgInfo->entry->recvCB(dgInfo->entry->clientData, &dgInfo->msg);
++	ASSERT(eventInfo);
++	ASSERT(eventInfo->sub);
 +
-+	vmci_resource_release(&dgInfo->entry->resource);
++	sub = eventInfo->sub;
++	ed = (struct vmci_event_data *)eventInfo->eventPayload;
 +
-+	inDGHostQueue = dgInfo->inDGHostQueue;
-+	kfree(dgInfo);
++	sub->callback(sub->id, ed, sub->callbackData);
 +
-+	if (inDGHostQueue)
-+		atomic_dec(&delayedDGHostQueueSize);
++	spin_lock_bh(&subscriberLock);
++	event_release(sub);
++	spin_unlock_bh(&subscriberLock);
++
++	kfree(eventInfo);
 +}
 +
 +/*
-+ * Dispatch datagram as a host, to the host, or other vm context. This
-+ * function cannot dispatch to hypervisor context handlers. This should
-+ * have been handled before we get here by VMCIDatagramDispatch.
-+ * Returns number of bytes sent on success, error code otherwise.
++ * Actually delivers the events to the subscribers.
++ * The callback function for each subscriber is invoked.
 + */
-+static int dg_dispatch_as_host(uint32_t contextID,
-+			       struct vmci_dg *dg)
++static int event_deliver(struct vmci_event_msg *eventMsg)
 +{
-+	int retval;
-+	size_t dgSize;
-+	uint32_t srcPrivFlags;
++	int err = VMCI_SUCCESS;
++	struct vmci_subscription *cur;
++	struct list_head noDelayList;
++	struct vmci_event_data *ed;
++	struct event_ref *eventRef, *p2;
 +
-+	ASSERT(dg);
-+	ASSERT(vmci_host_code_active());
++	ASSERT(eventMsg);
 +
-+	dgSize = VMCI_DG_SIZE(dg);
++	INIT_LIST_HEAD(&noDelayList);
 +
-+	if (contextID == VMCI_HOST_CONTEXT_ID &&
-+	    dg->dst.context == VMCI_HYPERVISOR_CONTEXT_ID)
-+		return VMCI_ERROR_DST_UNREACHABLE;
++	spin_lock_bh(&subscriberLock);
++	list_for_each_entry(cur, &subscriberArray[eventMsg->eventData.event],
++			    subscriberListItem) {
++		ASSERT(cur && cur->event == eventMsg->eventData.event);
 +
-+	ASSERT(dg->dst.context != VMCI_HYPERVISOR_CONTEXT_ID);
++		if (cur->runDelayed) {
++			struct delayed_event_info *eventInfo;
++			eventInfo = kzalloc(sizeof *eventInfo, GFP_ATOMIC);
++			if (!eventInfo) {
++				err = VMCI_ERROR_NO_MEM;
++				goto out;
++			}
 +
-+	/* Check that source handle matches sending context. */
-+	if (dg->src.context != contextID) {
-+		pr_devel("Sender context (ID=0x%x) is not owner of src " \
-+			 "datagram entry (handle=0x%x:0x%x).",
-+			 contextID, dg->src.context, dg->src.resource);
-+		return VMCI_ERROR_NO_ACCESS;
++			event_get(cur);
++			memcpy(eventInfo->eventPayload,
++			       VMCI_DG_PAYLOAD(eventMsg),
++			       (size_t) eventMsg->hdr.payloadSize);
++			eventInfo->sub = cur;
++			err = vmci_drv_schedule_delayed_work(
++				event_delayed_dispatch_cb,
++				eventInfo);
++			if (err != VMCI_SUCCESS) {
++				event_release(cur);
++				kfree(eventInfo);
++				goto out;
++			}
++
++		} else {
++			struct event_ref *eventRef;
++
++			/*
++			 * To avoid possible lock rank voilation when holding
++			 * subscriberLock, we construct a local list of
++			 * subscribers and release subscriberLock before
++			 * invokes the callbacks. This is similar to delayed
++			 * callbacks, but callbacks is invoked right away here.
++			 */
++			eventRef = kzalloc(sizeof *eventRef, GFP_ATOMIC);
++			if (!eventRef) {
++				err = VMCI_ERROR_NO_MEM;
++				goto out;
++			}
++
++			event_get(cur);
++			eventRef->sub = cur;
++			INIT_LIST_HEAD(&eventRef->listItem);
++			list_add(&eventRef->listItem, &noDelayList);
++		}
 +	}
 +
-+	/* Get hold of privileges of sending endpoint. */
-+	retval = vmci_dg_get_priv_flags(contextID, dg->src, &srcPrivFlags);
-+	if (retval != VMCI_SUCCESS) {
-+		pr_warn("Couldn't get privileges (handle=0x%x:0x%x).",
-+			dg->src.context, dg->src.resource);
-+		return retval;
-+	}
++out:
++	spin_unlock_bh(&subscriberLock);
 +
-+	/* Determine if we should route to host or guest destination. */
-+	if (dg->dst.context == VMCI_HOST_CONTEXT_ID) {
-+		/* Route to host datagram entry. */
-+		struct datagram_entry *dstEntry;
-+		struct vmci_resource *resource;
-+
-+		if (dg->src.context == VMCI_HYPERVISOR_CONTEXT_ID &&
-+		    dg->dst.resource == VMCI_EVENT_HANDLER) {
-+			return vmci_event_dispatch(dg);
-+		}
-+
-+		resource = vmci_resource_get(dg->dst,
-+					     VMCI_RESOURCE_TYPE_DATAGRAM);
-+		if (resource == NULL) {
-+			pr_devel("Sending to invalid destination " \
-+				 "(handle=0x%x:0x%x).", dg->dst.context,
-+				 dg->dst.resource);
-+			return VMCI_ERROR_INVALID_RESOURCE;
-+		}
-+		dstEntry =
-+			container_of(resource, struct datagram_entry,
-+				     resource);
-+		if (vmci_deny_interaction(srcPrivFlags, dstEntry->privFlags)) {
-+			vmci_resource_release(resource);
-+			return VMCI_ERROR_NO_ACCESS;
-+		}
-+		ASSERT(dstEntry->recvCB);
++	list_for_each_entry_safe(eventRef, p2, &noDelayList, listItem) {
++		struct vmci_subscription *cur = eventRef->sub;
++		uint8_t eventPayload[sizeof(struct vmci_event_data_max)]
++			= { 0 };
 +
 +		/*
-+		 * If a VMCI datagram destined for the host is also sent by the
-+		 * host, we always run it delayed. This ensures that no locks
-+		 * are held when the datagram callback runs.
++		 * We set event data before each callback to ensure
++		 * isolation.
 +		 */
-+		if (dstEntry->runDelayed
-+		    || dg->src.context == VMCI_HOST_CONTEXT_ID) {
-+			struct delayed_datagram_info *dgInfo;
++		memcpy(eventPayload, VMCI_DG_PAYLOAD(eventMsg),
++		       (size_t) eventMsg->hdr.payloadSize);
++		ed = (struct vmci_event_data *)eventPayload;
++		cur->callback(cur->id, ed, cur->callbackData);
 +
-+			if (atomic_add_return(1, &delayedDGHostQueueSize)
-+			    == VMCI_MAX_DELAYED_DG_HOST_QUEUE_SIZE) {
-+				atomic_dec(&delayedDGHostQueueSize);
-+				vmci_resource_release(resource);
-+				return VMCI_ERROR_NO_MEM;
-+			}
-+
-+			dgInfo =
-+				kmalloc(sizeof *dgInfo +
-+					(size_t) dg->payloadSize, GFP_ATOMIC);
-+			if (NULL == dgInfo) {
-+				atomic_dec(&delayedDGHostQueueSize);
-+				vmci_resource_release(resource);
-+				return VMCI_ERROR_NO_MEM;
-+			}
-+
-+			dgInfo->inDGHostQueue = true;
-+			dgInfo->entry = dstEntry;
-+			memcpy(&dgInfo->msg, dg, dgSize);
-+			retval =
-+			  vmci_drv_schedule_delayed_work(dg_delayed_dispatch_cb,
-+							 dgInfo);
-+			if (retval < VMCI_SUCCESS) {
-+				pr_warn("Failed to schedule delayed " \
-+					"work for datagram (result=%d).",
-+					retval);
-+				kfree(dgInfo);
-+				vmci_resource_release(resource);
-+				atomic_dec(&delayedDGHostQueueSize);
-+				return retval;
-+			}
-+		} else {
-+			retval = dstEntry->recvCB(dstEntry->clientData, dg);
-+			vmci_resource_release(resource);
-+			if (retval < VMCI_SUCCESS)
-+				return retval;
-+		}
-+	} else {
-+		/* Route to destination VM context. */
-+		struct vmci_dg *newDG;
-+
-+		if (contextID != dg->dst.context) {
-+			if (vmci_deny_interaction(srcPrivFlags,
-+						  VMCIContext_GetPrivFlags
-+						  (dg->dst.context))) {
-+				return VMCI_ERROR_NO_ACCESS;
-+			} else if (VMCI_CONTEXT_IS_VM(contextID)) {
-+				/*
-+				 * If the sending context is a VM, it
-+				 * cannot reach another VM.
-+				 */
-+
-+				pr_devel("Datagram communication between VMs " \
-+					 "not supported (src=0x%x, dst=0x%x).",
-+					 contextID, dg->dst.context);
-+				return VMCI_ERROR_DST_UNREACHABLE;
-+			}
-+		}
-+
-+		/* We make a copy to enqueue. */
-+		newDG = kmalloc(dgSize, GFP_KERNEL);
-+		if (newDG == NULL)
-+			return VMCI_ERROR_NO_MEM;
-+
-+		memcpy(newDG, dg, dgSize);
-+		retval = vmci_ctx_enqueue_dg(dg->dst.context, newDG);
-+		if (retval < VMCI_SUCCESS) {
-+			kfree(newDG);
-+			return retval;
-+		}
++		spin_lock_bh(&subscriberLock);
++		event_release(cur);
++		spin_unlock_bh(&subscriberLock);
++		kfree(eventRef);
 +	}
 +
-+	/*
-+	 * We currently truncate the size to signed 32 bits. This doesn't
-+	 * matter for this handler as it only support 4Kb messages.
-+	 */
-+	return (int)dgSize;
++	return err;
 +}
 +
 +/*
-+ * Dispatch datagram as a guest, down through the VMX and potentially to
-+ * the host.
-+ * Returns number of bytes sent on success, error code otherwise.
++ * Dispatcher for the VMCI_EVENT_RECEIVE datagrams. Calls all
++ * subscribers for given event.
 + */
-+static int dg_dispatch_as_guest(struct vmci_dg *dg)
++int vmci_event_dispatch(struct vmci_dg *msg)
 +{
-+	int retval;
-+	struct vmci_resource *resource;
++	struct vmci_event_msg *eventMsg = (struct vmci_event_msg *)msg;
 +
-+	resource = vmci_resource_get(dg->src, VMCI_RESOURCE_TYPE_DATAGRAM);
-+	if (NULL == resource)
-+		return VMCI_ERROR_NO_HANDLE;
++	ASSERT(msg &&
++	       msg->src.context == VMCI_HYPERVISOR_CONTEXT_ID &&
++	       msg->dst.resource == VMCI_EVENT_HANDLER);
 +
-+	retval = vmci_send_dg(dg);
-+	vmci_resource_release(resource);
-+	return retval;
++	if (msg->payloadSize < sizeof(uint32_t) ||
++	    msg->payloadSize > sizeof(struct vmci_event_data_max))
++		return VMCI_ERROR_INVALID_ARGS;
++
++	if (!VMCI_EVENT_VALID(eventMsg->eventData.event))
++		return VMCI_ERROR_EVENT_UNKNOWN;
++
++	event_deliver(eventMsg);
++	return VMCI_SUCCESS;
 +}
 +
 +/*
-+ * Dispatch datagram.  This will determine the routing for the datagram
-+ * and dispatch it accordingly.
-+ * Returns number of bytes sent on success, error code otherwise.
++ * Initialize and add subscription to subscriber list.
 + */
-+int vmci_dg_dispatch(uint32_t contextID,
-+		     struct vmci_dg *dg, bool fromGuest)
++static int event_register_subscription(struct vmci_subscription *sub,
++				       uint32_t event,
++				       uint32_t flags,
++				       VMCI_EventCB callback,
++				       void *callbackData)
 +{
-+	int retval;
-+	enum vmci_route route;
++	static uint32_t subscriptionID;
++	uint32_t attempts = 0;
++	int result;
++	bool success;
 +
-+	ASSERT(dg);
-+	BUILD_BUG_ON(sizeof(struct vmci_dg) != 24);
++	ASSERT(sub);
 +
-+	if (VMCI_DG_SIZE(dg) > VMCI_MAX_DG_SIZE) {
-+		pr_devel("Payload (size=%llu bytes) too big to " \
-+			 "send.", (unsigned long long) dg->payloadSize);
++	if (!VMCI_EVENT_VALID(event) || callback == NULL) {
++		pr_devel("Failed to subscribe to event (type=%d) " \
++			 "(callback=%p) (data=%p).", event,
++			 callback, callbackData);
 +		return VMCI_ERROR_INVALID_ARGS;
 +	}
 +
-+	retval = vmci_route(&dg->src, &dg->dst, fromGuest, &route);
++	sub->runDelayed = !!(flags & VMCI_FLAG_EVENT_DELAYED_CB);
++	sub->refCount = 1;
++	sub->event = event;
++	sub->callback = callback;
++	sub->callbackData = callbackData;
++	INIT_LIST_HEAD(&sub->subscriberListItem);
++
++	spin_lock_bh(&subscriberLock);
++
++	/* Creation of a new event is always allowed. */
++	for (success = false, attempts = 0;
++	     success == false && attempts < VMCI_EVENT_MAX_ATTEMPTS;
++	     attempts++) {
++		struct vmci_subscription *existingSub = NULL;
++
++		/*
++		 * We try to get an id a couple of time before
++		 * claiming we are out of resources.
++		 */
++		sub->id = ++subscriptionID;
++
++		/* Test for duplicate id. */
++		existingSub = event_find(sub->id);
++		if (existingSub == NULL)
++			success = true;
++		else
++			event_release(existingSub);
++	}
++
++	if (success) {
++		init_waitqueue_head(&sub->destroyEvent);
++		list_add(&sub->subscriberListItem, &subscriberArray[event]);
++		result = VMCI_SUCCESS;
++	} else {
++		result = VMCI_ERROR_NO_RESOURCES;
++	}
++
++	spin_unlock_bh(&subscriberLock);
++	return result;
++}
++
++/*
++ * Remove subscription from subscriber list.
++ */
++static struct vmci_subscription *event_unregister_subscription(uint32_t subID)
++{
++	struct vmci_subscription *s;
++
++	spin_lock_bh(&subscriberLock);
++	s = event_find(subID);
++	if (s != NULL) {
++		event_release(s);
++		list_del(&s->subscriberListItem);
++	}
++	spin_unlock_bh(&subscriberLock);
++
++	if (s != NULL)
++		vmci_drv_wait_on_event_intr(&s->destroyEvent,
++					    event_release_cb, s);
++
++	return s;
++}
++
++/**
++ * VMCIEvent_Subscribe() - Subscribe to a given event.
++ * @event:	The event to subscribe to.
++ * @flags:	Event flags.  VMCI_FLAG_EVENT_*
++ * @callback:	The callback to invoke upon the event.
++ * @callbackData:	Data to pass to the callback.
++ * @subscriptionID:	ID used to track subscription.  Used with
++ *		VMCIEvent_Unsubscribe()
++ *
++ * Subscribes to the provided event.  The callback specified can be fired
++ * in different contexts depending on what flag is specified while
++ * registering. If flags contains VMCI_FLAG_EVENT_NONE then the
++ * callback is fired with the subscriber lock held (and BH context
++ * on the guest). If flags contain VMCI_FLAG_EVENT_DELAYED_CB then
++ * the callback is fired with no locks held in thread context.
++ * This is useful because other VMCIEvent functions can be called,
++ * but it also increases the chances that an event will be dropped.
++ */
++int VMCIEvent_Subscribe(uint32_t event,
++			uint32_t flags,
++			VMCI_EventCB callback,
++			void *callbackData,
++			uint32_t *subscriptionID)
++{
++	int retval;
++	struct vmci_subscription *s = NULL;
++
++	if (subscriptionID == NULL) {
++		pr_devel("Invalid subscription (NULL).");
++		return VMCI_ERROR_INVALID_ARGS;
++	}
++
++	s = kmalloc(sizeof *s, GFP_KERNEL);
++	if (s == NULL)
++		return VMCI_ERROR_NO_MEM;
++
++	retval = event_register_subscription(s, event, flags,
++					     callback, callbackData);
 +	if (retval < VMCI_SUCCESS) {
-+		pr_devel("Failed to route datagram (src=0x%x, dst=0x%x, " \
-+			 "err=%d).", dg->src.context, dg->dst.context,
-+			 retval);
++		kfree(s);
 +		return retval;
 +	}
 +
-+	if (VMCI_ROUTE_AS_HOST == route) {
-+		if (VMCI_INVALID_ID == contextID)
-+			contextID = VMCI_HOST_CONTEXT_ID;
-+		return dg_dispatch_as_host(contextID, dg);
-+	}
-+
-+	if (VMCI_ROUTE_AS_GUEST == route)
-+		return dg_dispatch_as_guest(dg);
-+
-+	pr_warn("Unknown route (%d) for datagram.", route);
-+	return VMCI_ERROR_DST_UNREACHABLE;
-+}
-+
-+/*
-+ * Invoke the handler for the given datagram.  This is intended to be
-+ * called only when acting as a guest and receiving a datagram from the
-+ * virtual device.
-+ */
-+int vmci_dg_invoke_guest_handler(struct vmci_dg *dg)
-+{
-+	int retval;
-+	struct vmci_resource *resource;
-+	struct datagram_entry *dstEntry;
-+
-+	ASSERT(dg);
-+
-+	resource = vmci_resource_get(dg->dst, VMCI_RESOURCE_TYPE_DATAGRAM);
-+	if (NULL == resource) {
-+		pr_devel("destination (handle=0x%x:0x%x) doesn't exist.",
-+			 dg->dst.context, dg->dst.resource);
-+		return VMCI_ERROR_NO_HANDLE;
-+	}
-+
-+	dstEntry =
-+		container_of(resource, struct datagram_entry, resource);
-+	if (dstEntry->runDelayed) {
-+		struct delayed_datagram_info *dgInfo;
-+
-+		dgInfo =
-+			kmalloc(sizeof *dgInfo + (size_t) dg->payloadSize,
-+				GFP_ATOMIC);
-+		if (NULL == dgInfo) {
-+			vmci_resource_release(resource);
-+			retval = VMCI_ERROR_NO_MEM;
-+			goto exit;
-+		}
-+
-+		dgInfo->inDGHostQueue = false;
-+		dgInfo->entry = dstEntry;
-+		memcpy(&dgInfo->msg, dg, VMCI_DG_SIZE(dg));
-+
-+		retval =
-+			vmci_drv_schedule_delayed_work(dg_delayed_dispatch_cb,
-+						       dgInfo);
-+		if (retval < VMCI_SUCCESS) {
-+			pr_warn("Failed to schedule delayed work for " \
-+				"datagram (result=%d).", retval);
-+			kfree(dgInfo);
-+			vmci_resource_release(resource);
-+			dgInfo = NULL;
-+			goto exit;
-+		}
-+	} else {
-+		dstEntry->recvCB(dstEntry->clientData, dg);
-+		vmci_resource_release(resource);
-+		retval = VMCI_SUCCESS;
-+	}
-+
-+exit:
++	*subscriptionID = s->id;
 +	return retval;
 +}
++EXPORT_SYMBOL(VMCIEvent_Subscribe);
 +
 +/**
-+ * VMCIDatagram_CreateHndPriv() - Create host context datagram endpoint
-+ * @resourceID:	The resource ID.
-+ * @flags:	Datagram Flags.
-+ * @privFlags:	Privilege Flags.
-+ * @recvCB:	Callback when receiving datagrams.
-+ * @clientData:	Pointer for a datagram_entry struct
-+ * @outHandle:	vmci_handle that is populated as a result of this function.
++ * VMCIEvent_Unsubscribe() - Unsubscribe to an event.
++ * @subID:	A subscription ID ad provided by VMCIEvent_Subscribe()
 + *
-+ * Creates a host context datagram endpoint and returns a handle to it.
++ * Unsubscribe to given event. Removes it from list and frees it.
++ * Will return callbackData if requested by caller.
 + */
-+int VMCIDatagram_CreateHndPriv(uint32_t resourceID,
-+			       uint32_t flags,
-+			       uint32_t privFlags,
-+			       VMCIDatagramRecvCB recvCB,
-+			       void *clientData,
-+			       struct vmci_handle *outHandle)
++int VMCIEvent_Unsubscribe(uint32_t subID)
 +{
-+	if (outHandle == NULL)
-+		return VMCI_ERROR_INVALID_ARGS;
-+
-+	if (recvCB == NULL) {
-+		pr_devel("Client callback needed when creating " \
-+			 "datagram.");
-+		return VMCI_ERROR_INVALID_ARGS;
-+	}
-+
-+	if (privFlags & ~VMCI_PRIVILEGE_ALL_FLAGS)
-+		return VMCI_ERROR_INVALID_ARGS;
-+
-+	return dg_create_handle(resourceID, flags, privFlags, recvCB,
-+				clientData, outHandle);
-+}
-+EXPORT_SYMBOL(VMCIDatagram_CreateHndPriv);
-+
-+/**
-+ * VMCIDatagram_CreateHnd() - Create host context datagram endpoint
-+ * @resourceID:	Resource ID.
-+ * @flags:	Datagram Flags.
-+ * @recvCB:	Callback when receiving datagrams.
-+ * @clientData:	Pointer for a datagram_entry struct
-+ * @outHandle:	vmci_handle that is populated as a result of this function.
-+ *
-+ * Creates a host context datagram endpoint and returns a handle to
-+ * it.  Same as VMCIDatagram_CreateHndPriv without the priviledge
-+ * flags argument.
-+ */
-+int VMCIDatagram_CreateHnd(uint32_t resourceID,
-+			   uint32_t flags,
-+			   VMCIDatagramRecvCB recvCB,
-+			   void *clientData,
-+			   struct vmci_handle *outHandle)
-+{
-+	return VMCIDatagram_CreateHndPriv(resourceID, flags,
-+					  VMCI_DEFAULT_PROC_PRIVILEGE_FLAGS,
-+					  recvCB, clientData, outHandle);
-+}
-+EXPORT_SYMBOL(VMCIDatagram_CreateHnd);
-+
-+/**
-+ * VMCIDatagram_DestroyHnd() - Destroys datagram handle
-+ * @handle:	vmci_handle to be destroyed and reaped.
-+ *
-+ * Use this function to destroy any datagram handles created by
-+ * VMCIDatagram_CreateHnd{,Priv} functions.
-+ */
-+int VMCIDatagram_DestroyHnd(struct vmci_handle handle)
-+{
-+	struct datagram_entry *entry;
-+	struct vmci_resource *resource;
-+
-+	resource = vmci_resource_get(handle, VMCI_RESOURCE_TYPE_DATAGRAM);
-+	if (resource == NULL) {
-+		pr_devel("Failed to destroy datagram (handle=0x%x:0x%x)" \
-+			 ".", handle.context, handle.resource);
-+		return VMCI_ERROR_NOT_FOUND;
-+	}
-+
-+	entry = container_of(resource, struct datagram_entry, resource);
-+	vmci_resource_remove(handle, VMCI_RESOURCE_TYPE_DATAGRAM);
++	struct vmci_subscription *s;
 +
 +	/*
-+	 * We now wait on the destroyEvent and release the reference we got
-+	 * above.
++	 * Return subscription. At this point we know noone else is accessing
++	 * the subscription so we can free it.
 +	 */
-+	vmci_drv_wait_on_event_intr(&entry->destroyEvent, dg_release_cb,
-+				    entry);
-+	kfree(entry);
++	s = event_unregister_subscription(subID);
++	if (s == NULL)
++		return VMCI_ERROR_NOT_FOUND;
++
++	kfree(s);
 +
 +	return VMCI_SUCCESS;
 +}
-+EXPORT_SYMBOL(VMCIDatagram_DestroyHnd);
-+
-+/**
-+ * VMCIDatagram_Send() - Send a datagram
-+ * @msg:	The datagram to send.
-+ *
-+ * Sends the provided datagram on its merry way.
-+ */
-+int VMCIDatagram_Send(struct vmci_dg *msg)
-+{
-+	if (msg == NULL)
-+		return VMCI_ERROR_INVALID_ARGS;
-+
-+	return vmci_dg_dispatch(VMCI_INVALID_ID, msg, false);
-+}
-+EXPORT_SYMBOL(VMCIDatagram_Send);
-diff --git a/drivers/misc/vmw_vmci/vmci_datagram.h b/drivers/misc/vmw_vmci/vmci_datagram.h
++EXPORT_SYMBOL(VMCIEvent_Unsubscribe);
+diff --git a/drivers/misc/vmw_vmci/vmci_event.h b/drivers/misc/vmw_vmci/vmci_event.h
 new file mode 100644
-index 0000000..e5e54c2
+index 0000000..83574c6
 --- /dev/null
-+++ b/drivers/misc/vmw_vmci/vmci_datagram.h
-@@ -0,0 +1,56 @@
++++ b/drivers/misc/vmw_vmci/vmci_event.h
+@@ -0,0 +1,29 @@
 +/*
 + * VMware VMCI Driver
 + *
@@ -651,43 +518,16 @@ index 0000000..e5e54c2
 + * 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
 + */
 +
-+#ifndef _VMCI_DATAGRAM_H_
-+#define _VMCI_DATAGRAM_H_
++#ifndef __VMCI_EVENT_H__
++#define __VMCI_EVENT_H__
 +
-+#include "vmci_context.h"
++#include <linux/vmw_vmci_api.h>
 +
-+#define VMCI_MAX_DELAYED_DG_HOST_QUEUE_SIZE 256
++int vmci_event_init(void);
++void vmci_event_exit(void);
++int vmci_event_dispatch(struct vmci_dg *msg);
 +
-+/*
-+ * The struct vmci_dg_queue_entry is a queue header for the in-kernel VMCI
-+ * datagram queues. It is allocated in non-paged memory, as the
-+ * content is accessed while holding a spinlock. The pending datagram
-+ * itself may be allocated from paged memory. We shadow the size of
-+ * the datagram in the non-paged queue entry as this size is used
-+ * while holding the same spinlock as above.
-+ */
-+struct vmci_dg_queue_entry {
-+	struct list_head listItem;	/* For queuing. */
-+	size_t dgSize;		/* Size of datagram. */
-+	struct vmci_dg *dg;	/* Pending datagram. */
-+};
-+
-+/* VMCIDatagramSendRecvInfo */
-+struct vmci_dg_snd_rcv_info {
-+	uint64_t addr;
-+	uint32_t len;
-+	int32_t result;
-+};
-+
-+/* Init functions. */
-+int vmci_dg_init(void);
-+
-+/* Datagram API for non-public use. */
-+int vmci_dg_dispatch(uint32_t contextID, struct vmci_dg *dg,
-+		     bool fromGuest);
-+int vmci_dg_invoke_guest_handler(struct vmci_dg *dg);
-+
-+#endif /* _VMCI_DATAGRAM_H_ */
++#endif /*__VMCI_EVENT_H__ */
 -- 
 1.7.0.4
 
