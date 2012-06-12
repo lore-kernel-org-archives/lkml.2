@@ -1,94 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752359Ab2FLIu7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 04:50:59 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:57614 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752203Ab2FLIu6 (ORCPT
+	id S1752372Ab2FLIwp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 04:52:45 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:52980 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752227Ab2FLIwn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 04:50:58 -0400
-Date: Tue, 12 Jun 2012 10:50:40 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        "khali@linux-fr.org" <khali@linux-fr.org>,
-        "ben-linux@fluff.org" <ben-linux@fluff.org>,
-        "olof@lixom.net" <olof@lixom.net>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH 0/4] i2c: tegra: Bug fixes, cleanups and M_NOSTART support
-Message-ID: <20120612085040.GC9230@pengutronix.de>
-References: <1338901800-23968-1-git-send-email-ldewangan@nvidia.com>
- <4FCE3078.1030008@wwwdotorg.org>
- <4FCE3CD8.8060502@nvidia.com>
+	Tue, 12 Jun 2012 04:52:43 -0400
+Message-ID: <4FD70357.9060905@linaro.org>
+Date: Tue, 12 Jun 2012 09:52:39 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Fig2xvG2VGoz8o/s"
-Content-Disposition: inline
-In-Reply-To: <4FCE3CD8.8060502@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Wolfram Sang <w.sang@pengutronix.de>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, arnd@arndb.de, grant.likely@secretlab.ca,
+        linux-i2c@vger.kernel.org
+Subject: Re: [PATCH 09/14] i2c: Add Device Tree support to the Nomadik I2C
+ driver
+References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org> <1339428307-3850-10-git-send-email-lee.jones@linaro.org> <20120611190550.GK3887@pengutronix.de>
+In-Reply-To: <20120611190550.GK3887@pengutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Lee Jones <lee.jones@linaro.org>
+Date: Tue, 17 Apr 2012 16:04:13 +0100
+Subject: [PATCH 09/14] i2c: Add Device Tree support to the Nomadik I2C driver
 
---Fig2xvG2VGoz8o/s
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Here we move the i2c-nomadik's default settings into the driver
+rather than specifying them from platform code. At the time of
+this writing we only have one user, the u8500. As new users are
+added, it is expected that they will be Device Tree compliant.
+If this is the case, we will look up their initialisation values
+by compatible entry, then apply them forthwith.
 
-On Tue, Jun 05, 2012 at 10:37:36PM +0530, Laxman Dewangan wrote:
-> On Tuesday 05 June 2012 09:44 PM, Stephen Warren wrote:
-> >On 06/05/2012 07:09 AM, Laxman Dewangan wrote:
-> >>This patch series having the:
-> >>- Handling of late register write due to Tegra PPSB design.
-> >>- support for I2C_M_NOSTART
-> >>- Use devm_* for all allocation.
-> >The series,
-> >
-> >Acked-by: Stephen Warren<swarren@wwwdotorg.org>
-> >
-> >Note that patch 4 touches context adjacent to Prashant's "i2c: tegra:
-> >Add clk_prepare/clk_unprepare" patch, which I hope to take through the
-> >Tegra tree since it's a requirement for the Tegra common clock
-> >conversion. I don't think this will cause any significant conflict, but
-> >perhaps it's worth resolving it explicitly.
+Cc: linux-i2c@vger.kernel.org
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/i2c/busses/i2c-nomadik.c |   33 ++++++++++++++++++++++++++++++++-
+ 1 file changed, 32 insertions(+), 1 deletion(-)
 
-Is it really a requirement? Just wondering if it will cause problems, if
-Prashant's patch goes in via I2C after arm-soc has been merged. I am
-fine with simply acking the patch, though.
-
-> >Wolfram, perhaps we should put these 4 patches and Prashan'ts into their
-> >own topic branch so that you can merge it into the I2C tree, and I can
-> >merge it into the Tegra tree too? Or, I can take everything through
-> >Tegra if you want, and ack it.
-
-Laxman's patches should really go via I2C, I think. Can't we just fix
-the conflict in arm-soc?
-
-Regards,
-
-   Wolfram
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---Fig2xvG2VGoz8o/s
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAk/XAuAACgkQD27XaX1/VRvJZACgmJUb4NCK9hURE+7FGYME/+LZ
-OzEAoKY7E/RqXHNHCLmrYYM0lm5vXHfQ
-=01H1
------END PGP SIGNATURE-----
-
---Fig2xvG2VGoz8o/s--
+diff --git a/drivers/i2c/busses/i2c-nomadik.c b/drivers/i2c/busses/i2c-nomadik.c
+index a92440d..23fde19 100644
+--- a/drivers/i2c/busses/i2c-nomadik.c
++++ b/drivers/i2c/busses/i2c-nomadik.c
+@@ -23,6 +23,7 @@
+ #include <linux/io.h>
+ #include <linux/regulator/consumer.h>
+ #include <linux/pm_runtime.h>
++#include <linux/of_device.h>
+ 
+ #include <plat/i2c.h>
+ 
+@@ -899,15 +900,44 @@ static const struct i2c_algorithm nmk_i2c_algo = {
+ 	.functionality	= nmk_i2c_functionality
+ };
+ 
++static struct nmk_i2c_controller u8500_i2c = {
++	/*
++	 * Slave data setup time; 250ns, 100ns, and 10ns, which
++	 * is 14, 6 and 2 respectively for a 48Mhz i2c clock.
++	 */
++	.slsu           = 0xe,
++	.tft            = 1, 	  /* Tx FIFO threshold */
++	.rft            = 8, 	  /* Rx FIFO threshold */
++	.clk_freq       = 100000, /* std. mode operation */
++	.timeout        = 200, 	  /* Slave response timeout(ms) */
++	.sm             = I2C_FREQ_MODE_FAST,
++};
++
++static const struct of_device_id nmk_gpio_match[] = {
++	{ .compatible = "st,nomadik-i2c", .data = &u8500_i2c, },
++	{}
++};
++
+ static int __devinit nmk_i2c_probe(struct platform_device *pdev)
+ {
+ 	int ret = 0;
+ 	struct resource *res;
+-	struct nmk_i2c_controller *pdata =
++	const struct nmk_i2c_controller *pdata =
+ 			pdev->dev.platform_data;
++        const struct of_device_id *of_id =
++                        of_match_device(nmk_gpio_match, &pdev->dev);
+ 	struct nmk_i2c_dev	*dev;
+ 	struct i2c_adapter *adap;
+ 
++	if (!pdata) {
++		if (of_id && of_id->data)
++			/* Looks like we're booting via Device Tree. */
++			pdata = of_id->data;
++		else
++			/* No i2c configuration found, using the default. */
++			pdata = &u8500_i2c;
++	}
++
+ 	dev = kzalloc(sizeof(struct nmk_i2c_dev), GFP_KERNEL);
+ 	if (!dev) {
+ 		dev_err(&pdev->dev, "cannot allocate memory\n");
+@@ -1043,6 +1073,7 @@ static struct platform_driver nmk_i2c_driver = {
+ 		.owner = THIS_MODULE,
+ 		.name = DRIVER_NAME,
+ 		.pm = &nmk_i2c_pm,
++		.of_match_table = nmk_gpio_match,
+ 	},
+ 	.probe = nmk_i2c_probe,
+ 	.remove = __devexit_p(nmk_i2c_remove),
+-- 
+1.7.9.5
