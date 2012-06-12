@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751557Ab2FLHJC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 03:09:02 -0400
-Received: from smtp.syd.comcen.com.au ([203.23.236.77]:1268 "EHLO
-	smtp.syd.comcen.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750733Ab2FLHJA (ORCPT
+	id S1751801Ab2FLHKA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 03:10:00 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:57589 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751354Ab2FLHJ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 03:09:00 -0400
-Message-ID: <4FD6EA5B.5030905@spin.net.au>
-Date: Tue, 12 Jun 2012 17:06:03 +1000
-From: Chris Jones <chrisjones@spin.net.au>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120422 Firefox/12.0 SeaMonkey/2.9
+	Tue, 12 Jun 2012 03:09:59 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FD6EACE.9010109@jp.fujitsu.com>
+Date: Tue, 12 Jun 2012 16:07:58 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: Cong Wang <xiyou.wangcong@gmail.com>
-Subject: Re: gcc compiler modification to cater for new programming language
-References: <4FD40035.2020200@spin.net.au> <CAM_iQpXyMhx5JszEew1O9ehQ0z-eOCZ_DjpdFPNJuKfVafcL3g@mail.gmail.com>
-In-Reply-To: <CAM_iQpXyMhx5JszEew1O9ehQ0z-eOCZ_DjpdFPNJuKfVafcL3g@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Ron Chen <ron_chen_123@yahoo.com>
+CC: Linux Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: memcg cgroup controller & sbrk interaction
+References: <1339118347.78794.YahooMailNeo@web112018.mail.gq1.yahoo.com>
+In-Reply-To: <1339118347.78794.YahooMailNeo@web112018.mail.gq1.yahoo.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
-X-comcen-MailScanner-Information: Please contact the ISP for more information
-X-comcen-MailScanner: Found to be clean
-X-comcen-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
-	score=-2.14, required 4, AWL 0.36, BAYES_00 -2.60, RDNS_NONE 0.10)
-X-comcen-MailScanner-From: chrisjones@spin.net.au
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cong Wang wrote:
-> On Sun, Jun 10, 2012 at 10:02 AM, Chris Jones<chrisjones@spin.net.au>  wrote:
->> Is it possible to modify the source code of gcc to enable to compilation of
->> a completely new programming language, as yet unrecognized? How much of a
->> big job would I be looking at for such a task?
-> Yeah, you need to write a gcc front-end for it.
->
->
+(2012/06/08 10:19), Ron Chen wrote:
+> We are from the Open Grid Scheduler, which is the official Open Source Grid Engine. Open Grid Scheduler/
+> Grid Engine ( http://gridscheduler.sourceforge.net ) is used by many compute farms&  HPC sites for job scheduling.
+> 
+> In the next release, we are using cgroups to define a Job Container interface for batch jobs:
+> 
+> http://blogs.scalablelogic.com/2012/05/grid-engine-cgroups-integration.html
+> 
+> 
+> However, not only us, but others have found that the memcg controller does not cause sbrk(2) or mmap(2) to
+> return error when the cgroup is under high memory pressure. Further, when the amount of free memory is
+> really low, the Linux Kernel OOM killer picks something and kills it.
+> 
+> http://www.spinics.net/lists/cgroups/msg02622.html
+> 
+> 
+> We also would like to see if it is technically possible for the Virtual Memory Manager to interact with the
+> memory controller properly and give us the semantics of setrlimit(2). So basically if the current address
+> space usage exceeds the "memory.memsw.limit_in_bytes" limit defined by the administrator, then the
+> memory allocation system calls (example: mmap(2), sbrk(2), etc) will return error such that the OOM
+> killer is not invoked.
+> 
 
-Why would you suggest writing a front-end for it? I think you're wrong 
-there as a front-end has nothing to do with the functionality of gcc. 
-Explain to me why you would suggest this? Curious.
+It's not implemented yet. And, it was proposed before and patches were posted but
+finally didn't be merged.
 
-I am aware it is off-topic and have also brought it up on the gcc 
-mailing list, thanks.
+IIRC, there were some implementation problem but the biggest reason of rejection
+was the author couldn't convince us there are real use case.
 
+If you have real use case and want a new feature on memory cgroup, please CC
+cgroups@vger.kernel.org, linux-mm@kvack.org
+Someone (including me) may be able to cook a patch for future linux kernel if you
+have real use cases.
 
-Regards
+BTW, you can stop memory-cgroup-level oom-killer by memory.oom_control file.
+But you cannot stop system-level oom-killer, there are no knobs.
 
--- 
-		Chris Jones
-
-OpenSUSE Linux x86_64 (PC)|Android (Smartphone)|Windows x86 (Gaming!)
-Kernel developer|Lead Developer of SDL|Lead Developer of Nest Linux|Gamer and Emulator nut|Web Services|Digital Imaging Services
-Controllers: Rapier V2 Gaming mouse|Logitech Precision|PS3 controller|XB360 controller|Logitech Attack 3 j/stick
-Emulators: Fusion|Gens|ZSNES|Project64|PCSX-R|Stella|WinVICE|WinUAE
+Thanks,
+-Kame
 
