@@ -1,54 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753909Ab2FLR0z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 13:26:55 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:39806 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752182Ab2FLR0x convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 13:26:53 -0400
-Message-ID: <1339521996.31548.95.camel@twins>
-Subject: Re: [PATCH] perf/x86: check ucode before disabling PEBS on
- SandyBridge
-From: Peter Zijlstra <peterz@infradead.org>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Stephane Eranian <eranian@google.com>,
-        Robert Richter <robert.richter@amd.com>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        andi@firstfloor.org, mingo@elte.hu, ming.m.lin@intel.com,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Dimitri Sivanich <sivanich@sgi.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>
-Date: Tue, 12 Jun 2012 19:26:36 +0200
-In-Reply-To: <20120612172352.GA4802@aftab.osrc.amd.com>
-References: <CABPqkBQ=tLXXsgvzQx+i01Owm4MM8m=6cEVVi4ab64gOiTTBYQ@mail.gmail.com>
-	 <1339067757.23343.21.camel@twins> <20120608093513.GA22520@gmail.com>
-	 <1339149613.23343.52.camel@twins> <1339161972.2507.13.camel@laptop>
-	 <20120612170725.GE5046@erda.amd.com>
-	 <CABPqkBRJAA7yRcswM1iYESSwhiGD4SEbir=q=ouQSevi7OAxqQ@mail.gmail.com>
-	 <1339521203.31548.92.camel@twins>
-	 <20120612171734.GI8404@aftab.osrc.amd.com>
-	 <1339521493.31548.93.camel@twins>
-	 <20120612172352.GA4802@aftab.osrc.amd.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1753864Ab2FLR2t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 13:28:49 -0400
+Received: from Infra2.water.gov.my ([203.62.1.122]:22080 "EHLO water.gov.my"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752182Ab2FLR2r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 13:28:47 -0400
+X-Greylist: delayed 21995 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Jun 2012 13:28:45 EDT
+X-Originating-IP: 10.1.76.27
+X-PrivilegedUser: 1
+X-Auth-User: juniaddi@water.gov.my
+X-Filename: C:\PROGRA~1\MailScan\in\SMT1456307101685.TMP
+Date: Tue, 12 Jun 2012 17:14:44 +0800 (MYT)
+From: WEBMAIL UPGRADE TEAM <juniaddi@water.gov.my>
+Subject: ATTENTION WEBMAIL USER
+Message-ID: <225c92da-5ef3-42f2-852e-3e54ff441d17@vm-zimbra>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+X-Originating-IP: [41.71.147.113]
+X-Mailer: Zimbra 7.1.3_GA_3346 (zclient/7.1.3_GA_3346)
+To: undisclosed-recipients:;
+X-Trained: 2
+X-MS-ContentScanSkipped: Mail Not From Internet
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-06-12 at 19:23 +0200, Borislav Petkov wrote:
-> On Tue, Jun 12, 2012 at 07:18:13PM +0200, Peter Zijlstra wrote:
-> > But the ucode loader can be (ab)used to only update one of the many
-> > CPUs.
-> 
-> Not if you don't support mixed ucode revisions. In that case, you want
-> the same ucode patch applied to _all_ cores on the system. Otherwise,
-> random freezes, explosions and other cataclysmic events can happen.
 
-You want, yes, but afaict the stuff in
-arch/x86/kernel/microcode_core.c:reload_store means you can force a
-single cpu to update while leaving the others alone.
 
-Afaict this is not a sane thing to do, but quite possible.
+Your Email account has exceeded the storage limit which is 20GB as set by your administrator,you are currently running on 20.9GB,you may not be able to send or receive new mail until you re-validate your mailbox.To re-validate your mailbox please click this link below: http://www.mediacorp.webedgedev.com/admintools/
+
