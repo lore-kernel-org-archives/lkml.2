@@ -1,74 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752807Ab2FLDRm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 23:17:42 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37178 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752019Ab2FLDRk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 23:17:40 -0400
-Message-ID: <4FD6B472.7040609@zytor.com>
-Date: Mon, 11 Jun 2012 20:16:02 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: T Makphaibulchoke <tmac@hp.com>
-CC: linux@arm.linux.org.uk, schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
-        linux390@de.ibm.com, lethal@linux-sh.org, tglx@linutronix.de,
-        mingo@redhat.com, x86@kernel.org, kaloz@openwrt.org,
-        nicolas.pitre@linaro.org, jj@chaosbits.net, matt.fleming@intel.com,
-        lasse.collin@tukaani.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
-        linux-sh@vger.kernel.org
-Subject: Re: [PATCH v2] lib/decompress_unxz.c: removing all memory helper
- functions
-References: <1339470307-28223-1-git-send-email-tmac@hp.com>
-In-Reply-To: <1339470307-28223-1-git-send-email-tmac@hp.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
+	id S1752957Ab2FLDSi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 23:18:38 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:33109 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752019Ab2FLDSh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 23:18:37 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+noAAV8X+nLJGWUkRC6OU+5Ls9HX3rGRhnHguk2A
+	T7enOAiKc6Dogc
+Message-ID: <1339471112.7352.32.camel@marge.simpson.net>
+Subject: Re: [patch v3] sched: fix select_idle_sibling() induced bouncing
+From: Mike Galbraith <efault@gmx.de>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        lkml <linux-kernel@vger.kernel.org>, Paul Turner <pjt@google.com>,
+        Arjan Van De Ven <arjan@linux.intel.com>
+Date: Tue, 12 Jun 2012 05:18:32 +0200
+In-Reply-To: <1339440825.28766.123.camel@sbsiddha-desk.sc.intel.com>
+References: <1337857490.7300.19.camel@marge.simpson.net>
+	 <1337865431.9783.148.camel@laptop>
+	 <1338906621.6110.30.camel@marge.simpson.net>
+	 <1339433835.7358.30.camel@marge.simpson.net>
+	 <1339435331.31548.19.camel@twins>
+	 <1339437349.7358.57.camel@marge.simpson.net>
+	 <1339440825.28766.123.camel@sbsiddha-desk.sc.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2012 08:05 PM, T Makphaibulchoke wrote:
-> Cleaning up the file lib/decompress_unxz.c, moving all memory helper functions,
-> e.g. memmove, to a new common source file, lib/boot/mem.c.
+On Mon, 2012-06-11 at 11:53 -0700, Suresh Siddha wrote: 
+> On Mon, 2012-06-11 at 19:55 +0200, Mike Galbraith wrote:
+> > --- a/kernel/sched/core.c
+> > +++ b/kernel/sched/core.c
+> > @@ -5928,6 +5928,11 @@ static void destroy_sched_domains(struct
+> >   * SD_SHARE_PKG_RESOURCE set (Last Level Cache Domain) for this
+> >   * allows us to avoid some pointer chasing select_idle_sibling().
+> >   *
+> > + * Iterate domains and sched_groups upward, assigning CPUs to be
 > 
-> In additon to including the decompressor, any architecture supporting the XZ
-> decompression needs to also include this new source file.
-> 
-> Also moving some other duplicated memory helper functions to this new source
-> file from the arm, s390, sh and x86 preboot environments.  All 4 architectures
-> build without error when using any compression.
-> 
-> Adding a new file lib/boot/mem.c, containing memory helper functions required
-> by different compression types.
-> 
-> Adding memcmp declaration workaround and removing the memmove and memcpy
-> defines workaround from arch/arm/boot/compressed/decompress.c
-> 
-> Removing the common functions, memmove, memcmp and memset, and adding the new
-> source file include to arch/arm/boot/compressed/string.c.
-> 
-> Removing the memcpy and memmove functions and adding the new source file
-> include to arch/s390/boot/compressed/misc.c.
-> 
-> Removing the memset function and adding the new source file include to
-> arch/sh/boot/compressed/misc.c
-> 
-> Removing the memset function from arch/x86/boot/compressed/misc.c and move
-> the memcpy function to the file arch/x86/boot/compressed/string.c
-> 
-> Adding the memcpy function and the new source file include to
-> arch/x86/boot/compressed/string.c
-> 
+> You are actually iterating downwards (starting from the highest domain
+> with the SHARE_PKG_RESOURCES flag) in the patch.
 
-I can take this if Russell, Martin or Heiko, and Paul are willing to ack it.
+(not _my_ fault everybody else on the planet sees them upside-down;)
 
-	-hpa
+> > + * select_idle_sibling() hw buddy.  Cross-wiring hw makes bouncing
+> > + * due to random perturbation self canceling, ie sw buddies pull
+> > + * their counterpart to their CPU's hw counterpart.
+> > + *
+> 
+> Also it will be nice to include all the data you have observed as part
+> of the changelog.
 
+Comment inverted, worst pain encounter numbers added.
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+sched: fix select_idle_sibling() induced bouncing
+
+Traversing an entire package is not only expensive, it also leads to tasks
+bouncing all over a partially idle and possible quite large package.  Fix
+that up by assigning a 'buddy' CPU to try to motivate.  Each buddy may try
+to motivate that one other CPU, if it's busy, tough, it may then try it's
+SMT sibling, but that's all this optimization is allowed to cost.
+
+Sibling cache buddies are cross-wired to prevent bouncing.
+
+4 socket 40 core + SMT Westmere box, single 30 sec tbench runs
+clients     1       2       4        8       16       32       64      128
+pre        30      41     118      645     3769     6214    12233    14312
+post      299     603    1211     2418     4697     6847    11606    14557
+
+Signed-off-by: Mike Galbraith <efault@gmx.de>
+
+---
+ include/linux/sched.h |    1 +
+ kernel/sched/core.c   |   39 ++++++++++++++++++++++++++++++++++++++-
+ kernel/sched/fair.c   |   28 +++++++---------------------
+ 3 files changed, 46 insertions(+), 22 deletions(-)
+
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -955,6 +955,7 @@ struct sched_domain {
+ 	unsigned int smt_gain;
+ 	int flags;			/* See SD_* */
+ 	int level;
++	int idle_buddy;			/* cpu assigned to select_idle_sibling() */
+ 
+ 	/* Runtime fields. */
+ 	unsigned long last_balance;	/* init to jiffies. units in jiffies */
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -5928,6 +5928,11 @@ static void destroy_sched_domains(struct
+  * SD_SHARE_PKG_RESOURCE set (Last Level Cache Domain) for this
+  * allows us to avoid some pointer chasing select_idle_sibling().
+  *
++ * Iterate domains and sched_groups downward, assigning CPUs to be
++ * select_idle_sibling() hw buddy.  Cross-wiring hw makes bouncing
++ * due to random perturbation self canceling, ie sw buddies pull
++ * their counterpart to their CPU's hw counterpart.
++ *
+  * Also keep a unique ID per domain (we use the first cpu number in
+  * the cpumask of the domain), this allows us to quickly tell if
+  * two cpus are in the same cache domain, see cpus_share_cache().
+@@ -5943,8 +5948,40 @@ static void update_domain_cache(int cpu)
+ 	int id = cpu;
+ 
+ 	sd = highest_flag_domain(cpu, SD_SHARE_PKG_RESOURCES);
+-	if (sd)
++	if (sd) {
++		struct sched_domain *tmp = sd;
++		struct sched_group *sg, *prev;
++		bool right;
++
++		/*
++		 * Traversse to first CPU in group, and count hops
++		 * to cpu from there, switching direction on each
++		 * hop, never ever pointing the last CPU rightward.
++		 */
++		do {
++			id = cpumask_first(sched_domain_span(tmp));
++			prev = sg = tmp->groups;
++			right = 1;
++
++			while (cpumask_first(sched_group_cpus(sg)) != id)
++				sg = sg->next;
++
++			while (!cpumask_test_cpu(cpu, sched_group_cpus(sg))) {
++				prev = sg;
++				sg = sg->next;
++				right = !right;
++			}
++
++			/* A CPU went down, never point back to domain start. */
++			if (right && cpumask_first(sched_group_cpus(sg->next)) == id)
++				right = false;
++
++			sg = right? sg->next : prev;
++			tmp->idle_buddy = cpumask_first(sched_group_cpus(sg));
++		} while ((tmp = tmp->child));
++
+ 		id = cpumask_first(sched_domain_span(sd));
++	}
+ 
+ 	rcu_assign_pointer(per_cpu(sd_llc, cpu), sd);
+ 	per_cpu(sd_llc_id, cpu) = id;
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -2642,8 +2642,6 @@ static int select_idle_sibling(struct ta
+ 	int cpu = smp_processor_id();
+ 	int prev_cpu = task_cpu(p);
+ 	struct sched_domain *sd;
+-	struct sched_group *sg;
+-	int i;
+ 
+ 	/*
+ 	 * If the task is going to be woken-up on this cpu and if it is
+@@ -2660,29 +2658,17 @@ static int select_idle_sibling(struct ta
+ 		return prev_cpu;
+ 
+ 	/*
+-	 * Otherwise, iterate the domains and find an elegible idle cpu.
++	 * Otherwise, check assigned siblings to find an elegible idle cpu.
+ 	 */
+ 	sd = rcu_dereference(per_cpu(sd_llc, target));
++
+ 	for_each_lower_domain(sd) {
+-		sg = sd->groups;
+-		do {
+-			if (!cpumask_intersects(sched_group_cpus(sg),
+-						tsk_cpus_allowed(p)))
+-				goto next;
+-
+-			for_each_cpu(i, sched_group_cpus(sg)) {
+-				if (!idle_cpu(i))
+-					goto next;
+-			}
+-
+-			target = cpumask_first_and(sched_group_cpus(sg),
+-					tsk_cpus_allowed(p));
+-			goto done;
+-next:
+-			sg = sg->next;
+-		} while (sg != sd->groups);
++		if (!cpumask_test_cpu(sd->idle_buddy, tsk_cpus_allowed(p)))
++			continue;
++		if (idle_cpu(sd->idle_buddy))
++			return sd->idle_buddy;
+ 	}
+-done:
++
+ 	return target;
+ }
+ 
+
 
