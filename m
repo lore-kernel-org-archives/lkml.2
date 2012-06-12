@@ -1,76 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753190Ab2FLMlH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 08:41:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54712 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752342Ab2FLMlE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 08:41:04 -0400
-Date: Tue, 12 Jun 2012 13:40:45 +0100
-From: "Daniel P. Berrange" <berrange@redhat.com>
-To: Luiz Capitulino <lcapitulino@redhat.com>
-Cc: Wen Congyang <wency@cn.fujitsu.com>, kvm list <kvm@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Avi Kivity <avi@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
-Subject: Re: [Qemu-devel] [PATCH 3/3] deal with guest panicked event
-Message-ID: <20120612124045.GK10153@redhat.com>
-Reply-To: "Daniel P. Berrange" <berrange@redhat.com>
-References: <4FB9E4CE.8060709@cn.fujitsu.com>
- <4FB9E5CB.2020208@cn.fujitsu.com>
- <20120530162314.1e9e4d3c@doriath.home>
- <4FD6E7E9.4090408@cn.fujitsu.com>
- <20120612093504.1f7e24f1@doriath.home>
+	id S1752154Ab2FLMm4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 08:42:56 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:36959 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750875Ab2FLMmz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 08:42:55 -0400
+Date: Tue, 12 Jun 2012 08:35:24 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: axboe@kernel.dk, linux-kernel@vger.kernel.org, jaxboe@fusionio.com
+Cc: xen-devel@lists.xensource.com, wdauchy@gmail.com,
+        stefano.stabellini@eu.citrix.com, jbeulich@suse.com
+Subject: [GIT PULL] (xen) stable/for-jens-3.5 for 3.5-rc2..
+Message-ID: <20120612123524.GA559@phenom.dumpdata.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120612093504.1f7e24f1@doriath.home>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 12, 2012 at 09:35:04AM -0300, Luiz Capitulino wrote:
-> On Tue, 12 Jun 2012 14:55:37 +0800
-> Wen Congyang <wency@cn.fujitsu.com> wrote:
-> 
-> > >> +static void panicked_perform_action(void)
-> > >> +{
-> > >> +    switch(panicked_action) {
-> > >> +    case PANICKED_REPORT:
-> > >> +        panicked_mon_event("report");
-> > >> +        break;
-> > >> +
-> > >> +    case PANICKED_PAUSE:
-> > >> +        panicked_mon_event("pause");
-> > >> +        vm_stop(RUN_STATE_GUEST_PANICKED);
-> > >> +        break;
-> > >> +
-> > >> +    case PANICKED_QUIT:
-> > >> +        panicked_mon_event("quit");
-> > >> +        exit(0);
-> > >> +        break;
-> > >> +    }
-> > > 
-> > > Having the data argument is not needed/wanted. The mngt app can guess it if it
-> > > needs to know it, but I think it doesn't want to.
-> > 
-> > Libvirt will do something when the kernel is panicked, so it should know the action
-> > in qemu side.
-> 
-> But the action will be set by libvirt itself, no?
+Hey Jens,
 
-Sure, but the whole world isn't libvirt. If the process listening to the
-monitor is not the same as the process which launched the VM, then I
-think including the action is worthwhile. Besides, the way Wen has done
-this is identical to what we already do with QEVENT_WATCHDOG and I think
-it is desirable to keep consistency here.
+Please pull:
 
-Daniel
--- 
-|: http://berrange.com      -o-    http://www.flickr.com/photos/dberrange/ :|
-|: http://libvirt.org              -o-             http://virt-manager.org :|
-|: http://autobuild.org       -o-         http://search.cpan.org/~danberr/ :|
-|: http://entangle-photo.org       -o-       http://live.gnome.org/gtk-vnc :|
+ git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-jens-3.5
+
+it has two critical fixes to deal with 32/64 guest/host combinations
+when sending DISCARD commands. They weren't properly sent resulting
+in the guest crashing (https://bugzilla.redhat.com/show_bug.cgi?id=824641)
+The fix is in the backend (blkback) and the frontend has some extra
+WARN_ON added to diagnose similar issues like this in the future.
+
+Or if you prefer - I can stick those two patches in my tree and
+send them to Linus in my git pull this Friday with your Ack-ed by tag.
+
+Thanks!
+
+Konrad Rzeszutek Wilk (2):
+      xen/blkback: Copy id field when doing BLKIF_DISCARD.
+      xen/blkfront: Add WARN to deal with misbehaving backends.
+
+ drivers/block/xen-blkback/common.h |    2 +
+ drivers/block/xen-blkfront.c       |   58 ++++++++++++++++++++++++++++-------
+ 2 files changed, 48 insertions(+), 12 deletions(-)
