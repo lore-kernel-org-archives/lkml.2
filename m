@@ -1,194 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753000Ab2FLMCz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 08:02:55 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:40473 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752959Ab2FLMCw (ORCPT
+	id S1752894Ab2FLME1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 08:04:27 -0400
+Received: from fallback1.mail.ru ([94.100.176.18]:54617 "EHLO
+	fallback1.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751884Ab2FLME0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 08:02:52 -0400
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, devicetree-discuss@lists.ozlabs.org
-Cc: linux@arm.linux.org.uk, peterz@infradead.org, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, Vincent Guittot <vincent.guittot@linaro.org>
-Subject: [RFC 3/4] ARM: topology: Update cpu_power according to DT information
-Date: Tue, 12 Jun 2012 14:02:03 +0200
-Message-Id: <1339502524-10265-4-git-send-email-vincent.guittot@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1339502524-10265-1-git-send-email-vincent.guittot@linaro.org>
-References: <1339502524-10265-1-git-send-email-vincent.guittot@linaro.org>
+	Tue, 12 Jun 2012 08:04:26 -0400
+X-Greylist: delayed 1119 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Jun 2012 08:04:25 EDT
+Message-ID: <4FD72BE2.2030804@inbox.ru>
+Date: Tue, 12 Jun 2012 13:45:38 +0200
+From: Dmitry Artamonow <mad_soft@inbox.ru>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: remove linkup-l1110.h
+References: <1339495469.30984.115.camel@x61.thuisdomein>
+In-Reply-To: <1339495469.30984.115.camel@x61.thuisdomein>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Spam: Not detected
+X-Mras: Ok
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use cpu compatibility field and clock-frequency field of DT to
-estimate the capacity of each core of the system
+On 06/12/2012 12:04 PM, Paul Bolle wrote:
+> No file includes this header. Nothing seems interested in the things
+> this header provides. It appears that it has never been included since
+> at least v2.6.12-rc2. It can safely be removed.
+>
+> Signed-off-by: Paul Bolle<pebolle@tiscali.nl>
+> ---
+> Tested by "git grepping" the (history of) the tree for a few things.
+>
+>   arch/arm/include/asm/hardware/linkup-l1110.h |   48 --------------------------
+>   1 files changed, 0 insertions(+), 48 deletions(-)
+>   delete mode 100644 arch/arm/include/asm/hardware/linkup-l1110.h
+>
+These are the definitions for chip which is used on 2-slot CF/PCMCIA
+extension "jackets" on iPaq h3100/h3600. Currently h3600 PCMCIA driver
+doesn't support such 2-slot "jackets", so yes, this header can be removed.
 
-Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
----
- arch/arm/kernel/topology.c |  122 ++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 122 insertions(+)
+You can add my
+Acked-by: Dmitry Artamonow <mad_soft@inbox.ru>
+if you like.
 
-diff --git a/arch/arm/kernel/topology.c b/arch/arm/kernel/topology.c
-index 2f85a64..0c2aee4 100644
---- a/arch/arm/kernel/topology.c
-+++ b/arch/arm/kernel/topology.c
-@@ -17,6 +17,7 @@
- #include <linux/percpu.h>
- #include <linux/node.h>
- #include <linux/nodemask.h>
-+#include <linux/of.h>
- #include <linux/sched.h>
- 
- #include <asm/cputype.h>
-@@ -47,6 +48,122 @@ void set_power_scale(unsigned int cpu, unsigned long power)
- 	per_cpu(cpu_scale, cpu) = power;
- }
- 
-+#ifdef CONFIG_OF
-+struct cpu_efficiency {
-+	const char *compatible;
-+	unsigned long efficiency;
-+};
-+
-+/*
-+ * Table of relative efficiency of each processors
-+ * The efficiency value must fit in 20bit. The final
-+ * cpu_scale value must be in the range [1:2048[.
-+ * Processors that are not defined in the table,
-+ * use the default SCHED_POWER_SCALE value for cpu_scale.
-+ */
-+struct cpu_efficiency table_efficiency[] = {
-+	{"arm,cortex-a15", 3891},
-+	{"arm,cortex-a7",  2048},
-+	{NULL, },
-+};
-+
-+struct cpu_capacity {
-+	unsigned long hwid;
-+	unsigned long capacity;
-+};
-+
-+struct cpu_capacity cpu_capacity[NR_CPUS];
-+
-+unsigned long middle_capacity = 1;
-+
-+static void __init parse_dt_topology(void)
-+{
-+	struct cpu_efficiency *cpu_eff;
-+	struct device_node *cn = NULL;
-+	unsigned long min_capacity = (unsigned long)(-1);
-+	unsigned long max_capacity = 0;
-+	unsigned long capacity = 0;
-+	int cpu = 0;
-+
-+	while ((cn = of_find_node_by_type(cn, "cpu"))) {
-+		const u32 *rate, *reg;
-+		char *compatible;
-+		int len;
-+
-+		if (cpu >= num_possible_cpus())
-+			break;
-+
-+		compatible = of_get_property(cn, "compatible", &len);
-+
-+		for (cpu_eff = table_efficiency; cpu_eff->compatible; cpu_eff++)
-+			if (of_device_is_compatible(cn, cpu_eff->compatible))
-+				break;
-+
-+		if (cpu_eff->compatible == NULL)
-+			continue;
-+
-+		rate = of_get_property(cn, "clock-frequency", &len);
-+		if (!rate || len != 4) {
-+			pr_err("%s missing clock-frequency property\n",
-+				cn->full_name);
-+			continue;
-+		}
-+
-+		reg = of_get_property(cn, "reg", &len);
-+		if (!reg || len != 4) {
-+			pr_err("%s missing reg property\n", cn->full_name);
-+			continue;
-+		}
-+
-+		capacity = ((be32_to_cpup(rate)) >> 20)
-+			* cpu_eff->efficiency;
-+
-+		/* Save min capacity of the system */
-+		if (capacity < min_capacity)
-+			min_capacity = capacity;
-+
-+		/* Save max capacity of the system */
-+		if (capacity > max_capacity)
-+			max_capacity = capacity;
-+
-+		cpu_capacity[cpu].capacity = capacity;
-+		cpu_capacity[cpu++].hwid = be32_to_cpup(reg);
-+	}
-+
-+	if (cpu < num_possible_cpus())
-+		cpu_capacity[cpu].hwid = (unsigned long)(-1);
-+
-+	middle_capacity = (min_capacity + max_capacity) >> 11;
-+}
-+
-+void update_cpu_power(unsigned int cpu, unsigned long hwid)
-+{
-+	unsigned int idx = 0;
-+
-+	/* look for the cpu's hwid in the cpu capacity table */
-+	for (idx = 0; idx < num_possible_cpus(); idx++) {
-+		if (cpu_capacity[idx].hwid == hwid)
-+			break;
-+
-+		if (cpu_capacity[idx].hwid == -1)
-+			return;
-+	}
-+
-+	if (idx == num_possible_cpus())
-+		return;
-+
-+	set_power_scale(cpu, cpu_capacity[idx].capacity / middle_capacity);
-+
-+	printk(KERN_INFO "CPU%u: update cpu_power %lu\n",
-+		cpu, arch_scale_freq_power(NULL, cpu));
-+}
-+
-+#else
-+static inline void parse_dt_topology(void) {}
-+static inline void update_cpu_power(unsigned int cpuid, unsigned int mpidr) {}
-+#endif
-+
-+
- /*
-  * cpu topology management
-  */
-@@ -60,6 +177,7 @@ void set_power_scale(unsigned int cpu, unsigned long power)
-  * These masks reflect the current use of the affinity levels.
-  * The affinity level can be up to 16 bits according to ARM ARM
-  */
-+#define MPIDR_HWID_BITMASK 0xFFFFFF
- 
- #define MPIDR_LEVEL0_MASK 0x3
- #define MPIDR_LEVEL0_SHIFT 0
-@@ -157,6 +275,8 @@ void store_cpu_topology(unsigned int cpuid)
- 
- 	update_siblings_masks(cpuid);
- 
-+	update_cpu_power(cpuid, mpidr & MPIDR_HWID_BITMASK);
-+
- 	printk(KERN_INFO "CPU%u: thread %d, cpu %d, socket %d, mpidr %x\n",
- 		cpuid, cpu_topology[cpuid].thread_id,
- 		cpu_topology[cpuid].core_id,
-@@ -184,4 +304,6 @@ void init_cpu_topology(void)
- 		per_cpu(cpu_scale, cpu) = SCHED_POWER_SCALE;
- 	}
- 	smp_wmb();
-+
-+	parse_dt_topology();
- }
--- 
-1.7.9.5
+Thanks for cleaning it up!
 
+--
+Best regards,
+Dmitry "MAD" Artamonow
