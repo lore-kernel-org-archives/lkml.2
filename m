@@ -1,59 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751893Ab2FLK1Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 06:27:16 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:36835 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750875Ab2FLK1P (ORCPT
+	id S1752062Ab2FLK1X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 06:27:23 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38506 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751952Ab2FLK1V convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 06:27:15 -0400
-From: Wanpeng Li <liwp.linux@gmail.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: linux-kernel@vger.kernel.org, Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Wanpeng Li <liwp.linux@gmail.com>,
-        Wanpeng Li <liswp@linux.vnet.ibm.com>
-Subject: [PATCH] writeback: avoid race when update bandwidth
-Date: Tue, 12 Jun 2012 18:26:43 +0800
-Message-Id: <1339496803-2885-1-git-send-email-liwp.linux@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 12 Jun 2012 06:27:21 -0400
+Message-ID: <1339496836.31548.68.camel@twins>
+Subject: Re: Kernel panic - not syncing: Attempted to kill the idle task!
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: hi3766691@gmail.com, Hillf Danton <dhillf@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Zhouping Liu <zliu@redhat.com>
+Date: Tue, 12 Jun 2012 12:27:16 +0200
+In-Reply-To: <CA+55aFw=akW7B+vRkQRMojnP6_b1YXdKpNEjQ2EyBHcTe2_XLw@mail.gmail.com>
+References: <cfc29313-7fe7-4140-b9e6-053d925b4897@zmail13.collab.prod.int.phx2.redhat.com>
+	 <1339421268.30462.15.camel@twins> <4FD6BD72.2070808@redhat.com>
+	 <1339490988.31548.40.camel@twins>
+	 <CA+55aFw=akW7B+vRkQRMojnP6_b1YXdKpNEjQ2EyBHcTe2_XLw@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wanpeng Li <liwp@linux.vnet.ibm.com>
+On Tue, 2012-06-12 at 13:20 +0300, Linus Torvalds wrote:
+> Peter, you are very fundamentally wrong if you think the distance
+> array has to be symmetric. That is fundamentally not true for many
+> typologies.
+> 
+> The trivial example of a non symmetric case is just a simple
+> unidirectional ring. The distance from n to n+1 is just one, but the
+> distance from n+1 to n is n-1 hops.
+> 
+> So don't try to say that distances have to be symmetric. That's just
+> garbage. 
 
-Since bdi->wb.list_lock is used to protect the b_* lists,
-so the flushers who call wb_writeback to writeback pages will
-stuck when bandwidth update policy holds this lock. In order
-to avoid this race we can introduce a new bandwidth_lock who
-is responsible for protecting bandwidth update policy.
+Sure, I realize this, but the 17,18 thing isn't a ring. It looks like
+something that should be symmetric but isn't.
 
-Signed-off-by: Wanpeng Li <liswp@linux.vnet.ibm.com>
----
- mm/page-writeback.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index c8945e0..b3b08fb 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -1032,12 +1032,14 @@ static void bdi_update_bandwidth(struct backing_dev_info *bdi,
- 				 unsigned long bdi_dirty,
- 				 unsigned long start_time)
- {
-+	static DEFINE_SPINLOCK(bandwidth_lock);
-+
- 	if (time_is_after_eq_jiffies(bdi->bw_time_stamp + BANDWIDTH_INTERVAL))
- 		return;
--	spin_lock(&bdi->wb.list_lock);
-+	spin_lock(&bandwidth_lock);
- 	__bdi_update_bandwidth(bdi, thresh, bg_thresh, dirty,
- 			       bdi_thresh, bdi_dirty, start_time);
--	spin_unlock(&bdi->wb.list_lock);
-+	spin_unlock(&bandwidth_lock);
- }
- 
- /*
--- 
-1.7.9.5
 
