@@ -1,153 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753044Ab2FLMyP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 08:54:15 -0400
-Received: from smtp2.infineon.com ([217.10.60.23]:15434 "EHLO
-	smtp2.infineon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751696Ab2FLMyN (ORCPT
+	id S1753010Ab2FLM43 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 08:56:29 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:2931 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751168Ab2FLM41 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 08:54:13 -0400
-X-SBRS: None
-From: Peter Huewe <peter.huewe@infineon.com>
-To: <srajiv@linux.vnet.ibm.com>
-CC: <tpmdd@selhorst.net>, <tpmdd-devel@lists.sourceforge.net>,
-        <linux-kernel@vger.kernel.org>, Olof Johansson <olof@lixom.net>,
-        Luigi Semenzato <semenzato@google.com>, <andi.shyti@gmail.com>,
-        Bryan Freed <bfreed@chromium.org>,
-        Peter Huewe <peter.huewe@infineon.com>
-Subject: [PATCH 2/2] CHROMIUM: tpm: tpm_i2c_infineon: Lock the I2C adapter for a sequence of requests.
-Date: Tue, 12 Jun 2012 14:43:54 +0200
-Message-ID: <1339505034-6400-2-git-send-email-peter.huewe@infineon.com>
-X-Mailer: git-send-email 1.7.6.msysgit.0
-In-Reply-To: <1339505034-6400-1-git-send-email-peter.huewe@infineon.com>
-References: <1339505034-6400-1-git-send-email-peter.huewe@infineon.com>
+	Tue, 12 Jun 2012 08:56:27 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6739"; a="200164542"
+Message-ID: <4FD73C65.3050409@codeaurora.org>
+Date: Tue, 12 Jun 2012 18:26:05 +0530
+From: Ravi Kumar V <kumarrav@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.29.170.180]
+To: Jarod Wilson <jarod@redhat.com>
+CC: tsoni@codeaurora.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@infradead.org>, bryanh@codeaurora.org,
+        Anssi Hannula <anssi.hannula@iki.fi>, davidb@codeaurora.org,
+        linux-media@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        "Juan J. Garcia de Soria" <skandalfo@gmail.com>
+Subject: Re: [PATCH v3 1/1] rc: Add support for GPIO based IR Receiver driver.
+References: <1330408300-21939-1-git-send-email-kumarrav@codeaurora.org> <20120423201131.GG31244@redhat.com>
+In-Reply-To: <20120423201131.GG31244@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bryan Freed <bfreed@chromium.org>
+On 4/24/2012 1:41 AM, Jarod Wilson wrote:
+> On Tue, Feb 28, 2012 at 11:21:40AM +0530, Ravi Kumar V wrote:
+>> Adds GPIO based IR Receiver driver. It decodes signals using decoders
+>> available in rc framework.
+>
+> Been meaning to look at this, but it looks like its already merged
+> upstream. Just one question though, inlined below.
+>
+>> --- /dev/null
+>> +++ b/drivers/media/rc/gpio-ir-recv.c
+>> @@ -0,0 +1,205 @@
+>> +/* Copyright (c) 2012, Code Aurora Forum. All rights reserved.
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License version 2 and
+>> + * only version 2 as published by the Free Software Foundation.
+>> + *
+>> + * This program is distributed in the hope that it will be useful,
+>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>> + * GNU General Public License for more details.
+>> + */
+>> +
+>> +#include<linux/kernel.h>
+>> +#include<linux/init.h>
+>> +#include<linux/module.h>
+>> +#include<linux/interrupt.h>
+>> +#include<linux/gpio.h>
+>> +#include<linux/slab.h>
+>> +#include<linux/platform_device.h>
+>> +#include<linux/irq.h>
+>> +#include<media/rc-core.h>
+>> +#include<media/gpio-ir-recv.h>
+>> +
+>> +#define GPIO_IR_DRIVER_NAME	"gpio-rc-recv"
+>> +#define GPIO_IR_DEVICE_NAME	"gpio_ir_recv"
+>> +
+>> +struct gpio_rc_dev {
+>> +	struct rc_dev *rcdev;
+>> +	unsigned int gpio_nr;
+>> +	bool active_low;
+>> +};
+>> +
+>> +static irqreturn_t gpio_ir_recv_irq(int irq, void *dev_id)
+>> +{
+>> +	struct gpio_rc_dev *gpio_dev = dev_id;
+>> +	unsigned int gval;
+>> +	int rc = 0;
+>> +	enum raw_event_type type = IR_SPACE;
+>> +
+>> +	gval = gpio_get_value_cansleep(gpio_dev->gpio_nr);
+>> +
+>> +	if (gval<  0)
+>> +		goto err_get_value;
+>> +
+>> +	if (gpio_dev->active_low)
+>> +		gval = !gval;
+>> +
+>> +	if (gval == 1)
+>> +		type = IR_PULSE;
+>
+> What happens if gval is>  1?
 
-This is derived from Peter Huewe's recommended fix:
+gpio_get_value_cansleep() can return
+bool for low/high.
+negative for error.
 
-On some ChromeOS systems, a TPM sharing the I2C bus with another device
-gets confused when it sees I2C requests to that other device.
-This change locks the I2C adapter for the duration of the full sequence
-of I2C requests the TPM needs to complete.
+so i think we dont get value> 1
 
-smbus_xfer is not supported, but SMBUS is not supported by the original
-driver, either.
+>
+>> +	rc = ir_raw_event_store_edge(gpio_dev->rcdev, type);
+>> +	if (rc<  0)
+>> +		goto err_get_value;
+>> +
+>> +	ir_raw_event_handle(gpio_dev->rcdev);
+>> +
+>> +err_get_value:
+>> +	return IRQ_HANDLED;
+>> +}
+>
+> Looks like you'll store a space any time you get gval>  1, which may or
+> may not be intended here...
+>
+>
 
-Signed-off-by: Bryan Freed <bfreed@chromium.org>
-Signed-off-by: Peter Huewe <peter.huewe@infineon.com>
----
- drivers/char/tpm/tpm_i2c_infineon.c |   45 +++++++++++++++++++++++++++++++---
- 1 files changed, 41 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/char/tpm/tpm_i2c_infineon.c b/drivers/char/tpm/tpm_i2c_infineon.c
-index 54b9a5e..1794a09 100644
---- a/drivers/char/tpm/tpm_i2c_infineon.c
-+++ b/drivers/char/tpm/tpm_i2c_infineon.c
-@@ -68,6 +68,31 @@ struct tpm_inf_dev {
- static struct tpm_inf_dev tpm_dev;
- static struct i2c_driver tpm_tis_i2c_driver;
- 
-+
-+/*
-+ * Copy i2c-core:i2c_transfer() as close as possible without the adapter locks
-+ * and algorithm check.  These are done by the caller for atomicity.
-+ * Unfortunately we have to use this as a workaround in multislave environments
-+ * as no other suitable and working mechanism is available.
-+ */
-+static int i2c_transfer_nolock(struct i2c_adapter *adap, struct i2c_msg *msgs,
-+			       int num)
-+{
-+	unsigned long orig_jiffies;
-+	int ret, try;
-+
-+	/* Retry automatically on arbitration loss */
-+	orig_jiffies = jiffies;
-+	for (ret = 0, try = 0; try <= adap->retries; try++) {
-+		ret = adap->algo->master_xfer(adap, msgs, num);
-+		if (ret != -EAGAIN)
-+			break;
-+		if (time_after(jiffies, orig_jiffies + adap->timeout))
-+			break;
-+	}
-+	return ret;
-+}
-+
- /*
-  * iic_tpm_read() - read from TPM register
-  * @addr: register address to read from
-@@ -96,8 +121,13 @@ static int iic_tpm_read(u8 addr, u8 *buffer, size_t len)
- 	int rc;
- 	int count;
- 
-+	/* Lock the adapter for the duration of the whole sequence. */
-+	if (!tpm_dev.client->adapter->algo->master_xfer)
-+		return -EOPNOTSUPP;
-+	i2c_lock_adapter(tpm_dev.client->adapter);
-+
- 	for (count = 0; count < MAX_COUNT; count++) {
--		rc = i2c_transfer(tpm_dev.client->adapter, &msg1, 1);
-+		rc = i2c_transfer_nolock(tpm_dev.client->adapter, &msg1, 1);
- 		if (rc > 0)
- 			break;	/* break here to skip sleep */
- 
-@@ -105,19 +135,21 @@ static int iic_tpm_read(u8 addr, u8 *buffer, size_t len)
- 	}
- 
- 	if (rc <= 0)
--		return -EIO;
-+		goto out;
- 
- 	/* After the TPM has successfully received the register address it needs
- 	 * some time, thus we're sleeping here again, before retrieving the data
- 	 */
- 	for (count = 0; count < MAX_COUNT; count++) {
- 		usleep_range(SLEEP_DURATION_LOW, SLEEP_DURATION_HI);
--		rc = i2c_transfer(tpm_dev.client->adapter, &msg2, 1);
-+		rc = i2c_transfer_nolock(tpm_dev.client->adapter, &msg2, 1);
- 		if (rc > 0)
- 			break;
- 
- 	}
- 
-+out:
-+	i2c_unlock_adapter(tpm_dev.client->adapter);
- 	if (rc <= 0)
- 		return -EIO;
- 
-@@ -136,6 +168,10 @@ static int iic_tpm_write_generic(u8 addr, u8 *buffer, size_t len,
- 	if (len > TPM_BUFSIZE)
- 		return -EINVAL;
- 
-+	if (!tpm_dev.client->adapter->algo->master_xfer)
-+		return -EOPNOTSUPP;
-+	i2c_lock_adapter(tpm_dev.client->adapter);
-+
- 	/* prepend the 'register address' to the buffer */
- 	tpm_dev.buf[0] = addr;
- 	memcpy(&(tpm_dev.buf[1]), buffer, len);
-@@ -145,13 +181,14 @@ static int iic_tpm_write_generic(u8 addr, u8 *buffer, size_t len,
- 	 * cannot rely on the standard behavior of i2c_transfer.
- 	 */
- 	for (count = 0; count < max_count; count++) {
--		rc = i2c_transfer(tpm_dev.client->adapter, &msg1, 1);
-+		rc = i2c_transfer_nolock(tpm_dev.client->adapter, &msg1, 1);
- 		if (rc > 0)
- 			break;
- 
- 		usleep_range(sleep_low, sleep_hi);
- 	}
- 
-+	i2c_unlock_adapter(tpm_dev.client->adapter);
- 	if (rc <= 0)
- 		return -EIO;
- 
 -- 
-1.7.6.msysgit.0
-
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
