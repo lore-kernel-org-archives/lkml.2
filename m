@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753849Ab2FLPnq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 11:43:46 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:59313 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753444Ab2FLPjp (ORCPT
+	id S1753725Ab2FLPno (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 11:43:44 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:61603 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753515Ab2FLPjs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 11:39:45 -0400
+	Tue, 12 Jun 2012 11:39:48 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
         dm-devel@redhat.com
 Cc: Kent Overstreet <koverstreet@google.com>, tejun@google.com, agk@redhat.com,
         dan.j.williams@intel.com
-Subject: [Bcache v14 01/16] Revert "rw_semaphore: remove up/down_read_non_owner"
-Date: Tue, 12 Jun 2012 08:39:07 -0700
-Message-Id: <1339515562-14638-2-git-send-email-koverstreet@google.com>
+Subject: [Bcache v14 04/16] Add human-readable units modifier to vsnprintf()
+Date: Tue, 12 Jun 2012 08:39:10 -0700
+Message-Id: <1339515562-14638-5-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.7.9.3.327.g2980b
 In-Reply-To: <1339515562-14638-1-git-send-email-koverstreet@google.com>
 References: <1339515562-14638-1-git-send-email-koverstreet@google.com>
@@ -22,71 +22,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit 11b80f459adaf91a712f95e7734a17655a36bf30.
 
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 ---
- include/linux/rwsem.h |   10 ++++++++++
- kernel/rwsem.c        |   16 ++++++++++++++++
- 2 files changed, 26 insertions(+)
+ lib/vsprintf.c |   24 +++++++++++++++++++++++-
+ 1 file changed, 23 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
-index 54bd7cd..ddfe46d 100644
---- a/include/linux/rwsem.h
-+++ b/include/linux/rwsem.h
-@@ -125,9 +125,19 @@ extern void downgrade_write(struct rw_semaphore *sem);
-  */
- extern void down_read_nested(struct rw_semaphore *sem, int subclass);
- extern void down_write_nested(struct rw_semaphore *sem, int subclass);
-+/*
-+ * Take/release a lock when not the owner will release it.
-+ *
-+ * [ This API should be avoided as much as possible - the
-+ *   proper abstraction for this case is completions. ]
-+ */
-+extern void down_read_non_owner(struct rw_semaphore *sem);
-+extern void up_read_non_owner(struct rw_semaphore *sem);
- #else
- # define down_read_nested(sem, subclass)		down_read(sem)
- # define down_write_nested(sem, subclass)	down_write(sem)
-+# define down_read_non_owner(sem)		down_read(sem)
-+# define up_read_non_owner(sem)			up_read(sem)
- #endif
+diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+index c3f36d41..16149dd 100644
+--- a/lib/vsprintf.c
++++ b/lib/vsprintf.c
+@@ -338,6 +338,7 @@ int num_to_str(char *buf, int size, unsigned long long num)
+ #define LEFT	16		/* left justified */
+ #define SMALL	32		/* use lowercase in hex (must be 32 == 0x20) */
+ #define SPECIAL	64		/* prefix hex with "0x", octal with "0" */
++#define HUNITS	128		/* Human readable units, i.e. k/M/G/T */
  
- #endif /* _LINUX_RWSEM_H */
-diff --git a/kernel/rwsem.c b/kernel/rwsem.c
-index 6850f53..78b7915 100644
---- a/kernel/rwsem.c
-+++ b/kernel/rwsem.c
-@@ -116,6 +116,15 @@ void down_read_nested(struct rw_semaphore *sem, int subclass)
- 
- EXPORT_SYMBOL(down_read_nested);
- 
-+void down_read_non_owner(struct rw_semaphore *sem)
-+{
-+	might_sleep();
-+
-+	__down_read(sem);
-+}
-+
-+EXPORT_SYMBOL(down_read_non_owner);
-+
- void down_write_nested(struct rw_semaphore *sem, int subclass)
+ enum format_type {
+ 	FORMAT_TYPE_NONE, /* Just a string part */
+@@ -377,6 +378,7 @@ char *number(char *buf, char *end, unsigned long long num,
  {
- 	might_sleep();
-@@ -126,6 +135,13 @@ void down_write_nested(struct rw_semaphore *sem, int subclass)
+ 	/* we are called with base 8, 10 or 16, only, thus don't need "G..."  */
+ 	static const char digits[16] = "0123456789ABCDEF"; /* "GHIJKLMNOPQRSTUVWXYZ"; */
++	static const char units[] = "?kMGTPEZY";
  
- EXPORT_SYMBOL(down_write_nested);
- 
-+void up_read_non_owner(struct rw_semaphore *sem)
-+{
-+	__up_read(sem);
-+}
+ 	char tmp[66];
+ 	char sign;
+@@ -431,7 +433,26 @@ char *number(char *buf, char *end, unsigned long long num,
+ 			num >>= shift;
+ 		} while (num);
+ 	} else { /* base 10 */
+-		i = put_dec(tmp, num) - tmp;
++		if (spec.flags & HUNITS) {
++			int u, rem = 0;
 +
-+EXPORT_SYMBOL(up_read_non_owner);
++			for (u = 0; num >= 1024; u++) {
++				rem = num & ~(~0 << 10);
++				num >>= 10;
++			}
 +
- #endif
++			if (u) {
++				tmp[i++] = units[u];
++
++				if (num < 100) {
++					rem /= 100;
++					i = put_dec(tmp + i, rem) - tmp;
++					tmp[i++] = '.';
++				}
++			}
++		}
++
++		i = put_dec(tmp + i, num) - tmp;
+ 	}
  
+ 	/* printing 100 using %2d gives "100", not "00" */
+@@ -1127,6 +1148,7 @@ int format_decode(const char *fmt, struct printf_spec *spec)
+ 		case ' ': spec->flags |= SPACE;   break;
+ 		case '#': spec->flags |= SPECIAL; break;
+ 		case '0': spec->flags |= ZEROPAD; break;
++		case 'h': spec->flags |= HUNITS;  break;
+ 		default:  found = false;
+ 		}
  
 -- 
 1.7.9.3.327.g2980b
