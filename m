@@ -1,79 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751919Ab2FLHTL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 03:19:11 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:20402 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751125Ab2FLHTJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 03:19:09 -0400
-X-IronPort-AV: E=Sophos;i="4.77,394,1336320000"; 
-   d="scan'208";a="5167240"
-Message-ID: <4FD6EE5F.60206@cn.fujitsu.com>
-Date: Tue, 12 Jun 2012 15:23:11 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1752019Ab2FLHXz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 03:23:55 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:61049 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751458Ab2FLHXx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 03:23:53 -0400
+Message-ID: <4FD6EE85.2090207@linaro.org>
+Date: Tue, 12 Jun 2012 08:23:49 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: Luiz Capitulino <lcapitulino@redhat.com>
-CC: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Avi Kivity <avi@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
-Subject: Re: [Qemu-devel] [PATCH 1/3] start vm after reseting it
-References: <4FB9E4CE.8060709@cn.fujitsu.com>	<4FB9E57C.5040003@cn.fujitsu.com> <20120530161720.7c9b88b9@doriath.home>
-In-Reply-To: <20120530161720.7c9b88b9@doriath.home>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/06/12 15:19:41,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/06/12 15:19:43,
-	Serialize complete at 2012/06/12 15:19:43
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+To: Wolfram Sang <w.sang@pengutronix.de>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, arnd@arndb.de, grant.likely@secretlab.ca,
+        linux-i2c@vger.kernel.org
+Subject: Re: [PATCH 09/14] i2c: Add Device Tree support to the Nomadik I2C
+ driver
+References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org> <1339428307-3850-10-git-send-email-lee.jones@linaro.org> <20120611190550.GK3887@pengutronix.de>
+In-Reply-To: <20120611190550.GK3887@pengutronix.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 05/31/2012 03:17 AM, Luiz Capitulino Wrote:
-> On Mon, 21 May 2012 14:49:32 +0800
-> Wen Congyang <wency@cn.fujitsu.com> wrote:
-> 
->> The guest should run after reseting it, but it does not
->> run if its old state is RUN_STATE_INTERNAL_ERROR or RUN_STATE_PAUSED.
+On 11/06/12 20:05, Wolfram Sang wrote:
+> On Mon, Jun 11, 2012 at 04:25:02PM +0100, Lee Jones wrote:
+>> Here we move the i2c-nomadik's default settings into the driver
+>> rather than specifying them from platform code. At the time of
+>> this writing we only have one user, the u8500. As new users are
+>> added, it is expected that they will be Device Tree compliant.
+>> If this is the case, we will look up their initialisation values
+>> by compatible entry, then apply them forthwith.
 >>
->> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+>> Cc: linux-i2c@vger.kernel.org
+>> Acked-by: Linus Walleij<linus.walleij@linaro.org>
+>> Signed-off-by: Lee Jones<lee.jones@linaro.org>
 >> ---
->>  vl.c |    1 +
->>  1 files changed, 1 insertions(+), 0 deletions(-)
+>>   drivers/i2c/busses/i2c-nomadik.c |   40 +++++++++++++++++++++++++++++++++++++-
+>>   1 file changed, 39 insertions(+), 1 deletion(-)
 >>
->> diff --git a/vl.c b/vl.c
->> index 23ab3a3..7f5fed8 100644
->> --- a/vl.c
->> +++ b/vl.c
->> @@ -1539,6 +1539,7 @@ static bool main_loop_should_exit(void)
->>          if (runstate_check(RUN_STATE_INTERNAL_ERROR) ||
->>              runstate_check(RUN_STATE_SHUTDOWN)) {
->>              runstate_set(RUN_STATE_PAUSED);
->> +            vm_start();
-> 
-> Please, drop the runstate_set() call. I think you also have to
-> to call bdrv_iostatus_reset(), as qmp_cont() does.
+>> diff --git a/drivers/i2c/busses/i2c-nomadik.c b/drivers/i2c/busses/i2c-nomadik.c
+>> index a92440d..1ffdf67 100644
+>> --- a/drivers/i2c/busses/i2c-nomadik.c
+>> +++ b/drivers/i2c/busses/i2c-nomadik.c
+>> @@ -23,6 +23,7 @@
+>>   #include<linux/io.h>
+>>   #include<linux/regulator/consumer.h>
+>>   #include<linux/pm_runtime.h>
+>> +#include<linux/of_device.h>
+>>
+>>   #include<plat/i2c.h>
+>>
+>> @@ -899,15 +900,51 @@ static const struct i2c_algorithm nmk_i2c_algo = {
+>>   	.functionality	= nmk_i2c_functionality
+>>   };
+>>
+>> +static struct nmk_i2c_controller u8500_i2c = {
+>> +       /*
+>> +        * slave data setup time, which is
+>> +        * 250 ns,100ns,10ns which is 14,6,2
+>> +        * respectively for a 48 Mhz
+>> +        * i2c clock
+>> +        */
+>> +       .slsu           = 0xe,
+>> +       /* Tx FIFO threshold */
+>
+> Please put these comments directly after the members they describe.
+>
+> And make sure you use tabs for indentation all over the patch instead of
+> spaces. checkpatch.pl will help you to get the formal things right.
 
-I am not sure whether we should call it here. I think you may be right,
-so I will do it as you suggested.
+My apologies. This section of code was a direct copy and paste from 
+platform code (arch/arm/mach-ux500/board-mop500.c). It must have lost 
+some formatting en route. I'll make the changes you request and re-post.
 
-Thanks
-Wen Congyang
-
-> 
->>          }
->>      }
->>      if (qemu_powerdown_requested()) {
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+M: +44 77 88 633 515
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
