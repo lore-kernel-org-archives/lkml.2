@@ -1,226 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752918Ab2FLMKd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 08:10:33 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:40656 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752382Ab2FLMKc (ORCPT
+	id S1753028Ab2FLMKw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 08:10:52 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:40601 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752971Ab2FLMKv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 08:10:32 -0400
-Message-ID: <1339503026.2881.3.camel@phoenix>
-Subject: [PATCH RFT 2/2] regulator: wm8350: Reuse map_voltage() to get
- selector of a given uV
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Tue, 12 Jun 2012 20:10:26 +0800
-In-Reply-To: <1339502910.2881.1.camel@phoenix>
-References: <1339502910.2881.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	Tue, 12 Jun 2012 08:10:51 -0400
+Date: Tue, 12 Jun 2012 14:10:35 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Andrew Armenia <andrew@asquaredlabs.com>
+Cc: Ben Dooks <ben-linux@fluff.org>, Wolfram Sang <w.sang@pengutronix.de>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] i2c-piix4: separate registration and probing code
+Message-ID: <20120612141035.1a393a81@endymion.delvare>
+In-Reply-To: <1338860964-10803-3-git-send-email-andrew@asquaredlabs.com>
+References: <20120604091643.208956fe@endymion.delvare>
+	<1338860964-10803-1-git-send-email-andrew@asquaredlabs.com>
+	<1338860964-10803-3-git-send-email-andrew@asquaredlabs.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reuse map_voltage() to get the selector of a given uV.
+On Mon,  4 Jun 2012 21:49:23 -0400, Andrew Armenia wrote:
+> Some chipsets have multiple sets of SMBus registers each controlling a
+> separate SMBus. Supporting these chipsets properly will require registering
+> multiple I2C adapters for one piix4.
+> 
+> The code to initialize and register the i2c_adapter structure has been
+> separated from piix4_probe and allows registration of a piix4 adapter
+> given its base address. Note that the i2c_adapter and piix4_adapdata
+> structures are now dynamically allocated.
+> 
+> Signed-off-by: Andrew Armenia <andrew@asquaredlabs.com>
+> ---
+>  drivers/i2c/busses/i2c-piix4.c |   79 ++++++++++++++++++++++++++--------------
+>  1 file changed, 51 insertions(+), 28 deletions(-)
+> 
+> diff --git a/drivers/i2c/busses/i2c-piix4.c b/drivers/i2c/busses/i2c-piix4.c
+> index 7a5889c..8a87b3f 100644
+> --- a/drivers/i2c/busses/i2c-piix4.c
+> +++ b/drivers/i2c/busses/i2c-piix4.c
+> @@ -480,16 +480,6 @@ static const struct i2c_algorithm smbus_algorithm = {
+>  	.functionality	= piix4_func,
+>  };
+>  
+> -static struct i2c_adapter piix4_adapter = {
+> -	.owner		= THIS_MODULE,
+> -	.class		= I2C_CLASS_HWMON | I2C_CLASS_SPD,
+> -	.algo		= &smbus_algorithm,
+> -};
+> -
+> -static struct i2c_piix4_adapdata piix4_adapter_data = {
+> -	.smba		= 0,
+> -};
+> -
+>  static DEFINE_PCI_DEVICE_TABLE(piix4_ids) = {
+>  	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82371AB_3) },
+>  	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82443MX_3) },
+> @@ -514,6 +504,48 @@ static DEFINE_PCI_DEVICE_TABLE(piix4_ids) = {
+>  
+>  MODULE_DEVICE_TABLE (pci, piix4_ids);
+>  
+> +static struct i2c_adapter *piix4_main_adapter;
+> +
+> +/* register piix4 I2C adapter at the given base address */
+> +static int piix4_add_adapter(struct pci_dev *dev, unsigned short smba,
+> +				struct i2c_adapter **padap) {
 
-Then we can remove wm8350_ldo_mvolts_to_val() and wm8350_dcdc_mvolts_to_val().
-Also remove unused wm8350_dcdc_val_to_mvolts() function.
+Called from a __devinit function, could be made __devinit.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/wm8350-regulator.c |  127 +++++++++++++---------------------
- 1 file changed, 50 insertions(+), 77 deletions(-)
+> +	struct i2c_adapter *piix4_adapter;
+> +	struct i2c_piix4_adapdata *piix4_adapdata;
 
-diff --git a/drivers/regulator/wm8350-regulator.c b/drivers/regulator/wm8350-regulator.c
-index c4913be..7f0fa22 100644
---- a/drivers/regulator/wm8350-regulator.c
-+++ b/drivers/regulator/wm8350-regulator.c
-@@ -108,24 +108,6 @@ static int get_isink_val(int min_uA, int max_uA, u16 *setting)
- 	return -EINVAL;
- }
- 
--static inline unsigned int wm8350_ldo_mvolts_to_val(int mV)
--{
--	if (mV < 1800)
--		return (mV - 900) / 50;
--	else
--		return ((mV - 1800) / 100) + 16;
--}
--
--static inline int wm8350_dcdc_val_to_mvolts(unsigned int val)
--{
--	return (val * 25) + 850;
--}
--
--static inline unsigned int wm8350_dcdc_mvolts_to_val(int mV)
--{
--	return (mV - 850) / 25;
--}
--
- static int wm8350_isink_set_current(struct regulator_dev *rdev, int min_uA,
- 	int max_uA)
- {
-@@ -353,19 +335,10 @@ EXPORT_SYMBOL_GPL(wm8350_isink_set_flash);
- static int wm8350_dcdc_set_suspend_voltage(struct regulator_dev *rdev, int uV)
- {
- 	struct wm8350 *wm8350 = rdev_get_drvdata(rdev);
--	int volt_reg, mV = uV / 1000, dcdc = rdev_get_id(rdev);
-+	int sel, volt_reg, dcdc = rdev_get_id(rdev);
- 	u16 val;
- 
--	dev_dbg(wm8350->dev, "%s %d mV %d\n", __func__, dcdc, mV);
--
--	if (mV && (mV < 850 || mV > 4025)) {
--		dev_err(wm8350->dev,
--			"DCDC%d suspend voltage %d mV out of range\n",
--			dcdc, mV);
--		return -EINVAL;
--	}
--	if (mV == 0)
--		mV = 850;
-+	dev_dbg(wm8350->dev, "%s %d mV %d\n", __func__, dcdc, uV / 1000);
- 
- 	switch (dcdc) {
- 	case WM8350_DCDC_1:
-@@ -386,10 +359,13 @@ static int wm8350_dcdc_set_suspend_voltage(struct regulator_dev *rdev, int uV)
- 		return -EINVAL;
- 	}
- 
-+	sel = regulator_map_voltage_linear(rdev, uV, uV);
-+	if (sel < 0)
-+		return -EINVAL;
-+
- 	/* all DCDCs have same mV bits */
- 	val = wm8350_reg_read(wm8350, volt_reg) & ~WM8350_DC1_VSEL_MASK;
--	wm8350_reg_write(wm8350, volt_reg,
--			 val | wm8350_dcdc_mvolts_to_val(mV));
-+	wm8350_reg_write(wm8350, volt_reg, val | sel);
- 	return 0;
- }
- 
-@@ -566,19 +542,49 @@ static int wm8350_dcdc_set_suspend_mode(struct regulator_dev *rdev,
- 	return 0;
- }
- 
-+static int wm8350_ldo_list_voltage(struct regulator_dev *rdev,
-+				    unsigned selector)
-+{
-+	if (selector > WM8350_LDO1_VSEL_MASK)
-+		return -EINVAL;
-+
-+	if (selector < 16)
-+		return (selector * 50000) + 900000;
-+	else
-+		return ((selector - 16) * 100000) + 1800000;
-+}
-+
-+static int wm8350_ldo_map_voltage(struct regulator_dev *rdev, int min_uV,
-+				  int max_uV)
-+{
-+	int volt, sel;
-+	int min_mV = min_uV / 1000;
-+	int max_mV = max_uV / 1000;
-+
-+	if (min_mV < 900 || min_mV > 3300)
-+		return -EINVAL;
-+	if (max_mV < 900 || max_mV > 3300)
-+		return -EINVAL;
-+
-+	if (min_mV < 1800) /* step size is 50mV < 1800mV */
-+		sel = DIV_ROUND_UP(min_uV - 900, 50);
-+	else /* step size is 100mV > 1800mV */
-+		sel = DIV_ROUND_UP(min_uV - 1800, 100) + 16;
-+
-+	volt = wm8350_ldo_list_voltage(rdev, sel);
-+	if (volt < min_uV || volt > max_uV)
-+		return -EINVAL;
-+
-+	return sel;
-+}
-+
- static int wm8350_ldo_set_suspend_voltage(struct regulator_dev *rdev, int uV)
- {
- 	struct wm8350 *wm8350 = rdev_get_drvdata(rdev);
--	int volt_reg, mV = uV / 1000, ldo = rdev_get_id(rdev);
-+	int sel, volt_reg, ldo = rdev_get_id(rdev);
- 	u16 val;
- 
--	dev_dbg(wm8350->dev, "%s %d mV %d\n", __func__, ldo, mV);
--
--	if (mV < 900 || mV > 3300) {
--		dev_err(wm8350->dev, "LDO%d voltage %d mV out of range\n",
--			ldo, mV);
--		return -EINVAL;
--	}
-+	dev_dbg(wm8350->dev, "%s %d mV %d\n", __func__, ldo, uV / 1000);
- 
- 	switch (ldo) {
- 	case WM8350_LDO_1:
-@@ -597,10 +603,13 @@ static int wm8350_ldo_set_suspend_voltage(struct regulator_dev *rdev, int uV)
- 		return -EINVAL;
- 	}
- 
-+	sel = wm8350_ldo_map_voltage(rdev, uV, uV);
-+	if (sel < 0)
-+		return -EINVAL;
-+
- 	/* all LDOs have same mV bits */
- 	val = wm8350_reg_read(wm8350, volt_reg) & ~WM8350_LDO1_VSEL_MASK;
--	wm8350_reg_write(wm8350, volt_reg,
--			 val | wm8350_ldo_mvolts_to_val(mV));
-+	wm8350_reg_write(wm8350, volt_reg, val | sel);
- 	return 0;
- }
- 
-@@ -662,42 +671,6 @@ static int wm8350_ldo_set_suspend_disable(struct regulator_dev *rdev)
- 	return 0;
- }
- 
--static int wm8350_ldo_list_voltage(struct regulator_dev *rdev,
--				    unsigned selector)
--{
--	if (selector > WM8350_LDO1_VSEL_MASK)
--		return -EINVAL;
--
--	if (selector < 16)
--		return (selector * 50000) + 900000;
--	else
--		return ((selector - 16) * 100000) + 1800000;
--}
--
--static int wm8350_ldo_map_voltage(struct regulator_dev *rdev, int min_uV,
--				  int max_uV)
--{
--	int volt, sel;
--	int min_mV = min_uV / 1000;
--	int max_mV = max_uV / 1000;
--
--	if (min_mV < 900 || min_mV > 3300)
--		return -EINVAL;
--	if (max_mV < 900 || max_mV > 3300)
--		return -EINVAL;
--
--	if (min_mV < 1800) /* step size is 50mV < 1800mV */
--		sel = DIV_ROUND_UP(min_uV - 900, 50);
--	else /* step size is 100mV > 1800mV */
--		sel = DIV_ROUND_UP(min_uV - 1800, 100) + 16;
--
--	volt = wm8350_ldo_list_voltage(rdev, sel);
--	if (volt < min_uV || volt > max_uV)
--		return -EINVAL;
--
--	return sel;
--}
--
- int wm8350_dcdc_set_slot(struct wm8350 *wm8350, int dcdc, u16 start,
- 			 u16 stop, u16 fault)
- {
+It would be pleasant to use the same names here and in
+piix4_adap_remove(), for consistency.
+
+> +	int retval;
+> +
+> +	piix4_adapter = kmalloc(sizeof(*piix4_adapter), GFP_KERNEL);
+> +	memset(piix4_adapter, 0, sizeof(*piix4_adapter));
+
+Please use kzalloc. Furthermore, k*alloc() can theoretically fail, so
+you have to check for this unlikely case and handle it gracefully.
+
+> +	piix4_adapter->owner = THIS_MODULE;
+> +	piix4_adapter->class = I2C_CLASS_HWMON | I2C_CLASS_SPD;
+> +	piix4_adapter->algo = &smbus_algorithm;
+> +
+> +	piix4_adapdata = kmalloc(sizeof(*piix4_adapdata), GFP_KERNEL);
+> +	memset(piix4_adapdata, 0, sizeof(*piix4_adapdata));
+
+Same here.
+
+> +	piix4_adapdata->smba = smba;
+> +
+> +	/* set up the sysfs linkage to our parent device */
+> +	piix4_adapter->dev.parent = &dev->dev;
+> +
+> +	snprintf(piix4_adapter->name, sizeof(piix4_adapter->name),
+> +		"SMBus PIIX4 adapter at %04x", smba);
+> +
+> +	piix4_adapdata->smba = smba;
+
+You already did that a few lines above.
+
+> +
+> +	i2c_set_adapdata(piix4_adapter, piix4_adapdata);
+> +
+> +	retval = i2c_add_adapter(piix4_adapter);
+> +	if (retval) {
+> +		dev_err(&dev->dev, "Couldn't register adapter!\n");
+> +		release_region(smba, SMBIOSIZE);
+> +		kfree(piix4_adapdata);
+> +		kfree(piix4_adapter);
+> +	}
+> +
+> +	*padap = piix4_adapter;
+
+It's pointless do to that in the error case.
+
+> +
+> +	return retval;
+> +}
+> +
+>  static int __devinit piix4_probe(struct pci_dev *dev,
+>  				const struct pci_device_id *id)
+>  {
+> @@ -532,25 +564,10 @@ static int __devinit piix4_probe(struct pci_dev *dev,
+>  	if (retval)
+>  		return retval;
+>  
+> -	/* set up the sysfs linkage to our parent device */
+> -	piix4_adapter.dev.parent = &dev->dev;
+> -
+> -	snprintf(piix4_adapter.name, sizeof(piix4_adapter.name),
+> -		"SMBus PIIX4 adapter at %04x", smba);
+> -
+> -	piix4_adapter_data.smba = smba;
+> -
+> -	i2c_set_adapdata(&piix4_adapter, &piix4_adapter_data);
+> -
+> -	if ((retval = i2c_add_adapter(&piix4_adapter))) {
+> -		dev_err(&dev->dev, "Couldn't register adapter!\n");
+> -		release_region(smba, SMBIOSIZE);
+> -		piix4_adapter_data.smba = 0;
+> -	}
+> -
+> -	return retval;
+> +	return piix4_add_adapter(dev, smba, &piix4_main_adapter);
+>  }
+>  
+> +/* Remove the adapter and its associated IO region */
+>  static void piix4_adap_remove(struct i2c_adapter *adap)
+>  {
+>  	struct i2c_piix4_adapdata *adapdata;
+> @@ -561,11 +578,17 @@ static void piix4_adap_remove(struct i2c_adapter *adap)
+>  		release_region(adapdata->smba, SMBIOSIZE);
+>  		adapdata->smba = 0;
+
+This one can go away, no point in cleaning up a structure you're about
+to free.
+
+>  	}
+> +
+> +	kfree(adapdata);
+> +	kfree(adap);
+>  }
+>  
+>  static void __devexit piix4_remove(struct pci_dev *dev)
+>  {
+> -	piix4_adap_remove(&piix4_adapter);
+> +	if (piix4_main_adapter) {
+> +		piix4_adap_remove(piix4_main_adapter);
+> +		piix4_main_adapter = NULL;
+> +	}
+>  }
+>  
+>  static struct pci_driver piix4_driver = {
+
+
 -- 
-1.7.9.5
-
-
-
+Jean Delvare
