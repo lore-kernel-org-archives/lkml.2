@@ -1,82 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753490Ab2FLW2V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 18:28:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36121 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753067Ab2FLW2A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 18:28:00 -0400
-Date: Tue, 12 Jun 2012 19:24:53 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: x86@kernel.org, kvm@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Avi Kivity <avi@redhat.com>,
-        gleb@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCHv6 5/8] kvm: eoi msi documentation
-Message-ID: <20120612222453.GA1973@amt.cnet>
-References: <cover.1338474301.git.mst@redhat.com>
- <ee4c8513394438ba534b515f5c82d5a37187c811.1338474301.git.mst@redhat.com>
+	id S1753468Ab2FLW3f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 18:29:35 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:37465 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753284Ab2FLW3d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 18:29:33 -0400
+Date: Tue, 12 Jun 2012 15:29:12 -0700
+From: Mandeep Singh Baines <msb@google.com>
+To: Daniel Walker <dwalker@fifo99.com>
+Cc: fweisbec@gmail.com, msb@chromium.org, sshaiju@mvista.com, mingo@elte.hu,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: hung_task checking and sys_sync
+Message-ID: <20120612222912.GB16381@google.com>
+References: <20120612220924.GA13376@fifo99.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <ee4c8513394438ba534b515f5c82d5a37187c811.1338474301.git.mst@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120612220924.GA13376@fifo99.com>
+X-Operating-System: Linux/2.6.38.8-gg683 (x86_64)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 03, 2012 at 10:28:21AM +0300, Michael S. Tsirkin wrote:
-> Document the new EOI MSR. Couldn't decide whether this change belongs
-> conceptually on guest or host side, so a separate patch.
+Daniel Walker (dwalker@fifo99.com) wrote:
 > 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
->  Documentation/virtual/kvm/msr.txt |   32 ++++++++++++++++++++++++++++++++
->  1 files changed, 32 insertions(+), 0 deletions(-)
+
+Hi Daniel,
+
+> I found this commit which was a while ago,
 > 
-> diff --git a/Documentation/virtual/kvm/msr.txt b/Documentation/virtual/kvm/msr.txt
-> index 96b41bd..f202a22 100644
-> --- a/Documentation/virtual/kvm/msr.txt
-> +++ b/Documentation/virtual/kvm/msr.txt
-> @@ -223,3 +223,35 @@ MSR_KVM_STEAL_TIME: 0x4b564d03
->  		steal: the amount of time in which this vCPU did not run, in
->  		nanoseconds. Time during which the vcpu is idle, will not be
->  		reported as steal time.
-> +
-> +MSR_KVM_EOI_EN: 0x4b564d04
-> +	data: Bit 0 is 1 when PV end of interrupt is enabled on the vcpu; 0
-> +	when disabled.  When enabled, bits 63-1 hold 2-byte aligned physical address
-> +	of a 2 byte memory area which must be in guest RAM and must be zeroed.
-> +
-> +	The first, least significant bit of 2 byte memory location will be
-> +	written to by the hypervisor, typically at the time of interrupt
-> +	injection.  Value of 1 means that guest can skip writing EOI to the apic
-> +	(using MSR or MMIO write); instead, it is sufficient to signal
-> +	EOI by clearing the bit in guest memory - this location will
-> +	later be polled by the hypervisor.
-> +	Value of 0 means that the EOI write is required.
-> +
-> +	It is always safe for the guest to ignore the optimization and perform
-> +	the APIC EOI write anyway.
-> +
-> +	Hypervisor is guaranteed to only modify this least
-> +	significant bit while in the current VCPU context, this means that
-> +	guest does not need to use either lock prefix or memory ordering
-> +	primitives to synchronise with the hypervisor.
-> +
-> +	However, hypervisor can set and clear this memory bit at any time:
-> +	therefore to make sure hypervisor does not interrupt the
-> +	guest and clear the least significant bit in the memory area
-> +	in the window between guest testing it to detect
-> +	whether it can skip EOI apic write and between guest
-> +	clearing it to signal EOI to the hypervisor,
-> +	guest must both read the least sgnificant bit in the memory area and
+> commit fb822db465bd9fd4208eef1af4490539b236c54e
+> Author: Ingo Molnar <mingo@elte.hu>
+> Date:   Wed Aug 20 11:17:40 2008 +0200
+> 
+>     softlockup: increase hung tasks check from 2 minutes to 8 minutes
+>     
+>     Andrew says:
+>     
+>     > Seems that about 100% of the reports we get of this warning triggering
+>     > are sys_sync, transaction commit, etc.
+>     
+>     increase the timeout. If it still triggers for people, we can kill it.
+>     
+>     Signed-off-by: Ingo Molnar <mingo@elte.hu>
+> 
+> 
+> We're seeing these messages on an older kernel (montavista) but the code areas
+> appear similar to current kernels. The issue is that we're doing a file copy
+> which takes 10-15minutes, and in the background there is a "df --sync"
+> happening (which is calling sys_sync). We end up getting a hung task message
+> like below,
+> 
+> INFO: task df:1778 blocked for more than 120 seconds.
+> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> ffffffff81578d40 0000000000000086 ffff8801f6135b00 ffff880269a91800
+> ffff880269a91800 ffff8802702be000 ffff8801f602a080 0000000000000000
+> ffff8801f602a440 ffffffff8109c166 ffff8801e863de18 0000000000000004
+> Call Trace:
+>   [<ffffffff8109c166>] ? sync_page+0x0/0x49
+>   [<ffffffff81320de2>] ? __schedule+0x3c/0x57
+>   [<ffffffff810ea3c7>] ? bdi_sched_wait+0x0/0xe
+>   [<ffffffff81320de2>] ? __schedule+0x3c/0x57
+>   [<ffffffff81320e0d>] ? schedule+0x10/0x1e
+>   [<ffffffff810ea3d0>] ? bdi_sched_wait+0x9/0xe
+> 
+> There some variation in the stack trace , but always thru bdi_sched_wait().
+> 
+> 
+> These don't seem like valid warnings, since the copy happening is know to take
+> a long time.
 
-typo
+But the time is not unbounded. You could mask the hung_task_detector for
+this case but then you lose the ability to catch bugs in this code path.
 
-> +	clear it using a single CPU instruction, such as test and clear, or
-> +	compare and exchange.
-> +
-> -- 
+The timeout is configurable via /proc/sys/kernel/hung_task_timeout_secs.
+Can you bump up the value at boot via sysctl.conf?
 
+> Has there been any commit that disable these messages bdi_sched_wait?
+> 
+
+No. There is no mechanism to disable hung_task for a specific code path.
+We do skip processes if PF_PROZEN or PF_FROZEN_SKIP is set but that is
+really a different situation where the wait is unbounded.
+
+Regards,
+Mandeep
+
+> Daniel
