@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752294Ab2FLOVE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 10:21:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57213 "EHLO mx2.suse.de"
+	id S1752933Ab2FLOXF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 10:23:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57279 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751725Ab2FLOU7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 10:20:59 -0400
+	id S1752217Ab2FLOVD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 10:21:03 -0400
 From: Jan Kara <jack@suse.cz>
 To: Al Viro <viro@ZenIV.linux.org.uk>
 Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@suse.cz,
-        Jan Kara <jack@suse.cz>
-Subject: [PATCH 02/27] fs: Push file_update_time() into __block_page_mkwrite()
-Date: Tue, 12 Jun 2012 16:20:23 +0200
-Message-Id: <1339510848-16992-3-git-send-email-jack@suse.cz>
+        Jan Kara <jack@suse.cz>, linux-btrfs@vger.kernel.org,
+        Chris Mason <chris.mason@oracle.com>
+Subject: [PATCH 24/27] btrfs: Convert to new freezing mechanism
+Date: Tue, 12 Jun 2012 16:20:45 +0200
+Message-Id: <1339510848-16992-25-git-send-email-jack@suse.cz>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1339510848-16992-1-git-send-email-jack@suse.cz>
 References: <1339510848-16992-1-git-send-email-jack@suse.cz>
@@ -20,32 +21,136 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tested-by: Kamal Mostafa <kamal@canonical.com>
-Tested-by: Peter M. Petrakis <peter.petrakis@canonical.com>
-Tested-by: Dann Frazier <dann.frazier@canonical.com>
-Tested-by: Massimo Morana <massimo.morana@canonical.com>
+We convert btrfs_file_aio_write() to use new freeze check.  We also add proper
+freeze protection to btrfs_page_mkwrite(). We also add freeze protection to
+the transaction mechanism to avoid starting transactions on frozen filesystem.
+At minimum this is necessary to stop iput() of unlinked file to change frozen
+filesystem during truncation.
+
+Checks in cleaner_kthread() and transaction_kthread() can be safely removed
+since btrfs_freeze() will lock the mutexes and thus block the threads (and they
+shouldn't have anything to do anyway).
+
+CC: linux-btrfs@vger.kernel.org
+CC: Chris Mason <chris.mason@oracle.com>
 Signed-off-by: Jan Kara <jack@suse.cz>
 ---
- fs/buffer.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+ fs/btrfs/disk-io.c     |    3 ---
+ fs/btrfs/file.c        |    3 ++-
+ fs/btrfs/inode.c       |    6 +++++-
+ fs/btrfs/transaction.c |    7 +++++++
+ 4 files changed, 14 insertions(+), 5 deletions(-)
 
-diff --git a/fs/buffer.c b/fs/buffer.c
-index 838a9cf..bb2ed91 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -2314,6 +2314,12 @@ int __block_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf,
- 	loff_t size;
- 	int ret;
+diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
+index 7ae51de..663f3a0 100644
+--- a/fs/btrfs/disk-io.c
++++ b/fs/btrfs/disk-io.c
+@@ -1532,8 +1532,6 @@ static int cleaner_kthread(void *arg)
+ 	struct btrfs_root *root = arg;
  
-+	/*
-+	 * Update file times before taking page lock. We may end up failing the
-+	 * fault so this update may be superfluous but who really cares...
-+	 */
-+	file_update_time(vma->vm_file);
+ 	do {
+-		vfs_check_frozen(root->fs_info->sb, SB_FREEZE_WRITE);
+-
+ 		if (!(root->fs_info->sb->s_flags & MS_RDONLY) &&
+ 		    mutex_trylock(&root->fs_info->cleaner_mutex)) {
+ 			btrfs_run_delayed_iputs(root);
+@@ -1565,7 +1563,6 @@ static int transaction_kthread(void *arg)
+ 	do {
+ 		cannot_commit = false;
+ 		delay = HZ * 30;
+-		vfs_check_frozen(root->fs_info->sb, SB_FREEZE_WRITE);
+ 		mutex_lock(&root->fs_info->transaction_kthread_mutex);
+ 
+ 		spin_lock(&root->fs_info->trans_lock);
+diff --git a/fs/btrfs/file.c b/fs/btrfs/file.c
+index 70dc8ca..5131c3a 100644
+--- a/fs/btrfs/file.c
++++ b/fs/btrfs/file.c
+@@ -1392,7 +1392,7 @@ static ssize_t btrfs_file_aio_write(struct kiocb *iocb,
+ 	ssize_t err = 0;
+ 	size_t count, ocount;
+ 
+-	vfs_check_frozen(inode->i_sb, SB_FREEZE_WRITE);
++	sb_start_write(inode->i_sb);
+ 
+ 	mutex_lock(&inode->i_mutex);
+ 
+@@ -1482,6 +1482,7 @@ static ssize_t btrfs_file_aio_write(struct kiocb *iocb,
+ 			num_written = err;
+ 	}
+ out:
++	sb_end_write(inode->i_sb);
+ 	current->backing_dev_info = NULL;
+ 	return num_written ? num_written : err;
+ }
+diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
+index f6ab6f5..2e191f6 100644
+--- a/fs/btrfs/inode.c
++++ b/fs/btrfs/inode.c
+@@ -6535,6 +6535,7 @@ int btrfs_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 	u64 page_start;
+ 	u64 page_end;
+ 
++	sb_start_pagefault(inode->i_sb);
+ 	ret  = btrfs_delalloc_reserve_space(inode, PAGE_CACHE_SIZE);
+ 	if (!ret) {
+ 		ret = file_update_time(vma->vm_file);
+@@ -6624,12 +6625,15 @@ again:
+ 	unlock_extent_cached(io_tree, page_start, page_end, &cached_state, GFP_NOFS);
+ 
+ out_unlock:
+-	if (!ret)
++	if (!ret) {
++		sb_end_pagefault(inode->i_sb);
+ 		return VM_FAULT_LOCKED;
++	}
+ 	unlock_page(page);
+ out:
+ 	btrfs_delalloc_release_space(inode, PAGE_CACHE_SIZE);
+ out_noreserve:
++	sb_end_pagefault(inode->i_sb);
+ 	return ret;
+ }
+ 
+diff --git a/fs/btrfs/transaction.c b/fs/btrfs/transaction.c
+index 1791c6e..05d8c29 100644
+--- a/fs/btrfs/transaction.c
++++ b/fs/btrfs/transaction.c
+@@ -325,6 +325,8 @@ again:
+ 	if (!h)
+ 		return ERR_PTR(-ENOMEM);
+ 
++	sb_start_intwrite(root->fs_info->sb);
 +
- 	lock_page(page);
- 	size = i_size_read(inode);
- 	if ((page->mapping != inode->i_mapping) ||
+ 	if (may_wait_transaction(root, type))
+ 		wait_current_trans(root);
+ 
+@@ -335,6 +337,7 @@ again:
+ 	} while (ret == -EBUSY);
+ 
+ 	if (ret < 0) {
++		sb_end_intwrite(root->fs_info->sb);
+ 		kmem_cache_free(btrfs_trans_handle_cachep, h);
+ 		return ERR_PTR(ret);
+ 	}
+@@ -524,6 +527,8 @@ static int __btrfs_end_transaction(struct btrfs_trans_handle *trans,
+ 		count++;
+ 	}
+ 
++	sb_end_intwrite(root->fs_info->sb);
++
+ 	if (lock && !atomic_read(&root->fs_info->open_ioctl_trans) &&
+ 	    should_end_transaction(trans, root)) {
+ 		trans->transaction->blocked = 1;
+@@ -1507,6 +1512,8 @@ int btrfs_commit_transaction(struct btrfs_trans_handle *trans,
+ 	put_transaction(cur_trans);
+ 	put_transaction(cur_trans);
+ 
++	sb_end_intwrite(root->fs_info->sb);
++
+ 	trace_btrfs_transaction_commit(root);
+ 
+ 	btrfs_scrub_continue(root);
 -- 
 1.7.1
 
