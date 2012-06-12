@@ -1,145 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753318Ab2FLPyE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 11:54:04 -0400
-Received: from fieldses.org ([174.143.236.118]:50465 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751437Ab2FLPyC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 11:54:02 -0400
-Date: Tue, 12 Jun 2012 11:53:58 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
-        linux-kernel@vger.kernel.org, devel@openvz.org
-Subject: Re: [PATCH] NFS: hard-code init_net for NFS callback transports
-Message-ID: <20120612155358.GB22028@fieldses.org>
-References: <20120601095424.24427.74720.stgit@localhost.localdomain>
- <20120611123718.GF7654@fieldses.org>
+	id S1753378Ab2FLP4W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 11:56:22 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:54780 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752303Ab2FLP4U convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 11:56:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120611123718.GF7654@fieldses.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120612062000.GA6932@8bytes.org>
+References: <20120611152021.25959.71601.stgit@bling.home> <CAErSpo434tDtnSOxB_REG2jFNrZL=aZERWTmmK-cdjqM4z6yWg@mail.gmail.com>
+ <20120612062000.GA6932@8bytes.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 12 Jun 2012 09:55:59 -0600
+Message-ID: <CAErSpo6J61+XhtEeXdE-5Evhs-SJ4=3iEZDAXGuRi9moAU8KhQ@mail.gmail.com>
+Subject: Re: [PATCH v3 0/5] PCI: Prep for VFIO and IOMMU Groups
+To: Joerg Roedel <joro@8bytes.org>
+Cc: Alex Williamson <alex.williamson@redhat.com>, benh@kernel.crashing.org,
+        aik@ozlabs.ru, linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        iommu@lists.linux-foundation.org, dwmw2@infradead.org,
+        david@gibson.dropbear.id.au
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 11, 2012 at 08:37:18AM -0400, J. Bruce Fields wrote:
-> On Fri, Jun 01, 2012 at 01:55:47PM +0400, Stanislav Kinsbursky wrote:
-> > This patch set is a bug fix for Bruce's 3.5 branch.
-> > I'll rebase this for 3.4 and resend.
-> 
-> Apologies for neglecting this, I'm done with the bakeathon and should be
-> back to this soon.
-> 
-> But, I'm a bit confused: you say you'll rebase this, but I've only seen
-> two rebased patches for 3.4, and neither looks like a simple rebase of
-> this one.
+On Tue, Jun 12, 2012 at 12:20 AM, Joerg Roedel <joro@8bytes.org> wrote:
+> Hi Bjorn,
+>
+> On Mon, Jun 11, 2012 at 06:59:25PM -0600, Bjorn Helgaas wrote:
+>> On Mon, Jun 11, 2012 at 8:26 AM, Alex Williamson
+>> <alex.williamson@redhat.com> wrote:
+>> > v3:
+>> >  - Small change to device specific ACS check to allow quirk to
+>> >   support yes/no/pass type functionality. (no change to other
+>> >   patches and no trickle down through IOMMU series)
+>> >
+>> > Bjorn, what's needed to get these in?  Thanks,
+>>
+>> Sorry for the delay.  I applied these to my "next" branch (headed for
+>> 3.6).  I didn't feel comfortable pushing them towards 3.5 since
+>> they're not bugfixes, and they haven't been in -next yet.
+>
+> Great. Do you applied them directly to your next branch or do you have
+> them in a seperate branch I can pull in to merge the IOMMU Groups
+> patches on-top? The later would be really good :)
 
-Oh, I see; the backport of "SUNRPC: new svc_bind() routine introduced"
-is a combination of the patch by the same name upstream with this one.
+Hi Joerg, I have Alex's patches on a separate topic branch.  I folded
+in the pci_get_dev() fix and pushed it to here:
 
-In future for backports I'd rather keep a one-to-one correspondance
-between the original patches and the backported patches.  (Even if that
-means 4.2 might not be as "bisectable".)
+  git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git
+topic/alex-vfio-prep
 
-Also, get this patch into stable by just adding a "cc:
-stable@vger.kernel.org" with the signed-off at the end of this patch.
+This is also included in my "next" branch.
 
-I've gone ahead and fixed that up; results in the "for-3.4" and
-"for-3.5" branches of
-
-	git://linux-nfs.org/~bfields/linux-topics.git
-
-Let me know if anything looks wrong.
-
---b.
-
-> 
-> OK, I'll look more closely and probably I'll figure out.  But in
-> general, a little more detail in changelogs would help me process
-> patches more quickly:
-> 
-> 	- Please make sure it's clear whether a given patch is a bug
-> 	  fix, a new feature, or code reshuffling that isn't intended to
-> 	  change behavior.  If it's a bug fix, tell me whether we've had
-> 	  the bug forever or whether it's a recent regression.  And
-> 	  (relevant here) if it's a recent regression, reference the ID
-> 	  of the commit that introduced it.
-> 	- If something is a backport, please reference in the changelog
-> 	  the commit ID of the backported patch, especially if it's not
-> 	  obviously the same.
-> 
-> --b.
-> 	
-> 
-> > 
-> > In case of destroying mount namespace on child reaper exit, nsproxy is zeroed
-> > to the point already. So, dereferencing of it is invalid.
-> > This patch hard-code "init_net" for all network namespace references for NFS
-> > callback services. This will be fixed with proper NFS callback
-> > containerization.
-> > 
-> > Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-> > ---
-> >  fs/nfs/callback.c |   11 +++++------
-> >  1 files changed, 5 insertions(+), 6 deletions(-)
-> > 
-> > diff --git a/fs/nfs/callback.c b/fs/nfs/callback.c
-> > index 970659d..23ff18f 100644
-> > --- a/fs/nfs/callback.c
-> > +++ b/fs/nfs/callback.c
-> > @@ -17,7 +17,6 @@
-> >  #include <linux/kthread.h>
-> >  #include <linux/sunrpc/svcauth_gss.h>
-> >  #include <linux/sunrpc/bc_xprt.h>
-> > -#include <linux/nsproxy.h>
-> >  
-> >  #include <net/inet_sock.h>
-> >  
-> > @@ -107,7 +106,7 @@ nfs4_callback_up(struct svc_serv *serv, struct rpc_xprt *xprt)
-> >  {
-> >  	int ret;
-> >  
-> > -	ret = svc_create_xprt(serv, "tcp", xprt->xprt_net, PF_INET,
-> > +	ret = svc_create_xprt(serv, "tcp", &init_net, PF_INET,
-> >  				nfs_callback_set_tcpport, SVC_SOCK_ANONYMOUS);
-> >  	if (ret <= 0)
-> >  		goto out_err;
-> > @@ -115,7 +114,7 @@ nfs4_callback_up(struct svc_serv *serv, struct rpc_xprt *xprt)
-> >  	dprintk("NFS: Callback listener port = %u (af %u)\n",
-> >  			nfs_callback_tcpport, PF_INET);
-> >  
-> > -	ret = svc_create_xprt(serv, "tcp", xprt->xprt_net, PF_INET6,
-> > +	ret = svc_create_xprt(serv, "tcp", &init_net, PF_INET6,
-> >  				nfs_callback_set_tcpport, SVC_SOCK_ANONYMOUS);
-> >  	if (ret > 0) {
-> >  		nfs_callback_tcpport6 = ret;
-> > @@ -184,7 +183,7 @@ nfs41_callback_up(struct svc_serv *serv, struct rpc_xprt *xprt)
-> >  	 * fore channel connection.
-> >  	 * Returns the input port (0) and sets the svc_serv bc_xprt on success
-> >  	 */
-> > -	ret = svc_create_xprt(serv, "tcp-bc", xprt->xprt_net, PF_INET, 0,
-> > +	ret = svc_create_xprt(serv, "tcp-bc", &init_net, PF_INET, 0,
-> >  			      SVC_SOCK_ANONYMOUS);
-> >  	if (ret < 0) {
-> >  		rqstp = ERR_PTR(ret);
-> > @@ -254,7 +253,7 @@ int nfs_callback_up(u32 minorversion, struct rpc_xprt *xprt)
-> >  	char svc_name[12];
-> >  	int ret = 0;
-> >  	int minorversion_setup;
-> > -	struct net *net = current->nsproxy->net_ns;
-> > +	struct net *net = &init_net;
-> >  
-> >  	mutex_lock(&nfs_callback_mutex);
-> >  	if (cb_info->users++ || cb_info->task != NULL) {
-> > @@ -330,7 +329,7 @@ void nfs_callback_down(int minorversion)
-> >  	cb_info->users--;
-> >  	if (cb_info->users == 0 && cb_info->task != NULL) {
-> >  		kthread_stop(cb_info->task);
-> > -		svc_shutdown_net(cb_info->serv, current->nsproxy->net_ns);
-> > +		svc_shutdown_net(cb_info->serv, &init_net);
-> >  		svc_exit_thread(cb_info->rqst);
-> >  		cb_info->serv = NULL;
-> >  		cb_info->rqst = NULL;
-> > 
+Bjorn
