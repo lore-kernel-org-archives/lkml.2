@@ -1,174 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753598Ab2FLT5Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 15:57:25 -0400
-Received: from mail-lpp01m010-f74.google.com ([209.85.215.74]:42710 "EHLO
-	mail-lpp01m010-f74.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752807Ab2FLT5X (ORCPT
+	id S1753826Ab2FLT6r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 15:58:47 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:2136 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752551Ab2FLT6o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 15:57:23 -0400
-From: Bryan Freed <bfreed@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: olof@lixom.net, keescook@chromium.org, marco.stornelli@gmail.com,
-        grant.likely@secretlab.ca, anton.vorontsov@linaro.org,
-        Bryan Freed <bfreed@chromium.org>
-Subject: [PATCH v4] pstore/ram: Add ramoops support for the Flattened Device Tree.
-Date: Tue, 12 Jun 2012 12:56:59 -0700
-Message-Id: <1339531019-17040-1-git-send-email-bfreed@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
+	Tue, 12 Jun 2012 15:58:44 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6740"; a="198014015"
+Message-ID: <f9b014a8098cce8e4bac8d333d7101c0.squirrel@www.codeaurora.org>
+In-Reply-To: <x4962awk4fs.fsf@segfault.boston.devel.redhat.com>
+References: <1339491984-8462-1-git-send-email-merez@codeaurora.org>
+    <1339491984-8462-2-git-send-email-merez@codeaurora.org>
+    <x4962awk4fs.fsf@segfault.boston.devel.redhat.com>
+Date: Tue, 12 Jun 2012 12:58:44 -0700 (PDT)
+Subject: Re: [PATCH v4 1/1] block: Add test-iosched scheduler
+From: merez@codeaurora.org
+To: "Jeff Moyer" <jmoyer@redhat.com>
+Cc: "Maya Erez" <merez@codeaurora.org>, linux-mmc@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org,
+        "DOCUMENTATION" <linux-doc@vger.kernel.org>,
+        "open list" <linux-kernel@vger.kernel.org>
+User-Agent: SquirrelMail/1.4.17
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When called with a non-zero of_node, fill out a new ramoops_platform_data
-with data from the specified Flattened Device Tree node.
-Update ramoops documentation with the new FDT interface.
-Update devicetree/binding documentation with pstore/ramoops.txt.
 
-Signed-off-by: Bryan Freed <bfreed@chromium.org>
----
- .../devicetree/bindings/pstore/ramoops.txt         |   17 ++++++++
- Documentation/ramoops.txt                          |    7 ++-
- fs/pstore/ram.c                                    |   40 ++++++++++++++++++++
- 3 files changed, 62 insertions(+), 2 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/pstore/ramoops.txt
+On Tue, June 12, 2012 7:09 am, Jeff Moyer wrote:
+> Maya Erez <merez@codeaurora.org> writes:
+>
+>> The test scheduler allows testing a block device by dispatching
+>> specific requests according to the test case and declare PASS/FAIL
+>> according to the requests completion error code
+>
+> What sort of tests have you written that make use of this
+> infrastructure?
+>
+>> @@ -1072,8 +1072,6 @@ struct request *blk_get_request(struct
+>> request_queue *q, int rw, gfp_t gfp_mask)
+>>  {
+>>  	struct request *rq;
+>>
+>> -	BUG_ON(rw != READ && rw != WRITE);
+>> -
+>
+> Please explain this.
+get_request and get_request_wait, called by blk_get_request, expects to
+get the REQ_SYNC flag in addition to the read/write flag. Moreover, it
+uses the REQ_SYNC flag in its algorithm decision making.
+However blk_get_request expects to get a Boolean to indicate only
+read/write flag and cannot handle the REQ_SYNC flag.
+>
+> Cheers,
+> Jeff
+>
 
-diff --git a/Documentation/devicetree/bindings/pstore/ramoops.txt b/Documentation/devicetree/bindings/pstore/ramoops.txt
-new file mode 100644
-index 0000000..4590c5d
---- /dev/null
-+++ b/Documentation/devicetree/bindings/pstore/ramoops.txt
-@@ -0,0 +1,17 @@
-+Ramoops oops/panic logger
-+
-+Required properties:
-+- compatible: Must be "ramoops".
-+- reg: Specifies the base physical address and size of preserved memory.
-+- record-size: Specifies the size of each record in preserved memory.
-+
-+Example:
-+
-+ramoops {
-+	compatible = "ramoops";
-+	reg = <0x41f00000 0x00100000>;
-+	record-size = <0x00020000>;
-+};
-+The "reg = <0x41f00000 0x00100000>" line specifies a preserved memory
-+size of 1MB at physical address 0x41f00000.
-+The "record-size = <0x00020000>" line specifies a record size of 128KB.
-diff --git a/Documentation/ramoops.txt b/Documentation/ramoops.txt
-index 4ba7db2..80a6173 100644
---- a/Documentation/ramoops.txt
-+++ b/Documentation/ramoops.txt
-@@ -3,7 +3,7 @@ Ramoops oops/panic logger
- 
- Sergiu Iordache <sergiu@chromium.org>
- 
--Updated: 17 November 2011
-+Updated: 5 June 2012
- 
- 0. Introduction
- 
-@@ -37,7 +37,7 @@ corrupt, but usually it is restorable.
- 
- 2. Setting the parameters
- 
--Setting the ramoops parameters can be done in 2 different manners:
-+Setting the ramoops parameters can be done in 3 different manners:
-  1. Use the module parameters (which have the names of the variables described
-  as before).
-  2. Use a platform device and set the platform data. The parameters can then
-@@ -70,6 +70,9 @@ if (ret) {
- 	return ret;
- }
- 
-+ 3. Use the Flattened Device Tree to set the platform data.
-+ This is described in devicetree/bindings/pstore/ramoops.txt.
-+
- 3. Dump format
- 
- The data dump begins with a header, currently defined as "====" followed by a
-diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
-index 9123cce..feeef9b 100644
---- a/fs/pstore/ram.c
-+++ b/fs/pstore/ram.c
-@@ -32,6 +32,7 @@
- #include <linux/platform_device.h>
- #include <linux/slab.h>
- #include <linux/pstore_ram.h>
-+#include <linux/of_address.h>
- 
- #define RAMOOPS_KERNMSG_HDR "===="
- #define MIN_MEM_SIZE 4096UL
-@@ -199,10 +200,34 @@ static struct ramoops_context oops_cxt = {
- 	},
- };
- 
-+static int __init of_ramoops_platform_data(struct device_node *node,
-+					struct ramoops_platform_data *pdata)
-+{
-+	const __be32 *addrp;
-+	const __be32 *prop;
-+	u64 size;
-+
-+	memset(pdata, 0, sizeof(*pdata));
-+
-+	addrp = of_get_address(node, 0, &size, NULL);
-+	if (addrp == NULL)
-+		return -EINVAL;
-+	pdata->mem_address = of_translate_address(node, addrp);
-+	pdata->mem_size = size;
-+
-+	prop = of_get_property(node, "record-size", NULL);
-+	if (!prop)
-+		return -EINVAL;
-+	pdata->record_size = be32_to_cpup(prop);
-+
-+	return 0;
-+}
-+
- static int __init ramoops_probe(struct platform_device *pdev)
- {
- 	struct device *dev = &pdev->dev;
- 	struct ramoops_platform_data *pdata = pdev->dev.platform_data;
-+	struct ramoops_platform_data of_pdata;
- 	struct ramoops_context *cxt = &oops_cxt;
- 	int err = -EINVAL;
- 	int i;
-@@ -213,6 +238,14 @@ static int __init ramoops_probe(struct platform_device *pdev)
- 	if (cxt->max_count)
- 		goto fail_out;
- 
-+	if (pdev->dev.of_node) {
-+		if (of_ramoops_platform_data(pdev->dev.of_node, &of_pdata)) {
-+			pr_err("Invalid ramoops device tree data\n");
-+			goto fail_out;
-+		}
-+		pdata = &of_pdata;
-+	}
-+
- 	if (!pdata->mem_size || !pdata->record_size) {
- 		pr_err("The memory size and the record size must be "
- 			"non-zero\n");
-@@ -329,11 +362,18 @@ static int __exit ramoops_remove(struct platform_device *pdev)
- 	return -EBUSY;
- }
- 
-+static const struct of_device_id ramoops_of_match[] = {
-+	{ .compatible = "ramoops", },
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(of, ramoops_of_match);
-+
- static struct platform_driver ramoops_driver = {
- 	.remove		= __exit_p(ramoops_remove),
- 	.driver		= {
- 		.name	= "ramoops",
- 		.owner	= THIS_MODULE,
-+		.of_match_table = ramoops_of_match,
- 	},
- };
- 
+
 -- 
-1.7.7.3
+Sent by consultant of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
 
