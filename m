@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754165Ab2FLTHf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 15:07:35 -0400
-Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:47551 "EHLO
-	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752052Ab2FLTHe (ORCPT
+	id S1753957Ab2FLTJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 15:09:29 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:46430 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752104Ab2FLTJ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 15:07:34 -0400
-Date: Tue, 12 Jun 2012 12:07:28 -0700
-From: Mike Turquette <mturquette@ti.com>
-To: Rajendra Nayak <rnayak@ti.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/2] clk: Allow late cache allocation for clk->parents
-Message-ID: <20120612190728.GI19410@gmail.com>
-References: <1338973891-28719-1-git-send-email-rnayak@ti.com>
- <1338973891-28719-3-git-send-email-rnayak@ti.com>
+	Tue, 12 Jun 2012 15:09:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1338973891-28719-3-git-send-email-rnayak@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120612170412.359967ec@pyramind.ukuu.org.uk>
+References: <CAH9NwWd1F3Vw2zrQJh8Jazm45C_BAH3H3-qupvm2XaLgDOM=QQ@mail.gmail.com>
+	<CAMeQTsZfE8_t6DCr3UWVqnOLyxNuNh7_VxJmqiP+enBBqM0o_A@mail.gmail.com>
+	<CAH9NwWc3W6zHCFf9rwKg5NMQaWnh4A=xVVysmG1Y=eUMzu=18Q@mail.gmail.com>
+	<CAMeQTsaknGLR2QCWwN8kYKh8y=JJtqN-ZSty6YTKnAOv2Vp3XQ@mail.gmail.com>
+	<CAH9NwWdmhmLB5io5RWVQBj6c7zjXT9hFa7OAHVrL6oY8P0kjaw@mail.gmail.com>
+	<20120612132736.642a4a5a@pyramind.ukuu.org.uk>
+	<CAMeQTsZZ0ay7YqkzUzkhe6D6FNsQXaDKHfJKB6_6icd=4VemrA@mail.gmail.com>
+	<20120612170412.359967ec@pyramind.ukuu.org.uk>
+Date: Tue, 12 Jun 2012 21:09:26 +0200
+Message-ID: <CAMeQTsbAxToYhP4T+PRsaTq-wrX4yCprM=jCfK8NRWi21Avzvw@mail.gmail.com>
+Subject: Re: gma500: Cannot find any crtc or sizes - going 1024x768
+From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Christian Gmeiner <christian.gmeiner@gmail.com>,
+        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <greg@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20120606-14:41, Rajendra Nayak wrote:
-> Parent clocks for muxes are cached in clk->parents to
-> avoid frequent lookups, however the cache allocation happens
-> only during clock registeration and later clk_set_parent()
-> assumes a cache space available and allocated.
-> 
-> This is not entirely true for platforms which do early clock
-> registerations wherein the cache allocation using kzalloc
-> could fail during clock registeration.
-> 
-> Allow cache allocation to happen later as part of clk_set_parent()
-> to help such cases and avoid crashes assuming a cache being
-> available.
-> 
-> While here also replace existing kmalloc() with kzalloc()
-> in the file.
-> 
-> Signed-off-by: Rajendra Nayak <rnayak@ti.com>
+On Tue, Jun 12, 2012 at 6:04 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+>> Was there a special reason for 0x4108 to be left out in the IS_MRST macro?
+>> To me it looks like the bitmask should have been updated in commit:
+>>
+>> gma500: Add the E6xx PCI identifier we are missing
+>> 56125db1eecf8d34d84f7925686110d90724edf0
+>>
+>> If this is the case, I'll send a proper patch since this also applies to
+>> stable 3.3.x and 3.4.x
+>
+> Firstly it should never matter - there are no Moorestown devices in
+> circulation. E600T is very similar to Oaktrail.
+>
+> So the real question here seems to be why does the IS_MRST macro matter.
+> What weird firmware is involved here ?
 
-I've taken this patch into clk-next for testing.
+It matters because everything between 0x4100 - 0x4107 are Moorestown if you ask
+the macro, but are assigned to oaktrail_chip_ops. That makes Oaktrail ==
+Moorestown. IS_OAK might be a more appropriate name.
 
-Thanks,
-Mike
+IS_MRST is primarily used for two things:
+1) Take LVDS enable fuse value into account
+2) Tell that LVDS must be on Pipe A
+
+Those things where required for him to get the panel working,
+so why not include the 0x4108 in the IS_MRST check?
+
+-Patrik
