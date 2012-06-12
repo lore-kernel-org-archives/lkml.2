@@ -1,49 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751992Ab2FLIhP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 04:37:15 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:38857 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751181Ab2FLIhM (ORCPT
+	id S1752151Ab2FLIh3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 04:37:29 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:49076 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751443Ab2FLIh0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 04:37:12 -0400
-Message-ID: <4FD6FFB4.8080109@linaro.org>
-Date: Tue, 12 Jun 2012 09:37:08 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	Tue, 12 Jun 2012 04:37:26 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FD6FF47.8080200@jp.fujitsu.com>
+Date: Tue, 12 Jun 2012 17:35:19 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: grant.likely@secretlab.ca, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linus.walleij@stericsson.com,
-        arnd@arndb.de, Samuel Ortiz <sameo@linux.intel.com>,
-        Mattias WALLIN <mattias.wallin@stericsson.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH 07/14] mfd: Initialise the AB8500 driver at core_initcall
- time
-References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org> <1339428307-3850-8-git-send-email-lee.jones@linaro.org> <CACRpkdY8aD1djSdPoeKYDdFVbf3E84ZWw2Q5CCLsPmoD66Hf7A@mail.gmail.com>
-In-Reply-To: <CACRpkdY8aD1djSdPoeKYDdFVbf3E84ZWw2Q5CCLsPmoD66Hf7A@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+CC: linux-mm@kvack.org, dhillf@gmail.com, rientjes@google.com, mhocko@suse.cz,
+        akpm@linux-foundation.org, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH -V8 13/16] hugetlb/cgroup: add hugetlb cgroup control
+ files
+References: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1339232401-14392-14-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+In-Reply-To: <1339232401-14392-14-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06/12 22:03, Linus Walleij wrote:
-> On Mon, Jun 11, 2012 at 5:25 PM, Lee Jones<lee.jones@linaro.org>  wrote:
->
->> The AB8500 is soon to have its own IRQ domain. For this to be useful
->> the driver needs to be initialised earlier in the boot sequence. Here
->> we move initialisation forward from arch_initcall to core_initcall time.
->
-> I don't understand why using IRQ domain makes it necessary to
-> initialize the driver earlier in the init process. Please explain to me,
-> I need tutoring here.
+(2012/06/09 17:59), Aneesh Kumar K.V wrote:
+> From: "Aneesh Kumar K.V"<aneesh.kumar@linux.vnet.ibm.com>
+> 
+> Add the control files for hugetlb controller
+> 
+> Signed-off-by: Aneesh Kumar K.V<aneesh.kumar@linux.vnet.ibm.com>
+> ---
+>   include/linux/hugetlb.h        |    5 ++
+>   include/linux/hugetlb_cgroup.h |    6 ++
+>   mm/hugetlb.c                   |    8 +++
+>   mm/hugetlb_cgroup.c            |  130 ++++++++++++++++++++++++++++++++++++++++
+>   4 files changed, 149 insertions(+)
+> 
+> diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+> index 4aca057..9650bb1 100644
+> --- a/include/linux/hugetlb.h
+> +++ b/include/linux/hugetlb.h
+> @@ -4,6 +4,7 @@
+>   #include<linux/mm_types.h>
+>   #include<linux/fs.h>
+>   #include<linux/hugetlb_inline.h>
+> +#include<linux/cgroup.h>
+> 
+>   struct ctl_table;
+>   struct user_struct;
+> @@ -221,6 +222,10 @@ struct hstate {
+>   	unsigned int nr_huge_pages_node[MAX_NUMNODES];
+>   	unsigned int free_huge_pages_node[MAX_NUMNODES];
+>   	unsigned int surplus_huge_pages_node[MAX_NUMNODES];
+> +#ifdef CONFIG_CGROUP_HUGETLB_RES_CTLR
+> +	/* cgroup control files */
+> +	struct cftype cgroup_files[5];
+> +#endif
+>   	char name[HSTATE_NAME_LEN];
+>   };
+> 
+> diff --git a/include/linux/hugetlb_cgroup.h b/include/linux/hugetlb_cgroup.h
+> index ceff1d5..ba4836f 100644
+> --- a/include/linux/hugetlb_cgroup.h
+> +++ b/include/linux/hugetlb_cgroup.h
+> @@ -62,6 +62,7 @@ extern void hugetlb_cgroup_uncharge_page(int idx, unsigned long nr_pages,
+>   					 struct page *page);
+>   extern void hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
+>   					   struct hugetlb_cgroup *h_cg);
+> +extern int hugetlb_cgroup_file_init(int idx) __init;
+>   #else
+>   static inline struct hugetlb_cgroup *hugetlb_cgroup_from_page(struct page *page)
+>   {
+> @@ -106,5 +107,10 @@ hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
+>   {
+>   	return;
+>   }
+> +
+> +static inline int __init hugetlb_cgroup_file_init(int idx)
+> +{
+> +	return 0;
+> +}
+>   #endif  /* CONFIG_MEM_RES_CTLR_HUGETLB */
+>   #endif
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index 1ca2d8f..bf79131 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -30,6 +30,7 @@
+>   #include<linux/hugetlb.h>
+>   #include<linux/hugetlb_cgroup.h>
+>   #include<linux/node.h>
+> +#include<linux/hugetlb_cgroup.h>
+>   #include "internal.h"
+> 
+>   const unsigned long hugetlb_zero = 0, hugetlb_infinity = ~0UL;
+> @@ -1916,6 +1917,13 @@ void __init hugetlb_add_hstate(unsigned order)
+>   	h->next_nid_to_free = first_node(node_states[N_HIGH_MEMORY]);
+>   	snprintf(h->name, HSTATE_NAME_LEN, "hugepages-%lukB",
+>   					huge_page_size(h)/1024);
+> +	/*
+> +	 * Add cgroup control files only if the huge page consists
+> +	 * of more than two normal pages. This is because we use
+> +	 * page[2].lru.next for storing cgoup details.
+> +	 */
+> +	if (order>= 2)
+> +		hugetlb_cgroup_file_init(hugetlb_max_hstate - 1);
+> 
 
-See the other email.
+What happens at hugetlb module exit ? please see hugetlb_exit().
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-M: +44 77 88 633 515
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+BTW, module unload of hugetlbfs is restricted if hugetlb cgroup is mounted ??
+
+Thanks,
+-Kame
+
