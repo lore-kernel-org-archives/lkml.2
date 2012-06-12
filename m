@@ -1,43 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753495Ab2FLWwU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 18:52:20 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:55281 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751445Ab2FLWwT (ORCPT
+	id S1753508Ab2FLWxv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 18:53:51 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:53948 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751445Ab2FLWxu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 18:52:19 -0400
-Date: Tue, 12 Jun 2012 15:52:18 -0700 (PDT)
-Message-Id: <20120612.155218.1712141231523216893.davem@davemloft.net>
-To: Julia.Lawall@lip6.fr
-Cc: kernel-janitors@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, joe@perches.com
-Subject: Re: [PATCH 1/7] drivers/ide/ide-cs.c: adjust suspicious bit
- operation
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <alpine.DEB.2.02.1206121016090.1795@hadrien>
-References: <alpine.DEB.2.02.1206080712510.1793@hadrien>
-	<20120611.164316.2252454788889367611.davem@davemloft.net>
-	<alpine.DEB.2.02.1206121016090.1795@hadrien>
-X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
+	Tue, 12 Jun 2012 18:53:50 -0400
+Date: Wed, 13 Jun 2012 00:53:44 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Borislav Petkov <bp@alien8.de>, Andi Kleen <ak@linux.intel.com>,
+        Andi Kleen <andi@firstfloor.org>, x86@kernel.org, hpa@zytor.com,
+        eranian@google.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl
+Subject: Re: [PATCH 1/2] x86: Track minimum microcode revision globally v2
+Message-ID: <20120612225344.GE11413@one.firstfloor.org>
+References: <1339536350-10463-1-git-send-email-andi@firstfloor.org> <20120612213905.GE26817@liondog.tnic> <4FD7BE15.50604@linux.intel.com> <20120612221931.GA4376@liondog.tnic>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120612221931.GA4376@liondog.tnic>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-Date: Tue, 12 Jun 2012 10:17:25 -0400 (EDT)
+On Wed, Jun 13, 2012 at 12:19:31AM +0200, Borislav Petkov wrote:
+> On Tue, Jun 12, 2012 at 03:09:25PM -0700, Andi Kleen wrote:
+> > 
+> > >Ok, is it only me or is this boot_min_microcode superfluous?
+> > >IOW, you can only use boot_cpu_data.microcode instead and drop
+> > >boot_min_microcode.
+> > 
+> > boot_cpu_data.microcode contains a copy of the original microcode,
+> > so we couldn't detect the boot cpu case. In theory could hard code
+> > CPU #0 is boot cpu or so,
+> > but I prefer to track it with the separate variable.
+> 
+> Ok, this begs the next question then: why do we need to say that some AP
+> has a lower ucode version than the BSP?
 
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> IO_DATA_PATH_WIDTH_8 is 0, so a bit-and with it is always false.  The
-> value IO_DATA_PATH_WIDTH covers the bits of the IO_DATA_PATH constants, so
-> first pick those bits and then make the test using !=.
-> 
-> This problem was found using Coccinelle (http://coccinelle.lip6.fr/).
-> 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+I would consider that a BIOS bug.
 
-Applied, thanks.
+-Andi
