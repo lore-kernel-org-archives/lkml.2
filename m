@@ -1,83 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753467Ab2FLPix (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 11:38:53 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:60583 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751701Ab2FLPiv convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 11:38:51 -0400
+	id S1753487Ab2FLPjq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 11:39:46 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:48678 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751701Ab2FLPjn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 11:39:43 -0400
+Message-ID: <4FD762BA.2060408@linaro.org>
+Date: Tue, 12 Jun 2012 16:39:38 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <1339479468-3815-1-git-send-email-zheng.z.yan@intel.com>
-References: <1339479468-3815-1-git-send-email-zheng.z.yan@intel.com>
-Date: Tue, 12 Jun 2012 17:38:50 +0200
-Message-ID: <CABPqkBQu1hTa2R-PKsygLqOSSD9nu3+xR-79pT-8bB8Y16CBuw@mail.gmail.com>
-Subject: Re: [PATCH V5 0/13] perf: Intel uncore pmu counting support
-From: Stephane Eranian <eranian@google.com>
-To: "Yan, Zheng" <zheng.z.yan@intel.com>
-Cc: a.p.zijlstra@chello.nl, mingo@elte.hu, jolsa@redhat.com,
-        andi@firstfloor.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Linus Walleij <linus.walleij@linaro.org>, grant.likely@secretlab.ca,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH 06/14] mfd: Initialise the DB8500 PRCMU driver at core_initcall
+ time
+References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org> <201206121259.38807.arnd@arndb.de> <4FD742C9.7090603@linaro.org> <201206121449.22978.arnd@arndb.de>
+In-Reply-To: <201206121449.22978.arnd@arndb.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 12, 2012 at 7:37 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
-> Hi, all
+On 12/06/12 15:49, Arnd Bergmann wrote:
+> On Tuesday 12 June 2012, Lee Jones wrote:
+>> But your suggestion above involves some heavy refactoring of how Device
+>> Tree works. Meanwhile the ab8500 will not work as an IRQ controller
+>> until we either complete the work or use the same solution as we did for
+>> the Nomadik GPIO controller. I think for now at least we should continue
+>> to work on enablement and leave the 'nice to have's until last. We are
+>> doing nothing new here, just bringing the ab8500 IRQ controller into
+>> line with the Nomadik one.
 >
-> Here is the V5 patches to add uncore counting support for Nehalem,
-> Sandy Bridge and Sandy Bridge-EP, applied on top of current tip.
-> The code is based on Lin Ming's old patches.
->
-> For Nehalem and Sandy Bridge-EP, A few general events are exported
-> under sysfs directory:
->  /sys/bus/event_source/devices/${uncore_dev}/events/
->
-On NHM, I tried:
-    perf stat -a -e Uncore/CLOCKTICKS/
-invalid or unsupported event: 'Uncore/CLOCKTICKS/'
+> Right, I didn't say we should not take your patch, but we should be
+> aware that it's not the solution we want to use in the long run.
 
-I started tracking this down but gave up because it's coming
-once again from the too complex parser. You are looking for
-a format match (inv, edge, cmask) with the word CLOCKTICKS
-instead of config.
+I agree with you completely.
 
-Please fix this.
-
-Also I don't think using upper case for the PMU name is a good idea.
-Just call it uncore.
-
-
-> Each file in the events directory defines an event. The content is
-> a string such as:
->  config=1,config1=2
->
-> You can use 'perf stat' to access to the uncore pmu. For example:
->  perf stat -a -C 0 -e 'Uncore_iMC_0/CAS_COUNT_RD/' sleep 1
->  perf stat -a -C 0 -e 'Uncore_iMC_0/event=CAS_COUNT_RD/' sleep 1
->
-> Any comment is appreciated.
-> Thank you
-> ---
-> Changes since v1:
->  - Modify perf tool to parse events from sysfs
->  - A few minor code cleanup
->
-> Changes since v2:
->  - Place all events for a particular socket onto a single cpu
->  - Make the events parser in perf tool reentrantable
->  - A few code cleanup
->
-> Changes since v3:
->  - Use per cpu pointer to track uncore box
->  - Rework the cpu hotplug code because topology_physical_package_id()
->   return wrong result when the cpu is offline
->  - Rework the event alias code, event terms are stored in the alias
->   structure instead events string
->
-> Changes since v4:
->  - Include Jiri's uncore related changes patch set
->  - Add pmu/event=alias/ syntax support
->
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+M: +44 77 88 633 515
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
