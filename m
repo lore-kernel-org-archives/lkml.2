@@ -1,47 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753893Ab2FLR0B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 13:26:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46467 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751437Ab2FLRZ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 13:25:59 -0400
-Message-ID: <4FD77B94.1030207@redhat.com>
-Date: Tue, 12 Jun 2012 19:25:40 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1753917Ab2FLR02 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 13:26:28 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:58494 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753765Ab2FLR00 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 13:26:26 -0400
+Date: Tue, 12 Jun 2012 13:26:22 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Lasse Collin <lasse.collin@tukaani.org>
+cc: T Makphaibulchoke <tmac@hp.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com, linux390@de.ibm.com,
+        lethal@linux-sh.org, hpa@zytor.com, tglx@linutronix.de,
+        mingo@redhat.com, x86@kernel.org, kaloz@openwrt.org, jj@chaosbits.net,
+        matt.fleming@intel.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
+        linux-sh@vger.kernel.org
+Subject: Re: [PATCH v2] lib/decompress_unxz.c: removing all memory helper
+ functions
+In-Reply-To: <20120612191804.4211462a@tukaani.org>
+Message-ID: <alpine.LFD.2.02.1206121316190.23555@xanadu.home>
+References: <1339470307-28223-1-git-send-email-tmac@hp.com> <20120612191804.4211462a@tukaani.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: linux-kernel@vger.kernel.org, axboe@kernel.dk, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH] scsi: allow persistent reservations without CAP_SYS_RAWIO
-References: <1339517312-18134-1-git-send-email-pbonzini@redhat.com>  <1339518069.3050.8.camel@dabdike.int.hansenpartnership.com>  <4FD76D57.5020709@redhat.com> <4FD77438.6090202@redhat.com> <1339521657.3050.13.camel@dabdike.int.hansenpartnership.com>
-In-Reply-To: <1339521657.3050.13.camel@dabdike.int.hansenpartnership.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 12/06/2012 19:20, James Bottomley ha scritto:
-> I don't think you understand how persistent reservations work.
+On Tue, 12 Jun 2012, Lasse Collin wrote:
+
+> On 2012-06-11 T Makphaibulchoke wrote:
+> > +#ifndef __HAVE_PREBOOT_ARCH_MEMMOVE
+> > +void *memmove(void *__dest, __const void *__src, size_t count)
+> > +{
+> > +	unsigned char *d = __dest;
+> > +	const unsigned char *s = __src;
+> > +
+> > +	if (__dest == __src)
+> > +		return __dest;
+> > +
+> > +	if (__dest < __src)
+> > +		return memcpy(__dest, __src, count);
+> > +
+> > +	while (count--)
+> > +		d[count] = s[count];
+> > +	return __dest;
+> > +}
+> > +#endif
 > 
-> The first thing I'll say is I agree with Alan.  Unless you can justify
-> why you want to relax permissions I'm not going to do it.
+> The use of memcpy when __dest < __src is OK with some memcpy
+> implementations, but in a generic case it isn't guaranteed to work.
 
-See my answer to John.  The reason is that I want to let VMs use
-persistent reservations without running them as root.
+Of course, if the memcpy implementation is also provided along with this 
+memmove code, as it was the case on ARM before this patch, then you can 
+guarantee it.  And if that memcpy() happens to be slightly more 
+optimized then this is a win.
 
-> But secondly, the reason we're so up in arms about SCSI-3 PR is that
-> there's a feature called reservation by transport ID.  This is used to
-> reserve multipath devices when one of the paths is down.  Effectively it
-> allows a PR-OUT command to set a reservation on any LUN with access only
-> to one of them.  It's definitely a hack in the SCSI standard, but it's
-> not one that can be controlled by a unix like permission model.  Write
-> access to *any* LUN allows you to reserve *all* luns.
+> I think it would be better to just copy memmove from lib/string.c.
 
-Thanks for taking the time to explain---I knew about this, but I thought
-it could (perhaps should) be disabled on the SAN.  Anybody could already
-use reservation by transport ID if they had root access on the local
-machine, no?
+Instead of copying, maybe this would be much better to make the content 
+of lib/string.c usable in a pre-boot environment.
 
-Paolo
+
+Nicolas
