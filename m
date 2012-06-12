@@ -1,53 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754182Ab2FLTRg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 15:17:36 -0400
-Received: from he.sipsolutions.net ([78.46.109.217]:60240 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752182Ab2FLTRe (ORCPT
+	id S1754027Ab2FLTXk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 15:23:40 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:12970 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752061Ab2FLTXi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 15:17:34 -0400
-Message-ID: <1339528648.4531.15.camel@jlt3.sipsolutions.net>
-Subject: Re: [PATCH] iwlwifi: re-order module_init order to prevent NULL ptr
- deref
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: wey-yi.w.guy@intel.com, linville@tuxdriver.com, ilw@linux.intel.com,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 12 Jun 2012 21:17:28 +0200
-In-Reply-To: <1339528412-4163-1-git-send-email-levinsasha928@gmail.com> (sfid-20120612_211247_722972_E0F3BAE7)
-References: <1339528412-4163-1-git-send-email-levinsasha928@gmail.com>
-	 (sfid-20120612_211247_722972_E0F3BAE7)
+	Tue, 12 Jun 2012 15:23:38 -0400
+Message-ID: <1339529010.2711.5.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: [PATCH] sfc: Use standard __{clear,set}_bit_le() functions
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+CC: <grundler@parisc-linux.org>, <arnd@arndb.de>, <avi@redhat.com>,
+        <mtosatti@redhat.com>, <linux-net-drivers@solarflare.com>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arch@vger.kernel.org>, <kvm@vger.kernel.org>,
+        <takuya.yoshikawa@gmail.com>
+Date: Tue, 12 Jun 2012 20:23:30 +0100
+In-Reply-To: <20120611212901.2b4d0a17.yoshikawa.takuya@oss.ntt.co.jp>
+References: <20120611212735.f92ea521.yoshikawa.takuya@oss.ntt.co.jp>
+	 <20120611212901.2b4d0a17.yoshikawa.takuya@oss.ntt.co.jp>
+Organization: Solarflare Communications
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2-1+b1 
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+MIME-Version: 1.0
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-18964.005
+X-TM-AS-Result: No--12.127200-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-06-12 at 21:13 +0200, Sasha Levin wrote:
-> We need to make sure iwl_drv_init is called before iwl_init, since otherwise
-> iwl_init will NULL ptr deref when trying to add a new mode.
-> 
-> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-> ---
->  drivers/net/wireless/iwlwifi/Makefile |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/net/wireless/iwlwifi/Makefile b/drivers/net/wireless/iwlwifi/Makefile
-> index 98c8f64..16e39a4 100644
-> --- a/drivers/net/wireless/iwlwifi/Makefile
-> +++ b/drivers/net/wireless/iwlwifi/Makefile
-> @@ -1,5 +1,3 @@
-> -obj-$(CONFIG_IWLDVM)	+= dvm/
-> -
+There are now standard functions for dealing with little-endian bit
+arrays, so use them instead of our own implementations.
 
-Thanks! I already have a patch like this in my tree, will send a pull
-request soon:
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+---
+Please use this version instead.
 
-http://git.kernel.org/?p=linux/kernel/git/iwlwifi/iwlwifi-next.git;a=commit;h=4b75b1e49568dd6a30a1dddc47408cc6fde55608
+Ben.
 
-johannes
+ drivers/net/ethernet/sfc/efx.c        |    4 ++--
+ drivers/net/ethernet/sfc/net_driver.h |   12 ------------
+ drivers/net/ethernet/sfc/nic.c        |    4 ++--
+ 3 files changed, 4 insertions(+), 16 deletions(-)
+
+diff --git a/drivers/net/ethernet/sfc/efx.c b/drivers/net/ethernet/sfc/efx.c
+index b95f2e1..ca2a348 100644
+--- a/drivers/net/ethernet/sfc/efx.c
++++ b/drivers/net/ethernet/sfc/efx.c
+@@ -1976,14 +1976,14 @@ static void efx_set_rx_mode(struct net_device *net_dev)
+ 		netdev_for_each_mc_addr(ha, net_dev) {
+ 			crc = ether_crc_le(ETH_ALEN, ha->addr);
+ 			bit = crc & (EFX_MCAST_HASH_ENTRIES - 1);
+-			set_bit_le(bit, mc_hash->byte);
++			__set_bit_le(bit, mc_hash);
+ 		}
+ 
+ 		/* Broadcast packets go through the multicast hash filter.
+ 		 * ether_crc_le() of the broadcast address is 0xbe2612ff
+ 		 * so we always add bit 0xff to the mask.
+ 		 */
+-		set_bit_le(0xff, mc_hash->byte);
++		__set_bit_le(0xff, mc_hash);
+ 	}
+ 
+ 	if (efx->port_enabled)
+diff --git a/drivers/net/ethernet/sfc/net_driver.h b/drivers/net/ethernet/sfc/net_driver.h
+index 0e57535..6f1a7f7 100644
+--- a/drivers/net/ethernet/sfc/net_driver.h
++++ b/drivers/net/ethernet/sfc/net_driver.h
+@@ -1080,18 +1080,6 @@ static inline struct efx_rx_buffer *efx_rx_buffer(struct efx_rx_queue *rx_queue,
+ 	return &rx_queue->buffer[index];
+ }
+ 
+-/* Set bit in a little-endian bitfield */
+-static inline void set_bit_le(unsigned nr, unsigned char *addr)
+-{
+-	addr[nr / 8] |= (1 << (nr % 8));
+-}
+-
+-/* Clear bit in a little-endian bitfield */
+-static inline void clear_bit_le(unsigned nr, unsigned char *addr)
+-{
+-	addr[nr / 8] &= ~(1 << (nr % 8));
+-}
+-
+ 
+ /**
+  * EFX_MAX_FRAME_LEN - calculate maximum frame length
+diff --git a/drivers/net/ethernet/sfc/nic.c b/drivers/net/ethernet/sfc/nic.c
+index 4a9a5be..bb0172d 100644
+--- a/drivers/net/ethernet/sfc/nic.c
++++ b/drivers/net/ethernet/sfc/nic.c
+@@ -473,9 +473,9 @@ void efx_nic_init_tx(struct efx_tx_queue *tx_queue)
+ 
+ 		efx_reado(efx, &reg, FR_AA_TX_CHKSM_CFG);
+ 		if (tx_queue->queue & EFX_TXQ_TYPE_OFFLOAD)
+-			clear_bit_le(tx_queue->queue, (void *)&reg);
++			__clear_bit_le(tx_queue->queue, &reg);
+ 		else
+-			set_bit_le(tx_queue->queue, (void *)&reg);
++			__set_bit_le(tx_queue->queue, &reg);
+ 		efx_writeo(efx, &reg, FR_AA_TX_CHKSM_CFG);
+ 	}
+ 
+-- 
+1.7.7.6
+
+
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
