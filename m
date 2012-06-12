@@ -1,79 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751508Ab2FLKRg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 06:17:36 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:48560 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751092Ab2FLKRf convert rfc822-to-8bit
+	id S1751515Ab2FLKXt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 06:23:49 -0400
+Received: from nm19-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.216]:27614 "HELO
+	nm19-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750875Ab2FLKXs convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 06:17:35 -0400
+	Tue, 12 Jun 2012 06:23:48 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 596914.49313.bm@omp1016.mail.sp2.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=doJuD/AVL5RugY8ACCo7jRHSvaDJk7gniRhq/SHTKbiStEcJmUDVIG/FztuSpq97la7rRSUVE3kr4/cHNskL25l8twNKGYZkH3TBcs+bXegI6UF9GQP/8cyt+9pFiVa2rXmXE49orfVnNWdQ1yMvVgJOoeeXB4lMHDPqXAoxsZI=;
+X-YMail-OSG: QkSr44AVM1lOQshX1sXjY.ON0NRjA1E.mdI7lwsBRQ7N88O
+ odt8oh.oMQGBArWygjFLgo6e0ZJ8zMkSsGIqSlxkcUwXjyMFIFReadE9ySiC
+ fB4LIP2FpG.iGh4twEP7hy62zcYth1pyAcvD0Jt0c73iJWxErcI0e2hjXuWR
+ AozxDKjvEysn78SGnzDoOyZhGPs1q8L4LlSo7oh8zZGU0IEeL1xRlAICy41n
+ O.o3o1yh27UCZdvKeVCWk2FafhYXjScw.4oUfblhg_yu9t8CzWNGjrMU1rVf
+ udvNqaQkfye1pe0p9dAr1XUn2AqjiM5xmVRHRSb4a8bNe4XCp5aAxK08wcob
+ kNhnbLU9mDo0m5VQnfeXHL9XoDtXnjkDUMIsfaM8VnaLd79RtqSOtttMMzmV
+ 2M6I6fCPaqDmug4OsXRZ0wJ4ZdE_smXgVce2Rq8ghZIEli5M_A6009VqmrDV
+ Dw60brGJVXGSRsawaXsBI6sThuI0lsPkZrWpFcVdhCPqIjS7CiBjCw0UUkFv
+ StJ_B7g--
+X-Mailer: YahooMailWebService/0.8.118.349524
+References: <1339493860.10145.YahooMailNeo@web111708.mail.gq1.yahoo.com> <20120612111259.48862b67@pyramind.ukuu.org.uk> <1339496451.43175.YahooMailNeo@web111722.mail.gq1.yahoo.com>
+Message-ID: <1339496628.30704.YahooMailNeo@web111712.mail.gq1.yahoo.com>
+Date: Tue, 12 Jun 2012 03:23:48 -0700 (PDT)
+From: Mahmood Naderan <nt_mahmood@yahoo.com>
+Reply-To: Mahmood Naderan <nt_mahmood@yahoo.com>
+Subject: Re: CPU MTRRs and linux kernel
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1339496451.43175.YahooMailNeo@web111722.mail.gq1.yahoo.com>
 MIME-Version: 1.0
-In-Reply-To: <1339479468-3815-4-git-send-email-zheng.z.yan@intel.com>
-References: <1339479468-3815-1-git-send-email-zheng.z.yan@intel.com>
-	<1339479468-3815-4-git-send-email-zheng.z.yan@intel.com>
-Date: Tue, 12 Jun 2012 12:17:33 +0200
-Message-ID: <CABPqkBRepH-=j3Y9qJ1kXTkTv3_p0wC=Kzu+q=7rdxwk8vxk6A@mail.gmail.com>
-Subject: Re: [PATCH V5 03/13] perf: Allow pmu to choose cpu on which to
- install event
-From: Stephane Eranian <eranian@google.com>
-To: "Yan, Zheng" <zheng.z.yan@intel.com>
-Cc: a.p.zijlstra@chello.nl, mingo@elte.hu, jolsa@redhat.com,
-        andi@firstfloor.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 12, 2012 at 7:37 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
-> From: "Yan, Zheng" <zheng.z.yan@intel.com>
->
-> Allow the pmu->event_init callback to change event->cpu, so pmu can
-> choose cpu on which to install event.
->
-So now, the user can say perf record -e xxxx -C 1 -a and then get nothing
-out of perf report -C1 because under the cover the kernel has swapped
-it for another CPU?
 
-> Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
-> ---
->  kernel/events/core.c |    8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
->
-> diff --git a/kernel/events/core.c b/kernel/events/core.c
-> index d71a2d6..2c05027 100644
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -6302,7 +6302,7 @@ SYSCALL_DEFINE5(perf_event_open,
->        /*
->         * Get the target context (task or percpu):
->         */
-> -       ctx = find_get_context(pmu, task, cpu);
-> +       ctx = find_get_context(pmu, task, event->cpu);
->        if (IS_ERR(ctx)) {
->                err = PTR_ERR(ctx);
->                goto err_alloc;
-> @@ -6375,16 +6375,16 @@ SYSCALL_DEFINE5(perf_event_open,
->        mutex_lock(&ctx->mutex);
->
->        if (move_group) {
-> -               perf_install_in_context(ctx, group_leader, cpu);
-> +               perf_install_in_context(ctx, group_leader, event->cpu);
->                get_ctx(ctx);
->                list_for_each_entry(sibling, &group_leader->sibling_list,
->                                    group_entry) {
-> -                       perf_install_in_context(ctx, sibling, cpu);
-> +                       perf_install_in_context(ctx, sibling, event->cpu);
->                        get_ctx(ctx);
->                }
->        }
->
-> -       perf_install_in_context(ctx, event, cpu);
-> +       perf_install_in_context(ctx, event, event->cpu);
->        ++ctx->generation;
->        perf_unpin_context(ctx);
->        mutex_unlock(&ctx->mutex);
-> --
-> 1.7.10.2
->
+
+BIOS has the latest version. We bought it 2 weeks ago.
+
+I have to say, the BIOS has an option, IOMMU. If it is disabled, in the boot log, there is a message that explicitly state you have to enable the IOMMU from BIOS.
+After enabling that, in the boot log it doesn't comlain about IOMMU. However it says that warnning.
+One thing that I want to know, is that if it is really a warnning, then there should be someway to bypass that.
+
+I think this is related to OS (here kernel I think). However I am not sure.
+~MN
+
+
+
+
+----- Original Message -----
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Mahmood Naderan <nt_mahmood@yahoo.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Sent: Tuesday, June 12, 2012 2:42 PM
+Subject: Re: CPU MTRRs and linux kernel
+
+On Tue, 12 Jun 2012 02:37:40 -0700 (PDT)
+Mahmood Naderan <nt_mahmood@yahoo.com> wrote:
+
+> Hi everybody,
+> Abour rhis warnning in boot log:
+> 
+> WARNING: BIOS bug: CPU MTRRs don't cover all of memory, losing 61952MB of RAM
+
+� � � � �� ^^^^^ Note what it says here
+
+> Should I upgrade?
+
+Your BIOS perhaps.
+--
+To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at� http://vger.kernel.org/majordomo-info.html
+Please read the FAQ at� http://www.tux.org/lkml/
