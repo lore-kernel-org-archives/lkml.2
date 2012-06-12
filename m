@@ -1,72 +1,340 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751455Ab2FLHpy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 03:45:54 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:45976 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750996Ab2FLHpr (ORCPT
+	id S1751371Ab2FLHst (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 03:48:49 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:43569 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750867Ab2FLHsr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 03:45:47 -0400
-X-AuditID: 9c930179-b7bb9ae000000ea5-99-4fd6f3aa4e0e
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH 1/3] tools lib traceevent: Do not link broken field arg for an old ftrace event
-Date: Tue, 12 Jun 2012 16:42:37 +0900
-Message-Id: <1339486959-25241-2-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.10.2
-In-Reply-To: <1339486959-25241-1-git-send-email-namhyung@kernel.org>
-References: <1339486959-25241-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 12 Jun 2012 03:48:47 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FD6F3DD.2070004@jp.fujitsu.com>
+Date: Tue, 12 Jun 2012 16:46:37 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+CC: linux-mm@kvack.org, dhillf@gmail.com, rientjes@google.com, mhocko@suse.cz,
+        akpm@linux-foundation.org, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH -V8 09/16] mm/hugetlb: Add new HugeTLB cgroup
+References: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1339232401-14392-10-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+In-Reply-To: <1339232401-14392-10-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+(2012/06/09 17:59), Aneesh Kumar K.V wrote:
+> From: "Aneesh Kumar K.V"<aneesh.kumar@linux.vnet.ibm.com>
+> 
+> This patch implements a new controller that allows us to control HugeTLB
+> allocations. The extension allows to limit the HugeTLB usage per control
+> group and enforces the controller limit during page fault.  Since HugeTLB
+> doesn't support page reclaim, enforcing the limit at page fault time implies
+> that, the application will get SIGBUS signal if it tries to access HugeTLB
+> pages beyond its limit. This requires the application to know beforehand
+> how much HugeTLB pages it would require for its use.
+> 
+> The charge/uncharge calls will be added to HugeTLB code in later patch.
+> Support for cgroup removal will be added in later patches.
+> 
+> Signed-off-by: Aneesh Kumar K.V<aneesh.kumar@linux.vnet.ibm.com>
 
-Defer linking a newly allocated arg to print_fmt.args until
-all of its field is setup so that later access to ->field.name
-cannot be NULL.
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/lib/traceevent/event-parse.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+some nitpick below.
 
-diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index a6b5bcdc5580..7fcfdf9e2716 100644
---- a/tools/lib/traceevent/event-parse.c
-+++ b/tools/lib/traceevent/event-parse.c
-@@ -4665,20 +4665,20 @@ int pevent_parse_event(struct pevent *pevent,
- 		struct print_arg *arg, **list;
- 
- 		/* old ftrace had no args */
--
- 		list = &event->print_fmt.args;
- 		for (field = event->format.fields; field; field = field->next) {
- 			arg = alloc_arg();
--			*list = arg;
--			list = &arg->next;
- 			arg->type = PRINT_FIELD;
- 			arg->field.name = strdup(field->name);
- 			if (!arg->field.name) {
- 				do_warning("failed to allocate field name");
- 				event->flags |= EVENT_FL_FAILED;
-+				free_arg(arg);
- 				return -1;
- 			}
- 			arg->field.field = field;
-+			*list = arg;
-+			list = &arg->next;
- 		}
- 		return 0;
- 	}
--- 
-1.7.10.2
+> ---
+>   include/linux/cgroup_subsys.h  |    6 +++
+>   include/linux/hugetlb_cgroup.h |   79 ++++++++++++++++++++++++++++
+>   init/Kconfig                   |   16 ++++++
+>   mm/Makefile                    |    1 +
+>   mm/hugetlb_cgroup.c            |  114 ++++++++++++++++++++++++++++++++++++++++
+>   5 files changed, 216 insertions(+)
+>   create mode 100644 include/linux/hugetlb_cgroup.h
+>   create mode 100644 mm/hugetlb_cgroup.c
+> 
+> diff --git a/include/linux/cgroup_subsys.h b/include/linux/cgroup_subsys.h
+> index 0bd390c..895923a 100644
+> --- a/include/linux/cgroup_subsys.h
+> +++ b/include/linux/cgroup_subsys.h
+> @@ -72,3 +72,9 @@ SUBSYS(net_prio)
+>   #endif
+> 
+>   /* */
+> +
+> +#ifdef CONFIG_CGROUP_HUGETLB_RES_CTLR
+> +SUBSYS(hugetlb)
+> +#endif
+> +
+> +/* */
+> diff --git a/include/linux/hugetlb_cgroup.h b/include/linux/hugetlb_cgroup.h
+> new file mode 100644
+> index 0000000..5794be4
+> --- /dev/null
+> +++ b/include/linux/hugetlb_cgroup.h
+> @@ -0,0 +1,79 @@
+> +/*
+> + * Copyright IBM Corporation, 2012
+> + * Author Aneesh Kumar K.V<aneesh.kumar@linux.vnet.ibm.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms of version 2.1 of the GNU Lesser General Public License
+> + * as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it would be useful, but
+> + * WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+> + *
+> + */
+> +
+> +#ifndef _LINUX_HUGETLB_CGROUP_H
+> +#define _LINUX_HUGETLB_CGROUP_H
+> +
+> +#include<linux/res_counter.h>
+> +
+> +struct hugetlb_cgroup {
+> +	struct cgroup_subsys_state css;
+> +	/*
+> +	 * the counter to account for hugepages from hugetlb.
+> +	 */
+> +	struct res_counter hugepage[HUGE_MAX_HSTATE];
+> +};
+> +
+> +#ifdef CONFIG_CGROUP_HUGETLB_RES_CTLR
+> +static inline bool hugetlb_cgroup_disabled(void)
+> +{
+> +	if (hugetlb_subsys.disabled)
+> +		return true;
+> +	return false;
+> +}
+> +
+> +extern int hugetlb_cgroup_charge_page(int idx, unsigned long nr_pages,
+> +				      struct hugetlb_cgroup **ptr);
+> +extern void hugetlb_cgroup_commit_charge(int idx, unsigned long nr_pages,
+> +					 struct hugetlb_cgroup *h_cg,
+> +					 struct page *page);
+> +extern void hugetlb_cgroup_uncharge_page(int idx, unsigned long nr_pages,
+> +					 struct page *page);
+> +extern void hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
+> +					   struct hugetlb_cgroup *h_cg);
+> +#else
+> +static inline bool hugetlb_cgroup_disabled(void)
+> +{
+> +	return true;
+> +}
+> +
+> +static inline int
+> +hugetlb_cgroup_charge_page(int idx, unsigned long nr_pages,
+> +			   struct hugetlb_cgroup **ptr)
+> +{
+> +	return 0;
+> +}
+> +
+> +static inline void
+> +hugetlb_cgroup_commit_charge(int idx, unsigned long nr_pages,
+> +			     struct hugetlb_cgroup *h_cg,
+> +			     struct page *page)
+> +{
+> +	return;
+> +}
+> +
+> +static inline void
+> +hugetlb_cgroup_uncharge_page(int idx, unsigned long nr_pages, struct page *page)
+> +{
+> +	return;
+> +}
+> +
+> +static inline void
+> +hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
+> +			       struct hugetlb_cgroup *h_cg)
+> +{
+> +	return;
+> +}
+> +#endif  /* CONFIG_MEM_RES_CTLR_HUGETLB */
+> +#endif
+> diff --git a/init/Kconfig b/init/Kconfig
+> index d07dcf9..b9a0d0a 100644
+> --- a/init/Kconfig
+> +++ b/init/Kconfig
+> @@ -751,6 +751,22 @@ config CGROUP_MEM_RES_CTLR_KMEM
+>   	  the kmem extension can use it to guarantee that no group of processes
+>   	  will ever exhaust kernel resources alone.
+> 
+> +config CGROUP_HUGETLB_RES_CTLR
+> +	bool "HugeTLB Resource Controller for Control Groups"
+> +	depends on RESOURCE_COUNTERS&&  HUGETLB_PAGE&&  EXPERIMENTAL
+> +	select PAGE_CGROUP
+> +	default n
+> +	help
+> +	  Provides a simple cgroup Resource Controller for HugeTLB pages.
+
+what you want to say by adding 'simple' here ?
+
+
+> +	  When you enable this, you can put a per cgroup limit on HugeTLB usage.
+> +	  The limit is enforced during page fault. Since HugeTLB doesn't
+> +	  support page reclaim, enforcing the limit at page fault time implies
+> +	  that, the application will get SIGBUS signal if it tries to access
+> +	  HugeTLB pages beyond its limit. This requires the application to know
+> +	  beforehand how much HugeTLB pages it would require for its use. The
+> +	  control group is tracked in the third page lru pointer. This means
+> +	  that we cannot use the controller with huge page less than 3 pages.
+> +
+>   config CGROUP_PERF
+>   	bool "Enable perf_event per-cpu per-container group (cgroup) monitoring"
+>   	depends on PERF_EVENTS&&  CGROUPS
+> diff --git a/mm/Makefile b/mm/Makefile
+> index a156285..a8dd8d5 100644
+> --- a/mm/Makefile
+> +++ b/mm/Makefile
+> @@ -48,6 +48,7 @@ obj-$(CONFIG_MIGRATION) += migrate.o
+>   obj-$(CONFIG_QUICKLIST) += quicklist.o
+>   obj-$(CONFIG_TRANSPARENT_HUGEPAGE) += huge_memory.o
+>   obj-$(CONFIG_CGROUP_MEM_RES_CTLR) += memcontrol.o page_cgroup.o
+> +obj-$(CONFIG_CGROUP_HUGETLB_RES_CTLR) += hugetlb_cgroup.o
+>   obj-$(CONFIG_MEMORY_FAILURE) += memory-failure.o
+>   obj-$(CONFIG_HWPOISON_INJECT) += hwpoison-inject.o
+>   obj-$(CONFIG_DEBUG_KMEMLEAK) += kmemleak.o
+> diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
+> new file mode 100644
+> index 0000000..20a32c5
+> --- /dev/null
+> +++ b/mm/hugetlb_cgroup.c
+> @@ -0,0 +1,114 @@
+> +/*
+> + *
+> + * Copyright IBM Corporation, 2012
+> + * Author Aneesh Kumar K.V<aneesh.kumar@linux.vnet.ibm.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms of version 2.1 of the GNU Lesser General Public License
+> + * as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it would be useful, but
+> + * WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+> + *
+> + */
+> +
+> +#include<linux/cgroup.h>
+> +#include<linux/slab.h>
+> +#include<linux/hugetlb.h>
+> +#include<linux/hugetlb_cgroup.h>
+> +
+> +struct cgroup_subsys hugetlb_subsys __read_mostly;
+> +struct hugetlb_cgroup *root_h_cgroup __read_mostly;
+> +
+> +static inline
+> +struct hugetlb_cgroup *hugetlb_cgroup_from_css(struct cgroup_subsys_state *s)
+> +{
+> +	if (s)
+> +		return container_of(s, struct hugetlb_cgroup, css);
+> +	return NULL;
+> +}
+> +
+> +static inline
+> +struct hugetlb_cgroup *hugetlb_cgroup_from_cgroup(struct cgroup *cgroup)
+> +{
+> +	return hugetlb_cgroup_from_css(cgroup_subsys_state(cgroup,
+> +							   hugetlb_subsys_id));
+> +}
+> +
+> +static inline
+> +struct hugetlb_cgroup *hugetlb_cgroup_from_task(struct task_struct *task)
+> +{
+> +	return hugetlb_cgroup_from_css(task_subsys_state(task,
+> +							 hugetlb_subsys_id));
+> +}
+> +
+> +static inline bool hugetlb_cgroup_is_root(struct hugetlb_cgroup *h_cg)
+> +{
+> +	return (h_cg == root_h_cgroup);
+> +}
+> +
+> +static inline struct hugetlb_cgroup *parent_hugetlb_cgroup(struct cgroup *cg)
+> +{
+> +	if (!cg->parent)
+> +		return NULL;
+> +	return hugetlb_cgroup_from_cgroup(cg->parent);
+> +}
+> +
+> +static inline bool hugetlb_cgroup_have_usage(struct cgroup *cg)
+> +{
+> +	int idx;
+> +	struct hugetlb_cgroup *h_cg = hugetlb_cgroup_from_cgroup(cg);
+> +
+> +	for (idx = 0; idx<  hugetlb_max_hstate; idx++) {
+> +		if ((res_counter_read_u64(&h_cg->hugepage[idx], RES_USAGE))>  0)
+> +			return 1;
+> +	}
+> +	return 0;
+> +}
+
+How about using true/false rather than 0/1 ?
+
+
+> +
+> +static struct cgroup_subsys_state *hugetlb_cgroup_create(struct cgroup *cgroup)
+> +{
+> +	int idx;
+> +	struct cgroup *parent_cgroup;
+> +	struct hugetlb_cgroup *h_cgroup, *parent_h_cgroup;
+> +
+> +	h_cgroup = kzalloc(sizeof(*h_cgroup), GFP_KERNEL);
+> +	if (!h_cgroup)
+> +		return ERR_PTR(-ENOMEM);
+> +
+> +	parent_cgroup = cgroup->parent;
+> +	if (parent_cgroup) {
+> +		parent_h_cgroup = hugetlb_cgroup_from_cgroup(parent_cgroup);
+> +		for (idx = 0; idx<  HUGE_MAX_HSTATE; idx++)
+                                ^^^
+add space is better.
+
+> +			res_counter_init(&h_cgroup->hugepage[idx],
+> +					&parent_h_cgroup->hugepage[idx]);
+> +	} else {
+> +		root_h_cgroup = h_cgroup;
+> +		for (idx = 0; idx<  HUGE_MAX_HSTATE; idx++)
+                                ^^^
+
+> +			res_counter_init(&h_cgroup->hugepage[idx], NULL);
+> +	}
+> +	return&h_cgroup->css;
+             ^^^
+ditto.
+
+> +}
+> +
+> +static void hugetlb_cgroup_destroy(struct cgroup *cgroup)
+> +{
+> +	struct hugetlb_cgroup *h_cgroup;
+> +
+> +	h_cgroup = hugetlb_cgroup_from_cgroup(cgroup);
+> +	kfree(h_cgroup);
+> +}
+> +
+> +static int hugetlb_cgroup_pre_destroy(struct cgroup *cgroup)
+> +{
+> +	/* We will add the cgroup removal support in later patches */
+> +	   return -EBUSY;
+> +}
+
+-ENOTSUP rather than -BUSY :p
+
+> +
+> +struct cgroup_subsys hugetlb_subsys = {
+> +	.name = "hugetlb",
+> +	.create     = hugetlb_cgroup_create,
+> +	.pre_destroy = hugetlb_cgroup_pre_destroy,
+> +	.destroy    = hugetlb_cgroup_destroy,
+> +	.subsys_id  = hugetlb_subsys_id,
+> +};
+
+
+Thanks,
+-Kame
 
