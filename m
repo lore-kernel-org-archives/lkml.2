@@ -1,63 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752262Ab2FLJDR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 05:03:17 -0400
-Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:4217 "EHLO
-	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751908Ab2FLJDP (ORCPT
+	id S1752450Ab2FLJD3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 05:03:29 -0400
+Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:3012 "EHLO
+	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752070Ab2FLJD0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 05:03:15 -0400
-Message-ID: <1339491792.30984.110.camel@x61.thuisdomein>
-Subject: [PATCH] MIPS: remove three unused headers
+	Tue, 12 Jun 2012 05:03:26 -0400
+Message-ID: <1339491803.30984.111.camel@x61.thuisdomein>
+Subject: [PATCH] MIPS: remove two unused headers
 From: Paul Bolle <pebolle@tiscali.nl>
 To: Ralf Baechle <ralf@linux-mips.org>
 Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Date: Tue, 12 Jun 2012 11:03:12 +0200
+Date: Tue, 12 Jun 2012 11:03:23 +0200
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-X-OriginalArrivalTime: 12 Jun 2012 09:03:12.0471 (UTC) FILETIME=[31F12670:01CD487A]
+X-OriginalArrivalTime: 12 Jun 2012 09:03:24.0459 (UTC) FILETIME=[39165FB0:01CD487A]
 X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No file includes these three headers. It seems they have never been
-included since at least v2.6.12-rc2. They can safely be removed.
+No file includes these two headers. It seems they have never been
+included since they were added to the tree in commit
+4cbf2beac2265b3619be9c8e88ff4ff45b49d7c2 ("BCM1480 headers"). They can
+safely be removed.
 
 Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 ---
-Tested only by "git grepping" the (history of the) tree in various ways.
-Note that this included "git grepping" each named constant defined in
-these headers (against v3.5-rc2). That found no indication that they
+Again tested only by "git grepping" the (history of the) tree in various
+ways. Note that this included "git grepping" each named constant defined
+in these headers (against v3.5-rc2). That found no indication that they
 were used anywhere. Since these headers aren't included anyway, that's
 not really surprising. (But perhaps creative use of macro concatenation
 hides their usage in the code.)
 
- arch/mips/include/asm/sibyte/sb1250_l2c.h |  131 -------
- arch/mips/include/asm/sibyte/sb1250_ldt.h |  422 ----------------------
- arch/mips/include/asm/sibyte/sb1250_mc.h  |  550 -----------------------------
- 3 files changed, 0 insertions(+), 1103 deletions(-)
- delete mode 100644 arch/mips/include/asm/sibyte/sb1250_l2c.h
- delete mode 100644 arch/mips/include/asm/sibyte/sb1250_ldt.h
- delete mode 100644 arch/mips/include/asm/sibyte/sb1250_mc.h
+ arch/mips/include/asm/sibyte/bcm1480_l2c.h |  176 -----
+ arch/mips/include/asm/sibyte/bcm1480_mc.h  |  984 ----------------------------
+ 2 files changed, 0 insertions(+), 1160 deletions(-)
+ delete mode 100644 arch/mips/include/asm/sibyte/bcm1480_l2c.h
+ delete mode 100644 arch/mips/include/asm/sibyte/bcm1480_mc.h
 
-diff --git a/arch/mips/include/asm/sibyte/sb1250_l2c.h b/arch/mips/include/asm/sibyte/sb1250_l2c.h
+diff --git a/arch/mips/include/asm/sibyte/bcm1480_l2c.h b/arch/mips/include/asm/sibyte/bcm1480_l2c.h
 deleted file mode 100644
-index 6554dcf..0000000
---- a/arch/mips/include/asm/sibyte/sb1250_l2c.h
+index fd75817..0000000
+--- a/arch/mips/include/asm/sibyte/bcm1480_l2c.h
 +++ /dev/null
-@@ -1,131 +0,0 @@
+@@ -1,176 +0,0 @@
 -/*  *********************************************************************
--    *  SB1250 Board Support Package
+-    *  BCM1280/BCM1480 Board Support Package
 -    *
--    *  L2 Cache constants and macros		File: sb1250_l2c.h
+-    *  L2 Cache constants and macros		File: bcm1480_l2c.h
 -    *
 -    *  This module contains constants useful for manipulating the
 -    *  level 2 cache.
 -    *
--    *  SB1250 specification level:  User's manual 1/02/02
+-    *  BCM1400 specification level:  1280-UM100-D2 (11/14/03)
 -    *
 -    *********************************************************************
 -    *
@@ -81,552 +81,169 @@ index 6554dcf..0000000
 -    ********************************************************************* */
 -
 -
--#ifndef _SB1250_L2C_H
--#define _SB1250_L2C_H
+-#ifndef _BCM1480_L2C_H
+-#define _BCM1480_L2C_H
 -
 -#include "sb1250_defs.h"
 -
 -/*
-- * Level 2 Cache Tag register (Table 5-3)
+- * Format of level 2 cache management address (Table 55)
 - */
 -
--#define S_L2C_TAG_MBZ               0
--#define M_L2C_TAG_MBZ               _SB_MAKEMASK(5, S_L2C_TAG_MBZ)
+-#define S_BCM1480_L2C_MGMT_INDEX            5
+-#define M_BCM1480_L2C_MGMT_INDEX            _SB_MAKEMASK(12, S_BCM1480_L2C_MGMT_INDEX)
+-#define V_BCM1480_L2C_MGMT_INDEX(x)         _SB_MAKEVALUE(x, S_BCM1480_L2C_MGMT_INDEX)
+-#define G_BCM1480_L2C_MGMT_INDEX(x)         _SB_GETVALUE(x, S_BCM1480_L2C_MGMT_INDEX, M_BCM1480_L2C_MGMT_INDEX)
 -
--#define S_L2C_TAG_INDEX             5
--#define M_L2C_TAG_INDEX             _SB_MAKEMASK(12, S_L2C_TAG_INDEX)
--#define V_L2C_TAG_INDEX(x)          _SB_MAKEVALUE(x, S_L2C_TAG_INDEX)
--#define G_L2C_TAG_INDEX(x)          _SB_GETVALUE(x, S_L2C_TAG_INDEX, M_L2C_TAG_INDEX)
+-#define S_BCM1480_L2C_MGMT_WAY              17
+-#define M_BCM1480_L2C_MGMT_WAY              _SB_MAKEMASK(3, S_BCM1480_L2C_MGMT_WAY)
+-#define V_BCM1480_L2C_MGMT_WAY(x)           _SB_MAKEVALUE(x, S_BCM1480_L2C_MGMT_WAY)
+-#define G_BCM1480_L2C_MGMT_WAY(x)           _SB_GETVALUE(x, S_BCM1480_L2C_MGMT_WAY, M_BCM1480_L2C_MGMT_WAY)
 -
--#define S_L2C_TAG_TAG               17
--#define M_L2C_TAG_TAG               _SB_MAKEMASK(23, S_L2C_TAG_TAG)
--#define V_L2C_TAG_TAG(x)            _SB_MAKEVALUE(x, S_L2C_TAG_TAG)
--#define G_L2C_TAG_TAG(x)            _SB_GETVALUE(x, S_L2C_TAG_TAG, M_L2C_TAG_TAG)
+-#define M_BCM1480_L2C_MGMT_DIRTY            _SB_MAKEMASK1(20)
+-#define M_BCM1480_L2C_MGMT_VALID            _SB_MAKEMASK1(21)
 -
--#define S_L2C_TAG_ECC               40
--#define M_L2C_TAG_ECC               _SB_MAKEMASK(6, S_L2C_TAG_ECC)
--#define V_L2C_TAG_ECC(x)            _SB_MAKEVALUE(x, S_L2C_TAG_ECC)
--#define G_L2C_TAG_ECC(x)            _SB_GETVALUE(x, S_L2C_TAG_ECC, M_L2C_TAG_ECC)
+-#define S_BCM1480_L2C_MGMT_ECC_DIAG         22
+-#define M_BCM1480_L2C_MGMT_ECC_DIAG         _SB_MAKEMASK(2, S_BCM1480_L2C_MGMT_ECC_DIAG)
+-#define V_BCM1480_L2C_MGMT_ECC_DIAG(x)      _SB_MAKEVALUE(x, S_BCM1480_L2C_MGMT_ECC_DIAG)
+-#define G_BCM1480_L2C_MGMT_ECC_DIAG(x)      _SB_GETVALUE(x, S_BCM1480_L2C_MGMT_ECC_DIAG, M_BCM1480_L2C_MGMT_ECC_DIAG)
 -
--#define S_L2C_TAG_WAY               46
--#define M_L2C_TAG_WAY               _SB_MAKEMASK(2, S_L2C_TAG_WAY)
--#define V_L2C_TAG_WAY(x)            _SB_MAKEVALUE(x, S_L2C_TAG_WAY)
--#define G_L2C_TAG_WAY(x)            _SB_GETVALUE(x, S_L2C_TAG_WAY, M_L2C_TAG_WAY)
+-#define A_BCM1480_L2C_MGMT_TAG_BASE         0x00D0000000
 -
--#define M_L2C_TAG_DIRTY             _SB_MAKEMASK1(48)
--#define M_L2C_TAG_VALID             _SB_MAKEMASK1(49)
+-#define BCM1480_L2C_ENTRIES_PER_WAY         4096
+-#define BCM1480_L2C_NUM_WAYS                8
+-
 -
 -/*
-- * Format of level 2 cache management address (table 5-2)
+- * Level 2 Cache Tag register (Table 59)
 - */
 -
--#define S_L2C_MGMT_INDEX            5
--#define M_L2C_MGMT_INDEX            _SB_MAKEMASK(12, S_L2C_MGMT_INDEX)
--#define V_L2C_MGMT_INDEX(x)         _SB_MAKEVALUE(x, S_L2C_MGMT_INDEX)
--#define G_L2C_MGMT_INDEX(x)         _SB_GETVALUE(x, S_L2C_MGMT_INDEX, M_L2C_MGMT_INDEX)
+-#define S_BCM1480_L2C_TAG_MBZ               0
+-#define M_BCM1480_L2C_TAG_MBZ               _SB_MAKEMASK(5, S_BCM1480_L2C_TAG_MBZ)
 -
--#define S_L2C_MGMT_QUADRANT         15
--#define M_L2C_MGMT_QUADRANT         _SB_MAKEMASK(2, S_L2C_MGMT_QUADRANT)
--#define V_L2C_MGMT_QUADRANT(x)      _SB_MAKEVALUE(x, S_L2C_MGMT_QUADRANT)
--#define G_L2C_MGMT_QUADRANT(x)      _SB_GETVALUE(x, S_L2C_MGMT_QUADRANT, M_L2C_MGMT_QUADRANT)
+-#define S_BCM1480_L2C_TAG_INDEX             5
+-#define M_BCM1480_L2C_TAG_INDEX             _SB_MAKEMASK(12, S_BCM1480_L2C_TAG_INDEX)
+-#define V_BCM1480_L2C_TAG_INDEX(x)          _SB_MAKEVALUE(x, S_BCM1480_L2C_TAG_INDEX)
+-#define G_BCM1480_L2C_TAG_INDEX(x)          _SB_GETVALUE(x, S_BCM1480_L2C_TAG_INDEX, M_BCM1480_L2C_TAG_INDEX)
 -
--#define S_L2C_MGMT_HALF		    16
--#define M_L2C_MGMT_HALF	            _SB_MAKEMASK(1, S_L2C_MGMT_HALF)
+-/* Note that index bit 16 is also tag bit 40 */
+-#define S_BCM1480_L2C_TAG_TAG               17
+-#define M_BCM1480_L2C_TAG_TAG               _SB_MAKEMASK(23, S_BCM1480_L2C_TAG_TAG)
+-#define V_BCM1480_L2C_TAG_TAG(x)            _SB_MAKEVALUE(x, S_BCM1480_L2C_TAG_TAG)
+-#define G_BCM1480_L2C_TAG_TAG(x)            _SB_GETVALUE(x, S_BCM1480_L2C_TAG_TAG, M_BCM1480_L2C_TAG_TAG)
 -
--#define S_L2C_MGMT_WAY              17
--#define M_L2C_MGMT_WAY              _SB_MAKEMASK(2, S_L2C_MGMT_WAY)
--#define V_L2C_MGMT_WAY(x)           _SB_MAKEVALUE(x, S_L2C_MGMT_WAY)
--#define G_L2C_MGMT_WAY(x)           _SB_GETVALUE(x, S_L2C_MGMT_WAY, M_L2C_MGMT_WAY)
+-#define S_BCM1480_L2C_TAG_ECC               40
+-#define M_BCM1480_L2C_TAG_ECC               _SB_MAKEMASK(6, S_BCM1480_L2C_TAG_ECC)
+-#define V_BCM1480_L2C_TAG_ECC(x)            _SB_MAKEVALUE(x, S_BCM1480_L2C_TAG_ECC)
+-#define G_BCM1480_L2C_TAG_ECC(x)            _SB_GETVALUE(x, S_BCM1480_L2C_TAG_ECC, M_BCM1480_L2C_TAG_ECC)
 -
--#define S_L2C_MGMT_ECC_DIAG         21
--#define M_L2C_MGMT_ECC_DIAG         _SB_MAKEMASK(2, S_L2C_MGMT_ECC_DIAG)
--#define V_L2C_MGMT_ECC_DIAG(x)      _SB_MAKEVALUE(x, S_L2C_MGMT_ECC_DIAG)
--#define G_L2C_MGMT_ECC_DIAG(x)      _SB_GETVALUE(x, S_L2C_MGMT_ECC_DIAG, M_L2C_MGMT_ECC_DIAG)
+-#define S_BCM1480_L2C_TAG_WAY               46
+-#define M_BCM1480_L2C_TAG_WAY               _SB_MAKEMASK(3, S_BCM1480_L2C_TAG_WAY)
+-#define V_BCM1480_L2C_TAG_WAY(x)            _SB_MAKEVALUE(x, S_BCM1480_L2C_TAG_WAY)
+-#define G_BCM1480_L2C_TAG_WAY(x)            _SB_GETVALUE(x, S_BCM1480_L2C_TAG_WAY, M_BCM1480_L2C_TAG_WAY)
 -
--#define S_L2C_MGMT_TAG              23
--#define M_L2C_MGMT_TAG              _SB_MAKEMASK(4, S_L2C_MGMT_TAG)
--#define V_L2C_MGMT_TAG(x)           _SB_MAKEVALUE(x, S_L2C_MGMT_TAG)
--#define G_L2C_MGMT_TAG(x)           _SB_GETVALUE(x, S_L2C_MGMT_TAG, M_L2C_MGMT_TAG)
+-#define M_BCM1480_L2C_TAG_DIRTY             _SB_MAKEMASK1(49)
+-#define M_BCM1480_L2C_TAG_VALID             _SB_MAKEMASK1(50)
 -
--#define M_L2C_MGMT_DIRTY            _SB_MAKEMASK1(19)
--#define M_L2C_MGMT_VALID            _SB_MAKEMASK1(20)
--
--#define A_L2C_MGMT_TAG_BASE         0x00D0000000
--
--#define L2C_ENTRIES_PER_WAY       4096
--#define L2C_NUM_WAYS              4
+-#define S_BCM1480_L2C_DATA_ECC              51
+-#define M_BCM1480_L2C_DATA_ECC              _SB_MAKEMASK(10, S_BCM1480_L2C_DATA_ECC)
+-#define V_BCM1480_L2C_DATA_ECC(x)           _SB_MAKEVALUE(x, S_BCM1480_L2C_DATA_ECC)
+-#define G_BCM1480_L2C_DATA_ECC(x)           _SB_GETVALUE(x, S_BCM1480_L2C_DATA_ECC, M_BCM1480_L2C_DATA_ECC)
 -
 -
--#if SIBYTE_HDR_FEATURE(1250, PASS3) || SIBYTE_HDR_FEATURE(112x, PASS1)
 -/*
-- * L2 Read Misc. register (A_L2_READ_MISC)
+- * L2 Misc0 Value Register (Table 60)
 - */
--#define S_L2C_MISC_NO_WAY		10
--#define M_L2C_MISC_NO_WAY		_SB_MAKEMASK(4, S_L2C_MISC_NO_WAY)
--#define V_L2C_MISC_NO_WAY(x)		_SB_MAKEVALUE(x, S_L2C_MISC_NO_WAY)
--#define G_L2C_MISC_NO_WAY(x)		_SB_GETVALUE(x, S_L2C_MISC_NO_WAY, M_L2C_MISC_NO_WAY)
 -
--#define M_L2C_MISC_ECC_CLEANUP_DIS	_SB_MAKEMASK1(9)
--#define M_L2C_MISC_MC_PRIO_LOW		_SB_MAKEMASK1(8)
--#define M_L2C_MISC_SOFT_DISABLE_T	_SB_MAKEMASK1(7)
--#define M_L2C_MISC_SOFT_DISABLE_B	_SB_MAKEMASK1(6)
--#define M_L2C_MISC_SOFT_DISABLE_R	_SB_MAKEMASK1(5)
--#define M_L2C_MISC_SOFT_DISABLE_L	_SB_MAKEMASK1(4)
--#define M_L2C_MISC_SCACHE_DISABLE_T	_SB_MAKEMASK1(3)
--#define M_L2C_MISC_SCACHE_DISABLE_B	_SB_MAKEMASK1(2)
--#define M_L2C_MISC_SCACHE_DISABLE_R	_SB_MAKEMASK1(1)
--#define M_L2C_MISC_SCACHE_DISABLE_L	_SB_MAKEMASK1(0)
--#endif /* 1250 PASS3 || 112x PASS1 */
+-#define S_BCM1480_L2C_MISC0_WAY_REMOTE      0
+-#define M_BCM1480_L2C_MISC0_WAY_REMOTE      _SB_MAKEMASK(8, S_BCM1480_L2C_MISC0_WAY_REMOTE)
+-#define G_BCM1480_L2C_MISC0_WAY_REMOTE(x)   _SB_GETVALUE(x, S_BCM1480_L2C_MISC0_WAY_REMOTE, M_BCM1480_L2C_MISC0_WAY_REMOTE)
+-
+-#define S_BCM1480_L2C_MISC0_WAY_LOCAL       8
+-#define M_BCM1480_L2C_MISC0_WAY_LOCAL       _SB_MAKEMASK(8, S_BCM1480_L2C_MISC0_WAY_LOCAL)
+-#define G_BCM1480_L2C_MISC0_WAY_LOCAL(x)    _SB_GETVALUE(x, S_BCM1480_L2C_MISC0_WAY_LOCAL, M_BCM1480_L2C_MISC0_WAY_LOCAL)
+-
+-#define S_BCM1480_L2C_MISC0_WAY_ENABLE      16
+-#define M_BCM1480_L2C_MISC0_WAY_ENABLE      _SB_MAKEMASK(8, S_BCM1480_L2C_MISC0_WAY_ENABLE)
+-#define G_BCM1480_L2C_MISC0_WAY_ENABLE(x)   _SB_GETVALUE(x, S_BCM1480_L2C_MISC0_WAY_ENABLE, M_BCM1480_L2C_MISC0_WAY_ENABLE)
+-
+-#define S_BCM1480_L2C_MISC0_CACHE_DISABLE   24
+-#define M_BCM1480_L2C_MISC0_CACHE_DISABLE   _SB_MAKEMASK(2, S_BCM1480_L2C_MISC0_CACHE_DISABLE)
+-#define G_BCM1480_L2C_MISC0_CACHE_DISABLE(x) _SB_GETVALUE(x, S_BCM1480_L2C_MISC0_CACHE_DISABLE, M_BCM1480_L2C_MISC0_CACHE_DISABLE)
+-
+-#define S_BCM1480_L2C_MISC0_CACHE_QUAD      26
+-#define M_BCM1480_L2C_MISC0_CACHE_QUAD      _SB_MAKEMASK(2, S_BCM1480_L2C_MISC0_CACHE_QUAD)
+-#define G_BCM1480_L2C_MISC0_CACHE_QUAD(x)   _SB_GETVALUE(x, S_BCM1480_L2C_MISC0_CACHE_QUAD, M_BCM1480_L2C_MISC0_CACHE_QUAD)
+-
+-#define S_BCM1480_L2C_MISC0_MC_PRIORITY      30
+-#define M_BCM1480_L2C_MISC0_MC_PRIORITY      _SB_MAKEMASK1(S_BCM1480_L2C_MISC0_MC_PRIORITY)
+-
+-#define S_BCM1480_L2C_MISC0_ECC_CLEANUP      31
+-#define M_BCM1480_L2C_MISC0_ECC_CLEANUP      _SB_MAKEMASK1(S_BCM1480_L2C_MISC0_ECC_CLEANUP)
 -
 -
--#endif
-diff --git a/arch/mips/include/asm/sibyte/sb1250_ldt.h b/arch/mips/include/asm/sibyte/sb1250_ldt.h
+-/*
+- * L2 Misc1 Value Register (Table 60)
+- */
+-
+-#define S_BCM1480_L2C_MISC1_WAY_AGENT_0      0
+-#define M_BCM1480_L2C_MISC1_WAY_AGENT_0      _SB_MAKEMASK(8, S_BCM1480_L2C_MISC1_WAY_AGENT_0)
+-#define G_BCM1480_L2C_MISC1_WAY_AGENT_0(x)   _SB_GETVALUE(x, S_BCM1480_L2C_MISC1_WAY_AGENT_0, M_BCM1480_L2C_MISC1_WAY_AGENT_0)
+-
+-#define S_BCM1480_L2C_MISC1_WAY_AGENT_1      8
+-#define M_BCM1480_L2C_MISC1_WAY_AGENT_1      _SB_MAKEMASK(8, S_BCM1480_L2C_MISC1_WAY_AGENT_1)
+-#define G_BCM1480_L2C_MISC1_WAY_AGENT_1(x)   _SB_GETVALUE(x, S_BCM1480_L2C_MISC1_WAY_AGENT_1, M_BCM1480_L2C_MISC1_WAY_AGENT_1)
+-
+-#define S_BCM1480_L2C_MISC1_WAY_AGENT_2      16
+-#define M_BCM1480_L2C_MISC1_WAY_AGENT_2      _SB_MAKEMASK(8, S_BCM1480_L2C_MISC1_WAY_AGENT_2)
+-#define G_BCM1480_L2C_MISC1_WAY_AGENT_2(x)   _SB_GETVALUE(x, S_BCM1480_L2C_MISC1_WAY_AGENT_2, M_BCM1480_L2C_MISC1_WAY_AGENT_2)
+-
+-#define S_BCM1480_L2C_MISC1_WAY_AGENT_3      24
+-#define M_BCM1480_L2C_MISC1_WAY_AGENT_3      _SB_MAKEMASK(8, S_BCM1480_L2C_MISC1_WAY_AGENT_3)
+-#define G_BCM1480_L2C_MISC1_WAY_AGENT_3(x)   _SB_GETVALUE(x, S_BCM1480_L2C_MISC1_WAY_AGENT_3, M_BCM1480_L2C_MISC1_WAY_AGENT_3)
+-
+-#define S_BCM1480_L2C_MISC1_WAY_AGENT_4      32
+-#define M_BCM1480_L2C_MISC1_WAY_AGENT_4      _SB_MAKEMASK(8, S_BCM1480_L2C_MISC1_WAY_AGENT_4)
+-#define G_BCM1480_L2C_MISC1_WAY_AGENT_4(x)   _SB_GETVALUE(x, S_BCM1480_L2C_MISC1_WAY_AGENT_4, M_BCM1480_L2C_MISC1_WAY_AGENT_4)
+-
+-
+-/*
+- * L2 Misc2 Value Register (Table 60)
+- */
+-
+-#define S_BCM1480_L2C_MISC2_WAY_AGENT_8      0
+-#define M_BCM1480_L2C_MISC2_WAY_AGENT_8      _SB_MAKEMASK(8, S_BCM1480_L2C_MISC2_WAY_AGENT_8)
+-#define G_BCM1480_L2C_MISC2_WAY_AGENT_8(x)   _SB_GETVALUE(x, S_BCM1480_L2C_MISC2_WAY_AGENT_8, M_BCM1480_L2C_MISC2_WAY_AGENT_8)
+-
+-#define S_BCM1480_L2C_MISC2_WAY_AGENT_9      8
+-#define M_BCM1480_L2C_MISC2_WAY_AGENT_9      _SB_MAKEMASK(8, S_BCM1480_L2C_MISC2_WAY_AGENT_9)
+-#define G_BCM1480_L2C_MISC2_WAY_AGENT_9(x)   _SB_GETVALUE(x, S_BCM1480_L2C_MISC2_WAY_AGENT_9, M_BCM1480_L2C_MISC2_WAY_AGENT_9)
+-
+-#define S_BCM1480_L2C_MISC2_WAY_AGENT_A      16
+-#define M_BCM1480_L2C_MISC2_WAY_AGENT_A      _SB_MAKEMASK(8, S_BCM1480_L2C_MISC2_WAY_AGENT_A)
+-#define G_BCM1480_L2C_MISC2_WAY_AGENT_A(x)   _SB_GETVALUE(x, S_BCM1480_L2C_MISC2_WAY_AGENT_A, M_BCM1480_L2C_MISC2_WAY_AGENT_A)
+-
+-
+-#endif /* _BCM1480_L2C_H */
+diff --git a/arch/mips/include/asm/sibyte/bcm1480_mc.h b/arch/mips/include/asm/sibyte/bcm1480_mc.h
 deleted file mode 100644
-index 1e76cf1..0000000
---- a/arch/mips/include/asm/sibyte/sb1250_ldt.h
+index f26a41a..0000000
+--- a/arch/mips/include/asm/sibyte/bcm1480_mc.h
 +++ /dev/null
-@@ -1,422 +0,0 @@
+@@ -1,984 +0,0 @@
 -/*  *********************************************************************
--    *  SB1250 Board Support Package
+-    *  BCM1280/BCM1480 Board Support Package
 -    *
--    *  LDT constants				File: sb1250_ldt.h
--    *
--    *  This module contains constants and macros to describe
--    *  the LDT interface on the SB1250.
--    *
--    *  SB1250 specification level:  User's manual 1/02/02
--    *
--    *********************************************************************
--    *
--    *  Copyright 2000, 2001, 2002, 2003
--    *  Broadcom Corporation. All rights reserved.
--    *
--    *  This program is free software; you can redistribute it and/or
--    *  modify it under the terms of the GNU General Public License as
--    *  published by the Free Software Foundation; either version 2 of
--    *  the License, or (at your option) any later version.
--    *
--    *  This program is distributed in the hope that it will be useful,
--    *  but WITHOUT ANY WARRANTY; without even the implied warranty of
--    *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
--    *  GNU General Public License for more details.
--    *
--    *  You should have received a copy of the GNU General Public License
--    *  along with this program; if not, write to the Free Software
--    *  Foundation, Inc., 59 Temple Place, Suite 330, Boston,
--    *  MA 02111-1307 USA
--    ********************************************************************* */
--
--
--#ifndef _SB1250_LDT_H
--#define _SB1250_LDT_H
--
--#include "sb1250_defs.h"
--
--#define K_LDT_VENDOR_SIBYTE	0x166D
--#define K_LDT_DEVICE_SB1250	0x0002
--
--/*
-- * LDT Interface Type 1 (bridge) configuration header
-- */
--
--#define R_LDT_TYPE1_DEVICEID	0x0000
--#define R_LDT_TYPE1_CMDSTATUS	0x0004
--#define R_LDT_TYPE1_CLASSREV	0x0008
--#define R_LDT_TYPE1_DEVHDR	0x000C
--#define R_LDT_TYPE1_BAR0	0x0010	/* not used */
--#define R_LDT_TYPE1_BAR1	0x0014	/* not used */
--
--#define R_LDT_TYPE1_BUSID	0x0018	/* bus ID register */
--#define R_LDT_TYPE1_SECSTATUS	0x001C	/* secondary status / I/O base/limit */
--#define R_LDT_TYPE1_MEMLIMIT	0x0020
--#define R_LDT_TYPE1_PREFETCH	0x0024
--#define R_LDT_TYPE1_PREF_BASE	0x0028
--#define R_LDT_TYPE1_PREF_LIMIT	0x002C
--#define R_LDT_TYPE1_IOLIMIT	0x0030
--#define R_LDT_TYPE1_CAPPTR	0x0034
--#define R_LDT_TYPE1_ROMADDR	0x0038
--#define R_LDT_TYPE1_BRCTL	0x003C
--#define R_LDT_TYPE1_CMD		0x0040
--#define R_LDT_TYPE1_LINKCTRL	0x0044
--#define R_LDT_TYPE1_LINKFREQ	0x0048
--#define R_LDT_TYPE1_RESERVED1	0x004C
--#define R_LDT_TYPE1_SRICMD	0x0050
--#define R_LDT_TYPE1_SRITXNUM	0x0054
--#define R_LDT_TYPE1_SRIRXNUM	0x0058
--#define R_LDT_TYPE1_ERRSTATUS   0x0068
--#define R_LDT_TYPE1_SRICTRL	0x006C
--#if SIBYTE_HDR_FEATURE(1250, PASS2) || SIBYTE_HDR_FEATURE(112x, PASS1)
--#define R_LDT_TYPE1_ADDSTATUS	0x0070
--#endif /* 1250 PASS2 || 112x PASS1 */
--#define R_LDT_TYPE1_TXBUFCNT	0x00C8
--#define R_LDT_TYPE1_EXPCRC	0x00DC
--#define R_LDT_TYPE1_RXCRC	0x00F0
--
--
--/*
-- * LDT Device ID register
-- */
--
--#define S_LDT_DEVICEID_VENDOR		0
--#define M_LDT_DEVICEID_VENDOR		_SB_MAKEMASK_32(16, S_LDT_DEVICEID_VENDOR)
--#define V_LDT_DEVICEID_VENDOR(x)	_SB_MAKEVALUE_32(x, S_LDT_DEVICEID_VENDOR)
--#define G_LDT_DEVICEID_VENDOR(x)	_SB_GETVALUE_32(x, S_LDT_DEVICEID_VENDOR, M_LDT_DEVICEID_VENDOR)
--
--#define S_LDT_DEVICEID_DEVICEID		16
--#define M_LDT_DEVICEID_DEVICEID		_SB_MAKEMASK_32(16, S_LDT_DEVICEID_DEVICEID)
--#define V_LDT_DEVICEID_DEVICEID(x)	_SB_MAKEVALUE_32(x, S_LDT_DEVICEID_DEVICEID)
--#define G_LDT_DEVICEID_DEVICEID(x)	_SB_GETVALUE_32(x, S_LDT_DEVICEID_DEVICEID, M_LDT_DEVICEID_DEVICEID)
--
--
--/*
-- * LDT Command Register (Table 8-13)
-- */
--
--#define M_LDT_CMD_IOSPACE_EN		_SB_MAKEMASK1_32(0)
--#define M_LDT_CMD_MEMSPACE_EN		_SB_MAKEMASK1_32(1)
--#define M_LDT_CMD_MASTER_EN		_SB_MAKEMASK1_32(2)
--#define M_LDT_CMD_SPECCYC_EN		_SB_MAKEMASK1_32(3)
--#define M_LDT_CMD_MEMWRINV_EN		_SB_MAKEMASK1_32(4)
--#define M_LDT_CMD_VGAPALSNP_EN		_SB_MAKEMASK1_32(5)
--#define M_LDT_CMD_PARERRRESP		_SB_MAKEMASK1_32(6)
--#define M_LDT_CMD_WAITCYCCTRL		_SB_MAKEMASK1_32(7)
--#define M_LDT_CMD_SERR_EN		_SB_MAKEMASK1_32(8)
--#define M_LDT_CMD_FASTB2B_EN		_SB_MAKEMASK1_32(9)
--
--/*
-- * LDT class and revision registers
-- */
--
--#define S_LDT_CLASSREV_REV		0
--#define M_LDT_CLASSREV_REV		_SB_MAKEMASK_32(8, S_LDT_CLASSREV_REV)
--#define V_LDT_CLASSREV_REV(x)		_SB_MAKEVALUE_32(x, S_LDT_CLASSREV_REV)
--#define G_LDT_CLASSREV_REV(x)		_SB_GETVALUE_32(x, S_LDT_CLASSREV_REV, M_LDT_CLASSREV_REV)
--
--#define S_LDT_CLASSREV_CLASS		8
--#define M_LDT_CLASSREV_CLASS		_SB_MAKEMASK_32(24, S_LDT_CLASSREV_CLASS)
--#define V_LDT_CLASSREV_CLASS(x)		_SB_MAKEVALUE_32(x, S_LDT_CLASSREV_CLASS)
--#define G_LDT_CLASSREV_CLASS(x)		_SB_GETVALUE_32(x, S_LDT_CLASSREV_CLASS, M_LDT_CLASSREV_CLASS)
--
--#define K_LDT_REV			0x01
--#define K_LDT_CLASS			0x060000
--
--/*
-- * Device Header (offset 0x0C)
-- */
--
--#define S_LDT_DEVHDR_CLINESZ		0
--#define M_LDT_DEVHDR_CLINESZ		_SB_MAKEMASK_32(8, S_LDT_DEVHDR_CLINESZ)
--#define V_LDT_DEVHDR_CLINESZ(x)		_SB_MAKEVALUE_32(x, S_LDT_DEVHDR_CLINESZ)
--#define G_LDT_DEVHDR_CLINESZ(x)		_SB_GETVALUE_32(x, S_LDT_DEVHDR_CLINESZ, M_LDT_DEVHDR_CLINESZ)
--
--#define S_LDT_DEVHDR_LATTMR		8
--#define M_LDT_DEVHDR_LATTMR		_SB_MAKEMASK_32(8, S_LDT_DEVHDR_LATTMR)
--#define V_LDT_DEVHDR_LATTMR(x)		_SB_MAKEVALUE_32(x, S_LDT_DEVHDR_LATTMR)
--#define G_LDT_DEVHDR_LATTMR(x)		_SB_GETVALUE_32(x, S_LDT_DEVHDR_LATTMR, M_LDT_DEVHDR_LATTMR)
--
--#define S_LDT_DEVHDR_HDRTYPE		16
--#define M_LDT_DEVHDR_HDRTYPE		_SB_MAKEMASK_32(8, S_LDT_DEVHDR_HDRTYPE)
--#define V_LDT_DEVHDR_HDRTYPE(x)		_SB_MAKEVALUE_32(x, S_LDT_DEVHDR_HDRTYPE)
--#define G_LDT_DEVHDR_HDRTYPE(x)		_SB_GETVALUE_32(x, S_LDT_DEVHDR_HDRTYPE, M_LDT_DEVHDR_HDRTYPE)
--
--#define K_LDT_DEVHDR_HDRTYPE_TYPE1	1
--
--#define S_LDT_DEVHDR_BIST		24
--#define M_LDT_DEVHDR_BIST		_SB_MAKEMASK_32(8, S_LDT_DEVHDR_BIST)
--#define V_LDT_DEVHDR_BIST(x)		_SB_MAKEVALUE_32(x, S_LDT_DEVHDR_BIST)
--#define G_LDT_DEVHDR_BIST(x)		_SB_GETVALUE_32(x, S_LDT_DEVHDR_BIST, M_LDT_DEVHDR_BIST)
--
--
--
--/*
-- * LDT Status Register (Table 8-14).  Note that these constants
-- * assume you've read the command and status register
-- * together (32-bit read at offset 0x04)
-- *
-- * These bits also apply to the secondary status
-- * register (Table 8-15), offset 0x1C
-- */
--
--#if SIBYTE_HDR_FEATURE(1250, PASS2) || SIBYTE_HDR_FEATURE(112x, PASS1)
--#define M_LDT_STATUS_VGAEN		_SB_MAKEMASK1_32(3)
--#endif /* 1250 PASS2 || 112x PASS1 */
--#define M_LDT_STATUS_CAPLIST		_SB_MAKEMASK1_32(20)
--#define M_LDT_STATUS_66MHZCAP		_SB_MAKEMASK1_32(21)
--#define M_LDT_STATUS_RESERVED2		_SB_MAKEMASK1_32(22)
--#define M_LDT_STATUS_FASTB2BCAP		_SB_MAKEMASK1_32(23)
--#define M_LDT_STATUS_MSTRDPARERR	_SB_MAKEMASK1_32(24)
--
--#define S_LDT_STATUS_DEVSELTIMING	25
--#define M_LDT_STATUS_DEVSELTIMING	_SB_MAKEMASK_32(2, S_LDT_STATUS_DEVSELTIMING)
--#define V_LDT_STATUS_DEVSELTIMING(x)	_SB_MAKEVALUE_32(x, S_LDT_STATUS_DEVSELTIMING)
--#define G_LDT_STATUS_DEVSELTIMING(x)	_SB_GETVALUE_32(x, S_LDT_STATUS_DEVSELTIMING, M_LDT_STATUS_DEVSELTIMING)
--
--#define M_LDT_STATUS_SIGDTGTABORT	_SB_MAKEMASK1_32(27)
--#define M_LDT_STATUS_RCVDTGTABORT	_SB_MAKEMASK1_32(28)
--#define M_LDT_STATUS_RCVDMSTRABORT	_SB_MAKEMASK1_32(29)
--#define M_LDT_STATUS_SIGDSERR		_SB_MAKEMASK1_32(30)
--#define M_LDT_STATUS_DETPARERR		_SB_MAKEMASK1_32(31)
--
--/*
-- * Bridge Control Register (Table 8-16).  Note that these
-- * constants assume you've read the register as a 32-bit
-- * read (offset 0x3C)
-- */
--
--#define M_LDT_BRCTL_PARERRRESP_EN	_SB_MAKEMASK1_32(16)
--#define M_LDT_BRCTL_SERR_EN		_SB_MAKEMASK1_32(17)
--#define M_LDT_BRCTL_ISA_EN		_SB_MAKEMASK1_32(18)
--#define M_LDT_BRCTL_VGA_EN		_SB_MAKEMASK1_32(19)
--#define M_LDT_BRCTL_MSTRABORTMODE	_SB_MAKEMASK1_32(21)
--#define M_LDT_BRCTL_SECBUSRESET		_SB_MAKEMASK1_32(22)
--#define M_LDT_BRCTL_FASTB2B_EN		_SB_MAKEMASK1_32(23)
--#define M_LDT_BRCTL_PRIDISCARD		_SB_MAKEMASK1_32(24)
--#define M_LDT_BRCTL_SECDISCARD		_SB_MAKEMASK1_32(25)
--#define M_LDT_BRCTL_DISCARDSTAT		_SB_MAKEMASK1_32(26)
--#define M_LDT_BRCTL_DISCARDSERR_EN	_SB_MAKEMASK1_32(27)
--
--/*
-- * LDT Command Register (Table 8-17).  Note that these constants
-- * assume you've read the command and status register together
-- * 32-bit read at offset 0x40
-- */
--
--#define M_LDT_CMD_WARMRESET		_SB_MAKEMASK1_32(16)
--#define M_LDT_CMD_DOUBLEENDED		_SB_MAKEMASK1_32(17)
--
--#define S_LDT_CMD_CAPTYPE		29
--#define M_LDT_CMD_CAPTYPE		_SB_MAKEMASK_32(3, S_LDT_CMD_CAPTYPE)
--#define V_LDT_CMD_CAPTYPE(x)		_SB_MAKEVALUE_32(x, S_LDT_CMD_CAPTYPE)
--#define G_LDT_CMD_CAPTYPE(x)		_SB_GETVALUE_32(x, S_LDT_CMD_CAPTYPE, M_LDT_CMD_CAPTYPE)
--
--/*
-- * LDT link control register (Table 8-18), and (Table 8-19)
-- */
--
--#define M_LDT_LINKCTRL_CAPSYNCFLOOD_EN	_SB_MAKEMASK1_32(1)
--#define M_LDT_LINKCTRL_CRCSTARTTEST	_SB_MAKEMASK1_32(2)
--#define M_LDT_LINKCTRL_CRCFORCEERR	_SB_MAKEMASK1_32(3)
--#define M_LDT_LINKCTRL_LINKFAIL		_SB_MAKEMASK1_32(4)
--#define M_LDT_LINKCTRL_INITDONE		_SB_MAKEMASK1_32(5)
--#define M_LDT_LINKCTRL_EOC		_SB_MAKEMASK1_32(6)
--#define M_LDT_LINKCTRL_XMITOFF		_SB_MAKEMASK1_32(7)
--
--#define S_LDT_LINKCTRL_CRCERR		8
--#define M_LDT_LINKCTRL_CRCERR		_SB_MAKEMASK_32(4, S_LDT_LINKCTRL_CRCERR)
--#define V_LDT_LINKCTRL_CRCERR(x)	_SB_MAKEVALUE_32(x, S_LDT_LINKCTRL_CRCERR)
--#define G_LDT_LINKCTRL_CRCERR(x)	_SB_GETVALUE_32(x, S_LDT_LINKCTRL_CRCERR, M_LDT_LINKCTRL_CRCERR)
--
--#define S_LDT_LINKCTRL_MAXIN		16
--#define M_LDT_LINKCTRL_MAXIN		_SB_MAKEMASK_32(3, S_LDT_LINKCTRL_MAXIN)
--#define V_LDT_LINKCTRL_MAXIN(x)		_SB_MAKEVALUE_32(x, S_LDT_LINKCTRL_MAXIN)
--#define G_LDT_LINKCTRL_MAXIN(x)		_SB_GETVALUE_32(x, S_LDT_LINKCTRL_MAXIN, M_LDT_LINKCTRL_MAXIN)
--
--#define M_LDT_LINKCTRL_DWFCLN		_SB_MAKEMASK1_32(19)
--
--#define S_LDT_LINKCTRL_MAXOUT		20
--#define M_LDT_LINKCTRL_MAXOUT		_SB_MAKEMASK_32(3, S_LDT_LINKCTRL_MAXOUT)
--#define V_LDT_LINKCTRL_MAXOUT(x)	_SB_MAKEVALUE_32(x, S_LDT_LINKCTRL_MAXOUT)
--#define G_LDT_LINKCTRL_MAXOUT(x)	_SB_GETVALUE_32(x, S_LDT_LINKCTRL_MAXOUT, M_LDT_LINKCTRL_MAXOUT)
--
--#define M_LDT_LINKCTRL_DWFCOUT		_SB_MAKEMASK1_32(23)
--
--#define S_LDT_LINKCTRL_WIDTHIN		24
--#define M_LDT_LINKCTRL_WIDTHIN		_SB_MAKEMASK_32(3, S_LDT_LINKCTRL_WIDTHIN)
--#define V_LDT_LINKCTRL_WIDTHIN(x)	_SB_MAKEVALUE_32(x, S_LDT_LINKCTRL_WIDTHIN)
--#define G_LDT_LINKCTRL_WIDTHIN(x)	_SB_GETVALUE_32(x, S_LDT_LINKCTRL_WIDTHIN, M_LDT_LINKCTRL_WIDTHIN)
--
--#define M_LDT_LINKCTRL_DWFCLIN_EN	_SB_MAKEMASK1_32(27)
--
--#define S_LDT_LINKCTRL_WIDTHOUT		28
--#define M_LDT_LINKCTRL_WIDTHOUT		_SB_MAKEMASK_32(3, S_LDT_LINKCTRL_WIDTHOUT)
--#define V_LDT_LINKCTRL_WIDTHOUT(x)	_SB_MAKEVALUE_32(x, S_LDT_LINKCTRL_WIDTHOUT)
--#define G_LDT_LINKCTRL_WIDTHOUT(x)	_SB_GETVALUE_32(x, S_LDT_LINKCTRL_WIDTHOUT, M_LDT_LINKCTRL_WIDTHOUT)
--
--#define M_LDT_LINKCTRL_DWFCOUT_EN	_SB_MAKEMASK1_32(31)
--
--/*
-- * LDT Link frequency register  (Table 8-20) offset 0x48
-- */
--
--#define S_LDT_LINKFREQ_FREQ		8
--#define M_LDT_LINKFREQ_FREQ		_SB_MAKEMASK_32(4, S_LDT_LINKFREQ_FREQ)
--#define V_LDT_LINKFREQ_FREQ(x)		_SB_MAKEVALUE_32(x, S_LDT_LINKFREQ_FREQ)
--#define G_LDT_LINKFREQ_FREQ(x)		_SB_GETVALUE_32(x, S_LDT_LINKFREQ_FREQ, M_LDT_LINKFREQ_FREQ)
--
--#define K_LDT_LINKFREQ_200MHZ		0
--#define K_LDT_LINKFREQ_300MHZ		1
--#define K_LDT_LINKFREQ_400MHZ		2
--#define K_LDT_LINKFREQ_500MHZ		3
--#define K_LDT_LINKFREQ_600MHZ		4
--#define K_LDT_LINKFREQ_800MHZ		5
--#define K_LDT_LINKFREQ_1000MHZ		6
--
--/*
-- * LDT SRI Command Register (Table 8-21).  Note that these constants
-- * assume you've read the command and status register together
-- * 32-bit read at offset 0x50
-- */
--
--#define M_LDT_SRICMD_SIPREADY		_SB_MAKEMASK1_32(16)
--#define M_LDT_SRICMD_SYNCPTRCTL		_SB_MAKEMASK1_32(17)
--#define M_LDT_SRICMD_REDUCESYNCZERO	_SB_MAKEMASK1_32(18)
--#if SIBYTE_HDR_FEATURE_UP_TO(1250, PASS1)
--#define M_LDT_SRICMD_DISSTARVATIONCNT	_SB_MAKEMASK1_32(19)	/* PASS1 */
--#endif /* up to 1250 PASS1 */
--#if SIBYTE_HDR_FEATURE(1250, PASS2) || SIBYTE_HDR_FEATURE(112x, PASS1)
--#define M_LDT_SRICMD_DISMULTTXVLD	_SB_MAKEMASK1_32(19)
--#define M_LDT_SRICMD_EXPENDIAN		_SB_MAKEMASK1_32(26)
--#endif /* 1250 PASS2 || 112x PASS1 */
--
--
--#define S_LDT_SRICMD_RXMARGIN		20
--#define M_LDT_SRICMD_RXMARGIN		_SB_MAKEMASK_32(5, S_LDT_SRICMD_RXMARGIN)
--#define V_LDT_SRICMD_RXMARGIN(x)	_SB_MAKEVALUE_32(x, S_LDT_SRICMD_RXMARGIN)
--#define G_LDT_SRICMD_RXMARGIN(x)	_SB_GETVALUE_32(x, S_LDT_SRICMD_RXMARGIN, M_LDT_SRICMD_RXMARGIN)
--
--#define M_LDT_SRICMD_LDTPLLCOMPAT	_SB_MAKEMASK1_32(25)
--
--#define S_LDT_SRICMD_TXINITIALOFFSET	28
--#define M_LDT_SRICMD_TXINITIALOFFSET	_SB_MAKEMASK_32(3, S_LDT_SRICMD_TXINITIALOFFSET)
--#define V_LDT_SRICMD_TXINITIALOFFSET(x)	_SB_MAKEVALUE_32(x, S_LDT_SRICMD_TXINITIALOFFSET)
--#define G_LDT_SRICMD_TXINITIALOFFSET(x)	_SB_GETVALUE_32(x, S_LDT_SRICMD_TXINITIALOFFSET, M_LDT_SRICMD_TXINITIALOFFSET)
--
--#define M_LDT_SRICMD_LINKFREQDIRECT	_SB_MAKEMASK1_32(31)
--
--/*
-- * LDT Error control and status register (Table 8-22) (Table 8-23)
-- */
--
--#define M_LDT_ERRCTL_PROTFATAL_EN	_SB_MAKEMASK1_32(0)
--#define M_LDT_ERRCTL_PROTNONFATAL_EN	_SB_MAKEMASK1_32(1)
--#define M_LDT_ERRCTL_PROTSYNCFLOOD_EN	_SB_MAKEMASK1_32(2)
--#define M_LDT_ERRCTL_OVFFATAL_EN	_SB_MAKEMASK1_32(3)
--#define M_LDT_ERRCTL_OVFNONFATAL_EN	_SB_MAKEMASK1_32(4)
--#define M_LDT_ERRCTL_OVFSYNCFLOOD_EN	_SB_MAKEMASK1_32(5)
--#define M_LDT_ERRCTL_EOCNXAFATAL_EN	_SB_MAKEMASK1_32(6)
--#define M_LDT_ERRCTL_EOCNXANONFATAL_EN	_SB_MAKEMASK1_32(7)
--#define M_LDT_ERRCTL_EOCNXASYNCFLOOD_EN	_SB_MAKEMASK1_32(8)
--#define M_LDT_ERRCTL_CRCFATAL_EN	_SB_MAKEMASK1_32(9)
--#define M_LDT_ERRCTL_CRCNONFATAL_EN	_SB_MAKEMASK1_32(10)
--#define M_LDT_ERRCTL_SERRFATAL_EN	_SB_MAKEMASK1_32(11)
--#define M_LDT_ERRCTL_SRCTAGFATAL_EN	_SB_MAKEMASK1_32(12)
--#define M_LDT_ERRCTL_SRCTAGNONFATAL_EN	_SB_MAKEMASK1_32(13)
--#define M_LDT_ERRCTL_SRCTAGSYNCFLOOD_EN	_SB_MAKEMASK1_32(14)
--#define M_LDT_ERRCTL_MAPNXAFATAL_EN	_SB_MAKEMASK1_32(15)
--#define M_LDT_ERRCTL_MAPNXANONFATAL_EN	_SB_MAKEMASK1_32(16)
--#define M_LDT_ERRCTL_MAPNXASYNCFLOOD_EN	_SB_MAKEMASK1_32(17)
--
--#define M_LDT_ERRCTL_PROTOERR		_SB_MAKEMASK1_32(24)
--#define M_LDT_ERRCTL_OVFERR		_SB_MAKEMASK1_32(25)
--#define M_LDT_ERRCTL_EOCNXAERR		_SB_MAKEMASK1_32(26)
--#define M_LDT_ERRCTL_SRCTAGERR		_SB_MAKEMASK1_32(27)
--#define M_LDT_ERRCTL_MAPNXAERR		_SB_MAKEMASK1_32(28)
--
--/*
-- * SRI Control register (Table 8-24, 8-25)  Offset 0x6C
-- */
--
--#define S_LDT_SRICTRL_NEEDRESP		0
--#define M_LDT_SRICTRL_NEEDRESP		_SB_MAKEMASK_32(2, S_LDT_SRICTRL_NEEDRESP)
--#define V_LDT_SRICTRL_NEEDRESP(x)	_SB_MAKEVALUE_32(x, S_LDT_SRICTRL_NEEDRESP)
--#define G_LDT_SRICTRL_NEEDRESP(x)	_SB_GETVALUE_32(x, S_LDT_SRICTRL_NEEDRESP, M_LDT_SRICTRL_NEEDRESP)
--
--#define S_LDT_SRICTRL_NEEDNPREQ		2
--#define M_LDT_SRICTRL_NEEDNPREQ		_SB_MAKEMASK_32(2, S_LDT_SRICTRL_NEEDNPREQ)
--#define V_LDT_SRICTRL_NEEDNPREQ(x)	_SB_MAKEVALUE_32(x, S_LDT_SRICTRL_NEEDNPREQ)
--#define G_LDT_SRICTRL_NEEDNPREQ(x)	_SB_GETVALUE_32(x, S_LDT_SRICTRL_NEEDNPREQ, M_LDT_SRICTRL_NEEDNPREQ)
--
--#define S_LDT_SRICTRL_NEEDPREQ		4
--#define M_LDT_SRICTRL_NEEDPREQ		_SB_MAKEMASK_32(2, S_LDT_SRICTRL_NEEDPREQ)
--#define V_LDT_SRICTRL_NEEDPREQ(x)	_SB_MAKEVALUE_32(x, S_LDT_SRICTRL_NEEDPREQ)
--#define G_LDT_SRICTRL_NEEDPREQ(x)	_SB_GETVALUE_32(x, S_LDT_SRICTRL_NEEDPREQ, M_LDT_SRICTRL_NEEDPREQ)
--
--#define S_LDT_SRICTRL_WANTRESP		8
--#define M_LDT_SRICTRL_WANTRESP		_SB_MAKEMASK_32(2, S_LDT_SRICTRL_WANTRESP)
--#define V_LDT_SRICTRL_WANTRESP(x)	_SB_MAKEVALUE_32(x, S_LDT_SRICTRL_WANTRESP)
--#define G_LDT_SRICTRL_WANTRESP(x)	_SB_GETVALUE_32(x, S_LDT_SRICTRL_WANTRESP, M_LDT_SRICTRL_WANTRESP)
--
--#define S_LDT_SRICTRL_WANTNPREQ		10
--#define M_LDT_SRICTRL_WANTNPREQ		_SB_MAKEMASK_32(2, S_LDT_SRICTRL_WANTNPREQ)
--#define V_LDT_SRICTRL_WANTNPREQ(x)	_SB_MAKEVALUE_32(x, S_LDT_SRICTRL_WANTNPREQ)
--#define G_LDT_SRICTRL_WANTNPREQ(x)	_SB_GETVALUE_32(x, S_LDT_SRICTRL_WANTNPREQ, M_LDT_SRICTRL_WANTNPREQ)
--
--#define S_LDT_SRICTRL_WANTPREQ		12
--#define M_LDT_SRICTRL_WANTPREQ		_SB_MAKEMASK_32(2, S_LDT_SRICTRL_WANTPREQ)
--#define V_LDT_SRICTRL_WANTPREQ(x)	_SB_MAKEVALUE_32(x, S_LDT_SRICTRL_WANTPREQ)
--#define G_LDT_SRICTRL_WANTPREQ(x)	_SB_GETVALUE_32(x, S_LDT_SRICTRL_WANTPREQ, M_LDT_SRICTRL_WANTPREQ)
--
--#define S_LDT_SRICTRL_BUFRELSPACE	16
--#define M_LDT_SRICTRL_BUFRELSPACE	_SB_MAKEMASK_32(4, S_LDT_SRICTRL_BUFRELSPACE)
--#define V_LDT_SRICTRL_BUFRELSPACE(x)	_SB_MAKEVALUE_32(x, S_LDT_SRICTRL_BUFRELSPACE)
--#define G_LDT_SRICTRL_BUFRELSPACE(x)	_SB_GETVALUE_32(x, S_LDT_SRICTRL_BUFRELSPACE, M_LDT_SRICTRL_BUFRELSPACE)
--
--/*
-- * LDT SRI Transmit Buffer Count register (Table 8-26)
-- */
--
--#define S_LDT_TXBUFCNT_PCMD		0
--#define M_LDT_TXBUFCNT_PCMD		_SB_MAKEMASK_32(4, S_LDT_TXBUFCNT_PCMD)
--#define V_LDT_TXBUFCNT_PCMD(x)		_SB_MAKEVALUE_32(x, S_LDT_TXBUFCNT_PCMD)
--#define G_LDT_TXBUFCNT_PCMD(x)		_SB_GETVALUE_32(x, S_LDT_TXBUFCNT_PCMD, M_LDT_TXBUFCNT_PCMD)
--
--#define S_LDT_TXBUFCNT_PDATA		4
--#define M_LDT_TXBUFCNT_PDATA		_SB_MAKEMASK_32(4, S_LDT_TXBUFCNT_PDATA)
--#define V_LDT_TXBUFCNT_PDATA(x)		_SB_MAKEVALUE_32(x, S_LDT_TXBUFCNT_PDATA)
--#define G_LDT_TXBUFCNT_PDATA(x)		_SB_GETVALUE_32(x, S_LDT_TXBUFCNT_PDATA, M_LDT_TXBUFCNT_PDATA)
--
--#define S_LDT_TXBUFCNT_NPCMD		8
--#define M_LDT_TXBUFCNT_NPCMD		_SB_MAKEMASK_32(4, S_LDT_TXBUFCNT_NPCMD)
--#define V_LDT_TXBUFCNT_NPCMD(x)		_SB_MAKEVALUE_32(x, S_LDT_TXBUFCNT_NPCMD)
--#define G_LDT_TXBUFCNT_NPCMD(x)		_SB_GETVALUE_32(x, S_LDT_TXBUFCNT_NPCMD, M_LDT_TXBUFCNT_NPCMD)
--
--#define S_LDT_TXBUFCNT_NPDATA		12
--#define M_LDT_TXBUFCNT_NPDATA		_SB_MAKEMASK_32(4, S_LDT_TXBUFCNT_NPDATA)
--#define V_LDT_TXBUFCNT_NPDATA(x)	_SB_MAKEVALUE_32(x, S_LDT_TXBUFCNT_NPDATA)
--#define G_LDT_TXBUFCNT_NPDATA(x)	_SB_GETVALUE_32(x, S_LDT_TXBUFCNT_NPDATA, M_LDT_TXBUFCNT_NPDATA)
--
--#define S_LDT_TXBUFCNT_RCMD		16
--#define M_LDT_TXBUFCNT_RCMD		_SB_MAKEMASK_32(4, S_LDT_TXBUFCNT_RCMD)
--#define V_LDT_TXBUFCNT_RCMD(x)		_SB_MAKEVALUE_32(x, S_LDT_TXBUFCNT_RCMD)
--#define G_LDT_TXBUFCNT_RCMD(x)		_SB_GETVALUE_32(x, S_LDT_TXBUFCNT_RCMD, M_LDT_TXBUFCNT_RCMD)
--
--#define S_LDT_TXBUFCNT_RDATA		20
--#define M_LDT_TXBUFCNT_RDATA		_SB_MAKEMASK_32(4, S_LDT_TXBUFCNT_RDATA)
--#define V_LDT_TXBUFCNT_RDATA(x)		_SB_MAKEVALUE_32(x, S_LDT_TXBUFCNT_RDATA)
--#define G_LDT_TXBUFCNT_RDATA(x)		_SB_GETVALUE_32(x, S_LDT_TXBUFCNT_RDATA, M_LDT_TXBUFCNT_RDATA)
--
--#if SIBYTE_HDR_FEATURE(1250, PASS2) || SIBYTE_HDR_FEATURE(112x, PASS1)
--/*
-- * Additional Status Register
-- */
--
--#define S_LDT_ADDSTATUS_TGTDONE		0
--#define M_LDT_ADDSTATUS_TGTDONE		_SB_MAKEMASK_32(8, S_LDT_ADDSTATUS_TGTDONE)
--#define V_LDT_ADDSTATUS_TGTDONE(x)	_SB_MAKEVALUE_32(x, S_LDT_ADDSTATUS_TGTDONE)
--#define G_LDT_ADDSTATUS_TGTDONE(x)	_SB_GETVALUE_32(x, S_LDT_ADDSTATUS_TGTDONE, M_LDT_ADDSTATUS_TGTDONE)
--#endif /* 1250 PASS2 || 112x PASS1 */
--
--#endif
-diff --git a/arch/mips/include/asm/sibyte/sb1250_mc.h b/arch/mips/include/asm/sibyte/sb1250_mc.h
-deleted file mode 100644
-index 1eb1b5a..0000000
---- a/arch/mips/include/asm/sibyte/sb1250_mc.h
-+++ /dev/null
-@@ -1,550 +0,0 @@
--/*  *********************************************************************
--    *  SB1250 Board Support Package
--    *
--    *  Memory Controller constants              File: sb1250_mc.h
+-    *  Memory Controller constants              File: bcm1480_mc.h
 -    *
 -    *  This module contains constants and macros useful for
 -    *  programming the memory controller.
 -    *
--    *  SB1250 specification level:  User's manual 1/02/02
+-    *  BCM1400 specification level:  1280-UM100-D1 (11/14/03 Review Copy)
 -    *
 -    *********************************************************************
 -    *
--    *  Copyright 2000, 2001, 2002, 2003
+-    *  Copyright 2000,2001,2002,2003
 -    *  Broadcom Corporation. All rights reserved.
 -    *
 -    *  This program is free software; you can redistribute it and/or
@@ -646,524 +263,960 @@ index 1eb1b5a..0000000
 -    ********************************************************************* */
 -
 -
--#ifndef _SB1250_MC_H
--#define _SB1250_MC_H
+-#ifndef _BCM1480_MC_H
+-#define _BCM1480_MC_H
 -
 -#include "sb1250_defs.h"
 -
 -/*
-- * Memory Channel Config Register (table 6-14)
+- * Memory Channel Configuration Register (Table 81)
 - */
 -
--#define S_MC_RESERVED0              0
--#define M_MC_RESERVED0              _SB_MAKEMASK(8, S_MC_RESERVED0)
+-#define S_BCM1480_MC_INTLV0                 0
+-#define M_BCM1480_MC_INTLV0                 _SB_MAKEMASK(6, S_BCM1480_MC_INTLV0)
+-#define V_BCM1480_MC_INTLV0(x)              _SB_MAKEVALUE(x, S_BCM1480_MC_INTLV0)
+-#define G_BCM1480_MC_INTLV0(x)              _SB_GETVALUE(x, S_BCM1480_MC_INTLV0, M_BCM1480_MC_INTLV0)
+-#define V_BCM1480_MC_INTLV0_DEFAULT         V_BCM1480_MC_INTLV0(0)
 -
--#define S_MC_CHANNEL_SEL            8
--#define M_MC_CHANNEL_SEL            _SB_MAKEMASK(8, S_MC_CHANNEL_SEL)
--#define V_MC_CHANNEL_SEL(x)         _SB_MAKEVALUE(x, S_MC_CHANNEL_SEL)
--#define G_MC_CHANNEL_SEL(x)         _SB_GETVALUE(x, S_MC_CHANNEL_SEL, M_MC_CHANNEL_SEL)
+-#define S_BCM1480_MC_INTLV1                 8
+-#define M_BCM1480_MC_INTLV1                 _SB_MAKEMASK(6, S_BCM1480_MC_INTLV1)
+-#define V_BCM1480_MC_INTLV1(x)              _SB_MAKEVALUE(x, S_BCM1480_MC_INTLV1)
+-#define G_BCM1480_MC_INTLV1(x)              _SB_GETVALUE(x, S_BCM1480_MC_INTLV1, M_BCM1480_MC_INTLV1)
+-#define V_BCM1480_MC_INTLV1_DEFAULT         V_BCM1480_MC_INTLV1(0)
 -
--#define S_MC_BANK0_MAP              16
--#define M_MC_BANK0_MAP              _SB_MAKEMASK(4, S_MC_BANK0_MAP)
--#define V_MC_BANK0_MAP(x)           _SB_MAKEVALUE(x, S_MC_BANK0_MAP)
--#define G_MC_BANK0_MAP(x)           _SB_GETVALUE(x, S_MC_BANK0_MAP, M_MC_BANK0_MAP)
+-#define S_BCM1480_MC_INTLV2                 16
+-#define M_BCM1480_MC_INTLV2                 _SB_MAKEMASK(6, S_BCM1480_MC_INTLV2)
+-#define V_BCM1480_MC_INTLV2(x)              _SB_MAKEVALUE(x, S_BCM1480_MC_INTLV2)
+-#define G_BCM1480_MC_INTLV2(x)              _SB_GETVALUE(x, S_BCM1480_MC_INTLV2, M_BCM1480_MC_INTLV2)
+-#define V_BCM1480_MC_INTLV2_DEFAULT         V_BCM1480_MC_INTLV2(0)
 -
--#define K_MC_BANK0_MAP_DEFAULT      0x00
--#define V_MC_BANK0_MAP_DEFAULT      V_MC_BANK0_MAP(K_MC_BANK0_MAP_DEFAULT)
+-#define S_BCM1480_MC_CS_MODE                32
+-#define M_BCM1480_MC_CS_MODE                _SB_MAKEMASK(8, S_BCM1480_MC_CS_MODE)
+-#define V_BCM1480_MC_CS_MODE(x)             _SB_MAKEVALUE(x, S_BCM1480_MC_CS_MODE)
+-#define G_BCM1480_MC_CS_MODE(x)             _SB_GETVALUE(x, S_BCM1480_MC_CS_MODE, M_BCM1480_MC_CS_MODE)
+-#define V_BCM1480_MC_CS_MODE_DEFAULT        V_BCM1480_MC_CS_MODE(0)
 -
--#define S_MC_BANK1_MAP              20
--#define M_MC_BANK1_MAP              _SB_MAKEMASK(4, S_MC_BANK1_MAP)
--#define V_MC_BANK1_MAP(x)           _SB_MAKEVALUE(x, S_MC_BANK1_MAP)
--#define G_MC_BANK1_MAP(x)           _SB_GETVALUE(x, S_MC_BANK1_MAP, M_MC_BANK1_MAP)
+-#define V_BCM1480_MC_CONFIG_DEFAULT         (V_BCM1480_MC_INTLV0_DEFAULT  | \
+-                                     V_BCM1480_MC_INTLV1_DEFAULT  | \
+-                                     V_BCM1480_MC_INTLV2_DEFAULT  | \
+-				     V_BCM1480_MC_CS_MODE_DEFAULT)
 -
--#define K_MC_BANK1_MAP_DEFAULT      0x08
--#define V_MC_BANK1_MAP_DEFAULT      V_MC_BANK1_MAP(K_MC_BANK1_MAP_DEFAULT)
--
--#define S_MC_BANK2_MAP              24
--#define M_MC_BANK2_MAP              _SB_MAKEMASK(4, S_MC_BANK2_MAP)
--#define V_MC_BANK2_MAP(x)           _SB_MAKEVALUE(x, S_MC_BANK2_MAP)
--#define G_MC_BANK2_MAP(x)           _SB_GETVALUE(x, S_MC_BANK2_MAP, M_MC_BANK2_MAP)
--
--#define K_MC_BANK2_MAP_DEFAULT      0x09
--#define V_MC_BANK2_MAP_DEFAULT      V_MC_BANK2_MAP(K_MC_BANK2_MAP_DEFAULT)
--
--#define S_MC_BANK3_MAP              28
--#define M_MC_BANK3_MAP              _SB_MAKEMASK(4, S_MC_BANK3_MAP)
--#define V_MC_BANK3_MAP(x)           _SB_MAKEVALUE(x, S_MC_BANK3_MAP)
--#define G_MC_BANK3_MAP(x)           _SB_GETVALUE(x, S_MC_BANK3_MAP, M_MC_BANK3_MAP)
--
--#define K_MC_BANK3_MAP_DEFAULT      0x0C
--#define V_MC_BANK3_MAP_DEFAULT      V_MC_BANK3_MAP(K_MC_BANK3_MAP_DEFAULT)
--
--#define M_MC_RESERVED1              _SB_MAKEMASK(8, 32)
--
--#define S_MC_QUEUE_SIZE		    40
--#define M_MC_QUEUE_SIZE             _SB_MAKEMASK(4, S_MC_QUEUE_SIZE)
--#define V_MC_QUEUE_SIZE(x)          _SB_MAKEVALUE(x, S_MC_QUEUE_SIZE)
--#define G_MC_QUEUE_SIZE(x)          _SB_GETVALUE(x, S_MC_QUEUE_SIZE, M_MC_QUEUE_SIZE)
--#define V_MC_QUEUE_SIZE_DEFAULT     V_MC_QUEUE_SIZE(0x0A)
--
--#define S_MC_AGE_LIMIT              44
--#define M_MC_AGE_LIMIT              _SB_MAKEMASK(4, S_MC_AGE_LIMIT)
--#define V_MC_AGE_LIMIT(x)           _SB_MAKEVALUE(x, S_MC_AGE_LIMIT)
--#define G_MC_AGE_LIMIT(x)           _SB_GETVALUE(x, S_MC_AGE_LIMIT, M_MC_AGE_LIMIT)
--#define V_MC_AGE_LIMIT_DEFAULT      V_MC_AGE_LIMIT(8)
--
--#define S_MC_WR_LIMIT               48
--#define M_MC_WR_LIMIT               _SB_MAKEMASK(4, S_MC_WR_LIMIT)
--#define V_MC_WR_LIMIT(x)            _SB_MAKEVALUE(x, S_MC_WR_LIMIT)
--#define G_MC_WR_LIMIT(x)            _SB_GETVALUE(x, S_MC_WR_LIMIT, M_MC_WR_LIMIT)
--#define V_MC_WR_LIMIT_DEFAULT       V_MC_WR_LIMIT(5)
--
--#define M_MC_IOB1HIGHPRIORITY	    _SB_MAKEMASK1(52)
--
--#define M_MC_RESERVED2              _SB_MAKEMASK(3, 53)
--
--#define S_MC_CS_MODE                56
--#define M_MC_CS_MODE                _SB_MAKEMASK(4, S_MC_CS_MODE)
--#define V_MC_CS_MODE(x)             _SB_MAKEVALUE(x, S_MC_CS_MODE)
--#define G_MC_CS_MODE(x)             _SB_GETVALUE(x, S_MC_CS_MODE, M_MC_CS_MODE)
--
--#define K_MC_CS_MODE_MSB_CS         0
--#define K_MC_CS_MODE_INTLV_CS       15
--#define K_MC_CS_MODE_MIXED_CS_10    12
--#define K_MC_CS_MODE_MIXED_CS_30    6
--#define K_MC_CS_MODE_MIXED_CS_32    3
--
--#define V_MC_CS_MODE_MSB_CS         V_MC_CS_MODE(K_MC_CS_MODE_MSB_CS)
--#define V_MC_CS_MODE_INTLV_CS       V_MC_CS_MODE(K_MC_CS_MODE_INTLV_CS)
--#define V_MC_CS_MODE_MIXED_CS_10    V_MC_CS_MODE(K_MC_CS_MODE_MIXED_CS_10)
--#define V_MC_CS_MODE_MIXED_CS_30    V_MC_CS_MODE(K_MC_CS_MODE_MIXED_CS_30)
--#define V_MC_CS_MODE_MIXED_CS_32    V_MC_CS_MODE(K_MC_CS_MODE_MIXED_CS_32)
--
--#define M_MC_ECC_DISABLE            _SB_MAKEMASK1(60)
--#define M_MC_BERR_DISABLE           _SB_MAKEMASK1(61)
--#define M_MC_FORCE_SEQ              _SB_MAKEMASK1(62)
--#define M_MC_DEBUG                  _SB_MAKEMASK1(63)
--
--#define V_MC_CONFIG_DEFAULT     V_MC_WR_LIMIT_DEFAULT | V_MC_AGE_LIMIT_DEFAULT | \
--				V_MC_BANK0_MAP_DEFAULT | V_MC_BANK1_MAP_DEFAULT | \
--				V_MC_BANK2_MAP_DEFAULT | V_MC_BANK3_MAP_DEFAULT | V_MC_CHANNEL_SEL(0) | \
--                                M_MC_IOB1HIGHPRIORITY | V_MC_QUEUE_SIZE_DEFAULT
--
+-#define K_BCM1480_MC_CS01_MODE		    0x03
+-#define K_BCM1480_MC_CS02_MODE		    0x05
+-#define K_BCM1480_MC_CS0123_MODE	    0x0F
+-#define K_BCM1480_MC_CS0246_MODE	    0x55
+-#define K_BCM1480_MC_CS0145_MODE	    0x33
+-#define K_BCM1480_MC_CS0167_MODE	    0xC3
+-#define K_BCM1480_MC_CSFULL_MODE	    0xFF
 -
 -/*
-- * Memory clock config register (Table 6-15)
-- *
-- * Note: this field has been updated to be consistent with the errata to 0.2
+- * Chip Select Start Address Register (Table 82)
 - */
 -
--#define S_MC_CLK_RATIO              0
--#define M_MC_CLK_RATIO              _SB_MAKEMASK(4, S_MC_CLK_RATIO)
--#define V_MC_CLK_RATIO(x)           _SB_MAKEVALUE(x, S_MC_CLK_RATIO)
--#define G_MC_CLK_RATIO(x)           _SB_GETVALUE(x, S_MC_CLK_RATIO, M_MC_CLK_RATIO)
+-#define S_BCM1480_MC_CS0_START              0
+-#define M_BCM1480_MC_CS0_START              _SB_MAKEMASK(12, S_BCM1480_MC_CS0_START)
+-#define V_BCM1480_MC_CS0_START(x)           _SB_MAKEVALUE(x, S_BCM1480_MC_CS0_START)
+-#define G_BCM1480_MC_CS0_START(x)           _SB_GETVALUE(x, S_BCM1480_MC_CS0_START, M_BCM1480_MC_CS0_START)
 -
--#define K_MC_CLK_RATIO_2X           4
--#define K_MC_CLK_RATIO_25X          5
--#define K_MC_CLK_RATIO_3X           6
--#define K_MC_CLK_RATIO_35X          7
--#define K_MC_CLK_RATIO_4X           8
--#define K_MC_CLK_RATIO_45X	    9
+-#define S_BCM1480_MC_CS1_START              16
+-#define M_BCM1480_MC_CS1_START              _SB_MAKEMASK(12, S_BCM1480_MC_CS1_START)
+-#define V_BCM1480_MC_CS1_START(x)           _SB_MAKEVALUE(x, S_BCM1480_MC_CS1_START)
+-#define G_BCM1480_MC_CS1_START(x)           _SB_GETVALUE(x, S_BCM1480_MC_CS1_START, M_BCM1480_MC_CS1_START)
 -
--#define V_MC_CLK_RATIO_2X	    V_MC_CLK_RATIO(K_MC_CLK_RATIO_2X)
--#define V_MC_CLK_RATIO_25X          V_MC_CLK_RATIO(K_MC_CLK_RATIO_25X)
--#define V_MC_CLK_RATIO_3X           V_MC_CLK_RATIO(K_MC_CLK_RATIO_3X)
--#define V_MC_CLK_RATIO_35X          V_MC_CLK_RATIO(K_MC_CLK_RATIO_35X)
--#define V_MC_CLK_RATIO_4X           V_MC_CLK_RATIO(K_MC_CLK_RATIO_4X)
--#define V_MC_CLK_RATIO_45X          V_MC_CLK_RATIO(K_MC_CLK_RATIO_45X)
--#define V_MC_CLK_RATIO_DEFAULT      V_MC_CLK_RATIO_25X
+-#define S_BCM1480_MC_CS2_START              32
+-#define M_BCM1480_MC_CS2_START              _SB_MAKEMASK(12, S_BCM1480_MC_CS2_START)
+-#define V_BCM1480_MC_CS2_START(x)           _SB_MAKEVALUE(x, S_BCM1480_MC_CS2_START)
+-#define G_BCM1480_MC_CS2_START(x)           _SB_GETVALUE(x, S_BCM1480_MC_CS2_START, M_BCM1480_MC_CS2_START)
 -
--#define S_MC_REF_RATE                8
--#define M_MC_REF_RATE                _SB_MAKEMASK(8, S_MC_REF_RATE)
--#define V_MC_REF_RATE(x)             _SB_MAKEVALUE(x, S_MC_REF_RATE)
--#define G_MC_REF_RATE(x)             _SB_GETVALUE(x, S_MC_REF_RATE, M_MC_REF_RATE)
--
--#define K_MC_REF_RATE_100MHz         0x62
--#define K_MC_REF_RATE_133MHz         0x81
--#define K_MC_REF_RATE_200MHz         0xC4
--
--#define V_MC_REF_RATE_100MHz         V_MC_REF_RATE(K_MC_REF_RATE_100MHz)
--#define V_MC_REF_RATE_133MHz         V_MC_REF_RATE(K_MC_REF_RATE_133MHz)
--#define V_MC_REF_RATE_200MHz         V_MC_REF_RATE(K_MC_REF_RATE_200MHz)
--#define V_MC_REF_RATE_DEFAULT        V_MC_REF_RATE_100MHz
--
--#define S_MC_CLOCK_DRIVE             16
--#define M_MC_CLOCK_DRIVE             _SB_MAKEMASK(4, S_MC_CLOCK_DRIVE)
--#define V_MC_CLOCK_DRIVE(x)          _SB_MAKEVALUE(x, S_MC_CLOCK_DRIVE)
--#define G_MC_CLOCK_DRIVE(x)          _SB_GETVALUE(x, S_MC_CLOCK_DRIVE, M_MC_CLOCK_DRIVE)
--#define V_MC_CLOCK_DRIVE_DEFAULT     V_MC_CLOCK_DRIVE(0xF)
--
--#define S_MC_DATA_DRIVE              20
--#define M_MC_DATA_DRIVE              _SB_MAKEMASK(4, S_MC_DATA_DRIVE)
--#define V_MC_DATA_DRIVE(x)           _SB_MAKEVALUE(x, S_MC_DATA_DRIVE)
--#define G_MC_DATA_DRIVE(x)           _SB_GETVALUE(x, S_MC_DATA_DRIVE, M_MC_DATA_DRIVE)
--#define V_MC_DATA_DRIVE_DEFAULT      V_MC_DATA_DRIVE(0x0)
--
--#define S_MC_ADDR_DRIVE              24
--#define M_MC_ADDR_DRIVE              _SB_MAKEMASK(4, S_MC_ADDR_DRIVE)
--#define V_MC_ADDR_DRIVE(x)           _SB_MAKEVALUE(x, S_MC_ADDR_DRIVE)
--#define G_MC_ADDR_DRIVE(x)           _SB_GETVALUE(x, S_MC_ADDR_DRIVE, M_MC_ADDR_DRIVE)
--#define V_MC_ADDR_DRIVE_DEFAULT      V_MC_ADDR_DRIVE(0x0)
--
--#if SIBYTE_HDR_FEATURE(1250, PASS3) || SIBYTE_HDR_FEATURE(112x, PASS1)
--#define M_MC_REF_DISABLE             _SB_MAKEMASK1(30)
--#endif /* 1250 PASS3 || 112x PASS1 */
--
--#define M_MC_DLL_BYPASS              _SB_MAKEMASK1(31)
--
--#define S_MC_DQI_SKEW               32
--#define M_MC_DQI_SKEW               _SB_MAKEMASK(8, S_MC_DQI_SKEW)
--#define V_MC_DQI_SKEW(x)            _SB_MAKEVALUE(x, S_MC_DQI_SKEW)
--#define G_MC_DQI_SKEW(x)            _SB_GETVALUE(x, S_MC_DQI_SKEW, M_MC_DQI_SKEW)
--#define V_MC_DQI_SKEW_DEFAULT       V_MC_DQI_SKEW(0)
--
--#define S_MC_DQO_SKEW               40
--#define M_MC_DQO_SKEW               _SB_MAKEMASK(8, S_MC_DQO_SKEW)
--#define V_MC_DQO_SKEW(x)            _SB_MAKEVALUE(x, S_MC_DQO_SKEW)
--#define G_MC_DQO_SKEW(x)            _SB_GETVALUE(x, S_MC_DQO_SKEW, M_MC_DQO_SKEW)
--#define V_MC_DQO_SKEW_DEFAULT       V_MC_DQO_SKEW(0)
--
--#define S_MC_ADDR_SKEW               48
--#define M_MC_ADDR_SKEW               _SB_MAKEMASK(8, S_MC_ADDR_SKEW)
--#define V_MC_ADDR_SKEW(x)            _SB_MAKEVALUE(x, S_MC_ADDR_SKEW)
--#define G_MC_ADDR_SKEW(x)            _SB_GETVALUE(x, S_MC_ADDR_SKEW, M_MC_ADDR_SKEW)
--#define V_MC_ADDR_SKEW_DEFAULT       V_MC_ADDR_SKEW(0x0F)
--
--#define S_MC_DLL_DEFAULT             56
--#define M_MC_DLL_DEFAULT             _SB_MAKEMASK(8, S_MC_DLL_DEFAULT)
--#define V_MC_DLL_DEFAULT(x)          _SB_MAKEVALUE(x, S_MC_DLL_DEFAULT)
--#define G_MC_DLL_DEFAULT(x)          _SB_GETVALUE(x, S_MC_DLL_DEFAULT, M_MC_DLL_DEFAULT)
--#define V_MC_DLL_DEFAULT_DEFAULT     V_MC_DLL_DEFAULT(0x10)
--
--#define V_MC_CLKCONFIG_DEFAULT       V_MC_DLL_DEFAULT_DEFAULT |  \
--                                     V_MC_ADDR_SKEW_DEFAULT | \
--                                     V_MC_DQO_SKEW_DEFAULT | \
--                                     V_MC_DQI_SKEW_DEFAULT | \
--                                     V_MC_ADDR_DRIVE_DEFAULT | \
--                                     V_MC_DATA_DRIVE_DEFAULT | \
--                                     V_MC_CLOCK_DRIVE_DEFAULT | \
--                                     V_MC_REF_RATE_DEFAULT
--
--
+-#define S_BCM1480_MC_CS3_START              48
+-#define M_BCM1480_MC_CS3_START              _SB_MAKEMASK(12, S_BCM1480_MC_CS3_START)
+-#define V_BCM1480_MC_CS3_START(x)           _SB_MAKEVALUE(x, S_BCM1480_MC_CS3_START)
+-#define G_BCM1480_MC_CS3_START(x)           _SB_GETVALUE(x, S_BCM1480_MC_CS3_START, M_BCM1480_MC_CS3_START)
 -
 -/*
-- * DRAM Command Register (Table 6-13)
+- * Chip Select End Address Register (Table 83)
 - */
 -
--#define S_MC_COMMAND                0
--#define M_MC_COMMAND                _SB_MAKEMASK(4, S_MC_COMMAND)
--#define V_MC_COMMAND(x)             _SB_MAKEVALUE(x, S_MC_COMMAND)
--#define G_MC_COMMAND(x)             _SB_GETVALUE(x, S_MC_COMMAND, M_MC_COMMAND)
+-#define S_BCM1480_MC_CS0_END                0
+-#define M_BCM1480_MC_CS0_END                _SB_MAKEMASK(12, S_BCM1480_MC_CS0_END)
+-#define V_BCM1480_MC_CS0_END(x)             _SB_MAKEVALUE(x, S_BCM1480_MC_CS0_END)
+-#define G_BCM1480_MC_CS0_END(x)             _SB_GETVALUE(x, S_BCM1480_MC_CS0_END, M_BCM1480_MC_CS0_END)
 -
--#define K_MC_COMMAND_EMRS           0
--#define K_MC_COMMAND_MRS            1
--#define K_MC_COMMAND_PRE            2
--#define K_MC_COMMAND_AR             3
--#define K_MC_COMMAND_SETRFSH        4
--#define K_MC_COMMAND_CLRRFSH        5
--#define K_MC_COMMAND_SETPWRDN       6
--#define K_MC_COMMAND_CLRPWRDN       7
+-#define S_BCM1480_MC_CS1_END                16
+-#define M_BCM1480_MC_CS1_END                _SB_MAKEMASK(12, S_BCM1480_MC_CS1_END)
+-#define V_BCM1480_MC_CS1_END(x)             _SB_MAKEVALUE(x, S_BCM1480_MC_CS1_END)
+-#define G_BCM1480_MC_CS1_END(x)             _SB_GETVALUE(x, S_BCM1480_MC_CS1_END, M_BCM1480_MC_CS1_END)
 -
--#define V_MC_COMMAND_EMRS           V_MC_COMMAND(K_MC_COMMAND_EMRS)
--#define V_MC_COMMAND_MRS            V_MC_COMMAND(K_MC_COMMAND_MRS)
--#define V_MC_COMMAND_PRE            V_MC_COMMAND(K_MC_COMMAND_PRE)
--#define V_MC_COMMAND_AR             V_MC_COMMAND(K_MC_COMMAND_AR)
--#define V_MC_COMMAND_SETRFSH        V_MC_COMMAND(K_MC_COMMAND_SETRFSH)
--#define V_MC_COMMAND_CLRRFSH        V_MC_COMMAND(K_MC_COMMAND_CLRRFSH)
--#define V_MC_COMMAND_SETPWRDN       V_MC_COMMAND(K_MC_COMMAND_SETPWRDN)
--#define V_MC_COMMAND_CLRPWRDN       V_MC_COMMAND(K_MC_COMMAND_CLRPWRDN)
+-#define S_BCM1480_MC_CS2_END                32
+-#define M_BCM1480_MC_CS2_END                _SB_MAKEMASK(12, S_BCM1480_MC_CS2_END)
+-#define V_BCM1480_MC_CS2_END(x)             _SB_MAKEVALUE(x, S_BCM1480_MC_CS2_END)
+-#define G_BCM1480_MC_CS2_END(x)             _SB_GETVALUE(x, S_BCM1480_MC_CS2_END, M_BCM1480_MC_CS2_END)
 -
--#define M_MC_CS0                    _SB_MAKEMASK1(4)
--#define M_MC_CS1                    _SB_MAKEMASK1(5)
--#define M_MC_CS2                    _SB_MAKEMASK1(6)
--#define M_MC_CS3                    _SB_MAKEMASK1(7)
+-#define S_BCM1480_MC_CS3_END                48
+-#define M_BCM1480_MC_CS3_END                _SB_MAKEMASK(12, S_BCM1480_MC_CS3_END)
+-#define V_BCM1480_MC_CS3_END(x)             _SB_MAKEVALUE(x, S_BCM1480_MC_CS3_END)
+-#define G_BCM1480_MC_CS3_END(x)             _SB_GETVALUE(x, S_BCM1480_MC_CS3_END, M_BCM1480_MC_CS3_END)
 -
 -/*
-- * DRAM Mode Register (Table 6-14)
+- * Row Address Bit Select Register 0 (Table 84)
 - */
 -
--#define S_MC_EMODE                  0
--#define M_MC_EMODE                  _SB_MAKEMASK(15, S_MC_EMODE)
--#define V_MC_EMODE(x)               _SB_MAKEVALUE(x, S_MC_EMODE)
--#define G_MC_EMODE(x)               _SB_GETVALUE(x, S_MC_EMODE, M_MC_EMODE)
--#define V_MC_EMODE_DEFAULT          V_MC_EMODE(0)
+-#define S_BCM1480_MC_ROW00                  0
+-#define M_BCM1480_MC_ROW00                  _SB_MAKEMASK(6, S_BCM1480_MC_ROW00)
+-#define V_BCM1480_MC_ROW00(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_ROW00)
+-#define G_BCM1480_MC_ROW00(x)               _SB_GETVALUE(x, S_BCM1480_MC_ROW00, M_BCM1480_MC_ROW00)
 -
--#define S_MC_MODE                   16
--#define M_MC_MODE                   _SB_MAKEMASK(15, S_MC_MODE)
--#define V_MC_MODE(x)                _SB_MAKEVALUE(x, S_MC_MODE)
--#define G_MC_MODE(x)                _SB_GETVALUE(x, S_MC_MODE, M_MC_MODE)
--#define V_MC_MODE_DEFAULT           V_MC_MODE(0x22)
+-#define S_BCM1480_MC_ROW01                  8
+-#define M_BCM1480_MC_ROW01                  _SB_MAKEMASK(6, S_BCM1480_MC_ROW01)
+-#define V_BCM1480_MC_ROW01(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_ROW01)
+-#define G_BCM1480_MC_ROW01(x)               _SB_GETVALUE(x, S_BCM1480_MC_ROW01, M_BCM1480_MC_ROW01)
 -
--#define S_MC_DRAM_TYPE              32
--#define M_MC_DRAM_TYPE              _SB_MAKEMASK(3, S_MC_DRAM_TYPE)
--#define V_MC_DRAM_TYPE(x)           _SB_MAKEVALUE(x, S_MC_DRAM_TYPE)
--#define G_MC_DRAM_TYPE(x)           _SB_GETVALUE(x, S_MC_DRAM_TYPE, M_MC_DRAM_TYPE)
+-#define S_BCM1480_MC_ROW02                  16
+-#define M_BCM1480_MC_ROW02                  _SB_MAKEMASK(6, S_BCM1480_MC_ROW02)
+-#define V_BCM1480_MC_ROW02(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_ROW02)
+-#define G_BCM1480_MC_ROW02(x)               _SB_GETVALUE(x, S_BCM1480_MC_ROW02, M_BCM1480_MC_ROW02)
 -
--#define K_MC_DRAM_TYPE_JEDEC        0
--#define K_MC_DRAM_TYPE_FCRAM        1
--#define K_MC_DRAM_TYPE_SGRAM	    2
+-#define S_BCM1480_MC_ROW03                  24
+-#define M_BCM1480_MC_ROW03                  _SB_MAKEMASK(6, S_BCM1480_MC_ROW03)
+-#define V_BCM1480_MC_ROW03(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_ROW03)
+-#define G_BCM1480_MC_ROW03(x)               _SB_GETVALUE(x, S_BCM1480_MC_ROW03, M_BCM1480_MC_ROW03)
 -
--#define V_MC_DRAM_TYPE_JEDEC        V_MC_DRAM_TYPE(K_MC_DRAM_TYPE_JEDEC)
--#define V_MC_DRAM_TYPE_FCRAM        V_MC_DRAM_TYPE(K_MC_DRAM_TYPE_FCRAM)
--#define V_MC_DRAM_TYPE_SGRAM        V_MC_DRAM_TYPE(K_MC_DRAM_TYPE_SGRAM)
+-#define S_BCM1480_MC_ROW04                  32
+-#define M_BCM1480_MC_ROW04                  _SB_MAKEMASK(6, S_BCM1480_MC_ROW04)
+-#define V_BCM1480_MC_ROW04(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_ROW04)
+-#define G_BCM1480_MC_ROW04(x)               _SB_GETVALUE(x, S_BCM1480_MC_ROW04, M_BCM1480_MC_ROW04)
 -
--#define M_MC_EXTERNALDECODE	    _SB_MAKEMASK1(35)
+-#define S_BCM1480_MC_ROW05                  40
+-#define M_BCM1480_MC_ROW05                  _SB_MAKEMASK(6, S_BCM1480_MC_ROW05)
+-#define V_BCM1480_MC_ROW05(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_ROW05)
+-#define G_BCM1480_MC_ROW05(x)               _SB_GETVALUE(x, S_BCM1480_MC_ROW05, M_BCM1480_MC_ROW05)
 -
--#if SIBYTE_HDR_FEATURE(1250, PASS3) || SIBYTE_HDR_FEATURE(112x, PASS1)
--#define M_MC_PRE_ON_A8              _SB_MAKEMASK1(36)
--#define M_MC_RAM_WITH_A13           _SB_MAKEMASK1(37)
--#endif /* 1250 PASS3 || 112x PASS1 */
+-#define S_BCM1480_MC_ROW06                  48
+-#define M_BCM1480_MC_ROW06                  _SB_MAKEMASK(6, S_BCM1480_MC_ROW06)
+-#define V_BCM1480_MC_ROW06(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_ROW06)
+-#define G_BCM1480_MC_ROW06(x)               _SB_GETVALUE(x, S_BCM1480_MC_ROW06, M_BCM1480_MC_ROW06)
 -
--
+-#define S_BCM1480_MC_ROW07                  56
+-#define M_BCM1480_MC_ROW07                  _SB_MAKEMASK(6, S_BCM1480_MC_ROW07)
+-#define V_BCM1480_MC_ROW07(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_ROW07)
+-#define G_BCM1480_MC_ROW07(x)               _SB_GETVALUE(x, S_BCM1480_MC_ROW07, M_BCM1480_MC_ROW07)
 -
 -/*
-- * SDRAM Timing Register  (Table 6-15)
+- * Row Address Bit Select Register 1 (Table 85)
 - */
 -
--#define M_MC_w2rIDLE_TWOCYCLES	  _SB_MAKEMASK1(60)
--#define M_MC_r2wIDLE_TWOCYCLES	  _SB_MAKEMASK1(61)
--#define M_MC_r2rIDLE_TWOCYCLES	  _SB_MAKEMASK1(62)
+-#define S_BCM1480_MC_ROW08                  0
+-#define M_BCM1480_MC_ROW08                  _SB_MAKEMASK(6, S_BCM1480_MC_ROW08)
+-#define V_BCM1480_MC_ROW08(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_ROW08)
+-#define G_BCM1480_MC_ROW08(x)               _SB_GETVALUE(x, S_BCM1480_MC_ROW08, M_BCM1480_MC_ROW08)
 -
--#define S_MC_tFIFO                56
--#define M_MC_tFIFO                _SB_MAKEMASK(4, S_MC_tFIFO)
--#define V_MC_tFIFO(x)             _SB_MAKEVALUE(x, S_MC_tFIFO)
--#define G_MC_tFIFO(x)             _SB_GETVALUE(x, S_MC_tFIFO, M_MC_tFIFO)
--#define K_MC_tFIFO_DEFAULT        1
--#define V_MC_tFIFO_DEFAULT        V_MC_tFIFO(K_MC_tFIFO_DEFAULT)
+-#define S_BCM1480_MC_ROW09                  8
+-#define M_BCM1480_MC_ROW09                  _SB_MAKEMASK(6, S_BCM1480_MC_ROW09)
+-#define V_BCM1480_MC_ROW09(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_ROW09)
+-#define G_BCM1480_MC_ROW09(x)               _SB_GETVALUE(x, S_BCM1480_MC_ROW09, M_BCM1480_MC_ROW09)
 -
--#define S_MC_tRFC                 52
--#define M_MC_tRFC                 _SB_MAKEMASK(4, S_MC_tRFC)
--#define V_MC_tRFC(x)              _SB_MAKEVALUE(x, S_MC_tRFC)
--#define G_MC_tRFC(x)              _SB_GETVALUE(x, S_MC_tRFC, M_MC_tRFC)
--#define K_MC_tRFC_DEFAULT         12
--#define V_MC_tRFC_DEFAULT         V_MC_tRFC(K_MC_tRFC_DEFAULT)
+-#define S_BCM1480_MC_ROW10                  16
+-#define M_BCM1480_MC_ROW10                  _SB_MAKEMASK(6, S_BCM1480_MC_ROW10)
+-#define V_BCM1480_MC_ROW10(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_ROW10)
+-#define G_BCM1480_MC_ROW10(x)               _SB_GETVALUE(x, S_BCM1480_MC_ROW10, M_BCM1480_MC_ROW10)
 -
--#if SIBYTE_HDR_FEATURE(1250, PASS3)
--#define M_MC_tRFC_PLUS16          _SB_MAKEMASK1(51)	/* 1250C3 and later.  */
+-#define S_BCM1480_MC_ROW11                  24
+-#define M_BCM1480_MC_ROW11                  _SB_MAKEMASK(6, S_BCM1480_MC_ROW11)
+-#define V_BCM1480_MC_ROW11(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_ROW11)
+-#define G_BCM1480_MC_ROW11(x)               _SB_GETVALUE(x, S_BCM1480_MC_ROW11, M_BCM1480_MC_ROW11)
+-
+-#define S_BCM1480_MC_ROW12                  32
+-#define M_BCM1480_MC_ROW12                  _SB_MAKEMASK(6, S_BCM1480_MC_ROW12)
+-#define V_BCM1480_MC_ROW12(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_ROW12)
+-#define G_BCM1480_MC_ROW12(x)               _SB_GETVALUE(x, S_BCM1480_MC_ROW12, M_BCM1480_MC_ROW12)
+-
+-#define S_BCM1480_MC_ROW13                  40
+-#define M_BCM1480_MC_ROW13                  _SB_MAKEMASK(6, S_BCM1480_MC_ROW13)
+-#define V_BCM1480_MC_ROW13(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_ROW13)
+-#define G_BCM1480_MC_ROW13(x)               _SB_GETVALUE(x, S_BCM1480_MC_ROW13, M_BCM1480_MC_ROW13)
+-
+-#define S_BCM1480_MC_ROW14                  48
+-#define M_BCM1480_MC_ROW14                  _SB_MAKEMASK(6, S_BCM1480_MC_ROW14)
+-#define V_BCM1480_MC_ROW14(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_ROW14)
+-#define G_BCM1480_MC_ROW14(x)               _SB_GETVALUE(x, S_BCM1480_MC_ROW14, M_BCM1480_MC_ROW14)
+-
+-#define K_BCM1480_MC_ROWX_BIT_SPACING  	    8
+-
+-/*
+- * Column Address Bit Select Register 0 (Table 86)
+- */
+-
+-#define S_BCM1480_MC_COL00                  0
+-#define M_BCM1480_MC_COL00                  _SB_MAKEMASK(6, S_BCM1480_MC_COL00)
+-#define V_BCM1480_MC_COL00(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_COL00)
+-#define G_BCM1480_MC_COL00(x)               _SB_GETVALUE(x, S_BCM1480_MC_COL00, M_BCM1480_MC_COL00)
+-
+-#define S_BCM1480_MC_COL01                  8
+-#define M_BCM1480_MC_COL01                  _SB_MAKEMASK(6, S_BCM1480_MC_COL01)
+-#define V_BCM1480_MC_COL01(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_COL01)
+-#define G_BCM1480_MC_COL01(x)               _SB_GETVALUE(x, S_BCM1480_MC_COL01, M_BCM1480_MC_COL01)
+-
+-#define S_BCM1480_MC_COL02                  16
+-#define M_BCM1480_MC_COL02                  _SB_MAKEMASK(6, S_BCM1480_MC_COL02)
+-#define V_BCM1480_MC_COL02(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_COL02)
+-#define G_BCM1480_MC_COL02(x)               _SB_GETVALUE(x, S_BCM1480_MC_COL02, M_BCM1480_MC_COL02)
+-
+-#define S_BCM1480_MC_COL03                  24
+-#define M_BCM1480_MC_COL03                  _SB_MAKEMASK(6, S_BCM1480_MC_COL03)
+-#define V_BCM1480_MC_COL03(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_COL03)
+-#define G_BCM1480_MC_COL03(x)               _SB_GETVALUE(x, S_BCM1480_MC_COL03, M_BCM1480_MC_COL03)
+-
+-#define S_BCM1480_MC_COL04                  32
+-#define M_BCM1480_MC_COL04                  _SB_MAKEMASK(6, S_BCM1480_MC_COL04)
+-#define V_BCM1480_MC_COL04(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_COL04)
+-#define G_BCM1480_MC_COL04(x)               _SB_GETVALUE(x, S_BCM1480_MC_COL04, M_BCM1480_MC_COL04)
+-
+-#define S_BCM1480_MC_COL05                  40
+-#define M_BCM1480_MC_COL05                  _SB_MAKEMASK(6, S_BCM1480_MC_COL05)
+-#define V_BCM1480_MC_COL05(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_COL05)
+-#define G_BCM1480_MC_COL05(x)               _SB_GETVALUE(x, S_BCM1480_MC_COL05, M_BCM1480_MC_COL05)
+-
+-#define S_BCM1480_MC_COL06                  48
+-#define M_BCM1480_MC_COL06                  _SB_MAKEMASK(6, S_BCM1480_MC_COL06)
+-#define V_BCM1480_MC_COL06(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_COL06)
+-#define G_BCM1480_MC_COL06(x)               _SB_GETVALUE(x, S_BCM1480_MC_COL06, M_BCM1480_MC_COL06)
+-
+-#define S_BCM1480_MC_COL07                  56
+-#define M_BCM1480_MC_COL07                  _SB_MAKEMASK(6, S_BCM1480_MC_COL07)
+-#define V_BCM1480_MC_COL07(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_COL07)
+-#define G_BCM1480_MC_COL07(x)               _SB_GETVALUE(x, S_BCM1480_MC_COL07, M_BCM1480_MC_COL07)
+-
+-/*
+- * Column Address Bit Select Register 1 (Table 87)
+- */
+-
+-#define S_BCM1480_MC_COL08                  0
+-#define M_BCM1480_MC_COL08                  _SB_MAKEMASK(6, S_BCM1480_MC_COL08)
+-#define V_BCM1480_MC_COL08(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_COL08)
+-#define G_BCM1480_MC_COL08(x)               _SB_GETVALUE(x, S_BCM1480_MC_COL08, M_BCM1480_MC_COL08)
+-
+-#define S_BCM1480_MC_COL09                  8
+-#define M_BCM1480_MC_COL09                  _SB_MAKEMASK(6, S_BCM1480_MC_COL09)
+-#define V_BCM1480_MC_COL09(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_COL09)
+-#define G_BCM1480_MC_COL09(x)               _SB_GETVALUE(x, S_BCM1480_MC_COL09, M_BCM1480_MC_COL09)
+-
+-#define S_BCM1480_MC_COL10                  16   /* not a valid position, must be prog as 0 */
+-
+-#define S_BCM1480_MC_COL11                  24
+-#define M_BCM1480_MC_COL11                  _SB_MAKEMASK(6, S_BCM1480_MC_COL11)
+-#define V_BCM1480_MC_COL11(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_COL11)
+-#define G_BCM1480_MC_COL11(x)               _SB_GETVALUE(x, S_BCM1480_MC_COL11, M_BCM1480_MC_COL11)
+-
+-#define S_BCM1480_MC_COL12                  32
+-#define M_BCM1480_MC_COL12                  _SB_MAKEMASK(6, S_BCM1480_MC_COL12)
+-#define V_BCM1480_MC_COL12(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_COL12)
+-#define G_BCM1480_MC_COL12(x)               _SB_GETVALUE(x, S_BCM1480_MC_COL12, M_BCM1480_MC_COL12)
+-
+-#define S_BCM1480_MC_COL13                  40
+-#define M_BCM1480_MC_COL13                  _SB_MAKEMASK(6, S_BCM1480_MC_COL13)
+-#define V_BCM1480_MC_COL13(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_COL13)
+-#define G_BCM1480_MC_COL13(x)               _SB_GETVALUE(x, S_BCM1480_MC_COL13, M_BCM1480_MC_COL13)
+-
+-#define S_BCM1480_MC_COL14                  48
+-#define M_BCM1480_MC_COL14                  _SB_MAKEMASK(6, S_BCM1480_MC_COL14)
+-#define V_BCM1480_MC_COL14(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_COL14)
+-#define G_BCM1480_MC_COL14(x)               _SB_GETVALUE(x, S_BCM1480_MC_COL14, M_BCM1480_MC_COL14)
+-
+-#define K_BCM1480_MC_COLX_BIT_SPACING  	    8
+-
+-/*
+- * CS0 and CS1 Bank Address Bit Select Register (Table 88)
+- */
+-
+-#define S_BCM1480_MC_CS01_BANK0             0
+-#define M_BCM1480_MC_CS01_BANK0             _SB_MAKEMASK(6, S_BCM1480_MC_CS01_BANK0)
+-#define V_BCM1480_MC_CS01_BANK0(x)          _SB_MAKEVALUE(x, S_BCM1480_MC_CS01_BANK0)
+-#define G_BCM1480_MC_CS01_BANK0(x)          _SB_GETVALUE(x, S_BCM1480_MC_CS01_BANK0, M_BCM1480_MC_CS01_BANK0)
+-
+-#define S_BCM1480_MC_CS01_BANK1             8
+-#define M_BCM1480_MC_CS01_BANK1             _SB_MAKEMASK(6, S_BCM1480_MC_CS01_BANK1)
+-#define V_BCM1480_MC_CS01_BANK1(x)          _SB_MAKEVALUE(x, S_BCM1480_MC_CS01_BANK1)
+-#define G_BCM1480_MC_CS01_BANK1(x)          _SB_GETVALUE(x, S_BCM1480_MC_CS01_BANK1, M_BCM1480_MC_CS01_BANK1)
+-
+-#define S_BCM1480_MC_CS01_BANK2             16
+-#define M_BCM1480_MC_CS01_BANK2             _SB_MAKEMASK(6, S_BCM1480_MC_CS01_BANK2)
+-#define V_BCM1480_MC_CS01_BANK2(x)          _SB_MAKEVALUE(x, S_BCM1480_MC_CS01_BANK2)
+-#define G_BCM1480_MC_CS01_BANK2(x)          _SB_GETVALUE(x, S_BCM1480_MC_CS01_BANK2, M_BCM1480_MC_CS01_BANK2)
+-
+-/*
+- * CS2 and CS3 Bank Address Bit Select Register (Table 89)
+- */
+-
+-#define S_BCM1480_MC_CS23_BANK0             0
+-#define M_BCM1480_MC_CS23_BANK0             _SB_MAKEMASK(6, S_BCM1480_MC_CS23_BANK0)
+-#define V_BCM1480_MC_CS23_BANK0(x)          _SB_MAKEVALUE(x, S_BCM1480_MC_CS23_BANK0)
+-#define G_BCM1480_MC_CS23_BANK0(x)          _SB_GETVALUE(x, S_BCM1480_MC_CS23_BANK0, M_BCM1480_MC_CS23_BANK0)
+-
+-#define S_BCM1480_MC_CS23_BANK1             8
+-#define M_BCM1480_MC_CS23_BANK1             _SB_MAKEMASK(6, S_BCM1480_MC_CS23_BANK1)
+-#define V_BCM1480_MC_CS23_BANK1(x)          _SB_MAKEVALUE(x, S_BCM1480_MC_CS23_BANK1)
+-#define G_BCM1480_MC_CS23_BANK1(x)          _SB_GETVALUE(x, S_BCM1480_MC_CS23_BANK1, M_BCM1480_MC_CS23_BANK1)
+-
+-#define S_BCM1480_MC_CS23_BANK2             16
+-#define M_BCM1480_MC_CS23_BANK2             _SB_MAKEMASK(6, S_BCM1480_MC_CS23_BANK2)
+-#define V_BCM1480_MC_CS23_BANK2(x)          _SB_MAKEVALUE(x, S_BCM1480_MC_CS23_BANK2)
+-#define G_BCM1480_MC_CS23_BANK2(x)          _SB_GETVALUE(x, S_BCM1480_MC_CS23_BANK2, M_BCM1480_MC_CS23_BANK2)
+-
+-#define K_BCM1480_MC_CSXX_BANKX_BIT_SPACING  8
+-
+-/*
+- * DRAM Command Register (Table 90)
+- */
+-
+-#define S_BCM1480_MC_COMMAND                0
+-#define M_BCM1480_MC_COMMAND                _SB_MAKEMASK(4, S_BCM1480_MC_COMMAND)
+-#define V_BCM1480_MC_COMMAND(x)             _SB_MAKEVALUE(x, S_BCM1480_MC_COMMAND)
+-#define G_BCM1480_MC_COMMAND(x)             _SB_GETVALUE(x, S_BCM1480_MC_COMMAND, M_BCM1480_MC_COMMAND)
+-
+-#define K_BCM1480_MC_COMMAND_EMRS           0
+-#define K_BCM1480_MC_COMMAND_MRS            1
+-#define K_BCM1480_MC_COMMAND_PRE            2
+-#define K_BCM1480_MC_COMMAND_AR             3
+-#define K_BCM1480_MC_COMMAND_SETRFSH        4
+-#define K_BCM1480_MC_COMMAND_CLRRFSH        5
+-#define K_BCM1480_MC_COMMAND_SETPWRDN       6
+-#define K_BCM1480_MC_COMMAND_CLRPWRDN       7
+-
+-#if SIBYTE_HDR_FEATURE(1480, PASS2)
+-#define K_BCM1480_MC_COMMAND_EMRS2	    8
+-#define K_BCM1480_MC_COMMAND_EMRS3	    9
+-#define K_BCM1480_MC_COMMAND_ENABLE_MCLK    10
+-#define K_BCM1480_MC_COMMAND_DISABLE_MCLK   11
 -#endif
 -
--#define S_MC_tCwCr                40
--#define M_MC_tCwCr                _SB_MAKEMASK(4, S_MC_tCwCr)
--#define V_MC_tCwCr(x)             _SB_MAKEVALUE(x, S_MC_tCwCr)
--#define G_MC_tCwCr(x)             _SB_GETVALUE(x, S_MC_tCwCr, M_MC_tCwCr)
--#define K_MC_tCwCr_DEFAULT        4
--#define V_MC_tCwCr_DEFAULT        V_MC_tCwCr(K_MC_tCwCr_DEFAULT)
+-#define V_BCM1480_MC_COMMAND_EMRS           V_BCM1480_MC_COMMAND(K_BCM1480_MC_COMMAND_EMRS)
+-#define V_BCM1480_MC_COMMAND_MRS            V_BCM1480_MC_COMMAND(K_BCM1480_MC_COMMAND_MRS)
+-#define V_BCM1480_MC_COMMAND_PRE            V_BCM1480_MC_COMMAND(K_BCM1480_MC_COMMAND_PRE)
+-#define V_BCM1480_MC_COMMAND_AR             V_BCM1480_MC_COMMAND(K_BCM1480_MC_COMMAND_AR)
+-#define V_BCM1480_MC_COMMAND_SETRFSH        V_BCM1480_MC_COMMAND(K_BCM1480_MC_COMMAND_SETRFSH)
+-#define V_BCM1480_MC_COMMAND_CLRRFSH        V_BCM1480_MC_COMMAND(K_BCM1480_MC_COMMAND_CLRRFSH)
+-#define V_BCM1480_MC_COMMAND_SETPWRDN       V_BCM1480_MC_COMMAND(K_BCM1480_MC_COMMAND_SETPWRDN)
+-#define V_BCM1480_MC_COMMAND_CLRPWRDN       V_BCM1480_MC_COMMAND(K_BCM1480_MC_COMMAND_CLRPWRDN)
 -
--#define S_MC_tRCr                 28
--#define M_MC_tRCr                 _SB_MAKEMASK(4, S_MC_tRCr)
--#define V_MC_tRCr(x)              _SB_MAKEVALUE(x, S_MC_tRCr)
--#define G_MC_tRCr(x)              _SB_GETVALUE(x, S_MC_tRCr, M_MC_tRCr)
--#define K_MC_tRCr_DEFAULT         9
--#define V_MC_tRCr_DEFAULT         V_MC_tRCr(K_MC_tRCr_DEFAULT)
+-#if SIBYTE_HDR_FEATURE(1480, PASS2)
+-#define V_BCM1480_MC_COMMAND_EMRS2          V_BCM1480_MC_COMMAND(K_BCM1480_MC_COMMAND_EMRS2)
+-#define V_BCM1480_MC_COMMAND_EMRS3          V_BCM1480_MC_COMMAND(K_BCM1480_MC_COMMAND_EMRS3)
+-#define V_BCM1480_MC_COMMAND_ENABLE_MCLK    V_BCM1480_MC_COMMAND(K_BCM1480_MC_COMMAND_ENABLE_MCLK)
+-#define V_BCM1480_MC_COMMAND_DISABLE_MCLK   V_BCM1480_MC_COMMAND(K_BCM1480_MC_COMMAND_DISABLE_MCLK)
+-#endif
 -
--#define S_MC_tRCw                 24
--#define M_MC_tRCw                 _SB_MAKEMASK(4, S_MC_tRCw)
--#define V_MC_tRCw(x)              _SB_MAKEVALUE(x, S_MC_tRCw)
--#define G_MC_tRCw(x)              _SB_GETVALUE(x, S_MC_tRCw, M_MC_tRCw)
--#define K_MC_tRCw_DEFAULT         10
--#define V_MC_tRCw_DEFAULT         V_MC_tRCw(K_MC_tRCw_DEFAULT)
+-#define S_BCM1480_MC_CS0		    4
+-#define M_BCM1480_MC_CS0                    _SB_MAKEMASK1(4)
+-#define M_BCM1480_MC_CS1                    _SB_MAKEMASK1(5)
+-#define M_BCM1480_MC_CS2                    _SB_MAKEMASK1(6)
+-#define M_BCM1480_MC_CS3                    _SB_MAKEMASK1(7)
+-#define M_BCM1480_MC_CS4                    _SB_MAKEMASK1(8)
+-#define M_BCM1480_MC_CS5                    _SB_MAKEMASK1(9)
+-#define M_BCM1480_MC_CS6                    _SB_MAKEMASK1(10)
+-#define M_BCM1480_MC_CS7                    _SB_MAKEMASK1(11)
 -
--#define S_MC_tRRD                 20
--#define M_MC_tRRD                 _SB_MAKEMASK(4, S_MC_tRRD)
--#define V_MC_tRRD(x)              _SB_MAKEVALUE(x, S_MC_tRRD)
--#define G_MC_tRRD(x)              _SB_GETVALUE(x, S_MC_tRRD, M_MC_tRRD)
--#define K_MC_tRRD_DEFAULT         2
--#define V_MC_tRRD_DEFAULT         V_MC_tRRD(K_MC_tRRD_DEFAULT)
+-#define M_BCM1480_MC_CS                  _SB_MAKEMASK(8, S_BCM1480_MC_CS0)
+-#define V_BCM1480_MC_CS(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_CS0)
+-#define G_BCM1480_MC_CS(x)               _SB_GETVALUE(x, S_BCM1480_MC_CS0, M_BCM1480_MC_CS0)
 -
--#define S_MC_tRP                  16
--#define M_MC_tRP                  _SB_MAKEMASK(4, S_MC_tRP)
--#define V_MC_tRP(x)               _SB_MAKEVALUE(x, S_MC_tRP)
--#define G_MC_tRP(x)               _SB_GETVALUE(x, S_MC_tRP, M_MC_tRP)
--#define K_MC_tRP_DEFAULT          4
--#define V_MC_tRP_DEFAULT          V_MC_tRP(K_MC_tRP_DEFAULT)
--
--#define S_MC_tCwD                 8
--#define M_MC_tCwD                 _SB_MAKEMASK(4, S_MC_tCwD)
--#define V_MC_tCwD(x)              _SB_MAKEVALUE(x, S_MC_tCwD)
--#define G_MC_tCwD(x)              _SB_GETVALUE(x, S_MC_tCwD, M_MC_tCwD)
--#define K_MC_tCwD_DEFAULT         1
--#define V_MC_tCwD_DEFAULT         V_MC_tCwD(K_MC_tCwD_DEFAULT)
--
--#define M_tCrDh                   _SB_MAKEMASK1(7)
--#define M_MC_tCrDh		  M_tCrDh
--
--#define S_MC_tCrD                 4
--#define M_MC_tCrD                 _SB_MAKEMASK(3, S_MC_tCrD)
--#define V_MC_tCrD(x)              _SB_MAKEVALUE(x, S_MC_tCrD)
--#define G_MC_tCrD(x)              _SB_GETVALUE(x, S_MC_tCrD, M_MC_tCrD)
--#define K_MC_tCrD_DEFAULT         2
--#define V_MC_tCrD_DEFAULT         V_MC_tCrD(K_MC_tCrD_DEFAULT)
--
--#define S_MC_tRCD                 0
--#define M_MC_tRCD                 _SB_MAKEMASK(4, S_MC_tRCD)
--#define V_MC_tRCD(x)              _SB_MAKEVALUE(x, S_MC_tRCD)
--#define G_MC_tRCD(x)              _SB_GETVALUE(x, S_MC_tRCD, M_MC_tRCD)
--#define K_MC_tRCD_DEFAULT         3
--#define V_MC_tRCD_DEFAULT         V_MC_tRCD(K_MC_tRCD_DEFAULT)
--
--#define V_MC_TIMING_DEFAULT     V_MC_tFIFO(K_MC_tFIFO_DEFAULT) | \
--                                V_MC_tRFC(K_MC_tRFC_DEFAULT) | \
--                                V_MC_tCwCr(K_MC_tCwCr_DEFAULT) | \
--                                V_MC_tRCr(K_MC_tRCr_DEFAULT) | \
--                                V_MC_tRCw(K_MC_tRCw_DEFAULT) | \
--                                V_MC_tRRD(K_MC_tRRD_DEFAULT) | \
--                                V_MC_tRP(K_MC_tRP_DEFAULT) | \
--                                V_MC_tCwD(K_MC_tCwD_DEFAULT) | \
--                                V_MC_tCrD(K_MC_tCrD_DEFAULT) | \
--                                V_MC_tRCD(K_MC_tRCD_DEFAULT) | \
--                                M_MC_r2rIDLE_TWOCYCLES
+-#define M_BCM1480_MC_CMD_ACTIVE             _SB_MAKEMASK1(16)
 -
 -/*
-- * Errata says these are not the default
-- *                               M_MC_w2rIDLE_TWOCYCLES | \
-- *                               M_MC_r2wIDLE_TWOCYCLES | \
+- * DRAM Mode Register (Table 91)
 - */
 -
+-#define S_BCM1480_MC_EMODE                  0
+-#define M_BCM1480_MC_EMODE                  _SB_MAKEMASK(15, S_BCM1480_MC_EMODE)
+-#define V_BCM1480_MC_EMODE(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_EMODE)
+-#define G_BCM1480_MC_EMODE(x)               _SB_GETVALUE(x, S_BCM1480_MC_EMODE, M_BCM1480_MC_EMODE)
+-#define V_BCM1480_MC_EMODE_DEFAULT          V_BCM1480_MC_EMODE(0)
+-
+-#define S_BCM1480_MC_MODE                   16
+-#define M_BCM1480_MC_MODE                   _SB_MAKEMASK(15, S_BCM1480_MC_MODE)
+-#define V_BCM1480_MC_MODE(x)                _SB_MAKEVALUE(x, S_BCM1480_MC_MODE)
+-#define G_BCM1480_MC_MODE(x)                _SB_GETVALUE(x, S_BCM1480_MC_MODE, M_BCM1480_MC_MODE)
+-#define V_BCM1480_MC_MODE_DEFAULT           V_BCM1480_MC_MODE(0)
+-
+-#define S_BCM1480_MC_DRAM_TYPE              32
+-#define M_BCM1480_MC_DRAM_TYPE              _SB_MAKEMASK(4, S_BCM1480_MC_DRAM_TYPE)
+-#define V_BCM1480_MC_DRAM_TYPE(x)           _SB_MAKEVALUE(x, S_BCM1480_MC_DRAM_TYPE)
+-#define G_BCM1480_MC_DRAM_TYPE(x)           _SB_GETVALUE(x, S_BCM1480_MC_DRAM_TYPE, M_BCM1480_MC_DRAM_TYPE)
+-
+-#define K_BCM1480_MC_DRAM_TYPE_JEDEC        0
+-#define K_BCM1480_MC_DRAM_TYPE_FCRAM        1
+-
+-#if SIBYTE_HDR_FEATURE(1480, PASS2)
+-#define K_BCM1480_MC_DRAM_TYPE_DDR2	    2
+-#endif
+-
+-#define K_BCM1480_MC_DRAM_TYPE_DDR2_PASS1   0
+-
+-#define V_BCM1480_MC_DRAM_TYPE_JEDEC        V_BCM1480_MC_DRAM_TYPE(K_BCM1480_MC_DRAM_TYPE_JEDEC)
+-#define V_BCM1480_MC_DRAM_TYPE_FCRAM        V_BCM1480_MC_DRAM_TYPE(K_BCM1480_MC_DRAM_TYPE_FCRAM)
+-
+-#if SIBYTE_HDR_FEATURE(1480, PASS2)
+-#define V_BCM1480_MC_DRAM_TYPE_DDR2	    V_BCM1480_MC_DRAM_TYPE(K_BCM1480_MC_DRAM_TYPE_DDR2)
+-#endif
+-
+-#define M_BCM1480_MC_GANGED                 _SB_MAKEMASK1(36)
+-#define M_BCM1480_MC_BY9_INTF               _SB_MAKEMASK1(37)
+-#define M_BCM1480_MC_FORCE_ECC64            _SB_MAKEMASK1(38)
+-#define M_BCM1480_MC_ECC_DISABLE            _SB_MAKEMASK1(39)
+-
+-#define S_BCM1480_MC_PG_POLICY              40
+-#define M_BCM1480_MC_PG_POLICY              _SB_MAKEMASK(2, S_BCM1480_MC_PG_POLICY)
+-#define V_BCM1480_MC_PG_POLICY(x)           _SB_MAKEVALUE(x, S_BCM1480_MC_PG_POLICY)
+-#define G_BCM1480_MC_PG_POLICY(x)           _SB_GETVALUE(x, S_BCM1480_MC_PG_POLICY, M_BCM1480_MC_PG_POLICY)
+-
+-#define K_BCM1480_MC_PG_POLICY_CLOSED       0
+-#define K_BCM1480_MC_PG_POLICY_CAS_TIME_CHK 1
+-
+-#define V_BCM1480_MC_PG_POLICY_CLOSED       V_BCM1480_MC_PG_POLICY(K_BCM1480_MC_PG_POLICY_CLOSED)
+-#define V_BCM1480_MC_PG_POLICY_CAS_TIME_CHK V_BCM1480_MC_PG_POLICY(K_BCM1480_MC_PG_POLICY_CAS_TIME_CHK)
+-
+-#if SIBYTE_HDR_FEATURE(1480, PASS2)
+-#define M_BCM1480_MC_2T_CMD		    _SB_MAKEMASK1(42)
+-#define M_BCM1480_MC_ECC_COR_DIS	    _SB_MAKEMASK1(43)
+-#endif
+-
+-#define V_BCM1480_MC_DRAMMODE_DEFAULT	V_BCM1480_MC_EMODE_DEFAULT | V_BCM1480_MC_MODE_DEFAULT | V_BCM1480_MC_DRAM_TYPE_JEDEC | \
+-                                V_BCM1480_MC_PG_POLICY(K_BCM1480_MC_PG_POLICY_CAS_TIME_CHK)
 -
 -/*
-- * Chip Select Start Address Register (Table 6-17)
+- * Memory Clock Configuration Register (Table 92)
 - */
 -
--#define S_MC_CS0_START              0
--#define M_MC_CS0_START              _SB_MAKEMASK(16, S_MC_CS0_START)
--#define V_MC_CS0_START(x)           _SB_MAKEVALUE(x, S_MC_CS0_START)
--#define G_MC_CS0_START(x)           _SB_GETVALUE(x, S_MC_CS0_START, M_MC_CS0_START)
+-#define S_BCM1480_MC_CLK_RATIO              0
+-#define M_BCM1480_MC_CLK_RATIO              _SB_MAKEMASK(6, S_BCM1480_MC_CLK_RATIO)
+-#define V_BCM1480_MC_CLK_RATIO(x)           _SB_MAKEVALUE(x, S_BCM1480_MC_CLK_RATIO)
+-#define G_BCM1480_MC_CLK_RATIO(x)           _SB_GETVALUE(x, S_BCM1480_MC_CLK_RATIO, M_BCM1480_MC_CLK_RATIO)
 -
--#define S_MC_CS1_START              16
--#define M_MC_CS1_START              _SB_MAKEMASK(16, S_MC_CS1_START)
--#define V_MC_CS1_START(x)           _SB_MAKEVALUE(x, S_MC_CS1_START)
--#define G_MC_CS1_START(x)           _SB_GETVALUE(x, S_MC_CS1_START, M_MC_CS1_START)
+-#define V_BCM1480_MC_CLK_RATIO_DEFAULT      V_BCM1480_MC_CLK_RATIO(10)
 -
--#define S_MC_CS2_START              32
--#define M_MC_CS2_START              _SB_MAKEMASK(16, S_MC_CS2_START)
--#define V_MC_CS2_START(x)           _SB_MAKEVALUE(x, S_MC_CS2_START)
--#define G_MC_CS2_START(x)           _SB_GETVALUE(x, S_MC_CS2_START, M_MC_CS2_START)
+-#define S_BCM1480_MC_REF_RATE               8
+-#define M_BCM1480_MC_REF_RATE               _SB_MAKEMASK(8, S_BCM1480_MC_REF_RATE)
+-#define V_BCM1480_MC_REF_RATE(x)            _SB_MAKEVALUE(x, S_BCM1480_MC_REF_RATE)
+-#define G_BCM1480_MC_REF_RATE(x)            _SB_GETVALUE(x, S_BCM1480_MC_REF_RATE, M_BCM1480_MC_REF_RATE)
 -
--#define S_MC_CS3_START              48
--#define M_MC_CS3_START              _SB_MAKEMASK(16, S_MC_CS3_START)
--#define V_MC_CS3_START(x)           _SB_MAKEVALUE(x, S_MC_CS3_START)
--#define G_MC_CS3_START(x)           _SB_GETVALUE(x, S_MC_CS3_START, M_MC_CS3_START)
+-#define K_BCM1480_MC_REF_RATE_100MHz        0x31
+-#define K_BCM1480_MC_REF_RATE_200MHz        0x62
+-#define K_BCM1480_MC_REF_RATE_400MHz        0xC4
+-
+-#define V_BCM1480_MC_REF_RATE_100MHz        V_BCM1480_MC_REF_RATE(K_BCM1480_MC_REF_RATE_100MHz)
+-#define V_BCM1480_MC_REF_RATE_200MHz        V_BCM1480_MC_REF_RATE(K_BCM1480_MC_REF_RATE_200MHz)
+-#define V_BCM1480_MC_REF_RATE_400MHz        V_BCM1480_MC_REF_RATE(K_BCM1480_MC_REF_RATE_400MHz)
+-#define V_BCM1480_MC_REF_RATE_DEFAULT       V_BCM1480_MC_REF_RATE_400MHz
+-
+-#if SIBYTE_HDR_FEATURE(1480, PASS2)
+-#define M_BCM1480_MC_AUTO_REF_DIS	    _SB_MAKEMASK1(16)
+-#endif
 -
 -/*
-- * Chip Select End Address Register (Table 6-18)
+- * ODT Register (Table 99)
 - */
 -
--#define S_MC_CS0_END                0
--#define M_MC_CS0_END                _SB_MAKEMASK(16, S_MC_CS0_END)
--#define V_MC_CS0_END(x)             _SB_MAKEVALUE(x, S_MC_CS0_END)
--#define G_MC_CS0_END(x)             _SB_GETVALUE(x, S_MC_CS0_END, M_MC_CS0_END)
+-#if SIBYTE_HDR_FEATURE(1480, PASS2)
+-#define M_BCM1480_MC_RD_ODT0_CS0	    _SB_MAKEMASK1(0)
+-#define M_BCM1480_MC_RD_ODT0_CS2	    _SB_MAKEMASK1(1)
+-#define M_BCM1480_MC_RD_ODT0_CS4	    _SB_MAKEMASK1(2)
+-#define M_BCM1480_MC_RD_ODT0_CS6	    _SB_MAKEMASK1(3)
+-#define M_BCM1480_MC_WR_ODT0_CS0	    _SB_MAKEMASK1(4)
+-#define M_BCM1480_MC_WR_ODT0_CS2	    _SB_MAKEMASK1(5)
+-#define M_BCM1480_MC_WR_ODT0_CS4	    _SB_MAKEMASK1(6)
+-#define M_BCM1480_MC_WR_ODT0_CS6	    _SB_MAKEMASK1(7)
+-#define M_BCM1480_MC_RD_ODT2_CS0	    _SB_MAKEMASK1(8)
+-#define M_BCM1480_MC_RD_ODT2_CS2	    _SB_MAKEMASK1(9)
+-#define M_BCM1480_MC_RD_ODT2_CS4	    _SB_MAKEMASK1(10)
+-#define M_BCM1480_MC_RD_ODT2_CS6	    _SB_MAKEMASK1(11)
+-#define M_BCM1480_MC_WR_ODT2_CS0	    _SB_MAKEMASK1(12)
+-#define M_BCM1480_MC_WR_ODT2_CS2	    _SB_MAKEMASK1(13)
+-#define M_BCM1480_MC_WR_ODT2_CS4	    _SB_MAKEMASK1(14)
+-#define M_BCM1480_MC_WR_ODT2_CS6	    _SB_MAKEMASK1(15)
+-#define M_BCM1480_MC_RD_ODT4_CS0	    _SB_MAKEMASK1(16)
+-#define M_BCM1480_MC_RD_ODT4_CS2	    _SB_MAKEMASK1(17)
+-#define M_BCM1480_MC_RD_ODT4_CS4	    _SB_MAKEMASK1(18)
+-#define M_BCM1480_MC_RD_ODT4_CS6	    _SB_MAKEMASK1(19)
+-#define M_BCM1480_MC_WR_ODT4_CS0	    _SB_MAKEMASK1(20)
+-#define M_BCM1480_MC_WR_ODT4_CS2	    _SB_MAKEMASK1(21)
+-#define M_BCM1480_MC_WR_ODT4_CS4	    _SB_MAKEMASK1(22)
+-#define M_BCM1480_MC_WR_ODT4_CS6	    _SB_MAKEMASK1(23)
+-#define M_BCM1480_MC_RD_ODT6_CS0	    _SB_MAKEMASK1(24)
+-#define M_BCM1480_MC_RD_ODT6_CS2	    _SB_MAKEMASK1(25)
+-#define M_BCM1480_MC_RD_ODT6_CS4	    _SB_MAKEMASK1(26)
+-#define M_BCM1480_MC_RD_ODT6_CS6	    _SB_MAKEMASK1(27)
+-#define M_BCM1480_MC_WR_ODT6_CS0	    _SB_MAKEMASK1(28)
+-#define M_BCM1480_MC_WR_ODT6_CS2	    _SB_MAKEMASK1(29)
+-#define M_BCM1480_MC_WR_ODT6_CS4	    _SB_MAKEMASK1(30)
+-#define M_BCM1480_MC_WR_ODT6_CS6	    _SB_MAKEMASK1(31)
 -
--#define S_MC_CS1_END                16
--#define M_MC_CS1_END                _SB_MAKEMASK(16, S_MC_CS1_END)
--#define V_MC_CS1_END(x)             _SB_MAKEVALUE(x, S_MC_CS1_END)
--#define G_MC_CS1_END(x)             _SB_GETVALUE(x, S_MC_CS1_END, M_MC_CS1_END)
+-#define M_BCM1480_MC_CS_ODD_ODT_EN	    _SB_MAKEMASK1(32)
 -
--#define S_MC_CS2_END                32
--#define M_MC_CS2_END                _SB_MAKEMASK(16, S_MC_CS2_END)
--#define V_MC_CS2_END(x)             _SB_MAKEVALUE(x, S_MC_CS2_END)
--#define G_MC_CS2_END(x)             _SB_GETVALUE(x, S_MC_CS2_END, M_MC_CS2_END)
+-#define S_BCM1480_MC_ODT0	            0
+-#define M_BCM1480_MC_ODT0		    _SB_MAKEMASK(8, S_BCM1480_MC_ODT0)
+-#define V_BCM1480_MC_ODT0(x)		    _SB_MAKEVALUE(x, S_BCM1480_MC_ODT0)
 -
--#define S_MC_CS3_END                48
--#define M_MC_CS3_END                _SB_MAKEMASK(16, S_MC_CS3_END)
--#define V_MC_CS3_END(x)             _SB_MAKEVALUE(x, S_MC_CS3_END)
--#define G_MC_CS3_END(x)             _SB_GETVALUE(x, S_MC_CS3_END, M_MC_CS3_END)
+-#define S_BCM1480_MC_ODT2	            8
+-#define M_BCM1480_MC_ODT2		    _SB_MAKEMASK(8, S_BCM1480_MC_ODT2)
+-#define V_BCM1480_MC_ODT2(x)		    _SB_MAKEVALUE(x, S_BCM1480_MC_ODT2)
+-
+-#define S_BCM1480_MC_ODT4	            16
+-#define M_BCM1480_MC_ODT4		    _SB_MAKEMASK(8, S_BCM1480_MC_ODT4)
+-#define V_BCM1480_MC_ODT4(x)		    _SB_MAKEVALUE(x, S_BCM1480_MC_ODT4)
+-
+-#define S_BCM1480_MC_ODT6	            24
+-#define M_BCM1480_MC_ODT6		    _SB_MAKEMASK(8, S_BCM1480_MC_ODT6)
+-#define V_BCM1480_MC_ODT6(x)		    _SB_MAKEVALUE(x, S_BCM1480_MC_ODT6)
+-#endif
 -
 -/*
-- * Chip Select Interleave Register (Table 6-19)
+- * Memory DLL Configuration Register (Table 93)
 - */
 -
--#define S_MC_INTLV_RESERVED         0
--#define M_MC_INTLV_RESERVED         _SB_MAKEMASK(5, S_MC_INTLV_RESERVED)
+-#define S_BCM1480_MC_ADDR_COARSE_ADJ         0
+-#define M_BCM1480_MC_ADDR_COARSE_ADJ         _SB_MAKEMASK(6, S_BCM1480_MC_ADDR_COARSE_ADJ)
+-#define V_BCM1480_MC_ADDR_COARSE_ADJ(x)      _SB_MAKEVALUE(x, S_BCM1480_MC_ADDR_COARSE_ADJ)
+-#define G_BCM1480_MC_ADDR_COARSE_ADJ(x)      _SB_GETVALUE(x, S_BCM1480_MC_ADDR_COARSE_ADJ, M_BCM1480_MC_ADDR_COARSE_ADJ)
+-#define V_BCM1480_MC_ADDR_COARSE_ADJ_DEFAULT V_BCM1480_MC_ADDR_COARSE_ADJ(0x0)
 -
--#define S_MC_INTERLEAVE             7
--#define M_MC_INTERLEAVE             _SB_MAKEMASK(18, S_MC_INTERLEAVE)
--#define V_MC_INTERLEAVE(x)          _SB_MAKEVALUE(x, S_MC_INTERLEAVE)
+-#if SIBYTE_HDR_FEATURE(1480, PASS2)
+-#define S_BCM1480_MC_ADDR_FREQ_RANGE	    	8
+-#define M_BCM1480_MC_ADDR_FREQ_RANGE	    	_SB_MAKEMASK(4, S_BCM1480_MC_ADDR_FREQ_RANGE)
+-#define V_BCM1480_MC_ADDR_FREQ_RANGE(x)     	_SB_MAKEVALUE(x, S_BCM1480_MC_ADDR_FREQ_RANGE)
+-#define G_BCM1480_MC_ADDR_FREQ_RANGE(x)     	_SB_GETVALUE(x, S_BCM1480_MC_ADDR_FREQ_RANGE, M_BCM1480_MC_ADDR_FREQ_RANGE)
+-#define V_BCM1480_MC_ADDR_FREQ_RANGE_DEFAULT 	V_BCM1480_MC_ADDR_FREQ_RANGE(0x4)
+-#endif
 -
--#define S_MC_INTLV_MBZ              25
--#define M_MC_INTLV_MBZ              _SB_MAKEMASK(39, S_MC_INTLV_MBZ)
+-#define S_BCM1480_MC_ADDR_FINE_ADJ          8
+-#define M_BCM1480_MC_ADDR_FINE_ADJ          _SB_MAKEMASK(4, S_BCM1480_MC_ADDR_FINE_ADJ)
+-#define V_BCM1480_MC_ADDR_FINE_ADJ(x)       _SB_MAKEVALUE(x, S_BCM1480_MC_ADDR_FINE_ADJ)
+-#define G_BCM1480_MC_ADDR_FINE_ADJ(x)       _SB_GETVALUE(x, S_BCM1480_MC_ADDR_FINE_ADJ, M_BCM1480_MC_ADDR_FINE_ADJ)
+-#define V_BCM1480_MC_ADDR_FINE_ADJ_DEFAULT  V_BCM1480_MC_ADDR_FINE_ADJ(0x8)
+-
+-#define S_BCM1480_MC_DQI_COARSE_ADJ         16
+-#define M_BCM1480_MC_DQI_COARSE_ADJ         _SB_MAKEMASK(6, S_BCM1480_MC_DQI_COARSE_ADJ)
+-#define V_BCM1480_MC_DQI_COARSE_ADJ(x)      _SB_MAKEVALUE(x, S_BCM1480_MC_DQI_COARSE_ADJ)
+-#define G_BCM1480_MC_DQI_COARSE_ADJ(x)      _SB_GETVALUE(x, S_BCM1480_MC_DQI_COARSE_ADJ, M_BCM1480_MC_DQI_COARSE_ADJ)
+-#define V_BCM1480_MC_DQI_COARSE_ADJ_DEFAULT V_BCM1480_MC_DQI_COARSE_ADJ(0x0)
+-
+-#if SIBYTE_HDR_FEATURE(1480, PASS2)
+-#define S_BCM1480_MC_DQI_FREQ_RANGE	    	24
+-#define M_BCM1480_MC_DQI_FREQ_RANGE	    	_SB_MAKEMASK(4, S_BCM1480_MC_DQI_FREQ_RANGE)
+-#define V_BCM1480_MC_DQI_FREQ_RANGE(x)     	_SB_MAKEVALUE(x, S_BCM1480_MC_DQI_FREQ_RANGE)
+-#define G_BCM1480_MC_DQI_FREQ_RANGE(x)     	_SB_GETVALUE(x, S_BCM1480_MC_DQI_FREQ_RANGE, M_BCM1480_MC_DQI_FREQ_RANGE)
+-#define V_BCM1480_MC_DQI_FREQ_RANGE_DEFAULT 	V_BCM1480_MC_DQI_FREQ_RANGE(0x4)
+-#endif
+-
+-#define S_BCM1480_MC_DQI_FINE_ADJ           24
+-#define M_BCM1480_MC_DQI_FINE_ADJ           _SB_MAKEMASK(4, S_BCM1480_MC_DQI_FINE_ADJ)
+-#define V_BCM1480_MC_DQI_FINE_ADJ(x)        _SB_MAKEVALUE(x, S_BCM1480_MC_DQI_FINE_ADJ)
+-#define G_BCM1480_MC_DQI_FINE_ADJ(x)        _SB_GETVALUE(x, S_BCM1480_MC_DQI_FINE_ADJ, M_BCM1480_MC_DQI_FINE_ADJ)
+-#define V_BCM1480_MC_DQI_FINE_ADJ_DEFAULT   V_BCM1480_MC_DQI_FINE_ADJ(0x8)
+-
+-#define S_BCM1480_MC_DQO_COARSE_ADJ         32
+-#define M_BCM1480_MC_DQO_COARSE_ADJ         _SB_MAKEMASK(6, S_BCM1480_MC_DQO_COARSE_ADJ)
+-#define V_BCM1480_MC_DQO_COARSE_ADJ(x)      _SB_MAKEVALUE(x, S_BCM1480_MC_DQO_COARSE_ADJ)
+-#define G_BCM1480_MC_DQO_COARSE_ADJ(x)      _SB_GETVALUE(x, S_BCM1480_MC_DQO_COARSE_ADJ, M_BCM1480_MC_DQO_COARSE_ADJ)
+-#define V_BCM1480_MC_DQO_COARSE_ADJ_DEFAULT V_BCM1480_MC_DQO_COARSE_ADJ(0x0)
+-
+-#if SIBYTE_HDR_FEATURE(1480, PASS2)
+-#define S_BCM1480_MC_DQO_FREQ_RANGE	    	40
+-#define M_BCM1480_MC_DQO_FREQ_RANGE	    	_SB_MAKEMASK(4, S_BCM1480_MC_DQO_FREQ_RANGE)
+-#define V_BCM1480_MC_DQO_FREQ_RANGE(x)     	_SB_MAKEVALUE(x, S_BCM1480_MC_DQO_FREQ_RANGE)
+-#define G_BCM1480_MC_DQO_FREQ_RANGE(x)     	_SB_GETVALUE(x, S_BCM1480_MC_DQO_FREQ_RANGE, M_BCM1480_MC_DQO_FREQ_RANGE)
+-#define V_BCM1480_MC_DQO_FREQ_RANGE_DEFAULT 	V_BCM1480_MC_DQO_FREQ_RANGE(0x4)
+-#endif
+-
+-#define S_BCM1480_MC_DQO_FINE_ADJ           40
+-#define M_BCM1480_MC_DQO_FINE_ADJ           _SB_MAKEMASK(4, S_BCM1480_MC_DQO_FINE_ADJ)
+-#define V_BCM1480_MC_DQO_FINE_ADJ(x)        _SB_MAKEVALUE(x, S_BCM1480_MC_DQO_FINE_ADJ)
+-#define G_BCM1480_MC_DQO_FINE_ADJ(x)        _SB_GETVALUE(x, S_BCM1480_MC_DQO_FINE_ADJ, M_BCM1480_MC_DQO_FINE_ADJ)
+-#define V_BCM1480_MC_DQO_FINE_ADJ_DEFAULT   V_BCM1480_MC_DQO_FINE_ADJ(0x8)
+-
+-#if SIBYTE_HDR_FEATURE(1480, PASS2)
+-#define S_BCM1480_MC_DLL_PDSEL            44
+-#define M_BCM1480_MC_DLL_PDSEL            _SB_MAKEMASK(2, S_BCM1480_MC_DLL_PDSEL)
+-#define V_BCM1480_MC_DLL_PDSEL(x)         _SB_MAKEVALUE(x, S_BCM1480_MC_DLL_PDSEL)
+-#define G_BCM1480_MC_DLL_PDSEL(x)         _SB_GETVALUE(x, S_BCM1480_MC_DLL_PDSEL, M_BCM1480_MC_DLL_PDSEL)
+-#define V_BCM1480_MC_DLL_DEFAULT_PDSEL    V_BCM1480_MC_DLL_PDSEL(0x0)
+-
+-#define	M_BCM1480_MC_DLL_REGBYPASS        _SB_MAKEMASK1(46)
+-#define	M_BCM1480_MC_DQO_SHIFT            _SB_MAKEMASK1(47)
+-#endif
+-
+-#define S_BCM1480_MC_DLL_DEFAULT           48
+-#define M_BCM1480_MC_DLL_DEFAULT           _SB_MAKEMASK(6, S_BCM1480_MC_DLL_DEFAULT)
+-#define V_BCM1480_MC_DLL_DEFAULT(x)        _SB_MAKEVALUE(x, S_BCM1480_MC_DLL_DEFAULT)
+-#define G_BCM1480_MC_DLL_DEFAULT(x)        _SB_GETVALUE(x, S_BCM1480_MC_DLL_DEFAULT, M_BCM1480_MC_DLL_DEFAULT)
+-#define V_BCM1480_MC_DLL_DEFAULT_DEFAULT   V_BCM1480_MC_DLL_DEFAULT(0x10)
+-
+-#if SIBYTE_HDR_FEATURE(1480, PASS2)
+-#define S_BCM1480_MC_DLL_REGCTRL	  54
+-#define M_BCM1480_MC_DLL_REGCTRL       	  _SB_MAKEMASK(2, S_BCM1480_MC_DLL_REGCTRL)
+-#define V_BCM1480_MC_DLL_REGCTRL(x)       _SB_MAKEVALUE(x, S_BCM1480_MC_DLL_REGCTRL)
+-#define G_BCM1480_MC_DLL_REGCTRL(x)       _SB_GETVALUE(x, S_BCM1480_MC_DLL_REGCTRL, M_BCM1480_MC_DLL_REGCTRL)
+-#define V_BCM1480_MC_DLL_DEFAULT_REGCTRL  V_BCM1480_MC_DLL_REGCTRL(0x0)
+-#endif
+-
+-#if SIBYTE_HDR_FEATURE(1480, PASS2)
+-#define S_BCM1480_MC_DLL_FREQ_RANGE	    	56
+-#define M_BCM1480_MC_DLL_FREQ_RANGE	    	_SB_MAKEMASK(4, S_BCM1480_MC_DLL_FREQ_RANGE)
+-#define V_BCM1480_MC_DLL_FREQ_RANGE(x)     	_SB_MAKEVALUE(x, S_BCM1480_MC_DLL_FREQ_RANGE)
+-#define G_BCM1480_MC_DLL_FREQ_RANGE(x)     	_SB_GETVALUE(x, S_BCM1480_MC_DLL_FREQ_RANGE, M_BCM1480_MC_DLL_FREQ_RANGE)
+-#define V_BCM1480_MC_DLL_FREQ_RANGE_DEFAULT 	V_BCM1480_MC_DLL_FREQ_RANGE(0x4)
+-#endif
+-
+-#define S_BCM1480_MC_DLL_STEP_SIZE          56
+-#define M_BCM1480_MC_DLL_STEP_SIZE          _SB_MAKEMASK(4, S_BCM1480_MC_DLL_STEP_SIZE)
+-#define V_BCM1480_MC_DLL_STEP_SIZE(x)       _SB_MAKEVALUE(x, S_BCM1480_MC_DLL_STEP_SIZE)
+-#define G_BCM1480_MC_DLL_STEP_SIZE(x)       _SB_GETVALUE(x, S_BCM1480_MC_DLL_STEP_SIZE, M_BCM1480_MC_DLL_STEP_SIZE)
+-#define V_BCM1480_MC_DLL_STEP_SIZE_DEFAULT  V_BCM1480_MC_DLL_STEP_SIZE(0x8)
+-
+-#if SIBYTE_HDR_FEATURE(1480, PASS2)
+-#define S_BCM1480_MC_DLL_BGCTRL	  60
+-#define M_BCM1480_MC_DLL_BGCTRL       	  _SB_MAKEMASK(2, S_BCM1480_MC_DLL_BGCTRL)
+-#define V_BCM1480_MC_DLL_BGCTRL(x)       _SB_MAKEVALUE(x, S_BCM1480_MC_DLL_BGCTRL)
+-#define G_BCM1480_MC_DLL_BGCTRL(x)       _SB_GETVALUE(x, S_BCM1480_MC_DLL_BGCTRL, M_BCM1480_MC_DLL_BGCTRL)
+-#define V_BCM1480_MC_DLL_DEFAULT_BGCTRL  V_BCM1480_MC_DLL_BGCTRL(0x0)
+-#endif
+-
+-#define	M_BCM1480_MC_DLL_BYPASS		    _SB_MAKEMASK1(63)
 -
 -/*
-- * Row Address Bits Register (Table 6-20)
+- * Memory Drive Configuration Register (Table 94)
 - */
 -
--#define S_MC_RAS_RESERVED           0
--#define M_MC_RAS_RESERVED           _SB_MAKEMASK(5, S_MC_RAS_RESERVED)
+-#define S_BCM1480_MC_RTT_BYP_PULLDOWN       0
+-#define M_BCM1480_MC_RTT_BYP_PULLDOWN       _SB_MAKEMASK(3, S_BCM1480_MC_RTT_BYP_PULLDOWN)
+-#define V_BCM1480_MC_RTT_BYP_PULLDOWN(x)    _SB_MAKEVALUE(x, S_BCM1480_MC_RTT_BYP_PULLDOWN)
+-#define G_BCM1480_MC_RTT_BYP_PULLDOWN(x)    _SB_GETVALUE(x, S_BCM1480_MC_RTT_BYP_PULLDOWN, M_BCM1480_MC_RTT_BYP_PULLDOWN)
 -
--#define S_MC_RAS_SELECT             12
--#define M_MC_RAS_SELECT             _SB_MAKEMASK(25, S_MC_RAS_SELECT)
--#define V_MC_RAS_SELECT(x)          _SB_MAKEVALUE(x, S_MC_RAS_SELECT)
+-#define S_BCM1480_MC_RTT_BYP_PULLUP         6
+-#define M_BCM1480_MC_RTT_BYP_PULLUP         _SB_MAKEMASK(3, S_BCM1480_MC_RTT_BYP_PULLUP)
+-#define V_BCM1480_MC_RTT_BYP_PULLUP(x)      _SB_MAKEVALUE(x, S_BCM1480_MC_RTT_BYP_PULLUP)
+-#define G_BCM1480_MC_RTT_BYP_PULLUP(x)      _SB_GETVALUE(x, S_BCM1480_MC_RTT_BYP_PULLUP, M_BCM1480_MC_RTT_BYP_PULLUP)
 -
--#define S_MC_RAS_MBZ                37
--#define M_MC_RAS_MBZ                _SB_MAKEMASK(27, S_MC_RAS_MBZ)
+-#define M_BCM1480_MC_RTT_BYPASS             _SB_MAKEMASK1(8)
+-#define M_BCM1480_MC_RTT_COMP_MOV_AVG       _SB_MAKEMASK1(9)
 -
+-#define S_BCM1480_MC_PVT_BYP_C1_PULLDOWN    10
+-#define M_BCM1480_MC_PVT_BYP_C1_PULLDOWN    _SB_MAKEMASK(4, S_BCM1480_MC_PVT_BYP_C1_PULLDOWN)
+-#define V_BCM1480_MC_PVT_BYP_C1_PULLDOWN(x) _SB_MAKEVALUE(x, S_BCM1480_MC_PVT_BYP_C1_PULLDOWN)
+-#define G_BCM1480_MC_PVT_BYP_C1_PULLDOWN(x) _SB_GETVALUE(x, S_BCM1480_MC_PVT_BYP_C1_PULLDOWN, M_BCM1480_MC_PVT_BYP_C1_PULLDOWN)
+-
+-#define S_BCM1480_MC_PVT_BYP_C1_PULLUP      15
+-#define M_BCM1480_MC_PVT_BYP_C1_PULLUP      _SB_MAKEMASK(4, S_BCM1480_MC_PVT_BYP_C1_PULLUP)
+-#define V_BCM1480_MC_PVT_BYP_C1_PULLUP(x)   _SB_MAKEVALUE(x, S_BCM1480_MC_PVT_BYP_C1_PULLUP)
+-#define G_BCM1480_MC_PVT_BYP_C1_PULLUP(x)   _SB_GETVALUE(x, S_BCM1480_MC_PVT_BYP_C1_PULLUP, M_BCM1480_MC_PVT_BYP_C1_PULLUP)
+-
+-#define S_BCM1480_MC_PVT_BYP_C2_PULLDOWN    20
+-#define M_BCM1480_MC_PVT_BYP_C2_PULLDOWN    _SB_MAKEMASK(4, S_BCM1480_MC_PVT_BYP_C2_PULLDOWN)
+-#define V_BCM1480_MC_PVT_BYP_C2_PULLDOWN(x) _SB_MAKEVALUE(x, S_BCM1480_MC_PVT_BYP_C2_PULLDOWN)
+-#define G_BCM1480_MC_PVT_BYP_C2_PULLDOWN(x) _SB_GETVALUE(x, S_BCM1480_MC_PVT_BYP_C2_PULLDOWN, M_BCM1480_MC_PVT_BYP_C2_PULLDOWN)
+-
+-#define S_BCM1480_MC_PVT_BYP_C2_PULLUP      25
+-#define M_BCM1480_MC_PVT_BYP_C2_PULLUP      _SB_MAKEMASK(4, S_BCM1480_MC_PVT_BYP_C2_PULLUP)
+-#define V_BCM1480_MC_PVT_BYP_C2_PULLUP(x)   _SB_MAKEVALUE(x, S_BCM1480_MC_PVT_BYP_C2_PULLUP)
+-#define G_BCM1480_MC_PVT_BYP_C2_PULLUP(x)   _SB_GETVALUE(x, S_BCM1480_MC_PVT_BYP_C2_PULLUP, M_BCM1480_MC_PVT_BYP_C2_PULLUP)
+-
+-#define M_BCM1480_MC_PVT_BYPASS             _SB_MAKEMASK1(30)
+-#define M_BCM1480_MC_PVT_COMP_MOV_AVG       _SB_MAKEMASK1(31)
+-
+-#define M_BCM1480_MC_CLK_CLASS              _SB_MAKEMASK1(34)
+-#define M_BCM1480_MC_DATA_CLASS             _SB_MAKEMASK1(35)
+-#define M_BCM1480_MC_ADDR_CLASS             _SB_MAKEMASK1(36)
+-
+-#define M_BCM1480_MC_DQ_ODT_75              _SB_MAKEMASK1(37)
+-#define M_BCM1480_MC_DQ_ODT_150             _SB_MAKEMASK1(38)
+-#define M_BCM1480_MC_DQS_ODT_75             _SB_MAKEMASK1(39)
+-#define M_BCM1480_MC_DQS_ODT_150            _SB_MAKEMASK1(40)
+-#define M_BCM1480_MC_DQS_DIFF               _SB_MAKEMASK1(41)
 -
 -/*
-- * Column Address Bits Register (Table 6-21)
+- * ECC Test Data Register (Table 95)
 - */
 -
--#define S_MC_CAS_RESERVED           0
--#define M_MC_CAS_RESERVED           _SB_MAKEMASK(5, S_MC_CAS_RESERVED)
--
--#define S_MC_CAS_SELECT             5
--#define M_MC_CAS_SELECT             _SB_MAKEMASK(18, S_MC_CAS_SELECT)
--#define V_MC_CAS_SELECT(x)          _SB_MAKEVALUE(x, S_MC_CAS_SELECT)
--
--#define S_MC_CAS_MBZ                23
--#define M_MC_CAS_MBZ                _SB_MAKEMASK(41, S_MC_CAS_MBZ)
--
+-#define S_BCM1480_MC_DATA_INVERT            0
+-#define M_DATA_ECC_INVERT           _SB_MAKEMASK(64, S_BCM1480_MC_ECC_INVERT)
 -
 -/*
-- * Bank Address Address Bits Register (Table 6-22)
+- * ECC Test ECC Register (Table 96)
 - */
 -
--#define S_MC_BA_RESERVED            0
--#define M_MC_BA_RESERVED            _SB_MAKEMASK(5, S_MC_BA_RESERVED)
--
--#define S_MC_BA_SELECT              5
--#define M_MC_BA_SELECT              _SB_MAKEMASK(20, S_MC_BA_SELECT)
--#define V_MC_BA_SELECT(x)           _SB_MAKEVALUE(x, S_MC_BA_SELECT)
--
--#define S_MC_BA_MBZ                 25
--#define M_MC_BA_MBZ                 _SB_MAKEMASK(39, S_MC_BA_MBZ)
+-#define S_BCM1480_MC_ECC_INVERT             0
+-#define M_BCM1480_MC_ECC_INVERT             _SB_MAKEMASK(8, S_BCM1480_MC_ECC_INVERT)
 -
 -/*
-- * Chip Select Attribute Register (Table 6-23)
+- * SDRAM Timing Register  (Table 97)
 - */
 -
--#define K_MC_CS_ATTR_CLOSED         0
--#define K_MC_CS_ATTR_CASCHECK       1
--#define K_MC_CS_ATTR_HINT           2
--#define K_MC_CS_ATTR_OPEN           3
+-#define S_BCM1480_MC_tRCD                   0
+-#define M_BCM1480_MC_tRCD                   _SB_MAKEMASK(4, S_BCM1480_MC_tRCD)
+-#define V_BCM1480_MC_tRCD(x)                _SB_MAKEVALUE(x, S_BCM1480_MC_tRCD)
+-#define G_BCM1480_MC_tRCD(x)                _SB_GETVALUE(x, S_BCM1480_MC_tRCD, M_BCM1480_MC_tRCD)
+-#define K_BCM1480_MC_tRCD_DEFAULT           3
+-#define V_BCM1480_MC_tRCD_DEFAULT           V_BCM1480_MC_tRCD(K_BCM1480_MC_tRCD_DEFAULT)
 -
--#define S_MC_CS0_PAGE               0
--#define M_MC_CS0_PAGE               _SB_MAKEMASK(2, S_MC_CS0_PAGE)
--#define V_MC_CS0_PAGE(x)            _SB_MAKEVALUE(x, S_MC_CS0_PAGE)
--#define G_MC_CS0_PAGE(x)            _SB_GETVALUE(x, S_MC_CS0_PAGE, M_MC_CS0_PAGE)
+-#define S_BCM1480_MC_tCL                    4
+-#define M_BCM1480_MC_tCL                    _SB_MAKEMASK(4, S_BCM1480_MC_tCL)
+-#define V_BCM1480_MC_tCL(x)                 _SB_MAKEVALUE(x, S_BCM1480_MC_tCL)
+-#define G_BCM1480_MC_tCL(x)                 _SB_GETVALUE(x, S_BCM1480_MC_tCL, M_BCM1480_MC_tCL)
+-#define K_BCM1480_MC_tCL_DEFAULT            2
+-#define V_BCM1480_MC_tCL_DEFAULT            V_BCM1480_MC_tCL(K_BCM1480_MC_tCL_DEFAULT)
 -
--#define S_MC_CS1_PAGE               16
--#define M_MC_CS1_PAGE               _SB_MAKEMASK(2, S_MC_CS1_PAGE)
--#define V_MC_CS1_PAGE(x)            _SB_MAKEVALUE(x, S_MC_CS1_PAGE)
--#define G_MC_CS1_PAGE(x)            _SB_GETVALUE(x, S_MC_CS1_PAGE, M_MC_CS1_PAGE)
+-#define M_BCM1480_MC_tCrDh                  _SB_MAKEMASK1(8)
 -
--#define S_MC_CS2_PAGE               32
--#define M_MC_CS2_PAGE               _SB_MAKEMASK(2, S_MC_CS2_PAGE)
--#define V_MC_CS2_PAGE(x)            _SB_MAKEVALUE(x, S_MC_CS2_PAGE)
--#define G_MC_CS2_PAGE(x)            _SB_GETVALUE(x, S_MC_CS2_PAGE, M_MC_CS2_PAGE)
+-#define S_BCM1480_MC_tWR                    9
+-#define M_BCM1480_MC_tWR                    _SB_MAKEMASK(3, S_BCM1480_MC_tWR)
+-#define V_BCM1480_MC_tWR(x)                 _SB_MAKEVALUE(x, S_BCM1480_MC_tWR)
+-#define G_BCM1480_MC_tWR(x)                 _SB_GETVALUE(x, S_BCM1480_MC_tWR, M_BCM1480_MC_tWR)
+-#define K_BCM1480_MC_tWR_DEFAULT            2
+-#define V_BCM1480_MC_tWR_DEFAULT            V_BCM1480_MC_tWR(K_BCM1480_MC_tWR_DEFAULT)
 -
--#define S_MC_CS3_PAGE               48
--#define M_MC_CS3_PAGE               _SB_MAKEMASK(2, S_MC_CS3_PAGE)
--#define V_MC_CS3_PAGE(x)            _SB_MAKEVALUE(x, S_MC_CS3_PAGE)
--#define G_MC_CS3_PAGE(x)            _SB_GETVALUE(x, S_MC_CS3_PAGE, M_MC_CS3_PAGE)
+-#define S_BCM1480_MC_tCwD                   12
+-#define M_BCM1480_MC_tCwD                   _SB_MAKEMASK(4, S_BCM1480_MC_tCwD)
+-#define V_BCM1480_MC_tCwD(x)                _SB_MAKEVALUE(x, S_BCM1480_MC_tCwD)
+-#define G_BCM1480_MC_tCwD(x)                _SB_GETVALUE(x, S_BCM1480_MC_tCwD, M_BCM1480_MC_tCwD)
+-#define K_BCM1480_MC_tCwD_DEFAULT           1
+-#define V_BCM1480_MC_tCwD_DEFAULT           V_BCM1480_MC_tCwD(K_BCM1480_MC_tCwD_DEFAULT)
+-
+-#define S_BCM1480_MC_tRP                    16
+-#define M_BCM1480_MC_tRP                    _SB_MAKEMASK(4, S_BCM1480_MC_tRP)
+-#define V_BCM1480_MC_tRP(x)                 _SB_MAKEVALUE(x, S_BCM1480_MC_tRP)
+-#define G_BCM1480_MC_tRP(x)                 _SB_GETVALUE(x, S_BCM1480_MC_tRP, M_BCM1480_MC_tRP)
+-#define K_BCM1480_MC_tRP_DEFAULT            4
+-#define V_BCM1480_MC_tRP_DEFAULT            V_BCM1480_MC_tRP(K_BCM1480_MC_tRP_DEFAULT)
+-
+-#define S_BCM1480_MC_tRRD                   20
+-#define M_BCM1480_MC_tRRD                   _SB_MAKEMASK(4, S_BCM1480_MC_tRRD)
+-#define V_BCM1480_MC_tRRD(x)                _SB_MAKEVALUE(x, S_BCM1480_MC_tRRD)
+-#define G_BCM1480_MC_tRRD(x)                _SB_GETVALUE(x, S_BCM1480_MC_tRRD, M_BCM1480_MC_tRRD)
+-#define K_BCM1480_MC_tRRD_DEFAULT           2
+-#define V_BCM1480_MC_tRRD_DEFAULT           V_BCM1480_MC_tRRD(K_BCM1480_MC_tRRD_DEFAULT)
+-
+-#define S_BCM1480_MC_tRCw                   24
+-#define M_BCM1480_MC_tRCw                   _SB_MAKEMASK(5, S_BCM1480_MC_tRCw)
+-#define V_BCM1480_MC_tRCw(x)                _SB_MAKEVALUE(x, S_BCM1480_MC_tRCw)
+-#define G_BCM1480_MC_tRCw(x)                _SB_GETVALUE(x, S_BCM1480_MC_tRCw, M_BCM1480_MC_tRCw)
+-#define K_BCM1480_MC_tRCw_DEFAULT           10
+-#define V_BCM1480_MC_tRCw_DEFAULT           V_BCM1480_MC_tRCw(K_BCM1480_MC_tRCw_DEFAULT)
+-
+-#define S_BCM1480_MC_tRCr                   32
+-#define M_BCM1480_MC_tRCr                   _SB_MAKEMASK(5, S_BCM1480_MC_tRCr)
+-#define V_BCM1480_MC_tRCr(x)                _SB_MAKEVALUE(x, S_BCM1480_MC_tRCr)
+-#define G_BCM1480_MC_tRCr(x)                _SB_GETVALUE(x, S_BCM1480_MC_tRCr, M_BCM1480_MC_tRCr)
+-#define K_BCM1480_MC_tRCr_DEFAULT           9
+-#define V_BCM1480_MC_tRCr_DEFAULT           V_BCM1480_MC_tRCr(K_BCM1480_MC_tRCr_DEFAULT)
+-
+-#if SIBYTE_HDR_FEATURE(1480, PASS2)
+-#define S_BCM1480_MC_tFAW                   40
+-#define M_BCM1480_MC_tFAW                   _SB_MAKEMASK(6, S_BCM1480_MC_tFAW)
+-#define V_BCM1480_MC_tFAW(x)                _SB_MAKEVALUE(x, S_BCM1480_MC_tFAW)
+-#define G_BCM1480_MC_tFAW(x)                _SB_GETVALUE(x, S_BCM1480_MC_tFAW, M_BCM1480_MC_tFAW)
+-#define K_BCM1480_MC_tFAW_DEFAULT           0
+-#define V_BCM1480_MC_tFAW_DEFAULT           V_BCM1480_MC_tFAW(K_BCM1480_MC_tFAW_DEFAULT)
+-#endif
+-
+-#define S_BCM1480_MC_tRFC                   48
+-#define M_BCM1480_MC_tRFC                   _SB_MAKEMASK(7, S_BCM1480_MC_tRFC)
+-#define V_BCM1480_MC_tRFC(x)                _SB_MAKEVALUE(x, S_BCM1480_MC_tRFC)
+-#define G_BCM1480_MC_tRFC(x)                _SB_GETVALUE(x, S_BCM1480_MC_tRFC, M_BCM1480_MC_tRFC)
+-#define K_BCM1480_MC_tRFC_DEFAULT           12
+-#define V_BCM1480_MC_tRFC_DEFAULT           V_BCM1480_MC_tRFC(K_BCM1480_MC_tRFC_DEFAULT)
+-
+-#define S_BCM1480_MC_tFIFO                  56
+-#define M_BCM1480_MC_tFIFO                  _SB_MAKEMASK(2, S_BCM1480_MC_tFIFO)
+-#define V_BCM1480_MC_tFIFO(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_tFIFO)
+-#define G_BCM1480_MC_tFIFO(x)               _SB_GETVALUE(x, S_BCM1480_MC_tFIFO, M_BCM1480_MC_tFIFO)
+-#define K_BCM1480_MC_tFIFO_DEFAULT          0
+-#define V_BCM1480_MC_tFIFO_DEFAULT          V_BCM1480_MC_tFIFO(K_BCM1480_MC_tFIFO_DEFAULT)
+-
+-#define S_BCM1480_MC_tW2R                  58
+-#define M_BCM1480_MC_tW2R                  _SB_MAKEMASK(2, S_BCM1480_MC_tW2R)
+-#define V_BCM1480_MC_tW2R(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_tW2R)
+-#define G_BCM1480_MC_tW2R(x)               _SB_GETVALUE(x, S_BCM1480_MC_tW2R, M_BCM1480_MC_tW2R)
+-#define K_BCM1480_MC_tW2R_DEFAULT          1
+-#define V_BCM1480_MC_tW2R_DEFAULT          V_BCM1480_MC_tW2R(K_BCM1480_MC_tW2R_DEFAULT)
+-
+-#define S_BCM1480_MC_tR2W                  60
+-#define M_BCM1480_MC_tR2W                  _SB_MAKEMASK(2, S_BCM1480_MC_tR2W)
+-#define V_BCM1480_MC_tR2W(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_tR2W)
+-#define G_BCM1480_MC_tR2W(x)               _SB_GETVALUE(x, S_BCM1480_MC_tR2W, M_BCM1480_MC_tR2W)
+-#define K_BCM1480_MC_tR2W_DEFAULT          0
+-#define V_BCM1480_MC_tR2W_DEFAULT          V_BCM1480_MC_tR2W(K_BCM1480_MC_tR2W_DEFAULT)
+-
+-#define M_BCM1480_MC_tR2R		    _SB_MAKEMASK1(62)
+-
+-#define V_BCM1480_MC_TIMING_DEFAULT         (M_BCM1480_MC_tR2R | \
+-                                     V_BCM1480_MC_tFIFO_DEFAULT | \
+-                                     V_BCM1480_MC_tR2W_DEFAULT | \
+-                                     V_BCM1480_MC_tW2R_DEFAULT | \
+-                                     V_BCM1480_MC_tRFC_DEFAULT | \
+-                                     V_BCM1480_MC_tRCr_DEFAULT | \
+-                                     V_BCM1480_MC_tRCw_DEFAULT | \
+-                                     V_BCM1480_MC_tRRD_DEFAULT | \
+-                                     V_BCM1480_MC_tRP_DEFAULT | \
+-                                     V_BCM1480_MC_tCwD_DEFAULT | \
+-                                     V_BCM1480_MC_tWR_DEFAULT | \
+-                                     M_BCM1480_MC_tCrDh | \
+-                                     V_BCM1480_MC_tCL_DEFAULT | \
+-                                     V_BCM1480_MC_tRCD_DEFAULT)
 -
 -/*
-- * ECC Test ECC Register (Table 6-25)
+- * SDRAM Timing Register 2
 - */
 -
--#define S_MC_ECC_INVERT             0
--#define M_MC_ECC_INVERT             _SB_MAKEMASK(8, S_MC_ECC_INVERT)
+-#if SIBYTE_HDR_FEATURE(1480, PASS2)
 -
+-#define S_BCM1480_MC_tAL                   0
+-#define M_BCM1480_MC_tAL                   _SB_MAKEMASK(4, S_BCM1480_MC_tAL)
+-#define V_BCM1480_MC_tAL(x)                _SB_MAKEVALUE(x, S_BCM1480_MC_tAL)
+-#define G_BCM1480_MC_tAL(x)                _SB_GETVALUE(x, S_BCM1480_MC_tAL, M_BCM1480_MC_tAL)
+-#define K_BCM1480_MC_tAL_DEFAULT           0
+-#define V_BCM1480_MC_tAL_DEFAULT           V_BCM1480_MC_tAL(K_BCM1480_MC_tAL_DEFAULT)
+-
+-#define S_BCM1480_MC_tRTP                   4
+-#define M_BCM1480_MC_tRTP                   _SB_MAKEMASK(3, S_BCM1480_MC_tRTP)
+-#define V_BCM1480_MC_tRTP(x)                _SB_MAKEVALUE(x, S_BCM1480_MC_tRTP)
+-#define G_BCM1480_MC_tRTP(x)                _SB_GETVALUE(x, S_BCM1480_MC_tRTP, M_BCM1480_MC_tRTP)
+-#define K_BCM1480_MC_tRTP_DEFAULT           2
+-#define V_BCM1480_MC_tRTP_DEFAULT           V_BCM1480_MC_tRTP(K_BCM1480_MC_tRTP_DEFAULT)
+-
+-#define S_BCM1480_MC_tW2W                   8
+-#define M_BCM1480_MC_tW2W                   _SB_MAKEMASK(2, S_BCM1480_MC_tW2W)
+-#define V_BCM1480_MC_tW2W(x)                _SB_MAKEVALUE(x, S_BCM1480_MC_tW2W)
+-#define G_BCM1480_MC_tW2W(x)                _SB_GETVALUE(x, S_BCM1480_MC_tW2W, M_BCM1480_MC_tW2W)
+-#define K_BCM1480_MC_tW2W_DEFAULT           0
+-#define V_BCM1480_MC_tW2W_DEFAULT           V_BCM1480_MC_tW2W(K_BCM1480_MC_tW2W_DEFAULT)
+-
+-#define S_BCM1480_MC_tRAP                   12
+-#define M_BCM1480_MC_tRAP                  _SB_MAKEMASK(4, S_BCM1480_MC_tRAP)
+-#define V_BCM1480_MC_tRAP(x)                _SB_MAKEVALUE(x, S_BCM1480_MC_tRAP)
+-#define G_BCM1480_MC_tRAP(x)                _SB_GETVALUE(x, S_BCM1480_MC_tRAP, M_BCM1480_MC_tRAP)
+-#define K_BCM1480_MC_tRAP_DEFAULT           0
+-#define V_BCM1480_MC_tRAP_DEFAULT           V_BCM1480_MC_tRAP(K_BCM1480_MC_tRAP_DEFAULT)
 -
 -#endif
+-
+-
+-
+-/*
+- * Global Registers: single instances per BCM1480
+- */
+-
+-/*
+- * Global Configuration Register (Table 99)
+- */
+-
+-#define S_BCM1480_MC_BLK_SET_MARK           8
+-#define M_BCM1480_MC_BLK_SET_MARK           _SB_MAKEMASK(4, S_BCM1480_MC_BLK_SET_MARK)
+-#define V_BCM1480_MC_BLK_SET_MARK(x)        _SB_MAKEVALUE(x, S_BCM1480_MC_BLK_SET_MARK)
+-#define G_BCM1480_MC_BLK_SET_MARK(x)        _SB_GETVALUE(x, S_BCM1480_MC_BLK_SET_MARK, M_BCM1480_MC_BLK_SET_MARK)
+-
+-#define S_BCM1480_MC_BLK_CLR_MARK           12
+-#define M_BCM1480_MC_BLK_CLR_MARK           _SB_MAKEMASK(4, S_BCM1480_MC_BLK_CLR_MARK)
+-#define V_BCM1480_MC_BLK_CLR_MARK(x)        _SB_MAKEVALUE(x, S_BCM1480_MC_BLK_CLR_MARK)
+-#define G_BCM1480_MC_BLK_CLR_MARK(x)        _SB_GETVALUE(x, S_BCM1480_MC_BLK_CLR_MARK, M_BCM1480_MC_BLK_CLR_MARK)
+-
+-#define M_BCM1480_MC_PKT_PRIORITY           _SB_MAKEMASK1(16)
+-
+-#define S_BCM1480_MC_MAX_AGE                20
+-#define M_BCM1480_MC_MAX_AGE                _SB_MAKEMASK(4, S_BCM1480_MC_MAX_AGE)
+-#define V_BCM1480_MC_MAX_AGE(x)             _SB_MAKEVALUE(x, S_BCM1480_MC_MAX_AGE)
+-#define G_BCM1480_MC_MAX_AGE(x)             _SB_GETVALUE(x, S_BCM1480_MC_MAX_AGE, M_BCM1480_MC_MAX_AGE)
+-
+-#define M_BCM1480_MC_BERR_DISABLE           _SB_MAKEMASK1(29)
+-#define M_BCM1480_MC_FORCE_SEQ              _SB_MAKEMASK1(30)
+-#define M_BCM1480_MC_VGEN                   _SB_MAKEMASK1(32)
+-
+-#define S_BCM1480_MC_SLEW                   33
+-#define M_BCM1480_MC_SLEW                   _SB_MAKEMASK(2, S_BCM1480_MC_SLEW)
+-#define V_BCM1480_MC_SLEW(x)                _SB_MAKEVALUE(x, S_BCM1480_MC_SLEW)
+-#define G_BCM1480_MC_SLEW(x)                _SB_GETVALUE(x, S_BCM1480_MC_SLEW, M_BCM1480_MC_SLEW)
+-
+-#define M_BCM1480_MC_SSTL_VOLTAGE           _SB_MAKEMASK1(35)
+-
+-/*
+- * Global Channel Interleave Register (Table 100)
+- */
+-
+-#define S_BCM1480_MC_INTLV0                 0
+-#define M_BCM1480_MC_INTLV0                 _SB_MAKEMASK(6, S_BCM1480_MC_INTLV0)
+-#define V_BCM1480_MC_INTLV0(x)              _SB_MAKEVALUE(x, S_BCM1480_MC_INTLV0)
+-#define G_BCM1480_MC_INTLV0(x)              _SB_GETVALUE(x, S_BCM1480_MC_INTLV0, M_BCM1480_MC_INTLV0)
+-
+-#define S_BCM1480_MC_INTLV1                 8
+-#define M_BCM1480_MC_INTLV1                 _SB_MAKEMASK(6, S_BCM1480_MC_INTLV1)
+-#define V_BCM1480_MC_INTLV1(x)              _SB_MAKEVALUE(x, S_BCM1480_MC_INTLV1)
+-#define G_BCM1480_MC_INTLV1(x)              _SB_GETVALUE(x, S_BCM1480_MC_INTLV1, M_BCM1480_MC_INTLV1)
+-
+-#define S_BCM1480_MC_INTLV_MODE             16
+-#define M_BCM1480_MC_INTLV_MODE             _SB_MAKEMASK(3, S_BCM1480_MC_INTLV_MODE)
+-#define V_BCM1480_MC_INTLV_MODE(x)          _SB_MAKEVALUE(x, S_BCM1480_MC_INTLV_MODE)
+-#define G_BCM1480_MC_INTLV_MODE(x)          _SB_GETVALUE(x, S_BCM1480_MC_INTLV_MODE, M_BCM1480_MC_INTLV_MODE)
+-
+-#define K_BCM1480_MC_INTLV_MODE_NONE        0x0
+-#define K_BCM1480_MC_INTLV_MODE_01          0x1
+-#define K_BCM1480_MC_INTLV_MODE_23          0x2
+-#define K_BCM1480_MC_INTLV_MODE_01_23       0x3
+-#define K_BCM1480_MC_INTLV_MODE_0123        0x4
+-
+-#define V_BCM1480_MC_INTLV_MODE_NONE        V_BCM1480_MC_INTLV_MODE(K_BCM1480_MC_INTLV_MODE_NONE)
+-#define V_BCM1480_MC_INTLV_MODE_01          V_BCM1480_MC_INTLV_MODE(K_BCM1480_MC_INTLV_MODE_01)
+-#define V_BCM1480_MC_INTLV_MODE_23          V_BCM1480_MC_INTLV_MODE(K_BCM1480_MC_INTLV_MODE_23)
+-#define V_BCM1480_MC_INTLV_MODE_01_23       V_BCM1480_MC_INTLV_MODE(K_BCM1480_MC_INTLV_MODE_01_23)
+-#define V_BCM1480_MC_INTLV_MODE_0123        V_BCM1480_MC_INTLV_MODE(K_BCM1480_MC_INTLV_MODE_0123)
+-
+-/*
+- * ECC Status Register
+- */
+-
+-#define S_BCM1480_MC_ECC_ERR_ADDR           0
+-#define M_BCM1480_MC_ECC_ERR_ADDR           _SB_MAKEMASK(37, S_BCM1480_MC_ECC_ERR_ADDR)
+-#define V_BCM1480_MC_ECC_ERR_ADDR(x)        _SB_MAKEVALUE(x, S_BCM1480_MC_ECC_ERR_ADDR)
+-#define G_BCM1480_MC_ECC_ERR_ADDR(x)        _SB_GETVALUE(x, S_BCM1480_MC_ECC_ERR_ADDR, M_BCM1480_MC_ECC_ERR_ADDR)
+-
+-#if SIBYTE_HDR_FEATURE(1480, PASS2)
+-#define M_BCM1480_MC_ECC_ERR_RMW            _SB_MAKEMASK1(60)
+-#endif
+-
+-#define M_BCM1480_MC_ECC_MULT_ERR_DET       _SB_MAKEMASK1(61)
+-#define M_BCM1480_MC_ECC_UERR_DET           _SB_MAKEMASK1(62)
+-#define M_BCM1480_MC_ECC_CERR_DET           _SB_MAKEMASK1(63)
+-
+-/*
+- * Global ECC Address Register (Table 102)
+- */
+-
+-#define S_BCM1480_MC_ECC_CORR_ADDR          0
+-#define M_BCM1480_MC_ECC_CORR_ADDR          _SB_MAKEMASK(37, S_BCM1480_MC_ECC_CORR_ADDR)
+-#define V_BCM1480_MC_ECC_CORR_ADDR(x)       _SB_MAKEVALUE(x, S_BCM1480_MC_ECC_CORR_ADDR)
+-#define G_BCM1480_MC_ECC_CORR_ADDR(x)       _SB_GETVALUE(x, S_BCM1480_MC_ECC_CORR_ADDR, M_BCM1480_MC_ECC_CORR_ADDR)
+-
+-/*
+- * Global ECC Correction Register (Table 103)
+- */
+-
+-#define S_BCM1480_MC_ECC_CORRECT            0
+-#define M_BCM1480_MC_ECC_CORRECT            _SB_MAKEMASK(64, S_BCM1480_MC_ECC_CORRECT)
+-#define V_BCM1480_MC_ECC_CORRECT(x)         _SB_MAKEVALUE(x, S_BCM1480_MC_ECC_CORRECT)
+-#define G_BCM1480_MC_ECC_CORRECT(x)         _SB_GETVALUE(x, S_BCM1480_MC_ECC_CORRECT, M_BCM1480_MC_ECC_CORRECT)
+-
+-/*
+- * Global ECC Performance Counters Control Register (Table 104)
+- */
+-
+-#define S_BCM1480_MC_CHANNEL_SELECT         0
+-#define M_BCM1480_MC_CHANNEL_SELECT         _SB_MAKEMASK(4, S_BCM1480_MC_CHANNEL_SELECT)
+-#define V_BCM1480_MC_CHANNEL_SELECT(x)      _SB_MAKEVALUE(x, S_BCM1480_MC_CHANNEL_SELECT)
+-#define G_BCM1480_MC_CHANNEL_SELECT(x)      _SB_GETVALUE(x, S_BCM1480_MC_CHANNEL_SELECT, M_BCM1480_MC_CHANNEL_SELECT)
+-#define K_BCM1480_MC_CHANNEL_SELECT_0       0x1
+-#define K_BCM1480_MC_CHANNEL_SELECT_1       0x2
+-#define K_BCM1480_MC_CHANNEL_SELECT_2       0x4
+-#define K_BCM1480_MC_CHANNEL_SELECT_3       0x8
+-
+-#endif /* _BCM1480_MC_H */
 -- 
 1.7.7.6
+
+
 
