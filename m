@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752933Ab2FLOXF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 10:23:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57279 "EHLO mx2.suse.de"
+	id S1753396Ab2FLOXn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 10:23:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57244 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752217Ab2FLOVD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 10:21:03 -0400
+	id S1752119Ab2FLOVB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 10:21:01 -0400
 From: Jan Kara <jack@suse.cz>
 To: Al Viro <viro@ZenIV.linux.org.uk>
 Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@suse.cz,
-        Jan Kara <jack@suse.cz>, linux-btrfs@vger.kernel.org,
-        Chris Mason <chris.mason@oracle.com>
-Subject: [PATCH 24/27] btrfs: Convert to new freezing mechanism
-Date: Tue, 12 Jun 2012 16:20:45 +0200
-Message-Id: <1339510848-16992-25-git-send-email-jack@suse.cz>
+        Jan Kara <jack@suse.cz>, cluster-devel@redhat.com,
+        Steven Whitehouse <swhiteho@redhat.com>
+Subject: [PATCH 20/27] gfs2: Convert to new freezing mechanism
+Date: Tue, 12 Jun 2012 16:20:41 +0200
+Message-Id: <1339510848-16992-21-git-send-email-jack@suse.cz>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1339510848-16992-1-git-send-email-jack@suse.cz>
 References: <1339510848-16992-1-git-send-email-jack@suse.cz>
@@ -21,136 +21,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We convert btrfs_file_aio_write() to use new freeze check.  We also add proper
-freeze protection to btrfs_page_mkwrite(). We also add freeze protection to
-the transaction mechanism to avoid starting transactions on frozen filesystem.
-At minimum this is necessary to stop iput() of unlinked file to change frozen
-filesystem during truncation.
+We update gfs2_page_mkwrite() to use new freeze protection and the transaction
+code to use freeze protection while the transaction is running. That is needed
+to stop iput() of unlinked file from modifying the filesystem. The rest is
+handled by the generic code.
 
-Checks in cleaner_kthread() and transaction_kthread() can be safely removed
-since btrfs_freeze() will lock the mutexes and thus block the threads (and they
-shouldn't have anything to do anyway).
-
-CC: linux-btrfs@vger.kernel.org
-CC: Chris Mason <chris.mason@oracle.com>
+CC: cluster-devel@redhat.com
+CC: Steven Whitehouse <swhiteho@redhat.com>
+Acked-by: Steven Whitehouse <swhiteho@redhat.com>
 Signed-off-by: Jan Kara <jack@suse.cz>
 ---
- fs/btrfs/disk-io.c     |    3 ---
- fs/btrfs/file.c        |    3 ++-
- fs/btrfs/inode.c       |    6 +++++-
- fs/btrfs/transaction.c |    7 +++++++
- 4 files changed, 14 insertions(+), 5 deletions(-)
+ fs/gfs2/file.c  |   15 +++------------
+ fs/gfs2/trans.c |    4 ++++
+ 2 files changed, 7 insertions(+), 12 deletions(-)
 
-diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
-index 7ae51de..663f3a0 100644
---- a/fs/btrfs/disk-io.c
-+++ b/fs/btrfs/disk-io.c
-@@ -1532,8 +1532,6 @@ static int cleaner_kthread(void *arg)
- 	struct btrfs_root *root = arg;
+diff --git a/fs/gfs2/file.c b/fs/gfs2/file.c
+index 0795915..8ffeb03 100644
+--- a/fs/gfs2/file.c
++++ b/fs/gfs2/file.c
+@@ -370,11 +370,7 @@ static int gfs2_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 	loff_t size;
+ 	int ret;
  
- 	do {
--		vfs_check_frozen(root->fs_info->sb, SB_FREEZE_WRITE);
--
- 		if (!(root->fs_info->sb->s_flags & MS_RDONLY) &&
- 		    mutex_trylock(&root->fs_info->cleaner_mutex)) {
- 			btrfs_run_delayed_iputs(root);
-@@ -1565,7 +1563,6 @@ static int transaction_kthread(void *arg)
- 	do {
- 		cannot_commit = false;
- 		delay = HZ * 30;
--		vfs_check_frozen(root->fs_info->sb, SB_FREEZE_WRITE);
- 		mutex_lock(&root->fs_info->transaction_kthread_mutex);
- 
- 		spin_lock(&root->fs_info->trans_lock);
-diff --git a/fs/btrfs/file.c b/fs/btrfs/file.c
-index 70dc8ca..5131c3a 100644
---- a/fs/btrfs/file.c
-+++ b/fs/btrfs/file.c
-@@ -1392,7 +1392,7 @@ static ssize_t btrfs_file_aio_write(struct kiocb *iocb,
- 	ssize_t err = 0;
- 	size_t count, ocount;
- 
+-	/* Wait if fs is frozen. This is racy so we check again later on
+-	 * and retry if the fs has been frozen after the page lock has
+-	 * been acquired
+-	 */
 -	vfs_check_frozen(inode->i_sb, SB_FREEZE_WRITE);
-+	sb_start_write(inode->i_sb);
- 
- 	mutex_lock(&inode->i_mutex);
- 
-@@ -1482,6 +1482,7 @@ static ssize_t btrfs_file_aio_write(struct kiocb *iocb,
- 			num_written = err;
- 	}
- out:
-+	sb_end_write(inode->i_sb);
- 	current->backing_dev_info = NULL;
- 	return num_written ? num_written : err;
- }
-diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
-index f6ab6f5..2e191f6 100644
---- a/fs/btrfs/inode.c
-+++ b/fs/btrfs/inode.c
-@@ -6535,6 +6535,7 @@ int btrfs_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
- 	u64 page_start;
- 	u64 page_end;
- 
 +	sb_start_pagefault(inode->i_sb);
- 	ret  = btrfs_delalloc_reserve_space(inode, PAGE_CACHE_SIZE);
- 	if (!ret) {
- 		ret = file_update_time(vma->vm_file);
-@@ -6624,12 +6625,15 @@ again:
- 	unlock_extent_cached(io_tree, page_start, page_end, &cached_state, GFP_NOFS);
  
- out_unlock:
--	if (!ret)
-+	if (!ret) {
-+		sb_end_pagefault(inode->i_sb);
- 		return VM_FAULT_LOCKED;
-+	}
- 	unlock_page(page);
- out:
- 	btrfs_delalloc_release_space(inode, PAGE_CACHE_SIZE);
- out_noreserve:
+ 	/* Update file times before taking page lock */
+ 	file_update_time(vma->vm_file);
+@@ -458,14 +454,9 @@ out:
+ 	gfs2_holder_uninit(&gh);
+ 	if (ret == 0) {
+ 		set_page_dirty(page);
+-		/* This check must be post dropping of transaction lock */
+-		if (inode->i_sb->s_frozen == SB_UNFROZEN) {
+-			wait_on_page_writeback(page);
+-		} else {
+-			ret = -EAGAIN;
+-			unlock_page(page);
+-		}
++		wait_on_page_writeback(page);
+ 	}
 +	sb_end_pagefault(inode->i_sb);
- 	return ret;
+ 	return block_page_mkwrite_return(ret);
  }
  
-diff --git a/fs/btrfs/transaction.c b/fs/btrfs/transaction.c
-index 1791c6e..05d8c29 100644
---- a/fs/btrfs/transaction.c
-+++ b/fs/btrfs/transaction.c
-@@ -325,6 +325,8 @@ again:
- 	if (!h)
- 		return ERR_PTR(-ENOMEM);
+diff --git a/fs/gfs2/trans.c b/fs/gfs2/trans.c
+index ad3e2fb..adbd278 100644
+--- a/fs/gfs2/trans.c
++++ b/fs/gfs2/trans.c
+@@ -50,6 +50,7 @@ int gfs2_trans_begin(struct gfs2_sbd *sdp, unsigned int blocks,
+ 	if (revokes)
+ 		tr->tr_reserved += gfs2_struct2blk(sdp, revokes,
+ 						   sizeof(u64));
++	sb_start_intwrite(sdp->sd_vfs);
+ 	gfs2_holder_init(sdp->sd_trans_gl, LM_ST_SHARED, 0, &tr->tr_t_gh);
  
-+	sb_start_intwrite(root->fs_info->sb);
-+
- 	if (may_wait_transaction(root, type))
- 		wait_current_trans(root);
+ 	error = gfs2_glock_nq(&tr->tr_t_gh);
+@@ -68,6 +69,7 @@ fail_gunlock:
+ 	gfs2_glock_dq(&tr->tr_t_gh);
  
-@@ -335,6 +337,7 @@ again:
- 	} while (ret == -EBUSY);
+ fail_holder_uninit:
++	sb_end_intwrite(sdp->sd_vfs);
+ 	gfs2_holder_uninit(&tr->tr_t_gh);
+ 	kfree(tr);
  
- 	if (ret < 0) {
-+		sb_end_intwrite(root->fs_info->sb);
- 		kmem_cache_free(btrfs_trans_handle_cachep, h);
- 		return ERR_PTR(ret);
+@@ -116,6 +118,7 @@ void gfs2_trans_end(struct gfs2_sbd *sdp)
+ 			gfs2_holder_uninit(&tr->tr_t_gh);
+ 			kfree(tr);
+ 		}
++		sb_end_intwrite(sdp->sd_vfs);
+ 		return;
  	}
-@@ -524,6 +527,8 @@ static int __btrfs_end_transaction(struct btrfs_trans_handle *trans,
- 		count++;
- 	}
  
-+	sb_end_intwrite(root->fs_info->sb);
-+
- 	if (lock && !atomic_read(&root->fs_info->open_ioctl_trans) &&
- 	    should_end_transaction(trans, root)) {
- 		trans->transaction->blocked = 1;
-@@ -1507,6 +1512,8 @@ int btrfs_commit_transaction(struct btrfs_trans_handle *trans,
- 	put_transaction(cur_trans);
- 	put_transaction(cur_trans);
+@@ -136,6 +139,7 @@ void gfs2_trans_end(struct gfs2_sbd *sdp)
  
-+	sb_end_intwrite(root->fs_info->sb);
-+
- 	trace_btrfs_transaction_commit(root);
+ 	if (sdp->sd_vfs->s_flags & MS_SYNCHRONOUS)
+ 		gfs2_log_flush(sdp, NULL);
++	sb_end_intwrite(sdp->sd_vfs);
+ }
  
- 	btrfs_scrub_continue(root);
+ /**
 -- 
 1.7.1
 
