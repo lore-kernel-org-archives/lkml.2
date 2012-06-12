@@ -1,85 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752019Ab2FLHXz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 03:23:55 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:61049 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751458Ab2FLHXx (ORCPT
+	id S1752039Ab2FLHYN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 03:24:13 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:64190 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750733Ab2FLHYL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 03:23:53 -0400
-Message-ID: <4FD6EE85.2090207@linaro.org>
-Date: Tue, 12 Jun 2012 08:23:49 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	Tue, 12 Jun 2012 03:24:11 -0400
 MIME-Version: 1.0
-To: Wolfram Sang <w.sang@pengutronix.de>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, arnd@arndb.de, grant.likely@secretlab.ca,
-        linux-i2c@vger.kernel.org
-Subject: Re: [PATCH 09/14] i2c: Add Device Tree support to the Nomadik I2C
- driver
-References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org> <1339428307-3850-10-git-send-email-lee.jones@linaro.org> <20120611190550.GK3887@pengutronix.de>
-In-Reply-To: <20120611190550.GK3887@pengutronix.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <4FD6DC69.2090008@snapgear.com>
+References: <1339059427.25798.3.camel@x61.thuisdomein>
+	<4FD19B29.4050904@snapgear.com>
+	<CAMuHMdXisLvXAPbbkuYsYH2UZ_DJSyEhKZOL6_4qwuwLzFcEoQ@mail.gmail.com>
+	<4FD6DC69.2090008@snapgear.com>
+Date: Tue, 12 Jun 2012 09:24:10 +0200
+X-Google-Sender-Auth: mgTmoe-YYNXQq0Pq6tLcpJbH0gI
+Message-ID: <CAMuHMdWn7KsdW1mEcvp8tGrDZeMiD+e6RszB=qH7P3CLZEyftg@mail.gmail.com>
+Subject: Re: [PATCH] m68k: remove six unused headers
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Greg Ungerer <gerg@snapgear.com>
+Cc: Paul Bolle <pebolle@tiscali.nl>, linux-m68k@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06/12 20:05, Wolfram Sang wrote:
-> On Mon, Jun 11, 2012 at 04:25:02PM +0100, Lee Jones wrote:
->> Here we move the i2c-nomadik's default settings into the driver
->> rather than specifying them from platform code. At the time of
->> this writing we only have one user, the u8500. As new users are
->> added, it is expected that they will be Device Tree compliant.
->> If this is the case, we will look up their initialisation values
->> by compatible entry, then apply them forthwith.
+On Tue, Jun 12, 2012 at 8:06 AM, Greg Ungerer <gerg@snapgear.com> wrote:
+>>> Although mcfne.h has been unused for a while I am working on some patches
+>>> that do use it. No problem for the others.
 >>
->> Cc: linux-i2c@vger.kernel.org
->> Acked-by: Linus Walleij<linus.walleij@linaro.org>
->> Signed-off-by: Lee Jones<lee.jones@linaro.org>
->> ---
->>   drivers/i2c/busses/i2c-nomadik.c |   40 +++++++++++++++++++++++++++++++++++++-
->>   1 file changed, 39 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/i2c/busses/i2c-nomadik.c b/drivers/i2c/busses/i2c-nomadik.c
->> index a92440d..1ffdf67 100644
->> --- a/drivers/i2c/busses/i2c-nomadik.c
->> +++ b/drivers/i2c/busses/i2c-nomadik.c
->> @@ -23,6 +23,7 @@
->>   #include<linux/io.h>
->>   #include<linux/regulator/consumer.h>
->>   #include<linux/pm_runtime.h>
->> +#include<linux/of_device.h>
->>
->>   #include<plat/i2c.h>
->>
->> @@ -899,15 +900,51 @@ static const struct i2c_algorithm nmk_i2c_algo = {
->>   	.functionality	= nmk_i2c_functionality
->>   };
->>
->> +static struct nmk_i2c_controller u8500_i2c = {
->> +       /*
->> +        * slave data setup time, which is
->> +        * 250 ns,100ns,10ns which is 14,6,2
->> +        * respectively for a 48 Mhz
->> +        * i2c clock
->> +        */
->> +       .slsu           = 0xe,
->> +       /* Tx FIFO threshold */
+>> If I'm not mistaken, that should become mcf8390.h, as "NE2000" means
+>> "NE2000-compatible 8390-based Ethernet"? Cfr. the mac8390 and zorro8390
+>> discussions in the previous millennium.
 >
-> Please put these comments directly after the members they describe.
 >
-> And make sure you use tabs for indentation all over the patch instead of
-> spaces. checkpatch.pl will help you to get the formal things right.
+> I guess I missed those :-(
+> I think I see from the code for those under ~/drivers/net/ethernet/8390/
+> what this may have been about though.
+>
+> Interestingly one of the ColdFire platforms (the Arnewsh 5206 board)
+> really did have an ISA NE2000 card fitted to it. Most of the follow
+> ons that where similar use a Davicom/9000.
 
-My apologies. This section of code was a direct copy and paste from 
-platform code (arch/arm/mach-ux500/board-mop500.c). It must have lost 
-some formatting en route. I'll make the changes you request and re-post.
+If it's a real ISA NE2000 card, you ISA bus support instead of a special
+driver.
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-M: +44 77 88 633 515
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
