@@ -1,164 +1,420 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753902Ab2FLRYv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 13:24:51 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48160 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753873Ab2FLRYs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 13:24:48 -0400
-Date: Tue, 12 Jun 2012 10:24:44 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Joe Perches <joe@perches.com>, g@google.com
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, tejun@google.com, agk@redhat.com,
-        dan.j.williams@intel.com
-Subject: Re: [Bcache v14 16/16] bcache: Debug and tracing code
-Message-ID: <20120612172444.GA11365@google.com>
-References: <1339515562-14638-1-git-send-email-koverstreet@google.com>
- <1339515562-14638-17-git-send-email-koverstreet@google.com>
- <1339519858.2017.10.camel@joe2Laptop>
+	id S1753906Ab2FLRZY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 13:25:24 -0400
+Received: from fieldses.org ([174.143.236.118]:59960 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753749Ab2FLRZW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 13:25:22 -0400
+Date: Tue, 12 Jun 2012 13:25:16 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Jan Kara <jack@suse.cz>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@suse.cz, linux-nfs@vger.kernel.org
+Subject: Re: [PATCH 12/27] nfsd: Push mnt_want_write() outside of i_mutex
+Message-ID: <20120612172516.GA24476@fieldses.org>
+References: <1339510848-16992-1-git-send-email-jack@suse.cz>
+ <1339510848-16992-13-git-send-email-jack@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1339519858.2017.10.camel@joe2Laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1339510848-16992-13-git-send-email-jack@suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 12, 2012 at 09:50:58AM -0700, Joe Perches wrote:
-> On Tue, 2012-06-12 at 08:39 -0700, Kent Overstreet wrote:
+On Tue, Jun 12, 2012 at 04:20:33PM +0200, Jan Kara wrote:
+> When mnt_want_write() starts to handle freezing it will get a full lock
+> semantics requiring proper lock ordering. So push mnt_want_write() call
+> consistently outside of i_mutex.
 > 
-> > diff --git a/drivers/md/bcache/debug.c b/drivers/md/bcache/debug.c
-> 
-> > +static void dump_bset(struct btree *b, struct bset *i)
-> > +{
-> > +	for (struct bkey *k = i->start; k < end(i); k = bkey_next(k)) {
-> > +		printk(KERN_ERR "block %zu key %zu/%i: %s", index(i, b),
-> > +		       (uint64_t *) k - i->d, i->keys, pkey(k));
-> 
-> Add #define pr_fmt and use pr_<level> not printk everywhere.
+> CC: linux-nfs@vger.kernel.org
+> CC: "J. Bruce Fields" <bfields@fieldses.org>
 
-I've got the pr_fmt, but I don't want to use it here because it's
-dumping a btree node (100s of lines) so the bcache: would be redundant,
-but more importantly I don't want lines getting truncated.
+Looks good to me.  (If you want:
+Acked-by: J. Bruce Fields <bfields@redhat.com>
+.)
 
-> Doesn't this throw a gcc warning for argument mismatch?
+--b.
 
-No, why?
-
+> Signed-off-by: Jan Kara <jack@suse.cz>
+> ---
+>  fs/nfsd/nfs4recover.c      |    9 +++--
+>  fs/nfsd/nfsfh.c            |    1 +
+>  fs/nfsd/nfsproc.c          |    9 ++++-
+>  fs/nfsd/vfs.c              |   79 ++++++++++++++++++++++---------------------
+>  fs/nfsd/vfs.h              |   11 +++++-
+>  include/linux/nfsd/nfsfh.h |    1 +
+>  6 files changed, 64 insertions(+), 46 deletions(-)
 > 
-> > +static void vdump_bucket_and_panic(struct btree *b, const char *m, va_list args)
-> > +{
+> diff --git a/fs/nfsd/nfs4recover.c b/fs/nfsd/nfs4recover.c
+> index 5ff0b7b..43295d4 100644
+> --- a/fs/nfsd/nfs4recover.c
+> +++ b/fs/nfsd/nfs4recover.c
+> @@ -154,6 +154,10 @@ nfsd4_create_clid_dir(struct nfs4_client *clp)
+>  	if (status < 0)
+>  		return;
+>  
+> +	status = mnt_want_write_file(rec_file);
+> +	if (status)
+> +		return;
+> +
+>  	dir = rec_file->f_path.dentry;
+>  	/* lock the parent */
+>  	mutex_lock(&dir->d_inode->i_mutex);
+> @@ -173,11 +177,7 @@ nfsd4_create_clid_dir(struct nfs4_client *clp)
+>  		 * as well be forgiving and just succeed silently.
+>  		 */
+>  		goto out_put;
+> -	status = mnt_want_write_file(rec_file);
+> -	if (status)
+> -		goto out_put;
+>  	status = vfs_mkdir(dir->d_inode, dentry, S_IRWXU);
+> -	mnt_drop_write_file(rec_file);
+>  out_put:
+>  	dput(dentry);
+>  out_unlock:
+> @@ -189,6 +189,7 @@ out_unlock:
+>  				" (err %d); please check that %s exists"
+>  				" and is writeable", status,
+>  				user_recovery_dirname);
+> +	mnt_drop_write_file(rec_file);
+>  	nfs4_reset_creds(original_cred);
+>  }
+>  
+> diff --git a/fs/nfsd/nfsfh.c b/fs/nfsd/nfsfh.c
+> index cc79300..032af38 100644
+> --- a/fs/nfsd/nfsfh.c
+> +++ b/fs/nfsd/nfsfh.c
+> @@ -635,6 +635,7 @@ fh_put(struct svc_fh *fhp)
+>  		fhp->fh_post_saved = 0;
+>  #endif
+>  	}
+> +	fh_drop_write(fhp);
+>  	if (exp) {
+>  		exp_put(exp);
+>  		fhp->fh_export = NULL;
+> diff --git a/fs/nfsd/nfsproc.c b/fs/nfsd/nfsproc.c
+> index e15dc45..aad6d45 100644
+> --- a/fs/nfsd/nfsproc.c
+> +++ b/fs/nfsd/nfsproc.c
+> @@ -196,6 +196,7 @@ nfsd_proc_create(struct svc_rqst *rqstp, struct nfsd_createargs *argp,
+>  	struct dentry	*dchild;
+>  	int		type, mode;
+>  	__be32		nfserr;
+> +	int		hosterr;
+>  	dev_t		rdev = 0, wanted = new_decode_dev(attr->ia_size);
+>  
+>  	dprintk("nfsd: CREATE   %s %.*s\n",
+> @@ -214,6 +215,12 @@ nfsd_proc_create(struct svc_rqst *rqstp, struct nfsd_createargs *argp,
+>  	nfserr = nfserr_exist;
+>  	if (isdotent(argp->name, argp->len))
+>  		goto done;
+> +	hosterr = fh_want_write(dirfhp);
+> +	if (hosterr) {
+> +		nfserr = nfserrno(hosterr);
+> +		goto done;
+> +	}
+> +
+>  	fh_lock_nested(dirfhp, I_MUTEX_PARENT);
+>  	dchild = lookup_one_len(argp->name, dirfhp->fh_dentry, argp->len);
+>  	if (IS_ERR(dchild)) {
+> @@ -330,7 +337,7 @@ nfsd_proc_create(struct svc_rqst *rqstp, struct nfsd_createargs *argp,
+>  out_unlock:
+>  	/* We don't really need to unlock, as fh_put does it. */
+>  	fh_unlock(dirfhp);
+> -
+> +	fh_drop_write(dirfhp);
+>  done:
+>  	fh_put(dirfhp);
+>  	return nfsd_return_dirop(nfserr, resp);
+> diff --git a/fs/nfsd/vfs.c b/fs/nfsd/vfs.c
+> index c8bd9c3..4503995 100644
+> --- a/fs/nfsd/vfs.c
+> +++ b/fs/nfsd/vfs.c
+> @@ -1276,6 +1276,10 @@ nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
+>  	 * If it has, the parent directory should already be locked.
+>  	 */
+>  	if (!resfhp->fh_dentry) {
+> +		host_err = fh_want_write(fhp);
+> +		if (host_err)
+> +			goto out_nfserr;
+> +
+>  		/* called from nfsd_proc_mkdir, or possibly nfsd3_proc_create */
+>  		fh_lock_nested(fhp, I_MUTEX_PARENT);
+>  		dchild = lookup_one_len(fname, dentry, flen);
+> @@ -1319,14 +1323,11 @@ nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
+>  		goto out;
+>  	}
+>  
+> -	host_err = fh_want_write(fhp);
+> -	if (host_err)
+> -		goto out_nfserr;
+> -
+>  	/*
+>  	 * Get the dir op function pointer.
+>  	 */
+>  	err = 0;
+> +	host_err = 0;
+>  	switch (type) {
+>  	case S_IFREG:
+>  		host_err = vfs_create(dirp, dchild, iap->ia_mode, NULL);
+> @@ -1343,10 +1344,8 @@ nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
+>  		host_err = vfs_mknod(dirp, dchild, iap->ia_mode, rdev);
+>  		break;
+>  	}
+> -	if (host_err < 0) {
+> -		fh_drop_write(fhp);
+> +	if (host_err < 0)
+>  		goto out_nfserr;
+> -	}
+>  
+>  	err = nfsd_create_setattr(rqstp, resfhp, iap);
+>  
+> @@ -1358,7 +1357,6 @@ nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
+>  	err2 = nfserrno(commit_metadata(fhp));
+>  	if (err2)
+>  		err = err2;
+> -	fh_drop_write(fhp);
+>  	/*
+>  	 * Update the file handle to get the new inode info.
+>  	 */
+> @@ -1417,6 +1415,11 @@ do_nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
+>  	err = nfserr_notdir;
+>  	if (!dirp->i_op->lookup)
+>  		goto out;
+> +
+> +	host_err = fh_want_write(fhp);
+> +	if (host_err)
+> +		goto out_nfserr;
+> +
+>  	fh_lock_nested(fhp, I_MUTEX_PARENT);
+>  
+>  	/*
+> @@ -1449,9 +1452,6 @@ do_nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
+>  		v_atime = verifier[1]&0x7fffffff;
+>  	}
+>  	
+> -	host_err = fh_want_write(fhp);
+> -	if (host_err)
+> -		goto out_nfserr;
+>  	if (dchild->d_inode) {
+>  		err = 0;
+>  
+> @@ -1522,7 +1522,6 @@ do_nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
+>  	if (!err)
+>  		err = nfserrno(commit_metadata(fhp));
+>  
+> -	fh_drop_write(fhp);
+>  	/*
+>  	 * Update the filehandle to get the new inode info.
+>  	 */
+> @@ -1533,6 +1532,7 @@ do_nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
+>  	fh_unlock(fhp);
+>  	if (dchild && !IS_ERR(dchild))
+>  		dput(dchild);
+> +	fh_drop_write(fhp);
+>   	return err;
+>   
+>   out_nfserr:
+> @@ -1613,6 +1613,11 @@ nfsd_symlink(struct svc_rqst *rqstp, struct svc_fh *fhp,
+>  	err = fh_verify(rqstp, fhp, S_IFDIR, NFSD_MAY_CREATE);
+>  	if (err)
+>  		goto out;
+> +
+> +	host_err = fh_want_write(fhp);
+> +	if (host_err)
+> +		goto out_nfserr;
+> +
+>  	fh_lock(fhp);
+>  	dentry = fhp->fh_dentry;
+>  	dnew = lookup_one_len(fname, dentry, flen);
+> @@ -1620,10 +1625,6 @@ nfsd_symlink(struct svc_rqst *rqstp, struct svc_fh *fhp,
+>  	if (IS_ERR(dnew))
+>  		goto out_nfserr;
+>  
+> -	host_err = fh_want_write(fhp);
+> -	if (host_err)
+> -		goto out_nfserr;
+> -
+>  	if (unlikely(path[plen] != 0)) {
+>  		char *path_alloced = kmalloc(plen+1, GFP_KERNEL);
+>  		if (path_alloced == NULL)
+> @@ -1683,6 +1684,12 @@ nfsd_link(struct svc_rqst *rqstp, struct svc_fh *ffhp,
+>  	if (isdotent(name, len))
+>  		goto out;
+>  
+> +	host_err = fh_want_write(tfhp);
+> +	if (host_err) {
+> +		err = nfserrno(host_err);
+> +		goto out;
+> +	}
+> +
+>  	fh_lock_nested(ffhp, I_MUTEX_PARENT);
+>  	ddir = ffhp->fh_dentry;
+>  	dirp = ddir->d_inode;
+> @@ -1694,18 +1701,13 @@ nfsd_link(struct svc_rqst *rqstp, struct svc_fh *ffhp,
+>  
+>  	dold = tfhp->fh_dentry;
+>  
+> -	host_err = fh_want_write(tfhp);
+> -	if (host_err) {
+> -		err = nfserrno(host_err);
+> -		goto out_dput;
+> -	}
+>  	err = nfserr_noent;
+>  	if (!dold->d_inode)
+> -		goto out_drop_write;
+> +		goto out_dput;
+>  	host_err = nfsd_break_lease(dold->d_inode);
+>  	if (host_err) {
+>  		err = nfserrno(host_err);
+> -		goto out_drop_write;
+> +		goto out_dput;
+>  	}
+>  	host_err = vfs_link(dold, dirp, dnew);
+>  	if (!host_err) {
+> @@ -1718,12 +1720,11 @@ nfsd_link(struct svc_rqst *rqstp, struct svc_fh *ffhp,
+>  		else
+>  			err = nfserrno(host_err);
+>  	}
+> -out_drop_write:
+> -	fh_drop_write(tfhp);
+>  out_dput:
+>  	dput(dnew);
+>  out_unlock:
+>  	fh_unlock(ffhp);
+> +	fh_drop_write(tfhp);
+>  out:
+>  	return err;
+>  
+> @@ -1766,6 +1767,12 @@ nfsd_rename(struct svc_rqst *rqstp, struct svc_fh *ffhp, char *fname, int flen,
+>  	if (!flen || isdotent(fname, flen) || !tlen || isdotent(tname, tlen))
+>  		goto out;
+>  
+> +	host_err = fh_want_write(ffhp);
+> +	if (host_err) {
+> +		err = nfserrno(host_err);
+> +		goto out;
+> +	}
+> +
+>  	/* cannot use fh_lock as we need deadlock protective ordering
+>  	 * so do it by hand */
+>  	trap = lock_rename(tdentry, fdentry);
+> @@ -1796,17 +1803,14 @@ nfsd_rename(struct svc_rqst *rqstp, struct svc_fh *ffhp, char *fname, int flen,
+>  	host_err = -EXDEV;
+>  	if (ffhp->fh_export->ex_path.mnt != tfhp->fh_export->ex_path.mnt)
+>  		goto out_dput_new;
+> -	host_err = fh_want_write(ffhp);
+> -	if (host_err)
+> -		goto out_dput_new;
+>  
+>  	host_err = nfsd_break_lease(odentry->d_inode);
+>  	if (host_err)
+> -		goto out_drop_write;
+> +		goto out_dput_new;
+>  	if (ndentry->d_inode) {
+>  		host_err = nfsd_break_lease(ndentry->d_inode);
+>  		if (host_err)
+> -			goto out_drop_write;
+> +			goto out_dput_new;
+>  	}
+>  	host_err = vfs_rename(fdir, odentry, tdir, ndentry);
+>  	if (!host_err) {
+> @@ -1814,8 +1818,6 @@ nfsd_rename(struct svc_rqst *rqstp, struct svc_fh *ffhp, char *fname, int flen,
+>  		if (!host_err)
+>  			host_err = commit_metadata(ffhp);
+>  	}
+> -out_drop_write:
+> -	fh_drop_write(ffhp);
+>   out_dput_new:
+>  	dput(ndentry);
+>   out_dput_old:
+> @@ -1831,6 +1833,7 @@ out_drop_write:
+>  	fill_post_wcc(tfhp);
+>  	unlock_rename(tdentry, fdentry);
+>  	ffhp->fh_locked = tfhp->fh_locked = 0;
+> +	fh_drop_write(ffhp);
+>  
+>  out:
+>  	return err;
+> @@ -1856,6 +1859,10 @@ nfsd_unlink(struct svc_rqst *rqstp, struct svc_fh *fhp, int type,
+>  	if (err)
+>  		goto out;
+>  
+> +	host_err = fh_want_write(fhp);
+> +	if (host_err)
+> +		goto out_nfserr;
+> +
+>  	fh_lock_nested(fhp, I_MUTEX_PARENT);
+>  	dentry = fhp->fh_dentry;
+>  	dirp = dentry->d_inode;
+> @@ -1874,21 +1881,15 @@ nfsd_unlink(struct svc_rqst *rqstp, struct svc_fh *fhp, int type,
+>  	if (!type)
+>  		type = rdentry->d_inode->i_mode & S_IFMT;
+>  
+> -	host_err = fh_want_write(fhp);
+> -	if (host_err)
+> -		goto out_put;
+> -
+>  	host_err = nfsd_break_lease(rdentry->d_inode);
+>  	if (host_err)
+> -		goto out_drop_write;
+> +		goto out_put;
+>  	if (type != S_IFDIR)
+>  		host_err = vfs_unlink(dirp, rdentry);
+>  	else
+>  		host_err = vfs_rmdir(dirp, rdentry);
+>  	if (!host_err)
+>  		host_err = commit_metadata(fhp);
+> -out_drop_write:
+> -	fh_drop_write(fhp);
+>  out_put:
+>  	dput(rdentry);
+>  
+> diff --git a/fs/nfsd/vfs.h b/fs/nfsd/vfs.h
+> index ec0611b..359594c 100644
+> --- a/fs/nfsd/vfs.h
+> +++ b/fs/nfsd/vfs.h
+> @@ -110,12 +110,19 @@ int nfsd_set_posix_acl(struct svc_fh *, int, struct posix_acl *);
+>  
+>  static inline int fh_want_write(struct svc_fh *fh)
+>  {
+> -	return mnt_want_write(fh->fh_export->ex_path.mnt);
+> +	int ret = mnt_want_write(fh->fh_export->ex_path.mnt);
+> +
+> +	if (!ret)
+> +		fh->fh_want_write = 1;
+> +	return ret;
+>  }
+>  
+>  static inline void fh_drop_write(struct svc_fh *fh)
+>  {
+> -	mnt_drop_write(fh->fh_export->ex_path.mnt);
+> +	if (fh->fh_want_write) {
+> +		fh->fh_want_write = 0;
+> +		mnt_drop_write(fh->fh_export->ex_path.mnt);
+> +	}
+>  }
+>  
+>  #endif /* LINUX_NFSD_VFS_H */
+> diff --git a/include/linux/nfsd/nfsfh.h b/include/linux/nfsd/nfsfh.h
+> index ce4743a..fa63048 100644
+> --- a/include/linux/nfsd/nfsfh.h
+> +++ b/include/linux/nfsd/nfsfh.h
+> @@ -143,6 +143,7 @@ typedef struct svc_fh {
+>  	int			fh_maxsize;	/* max size for fh_handle */
+>  
+>  	unsigned char		fh_locked;	/* inode locked by us */
+> +	unsigned char		fh_want_write;	/* remount protection taken */
+>  
+>  #ifdef CONFIG_NFSD_V3
+>  	unsigned char		fh_post_saved;	/* post-op attrs saved */
+> -- 
+> 1.7.1
 > 
-> m should be renamed fmt
-
-Agreed.
-
-> 
-> > +	struct bset *i;
-> > +
-> > +	console_lock();
-> > +
-> > +	for_each_sorted_set(b, i)
-> > +		dump_bset(b, i);
-> > +
-> > +	vprintk(m, args);
-> > +
-> > +	console_unlock();
-> > +
-> > +	panic("at %s\n", pbtree(b));
-> > +}
-> > +
-> > +static void dump_bucket_and_panic(struct btree *b, const char *m, ...)
-> > +{
-> 
-> here too.
-> 
-> > +	va_list args;
-> > +	va_start(args, m);
-> > +	vdump_bucket_and_panic(b, m, args);
-> > +	va_end(args);
-> > +}
-> > +
-> > +static void __maybe_unused
-> > +dump_key_and_panic(struct btree *b, struct bset *i, int j)
-> > +{
-> > +	long bucket = PTR_BUCKET_NR(b->c, node(i, j), 0);
-> > +	long r = PTR_OFFSET(node(i, j), 0) & ~(~0 << b->c->bucket_bits);
-> > +
-> > +	printk(KERN_ERR "level %i block %zu key %i/%i: %s "
-> > +	       "bucket %llu offset %li into bucket\n",
-> 
-> coalesce formats please.
-
-The "block %zu key %i/%i" part? I think I can do that.
-
-> 
-> > +	       b->level, index(i, b), j, i->keys, pkey(node(i, j)),
-> > +	       (uint64_t) bucket, r);
-> > +	dump_bucket_and_panic(b, "");
-> > +}
-> 
-> []
-> 
-> > +static int debug_seq_show(struct seq_file *f, void *data)
-> > +{
-> > +	static const char *tabs = "\t\t\t\t\t";
-> 
-> Seems a _very_ odd use.
-
-It is a strange hack.
-
-The idea is that we want to indent more as we recurse; we could build up
-a new string of tabs each time we recurse that's got one more tab than
-our parent's, but that'd be a pain in the ass and it'd use more stack
-space (though that should be fine here), so instead it's just
-decrementing the pointer to the tab string to produce a string with one
-more tab.
-
-I'm not opposed to taking it out if you know cleaner way that isn't
-ridiculously verbose. But this code needs to be rewritten to not use
-single_open() (which I tihnk is going to be a pain in the ass) so it's
-not really at the top of my list.
-
-> 
-> > +	uint64_t last = 0, sectors = 0;
-> > +	struct cache_set *c = f->private;
-> > +
-> > +	struct btree_op op;
-> > +	bch_btree_op_init_stack(&op);
-> > +
-> > +	btree_root(dump, c, &op, f, &tabs[4], &last, &sectors);
-> > +
-> 
-> Why not just:
-> 
-> 	btree_root(dump, c, &op, "\t", &last, &sectors);
-> 
-> Please don't be lazy when modifying code.
-> 
-> []
-> 
-> > diff --git a/drivers/md/bcache/debug.h b/drivers/md/bcache/debug.h
-> []
-> > +#define KEYHACK_SIZE 80
-> > +struct keyprint_hack {
-> > +	char s[KEYHACK_SIZE];
-> > +};
-> 
-> structures named _hack are generally a bad idea.
-
-Heh. Well, I don't try to hide my terrible hacks. Ugly stuff should be
-ugly.
-
-If you missed what it's for, it lets you do
-printk("some key: %s\n", pkey(k));
-
-which is very handy.
-
-IMO it ought to be a vsnprintf extension, except that there's no plugin
-mechanism to do that so it could be specific to bcache. I'd love to
-implement that (shouldn't be very hard), but in the meantime this gets
-the job done.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
