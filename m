@@ -1,66 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751801Ab2FLHKA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 03:10:00 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:57589 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751354Ab2FLHJ7 (ORCPT
+	id S1751803Ab2FLHOy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 03:14:54 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:65363 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751125Ab2FLHOw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 03:09:59 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FD6EACE.9010109@jp.fujitsu.com>
-Date: Tue, 12 Jun 2012 16:07:58 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Tue, 12 Jun 2012 03:14:52 -0400
+Date: Tue, 12 Jun 2012 09:16:49 +0200
+From: Fabio Baltieri <fabio.baltieri@gmail.com>
+To: Shuah Khan <shuahkhan@gmail.com>
+Cc: Bryan Wu <bryan.wu@canonical.com>, linux-leds@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>
+Subject: Re: [PATCH] leds: use led_brightness_set in led_trigger_event
+Message-ID: <20120612071649.GA1306@gmail.com>
+References: <1339448260-1733-1-git-send-email-fabio.baltieri@gmail.com>
+ <1339450705.23857.16.camel@lorien2>
 MIME-Version: 1.0
-To: Ron Chen <ron_chen_123@yahoo.com>
-CC: Linux Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: memcg cgroup controller & sbrk interaction
-References: <1339118347.78794.YahooMailNeo@web112018.mail.gq1.yahoo.com>
-In-Reply-To: <1339118347.78794.YahooMailNeo@web112018.mail.gq1.yahoo.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339450705.23857.16.camel@lorien2>
+X-Operating-System: Linux balto-eee 3.5.0-rc1-balto-eee-00012-g1f35d37
+ GNU/Linux
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/06/08 10:19), Ron Chen wrote:
-> We are from the Open Grid Scheduler, which is the official Open Source Grid Engine. Open Grid Scheduler/
-> Grid Engine ( http://gridscheduler.sourceforge.net ) is used by many compute farms&  HPC sites for job scheduling.
+On Mon, Jun 11, 2012 at 03:38:25PM -0600, Shuah Khan wrote:
+> On Mon, 2012-06-11 at 22:57 +0200, Fabio Baltieri wrote:
+> > Fix led_trigger_event() to use led_brightness_set() instead of
+> > led_set_brightness(), so that any pending blink timer is stopped before
+> > setting the new brightness value.  Without this fix LED status may be
+> > overridden by a pending timer.
+> > 
+> > This allows a trigger to use a mix of led_trigger_event(),
+> > led_trigger_blink() and led_trigger_blink_oneshot() without races.
+> > 
+> > Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
+> > Cc: Bryan Wu <bryan.wu@canonical.com>
+> > ---
+> > Hi Bryan,
+> > 
+> > I found this one while working on another patch but I think it's also needed by
+> > other drivers which mixes led_trigger_blink() and led_trigger_event(), such as
+> > power_supply_leds.
+> > 
+> > Without this a led don't stop blinking as it should when calling
+> > led_trigger_event().
 > 
-> In the next release, we are using cgroups to define a Job Container interface for batch jobs:
-> 
-> http://blogs.scalablelogic.com/2012/05/grid-engine-cgroups-integration.html
-> 
-> 
-> However, not only us, but others have found that the memcg controller does not cause sbrk(2) or mmap(2) to
-> return error when the cgroup is under high memory pressure. Further, when the amount of free memory is
-> really low, the Linux Kernel OOM killer picks something and kills it.
-> 
-> http://www.spinics.net/lists/cgroups/msg02622.html
-> 
-> 
-> We also would like to see if it is technically possible for the Virtual Memory Manager to interact with the
-> memory controller properly and give us the semantics of setrlimit(2). So basically if the current address
-> space usage exceeds the "memory.memsw.limit_in_bytes" limit defined by the administrator, then the
-> memory allocation system calls (example: mmap(2), sbrk(2), etc) will return error such that the OOM
-> killer is not invoked.
-> 
+> Good find. This is very subtle race though because both timer and
+> oneshot triggers call led_brightness_set() from their deactivate
+> routines. Is this when these events triggered using oneshot trigger? 
 
-It's not implemented yet. And, it was proposed before and patches were posted but
-finally didn't be merged.
+Actually that was when mixing blink (both timer and oneshot, they use
+the same timer) and standard trigger-event-set. It should be safe if
+only internal (core) functions call set_brightness.
 
-IIRC, there were some implementation problem but the biggest reason of rejection
-was the author couldn't convince us there are real use case.
+> > 
+> > Should not cause any harm on other drivers.
+> > 
+> > (I'm starting to find the whole led_set_brightness/led_brightness_set thing a
+> > bit confusing BTW...)
+> 
+> I agree with the names are confusing. :) It found it confusing as well.
+> Probably why we have this bug hiding until led_trigger_blink() came
+> along.
+> 
+> led_brightness_set() calls led_set_brightness(). led_set_brightness()
+> takes cares about whether the driver is in suspend state and invokes
+> driver's brightness_set interface. Maybe led_clear_blink_timer() would
+> be a better name for this led_brightness_set() routine.
 
-If you have real use case and want a new feature on memory cgroup, please CC
-cgroups@vger.kernel.org, linux-mm@kvack.org
-Someone (including me) may be able to cook a patch for future linux kernel if you
-have real use cases.
+I think maybe we should just rename the function to led_set_brightness()
+for the safe one (the one whichh also deactivate the time) and
+_led_set_brightness() for the internal one, to put some emphasis to the
+"internal" nature of the second.
 
-BTW, you can stop memory-cgroup-level oom-killer by memory.oom_control file.
-But you cannot stop system-level oom-killer, there are no knobs.
+> I can volunteer to make this change if we agree that this will be a good
+> one to clear this naming confusion.
 
-Thanks,
--Kame
+That would save some headache in the future! :-)
 
+Fabio
+
+> 
+> -- Shuah
+> 
+> > 
+> > Fabio
+> > 
+> >  drivers/leds/led-triggers.c | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/leds/led-triggers.c b/drivers/leds/led-triggers.c
+> > index fa0b9be..b88d3b9 100644
+> > --- a/drivers/leds/led-triggers.c
+> > +++ b/drivers/leds/led-triggers.c
+> > @@ -224,7 +224,7 @@ void led_trigger_event(struct led_trigger *trig,
+> >  		struct led_classdev *led_cdev;
+> >  
+> >  		led_cdev = list_entry(entry, struct led_classdev, trig_list);
+> > -		led_set_brightness(led_cdev, brightness);
+> > +		led_brightness_set(led_cdev, brightness);
+> 
+> This is in-line with led_trigger_set() which is calling
+> led_bightness_set() correctly. Also led_classdev_unregister() calls it I
+> think for the same reason so the blink timer can be stopped.
+> 
+> >  	}
+> >  	read_unlock(&trig->leddev_list_lock);
+> >  }
+> 
+> 
