@@ -1,127 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753294Ab2FLBrK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 21:47:10 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:38959 "EHLO
+	id S1752666Ab2FLB7v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 21:59:51 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:35783 "EHLO
 	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752761Ab2FLBrI (ORCPT
+	with ESMTP id S1751856Ab2FLB7u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 21:47:08 -0400
-Date: Tue, 12 Jun 2012 11:47:01 +1000
+	Mon, 11 Jun 2012 21:59:50 -0400
+Date: Tue, 12 Jun 2012 11:59:39 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Gustavo F. Padovan" <padovan@profusion.mobi>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Johan Hedberg <johan.hedberg@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Marcel Holtmann <marcel@holtmann.org>
-Subject: linux-next: manual merge of the bluetooth tree with the wireless
- tree
-Message-Id: <20120612114701.85f70fd92fc42a9c9f2962ac@canb.auug.org.au>
+        Ola Lilja <ola.o.lilja@stericsson.com>
+Subject: linux-next: build failure after merge of the sound-asoc tree
+Message-Id: <20120612115939.63908eaf9e0a476a15776df1@canb.auug.org.au>
 X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA256";
- boundary="Signature=_Tue__12_Jun_2012_11_47_01_+1000_hpgsyZgIO/Ow_vsV"
+ boundary="Signature=_Tue__12_Jun_2012_11_59_39_+1000_+FuP.tkMPMuYcitW"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__12_Jun_2012_11_47_01_+1000_hpgsyZgIO/Ow_vsV
+--Signature=_Tue__12_Jun_2012_11_59_39_+1000_+FuP.tkMPMuYcitW
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Gustavo,
+Hi all,
 
-Today's linux-next merge of the bluetooth tree got a conflict in
-net/bluetooth/hci_event.c between commit 1c2e00418317 ("Bluetooth: Add
-support for encryption key refresh") from the wireless tree and commit
-6039aa73a132 ("Bluetooth: Remove most of the inline usage") from the
-bluetooth tree.
+After merging the sound-asoc tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
+sound/soc/codecs/ab8500-codec.c:35:43: fatal error: linux/mfd/abx500/ab8500=
+-codec.h: No such file or directory
+
+Caused by commit 679d7abdc754 ("ASoC: codecs: Add AB8500 codec-driver").
+
+I have used the sound-asoc tree from next-20120608 for today.
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc net/bluetooth/hci_event.c
-index 94ad124,47656be..0000000
---- a/net/bluetooth/hci_event.c
-+++ b/net/bluetooth/hci_event.c
-@@@ -3043,51 -3040,7 +3040,51 @@@ static void hci_extended_inquiry_result
-  	hci_dev_unlock(hdev);
-  }
- =20
- +static void hci_key_refresh_complete_evt(struct hci_dev *hdev,
- +					 struct sk_buff *skb)
- +{
- +	struct hci_ev_key_refresh_complete *ev =3D (void *) skb->data;
- +	struct hci_conn *conn;
- +
- +	BT_DBG("%s status %u handle %u", hdev->name, ev->status,
- +	       __le16_to_cpu(ev->handle));
- +
- +	hci_dev_lock(hdev);
- +
- +	conn =3D hci_conn_hash_lookup_handle(hdev, __le16_to_cpu(ev->handle));
- +	if (!conn)
- +		goto unlock;
- +
- +	if (!ev->status)
- +		conn->sec_level =3D conn->pending_sec_level;
- +
- +	clear_bit(HCI_CONN_ENCRYPT_PEND, &conn->flags);
- +
- +	if (ev->status && conn->state =3D=3D BT_CONNECTED) {
- +		hci_acl_disconn(conn, HCI_ERROR_AUTH_FAILURE);
- +		hci_conn_put(conn);
- +		goto unlock;
- +	}
- +
- +	if (conn->state =3D=3D BT_CONFIG) {
- +		if (!ev->status)
- +			conn->state =3D BT_CONNECTED;
- +
- +		hci_proto_connect_cfm(conn, ev->status);
- +		hci_conn_put(conn);
- +	} else {
- +		hci_auth_cfm(conn, ev->status);
- +
- +		hci_conn_hold(conn);
- +		conn->disc_timeout =3D HCI_DISCONN_TIMEOUT;
- +		hci_conn_put(conn);
- +	}
- +
- +unlock:
- +	hci_dev_unlock(hdev);
- +}
- +
-- static inline u8 hci_get_auth_req(struct hci_conn *conn)
-+ static u8 hci_get_auth_req(struct hci_conn *conn)
-  {
-  	/* If remote requests dedicated bonding follow that lead */
-  	if (conn->remote_auth =3D=3D 0x02 || conn->remote_auth =3D=3D 0x03) {
-
---Signature=_Tue__12_Jun_2012_11_47_01_+1000_hpgsyZgIO/Ow_vsV
+--Signature=_Tue__12_Jun_2012_11_59_39_+1000_+FuP.tkMPMuYcitW
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJP1p+VAAoJEECxmPOUX5FEZZMQAJJpwLBWCd1inzO3ewMioryP
-xErjZjUxGeB7P2HYBdCZKM46Vvwv92qzC37kXe94l5cu7Vt9HekVgjkIEILAKMhf
-U/m4kkxkq8PajHpDsm7zLHXDiyxAQGR07N/i4dwsXNhPIpLkbQWrwe4sIG36JMN6
-D8X+aYgK5sWnyIdGS/AKHUi++PerfqR6fGxDYgTs8EUOU6Et87lz73R7WlS/yExq
-RJU7dNBmwPaf/+xodOJ6nVBAF7siBrXO2APkkblNfIN+8Pzq/8DwhGaErNGFzURA
-VzcgUZQMnluAbFvEgqgaGU8VMyKMutsfQikoxImjBq3dHJcxsUFyVsXdpyiC/DOv
-Twww4zbDKBAptGsivjsBXDZUVb+fV3/VymdXGfWJkSkPgUMNU3DSJBVtMEv4rxti
-LErVW9Nc1lnXZLdF8sER4GwGCKu6OCDOVzGpIQvP6C03F3D5JtZVnc9jhvSOO8NG
-0CG79o/RYJruuEz2AE6FQNTvaKrMUZaX4zfBCERNwm9PGmzXlEeu3B3Pt6RaTi9i
-xv47KQsxUG0BsP2M6Jg+U2OWfDct2UNIB7HcwHBeYeUZFMelx+2T2QSnErhWZ9fl
-+H7fHE+aW7EVOLSHAq+Y97Z5yWujMuMWAiTz05X3ILtgnfNdRs/T9kt0krIvUjJr
-NFfZ2SvpR1crWNgWR8tm
-=celB
+iQIcBAEBCAAGBQJP1qKLAAoJEECxmPOUX5FEe98P/i4RZ6DUEGo5kHbzMm8N2bia
+bgsp5/TnpuKdYvH8eP+sMqTtgiaVzOdiv7eDSd8PbLaoCFb9oilWTPBb7wbcah4x
+IpFR5mqwLO7NsNz2lW+N/YoUtzj3RViAgvts8lJUXZ3Bb4jiXKSoHLZiXKCfSiJ3
+2hYCfy1sKyjuWQnIOXOOCesn1QEcOC+WLmDX1y0fHIv5dCO+ZdW2cDi+Dw2Hzx/b
+rus/NSvduNCsBkozQHXemyCkVal+ssm4/heAL+mBwqZwcZP6gNDPjjuFq7KHp5Fp
+6L5BwACPLfFlQ7J/nN8h9YXN4LjMJJkbhYVMVTD+AOTDlxlOS8FCyHmCRB56vW3u
+vCFszjIpe7dVfB4nm/F/gM6aUyXQ4wQb4fJj2kCnUDc2HemUiyNHygry58eh14a6
+fTKXjIitMrq9DIpjUZihmfMjJqvOsTxwrfNxsiLjHbfS51j/3+ariJ61aKzAb4+M
+QckAxp0X4A+8JGaTqziITa/jQXZnRU3g2+aX/wUowVgGuA8mjOEebuq+iZsCKz5k
+mQbj9O0H1+liiqZk6at+V/Q5NpF1s1wp5UdTvKWsWXVUnWx6cj3wagNydqRVSdds
+AlCzEGDqR8DBL5L+ZATQdeqj/v7qHYjfhZ783JEbJyT7RUP1h1QwnOMLgJ/X391k
+D8LwerEUXh8Wu/mkwr06
+=q4EW
 -----END PGP SIGNATURE-----
 
---Signature=_Tue__12_Jun_2012_11_47_01_+1000_hpgsyZgIO/Ow_vsV--
+--Signature=_Tue__12_Jun_2012_11_59_39_+1000_+FuP.tkMPMuYcitW--
