@@ -1,116 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752181Ab2FLNsM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 09:48:12 -0400
-Received: from nm19-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.216]:36160 "HELO
-	nm19-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751354Ab2FLNsL convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 09:48:11 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 957086.80823.bm@omp1066.mail.sp2.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=HZ93XIVwnv/k6t8N2qTgm1W+SBC/RFULcmmR3FyqCSKnOKDVI8quu6/xpGS3ffu6iAPMsrL1GyY9QULmmsZc1w8FA9s60N6110h2A2tSwqlAhnFtEPdcJoT4xqOH9D8xZwsLLWh3L+xa0ViJxVVWJCM3QxrB7+OkCjTmqtQdrbw=;
-X-YMail-OSG: kShGjR0VM1kqmjooF82veVpbDUnMX1.XIoKOXGCEPEzFBpu
- 6e.4s_MM5l_IuoczCANbxxU91vSkSVWVszCqGHSlcX4nm8XCRVSyuVtuVjWE
- 0s7JrLTo3NHPo_zhkrnvpzh2DEqWLozmicLMGZBiCBJ5aE8O6ufoiInyz_LJ
- Z28BNUFRE9ZOaslNAI2vYYJFVf6kv9tbf1xvVkFHwONNoy7drzPcobkIhDIz
- JNdyafsqbKp0r.mDfNUqs9y9Po4Zow0GYFsTYLak7d0nBHD8Y9YjrhJeWtQJ
- kMg2UBUo1FeOLvA3fnLE40og9ZPH_9mWVOdk7U.5C2MrAm3iytlNiGeRJmAc
- ct0SOPcC40WNgNn2viBHSw5CHQCseFpsfwK.4XN4nuxiVCZZFk8KNllj3U_R
- pKjGxdW27O7050.64m9Al2lPwrEGjlWLXI7nWDSGPCMWnpfu9G9eGnY0Q_p4
- W7iiRAA--
-X-Mailer: YahooMailWebService/0.8.118.349524
-References: <1339493860.10145.YahooMailNeo@web111708.mail.gq1.yahoo.com> <20120612103954.GB10124@x1.osrc.amd.com>
-Message-ID: <1339508890.39685.YahooMailNeo@web111705.mail.gq1.yahoo.com>
-Date: Tue, 12 Jun 2012 06:48:10 -0700 (PDT)
-From: Mahmood Naderan <nt_mahmood@yahoo.com>
-Reply-To: Mahmood Naderan <nt_mahmood@yahoo.com>
-Subject: Re: CPU MTRRs and linux kernel
-To: Borislav Petkov <bp@alien8.de>
-Cc: "\"linux-kernel@vger.kernel.org\"" <linux-kernel@vger.kernel.org>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>
-In-Reply-To: <20120612103954.GB10124@x1.osrc.amd.com>
+	id S1751458Ab2FLNzj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 09:55:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54748 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750895Ab2FLNzg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 09:55:36 -0400
+Date: Tue, 12 Jun 2012 14:55:29 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: kosaki.motohiro@gmail.com
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@google.com>, Dave Jones <davej@redhat.com>,
+        Christoph Lameter <cl@linux.com>, stable@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 2/6] mempolicy: remove all mempolicy sharing
+Message-ID: <20120612135529.GA20467@suse.de>
+References: <1339406250-10169-1-git-send-email-kosaki.motohiro@gmail.com>
+ <1339406250-10169-3-git-send-email-kosaki.motohiro@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1339406250-10169-3-git-send-email-kosaki.motohiro@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Borislav,
-I want to know, should I upgrade to the latest kernel or it is possible to download the source of 2.6.32-24 from repository and modify cleanup.c and then recompile?
-
-~MN
-
------ Original Message -----
-From: Borislav Petkov <bp@alien8.de>
-To: Mahmood Naderan <nt_mahmood@yahoo.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>; Andreas Herrmann <andreas.herrmann3@amd.com>
-Sent: Tuesday, June 12, 2012 3:09 PM
-Subject: Re: CPU MTRRs and linux kernel
-
-On Tue, Jun 12, 2012 at 02:37:40AM -0700, Mahmood Naderan wrote:
-> Hi everybody,
-> Abour rhis warnning in boot log:
+On Mon, Jun 11, 2012 at 05:17:26AM -0400, kosaki.motohiro@gmail.com wrote:
+> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 > 
-> WARNING: BIOS bug: CPU MTRRs don't cover all of memory, losing 61952MB of RAM
+> Dave Jones' system call fuzz testing tool "trinity" triggered the following
+> bug error with slab debugging enabled
 > 
->  
-> I
->  searched a lot however didn't find a clear solution. Does AMD new 
-> processors (62XX) have problems with new kernels or old kernels??
-> Mine is:
+> [ 7613.229315] =============================================================================
+> [ 7613.229955] BUG numa_policy (Not tainted): Poison overwritten
+> [ 7613.230560] -----------------------------------------------------------------------------
+> [ 7613.230560]
+> [ 7613.231834] INFO: 0xffff880146498250-0xffff880146498250. First byte 0x6a instead of 0x6b
+> [ 7613.232518] INFO: Allocated in mpol_new+0xa3/0x140 age=46310 cpu=6 pid=32154
+> [ 7613.233188]  __slab_alloc+0x3d3/0x445
+> [ 7613.233877]  kmem_cache_alloc+0x29d/0x2b0
+> [ 7613.234564]  mpol_new+0xa3/0x140
+> [ 7613.235236]  sys_mbind+0x142/0x620
+> [ 7613.235929]  system_call_fastpath+0x16/0x1b
+> [ 7613.236640] INFO: Freed in __mpol_put+0x27/0x30 age=46268 cpu=6 pid=32154
+> [ 7613.237354]  __slab_free+0x2e/0x1de
+> [ 7613.238080]  kmem_cache_free+0x25a/0x260
+> [ 7613.238799]  __mpol_put+0x27/0x30
+> [ 7613.239515]  remove_vma+0x68/0x90
+> [ 7613.240223]  exit_mmap+0x118/0x140
+> [ 7613.240939]  mmput+0x73/0x110
+> [ 7613.241651]  exit_mm+0x108/0x130
+> [ 7613.242367]  do_exit+0x162/0xb90
+> [ 7613.243074]  do_group_exit+0x4f/0xc0
+> [ 7613.243790]  sys_exit_group+0x17/0x20
+> [ 7613.244507]  system_call_fastpath+0x16/0x1b
+> [ 7613.245212] INFO: Slab 0xffffea0005192600 objects=27 used=27 fp=0x          (null) flags=0x20000000004080
+> [ 7613.246000] INFO: Object 0xffff880146498250 @offset=592 fp=0xffff88014649b9d0
 > 
-> Linux n1 2.6.32-24-server #39-Ubuntu SMP Wed Jul 28 06:21:40 UTC 2010 x86_64 GNU/Linux
+> The problem was created by a reference count imbalance. Example, In following case,
+> mbind(addr, len) try to replace mempolicies of vma1 and vma2 and then they will
+> be share the same mempolicy, and the new mempolicy has MPOL_F_SHARED flag.
 > 
-> Should I upgrade?
+>   +-------------------+-------------------+
+>   |     vma1          |     vma2(shmem)   |
+>   +-------------------+-------------------+
+>   |                                       |
+>  addr                                 addr+len
+> 
 
-Yes, fix is below and it got backported to -stable AFAICT but obviously
-the ubuntus don't have it in the kernel you cite above.
+Your example is missing some important detail. When I was looking at this
+I thought of the same scenario because initially I thought this might be
+the problem Dave's test case was hitting. Obviously I then proceeded to
+mess up anyway so take this with a grain of salt but why is this particular
+situation not prevented by vma_merge? is_mergeable_vma() should have spotted
+that the vm_files differed and mbind_range() should not have tried
+sharing them.
 
+> Look at alloc_pages_vma(), it uses get_vma_policy() and mpol_cond_put() pair
+> for maintaining mempolicy refcount. The current rule is, get_vma_policy() does
+> NOT increase a refcount if the policy is not attached shmem vma and mpol_cond_put()
+> DOES decrease a refcount if mpol has MPOL_F_SHARED.
+> 
 
-commit 3fdbf004c1706480a7c7fac3c9d836fa6df20d7d
-Author: Andreas Herrmann <andreas.herrmann3@amd.com>
-Date:   Thu Sep 30 14:32:35 2010 +0200
+The rules about refcounting are indeed annoying. It would be a lot easier
+to understand if the reference counting was unconditional but then every
+page allocation in a large VMA would also bounce the cacheline storing
+the count which would just generate a new bug later.
 
-    x86, mtrr: Assume SYS_CFG[Tom2ForceMemTypeWB] exists on all future AMD CPUs
-    
-    Instead of adapting the CPU family check in amd_special_default_mtrr()
-    for each new CPU family assume that all new AMD CPUs support the
-    necessary bits in SYS_CFG MSR.
-    
-    Tom2Enabled is architectural (defined in APM Vol.2).
-    Tom2ForceMemTypeWB is defined in all BKDGs starting with K8 NPT.
-    In pre K8-NPT BKDG this bit is reserved (read as zero).
-    
-    W/o this adaption Linux would unnecessarily complain about bad MTRR
-    settings on every new AMD CPU family, e.g.
-    
-    [    0.000000] WARNING: BIOS bug: CPU MTRRs don't cover all of memory, losing 4863MB of RAM.
-    
-    Cc: stable@kernel.org # .32.x, .35.x
-    Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
-    LKML-Reference: <20100930123235.GB20545@loge.amd.com>
-    Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+> In above case, vma1 is not shmem vma and vma->policy has MPOL_F_SHARED! then,
+> get_vma_policy() doesn't increase a refcount and mpol_cond_put() decrease a 
+> refcount whenever alloc_page_vma() is called.
+> 
+> The bug was introduced by commit 52cd3b0740 (mempolicy: rework mempolicy Reference
+> Counting) at 4 years ago.
+> 
+> More unfortunately mempolicy has one another serious broken. Currently,
+> mempolicy rebind logic (it is called from cpuset rebinding) ignore a refcount
+> of mempolicy and override it forcibly. Thus, any mempolicy sharing may
+> cause mempolicy corruption. The bug was introduced by commit 68860ec10b
+> (cpusets: automatic numa mempolicy rebinding) at 7 years ago.
+> 
 
-diff --git a/arch/x86/kernel/cpu/mtrr/cleanup.c b/arch/x86/kernel/cpu/mtrr/cleanup.c
-index c5f59d071425..ac140c7be396 100644
---- a/arch/x86/kernel/cpu/mtrr/cleanup.c
-+++ b/arch/x86/kernel/cpu/mtrr/cleanup.c
-@@ -827,7 +827,7 @@ int __init amd_special_default_mtrr(void)
+I suspect these bugs were not noticed because the shmem policies are
+typically large and very long lived without much use of mbind() but
+that's not an excuse.
 
-        if (boot_cpu_data.x86_vendor != X86_VENDOR_AMD)
-                return 0;
--       if (boot_cpu_data.x86 < 0xf || boot_cpu_data.x86 > 0x11)
-+       if (boot_cpu_data.x86 < 0xf)
-                return 0;
-        /* In case some hypervisor doesn't pass SYSCFG through: */
-        if (rdmsr_safe(MSR_K8_SYSCFG, &l, &h) < 0)
+> To disable policy sharing solves user visible breakage and this patch does it.
+> Maybe, we need to rewrite MPOL_F_SHARED and mempolicy rebinding code and aim
+> to proper cow logic eventually, but I think this is good first step.
+> 
+> Reported-by: Dave Jones <davej@redhat.com>,
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Christoph Lameter <cl@linux.com>,
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: <stable@vger.kernel.org>
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> ---
+>  mm/mempolicy.c |   49 ++++++++++++++++++++++++++++++++++++-------------
+>  1 files changed, 36 insertions(+), 13 deletions(-)
+> 
+> diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+> index 0a60def..9505cb9 100644
+> --- a/mm/mempolicy.c
+> +++ b/mm/mempolicy.c
+> @@ -607,24 +607,38 @@ check_range(struct mm_struct *mm, unsigned long start, unsigned long end,
+>  	return first;
+>  }
+>  
+> -/* Apply policy to a single VMA */
+> -static int policy_vma(struct vm_area_struct *vma, struct mempolicy *new)
+> +/*
+> + * Apply policy to a single VMA
+> + * This must be called with the mmap_sem held for writing.
+> + */
+> +static int policy_vma(struct vm_area_struct *vma, struct mempolicy *pol)
+
+If we're going to change this, change the policy_vma() name as well to
+set_vma_policy. We currently have policy_vma() and vma_policy() which mean
+totally different things which is partially why I deleted it entirely the
+first time around. It's a small issue but it might make mempolicy.c 0.0001%
+easier to follow.
+
+>  {
+> -	int err = 0;
+> -	struct mempolicy *old = vma->vm_policy;
+> +	int err;
+> +	struct mempolicy *old;
+> +	struct mempolicy *new;
+>  
+>  	pr_debug("vma %lx-%lx/%lx vm_ops %p vm_file %p set_policy %p\n",
+>  		 vma->vm_start, vma->vm_end, vma->vm_pgoff,
+>  		 vma->vm_ops, vma->vm_file,
+>  		 vma->vm_ops ? vma->vm_ops->set_policy : NULL);
+>  
+> -	if (vma->vm_ops && vma->vm_ops->set_policy)
+> +	new = mpol_dup(pol);
+> +	if (IS_ERR(new))
+> +		return PTR_ERR(new);
+> +
+> +	if (vma->vm_ops && vma->vm_ops->set_policy) {
+>  		err = vma->vm_ops->set_policy(vma, new);
+> -	if (!err) {
+> -		mpol_get(new);
+> -		vma->vm_policy = new;
+> -		mpol_put(old);
+> +		if (err)
+> +			goto err_out;
+>  	}
+> +
+> +	old = vma->vm_policy;
+> +	vma->vm_policy = new; /* protected by mmap_sem */
+> +	mpol_put(old);
+> +
+> +	return 0;
+> + err_out:
+> +	mpol_put(new);
+>  	return err;
+>  }
+>  
+> @@ -2147,15 +2161,24 @@ static void sp_delete(struct shared_policy *sp, struct sp_node *n)
+>  static struct sp_node *sp_alloc(unsigned long start, unsigned long end,
+>  				struct mempolicy *pol)
+>  {
+> -	struct sp_node *n = kmem_cache_alloc(sn_cache, GFP_KERNEL);
+> +	struct sp_node *n;
+> +	struct mempolicy *newpol;
+>  
+> +	n = kmem_cache_alloc(sn_cache, GFP_KERNEL);
+>  	if (!n)
+>  		return NULL;
+> +
+> +	newpol = mpol_dup(pol);
+> +	if (IS_ERR(newpol)) {
+> +		kmem_cache_free(sn_cache, n);
+> +		return NULL;
+> +	}
+> +	newpol->flags |= MPOL_F_SHARED;
+> +
+>  	n->start = start;
+>  	n->end = end;
+> -	mpol_get(pol);
+> -	pol->flags |= MPOL_F_SHARED;	/* for unref */
+> -	n->policy = pol;
+> +	n->policy = newpol;
+> +
+>  	return n;
+>  }
+>  
 
 -- 
-Regards/Gruss,
-Boris.
-
+Mel Gorman
+SUSE Labs
