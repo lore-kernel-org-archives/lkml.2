@@ -1,73 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753239Ab2FLSbs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 14:31:48 -0400
-Received: from mail160.messagelabs.com ([216.82.253.99]:20760 "EHLO
-	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751137Ab2FLSbq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 14:31:46 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-14.tower-160.messagelabs.com!1339525902!9290416!8
-X-Originating-IP: [216.166.12.69]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
-        "abbotti@mev.co.uk" <abbotti@mev.co.uk>
-Date: Tue, 12 Jun 2012 13:31:38 -0500
-Subject: RE: [PATCH] staging: comedi: cleanup alloc_subdevices
-Thread-Topic: [PATCH] staging: comedi: cleanup alloc_subdevices
-Thread-Index: Ac1IPKyjZfPMl1fWSOC5B0ZimP/TAAAjJtGg
-Message-ID: <ADE657CA350FB648AAC2C43247A983F0020698DBC6D7@AUSP01VMBX24.collaborationhost.net>
-References: <201206071508.15674.hartleys@visionengravers.com>
- <20120611235657.GA26721@kroah.com>
- <ADE657CA350FB648AAC2C43247A983F0020698DBC4A9@AUSP01VMBX24.collaborationhost.net>
- <20120612004421.GA30997@kroah.com>
- <ADE657CA350FB648AAC2C43247A983F0020698DBC4B9@AUSP01VMBX24.collaborationhost.net>
- <20120612014239.GA32087@kroah.com>
-In-Reply-To: <20120612014239.GA32087@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754016Ab2FLSgD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 14:36:03 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44307 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751816Ab2FLSgC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 14:36:02 -0400
+Message-ID: <4FD78BE6.4060207@zytor.com>
+Date: Tue, 12 Jun 2012 11:35:18 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
+To: Stephane Eranian <eranian@google.com>
+CC: linux-kernel@vger.kernel.org, peterz@infradead.org, andi@firstfloor.org,
+        mingo@elte.hu, ming.m.lin@intel.com, Borislav Petkov <bp@amd64.org>,
+        "Yu, Fenghua" <fenghua.yu@intel.com>
+Subject: Re: [PATCH] perf/x86: check ucode before disabling PEBS on SandyBridge
+References: <20120607071531.GA4849@quad>
+In-Reply-To: <20120607071531.GA4849@quad>
+X-Enigmail-Version: 1.4.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, June 11, 2012 6:43 PM, Greg KH wrote:
-> On Mon, Jun 11, 2012 at 07:49:46PM -0500, H Hartley Sweeten wrote:
->> Also, I have never done local commits to my Linux-next tree so I'm not
->> sure how to proceed with the incremental patches. If it's ok with you
->> I'll just wait for each patch to go into staging.
->
-> Create a brach from the one you are working on:
-> 	git branch -b my_branch
-> make a change and commit it
-> commit another one
-> and so on.
-> then create the patches:
-> 	git format-patch original_branch_name..my_branch
-> and use git send-email to send them off in order.
->
-> Otherwise we are going to take 7 weeks when I apply one of your patches
-> a week :)
+Andi just alerted me to this thread.
 
-Greg,
+I, Thomas and Borislav discussed this at LCE last year, and it really
+comes up that we have a *large* number of reasons to load microcode
+early.  We then need to keep the microcode around so that it can be
+loaded on APs, hotplug CPUs, and after S3 resume.
 
-I did as you described above and have the 7 patches ready but I just
-noticed you have already applied the first one.
+The protocol discussion happened in this thread:
 
-Should I post the entire series and note that the first one is already
-applied?
+http://marc.info/?i=1332512984-79664-1-git-send-email-trenn@suse.de
 
-Thanks,
-Hartley
+Fenghua Yu at Intel is currently working on the implementation.
 
+	-hpa
