@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752779Ab2FLLwU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 07:52:20 -0400
-Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:31620
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752395Ab2FLLwT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 07:52:19 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dI9371I1432Izz1202hzz8275bh8275dhz2dh2a8h668h839h944hd25hf0ah)
-Date: Tue, 12 Jun 2012 19:50:34 +0800
-From: Dong Aisheng <aisheng.dong@freescale.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Devendra Naga <devendra.aaru@gmail.com>,
-        Dong Aisheng <B29396@freescale.com>, Shawn Guo <shawn.guo@linaro.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] pinctrl: pinctrl-mxs: Take care of frees if the
- kzalloc fails
-Message-ID: <20120612115033.GG25534@shlinux2.ap.freescale.net>
-References: <1339243283-28068-1-git-send-email-devendra.aaru@gmail.com>
- <CACRpkdb+GwB_VxfmPSwfc-1BfCs+fePSqnN3binY0xttb5p7xA@mail.gmail.com>
+	id S1752828Ab2FLLwf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 07:52:35 -0400
+Received: from mga11.intel.com ([192.55.52.93]:34538 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752395Ab2FLLwW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 07:52:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="164606181"
+Date: Tue, 12 Jun 2012 19:52:19 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Wanpeng Li <liwp.linux@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Gavin Shan <shangw@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2] writeback: avoid race when update bandwidth
+Message-ID: <20120612115219.GA17348@localhost>
+References: <1339501561-4570-1-git-send-email-liwp.linux@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CACRpkdb+GwB_VxfmPSwfc-1BfCs+fePSqnN3binY0xttb5p7xA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: freescale.com
+In-Reply-To: <1339501561-4570-1-git-send-email-liwp.linux@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 12, 2012 at 01:31:25PM +0200, Linus Walleij wrote:
-> On Sat, Jun 9, 2012 at 2:01 PM, Devendra Naga <devendra.aaru@gmail.com> wrote:
+On Tue, Jun 12, 2012 at 07:46:01PM +0800, Wanpeng Li wrote:
+> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
 > 
-> > if there is no purecfg , the group pointer is allocated using kzalloc and if it
-> > fails to allocate, we wont free the new_map,
-> >
-> > if config is true, we call kmemdup and if it
-> > fails to do so we wont free the allocated group if there is no purecfg.
-> >
-> > fix this by doing the frees of new_map pointer and group pointers.
-> >
-> > Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
+> "V1 -> V2"
+> * remove dirty_lock
 > 
-> Obviously correct so applied.
+> Since bdi->wb.list_lock is used to protect the b_* lists,
+> so the flushers who call wb_writeback to writeback pages will
+> stuck when bandwidth update policy holds this lock. In order
+> to avoid this race we can introduce a new bandwidth_lock who
+> is responsible for protecting bandwidth update policy.
 > 
-> Dong, Shawn: any ACKs?
-> 
-Acked-by: Dong Aisheng <dong.aisheng@linaro.org>
+> Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
 
-Regards
-Dong Aisheng
+Applied with a new title "writeback: use a standalone lock for
+updating write bandwidth". "race" is sensitive because it often
+refers to some locking error.
 
+Thank you!
+
+Fengguang
