@@ -1,107 +1,1169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752321Ab2FLJAA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 05:00:00 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:56034 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750995Ab2FLI75 (ORCPT
+	id S1752262Ab2FLJDR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 05:03:17 -0400
+Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:4217 "EHLO
+	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751908Ab2FLJDP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 04:59:57 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FD70492.2090709@jp.fujitsu.com>
-Date: Tue, 12 Jun 2012 17:57:54 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-CC: linux-mm@kvack.org, dhillf@gmail.com, rientjes@google.com, mhocko@suse.cz,
-        akpm@linux-foundation.org, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH -V8 16/16] hugetlb/cgroup: add HugeTLB controller documentation
-References: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1339232401-14392-17-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-In-Reply-To: <1339232401-14392-17-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-2022-JP
+	Tue, 12 Jun 2012 05:03:15 -0400
+Message-ID: <1339491792.30984.110.camel@x61.thuisdomein>
+Subject: [PATCH] MIPS: remove three unused headers
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Date: Tue, 12 Jun 2012 11:03:12 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-OriginalArrivalTime: 12 Jun 2012 09:03:12.0471 (UTC) FILETIME=[31F12670:01CD487A]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/06/09 18:00), Aneesh Kumar K.V wrote:
-> From: "Aneesh Kumar K.V"<aneesh.kumar@linux.vnet.ibm.com>
-> 
-> Signed-off-by: Aneesh Kumar K.V<aneesh.kumar@linux.vnet.ibm.com>
+No file includes these three headers. It seems they have never been
+included since at least v2.6.12-rc2. They can safely be removed.
 
-Documentation in patch 1/16 will help other guy's review.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Tested only by "git grepping" the (history of the) tree in various ways.
+Note that this included "git grepping" each named constant defined in
+these headers (against v3.5-rc2). That found no indication that they
+were used anywhere. Since these headers aren't included anyway, that's
+not really surprising. (But perhaps creative use of macro concatenation
+hides their usage in the code.)
 
+ arch/mips/include/asm/sibyte/sb1250_l2c.h |  131 -------
+ arch/mips/include/asm/sibyte/sb1250_ldt.h |  422 ----------------------
+ arch/mips/include/asm/sibyte/sb1250_mc.h  |  550 -----------------------------
+ 3 files changed, 0 insertions(+), 1103 deletions(-)
+ delete mode 100644 arch/mips/include/asm/sibyte/sb1250_l2c.h
+ delete mode 100644 arch/mips/include/asm/sibyte/sb1250_ldt.h
+ delete mode 100644 arch/mips/include/asm/sibyte/sb1250_mc.h
 
-> ---
->   Documentation/cgroups/hugetlb.txt |   45 +++++++++++++++++++++++++++++++++++++
->   1 file changed, 45 insertions(+)
->   create mode 100644 Documentation/cgroups/hugetlb.txt
-> 
-> diff --git a/Documentation/cgroups/hugetlb.txt b/Documentation/cgroups/hugetlb.txt
-> new file mode 100644
-> index 0000000..a9faaca
-> --- /dev/null
-> +++ b/Documentation/cgroups/hugetlb.txt
-> @@ -0,0 +1,45 @@
-> +HugeTLB Controller
-> +-------------------
-> +
-> +The HugeTLB controller allows to limit the HugeTLB usage per control group and
-> +enforces the controller limit during page fault. Since HugeTLB doesn't
-> +support page reclaim, enforcing the limit at page fault time implies that,
-> +the application will get SIGBUS signal if it tries to access HugeTLB pages
-> +beyond its limit. This requires the application to know beforehand how much
-> +HugeTLB pages it would require for its use.
-> +
-
-
-Isn't it better to mention hugetlb cgroup doesn't have its own free-huge-page-list,
-it's just a quota. And system admin need to set up hugetlb page pool regardless
-of using hugetlb cgroup.
-
-
-> +HugeTLB controller can be created by first mounting the cgroup filesystem.
-> +
-> +# mount -t cgroup -o hugetlb none /sys/fs/cgroup
-> +
-> +With the above step, the initial or the parent HugeTLB group becomes
-> +visible at /sys/fs/cgroup. At bootup, this group includes all the tasks in
-> +the system. /sys/fs/cgroup/tasks lists the tasks in this cgroup.
-> +
-> +New groups can be created under the parent group /sys/fs/cgroup.
-> +
-> +# cd /sys/fs/cgroup
-> +# mkdir g1
-> +# echo $$>  g1/tasks
-> +
-> +The above steps create a new group g1 and move the current shell
-> +process (bash) into it.
-> +
-> +Brief summary of control files
-> +
-> + hugetlb.<hugepagesize>.limit_in_bytes     # set/show limit of "hugepagesize" hugetlb usage
-> + hugetlb.<hugepagesize>.max_usage_in_bytes # show max "hugepagesize" hugetlb  usage recorded
-> + hugetlb.<hugepagesize>.usage_in_bytes     # show current res_counter usage for "hugepagesize" hugetlb
-> + hugetlb.<hugepagesize>.failcnt		   # show the number of allocation failure due to HugeTLB limit
-                                         ^^^^^^^^
-breakage in spacing.
-
-> +
-> +For a system supporting two hugepage size (16M and 16G) the control
-> +files include:
-> +
-> +hugetlb.16GB.limit_in_bytes
-> +hugetlb.16GB.max_usage_in_bytes
-> +hugetlb.16GB.usage_in_bytes
-> +hugetlb.16GB.failcnt
-> +hugetlb.16MB.limit_in_bytes
-> +hugetlb.16MB.max_usage_in_bytes
-> +hugetlb.16MB.usage_in_bytes
-> +hugetlb.16MB.failcnt
-
-seems nice.
-
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+diff --git a/arch/mips/include/asm/sibyte/sb1250_l2c.h b/arch/mips/include/asm/sibyte/sb1250_l2c.h
+deleted file mode 100644
+index 6554dcf..0000000
+--- a/arch/mips/include/asm/sibyte/sb1250_l2c.h
++++ /dev/null
+@@ -1,131 +0,0 @@
+-/*  *********************************************************************
+-    *  SB1250 Board Support Package
+-    *
+-    *  L2 Cache constants and macros		File: sb1250_l2c.h
+-    *
+-    *  This module contains constants useful for manipulating the
+-    *  level 2 cache.
+-    *
+-    *  SB1250 specification level:  User's manual 1/02/02
+-    *
+-    *********************************************************************
+-    *
+-    *  Copyright 2000,2001,2002,2003
+-    *  Broadcom Corporation. All rights reserved.
+-    *
+-    *  This program is free software; you can redistribute it and/or
+-    *  modify it under the terms of the GNU General Public License as
+-    *  published by the Free Software Foundation; either version 2 of
+-    *  the License, or (at your option) any later version.
+-    *
+-    *  This program is distributed in the hope that it will be useful,
+-    *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+-    *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-    *  GNU General Public License for more details.
+-    *
+-    *  You should have received a copy of the GNU General Public License
+-    *  along with this program; if not, write to the Free Software
+-    *  Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+-    *  MA 02111-1307 USA
+-    ********************************************************************* */
+-
+-
+-#ifndef _SB1250_L2C_H
+-#define _SB1250_L2C_H
+-
+-#include "sb1250_defs.h"
+-
+-/*
+- * Level 2 Cache Tag register (Table 5-3)
+- */
+-
+-#define S_L2C_TAG_MBZ               0
+-#define M_L2C_TAG_MBZ               _SB_MAKEMASK(5, S_L2C_TAG_MBZ)
+-
+-#define S_L2C_TAG_INDEX             5
+-#define M_L2C_TAG_INDEX             _SB_MAKEMASK(12, S_L2C_TAG_INDEX)
+-#define V_L2C_TAG_INDEX(x)          _SB_MAKEVALUE(x, S_L2C_TAG_INDEX)
+-#define G_L2C_TAG_INDEX(x)          _SB_GETVALUE(x, S_L2C_TAG_INDEX, M_L2C_TAG_INDEX)
+-
+-#define S_L2C_TAG_TAG               17
+-#define M_L2C_TAG_TAG               _SB_MAKEMASK(23, S_L2C_TAG_TAG)
+-#define V_L2C_TAG_TAG(x)            _SB_MAKEVALUE(x, S_L2C_TAG_TAG)
+-#define G_L2C_TAG_TAG(x)            _SB_GETVALUE(x, S_L2C_TAG_TAG, M_L2C_TAG_TAG)
+-
+-#define S_L2C_TAG_ECC               40
+-#define M_L2C_TAG_ECC               _SB_MAKEMASK(6, S_L2C_TAG_ECC)
+-#define V_L2C_TAG_ECC(x)            _SB_MAKEVALUE(x, S_L2C_TAG_ECC)
+-#define G_L2C_TAG_ECC(x)            _SB_GETVALUE(x, S_L2C_TAG_ECC, M_L2C_TAG_ECC)
+-
+-#define S_L2C_TAG_WAY               46
+-#define M_L2C_TAG_WAY               _SB_MAKEMASK(2, S_L2C_TAG_WAY)
+-#define V_L2C_TAG_WAY(x)            _SB_MAKEVALUE(x, S_L2C_TAG_WAY)
+-#define G_L2C_TAG_WAY(x)            _SB_GETVALUE(x, S_L2C_TAG_WAY, M_L2C_TAG_WAY)
+-
+-#define M_L2C_TAG_DIRTY             _SB_MAKEMASK1(48)
+-#define M_L2C_TAG_VALID             _SB_MAKEMASK1(49)
+-
+-/*
+- * Format of level 2 cache management address (table 5-2)
+- */
+-
+-#define S_L2C_MGMT_INDEX            5
+-#define M_L2C_MGMT_INDEX            _SB_MAKEMASK(12, S_L2C_MGMT_INDEX)
+-#define V_L2C_MGMT_INDEX(x)         _SB_MAKEVALUE(x, S_L2C_MGMT_INDEX)
+-#define G_L2C_MGMT_INDEX(x)         _SB_GETVALUE(x, S_L2C_MGMT_INDEX, M_L2C_MGMT_INDEX)
+-
+-#define S_L2C_MGMT_QUADRANT         15
+-#define M_L2C_MGMT_QUADRANT         _SB_MAKEMASK(2, S_L2C_MGMT_QUADRANT)
+-#define V_L2C_MGMT_QUADRANT(x)      _SB_MAKEVALUE(x, S_L2C_MGMT_QUADRANT)
+-#define G_L2C_MGMT_QUADRANT(x)      _SB_GETVALUE(x, S_L2C_MGMT_QUADRANT, M_L2C_MGMT_QUADRANT)
+-
+-#define S_L2C_MGMT_HALF		    16
+-#define M_L2C_MGMT_HALF	            _SB_MAKEMASK(1, S_L2C_MGMT_HALF)
+-
+-#define S_L2C_MGMT_WAY              17
+-#define M_L2C_MGMT_WAY              _SB_MAKEMASK(2, S_L2C_MGMT_WAY)
+-#define V_L2C_MGMT_WAY(x)           _SB_MAKEVALUE(x, S_L2C_MGMT_WAY)
+-#define G_L2C_MGMT_WAY(x)           _SB_GETVALUE(x, S_L2C_MGMT_WAY, M_L2C_MGMT_WAY)
+-
+-#define S_L2C_MGMT_ECC_DIAG         21
+-#define M_L2C_MGMT_ECC_DIAG         _SB_MAKEMASK(2, S_L2C_MGMT_ECC_DIAG)
+-#define V_L2C_MGMT_ECC_DIAG(x)      _SB_MAKEVALUE(x, S_L2C_MGMT_ECC_DIAG)
+-#define G_L2C_MGMT_ECC_DIAG(x)      _SB_GETVALUE(x, S_L2C_MGMT_ECC_DIAG, M_L2C_MGMT_ECC_DIAG)
+-
+-#define S_L2C_MGMT_TAG              23
+-#define M_L2C_MGMT_TAG              _SB_MAKEMASK(4, S_L2C_MGMT_TAG)
+-#define V_L2C_MGMT_TAG(x)           _SB_MAKEVALUE(x, S_L2C_MGMT_TAG)
+-#define G_L2C_MGMT_TAG(x)           _SB_GETVALUE(x, S_L2C_MGMT_TAG, M_L2C_MGMT_TAG)
+-
+-#define M_L2C_MGMT_DIRTY            _SB_MAKEMASK1(19)
+-#define M_L2C_MGMT_VALID            _SB_MAKEMASK1(20)
+-
+-#define A_L2C_MGMT_TAG_BASE         0x00D0000000
+-
+-#define L2C_ENTRIES_PER_WAY       4096
+-#define L2C_NUM_WAYS              4
+-
+-
+-#if SIBYTE_HDR_FEATURE(1250, PASS3) || SIBYTE_HDR_FEATURE(112x, PASS1)
+-/*
+- * L2 Read Misc. register (A_L2_READ_MISC)
+- */
+-#define S_L2C_MISC_NO_WAY		10
+-#define M_L2C_MISC_NO_WAY		_SB_MAKEMASK(4, S_L2C_MISC_NO_WAY)
+-#define V_L2C_MISC_NO_WAY(x)		_SB_MAKEVALUE(x, S_L2C_MISC_NO_WAY)
+-#define G_L2C_MISC_NO_WAY(x)		_SB_GETVALUE(x, S_L2C_MISC_NO_WAY, M_L2C_MISC_NO_WAY)
+-
+-#define M_L2C_MISC_ECC_CLEANUP_DIS	_SB_MAKEMASK1(9)
+-#define M_L2C_MISC_MC_PRIO_LOW		_SB_MAKEMASK1(8)
+-#define M_L2C_MISC_SOFT_DISABLE_T	_SB_MAKEMASK1(7)
+-#define M_L2C_MISC_SOFT_DISABLE_B	_SB_MAKEMASK1(6)
+-#define M_L2C_MISC_SOFT_DISABLE_R	_SB_MAKEMASK1(5)
+-#define M_L2C_MISC_SOFT_DISABLE_L	_SB_MAKEMASK1(4)
+-#define M_L2C_MISC_SCACHE_DISABLE_T	_SB_MAKEMASK1(3)
+-#define M_L2C_MISC_SCACHE_DISABLE_B	_SB_MAKEMASK1(2)
+-#define M_L2C_MISC_SCACHE_DISABLE_R	_SB_MAKEMASK1(1)
+-#define M_L2C_MISC_SCACHE_DISABLE_L	_SB_MAKEMASK1(0)
+-#endif /* 1250 PASS3 || 112x PASS1 */
+-
+-
+-#endif
+diff --git a/arch/mips/include/asm/sibyte/sb1250_ldt.h b/arch/mips/include/asm/sibyte/sb1250_ldt.h
+deleted file mode 100644
+index 1e76cf1..0000000
+--- a/arch/mips/include/asm/sibyte/sb1250_ldt.h
++++ /dev/null
+@@ -1,422 +0,0 @@
+-/*  *********************************************************************
+-    *  SB1250 Board Support Package
+-    *
+-    *  LDT constants				File: sb1250_ldt.h
+-    *
+-    *  This module contains constants and macros to describe
+-    *  the LDT interface on the SB1250.
+-    *
+-    *  SB1250 specification level:  User's manual 1/02/02
+-    *
+-    *********************************************************************
+-    *
+-    *  Copyright 2000, 2001, 2002, 2003
+-    *  Broadcom Corporation. All rights reserved.
+-    *
+-    *  This program is free software; you can redistribute it and/or
+-    *  modify it under the terms of the GNU General Public License as
+-    *  published by the Free Software Foundation; either version 2 of
+-    *  the License, or (at your option) any later version.
+-    *
+-    *  This program is distributed in the hope that it will be useful,
+-    *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+-    *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-    *  GNU General Public License for more details.
+-    *
+-    *  You should have received a copy of the GNU General Public License
+-    *  along with this program; if not, write to the Free Software
+-    *  Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+-    *  MA 02111-1307 USA
+-    ********************************************************************* */
+-
+-
+-#ifndef _SB1250_LDT_H
+-#define _SB1250_LDT_H
+-
+-#include "sb1250_defs.h"
+-
+-#define K_LDT_VENDOR_SIBYTE	0x166D
+-#define K_LDT_DEVICE_SB1250	0x0002
+-
+-/*
+- * LDT Interface Type 1 (bridge) configuration header
+- */
+-
+-#define R_LDT_TYPE1_DEVICEID	0x0000
+-#define R_LDT_TYPE1_CMDSTATUS	0x0004
+-#define R_LDT_TYPE1_CLASSREV	0x0008
+-#define R_LDT_TYPE1_DEVHDR	0x000C
+-#define R_LDT_TYPE1_BAR0	0x0010	/* not used */
+-#define R_LDT_TYPE1_BAR1	0x0014	/* not used */
+-
+-#define R_LDT_TYPE1_BUSID	0x0018	/* bus ID register */
+-#define R_LDT_TYPE1_SECSTATUS	0x001C	/* secondary status / I/O base/limit */
+-#define R_LDT_TYPE1_MEMLIMIT	0x0020
+-#define R_LDT_TYPE1_PREFETCH	0x0024
+-#define R_LDT_TYPE1_PREF_BASE	0x0028
+-#define R_LDT_TYPE1_PREF_LIMIT	0x002C
+-#define R_LDT_TYPE1_IOLIMIT	0x0030
+-#define R_LDT_TYPE1_CAPPTR	0x0034
+-#define R_LDT_TYPE1_ROMADDR	0x0038
+-#define R_LDT_TYPE1_BRCTL	0x003C
+-#define R_LDT_TYPE1_CMD		0x0040
+-#define R_LDT_TYPE1_LINKCTRL	0x0044
+-#define R_LDT_TYPE1_LINKFREQ	0x0048
+-#define R_LDT_TYPE1_RESERVED1	0x004C
+-#define R_LDT_TYPE1_SRICMD	0x0050
+-#define R_LDT_TYPE1_SRITXNUM	0x0054
+-#define R_LDT_TYPE1_SRIRXNUM	0x0058
+-#define R_LDT_TYPE1_ERRSTATUS   0x0068
+-#define R_LDT_TYPE1_SRICTRL	0x006C
+-#if SIBYTE_HDR_FEATURE(1250, PASS2) || SIBYTE_HDR_FEATURE(112x, PASS1)
+-#define R_LDT_TYPE1_ADDSTATUS	0x0070
+-#endif /* 1250 PASS2 || 112x PASS1 */
+-#define R_LDT_TYPE1_TXBUFCNT	0x00C8
+-#define R_LDT_TYPE1_EXPCRC	0x00DC
+-#define R_LDT_TYPE1_RXCRC	0x00F0
+-
+-
+-/*
+- * LDT Device ID register
+- */
+-
+-#define S_LDT_DEVICEID_VENDOR		0
+-#define M_LDT_DEVICEID_VENDOR		_SB_MAKEMASK_32(16, S_LDT_DEVICEID_VENDOR)
+-#define V_LDT_DEVICEID_VENDOR(x)	_SB_MAKEVALUE_32(x, S_LDT_DEVICEID_VENDOR)
+-#define G_LDT_DEVICEID_VENDOR(x)	_SB_GETVALUE_32(x, S_LDT_DEVICEID_VENDOR, M_LDT_DEVICEID_VENDOR)
+-
+-#define S_LDT_DEVICEID_DEVICEID		16
+-#define M_LDT_DEVICEID_DEVICEID		_SB_MAKEMASK_32(16, S_LDT_DEVICEID_DEVICEID)
+-#define V_LDT_DEVICEID_DEVICEID(x)	_SB_MAKEVALUE_32(x, S_LDT_DEVICEID_DEVICEID)
+-#define G_LDT_DEVICEID_DEVICEID(x)	_SB_GETVALUE_32(x, S_LDT_DEVICEID_DEVICEID, M_LDT_DEVICEID_DEVICEID)
+-
+-
+-/*
+- * LDT Command Register (Table 8-13)
+- */
+-
+-#define M_LDT_CMD_IOSPACE_EN		_SB_MAKEMASK1_32(0)
+-#define M_LDT_CMD_MEMSPACE_EN		_SB_MAKEMASK1_32(1)
+-#define M_LDT_CMD_MASTER_EN		_SB_MAKEMASK1_32(2)
+-#define M_LDT_CMD_SPECCYC_EN		_SB_MAKEMASK1_32(3)
+-#define M_LDT_CMD_MEMWRINV_EN		_SB_MAKEMASK1_32(4)
+-#define M_LDT_CMD_VGAPALSNP_EN		_SB_MAKEMASK1_32(5)
+-#define M_LDT_CMD_PARERRRESP		_SB_MAKEMASK1_32(6)
+-#define M_LDT_CMD_WAITCYCCTRL		_SB_MAKEMASK1_32(7)
+-#define M_LDT_CMD_SERR_EN		_SB_MAKEMASK1_32(8)
+-#define M_LDT_CMD_FASTB2B_EN		_SB_MAKEMASK1_32(9)
+-
+-/*
+- * LDT class and revision registers
+- */
+-
+-#define S_LDT_CLASSREV_REV		0
+-#define M_LDT_CLASSREV_REV		_SB_MAKEMASK_32(8, S_LDT_CLASSREV_REV)
+-#define V_LDT_CLASSREV_REV(x)		_SB_MAKEVALUE_32(x, S_LDT_CLASSREV_REV)
+-#define G_LDT_CLASSREV_REV(x)		_SB_GETVALUE_32(x, S_LDT_CLASSREV_REV, M_LDT_CLASSREV_REV)
+-
+-#define S_LDT_CLASSREV_CLASS		8
+-#define M_LDT_CLASSREV_CLASS		_SB_MAKEMASK_32(24, S_LDT_CLASSREV_CLASS)
+-#define V_LDT_CLASSREV_CLASS(x)		_SB_MAKEVALUE_32(x, S_LDT_CLASSREV_CLASS)
+-#define G_LDT_CLASSREV_CLASS(x)		_SB_GETVALUE_32(x, S_LDT_CLASSREV_CLASS, M_LDT_CLASSREV_CLASS)
+-
+-#define K_LDT_REV			0x01
+-#define K_LDT_CLASS			0x060000
+-
+-/*
+- * Device Header (offset 0x0C)
+- */
+-
+-#define S_LDT_DEVHDR_CLINESZ		0
+-#define M_LDT_DEVHDR_CLINESZ		_SB_MAKEMASK_32(8, S_LDT_DEVHDR_CLINESZ)
+-#define V_LDT_DEVHDR_CLINESZ(x)		_SB_MAKEVALUE_32(x, S_LDT_DEVHDR_CLINESZ)
+-#define G_LDT_DEVHDR_CLINESZ(x)		_SB_GETVALUE_32(x, S_LDT_DEVHDR_CLINESZ, M_LDT_DEVHDR_CLINESZ)
+-
+-#define S_LDT_DEVHDR_LATTMR		8
+-#define M_LDT_DEVHDR_LATTMR		_SB_MAKEMASK_32(8, S_LDT_DEVHDR_LATTMR)
+-#define V_LDT_DEVHDR_LATTMR(x)		_SB_MAKEVALUE_32(x, S_LDT_DEVHDR_LATTMR)
+-#define G_LDT_DEVHDR_LATTMR(x)		_SB_GETVALUE_32(x, S_LDT_DEVHDR_LATTMR, M_LDT_DEVHDR_LATTMR)
+-
+-#define S_LDT_DEVHDR_HDRTYPE		16
+-#define M_LDT_DEVHDR_HDRTYPE		_SB_MAKEMASK_32(8, S_LDT_DEVHDR_HDRTYPE)
+-#define V_LDT_DEVHDR_HDRTYPE(x)		_SB_MAKEVALUE_32(x, S_LDT_DEVHDR_HDRTYPE)
+-#define G_LDT_DEVHDR_HDRTYPE(x)		_SB_GETVALUE_32(x, S_LDT_DEVHDR_HDRTYPE, M_LDT_DEVHDR_HDRTYPE)
+-
+-#define K_LDT_DEVHDR_HDRTYPE_TYPE1	1
+-
+-#define S_LDT_DEVHDR_BIST		24
+-#define M_LDT_DEVHDR_BIST		_SB_MAKEMASK_32(8, S_LDT_DEVHDR_BIST)
+-#define V_LDT_DEVHDR_BIST(x)		_SB_MAKEVALUE_32(x, S_LDT_DEVHDR_BIST)
+-#define G_LDT_DEVHDR_BIST(x)		_SB_GETVALUE_32(x, S_LDT_DEVHDR_BIST, M_LDT_DEVHDR_BIST)
+-
+-
+-
+-/*
+- * LDT Status Register (Table 8-14).  Note that these constants
+- * assume you've read the command and status register
+- * together (32-bit read at offset 0x04)
+- *
+- * These bits also apply to the secondary status
+- * register (Table 8-15), offset 0x1C
+- */
+-
+-#if SIBYTE_HDR_FEATURE(1250, PASS2) || SIBYTE_HDR_FEATURE(112x, PASS1)
+-#define M_LDT_STATUS_VGAEN		_SB_MAKEMASK1_32(3)
+-#endif /* 1250 PASS2 || 112x PASS1 */
+-#define M_LDT_STATUS_CAPLIST		_SB_MAKEMASK1_32(20)
+-#define M_LDT_STATUS_66MHZCAP		_SB_MAKEMASK1_32(21)
+-#define M_LDT_STATUS_RESERVED2		_SB_MAKEMASK1_32(22)
+-#define M_LDT_STATUS_FASTB2BCAP		_SB_MAKEMASK1_32(23)
+-#define M_LDT_STATUS_MSTRDPARERR	_SB_MAKEMASK1_32(24)
+-
+-#define S_LDT_STATUS_DEVSELTIMING	25
+-#define M_LDT_STATUS_DEVSELTIMING	_SB_MAKEMASK_32(2, S_LDT_STATUS_DEVSELTIMING)
+-#define V_LDT_STATUS_DEVSELTIMING(x)	_SB_MAKEVALUE_32(x, S_LDT_STATUS_DEVSELTIMING)
+-#define G_LDT_STATUS_DEVSELTIMING(x)	_SB_GETVALUE_32(x, S_LDT_STATUS_DEVSELTIMING, M_LDT_STATUS_DEVSELTIMING)
+-
+-#define M_LDT_STATUS_SIGDTGTABORT	_SB_MAKEMASK1_32(27)
+-#define M_LDT_STATUS_RCVDTGTABORT	_SB_MAKEMASK1_32(28)
+-#define M_LDT_STATUS_RCVDMSTRABORT	_SB_MAKEMASK1_32(29)
+-#define M_LDT_STATUS_SIGDSERR		_SB_MAKEMASK1_32(30)
+-#define M_LDT_STATUS_DETPARERR		_SB_MAKEMASK1_32(31)
+-
+-/*
+- * Bridge Control Register (Table 8-16).  Note that these
+- * constants assume you've read the register as a 32-bit
+- * read (offset 0x3C)
+- */
+-
+-#define M_LDT_BRCTL_PARERRRESP_EN	_SB_MAKEMASK1_32(16)
+-#define M_LDT_BRCTL_SERR_EN		_SB_MAKEMASK1_32(17)
+-#define M_LDT_BRCTL_ISA_EN		_SB_MAKEMASK1_32(18)
+-#define M_LDT_BRCTL_VGA_EN		_SB_MAKEMASK1_32(19)
+-#define M_LDT_BRCTL_MSTRABORTMODE	_SB_MAKEMASK1_32(21)
+-#define M_LDT_BRCTL_SECBUSRESET		_SB_MAKEMASK1_32(22)
+-#define M_LDT_BRCTL_FASTB2B_EN		_SB_MAKEMASK1_32(23)
+-#define M_LDT_BRCTL_PRIDISCARD		_SB_MAKEMASK1_32(24)
+-#define M_LDT_BRCTL_SECDISCARD		_SB_MAKEMASK1_32(25)
+-#define M_LDT_BRCTL_DISCARDSTAT		_SB_MAKEMASK1_32(26)
+-#define M_LDT_BRCTL_DISCARDSERR_EN	_SB_MAKEMASK1_32(27)
+-
+-/*
+- * LDT Command Register (Table 8-17).  Note that these constants
+- * assume you've read the command and status register together
+- * 32-bit read at offset 0x40
+- */
+-
+-#define M_LDT_CMD_WARMRESET		_SB_MAKEMASK1_32(16)
+-#define M_LDT_CMD_DOUBLEENDED		_SB_MAKEMASK1_32(17)
+-
+-#define S_LDT_CMD_CAPTYPE		29
+-#define M_LDT_CMD_CAPTYPE		_SB_MAKEMASK_32(3, S_LDT_CMD_CAPTYPE)
+-#define V_LDT_CMD_CAPTYPE(x)		_SB_MAKEVALUE_32(x, S_LDT_CMD_CAPTYPE)
+-#define G_LDT_CMD_CAPTYPE(x)		_SB_GETVALUE_32(x, S_LDT_CMD_CAPTYPE, M_LDT_CMD_CAPTYPE)
+-
+-/*
+- * LDT link control register (Table 8-18), and (Table 8-19)
+- */
+-
+-#define M_LDT_LINKCTRL_CAPSYNCFLOOD_EN	_SB_MAKEMASK1_32(1)
+-#define M_LDT_LINKCTRL_CRCSTARTTEST	_SB_MAKEMASK1_32(2)
+-#define M_LDT_LINKCTRL_CRCFORCEERR	_SB_MAKEMASK1_32(3)
+-#define M_LDT_LINKCTRL_LINKFAIL		_SB_MAKEMASK1_32(4)
+-#define M_LDT_LINKCTRL_INITDONE		_SB_MAKEMASK1_32(5)
+-#define M_LDT_LINKCTRL_EOC		_SB_MAKEMASK1_32(6)
+-#define M_LDT_LINKCTRL_XMITOFF		_SB_MAKEMASK1_32(7)
+-
+-#define S_LDT_LINKCTRL_CRCERR		8
+-#define M_LDT_LINKCTRL_CRCERR		_SB_MAKEMASK_32(4, S_LDT_LINKCTRL_CRCERR)
+-#define V_LDT_LINKCTRL_CRCERR(x)	_SB_MAKEVALUE_32(x, S_LDT_LINKCTRL_CRCERR)
+-#define G_LDT_LINKCTRL_CRCERR(x)	_SB_GETVALUE_32(x, S_LDT_LINKCTRL_CRCERR, M_LDT_LINKCTRL_CRCERR)
+-
+-#define S_LDT_LINKCTRL_MAXIN		16
+-#define M_LDT_LINKCTRL_MAXIN		_SB_MAKEMASK_32(3, S_LDT_LINKCTRL_MAXIN)
+-#define V_LDT_LINKCTRL_MAXIN(x)		_SB_MAKEVALUE_32(x, S_LDT_LINKCTRL_MAXIN)
+-#define G_LDT_LINKCTRL_MAXIN(x)		_SB_GETVALUE_32(x, S_LDT_LINKCTRL_MAXIN, M_LDT_LINKCTRL_MAXIN)
+-
+-#define M_LDT_LINKCTRL_DWFCLN		_SB_MAKEMASK1_32(19)
+-
+-#define S_LDT_LINKCTRL_MAXOUT		20
+-#define M_LDT_LINKCTRL_MAXOUT		_SB_MAKEMASK_32(3, S_LDT_LINKCTRL_MAXOUT)
+-#define V_LDT_LINKCTRL_MAXOUT(x)	_SB_MAKEVALUE_32(x, S_LDT_LINKCTRL_MAXOUT)
+-#define G_LDT_LINKCTRL_MAXOUT(x)	_SB_GETVALUE_32(x, S_LDT_LINKCTRL_MAXOUT, M_LDT_LINKCTRL_MAXOUT)
+-
+-#define M_LDT_LINKCTRL_DWFCOUT		_SB_MAKEMASK1_32(23)
+-
+-#define S_LDT_LINKCTRL_WIDTHIN		24
+-#define M_LDT_LINKCTRL_WIDTHIN		_SB_MAKEMASK_32(3, S_LDT_LINKCTRL_WIDTHIN)
+-#define V_LDT_LINKCTRL_WIDTHIN(x)	_SB_MAKEVALUE_32(x, S_LDT_LINKCTRL_WIDTHIN)
+-#define G_LDT_LINKCTRL_WIDTHIN(x)	_SB_GETVALUE_32(x, S_LDT_LINKCTRL_WIDTHIN, M_LDT_LINKCTRL_WIDTHIN)
+-
+-#define M_LDT_LINKCTRL_DWFCLIN_EN	_SB_MAKEMASK1_32(27)
+-
+-#define S_LDT_LINKCTRL_WIDTHOUT		28
+-#define M_LDT_LINKCTRL_WIDTHOUT		_SB_MAKEMASK_32(3, S_LDT_LINKCTRL_WIDTHOUT)
+-#define V_LDT_LINKCTRL_WIDTHOUT(x)	_SB_MAKEVALUE_32(x, S_LDT_LINKCTRL_WIDTHOUT)
+-#define G_LDT_LINKCTRL_WIDTHOUT(x)	_SB_GETVALUE_32(x, S_LDT_LINKCTRL_WIDTHOUT, M_LDT_LINKCTRL_WIDTHOUT)
+-
+-#define M_LDT_LINKCTRL_DWFCOUT_EN	_SB_MAKEMASK1_32(31)
+-
+-/*
+- * LDT Link frequency register  (Table 8-20) offset 0x48
+- */
+-
+-#define S_LDT_LINKFREQ_FREQ		8
+-#define M_LDT_LINKFREQ_FREQ		_SB_MAKEMASK_32(4, S_LDT_LINKFREQ_FREQ)
+-#define V_LDT_LINKFREQ_FREQ(x)		_SB_MAKEVALUE_32(x, S_LDT_LINKFREQ_FREQ)
+-#define G_LDT_LINKFREQ_FREQ(x)		_SB_GETVALUE_32(x, S_LDT_LINKFREQ_FREQ, M_LDT_LINKFREQ_FREQ)
+-
+-#define K_LDT_LINKFREQ_200MHZ		0
+-#define K_LDT_LINKFREQ_300MHZ		1
+-#define K_LDT_LINKFREQ_400MHZ		2
+-#define K_LDT_LINKFREQ_500MHZ		3
+-#define K_LDT_LINKFREQ_600MHZ		4
+-#define K_LDT_LINKFREQ_800MHZ		5
+-#define K_LDT_LINKFREQ_1000MHZ		6
+-
+-/*
+- * LDT SRI Command Register (Table 8-21).  Note that these constants
+- * assume you've read the command and status register together
+- * 32-bit read at offset 0x50
+- */
+-
+-#define M_LDT_SRICMD_SIPREADY		_SB_MAKEMASK1_32(16)
+-#define M_LDT_SRICMD_SYNCPTRCTL		_SB_MAKEMASK1_32(17)
+-#define M_LDT_SRICMD_REDUCESYNCZERO	_SB_MAKEMASK1_32(18)
+-#if SIBYTE_HDR_FEATURE_UP_TO(1250, PASS1)
+-#define M_LDT_SRICMD_DISSTARVATIONCNT	_SB_MAKEMASK1_32(19)	/* PASS1 */
+-#endif /* up to 1250 PASS1 */
+-#if SIBYTE_HDR_FEATURE(1250, PASS2) || SIBYTE_HDR_FEATURE(112x, PASS1)
+-#define M_LDT_SRICMD_DISMULTTXVLD	_SB_MAKEMASK1_32(19)
+-#define M_LDT_SRICMD_EXPENDIAN		_SB_MAKEMASK1_32(26)
+-#endif /* 1250 PASS2 || 112x PASS1 */
+-
+-
+-#define S_LDT_SRICMD_RXMARGIN		20
+-#define M_LDT_SRICMD_RXMARGIN		_SB_MAKEMASK_32(5, S_LDT_SRICMD_RXMARGIN)
+-#define V_LDT_SRICMD_RXMARGIN(x)	_SB_MAKEVALUE_32(x, S_LDT_SRICMD_RXMARGIN)
+-#define G_LDT_SRICMD_RXMARGIN(x)	_SB_GETVALUE_32(x, S_LDT_SRICMD_RXMARGIN, M_LDT_SRICMD_RXMARGIN)
+-
+-#define M_LDT_SRICMD_LDTPLLCOMPAT	_SB_MAKEMASK1_32(25)
+-
+-#define S_LDT_SRICMD_TXINITIALOFFSET	28
+-#define M_LDT_SRICMD_TXINITIALOFFSET	_SB_MAKEMASK_32(3, S_LDT_SRICMD_TXINITIALOFFSET)
+-#define V_LDT_SRICMD_TXINITIALOFFSET(x)	_SB_MAKEVALUE_32(x, S_LDT_SRICMD_TXINITIALOFFSET)
+-#define G_LDT_SRICMD_TXINITIALOFFSET(x)	_SB_GETVALUE_32(x, S_LDT_SRICMD_TXINITIALOFFSET, M_LDT_SRICMD_TXINITIALOFFSET)
+-
+-#define M_LDT_SRICMD_LINKFREQDIRECT	_SB_MAKEMASK1_32(31)
+-
+-/*
+- * LDT Error control and status register (Table 8-22) (Table 8-23)
+- */
+-
+-#define M_LDT_ERRCTL_PROTFATAL_EN	_SB_MAKEMASK1_32(0)
+-#define M_LDT_ERRCTL_PROTNONFATAL_EN	_SB_MAKEMASK1_32(1)
+-#define M_LDT_ERRCTL_PROTSYNCFLOOD_EN	_SB_MAKEMASK1_32(2)
+-#define M_LDT_ERRCTL_OVFFATAL_EN	_SB_MAKEMASK1_32(3)
+-#define M_LDT_ERRCTL_OVFNONFATAL_EN	_SB_MAKEMASK1_32(4)
+-#define M_LDT_ERRCTL_OVFSYNCFLOOD_EN	_SB_MAKEMASK1_32(5)
+-#define M_LDT_ERRCTL_EOCNXAFATAL_EN	_SB_MAKEMASK1_32(6)
+-#define M_LDT_ERRCTL_EOCNXANONFATAL_EN	_SB_MAKEMASK1_32(7)
+-#define M_LDT_ERRCTL_EOCNXASYNCFLOOD_EN	_SB_MAKEMASK1_32(8)
+-#define M_LDT_ERRCTL_CRCFATAL_EN	_SB_MAKEMASK1_32(9)
+-#define M_LDT_ERRCTL_CRCNONFATAL_EN	_SB_MAKEMASK1_32(10)
+-#define M_LDT_ERRCTL_SERRFATAL_EN	_SB_MAKEMASK1_32(11)
+-#define M_LDT_ERRCTL_SRCTAGFATAL_EN	_SB_MAKEMASK1_32(12)
+-#define M_LDT_ERRCTL_SRCTAGNONFATAL_EN	_SB_MAKEMASK1_32(13)
+-#define M_LDT_ERRCTL_SRCTAGSYNCFLOOD_EN	_SB_MAKEMASK1_32(14)
+-#define M_LDT_ERRCTL_MAPNXAFATAL_EN	_SB_MAKEMASK1_32(15)
+-#define M_LDT_ERRCTL_MAPNXANONFATAL_EN	_SB_MAKEMASK1_32(16)
+-#define M_LDT_ERRCTL_MAPNXASYNCFLOOD_EN	_SB_MAKEMASK1_32(17)
+-
+-#define M_LDT_ERRCTL_PROTOERR		_SB_MAKEMASK1_32(24)
+-#define M_LDT_ERRCTL_OVFERR		_SB_MAKEMASK1_32(25)
+-#define M_LDT_ERRCTL_EOCNXAERR		_SB_MAKEMASK1_32(26)
+-#define M_LDT_ERRCTL_SRCTAGERR		_SB_MAKEMASK1_32(27)
+-#define M_LDT_ERRCTL_MAPNXAERR		_SB_MAKEMASK1_32(28)
+-
+-/*
+- * SRI Control register (Table 8-24, 8-25)  Offset 0x6C
+- */
+-
+-#define S_LDT_SRICTRL_NEEDRESP		0
+-#define M_LDT_SRICTRL_NEEDRESP		_SB_MAKEMASK_32(2, S_LDT_SRICTRL_NEEDRESP)
+-#define V_LDT_SRICTRL_NEEDRESP(x)	_SB_MAKEVALUE_32(x, S_LDT_SRICTRL_NEEDRESP)
+-#define G_LDT_SRICTRL_NEEDRESP(x)	_SB_GETVALUE_32(x, S_LDT_SRICTRL_NEEDRESP, M_LDT_SRICTRL_NEEDRESP)
+-
+-#define S_LDT_SRICTRL_NEEDNPREQ		2
+-#define M_LDT_SRICTRL_NEEDNPREQ		_SB_MAKEMASK_32(2, S_LDT_SRICTRL_NEEDNPREQ)
+-#define V_LDT_SRICTRL_NEEDNPREQ(x)	_SB_MAKEVALUE_32(x, S_LDT_SRICTRL_NEEDNPREQ)
+-#define G_LDT_SRICTRL_NEEDNPREQ(x)	_SB_GETVALUE_32(x, S_LDT_SRICTRL_NEEDNPREQ, M_LDT_SRICTRL_NEEDNPREQ)
+-
+-#define S_LDT_SRICTRL_NEEDPREQ		4
+-#define M_LDT_SRICTRL_NEEDPREQ		_SB_MAKEMASK_32(2, S_LDT_SRICTRL_NEEDPREQ)
+-#define V_LDT_SRICTRL_NEEDPREQ(x)	_SB_MAKEVALUE_32(x, S_LDT_SRICTRL_NEEDPREQ)
+-#define G_LDT_SRICTRL_NEEDPREQ(x)	_SB_GETVALUE_32(x, S_LDT_SRICTRL_NEEDPREQ, M_LDT_SRICTRL_NEEDPREQ)
+-
+-#define S_LDT_SRICTRL_WANTRESP		8
+-#define M_LDT_SRICTRL_WANTRESP		_SB_MAKEMASK_32(2, S_LDT_SRICTRL_WANTRESP)
+-#define V_LDT_SRICTRL_WANTRESP(x)	_SB_MAKEVALUE_32(x, S_LDT_SRICTRL_WANTRESP)
+-#define G_LDT_SRICTRL_WANTRESP(x)	_SB_GETVALUE_32(x, S_LDT_SRICTRL_WANTRESP, M_LDT_SRICTRL_WANTRESP)
+-
+-#define S_LDT_SRICTRL_WANTNPREQ		10
+-#define M_LDT_SRICTRL_WANTNPREQ		_SB_MAKEMASK_32(2, S_LDT_SRICTRL_WANTNPREQ)
+-#define V_LDT_SRICTRL_WANTNPREQ(x)	_SB_MAKEVALUE_32(x, S_LDT_SRICTRL_WANTNPREQ)
+-#define G_LDT_SRICTRL_WANTNPREQ(x)	_SB_GETVALUE_32(x, S_LDT_SRICTRL_WANTNPREQ, M_LDT_SRICTRL_WANTNPREQ)
+-
+-#define S_LDT_SRICTRL_WANTPREQ		12
+-#define M_LDT_SRICTRL_WANTPREQ		_SB_MAKEMASK_32(2, S_LDT_SRICTRL_WANTPREQ)
+-#define V_LDT_SRICTRL_WANTPREQ(x)	_SB_MAKEVALUE_32(x, S_LDT_SRICTRL_WANTPREQ)
+-#define G_LDT_SRICTRL_WANTPREQ(x)	_SB_GETVALUE_32(x, S_LDT_SRICTRL_WANTPREQ, M_LDT_SRICTRL_WANTPREQ)
+-
+-#define S_LDT_SRICTRL_BUFRELSPACE	16
+-#define M_LDT_SRICTRL_BUFRELSPACE	_SB_MAKEMASK_32(4, S_LDT_SRICTRL_BUFRELSPACE)
+-#define V_LDT_SRICTRL_BUFRELSPACE(x)	_SB_MAKEVALUE_32(x, S_LDT_SRICTRL_BUFRELSPACE)
+-#define G_LDT_SRICTRL_BUFRELSPACE(x)	_SB_GETVALUE_32(x, S_LDT_SRICTRL_BUFRELSPACE, M_LDT_SRICTRL_BUFRELSPACE)
+-
+-/*
+- * LDT SRI Transmit Buffer Count register (Table 8-26)
+- */
+-
+-#define S_LDT_TXBUFCNT_PCMD		0
+-#define M_LDT_TXBUFCNT_PCMD		_SB_MAKEMASK_32(4, S_LDT_TXBUFCNT_PCMD)
+-#define V_LDT_TXBUFCNT_PCMD(x)		_SB_MAKEVALUE_32(x, S_LDT_TXBUFCNT_PCMD)
+-#define G_LDT_TXBUFCNT_PCMD(x)		_SB_GETVALUE_32(x, S_LDT_TXBUFCNT_PCMD, M_LDT_TXBUFCNT_PCMD)
+-
+-#define S_LDT_TXBUFCNT_PDATA		4
+-#define M_LDT_TXBUFCNT_PDATA		_SB_MAKEMASK_32(4, S_LDT_TXBUFCNT_PDATA)
+-#define V_LDT_TXBUFCNT_PDATA(x)		_SB_MAKEVALUE_32(x, S_LDT_TXBUFCNT_PDATA)
+-#define G_LDT_TXBUFCNT_PDATA(x)		_SB_GETVALUE_32(x, S_LDT_TXBUFCNT_PDATA, M_LDT_TXBUFCNT_PDATA)
+-
+-#define S_LDT_TXBUFCNT_NPCMD		8
+-#define M_LDT_TXBUFCNT_NPCMD		_SB_MAKEMASK_32(4, S_LDT_TXBUFCNT_NPCMD)
+-#define V_LDT_TXBUFCNT_NPCMD(x)		_SB_MAKEVALUE_32(x, S_LDT_TXBUFCNT_NPCMD)
+-#define G_LDT_TXBUFCNT_NPCMD(x)		_SB_GETVALUE_32(x, S_LDT_TXBUFCNT_NPCMD, M_LDT_TXBUFCNT_NPCMD)
+-
+-#define S_LDT_TXBUFCNT_NPDATA		12
+-#define M_LDT_TXBUFCNT_NPDATA		_SB_MAKEMASK_32(4, S_LDT_TXBUFCNT_NPDATA)
+-#define V_LDT_TXBUFCNT_NPDATA(x)	_SB_MAKEVALUE_32(x, S_LDT_TXBUFCNT_NPDATA)
+-#define G_LDT_TXBUFCNT_NPDATA(x)	_SB_GETVALUE_32(x, S_LDT_TXBUFCNT_NPDATA, M_LDT_TXBUFCNT_NPDATA)
+-
+-#define S_LDT_TXBUFCNT_RCMD		16
+-#define M_LDT_TXBUFCNT_RCMD		_SB_MAKEMASK_32(4, S_LDT_TXBUFCNT_RCMD)
+-#define V_LDT_TXBUFCNT_RCMD(x)		_SB_MAKEVALUE_32(x, S_LDT_TXBUFCNT_RCMD)
+-#define G_LDT_TXBUFCNT_RCMD(x)		_SB_GETVALUE_32(x, S_LDT_TXBUFCNT_RCMD, M_LDT_TXBUFCNT_RCMD)
+-
+-#define S_LDT_TXBUFCNT_RDATA		20
+-#define M_LDT_TXBUFCNT_RDATA		_SB_MAKEMASK_32(4, S_LDT_TXBUFCNT_RDATA)
+-#define V_LDT_TXBUFCNT_RDATA(x)		_SB_MAKEVALUE_32(x, S_LDT_TXBUFCNT_RDATA)
+-#define G_LDT_TXBUFCNT_RDATA(x)		_SB_GETVALUE_32(x, S_LDT_TXBUFCNT_RDATA, M_LDT_TXBUFCNT_RDATA)
+-
+-#if SIBYTE_HDR_FEATURE(1250, PASS2) || SIBYTE_HDR_FEATURE(112x, PASS1)
+-/*
+- * Additional Status Register
+- */
+-
+-#define S_LDT_ADDSTATUS_TGTDONE		0
+-#define M_LDT_ADDSTATUS_TGTDONE		_SB_MAKEMASK_32(8, S_LDT_ADDSTATUS_TGTDONE)
+-#define V_LDT_ADDSTATUS_TGTDONE(x)	_SB_MAKEVALUE_32(x, S_LDT_ADDSTATUS_TGTDONE)
+-#define G_LDT_ADDSTATUS_TGTDONE(x)	_SB_GETVALUE_32(x, S_LDT_ADDSTATUS_TGTDONE, M_LDT_ADDSTATUS_TGTDONE)
+-#endif /* 1250 PASS2 || 112x PASS1 */
+-
+-#endif
+diff --git a/arch/mips/include/asm/sibyte/sb1250_mc.h b/arch/mips/include/asm/sibyte/sb1250_mc.h
+deleted file mode 100644
+index 1eb1b5a..0000000
+--- a/arch/mips/include/asm/sibyte/sb1250_mc.h
++++ /dev/null
+@@ -1,550 +0,0 @@
+-/*  *********************************************************************
+-    *  SB1250 Board Support Package
+-    *
+-    *  Memory Controller constants              File: sb1250_mc.h
+-    *
+-    *  This module contains constants and macros useful for
+-    *  programming the memory controller.
+-    *
+-    *  SB1250 specification level:  User's manual 1/02/02
+-    *
+-    *********************************************************************
+-    *
+-    *  Copyright 2000, 2001, 2002, 2003
+-    *  Broadcom Corporation. All rights reserved.
+-    *
+-    *  This program is free software; you can redistribute it and/or
+-    *  modify it under the terms of the GNU General Public License as
+-    *  published by the Free Software Foundation; either version 2 of
+-    *  the License, or (at your option) any later version.
+-    *
+-    *  This program is distributed in the hope that it will be useful,
+-    *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+-    *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-    *  GNU General Public License for more details.
+-    *
+-    *  You should have received a copy of the GNU General Public License
+-    *  along with this program; if not, write to the Free Software
+-    *  Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+-    *  MA 02111-1307 USA
+-    ********************************************************************* */
+-
+-
+-#ifndef _SB1250_MC_H
+-#define _SB1250_MC_H
+-
+-#include "sb1250_defs.h"
+-
+-/*
+- * Memory Channel Config Register (table 6-14)
+- */
+-
+-#define S_MC_RESERVED0              0
+-#define M_MC_RESERVED0              _SB_MAKEMASK(8, S_MC_RESERVED0)
+-
+-#define S_MC_CHANNEL_SEL            8
+-#define M_MC_CHANNEL_SEL            _SB_MAKEMASK(8, S_MC_CHANNEL_SEL)
+-#define V_MC_CHANNEL_SEL(x)         _SB_MAKEVALUE(x, S_MC_CHANNEL_SEL)
+-#define G_MC_CHANNEL_SEL(x)         _SB_GETVALUE(x, S_MC_CHANNEL_SEL, M_MC_CHANNEL_SEL)
+-
+-#define S_MC_BANK0_MAP              16
+-#define M_MC_BANK0_MAP              _SB_MAKEMASK(4, S_MC_BANK0_MAP)
+-#define V_MC_BANK0_MAP(x)           _SB_MAKEVALUE(x, S_MC_BANK0_MAP)
+-#define G_MC_BANK0_MAP(x)           _SB_GETVALUE(x, S_MC_BANK0_MAP, M_MC_BANK0_MAP)
+-
+-#define K_MC_BANK0_MAP_DEFAULT      0x00
+-#define V_MC_BANK0_MAP_DEFAULT      V_MC_BANK0_MAP(K_MC_BANK0_MAP_DEFAULT)
+-
+-#define S_MC_BANK1_MAP              20
+-#define M_MC_BANK1_MAP              _SB_MAKEMASK(4, S_MC_BANK1_MAP)
+-#define V_MC_BANK1_MAP(x)           _SB_MAKEVALUE(x, S_MC_BANK1_MAP)
+-#define G_MC_BANK1_MAP(x)           _SB_GETVALUE(x, S_MC_BANK1_MAP, M_MC_BANK1_MAP)
+-
+-#define K_MC_BANK1_MAP_DEFAULT      0x08
+-#define V_MC_BANK1_MAP_DEFAULT      V_MC_BANK1_MAP(K_MC_BANK1_MAP_DEFAULT)
+-
+-#define S_MC_BANK2_MAP              24
+-#define M_MC_BANK2_MAP              _SB_MAKEMASK(4, S_MC_BANK2_MAP)
+-#define V_MC_BANK2_MAP(x)           _SB_MAKEVALUE(x, S_MC_BANK2_MAP)
+-#define G_MC_BANK2_MAP(x)           _SB_GETVALUE(x, S_MC_BANK2_MAP, M_MC_BANK2_MAP)
+-
+-#define K_MC_BANK2_MAP_DEFAULT      0x09
+-#define V_MC_BANK2_MAP_DEFAULT      V_MC_BANK2_MAP(K_MC_BANK2_MAP_DEFAULT)
+-
+-#define S_MC_BANK3_MAP              28
+-#define M_MC_BANK3_MAP              _SB_MAKEMASK(4, S_MC_BANK3_MAP)
+-#define V_MC_BANK3_MAP(x)           _SB_MAKEVALUE(x, S_MC_BANK3_MAP)
+-#define G_MC_BANK3_MAP(x)           _SB_GETVALUE(x, S_MC_BANK3_MAP, M_MC_BANK3_MAP)
+-
+-#define K_MC_BANK3_MAP_DEFAULT      0x0C
+-#define V_MC_BANK3_MAP_DEFAULT      V_MC_BANK3_MAP(K_MC_BANK3_MAP_DEFAULT)
+-
+-#define M_MC_RESERVED1              _SB_MAKEMASK(8, 32)
+-
+-#define S_MC_QUEUE_SIZE		    40
+-#define M_MC_QUEUE_SIZE             _SB_MAKEMASK(4, S_MC_QUEUE_SIZE)
+-#define V_MC_QUEUE_SIZE(x)          _SB_MAKEVALUE(x, S_MC_QUEUE_SIZE)
+-#define G_MC_QUEUE_SIZE(x)          _SB_GETVALUE(x, S_MC_QUEUE_SIZE, M_MC_QUEUE_SIZE)
+-#define V_MC_QUEUE_SIZE_DEFAULT     V_MC_QUEUE_SIZE(0x0A)
+-
+-#define S_MC_AGE_LIMIT              44
+-#define M_MC_AGE_LIMIT              _SB_MAKEMASK(4, S_MC_AGE_LIMIT)
+-#define V_MC_AGE_LIMIT(x)           _SB_MAKEVALUE(x, S_MC_AGE_LIMIT)
+-#define G_MC_AGE_LIMIT(x)           _SB_GETVALUE(x, S_MC_AGE_LIMIT, M_MC_AGE_LIMIT)
+-#define V_MC_AGE_LIMIT_DEFAULT      V_MC_AGE_LIMIT(8)
+-
+-#define S_MC_WR_LIMIT               48
+-#define M_MC_WR_LIMIT               _SB_MAKEMASK(4, S_MC_WR_LIMIT)
+-#define V_MC_WR_LIMIT(x)            _SB_MAKEVALUE(x, S_MC_WR_LIMIT)
+-#define G_MC_WR_LIMIT(x)            _SB_GETVALUE(x, S_MC_WR_LIMIT, M_MC_WR_LIMIT)
+-#define V_MC_WR_LIMIT_DEFAULT       V_MC_WR_LIMIT(5)
+-
+-#define M_MC_IOB1HIGHPRIORITY	    _SB_MAKEMASK1(52)
+-
+-#define M_MC_RESERVED2              _SB_MAKEMASK(3, 53)
+-
+-#define S_MC_CS_MODE                56
+-#define M_MC_CS_MODE                _SB_MAKEMASK(4, S_MC_CS_MODE)
+-#define V_MC_CS_MODE(x)             _SB_MAKEVALUE(x, S_MC_CS_MODE)
+-#define G_MC_CS_MODE(x)             _SB_GETVALUE(x, S_MC_CS_MODE, M_MC_CS_MODE)
+-
+-#define K_MC_CS_MODE_MSB_CS         0
+-#define K_MC_CS_MODE_INTLV_CS       15
+-#define K_MC_CS_MODE_MIXED_CS_10    12
+-#define K_MC_CS_MODE_MIXED_CS_30    6
+-#define K_MC_CS_MODE_MIXED_CS_32    3
+-
+-#define V_MC_CS_MODE_MSB_CS         V_MC_CS_MODE(K_MC_CS_MODE_MSB_CS)
+-#define V_MC_CS_MODE_INTLV_CS       V_MC_CS_MODE(K_MC_CS_MODE_INTLV_CS)
+-#define V_MC_CS_MODE_MIXED_CS_10    V_MC_CS_MODE(K_MC_CS_MODE_MIXED_CS_10)
+-#define V_MC_CS_MODE_MIXED_CS_30    V_MC_CS_MODE(K_MC_CS_MODE_MIXED_CS_30)
+-#define V_MC_CS_MODE_MIXED_CS_32    V_MC_CS_MODE(K_MC_CS_MODE_MIXED_CS_32)
+-
+-#define M_MC_ECC_DISABLE            _SB_MAKEMASK1(60)
+-#define M_MC_BERR_DISABLE           _SB_MAKEMASK1(61)
+-#define M_MC_FORCE_SEQ              _SB_MAKEMASK1(62)
+-#define M_MC_DEBUG                  _SB_MAKEMASK1(63)
+-
+-#define V_MC_CONFIG_DEFAULT     V_MC_WR_LIMIT_DEFAULT | V_MC_AGE_LIMIT_DEFAULT | \
+-				V_MC_BANK0_MAP_DEFAULT | V_MC_BANK1_MAP_DEFAULT | \
+-				V_MC_BANK2_MAP_DEFAULT | V_MC_BANK3_MAP_DEFAULT | V_MC_CHANNEL_SEL(0) | \
+-                                M_MC_IOB1HIGHPRIORITY | V_MC_QUEUE_SIZE_DEFAULT
+-
+-
+-/*
+- * Memory clock config register (Table 6-15)
+- *
+- * Note: this field has been updated to be consistent with the errata to 0.2
+- */
+-
+-#define S_MC_CLK_RATIO              0
+-#define M_MC_CLK_RATIO              _SB_MAKEMASK(4, S_MC_CLK_RATIO)
+-#define V_MC_CLK_RATIO(x)           _SB_MAKEVALUE(x, S_MC_CLK_RATIO)
+-#define G_MC_CLK_RATIO(x)           _SB_GETVALUE(x, S_MC_CLK_RATIO, M_MC_CLK_RATIO)
+-
+-#define K_MC_CLK_RATIO_2X           4
+-#define K_MC_CLK_RATIO_25X          5
+-#define K_MC_CLK_RATIO_3X           6
+-#define K_MC_CLK_RATIO_35X          7
+-#define K_MC_CLK_RATIO_4X           8
+-#define K_MC_CLK_RATIO_45X	    9
+-
+-#define V_MC_CLK_RATIO_2X	    V_MC_CLK_RATIO(K_MC_CLK_RATIO_2X)
+-#define V_MC_CLK_RATIO_25X          V_MC_CLK_RATIO(K_MC_CLK_RATIO_25X)
+-#define V_MC_CLK_RATIO_3X           V_MC_CLK_RATIO(K_MC_CLK_RATIO_3X)
+-#define V_MC_CLK_RATIO_35X          V_MC_CLK_RATIO(K_MC_CLK_RATIO_35X)
+-#define V_MC_CLK_RATIO_4X           V_MC_CLK_RATIO(K_MC_CLK_RATIO_4X)
+-#define V_MC_CLK_RATIO_45X          V_MC_CLK_RATIO(K_MC_CLK_RATIO_45X)
+-#define V_MC_CLK_RATIO_DEFAULT      V_MC_CLK_RATIO_25X
+-
+-#define S_MC_REF_RATE                8
+-#define M_MC_REF_RATE                _SB_MAKEMASK(8, S_MC_REF_RATE)
+-#define V_MC_REF_RATE(x)             _SB_MAKEVALUE(x, S_MC_REF_RATE)
+-#define G_MC_REF_RATE(x)             _SB_GETVALUE(x, S_MC_REF_RATE, M_MC_REF_RATE)
+-
+-#define K_MC_REF_RATE_100MHz         0x62
+-#define K_MC_REF_RATE_133MHz         0x81
+-#define K_MC_REF_RATE_200MHz         0xC4
+-
+-#define V_MC_REF_RATE_100MHz         V_MC_REF_RATE(K_MC_REF_RATE_100MHz)
+-#define V_MC_REF_RATE_133MHz         V_MC_REF_RATE(K_MC_REF_RATE_133MHz)
+-#define V_MC_REF_RATE_200MHz         V_MC_REF_RATE(K_MC_REF_RATE_200MHz)
+-#define V_MC_REF_RATE_DEFAULT        V_MC_REF_RATE_100MHz
+-
+-#define S_MC_CLOCK_DRIVE             16
+-#define M_MC_CLOCK_DRIVE             _SB_MAKEMASK(4, S_MC_CLOCK_DRIVE)
+-#define V_MC_CLOCK_DRIVE(x)          _SB_MAKEVALUE(x, S_MC_CLOCK_DRIVE)
+-#define G_MC_CLOCK_DRIVE(x)          _SB_GETVALUE(x, S_MC_CLOCK_DRIVE, M_MC_CLOCK_DRIVE)
+-#define V_MC_CLOCK_DRIVE_DEFAULT     V_MC_CLOCK_DRIVE(0xF)
+-
+-#define S_MC_DATA_DRIVE              20
+-#define M_MC_DATA_DRIVE              _SB_MAKEMASK(4, S_MC_DATA_DRIVE)
+-#define V_MC_DATA_DRIVE(x)           _SB_MAKEVALUE(x, S_MC_DATA_DRIVE)
+-#define G_MC_DATA_DRIVE(x)           _SB_GETVALUE(x, S_MC_DATA_DRIVE, M_MC_DATA_DRIVE)
+-#define V_MC_DATA_DRIVE_DEFAULT      V_MC_DATA_DRIVE(0x0)
+-
+-#define S_MC_ADDR_DRIVE              24
+-#define M_MC_ADDR_DRIVE              _SB_MAKEMASK(4, S_MC_ADDR_DRIVE)
+-#define V_MC_ADDR_DRIVE(x)           _SB_MAKEVALUE(x, S_MC_ADDR_DRIVE)
+-#define G_MC_ADDR_DRIVE(x)           _SB_GETVALUE(x, S_MC_ADDR_DRIVE, M_MC_ADDR_DRIVE)
+-#define V_MC_ADDR_DRIVE_DEFAULT      V_MC_ADDR_DRIVE(0x0)
+-
+-#if SIBYTE_HDR_FEATURE(1250, PASS3) || SIBYTE_HDR_FEATURE(112x, PASS1)
+-#define M_MC_REF_DISABLE             _SB_MAKEMASK1(30)
+-#endif /* 1250 PASS3 || 112x PASS1 */
+-
+-#define M_MC_DLL_BYPASS              _SB_MAKEMASK1(31)
+-
+-#define S_MC_DQI_SKEW               32
+-#define M_MC_DQI_SKEW               _SB_MAKEMASK(8, S_MC_DQI_SKEW)
+-#define V_MC_DQI_SKEW(x)            _SB_MAKEVALUE(x, S_MC_DQI_SKEW)
+-#define G_MC_DQI_SKEW(x)            _SB_GETVALUE(x, S_MC_DQI_SKEW, M_MC_DQI_SKEW)
+-#define V_MC_DQI_SKEW_DEFAULT       V_MC_DQI_SKEW(0)
+-
+-#define S_MC_DQO_SKEW               40
+-#define M_MC_DQO_SKEW               _SB_MAKEMASK(8, S_MC_DQO_SKEW)
+-#define V_MC_DQO_SKEW(x)            _SB_MAKEVALUE(x, S_MC_DQO_SKEW)
+-#define G_MC_DQO_SKEW(x)            _SB_GETVALUE(x, S_MC_DQO_SKEW, M_MC_DQO_SKEW)
+-#define V_MC_DQO_SKEW_DEFAULT       V_MC_DQO_SKEW(0)
+-
+-#define S_MC_ADDR_SKEW               48
+-#define M_MC_ADDR_SKEW               _SB_MAKEMASK(8, S_MC_ADDR_SKEW)
+-#define V_MC_ADDR_SKEW(x)            _SB_MAKEVALUE(x, S_MC_ADDR_SKEW)
+-#define G_MC_ADDR_SKEW(x)            _SB_GETVALUE(x, S_MC_ADDR_SKEW, M_MC_ADDR_SKEW)
+-#define V_MC_ADDR_SKEW_DEFAULT       V_MC_ADDR_SKEW(0x0F)
+-
+-#define S_MC_DLL_DEFAULT             56
+-#define M_MC_DLL_DEFAULT             _SB_MAKEMASK(8, S_MC_DLL_DEFAULT)
+-#define V_MC_DLL_DEFAULT(x)          _SB_MAKEVALUE(x, S_MC_DLL_DEFAULT)
+-#define G_MC_DLL_DEFAULT(x)          _SB_GETVALUE(x, S_MC_DLL_DEFAULT, M_MC_DLL_DEFAULT)
+-#define V_MC_DLL_DEFAULT_DEFAULT     V_MC_DLL_DEFAULT(0x10)
+-
+-#define V_MC_CLKCONFIG_DEFAULT       V_MC_DLL_DEFAULT_DEFAULT |  \
+-                                     V_MC_ADDR_SKEW_DEFAULT | \
+-                                     V_MC_DQO_SKEW_DEFAULT | \
+-                                     V_MC_DQI_SKEW_DEFAULT | \
+-                                     V_MC_ADDR_DRIVE_DEFAULT | \
+-                                     V_MC_DATA_DRIVE_DEFAULT | \
+-                                     V_MC_CLOCK_DRIVE_DEFAULT | \
+-                                     V_MC_REF_RATE_DEFAULT
+-
+-
+-
+-/*
+- * DRAM Command Register (Table 6-13)
+- */
+-
+-#define S_MC_COMMAND                0
+-#define M_MC_COMMAND                _SB_MAKEMASK(4, S_MC_COMMAND)
+-#define V_MC_COMMAND(x)             _SB_MAKEVALUE(x, S_MC_COMMAND)
+-#define G_MC_COMMAND(x)             _SB_GETVALUE(x, S_MC_COMMAND, M_MC_COMMAND)
+-
+-#define K_MC_COMMAND_EMRS           0
+-#define K_MC_COMMAND_MRS            1
+-#define K_MC_COMMAND_PRE            2
+-#define K_MC_COMMAND_AR             3
+-#define K_MC_COMMAND_SETRFSH        4
+-#define K_MC_COMMAND_CLRRFSH        5
+-#define K_MC_COMMAND_SETPWRDN       6
+-#define K_MC_COMMAND_CLRPWRDN       7
+-
+-#define V_MC_COMMAND_EMRS           V_MC_COMMAND(K_MC_COMMAND_EMRS)
+-#define V_MC_COMMAND_MRS            V_MC_COMMAND(K_MC_COMMAND_MRS)
+-#define V_MC_COMMAND_PRE            V_MC_COMMAND(K_MC_COMMAND_PRE)
+-#define V_MC_COMMAND_AR             V_MC_COMMAND(K_MC_COMMAND_AR)
+-#define V_MC_COMMAND_SETRFSH        V_MC_COMMAND(K_MC_COMMAND_SETRFSH)
+-#define V_MC_COMMAND_CLRRFSH        V_MC_COMMAND(K_MC_COMMAND_CLRRFSH)
+-#define V_MC_COMMAND_SETPWRDN       V_MC_COMMAND(K_MC_COMMAND_SETPWRDN)
+-#define V_MC_COMMAND_CLRPWRDN       V_MC_COMMAND(K_MC_COMMAND_CLRPWRDN)
+-
+-#define M_MC_CS0                    _SB_MAKEMASK1(4)
+-#define M_MC_CS1                    _SB_MAKEMASK1(5)
+-#define M_MC_CS2                    _SB_MAKEMASK1(6)
+-#define M_MC_CS3                    _SB_MAKEMASK1(7)
+-
+-/*
+- * DRAM Mode Register (Table 6-14)
+- */
+-
+-#define S_MC_EMODE                  0
+-#define M_MC_EMODE                  _SB_MAKEMASK(15, S_MC_EMODE)
+-#define V_MC_EMODE(x)               _SB_MAKEVALUE(x, S_MC_EMODE)
+-#define G_MC_EMODE(x)               _SB_GETVALUE(x, S_MC_EMODE, M_MC_EMODE)
+-#define V_MC_EMODE_DEFAULT          V_MC_EMODE(0)
+-
+-#define S_MC_MODE                   16
+-#define M_MC_MODE                   _SB_MAKEMASK(15, S_MC_MODE)
+-#define V_MC_MODE(x)                _SB_MAKEVALUE(x, S_MC_MODE)
+-#define G_MC_MODE(x)                _SB_GETVALUE(x, S_MC_MODE, M_MC_MODE)
+-#define V_MC_MODE_DEFAULT           V_MC_MODE(0x22)
+-
+-#define S_MC_DRAM_TYPE              32
+-#define M_MC_DRAM_TYPE              _SB_MAKEMASK(3, S_MC_DRAM_TYPE)
+-#define V_MC_DRAM_TYPE(x)           _SB_MAKEVALUE(x, S_MC_DRAM_TYPE)
+-#define G_MC_DRAM_TYPE(x)           _SB_GETVALUE(x, S_MC_DRAM_TYPE, M_MC_DRAM_TYPE)
+-
+-#define K_MC_DRAM_TYPE_JEDEC        0
+-#define K_MC_DRAM_TYPE_FCRAM        1
+-#define K_MC_DRAM_TYPE_SGRAM	    2
+-
+-#define V_MC_DRAM_TYPE_JEDEC        V_MC_DRAM_TYPE(K_MC_DRAM_TYPE_JEDEC)
+-#define V_MC_DRAM_TYPE_FCRAM        V_MC_DRAM_TYPE(K_MC_DRAM_TYPE_FCRAM)
+-#define V_MC_DRAM_TYPE_SGRAM        V_MC_DRAM_TYPE(K_MC_DRAM_TYPE_SGRAM)
+-
+-#define M_MC_EXTERNALDECODE	    _SB_MAKEMASK1(35)
+-
+-#if SIBYTE_HDR_FEATURE(1250, PASS3) || SIBYTE_HDR_FEATURE(112x, PASS1)
+-#define M_MC_PRE_ON_A8              _SB_MAKEMASK1(36)
+-#define M_MC_RAM_WITH_A13           _SB_MAKEMASK1(37)
+-#endif /* 1250 PASS3 || 112x PASS1 */
+-
+-
+-
+-/*
+- * SDRAM Timing Register  (Table 6-15)
+- */
+-
+-#define M_MC_w2rIDLE_TWOCYCLES	  _SB_MAKEMASK1(60)
+-#define M_MC_r2wIDLE_TWOCYCLES	  _SB_MAKEMASK1(61)
+-#define M_MC_r2rIDLE_TWOCYCLES	  _SB_MAKEMASK1(62)
+-
+-#define S_MC_tFIFO                56
+-#define M_MC_tFIFO                _SB_MAKEMASK(4, S_MC_tFIFO)
+-#define V_MC_tFIFO(x)             _SB_MAKEVALUE(x, S_MC_tFIFO)
+-#define G_MC_tFIFO(x)             _SB_GETVALUE(x, S_MC_tFIFO, M_MC_tFIFO)
+-#define K_MC_tFIFO_DEFAULT        1
+-#define V_MC_tFIFO_DEFAULT        V_MC_tFIFO(K_MC_tFIFO_DEFAULT)
+-
+-#define S_MC_tRFC                 52
+-#define M_MC_tRFC                 _SB_MAKEMASK(4, S_MC_tRFC)
+-#define V_MC_tRFC(x)              _SB_MAKEVALUE(x, S_MC_tRFC)
+-#define G_MC_tRFC(x)              _SB_GETVALUE(x, S_MC_tRFC, M_MC_tRFC)
+-#define K_MC_tRFC_DEFAULT         12
+-#define V_MC_tRFC_DEFAULT         V_MC_tRFC(K_MC_tRFC_DEFAULT)
+-
+-#if SIBYTE_HDR_FEATURE(1250, PASS3)
+-#define M_MC_tRFC_PLUS16          _SB_MAKEMASK1(51)	/* 1250C3 and later.  */
+-#endif
+-
+-#define S_MC_tCwCr                40
+-#define M_MC_tCwCr                _SB_MAKEMASK(4, S_MC_tCwCr)
+-#define V_MC_tCwCr(x)             _SB_MAKEVALUE(x, S_MC_tCwCr)
+-#define G_MC_tCwCr(x)             _SB_GETVALUE(x, S_MC_tCwCr, M_MC_tCwCr)
+-#define K_MC_tCwCr_DEFAULT        4
+-#define V_MC_tCwCr_DEFAULT        V_MC_tCwCr(K_MC_tCwCr_DEFAULT)
+-
+-#define S_MC_tRCr                 28
+-#define M_MC_tRCr                 _SB_MAKEMASK(4, S_MC_tRCr)
+-#define V_MC_tRCr(x)              _SB_MAKEVALUE(x, S_MC_tRCr)
+-#define G_MC_tRCr(x)              _SB_GETVALUE(x, S_MC_tRCr, M_MC_tRCr)
+-#define K_MC_tRCr_DEFAULT         9
+-#define V_MC_tRCr_DEFAULT         V_MC_tRCr(K_MC_tRCr_DEFAULT)
+-
+-#define S_MC_tRCw                 24
+-#define M_MC_tRCw                 _SB_MAKEMASK(4, S_MC_tRCw)
+-#define V_MC_tRCw(x)              _SB_MAKEVALUE(x, S_MC_tRCw)
+-#define G_MC_tRCw(x)              _SB_GETVALUE(x, S_MC_tRCw, M_MC_tRCw)
+-#define K_MC_tRCw_DEFAULT         10
+-#define V_MC_tRCw_DEFAULT         V_MC_tRCw(K_MC_tRCw_DEFAULT)
+-
+-#define S_MC_tRRD                 20
+-#define M_MC_tRRD                 _SB_MAKEMASK(4, S_MC_tRRD)
+-#define V_MC_tRRD(x)              _SB_MAKEVALUE(x, S_MC_tRRD)
+-#define G_MC_tRRD(x)              _SB_GETVALUE(x, S_MC_tRRD, M_MC_tRRD)
+-#define K_MC_tRRD_DEFAULT         2
+-#define V_MC_tRRD_DEFAULT         V_MC_tRRD(K_MC_tRRD_DEFAULT)
+-
+-#define S_MC_tRP                  16
+-#define M_MC_tRP                  _SB_MAKEMASK(4, S_MC_tRP)
+-#define V_MC_tRP(x)               _SB_MAKEVALUE(x, S_MC_tRP)
+-#define G_MC_tRP(x)               _SB_GETVALUE(x, S_MC_tRP, M_MC_tRP)
+-#define K_MC_tRP_DEFAULT          4
+-#define V_MC_tRP_DEFAULT          V_MC_tRP(K_MC_tRP_DEFAULT)
+-
+-#define S_MC_tCwD                 8
+-#define M_MC_tCwD                 _SB_MAKEMASK(4, S_MC_tCwD)
+-#define V_MC_tCwD(x)              _SB_MAKEVALUE(x, S_MC_tCwD)
+-#define G_MC_tCwD(x)              _SB_GETVALUE(x, S_MC_tCwD, M_MC_tCwD)
+-#define K_MC_tCwD_DEFAULT         1
+-#define V_MC_tCwD_DEFAULT         V_MC_tCwD(K_MC_tCwD_DEFAULT)
+-
+-#define M_tCrDh                   _SB_MAKEMASK1(7)
+-#define M_MC_tCrDh		  M_tCrDh
+-
+-#define S_MC_tCrD                 4
+-#define M_MC_tCrD                 _SB_MAKEMASK(3, S_MC_tCrD)
+-#define V_MC_tCrD(x)              _SB_MAKEVALUE(x, S_MC_tCrD)
+-#define G_MC_tCrD(x)              _SB_GETVALUE(x, S_MC_tCrD, M_MC_tCrD)
+-#define K_MC_tCrD_DEFAULT         2
+-#define V_MC_tCrD_DEFAULT         V_MC_tCrD(K_MC_tCrD_DEFAULT)
+-
+-#define S_MC_tRCD                 0
+-#define M_MC_tRCD                 _SB_MAKEMASK(4, S_MC_tRCD)
+-#define V_MC_tRCD(x)              _SB_MAKEVALUE(x, S_MC_tRCD)
+-#define G_MC_tRCD(x)              _SB_GETVALUE(x, S_MC_tRCD, M_MC_tRCD)
+-#define K_MC_tRCD_DEFAULT         3
+-#define V_MC_tRCD_DEFAULT         V_MC_tRCD(K_MC_tRCD_DEFAULT)
+-
+-#define V_MC_TIMING_DEFAULT     V_MC_tFIFO(K_MC_tFIFO_DEFAULT) | \
+-                                V_MC_tRFC(K_MC_tRFC_DEFAULT) | \
+-                                V_MC_tCwCr(K_MC_tCwCr_DEFAULT) | \
+-                                V_MC_tRCr(K_MC_tRCr_DEFAULT) | \
+-                                V_MC_tRCw(K_MC_tRCw_DEFAULT) | \
+-                                V_MC_tRRD(K_MC_tRRD_DEFAULT) | \
+-                                V_MC_tRP(K_MC_tRP_DEFAULT) | \
+-                                V_MC_tCwD(K_MC_tCwD_DEFAULT) | \
+-                                V_MC_tCrD(K_MC_tCrD_DEFAULT) | \
+-                                V_MC_tRCD(K_MC_tRCD_DEFAULT) | \
+-                                M_MC_r2rIDLE_TWOCYCLES
+-
+-/*
+- * Errata says these are not the default
+- *                               M_MC_w2rIDLE_TWOCYCLES | \
+- *                               M_MC_r2wIDLE_TWOCYCLES | \
+- */
+-
+-
+-/*
+- * Chip Select Start Address Register (Table 6-17)
+- */
+-
+-#define S_MC_CS0_START              0
+-#define M_MC_CS0_START              _SB_MAKEMASK(16, S_MC_CS0_START)
+-#define V_MC_CS0_START(x)           _SB_MAKEVALUE(x, S_MC_CS0_START)
+-#define G_MC_CS0_START(x)           _SB_GETVALUE(x, S_MC_CS0_START, M_MC_CS0_START)
+-
+-#define S_MC_CS1_START              16
+-#define M_MC_CS1_START              _SB_MAKEMASK(16, S_MC_CS1_START)
+-#define V_MC_CS1_START(x)           _SB_MAKEVALUE(x, S_MC_CS1_START)
+-#define G_MC_CS1_START(x)           _SB_GETVALUE(x, S_MC_CS1_START, M_MC_CS1_START)
+-
+-#define S_MC_CS2_START              32
+-#define M_MC_CS2_START              _SB_MAKEMASK(16, S_MC_CS2_START)
+-#define V_MC_CS2_START(x)           _SB_MAKEVALUE(x, S_MC_CS2_START)
+-#define G_MC_CS2_START(x)           _SB_GETVALUE(x, S_MC_CS2_START, M_MC_CS2_START)
+-
+-#define S_MC_CS3_START              48
+-#define M_MC_CS3_START              _SB_MAKEMASK(16, S_MC_CS3_START)
+-#define V_MC_CS3_START(x)           _SB_MAKEVALUE(x, S_MC_CS3_START)
+-#define G_MC_CS3_START(x)           _SB_GETVALUE(x, S_MC_CS3_START, M_MC_CS3_START)
+-
+-/*
+- * Chip Select End Address Register (Table 6-18)
+- */
+-
+-#define S_MC_CS0_END                0
+-#define M_MC_CS0_END                _SB_MAKEMASK(16, S_MC_CS0_END)
+-#define V_MC_CS0_END(x)             _SB_MAKEVALUE(x, S_MC_CS0_END)
+-#define G_MC_CS0_END(x)             _SB_GETVALUE(x, S_MC_CS0_END, M_MC_CS0_END)
+-
+-#define S_MC_CS1_END                16
+-#define M_MC_CS1_END                _SB_MAKEMASK(16, S_MC_CS1_END)
+-#define V_MC_CS1_END(x)             _SB_MAKEVALUE(x, S_MC_CS1_END)
+-#define G_MC_CS1_END(x)             _SB_GETVALUE(x, S_MC_CS1_END, M_MC_CS1_END)
+-
+-#define S_MC_CS2_END                32
+-#define M_MC_CS2_END                _SB_MAKEMASK(16, S_MC_CS2_END)
+-#define V_MC_CS2_END(x)             _SB_MAKEVALUE(x, S_MC_CS2_END)
+-#define G_MC_CS2_END(x)             _SB_GETVALUE(x, S_MC_CS2_END, M_MC_CS2_END)
+-
+-#define S_MC_CS3_END                48
+-#define M_MC_CS3_END                _SB_MAKEMASK(16, S_MC_CS3_END)
+-#define V_MC_CS3_END(x)             _SB_MAKEVALUE(x, S_MC_CS3_END)
+-#define G_MC_CS3_END(x)             _SB_GETVALUE(x, S_MC_CS3_END, M_MC_CS3_END)
+-
+-/*
+- * Chip Select Interleave Register (Table 6-19)
+- */
+-
+-#define S_MC_INTLV_RESERVED         0
+-#define M_MC_INTLV_RESERVED         _SB_MAKEMASK(5, S_MC_INTLV_RESERVED)
+-
+-#define S_MC_INTERLEAVE             7
+-#define M_MC_INTERLEAVE             _SB_MAKEMASK(18, S_MC_INTERLEAVE)
+-#define V_MC_INTERLEAVE(x)          _SB_MAKEVALUE(x, S_MC_INTERLEAVE)
+-
+-#define S_MC_INTLV_MBZ              25
+-#define M_MC_INTLV_MBZ              _SB_MAKEMASK(39, S_MC_INTLV_MBZ)
+-
+-/*
+- * Row Address Bits Register (Table 6-20)
+- */
+-
+-#define S_MC_RAS_RESERVED           0
+-#define M_MC_RAS_RESERVED           _SB_MAKEMASK(5, S_MC_RAS_RESERVED)
+-
+-#define S_MC_RAS_SELECT             12
+-#define M_MC_RAS_SELECT             _SB_MAKEMASK(25, S_MC_RAS_SELECT)
+-#define V_MC_RAS_SELECT(x)          _SB_MAKEVALUE(x, S_MC_RAS_SELECT)
+-
+-#define S_MC_RAS_MBZ                37
+-#define M_MC_RAS_MBZ                _SB_MAKEMASK(27, S_MC_RAS_MBZ)
+-
+-
+-/*
+- * Column Address Bits Register (Table 6-21)
+- */
+-
+-#define S_MC_CAS_RESERVED           0
+-#define M_MC_CAS_RESERVED           _SB_MAKEMASK(5, S_MC_CAS_RESERVED)
+-
+-#define S_MC_CAS_SELECT             5
+-#define M_MC_CAS_SELECT             _SB_MAKEMASK(18, S_MC_CAS_SELECT)
+-#define V_MC_CAS_SELECT(x)          _SB_MAKEVALUE(x, S_MC_CAS_SELECT)
+-
+-#define S_MC_CAS_MBZ                23
+-#define M_MC_CAS_MBZ                _SB_MAKEMASK(41, S_MC_CAS_MBZ)
+-
+-
+-/*
+- * Bank Address Address Bits Register (Table 6-22)
+- */
+-
+-#define S_MC_BA_RESERVED            0
+-#define M_MC_BA_RESERVED            _SB_MAKEMASK(5, S_MC_BA_RESERVED)
+-
+-#define S_MC_BA_SELECT              5
+-#define M_MC_BA_SELECT              _SB_MAKEMASK(20, S_MC_BA_SELECT)
+-#define V_MC_BA_SELECT(x)           _SB_MAKEVALUE(x, S_MC_BA_SELECT)
+-
+-#define S_MC_BA_MBZ                 25
+-#define M_MC_BA_MBZ                 _SB_MAKEMASK(39, S_MC_BA_MBZ)
+-
+-/*
+- * Chip Select Attribute Register (Table 6-23)
+- */
+-
+-#define K_MC_CS_ATTR_CLOSED         0
+-#define K_MC_CS_ATTR_CASCHECK       1
+-#define K_MC_CS_ATTR_HINT           2
+-#define K_MC_CS_ATTR_OPEN           3
+-
+-#define S_MC_CS0_PAGE               0
+-#define M_MC_CS0_PAGE               _SB_MAKEMASK(2, S_MC_CS0_PAGE)
+-#define V_MC_CS0_PAGE(x)            _SB_MAKEVALUE(x, S_MC_CS0_PAGE)
+-#define G_MC_CS0_PAGE(x)            _SB_GETVALUE(x, S_MC_CS0_PAGE, M_MC_CS0_PAGE)
+-
+-#define S_MC_CS1_PAGE               16
+-#define M_MC_CS1_PAGE               _SB_MAKEMASK(2, S_MC_CS1_PAGE)
+-#define V_MC_CS1_PAGE(x)            _SB_MAKEVALUE(x, S_MC_CS1_PAGE)
+-#define G_MC_CS1_PAGE(x)            _SB_GETVALUE(x, S_MC_CS1_PAGE, M_MC_CS1_PAGE)
+-
+-#define S_MC_CS2_PAGE               32
+-#define M_MC_CS2_PAGE               _SB_MAKEMASK(2, S_MC_CS2_PAGE)
+-#define V_MC_CS2_PAGE(x)            _SB_MAKEVALUE(x, S_MC_CS2_PAGE)
+-#define G_MC_CS2_PAGE(x)            _SB_GETVALUE(x, S_MC_CS2_PAGE, M_MC_CS2_PAGE)
+-
+-#define S_MC_CS3_PAGE               48
+-#define M_MC_CS3_PAGE               _SB_MAKEMASK(2, S_MC_CS3_PAGE)
+-#define V_MC_CS3_PAGE(x)            _SB_MAKEVALUE(x, S_MC_CS3_PAGE)
+-#define G_MC_CS3_PAGE(x)            _SB_GETVALUE(x, S_MC_CS3_PAGE, M_MC_CS3_PAGE)
+-
+-/*
+- * ECC Test ECC Register (Table 6-25)
+- */
+-
+-#define S_MC_ECC_INVERT             0
+-#define M_MC_ECC_INVERT             _SB_MAKEMASK(8, S_MC_ECC_INVERT)
+-
+-
+-#endif
+-- 
+1.7.7.6
 
