@@ -1,59 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753348Ab2FLN3z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 09:29:55 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45958 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753275Ab2FLN3x (ORCPT
+	id S1752105Ab2FLNkZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 09:40:25 -0400
+Received: from www.linutronix.de ([62.245.132.108]:43916 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750987Ab2FLNkX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 09:29:53 -0400
-Message-ID: <4FD74447.2090906@redhat.com>
-Date: Tue, 12 Jun 2012 15:29:43 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: Wen Congyang <wency@cn.fujitsu.com>
-CC: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
+	Tue, 12 Jun 2012 09:40:23 -0400
+Date: Tue, 12 Jun 2012 15:40:13 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Sasha Levin <levinsasha928@gmail.com>
+cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        paulmck <paulmck@linux.vnet.ibm.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Avi Kivity <avi@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
-Subject: Re: [PATCH 3/3] deal with guest panicked event
-References: <4FB9E4CE.8060709@cn.fujitsu.com> <4FB9E5CB.2020208@cn.fujitsu.com>
-In-Reply-To: <4FB9E5CB.2020208@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        Dave Jones <davej@redhat.com>
+Subject: Re: rcu,sched: spinlock recursion on 3.5-rc2
+In-Reply-To: <1339500907.4999.99.camel@lappy>
+Message-ID: <alpine.LFD.2.02.1206121535180.3086@ionos>
+References: <1339500907.4999.99.camel@lappy>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 21/05/2012 08:50, Wen Congyang ha scritto:
-> +DEF("onpanic", HAS_ARG, QEMU_OPTION_onpanic, \
-> +    "-onpanic report|pause|quit\n" \
-> +    "                action when the guest is panicked [default=report]",
-> +    QEMU_ARCH_ALL)
-> +STEXI
-> +@item -onpanic @var{action}
-> +
-> +The @var{action} controls what QEmu will do when the guest is panicked.
-> +The default is @code{report} (emit QEVENT_GUEST_PANICKED only).
+On Tue, 12 Jun 2012, Sasha Levin wrote:
 
--watchdog-action just calls this "none".
+> Hey all,
+> 
+> I've got the following splat while fuzzing with trinity in a KVM tools guest on 3.5-rc2:
+> 
+> [ 8110.274070] BUG: spinlock recursion on CPU#0, rcu_torture_rea/2658
+> [ 8110.275014]  lock: 0xffff88000d9d6140, .magic: dead4ead, .owner: rcu_torture_rea/2658, .owner_cpu: 0
+> [ 8110.275014] Pid: 2658, comm: rcu_torture_rea Tainted: G        W    3.5.0-rc2-sasha-00019-gbd68491 #376
+> [ 8110.275014] Call Trace:
+> [ 8110.275014]  [<ffffffff8197de38>] spin_dump+0x78/0xc0
+> [ 8110.275014]  [<ffffffff8197deab>] spin_bug+0x2b/0x40
+> [ 8110.275014]  [<ffffffff8197dfee>] do_raw_spin_lock+0x4e/0x140
+> [ 8110.275014]  [<ffffffff837c0b2b>] _raw_spin_lock+0x5b/0x70
+> [ 8110.275014]  [<ffffffff8111d051>] ? rt_mutex_setprio+0x81/0x2c0
+> [ 8110.275014]  [<ffffffff8111d051>] rt_mutex_setprio+0x81/0x2c0
+> [ 8110.275014]  [<ffffffff81155160>] __rt_mutex_adjust_prio+0x20/0x30
+> [ 8110.275014]  [<ffffffff837c0164>] rt_mutex_slowunlock+0x104/0x130
+> [ 8110.275014]  [<ffffffff837c0199>] rt_mutex_unlock+0x9/0x10
+> [ 8110.275014]  [<ffffffff81193e30>] rcu_read_unlock_special+0x350/0x400
+> [ 8110.275014]  [<ffffffff8114841a>] ? get_lock_stats+0x2a/0x60
+> [ 8110.275014]  [<ffffffff811941aa>] rcu_preempt_note_context_switch+0x22a/0x300
+> [ 8110.275014]  [<ffffffff837bf8ca>] __schedule+0x76a/0x880
+> [ 8110.275014]  [<ffffffff837c1c74>] ? retint_restore_args+0x13/0x13
+> [ 8110.275014]  [<ffffffff8118dc20>] ? rcu_torture_read_unlock+0x40/0x60
+> [ 8110.275014]  [<ffffffff837bff64>] preempt_schedule_irq+0x94/0xd0
+> [ 8110.275014]  [<ffffffff837c1da6>] retint_kernel+0x26/0x30
+> [ 8110.275014]  [<ffffffff81193ae1>] ? rcu_read_unlock_special+0x1/0x400
+> [ 8110.275014]  [<ffffffff81193f2d>] ? __rcu_read_unlock+0x4d/0xa0
+> [ 8110.275014]  [<ffffffff8118dc3d>] rcu_torture_read_unlock+0x5d/0x60
+> [ 8110.275014]  [<ffffffff8118dedd>] rcu_torture_reader+0x29d/0x380
+> [ 8110.275014]  [<ffffffff8118ca50>] ? T.865+0x50/0x50
+> [ 8110.275014]  [<ffffffff8118dc40>] ? rcu_torture_read_unlock+0x60/0x60
+> [ 8110.275014]  [<ffffffff81106e32>] kthread+0xb2/0xc0
+> [ 8110.275014]  [<ffffffff837c39f4>] kernel_thread_helper+0x4/0x10
+> [ 8110.275014]  [<ffffffff837c1c74>] ? retint_restore_args+0x13/0x13
+> [ 8110.275014]  [<ffffffff81106d80>] ? __init_kthread_worker+0x70/0x70
+> [ 8110.275014]  [<ffffffff837c39f0>] ? gs_change+0x13/0x13
 
-> +Other possible actions are:
-> +@code{pause} (emit QEVENT_GUEST_PANICKED and pause VM),
-> +@code{quit} (emit QEVENT_GUEST_PANICKED and quit VM).
+Ok, that's nasty.
 
-Rather than just "quit", there should be choices for "shutdown",
-"poweroff" and "reset" for consistency with -watchdog-action.
+The torture thread got preempted. rcu_preempt_note_context_switch()
+tries to unlock the boosting rt mutex.
 
-Also, this option should also be accessible from "-machine", please.
+Though rcu_preempt_note_context_switch() is called with rq lock
+held. So it's not a surprise that the code will dead lock.
 
-Paolo
+My brain hurts already from looking, so Paul to the rescue!
 
-> +ETEXI
-> +
->  HXCOMM This is the last statement. Insert new options before this line!
->  STEXI
->  @end table
+Thanks,
+
+	tglx
+
+
