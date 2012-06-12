@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754234Ab2FLVPW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 17:15:22 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45931 "EHLO mail.zytor.com"
+	id S1754288Ab2FLVQg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 17:16:36 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45940 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752720Ab2FLVPV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 17:15:21 -0400
-Message-ID: <4FD7B15F.1050108@zytor.com>
-Date: Tue, 12 Jun 2012 14:15:11 -0700
+	id S1752720Ab2FLVQf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 17:16:35 -0400
+Message-ID: <4FD7B1AB.6030708@zytor.com>
+Date: Tue, 12 Jun 2012 14:16:27 -0700
 From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
@@ -38,7 +38,9 @@ On 06/12/2012 02:14 PM, Brandon Falk wrote:
 > that for me.
 > 
 
-The kernel doesn't load anything, that is the boot loader's job.
+I would also strongly discourage you from writing a new bootloader if
+you can avoid it.  You *certainly* want to avoid the use of the fixed
+0x90000 address, that is a decade obsolete.
 
 	-hpa
 
