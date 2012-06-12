@@ -1,50 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754053Ab2FLTMa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 15:12:30 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:37681 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751498Ab2FLTM2 (ORCPT
+	id S1753913Ab2FLTOA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 15:14:00 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:61673 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751498Ab2FLTN6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 15:12:28 -0400
-From: Sasha Levin <levinsasha928@gmail.com>
-To: johannes.berg@intel.com, wey-yi.w.guy@intel.com, linville@tuxdriver.com
-Cc: ilw@linux.intel.com, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: [PATCH] iwlwifi: re-order module_init order to prevent NULL ptr deref
-Date: Tue, 12 Jun 2012 21:13:32 +0200
-Message-Id: <1339528412-4163-1-git-send-email-levinsasha928@gmail.com>
-X-Mailer: git-send-email 1.7.8.6
+	Tue, 12 Jun 2012 15:13:58 -0400
+Message-ID: <4FD794F2.2080000@redhat.com>
+Date: Tue, 12 Jun 2012 21:13:54 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+MIME-Version: 1.0
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: linux-kernel@vger.kernel.org, axboe@kernel.dk, linux-scsi@vger.kernel.org,
+        jbottomley@parallels.com, Al Viro <viro@ZenIV.linux.org.uk>
+Subject: Re: Can we pass a file handle down to the block ioctls to implement
+ per file filters on scsi SG_IO ?
+References: <1339517312-18134-1-git-send-email-pbonzini@redhat.com> <20120612175503.3462962f@pyramind.ukuu.org.uk> <4FD777A5.9050001@redhat.com> <20120612195200.2a1b6129@pyramind.ukuu.org.uk>
+In-Reply-To: <20120612195200.2a1b6129@pyramind.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need to make sure iwl_drv_init is called before iwl_init, since otherwise
-iwl_init will NULL ptr deref when trying to add a new mode.
+Il 12/06/2012 20:52, Alan Cox ha scritto:
+> > Sure; however, doing so requires access to some member of "struct file"
+> > from SG_IO.  Thus, ioctl would need to take a "struct file" rather than
+> > just an fmode_t.
+> > 
+> > The switch to fmode_t was done in 2007 by Al Viro.  I would like to
+> > understand the reasons for the switch; it seems to me that it was part
+> > of the big kernel lock removal.  If it's acceptable to undo it, I would
+> > very much would like to add generic BPF filtering to SG_IO
+> 
+> That would solve all sorts of problems in this area, so lets ping the man
+> himself -  Al ?
 
-Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
----
- drivers/net/wireless/iwlwifi/Makefile |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+(Even if he says no, we could probably use cgroups instead).
 
-diff --git a/drivers/net/wireless/iwlwifi/Makefile b/drivers/net/wireless/iwlwifi/Makefile
-index 98c8f64..16e39a4 100644
---- a/drivers/net/wireless/iwlwifi/Makefile
-+++ b/drivers/net/wireless/iwlwifi/Makefile
-@@ -1,5 +1,3 @@
--obj-$(CONFIG_IWLDVM)	+= dvm/
--
- CFLAGS_iwl-devtrace.o := -I$(src)
- 
- # common
-@@ -14,4 +12,6 @@ iwlwifi-objs		+= pcie/1000.o pcie/2000.o pcie/5000.o pcie/6000.o
- 
- iwlwifi-$(CONFIG_IWLWIFI_DEVICE_TRACING) += iwl-devtrace.o
- 
-+obj-$(CONFIG_IWLDVM)    += dvm/
-+
- ccflags-y += -D__CHECK_ENDIAN__ -I$(src)
--- 
-1.7.8.6
-
+Paolo
