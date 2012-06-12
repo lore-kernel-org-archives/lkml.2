@@ -1,194 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752027Ab2FLHds (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 03:33:48 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:47616 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751871Ab2FLHdr (ORCPT
+	id S1752093Ab2FLHeI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 03:34:08 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:36180 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751802Ab2FLHeE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 03:33:47 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FD6F05D.5010404@jp.fujitsu.com>
-Date: Tue, 12 Jun 2012 16:31:41 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Tue, 12 Jun 2012 03:34:04 -0400
+Message-ID: <4FD6F0E8.5040606@linaro.org>
+Date: Tue, 12 Jun 2012 08:34:00 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-CC: linux-mm@kvack.org, dhillf@gmail.com, rientjes@google.com, mhocko@suse.cz,
-        akpm@linux-foundation.org, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH -V8 06/16] hugetlb: simplify migrate_huge_page()
-References: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1339232401-14392-7-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-In-Reply-To: <1339232401-14392-7-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, arnd@arndb.de, grant.likely@secretlab.ca,
+        linux-i2c@vger.kernel.org
+Subject: Re: [PATCH 09/14] i2c: Add Device Tree support to the Nomadik I2C
+ driver
+References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org> <1339428307-3850-10-git-send-email-lee.jones@linaro.org> <CACRpkdaMDbH4NkiHRLAfbJZ_j4QXbwg94bvaWsdYRPH+dSfc8Q@mail.gmail.com>
+In-Reply-To: <CACRpkdaMDbH4NkiHRLAfbJZ_j4QXbwg94bvaWsdYRPH+dSfc8Q@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/06/09 17:59), Aneesh Kumar K.V wrote:
-> From: "Aneesh Kumar K.V"<aneesh.kumar@linux.vnet.ibm.com>
-> 
-> Since we migrate only one hugepage don't use linked list for passing the
-> page around.  Directly pass page that need to be migrated as argument.
-> This also remove the usage page->lru in migrate path.
-> 
-> Signed-off-by: Aneesh Kumar K.V<aneesh.kumar@linux.vnet.ibm.com>
+On 11/06/12 21:37, Linus Walleij wrote:
+> On Mon, Jun 11, 2012 at 5:25 PM, Lee Jones<lee.jones@linaro.org>  wrote:
+>
+>> As new users are
+>> added, it is expected that they will be Device Tree compliant.
+>> If this is the case, we will look up their initialisation values
+>> by compatible entry, then apply them forthwith.
+> (...)
+>> +static struct nmk_i2c_controller u8500_i2c = {
+>> +       /*
+>> +        * slave data setup time, which is
+>> +        * 250 ns,100ns,10ns which is 14,6,2
+>> +        * respectively for a 48 Mhz
+>> +        * i2c clock
+>> +        */
+>> +       .slsu           = 0xe,
+>> +       /* Tx FIFO threshold */
+>> +       .tft            = 1,
+>> +       /* Rx FIFO threshold */
+>> +       .rft            = 8,
+>> +       /* std. mode operation */
+>> +       .clk_freq       = 100000,
+>> +       /* Slave response timeout(ms) */
+>> +       .timeout        = 200,
+>> +       .sm             = I2C_FREQ_MODE_FAST,
+>> +};
+>
+> So why don't we create proper device tree bindings for the above platform
+> data?
+>
+> For example several driver under
+> Documentation/devicetree/bindings/i2c/*
+> define the .clk_freq above as "clock-frequency"
+>
+> samsung-i2c even has this:
+> samsung,i2c-sda-delay =<100>;
+> samsung,i2c-max-bus-freq =<100000>;
+>
+> Where i2c-sda-delay corresponds to slsu above.
+>
+> I suspect .sm can be derived from the frequency so it
+> is "FAST" whenever the frequency>  100000.
+>
+> This looks to me like a way to push the burden of doing the real
+> device tree binding for the above to the next user.
+> (Which will likely be me, so therefore I care a bit ...)
 
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+On the contrary. This will avoid any added Device Tree complexity and 
+ensure that no extra vendor specific bindings are required. When a new 
+user wishes to use the driver, all they (you) have to do is create a new 
+struct with the platform specific information and add the entry to 
+nmk_gpio_match[], simples.
 
+I've even added the logic to extract any information you provide via 
+nmk_gpio_match[] for use as platform data. This keeps it both out of 
+platform code and the Device Tree binary. Everyone's a winner. :)
 
-> ---
->   include/linux/migrate.h |    4 +--
->   mm/memory-failure.c     |   13 ++--------
->   mm/migrate.c            |   65 +++++++++++++++--------------------------------
->   3 files changed, 25 insertions(+), 57 deletions(-)
-> 
-> diff --git a/include/linux/migrate.h b/include/linux/migrate.h
-> index 855c337..ce7e667 100644
-> --- a/include/linux/migrate.h
-> +++ b/include/linux/migrate.h
-> @@ -15,7 +15,7 @@ extern int migrate_page(struct address_space *,
->   extern int migrate_pages(struct list_head *l, new_page_t x,
->   			unsigned long private, bool offlining,
->   			enum migrate_mode mode);
-> -extern int migrate_huge_pages(struct list_head *l, new_page_t x,
-> +extern int migrate_huge_page(struct page *, new_page_t x,
->   			unsigned long private, bool offlining,
->   			enum migrate_mode mode);
-> 
-> @@ -36,7 +36,7 @@ static inline void putback_lru_pages(struct list_head *l) {}
->   static inline int migrate_pages(struct list_head *l, new_page_t x,
->   		unsigned long private, bool offlining,
->   		enum migrate_mode mode) { return -ENOSYS; }
-> -static inline int migrate_huge_pages(struct list_head *l, new_page_t x,
-> +static inline int migrate_huge_page(struct page *page, new_page_t x,
->   		unsigned long private, bool offlining,
->   		enum migrate_mode mode) { return -ENOSYS; }
-> 
-> diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-> index ab1e714..53a1495 100644
-> --- a/mm/memory-failure.c
-> +++ b/mm/memory-failure.c
-> @@ -1414,7 +1414,6 @@ static int soft_offline_huge_page(struct page *page, int flags)
->   	int ret;
->   	unsigned long pfn = page_to_pfn(page);
->   	struct page *hpage = compound_head(page);
-> -	LIST_HEAD(pagelist);
-> 
->   	ret = get_any_page(page, pfn, flags);
->   	if (ret<  0)
-> @@ -1429,19 +1428,11 @@ static int soft_offline_huge_page(struct page *page, int flags)
->   	}
-> 
->   	/* Keep page count to indicate a given hugepage is isolated. */
-> -
-> -	list_add(&hpage->lru,&pagelist);
-> -	ret = migrate_huge_pages(&pagelist, new_page, MPOL_MF_MOVE_ALL, 0,
-> -				true);
-> +	ret = migrate_huge_page(hpage, new_page, MPOL_MF_MOVE_ALL, 0, true);
-> +	put_page(hpage);
->   	if (ret) {
-> -		struct page *page1, *page2;
-> -		list_for_each_entry_safe(page1, page2,&pagelist, lru)
-> -			put_page(page1);
-> -
->   		pr_info("soft offline: %#lx: migration failed %d, type %lx\n",
->   			pfn, ret, page->flags);
-> -		if (ret>  0)
-> -			ret = -EIO;
->   		return ret;
->   	}
->   done:
-> diff --git a/mm/migrate.c b/mm/migrate.c
-> index be26d5c..fdce3a2 100644
-> --- a/mm/migrate.c
-> +++ b/mm/migrate.c
-> @@ -932,15 +932,8 @@ static int unmap_and_move_huge_page(new_page_t get_new_page,
->   	if (anon_vma)
->   		put_anon_vma(anon_vma);
->   	unlock_page(hpage);
-> -
->   out:
-> -	if (rc != -EAGAIN) {
-> -		list_del(&hpage->lru);
-> -		put_page(hpage);
-> -	}
-> -
->   	put_page(new_hpage);
-> -
->   	if (result) {
->   		if (rc)
->   			*result = rc;
-> @@ -1016,48 +1009,32 @@ out:
->   	return nr_failed + retry;
->   }
-> 
-> -int migrate_huge_pages(struct list_head *from,
-> -		new_page_t get_new_page, unsigned long private, bool offlining,
-> -		enum migrate_mode mode)
-> +int migrate_huge_page(struct page *hpage, new_page_t get_new_page,
-> +		      unsigned long private, bool offlining,
-> +		      enum migrate_mode mode)
->   {
-> -	int retry = 1;
-> -	int nr_failed = 0;
-> -	int pass = 0;
-> -	struct page *page;
-> -	struct page *page2;
-> -	int rc;
-> -
-> -	for (pass = 0; pass<  10&&  retry; pass++) {
-> -		retry = 0;
-> -
-> -		list_for_each_entry_safe(page, page2, from, lru) {
-> +	int pass, rc;
-> +
-> +	for (pass = 0; pass<  10; pass++) {
-> +		rc = unmap_and_move_huge_page(get_new_page,
-> +					      private, hpage, pass>  2, offlining,
-> +					      mode);
-> +		switch (rc) {
-> +		case -ENOMEM:
-> +			goto out;
-> +		case -EAGAIN:
-> +			/* try again */
->   			cond_resched();
-> -
-> -			rc = unmap_and_move_huge_page(get_new_page,
-> -					private, page, pass>  2, offlining,
-> -					mode);
-> -
-> -			switch(rc) {
-> -			case -ENOMEM:
-> -				goto out;
-> -			case -EAGAIN:
-> -				retry++;
-> -				break;
-> -			case 0:
-> -				break;
-> -			default:
-> -				/* Permanent failure */
-> -				nr_failed++;
-> -				break;
-> -			}
-> +			break;
-> +		case 0:
-> +			goto out;
-> +		default:
-> +			rc = -EIO;
-> +			goto out;
->   		}
->   	}
-> -	rc = 0;
->   out:
-> -	if (rc)
-> -		return rc;
-> -
-> -	return nr_failed + retry;
-> +	return rc;
->   }
-> 
->   #ifdef CONFIG_NUMA
-
-
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+M: +44 77 88 633 515
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
