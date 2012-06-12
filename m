@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753718Ab2FLWye (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 18:54:34 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16044 "EHLO
+	id S1753811Ab2FLWyv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 18:54:51 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23293 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752780Ab2FLWyb (ORCPT
+	with ESMTP id S1753612Ab2FLWya (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 18:54:31 -0400
-X-Authority-Analysis: v=2.0 cv=eIiRfQV1 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Ciwy3NGCPMMA:10 a=Uma7A4zuSYsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=3nbZYyFuAAAA:8 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=oGMlB6cnAAAA:8 a=VnNF1IyMAAAA:8 a=Z4Rwk6OoAAAA:8 a=pGLkceISAAAA:8 a=Y1Ot2RuyV6B7H7rStpgA:9 a=EvKJbDF4Ut8A:10 a=Zh68SRI7RUMA:10 a=jEp0ucaQiEUA:10 a=CY6gl2JlH4YA:10 a=jbrJJM5MRmoA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+	Tue, 12 Jun 2012 18:54:30 -0400
+X-Authority-Analysis: v=2.0 cv=D8PF24tj c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Ciwy3NGCPMMA:10 a=_SymJIx89xIA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=3nbZYyFuAAAA:8 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=oGMlB6cnAAAA:8 a=VnNF1IyMAAAA:8 a=Z4Rwk6OoAAAA:8 a=pGLkceISAAAA:8 a=WoGK4d_3FuubdTwUpJUA:9 a=EvKJbDF4Ut8A:10 a=Zh68SRI7RUMA:10 a=jEp0ucaQiEUA:10 a=CY6gl2JlH4YA:10 a=jbrJJM5MRmoA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=usbtaDLraoK7Febj:21 a=EzC1ys5tiW-Qnklw:21 a=ZycB6UtQUfgMyuk2+PxD7w==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.80.29
-Message-Id: <20120612225427.457117696@goodmis.org>
+Message-Id: <20120612225426.396720897@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Tue, 12 Jun 2012 18:43:40 -0400
+Date: Tue, 12 Jun 2012 18:43:36 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
@@ -22,20 +22,19 @@ Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         "H. Peter Anvin" <hpa@zytor.com>,
         Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         "Frank Ch. Eigler" <fche@redhat.com>
-Subject: [RFC][PATCH 13/13 v2] kprobes/x86: ftrace based optimization for x86
+Subject: [RFC][PATCH 09/13 v2] kprobes: cleanup to separate probe-able check
 References: <20120612224327.426900129@goodmis.org>
-Content-Disposition: inline; filename=0013-kprobes-x86-ftrace-based-optimization-for-x86.patch
+Content-Disposition: inline; filename=0009-kprobes-cleanup-to-separate-probe-able-check.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-Add function tracer based kprobe optimization support
-handlers on x86. This allows kprobes to use function
-tracer for probing on mcount call.
+Separate probe-able address checking code from
+register_kprobe().
 
-Link: http://lkml.kernel.org/r/20120605102838.27845.26317.stgit@localhost.localdomain
+Link: http://lkml.kernel.org/r/20120605102820.27845.90133.stgit@localhost.localdomain
 
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Ingo Molnar <mingo@redhat.com>
@@ -45,114 +44,140 @@ Cc: "Frank Ch. Eigler" <fche@redhat.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-
-[ Updated to new port of ftrace save regs functions ]
-
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/x86/include/asm/kprobes.h |    1 +
- arch/x86/kernel/kprobes.c      |   48 ++++++++++++++++++++++++++++++++++++++++
- include/linux/kprobes.h        |    2 +-
- kernel/kprobes.c               |    2 +-
- 4 files changed, 51 insertions(+), 2 deletions(-)
+ kernel/kprobes.c |   82 ++++++++++++++++++++++++++++++------------------------
+ 1 file changed, 45 insertions(+), 37 deletions(-)
 
-diff --git a/arch/x86/include/asm/kprobes.h b/arch/x86/include/asm/kprobes.h
-index 5478825..d3ddd17 100644
---- a/arch/x86/include/asm/kprobes.h
-+++ b/arch/x86/include/asm/kprobes.h
-@@ -27,6 +27,7 @@
- #include <asm/insn.h>
- 
- #define  __ARCH_WANT_KPROBES_INSN_SLOT
-+#define  ARCH_SUPPORTS_KPROBES_ON_FTRACE
- 
- struct pt_regs;
- struct kprobe;
-diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
-index e2f751e..47ae102 100644
---- a/arch/x86/kernel/kprobes.c
-+++ b/arch/x86/kernel/kprobes.c
-@@ -1052,6 +1052,54 @@ int __kprobes longjmp_break_handler(struct kprobe *p, struct pt_regs *regs)
- 	return 0;
- }
- 
-+#ifdef KPROBES_CAN_USE_FTRACE
-+/* Ftrace callback handler for kprobes */
-+void __kprobes kprobe_ftrace_handler(unsigned long ip, unsigned long parent_ip,
-+				     struct ftrace_ops *ops, struct pt_regs *regs)
-+{
-+	struct kprobe *p;
-+	struct kprobe_ctlblk *kcb;
-+	unsigned long flags;
-+
-+	/* Disable irq for emulating a breakpoint and avoiding preempt */
-+	local_irq_save(flags);
-+
-+	p = get_kprobe((kprobe_opcode_t *)ip);
-+	if (unlikely(!p) || kprobe_disabled(p))
-+		goto end;
-+
-+	kcb = get_kprobe_ctlblk();
-+	if (kprobe_running()) {
-+		kprobes_inc_nmissed_count(p);
-+	} else {
-+		regs->ip += sizeof(kprobe_opcode_t);
-+
-+		__this_cpu_write(current_kprobe, p);
-+		kcb->kprobe_status = KPROBE_HIT_ACTIVE;
-+		if (p->pre_handler)
-+			p->pre_handler(p, regs);
-+
-+		if (unlikely(p->post_handler)) {
-+			/* Emulate singlestep as if there is a 5byte nop */
-+			regs->ip = ip + MCOUNT_INSN_SIZE;
-+			kcb->kprobe_status = KPROBE_HIT_SSDONE;
-+			p->post_handler(p, regs, 0);
-+		}
-+		__this_cpu_write(current_kprobe, NULL);
-+		regs->ip = ip;	/* Recover for next callback */
-+	}
-+end:
-+	local_irq_restore(flags);
-+}
-+
-+int __kprobes arch_prepare_kprobe_ftrace(struct kprobe *p)
-+{
-+	p->ainsn.insn = NULL;
-+	p->ainsn.boostable = -1;
-+	return 0;
-+}
-+#endif
-+
- int __init arch_init_kprobes(void)
- {
- 	return arch_init_optprobes();
-diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
-index aa0d05e..23755ba 100644
---- a/include/linux/kprobes.h
-+++ b/include/linux/kprobes.h
-@@ -318,7 +318,7 @@ extern int proc_kprobes_optimization_handler(struct ctl_table *table,
- #endif /* CONFIG_OPTPROBES */
- #ifdef KPROBES_CAN_USE_FTRACE
- extern void kprobe_ftrace_handler(unsigned long ip, unsigned long parent_ip,
--				  struct pt_regs *regs);
-+				  struct ftrace_ops *ops, struct pt_regs *regs);
- extern int arch_prepare_kprobe_ftrace(struct kprobe *p);
- #endif
- 
 diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index 69c16ef..35b4315 100644
+index 7a8a122..6137fe3 100644
 --- a/kernel/kprobes.c
 +++ b/kernel/kprobes.c
-@@ -921,7 +921,7 @@ static __kprobes struct kprobe *alloc_aggr_kprobe(struct kprobe *p)
+@@ -1313,67 +1313,80 @@ static inline int check_kprobe_rereg(struct kprobe *p)
+ 	return ret;
+ }
  
- #ifdef KPROBES_CAN_USE_FTRACE
- static struct ftrace_ops kprobe_ftrace_ops __read_mostly = {
--	.regs_func = kprobe_ftrace_handler,
-+	.func = kprobe_ftrace_handler,
- 	.flags = FTRACE_OPS_FL_SAVE_REGS,
- };
- static int kprobe_ftrace_enabled;
+-int __kprobes register_kprobe(struct kprobe *p)
++static __kprobes int check_kprobe_address_safe(struct kprobe *p,
++					       struct module **probed_mod)
+ {
+ 	int ret = 0;
+-	struct kprobe *old_p;
+-	struct module *probed_mod;
+-	kprobe_opcode_t *addr;
+-
+-	addr = kprobe_addr(p);
+-	if (IS_ERR(addr))
+-		return PTR_ERR(addr);
+-	p->addr = addr;
+-
+-	ret = check_kprobe_rereg(p);
+-	if (ret)
+-		return ret;
+ 
+ 	jump_label_lock();
+ 	preempt_disable();
++
++	/* Ensure it is not in reserved area nor out of text */
+ 	if (!kernel_text_address((unsigned long) p->addr) ||
+ 	    in_kprobes_functions((unsigned long) p->addr) ||
+ 	    ftrace_text_reserved(p->addr, p->addr) ||
+ 	    jump_label_text_reserved(p->addr, p->addr)) {
+ 		ret = -EINVAL;
+-		goto cannot_probe;
++		goto out;
+ 	}
+ 
+-	/* User can pass only KPROBE_FLAG_DISABLED to register_kprobe */
+-	p->flags &= KPROBE_FLAG_DISABLED;
+-
+-	/*
+-	 * Check if are we probing a module.
+-	 */
+-	probed_mod = __module_text_address((unsigned long) p->addr);
+-	if (probed_mod) {
+-		/* Return -ENOENT if fail. */
+-		ret = -ENOENT;
++	/* Check if are we probing a module */
++	*probed_mod = __module_text_address((unsigned long) p->addr);
++	if (*probed_mod) {
+ 		/*
+ 		 * We must hold a refcount of the probed module while updating
+ 		 * its code to prohibit unexpected unloading.
+ 		 */
+-		if (unlikely(!try_module_get(probed_mod)))
+-			goto cannot_probe;
++		if (unlikely(!try_module_get(*probed_mod))) {
++			ret = -ENOENT;
++			goto out;
++		}
+ 
+ 		/*
+ 		 * If the module freed .init.text, we couldn't insert
+ 		 * kprobes in there.
+ 		 */
+-		if (within_module_init((unsigned long)p->addr, probed_mod) &&
+-		    probed_mod->state != MODULE_STATE_COMING) {
+-			module_put(probed_mod);
+-			goto cannot_probe;
++		if (within_module_init((unsigned long)p->addr, *probed_mod) &&
++		    (*probed_mod)->state != MODULE_STATE_COMING) {
++			module_put(*probed_mod);
++			*probed_mod = NULL;
++			ret = -ENOENT;
+ 		}
+-		/* ret will be updated by following code */
+ 	}
++out:
+ 	preempt_enable();
+ 	jump_label_unlock();
+ 
++	return ret;
++}
++
++int __kprobes register_kprobe(struct kprobe *p)
++{
++	int ret;
++	struct kprobe *old_p;
++	struct module *probed_mod;
++	kprobe_opcode_t *addr;
++
++	/* Adjust probe address from symbol */
++	addr = kprobe_addr(p);
++	if (IS_ERR(addr))
++		return PTR_ERR(addr);
++	p->addr = addr;
++
++	ret = check_kprobe_rereg(p);
++	if (ret)
++		return ret;
++
++	/* User can pass only KPROBE_FLAG_DISABLED to register_kprobe */
++	p->flags &= KPROBE_FLAG_DISABLED;
+ 	p->nmissed = 0;
+ 	INIT_LIST_HEAD(&p->list);
+-	mutex_lock(&kprobe_mutex);
+ 
++	ret = check_kprobe_address_safe(p, &probed_mod);
++	if (ret)
++		return ret;
++
++	mutex_lock(&kprobe_mutex);
+ 	jump_label_lock(); /* needed to call jump_label_text_reserved() */
+ 
+ 	get_online_cpus();	/* For avoiding text_mutex deadlock. */
+@@ -1410,11 +1423,6 @@ out:
+ 		module_put(probed_mod);
+ 
+ 	return ret;
+-
+-cannot_probe:
+-	preempt_enable();
+-	jump_label_unlock();
+-	return ret;
+ }
+ EXPORT_SYMBOL_GPL(register_kprobe);
+ 
 -- 
 1.7.10
 
