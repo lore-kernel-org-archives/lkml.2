@@ -1,99 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751593Ab2FLClR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 22:41:17 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:52884 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751054Ab2FLClP convert rfc822-to-8bit (ORCPT
+	id S1751621Ab2FLCqt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 22:46:49 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:35121 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751132Ab2FLCqs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 22:41:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120612014239.GA32087@kroah.com>
-References: <201206071508.15674.hartleys@visionengravers.com>
-	<20120611235657.GA26721@kroah.com>
-	<ADE657CA350FB648AAC2C43247A983F0020698DBC4A9@AUSP01VMBX24.collaborationhost.net>
-	<20120612004421.GA30997@kroah.com>
-	<ADE657CA350FB648AAC2C43247A983F0020698DBC4B9@AUSP01VMBX24.collaborationhost.net>
-	<20120612014239.GA32087@kroah.com>
-Date: Mon, 11 Jun 2012 22:41:14 -0400
-Message-ID: <CACqU3MXmYCcpzOYaJKa-x=Vn-iFDmXbAPxbFwN0nvt+x3h7UvQ@mail.gmail.com>
-Subject: Re: [PATCH] staging: comedi: cleanup alloc_subdevices
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: H Hartley Sweeten <hartleys@visionengravers.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
-        "abbotti@mev.co.uk" <abbotti@mev.co.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 11 Jun 2012 22:46:48 -0400
+Message-ID: <1339469203.22991.7.camel@phoenix>
+Subject: [PATCH RFT] regulator: wm831x-ldo: Convert to
+ regulator_set_voltage_sel_regmap and map_voltage
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Tue, 12 Jun 2012 10:46:43 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/wm831x-ldo.c |  129 ++++++++++++----------------------------
+ 1 file changed, 38 insertions(+), 91 deletions(-)
 
-On Mon, Jun 11, 2012 at 9:42 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Mon, Jun 11, 2012 at 07:49:46PM -0500, H Hartley Sweeten wrote:
->> On Monday, June 11, 2012 5:44 PM, Greg KH wrote:
->> > On Mon, Jun 11, 2012 at 07:07:41PM -0500, H Hartley Sweeten wrote:
->> >> 2, 3, and 4 probably go together. They all deal with the 'num_subdevices'
->> >>
->> >> 1 can be a separate patch as long as I don't do the rename.
->> >>
->> >> 5, 6, and 7 could all go together with the final rename of the function.
->> >>
->> >> Does that sound ok?
->> >
->> > No, why not just break it up into 7 different patches?  You are doing
->> > different things, which would you rather review for correctness, 7
->> > simple, tiny patches, or some that do multiple things at the same time
->> > that are bigger?
->>
->> Ok. I just posted the first one. It's still pretty big since it hits every
->> comedi driver file.
->>
->> Please ignore the first post. I fat-fingered the prototype in the header.
->> v2 is correct.
->>
->> Also, I have never done local commits to my Linux-next tree so I'm not
->> sure how to proceed with the incremental patches. If it's ok with you
->> I'll just wait for each patch to go into staging.
->
-> Create a brach from the one you are working on:
->        git branch -b my_branch
-> make a change and commit it
-> commit another one
-> and so on.
-actually, there is a simple way to do that. Simply start from the big
-commit, then
+diff --git a/drivers/regulator/wm831x-ldo.c b/drivers/regulator/wm831x-ldo.c
+index f23d020e9..04d8a41 100644
+--- a/drivers/regulator/wm831x-ldo.c
++++ b/drivers/regulator/wm831x-ldo.c
+@@ -78,13 +78,10 @@ static int wm831x_gp_ldo_list_voltage(struct regulator_dev *rdev,
+ 	return -EINVAL;
+ }
+ 
+-static int wm831x_gp_ldo_set_voltage_int(struct regulator_dev *rdev, int reg,
+-					 int min_uV, int max_uV,
+-					 unsigned *selector)
++static int wm831x_gp_ldo_map_voltage(struct regulator_dev *rdev,
++				     int min_uV, int max_uV)
+ {
+-	struct wm831x_ldo *ldo = rdev_get_drvdata(rdev);
+-	struct wm831x *wm831x = ldo->wm831x;
+-	int vsel, ret;
++	int volt, vsel;
+ 
+ 	if (min_uV < 900000)
+ 		vsel = 0;
+@@ -94,36 +91,25 @@ static int wm831x_gp_ldo_set_voltage_int(struct regulator_dev *rdev, int reg,
+ 		vsel = ((min_uV - 1700000) / 100000)
+ 			+ WM831X_GP_LDO_SELECTOR_LOW + 1;
+ 
+-	ret = wm831x_gp_ldo_list_voltage(rdev, vsel);
+-	if (ret < 0)
+-		return ret;
+-	if (ret < min_uV || ret > max_uV)
++	volt = wm831x_gp_ldo_list_voltage(rdev, vsel);
++	if (volt < min_uV || volt > max_uV)
+ 		return -EINVAL;
+ 
+-	*selector = vsel;
+-
+-	return wm831x_set_bits(wm831x, reg, WM831X_LDO1_ON_VSEL_MASK, vsel);
+-}
+-
+-static int wm831x_gp_ldo_set_voltage(struct regulator_dev *rdev,
+-				     int min_uV, int max_uV,
+-				     unsigned *selector)
+-{
+-	struct wm831x_ldo *ldo = rdev_get_drvdata(rdev);
+-	int reg = ldo->base + WM831X_LDO_ON_CONTROL;
+-
+-	return wm831x_gp_ldo_set_voltage_int(rdev, reg, min_uV, max_uV,
+-					     selector);
++	return vsel;
+ }
+ 
+ static int wm831x_gp_ldo_set_suspend_voltage(struct regulator_dev *rdev,
+ 					     int uV)
+ {
+ 	struct wm831x_ldo *ldo = rdev_get_drvdata(rdev);
+-	int reg = ldo->base + WM831X_LDO_SLEEP_CONTROL;
+-	unsigned int selector;
++	struct wm831x *wm831x = ldo->wm831x;
++	int sel, reg = ldo->base + WM831X_LDO_SLEEP_CONTROL;
+ 
+-	return wm831x_gp_ldo_set_voltage_int(rdev, reg, uV, uV, &selector);
++	sel = wm831x_gp_ldo_map_voltage(rdev, uV, uV);
++	if (sel < 0)
++		return sel;
++
++	return wm831x_set_bits(wm831x, reg, WM831X_LDO1_ON_VSEL_MASK, sel);
+ }
+ 
+ static unsigned int wm831x_gp_ldo_get_mode(struct regulator_dev *rdev)
+@@ -243,8 +229,9 @@ static unsigned int wm831x_gp_ldo_get_optimum_mode(struct regulator_dev *rdev,
+ 
+ static struct regulator_ops wm831x_gp_ldo_ops = {
+ 	.list_voltage = wm831x_gp_ldo_list_voltage,
++	.map_voltage = wm831x_gp_ldo_map_voltage,
+ 	.get_voltage_sel = regulator_get_voltage_sel_regmap,
+-	.set_voltage = wm831x_gp_ldo_set_voltage,
++	.set_voltage_sel = regulator_set_voltage_sel_regmap,
+ 	.set_suspend_voltage = wm831x_gp_ldo_set_suspend_voltage,
+ 	.get_mode = wm831x_gp_ldo_get_mode,
+ 	.set_mode = wm831x_gp_ldo_set_mode,
+@@ -384,13 +371,10 @@ static int wm831x_aldo_list_voltage(struct regulator_dev *rdev,
+ 	return -EINVAL;
+ }
+ 
+-static int wm831x_aldo_set_voltage_int(struct regulator_dev *rdev, int reg,
+-				       int min_uV, int max_uV,
+-				       unsigned *selector)
++static int wm831x_aldo_map_voltage(struct regulator_dev *rdev,
++				   int min_uV, int max_uV)
+ {
+-	struct wm831x_ldo *ldo = rdev_get_drvdata(rdev);
+-	struct wm831x *wm831x = ldo->wm831x;
+-	int vsel, ret;
++	int volt, vsel;
+ 
+ 	if (min_uV < 1000000)
+ 		vsel = 0;
+@@ -400,35 +384,26 @@ static int wm831x_aldo_set_voltage_int(struct regulator_dev *rdev, int reg,
+ 		vsel = ((min_uV - 1700000) / 100000)
+ 			+ WM831X_ALDO_SELECTOR_LOW + 1;
+ 
+-	ret = wm831x_aldo_list_voltage(rdev, vsel);
+-	if (ret < 0)
+-		return ret;
+-	if (ret < min_uV || ret > max_uV)
++	volt = wm831x_aldo_list_voltage(rdev, vsel);
++	if (volt < min_uV || volt > max_uV)
+ 		return -EINVAL;
+ 
+-	*selector = vsel;
+-
+-	return wm831x_set_bits(wm831x, reg, WM831X_LDO7_ON_VSEL_MASK, vsel);
+-}
+-
+-static int wm831x_aldo_set_voltage(struct regulator_dev *rdev,
+-				   int min_uV, int max_uV, unsigned *selector)
+-{
+-	struct wm831x_ldo *ldo = rdev_get_drvdata(rdev);
+-	int reg = ldo->base + WM831X_LDO_ON_CONTROL;
++	return vsel;
+ 
+-	return wm831x_aldo_set_voltage_int(rdev, reg, min_uV, max_uV,
+-					   selector);
+ }
+ 
+ static int wm831x_aldo_set_suspend_voltage(struct regulator_dev *rdev,
+ 					     int uV)
+ {
+ 	struct wm831x_ldo *ldo = rdev_get_drvdata(rdev);
+-	int reg = ldo->base + WM831X_LDO_SLEEP_CONTROL;
+-	unsigned int selector;
++	struct wm831x *wm831x = ldo->wm831x;
++	int sel, reg = ldo->base + WM831X_LDO_SLEEP_CONTROL;
++
++	sel = wm831x_aldo_map_voltage(rdev, uV, uV);
++	if (sel < 0)
++		return sel;
+ 
+-	return wm831x_aldo_set_voltage_int(rdev, reg, uV, uV, &selector);
++	return wm831x_set_bits(wm831x, reg, WM831X_LDO7_ON_VSEL_MASK, sel);
+ }
+ 
+ static unsigned int wm831x_aldo_get_mode(struct regulator_dev *rdev)
+@@ -506,8 +481,9 @@ static int wm831x_aldo_get_status(struct regulator_dev *rdev)
+ 
+ static struct regulator_ops wm831x_aldo_ops = {
+ 	.list_voltage = wm831x_aldo_list_voltage,
++	.map_voltage = wm831x_aldo_map_voltage,
+ 	.get_voltage_sel = regulator_get_voltage_sel_regmap,
+-	.set_voltage = wm831x_aldo_set_voltage,
++	.set_voltage_sel = regulator_set_voltage_sel_regmap,
+ 	.set_suspend_voltage = wm831x_aldo_set_suspend_voltage,
+ 	.get_mode = wm831x_aldo_get_mode,
+ 	.set_mode = wm831x_aldo_set_mode,
+@@ -628,47 +604,18 @@ static struct platform_driver wm831x_aldo_driver = {
+ 
+ #define WM831X_ALIVE_LDO_MAX_SELECTOR 0xf
+ 
+-static int wm831x_alive_ldo_set_voltage_int(struct regulator_dev *rdev,
+-					    int reg,
+-					    int min_uV, int max_uV,
+-					    unsigned *selector)
+-{
+-	struct wm831x_ldo *ldo = rdev_get_drvdata(rdev);
+-	struct wm831x *wm831x = ldo->wm831x;
+-	int vsel, ret;
+-
+-	vsel = (min_uV - 800000) / 50000;
+-
+-	ret = regulator_list_voltage_linear(rdev, vsel);
+-	if (ret < 0)
+-		return ret;
+-	if (ret < min_uV || ret > max_uV)
+-		return -EINVAL;
+-
+-	*selector = vsel;
+-
+-	return wm831x_set_bits(wm831x, reg, WM831X_LDO11_ON_VSEL_MASK, vsel);
+-}
+-
+-static int wm831x_alive_ldo_set_voltage(struct regulator_dev *rdev,
+-					int min_uV, int max_uV,
+-					unsigned *selector)
+-{
+-	struct wm831x_ldo *ldo = rdev_get_drvdata(rdev);
+-	int reg = ldo->base + WM831X_ALIVE_LDO_ON_CONTROL;
+-
+-	return wm831x_alive_ldo_set_voltage_int(rdev, reg, min_uV, max_uV,
+-						selector);
+-}
+-
+ static int wm831x_alive_ldo_set_suspend_voltage(struct regulator_dev *rdev,
+ 					     int uV)
+ {
+ 	struct wm831x_ldo *ldo = rdev_get_drvdata(rdev);
+-	int reg = ldo->base + WM831X_ALIVE_LDO_SLEEP_CONTROL;
+-	unsigned selector;
++	struct wm831x *wm831x = ldo->wm831x;
++	int sel, reg = ldo->base + WM831X_ALIVE_LDO_SLEEP_CONTROL;
++
++	sel = regulator_map_voltage_linear(rdev, uV, uV);
++	if (sel < 0)
++		return sel;
+ 
+-	return wm831x_alive_ldo_set_voltage_int(rdev, reg, uV, uV, &selector);
++	return wm831x_set_bits(wm831x, reg, WM831X_LDO11_ON_VSEL_MASK, sel);
+ }
+ 
+ static int wm831x_alive_ldo_get_status(struct regulator_dev *rdev)
+@@ -692,7 +639,7 @@ static struct regulator_ops wm831x_alive_ldo_ops = {
+ 	.list_voltage = regulator_list_voltage_linear,
+ 	.map_voltage = regulator_map_voltage_linear,
+ 	.get_voltage_sel = regulator_get_voltage_sel_regmap,
+-	.set_voltage = wm831x_alive_ldo_set_voltage,
++	.set_voltage_sel = regulator_set_voltage_sel_regmap,
+ 	.set_suspend_voltage = wm831x_alive_ldo_set_suspend_voltage,
+ 	.get_status = wm831x_alive_ldo_get_status,
+ 
+-- 
+1.7.9.5
 
-# git reset --soft HEAD^
-# git reset
 
-Then do 7 iterations of:
 
-# git add -p
-
-Adding or not relevant hunks for the current change to be committed,
-eventually manually editing them if two or more change end up being
-mangled together.
-
-my 0.2c,
- - Arnaud
-
-> then create the patches:
->        git format-patch original_branch_name..my_branch
-> and use git send-email to send them off in order.
->
-> Otherwise we are going to take 7 weeks when I apply one of your patches
-> a week :)
->
-> thanks,
->
-> greg k-h
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
