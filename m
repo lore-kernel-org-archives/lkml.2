@@ -1,78 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751881Ab2FLIMX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 04:12:23 -0400
-Received: from mga11.intel.com ([192.55.52.93]:34622 "EHLO mga11.intel.com"
+	id S1751963Ab2FLIM0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 04:12:26 -0400
+Received: from mga11.intel.com ([192.55.52.93]:27666 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751156Ab2FLIMU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 04:12:20 -0400
+	id S1751156Ab2FLIMY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 04:12:24 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="164501662"
+   d="scan'208";a="164501689"
 From: Artem Bityutskiy <dedekind1@gmail.com>
 To: Al Viro <viro@ZenIV.linux.org.uk>
 Cc: Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
         Linux Kernel Maling List <linux-kernel@vger.kernel.org>
-Subject: [PATCH 0/6] hfs: stop using write_supers and s_dirt
-Date: Tue, 12 Jun 2012 11:13:32 +0300
-Message-Id: <1339488818-14461-1-git-send-email-dedekind1@gmail.com>
+Subject: [PATCH 3/6] hfs: remove extra mdb write on unmount
+Date: Tue, 12 Jun 2012 11:13:35 +0300
+Message-Id: <1339488818-14461-4-git-send-email-dedekind1@gmail.com>
 X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1339488818-14461-1-git-send-email-dedekind1@gmail.com>
+References: <1339488818-14461-1-git-send-email-dedekind1@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch-set makes HFS file-system stop using the VFS '->write_supers()'
-call-back and the '->s_dirt' superblock field because I plan to remove them
-once all users are gone.
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-Like the other similar patch-sets, we switch to a delayed job for writing out
-the superblock instead of using the 's_dirt' flag. Additionally, this patch-set
-includes several clean-ups.
+HFS calls 'hfs_write_super()' from 'hfs_put_super()' in order to write the MDB
+to the media. However, it is not needed because VFS calls '->sync_fs()' before
+calling '->put_super()' - so by the time we are in 'hfs_write_super()', the MDB
+is already synchronized.
 
-Reminder:
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+---
+ fs/hfs/super.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-The goal is to get rid of the 'sync_supers()' kernel thread. This kernel thread
-wakes up every 5 seconds (by default) and calls '->write_super()' for all
-mounted file-systems. And the bad thing is that this is done even if all the
-superblocks are clean. Moreover, many file-systems do not even need this end
-they do not register the '->write_super()' method at all (e.g., btrfs).
+diff --git a/fs/hfs/super.c b/fs/hfs/super.c
+index f7c06bb..47e4119 100644
+--- a/fs/hfs/super.c
++++ b/fs/hfs/super.c
+@@ -74,8 +74,6 @@ static int hfs_sync_fs(struct super_block *sb, int wait)
+  */
+ static void hfs_put_super(struct super_block *sb)
+ {
+-	if (sb->s_dirt)
+-		hfs_write_super(sb);
+ 	hfs_mdb_close(sb);
+ 	/* release the MDB's resources */
+ 	hfs_mdb_put(sb);
+-- 
+1.7.7.6
 
-So 'sync_supers()' most often just generates useless wake-ups and wastes power.
-I am trying to make all file-systems independent of '->write_super()' and plan
-to remove 'sync_supers()' and '->write_super()' completely once there are no
-more users.
-
-Al, in the past I was trying to upstream patches which optimized 'sync_super()',
-but you wanted me to kill it completely instead, which I am trying to do
-now, see http://lkml.org/lkml/2010/7/22/96
-
-Tested using the fsstress test from the LTP project.
-
-======
-Overall status:
-
-1. ext4: patches submitted, waiting for review from Ted Ts'o:
-   https://lkml.org/lkml/2012/4/2/111
-2. udf: patch submitted, should be in Jan Kara's tree:
-   https://lkml.org/lkml/2012/6/4/233
-3  exofs: patch submitted, not sure if it will go to the exofs tree:
-   https://lkml.org/lkml/2012/6/4/211
-4. affs: patches submitted, should be in Al Viro's tree:
-   https://lkml.org/lkml/2012/6/6/400
-4. ext2:     done, see commit f72cf5e223a28d3b3ea7dc9e40464fd534e359e8
-5. vfat:     done, see commit 78491189ddb6d84d4a4abae992ed891a236d0263
-6. jffs2:    done, see commit 208b14e507c00ff7f108e1a388dd3d8cc805a443
-7. reiserfs: done, see commit 033369d1af1264abc23bea2e174aa47cdd212f6f
-
-TODO: hfsplus, sysv, ufs
-======
-
- fs/hfs/extent.c |    2 +-
- fs/hfs/hfs_fs.h |   15 +++++++----
- fs/hfs/inode.c  |   14 +++-------
- fs/hfs/mdb.c    |   15 +++++++++++
- fs/hfs/super.c  |   73 +++++++++++++++++++++++++++----------------------------
- 5 files changed, 65 insertions(+), 54 deletions(-)
-
-Thanks,
-Artem.
