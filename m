@@ -1,68 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753276Ab2FLNTs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 09:19:48 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:45783 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751696Ab2FLNTr convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 09:19:47 -0400
-MIME-Version: 1.0
-In-Reply-To: <1339505386.30984.123.camel@x61.thuisdomein>
-References: <1339505386.30984.123.camel@x61.thuisdomein>
-From: Eric Miao <eric.y.miao@gmail.com>
-Date: Tue, 12 Jun 2012 21:19:25 +0800
-Message-ID: <CAMPhdO99maVhhpzLC_v9ZBdt=2=KNAg4oEn+wbQYmhYTEtTGgw@mail.gmail.com>
-Subject: Re: [PATCH] ARM: pxa: remove eseries.h
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1753306Ab2FLNVg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 09:21:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61220 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752591Ab2FLNVf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 09:21:35 -0400
+Date: Tue, 12 Jun 2012 10:21:45 -0300
+From: Luiz Capitulino <lcapitulino@redhat.com>
+To: "Daniel P. Berrange" <berrange@redhat.com>
+Cc: Wen Congyang <wency@cn.fujitsu.com>, kvm list <kvm@vger.kernel.org>,
+        qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Avi Kivity <avi@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
+Subject: Re: [Qemu-devel] [PATCH 3/3] deal with guest panicked event
+Message-ID: <20120612102145.6a21608a@doriath.home>
+In-Reply-To: <20120612124045.GK10153@redhat.com>
+References: <4FB9E4CE.8060709@cn.fujitsu.com>
+	<4FB9E5CB.2020208@cn.fujitsu.com>
+	<20120530162314.1e9e4d3c@doriath.home>
+	<4FD6E7E9.4090408@cn.fujitsu.com>
+	<20120612093504.1f7e24f1@doriath.home>
+	<20120612124045.GK10153@redhat.com>
+Organization: Red Hat
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 12, 2012 at 8:49 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
-> Commit e478fe4cd50b86e95fadc415438b63fa94060b7d ("[ARM] pxa: merge all
-> eseries board code into eseries.c") removed all six files that included
-> eseries.h. Everything that this header provides is now either local to
-> eseries.c or entirely unused. It was apparently just an oversight to
-> keep this header. This header can safely be removed.
->
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+On Tue, 12 Jun 2012 13:40:45 +0100
+"Daniel P. Berrange" <berrange@redhat.com> wrote:
 
-That was long time ago. I'm basically good with the removal. Haojian, could
-you give a simple test maybe?
+> On Tue, Jun 12, 2012 at 09:35:04AM -0300, Luiz Capitulino wrote:
+> > On Tue, 12 Jun 2012 14:55:37 +0800
+> > Wen Congyang <wency@cn.fujitsu.com> wrote:
+> > 
+> > > >> +static void panicked_perform_action(void)
+> > > >> +{
+> > > >> +    switch(panicked_action) {
+> > > >> +    case PANICKED_REPORT:
+> > > >> +        panicked_mon_event("report");
+> > > >> +        break;
+> > > >> +
+> > > >> +    case PANICKED_PAUSE:
+> > > >> +        panicked_mon_event("pause");
+> > > >> +        vm_stop(RUN_STATE_GUEST_PANICKED);
+> > > >> +        break;
+> > > >> +
+> > > >> +    case PANICKED_QUIT:
+> > > >> +        panicked_mon_event("quit");
+> > > >> +        exit(0);
+> > > >> +        break;
+> > > >> +    }
+> > > > 
+> > > > Having the data argument is not needed/wanted. The mngt app can guess it if it
+> > > > needs to know it, but I think it doesn't want to.
+> > > 
+> > > Libvirt will do something when the kernel is panicked, so it should know the action
+> > > in qemu side.
+> > 
+> > But the action will be set by libvirt itself, no?
+> 
+> Sure, but the whole world isn't libvirt. If the process listening to the
+> monitor is not the same as the process which launched the VM, then I
+> think including the action is worthwhile. Besides, the way Wen has done
+> this is identical to what we already do with QEVENT_WATCHDOG and I think
+> it is desirable to keep consistency here.
 
-> ---
-> Testing with "git grep" for various things in the (history of the) tree.
->
->  arch/arm/mach-pxa/eseries.h |   14 --------------
->  1 files changed, 0 insertions(+), 14 deletions(-)
->  delete mode 100644 arch/arm/mach-pxa/eseries.h
->
-> diff --git a/arch/arm/mach-pxa/eseries.h b/arch/arm/mach-pxa/eseries.h
-> deleted file mode 100644
-> index b96949d..0000000
-> --- a/arch/arm/mach-pxa/eseries.h
-> +++ /dev/null
-> @@ -1,14 +0,0 @@
-> -void __init eseries_fixup(struct tag *tags, char **cmdline, struct meminfo *mi);
-> -
-> -extern struct pxa2xx_udc_mach_info e7xx_udc_mach_info;
-> -extern struct pxaficp_platform_data e7xx_ficp_platform_data;
-> -extern int e7xx_irda_init(void);
-> -
-> -extern int eseries_tmio_enable(struct platform_device *dev);
-> -extern int eseries_tmio_disable(struct platform_device *dev);
-> -extern int eseries_tmio_suspend(struct platform_device *dev);
-> -extern int eseries_tmio_resume(struct platform_device *dev);
-> -extern void eseries_get_tmio_gpios(void);
-> -extern struct resource eseries_tmio_resources[];
-> -extern struct platform_device e300_tc6387xb_device;
-> -
-> --
-> 1.7.7.6
->
+That's right, I had forgotten about the WATCHDOG event. Maybe it would
+make more sense to have this info in a query- command though, specially if
+we plan to have a command to change that setting.
+
+But I won't oppose having it in the event.
