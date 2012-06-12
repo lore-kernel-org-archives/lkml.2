@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753507Ab2FLRqd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 13:46:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56131 "EHLO mx1.redhat.com"
+	id S1753098Ab2FLRtS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 13:49:18 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43942 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752879Ab2FLRqc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 13:46:32 -0400
-Date: Tue, 12 Jun 2012 19:43:05 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        linuxppc-dev@lists.ozlabs.org, lkml <linux-kernel@vger.kernel.org>,
-        michael@ellerman.id.au, antonb@thinktux.localdomain,
-        Paul Mackerras <paulus@samba.org>, benh@kernel.crashing.org,
-        Ingo Molnar <mingo@elte.hu>, peterz@infradead.org,
-        Jim Keniston <jkenisto@us.ibm.com>
-Subject: Re: [PATCH v2 1/2] uprobes: Pass probed vaddr to
-	arch_uprobe_analyze_insn()
-Message-ID: <20120612174305.GA16349@redhat.com>
-References: <20120608093257.GG13409@in.ibm.com> <20120611161215.GA12116@redhat.com> <20120612165404.GB30555@linux.vnet.ibm.com>
+	id S1752040Ab2FLRtR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 13:49:17 -0400
+Message-ID: <4FD780D2.603@zytor.com>
+Date: Tue, 12 Jun 2012 10:48:02 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120612165404.GB30555@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+CC: Lasse Collin <lasse.collin@tukaani.org>, T Makphaibulchoke <tmac@hp.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com, linux390@de.ibm.com,
+        lethal@linux-sh.org, tglx@linutronix.de, mingo@redhat.com,
+        x86@kernel.org, kaloz@openwrt.org, jj@chaosbits.net,
+        matt.fleming@intel.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
+        linux-sh@vger.kernel.org
+Subject: Re: [PATCH v2] lib/decompress_unxz.c: removing all memory helper
+ functions
+References: <1339470307-28223-1-git-send-email-tmac@hp.com> <20120612191804.4211462a@tukaani.org> <alpine.LFD.2.02.1206121316190.23555@xanadu.home> <4FD77CAF.1020402@zytor.com> <alpine.LFD.2.02.1206121336060.23555@xanadu.home>
+In-Reply-To: <alpine.LFD.2.02.1206121336060.23555@xanadu.home>
+X-Enigmail-Version: 1.4.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/12, Srikar Dronamraju wrote:
-> >
-> > Note also that we should move this !UPROBE_COPY_INSN from
-> > install_breakpoint() to somewhere near alloc_uprobe(). This code
-> > is called only once, it looks a bit strange to use the "random" mm
-> > (the first mm vma_prio_tree_foreach() finds) and its mapping to
-> > verify the insn. In fact this is simply not correct and should be
-> > fixed, note that on x86 arch_uprobe_analyze_insn() checks
->
-> The reason we "delay" the copy_insn to the first insert is because
-> we have to get access to mm. For archs like x86, we want to know if the
-> executable is 32 bit or not
+On 06/12/2012 10:44 AM, Nicolas Pitre wrote:
+> On Tue, 12 Jun 2012, H. Peter Anvin wrote:
+> 
+>> On 06/12/2012 10:26 AM, Nicolas Pitre wrote:
+>>>
+>>> Instead of copying, maybe this would be much better to make the content 
+>>> of lib/string.c usable in a pre-boot environment.
+>>>
+>>
+>> Not sure about that... a lot of it is #ifndef __HAVE_ARCH_* and you
+>> *really* want those optimizations on some arches.
+> 
+> Sure.  What about:
+> 
+> lib/boot/mem.c: lib/string.c
+> 	sed 's/^#ifndef __HAVE_ARCH_/#ifndef __HAVE_PREBOOT_ARCH_/' < $< > $@
+> 
+> This is over simplified but you get the idea.  Maybe lib/string.c itself 
+> should be split into several files to help with a finer grained 
+> selection.
+> 
 
-Yes. And this is wrong afaics.
+The point is that I think we pretty much end up with a null usable set
+in the end.
 
-Once again. This !UPROBE_COPY_INSN code is called only once, and it
-uses the "random" mm. After that install_breakpoint() just calls
-set_swbp(another_mm) while the insn can be invalid because
-another_mm->ia32_compat != mm->ia32_compat.
-
-> So in effect, if we get access to
-> struct file corresponding to the inode and if the inode corresponds to
-> 32 bit executable file or 64 bit executable file during register, then
-> we can move it around alloc_uprobe().
-
-I don't think this can work. I have another simple fix in mind, I'll
-write another email later.
-
-Oleg.
+	-hpa
 
