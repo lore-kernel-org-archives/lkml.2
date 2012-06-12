@@ -1,114 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753141Ab2FLQew (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 12:34:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24814 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751306Ab2FLQeu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 12:34:50 -0400
-Subject: Re: [PATCH 0/4] PCI: PCIe capability structure related
- cleanup/fixes
-From: Myron Stowe <mstowe@redhat.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Myron Stowe <myron.stowe@redhat.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, xudong.hao@linux.intel.com,
-        ddutile@redhat.com, yu.zhao@intel.com
-In-Reply-To: <CAErSpo5yZdr4dgqjO6O9PSi3XZXfSOHmjjJRemaqAfmpv5WREA@mail.gmail.com>
-References: <20120601211619.20328.36769.stgit@amt.stowe>
-	 <CAErSpo5yZdr4dgqjO6O9PSi3XZXfSOHmjjJRemaqAfmpv5WREA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 12 Jun 2012 10:34:44 -0600
-Message-ID: <1339518884.2415.2.camel@zim.stowe>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753174Ab2FLQil (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 12:38:41 -0400
+Received: from nm1-vm2.bullet.mail.ne1.yahoo.com ([98.138.91.17]:34156 "HELO
+	nm1-vm2.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751306Ab2FLQik convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 12:38:40 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 855540.15029.bm@omp1053.mail.ne1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=hgNvPlTNWxcnbexTfO4lUtRwZkjY0i9EcXrIpN0WAn/o5D5QmSwDq05xtOJ7ZZWvq6pTEtjT/GP1Oz68v10Ukc0YCpK99oe9z6HM3fwiyP/DZ+NbgYeb5pIrza0eQ6u6bmyvQcVB8sGq/etKp3XdceWuG5yY+ryVSrn9z7LjeDA=;
+X-YMail-OSG: HV9OjIYVM1kpCVSTvhtboouZ80_IpQYqRq3SBIskgH1_c_4
+ UKbzu86iVqkeTA.LPdcxpWAHWI4SS16pPQL9TzIzJDqKkgUkxe6e3DPFDz6z
+ ._hhKkjKMqj12NGg0gXK_LVNNLCwWX2Rn6brZ5voWvVfH52AbIL6ES1.I5Z7
+ VvklFFtCVujkgv03Nz51RTnmarrtPOV92UfBvbCJwwTzrjxPM_I46Aji32ZH
+ q4RVWkPyVzniNri.zbfclZcDcDwLqzNZ6UC9XtV3wm9.37NixWxFkHeKWbmz
+ eRVhOc.oXIGvy7wxgbnpshs8eeJmooyUCSWzV3jEcf2qWGuEwNbhI3J3P1UA
+ leVy2z7pL5IeuNJQg9WFGi7ghfrIGQGddSxx_tKQH38DGcox8mxQF3M8MSEI
+ P6cBWbzf4WrrUn_PVwoeRoLiTxd_4oylBV2CYBkgrwcWJjXttRlm_F2.pudO
+ JZhdJpSvNNjJ1oHGyPMJoIj6qsOhus4nUN1TlcZY1W1aonErmAVVNqLnL5_8
+ mxdQ-
+X-Mailer: YahooMailWebService/0.8.118.349524
+References: <1339493860.10145.YahooMailNeo@web111708.mail.gq1.yahoo.com> <20120612103954.GB10124@x1.osrc.amd.com> <1339508890.39685.YahooMailNeo@web111705.mail.gq1.yahoo.com> <4FD75C84.7020105@canonical.com> <1339514128.5023.YahooMailNeo@web111708.mail.gq1.yahoo.com> <4FD760BC.7030409@canonical.com>
+Message-ID: <1339519116.75645.YahooMailNeo@web111719.mail.gq1.yahoo.com>
+Date: Tue, 12 Jun 2012 09:38:36 -0700 (PDT)
+From: Mahmood Naderan <nt_mahmood@yahoo.com>
+Reply-To: Mahmood Naderan <nt_mahmood@yahoo.com>
+Subject: Re: CPU MTRRs and linux kernel
+To: Stefan Bader <stefan.bader@canonical.com>
+Cc: Borislav Petkov <bp@alien8.de>,
+        "\"linux-kernel@vger.kernel.org\"" <linux-kernel@vger.kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+In-Reply-To: <4FD760BC.7030409@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-06-11 at 19:52 -0700, Bjorn Helgaas wrote:
-> On Fri, Jun 1, 2012 at 2:16 PM, Myron Stowe <myron.stowe@redhat.com> wrote:
-> > The following series introduces PCI Express 'capability structure'
-> > related cleanup, fixes, and optimizations.
-> >
-> > Patch 1/4 changes pci_ltr_supported() to a static routine.
-> >
-> > Patch 2/4 removes redundant checking in various PCI Express features as
-> > suggested by Bjorn Helgaas in
-> > http://marc.info/?l=linux-pci&m=130463494319762&w=2
-> >
-> > There is a similar idiom in use that could be similarly be re-factored:
-> >    if (!pci_is_pcie(dev))
-> >        return;
-> >
-> >    pos = pci_find_ext_capability(dev, ...);
-> >    if (!pos)
-> >        return;
-> >
-> > At first it seemed incorrect to remove the redundant call of
-> > pci_is_pcie() in these cases as a PCI or PCI-X (< 2.0) device may be
-> > involved.  In such cases an "extended capability" list would not exist,
-> > as it was not introduced until PCI-X 2.0, and accesses outside of the
-> > device's configuration space would be attempted.  However, upon further
-> > review of pci_find_ext_capability() it looks as if such accesses would
-> > be handled correctly due to the short-circuiting logic involved -
-> >
-> >    if (pci_read_config_dword(dev, pos, &header) != PCIBIOS_SUCCESSFUL)
-> >        return 0;
-> >
-> > As such, I'll entertain comments as to whether or not we should also
-> > make similar removals of pci_is_pcie() in these cases.
-> >
-> > Patch 3/4 introduces pci_pcie_cap2() for use in v2 capability related
-> > feature code.  The makeup of Express' capability structure varies
-> > substantially between v1 and v2.
-> >
-> > There is still some redundancy in PCIe v2 capabilities checking related
-> > to the Latency Tolerance Reporting (LTR) feature routines that likely
-> > could be re-factored further; please feel free to respond with ideas.
-> >
-> > Patch 4/4 makes a minor optimization to the saving and restoring of
-> > PCI Express capability structures.
-> >
-> > Seems like the same type of optimization could be done to remove the
-> > 'if (pcie_cap_has_lnkctl(dev->pcie_type, flags))' check.  According to
-> > section 7.8 "PCI Express Capability Structure" of the PCI Express 1.0a
-> > specification:
-> >
-> >    "Figure 7-10 details allocation of register fields in the PCI
-> >     Express Capability structure. The PCI Express Capabilities,
-> >     Device Capabilities, Device Status/Control, Link Capabilities,
-> >     and Link Status/Control registers are required for all PCI
-> >     Express devices. Endpoints are not required to implement
-> >     registers other than those listed above and terminate the
-> >     capability structure."
-> >
-> > There may have been some early Express devices that did not properly
-> > follow the specification which required the introduction of
-> > 'pcie_cap_has_lnkctl()' so I did not make the additional optimization.
-> > ---
-> >
-> > Myron Stowe (4):
-> >      PCI: Remove redundant capabilities checking in pci_{save,restore}_pcie_state
-> >      PCI: Add pci_pcie_cap2() check for PCIe feature capabilities >= v2
-> >      PCI: Remove redundant checking in PCI Express capability routines
-> >      PCI: make pci_ltr_supported static.
-> 
-> I added Don's acks, made a couple minor changes he suggested, removed
-> the static pci_ltr_supported() function declaration (unnecessary,
-> AFAICS), and pushed these to:
-> 
->   http://git.kernel.org/?p=linux/kernel/git/helgaas/pci.git;a=shortlog;h=refs/heads/topic/stowe-cap-cleanup
-> 
-> If everything looks right to you, I'll merge it into "next" tomorrow.
-> Thanks for doing this; I think it's some nice cleanup and will make
-> things safer and easier to understand.
+>From the kernel version you gave in the
+>initial post I take you are using a Ubuntu 10.04 server installation. And the
+>latest kernel for that release is 2.6.32-41.89 (which should replace any older
+>kernel if you do updates).
+ 
+ok I got it. thanks
 
-Looks good - thanks to both Don and yourself for the suggestions and
-changes to make the patch headers more comprehensible with respect to
-the capabilities structure versions.
-
-Myron
-> 
-> Bjorn
+~MN
 
 
+----- Original Message -----
+From: Stefan Bader <stefan.bader@canonical.com>
+To: Mahmood Naderan <nt_mahmood@yahoo.com>
+Cc: Borislav Petkov <bp@alien8.de>; "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>; Andreas Herrmann <andreas.herrmann3@amd.com>
+Sent: Tuesday, June 12, 2012 8:01 PM
+Subject: Re: CPU MTRRs and linux kernel
+
+On 12.06.2012 17:15, Mahmood Naderan wrote:
+>> And the latest kernel is 2.6.32-41.89 by now...
+> 
+> Sorry 3.4.2 ???
+
+Not sure what this is intended to mean. From the kernel version you gave in the
+initial post I take you are using a Ubuntu 10.04 server installation. And the
+latest kernel for that release is 2.6.32-41.89 (which should replace any older
+kernel if you do updates).
+
+-Stefan
+>  
+> 
+> // Naderan *Mahmood;
+> 
+> 
+> ----- Original Message -----
+> From: Stefan Bader <stefan.bader@canonical.com>
+> To: Mahmood Naderan <nt_mahmood@yahoo.com>
+> Cc: Borislav Petkov <bp@alien8.de>; "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>; Andreas Herrmann <andreas.herrmann3@amd.com>
+> Sent: Tuesday, June 12, 2012 7:43 PM
+> Subject: Re: CPU MTRRs and linux kernel
+> 
+> On 12.06.2012 15:48, Mahmood Naderan wrote:
+>> Thanks Borislav,
+>> I want to know, should I upgrade to the latest kernel or it is possible to download the source of 2.6.32-24 from repository and modify cleanup.c and then recompile?
+>>
+> Just update to the latest kernel. 2.6.32-24.39 is way old. The fix Boris
+> mentioned was in 2.6.32-27.49. And the latest kernel is 2.6.32-41.89 by now...
+> 
+> -Stefan
+> 
+>> ~MN
+>>
+>> ----- Original Message -----
+>> From: Borislav Petkov <bp@alien8.de>
+>> To: Mahmood Naderan <nt_mahmood@yahoo.com>
+>> Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>; Andreas Herrmann <andreas.herrmann3@amd.com>
+>> Sent: Tuesday, June 12, 2012 3:09 PM
+>> Subject: Re: CPU MTRRs and linux kernel
+>>
+>> On Tue, Jun 12, 2012 at 02:37:40AM -0700, Mahmood Naderan wrote:
+>>> Hi everybody,
+>>> Abour rhis warnning in boot log:
+>>>
+>>> WARNING: BIOS bug: CPU MTRRs don't cover all of memory, losing 61952MB of RAM
+>>>
+>>>  
+>>> I
+>>>    searched a lot however didn't find a clear solution. Does AMD new 
+>>> processors (62XX) have problems with new kernels or old kernels??
+>>> Mine is:
+>>>
+>>> Linux n1 2.6.32-24-server #39-Ubuntu SMP Wed Jul 28 06:21:40 UTC 2010 x86_64 GNU/Linux
+>>>
+>>> Should I upgrade?
+>>
+>> Yes, fix is below and it got backported to -stable AFAICT but obviously
+>> the ubuntus don't have it in the kernel you cite above.
+>>
+>>
+>> commit 3fdbf004c1706480a7c7fac3c9d836fa6df20d7d
+>> Author: Andreas Herrmann <andreas.herrmann3@amd.com>
+>> Date:   Thu Sep 30 14:32:35 2010 +0200
+>>
+>>      x86, mtrr: Assume SYS_CFG[Tom2ForceMemTypeWB] exists on all future AMD CPUs
+>>    
+>>      Instead of adapting the CPU family check in amd_special_default_mtrr()
+>>      for each new CPU family assume that all new AMD CPUs support the
+>>      necessary bits in SYS_CFG MSR.
+>>    
+>>      Tom2Enabled is architectural (defined in APM Vol.2).
+>>      Tom2ForceMemTypeWB is defined in all BKDGs starting with K8 NPT.
+>>      In pre K8-NPT BKDG this bit is reserved (read as zero).
+>>    
+>>      W/o this adaption Linux would unnecessarily complain about bad MTRR
+>>      settings on every new AMD CPU family, e.g.
+>>    
+>>      [    0.000000] WARNING: BIOS bug: CPU MTRRs don't cover all of memory, losing 4863MB of RAM.
+>>    
+>>      Cc: stable@kernel.org # .32.x, .35.x
+>>      Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+>>      LKML-Reference: <20100930123235.GB20545@loge.amd.com>
+>>      Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+>>
+>> diff --git a/arch/x86/kernel/cpu/mtrr/cleanup.c b/arch/x86/kernel/cpu/mtrr/cleanup.c
+>> index c5f59d071425..ac140c7be396 100644
+>> --- a/arch/x86/kernel/cpu/mtrr/cleanup.c
+>> +++ b/arch/x86/kernel/cpu/mtrr/cleanup.c
+>> @@ -827,7 +827,7 @@ int __init amd_special_default_mtrr(void)
+>>
+>>          if (boot_cpu_data.x86_vendor != X86_VENDOR_AMD)
+>>                  return 0;
+>> -       if (boot_cpu_data.x86 < 0xf || boot_cpu_data.x86 > 0x11)
+>> +       if (boot_cpu_data.x86 < 0xf)
+>>                  return 0;
+>>          /* In case some hypervisor doesn't pass SYSCFG through: */
+>>          if (rdmsr_safe(MSR_K8_SYSCFG, &l, &h) < 0)
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
