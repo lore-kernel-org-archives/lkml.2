@@ -1,69 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753225Ab2FLO1H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 10:27:07 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59269 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752192Ab2FLO1C (ORCPT
+	id S1753293Ab2FLO1Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 10:27:16 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:60555 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751623Ab2FLO1M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 10:27:02 -0400
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: James.Bottomley@HansenPartnership.com, gregkh@linuxfoundation.org,
-        mdharm-usb@one-eyed-alien.net, stern@rowland.harvard.edu,
-        sshtylyov@mvista.com, bvanassche@acm.org
-Cc: linux-usb@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Pankaj Kumar <pankaj.km@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: [PATCH v4 3/3] usb: storage: update usb devices for write cache quirk in quirk list.
-Date: Tue, 12 Jun 2012 10:26:30 -0400
-Message-Id: <1339511190-2440-1-git-send-email-linkinjeon@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 12 Jun 2012 10:27:12 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAHdPZaMEiJrDdw66KkODd_VuomV0TY6qPZn1z_W48j++ed5YJA@mail.gmail.com>
+References: <1339183331-4108-1-git-send-email-devendra.aaru@gmail.com>
+	<CACRpkdb0TefNMcXyTRkz6Kv5FifJMmSoXzFTQgKhCt6B0T5sDA@mail.gmail.com>
+	<CAHdPZaMEiJrDdw66KkODd_VuomV0TY6qPZn1z_W48j++ed5YJA@mail.gmail.com>
+Date: Tue, 12 Jun 2012 16:27:11 +0200
+Message-ID: <CACRpkdZji5DDoK=GEyCq5QJgksLYJsbgTCCU=dYA1i3Q0SXMqw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] pinctrl: pinctrl-imx: free allocated pinctrl_map
+ structure only once and use kernel facilities for IMX_PMX_DUMP
+From: Linus Walleij <linus.walleij@linaro.org>
+To: "devendra.aaru" <devendra.aaru@gmail.com>
+Cc: Dong Aisheng <aisheng.dong@freescale.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update information of Seagate Portable HDD and WD My Passport HDD in
-quirk list.
+On Tue, Jun 12, 2012 at 2:34 PM, devendra.aaru <devendra.aaru@gmail.com> wrote:
 
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-Signed-off-by: Pankaj Kumar <pankaj.km@samsung.com>
-Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
----
- drivers/usb/storage/unusual_devs.h |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+> so for every review, do we need to increment version count of the patch?
 
-diff --git a/drivers/usb/storage/unusual_devs.h b/drivers/usb/storage/unusual_devs.h
-index 1719886..62a31be 100644
---- a/drivers/usb/storage/unusual_devs.h
-+++ b/drivers/usb/storage/unusual_devs.h
-@@ -1267,6 +1267,12 @@ UNUSUAL_DEV( 0x0af0, 0xd357, 0x0000, 0x0000,
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
- 		0 ),
- 
-+/* Reported by Namjae Jeon <namjae.jeon@samsung.com> */
-+UNUSUAL_DEV(0x0bc2, 0x2300, 0x0000, 0x9999,
-+		"Seagate",
-+		"Portable HDD",
-+		USB_SC_DEVICE, USB_PR_DEVICE, NULL, US_FL_WRITE_CACHE),
-+
- /* Reported by Ben Efros <ben@pc-doctor.com> */
- UNUSUAL_DEV( 0x0bc2, 0x3010, 0x0000, 0x0000,
- 		"Seagate",
-@@ -1468,6 +1474,12 @@ UNUSUAL_DEV(  0x1058, 0x0704, 0x0000, 0x9999,
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
- 		US_FL_SANE_SENSE),
- 
-+/* Reported by Namjae Jeon <namjae.jeon@samsung.com> */
-+UNUSUAL_DEV(0x1058, 0x070a, 0x0000, 0x9999,
-+		"Western Digital",
-+		"My Passport HDD",
-+		USB_SC_DEVICE, USB_PR_DEVICE, NULL, US_FL_WRITE_CACHE),
-+
- /* Reported by Fabio Venturi <f.venturi@tdnet.it>
-  * The device reports a vendor-specific bDeviceClass.
-  */
--- 
-1.7.9.5
+No, just make sure I can understand which is the latest one... any way you
+want :-)
 
+Linus Walleij
