@@ -1,82 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753836Ab2FLRLM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 13:11:12 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:47679 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753098Ab2FLRLJ (ORCPT
+	id S1753366Ab2FLRNk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 13:13:40 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:32797 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752027Ab2FLRNj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 13:11:09 -0400
-Date: Tue, 12 Jun 2012 14:11:02 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Dmitry Antipov <dmitry.antipov@linaro.org>, Ingo Molnar <mingo@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org
-Subject: Re: [PATCH] perf sched replay: fix event lookup
-Message-ID: <20120612171102.GD5816@infradead.org>
-References: <1339232758-920-1-git-send-email-dmitry.antipov@linaro.org>
- <87pq96pfj9.fsf@sejong.aot.lge.com>
- <20120611140852.GB2202@infradead.org>
- <8739616pc9.fsf@sejong.aot.lge.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <8739616pc9.fsf@sejong.aot.lge.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 12 Jun 2012 13:13:39 -0400
+Message-ID: <1339521203.31548.92.camel@twins>
+Subject: Re: [PATCH] perf/x86: check ucode before disabling PEBS on
+ SandyBridge
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Robert Richter <robert.richter@amd.com>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, andi@firstfloor.org, mingo@elte.hu,
+        ming.m.lin@intel.com, Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Dimitri Sivanich <sivanich@sgi.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>
+Date: Tue, 12 Jun 2012 19:13:23 +0200
+In-Reply-To: <CABPqkBRJAA7yRcswM1iYESSwhiGD4SEbir=q=ouQSevi7OAxqQ@mail.gmail.com>
+References: <20120607071531.GA4849@quad> <1339064319.23343.13.camel@twins>
+	 <CABPqkBQ+p5rcuxpXCTLMXPM+awAHhQ6mP9-WzVh5GWtn2GyfrA@mail.gmail.com>
+	 <1339065932.23343.18.camel@twins>
+	 <CABPqkBQ=tLXXsgvzQx+i01Owm4MM8m=6cEVVi4ab64gOiTTBYQ@mail.gmail.com>
+	 <1339067757.23343.21.camel@twins> <20120608093513.GA22520@gmail.com>
+	 <1339149613.23343.52.camel@twins> <1339161972.2507.13.camel@laptop>
+	 <20120612170725.GE5046@erda.amd.com>
+	 <CABPqkBRJAA7yRcswM1iYESSwhiGD4SEbir=q=ouQSevi7OAxqQ@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Jun 12, 2012 at 03:01:26PM +0900, Namhyung Kim escreveu:
-> Hi,
-> 
-> On Mon, 11 Jun 2012 11:08:52 -0300, Arnaldo Carvalho de Melo wrote:
-> > Em Mon, Jun 11, 2012 at 02:46:02PM +0900, Namhyung Kim escreveu:
-> >> On Sat,  9 Jun 2012 13:05:58 +0400, Dmitry Antipov wrote:
-> >> > Use new function trace_find_event_by_name to lookup events before
-> >> > looking through /sys files. This helps 'perf sched replay' to map
-> >> > event names to IDs correctly when processing perf.data recorded
-> >> > on another machine.
-> >> 
-> >> Basically the same approach with the previous reply, please put this
-> >> into trace_event__id(). And minor nits below..
-> >
-> > Well, trace_event__id() is private to evlist and evlist so far is a
-> > local thing, i.e. it doesn't know anything about perf.data files.
-> >
-> 
-> Really? I see that perf_session__open make up an evlist for the session
-> and a tracepoint event in the evlist should look up the perf.data
-> first. As this patch addressed, perf sched replay dealt with the
-> session->evlist already. Am I missing something?
+On Tue, 2012-06-12 at 19:09 +0200, Stephane Eranian wrote:
+> > Instead of registering a microcode notifier, why not checking the
+> > availability of pebs dynamically with each syscall in
+> > intel_pmu_hw_config()? It looks like intel_snb_verify_ucode() is not
+> > that much expensive. We can perform the check only if the event
+> could
+> > be for pebs and if pebs is broken. The check could be repeated when
+> > setting up a new event after ucode could potentially has been
+> updated
+> > (e.g. after bringing a cpu online or so).
 
-I sent a patch fixing it, basically after creating the evlist in
-perf_session__open it will traverse it, looking up the pevents list
-created while processing the trace feature section in the header,
-setting up evsel->name properly.
+Because you then end up with a for_each_online_cpu() loop in there,
+that's not pretty and quite horrible on large systems when you need to
+create nr_cpus events.
 
-> > So I think we should have a per perf.data (perf_session) method that
-> > knows that it shouldn't look _at all_ to /sys, but just at what came in
-> > the perf.data file.
-> >
-> 
-> Fair enough. The method should be a simple wrapper to libtraceevent APIs
-> like this patch.
+Furthermore, ucode update is the rare thing, creating events happens
+much more frequently.
 
-Right, that is what it does.
+> That's what I had in my original version. 
 
-> 
-> > As well when we want something that is on the running machine, even if
-> > we're dealing somehow with a perf.data file, we shouldn't use what is in
-> > it.
-> >
-> 
-> That's the current behavior of the trace_event__id(). Do you want to
-> make it public?
-
-No need for it, the only users should be inside evsel.c.
-
-- Arnaldo
+Right, but you really need to check all cpus, not just the one you
+happen to run on or the boot cpu.
