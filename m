@@ -1,120 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752151Ab2FLIh3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 04:37:29 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:49076 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751443Ab2FLIh0 (ORCPT
+	id S1752163Ab2FLIoX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 04:44:23 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:47555 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751552Ab2FLIoT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 04:37:26 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FD6FF47.8080200@jp.fujitsu.com>
-Date: Tue, 12 Jun 2012 17:35:19 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Tue, 12 Jun 2012 04:44:19 -0400
+From: =?UTF-8?q?Tomasz=20Mo=C5=84?= <desowin@gmail.com>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Hans de Goede <hdegoede@redhat.com>, linux-media@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Tomasz=20Mo=C5=84?= <desowin@gmail.com>
+Subject: [PATCH v2 1/1] v4l: mem2mem_testdev: Add horizontal and vertical flip.
+Date: Tue, 12 Jun 2012 12:43:49 +0200
+Message-Id: <1339497829-4897-1-git-send-email-desowin@gmail.com>
+X-Mailer: git-send-email 1.7.10
 MIME-Version: 1.0
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-CC: linux-mm@kvack.org, dhillf@gmail.com, rientjes@google.com, mhocko@suse.cz,
-        akpm@linux-foundation.org, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH -V8 13/16] hugetlb/cgroup: add hugetlb cgroup control
- files
-References: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1339232401-14392-14-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-In-Reply-To: <1339232401-14392-14-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/06/09 17:59), Aneesh Kumar K.V wrote:
-> From: "Aneesh Kumar K.V"<aneesh.kumar@linux.vnet.ibm.com>
-> 
-> Add the control files for hugetlb controller
-> 
-> Signed-off-by: Aneesh Kumar K.V<aneesh.kumar@linux.vnet.ibm.com>
-> ---
->   include/linux/hugetlb.h        |    5 ++
->   include/linux/hugetlb_cgroup.h |    6 ++
->   mm/hugetlb.c                   |    8 +++
->   mm/hugetlb_cgroup.c            |  130 ++++++++++++++++++++++++++++++++++++++++
->   4 files changed, 149 insertions(+)
-> 
-> diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-> index 4aca057..9650bb1 100644
-> --- a/include/linux/hugetlb.h
-> +++ b/include/linux/hugetlb.h
-> @@ -4,6 +4,7 @@
->   #include<linux/mm_types.h>
->   #include<linux/fs.h>
->   #include<linux/hugetlb_inline.h>
-> +#include<linux/cgroup.h>
-> 
->   struct ctl_table;
->   struct user_struct;
-> @@ -221,6 +222,10 @@ struct hstate {
->   	unsigned int nr_huge_pages_node[MAX_NUMNODES];
->   	unsigned int free_huge_pages_node[MAX_NUMNODES];
->   	unsigned int surplus_huge_pages_node[MAX_NUMNODES];
-> +#ifdef CONFIG_CGROUP_HUGETLB_RES_CTLR
-> +	/* cgroup control files */
-> +	struct cftype cgroup_files[5];
-> +#endif
->   	char name[HSTATE_NAME_LEN];
->   };
-> 
-> diff --git a/include/linux/hugetlb_cgroup.h b/include/linux/hugetlb_cgroup.h
-> index ceff1d5..ba4836f 100644
-> --- a/include/linux/hugetlb_cgroup.h
-> +++ b/include/linux/hugetlb_cgroup.h
-> @@ -62,6 +62,7 @@ extern void hugetlb_cgroup_uncharge_page(int idx, unsigned long nr_pages,
->   					 struct page *page);
->   extern void hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
->   					   struct hugetlb_cgroup *h_cg);
-> +extern int hugetlb_cgroup_file_init(int idx) __init;
->   #else
->   static inline struct hugetlb_cgroup *hugetlb_cgroup_from_page(struct page *page)
->   {
-> @@ -106,5 +107,10 @@ hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
->   {
->   	return;
->   }
-> +
-> +static inline int __init hugetlb_cgroup_file_init(int idx)
-> +{
-> +	return 0;
-> +}
->   #endif  /* CONFIG_MEM_RES_CTLR_HUGETLB */
->   #endif
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index 1ca2d8f..bf79131 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -30,6 +30,7 @@
->   #include<linux/hugetlb.h>
->   #include<linux/hugetlb_cgroup.h>
->   #include<linux/node.h>
-> +#include<linux/hugetlb_cgroup.h>
->   #include "internal.h"
-> 
->   const unsigned long hugetlb_zero = 0, hugetlb_infinity = ~0UL;
-> @@ -1916,6 +1917,13 @@ void __init hugetlb_add_hstate(unsigned order)
->   	h->next_nid_to_free = first_node(node_states[N_HIGH_MEMORY]);
->   	snprintf(h->name, HSTATE_NAME_LEN, "hugepages-%lukB",
->   					huge_page_size(h)/1024);
-> +	/*
-> +	 * Add cgroup control files only if the huge page consists
-> +	 * of more than two normal pages. This is because we use
-> +	 * page[2].lru.next for storing cgoup details.
-> +	 */
-> +	if (order>= 2)
-> +		hugetlb_cgroup_file_init(hugetlb_max_hstate - 1);
-> 
+Add horizontal and vertical flip to the mem2mem_testdev driver.
+Flip modes can be enabled either separately or simultaneously.
 
-What happens at hugetlb module exit ? please see hugetlb_exit().
+Signed-off-by: Tomasz Moń <desowin@gmail.com>
+---
+ drivers/media/video/mem2mem_testdev.c |  135 ++++++++++++++++++++++++++++++---
+ 1 file changed, 124 insertions(+), 11 deletions(-)
 
-BTW, module unload of hugetlbfs is restricted if hugetlb cgroup is mounted ??
-
-Thanks,
--Kame
+diff --git a/drivers/media/video/mem2mem_testdev.c b/drivers/media/video/mem2mem_testdev.c
+index d2dec58..e1b66e9 100644
+--- a/drivers/media/video/mem2mem_testdev.c
++++ b/drivers/media/video/mem2mem_testdev.c
+@@ -60,6 +60,10 @@ MODULE_VERSION("0.1.1");
+ #define MEM2MEM_COLOR_STEP	(0xff >> 4)
+ #define MEM2MEM_NUM_TILES	8
+ 
++/* Flags that indicate processing mode */
++#define MEM2MEM_HFLIP	(1 << 0)
++#define MEM2MEM_VFLIP	(1 << 1)
++
+ #define dprintk(dev, fmt, arg...) \
+ 	v4l2_dbg(1, 1, &dev->v4l2_dev, "%s: " fmt, __func__, ## arg)
+ 
+@@ -131,6 +135,24 @@ static struct m2mtest_q_data *get_q_data(enum v4l2_buf_type type)
+ 
+ static struct v4l2_queryctrl m2mtest_ctrls[] = {
+ 	{
++		.id		= V4L2_CID_HFLIP,
++		.type		= V4L2_CTRL_TYPE_BOOLEAN,
++		.name		= "Mirror",
++		.minimum	= 0,
++		.maximum	= 1,
++		.step		= 1,
++		.default_value	= 0,
++		.flags		= 0,
++	}, {
++		.id		= V4L2_CID_VFLIP,
++		.type		= V4L2_CTRL_TYPE_BOOLEAN,
++		.name		= "Vertical Mirror",
++		.minimum	= 0,
++		.maximum	= 1,
++		.step		= 1,
++		.default_value	= 0,
++		.flags		= 0,
++	}, {
+ 		.id		= V4L2_CID_TRANS_TIME_MSEC,
+ 		.type		= V4L2_CTRL_TYPE_INTEGER,
+ 		.name		= "Transaction time (msec)",
+@@ -197,6 +219,9 @@ struct m2mtest_ctx {
+ 	/* Abort requested by m2m */
+ 	int			aborting;
+ 
++	/* Processing mode */
++	int			mode;
++
+ 	struct v4l2_m2m_ctx	*m2m_ctx;
+ };
+ 
+@@ -247,19 +272,84 @@ static int device_process(struct m2mtest_ctx *ctx,
+ 	bytes_left = bytesperline - tile_w * MEM2MEM_NUM_TILES;
+ 	w = 0;
+ 
+-	for (y = 0; y < height; ++y) {
+-		for (t = 0; t < MEM2MEM_NUM_TILES; ++t) {
+-			if (w & 0x1) {
+-				for (x = 0; x < tile_w; ++x)
+-					*p_out++ = *p_in++ + MEM2MEM_COLOR_STEP;
+-			} else {
+-				for (x = 0; x < tile_w; ++x)
+-					*p_out++ = *p_in++ - MEM2MEM_COLOR_STEP;
++	switch (ctx->mode) {
++	case MEM2MEM_HFLIP | MEM2MEM_VFLIP:
++		p_out += bytesperline * height - bytes_left;
++		for (y = 0; y < height; ++y) {
++			for (t = 0; t < MEM2MEM_NUM_TILES; ++t) {
++				if (w & 0x1) {
++					for (x = 0; x < tile_w; ++x)
++						*--p_out = *p_in++ +
++							MEM2MEM_COLOR_STEP;
++				} else {
++					for (x = 0; x < tile_w; ++x)
++						*--p_out = *p_in++ -
++							MEM2MEM_COLOR_STEP;
++				}
++				++w;
+ 			}
+-			++w;
++			p_in += bytes_left;
++			p_out -= bytes_left;
++		}
++		break;
++
++	case MEM2MEM_HFLIP:
++		for (y = 0; y < height; ++y) {
++			p_out += MEM2MEM_NUM_TILES * tile_w;
++			for (t = 0; t < MEM2MEM_NUM_TILES; ++t) {
++				if (w & 0x01) {
++					for (x = 0; x < tile_w; ++x)
++						*--p_out = *p_in++ +
++							MEM2MEM_COLOR_STEP;
++				} else {
++					for (x = 0; x < tile_w; ++x)
++						*--p_out = *p_in++ -
++							MEM2MEM_COLOR_STEP;
++				}
++				++w;
++			}
++			p_in += bytes_left;
++			p_out += bytesperline;
++		}
++		break;
++
++	case MEM2MEM_VFLIP:
++		p_out += bytesperline * (height - 1);
++		for (y = 0; y < height; ++y) {
++			for (t = 0; t < MEM2MEM_NUM_TILES; ++t) {
++				if (w & 0x1) {
++					for (x = 0; x < tile_w; ++x)
++						*p_out++ = *p_in++ +
++							MEM2MEM_COLOR_STEP;
++				} else {
++					for (x = 0; x < tile_w; ++x)
++						*p_out++ = *p_in++ -
++							MEM2MEM_COLOR_STEP;
++				}
++				++w;
++			}
++			p_in += bytes_left;
++			p_out += bytes_left - 2 * bytesperline;
++		}
++		break;
++
++	default:
++		for (y = 0; y < height; ++y) {
++			for (t = 0; t < MEM2MEM_NUM_TILES; ++t) {
++				if (w & 0x1) {
++					for (x = 0; x < tile_w; ++x)
++						*p_out++ = *p_in++ +
++							MEM2MEM_COLOR_STEP;
++				} else {
++					for (x = 0; x < tile_w; ++x)
++						*p_out++ = *p_in++ -
++							MEM2MEM_COLOR_STEP;
++				}
++				++w;
++			}
++			p_in += bytes_left;
++			p_out += bytes_left;
+ 		}
+-		p_in += bytes_left;
+-		p_out += bytes_left;
+ 	}
+ 
+ 	return 0;
+@@ -646,6 +736,14 @@ static int vidioc_g_ctrl(struct file *file, void *priv,
+ 	struct m2mtest_ctx *ctx = priv;
+ 
+ 	switch (ctrl->id) {
++	case V4L2_CID_HFLIP:
++		ctrl->value = (ctx->mode & MEM2MEM_HFLIP) ? 1 : 0;
++		break;
++
++	case V4L2_CID_VFLIP:
++		ctrl->value = (ctx->mode & MEM2MEM_VFLIP) ? 1 : 0;
++		break;
++
+ 	case V4L2_CID_TRANS_TIME_MSEC:
+ 		ctrl->value = ctx->transtime;
+ 		break;
+@@ -689,6 +787,20 @@ static int vidioc_s_ctrl(struct file *file, void *priv,
+ 		return ret;
+ 
+ 	switch (ctrl->id) {
++	case V4L2_CID_HFLIP:
++		if (ctrl->value)
++			ctx->mode |= MEM2MEM_HFLIP;
++		else
++			ctx->mode &= ~MEM2MEM_HFLIP;
++		break;
++
++	case V4L2_CID_VFLIP:
++		if (ctrl->value)
++			ctx->mode |= MEM2MEM_VFLIP;
++		else
++			ctx->mode &= ~MEM2MEM_VFLIP;
++		break;
++
+ 	case V4L2_CID_TRANS_TIME_MSEC:
+ 		ctx->transtime = ctrl->value;
+ 		break;
+@@ -859,6 +971,7 @@ static int m2mtest_open(struct file *file)
+ 	ctx->translen = MEM2MEM_DEF_TRANSLEN;
+ 	ctx->transtime = MEM2MEM_DEF_TRANSTIME;
+ 	ctx->num_processed = 0;
++	ctx->mode = 0;
+ 
+ 	ctx->m2m_ctx = v4l2_m2m_ctx_init(dev->m2m_dev, ctx, &queue_init);
+ 
+-- 
+1.7.10
 
