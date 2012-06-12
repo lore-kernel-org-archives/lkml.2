@@ -1,58 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754167Ab2FLUm3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 16:42:29 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45636 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752144Ab2FLUm2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 16:42:28 -0400
-Message-ID: <4FD7A99F.8030007@zytor.com>
-Date: Tue, 12 Jun 2012 13:42:07 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
-        andi@firstfloor.org, mingo@elte.hu, ming.m.lin@intel.com,
-        "Yu, Fenghua" <fenghua.yu@intel.com>
-Subject: Re: [PATCH] perf/x86: check ucode before disabling PEBS on SandyBridge
-References: <20120607071531.GA4849@quad> <4FD78BE6.4060207@zytor.com> <20120612190720.GA11137@aftab.osrc.amd.com> <1339529614.31548.104.camel@twins> <20120612194900.GC11137@aftab.osrc.amd.com> <4FD7A687.3040500@zytor.com> <20120612203730.GE11137@aftab.osrc.amd.com>
-In-Reply-To: <20120612203730.GE11137@aftab.osrc.amd.com>
-X-Enigmail-Version: 1.4.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1754186Ab2FLUow (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 16:44:52 -0400
+Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:53736 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753469Ab2FLUov (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 16:44:51 -0400
+From: "Andrew Stiegmann (stieg)" <astiegmann@vmware.com>
+To: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        vm-crosstalk@vmware.com
+Cc: gregkh@linuxfoundation.org, cschamp@vmware.com, dtor@vmware.com,
+        acking@vmware.com, dsouders@vmware.com,
+        "Andrew Stiegmann (stieg)" <astiegmann@vmware.com>
+Subject: [vmw_vmci RFCv2 00/11] VMCI for Linux
+Date: Tue, 12 Jun 2012 13:44:19 -0700
+Message-Id: <1339533870-24187-1-git-send-email-astiegmann@vmware.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/12/2012 01:37 PM, Borislav Petkov wrote:
-> On Tue, Jun 12, 2012 at 01:28:55PM -0700, H. Peter Anvin wrote:
->> On 06/12/2012 12:49 PM, Borislav Petkov wrote:
->>>
->>> Also, I'd assume we need some of the current functionality to be able to
->>> load ucode without rebooting the box.
->>>
->>
->> Yes, the basic idea is that we'll keep the ucode around anyway so we can
->> feed it to hotplug CPUs or S3 resume.  If the ucode is updated from
->> userspace we'd replace the in-memory copy and load it into the CPUs.
-> 
-> You say CPUs, i.e. plural. What is your take on loading ucode on a
-> single core, i.e. the /sys/devices/system/cpu/cpuX/microcode/reload
-> interface? Do you guys need to load ucode only system-wide or can you
-> stomach per-core loads?
-> 
-> I want to disable it (or even remove it, modulo the whole userspace
-> compat blah blah) on AMD.
-> 
-> Also, if we do system-wide, can we have a single sysfs node where we
-> give the new ucode from userspace instead of per-cpu files?
-> 
+Second revision of the VMware VMCI RFC patchset.  It incorperates
+fixes for all the feedback about the comment blocks and style and now
+passes checkpatch with 0 errors and 0 warnings.  Thanks to all who
+have reviewed the code thus far.
 
-I personally don't know of any valid use case for per-core loads, and it
-sounds like a horrid idea.  And yes, I would prefer a single sysfs file,
-or better yet a plain old device node.
+* * *
 
-	-hpa
+In an effort to improve the out-of-the-box experience with Linux
+kernels for VMware users, VMware is working on readying the Virtual
+Machine Communication Interface (vmw_vmci) and VMCI Sockets
+(vmw_vsock) kernel modules for inclusion in the Linux kernel. The
+purpose of this post is to acquire feedback on the vmw_vmci kernel
+module. The vmw_vsock kernel module will be presented in a later post.
+
+VMCI allows virtual machines to communicate with host kernel modules
+and the VMware hypervisors. User level applications both in a virtual
+machine and on the host can use vmw_vmci through VMCI Sockets, a socket
+address family designed to be compatible with UDP and TCP at the
+interface level. Today, VMCI and VMCI Sockets are used by the VMware
+shared folders (HGFS) and various VMware Tools components inside the
+guest for zero-config, network-less access to VMware host services. In
+addition to this, VMware's users are using VMCI Sockets for various
+applications, where network access of the virtual machine is
+restricted or non-existent. Examples of this are VMs communicating
+with device proxies for proprietary hardware running as host
+applications and automated testing of applications running within
+virtual machines.
+
+In a virtual machine, VMCI is exposed as a regular PCI device. The
+primary communication mechanisms supported are a point-to-point
+bidirectional transport based on a pair of memory-mapped queues, and
+asynchronous notifications in the form of datagrams and
+doorbells. These features are available to kernel level components
+such as HGFS and VMCI Sockets through the VMCI kernel API. In addition
+to this, the VMCI kernel API provides support for receiving events
+related to the state of the VMCI communication channels, and the
+virtual machine itself.
+
+Outside the virtual machine, the host side support of the VMCI kernel
+module makes the same VMCI kernel API available to VMCI endpoints on
+the host. In addition to this, the host side manages each VMCI device
+in a virtual machine through a context object. This context object
+serves to identify the virtual machine for communication, and to track
+the resource consumption of the given VMCI device. Both operations
+related to communication between the virtual machine and the host
+kernel, and those related to the management of the VMCI device state
+in the host kernel, are invoked by the user level component of the
+hypervisor through a set of ioctls on the VMCI device node.  To
+provide seamless support for nested virtualization, where a virtual
+machine may use both a VMCI PCI device to talk to its hypervisor, and
+the VMCI host side support to run nested virtual machines, the VMCI
+host and virtual machine support are combined in a single kernel
+module.
+
+For additional information about the use of VMCI and in particular
+VMCI Sockets, please refer to the VMCI Socket Programming Guide
+available at https://www.vmware.com/support/developer/vmci-sdk/.
+
+Andrew Stiegmann (stieg) (11):
+  Apply VMCI context code
+  Apply VMCI datagram code
+  Apply VMCI doorbell code
+  Apply VMCI driver code
+  Apply VMCI event code
+  Apply dynamic array code
+  Apply VMCI hash table
+  Apply VMCI queue pairs
+  Apply VMCI resource code
+  Apply vmci routing code
+  Apply the header code to make VMCI build
+
+ drivers/misc/Kconfig                      |    1 +
+ drivers/misc/Makefile                     |    1 +
+ drivers/misc/vmw_vmci/Kconfig             |   16 +
+ drivers/misc/vmw_vmci/Makefile            |   43 +
+ drivers/misc/vmw_vmci/vmci_common_int.h   |   58 +
+ drivers/misc/vmw_vmci/vmci_context.c      | 1269 +++++++++++
+ drivers/misc/vmw_vmci/vmci_context.h      |  161 ++
+ drivers/misc/vmw_vmci/vmci_datagram.c     |  586 +++++
+ drivers/misc/vmw_vmci/vmci_datagram.h     |   56 +
+ drivers/misc/vmw_vmci/vmci_doorbell.c     |  751 ++++++
+ drivers/misc/vmw_vmci/vmci_doorbell.h     |   57 +
+ drivers/misc/vmw_vmci/vmci_driver.c       | 2297 +++++++++++++++++++
+ drivers/misc/vmw_vmci/vmci_driver.h       |   52 +
+ drivers/misc/vmw_vmci/vmci_event.c        |  453 ++++
+ drivers/misc/vmw_vmci/vmci_event.h        |   29 +
+ drivers/misc/vmw_vmci/vmci_handle_array.c |  174 ++
+ drivers/misc/vmw_vmci/vmci_handle_array.h |   50 +
+ drivers/misc/vmw_vmci/vmci_hash_table.c   |  332 +++
+ drivers/misc/vmw_vmci/vmci_hash_table.h   |   56 +
+ drivers/misc/vmw_vmci/vmci_queue_pair.c   | 3549 +++++++++++++++++++++++++++++
+ drivers/misc/vmw_vmci/vmci_queue_pair.h   |  182 ++
+ drivers/misc/vmw_vmci/vmci_resource.c     |  194 ++
+ drivers/misc/vmw_vmci/vmci_resource.h     |   62 +
+ drivers/misc/vmw_vmci/vmci_route.c        |  241 ++
+ drivers/misc/vmw_vmci/vmci_route.h        |   34 +
+ include/linux/vmw_vmci_api.h              |   89 +
+ include/linux/vmw_vmci_defs.h             |  921 ++++++++
+ 27 files changed, 11714 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/misc/vmw_vmci/Kconfig
+ create mode 100644 drivers/misc/vmw_vmci/Makefile
+ create mode 100644 drivers/misc/vmw_vmci/vmci_common_int.h
+ create mode 100644 drivers/misc/vmw_vmci/vmci_context.c
+ create mode 100644 drivers/misc/vmw_vmci/vmci_context.h
+ create mode 100644 drivers/misc/vmw_vmci/vmci_datagram.c
+ create mode 100644 drivers/misc/vmw_vmci/vmci_datagram.h
+ create mode 100644 drivers/misc/vmw_vmci/vmci_doorbell.c
+ create mode 100644 drivers/misc/vmw_vmci/vmci_doorbell.h
+ create mode 100644 drivers/misc/vmw_vmci/vmci_driver.c
+ create mode 100644 drivers/misc/vmw_vmci/vmci_driver.h
+ create mode 100644 drivers/misc/vmw_vmci/vmci_event.c
+ create mode 100644 drivers/misc/vmw_vmci/vmci_event.h
+ create mode 100644 drivers/misc/vmw_vmci/vmci_handle_array.c
+ create mode 100644 drivers/misc/vmw_vmci/vmci_handle_array.h
+ create mode 100644 drivers/misc/vmw_vmci/vmci_hash_table.c
+ create mode 100644 drivers/misc/vmw_vmci/vmci_hash_table.h
+ create mode 100644 drivers/misc/vmw_vmci/vmci_queue_pair.c
+ create mode 100644 drivers/misc/vmw_vmci/vmci_queue_pair.h
+ create mode 100644 drivers/misc/vmw_vmci/vmci_resource.c
+ create mode 100644 drivers/misc/vmw_vmci/vmci_resource.h
+ create mode 100644 drivers/misc/vmw_vmci/vmci_route.c
+ create mode 100644 drivers/misc/vmw_vmci/vmci_route.h
+ create mode 100644 include/linux/vmw_vmci_api.h
+ create mode 100644 include/linux/vmw_vmci_defs.h
 
