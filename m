@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753190Ab2FLB2t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 21:28:49 -0400
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:57084 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752761Ab2FLB2r (ORCPT
+	id S1753264Ab2FLB2y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 21:28:54 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:36859 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753210Ab2FLB2v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 21:28:47 -0400
-Message-ID: <4FD69B42.4070709@xenotime.net>
-Date: Mon, 11 Jun 2012 18:28:34 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        LKML <linux-kernel@vger.kernel.org>
-CC: Leonid Froenchenko <lfroen@galileo.co.il>,
-        Jarod Wilson <jarod@wilsonet.com>
-Subject: [PATCH] staging/media/lirc: fix some lirc_bt829.c sparse warnings
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Mon, 11 Jun 2012 21:28:51 -0400
+From: Filipe Brandenburger <filbranden@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Roland McGrath <roland@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Filipe Brandenburger <filbranden@gmail.com>
+Subject: [PATCHv2 0/1] prctl: move pdeath_signal from task_struct to signal_struct
+Date: Mon, 11 Jun 2012 21:28:18 -0400
+Message-Id: <1339464499-10270-1-git-send-email-filbranden@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1338332348-3469-1-git-send-email-filbranden@gmail.com>
+References: <1338332348-3469-1-git-send-email-filbranden@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
+Hello,
 
-Fix some sparse warnings in lirc_bt829.c:
+This is a second version of the patch that I previously submitted under
+title "prctl: pdeath_signal sent when parent thread (instead of parent
+process) dies". As per the discussion on the original patch, I reworked
+it to move pdeath_signal to signal_struct and make it truly per-process.
 
-drivers/staging/media/lirc/lirc_bt829.c:174:22: warning: non-ANSI function declaration of function 'poll_main'
-drivers/staging/media/lirc/lirc_bt829.c:161:29: warning: Using plain integer as NULL pointer
-drivers/staging/media/lirc/lirc_bt829.c:134:35: warning: Using plain integer as NULL pointer
+On Bugzilla #43300, there is some extra discussion and three test cases
+including a transcript of their output running on the unpatched kernel
+and on the patched kernel. The three test cases check three corner cases
+where the current per-task pdeath_signal shows some behavior that is
+counter intuitive and goes against what is in the documentation (the
+prctl(2) manpage states that PR_SET_PDEATHSIG sets "the parent process
+death signal of the calling process" which makes it clear that it is
+supposed to be per-process.)
 
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Leonid Froenchenko <lfroen@galileo.co.il>
-Cc: Jarod Wilson <jarod@wilsonet.com>
----
- drivers/staging/media/lirc/lirc_bt829.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+A link to the Bugzilla report:
+https://bugzilla.kernel.org/show_bug.cgi?id=43300
 
---- lnx-35-rc2.orig/drivers/staging/media/lirc/lirc_bt829.c
-+++ lnx-35-rc2/drivers/staging/media/lirc/lirc_bt829.c
-@@ -131,7 +131,7 @@ int init_module(void)
- 	atir_driver.minor       = -1;
- 	atir_driver.code_length = 8;
- 	atir_driver.sample_rate = 10;
--	atir_driver.data        = 0;
-+	atir_driver.data        = NULL;
- 	atir_driver.add_to_buf  = atir_add_to_buf;
- 	atir_driver.set_use_inc = atir_set_use_inc;
- 	atir_driver.set_use_dec = atir_set_use_dec;
-@@ -158,7 +158,7 @@ void cleanup_module(void)
- static int atir_init_start(void)
- {
- 	pci_addr_lin = ioremap(pci_addr_phys + DATA_PCI_OFF, 0x400);
--	if (pci_addr_lin == 0) {
-+	if (pci_addr_lin == NULL) {
- 		printk(KERN_INFO DRIVER_NAME ": pci mem must be mapped\n");
- 		return 0;
- 	}
-@@ -171,7 +171,7 @@ static void cycle_delay(int cycle)
- }
- 
- 
--static int poll_main()
-+static int poll_main(void)
- {
- 	unsigned char status_high, status_low;
- 
+Thanks,
+Filipe
+
+
+Filipe Brandenburger (1):
+  prctl: move pdeath_signal from task_struct to signal_struct
+
+ fs/exec.c                  |    2 +-
+ include/linux/sched.h      |    7 ++++++-
+ kernel/cred.c              |    2 +-
+ kernel/exit.c              |    8 +++++---
+ kernel/fork.c              |    1 -
+ kernel/sys.c               |    5 +++--
+ security/apparmor/domain.c |    2 +-
+ security/selinux/hooks.c   |    2 +-
+ security/smack/smack_lsm.c |    2 +-
+ 9 files changed, 19 insertions(+), 12 deletions(-)
+
+-- 
+1.7.7.6
+
