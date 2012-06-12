@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753378Ab2FLP4W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 11:56:22 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:54780 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752303Ab2FLP4U convert rfc822-to-8bit (ORCPT
+	id S1753426Ab2FLP5H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 11:57:07 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:37406 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752303Ab2FLP5E convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 11:56:20 -0400
+	Tue, 12 Jun 2012 11:57:04 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120612062000.GA6932@8bytes.org>
-References: <20120611152021.25959.71601.stgit@bling.home> <CAErSpo434tDtnSOxB_REG2jFNrZL=aZERWTmmK-cdjqM4z6yWg@mail.gmail.com>
- <20120612062000.GA6932@8bytes.org>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 12 Jun 2012 09:55:59 -0600
-Message-ID: <CAErSpo6J61+XhtEeXdE-5Evhs-SJ4=3iEZDAXGuRi9moAU8KhQ@mail.gmail.com>
-Subject: Re: [PATCH v3 0/5] PCI: Prep for VFIO and IOMMU Groups
-To: Joerg Roedel <joro@8bytes.org>
-Cc: Alex Williamson <alex.williamson@redhat.com>, benh@kernel.crashing.org,
-        aik@ozlabs.ru, linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        iommu@lists.linux-foundation.org, dwmw2@infradead.org,
-        david@gibson.dropbear.id.au
+In-Reply-To: <CAF8ieYUyiRj45O+zu399yL_biE6fm-q8W-qjaxTHNS4ci3otBA@mail.gmail.com>
+References: <1333380769-2650-1-git-send-email-consul.kautuk@gmail.com>
+	<CAF8ieYUyiRj45O+zu399yL_biE6fm-q8W-qjaxTHNS4ci3otBA@mail.gmail.com>
+Date: Tue, 12 Jun 2012 21:27:03 +0530
+Message-ID: <CAFPAmTT4tHkLM1ig8GRM4O8vMmXPO2o4cCE=2abqd0e+B+CkTQ@mail.gmail.com>
+Subject: Re: [PATCH 01/19 v2.1] avr32/mm/fault.c: Port OOM changes to do_page_fault
+From: Kautuk Consul <consul.kautuk@gmail.com>
+To: =?ISO-8859-1?Q?H=E5vard_Skinnemoen?= <hskinnemoen@gmail.com>
+Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        linux-kernel@vger.kernel.org, "Mohd. Faris" <mohdfarisq2010@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 12, 2012 at 12:20 AM, Joerg Roedel <joro@8bytes.org> wrote:
-> Hi Bjorn,
->
-> On Mon, Jun 11, 2012 at 06:59:25PM -0600, Bjorn Helgaas wrote:
->> On Mon, Jun 11, 2012 at 8:26 AM, Alex Williamson
->> <alex.williamson@redhat.com> wrote:
->> > v3:
->> >  - Small change to device specific ACS check to allow quirk to
->> >   support yes/no/pass type functionality. (no change to other
->> >   patches and no trickle down through IOMMU series)
->> >
->> > Bjorn, what's needed to get these in?  Thanks,
+hi,
+
+When can I see this patch in linux-next ?
+
+Thanks,
+Kautuk.
+
+On Mon, Apr 2, 2012 at 9:46 PM, Håvard Skinnemoen <hskinnemoen@gmail.com> wrote:
+> On Mon, Apr 2, 2012 at 8:32 AM, Kautuk Consul <consul.kautuk@gmail.com> wrote:
+>> Commit d065bd810b6deb67d4897a14bfe21f8eb526ba99
+>> (mm: retry page fault when blocking on disk transfer) and
+>> commit 37b23e0525d393d48a7d59f870b3bc061a30ccdb
+>> (x86,mm: make pagefault killable)
 >>
->> Sorry for the delay.  I applied these to my "next" branch (headed for
->> 3.6).  I didn't feel comfortable pushing them towards 3.5 since
->> they're not bugfixes, and they haven't been in -next yet.
+>> The above commits introduced changes into the x86 pagefault handler
+>> for making the page fault handler retryable as well as killable.
+>>
+>> These changes reduce the mmap_sem hold time, which is crucial
+>> during OOM killer invocation.
+>>
+>> Port these changes to AVR32.
+>>
+>> Signed-off-by: Mohd. Faris <mohdfarisq2010@gmail.com>
+>> Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
 >
-> Great. Do you applied them directly to your next branch or do you have
-> them in a seperate branch I can pull in to merge the IOMMU Groups
-> patches on-top? The later would be really good :)
-
-Hi Joerg, I have Alex's patches on a separate topic branch.  I folded
-in the pci_get_dev() fix and pushed it to here:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git
-topic/alex-vfio-prep
-
-This is also included in my "next" branch.
-
-Bjorn
+> Acked-by: Havard Skinnemoen <hskinnemoen@gmail.com>
