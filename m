@@ -1,83 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752940Ab2FLOrG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 10:47:06 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:52620 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752191Ab2FLOrE (ORCPT
+	id S1753347Ab2FLOt3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 10:49:29 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:53778 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752619Ab2FLOt2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 10:47:04 -0400
-Message-ID: <4FD75648.7060702@pengutronix.de>
-Date: Tue, 12 Jun 2012 16:46:32 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-Organization: Pengutronix e.K.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	Tue, 12 Jun 2012 10:49:28 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH 06/14] mfd: Initialise the DB8500 PRCMU driver at core_initcall time
+Date: Tue, 12 Jun 2012 14:49:22 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: Linus Walleij <linus.walleij@linaro.org>, grant.likely@secretlab.ca,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, Samuel Ortiz <sameo@linux.intel.com>
+References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org> <201206121259.38807.arnd@arndb.de> <4FD742C9.7090603@linaro.org>
+In-Reply-To: <4FD742C9.7090603@linaro.org>
 MIME-Version: 1.0
-To: Federico Vaga <federico.vaga@gmail.com>
-CC: Wolfgang Grandegger <wg@grandegger.com>,
-        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
-        Alan Cox <alan@linux.intel.com>, Alessandro Rubini <rubini@gnudd.com>,
-        linux-can@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] c_can_pci: generic module for c_can on PCI
-References: <4FC135C6.5030206@grandegger.com> <1338816766-7089-2-git-send-email-federico.vaga@gmail.com> <4FCCC077.7000303@pengutronix.de> <2105333.GQGP4hKIYU@harkonnen>
-In-Reply-To: <2105333.GQGP4hKIYU@harkonnen>
-X-Enigmail-Version: 1.4.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig28374E933A468630350573AD"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201206121449.22978.arnd@arndb.de>
+X-Provags-ID: V02:K0:FoT1vogn5scv+jkXLLJ19QGzWboIwlGRY91UswhOm/K
+ Adztr9J4wNb6F2v4cGhq1joByOh/GgCAzJ0KpyyLnHpjZ9ySf3
+ u+x1/8nrLPSLYIEw3zMfXXWJFYt1IxBTjrwM+95iIgPGBeeJdS
+ eoCBjIevhGrYKsFqxfvyPKVlxTNoXlyR/PcHKjz78B4j6+Fv/a
+ NaXfTWYGs/KAoApA17/sNaJoExjkLSGJQaocoV5hetpUVZ0gcU
+ f43woG1ShhW85TdBVooQMG1o5s0oLzZWhH//QJ9x3pFiju9M5Q
+ LJPhJiuaIr7NN1QH7Mmzb2q9+l9tU0rkNDN3CBDnf1YPBb8Vm+
+ Kero5dSv3rQatII8akpI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig28374E933A468630350573AD
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Tuesday 12 June 2012, Lee Jones wrote:
+> But your suggestion above involves some heavy refactoring of how Device 
+> Tree works. Meanwhile the ab8500 will not work as an IRQ controller 
+> until we either complete the work or use the same solution as we did for 
+> the Nomadik GPIO controller. I think for now at least we should continue 
+> to work on enablement and leave the 'nice to have's until last. We are 
+> doing nothing new here, just bringing the ab8500 IRQ controller into 
+> line with the Nomadik one.
 
-On 06/12/2012 04:25 PM, Federico Vaga wrote:
->>> +out_free_clock:
->>> +	if (!priv->priv)
->>
->>            ^^^
->>
->> looks fishy
->=20
-> Also c_can_platform.c use priv->priv when it needs to get clk. I can ad=
-d=20
-> a comment to specify what the statement do.
+Right, I didn't say we should not take your patch, but we should be
+aware that it's not the solution we want to use in the long run.
 
-> +out_free_clock:
-> +	if (!priv->priv)
-> +		clk_put(priv->priv);
-
-Why do you call clk_put on priv->priv, if priv->priv is NULL?
-
-Marc
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---------------enig28374E933A468630350573AD
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk/XVkgACgkQjTAFq1RaXHPa2QCePTAWniuYkAWURBkjbmYbR7pe
-wkEAn3+b16dz+073eYLCrWilNg8AdqkD
-=VOy/
------END PGP SIGNATURE-----
-
---------------enig28374E933A468630350573AD--
+	Arnd
