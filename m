@@ -1,92 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753468Ab2FLW3f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 18:29:35 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:37465 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753284Ab2FLW3d (ORCPT
+	id S1753426Ab2FLWcn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 18:32:43 -0400
+Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:56667 "EHLO
+	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751445Ab2FLWcm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 18:29:33 -0400
-Date: Tue, 12 Jun 2012 15:29:12 -0700
-From: Mandeep Singh Baines <msb@google.com>
-To: Daniel Walker <dwalker@fifo99.com>
-Cc: fweisbec@gmail.com, msb@chromium.org, sshaiju@mvista.com, mingo@elte.hu,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: hung_task checking and sys_sync
-Message-ID: <20120612222912.GB16381@google.com>
-References: <20120612220924.GA13376@fifo99.com>
-MIME-Version: 1.0
+	Tue, 12 Jun 2012 18:32:42 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120612220924.GA13376@fifo99.com>
-X-Operating-System: Linux/2.6.38.8-gg683 (x86_64)
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Mime-Version: 1.0 (Apple Message framework v1278)
+Subject: Patch: Fix return value in cifsConvertToUTF16().
+From: Anton Altaparmakov <aia21@cam.ac.uk>
+Date: Tue, 12 Jun 2012 23:32:40 +0100
+Cc: linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <AA265B63-A9D7-4A21-A279-88894DEF46C4@cam.ac.uk>
+To: Steve French <sfrench@samba.org>
+X-Mailer: Apple Mail (2.1278)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Daniel Walker (dwalker@fifo99.com) wrote:
-> 
+Hi,
 
-Hi Daniel,
+Please apply the below patch which fixes the return value in cifsConvertToUTF16().  At the moment it is returning the number of bytes in the input string which is not the same as returning the number of returned UTF16 characters!  (Note the mount is done using "iocharset=utf8".)
 
-> I found this commit which was a while ago,
-> 
-> commit fb822db465bd9fd4208eef1af4490539b236c54e
-> Author: Ingo Molnar <mingo@elte.hu>
-> Date:   Wed Aug 20 11:17:40 2008 +0200
-> 
->     softlockup: increase hung tasks check from 2 minutes to 8 minutes
->     
->     Andrew says:
->     
->     > Seems that about 100% of the reports we get of this warning triggering
->     > are sys_sync, transaction commit, etc.
->     
->     increase the timeout. If it still triggers for people, we can kill it.
->     
->     Signed-off-by: Ingo Molnar <mingo@elte.hu>
-> 
-> 
-> We're seeing these messages on an older kernel (montavista) but the code areas
-> appear similar to current kernels. The issue is that we're doing a file copy
-> which takes 10-15minutes, and in the background there is a "df --sync"
-> happening (which is calling sys_sync). We end up getting a hung task message
-> like below,
-> 
-> INFO: task df:1778 blocked for more than 120 seconds.
-> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-> ffffffff81578d40 0000000000000086 ffff8801f6135b00 ffff880269a91800
-> ffff880269a91800 ffff8802702be000 ffff8801f602a080 0000000000000000
-> ffff8801f602a440 ffffffff8109c166 ffff8801e863de18 0000000000000004
-> Call Trace:
->   [<ffffffff8109c166>] ? sync_page+0x0/0x49
->   [<ffffffff81320de2>] ? __schedule+0x3c/0x57
->   [<ffffffff810ea3c7>] ? bdi_sched_wait+0x0/0xe
->   [<ffffffff81320de2>] ? __schedule+0x3c/0x57
->   [<ffffffff81320e0d>] ? schedule+0x10/0x1e
->   [<ffffffff810ea3d0>] ? bdi_sched_wait+0x9/0xe
-> 
-> There some variation in the stack trace , but always thru bdi_sched_wait().
-> 
-> 
-> These don't seem like valid warnings, since the copy happening is know to take
-> a long time.
+This causes rename system call with source being a Unicode name to fail because in UTF8 the unicode characters are more than one byte long thus cifsConvertToUTF16() returns a number larger than the actual number of returned UTF16 characters thus CIFSSMBRename() ends up constructing one or more NULL characters at the end of the source filename thus it sends a rename command like this to the server: "source_name\0 target_name" which the server presumably interprets as just "source_name" which is obviously bogus for a rename call and thus the rename fails.
 
-But the time is not unbounded. You could mask the hung_task_detector for
-this case but then you lose the ability to catch bugs in this code path.
+The simple and obviously correct fix is the below patch which changes the cifsConvertToUTF16() function to return variable "j" instead of "i" which is the index into the destination UTF16 array which is the correct thing to do and fixes the rename bug.
 
-The timeout is configurable via /proc/sys/kernel/hung_task_timeout_secs.
-Can you bump up the value at boot via sysctl.conf?
+Signed-off-by: Anton Altaparmakov <aia21@cam.ac.uk>
 
-> Has there been any commit that disable these messages bdi_sched_wait?
-> 
+Best regards,
 
-No. There is no mechanism to disable hung_task for a specific code path.
-We do skip processes if PF_PROZEN or PF_FROZEN_SKIP is set but that is
-really a different situation where the wait is unbounded.
+	Anton
+-- 
+Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
+Unix Support, Computing Service, University of Cambridge, CB2 3QH, UK
+Linux NTFS maintainer, http://www.linux-ntfs.org/
+---
 
-Regards,
-Mandeep
+diff --git a/fs/cifs/cifs_unicode.c b/fs/cifs/cifs_unicode.c
+index fbb9da9..33ef60d 100644
+--- a/fs/cifs/cifs_unicode.c
++++ b/fs/cifs/cifs_unicode.c
+@@ -328,6 +328,6 @@ cifsConvertToUTF16(__le16 *target, const char *source, int s
+ 	}
+ 
+ ctoUTF16_out:
+-	return i;
++	return j;
+ }
+ 
+ 
 
-> Daniel
