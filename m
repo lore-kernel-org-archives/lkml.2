@@ -1,157 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752311Ab2FLKxN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 06:53:13 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:58978 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751847Ab2FLKxM (ORCPT
+	id S1752140Ab2FLK45 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 06:56:57 -0400
+Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:48194 "EHLO
+	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751092Ab2FLK44 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 06:53:12 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-mm@kvack.org, dhillf@gmail.com, rientjes@google.com, mhocko@suse.cz,
-        akpm@linux-foundation.org, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH -V8 12/16] hugetlb/cgroup: Add support for cgroup removal
-In-Reply-To: <4FD6FC76.8040203@jp.fujitsu.com>
-References: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1339232401-14392-13-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <4FD6FC76.8040203@jp.fujitsu.com>
-User-Agent: Notmuch/0.13.2+35~g0ff57e7 (http://notmuchmail.org) Emacs/24.1.50.1 (x86_64-unknown-linux-gnu)
-Date: Tue, 12 Jun 2012 16:22:57 +0530
-Message-ID: <87fwa0ol86.fsf@skywalker.in.ibm.com>
+	Tue, 12 Jun 2012 06:56:56 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Cc: Stephen Warren <swarren@nvidia.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH] pinctrl: nomadik: fix up typo
+Date: Tue, 12 Jun 2012 12:56:32 +0200
+Message-ID: <1339498592-1435-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.9.2
 MIME-Version: 1.0
 Content-Type: text/plain
-x-cbid: 12061200-5140-0000-0000-000001904897
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
+Commit a60b57eddaa8af6c02cf7bbeb58ebf82881f08ac
+"drivers/gpio: gpio-nomadik: Add support for irqdomains"
+changed GPIO offset calculations to have this form:
+(gpio % NMK_GPIO_PER_CHIP) except in this one place for
+setting sleep mode, where the conversion was all wrong, and
+instead mod:ing the GPIO with the IRQ base which does not
+make any sense.
 
-> (2012/06/09 17:59), Aneesh Kumar K.V wrote:
->> From: "Aneesh Kumar K.V"<aneesh.kumar@linux.vnet.ibm.com>
->> 
->> This patch add support for cgroup removal. If we don't have parent
->> cgroup, the charges are moved to root cgroup.
->> 
->> Signed-off-by: Aneesh Kumar K.V<aneesh.kumar@linux.vnet.ibm.com>
->
-> I'm sorry if already pointed out....
->
->> ---
->>   mm/hugetlb_cgroup.c |   81 +++++++++++++++++++++++++++++++++++++++++++++++++--
->>   1 file changed, 79 insertions(+), 2 deletions(-)
->> 
->> diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
->> index 48efd5a..9458fe3 100644
->> --- a/mm/hugetlb_cgroup.c
->> +++ b/mm/hugetlb_cgroup.c
->> @@ -99,10 +99,87 @@ static void hugetlb_cgroup_destroy(struct cgroup *cgroup)
->>   	kfree(h_cgroup);
->>   }
->> 
->> +
->> +static int hugetlb_cgroup_move_parent(int idx, struct cgroup *cgroup,
->> +				      struct page *page)
->> +{
->> +	int csize;
->> +	struct res_counter *counter;
->> +	struct res_counter *fail_res;
->> +	struct hugetlb_cgroup *page_hcg;
->> +	struct hugetlb_cgroup *h_cg   = hugetlb_cgroup_from_cgroup(cgroup);
->> +	struct hugetlb_cgroup *parent = parent_hugetlb_cgroup(cgroup);
->> +
->> +	if (!get_page_unless_zero(page))
->> +		goto out;
->
-> It seems this doesn't necessary...this is under hugetlb_lock().
+So fix this up so we can use sleepmode.
 
-already updated.
+Cc: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
+---
+ drivers/pinctrl/pinctrl-nomadik.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
->
->> +
->> +	page_hcg = hugetlb_cgroup_from_page(page);
->> +	/*
->> +	 * We can have pages in active list without any cgroup
->> +	 * ie, hugepage with less than 3 pages. We can safely
->> +	 * ignore those pages.
->> +	 */
->> +	if (!page_hcg || page_hcg != h_cg)
->> +		goto err_out;
->> +
->> +	csize = PAGE_SIZE<<  compound_order(page);
->> +	if (!parent) {
->> +		parent = root_h_cgroup;
->> +		/* root has no limit */
->> +		res_counter_charge_nofail(&parent->hugepage[idx],
->> +					  csize,&fail_res);
->                                               ^^^
-> space ?
-
-I don't have code this way locally, may be a mail client error ?
-
->
->> +	}
->> +	counter =&h_cg->hugepage[idx];
->> +	res_counter_uncharge_until(counter, counter->parent, csize);
->> +
->> +	set_hugetlb_cgroup(page, parent);
->> +err_out:
->> +	put_page(page);
->> +out:
->> +	return 0;
->> +}
->> +
->> +/*
->> + * Force the hugetlb cgroup to empty the hugetlb resources by moving them to
->> + * the parent cgroup.
->> + */
->>   static int hugetlb_cgroup_pre_destroy(struct cgroup *cgroup)
->>   {
->> -	/* We will add the cgroup removal support in later patches */
->> -	   return -EBUSY;
->> +	struct hstate *h;
->> +	struct page *page;
->> +	int ret = 0, idx = 0;
->> +
->> +	do {
->> +		if (cgroup_task_count(cgroup) ||
->> +		    !list_empty(&cgroup->children)) {
->> +			ret = -EBUSY;
->> +			goto out;
->> +		}
-
-Is this check  going to moved to higher levels ? Do we still need
-this. Or will that happen when pred_destroy becomes void ?
-
->
->> +		/*
->> +		 * If the task doing the cgroup_rmdir got a signal
->> +		 * we don't really need to loop till the hugetlb resource
->> +		 * usage become zero.
->> +		 */
->> +		if (signal_pending(current)) {
->> +			ret = -EINTR;
->> +			goto out;
->> +		}
->
-> I'll post a patch to remove this check from memcg because memcg's rmdir
-> always succeed now. So, could you remove this ?
-
-Will drop this 
-
->
->
->> +		for_each_hstate(h) {
->> +			spin_lock(&hugetlb_lock);
->> +			list_for_each_entry(page,&h->hugepage_activelist, lru) {
->> +				ret = hugetlb_cgroup_move_parent(idx, cgroup, page);
->> +				if (ret) {
->
-> When 'ret' should be !0 ?
-> If hugetlb_cgroup_move_parent() always returns 0, the check will not be necessary.
->
-
-I will make this void funciton.
-
--aneesh
+diff --git a/drivers/pinctrl/pinctrl-nomadik.c b/drivers/pinctrl/pinctrl-nomadik.c
+index ba7122f..e8937e7 100644
+--- a/drivers/pinctrl/pinctrl-nomadik.c
++++ b/drivers/pinctrl/pinctrl-nomadik.c
+@@ -673,7 +673,7 @@ static void __nmk_gpio_set_wake(struct nmk_gpio_chip *nmk_chip,
+ 	 * wakeup is anyhow controlled by the RIMSC and FIMSC registers.
+ 	 */
+ 	if (nmk_chip->sleepmode && on) {
+-		__nmk_gpio_set_slpm(nmk_chip, gpio % nmk_chip->chip.base,
++		__nmk_gpio_set_slpm(nmk_chip, gpio % NMK_GPIO_PER_CHIP,
+ 				    NMK_GPIO_SLPM_WAKEUP_ENABLE);
+ 	}
+ 
+-- 
+1.7.9.2
 
