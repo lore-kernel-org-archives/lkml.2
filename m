@@ -1,44 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753358Ab2FLTzi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 15:55:38 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:61604 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752559Ab2FLTzh (ORCPT
+	id S1753598Ab2FLT5Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 15:57:25 -0400
+Received: from mail-lpp01m010-f74.google.com ([209.85.215.74]:42710 "EHLO
+	mail-lpp01m010-f74.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752807Ab2FLT5X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 15:55:37 -0400
-From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-To: David Woodhouse <dwmw2@infradead.org>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Brian Norris <computersforpeace@gmail.com>,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-Subject: [PATCH] mtd: m25p80: Add support for n25q064
-Date: Tue, 12 Jun 2012 16:55:15 -0300
-Message-Id: <1339530915-24799-1-git-send-email-aletes.xgr@gmail.com>
-X-Mailer: git-send-email 1.7.10
+	Tue, 12 Jun 2012 15:57:23 -0400
+From: Bryan Freed <bfreed@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: olof@lixom.net, keescook@chromium.org, marco.stornelli@gmail.com,
+        grant.likely@secretlab.ca, anton.vorontsov@linaro.org,
+        Bryan Freed <bfreed@chromium.org>
+Subject: [PATCH v4] pstore/ram: Add ramoops support for the Flattened Device Tree.
+Date: Tue, 12 Jun 2012 12:56:59 -0700
+Message-Id: <1339531019-17040-1-git-send-email-bfreed@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
----
- drivers/mtd/devices/m25p80.c |    1 +
- 1 file changed, 1 insertion(+)
+When called with a non-zero of_node, fill out a new ramoops_platform_data
+with data from the specified Flattened Device Tree node.
+Update ramoops documentation with the new FDT interface.
+Update devicetree/binding documentation with pstore/ramoops.txt.
 
-diff --git a/drivers/mtd/devices/m25p80.c b/drivers/mtd/devices/m25p80.c
-index 4cc818e..53c77bf 100644
---- a/drivers/mtd/devices/m25p80.c
-+++ b/drivers/mtd/devices/m25p80.c
-@@ -646,6 +646,7 @@ static const struct spi_device_id m25p_ids[] = {
- 	{ "160s33b",  INFO(0x898911, 0, 64 * 1024,  32, 0) },
- 	{ "320s33b",  INFO(0x898912, 0, 64 * 1024,  64, 0) },
- 	{ "640s33b",  INFO(0x898913, 0, 64 * 1024, 128, 0) },
-+	{ "n25q064",  INFO(0x20ba17, 0, 64 * 1024, 128, 0) },
+Signed-off-by: Bryan Freed <bfreed@chromium.org>
+---
+ .../devicetree/bindings/pstore/ramoops.txt         |   17 ++++++++
+ Documentation/ramoops.txt                          |    7 ++-
+ fs/pstore/ram.c                                    |   40 ++++++++++++++++++++
+ 3 files changed, 62 insertions(+), 2 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/pstore/ramoops.txt
+
+diff --git a/Documentation/devicetree/bindings/pstore/ramoops.txt b/Documentation/devicetree/bindings/pstore/ramoops.txt
+new file mode 100644
+index 0000000..4590c5d
+--- /dev/null
++++ b/Documentation/devicetree/bindings/pstore/ramoops.txt
+@@ -0,0 +1,17 @@
++Ramoops oops/panic logger
++
++Required properties:
++- compatible: Must be "ramoops".
++- reg: Specifies the base physical address and size of preserved memory.
++- record-size: Specifies the size of each record in preserved memory.
++
++Example:
++
++ramoops {
++	compatible = "ramoops";
++	reg = <0x41f00000 0x00100000>;
++	record-size = <0x00020000>;
++};
++The "reg = <0x41f00000 0x00100000>" line specifies a preserved memory
++size of 1MB at physical address 0x41f00000.
++The "record-size = <0x00020000>" line specifies a record size of 128KB.
+diff --git a/Documentation/ramoops.txt b/Documentation/ramoops.txt
+index 4ba7db2..80a6173 100644
+--- a/Documentation/ramoops.txt
++++ b/Documentation/ramoops.txt
+@@ -3,7 +3,7 @@ Ramoops oops/panic logger
  
- 	/* Macronix */
- 	{ "mx25l2005a",  INFO(0xc22012, 0, 64 * 1024,   4, SECT_4K) },
+ Sergiu Iordache <sergiu@chromium.org>
+ 
+-Updated: 17 November 2011
++Updated: 5 June 2012
+ 
+ 0. Introduction
+ 
+@@ -37,7 +37,7 @@ corrupt, but usually it is restorable.
+ 
+ 2. Setting the parameters
+ 
+-Setting the ramoops parameters can be done in 2 different manners:
++Setting the ramoops parameters can be done in 3 different manners:
+  1. Use the module parameters (which have the names of the variables described
+  as before).
+  2. Use a platform device and set the platform data. The parameters can then
+@@ -70,6 +70,9 @@ if (ret) {
+ 	return ret;
+ }
+ 
++ 3. Use the Flattened Device Tree to set the platform data.
++ This is described in devicetree/bindings/pstore/ramoops.txt.
++
+ 3. Dump format
+ 
+ The data dump begins with a header, currently defined as "====" followed by a
+diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
+index 9123cce..feeef9b 100644
+--- a/fs/pstore/ram.c
++++ b/fs/pstore/ram.c
+@@ -32,6 +32,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/slab.h>
+ #include <linux/pstore_ram.h>
++#include <linux/of_address.h>
+ 
+ #define RAMOOPS_KERNMSG_HDR "===="
+ #define MIN_MEM_SIZE 4096UL
+@@ -199,10 +200,34 @@ static struct ramoops_context oops_cxt = {
+ 	},
+ };
+ 
++static int __init of_ramoops_platform_data(struct device_node *node,
++					struct ramoops_platform_data *pdata)
++{
++	const __be32 *addrp;
++	const __be32 *prop;
++	u64 size;
++
++	memset(pdata, 0, sizeof(*pdata));
++
++	addrp = of_get_address(node, 0, &size, NULL);
++	if (addrp == NULL)
++		return -EINVAL;
++	pdata->mem_address = of_translate_address(node, addrp);
++	pdata->mem_size = size;
++
++	prop = of_get_property(node, "record-size", NULL);
++	if (!prop)
++		return -EINVAL;
++	pdata->record_size = be32_to_cpup(prop);
++
++	return 0;
++}
++
+ static int __init ramoops_probe(struct platform_device *pdev)
+ {
+ 	struct device *dev = &pdev->dev;
+ 	struct ramoops_platform_data *pdata = pdev->dev.platform_data;
++	struct ramoops_platform_data of_pdata;
+ 	struct ramoops_context *cxt = &oops_cxt;
+ 	int err = -EINVAL;
+ 	int i;
+@@ -213,6 +238,14 @@ static int __init ramoops_probe(struct platform_device *pdev)
+ 	if (cxt->max_count)
+ 		goto fail_out;
+ 
++	if (pdev->dev.of_node) {
++		if (of_ramoops_platform_data(pdev->dev.of_node, &of_pdata)) {
++			pr_err("Invalid ramoops device tree data\n");
++			goto fail_out;
++		}
++		pdata = &of_pdata;
++	}
++
+ 	if (!pdata->mem_size || !pdata->record_size) {
+ 		pr_err("The memory size and the record size must be "
+ 			"non-zero\n");
+@@ -329,11 +362,18 @@ static int __exit ramoops_remove(struct platform_device *pdev)
+ 	return -EBUSY;
+ }
+ 
++static const struct of_device_id ramoops_of_match[] = {
++	{ .compatible = "ramoops", },
++	{ },
++};
++MODULE_DEVICE_TABLE(of, ramoops_of_match);
++
+ static struct platform_driver ramoops_driver = {
+ 	.remove		= __exit_p(ramoops_remove),
+ 	.driver		= {
+ 		.name	= "ramoops",
+ 		.owner	= THIS_MODULE,
++		.of_match_table = ramoops_of_match,
+ 	},
+ };
+ 
 -- 
-1.7.10
+1.7.7.3
 
