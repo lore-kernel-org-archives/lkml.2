@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752795Ab2FLQHJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 12:07:09 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:59743 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751623Ab2FLQHG (ORCPT
+	id S1753235Ab2FLQIp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 12:08:45 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40935 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751745Ab2FLQIn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 12:07:06 -0400
-Message-ID: <4FD76927.8040702@wwwdotorg.org>
-Date: Tue, 12 Jun 2012 10:07:03 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: Wolfram Sang <w.sang@pengutronix.de>,
-        "khali@linux-fr.org" <khali@linux-fr.org>,
-        "ben-linux@fluff.org" <ben-linux@fluff.org>,
-        "olof@lixom.net" <olof@lixom.net>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH 1/4] i2c: tegra: make sure register writes completes
-References: <1338901800-23968-1-git-send-email-ldewangan@nvidia.com> <1338901800-23968-2-git-send-email-ldewangan@nvidia.com> <20120612075422.GB9230@pengutronix.de> <4FD71709.9040208@nvidia.com>
-In-Reply-To: <4FD71709.9040208@nvidia.com>
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 12 Jun 2012 12:08:43 -0400
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: axboe@kernel.dk, linux-scsi@vger.kernel.org, jbottomley@parallels.com
+Subject: [PATCH] scsi: allow persistent reservations without CAP_SYS_RAWIO
+Date: Tue, 12 Jun 2012 18:08:32 +0200
+Message-Id: <1339517312-18134-1-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.7.10.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/12/2012 04:16 AM, Laxman Dewangan wrote:
-> On Tuesday 12 June 2012 01:24 PM, Wolfram Sang wrote:
->> * PGP Signed by an unknown key
->>
->> On Tue, Jun 05, 2012 at 06:39:57PM +0530, Laxman Dewangan wrote:
->>> @@ -430,6 +430,13 @@ static irqreturn_t tegra_i2c_isr(int irq, void
->>> *dev_id)
->>>       if (i2c_dev->is_dvc)
->>>           dvc_writel(i2c_dev, DVC_STATUS_I2C_DONE_INTR, DVC_STATUS);
->>>
->>> +    /*
->>> +     * Register write get queued in the PPSB bus and write can
->>> +     * happen later. Read back register to make sure that register
->>> +     * write is completed.
->>> +     */
->>> +    i2c_readl(i2c_dev, I2C_INT_STATUS);
->>
->> Does it make sense to put the read into i2c_writel?
->
-> We can not put in i2c_writel() as we also do fifo write using this and
-> writing and reading back fifo can drainout the fifo.
-> hence putting this here seems more appropriate.
+Persistent reservations commands cannot be issued right now without
+giving CAP_SYS_RAWIO to the process who wishes to send them.  This
+is a bit heavy-handed, allow these two commands.
 
-You can put it inside i2c_writel(), but make the read-back conditional
-depending on which register was just written. The Tegra SD driver has
-similar conditional code in readl/writel to WAR some HW quirks.
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+---
+        Ok for 3.5 as well?
+
+ block/scsi_ioctl.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
+index 260fa80..5d6c9c1 100644
+--- a/block/scsi_ioctl.c
++++ b/block/scsi_ioctl.c
+@@ -137,6 +137,7 @@ static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
+ 	__set_bit(SERVICE_ACTION_IN, filter->read_ok);
+ 	__set_bit(RECEIVE_DIAGNOSTIC, filter->read_ok);
+ 	__set_bit(MAINTENANCE_IN, filter->read_ok);
++	__set_bit(PERSISTENT_RESERVE_IN, filter->read_ok);
+ 	__set_bit(GPCMD_READ_BUFFER_CAPACITY, filter->read_ok);
+ 
+ 	/* Audio CD commands */
+@@ -178,6 +179,7 @@ static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
+ 	__set_bit(GPCMD_MODE_SELECT_10, filter->write_ok);
+ 	__set_bit(MODE_SELECT, filter->write_ok);
+ 	__set_bit(LOG_SELECT, filter->write_ok);
++	__set_bit(PERSISTENT_RESERVE_OUT, filter->write_ok);
+ 	__set_bit(GPCMD_BLANK, filter->write_ok);
+ 	__set_bit(GPCMD_CLOSE_TRACK, filter->write_ok);
+ 	__set_bit(GPCMD_FLUSH_CACHE, filter->write_ok);
+-- 
+1.7.1
+
