@@ -1,50 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752498Ab2FLLIo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 07:08:44 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:42817 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751766Ab2FLLIm (ORCPT
+	id S1752203Ab2FLLLv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 07:11:51 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:53946 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750711Ab2FLLLu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 07:08:42 -0400
-Message-ID: <4FD72336.9040803@linaro.org>
-Date: Tue, 12 Jun 2012 12:08:38 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@stericsson.com>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH] pinctrl: nomadik: fix up typo
-References: <1339498592-1435-1-git-send-email-linus.walleij@stericsson.com>
-In-Reply-To: <1339498592-1435-1-git-send-email-linus.walleij@stericsson.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Tue, 12 Jun 2012 07:11:50 -0400
+Date: Tue, 12 Jun 2012 12:15:27 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+Cc: Christian Gmeiner <christian.gmeiner@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: gma500: Cannot find any crtc or sizes - going 1024x768
+Message-ID: <20120612121527.6d3ab653@pyramind.ukuu.org.uk>
+In-Reply-To: <CAMeQTsaknGLR2QCWwN8kYKh8y=JJtqN-ZSty6YTKnAOv2Vp3XQ@mail.gmail.com>
+References: <CAH9NwWd1F3Vw2zrQJh8Jazm45C_BAH3H3-qupvm2XaLgDOM=QQ@mail.gmail.com>
+	<CAMeQTsZfE8_t6DCr3UWVqnOLyxNuNh7_VxJmqiP+enBBqM0o_A@mail.gmail.com>
+	<CAH9NwWc3W6zHCFf9rwKg5NMQaWnh4A=xVVysmG1Y=eUMzu=18Q@mail.gmail.com>
+	<CAMeQTsaknGLR2QCWwN8kYKh8y=JJtqN-ZSty6YTKnAOv2Vp3XQ@mail.gmail.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/12 11:56, Linus Walleij wrote:
-> Commit a60b57eddaa8af6c02cf7bbeb58ebf82881f08ac
-> "drivers/gpio: gpio-nomadik: Add support for irqdomains"
-> changed GPIO offset calculations to have this form:
-> (gpio % NMK_GPIO_PER_CHIP) except in this one place for
-> setting sleep mode, where the conversion was all wrong, and
-> instead mod:ing the GPIO with the IRQ base which does not
-> make any sense.
->
-> So fix this up so we can use sleepmode.
->
-> Cc: Lee Jones<lee.jones@linaro.org>
-> Signed-off-by: Linus Walleij<linus.walleij@stericsson.com>
+> You're hitting a bug in the IS_MRST macro. You might actually have the fuse
+> value but IS_MRST returns false for 0x4108. Try the following patch:
 
-Makes sense.
+If its an Oaktrail device then it should be using the PC BIOS data anyway
+I would have thought. Only Moorestown should be using the other style of
+data and Moorestown never became a real product.
 
-Reviewed-by: Lee Jones <lee.jones@linaro.org>
+However if the panel is on the SDVO port then the BIOS data would appear
+to be correct as it isn't on the LVDS channel but bridged off the SDVO.
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-M: +44 77 88 633 515
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+In that case it'll need SDVO support sorting out.
+
+Alan
