@@ -1,109 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751696Ab2FLIKd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 04:10:33 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:59494 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750937Ab2FLIK3 (ORCPT
+	id S1751781Ab2FLILv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 04:11:51 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:42221 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751185Ab2FLILs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 04:10:29 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FD6F8F9.2040901@jp.fujitsu.com>
-Date: Tue, 12 Jun 2012 17:08:25 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Tue, 12 Jun 2012 04:11:48 -0400
+Message-ID: <4FD6F9C1.1020305@linaro.org>
+Date: Tue, 12 Jun 2012 09:11:45 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-CC: linux-mm@kvack.org, dhillf@gmail.com, rientjes@google.com, mhocko@suse.cz,
-        akpm@linux-foundation.org, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH -V8 11/16] hugetlb/cgroup: Add charge/uncharge routines
- for hugetlb cgroup
-References: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1339232401-14392-12-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-In-Reply-To: <1339232401-14392-12-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: grant.likely@secretlab.ca, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linus.walleij@stericsson.com,
+        arnd@arndb.de, Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH 06/14] mfd: Initialise the DB8500 PRCMU driver at core_initcall
+ time
+References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org> <1339428307-3850-7-git-send-email-lee.jones@linaro.org> <CACRpkdYoQFhBfRaPMBiVTiD979b+8708oS1qCPm+iyy5OZe2bw@mail.gmail.com>
+In-Reply-To: <CACRpkdYoQFhBfRaPMBiVTiD979b+8708oS1qCPm+iyy5OZe2bw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/06/09 17:59), Aneesh Kumar K.V wrote:
-> From: "Aneesh Kumar K.V"<aneesh.kumar@linux.vnet.ibm.com>
-> 
-> This patchset add the charge and uncharge routines for hugetlb cgroup.
-> This will be used in later patches when we allocate/free HugeTLB
-> pages.
-> 
-> Signed-off-by: Aneesh Kumar K.V<aneesh.kumar@linux.vnet.ibm.com>
+On 11/06/12 22:01, Linus Walleij wrote:
+> On Mon, Jun 11, 2012 at 5:24 PM, Lee Jones<lee.jones@linaro.org>  wrote:
+>
+>> Now the AB8500 has its own IRQ domain
+>
+> But that does not appear until patch 8 in this series? Are the patches in
+> the wrong order? Or does this need rewording?
 
+The patches are in the correct order. This needs to be done _before_ we 
+provide the AB8500 with its own domain. I guess the line should 
+reference future tense. We are only talking two patches in the future, 
+is it that important? I will change the wording slightly if it is.
 
-I'm sorry if following has been already pointed out.
+>> it needs to be initialised earlier
+>> in the boot sequence. As the AB8500 relies on the DB8500 PRCMU we need to
+>> reflect this change for the PRCMU driver too.
+>
+> Hm what shall we do when we run out of initlevels? I think this was the
+> kind of thing that deferred probe should solve. Usually changing this kind
+> of thing has side effects so I'm a bit hesitant.
 
-> ---
->   mm/hugetlb_cgroup.c |   87 +++++++++++++++++++++++++++++++++++++++++++++++++++
->   1 file changed, 87 insertions(+)
-> 
-> diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
-> index 20a32c5..48efd5a 100644
-> --- a/mm/hugetlb_cgroup.c
-> +++ b/mm/hugetlb_cgroup.c
-> @@ -105,6 +105,93 @@ static int hugetlb_cgroup_pre_destroy(struct cgroup *cgroup)
->   	   return -EBUSY;
->   }
-> 
-> +int hugetlb_cgroup_charge_page(int idx, unsigned long nr_pages,
-> +			       struct hugetlb_cgroup **ptr)
-> +{
-> +	int ret = 0;
-> +	struct res_counter *fail_res;
-> +	struct hugetlb_cgroup *h_cg = NULL;
-> +	unsigned long csize = nr_pages * PAGE_SIZE;
-> +
-> +	if (hugetlb_cgroup_disabled())
-> +		goto done;
-> +	/*
-> +	 * We don't charge any cgroup if the compound page have less
-> +	 * than 3 pages.
-> +	 */
-> +	if (hstates[idx].order<  2)
-> +		goto done;
-> +again:
-> +	rcu_read_lock();
-> +	h_cg = hugetlb_cgroup_from_task(current);
-> +	if (!h_cg)
-> +		h_cg = root_h_cgroup;
-> +
-> +	if (!css_tryget(&h_cg->css)) {
-> +		rcu_read_unlock();
-> +		goto again;
-> +	}
-> +	rcu_read_unlock();
-> +
-> +	ret = res_counter_charge(&h_cg->hugepage[idx], csize,&fail_res);
-> +	css_put(&h_cg->css);
-> +done:
-> +	*ptr = h_cg;
-> +	return ret;
-> +}
-> +
+Nothing seems to be broken by it. My Snowball still comes up and 
+everything that worked before continues to do so. How would you like me 
+to take this forward?
 
-Memory cgroup uses very complicated 'charge' routine for handling pageout...
-which gets sleep.
-
-For hugetlbfs, it has not sleep routine, you can do charge in simple way.
-I guess...get/put here is overkill.
-
-For example, h_cg cannot be freed while it has tasks. So, if 'current' is
-belongs to the cgroup, it cannot be disappear. Then, you don't need get/put,
-additional atomic ops for holding cgroup.
-
-	rcu_read_lock();
-	h_cg = hugetlb_cgroup_from_task(current);
-	ret = res_counter_charge(&h_cg->hugetpage[idx], csize,  &fail_res);
-	rcu_read_unlock();
-
-	return ret;
-
-Thanks,
--Kame
-
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+M: +44 77 88 633 515
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
