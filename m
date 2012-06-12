@@ -1,71 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752190Ab2FLPSk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 11:18:40 -0400
-Received: from nm26-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.230]:44180 "HELO
-	nm26-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751640Ab2FLPSj convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 11:18:39 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 753907.11636.bm@omp1035.mail.sp2.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=qekIjfWb9K5LerruUuxssBz9+J2GLfPPm5ej0tyLyvm+i1kt031TFeQetGshXn5j5ooj+C/hqt864ZHm9bG1XGETXGzZtd/VeoaAAl1Fn9S8y7LYBbY3ymy7hyOxX9IcyqqKnZKIrLWhxGEn8jg8I2tNCZcAzpR3k/f21JS43ks=;
-X-YMail-OSG: 6b.x2D0VM1m_jrVkjYwX47rrBCvBlhT0NBocyvVeM7a06rw
- h_Y9BgtxHWM7Z6o6hCjnbygFBK.SFiGSOufXyor3k6dXINnMDza5ApkA6UoN
- GxKGA_KfJnzKpeRQOaglKywJm5Rj2Rj8gNrdYJW_m__zHJq3NEgwkDpklOFg
- puv1huK6v3vjQ9P_QeSTz5xtrtAUEqgqEfDSq69LkvAYBATErb5iFrIkIEYN
- 2Dlx.qta3xtSFhruRwVtIHjQly73oETsVEUOxLBSsO2bi4WRP.klHJ91Hy1U
- tYDYK_gHwFJlX.QsMBeaXTXbKGJRG5_bBcolKvgNSolYfNdBOgGexwo3MGKf
- C3rr.r8xzOhoa5AHjQ.f0IS25Lnn..acKkt4eCGRdD9f85NBT.5M8FhOF3z7
- YUEdSivw0pa3oeK5BIgQnJBbW.qP8NphuVOrrwVK.SRZh0ToR7TG5Cj9kuYg
- autd.Rg--
-X-Mailer: YahooMailWebService/0.8.118.349524
-References: <1339493860.10145.YahooMailNeo@web111708.mail.gq1.yahoo.com> <20120612103954.GB10124@x1.osrc.amd.com> <1339508890.39685.YahooMailNeo@web111705.mail.gq1.yahoo.com> <4FD75C84.7020105@canonical.com> <1339514128.5023.YahooMailNeo@web111708.mail.gq1.yahoo.com> <20120612151713.GB10128@x1.osrc.amd.com>
-Message-ID: <1339514318.4218.YahooMailNeo@web111712.mail.gq1.yahoo.com>
-Date: Tue, 12 Jun 2012 08:18:38 -0700 (PDT)
-From: Mahmood Naderan <nt_mahmood@yahoo.com>
-Reply-To: Mahmood Naderan <nt_mahmood@yahoo.com>
-Subject: Re: CPU MTRRs and linux kernel
-To: Borislav Petkov <bp@alien8.de>
-Cc: Stefan Bader <stefan.bader@canonical.com>,
-        "\"\"linux-kernel@vger.kernel.org\"\"" <linux-kernel@vger.kernel.org>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>
-In-Reply-To: <20120612151713.GB10128@x1.osrc.amd.com>
+	id S1752321Ab2FLPUR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 11:20:17 -0400
+Received: from www.linutronix.de ([62.245.132.108]:44378 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751954Ab2FLPUQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 11:20:16 -0400
+Date: Tue, 12 Jun 2012 17:20:10 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Sasha Levin <levinsasha928@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>
+Subject: Re: rcu,sched: spinlock recursion on 3.5-rc2
+In-Reply-To: <1339514114.31548.78.camel@twins>
+Message-ID: <alpine.LFD.2.02.1206121716370.3086@ionos>
+References: <1339500907.4999.99.camel@lappy>  <alpine.LFD.2.02.1206121535180.3086@ionos>  <20120612144705.GB2423@linux.vnet.ibm.com>  <alpine.LFD.2.02.1206121701350.3086@ionos> <1339514114.31548.78.camel@twins>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->He means the latest 2.6.32.x Ubuntu kernel which you can get from the
->Ubuntu repositories, I assume.
- 
-ok I understand
+On Tue, 12 Jun 2012, Peter Zijlstra wrote:
 
+> On Tue, 2012-06-12 at 17:07 +0200, Thomas Gleixner wrote:
+> > Hmm, not sure. The deadlock was not triggered in switch_to. It was
+> > just at the beginning of __schedule()
+> > 
+> > 
+> How can you tell? switch_to() is a macro not a function, it won't ever
+> show up on a stack-trace.. but I think you meant context_switch() but
+> that typically gets inlined, similar problem.
 
-~MN
+Bah, I misread the trace and the rcu code. :(
 
+So, yes the revert should solve the problem. Looks like I need more
+coffee, not Paul :)
 
------ Original Message -----
-From: Borislav Petkov <bp@alien8.de>
-To: Mahmood Naderan <nt_mahmood@yahoo.com>
-Cc: Stefan Bader <stefan.bader@canonical.com>; ""linux-kernel@vger.kernel.org"" <linux-kernel@vger.kernel.org>; Andreas Herrmann <andreas.herrmann3@amd.com>
-Sent: Tuesday, June 12, 2012 7:47 PM
-Subject: Re: CPU MTRRs and linux kernel
+Thanks,
 
-On Tue, Jun 12, 2012 at 08:15:28AM -0700, Mahmood Naderan wrote:
-> >And the latest kernel is 2.6.32-41.89 by now...
-> 
-> Sorry 3.4.2 ???
-
-He means the latest 2.6.32.x Ubuntu kernel which you can get from the
-Ubuntu repositories, I assume.
-
--- 
-Regards/Gruss,
-Boris.
-
+	tglx
