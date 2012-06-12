@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753468Ab2FLFiO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 01:38:14 -0400
-Received: from mga14.intel.com ([143.182.124.37]:8726 "EHLO mga14.intel.com"
+	id S1753515Ab2FLFiT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 01:38:19 -0400
+Received: from mga14.intel.com ([143.182.124.37]:58327 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752076Ab2FLFiK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 01:38:10 -0400
+	id S1751409Ab2FLFiO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 01:38:14 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="111014229"
+   d="scan'208";a="111014249"
 From: "Yan, Zheng" <zheng.z.yan@intel.com>
 To: a.p.zijlstra@chello.nl, mingo@elte.hu, jolsa@redhat.com,
         eranian@google.com, andi@firstfloor.org, linux-kernel@vger.kernel.org
-Subject: [PATCH V5 09/13] perf, tool: Use data struct for arg passing in event parse function
-Date: Tue, 12 Jun 2012 13:37:44 +0800
-Message-Id: <1339479468-3815-10-git-send-email-zheng.z.yan@intel.com>
+Subject: [PATCH V5 11/13] perf, tool: Add support to reuse event grammar to parse out terms
+Date: Tue, 12 Jun 2012 13:37:46 +0800
+Message-Id: <1339479468-3815-12-git-send-email-zheng.z.yan@intel.com>
 X-Mailer: git-send-email 1.7.10.2
 In-Reply-To: <1339479468-3815-1-git-send-email-zheng.z.yan@intel.com>
 References: <1339479468-3815-1-git-send-email-zheng.z.yan@intel.com>
@@ -24,270 +24,179 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiri Olsa <jolsa@redhat.com>
 
-Moving all the bison arguments into the structure. In upcomming
-patches we are going to
-  - add more arguments
-  - reuse the grammer for term parsing
+We want to reuse the event grammar for parsing aliased terms.
+The obvious reason is we dont need to add new code when there's
+already support for this in event grammar.
 
-so it's more clear to pack/separate related arguments.
+Doing this by adding terms and event start entries into event
+parse grammar. The grammar forks on the begining based on the
+starting token, which is supplied via bison interface into the
+lexer.  The lexer then returns the starting token as the first
+token, thus making the grammar switch accordingly.
+
+Currently 2 starting tokens/grammars are supported:
+	PE_START_TERMS, PE_START_EVENTS
+
+The PE_START_TERMS related grammar uses 'event_config' part
+of the grammar for term parsing.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/util/parse-events.c |   16 +++++++------
- tools/perf/util/parse-events.h |    8 +++++--
- tools/perf/util/parse-events.y |   52 +++++++++++++++++++++++++++-------------
- 3 files changed, 50 insertions(+), 26 deletions(-)
+ tools/perf/util/parse-events.c |   28 +++++++++++++++++++++++++---
+ tools/perf/util/parse-events.h |    5 +++++
+ tools/perf/util/parse-events.l |   13 +++++++++++++
+ tools/perf/util/parse-events.y |   12 ++++++++++++
+ 4 files changed, 55 insertions(+), 3 deletions(-)
 
 diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 05dbc8b..c71b29a 100644
+index ca8665e..d002170 100644
 --- a/tools/perf/util/parse-events.c
 +++ b/tools/perf/util/parse-events.c
-@@ -26,7 +26,7 @@ struct event_symbol {
- #ifdef PARSER_DEBUG
- extern int parse_events_debug;
- #endif
--int parse_events_parse(struct list_head *list, int *idx);
-+int parse_events_parse(void *data);
+@@ -12,6 +12,7 @@
+ #include "header.h"
+ #include "debugfs.h"
+ #include "parse-events-bison.h"
++#define YY_EXTRA_TYPE int
+ #include "parse-events-flex.h"
+ #include "pmu.h"
  
- #define CHW(x) .type = PERF_TYPE_HARDWARE, .config = PERF_COUNT_HW_##x
- #define CSW(x) .type = PERF_TYPE_SOFTWARE, .config = PERF_COUNT_SW_##x
-@@ -789,25 +789,27 @@ int parse_events_modifier(struct list_head *list, char *str)
+@@ -788,13 +789,13 @@ int parse_events_modifier(struct list_head *list, char *str)
+ 	return 0;
+ }
  
+-static int parse_events__scanner(const char *str, void *data)
++static int parse_events__scanner(const char *str, void *data, int start_token)
+ {
+ 	YY_BUFFER_STATE buffer;
+ 	void *scanner;
+ 	int ret;
+ 
+-	ret = parse_events_lex_init(&scanner);
++	ret = parse_events_lex_init_extra(start_token, &scanner);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -811,6 +812,27 @@ static int parse_events__scanner(const char *str, void *data)
+ 	return ret;
+ }
+ 
++/*
++ * parse event config string, return a list of event terms.
++ */
++int parse_events_terms(struct list_head *terms, const char *str)
++{
++	struct parse_events_data__terms data = {
++		.terms = NULL,
++	};
++	int ret;
++
++	ret = parse_events__scanner(str, &data, PE_START_TERMS);
++	if (!ret) {
++		list_splice(data.terms, terms);
++		free(data.terms);
++		return 0;
++	}
++
++	parse_events__free_terms(data.terms);
++	return ret;
++}
++
  int parse_events(struct perf_evlist *evlist, const char *str, int unset __used)
  {
--	LIST_HEAD(list);
--	LIST_HEAD(list_tmp);
-+	struct parse_events_data__events data = {
-+		.list = LIST_HEAD_INIT(data.list),
-+		.idx  = evlist->nr_entries,
-+	};
- 	YY_BUFFER_STATE buffer;
--	int ret, idx = evlist->nr_entries;
-+	int ret;
+ 	struct parse_events_data__events data = {
+@@ -819,7 +841,7 @@ int parse_events(struct perf_evlist *evlist, const char *str, int unset __used)
+ 	};
+ 	int ret;
  
- 	buffer = parse_events__scan_string(str);
- 
- #ifdef PARSER_DEBUG
- 	parse_events_debug = 1;
- #endif
--	ret = parse_events_parse(&list, &idx);
-+	ret = parse_events_parse(&data);
- 
- 	parse_events__flush_buffer(buffer);
- 	parse_events__delete_buffer(buffer);
- 	parse_events_lex_destroy();
- 
+-	ret = parse_events__scanner(str, &data);
++	ret = parse_events__scanner(str, &data, PE_START_EVENTS);
  	if (!ret) {
--		int entries = idx - evlist->nr_entries;
--		perf_evlist__splice_list_tail(evlist, &list, entries);
-+		int entries = data.idx - evlist->nr_entries;
-+		perf_evlist__splice_list_tail(evlist, &data.list, entries);
- 		return 0;
- 	}
- 
+ 		int entries = data.idx - evlist->nr_entries;
+ 		perf_evlist__splice_list_tail(evlist, &data.list, entries);
 diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index 8cac57a..dc3c83a 100644
+index fa2b19b..9896eda 100644
 --- a/tools/perf/util/parse-events.h
 +++ b/tools/perf/util/parse-events.h
-@@ -63,6 +63,11 @@ struct parse_events__term {
- 	struct list_head list;
+@@ -33,6 +33,7 @@ extern int parse_events_option(const struct option *opt, const char *str,
+ 			       int unset);
+ extern int parse_events(struct perf_evlist *evlist, const char *str,
+ 			int unset);
++extern int parse_events_terms(struct list_head *terms, const char *str);
+ extern int parse_filter(const struct option *opt, const char *str, int unset);
+ 
+ #define EVENTS_HELP_MAX (128*1024)
+@@ -68,6 +69,10 @@ struct parse_events_data__events {
+ 	int idx;
  };
  
-+struct parse_events_data__events {
-+	struct list_head list;
-+	int idx;
++struct parse_events_data__terms {
++	struct list_head *terms;
 +};
 +
  int parse_events__is_hardcoded_term(struct parse_events__term *term);
  int parse_events__term_num(struct parse_events__term **_term,
  			   int type_term, char *config, long num);
-@@ -83,8 +88,7 @@ int parse_events_add_pmu(struct list_head **list, int *idx,
- 			 char *pmu , struct list_head *head_config);
- void parse_events_update_lists(struct list_head *list_event,
- 			       struct list_head *list_all);
--void parse_events_error(struct list_head *list_all,
--			int *idx, char const *msg);
-+void parse_events_error(void *data, char const *msg);
- int parse_events__test(void);
- 
- void print_events(const char *event_glob);
-diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
-index 362cc59..e533bf7 100644
---- a/tools/perf/util/parse-events.y
-+++ b/tools/perf/util/parse-events.y
-@@ -1,7 +1,6 @@
- 
- %name-prefix "parse_events_"
--%parse-param {struct list_head *list_all}
--%parse-param {int *idx}
-+%parse-param {void *_data}
- 
- %{
- 
-@@ -64,18 +63,22 @@ events ',' event | event
- event:
- event_def PE_MODIFIER_EVENT
- {
-+	struct parse_events_data__events *data = _data;
-+
- 	/*
- 	 * Apply modifier on all events added by single event definition
- 	 * (there could be more events added for multiple tracepoint
- 	 * definitions via '*?'.
- 	 */
- 	ABORT_ON(parse_events_modifier($1, $2));
--	parse_events_update_lists($1, list_all);
-+	parse_events_update_lists($1, &data->list);
- }
- |
- event_def
- {
--	parse_events_update_lists($1, list_all);
-+	struct parse_events_data__events *data = _data;
-+
-+	parse_events_update_lists($1, &data->list);
- }
- 
- event_def: event_pmu |
-@@ -89,9 +92,10 @@ event_def: event_pmu |
- event_pmu:
- PE_NAME '/' event_config '/'
- {
-+	struct parse_events_data__events *data = _data;
- 	struct list_head *list = NULL;
- 
--	ABORT_ON(parse_events_add_pmu(&list, idx, $1, $3));
-+	ABORT_ON(parse_events_add_pmu(&list, &data->idx, $1, $3));
- 	parse_events__free_terms($3);
- 	$$ = list;
- }
-@@ -99,91 +103,106 @@ PE_NAME '/' event_config '/'
- event_legacy_symbol:
- PE_VALUE_SYM '/' event_config '/'
- {
-+	struct parse_events_data__events *data = _data;
- 	struct list_head *list = NULL;
- 	int type = $1 >> 16;
- 	int config = $1 & 255;
- 
--	ABORT_ON(parse_events_add_numeric(&list, idx, type, config, $3));
-+	ABORT_ON(parse_events_add_numeric(&list, &data->idx,
-+					  type, config, $3));
- 	parse_events__free_terms($3);
- 	$$ = list;
- }
- |
- PE_VALUE_SYM sep_slash_dc
- {
-+	struct parse_events_data__events *data = _data;
- 	struct list_head *list = NULL;
- 	int type = $1 >> 16;
- 	int config = $1 & 255;
- 
--	ABORT_ON(parse_events_add_numeric(&list, idx, type, config, NULL));
-+	ABORT_ON(parse_events_add_numeric(&list, &data->idx,
-+					  type, config, NULL));
- 	$$ = list;
- }
- 
- event_legacy_cache:
- PE_NAME_CACHE_TYPE '-' PE_NAME_CACHE_OP_RESULT '-' PE_NAME_CACHE_OP_RESULT
- {
-+	struct parse_events_data__events *data = _data;
- 	struct list_head *list = NULL;
- 
--	ABORT_ON(parse_events_add_cache(&list, idx, $1, $3, $5));
-+	ABORT_ON(parse_events_add_cache(&list, &data->idx, $1, $3, $5));
- 	$$ = list;
- }
- |
- PE_NAME_CACHE_TYPE '-' PE_NAME_CACHE_OP_RESULT
- {
-+	struct parse_events_data__events *data = _data;
- 	struct list_head *list = NULL;
- 
--	ABORT_ON(parse_events_add_cache(&list, idx, $1, $3, NULL));
-+	ABORT_ON(parse_events_add_cache(&list, &data->idx, $1, $3, NULL));
- 	$$ = list;
- }
- |
- PE_NAME_CACHE_TYPE
- {
-+	struct parse_events_data__events *data = _data;
- 	struct list_head *list = NULL;
- 
--	ABORT_ON(parse_events_add_cache(&list, idx, $1, NULL, NULL));
-+	ABORT_ON(parse_events_add_cache(&list, &data->idx, $1, NULL, NULL));
- 	$$ = list;
- }
- 
- event_legacy_mem:
- PE_PREFIX_MEM PE_VALUE ':' PE_MODIFIER_BP sep_dc
- {
-+	struct parse_events_data__events *data = _data;
- 	struct list_head *list = NULL;
- 
--	ABORT_ON(parse_events_add_breakpoint(&list, idx, (void *) $2, $4));
-+	ABORT_ON(parse_events_add_breakpoint(&list, &data->idx,
-+					     (void *) $2, $4));
- 	$$ = list;
- }
- |
- PE_PREFIX_MEM PE_VALUE sep_dc
- {
-+	struct parse_events_data__events *data = _data;
- 	struct list_head *list = NULL;
- 
--	ABORT_ON(parse_events_add_breakpoint(&list, idx, (void *) $2, NULL));
-+	ABORT_ON(parse_events_add_breakpoint(&list, &data->idx,
-+					     (void *) $2, NULL));
- 	$$ = list;
- }
- 
- event_legacy_tracepoint:
- PE_NAME ':' PE_NAME
- {
-+	struct parse_events_data__events *data = _data;
- 	struct list_head *list = NULL;
- 
--	ABORT_ON(parse_events_add_tracepoint(&list, idx, $1, $3));
-+	ABORT_ON(parse_events_add_tracepoint(&list, &data->idx, $1, $3));
- 	$$ = list;
- }
- 
- event_legacy_numeric:
- PE_VALUE ':' PE_VALUE
- {
-+	struct parse_events_data__events *data = _data;
- 	struct list_head *list = NULL;
- 
--	ABORT_ON(parse_events_add_numeric(&list, idx, $1, $3, NULL));
-+	ABORT_ON(parse_events_add_numeric(&list, &data->idx, $1, $3, NULL));
- 	$$ = list;
- }
- 
- event_legacy_raw:
- PE_RAW
- {
-+	struct parse_events_data__events *data = _data;
- 	struct list_head *list = NULL;
- 
--	ABORT_ON(parse_events_add_numeric(&list, idx, PERF_TYPE_RAW, $1, NULL));
-+	ABORT_ON(parse_events_add_numeric(&list, &data->idx,
-+					  PERF_TYPE_RAW, $1, NULL));
- 	$$ = list;
- }
- 
-@@ -267,8 +286,7 @@ sep_slash_dc: '/' | ':' |
+diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
+index 329794e..488362e 100644
+--- a/tools/perf/util/parse-events.l
++++ b/tools/perf/util/parse-events.l
+@@ -79,6 +79,19 @@ modifier_event	[ukhpGH]{1,8}
+ modifier_bp	[rwx]
  
  %%
++
++%{
++	{
++		int start_token;
++
++		start_token = (int) parse_events_get_extra(yyscanner);
++		if (start_token) {
++			parse_events_set_extra(NULL, yyscanner);
++			return start_token;
++		}
++         }
++%}
++
+ cpu-cycles|cycles				{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES); }
+ stalled-cycles-frontend|idle-cycles-frontend	{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_STALLED_CYCLES_FRONTEND); }
+ stalled-cycles-backend|idle-cycles-backend	{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_STALLED_CYCLES_BACKEND); }
+diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
+index 2a93d5c..9525c45 100644
+--- a/tools/perf/util/parse-events.y
++++ b/tools/perf/util/parse-events.y
+@@ -25,6 +25,7 @@ do { \
  
--void parse_events_error(struct list_head *list_all __used,
--			int *idx __used,
-+void parse_events_error(void *data __used,
- 			char const *msg __used)
- {
+ %}
+ 
++%token PE_START_EVENTS PE_START_TERMS
+ %token PE_VALUE PE_VALUE_SYM PE_RAW PE_TERM
+ %token PE_NAME
+ %token PE_MODIFIER_EVENT PE_MODIFIER_BP
+@@ -60,6 +61,11 @@ do { \
  }
+ %%
+ 
++start:
++PE_START_EVENTS events
++|
++PE_START_TERMS  terms
++
+ events:
+ events ',' event | event
+ 
+@@ -209,6 +215,12 @@ PE_RAW
+ 	$$ = list;
+ }
+ 
++terms: event_config
++{
++	struct parse_events_data__terms *data = _data;
++	data->terms = $1;
++}
++
+ event_config:
+ event_config ',' event_term
+ {
 -- 
 1.7.10.2
 
