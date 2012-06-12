@@ -1,44 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754125Ab2FLRhK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 13:37:10 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:39560 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753905Ab2FLRhI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 13:37:08 -0400
-Date: Tue, 12 Jun 2012 10:37:03 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Marcus Karlsson <mk@acc.umu.se>
-Cc: thomas@m3y3r.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: rts_pstor: fixed some coding style errors
-Message-ID: <20120612173703.GA2499@kroah.com>
-References: <1338496799-13437-1-git-send-email-mk@acc.umu.se>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1338496799-13437-1-git-send-email-mk@acc.umu.se>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754034Ab2FLRkO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 13:40:14 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:51651 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753860Ab2FLRkM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 13:40:12 -0400
+Message-ID: <1339522812.2404.4.camel@joe2Laptop>
+Subject: Re: [PATCH v2] lib/decompress_unxz.c: removing all memory helper
+ functions
+From: Joe Perches <joe@perches.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Lasse Collin <lasse.collin@tukaani.org>,
+        T Makphaibulchoke <tmac@hp.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com, linux390@de.ibm.com,
+        lethal@linux-sh.org, tglx@linutronix.de, mingo@redhat.com,
+        x86@kernel.org, kaloz@openwrt.org, jj@chaosbits.net,
+        matt.fleming@intel.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
+        linux-sh@vger.kernel.org
+Date: Tue, 12 Jun 2012 10:40:12 -0700
+In-Reply-To: <4FD77CAF.1020402@zytor.com>
+References: <1339470307-28223-1-git-send-email-tmac@hp.com>
+	 <20120612191804.4211462a@tukaani.org>
+	 <alpine.LFD.2.02.1206121316190.23555@xanadu.home>
+	 <4FD77CAF.1020402@zytor.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 31, 2012 at 10:39:59PM +0200, Marcus Karlsson wrote:
-> Fixed some code styling errors in the following files:
-> 
-> drivers/staging/rts_pstor/rtsx_scsi.c:
-> * multiple statements on single line
-> 
-> drivers/staging/rts_pstor/trace.h:
-> * trailing whitespace
-> * non-enclosed macro
-> 
-> drivers/staging/rts_pstor/xd.c:
-> * trailing whitespace
+On Tue, 2012-06-12 at 10:30 -0700, H. Peter Anvin wrote:
+> On 06/12/2012 10:26 AM, Nicolas Pitre wrote:
+> > 
+> > Instead of copying, maybe this would be much better to make the content 
+> > of lib/string.c usable in a pre-boot environment.
 
-Please break this up into individual patches, each doing one thing.
-Doing all of this in one large patch makes it much harder to review.
+> Not sure about that... a lot of it is #ifndef __HAVE_ARCH_* and you
+> *really* want those optimizations on some arches.
 
-thanks,
+Can __weak be used?
 
-greg k-h
