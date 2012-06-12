@@ -1,75 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753235Ab2FLVka (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 17:40:30 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:55431 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751745Ab2FLVk3 (ORCPT
+	id S1752841Ab2FLV6W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 17:58:22 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:58252 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751853Ab2FLV6V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 17:40:29 -0400
-Date: Tue, 12 Jun 2012 14:40:25 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, devel@driverdev.osuosl.org,
-        abbotti@mev.co.uk, fmhess@users.sourceforge.net
-Subject: Re: [PATCH 2/8] staging: comedi: change type of num_subdevices
- parameter to comedi_alloc_subdevices
-Message-ID: <20120612214025.GA4323@kroah.com>
-References: <201206121157.27498.hartleys@visionengravers.com>
+	Tue, 12 Jun 2012 17:58:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201206121157.27498.hartleys@visionengravers.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120612170412.359967ec@pyramind.ukuu.org.uk>
+References: <CAH9NwWd1F3Vw2zrQJh8Jazm45C_BAH3H3-qupvm2XaLgDOM=QQ@mail.gmail.com>
+ <CAMeQTsZfE8_t6DCr3UWVqnOLyxNuNh7_VxJmqiP+enBBqM0o_A@mail.gmail.com>
+ <CAH9NwWc3W6zHCFf9rwKg5NMQaWnh4A=xVVysmG1Y=eUMzu=18Q@mail.gmail.com>
+ <CAMeQTsaknGLR2QCWwN8kYKh8y=JJtqN-ZSty6YTKnAOv2Vp3XQ@mail.gmail.com>
+ <CAH9NwWdmhmLB5io5RWVQBj6c7zjXT9hFa7OAHVrL6oY8P0kjaw@mail.gmail.com>
+ <20120612132736.642a4a5a@pyramind.ukuu.org.uk> <CAMeQTsZZ0ay7YqkzUzkhe6D6FNsQXaDKHfJKB6_6icd=4VemrA@mail.gmail.com>
+ <20120612170412.359967ec@pyramind.ukuu.org.uk>
+From: Christian Gmeiner <christian.gmeiner@gmail.com>
+Date: Tue, 12 Jun 2012 23:58:00 +0200
+Message-ID: <CAH9NwWdF+zukb1r1z6ES6ULeg3dkFzhvhBq1xzjrqjWx-O3cOA@mail.gmail.com>
+Subject: Re: gma500: Cannot find any crtc or sizes - going 1024x768
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>,
+        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <greg@kroah.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 12, 2012 at 11:57:27AM -0700, H Hartley Sweeten wrote:
-> From 606739d47df00ac9767e3256ab8f6eb1572bd429 Mon Sep 17 00:00:00 2001
-> From: H Hartley Sweeten <hsweeten@visionengravers.com>
-> Date: Tue, 12 Jun 2012 09:45:17 -0700
-> Subject: [PATCH 2/8] staging: comedi: change type of num_subdevices parameter
->  to comedi_alloc_subdevices
-> 
-> The n_subdevices variable of struct comedi_device is an int type.
-> Change the type of the comedi_alloc_subdevices 'num_subdevices' from
-> an unsigned int to an int to match it.
+2012/6/12 Alan Cox <alan@lxorguk.ukuu.org.uk>:
+>> Was there a special reason for 0x4108 to be left out in the IS_MRST macro?
+>> To me it looks like the bitmask should have been updated in commit:
+>>
+>> gma500: Add the E6xx PCI identifier we are missing
+>> 56125db1eecf8d34d84f7925686110d90724edf0
+>>
+>> If this is the case, I'll send a proper patch since this also applies to
+>> stable 3.3.x and 3.4.x
+>
+> Firstly it should never matter - there are no Moorestown devices in
+> circulation. E600T is very similar to Oaktrail.
+>
+> So the real question here seems to be why does the IS_MRST macro matter.
+> What weird firmware is involved here ?
 
-Ok, some hints on how to send emails, don't do it this way :)
+My company is using these cpu bords for our products:
+http://www.congatec.com/en/products/qseven/dView/conga-qa6.html
 
-You need to use git send-email, which will not duplicate the From and
-stuff in the body of the email.
+With firmware you mean BIOS or VBios or ...? If you tell me what you need, I may
+ask our supplier for more informations. I can tell you that the
+following options can be
+changed in the BIOS regarding gfx - see
+https://www.dropbox.com/s/btlciurz0ih4fhu/IMG_20120612_143431.jpg
 
-Otherwise, I have to edit the patches by hand, or that information ends
-up in the commit log for the patch:
 
------------
-commit c70c98a0180522411aff8eb87e10523eef2fe3f6
-Author: H Hartley Sweeten <hartleys@visionengravers.com>
-Date:   Tue Jun 12 11:57:27 2012 -0700
-
-    staging: comedi: change type of num_subdevices parameter to comedi_alloc_subdevices
-    
-    From 606739d47df00ac9767e3256ab8f6eb1572bd429 Mon Sep 17 00:00:00 2001
-    From: H Hartley Sweeten <hsweeten@visionengravers.com>
-    Date: Tue, 12 Jun 2012 09:45:17 -0700
-    Subject: [PATCH 2/8] staging: comedi: change type of num_subdevices parameter
-     to comedi_alloc_subdevices
-    
-    The n_subdevices variable of struct comedi_device is an int type.
-    Change the type of the comedi_alloc_subdevices 'num_subdevices' from
-    an unsigned int to an int to match it.
-    
-    Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-    Cc: Ian Abbott <abbott@mev.co.uk>
-    Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
-    Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
--------------
-
-I'll edit up these 8, but in the future, please don't do that.
-
-thanks,
-
-greg k-h
+---
+Christian Gmeiner, MSc
