@@ -1,42 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753129Ab2FLA7u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 20:59:50 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:48304 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752884Ab2FLA7s convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 20:59:48 -0400
+	id S1753149Ab2FLBCf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 21:02:35 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33549 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752913Ab2FLBCe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 21:02:34 -0400
+Date: Mon, 11 Jun 2012 18:00:51 -0700
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
+        Tony Luck <tony.luck@intel.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
+        Shuah Khan <shuahkhan@gmail.com>, arve@android.com,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Subject: Re: [PATCH 0/5] Some pstore/ramoops fixes
+Message-ID: <20120612010050.GA21674@lizard>
+References: <20120526130650.GA6242@lizard>
 MIME-Version: 1.0
-In-Reply-To: <20120611152021.25959.71601.stgit@bling.home>
-References: <20120611152021.25959.71601.stgit@bling.home>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 11 Jun 2012 18:59:25 -0600
-Message-ID: <CAErSpo434tDtnSOxB_REG2jFNrZL=aZERWTmmK-cdjqM4z6yWg@mail.gmail.com>
-Subject: Re: [PATCH v3 0/5] PCI: Prep for VFIO and IOMMU Groups
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: linux-pci@vger.kernel.org, benh@kernel.crashing.org, aik@ozlabs.ru,
-        david@gibson.dropbear.id.au, joerg.roedel@amd.com, dwmw2@infradead.org,
-        konrad.wilk@oracle.com, iommu@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, ddutile@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20120526130650.GA6242@lizard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 11, 2012 at 8:26 AM, Alex Williamson
-<alex.williamson@redhat.com> wrote:
-> v3:
->  - Small change to device specific ACS check to allow quirk to
->   support yes/no/pass type functionality. (no change to other
->   patches and no trickle down through IOMMU series)
->
-> Bjorn, what's needed to get these in?  Thanks,
+On Sat, May 26, 2012 at 06:06:50AM -0700, Anton Vorontsov wrote:
+> In the light of Linus' response, and I said this to Colin already, I'll
+> just zap a prz at boot time for pstore/console interface, which means
+> that nowadays there shouldn't be any objections to this bunch of fixes.
+> 
+> These are valid fixes for v3.5, they restore old pstore's behavior
+> nuances, which I changed accidentaly.
+> 
+> Except for the last patch, which is just a fix I happened to make when
+> I got bored of the warning. :-) Not a regression fix, though.
+> 
+> Thanks,
+> 
+> ---
+>  fs/pstore/inode.c          |    2 +-
+>  fs/pstore/ram.c            |    3 +++
+>  fs/pstore/ram_core.c       |   27 +++++++++++++++++----------
+>  include/linux/pstore_ram.h |    2 ++
+>  4 files changed, 23 insertions(+), 11 deletions(-)
 
-Sorry for the delay.  I applied these to my "next" branch (headed for
-3.6).  I didn't feel comfortable pushing them towards 3.5 since
-they're not bugfixes, and they haven't been in -next yet.
+Hi Greg,
 
-Bjorn
+Have you had a chance to look into these? Plus into
+"[PATCH v5 0/11] Merge ram_console into pstore" series, I believe
+there were no objections as well.
+
+Thanks!
+
+p.s. I must confess I have a huge pile of battery-related patches in
+my inbox that I have to review/apply, and folks start to send similar
+pings as I send to you now. :-) I should probably start working on
+my backlog to improve my karma, hehe.
+
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
