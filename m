@@ -1,45 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754084Ab2FLSHn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 14:07:43 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:43854 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753810Ab2FLSHN (ORCPT
+	id S1754003Ab2FLSR2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 14:17:28 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27166 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753415Ab2FLSR1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 14:07:13 -0400
-Date: Tue, 12 Jun 2012 11:07:09 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Ben Chan <benchan@chromium.org>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Sage Ahn <syahn@gctsemi.com>
-Subject: Re: [PATCH v2] staging: gdm72xx: Fix spinlock recursion on
- gdm_usb_send_complete
-Message-ID: <20120612180709.GA9775@kroah.com>
-References: <1339522852-28066-1-git-send-email-benchan@chromium.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339522852-28066-1-git-send-email-benchan@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 12 Jun 2012 14:17:27 -0400
+X-Authority-Analysis: v=2.0 cv=T6AOvo2Q c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=VwQbUJbxAAAA:8 a=yynpYqAUSug8GtzBNiAA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1339525045.13377.141.camel@gandalf.stny.rr.com>
+Subject: [ANNOUNCE] 3.4.2-rt10
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>
+Date: Tue, 12 Jun 2012 14:17:25 -0400
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1+b1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 12, 2012 at 10:40:52AM -0700, Ben Chan wrote:
-> This patch fixes a spinlock recursion bug on several call sites of
-> gdm_usb_send_complete by not calling spin_lock_irqsave on
-> urb->context->tx_cxt->lock when the lock has already been acquired.
-> 
-> Signed-off-by: Ben Chan <benchan@chromium.org>
-> Cc: Sage Ahn <syahn@gctsemi.com>
-> ---
-> This revised patch simplifies the previous patch.
 
-Argh, I _just_ applied the previous patch :(
+Dear RT Folks,
 
-Care to send me an incremental one, fixing it up to look like this now
-so I don't have to revert your previous one?
+I'm pleased to announce the 3.4.2-rt10 stable release.
 
-thanks,
 
-greg k-h
+This release is just an update to the new stable 3.4.2 version
+and no RT specific changes have been made.
+
+
+You can get this release via the git tree at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+
+  Head SHA1: bb35e471ec2917566656f83c5e86f552f64cf5d6
+
+
+Or to build 3.4.2-rt10 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.4.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.4.2.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/patch-3.4.2-rt10.patch.xz
+
+
+
+Enjoy,
+
+-- Steve
+
+
+
