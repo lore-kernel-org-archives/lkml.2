@@ -1,43 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752935Ab2FLOcN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 10:32:13 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:56321 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752004Ab2FLOcL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 10:32:11 -0400
+	id S1753170Ab2FLOcY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 10:32:24 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58283 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751790Ab2FLOcX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 10:32:23 -0400
+Date: Tue, 12 Jun 2012 16:32:20 +0200
+From: Jan Kara <jack@suse.cz>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Jan Kara <jack@suse.cz>, Al Viro <viro@ZenIV.linux.org.uk>,
+        Alex Elder <elder@kernel.org>, linux-fsdevel@suse.cz,
+        LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
+        Ben Myers <bpm@sgi.com>
+Subject: Re: [PATCH 18/27] xfs: Convert to new freezing code
+Message-ID: <20120612143220.GG6021@quack.suse.cz>
+References: <1339510848-16992-1-git-send-email-jack@suse.cz>
+ <1339510848-16992-19-git-send-email-jack@suse.cz>
+ <20120612142346.GA25132@infradead.org>
 MIME-Version: 1.0
-In-Reply-To: <4FD6F7C6.80002@linaro.org>
-References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org>
-	<1339428307-3850-15-git-send-email-lee.jones@linaro.org>
-	<CACRpkdbJdA8rgcXX4Xc3sMrx==5jd-Scu1Xy0UKz0ot3_bbNzw@mail.gmail.com>
-	<4FD6F7C6.80002@linaro.org>
-Date: Tue, 12 Jun 2012 16:32:10 +0200
-Message-ID: <CACRpkdYiZkRT-XLbEBRzCBKJ+721OBVKmUF+v17seFiWxmndnw@mail.gmail.com>
-Subject: Re: [PATCH 14/14] ARM: ux500: Move rtc-pl031 registration to Device
- Tree when enabled
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, arnd@arndb.de, grant.likely@secretlab.ca
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120612142346.GA25132@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 12, 2012 at 10:03 AM, Lee Jones <lee.jones@linaro.org> wrote:
-> On 11/06/12 22:43, Linus Walleij wrote:
+On Tue 12-06-12 10:23:47, Christoph Hellwig wrote:
+> > +	 * We will pass freeze protection with a transaction.  So tell lockdep
+> > +	 * we released it.
+> > +	 */
+> > +	rwsem_release(&ioend->io_inode->i_sb->s_writers.lock_map[SB_FREEZE_FS-1],
+> > +		      1, _THIS_IP_);
+> 
+> I'll need some time to get through the whole series, but repeated use
+> of constructs like this really screams for a helper abstracting it out
+> and documenting it.
+  It's there twice and only in XFS because XFS needs to pass the freeze
+protection (along with a transaction) to a worker thread. I'm not against a
+helper but then it should probably be in a form to allow easy
+instrumentation of lockdep that we are passing a state of lock together
+with a work struct?
 
->> Oh this is a bug fix really, well it's in the device tree so nevermind.
->
-> It is? How so?
-
-That the device tree was declaring a compatible node for something
-that never existed (stericsson,db8500-rtc) while the real node is
-"arm,rtc-pl031", "arm,primecell".
-
-Without this fix 3.4 will not have an PL031 RTC I guess?
-
-Yours,
-Linus Walleij
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
