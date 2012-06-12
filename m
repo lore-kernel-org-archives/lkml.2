@@ -1,48 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754034Ab2FLRkO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 13:40:14 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:51651 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753860Ab2FLRkM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 13:40:12 -0400
-Message-ID: <1339522812.2404.4.camel@joe2Laptop>
-Subject: Re: [PATCH v2] lib/decompress_unxz.c: removing all memory helper
- functions
-From: Joe Perches <joe@perches.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Lasse Collin <lasse.collin@tukaani.org>,
-        T Makphaibulchoke <tmac@hp.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com, linux390@de.ibm.com,
-        lethal@linux-sh.org, tglx@linutronix.de, mingo@redhat.com,
-        x86@kernel.org, kaloz@openwrt.org, jj@chaosbits.net,
-        matt.fleming@intel.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
-        linux-sh@vger.kernel.org
-Date: Tue, 12 Jun 2012 10:40:12 -0700
-In-Reply-To: <4FD77CAF.1020402@zytor.com>
-References: <1339470307-28223-1-git-send-email-tmac@hp.com>
-	 <20120612191804.4211462a@tukaani.org>
-	 <alpine.LFD.2.02.1206121316190.23555@xanadu.home>
-	 <4FD77CAF.1020402@zytor.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753981Ab2FLRk6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 13:40:58 -0400
+Received: from mail-lpp01m010-f74.google.com ([209.85.215.74]:55810 "EHLO
+	mail-lpp01m010-f74.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751729Ab2FLRk5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 13:40:57 -0400
+From: Ben Chan <benchan@chromium.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ben Chan <benchan@chromium.org>, Sage Ahn <syahn@gctsemi.com>
+Subject: [PATCH v2] staging: gdm72xx: Fix spinlock recursion on gdm_usb_send_complete
+Date: Tue, 12 Jun 2012 10:40:52 -0700
+Message-Id: <1339522852-28066-1-git-send-email-benchan@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-06-12 at 10:30 -0700, H. Peter Anvin wrote:
-> On 06/12/2012 10:26 AM, Nicolas Pitre wrote:
-> > 
-> > Instead of copying, maybe this would be much better to make the content 
-> > of lib/string.c usable in a pre-boot environment.
+This patch fixes a spinlock recursion bug on several call sites of
+gdm_usb_send_complete by not calling spin_lock_irqsave on
+urb->context->tx_cxt->lock when the lock has already been acquired.
 
-> Not sure about that... a lot of it is #ifndef __HAVE_ARCH_* and you
-> *really* want those optimizations on some arches.
+Signed-off-by: Ben Chan <benchan@chromium.org>
+Cc: Sage Ahn <syahn@gctsemi.com>
+---
+This revised patch simplifies the previous patch.
 
-Can __weak be used?
+ drivers/staging/gdm72xx/gdm_usb.c |   20 +++++++++++++-------
+ 1 files changed, 13 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/staging/gdm72xx/gdm_usb.c b/drivers/staging/gdm72xx/gdm_usb.c
+index 1e9dc0d..a5313fc 100644
+--- a/drivers/staging/gdm72xx/gdm_usb.c
++++ b/drivers/staging/gdm72xx/gdm_usb.c
+@@ -270,20 +270,17 @@ static void release_usb(struct usbwm_dev *udev)
+ 	}
+ }
+ 
+-static void gdm_usb_send_complete(struct urb *urb)
++static void __gdm_usb_send_complete(struct urb *urb)
+ {
+ 	struct usb_tx *t = urb->context;
+ 	struct tx_cxt *tx = t->tx_cxt;
+ 	u8 *pkt = t->buf;
+ 	u16 cmd_evt;
+-	unsigned long flags;
+ 
+ 	/* Completion by usb_unlink_urb */
+ 	if (urb->status == -ECONNRESET)
+ 		return;
+ 
+-	spin_lock_irqsave(&tx->lock, flags);
+-
+ 	if (t->callback)
+ 		t->callback(t->cb_data);
+ 
+@@ -295,7 +292,16 @@ static void gdm_usb_send_complete(struct urb *urb)
+ 		put_tx_struct(tx, t);
+ 	else
+ 		free_tx_struct(t);
++}
++
++static void gdm_usb_send_complete(struct urb *urb)
++{
++	struct usb_tx *t = urb->context;
++	struct tx_cxt *tx = t->tx_cxt;
++	unsigned long flags;
+ 
++	spin_lock_irqsave(&tx->lock, flags);
++	__gdm_usb_send_complete(urb);
+ 	spin_unlock_irqrestore(&tx->lock, flags);
+ }
+ 
+@@ -411,7 +417,7 @@ out:
+ 
+ send_fail:
+ 	t->callback = NULL;
+-	gdm_usb_send_complete(t->urb);
++	__gdm_usb_send_complete(t->urb);
+ 	spin_unlock_irqrestore(&tx->lock, flags);
+ 	return ret;
+ }
+@@ -540,7 +546,7 @@ static void do_pm_control(struct work_struct *work)
+ 
+ 			if (ret) {
+ 				t->callback = NULL;
+-				gdm_usb_send_complete(t->urb);
++				__gdm_usb_send_complete(t->urb);
+ 			}
+ 		}
+ 	}
+@@ -742,7 +748,7 @@ static int k_mode_thread(void *arg)
+ 
+ 				if (ret) {
+ 					t->callback = NULL;
+-					gdm_usb_send_complete(t->urb);
++					__gdm_usb_send_complete(t->urb);
+ 				}
+ 			}
+ 
+-- 
+1.7.7.3
 
