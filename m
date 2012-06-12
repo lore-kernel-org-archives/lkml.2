@@ -1,123 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751794Ab2FLHyp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 03:54:45 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:59800 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751465Ab2FLHyn (ORCPT
+	id S1751351Ab2FLIBm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 04:01:42 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:51935 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750876Ab2FLIBl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 03:54:43 -0400
-Date: Tue, 12 Jun 2012 09:54:22 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: khali@linux-fr.org, ben-linux@fluff.org, swarren@wwwdotorg.org,
-        olof@lixom.net, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
-Subject: Re: [PATCH 1/4] i2c: tegra: make sure register writes completes
-Message-ID: <20120612075422.GB9230@pengutronix.de>
-References: <1338901800-23968-1-git-send-email-ldewangan@nvidia.com>
- <1338901800-23968-2-git-send-email-ldewangan@nvidia.com>
+	Tue, 12 Jun 2012 04:01:41 -0400
+Message-ID: <4FD6F761.6010305@linaro.org>
+Date: Tue, 12 Jun 2012 09:01:37 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="NDin8bjvE/0mNLFQ"
-Content-Disposition: inline
-In-Reply-To: <1338901800-23968-2-git-send-email-ldewangan@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, arnd@arndb.de, grant.likely@secretlab.ca,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Mattias WALLIN <mattias.wallin@stericsson.com>,
+        Michel Jaouen <michel.jaouen@stericsson.com>
+Subject: Re: [PATCH 08/14] mfd: Add IRQ domain support for the AB8500
+References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org> <1339428307-3850-9-git-send-email-lee.jones@linaro.org> <CACRpkdaZ1OZdaqo=_YvQpyYazpcmhLT8QF4jz1WUQMSAsTM8Sw@mail.gmail.com>
+In-Reply-To: <CACRpkdaZ1OZdaqo=_YvQpyYazpcmhLT8QF4jz1WUQMSAsTM8Sw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/06/12 22:33, Linus Walleij wrote:
+> On Mon, Jun 11, 2012 at 5:25 PM, Lee Jones<lee.jones@linaro.org>  wrote:
+>
+>> As the AB8500 is an IRQ controller in its own right, here we provide
+>> the AB8500 driver with IRQ domain support. This is required if we wish
+>> to reference any of its IRQs from a platform's Device Tree.
+>
+> OK..
+>
+>> diff --git a/drivers/mfd/ab8500-core.c b/drivers/mfd/ab8500-core.c
+> (...)
+>> -static int ab8500_irq_init(struct ab8500 *ab8500)
+>> +/**
+>> + * ab8500_irq_get_virq(): Map an interrupt on a chip to a virtual IRQ
+>> + *
+>> + * Useful for drivers to request their own IRQs.
+>
+> Check style against Documentation/kernel-doc-nano-HOWTO.txt
+> verbos explanation follows argument documentation.
 
---NDin8bjvE/0mNLFQ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Ah, good to know.
 
-On Tue, Jun 05, 2012 at 06:39:57PM +0530, Laxman Dewangan wrote:
-> The Tegra PPSB (an peripheral bus) queues writes transactions.
-> In order to guarantee that writes have completed before a
-> certain time, a read transaction to a register on the same
-> bus must be executed.
-> This is necessary in situations such as when clearing an
-> interrupt status or enable, so that when returning from an
-> interrupt handler, the HW has already de-asserted its
-> interrupt status output, which will avoid spurious interrupts.
->=20
-> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-> ---
->  drivers/i2c/busses/i2c-tegra.c |   13 +++++++++++++
->  1 files changed, 13 insertions(+), 0 deletions(-)
->=20
-> diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegr=
-a.c
-> index 8b2e555..fa92396 100644
-> --- a/drivers/i2c/busses/i2c-tegra.c
-> +++ b/drivers/i2c/busses/i2c-tegra.c
-> @@ -430,6 +430,13 @@ static irqreturn_t tegra_i2c_isr(int irq, void *dev_=
-id)
->  	if (i2c_dev->is_dvc)
->  		dvc_writel(i2c_dev, DVC_STATUS_I2C_DONE_INTR, DVC_STATUS);
-> =20
-> +	/*
-> +	 * Register write get queued in the PPSB bus and write can
-> +	 * happen later. Read back register to make sure that register
-> +	 * write is completed.
-> +	 */
-> +	i2c_readl(i2c_dev, I2C_INT_STATUS);
+I just followed other examples in this case. I'll swap them over.
 
-Does it make sense to put the read into i2c_writel?
+>> + *
+>> + * @ab8500: ab8500_irq controller to operate on.
+>> + * @irq: index of the interrupt requested in the chip IRQs
+>> + */
+>> +int ab8500_irq_get_virq(struct ab8500 *ab8500, int irq)
+>>   {
+>> -       int base = ab8500->irq_base;
+>> -       int irq;
+>> -       int num_irqs;
+>> +       if (!ab8500)
+>> +               return -EINVAL;
+>>
+>> -       if (is_ab9540(ab8500))
+>> -               num_irqs = AB9540_NR_IRQS;
+>> -       else if (is_ab8505(ab8500))
+>> -               num_irqs = AB8505_NR_IRQS;
+>> -       else
+>> -               num_irqs = AB8500_NR_IRQS;
+>> +       return irq_create_mapping(ab8500->domain, irq);
+>> +}
+>> +EXPORT_SYMBOL_GPL(ab8500_irq_get_virq);
+> (...)
+>> @@ -1233,11 +1256,9 @@ static int __devinit ab8500_probe(struct platform_device *pdev)
+>>
+>>         if (plat)
+>>                 ab8500->irq_base = plat->irq_base;
+>> -       else if (np)
+>> -               ret = of_property_read_u32(np, "stericsson,irq-base",&ab8500->irq_base);
+>
+> So if we're not using the irq base thing anymore, should you also
+> delete it from the binding document too? (If there is no binding
+> doc something is wrong and you need to create it I guess...)
 
-> +
->  	if (status & I2C_INT_PACKET_XFER_COMPLETE) {
->  		BUG_ON(i2c_dev->msg_buf_remaining);
->  		complete(&i2c_dev->msg_complete);
-> @@ -444,6 +451,9 @@ err:
->  	if (i2c_dev->is_dvc)
->  		dvc_writel(i2c_dev, DVC_STATUS_I2C_DONE_INTR, DVC_STATUS);
-> =20
-> +	/* Read back register to make sure that register writes completed */
-> +	i2c_readl(i2c_dev, I2C_INT_STATUS);
-> +
->  	complete(&i2c_dev->msg_complete);
->  	return IRQ_HANDLED;
->  }
-> @@ -505,6 +515,9 @@ static int tegra_i2c_xfer_msg(struct tegra_i2c_dev *i=
-2c_dev,
->  	ret =3D wait_for_completion_timeout(&i2c_dev->msg_complete, TEGRA_I2C_T=
-IMEOUT);
->  	tegra_i2c_mask_irq(i2c_dev, int_mask);
-> =20
-> +	/* Read back register to make sure that register writes completed */
-> +	i2c_readl(i2c_dev, I2C_INT_MASK);
-> +
+No. A document is not required now, as we are using standard bindings.
 
-It definately makes sense to put this read into tegra_i2c_mask_irq()?
+>> diff --git a/include/linux/mfd/abx500/ab8500.h b/include/linux/mfd/abx500/ab8500.h
+>> index 91dd3ef..48f126c 100644
+>> --- a/include/linux/mfd/abx500/ab8500.h
+>> +++ b/include/linux/mfd/abx500/ab8500.h
+>> @@ -227,6 +227,7 @@ enum ab8500_version {
+>>   * @irq_lock: genirq bus lock
+>>   * @transfer_ongoing: 0 if no transfer ongoing
+>>   * @irq: irq line
+>> + * @irq_domain: irq domain
+>>   * @version: chip version id (e.g. ab8500 or ab9540)
+>>   * @chip_id: chip revision id
+>>   * @write: register write
+>> @@ -247,6 +248,7 @@ struct ab8500 {
+>>         atomic_t        transfer_ongoing;
+>>         int             irq_base;
+>>         int             irq;
+>> +       struct irq_domain  *domain;
+>
+> Don't you need to forward-declare struct irq_domain?
+> I think you're just lucky to have it compiling... (Something
+> else included<linux/irqdomain.h>  on the way here.)
 
->  	if (WARN_ON(ret =3D=3D 0)) {
->  		dev_err(i2c_dev->dev, "i2c transfer timed out\n");
+You're right. I'll make the changes and resubmit.
 
-Regards,
-
-   Wolfram
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---NDin8bjvE/0mNLFQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAk/W9a4ACgkQD27XaX1/VRuUqQCglVAJt24rc4csHjA6Xcy/CXWO
-0vkAoI/ySXqxiqSF9atgWue7VNs0G44G
-=Bnh4
------END PGP SIGNATURE-----
-
---NDin8bjvE/0mNLFQ--
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+M: +44 77 88 633 515
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
