@@ -1,109 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753287Ab2FLBlm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 21:41:42 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:54042 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753153Ab2FLBlk (ORCPT
+	id S1753320Ab2FLBmp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 21:42:45 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:48137 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753236Ab2FLBmo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 21:41:40 -0400
-Date: Tue, 12 Jun 2012 11:41:29 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Subject: linux-next: manual merge of the wireless-next tree with the net
- tree
-Message-Id: <20120612114129.68159847828093544c867306@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__12_Jun_2012_11_41_29_+1000_qf5PuksRafMoQ/gn"
+	Mon, 11 Jun 2012 21:42:44 -0400
+Date: Mon, 11 Jun 2012 18:42:39 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
+        "abbotti@mev.co.uk" <abbotti@mev.co.uk>
+Subject: Re: [PATCH] staging: comedi: cleanup alloc_subdevices
+Message-ID: <20120612014239.GA32087@kroah.com>
+References: <201206071508.15674.hartleys@visionengravers.com>
+ <20120611235657.GA26721@kroah.com>
+ <ADE657CA350FB648AAC2C43247A983F0020698DBC4A9@AUSP01VMBX24.collaborationhost.net>
+ <20120612004421.GA30997@kroah.com>
+ <ADE657CA350FB648AAC2C43247A983F0020698DBC4B9@AUSP01VMBX24.collaborationhost.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <ADE657CA350FB648AAC2C43247A983F0020698DBC4B9@AUSP01VMBX24.collaborationhost.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__12_Jun_2012_11_41_29_+1000_qf5PuksRafMoQ/gn
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Jun 11, 2012 at 07:49:46PM -0500, H Hartley Sweeten wrote:
+> On Monday, June 11, 2012 5:44 PM, Greg KH wrote:
+> > On Mon, Jun 11, 2012 at 07:07:41PM -0500, H Hartley Sweeten wrote:
+> >> 2, 3, and 4 probably go together. They all deal with the 'num_subdevices'
+> >> 
+> >> 1 can be a separate patch as long as I don't do the rename.
+> >> 
+> >> 5, 6, and 7 could all go together with the final rename of the function.
+> >> 
+> >> Does that sound ok?
+> >
+> > No, why not just break it up into 7 different patches?  You are doing
+> > different things, which would you rather review for correctness, 7
+> > simple, tiny patches, or some that do multiple things at the same time
+> > that are bigger?
+> 
+> Ok. I just posted the first one. It's still pretty big since it hits every
+> comedi driver file.
+> 
+> Please ignore the first post. I fat-fingered the prototype in the header.
+> v2 is correct.
+> 
+> Also, I have never done local commits to my Linux-next tree so I'm not
+> sure how to proceed with the incremental patches. If it's ok with you
+> I'll just wait for each patch to go into staging.
 
-Hi John,
+Create a brach from the one you are working on:
+	git branch -b my_branch
+make a change and commit it
+commit another one
+and so on.
+then create the patches:
+	git format-patch original_branch_name..my_branch
+and use git send-email to send them off in order.
 
-Today's linux-next merge of the wireless-next tree got a conflict in
-drivers/net/wireless/iwlwifi/pcie/trans.c between commit d012d04e4d63
-("iwlwifi: disable the buggy chain extension feature in HW") from the net
-tree and commit 4beaf6c2f8af ("iwlwifi: s/txq_setup/txq_enable") from the
-wireless-next tree.
+Otherwise we are going to take 7 weeks when I apply one of your patches
+a week :)
 
-I fixed it up (I think - see below) and can carry the fix as necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+thanks,
 
-diff --cc drivers/net/wireless/iwlwifi/pcie/trans.c
-index cb951ad,1eabb83..0000000
---- a/drivers/net/wireless/iwlwifi/pcie/trans.c
-+++ b/drivers/net/wireless/iwlwifi/pcie/trans.c
-@@@ -1058,11 -1054,17 +1054,22 @@@ static void iwl_tx_start(struct iwl_tra
-  	iwl_write_prph(trans, SCD_DRAM_BASE_ADDR,
-  		       trans_pcie->scd_bc_tbls.dma >> 10);
- =20
- +	/* The chain extension of the SCD doesn't work well. This feature is
- +	 * enabled by default by the HW, so we need to disable it manually.
- +	 */
- +	iwl_write_prph(trans, SCD_CHAINEXT_EN, 0);
- +
-+ 	for (i =3D 0; i < trans_pcie->n_q_to_fifo; i++) {
-+ 		int fifo =3D trans_pcie->setup_q_to_fifo[i];
-+=20
-+ 		__iwl_trans_pcie_txq_enable(trans, i, fifo, IWL_INVALID_STATION,
-+ 					    IWL_TID_NON_QOS,
-+ 					    SCD_FRAME_LIMIT, 0);
-+ 	}
-+=20
-+ 	/* Activate all Tx DMA/FIFO channels */
-+ 	iwl_trans_txq_set_sched(trans, IWL_MASK(0, 7));
-+=20
-  	/* Enable DMA channel */
-  	for (chan =3D 0; chan < FH_TCSR_CHNL_NUM ; chan++)
-  		iwl_write_direct32(trans, FH_TCSR_CHNL_TX_CONFIG_REG(chan),
-@@@ -1356,10 -1317,10 +1322,10 @@@ static int iwl_trans_pcie_tx(struct iwl
-  	iwl_trans_txq_update_byte_cnt_tbl(trans, txq, le16_to_cpu(tx_cmd->len));
- =20
-  	dma_sync_single_for_device(trans->dev, txcmd_phys, firstlen,
-- 			DMA_BIDIRECTIONAL);
-+ 				   DMA_BIDIRECTIONAL);
- =20
-  	trace_iwlwifi_dev_tx(trans->dev,
- -			     &((struct iwl_tfd *)txq->tfds)[txq->q.write_ptr],
- +			     &txq->tfds[txq->q.write_ptr],
-  			     sizeof(struct iwl_tfd),
-  			     &dev_cmd->hdr, firstlen,
-  			     skb->data + hdr_len, secondlen);
-
---Signature=_Tue__12_Jun_2012_11_41_29_+1000_qf5PuksRafMoQ/gn
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJP1p5JAAoJEECxmPOUX5FEfbQP/1NnH56yep7zsRa1yjUbd9wq
-t1hRrg1QumdOIDCWkeIlaikPaPZL/fIHyWBYCA6rdlvooKBbw8bSHtc0oxK7bM5p
-xXMhhJJdfxmFiYiyg6NRdcWfkB8c/d6nVeQPj0fB4AXeilwJnLpKJoR4kdYCo/9/
-bLZUfLwg1+WfqtSm4ORCM6gq05xBHDT9mOsyIFBtTo4HR9rrb94m++rA6VGcXXEk
-SzP/zSpjvYq2GPhTQq7qkCWbh3BF5Qx3NraOafMLkOxWqGh5tyMToryeoKxVbQuE
-ckNhnDFO0Z8XprahwiIYmmj31XR6mGcnWLcxZWBzGe/cTxLMatssFpk9uGDDcO2O
-g+zmv9cyiWMXpcgbUG+ZSudeZd5OHUO1mgOoVcKHF8ygC+S/DzBYm9/hea0mnQK/
-Klfn6Fx+RtIhTYfbiPB7aZXEYj3IimTttk7f64k4Xljf8OqeTgidlu6FkMocAaLr
-vVLJhVX0jvAaFL3unrCx2AUVZmxsDxCLomBYqN09jRxh8WIf+n+2m4PXvQpSDAbf
-IWtbbfcKDwT7rxDBOKIAdOxJJSTvS1kuDYLoRZHt9hOD1WbVrrIQ2BgJ3SrRICXG
-73eXojggjE1mX0+URbCEOGiLgjxv7CRLpXK903d3xS3SKygBcysz/pGzbPbvINGd
-wNdzhW9YbELG5zKsZrZ2
-=E7zU
------END PGP SIGNATURE-----
-
---Signature=_Tue__12_Jun_2012_11_41_29_+1000_qf5PuksRafMoQ/gn--
+greg k-h
