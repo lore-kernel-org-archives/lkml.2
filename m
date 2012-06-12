@@ -1,1222 +1,1381 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752450Ab2FLJD3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 05:03:29 -0400
-Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:3012 "EHLO
-	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752070Ab2FLJD0 (ORCPT
+	id S1752313Ab2FLJG6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 05:06:58 -0400
+Received: from 212.199.104.198.static.012.net.il ([212.199.104.198]:64733 "EHLO
+	lx-merez.qi.qualcomm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751437Ab2FLJGy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 05:03:26 -0400
-Message-ID: <1339491803.30984.111.camel@x61.thuisdomein>
-Subject: [PATCH] MIPS: remove two unused headers
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Date: Tue, 12 Jun 2012 11:03:23 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-OriginalArrivalTime: 12 Jun 2012 09:03:24.0459 (UTC) FILETIME=[39165FB0:01CD487A]
-X-RcptDomain: vger.kernel.org
+	Tue, 12 Jun 2012 05:06:54 -0400
+From: Maya Erez <merez@codeaurora.org>
+To: linux-mmc@vger.kernel.org
+Cc: linux-arm-msm@vger.kernel.org, Maya Erez <merez@codeaurora.org>,
+        linux-doc@vger.kernel.org (open list:DOCUMENTATION),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH v4 1/1] block: Add test-iosched scheduler
+Date: Tue, 12 Jun 2012 12:06:24 +0300
+Message-Id: <1339491984-8462-2-git-send-email-merez@codeaurora.org>
+X-Mailer: git-send-email 1.7.3.3
+In-Reply-To: <1339491984-8462-1-git-send-email-merez@codeaurora.org>
+References: <1339491984-8462-1-git-send-email-merez@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No file includes these two headers. It seems they have never been
-included since they were added to the tree in commit
-4cbf2beac2265b3619be9c8e88ff4ff45b49d7c2 ("BCM1480 headers"). They can
-safely be removed.
+The test scheduler allows testing a block device by dispatching
+specific requests according to the test case and declare PASS/FAIL
+according to the requests completion error code
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Again tested only by "git grepping" the (history of the) tree in various
-ways. Note that this included "git grepping" each named constant defined
-in these headers (against v3.5-rc2). That found no indication that they
-were used anywhere. Since these headers aren't included anyway, that's
-not really surprising. (But perhaps creative use of macro concatenation
-hides their usage in the code.)
+Signed-off-by: Maya Erez <merez@codeaurora.org>
 
- arch/mips/include/asm/sibyte/bcm1480_l2c.h |  176 -----
- arch/mips/include/asm/sibyte/bcm1480_mc.h  |  984 ----------------------------
- 2 files changed, 0 insertions(+), 1160 deletions(-)
- delete mode 100644 arch/mips/include/asm/sibyte/bcm1480_l2c.h
- delete mode 100644 arch/mips/include/asm/sibyte/bcm1480_mc.h
-
-diff --git a/arch/mips/include/asm/sibyte/bcm1480_l2c.h b/arch/mips/include/asm/sibyte/bcm1480_l2c.h
-deleted file mode 100644
-index fd75817..0000000
---- a/arch/mips/include/asm/sibyte/bcm1480_l2c.h
-+++ /dev/null
-@@ -1,176 +0,0 @@
--/*  *********************************************************************
--    *  BCM1280/BCM1480 Board Support Package
--    *
--    *  L2 Cache constants and macros		File: bcm1480_l2c.h
--    *
--    *  This module contains constants useful for manipulating the
--    *  level 2 cache.
--    *
--    *  BCM1400 specification level:  1280-UM100-D2 (11/14/03)
--    *
--    *********************************************************************
--    *
--    *  Copyright 2000,2001,2002,2003
--    *  Broadcom Corporation. All rights reserved.
--    *
--    *  This program is free software; you can redistribute it and/or
--    *  modify it under the terms of the GNU General Public License as
--    *  published by the Free Software Foundation; either version 2 of
--    *  the License, or (at your option) any later version.
--    *
--    *  This program is distributed in the hope that it will be useful,
--    *  but WITHOUT ANY WARRANTY; without even the implied warranty of
--    *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
--    *  GNU General Public License for more details.
--    *
--    *  You should have received a copy of the GNU General Public License
--    *  along with this program; if not, write to the Free Software
--    *  Foundation, Inc., 59 Temple Place, Suite 330, Boston,
--    *  MA 02111-1307 USA
--    ********************************************************************* */
--
--
--#ifndef _BCM1480_L2C_H
--#define _BCM1480_L2C_H
--
--#include "sb1250_defs.h"
--
--/*
-- * Format of level 2 cache management address (Table 55)
-- */
--
--#define S_BCM1480_L2C_MGMT_INDEX            5
--#define M_BCM1480_L2C_MGMT_INDEX            _SB_MAKEMASK(12, S_BCM1480_L2C_MGMT_INDEX)
--#define V_BCM1480_L2C_MGMT_INDEX(x)         _SB_MAKEVALUE(x, S_BCM1480_L2C_MGMT_INDEX)
--#define G_BCM1480_L2C_MGMT_INDEX(x)         _SB_GETVALUE(x, S_BCM1480_L2C_MGMT_INDEX, M_BCM1480_L2C_MGMT_INDEX)
--
--#define S_BCM1480_L2C_MGMT_WAY              17
--#define M_BCM1480_L2C_MGMT_WAY              _SB_MAKEMASK(3, S_BCM1480_L2C_MGMT_WAY)
--#define V_BCM1480_L2C_MGMT_WAY(x)           _SB_MAKEVALUE(x, S_BCM1480_L2C_MGMT_WAY)
--#define G_BCM1480_L2C_MGMT_WAY(x)           _SB_GETVALUE(x, S_BCM1480_L2C_MGMT_WAY, M_BCM1480_L2C_MGMT_WAY)
--
--#define M_BCM1480_L2C_MGMT_DIRTY            _SB_MAKEMASK1(20)
--#define M_BCM1480_L2C_MGMT_VALID            _SB_MAKEMASK1(21)
--
--#define S_BCM1480_L2C_MGMT_ECC_DIAG         22
--#define M_BCM1480_L2C_MGMT_ECC_DIAG         _SB_MAKEMASK(2, S_BCM1480_L2C_MGMT_ECC_DIAG)
--#define V_BCM1480_L2C_MGMT_ECC_DIAG(x)      _SB_MAKEVALUE(x, S_BCM1480_L2C_MGMT_ECC_DIAG)
--#define G_BCM1480_L2C_MGMT_ECC_DIAG(x)      _SB_GETVALUE(x, S_BCM1480_L2C_MGMT_ECC_DIAG, M_BCM1480_L2C_MGMT_ECC_DIAG)
--
--#define A_BCM1480_L2C_MGMT_TAG_BASE         0x00D0000000
--
--#define BCM1480_L2C_ENTRIES_PER_WAY         4096
--#define BCM1480_L2C_NUM_WAYS                8
--
--
--/*
-- * Level 2 Cache Tag register (Table 59)
-- */
--
--#define S_BCM1480_L2C_TAG_MBZ               0
--#define M_BCM1480_L2C_TAG_MBZ               _SB_MAKEMASK(5, S_BCM1480_L2C_TAG_MBZ)
--
--#define S_BCM1480_L2C_TAG_INDEX             5
--#define M_BCM1480_L2C_TAG_INDEX             _SB_MAKEMASK(12, S_BCM1480_L2C_TAG_INDEX)
--#define V_BCM1480_L2C_TAG_INDEX(x)          _SB_MAKEVALUE(x, S_BCM1480_L2C_TAG_INDEX)
--#define G_BCM1480_L2C_TAG_INDEX(x)          _SB_GETVALUE(x, S_BCM1480_L2C_TAG_INDEX, M_BCM1480_L2C_TAG_INDEX)
--
--/* Note that index bit 16 is also tag bit 40 */
--#define S_BCM1480_L2C_TAG_TAG               17
--#define M_BCM1480_L2C_TAG_TAG               _SB_MAKEMASK(23, S_BCM1480_L2C_TAG_TAG)
--#define V_BCM1480_L2C_TAG_TAG(x)            _SB_MAKEVALUE(x, S_BCM1480_L2C_TAG_TAG)
--#define G_BCM1480_L2C_TAG_TAG(x)            _SB_GETVALUE(x, S_BCM1480_L2C_TAG_TAG, M_BCM1480_L2C_TAG_TAG)
--
--#define S_BCM1480_L2C_TAG_ECC               40
--#define M_BCM1480_L2C_TAG_ECC               _SB_MAKEMASK(6, S_BCM1480_L2C_TAG_ECC)
--#define V_BCM1480_L2C_TAG_ECC(x)            _SB_MAKEVALUE(x, S_BCM1480_L2C_TAG_ECC)
--#define G_BCM1480_L2C_TAG_ECC(x)            _SB_GETVALUE(x, S_BCM1480_L2C_TAG_ECC, M_BCM1480_L2C_TAG_ECC)
--
--#define S_BCM1480_L2C_TAG_WAY               46
--#define M_BCM1480_L2C_TAG_WAY               _SB_MAKEMASK(3, S_BCM1480_L2C_TAG_WAY)
--#define V_BCM1480_L2C_TAG_WAY(x)            _SB_MAKEVALUE(x, S_BCM1480_L2C_TAG_WAY)
--#define G_BCM1480_L2C_TAG_WAY(x)            _SB_GETVALUE(x, S_BCM1480_L2C_TAG_WAY, M_BCM1480_L2C_TAG_WAY)
--
--#define M_BCM1480_L2C_TAG_DIRTY             _SB_MAKEMASK1(49)
--#define M_BCM1480_L2C_TAG_VALID             _SB_MAKEMASK1(50)
--
--#define S_BCM1480_L2C_DATA_ECC              51
--#define M_BCM1480_L2C_DATA_ECC              _SB_MAKEMASK(10, S_BCM1480_L2C_DATA_ECC)
--#define V_BCM1480_L2C_DATA_ECC(x)           _SB_MAKEVALUE(x, S_BCM1480_L2C_DATA_ECC)
--#define G_BCM1480_L2C_DATA_ECC(x)           _SB_GETVALUE(x, S_BCM1480_L2C_DATA_ECC, M_BCM1480_L2C_DATA_ECC)
--
--
--/*
-- * L2 Misc0 Value Register (Table 60)
-- */
--
--#define S_BCM1480_L2C_MISC0_WAY_REMOTE      0
--#define M_BCM1480_L2C_MISC0_WAY_REMOTE      _SB_MAKEMASK(8, S_BCM1480_L2C_MISC0_WAY_REMOTE)
--#define G_BCM1480_L2C_MISC0_WAY_REMOTE(x)   _SB_GETVALUE(x, S_BCM1480_L2C_MISC0_WAY_REMOTE, M_BCM1480_L2C_MISC0_WAY_REMOTE)
--
--#define S_BCM1480_L2C_MISC0_WAY_LOCAL       8
--#define M_BCM1480_L2C_MISC0_WAY_LOCAL       _SB_MAKEMASK(8, S_BCM1480_L2C_MISC0_WAY_LOCAL)
--#define G_BCM1480_L2C_MISC0_WAY_LOCAL(x)    _SB_GETVALUE(x, S_BCM1480_L2C_MISC0_WAY_LOCAL, M_BCM1480_L2C_MISC0_WAY_LOCAL)
--
--#define S_BCM1480_L2C_MISC0_WAY_ENABLE      16
--#define M_BCM1480_L2C_MISC0_WAY_ENABLE      _SB_MAKEMASK(8, S_BCM1480_L2C_MISC0_WAY_ENABLE)
--#define G_BCM1480_L2C_MISC0_WAY_ENABLE(x)   _SB_GETVALUE(x, S_BCM1480_L2C_MISC0_WAY_ENABLE, M_BCM1480_L2C_MISC0_WAY_ENABLE)
--
--#define S_BCM1480_L2C_MISC0_CACHE_DISABLE   24
--#define M_BCM1480_L2C_MISC0_CACHE_DISABLE   _SB_MAKEMASK(2, S_BCM1480_L2C_MISC0_CACHE_DISABLE)
--#define G_BCM1480_L2C_MISC0_CACHE_DISABLE(x) _SB_GETVALUE(x, S_BCM1480_L2C_MISC0_CACHE_DISABLE, M_BCM1480_L2C_MISC0_CACHE_DISABLE)
--
--#define S_BCM1480_L2C_MISC0_CACHE_QUAD      26
--#define M_BCM1480_L2C_MISC0_CACHE_QUAD      _SB_MAKEMASK(2, S_BCM1480_L2C_MISC0_CACHE_QUAD)
--#define G_BCM1480_L2C_MISC0_CACHE_QUAD(x)   _SB_GETVALUE(x, S_BCM1480_L2C_MISC0_CACHE_QUAD, M_BCM1480_L2C_MISC0_CACHE_QUAD)
--
--#define S_BCM1480_L2C_MISC0_MC_PRIORITY      30
--#define M_BCM1480_L2C_MISC0_MC_PRIORITY      _SB_MAKEMASK1(S_BCM1480_L2C_MISC0_MC_PRIORITY)
--
--#define S_BCM1480_L2C_MISC0_ECC_CLEANUP      31
--#define M_BCM1480_L2C_MISC0_ECC_CLEANUP      _SB_MAKEMASK1(S_BCM1480_L2C_MISC0_ECC_CLEANUP)
--
--
--/*
-- * L2 Misc1 Value Register (Table 60)
-- */
--
--#define S_BCM1480_L2C_MISC1_WAY_AGENT_0      0
--#define M_BCM1480_L2C_MISC1_WAY_AGENT_0      _SB_MAKEMASK(8, S_BCM1480_L2C_MISC1_WAY_AGENT_0)
--#define G_BCM1480_L2C_MISC1_WAY_AGENT_0(x)   _SB_GETVALUE(x, S_BCM1480_L2C_MISC1_WAY_AGENT_0, M_BCM1480_L2C_MISC1_WAY_AGENT_0)
--
--#define S_BCM1480_L2C_MISC1_WAY_AGENT_1      8
--#define M_BCM1480_L2C_MISC1_WAY_AGENT_1      _SB_MAKEMASK(8, S_BCM1480_L2C_MISC1_WAY_AGENT_1)
--#define G_BCM1480_L2C_MISC1_WAY_AGENT_1(x)   _SB_GETVALUE(x, S_BCM1480_L2C_MISC1_WAY_AGENT_1, M_BCM1480_L2C_MISC1_WAY_AGENT_1)
--
--#define S_BCM1480_L2C_MISC1_WAY_AGENT_2      16
--#define M_BCM1480_L2C_MISC1_WAY_AGENT_2      _SB_MAKEMASK(8, S_BCM1480_L2C_MISC1_WAY_AGENT_2)
--#define G_BCM1480_L2C_MISC1_WAY_AGENT_2(x)   _SB_GETVALUE(x, S_BCM1480_L2C_MISC1_WAY_AGENT_2, M_BCM1480_L2C_MISC1_WAY_AGENT_2)
--
--#define S_BCM1480_L2C_MISC1_WAY_AGENT_3      24
--#define M_BCM1480_L2C_MISC1_WAY_AGENT_3      _SB_MAKEMASK(8, S_BCM1480_L2C_MISC1_WAY_AGENT_3)
--#define G_BCM1480_L2C_MISC1_WAY_AGENT_3(x)   _SB_GETVALUE(x, S_BCM1480_L2C_MISC1_WAY_AGENT_3, M_BCM1480_L2C_MISC1_WAY_AGENT_3)
--
--#define S_BCM1480_L2C_MISC1_WAY_AGENT_4      32
--#define M_BCM1480_L2C_MISC1_WAY_AGENT_4      _SB_MAKEMASK(8, S_BCM1480_L2C_MISC1_WAY_AGENT_4)
--#define G_BCM1480_L2C_MISC1_WAY_AGENT_4(x)   _SB_GETVALUE(x, S_BCM1480_L2C_MISC1_WAY_AGENT_4, M_BCM1480_L2C_MISC1_WAY_AGENT_4)
--
--
--/*
-- * L2 Misc2 Value Register (Table 60)
-- */
--
--#define S_BCM1480_L2C_MISC2_WAY_AGENT_8      0
--#define M_BCM1480_L2C_MISC2_WAY_AGENT_8      _SB_MAKEMASK(8, S_BCM1480_L2C_MISC2_WAY_AGENT_8)
--#define G_BCM1480_L2C_MISC2_WAY_AGENT_8(x)   _SB_GETVALUE(x, S_BCM1480_L2C_MISC2_WAY_AGENT_8, M_BCM1480_L2C_MISC2_WAY_AGENT_8)
--
--#define S_BCM1480_L2C_MISC2_WAY_AGENT_9      8
--#define M_BCM1480_L2C_MISC2_WAY_AGENT_9      _SB_MAKEMASK(8, S_BCM1480_L2C_MISC2_WAY_AGENT_9)
--#define G_BCM1480_L2C_MISC2_WAY_AGENT_9(x)   _SB_GETVALUE(x, S_BCM1480_L2C_MISC2_WAY_AGENT_9, M_BCM1480_L2C_MISC2_WAY_AGENT_9)
--
--#define S_BCM1480_L2C_MISC2_WAY_AGENT_A      16
--#define M_BCM1480_L2C_MISC2_WAY_AGENT_A      _SB_MAKEMASK(8, S_BCM1480_L2C_MISC2_WAY_AGENT_A)
--#define G_BCM1480_L2C_MISC2_WAY_AGENT_A(x)   _SB_GETVALUE(x, S_BCM1480_L2C_MISC2_WAY_AGENT_A, M_BCM1480_L2C_MISC2_WAY_AGENT_A)
--
--
--#endif /* _BCM1480_L2C_H */
-diff --git a/arch/mips/include/asm/sibyte/bcm1480_mc.h b/arch/mips/include/asm/sibyte/bcm1480_mc.h
-deleted file mode 100644
-index f26a41a..0000000
---- a/arch/mips/include/asm/sibyte/bcm1480_mc.h
-+++ /dev/null
-@@ -1,984 +0,0 @@
--/*  *********************************************************************
--    *  BCM1280/BCM1480 Board Support Package
--    *
--    *  Memory Controller constants              File: bcm1480_mc.h
--    *
--    *  This module contains constants and macros useful for
--    *  programming the memory controller.
--    *
--    *  BCM1400 specification level:  1280-UM100-D1 (11/14/03 Review Copy)
--    *
--    *********************************************************************
--    *
--    *  Copyright 2000,2001,2002,2003
--    *  Broadcom Corporation. All rights reserved.
--    *
--    *  This program is free software; you can redistribute it and/or
--    *  modify it under the terms of the GNU General Public License as
--    *  published by the Free Software Foundation; either version 2 of
--    *  the License, or (at your option) any later version.
--    *
--    *  This program is distributed in the hope that it will be useful,
--    *  but WITHOUT ANY WARRANTY; without even the implied warranty of
--    *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
--    *  GNU General Public License for more details.
--    *
--    *  You should have received a copy of the GNU General Public License
--    *  along with this program; if not, write to the Free Software
--    *  Foundation, Inc., 59 Temple Place, Suite 330, Boston,
--    *  MA 02111-1307 USA
--    ********************************************************************* */
--
--
--#ifndef _BCM1480_MC_H
--#define _BCM1480_MC_H
--
--#include "sb1250_defs.h"
--
--/*
-- * Memory Channel Configuration Register (Table 81)
-- */
--
--#define S_BCM1480_MC_INTLV0                 0
--#define M_BCM1480_MC_INTLV0                 _SB_MAKEMASK(6, S_BCM1480_MC_INTLV0)
--#define V_BCM1480_MC_INTLV0(x)              _SB_MAKEVALUE(x, S_BCM1480_MC_INTLV0)
--#define G_BCM1480_MC_INTLV0(x)              _SB_GETVALUE(x, S_BCM1480_MC_INTLV0, M_BCM1480_MC_INTLV0)
--#define V_BCM1480_MC_INTLV0_DEFAULT         V_BCM1480_MC_INTLV0(0)
--
--#define S_BCM1480_MC_INTLV1                 8
--#define M_BCM1480_MC_INTLV1                 _SB_MAKEMASK(6, S_BCM1480_MC_INTLV1)
--#define V_BCM1480_MC_INTLV1(x)              _SB_MAKEVALUE(x, S_BCM1480_MC_INTLV1)
--#define G_BCM1480_MC_INTLV1(x)              _SB_GETVALUE(x, S_BCM1480_MC_INTLV1, M_BCM1480_MC_INTLV1)
--#define V_BCM1480_MC_INTLV1_DEFAULT         V_BCM1480_MC_INTLV1(0)
--
--#define S_BCM1480_MC_INTLV2                 16
--#define M_BCM1480_MC_INTLV2                 _SB_MAKEMASK(6, S_BCM1480_MC_INTLV2)
--#define V_BCM1480_MC_INTLV2(x)              _SB_MAKEVALUE(x, S_BCM1480_MC_INTLV2)
--#define G_BCM1480_MC_INTLV2(x)              _SB_GETVALUE(x, S_BCM1480_MC_INTLV2, M_BCM1480_MC_INTLV2)
--#define V_BCM1480_MC_INTLV2_DEFAULT         V_BCM1480_MC_INTLV2(0)
--
--#define S_BCM1480_MC_CS_MODE                32
--#define M_BCM1480_MC_CS_MODE                _SB_MAKEMASK(8, S_BCM1480_MC_CS_MODE)
--#define V_BCM1480_MC_CS_MODE(x)             _SB_MAKEVALUE(x, S_BCM1480_MC_CS_MODE)
--#define G_BCM1480_MC_CS_MODE(x)             _SB_GETVALUE(x, S_BCM1480_MC_CS_MODE, M_BCM1480_MC_CS_MODE)
--#define V_BCM1480_MC_CS_MODE_DEFAULT        V_BCM1480_MC_CS_MODE(0)
--
--#define V_BCM1480_MC_CONFIG_DEFAULT         (V_BCM1480_MC_INTLV0_DEFAULT  | \
--                                     V_BCM1480_MC_INTLV1_DEFAULT  | \
--                                     V_BCM1480_MC_INTLV2_DEFAULT  | \
--				     V_BCM1480_MC_CS_MODE_DEFAULT)
--
--#define K_BCM1480_MC_CS01_MODE		    0x03
--#define K_BCM1480_MC_CS02_MODE		    0x05
--#define K_BCM1480_MC_CS0123_MODE	    0x0F
--#define K_BCM1480_MC_CS0246_MODE	    0x55
--#define K_BCM1480_MC_CS0145_MODE	    0x33
--#define K_BCM1480_MC_CS0167_MODE	    0xC3
--#define K_BCM1480_MC_CSFULL_MODE	    0xFF
--
--/*
-- * Chip Select Start Address Register (Table 82)
-- */
--
--#define S_BCM1480_MC_CS0_START              0
--#define M_BCM1480_MC_CS0_START              _SB_MAKEMASK(12, S_BCM1480_MC_CS0_START)
--#define V_BCM1480_MC_CS0_START(x)           _SB_MAKEVALUE(x, S_BCM1480_MC_CS0_START)
--#define G_BCM1480_MC_CS0_START(x)           _SB_GETVALUE(x, S_BCM1480_MC_CS0_START, M_BCM1480_MC_CS0_START)
--
--#define S_BCM1480_MC_CS1_START              16
--#define M_BCM1480_MC_CS1_START              _SB_MAKEMASK(12, S_BCM1480_MC_CS1_START)
--#define V_BCM1480_MC_CS1_START(x)           _SB_MAKEVALUE(x, S_BCM1480_MC_CS1_START)
--#define G_BCM1480_MC_CS1_START(x)           _SB_GETVALUE(x, S_BCM1480_MC_CS1_START, M_BCM1480_MC_CS1_START)
--
--#define S_BCM1480_MC_CS2_START              32
--#define M_BCM1480_MC_CS2_START              _SB_MAKEMASK(12, S_BCM1480_MC_CS2_START)
--#define V_BCM1480_MC_CS2_START(x)           _SB_MAKEVALUE(x, S_BCM1480_MC_CS2_START)
--#define G_BCM1480_MC_CS2_START(x)           _SB_GETVALUE(x, S_BCM1480_MC_CS2_START, M_BCM1480_MC_CS2_START)
--
--#define S_BCM1480_MC_CS3_START              48
--#define M_BCM1480_MC_CS3_START              _SB_MAKEMASK(12, S_BCM1480_MC_CS3_START)
--#define V_BCM1480_MC_CS3_START(x)           _SB_MAKEVALUE(x, S_BCM1480_MC_CS3_START)
--#define G_BCM1480_MC_CS3_START(x)           _SB_GETVALUE(x, S_BCM1480_MC_CS3_START, M_BCM1480_MC_CS3_START)
--
--/*
-- * Chip Select End Address Register (Table 83)
-- */
--
--#define S_BCM1480_MC_CS0_END                0
--#define M_BCM1480_MC_CS0_END                _SB_MAKEMASK(12, S_BCM1480_MC_CS0_END)
--#define V_BCM1480_MC_CS0_END(x)             _SB_MAKEVALUE(x, S_BCM1480_MC_CS0_END)
--#define G_BCM1480_MC_CS0_END(x)             _SB_GETVALUE(x, S_BCM1480_MC_CS0_END, M_BCM1480_MC_CS0_END)
--
--#define S_BCM1480_MC_CS1_END                16
--#define M_BCM1480_MC_CS1_END                _SB_MAKEMASK(12, S_BCM1480_MC_CS1_END)
--#define V_BCM1480_MC_CS1_END(x)             _SB_MAKEVALUE(x, S_BCM1480_MC_CS1_END)
--#define G_BCM1480_MC_CS1_END(x)             _SB_GETVALUE(x, S_BCM1480_MC_CS1_END, M_BCM1480_MC_CS1_END)
--
--#define S_BCM1480_MC_CS2_END                32
--#define M_BCM1480_MC_CS2_END                _SB_MAKEMASK(12, S_BCM1480_MC_CS2_END)
--#define V_BCM1480_MC_CS2_END(x)             _SB_MAKEVALUE(x, S_BCM1480_MC_CS2_END)
--#define G_BCM1480_MC_CS2_END(x)             _SB_GETVALUE(x, S_BCM1480_MC_CS2_END, M_BCM1480_MC_CS2_END)
--
--#define S_BCM1480_MC_CS3_END                48
--#define M_BCM1480_MC_CS3_END                _SB_MAKEMASK(12, S_BCM1480_MC_CS3_END)
--#define V_BCM1480_MC_CS3_END(x)             _SB_MAKEVALUE(x, S_BCM1480_MC_CS3_END)
--#define G_BCM1480_MC_CS3_END(x)             _SB_GETVALUE(x, S_BCM1480_MC_CS3_END, M_BCM1480_MC_CS3_END)
--
--/*
-- * Row Address Bit Select Register 0 (Table 84)
-- */
--
--#define S_BCM1480_MC_ROW00                  0
--#define M_BCM1480_MC_ROW00                  _SB_MAKEMASK(6, S_BCM1480_MC_ROW00)
--#define V_BCM1480_MC_ROW00(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_ROW00)
--#define G_BCM1480_MC_ROW00(x)               _SB_GETVALUE(x, S_BCM1480_MC_ROW00, M_BCM1480_MC_ROW00)
--
--#define S_BCM1480_MC_ROW01                  8
--#define M_BCM1480_MC_ROW01                  _SB_MAKEMASK(6, S_BCM1480_MC_ROW01)
--#define V_BCM1480_MC_ROW01(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_ROW01)
--#define G_BCM1480_MC_ROW01(x)               _SB_GETVALUE(x, S_BCM1480_MC_ROW01, M_BCM1480_MC_ROW01)
--
--#define S_BCM1480_MC_ROW02                  16
--#define M_BCM1480_MC_ROW02                  _SB_MAKEMASK(6, S_BCM1480_MC_ROW02)
--#define V_BCM1480_MC_ROW02(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_ROW02)
--#define G_BCM1480_MC_ROW02(x)               _SB_GETVALUE(x, S_BCM1480_MC_ROW02, M_BCM1480_MC_ROW02)
--
--#define S_BCM1480_MC_ROW03                  24
--#define M_BCM1480_MC_ROW03                  _SB_MAKEMASK(6, S_BCM1480_MC_ROW03)
--#define V_BCM1480_MC_ROW03(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_ROW03)
--#define G_BCM1480_MC_ROW03(x)               _SB_GETVALUE(x, S_BCM1480_MC_ROW03, M_BCM1480_MC_ROW03)
--
--#define S_BCM1480_MC_ROW04                  32
--#define M_BCM1480_MC_ROW04                  _SB_MAKEMASK(6, S_BCM1480_MC_ROW04)
--#define V_BCM1480_MC_ROW04(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_ROW04)
--#define G_BCM1480_MC_ROW04(x)               _SB_GETVALUE(x, S_BCM1480_MC_ROW04, M_BCM1480_MC_ROW04)
--
--#define S_BCM1480_MC_ROW05                  40
--#define M_BCM1480_MC_ROW05                  _SB_MAKEMASK(6, S_BCM1480_MC_ROW05)
--#define V_BCM1480_MC_ROW05(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_ROW05)
--#define G_BCM1480_MC_ROW05(x)               _SB_GETVALUE(x, S_BCM1480_MC_ROW05, M_BCM1480_MC_ROW05)
--
--#define S_BCM1480_MC_ROW06                  48
--#define M_BCM1480_MC_ROW06                  _SB_MAKEMASK(6, S_BCM1480_MC_ROW06)
--#define V_BCM1480_MC_ROW06(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_ROW06)
--#define G_BCM1480_MC_ROW06(x)               _SB_GETVALUE(x, S_BCM1480_MC_ROW06, M_BCM1480_MC_ROW06)
--
--#define S_BCM1480_MC_ROW07                  56
--#define M_BCM1480_MC_ROW07                  _SB_MAKEMASK(6, S_BCM1480_MC_ROW07)
--#define V_BCM1480_MC_ROW07(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_ROW07)
--#define G_BCM1480_MC_ROW07(x)               _SB_GETVALUE(x, S_BCM1480_MC_ROW07, M_BCM1480_MC_ROW07)
--
--/*
-- * Row Address Bit Select Register 1 (Table 85)
-- */
--
--#define S_BCM1480_MC_ROW08                  0
--#define M_BCM1480_MC_ROW08                  _SB_MAKEMASK(6, S_BCM1480_MC_ROW08)
--#define V_BCM1480_MC_ROW08(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_ROW08)
--#define G_BCM1480_MC_ROW08(x)               _SB_GETVALUE(x, S_BCM1480_MC_ROW08, M_BCM1480_MC_ROW08)
--
--#define S_BCM1480_MC_ROW09                  8
--#define M_BCM1480_MC_ROW09                  _SB_MAKEMASK(6, S_BCM1480_MC_ROW09)
--#define V_BCM1480_MC_ROW09(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_ROW09)
--#define G_BCM1480_MC_ROW09(x)               _SB_GETVALUE(x, S_BCM1480_MC_ROW09, M_BCM1480_MC_ROW09)
--
--#define S_BCM1480_MC_ROW10                  16
--#define M_BCM1480_MC_ROW10                  _SB_MAKEMASK(6, S_BCM1480_MC_ROW10)
--#define V_BCM1480_MC_ROW10(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_ROW10)
--#define G_BCM1480_MC_ROW10(x)               _SB_GETVALUE(x, S_BCM1480_MC_ROW10, M_BCM1480_MC_ROW10)
--
--#define S_BCM1480_MC_ROW11                  24
--#define M_BCM1480_MC_ROW11                  _SB_MAKEMASK(6, S_BCM1480_MC_ROW11)
--#define V_BCM1480_MC_ROW11(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_ROW11)
--#define G_BCM1480_MC_ROW11(x)               _SB_GETVALUE(x, S_BCM1480_MC_ROW11, M_BCM1480_MC_ROW11)
--
--#define S_BCM1480_MC_ROW12                  32
--#define M_BCM1480_MC_ROW12                  _SB_MAKEMASK(6, S_BCM1480_MC_ROW12)
--#define V_BCM1480_MC_ROW12(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_ROW12)
--#define G_BCM1480_MC_ROW12(x)               _SB_GETVALUE(x, S_BCM1480_MC_ROW12, M_BCM1480_MC_ROW12)
--
--#define S_BCM1480_MC_ROW13                  40
--#define M_BCM1480_MC_ROW13                  _SB_MAKEMASK(6, S_BCM1480_MC_ROW13)
--#define V_BCM1480_MC_ROW13(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_ROW13)
--#define G_BCM1480_MC_ROW13(x)               _SB_GETVALUE(x, S_BCM1480_MC_ROW13, M_BCM1480_MC_ROW13)
--
--#define S_BCM1480_MC_ROW14                  48
--#define M_BCM1480_MC_ROW14                  _SB_MAKEMASK(6, S_BCM1480_MC_ROW14)
--#define V_BCM1480_MC_ROW14(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_ROW14)
--#define G_BCM1480_MC_ROW14(x)               _SB_GETVALUE(x, S_BCM1480_MC_ROW14, M_BCM1480_MC_ROW14)
--
--#define K_BCM1480_MC_ROWX_BIT_SPACING  	    8
--
--/*
-- * Column Address Bit Select Register 0 (Table 86)
-- */
--
--#define S_BCM1480_MC_COL00                  0
--#define M_BCM1480_MC_COL00                  _SB_MAKEMASK(6, S_BCM1480_MC_COL00)
--#define V_BCM1480_MC_COL00(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_COL00)
--#define G_BCM1480_MC_COL00(x)               _SB_GETVALUE(x, S_BCM1480_MC_COL00, M_BCM1480_MC_COL00)
--
--#define S_BCM1480_MC_COL01                  8
--#define M_BCM1480_MC_COL01                  _SB_MAKEMASK(6, S_BCM1480_MC_COL01)
--#define V_BCM1480_MC_COL01(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_COL01)
--#define G_BCM1480_MC_COL01(x)               _SB_GETVALUE(x, S_BCM1480_MC_COL01, M_BCM1480_MC_COL01)
--
--#define S_BCM1480_MC_COL02                  16
--#define M_BCM1480_MC_COL02                  _SB_MAKEMASK(6, S_BCM1480_MC_COL02)
--#define V_BCM1480_MC_COL02(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_COL02)
--#define G_BCM1480_MC_COL02(x)               _SB_GETVALUE(x, S_BCM1480_MC_COL02, M_BCM1480_MC_COL02)
--
--#define S_BCM1480_MC_COL03                  24
--#define M_BCM1480_MC_COL03                  _SB_MAKEMASK(6, S_BCM1480_MC_COL03)
--#define V_BCM1480_MC_COL03(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_COL03)
--#define G_BCM1480_MC_COL03(x)               _SB_GETVALUE(x, S_BCM1480_MC_COL03, M_BCM1480_MC_COL03)
--
--#define S_BCM1480_MC_COL04                  32
--#define M_BCM1480_MC_COL04                  _SB_MAKEMASK(6, S_BCM1480_MC_COL04)
--#define V_BCM1480_MC_COL04(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_COL04)
--#define G_BCM1480_MC_COL04(x)               _SB_GETVALUE(x, S_BCM1480_MC_COL04, M_BCM1480_MC_COL04)
--
--#define S_BCM1480_MC_COL05                  40
--#define M_BCM1480_MC_COL05                  _SB_MAKEMASK(6, S_BCM1480_MC_COL05)
--#define V_BCM1480_MC_COL05(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_COL05)
--#define G_BCM1480_MC_COL05(x)               _SB_GETVALUE(x, S_BCM1480_MC_COL05, M_BCM1480_MC_COL05)
--
--#define S_BCM1480_MC_COL06                  48
--#define M_BCM1480_MC_COL06                  _SB_MAKEMASK(6, S_BCM1480_MC_COL06)
--#define V_BCM1480_MC_COL06(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_COL06)
--#define G_BCM1480_MC_COL06(x)               _SB_GETVALUE(x, S_BCM1480_MC_COL06, M_BCM1480_MC_COL06)
--
--#define S_BCM1480_MC_COL07                  56
--#define M_BCM1480_MC_COL07                  _SB_MAKEMASK(6, S_BCM1480_MC_COL07)
--#define V_BCM1480_MC_COL07(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_COL07)
--#define G_BCM1480_MC_COL07(x)               _SB_GETVALUE(x, S_BCM1480_MC_COL07, M_BCM1480_MC_COL07)
--
--/*
-- * Column Address Bit Select Register 1 (Table 87)
-- */
--
--#define S_BCM1480_MC_COL08                  0
--#define M_BCM1480_MC_COL08                  _SB_MAKEMASK(6, S_BCM1480_MC_COL08)
--#define V_BCM1480_MC_COL08(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_COL08)
--#define G_BCM1480_MC_COL08(x)               _SB_GETVALUE(x, S_BCM1480_MC_COL08, M_BCM1480_MC_COL08)
--
--#define S_BCM1480_MC_COL09                  8
--#define M_BCM1480_MC_COL09                  _SB_MAKEMASK(6, S_BCM1480_MC_COL09)
--#define V_BCM1480_MC_COL09(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_COL09)
--#define G_BCM1480_MC_COL09(x)               _SB_GETVALUE(x, S_BCM1480_MC_COL09, M_BCM1480_MC_COL09)
--
--#define S_BCM1480_MC_COL10                  16   /* not a valid position, must be prog as 0 */
--
--#define S_BCM1480_MC_COL11                  24
--#define M_BCM1480_MC_COL11                  _SB_MAKEMASK(6, S_BCM1480_MC_COL11)
--#define V_BCM1480_MC_COL11(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_COL11)
--#define G_BCM1480_MC_COL11(x)               _SB_GETVALUE(x, S_BCM1480_MC_COL11, M_BCM1480_MC_COL11)
--
--#define S_BCM1480_MC_COL12                  32
--#define M_BCM1480_MC_COL12                  _SB_MAKEMASK(6, S_BCM1480_MC_COL12)
--#define V_BCM1480_MC_COL12(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_COL12)
--#define G_BCM1480_MC_COL12(x)               _SB_GETVALUE(x, S_BCM1480_MC_COL12, M_BCM1480_MC_COL12)
--
--#define S_BCM1480_MC_COL13                  40
--#define M_BCM1480_MC_COL13                  _SB_MAKEMASK(6, S_BCM1480_MC_COL13)
--#define V_BCM1480_MC_COL13(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_COL13)
--#define G_BCM1480_MC_COL13(x)               _SB_GETVALUE(x, S_BCM1480_MC_COL13, M_BCM1480_MC_COL13)
--
--#define S_BCM1480_MC_COL14                  48
--#define M_BCM1480_MC_COL14                  _SB_MAKEMASK(6, S_BCM1480_MC_COL14)
--#define V_BCM1480_MC_COL14(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_COL14)
--#define G_BCM1480_MC_COL14(x)               _SB_GETVALUE(x, S_BCM1480_MC_COL14, M_BCM1480_MC_COL14)
--
--#define K_BCM1480_MC_COLX_BIT_SPACING  	    8
--
--/*
-- * CS0 and CS1 Bank Address Bit Select Register (Table 88)
-- */
--
--#define S_BCM1480_MC_CS01_BANK0             0
--#define M_BCM1480_MC_CS01_BANK0             _SB_MAKEMASK(6, S_BCM1480_MC_CS01_BANK0)
--#define V_BCM1480_MC_CS01_BANK0(x)          _SB_MAKEVALUE(x, S_BCM1480_MC_CS01_BANK0)
--#define G_BCM1480_MC_CS01_BANK0(x)          _SB_GETVALUE(x, S_BCM1480_MC_CS01_BANK0, M_BCM1480_MC_CS01_BANK0)
--
--#define S_BCM1480_MC_CS01_BANK1             8
--#define M_BCM1480_MC_CS01_BANK1             _SB_MAKEMASK(6, S_BCM1480_MC_CS01_BANK1)
--#define V_BCM1480_MC_CS01_BANK1(x)          _SB_MAKEVALUE(x, S_BCM1480_MC_CS01_BANK1)
--#define G_BCM1480_MC_CS01_BANK1(x)          _SB_GETVALUE(x, S_BCM1480_MC_CS01_BANK1, M_BCM1480_MC_CS01_BANK1)
--
--#define S_BCM1480_MC_CS01_BANK2             16
--#define M_BCM1480_MC_CS01_BANK2             _SB_MAKEMASK(6, S_BCM1480_MC_CS01_BANK2)
--#define V_BCM1480_MC_CS01_BANK2(x)          _SB_MAKEVALUE(x, S_BCM1480_MC_CS01_BANK2)
--#define G_BCM1480_MC_CS01_BANK2(x)          _SB_GETVALUE(x, S_BCM1480_MC_CS01_BANK2, M_BCM1480_MC_CS01_BANK2)
--
--/*
-- * CS2 and CS3 Bank Address Bit Select Register (Table 89)
-- */
--
--#define S_BCM1480_MC_CS23_BANK0             0
--#define M_BCM1480_MC_CS23_BANK0             _SB_MAKEMASK(6, S_BCM1480_MC_CS23_BANK0)
--#define V_BCM1480_MC_CS23_BANK0(x)          _SB_MAKEVALUE(x, S_BCM1480_MC_CS23_BANK0)
--#define G_BCM1480_MC_CS23_BANK0(x)          _SB_GETVALUE(x, S_BCM1480_MC_CS23_BANK0, M_BCM1480_MC_CS23_BANK0)
--
--#define S_BCM1480_MC_CS23_BANK1             8
--#define M_BCM1480_MC_CS23_BANK1             _SB_MAKEMASK(6, S_BCM1480_MC_CS23_BANK1)
--#define V_BCM1480_MC_CS23_BANK1(x)          _SB_MAKEVALUE(x, S_BCM1480_MC_CS23_BANK1)
--#define G_BCM1480_MC_CS23_BANK1(x)          _SB_GETVALUE(x, S_BCM1480_MC_CS23_BANK1, M_BCM1480_MC_CS23_BANK1)
--
--#define S_BCM1480_MC_CS23_BANK2             16
--#define M_BCM1480_MC_CS23_BANK2             _SB_MAKEMASK(6, S_BCM1480_MC_CS23_BANK2)
--#define V_BCM1480_MC_CS23_BANK2(x)          _SB_MAKEVALUE(x, S_BCM1480_MC_CS23_BANK2)
--#define G_BCM1480_MC_CS23_BANK2(x)          _SB_GETVALUE(x, S_BCM1480_MC_CS23_BANK2, M_BCM1480_MC_CS23_BANK2)
--
--#define K_BCM1480_MC_CSXX_BANKX_BIT_SPACING  8
--
--/*
-- * DRAM Command Register (Table 90)
-- */
--
--#define S_BCM1480_MC_COMMAND                0
--#define M_BCM1480_MC_COMMAND                _SB_MAKEMASK(4, S_BCM1480_MC_COMMAND)
--#define V_BCM1480_MC_COMMAND(x)             _SB_MAKEVALUE(x, S_BCM1480_MC_COMMAND)
--#define G_BCM1480_MC_COMMAND(x)             _SB_GETVALUE(x, S_BCM1480_MC_COMMAND, M_BCM1480_MC_COMMAND)
--
--#define K_BCM1480_MC_COMMAND_EMRS           0
--#define K_BCM1480_MC_COMMAND_MRS            1
--#define K_BCM1480_MC_COMMAND_PRE            2
--#define K_BCM1480_MC_COMMAND_AR             3
--#define K_BCM1480_MC_COMMAND_SETRFSH        4
--#define K_BCM1480_MC_COMMAND_CLRRFSH        5
--#define K_BCM1480_MC_COMMAND_SETPWRDN       6
--#define K_BCM1480_MC_COMMAND_CLRPWRDN       7
--
--#if SIBYTE_HDR_FEATURE(1480, PASS2)
--#define K_BCM1480_MC_COMMAND_EMRS2	    8
--#define K_BCM1480_MC_COMMAND_EMRS3	    9
--#define K_BCM1480_MC_COMMAND_ENABLE_MCLK    10
--#define K_BCM1480_MC_COMMAND_DISABLE_MCLK   11
--#endif
--
--#define V_BCM1480_MC_COMMAND_EMRS           V_BCM1480_MC_COMMAND(K_BCM1480_MC_COMMAND_EMRS)
--#define V_BCM1480_MC_COMMAND_MRS            V_BCM1480_MC_COMMAND(K_BCM1480_MC_COMMAND_MRS)
--#define V_BCM1480_MC_COMMAND_PRE            V_BCM1480_MC_COMMAND(K_BCM1480_MC_COMMAND_PRE)
--#define V_BCM1480_MC_COMMAND_AR             V_BCM1480_MC_COMMAND(K_BCM1480_MC_COMMAND_AR)
--#define V_BCM1480_MC_COMMAND_SETRFSH        V_BCM1480_MC_COMMAND(K_BCM1480_MC_COMMAND_SETRFSH)
--#define V_BCM1480_MC_COMMAND_CLRRFSH        V_BCM1480_MC_COMMAND(K_BCM1480_MC_COMMAND_CLRRFSH)
--#define V_BCM1480_MC_COMMAND_SETPWRDN       V_BCM1480_MC_COMMAND(K_BCM1480_MC_COMMAND_SETPWRDN)
--#define V_BCM1480_MC_COMMAND_CLRPWRDN       V_BCM1480_MC_COMMAND(K_BCM1480_MC_COMMAND_CLRPWRDN)
--
--#if SIBYTE_HDR_FEATURE(1480, PASS2)
--#define V_BCM1480_MC_COMMAND_EMRS2          V_BCM1480_MC_COMMAND(K_BCM1480_MC_COMMAND_EMRS2)
--#define V_BCM1480_MC_COMMAND_EMRS3          V_BCM1480_MC_COMMAND(K_BCM1480_MC_COMMAND_EMRS3)
--#define V_BCM1480_MC_COMMAND_ENABLE_MCLK    V_BCM1480_MC_COMMAND(K_BCM1480_MC_COMMAND_ENABLE_MCLK)
--#define V_BCM1480_MC_COMMAND_DISABLE_MCLK   V_BCM1480_MC_COMMAND(K_BCM1480_MC_COMMAND_DISABLE_MCLK)
--#endif
--
--#define S_BCM1480_MC_CS0		    4
--#define M_BCM1480_MC_CS0                    _SB_MAKEMASK1(4)
--#define M_BCM1480_MC_CS1                    _SB_MAKEMASK1(5)
--#define M_BCM1480_MC_CS2                    _SB_MAKEMASK1(6)
--#define M_BCM1480_MC_CS3                    _SB_MAKEMASK1(7)
--#define M_BCM1480_MC_CS4                    _SB_MAKEMASK1(8)
--#define M_BCM1480_MC_CS5                    _SB_MAKEMASK1(9)
--#define M_BCM1480_MC_CS6                    _SB_MAKEMASK1(10)
--#define M_BCM1480_MC_CS7                    _SB_MAKEMASK1(11)
--
--#define M_BCM1480_MC_CS                  _SB_MAKEMASK(8, S_BCM1480_MC_CS0)
--#define V_BCM1480_MC_CS(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_CS0)
--#define G_BCM1480_MC_CS(x)               _SB_GETVALUE(x, S_BCM1480_MC_CS0, M_BCM1480_MC_CS0)
--
--#define M_BCM1480_MC_CMD_ACTIVE             _SB_MAKEMASK1(16)
--
--/*
-- * DRAM Mode Register (Table 91)
-- */
--
--#define S_BCM1480_MC_EMODE                  0
--#define M_BCM1480_MC_EMODE                  _SB_MAKEMASK(15, S_BCM1480_MC_EMODE)
--#define V_BCM1480_MC_EMODE(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_EMODE)
--#define G_BCM1480_MC_EMODE(x)               _SB_GETVALUE(x, S_BCM1480_MC_EMODE, M_BCM1480_MC_EMODE)
--#define V_BCM1480_MC_EMODE_DEFAULT          V_BCM1480_MC_EMODE(0)
--
--#define S_BCM1480_MC_MODE                   16
--#define M_BCM1480_MC_MODE                   _SB_MAKEMASK(15, S_BCM1480_MC_MODE)
--#define V_BCM1480_MC_MODE(x)                _SB_MAKEVALUE(x, S_BCM1480_MC_MODE)
--#define G_BCM1480_MC_MODE(x)                _SB_GETVALUE(x, S_BCM1480_MC_MODE, M_BCM1480_MC_MODE)
--#define V_BCM1480_MC_MODE_DEFAULT           V_BCM1480_MC_MODE(0)
--
--#define S_BCM1480_MC_DRAM_TYPE              32
--#define M_BCM1480_MC_DRAM_TYPE              _SB_MAKEMASK(4, S_BCM1480_MC_DRAM_TYPE)
--#define V_BCM1480_MC_DRAM_TYPE(x)           _SB_MAKEVALUE(x, S_BCM1480_MC_DRAM_TYPE)
--#define G_BCM1480_MC_DRAM_TYPE(x)           _SB_GETVALUE(x, S_BCM1480_MC_DRAM_TYPE, M_BCM1480_MC_DRAM_TYPE)
--
--#define K_BCM1480_MC_DRAM_TYPE_JEDEC        0
--#define K_BCM1480_MC_DRAM_TYPE_FCRAM        1
--
--#if SIBYTE_HDR_FEATURE(1480, PASS2)
--#define K_BCM1480_MC_DRAM_TYPE_DDR2	    2
--#endif
--
--#define K_BCM1480_MC_DRAM_TYPE_DDR2_PASS1   0
--
--#define V_BCM1480_MC_DRAM_TYPE_JEDEC        V_BCM1480_MC_DRAM_TYPE(K_BCM1480_MC_DRAM_TYPE_JEDEC)
--#define V_BCM1480_MC_DRAM_TYPE_FCRAM        V_BCM1480_MC_DRAM_TYPE(K_BCM1480_MC_DRAM_TYPE_FCRAM)
--
--#if SIBYTE_HDR_FEATURE(1480, PASS2)
--#define V_BCM1480_MC_DRAM_TYPE_DDR2	    V_BCM1480_MC_DRAM_TYPE(K_BCM1480_MC_DRAM_TYPE_DDR2)
--#endif
--
--#define M_BCM1480_MC_GANGED                 _SB_MAKEMASK1(36)
--#define M_BCM1480_MC_BY9_INTF               _SB_MAKEMASK1(37)
--#define M_BCM1480_MC_FORCE_ECC64            _SB_MAKEMASK1(38)
--#define M_BCM1480_MC_ECC_DISABLE            _SB_MAKEMASK1(39)
--
--#define S_BCM1480_MC_PG_POLICY              40
--#define M_BCM1480_MC_PG_POLICY              _SB_MAKEMASK(2, S_BCM1480_MC_PG_POLICY)
--#define V_BCM1480_MC_PG_POLICY(x)           _SB_MAKEVALUE(x, S_BCM1480_MC_PG_POLICY)
--#define G_BCM1480_MC_PG_POLICY(x)           _SB_GETVALUE(x, S_BCM1480_MC_PG_POLICY, M_BCM1480_MC_PG_POLICY)
--
--#define K_BCM1480_MC_PG_POLICY_CLOSED       0
--#define K_BCM1480_MC_PG_POLICY_CAS_TIME_CHK 1
--
--#define V_BCM1480_MC_PG_POLICY_CLOSED       V_BCM1480_MC_PG_POLICY(K_BCM1480_MC_PG_POLICY_CLOSED)
--#define V_BCM1480_MC_PG_POLICY_CAS_TIME_CHK V_BCM1480_MC_PG_POLICY(K_BCM1480_MC_PG_POLICY_CAS_TIME_CHK)
--
--#if SIBYTE_HDR_FEATURE(1480, PASS2)
--#define M_BCM1480_MC_2T_CMD		    _SB_MAKEMASK1(42)
--#define M_BCM1480_MC_ECC_COR_DIS	    _SB_MAKEMASK1(43)
--#endif
--
--#define V_BCM1480_MC_DRAMMODE_DEFAULT	V_BCM1480_MC_EMODE_DEFAULT | V_BCM1480_MC_MODE_DEFAULT | V_BCM1480_MC_DRAM_TYPE_JEDEC | \
--                                V_BCM1480_MC_PG_POLICY(K_BCM1480_MC_PG_POLICY_CAS_TIME_CHK)
--
--/*
-- * Memory Clock Configuration Register (Table 92)
-- */
--
--#define S_BCM1480_MC_CLK_RATIO              0
--#define M_BCM1480_MC_CLK_RATIO              _SB_MAKEMASK(6, S_BCM1480_MC_CLK_RATIO)
--#define V_BCM1480_MC_CLK_RATIO(x)           _SB_MAKEVALUE(x, S_BCM1480_MC_CLK_RATIO)
--#define G_BCM1480_MC_CLK_RATIO(x)           _SB_GETVALUE(x, S_BCM1480_MC_CLK_RATIO, M_BCM1480_MC_CLK_RATIO)
--
--#define V_BCM1480_MC_CLK_RATIO_DEFAULT      V_BCM1480_MC_CLK_RATIO(10)
--
--#define S_BCM1480_MC_REF_RATE               8
--#define M_BCM1480_MC_REF_RATE               _SB_MAKEMASK(8, S_BCM1480_MC_REF_RATE)
--#define V_BCM1480_MC_REF_RATE(x)            _SB_MAKEVALUE(x, S_BCM1480_MC_REF_RATE)
--#define G_BCM1480_MC_REF_RATE(x)            _SB_GETVALUE(x, S_BCM1480_MC_REF_RATE, M_BCM1480_MC_REF_RATE)
--
--#define K_BCM1480_MC_REF_RATE_100MHz        0x31
--#define K_BCM1480_MC_REF_RATE_200MHz        0x62
--#define K_BCM1480_MC_REF_RATE_400MHz        0xC4
--
--#define V_BCM1480_MC_REF_RATE_100MHz        V_BCM1480_MC_REF_RATE(K_BCM1480_MC_REF_RATE_100MHz)
--#define V_BCM1480_MC_REF_RATE_200MHz        V_BCM1480_MC_REF_RATE(K_BCM1480_MC_REF_RATE_200MHz)
--#define V_BCM1480_MC_REF_RATE_400MHz        V_BCM1480_MC_REF_RATE(K_BCM1480_MC_REF_RATE_400MHz)
--#define V_BCM1480_MC_REF_RATE_DEFAULT       V_BCM1480_MC_REF_RATE_400MHz
--
--#if SIBYTE_HDR_FEATURE(1480, PASS2)
--#define M_BCM1480_MC_AUTO_REF_DIS	    _SB_MAKEMASK1(16)
--#endif
--
--/*
-- * ODT Register (Table 99)
-- */
--
--#if SIBYTE_HDR_FEATURE(1480, PASS2)
--#define M_BCM1480_MC_RD_ODT0_CS0	    _SB_MAKEMASK1(0)
--#define M_BCM1480_MC_RD_ODT0_CS2	    _SB_MAKEMASK1(1)
--#define M_BCM1480_MC_RD_ODT0_CS4	    _SB_MAKEMASK1(2)
--#define M_BCM1480_MC_RD_ODT0_CS6	    _SB_MAKEMASK1(3)
--#define M_BCM1480_MC_WR_ODT0_CS0	    _SB_MAKEMASK1(4)
--#define M_BCM1480_MC_WR_ODT0_CS2	    _SB_MAKEMASK1(5)
--#define M_BCM1480_MC_WR_ODT0_CS4	    _SB_MAKEMASK1(6)
--#define M_BCM1480_MC_WR_ODT0_CS6	    _SB_MAKEMASK1(7)
--#define M_BCM1480_MC_RD_ODT2_CS0	    _SB_MAKEMASK1(8)
--#define M_BCM1480_MC_RD_ODT2_CS2	    _SB_MAKEMASK1(9)
--#define M_BCM1480_MC_RD_ODT2_CS4	    _SB_MAKEMASK1(10)
--#define M_BCM1480_MC_RD_ODT2_CS6	    _SB_MAKEMASK1(11)
--#define M_BCM1480_MC_WR_ODT2_CS0	    _SB_MAKEMASK1(12)
--#define M_BCM1480_MC_WR_ODT2_CS2	    _SB_MAKEMASK1(13)
--#define M_BCM1480_MC_WR_ODT2_CS4	    _SB_MAKEMASK1(14)
--#define M_BCM1480_MC_WR_ODT2_CS6	    _SB_MAKEMASK1(15)
--#define M_BCM1480_MC_RD_ODT4_CS0	    _SB_MAKEMASK1(16)
--#define M_BCM1480_MC_RD_ODT4_CS2	    _SB_MAKEMASK1(17)
--#define M_BCM1480_MC_RD_ODT4_CS4	    _SB_MAKEMASK1(18)
--#define M_BCM1480_MC_RD_ODT4_CS6	    _SB_MAKEMASK1(19)
--#define M_BCM1480_MC_WR_ODT4_CS0	    _SB_MAKEMASK1(20)
--#define M_BCM1480_MC_WR_ODT4_CS2	    _SB_MAKEMASK1(21)
--#define M_BCM1480_MC_WR_ODT4_CS4	    _SB_MAKEMASK1(22)
--#define M_BCM1480_MC_WR_ODT4_CS6	    _SB_MAKEMASK1(23)
--#define M_BCM1480_MC_RD_ODT6_CS0	    _SB_MAKEMASK1(24)
--#define M_BCM1480_MC_RD_ODT6_CS2	    _SB_MAKEMASK1(25)
--#define M_BCM1480_MC_RD_ODT6_CS4	    _SB_MAKEMASK1(26)
--#define M_BCM1480_MC_RD_ODT6_CS6	    _SB_MAKEMASK1(27)
--#define M_BCM1480_MC_WR_ODT6_CS0	    _SB_MAKEMASK1(28)
--#define M_BCM1480_MC_WR_ODT6_CS2	    _SB_MAKEMASK1(29)
--#define M_BCM1480_MC_WR_ODT6_CS4	    _SB_MAKEMASK1(30)
--#define M_BCM1480_MC_WR_ODT6_CS6	    _SB_MAKEMASK1(31)
--
--#define M_BCM1480_MC_CS_ODD_ODT_EN	    _SB_MAKEMASK1(32)
--
--#define S_BCM1480_MC_ODT0	            0
--#define M_BCM1480_MC_ODT0		    _SB_MAKEMASK(8, S_BCM1480_MC_ODT0)
--#define V_BCM1480_MC_ODT0(x)		    _SB_MAKEVALUE(x, S_BCM1480_MC_ODT0)
--
--#define S_BCM1480_MC_ODT2	            8
--#define M_BCM1480_MC_ODT2		    _SB_MAKEMASK(8, S_BCM1480_MC_ODT2)
--#define V_BCM1480_MC_ODT2(x)		    _SB_MAKEVALUE(x, S_BCM1480_MC_ODT2)
--
--#define S_BCM1480_MC_ODT4	            16
--#define M_BCM1480_MC_ODT4		    _SB_MAKEMASK(8, S_BCM1480_MC_ODT4)
--#define V_BCM1480_MC_ODT4(x)		    _SB_MAKEVALUE(x, S_BCM1480_MC_ODT4)
--
--#define S_BCM1480_MC_ODT6	            24
--#define M_BCM1480_MC_ODT6		    _SB_MAKEMASK(8, S_BCM1480_MC_ODT6)
--#define V_BCM1480_MC_ODT6(x)		    _SB_MAKEVALUE(x, S_BCM1480_MC_ODT6)
--#endif
--
--/*
-- * Memory DLL Configuration Register (Table 93)
-- */
--
--#define S_BCM1480_MC_ADDR_COARSE_ADJ         0
--#define M_BCM1480_MC_ADDR_COARSE_ADJ         _SB_MAKEMASK(6, S_BCM1480_MC_ADDR_COARSE_ADJ)
--#define V_BCM1480_MC_ADDR_COARSE_ADJ(x)      _SB_MAKEVALUE(x, S_BCM1480_MC_ADDR_COARSE_ADJ)
--#define G_BCM1480_MC_ADDR_COARSE_ADJ(x)      _SB_GETVALUE(x, S_BCM1480_MC_ADDR_COARSE_ADJ, M_BCM1480_MC_ADDR_COARSE_ADJ)
--#define V_BCM1480_MC_ADDR_COARSE_ADJ_DEFAULT V_BCM1480_MC_ADDR_COARSE_ADJ(0x0)
--
--#if SIBYTE_HDR_FEATURE(1480, PASS2)
--#define S_BCM1480_MC_ADDR_FREQ_RANGE	    	8
--#define M_BCM1480_MC_ADDR_FREQ_RANGE	    	_SB_MAKEMASK(4, S_BCM1480_MC_ADDR_FREQ_RANGE)
--#define V_BCM1480_MC_ADDR_FREQ_RANGE(x)     	_SB_MAKEVALUE(x, S_BCM1480_MC_ADDR_FREQ_RANGE)
--#define G_BCM1480_MC_ADDR_FREQ_RANGE(x)     	_SB_GETVALUE(x, S_BCM1480_MC_ADDR_FREQ_RANGE, M_BCM1480_MC_ADDR_FREQ_RANGE)
--#define V_BCM1480_MC_ADDR_FREQ_RANGE_DEFAULT 	V_BCM1480_MC_ADDR_FREQ_RANGE(0x4)
--#endif
--
--#define S_BCM1480_MC_ADDR_FINE_ADJ          8
--#define M_BCM1480_MC_ADDR_FINE_ADJ          _SB_MAKEMASK(4, S_BCM1480_MC_ADDR_FINE_ADJ)
--#define V_BCM1480_MC_ADDR_FINE_ADJ(x)       _SB_MAKEVALUE(x, S_BCM1480_MC_ADDR_FINE_ADJ)
--#define G_BCM1480_MC_ADDR_FINE_ADJ(x)       _SB_GETVALUE(x, S_BCM1480_MC_ADDR_FINE_ADJ, M_BCM1480_MC_ADDR_FINE_ADJ)
--#define V_BCM1480_MC_ADDR_FINE_ADJ_DEFAULT  V_BCM1480_MC_ADDR_FINE_ADJ(0x8)
--
--#define S_BCM1480_MC_DQI_COARSE_ADJ         16
--#define M_BCM1480_MC_DQI_COARSE_ADJ         _SB_MAKEMASK(6, S_BCM1480_MC_DQI_COARSE_ADJ)
--#define V_BCM1480_MC_DQI_COARSE_ADJ(x)      _SB_MAKEVALUE(x, S_BCM1480_MC_DQI_COARSE_ADJ)
--#define G_BCM1480_MC_DQI_COARSE_ADJ(x)      _SB_GETVALUE(x, S_BCM1480_MC_DQI_COARSE_ADJ, M_BCM1480_MC_DQI_COARSE_ADJ)
--#define V_BCM1480_MC_DQI_COARSE_ADJ_DEFAULT V_BCM1480_MC_DQI_COARSE_ADJ(0x0)
--
--#if SIBYTE_HDR_FEATURE(1480, PASS2)
--#define S_BCM1480_MC_DQI_FREQ_RANGE	    	24
--#define M_BCM1480_MC_DQI_FREQ_RANGE	    	_SB_MAKEMASK(4, S_BCM1480_MC_DQI_FREQ_RANGE)
--#define V_BCM1480_MC_DQI_FREQ_RANGE(x)     	_SB_MAKEVALUE(x, S_BCM1480_MC_DQI_FREQ_RANGE)
--#define G_BCM1480_MC_DQI_FREQ_RANGE(x)     	_SB_GETVALUE(x, S_BCM1480_MC_DQI_FREQ_RANGE, M_BCM1480_MC_DQI_FREQ_RANGE)
--#define V_BCM1480_MC_DQI_FREQ_RANGE_DEFAULT 	V_BCM1480_MC_DQI_FREQ_RANGE(0x4)
--#endif
--
--#define S_BCM1480_MC_DQI_FINE_ADJ           24
--#define M_BCM1480_MC_DQI_FINE_ADJ           _SB_MAKEMASK(4, S_BCM1480_MC_DQI_FINE_ADJ)
--#define V_BCM1480_MC_DQI_FINE_ADJ(x)        _SB_MAKEVALUE(x, S_BCM1480_MC_DQI_FINE_ADJ)
--#define G_BCM1480_MC_DQI_FINE_ADJ(x)        _SB_GETVALUE(x, S_BCM1480_MC_DQI_FINE_ADJ, M_BCM1480_MC_DQI_FINE_ADJ)
--#define V_BCM1480_MC_DQI_FINE_ADJ_DEFAULT   V_BCM1480_MC_DQI_FINE_ADJ(0x8)
--
--#define S_BCM1480_MC_DQO_COARSE_ADJ         32
--#define M_BCM1480_MC_DQO_COARSE_ADJ         _SB_MAKEMASK(6, S_BCM1480_MC_DQO_COARSE_ADJ)
--#define V_BCM1480_MC_DQO_COARSE_ADJ(x)      _SB_MAKEVALUE(x, S_BCM1480_MC_DQO_COARSE_ADJ)
--#define G_BCM1480_MC_DQO_COARSE_ADJ(x)      _SB_GETVALUE(x, S_BCM1480_MC_DQO_COARSE_ADJ, M_BCM1480_MC_DQO_COARSE_ADJ)
--#define V_BCM1480_MC_DQO_COARSE_ADJ_DEFAULT V_BCM1480_MC_DQO_COARSE_ADJ(0x0)
--
--#if SIBYTE_HDR_FEATURE(1480, PASS2)
--#define S_BCM1480_MC_DQO_FREQ_RANGE	    	40
--#define M_BCM1480_MC_DQO_FREQ_RANGE	    	_SB_MAKEMASK(4, S_BCM1480_MC_DQO_FREQ_RANGE)
--#define V_BCM1480_MC_DQO_FREQ_RANGE(x)     	_SB_MAKEVALUE(x, S_BCM1480_MC_DQO_FREQ_RANGE)
--#define G_BCM1480_MC_DQO_FREQ_RANGE(x)     	_SB_GETVALUE(x, S_BCM1480_MC_DQO_FREQ_RANGE, M_BCM1480_MC_DQO_FREQ_RANGE)
--#define V_BCM1480_MC_DQO_FREQ_RANGE_DEFAULT 	V_BCM1480_MC_DQO_FREQ_RANGE(0x4)
--#endif
--
--#define S_BCM1480_MC_DQO_FINE_ADJ           40
--#define M_BCM1480_MC_DQO_FINE_ADJ           _SB_MAKEMASK(4, S_BCM1480_MC_DQO_FINE_ADJ)
--#define V_BCM1480_MC_DQO_FINE_ADJ(x)        _SB_MAKEVALUE(x, S_BCM1480_MC_DQO_FINE_ADJ)
--#define G_BCM1480_MC_DQO_FINE_ADJ(x)        _SB_GETVALUE(x, S_BCM1480_MC_DQO_FINE_ADJ, M_BCM1480_MC_DQO_FINE_ADJ)
--#define V_BCM1480_MC_DQO_FINE_ADJ_DEFAULT   V_BCM1480_MC_DQO_FINE_ADJ(0x8)
--
--#if SIBYTE_HDR_FEATURE(1480, PASS2)
--#define S_BCM1480_MC_DLL_PDSEL            44
--#define M_BCM1480_MC_DLL_PDSEL            _SB_MAKEMASK(2, S_BCM1480_MC_DLL_PDSEL)
--#define V_BCM1480_MC_DLL_PDSEL(x)         _SB_MAKEVALUE(x, S_BCM1480_MC_DLL_PDSEL)
--#define G_BCM1480_MC_DLL_PDSEL(x)         _SB_GETVALUE(x, S_BCM1480_MC_DLL_PDSEL, M_BCM1480_MC_DLL_PDSEL)
--#define V_BCM1480_MC_DLL_DEFAULT_PDSEL    V_BCM1480_MC_DLL_PDSEL(0x0)
--
--#define	M_BCM1480_MC_DLL_REGBYPASS        _SB_MAKEMASK1(46)
--#define	M_BCM1480_MC_DQO_SHIFT            _SB_MAKEMASK1(47)
--#endif
--
--#define S_BCM1480_MC_DLL_DEFAULT           48
--#define M_BCM1480_MC_DLL_DEFAULT           _SB_MAKEMASK(6, S_BCM1480_MC_DLL_DEFAULT)
--#define V_BCM1480_MC_DLL_DEFAULT(x)        _SB_MAKEVALUE(x, S_BCM1480_MC_DLL_DEFAULT)
--#define G_BCM1480_MC_DLL_DEFAULT(x)        _SB_GETVALUE(x, S_BCM1480_MC_DLL_DEFAULT, M_BCM1480_MC_DLL_DEFAULT)
--#define V_BCM1480_MC_DLL_DEFAULT_DEFAULT   V_BCM1480_MC_DLL_DEFAULT(0x10)
--
--#if SIBYTE_HDR_FEATURE(1480, PASS2)
--#define S_BCM1480_MC_DLL_REGCTRL	  54
--#define M_BCM1480_MC_DLL_REGCTRL       	  _SB_MAKEMASK(2, S_BCM1480_MC_DLL_REGCTRL)
--#define V_BCM1480_MC_DLL_REGCTRL(x)       _SB_MAKEVALUE(x, S_BCM1480_MC_DLL_REGCTRL)
--#define G_BCM1480_MC_DLL_REGCTRL(x)       _SB_GETVALUE(x, S_BCM1480_MC_DLL_REGCTRL, M_BCM1480_MC_DLL_REGCTRL)
--#define V_BCM1480_MC_DLL_DEFAULT_REGCTRL  V_BCM1480_MC_DLL_REGCTRL(0x0)
--#endif
--
--#if SIBYTE_HDR_FEATURE(1480, PASS2)
--#define S_BCM1480_MC_DLL_FREQ_RANGE	    	56
--#define M_BCM1480_MC_DLL_FREQ_RANGE	    	_SB_MAKEMASK(4, S_BCM1480_MC_DLL_FREQ_RANGE)
--#define V_BCM1480_MC_DLL_FREQ_RANGE(x)     	_SB_MAKEVALUE(x, S_BCM1480_MC_DLL_FREQ_RANGE)
--#define G_BCM1480_MC_DLL_FREQ_RANGE(x)     	_SB_GETVALUE(x, S_BCM1480_MC_DLL_FREQ_RANGE, M_BCM1480_MC_DLL_FREQ_RANGE)
--#define V_BCM1480_MC_DLL_FREQ_RANGE_DEFAULT 	V_BCM1480_MC_DLL_FREQ_RANGE(0x4)
--#endif
--
--#define S_BCM1480_MC_DLL_STEP_SIZE          56
--#define M_BCM1480_MC_DLL_STEP_SIZE          _SB_MAKEMASK(4, S_BCM1480_MC_DLL_STEP_SIZE)
--#define V_BCM1480_MC_DLL_STEP_SIZE(x)       _SB_MAKEVALUE(x, S_BCM1480_MC_DLL_STEP_SIZE)
--#define G_BCM1480_MC_DLL_STEP_SIZE(x)       _SB_GETVALUE(x, S_BCM1480_MC_DLL_STEP_SIZE, M_BCM1480_MC_DLL_STEP_SIZE)
--#define V_BCM1480_MC_DLL_STEP_SIZE_DEFAULT  V_BCM1480_MC_DLL_STEP_SIZE(0x8)
--
--#if SIBYTE_HDR_FEATURE(1480, PASS2)
--#define S_BCM1480_MC_DLL_BGCTRL	  60
--#define M_BCM1480_MC_DLL_BGCTRL       	  _SB_MAKEMASK(2, S_BCM1480_MC_DLL_BGCTRL)
--#define V_BCM1480_MC_DLL_BGCTRL(x)       _SB_MAKEVALUE(x, S_BCM1480_MC_DLL_BGCTRL)
--#define G_BCM1480_MC_DLL_BGCTRL(x)       _SB_GETVALUE(x, S_BCM1480_MC_DLL_BGCTRL, M_BCM1480_MC_DLL_BGCTRL)
--#define V_BCM1480_MC_DLL_DEFAULT_BGCTRL  V_BCM1480_MC_DLL_BGCTRL(0x0)
--#endif
--
--#define	M_BCM1480_MC_DLL_BYPASS		    _SB_MAKEMASK1(63)
--
--/*
-- * Memory Drive Configuration Register (Table 94)
-- */
--
--#define S_BCM1480_MC_RTT_BYP_PULLDOWN       0
--#define M_BCM1480_MC_RTT_BYP_PULLDOWN       _SB_MAKEMASK(3, S_BCM1480_MC_RTT_BYP_PULLDOWN)
--#define V_BCM1480_MC_RTT_BYP_PULLDOWN(x)    _SB_MAKEVALUE(x, S_BCM1480_MC_RTT_BYP_PULLDOWN)
--#define G_BCM1480_MC_RTT_BYP_PULLDOWN(x)    _SB_GETVALUE(x, S_BCM1480_MC_RTT_BYP_PULLDOWN, M_BCM1480_MC_RTT_BYP_PULLDOWN)
--
--#define S_BCM1480_MC_RTT_BYP_PULLUP         6
--#define M_BCM1480_MC_RTT_BYP_PULLUP         _SB_MAKEMASK(3, S_BCM1480_MC_RTT_BYP_PULLUP)
--#define V_BCM1480_MC_RTT_BYP_PULLUP(x)      _SB_MAKEVALUE(x, S_BCM1480_MC_RTT_BYP_PULLUP)
--#define G_BCM1480_MC_RTT_BYP_PULLUP(x)      _SB_GETVALUE(x, S_BCM1480_MC_RTT_BYP_PULLUP, M_BCM1480_MC_RTT_BYP_PULLUP)
--
--#define M_BCM1480_MC_RTT_BYPASS             _SB_MAKEMASK1(8)
--#define M_BCM1480_MC_RTT_COMP_MOV_AVG       _SB_MAKEMASK1(9)
--
--#define S_BCM1480_MC_PVT_BYP_C1_PULLDOWN    10
--#define M_BCM1480_MC_PVT_BYP_C1_PULLDOWN    _SB_MAKEMASK(4, S_BCM1480_MC_PVT_BYP_C1_PULLDOWN)
--#define V_BCM1480_MC_PVT_BYP_C1_PULLDOWN(x) _SB_MAKEVALUE(x, S_BCM1480_MC_PVT_BYP_C1_PULLDOWN)
--#define G_BCM1480_MC_PVT_BYP_C1_PULLDOWN(x) _SB_GETVALUE(x, S_BCM1480_MC_PVT_BYP_C1_PULLDOWN, M_BCM1480_MC_PVT_BYP_C1_PULLDOWN)
--
--#define S_BCM1480_MC_PVT_BYP_C1_PULLUP      15
--#define M_BCM1480_MC_PVT_BYP_C1_PULLUP      _SB_MAKEMASK(4, S_BCM1480_MC_PVT_BYP_C1_PULLUP)
--#define V_BCM1480_MC_PVT_BYP_C1_PULLUP(x)   _SB_MAKEVALUE(x, S_BCM1480_MC_PVT_BYP_C1_PULLUP)
--#define G_BCM1480_MC_PVT_BYP_C1_PULLUP(x)   _SB_GETVALUE(x, S_BCM1480_MC_PVT_BYP_C1_PULLUP, M_BCM1480_MC_PVT_BYP_C1_PULLUP)
--
--#define S_BCM1480_MC_PVT_BYP_C2_PULLDOWN    20
--#define M_BCM1480_MC_PVT_BYP_C2_PULLDOWN    _SB_MAKEMASK(4, S_BCM1480_MC_PVT_BYP_C2_PULLDOWN)
--#define V_BCM1480_MC_PVT_BYP_C2_PULLDOWN(x) _SB_MAKEVALUE(x, S_BCM1480_MC_PVT_BYP_C2_PULLDOWN)
--#define G_BCM1480_MC_PVT_BYP_C2_PULLDOWN(x) _SB_GETVALUE(x, S_BCM1480_MC_PVT_BYP_C2_PULLDOWN, M_BCM1480_MC_PVT_BYP_C2_PULLDOWN)
--
--#define S_BCM1480_MC_PVT_BYP_C2_PULLUP      25
--#define M_BCM1480_MC_PVT_BYP_C2_PULLUP      _SB_MAKEMASK(4, S_BCM1480_MC_PVT_BYP_C2_PULLUP)
--#define V_BCM1480_MC_PVT_BYP_C2_PULLUP(x)   _SB_MAKEVALUE(x, S_BCM1480_MC_PVT_BYP_C2_PULLUP)
--#define G_BCM1480_MC_PVT_BYP_C2_PULLUP(x)   _SB_GETVALUE(x, S_BCM1480_MC_PVT_BYP_C2_PULLUP, M_BCM1480_MC_PVT_BYP_C2_PULLUP)
--
--#define M_BCM1480_MC_PVT_BYPASS             _SB_MAKEMASK1(30)
--#define M_BCM1480_MC_PVT_COMP_MOV_AVG       _SB_MAKEMASK1(31)
--
--#define M_BCM1480_MC_CLK_CLASS              _SB_MAKEMASK1(34)
--#define M_BCM1480_MC_DATA_CLASS             _SB_MAKEMASK1(35)
--#define M_BCM1480_MC_ADDR_CLASS             _SB_MAKEMASK1(36)
--
--#define M_BCM1480_MC_DQ_ODT_75              _SB_MAKEMASK1(37)
--#define M_BCM1480_MC_DQ_ODT_150             _SB_MAKEMASK1(38)
--#define M_BCM1480_MC_DQS_ODT_75             _SB_MAKEMASK1(39)
--#define M_BCM1480_MC_DQS_ODT_150            _SB_MAKEMASK1(40)
--#define M_BCM1480_MC_DQS_DIFF               _SB_MAKEMASK1(41)
--
--/*
-- * ECC Test Data Register (Table 95)
-- */
--
--#define S_BCM1480_MC_DATA_INVERT            0
--#define M_DATA_ECC_INVERT           _SB_MAKEMASK(64, S_BCM1480_MC_ECC_INVERT)
--
--/*
-- * ECC Test ECC Register (Table 96)
-- */
--
--#define S_BCM1480_MC_ECC_INVERT             0
--#define M_BCM1480_MC_ECC_INVERT             _SB_MAKEMASK(8, S_BCM1480_MC_ECC_INVERT)
--
--/*
-- * SDRAM Timing Register  (Table 97)
-- */
--
--#define S_BCM1480_MC_tRCD                   0
--#define M_BCM1480_MC_tRCD                   _SB_MAKEMASK(4, S_BCM1480_MC_tRCD)
--#define V_BCM1480_MC_tRCD(x)                _SB_MAKEVALUE(x, S_BCM1480_MC_tRCD)
--#define G_BCM1480_MC_tRCD(x)                _SB_GETVALUE(x, S_BCM1480_MC_tRCD, M_BCM1480_MC_tRCD)
--#define K_BCM1480_MC_tRCD_DEFAULT           3
--#define V_BCM1480_MC_tRCD_DEFAULT           V_BCM1480_MC_tRCD(K_BCM1480_MC_tRCD_DEFAULT)
--
--#define S_BCM1480_MC_tCL                    4
--#define M_BCM1480_MC_tCL                    _SB_MAKEMASK(4, S_BCM1480_MC_tCL)
--#define V_BCM1480_MC_tCL(x)                 _SB_MAKEVALUE(x, S_BCM1480_MC_tCL)
--#define G_BCM1480_MC_tCL(x)                 _SB_GETVALUE(x, S_BCM1480_MC_tCL, M_BCM1480_MC_tCL)
--#define K_BCM1480_MC_tCL_DEFAULT            2
--#define V_BCM1480_MC_tCL_DEFAULT            V_BCM1480_MC_tCL(K_BCM1480_MC_tCL_DEFAULT)
--
--#define M_BCM1480_MC_tCrDh                  _SB_MAKEMASK1(8)
--
--#define S_BCM1480_MC_tWR                    9
--#define M_BCM1480_MC_tWR                    _SB_MAKEMASK(3, S_BCM1480_MC_tWR)
--#define V_BCM1480_MC_tWR(x)                 _SB_MAKEVALUE(x, S_BCM1480_MC_tWR)
--#define G_BCM1480_MC_tWR(x)                 _SB_GETVALUE(x, S_BCM1480_MC_tWR, M_BCM1480_MC_tWR)
--#define K_BCM1480_MC_tWR_DEFAULT            2
--#define V_BCM1480_MC_tWR_DEFAULT            V_BCM1480_MC_tWR(K_BCM1480_MC_tWR_DEFAULT)
--
--#define S_BCM1480_MC_tCwD                   12
--#define M_BCM1480_MC_tCwD                   _SB_MAKEMASK(4, S_BCM1480_MC_tCwD)
--#define V_BCM1480_MC_tCwD(x)                _SB_MAKEVALUE(x, S_BCM1480_MC_tCwD)
--#define G_BCM1480_MC_tCwD(x)                _SB_GETVALUE(x, S_BCM1480_MC_tCwD, M_BCM1480_MC_tCwD)
--#define K_BCM1480_MC_tCwD_DEFAULT           1
--#define V_BCM1480_MC_tCwD_DEFAULT           V_BCM1480_MC_tCwD(K_BCM1480_MC_tCwD_DEFAULT)
--
--#define S_BCM1480_MC_tRP                    16
--#define M_BCM1480_MC_tRP                    _SB_MAKEMASK(4, S_BCM1480_MC_tRP)
--#define V_BCM1480_MC_tRP(x)                 _SB_MAKEVALUE(x, S_BCM1480_MC_tRP)
--#define G_BCM1480_MC_tRP(x)                 _SB_GETVALUE(x, S_BCM1480_MC_tRP, M_BCM1480_MC_tRP)
--#define K_BCM1480_MC_tRP_DEFAULT            4
--#define V_BCM1480_MC_tRP_DEFAULT            V_BCM1480_MC_tRP(K_BCM1480_MC_tRP_DEFAULT)
--
--#define S_BCM1480_MC_tRRD                   20
--#define M_BCM1480_MC_tRRD                   _SB_MAKEMASK(4, S_BCM1480_MC_tRRD)
--#define V_BCM1480_MC_tRRD(x)                _SB_MAKEVALUE(x, S_BCM1480_MC_tRRD)
--#define G_BCM1480_MC_tRRD(x)                _SB_GETVALUE(x, S_BCM1480_MC_tRRD, M_BCM1480_MC_tRRD)
--#define K_BCM1480_MC_tRRD_DEFAULT           2
--#define V_BCM1480_MC_tRRD_DEFAULT           V_BCM1480_MC_tRRD(K_BCM1480_MC_tRRD_DEFAULT)
--
--#define S_BCM1480_MC_tRCw                   24
--#define M_BCM1480_MC_tRCw                   _SB_MAKEMASK(5, S_BCM1480_MC_tRCw)
--#define V_BCM1480_MC_tRCw(x)                _SB_MAKEVALUE(x, S_BCM1480_MC_tRCw)
--#define G_BCM1480_MC_tRCw(x)                _SB_GETVALUE(x, S_BCM1480_MC_tRCw, M_BCM1480_MC_tRCw)
--#define K_BCM1480_MC_tRCw_DEFAULT           10
--#define V_BCM1480_MC_tRCw_DEFAULT           V_BCM1480_MC_tRCw(K_BCM1480_MC_tRCw_DEFAULT)
--
--#define S_BCM1480_MC_tRCr                   32
--#define M_BCM1480_MC_tRCr                   _SB_MAKEMASK(5, S_BCM1480_MC_tRCr)
--#define V_BCM1480_MC_tRCr(x)                _SB_MAKEVALUE(x, S_BCM1480_MC_tRCr)
--#define G_BCM1480_MC_tRCr(x)                _SB_GETVALUE(x, S_BCM1480_MC_tRCr, M_BCM1480_MC_tRCr)
--#define K_BCM1480_MC_tRCr_DEFAULT           9
--#define V_BCM1480_MC_tRCr_DEFAULT           V_BCM1480_MC_tRCr(K_BCM1480_MC_tRCr_DEFAULT)
--
--#if SIBYTE_HDR_FEATURE(1480, PASS2)
--#define S_BCM1480_MC_tFAW                   40
--#define M_BCM1480_MC_tFAW                   _SB_MAKEMASK(6, S_BCM1480_MC_tFAW)
--#define V_BCM1480_MC_tFAW(x)                _SB_MAKEVALUE(x, S_BCM1480_MC_tFAW)
--#define G_BCM1480_MC_tFAW(x)                _SB_GETVALUE(x, S_BCM1480_MC_tFAW, M_BCM1480_MC_tFAW)
--#define K_BCM1480_MC_tFAW_DEFAULT           0
--#define V_BCM1480_MC_tFAW_DEFAULT           V_BCM1480_MC_tFAW(K_BCM1480_MC_tFAW_DEFAULT)
--#endif
--
--#define S_BCM1480_MC_tRFC                   48
--#define M_BCM1480_MC_tRFC                   _SB_MAKEMASK(7, S_BCM1480_MC_tRFC)
--#define V_BCM1480_MC_tRFC(x)                _SB_MAKEVALUE(x, S_BCM1480_MC_tRFC)
--#define G_BCM1480_MC_tRFC(x)                _SB_GETVALUE(x, S_BCM1480_MC_tRFC, M_BCM1480_MC_tRFC)
--#define K_BCM1480_MC_tRFC_DEFAULT           12
--#define V_BCM1480_MC_tRFC_DEFAULT           V_BCM1480_MC_tRFC(K_BCM1480_MC_tRFC_DEFAULT)
--
--#define S_BCM1480_MC_tFIFO                  56
--#define M_BCM1480_MC_tFIFO                  _SB_MAKEMASK(2, S_BCM1480_MC_tFIFO)
--#define V_BCM1480_MC_tFIFO(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_tFIFO)
--#define G_BCM1480_MC_tFIFO(x)               _SB_GETVALUE(x, S_BCM1480_MC_tFIFO, M_BCM1480_MC_tFIFO)
--#define K_BCM1480_MC_tFIFO_DEFAULT          0
--#define V_BCM1480_MC_tFIFO_DEFAULT          V_BCM1480_MC_tFIFO(K_BCM1480_MC_tFIFO_DEFAULT)
--
--#define S_BCM1480_MC_tW2R                  58
--#define M_BCM1480_MC_tW2R                  _SB_MAKEMASK(2, S_BCM1480_MC_tW2R)
--#define V_BCM1480_MC_tW2R(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_tW2R)
--#define G_BCM1480_MC_tW2R(x)               _SB_GETVALUE(x, S_BCM1480_MC_tW2R, M_BCM1480_MC_tW2R)
--#define K_BCM1480_MC_tW2R_DEFAULT          1
--#define V_BCM1480_MC_tW2R_DEFAULT          V_BCM1480_MC_tW2R(K_BCM1480_MC_tW2R_DEFAULT)
--
--#define S_BCM1480_MC_tR2W                  60
--#define M_BCM1480_MC_tR2W                  _SB_MAKEMASK(2, S_BCM1480_MC_tR2W)
--#define V_BCM1480_MC_tR2W(x)               _SB_MAKEVALUE(x, S_BCM1480_MC_tR2W)
--#define G_BCM1480_MC_tR2W(x)               _SB_GETVALUE(x, S_BCM1480_MC_tR2W, M_BCM1480_MC_tR2W)
--#define K_BCM1480_MC_tR2W_DEFAULT          0
--#define V_BCM1480_MC_tR2W_DEFAULT          V_BCM1480_MC_tR2W(K_BCM1480_MC_tR2W_DEFAULT)
--
--#define M_BCM1480_MC_tR2R		    _SB_MAKEMASK1(62)
--
--#define V_BCM1480_MC_TIMING_DEFAULT         (M_BCM1480_MC_tR2R | \
--                                     V_BCM1480_MC_tFIFO_DEFAULT | \
--                                     V_BCM1480_MC_tR2W_DEFAULT | \
--                                     V_BCM1480_MC_tW2R_DEFAULT | \
--                                     V_BCM1480_MC_tRFC_DEFAULT | \
--                                     V_BCM1480_MC_tRCr_DEFAULT | \
--                                     V_BCM1480_MC_tRCw_DEFAULT | \
--                                     V_BCM1480_MC_tRRD_DEFAULT | \
--                                     V_BCM1480_MC_tRP_DEFAULT | \
--                                     V_BCM1480_MC_tCwD_DEFAULT | \
--                                     V_BCM1480_MC_tWR_DEFAULT | \
--                                     M_BCM1480_MC_tCrDh | \
--                                     V_BCM1480_MC_tCL_DEFAULT | \
--                                     V_BCM1480_MC_tRCD_DEFAULT)
--
--/*
-- * SDRAM Timing Register 2
-- */
--
--#if SIBYTE_HDR_FEATURE(1480, PASS2)
--
--#define S_BCM1480_MC_tAL                   0
--#define M_BCM1480_MC_tAL                   _SB_MAKEMASK(4, S_BCM1480_MC_tAL)
--#define V_BCM1480_MC_tAL(x)                _SB_MAKEVALUE(x, S_BCM1480_MC_tAL)
--#define G_BCM1480_MC_tAL(x)                _SB_GETVALUE(x, S_BCM1480_MC_tAL, M_BCM1480_MC_tAL)
--#define K_BCM1480_MC_tAL_DEFAULT           0
--#define V_BCM1480_MC_tAL_DEFAULT           V_BCM1480_MC_tAL(K_BCM1480_MC_tAL_DEFAULT)
--
--#define S_BCM1480_MC_tRTP                   4
--#define M_BCM1480_MC_tRTP                   _SB_MAKEMASK(3, S_BCM1480_MC_tRTP)
--#define V_BCM1480_MC_tRTP(x)                _SB_MAKEVALUE(x, S_BCM1480_MC_tRTP)
--#define G_BCM1480_MC_tRTP(x)                _SB_GETVALUE(x, S_BCM1480_MC_tRTP, M_BCM1480_MC_tRTP)
--#define K_BCM1480_MC_tRTP_DEFAULT           2
--#define V_BCM1480_MC_tRTP_DEFAULT           V_BCM1480_MC_tRTP(K_BCM1480_MC_tRTP_DEFAULT)
--
--#define S_BCM1480_MC_tW2W                   8
--#define M_BCM1480_MC_tW2W                   _SB_MAKEMASK(2, S_BCM1480_MC_tW2W)
--#define V_BCM1480_MC_tW2W(x)                _SB_MAKEVALUE(x, S_BCM1480_MC_tW2W)
--#define G_BCM1480_MC_tW2W(x)                _SB_GETVALUE(x, S_BCM1480_MC_tW2W, M_BCM1480_MC_tW2W)
--#define K_BCM1480_MC_tW2W_DEFAULT           0
--#define V_BCM1480_MC_tW2W_DEFAULT           V_BCM1480_MC_tW2W(K_BCM1480_MC_tW2W_DEFAULT)
--
--#define S_BCM1480_MC_tRAP                   12
--#define M_BCM1480_MC_tRAP                  _SB_MAKEMASK(4, S_BCM1480_MC_tRAP)
--#define V_BCM1480_MC_tRAP(x)                _SB_MAKEVALUE(x, S_BCM1480_MC_tRAP)
--#define G_BCM1480_MC_tRAP(x)                _SB_GETVALUE(x, S_BCM1480_MC_tRAP, M_BCM1480_MC_tRAP)
--#define K_BCM1480_MC_tRAP_DEFAULT           0
--#define V_BCM1480_MC_tRAP_DEFAULT           V_BCM1480_MC_tRAP(K_BCM1480_MC_tRAP_DEFAULT)
--
--#endif
--
--
--
--/*
-- * Global Registers: single instances per BCM1480
-- */
--
--/*
-- * Global Configuration Register (Table 99)
-- */
--
--#define S_BCM1480_MC_BLK_SET_MARK           8
--#define M_BCM1480_MC_BLK_SET_MARK           _SB_MAKEMASK(4, S_BCM1480_MC_BLK_SET_MARK)
--#define V_BCM1480_MC_BLK_SET_MARK(x)        _SB_MAKEVALUE(x, S_BCM1480_MC_BLK_SET_MARK)
--#define G_BCM1480_MC_BLK_SET_MARK(x)        _SB_GETVALUE(x, S_BCM1480_MC_BLK_SET_MARK, M_BCM1480_MC_BLK_SET_MARK)
--
--#define S_BCM1480_MC_BLK_CLR_MARK           12
--#define M_BCM1480_MC_BLK_CLR_MARK           _SB_MAKEMASK(4, S_BCM1480_MC_BLK_CLR_MARK)
--#define V_BCM1480_MC_BLK_CLR_MARK(x)        _SB_MAKEVALUE(x, S_BCM1480_MC_BLK_CLR_MARK)
--#define G_BCM1480_MC_BLK_CLR_MARK(x)        _SB_GETVALUE(x, S_BCM1480_MC_BLK_CLR_MARK, M_BCM1480_MC_BLK_CLR_MARK)
--
--#define M_BCM1480_MC_PKT_PRIORITY           _SB_MAKEMASK1(16)
--
--#define S_BCM1480_MC_MAX_AGE                20
--#define M_BCM1480_MC_MAX_AGE                _SB_MAKEMASK(4, S_BCM1480_MC_MAX_AGE)
--#define V_BCM1480_MC_MAX_AGE(x)             _SB_MAKEVALUE(x, S_BCM1480_MC_MAX_AGE)
--#define G_BCM1480_MC_MAX_AGE(x)             _SB_GETVALUE(x, S_BCM1480_MC_MAX_AGE, M_BCM1480_MC_MAX_AGE)
--
--#define M_BCM1480_MC_BERR_DISABLE           _SB_MAKEMASK1(29)
--#define M_BCM1480_MC_FORCE_SEQ              _SB_MAKEMASK1(30)
--#define M_BCM1480_MC_VGEN                   _SB_MAKEMASK1(32)
--
--#define S_BCM1480_MC_SLEW                   33
--#define M_BCM1480_MC_SLEW                   _SB_MAKEMASK(2, S_BCM1480_MC_SLEW)
--#define V_BCM1480_MC_SLEW(x)                _SB_MAKEVALUE(x, S_BCM1480_MC_SLEW)
--#define G_BCM1480_MC_SLEW(x)                _SB_GETVALUE(x, S_BCM1480_MC_SLEW, M_BCM1480_MC_SLEW)
--
--#define M_BCM1480_MC_SSTL_VOLTAGE           _SB_MAKEMASK1(35)
--
--/*
-- * Global Channel Interleave Register (Table 100)
-- */
--
--#define S_BCM1480_MC_INTLV0                 0
--#define M_BCM1480_MC_INTLV0                 _SB_MAKEMASK(6, S_BCM1480_MC_INTLV0)
--#define V_BCM1480_MC_INTLV0(x)              _SB_MAKEVALUE(x, S_BCM1480_MC_INTLV0)
--#define G_BCM1480_MC_INTLV0(x)              _SB_GETVALUE(x, S_BCM1480_MC_INTLV0, M_BCM1480_MC_INTLV0)
--
--#define S_BCM1480_MC_INTLV1                 8
--#define M_BCM1480_MC_INTLV1                 _SB_MAKEMASK(6, S_BCM1480_MC_INTLV1)
--#define V_BCM1480_MC_INTLV1(x)              _SB_MAKEVALUE(x, S_BCM1480_MC_INTLV1)
--#define G_BCM1480_MC_INTLV1(x)              _SB_GETVALUE(x, S_BCM1480_MC_INTLV1, M_BCM1480_MC_INTLV1)
--
--#define S_BCM1480_MC_INTLV_MODE             16
--#define M_BCM1480_MC_INTLV_MODE             _SB_MAKEMASK(3, S_BCM1480_MC_INTLV_MODE)
--#define V_BCM1480_MC_INTLV_MODE(x)          _SB_MAKEVALUE(x, S_BCM1480_MC_INTLV_MODE)
--#define G_BCM1480_MC_INTLV_MODE(x)          _SB_GETVALUE(x, S_BCM1480_MC_INTLV_MODE, M_BCM1480_MC_INTLV_MODE)
--
--#define K_BCM1480_MC_INTLV_MODE_NONE        0x0
--#define K_BCM1480_MC_INTLV_MODE_01          0x1
--#define K_BCM1480_MC_INTLV_MODE_23          0x2
--#define K_BCM1480_MC_INTLV_MODE_01_23       0x3
--#define K_BCM1480_MC_INTLV_MODE_0123        0x4
--
--#define V_BCM1480_MC_INTLV_MODE_NONE        V_BCM1480_MC_INTLV_MODE(K_BCM1480_MC_INTLV_MODE_NONE)
--#define V_BCM1480_MC_INTLV_MODE_01          V_BCM1480_MC_INTLV_MODE(K_BCM1480_MC_INTLV_MODE_01)
--#define V_BCM1480_MC_INTLV_MODE_23          V_BCM1480_MC_INTLV_MODE(K_BCM1480_MC_INTLV_MODE_23)
--#define V_BCM1480_MC_INTLV_MODE_01_23       V_BCM1480_MC_INTLV_MODE(K_BCM1480_MC_INTLV_MODE_01_23)
--#define V_BCM1480_MC_INTLV_MODE_0123        V_BCM1480_MC_INTLV_MODE(K_BCM1480_MC_INTLV_MODE_0123)
--
--/*
-- * ECC Status Register
-- */
--
--#define S_BCM1480_MC_ECC_ERR_ADDR           0
--#define M_BCM1480_MC_ECC_ERR_ADDR           _SB_MAKEMASK(37, S_BCM1480_MC_ECC_ERR_ADDR)
--#define V_BCM1480_MC_ECC_ERR_ADDR(x)        _SB_MAKEVALUE(x, S_BCM1480_MC_ECC_ERR_ADDR)
--#define G_BCM1480_MC_ECC_ERR_ADDR(x)        _SB_GETVALUE(x, S_BCM1480_MC_ECC_ERR_ADDR, M_BCM1480_MC_ECC_ERR_ADDR)
--
--#if SIBYTE_HDR_FEATURE(1480, PASS2)
--#define M_BCM1480_MC_ECC_ERR_RMW            _SB_MAKEMASK1(60)
--#endif
--
--#define M_BCM1480_MC_ECC_MULT_ERR_DET       _SB_MAKEMASK1(61)
--#define M_BCM1480_MC_ECC_UERR_DET           _SB_MAKEMASK1(62)
--#define M_BCM1480_MC_ECC_CERR_DET           _SB_MAKEMASK1(63)
--
--/*
-- * Global ECC Address Register (Table 102)
-- */
--
--#define S_BCM1480_MC_ECC_CORR_ADDR          0
--#define M_BCM1480_MC_ECC_CORR_ADDR          _SB_MAKEMASK(37, S_BCM1480_MC_ECC_CORR_ADDR)
--#define V_BCM1480_MC_ECC_CORR_ADDR(x)       _SB_MAKEVALUE(x, S_BCM1480_MC_ECC_CORR_ADDR)
--#define G_BCM1480_MC_ECC_CORR_ADDR(x)       _SB_GETVALUE(x, S_BCM1480_MC_ECC_CORR_ADDR, M_BCM1480_MC_ECC_CORR_ADDR)
--
--/*
-- * Global ECC Correction Register (Table 103)
-- */
--
--#define S_BCM1480_MC_ECC_CORRECT            0
--#define M_BCM1480_MC_ECC_CORRECT            _SB_MAKEMASK(64, S_BCM1480_MC_ECC_CORRECT)
--#define V_BCM1480_MC_ECC_CORRECT(x)         _SB_MAKEVALUE(x, S_BCM1480_MC_ECC_CORRECT)
--#define G_BCM1480_MC_ECC_CORRECT(x)         _SB_GETVALUE(x, S_BCM1480_MC_ECC_CORRECT, M_BCM1480_MC_ECC_CORRECT)
--
--/*
-- * Global ECC Performance Counters Control Register (Table 104)
-- */
--
--#define S_BCM1480_MC_CHANNEL_SELECT         0
--#define M_BCM1480_MC_CHANNEL_SELECT         _SB_MAKEMASK(4, S_BCM1480_MC_CHANNEL_SELECT)
--#define V_BCM1480_MC_CHANNEL_SELECT(x)      _SB_MAKEVALUE(x, S_BCM1480_MC_CHANNEL_SELECT)
--#define G_BCM1480_MC_CHANNEL_SELECT(x)      _SB_GETVALUE(x, S_BCM1480_MC_CHANNEL_SELECT, M_BCM1480_MC_CHANNEL_SELECT)
--#define K_BCM1480_MC_CHANNEL_SELECT_0       0x1
--#define K_BCM1480_MC_CHANNEL_SELECT_1       0x2
--#define K_BCM1480_MC_CHANNEL_SELECT_2       0x4
--#define K_BCM1480_MC_CHANNEL_SELECT_3       0x8
--
--#endif /* _BCM1480_MC_H */
+diff --git a/Documentation/block/test-iosched.txt b/Documentation/block/test-iosched.txt
+new file mode 100644
+index 0000000..75d8134
+--- /dev/null
++++ b/Documentation/block/test-iosched.txt
+@@ -0,0 +1,39 @@
++Test IO scheduler
++==================
++
++The test scheduler allows testing a block device by dispatching
++specific requests according to the test case and declare PASS/FAIL
++according to the requests completion error code.
++
++The test IO scheduler implements the no-op scheduler operations, and uses
++them in order to dispatch the non-test requests when no test is running.
++This will allow to keep a normal FS operation in parallel to the test
++capability.
++The test IO scheduler keeps two different queues, one for real-world requests
++(inserted by the FS) and the other for the test requests.
++The test IO scheduler chooses the queue for dispatch requests according to the
++test state (IDLE/RUNNING).
++
++the test IO scheduler is compiled by default as a dynamic module and enabled
++only if CONFIG_DEBUG_FS is defined.
++
++Each block device test utility that would like to use the test-iosched test
++services, should register as a blk_dev_test_type and supply an init and exit
++callbacks. Those callback are called upon selection (or removal) of the
++test-iosched as the active scheduler. From that point the block device test
++can start a test and supply its own callbacks for preparing, running, result
++checking and cleanup of the test.
++
++Each test is exposed via debugfs and can be triggered by writing to
++the debugfs file. In order to add a new test one should expose a new debugfs
++file for the new test.
++
++Selecting IO schedulers
++-----------------------
++Refer to Documentation/block/switching-sched.txt for information on
++selecting an io scheduler on a per-device basis.
++
++
++May 10 2012, maya Erez <merez@codeaurora.org>
++
++
+diff --git a/block/Kconfig.iosched b/block/Kconfig.iosched
+index 421bef9..af3d6a3 100644
+--- a/block/Kconfig.iosched
++++ b/block/Kconfig.iosched
+@@ -12,6 +12,17 @@ config IOSCHED_NOOP
+ 	  that do their own scheduling and require only minimal assistance from
+ 	  the kernel.
+ 
++config IOSCHED_TEST
++	tristate "Test I/O scheduler"
++	depends on DEBUG_FS
++	default m
++	---help---
++	  The test I/O scheduler is a duplicate of the noop scheduler with
++	  addition of test utlity.
++	  It allows testing a block device by dispatching specific requests
++	  according to the test case and declare PASS/FAIL according to the
++	  requests completion error code.
++
+ config IOSCHED_DEADLINE
+ 	tristate "Deadline I/O scheduler"
+ 	default y
+diff --git a/block/Makefile b/block/Makefile
+index 39b76ba..436b220 100644
+--- a/block/Makefile
++++ b/block/Makefile
+@@ -15,6 +15,7 @@ obj-$(CONFIG_BLK_DEV_THROTTLING)	+= blk-throttle.o
+ obj-$(CONFIG_IOSCHED_NOOP)	+= noop-iosched.o
+ obj-$(CONFIG_IOSCHED_DEADLINE)	+= deadline-iosched.o
+ obj-$(CONFIG_IOSCHED_CFQ)	+= cfq-iosched.o
++obj-$(CONFIG_IOSCHED_TEST)	+= test-iosched.o
+ 
+ obj-$(CONFIG_BLOCK_COMPAT)	+= compat_ioctl.o
+ obj-$(CONFIG_BLK_DEV_INTEGRITY)	+= blk-integrity.o
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 5639a3d..54ea4da 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -1072,8 +1072,6 @@ struct request *blk_get_request(struct request_queue *q, int rw, gfp_t gfp_mask)
+ {
+ 	struct request *rq;
+ 
+-	BUG_ON(rw != READ && rw != WRITE);
+-
+ 	spin_lock_irq(q->queue_lock);
+ 	if (gfp_mask & __GFP_WAIT)
+ 		rq = get_request_wait(q, rw, NULL);
+@@ -1406,6 +1404,7 @@ void init_request_from_bio(struct request *req, struct bio *bio)
+ 	req->ioprio = bio_prio(bio);
+ 	blk_rq_bio_prep(req->q, req, bio);
+ }
++EXPORT_SYMBOL(init_request_from_bio);
+ 
+ void blk_queue_bio(struct request_queue *q, struct bio *bio)
+ {
+diff --git a/block/test-iosched.c b/block/test-iosched.c
+new file mode 100644
+index 0000000..e4b89d2
+--- /dev/null
++++ b/block/test-iosched.c
+@@ -0,0 +1,1015 @@
++
++/* Copyright (c) 2012, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * The test scheduler allows to test the block device by dispatching
++ * specific requests according to the test case and declare PASS/FAIL
++ * according to the requests completion error code.
++ * Each test is exposed via debugfs and can be triggered by writing to
++ * the debugfs file.
++ *
++ */
++
++/* elevator test iosched */
++#include <linux/blkdev.h>
++#include <linux/elevator.h>
++#include <linux/bio.h>
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/init.h>
++#include <linux/debugfs.h>
++#include <linux/test-iosched.h>
++#include <linux/delay.h>
++#include "blk.h"
++
++#define MODULE_NAME "test-iosched"
++#define WR_RD_START_REQ_ID 1234
++#define UNIQUE_START_REQ_ID 5678
++#define TIMEOUT_TIMER_MS 40000
++#define TEST_MAX_TESTCASE_ROUNDS 15
++
++#define test_pr_debug(fmt, args...) pr_debug("%s: "fmt"\n", MODULE_NAME, args)
++#define test_pr_info(fmt, args...) pr_info("%s: "fmt"\n", MODULE_NAME, args)
++#define test_pr_err(fmt, args...) pr_err("%s: "fmt"\n", MODULE_NAME, args)
++
++static DEFINE_SPINLOCK(blk_dev_test_list_lock);
++static LIST_HEAD(blk_dev_test_list);
++static struct test_data *ptd;
++
++/* Get the request after `test_rq' in the test requests list */
++static struct test_request *
++latter_test_request(struct request_queue *q,
++				 struct test_request *test_rq)
++{
++	struct test_data *td = q->elevator->elevator_data;
++
++	if (test_rq->queuelist.next == &td->test_queue)
++		return NULL;
++	return list_entry(test_rq->queuelist.next, struct test_request,
++			  queuelist);
++}
++
++/**
++ * test_iosched_get_req_queue() - returns the request queue
++ * served by the scheduler
++ */
++struct request_queue *test_iosched_get_req_queue(void)
++{
++	if (!ptd)
++		return NULL;
++
++	return ptd->req_q;
++}
++EXPORT_SYMBOL(test_iosched_get_req_queue);
++
++/**
++ * test_iosched_mark_test_completion() - Wakeup the debugfs
++ * thread, waiting on the test completion
++ */
++void test_iosched_mark_test_completion(void)
++{
++	if (!ptd)
++		return;
++
++	ptd->test_state = TEST_COMPLETED;
++	wake_up(&ptd->wait_q);
++}
++EXPORT_SYMBOL(test_iosched_mark_test_completion);
++
++/* Check if all the queued test requests were completed */
++static void check_test_completion(void)
++{
++	struct test_request *test_rq;
++	struct request *rq;
++
++	list_for_each_entry(test_rq, &ptd->test_queue, queuelist) {
++		rq = test_rq->rq;
++		if (!test_rq->req_completed)
++			return;
++	}
++
++	test_pr_info("%s: Test is completed", __func__);
++
++	test_iosched_mark_test_completion();
++}
++
++/*
++ * A callback to be called per bio completion.
++ * Frees the bio memory.
++ */
++static void end_test_bio(struct bio *bio, int err)
++{
++	if (err)
++		clear_bit(BIO_UPTODATE, &bio->bi_flags);
++
++	bio_put(bio);
++}
++
++/*
++ * A callback to be called per request completion.
++ * the request memory is not freed here, will be freed later after the test
++ * results checking.
++ */
++static void end_test_req(struct request *rq, int err)
++{
++	struct test_request *test_rq;
++
++	test_rq = (struct test_request *)rq->elv.priv[0];
++	BUG_ON(!test_rq);
++
++	test_pr_info("%s: request %d completed, err=%d",
++	       __func__, test_rq->req_id, err);
++
++	test_rq->req_completed = 1;
++	test_rq->req_result = err;
++
++	check_test_completion();
++}
++
++/**
++ * test_iosched_add_unique_test_req() - Create and queue a non
++ * read/write request (such as FLUSH/DISCRAD/SANITIZE).
++ * @is_err_expcted:	A flag to indicate if this request
++ *			should succeed or not
++ * @req_unique:		The type of request to add
++ * @start_sec:		start address of the first bio
++ * @nr_sects:		number of sectors in the request
++ * @end_req_io:		specific completion callback. When not
++ *			set, the defaulcallback will be used
++ */
++int test_iosched_add_unique_test_req(int is_err_expcted,
++			enum req_unique_type req_unique,
++			int start_sec, int nr_sects, rq_end_io_fn *end_req_io)
++{
++	struct bio *bio;
++	struct request *rq;
++	int rw_flags;
++	struct test_request *test_rq;
++
++	if (!ptd)
++		return -ENODEV;
++
++	bio = bio_alloc(GFP_KERNEL, 0);
++	if (!bio) {
++		test_pr_err("%s: Failed to allocate a bio", __func__);
++		return -ENODEV;
++	}
++	bio_get(bio);
++	bio->bi_end_io = end_test_bio;
++
++	switch (req_unique) {
++	case REQ_UNIQUE_FLUSH:
++		bio->bi_rw = WRITE_FLUSH;
++		break;
++	case REQ_UNIQUE_DISCARD:
++		bio->bi_rw = REQ_WRITE | REQ_DISCARD;
++		bio->bi_size = nr_sects << 9;
++		bio->bi_sector = start_sec;
++		break;
++	default:
++		test_pr_err("%s: Invalid request type %d", __func__,
++			    req_unique);
++		bio_put(bio);
++		return -ENODEV;
++	}
++
++	rw_flags = bio_data_dir(bio);
++	if (bio->bi_rw & REQ_SYNC)
++		rw_flags |= REQ_SYNC;
++
++	rq = blk_get_request(ptd->req_q, rw_flags, GFP_KERNEL);
++	if (!rq) {
++		test_pr_err("%s: Failed to allocate a request", __func__);
++		bio_put(bio);
++		return -ENODEV;
++	}
++
++	init_request_from_bio(rq, bio);
++	if (end_req_io)
++		rq->end_io = end_req_io;
++	else
++		rq->end_io = end_test_req;
++
++	test_rq = kzalloc(sizeof(struct test_request), GFP_KERNEL);
++	if (!test_rq) {
++		test_pr_err("%s: Failed to allocate a test request", __func__);
++		bio_put(bio);
++		blk_put_request(rq);
++		return -ENODEV;
++	}
++	test_rq->req_completed = 0;
++	test_rq->req_result = -1;
++	test_rq->rq = rq;
++	test_rq->is_err_expected = is_err_expcted;
++	rq->elv.priv[0] = (void *)test_rq;
++	test_rq->req_id = ptd->unique_next_req_id++;
++
++	test_pr_debug(
++		"%s: added request %d to the test requests list, type = %d",
++		__func__, test_rq->req_id, req_unique);
++
++	list_add_tail(&test_rq->queuelist, &ptd->test_queue);
++
++	return 0;
++}
++EXPORT_SYMBOL(test_iosched_add_unique_test_req);
++
++/*
++ * Get a pattern to be filled in the request data buffer.
++ * If the pattern used is (-1) the buffer will be filled with sequential
++ * numbers
++ */
++static void fill_buf_with_pattern(int *buf, int num_bytes, int pattern)
++{
++	int i = 0;
++	int num_of_dwords = num_bytes/sizeof(int);
++
++	if (pattern == TEST_NO_PATTERN)
++		return;
++
++	/* num_bytes should be aligned to sizeof(int) */
++	BUG_ON((num_bytes % sizeof(int)) != 0);
++
++	if (pattern == TEST_PATTERN_SEQUENTIAL) {
++		for (i = 0; i < num_of_dwords; i++)
++			buf[i] = i;
++	} else {
++		for (i = 0; i < num_of_dwords; i++)
++			buf[i] = pattern;
++	}
++}
++
++/**
++ * test_iosched_add_wr_rd_test_req() - Create and queue a
++ * read/write request.
++ * @is_err_expcted:	A flag to indicate if this request
++ *			should succeed or not
++ * @direction:		READ/WRITE
++ * @start_sec:		start address of the first bio
++ * @num_bios:		number of BIOs to be allocated for the
++ *			request
++ * @pattern:		A pattern, to be written into the write
++ *			requests data buffer. In case of READ
++ *			request, the given pattern is kept as
++ *			the expected pattern. The expected
++ *			pattern will be compared in the test
++ *			check result function. If no comparisson
++ *			is required, set pattern to
++ *			TEST_NO_PATTERN.
++ * @end_req_io:		specific completion callback. When not
++ *			set,the default callback will be used
++ *
++ * This function allocates the test request and the block
++ * request and calls blk_rq_map_kern which allocates the
++ * required BIO. The allocated test request and the block
++ * request memory is freed at the end of the test and the
++ * allocated BIO memory is freed by end_test_bio.
++ */
++int test_iosched_add_wr_rd_test_req(int is_err_expcted,
++		      int direction, int start_sec,
++		      int num_bios, int pattern, rq_end_io_fn *end_req_io)
++{
++	struct request *rq = NULL;
++	struct test_request *test_rq = NULL;
++	int rw_flags = 0;
++	int buf_size = 0;
++	int ret = 0, i = 0;
++	unsigned int *bio_ptr = NULL;
++	struct bio *bio = NULL;
++
++	if (!ptd)
++		return -ENODEV;
++
++	rw_flags = direction;
++
++	rq = blk_get_request(ptd->req_q, rw_flags, GFP_KERNEL);
++	if (!rq) {
++		test_pr_err("%s: Failed to allocate a request", __func__);
++		return -ENODEV;
++	}
++
++	test_rq = kzalloc(sizeof(struct test_request), GFP_KERNEL);
++	if (!test_rq) {
++		test_pr_err("%s: Failed to allocate test request", __func__);
++		blk_put_request(rq);
++		return -ENODEV;
++	}
++
++	buf_size = sizeof(unsigned int) * BIO_U32_SIZE * num_bios;
++	test_rq->bios_buffer = kzalloc(buf_size, GFP_KERNEL);
++	if (!test_rq->bios_buffer) {
++		test_pr_err("%s: Failed to allocate the data buf", __func__);
++		goto err;
++	}
++	test_rq->buf_size = buf_size;
++
++	if (direction == WRITE)
++		fill_buf_with_pattern(test_rq->bios_buffer,
++						   buf_size, pattern);
++	test_rq->wr_rd_data_pattern = pattern;
++
++	bio_ptr = test_rq->bios_buffer;
++	for (i = 0; i < num_bios; ++i) {
++		ret = blk_rq_map_kern(ptd->req_q, rq,
++				      (void *)bio_ptr,
++				      sizeof(unsigned int)*BIO_U32_SIZE,
++				      GFP_KERNEL);
++		if (ret) {
++			test_pr_err("%s: blk_rq_map_kern returned error %d",
++				    __func__, ret);
++			goto err;
++		}
++		bio_ptr += BIO_U32_SIZE;
++	}
++
++	if (end_req_io)
++		rq->end_io = end_req_io;
++	else
++		rq->end_io = end_test_req;
++	rq->__sector = start_sec;
++	rq->cmd_type |= REQ_TYPE_FS;
++
++	if (rq->bio) {
++		rq->bio->bi_sector = start_sec;
++		rq->bio->bi_end_io = end_test_bio;
++		bio = rq->bio;
++		while ((bio = bio->bi_next) != NULL)
++			bio->bi_end_io = end_test_bio;
++	}
++
++	ptd->num_of_write_bios += num_bios;
++	test_rq->req_id = ptd->wr_rd_next_req_id++;
++
++	test_rq->req_completed = 0;
++	test_rq->req_result = -1;
++	test_rq->rq = rq;
++	test_rq->is_err_expected = is_err_expcted;
++	rq->elv.priv[0] = (void *)test_rq;
++
++	test_pr_debug(
++		"%s: added request %d to the test requests list, buf_size=%d",
++		__func__, test_rq->req_id, buf_size);
++
++	list_add_tail(&test_rq->queuelist, &ptd->test_queue);
++
++	return 0;
++err:
++	blk_put_request(rq);
++	kfree(test_rq->bios_buffer);
++	return -ENODEV;
++}
++EXPORT_SYMBOL(test_iosched_add_wr_rd_test_req);
++
++/* Converts the testcase number into a string */
++static char *get_test_case_str(struct test_data *td)
++{
++	if (td->test_info.get_test_case_str_fn)
++		return td->test_info.get_test_case_str_fn(td);
++
++	return "Unknown testcase";
++}
++
++/*
++ * Verify that the test request data buffer includes the expected
++ * pattern
++ */
++static int compare_buffer_to_pattern(struct test_request *test_rq)
++{
++	int i = 0;
++	int num_of_dwords = test_rq->buf_size/sizeof(int);
++
++	/* num_bytes should be aligned to sizeof(int) */
++	BUG_ON((test_rq->buf_size % sizeof(int)) != 0);
++	BUG_ON(test_rq->bios_buffer == NULL);
++
++	if (test_rq->wr_rd_data_pattern == TEST_NO_PATTERN)
++		return 0;
++
++	if (test_rq->wr_rd_data_pattern == TEST_PATTERN_SEQUENTIAL) {
++		for (i = 0; i < num_of_dwords; i++) {
++			if (test_rq->bios_buffer[i] != i) {
++				test_pr_err(
++					"%s: wrong pattern 0x%x in index %d",
++					__func__, test_rq->bios_buffer[i], i);
++				return -EINVAL;
++			}
++		}
++	} else {
++		for (i = 0; i < num_of_dwords; i++) {
++			if (test_rq->bios_buffer[i] !=
++			    test_rq->wr_rd_data_pattern) {
++				test_pr_err(
++					"%s: wrong pattern 0x%x in index %d",
++					__func__, test_rq->bios_buffer[i], i);
++				return -EINVAL;
++			}
++		}
++	}
++
++	return 0;
++}
++
++/*
++ * Determine if the test passed or failed.
++ * The function checks the test request completion value and calls
++ * check_testcase_result for result checking that are specific
++ * to a test case.
++ */
++static int check_test_result(struct test_data *td)
++{
++	struct test_request *test_rq;
++	struct request *rq;
++	int res = 0;
++	static int run;
++
++	list_for_each_entry(test_rq, &ptd->test_queue, queuelist) {
++		rq = test_rq->rq;
++		if (!test_rq->req_completed) {
++			test_pr_err("%s: rq %d not completed", __func__,
++				    test_rq->req_id);
++			res = -EINVAL;
++			goto err;
++		}
++
++		if ((test_rq->req_result < 0) && !test_rq->is_err_expected) {
++			test_pr_err(
++				"%s: rq %d completed with err, not as expected",
++				__func__, test_rq->req_id);
++			res = -EINVAL;
++			goto err;
++		}
++		if ((test_rq->req_result == 0) && test_rq->is_err_expected) {
++			test_pr_err("%s: rq %d succeeded, not as expected",
++				    __func__, test_rq->req_id);
++			res = -EINVAL;
++			goto err;
++		}
++		if (rq_data_dir(test_rq->rq) == READ) {
++			res = compare_buffer_to_pattern(test_rq);
++			if (res) {
++				test_pr_err("%s: read pattern not as expected",
++					    __func__);
++				res = -EINVAL;
++				goto err;
++			}
++		}
++	}
++
++	if (td->test_info.check_test_result_fn) {
++		res = td->test_info.check_test_result_fn(td);
++		if (res)
++			goto err;
++	}
++
++	test_pr_info("%s: %s, run# %03d, PASSED",
++			    __func__, get_test_case_str(td), ++run);
++	td->test_result = TEST_PASSED;
++
++	return 0;
++err:
++	test_pr_err("%s: %s, run# %03d, FAILED",
++		    __func__, get_test_case_str(td), ++run);
++	td->test_result = TEST_FAILED;
++	return res;
++}
++
++/* Create and queue the required requests according to the test case */
++static int prepare_test(struct test_data *td)
++{
++	int ret = 0;
++
++	if (td->test_info.prepare_test_fn) {
++		ret = td->test_info.prepare_test_fn(td);
++		return ret;
++	}
++
++	return 0;
++}
++
++/* Run the test */
++static int run_test(struct test_data *td)
++{
++	int ret = 0;
++
++	if (td->test_info.run_test_fn) {
++		ret = td->test_info.run_test_fn(td);
++		return ret;
++	}
++
++	/*
++	 * Set the next_req pointer to the first request in the test requests
++	 * list
++	 */
++	if (!list_empty(&td->test_queue))
++		td->next_req = list_entry(td->test_queue.next,
++					  struct test_request, queuelist);
++	__blk_run_queue(td->req_q);
++
++	return 0;
++}
++
++/* Free the allocated test requests, their requests and BIOs buffer */
++static void free_test_requests(struct test_data *td)
++{
++	struct test_request *test_rq;
++	while (!list_empty(&td->test_queue)) {
++		test_rq = list_entry(td->test_queue.next, struct test_request,
++				     queuelist);
++		list_del_init(&test_rq->queuelist);
++		blk_put_request(test_rq->rq);
++		kfree(test_rq->bios_buffer);
++		kfree(test_rq);
++	}
++}
++
++/*
++ * Do post test operations.
++ * Free the allocated test requests, their requests and BIOs buffer.
++ */
++static int post_test(struct test_data *td)
++{
++	int ret = 0;
++
++	if (td->test_info.post_test_fn)
++		ret = td->test_info.post_test_fn(td);
++
++	ptd->test_info.testcase = 0;
++	ptd->test_state = TEST_IDLE;
++
++	free_test_requests(td);
++
++	return ret;
++}
++
++/*
++ * The timer verifies that the test will be completed even if we don't get
++ * the completion callback for all the requests.
++ */
++static void test_timeout_handler(unsigned long data)
++{
++	struct test_data *td = (struct test_data *)data;
++
++	test_pr_info("%s: TIMEOUT timer expired", __func__);
++	td->test_state = TEST_COMPLETED;
++	wake_up(&td->wait_q);
++	return;
++}
++
++static unsigned int get_timeout_msec(struct test_data *td)
++{
++	if (td->test_info.timeout_msec)
++		return td->test_info.timeout_msec;
++	else
++		return TIMEOUT_TIMER_MS;
++}
++
++/**
++ * test_iosched_start_test() - Prepares and runs the test.
++ * @t_info:	the current test testcase and callbacks
++ *		functions
++ *
++ * The function also checks the test result upon test completion
++ */
++int test_iosched_start_test(struct test_info *t_info)
++{
++	int ret = 0;
++	unsigned timeout_msec;
++	int counter = 0;
++	char *test_name = NULL;
++
++	if (!ptd)
++		return -ENODEV;
++
++	if (!t_info) {
++		ptd->test_result = TEST_FAILED;
++		return -EINVAL;
++	}
++
++	do {
++		if (ptd->ignore_round)
++			/*
++			 * We ignored the last run due to FS write requests.
++			 * Sleep to allow those requests to be issued
++			 */
++			msleep(2000);
++
++		spin_lock(&ptd->lock);
++
++		if (ptd->test_state != TEST_IDLE) {
++			test_pr_info(
++				"%s: Another test is running, try again later",
++				__func__);
++			return -EINVAL;
++		}
++
++		if (ptd->start_sector == 0) {
++			test_pr_err("%s: Invalid start sector\n. "
++				"User should set the start sector before "
++				"running the test using this command:\n"
++				"echo <START_SECTOR> > "
++				"/<path-to-debugfs>/test-iosched/start_sector",
++			       __func__);
++			ptd->test_result = TEST_FAILED;
++			spin_unlock(&ptd->lock);
++			return -EINVAL;
++		}
++
++		memcpy(&ptd->test_info, t_info, sizeof(struct test_info));
++
++		ptd->next_req = NULL;
++		ptd->test_result = TEST_NO_RESULT;
++		ptd->num_of_write_bios = 0;
++
++		ptd->unique_next_req_id = UNIQUE_START_REQ_ID;
++		ptd->wr_rd_next_req_id = WR_RD_START_REQ_ID;
++
++		ptd->test_state = TEST_RUNNING;
++
++		spin_unlock(&ptd->lock);
++
++		timeout_msec = get_timeout_msec(ptd);
++		mod_timer(&ptd->timeout_timer, jiffies +
++			  msecs_to_jiffies(timeout_msec));
++
++		if (ptd->test_info.get_test_case_str_fn)
++			test_name = ptd->test_info.get_test_case_str_fn(ptd);
++		else
++			test_name = "Unknown testcase";
++		test_pr_info("%s: Starting test %s\n", __func__, test_name);
++
++		ret = prepare_test(ptd);
++		if (ret) {
++			test_pr_err("%s: failed to prepare the test\n",
++				    __func__);
++			goto error;
++		}
++
++		ret = run_test(ptd);
++		if (ret) {
++			test_pr_err("%s: failed to run the test\n", __func__);
++			goto error;
++		}
++
++		test_pr_info("%s: Waiting for the test completion", __func__);
++
++		wait_event(ptd->wait_q, ptd->test_state == TEST_COMPLETED);
++		del_timer_sync(&ptd->timeout_timer);
++
++		if (!ptd->ignore_round) {
++			ret = check_test_result(ptd);
++			if (ret) {
++				test_pr_err("%s: check_test_result failed\n",
++					    __func__);
++				goto error;
++			}
++		} else {
++			test_pr_info(
++			"%s: Round canceled (Got wr reqs in the middle)",
++			__func__);
++		}
++
++		ret = post_test(ptd);
++		if (ret) {
++			test_pr_err("%s: post_test failed\n", __func__);
++			goto error;
++		}
++
++		/*
++		 * Wakeup the queue thread to fetch FS requests that might got
++		 * postponded due to the test
++		 */
++		__blk_run_queue(ptd->req_q);
++
++		if (counter == TEST_MAX_TESTCASE_ROUNDS) {
++			test_pr_info("%s: Too many rounds did not succeed...",
++			     __func__);
++			ptd->test_result = TEST_FAILED;
++		}
++
++	} while ((ptd->ignore_round) && (counter < TEST_MAX_TESTCASE_ROUNDS));
++
++	if (ptd->test_result == TEST_PASSED)
++		return 0;
++	else
++		return -EINVAL;
++
++error:
++	ptd->test_result = TEST_FAILED;
++	ptd->test_info.testcase = 0;
++	post_test(ptd);
++	return ret;
++}
++EXPORT_SYMBOL(test_iosched_start_test);
++
++/**
++ * test_iosched_register() - register a block device test
++ * utility.
++ * @bdt:	the block device test type to register
++ */
++void test_iosched_register(struct blk_dev_test_type *bdt)
++{
++	spin_lock(&blk_dev_test_list_lock);
++	list_add_tail(&bdt->list, &blk_dev_test_list);
++	spin_unlock(&blk_dev_test_list_lock);
++}
++EXPORT_SYMBOL_GPL(test_iosched_register);
++
++/**
++ * test_iosched_unregister() - unregister a block device test
++ * utility.
++ * @bdt:	the block device test type to unregister
++ */
++void test_iosched_unregister(struct blk_dev_test_type *bdt)
++{
++	spin_lock(&blk_dev_test_list_lock);
++	list_del_init(&bdt->list);
++	spin_unlock(&blk_dev_test_list_lock);
++}
++EXPORT_SYMBOL_GPL(test_iosched_unregister);
++
++/**
++ * test_iosched_set_test_result() - Set the test
++ * result(PASS/FAIL)
++ * @test_result:	the test result
++ */
++void test_iosched_set_test_result(int test_result)
++{
++	if (!ptd)
++		return;
++
++	ptd->test_result = test_result;
++}
++EXPORT_SYMBOL(test_iosched_set_test_result);
++
++/**
++ * test_iosched_get_debugfs_tests_root() - returns the root
++ * debugfs directory for the test_iosched tests
++ */
++struct dentry *test_iosched_get_debugfs_tests_root(void)
++{
++	if (!ptd)
++		return NULL;
++
++	return ptd->debug.debug_tests_root;
++}
++EXPORT_SYMBOL(test_iosched_get_debugfs_tests_root);
++
++/**
++ * test_iosched_get_debugfs_utils_root() - returns the root
++ * debugfs directory for the test_iosched utils
++ */
++struct dentry *test_iosched_get_debugfs_utils_root(void)
++{
++	if (!ptd)
++		return NULL;
++
++	return ptd->debug.debug_utils_root;
++}
++EXPORT_SYMBOL(test_iosched_get_debugfs_utils_root);
++
++static int test_debugfs_init(struct test_data *td)
++{
++	td->debug.debug_root = debugfs_create_dir("test-iosched", NULL);
++	if (!td->debug.debug_root)
++		return -ENOENT;
++
++	td->debug.debug_tests_root = debugfs_create_dir("tests",
++							td->debug.debug_root);
++	if (!td->debug.debug_tests_root)
++		goto err;
++
++	td->debug.debug_utils_root = debugfs_create_dir("utils",
++							td->debug.debug_root);
++	if (!td->debug.debug_utils_root)
++		goto err;
++
++	td->debug.debug_test_result = debugfs_create_u32(
++					"test_result",
++					S_IRUGO | S_IWUGO,
++					td->debug.debug_utils_root,
++					&td->test_result);
++	if (!td->debug.debug_test_result)
++		goto err;
++
++	td->debug.start_sector = debugfs_create_u32(
++					"start_sector",
++					S_IRUGO | S_IWUGO,
++					td->debug.debug_utils_root,
++					&td->start_sector);
++	if (!td->debug.start_sector)
++		goto err;
++
++	return 0;
++
++err:
++	debugfs_remove_recursive(td->debug.debug_root);
++	return -ENOENT;
++}
++
++static void test_debugfs_cleanup(struct test_data *td)
++{
++	debugfs_remove_recursive(td->debug.debug_root);
++}
++
++static void print_req(struct request *req)
++{
++	struct bio *bio;
++	struct test_request *test_rq;
++
++	if (!req)
++		return;
++
++	test_rq = (struct test_request *)req->elv.priv[0];
++
++	if (test_rq) {
++		test_pr_debug("%s: Dispatch request %d: "
++			"__data_len=0x%x, __sector=0x%lx, atomic_flags=0x%lx, "
++		       "cmd_flags=0x%x, cmd_len=0x%x, cmd_type=0x%x, "
++		       "nr_phys_segments=%d, num_of_sectors=%d",
++		       __func__, test_rq->req_id, req->__data_len,
++		       (unsigned long)req->__sector,
++		       req->atomic_flags, req->cmd_flags, req->cmd_len,
++		       req->cmd_type,  req->nr_phys_segments,
++		       blk_rq_sectors(req));
++		bio = req->bio;
++		test_pr_debug("%s: bio: bi_size=%d, bi_sector=0x%lx",
++			      __func__, bio->bi_size,
++			      (unsigned long)bio->bi_sector);
++		while ((bio = bio->bi_next) != NULL) {
++			test_pr_debug("%s: bio: bi_size=%d, bi_sector=0x%lx",
++				      __func__, bio->bi_size,
++				      (unsigned long)bio->bi_sector);
++		}
++	}
++}
++
++static void test_merged_requests(struct request_queue *q,
++			 struct request *rq, struct request *next)
++{
++	list_del_init(&next->queuelist);
++}
++
++/*
++ * Dispatch a test request in case there is a running test Otherwise, dispatch
++ * a request that was queued by the FS to keep the card functional.
++ */
++static int test_dispatch_requests(struct request_queue *q, int force)
++{
++	struct test_data *td = q->elevator->elevator_data;
++	struct request *rq = NULL;
++
++	switch (td->test_state) {
++	case TEST_IDLE:
++		if (!list_empty(&td->queue)) {
++			rq = list_entry(td->queue.next, struct request,
++					queuelist);
++			list_del_init(&rq->queuelist);
++			elv_dispatch_sort(q, rq);
++			return 1;
++		}
++		break;
++	case TEST_RUNNING:
++		if (td->next_req) {
++			rq = td->next_req->rq;
++			td->next_req =
++				latter_test_request(td->req_q, td->next_req);
++			if (!rq)
++				return 0;
++			print_req(rq);
++			elv_dispatch_sort(q, rq);
++			return 1;
++		}
++		break;
++	case TEST_COMPLETED:
++	default:
++		return 0;
++	}
++
++	return 0;
++}
++
++static void test_add_request(struct request_queue *q,
++				     struct request *rq)
++{
++	struct test_data *td = q->elevator->elevator_data;
++
++	list_add_tail(&rq->queuelist, &td->queue);
++
++	if (ptd->test_info.ignore_run_due_to_fs_wr_reqs) {
++		if ((rq_data_dir(rq) == WRITE) &&
++		    (td->test_state == TEST_RUNNING)) {
++			test_pr_info(
++				"%s: got WRITE req in the middle of the test",
++				__func__);
++			td->ignore_round = 1;
++		}
++	}
++}
++
++static struct request *
++test_former_request(struct request_queue *q, struct request *rq)
++{
++	struct test_data *td = q->elevator->elevator_data;
++
++	if (rq->queuelist.prev == &td->queue)
++		return NULL;
++	return list_entry(rq->queuelist.prev, struct request, queuelist);
++}
++
++static struct request *
++test_latter_request(struct request_queue *q, struct request *rq)
++{
++	struct test_data *td = q->elevator->elevator_data;
++
++	if (rq->queuelist.next == &td->queue)
++		return NULL;
++	return list_entry(rq->queuelist.next, struct request, queuelist);
++}
++
++static int test_init_queue(struct request_queue *q)
++{
++	struct blk_dev_test_type *__bdt;
++
++	ptd = kmalloc_node(sizeof(struct test_data), GFP_KERNEL,
++			     q->node);
++	if (!ptd) {
++		test_pr_err("%s: failed to allocate test data", __func__);
++		return -ENODEV;
++	}
++	memset((void *)ptd, 0, sizeof(struct test_data));
++	INIT_LIST_HEAD(&ptd->queue);
++	INIT_LIST_HEAD(&ptd->test_queue);
++	init_waitqueue_head(&ptd->wait_q);
++	ptd->req_q = q;
++	q->elevator->elevator_data = ptd;
++
++	setup_timer(&ptd->timeout_timer, test_timeout_handler,
++		    (unsigned long)ptd);
++
++	spin_lock_init(&ptd->lock);
++
++	if (test_debugfs_init(ptd)) {
++		test_pr_err("%s: Failed to create debugfs files", __func__);
++		return -ENODEV;
++	}
++
++	list_for_each_entry(__bdt, &blk_dev_test_list, list)
++		__bdt->init_fn();
++
++	return 0;
++}
++
++static void test_exit_queue(struct elevator_queue *e)
++{
++	struct test_data *td = e->elevator_data;
++	struct blk_dev_test_type *__bdt;
++
++	BUG_ON(!list_empty(&td->queue));
++
++	list_for_each_entry(__bdt, &blk_dev_test_list, list)
++		__bdt->exit_fn();
++
++	test_debugfs_cleanup(td);
++
++	kfree(td);
++}
++
++static struct elevator_type elevator_test_iosched = {
++	.ops = {
++		.elevator_merge_req_fn = test_merged_requests,
++		.elevator_dispatch_fn = test_dispatch_requests,
++		.elevator_add_req_fn = test_add_request,
++		.elevator_former_req_fn = test_former_request,
++		.elevator_latter_req_fn = test_latter_request,
++		.elevator_init_fn = test_init_queue,
++		.elevator_exit_fn = test_exit_queue,
++	},
++	.elevator_name = "test-iosched",
++	.elevator_owner = THIS_MODULE,
++};
++
++static int __init test_init(void)
++{
++	elv_register(&elevator_test_iosched);
++
++	return 0;
++}
++
++static void __exit test_exit(void)
++{
++	elv_unregister(&elevator_test_iosched);
++}
++
++module_init(test_init);
++module_exit(test_exit);
++
++MODULE_LICENSE("GPL");
++MODULE_DESCRIPTION("Test IO scheduler");
+diff --git a/include/linux/test-iosched.h b/include/linux/test-iosched.h
+new file mode 100644
+index 0000000..c2db5a9
+--- /dev/null
++++ b/include/linux/test-iosched.h
+@@ -0,0 +1,218 @@
++#ifndef _LINUX_TEST_IOSCHED_H
++#define _LINUX_TEST_IOSCHED_H
++
++/*
++ * Patterns definitions for read/write requests data
++ */
++#define TEST_PATTERN_SEQUENTIAL	-1
++#define TEST_PATTERN_5A		0x5A5A5A5A
++#define TEST_PATTERN_FF		0xFFFFFFFF
++#define TEST_NO_PATTERN		0xDEADBEEF
++#define BIO_U32_SIZE 1024
++
++struct test_data;
++
++typedef int (prepare_test_fn) (struct test_data *);
++typedef int (run_test_fn) (struct test_data *);
++typedef int (check_test_result_fn) (struct test_data *);
++typedef int (post_test_fn) (struct test_data *);
++typedef char* (get_test_case_str_fn) (struct test_data *);
++typedef void (blk_dev_test_init_fn) (void);
++typedef void (blk_dev_test_exit_fn) (void);
++
++/**
++ * enum test_state - defines the state of the test
++ */
++enum test_state {
++	TEST_IDLE,
++	TEST_RUNNING,
++	TEST_COMPLETED,
++};
++
++/**
++ * enum test_results - defines the success orfailure of the test
++ */
++enum test_results {
++	TEST_NO_RESULT,
++	TEST_FAILED,
++	TEST_PASSED,
++	TEST_NOT_SUPPORTED,
++};
++
++/**
++ * enum req_unique_type - defines a unique request type
++ */
++enum req_unique_type {
++	REQ_UNIQUE_NONE,
++	REQ_UNIQUE_DISCARD,
++	REQ_UNIQUE_FLUSH,
++};
++
++/**
++ * struct test_debug - debugfs directories
++ * @debug_root:		The test-iosched debugfs root directory
++ * @debug_utils_root:	test-iosched debugfs utils root
++ *			directory
++ * @debug_tests_root:	test-iosched debugfs tests root
++ *			directory
++ * @debug_test_result:	Exposes the test result to the user
++ *			space
++ * @start_sector:	The start sector for read/write requests
++ */
++struct test_debug {
++	struct dentry *debug_root;
++	struct dentry *debug_utils_root;
++	struct dentry *debug_tests_root;
++	struct dentry *debug_test_result;
++	struct dentry *start_sector;
++};
++
++/**
++ * struct test_request - defines a test request
++ * @queuelist:		The test requests list
++ * @bios_buffer:	Write/read requests data buffer
++ * @buf_size:		Write/read requests data buffer size (in
++ *			bytes)
++ * @rq:			A block request, to be dispatched
++ * @req_completed:	A flag to indicate if the request was
++ *			completed
++ * @req_result:		Keeps the error code received in the
++ *			request completion callback
++ * @is_err_expected:	A flag to indicate if the request should
++ *			fail
++ * @wr_rd_data_pattern:	A pattern written to the write data
++ *			buffer. Can be used in read requests to
++ *			verify the data
++ * @req_id:		A unique ID to identify a test request
++ *			to ease the debugging of the test cases
++ */
++struct test_request {
++	struct list_head queuelist;
++	unsigned int *bios_buffer;
++	int buf_size;
++	struct request *rq;
++	bool req_completed;
++	int req_result;
++	int is_err_expected;
++	int wr_rd_data_pattern;
++	int req_id;
++};
++
++/**
++ * struct test_info - specific test information
++ * @testcase:		The current running test case
++ * @timeout_msec:	Test specific test timeout
++ * @buf_size:		Write/read requests data buffer size (in
++ *			bytes)
++ * @ignore_run_due_to_fs_wr_reqs: A flag to indicate if the test
++ *			should be re-run in case we get FS write
++ *			requests in theh middle of the test. The
++ *			write requests can be followed by a
++ *			FLUSH request that might cause
++ *			unexpected results of the test.
++ * @prepare_test_fn:	Test specific test preparation callback
++ * @run_test_fn:	Test specific test running callback
++ * @check_test_result_fn: Test specific test result checking
++ *			callback
++ * @get_test_case_str_fn: Test specific function to get the test name
++ * @data:		Test specific private data
++ */
++struct test_info {
++	int testcase;
++	unsigned timeout_msec;
++	bool ignore_run_due_to_fs_wr_reqs;
++	prepare_test_fn *prepare_test_fn;
++	run_test_fn *run_test_fn;
++	check_test_result_fn *check_test_result_fn;
++	post_test_fn *post_test_fn;
++	get_test_case_str_fn *get_test_case_str_fn;
++	void *data;
++};
++
++/**
++ * struct blk_dev_test_type - identifies block device test
++ * @list:	list head pointer
++ * @init_fn:	block device test init callback
++ * @exit_fn:	block device test exit callback
++ */
++struct blk_dev_test_type {
++	struct list_head list;
++	blk_dev_test_init_fn *init_fn;
++	blk_dev_test_exit_fn *exit_fn;
++};
++
++/**
++ * struct test_data - global test iosched data
++ * @queue:		The test IO scheduler requests list
++ * @test_queue:		The test requests list
++ * @next_req:		Points to the next request to be
++ *			dispatched from the test requests list
++ * @wait_q:		A wait queue for waiting for the test
++ *			requests completion
++ * @test_state:		Indicates if there is a running test.
++ *			Used for dispatch function
++ * @test_result:	Indicates if the test passed or failed
++ * @debug:		The test debugfs entries
++ * @req_q:		The block layer request queue
++ * @num_of_write_bios:	The number of write BIOs added to the test requests.
++ *			Used to calcualte the sector number of
++ *			new BIOs.
++ * @start_sector:	The address of the first sector that can
++ *			be accessed by the test
++ * @timeout_timer:	A timer to verify test completion in
++ *			case of non-completed requests
++ * @wr_rd_next_req_id:	A unique ID to identify WRITE/READ
++ *			request to ease the debugging of the
++ *			test cases
++ * @unique_next_req_id:	A unique ID to identify
++ *			FLUSH/DISCARD/SANITIZE request to ease
++ *			the debugging of the test cases
++ * @lock:		A lock to verify running a single test
++ *			at a time
++ * @test_info:		A specific test data to be set by the
++ *			test invokation function
++ * @ignore_round:	A boolean variable indicating that a
++ *			test round was disturbed by an external
++ *			flush request, therefore disqualifying
++ *			the results
++ */
++struct test_data {
++	struct list_head queue;
++	struct list_head test_queue;
++	struct test_request *next_req;
++	wait_queue_head_t wait_q;
++	enum test_state test_state;
++	enum test_results test_result;
++	struct test_debug debug;
++	struct request_queue *req_q;
++	int num_of_write_bios;
++	u32 start_sector;
++	struct timer_list timeout_timer;
++	int wr_rd_next_req_id;
++	int unique_next_req_id;
++	spinlock_t lock;
++	struct test_info test_info;
++	int ignore_round;
++};
++
++extern int test_iosched_start_test(struct test_info *t_info);
++extern void test_iosched_mark_test_completion(void);
++extern int test_iosched_add_unique_test_req(int is_err_expcted,
++		enum req_unique_type req_unique,
++		int start_sec, int nr_sects, rq_end_io_fn *end_req_io);
++extern int test_iosched_add_wr_rd_test_req(int is_err_expcted,
++	      int direction, int start_sec,
++	      int num_bios, int pattern, rq_end_io_fn *end_req_io);
++
++extern struct dentry *test_iosched_get_debugfs_tests_root(void);
++extern struct dentry *test_iosched_get_debugfs_utils_root(void);
++
++extern struct request_queue *test_iosched_get_req_queue(void);
++
++extern void test_iosched_set_test_result(int);
++
++void test_iosched_register(struct blk_dev_test_type *bdt);
++
++void test_iosched_unregister(struct blk_dev_test_type *bdt);
++
++#endif /* _LINUX_TEST_IOSCHED_H */
 -- 
-1.7.7.6
-
-
+1.7.3.3
+-- 
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
