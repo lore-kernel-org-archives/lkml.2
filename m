@@ -1,59 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751781Ab2FLILv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 04:11:51 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:42221 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751185Ab2FLILs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 04:11:48 -0400
-Message-ID: <4FD6F9C1.1020305@linaro.org>
-Date: Tue, 12 Jun 2012 09:11:45 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: grant.likely@secretlab.ca, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linus.walleij@stericsson.com,
-        arnd@arndb.de, Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH 06/14] mfd: Initialise the DB8500 PRCMU driver at core_initcall
- time
-References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org> <1339428307-3850-7-git-send-email-lee.jones@linaro.org> <CACRpkdYoQFhBfRaPMBiVTiD979b+8708oS1qCPm+iyy5OZe2bw@mail.gmail.com>
-In-Reply-To: <CACRpkdYoQFhBfRaPMBiVTiD979b+8708oS1qCPm+iyy5OZe2bw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1751881Ab2FLIMX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 04:12:23 -0400
+Received: from mga11.intel.com ([192.55.52.93]:34622 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751156Ab2FLIMU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 04:12:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="164501662"
+From: Artem Bityutskiy <dedekind1@gmail.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/6] hfs: stop using write_supers and s_dirt
+Date: Tue, 12 Jun 2012 11:13:32 +0300
+Message-Id: <1339488818-14461-1-git-send-email-dedekind1@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06/12 22:01, Linus Walleij wrote:
-> On Mon, Jun 11, 2012 at 5:24 PM, Lee Jones<lee.jones@linaro.org>  wrote:
->
->> Now the AB8500 has its own IRQ domain
->
-> But that does not appear until patch 8 in this series? Are the patches in
-> the wrong order? Or does this need rewording?
+This patch-set makes HFS file-system stop using the VFS '->write_supers()'
+call-back and the '->s_dirt' superblock field because I plan to remove them
+once all users are gone.
 
-The patches are in the correct order. This needs to be done _before_ we 
-provide the AB8500 with its own domain. I guess the line should 
-reference future tense. We are only talking two patches in the future, 
-is it that important? I will change the wording slightly if it is.
+Like the other similar patch-sets, we switch to a delayed job for writing out
+the superblock instead of using the 's_dirt' flag. Additionally, this patch-set
+includes several clean-ups.
 
->> it needs to be initialised earlier
->> in the boot sequence. As the AB8500 relies on the DB8500 PRCMU we need to
->> reflect this change for the PRCMU driver too.
->
-> Hm what shall we do when we run out of initlevels? I think this was the
-> kind of thing that deferred probe should solve. Usually changing this kind
-> of thing has side effects so I'm a bit hesitant.
+Reminder:
 
-Nothing seems to be broken by it. My Snowball still comes up and 
-everything that worked before continues to do so. How would you like me 
-to take this forward?
+The goal is to get rid of the 'sync_supers()' kernel thread. This kernel thread
+wakes up every 5 seconds (by default) and calls '->write_super()' for all
+mounted file-systems. And the bad thing is that this is done even if all the
+superblocks are clean. Moreover, many file-systems do not even need this end
+they do not register the '->write_super()' method at all (e.g., btrfs).
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-M: +44 77 88 633 515
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+So 'sync_supers()' most often just generates useless wake-ups and wastes power.
+I am trying to make all file-systems independent of '->write_super()' and plan
+to remove 'sync_supers()' and '->write_super()' completely once there are no
+more users.
+
+Al, in the past I was trying to upstream patches which optimized 'sync_super()',
+but you wanted me to kill it completely instead, which I am trying to do
+now, see http://lkml.org/lkml/2010/7/22/96
+
+Tested using the fsstress test from the LTP project.
+
+======
+Overall status:
+
+1. ext4: patches submitted, waiting for review from Ted Ts'o:
+   https://lkml.org/lkml/2012/4/2/111
+2. udf: patch submitted, should be in Jan Kara's tree:
+   https://lkml.org/lkml/2012/6/4/233
+3  exofs: patch submitted, not sure if it will go to the exofs tree:
+   https://lkml.org/lkml/2012/6/4/211
+4. affs: patches submitted, should be in Al Viro's tree:
+   https://lkml.org/lkml/2012/6/6/400
+4. ext2:     done, see commit f72cf5e223a28d3b3ea7dc9e40464fd534e359e8
+5. vfat:     done, see commit 78491189ddb6d84d4a4abae992ed891a236d0263
+6. jffs2:    done, see commit 208b14e507c00ff7f108e1a388dd3d8cc805a443
+7. reiserfs: done, see commit 033369d1af1264abc23bea2e174aa47cdd212f6f
+
+TODO: hfsplus, sysv, ufs
+======
+
+ fs/hfs/extent.c |    2 +-
+ fs/hfs/hfs_fs.h |   15 +++++++----
+ fs/hfs/inode.c  |   14 +++-------
+ fs/hfs/mdb.c    |   15 +++++++++++
+ fs/hfs/super.c  |   73 +++++++++++++++++++++++++++----------------------------
+ 5 files changed, 65 insertions(+), 54 deletions(-)
+
+Thanks,
+Artem.
