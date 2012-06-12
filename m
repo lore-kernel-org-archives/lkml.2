@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753390Ab2FLQCy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 12:02:54 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:3463 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752299Ab2FLQCx (ORCPT
+	id S1753522Ab2FLQD3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 12:03:29 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:47526 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752495Ab2FLQD1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 12:02:53 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6740"; a="200237216"
-Date: Tue, 12 Jun 2012 09:02:29 -0700
-From: David Brown <davidb@codeaurora.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Kukjin Kim <kgene.kim@samsung.com>, Eric Miao <eric.y.miao@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tomasz Figa <tomasz.figa@gmail.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Paulo Marques <pmarques@grupopie.com>,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Jon Masters <jonathan@jonmasters.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: two possible fixes for the KALLSYMS build problem
-Message-ID: <20120612160229.GA21389@codeaurora.org>
-References: <1338567721-19514-1-git-send-email-davidb@codeaurora.org>
- <20120611203748.GA16967@codeaurora.org>
- <20120612143249.GB7918@n2100.arm.linux.org.uk>
+	Tue, 12 Jun 2012 12:03:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120612143249.GB7918@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4FD6ECE2.6070901@kernel.org>
+References: <1338575387-26972-1-git-send-email-john.stultz@linaro.org>
+ <1338575387-26972-4-git-send-email-john.stultz@linaro.org>
+ <4FC9235F.5000402@gmail.com> <4FC92E30.4000906@linaro.org>
+ <4FC9360B.4020401@gmail.com> <4FC937AD.8040201@linaro.org>
+ <4FC9438B.1000403@gmail.com> <4FC94F61.20305@linaro.org> <4FCFB4F6.6070308@gmail.com>
+ <4FCFEE36.3010902@linaro.org> <CAO6Zf6D++8hOz19BmUwQ8iwbQknQRNsF4npP4r-830j04vbj=g@mail.gmail.com>
+ <4FD13C30.2030401@linux.vnet.ibm.com> <4FD16B6E.8000307@linaro.org>
+ <4FD1848B.7040102@gmail.com> <4FD2C6C5.1070900@linaro.org> <4FD6ECE2.6070901@kernel.org>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Tue, 12 Jun 2012 12:03:04 -0400
+Message-ID: <CAHGf_=oTC6LGd-5=aGYM4rj+3AAVPr9Zk8cT_FXguVhSVgKWnQ@mail.gmail.com>
+Subject: Re: [PATCH 3/3] [RFC] tmpfs: Add FALLOC_FL_MARK_VOLATILE/UNMARK_VOLATILE
+ handlers
+To: Minchan Kim <minchan@kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
+        Andrea Righi <andrea@betterlinux.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Taras Glek <tgek@mozilla.com>, Mike Hommey <mh@glandium.org>,
+        Jan Kara <jack@suse.cz>, "linux-mm@kvack.org" <linux-mm@kvack.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 12, 2012 at 03:32:49PM +0100, Russell King - ARM Linux wrote:
-> On Mon, Jun 11, 2012 at 01:37:48PM -0700, David Brown wrote:
-> > On Fri, Jun 01, 2012 at 09:21:59AM -0700, David Brown wrote:
-> > 
-> > > David Brown (1):
-> > >   ARM: Prevent KALLSYM size mismatch on ARM.
-> > > 
-> > >  arch/arm/kernel/vmlinux.lds.S |    3 +++
-> > >  1 file changed, 3 insertions(+)
-> > 
-> > Just wondering if anyone has had a chance to look at either of these,
-> > or try them.  I haven't seen any KALLSYMS mismatch build errors with
-> > either of these patches applied.
-> 
-> I think variant 2 is the better approach out of either as it doesn't add
-> to the size of the resulting kernel image.
+> Off-topic:
+> But I'm not sure because I might try to make new easy-reclaimable LRU list for low memory notification.
+> That LRU list would contain non-mapped clean cache page and volatile pages if I decide adding it.
+> Both pages has a common characteristic that recreating page is less costly.
+> It's true for eMMC/SSD like device, at least.
 
-The first variant doesn't ever increase the size of the kernel,
-either.  Variant two actually makes it a little smaller, since a few
-symbols are eliminated.
++1.
 
-The second variant is cleaner, though as long as it is safe in every
-configuration.
-
-David
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+I like L2 inactive list.
