@@ -1,62 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753452Ab2FLWe2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 18:34:28 -0400
-Received: from fifo99.com ([67.223.236.141]:35435 "EHLO fifo99.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751498Ab2FLWe1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 18:34:27 -0400
-Date: Tue, 12 Jun 2012 15:34:22 -0700
-From: Daniel Walker <dwalker@fifo99.com>
-To: Mandeep Singh Baines <msb@google.com>
-Cc: fweisbec@gmail.com, msb@chromium.org, sshaiju@mvista.com, mingo@elte.hu,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: hung_task checking and sys_sync
-Message-ID: <20120612223422.GB13492@fifo99.com>
-References: <20120612220924.GA13376@fifo99.com> <20120612222912.GB16381@google.com>
+	id S1753501Ab2FLWle (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 18:41:34 -0400
+Received: from tru75-7-88-161-131-83.fbx.proxad.net ([88.161.131.83]:59018
+	"EHLO next.fork.zz" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752182Ab2FLWld (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 18:41:33 -0400
+Message-ID: <4FD7C595.202@free.fr>
+Date: Wed, 13 Jun 2012 00:41:25 +0200
+From: Wallak <wallak@free.fr>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120604 Firefox/12.0 SeaMonkey/2.9.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120612222912.GB16381@google.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: Jan Kara <jack@suse.cz>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: File copy is very slow on linux-3.4.2 (or linux-3.3x) on a specific
+ hardware: AMD FX-8150 + 990FX
+References: <1108815600.134531433.1339443818361.JavaMail.root@zimbra44-e7.priv.proxad.net> <437497008.134549481.1339444456294.JavaMail.root@zimbra44-e7.priv.proxad.net> <20120612165357.GI6021@quack.suse.cz> <4FD78CE4.4000209@free.fr> <20120612210947.GB20007@quack.suse.cz>
+In-Reply-To: <20120612210947.GB20007@quack.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 12, 2012 at 03:29:12PM -0700, Mandeep Singh Baines wrote:
-> 
-> But the time is not unbounded. You could mask the hung_task_detector for
-> this case but then you lose the ability to catch bugs in this code path.
-> 
-> The timeout is configurable via /proc/sys/kernel/hung_task_timeout_secs.
-> Can you bump up the value at boot via sysctl.conf?
+Jan Kara wrote:
+> On Tue 12-06-12 20:39:32, Wallak wrote:
+>> Jan Kara wrote:
+>>> On Mon 11-06-12 21:54:16, wallak@free.fr wrote:
+>>>> I've a very annoying issue on recent kernel (linux-3.4.2-SMP) with my main motherboard (AMD FX-8150 + 990FX - 8 cores 4.1GHz), file copy is very slow (see below). The same kernel works flawlessly on an AMD E450 2 cores motherboard.
+>>>>
+>>>> Linux-3.2.20 works properly on this hardware.
+>>>> hdparm -t gives good results on both kernels.
+>>>>
+>>>> I've no idea where this bug come from. Do you have this issue on your hardware ? A patch is available ?
+>>>>
+>>>>
+>>>> *linux-3.4.2
+>>>> dd if=../in/file_8gb.tmp of=tmp.tmp bs=1024k count=100
+>>>> 100+0 records in
+>>>> 100+0 records out
+>>>> 104857600 bytes (105 MB) copied, 132.884 s, 789 kB/s
+>>>>
+>>>>
+>>>> *linux-3.2.20
+>>>> dd if=../in/file_8gb.tmp of=tmp.tmp bs=1024k count=100
+>>>> 100+0 records in
+>>>> 100+0 records out
+>>>> 104857600 bytes (105 MB) copied, 3.30793 s, 31.7 MB/s
+>>>    So let's separate reading and writing part first. What is the speed of
+>>> dd if=../in/file_8gb.tmp of=/dev/null bs=1M count=100
+>>>    on both kernels?
+>>> And what is the speed of:
+>>> dd if=/dev/zero of=tmp.tm bs=1M count=100
+>> You're right, the issue is only while writing. The results are below:
+>>
+>> #linux-3.4.2
+>> dd if=/dev/zero of=tmp.tm bs=1M count=100
+>> 100+0 records in
+>> 100+0 records out
+>> 104857600 bytes (105 MB) copied, 151.347 s, 693 kB/s
+>> dd if=../in/file_8gb.tmp of=/dev/null bs=1M count=100
+>> 100+0 records in
+>> 100+0 records out
+>> 104857600 bytes (105 MB) copied, 1.26228 s, 83.1 MB/s
+>>
+>> #linux-3.2.20
+>> dd if=/dev/zero of=tmp.tm bs=1M count=100
+>> 100+0 records in
+>> 100+0 records out
+>> 104857600 bytes (105 MB) copied, 1.00838 s, 104 MB/s
+>> dd if=../in/file_8gb.tmp of=/dev/null bs=1M count=100
+>> 100+0 records in
+>> 100+0 records out
+>> 104857600 bytes (105 MB) copied, 1.26947 s, 82.6 MB/s
+>>
+>>
+>>>    Also what filesystems are you using?
+>> This is an ext2 file system:
+>>
+>> /dev/sda6      ext2    464463364 323380956 141082408  70% /backup
+>    OK, I'm surprised by one thing - how come the writes do no end up cached
+> in memory (thus you should get much higher throughput). Is the filesystem
+> mounted with -o sync option by any chance?
+>
+> 								Honza
 
-Maybe, but I'm wondering if these types should just be stopped because Andrew
-had complained about them already.
- 
-> > Has there been any commit that disable these messages bdi_sched_wait?
-> > 
-> 
-> No. There is no mechanism to disable hung_task for a specific code path.
-> We do skip processes if PF_PROZEN or PF_FROZEN_SKIP is set but that is
-> really a different situation where the wait is unbounded.
+     I've tried with an nfs mounted drive, the issue is still there, it 
+seems to be global. With sync enabled, the output is quite faster, 
+that's quite unexpected.
+On my AMD E450 motherboard this kernel works fine - Are you able to 
+reproduce this behavior ?
 
-There is presidence for this type of change, 
 
-Author: Mark Lord <kernel@teksavvy.com>
-Date:   Fri Sep 24 09:51:13 2010 -0400
+#/dev/sda6 /backup ext2 rw,relatime,errors=continue 0 0           
+(/proc/mount)
+100+0 records in
+100+0 records out
+104857600 bytes (105 MB) copied, 155.407 s, 675 kB/s
 
-    block: Prevent hang_check firing during long I/O
-    
-    During long I/O operations, the hang_check timer may fire,
-    trigger stack dumps that unnecessarily alarm the user.
-    
-    Eg.  hdparm --security-erase NULL /dev/sdb  ## can take *hours* to complete
-    
-    So, if hang_check is armed, we should wake up periodically
-    to prevent it from triggering.  This patch uses a wake-up interval
-    equal to half the hang_check timer period, which keeps overhead low enough.
-    
-    Signed-off-by: Mark Lord <mlord@pobox.com>
-    Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+#/dev/sda6 /backup ext2 rw,sync,relatime,errors=continue 0 0
+100+0 records in
+100+0 records out
+104857600 bytes (105 MB) copied, 69.7868 s, 1.5 MB/s
+
+#nfs drive - same issue:
+100+0 records in
+100+0 records out
+104857600 bytes (105 MB) copied, 221.572 s, 473 kB/s
+
+Best Regards,
+Wallak.
+
 
