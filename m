@@ -1,84 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752105Ab2FLNkZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 09:40:25 -0400
-Received: from www.linutronix.de ([62.245.132.108]:43916 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750987Ab2FLNkX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 09:40:23 -0400
-Date: Tue, 12 Jun 2012 15:40:13 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Sasha Levin <levinsasha928@gmail.com>
-cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        paulmck <paulmck@linux.vnet.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>
-Subject: Re: rcu,sched: spinlock recursion on 3.5-rc2
-In-Reply-To: <1339500907.4999.99.camel@lappy>
-Message-ID: <alpine.LFD.2.02.1206121535180.3086@ionos>
-References: <1339500907.4999.99.camel@lappy>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1752181Ab2FLNsM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 09:48:12 -0400
+Received: from nm19-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.216]:36160 "HELO
+	nm19-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751354Ab2FLNsL convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 09:48:11 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 957086.80823.bm@omp1066.mail.sp2.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=HZ93XIVwnv/k6t8N2qTgm1W+SBC/RFULcmmR3FyqCSKnOKDVI8quu6/xpGS3ffu6iAPMsrL1GyY9QULmmsZc1w8FA9s60N6110h2A2tSwqlAhnFtEPdcJoT4xqOH9D8xZwsLLWh3L+xa0ViJxVVWJCM3QxrB7+OkCjTmqtQdrbw=;
+X-YMail-OSG: kShGjR0VM1kqmjooF82veVpbDUnMX1.XIoKOXGCEPEzFBpu
+ 6e.4s_MM5l_IuoczCANbxxU91vSkSVWVszCqGHSlcX4nm8XCRVSyuVtuVjWE
+ 0s7JrLTo3NHPo_zhkrnvpzh2DEqWLozmicLMGZBiCBJ5aE8O6ufoiInyz_LJ
+ Z28BNUFRE9ZOaslNAI2vYYJFVf6kv9tbf1xvVkFHwONNoy7drzPcobkIhDIz
+ JNdyafsqbKp0r.mDfNUqs9y9Po4Zow0GYFsTYLak7d0nBHD8Y9YjrhJeWtQJ
+ kMg2UBUo1FeOLvA3fnLE40og9ZPH_9mWVOdk7U.5C2MrAm3iytlNiGeRJmAc
+ ct0SOPcC40WNgNn2viBHSw5CHQCseFpsfwK.4XN4nuxiVCZZFk8KNllj3U_R
+ pKjGxdW27O7050.64m9Al2lPwrEGjlWLXI7nWDSGPCMWnpfu9G9eGnY0Q_p4
+ W7iiRAA--
+X-Mailer: YahooMailWebService/0.8.118.349524
+References: <1339493860.10145.YahooMailNeo@web111708.mail.gq1.yahoo.com> <20120612103954.GB10124@x1.osrc.amd.com>
+Message-ID: <1339508890.39685.YahooMailNeo@web111705.mail.gq1.yahoo.com>
+Date: Tue, 12 Jun 2012 06:48:10 -0700 (PDT)
+From: Mahmood Naderan <nt_mahmood@yahoo.com>
+Reply-To: Mahmood Naderan <nt_mahmood@yahoo.com>
+Subject: Re: CPU MTRRs and linux kernel
+To: Borislav Petkov <bp@alien8.de>
+Cc: "\"linux-kernel@vger.kernel.org\"" <linux-kernel@vger.kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+In-Reply-To: <20120612103954.GB10124@x1.osrc.amd.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 12 Jun 2012, Sasha Levin wrote:
+Thanks Borislav,
+I want to know, should I upgrade to the latest kernel or it is possible to download the source of 2.6.32-24 from repository and modify cleanup.c and then recompile?
 
-> Hey all,
+~MN
+
+----- Original Message -----
+From: Borislav Petkov <bp@alien8.de>
+To: Mahmood Naderan <nt_mahmood@yahoo.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>; Andreas Herrmann <andreas.herrmann3@amd.com>
+Sent: Tuesday, June 12, 2012 3:09 PM
+Subject: Re: CPU MTRRs and linux kernel
+
+On Tue, Jun 12, 2012 at 02:37:40AM -0700, Mahmood Naderan wrote:
+> Hi everybody,
+> Abour rhis warnning in boot log:
 > 
-> I've got the following splat while fuzzing with trinity in a KVM tools guest on 3.5-rc2:
+> WARNING: BIOS bug: CPU MTRRs don't cover all of memory, losing 61952MB of RAM
 > 
-> [ 8110.274070] BUG: spinlock recursion on CPU#0, rcu_torture_rea/2658
-> [ 8110.275014]  lock: 0xffff88000d9d6140, .magic: dead4ead, .owner: rcu_torture_rea/2658, .owner_cpu: 0
-> [ 8110.275014] Pid: 2658, comm: rcu_torture_rea Tainted: G        W    3.5.0-rc2-sasha-00019-gbd68491 #376
-> [ 8110.275014] Call Trace:
-> [ 8110.275014]  [<ffffffff8197de38>] spin_dump+0x78/0xc0
-> [ 8110.275014]  [<ffffffff8197deab>] spin_bug+0x2b/0x40
-> [ 8110.275014]  [<ffffffff8197dfee>] do_raw_spin_lock+0x4e/0x140
-> [ 8110.275014]  [<ffffffff837c0b2b>] _raw_spin_lock+0x5b/0x70
-> [ 8110.275014]  [<ffffffff8111d051>] ? rt_mutex_setprio+0x81/0x2c0
-> [ 8110.275014]  [<ffffffff8111d051>] rt_mutex_setprio+0x81/0x2c0
-> [ 8110.275014]  [<ffffffff81155160>] __rt_mutex_adjust_prio+0x20/0x30
-> [ 8110.275014]  [<ffffffff837c0164>] rt_mutex_slowunlock+0x104/0x130
-> [ 8110.275014]  [<ffffffff837c0199>] rt_mutex_unlock+0x9/0x10
-> [ 8110.275014]  [<ffffffff81193e30>] rcu_read_unlock_special+0x350/0x400
-> [ 8110.275014]  [<ffffffff8114841a>] ? get_lock_stats+0x2a/0x60
-> [ 8110.275014]  [<ffffffff811941aa>] rcu_preempt_note_context_switch+0x22a/0x300
-> [ 8110.275014]  [<ffffffff837bf8ca>] __schedule+0x76a/0x880
-> [ 8110.275014]  [<ffffffff837c1c74>] ? retint_restore_args+0x13/0x13
-> [ 8110.275014]  [<ffffffff8118dc20>] ? rcu_torture_read_unlock+0x40/0x60
-> [ 8110.275014]  [<ffffffff837bff64>] preempt_schedule_irq+0x94/0xd0
-> [ 8110.275014]  [<ffffffff837c1da6>] retint_kernel+0x26/0x30
-> [ 8110.275014]  [<ffffffff81193ae1>] ? rcu_read_unlock_special+0x1/0x400
-> [ 8110.275014]  [<ffffffff81193f2d>] ? __rcu_read_unlock+0x4d/0xa0
-> [ 8110.275014]  [<ffffffff8118dc3d>] rcu_torture_read_unlock+0x5d/0x60
-> [ 8110.275014]  [<ffffffff8118dedd>] rcu_torture_reader+0x29d/0x380
-> [ 8110.275014]  [<ffffffff8118ca50>] ? T.865+0x50/0x50
-> [ 8110.275014]  [<ffffffff8118dc40>] ? rcu_torture_read_unlock+0x60/0x60
-> [ 8110.275014]  [<ffffffff81106e32>] kthread+0xb2/0xc0
-> [ 8110.275014]  [<ffffffff837c39f4>] kernel_thread_helper+0x4/0x10
-> [ 8110.275014]  [<ffffffff837c1c74>] ? retint_restore_args+0x13/0x13
-> [ 8110.275014]  [<ffffffff81106d80>] ? __init_kthread_worker+0x70/0x70
-> [ 8110.275014]  [<ffffffff837c39f0>] ? gs_change+0x13/0x13
+>  
+> I
+>  searched a lot however didn't find a clear solution. Does AMD new 
+> processors (62XX) have problems with new kernels or old kernels??
+> Mine is:
+> 
+> Linux n1 2.6.32-24-server #39-Ubuntu SMP Wed Jul 28 06:21:40 UTC 2010 x86_64 GNU/Linux
+> 
+> Should I upgrade?
 
-Ok, that's nasty.
+Yes, fix is below and it got backported to -stable AFAICT but obviously
+the ubuntus don't have it in the kernel you cite above.
 
-The torture thread got preempted. rcu_preempt_note_context_switch()
-tries to unlock the boosting rt mutex.
 
-Though rcu_preempt_note_context_switch() is called with rq lock
-held. So it's not a surprise that the code will dead lock.
+commit 3fdbf004c1706480a7c7fac3c9d836fa6df20d7d
+Author: Andreas Herrmann <andreas.herrmann3@amd.com>
+Date:   Thu Sep 30 14:32:35 2010 +0200
 
-My brain hurts already from looking, so Paul to the rescue!
+    x86, mtrr: Assume SYS_CFG[Tom2ForceMemTypeWB] exists on all future AMD CPUs
+    
+    Instead of adapting the CPU family check in amd_special_default_mtrr()
+    for each new CPU family assume that all new AMD CPUs support the
+    necessary bits in SYS_CFG MSR.
+    
+    Tom2Enabled is architectural (defined in APM Vol.2).
+    Tom2ForceMemTypeWB is defined in all BKDGs starting with K8 NPT.
+    In pre K8-NPT BKDG this bit is reserved (read as zero).
+    
+    W/o this adaption Linux would unnecessarily complain about bad MTRR
+    settings on every new AMD CPU family, e.g.
+    
+    [    0.000000] WARNING: BIOS bug: CPU MTRRs don't cover all of memory, losing 4863MB of RAM.
+    
+    Cc: stable@kernel.org # .32.x, .35.x
+    Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+    LKML-Reference: <20100930123235.GB20545@loge.amd.com>
+    Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 
-Thanks,
+diff --git a/arch/x86/kernel/cpu/mtrr/cleanup.c b/arch/x86/kernel/cpu/mtrr/cleanup.c
+index c5f59d071425..ac140c7be396 100644
+--- a/arch/x86/kernel/cpu/mtrr/cleanup.c
++++ b/arch/x86/kernel/cpu/mtrr/cleanup.c
+@@ -827,7 +827,7 @@ int __init amd_special_default_mtrr(void)
 
-	tglx
+        if (boot_cpu_data.x86_vendor != X86_VENDOR_AMD)
+                return 0;
+-       if (boot_cpu_data.x86 < 0xf || boot_cpu_data.x86 > 0x11)
++       if (boot_cpu_data.x86 < 0xf)
+                return 0;
+        /* In case some hypervisor doesn't pass SYSCFG through: */
+        if (rdmsr_safe(MSR_K8_SYSCFG, &l, &h) < 0)
 
+-- 
+Regards/Gruss,
+Boris.
 
