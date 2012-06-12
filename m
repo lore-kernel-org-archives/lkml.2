@@ -1,56 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753934Ab2FLSDE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 14:03:04 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:58839 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752773Ab2FLSDD (ORCPT
+	id S1753994Ab2FLSFD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 14:05:03 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:53690 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753388Ab2FLSFC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 14:03:03 -0400
-Message-ID: <1339524176.3050.18.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH] scsi: allow persistent reservations without
- CAP_SYS_RAWIO
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, linux-scsi@vger.kernel.org
-Date: Tue, 12 Jun 2012 19:02:56 +0100
-In-Reply-To: <4FD77B94.1030207@redhat.com>
-References: <1339517312-18134-1-git-send-email-pbonzini@redhat.com>
-	  <1339518069.3050.8.camel@dabdike.int.hansenpartnership.com>
-	  <4FD76D57.5020709@redhat.com> <4FD77438.6090202@redhat.com>
-	 <1339521657.3050.13.camel@dabdike.int.hansenpartnership.com>
-	 <4FD77B94.1030207@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 12 Jun 2012 14:05:02 -0400
+Date: Tue, 12 Jun 2012 20:04:55 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Borislav Petkov <bp@amd64.org>, Stephane Eranian <eranian@google.com>,
+        Robert Richter <robert.richter@amd.com>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        andi@firstfloor.org, mingo@elte.hu, ming.m.lin@intel.com,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Dimitri Sivanich <sivanich@sgi.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>
+Subject: Re: [PATCH] perf/x86: check ucode before disabling PEBS on SandyBridge
+Message-ID: <20120612180455.GB11413@one.firstfloor.org>
+References: <1339161972.2507.13.camel@laptop> <20120612170725.GE5046@erda.amd.com> <CABPqkBRJAA7yRcswM1iYESSwhiGD4SEbir=q=ouQSevi7OAxqQ@mail.gmail.com> <1339521203.31548.92.camel@twins> <20120612171734.GI8404@aftab.osrc.amd.com> <1339521493.31548.93.camel@twins> <20120612172352.GA4802@aftab.osrc.amd.com> <1339521996.31548.95.camel@twins> <20120612173506.GB4802@aftab.osrc.amd.com> <1339522843.31548.100.camel@twins>
 Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339522843.31548.100.camel@twins>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-06-12 at 19:25 +0200, Paolo Bonzini wrote:
-> Il 12/06/2012 19:20, James Bottomley ha scritto:
-> > But secondly, the reason we're so up in arms about SCSI-3 PR is that
-> > there's a feature called reservation by transport ID.  This is used to
-> > reserve multipath devices when one of the paths is down.  Effectively it
-> > allows a PR-OUT command to set a reservation on any LUN with access only
-> > to one of them.  It's definitely a hack in the SCSI standard, but it's
-> > not one that can be controlled by a unix like permission model.  Write
-> > access to *any* LUN allows you to reserve *all* luns.
-> 
-> Thanks for taking the time to explain---I knew about this, but I thought
-> it could (perhaps should) be disabled on the SAN.  Anybody could already
-> use reservation by transport ID if they had root access on the local
-> machine, no?
+> Also, you can create a pebs event while updating micro-code. There's a
+> race window there if you don't check all cpus.
 
-No ... it's required for multipath to work correctly and multipath is a
-usual enterprise feature.
+The best proposal I've seen so far was to track the minimum ucode
+revision and check that on every syscall.
 
-The only way around this is either to trust your users or not to give
-out root ... and most data centres choose the latter.  It causes real
-pain from NPIV and SR-IOV ... you need hardware solutions like some type
-of SAN volume controller to fix it.
+This can be a single global, so it should not be very exepsnive.
 
-James
+I can look at implementing that if that solution is agreeable with 
+everyone.
 
-
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
