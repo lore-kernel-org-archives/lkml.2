@@ -1,69 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752315Ab2FLLId (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 07:08:33 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:33429 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750987Ab2FLLIc convert rfc822-to-8bit (ORCPT
+	id S1752498Ab2FLLIo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 07:08:44 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:42817 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751766Ab2FLLIm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 07:08:32 -0400
-Message-ID: <1339499306.31548.75.camel@twins>
-Subject: Re: Kernel panic - not syncing: Attempted to kill the idle task!
-From: Peter Zijlstra <peterz@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: hi3766691@gmail.com, Hillf Danton <dhillf@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Zhouping Liu <zliu@redhat.com>
-Date: Tue, 12 Jun 2012 13:08:26 +0200
-In-Reply-To: <1339496836.31548.68.camel@twins>
-References: <cfc29313-7fe7-4140-b9e6-053d925b4897@zmail13.collab.prod.int.phx2.redhat.com>
-	 <1339421268.30462.15.camel@twins> <4FD6BD72.2070808@redhat.com>
-	 <1339490988.31548.40.camel@twins>
-	 <CA+55aFw=akW7B+vRkQRMojnP6_b1YXdKpNEjQ2EyBHcTe2_XLw@mail.gmail.com>
-	 <1339496836.31548.68.camel@twins>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Tue, 12 Jun 2012 07:08:42 -0400
+Message-ID: <4FD72336.9040803@linaro.org>
+Date: Tue, 12 Jun 2012 12:08:38 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@stericsson.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH] pinctrl: nomadik: fix up typo
+References: <1339498592-1435-1-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <1339498592-1435-1-git-send-email-linus.walleij@stericsson.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-06-12 at 12:27 +0200, Peter Zijlstra wrote:
-> On Tue, 2012-06-12 at 13:20 +0300, Linus Torvalds wrote:
-> > Peter, you are very fundamentally wrong if you think the distance
-> > array has to be symmetric. That is fundamentally not true for many
-> > typologies.
-> > 
-> > The trivial example of a non symmetric case is just a simple
-> > unidirectional ring. The distance from n to n+1 is just one, but the
-> > distance from n+1 to n is n-1 hops.
-> > 
-> > So don't try to say that distances have to be symmetric. That's just
-> > garbage. 
-> 
-> Sure, I realize this, but the 17,18 thing isn't a ring. It looks like
-> something that should be symmetric but isn't.
+On 12/06/12 11:56, Linus Walleij wrote:
+> Commit a60b57eddaa8af6c02cf7bbeb58ebf82881f08ac
+> "drivers/gpio: gpio-nomadik: Add support for irqdomains"
+> changed GPIO offset calculations to have this form:
+> (gpio % NMK_GPIO_PER_CHIP) except in this one place for
+> setting sleep mode, where the conversion was all wrong, and
+> instead mod:ing the GPIO with the IRQ base which does not
+> make any sense.
+>
+> So fix this up so we can use sleepmode.
+>
+> Cc: Lee Jones<lee.jones@linaro.org>
+> Signed-off-by: Linus Walleij<linus.walleij@stericsson.com>
 
-Not a unidirectional one that is.. I played around a bit more and found
-a shape that isn't too odd:
+Makes sense.
 
+Reviewed-by: Lee Jones <lee.jones@linaro.org>
 
-                  2
-                /   \
-              0       5
-             /      /  \
-            1 --- / --- 3
-             \  /      /
-              4       6
-                \   /
-                  7 
-
-
-I would've crossed 0<->6 instead of 1<->3 so the 2/3 connected nodes are
-spread better, but what do I know.
-
-The only really odd thing is the numbering, which is what threw me.
-
-But yeah, the possibility of uni-directional rings makes detecting
-obvious crack tables harder, which is why I haven't got it -- yet.
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+M: +44 77 88 633 515
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
