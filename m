@@ -1,59 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752039Ab2FLHYN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 03:24:13 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:64190 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750733Ab2FLHYL convert rfc822-to-8bit (ORCPT
+	id S1752027Ab2FLHds (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 03:33:48 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:47616 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751871Ab2FLHdr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 03:24:11 -0400
+	Tue, 12 Jun 2012 03:33:47 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FD6F05D.5010404@jp.fujitsu.com>
+Date: Tue, 12 Jun 2012 16:31:41 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <4FD6DC69.2090008@snapgear.com>
-References: <1339059427.25798.3.camel@x61.thuisdomein>
-	<4FD19B29.4050904@snapgear.com>
-	<CAMuHMdXisLvXAPbbkuYsYH2UZ_DJSyEhKZOL6_4qwuwLzFcEoQ@mail.gmail.com>
-	<4FD6DC69.2090008@snapgear.com>
-Date: Tue, 12 Jun 2012 09:24:10 +0200
-X-Google-Sender-Auth: mgTmoe-YYNXQq0Pq6tLcpJbH0gI
-Message-ID: <CAMuHMdWn7KsdW1mEcvp8tGrDZeMiD+e6RszB=qH7P3CLZEyftg@mail.gmail.com>
-Subject: Re: [PATCH] m68k: remove six unused headers
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Greg Ungerer <gerg@snapgear.com>
-Cc: Paul Bolle <pebolle@tiscali.nl>, linux-m68k@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+CC: linux-mm@kvack.org, dhillf@gmail.com, rientjes@google.com, mhocko@suse.cz,
+        akpm@linux-foundation.org, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH -V8 06/16] hugetlb: simplify migrate_huge_page()
+References: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1339232401-14392-7-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+In-Reply-To: <1339232401-14392-7-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 12, 2012 at 8:06 AM, Greg Ungerer <gerg@snapgear.com> wrote:
->>> Although mcfne.h has been unused for a while I am working on some patches
->>> that do use it. No problem for the others.
->>
->> If I'm not mistaken, that should become mcf8390.h, as "NE2000" means
->> "NE2000-compatible 8390-based Ethernet"? Cfr. the mac8390 and zorro8390
->> discussions in the previous millennium.
->
->
-> I guess I missed those :-(
-> I think I see from the code for those under ~/drivers/net/ethernet/8390/
-> what this may have been about though.
->
-> Interestingly one of the ColdFire platforms (the Arnewsh 5206 board)
-> really did have an ISA NE2000 card fitted to it. Most of the follow
-> ons that where similar use a Davicom/9000.
+(2012/06/09 17:59), Aneesh Kumar K.V wrote:
+> From: "Aneesh Kumar K.V"<aneesh.kumar@linux.vnet.ibm.com>
+> 
+> Since we migrate only one hugepage don't use linked list for passing the
+> page around.  Directly pass page that need to be migrated as argument.
+> This also remove the usage page->lru in migrate path.
+> 
+> Signed-off-by: Aneesh Kumar K.V<aneesh.kumar@linux.vnet.ibm.com>
 
-If it's a real ISA NE2000 card, you ISA bus support instead of a special
-driver.
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-Gr{oetje,eeting}s,
 
-                        Geert
+> ---
+>   include/linux/migrate.h |    4 +--
+>   mm/memory-failure.c     |   13 ++--------
+>   mm/migrate.c            |   65 +++++++++++++++--------------------------------
+>   3 files changed, 25 insertions(+), 57 deletions(-)
+> 
+> diff --git a/include/linux/migrate.h b/include/linux/migrate.h
+> index 855c337..ce7e667 100644
+> --- a/include/linux/migrate.h
+> +++ b/include/linux/migrate.h
+> @@ -15,7 +15,7 @@ extern int migrate_page(struct address_space *,
+>   extern int migrate_pages(struct list_head *l, new_page_t x,
+>   			unsigned long private, bool offlining,
+>   			enum migrate_mode mode);
+> -extern int migrate_huge_pages(struct list_head *l, new_page_t x,
+> +extern int migrate_huge_page(struct page *, new_page_t x,
+>   			unsigned long private, bool offlining,
+>   			enum migrate_mode mode);
+> 
+> @@ -36,7 +36,7 @@ static inline void putback_lru_pages(struct list_head *l) {}
+>   static inline int migrate_pages(struct list_head *l, new_page_t x,
+>   		unsigned long private, bool offlining,
+>   		enum migrate_mode mode) { return -ENOSYS; }
+> -static inline int migrate_huge_pages(struct list_head *l, new_page_t x,
+> +static inline int migrate_huge_page(struct page *page, new_page_t x,
+>   		unsigned long private, bool offlining,
+>   		enum migrate_mode mode) { return -ENOSYS; }
+> 
+> diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+> index ab1e714..53a1495 100644
+> --- a/mm/memory-failure.c
+> +++ b/mm/memory-failure.c
+> @@ -1414,7 +1414,6 @@ static int soft_offline_huge_page(struct page *page, int flags)
+>   	int ret;
+>   	unsigned long pfn = page_to_pfn(page);
+>   	struct page *hpage = compound_head(page);
+> -	LIST_HEAD(pagelist);
+> 
+>   	ret = get_any_page(page, pfn, flags);
+>   	if (ret<  0)
+> @@ -1429,19 +1428,11 @@ static int soft_offline_huge_page(struct page *page, int flags)
+>   	}
+> 
+>   	/* Keep page count to indicate a given hugepage is isolated. */
+> -
+> -	list_add(&hpage->lru,&pagelist);
+> -	ret = migrate_huge_pages(&pagelist, new_page, MPOL_MF_MOVE_ALL, 0,
+> -				true);
+> +	ret = migrate_huge_page(hpage, new_page, MPOL_MF_MOVE_ALL, 0, true);
+> +	put_page(hpage);
+>   	if (ret) {
+> -		struct page *page1, *page2;
+> -		list_for_each_entry_safe(page1, page2,&pagelist, lru)
+> -			put_page(page1);
+> -
+>   		pr_info("soft offline: %#lx: migration failed %d, type %lx\n",
+>   			pfn, ret, page->flags);
+> -		if (ret>  0)
+> -			ret = -EIO;
+>   		return ret;
+>   	}
+>   done:
+> diff --git a/mm/migrate.c b/mm/migrate.c
+> index be26d5c..fdce3a2 100644
+> --- a/mm/migrate.c
+> +++ b/mm/migrate.c
+> @@ -932,15 +932,8 @@ static int unmap_and_move_huge_page(new_page_t get_new_page,
+>   	if (anon_vma)
+>   		put_anon_vma(anon_vma);
+>   	unlock_page(hpage);
+> -
+>   out:
+> -	if (rc != -EAGAIN) {
+> -		list_del(&hpage->lru);
+> -		put_page(hpage);
+> -	}
+> -
+>   	put_page(new_hpage);
+> -
+>   	if (result) {
+>   		if (rc)
+>   			*result = rc;
+> @@ -1016,48 +1009,32 @@ out:
+>   	return nr_failed + retry;
+>   }
+> 
+> -int migrate_huge_pages(struct list_head *from,
+> -		new_page_t get_new_page, unsigned long private, bool offlining,
+> -		enum migrate_mode mode)
+> +int migrate_huge_page(struct page *hpage, new_page_t get_new_page,
+> +		      unsigned long private, bool offlining,
+> +		      enum migrate_mode mode)
+>   {
+> -	int retry = 1;
+> -	int nr_failed = 0;
+> -	int pass = 0;
+> -	struct page *page;
+> -	struct page *page2;
+> -	int rc;
+> -
+> -	for (pass = 0; pass<  10&&  retry; pass++) {
+> -		retry = 0;
+> -
+> -		list_for_each_entry_safe(page, page2, from, lru) {
+> +	int pass, rc;
+> +
+> +	for (pass = 0; pass<  10; pass++) {
+> +		rc = unmap_and_move_huge_page(get_new_page,
+> +					      private, hpage, pass>  2, offlining,
+> +					      mode);
+> +		switch (rc) {
+> +		case -ENOMEM:
+> +			goto out;
+> +		case -EAGAIN:
+> +			/* try again */
+>   			cond_resched();
+> -
+> -			rc = unmap_and_move_huge_page(get_new_page,
+> -					private, page, pass>  2, offlining,
+> -					mode);
+> -
+> -			switch(rc) {
+> -			case -ENOMEM:
+> -				goto out;
+> -			case -EAGAIN:
+> -				retry++;
+> -				break;
+> -			case 0:
+> -				break;
+> -			default:
+> -				/* Permanent failure */
+> -				nr_failed++;
+> -				break;
+> -			}
+> +			break;
+> +		case 0:
+> +			goto out;
+> +		default:
+> +			rc = -EIO;
+> +			goto out;
+>   		}
+>   	}
+> -	rc = 0;
+>   out:
+> -	if (rc)
+> -		return rc;
+> -
+> -	return nr_failed + retry;
+> +	return rc;
+>   }
+> 
+>   #ifdef CONFIG_NUMA
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
