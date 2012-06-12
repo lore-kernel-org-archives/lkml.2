@@ -1,157 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751953Ab2FLIZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 04:25:26 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:50407 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751437Ab2FLIZX (ORCPT
+	id S1752020Ab2FLI1I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 04:27:08 -0400
+Received: from sting.hengli.com.au ([178.18.18.71]:47489 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751535Ab2FLI1D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 04:25:23 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FD6FC76.8040203@jp.fujitsu.com>
-Date: Tue, 12 Jun 2012 17:23:18 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Tue, 12 Jun 2012 04:27:03 -0400
+Date: Tue, 12 Jun 2012 16:26:51 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
+Cc: linux-crypto@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] crypto: aes - make assembler implementation default
+ for i386 and x86-64
+Message-ID: <20120612082651.GA13419@gondor.apana.org.au>
+References: <20120530215333.32995tjzj9dr4jwo@www.81.fi>
+ <20120609145055.12766.42439.stgit@localhost6.localdomain6>
 MIME-Version: 1.0
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-CC: linux-mm@kvack.org, dhillf@gmail.com, rientjes@google.com, mhocko@suse.cz,
-        akpm@linux-foundation.org, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH -V8 12/16] hugetlb/cgroup: Add support for cgroup removal
-References: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1339232401-14392-13-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-In-Reply-To: <1339232401-14392-13-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120609145055.12766.42439.stgit@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/06/09 17:59), Aneesh Kumar K.V wrote:
-> From: "Aneesh Kumar K.V"<aneesh.kumar@linux.vnet.ibm.com>
+On Sat, Jun 09, 2012 at 05:50:55PM +0300, Jussi Kivilinna wrote:
+> AES is often built-in and therefore implementations other than aes-generic
+> don't get autoloaded by module-aliases. This is solved for aes-ni by cpuid
+> autoloading, but for x86-64/i586 assembler implementation cpuid matching
+> does not make much sense (aes-generic built-in but overridden by x86-64/i586
+> assembler implementation module). Instead change Kconfig so that assembler
+> implementation is default on x86-64 and i386.
 > 
-> This patch add support for cgroup removal. If we don't have parent
-> cgroup, the charges are moved to root cgroup.
+> This patch also splits common parts exported to assembler implementations
+> from aes-generic to new module aes-common.
 > 
-> Signed-off-by: Aneesh Kumar K.V<aneesh.kumar@linux.vnet.ibm.com>
-
-I'm sorry if already pointed out....
-
-> ---
->   mm/hugetlb_cgroup.c |   81 +++++++++++++++++++++++++++++++++++++++++++++++++--
->   1 file changed, 79 insertions(+), 2 deletions(-)
+> Patch tested on x86-64, compile tested on i386 and arm.
 > 
-> diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
-> index 48efd5a..9458fe3 100644
-> --- a/mm/hugetlb_cgroup.c
-> +++ b/mm/hugetlb_cgroup.c
-> @@ -99,10 +99,87 @@ static void hugetlb_cgroup_destroy(struct cgroup *cgroup)
->   	kfree(h_cgroup);
->   }
-> 
-> +
-> +static int hugetlb_cgroup_move_parent(int idx, struct cgroup *cgroup,
-> +				      struct page *page)
-> +{
-> +	int csize;
-> +	struct res_counter *counter;
-> +	struct res_counter *fail_res;
-> +	struct hugetlb_cgroup *page_hcg;
-> +	struct hugetlb_cgroup *h_cg   = hugetlb_cgroup_from_cgroup(cgroup);
-> +	struct hugetlb_cgroup *parent = parent_hugetlb_cgroup(cgroup);
-> +
-> +	if (!get_page_unless_zero(page))
-> +		goto out;
+> Signed-off-by: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
 
-It seems this doesn't necessary...this is under hugetlb_lock().
+I like the idea but I'm not sure about where we draw the line.
+E.g., why not enable padlock, or for that matter every single
+hardware implementation of AES?
 
-> +
-> +	page_hcg = hugetlb_cgroup_from_page(page);
-> +	/*
-> +	 * We can have pages in active list without any cgroup
-> +	 * ie, hugepage with less than 3 pages. We can safely
-> +	 * ignore those pages.
-> +	 */
-> +	if (!page_hcg || page_hcg != h_cg)
-> +		goto err_out;
-> +
-> +	csize = PAGE_SIZE<<  compound_order(page);
-> +	if (!parent) {
-> +		parent = root_h_cgroup;
-> +		/* root has no limit */
-> +		res_counter_charge_nofail(&parent->hugepage[idx],
-> +					  csize,&fail_res);
-                                              ^^^
-space ?
+This can get unwieldy very quickly.
 
-> +	}
-> +	counter =&h_cg->hugepage[idx];
-> +	res_counter_uncharge_until(counter, counter->parent, csize);
-> +
-> +	set_hugetlb_cgroup(page, parent);
-> +err_out:
-> +	put_page(page);
-> +out:
-> +	return 0;
-> +}
-> +
-> +/*
-> + * Force the hugetlb cgroup to empty the hugetlb resources by moving them to
-> + * the parent cgroup.
-> + */
->   static int hugetlb_cgroup_pre_destroy(struct cgroup *cgroup)
->   {
-> -	/* We will add the cgroup removal support in later patches */
-> -	   return -EBUSY;
-> +	struct hstate *h;
-> +	struct page *page;
-> +	int ret = 0, idx = 0;
-> +
-> +	do {
-> +		if (cgroup_task_count(cgroup) ||
-> +		    !list_empty(&cgroup->children)) {
-> +			ret = -EBUSY;
-> +			goto out;
-> +		}
-
-> +		/*
-> +		 * If the task doing the cgroup_rmdir got a signal
-> +		 * we don't really need to loop till the hugetlb resource
-> +		 * usage become zero.
-> +		 */
-> +		if (signal_pending(current)) {
-> +			ret = -EINTR;
-> +			goto out;
-> +		}
-
-I'll post a patch to remove this check from memcg because memcg's rmdir
-always succeed now. So, could you remove this ?
-
-
-> +		for_each_hstate(h) {
-> +			spin_lock(&hugetlb_lock);
-> +			list_for_each_entry(page,&h->hugepage_activelist, lru) {
-> +				ret = hugetlb_cgroup_move_parent(idx, cgroup, page);
-> +				if (ret) {
-
-When 'ret' should be !0 ?
-If hugetlb_cgroup_move_parent() always returns 0, the check will not be necessary.
-
-Thanks,
--Kame
-
-> +					spin_unlock(&hugetlb_lock);
-> +					goto out;
-> +				}
-> +			}
-> +			spin_unlock(&hugetlb_lock);
-> +			idx++;
-> +		}
-> +		cond_resched();
-> +	} while (hugetlb_cgroup_have_usage(cgroup));
-> +out:
-> +	return ret;
->   }
-> 
->   int hugetlb_cgroup_charge_page(int idx, unsigned long nr_pages,
-
-
+Cheers,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
