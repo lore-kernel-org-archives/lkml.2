@@ -1,95 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753227Ab2FLVjL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 17:39:11 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:49647 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752403Ab2FLVjJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 17:39:09 -0400
-Date: Tue, 12 Jun 2012 23:39:05 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: x86@kernel.org, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 1/2] x86: Track minimum microcode revision globally v2
-Message-ID: <20120612213905.GE26817@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Andi Kleen <andi@firstfloor.org>, x86@kernel.org, hpa@zytor.com,
-	eranian@google.com, linux-kernel@vger.kernel.org,
-	a.p.zijlstra@chello.nl, Andi Kleen <ak@linux.intel.com>
-References: <1339536350-10463-1-git-send-email-andi@firstfloor.org>
+	id S1753235Ab2FLVka (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 17:40:30 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:55431 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751745Ab2FLVk3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 17:40:29 -0400
+Date: Tue, 12 Jun 2012 14:40:25 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, devel@driverdev.osuosl.org,
+        abbotti@mev.co.uk, fmhess@users.sourceforge.net
+Subject: Re: [PATCH 2/8] staging: comedi: change type of num_subdevices
+ parameter to comedi_alloc_subdevices
+Message-ID: <20120612214025.GA4323@kroah.com>
+References: <201206121157.27498.hartleys@visionengravers.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1339536350-10463-1-git-send-email-andi@firstfloor.org>
+In-Reply-To: <201206121157.27498.hartleys@visionengravers.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 12, 2012 at 02:25:49PM -0700, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
+On Tue, Jun 12, 2012 at 11:57:27AM -0700, H Hartley Sweeten wrote:
+> From 606739d47df00ac9767e3256ab8f6eb1572bd429 Mon Sep 17 00:00:00 2001
+> From: H Hartley Sweeten <hsweeten@visionengravers.com>
+> Date: Tue, 12 Jun 2012 09:45:17 -0700
+> Subject: [PATCH 2/8] staging: comedi: change type of num_subdevices parameter
+>  to comedi_alloc_subdevices
 > 
-> For bug workarounds depending on microcode revisions we need to
-> know the minimum microcode revision shared by all CPUs.
-> 
-> This patch adds infrastructure to track this.
-> 
-> Every time microcode is updated we update a global variable for
-> the minimum microcode revision of all the CPUs in the system.
-> At boot time we use the lowest available microcode (and warn
-> if  they are inconsistent)
-> 
-> At CPU hotplug or S3 resume time there is a short race window
-> where something might run on the CPUs but before the microcode
-> update notifier runs. For the current workarounds that need this
-> this is acceptable and shouldn't be a problem.
-> 
-> Only tested on Intel CPUs, but should work for AMD too.
+> The n_subdevices variable of struct comedi_device is an int type.
+> Change the type of the comedi_alloc_subdevices 'num_subdevices' from
+> an unsigned int to an int to match it.
 
-Yeah, will test this one soonish.
+Ok, some hints on how to send emails, don't do it this way :)
 
-> v2: Use boot_cpu_data.microcode to track minimum revision (H. Peter Anvin)
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  arch/x86/include/asm/processor.h  |    2 +
->  arch/x86/kernel/cpu/amd.c         |    2 +
->  arch/x86/kernel/cpu/common.c      |   38 +++++++++++++++++++++++++++++++++++++
->  arch/x86/kernel/cpu/cpu.h         |    3 ++
->  arch/x86/kernel/cpu/intel.c       |    2 +
->  arch/x86/kernel/microcode_amd.c   |    1 +
->  arch/x86/kernel/microcode_intel.c |    1 +
->  7 files changed, 49 insertions(+), 0 deletions(-)
+You need to use git send-email, which will not duplicate the From and
+stuff in the body of the email.
 
-[ … ]
+Otherwise, I have to edit the patches by hand, or that information ends
+up in the commit log for the patch:
 
-> +/*
-> + * Track the minimum global microcode version.  On early bootup assume
-> + * the BIOS set all CPUs to the same revision. If that's not the case
-> + * some code may be already running assuming the newer revision, but
-> + * there's not much we can do about that (but it's unlikely to be
-> + * problem in early bootup)
-> + */
-> +__cpuinit void boot_update_min_microcode(struct cpuinfo_x86 *c)
-> +{	
-> +	static int boot_min_microcode;
-> +
-> +	if (!boot_min_microcode) {
-> +		boot_min_microcode = c->microcode;
-> +		boot_cpu_data.microcode = c->microcode;
-> +	} else if (c->microcode < boot_min_microcode) {
-> +		pr_warn("CPU %d has lower microcode revision %x at boot than boot CPU (%x)\n",
-> +			smp_processor_id(), 
-> +			c->microcode,
-> +			boot_min_microcode);
-> +		boot_cpu_data.microcode = c->microcode;
+-----------
+commit c70c98a0180522411aff8eb87e10523eef2fe3f6
+Author: H Hartley Sweeten <hartleys@visionengravers.com>
+Date:   Tue Jun 12 11:57:27 2012 -0700
 
-Ok, is it only me or is this boot_min_microcode superfluous?
-IOW, you can only use boot_cpu_data.microcode instead and drop
-boot_min_microcode.
+    staging: comedi: change type of num_subdevices parameter to comedi_alloc_subdevices
+    
+    From 606739d47df00ac9767e3256ab8f6eb1572bd429 Mon Sep 17 00:00:00 2001
+    From: H Hartley Sweeten <hsweeten@visionengravers.com>
+    Date: Tue, 12 Jun 2012 09:45:17 -0700
+    Subject: [PATCH 2/8] staging: comedi: change type of num_subdevices parameter
+     to comedi_alloc_subdevices
+    
+    The n_subdevices variable of struct comedi_device is an int type.
+    Change the type of the comedi_alloc_subdevices 'num_subdevices' from
+    an unsigned int to an int to match it.
+    
+    Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+    Cc: Ian Abbott <abbott@mev.co.uk>
+    Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
+    Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
--- 
-Regards/Gruss,
-    Boris.
+-------------
+
+I'll edit up these 8, but in the future, please don't do that.
+
+thanks,
+
+greg k-h
