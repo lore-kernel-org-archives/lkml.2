@@ -1,77 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753232Ab2FLBbN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 21:31:13 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:58620 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752761Ab2FLBbM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 21:31:12 -0400
-From: Mike Frysinger <vapier@gentoo.org>
-Organization: wh0rd.org
-To: Paul Bolle <pebolle@tiscali.nl>
-Subject: Re: [uclinux-dist-devel] blackfin: how is the I-pipe code supposed 
- =?utf-8?q?to=09be?= built?
-Date: Mon, 11 Jun 2012 21:31:12 -0400
-User-Agent: KMail/1.13.7 (Linux/3.4.0; KDE/4.6.5; x86_64; ; )
-Cc: "Zhang, Sonic" <Sonic.Zhang@analog.com>,
-        "uclinux-dist-devel@blackfin.uclinux.org" 
-	<uclinux-dist-devel@blackfin.uclinux.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "philippe.gerum@xenomai.org" <philippe.gerum@xenomai.org>
-References: <1339365045.30984.78.camel@x61.thuisdomein> <DB904C5425BA6F4E8424B3B51A1414D170235830B4@NWD2CMBX1.ad.analog.com> <1339443890.30984.96.camel@x61.thuisdomein>
-In-Reply-To: <1339443890.30984.96.camel@x61.thuisdomein>
-MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1554950.NAdYPBsBiL";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201206112131.14430.vapier@gentoo.org>
+	id S1753286Ab2FLBcG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 21:32:06 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:50777 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752913Ab2FLBcE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 21:32:04 -0400
+Date: Tue, 12 Jun 2012 11:31:48 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: linux-next: manual merge of the wireless-next tree with the net
+ tree
+Message-Id: <20120612113148.24f733ee30acb204faedce3a@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__12_Jun_2012_11_31_48_+1000_5u9GJPzGwVjZY4_b"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1554950.NAdYPBsBiL
-Content-Type: Text/Plain;
-  charset="utf-8"
+--Signature=_Tue__12_Jun_2012_11_31_48_+1000_5u9GJPzGwVjZY4_b
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Monday 11 June 2012 15:44:50 Paul Bolle wrote:
-> On Sun, 2012-06-10 at 23:05 -0400, Zhang, Sonic wrote:
-> > The IPIPE patch is part of the ADEOS real time kernel patch. The
-> > common part of this patch hasn't been merged into mainline by the
-> > maintainer Philippe Gerum, although the Blackfin architecture part
-> > was. The relative Kbuild support and Kconfig symbols are defined in
-> > the ADOES common patch.
->=20
-> What's the point of having code in the mainline tree, for over three
-> years, without any Kbuild or Kconfig support?
+Hi John,
 
-because the Blackfin team cares about keeping ADEOS active throughout the=20
-rewrites/updates of core code.  it isn't hurting keeping the code in the=20
-arch/blackfin/ tree, and we're ok with any overhead it implies for the team.
-=2Dmike
+Today's linux-next merge of the wireless-next tree got a conflict in MAINTA=
+INERS between commit ce466579b1c9 ("wireless: add my new trees to MAINTAINE=
+RS") from the net tree and commit 491b26b40222 ("wireless: update wireless =
+URLs") from the wireless-next tree.
 
---nextPart1554950.NAdYPBsBiL
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc MAINTAINERS
+index f6e62de,c5fd905..0000000
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@@ -4351,9 -4339,8 +4351,9 @@@ F:	arch/m68k/hp300
+  MAC80211
+  M:	Johannes Berg <johannes@sipsolutions.net>
+  L:	linux-wireless@vger.kernel.org
+- W:	http://linuxwireless.org/
++ W:	http://wireless.kernel.org/
+ -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless.git
+ +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/jberg/mac80211.git
+ +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/jberg/mac80211-next.=
+git
+  S:	Maintained
+  F:	Documentation/networking/mac80211-injection.txt
+  F:	include/net/mac80211.h
+@@@ -4363,9 -4350,8 +4363,9 @@@ MAC80211 PID RATE CONTRO
+  M:	Stefano Brivio <stefano.brivio@polimi.it>
+  M:	Mattias Nissler <mattias.nissler@gmx.de>
+  L:	linux-wireless@vger.kernel.org
+- W:	http://linuxwireless.org/en/developers/Documentation/mac80211/RateCont=
+rol/PID
++ W:	http://wireless.kernel.org/en/developers/Documentation/mac80211/RateCo=
+ntrol/PID
+ -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless.git
+ +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/jberg/mac80211.git
+ +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/jberg/mac80211-next.=
+git
+  S:	Maintained
+  F:	net/mac80211/rc80211_pid*
+ =20
+
+--Signature=_Tue__12_Jun_2012_11_31_48_+1000_5u9GJPzGwVjZY4_b
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAABAgAGBQJP1pviAAoJEEFjO5/oN/WBWWsP/2llpZnyQaz1KZ3Usyh8jDlg
-ZIKQViLzAQmexvC6u1mr4RRnhD8yNeefNmZAmNIpctp7xTh5EbdlZmXoQ1PxIc5C
-qusYxoF0mLs8UMLCRf+ubJaSUU6+p2yei6rsNeUmJVEKUtsMSVUAFINkk6bMlzho
-Rg3BuaSIdzBGMmaFe1ndFcYhGloyyddFlVv8RKR9aud+uVzBFOCn4Z6PrcIv+hZ3
-ICLWuElkK7t8d+ehRYSzOuXSkZFa5XYXfzOzKm+PkbLJLFW07xkMq3m/2Mja5A1e
-gcBn40foLcCwF8DJTT7MlfSkTOdiNNZN+vHUXLUr6fWvDFMgtGioggw85vfkaY2v
-+jXwxdmG2xYhMEtY/luYMq+nwmr75wS71W0WoRmLyYGwO4wlU+fPwHtRIlb+AZ6D
-854sUi0GyYX4AMon0wAI0ZH7fCVTuG8KaeWK6m6cPO1tkcDXvW+AbLFpJ8OEN0YO
-7qSAZPnRZRaikrju3XJlIz/Dj419+0XO5SW+uall9ZvJtlvkRjRhO5dzTpfQmm9o
-cA6u8nen05p8xfVzbuSHoxGfUtM8oXBv/L9G5gxtTiAN+usO4xrPyE8i3zk6ACCW
-WLFvoQNJvyvuGnPTyuUSd+9gC7iagFEnvg1Lcjg1xugBt3XKBihZKvx+2pPo8KRa
-EZslJb6Q0+SBj6FV2GTI
-=IC0z
+iQIcBAEBCAAGBQJP1pwEAAoJEECxmPOUX5FETGIQAJuHF5QNEj8iU0UDaLcWZsmD
+IrxfnEe2UF/hn8yq8H4bInP6YuXLm+oDxxnUw2gKRdGZee9/AGx1ubf/VbYZoM0U
+i1EqtIH9YT2g+Jv9A1CwgwaZjOP/d4qAU8OKz6khk2apu5E5DF0Pi7aX57ym+1n5
+iaTv+P/OfFClkma947tnTGhnFU7Q533Z8UCPdJ+da4cAc6eAnfzi6j5ocx40hEcZ
+oseluY+qcjvHb/4skr1D3F6mzb+W9DF5YHjZTziZAhlzFCaxnE0IiMAzddFjgb8B
+T1Ve+t1VhwSuM7i3v8Rl4QFkW7laURhdtyK1hmaj37TOQkNL+Cb3/kojpohqOR+P
+/WB8T0H+4orCWLXVsVbepkUXYYlXY1+OSFYQFdcuXAdS64mcLu0ebDOd9ULUm3Fj
+jGD2lHxdn5ws+wnf1lvU6HCwONZuuIc2L8btLeh/bd5/ULLKoC2GHHWq5toZTAah
+cqhKc79YRV9c1ZCIU5VzHbgOmLFL4XxiA9TpHYmksfR/E79jHDONOaczMtWWHUUa
+v1fdT4OeyR06g9H6nCtHHSVd6aDPvzOzqWPlQF79mIzGifuCRxmeQ3bA0fTVUr5+
+pqSyKMTzwOfREJw4+5dUHz3IB9JmzoiYOkm4ap6YyZDEFevy7IAN9PMk/RlDOZ9C
+16D1dPo9j/YPwm0T5d8z
+=cL6d
 -----END PGP SIGNATURE-----
 
---nextPart1554950.NAdYPBsBiL--
+--Signature=_Tue__12_Jun_2012_11_31_48_+1000_5u9GJPzGwVjZY4_b--
