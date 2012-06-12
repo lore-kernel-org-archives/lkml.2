@@ -1,86 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753676Ab2FLQrH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 12:47:07 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:41172 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753362Ab2FLQrF convert rfc822-to-8bit (ORCPT
+	id S1753829Ab2FLQra (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 12:47:30 -0400
+Received: from www.linutronix.de ([62.245.132.108]:44922 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753714Ab2FLQr2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 12:47:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1206110944120.31180@router.home>
-References: <1339406250-10169-1-git-send-email-kosaki.motohiro@gmail.com>
- <1339406250-10169-3-git-send-email-kosaki.motohiro@gmail.com> <alpine.DEB.2.00.1206110944120.31180@router.home>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Tue, 12 Jun 2012 12:46:44 -0400
-Message-ID: <CAHGf_=rz7RVLoYB75pHOH5j-ka3Lf_oHk7ffT+AvOTLfYaWzDw@mail.gmail.com>
-Subject: Re: [PATCH 2/6] mempolicy: remove all mempolicy sharing
-To: Christoph Lameter <cl@linux.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@google.com>, Dave Jones <davej@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, stable@vger.kernel.org,
+	Tue, 12 Jun 2012 12:47:28 -0400
+Date: Tue, 12 Jun 2012 18:47:23 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Subject: Re: [GIT PULL] irq/core changes for v3.5
+In-Reply-To: <CA+55aFxNy2-DnWVDUiOuF+NncRBUC=frZN+CTLsJ+o2ofXtZYQ@mail.gmail.com>
+Message-ID: <alpine.LFD.2.02.1206121732230.3086@ionos>
+References: <20120522032554.GA11358@gmail.com> <Pine.LNX.4.64.1206121201130.6800@axis700.grange> <alpine.LFD.2.02.1206121639420.3086@ionos> <CA+55aFxNy2-DnWVDUiOuF+NncRBUC=frZN+CTLsJ+o2ofXtZYQ@mail.gmail.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 11, 2012 at 11:02 AM, Christoph Lameter <cl@linux.com> wrote:
-> Some more attempts to cleanup changelogs:
->
->> The problem was created by a reference count imbalance. Example, In following case,
->> mbind(addr, len) try to replace mempolicies of vma1 and vma2 and then they will
->> be share the same mempolicy, and the new mempolicy has MPOL_F_SHARED flag.
->
-> The bug that we saw <where ? details?> was created by a refcount
-> imbalance. If mbind() replaces the memory policies of vma1 and vma and
-> they share the same shared mempolicy (MPOL_F_SHARED set) then an imbalance
-> may occur.
->
->>   +-------------------+-------------------+
->>   |     vma1          |     vma2(shmem)   |
->>   +-------------------+-------------------+
->>   |                                       |
->>  addr                                 addr+len
->>
->> Look at alloc_pages_vma(), it uses get_vma_policy() and mpol_cond_put() pair
->> for maintaining mempolicy refcount. The current rule is, get_vma_policy() does
->> NOT increase a refcount if the policy is not attached shmem vma and mpol_cond_put()
->> DOES decrease a refcount if mpol has MPOL_F_SHARED.
->
-> alloc_pages_vma() uses the two function get_vma_policy() and
-> mpol_cond_put() to maintain the refcount on the memory policies. However,
-> the current rule is that get_vma_policy() does *not* increase the refcount
-> if the policy is not attached to a shm vma. mpol_cond_put *does* decrease
-> the refcount if the memory policy has MPOL_F_SHARED set.
->
->> In above case, vma1 is not shmem vma and vma->policy has MPOL_F_SHARED! then,
->> get_vma_policy() doesn't increase a refcount and mpol_cond_put() decrease a
->> refcount whenever alloc_page_vma() is called.
->>
->> The bug was introduced by commit 52cd3b0740 (mempolicy: rework mempolicy Reference
->> Counting) at 4 years ago.
->>
->> More unfortunately mempolicy has one another serious broken. Currently,
->> mempolicy rebind logic (it is called from cpuset rebinding) ignore a refcount
->> of mempolicy and override it forcibly. Thus, any mempolicy sharing may
->> cause mempolicy corruption. The bug was introduced by commit 68860ec10b
->> (cpusets: automatic numa mempolicy rebinding) at 7 years ago.
->
-> Memory policies have another issue. Currently the mempolicy rebind logic
-> used for cpuset rebinding ignores the refcount of memory policies.
-> Therefore, any memory policy sharing can cause refcount mismatches. The
-> bug was ...
->
->> To disable policy sharing solves user visible breakage and this patch does it.
->> Maybe, we need to rewrite MPOL_F_SHARED and mempolicy rebinding code and aim
->> to proper cow logic eventually, but I think this is good first step.
->
-> Disabling policy sharing solves the breakage and that is how this patch
-> fixes the issue for now. Rewriting the shared policy handling with proper
-> COW logic support will be necessary to cleanly address the
-> problem and allow proper sharing of memory policies.
+On Tue, 12 Jun 2012, Linus Torvalds wrote:
 
-Thanks, Christoph.
-I'll rewrite the description as your suggestion.
+> On Tue, Jun 12, 2012 at 5:56 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> >
+> > Thinking more about it, it's probably the best thing to simply force
+> > the IRQF_ONESHOT flag if it's missing.
+> 
+> No, that's just crazy.
+> 
+> Now you make broken shit code work, and then you break the *correct*
+> code that didn't want threading and didn't set IRQF_ONESHOT.
+
+That correct code is totally unaffected. We only force set it for the
+case which *requests* a threaded irq w/o a primary handler and w/o
+supplying the ONESHOT flag.
+
+> Just face it: if somebody doesn't have an interrupt-time function
+> pointer, they need to rethink their code. It's a mistake. It's broken
+> shit.
+
+We explicitely made it that way to prevent people from implementing
+the same function which just returns IRQ_WAKE_THREAD over and over.
+
+This was done in the first place for irqs where the device which
+raised the interrupt cannot be accessed from hard interrupt context
+(stuff behind serial busses, i2c, spi ....)
+
+The only choice those people had before we provided threaded
+interrupts in the core was having a primary handler which called
+disable_irq_nosync() and then woke an handling thread, which then
+reenabled the irq line with enable_irq().
+
+That allowed us to remove a lot of crappy, broken and racy kthread
+code from drivers that way and consolidated the handling into the core
+code.
+
+Yes, in hindsight I should have enforced IRQF_ONESHOT for those
+callers which have a NULL primary handler right from the beginning,
+but that doesn't help much now.
+
+> Why pander to crap? What is the advantage of allowing people to think
+> that they don't need an interrupt-time function? It's a fundamentaly
+> broken model, since it *cannot* work tgether with another driver that
+> wants to have the normal semantics and happens to share the irq.
+
+The vast majority of that stuff is embedded. Shared interupt lines are
+almost non existent in that space. It's just x86 which is full of that
+shared nonsense.
+
+If it's shared between a normal semantics device and one which
+requires the oneshot semantics, the core has already a sanity check
+for those cases and always had.
+
+If you really need a threaded handler which shares the interrupt line
+with a non threaded one, then you definitely need a primary handler
+which can disable the irq at the device level, but that was always
+a requirement.
+
+I just checked all the drivers in question with coccinelle.
+
+Only a total of 8 drivers set IRQF_SHARED. 5 of them are for the same
+ARM platform on which none of the irqs can be shared. So IRQF_SHARED
+there is bogus. One other is for ARM stuff as well, which does not
+have shared interrupts either. The two remaining are "general purpose"
+drivers which also originated from embedded and are unlikely to show
+up on a PC platform.
+
+I did not bother to check the few ones which use platform data, but
+those are definitely embedded ones as well, which won't have shared
+interrupts either.
+
+So now we have the choice of:
+
+   - Leaving the current check and regress 90+ drivers
+
+   - Leaving the current check and fix 90+ broken drivers
+
+   - Reverting it and end up with no protection at all
+
+   - Forcing the flag and risking the wreckage of two oddball drivers
+     _IF_ they ever show up on a PC platform.
+
+I definitely prefer option #4 as it makes the most sense.
+
+Thanks,
+
+	tglx
