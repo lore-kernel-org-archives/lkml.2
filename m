@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753302Ab2FLNOg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 09:14:36 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:64895 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752286Ab2FLNOf (ORCPT
+	id S1753330Ab2FLNPe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 09:15:34 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:53067 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753095Ab2FLNPd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 09:14:35 -0400
-Message-ID: <4FD740B7.8090203@tilera.com>
-Date: Tue, 12 Jun 2012 09:14:31 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120604 Thunderbird/13.0
+	Tue, 12 Jun 2012 09:15:33 -0400
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: <eric.dumazet@gmail.com>, <bhutchings@solarflare.com>, <arnd@arndb.de>,
-        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
-Subject: Re: [PATCH v10] tilegx network driver: initial support
-References: <4FCFA312.4020505@tilera.com> <20120606.115440.1245419453265419850.davem@davemloft.net> <201206072045.q57Kj2r1009249@farm-0002.internal.tilera.com> <20120611.170336.1197560839526564340.davem@davemloft.net>
-In-Reply-To: <20120611.170336.1197560839526564340.davem@davemloft.net>
-X-Enigmail-Version: 1.4.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1338813658.28282.43.camel@twins>
+References: <1338797382-287275-1-git-send-email-avagin@openvz.org>
+	<1338813658.28282.43.camel@twins>
+Date: Tue, 12 Jun 2012 17:15:32 +0400
+Message-ID: <CANaxB-xZ+KDZGMb8G1s5q+R_jzdWbP_FFxiGR=s4L90_tUqNjQ@mail.gmail.com>
+Subject: Re: [RFC] [PATCH 0/5] Teach perf tool to profile sleep times (V4)
+From: Andrew Wagin <avagin@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arun Sharma <asharma@fb.com>, Oleg Strikov <OSTRIKOV@nvidia.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/11/2012 8:03 PM, David Miller wrote:
-> From: Chris Metcalf <cmetcalf@tilera.com>
-> Date: Thu, 7 Jun 2012 16:45:02 -0400
+Hello,
+
+> So I really don't like this stuff either.. :-)
 >
->> This change adds support for the tilegx network driver based on the
->> GXIO IORPC support in the tilegx software stack, using the on-chip
->> mPIPE packet processing engine.
->>
->> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
-> Applied.
+> Mostly because it adds very similar stuff to what's already there and
+> then doesn't try and consolidate things.
+>
+> And partly because you're measuring the 'wrong' thing, the delay between
+> sched-out and sched-in includes a number of things, only one part of
+> that is the delay due to blocking.
+>
+> And as a result you need that hideous prev_state crap.
+>
 
-Glad to hear it.  Thanks for bearing with the multiple revisions.  I (we)
-appreciate all your feedback, and that of Ben, Eric, Arnd, and other folks
-who contributed their time.
+Yes, you are right.
 
-The driver does depend on tilegx iorpc framework code that is currently
-only in linux-next, but it should all come together properly for 3.6.
+>
+>
+> Would something like the below work?
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
-
-
-
+Yes, I like it. Are you going to commit this? Thank for this work.
