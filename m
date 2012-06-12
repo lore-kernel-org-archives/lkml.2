@@ -1,101 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753935Ab2FLS1N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 14:27:13 -0400
-Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:35017 "EHLO
-	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751455Ab2FLS1L (ORCPT
+	id S1753239Ab2FLSbs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 14:31:48 -0400
+Received: from mail160.messagelabs.com ([216.82.253.99]:20760 "EHLO
+	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751137Ab2FLSbq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 14:27:11 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH] mfd: ab3100-core: use devm allocation
-Date: Tue, 12 Jun 2012 20:26:58 +0200
-Message-ID: <1339525618-8318-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.9.2
+	Tue, 12 Jun 2012 14:31:46 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-14.tower-160.messagelabs.com!1339525902!9290416!8
+X-Originating-IP: [216.166.12.69]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
+        "abbotti@mev.co.uk" <abbotti@mev.co.uk>
+Date: Tue, 12 Jun 2012 13:31:38 -0500
+Subject: RE: [PATCH] staging: comedi: cleanup alloc_subdevices
+Thread-Topic: [PATCH] staging: comedi: cleanup alloc_subdevices
+Thread-Index: Ac1IPKyjZfPMl1fWSOC5B0ZimP/TAAAjJtGg
+Message-ID: <ADE657CA350FB648AAC2C43247A983F0020698DBC6D7@AUSP01VMBX24.collaborationhost.net>
+References: <201206071508.15674.hartleys@visionengravers.com>
+ <20120611235657.GA26721@kroah.com>
+ <ADE657CA350FB648AAC2C43247A983F0020698DBC4A9@AUSP01VMBX24.collaborationhost.net>
+ <20120612004421.GA30997@kroah.com>
+ <ADE657CA350FB648AAC2C43247A983F0020698DBC4B9@AUSP01VMBX24.collaborationhost.net>
+ <20120612014239.GA32087@kroah.com>
+In-Reply-To: <20120612014239.GA32087@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+On Monday, June 11, 2012 6:43 PM, Greg KH wrote:
+> On Mon, Jun 11, 2012 at 07:49:46PM -0500, H Hartley Sweeten wrote:
+>> Also, I have never done local commits to my Linux-next tree so I'm not
+>> sure how to proceed with the incremental patches. If it's ok with you
+>> I'll just wait for each patch to go into staging.
+>
+> Create a brach from the one you are working on:
+> 	git branch -b my_branch
+> make a change and commit it
+> commit another one
+> and so on.
+> then create the patches:
+> 	git format-patch original_branch_name..my_branch
+> and use git send-email to send them off in order.
+>
+> Otherwise we are going to take 7 weeks when I apply one of your patches
+> a week :)
 
-Allocate memory and irq for device state using devm_*
-helpers to simplify memory accounting.
+Greg,
 
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/mfd/ab3100-core.c |   23 +++++++----------------
- 1 file changed, 7 insertions(+), 16 deletions(-)
+I did as you described above and have the 7 patches ready but I just
+noticed you have already applied the first one.
 
-diff --git a/drivers/mfd/ab3100-core.c b/drivers/mfd/ab3100-core.c
-index 1efad20..4276aab 100644
---- a/drivers/mfd/ab3100-core.c
-+++ b/drivers/mfd/ab3100-core.c
-@@ -867,7 +867,7 @@ static int __devinit ab3100_probe(struct i2c_client *client,
- 	int err;
- 	int i;
- 
--	ab3100 = kzalloc(sizeof(struct ab3100), GFP_KERNEL);
-+	ab3100 = devm_kzalloc(&client->dev, sizeof(struct ab3100), GFP_KERNEL);
- 	if (!ab3100) {
- 		dev_err(&client->dev, "could not allocate AB3100 device\n");
- 		return -ENOMEM;
-@@ -921,7 +921,7 @@ static int __devinit ab3100_probe(struct i2c_client *client,
- 
- 	/* Attach a second dummy i2c_client to the test register address */
- 	ab3100->testreg_client = i2c_new_dummy(client->adapter,
--						     client->addr + 1);
-+					       client->addr + 1);
- 	if (!ab3100->testreg_client) {
- 		err = -ENOMEM;
- 		goto exit_no_testreg_client;
-@@ -931,13 +931,13 @@ static int __devinit ab3100_probe(struct i2c_client *client,
- 	if (err)
- 		goto exit_no_setup;
- 
--	err = request_threaded_irq(client->irq, NULL, ab3100_irq_handler,
--				IRQF_ONESHOT, "ab3100-core", ab3100);
--	/* This real unpredictable IRQ is of course sampled for entropy */
--	rand_initialize_irq(client->irq);
--
-+	err = devm_request_threaded_irq(&client->dev,
-+					client->irq, NULL, ab3100_irq_handler,
-+					IRQF_ONESHOT, "ab3100-core", ab3100);
- 	if (err)
- 		goto exit_no_irq;
-+	/* This real unpredictable IRQ is of course sampled for entropy */
-+	rand_initialize_irq(client->irq);
- 
- 	err = abx500_register_ops(&client->dev, &ab3100_ops);
- 	if (err)
-@@ -962,7 +962,6 @@ static int __devinit ab3100_probe(struct i2c_client *client,
- 	i2c_unregister_device(ab3100->testreg_client);
-  exit_no_testreg_client:
-  exit_no_detect:
--	kfree(ab3100);
- 	return err;
- }
- 
-@@ -972,16 +971,8 @@ static int __devexit ab3100_remove(struct i2c_client *client)
- 
- 	/* Unregister subdevices */
- 	mfd_remove_devices(&client->dev);
--
- 	ab3100_remove_debugfs();
- 	i2c_unregister_device(ab3100->testreg_client);
--
--	/*
--	 * At this point, all subscribers should have unregistered
--	 * their notifiers so deactivate IRQ
--	 */
--	free_irq(client->irq, ab3100);
--	kfree(ab3100);
- 	return 0;
- }
- 
--- 
-1.7.9.2
+Should I post the entire series and note that the first one is already
+applied?
+
+Thanks,
+Hartley
 
