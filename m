@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754121Ab2FLS6l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 14:58:41 -0400
-Received: from mail132.messagelabs.com ([216.82.242.115]:35497 "EHLO
-	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753335Ab2FLS6j convert rfc822-to-8bit (ORCPT
+	id S1753827Ab2FLS7F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 14:59:05 -0400
+Received: from mail127.messagelabs.com ([216.82.250.115]:22848 "EHLO
+	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753461Ab2FLS7C convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 14:58:39 -0400
+	Tue, 12 Jun 2012 14:59:02 -0400
 X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-8.tower-132.messagelabs.com!1339527508!8361020!17
+X-Msg-Ref: server-14.tower-127.messagelabs.com!1339527534!8265662!24
 X-Originating-IP: [216.166.12.97]
 X-StarScan-Version: 6.5.10; banners=-,-,-
 X-VirusChecked: Checked
 From: H Hartley Sweeten <hartleys@visionengravers.com>
 To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 4/8] staging: comedi: only set dev->n_subdevices when kcalloc succeedes
-Date: Tue, 12 Jun 2012 11:58:27 -0700
+Subject: [PATCH 5/8] staging: comedi: remove the comed_alloc_subdevices "allocation failed" messages
+Date: Tue, 12 Jun 2012 11:58:45 -0700
 User-Agent: KMail/1.9.9
 CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
         <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
@@ -23,188 +23,256 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-Message-ID: <201206121158.27933.hartleys@visionengravers.com>
+Message-ID: <201206121158.46249.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 4a741286f60e27ac7dd59eeb36ef49c5937d7fa2 Mon Sep 17 00:00:00 2001
+>From 62e9ab7262b4a5dc522dcb861d813cde4a718214 Mon Sep 17 00:00:00 2001
 From: H Hartley Sweeten <hsweeten@visionengravers.com>
-Date: Tue, 12 Jun 2012 10:07:03 -0700
-Subject: [PATCH 4/8] staging: comedi: only set dev->n_subdevices when kcalloc
- succeedes
+Date: Tue, 12 Jun 2012 10:33:08 -0700
+Subject: [PATCH 5/8] staging: comedi: remove the comed_alloc_subdevices
+ "allocation failed" messages
 
-It's possible for the kcalloc in comedi_alloc_subdevices to fail.
-Only set the dev->n_subdevices variable if the allocation is
-successful.
-
-Since the core sets dev->n_subdevices, remove all the places in the
-drivers where this variable was getting set.
+Remove all the "allocation failed" debug messages that are displayed
+when the comedi_alloc_subdevices call fails.
 
 Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbott@mev.co.uk>
+Cc: Ian Abbot <abbott@mev.co.uk>
 Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/staging/comedi/drivers.c             |    2 +-
- drivers/staging/comedi/drivers/comedi_test.c |    3 +--
- drivers/staging/comedi/drivers/ni_660x.c     |    4 +---
- drivers/staging/comedi/drivers/s526.c        |    3 +--
- drivers/staging/comedi/drivers/usbdux.c      |    7 ++++---
- drivers/staging/comedi/drivers/usbduxfast.c  |   10 +---------
- drivers/staging/comedi/drivers/usbduxsigma.c |    7 ++++---
- 7 files changed, 13 insertions(+), 23 deletions(-)
+ drivers/staging/comedi/drivers/8255.c         |    6 +-----
+ drivers/staging/comedi/drivers/adv_pci1723.c  |    4 +---
+ drivers/staging/comedi/drivers/amplc_dio200.c |    4 +---
+ drivers/staging/comedi/drivers/amplc_pc236.c  |    4 +---
+ drivers/staging/comedi/drivers/amplc_pc263.c  |    4 +---
+ drivers/staging/comedi/drivers/amplc_pci224.c |    4 +---
+ drivers/staging/comedi/drivers/dyna_pci10xx.c |    2 --
+ drivers/staging/comedi/drivers/pcmda12.c      |    4 +---
+ drivers/staging/comedi/drivers/pcmmio.c       |    5 +----
+ drivers/staging/comedi/drivers/pcmuio.c       |    4 +---
+ drivers/staging/comedi/drivers/unioxx5.c      |    4 +---
+ drivers/staging/comedi/drivers/usbdux.c       |    2 --
+ drivers/staging/comedi/drivers/usbduxfast.c   |    2 --
+ drivers/staging/comedi/drivers/usbduxsigma.c  |    2 --
+ 14 files changed, 10 insertions(+), 41 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers.c b/drivers/staging/comedi/drivers.c
-index 4d5da37..238c29d 100644
---- a/drivers/staging/comedi/drivers.c
-+++ b/drivers/staging/comedi/drivers.c
-@@ -62,12 +62,12 @@ int comedi_alloc_subdevices(struct comedi_device *dev, int num_subdevices)
+diff --git a/drivers/staging/comedi/drivers/8255.c b/drivers/staging/comedi/drivers/8255.c
+index 875b020..64b0054 100644
+--- a/drivers/staging/comedi/drivers/8255.c
++++ b/drivers/staging/comedi/drivers/8255.c
+@@ -389,12 +389,8 @@ static int dev_8255_attach(struct comedi_device *dev,
+ 	}
  
- 	if (num_subdevices < 1)
- 		return -EINVAL;
--	dev->n_subdevices = num_subdevices;
- 	dev->subdevices =
- 	    kcalloc(num_subdevices, sizeof(struct comedi_subdevice),
- 		    GFP_KERNEL);
- 	if (!dev->subdevices)
- 		return -ENOMEM;
-+	dev->n_subdevices = num_subdevices;
- 	for (i = 0; i < num_subdevices; ++i) {
- 		dev->subdevices[i].device = dev;
- 		dev->subdevices[i].async_dma_dir = DMA_NONE;
-diff --git a/drivers/staging/comedi/drivers/comedi_test.c b/drivers/staging/comedi/drivers/comedi_test.c
-index cd43c0d..004da30 100644
---- a/drivers/staging/comedi/drivers/comedi_test.c
-+++ b/drivers/staging/comedi/drivers/comedi_test.c
-@@ -447,8 +447,7 @@ static int waveform_attach(struct comedi_device *dev,
- 	devpriv->uvolt_amplitude = amplitude;
- 	devpriv->usec_period = period;
+ 	ret = comedi_alloc_subdevices(dev, i);
+-	if (ret < 0) {
+-		/* FIXME this printk call should give a proper message, the
+-		 * below line just maintains previous functionality */
+-		printk("comedi%d: 8255:", dev->minor);
++	if (ret < 0)
+ 		return ret;
+-	}
  
--	dev->n_subdevices = 2;
--	if (comedi_alloc_subdevices(dev, dev->n_subdevices) < 0)
-+	if (comedi_alloc_subdevices(dev, 2) < 0)
- 		return -ENOMEM;
+ 	printk(KERN_INFO "comedi%d: 8255:", dev->minor);
+ 
+diff --git a/drivers/staging/comedi/drivers/adv_pci1723.c b/drivers/staging/comedi/drivers/adv_pci1723.c
+index 0aa0af4..c14ad35 100644
+--- a/drivers/staging/comedi/drivers/adv_pci1723.c
++++ b/drivers/staging/comedi/drivers/adv_pci1723.c
+@@ -366,10 +366,8 @@ static int pci1723_attach(struct comedi_device *dev,
+ 		n_subdevices++;
+ 
+ 	ret = comedi_alloc_subdevices(dev, n_subdevices);
+-	if (ret < 0) {
+-		printk(" - Allocation failed!\n");
++	if (ret < 0)
+ 		return ret;
+-	}
+ 
+ 	pci1723_reset(dev);
+ 	subdev = 0;
+diff --git a/drivers/staging/comedi/drivers/amplc_dio200.c b/drivers/staging/comedi/drivers/amplc_dio200.c
+index d7d056e..17d3489 100644
+--- a/drivers/staging/comedi/drivers/amplc_dio200.c
++++ b/drivers/staging/comedi/drivers/amplc_dio200.c
+@@ -1274,10 +1274,8 @@ static int dio200_common_attach(struct comedi_device *dev, unsigned long iobase,
+ 	dev->iobase = iobase;
+ 	dev->board_name = thisboard->name;
+ 	ret = comedi_alloc_subdevices(dev, layout->n_subdevs);
+-	if (ret < 0) {
+-		dev_err(dev->class_dev, "error! out of memory!\n");
++	if (ret < 0)
+ 		return ret;
+-	}
+ 	for (n = 0; n < dev->n_subdevices; n++) {
+ 		s = &dev->subdevices[n];
+ 		switch (layout->sdtype[n]) {
+diff --git a/drivers/staging/comedi/drivers/amplc_pc236.c b/drivers/staging/comedi/drivers/amplc_pc236.c
+index 522e1c0..6205985 100644
+--- a/drivers/staging/comedi/drivers/amplc_pc236.c
++++ b/drivers/staging/comedi/drivers/amplc_pc236.c
+@@ -456,10 +456,8 @@ static int pc236_common_attach(struct comedi_device *dev, unsigned long iobase,
+ 	dev->iobase = iobase;
+ 
+ 	ret = comedi_alloc_subdevices(dev, 2);
+-	if (ret < 0) {
+-		dev_err(dev->class_dev, "error! out of memory!\n");
++	if (ret < 0)
+ 		return ret;
+-	}
  
  	s = dev->subdevices + 0;
-diff --git a/drivers/staging/comedi/drivers/ni_660x.c b/drivers/staging/comedi/drivers/ni_660x.c
-index 5827deb..8c6a6ba 100644
---- a/drivers/staging/comedi/drivers/ni_660x.c
-+++ b/drivers/staging/comedi/drivers/ni_660x.c
-@@ -1093,9 +1093,7 @@ static int ni_660x_attach(struct comedi_device *dev,
+ 	/* digital i/o subdevice (8255) */
+diff --git a/drivers/staging/comedi/drivers/amplc_pc263.c b/drivers/staging/comedi/drivers/amplc_pc263.c
+index cfb69fa..f1d68df 100644
+--- a/drivers/staging/comedi/drivers/amplc_pc263.c
++++ b/drivers/staging/comedi/drivers/amplc_pc263.c
+@@ -228,10 +228,8 @@ static int pc263_common_attach(struct comedi_device *dev, unsigned long iobase)
+ 	dev->iobase = iobase;
  
- 	printk(KERN_INFO " %s ", dev->board_name);
- 
--	dev->n_subdevices = 2 + NI_660X_MAX_NUM_COUNTERS;
--
--	if (comedi_alloc_subdevices(dev, dev->n_subdevices) < 0)
-+	if (comedi_alloc_subdevices(dev, 2 + NI_660X_MAX_NUM_COUNTERS) < 0)
- 		return -ENOMEM;
- 
- 	s = dev->subdevices + 0;
-diff --git a/drivers/staging/comedi/drivers/s526.c b/drivers/staging/comedi/drivers/s526.c
-index 17d581b..dbbff70 100644
---- a/drivers/staging/comedi/drivers/s526.c
-+++ b/drivers/staging/comedi/drivers/s526.c
-@@ -778,8 +778,7 @@ static int s526_attach(struct comedi_device *dev, struct comedi_devconfig *it)
-  * Allocate the subdevice structures.  alloc_subdevice() is a
-  * convenient macro defined in comedidev.h.
-  */
--	dev->n_subdevices = 4;
--	if (comedi_alloc_subdevices(dev, dev->n_subdevices) < 0)
-+	if (comedi_alloc_subdevices(dev, 4) < 0)
- 		return -ENOMEM;
+ 	ret = comedi_alloc_subdevices(dev, 1);
+-	if (ret < 0) {
+-		dev_err(dev->class_dev, "error! out of memory!\n");
++	if (ret < 0)
+ 		return ret;
+-	}
  
  	s = dev->subdevices + 0;
+ 	/* digital output subdevice */
+diff --git a/drivers/staging/comedi/drivers/amplc_pci224.c b/drivers/staging/comedi/drivers/amplc_pci224.c
+index 848fab2..7dd4057 100644
+--- a/drivers/staging/comedi/drivers/amplc_pci224.c
++++ b/drivers/staging/comedi/drivers/amplc_pci224.c
+@@ -1384,10 +1384,8 @@ static int pci224_attach_common(struct comedi_device *dev,
+ 
+ 	/* Allocate subdevices.  There is only one!  */
+ 	ret = comedi_alloc_subdevices(dev, 1);
+-	if (ret < 0) {
+-		dev_err(dev->class_dev, "error! out of memory!\n");
++	if (ret < 0)
+ 		return ret;
+-	}
+ 
+ 	s = dev->subdevices + 0;
+ 	/* Analog output subdevice. */
+diff --git a/drivers/staging/comedi/drivers/dyna_pci10xx.c b/drivers/staging/comedi/drivers/dyna_pci10xx.c
+index 6f6fb52..bab2e37 100644
+--- a/drivers/staging/comedi/drivers/dyna_pci10xx.c
++++ b/drivers/staging/comedi/drivers/dyna_pci10xx.c
+@@ -330,8 +330,6 @@ found:
+ 	devpriv->BADR5 = pci_resource_start(pcidev, 5);
+ 
+ 	if (comedi_alloc_subdevices(dev, 4) < 0) {
+-		printk(KERN_ERR "comedi: dyna_pci10xx: "
+-			"failed allocating subdevices\n");
+ 		mutex_unlock(&start_stop_sem);
+ 		return -ENOMEM;
+ 	}
+diff --git a/drivers/staging/comedi/drivers/pcmda12.c b/drivers/staging/comedi/drivers/pcmda12.c
+index 3645e9e..e1b30cc 100644
+--- a/drivers/staging/comedi/drivers/pcmda12.c
++++ b/drivers/staging/comedi/drivers/pcmda12.c
+@@ -197,10 +197,8 @@ static int pcmda12_attach(struct comedi_device *dev,
+ 	 * Allocate 2 subdevs (32 + 16 DIO lines) or 3 32 DIO subdevs for the
+ 	 * 96-channel version of the board.
+ 	 */
+-	if (comedi_alloc_subdevices(dev, 1) < 0) {
+-		printk(KERN_ERR "cannot allocate subdevice data structures\n");
++	if (comedi_alloc_subdevices(dev, 1) < 0)
+ 		return -ENOMEM;
+-	}
+ 
+ 	s = dev->subdevices;
+ 	s->private = NULL;
+diff --git a/drivers/staging/comedi/drivers/pcmmio.c b/drivers/staging/comedi/drivers/pcmmio.c
+index 67fdac5..abaf6c7 100644
+--- a/drivers/staging/comedi/drivers/pcmmio.c
++++ b/drivers/staging/comedi/drivers/pcmmio.c
+@@ -1077,11 +1077,8 @@ static int pcmmio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	 *
+ 	 * Allocate 1 AI + 1 AO + 2 DIO subdevs (24 lines per DIO)
+ 	 */
+-	if (comedi_alloc_subdevices(dev, n_subdevs) < 0) {
+-		printk(KERN_ERR "comedi%d: cannot allocate subdevice data structures\n",
+-				dev->minor);
++	if (comedi_alloc_subdevices(dev, n_subdevs) < 0)
+ 		return -ENOMEM;
+-	}
+ 
+ 	/* First, AI */
+ 	sdev_no = 0;
+diff --git a/drivers/staging/comedi/drivers/pcmuio.c b/drivers/staging/comedi/drivers/pcmuio.c
+index ce5068e..e4153bd 100644
+--- a/drivers/staging/comedi/drivers/pcmuio.c
++++ b/drivers/staging/comedi/drivers/pcmuio.c
+@@ -807,10 +807,8 @@ static int pcmuio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	 * Allocate 2 subdevs (32 + 16 DIO lines) or 3 32 DIO subdevs for the
+ 	 * 96-channel version of the board.
+ 	 */
+-	if (comedi_alloc_subdevices(dev, n_subdevs) < 0) {
+-		dev_dbg(dev->hw_dev, "cannot allocate subdevice data structures\n");
++	if (comedi_alloc_subdevices(dev, n_subdevs) < 0)
+ 		return -ENOMEM;
+-	}
+ 
+ 	port = 0;
+ 	asic = 0;
+diff --git a/drivers/staging/comedi/drivers/unioxx5.c b/drivers/staging/comedi/drivers/unioxx5.c
+index 170bc48..711dad7 100644
+--- a/drivers/staging/comedi/drivers/unioxx5.c
++++ b/drivers/staging/comedi/drivers/unioxx5.c
+@@ -468,10 +468,8 @@ static int unioxx5_attach(struct comedi_device *dev,
+ 		return -1;
+ 	}
+ 
+-	if (comedi_alloc_subdevices(dev, n_subd) < 0) {
+-		printk(KERN_ERR "out of memory\n");
++	if (comedi_alloc_subdevices(dev, n_subd) < 0)
+ 		return -ENOMEM;
+-	}
+ 
+ 	/* initializing each of for same subdevices */
+ 	for (i = 0; i < n_subd; i++, iobase += UNIOXX5_SUBDEV_ODDS) {
 diff --git a/drivers/staging/comedi/drivers/usbdux.c b/drivers/staging/comedi/drivers/usbdux.c
-index ca8b3e1..3819663 100644
+index 3819663..79df200 100644
 --- a/drivers/staging/comedi/drivers/usbdux.c
 +++ b/drivers/staging/comedi/drivers/usbdux.c
-@@ -2624,6 +2624,7 @@ static int usbdux_attach_common(struct comedi_device *dev,
- {
- 	int ret;
- 	struct comedi_subdevice *s = NULL;
-+	int n_subdevs;
- 
- 	down(&udev->sem);
- 	/* pointer back to the corresponding comedi device */
-@@ -2638,14 +2639,14 @@ static int usbdux_attach_common(struct comedi_device *dev,
- 	/* set number of subdevices */
- 	if (udev->high_speed) {
- 		/* with pwm */
--		dev->n_subdevices = 5;
-+		n_subdevs = 5;
- 	} else {
- 		/* without pwm */
--		dev->n_subdevices = 4;
-+		n_subdevs = 4;
- 	}
- 
+@@ -2648,8 +2648,6 @@ static int usbdux_attach_common(struct comedi_device *dev,
  	/* allocate space for the subdevices */
--	ret = comedi_alloc_subdevices(dev, dev->n_subdevices);
-+	ret = comedi_alloc_subdevices(dev, n_subdevs);
+ 	ret = comedi_alloc_subdevices(dev, n_subdevs);
  	if (ret < 0) {
- 		dev_err(&udev->interface->dev,
- 			"comedi%d: error alloc space for subdev\n", dev->minor);
+-		dev_err(&udev->interface->dev,
+-			"comedi%d: error alloc space for subdev\n", dev->minor);
+ 		up(&udev->sem);
+ 		return ret;
+ 	}
 diff --git a/drivers/staging/comedi/drivers/usbduxfast.c b/drivers/staging/comedi/drivers/usbduxfast.c
-index b2f7350..262556e 100644
+index 262556e..660dd4e 100644
 --- a/drivers/staging/comedi/drivers/usbduxfast.c
 +++ b/drivers/staging/comedi/drivers/usbduxfast.c
-@@ -127,11 +127,6 @@
- #define NUMUSBDUXFAST	16
- 
- /*
-- * number of subdevices
-- */
--#define N_SUBDEVICES	1
--
--/*
-  * analogue in subdevice
-  */
- #define SUBDEV_AD	0
-@@ -1671,11 +1666,8 @@ static int usbduxfast_attach(struct comedi_device *dev,
- 
- 	dev->board_name = BOARDNAME;
- 
--	/* set number of subdevices */
--	dev->n_subdevices = N_SUBDEVICES;
--
+@@ -1669,8 +1669,6 @@ static int usbduxfast_attach(struct comedi_device *dev,
  	/* allocate space for the subdevices */
--	ret = comedi_alloc_subdevices(dev, N_SUBDEVICES);
-+	ret = comedi_alloc_subdevices(dev, 1);
+ 	ret = comedi_alloc_subdevices(dev, 1);
  	if (ret < 0) {
- 		printk(KERN_ERR "comedi%d: usbduxfast: error alloc space for "
- 		       "subdev\n", dev->minor);
+-		printk(KERN_ERR "comedi%d: usbduxfast: error alloc space for "
+-		       "subdev\n", dev->minor);
+ 		up(&(usbduxfastsub[index].sem));
+ 		up(&start_stop_sem);
+ 		return ret;
 diff --git a/drivers/staging/comedi/drivers/usbduxsigma.c b/drivers/staging/comedi/drivers/usbduxsigma.c
-index 00faf4a..87c613e 100644
+index 87c613e..f37e96c 100644
 --- a/drivers/staging/comedi/drivers/usbduxsigma.c
 +++ b/drivers/staging/comedi/drivers/usbduxsigma.c
-@@ -2642,6 +2642,7 @@ static int usbduxsigma_attach(struct comedi_device *dev,
- 	int index;
- 	int i;
- 	struct usbduxsub *udev;
-+	int n_subdevs;
- 
- 	int offset;
- 
-@@ -2683,14 +2684,14 @@ static int usbduxsigma_attach(struct comedi_device *dev,
- 	/* set number of subdevices */
- 	if (udev->high_speed) {
- 		/* with pwm */
--		dev->n_subdevices = 4;
-+		n_subdevs = 4;
- 	} else {
- 		/* without pwm */
--		dev->n_subdevices = 3;
-+		n_subdevs = 3;
- 	}
- 
+@@ -2693,8 +2693,6 @@ static int usbduxsigma_attach(struct comedi_device *dev,
  	/* allocate space for the subdevices */
--	ret = comedi_alloc_subdevices(dev, dev->n_subdevices);
-+	ret = comedi_alloc_subdevices(dev, n_subdevs);
+ 	ret = comedi_alloc_subdevices(dev, n_subdevs);
  	if (ret < 0) {
- 		dev_err(&udev->interface->dev,
- 			"comedi%d: no space for subdev\n", dev->minor);
+-		dev_err(&udev->interface->dev,
+-			"comedi%d: no space for subdev\n", dev->minor);
+ 		up(&udev->sem);
+ 		up(&start_stop_sem);
+ 		return ret;
 -- 
 1.7.7
 
