@@ -1,65 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753248Ab2FLDTZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 23:19:25 -0400
-Received: from dalsmrelay2.nai.com ([205.227.136.216]:61979 "EHLO
-	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751828Ab2FLDTY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 23:19:24 -0400
-Message-ID: <4FD6B4CC.4060409@snapgear.com>
-Date: Tue, 12 Jun 2012 13:17:32 +1000
-From: Greg Ungerer <gerg@snapgear.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: <linux-m68k@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] m68k: Replace m68k-specific _[se]bss by generic __bss_{start,stop}
-References: <1339338998-24629-1-git-send-email-geert@linux-m68k.org>
-In-Reply-To: <1339338998-24629-1-git-send-email-geert@linux-m68k.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753336Ab2FLDUZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 23:20:25 -0400
+Received: from mga03.intel.com ([143.182.124.21]:13926 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752202Ab2FLDUX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 23:20:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="110982895"
+From: Huang Ying <ying.huang@intel.com>
+To: Len Brown <lenb@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
+        ying.huang@intel.com, linux-acpi@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: [BUGFIX] ACPI, APEI, Avoid too much error reporting in runtime
+Date: Tue, 12 Jun 2012 11:20:19 +0800
+Message-Id: <1339471219-4057-1-git-send-email-ying.huang@intel.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert,
+This patch fixed the following bug.
 
-On 11/06/12 00:36, Geert Uytterhoeven wrote:
-> BSS_SECTION() provides the __bss_{start,stop} symbols, so there's no need
-> to wrap our own _[se]bss around it.
->
-> Signed-off-by: Geert Uytterhoeven<geert@linux-m68k.org>
+https://bugzilla.kernel.org/show_bug.cgi?id=43282
 
-Both these patches look good to me:
+This is caused by a firmware bug checking (checking generic address
+register provided by firmware) in runtime.  The checking should be
+done in address mapping time instead of runtime to avoid too much
+error reporting in runtime.
 
-Acked-by: Greg Ungerer<gerg@uclinux.org>
+Reported-by: Pawel Sikora <pluto@agmk.net>
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+Tested-by: Jean Delvare <khali@linux-fr.org>
+Cc: stable@vger.kernel.org
+---
+ drivers/acpi/apei/apei-base.c     |   17 +++++++++++++++--
+ drivers/acpi/apei/apei-internal.h |    9 +++++++++
+ drivers/acpi/apei/ghes.c          |    6 +++---
+ 3 files changed, 27 insertions(+), 5 deletions(-)
 
-Thanks
-Greg
-
-
-> Prerequisite: mtd/uclinux: Use generic __bss_stop instead of _ebss
->
->   arch/m68k/include/asm/sections.h      |    2 --
->   arch/m68k/kernel/setup_no.c           |    4 ++--
->   arch/m68k/kernel/vmlinux-nommu.lds    |    2 --
->   arch/m68k/kernel/vmlinux-std.lds      |    2 --
->   arch/m68k/kernel/vmlinux-sun3.lds     |    2 --
->   arch/m68k/mm/init_mm.c                |    2 +-
->   arch/m68k/mm/init_no.c                |    2 +-
->   arch/m68k/platform/68328/head-de2.S   |    8 ++++----
->   arch/m68k/platform/68328/head-pilot.S |   10 +++++-----
->   arch/m68k/platform/68328/head-ram.S   |    4 ++--
->   arch/m68k/platform/68328/head-rom.S   |    6 +++---
->   arch/m68k/platform/68360/head-ram.S   |    6 +++---
->   arch/m68k/platform/68360/head-rom.S   |    8 ++++----
->   arch/m68k/platform/coldfire/head.S    |   10 +++++-----
->   14 files changed, 30 insertions(+), 38 deletions(-)
-
-
-------------------------------------------------------------------------
-Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
-SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
-8 Gardner Close                             FAX:         +61 7 3217 5323
-Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
+--- a/drivers/acpi/apei/apei-base.c
++++ b/drivers/acpi/apei/apei-base.c
+@@ -243,7 +243,7 @@ static int pre_map_gar_callback(struct a
+ 	u8 ins = entry->instruction;
+ 
+ 	if (ctx->ins_table[ins].flags & APEI_EXEC_INS_ACCESS_REGISTER)
+-		return acpi_os_map_generic_address(&entry->register_region);
++		return apei_map_generic_address(&entry->register_region);
+ 
+ 	return 0;
+ }
+@@ -276,7 +276,7 @@ static int post_unmap_gar_callback(struc
+ 	u8 ins = entry->instruction;
+ 
+ 	if (ctx->ins_table[ins].flags & APEI_EXEC_INS_ACCESS_REGISTER)
+-		acpi_os_unmap_generic_address(&entry->register_region);
++		apei_unmap_generic_address(&entry->register_region);
+ 
+ 	return 0;
+ }
+@@ -606,6 +606,19 @@ static int apei_check_gar(struct acpi_ge
+ 	return 0;
+ }
+ 
++int apei_map_generic_address(struct acpi_generic_address *reg)
++{
++	int rc;
++	u32 access_bit_width;
++	u64 address;
++
++	rc = apei_check_gar(reg, &address, &access_bit_width);
++	if (rc)
++		return rc;
++	return acpi_os_map_generic_address(reg);
++}
++EXPORT_SYMBOL_GPL(apei_map_generic_address);
++
+ /* read GAR in interrupt (including NMI) or process context */
+ int apei_read(u64 *val, struct acpi_generic_address *reg)
+ {
+--- a/drivers/acpi/apei/apei-internal.h
++++ b/drivers/acpi/apei/apei-internal.h
+@@ -7,6 +7,8 @@
+ #define APEI_INTERNAL_H
+ 
+ #include <linux/cper.h>
++#include <linux/acpi.h>
++#include <linux/acpi_io.h>
+ 
+ struct apei_exec_context;
+ 
+@@ -68,6 +70,13 @@ static inline int apei_exec_run_optional
+ /* IP has been set in instruction function */
+ #define APEI_EXEC_SET_IP	1
+ 
++int apei_map_generic_address(struct acpi_generic_address *reg);
++
++static inline void apei_unmap_generic_address(struct acpi_generic_address *reg)
++{
++	acpi_os_unmap_generic_address(reg);
++}
++
+ int apei_read(u64 *val, struct acpi_generic_address *reg);
+ int apei_write(u64 val, struct acpi_generic_address *reg);
+ 
+--- a/drivers/acpi/apei/ghes.c
++++ b/drivers/acpi/apei/ghes.c
+@@ -301,7 +301,7 @@ static struct ghes *ghes_new(struct acpi
+ 	if (!ghes)
+ 		return ERR_PTR(-ENOMEM);
+ 	ghes->generic = generic;
+-	rc = acpi_os_map_generic_address(&generic->error_status_address);
++	rc = apei_map_generic_address(&generic->error_status_address);
+ 	if (rc)
+ 		goto err_free;
+ 	error_block_length = generic->error_block_length;
+@@ -321,7 +321,7 @@ static struct ghes *ghes_new(struct acpi
+ 	return ghes;
+ 
+ err_unmap:
+-	acpi_os_unmap_generic_address(&generic->error_status_address);
++	apei_unmap_generic_address(&generic->error_status_address);
+ err_free:
+ 	kfree(ghes);
+ 	return ERR_PTR(rc);
+@@ -330,7 +330,7 @@ err_free:
+ static void ghes_fini(struct ghes *ghes)
+ {
+ 	kfree(ghes->estatus);
+-	acpi_os_unmap_generic_address(&ghes->generic->error_status_address);
++	apei_unmap_generic_address(&ghes->generic->error_status_address);
+ }
+ 
+ enum {
