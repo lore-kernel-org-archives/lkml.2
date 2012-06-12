@@ -1,64 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753780Ab2FLSpI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 14:45:08 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:50517 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752179Ab2FLSpG (ORCPT
+	id S1754036Ab2FLSpy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 14:45:54 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:57795 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751455Ab2FLSpx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 14:45:06 -0400
-From: Chris Yungmann <yungmann.chris@gmail.com>
-To: samuel.thibault@ens-lyon.org
-Cc: w.d.hubbs@gmail.com, chris@the-brannons.com, kirk@braille.uwo.ca,
-        gregkh@linuxfoundation.org, speakup@braille.uwo.ca,
-        linux-kernel@vger.kernel.org, kernelnewbies@kernelnewbies.org,
-        Chris Yungmann <yungmann.chris@gmail.com>
-Subject: [PATCH][RESEND] staging: speakup: fixed checkpatch and sparse warnings in selection.c
-Date: Tue, 12 Jun 2012 14:44:11 -0400
-Message-Id: <1339526651-14388-1-git-send-email-yungmann.chris@gmail.com>
-X-Mailer: git-send-email 1.7.10
+	Tue, 12 Jun 2012 14:45:53 -0400
+Date: Tue, 12 Jun 2012 11:45:48 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
+        "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] staging: comedi: cleanup alloc_subdevices
+Message-ID: <20120612184548.GA19550@kroah.com>
+References: <201206071508.15674.hartleys@visionengravers.com>
+ <20120611235657.GA26721@kroah.com>
+ <ADE657CA350FB648AAC2C43247A983F0020698DBC4A9@AUSP01VMBX24.collaborationhost.net>
+ <20120612004421.GA30997@kroah.com>
+ <ADE657CA350FB648AAC2C43247A983F0020698DBC4B9@AUSP01VMBX24.collaborationhost.net>
+ <20120612014239.GA32087@kroah.com>
+ <ADE657CA350FB648AAC2C43247A983F0020698DBC6D7@AUSP01VMBX24.collaborationhost.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <ADE657CA350FB648AAC2C43247A983F0020698DBC6D7@AUSP01VMBX24.collaborationhost.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Left in_atomic() call as more work is needed (see TODO note at top of function).
+On Tue, Jun 12, 2012 at 01:31:38PM -0500, H Hartley Sweeten wrote:
+> On Monday, June 11, 2012 6:43 PM, Greg KH wrote:
+> > On Mon, Jun 11, 2012 at 07:49:46PM -0500, H Hartley Sweeten wrote:
+> >> Also, I have never done local commits to my Linux-next tree so I'm not
+> >> sure how to proceed with the incremental patches. If it's ok with you
+> >> I'll just wait for each patch to go into staging.
+> >
+> > Create a brach from the one you are working on:
+> > 	git branch -b my_branch
+> > make a change and commit it
+> > commit another one
+> > and so on.
+> > then create the patches:
+> > 	git format-patch original_branch_name..my_branch
+> > and use git send-email to send them off in order.
+> >
+> > Otherwise we are going to take 7 weeks when I apply one of your patches
+> > a week :)
+> 
+> Greg,
+> 
+> I did as you described above and have the 7 patches ready but I just
+> noticed you have already applied the first one.
+> 
+> Should I post the entire series and note that the first one is already
+> applied?
 
-Signed-off-by: Chris Yungmann <yungmann.chris@gmail.com>
----
- drivers/staging/speakup/selection.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Yup, that will be fine, I can easily delete that one from my inbox :)
 
-diff --git a/drivers/staging/speakup/selection.c b/drivers/staging/speakup/selection.c
-index fe1f405..006403d 100644
---- a/drivers/staging/speakup/selection.c
-+++ b/drivers/staging/speakup/selection.c
-@@ -68,7 +68,7 @@ int speakup_set_selection(struct tty_struct *tty)
- 	if (spk_sel_cons != vc_cons[fg_console].d) {
- 		speakup_clear_selection();
- 		spk_sel_cons = vc_cons[fg_console].d;
--		printk(KERN_WARNING
-+		pr_warn(KERN_WARNING
- 			"Selection: mark console not the same as cut\n");
- 		return -EINVAL;
- 	}
-@@ -95,7 +95,7 @@ int speakup_set_selection(struct tty_struct *tty)
- 	/* Allocate a new buffer before freeing the old one ... */
- 	bp = kmalloc((sel_end-sel_start)/2+1, GFP_ATOMIC);
- 	if (!bp) {
--		printk(KERN_WARNING "selection: kmalloc() failed\n");
-+		pr_warn(KERN_WARNING "selection: kmalloc() failed\n");
- 		speakup_clear_selection();
- 		return -ENOMEM;
- 	}
-@@ -141,7 +141,7 @@ int speakup_paste_selection(struct tty_struct *tty)
- 		count = sel_buffer_lth - pasted;
- 		count = min_t(int, count, tty->receive_room);
- 		tty->ldisc->ops->receive_buf(tty, sel_buffer + pasted,
--			0, count);
-+			NULL, count);
- 		pasted += count;
- 	}
- 	remove_wait_queue(&vc->paste_wait, &wait);
--- 
-1.7.10
+thanks,
 
+greg k-h
