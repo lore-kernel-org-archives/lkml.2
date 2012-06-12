@@ -1,72 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753149Ab2FLBCf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 21:02:35 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33549 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752913Ab2FLBCe (ORCPT
+	id S1753196Ab2FLBC4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 21:02:56 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:48953 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753116Ab2FLBCy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 21:02:34 -0400
-Date: Mon, 11 Jun 2012 18:00:51 -0700
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
-        Tony Luck <tony.luck@intel.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
-        Shuah Khan <shuahkhan@gmail.com>, arve@android.com,
-        Rebecca Schultz Zavin <rebecca@android.com>,
-        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: Re: [PATCH 0/5] Some pstore/ramoops fixes
-Message-ID: <20120612010050.GA21674@lizard>
-References: <20120526130650.GA6242@lizard>
+	Mon, 11 Jun 2012 21:02:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120526130650.GA6242@lizard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <Pine.LNX.4.44L0.1206111202010.1607-100000@iolanthe.rowland.org>
+References: <CACVXFVNS2U-t7_8WwVNhQprP29y_xiZX25WwoBD5SRpch-p+7A@mail.gmail.com>
+	<Pine.LNX.4.44L0.1206111202010.1607-100000@iolanthe.rowland.org>
+Date: Tue, 12 Jun 2012 09:02:51 +0800
+Message-ID: <CACVXFVPEwZk09+jsStZcf_4qeK-NPXZUVuvrkj17k2zu0b6JBQ@mail.gmail.com>
+Subject: Re: [PATCH] driver core: fix shutdown races with probe/remove(v2)
+From: Ming Lei <ming.lei@canonical.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 26, 2012 at 06:06:50AM -0700, Anton Vorontsov wrote:
-> In the light of Linus' response, and I said this to Colin already, I'll
-> just zap a prz at boot time for pstore/console interface, which means
-> that nowadays there shouldn't be any objections to this bunch of fixes.
-> 
-> These are valid fixes for v3.5, they restore old pstore's behavior
-> nuances, which I changed accidentaly.
-> 
-> Except for the last patch, which is just a fix I happened to make when
-> I got bored of the warning. :-) Not a regression fix, though.
-> 
-> Thanks,
-> 
-> ---
->  fs/pstore/inode.c          |    2 +-
->  fs/pstore/ram.c            |    3 +++
->  fs/pstore/ram_core.c       |   27 +++++++++++++++++----------
->  include/linux/pstore_ram.h |    2 ++
->  4 files changed, 23 insertions(+), 11 deletions(-)
+On Tue, Jun 12, 2012 at 12:02 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> On Mon, 11 Jun 2012, Ming Lei wrote:
+>>
+>> I have considered doing it, but which may consume another 1sec.
+>>
+>> Also if the parent lock has been held, it is very possibly that the
+>> device can't be probed or removed at the same time, so just logged
+>> the crazy thing and go ahead.
+>
+> Okay.  Then you can add my Acked-by.
 
-Hi Greg,
+Thanks, I think Greg will do it.
 
-Have you had a chance to look into these? Plus into
-"[PATCH v5 0/11] Merge ram_console into pstore" series, I believe
-there were no objections as well.
 
-Thanks!
-
-p.s. I must confess I have a huge pile of battery-related patches in
-my inbox that I have to review/apply, and folks start to send similar
-pings as I send to you now. :-) I should probably start working on
-my backlog to improve my karma, hehe.
-
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+Thanks,
+--
+Ming Lei
