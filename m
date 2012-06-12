@@ -1,134 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753354Ab2FLCYR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 22:24:17 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:59367 "EHLO
+	id S1753329Ab2FLCcd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 22:32:33 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:58083 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753315Ab2FLCYP (ORCPT
+	with ESMTP id S1752447Ab2FLCcc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 22:24:15 -0400
-Message-ID: <1339467849.22991.5.camel@phoenix>
-Subject: [PATCH RFT 4/4] regulator: wm831x-dcdc: Convert to
- devm_request_threaded_irq
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Tue, 12 Jun 2012 10:24:09 +0800
-In-Reply-To: <1339467650.22991.1.camel@phoenix>
-References: <1339467650.22991.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 11 Jun 2012 22:32:32 -0400
+From: Rob Herring <robherring2@gmail.com>
+To: linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Cc: mchehab@redhat.com, Rob Herring <rob.herring@calxeda.com>
+Subject: [PATCH v2 0/3] EDAC support for Calxeda Highbank
+Date: Mon, 11 Jun 2012 21:32:11 -0500
+Message-Id: <1339468334-9927-1-git-send-email-robherring2@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/wm831x-dcdc.c |   35 ++++++++++++-----------------------
- 1 file changed, 12 insertions(+), 23 deletions(-)
+From: Rob Herring <rob.herring@calxeda.com>
 
-diff --git a/drivers/regulator/wm831x-dcdc.c b/drivers/regulator/wm831x-dcdc.c
-index eea53e1..5ec10d7 100644
---- a/drivers/regulator/wm831x-dcdc.c
-+++ b/drivers/regulator/wm831x-dcdc.c
-@@ -532,8 +532,9 @@ static __devinit int wm831x_buckv_probe(struct platform_device *pdev)
- 	}
- 
- 	irq = wm831x_irq(wm831x, platform_get_irq_byname(pdev, "UV"));
--	ret = request_threaded_irq(irq, NULL, wm831x_dcdc_uv_irq,
--				   IRQF_TRIGGER_RISING, dcdc->name, dcdc);
-+	ret = devm_request_threaded_irq(&pdev->dev, irq, NULL,
-+					wm831x_dcdc_uv_irq, IRQF_TRIGGER_RISING,
-+					dcdc->name, dcdc);
- 	if (ret != 0) {
- 		dev_err(&pdev->dev, "Failed to request UV IRQ %d: %d\n",
- 			irq, ret);
-@@ -541,8 +542,9 @@ static __devinit int wm831x_buckv_probe(struct platform_device *pdev)
- 	}
- 
- 	irq = wm831x_irq(wm831x, platform_get_irq_byname(pdev, "HC"));
--	ret = request_threaded_irq(irq, NULL, wm831x_dcdc_oc_irq,
--				   IRQF_TRIGGER_RISING, dcdc->name, dcdc);
-+	ret = devm_request_threaded_irq(&pdev->dev, irq, NULL,
-+					wm831x_dcdc_oc_irq, IRQF_TRIGGER_RISING,
-+					dcdc->name, dcdc);
- 	if (ret != 0) {
- 		dev_err(&pdev->dev, "Failed to request HC IRQ %d: %d\n",
- 			irq, ret);
-@@ -554,8 +556,6 @@ static __devinit int wm831x_buckv_probe(struct platform_device *pdev)
- 	return 0;
- 
- err_uv:
--	free_irq(wm831x_irq(wm831x, platform_get_irq_byname(pdev, "UV")),
--		 dcdc);
- err_regulator:
- 	regulator_unregister(dcdc->regulator);
- err:
-@@ -567,14 +567,8 @@ err:
- static __devexit int wm831x_buckv_remove(struct platform_device *pdev)
- {
- 	struct wm831x_dcdc *dcdc = platform_get_drvdata(pdev);
--	struct wm831x *wm831x = dcdc->wm831x;
- 
- 	platform_set_drvdata(pdev, NULL);
--
--	free_irq(wm831x_irq(wm831x, platform_get_irq_byname(pdev, "HC")),
--			    dcdc);
--	free_irq(wm831x_irq(wm831x, platform_get_irq_byname(pdev, "UV")),
--			    dcdc);
- 	regulator_unregister(dcdc->regulator);
- 	if (dcdc->dvs_gpio)
- 		gpio_free(dcdc->dvs_gpio);
-@@ -694,8 +688,9 @@ static __devinit int wm831x_buckp_probe(struct platform_device *pdev)
- 	}
- 
- 	irq = wm831x_irq(wm831x, platform_get_irq_byname(pdev, "UV"));
--	ret = request_threaded_irq(irq, NULL, wm831x_dcdc_uv_irq,
--				   IRQF_TRIGGER_RISING,	dcdc->name, dcdc);
-+	ret = devm_request_threaded_irq(&pdev->dev, irq, NULL,
-+					wm831x_dcdc_uv_irq, IRQF_TRIGGER_RISING,
-+					dcdc->name, dcdc);
- 	if (ret != 0) {
- 		dev_err(&pdev->dev, "Failed to request UV IRQ %d: %d\n",
- 			irq, ret);
-@@ -717,9 +712,6 @@ static __devexit int wm831x_buckp_remove(struct platform_device *pdev)
- 	struct wm831x_dcdc *dcdc = platform_get_drvdata(pdev);
- 
- 	platform_set_drvdata(pdev, NULL);
--
--	free_irq(wm831x_irq(dcdc->wm831x, platform_get_irq_byname(pdev, "UV")),
--			    dcdc);
- 	regulator_unregister(dcdc->regulator);
- 
- 	return 0;
-@@ -828,9 +820,9 @@ static __devinit int wm831x_boostp_probe(struct platform_device *pdev)
- 	}
- 
- 	irq = wm831x_irq(wm831x, platform_get_irq_byname(pdev, "UV"));
--	ret = request_threaded_irq(irq, NULL, wm831x_dcdc_uv_irq,
--				   IRQF_TRIGGER_RISING, dcdc->name,
--				   dcdc);
-+	ret = devm_request_threaded_irq(&pdev->dev, irq, NULL,
-+					wm831x_dcdc_uv_irq, IRQF_TRIGGER_RISING,
-+					dcdc->name, dcdc);
- 	if (ret != 0) {
- 		dev_err(&pdev->dev, "Failed to request UV IRQ %d: %d\n",
- 			irq, ret);
-@@ -852,9 +844,6 @@ static __devexit int wm831x_boostp_remove(struct platform_device *pdev)
- 	struct wm831x_dcdc *dcdc = platform_get_drvdata(pdev);
- 
- 	platform_set_drvdata(pdev, NULL);
--
--	free_irq(wm831x_irq(dcdc->wm831x, platform_get_irq_byname(pdev, "UV")),
--		 dcdc);
- 	regulator_unregister(dcdc->regulator);
- 
- 	return 0;
+This series adds EDAC support for Calxeda Highbank platform L2 and
+memory ECC hardware.
+
+This version is rebased current edac next tree for 3.6. Changes in
+this version are the addition of a common edac debugfs directory and
+coverting the highbank error injection to use debugfs.
+
+Rob
+
+Rob Herring (3):
+  edac: create top-level debugfs directory
+  edac: add support for Calxeda highbank memory controller
+  edac: add support for Calxeda highbank L2 cache ecc
+
+ .../devicetree/bindings/arm/calxeda/l2ecc.txt      |   17 ++
+ .../devicetree/bindings/arm/calxeda/mem-ctrlr.txt  |   17 ++
+ arch/arm/boot/dts/highbank.dts                     |   12 +
+ drivers/edac/Kconfig                               |   16 +-
+ drivers/edac/Makefile                              |    4 +
+ drivers/edac/edac_mc_sysfs.c                       |   23 +-
+ drivers/edac/edac_module.c                         |    3 +
+ drivers/edac/edac_module.h                         |   14 ++
+ drivers/edac/highbank_l2_edac.c                    |  149 ++++++++++++
+ drivers/edac/highbank_mc_edac.c                    |  256 ++++++++++++++++++++
+ 10 files changed, 509 insertions(+), 2 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/arm/calxeda/l2ecc.txt
+ create mode 100644 Documentation/devicetree/bindings/arm/calxeda/mem-ctrlr.txt
+ create mode 100644 drivers/edac/highbank_l2_edac.c
+ create mode 100644 drivers/edac/highbank_mc_edac.c
+
 -- 
 1.7.9.5
-
-
 
