@@ -1,84 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753003Ab2FLAB4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 20:01:56 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47919 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752859Ab2FLABz (ORCPT
+	id S1752852Ab2FLAC7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 20:02:59 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:55317 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750969Ab2FLAC6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 20:01:55 -0400
-Date: Mon, 11 Jun 2012 17:01:51 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Miguel =?iso-8859-1?Q?G=F3mez?= <magomez@igalia.com>
-Cc: arnaud.patard@rtp-net.org, aaro.koskinen@iki.fi, dan.carpenter@oracle.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] Staging: xgifb: reorder the code a bit to be more
- module friendly
-Message-ID: <20120612000151.GA16887@kroah.com>
-References: <1338992527-5659-1-git-send-email-magomez@igalia.com>
- <1338992527-5659-2-git-send-email-magomez@igalia.com>
+	Mon, 11 Jun 2012 20:02:58 -0400
+Date: Mon, 11 Jun 2012 21:02:53 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Tim Chen <tim.c.chen@linux.intel.com>, David Ahern <dsahern@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: Does perf inject preserve call chain data?
+Message-ID: <20120612000253.GB3897@infradead.org>
+References: <4FBC0C10.8010801@gmail.com>
+ <20120608143843.GA9954@infradead.org>
+ <1339173896.3796.230.camel@schen9-DESK>
+ <4FD232B7.7080905@gmail.com>
+ <1339175828.3796.232.camel@schen9-DESK>
+ <20120608195215.GO28225@tassilo.jf.intel.com>
+ <20120609160547.GB9954@infradead.org>
+ <4FD63C52.4090003@linux.intel.com>
+ <20120611215912.GA3897@infradead.org>
+ <4FD66D17.3000202@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1338992527-5659-2-git-send-email-magomez@igalia.com>
+In-Reply-To: <4FD66D17.3000202@linux.intel.com>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 06, 2012 at 04:22:05PM +0200, Miguel Gómez wrote:
-> Signed-off-by: Miguel Gómez <magomez@igalia.com>
-> ---
->  drivers/staging/xgifb/XGI_main_26.c |   51 +++++++++++++++++------------------
->  1 file changed, 25 insertions(+), 26 deletions(-)
+Em Mon, Jun 11, 2012 at 03:11:35PM -0700, Andi Kleen escreveu:
+> >http://git.kernel.org/?p=linux/kernel/git/acme/linux.git;a=commit;h=a78e5b82e99d8d284afc012ef015ef3332153aaf
 > 
-> diff --git a/drivers/staging/xgifb/XGI_main_26.c b/drivers/staging/xgifb/XGI_main_26.c
-> index 61dc7cb..96abb23 100644
-> --- a/drivers/staging/xgifb/XGI_main_26.c
-> +++ b/drivers/staging/xgifb/XGI_main_26.c
-> @@ -2306,49 +2306,44 @@ static struct pci_driver xgifb_driver = {
->  	.remove = __devexit_p(xgifb_remove)
->  };
->  
-> -static int __init xgifb_init(void)
-> -{
-> -	char *option = NULL;
-> -
-> -	if (forcecrt2type != NULL)
-> -		XGIfb_search_crt2type(forcecrt2type);
-> -	if (fb_get_options("xgifb", &option))
-> -		return -ENODEV;
-> -	XGIfb_setup(option);
-> -
-> -	return pci_register_driver(&xgifb_driver);
-> -}
->  
-> -module_init(xgifb_init);
->  
->  /*****************************************************/
->  /*                      MODULE                       */
->  /*****************************************************/
->  
-> -MODULE_DESCRIPTION("Z7 Z9 Z9S Z11 framebuffer device driver");
-> -MODULE_LICENSE("GPL");
-> -MODULE_AUTHOR("XGITECH , Others");
-> -
->  module_param(mode, charp, 0);
-> -module_param(vesa, int, 0);
-> -module_param(filter, int, 0);
-> -module_param(forcecrt2type, charp, 0);
-> +MODULE_PARM_DESC(mode,
-> +	"\nSelects the desired default display mode in the format XxYxDepth,\n"
-> +	"eg. 1024x768x16.\n");
->  
-> +module_param(forcecrt2type, charp, 0);
->  MODULE_PARM_DESC(forcecrt2type,
->  	"\nForce the second display output type. Possible values are NONE,\n"
->  	"LCD, TV, VGA, SVIDEO or COMPOSITE.\n");
+> Thanks. That would work I suppose.  I think I would still prefer a single
+> command over a bunch of options, but having options is not too bad.
 
-What's with these "\n" in the string?  Shouldn't those be removed?
+Not a bunch, just one option.
 
-thanks,
+And only if you feel like, at that point in time, to snapshot it to send
+it over e-mail.
 
-greg k-h
+- Arnaldo
