@@ -1,49 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753328Ab2FLWTg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 18:19:36 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:46059 "EHLO mail.skyhub.de"
+	id S1753397Ab2FLW2B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 18:28:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28811 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752472Ab2FLWTe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 18:19:34 -0400
-Date: Wed, 13 Jun 2012 00:19:31 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: Andi Kleen <andi@firstfloor.org>, x86@kernel.org, hpa@zytor.com,
-        eranian@google.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl
-Subject: Re: [PATCH 1/2] x86: Track minimum microcode revision globally v2
-Message-ID: <20120612221931.GA4376@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Andi Kleen <ak@linux.intel.com>, Andi Kleen <andi@firstfloor.org>,
-	x86@kernel.org, hpa@zytor.com, eranian@google.com,
-	linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl
-References: <1339536350-10463-1-git-send-email-andi@firstfloor.org>
- <20120612213905.GE26817@liondog.tnic>
- <4FD7BE15.50604@linux.intel.com>
+	id S1751116Ab2FLW2A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 18:28:00 -0400
+Date: Tue, 12 Jun 2012 19:27:48 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: x86@kernel.org, kvm@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Avi Kivity <avi@redhat.com>,
+        gleb@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCHv6 6/8] kvm: only sync when attention bits set
+Message-ID: <20120612222748.GB1973@amt.cnet>
+References: <cover.1338474301.git.mst@redhat.com>
+ <56ee14064ef307b7075f6977122781456cab5165.1338474301.git.mst@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4FD7BE15.50604@linux.intel.com>
+In-Reply-To: <56ee14064ef307b7075f6977122781456cab5165.1338474301.git.mst@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 12, 2012 at 03:09:25PM -0700, Andi Kleen wrote:
+On Sun, Jun 03, 2012 at 10:28:29AM +0300, Michael S. Tsirkin wrote:
+> Commit eb0dc6d0368072236dcd086d7fdc17fd3c4574d4 introduced apic
+> attention bitmask but kvm still syncs lapic unconditionally.
+> As that commit suggested and in anticipation of adding more attention
+> bits, only sync lapic if(apic_attention).
 > 
-> >Ok, is it only me or is this boot_min_microcode superfluous?
-> >IOW, you can only use boot_cpu_data.microcode instead and drop
-> >boot_min_microcode.
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
+>  arch/x86/kvm/x86.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
 > 
-> boot_cpu_data.microcode contains a copy of the original microcode,
-> so we couldn't detect the boot cpu case. In theory could hard code
-> CPU #0 is boot cpu or so,
-> but I prefer to track it with the separate variable.
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index be6d549..2f70861 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -5388,7 +5388,8 @@ static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
+>  	if (unlikely(vcpu->arch.tsc_always_catchup))
+>  		kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
+>  
+> -	kvm_lapic_sync_from_vapic(vcpu);
+> +	if (unlikely(vcpu->arch.apic_attention))
+> +		kvm_lapic_sync_from_vapic(vcpu);
 
-Ok, this begs the next question then: why do we need to say that some AP
-has a lower ucode version than the BSP?
+void kvm_lapic_sync_from_vapic(struct kvm_vcpu *vcpu)
+{
+        u32 data;
+        void *vapic;
 
--- 
-Regards/Gruss,
-    Boris.
+        if (!test_bit(KVM_APIC_CHECK_VAPIC, &vcpu->arch.apic_attention))
+                return;
+
+Please use unlikely more carefully, when a gain is measureable:
+http://lwn.net/Articles/420019/
+
