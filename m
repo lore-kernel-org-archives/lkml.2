@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751922Ab2FLIgF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 04:36:05 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:54160 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751181Ab2FLIgB (ORCPT
+	id S1752089Ab2FLIg2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 04:36:28 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:65357 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751550Ab2FLIg0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 04:36:01 -0400
-Message-ID: <4FD6FF6C.6040500@linaro.org>
-Date: Tue, 12 Jun 2012 09:35:56 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: grant.likely@secretlab.ca, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linus.walleij@stericsson.com,
-        arnd@arndb.de, Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH 06/14] mfd: Initialise the DB8500 PRCMU driver at core_initcall
- time
-References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org> <1339428307-3850-7-git-send-email-lee.jones@linaro.org> <CACRpkdYoQFhBfRaPMBiVTiD979b+8708oS1qCPm+iyy5OZe2bw@mail.gmail.com>
-In-Reply-To: <CACRpkdYoQFhBfRaPMBiVTiD979b+8708oS1qCPm+iyy5OZe2bw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Tue, 12 Jun 2012 04:36:26 -0400
+Message-ID: <1339490180.6743.3.camel@phoenix>
+Subject: [PATCH 2/2] regulator: wm8400: Adjust the equation for selector >=
+ 15 in wm8400_ldo_list_voltage
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Tue, 12 Jun 2012 16:36:20 +0800
+In-Reply-To: <1339490095.6743.1.camel@phoenix>
+References: <1339490095.6743.1.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06/12 22:01, Linus Walleij wrote:
-> On Mon, Jun 11, 2012 at 5:24 PM, Lee Jones<lee.jones@linaro.org>  wrote:
->
->> Now the AB8500 has its own IRQ domain
->
-> But that does not appear until patch 8 in this series? Are the patches in
-> the wrong order? Or does this need rewording?
->
->> it needs to be initialised earlier
->> in the boot sequence. As the AB8500 relies on the DB8500 PRCMU we need to
->> reflect this change for the PRCMU driver too.
->
-> Hm what shall we do when we run out of initlevels? I think this was the
-> kind of thing that deferred probe should solve. Usually changing this kind
-> of thing has side effects so I'm a bit hesitant.
+Adjust the equation for selector >= 15 for better readability.
+The equation "1700000 + ((selector - 15) * 100000)" can be interpreted by:
+Starting from selector 15: Steps of 100mV from 1700mV
 
-Ah yes, I remember now. The IRQ domain needs to be in place _before_ the 
-Device Tree is parsed by the Open Firmware subsystem. If it's not the 
-error "no irq domain found" is triggered and the IRQs are never mapped.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/wm8400-regulator.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-I'd be happy to take a second opinion, but I believe this (and the other 
-core_initcall patch) is required.
-
+diff --git a/drivers/regulator/wm8400-regulator.c b/drivers/regulator/wm8400-regulator.c
+index 9f9df8e..9035dd0 100644
+--- a/drivers/regulator/wm8400-regulator.c
++++ b/drivers/regulator/wm8400-regulator.c
+@@ -28,7 +28,7 @@ static int wm8400_ldo_list_voltage(struct regulator_dev *dev,
+ 	if (selector < 15)
+ 		return 900000 + (selector * 50000);
+ 	else
+-		return 1600000 + ((selector - 14) * 100000);
++		return 1700000 + ((selector - 15) * 100000);
+ }
+ 
+ static int wm8400_ldo_map_voltage(struct regulator_dev *dev,
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-M: +44 77 88 633 515
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.7.9.5
+
+
+
