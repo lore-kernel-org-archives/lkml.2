@@ -1,117 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753829Ab2FLQra (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 12:47:30 -0400
-Received: from www.linutronix.de ([62.245.132.108]:44922 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753714Ab2FLQr2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 12:47:28 -0400
-Date: Tue, 12 Jun 2012 18:47:23 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] irq/core changes for v3.5
-In-Reply-To: <CA+55aFxNy2-DnWVDUiOuF+NncRBUC=frZN+CTLsJ+o2ofXtZYQ@mail.gmail.com>
-Message-ID: <alpine.LFD.2.02.1206121732230.3086@ionos>
-References: <20120522032554.GA11358@gmail.com> <Pine.LNX.4.64.1206121201130.6800@axis700.grange> <alpine.LFD.2.02.1206121639420.3086@ionos> <CA+55aFxNy2-DnWVDUiOuF+NncRBUC=frZN+CTLsJ+o2ofXtZYQ@mail.gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1753024Ab2FLQvB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 12:51:01 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:44149 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751074Ab2FLQvA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 12:51:00 -0400
+Message-ID: <1339519858.2017.10.camel@joe2Laptop>
+Subject: Re: [Bcache v14 16/16] bcache: Debug and tracing code
+From: Joe Perches <joe@perches.com>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, tejun@google.com, agk@redhat.com,
+        dan.j.williams@intel.com
+Date: Tue, 12 Jun 2012 09:50:58 -0700
+In-Reply-To: <1339515562-14638-17-git-send-email-koverstreet@google.com>
+References: <1339515562-14638-1-git-send-email-koverstreet@google.com>
+	 <1339515562-14638-17-git-send-email-koverstreet@google.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 12 Jun 2012, Linus Torvalds wrote:
+On Tue, 2012-06-12 at 08:39 -0700, Kent Overstreet wrote:
 
-> On Tue, Jun 12, 2012 at 5:56 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> >
-> > Thinking more about it, it's probably the best thing to simply force
-> > the IRQF_ONESHOT flag if it's missing.
-> 
-> No, that's just crazy.
-> 
-> Now you make broken shit code work, and then you break the *correct*
-> code that didn't want threading and didn't set IRQF_ONESHOT.
+> diff --git a/drivers/md/bcache/debug.c b/drivers/md/bcache/debug.c
 
-That correct code is totally unaffected. We only force set it for the
-case which *requests* a threaded irq w/o a primary handler and w/o
-supplying the ONESHOT flag.
+> +static void dump_bset(struct btree *b, struct bset *i)
+> +{
+> +	for (struct bkey *k = i->start; k < end(i); k = bkey_next(k)) {
+> +		printk(KERN_ERR "block %zu key %zu/%i: %s", index(i, b),
+> +		       (uint64_t *) k - i->d, i->keys, pkey(k));
 
-> Just face it: if somebody doesn't have an interrupt-time function
-> pointer, they need to rethink their code. It's a mistake. It's broken
-> shit.
+Add #define pr_fmt and use pr_<level> not printk everywhere.
+Doesn't this throw a gcc warning for argument mismatch?
 
-We explicitely made it that way to prevent people from implementing
-the same function which just returns IRQ_WAKE_THREAD over and over.
+> +static void vdump_bucket_and_panic(struct btree *b, const char *m, va_list args)
+> +{
 
-This was done in the first place for irqs where the device which
-raised the interrupt cannot be accessed from hard interrupt context
-(stuff behind serial busses, i2c, spi ....)
+m should be renamed fmt
 
-The only choice those people had before we provided threaded
-interrupts in the core was having a primary handler which called
-disable_irq_nosync() and then woke an handling thread, which then
-reenabled the irq line with enable_irq().
+> +	struct bset *i;
+> +
+> +	console_lock();
+> +
+> +	for_each_sorted_set(b, i)
+> +		dump_bset(b, i);
+> +
+> +	vprintk(m, args);
+> +
+> +	console_unlock();
+> +
+> +	panic("at %s\n", pbtree(b));
+> +}
+> +
+> +static void dump_bucket_and_panic(struct btree *b, const char *m, ...)
+> +{
 
-That allowed us to remove a lot of crappy, broken and racy kthread
-code from drivers that way and consolidated the handling into the core
-code.
+here too.
 
-Yes, in hindsight I should have enforced IRQF_ONESHOT for those
-callers which have a NULL primary handler right from the beginning,
-but that doesn't help much now.
+> +	va_list args;
+> +	va_start(args, m);
+> +	vdump_bucket_and_panic(b, m, args);
+> +	va_end(args);
+> +}
+> +
+> +static void __maybe_unused
+> +dump_key_and_panic(struct btree *b, struct bset *i, int j)
+> +{
+> +	long bucket = PTR_BUCKET_NR(b->c, node(i, j), 0);
+> +	long r = PTR_OFFSET(node(i, j), 0) & ~(~0 << b->c->bucket_bits);
+> +
+> +	printk(KERN_ERR "level %i block %zu key %i/%i: %s "
+> +	       "bucket %llu offset %li into bucket\n",
 
-> Why pander to crap? What is the advantage of allowing people to think
-> that they don't need an interrupt-time function? It's a fundamentaly
-> broken model, since it *cannot* work tgether with another driver that
-> wants to have the normal semantics and happens to share the irq.
+coalesce formats please.
 
-The vast majority of that stuff is embedded. Shared interupt lines are
-almost non existent in that space. It's just x86 which is full of that
-shared nonsense.
+> +	       b->level, index(i, b), j, i->keys, pkey(node(i, j)),
+> +	       (uint64_t) bucket, r);
+> +	dump_bucket_and_panic(b, "");
+> +}
 
-If it's shared between a normal semantics device and one which
-requires the oneshot semantics, the core has already a sanity check
-for those cases and always had.
+[]
 
-If you really need a threaded handler which shares the interrupt line
-with a non threaded one, then you definitely need a primary handler
-which can disable the irq at the device level, but that was always
-a requirement.
+> +static int debug_seq_show(struct seq_file *f, void *data)
+> +{
+> +	static const char *tabs = "\t\t\t\t\t";
 
-I just checked all the drivers in question with coccinelle.
+Seems a _very_ odd use.
 
-Only a total of 8 drivers set IRQF_SHARED. 5 of them are for the same
-ARM platform on which none of the irqs can be shared. So IRQF_SHARED
-there is bogus. One other is for ARM stuff as well, which does not
-have shared interrupts either. The two remaining are "general purpose"
-drivers which also originated from embedded and are unlikely to show
-up on a PC platform.
+> +	uint64_t last = 0, sectors = 0;
+> +	struct cache_set *c = f->private;
+> +
+> +	struct btree_op op;
+> +	bch_btree_op_init_stack(&op);
+> +
+> +	btree_root(dump, c, &op, f, &tabs[4], &last, &sectors);
+> +
 
-I did not bother to check the few ones which use platform data, but
-those are definitely embedded ones as well, which won't have shared
-interrupts either.
+Why not just:
 
-So now we have the choice of:
+	btree_root(dump, c, &op, "\t", &last, &sectors);
 
-   - Leaving the current check and regress 90+ drivers
+Please don't be lazy when modifying code.
 
-   - Leaving the current check and fix 90+ broken drivers
+[]
 
-   - Reverting it and end up with no protection at all
+> diff --git a/drivers/md/bcache/debug.h b/drivers/md/bcache/debug.h
+[]
+> +#define KEYHACK_SIZE 80
+> +struct keyprint_hack {
+> +	char s[KEYHACK_SIZE];
+> +};
 
-   - Forcing the flag and risking the wreckage of two oddball drivers
-     _IF_ they ever show up on a PC platform.
+structures named _hack are generally a bad idea.
 
-I definitely prefer option #4 as it makes the most sense.
 
-Thanks,
-
-	tglx
