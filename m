@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753024Ab2FLADi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 20:03:38 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:47080 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751770Ab2FLADh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 20:03:37 -0400
-Date: Mon, 11 Jun 2012 17:03:36 -0700 (PDT)
-Message-Id: <20120611.170336.1197560839526564340.davem@davemloft.net>
-To: cmetcalf@tilera.com
-Cc: eric.dumazet@gmail.com, bhutchings@solarflare.com, arnd@arndb.de,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH v10] tilegx network driver: initial support
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <201206072045.q57Kj2r1009249@farm-0002.internal.tilera.com>
-References: <4FCFA312.4020505@tilera.com>
-	<20120606.115440.1245419453265419850.davem@davemloft.net>
-	<201206072045.q57Kj2r1009249@farm-0002.internal.tilera.com>
-X-Mailer: Mew version 6.5 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+	id S1753042Ab2FLAEZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 20:04:25 -0400
+Received: from mga09.intel.com ([134.134.136.24]:59691 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752349Ab2FLAEY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 20:04:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="151622724"
+Subject: Re: [PATCH] perf report: delay sample_type checks in pipe mode
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org, mingo@kernel.org,
+        peterz@infradead.org, fweisbec@gmail.com, paulus@samba.org,
+        tglx@linutronix.de
+In-Reply-To: <4FD64BDA.7080508@gmail.com>
+References: <1339444121-26236-1-git-send-email-dsahern@gmail.com>
+	 <4FD64BDA.7080508@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 11 Jun 2012 17:05:12 -0700
+Message-ID: <1339459512.3796.235.camel@schen9-DESK>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Thu, 7 Jun 2012 16:45:02 -0400
-
-> This change adds support for the tilegx network driver based on the
-> GXIO IORPC support in the tilegx software stack, using the on-chip
-> mPIPE packet processing engine.
+On Mon, 2012-06-11 at 13:49 -0600, David Ahern wrote:
+> On 6/11/12 1:48 PM, David Ahern wrote:
+> > The pipeline:
+> >    perf record -a -g -o - sleep 5 |perf inject -v -b  | perf report  -g -i -
+> >
+> > generates the warning:
+> >    Selected -g but no callchain data. Did you call 'perf record' without -g?
+> >
+> > The problem is that the header data is not written to the pipe, so the
+> > sample_type has not been available when perf_report__setup_sample_type is
+> > called. For pipe mode, record dumps the sample type as part of the
+> > synthesized events stream -- perf_event__synthesize_attrs(). Handle this
+> > be detecting pipe mode and not doing early sanity checks on sample_type.
 > 
-> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+> Slightly different fix. Tim: can you re-test?
+> 
+> David
+> 
 
-Applied.
+Works for me.
 
-Although:
+Tim
 
-> +/* The transmit wake timer for a given cpu and echannel. */
-> +struct tile_net_tx_wake {
-> +	struct hrtimer timer;
-> +	struct net_device *dev;
-> +};
-> +	
-   ^^^^^^^
-
-I had to remove that trailing whitespace when I applied this.
