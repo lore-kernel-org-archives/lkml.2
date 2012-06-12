@@ -1,66 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753224Ab2FLGIR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 02:08:17 -0400
-Received: from dalsmrelay2.nai.com ([205.227.136.216]:26855 "EHLO
-	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751954Ab2FLGIP (ORCPT
+	id S1752512Ab2FLGMH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 02:12:07 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:38829 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751496Ab2FLGMF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 02:08:15 -0400
-Message-ID: <4FD6DC69.2090008@snapgear.com>
-Date: Tue, 12 Jun 2012 16:06:33 +1000
-From: Greg Ungerer <gerg@snapgear.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Tue, 12 Jun 2012 02:12:05 -0400
+Date: Tue, 12 Jun 2012 03:11:58 -0300
+From: Gustavo Padovan <gustavo@padovan.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: "Gustavo F. Padovan" <padovan@profusion.mobi>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Johan Hedberg <johan.hedberg@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Marcel Holtmann <marcel@holtmann.org>
+Subject: Re: linux-next: manual merge of the bluetooth tree with the wireless
+ tree
+Message-ID: <20120612061158.GH24440@joana>
+Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
+	Stephen Rothwell <sfr@canb.auug.org.au>,
+	"Gustavo F. Padovan" <padovan@profusion.mobi>,
+	linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+	Johan Hedberg <johan.hedberg@intel.com>,
+	"John W. Linville" <linville@tuxdriver.com>,
+	Marcel Holtmann <marcel@holtmann.org>
+References: <20120612114701.85f70fd92fc42a9c9f2962ac@canb.auug.org.au>
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Paul Bolle <pebolle@tiscali.nl>, <linux-m68k@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] m68k: remove six unused headers
-References: <1339059427.25798.3.camel@x61.thuisdomein> <4FD19B29.4050904@snapgear.com> <CAMuHMdXisLvXAPbbkuYsYH2UZ_DJSyEhKZOL6_4qwuwLzFcEoQ@mail.gmail.com>
-In-Reply-To: <CAMuHMdXisLvXAPbbkuYsYH2UZ_DJSyEhKZOL6_4qwuwLzFcEoQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="CE+1k2dSO48ffgeK"
+Content-Disposition: inline
+In-Reply-To: <20120612114701.85f70fd92fc42a9c9f2962ac@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert,
 
-On 10/06/12 18:40, Geert Uytterhoeven wrote:
-> On Fri, Jun 8, 2012 at 8:26 AM, Greg Ungerer<gerg@snapgear.com>  wrote:
->> On 07/06/12 18:57, Paul Bolle wrote:
->>> There are six entirely unused headers in arch/m68k/include/asm. Nothing
->>> includes these headers. And a few tests found no hits for the things
->>> they provide (which makes sense).
->>>
->>> MC68332.h, mac_mouse.h, mcfmbus.h, and mcfne.h are all unused since at
->>> least v2.6.12-rc2 (I didn't bother looking further back than that).
->>
->>
->> Although mcfne.h has been unused for a while I am working on some patches
->> that do use it. No problem for the others.
->
-> If I'm not mistaken, that should become mcf8390.h, as "NE2000" means
-> "NE2000-compatible 8390-based Ethernet"? Cfr. the mac8390 and zorro8390
-> discussions in the previous millennium.
+--CE+1k2dSO48ffgeK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I guess I missed those :-(
-I think I see from the code for those under ~/drivers/net/ethernet/8390/
-what this may have been about though.
+Hi Stephen,
 
-Interestingly one of the ColdFire platforms (the Arnewsh 5206 board)
-really did have an ISA NE2000 card fitted to it. Most of the follow
-ons that where similar use a Davicom/9000.
+* Stephen Rothwell <sfr@canb.auug.org.au> [2012-06-12 11:47:01 +1000]:
 
-I'll modify my work a little to follow the other examples.
+> Hi Gustavo,
+>=20
+> Today's linux-next merge of the bluetooth tree got a conflict in
+> net/bluetooth/hci_event.c between commit 1c2e00418317 ("Bluetooth: Add
+> support for encryption key refresh") from the wireless tree and commit
+> 6039aa73a132 ("Bluetooth: Remove most of the inline usage") from the
+> bluetooth tree.
 
-Thanks
-Greg
+That is because I just merged bluetooth tree into bluetooth-next, should be
+fixed on wireless-next once I do a pull request to John(this is already fix=
+ed
+in bluetooth-next). Thanks for spotting me this.
 
+	Gustavo
 
+--CE+1k2dSO48ffgeK
+Content-Type: application/pgp-signature
 
-------------------------------------------------------------------------
-Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
-SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
-8 Gardner Close                             FAX:         +61 7 3217 5323
-Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP1t2uAAoJEPs3PUX4s20oNSYP/0+ar71hz/cjD8QXcFBpHeXn
+U9TTLb49Sgac/hGwU/PtALqSP44iM/l3FDoqHc1fw73thpiIXMa+eE5mONEDbpnG
+1E99tDVSKQ9aykU3LiQ6LtHvEHDwlA2bd7+0K2LybRfSeRr9HiNsH3ZxWgf0mRaS
+4NUyZkww30ub1m30B6bPZ9FRbNmU9HxaDiN4lcW7ozYe1rOq0SEAztNVti4kxWyL
+ySfk2AcBVfF90D+Yhs1wlOOU7hxhIluHDwIcP2+zLA+u5BspKeYoSFf1CjnulOx8
+yTd62zEk/ygADnMzK324P5MbIEBMqq/miHSeDEJl5JQVSKaFWSHK1zNiGr+EzlCD
+eMDS8oWtabwBFOx9EHrnL5F9veYG5HL/otQD5nCiKSkX1wUEZHqqt0t5cfJg+0wM
+azA6HVOmmogRObk+/Vqkbc+6hIqHbyG0Udxbc+olGk+2eagpfqq/hBodGjtUdxwq
+8vUUCrH+MGWgNa6E7xPznOXvmbfLD4SRa/RsrzdPqRrAiDG/0v5UZ65tBI2uKZUF
+l/VBMdLvgNGMjmqRQ0A4PXXQxqYjABVHzywh1vWE6F/yHhtHQAKByIN3LRkL0pRt
+A0cwZuDCous/2JaV6Ob+tkTlHBRPbZrkpaXvyt5hIdboCkNJvABTzsOJJ/qaz6P9
+lGYvBKCgq11XVzn2WRxh
+=OMQX
+-----END PGP SIGNATURE-----
+
+--CE+1k2dSO48ffgeK--
