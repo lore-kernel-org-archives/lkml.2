@@ -1,164 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752960Ab2FLSTm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 14:19:42 -0400
-Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:47448 "EHLO
-	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751559Ab2FLSTl (ORCPT
+	id S1753721Ab2FLSVE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 14:21:04 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:54979 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751181Ab2FLSVC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 14:19:41 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: <linux-kernel@vger.kernel.org>, Dan Williams <dan.j.williams@intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH] dma: coh901318: use devm allocation
-Date: Tue, 12 Jun 2012 20:19:24 +0200
-Message-ID: <1339525164-7325-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.9.2
+	Tue, 12 Jun 2012 14:21:02 -0400
+Date: Tue, 12 Jun 2012 19:20:36 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: David Brown <davidb@codeaurora.org>
+Cc: Kukjin Kim <kgene.kim@samsung.com>, Eric Miao <eric.y.miao@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Tomasz Figa <tomasz.figa@gmail.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Paulo Marques <pmarques@grupopie.com>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Jon Masters <jonathan@jonmasters.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: two possible fixes for the KALLSYMS build problem
+Message-ID: <20120612182036.GE7918@n2100.arm.linux.org.uk>
+References: <1338567721-19514-1-git-send-email-davidb@codeaurora.org> <20120611203748.GA16967@codeaurora.org> <20120612143249.GB7918@n2100.arm.linux.org.uk> <20120612160229.GA21389@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120612160229.GA21389@codeaurora.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+On Tue, Jun 12, 2012 at 09:02:29AM -0700, David Brown wrote:
+> On Tue, Jun 12, 2012 at 03:32:49PM +0100, Russell King - ARM Linux wrote:
+> > On Mon, Jun 11, 2012 at 01:37:48PM -0700, David Brown wrote:
+> > > On Fri, Jun 01, 2012 at 09:21:59AM -0700, David Brown wrote:
+> > > 
+> > > > David Brown (1):
+> > > >   ARM: Prevent KALLSYM size mismatch on ARM.
+> > > > 
+> > > >  arch/arm/kernel/vmlinux.lds.S |    3 +++
+> > > >  1 file changed, 3 insertions(+)
+> > > 
+> > > Just wondering if anyone has had a chance to look at either of these,
+> > > or try them.  I haven't seen any KALLSYMS mismatch build errors with
+> > > either of these patches applied.
+> > 
+> > I think variant 2 is the better approach out of either as it doesn't add
+> > to the size of the resulting kernel image.
+> 
+> The first variant doesn't ever increase the size of the kernel,
+> either.  Variant two actually makes it a little smaller, since a few
+> symbols are eliminated.
 
-Allocate memory, region, remap and irq for device state using
-devm_* helpers to simplify memory accounting.
+Ok.
 
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/dma/coh901318.c |   72 ++++++++++++++++-------------------------------
- 1 file changed, 24 insertions(+), 48 deletions(-)
+> The second variant is cleaner, though as long as it is safe in every
+> configuration.
 
-diff --git a/drivers/dma/coh901318.c b/drivers/dma/coh901318.c
-index e67b4e0..aa384e5 100644
---- a/drivers/dma/coh901318.c
-+++ b/drivers/dma/coh901318.c
-@@ -1438,34 +1438,32 @@ static int __init coh901318_probe(struct platform_device *pdev)
- 
- 	io = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!io)
--		goto err_get_resource;
-+		return -ENODEV;
- 
- 	/* Map DMA controller registers to virtual memory */
--	if (request_mem_region(io->start,
--			       resource_size(io),
--			       pdev->dev.driver->name) == NULL) {
--		err = -EBUSY;
--		goto err_request_mem;
--	}
-+	if (devm_request_mem_region(&pdev->dev,
-+				    io->start,
-+				    resource_size(io),
-+				    pdev->dev.driver->name) == NULL)
-+		return -ENOMEM;
- 
- 	pdata = pdev->dev.platform_data;
- 	if (!pdata)
--		goto err_no_platformdata;
-+		return -ENODEV;
- 
--	base = kmalloc(ALIGN(sizeof(struct coh901318_base), 4) +
--		       pdata->max_channels *
--		       sizeof(struct coh901318_chan),
--		       GFP_KERNEL);
-+	base = devm_kzalloc(&pdev->dev,
-+			    ALIGN(sizeof(struct coh901318_base), 4) +
-+			    pdata->max_channels *
-+			    sizeof(struct coh901318_chan),
-+			    GFP_KERNEL);
- 	if (!base)
--		goto err_alloc_coh_dma_channels;
-+		return -ENOMEM;
- 
- 	base->chans = ((void *)base) + ALIGN(sizeof(struct coh901318_base), 4);
- 
--	base->virtbase = ioremap(io->start, resource_size(io));
--	if (!base->virtbase) {
--		err = -ENOMEM;
--		goto err_no_ioremap;
--	}
-+	base->virtbase = devm_ioremap(&pdev->dev, io->start, resource_size(io));
-+	if (!base->virtbase)
-+		return -ENOMEM;
- 
- 	base->dev = &pdev->dev;
- 	base->platform = pdata;
-@@ -1474,25 +1472,20 @@ static int __init coh901318_probe(struct platform_device *pdev)
- 
- 	COH901318_DEBUGFS_ASSIGN(debugfs_dma_base, base);
- 
--	platform_set_drvdata(pdev, base);
--
- 	irq = platform_get_irq(pdev, 0);
- 	if (irq < 0)
--		goto err_no_irq;
--
--	err = request_irq(irq, dma_irq_handler, IRQF_DISABLED,
--			  "coh901318", base);
--	if (err) {
--		dev_crit(&pdev->dev,
--			 "Cannot allocate IRQ for DMA controller!\n");
--		goto err_request_irq;
--	}
-+		return irq;
-+
-+	err = devm_request_irq(&pdev->dev, irq, dma_irq_handler, IRQF_DISABLED,
-+			       "coh901318", base);
-+	if (err)
-+		return err;
- 
- 	err = coh901318_pool_create(&base->pool, &pdev->dev,
- 				    sizeof(struct coh901318_lli),
- 				    32);
- 	if (err)
--		goto err_pool_create;
-+		return err;
- 
- 	/* init channels for device transfers */
- 	coh901318_base_init(&base->dma_slave,  base->platform->chans_slave,
-@@ -1538,6 +1531,7 @@ static int __init coh901318_probe(struct platform_device *pdev)
- 	if (err)
- 		goto err_register_memcpy;
- 
-+	platform_set_drvdata(pdev, base);
- 	dev_info(&pdev->dev, "Initialized COH901318 DMA on virtual base 0x%08x\n",
- 		(u32) base->virtbase);
- 
-@@ -1547,19 +1541,6 @@ static int __init coh901318_probe(struct platform_device *pdev)
- 	dma_async_device_unregister(&base->dma_slave);
-  err_register_slave:
- 	coh901318_pool_destroy(&base->pool);
-- err_pool_create:
--	free_irq(platform_get_irq(pdev, 0), base);
-- err_request_irq:
-- err_no_irq:
--	iounmap(base->virtbase);
-- err_no_ioremap:
--	kfree(base);
-- err_alloc_coh_dma_channels:
-- err_no_platformdata:
--	release_mem_region(pdev->resource->start,
--			   resource_size(pdev->resource));
-- err_request_mem:
-- err_get_resource:
- 	return err;
- }
- 
-@@ -1570,11 +1551,6 @@ static int __exit coh901318_remove(struct platform_device *pdev)
- 	dma_async_device_unregister(&base->dma_memcpy);
- 	dma_async_device_unregister(&base->dma_slave);
- 	coh901318_pool_destroy(&base->pool);
--	free_irq(platform_get_irq(pdev, 0), base);
--	iounmap(base->virtbase);
--	kfree(base);
--	release_mem_region(pdev->resource->start,
--			   resource_size(pdev->resource));
- 	return 0;
- }
- 
--- 
-1.7.9.2
+Well, we don't have any per-CPU data unless we're building for SMP.
+See:
 
+#ifndef PER_CPU_BASE_SECTION
+#ifdef CONFIG_SMP
+#define PER_CPU_BASE_SECTION ".data..percpu"
+#else
+#define PER_CPU_BASE_SECTION ".data"
+#endif
+#endif
+
+in include/asm-generic/percpu.h.
