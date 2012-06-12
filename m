@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754302Ab2FLUpb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 16:45:31 -0400
-Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:35899 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754203Ab2FLUpI (ORCPT
+	id S1754359Ab2FLUpw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 16:45:52 -0400
+Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:53760 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754235Ab2FLUpH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 16:45:08 -0400
+	Tue, 12 Jun 2012 16:45:07 -0400
 From: "Andrew Stiegmann (stieg)" <astiegmann@vmware.com>
 To: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
         vm-crosstalk@vmware.com
 Cc: gregkh@linuxfoundation.org, cschamp@vmware.com, dtor@vmware.com,
         acking@vmware.com, dsouders@vmware.com,
         "Andrew Stiegmann (stieg)" <astiegmann@vmware.com>
-Subject: [vmw_vmci RFCv2 11/11] Apply the header code to make VMCI build
-Date: Tue, 12 Jun 2012 13:44:30 -0700
-Message-Id: <1339533870-24187-12-git-send-email-astiegmann@vmware.com>
+Subject: [vmw_vmci RFCv2 09/11] Apply VMCI resource code
+Date: Tue, 12 Jun 2012 13:44:28 -0700
+Message-Id: <1339533870-24187-10-git-send-email-astiegmann@vmware.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1339533870-24187-1-git-send-email-astiegmann@vmware.com>
 References: <1339533870-24187-1-git-send-email-astiegmann@vmware.com>
@@ -23,122 +23,22 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds all the necessary files to enable building of the VMCI module
-with the Linux Makefiles and Kconfig systems. Also adds the header
-files used for building modules against the driver.
+Tracks all used resources within the vmci code.
 
 Signed-off-by: Andrew Stiegmann (stieg) <astiegmann@vmware.com>
 ---
- drivers/misc/Kconfig                    |    1 +
- drivers/misc/Makefile                   |    1 +
- drivers/misc/vmw_vmci/Kconfig           |   16 +
- drivers/misc/vmw_vmci/Makefile          |   43 ++
- drivers/misc/vmw_vmci/vmci_common_int.h |   58 ++
- include/linux/vmw_vmci_api.h            |   89 +++
- include/linux/vmw_vmci_defs.h           |  921 +++++++++++++++++++++++++++++++
- 7 files changed, 1129 insertions(+), 0 deletions(-)
- create mode 100644 drivers/misc/vmw_vmci/Kconfig
- create mode 100644 drivers/misc/vmw_vmci/Makefile
- create mode 100644 drivers/misc/vmw_vmci/vmci_common_int.h
- create mode 100644 include/linux/vmw_vmci_api.h
- create mode 100644 include/linux/vmw_vmci_defs.h
+ drivers/misc/vmw_vmci/vmci_resource.c |  194 +++++++++++++++++++++++++++++++++
+ drivers/misc/vmw_vmci/vmci_resource.h |   62 +++++++++++
+ 2 files changed, 256 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/misc/vmw_vmci/vmci_resource.c
+ create mode 100644 drivers/misc/vmw_vmci/vmci_resource.h
 
-diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-index 2661f6e..fe38c7a 100644
---- a/drivers/misc/Kconfig
-+++ b/drivers/misc/Kconfig
-@@ -517,4 +517,5 @@ source "drivers/misc/lis3lv02d/Kconfig"
- source "drivers/misc/carma/Kconfig"
- source "drivers/misc/altera-stapl/Kconfig"
- source "drivers/misc/mei/Kconfig"
-+source "drivers/misc/vmw_vmci/Kconfig"
- endmenu
-diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
-index 456972f..af9e413 100644
---- a/drivers/misc/Makefile
-+++ b/drivers/misc/Makefile
-@@ -51,3 +51,4 @@ obj-y				+= carma/
- obj-$(CONFIG_USB_SWITCH_FSA9480) += fsa9480.o
- obj-$(CONFIG_ALTERA_STAPL)	+=altera-stapl/
- obj-$(CONFIG_INTEL_MEI)		+= mei/
-+obj-y				+= vmw_vmci/
-diff --git a/drivers/misc/vmw_vmci/Kconfig b/drivers/misc/vmw_vmci/Kconfig
+diff --git a/drivers/misc/vmw_vmci/vmci_resource.c b/drivers/misc/vmw_vmci/vmci_resource.c
 new file mode 100644
-index 0000000..55015e7
+index 0000000..03d1f44
 --- /dev/null
-+++ b/drivers/misc/vmw_vmci/Kconfig
-@@ -0,0 +1,16 @@
-+#
-+# VMware VMCI device
-+#
-+
-+config VMWARE_VMCI
-+	tristate "VMware VMCI Driver"
-+	depends on X86
-+	help
-+	  This is VMware's Virtual Machine Communication Interface.  It enables
-+	  high-speed communication between host and guest in a virtual
-+	  environment via the VMCI virtual device.
-+
-+	  If unsure, say N.
-+
-+	  To compile this driver as a module, choose M here: the
-+	  module will be called vmw_vmci.
-diff --git a/drivers/misc/vmw_vmci/Makefile b/drivers/misc/vmw_vmci/Makefile
-new file mode 100644
-index 0000000..19755fb
---- /dev/null
-+++ b/drivers/misc/vmw_vmci/Makefile
-@@ -0,0 +1,43 @@
-+################################################################################
-+#
-+# Linux driver for VMware's VMCI device.
-+#
-+# Copyright (C) 2007-2012, VMware, Inc. All Rights Reserved.
-+#
-+# This program is free software; you can redistribute it and/or modify it
-+# under the terms of the GNU General Public License as published by the
-+# Free Software Foundation; version 2 of the License and no later version.
-+#
-+# This program is distributed in the hope that it will be useful, but
-+# WITHOUT ANY WARRANTY; without even the implied warranty of
-+# MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-+# NON INFRINGEMENT.  See the GNU General Public License for more
-+# details.
-+#
-+# You should have received a copy of the GNU General Public License
-+# along with this program; if not, write to the Free Software
-+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
-+#
-+# The full GNU General Public License is included in this distribution in
-+# the file called "COPYING".
-+#
-+# Maintained by: Andrew Stiegmann <pv-drivers@vmware.com>
-+#
-+################################################################################
-+
-+#
-+# Makefile for the VMware VMCI
-+#
-+
-+obj-$(CONFIG_VMWARE_VMCI) += vmw_vmci.o
-+
-+vmw_vmci-objs += vmci_context.o
-+vmw_vmci-objs += vmci_datagram.o
-+vmw_vmci-objs += vmci_doorbell.o
-+vmw_vmci-objs += vmci_driver.o
-+vmw_vmci-objs += vmci_event.o
-+vmw_vmci-objs += vmci_handle_array.o
-+vmw_vmci-objs += vmci_hash_table.o
-+vmw_vmci-objs += vmci_queue_pair.o
-+vmw_vmci-objs += vmci_resource.o
-+vmw_vmci-objs += vmci_route.o
-diff --git a/drivers/misc/vmw_vmci/vmci_common_int.h b/drivers/misc/vmw_vmci/vmci_common_int.h
-new file mode 100644
-index 0000000..6e82610
---- /dev/null
-+++ b/drivers/misc/vmw_vmci/vmci_common_int.h
-@@ -0,0 +1,58 @@
++++ b/drivers/misc/vmw_vmci/vmci_resource.c
+@@ -0,0 +1,194 @@
 +/*
 + * VMware VMCI Driver
 + *
@@ -157,1068 +57,250 @@ index 0000000..6e82610
 + * with this program; if not, write to the Free Software Foundation, Inc.,
 + * 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
 + */
-+
-+#ifndef _VMCI_COMMONINT_H_
-+#define _VMCI_COMMONINT_H_
-+
-+#include <linux/printk.h>
-+#include <linux/vmw_vmci_defs.h>
-+
-+#include "vmci_handle_array.h"
-+
-+#define ASSERT(cond) BUG_ON(!(cond))
-+
-+#define CAN_BLOCK(_f) (!((_f) & VMCI_QPFLAG_NONBLOCK))
-+#define QP_PINNED(_f) ((_f) & VMCI_QPFLAG_PINNED)
-+
-+#define PCI_VENDOR_ID_VMWARE	0x15AD
-+#define PCI_DEVICE_ID_VMWARE_VMCI	0x0740
-+#define VMCI_DRIVER_VERSION_STRING	"9.5.5.0-k"
-+#define MODULE_NAME "vmw_vmci"
-+
-+/* Print magic... whee! */
-+#ifdef pr_fmt
-+#undef pr_fmt
-+#define pr_fmt(fmt) MODULE_NAME ": " fmt
-+#endif
-+
-+/*
-+ * Utilility function that checks whether two entities are allowed
-+ * to interact. If one of them is restricted, the other one must
-+ * be trusted.
-+ */
-+static inline bool vmci_deny_interaction(uint32_t partOne,
-+					 uint32_t partTwo)
-+{
-+	return ((partOne & VMCI_PRIVILEGE_FLAG_RESTRICTED) &&
-+		!(partTwo & VMCI_PRIVILEGE_FLAG_TRUSTED)) ||
-+	       ((partTwo & VMCI_PRIVILEGE_FLAG_RESTRICTED) &&
-+		!(partOne & VMCI_PRIVILEGE_FLAG_TRUSTED));
-+}
-+
-+#endif				/* _VMCI_COMMONINT_H_ */
-diff --git a/include/linux/vmw_vmci_api.h b/include/linux/vmw_vmci_api.h
-new file mode 100644
-index 0000000..71a4668
---- /dev/null
-+++ b/include/linux/vmw_vmci_api.h
-@@ -0,0 +1,89 @@
-+/*
-+ * VMware VMCI Driver
-+ *
-+ * Copyright (C) 2012 VMware, Inc. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the
-+ * Free Software Foundation version 2 and no later version.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-+ * or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
-+ * for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along
-+ * with this program; if not, write to the Free Software Foundation, Inc.,
-+ * 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
-+ */
-+
-+#ifndef __VMW_VMCI_API_H__
-+#define __VMW_VMCI_API_H__
 +
 +#include <linux/vmw_vmci_defs.h>
 +
-+#undef  VMCI_KERNEL_API_VERSION
-+#define VMCI_KERNEL_API_VERSION_2 2
-+#define VMCI_KERNEL_API_VERSION   VMCI_KERNEL_API_VERSION_2
-+
-+typedef void (VMCI_DeviceShutdownFn) (void *deviceRegistration, void *userData);
-+
-+bool VMCI_DeviceGet(uint32_t *apiVersion,
-+		    VMCI_DeviceShutdownFn *deviceShutdownCB,
-+		    void *userData, void **deviceRegistration);
-+void VMCI_DeviceRelease(void *deviceRegistration);
-+int VMCIDatagram_CreateHnd(uint32_t resourceID, uint32_t flags,
-+			   VMCIDatagramRecvCB recvCB, void *clientData,
-+			   struct vmci_handle *outHandle);
-+int VMCIDatagram_CreateHndPriv(uint32_t resourceID, uint32_t flags,
-+			       uint32_t privFlags,
-+			       VMCIDatagramRecvCB recvCB, void *clientData,
-+			       struct vmci_handle *outHandle);
-+int VMCIDatagram_DestroyHnd(struct vmci_handle handle);
-+int VMCIDatagram_Send(struct vmci_dg *msg);
-+int VMCIDoorbell_Create(struct vmci_handle *handle, uint32_t flags,
-+			uint32_t privFlags,
-+			VMCICallback notifyCB, void *clientData);
-+int VMCIDoorbell_Destroy(struct vmci_handle handle);
-+int VMCIDoorbell_Notify(struct vmci_handle handle, uint32_t privFlags);
-+uint32_t VMCI_GetContextID(void);
-+uint32_t VMCI_Version(void);
-+int VMCI_ContextID2HostVmID(uint32_t contextID, void *hostVmID,
-+			    size_t hostVmIDLen);
-+int VMCI_IsContextOwner(uint32_t contextID, void *hostUser);
-+
-+int VMCIEvent_Subscribe(uint32_t event, uint32_t flags,
-+			VMCI_EventCB callback, void *callbackData,
-+			uint32_t *subID);
-+int VMCIEvent_Unsubscribe(uint32_t subID);
-+uint32_t VMCIContext_GetPrivFlags(uint32_t contextID);
-+int VMCIQPair_Alloc(struct vmci_qp **qpair,
-+		    struct vmci_handle *handle,
-+		    uint64_t produceQSize,
-+		    uint64_t consumeQSize,
-+		    uint32_t peer, uint32_t flags, uint32_t privFlags);
-+int VMCIQPair_Detach(struct vmci_qp **qpair);
-+int VMCIQPair_GetProduceIndexes(const struct vmci_qp *qpair,
-+				uint64_t *producerTail,
-+				uint64_t *consumerHead);
-+int VMCIQPair_GetConsumeIndexes(const struct vmci_qp *qpair,
-+				uint64_t *consumerTail,
-+				uint64_t *producerHead);
-+int64_t VMCIQPair_ProduceFreeSpace(const struct vmci_qp *qpair);
-+int64_t VMCIQPair_ProduceBufReady(const struct vmci_qp *qpair);
-+int64_t VMCIQPair_ConsumeFreeSpace(const struct vmci_qp *qpair);
-+int64_t VMCIQPair_ConsumeBufReady(const struct vmci_qp *qpair);
-+ssize_t VMCIQPair_Enqueue(struct vmci_qp *qpair,
-+			  const void *buf, size_t bufSize, int mode);
-+ssize_t VMCIQPair_Dequeue(struct vmci_qp *qpair,
-+			  void *buf, size_t bufSize, int mode);
-+ssize_t VMCIQPair_Peek(struct vmci_qp *qpair, void *buf, size_t bufSize,
-+		       int mode);
-+ssize_t VMCIQPair_EnqueueV(struct vmci_qp *qpair,
-+			   void *iov, size_t iovSize, int mode);
-+ssize_t VMCIQPair_DequeueV(struct vmci_qp *qpair,
-+			   void *iov, size_t iovSize, int mode);
-+ssize_t VMCIQPair_PeekV(struct vmci_qp *qpair, void *iov, size_t iovSize,
-+			int mode);
-+
-+#endif /* !__VMW_VMCI_API_H__ */
-diff --git a/include/linux/vmw_vmci_defs.h b/include/linux/vmw_vmci_defs.h
-new file mode 100644
-index 0000000..d71d5e0
---- /dev/null
-+++ b/include/linux/vmw_vmci_defs.h
-@@ -0,0 +1,921 @@
-+/*
-+ * VMware VMCI Driver
-+ *
-+ * Copyright (C) 2012 VMware, Inc. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the
-+ * Free Software Foundation version 2 and no later version.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-+ * or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
-+ * for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along
-+ * with this program; if not, write to the Free Software Foundation, Inc.,
-+ * 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
-+ */
-+
-+#ifndef _VMW_VMCI_DEF_H_
-+#define _VMW_VMCI_DEF_H_
-+
-+#include <linux/atomic.h>
-+
-+/* Register offsets. */
-+#define VMCI_STATUS_ADDR      0x00
-+#define VMCI_CONTROL_ADDR     0x04
-+#define VMCI_ICR_ADDR	      0x08
-+#define VMCI_IMR_ADDR         0x0c
-+#define VMCI_DATA_OUT_ADDR    0x10
-+#define VMCI_DATA_IN_ADDR     0x14
-+#define VMCI_CAPS_ADDR        0x18
-+#define VMCI_RESULT_LOW_ADDR  0x1c
-+#define VMCI_RESULT_HIGH_ADDR 0x20
-+
-+/* Max number of devices. */
-+#define VMCI_MAX_DEVICES 1
-+
-+/* Status register bits. */
-+#define VMCI_STATUS_INT_ON     0x1
-+
-+/* Control register bits. */
-+#define VMCI_CONTROL_RESET        0x1
-+#define VMCI_CONTROL_INT_ENABLE   0x2
-+#define VMCI_CONTROL_INT_DISABLE  0x4
-+
-+/* Capabilities register bits. */
-+#define VMCI_CAPS_HYPERCALL     0x1
-+#define VMCI_CAPS_GUESTCALL     0x2
-+#define VMCI_CAPS_DATAGRAM      0x4
-+#define VMCI_CAPS_NOTIFICATIONS 0x8
-+
-+/* Interrupt Cause register bits. */
-+#define VMCI_ICR_DATAGRAM      0x1
-+#define VMCI_ICR_NOTIFICATION  0x2
-+
-+/* Interrupt Mask register bits. */
-+#define VMCI_IMR_DATAGRAM      0x1
-+#define VMCI_IMR_NOTIFICATION  0x2
-+
-+/* Interrupt type. */
-+enum {
-+	VMCI_INTR_TYPE_INTX = 0,
-+	VMCI_INTR_TYPE_MSI = 1,
-+	VMCI_INTR_TYPE_MSIX = 2,
-+};
-+
-+/* Maximum MSI/MSI-X interrupt vectors in the device. */
-+#define VMCI_MAX_INTRS 2
-+
-+/*
-+ * Supported interrupt vectors.  There is one for each ICR value above,
-+ * but here they indicate the position in the vector array/message ID.
-+ */
-+enum {
-+	VMCI_INTR_DATAGRAM = 0,
-+	VMCI_INTR_NOTIFICATION = 1,
-+};
-+
-+/*
-+ * A single VMCI device has an upper limit of 128MB on the amount of
-+ * memory that can be used for queue pairs.
-+ */
-+#define VMCI_MAX_GUEST_QP_MEMORY (128 * 1024 * 1024)
-+
-+/*
-+ * Queues with pre-mapped data pages must be small, so that we don't pin
-+ * too much kernel memory (especially on vmkernel).  We limit a queuepair to
-+ * 32 KB, or 16 KB per queue for symmetrical pairs.
-+ */
-+#define VMCI_MAX_PINNED_QP_MEMORY (32 * 1024)
-+
-+/*
-+ * We have a fixed set of resource IDs available in the VMX.
-+ * This allows us to have a very simple implementation since we statically
-+ * know how many will create datagram handles. If a new caller arrives and
-+ * we have run out of slots we can manually increment the maximum size of
-+ * available resource IDs.
-+ *
-+ * VMCI reserved hypervisor datagram resource IDs.
-+ */
-+enum {
-+	VMCI_RESOURCES_QUERY = 0,
-+	VMCI_GET_CONTEXT_ID = 1,
-+	VMCI_SET_NOTIFY_BITMAP = 2,
-+	VMCI_DOORBELL_LINK = 3,
-+	VMCI_DOORBELL_UNLINK = 4,
-+	VMCI_DOORBELL_NOTIFY = 5,
-+/*
-+ * VMCI_DATAGRAM_REQUEST_MAP and VMCI_DATAGRAM_REMOVE_MAP are
-+ * obsoleted by the removal of VM to VM communication.
-+ */
-+	VMCI_DATAGRAM_REQUEST_MAP = 6,
-+	VMCI_DATAGRAM_REMOVE_MAP = 7,
-+	VMCI_EVENT_SUBSCRIBE = 8,
-+	VMCI_EVENT_UNSUBSCRIBE = 9,
-+	VMCI_QUEUEPAIR_ALLOC = 10,
-+	VMCI_QUEUEPAIR_DETACH = 11,
-+
-+/*
-+ * VMCI_VSOCK_VMX_LOOKUP was assigned to 12 for Fusion 3.0/3.1,
-+ * WS 7.0/7.1 and ESX 4.1
-+ */
-+	VMCI_HGFS_TRANSPORT = 13,
-+	VMCI_UNITY_PBRPC_REGISTER = 14,
-+	VMCI_RESOURCE_MAX = 15,
-+};
-+
-+/**
-+ * struct vmci_handle - Ownership information structure
-+ * @context:	The VMX context ID.
-+ * @resource:	The resource ID (used for locating in resource hash).
-+ *
-+ * The vmci_handle structure is used to track resources used within
-+ * vmw_vmci.
-+ */
-+struct vmci_handle {
-+	uint32_t context;
-+	uint32_t resource;
-+};
-+
-+#define VMCI_HANDLE_EQUAL(_h1, _h2) ((_h1).context == (_h2).context &&	\
-+				     (_h1).resource == (_h2).resource)
-+
-+#define VMCI_INVALID_ID ~0
-+static const struct vmci_handle VMCI_INVALID_HANDLE = { VMCI_INVALID_ID,
-+							VMCI_INVALID_ID
-+};
-+
-+#define VMCI_HANDLE_INVALID(_handle)				\
-+	VMCI_HANDLE_EQUAL((_handle), VMCI_INVALID_HANDLE)
-+
-+/*
-+ * The below defines can be used to send anonymous requests.
-+ * This also indicates that no response is expected.
-+ */
-+#define VMCI_ANON_SRC_CONTEXT_ID   VMCI_INVALID_ID
-+#define VMCI_ANON_SRC_RESOURCE_ID  VMCI_INVALID_ID
-+#define VMCI_ANON_SRC_HANDLE       vmci_make_handle(VMCI_ANON_SRC_CONTEXT_ID, \
-+						    VMCI_ANON_SRC_RESOURCE_ID)
-+
-+/* The lowest 16 context ids are reserved for internal use. */
-+#define VMCI_RESERVED_CID_LIMIT ((uint32_t) 16)
-+
-+/*
-+ * Hypervisor context id, used for calling into hypervisor
-+ * supplied services from the VM.
-+ */
-+#define VMCI_HYPERVISOR_CONTEXT_ID 0
-+
-+/*
-+ * Well-known context id, a logical context that contains a set of
-+ * well-known services. This context ID is now obsolete.
-+ */
-+#define VMCI_WELL_KNOWN_CONTEXT_ID 1
-+
-+/*
-+ * Context ID used by host endpoints.
-+ */
-+#define VMCI_HOST_CONTEXT_ID  2
-+
-+#define VMCI_CONTEXT_IS_VM(_cid) (VMCI_INVALID_ID != (_cid) &&		\
-+				  (_cid) > VMCI_HOST_CONTEXT_ID)
-+
-+/*
-+ * The VMCI_CONTEXT_RESOURCE_ID is used together with vmci_make_handle to make
-+ * handles that refer to a specific context.
-+ */
-+#define VMCI_CONTEXT_RESOURCE_ID 0
-+
-+/*
-+ * VMCI error codes.
-+ */
-+enum {
-+	VMCI_SUCCESS_QUEUEPAIR_ATTACH	=  5,
-+	VMCI_SUCCESS_QUEUEPAIR_CREATE	=  4,
-+	VMCI_SUCCESS_LAST_DETACH	=  3,
-+	VMCI_SUCCESS_ACCESS_GRANTED	=  2,
-+	VMCI_SUCCESS_ENTRY_DEAD	=  1,
-+	VMCI_SUCCESS			=  0,
-+	VMCI_ERROR_INVALID_RESOURCE	= (-1),
-+	VMCI_ERROR_INVALID_ARGS	= (-2),
-+	VMCI_ERROR_NO_MEM		= (-3),
-+	VMCI_ERROR_DATAGRAM_FAILED	= (-4),
-+	VMCI_ERROR_MORE_DATA		= (-5),
-+	VMCI_ERROR_NO_MORE_DATAGRAMS	= (-6),
-+	VMCI_ERROR_NO_ACCESS		= (-7),
-+	VMCI_ERROR_NO_HANDLE		= (-8),
-+	VMCI_ERROR_DUPLICATE_ENTRY	= (-9),
-+	VMCI_ERROR_DST_UNREACHABLE	= (-10),
-+	VMCI_ERROR_PAYLOAD_TOO_LARGE	= (-11),
-+	VMCI_ERROR_INVALID_PRIV	= (-12),
-+	VMCI_ERROR_GENERIC		= (-13),
-+	VMCI_ERROR_PAGE_ALREADY_SHARED	= (-14),
-+	VMCI_ERROR_CANNOT_SHARE_PAGE	= (-15),
-+	VMCI_ERROR_CANNOT_UNSHARE_PAGE	= (-16),
-+	VMCI_ERROR_NO_PROCESS		= (-17),
-+	VMCI_ERROR_NO_DATAGRAM	= (-18),
-+	VMCI_ERROR_NO_RESOURCES	= (-19),
-+	VMCI_ERROR_UNAVAILABLE	= (-20),
-+	VMCI_ERROR_NOT_FOUND		= (-21),
-+	VMCI_ERROR_ALREADY_EXISTS	= (-22),
-+	VMCI_ERROR_NOT_PAGE_ALIGNED	= (-23),
-+	VMCI_ERROR_INVALID_SIZE	= (-24),
-+	VMCI_ERROR_REGION_ALREADY_SHARED = (-25),
-+	VMCI_ERROR_TIMEOUT	= (-26),
-+	VMCI_ERROR_DATAGRAM_INCOMPLETE	= (-27),
-+	VMCI_ERROR_INCORRECT_IRQL	= (-28),
-+	VMCI_ERROR_EVENT_UNKNOWN	= (-29),
-+	VMCI_ERROR_OBSOLETE	= (-30),
-+	VMCI_ERROR_QUEUEPAIR_MISMATCH	= (-31),
-+	VMCI_ERROR_QUEUEPAIR_NOTSET	= (-32),
-+	VMCI_ERROR_QUEUEPAIR_NOTOWNER	= (-33),
-+	VMCI_ERROR_QUEUEPAIR_NOTATTACHED	= (-34),
-+	VMCI_ERROR_QUEUEPAIR_NOSPACE	= (-35),
-+	VMCI_ERROR_QUEUEPAIR_NODATA	= (-36),
-+	VMCI_ERROR_BUSMEM_INVALIDATION	= (-37),
-+	VMCI_ERROR_MODULE_NOT_LOADED	= (-38),
-+	VMCI_ERROR_DEVICE_NOT_FOUND	= (-39),
-+	VMCI_ERROR_QUEUEPAIR_NOT_READY	= (-40),
-+	VMCI_ERROR_WOULD_BLOCK	= (-41),
-+
-+	/* VMCI clients should return error code within this range */
-+	VMCI_ERROR_CLIENT_MIN		= (-500),
-+	VMCI_ERROR_CLIENT_MAX	= (-550),
-+
-+	/* Internal error codes. */
-+	VMCI_SHAREDMEM_ERROR_BAD_CONTEXT	= (-1000),
-+};
-+
-+/* VMCI reserved events. */
-+enum {
-+	/* Only applicable to guest endpoints */
-+	VMCI_EVENT_CTX_ID_UPDATE  = 0,
-+
-+	/* Applicable to guest and host */
-+	VMCI_EVENT_CTX_REMOVED    = 1,
-+
-+	/* Only applicable to guest endpoints */
-+	VMCI_EVENT_QP_RESUMED	  = 2,
-+
-+	/* Applicable to guest and host */
-+	VMCI_EVENT_QP_PEER_ATTACH = 3,
-+
-+	/* Applicable to guest and host */
-+	VMCI_EVENT_QP_PEER_DETACH = 4,
-+
-+	/*
-+	 * Applicable to VMX and vmk.  On vmk,
-+	 * this event has the Context payload type.
-+	 */
-+	VMCI_EVENT_MEM_ACCESS_ON  = 5,
-+
-+	/*
-+	 * Applicable to VMX and vmk.  Same as
-+	 * above for the payload type.
-+	 */
-+	VMCI_EVENT_MEM_ACCESS_OFF = 6,
-+	VMCI_EVENT_MAX = 7,
-+};
-+
-+/*
-+ * Of the above events, a few are reserved for use in the VMX, and
-+ * other endpoints (guest and host kernel) should not use them. For
-+ * the rest of the events, we allow both host and guest endpoints to
-+ * subscribe to them, to maintain the same API for host and guest
-+ * endpoints.
-+ */
-+#define VMCI_EVENT_VALID_VMX(_event) ((_event) == VMCI_EVENT_MEM_ACCESS_ON || \
-+				      (_event) == VMCI_EVENT_MEM_ACCESS_OFF)
-+
-+#define VMCI_EVENT_VALID(_event) ((_event) < VMCI_EVENT_MAX &&		\
-+				  !VMCI_EVENT_VALID_VMX(_event))
-+
-+/* Reserved guest datagram resource ids. */
-+#define VMCI_EVENT_HANDLER 0
-+
-+/*
-+ * VMCI coarse-grained privileges (per context or host
-+ * process/endpoint. An entity with the restricted flag is only
-+ * allowed to interact with the hypervisor and trusted entities.
-+ */
-+enum {
-+	VMCI_NO_PRIVILEGE_FLAGS = 0,
-+	VMCI_PRIVILEGE_FLAG_RESTRICTED = 1,
-+	VMCI_PRIVILEGE_FLAG_TRUSTED = 2,
-+	VMCI_PRIVILEGE_ALL_FLAGS = (VMCI_PRIVILEGE_FLAG_RESTRICTED |
-+				    VMCI_PRIVILEGE_FLAG_TRUSTED),
-+	VMCI_DEFAULT_PROC_PRIVILEGE_FLAGS = VMCI_NO_PRIVILEGE_FLAGS,
-+	VMCI_LEAST_PRIVILEGE_FLAGS = VMCI_PRIVILEGE_FLAG_RESTRICTED,
-+	VMCI_MAX_PRIVILEGE_FLAGS = VMCI_PRIVILEGE_FLAG_TRUSTED,
-+};
++#include "vmci_common_int.h"
++#include "vmci_hash_table.h"
++#include "vmci_resource.h"
++#include "vmci_driver.h"
 +
 +/* 0 through VMCI_RESERVED_RESOURCE_ID_MAX are reserved. */
-+#define VMCI_RESERVED_RESOURCE_ID_MAX 1023
++static uint32_t resourceID = VMCI_RESERVED_RESOURCE_ID_MAX + 1;
++static spinlock_t resourceIdLock;
++static struct vmci_hash_table *resourceTable;
 +
 +/*
-+ * Driver version.
-+ *
-+ * Increment major version when you make an incompatible change.
-+ * Compatibility goes both ways (old driver with new executable
-+ * as well as new driver with old executable).
++ * Initializes the VMCI Resource Access Control API. Creates a hashtable
++ * to hold all resources, and registers vectors and callbacks for
++ * hypercalls.
 + */
++int __init vmci_resource_init(void)
++{
++	spin_lock_init(&resourceIdLock);
 +
-+/* Never change VMCI_VERSION_SHIFT_WIDTH */
-+#define VMCI_VERSION_SHIFT_WIDTH 16
-+#define VMCI_MAKE_VERSION(_major, _minor)				\
-+	((_major) << VMCI_VERSION_SHIFT_WIDTH | (uint16_t) (_minor))
++	resourceTable = vmci_hash_create(128);
++	if (resourceTable == NULL) {
++		pr_warn("Failed creating a resource hash table.");
++		return VMCI_ERROR_NO_MEM;
++	}
 +
-+#define VMCI_VERSION_MAJOR(v)  ((uint32) (v) >> VMCI_VERSION_SHIFT_WIDTH)
-+#define VMCI_VERSION_MINOR(v)  ((uint16_t) (v))
++	return VMCI_SUCCESS;
++}
++
++void vmci_resource_exit(void)
++{
++	if (resourceTable)
++		vmci_hash_destroy(resourceTable);
++}
 +
 +/*
-+ * VMCI_VERSION is always the current version.  Subsequently listed
-+ * versions are ways of detecting previous versions of the connecting
-+ * application (i.e., VMX).
-+ *
-+ * VMCI_VERSION_NOVMVM: This version removed support for VM to VM
-+ * communication.
-+ *
-+ * VMCI_VERSION_NOTIFY: This version introduced doorbell notification
-+ * support.
-+ *
-+ * VMCI_VERSION_HOSTQP: This version introduced host end point support
-+ * for hosted products.
-+ *
-+ * VMCI_VERSION_PREHOSTQP: This is the version prior to the adoption of
-+ * support for host end-points.
-+ *
-+ * VMCI_VERSION_PREVERS2: This fictional version number is intended to
-+ * represent the version of a VMX which doesn't call into the driver
-+ * with ioctl VERSION2 and thus doesn't establish its version with the
-+ * driver.
++ * Return resource ID. The first VMCI_RESERVED_RESOURCE_ID_MAX are
++ * reserved so we start from its value + 1.  Returns
++ * VMCI resource id on success, VMCI_INVALID_ID on failure.
 + */
-+
-+#define VMCI_VERSION                VMCI_VERSION_NOVMVM
-+#define VMCI_VERSION_NOVMVM         VMCI_MAKE_VERSION(11, 0)
-+#define VMCI_VERSION_NOTIFY         VMCI_MAKE_VERSION(10, 0)
-+#define VMCI_VERSION_HOSTQP         VMCI_MAKE_VERSION(9, 0)
-+#define VMCI_VERSION_PREHOSTQP      VMCI_MAKE_VERSION(8, 0)
-+#define VMCI_VERSION_PREVERS2       VMCI_MAKE_VERSION(1, 0)
-+
-+/*
-+ * Linux defines _IO* macros, but the core kernel code ignore the encoded
-+ * ioctl value. It is up to individual drivers to decode the value (for
-+ * example to look at the size of a structure to determine which version
-+ * of a specific command should be used) or not (which is what we
-+ * currently do, so right now the ioctl value for a given command is the
-+ * command itself).
-+ *
-+ * Hence, we just define the IOCTL_VMCI_foo values directly, with no
-+ * intermediate IOCTLCMD_ representation.
-+ */
-+#  define IOCTLCMD(_cmd) IOCTL_VMCI_ ## _cmd
-+
-+enum {
-+	/*
-+	 * We need to bracket the range of values used for ioctls,
-+	 * because x86_64 Linux forces us to explicitly register ioctl
-+	 * handlers by value for handling 32 bit ioctl syscalls.
-+	 * Hence FIRST and LAST.  Pick something for FIRST that
-+	 * doesn't collide with vmmon (2001+).
-+	 */
-+	IOCTLCMD(FIRST) = 1951,
-+	IOCTLCMD(VERSION) = IOCTLCMD(FIRST),
-+
-+	/* BEGIN VMCI */
-+	IOCTLCMD(INIT_CONTEXT),
++uint32_t vmci_resource_get_id(uint32_t contextID)
++{
++	uint32_t oldRID = resourceID;
++	uint32_t currentRID;
++	bool foundRID = false;
 +
 +	/*
-+	 * The following two were used for process and datagram
-+	 * process creation.  They are not used anymore and reserved
-+	 * for future use.  They will fail if issued.
++	 * Generate a unique resource ID.  Keep on trying until we wrap around
++	 * in the RID space.
 +	 */
-+	IOCTLCMD(RESERVED1),
-+	IOCTLCMD(RESERVED2),
++	ASSERT(oldRID > VMCI_RESERVED_RESOURCE_ID_MAX);
++
++	do {
++		struct vmci_handle handle;
++
++		spin_lock(&resourceIdLock);
++		currentRID = resourceID;
++		handle = vmci_make_handle(contextID, currentRID);
++		resourceID++;
++		if (unlikely(resourceID == VMCI_INVALID_ID)) {
++			/* Skip the reserved rids. */
++
++			resourceID = VMCI_RESERVED_RESOURCE_ID_MAX + 1;
++		}
++		spin_unlock(&resourceIdLock);
++		foundRID = !vmci_hash_exists(resourceTable, handle);
++	} while (!foundRID && resourceID != oldRID);
++
++	return (unlikely(!foundRID)) ? VMCI_INVALID_ID : currentRID;
++}
++
++int vmci_resource_add(struct vmci_resource *resource,
++		      enum vmci_resource_type resourceType,
++		      struct vmci_handle resourceHandle,
++		      VMCIResourceFreeCB containerFreeCB,
++		      void *containerObject)
++{
++	int result;
++
++	ASSERT(resource);
++
++	if (VMCI_HANDLE_EQUAL(resourceHandle, VMCI_INVALID_HANDLE)) {
++		pr_devel("Invalid argument resource (handle=0x%x:0x%x)",
++			 resourceHandle.context, resourceHandle.resource);
++		return VMCI_ERROR_INVALID_ARGS;
++	}
++
++	vmci_hash_init_entry(&resource->hashEntry, resourceHandle);
++	resource->type = resourceType;
++	resource->containerFreeCB = containerFreeCB;
++	resource->containerObject = containerObject;
++
++	/* Add resource to hashtable. */
++	result = vmci_hash_add(resourceTable, &resource->hashEntry);
++	if (result != VMCI_SUCCESS) {
++		pr_devel("Failed to add entry to hash table " \
++			 "(result=%d).", result);
++		return result;
++	}
++
++	return result;
++}
++
++void vmci_resource_remove(struct vmci_handle resourceHandle,
++			  enum vmci_resource_type resourceType)
++{
++	struct vmci_resource *resource =
++		vmci_resource_get(resourceHandle, resourceType);
++
++	if (resource == NULL)
++		return;
++
++	/* Remove resource from hashtable. */
++	vmci_hash_remove(resourceTable, &resource->hashEntry);
++
++	vmci_resource_release(resource);
++	/* resource could be freed by now. */
++}
++
++struct vmci_resource *vmci_resource_get(struct vmci_handle resourceHandle,
++					enum vmci_resource_type resourceType)
++{
++	struct vmci_resource *resource;
++	struct vmci_hash_entry *entry =
++		vmci_hash_get(resourceTable, resourceHandle);
++
++	if (entry == NULL)
++		return NULL;
++
++	resource = container_of(entry, struct vmci_resource, hashEntry);
++	if (resourceType == VMCI_RESOURCE_TYPE_ANY ||
++	    resource->type == resourceType)
++		return resource;
++
++	vmci_hash_release(resourceTable, entry);
++	return NULL;
++}
++
++/*
++ * Hold the given resource.  This will hold the hashtable entry.  This
++ * is like doing a Get() but without having to lookup the resource by
++ * handle.
++ */
++void vmci_resource_hold(struct vmci_resource *resource)
++{
++	ASSERT(resource);
++	vmci_hash_hold(resourceTable, &resource->hashEntry);
++}
++
++/*
++ * resource's containerFreeCB will get called if last reference.
++ */
++int vmci_resource_release(struct vmci_resource *resource)
++{
++	int result;
++
++	ASSERT(resource);
++
++	result = vmci_hash_release(resourceTable, &resource->hashEntry);
++	if (result == VMCI_SUCCESS_ENTRY_DEAD && resource->containerFreeCB)
++		resource->containerFreeCB(resource->containerObject);
 +
 +	/*
-+	 * The following used to be for shared memory. It is now
-+	 * unused and and is reserved for future use. It will fail if
-+	 * issued.
++	 * We propagate the information back to caller in case it wants to know
++	 * whether entry was freed.
 +	 */
-+	IOCTLCMD(RESERVED3),
++	return result;
++}
 +
-+	/*
-+	 * The follwoing three were also used to be for shared
-+	 * memory. An old WS6 user-mode client might try to use them
-+	 * with the new driver, but since we ensure that only contexts
-+	 * created by VMX'en of the appropriate version
-+	 * (VMCI_VERSION_NOTIFY or VMCI_VERSION_NEWQP) or higher use
-+	 * these ioctl, everything is fine.
-+	 */
-+	IOCTLCMD(QUEUEPAIR_SETVA),
-+	IOCTLCMD(NOTIFY_RESOURCE),
-+	IOCTLCMD(NOTIFICATIONS_RECEIVE),
-+	IOCTLCMD(VERSION2),
-+	IOCTLCMD(QUEUEPAIR_ALLOC),
-+	IOCTLCMD(QUEUEPAIR_SETPAGEFILE),
-+	IOCTLCMD(QUEUEPAIR_DETACH),
-+	IOCTLCMD(DATAGRAM_SEND),
-+	IOCTLCMD(DATAGRAM_RECEIVE),
-+	IOCTLCMD(DATAGRAM_REQUEST_MAP),
-+	IOCTLCMD(DATAGRAM_REMOVE_MAP),
-+	IOCTLCMD(CTX_ADD_NOTIFICATION),
-+	IOCTLCMD(CTX_REMOVE_NOTIFICATION),
-+	IOCTLCMD(CTX_GET_CPT_STATE),
-+	IOCTLCMD(CTX_SET_CPT_STATE),
-+	IOCTLCMD(GET_CONTEXT_ID),
-+	IOCTLCMD(LAST),
-+	/* END VMCI */
-+
-+	/*
-+	 * VMCI Socket IOCTLS are defined next and go from
-+	 * IOCTLCMD(LAST) (1972) to 1990.  VMware reserves a range of
-+	 * 4 ioctls for VMCI Sockets to grow.  We cannot reserve many
-+	 * ioctls here since we are close to overlapping with vmmon
-+	 * ioctls (2001+).  Define a meta-ioctl if running out of this
-+	 * binary space.
-+	 */
-+	IOCTLCMD(SOCKETS_LAST) = 1994,	/* 1994 on Linux. */
-+
-+	/*
-+	 * The VSockets ioctls occupy the block above.  We define a
-+	 * new range of VMCI ioctls to maintain binary compatibility
-+	 * between the user land and the kernel driver.  Careful,
-+	 * vmmon ioctls start from 2001, so this means we can add only
-+	 * 4 new VMCI ioctls.  Define a meta-ioctl if running out of
-+	 * this binary space.
-+	 */
-+	IOCTLCMD(FIRST2),
-+	IOCTLCMD(SET_NOTIFY) = IOCTLCMD(FIRST2),	/* 1995 on Linux. */
-+	IOCTLCMD(LAST2),
-+};
-+
-+/* Clean up helper macros */
-+#undef IOCTLCMD
-+
++struct vmci_handle vmci_resource_handle(struct vmci_resource *resource)
++{
++	ASSERT(resource);
++	return resource->hashEntry.handle;
++}
+diff --git a/drivers/misc/vmw_vmci/vmci_resource.h b/drivers/misc/vmw_vmci/vmci_resource.h
+new file mode 100644
+index 0000000..81a4254
+--- /dev/null
++++ b/drivers/misc/vmw_vmci/vmci_resource.h
+@@ -0,0 +1,62 @@
 +/*
-+ * struct vmci_queue_header - VMCI Queue Header information.
++ * VMware VMCI Driver
 + *
-+ * A Queue cannot stand by itself as designed.  Each Queue's header
-+ * contains a pointer into itself (the producerTail) and into its peer
-+ * (consumerHead).  The reason for the separation is one of
-+ * accessibility: Each end-point can modify two things: where the next
-+ * location to enqueue is within its produceQ (producerTail); and
-+ * where the next dequeue location is in its consumeQ (consumerHead).
++ * Copyright (C) 2012 VMware, Inc. All rights reserved.
 + *
-+ * An end-point cannot modify the pointers of its peer (guest to
-+ * guest; NOTE that in the host both queue headers are mapped r/w).
-+ * But, each end-point needs read access to both Queue header
-+ * structures in order to determine how much space is used (or left)
-+ * in the Queue.  This is because for an end-point to know how full
-+ * its produceQ is, it needs to use the consumerHead that points into
-+ * the produceQ but -that- consumerHead is in the Queue header for
-+ * that end-points consumeQ.
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the
++ * Free Software Foundation version 2 and no later version.
 + *
-+ * Thoroughly confused?  Sorry.
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
++ * or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
++ * for more details.
 + *
-+ * producerTail: the point to enqueue new entrants.  When you approach
-+ * a line in a store, for example, you walk up to the tail.
-+ *
-+ * consumerHead: the point in the queue from which the next element is
-+ * dequeued.  In other words, who is next in line is he who is at the
-+ * head of the line.
-+ *
-+ * Also, producerTail points to an empty byte in the Queue, whereas
-+ * consumerHead points to a valid byte of data (unless producerTail ==
-+ * consumerHead in which case consumerHead does not point to a valid
-+ * byte of data).
-+ *
-+ * For a queue of buffer 'size' bytes, the tail and head pointers will be in
-+ * the range [0, size-1].
-+ *
-+ * If produceQHeader->producerTail == consumeQHeader->consumerHead
-+ * then the produceQ is empty.
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
 + */
-+struct vmci_queue_header {
-+	/* All fields are 64bit and aligned. */
-+	struct vmci_handle handle;	/* Identifier. */
-+	atomic64_t producerTail;	/* Offset in this queue. */
-+	atomic64_t consumerHead;	/* Offset in peer queue. */
++
++#ifndef _VMCI_RESOURCE_H_
++#define _VMCI_RESOURCE_H_
++
++#include <linux/vmw_vmci_defs.h>
++
++#include "vmci_context.h"
++#include "vmci_hash_table.h"
++
++typedef void (*VMCIResourceFreeCB) (void *resource);
++
++enum vmci_resource_type {
++	VMCI_RESOURCE_TYPE_ANY,
++	VMCI_RESOURCE_TYPE_API,
++	VMCI_RESOURCE_TYPE_GROUP,
++	VMCI_RESOURCE_TYPE_DATAGRAM,
++	VMCI_RESOURCE_TYPE_DOORBELL,
 +};
 +
-+/**
-+ * struct vmci_dg - Base struct for vmci datagrams.
-+ * @dst:	A vmci_handle that tracks the destination of the datagram.
-+ * @src:	A vmci_handle that tracks the source of the datagram.
-+ * @payloadSize:	The size of the payload.
-+ *
-+ * vmci_dg structs are used when sending vmci datagrams.  They include
-+ * the necessary source and destination information to properly route
-+ * the information along with the size of the package.
-+ */
-+struct vmci_dg {
-+	struct vmci_handle dst;
-+	struct vmci_handle src;
-+	uint64_t payloadSize;
++struct vmci_resource {
++	struct vmci_hash_entry hashEntry;
++	enum vmci_resource_type type;
++	/* Callback to free container object when refCount is 0. */
++	VMCIResourceFreeCB containerFreeCB;
++	void *containerObject;	/* Container object reference. */
 +};
 +
-+/*
-+ * Second flag is for creating a well-known handle instead of a per context
-+ * handle.  Next flag is for deferring datagram delivery, so that the
-+ * datagram callback is invoked in a delayed context (not interrupt context).
-+ */
-+#define VMCI_FLAG_DG_NONE          0
-+#define VMCI_FLAG_WELLKNOWN_DG_HND 0x1
-+#define VMCI_FLAG_ANYCID_DG_HND    0x2
-+#define VMCI_FLAG_DG_DELAYED_CB    0x4
++int vmci_resource_init(void);
++void vmci_resource_exit(void);
++uint32_t vmci_resource_get_id(uint32_t contextID);
++int vmci_resource_add(struct vmci_resource *resource,
++		      enum vmci_resource_type resourceType,
++		      struct vmci_handle resourceHandle,
++		      VMCIResourceFreeCB containerFreeCB,
++		      void *containerObject);
++void vmci_resource_remove(struct vmci_handle resourceHandle,
++			  enum vmci_resource_type resourceType);
++struct vmci_resource *vmci_resource_get(struct vmci_handle resourceHandle,
++					enum vmci_resource_type resourceType);
++void vmci_resource_hold(struct vmci_resource *resource);
++int vmci_resource_release(struct vmci_resource *resource);
++struct vmci_handle vmci_resource_handle(struct vmci_resource *resource);
 +
-+/* Event callback should fire in a delayed context (not interrupt context.) */
-+#define VMCI_FLAG_EVENT_NONE       0
-+#define VMCI_FLAG_EVENT_DELAYED_CB 0x1
-+
-+/*
-+ * Maximum supported size of a VMCI datagram for routable datagrams.
-+ * Datagrams going to the hypervisor are allowed to be larger.
-+ */
-+#define VMCI_MAX_DG_SIZE (17 * 4096)
-+#define VMCI_MAX_DG_PAYLOAD_SIZE (VMCI_MAX_DG_SIZE - sizeof(struct vmci_dg))
-+#define VMCI_DG_PAYLOAD(_dg) (void *)((char *)(_dg) + sizeof(struct vmci_dg))
-+#define VMCI_DG_HEADERSIZE sizeof(struct vmci_dg)
-+#define VMCI_DG_SIZE(_dg) (VMCI_DG_HEADERSIZE + (size_t)(_dg)->payloadSize)
-+#define VMCI_DG_SIZE_ALIGNED(_dg) ((VMCI_DG_SIZE(_dg) + 7) & (~((size_t) 0x7)))
-+#define VMCI_MAX_DATAGRAM_QUEUE_SIZE (VMCI_MAX_DG_SIZE * 2)
-+
-+/* Flags for VMCI QueuePair API. */
-+enum {
-+	/* Fail alloc if QP not created by peer. */
-+	VMCI_QPFLAG_ATTACH_ONLY = 1 << 0,
-+
-+	/* Only allow attaches from local context. */
-+	VMCI_QPFLAG_LOCAL = 1 << 1,
-+
-+	/* Host won't block when guest is quiesced. */
-+	VMCI_QPFLAG_NONBLOCK = 1 << 2,
-+
-+	/* Pin data pages in ESX.  Used with NONBLOCK */
-+	VMCI_QPFLAG_PINNED = 1 << 3,
-+
-+	/* Update the following flag when adding new flags. */
-+	VMCI_QP_ALL_FLAGS = (VMCI_QPFLAG_ATTACH_ONLY | VMCI_QPFLAG_LOCAL |
-+			     VMCI_QPFLAG_NONBLOCK | VMCI_QPFLAG_PINNED),
-+
-+	/* Convenience flags */
-+	VMCI_QP_ASYMM = (VMCI_QPFLAG_NONBLOCK | VMCI_QPFLAG_PINNED),
-+	VMCI_QP_ASYMM_PEER = (VMCI_QPFLAG_ATTACH_ONLY | VMCI_QP_ASYMM),
-+};
-+
-+/*
-+ * We allow at least 1024 more event datagrams from the hypervisor past the
-+ * normally allowed datagrams pending for a given context.  We define this
-+ * limit on event datagrams from the hypervisor to guard against DoS attack
-+ * from a malicious VM which could repeatedly attach to and detach from a queue
-+ * pair, causing events to be queued at the destination VM.  However, the rate
-+ * at which such events can be generated is small since it requires a VM exit
-+ * and handling of queue pair attach/detach call at the hypervisor.  Event
-+ * datagrams may be queued up at the destination VM if it has interrupts
-+ * disabled or if it is not draining events for some other reason.  1024
-+ * datagrams is a grossly conservative estimate of the time for which
-+ * interrupts may be disabled in the destination VM, but at the same time does
-+ * not exacerbate the memory pressure problem on the host by much (size of each
-+ * event datagram is small).
-+ */
-+#define VMCI_MAX_DATAGRAM_AND_EVENT_QUEUE_SIZE				\
-+	(VMCI_MAX_DATAGRAM_QUEUE_SIZE +					\
-+	 1024 * (sizeof(struct vmci_dg) + sizeof(struct vmci_event_data_max)))
-+
-+/*
-+ * Struct used for querying, via VMCI_RESOURCES_QUERY, the availability of
-+ * hypervisor resources.  Struct size is 16 bytes. All fields in struct are
-+ * aligned to their natural alignment.
-+ */
-+struct vmci_resource_query_hdr {
-+	struct vmci_dg hdr;
-+	uint32_t numResources;
-+	uint32_t _padding;
-+};
-+
-+/*
-+ * Convenience struct for negotiating vectors. Must match layout of
-+ * VMCIResourceQueryHdr minus the struct vmci_dg header.
-+ */
-+struct vmci_resource_query_msg {
-+	uint32_t numResources;
-+	uint32_t _padding;
-+	uint32_t resources[1];
-+};
-+
-+/*
-+ * The maximum number of resources that can be queried using
-+ * VMCI_RESOURCE_QUERY is 31, as the result is encoded in the lower 31
-+ * bits of a positive return value. Negative values are reserved for
-+ * errors.
-+ */
-+#define VMCI_RESOURCE_QUERY_MAX_NUM 31
-+
-+/* Maximum size for the VMCI_RESOURCE_QUERY request. */
-+#define VMCI_RESOURCE_QUERY_MAX_SIZE				\
-+	(sizeof(struct vmci_resource_query_hdr) +		\
-+	 sizeof(uint32_t) * VMCI_RESOURCE_QUERY_MAX_NUM)
-+
-+/*
-+ * Struct used for setting the notification bitmap.  All fields in
-+ * struct are aligned to their natural alignment.
-+ */
-+struct vmci_notify_bm_set_msg {
-+	struct vmci_dg hdr;
-+	uint32_t bitmapPPN;
-+	uint32_t _pad;
-+};
-+
-+/*
-+ * Struct used for linking a doorbell handle with an index in the
-+ * notify bitmap. All fields in struct are aligned to their natural
-+ * alignment.
-+ */
-+struct vmci_doorbell_link_msg {
-+	struct vmci_dg hdr;
-+	struct vmci_handle handle;
-+	uint64_t notifyIdx;
-+};
-+
-+/*
-+ * Struct used for unlinking a doorbell handle from an index in the
-+ * notify bitmap. All fields in struct are aligned to their natural
-+ * alignment.
-+ */
-+struct vmci_doorbell_unlink_msg {
-+	struct vmci_dg hdr;
-+	struct vmci_handle handle;
-+};
-+
-+/*
-+ * Struct used for generating a notification on a doorbell handle. All
-+ * fields in struct are aligned to their natural alignment.
-+ */
-+struct vmci_doorbell_ntfy_msg {
-+	struct vmci_dg hdr;
-+	struct vmci_handle handle;
-+};
-+
-+/*
-+ * This struct is used to contain data for events.  Size of this struct is a
-+ * multiple of 8 bytes, and all fields are aligned to their natural alignment.
-+ */
-+struct vmci_event_data {
-+	uint32_t event;		/* 4 bytes. */
-+	uint32_t _pad;
-+	/* Event payload is put here. */
-+};
-+
-+
-+/*
-+ * Define the different VMCI_EVENT payload data types here.  All structs must
-+ * be a multiple of 8 bytes, and fields must be aligned to their natural
-+ * alignment.
-+ */
-+struct vmci_event_payld_ctx {
-+	uint32_t contextID;	/* 4 bytes. */
-+	uint32_t _pad;
-+};
-+
-+struct vmci_event_payld_qp {
-+	struct vmci_handle handle;	/* QueuePair handle. */
-+	uint32_t peerId;	/* Context id of attaching/detaching VM. */
-+	uint32_t _pad;
-+};
-+
-+/*
-+ * We define the following struct to get the size of the maximum event
-+ * data the hypervisor may send to the guest.  If adding a new event
-+ * payload type above, add it to the following struct too (inside the
-+ * union).
-+ */
-+struct vmci_event_data_max {
-+	struct vmci_event_data eventData;
-+	union {
-+		struct vmci_event_payld_ctx contextPayload;
-+		struct vmci_event_payld_qp qpPayload;
-+	} evDataPayload;
-+};
-+
-+/*
-+ * Struct used for VMCI_EVENT_SUBSCRIBE/UNSUBSCRIBE and
-+ * VMCI_EVENT_HANDLER messages.  Struct size is 32 bytes.  All fields
-+ * in struct are aligned to their natural alignment.
-+ */
-+struct vmci_event_msg {
-+	struct vmci_dg hdr;
-+
-+	/* Has event type and payload. */
-+	struct vmci_event_data eventData;
-+
-+	/* Payload gets put here. */
-+};
-+
-+/*
-+ * Structs used for QueuePair alloc and detach messages.  We align fields of
-+ * these structs to 64bit boundaries.
-+ */
-+struct vmci_qp_alloc_msg {
-+	struct vmci_dg hdr;
-+	struct vmci_handle handle;
-+	uint32_t peer;
-+	uint32_t flags;
-+	uint64_t produceSize;
-+	uint64_t consumeSize;
-+	uint64_t numPPNs;
-+
-+	/* List of PPNs placed here. */
-+};
-+
-+struct vmci_qp_detach_msg {
-+	struct vmci_dg hdr;
-+	struct vmci_handle handle;
-+};
-+
-+/* VMCI Doorbell API. */
-+#define VMCI_FLAG_DELAYED_CB 0x01
-+
-+typedef void (*VMCICallback) (void *clientData);
-+
-+/**
-+ * struct vmci_qp - A vmw_vmci queue pair handle.
-+ *
-+ * This structure is used as a handle to a queue pair created by
-+ * VMCI.  It is intentionally left opaque to clients.
-+ */
-+struct vmci_qp;
-+
-+/* Callback needed for correctly waiting on events. */
-+typedef int (*VMCIDatagramRecvCB) (void *clientData,
-+				   struct vmci_dg *msg);
-+
-+/* VMCI Event API. */
-+typedef void (*VMCI_EventCB) (uint32_t subID, struct vmci_event_data *ed,
-+			      void *clientData);
-+
-+/*
-+ * We use the following inline function to access the payload data
-+ * associated with an event data.
-+ */
-+static inline void *vmci_event_data_payload(struct vmci_event_data *evData)
-+{
-+	return (void *)((char *)evData + sizeof *evData);
-+}
-+
-+/*
-+ * Helper to add a given offset to a head or tail pointer. Wraps the
-+ * value of the pointer around the max size of the queue.
-+ */
-+static inline void vmci_qp_add_pointer(atomic64_t *var,
-+				       size_t add,
-+				       uint64_t size)
-+{
-+	uint64_t newVal = atomic64_read(var);
-+
-+	if (newVal >= size - add)
-+		newVal -= size;
-+
-+	newVal += add;
-+
-+	atomic64_set(var, newVal);
-+}
-+
-+/*
-+ * Helper routine to get the Producer Tail from the supplied queue.
-+ */
-+static inline uint64_t
-+vmci_q_header_producer_tail(const struct vmci_queue_header *qHeader)
-+{
-+	struct vmci_queue_header *qh = (struct vmci_queue_header *)qHeader;
-+	return atomic64_read(&qh->producerTail);
-+}
-+
-+/*
-+ * Helper routine to get the Consumer Head from the supplied queue.
-+ */
-+static inline uint64_t
-+vmci_q_header_consumer_head(const struct vmci_queue_header *qHeader)
-+{
-+	struct vmci_queue_header *qh = (struct vmci_queue_header *)qHeader;
-+	return atomic64_read(&qh->consumerHead);
-+}
-+
-+/*
-+ * Helper routine to increment the Producer Tail.  Fundamentally,
-+ * vmci_qp_add_pointer() is used to manipulate the tail itself.
-+ */
-+static inline void
-+vmci_q_header_add_producer_tail(struct vmci_queue_header *qHeader,
-+				size_t add,
-+				uint64_t queueSize)
-+{
-+	vmci_qp_add_pointer(&qHeader->producerTail, add, queueSize);
-+}
-+
-+/*
-+ * Helper routine to increment the Consumer Head.  Fundamentally,
-+ * vmci_qp_add_pointer() is used to manipulate the head itself.
-+ */
-+static inline void
-+vmci_q_header_add_consumer_head(struct vmci_queue_header *qHeader,
-+				size_t add,
-+				uint64_t queueSize)
-+{
-+	vmci_qp_add_pointer(&qHeader->consumerHead, add, queueSize);
-+}
-+
-+/*
-+ * Helper routine for getting the head and the tail pointer for a queue.
-+ * Both the VMCIQueues are needed to get both the pointers for one queue.
-+ */
-+static inline void
-+vmci_q_header_get_pointers(const struct vmci_queue_header *produceQHeader,
-+			   const struct vmci_queue_header *consumeQHeader,
-+			   uint64_t *producerTail,
-+			   uint64_t *consumerHead)
-+{
-+	if (producerTail)
-+		*producerTail = vmci_q_header_producer_tail(produceQHeader);
-+
-+	if (consumerHead)
-+		*consumerHead = vmci_q_header_consumer_head(consumeQHeader);
-+}
-+
-+static inline void vmci_q_header_init(struct vmci_queue_header *qHeader,
-+				      const struct vmci_handle handle)
-+{
-+	qHeader->handle = handle;
-+	atomic64_set(&qHeader->producerTail, 0);
-+	atomic64_set(&qHeader->consumerHead, 0);
-+}
-+
-+/*
-+ * Finds available free space in a produce queue to enqueue more
-+ * data or reports an error if queue pair corruption is detected.
-+ */
-+static int64_t
-+vmci_q_header_free_space(const struct vmci_queue_header *produceQHeader,
-+			 const struct vmci_queue_header *consumeQHeader,
-+			 const uint64_t produceQSize)
-+{
-+	uint64_t tail;
-+	uint64_t head;
-+	uint64_t freeSpace;
-+
-+	tail = vmci_q_header_producer_tail(produceQHeader);
-+	head = vmci_q_header_consumer_head(consumeQHeader);
-+
-+	if (tail >= produceQSize || head >= produceQSize)
-+		return VMCI_ERROR_INVALID_SIZE;
-+
-+	/*
-+	 * Deduct 1 to avoid tail becoming equal to head which causes
-+	 * ambiguity. If head and tail are equal it means that the
-+	 * queue is empty.
-+	 */
-+	if (tail >= head)
-+		freeSpace = produceQSize - (tail - head) - 1;
-+	else
-+		freeSpace = head - tail - 1;
-+
-+	return freeSpace;
-+}
-+
-+/*
-+ * vmci_q_header_free_space() does all the heavy lifting of
-+ * determing the number of free bytes in a Queue.  This routine,
-+ * then subtracts that size from the full size of the Queue so
-+ * the caller knows how many bytes are ready to be dequeued.
-+ * Results:
-+ * On success, available data size in bytes (up to MAX_INT64).
-+ * On failure, appropriate error code.
-+ */
-+static inline int64_t
-+vmci_q_header_buf_ready(const struct vmci_queue_header *consumeQHeader,
-+			const struct vmci_queue_header *produceQHeader,
-+			const uint64_t consumeQSize)
-+{
-+	int64_t freeSpace;
-+
-+	freeSpace = vmci_q_header_free_space(consumeQHeader,
-+					     produceQHeader, consumeQSize);
-+	if (freeSpace < VMCI_SUCCESS)
-+		return freeSpace;
-+
-+	return consumeQSize - freeSpace - 1;
-+}
-+
-+static inline struct vmci_handle vmci_make_handle(uint32_t cid, uint32_t rid)
-+{
-+	struct vmci_handle h;
-+
-+	h.context = cid;
-+	h.resource = rid;
-+
-+	return h;
-+}
-+
-+#endif /* _VMW_VMCI_DEF_H_ */
++#endif /* _VMCI_RESOURCE_H_ */
 -- 
 1.7.0.4
 
