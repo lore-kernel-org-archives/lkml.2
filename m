@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752560Ab2FLKrn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 06:47:43 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:2041 "EHLO
+	id S1752265Ab2FLKrU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 06:47:20 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:2016 "EHLO
 	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752478Ab2FLKr3 (ORCPT
+	with ESMTP id S1751035Ab2FLKrQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 06:47:29 -0400
+	Tue, 12 Jun 2012 06:47:16 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Tue, 12 Jun 2012 03:46:55 -0700
+	by hqnvupgp05.nvidia.com on Tue, 12 Jun 2012 03:46:44 -0700
 From: Laxman Dewangan <ldewangan@nvidia.com>
 To: <khali@linux-fr.org>, <w.sang@pengutronix.de>, <ben-linux@fluff.org>,
         <swarren@wwwdotorg.org>, <olof@lixom.net>
 CC: <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-tegra@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH V2 4/4] i2c: tegra: make all resource allocation through devm_*
-Date: Tue, 12 Jun 2012 16:07:31 +0530
-Message-ID: <1339497451-26260-5-git-send-email-ldewangan@nvidia.com>
+Subject: [PATCH V2 1/4] i2c: tegra: make sure register writes completes
+Date: Tue, 12 Jun 2012 16:07:28 +0530
+Message-ID: <1339497451-26260-2-git-send-email-ldewangan@nvidia.com>
 X-Mailer: git-send-email 1.7.1.1
 In-Reply-To: <1339497451-26260-1-git-send-email-ldewangan@nvidia.com>
 References: <1339497451-26260-1-git-send-email-ldewangan@nvidia.com>
@@ -26,153 +26,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the devm_* for the memory region allocation, interrupt request,
-clock handler request.
-By doing this, it does not require to explicitly free it and hence
-saving some code.
+The Tegra PPSB (an peripheral bus) queues writes transactions.
+In order to guarantee that writes have completed before a
+certain time, a read transaction to a register on the same
+bus must be executed.
+This is necessary in situations such as when clearing an
+interrupt status or enable, so that when returning from an
+interrupt handler, the HW has already de-asserted its
+interrupt status output, which will avoid spurious interrupts.
 
 Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 ---
-This is rebased of earlier similar patch and sending as
-part of this series.
-No change from V1.
+changes from V1:
+	Taken care of Wolfram's review comment.
 
- drivers/i2c/busses/i2c-tegra.c |   62 +++++++++++-----------------------------
- 1 files changed, 17 insertions(+), 45 deletions(-)
+ drivers/i2c/busses/i2c-tegra.c |   16 ++++++++++++++++
+ 1 files changed, 16 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
-index b093b66..2ace6ac 100644
+index 3da7ee3..753519a 100644
 --- a/drivers/i2c/busses/i2c-tegra.c
 +++ b/drivers/i2c/busses/i2c-tegra.c
-@@ -610,7 +610,6 @@ static int __devinit tegra_i2c_probe(struct platform_device *pdev)
- 	struct tegra_i2c_dev *i2c_dev;
- 	struct tegra_i2c_platform_data *pdata = pdev->dev.platform_data;
- 	struct resource *res;
--	struct resource *iomem;
- 	struct clk *clk;
- 	struct clk *i2c_clk;
- 	const unsigned int *prop;
-@@ -623,50 +622,41 @@ static int __devinit tegra_i2c_probe(struct platform_device *pdev)
- 		dev_err(&pdev->dev, "no mem resource\n");
- 		return -EINVAL;
- 	}
--	iomem = request_mem_region(res->start, resource_size(res), pdev->name);
--	if (!iomem) {
--		dev_err(&pdev->dev, "I2C region already claimed\n");
--		return -EBUSY;
--	}
- 
--	base = ioremap(iomem->start, resource_size(iomem));
-+	base = devm_request_and_ioremap(&pdev->dev, res);
- 	if (!base) {
--		dev_err(&pdev->dev, "Cannot ioremap I2C region\n");
--		return -ENOMEM;
-+		dev_err(&pdev->dev, "Cannot request/ioremap I2C registers\n");
-+		return -EADDRNOTAVAIL;
- 	}
- 
- 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
- 	if (!res) {
- 		dev_err(&pdev->dev, "no irq resource\n");
--		ret = -EINVAL;
--		goto err_iounmap;
-+		return -EINVAL;
- 	}
- 	irq = res->start;
- 
--	clk = clk_get(&pdev->dev, NULL);
-+	clk = devm_clk_get(&pdev->dev, NULL);
- 	if (IS_ERR(clk)) {
- 		dev_err(&pdev->dev, "missing controller clock");
--		ret = PTR_ERR(clk);
--		goto err_release_region;
-+		return PTR_ERR(clk);
- 	}
- 
--	i2c_clk = clk_get(&pdev->dev, "i2c");
-+	i2c_clk = devm_clk_get(&pdev->dev, "i2c");
- 	if (IS_ERR(i2c_clk)) {
- 		dev_err(&pdev->dev, "missing bus clock");
--		ret = PTR_ERR(i2c_clk);
--		goto err_clk_put;
-+		return PTR_ERR(i2c_clk);
- 	}
- 
--	i2c_dev = kzalloc(sizeof(struct tegra_i2c_dev), GFP_KERNEL);
-+	i2c_dev = devm_kzalloc(&pdev->dev, sizeof(*i2c_dev), GFP_KERNEL);
- 	if (!i2c_dev) {
--		ret = -ENOMEM;
--		goto err_i2c_clk_put;
-+		dev_err(&pdev->dev, "Could not allocate struct tegra_i2c_dev");
-+		return -ENOMEM;
- 	}
- 
- 	i2c_dev->base = base;
- 	i2c_dev->clk = clk;
- 	i2c_dev->i2c_clk = i2c_clk;
--	i2c_dev->iomem = iomem;
- 	i2c_dev->adapter.algo = &tegra_i2c_algo;
- 	i2c_dev->irq = irq;
- 	i2c_dev->cont_id = pdev->id;
-@@ -695,13 +685,14 @@ static int __devinit tegra_i2c_probe(struct platform_device *pdev)
- 	ret = tegra_i2c_init(i2c_dev);
- 	if (ret) {
- 		dev_err(&pdev->dev, "Failed to initialize i2c controller");
--		goto err_free;
-+		return ret;
- 	}
- 
--	ret = request_irq(i2c_dev->irq, tegra_i2c_isr, 0, pdev->name, i2c_dev);
-+	ret = devm_request_irq(&pdev->dev, i2c_dev->irq,
-+			tegra_i2c_isr, 0, pdev->name, i2c_dev);
- 	if (ret) {
- 		dev_err(&pdev->dev, "Failed to request irq %i\n", i2c_dev->irq);
--		goto err_free;
-+		return ret;
- 	}
- 
- 	clk_prepare_enable(i2c_dev->i2c_clk);
-@@ -719,38 +710,19 @@ static int __devinit tegra_i2c_probe(struct platform_device *pdev)
- 	ret = i2c_add_numbered_adapter(&i2c_dev->adapter);
- 	if (ret) {
- 		dev_err(&pdev->dev, "Failed to add I2C adapter\n");
--		goto err_free_irq;
-+		clk_disable(i2c_dev->i2c_clk);
-+		return ret;
- 	}
- 
- 	of_i2c_register_devices(&i2c_dev->adapter);
- 
- 	return 0;
--err_free_irq:
--	free_irq(i2c_dev->irq, i2c_dev);
--err_free:
--	kfree(i2c_dev);
--err_i2c_clk_put:
--	clk_put(i2c_clk);
--err_clk_put:
--	clk_put(clk);
--err_release_region:
--	release_mem_region(iomem->start, resource_size(iomem));
--err_iounmap:
--	iounmap(base);
--	return ret;
+@@ -189,6 +189,9 @@ static void tegra_i2c_mask_irq(struct tegra_i2c_dev *i2c_dev, u32 mask)
+ 	u32 int_mask = i2c_readl(i2c_dev, I2C_INT_MASK);
+ 	int_mask &= ~mask;
+ 	i2c_writel(i2c_dev, int_mask, I2C_INT_MASK);
++
++	/* Read back register to make sure that register writes completed */
++	i2c_readl(i2c_dev, I2C_INT_MASK);
  }
  
- static int __devexit tegra_i2c_remove(struct platform_device *pdev)
- {
- 	struct tegra_i2c_dev *i2c_dev = platform_get_drvdata(pdev);
- 	i2c_del_adapter(&i2c_dev->adapter);
--	free_irq(i2c_dev->irq, i2c_dev);
--	clk_put(i2c_dev->i2c_clk);
--	clk_put(i2c_dev->clk);
--	release_mem_region(i2c_dev->iomem->start,
--		resource_size(i2c_dev->iomem));
--	iounmap(i2c_dev->base);
--	kfree(i2c_dev);
- 	return 0;
+ static void tegra_i2c_unmask_irq(struct tegra_i2c_dev *i2c_dev, u32 mask)
+@@ -196,6 +199,9 @@ static void tegra_i2c_unmask_irq(struct tegra_i2c_dev *i2c_dev, u32 mask)
+ 	u32 int_mask = i2c_readl(i2c_dev, I2C_INT_MASK);
+ 	int_mask |= mask;
+ 	i2c_writel(i2c_dev, int_mask, I2C_INT_MASK);
++
++	/* Read back register to make sure that register writes completed */
++	i2c_readl(i2c_dev, I2C_INT_MASK);
  }
  
+ static int tegra_i2c_flush_fifos(struct tegra_i2c_dev *i2c_dev)
+@@ -430,6 +436,13 @@ static irqreturn_t tegra_i2c_isr(int irq, void *dev_id)
+ 	if (i2c_dev->is_dvc)
+ 		dvc_writel(i2c_dev, DVC_STATUS_I2C_DONE_INTR, DVC_STATUS);
+ 
++	/*
++	 * Register write get queued in the PPSB bus and write can
++	 * happen later. Read back register to make sure that register
++	 * write is completed.
++	 */
++	i2c_readl(i2c_dev, I2C_INT_STATUS);
++
+ 	if (status & I2C_INT_PACKET_XFER_COMPLETE) {
+ 		BUG_ON(i2c_dev->msg_buf_remaining);
+ 		complete(&i2c_dev->msg_complete);
+@@ -444,6 +457,9 @@ err:
+ 	if (i2c_dev->is_dvc)
+ 		dvc_writel(i2c_dev, DVC_STATUS_I2C_DONE_INTR, DVC_STATUS);
+ 
++	/* Read back register to make sure that register writes completed */
++	i2c_readl(i2c_dev, I2C_INT_STATUS);
++
+ 	complete(&i2c_dev->msg_complete);
+ 	return IRQ_HANDLED;
+ }
 -- 
 1.7.1.1
 
