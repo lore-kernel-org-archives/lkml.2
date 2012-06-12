@@ -1,235 +1,465 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753122Ab2FLMsG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 08:48:06 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:21613 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752525Ab2FLMsE (ORCPT
+	id S1753149Ab2FLMsP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 08:48:15 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56442 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752534Ab2FLMsJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 08:48:04 -0400
-Date: Tue, 12 Jun 2012 14:47:46 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Andrew Armenia <andrew@asquaredlabs.com>
-Cc: Ben Dooks <ben-linux@fluff.org>, Wolfram Sang <w.sang@pengutronix.de>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] i2c-piix4: support aux SMBus on AMD chipsets
-Message-ID: <20120612144746.0419baeb@endymion.delvare>
-In-Reply-To: <1338860964-10803-4-git-send-email-andrew@asquaredlabs.com>
-References: <20120604091643.208956fe@endymion.delvare>
-	<1338860964-10803-1-git-send-email-andrew@asquaredlabs.com>
-	<1338860964-10803-4-git-send-email-andrew@asquaredlabs.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+	Tue, 12 Jun 2012 08:48:09 -0400
+Message-ID: <1339505279.12492.1.camel@phoenix>
+Subject: [PATCH] i2c: use module_pci_driver
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        "Wolfram Sang (embedded platforms)" <w.sang@pengutronix.de>,
+        Rudolf Marek <r.marek@assembler.cz>, Olof Johansson <olof@lixom.net>,
+        "Mark M. Hoffman" <mhoffman@lightlink.com>,
+        Tomoya MORINAGA <tomoya.rohm@gmail.com>, linux-i2c@vger.kernel.org
+Date: Tue, 12 Jun 2012 20:47:59 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 8bit
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  4 Jun 2012 21:49:24 -0400, Andrew Armenia wrote:
-> Some AMD chipsets, such as the SP5100, have an auxiliary SMBus with a second
-> set of registers. This patch adds support for the SP5100 and should work on
-> similar chipsets. Tested on ASUS KCMA-D8 motherboard.
+This patch converts the drivers in drivers/i2c/buses/* to use
+module_pci_driver() macro which makes the code smaller and a bit simpler.
 
-The SP5100 isn't even documented as being supported. Can you please add
-it to Documentation/i2c/busses/i2c-piix4, drivers/i2c/busses/Kconfig,
-and the header comment? Or is it a different code name for an already
-supported south bridge? I admit I stopped following AMD chipsets some
-times ago.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Cc: "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>
+Cc: "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>
+Cc: "Wolfram Sang (embedded platforms)" <w.sang@pengutronix.de>
+Cc: Rudolf Marek <r.marek@assembler.cz>
+Cc: Olof Johansson <olof@lixom.net>
+Cc: "Mark M. Hoffman" <mhoffman@lightlink.com>
+Cc: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+---
+ drivers/i2c/busses/i2c-ali1535.c           |   13 +------------
+ drivers/i2c/busses/i2c-ali1563.c           |   14 +-------------
+ drivers/i2c/busses/i2c-ali15x3.c           |   13 +------------
+ drivers/i2c/busses/i2c-amd756.c            |   13 +------------
+ drivers/i2c/busses/i2c-amd8111.c           |   13 +------------
+ drivers/i2c/busses/i2c-designware-pcidrv.c |   12 +-----------
+ drivers/i2c/busses/i2c-eg20t.c             |   12 +-----------
+ drivers/i2c/busses/i2c-hydra.c             |   17 +----------------
+ drivers/i2c/busses/i2c-intel-mid.c         |   13 +------------
+ drivers/i2c/busses/i2c-nforce2.c           |   14 +-------------
+ drivers/i2c/busses/i2c-pasemi.c            |   13 +------------
+ drivers/i2c/busses/i2c-piix4.c             |   13 +------------
+ drivers/i2c/busses/i2c-pxa-pci.c           |   12 +-----------
+ drivers/i2c/busses/i2c-sis630.c            |   15 +--------------
+ drivers/i2c/busses/i2c-sis96x.c            |   15 +--------------
+ drivers/i2c/busses/i2c-via.c               |   14 +-------------
+ 16 files changed, 16 insertions(+), 200 deletions(-)
 
-> 
-> Signed-off-by: Andrew Armenia <andrew@asquaredlabs.com>
-> ---
->  drivers/i2c/busses/i2c-piix4.c |   83 ++++++++++++++++++++++++++++++++++++----
->  1 file changed, 76 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/i2c/busses/i2c-piix4.c b/drivers/i2c/busses/i2c-piix4.c
-> index 8a87b3f..972b604 100644
-> --- a/drivers/i2c/busses/i2c-piix4.c
-> +++ b/drivers/i2c/busses/i2c-piix4.c
-> @@ -25,7 +25,8 @@
->  	AMD Hudson-2
->  	SMSC Victory66
->  
-> -   Note: we assume there can only be one device, with one SMBus interface.
-> +   Note: we assume there can only be one device, with one or two SMBus
-> +   interfaces.
->  */
->  
->  #include <linux/module.h>
-> @@ -66,6 +67,7 @@
->  #define SMBSHDW1	0x0D4
->  #define SMBSHDW2	0x0D5
->  #define SMBREV		0x0D6
-> +#define SMBAUXBA	0x058
-
-Keeping the list sorted by register offset would seem reasonable.
-
->  
->  /* Other settings */
->  #define MAX_TIMEOUT	500
-> @@ -130,6 +132,8 @@ struct i2c_piix4_adapdata {
->  	unsigned short smba;
->  };
->  
-> +static void piix4_adap_remove(struct i2c_adapter *adap);
-> +
-
-Please just reorder the functions (ideally at the time you introduce
-them) so that you don't need this forward declaration.
-
->  static int __devinit piix4_setup(struct pci_dev *PIIX4_dev,
->  				const struct pci_device_id *id,
->  				unsigned short *smba)
-> @@ -300,6 +304,45 @@ static int __devinit piix4_setup_sb800(struct pci_dev *PIIX4_dev,
->  	return 0;
->  }
->  
-> +static int __devinit piix4_setup_aux(struct pci_dev *PIIX4_dev,
-> +				const struct pci_device_id *id,
-> +				unsigned short base_reg_addr,
-> +				unsigned short *smba)
-> +{
-> +	/* Set up auxiliary SMBus controllers found on some AMD
-> +	 * chipsets e.g. SP5100 */
-> +	unsigned short piix4_smba;
-> +
-> +	/* Read address of auxiliary SMBus controller */
-> +	pci_read_config_word(PIIX4_dev, base_reg_addr, &piix4_smba);
-> +	piix4_smba &= 0xffe0;
-> +
-> +	if (piix4_smba == 0) {
-> +		dev_err(&PIIX4_dev->dev, "Aux SMBus base address "
-> +			"uninitialized - upgrade BIOS\n");
-
-This case could be OK if the board vendor simply did not need a second
-SMBus channel. So we shouldn't spit an error message in this case,
-maybe a debug message if you want but that's about it.
-
-> +		return -ENODEV;
-> +	}
-> +
-> +	if (acpi_check_region(piix4_smba, SMBIOSIZE, piix4_driver.name))
-> +		return -ENODEV;
-> +
-> +	if (!request_region(piix4_smba, SMBIOSIZE, piix4_driver.name)) {
-> +		dev_err(&PIIX4_dev->dev, "Aux SMBus region 0x%x already"
-> +			" in use!\n", piix4_smba);
-
-White space at end of first half please, for consistency.
-
-> +		return -EBUSY;
-> +	}
-> +
-> +	dev_info(&PIIX4_dev->dev,
-> +		"Auxiliary SMBus Host Controller at 0x%x\n",
-
-You should probably write "Auxiliary" in the previous message messages
-too, for consistency and readability.
-
-> +		piix4_smba
-> +	);
-> +
-> +	*smba = piix4_smba;
-> +
-> +	return 0;
-> +}
-> +
-> +
->  static int piix4_transaction(unsigned short piix4_smba)
->  {
->  	int temp;
-> @@ -505,6 +548,7 @@ static DEFINE_PCI_DEVICE_TABLE(piix4_ids) = {
->  MODULE_DEVICE_TABLE (pci, piix4_ids);
->  
->  static struct i2c_adapter *piix4_main_adapter;
-> +static struct i2c_adapter *piix4_aux_adapter;
->  
->  /* register piix4 I2C adapter at the given base address */
->  static int piix4_add_adapter(struct pci_dev *dev, unsigned short smba,
-> @@ -562,9 +606,33 @@ static int __devinit piix4_probe(struct pci_dev *dev,
->  		retval = piix4_setup(dev, id, &smba);
->  
->  	if (retval)
-> -		return retval;
-> +		goto error;
-> +
-> +	retval = piix4_add_adapter(dev, smba, &piix4_main_adapter);
-> +	if (retval)
-> +		goto error;
->  
-> -	return piix4_add_adapter(dev, smba, &piix4_main_adapter);
-> +	/* check for AMD SP5100 (maybe others) with aux SMBus port */
-> +	if (dev->vendor == PCI_VENDOR_ID_ATI &&
-> +	    dev->device == PCI_DEVICE_ID_ATI_SBX00_SMBUS &&
-> +		dev->revision == 0x3d) {
-
-Hmm, that would be an ATI SB600 or SB700, so not a recent chip? This
-strict check on revision is likely to exclude some systems where this
-code should run. Given that the SB800 started at revision 0x40 as far
-as I know, shouldn't we test for < 0x40 here?
-
-> +
-> +		retval = piix4_setup_aux(dev, id, SMBAUXBA, &smba);
-> +		if (retval)
-> +			goto error;
-> +
-> +		retval = piix4_add_adapter(dev, smba, &piix4_aux_adapter);
-> +		if (retval)
-> +			goto error;
-
-I don't get the logic here. If we fail to register the auxiliary SMBus,
-it is certainly not a reason to give up the working main SMBus.
-Especially with my comment above that the Auxiliary SMBus may have been
-disabled by the vendor on purpose.
-
-> +	}
-> +
-> +	return 0;
-> +
-> +error:
-> +	/* clean up any adapters that were already added */
-> +	piix4_adap_remove(piix4_main_adapter);
-> +	piix4_adap_remove(piix4_aux_adapter);
-
-You're not clearing the pointers, this could cause trouble on hot-plug.
-
-> +	return retval;
->  }
->  
->  /* Remove the adapter and its associated IO region */
-> @@ -572,6 +640,9 @@ static void piix4_adap_remove(struct i2c_adapter *adap)
->  {
->  	struct i2c_piix4_adapdata *adapdata;
->  
-> +	if (adap == NULL)
-> +		return;
-> +
-
-If you want to do that, it would be better done right in patch 2/3, to
-avoid changing code back and forth.
-
->  	adapdata = (struct i2c_piix4_adapdata *)i2c_get_adapdata(adap);
->  	if (adapdata->smba) {
->  		i2c_del_adapter(adap);
-> @@ -585,10 +656,8 @@ static void piix4_adap_remove(struct i2c_adapter *adap)
->  
->  static void __devexit piix4_remove(struct pci_dev *dev)
->  {
-> -	if (piix4_main_adapter) {
-> -		piix4_adap_remove(piix4_main_adapter);
-> -		piix4_main_adapter = NULL;
-> -	}
-> +	piix4_adap_remove(piix4_main_adapter);
-> +	piix4_adap_remove(piix4_aux_adapter);
-
-Here again you're no longer clearing the pointers afterward, this could
-cause trouble (unlikely, but better safe than sorry.)
-
->  }
->  
->  static struct pci_driver piix4_driver = {
-
-
+diff --git a/drivers/i2c/busses/i2c-ali1535.c b/drivers/i2c/busses/i2c-ali1535.c
+index e66d248..125cd8e 100644
+--- a/drivers/i2c/busses/i2c-ali1535.c
++++ b/drivers/i2c/busses/i2c-ali1535.c
+@@ -531,15 +531,7 @@ static struct pci_driver ali1535_driver = {
+ 	.remove		= __devexit_p(ali1535_remove),
+ };
+ 
+-static int __init i2c_ali1535_init(void)
+-{
+-	return pci_register_driver(&ali1535_driver);
+-}
+-
+-static void __exit i2c_ali1535_exit(void)
+-{
+-	pci_unregister_driver(&ali1535_driver);
+-}
++module_pci_driver(ali1535_driver);
+ 
+ MODULE_AUTHOR("Frodo Looijaard <frodol@dds.nl>, "
+ 	      "Philip Edelbrock <phil@netroedge.com>, "
+@@ -547,6 +539,3 @@ MODULE_AUTHOR("Frodo Looijaard <frodol@dds.nl>, "
+ 	      "and Dan Eaton <dan.eaton@rocketlogix.com>");
+ MODULE_DESCRIPTION("ALI1535 SMBus driver");
+ MODULE_LICENSE("GPL");
+-
+-module_init(i2c_ali1535_init);
+-module_exit(i2c_ali1535_exit);
+diff --git a/drivers/i2c/busses/i2c-ali1563.c b/drivers/i2c/busses/i2c-ali1563.c
+index 47ae009..e02d9f8 100644
+--- a/drivers/i2c/busses/i2c-ali1563.c
++++ b/drivers/i2c/busses/i2c-ali1563.c
+@@ -431,18 +431,6 @@ static struct pci_driver ali1563_pci_driver = {
+ 	.remove		= __devexit_p(ali1563_remove),
+ };
+ 
+-static int __init ali1563_init(void)
+-{
+-	return pci_register_driver(&ali1563_pci_driver);
+-}
+-
+-module_init(ali1563_init);
+-
+-static void __exit ali1563_exit(void)
+-{
+-	pci_unregister_driver(&ali1563_pci_driver);
+-}
+-
+-module_exit(ali1563_exit);
++module_pci_driver(ali1563_pci_driver);
+ 
+ MODULE_LICENSE("GPL");
+diff --git a/drivers/i2c/busses/i2c-ali15x3.c b/drivers/i2c/busses/i2c-ali15x3.c
+index 087ea9caa..ce8d26d 100644
+--- a/drivers/i2c/busses/i2c-ali15x3.c
++++ b/drivers/i2c/busses/i2c-ali15x3.c
+@@ -513,21 +513,10 @@ static struct pci_driver ali15x3_driver = {
+ 	.remove		= __devexit_p(ali15x3_remove),
+ };
+ 
+-static int __init i2c_ali15x3_init(void)
+-{
+-	return pci_register_driver(&ali15x3_driver);
+-}
+-
+-static void __exit i2c_ali15x3_exit(void)
+-{
+-	pci_unregister_driver(&ali15x3_driver);
+-}
++module_pci_driver(ali15x3_driver);
+ 
+ MODULE_AUTHOR ("Frodo Looijaard <frodol@dds.nl>, "
+ 		"Philip Edelbrock <phil@netroedge.com>, "
+ 		"and Mark D. Studebaker <mdsxyz123@yahoo.com>");
+ MODULE_DESCRIPTION("ALI15X3 SMBus driver");
+ MODULE_LICENSE("GPL");
+-
+-module_init(i2c_ali15x3_init);
+-module_exit(i2c_ali15x3_exit);
+diff --git a/drivers/i2c/busses/i2c-amd756.c b/drivers/i2c/busses/i2c-amd756.c
+index eb778bf1..304aa03 100644
+--- a/drivers/i2c/busses/i2c-amd756.c
++++ b/drivers/i2c/busses/i2c-amd756.c
+@@ -410,21 +410,10 @@ static struct pci_driver amd756_driver = {
+ 	.remove		= __devexit_p(amd756_remove),
+ };
+ 
+-static int __init amd756_init(void)
+-{
+-	return pci_register_driver(&amd756_driver);
+-}
+-
+-static void __exit amd756_exit(void)
+-{
+-	pci_unregister_driver(&amd756_driver);
+-}
++module_pci_driver(amd756_driver);
+ 
+ MODULE_AUTHOR("Merlin Hughes <merlin@merlin.org>");
+ MODULE_DESCRIPTION("AMD756/766/768/8111 and nVidia nForce SMBus driver");
+ MODULE_LICENSE("GPL");
+ 
+ EXPORT_SYMBOL(amd756_smbus);
+-
+-module_init(amd756_init)
+-module_exit(amd756_exit)
+diff --git a/drivers/i2c/busses/i2c-amd8111.c b/drivers/i2c/busses/i2c-amd8111.c
+index e5ac53b..0919ac1 100644
+--- a/drivers/i2c/busses/i2c-amd8111.c
++++ b/drivers/i2c/busses/i2c-amd8111.c
+@@ -491,15 +491,4 @@ static struct pci_driver amd8111_driver = {
+ 	.remove		= __devexit_p(amd8111_remove),
+ };
+ 
+-static int __init i2c_amd8111_init(void)
+-{
+-	return pci_register_driver(&amd8111_driver);
+-}
+-
+-static void __exit i2c_amd8111_exit(void)
+-{
+-	pci_unregister_driver(&amd8111_driver);
+-}
+-
+-module_init(i2c_amd8111_init);
+-module_exit(i2c_amd8111_exit);
++module_pci_driver(amd8111_driver);
+diff --git a/drivers/i2c/busses/i2c-designware-pcidrv.c b/drivers/i2c/busses/i2c-designware-pcidrv.c
+index 00e8f21..92a1e2c 100644
+--- a/drivers/i2c/busses/i2c-designware-pcidrv.c
++++ b/drivers/i2c/busses/i2c-designware-pcidrv.c
+@@ -374,17 +374,7 @@ static struct pci_driver dw_i2c_driver = {
+ 	},
+ };
+ 
+-static int __init dw_i2c_init_driver(void)
+-{
+-	return  pci_register_driver(&dw_i2c_driver);
+-}
+-module_init(dw_i2c_init_driver);
+-
+-static void __exit dw_i2c_exit_driver(void)
+-{
+-	pci_unregister_driver(&dw_i2c_driver);
+-}
+-module_exit(dw_i2c_exit_driver);
++module_pci_driver(dw_i2c_driver);
+ 
+ MODULE_AUTHOR("Baruch Siach <baruch@tkos.co.il>");
+ MODULE_DESCRIPTION("Synopsys DesignWare PCI I2C bus adapter");
+diff --git a/drivers/i2c/busses/i2c-eg20t.c b/drivers/i2c/busses/i2c-eg20t.c
+index 2f74ae8..259f769 100644
+--- a/drivers/i2c/busses/i2c-eg20t.c
++++ b/drivers/i2c/busses/i2c-eg20t.c
+@@ -953,17 +953,7 @@ static struct pci_driver pch_pcidriver = {
+ 	.resume = pch_i2c_resume
+ };
+ 
+-static int __init pch_pci_init(void)
+-{
+-	return pci_register_driver(&pch_pcidriver);
+-}
+-module_init(pch_pci_init);
+-
+-static void __exit pch_pci_exit(void)
+-{
+-	pci_unregister_driver(&pch_pcidriver);
+-}
+-module_exit(pch_pci_exit);
++module_pci_driver(pch_pcidriver);
+ 
+ MODULE_DESCRIPTION("Intel EG20T PCH/LAPIS Semico ML7213/ML7223/ML7831 IOH I2C");
+ MODULE_LICENSE("GPL");
+diff --git a/drivers/i2c/busses/i2c-hydra.c b/drivers/i2c/busses/i2c-hydra.c
+index c527de1..c9f95e1 100644
+--- a/drivers/i2c/busses/i2c-hydra.c
++++ b/drivers/i2c/busses/i2c-hydra.c
+@@ -156,23 +156,8 @@ static struct pci_driver hydra_driver = {
+ 	.remove		= __devexit_p(hydra_remove),
+ };
+ 
+-static int __init i2c_hydra_init(void)
+-{
+-	return pci_register_driver(&hydra_driver);
+-}
+-
+-
+-static void __exit i2c_hydra_exit(void)
+-{
+-	pci_unregister_driver(&hydra_driver);
+-}
+-
+-
++module_pci_driver(hydra_driver);
+ 
+ MODULE_AUTHOR("Geert Uytterhoeven <geert@linux-m68k.org>");
+ MODULE_DESCRIPTION("i2c for Apple Hydra Mac I/O");
+ MODULE_LICENSE("GPL");
+-
+-module_init(i2c_hydra_init);
+-module_exit(i2c_hydra_exit);
+-
+diff --git a/drivers/i2c/busses/i2c-intel-mid.c b/drivers/i2c/busses/i2c-intel-mid.c
+index 365bad5..7c28f10 100644
+--- a/drivers/i2c/busses/i2c-intel-mid.c
++++ b/drivers/i2c/busses/i2c-intel-mid.c
+@@ -1116,18 +1116,7 @@ static struct pci_driver intel_mid_i2c_driver = {
+ 	.remove		= __devexit_p(intel_mid_i2c_remove),
+ };
+ 
+-static int __init intel_mid_i2c_init(void)
+-{
+-	return pci_register_driver(&intel_mid_i2c_driver);
+-}
+-
+-static void __exit intel_mid_i2c_exit(void)
+-{
+-	pci_unregister_driver(&intel_mid_i2c_driver);
+-}
+-
+-module_init(intel_mid_i2c_init);
+-module_exit(intel_mid_i2c_exit);
++module_pci_driver(intel_mid_i2c_driver);
+ 
+ MODULE_AUTHOR("Ba Zheng <zheng.ba@intel.com>");
+ MODULE_DESCRIPTION("I2C driver for Moorestown Platform");
+diff --git a/drivers/i2c/busses/i2c-nforce2.c b/drivers/i2c/busses/i2c-nforce2.c
+index 43a96a1..392303b 100644
+--- a/drivers/i2c/busses/i2c-nforce2.c
++++ b/drivers/i2c/busses/i2c-nforce2.c
+@@ -453,16 +453,4 @@ static struct pci_driver nforce2_driver = {
+ 	.remove		= __devexit_p(nforce2_remove),
+ };
+ 
+-static int __init nforce2_init(void)
+-{
+-	return pci_register_driver(&nforce2_driver);
+-}
+-
+-static void __exit nforce2_exit(void)
+-{
+-	pci_unregister_driver(&nforce2_driver);
+-}
+-
+-module_init(nforce2_init);
+-module_exit(nforce2_exit);
+-
++module_pci_driver(nforce2_driver);
+diff --git a/drivers/i2c/busses/i2c-pasemi.c b/drivers/i2c/busses/i2c-pasemi.c
+index eaaea73..12edefd 100644
+--- a/drivers/i2c/busses/i2c-pasemi.c
++++ b/drivers/i2c/busses/i2c-pasemi.c
+@@ -415,19 +415,8 @@ static struct pci_driver pasemi_smb_driver = {
+ 	.remove		= __devexit_p(pasemi_smb_remove),
+ };
+ 
+-static int __init pasemi_smb_init(void)
+-{
+-	return pci_register_driver(&pasemi_smb_driver);
+-}
+-
+-static void __exit pasemi_smb_exit(void)
+-{
+-	pci_unregister_driver(&pasemi_smb_driver);
+-}
++module_pci_driver(pasemi_smb_driver);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR ("Olof Johansson <olof@lixom.net>");
+ MODULE_DESCRIPTION("PA Semi PWRficient SMBus driver");
+-
+-module_init(pasemi_smb_init);
+-module_exit(pasemi_smb_exit);
+diff --git a/drivers/i2c/busses/i2c-piix4.c b/drivers/i2c/busses/i2c-piix4.c
+index c14d48d..46833fa 100644
+--- a/drivers/i2c/busses/i2c-piix4.c
++++ b/drivers/i2c/busses/i2c-piix4.c
+@@ -544,20 +544,9 @@ static struct pci_driver piix4_driver = {
+ 	.remove		= __devexit_p(piix4_remove),
+ };
+ 
+-static int __init i2c_piix4_init(void)
+-{
+-	return pci_register_driver(&piix4_driver);
+-}
+-
+-static void __exit i2c_piix4_exit(void)
+-{
+-	pci_unregister_driver(&piix4_driver);
+-}
++module_pci_driver(piix4_driver);
+ 
+ MODULE_AUTHOR("Frodo Looijaard <frodol@dds.nl> and "
+ 		"Philip Edelbrock <phil@netroedge.com>");
+ MODULE_DESCRIPTION("PIIX4 SMBus driver");
+ MODULE_LICENSE("GPL");
+-
+-module_init(i2c_piix4_init);
+-module_exit(i2c_piix4_exit);
+diff --git a/drivers/i2c/busses/i2c-pxa-pci.c b/drivers/i2c/busses/i2c-pxa-pci.c
+index a058179..4dc9bef 100644
+--- a/drivers/i2c/busses/i2c-pxa-pci.c
++++ b/drivers/i2c/busses/i2c-pxa-pci.c
+@@ -163,17 +163,7 @@ static struct pci_driver ce4100_i2c_driver = {
+ 	.remove         = __devexit_p(ce4100_i2c_remove),
+ };
+ 
+-static int __init ce4100_i2c_init(void)
+-{
+-	return pci_register_driver(&ce4100_i2c_driver);
+-}
+-module_init(ce4100_i2c_init);
+-
+-static void __exit ce4100_i2c_exit(void)
+-{
+-	pci_unregister_driver(&ce4100_i2c_driver);
+-}
+-module_exit(ce4100_i2c_exit);
++module_pci_driver(ce4100_i2c_driver);
+ 
+ MODULE_DESCRIPTION("CE4100 PCI-I2C glue code for PXA's driver");
+ MODULE_LICENSE("GPL v2");
+diff --git a/drivers/i2c/busses/i2c-sis630.c b/drivers/i2c/busses/i2c-sis630.c
+index 15cf78f..5d6723b 100644
+--- a/drivers/i2c/busses/i2c-sis630.c
++++ b/drivers/i2c/busses/i2c-sis630.c
+@@ -513,21 +513,8 @@ static struct pci_driver sis630_driver = {
+ 	.remove		= __devexit_p(sis630_remove),
+ };
+ 
+-static int __init i2c_sis630_init(void)
+-{
+-	return pci_register_driver(&sis630_driver);
+-}
+-
+-
+-static void __exit i2c_sis630_exit(void)
+-{
+-	pci_unregister_driver(&sis630_driver);
+-}
+-
++module_pci_driver(sis630_driver);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("Alexander Malysh <amalysh@web.de>");
+ MODULE_DESCRIPTION("SIS630 SMBus driver");
+-
+-module_init(i2c_sis630_init);
+-module_exit(i2c_sis630_exit);
+diff --git a/drivers/i2c/busses/i2c-sis96x.c b/drivers/i2c/busses/i2c-sis96x.c
+index cc5d149..7b72614 100644
+--- a/drivers/i2c/busses/i2c-sis96x.c
++++ b/drivers/i2c/busses/i2c-sis96x.c
+@@ -324,21 +324,8 @@ static struct pci_driver sis96x_driver = {
+ 	.remove		= __devexit_p(sis96x_remove),
+ };
+ 
+-static int __init i2c_sis96x_init(void)
+-{
+-	return pci_register_driver(&sis96x_driver);
+-}
+-
+-static void __exit i2c_sis96x_exit(void)
+-{
+-	pci_unregister_driver(&sis96x_driver);
+-}
++module_pci_driver(sis96x_driver);
+ 
+ MODULE_AUTHOR("Mark M. Hoffman <mhoffman@lightlink.com>");
+ MODULE_DESCRIPTION("SiS96x SMBus driver");
+ MODULE_LICENSE("GPL");
+-
+-/* Register initialization functions using helper macros */
+-module_init(i2c_sis96x_init);
+-module_exit(i2c_sis96x_exit);
+-
+diff --git a/drivers/i2c/busses/i2c-via.c b/drivers/i2c/busses/i2c-via.c
+index 713d31a..7ffee71 100644
+--- a/drivers/i2c/busses/i2c-via.c
++++ b/drivers/i2c/busses/i2c-via.c
+@@ -161,20 +161,8 @@ static struct pci_driver vt586b_driver = {
+ 	.remove		= __devexit_p(vt586b_remove),
+ };
+ 
+-static int __init i2c_vt586b_init(void)
+-{
+-	return pci_register_driver(&vt586b_driver);
+-}
+-
+-static void __exit i2c_vt586b_exit(void)
+-{
+-	pci_unregister_driver(&vt586b_driver);
+-}
+-
++module_pci_driver(vt586b_driver);
+ 
+ MODULE_AUTHOR("Kyösti Mälkki <kmalkki@cc.hut.fi>");
+ MODULE_DESCRIPTION("i2c for Via vt82c586b southbridge");
+ MODULE_LICENSE("GPL");
+-
+-module_init(i2c_vt586b_init);
+-module_exit(i2c_vt586b_exit);
 -- 
-Jean Delvare
+1.7.9.5
+
+
+
