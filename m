@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752392Ab2FLRpG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 13:45:06 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:52411 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751424Ab2FLRpD (ORCPT
+	id S1752515Ab2FLRpd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 13:45:33 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50951 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751777Ab2FLRpc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 13:45:03 -0400
-Date: Tue, 12 Jun 2012 13:44:59 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-cc: Lasse Collin <lasse.collin@tukaani.org>, T Makphaibulchoke <tmac@hp.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com, linux390@de.ibm.com,
-        lethal@linux-sh.org, tglx@linutronix.de, mingo@redhat.com,
-        x86@kernel.org, kaloz@openwrt.org, jj@chaosbits.net,
-        matt.fleming@intel.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
-        linux-sh@vger.kernel.org
-Subject: Re: [PATCH v2] lib/decompress_unxz.c: removing all memory helper
- functions
-In-Reply-To: <4FD77CAF.1020402@zytor.com>
-Message-ID: <alpine.LFD.2.02.1206121336060.23555@xanadu.home>
-References: <1339470307-28223-1-git-send-email-tmac@hp.com> <20120612191804.4211462a@tukaani.org> <alpine.LFD.2.02.1206121316190.23555@xanadu.home> <4FD77CAF.1020402@zytor.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Tue, 12 Jun 2012 13:45:32 -0400
+Date: Tue, 12 Jun 2012 10:45:28 -0700
+From: Kent Overstreet <koverstreet@google.com>
+To: Joe Perches <joe@perches.com>
+Cc: g@google.com, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, tejun@google.com, agk@redhat.com,
+        dan.j.williams@intel.com
+Subject: Re: [Bcache v14 16/16] bcache: Debug and tracing code
+Message-ID: <20120612174528.GB11365@google.com>
+References: <1339515562-14638-1-git-send-email-koverstreet@google.com>
+ <1339515562-14638-17-git-send-email-koverstreet@google.com>
+ <1339519858.2017.10.camel@joe2Laptop>
+ <20120612172444.GA11365@google.com>
+ <1339522543.2404.3.camel@joe2Laptop>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339522543.2404.3.camel@joe2Laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 12 Jun 2012, H. Peter Anvin wrote:
-
-> On 06/12/2012 10:26 AM, Nicolas Pitre wrote:
-> > 
-> > Instead of copying, maybe this would be much better to make the content 
-> > of lib/string.c usable in a pre-boot environment.
-> > 
+On Tue, Jun 12, 2012 at 10:35:43AM -0700, Joe Perches wrote:
+> "(uint64_t *)k - i->d" is what type again?
+> What is a %zu?
 > 
-> Not sure about that... a lot of it is #ifndef __HAVE_ARCH_* and you
-> *really* want those optimizations on some arches.
+> Isn't that a mismatch?
 
-Sure.  What about:
+You're right - ssize_t and size_t. I think gcc just isn't checking
+signedness at all, that %i should be a %u too. Good catch.
 
-lib/boot/mem.c: lib/string.c
-	sed 's/^#ifndef __HAVE_ARCH_/#ifndef __HAVE_PREBOOT_ARCH_/' < $< > $@
+> 
+> > > > +static int debug_seq_show(struct seq_file *f, void *data)
+> > > > +{
+> > > > +	static const char *tabs = "\t\t\t\t\t";
+> > > 
+> > > Seems a _very_ odd use.
+> > 
+> > It is a strange hack.
+> > 
+> > The idea is that we want to indent more as we recurse; we could build up
+> > a new string of tabs each time we recurse that's got one more tab than
+> > our parent's, but that'd be a pain in the ass and it'd use more stack
+> > space (though that should be fine here), so instead it's just
+> > decrementing the pointer to the tab string to produce a string with one
+> > more tab.
+> 
+> It's a nice idea, but that's not what's happening
+> as I believe you reference tabs only once as &tabs[4]
 
-This is over simplified but you get the idea.  Maybe lib/string.c itself 
-should be split into several files to help with a finer grained 
-selection.
-
-
-Nicolas
+bch_btree_dump() prints out tabs, and passes tabs - 1 when it recurses.
