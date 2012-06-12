@@ -1,79 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753814Ab2FLTPX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 15:15:23 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:31827 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751612Ab2FLTPW (ORCPT
+	id S1754182Ab2FLTRg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 15:17:36 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:60240 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752182Ab2FLTRe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 15:15:22 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6740"; a="200317450"
-Message-ID: <113bb1f38dbc386f1adfc580e10dc2e5.squirrel@www.codeaurora.org>
-In-Reply-To: <000001cd489c$115f03b0$341d0b10$%jun@samsung.com>
-References: <000601cd47ab$8ad77c50$a08674f0$%jun@samsung.com>
-    <CANfBPZ9dwwAOBbXPqGV64k-sB-MzRtTO8x7tXnZBjtYN+V88XQ@mail.gmail.com>
-    <000001cd489c$115f03b0$341d0b10$%jun@samsung.com>
-Date: Tue, 12 Jun 2012 12:15:21 -0700 (PDT)
-Subject: RE: [PATCH v7 1/3] mmc: core: Add packed command feature of eMMC4.5
-From: merez@codeaurora.org
-To: "Seungwon Jeon" <tgih.jun@samsung.com>
-Cc: "'S, Venkatraman'" <svenkatr@ti.com>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "'Chris Ball'" <cjb@laptop.org>,
-        "'Maya Erez'" <merez@codeaurora.org>,
-        "'Subhash Jadavani'" <subhashj@codeaurora.org>
-User-Agent: SquirrelMail/1.4.17
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+	Tue, 12 Jun 2012 15:17:34 -0400
+Message-ID: <1339528648.4531.15.camel@jlt3.sipsolutions.net>
+Subject: Re: [PATCH] iwlwifi: re-order module_init order to prevent NULL ptr
+ deref
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: wey-yi.w.guy@intel.com, linville@tuxdriver.com, ilw@linux.intel.com,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 12 Jun 2012 21:17:28 +0200
+In-Reply-To: <1339528412-4163-1-git-send-email-levinsasha928@gmail.com> (sfid-20120612_211247_722972_E0F3BAE7)
+References: <1339528412-4163-1-git-send-email-levinsasha928@gmail.com>
+	 (sfid-20120612_211247_722972_E0F3BAE7)
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2-1+b1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2012-06-12 at 21:13 +0200, Sasha Levin wrote:
+> We need to make sure iwl_drv_init is called before iwl_init, since otherwise
+> iwl_init will NULL ptr deref when trying to add a new mode.
+> 
+> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> ---
+>  drivers/net/wireless/iwlwifi/Makefile |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/net/wireless/iwlwifi/Makefile b/drivers/net/wireless/iwlwifi/Makefile
+> index 98c8f64..16e39a4 100644
+> --- a/drivers/net/wireless/iwlwifi/Makefile
+> +++ b/drivers/net/wireless/iwlwifi/Makefile
+> @@ -1,5 +1,3 @@
+> -obj-$(CONFIG_IWLDVM)	+= dvm/
+> -
 
-> S, Venkatraman <svenkatr@ti.com> wrote:
->> On Mon, Jun 11, 2012 at 1:53 PM, Seungwon Jeon <tgih.jun@samsung.com>
->> wrote:
->> > This patch adds packed command feature of eMMC4.5.
->> > The maximum number for packing read(or write) is offered
->> > and exception event relevant to packed command which is
->> > used for error handling is enabled. If host wants to use
->> > this feature, MMC_CAP2_PACKED_CMD should be set.
->> >
->> > Signed-off-by: Seungwon Jeon <tgih.jun@samsung.com>
->>
->> Can you please post some clear performance benchmarks with your patchset
->> ?
->> Given that #merez claims to see a significant performance drop for
->> reads, it will be
->> good to compare notes.
->> If it's not too much trouble, both CFQ and deadline scheduler figures
->> would be useful, on a
->> set of read only, write only and parallel read write usecases.
->>
->> I can also try to replicate your results if you can publish the exact
->> configuration you used
->> for testing (example: iozone parameters)
-> I'm checking the merez's result.
-> Currently packed command is effective on write.
-> When running packed write with iozone, there is 25% performance gains.
-> (ex: iozone -az -i0 -I -s 10m -f /target/test -e)
->
-Our tests shows performance gain of 50-60% in scenarios of only write lmdd
-operations.
+Thanks! I already have a patch like this in my tree, will send a pull
+request soon:
 
-As I mentioned in the write packing control thread the degradation of read
-performance in case of mix read/write operations appears also without
-write packing. Therefore I don't think it should stop us from approving
-the write packing patch, that gives a significant improvement to the write
-performance.
-The read performance degradation should be resolved regardless of the
-write packing patch.
+http://git.kernel.org/?p=linux/kernel/git/iwlwifi/iwlwifi-next.git;a=commit;h=4b75b1e49568dd6a30a1dddc47408cc6fde55608
 
-Thanks,
-Maya Erez
---
-Sent by consultant of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+johannes
 
