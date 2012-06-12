@@ -1,184 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752687Ab2FLPW0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 11:22:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14693 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752249Ab2FLPWY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 11:22:24 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>, gregkh@linuxfoundation.org,
-        John Stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, lwoodman@redhat.com,
-        jbaron@redhat.com, dzickus@redhat.com
-Subject: [PATCH] tty, add kref to sysrq handlers
-Date: Tue, 12 Jun 2012 11:22:02 -0400
-Message-Id: <1339514522-1742-1-git-send-email-prarit@redhat.com>
+	id S1752669Ab2FLPYI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 11:24:08 -0400
+Received: from nm23-vm1.bullet.mail.ne1.yahoo.com ([98.138.91.50]:47588 "HELO
+	nm23-vm1.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751696Ab2FLPYG convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 11:24:06 -0400
+X-Greylist: delayed 382 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Jun 2012 11:24:06 EDT
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 410758.67146.bm@omp1060.mail.ne1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=zpbl4SF9zqg9qEahzBbGZXhXPYo9QyPps0Ysgqm2/LNiGlO0j5IyVHZW6I7Oi0zfOSW23ZjisSPCH5W5SrQu7avt0NjxxVK0Zd2ZW1Kz2znjRDgFiRMjbhaEjZ/qSMQOF/GtbS+B24Bvm9UEsv4ZtA+XJaz0ivxyTTfKQFa0Iwk=;
+X-YMail-OSG: g9AmcZ8VM1mHMo4NN5XzkmsgaR_XXlkzgVmDdyC_rKzJsdo
+ kIlpzfTeZfuDPI8rCjKCgqXEhiZi0nipNBv3AXLS.hBWjEkUqAd4i4g6zYyw
+ .AwdhXWYdygwa52CVnKlPECaWURyOhnSm0RBtLNvhZaqlcn4dErY8SS7AX89
+ W0euFa6OstiyVuUCRTjD2ssr1GoV8Rxv6.7pa4gEXyjpNIAkwCF8LkZ0HpT8
+ oLVaIgjKu2S6VDn_soduidD7BNuJJs7L4ojse.LgETOO5vTGo4hJZW7IJgB9
+ 6g.T.j5cvaEZILRVrAKDHboRvEfVD0tpJ9cZTyDnUY1SbNBF.u.4X1pIrJi3
+ D3PNpsaP9N0AYIrswYE9UnGK0HORE2HB2pX.m050sYUvGukHFUnRK89SHgCV
+ Jl2lKiZt065OhWSsVNhY3t3dC.YTAxw9AqPCtIkN8unraPMKR.oN_sUiKxmD
+ QIa4tEdvBdx3KKf3b4reIufDP7mXoOb.od3Lz0UBKhjPofXN4bdSELy4MRoo
+ n9m0-
+X-Mailer: YahooMailWebService/0.8.118.349524
+References: <1339493860.10145.YahooMailNeo@web111708.mail.gq1.yahoo.com> <20120612103954.GB10124@x1.osrc.amd.com> <1339508890.39685.YahooMailNeo@web111705.mail.gq1.yahoo.com> <20120612135713.GA10128@x1.osrc.amd.com>
+Message-ID: <1339514263.74306.YahooMailNeo@web111722.mail.gq1.yahoo.com>
+Date: Tue, 12 Jun 2012 08:17:43 -0700 (PDT)
+From: Mahmood Naderan <nt_mahmood@yahoo.com>
+Reply-To: Mahmood Naderan <nt_mahmood@yahoo.com>
+Subject: Re: CPU MTRRs and linux kernel
+To: Borislav Petkov <bp@alien8.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+In-Reply-To: <20120612135713.GA10128@x1.osrc.amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[This seems to have been missed ... sending again]
+>If it were me and I didn't have any particular reason to stick with
+>2.6.32, I'd always go for the latest kernel
+ 
+One thing is not clear for me. Did you make the following change in the latest version today? I want to know, should I wait until it is pushed in to ubuntu repository?
 
-On a large system with a large number of tasks, the output of
+diff --git a/arch/x86/kernel/cpu/mtrr/cleanup.c b/arch/x86/kernel/cpu/mtrr/cleanup.c
+index c5f59d071425..ac140c7be396 100644
+--- a/arch/x86/kernel/cpu/mtrr/cleanup.c
++++ b/arch/x86/kernel/cpu/mtrr/cleanup.c
+@@ -827,7 +827,7 @@ int __init amd_special_default_mtrr(void)
 
-echo t > /proc/sysrq-trigger
+        if (boot_cpu_data.x86_vendor != X86_VENDOR_AMD)
+                return 0;
+-       if (boot_cpu_data.x86 < 0xf || boot_cpu_data.x86 > 0x11)
++       if (boot_cpu_data.x86 < 0xf)
+                return 0;
+        /* In case some hypervisor doesn't pass SYSCFG through: */
+        if (rdmsr_safe(MSR_K8_SYSCFG, &l, &h) < 0)
 
-can take a long period of time.  If this period is greater than the period
-of the current clocksource, the clocksource watchdog will mark the
-clocksource as unstable and fail the clocksource over.
 
-The problem with sysrq is that __handle_sysrq() takes a spin_lock with
-interrupts disabled and disables interrupts for the duration of the
-handler.  If this happens during sysrq-t on a large system with a large
-number of tasks, the result is a "brown-out" of the system.
 
-The spin_lock in question, sysrq_key_table_lock, is in place to prevent
-the removal of a sysrq handler while it is being executed in
-__handle_sysrq().
+// Naderan *Mahmood;
 
-A kref is added to each sysrq handler and is incremented and decremented
-in __handle_sysrq().  This, while more complicated than a lock , leads to
-minimizing the time that the sysrq_key_table_lock is acquired and results
-in a functional sysrq-t.
 
-I've tested both options and I no longer see the clocksource watchdog
-marking the TSC clocksource as unstable.
+----- Original Message -----
+From: Borislav Petkov <bp@alien8.de>
+To: Mahmood Naderan <nt_mahmood@yahoo.com>
+Cc: LKML <linux-kernel@vger.kernel.org>; Andreas Herrmann <andreas.herrmann3@amd.com>
+Sent: Tuesday, June 12, 2012 6:27 PM
+Subject: Re: CPU MTRRs and linux kernel
 
-Cc: gregkh@linuxfoundation.org
-Cc: John Stultz <johnstul@us.ibm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: lwoodman@redhat.com
-Cc: jbaron@redhat.com
-Cc: dzickus@redhat.com
----
- drivers/tty/sysrq.c   |   42 +++++++++++++++++++++++++++++++++++++++---
- include/linux/sysrq.h |    2 ++
- 2 files changed, 41 insertions(+), 3 deletions(-)
+On Tue, Jun 12, 2012 at 06:48:10AM -0700, Mahmood Naderan wrote:
+> Thanks Borislav, I want to know, should I upgrade to the latest kernel
+> or it is possible to download the source of 2.6.32-24 from repository
+> and modify cleanup.c and then recompile?
 
-diff --git a/drivers/tty/sysrq.c b/drivers/tty/sysrq.c
-index 0572889..38c6ae6 100644
---- a/drivers/tty/sysrq.c
-+++ b/drivers/tty/sysrq.c
-@@ -458,6 +458,20 @@ static struct sysrq_key_op *sysrq_key_table[36] = {
- 	&sysrq_ftrace_dump_op,		/* z */
- };
- 
-+void sysrq_release(struct kref *kref)
-+{
-+	struct sysrq_key_op *release_op;
-+	int i;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&sysrq_key_table_lock, flags);
-+	release_op = container_of(kref, struct sysrq_key_op, kref);
-+	for (i = 0; i < ARRAY_SIZE(sysrq_key_table); i++)
-+		if (sysrq_key_table[i] == release_op)
-+			sysrq_key_table[i] = NULL;
-+	spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
-+}
-+
- /* key2index calculation, -1 on invalid index */
- static int sysrq_key_table_key2index(int key)
- {
-@@ -502,7 +516,6 @@ void __handle_sysrq(int key, bool check_mask)
- 	int i;
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&sysrq_key_table_lock, flags);
- 	/*
- 	 * Raise the apparent loglevel to maximum so that the sysrq header
- 	 * is shown to provide the user with positive feedback.  We do not
-@@ -513,7 +526,12 @@ void __handle_sysrq(int key, bool check_mask)
- 	console_loglevel = 7;
- 	printk(KERN_INFO "SysRq : ");
- 
-+	spin_lock_irqsave(&sysrq_key_table_lock, flags);
-         op_p = __sysrq_get_key_op(key);
-+	if (op_p)
-+		kref_get(&op_p->kref);
-+	spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
-+
-         if (op_p) {
- 		/*
- 		 * Should we check for enabled operations (/proc/sysrq-trigger
-@@ -526,9 +544,14 @@ void __handle_sysrq(int key, bool check_mask)
- 		} else {
- 			printk("This sysrq operation is disabled.\n");
- 		}
-+
-+		spin_lock_irqsave(&sysrq_key_table_lock, flags);
-+		kref_put(&op_p->kref, sysrq_release);
-+		spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
- 	} else {
- 		printk("HELP : ");
- 		/* Only print the help msg once per handler */
-+		spin_lock_irqsave(&sysrq_key_table_lock, flags);
- 		for (i = 0; i < ARRAY_SIZE(sysrq_key_table); i++) {
- 			if (sysrq_key_table[i]) {
- 				int j;
-@@ -541,10 +564,10 @@ void __handle_sysrq(int key, bool check_mask)
- 				printk("%s ", sysrq_key_table[i]->help_msg);
- 			}
- 		}
-+		spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
- 		printk("\n");
- 		console_loglevel = orig_log_level;
- 	}
--	spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
- }
- 
- void handle_sysrq(int key)
-@@ -837,7 +860,12 @@ static int __sysrq_swap_key_ops(int key, struct sysrq_key_op *insert_op_p,
- 
- 	spin_lock_irqsave(&sysrq_key_table_lock, flags);
- 	if (__sysrq_get_key_op(key) == remove_op_p) {
--		__sysrq_put_key_op(key, insert_op_p);
-+		if (!remove_op_p) { /* register */
-+			__sysrq_put_key_op(key, insert_op_p);
-+			kref_init(&insert_op_p->kref);
-+		}
-+		if (!insert_op_p) /* unregister */
-+			kref_put(&remove_op_p->kref, sysrq_release);
- 		retval = 0;
- 	} else {
- 		retval = -1;
-@@ -898,6 +926,14 @@ static inline void sysrq_init_procfs(void)
- 
- static int __init sysrq_init(void)
- {
-+	int i;
-+
-+	spin_lock_irqsave(&sysrq_key_table_lock, flags);
-+	for (i = 0; i < ARRAY_SIZE(sysrq_key_table); i++)
-+		if (sysrq_key_table[i])
-+			kref_init(&sysrq_key_table[i]->kref);
-+	spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
-+
- 	sysrq_init_procfs();
- 
- 	if (sysrq_on())
-diff --git a/include/linux/sysrq.h b/include/linux/sysrq.h
-index 7faf933..d458f39 100644
---- a/include/linux/sysrq.h
-+++ b/include/linux/sysrq.h
-@@ -16,6 +16,7 @@
- 
- #include <linux/errno.h>
- #include <linux/types.h>
-+#include <linux/kref.h>
- 
- /* Enable/disable SYSRQ support by default (0==no, 1==yes). */
- #define SYSRQ_DEFAULT_ENABLE	1
-@@ -36,6 +37,7 @@ struct sysrq_key_op {
- 	char *help_msg;
- 	char *action_msg;
- 	int enable_mask;
-+	struct kref kref;
- };
- 
- #ifdef CONFIG_MAGIC_SYSRQ
+Whatever you decide.
+
+If it were me and I didn't have any particular reason to stick with
+2.6.32, I'd always go for the latest kernel.
+
+In any case, no matter which kernel you're installing, just make sure it
+contains the aforementioned patch which should fix your problem.
+
+HTH.
+
 -- 
-1.7.1
+Regards/Gruss,
+Boris.
+--
+To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Please read the FAQ at  http://www.tux.org/lkml/
 
