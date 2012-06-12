@@ -1,79 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751857Ab2FLIWg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 04:22:36 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:17863 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751443Ab2FLIWe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 04:22:34 -0400
-X-IronPort-AV: E=Sophos;i="4.77,394,1336320000"; 
-   d="scan'208";a="5167925"
-Message-ID: <4FD6FD3B.2090800@cn.fujitsu.com>
-Date: Tue, 12 Jun 2012 16:26:35 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1751953Ab2FLIZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 04:25:26 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:50407 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751437Ab2FLIZX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 04:25:23 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FD6FC76.8040203@jp.fujitsu.com>
+Date: Tue, 12 Jun 2012 17:23:18 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Christian Borntraeger <borntraeger@de.ibm.com>
-CC: kvm list <kvm@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
-        qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
-Subject: Re: [PATCH] kvm: notify host when guest panicked
-References: <4FB9E4CE.8060709@cn.fujitsu.com> <4FD6E5EC.3090802@cn.fujitsu.com> <4FD6F488.7090303@de.ibm.com>
-In-Reply-To: <4FD6F488.7090303@de.ibm.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/06/12 16:23:04,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/06/12 16:23:05,
-	Serialize complete at 2012/06/12 16:23:05
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+CC: linux-mm@kvack.org, dhillf@gmail.com, rientjes@google.com, mhocko@suse.cz,
+        akpm@linux-foundation.org, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH -V8 12/16] hugetlb/cgroup: Add support for cgroup removal
+References: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1339232401-14392-13-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+In-Reply-To: <1339232401-14392-13-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 06/12/2012 03:49 PM, Christian Borntraeger Wrote:
->>> We have three solutions to implement this feature:
->>> 1. use vmcall
->>> 2. use I/O port
->>> 3. use virtio-serial.
->>
->>> We have decided to avoid touching hypervisor. The reason why I choose
->>> choose the I/O port is:
->>> 1. it is easier to implememt
->>> 2. it does not depend any virtual device
->>> 3. it can work when startint the kernel
+(2012/06/09 17:59), Aneesh Kumar K.V wrote:
+> From: "Aneesh Kumar K.V"<aneesh.kumar@linux.vnet.ibm.com>
 > 
-> Havent looked deeply into that, butz wouldnt kvm_hypercall0 also fulfill all of these
-> points? You just have to define the number for each architecture and then it should be 
-> possible to write a simple panic driver that works on all architectures.
+> This patch add support for cgroup removal. If we don't have parent
+> cgroup, the charges are moved to root cgroup.
 > 
->>> --- a/include/linux/kvm_para.h
->>> +++ b/include/linux/kvm_para.h
->>> @@ -20,6 +20,14 @@
->>>  #define KVM_HC_FEATURES			3
->>>  #define KVM_HC_PPC_MAP_MAGIC_PAGE	4
->>>  
->>> +#define KVM_PV_PORT	(0x505UL)
->>> +
-> 
-> ignoring the above, shouldnt a port number go into an architecture specific file?
+> Signed-off-by: Aneesh Kumar K.V<aneesh.kumar@linux.vnet.ibm.com>
 
-I am not sure whether it should be put into an architecture specific file.
+I'm sorry if already pointed out....
 
-Thanks
-Wen Congyang
+> ---
+>   mm/hugetlb_cgroup.c |   81 +++++++++++++++++++++++++++++++++++++++++++++++++--
+>   1 file changed, 79 insertions(+), 2 deletions(-)
+> 
+> diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
+> index 48efd5a..9458fe3 100644
+> --- a/mm/hugetlb_cgroup.c
+> +++ b/mm/hugetlb_cgroup.c
+> @@ -99,10 +99,87 @@ static void hugetlb_cgroup_destroy(struct cgroup *cgroup)
+>   	kfree(h_cgroup);
+>   }
+> 
+> +
+> +static int hugetlb_cgroup_move_parent(int idx, struct cgroup *cgroup,
+> +				      struct page *page)
+> +{
+> +	int csize;
+> +	struct res_counter *counter;
+> +	struct res_counter *fail_res;
+> +	struct hugetlb_cgroup *page_hcg;
+> +	struct hugetlb_cgroup *h_cg   = hugetlb_cgroup_from_cgroup(cgroup);
+> +	struct hugetlb_cgroup *parent = parent_hugetlb_cgroup(cgroup);
+> +
+> +	if (!get_page_unless_zero(page))
+> +		goto out;
 
+It seems this doesn't necessary...this is under hugetlb_lock().
+
+> +
+> +	page_hcg = hugetlb_cgroup_from_page(page);
+> +	/*
+> +	 * We can have pages in active list without any cgroup
+> +	 * ie, hugepage with less than 3 pages. We can safely
+> +	 * ignore those pages.
+> +	 */
+> +	if (!page_hcg || page_hcg != h_cg)
+> +		goto err_out;
+> +
+> +	csize = PAGE_SIZE<<  compound_order(page);
+> +	if (!parent) {
+> +		parent = root_h_cgroup;
+> +		/* root has no limit */
+> +		res_counter_charge_nofail(&parent->hugepage[idx],
+> +					  csize,&fail_res);
+                                              ^^^
+space ?
+
+> +	}
+> +	counter =&h_cg->hugepage[idx];
+> +	res_counter_uncharge_until(counter, counter->parent, csize);
+> +
+> +	set_hugetlb_cgroup(page, parent);
+> +err_out:
+> +	put_page(page);
+> +out:
+> +	return 0;
+> +}
+> +
+> +/*
+> + * Force the hugetlb cgroup to empty the hugetlb resources by moving them to
+> + * the parent cgroup.
+> + */
+>   static int hugetlb_cgroup_pre_destroy(struct cgroup *cgroup)
+>   {
+> -	/* We will add the cgroup removal support in later patches */
+> -	   return -EBUSY;
+> +	struct hstate *h;
+> +	struct page *page;
+> +	int ret = 0, idx = 0;
+> +
+> +	do {
+> +		if (cgroup_task_count(cgroup) ||
+> +		    !list_empty(&cgroup->children)) {
+> +			ret = -EBUSY;
+> +			goto out;
+> +		}
+
+> +		/*
+> +		 * If the task doing the cgroup_rmdir got a signal
+> +		 * we don't really need to loop till the hugetlb resource
+> +		 * usage become zero.
+> +		 */
+> +		if (signal_pending(current)) {
+> +			ret = -EINTR;
+> +			goto out;
+> +		}
+
+I'll post a patch to remove this check from memcg because memcg's rmdir
+always succeed now. So, could you remove this ?
+
+
+> +		for_each_hstate(h) {
+> +			spin_lock(&hugetlb_lock);
+> +			list_for_each_entry(page,&h->hugepage_activelist, lru) {
+> +				ret = hugetlb_cgroup_move_parent(idx, cgroup, page);
+> +				if (ret) {
+
+When 'ret' should be !0 ?
+If hugetlb_cgroup_move_parent() always returns 0, the check will not be necessary.
+
+Thanks,
+-Kame
+
+> +					spin_unlock(&hugetlb_lock);
+> +					goto out;
+> +				}
+> +			}
+> +			spin_unlock(&hugetlb_lock);
+> +			idx++;
+> +		}
+> +		cond_resched();
+> +	} while (hugetlb_cgroup_have_usage(cgroup));
+> +out:
+> +	return ret;
+>   }
 > 
-> 
-> Christian
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+>   int hugetlb_cgroup_charge_page(int idx, unsigned long nr_pages,
+
 
