@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753655Ab2FLTHC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 15:07:02 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:58951 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751506Ab2FLTHA (ORCPT
+	id S1754165Ab2FLTHf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 15:07:35 -0400
+Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:47551 "EHLO
+	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752052Ab2FLTHe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 15:07:00 -0400
-Date: Tue, 12 Jun 2012 21:07:20 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, andi@firstfloor.org, mingo@elte.hu,
-        ming.m.lin@intel.com, Borislav Petkov <bp@amd64.org>,
-        "Yu, Fenghua" <fenghua.yu@intel.com>
-Subject: Re: [PATCH] perf/x86: check ucode before disabling PEBS on
- SandyBridge
-Message-ID: <20120612190720.GA11137@aftab.osrc.amd.com>
-References: <20120607071531.GA4849@quad>
- <4FD78BE6.4060207@zytor.com>
+	Tue, 12 Jun 2012 15:07:34 -0400
+Date: Tue, 12 Jun 2012 12:07:28 -0700
+From: Mike Turquette <mturquette@ti.com>
+To: Rajendra Nayak <rnayak@ti.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 2/2] clk: Allow late cache allocation for clk->parents
+Message-ID: <20120612190728.GI19410@gmail.com>
+References: <1338973891-28719-1-git-send-email-rnayak@ti.com>
+ <1338973891-28719-3-git-send-email-rnayak@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4FD78BE6.4060207@zytor.com>
+In-Reply-To: <1338973891-28719-3-git-send-email-rnayak@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 12, 2012 at 11:35:18AM -0700, H. Peter Anvin wrote:
-> Andi just alerted me to this thread.
+On 20120606-14:41, Rajendra Nayak wrote:
+> Parent clocks for muxes are cached in clk->parents to
+> avoid frequent lookups, however the cache allocation happens
+> only during clock registeration and later clk_set_parent()
+> assumes a cache space available and allocated.
 > 
-> I, Thomas and Borislav discussed this at LCE last year, and it really
-> comes up that we have a *large* number of reasons to load microcode
-> early.  We then need to keep the microcode around so that it can be
-> loaded on APs, hotplug CPUs, and after S3 resume.
+> This is not entirely true for platforms which do early clock
+> registerations wherein the cache allocation using kzalloc
+> could fail during clock registeration.
 > 
-> The protocol discussion happened in this thread:
+> Allow cache allocation to happen later as part of clk_set_parent()
+> to help such cases and avoid crashes assuming a cache being
+> available.
 > 
-> http://marc.info/?i=1332512984-79664-1-git-send-email-trenn@suse.de
+> While here also replace existing kmalloc() with kzalloc()
+> in the file.
 > 
-> Fenghua Yu at Intel is currently working on the implementation.
+> Signed-off-by: Rajendra Nayak <rnayak@ti.com>
 
-Nice, this is the initrd cpio thing, cool, no changes needed for the
-bootloader. Ping me when you have something ready so that I can start
-testing it here too.
+I've taken this patch into clk-next for testing.
 
-Thanks guys.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+Thanks,
+Mike
