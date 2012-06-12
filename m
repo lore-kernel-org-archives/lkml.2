@@ -1,76 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753807Ab2FLRKK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 13:10:10 -0400
-Received: from Mycroft.westnet.com ([216.187.52.7]:48210 "EHLO
-	mycroft.westnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753719Ab2FLRKG (ORCPT
+	id S1753794Ab2FLRKs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 13:10:48 -0400
+Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:49037 "EHLO
+	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753400Ab2FLRKq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 13:10:06 -0400
+	Tue, 12 Jun 2012 13:10:46 -0400
+Date: Tue, 12 Jun 2012 10:10:41 -0700
+From: Mike Turquette <mturquette@ti.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] clk: Constify struct clk_init_data
+Message-ID: <20120612171041.GF19410@gmail.com>
+References: <1337004763-21250-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-ID: <20439.30634.460606.215696@quad.stoffel.home>
-Date: Tue, 12 Jun 2012 13:08:58 -0400
-From: "John Stoffel" <john@stoffel.org>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, linux-scsi@vger.kernel.org,
-        jbottomley@parallels.com
-Subject: Re: [PATCH] scsi: allow persistent reservations without CAP_SYS_RAWIO
-In-Reply-To: <1339517312-18134-1-git-send-email-pbonzini@redhat.com>
-References: <1339517312-18134-1-git-send-email-pbonzini@redhat.com>
-X-Mailer: VM 8.1.2 under 23.2.1 (x86_64-pc-linux-gnu)
+Content-Disposition: inline
+In-Reply-To: <1337004763-21250-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 20120514-15:12, Mark Brown wrote:
+> Allow drivers to declare their clk_init_data const, the framework really
+> shouldn't be modifying the data.
+> 
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-Paolo> Persistent reservations commands cannot be issued right now
-Paolo> without giving CAP_SYS_RAWIO to the process who wishes to send
-Paolo> them.  This is a bit heavy-handed, allow these two commands.
+Thanks for the patch Mark.  I've pulled into clk-next for testing.
 
-This seems like a bad idea, now anyone can just put in a SCSI
-reservation on a system and then you have to hunt around trying to
-figure it out.  
-
-What's the motivation here?  What's the use case this solves?  
-
-John
-
-
-
-Paolo> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-Paolo> ---
-Paolo>         Ok for 3.5 as well?
-
-Paolo>  block/scsi_ioctl.c |    2 ++
-Paolo>  1 files changed, 2 insertions(+), 0 deletions(-)
-
-Paolo> diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
-Paolo> index 260fa80..5d6c9c1 100644
-Paolo> --- a/block/scsi_ioctl.c
-Paolo> +++ b/block/scsi_ioctl.c
-Paolo> @@ -137,6 +137,7 @@ static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
-Paolo>  	__set_bit(SERVICE_ACTION_IN, filter->read_ok);
-Paolo>  	__set_bit(RECEIVE_DIAGNOSTIC, filter->read_ok);
-Paolo>  	__set_bit(MAINTENANCE_IN, filter->read_ok);
-Paolo> +	__set_bit(PERSISTENT_RESERVE_IN, filter->read_ok);
-Paolo>  	__set_bit(GPCMD_READ_BUFFER_CAPACITY, filter->read_ok);
- 
-Paolo>  	/* Audio CD commands */
-Paolo> @@ -178,6 +179,7 @@ static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
-Paolo>  	__set_bit(GPCMD_MODE_SELECT_10, filter->write_ok);
-Paolo>  	__set_bit(MODE_SELECT, filter->write_ok);
-Paolo>  	__set_bit(LOG_SELECT, filter->write_ok);
-Paolo> +	__set_bit(PERSISTENT_RESERVE_OUT, filter->write_ok);
-Paolo>  	__set_bit(GPCMD_BLANK, filter->write_ok);
-Paolo>  	__set_bit(GPCMD_CLOSE_TRACK, filter->write_ok);
-Paolo>  	__set_bit(GPCMD_FLUSH_CACHE, filter->write_ok);
-Paolo> -- 
-Paolo> 1.7.1
-
-Paolo> --
-Paolo> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-Paolo> the body of a message to majordomo@vger.kernel.org
-Paolo> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-Paolo> Please read the FAQ at  http://www.tux.org/lkml/
+Regards,
+Mike
