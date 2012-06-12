@@ -1,66 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754114Ab2FLRlE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 13:41:04 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48509 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752420Ab2FLRlA convert rfc822-to-8bit (ORCPT
+	id S1752392Ab2FLRpG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 13:45:06 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:52411 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751424Ab2FLRpD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 13:41:00 -0400
-Message-ID: <1339522843.31548.100.camel@twins>
-Subject: Re: [PATCH] perf/x86: check ucode before disabling PEBS on
- SandyBridge
-From: Peter Zijlstra <peterz@infradead.org>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Stephane Eranian <eranian@google.com>,
-        Robert Richter <robert.richter@amd.com>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        andi@firstfloor.org, mingo@elte.hu, ming.m.lin@intel.com,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Dimitri Sivanich <sivanich@sgi.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>
-Date: Tue, 12 Jun 2012 19:40:43 +0200
-In-Reply-To: <20120612173506.GB4802@aftab.osrc.amd.com>
-References: <20120608093513.GA22520@gmail.com>
-	 <1339149613.23343.52.camel@twins> <1339161972.2507.13.camel@laptop>
-	 <20120612170725.GE5046@erda.amd.com>
-	 <CABPqkBRJAA7yRcswM1iYESSwhiGD4SEbir=q=ouQSevi7OAxqQ@mail.gmail.com>
-	 <1339521203.31548.92.camel@twins>
-	 <20120612171734.GI8404@aftab.osrc.amd.com>
-	 <1339521493.31548.93.camel@twins>
-	 <20120612172352.GA4802@aftab.osrc.amd.com>
-	 <1339521996.31548.95.camel@twins>
-	 <20120612173506.GB4802@aftab.osrc.amd.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Tue, 12 Jun 2012 13:45:03 -0400
+Date: Tue, 12 Jun 2012 13:44:59 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+cc: Lasse Collin <lasse.collin@tukaani.org>, T Makphaibulchoke <tmac@hp.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com, linux390@de.ibm.com,
+        lethal@linux-sh.org, tglx@linutronix.de, mingo@redhat.com,
+        x86@kernel.org, kaloz@openwrt.org, jj@chaosbits.net,
+        matt.fleming@intel.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
+        linux-sh@vger.kernel.org
+Subject: Re: [PATCH v2] lib/decompress_unxz.c: removing all memory helper
+ functions
+In-Reply-To: <4FD77CAF.1020402@zytor.com>
+Message-ID: <alpine.LFD.2.02.1206121336060.23555@xanadu.home>
+References: <1339470307-28223-1-git-send-email-tmac@hp.com> <20120612191804.4211462a@tukaani.org> <alpine.LFD.2.02.1206121316190.23555@xanadu.home> <4FD77CAF.1020402@zytor.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-06-12 at 19:35 +0200, Borislav Petkov wrote:
-> On Tue, Jun 12, 2012 at 07:26:36PM +0200, Peter Zijlstra wrote:
-> > You want, yes, but afaict the stuff in
-> > arch/x86/kernel/microcode_core.c:reload_store means you can force a
-> > single cpu to update while leaving the others alone.
+On Tue, 12 Jun 2012, H. Peter Anvin wrote:
+
+> On 06/12/2012 10:26 AM, Nicolas Pitre wrote:
+> > 
+> > Instead of copying, maybe this would be much better to make the content 
+> > of lib/string.c usable in a pre-boot environment.
+> > 
 > 
-> Btw, this doesn't work on AMD... for a reason.
+> Not sure about that... a lot of it is #ifndef __HAVE_ARCH_* and you
+> *really* want those optimizations on some arches.
 
-How so? afaict there's nothing stopping it from working.
+Sure.  What about:
 
-> > Afaict this is not a sane thing to do, but quite possible.
-> 
-> I'd guess this is still there to support mixed ucode revisions for some
-> oldish platforms. But if SB doesn't support mixed ucode revisions,
-> you don't want to use the reload_store interface anyway for reasons
-> described above. Maybe this interface should be behind a family, model
-> check or so, so that users don't shoot themselves in the foot but it is
-> root-only anyway.
+lib/boot/mem.c: lib/string.c
+	sed 's/^#ifndef __HAVE_ARCH_/#ifndef __HAVE_PREBOOT_ARCH_/' < $< > $@
 
-Ideally this interface should be removed, but yeah. As long as its there
-you have to check all CPUs, because officially supported or not simply
-doesn't matter, the user can do it.
+This is over simplified but you get the idea.  Maybe lib/string.c itself 
+should be split into several files to help with a finer grained 
+selection.
 
-Also, you can create a pebs event while updating micro-code. There's a
-race window there if you don't check all cpus.
+
+Nicolas
