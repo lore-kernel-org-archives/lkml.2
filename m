@@ -1,83 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754110Ab2FLUKJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 16:10:09 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:59165 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751422Ab2FLUKH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 16:10:07 -0400
-Date: Tue, 12 Jun 2012 22:10:28 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>,
-        Robert Richter <robert.richter@amd.com>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        andi@firstfloor.org, mingo@elte.hu, ming.m.lin@intel.com,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Dimitri Sivanich <sivanich@sgi.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>
-Subject: Re: [PATCH] perf/x86: check ucode before disabling PEBS on
- SandyBridge
-Message-ID: <20120612201028.GD11137@aftab.osrc.amd.com>
-References: <1339161972.2507.13.camel@laptop>
- <20120612170725.GE5046@erda.amd.com>
- <CABPqkBRJAA7yRcswM1iYESSwhiGD4SEbir=q=ouQSevi7OAxqQ@mail.gmail.com>
- <1339521203.31548.92.camel@twins>
- <20120612171734.GI8404@aftab.osrc.amd.com>
- <1339521493.31548.93.camel@twins>
- <20120612172352.GA4802@aftab.osrc.amd.com>
- <1339521996.31548.95.camel@twins>
- <20120612173506.GB4802@aftab.osrc.amd.com>
- <1339522843.31548.100.camel@twins>
+	id S1753889Ab2FLUNu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 16:13:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41512 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751623Ab2FLUNt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 16:13:49 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: merez@codeaurora.org
+Cc: linux-mmc@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        "DOCUMENTATION" <linux-doc@vger.kernel.org>,
+        "open list" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 1/1] block: Add test-iosched scheduler
+References: <1339491984-8462-1-git-send-email-merez@codeaurora.org>
+	<1339491984-8462-2-git-send-email-merez@codeaurora.org>
+	<x4962awk4fs.fsf@segfault.boston.devel.redhat.com>
+	<f9b014a8098cce8e4bac8d333d7101c0.squirrel@www.codeaurora.org>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Tue, 12 Jun 2012 16:13:46 -0400
+In-Reply-To: <f9b014a8098cce8e4bac8d333d7101c0.squirrel@www.codeaurora.org>
+	(merez@codeaurora.org's message of "Tue, 12 Jun 2012 12:58:44 -0700
+	(PDT)")
+Message-ID: <x498vfsi8zp.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339522843.31548.100.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 12, 2012 at 07:40:43PM +0200, Peter Zijlstra wrote:
-> How so? afaict there's nothing stopping it from working.
+merez@codeaurora.org writes:
 
-I spoke too soon. It works but only if you have a
-newer-than-whats-on-the-system microcode image file. IOW, you need to
-move the microcode image away so that the ucode driver doesn't find it,
-boot, then move it back to /lib/firmware and do the reload thing through
-sysfs.
+> On Tue, June 12, 2012 7:09 am, Jeff Moyer wrote:
+>> Maya Erez <merez@codeaurora.org> writes:
+>>
+>>> The test scheduler allows testing a block device by dispatching
+>>> specific requests according to the test case and declare PASS/FAIL
+>>> according to the requests completion error code
+>>
+>> What sort of tests have you written that make use of this
+>> infrastructure?
+>>
+>>> @@ -1072,8 +1072,6 @@ struct request *blk_get_request(struct
+>>> request_queue *q, int rw, gfp_t gfp_mask)
+>>>  {
+>>>  	struct request *rq;
+>>>
+>>> -	BUG_ON(rw != READ && rw != WRITE);
+>>> -
+>>
+>> Please explain this.
+> get_request and get_request_wait, called by blk_get_request, expects to
+> get the REQ_SYNC flag in addition to the read/write flag. Moreover, it
+> uses the REQ_SYNC flag in its algorithm decision making.
+> However blk_get_request expects to get a Boolean to indicate only
+> read/write flag and cannot handle the REQ_SYNC flag.
 
-Last time I tried this, the microcode got already updated during boot
-and so the loading path didn't find a newer image, leading me to think
-the interface didn't work and I didn't dig deeper as to why it didn't.
+Right, so why is it okay to change this?  Right now, blk_get_request is
+used for block special requests.  There is no sense of sync vs. async
+for such requests (that's an fs request notion).  Perhaps you're calling
+the wrong function?
 
-Which means that I definitely need to disable this on AMD. I'll try to
-cook up something...
-
-> Ideally this interface should be removed, but yeah. As long as its there
-> you have to check all CPUs, because officially supported or not simply
-> doesn't matter, the user can do it.
-> 
-> Also, you can create a pebs event while updating micro-code. There's a
-> race window there if you don't check all cpus.
-
-Oh man, this is just nasty.
-
-Ok, we could probably make the notifier functionality dependent on
-whether the ucode driver for a vendor supports the reload_store
-interface and thus single cpu ucode updates. If it doesn't, no need to
-run the notifier per cpu but then the story with the race window is
-still unsolved.
-
-I need to sleep on it.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+Cheers,
+Jeff
