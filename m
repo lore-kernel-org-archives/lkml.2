@@ -1,48 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753740Ab2FLRNy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 13:13:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63769 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753411Ab2FLRNx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 13:13:53 -0400
-Message-ID: <4FD778BA.8040201@redhat.com>
-Date: Tue, 12 Jun 2012 19:13:30 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1753383Ab2FLRPH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 13:15:07 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:58327 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751306Ab2FLRPF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 13:15:05 -0400
+Date: Tue, 12 Jun 2012 19:15:24 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Robert Richter <robert.richter@amd.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, andi@firstfloor.org, mingo@elte.hu,
+        ming.m.lin@intel.com, Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Dimitri Sivanich <sivanich@sgi.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>
+Subject: Re: [PATCH] perf/x86: check ucode before disabling PEBS on
+ SandyBridge
+Message-ID: <20120612171524.GH8404@aftab.osrc.amd.com>
+References: <1339064319.23343.13.camel@twins>
+ <CABPqkBQ+p5rcuxpXCTLMXPM+awAHhQ6mP9-WzVh5GWtn2GyfrA@mail.gmail.com>
+ <1339065932.23343.18.camel@twins>
+ <CABPqkBQ=tLXXsgvzQx+i01Owm4MM8m=6cEVVi4ab64gOiTTBYQ@mail.gmail.com>
+ <1339067757.23343.21.camel@twins>
+ <20120608093513.GA22520@gmail.com>
+ <1339149613.23343.52.camel@twins>
+ <1339161972.2507.13.camel@laptop>
+ <20120612170725.GE5046@erda.amd.com>
+ <CABPqkBRJAA7yRcswM1iYESSwhiGD4SEbir=q=ouQSevi7OAxqQ@mail.gmail.com>
 MIME-Version: 1.0
-To: John Stoffel <john@stoffel.org>
-CC: linux-kernel@vger.kernel.org, axboe@kernel.dk, linux-scsi@vger.kernel.org,
-        jbottomley@parallels.com
-Subject: Re: [PATCH] scsi: allow persistent reservations without CAP_SYS_RAWIO
-References: <1339517312-18134-1-git-send-email-pbonzini@redhat.com> <20439.30634.460606.215696@quad.stoffel.home>
-In-Reply-To: <20439.30634.460606.215696@quad.stoffel.home>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBRJAA7yRcswM1iYESSwhiGD4SEbir=q=ouQSevi7OAxqQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 12/06/2012 19:08, John Stoffel ha scritto:
-> Paolo> Persistent reservations commands cannot be issued right now
-> Paolo> without giving CAP_SYS_RAWIO to the process who wishes to send
-> Paolo> them.  This is a bit heavy-handed, allow these two commands.
-> 
-> This seems like a bad idea, now anyone can just put in a SCSI
-> reservation on a system and then you have to hunt around trying to
-> figure it out.  
+On Tue, Jun 12, 2012 at 07:09:19PM +0200, Stephane Eranian wrote:
+> > Instead of registering a microcode notifier, why not checking the
+> > availability of pebs dynamically with each syscall in
+> > intel_pmu_hw_config()? It looks like intel_snb_verify_ucode() is not
+> > that much expensive. We can perform the check only if the event could
+> > be for pebs and if pebs is broken. The check could be repeated when
+> > setting up a new event after ucode could potentially has been updated
+> > (e.g. after bringing a cpu online or so).
 
-What's the difference from anyone destroying data on a disk?  You still
-need write access to the block device node.  Also, you could already do
-the same if you have root permissions on your _local_ machine.
+Yes, this will obviate the need for touching the microcode driver at all.
 
-(BTW, please reply to these objections where I already stated them, in
-the answer to James Bottomley).
+> That's what I had in my original version.
 
-> What's the motivation here?  What's the use case this solves?  
+... and you decided not to do it like that because... ?
 
-I would like to give access to persistent reservations to VMs, without
-having to run qemu as root.  One alternative is to run a userspace iSCSI
-initiator, but of course that would only work with iSCSI.
+Thanks.
 
-Paolo
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
