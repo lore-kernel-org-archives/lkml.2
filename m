@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753755Ab2FLPkT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 11:40:19 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47983 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753648Ab2FLPj7 (ORCPT
+	id S1753731Ab2FLPkR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 11:40:17 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:43586 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753652Ab2FLPkB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 11:39:59 -0400
+	Tue, 12 Jun 2012 11:40:01 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
         dm-devel@redhat.com
 Cc: Kent Overstreet <koverstreet@google.com>, tejun@google.com, agk@redhat.com,
         dan.j.williams@intel.com
-Subject: [Bcache v14 12/16] bcache: Bset code (lookups within a btree node)
-Date: Tue, 12 Jun 2012 08:39:18 -0700
-Message-Id: <1339515562-14638-13-git-send-email-koverstreet@google.com>
+Subject: [Bcache v14 13/16] bcache: Journalling
+Date: Tue, 12 Jun 2012 08:39:19 -0700
+Message-Id: <1339515562-14638-14-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.7.9.3.327.g2980b
 In-Reply-To: <1339515562-14638-1-git-send-email-koverstreet@google.com>
 References: <1339515562-14638-1-git-send-email-koverstreet@google.com>
@@ -24,1514 +24,838 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 ---
- drivers/md/bcache/bset.c | 1259 ++++++++++++++++++++++++++++++++++++++++++++++
- drivers/md/bcache/bset.h |  233 +++++++++
- 2 files changed, 1492 insertions(+)
+ drivers/md/bcache/journal.c |  703 +++++++++++++++++++++++++++++++++++++++++++
+ drivers/md/bcache/journal.h |  113 +++++++
+ 2 files changed, 816 insertions(+)
 
-diff --git a/drivers/md/bcache/bset.c b/drivers/md/bcache/bset.c
+diff --git a/drivers/md/bcache/journal.c b/drivers/md/bcache/journal.c
 new file mode 100644
-index 0000000..94b4ea4
+index 0000000..dd5d9fd
 --- /dev/null
-+++ b/drivers/md/bcache/bset.c
-@@ -0,0 +1,1259 @@
++++ b/drivers/md/bcache/journal.c
+@@ -0,0 +1,703 @@
 +
 +#include "bcache.h"
 +#include "btree.h"
 +#include "debug.h"
++#include "request.h"
 +
-+#include <linux/random.h>
++/*
++ * Journal replay/recovery:
++ *
++ * This code is all driven from run_cache_set(); we first read the journal
++ * entries, do some other stuff, then we mark all the keys in the journal
++ * entries (same as garbage collection would), then we replay them - reinserting
++ * them into the cache in precisely the same order as they appear in the
++ * journal.
++ *
++ * We only journal keys that go in leaf nodes, which simplifies things quite a
++ * bit.
++ */
 +
-+/* Keylists */
-+
-+void bch_keylist_copy(struct keylist *dest, struct keylist *src)
++static void journal_read_endio(struct bio *bio, int error)
 +{
-+	*dest = *src;
-+
-+	if (src->list == src->d) {
-+		size_t n = (uint64_t *) src->top - src->d;
-+		dest->top = (struct bkey *) &dest->d[n];
-+		dest->list = dest->d;
-+	}
++	struct closure *cl = bio->bi_private;
++	closure_put(cl);
 +}
 +
-+int bch_keylist_realloc(struct keylist *l, int nptrs, struct cache_set *c)
++static int journal_read_bucket(struct cache *ca, struct list_head *list,
++			       struct btree_op *op, unsigned bucket_index)
 +{
-+	unsigned oldsize = (uint64_t *) l->top - l->list;
-+	unsigned newsize = oldsize + 2 + nptrs;
-+	uint64_t *new;
++	struct journal_device *ja = &ca->journal;
++	struct bio *bio = &ja->bio;
 +
-+	/* The journalling code doesn't handle the case where the keys to insert
-+	 * is bigger than an empty write: If we just return -ENOMEM here,
-+	 * bio_insert() and bio_invalidate() will insert the keys created so far
-+	 * and finish the rest when the keylist is empty.
-+	 */
-+	if (newsize * sizeof(uint64_t) > block_bytes(c) - sizeof(struct jset))
-+		return -ENOMEM;
++	struct journal_replay *i;
++	struct jset *j, *data = ca->set->journal.w[0].data;
++	unsigned len, left, offset = 0;
++	int ret = 0;
++	sector_t bucket = bucket_to_sector(ca->set, ca->sb.d[bucket_index]);
 +
-+	newsize = roundup_pow_of_two(newsize);
++	pr_debug("reading %llu", (uint64_t) bucket);
 +
-+	if (newsize <= KEYLIST_INLINE ||
-+	    roundup_pow_of_two(oldsize) == newsize)
-+		return 0;
++	while (offset < ca->sb.bucket_size) {
++reread:		left = ca->sb.bucket_size - offset;
++		len = min_t(unsigned, left, PAGE_SECTORS * 8);
 +
-+	new = krealloc(l->list == l->d ? NULL : l->list,
-+		       sizeof(uint64_t) * newsize, GFP_NOIO);
++		bio_reset(bio);
++		bio->bi_sector	= bucket + offset;
++		bio->bi_bdev	= ca->bdev;
++		bio->bi_rw	= READ;
++		bio->bi_size	= len << 9;
 +
-+	if (!new)
-+		return -ENOMEM;
++		bio->bi_end_io	= journal_read_endio;
++		bio->bi_private = &op->cl;
++		bio_map(bio, data);
 +
-+	if (l->list == l->d)
-+		memcpy(new, l->list, sizeof(uint64_t) * KEYLIST_INLINE);
++		closure_bio_submit(bio, &op->cl);
++		closure_sync(&op->cl);
 +
-+	l->list = new;
-+	l->top = (struct bkey *) (&l->list[oldsize]);
++		/* This function could be simpler now since we no longer write
++		 * journal entries that overlap bucket boundaries; this means
++		 * the start of a bucket will always have a valid journal entry
++		 * if it has any journal entries at all.
++		 */
 +
-+	return 0;
-+}
++		j = data;
++		while (len) {
++			struct list_head *where;
++			size_t blocks, bytes = set_bytes(j);
 +
-+struct bkey *bch_keylist_pop(struct keylist *l)
-+{
-+	struct bkey *k = l->bottom;
++			if (j->magic != jset_magic(ca->set))
++				return ret;
 +
-+	if (k == l->top)
-+		return NULL;
++			if (bytes > left << 9)
++				return ret;
 +
-+	while (bkey_next(k) != l->top)
-+		k = bkey_next(k);
++			if (bytes > len << 9)
++				goto reread;
 +
-+	return l->top = k;
-+}
++			if (j->csum != csum_set(j))
++				return ret;
 +
-+/* Pointer validation */
++			blocks = set_blocks(j, ca->set);
 +
-+bool __bch_ptr_invalid(struct cache_set *c, int level, const struct bkey *k)
-+{
-+	if (level && (!KEY_PTRS(k) || !KEY_SIZE(k) || KEY_DIRTY(k)))
-+		goto bad;
-+
-+	if (!level && KEY_SIZE(k) > KEY_OFFSET(k))
-+		goto bad;
-+
-+	if (!KEY_SIZE(k))
-+		return true;
-+
-+	for (unsigned i = 0; i < KEY_PTRS(k); i++)
-+		if (ptr_available(c, k, i)) {
-+			struct cache *ca = PTR_CACHE(c, k, i);
-+			size_t bucket = PTR_BUCKET_NR(c, k, i);
-+			size_t r = bucket_remainder(c, PTR_OFFSET(k, i));
-+
-+			if (KEY_SIZE(k) + r > c->sb.bucket_size ||
-+			    bucket <  ca->sb.first_bucket ||
-+			    bucket >= ca->sb.nbuckets)
-+				goto bad;
-+		}
-+
-+	return false;
-+bad:
-+	cache_bug(c, "spotted bad key %s: %s", pkey(k), bch_ptr_status(c, k));
-+	return true;
-+}
-+
-+bool bch_ptr_bad(struct btree *b, const struct bkey *k)
-+{
-+	struct bucket *g;
-+	unsigned i, stale;
-+
-+	if (!bkey_cmp(k, &ZERO_KEY) ||
-+	    !KEY_PTRS(k) ||
-+	    bch_ptr_invalid(b, k))
-+		return true;
-+
-+	if (KEY_PTRS(k) && PTR_DEV(k, 0) == PTR_CHECK_DEV)
-+		return true;
-+
-+	for (i = 0; i < KEY_PTRS(k); i++)
-+		if (ptr_available(b->c, k, i)) {
-+			g = PTR_BUCKET(b->c, k, i);
-+			stale = ptr_stale(b->c, k, i);
-+
-+			btree_bug_on(stale > 96, b,
-+				     "key too stale: %i, need_gc %u",
-+				     stale, b->c->need_gc);
-+
-+			btree_bug_on(stale && KEY_DIRTY(k) && KEY_SIZE(k),
-+				     b, "stale dirty pointer");
-+
-+			if (stale)
-+				return true;
-+
-+#ifdef CONFIG_BCACHE_EDEBUG
-+			if (!mutex_trylock(&b->c->bucket_lock))
-+				continue;
-+
-+			if (b->level) {
-+				if (KEY_DIRTY(k) ||
-+				    g->prio != BTREE_PRIO ||
-+				    (b->c->gc_mark_valid &&
-+				     GC_MARK(g) != GC_MARK_BTREE))
-+					goto bug;
-+
-+			} else {
-+				if (g->prio == BTREE_PRIO)
-+					goto bug;
-+
-+				if (KEY_DIRTY(k) &&
-+				    b->c->gc_mark_valid &&
-+				    GC_MARK(g) != GC_MARK_DIRTY)
-+					goto bug;
++			while (!list_empty(list)) {
++				i = list_first_entry(list,
++					struct journal_replay, list);
++				if (i->j.seq >= j->last_seq)
++					break;
++				list_del(&i->list);
++				kfree(i);
 +			}
-+			mutex_unlock(&b->c->bucket_lock);
-+#endif
++
++			list_for_each_entry_reverse(i, list, list) {
++				if (j->seq == i->j.seq)
++					goto next_set;
++
++				if (j->seq < i->j.last_seq)
++					goto next_set;
++
++				if (j->seq > i->j.seq) {
++					where = &i->list;
++					goto add;
++				}
++			}
++
++			where = list;
++add:
++			i = kmalloc(offsetof(struct journal_replay, j) +
++				    bytes, GFP_KERNEL);
++			if (!i)
++				return -ENOMEM;
++			memcpy(&i->j, j, bytes);
++			list_add(&i->list, where);
++			ret = 1;
++
++			ja->seq[bucket_index] = j->seq;
++next_set:
++			offset	+= blocks * ca->sb.block_size;
++			len	-= blocks * ca->sb.block_size;
++			j = ((void *) j) + blocks * block_bytes(ca);
 +		}
-+
-+	return false;
-+#ifdef CONFIG_BCACHE_EDEBUG
-+bug:
-+	mutex_unlock(&b->c->bucket_lock);
-+	btree_bug(b, "inconsistent pointer %s: bucket %li pin %i "
-+		  "prio %i gen %i last_gc %i mark %llu gc_gen %i", pkey(k),
-+		  PTR_BUCKET_NR(b->c, k, i), atomic_read(&g->pin),
-+		  g->prio, g->gen, g->last_gc, GC_MARK(g), g->gc_gen);
-+	return true;
-+#endif
-+}
-+
-+/* Key/pointer manipulation */
-+
-+void bch_bkey_copy_single_ptr(struct bkey *dest, const struct bkey *src, unsigned i)
-+{
-+	BUG_ON(i > KEY_PTRS(src));
-+
-+	/* Only copy the header, key, and one pointer. */
-+	memcpy(dest, src, 2 * sizeof(uint64_t));
-+	dest->ptr[0] = src->ptr[i];
-+	SET_KEY_PTRS(dest, 1);
-+	/* We didn't copy the checksum so clear that bit. */
-+	SET_KEY_CSUM(dest, 0);
-+}
-+
-+bool __bch_cut_front(const struct bkey *where, struct bkey *k)
-+{
-+	unsigned len = 0;
-+
-+	if (bkey_cmp(where, &START_KEY(k)) <= 0)
-+		return false;
-+
-+	if (bkey_cmp(where, k) < 0)
-+		len = KEY_OFFSET(k) - KEY_OFFSET(where);
-+	else
-+		bkey_copy_key(k, where);
-+
-+	for (unsigned i = 0; i < KEY_PTRS(k); i++)
-+		SET_PTR_OFFSET(k, i, PTR_OFFSET(k, i) + KEY_SIZE(k) - len);
-+
-+	BUG_ON(len > KEY_SIZE(k));
-+	SET_KEY_SIZE(k, len);
-+	return true;
-+}
-+
-+bool __bch_cut_back(const struct bkey *where, struct bkey *k)
-+{
-+	unsigned len = 0;
-+
-+	if (bkey_cmp(where, k) >= 0)
-+		return false;
-+
-+	BUG_ON(KEY_INODE(where) != KEY_INODE(k));
-+
-+	if (bkey_cmp(where, &START_KEY(k)) > 0)
-+		len = KEY_OFFSET(where) - KEY_START(k);
-+
-+	bkey_copy_key(k, where);
-+
-+	BUG_ON(len > KEY_SIZE(k));
-+	SET_KEY_SIZE(k, len);
-+	return true;
-+}
-+
-+static uint64_t merge_chksums(struct bkey *l, struct bkey *r)
-+{
-+	return (l->ptr[KEY_PTRS(l)] + r->ptr[KEY_PTRS(r)]) &
-+		~((uint64_t)1 << 63);
-+}
-+
-+/* Tries to merge l and r: l should be lower than r
-+ * Returns true if we were able to merge. If we did merge, l will be the merged
-+ * key, r will be untouched.
-+ */
-+bool bch_bkey_try_merge(struct btree *b, struct bkey *l, struct bkey *r)
-+{
-+	if (key_merging_disabled(b->c))
-+		return false;
-+
-+	if (KEY_PTRS(l) != KEY_PTRS(r) ||
-+	    KEY_DIRTY(l) != KEY_DIRTY(r) ||
-+	    bkey_cmp(l, &START_KEY(r)))
-+		return false;
-+
-+	for (unsigned j = 0; j < KEY_PTRS(l); j++)
-+		if (l->ptr[j] + PTR(0, KEY_SIZE(l), 0) != r->ptr[j] ||
-+		    PTR_BUCKET_NR(b->c, l, j) != PTR_BUCKET_NR(b->c, r, j))
-+			return false;
-+
-+	/* Keys with no pointers aren't restricted to one bucket and could
-+	 * overflow KEY_SIZE
-+	 */
-+	if (KEY_SIZE(l) + KEY_SIZE(r) > USHRT_MAX) {
-+		SET_KEY_OFFSET(l, KEY_OFFSET(l) + USHRT_MAX - KEY_SIZE(l));
-+		SET_KEY_SIZE(l, USHRT_MAX);
-+
-+		bch_cut_front(l, r);
-+		return false;
 +	}
 +
-+	if (KEY_CSUM(l)) {
-+		if (KEY_CSUM(r))
-+			l->ptr[KEY_PTRS(l)] = merge_chksums(l, r);
-+		else
-+			SET_KEY_CSUM(l, 0);
-+	}
-+
-+	SET_KEY_OFFSET(l, KEY_OFFSET(l) + KEY_SIZE(r));
-+	SET_KEY_SIZE(l, KEY_SIZE(l) + KEY_SIZE(r));
-+
-+	return true;
++	return ret;
 +}
 +
-+/* Binary tree stuff for auxiliary search trees */
-+
-+static unsigned inorder_next(unsigned j, unsigned size)
++int bch_journal_read(struct cache_set *c, struct list_head *list,
++			struct btree_op *op)
 +{
-+	if (j * 2 + 1 < size) {
-+		j = j * 2 + 1;
++#define read_bucket(b)							\
++	({								\
++		int ret = journal_read_bucket(ca, list, op, b);		\
++		__set_bit(b, bitmap);					\
++		if (ret < 0)						\
++			return ret;					\
++		ret;							\
++	})
 +
-+		while (j * 2 < size)
-+			j *= 2;
-+	} else
-+		j >>= ffz(j) + 1;
++	struct cache *ca;
 +
-+	return j;
-+}
++	for_each_cache(ca, c) {
++		struct journal_device *ja = &ca->journal;
++		unsigned long bitmap[SB_JOURNAL_BUCKETS / BITS_PER_LONG];
++		unsigned l, r, m;
++		uint64_t seq;
 +
-+static unsigned inorder_prev(unsigned j, unsigned size)
-+{
-+	if (j * 2 < size) {
-+		j = j * 2;
++		bitmap_zero(bitmap, SB_JOURNAL_BUCKETS);
++		pr_debug("%u journal buckets", ca->sb.njournal_buckets);
 +
-+		while (j * 2 + 1 < size)
-+			j = j * 2 + 1;
-+	} else
-+		j >>= ffs(j);
++		/* Read journal buckets ordered by golden ratio hash to quickly
++		 * find a sequence of buckets with valid journal entries
++		 */
++		for (unsigned i = 0; i < ca->sb.njournal_buckets; i++) {
++			l = (i * 2654435769U) % ca->sb.njournal_buckets;
 +
-+	return j;
-+}
-+
-+/* I have no idea why this code works... and I'm the one who wrote it
-+ *
-+ * However, I do know what it does:
-+ * Given a binary tree constructed in an array (i.e. how you normally implement
-+ * a heap), it converts a node in the tree - referenced by array index - to the
-+ * index it would have if you did an inorder traversal.
-+ *
-+ * Also tested for every j, size up to size somewhere around 6 million.
-+ *
-+ * The binary tree starts at array index 1, not 0
-+ * extra is a function of size:
-+ *   extra = (size - rounddown_pow_of_two(size - 1)) << 1;
-+ */
-+static unsigned __to_inorder(unsigned j, unsigned size, unsigned extra)
-+{
-+	unsigned b = fls(j);
-+	unsigned shift = fls(size - 1) - b;
-+
-+	j  ^= 1U << (b - 1);
-+	j <<= 1;
-+	j  |= 1;
-+	j <<= shift;
-+
-+	if (j > extra)
-+		j -= (j - extra) >> 1;
-+
-+	return j;
-+}
-+
-+static unsigned to_inorder(unsigned j, struct bset_tree *t)
-+{
-+	return __to_inorder(j, t->size, t->extra);
-+}
-+
-+static unsigned __inorder_to_tree(unsigned j, unsigned size, unsigned extra)
-+{
-+	unsigned shift;
-+
-+	if (j > extra)
-+		j += j - extra;
-+
-+	shift = ffs(j);
-+
-+	j >>= shift;
-+	j  |= roundup_pow_of_two(size) >> shift;
-+
-+	return j;
-+}
-+
-+static unsigned inorder_to_tree(unsigned j, struct bset_tree *t)
-+{
-+	return __inorder_to_tree(j, t->size, t->extra);
-+}
-+
-+#if 0
-+void inorder_test(void)
-+{
-+	unsigned long done = 0;
-+	ktime_t start = ktime_get();
-+
-+	for (unsigned size = 2;
-+	     size < 65536000;
-+	     size++) {
-+		unsigned extra = (size - rounddown_pow_of_two(size - 1)) << 1;
-+		unsigned i = 1, j = rounddown_pow_of_two(size - 1);
-+
-+		if (!(size % 4096))
-+			printk(KERN_NOTICE "loop %u, %llu per us\n", size,
-+			       done / ktime_us_delta(ktime_get(), start));
-+
-+		while (1) {
-+			if (__inorder_to_tree(i, size, extra) != j)
-+				panic("size %10u j %10u i %10u", size, j, i);
-+
-+			if (__to_inorder(j, size, extra) != i)
-+				panic("size %10u j %10u i %10u", size, j, i);
-+
-+			if (j == rounddown_pow_of_two(size) - 1)
++			if (test_bit(l, bitmap))
 +				break;
 +
-+			BUG_ON(inorder_prev(inorder_next(j, size), size) != j);
-+
-+			j = inorder_next(j, size);
-+			i++;
++			if (read_bucket(l))
++				goto bsearch;
 +		}
 +
-+		done += size - 1;
++		/* If that fails, check all the buckets we haven't checked
++		 * already
++		 */
++		pr_debug("falling back to linear search");
++
++		for (l = 0; l < ca->sb.njournal_buckets; l++) {
++			if (test_bit(l, bitmap))
++				continue;
++
++			if (read_bucket(l))
++				goto bsearch;
++		}
++bsearch:
++		/* Binary search */
++		m = r = find_next_bit(bitmap, ca->sb.njournal_buckets, l + 1);
++		pr_debug("starting binary search, l %u r %u", l, r);
++
++		while (l + 1 < r) {
++			m = (l + r) >> 1;
++
++			if (read_bucket(m))
++				l = m;
++			else
++				r = m;
++		}
++
++		/* Read buckets in reverse order until we stop finding more
++		 * journal entries
++		 */
++		pr_debug("finishing up");
++		l = m;
++
++		while (1) {
++			if (!l--)
++				l = ca->sb.njournal_buckets - 1;
++
++			if (l == m)
++				break;
++
++			if (test_bit(l, bitmap))
++				continue;
++
++			if (!read_bucket(l))
++				break;
++		}
++
++		seq = 0;
++
++		for (unsigned i = 0; i < ca->sb.njournal_buckets; i++)
++			if (ja->seq[i] > seq) {
++				seq = ja->seq[i];
++				ja->cur = ja->last = i;
++
++			}
 +	}
-+}
-+#endif
 +
-+/*
-+ * Cacheline/offset <-> bkey pointer arithmatic:
-+ *
-+ * t->tree is a binary search tree in an array; each node corresponds to a key
-+ * in one cacheline in t->set (BSET_CACHELINE bytes).
-+ *
-+ * This means we don't have to store the full index of the key that a node in
-+ * the binary tree points to; to_inorder() gives us the cacheline, and then
-+ * bkey_float->m gives us the offset within that cacheline, in units of 8 bytes.
-+ *
-+ * cacheline_to_bkey() and friends abstract out all the pointer arithmatic to
-+ * make this work.
-+ *
-+ * To construct the bfloat for an arbitrary key we need to know what the key
-+ * immediately preceding it is: we have to check if the two keys differ in the
-+ * bits we're going to store in bkey_float->mantissa. t->prev[j] stores the size
-+ * of the previous key so we can walk backwards to it from t->tree[j]'s key.
-+ */
++	c->journal.seq = list_entry(list->prev,
++				    struct journal_replay,
++				    list)->j.seq;
 +
-+static struct bkey *cacheline_to_bkey(struct bset_tree *t, unsigned cacheline,
-+				      unsigned offset)
-+{
-+	return ((void *) t->data) + cacheline * BSET_CACHELINE + offset * 8;
++	return 0;
++#undef read_bucket
 +}
 +
-+static unsigned bkey_to_cacheline(struct bset_tree *t, struct bkey *k)
++void bch_journal_mark(struct cache_set *c, struct list_head *list)
 +{
-+	return ((void *) k - (void *) t->data) / BSET_CACHELINE;
-+}
-+
-+static unsigned bkey_to_cacheline_offset(struct bkey *k)
-+{
-+	return ((size_t) k & (BSET_CACHELINE - 1)) / sizeof(uint64_t);
-+}
-+
-+static struct bkey *tree_to_bkey(struct bset_tree *t, unsigned j)
-+{
-+	return cacheline_to_bkey(t, to_inorder(j, t), t->tree[j].m);
-+}
-+
-+static struct bkey *tree_to_prev_bkey(struct bset_tree *t, unsigned j)
-+{
-+	return (void *) (((uint64_t *) tree_to_bkey(t, j)) - t->prev[j]);
-+}
-+
-+/*
-+ * For the write set - the one we're currently inserting keys into - we don't
-+ * maintain a full search tree, we just keep a simple lookup table in t->prev.
-+ */
-+static struct bkey *table_to_bkey(struct bset_tree *t, unsigned cacheline)
-+{
-+	return cacheline_to_bkey(t, cacheline, t->prev[cacheline]);
-+}
-+
-+/*
-+ * Auxiliary search trees:
-+ *
-+ * A btree node contains multiple sets of keys; within a set the keys are in
-+ * sorted order.
-+ *
-+ * Since keys are variable length, we can't use a binary search - we wouldn't be
-+ * able to find the start of the next key. But binary searches are slow anyways,
-+ * due to terrible cache behaviour; bcache originally used binary searches and
-+ * that code topped out at under 50k lookups/second.
-+ *
-+ * So we need to construct some sort of lookup table. Since we only insert keys
-+ * into the last (unwritten) set, most of the keys within a given btree node are
-+ * usually in sets that are mostly constant. We use two different types of
-+ * lookup tables to take advantage of this.
-+ *
-+ * Both lookup tables share in common that they don't index every key in the
-+ * set; they index one key every BSET_CACHELINE bytes, and then a linear search
-+ * is used for the rest.
-+ *
-+ * For sets that have been written to disk and are no longer being inserted
-+ * into, we construct a binary search tree in an array - traversing a binary
-+ * search tree in an array gives excellent locality of reference and is very
-+ * fast, since both children of any node are adjacent to each other in memory
-+ * (and their grandchildren, and great grandchildren...) - this means
-+ * prefetching can be used to great effect.
-+ *
-+ * It's quite useful performance wise to keep these nodes small - not just
-+ * because they're more likely to be in L2, but also because we can prefetch
-+ * more nodes on a single cacheline and thus prefetch more iterations in advance
-+ * when traversing this tree.
-+ *
-+ * Nodes in the auxiliary search tree must contain both a key to compare against
-+ * (we don't want to fetch the key from the set, that would defeat the purpose),
-+ * and a pointer to the key. We use a few tricks to compress both of these.
-+ *
-+ * To compress the pointer, we take advantage of the fact that one node in the
-+ * search tree corresponds to precisely BSET_CACHELINE bytes in the set. We have
-+ * a function (to_inorder()) that takes the index of a node in a binary tree and
-+ * returns what its index would be in an inorder traversal, so we only have to
-+ * store the low bits of the offset.
-+ *
-+ * The key is 84 bits (KEY_DEV + key->key, the offset on the device). To
-+ * compress that,  we take advantage of the fact that when we're traversing the
-+ * search tree at every iteration we know that both our search key and the key
-+ * we're looking for lie within some range - bounded by our previous
-+ * comparisons. (We special case the start of a search so that this is true even
-+ * at the root of the tree).
-+ *
-+ * So we know the key we're looking for is between a and b, and a and b don't
-+ * differ higher than bit 50, we don't need to check anything higher than bit
-+ * 50.
-+ *
-+ * We don't usually need the rest of the bits, either; we only need enough bits
-+ * to partition the key range we're currently checking.  Consider key n - the
-+ * key our auxiliary search tree node corresponds to, and key p, the key
-+ * immediately preceding n.  The lowest bit we need to store in the auxiliary
-+ * search tree is the highest bit that differs between n and p.
-+ *
-+ * Note that this could be bit 0 - we might sometimes need all 80 bits to do the
-+ * comparison. But we'd really like our nodes in the auxiliary search tree to be
-+ * of fixed size.
-+ *
-+ * The solution is to make them fixed size, and when we're constructing a node
-+ * check if p and n differed in the bits we needed them to. If they don't we
-+ * flag that node, and when doing lookups we fallback to comparing against the
-+ * real key. As long as this doesn't happen to often (and it seems to reliably
-+ * happen a bit less than 1% of the time), we win - even on failures, that key
-+ * is then more likely to be in cache than if we were doing binary searches all
-+ * the way, since we're touching so much less memory.
-+ *
-+ * The keys in the auxiliary search tree are stored in (software) floating
-+ * point, with an exponent and a mantissa. The exponent needs to be big enough
-+ * to address all the bits in the original key, but the number of bits in the
-+ * mantissa is somewhat arbitrary; more bits just gets us fewer failures.
-+ *
-+ * We need 7 bits for the exponent and 3 bits for the key's offset (since keys
-+ * are 8 byte aligned); using 22 bits for the mantissa means a node is 4 bytes.
-+ * We need one node per 128 bytes in the btree node, which means the auxiliary
-+ * search trees take up 3% as much memory as the btree itself.
-+ *
-+ * Constructing these auxiliary search trees is moderately expensive, and we
-+ * don't want to be constantly rebuilding the search tree for the last set
-+ * whenever we insert another key into it. For the unwritten set, we use a much
-+ * simpler lookup table - it's just a flat array, so index i in the lookup table
-+ * corresponds to the i range of BSET_CACHELINE bytes in the set. Indexing
-+ * within each byte range works the same as with the auxiliary search trees.
-+ *
-+ * These are much easier to keep up to date when we insert a key - we do it
-+ * somewhat lazily; when we shift a key up we usually just increment the pointer
-+ * to it, only when it would overflow do we go to the trouble of finding the
-+ * first key in that range of bytes again.
-+ */
-+
-+static inline uint64_t shrd128(uint64_t high, uint64_t low, uint8_t shift)
-+{
-+#ifdef CONFIG_X86_64
-+	asm("shrd %[shift],%[high],%[low]"
-+	    : [low] "+Rm" (low)
-+	    : [high] "R" (high),
-+	    [shift] "ci" (shift)
-+	    : "cc");
-+#else
-+	low >>= shift;
-+	low  |= (high << 1) << (63U - shift);
-+#endif
-+	return low;
-+}
-+
-+static inline unsigned bfloat_mantissa(const struct bkey *k,
-+				       struct bkey_float *f)
-+{
-+	const uint64_t *p = &k->low - (f->exponent >> 6);
-+	return shrd128(p[-1], p[0], f->exponent & 63) & BKEY_MANTISSA_MASK;
-+}
-+
-+static void make_bfloat(struct bset_tree *t, unsigned j)
-+{
-+	struct bkey_float *f = &t->tree[j];
-+	struct bkey *m = tree_to_bkey(t, j);
-+	struct bkey *p = tree_to_prev_bkey(t, j);
-+
-+	struct bkey *l = is_power_of_2(j)
-+		? t->data->start
-+		: tree_to_prev_bkey(t, j >> ffs(j));
-+
-+	struct bkey *r = is_power_of_2(j + 1)
-+		? node(t->data, t->data->keys - bkey_u64s(&t->end))
-+		: tree_to_bkey(t, j >> (ffz(j) + 1));
-+
-+	BUG_ON(m < l || m > r);
-+	BUG_ON(bkey_next(p) != m);
-+
-+	if (KEY_INODE(l) != KEY_INODE(r))
-+		f->exponent = fls64(KEY_INODE(r) ^ KEY_INODE(l)) + 64;
-+	else
-+		f->exponent = fls64(r->low ^ l->low);
-+
-+	f->exponent = max_t(int, f->exponent - BKEY_MANTISSA_BITS, 0);
++	atomic_t p = { 0 };
++	struct journal_replay *i;
++	struct journal *j = &c->journal;
++	uint64_t last = j->seq;
 +
 +	/*
-+	 * Setting f->exponent = 127 flags this node as failed, and causes the
-+	 * lookup code to fall back to comparing against the original key.
++	 * journal.pin should never fill up - we never write a journal
++	 * entry when it would fill up. But if for some reason it does, we
++	 * iterate over the list in reverse order so that we can just skip that
++	 * refcount instead of bugging.
 +	 */
 +
-+	if (bfloat_mantissa(m, f) != bfloat_mantissa(p, f))
-+		f->mantissa = bfloat_mantissa(m, f) - 1;
-+	else
-+		f->exponent = 127;
-+}
-+
-+static void bset_alloc_tree(struct btree *b, struct bset_tree *t)
-+{
-+	if (t != b->sets) {
-+		unsigned j = roundup(t[-1].size,
-+				     64 / sizeof(struct bkey_float));
-+
-+		t->tree = t[-1].tree + j;
-+		t->prev = t[-1].prev + j;
-+	}
-+
-+	while (t < b->sets + MAX_BSETS)
-+		t++->size = 0;
-+}
-+
-+static void bset_build_unwritten_tree(struct btree *b)
-+{
-+	struct bset_tree *t = b->sets + b->nsets;
-+
-+	bset_alloc_tree(b, t);
-+
-+	if (t->tree != b->sets->tree + bset_tree_space(b)) {
-+		t->prev[0] = bkey_to_cacheline_offset(t->data->start);
-+		t->size = 1;
-+	}
-+}
-+
-+static void bset_build_written_tree(struct btree *b)
-+{
-+	struct bset_tree *t = b->sets + b->nsets;
-+	struct bkey *k = t->data->start;
-+	unsigned j, cacheline = 1;
-+
-+	bset_alloc_tree(b, t);
-+
-+	t->size = min_t(unsigned,
-+			bkey_to_cacheline(t, end(t->data)),
-+			b->sets->tree + bset_tree_space(b) - t->tree);
-+
-+	if (t->size < 2) {
-+		t->size = 0;
-+		return;
-+	}
-+
-+	t->extra = (t->size - rounddown_pow_of_two(t->size - 1)) << 1;
-+
-+	/* First we figure out where the first key in each cacheline is */
-+	for (j = inorder_next(0, t->size);
-+	     j;
-+	     j = inorder_next(j, t->size)) {
-+		while (bkey_to_cacheline(t, k) != cacheline)
-+			k = bkey_next(k);
-+
-+		t->prev[j] = bkey_u64s(k);
-+		k = bkey_next(k);
-+		cacheline++;
-+		t->tree[j].m = bkey_to_cacheline_offset(k);
-+	}
-+
-+	while (bkey_next(k) != end(t->data))
-+		k = bkey_next(k);
-+
-+	t->end = *k;
-+
-+	/* Then we build the tree */
-+	for (j = inorder_next(0, t->size);
-+	     j;
-+	     j = inorder_next(j, t->size))
-+		make_bfloat(t, j);
-+}
-+
-+void bch_bset_fix_invalidated_key(struct btree *b, struct bkey *k)
-+{
-+	struct bset_tree *t;
-+	unsigned inorder, j = 1;
-+
-+	for (t = b->sets; t <= &b->sets[b->nsets]; t++)
-+		if (k < end(t->data))
-+			goto found_set;
-+
-+	BUG();
-+found_set:
-+	if (!t->size || !bset_written(b, t))
-+		return;
-+
-+	inorder = bkey_to_cacheline(t, k);
-+
-+	if (k == t->data->start)
-+		goto fix_left;
-+
-+	if (bkey_next(k) == end(t->data)) {
-+		t->end = *k;
-+		goto fix_right;
-+	}
-+
-+	j = inorder_to_tree(inorder, t);
-+
-+	if (j &&
-+	    j < t->size &&
-+	    k == tree_to_bkey(t, j))
-+fix_left:	do {
-+			make_bfloat(t, j);
-+			j = j * 2;
-+		} while (j < t->size);
-+
-+	j = inorder_to_tree(inorder + 1, t);
-+
-+	if (j &&
-+	    j < t->size &&
-+	    k == tree_to_prev_bkey(t, j))
-+fix_right:	do {
-+			make_bfloat(t, j);
-+			j = j * 2 + 1;
-+		} while (j < t->size);
-+}
-+
-+void bch_bset_fix_lookup_table(struct btree *b, struct bkey *k)
-+{
-+	struct bset_tree *t = &b->sets[b->nsets];
-+	unsigned shift = bkey_u64s(k);
-+	unsigned j = bkey_to_cacheline(t, k);
-+
-+	/* We're getting called from btree_split() or btree_gc, just bail out */
-+	if (!t->size)
-+		return;
-+
-+	/* k is the key we just inserted; we need to find the entry in the
-+	 * lookup table for the first key that is strictly greater than k:
-+	 * it's either k's cacheline or the next one
-+	 */
-+	if (j < t->size &&
-+	    table_to_bkey(t, j) <= k)
-+		j++;
-+
-+	/* Adjust all the lookup table entries, and find a new key for any that
-+	 * have gotten too big
-+	 */
-+	for (; j < t->size; j++) {
-+		t->prev[j] += shift;
-+
-+		if (t->prev[j] > 7) {
-+			k = table_to_bkey(t, j - 1);
-+
-+			while (k < cacheline_to_bkey(t, j, 0))
-+				k = bkey_next(k);
-+
-+			t->prev[j] = bkey_to_cacheline_offset(k);
-+		}
-+	}
-+
-+	if (t->size == b->sets->tree + bset_tree_space(b) - t->tree)
-+		return;
-+
-+	/* Possibly add a new entry to the end of the lookup table */
-+
-+	for (k = table_to_bkey(t, t->size - 1);
-+	     k != end(t->data);
-+	     k = bkey_next(k))
-+		if (t->size == bkey_to_cacheline(t, k)) {
-+			t->prev[t->size] = bkey_to_cacheline_offset(k);
-+			t->size++;
-+		}
-+}
-+
-+void bch_bset_init_next(struct btree *b)
-+{
-+	struct bset *i = write_block(b);
-+
-+	if (i != b->sets[0].data) {
-+		b->sets[++b->nsets].data = i;
-+		i->seq = b->sets[0].data->seq;
-+	} else
-+		get_random_bytes(&i->seq, sizeof(uint64_t));
-+
-+	i->magic	= bset_magic(b->c);
-+	i->version	= 0;
-+	i->keys		= 0;
-+
-+	bset_build_unwritten_tree(b);
-+}
-+
-+struct bset_search_iter {
-+	struct bkey *l, *r;
-+};
-+
-+static struct bset_search_iter bset_search_write_set(struct btree *b,
-+						     struct bset_tree *t,
-+						     const struct bkey *search)
-+{
-+	unsigned li = 0, ri = t->size;
-+
-+	BUG_ON(!b->nsets &&
-+	       t->size < bkey_to_cacheline(t, end(t->data)));
-+
-+	while (li + 1 != ri) {
-+		unsigned m = (li + ri) >> 1;
-+
-+		if (bkey_cmp(table_to_bkey(t, m), search) > 0)
-+			ri = m;
-+		else
-+			li = m;
-+	}
-+
-+	return (struct bset_search_iter) {
-+		table_to_bkey(t, li),
-+		ri < t->size ? table_to_bkey(t, ri) : end(t->data)
-+	};
-+}
-+
-+static struct bset_search_iter bset_search_tree(struct btree *b,
-+						struct bset_tree *t,
-+						const struct bkey *search)
-+{
-+	struct bkey *l, *r;
-+	struct bkey_float *f;
-+	unsigned inorder, j, n = 1;
-+
-+	do {
-+		unsigned p = n << 4;
-+		p &= ((int) (p - t->size)) >> 31;
-+
-+		prefetch(&t->tree[p]);
-+
-+		j = n;
-+		f = &t->tree[j];
-+
-+		/*
-+		 * n = (f->mantissa > bfloat_mantissa())
-+		 *	? j * 2
-+		 *	: j * 2 + 1;
-+		 *
-+		 * We need to subtract 1 from f->mantissa for the sign bit trick
-+		 * to work  - that's done in make_bfloat()
-+		 */
-+		if (likely(f->exponent != 127))
-+			n = j * 2 + (((unsigned)
-+				      (f->mantissa -
-+				       bfloat_mantissa(search, f))) >> 31);
-+		else
-+			n = (bkey_cmp(tree_to_bkey(t, j), search) > 0)
-+				? j * 2
-+				: j * 2 + 1;
-+	} while (n < t->size);
-+
-+	inorder = to_inorder(j, t);
-+
-+	/*
-+	 * n would have been the node we recursed to - the low bit tells us if
-+	 * we recursed left or recursed right.
-+	 */
-+	if (n & 1) {
-+		l = cacheline_to_bkey(t, inorder, f->m);
-+
-+		if (++inorder != t->size) {
-+			f = &t->tree[inorder_next(j, t->size)];
-+			r = cacheline_to_bkey(t, inorder, f->m);
-+		} else
-+			r = end(t->data);
-+	} else {
-+		r = cacheline_to_bkey(t, inorder, f->m);
-+
-+		if (--inorder) {
-+			f = &t->tree[inorder_prev(j, t->size)];
-+			l = cacheline_to_bkey(t, inorder, f->m);
-+		} else
-+			l = t->data->start;
-+	}
-+
-+	return (struct bset_search_iter) {l, r};
-+}
-+
-+struct bkey *__bch_bset_search(struct btree *b, struct bset_tree *t,
-+			       const struct bkey *search)
-+{
-+	struct bset_search_iter i;
-+
-+	/*
-+	 * First, we search for a cacheline, then lastly we do a linear search
-+	 * within that cacheline.
-+	 *
-+	 * To search for the cacheline, there's three different possibilities:
-+	 *  * The set is too small to have a search tree, so we just do a linear
-+	 *    search over the whole set.
-+	 *  * The set is the one we're currently inserting into; keeping a full
-+	 *    auxiliary search tree up to date would be too expensive, so we
-+	 *    use a much simpler lookup table to do a binary search -
-+	 *    bset_search_write_set().
-+	 *  * Or we use the auxiliary search tree we constructed earlier -
-+	 *    bset_search_tree()
-+	 */
-+
-+	if (unlikely(!t->size)) {
-+		i.l = t->data->start;
-+		i.r = end(t->data);
-+	} else if (bset_written(b, t)) {
-+		/*
-+		 * Each node in the auxiliary search tree covers a certain range
-+		 * of bits, and keys above and below the set it covers might
-+		 * differ outside those bits - so we have to special case the
-+		 * start and end - handle that here:
-+		 */
-+
-+		if (unlikely(bkey_cmp(search, &t->end) >= 0))
-+			return end(t->data);
-+
-+		if (unlikely(bkey_cmp(search, t->data->start) < 0))
-+			return t->data->start;
-+
-+		i = bset_search_tree(b, t, search);
-+	} else
-+		i = bset_search_write_set(b, t, search);
-+
-+#ifdef CONFIG_BCACHE_EDEBUG
-+	BUG_ON(bset_written(b, t) &&
-+	       i.l != t->data->start &&
-+	       bkey_cmp(tree_to_prev_bkey(t,
-+		  inorder_to_tree(bkey_to_cacheline(t, i.l), t)),
-+			search) > 0);
-+
-+	BUG_ON(i.r != end(t->data) &&
-+	       bkey_cmp(i.r, search) <= 0);
-+#endif
-+
-+	while (likely(i.l != i.r) &&
-+	       bkey_cmp(i.l, search) <= 0)
-+		i.l = bkey_next(i.l);
-+
-+	return i.l;
-+}
-+
-+/* Btree iterator */
-+
-+static inline bool btree_iter_cmp(struct btree_iter_set l,
-+				  struct btree_iter_set r)
-+{
-+	int64_t c = bkey_cmp(&START_KEY(l.k), &START_KEY(r.k));
-+
-+	return c ? c > 0 : l.k < r.k;
-+}
-+
-+static inline bool btree_iter_end(struct btree_iter *iter)
-+{
-+	return !iter->used;
-+}
-+
-+void bch_btree_iter_push(struct btree_iter *iter, struct bkey *k, struct bkey *end)
-+{
-+	if (k != end)
-+		BUG_ON(!heap_add(iter,
-+				 ((struct btree_iter_set) { k, end }),
-+				 btree_iter_cmp));
-+}
-+
-+struct bkey *__bch_btree_iter_init(struct btree *b, struct btree_iter *iter,
-+			       struct bkey *search, struct bset_tree *start)
-+{
-+	struct bkey *ret = NULL;
-+	iter->size = ARRAY_SIZE(iter->data);
-+	iter->used = 0;
-+
-+	for (; start <= &b->sets[b->nsets]; start++) {
-+		ret = bch_bset_search(b, start, search);
-+		bch_btree_iter_push(iter, ret, end(start->data));
-+	}
-+
-+	return ret;
-+}
-+
-+struct bkey *bch_btree_iter_next(struct btree_iter *iter)
-+{
-+	struct btree_iter_set unused;
-+	struct bkey *ret = NULL;
-+
-+	if (!btree_iter_end(iter)) {
-+		ret = iter->data->k;
-+		iter->data->k = bkey_next(iter->data->k);
-+
-+		if (iter->data->k > iter->data->end) {
-+			__WARN();
-+			iter->data->k = iter->data->end;
-+		}
-+
-+		if (iter->data->k == iter->data->end)
-+			heap_pop(iter, unused, btree_iter_cmp);
-+		else
-+			heap_sift(iter, 0, btree_iter_cmp);
-+	}
-+
-+	return ret;
-+}
-+
-+struct bkey *bch_next_recurse_key(struct btree *b, struct bkey *search)
-+{
-+	struct bkey *ret;
-+	struct btree_iter iter;
-+	bch_btree_iter_init(b, &iter, search);
-+
-+	do
-+		ret = bch_btree_iter_next(&iter);
-+	while (ret && bch_ptr_bad(b, ret));
-+
-+	return ret;
-+}
-+
-+/* Mergesort */
-+
-+static void btree_sort_fixup(struct btree_iter *iter)
-+{
-+	while (iter->used > 1) {
-+		struct btree_iter_set *top = iter->data, *i = top + 1;
-+		struct bkey *k;
-+
-+		if (iter->used > 2 &&
-+		    btree_iter_cmp(i[0], i[1]))
-+			i++;
-+
-+		for (k = i->k;
-+		     k != i->end && bkey_cmp(top->k, &START_KEY(k)) > 0;
-+		     k = bkey_next(k))
-+			if (top->k > i->k)
-+				__bch_cut_front(top->k, k);
-+			else if (KEY_SIZE(k))
-+				bch_cut_back(&START_KEY(k), top->k);
-+
-+		if (top->k < i->k || k == i->k)
-+			break;
-+
-+		heap_sift(iter, i - top, btree_iter_cmp);
-+	}
-+}
-+
-+static void btree_mergesort(struct btree *b, struct bset *out,
-+			    struct btree_iter *iter,
-+			    bool fixup, bool remove_stale)
-+{
-+	struct bkey *k, *last = NULL;
-+	bool (*bad)(struct btree *, const struct bkey *) = remove_stale
-+		? bch_ptr_bad
-+		: bch_ptr_invalid;
-+
-+	while (!btree_iter_end(iter)) {
-+		if (fixup && !b->level)
-+			btree_sort_fixup(iter);
-+
-+		k = bch_btree_iter_next(iter);
-+		if (bad(b, k))
-+			continue;
-+
-+		if (!last) {
-+			last = out->start;
-+			bkey_copy(last, k);
-+		} else if (b->level ||
-+			   !bch_bkey_try_merge(b, last, k)) {
-+			last = bkey_next(last);
-+			bkey_copy(last, k);
-+		}
-+	}
-+
-+	out->keys = last ? (uint64_t *) bkey_next(last) - out->d : 0;
-+
-+	pr_debug("sorted %i keys", out->keys);
-+	bch_check_key_order(b, out);
-+}
-+
-+static void __btree_sort(struct btree *b, struct btree_iter *iter,
-+			 unsigned start, unsigned order, bool fixup)
-+{
-+	uint64_t start_time;
-+	bool remove_stale = !b->written;
-+	struct bset *out = (void *) __get_free_pages(__GFP_NOWARN|GFP_NOIO,
-+						     order);
-+	if (!out) {
-+		mutex_lock(&b->c->sort_lock);
-+		out = b->c->sort;
-+		order = ilog2(bucket_pages(b->c));
-+	}
-+
-+	start_time = local_clock();
-+
-+	btree_mergesort(b, out, iter, fixup, remove_stale);
-+	b->nsets = start;
-+
-+	if (!fixup && !start && b->written)
-+		bch_btree_verify(b, out);
-+
-+	if (!start && order == b->page_order) {
-+		/*
-+		 * Our temporary buffer is the same size as the btree node's
-+		 * buffer, we can just swap buffers instead of doing a big
-+		 * memcpy()
-+		 */
-+
-+		out->magic	= bset_magic(b->c);
-+		out->seq	= b->sets[0].data->seq;
-+		out->version	= b->sets[0].data->version;
-+		swap(out, b->sets[0].data);
-+
-+		if (b->c->sort == b->sets[0].data)
-+			b->c->sort = out;
-+	} else {
-+		b->sets[start].data->keys = out->keys;
-+		memcpy(b->sets[start].data->start, out->start,
-+		       (void *) end(out) - (void *) out->start);
-+	}
-+
-+	if (out == b->c->sort)
-+		mutex_unlock(&b->c->sort_lock);
-+	else
-+		free_pages((unsigned long) out, order);
-+
-+	if (b->written)
-+		bset_build_written_tree(b);
-+
-+	if (!start) {
-+		spin_lock(&b->c->sort_time_lock);
-+		time_stats_update(&b->c->sort_time, start_time);
-+		spin_unlock(&b->c->sort_time_lock);
-+	}
-+}
-+
-+void bch_btree_sort_partial(struct btree *b, unsigned start)
-+{
-+	size_t oldsize = 0, order = b->page_order, keys = 0;
-+	struct btree_iter iter;
-+	__bch_btree_iter_init(b, &iter, NULL, &b->sets[start]);
-+
-+	BUG_ON(b->sets[b->nsets].data == write_block(b) &&
-+	       (b->sets[b->nsets].size || b->nsets));
-+
-+	if (b->written)
-+		oldsize = bch_count_data(b);
-+
-+	if (start) {
-+		struct bset *i;
-+		for_each_sorted_set_start(b, i, start)
-+			keys += i->keys;
-+
-+		order = roundup_pow_of_two(__set_bytes(i, keys)) / PAGE_SIZE;
-+		if (order)
-+			order = ilog2(order);
-+	}
-+
-+	__btree_sort(b, &iter, start, order, false);
-+
-+	EBUG_ON(b->written && bch_count_data(b) != oldsize);
-+}
-+
-+void bch_btree_sort_and_fix_extents(struct btree *b, struct btree_iter *iter)
-+{
-+	BUG_ON(!b->written);
-+	__btree_sort(b, iter, 0, b->page_order, true);
-+}
-+
-+void bch_btree_sort_into(struct btree *b, struct btree *new)
-+{
-+	uint64_t start_time = local_clock();
-+
-+	struct btree_iter iter;
-+	bch_btree_iter_init(b, &iter, NULL);
-+
-+	btree_mergesort(b, new->sets->data, &iter, false, true);
-+
-+	spin_lock(&b->c->sort_time_lock);
-+	time_stats_update(&b->c->sort_time, start_time);
-+	spin_unlock(&b->c->sort_time_lock);
-+
-+	bkey_copy_key(&new->key, &b->key);
-+	new->sets->size = 0;
-+}
-+
-+void bch_btree_sort_lazy(struct btree *b)
-+{
-+	if (b->nsets) {
-+		struct bset *i;
-+		unsigned keys = 0, total;
-+
-+		for_each_sorted_set(b, i)
-+			keys += i->keys;
-+		total = keys;
-+
-+		for (unsigned j = 0; j < b->nsets; j++) {
-+			if (keys * 2 < total ||
-+			    keys < 1000) {
-+				bch_btree_sort_partial(b, j);
-+				return;
++	list_for_each_entry_reverse(i, list, list) {
++		BUG_ON(last < i->j.seq);
++		i->pin = NULL;
++
++		while (last-- != i->j.seq)
++			if (fifo_free(&j->pin) > 1) {
++				fifo_push_front(&j->pin, p);
++				atomic_set(&fifo_front(&j->pin), 0);
 +			}
 +
-+			keys -= b->sets[j].data->keys;
++		if (fifo_free(&j->pin) > 1) {
++			fifo_push_front(&j->pin, p);
++			i->pin = &fifo_front(&j->pin);
++			atomic_set(i->pin, 1);
 +		}
 +
-+		/* Must sort if b->nsets == 3 or we'll overflow */
-+		if (b->nsets >= (MAX_BSETS - 1) - b->level) {
-+			bch_btree_sort(b);
-+			return;
++		for (struct bkey *k = i->j.start;
++		     k < end(&i->j);
++		     k = bkey_next(k)) {
++			for (unsigned j = 0; j < KEY_PTRS(k); j++) {
++				struct bucket *g = PTR_BUCKET(c, k, j);
++				atomic_inc(&g->pin);
++
++				if (g->prio == BTREE_PRIO &&
++				    !ptr_stale(c, k, j))
++					g->prio = INITIAL_PRIO;
++			}
++
++			__bch_btree_mark_key(c, 0, k);
 +		}
 +	}
-+
-+	bset_build_written_tree(b);
 +}
 +
-+/* Sysfs stuff */
-+
-+struct bset_stats {
-+	size_t nodes;
-+	size_t sets_written, sets_unwritten;
-+	size_t bytes_written, bytes_unwritten;
-+	size_t floats, failed;
-+};
-+
-+static int bch_btree_bset_stats(struct btree *b, struct btree_op *op,
-+			    struct bset_stats *stats)
++int bch_journal_replay(struct cache_set *s, struct list_head *list,
++			  struct btree_op *op)
 +{
-+	struct bkey *k;
++	int ret = 0, keys = 0, entries = 0;
++	struct journal_replay *i =
++		list_entry(list->prev, struct journal_replay, list);
 +
-+	stats->nodes++;
++	uint64_t start = i->j.last_seq, end = i->j.seq, n = start;
 +
-+	for (int i = 0; i <= b->nsets; i++) {
-+		struct bset_tree *t = &b->sets[i];
-+		size_t bytes = t->data->keys * sizeof(uint64_t);
++	list_for_each_entry(i, list, list) {
++		BUG_ON(i->pin && atomic_read(i->pin) != 1);
 +
-+		if (bset_written(b, t)) {
-+			stats->sets_written++;
-+			stats->bytes_written += bytes;
++		if (n != i->j.seq)
++			err_printk("journal entries %llu-%llu "
++				   "missing! (replaying %llu-%llu)\n",
++				   n, i->j.seq - 1, start, end);
 +
-+			stats->floats += t->size - 1;
++		for (struct bkey *k = i->j.start;
++		     k < end(&i->j);
++		     k = bkey_next(k)) {
++			pr_debug("%s", pkey(k));
++			bkey_copy(op->keys.top, k);
++			bch_keylist_push(&op->keys);
 +
-+			for (size_t j = 1; j < t->size; j++)
-+				if (t->tree[j].exponent == 127)
-+					stats->failed++;
-+		} else {
-+			stats->sets_unwritten++;
-+			stats->bytes_unwritten += bytes;
++			op->journal = i->pin;
++			atomic_inc(op->journal);
++
++			ret = bch_btree_insert(op, s);
++			if (ret)
++				goto err;
++
++			BUG_ON(!bch_keylist_empty(&op->keys));
++			keys++;
 +		}
++
++		if (i->pin)
++			atomic_dec(i->pin);
++		n = i->j.seq + 1;
++		entries++;
 +	}
 +
-+	if (b->level)
-+		for_each_key_filter(b, k, bch_ptr_bad) {
-+			int ret = btree(bset_stats, k, b, op, stats);
-+			if (ret)
-+				return ret;
++	printk(KERN_INFO "bcache: journal replay done, %i keys in %i "
++	       "entries, seq %llu-%llu\n", keys, entries, start, end);
++
++	while (!list_empty(list)) {
++		i = list_first_entry(list, struct journal_replay, list);
++		list_del(&i->list);
++		kfree(i);
++	}
++err:
++	closure_sync(&op->cl);
++	return ret;
++}
++
++/* Journalling */
++
++static void btree_flush_write(struct cache_set *c)
++{
++	/*
++	 * Try to find the btree node with that references the oldest journal
++	 * entry, best is our current candidate and is locked if non NULL:
++	 */
++	struct btree *b, *best = NULL;
++	struct hlist_node *cursor;
++
++	for_each_cached_btree(b, cursor, c) {
++		if (!down_write_trylock(&b->lock))
++			continue;
++
++		if (!btree_node_dirty(b) ||
++		    !btree_current_write(b)->journal) {
++			rw_unlock(true, b);
++			continue;
 +		}
++
++		if (!best)
++			best = b;
++		else if (journal_pin_cmp(c,
++					 btree_current_write(best),
++					 btree_current_write(b))) {
++			rw_unlock(true, best);
++			best = b;
++		} else
++			rw_unlock(true, b);
++	}
++
++	if (best)
++		goto out;
++
++	/* We can't find the best btree node, just pick the first */
++	list_for_each_entry(b, &c->btree_cache, list)
++		if (!b->level && btree_node_dirty(b)) {
++			best = b;
++			rw_lock(true, best, best->level);
++			goto found;
++		}
++
++out:
++	if (!best)
++		return;
++found:
++	if (btree_node_dirty(best))
++		bch_btree_write(best, true, NULL);
++	rw_unlock(true, best);
++}
++
++#define last_seq(j)	((j)->seq - fifo_used(&(j)->pin) + 1)
++
++static void journal_reclaim(struct cache_set *c)
++{
++	struct bkey *k = &c->journal.key;
++	struct cache *ca;
++	uint64_t last_seq;
++	unsigned n = 0;
++	atomic_t p;
++
++	while (!atomic_read(&fifo_front(&c->journal.pin)))
++		fifo_pop(&c->journal.pin, p);
++
++	last_seq = last_seq(&c->journal);
++
++	for_each_cache(ca, c) {
++		struct journal_device *ja = &ca->journal;
++
++		while (ja->last != ja->cur &&
++		       ja->seq[ja->last] < last_seq)
++			if (++ja->last == ca->sb.njournal_buckets)
++				ja->last = 0;
++	}
++
++	if (c->journal.blocks_free)
++		return;
++
++	/*
++	 * Now we allocate:
++	 * XXX: Sort by free journal space
++	 */
++
++	for_each_cache(ca, c) {
++		struct journal_device *ja = &ca->journal;
++		unsigned next = (ja->cur + 1) % ca->sb.njournal_buckets;
++
++		if (next == ja->last)
++			continue;
++
++		ja->cur = next;
++		k->ptr[n++] = PTR(0,
++				  bucket_to_sector(c, ca->sb.d[ja->cur]),
++				  ca->sb.nr_this_dev);
++	}
++
++	bkey_init(k);
++	SET_KEY_PTRS(k, n);
++
++	if (n)
++		c->journal.blocks_free = c->sb.bucket_size >> c->block_bits;
++
++	if (!journal_full(&c->journal))
++		__closure_wake_up(&c->journal.wait);
++}
++
++void bch_journal_next(struct journal *j)
++{
++	atomic_t p = { 1 };
++
++	j->cur = (j->cur == j->w)
++		? &j->w[1]
++		: &j->w[0];
++
++	/*
++	 * The fifo_push() needs to happen at the same time as j->seq is
++	 * incremented for last_seq() to be calculated correctly
++	 */
++	BUG_ON(!fifo_push(&j->pin, p));
++	atomic_set(&fifo_back(&j->pin), 1);
++
++	j->cur->data->seq	= ++j->seq;
++	j->cur->need_write	= false;
++	j->cur->data->keys	= 0;
++
++	if (fifo_full(&j->pin))
++		pr_debug("journal_pin full (%zu)", fifo_used(&j->pin));
++}
++
++static void journal_write_endio(struct bio *bio, int error)
++{
++	struct journal_write *w = bio->bi_private;
++
++	cache_set_err_on(error, w->c, "journal io error");
++	closure_put(&w->c->journal.io.cl);
++}
++
++static void journal_write(struct closure *);
++
++static void journal_write_done(struct closure *cl)
++{
++	struct journal *j = container_of(cl, struct journal, io.cl);
++	struct cache_set *c = container_of(j, struct cache_set, journal);
++
++	struct journal_write *w = (j->cur == j->w)
++		? &j->w[1]
++		: &j->w[0];
++
++	__closure_wake_up(&w->wait);
++
++	if (c->journal_delay_ms)
++		closure_delay(&j->io, msecs_to_jiffies(c->journal_delay_ms));
++
++	continue_at(cl, journal_write, system_wq);
++}
++
++static void journal_write_unlocked(struct closure *cl)
++{
++	struct cache_set *c = container_of(cl, struct cache_set, journal.io.cl);
++	struct cache *ca;
++	struct journal_write *w = c->journal.cur;
++	struct bkey *k = &c->journal.key;
++	unsigned sectors = set_blocks(w->data, c) * c->sb.block_size;
++
++	struct bio *bio;
++	struct bio_list list;
++	bio_list_init(&list);
++
++	if (!w->need_write) {
++		/*
++		 * XXX: have to unlock closure before we unlock journal lock,
++		 * else we race with bch_journal(). But this way we race
++		 * against cache set unregister. Doh.
++		 */
++		set_closure_fn(cl, NULL, NULL);
++		closure_sub(cl, CLOSURE_RUNNING + 1);
++		spin_unlock(&c->journal.lock);
++		return;
++	} else if (journal_full(&c->journal)) {
++		journal_reclaim(c);
++		spin_unlock(&c->journal.lock);
++
++		btree_flush_write(c);
++		continue_at(cl, journal_write, system_wq);
++	}
++
++	c->journal.blocks_free -= set_blocks(w->data, c);
++
++	w->data->btree_level = c->root->level;
++
++	bkey_copy(&w->data->btree_root, &c->root->key);
++	bkey_copy(&w->data->uuid_bucket, &c->uuid_bucket);
++
++	for_each_cache(ca, c)
++		w->data->prio_bucket[ca->sb.nr_this_dev] = ca->prio_buckets[0];
++
++	w->data->magic		= jset_magic(c);
++	w->data->version	= BCACHE_JSET_VERSION;
++	w->data->last_seq	= last_seq(&c->journal);
++	w->data->csum		= csum_set(w->data);
++
++	for (unsigned i = 0; i < KEY_PTRS(k); i++) {
++		ca = PTR_CACHE(c, k, i);
++		bio = &ca->journal.bio;
++
++		atomic_long_add(sectors, &ca->meta_sectors_written);
++
++		bio_reset(bio);
++		bio->bi_sector	= PTR_OFFSET(k, i);
++		bio->bi_bdev	= ca->bdev;
++		bio->bi_rw	= REQ_WRITE|REQ_SYNC|REQ_META|REQ_FLUSH;
++		bio->bi_size	= sectors << 9;
++
++		bio->bi_end_io	= journal_write_endio;
++		bio->bi_private = w;
++		bio_map(bio, w->data);
++
++		trace_bcache_journal_write(bio);
++		bio_list_add(&list, bio);
++
++		SET_PTR_OFFSET(k, i, PTR_OFFSET(k, i) + sectors);
++
++		ca->journal.seq[ca->journal.cur] = w->data->seq;
++	}
++
++	atomic_dec_bug(&fifo_back(&c->journal.pin));
++	bch_journal_next(&c->journal);
++	journal_reclaim(c);
++
++	spin_unlock(&c->journal.lock);
++
++	while ((bio = bio_list_pop(&list)))
++		closure_bio_submit(bio, cl);
++
++	continue_at(cl, journal_write_done, NULL);
++}
++
++static void journal_write(struct closure *cl)
++{
++	struct cache_set *c = container_of(cl, struct cache_set, journal.io.cl);
++
++	spin_lock(&c->journal.lock);
++	journal_write_unlocked(cl);
++}
++
++static void __journal_try_write(struct cache_set *c, bool noflush)
++{
++	struct closure *cl = &c->journal.io.cl;
++
++	if (!closure_trylock(cl, &c->cl))
++		spin_unlock(&c->journal.lock);
++	else if (noflush && journal_full(&c->journal)) {
++		spin_unlock(&c->journal.lock);
++		continue_at(cl, journal_write, system_wq);
++	} else
++		journal_write_unlocked(cl);
++}
++
++#define journal_try_write(c)	__journal_try_write(c, false)
++
++void bch_journal_meta(struct cache_set *c, struct closure *cl)
++{
++	struct journal_write *w;
++
++	if (CACHE_SYNC(&c->sb)) {
++		spin_lock(&c->journal.lock);
++
++		w = c->journal.cur;
++		w->need_write = true;
++
++		if (cl)
++			BUG_ON(!closure_wait(&w->wait, cl));
++
++		__journal_try_write(c, true);
++	}
++}
++
++/*
++ * Entry point to the journalling code - bio_insert() and btree_invalidate()
++ * pass bch_journal() a list of keys to be journalled, and then
++ * bch_journal() hands those same keys off to btree_insert_async()
++ */
++
++void bch_journal(struct closure *cl)
++{
++	struct btree_op *op = container_of(cl, struct btree_op, cl);
++	struct cache_set *c = op->c;
++	struct journal_write *w;
++	size_t b, n = ((uint64_t *) op->keys.top) - op->keys.list;
++
++	if (op->type != BTREE_INSERT ||
++	    !CACHE_SYNC(&c->sb))
++		goto out;
++
++	/*
++	 * If we're looping because we errored, might already be waiting on
++	 * another journal write:
++	 */
++	while (atomic_read(&cl->parent->remaining) & CLOSURE_WAITING)
++		closure_sync(cl->parent);
++
++	spin_lock(&c->journal.lock);
++
++	if (journal_full(&c->journal)) {
++		/* XXX: tracepoint */
++		closure_wait(&c->journal.wait, cl);
++
++		journal_reclaim(c);
++		spin_unlock(&c->journal.lock);
++
++		btree_flush_write(c);
++		continue_at(cl, bch_journal, bcache_wq);
++	}
++
++	w = c->journal.cur;
++	w->need_write = true;
++	b = __set_blocks(w->data, w->data->keys + n, c);
++
++	if (b * c->sb.block_size > PAGE_SECTORS << JSET_BITS ||
++	    b > c->journal.blocks_free) {
++		/* XXX: If we were inserting so many keys that they won't fit in
++		 * an _empty_ journal write, we'll deadlock. For now, handle
++		 * this in bch_keylist_realloc() - but something to think about.
++		 */
++		BUG_ON(!w->data->keys);
++
++		/* XXX: tracepoint */
++		BUG_ON(!closure_wait(&w->wait, cl));
++
++		closure_flush(&c->journal.io);
++
++		journal_try_write(c);
++		continue_at(cl, bch_journal, bcache_wq);
++	}
++
++	memcpy(end(w->data), op->keys.list, n * sizeof(uint64_t));
++	w->data->keys += n;
++
++	op->journal = &fifo_back(&c->journal.pin);
++	atomic_inc(op->journal);
++
++	if (op->flush_journal) {
++		closure_flush(&c->journal.io);
++		closure_wait(&w->wait, cl->parent);
++	}
++
++	journal_try_write(c);
++out:
++	bch_btree_insert_async(cl);
++}
++
++void bch_journal_free(struct cache_set *c)
++{
++	free_pages((unsigned long) c->journal.w[1].data, JSET_BITS);
++	free_pages((unsigned long) c->journal.w[0].data, JSET_BITS);
++	free_fifo(&c->journal.pin);
++}
++
++int bch_journal_alloc(struct cache_set *c)
++{
++	struct journal *j = &c->journal;
++
++	closure_init_unlocked(&j->io);
++	spin_lock_init(&j->lock);
++
++	c->journal_delay_ms = 100;
++
++	j->w[0].c = c;
++	j->w[1].c = c;
++
++	if (!(init_fifo(&j->pin, JOURNAL_PIN, GFP_KERNEL)) ||
++	    !(j->w[0].data = (void *) __get_free_pages(GFP_KERNEL, JSET_BITS)) ||
++	    !(j->w[1].data = (void *) __get_free_pages(GFP_KERNEL, JSET_BITS)))
++		return -ENOMEM;
 +
 +	return 0;
 +}
-+
-+int bch_bset_print_stats(struct cache_set *c, char *buf)
-+{
-+	struct btree_op op;
-+	struct bset_stats t;
-+	int ret;
-+
-+	bch_btree_op_init_stack(&op);
-+	memset(&t, 0, sizeof(struct bset_stats));
-+
-+	ret = btree_root(bset_stats, c, &op, &t);
-+	if (ret)
-+		return ret;
-+
-+	return snprintf(buf, PAGE_SIZE,
-+			"btree nodes:		%zu\n"
-+			"written sets:		%zu\n"
-+			"unwritten sets:		%zu\n"
-+			"written key bytes:	%zu\n"
-+			"unwritten key bytes:	%zu\n"
-+			"floats:			%zu\n"
-+			"failed:			%zu\n",
-+			t.nodes,
-+			t.sets_written, t.sets_unwritten,
-+			t.bytes_written, t.bytes_unwritten,
-+			t.floats, t.failed);
-+}
-diff --git a/drivers/md/bcache/bset.h b/drivers/md/bcache/bset.h
+diff --git a/drivers/md/bcache/journal.h b/drivers/md/bcache/journal.h
 new file mode 100644
-index 0000000..c3d8e28
+index 0000000..0cd2bb4
 --- /dev/null
-+++ b/drivers/md/bcache/bset.h
-@@ -0,0 +1,233 @@
-+#ifndef _BCACHE_BSET_H
-+#define _BCACHE_BSET_H
++++ b/drivers/md/bcache/journal.h
+@@ -0,0 +1,113 @@
++#ifndef _BCACHE_JOURNAL_H
++#define _BCACHE_JOURNAL_H
 +
-+/* Btree key comparison/iteration */
-+
-+struct btree_iter {
-+	size_t size, used;
-+	struct btree_iter_set {
-+		struct bkey *k, *end;
-+	} data[MAX_BSETS];
-+};
-+
-+struct bset_tree {
-+	/*
-+	 * We construct a binary tree in an array as if the array
-+	 * started at 1, so that things line up on the same cachelines
-+	 * better: see comments in bset.c at cacheline_to_bkey() for
-+	 * details
-+	 */
-+
-+	/* size of the binary tree and prev array */
-+	unsigned	size;
-+
-+	/* function of size - precalculated for to_inorder() */
-+	unsigned	extra;
-+
-+	/* copy of the last key in the set */
-+	struct bkey	end;
-+	struct bkey_float *tree;
-+
-+	/*
-+	 * The nodes in the bset tree point to specific keys - this
-+	 * array holds the sizes of the previous key.
-+	 *
-+	 * Conceptually it's a member of struct bkey_float, but we want
-+	 * to keep bkey_float to 4 bytes and prev isn't used in the fast
-+	 * path.
-+	 */
-+	uint8_t		*prev;
-+
-+	/* The actual btree node, with pointers to each sorted set */
-+	struct bset	*data;
-+};
-+
-+static __always_inline int64_t bkey_cmp(const struct bkey *l,
-+					const struct bkey *r)
-+{
-+	return unlikely(KEY_INODE(l) != KEY_INODE(r))
-+		? (int64_t) KEY_INODE(l) - (int64_t) KEY_INODE(r)
-+		: (int64_t) KEY_OFFSET(l) - (int64_t) KEY_OFFSET(r);
-+}
-+
-+static inline size_t bkey_u64s(const struct bkey *k)
-+{
-+	BUG_ON(KEY_CSUM(k) > 1);
-+	return 2 + KEY_PTRS(k) + (KEY_CSUM(k) ? 1 : 0);
-+}
-+
-+static inline size_t bkey_bytes(const struct bkey *k)
-+{
-+	return bkey_u64s(k) * sizeof(uint64_t);
-+}
-+
-+static inline void bkey_copy(struct bkey *dest, const struct bkey *src)
-+{
-+	memcpy(dest, src, bkey_bytes(src));
-+}
-+
-+static inline void bkey_copy_key(struct bkey *dest, const struct bkey *src)
-+{
-+	if (!src)
-+		src = &KEY(0, 0, 0);
-+
-+	SET_KEY_INODE(dest, KEY_INODE(src));
-+	SET_KEY_OFFSET(dest, KEY_OFFSET(src));
-+}
-+
-+static inline struct bkey *bkey_next(const struct bkey *k)
-+{
-+	uint64_t *d = (void *) k;
-+	return (struct bkey *) (d + bkey_u64s(k));
-+}
-+
-+/* Keylists */
-+
-+struct keylist {
-+	struct bkey		*top;
-+	union {
-+		uint64_t		*list;
-+		struct bkey		*bottom;
-+	};
-+
-+	/* Enough room for btree_split's keys without realloc */
-+#define KEYLIST_INLINE		16
-+	uint64_t		d[KEYLIST_INLINE];
-+};
-+
-+static inline void bch_keylist_init(struct keylist *l)
-+{
-+	l->top = (void *) (l->list = l->d);
-+}
-+
-+static inline void bch_keylist_push(struct keylist *l)
-+{
-+	l->top = bkey_next(l->top);
-+}
-+
-+static inline void bch_keylist_add(struct keylist *l, struct bkey *k)
-+{
-+	bkey_copy(l->top, k);
-+	bch_keylist_push(l);
-+}
-+
-+static inline bool bch_keylist_empty(struct keylist *l)
-+{
-+	return l->top == (void *) l->list;
-+}
-+
-+static inline void bch_keylist_free(struct keylist *l)
-+{
-+	if (l->list != l->d)
-+		kfree(l->list);
-+}
-+
-+void bch_keylist_copy(struct keylist *, struct keylist *);
-+struct bkey *bch_keylist_pop(struct keylist *);
-+int bch_keylist_realloc(struct keylist *, int, struct cache_set *);
-+
-+void bch_bkey_copy_single_ptr(struct bkey *, const struct bkey *, unsigned);
-+bool __bch_cut_front(const struct bkey *, struct bkey *);
-+bool __bch_cut_back(const struct bkey *, struct bkey *);
-+
-+static inline bool bch_cut_front(const struct bkey *where, struct bkey *k)
-+{
-+	BUG_ON(bkey_cmp(where, k) > 0);
-+	return __bch_cut_front(where, k);
-+}
-+
-+static inline bool bch_cut_back(const struct bkey *where, struct bkey *k)
-+{
-+	BUG_ON(bkey_cmp(where, &START_KEY(k)) < 0);
-+	return __bch_cut_back(where, k);
-+}
-+
-+const char *bch_ptr_status(struct cache_set *, const struct bkey *);
-+bool __bch_ptr_invalid(struct cache_set *, int level, const struct bkey *);
-+bool bch_ptr_bad(struct btree *, const struct bkey *);
-+
-+static inline uint8_t gen_after(uint8_t a, uint8_t b)
-+{
-+	uint8_t r = a - b;
-+	return r > 128U ? 0 : r;
-+}
-+
-+static inline uint8_t ptr_stale(struct cache_set *c, const struct bkey *k,
-+				unsigned i)
-+{
-+	return gen_after(PTR_BUCKET(c, k, i)->gen, PTR_GEN(k, i));
-+}
-+
-+static inline bool ptr_available(struct cache_set *c, const struct bkey *k,
-+				 unsigned i)
-+{
-+	return (PTR_DEV(k, i) < MAX_CACHES_PER_SET) && PTR_CACHE(c, k, i);
-+}
-+
-+struct bkey *bch_next_recurse_key(struct btree *, struct bkey *);
-+struct bkey *bch_btree_iter_next(struct btree_iter *);
-+void bch_btree_iter_push(struct btree_iter *, struct bkey *, struct bkey *);
-+struct bkey *__bch_btree_iter_init(struct btree *, struct btree_iter *,
-+				   struct bkey *, struct bset_tree *);
-+
-+/* 32 bits total: */
-+#define BKEY_MID_BITS		3
-+#define BKEY_EXPONENT_BITS	7
-+#define BKEY_MANTISSA_BITS	22
-+#define BKEY_MANTISSA_MASK	((1 << BKEY_MANTISSA_BITS) - 1)
-+
-+struct bkey_float {
-+	unsigned	exponent:BKEY_EXPONENT_BITS;
-+	unsigned	m:BKEY_MID_BITS;
-+	unsigned	mantissa:BKEY_MANTISSA_BITS;
-+} __packed;
++#define BCACHE_JSET_VERSION_UUIDv1	1
++/* Always latest UUID format */
++#define BCACHE_JSET_VERSION_UUID	1
++#define BCACHE_JSET_VERSION		1
 +
 +/*
-+ * BSET_CACHELINE was originally intended to match the hardware cacheline size -
-+ * it used to be 64, but I realized the lookup code would touch slightly less
-+ * memory if it was 128.
++ * On disk format for a journal entry:
++ * seq is monotonically increasing; every journal entry has its own unique
++ * sequence number.
 + *
-+ * It definites the number of bytes (in struct bset) per struct bkey_float in
-+ * the auxiliar search tree - when we're done searching the bset_float tree we
-+ * have this many bytes left that we do a linear search over.
++ * last_seq is the oldest journal entry that still has keys the btree hasn't
++ * flushed to disk yet.
 + *
-+ * Since (after level 5) every level of the bset_tree is on a new cacheline,
-+ * we're touching one fewer cacheline in the bset tree in exchange for one more
-+ * cacheline in the linear search - but the linear search might stop before it
-+ * gets to the second cacheline.
++ * version is for on disk format changes.
 + */
++struct jset {
++	uint64_t		csum;
++	uint64_t		magic;
++	uint64_t		seq;
++	uint32_t		version;
++	uint32_t		keys;
 +
-+#define BSET_CACHELINE		128
-+#define bset_tree_space(b)	(btree_data_space(b) / BSET_CACHELINE)
++	uint64_t		last_seq;
 +
-+#define bset_tree_bytes(b)	(bset_tree_space(b) * sizeof(struct bkey_float))
-+#define bset_prev_bytes(b)	(bset_tree_space(b) * sizeof(uint8_t))
++	BKEY_PADDED(uuid_bucket);
++	BKEY_PADDED(btree_root);
++	uint16_t		btree_level;
++	uint16_t		pad[3];
 +
-+void bch_bset_init_next(struct btree *);
++	uint64_t		prio_bucket[MAX_CACHES_PER_SET];
 +
-+void bch_bset_fix_invalidated_key(struct btree *, struct bkey *);
-+void bch_bset_fix_lookup_table(struct btree *, struct bkey *);
++	union {
++		struct bkey	start[0];
++		uint64_t	d[0];
++	};
++};
 +
-+struct bkey *__bch_bset_search(struct btree *, struct bset_tree *,
-+			   const struct bkey *);
++/*
++ * Only used for holding the journal entries we read in btree_journal_read()
++ * during cache_registration
++ */
++struct journal_replay {
++	struct list_head	list;
++	atomic_t		*pin;
++	struct jset		j;
++};
 +
-+static inline struct bkey *bch_bset_search(struct btree *b, struct bset_tree *t,
-+					   const struct bkey *search)
-+{
-+	return search ? __bch_bset_search(b, t, search) : t->data->start;
-+}
++/*
++ * We put two of these in struct journal; we used them for writes to the
++ * journal that are being staged or in flight.
++ */
++struct journal_write {
++	struct jset		*data;
++#define JSET_BITS		3
 +
-+bool bch_bkey_try_merge(struct btree *, struct bkey *, struct bkey *);
-+void bch_btree_sort_lazy(struct btree *);
-+void bch_btree_sort_into(struct btree *, struct btree *);
-+void bch_btree_sort_and_fix_extents(struct btree *, struct btree_iter *);
-+void bch_btree_sort_partial(struct btree *, unsigned);
++	struct cache_set	*c;
++	struct closure_waitlist	wait;
++	bool			need_write;
++};
 +
-+static inline void bch_btree_sort(struct btree *b)
-+{
-+	bch_btree_sort_partial(b, 0);
-+}
++struct journal {
++	spinlock_t		lock;
++	/* used when waiting because the journal was full */
++	struct closure_waitlist	wait;
++	struct closure_with_timer io;
 +
-+int bch_bset_print_stats(struct cache_set *, char *);
++	unsigned		blocks_free;
++	uint64_t		seq;
++	DECLARE_FIFO(atomic_t, pin);
 +
-+#endif
++	BKEY_PADDED(key);
++
++	struct journal_write	w[2], *cur;
++};
++
++struct journal_device {
++	unsigned		cur;
++	unsigned		last;
++	uint64_t		seq[SB_JOURNAL_BUCKETS];
++
++	struct bio		bio;
++	struct bio_vec		bv[8];
++};
++
++#define journal_pin_cmp(c, l, r)				\
++	(fifo_idx(&(c)->journal.pin, (l)->journal) >		\
++	 fifo_idx(&(c)->journal.pin, (r)->journal))
++
++#define JOURNAL_PIN	20000
++
++#define journal_full(j)						\
++	(!(j)->blocks_free || fifo_free(&(j)->pin) <= 1)
++
++struct closure;
++struct cache_set;
++struct btree_op;
++
++void bch_journal(struct closure *);
++void bch_journal_next(struct journal *);
++void bch_journal_mark(struct cache_set *, struct list_head *);
++void bch_journal_meta(struct cache_set *, struct closure *);
++int bch_journal_read(struct cache_set *, struct list_head *,
++			struct btree_op *);
++int bch_journal_replay(struct cache_set *, struct list_head *,
++			  struct btree_op *);
++
++void bch_journal_free(struct cache_set *);
++int bch_journal_alloc(struct cache_set *);
++
++#endif /* _BCACHE_JOURNAL_H */
 -- 
 1.7.9.3.327.g2980b
 
