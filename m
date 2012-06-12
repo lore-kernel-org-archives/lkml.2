@@ -1,73 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752834Ab2FLPHq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 11:07:46 -0400
-Received: from www.linutronix.de ([62.245.132.108]:44343 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751517Ab2FLPHp (ORCPT
+	id S1752890Ab2FLPNX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 11:13:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52087 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752335Ab2FLPNW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 11:07:45 -0400
-Date: Tue, 12 Jun 2012 17:07:37 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: Sasha Levin <levinsasha928@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>
-Subject: Re: rcu,sched: spinlock recursion on 3.5-rc2
-In-Reply-To: <20120612144705.GB2423@linux.vnet.ibm.com>
-Message-ID: <alpine.LFD.2.02.1206121701350.3086@ionos>
-References: <1339500907.4999.99.camel@lappy> <alpine.LFD.2.02.1206121535180.3086@ionos> <20120612144705.GB2423@linux.vnet.ibm.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Tue, 12 Jun 2012 11:13:22 -0400
+Message-ID: <4FD75C84.7020105@canonical.com>
+Date: Tue, 12 Jun 2012 17:13:08 +0200
+From: Stefan Bader <stefan.bader@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Mahmood Naderan <nt_mahmood@yahoo.com>
+CC: Borislav Petkov <bp@alien8.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+Subject: Re: CPU MTRRs and linux kernel
+References: <1339493860.10145.YahooMailNeo@web111708.mail.gq1.yahoo.com> <20120612103954.GB10124@x1.osrc.amd.com> <1339508890.39685.YahooMailNeo@web111705.mail.gq1.yahoo.com>
+In-Reply-To: <1339508890.39685.YahooMailNeo@web111705.mail.gq1.yahoo.com>
+X-Enigmail-Version: 1.5pre
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="------------enig68729D020F2947AB403F2414"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 12 Jun 2012, Paul E. McKenney wrote:
-> On Tue, Jun 12, 2012 at 03:40:13PM +0200, Thomas Gleixner wrote:
-> > The torture thread got preempted. rcu_preempt_note_context_switch()
-> > tries to unlock the boosting rt mutex.
-> > 
-> > Though rcu_preempt_note_context_switch() is called with rq lock
-> > held. So it's not a surprise that the code will dead lock.
-> > 
-> > My brain hurts already from looking, so Paul to the rescue!
-> 
-> My brain hurts from beating my head on my desk.  It seems that attempts
-> to enhance PREEMPT_RCU's read-side performance require even more paranoia
-> than I normally bring to bear.  :-/
-> 
-> Please see below for what I expect is the relevant revert.
-> 
-> 							Thanx, Paul
-> 
-> ------------------------------------------------------------------------
-> 
-> Revert "rcu: Move PREEMPT_RCU preemption to switch_to() invocation"
-> 
-> This reverts commit 616c310e83b872024271c915c1b9ab505b9efad9
-> (Move PREEMPT_RCU preemption to switch_to() invocation) which can
-> result in runqueue deadlock.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig68729D020F2947AB403F2414
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Hmm, not sure. The deadlock was not triggered in switch_to. It was
-just at the beginning of __schedule()
+On 12.06.2012 15:48, Mahmood Naderan wrote:
+> Thanks Borislav,
+> I want to know, should I upgrade to the latest kernel or it is possible=
+ to download the source of 2.6.32-24 from repository and modify cleanup.c=
+ and then recompile?
+>=20
+Just update to the latest kernel. 2.6.32-24.39 is way old. The fix Boris
+mentioned was in 2.6.32-27.49. And the latest kernel is 2.6.32-41.89 by n=
+ow...
 
-need_resched:
-	preempt_disable();
-        cpu = smp_processor_id();
-	rq = cpu_rq(cpu);
-        rcu_note_context_switch(cpu);
-	
-	Which ends up in rcu_read_unlock_special() which tries to
-	unlock the rtmutex.
+-Stefan
 
-So that code is still there ....
+> ~MN
+>=20
+> ----- Original Message -----
+> From: Borislav Petkov <bp@alien8.de>
+> To: Mahmood Naderan <nt_mahmood@yahoo.com>
+> Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>; Andr=
+eas Herrmann <andreas.herrmann3@amd.com>
+> Sent: Tuesday, June 12, 2012 3:09 PM
+> Subject: Re: CPU MTRRs and linux kernel
+>=20
+> On Tue, Jun 12, 2012 at 02:37:40AM -0700, Mahmood Naderan wrote:
+>> Hi everybody,
+>> Abour rhis warnning in boot log:
+>>
+>> WARNING: BIOS bug: CPU MTRRs don't cover all of memory, losing 61952MB=
+ of RAM
+>>
+>> =20
+>> I
+>>   searched a lot however didn't find a clear solution. Does AMD new=20
+>> processors (62XX) have problems with new kernels or old kernels??
+>> Mine is:
+>>
+>> Linux n1 2.6.32-24-server #39-Ubuntu SMP Wed Jul 28 06:21:40 UTC 2010 =
+x86_64 GNU/Linux
+>>
+>> Should I upgrade?
+>=20
+> Yes, fix is below and it got backported to -stable AFAICT but obviously=
 
-Thanks,
+> the ubuntus don't have it in the kernel you cite above.
+>=20
+>=20
+> commit 3fdbf004c1706480a7c7fac3c9d836fa6df20d7d
+> Author: Andreas Herrmann <andreas.herrmann3@amd.com>
+> Date:   Thu Sep 30 14:32:35 2010 +0200
+>=20
+>     x86, mtrr: Assume SYS_CFG[Tom2ForceMemTypeWB] exists on all future =
+AMD CPUs
+>    =20
+>     Instead of adapting the CPU family check in amd_special_default_mtr=
+r()
+>     for each new CPU family assume that all new AMD CPUs support the
+>     necessary bits in SYS_CFG MSR.
+>    =20
+>     Tom2Enabled is architectural (defined in APM Vol.2).
+>     Tom2ForceMemTypeWB is defined in all BKDGs starting with K8 NPT.
+>     In pre K8-NPT BKDG this bit is reserved (read as zero).
+>    =20
+>     W/o this adaption Linux would unnecessarily complain about bad MTRR=
 
-	tglx
+>     settings on every new AMD CPU family, e.g.
+>    =20
+>     [    0.000000] WARNING: BIOS bug: CPU MTRRs don't cover all of memo=
+ry, losing 4863MB of RAM.
+>    =20
+>     Cc: stable@kernel.org # .32.x, .35.x
+>     Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+>     LKML-Reference: <20100930123235.GB20545@loge.amd.com>
+>     Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+>=20
+> diff --git a/arch/x86/kernel/cpu/mtrr/cleanup.c b/arch/x86/kernel/cpu/m=
+trr/cleanup.c
+> index c5f59d071425..ac140c7be396 100644
+> --- a/arch/x86/kernel/cpu/mtrr/cleanup.c
+> +++ b/arch/x86/kernel/cpu/mtrr/cleanup.c
+> @@ -827,7 +827,7 @@ int __init amd_special_default_mtrr(void)
+>=20
+>         if (boot_cpu_data.x86_vendor !=3D X86_VENDOR_AMD)
+>                 return 0;
+> -       if (boot_cpu_data.x86 < 0xf || boot_cpu_data.x86 > 0x11)
+> +       if (boot_cpu_data.x86 < 0xf)
+>                 return 0;
+>         /* In case some hypervisor doesn't pass SYSCFG through: */
+>         if (rdmsr_safe(MSR_K8_SYSCFG, &l, &h) < 0)
+>=20
+
+
+
+--------------enig68729D020F2947AB403F2414
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iQIcBAEBCgAGBQJP11yMAAoJEOhnXe7L7s6jZwQP/241DaN5bhzxYS4dhtIR5dCh
+vZkpw7WPTc4omil/p+avwT7UYaTj2nVxPc9HDcdlYoJF/uBQG1J1pIIYZCQwNynT
+FaVMGuWpoxPlJ9hdN2k5hNQs1bWIg3g+HfYeRWuezvR31zzIfpkv6zXZ2I1ha3p1
+bvTJOscMXoR+J/VSl1tCLYwUeThtDZdQLcsHjH1bMBiX6+3bmTUVTa8CZZd8pR05
+p9Bbeb1A1bx7JoLgxaY6DIZwktiFi7c4hkVSHhOgEg8DT61RtlWe0oauyXSazufy
+P1qqOcFOH13/WKxb3HvxnNPvogAOihcG9PYnyny3SKow5y5HEH0/yfTYIj0iQxKd
+bGEDYIFmTwv3CeKFDnzziR++8rDuCscDzQ1QmVM1VnqSPfipdWpg3zRUTpwo0KP+
+N+WkrcygbCAaOMDgIZlfKNV4ZggX/XJZJnWL1QQkWALRC3QvPZ3pHSUhbntcglrl
+W1cpy4mFpklvJHnh61cv9m8UW/Gk8+123rRd+sW0450bakopnTgtsGBtkoeUOV5f
+jqxJkg0qqmnsI9JUpJvnI909D6ixCZt/NdJKTkon4GqeBl4mBzJeoQQeZPHe4C6E
+cJLX880lSe7QNrZ9e1pV8YMG8eYSIlMd2dyLXMXB2VHqAwzN+qv6h40HS2K/dah5
+DrWMreJSCJjlmVWj7ERl
+=+Sog
+-----END PGP SIGNATURE-----
+
+--------------enig68729D020F2947AB403F2414--
