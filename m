@@ -1,48 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752194Ab2FLJS4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 05:18:56 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:61906 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751185Ab2FLJSz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 05:18:55 -0400
-Message-ID: <1339492729.6743.4.camel@phoenix>
-Subject: [PATCH] regulator: wm8350: Add missing min_uV and uV_step settings
- for DCDC4
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Tue, 12 Jun 2012 17:18:49 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752544Ab2FLJTO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 05:19:14 -0400
+Received: from ozlabs.org ([203.10.76.45]:45847 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752297Ab2FLJTM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 05:19:12 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Stephen Hemminger <shemminger@vyatta.com>
+Cc: Felipe Balbi <balbi@ti.com>, trivial@kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] trivial: treewide: remove extra semicolon added by module_init/exit
+In-Reply-To: <20120611142028.380c5a61@nehalam.linuxnetplumber.net>
+References: <1338990069-6627-1-git-send-email-balbi@ti.com> <20120606083119.0d0a0029@nehalam.linuxnetplumber.net> <87zk8bhfds.fsf@rustcorp.com.au> <20120611142028.380c5a61@nehalam.linuxnetplumber.net>
+User-Agent: Notmuch/0.12 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Tue, 12 Jun 2012 09:56:36 +0930
+Message-ID: <87zk89nznn.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/wm8350-regulator.c |    2 ++
- 1 file changed, 2 insertions(+)
+On Mon, 11 Jun 2012 14:20:28 -0700, Stephen Hemminger <shemminger@vyatta.com> wrote:
+> Given common kernel practice and the fact that only 16% of the uses of
+> module_init/exit are without semicolon and that other kernel macros don't
+> include semicolon.
+> 
+> I recommend going with the majority and common practice...
+>   1. Fix the 636 places that use module_init()/exit without semicolon to include semicolon
+>   2. Remove semicolon from module_init()/exit()
 
-diff --git a/drivers/regulator/wm8350-regulator.c b/drivers/regulator/wm8350-regulator.c
-index ca678ee..53bf3df 100644
---- a/drivers/regulator/wm8350-regulator.c
-+++ b/drivers/regulator/wm8350-regulator.c
-@@ -1105,6 +1105,8 @@ static const struct regulator_desc wm8350_reg[NUM_WM8350_REGULATORS] = {
- 		.irq = WM8350_IRQ_UV_DC4,
- 		.type = REGULATOR_VOLTAGE,
- 		.n_voltages = WM8350_DCDC_MAX_VSEL + 1,
-+		.min_uV = 850000,
-+		.uV_step = 25000,
- 		.vsel_reg = WM8350_DCDC4_CONTROL,
- 		.vsel_mask = WM8350_DC4_VSEL_MASK,
- 		.enable_reg = WM8350_DCDC_LDO_REQUESTED,
--- 
-1.7.9.5
+Um, yes.  He should do exactly what he did.
 
+It's a wart, let's fix it.
 
-
+Thanks,
+Rusty.
+PS. CC's chopped; somewhere in there is a bad address...
