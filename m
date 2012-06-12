@@ -1,312 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753370Ab2FLOXm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 10:23:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57245 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752124Ab2FLOVB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 10:21:01 -0400
-From: Jan Kara <jack@suse.cz>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@suse.cz,
-        Jan Kara <jack@suse.cz>
-Subject: [PATCH 14/27] fs: Add freezing handling to mnt_want_write() / mnt_drop_write()
-Date: Tue, 12 Jun 2012 16:20:35 +0200
-Message-Id: <1339510848-16992-15-git-send-email-jack@suse.cz>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1339510848-16992-1-git-send-email-jack@suse.cz>
+	id S1753404Ab2FLOX4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 10:23:56 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:36039
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751836Ab2FLOXy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 10:23:54 -0400
+Date: Tue, 12 Jun 2012 10:23:47 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Jan Kara <jack@suse.cz>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, Alex Elder <elder@kernel.org>,
+        linux-fsdevel@suse.cz, LKML <linux-kernel@vger.kernel.org>,
+        xfs@oss.sgi.com, Ben Myers <bpm@sgi.com>
+Subject: Re: [PATCH 18/27] xfs: Convert to new freezing code
+Message-ID: <20120612142346.GA25132@infradead.org>
 References: <1339510848-16992-1-git-send-email-jack@suse.cz>
+ <1339510848-16992-19-git-send-email-jack@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339510848-16992-19-git-send-email-jack@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Most of places where we want freeze protection coincides with the places where
-we also have remount-ro protection. So make mnt_want_write() and
-mnt_drop_write() (and their _file alternative) prevent freezing as well.
-For the few cases that are really interested only in remount-ro protection
-provide new function variants.
+> +	 * We will pass freeze protection with a transaction.  So tell lockdep
+> +	 * we released it.
+> +	 */
+> +	rwsem_release(&ioend->io_inode->i_sb->s_writers.lock_map[SB_FREEZE_FS-1],
+> +		      1, _THIS_IP_);
 
-BugLink: https://bugs.launchpad.net/bugs/897421
-Tested-by: Kamal Mostafa <kamal@canonical.com>
-Tested-by: Peter M. Petrakis <peter.petrakis@canonical.com>
-Tested-by: Dann Frazier <dann.frazier@canonical.com>
-Tested-by: Massimo Morana <massimo.morana@canonical.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
----
- fs/file_table.c       |    2 +-
- fs/inode.c            |    4 +-
- fs/namei.c            |   15 ++++++-
- fs/namespace.c        |  101 +++++++++++++++++++++++++++++++++++++++----------
- fs/open.c             |    2 +-
- include/linux/mount.h |    4 ++
- 6 files changed, 102 insertions(+), 26 deletions(-)
-
-diff --git a/fs/file_table.c b/fs/file_table.c
-index a305d9e..5fcaa56 100644
---- a/fs/file_table.c
-+++ b/fs/file_table.c
-@@ -215,7 +215,7 @@ static void drop_file_write_access(struct file *file)
- 		return;
- 	if (file_check_writeable(file) != 0)
- 		return;
--	mnt_drop_write(mnt);
-+	__mnt_drop_write(mnt);
- 	file_release_write(file);
- }
- 
-diff --git a/fs/inode.c b/fs/inode.c
-index c99163b..f23fbd1 100644
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -1660,11 +1660,11 @@ int file_update_time(struct file *file)
- 		return 0;
- 
- 	/* Finally allowed to write? Takes lock. */
--	if (mnt_want_write_file(file))
-+	if (__mnt_want_write_file(file))
- 		return 0;
- 
- 	ret = update_time(inode, &now, sync_it);
--	mnt_drop_write_file(file);
-+	__mnt_drop_write_file(file);
- 
- 	return ret;
- }
-diff --git a/fs/namei.c b/fs/namei.c
-index 6e65207..81fd4ef 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -2270,12 +2270,20 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
- 		goto exit;
- 
- retry_lookup:
-+	/*
-+	 * We don't know whether write access will be needed or not. But we
-+	 * must get the protection before getting i_mutex due to locking
-+	 * constraints. Thus O_CREAT open will get blocked on frozen filesystem
-+	 * even if it didn't need to create anything. Not that surprising...
-+	 */
-+	sb_start_write(dir->d_sb);
- 	mutex_lock(&dir->d_inode->i_mutex);
- 
- 	dentry = lookup_hash(nd);
- 	error = PTR_ERR(dentry);
- 	if (IS_ERR(dentry)) {
- 		mutex_unlock(&dir->d_inode->i_mutex);
-+		sb_end_write(dir->d_sb);
- 		goto exit;
- 	}
- 
-@@ -2294,9 +2302,11 @@ retry_lookup:
- 		 * a permanent write count is taken through
- 		 * the 'struct file' in nameidata_to_filp().
- 		 */
--		error = mnt_want_write(nd->path.mnt);
--		if (error)
-+		error = __mnt_want_write(nd->path.mnt);
-+		if (error) {
-+			sb_end_write(dir->d_sb);
- 			goto exit_mutex_unlock;
-+		}
- 		want_write = 1;
- 		/* Don't check for write permission, don't truncate */
- 		open_flag &= ~O_TRUNC;
-@@ -2318,6 +2328,7 @@ retry_lookup:
- 	 * It already exists.
- 	 */
- 	mutex_unlock(&dir->d_inode->i_mutex);
-+	sb_end_write(dir->d_sb);
- 	audit_inode(pathname, path->dentry);
- 
- 	error = -EEXIST;
-diff --git a/fs/namespace.c b/fs/namespace.c
-index 1e4a5fe..2e36aee 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -283,24 +283,22 @@ static int mnt_is_readonly(struct vfsmount *mnt)
- }
- 
- /*
-- * Most r/o checks on a fs are for operations that take
-- * discrete amounts of time, like a write() or unlink().
-- * We must keep track of when those operations start
-- * (for permission checks) and when they end, so that
-- * we can determine when writes are able to occur to
-- * a filesystem.
-+ * Most r/o & frozen checks on a fs are for operations that take discrete
-+ * amounts of time, like a write() or unlink().  We must keep track of when
-+ * those operations start (for permission checks) and when they end, so that we
-+ * can determine when writes are able to occur to a filesystem.
-  */
- /**
-- * mnt_want_write - get write access to a mount
-+ * __mnt_want_write - get write access to a mount without freeze protection
-  * @m: the mount on which to take a write
-  *
-- * This tells the low-level filesystem that a write is
-- * about to be performed to it, and makes sure that
-- * writes are allowed before returning success.  When
-- * the write operation is finished, mnt_drop_write()
-- * must be called.  This is effectively a refcount.
-+ * This tells the low-level filesystem that a write is about to be performed to
-+ * it, and makes sure that writes are allowed (mnt it read-write) before
-+ * returning success. This operation does not protect against filesystem being
-+ * frozen. When the write operation is finished, __mnt_drop_write() must be
-+ * called. This is effectively a refcount.
-  */
--int mnt_want_write(struct vfsmount *m)
-+int __mnt_want_write(struct vfsmount *m)
- {
- 	struct mount *mnt = real_mount(m);
- 	int ret = 0;
-@@ -326,6 +324,28 @@ int mnt_want_write(struct vfsmount *m)
- 		ret = -EROFS;
- 	}
- 	preempt_enable();
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(__mnt_want_write);
-+
-+/**
-+ * mnt_want_write - get write access to a mount
-+ * @m: the mount on which to take a write
-+ *
-+ * This tells the low-level filesystem that a write is about to be performed to
-+ * it, and makes sure that writes are allowed (mount is read-write, filesystem
-+ * is not frozen) before returning success.  When the write operation is
-+ * finished, mnt_drop_write() must be called.  This is effectively a refcount.
-+ */
-+int mnt_want_write(struct vfsmount *m)
-+{
-+	int ret;
-+
-+	sb_start_write(m->mnt_sb);
-+	ret = __mnt_want_write(m);
-+	if (ret)
-+		sb_end_write(m->mnt_sb);
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(mnt_want_write);
-@@ -355,38 +375,79 @@ int mnt_clone_write(struct vfsmount *mnt)
- EXPORT_SYMBOL_GPL(mnt_clone_write);
- 
- /**
-- * mnt_want_write_file - get write access to a file's mount
-+ * __mnt_want_write_file - get write access to a file's mount
-  * @file: the file who's mount on which to take a write
-  *
-- * This is like mnt_want_write, but it takes a file and can
-+ * This is like __mnt_want_write, but it takes a file and can
-  * do some optimisations if the file is open for write already
-  */
--int mnt_want_write_file(struct file *file)
-+int __mnt_want_write_file(struct file *file)
- {
- 	struct inode *inode = file->f_dentry->d_inode;
-+
- 	if (!(file->f_mode & FMODE_WRITE) || special_file(inode->i_mode))
--		return mnt_want_write(file->f_path.mnt);
-+		return __mnt_want_write(file->f_path.mnt);
- 	else
- 		return mnt_clone_write(file->f_path.mnt);
- }
-+EXPORT_SYMBOL_GPL(__mnt_want_write_file);
-+
-+/**
-+ * mnt_want_write_file - get write access to a file's mount
-+ * @file: the file who's mount on which to take a write
-+ *
-+ * This is like mnt_want_write, but it takes a file and can
-+ * do some optimisations if the file is open for write already
-+ */
-+int mnt_want_write_file(struct file *file)
-+{
-+	int ret;
-+
-+	sb_start_write(file->f_path.mnt->mnt_sb);
-+	ret = __mnt_want_write_file(file);
-+	if (ret)
-+		sb_end_write(file->f_path.mnt->mnt_sb);
-+	return ret;
-+}
- EXPORT_SYMBOL_GPL(mnt_want_write_file);
- 
- /**
-- * mnt_drop_write - give up write access to a mount
-+ * __mnt_drop_write - give up write access to a mount
-  * @mnt: the mount on which to give up write access
-  *
-  * Tells the low-level filesystem that we are done
-  * performing writes to it.  Must be matched with
-- * mnt_want_write() call above.
-+ * __mnt_want_write() call above.
-  */
--void mnt_drop_write(struct vfsmount *mnt)
-+void __mnt_drop_write(struct vfsmount *mnt)
- {
- 	preempt_disable();
- 	mnt_dec_writers(real_mount(mnt));
- 	preempt_enable();
- }
-+EXPORT_SYMBOL_GPL(__mnt_drop_write);
-+
-+/**
-+ * mnt_drop_write - give up write access to a mount
-+ * @mnt: the mount on which to give up write access
-+ *
-+ * Tells the low-level filesystem that we are done performing writes to it and
-+ * also allows filesystem to be frozen again.  Must be matched with
-+ * mnt_want_write() call above.
-+ */
-+void mnt_drop_write(struct vfsmount *mnt)
-+{
-+	__mnt_drop_write(mnt);
-+	sb_end_write(mnt->mnt_sb);
-+}
- EXPORT_SYMBOL_GPL(mnt_drop_write);
- 
-+void __mnt_drop_write_file(struct file *file)
-+{
-+	__mnt_drop_write(file->f_path.mnt);
-+}
-+EXPORT_SYMBOL(__mnt_drop_write_file);
-+
- void mnt_drop_write_file(struct file *file)
- {
- 	mnt_drop_write(file->f_path.mnt);
-diff --git a/fs/open.c b/fs/open.c
-index d6c79a0..5e129f5 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -647,7 +647,7 @@ static inline int __get_file_write_access(struct inode *inode,
- 		/*
- 		 * Balanced in __fput()
- 		 */
--		error = mnt_want_write(mnt);
-+		error = __mnt_want_write(mnt);
- 		if (error)
- 			put_write_access(inode);
- 	}
-diff --git a/include/linux/mount.h b/include/linux/mount.h
-index d7029f4..d6ffc3d 100644
---- a/include/linux/mount.h
-+++ b/include/linux/mount.h
-@@ -55,10 +55,14 @@ struct vfsmount {
- 
- struct file; /* forward dec */
- 
-+extern int __mnt_want_write(struct vfsmount *mnt);
- extern int mnt_want_write(struct vfsmount *mnt);
-+extern int __mnt_want_write_file(struct file *file);
- extern int mnt_want_write_file(struct file *file);
- extern int mnt_clone_write(struct vfsmount *mnt);
-+extern void __mnt_drop_write(struct vfsmount *mnt);
- extern void mnt_drop_write(struct vfsmount *mnt);
-+extern void __mnt_drop_write_file(struct file *file);
- extern void mnt_drop_write_file(struct file *file);
- extern void mntput(struct vfsmount *mnt);
- extern struct vfsmount *mntget(struct vfsmount *mnt);
--- 
-1.7.1
+I'll need some time to get through the whole series, but repeated use
+of constructs like this really screams for a helper abstracting it out
+and documenting it.
 
