@@ -1,85 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751460Ab2FLEw7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 00:52:59 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:45540 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750909Ab2FLEwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 00:52:45 -0400
-Date: Tue, 12 Jun 2012 10:22:22 +0530
-From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-To: Michael Ellerman <michael@ellerman.id.au>
-Cc: Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>, oleg@redhat.com,
-        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
-        Ingo Molnar <mingo@elte.hu>, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH 2/2] [POWERPC] uprobes: powerpc port
-Message-ID: <20120612045222.GA19385@in.ibm.com>
-Reply-To: ananth@in.ibm.com
-References: <20120606093541.GA29580@in.ibm.com> <1339006084.3458.25.camel@localhost> <20120608043605.GB13409@in.ibm.com> <1339134714.25573.4.camel@concordia> <20120608060104.GD13409@in.ibm.com> <1339136264.25573.7.camel@concordia> <20120608061954.GE13409@in.ibm.com> <1339137497.25573.9.camel@concordia> <20120608092104.GF13409@in.ibm.com> <1339473706.14757.14.camel@concordia>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339473706.14757.14.camel@concordia>
-User-Agent: Mutt/1.5.17 (2007-11-01)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12061204-3534-0000-0000-0000094550E6
+	id S1751630Ab2FLEyv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 00:54:51 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:51143 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750937Ab2FLEyu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 00:54:50 -0400
+Date: Tue, 12 Jun 2012 14:54:41 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
+Subject: linux-next: build failure after merge of the final tree (pci tree
+ related)
+Message-Id: <20120612145441.400975347f06785d391d0f8f@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__12_Jun_2012_14_54_41_+1000_rGOhTANsKHYm/glm"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 12, 2012 at 02:01:46PM +1000, Michael Ellerman wrote:
-> On Fri, 2012-06-08 at 14:51 +0530, Ananth N Mavinakayanahalli wrote:
-> > On Fri, Jun 08, 2012 at 04:38:17PM +1000, Michael Ellerman wrote:
-> > > On Fri, 2012-06-08 at 11:49 +0530, Ananth N Mavinakayanahalli wrote:
-> > > > On Fri, Jun 08, 2012 at 04:17:44PM +1000, Michael Ellerman wrote:
-> > > > > On Fri, 2012-06-08 at 11:31 +0530, Ananth N Mavinakayanahalli wrote:
-> > > > > > On Fri, Jun 08, 2012 at 03:51:54PM +1000, Michael Ellerman wrote:
-> > > > > > > On Fri, 2012-06-08 at 10:06 +0530, Ananth N Mavinakayanahalli wrote:
-> > > > > > 
-> > > > > > But MSR_PR=1 and hence emulate_step() will return -1 and hence we will
-> > > > > > end up single-stepping using user_enable_single_step(). Same with rfid.
-> > > > > 
-> > > > > Right. But that was exactly Jim's point, you may be asked to emulate
-> > > > > those instructions even though you wouldn't expect to see them in
-> > > > > userspace code, so you need to handle it.
-> > > > > 
-> > > > > Luckily it looks like emulate_step() will do the right thing for you.
-> > > > > It'd be good to test it to make 100% sure.
-> > > > 
-> > > > Sure. Will add that check and send v2.
-> > > 
-> > > Sorry I didn't mean add a test in the code, I meant construct a test
-> > > case to confirm that it works as expected.
-> > 
-> > Michael,
-> > 
-> > I just hand-coded the instr to emulate_step() and here are the results:
-> > 
-> > MSR_PR is set
-> > insn = 7c600124, ret = 0 /* mtmsr */
-> > insn = 7c600164, ret = 0 /* mtmsrd */
-> > insn = 4c000024, ret = -1 /* rfid */
-> > insn = 4c000064, ret = 0 /* rfi */
-> > 
-> > Also verified that standalone programs with those instructions in inline
-> > asm will die with a SIGILL.
-> > 
-> > So, for mtmsr, mtmsrd and rfi, we have to single-step them which will
-> > result in a SIGILL in turn.
-> 
-> What happens in the rfid case? You don't handle -1 from emulate_step()
-> any differently AFAICS, so don't we try to single step that too?
+--Signature=_Tue__12_Jun_2012_14_54_41_+1000_rGOhTANsKHYm/glm
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
--1 is just emulate_step() flagging cases where instructions must not be
-single-stepped (rfi[d], mtmsr that clears MSR_RI). But as with the other
-OEA instructions in user space, we fail with a SIGILL.
+Hi all,
 
-As the application is hozed in any case if we encounter an OEA
-instruction, I'd think there is no point in handling a -1 from
-emulate_step() any differently.
+After merging the final tree, today's linux-next build (sparc64 defconfig)
+failed like this:
 
-Ananth
+arch/sparc/kernel/pci.c: In function 'pci_scan_one_pbm':
+arch/sparc/kernel/pci.c:689:21: error: 'struct pci_pbm_info' has no member =
+named 'pci_last_busn'
 
+Caused by commit 2c7f691b032b ("sparc/PCI: register busn_res for root buses=
+").
+
+I have added the following patch for today:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Tue, 12 Jun 2012 14:48:39 +1000
+Subject: [PATCH] sparc/PCI: fix typo
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ arch/sparc/kernel/pci.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/sparc/kernel/pci.c b/arch/sparc/kernel/pci.c
+index 74e4bf3..4f92a9a 100644
+--- a/arch/sparc/kernel/pci.c
++++ b/arch/sparc/kernel/pci.c
+@@ -686,7 +686,7 @@ struct pci_bus * __devinit pci_scan_one_pbm(struct pci_=
+pbm_info *pbm,
+ 	pci_add_resource_offset(&resources, &pbm->mem_space,
+ 				pbm->mem_space.start);
+ 	pbm->busn.start =3D pbm->pci_first_busno;
+-	pbm->busn.end	=3D pbm->pci_last_busn;
++	pbm->busn.end	=3D pbm->pci_last_busno;
+ 	pbm->busn.flags	=3D IORESOURCE_BUS;
+ 	pci_add_resource(&resources, &pbm->busn);
+ 	bus =3D pci_create_root_bus(parent, pbm->pci_first_busno, pbm->pci_ops,
+--=20
+1.7.10.280.gaa39
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__12_Jun_2012_14_54_41_+1000_rGOhTANsKHYm/glm
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJP1suRAAoJEECxmPOUX5FEja0P/RogqQHbl5fKJhFPbjjscHVt
+wB6g9C9dir1MmI3KIVH33pz2HaRXpMuZOruZbLSN7rD2NeitxKnx/9zHL5QeWe6F
+iiBBiCkgDqxB3RTHehncEgpk7vvHwNanNEQeJ3NC/HoqiNqTWTiwL5KhQAVuRcN4
+Zy1fQhVo10vIwpEJBEUJB+44GWroO//tcQZGtGI5f5BylWNOCjjYKgn2V7oqHO/5
+Hkm0LeeGQ+VCexC9l+tXrg2heMlnxIITmVuoxAD5Xm+ECQA4rTz9aFNjPVPQAHjN
+KBGVxgDaU6RQlJstRvgKuecK5+KKL1ieYJLy4K9jo8Vjh0oyofAJacrzUJgdk/r3
+Z7ct6td5FLMvVUhV8SjEgDfpvletDDSyNE410tl7kZjvpFkvDClWbftS20pQtBvc
+5bMQXYDgjk2VDDKfI3dN4vaGkuipipxCicmMnVNkVNHpyWL8OYGbxCWAkYQdDOxk
+JHFdMkaEunO26sLoe5gq5CFXzoR7JVIX0XrERy6U874g7+byR76agS6knauvRlwn
+vCeqeO7vjEkf5bFKqkSCNPw2hTFE0OW7XNX54AhAyCJFpyKlAdhqxCFR27MIUCNr
+WNci01ICom+ryehZrHvmdWHTOXwjA1CA0bqfgPwFNFLrYcNNArP5YCbpv7BP/CUM
+uNK5Y+tgWkvAqxOnH8vq
+=AtQy
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__12_Jun_2012_14_54_41_+1000_rGOhTANsKHYm/glm--
