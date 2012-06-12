@@ -1,79 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752594Ab2FLKuh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 06:50:37 -0400
-Received: from na3sys009aog127.obsmtp.com ([74.125.149.107]:36603 "EHLO
-	na3sys009aog127.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752485Ab2FLKuc (ORCPT
+	id S1752311Ab2FLKxN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 06:53:13 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:58978 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751847Ab2FLKxM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 06:50:32 -0400
-Date: Tue, 12 Jun 2012 13:48:32 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: gregkh@linuxfoundation.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org, balbi@ti.com
-Subject: Re: [PATCH 0/5] usb: musb: cleanup
-Message-ID: <20120612104831.GE10901@arwen.pp.htv.fi>
-Reply-To: balbi@ti.com
-References: <1338889118-10032-1-git-send-email-kishon@ti.com>
+	Tue, 12 Jun 2012 06:53:12 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-mm@kvack.org, dhillf@gmail.com, rientjes@google.com, mhocko@suse.cz,
+        akpm@linux-foundation.org, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH -V8 12/16] hugetlb/cgroup: Add support for cgroup removal
+In-Reply-To: <4FD6FC76.8040203@jp.fujitsu.com>
+References: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1339232401-14392-13-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <4FD6FC76.8040203@jp.fujitsu.com>
+User-Agent: Notmuch/0.13.2+35~g0ff57e7 (http://notmuchmail.org) Emacs/24.1.50.1 (x86_64-unknown-linux-gnu)
+Date: Tue, 12 Jun 2012 16:22:57 +0530
+Message-ID: <87fwa0ol86.fsf@skywalker.in.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="jKBxcB1XkHIR0Eqt"
-Content-Disposition: inline
-In-Reply-To: <1338889118-10032-1-git-send-email-kishon@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+x-cbid: 12061200-5140-0000-0000-000001904897
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
 
---jKBxcB1XkHIR0Eqt
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> (2012/06/09 17:59), Aneesh Kumar K.V wrote:
+>> From: "Aneesh Kumar K.V"<aneesh.kumar@linux.vnet.ibm.com>
+>> 
+>> This patch add support for cgroup removal. If we don't have parent
+>> cgroup, the charges are moved to root cgroup.
+>> 
+>> Signed-off-by: Aneesh Kumar K.V<aneesh.kumar@linux.vnet.ibm.com>
+>
+> I'm sorry if already pointed out....
+>
+>> ---
+>>   mm/hugetlb_cgroup.c |   81 +++++++++++++++++++++++++++++++++++++++++++++++++--
+>>   1 file changed, 79 insertions(+), 2 deletions(-)
+>> 
+>> diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
+>> index 48efd5a..9458fe3 100644
+>> --- a/mm/hugetlb_cgroup.c
+>> +++ b/mm/hugetlb_cgroup.c
+>> @@ -99,10 +99,87 @@ static void hugetlb_cgroup_destroy(struct cgroup *cgroup)
+>>   	kfree(h_cgroup);
+>>   }
+>> 
+>> +
+>> +static int hugetlb_cgroup_move_parent(int idx, struct cgroup *cgroup,
+>> +				      struct page *page)
+>> +{
+>> +	int csize;
+>> +	struct res_counter *counter;
+>> +	struct res_counter *fail_res;
+>> +	struct hugetlb_cgroup *page_hcg;
+>> +	struct hugetlb_cgroup *h_cg   = hugetlb_cgroup_from_cgroup(cgroup);
+>> +	struct hugetlb_cgroup *parent = parent_hugetlb_cgroup(cgroup);
+>> +
+>> +	if (!get_page_unless_zero(page))
+>> +		goto out;
+>
+> It seems this doesn't necessary...this is under hugetlb_lock().
 
-On Tue, Jun 05, 2012 at 03:08:33PM +0530, Kishon Vijay Abraham I wrote:
-> Most part of this patch series was obtained by splitting
-> [RFC PATCH 2/3] usb: musb: omap glue: use omap-usb2 as the phy driver.
->=20
-> TO DO:
-> * dt adaptation of musb omap glue, twl4030, twl6030.
-> * Use control module driver API to write to control module registers
->  (mailbox and power control of phy)
-> * send usb2 phy driver
-> * make musb omap glue make use of usb2 phy driver and make twl630
->  as a comparator driver.
->=20
-> Patch series depends on
-> [PATCH v4 0/3] usb: multi-phy support
->=20
-> Performed device mode testing in omap4 panda and omap3 beagle
+already updated.
 
-here too, we need a new version.
+>
+>> +
+>> +	page_hcg = hugetlb_cgroup_from_page(page);
+>> +	/*
+>> +	 * We can have pages in active list without any cgroup
+>> +	 * ie, hugepage with less than 3 pages. We can safely
+>> +	 * ignore those pages.
+>> +	 */
+>> +	if (!page_hcg || page_hcg != h_cg)
+>> +		goto err_out;
+>> +
+>> +	csize = PAGE_SIZE<<  compound_order(page);
+>> +	if (!parent) {
+>> +		parent = root_h_cgroup;
+>> +		/* root has no limit */
+>> +		res_counter_charge_nofail(&parent->hugepage[idx],
+>> +					  csize,&fail_res);
+>                                               ^^^
+> space ?
 
---=20
-balbi
+I don't have code this way locally, may be a mail client error ?
 
---jKBxcB1XkHIR0Eqt
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+>
+>> +	}
+>> +	counter =&h_cg->hugepage[idx];
+>> +	res_counter_uncharge_until(counter, counter->parent, csize);
+>> +
+>> +	set_hugetlb_cgroup(page, parent);
+>> +err_out:
+>> +	put_page(page);
+>> +out:
+>> +	return 0;
+>> +}
+>> +
+>> +/*
+>> + * Force the hugetlb cgroup to empty the hugetlb resources by moving them to
+>> + * the parent cgroup.
+>> + */
+>>   static int hugetlb_cgroup_pre_destroy(struct cgroup *cgroup)
+>>   {
+>> -	/* We will add the cgroup removal support in later patches */
+>> -	   return -EBUSY;
+>> +	struct hstate *h;
+>> +	struct page *page;
+>> +	int ret = 0, idx = 0;
+>> +
+>> +	do {
+>> +		if (cgroup_task_count(cgroup) ||
+>> +		    !list_empty(&cgroup->children)) {
+>> +			ret = -EBUSY;
+>> +			goto out;
+>> +		}
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Is this check  going to moved to higher levels ? Do we still need
+this. Or will that happen when pred_destroy becomes void ?
 
-iQIcBAEBAgAGBQJP1x5/AAoJEIaOsuA1yqREiZgP/0gxCeLB+VsJ6TTSmEwPDaBW
-SPRrGNTejgFMwtvqyTfNSWFiPtxBc/xAxc2xLJClPLX+M/NbdQ07vDrD4/IeeSMw
-f3xNQnQuSY+e2ou4FDAPPV8bJcwsEzebNgN744itAnodC1xQkZ78NHIgVQMVCm3y
-U3iIkJDBUDn+cMK+3kUlD9rCKs2PD/Iu1/a9x4TPVGBkneYy8tKHt9bVtgE6ZgZ/
-qKNaQvPy2mTPwU7OUdUiB7nRRauQyOdG0FAOVHR0LQXxzG6s2tHZs9jFSphgJgWs
-HWrEpYmoaOQNipxLPQI7WIea0f3hY/vZQgC5HzFD0QZymfZdUFmEnicBWsg/ft7Q
-gAssL7tpFUnRhtwL32KM8UPHBbKmRHlVKWjyNiVMf6cUn/HL1H3VzMhl4Rh36AuI
-QPenjbXivGXN2ZFTciDZH8WUOdupGvO+Xb4NDBXcLbse4C0yU2ZI4Zq0oOS/V9P6
-UvgFVWaOPoUbxZbVWHCgWW8PgX6Ym+JwOha1hgXJNLuuUNYp+YQE5PtAughMVk0/
-II0AnCAE87QKV6+E8X1NRWV2a1ZSupZuQxTiPVZzyx3OjIo0t055hD0F570lRAOb
-IWEK84uhw6uex5M6e/VvuZCI2XNeYLMQ7IFoYqn0p+jBPMrhkGUML4x+yamIDsKX
-Pi29Uufj+DYQWseXg9+/
-=U0/w
------END PGP SIGNATURE-----
+>
+>> +		/*
+>> +		 * If the task doing the cgroup_rmdir got a signal
+>> +		 * we don't really need to loop till the hugetlb resource
+>> +		 * usage become zero.
+>> +		 */
+>> +		if (signal_pending(current)) {
+>> +			ret = -EINTR;
+>> +			goto out;
+>> +		}
+>
+> I'll post a patch to remove this check from memcg because memcg's rmdir
+> always succeed now. So, could you remove this ?
 
---jKBxcB1XkHIR0Eqt--
+Will drop this 
+
+>
+>
+>> +		for_each_hstate(h) {
+>> +			spin_lock(&hugetlb_lock);
+>> +			list_for_each_entry(page,&h->hugepage_activelist, lru) {
+>> +				ret = hugetlb_cgroup_move_parent(idx, cgroup, page);
+>> +				if (ret) {
+>
+> When 'ret' should be !0 ?
+> If hugetlb_cgroup_move_parent() always returns 0, the check will not be necessary.
+>
+
+I will make this void funciton.
+
+-aneesh
+
