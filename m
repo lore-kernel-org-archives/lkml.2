@@ -1,70 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753559Ab2FLRJD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 13:09:03 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:52886 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752027Ab2FLRJB (ORCPT
+	id S1753685Ab2FLRJX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 13:09:23 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:60225 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753445Ab2FLRJV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 13:09:01 -0400
-Message-ID: <4FD777A5.9050001@redhat.com>
-Date: Tue, 12 Jun 2012 19:08:53 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	Tue, 12 Jun 2012 13:09:21 -0400
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: linux-kernel@vger.kernel.org, axboe@kernel.dk, linux-scsi@vger.kernel.org,
-        jbottomley@parallels.com
-Subject: Re: [PATCH] scsi: allow persistent reservations without CAP_SYS_RAWIO
-References: <1339517312-18134-1-git-send-email-pbonzini@redhat.com> <20120612175503.3462962f@pyramind.ukuu.org.uk>
-In-Reply-To: <20120612175503.3462962f@pyramind.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120612170725.GE5046@erda.amd.com>
+References: <20120607071531.GA4849@quad>
+	<1339064319.23343.13.camel@twins>
+	<CABPqkBQ+p5rcuxpXCTLMXPM+awAHhQ6mP9-WzVh5GWtn2GyfrA@mail.gmail.com>
+	<1339065932.23343.18.camel@twins>
+	<CABPqkBQ=tLXXsgvzQx+i01Owm4MM8m=6cEVVi4ab64gOiTTBYQ@mail.gmail.com>
+	<1339067757.23343.21.camel@twins>
+	<20120608093513.GA22520@gmail.com>
+	<1339149613.23343.52.camel@twins>
+	<1339161972.2507.13.camel@laptop>
+	<20120612170725.GE5046@erda.amd.com>
+Date: Tue, 12 Jun 2012 19:09:19 +0200
+Message-ID: <CABPqkBRJAA7yRcswM1iYESSwhiGD4SEbir=q=ouQSevi7OAxqQ@mail.gmail.com>
+Subject: Re: [PATCH] perf/x86: check ucode before disabling PEBS on SandyBridge
+From: Stephane Eranian <eranian@google.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, andi@firstfloor.org, mingo@elte.hu,
+        ming.m.lin@intel.com, Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Dimitri Sivanich <sivanich@sgi.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 12/06/2012 18:55, Alan Cox ha scritto:
-> On Tue, 12 Jun 2012 18:08:32 +0200
-> Paolo Bonzini <pbonzini@redhat.com> wrote:
-> 
->> Persistent reservations commands cannot be issued right now without
->> giving CAP_SYS_RAWIO to the process who wishes to send them.  This
->> is a bit heavy-handed, allow these two commands.
->>
->> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
->> ---
->>         Ok for 3.5 as well?
-> 
-> NAK.
-> 
-> Persistent reservations are exactly the kind of command that should have
-> a security model attached to them.
+On Tue, Jun 12, 2012 at 7:07 PM, Robert Richter <robert.richter@amd.com> wrote:
+> On 08.06.12 15:26:12, Peter Zijlstra wrote:
+>> +static const u32 snb_ucode_rev = 0x28;
+>> +
+>> +static void intel_snb_verify_ucode(void)
+>> +{
+>> +     u32 rev = UINT_MAX;
+>> +     int pebs_broken = 0;
+>> +     int cpu;
+>> +
+>> +     get_online_cpus();
+>> +     /*
+>> +      * Because the microcode loader is bloody stupid and allows different
+>> +      * revisions per cpu and does strictly per-cpu loading, we now have to
+>> +      * check all cpus to determine the minimally installed revision.
+>> +      *
+>> +      * This makes updating the microcode O(n^2) in the number of CPUs :/
+>> +      */
+>> +     for_each_online_cpu(cpu)
+>> +             rev = min(cpu_data(cpu).microcode, rev);
+>> +     put_online_cpus();
+>> +
+>> +     pebs_broken = (rev < snb_ucode_rev);
+>> +
+>> +     if (pebs_broken == x86_pmu.pebs_broken)
+>> +             return;
+>> +
+>> +     /*
+>> +      * Serialized by the microcode lock..
+>> +      */
+>> +     if (x86_pmu.pebs_broken) {
+>> +             pr_info("PEBS enabled due to micro-code update\n");
+>> +             x86_pmu.pebs_broken = 0;
+>> +     } else {
+>> +             pr_info("PEBS disabled due to CPU errata, "
+>> +                     "please upgrade micro-code to at least %x (current: %x)\n",
+>> +                     snb_ucode_rev, rev);
+>> +             x86_pmu.pebs_broken = 1;
+>> +     }
+>> +}
+>> +
+>> +static int intel_snb_ucode_notifier(struct notifier_block *self,
+>> +                                unsigned long action, void *_uci)
+>> +{
+>> +     /*
+>> +      * Since ucode cannot be down-graded, and no future ucode revision
+>> +      * is known to break PEBS again, we're ok with MICROCODE_CAN_UPDATE.
+>> +      */
+>> +
+>> +     if (action == MICROCODE_UPDATED)
+>> +             intel_snb_verify_ucode();
+>> +
+>> +     return NOTIFY_DONE;
+>> +}
+>> +
+>>  static __init void intel_sandybridge_quirk(void)
+>>  {
+>> -     pr_warn("PEBS disabled due to CPU errata\n");
+>> -     x86_pmu.pebs = 0;
+>> -     x86_pmu.pebs_constraints = NULL;
+>> +     intel_snb_verify_ucode();
+>> +     /*
+>> +      * we're still single threaded, so while there's a hole here,
+>> +      * you can't trigger it.
+>> +      */
+>> +     microcode_notifier(intel_snb_ucode_notifier);
+>>  }
+>
+> Instead of registering a microcode notifier, why not checking the
+> availability of pebs dynamically with each syscall in
+> intel_pmu_hw_config()? It looks like intel_snb_verify_ucode() is not
+> that much expensive. We can perform the check only if the event could
+> be for pebs and if pebs is broken. The check could be repeated when
+> setting up a new event after ucode could potentially has been updated
+> (e.g. after bringing a cpu online or so).
+>
+That's what I had in my original version.
 
-There is.  It's called "chmod"; you don't give write access to LUNs to
-random users.  and SCM_RIGHTS is what lets you override it securely.
-
-> Red Hat seems to be an ever growing source of "mummy its hard, lets
-> disable all the security" type fixes. Please stop it.
-
-Last time you were complaining that I was turning things *off* (SG_IO to
-partitions for root).  Now you complain that I'm turning things *on*.
-It's difficult to say they are the same thing.  Though perhaps you were
-talking about someone else.
-
-> There is a sensible debate to be had about whether a lesser privilege
-> ought to be allowed. The real fix to this as with half of the other
-> crazy attempts to break all the security models that seem to keep spewing
-> forth is for someone who cares about it (that seems to me Red Hat) add
-> support for pushing a BPF filter onto a block device command queue. 
-
-Sure; however, doing so requires access to some member of "struct file"
-from SG_IO.  Thus, ioctl would need to take a "struct file" rather than
-just an fmode_t.
-
-The switch to fmode_t was done in 2007 by Al Viro.  I would like to
-understand the reasons for the switch; it seems to me that it was part
-of the big kernel lock removal.  If it's acceptable to undo it, I would
-very much would like to add generic BPF filtering to SG_IO.
-
-Paolo
+> -Robert
+>
+>
+> --
+> Advanced Micro Devices, Inc.
+> Operating System Research Center
+>
