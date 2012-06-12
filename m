@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753425Ab2FLFiJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 01:38:09 -0400
-Received: from mga14.intel.com ([143.182.124.37]:9195 "EHLO mga14.intel.com"
+	id S1753468Ab2FLFiO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 01:38:14 -0400
+Received: from mga14.intel.com ([143.182.124.37]:8726 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751409Ab2FLFh6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 01:37:58 -0400
+	id S1752076Ab2FLFiK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 01:38:10 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="111014175"
+   d="scan'208";a="111014229"
 From: "Yan, Zheng" <zheng.z.yan@intel.com>
 To: a.p.zijlstra@chello.nl, mingo@elte.hu, jolsa@redhat.com,
         eranian@google.com, andi@firstfloor.org, linux-kernel@vger.kernel.org
-Cc: "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: [PATCH V5 02/13] perf: Avoid race between cpu hotplug and installing event
-Date: Tue, 12 Jun 2012 13:37:37 +0800
-Message-Id: <1339479468-3815-3-git-send-email-zheng.z.yan@intel.com>
+Subject: [PATCH V5 09/13] perf, tool: Use data struct for arg passing in event parse function
+Date: Tue, 12 Jun 2012 13:37:44 +0800
+Message-Id: <1339479468-3815-10-git-send-email-zheng.z.yan@intel.com>
 X-Mailer: git-send-email 1.7.10.2
 In-Reply-To: <1339479468-3815-1-git-send-email-zheng.z.yan@intel.com>
 References: <1339479468-3815-1-git-send-email-zheng.z.yan@intel.com>
@@ -23,47 +22,272 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+From: Jiri Olsa <jolsa@redhat.com>
 
-perf_event_open requires the cpu on which to install event is online,
-but the cpu can go offline after perf_event_open checks that. Add
-get_online_cpus()/put_online_cpus() pair to avoid the race.
+Moving all the bison arguments into the structure. In upcomming
+patches we are going to
+  - add more arguments
+  - reuse the grammer for term parsing
 
-Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
+so it's more clear to pack/separate related arguments.
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- kernel/events/core.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ tools/perf/util/parse-events.c |   16 +++++++------
+ tools/perf/util/parse-events.h |    8 +++++--
+ tools/perf/util/parse-events.y |   52 +++++++++++++++++++++++++++-------------
+ 3 files changed, 50 insertions(+), 26 deletions(-)
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index f85c015..d71a2d6 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -6248,6 +6248,8 @@ SYSCALL_DEFINE5(perf_event_open,
- 		}
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 05dbc8b..c71b29a 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -26,7 +26,7 @@ struct event_symbol {
+ #ifdef PARSER_DEBUG
+ extern int parse_events_debug;
+ #endif
+-int parse_events_parse(struct list_head *list, int *idx);
++int parse_events_parse(void *data);
+ 
+ #define CHW(x) .type = PERF_TYPE_HARDWARE, .config = PERF_COUNT_HW_##x
+ #define CSW(x) .type = PERF_TYPE_SOFTWARE, .config = PERF_COUNT_SW_##x
+@@ -789,25 +789,27 @@ int parse_events_modifier(struct list_head *list, char *str)
+ 
+ int parse_events(struct perf_evlist *evlist, const char *str, int unset __used)
+ {
+-	LIST_HEAD(list);
+-	LIST_HEAD(list_tmp);
++	struct parse_events_data__events data = {
++		.list = LIST_HEAD_INIT(data.list),
++		.idx  = evlist->nr_entries,
++	};
+ 	YY_BUFFER_STATE buffer;
+-	int ret, idx = evlist->nr_entries;
++	int ret;
+ 
+ 	buffer = parse_events__scan_string(str);
+ 
+ #ifdef PARSER_DEBUG
+ 	parse_events_debug = 1;
+ #endif
+-	ret = parse_events_parse(&list, &idx);
++	ret = parse_events_parse(&data);
+ 
+ 	parse_events__flush_buffer(buffer);
+ 	parse_events__delete_buffer(buffer);
+ 	parse_events_lex_destroy();
+ 
+ 	if (!ret) {
+-		int entries = idx - evlist->nr_entries;
+-		perf_evlist__splice_list_tail(evlist, &list, entries);
++		int entries = data.idx - evlist->nr_entries;
++		perf_evlist__splice_list_tail(evlist, &data.list, entries);
+ 		return 0;
  	}
  
-+	get_online_cpus();
-+
- 	event = perf_event_alloc(&attr, cpu, task, group_leader, NULL,
- 				 NULL, NULL);
- 	if (IS_ERR(event)) {
-@@ -6387,6 +6389,8 @@ SYSCALL_DEFINE5(perf_event_open,
- 	perf_unpin_context(ctx);
- 	mutex_unlock(&ctx->mutex);
+diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
+index 8cac57a..dc3c83a 100644
+--- a/tools/perf/util/parse-events.h
++++ b/tools/perf/util/parse-events.h
+@@ -63,6 +63,11 @@ struct parse_events__term {
+ 	struct list_head list;
+ };
  
-+	put_online_cpus();
++struct parse_events_data__events {
++	struct list_head list;
++	int idx;
++};
 +
- 	event->owner = current;
+ int parse_events__is_hardcoded_term(struct parse_events__term *term);
+ int parse_events__term_num(struct parse_events__term **_term,
+ 			   int type_term, char *config, long num);
+@@ -83,8 +88,7 @@ int parse_events_add_pmu(struct list_head **list, int *idx,
+ 			 char *pmu , struct list_head *head_config);
+ void parse_events_update_lists(struct list_head *list_event,
+ 			       struct list_head *list_all);
+-void parse_events_error(struct list_head *list_all,
+-			int *idx, char const *msg);
++void parse_events_error(void *data, char const *msg);
+ int parse_events__test(void);
  
- 	mutex_lock(&current->perf_event_mutex);
-@@ -6415,6 +6419,7 @@ err_context:
- err_alloc:
- 	free_event(event);
- err_task:
-+	put_online_cpus();
- 	if (task)
- 		put_task_struct(task);
- err_group_fd:
+ void print_events(const char *event_glob);
+diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
+index 362cc59..e533bf7 100644
+--- a/tools/perf/util/parse-events.y
++++ b/tools/perf/util/parse-events.y
+@@ -1,7 +1,6 @@
+ 
+ %name-prefix "parse_events_"
+-%parse-param {struct list_head *list_all}
+-%parse-param {int *idx}
++%parse-param {void *_data}
+ 
+ %{
+ 
+@@ -64,18 +63,22 @@ events ',' event | event
+ event:
+ event_def PE_MODIFIER_EVENT
+ {
++	struct parse_events_data__events *data = _data;
++
+ 	/*
+ 	 * Apply modifier on all events added by single event definition
+ 	 * (there could be more events added for multiple tracepoint
+ 	 * definitions via '*?'.
+ 	 */
+ 	ABORT_ON(parse_events_modifier($1, $2));
+-	parse_events_update_lists($1, list_all);
++	parse_events_update_lists($1, &data->list);
+ }
+ |
+ event_def
+ {
+-	parse_events_update_lists($1, list_all);
++	struct parse_events_data__events *data = _data;
++
++	parse_events_update_lists($1, &data->list);
+ }
+ 
+ event_def: event_pmu |
+@@ -89,9 +92,10 @@ event_def: event_pmu |
+ event_pmu:
+ PE_NAME '/' event_config '/'
+ {
++	struct parse_events_data__events *data = _data;
+ 	struct list_head *list = NULL;
+ 
+-	ABORT_ON(parse_events_add_pmu(&list, idx, $1, $3));
++	ABORT_ON(parse_events_add_pmu(&list, &data->idx, $1, $3));
+ 	parse_events__free_terms($3);
+ 	$$ = list;
+ }
+@@ -99,91 +103,106 @@ PE_NAME '/' event_config '/'
+ event_legacy_symbol:
+ PE_VALUE_SYM '/' event_config '/'
+ {
++	struct parse_events_data__events *data = _data;
+ 	struct list_head *list = NULL;
+ 	int type = $1 >> 16;
+ 	int config = $1 & 255;
+ 
+-	ABORT_ON(parse_events_add_numeric(&list, idx, type, config, $3));
++	ABORT_ON(parse_events_add_numeric(&list, &data->idx,
++					  type, config, $3));
+ 	parse_events__free_terms($3);
+ 	$$ = list;
+ }
+ |
+ PE_VALUE_SYM sep_slash_dc
+ {
++	struct parse_events_data__events *data = _data;
+ 	struct list_head *list = NULL;
+ 	int type = $1 >> 16;
+ 	int config = $1 & 255;
+ 
+-	ABORT_ON(parse_events_add_numeric(&list, idx, type, config, NULL));
++	ABORT_ON(parse_events_add_numeric(&list, &data->idx,
++					  type, config, NULL));
+ 	$$ = list;
+ }
+ 
+ event_legacy_cache:
+ PE_NAME_CACHE_TYPE '-' PE_NAME_CACHE_OP_RESULT '-' PE_NAME_CACHE_OP_RESULT
+ {
++	struct parse_events_data__events *data = _data;
+ 	struct list_head *list = NULL;
+ 
+-	ABORT_ON(parse_events_add_cache(&list, idx, $1, $3, $5));
++	ABORT_ON(parse_events_add_cache(&list, &data->idx, $1, $3, $5));
+ 	$$ = list;
+ }
+ |
+ PE_NAME_CACHE_TYPE '-' PE_NAME_CACHE_OP_RESULT
+ {
++	struct parse_events_data__events *data = _data;
+ 	struct list_head *list = NULL;
+ 
+-	ABORT_ON(parse_events_add_cache(&list, idx, $1, $3, NULL));
++	ABORT_ON(parse_events_add_cache(&list, &data->idx, $1, $3, NULL));
+ 	$$ = list;
+ }
+ |
+ PE_NAME_CACHE_TYPE
+ {
++	struct parse_events_data__events *data = _data;
+ 	struct list_head *list = NULL;
+ 
+-	ABORT_ON(parse_events_add_cache(&list, idx, $1, NULL, NULL));
++	ABORT_ON(parse_events_add_cache(&list, &data->idx, $1, NULL, NULL));
+ 	$$ = list;
+ }
+ 
+ event_legacy_mem:
+ PE_PREFIX_MEM PE_VALUE ':' PE_MODIFIER_BP sep_dc
+ {
++	struct parse_events_data__events *data = _data;
+ 	struct list_head *list = NULL;
+ 
+-	ABORT_ON(parse_events_add_breakpoint(&list, idx, (void *) $2, $4));
++	ABORT_ON(parse_events_add_breakpoint(&list, &data->idx,
++					     (void *) $2, $4));
+ 	$$ = list;
+ }
+ |
+ PE_PREFIX_MEM PE_VALUE sep_dc
+ {
++	struct parse_events_data__events *data = _data;
+ 	struct list_head *list = NULL;
+ 
+-	ABORT_ON(parse_events_add_breakpoint(&list, idx, (void *) $2, NULL));
++	ABORT_ON(parse_events_add_breakpoint(&list, &data->idx,
++					     (void *) $2, NULL));
+ 	$$ = list;
+ }
+ 
+ event_legacy_tracepoint:
+ PE_NAME ':' PE_NAME
+ {
++	struct parse_events_data__events *data = _data;
+ 	struct list_head *list = NULL;
+ 
+-	ABORT_ON(parse_events_add_tracepoint(&list, idx, $1, $3));
++	ABORT_ON(parse_events_add_tracepoint(&list, &data->idx, $1, $3));
+ 	$$ = list;
+ }
+ 
+ event_legacy_numeric:
+ PE_VALUE ':' PE_VALUE
+ {
++	struct parse_events_data__events *data = _data;
+ 	struct list_head *list = NULL;
+ 
+-	ABORT_ON(parse_events_add_numeric(&list, idx, $1, $3, NULL));
++	ABORT_ON(parse_events_add_numeric(&list, &data->idx, $1, $3, NULL));
+ 	$$ = list;
+ }
+ 
+ event_legacy_raw:
+ PE_RAW
+ {
++	struct parse_events_data__events *data = _data;
+ 	struct list_head *list = NULL;
+ 
+-	ABORT_ON(parse_events_add_numeric(&list, idx, PERF_TYPE_RAW, $1, NULL));
++	ABORT_ON(parse_events_add_numeric(&list, &data->idx,
++					  PERF_TYPE_RAW, $1, NULL));
+ 	$$ = list;
+ }
+ 
+@@ -267,8 +286,7 @@ sep_slash_dc: '/' | ':' |
+ 
+ %%
+ 
+-void parse_events_error(struct list_head *list_all __used,
+-			int *idx __used,
++void parse_events_error(void *data __used,
+ 			char const *msg __used)
+ {
+ }
 -- 
 1.7.10.2
 
