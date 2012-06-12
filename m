@@ -1,45 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753994Ab2FLSFD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 14:05:03 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:53690 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753388Ab2FLSFC (ORCPT
+	id S1754084Ab2FLSHn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 14:07:43 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:43854 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753810Ab2FLSHN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 14:05:02 -0400
-Date: Tue, 12 Jun 2012 20:04:55 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Borislav Petkov <bp@amd64.org>, Stephane Eranian <eranian@google.com>,
-        Robert Richter <robert.richter@amd.com>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        andi@firstfloor.org, mingo@elte.hu, ming.m.lin@intel.com,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Dimitri Sivanich <sivanich@sgi.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>
-Subject: Re: [PATCH] perf/x86: check ucode before disabling PEBS on SandyBridge
-Message-ID: <20120612180455.GB11413@one.firstfloor.org>
-References: <1339161972.2507.13.camel@laptop> <20120612170725.GE5046@erda.amd.com> <CABPqkBRJAA7yRcswM1iYESSwhiGD4SEbir=q=ouQSevi7OAxqQ@mail.gmail.com> <1339521203.31548.92.camel@twins> <20120612171734.GI8404@aftab.osrc.amd.com> <1339521493.31548.93.camel@twins> <20120612172352.GA4802@aftab.osrc.amd.com> <1339521996.31548.95.camel@twins> <20120612173506.GB4802@aftab.osrc.amd.com> <1339522843.31548.100.camel@twins>
-Mime-Version: 1.0
+	Tue, 12 Jun 2012 14:07:13 -0400
+Date: Tue, 12 Jun 2012 11:07:09 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Ben Chan <benchan@chromium.org>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Sage Ahn <syahn@gctsemi.com>
+Subject: Re: [PATCH v2] staging: gdm72xx: Fix spinlock recursion on
+ gdm_usb_send_complete
+Message-ID: <20120612180709.GA9775@kroah.com>
+References: <1339522852-28066-1-git-send-email-benchan@chromium.org>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1339522843.31548.100.camel@twins>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <1339522852-28066-1-git-send-email-benchan@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Also, you can create a pebs event while updating micro-code. There's a
-> race window there if you don't check all cpus.
+On Tue, Jun 12, 2012 at 10:40:52AM -0700, Ben Chan wrote:
+> This patch fixes a spinlock recursion bug on several call sites of
+> gdm_usb_send_complete by not calling spin_lock_irqsave on
+> urb->context->tx_cxt->lock when the lock has already been acquired.
+> 
+> Signed-off-by: Ben Chan <benchan@chromium.org>
+> Cc: Sage Ahn <syahn@gctsemi.com>
+> ---
+> This revised patch simplifies the previous patch.
 
-The best proposal I've seen so far was to track the minimum ucode
-revision and check that on every syscall.
+Argh, I _just_ applied the previous patch :(
 
-This can be a single global, so it should not be very exepsnive.
+Care to send me an incremental one, fixing it up to look like this now
+so I don't have to revert your previous one?
 
-I can look at implementing that if that solution is agreeable with 
-everyone.
+thanks,
 
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
+greg k-h
