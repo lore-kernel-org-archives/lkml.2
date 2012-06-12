@@ -1,88 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752602Ab2FLLSI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 07:18:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34408 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751884Ab2FLLSH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 07:18:07 -0400
-Date: Tue, 12 Jun 2012 07:18:03 -0400
-From: "J. Bruce Fields" <bfields@redhat.com>
-To: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: NFSv4 regression, kernel BUG at fs/nfsd/nfs4state.c:1044!
-Message-ID: <20120612111802.GI31109@pad.fieldses.org>
-References: <20120610090342.GA5076@cucamonga.audible.transient.net>
- <20120611161425.GF31109@pad.fieldses.org>
- <20120612101339.GB30293@cucamonga.audible.transient.net>
+	id S1752608Ab2FLLVG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 07:21:06 -0400
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:40505 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751374Ab2FLLVD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 07:21:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120612101339.GB30293@cucamonga.audible.transient.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4FD0D5FF.2000104@wwwdotorg.org>
+References: <Pine.LNX.4.64.1205230020210.11851@axis700.grange>
+	<4FBCF9F0.1010901@wwwdotorg.org>
+	<Pine.LNX.4.64.1205231659310.21980@axis700.grange>
+	<4FBD01A6.4080807@wwwdotorg.org>
+	<Pine.LNX.4.64.1206070332100.9501@axis700.grange>
+	<4FD0D5FF.2000104@wwwdotorg.org>
+Date: Tue, 12 Jun 2012 13:21:02 +0200
+Message-ID: <CACRpkdZRgCnQktd7Q37Mho2uVWcxY2JS=tqkbFfg3MB5E97xCA@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: add a pinctrl_mux_group_selected() function
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 12, 2012 at 10:13:39AM +0000, Jamie Heilman wrote:
-> J. Bruce Fields wrote:
-> > On Sun, Jun 10, 2012 at 09:03:42AM +0000, Jamie Heilman wrote:
-> > > Upgrading my NFSv4 server from 3.3.8 to 3.4.2 I've managed to
-> > > reproduce this reliably:
-> > > 
-> > > ------------[ cut here ]------------
-> > > kernel BUG at fs/nfsd/nfs4state.c:1044!
-> > 
-> > That's 
-> > 
-> > 	free_client(struct nfs4_client *clp)
-> > 	{
-> > --->        	BUG_ON(!spin_is_locked(&client_lock));
-> > 
-> > 
-> > > invalid opcode: 0000 [#1] 
-> > > Modules linked in: md5 cpufreq_conservative cpufreq_stats cpufreq_powersave cpufreq_ondemand autofs4 quota_v2 quota_tree nfsd nfs_acl exportfs nfs lockd fscache auth_rpcgss sunrpc xt_mark xt_dscp cls_fw sch_htb iptable_nat nf_nat ipt_REJECT xt_multiport xt_mac xt_tcpudp iptable_mangle nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack xt_LOG xt_limit iptable_filter ip_tables x_tables dm_crypt dm_mod snd_hda_codec_via tpm_tis tpm via_rhine snd_hda_intel snd_hda_codec tpm_bios mii via_velocity snd_hwdep snd_pcm snd_timer snd soundcore snd_page_alloc evdev crc_ccitt via_agp agpgart button
-> > > 
-> > > Pid: 1804, comm: nfsd Not tainted 3.4.2 #3 To Be Filled By O.E.M. To Be Filled By O.E.M./To be filled by O.E.M.
-> > > EIP: 0060:[<f86ac683>] EFLAGS: 00010246 CPU: 0
-> > > EIP is at free_client.isra.47+0x3/0x5 [nfsd]
-> > > EAX: 00000000 EBX: e9d48800 ECX: e9d48030 EDX: f86b20f8
-> > > ESI: e9d48810 EDI: e9cf9ec0 EBP: e9cf9eb4 ESP: e9cf9eb4
-> > >  DS: 007b ES: 007b FS: 0000 GS: 00e0 SS: 0068
-> > > CR0: 8005003b CR2: b760bee0 CR3: 34d04000 CR4: 000006b0
-> > > DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
-> > > DR6: ffff0ff0 DR7: 00000400
-> > > Process nfsd (pid: 1804, ti=e9cf8000 task=e9cf4000 task.ti=e9cf8000)
-> > > Stack:
-> > >  e9cf9ed4 f86a6c00 e9d48828 e9cf9ec0 e9cf9ec0 e9d48800 e9d48000 00000000
-> > >  e9cf9f00 f86a6d36 00000000 000555c0 f53c0001 4fd43f69 00000001 7ad0b2a0
-> > >  f4c45000 f4c44060 00000360 e9cf9f3c f869f63c f86aff20 e9cb9000 00000000
-> > > Call Trace:
-> > >  [<f86a6c00>] expire_client+0xb1/0xb9 [nfsd]
-> > 
-> > And the only free_client call there is:
-> > 
-> > 	spin_lock(&client_lock);
-> > 	unhash_client_locked(clp);
-> > 	if (atomic_read(&clp->cl_refcount) == 0)
-> > --->		free_client(clp);
-> > 	spin_unlock(&client_lock);
-> > 
-> > So, that's strange.
-> 
-> OK, other observations which may or may not have any value:
-> - I can't trigger the BUG if I build with CONFIG_SMP (which obviously
->   changes the RCU as well)
-> - I can't trigger the BUG if I build with CONFIG_DEBUG_SPINLOCK
+On Thu, Jun 7, 2012 at 6:25 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 06/06/2012 08:05 PM, Guennadi Liakhovetski wrote:
 
-Oh, OK, so probably spin_is_locked() just isn't reliable in the
-!CONFIG_SMP case.  That would make sense.
+>> Sorry for not mentioning this in my previous reply, but there's more to
+>> it, not just data lines can optionally be present. Each of the 3 possible
+>> data-bus widths can also have Card Detection and Write Protect lines
+>> present, which brings the number of possible configurations to 4 * 3 =
+>> 12... We don't want to try all of them, right?
 
-So at a minimum we should change that BUG_ON to a WARN_ON_ONCE.
+No that seems tiresome. And as noted elsewhere pinctrl is not
+about maximum exercise of combinatorics. Nor should you encode
+all possible combinations in you map, only put in a "default" map which
+applied to that very board.
 
---b.
+>> Whereas just querying the
+>> pinctrl framework about which pins have been selected and configured seems
+>> to be quite straight forward to me. Or should we request several
+>> configurations from the driver? One of the 3 bus widthes, and additionally
+>> a card-detection and a write-protect configurations?
+>
+> I would personally recommend not deriving any information from the
+> selected pinctrl configuration at all. That way, you /can/ just use a
+> "default" state, and never have to search through multiple pinctrl
+> states. The board file will define that one state as setting up pinctrl
+> however it needs to be for that board - 1/4/8 bit, with/without
+> CD/WP/... signals/GPIOs etc.
 
-> - the "RPC: fragment too large" errors I mentioned appear to only occur
->   with a 3.5-rc client; I can't repro them with a 3.4 client
-> 
-> -- 
-> Jamie Heilman                     http://audible.transient.net/~jamie/
+I second this, if possible.
+
+> If you're using built-in CD/WP logic on the SD host controller and don't
+> have the ability to make those pins plain GPIOs, I think it's entirely
+> reasonable to require DT to contain properties to enable/disable those
+> features, e.g. I see fsl-imx-esdhc.txt already has fsl,cd-internal and
+> fsl,wp-internal properties for this purpose.
+
+This looks good to me.
+
+I'm just guessing that the case is such that the SD controller has
+built-in lines for CD and WP, but on its way to the external pin it
+passes a piece of hardware that has pin configuration capabilities,
+and in this case I'm semi-guessing that this piece of hardware
+has a mode for that pin/line called "gpio" and that is where all
+confusion comes from. But actually that has nothing to do with
+the Linux concept of GPIOs (which is just gpiolib and a big
+numberspace) as far as Linux is concerned, this is a pin config
+setting part of the "default" state and nothing else.
+
+Yours,
+Linus Walleij
