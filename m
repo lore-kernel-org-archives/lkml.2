@@ -1,44 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753501Ab2FLPiQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 11:38:16 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39045 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751701Ab2FLPiP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 11:38:15 -0400
-Message-ID: <4FD76260.3020807@redhat.com>
-Date: Tue, 12 Jun 2012 17:38:08 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1753467Ab2FLPix (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 11:38:53 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:60583 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751701Ab2FLPiv convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 11:38:51 -0400
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        hughd@google.com
-Subject: Re: [PATCH 0/2] msync improvements
-References: <1338497035-13014-1-git-send-email-pbonzini@redhat.com>
-In-Reply-To: <1338497035-13014-1-git-send-email-pbonzini@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1339479468-3815-1-git-send-email-zheng.z.yan@intel.com>
+References: <1339479468-3815-1-git-send-email-zheng.z.yan@intel.com>
+Date: Tue, 12 Jun 2012 17:38:50 +0200
+Message-ID: <CABPqkBQu1hTa2R-PKsygLqOSSD9nu3+xR-79pT-8bB8Y16CBuw@mail.gmail.com>
+Subject: Re: [PATCH V5 0/13] perf: Intel uncore pmu counting support
+From: Stephane Eranian <eranian@google.com>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: a.p.zijlstra@chello.nl, mingo@elte.hu, jolsa@redhat.com,
+        andi@firstfloor.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 31/05/2012 22:43, Paolo Bonzini ha scritto:
-> These two patches are improvements on the implementation of the msync
-> system call.  To give some context, I found them while working on
-> the implementation of a persistent dirty bitmap.
-> 
-> Paolo Bonzini (2):
->   msync: support syncing a small part of the file
->   msync: start async writeout when MS_ASYNC
-> 
->  include/linux/fs.h |    3 +-
->  mm/fadvise.c       |    2 +-
->  mm/filemap.c       |   11 +++++---
->  mm/msync.c         |   63 +++++++++++++++++++++++++++++++++-------------------
->  4 files changed, 50 insertions(+), 29 deletions(-)
-> 
+On Tue, Jun 12, 2012 at 7:37 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
+> Hi, all
+>
+> Here is the V5 patches to add uncore counting support for Nehalem,
+> Sandy Bridge and Sandy Bridge-EP, applied on top of current tip.
+> The code is based on Lin Ming's old patches.
+>
+> For Nehalem and Sandy Bridge-EP, A few general events are exported
+> under sysfs directory:
+>  /sys/bus/event_source/devices/${uncore_dev}/events/
+>
+On NHM, I tried:
+    perf stat -a -e Uncore/CLOCKTICKS/
+invalid or unsupported event: 'Uncore/CLOCKTICKS/'
 
-Ping?
+I started tracking this down but gave up because it's coming
+once again from the too complex parser. You are looking for
+a format match (inv, edge, cmask) with the word CLOCKTICKS
+instead of config.
 
-Paolo
+Please fix this.
+
+Also I don't think using upper case for the PMU name is a good idea.
+Just call it uncore.
+
+
+> Each file in the events directory defines an event. The content is
+> a string such as:
+>  config=1,config1=2
+>
+> You can use 'perf stat' to access to the uncore pmu. For example:
+>  perf stat -a -C 0 -e 'Uncore_iMC_0/CAS_COUNT_RD/' sleep 1
+>  perf stat -a -C 0 -e 'Uncore_iMC_0/event=CAS_COUNT_RD/' sleep 1
+>
+> Any comment is appreciated.
+> Thank you
+> ---
+> Changes since v1:
+>  - Modify perf tool to parse events from sysfs
+>  - A few minor code cleanup
+>
+> Changes since v2:
+>  - Place all events for a particular socket onto a single cpu
+>  - Make the events parser in perf tool reentrantable
+>  - A few code cleanup
+>
+> Changes since v3:
+>  - Use per cpu pointer to track uncore box
+>  - Rework the cpu hotplug code because topology_physical_package_id()
+>   return wrong result when the cpu is offline
+>  - Rework the event alias code, event terms are stored in the alias
+>   structure instead events string
+>
+> Changes since v4:
+>  - Include Jiri's uncore related changes patch set
+>  - Add pmu/event=alias/ syntax support
+>
