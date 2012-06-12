@@ -1,85 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751963Ab2FLDFK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 23:05:10 -0400
-Received: from linux-sh.org ([111.68.239.195]:38135 "EHLO linux-sh.org"
+	id S1752039Ab2FLDIO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 23:08:14 -0400
+Received: from mga02.intel.com ([134.134.136.20]:53512 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751032Ab2FLDFH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 23:05:07 -0400
-Date: Tue, 12 Jun 2012 12:04:43 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Stuart Menefy <stuart.menefy@st.com>, Arnd Bergmann <arnd@arndb.de>,
-        Peppe CAVALLARO <peppe.cavallaro@st.com>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        John Stultz <johnstul@us.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH (sh-2.6) 1/4] clksource: Generic timer infrastructure
-Message-ID: <20120612030442.GH10170@linux-sh.org>
-References: <1298369864-24429-1-git-send-email-peppe.cavallaro@st.com>
- <1298369864-24429-2-git-send-email-peppe.cavallaro@st.com>
- <201102241820.55873.arnd@arndb.de>
- <4D6D0EA3.9000504@st.com>
- <alpine.LFD.2.00.1103011630080.2701@localhost6.localdomain6>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1103011630080.2701@localhost6.localdomain6>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751032Ab2FLDIM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 23:08:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="151687501"
+Message-ID: <1339470490.7404.34.camel@yhuang-dev>
+Subject: Re: [BUGFIX] ACPI, APEI, Avoid too much error reporting in runtime
+From: Huang Ying <ying.huang@intel.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
+        Tony Luck <tony.luck@intel.com>, linux-acpi@vger.kernel.org,
+        stable@vger.kernel.org
+Date: Tue, 12 Jun 2012 11:08:10 +0800
+In-Reply-To: <1339421127.4942.8.camel@deadeye.wl.decadent.org.uk>
+References: <1339395822-12032-1-git-send-email-ying.huang@intel.com>
+	 <1339421127.4942.8.camel@deadeye.wl.decadent.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2-1+b1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 01, 2011 at 05:48:33PM +0100, Thomas Gleixner wrote:
-> On Tue, 1 Mar 2011, Stuart Menefy wrote:
-> > On 24/02/11 17:20, Arnd Bergmann wrote:
-> > > On Tuesday 22 February 2011, Peppe CAVALLARO wrote:
-> > >> From: Stuart Menefy <stuart.menefy@st.com>
-> > >>
-> > >> Many devices targeted at the embedded market provide a number of
-> > >> generic timers which are capable of generating interrupts at a
-> > >> requested rate. These can then be used in the implementation of drivers
-> > >> for other peripherals which require a timer interrupt, without having
-> > >> to provide an additional timer as part of that peripheral.
+On Mon, 2012-06-11 at 14:25 +0100, Ben Hutchings wrote:
+> On Mon, 2012-06-11 at 14:23 +0800, Huang Ying wrote:
+> > This patch fixed the following bug.
+> > 
+> > https://bugzilla.kernel.org/show_bug.cgi?id=43282
+> > 
+> > This is caused by a firmware bug checking (checking generic address
+> > register provided by firmware) in runtime.  The checking should be
+> > done in address mapping time instead of runtime to avoid too much
+> > error reporting in runtime.
+> > 
+> > Reported-by: Pawel Sikora <pluto@agmk.net>
+> > Signed-off-by: Huang Ying <ying.huang@intel.com>
+> > Tested-by: Jean Delvare <khali@linux-fr.org>
+> [...]
 > 
-> Why can't you just use an hrtimer and be done with it? Just because
-> there is some extra hardware in the chip?
-> 
-..
+> This is not the correct way to submit a patch for stable.  See
+> Documentation/stable_kernel_rules.txt.
 
-> If we get some reasonable explanation why an extra timer interrupt is
-> solving a specific problem better than hrtimers we can do that, but
-> that needs more thought than picking the first available clockevent
-> from a list. If we come to the conclusion, that we want/need this kind
-> of functionality then I really prefer not to create yet another piece
-> of infrastructure which deals with timer devices.
-> 
+Thanks for reminding.  Will resend the patch.
 
-I've run in to this issue again while working on local timer support on
-SH, as we're presently dependent on broadcast and dummy tick devices in
-the SMP case, while quite a few timer channels remain available for use.
-(Ironically, while the aforementioned driver was able to solve the
-problem with hrtimers, we have the same need to _provide_ hrtimers).
+Best Regards,
+Huang Ying
 
-In the sh_tmu/cmt/mtu2 case all timer channels are handed off as platform
-devices, and the block itself is global for all CPUs, though we can tweak
-the IRQ affinity relative to the cpumask. My tentative plan is to deal
-with the clockevent device as a percpu thing in the local timer case
-which will require some additional side infrastructure, but some
-additional work will need to be done in the clockevents code regardless.
-
-The ARM approach is a bit backwards from what we're interested in
-solving, as it uses its own local timer infrastructure and some
-TWD-specific API for registering per-cpu timers and only then inserting
-them in to the clockevents list. Whereas in our case we've got all of the
-timer channels available at platform probe time (earlier for the early
-timer case), and simply need a method for tracking unused channels as
-well as having a facility for picking them up and reconfiguring them
-later on when the secondary CPUs come up. I'm not at all interested in
-registering the same timer multiple times with slightly different APIs,
-having two different drivers fighting over the same register space is not
-a thought that fills me with joy.
-
-In any event, I'll hack on it a bit and see what falls out, patches
-later.
