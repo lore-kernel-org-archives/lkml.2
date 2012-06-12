@@ -1,73 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753775Ab2FLUEK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 16:04:10 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:35833 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753067Ab2FLUEI (ORCPT
+	id S1754090Ab2FLUHj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 16:07:39 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:34230 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753644Ab2FLUHg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 16:04:08 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6740"; a="200337857"
-Message-ID: <877b9088e2763c57e24f9931b5839a3e.squirrel@www.codeaurora.org>
-In-Reply-To: <x491ulkk4cb.fsf@segfault.boston.devel.redhat.com>
-References: <1339494088-29126-1-git-send-email-merez@codeaurora.org>
-    <1339494088-29126-2-git-send-email-merez@codeaurora.org>
-    <x491ulkk4cb.fsf@segfault.boston.devel.redhat.com>
-Date: Tue, 12 Jun 2012 13:04:08 -0700 (PDT)
-Subject: Re: [PATCH 1/1] block: Add eMMC4.5 packed commands unit-tests
-From: merez@codeaurora.org
-To: "Jeff Moyer" <jmoyer@redhat.com>
-Cc: "Maya Erez" <merez@codeaurora.org>, linux-mmc@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, "Lee Susman" <lsusman@codeaurora.org>,
-        "open list" <linux-kernel@vger.kernel.org>
-User-Agent: SquirrelMail/1.4.17
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+	Tue, 12 Jun 2012 16:07:36 -0400
+From: Sasha Levin <levinsasha928@gmail.com>
+To: lauro.venancio@openbossa.org, aloisio.almeida@openbossa.org,
+        sameo@linux.intel.com, linville@tuxdriver.com
+Cc: davej@redhat.com, linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Sasha Levin <levinsasha928@gmail.com>
+Subject: [PATCH] NFC: only put local on destruction if it was created before
+Date: Tue, 12 Jun 2012 22:08:19 +0200
+Message-Id: <1339531699-7377-1-git-send-email-levinsasha928@gmail.com>
+X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Not having 'local' is a valid case when a socket was created but never
+bound or connected to anything, so avoid putting 'local' if it was
+never created.
 
-On Tue, June 12, 2012 7:11 am, Jeff Moyer wrote:
-> Maya Erez <merez@codeaurora.org> writes:
->
->> Expose the following packed commands tests:
->> - Test the write packed commands list preparation
->> - Simulate a returned error code
->> - Send an invalid packed command to the card
->>
->> Signed-off-by: Lee Susman <lsusman@codeaurora.org>
->> Signed-off-by: Maya Erez <merez@codeaurora.org>
->>
->> diff --git a/drivers/mmc/card/Kconfig b/drivers/mmc/card/Kconfig
->> index 3b1f783..bbe8cac 100644
->> --- a/drivers/mmc/card/Kconfig
->> +++ b/drivers/mmc/card/Kconfig
->> @@ -67,3 +67,14 @@ config MMC_TEST
->>
->>  	  This driver is only of interest to those developing or
->>  	  testing a host driver. Most people should say N here.
->> +
->> +config MMC_BLOCK_TEST
->> +	tristate "MMC block test"
->> +	depends on MMC_BLOCK && IOSCHED_TEST
->
-> Umm, if this depends on your iosched-test patch, then you should make
-> them both part of a patch series.  It would have answered one of my
-> questions on that patch.
->
-> Cheers,
-> Jeff
->
-I will combine them in the next patch.
+Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+---
+ net/nfc/llcp/sock.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-Thanks,
-Maya Erez
-
+diff --git a/net/nfc/llcp/sock.c b/net/nfc/llcp/sock.c
+index 2c0b317..54daa10 100644
+--- a/net/nfc/llcp/sock.c
++++ b/net/nfc/llcp/sock.c
+@@ -710,7 +710,8 @@ void nfc_llcp_sock_free(struct nfc_llcp_sock *sock)
+ 
+ 	sock->parent = NULL;
+ 
+-	nfc_llcp_local_put(sock->local);
++	if (sock->local)
++		nfc_llcp_local_put(sock->local);
+ }
+ 
+ static int llcp_sock_create(struct net *net, struct socket *sock,
 -- 
-Sent by consultant of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+1.7.8.6
 
