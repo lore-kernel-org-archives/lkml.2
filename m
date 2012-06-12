@@ -1,77 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752233Ab2FLJM3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 05:12:29 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:36404 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751508Ab2FLJM1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 05:12:27 -0400
-Message-ID: <1339492335.31548.50.camel@twins>
-Subject: Re: [Patch][perf] Invoke __perf_event_disable without an IPI
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: prasad@linux.vnet.ibm.com
-Cc: Paul Mackerras <paulus@samba.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Edjunior Barbosa Machado <emachado@linux.vnet.ibm.com>,
-        "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-Date: Tue, 12 Jun 2012 11:12:15 +0200
-In-Reply-To: <20120612060626.GB2538@in.ibm.com>
-References: <20120611060242.GA2538@in.ibm.com>
-	 <1339413213.30462.11.camel@twins> <20120612060626.GB2538@in.ibm.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1752144Ab2FLJOX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 05:14:23 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37666 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751182Ab2FLJOV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 05:14:21 -0400
+Date: Tue, 12 Jun 2012 11:14:19 +0200
+From: Jan Kara <jack@suse.cz>
+To: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Jan Kara <jack@suse.cz>, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH v3 7/9] ext2: use memweight()
+Message-ID: <20120612091419.GC6021@quack.suse.cz>
+References: <1339203038-13069-1-git-send-email-akinobu.mita@gmail.com>
+ <1339203038-13069-7-git-send-email-akinobu.mita@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339203038-13069-7-git-send-email-akinobu.mita@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-06-12 at 11:36 +0530, K.Prasad wrote:
-> On Mon, Jun 11, 2012 at 01:13:33PM +0200, Peter Zijlstra wrote:
-> > On Mon, 2012-06-11 at 11:32 +0530, K.Prasad wrote:
-> > 
-> > > diff --git a/kernel/events/core.c b/kernel/events/core.c
-> > > index fd126f8..0e2c1eb 100644
-> > > --- a/kernel/events/core.c
-> > > +++ b/kernel/events/core.c
-> > > @@ -1302,6 +1302,7 @@ static int __perf_event_disable(void *info)
-> > >   */
-> > >  void perf_event_disable(struct perf_event *event)
-> > >  {
-> > > +	int ret;
-> > >  	struct perf_event_context *ctx = event->ctx;
-> > >  	struct task_struct *task = ctx->task;
-> > >  
-> > > @@ -1314,6 +1315,17 @@ void perf_event_disable(struct perf_event *event)
-> > >  	}
-> > >  
-> > >  retry:
-> > > +	/*
-> > > +	 * perf_event_disable may be called when interrupts are disabled.
-> > > +	 * For e.g. hw_breakpoint_handler exception in PowerPC. Hence using
-> > > +	 * IPIs to invoke __perf_event_disable is not always suitable. When
-> > > +	 * possible invoke __perf_event_disable directly.
-> > > +	 */
-> > > +	if ((task_cpu(task) == smp_processor_id()) && irqs_disabled()) {
-> > 
-> > Urgh.. 
-> > 
-> > So what's the callchain for the ppc->hw_bp->perf that triggers this?
+On Sat 09-06-12 09:50:36, Akinobu Mita wrote:
+> Convert ext2_count_free() to use memweight() instead of table lookup
+> based counting clear bits implementation.  This change only affects
+> the code segments enabled by EXT2FS_DEBUG.
 > 
-> Hardware breakpoints for user-space have traditionally operated in a
-> one-shot mode i.e. breakpoint is disabled after the first hit by
-> invoking perf_event_disable from hw_breakpoint_handler.
+> Note that this memweight() call can't be replaced with a single
+> bitmap_weight() call, although the pointer to the memory area is
+> aligned to long-word boundary.  Because the size of the memory area
+> may not be a multiple of BITS_PER_LONG, then it returns wrong value on
+> big-endian architecture.
+> 
+> This also includes the following changes.
+> 
+> - Remove unnecessary map == NULL check in ext2_count_free() which
+>   always takes non-null pointer as the memory area.
+> 
+> - Fix printk format warning that only reveals with EXT2FS_DEBUG.
+> 
+> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+> Cc: Jan Kara <jack@suse.cz>
+  Acked-by: Jan Kara <jack@suse.cz>
 
-I take it this is the same across architectures? So basically everybody
-suffers this?
+								Honza
 
-Hmm,. x86 doesn't seem to do this.. are you saying breakpoint semantics
-differ across architectures? Really?
-
-Oh man how I do hate this breakpoint crap.. I guess you might as well
-use __perf_event_disable() directly, no point in butchering
-perf_event_disable() or even task_function_call().
+> Cc: linux-ext4@vger.kernel.org
+> ---
+> v3: rewrite to keep ext2_count_free() as a wrapper for memweight()
+> 
+>  fs/ext2/balloc.c |   14 ++------------
+>  fs/ext2/ialloc.c |    1 +
+>  2 files changed, 3 insertions(+), 12 deletions(-)
+> 
+> diff --git a/fs/ext2/balloc.c b/fs/ext2/balloc.c
+> index 1c36139..376aa77 100644
+> --- a/fs/ext2/balloc.c
+> +++ b/fs/ext2/balloc.c
+> @@ -1444,19 +1444,9 @@ ext2_fsblk_t ext2_new_block(struct inode *inode, unsigned long goal, int *errp)
+>  
+>  #ifdef EXT2FS_DEBUG
+>  
+> -static const int nibblemap[] = {4, 3, 3, 2, 3, 2, 2, 1, 3, 2, 2, 1, 2, 1, 1, 0};
+> -
+> -unsigned long ext2_count_free (struct buffer_head * map, unsigned int numchars)
+> +unsigned long ext2_count_free(struct buffer_head *map, unsigned int numchars)
+>  {
+> -	unsigned int i;
+> -	unsigned long sum = 0;
+> -
+> -	if (!map)
+> -		return (0);
+> -	for (i = 0; i < numchars; i++)
+> -		sum += nibblemap[map->b_data[i] & 0xf] +
+> -			nibblemap[(map->b_data[i] >> 4) & 0xf];
+> -	return (sum);
+> +	return numchars * BITS_PER_BYTE - memweight(map->b_data, numchars);
+>  }
+>  
+>  #endif  /*  EXT2FS_DEBUG  */
+> diff --git a/fs/ext2/ialloc.c b/fs/ext2/ialloc.c
+> index c13eb7b..8f370e01 100644
+> --- a/fs/ext2/ialloc.c
+> +++ b/fs/ext2/ialloc.c
+> @@ -644,6 +644,7 @@ unsigned long ext2_count_free_inodes (struct super_block * sb)
+>  	}
+>  	brelse(bitmap_bh);
+>  	printk("ext2_count_free_inodes: stored = %lu, computed = %lu, %lu\n",
+> +		(unsigned long)
+>  		percpu_counter_read(&EXT2_SB(sb)->s_freeinodes_counter),
+>  		desc_count, bitmap_count);
+>  	return desc_count;
+> -- 
+> 1.7.7.6
+> 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
