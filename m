@@ -1,117 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753225Ab2FLCOX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 22:14:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64852 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752202Ab2FLCOW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 22:14:22 -0400
-Date: Mon, 11 Jun 2012 23:13:52 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Eric B Munson <emunson@mgebm.net>
-Cc: sedat.dilek@gmail.com, kvm@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        x86@kernel.org
-Subject: Re: WARNING: at arch/x86/kernel/kvmclock.c:127
-Message-ID: <20120612021352.GA2845@amt.cnet>
-References: <CA+icZUUD+oHPK=L6iHg-FfkpXVCPQTKHuzwDo9EaYYjYmYePCA@mail.gmail.com>
- <0669740d6e2f3648f1c5c9a50e72f6eb@mgebm.net>
- <20120611220719.GA27415@amt.cnet>
- <ff5b99576bc8f0cbe81a432ddae5f9b5@mgebm.net>
+	id S1753274Ab2FLCQW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 22:16:22 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:35789 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752202Ab2FLCQV convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Jun 2012 22:16:21 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -9
+X-BigFish: VS-9(zzbb2dI98dI9371I148cI542M1432Izz1202hzz8275bhz2dh2a8h668h839h8e2h8e3h944hd25hf0ahbe9i)
+From: Jia Hongtao-B38951 <B38951@freescale.com>
+To: Rob Herring <robherring2@gmail.com>
+CC: "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg KH <greg@kroah.com>
+Subject: RE: [PATCH V3 5/6] Avoid duplicate probe for of platform devices
+Thread-Topic: [PATCH V3 5/6] Avoid duplicate probe for of platform devices
+Thread-Index: AQHNRV2d07XgG54zbUKKBQTDlvBob5b1mBOAgABd/RA=
+Date: Tue, 12 Jun 2012 02:16:18 +0000
+Message-ID: <412C8208B4A0464FA894C5F0C278CD5D01A0972B@039-SN1MPN1-002.039d.mgd.msft.net>
+References: <1339148585-16947-1-git-send-email-B38951@freescale.com>
+ <4FD60FB1.7050106@gmail.com>
+In-Reply-To: <4FD60FB1.7050106@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.193.20.48]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <ff5b99576bc8f0cbe81a432ddae5f9b5@mgebm.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 11, 2012 at 06:10:34PM -0400, Eric B Munson wrote:
-> On Mon, 11 Jun 2012 19:07:19 -0300, Marcelo Tosatti wrote:
-> >On Mon, Jun 11, 2012 at 05:47:00PM -0400, Eric B Munson wrote:
-> >>On Sun, 10 Jun 2012 17:47:24 +0200, Sedat Dilek wrote:
-> >>>Hi,
-> >>>
-> >>>I see the same warning especially when resuming from a suspend (see
-> >>>timestamps >=30-35sec) between Linux v3.5-rc1..v3.5-rc2.
-> >>>
-> >>>$ sudo grep kvmclock.c /var/log/kern.log
-> >>>Jun  4 21:11:32 fambox kernel: [  784.037237] WARNING: at
-> >>>arch/x86/kernel/kvmclock.c:127
-> >>>kvm_check_and_clear_guest_paused+0x52/0x60()
-> >>>Jun  5 20:35:57 fambox kernel: [ 1928.458060] WARNING: at
-> >>>arch/x86/kernel/kvmclock.c:127
-> >>>kvm_check_and_clear_guest_paused+0x52/0x60()
-> >>>Jun  8 09:35:52 fambox kernel: [ 3290.134637] WARNING: at
-> >>>arch/x86/kernel/kvmclock.c:127
-> >>>kvm_check_and_clear_guest_paused+0x52/0x60()
-> >>>Jun  8 09:35:52 fambox kernel: [ 3290.238592] WARNING: at
-> >>>arch/x86/kernel/kvmclock.c:127
-> >>>kvm_check_and_clear_guest_paused+0x52/0x60()
-> >>>Jun  8 12:11:20 fambox kernel: [ 5777.023571] WARNING: at
-> >>>arch/x86/kernel/kvmclock.c:127
-> >>>kvm_check_and_clear_guest_paused+0x52/0x60()
-> >>>Jun  9 13:32:50 fambox kernel: [ 2778.842695] WARNING: at
-> >>>arch/x86/kernel/kvmclock.c:127
-> >>>kvm_check_and_clear_guest_paused+0x52/0x60()
-> >>>
-> >>>From [1]:
-> >>>
-> >>>"...The warning itself is not required for the check_and_clear
-> >>>function and can be removed as far as I am concerned."
-> >>>
-> >>>From [2] commit 3b5d56b9317fa7b5407dff1aa7b115bf6cdbd494
-> >>("kvmclock:
-> >>>Add functions to check if the host has stopped the vm")
-> >>>...
-> >>>+bool kvm_check_and_clear_guest_paused(void)
-> >>>+{
-> >>>+       bool ret = false;
-> >>>+       struct pvclock_vcpu_time_info *src;
-> >>>+
-> >>>+       /*
-> >>>+        * per_cpu() is safe here because this function is only
-> >>>called from
-> >>>+        * timer functions where preemption is already disabled.
-> >>>+        */
-> >>>+       WARN_ON(!in_atomic());
-> >>>+       src = &__get_cpu_var(hv_clock);
-> >>>+       if ((src->flags & PVCLOCK_GUEST_STOPPED) != 0) {
-> >>>+               __this_cpu_and(hv_clock.flags,
-> >>>~PVCLOCK_GUEST_STOPPED);
-> >>>+               ret = true;
-> >>>+       }
-> >>>+
-> >>>+       return ret;
-> >>>+}
-> >>>+EXPORT_SYMBOL_GPL(kvm_check_and_clear_guest_paused);
-> >>>+
-> >>>...
-> >>>( The export macro was dropped in a followup commit. )
-> >>>
-> >>>So you mean "WARN_ON(!in_atomic());" can be deleted?
-> >
-> >Yes.
-> >
-> >>When I wrote the patch originally, I was under the (incorrect)
-> >>assumption that the watch dog was only ever reset in an atomic
-> >>context.  Given that this is not the case, the warning can be
-> >>removed.  Though before that happens, I have a question: if this is
-> >>called outside of an atomic context, is the use of __get_cpu_Var()
-> >>and __this_cpu_and() invalid?
-> >
-> >It remains valid because its called with interrupts
-> >disabled (see migrate_hrtimers).
-> 
-> Thank you, that was my assumption but I wanted to confirm.  I do not
-> have access to my working kernel tree and won't for 2 days.  I can't
-> get to the patch until late Wednesday so if someone else wants to
-> work that up I'd appreciate it.
-> 
-> Thanks,
-> Eric
 
-Removed the warning in kvm.git master.
+
+> -----Original Message-----
+> From: Rob Herring [mailto:robherring2@gmail.com]
+> Sent: Monday, June 11, 2012 11:33 PM
+> To: Jia Hongtao-B38951
+> Cc: devicetree-discuss@lists.ozlabs.org; linux-kernel@vger.kernel.org;
+> Greg KH
+> Subject: Re: [PATCH V3 5/6] Avoid duplicate probe for of platform devices
+> 
+> [adding lkml and Greg KH]
+> 
+> On 06/08/2012 04:43 AM, Jia Hongtao wrote:
+> > We changed the pcie controller driver to platform driver so that the
+> PCI
+> > of platform devices need to be created earlier in the arch_initcall
+> stage
+> > according to the original timing of calling fsl_add_bridge(). So we do
+> PCI
+> > probing separately from other devices. But probing more than once could
+> > cause duplication warning. We add check if the devices have already
+> probed
+> > before probing any devices to avoid duplication warning.
+> >
+> > Signed-off-by: Jia Hongtao <B38951@freescale.com>
+> > Signed-off-by: Li Yang <leoli@freescale.com>
+> > ---
+> 
+> Where's v1 and v2 history?
+
+Sorry, there is no V1 and V2.
+These are a series of patches and only this one related to device-tree operation.
+V3 are for other patches.
+I will aware of that in the future.
+Thanks for mentioning.
+
+> 
+> >  drivers/of/platform.c |   18 ++++++++++++------
+> >  1 files changed, 12 insertions(+), 6 deletions(-)
+> >
+> > diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+> > index a37330e..3aab01f 100644
+> > --- a/drivers/of/platform.c
+> > +++ b/drivers/of/platform.c
+> > @@ -139,6 +139,18 @@ struct platform_device *of_device_alloc(struct
+> device_node *np,
+> >  	if (!dev)
+> >  		return NULL;
+> >
+> > +	dev->dev.of_node = of_node_get(np);
+> > +	if (bus_id)
+> > +		dev_set_name(&dev->dev, "%s", bus_id);
+> > +	else
+> > +		of_device_make_bus_id(&dev->dev);
+> > +
+> > +	if (kset_find_obj(dev->dev.kobj.kset, kobject_name(&dev->dev.kobj)))
+> {
+> 
+> Is this a fast operation? I worry that we'd be doing this for every
+> device creation. Looking at kobj's seems too low level as well.
+>
+
+To us this is also the main concern.
+
+-Jia Hongtao.
+ 
+> Perhaps moving the warning up the call stack and making the relevant
+> functions __must_check would work.
+> 
+> Rob
+> 
+> > +		kfree(dev);
+> > +		of_node_put(np);
+> > +		return NULL;
+> > +	}
+> > +
+> >  	/* count the io and irq resources */
+> >  	while (of_address_to_resource(np, num_reg, &temp_res) == 0)
+> >  		num_reg++;
+> > @@ -161,17 +173,11 @@ struct platform_device *of_device_alloc(struct
+> device_node *np,
+> >  		WARN_ON(of_irq_to_resource_table(np, res, num_irq) !=
+> num_irq);
+> >  	}
+> >
+> > -	dev->dev.of_node = of_node_get(np);
+> >  #if defined(CONFIG_MICROBLAZE)
+> >  	dev->dev.dma_mask = &dev->archdata.dma_mask;
+> >  #endif
+> >  	dev->dev.parent = parent;
+> >
+> > -	if (bus_id)
+> > -		dev_set_name(&dev->dev, "%s", bus_id);
+> > -	else
+> > -		of_device_make_bus_id(&dev->dev);
+> > -
+> >  	return dev;
+> >  }
+> >  EXPORT_SYMBOL(of_device_alloc);
+> 
+
 
