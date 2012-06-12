@@ -1,110 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752360Ab2FLLBL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 07:01:11 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:54898 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751327Ab2FLLBJ (ORCPT
+	id S1752601Ab2FLLB4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 07:01:56 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:43457 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751923Ab2FLLBy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 07:01:09 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-mm@kvack.org, dhillf@gmail.com, rientjes@google.com, mhocko@suse.cz,
-        akpm@linux-foundation.org, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH -V8 15/16] hugetlb/cgroup: migrate hugetlb cgroup info from oldpage to new page during migration
-In-Reply-To: <4FD70329.4080009@jp.fujitsu.com>
-References: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1339232401-14392-16-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <4FD70329.4080009@jp.fujitsu.com>
-User-Agent: Notmuch/0.13.2+35~g0ff57e7 (http://notmuchmail.org) Emacs/24.1.50.1 (x86_64-unknown-linux-gnu)
-Date: Tue, 12 Jun 2012 16:30:16 +0530
-Message-ID: <87aa08okvz.fsf@skywalker.in.ibm.com>
+	Tue, 12 Jun 2012 07:01:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-x-cbid: 12061200-5490-0000-0000-00000193D1D6
+In-Reply-To: <1339183331-4108-1-git-send-email-devendra.aaru@gmail.com>
+References: <1339183331-4108-1-git-send-email-devendra.aaru@gmail.com>
+Date: Tue, 12 Jun 2012 13:01:53 +0200
+Message-ID: <CACRpkdb0TefNMcXyTRkz6Kv5FifJMmSoXzFTQgKhCt6B0T5sDA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] pinctrl: pinctrl-imx: free allocated pinctrl_map
+ structure only once and use kernel facilities for IMX_PMX_DUMP
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Devendra Naga <devendra.aaru@gmail.com>
+Cc: Dong Aisheng <aisheng.dong@freescale.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
+On Fri, Jun 8, 2012 at 9:22 PM, Devendra Naga <devendra.aaru@gmail.com> wrote:
 
-> (2012/06/09 18:00), Aneesh Kumar K.V wrote:
->> From: "Aneesh Kumar K.V"<aneesh.kumar@linux.vnet.ibm.com>
->> 
->> With HugeTLB pages, hugetlb cgroup is uncharged in compound page destructor.  Since
->> we are holding a hugepage reference, we can be sure that old page won't
->> get uncharged till the last put_page().
->> 
->> Signed-off-by: Aneesh Kumar K.V<aneesh.kumar@linux.vnet.ibm.com>
+> a) as we allocate the pinctrl_map structure at imx_dt_node_to_map at  line 167, anyway
+>   if its an element, or a num_elements * (sizeof(type)) elements allocated to one single
+>   pointer must be freed only once.
 >
-> one comment.
+> CASE. A)
 >
->> ---
->>   include/linux/hugetlb_cgroup.h |    8 ++++++++
->>   mm/hugetlb_cgroup.c            |   21 +++++++++++++++++++++
->>   mm/migrate.c                   |    5 +++++
->>   3 files changed, 34 insertions(+)
->> 
->> diff --git a/include/linux/hugetlb_cgroup.h b/include/linux/hugetlb_cgroup.h
->> index ba4836f..b64d067 100644
->> --- a/include/linux/hugetlb_cgroup.h
->> +++ b/include/linux/hugetlb_cgroup.h
->> @@ -63,6 +63,8 @@ extern void hugetlb_cgroup_uncharge_page(int idx, unsigned long nr_pages,
->>   extern void hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
->>   					   struct hugetlb_cgroup *h_cg);
->>   extern int hugetlb_cgroup_file_init(int idx) __init;
->> +extern void hugetlb_cgroup_migrate(struct page *oldhpage,
->> +				   struct page *newhpage);
->>   #else
->>   static inline struct hugetlb_cgroup *hugetlb_cgroup_from_page(struct page *page)
->>   {
->> @@ -112,5 +114,11 @@ static inline int __init hugetlb_cgroup_file_init(int idx)
->>   {
->>   	return 0;
->>   }
->> +
->> +static inline void hugetlb_cgroup_migrate(struct page *oldhpage,
->> +					  struct page *newhpage)
->> +{
->> +	return;
->> +}
->>   #endif  /* CONFIG_MEM_RES_CTLR_HUGETLB */
->>   #endif
->> diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
->> index c2b7b8e..2d384fe 100644
->> --- a/mm/hugetlb_cgroup.c
->> +++ b/mm/hugetlb_cgroup.c
->> @@ -394,6 +394,27 @@ int __init hugetlb_cgroup_file_init(int idx)
->>   	return 0;
->>   }
->> 
->> +void hugetlb_cgroup_migrate(struct page *oldhpage, struct page *newhpage)
->> +{
->> +	struct hugetlb_cgroup *h_cg;
->> +
->> +	VM_BUG_ON(!PageHuge(oldhpage));
->> +
->> +	if (hugetlb_cgroup_disabled())
->> +		return;
->> +
->> +	spin_lock(&hugetlb_lock);
->> +	h_cg = hugetlb_cgroup_from_page(oldhpage);
->> +	set_hugetlb_cgroup(oldhpage, NULL);
->> +	cgroup_exclude_rmdir(&h_cg->css);
->> +
->> +	/* move the h_cg details to new cgroup */
->> +	set_hugetlb_cgroup(newhpage, h_cg);
->> +	spin_unlock(&hugetlb_lock);
->> +	cgroup_release_and_wakeup_rmdir(&h_cg->css);
->> +	return;
+> as new_map is not moved and allocated like,
 >
+> for (i = 0; i < MAX_ELEMS; i++) {
+>    new_map[i] = kmalloc(numelems * size, GFP_KERNEL);
+> }
 >
-> Why do you need  cgroup_exclude/release rmdir here ? you holds hugetlb_lock()
-> and charges will not be empty, here.
+> its freed as
 >
+> for (i = 0; i < MAX_ELEMS; i++) {
+>    kfree(new_map[i]);
+> }
+>
+> CASE. B)
+> and its allocated like
+>        new_map = kmalloc(numelems * size, GFP_KERNEL);
+>
+> it just needs kfree not as case A's.
+>
+> b) use KERN_DEBUG facility for the IMX_PMX_DUMP macro.
+>
+> Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
+> Acked-by: Dong Aisheng <dong.aisheng@linaro.org>
 
- But even without empty charge, we can still remove the cgroup right ?
- ie if we don't have any task but some charge in the cgroup because of
- shared mmap in hugetlbfs. 
+OK I applied this, which I *think* is the last version of the patch,
+please double-check that the right one is in my git.
 
--aneesh
+This was send the 9th but not tagged v3 so I was a bit confused...
 
+Yours,
+Linus Walleij
