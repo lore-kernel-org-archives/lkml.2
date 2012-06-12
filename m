@@ -1,68 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751499Ab2FLChF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 22:37:05 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:34697 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751054Ab2FLChD (ORCPT
+	id S1751593Ab2FLClR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 22:41:17 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:52884 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751054Ab2FLClP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 22:37:03 -0400
-X-AuditID: b753bd60-9f483ba000000655-e6-4fd6ab4c19d5
-X-AuditID: b753bd60-9f483ba000000655-e6-4fd6ab4c19d5
-Message-ID: <4FD6AB49.3010809@hitachi.com>
-Date: Tue, 12 Jun 2012 11:36:57 +0900
-From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Reply-To: yoshihiro.yunomae.ez@hitachi.com
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Mon, 11 Jun 2012 22:41:15 -0400
 MIME-Version: 1.0
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: ivring driver
-References: <20120605152947.GA21787@Krystal>
-In-Reply-To: <20120605152947.GA21787@Krystal>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <20120612014239.GA32087@kroah.com>
+References: <201206071508.15674.hartleys@visionengravers.com>
+	<20120611235657.GA26721@kroah.com>
+	<ADE657CA350FB648AAC2C43247A983F0020698DBC4A9@AUSP01VMBX24.collaborationhost.net>
+	<20120612004421.GA30997@kroah.com>
+	<ADE657CA350FB648AAC2C43247A983F0020698DBC4B9@AUSP01VMBX24.collaborationhost.net>
+	<20120612014239.GA32087@kroah.com>
+Date: Mon, 11 Jun 2012 22:41:14 -0400
+Message-ID: <CACqU3MXmYCcpzOYaJKa-x=Vn-iFDmXbAPxbFwN0nvt+x3h7UvQ@mail.gmail.com>
+Subject: Re: [PATCH] staging: comedi: cleanup alloc_subdevices
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: H Hartley Sweeten <hartleys@visionengravers.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
+        "abbotti@mev.co.uk" <abbotti@mev.co.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/06/06 0:29), Mathieu Desnoyers wrote:
-> Hi Yoshihiro,
+Hi,
+
+On Mon, Jun 11, 2012 at 9:42 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Mon, Jun 11, 2012 at 07:49:46PM -0500, H Hartley Sweeten wrote:
+>> On Monday, June 11, 2012 5:44 PM, Greg KH wrote:
+>> > On Mon, Jun 11, 2012 at 07:07:41PM -0500, H Hartley Sweeten wrote:
+>> >> 2, 3, and 4 probably go together. They all deal with the 'num_subdevices'
+>> >>
+>> >> 1 can be a separate patch as long as I don't do the rename.
+>> >>
+>> >> 5, 6, and 7 could all go together with the final rename of the function.
+>> >>
+>> >> Does that sound ok?
+>> >
+>> > No, why not just break it up into 7 different patches?  You are doing
+>> > different things, which would you rather review for correctness, 7
+>> > simple, tiny patches, or some that do multiple things at the same time
+>> > that are bigger?
+>>
+>> Ok. I just posted the first one. It's still pretty big since it hits every
+>> comedi driver file.
+>>
+>> Please ignore the first post. I fat-fingered the prototype in the header.
+>> v2 is correct.
+>>
+>> Also, I have never done local commits to my Linux-next tree so I'm not
+>> sure how to proceed with the incremental patches. If it's ok with you
+>> I'll just wait for each patch to go into staging.
 >
-> I stumbled on your post on ivring (https://lkml.org/lkml/2012/6/5/143)
-> for buffering trace data from guest to host. I notice that it would be
-> very interesting to see a comparison of its performance against:
+> Create a brach from the one you are working on:
+>        git branch -b my_branch
+> make a change and commit it
+> commit another one
+> and so on.
+actually, there is a simple way to do that. Simply start from the big
+commit, then
+
+# git reset --soft HEAD^
+# git reset
+
+Then do 7 iterations of:
+
+# git add -p
+
+Adding or not relevant hunks for the current change to be committed,
+eventually manually editing them if two or more change end up being
+mangled together.
+
+my 0.2c,
+ - Arnaud
+
+> then create the patches:
+>        git format-patch original_branch_name..my_branch
+> and use git send-email to send them off in order.
 >
-> - ftrace ring buffer
-> - perf ring buffer
-> - lttng 2.0 ring buffer
-> - lttng-ust 2.0 (user-space tracing) ring buffer
-
-Hi Mathieu. Thank you for commenting on how to compare among
-ring-buffer's performances. And sorry, I'm late for replying to you.
-
-> Comparing only with network-related mechanisms does not seem to provide
-> a complete picture of where it stands wrt other ring buffers out there.
+> Otherwise we are going to take 7 weeks when I apply one of your patches
+> a week :)
 >
-> One of the metric we have used in the past is the number of nanoseconds
-> it takes to write a single event, based on a test that writes lots of
-> events into various buffer sizes, into flight recorder mode buffers
-> (which overwrites oldest information on buffer full condition, with data
-> collection to disk disabled, to remove I/O from the picture -- I/O can
-> then be performed in "snapshot" mode, after some error condition is
-> detected).
-
-OK, I see. When the overhead of ring-buffers will be evaluated in
-the next, I may use the metric as a reference.
-
-Thank you,
-
--- 
-Yoshihiro YUNOMAE
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: yoshihiro.yunomae.ez@hitachi.com
+> thanks,
+>
+> greg k-h
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
