@@ -1,115 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751803Ab2FLHOy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 03:14:54 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:65363 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751125Ab2FLHOw (ORCPT
+	id S1751836Ab2FLHQx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 03:16:53 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:61470 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751125Ab2FLHQv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 03:14:52 -0400
-Date: Tue, 12 Jun 2012 09:16:49 +0200
-From: Fabio Baltieri <fabio.baltieri@gmail.com>
-To: Shuah Khan <shuahkhan@gmail.com>
-Cc: Bryan Wu <bryan.wu@canonical.com>, linux-leds@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>
-Subject: Re: [PATCH] leds: use led_brightness_set in led_trigger_event
-Message-ID: <20120612071649.GA1306@gmail.com>
-References: <1339448260-1733-1-git-send-email-fabio.baltieri@gmail.com>
- <1339450705.23857.16.camel@lorien2>
+	Tue, 12 Jun 2012 03:16:51 -0400
+X-AuditID: 9c93016f-b7c3cae000001954-30-4fd6ecde924b
+Message-ID: <4FD6ECE2.6070901@kernel.org>
+Date: Tue, 12 Jun 2012 16:16:50 +0900
+From: Minchan Kim <minchan@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339450705.23857.16.camel@lorien2>
-X-Operating-System: Linux balto-eee 3.5.0-rc1-balto-eee-00012-g1f35d37
- GNU/Linux
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Newsgroups: gmane.linux.kernel
+To: John Stultz <john.stultz@linaro.org>
+CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
+        Andrea Righi <andrea@betterlinux.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Taras Glek <tgek@mozilla.com>, Mike Hommey <mh@glandium.org>,
+        Jan Kara <jack@suse.cz>, "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH 3/3] [RFC] tmpfs: Add FALLOC_FL_MARK_VOLATILE/UNMARK_VOLATILE
+ handlers
+References: <1338575387-26972-1-git-send-email-john.stultz@linaro.org> <1338575387-26972-4-git-send-email-john.stultz@linaro.org> <4FC9235F.5000402@gmail.com>	<4FC92E30.4000906@linaro.org> <4FC9360B.4020401@gmail.com>	<4FC937AD.8040201@linaro.org> <4FC9438B.1000403@gmail.com>	<4FC94F61.20305@linaro.org> <4FCFB4F6.6070308@gmail.com>	<4FCFEE36.3010902@linaro.org> <CAO6Zf6D++8hOz19BmUwQ8iwbQknQRNsF4npP4r-830j04vbj=g@mail.gmail.com> <4FD13C30.2030401@linux.vnet.ibm.com> <4FD16B6E.8000307@linaro.org> <4FD1848B.7040102@gmail.com> <4FD2C6C5.1070900@linaro.org>
+In-Reply-To: <4FD2C6C5.1070900@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 11, 2012 at 03:38:25PM -0600, Shuah Khan wrote:
-> On Mon, 2012-06-11 at 22:57 +0200, Fabio Baltieri wrote:
-> > Fix led_trigger_event() to use led_brightness_set() instead of
-> > led_set_brightness(), so that any pending blink timer is stopped before
-> > setting the new brightness value.  Without this fix LED status may be
-> > overridden by a pending timer.
-> > 
-> > This allows a trigger to use a mix of led_trigger_event(),
-> > led_trigger_blink() and led_trigger_blink_oneshot() without races.
-> > 
-> > Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
-> > Cc: Bryan Wu <bryan.wu@canonical.com>
-> > ---
-> > Hi Bryan,
-> > 
-> > I found this one while working on another patch but I think it's also needed by
-> > other drivers which mixes led_trigger_blink() and led_trigger_event(), such as
-> > power_supply_leds.
-> > 
-> > Without this a led don't stop blinking as it should when calling
-> > led_trigger_event().
-> 
-> Good find. This is very subtle race though because both timer and
-> oneshot triggers call led_brightness_set() from their deactivate
-> routines. Is this when these events triggered using oneshot trigger? 
+Please, Cced linux-mm.
 
-Actually that was when mixing blink (both timer and oneshot, they use
-the same timer) and standard trigger-event-set. It should be safe if
-only internal (core) functions call set_brightness.
+On 06/09/2012 12:45 PM, John Stultz wrote:
 
-> > 
-> > Should not cause any harm on other drivers.
-> > 
-> > (I'm starting to find the whole led_set_brightness/led_brightness_set thing a
-> > bit confusing BTW...)
+> On 06/07/2012 09:50 PM, KOSAKI Motohiro wrote:
+>> (6/7/12 11:03 PM), John Stultz wrote:
+>>
+>>> So I'm falling back to using a shrinker for now, but I think Dmitry's
+>>> point is an interesting one, and am interested in finding a better
+>>> place to trigger purging volatile ranges from the mm code. If anyone
+>>> has any
+>>> suggestions, let me know, otherwise I'll go back to trying to better
+>>> grok the mm code.
+>>
+>> I hate vm feature to abuse shrink_slab(). because of, it was not
+>> designed generic callback.
+>> it was designed for shrinking filesystem metadata. Therefore, vm
+>> keeping a balance between
+>> page scanning and slab scanning. then, a lot of shrink_slab misuse may
+>> lead to break balancing
+>> logic. i.e. drop icache/dcache too many and makes perfomance impact.
+>>
+>> As far as a code impact is small, I'm prefer to connect w/ vm reclaim
+>> code directly.
 > 
-> I agree with the names are confusing. :) It found it confusing as well.
-> Probably why we have this bug hiding until led_trigger_blink() came
-> along.
+> I can see your concern about mis-using the shrinker code. Also your
+> other email's point about the problem of having LRU range purging
+> behavior on a NUMA system makes some sense too.  Unfortunately I'm not
+> yet familiar enough with the reclaim core to sort out how to best track
+> and connect the volatile range purging in the vm's reclaim core yet.
 > 
-> led_brightness_set() calls led_set_brightness(). led_set_brightness()
-> takes cares about whether the driver is in suspend state and invokes
-> driver's brightness_set interface. Maybe led_clear_blink_timer() would
-> be a better name for this led_brightness_set() routine.
+> So for now, I've moved the code back to using the shrinker (along with
+> fixing a few bugs along the way).
+> Thus, currently we manage the ranges as so:
+>     [per fs volatile range lru head] -> [volatile range] -> [volatile
+> range] -> [volatile range]
+> With the per-fs shrinker zaping the volatile ranges from the lru.
+> 
+> I *think* ideally, the pages in a volatile range should be similar to
+> non-dirty file-backed pages.  There is a cost to restore them, but
+> freeing them is very cheap.  The trick is that volatile ranges
+> introduces a new relationship between pages. Since the neighboring
+> virtual pages in a volatile range are in effect tied together, purging
+> one effectively ruins the value of keeping the others, regardless of
+> which zone they are physically.
+> 
+> So maybe the right appraoch give up the per-fs volatile range lru, and
+> try a varient of what DaveC and DaveH have suggested: Letting the page
+> based lru reclamation handle the selection on a physical page basis, but
+> then zapping the entirety of the neighboring range if any one page is
+> reclaimed.  In order to try to preserve the range based LRU behavior,
+> activate all the pages in the range together when the range is marked
 
-I think maybe we should just rename the function to led_set_brightness()
-for the safe one (the one whichh also deactivate the time) and
-_led_set_brightness() for the internal one, to put some emphasis to the
-"internal" nature of the second.
 
-> I can volunteer to make this change if we agree that this will be a good
-> one to clear this naming confusion.
+You mean deactivation for fast reclaiming, not activation when memory pressure happen?
 
-That would save some headache in the future! :-)
+> volatile.  Since we assume ranges are un-touched when volatile, that
+> should preserve LRU purging behavior on single node systems and on
+> multi-node systems it will approximate fairly closely.
+> 
+> My main concern with this approach is marking and unmarking volatile
+> ranges needs to be fast, so I'm worried about the additional overhead of
+> activating each of the containing pages on mark_volatile.
 
-Fabio
+
+Yes. it could be a problem if range is very large and populated already.
+Why can't we make new hooks?
+
+Just concept for showing my intention..
+
++int shrink_volatile_pages(struct zone *zone)
++{
++       int ret = 0;
++       if (zone_page_state(zone, NR_ZONE_VOLATILE))
++               ret = shmem_purge_one_volatile_range();
++       return ret;
++}
++
+ static void shrink_zone(struct zone *zone, struct scan_control *sc)
+ {
+        struct mem_cgroup *root = sc->target_mem_cgroup;
+@@ -1827,6 +1835,18 @@ static void shrink_zone(struct zone *zone, struct scan_control *sc)
+                .priority = sc->priority,
+        };
+        struct mem_cgroup *memcg;
++       int ret;
++
++       /*
++        * Before we dive into trouble maker, let's look at easy-
++        * reclaimable pages and avoid costly-reclaim if possible.
++        */
++       do {
++               ret = shrink_volatile_pages();
++               if (ret)
++                       zone_watermark_ok(zone, sc->order, xxx);
++                               return;
++       } while(ret)
+
+Off-topic:
+
+I want to drive low memory notification level-triggering instead of raw vmstat trigger.
+(It's rather long thread https://lkml.org/lkml/2012/5/1/97)
+
+level 1: out-of-easy reclaimable pages (NR_VOLATILE + NR_UNMAPPED_CLEAN_PAGE)
+level 2 (more sever VM pressure than level 1): level2 + reclaimable dirty pages
+
+When it is out of easy-reclaimable pages, it might be good indication for
+low memory notification.
+
 
 > 
-> -- Shuah
+> The other question I have with this approach is if we're on a system
+> that doesn't have swap, it *seems* (not totally sure I understand it
+> yet) the tmpfs file pages will be skipped over when we call
+> shrink_lruvec.  So it seems we may need to add a new lru_list enum and
+> nr[] entry (maybe LRU_VOLATILE?).   So then it may be that when we mark
+> a range as volatile, instead of just activating it, we move it to the
+> volatile lru, and then when we shrink from that list, we call back to
+> the filesystem to trigger the entire range purging.
+
+
+Adding new LRU idea might make very slow fallocate(VOLATILE) so I hope we can avoid that if possible.
+
+Off-topic: 
+But I'm not sure because I might try to make new easy-reclaimable LRU list for low memory notification.
+That LRU list would contain non-mapped clean cache page and volatile pages if I decide adding it.
+Both pages has a common characteristic that recreating page is less costly.
+It's true for eMMC/SSD like device, at least.
+
 > 
-> > 
-> > Fabio
-> > 
-> >  drivers/leds/led-triggers.c | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/leds/led-triggers.c b/drivers/leds/led-triggers.c
-> > index fa0b9be..b88d3b9 100644
-> > --- a/drivers/leds/led-triggers.c
-> > +++ b/drivers/leds/led-triggers.c
-> > @@ -224,7 +224,7 @@ void led_trigger_event(struct led_trigger *trig,
-> >  		struct led_classdev *led_cdev;
-> >  
-> >  		led_cdev = list_entry(entry, struct led_classdev, trig_list);
-> > -		led_set_brightness(led_cdev, brightness);
-> > +		led_brightness_set(led_cdev, brightness);
+> Does that sound reasonable?  Any other suggested approaches?  I'll think
+> some more about it this weekend and try to get a patch scratched out
+> early next week.
 > 
-> This is in-line with led_trigger_set() which is calling
-> led_bightness_set() correctly. Also led_classdev_unregister() calls it I
-> think for the same reason so the blink timer can be stopped.
-> 
-> >  	}
-> >  	read_unlock(&trig->leddev_list_lock);
-> >  }
+> thanks
+> -john
 > 
 > 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+
+
+
+-- 
+Kind regards,
+Minchan Kim
