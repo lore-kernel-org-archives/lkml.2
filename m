@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752603Ab2FLOX3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 10:23:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57280 "EHLO mx2.suse.de"
+	id S1753080Ab2FLO0g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 10:26:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57232 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752221Ab2FLOVC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 10:21:02 -0400
+	id S1752040Ab2FLOVB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 10:21:01 -0400
 From: Jan Kara <jack@suse.cz>
 To: Al Viro <viro@ZenIV.linux.org.uk>
 Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@suse.cz,
-        Jan Kara <jack@suse.cz>
-Subject: [PATCH 25/27] ext2: Implement freezing
-Date: Tue, 12 Jun 2012 16:20:46 +0200
-Message-Id: <1339510848-16992-26-git-send-email-jack@suse.cz>
+        Jan Kara <jack@suse.cz>, linux-nfs@vger.kernel.org,
+        "J. Bruce Fields" <bfields@fieldses.org>
+Subject: [PATCH 12/27] nfsd: Push mnt_want_write() outside of i_mutex
+Date: Tue, 12 Jun 2012 16:20:33 +0200
+Message-Id: <1339510848-16992-13-git-send-email-jack@suse.cz>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1339510848-16992-1-git-send-email-jack@suse.cz>
 References: <1339510848-16992-1-git-send-email-jack@suse.cz>
@@ -20,100 +21,385 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The only missing piece to make freezing work reliably with ext2 is to
-stop iput() of unlinked inode from deleting the inode on frozen filesystem.
-So add a necessary protection to ext2_evict_inode().
+When mnt_want_write() starts to handle freezing it will get a full lock
+semantics requiring proper lock ordering. So push mnt_want_write() call
+consistently outside of i_mutex.
 
-We also provide appropriate ->freeze_fs and ->unfreeze_fs functions.
-
+CC: linux-nfs@vger.kernel.org
+CC: "J. Bruce Fields" <bfields@fieldses.org>
 Signed-off-by: Jan Kara <jack@suse.cz>
 ---
- fs/ext2/inode.c |    5 ++++-
- fs/ext2/super.c |   33 +++++++++++++++++++++++++++++++++
- 2 files changed, 37 insertions(+), 1 deletions(-)
+ fs/nfsd/nfs4recover.c      |    9 +++--
+ fs/nfsd/nfsfh.c            |    1 +
+ fs/nfsd/nfsproc.c          |    9 ++++-
+ fs/nfsd/vfs.c              |   79 ++++++++++++++++++++++---------------------
+ fs/nfsd/vfs.h              |   11 +++++-
+ include/linux/nfsd/nfsfh.h |    1 +
+ 6 files changed, 64 insertions(+), 46 deletions(-)
 
-diff --git a/fs/ext2/inode.c b/fs/ext2/inode.c
-index 264d315..6363ac6 100644
---- a/fs/ext2/inode.c
-+++ b/fs/ext2/inode.c
-@@ -79,6 +79,7 @@ void ext2_evict_inode(struct inode * inode)
- 	truncate_inode_pages(&inode->i_data, 0);
+diff --git a/fs/nfsd/nfs4recover.c b/fs/nfsd/nfs4recover.c
+index 5ff0b7b..43295d4 100644
+--- a/fs/nfsd/nfs4recover.c
++++ b/fs/nfsd/nfs4recover.c
+@@ -154,6 +154,10 @@ nfsd4_create_clid_dir(struct nfs4_client *clp)
+ 	if (status < 0)
+ 		return;
  
- 	if (want_delete) {
-+		sb_start_intwrite(inode->i_sb);
- 		/* set dtime */
- 		EXT2_I(inode)->i_dtime	= get_seconds();
- 		mark_inode_dirty(inode);
-@@ -98,8 +99,10 @@ void ext2_evict_inode(struct inode * inode)
- 	if (unlikely(rsv))
- 		kfree(rsv);
- 
--	if (want_delete)
-+	if (want_delete) {
- 		ext2_free_inode(inode);
-+		sb_end_intwrite(inode->i_sb);
-+	}
++	status = mnt_want_write_file(rec_file);
++	if (status)
++		return;
++
+ 	dir = rec_file->f_path.dentry;
+ 	/* lock the parent */
+ 	mutex_lock(&dir->d_inode->i_mutex);
+@@ -173,11 +177,7 @@ nfsd4_create_clid_dir(struct nfs4_client *clp)
+ 		 * as well be forgiving and just succeed silently.
+ 		 */
+ 		goto out_put;
+-	status = mnt_want_write_file(rec_file);
+-	if (status)
+-		goto out_put;
+ 	status = vfs_mkdir(dir->d_inode, dentry, S_IRWXU);
+-	mnt_drop_write_file(rec_file);
+ out_put:
+ 	dput(dentry);
+ out_unlock:
+@@ -189,6 +189,7 @@ out_unlock:
+ 				" (err %d); please check that %s exists"
+ 				" and is writeable", status,
+ 				user_recovery_dirname);
++	mnt_drop_write_file(rec_file);
+ 	nfs4_reset_creds(original_cred);
  }
  
- typedef struct {
-diff --git a/fs/ext2/super.c b/fs/ext2/super.c
-index b3621cb..25232c1 100644
---- a/fs/ext2/super.c
-+++ b/fs/ext2/super.c
-@@ -42,6 +42,8 @@ static void ext2_sync_super(struct super_block *sb,
- static int ext2_remount (struct super_block * sb, int * flags, char * data);
- static int ext2_statfs (struct dentry * dentry, struct kstatfs * buf);
- static int ext2_sync_fs(struct super_block *sb, int wait);
-+static int ext2_freeze(struct super_block *sb);
-+static int ext2_unfreeze(struct super_block *sb);
+diff --git a/fs/nfsd/nfsfh.c b/fs/nfsd/nfsfh.c
+index cc79300..032af38 100644
+--- a/fs/nfsd/nfsfh.c
++++ b/fs/nfsd/nfsfh.c
+@@ -635,6 +635,7 @@ fh_put(struct svc_fh *fhp)
+ 		fhp->fh_post_saved = 0;
+ #endif
+ 	}
++	fh_drop_write(fhp);
+ 	if (exp) {
+ 		exp_put(exp);
+ 		fhp->fh_export = NULL;
+diff --git a/fs/nfsd/nfsproc.c b/fs/nfsd/nfsproc.c
+index e15dc45..aad6d45 100644
+--- a/fs/nfsd/nfsproc.c
++++ b/fs/nfsd/nfsproc.c
+@@ -196,6 +196,7 @@ nfsd_proc_create(struct svc_rqst *rqstp, struct nfsd_createargs *argp,
+ 	struct dentry	*dchild;
+ 	int		type, mode;
+ 	__be32		nfserr;
++	int		hosterr;
+ 	dev_t		rdev = 0, wanted = new_decode_dev(attr->ia_size);
  
- void ext2_error(struct super_block *sb, const char *function,
- 		const char *fmt, ...)
-@@ -305,6 +307,8 @@ static const struct super_operations ext2_sops = {
- 	.evict_inode	= ext2_evict_inode,
- 	.put_super	= ext2_put_super,
- 	.sync_fs	= ext2_sync_fs,
-+	.freeze_fs	= ext2_freeze,
-+	.unfreeze_fs	= ext2_unfreeze,
- 	.statfs		= ext2_statfs,
- 	.remount_fs	= ext2_remount,
- 	.show_options	= ext2_show_options,
-@@ -1194,6 +1198,35 @@ static int ext2_sync_fs(struct super_block *sb, int wait)
- 	return 0;
- }
- 
-+static int ext2_freeze(struct super_block *sb)
-+{
-+	struct ext2_sb_info *sbi = EXT2_SB(sb);
-+
-+	/*
-+	 * Open but unlinked files present? Keep EXT2_VALID_FS flag cleared
-+	 * because we have unattached inodes and thus filesystem is not fully
-+	 * consistent.
-+	 */
-+	if (atomic_long_read(&sb->s_remove_count)) {
-+		ext2_sync_fs(sb, 1);
-+		return 0;
+ 	dprintk("nfsd: CREATE   %s %.*s\n",
+@@ -214,6 +215,12 @@ nfsd_proc_create(struct svc_rqst *rqstp, struct nfsd_createargs *argp,
+ 	nfserr = nfserr_exist;
+ 	if (isdotent(argp->name, argp->len))
+ 		goto done;
++	hosterr = fh_want_write(dirfhp);
++	if (hosterr) {
++		nfserr = nfserrno(hosterr);
++		goto done;
 +	}
-+	/* Set EXT2_FS_VALID flag */
-+	spin_lock(&sbi->s_lock);
-+	sbi->s_es->s_state = cpu_to_le16(sbi->s_mount_state);
-+	spin_unlock(&sbi->s_lock);
-+	ext2_sync_super(sb, sbi->s_es, 1);
 +
-+	return 0;
-+}
+ 	fh_lock_nested(dirfhp, I_MUTEX_PARENT);
+ 	dchild = lookup_one_len(argp->name, dirfhp->fh_dentry, argp->len);
+ 	if (IS_ERR(dchild)) {
+@@ -330,7 +337,7 @@ nfsd_proc_create(struct svc_rqst *rqstp, struct nfsd_createargs *argp,
+ out_unlock:
+ 	/* We don't really need to unlock, as fh_put does it. */
+ 	fh_unlock(dirfhp);
+-
++	fh_drop_write(dirfhp);
+ done:
+ 	fh_put(dirfhp);
+ 	return nfsd_return_dirop(nfserr, resp);
+diff --git a/fs/nfsd/vfs.c b/fs/nfsd/vfs.c
+index c8bd9c3..4503995 100644
+--- a/fs/nfsd/vfs.c
++++ b/fs/nfsd/vfs.c
+@@ -1276,6 +1276,10 @@ nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
+ 	 * If it has, the parent directory should already be locked.
+ 	 */
+ 	if (!resfhp->fh_dentry) {
++		host_err = fh_want_write(fhp);
++		if (host_err)
++			goto out_nfserr;
 +
-+static int ext2_unfreeze(struct super_block *sb)
-+{
-+	/* Just write sb to clear EXT2_VALID_FS flag */
-+	ext2_write_super(sb);
-+
-+	return 0;
-+}
+ 		/* called from nfsd_proc_mkdir, or possibly nfsd3_proc_create */
+ 		fh_lock_nested(fhp, I_MUTEX_PARENT);
+ 		dchild = lookup_one_len(fname, dentry, flen);
+@@ -1319,14 +1323,11 @@ nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
+ 		goto out;
+ 	}
  
- void ext2_write_super(struct super_block *sb)
+-	host_err = fh_want_write(fhp);
+-	if (host_err)
+-		goto out_nfserr;
+-
+ 	/*
+ 	 * Get the dir op function pointer.
+ 	 */
+ 	err = 0;
++	host_err = 0;
+ 	switch (type) {
+ 	case S_IFREG:
+ 		host_err = vfs_create(dirp, dchild, iap->ia_mode, NULL);
+@@ -1343,10 +1344,8 @@ nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
+ 		host_err = vfs_mknod(dirp, dchild, iap->ia_mode, rdev);
+ 		break;
+ 	}
+-	if (host_err < 0) {
+-		fh_drop_write(fhp);
++	if (host_err < 0)
+ 		goto out_nfserr;
+-	}
+ 
+ 	err = nfsd_create_setattr(rqstp, resfhp, iap);
+ 
+@@ -1358,7 +1357,6 @@ nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
+ 	err2 = nfserrno(commit_metadata(fhp));
+ 	if (err2)
+ 		err = err2;
+-	fh_drop_write(fhp);
+ 	/*
+ 	 * Update the file handle to get the new inode info.
+ 	 */
+@@ -1417,6 +1415,11 @@ do_nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
+ 	err = nfserr_notdir;
+ 	if (!dirp->i_op->lookup)
+ 		goto out;
++
++	host_err = fh_want_write(fhp);
++	if (host_err)
++		goto out_nfserr;
++
+ 	fh_lock_nested(fhp, I_MUTEX_PARENT);
+ 
+ 	/*
+@@ -1449,9 +1452,6 @@ do_nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
+ 		v_atime = verifier[1]&0x7fffffff;
+ 	}
+ 	
+-	host_err = fh_want_write(fhp);
+-	if (host_err)
+-		goto out_nfserr;
+ 	if (dchild->d_inode) {
+ 		err = 0;
+ 
+@@ -1522,7 +1522,6 @@ do_nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
+ 	if (!err)
+ 		err = nfserrno(commit_metadata(fhp));
+ 
+-	fh_drop_write(fhp);
+ 	/*
+ 	 * Update the filehandle to get the new inode info.
+ 	 */
+@@ -1533,6 +1532,7 @@ do_nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
+ 	fh_unlock(fhp);
+ 	if (dchild && !IS_ERR(dchild))
+ 		dput(dchild);
++	fh_drop_write(fhp);
+  	return err;
+  
+  out_nfserr:
+@@ -1613,6 +1613,11 @@ nfsd_symlink(struct svc_rqst *rqstp, struct svc_fh *fhp,
+ 	err = fh_verify(rqstp, fhp, S_IFDIR, NFSD_MAY_CREATE);
+ 	if (err)
+ 		goto out;
++
++	host_err = fh_want_write(fhp);
++	if (host_err)
++		goto out_nfserr;
++
+ 	fh_lock(fhp);
+ 	dentry = fhp->fh_dentry;
+ 	dnew = lookup_one_len(fname, dentry, flen);
+@@ -1620,10 +1625,6 @@ nfsd_symlink(struct svc_rqst *rqstp, struct svc_fh *fhp,
+ 	if (IS_ERR(dnew))
+ 		goto out_nfserr;
+ 
+-	host_err = fh_want_write(fhp);
+-	if (host_err)
+-		goto out_nfserr;
+-
+ 	if (unlikely(path[plen] != 0)) {
+ 		char *path_alloced = kmalloc(plen+1, GFP_KERNEL);
+ 		if (path_alloced == NULL)
+@@ -1683,6 +1684,12 @@ nfsd_link(struct svc_rqst *rqstp, struct svc_fh *ffhp,
+ 	if (isdotent(name, len))
+ 		goto out;
+ 
++	host_err = fh_want_write(tfhp);
++	if (host_err) {
++		err = nfserrno(host_err);
++		goto out;
++	}
++
+ 	fh_lock_nested(ffhp, I_MUTEX_PARENT);
+ 	ddir = ffhp->fh_dentry;
+ 	dirp = ddir->d_inode;
+@@ -1694,18 +1701,13 @@ nfsd_link(struct svc_rqst *rqstp, struct svc_fh *ffhp,
+ 
+ 	dold = tfhp->fh_dentry;
+ 
+-	host_err = fh_want_write(tfhp);
+-	if (host_err) {
+-		err = nfserrno(host_err);
+-		goto out_dput;
+-	}
+ 	err = nfserr_noent;
+ 	if (!dold->d_inode)
+-		goto out_drop_write;
++		goto out_dput;
+ 	host_err = nfsd_break_lease(dold->d_inode);
+ 	if (host_err) {
+ 		err = nfserrno(host_err);
+-		goto out_drop_write;
++		goto out_dput;
+ 	}
+ 	host_err = vfs_link(dold, dirp, dnew);
+ 	if (!host_err) {
+@@ -1718,12 +1720,11 @@ nfsd_link(struct svc_rqst *rqstp, struct svc_fh *ffhp,
+ 		else
+ 			err = nfserrno(host_err);
+ 	}
+-out_drop_write:
+-	fh_drop_write(tfhp);
+ out_dput:
+ 	dput(dnew);
+ out_unlock:
+ 	fh_unlock(ffhp);
++	fh_drop_write(tfhp);
+ out:
+ 	return err;
+ 
+@@ -1766,6 +1767,12 @@ nfsd_rename(struct svc_rqst *rqstp, struct svc_fh *ffhp, char *fname, int flen,
+ 	if (!flen || isdotent(fname, flen) || !tlen || isdotent(tname, tlen))
+ 		goto out;
+ 
++	host_err = fh_want_write(ffhp);
++	if (host_err) {
++		err = nfserrno(host_err);
++		goto out;
++	}
++
+ 	/* cannot use fh_lock as we need deadlock protective ordering
+ 	 * so do it by hand */
+ 	trap = lock_rename(tdentry, fdentry);
+@@ -1796,17 +1803,14 @@ nfsd_rename(struct svc_rqst *rqstp, struct svc_fh *ffhp, char *fname, int flen,
+ 	host_err = -EXDEV;
+ 	if (ffhp->fh_export->ex_path.mnt != tfhp->fh_export->ex_path.mnt)
+ 		goto out_dput_new;
+-	host_err = fh_want_write(ffhp);
+-	if (host_err)
+-		goto out_dput_new;
+ 
+ 	host_err = nfsd_break_lease(odentry->d_inode);
+ 	if (host_err)
+-		goto out_drop_write;
++		goto out_dput_new;
+ 	if (ndentry->d_inode) {
+ 		host_err = nfsd_break_lease(ndentry->d_inode);
+ 		if (host_err)
+-			goto out_drop_write;
++			goto out_dput_new;
+ 	}
+ 	host_err = vfs_rename(fdir, odentry, tdir, ndentry);
+ 	if (!host_err) {
+@@ -1814,8 +1818,6 @@ nfsd_rename(struct svc_rqst *rqstp, struct svc_fh *ffhp, char *fname, int flen,
+ 		if (!host_err)
+ 			host_err = commit_metadata(ffhp);
+ 	}
+-out_drop_write:
+-	fh_drop_write(ffhp);
+  out_dput_new:
+ 	dput(ndentry);
+  out_dput_old:
+@@ -1831,6 +1833,7 @@ out_drop_write:
+ 	fill_post_wcc(tfhp);
+ 	unlock_rename(tdentry, fdentry);
+ 	ffhp->fh_locked = tfhp->fh_locked = 0;
++	fh_drop_write(ffhp);
+ 
+ out:
+ 	return err;
+@@ -1856,6 +1859,10 @@ nfsd_unlink(struct svc_rqst *rqstp, struct svc_fh *fhp, int type,
+ 	if (err)
+ 		goto out;
+ 
++	host_err = fh_want_write(fhp);
++	if (host_err)
++		goto out_nfserr;
++
+ 	fh_lock_nested(fhp, I_MUTEX_PARENT);
+ 	dentry = fhp->fh_dentry;
+ 	dirp = dentry->d_inode;
+@@ -1874,21 +1881,15 @@ nfsd_unlink(struct svc_rqst *rqstp, struct svc_fh *fhp, int type,
+ 	if (!type)
+ 		type = rdentry->d_inode->i_mode & S_IFMT;
+ 
+-	host_err = fh_want_write(fhp);
+-	if (host_err)
+-		goto out_put;
+-
+ 	host_err = nfsd_break_lease(rdentry->d_inode);
+ 	if (host_err)
+-		goto out_drop_write;
++		goto out_put;
+ 	if (type != S_IFDIR)
+ 		host_err = vfs_unlink(dirp, rdentry);
+ 	else
+ 		host_err = vfs_rmdir(dirp, rdentry);
+ 	if (!host_err)
+ 		host_err = commit_metadata(fhp);
+-out_drop_write:
+-	fh_drop_write(fhp);
+ out_put:
+ 	dput(rdentry);
+ 
+diff --git a/fs/nfsd/vfs.h b/fs/nfsd/vfs.h
+index ec0611b..359594c 100644
+--- a/fs/nfsd/vfs.h
++++ b/fs/nfsd/vfs.h
+@@ -110,12 +110,19 @@ int nfsd_set_posix_acl(struct svc_fh *, int, struct posix_acl *);
+ 
+ static inline int fh_want_write(struct svc_fh *fh)
  {
+-	return mnt_want_write(fh->fh_export->ex_path.mnt);
++	int ret = mnt_want_write(fh->fh_export->ex_path.mnt);
++
++	if (!ret)
++		fh->fh_want_write = 1;
++	return ret;
+ }
+ 
+ static inline void fh_drop_write(struct svc_fh *fh)
+ {
+-	mnt_drop_write(fh->fh_export->ex_path.mnt);
++	if (fh->fh_want_write) {
++		fh->fh_want_write = 0;
++		mnt_drop_write(fh->fh_export->ex_path.mnt);
++	}
+ }
+ 
+ #endif /* LINUX_NFSD_VFS_H */
+diff --git a/include/linux/nfsd/nfsfh.h b/include/linux/nfsd/nfsfh.h
+index ce4743a..fa63048 100644
+--- a/include/linux/nfsd/nfsfh.h
++++ b/include/linux/nfsd/nfsfh.h
+@@ -143,6 +143,7 @@ typedef struct svc_fh {
+ 	int			fh_maxsize;	/* max size for fh_handle */
+ 
+ 	unsigned char		fh_locked;	/* inode locked by us */
++	unsigned char		fh_want_write;	/* remount protection taken */
+ 
+ #ifdef CONFIG_NFSD_V3
+ 	unsigned char		fh_post_saved;	/* post-op attrs saved */
 -- 
 1.7.1
 
