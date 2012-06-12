@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753426Ab2FLWcn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 18:32:43 -0400
-Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:56667 "EHLO
-	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751445Ab2FLWcm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 18:32:42 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+	id S1753452Ab2FLWe2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 18:34:28 -0400
+Received: from fifo99.com ([67.223.236.141]:35435 "EHLO fifo99.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751498Ab2FLWe1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 18:34:27 -0400
+Date: Tue, 12 Jun 2012 15:34:22 -0700
+From: Daniel Walker <dwalker@fifo99.com>
+To: Mandeep Singh Baines <msb@google.com>
+Cc: fweisbec@gmail.com, msb@chromium.org, sshaiju@mvista.com, mingo@elte.hu,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: hung_task checking and sys_sync
+Message-ID: <20120612223422.GB13492@fifo99.com>
+References: <20120612220924.GA13376@fifo99.com> <20120612222912.GB16381@google.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Apple Message framework v1278)
-Subject: Patch: Fix return value in cifsConvertToUTF16().
-From: Anton Altaparmakov <aia21@cam.ac.uk>
-Date: Tue, 12 Jun 2012 23:32:40 +0100
-Cc: linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <AA265B63-A9D7-4A21-A279-88894DEF46C4@cam.ac.uk>
-To: Steve French <sfrench@samba.org>
-X-Mailer: Apple Mail (2.1278)
+Content-Disposition: inline
+In-Reply-To: <20120612222912.GB16381@google.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Jun 12, 2012 at 03:29:12PM -0700, Mandeep Singh Baines wrote:
+> 
+> But the time is not unbounded. You could mask the hung_task_detector for
+> this case but then you lose the ability to catch bugs in this code path.
+> 
+> The timeout is configurable via /proc/sys/kernel/hung_task_timeout_secs.
+> Can you bump up the value at boot via sysctl.conf?
 
-Please apply the below patch which fixes the return value in cifsConvertToUTF16().  At the moment it is returning the number of bytes in the input string which is not the same as returning the number of returned UTF16 characters!  (Note the mount is done using "iocharset=utf8".)
-
-This causes rename system call with source being a Unicode name to fail because in UTF8 the unicode characters are more than one byte long thus cifsConvertToUTF16() returns a number larger than the actual number of returned UTF16 characters thus CIFSSMBRename() ends up constructing one or more NULL characters at the end of the source filename thus it sends a rename command like this to the server: "source_name\0 target_name" which the server presumably interprets as just "source_name" which is obviously bogus for a rename call and thus the rename fails.
-
-The simple and obviously correct fix is the below patch which changes the cifsConvertToUTF16() function to return variable "j" instead of "i" which is the index into the destination UTF16 array which is the correct thing to do and fixes the rename bug.
-
-Signed-off-by: Anton Altaparmakov <aia21@cam.ac.uk>
-
-Best regards,
-
-	Anton
--- 
-Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
-Unix Support, Computing Service, University of Cambridge, CB2 3QH, UK
-Linux NTFS maintainer, http://www.linux-ntfs.org/
----
-
-diff --git a/fs/cifs/cifs_unicode.c b/fs/cifs/cifs_unicode.c
-index fbb9da9..33ef60d 100644
---- a/fs/cifs/cifs_unicode.c
-+++ b/fs/cifs/cifs_unicode.c
-@@ -328,6 +328,6 @@ cifsConvertToUTF16(__le16 *target, const char *source, int s
- 	}
+Maybe, but I'm wondering if these types should just be stopped because Andrew
+had complained about them already.
  
- ctoUTF16_out:
--	return i;
-+	return j;
- }
- 
- 
+> > Has there been any commit that disable these messages bdi_sched_wait?
+> > 
+> 
+> No. There is no mechanism to disable hung_task for a specific code path.
+> We do skip processes if PF_PROZEN or PF_FROZEN_SKIP is set but that is
+> really a different situation where the wait is unbounded.
+
+There is presidence for this type of change, 
+
+Author: Mark Lord <kernel@teksavvy.com>
+Date:   Fri Sep 24 09:51:13 2010 -0400
+
+    block: Prevent hang_check firing during long I/O
+    
+    During long I/O operations, the hang_check timer may fire,
+    trigger stack dumps that unnecessarily alarm the user.
+    
+    Eg.  hdparm --security-erase NULL /dev/sdb  ## can take *hours* to complete
+    
+    So, if hang_check is armed, we should wake up periodically
+    to prevent it from triggering.  This patch uses a wake-up interval
+    equal to half the hang_check timer period, which keeps overhead low enough.
+    
+    Signed-off-by: Mark Lord <mlord@pobox.com>
+    Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
 
