@@ -1,152 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753206Ab2FLM5H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 08:57:07 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:58152 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752117Ab2FLM5E convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 08:57:04 -0400
+	id S1753211Ab2FLM74 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 08:59:56 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:62165 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751916Ab2FLM7z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 08:59:55 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH 06/14] mfd: Initialise the DB8500 PRCMU driver at core_initcall time
+Date: Tue, 12 Jun 2012 12:59:38 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: Linus Walleij <linus.walleij@linaro.org>, grant.likely@secretlab.ca,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, Samuel Ortiz <sameo@linux.intel.com>
+References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org> <CACRpkdYoQFhBfRaPMBiVTiD979b+8708oS1qCPm+iyy5OZe2bw@mail.gmail.com> <4FD6FF6C.6040500@linaro.org>
+In-Reply-To: <4FD6FF6C.6040500@linaro.org>
 MIME-Version: 1.0
-Date: Tue, 12 Jun 2012 20:57:02 +0800
-Message-ID: <CAJRGBZw2TctmBxRuA-byaGNCs=1v+M-1PXSm+OuwWApSqu7UjA@mail.gmail.com>
-Subject: What is the right practice to get new code upstream( was Fwd: [patch]
- a simple hardware detector for latency as well as throughput ver. 0.1.0)
-From: Luming Yu <luming.yu@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, tglx@linutronix.de,
-        sfr@canb.auug.org.au, Andrew Morton <akpm@linux-foundation.org>,
-        jcm@jonmasters.org, linux-next@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, torvalds@linux-foundation.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201206121259.38807.arnd@arndb.de>
+X-Provags-ID: V02:K0:aPcVl++fSR1NkvqID7EUaF419HZ+IZoTtaQconxtPy1
+ kAkC0vWthbSUZ6fZvBR2sRiviNJVWEMAjfF3XuqII8yDAGrKvq
+ 4mgRE1kFW3fOTjkTz4a3dTa1zVzddIiJ/A/VkObIHCphJ3liAo
+ bsNz2gXxS7MZ7Q/Vj8l0dRLCAyFRUNbm+ZcGLMYdXbTqCYPWjk
+ 4rY+mSkvEH6KYL3Bgn0gIvp2wmWvB8/AyA/NVEMeqvBzyKAjDk
+ wlh0THVi6Fg69s47dSCaMkexaT8X1gvc+7Y+aGVIQ7gh9iD6tx
+ n2yJbyd3xZrTSHqiFQfkWfEEfM5evCyAinH0cjXgzvKhqwFXmn
+ kjWhsdHNDXZt+LHvOk+8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+On Tuesday 12 June 2012, Lee Jones wrote:
+> On 11/06/12 22:01, Linus Walleij wrote:
+> > Hm what shall we do when we run out of initlevels? I think this was the
+> > kind of thing that deferred probe should solve. Usually changing this kind
+> > of thing has side effects so I'm a bit hesitant.
+> 
+> Ah yes, I remember now. The IRQ domain needs to be in place before the 
+> Device Tree is parsed by the Open Firmware subsystem. If it's not the 
+> error "no irq domain found" is triggered and the IRQs are never mapped.
+> 
+> I'd be happy to take a second opinion, but I believe this (and the other 
+> core_initcall patch) is required.
 
-I must have forgotten cc key persons. Sorry to make noise again.
-I need to know what the right practice is to get your attention to
-accept a new tool upstream like this one.
+It's still just a hack. The real solution that we discussed last time it
+came up is to defer the translation of irq numbers until device driver
+probe time, and bail out with -EPROBE_DEFER if you try to use a device
+whose interrupt is not available yet.
 
-About the tool:
-
-It's unique. It's simple. But it's valuable, But it's still a starting point.
-
-The tool is based on Jcm's latency testing tool in RT tree to detect
-SMI caused problem.
-Basically it's a testing tool to measure latency and bandwidth of raw
-hardware instructions and component functions exclusively in
-stop_machine context. It's a kernel module that can be run separately
-from kernel boot. The Goal is to test out hardware/BIOS caused
-problems in 2 minutes. To me, capable of measuring the intrinsic of
-hardware on which we build our software is always a better idea than
-blindly looking for data from any documents. In current version of the
-tool, we have a basic sampling facility and TSC test ready for x86. I
-plan to add more test into this tool to enrich our tool set in Linux.
-
-Any inputs are appreciated. :-)
-
-Thanks for your time.
-/l
-
----------- Forwarded message ----------
-From: Luming Yu <luming.yu@gmail.com>
-Date: Tue, Jun 12, 2012 at 11:42 AM
-Subject: Fwd: [patch] a simple hardware detector for latency as well
-as throughput ver. 0.1.0
-To: LKML <linux-kernel@vger.kernel.org>
-
-
-Hello everyone,
-
-I'm trying to push a new tool upstream. I'd like to hear back from you
-what the best practice is to get the job done.
-
-Thanks,
-Luming
-
-
----------- Forwarded message ----------
-From: Luming Yu <luming.yu@gmail.com>
-Date: Mon, Jun 11, 2012 at 9:59 PM
-Subject: Fwd: [patch] a simple hardware detector for latency as well
-as throughput ver. 0.1.0
-To: sfr@canb.auug.org.au
-Cc: Andrew Morton <akpm@linux-foundation.org>, jcm@jonmasters.org,
-linux-next@vger.kernel.org
-
-
-Hi,
-
-I'd like to know if the patch looks good for linux-next to find its
-way upstream in 3.6.
-
-Thanks and regards,
-Luming
-
-
----------- Forwarded message ----------
-From: Luming Yu <luming.yu@gmail.com>
-Date: Wed, May 30, 2012 at 7:47 AM
-Subject: Fwd: [patch] a simple hardware detector for latency as well
-as throughput ver. 0.1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: jcm@jonmasters.org
-
-
-Hello akpm,
-
-I'd like to push the patch to upstream, but I'm not sure if jcm has
-extra bandwidth although he is also interested in having the tool
-upstream..So I'd like ping you to check if there is any chance to
-queue it up in your tree first.I will enhance it further after it's
-upstream.
-
-Thanks,
-Luming
-
-
-
----------- Forwarded message ----------
-From: Luming Yu <luming.yu@gmail.com>
-Date: Tue, May 29, 2012 at 4:37 AM
-Subject: [patch] a simple hardware detector for latency as well as
-throughput ver. 0.1.0
-To: jcm@jonmasters.org
-Cc: linux-kernel@vger.kernel.org
-
-
-Hi Jon,
-
-The patch is the fist step to test some basic hardware functions like
-TSC to help people understand if there is any hardware latency as well as
-throughput problem exposed on bare metal or left behind by BIOS or
-interfered by SM. Currently the patch tests hardware features
-(tsc,freq, and rdrandom whiich is new instruction to get random
-number) in stop_machine context. I will add more after the first step
-get merged for those guys who want to directly play with new hardware
-functions.
-
-I suppose I can add your signed-off-by as the code is derived from your
-hwlat_dector.
-
-I'm also reuqesting if you are going to queue it up somewhere that can
-be pulled into 3.5.
-
-Of cause, I will update the patch based upon any comments that you
-think must be fixed for 3.5 merge.
-
-Thanks,
-Luming
-
-
-Signed-off-by Luming Yu <luming.yu@intel.com>
-
-
- Kconfig   |    7
- Makefile  |    2
- hw_test.c |  954
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 963 insertions(+)
+	Arnd
