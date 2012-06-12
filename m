@@ -1,39 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753541Ab2FLQVP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 12:21:15 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:58445 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752720Ab2FLQVO (ORCPT
+	id S1753595Ab2FLQWH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 12:22:07 -0400
+Received: from zimbra.linbit.com ([212.69.161.123]:41715 "EHLO
+	zimbra.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752838Ab2FLQWF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 12:21:14 -0400
-Message-ID: <1339518069.3050.8.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH] scsi: allow persistent reservations without
- CAP_SYS_RAWIO
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, linux-scsi@vger.kernel.org
-Date: Tue, 12 Jun 2012 17:21:09 +0100
-In-Reply-To: <1339517312-18134-1-git-send-email-pbonzini@redhat.com>
-References: <1339517312-18134-1-git-send-email-pbonzini@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 12 Jun 2012 12:22:05 -0400
+From: Philipp Reisner <philipp.reisner@linbit.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: drbd-dev@lists.linbit.com, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] drbd fixes
+Date: Tue, 12 Jun 2012 18:22:03 +0000
+Message-ID: <1788738.mNsnrf6o6T@fat-tyre>
+Organization: LINBIT
+User-Agent: KMail/4.8.3 (Linux/3.2.0-24-generic; KDE/4.8.3; x86_64; ; )
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-06-12 at 18:08 +0200, Paolo Bonzini wrote:
-> Persistent reservations commands cannot be issued right now without
-> giving CAP_SYS_RAWIO to the process who wishes to send them.  This
-> is a bit heavy-handed, allow these two commands.
+Hi Jens,
 
-Why is this heavy handed?  If you remove CAP_SYS_RAWIO, any userspace
-process can send these, which would allow any user to completely disrupt
-a SAN by injecting spurious reservations ... that doesn't look to be
-terribly safe for an operating system running in a data centre.
+In the last 4 weeks three bugs were reported and fixed. Please consider
+to pass these 3 commits on to Linus.
 
-James
- 
+The following changes since commit 4fd1ffaa122cf66bfb710ced43679413df4f3605:
+
+  Merge branch 'for-jens' of git://git.drbd.org/linux-drbd into for-3.5/drivers (2012-05-18 16:20:06 +0200)
+
+are available in the git repository at:
+
+
+  git://git.drbd.org/linux-drbd.git for-jens
+
+for you to fetch changes up to 0d5934e3c258fc5decc4103600c597086fd95a52:
+
+  drbd: fix null pointer dereference with on-congestion policy when diskless (2012-06-12 14:35:19 +0200)
+
+----------------------------------------------------------------
+Lars Ellenberg (3):
+      drbd: fix access of unallocated pages and kernel panic
+      drbd: fix list corruption by failing but already aborted reads
+      drbd: fix null pointer dereference with on-congestion policy when diskless
+
+ drivers/block/drbd/drbd_bitmap.c |   11 +++++--
+ drivers/block/drbd/drbd_req.c    |   66 ++++++++++++++++++++++++--------------
+2 files changed, 51 insertions(+), 26 deletions(-)
+
+Best,
+ Philipp
+-- 
+: Dipl-Ing Philipp Reisner
+: LINBIT | Your Way to High Availability
+: Tel: +43-1-8178292-50, Fax: +43-1-8178292-82
+: http://www.linbit.com
+
+DRBD(R) and LINBIT(R) are registered trademarks of LINBIT, Austria.
 
