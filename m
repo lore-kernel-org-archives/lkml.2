@@ -1,114 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753441Ab2FLSXh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 14:23:37 -0400
-Received: from mail-bk0-f74.google.com ([209.85.214.74]:34271 "EHLO
-	mail-bk0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751790Ab2FLSXg (ORCPT
+	id S1753632Ab2FLSZY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 14:25:24 -0400
+Received: from sd-mail-sa-02.sanoma.fi ([158.127.18.162]:44915 "EHLO
+	sd-mail-sa-02.sanoma.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752262Ab2FLSZW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 14:23:36 -0400
-From: Ben Chan <benchan@chromium.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Ben Chan <benchan@chromium.org>, Sage Ahn <syahn@gctsemi.com>
-Subject: [PATCH] staging: gdm72xx: Simplify spinlock fix for gdm_usb_send_complete
-Date: Tue, 12 Jun 2012 11:23:32 -0700
-Message-Id: <1339525412-20542-1-git-send-email-benchan@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
+	Tue, 12 Jun 2012 14:25:22 -0400
+Message-ID: <20120612212518.22246qw5kuyn2osg@www.81.fi>
+Date: Tue, 12 Jun 2012 21:25:18 +0300
+From: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: linux-crypto@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] crypto: aes - make assembler implementation default
+ for i386 and x86-64
+References: <20120530215333.32995tjzj9dr4jwo@www.81.fi>
+ <20120609145055.12766.42439.stgit@localhost6.localdomain6>
+ <20120612082651.GA13419@gondor.apana.org.au>
+In-Reply-To: <20120612082651.GA13419@gondor.apana.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.7)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch simplifies the previous patch (commit
-dd13c86b0dae86efdde98119ffd7348e80719ade) for fixing the spinlock
-recursion issue on several call sites of gdm_usb_send_complete.
+Quoting Herbert Xu <herbert@gondor.apana.org.au>:
 
-Signed-off-by: Ben Chan <benchan@chromium.org>
-Cc: Sage Ahn <syahn@gctsemi.com>
----
- drivers/staging/gdm72xx/gdm_usb.c |   26 ++++++++++----------------
- 1 files changed, 10 insertions(+), 16 deletions(-)
+> On Sat, Jun 09, 2012 at 05:50:55PM +0300, Jussi Kivilinna wrote:
+>> AES is often built-in and therefore implementations other than aes-generic
+>> don't get autoloaded by module-aliases. This is solved for aes-ni by cpuid
+>> autoloading, but for x86-64/i586 assembler implementation cpuid matching
+>> does not make much sense (aes-generic built-in but overridden by x86-64/i586
+>> assembler implementation module). Instead change Kconfig so that assembler
+>> implementation is default on x86-64 and i386.
+>>
+>> This patch also splits common parts exported to assembler implementations
+>> from aes-generic to new module aes-common.
+>>
+>> Patch tested on x86-64, compile tested on i386 and arm.
+>>
+>> Signed-off-by: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
+>
+> I like the idea but I'm not sure about where we draw the line.
+> E.g., why not enable padlock, or for that matter every single
+> hardware implementation of AES?
+>
+> This can get unwieldy very quickly.
+>
 
-diff --git a/drivers/staging/gdm72xx/gdm_usb.c b/drivers/staging/gdm72xx/gdm_usb.c
-index 646e0ac..89268c7 100644
---- a/drivers/staging/gdm72xx/gdm_usb.c
-+++ b/drivers/staging/gdm72xx/gdm_usb.c
-@@ -270,21 +270,17 @@ static void release_usb(struct usbwm_dev *udev)
- 	}
- }
- 
--static void gdm_usb_send_complete_impl(struct urb *urb, bool need_lock)
-+static void __gdm_usb_send_complete(struct urb *urb)
- {
- 	struct usb_tx *t = urb->context;
- 	struct tx_cxt *tx = t->tx_cxt;
- 	u8 *pkt = t->buf;
- 	u16 cmd_evt;
--	unsigned long flags;
- 
- 	/* Completion by usb_unlink_urb */
- 	if (urb->status == -ECONNRESET)
- 		return;
- 
--	if (need_lock)
--		spin_lock_irqsave(&tx->lock, flags);
--
- 	if (t->callback)
- 		t->callback(t->cb_data);
- 
-@@ -296,19 +292,17 @@ static void gdm_usb_send_complete_impl(struct urb *urb, bool need_lock)
- 		put_tx_struct(tx, t);
- 	else
- 		free_tx_struct(t);
--
--	if (need_lock)
--		spin_unlock_irqrestore(&tx->lock, flags);
- }
- 
- static void gdm_usb_send_complete(struct urb *urb)
- {
--	gdm_usb_send_complete_impl(urb, true);
--}
-+	struct usb_tx *t = urb->context;
-+	struct tx_cxt *tx = t->tx_cxt;
-+	unsigned long flags;
- 
--static void gdm_usb_send_complete_no_lock(struct urb *urb)
--{
--	gdm_usb_send_complete_impl(urb, false);
-+	spin_lock_irqsave(&tx->lock, flags);
-+	__gdm_usb_send_complete(urb);
-+	spin_unlock_irqrestore(&tx->lock, flags);
- }
- 
- static int gdm_usb_send(void *priv_dev, void *data, int len,
-@@ -423,7 +417,7 @@ out:
- 
- send_fail:
- 	t->callback = NULL;
--	gdm_usb_send_complete_no_lock(t->urb);
-+	__gdm_usb_send_complete(t->urb);
- 	spin_unlock_irqrestore(&tx->lock, flags);
- 	return ret;
- }
-@@ -552,7 +546,7 @@ static void do_pm_control(struct work_struct *work)
- 
- 			if (ret) {
- 				t->callback = NULL;
--				gdm_usb_send_complete_no_lock(t->urb);
-+				__gdm_usb_send_complete(t->urb);
- 			}
- 		}
- 	}
-@@ -754,7 +748,7 @@ static int k_mode_thread(void *arg)
- 
- 				if (ret) {
- 					t->callback = NULL;
--					gdm_usb_send_complete_no_lock(t->urb);
-+					__gdm_usb_send_complete(t->urb);
- 				}
- 			}
- 
--- 
-1.7.7.3
+Well, how about letting arch specific assembler implementations  
+replace aes-generic
+completely.. in this case add "depends on !X86" on CRYPTO_AES_GENERIC.  
+Hardware
+modules get autoloaded (cpuid/pci/platform/etc) but generic assembler  
+implementation
+might as well be replacement as it cannot autoload depending on  
+hardware support (or
+it can, but will be always loaded).
+
+-Jussi
+
 
