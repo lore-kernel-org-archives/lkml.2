@@ -1,127 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753506Ab2FLRHq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 13:07:46 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:39343
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752966Ab2FLRHj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 13:07:39 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VPS3(z1823lz98dIzz1202hzzz2dh668h839h944hd25hf0ah)
-X-WSS-ID: 0M5IKWF-02-EM6-02
-X-M-MSG: 
-Date: Tue, 12 Jun 2012 19:07:25 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@kernel.org>, Stephane Eranian <eranian@google.com>,
-        <linux-kernel@vger.kernel.org>, <andi@firstfloor.org>, <mingo@elte.hu>,
-        <ming.m.lin@intel.com>, Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Dimitri Sivanich <sivanich@sgi.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>
-Subject: Re: [PATCH] perf/x86: check ucode before disabling PEBS on
- SandyBridge
-Message-ID: <20120612170725.GE5046@erda.amd.com>
-References: <20120607071531.GA4849@quad>
- <1339064319.23343.13.camel@twins>
- <CABPqkBQ+p5rcuxpXCTLMXPM+awAHhQ6mP9-WzVh5GWtn2GyfrA@mail.gmail.com>
- <1339065932.23343.18.camel@twins>
- <CABPqkBQ=tLXXsgvzQx+i01Owm4MM8m=6cEVVi4ab64gOiTTBYQ@mail.gmail.com>
- <1339067757.23343.21.camel@twins>
- <20120608093513.GA22520@gmail.com>
- <1339149613.23343.52.camel@twins>
- <1339161972.2507.13.camel@laptop>
+	id S1753578Ab2FLRIN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 13:08:13 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:33691 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752807Ab2FLRIL convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 13:08:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1339161972.2507.13.camel@laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+In-Reply-To: <1339142492-13625-5-git-send-email-xudong.hao@intel.com>
+References: <1339142492-13625-1-git-send-email-xudong.hao@intel.com> <1339142492-13625-5-git-send-email-xudong.hao@intel.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 12 Jun 2012 11:07:48 -0600
+Message-ID: <CAErSpo6VuffgjUh3nguFH3E8fPmwA2Hj+C+pXZsYN7h_C9M5Kg@mail.gmail.com>
+Subject: Re: [PATCH 4/4] PCI: save/restore max Latency Value for device LTR
+To: Xudong Hao <xudong.hao@intel.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, avi@redhat.com, alex.williamson@redhat.com,
+        ddutile@redhat.com, myron.stowe@redhat.com, xiantao.zhang@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08.06.12 15:26:12, Peter Zijlstra wrote:
-> +static const u32 snb_ucode_rev = 0x28;
+On Fri, Jun 8, 2012 at 2:01 AM, Xudong Hao <xudong.hao@intel.com> wrote:
+> LTR: Save Max snoop/no-snoop Latency Value in pci_save_pcie_state, and restore
+> them in pci_restore_pcie_state.
+>
+> Signed-off-by: Xudong Hao <xudong.hao@intel.com>
+> ---
+>  drivers/pci/pci.c   |   71 ++++++++++++++++++++++++++++++++++++++++++++++++---
+>  drivers/pci/probe.c |    5 +++-
+>  2 files changed, 71 insertions(+), 5 deletions(-)
+>
+> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+> index 35127c1..7172f15 100644
+> --- a/drivers/pci/pci.c
+> +++ b/drivers/pci/pci.c
+> @@ -912,6 +912,54 @@ static void pci_restore_pcie_state(struct pci_dev *dev)
+>                pci_write_config_word(dev, pos + PCI_EXP_SLTCTL2, cap[i++]);
+>  }
+>
+> +#define PCI_LTR_SAVE_REGS      2
 > +
-> +static void intel_snb_verify_ucode(void)
+> +static int pci_save_ltr_value(struct pci_dev *dev)
 > +{
-> +	u32 rev = UINT_MAX;
-> +	int pebs_broken = 0;
-> +	int cpu;
+> +       int i = 0, pos;
+> +       struct pci_cap_saved_state *save_state;
+> +       u16 *cap;
+> +       u16 ctrl;
 > +
-> +	get_online_cpus();
-> +	/*
-> +	 * Because the microcode loader is bloody stupid and allows different
-> +	 * revisions per cpu and does strictly per-cpu loading, we now have to
-> +	 * check all cpus to determine the minimally installed revision.
-> +	 *
-> +	 * This makes updating the microcode O(n^2) in the number of CPUs :/
-> +	 */
-> +	for_each_online_cpu(cpu)
-> +		rev = min(cpu_data(cpu).microcode, rev);
-> +	put_online_cpus();
+> +       pos = pci_find_ext_capability(dev, PCI_EXT_CAP_ID_LTR);
+> +       if (!pos)
+> +               return -ENOTSUPP;
 > +
-> +	pebs_broken = (rev < snb_ucode_rev);
+> +       /* Check if LTR is eanbled before save value */
+> +       pci_read_config_word(dev, pos + PCI_EXP_DEVCTL2, &ctrl);
+
+This is totally broken.  "pos" is the LTR Extended Capability (spec
+section 7.25).  PCI_EXP_DEVCTL2 is a field in the PCI Express
+Capability structure (section 7.8).
+
+> +       if (!(ctrl & PCI_EXP_LTR_EN))
+> +               return -ENOTSUPP;
 > +
-> +	if (pebs_broken == x86_pmu.pebs_broken)
-> +		return;
+> +       save_state = pci_find_saved_cap(dev, PCI_EXT_CAP_ID_LTR);
+> +       if (!save_state) {
+> +               dev_err(&dev->dev, "buffer not found in %s\n", __func__);
+> +               return -ENOMEM;
+> +       }
+> +       cap = (u16 *)&save_state->cap.data[0];
 > +
-> +	/*
-> +	 * Serialized by the microcode lock..
-> +	 */
-> +	if (x86_pmu.pebs_broken) {
-> +		pr_info("PEBS enabled due to micro-code update\n");
-> +		x86_pmu.pebs_broken = 0;
-> +	} else {
-> +		pr_info("PEBS disabled due to CPU errata, "
-> +			"please upgrade micro-code to at least %x (current: %x)\n",
-> +			snb_ucode_rev, rev);
-> +		x86_pmu.pebs_broken = 1;
-> +	}
+> +       pci_read_config_word(dev, pos + PCI_LTR_MAX_SNOOP_LAT, &cap[i++]);
+> +       pci_read_config_word(dev, pos + PCI_LTR_MAX_NOSNOOP_LAT, &cap[i++]);
+> +       return 0;
 > +}
 > +
-> +static int intel_snb_ucode_notifier(struct notifier_block *self,
-> +				   unsigned long action, void *_uci)
+> +static void pci_restore_ltr_value(struct pci_dev *dev)
 > +{
-> +	/*
-> +	 * Since ucode cannot be down-graded, and no future ucode revision
-> +	 * is known to break PEBS again, we're ok with MICROCODE_CAN_UPDATE.
-> +	 */
+> +       int i = 0, pos;
+> +       struct pci_cap_saved_state *save_state;
+> +       u16 *cap;
 > +
-> +	if (action == MICROCODE_UPDATED)
-> +		intel_snb_verify_ucode();
+> +       if (!pci_ltr_supported(dev))
+> +               return;
 > +
-> +	return NOTIFY_DONE;
+> +       save_state = pci_find_saved_cap(dev, PCI_EXT_CAP_ID_LTR);
+> +       pos = pci_find_ext_capability(dev, PCI_EXT_CAP_ID_LTR);
+> +       if (!save_state || !pos)
+> +               return;
+> +       cap = (u16 *)&save_state->cap.data[0];
+> +
+> +       pci_write_config_word(dev, pos + PCI_LTR_MAX_SNOOP_LAT, cap[i++]);
+> +       pci_write_config_word(dev, pos + PCI_LTR_MAX_NOSNOOP_LAT, cap[i++]);
 > +}
+>
+>  static int pci_save_pcix_state(struct pci_dev *dev)
+>  {
+> @@ -966,6 +1014,11 @@ pci_save_state(struct pci_dev *dev)
+>                return i;
+>        if ((i = pci_save_pcix_state(dev)) != 0)
+>                return i;
 > +
->  static __init void intel_sandybridge_quirk(void)
->  {
-> -	pr_warn("PEBS disabled due to CPU errata\n");
-> -	x86_pmu.pebs = 0;
-> -	x86_pmu.pebs_constraints = NULL;
-> +	intel_snb_verify_ucode();
-> +	/*
-> +	 * we're still single threaded, so while there's a hole here,
-> +	 * you can't trigger it.
-> +	 */
-> +	microcode_notifier(intel_snb_ucode_notifier);
->  }
-
-Instead of registering a microcode notifier, why not checking the
-availability of pebs dynamically with each syscall in
-intel_pmu_hw_config()? It looks like intel_snb_verify_ucode() is not
-that much expensive. We can perform the check only if the event could
-be for pebs and if pebs is broken. The check could be repeated when
-setting up a new event after ucode could potentially has been updated
-(e.g. after bringing a cpu online or so).
-
--Robert
-
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+> +       if (pci_ltr_supported(dev))
+> +               if ((i = pci_save_ltr_value(dev)) != 0)
+> +                       return i;
+> +
+>        return 0;
+>  }
+>
+> @@ -1034,6 +1087,7 @@ void pci_restore_state(struct pci_dev *dev)
+>        pci_restore_pcix_state(dev);
+>        pci_restore_msi_state(dev);
+>        pci_restore_iov_state(dev);
+> +       pci_restore_ltr_value(dev);
+>
+>        dev->state_saved = false;
+>  }
+> @@ -1955,12 +2009,15 @@ static void pci_add_saved_cap(struct pci_dev *pci_dev,
+>  * @size: requested size of the buffer
+>  */
+>  static int pci_add_cap_save_buffer(
+> -       struct pci_dev *dev, char cap, unsigned int size)
+> +       struct pci_dev *dev, char cap, unsigned int size, bool is_extcap)
+>  {
+>        int pos;
+>        struct pci_cap_saved_state *save_state;
+>
+> -       pos = pci_find_capability(dev, cap);
+> +       if (is_extcap)
+> +               pos = pci_find_ext_capability(dev, cap);
+> +       else
+> +               pos = pci_find_capability(dev, cap);
+>        if (pos <= 0)
+>                return 0;
+>
+> @@ -1984,15 +2041,21 @@ void pci_allocate_cap_save_buffers(struct pci_dev *dev)
+>        int error;
+>
+>        error = pci_add_cap_save_buffer(dev, PCI_CAP_ID_EXP,
+> -                                       PCI_EXP_SAVE_REGS * sizeof(u16));
+> +                                       PCI_EXP_SAVE_REGS * sizeof(u16), 0);
+>        if (error)
+>                dev_err(&dev->dev,
+>                        "unable to preallocate PCI Express save buffer\n");
+>
+> -       error = pci_add_cap_save_buffer(dev, PCI_CAP_ID_PCIX, sizeof(u16));
+> +       error = pci_add_cap_save_buffer(dev, PCI_CAP_ID_PCIX, sizeof(u16), 0);
+>        if (error)
+>                dev_err(&dev->dev,
+>                        "unable to preallocate PCI-X save buffer\n");
+> +
+> +       error = pci_add_cap_save_buffer(dev, PCI_EXT_CAP_ID_LTR,
+> +                                       PCI_LTR_SAVE_REGS * sizeof(u16), 1);
+> +       if (error)
+> +               dev_err(&dev->dev,
+> +                       "unable to preallocate LTR save buffer\n");
+>  }
+>
+>  void pci_free_cap_save_buffers(struct pci_dev *dev)
+> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+> index 658ac97..a6eb509 100644
+> --- a/drivers/pci/probe.c
+> +++ b/drivers/pci/probe.c
+> @@ -1232,7 +1232,10 @@ static void pci_init_capabilities(struct pci_dev *dev)
+>        /* MSI/MSI-X list */
+>        pci_msi_init_pci_dev(dev);
+>
+> -       /* Buffers for saving PCIe and PCI-X capabilities */
+> +       /*
+> +        * Buffers for saving PCIe and PCI-X capabilities
+> +        * and for saving LTR extented capabilities.
+> +        */
+>        pci_allocate_cap_save_buffers(dev);
+>
+>        /* Power Management */
+> --
+> 1.5.5
+>
