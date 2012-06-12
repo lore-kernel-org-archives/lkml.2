@@ -1,181 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751618Ab2FLHvJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 03:51:09 -0400
-Received: from mga14.intel.com ([143.182.124.37]:14978 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750867Ab2FLHvI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 03:51:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208,223";a="111057321"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Borislav Petkov <bp@amd64.org>, "Luck, Tony" <tony.luck@intel.com>,
-        "'xen-devel@lists.xensource.com'" <xen-devel@lists.xensource.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] xen/mce: schedule a workqueue to avoid sleep in atomic
- context
-Thread-Topic: [PATCH] xen/mce: schedule a workqueue to avoid sleep in atomic
- context
-Thread-Index: Ac1IcB2Zmrg1zlUCRGutICBqPpSu9A==
-Date: Tue, 12 Jun 2012 07:51:03 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC8292335228748@SHSMSX101.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: multipart/mixed;
-	boundary="_002_DE8DF0795D48FD4CA783C40EC8292335228748SHSMSX101ccrcorpi_"
+	id S1751749Ab2FLHwM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 03:52:12 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:40732 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750995Ab2FLHwK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 03:52:10 -0400
 MIME-Version: 1.0
+In-Reply-To: <20120612071649.GA1306@gmail.com>
+References: <1339448260-1733-1-git-send-email-fabio.baltieri@gmail.com>
+ <1339450705.23857.16.camel@lorien2> <20120612071649.GA1306@gmail.com>
+From: Bryan Wu <bryan.wu@canonical.com>
+Date: Tue, 12 Jun 2012 15:51:49 +0800
+X-Google-Sender-Auth: V4vxRFXFdp8fqmsM8k47PMOhdR4
+Message-ID: <CAK5ve-+D7vPO1U4gZDHRBmafJtF5T_EYBPCSAT2YOXjbc_u4zQ@mail.gmail.com>
+Subject: Re: [PATCH] leds: use led_brightness_set in led_trigger_event
+To: Fabio Baltieri <fabio.baltieri@gmail.com>
+Cc: Shuah Khan <shuahkhan@gmail.com>, linux-leds@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---_002_DE8DF0795D48FD4CA783C40EC8292335228748SHSMSX101ccrcorpi_
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: quoted-printable
+On Tue, Jun 12, 2012 at 3:16 PM, Fabio Baltieri
+<fabio.baltieri@gmail.com> wrote:
+> On Mon, Jun 11, 2012 at 03:38:25PM -0600, Shuah Khan wrote:
+>> On Mon, 2012-06-11 at 22:57 +0200, Fabio Baltieri wrote:
+>> > Fix led_trigger_event() to use led_brightness_set() instead of
+>> > led_set_brightness(), so that any pending blink timer is stopped before
+>> > setting the new brightness value.  Without this fix LED status may be
+>> > overridden by a pending timer.
+>> >
+>> > This allows a trigger to use a mix of led_trigger_event(),
+>> > led_trigger_blink() and led_trigger_blink_oneshot() without races.
+>> >
+>> > Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
+>> > Cc: Bryan Wu <bryan.wu@canonical.com>
+>> > ---
+>> > Hi Bryan,
+>> >
+>> > I found this one while working on another patch but I think it's also needed by
+>> > other drivers which mixes led_trigger_blink() and led_trigger_event(), such as
+>> > power_supply_leds.
+>> >
+>> > Without this a led don't stop blinking as it should when calling
+>> > led_trigger_event().
+>>
+>> Good find. This is very subtle race though because both timer and
+>> oneshot triggers call led_brightness_set() from their deactivate
+>> routines. Is this when these events triggered using oneshot trigger?
+>
+> Actually that was when mixing blink (both timer and oneshot, they use
+> the same timer) and standard trigger-event-set. It should be safe if
+> only internal (core) functions call set_brightness.
+>
+>> >
+>> > Should not cause any harm on other drivers.
+>> >
+>> > (I'm starting to find the whole led_set_brightness/led_brightness_set thing a
+>> > bit confusing BTW...)
+>>
+>> I agree with the names are confusing. :) It found it confusing as well.
+>> Probably why we have this bug hiding until led_trigger_blink() came
+>> along.
+>>
+>> led_brightness_set() calls led_set_brightness(). led_set_brightness()
+>> takes cares about whether the driver is in suspend state and invokes
+>> driver's brightness_set interface. Maybe led_clear_blink_timer() would
+>> be a better name for this led_brightness_set() routine.
+>
+> I think maybe we should just rename the function to led_set_brightness()
+> for the safe one (the one whichh also deactivate the time) and
+> _led_set_brightness() for the internal one, to put some emphasis to the
+> "internal" nature of the second.
+>
 
->From aa2ce7440f16002266dc8464f749992d0c8ac0e5 Mon Sep 17 00:00:00 2001
-From: Liu, Jinsong <jinsong.liu@intel.com>
-Date: Tue, 12 Jun 2012 23:11:16 +0800
-Subject: [PATCH] xen/mce: schedule a workqueue to avoid sleep in atomic con=
-text
+Thanks for catching this. It's a good idea we sort out those confusing name.
+Probably __led_set_bringness() is more conventional than _led_set_brightness().
 
-copy_to_user might sleep and print a stack trace if it is executed
-in an atomic spinlock context.
+And might also need to revisit other function names.
 
-This patch schedule a workqueue for IRQ handler to poll the data,
-and use mutex instead of spinlock, so copy_to_user sleep in atomic
-context would not occur.
+>> I can volunteer to make this change if we agree that this will be a good
+>> one to clear this naming confusion.
+>
 
-Reported-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Suggested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Liu, Jinsong <jinsong.liu@intel.com>
----
- drivers/xen/mcelog.c |   18 +++++++++++-------
- 1 files changed, 11 insertions(+), 7 deletions(-)
+OK, good Shuah, please go ahead and submit patches and I will hold
+this patch for a while and wait for the final fixing.
 
-diff --git a/drivers/xen/mcelog.c b/drivers/xen/mcelog.c
-index 72e87d2..804aa3c 100644
---- a/drivers/xen/mcelog.c
-+++ b/drivers/xen/mcelog.c
-@@ -55,7 +55,7 @@ static struct mc_info g_mi;
- static struct mcinfo_logical_cpu *g_physinfo;
- static uint32_t ncpus;
-=20
--static DEFINE_SPINLOCK(mcelog_lock);
-+static DEFINE_MUTEX(mcelog_lock);
-=20
- static struct xen_mce_log xen_mcelog =3D {
- 	.signature	=3D XEN_MCE_LOG_SIGNATURE,
-@@ -106,7 +106,7 @@ static ssize_t xen_mce_chrdev_read(struct file *filp, c=
-har __user *ubuf,
- 	unsigned num;
- 	int i, err;
-=20
--	spin_lock(&mcelog_lock);
-+	mutex_lock(&mcelog_lock);
-=20
- 	num =3D xen_mcelog.next;
-=20
-@@ -130,7 +130,7 @@ static ssize_t xen_mce_chrdev_read(struct file *filp, c=
-har __user *ubuf,
- 		err =3D -EFAULT;
-=20
- out:
--	spin_unlock(&mcelog_lock);
-+	mutex_unlock(&mcelog_lock);
-=20
- 	return err ? err : buf - ubuf;
- }
-@@ -310,12 +310,11 @@ static int mc_queue_handle(uint32_t flags)
- }
-=20
- /* virq handler for machine check error info*/
--static irqreturn_t xen_mce_interrupt(int irq, void *dev_id)
-+static void xen_mce_work_fn(struct work_struct *work)
- {
- 	int err;
--	unsigned long tmp;
-=20
--	spin_lock_irqsave(&mcelog_lock, tmp);
-+	mutex_lock(&mcelog_lock);
-=20
- 	/* urgent mc_info */
- 	err =3D mc_queue_handle(XEN_MC_URGENT);
-@@ -330,8 +329,13 @@ static irqreturn_t xen_mce_interrupt(int irq, void *de=
-v_id)
- 		pr_err(XEN_MCELOG
- 		       "Failed to handle nonurgent mc_info queue.\n");
-=20
--	spin_unlock_irqrestore(&mcelog_lock, tmp);
-+	mutex_unlock(&mcelog_lock);
-+}
-+static DECLARE_WORK(xen_mce_work, xen_mce_work_fn);
-=20
-+static irqreturn_t xen_mce_interrupt(int irq, void *dev_id)
-+{
-+	schedule_work(&xen_mce_work);
- 	return IRQ_HANDLED;
- }
-=20
---=20
-1.7.1
+-Bryan
 
---_002_DE8DF0795D48FD4CA783C40EC8292335228748SHSMSX101ccrcorpi_
-Content-Type: application/octet-stream;
-	name="0001-xen-mce-schedule-a-workqueue-to-avoid-sleep-in-atomi.patch"
-Content-Description: 0001-xen-mce-schedule-a-workqueue-to-avoid-sleep-in-atomi.patch
-Content-Disposition: attachment;
-	filename="0001-xen-mce-schedule-a-workqueue-to-avoid-sleep-in-atomi.patch";
-	size=2441; creation-date="Tue, 12 Jun 2012 07:45:53 GMT";
-	modification-date="Tue, 12 Jun 2012 15:39:38 GMT"
-Content-Transfer-Encoding: base64
+> That would save some headache in the future! :-)
+>
+> Fabio
+>
+>>
+>> -- Shuah
+>>
+>> >
+>> > Fabio
+>> >
+>> >  drivers/leds/led-triggers.c | 2 +-
+>> >  1 file changed, 1 insertion(+), 1 deletion(-)
+>> >
+>> > diff --git a/drivers/leds/led-triggers.c b/drivers/leds/led-triggers.c
+>> > index fa0b9be..b88d3b9 100644
+>> > --- a/drivers/leds/led-triggers.c
+>> > +++ b/drivers/leds/led-triggers.c
+>> > @@ -224,7 +224,7 @@ void led_trigger_event(struct led_trigger *trig,
+>> >             struct led_classdev *led_cdev;
+>> >
+>> >             led_cdev = list_entry(entry, struct led_classdev, trig_list);
+>> > -           led_set_brightness(led_cdev, brightness);
+>> > +           led_brightness_set(led_cdev, brightness);
+>>
+>> This is in-line with led_trigger_set() which is calling
+>> led_bightness_set() correctly. Also led_classdev_unregister() calls it I
+>> think for the same reason so the blink timer can be stopped.
+>>
+>> >     }
+>> >     read_unlock(&trig->leddev_list_lock);
+>> >  }
+>>
+>>
 
-RnJvbSBhYTJjZTc0NDBmMTYwMDIyNjZkYzg0NjRmNzQ5OTkyZDBjOGFjMGU1IE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBMaXUsIEppbnNvbmcgPGppbnNvbmcubGl1QGludGVsLmNvbT4K
-RGF0ZTogVHVlLCAxMiBKdW4gMjAxMiAyMzoxMToxNiArMDgwMApTdWJqZWN0OiBbUEFUQ0hdIHhl
-bi9tY2U6IHNjaGVkdWxlIGEgd29ya3F1ZXVlIHRvIGF2b2lkIHNsZWVwIGluIGF0b21pYyBjb250
-ZXh0Cgpjb3B5X3RvX3VzZXIgbWlnaHQgc2xlZXAgYW5kIHByaW50IGEgc3RhY2sgdHJhY2UgaWYg
-aXQgaXMgZXhlY3V0ZWQKaW4gYW4gYXRvbWljIHNwaW5sb2NrIGNvbnRleHQuCgpUaGlzIHBhdGNo
-IHNjaGVkdWxlIGEgd29ya3F1ZXVlIGZvciBJUlEgaGFuZGxlciB0byBwb2xsIHRoZSBkYXRhLAph
-bmQgdXNlIG11dGV4IGluc3RlYWQgb2Ygc3BpbmxvY2ssIHNvIGNvcHlfdG9fdXNlciBzbGVlcCBp
-biBhdG9taWMKY29udGV4dCB3b3VsZCBub3Qgb2NjdXIuCgpSZXBvcnRlZC1ieTogS29ucmFkIFJ6
-ZXN6dXRlayBXaWxrIDxrb25yYWQud2lsa0BvcmFjbGUuY29tPgpTdWdnZXN0ZWQtYnk6IEtvbnJh
-ZCBSemVzenV0ZWsgV2lsayA8a29ucmFkLndpbGtAb3JhY2xlLmNvbT4KU2lnbmVkLW9mZi1ieTog
-TGl1LCBKaW5zb25nIDxqaW5zb25nLmxpdUBpbnRlbC5jb20+Ci0tLQogZHJpdmVycy94ZW4vbWNl
-bG9nLmMgfCAgIDE4ICsrKysrKysrKysrLS0tLS0tLQogMSBmaWxlcyBjaGFuZ2VkLCAxMSBpbnNl
-cnRpb25zKCspLCA3IGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2RyaXZlcnMveGVuL21jZWxv
-Zy5jIGIvZHJpdmVycy94ZW4vbWNlbG9nLmMKaW5kZXggNzJlODdkMi4uODA0YWEzYyAxMDA2NDQK
-LS0tIGEvZHJpdmVycy94ZW4vbWNlbG9nLmMKKysrIGIvZHJpdmVycy94ZW4vbWNlbG9nLmMKQEAg
-LTU1LDcgKzU1LDcgQEAgc3RhdGljIHN0cnVjdCBtY19pbmZvIGdfbWk7CiBzdGF0aWMgc3RydWN0
-IG1jaW5mb19sb2dpY2FsX2NwdSAqZ19waHlzaW5mbzsKIHN0YXRpYyB1aW50MzJfdCBuY3B1czsK
-IAotc3RhdGljIERFRklORV9TUElOTE9DSyhtY2Vsb2dfbG9jayk7CitzdGF0aWMgREVGSU5FX01V
-VEVYKG1jZWxvZ19sb2NrKTsKIAogc3RhdGljIHN0cnVjdCB4ZW5fbWNlX2xvZyB4ZW5fbWNlbG9n
-ID0gewogCS5zaWduYXR1cmUJPSBYRU5fTUNFX0xPR19TSUdOQVRVUkUsCkBAIC0xMDYsNyArMTA2
-LDcgQEAgc3RhdGljIHNzaXplX3QgeGVuX21jZV9jaHJkZXZfcmVhZChzdHJ1Y3QgZmlsZSAqZmls
-cCwgY2hhciBfX3VzZXIgKnVidWYsCiAJdW5zaWduZWQgbnVtOwogCWludCBpLCBlcnI7CiAKLQlz
-cGluX2xvY2soJm1jZWxvZ19sb2NrKTsKKwltdXRleF9sb2NrKCZtY2Vsb2dfbG9jayk7CiAKIAlu
-dW0gPSB4ZW5fbWNlbG9nLm5leHQ7CiAKQEAgLTEzMCw3ICsxMzAsNyBAQCBzdGF0aWMgc3NpemVf
-dCB4ZW5fbWNlX2NocmRldl9yZWFkKHN0cnVjdCBmaWxlICpmaWxwLCBjaGFyIF9fdXNlciAqdWJ1
-ZiwKIAkJZXJyID0gLUVGQVVMVDsKIAogb3V0OgotCXNwaW5fdW5sb2NrKCZtY2Vsb2dfbG9jayk7
-CisJbXV0ZXhfdW5sb2NrKCZtY2Vsb2dfbG9jayk7CiAKIAlyZXR1cm4gZXJyID8gZXJyIDogYnVm
-IC0gdWJ1ZjsKIH0KQEAgLTMxMCwxMiArMzEwLDExIEBAIHN0YXRpYyBpbnQgbWNfcXVldWVfaGFu
-ZGxlKHVpbnQzMl90IGZsYWdzKQogfQogCiAvKiB2aXJxIGhhbmRsZXIgZm9yIG1hY2hpbmUgY2hl
-Y2sgZXJyb3IgaW5mbyovCi1zdGF0aWMgaXJxcmV0dXJuX3QgeGVuX21jZV9pbnRlcnJ1cHQoaW50
-IGlycSwgdm9pZCAqZGV2X2lkKQorc3RhdGljIHZvaWQgeGVuX21jZV93b3JrX2ZuKHN0cnVjdCB3
-b3JrX3N0cnVjdCAqd29yaykKIHsKIAlpbnQgZXJyOwotCXVuc2lnbmVkIGxvbmcgdG1wOwogCi0J
-c3Bpbl9sb2NrX2lycXNhdmUoJm1jZWxvZ19sb2NrLCB0bXApOworCW11dGV4X2xvY2soJm1jZWxv
-Z19sb2NrKTsKIAogCS8qIHVyZ2VudCBtY19pbmZvICovCiAJZXJyID0gbWNfcXVldWVfaGFuZGxl
-KFhFTl9NQ19VUkdFTlQpOwpAQCAtMzMwLDggKzMyOSwxMyBAQCBzdGF0aWMgaXJxcmV0dXJuX3Qg
-eGVuX21jZV9pbnRlcnJ1cHQoaW50IGlycSwgdm9pZCAqZGV2X2lkKQogCQlwcl9lcnIoWEVOX01D
-RUxPRwogCQkgICAgICAgIkZhaWxlZCB0byBoYW5kbGUgbm9udXJnZW50IG1jX2luZm8gcXVldWUu
-XG4iKTsKIAotCXNwaW5fdW5sb2NrX2lycXJlc3RvcmUoJm1jZWxvZ19sb2NrLCB0bXApOworCW11
-dGV4X3VubG9jaygmbWNlbG9nX2xvY2spOworfQorc3RhdGljIERFQ0xBUkVfV09SSyh4ZW5fbWNl
-X3dvcmssIHhlbl9tY2Vfd29ya19mbik7CiAKK3N0YXRpYyBpcnFyZXR1cm5fdCB4ZW5fbWNlX2lu
-dGVycnVwdChpbnQgaXJxLCB2b2lkICpkZXZfaWQpCit7CisJc2NoZWR1bGVfd29yaygmeGVuX21j
-ZV93b3JrKTsKIAlyZXR1cm4gSVJRX0hBTkRMRUQ7CiB9CiAKLS0gCjEuNy4xCgo=
 
---_002_DE8DF0795D48FD4CA783C40EC8292335228748SHSMSX101ccrcorpi_--
+
+-- 
+Bryan Wu <bryan.wu@canonical.com>
+Kernel Developer    +86.186-168-78255 Mobile
+Canonical Ltd.      www.canonical.com
+Ubuntu - Linux for human beings | www.ubuntu.com
