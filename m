@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751674Ab2FLNzw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 09:55:52 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62732 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750961Ab2FLNzu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 09:55:50 -0400
+	id S1751557Ab2FLN5R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 09:57:17 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:60700 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751129Ab2FLN5P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 09:57:15 -0400
+Date: Tue, 12 Jun 2012 15:57:13 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Mahmood Naderan <nt_mahmood@yahoo.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+Subject: Re: CPU MTRRs and linux kernel
+Message-ID: <20120612135713.GA10128@x1.osrc.amd.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Mahmood Naderan <nt_mahmood@yahoo.com>,
+	LKML <linux-kernel@vger.kernel.org>,
+	Andreas Herrmann <andreas.herrmann3@amd.com>
+References: <1339493860.10145.YahooMailNeo@web111708.mail.gq1.yahoo.com>
+ <20120612103954.GB10124@x1.osrc.amd.com>
+ <1339508890.39685.YahooMailNeo@web111705.mail.gq1.yahoo.com>
 MIME-Version: 1.0
-In-Reply-To: <20120612132736.642a4a5a@pyramind.ukuu.org.uk>
-References: <CAH9NwWd1F3Vw2zrQJh8Jazm45C_BAH3H3-qupvm2XaLgDOM=QQ@mail.gmail.com>
-	<CAMeQTsZfE8_t6DCr3UWVqnOLyxNuNh7_VxJmqiP+enBBqM0o_A@mail.gmail.com>
-	<CAH9NwWc3W6zHCFf9rwKg5NMQaWnh4A=xVVysmG1Y=eUMzu=18Q@mail.gmail.com>
-	<CAMeQTsaknGLR2QCWwN8kYKh8y=JJtqN-ZSty6YTKnAOv2Vp3XQ@mail.gmail.com>
-	<CAH9NwWdmhmLB5io5RWVQBj6c7zjXT9hFa7OAHVrL6oY8P0kjaw@mail.gmail.com>
-	<20120612132736.642a4a5a@pyramind.ukuu.org.uk>
-Date: Tue, 12 Jun 2012 15:55:50 +0200
-Message-ID: <CAMeQTsZZ0ay7YqkzUzkhe6D6FNsQXaDKHfJKB6_6icd=4VemrA@mail.gmail.com>
-Subject: Re: gma500: Cannot find any crtc or sizes - going 1024x768
-From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Christian Gmeiner <christian.gmeiner@gmail.com>,
-        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <greg@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1339508890.39685.YahooMailNeo@web111705.mail.gq1.yahoo.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 12, 2012 at 2:27 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
->> Works much better with this patch applied - I see a linux desktop on
->> the panel :)
->
-> Yay..
->
->> Is there a way to overwrite the found modeline?
->
-> You can set modelines via the video interfaces and also by passing it as
-> a boot parameter. The mode setting X server will also let you set modes.
->
->
-> video=640x400@60
->
-> or similar should work - you can set all kinds of bits this way.
->
->
-> If there is a way to identify the platform and that is needed to get it
-> right then we can also hardcode a DMI match or similar for the device
-> eventually.
+On Tue, Jun 12, 2012 at 06:48:10AM -0700, Mahmood Naderan wrote:
+> Thanks Borislav, I want to know, should I upgrade to the latest kernel
+> or it is possible to download the source of 2.6.32-24 from repository
+> and modify cleanup.c and then recompile?
 
-Was there a special reason for 0x4108 to be left out in the IS_MRST macro?
-To me it looks like the bitmask should have been updated in commit:
+Whatever you decide.
 
-gma500: Add the E6xx PCI identifier we are missing
-56125db1eecf8d34d84f7925686110d90724edf0
+If it were me and I didn't have any particular reason to stick with
+2.6.32, I'd always go for the latest kernel.
 
-If this is the case, I'll send a proper patch since this also applies to
-stable 3.3.x and 3.4.x
+In any case, no matter which kernel you're installing, just make sure it
+contains the aforementioned patch which should fix your problem.
 
-Patrik
+HTH.
+
+-- 
+Regards/Gruss,
+Boris.
