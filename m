@@ -1,661 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753785Ab2FLW5y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 18:57:54 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16044 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752843Ab2FLWy0 (ORCPT
+	id S1753624Ab2FLW6d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 18:58:33 -0400
+Received: from ironport2-out.teksavvy.com ([206.248.154.182]:11546 "EHLO
+	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752854Ab2FLW6b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 18:54:26 -0400
-X-Authority-Analysis: v=2.0 cv=eIiRfQV1 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Ciwy3NGCPMMA:10 a=45YwEKLOSbgA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=2BORkHQ9DZn1uWWSU7gA:9 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=x5j0hXPS32eIK5u8:21 a=r0ACqAGHX4PcAewt:21 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-Id: <20120612225425.218922417@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Tue, 12 Jun 2012 18:43:32 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [RFC][PATCH 05/13 v2] ftrace/x86: Add separate function to save regs
-References: <20120612224327.426900129@goodmis.org>
-Content-Disposition: inline; filename=0005-ftrace-x86-Add-separate-function-to-save-regs.patch
+	Tue, 12 Jun 2012 18:58:31 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApMBAG6Zu08Y9geI/2dsb2JhbAANN4UtsgEBAQEBAgEBAhsFVQYLCxgCAgUWCwICCQMCAQIBFi8GAQwGAgEBiAUQpwOSe4EmiXuED4EUA5J2gzSRZoFD
+X-IronPort-AV: E=Sophos;i="4.75,637,1330923600"; 
+   d="scan'208";a="191232552"
+Message-ID: <4FD7C995.8040402@teksavvy.com>
+Date: Tue, 12 Jun 2012 18:58:29 -0400
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Linux Kernel <linux-kernel@vger.kernel.org>, davej@redhat.com,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Ben Hutchings <bhutchings@solarflare.com>
+Subject: Re: mount.nfs: cannot allocate memory
+References: <4FD7C65F.80602@teksavvy.com> <4FD7C7C6.9030204@teksavvy.com>
+In-Reply-To: <4FD7C7C6.9030204@teksavvy.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <srostedt@redhat.com>
+Adding Ben Hutchings to CC: as he seems to have looked into this before.
 
-Add a way to have different functions calling different trampolines.
-If a ftrace_ops wants regs saved on the return, then have only the
-functions with ops registered to save regs. Functions registered by
-other ops would not be affected, unless the functions overlap.
+> On 12-06-12 06:44 PM, Mark Lord wrote:
+>> I've been seeing these messages on my AMD Fusion server
+>> running linux-3.3.7-64bit.  Does this ring any bells for anyone else?
+>> The system is NOT low on memory.
+>>
+>> I'm building/installing 3.4.2 now to see if it behaves any better.
+>>
+>> [962841.265658] mount.nfs: page allocation failure: order:4, mode:0xc0d0
+>> [962841.265674] Pid: 32116, comm: mount.nfs Not tainted 3.3.7 #2
+>> [962841.265680] Call Trace:
+>> [962841.265700]  [<ffffffff81079363>] ? warn_alloc_failed+0x11a/0x12d
+>> [962841.265713]  [<ffffffff8107b904>] ? __alloc_pages_nodemask+0x6c0/0x702
+>> [962841.265725]  [<ffffffff8114fcb8>] ? timerqueue_del+0x53/0x63
+>> [962841.265758]  [<ffffffff8107b9ba>] ? __get_free_pages+0x10/0x3f
+>> [962841.265805]  [<ffffffffa01ea33d>] ? nfs_idmap_new+0x28/0xde [nfs]
+>> [962841.265836]  [<ffffffffa01c79c9>] ? nfs4_init_client+0x74/0x12a [nfs]
+>> [962841.265863]  [<ffffffffa01c6f3b>] ? nfs_get_client+0x337/0x476 [nfs]
+>> [962841.265874]  [<ffffffff81087ad8>] ? pcpu_alloc+0x796/0x7ad
+>> [962841.265885]  [<ffffffff810403f7>] ? should_resched+0x5/0x23
+>> [962841.265913]  [<ffffffffa01c70f2>] ? nfs4_set_client+0x78/0xca [nfs]
+>> [962841.265944]  [<ffffffffa01c7b5c>] ? nfs4_create_server+0xdd/0x208 [nfs]
+>> [962841.265956]  [<ffffffff812c0de1>] ? _cond_resched+0x7/0x1c
+>> [962841.265990]  [<ffffffffa01cfa3c>] ? nfs4_remote_mount+0x50/0x183 [nfs]
+>> [962841.266007]  [<ffffffff810ab334>] ? mount_fs+0xc/0xa0
+>> [962841.266020]  [<ffffffff810bd3fd>] ? vfs_kern_mount+0x61/0xcc
+>> [962841.266053]  [<ffffffffa01cfc3f>] ? nfs_do_root_mount+0x89/0xaa [nfs]
+>> [962841.266088]  [<ffffffffa01d0702>] ? nfs4_try_mount.isra.27+0x4c/0x9e [nfs]
+>> [962841.266120]  [<ffffffffa01d1145>] ? nfs_fs_mount+0x3e9/0x5ef [nfs]
+>> [962841.266131]  [<ffffffff8114b3bc>] ? ida_get_new_above+0x176/0x198
+>> [962841.266147]  [<ffffffff810ab334>] ? mount_fs+0xc/0xa0
+>> [962841.266159]  [<ffffffff810bd3fd>] ? vfs_kern_mount+0x61/0xcc
+>> [962841.266172]  [<ffffffff810bd7f0>] ? do_kern_mount+0x49/0xd8
+>> [962841.266182]  [<ffffffff810beec8>] ? do_mount+0x630/0x695
+>> [962841.266191]  [<ffffffff810be80a>] ? copy_mount_options+0xc3/0x126
+>> [962841.266201]  [<ffffffff810bf00f>] ? sys_mount+0x88/0xca
+>> [962841.266212]  [<ffffffff812c20a2>] ? system_call_fastpath+0x16/0x1b
+>> [962841.266219] Mem-Info:
+>> [962841.266224] DMA per-cpu:
+>> [962841.266230] CPU    0: hi:    0, btch:   1 usd:   0
+>> [962841.266237] CPU    1: hi:    0, btch:   1 usd:   0
+>> [962841.266242] DMA32 per-cpu:
+>> [962841.266248] CPU    0: hi:  186, btch:  31 usd:   0
+>> [962841.266255] CPU    1: hi:  186, btch:  31 usd:   0
+>> [962841.266260] Normal per-cpu:
+>> [962841.266266] CPU    0: hi:  186, btch:  31 usd:   0
+>> [962841.266272] CPU    1: hi:  186, btch:  31 usd: 167
+>> [962841.266289] active_anon:60865 inactive_anon:15547 isolated_anon:0
+>> [962841.266293]  active_file:221296 inactive_file:1249491 isolated_file:0
+>> [962841.266297]  unevictable:0 dirty:4156 writeback:0 unstable:0
+>> [962841.266300]  free:47696 slab_reclaimable:325469 slab_unreclaimable:6023
+>> [962841.266304]  mapped:8585 shmem:1955 pagetables:4954 bounce:0
+>> [962841.266327] DMA free:15904kB min:132kB low:164kB high:196kB active_anon:0kB inactive_anon:0kB
+>> active_file:0kB inactive_file:0kB unevictable:0kB isolated(anon):0kB isolated(file):0kB
+>> present:15648kB mlocked:0kB dirty:0kB writeback:0kB mapped:0kB shmem:0kB slab_reclaimable:0kB
+>> slab_unreclaimable:0kB kernel_stack:0kB pagetables:0kB unstable:0kB bounce:0kB writeback_tmp:0kB
+>> pages_scanned:0 all_unreclaimable? yes
+>> [962841.266344] lowmem_reserve[]: 0 2603 7628 7628
+>> [962841.266371] DMA32 free:102056kB min:23020kB low:28772kB high:34528kB active_anon:20256kB
+>> inactive_anon:19164kB active_file:160472kB inactive_file:1952944kB unevictable:0kB
+>> isolated(anon):0kB isolated(file):0kB present:2666288kB mlocked:0kB dirty:5804kB writeback:0kB
+>> mapped:8052kB shmem:4192kB slab_reclaimable:400280kB slab_unreclaimable:3080kB kernel_stack:104kB
+>> pagetables:1400kB unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? no
+>> [962841.266391] lowmem_reserve[]: 0 0 5024 5024
+>> [962841.266417] Normal free:72824kB min:44424kB low:55528kB high:66636kB active_anon:223204kB
+>> inactive_anon:43024kB active_file:724712kB inactive_file:3045020kB unevictable:0kB
+>> isolated(anon):0kB isolated(file):0kB present:5144828kB mlocked:0kB dirty:10820kB writeback:0kB
+>> mapped:26288kB shmem:3628kB slab_reclaimable:901596kB slab_unreclaimable:21012kB kernel_stack:2640kB
+>> pagetables:18416kB unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:135 all_unreclaimable? no
+>> [962841.266438] lowmem_reserve[]: 0 0 0 0
+>> [962841.266448] DMA: 0*4kB 0*8kB 0*16kB 1*32kB 2*64kB 1*128kB 1*256kB 0*512kB 1*1024kB 1*2048kB
+>> 3*4096kB = 15904kB
+>> [962841.266475] DMA32: 18658*4kB 2005*8kB 437*16kB 112*32kB 13*64kB 0*128kB 0*256kB 0*512kB 0*1024kB
+>> 0*2048kB 0*4096kB = 102080kB
+>> [962841.266501] Normal: 8194*4kB 4068*8kB 395*16kB 31*32kB 3*64kB 0*128kB 0*256kB 0*512kB 0*1024kB
+>> 0*2048kB 0*4096kB = 72824kB
+>> [962841.266526] 1472725 total pagecache pages
+>> [962841.266532] 0 pages in swap cache
+>> [962841.266538] Swap cache stats: add 0, delete 0, find 0/0
+>> [962841.266544] Free swap  = 7846908kB
+>> [962841.266549] Total swap = 7846908kB
+>> [962841.381943] 1994736 pages RAM
+>> [962841.381951] 53376 pages reserved
+>> [962841.381956] 1122458 pages shared
+>> [962841.381961] 819713 pages non-shared
+> 
+> Looks like an old bug, perhaps:
+> https://bugzilla.redhat.com/show_bug.cgi?id=593035
+> https://bugzilla.redhat.com/show_bug.cgi?id=728003
+> 
+> I wonder what the underlying cause is?
+> And I also wonder if the NFS code should be more clever
+> about handing order-4 allocation failures.
 
-If one ftrace_ops registered functions A, B and C and another ops
-registered fucntions to save regs on A, and D, then only functions
-A and D would be saving regs. Function B and C would work as normal.
-Although A is registered by both ops: normal and saves regs; this is fine
-as saving the regs is needed to satisfy one of the ops that calls it
-but the regs are ignored by the other ops function.
+More references:
+http://www.mail-archive.com/debian-kernel@lists.debian.org/msg71281.html
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1004619
+http://codemonkey.org.uk/2012/02/17/fedora-16-kernel-bugzilla-status-report-20120210-20120217/
+https://lkml.org/lkml/2011/2/24/73
 
-x86_64 implements the full regs saving, and i386 just passes a NULL
-for regs to satisfy the ftrace_ops passing. Where an arch must supply
-both regs and ftrace_ops parameters, even if regs is just NULL.
-
-It is OK for an arch to pass NULL regs. All function trace users that
-require regs passing must add the flag FTRACE_OPS_FL_SAVE_REGS when
-registering the ftrace_ops and either check if regs is not NULL or
-check if ARCH_SUPPORTS_FTRACE_SAVE_REGS. If the arch supports passing
-regs it will set this macro and pass regs for ops that request them.
-All other archs will just pass NULL.
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- arch/x86/include/asm/ftrace.h |    8 +++-
- arch/x86/kernel/entry_32.S    |    2 +
- arch/x86/kernel/entry_64.S    |   86 +++++++++++++++++++++++++++++++++++----
- arch/x86/kernel/ftrace.c      |   77 +++++++++++++++++++++++++++++++++--
- include/linux/ftrace.h        |   90 +++++++++++++++++++++++++++++++++++++++--
- kernel/trace/ftrace.c         |   77 +++++++++++++++++++++++++++++++----
- 6 files changed, 315 insertions(+), 25 deletions(-)
-
-diff --git a/arch/x86/include/asm/ftrace.h b/arch/x86/include/asm/ftrace.h
-index aefea5b..fd10faf 100644
---- a/arch/x86/include/asm/ftrace.h
-+++ b/arch/x86/include/asm/ftrace.h
-@@ -3,11 +3,12 @@
- 
- #ifdef __ASSEMBLY__
- 
--	.macro MCOUNT_SAVE_FRAME
-+	/* skip is set if the stack was already partially adjusted */
-+	.macro MCOUNT_SAVE_FRAME skip=0
- 	 /*
- 	  * We add enough stack to save all regs.
- 	  */
--	subq $(SS+8), %rsp
-+	subq $(SS+8-\skip), %rsp
- 	movq %rax, RAX(%rsp)
- 	movq %rcx, RCX(%rsp)
- 	movq %rdx, RDX(%rsp)
-@@ -39,6 +40,9 @@
- 
- #ifdef CONFIG_DYNAMIC_FTRACE
- #define ARCH_SUPPORTS_FTRACE_OPS 1
-+#ifdef CONFIG_X86_64
-+#define ARCH_SUPPORTS_FTRACE_SAVE_REGS
-+#endif
- #endif
- 
- #ifndef __ASSEMBLY__
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index e3e17a0..acd4963 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -1109,6 +1109,7 @@ ENTRY(ftrace_caller)
- 	pushl %eax
- 	pushl %ecx
- 	pushl %edx
-+	pushl $0	/* Pass NULL as regs pointer */
- 	movl 0xc(%esp), %eax
- 	movl 0x4(%ebp), %edx
- 	leal function_trace_op, %ecx
-@@ -1118,6 +1119,7 @@ ENTRY(ftrace_caller)
- ftrace_call:
- 	call ftrace_stub
- 
-+	addl $4,%esp	/* skip NULL pointer */
- 	popl %edx
- 	popl %ecx
- 	popl %eax
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 83d8ae0..80bd69a 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -73,25 +73,34 @@ ENTRY(mcount)
- 	retq
- END(mcount)
- 
-+/* skip is set if stack has been adjusted */
-+.macro ftrace_caller_setup skip=0
-+	MCOUNT_SAVE_FRAME \skip
-+
-+	/* Load the ftrace_ops into the 3rd parameter */
-+	leaq function_trace_op, %rdx
-+
-+	/* Load ip into the first parameter */
-+	movq RIP(%rsp), %rdi
-+	subq $MCOUNT_INSN_SIZE, %rdi
-+	/* Load the parent_ip into the second parameter */
-+	movq 8(%rbp), %rsi
-+.endm
-+
- ENTRY(ftrace_caller)
-+	/* Check if tracing was disabled (quick check) */
- 	cmpl $0, function_trace_stop
- 	jne  ftrace_stub
- 
--	MCOUNT_SAVE_FRAME
--
--	leaq function_trace_op, %rdx
--
-+	ftrace_caller_setup
- 	/* regs go into 4th parameter (but make it NULL) */
- 	movq $0, %rcx
- 
--	movq RIP(%rsp), %rdi
--	movq 8(%rbp), %rsi
--	subq $MCOUNT_INSN_SIZE, %rdi
--
- GLOBAL(ftrace_call)
- 	call ftrace_stub
- 
- 	MCOUNT_RESTORE_FRAME
-+ftrace_return:
- 
- #ifdef CONFIG_FUNCTION_GRAPH_TRACER
- GLOBAL(ftrace_graph_call)
-@@ -102,6 +111,67 @@ GLOBAL(ftrace_stub)
- 	retq
- END(ftrace_caller)
- 
-+ENTRY(ftrace_regs_caller)
-+	/* Save the current flags before compare (in SS location)*/
-+	pushfq
-+	
-+	/* Check if tracing was disabled (quick check) */
-+	cmpl $0, function_trace_stop
-+	jne  ftrace_restore_flags
-+
-+	/* skip=8 to skip flags saved in SS */
-+	ftrace_caller_setup 8
-+
-+	/* Save the rest of pt_regs */
-+	movq %r15, R15(%rsp)
-+	movq %r14, R14(%rsp)
-+	movq %r13, R13(%rsp)
-+	movq %r12, R12(%rsp)
-+	movq %r11, R11(%rsp)
-+	movq %r10, R10(%rsp)
-+	movq %rbp, RBP(%rsp)
-+	movq %rbx, RBX(%rsp)
-+	/* Copy saved flags */
-+	movq SS(%rsp), %rcx
-+	movq %rcx, EFLAGS(%rsp)
-+	/* Kernel segments */
-+	movq $__KERNEL_DS, %rcx
-+	movq %rcx, SS(%rsp)
-+	movq $__KERNEL_CS, %rcx
-+	movq %rcx, CS(%rsp)
-+	/* Stack - skipping return address */
-+	leaq SS+16(%rsp), %rcx
-+	movq %rcx, RSP(%rsp)
-+
-+	/* regs go into 4th parameter */
-+	leaq (%rsp), %rcx
-+
-+GLOBAL(ftrace_regs_call)
-+	call ftrace_stub
-+	
-+	/* restore the rest of pt_regs */
-+	movq R15(%rsp), %r15
-+	movq R14(%rsp), %r14
-+	movq R13(%rsp), %r13
-+	movq R12(%rsp), %r12
-+	movq R10(%rsp), %r10
-+	movq RBP(%rsp), %rbp
-+	movq RBX(%rsp), %rbx
-+
-+	/* Restore flags */
-+	pushq EFLAGS(%rsp)
-+	popfq
-+
-+	MCOUNT_RESTORE_FRAME
-+
-+	jmp ftrace_return
-+ftrace_restore_flags:
-+	popfq
-+	jmp  ftrace_stub
-+	
-+END(ftrace_regs_caller)
-+
-+
- #else /* ! CONFIG_DYNAMIC_FTRACE */
- ENTRY(mcount)
- 	cmpl $0, function_trace_stop
-diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
-index c3a7cb4..b90eb1a 100644
---- a/arch/x86/kernel/ftrace.c
-+++ b/arch/x86/kernel/ftrace.c
-@@ -206,6 +206,23 @@ static int
- ftrace_modify_code(unsigned long ip, unsigned const char *old_code,
- 		   unsigned const char *new_code);
- 
-+#ifdef ARCH_SUPPORTS_FTRACE_SAVE_REGS
-+/*
-+ * Should never be called:
-+ *  As it is only called by __ftrace_replace_code() which is called by
-+ *  ftrace_replace_code() that x86 overrides, and by ftrace_update_code()
-+ *  which is called to turn mcount into nops or nops into function calls
-+ *  but not to convert a function from not using regs to one that uses
-+ *  regs, which ftrace_modify_call() is for.
-+ */
-+int ftrace_modify_call(struct dyn_ftrace *rec, unsigned long old_addr,
-+				 unsigned long addr)
-+{
-+	WARN_ON(1);
-+	return -EINVAL;
-+}
-+#endif
-+
- int ftrace_update_ftrace_func(ftrace_func_t func)
- {
- 	unsigned long ip = (unsigned long)(&ftrace_call);
-@@ -220,6 +237,16 @@ int ftrace_update_ftrace_func(ftrace_func_t func)
- 
- 	ret = ftrace_modify_code(ip, old, new);
- 
-+#ifdef ARCH_SUPPORTS_FTRACE_SAVE_REGS
-+	/* Also update the regs callback function */
-+	if (!ret) {
-+		ip = (unsigned long)(&ftrace_regs_call);
-+		memcpy(old, &ftrace_regs_call, MCOUNT_INSN_SIZE);
-+		new = ftrace_call_replace(ip, (unsigned long)func);
-+		ret = ftrace_modify_code(ip, old, new);
-+	}
-+#endif
-+
- 	atomic_dec(&modifying_ftrace_code);
- 
- 	return ret;
-@@ -299,6 +326,32 @@ static int add_brk_on_nop(struct dyn_ftrace *rec)
- 	return add_break(rec->ip, old);
- }
- 
-+/*
-+ * If the record has the FTRACE_FL_REGS set, that means that it
-+ * wants to convert to a callback that saves all regs. If FTRACE_FL_REGS
-+ * is not not set, then it wants to convert to the normal callback.
-+ */
-+static unsigned long get_ftrace_addr(struct dyn_ftrace *rec)
-+{
-+	if (rec->flags & FTRACE_FL_REGS)
-+		return (unsigned long)FTRACE_REGS_ADDR;
-+	else
-+		return (unsigned long)FTRACE_ADDR;
-+}
-+
-+/*
-+ * The FTRACE_FL_REGS_EN is set when the record already points to
-+ * a function that saves all the regs. Basically the '_EN' version
-+ * represents the current state of the function.
-+ */
-+static unsigned long get_ftrace_old_addr(struct dyn_ftrace *rec)
-+{
-+	if (rec->flags & FTRACE_FL_REGS_EN)
-+		return (unsigned long)FTRACE_REGS_ADDR;
-+	else
-+		return (unsigned long)FTRACE_ADDR;
-+}
-+
- static int add_breakpoints(struct dyn_ftrace *rec, int enable)
- {
- 	unsigned long ftrace_addr;
-@@ -306,7 +359,7 @@ static int add_breakpoints(struct dyn_ftrace *rec, int enable)
- 
- 	ret = ftrace_test_record(rec, enable);
- 
--	ftrace_addr = (unsigned long)FTRACE_ADDR;
-+	ftrace_addr = get_ftrace_addr(rec);
- 
- 	switch (ret) {
- 	case FTRACE_UPDATE_IGNORE:
-@@ -316,6 +369,10 @@ static int add_breakpoints(struct dyn_ftrace *rec, int enable)
- 		/* converting nop to call */
- 		return add_brk_on_nop(rec);
- 
-+	case FTRACE_UPDATE_MODIFY_CALL_REGS:
-+	case FTRACE_UPDATE_MODIFY_CALL:
-+		ftrace_addr = get_ftrace_old_addr(rec);
-+		/* fall through */
- 	case FTRACE_UPDATE_MAKE_NOP:
- 		/* converting a call to a nop */
- 		return add_brk_on_call(rec, ftrace_addr);
-@@ -360,13 +417,21 @@ static int remove_breakpoint(struct dyn_ftrace *rec)
- 		 * If not, don't touch the breakpoint, we make just create
- 		 * a disaster.
- 		 */
--		ftrace_addr = (unsigned long)FTRACE_ADDR;
-+		ftrace_addr = get_ftrace_addr(rec);
-+		nop = ftrace_call_replace(ip, ftrace_addr);
-+
-+		if (memcmp(&ins[1], &nop[1], MCOUNT_INSN_SIZE - 1) == 0)
-+			goto update;
-+
-+		/* Check both ftrace_addr and ftrace_old_addr */
-+		ftrace_addr = get_ftrace_old_addr(rec);
- 		nop = ftrace_call_replace(ip, ftrace_addr);
- 
- 		if (memcmp(&ins[1], &nop[1], MCOUNT_INSN_SIZE - 1) != 0)
- 			return -EINVAL;
- 	}
- 
-+ update:
- 	return probe_kernel_write((void *)ip, &nop[0], 1);
- }
- 
-@@ -405,12 +470,14 @@ static int add_update(struct dyn_ftrace *rec, int enable)
- 
- 	ret = ftrace_test_record(rec, enable);
- 
--	ftrace_addr = (unsigned long)FTRACE_ADDR;
-+	ftrace_addr  = get_ftrace_addr(rec);
- 
- 	switch (ret) {
- 	case FTRACE_UPDATE_IGNORE:
- 		return 0;
- 
-+	case FTRACE_UPDATE_MODIFY_CALL_REGS:
-+	case FTRACE_UPDATE_MODIFY_CALL:
- 	case FTRACE_UPDATE_MAKE_CALL:
- 		/* converting nop to call */
- 		return add_update_call(rec, ftrace_addr);
-@@ -455,12 +522,14 @@ static int finish_update(struct dyn_ftrace *rec, int enable)
- 
- 	ret = ftrace_update_record(rec, enable);
- 
--	ftrace_addr = (unsigned long)FTRACE_ADDR;
-+	ftrace_addr = get_ftrace_addr(rec);
- 
- 	switch (ret) {
- 	case FTRACE_UPDATE_IGNORE:
- 		return 0;
- 
-+	case FTRACE_UPDATE_MODIFY_CALL_REGS:
-+	case FTRACE_UPDATE_MODIFY_CALL:
- 	case FTRACE_UPDATE_MAKE_CALL:
- 		/* converting nop to call */
- 		return finish_update_call(rec, ftrace_addr);
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index e420288..70b2c32 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -71,12 +71,19 @@ typedef void (*ftrace_func_t)(unsigned long ip, unsigned long parent_ip,
-  *           could be controled by following calls:
-  *             ftrace_function_local_enable
-  *             ftrace_function_local_disable
-+ * SAVE_REGS - The ftrace_ops wants regs saved at each function called
-+ *            and passed to the callback. If the arch does not support
-+ *            regs passing, the regs parameter will be NULL.
-+ *            The ftrace_ops user can either have the callback check if
-+ *            regs is NULL, or it may check if ARCH_SUPPORTS_FTRACE_SAVE_REGS
-+ *            is defined.
-  */
- enum {
- 	FTRACE_OPS_FL_ENABLED		= 1 << 0,
- 	FTRACE_OPS_FL_GLOBAL		= 1 << 1,
- 	FTRACE_OPS_FL_DYNAMIC		= 1 << 2,
- 	FTRACE_OPS_FL_CONTROL		= 1 << 3,
-+	FTRACE_OPS_FL_SAVE_REGS		= 1 << 4,
- };
- 
- struct ftrace_ops {
-@@ -254,12 +261,31 @@ extern void unregister_ftrace_function_probe_all(char *glob);
- 
- extern int ftrace_text_reserved(void *start, void *end);
- 
-+/*
-+ * The dyn_ftrace record's flags field is split into two parts.
-+ * the first part which is '0-FTRACE_REF_MAX' is a counter of
-+ * the number of callbacks that have registered the function that
-+ * the dyn_ftrace descriptor represents.
-+ *
-+ * The second part is a mask:
-+ *  ENABLED - the function is being traced
-+ *  REGS    - the record wants the function to save regs
-+ *  REGS_EN - the function is set up to save regs.
-+ *
-+ * When a new ftrace_ops is registered and wants a function to save
-+ * pt_regs, the rec->flag REGS is set. When the function has been
-+ * set up to save regs, the REG_EN flag is set. Once a function
-+ * starts saving regs it will do so until all ftrace_ops are removed
-+ * from tracing that function.
-+ */
- enum {
--	FTRACE_FL_ENABLED	= (1 << 30),
-+	FTRACE_FL_ENABLED	= (1UL << 29),
-+	FTRACE_FL_REGS		= (1UL << 30),
-+	FTRACE_FL_REGS_EN	= (1UL << 31)
- };
- 
--#define FTRACE_FL_MASK		(0x3UL << 30)
--#define FTRACE_REF_MAX		((1 << 30) - 1)
-+#define FTRACE_FL_MASK		(0x7UL << 29)
-+#define FTRACE_REF_MAX		((1UL << 29) - 1)
- 
- struct dyn_ftrace {
- 	union {
-@@ -290,9 +316,23 @@ enum {
- 	FTRACE_STOP_FUNC_RET		= (1 << 4),
- };
- 
-+/*
-+ * The FTRACE_UPDATE_* enum is used to pass information back
-+ * from the ftrace_update_record() and ftrace_test_record()
-+ * functions. These are called by the code update routines
-+ * to find out what is to be done for a given function.
-+ *
-+ *  IGNORE           - The function is already what we want it to be
-+ *  MAKE_CALL        - Start tracing the function
-+ *  MODIFY_CALL      - Stop saving regs for the function
-+ *  MODIFY_CALL_REGS - Start saving regs for the function
-+ *  MAKE_NOP         - Stop tracing the function
-+ */
- enum {
- 	FTRACE_UPDATE_IGNORE,
- 	FTRACE_UPDATE_MAKE_CALL,
-+	FTRACE_UPDATE_MODIFY_CALL,
-+	FTRACE_UPDATE_MODIFY_CALL_REGS,
- 	FTRACE_UPDATE_MAKE_NOP,
- };
- 
-@@ -344,7 +384,9 @@ extern int ftrace_dyn_arch_init(void *data);
- extern void ftrace_replace_code(int enable);
- extern int ftrace_update_ftrace_func(ftrace_func_t func);
- extern void ftrace_caller(void);
-+extern void ftrace_regs_caller(void);
- extern void ftrace_call(void);
-+extern void ftrace_regs_call(void);
- extern void mcount_call(void);
- 
- void ftrace_modify_all_code(int command);
-@@ -352,6 +394,15 @@ void ftrace_modify_all_code(int command);
- #ifndef FTRACE_ADDR
- #define FTRACE_ADDR ((unsigned long)ftrace_caller)
- #endif
-+
-+#ifndef FTRACE_REGS_ADDR
-+#ifdef ARCH_SUPPORTS_FTRACE_SAVE_REGS
-+# define FTRACE_REGS_ADDR ((unsigned long)ftrace_regs_caller)
-+#else
-+# define FTRACE_REGS_ADDR FTRACE_ADDR
-+#endif
-+#endif
-+
- #ifdef CONFIG_FUNCTION_GRAPH_TRACER
- extern void ftrace_graph_caller(void);
- extern int ftrace_enable_ftrace_graph_caller(void);
-@@ -407,6 +458,39 @@ extern int ftrace_make_nop(struct module *mod,
-  */
- extern int ftrace_make_call(struct dyn_ftrace *rec, unsigned long addr);
- 
-+#ifdef ARCH_SUPPORTS_FTRACE_SAVE_REGS
-+/**
-+ * ftrace_modify_call - convert from one addr to another (no nop)
-+ * @rec: the mcount call site record
-+ * @old_addr: the address expected to be currently called to
-+ * @addr: the address to change to
-+ *
-+ * This is a very sensitive operation and great care needs
-+ * to be taken by the arch.  The operation should carefully
-+ * read the location, check to see if what is read is indeed
-+ * what we expect it to be, and then on success of the compare,
-+ * it should write to the location.
-+ *
-+ * The code segment at @rec->ip should be a caller to @old_addr
-+ *
-+ * Return must be:
-+ *  0 on success
-+ *  -EFAULT on error reading the location
-+ *  -EINVAL on a failed compare of the contents
-+ *  -EPERM  on error writing to the location
-+ * Any other value will be considered a failure.
-+ */
-+extern int ftrace_modify_call(struct dyn_ftrace *rec, unsigned long old_addr,
-+			      unsigned long addr);
-+#else
-+/* Should never be called */
-+static inline int ftrace_modify_call(struct dyn_ftrace *rec, unsigned long old_addr,
-+				     unsigned long addr)
-+{
-+	return -EINVAL;
-+}
-+#endif
-+
- /* May be defined in arch */
- extern int ftrace_arch_read_dyn_info(char *buf, int size);
- 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 81c258f..f6fc9d5 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -1515,6 +1515,12 @@ static void __ftrace_hash_rec_update(struct ftrace_ops *ops,
- 			rec->flags++;
- 			if (FTRACE_WARN_ON((rec->flags & ~FTRACE_FL_MASK) == FTRACE_REF_MAX))
- 				return;
-+			/*
-+			 * If any ops wants regs saved for this function
-+			 * then all ops will get saved regs.
-+			 */
-+			if (ops->flags & FTRACE_OPS_FL_SAVE_REGS)
-+				rec->flags |= FTRACE_FL_REGS;
- 		} else {
- 			if (FTRACE_WARN_ON((rec->flags & ~FTRACE_FL_MASK) == 0))
- 				return;
-@@ -1606,18 +1612,59 @@ static int ftrace_check_record(struct dyn_ftrace *rec, int enable, int update)
- 	if (enable && (rec->flags & ~FTRACE_FL_MASK))
- 		flag = FTRACE_FL_ENABLED;
- 
-+	/*
-+	 * If enabling and the REGS flag does not match the REGS_EN, then
-+	 * do not ignore this record. Set flags to fail the compare against
-+	 * ENABLED.
-+	 */
-+	if (flag &&
-+	    (!(rec->flags & FTRACE_FL_REGS) != !(rec->flags & FTRACE_FL_REGS_EN)))
-+		flag |= FTRACE_FL_REGS;
-+
- 	/* If the state of this record hasn't changed, then do nothing */
- 	if ((rec->flags & FTRACE_FL_ENABLED) == flag)
- 		return FTRACE_UPDATE_IGNORE;
- 
- 	if (flag) {
--		if (update)
-+		/* Save off if rec is being enabled (for return value) */
-+		flag ^= rec->flags & FTRACE_FL_ENABLED;
-+
-+		if (update) {
- 			rec->flags |= FTRACE_FL_ENABLED;
--		return FTRACE_UPDATE_MAKE_CALL;
-+			if (flag & FTRACE_FL_REGS) {
-+				if (rec->flags & FTRACE_FL_REGS)
-+					rec->flags |= FTRACE_FL_REGS_EN;
-+				else
-+					rec->flags &= ~FTRACE_FL_REGS_EN;
-+			}
-+		}
-+
-+		/*
-+		 * If this record is being updated from a nop, then
-+		 *   return UPDATE_MAKE_CALL.
-+		 * Otherwise, if the EN flag is set, then return
-+		 *   UPDATE_MODIFY_CALL_REGS to tell the caller to convert
-+		 *   from the non-save regs, to a save regs function.
-+		 * Otherwise,
-+		 *   return UPDATE_MODIFY_CALL to tell the caller to convert
-+		 *   from the save regs, to a non-save regs function.
-+		 */
-+		if (flag & FTRACE_FL_ENABLED)
-+			return FTRACE_UPDATE_MAKE_CALL;
-+		else if (rec->flags & FTRACE_FL_REGS_EN)
-+			return FTRACE_UPDATE_MODIFY_CALL_REGS;
-+		else
-+			return FTRACE_UPDATE_MODIFY_CALL;
- 	}
- 
--	if (update)
--		rec->flags &= ~FTRACE_FL_ENABLED;
-+	if (update) {
-+		/* If there's no more users, clear all flags */
-+		if (!(rec->flags & ~FTRACE_FL_MASK))
-+			rec->flags = 0;
-+		else
-+			/* Just disable the record (keep REGS state) */
-+			rec->flags &= ~FTRACE_FL_ENABLED;
-+	}
- 
- 	return FTRACE_UPDATE_MAKE_NOP;
- }
-@@ -1652,13 +1699,17 @@ int ftrace_test_record(struct dyn_ftrace *rec, int enable)
- static int
- __ftrace_replace_code(struct dyn_ftrace *rec, int enable)
- {
-+	unsigned long ftrace_old_addr;
- 	unsigned long ftrace_addr;
- 	int ret;
- 
--	ftrace_addr = (unsigned long)FTRACE_ADDR;
--
- 	ret = ftrace_update_record(rec, enable);
- 
-+	if (rec->flags & FTRACE_FL_REGS)
-+		ftrace_addr = (unsigned long)FTRACE_REGS_ADDR;
-+	else
-+		ftrace_addr = (unsigned long)FTRACE_ADDR;
-+
- 	switch (ret) {
- 	case FTRACE_UPDATE_IGNORE:
- 		return 0;
-@@ -1668,6 +1719,15 @@ __ftrace_replace_code(struct dyn_ftrace *rec, int enable)
- 
- 	case FTRACE_UPDATE_MAKE_NOP:
- 		return ftrace_make_nop(NULL, rec, ftrace_addr);
-+
-+	case FTRACE_UPDATE_MODIFY_CALL_REGS:
-+	case FTRACE_UPDATE_MODIFY_CALL:
-+		if (rec->flags & FTRACE_FL_REGS)
-+			ftrace_old_addr = (unsigned long)FTRACE_ADDR;
-+		else
-+			ftrace_old_addr = (unsigned long)FTRACE_REGS_ADDR;
-+
-+		return ftrace_modify_call(rec, ftrace_old_addr, ftrace_addr);
- 	}
- 
- 	return -1; /* unknow ftrace bug */
-@@ -2421,8 +2481,9 @@ static int t_show(struct seq_file *m, void *v)
- 
- 	seq_printf(m, "%ps", (void *)rec->ip);
- 	if (iter->flags & FTRACE_ITER_ENABLED)
--		seq_printf(m, " (%ld)",
--			   rec->flags & ~FTRACE_FL_MASK);
-+		seq_printf(m, " (%ld)%s",
-+			   rec->flags & ~FTRACE_FL_MASK,
-+			   rec->flags & FTRACE_FL_REGS ? " R" : "");
- 	seq_printf(m, "\n");
- 
- 	return 0;
--- 
-1.7.10
 
 
