@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752551Ab2FLJJk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 05:09:40 -0400
+	id S1752636Ab2FLJJr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 05:09:47 -0400
 Received: from mga01.intel.com ([192.55.52.88]:22878 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752480Ab2FLJJg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 05:09:36 -0400
+	id S1752480Ab2FLJJp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 05:09:45 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="178775603"
+   d="scan'208";a="178775650"
 From: Alex Shi <alex.shi@intel.com>
 To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, arnd@arndb.de,
         rostedt@goodmis.org, fweisbec@gmail.com
@@ -20,9 +20,9 @@ Cc: jeremy@goop.org, seto.hidetoshi@jp.fujitsu.com, borislav.petkov@amd.com,
         cpw@sgi.com, penberg@kernel.org, steiner@sgi.com,
         viro@zeniv.linux.org.uk, kamezawa.hiroyu@jp.fujitsu.com,
         aarcange@redhat.com, rientjes@google.com, linux-kernel@vger.kernel.org
-Subject: [PATCH v8 3/8] x86/tlb: fall back to flush all when meet a THP large page
-Date: Tue, 12 Jun 2012 17:06:40 +0800
-Message-Id: <1339492005-20241-4-git-send-email-alex.shi@intel.com>
+Subject: [PATCH v8 5/8] x86/tlb: add tlb_flushall_shift knob into debugfs
+Date: Tue, 12 Jun 2012 17:06:42 +0800
+Message-Id: <1339492005-20241-6-git-send-email-alex.shi@intel.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1339492005-20241-1-git-send-email-alex.shi@intel.com>
 References: <1339492005-20241-1-git-send-email-alex.shi@intel.com>
@@ -30,86 +30,117 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We don't need to flush large pages by PAGE_SIZE step, that just waste
-time. and actually, large page don't need 'invlpg' optimizing according
-to our macro benchmark. So, just flush whole TLB is enough for them.
+kernel will replace cr3 rewrite with invlpg when
+  tlb_flush_entries <= active_tlb_entries / 2^tlb_flushall_factor
+if tlb_flushall_factor is -1, kernel won't do this replacement.
 
-The following result is tested on a 2CPU * 4cores * 2HT NHM EP machine,
-with THP 'always' setting.
+User can modify its value according to specific CPU/applications.
 
-Multi-thread testing, '-t' paramter is thread number:
-                       without this patch 	with this patch
-./mprotect -t 1         14ns                       13ns
-./mprotect -t 2         13ns                       13ns
-./mprotect -t 4         12ns                       11ns
-./mprotect -t 8         14ns                       10ns
-./mprotect -t 16        28ns                       28ns
-./mprotect -t 32        54ns                       52ns
-./mprotect -t 128       200ns                      200ns
+Thanks for Borislav providing the help message of
+CONFIG_DEBUG_TLBFLUSH.
 
 Signed-off-by: Alex Shi <alex.shi@intel.com>
 ---
- arch/x86/mm/tlb.c |   34 ++++++++++++++++++++++++++++++++++
- 1 files changed, 34 insertions(+), 0 deletions(-)
+ arch/x86/Kconfig.debug |   19 +++++++++++++++++
+ arch/x86/mm/tlb.c      |   51 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 70 insertions(+), 0 deletions(-)
 
+diff --git a/arch/x86/Kconfig.debug b/arch/x86/Kconfig.debug
+index e46c214..b322f12 100644
+--- a/arch/x86/Kconfig.debug
++++ b/arch/x86/Kconfig.debug
+@@ -129,6 +129,25 @@ config DOUBLEFAULT
+ 	  option saves about 4k and might cause you much additional grey
+ 	  hair.
+ 
++config DEBUG_TLBFLUSH
++	bool "Set upper limit of TLB entries to flush one-by-one"
++	depends on DEBUG_KERNEL && (X86_64 || X86_INVLPG)
++	---help---
++
++	X86-only for now.
++
++	This option allows the user to tune the amount of TLB entries the
++	kernel flushes one-by-one instead of doing a full TLB flush. In
++	certain situations, the former is cheaper. This is controlled by the
++	tlb_flushall_shift knob under /sys/kernel/debug/x86. If you set it
++	to -1, the code flushes the whole TLB unconditionally. Otherwise,
++	for positive values of it, the kernel will use single TLB entry
++	invalidating instructions according to the following formula:
++
++	flush_entries <= active_tlb_entries / 2^tlb_flushall_shift
++
++	If in doubt, say "N".
++
+ config IOMMU_DEBUG
+ 	bool "Enable IOMMU debugging"
+ 	depends on GART_IOMMU && DEBUG_KERNEL
 diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
-index 3b91c98..184a02a 100644
+index 2939f2f..5911f61 100644
 --- a/arch/x86/mm/tlb.c
 +++ b/arch/x86/mm/tlb.c
-@@ -318,12 +318,42 @@ void flush_tlb_mm(struct mm_struct *mm)
+@@ -12,6 +12,7 @@
+ #include <asm/cache.h>
+ #include <asm/apic.h>
+ #include <asm/uv/uv.h>
++#include <linux/debugfs.h>
  
- #define FLUSHALL_BAR	16
- 
-+#ifdef CONFIG_TRANSPARENT_HUGEPAGE
-+static inline unsigned long has_large_page(struct mm_struct *mm,
-+				 unsigned long start, unsigned long end)
+ DEFINE_PER_CPU_SHARED_ALIGNED(struct tlb_state, cpu_tlbstate)
+ 			= { &init_mm, 0, };
+@@ -430,3 +431,53 @@ void flush_tlb_all(void)
+ {
+ 	on_each_cpu(do_flush_tlb_all, NULL, 1);
+ }
++
++#ifdef CONFIG_DEBUG_TLBFLUSH
++static ssize_t tlbflush_read_file(struct file *file, char __user *user_buf,
++			     size_t count, loff_t *ppos)
 +{
-+	pgd_t *pgd;
-+	pud_t *pud;
-+	pmd_t *pmd;
-+	unsigned long addr = ALIGN(start, HPAGE_SIZE);
-+	for (; addr < end; addr += HPAGE_SIZE) {
-+		pgd = pgd_offset(mm, addr);
-+		if (likely(!pgd_none(*pgd))) {
-+			pud = pud_offset(pgd, addr);
-+			if (likely(!pud_none(*pud))) {
-+				pmd = pmd_offset(pud, addr);
-+				if (likely(!pmd_none(*pmd)))
-+					if (pmd_large(*pmd))
-+						return addr;
-+			}
-+		}
++	char buf[32];
++	unsigned int len;
++
++	len = sprintf(buf, "%hd\n", tlb_flushall_shift);
++	return simple_read_from_buffer(user_buf, count, ppos, buf, len);
++}
++
++static ssize_t tlbflush_write_file(struct file *file,
++		 const char __user *user_buf, size_t count, loff_t *ppos)
++{
++	char buf[32];
++	ssize_t len;
++	s8 shift;
++
++	len = min(count, sizeof(buf) - 1);
++	if (copy_from_user(buf, user_buf, len))
++		return -EFAULT;
++
++	buf[len] = '\0';
++	if (kstrtos8(buf, 0, &shift))
++		return -EINVAL;
++
++	if (shift > 64)
++		return -EINVAL;
++
++	tlb_flushall_shift = shift;
++	return count;
++}
++
++static const struct file_operations fops_tlbflush = {
++	.read = tlbflush_read_file,
++	.write = tlbflush_write_file,
++	.llseek = default_llseek,
++};
++
++static int __cpuinit create_tlb_flushall_shift(void)
++{
++	if (cpu_has_invlpg) {
++		debugfs_create_file("tlb_flushall_shift", S_IRUSR | S_IWUSR,
++			arch_debugfs_dir, NULL, &fops_tlbflush);
 +	}
 +	return 0;
 +}
-+#else
-+static inline unsigned long has_large_page(struct mm_struct *mm,
-+				 unsigned long start, unsigned long end)
-+{
-+	return 0;
-+}
++late_initcall(create_tlb_flushall_shift);
 +#endif
- void flush_tlb_range(struct vm_area_struct *vma,
- 				   unsigned long start, unsigned long end)
- {
- 	struct mm_struct *mm;
- 
- 	if (!cpu_has_invlpg || vma->vm_flags & VM_HUGETLB) {
-+flush_all:
- 		flush_tlb_mm(vma->vm_mm);
- 		return;
- 	}
-@@ -346,6 +376,10 @@ void flush_tlb_range(struct vm_area_struct *vma,
- 			if ((end - start)/PAGE_SIZE > act_entries/FLUSHALL_BAR)
- 				local_flush_tlb();
- 			else {
-+				if (has_large_page(mm, start, end)) {
-+					preempt_enable();
-+					goto flush_all;
-+				}
- 				for (addr = start; addr < end;
- 						addr += PAGE_SIZE)
- 					__flush_tlb_single(addr);
 -- 
 1.7.5.4
 
