@@ -1,465 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753149Ab2FLMsP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 08:48:15 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56442 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752534Ab2FLMsJ (ORCPT
+	id S1753229Ab2FLMsn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 08:48:43 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20636 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752971Ab2FLMsl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 08:48:09 -0400
-Message-ID: <1339505279.12492.1.camel@phoenix>
-Subject: [PATCH] i2c: use module_pci_driver
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        "Wolfram Sang (embedded platforms)" <w.sang@pengutronix.de>,
-        Rudolf Marek <r.marek@assembler.cz>, Olof Johansson <olof@lixom.net>,
-        "Mark M. Hoffman" <mhoffman@lightlink.com>,
-        Tomoya MORINAGA <tomoya.rohm@gmail.com>, linux-i2c@vger.kernel.org
-Date: Tue, 12 Jun 2012 20:47:59 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 8bit
+	Tue, 12 Jun 2012 08:48:41 -0400
+X-Authority-Analysis: v=2.0 cv=D8PF24tj c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=VwQbUJbxAAAA:8 a=aONDl-815hj8TuMJ4moA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1339505320.13377.123.camel@gandalf.stny.rr.com>
+Subject: [ANNOUNCE] 3.0.33-rt54
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>
+Date: Tue, 12 Jun 2012 08:48:40 -0400
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1+b1 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch converts the drivers in drivers/i2c/buses/* to use
-module_pci_driver() macro which makes the code smaller and a bit simpler.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
-Cc: "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>
-Cc: "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>
-Cc: "Wolfram Sang (embedded platforms)" <w.sang@pengutronix.de>
-Cc: Rudolf Marek <r.marek@assembler.cz>
-Cc: Olof Johansson <olof@lixom.net>
-Cc: "Mark M. Hoffman" <mhoffman@lightlink.com>
-Cc: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Dear RT Folks,
+
+I'm pleased to announce the 3.0.33-rt54 stable release.
+
+
+You can get this release via the git tree at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+
+  Head SHA1: f539529bbaf7bbd5b45d71e72bd49cbe33ef7ad0
+
+
+Or to build 3.0.33-rt54 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.0/linux-3.0.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.0/patch-3.0.33.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/patch-3.0.33-rt54.patch.xz
+
+
+You can also build from 3.0.33-rt53 by applying the incremental patch:
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/incr/patch-3.0.33-rt53-rt54.patch.xz
+
+
+
+Enjoy,
+
+-- Steve
+
+
+Changes from 3.0.33-rt53:
+
 ---
- drivers/i2c/busses/i2c-ali1535.c           |   13 +------------
- drivers/i2c/busses/i2c-ali1563.c           |   14 +-------------
- drivers/i2c/busses/i2c-ali15x3.c           |   13 +------------
- drivers/i2c/busses/i2c-amd756.c            |   13 +------------
- drivers/i2c/busses/i2c-amd8111.c           |   13 +------------
- drivers/i2c/busses/i2c-designware-pcidrv.c |   12 +-----------
- drivers/i2c/busses/i2c-eg20t.c             |   12 +-----------
- drivers/i2c/busses/i2c-hydra.c             |   17 +----------------
- drivers/i2c/busses/i2c-intel-mid.c         |   13 +------------
- drivers/i2c/busses/i2c-nforce2.c           |   14 +-------------
- drivers/i2c/busses/i2c-pasemi.c            |   13 +------------
- drivers/i2c/busses/i2c-piix4.c             |   13 +------------
- drivers/i2c/busses/i2c-pxa-pci.c           |   12 +-----------
- drivers/i2c/busses/i2c-sis630.c            |   15 +--------------
- drivers/i2c/busses/i2c-sis96x.c            |   15 +--------------
- drivers/i2c/busses/i2c-via.c               |   14 +-------------
- 16 files changed, 16 insertions(+), 200 deletions(-)
 
-diff --git a/drivers/i2c/busses/i2c-ali1535.c b/drivers/i2c/busses/i2c-ali1535.c
-index e66d248..125cd8e 100644
---- a/drivers/i2c/busses/i2c-ali1535.c
-+++ b/drivers/i2c/busses/i2c-ali1535.c
-@@ -531,15 +531,7 @@ static struct pci_driver ali1535_driver = {
- 	.remove		= __devexit_p(ali1535_remove),
- };
- 
--static int __init i2c_ali1535_init(void)
--{
--	return pci_register_driver(&ali1535_driver);
--}
--
--static void __exit i2c_ali1535_exit(void)
--{
--	pci_unregister_driver(&ali1535_driver);
--}
-+module_pci_driver(ali1535_driver);
- 
- MODULE_AUTHOR("Frodo Looijaard <frodol@dds.nl>, "
- 	      "Philip Edelbrock <phil@netroedge.com>, "
-@@ -547,6 +539,3 @@ MODULE_AUTHOR("Frodo Looijaard <frodol@dds.nl>, "
- 	      "and Dan Eaton <dan.eaton@rocketlogix.com>");
- MODULE_DESCRIPTION("ALI1535 SMBus driver");
- MODULE_LICENSE("GPL");
--
--module_init(i2c_ali1535_init);
--module_exit(i2c_ali1535_exit);
-diff --git a/drivers/i2c/busses/i2c-ali1563.c b/drivers/i2c/busses/i2c-ali1563.c
-index 47ae009..e02d9f8 100644
---- a/drivers/i2c/busses/i2c-ali1563.c
-+++ b/drivers/i2c/busses/i2c-ali1563.c
-@@ -431,18 +431,6 @@ static struct pci_driver ali1563_pci_driver = {
- 	.remove		= __devexit_p(ali1563_remove),
- };
- 
--static int __init ali1563_init(void)
--{
--	return pci_register_driver(&ali1563_pci_driver);
--}
--
--module_init(ali1563_init);
--
--static void __exit ali1563_exit(void)
--{
--	pci_unregister_driver(&ali1563_pci_driver);
--}
--
--module_exit(ali1563_exit);
-+module_pci_driver(ali1563_pci_driver);
- 
- MODULE_LICENSE("GPL");
-diff --git a/drivers/i2c/busses/i2c-ali15x3.c b/drivers/i2c/busses/i2c-ali15x3.c
-index 087ea9caa..ce8d26d 100644
---- a/drivers/i2c/busses/i2c-ali15x3.c
-+++ b/drivers/i2c/busses/i2c-ali15x3.c
-@@ -513,21 +513,10 @@ static struct pci_driver ali15x3_driver = {
- 	.remove		= __devexit_p(ali15x3_remove),
- };
- 
--static int __init i2c_ali15x3_init(void)
--{
--	return pci_register_driver(&ali15x3_driver);
--}
--
--static void __exit i2c_ali15x3_exit(void)
--{
--	pci_unregister_driver(&ali15x3_driver);
--}
-+module_pci_driver(ali15x3_driver);
- 
- MODULE_AUTHOR ("Frodo Looijaard <frodol@dds.nl>, "
- 		"Philip Edelbrock <phil@netroedge.com>, "
- 		"and Mark D. Studebaker <mdsxyz123@yahoo.com>");
- MODULE_DESCRIPTION("ALI15X3 SMBus driver");
- MODULE_LICENSE("GPL");
--
--module_init(i2c_ali15x3_init);
--module_exit(i2c_ali15x3_exit);
-diff --git a/drivers/i2c/busses/i2c-amd756.c b/drivers/i2c/busses/i2c-amd756.c
-index eb778bf1..304aa03 100644
---- a/drivers/i2c/busses/i2c-amd756.c
-+++ b/drivers/i2c/busses/i2c-amd756.c
-@@ -410,21 +410,10 @@ static struct pci_driver amd756_driver = {
- 	.remove		= __devexit_p(amd756_remove),
- };
- 
--static int __init amd756_init(void)
--{
--	return pci_register_driver(&amd756_driver);
--}
--
--static void __exit amd756_exit(void)
--{
--	pci_unregister_driver(&amd756_driver);
--}
-+module_pci_driver(amd756_driver);
- 
- MODULE_AUTHOR("Merlin Hughes <merlin@merlin.org>");
- MODULE_DESCRIPTION("AMD756/766/768/8111 and nVidia nForce SMBus driver");
- MODULE_LICENSE("GPL");
- 
- EXPORT_SYMBOL(amd756_smbus);
--
--module_init(amd756_init)
--module_exit(amd756_exit)
-diff --git a/drivers/i2c/busses/i2c-amd8111.c b/drivers/i2c/busses/i2c-amd8111.c
-index e5ac53b..0919ac1 100644
---- a/drivers/i2c/busses/i2c-amd8111.c
-+++ b/drivers/i2c/busses/i2c-amd8111.c
-@@ -491,15 +491,4 @@ static struct pci_driver amd8111_driver = {
- 	.remove		= __devexit_p(amd8111_remove),
- };
- 
--static int __init i2c_amd8111_init(void)
--{
--	return pci_register_driver(&amd8111_driver);
--}
--
--static void __exit i2c_amd8111_exit(void)
--{
--	pci_unregister_driver(&amd8111_driver);
--}
--
--module_init(i2c_amd8111_init);
--module_exit(i2c_amd8111_exit);
-+module_pci_driver(amd8111_driver);
-diff --git a/drivers/i2c/busses/i2c-designware-pcidrv.c b/drivers/i2c/busses/i2c-designware-pcidrv.c
-index 00e8f21..92a1e2c 100644
---- a/drivers/i2c/busses/i2c-designware-pcidrv.c
-+++ b/drivers/i2c/busses/i2c-designware-pcidrv.c
-@@ -374,17 +374,7 @@ static struct pci_driver dw_i2c_driver = {
- 	},
- };
- 
--static int __init dw_i2c_init_driver(void)
--{
--	return  pci_register_driver(&dw_i2c_driver);
--}
--module_init(dw_i2c_init_driver);
--
--static void __exit dw_i2c_exit_driver(void)
--{
--	pci_unregister_driver(&dw_i2c_driver);
--}
--module_exit(dw_i2c_exit_driver);
-+module_pci_driver(dw_i2c_driver);
- 
- MODULE_AUTHOR("Baruch Siach <baruch@tkos.co.il>");
- MODULE_DESCRIPTION("Synopsys DesignWare PCI I2C bus adapter");
-diff --git a/drivers/i2c/busses/i2c-eg20t.c b/drivers/i2c/busses/i2c-eg20t.c
-index 2f74ae8..259f769 100644
---- a/drivers/i2c/busses/i2c-eg20t.c
-+++ b/drivers/i2c/busses/i2c-eg20t.c
-@@ -953,17 +953,7 @@ static struct pci_driver pch_pcidriver = {
- 	.resume = pch_i2c_resume
- };
- 
--static int __init pch_pci_init(void)
--{
--	return pci_register_driver(&pch_pcidriver);
--}
--module_init(pch_pci_init);
--
--static void __exit pch_pci_exit(void)
--{
--	pci_unregister_driver(&pch_pcidriver);
--}
--module_exit(pch_pci_exit);
-+module_pci_driver(pch_pcidriver);
- 
- MODULE_DESCRIPTION("Intel EG20T PCH/LAPIS Semico ML7213/ML7223/ML7831 IOH I2C");
- MODULE_LICENSE("GPL");
-diff --git a/drivers/i2c/busses/i2c-hydra.c b/drivers/i2c/busses/i2c-hydra.c
-index c527de1..c9f95e1 100644
---- a/drivers/i2c/busses/i2c-hydra.c
-+++ b/drivers/i2c/busses/i2c-hydra.c
-@@ -156,23 +156,8 @@ static struct pci_driver hydra_driver = {
- 	.remove		= __devexit_p(hydra_remove),
- };
- 
--static int __init i2c_hydra_init(void)
--{
--	return pci_register_driver(&hydra_driver);
--}
--
--
--static void __exit i2c_hydra_exit(void)
--{
--	pci_unregister_driver(&hydra_driver);
--}
--
--
-+module_pci_driver(hydra_driver);
- 
- MODULE_AUTHOR("Geert Uytterhoeven <geert@linux-m68k.org>");
- MODULE_DESCRIPTION("i2c for Apple Hydra Mac I/O");
- MODULE_LICENSE("GPL");
--
--module_init(i2c_hydra_init);
--module_exit(i2c_hydra_exit);
--
-diff --git a/drivers/i2c/busses/i2c-intel-mid.c b/drivers/i2c/busses/i2c-intel-mid.c
-index 365bad5..7c28f10 100644
---- a/drivers/i2c/busses/i2c-intel-mid.c
-+++ b/drivers/i2c/busses/i2c-intel-mid.c
-@@ -1116,18 +1116,7 @@ static struct pci_driver intel_mid_i2c_driver = {
- 	.remove		= __devexit_p(intel_mid_i2c_remove),
- };
- 
--static int __init intel_mid_i2c_init(void)
--{
--	return pci_register_driver(&intel_mid_i2c_driver);
--}
--
--static void __exit intel_mid_i2c_exit(void)
--{
--	pci_unregister_driver(&intel_mid_i2c_driver);
--}
--
--module_init(intel_mid_i2c_init);
--module_exit(intel_mid_i2c_exit);
-+module_pci_driver(intel_mid_i2c_driver);
- 
- MODULE_AUTHOR("Ba Zheng <zheng.ba@intel.com>");
- MODULE_DESCRIPTION("I2C driver for Moorestown Platform");
-diff --git a/drivers/i2c/busses/i2c-nforce2.c b/drivers/i2c/busses/i2c-nforce2.c
-index 43a96a1..392303b 100644
---- a/drivers/i2c/busses/i2c-nforce2.c
-+++ b/drivers/i2c/busses/i2c-nforce2.c
-@@ -453,16 +453,4 @@ static struct pci_driver nforce2_driver = {
- 	.remove		= __devexit_p(nforce2_remove),
- };
- 
--static int __init nforce2_init(void)
--{
--	return pci_register_driver(&nforce2_driver);
--}
--
--static void __exit nforce2_exit(void)
--{
--	pci_unregister_driver(&nforce2_driver);
--}
--
--module_init(nforce2_init);
--module_exit(nforce2_exit);
--
-+module_pci_driver(nforce2_driver);
-diff --git a/drivers/i2c/busses/i2c-pasemi.c b/drivers/i2c/busses/i2c-pasemi.c
-index eaaea73..12edefd 100644
---- a/drivers/i2c/busses/i2c-pasemi.c
-+++ b/drivers/i2c/busses/i2c-pasemi.c
-@@ -415,19 +415,8 @@ static struct pci_driver pasemi_smb_driver = {
- 	.remove		= __devexit_p(pasemi_smb_remove),
- };
- 
--static int __init pasemi_smb_init(void)
--{
--	return pci_register_driver(&pasemi_smb_driver);
--}
--
--static void __exit pasemi_smb_exit(void)
--{
--	pci_unregister_driver(&pasemi_smb_driver);
--}
-+module_pci_driver(pasemi_smb_driver);
- 
- MODULE_LICENSE("GPL");
- MODULE_AUTHOR ("Olof Johansson <olof@lixom.net>");
- MODULE_DESCRIPTION("PA Semi PWRficient SMBus driver");
--
--module_init(pasemi_smb_init);
--module_exit(pasemi_smb_exit);
-diff --git a/drivers/i2c/busses/i2c-piix4.c b/drivers/i2c/busses/i2c-piix4.c
-index c14d48d..46833fa 100644
---- a/drivers/i2c/busses/i2c-piix4.c
-+++ b/drivers/i2c/busses/i2c-piix4.c
-@@ -544,20 +544,9 @@ static struct pci_driver piix4_driver = {
- 	.remove		= __devexit_p(piix4_remove),
- };
- 
--static int __init i2c_piix4_init(void)
--{
--	return pci_register_driver(&piix4_driver);
--}
--
--static void __exit i2c_piix4_exit(void)
--{
--	pci_unregister_driver(&piix4_driver);
--}
-+module_pci_driver(piix4_driver);
- 
- MODULE_AUTHOR("Frodo Looijaard <frodol@dds.nl> and "
- 		"Philip Edelbrock <phil@netroedge.com>");
- MODULE_DESCRIPTION("PIIX4 SMBus driver");
- MODULE_LICENSE("GPL");
--
--module_init(i2c_piix4_init);
--module_exit(i2c_piix4_exit);
-diff --git a/drivers/i2c/busses/i2c-pxa-pci.c b/drivers/i2c/busses/i2c-pxa-pci.c
-index a058179..4dc9bef 100644
---- a/drivers/i2c/busses/i2c-pxa-pci.c
-+++ b/drivers/i2c/busses/i2c-pxa-pci.c
-@@ -163,17 +163,7 @@ static struct pci_driver ce4100_i2c_driver = {
- 	.remove         = __devexit_p(ce4100_i2c_remove),
- };
- 
--static int __init ce4100_i2c_init(void)
--{
--	return pci_register_driver(&ce4100_i2c_driver);
--}
--module_init(ce4100_i2c_init);
--
--static void __exit ce4100_i2c_exit(void)
--{
--	pci_unregister_driver(&ce4100_i2c_driver);
--}
--module_exit(ce4100_i2c_exit);
-+module_pci_driver(ce4100_i2c_driver);
- 
- MODULE_DESCRIPTION("CE4100 PCI-I2C glue code for PXA's driver");
- MODULE_LICENSE("GPL v2");
-diff --git a/drivers/i2c/busses/i2c-sis630.c b/drivers/i2c/busses/i2c-sis630.c
-index 15cf78f..5d6723b 100644
---- a/drivers/i2c/busses/i2c-sis630.c
-+++ b/drivers/i2c/busses/i2c-sis630.c
-@@ -513,21 +513,8 @@ static struct pci_driver sis630_driver = {
- 	.remove		= __devexit_p(sis630_remove),
- };
- 
--static int __init i2c_sis630_init(void)
--{
--	return pci_register_driver(&sis630_driver);
--}
--
--
--static void __exit i2c_sis630_exit(void)
--{
--	pci_unregister_driver(&sis630_driver);
--}
--
-+module_pci_driver(sis630_driver);
- 
- MODULE_LICENSE("GPL");
- MODULE_AUTHOR("Alexander Malysh <amalysh@web.de>");
- MODULE_DESCRIPTION("SIS630 SMBus driver");
--
--module_init(i2c_sis630_init);
--module_exit(i2c_sis630_exit);
-diff --git a/drivers/i2c/busses/i2c-sis96x.c b/drivers/i2c/busses/i2c-sis96x.c
-index cc5d149..7b72614 100644
---- a/drivers/i2c/busses/i2c-sis96x.c
-+++ b/drivers/i2c/busses/i2c-sis96x.c
-@@ -324,21 +324,8 @@ static struct pci_driver sis96x_driver = {
- 	.remove		= __devexit_p(sis96x_remove),
- };
- 
--static int __init i2c_sis96x_init(void)
--{
--	return pci_register_driver(&sis96x_driver);
--}
--
--static void __exit i2c_sis96x_exit(void)
--{
--	pci_unregister_driver(&sis96x_driver);
--}
-+module_pci_driver(sis96x_driver);
- 
- MODULE_AUTHOR("Mark M. Hoffman <mhoffman@lightlink.com>");
- MODULE_DESCRIPTION("SiS96x SMBus driver");
- MODULE_LICENSE("GPL");
--
--/* Register initialization functions using helper macros */
--module_init(i2c_sis96x_init);
--module_exit(i2c_sis96x_exit);
--
-diff --git a/drivers/i2c/busses/i2c-via.c b/drivers/i2c/busses/i2c-via.c
-index 713d31a..7ffee71 100644
---- a/drivers/i2c/busses/i2c-via.c
-+++ b/drivers/i2c/busses/i2c-via.c
-@@ -161,20 +161,8 @@ static struct pci_driver vt586b_driver = {
- 	.remove		= __devexit_p(vt586b_remove),
- };
- 
--static int __init i2c_vt586b_init(void)
--{
--	return pci_register_driver(&vt586b_driver);
--}
--
--static void __exit i2c_vt586b_exit(void)
--{
--	pci_unregister_driver(&vt586b_driver);
--}
--
-+module_pci_driver(vt586b_driver);
- 
- MODULE_AUTHOR("Kyösti Mälkki <kmalkki@cc.hut.fi>");
- MODULE_DESCRIPTION("i2c for Via vt82c586b southbridge");
- MODULE_LICENSE("GPL");
--
--module_init(i2c_vt586b_init);
--module_exit(i2c_vt586b_exit);
--- 
-1.7.9.5
+John Kacur (1):
+      scsi: qla2xxx: Use local_irq_save_nort() in qla2x00_poll
 
+Priyanka Jain (1):
+      net,RT:REmove preemption disabling in netif_rx()
+
+Steven Rostedt (1):
+      Linux 3.0.33-rt54
+
+Thomas Gleixner (1):
+      mips-remove-smp-reserve-lock.patch
+
+----
+ arch/mips/cavium-octeon/smp.c     |    6 ------
+ drivers/scsi/qla2xxx/qla_inline.h |    4 ++--
+ localversion-rt                   |    2 +-
+ net/core/dev.c                    |    8 ++++----
+ 4 files changed, 7 insertions(+), 13 deletions(-)
+---------------------------
+diff --git a/arch/mips/cavium-octeon/smp.c b/arch/mips/cavium-octeon/smp.c
+index efcfff4..86fce15 100644
+--- a/arch/mips/cavium-octeon/smp.c
++++ b/arch/mips/cavium-octeon/smp.c
+@@ -257,8 +257,6 @@ DEFINE_PER_CPU(int, cpu_state);
+ 
+ extern void fixup_irqs(void);
+ 
+-static DEFINE_SPINLOCK(smp_reserve_lock);
+-
+ static int octeon_cpu_disable(void)
+ {
+ 	unsigned int cpu = smp_processor_id();
+@@ -266,8 +264,6 @@ static int octeon_cpu_disable(void)
+ 	if (cpu == 0)
+ 		return -EBUSY;
+ 
+-	spin_lock(&smp_reserve_lock);
+-
+ 	cpu_clear(cpu, cpu_online_map);
+ 	cpu_clear(cpu, cpu_callin_map);
+ 	local_irq_disable();
+@@ -277,8 +273,6 @@ static int octeon_cpu_disable(void)
+ 	flush_cache_all();
+ 	local_flush_tlb_all();
+ 
+-	spin_unlock(&smp_reserve_lock);
+-
+ 	return 0;
+ }
+ 
+diff --git a/drivers/scsi/qla2xxx/qla_inline.h b/drivers/scsi/qla2xxx/qla_inline.h
+index 4c8167e..e5e99e9 100644
+--- a/drivers/scsi/qla2xxx/qla_inline.h
++++ b/drivers/scsi/qla2xxx/qla_inline.h
+@@ -36,12 +36,12 @@ qla2x00_poll(struct rsp_que *rsp)
+ {
+ 	unsigned long flags;
+ 	struct qla_hw_data *ha = rsp->hw;
+-	local_irq_save(flags);
++	local_irq_save_nort(flags);
+ 	if (IS_QLA82XX(ha))
+ 		qla82xx_poll(0, rsp);
+ 	else
+ 		ha->isp_ops->intr_handler(0, rsp);
+-	local_irq_restore(flags);
++	local_irq_restore_nort(flags);
+ }
+ 
+ static inline uint8_t *
+diff --git a/localversion-rt b/localversion-rt
+index e6c0dc6..3165a87 100644
+--- a/localversion-rt
++++ b/localversion-rt
+@@ -1 +1 @@
+--rt53
++-rt54
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 79e9903..d9f43e1 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -2898,7 +2898,7 @@ int netif_rx(struct sk_buff *skb)
+ 		struct rps_dev_flow voidflow, *rflow = &voidflow;
+ 		int cpu;
+ 
+-		preempt_disable();
++		migrate_disable();
+ 		rcu_read_lock();
+ 
+ 		cpu = get_rps_cpu(skb->dev, skb, &rflow);
+@@ -2908,13 +2908,13 @@ int netif_rx(struct sk_buff *skb)
+ 		ret = enqueue_to_backlog(skb, cpu, &rflow->last_qtail);
+ 
+ 		rcu_read_unlock();
+-		preempt_enable();
++		migrate_enable();
+ 	}
+ #else
+ 	{
+ 		unsigned int qtail;
+-		ret = enqueue_to_backlog(skb, get_cpu(), &qtail);
+-		put_cpu();
++		ret = enqueue_to_backlog(skb, get_cpu_light(), &qtail);
++		put_cpu_light();
+ 	}
+ #endif
+ 	return ret;
 
 
