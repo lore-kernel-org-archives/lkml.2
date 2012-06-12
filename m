@@ -1,41 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753079Ab2FLMLu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 08:11:50 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:60272 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752980Ab2FLMLs (ORCPT
+	id S1752988Ab2FLMX5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 08:23:57 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:54029 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752852Ab2FLMX4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 08:11:48 -0400
-Message-ID: <4FD731F9.8070509@gmail.com>
-Date: Tue, 12 Jun 2012 22:11:37 +1000
-From: Jason Stubbs <jasonbstubbs@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:13.0) Gecko/20120601 Thunderbird/13.0
-MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: linux-kernel@vger.kernel.org, xen-devel@lists.xen.org
-Subject: Re: PROBLEM: Possible race between  xen, md, dm and/or xfs
-References: <4FD1918A.2060908@gmail.com> <20120612035737.GL22848@dastard>
-In-Reply-To: <20120612035737.GL22848@dastard>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 12 Jun 2012 08:23:56 -0400
+Date: Tue, 12 Jun 2012 13:27:36 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Christian Gmeiner <christian.gmeiner@gmail.com>
+Cc: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: gma500: Cannot find any crtc or sizes - going 1024x768
+Message-ID: <20120612132736.642a4a5a@pyramind.ukuu.org.uk>
+In-Reply-To: <CAH9NwWdmhmLB5io5RWVQBj6c7zjXT9hFa7OAHVrL6oY8P0kjaw@mail.gmail.com>
+References: <CAH9NwWd1F3Vw2zrQJh8Jazm45C_BAH3H3-qupvm2XaLgDOM=QQ@mail.gmail.com>
+	<CAMeQTsZfE8_t6DCr3UWVqnOLyxNuNh7_VxJmqiP+enBBqM0o_A@mail.gmail.com>
+	<CAH9NwWc3W6zHCFf9rwKg5NMQaWnh4A=xVVysmG1Y=eUMzu=18Q@mail.gmail.com>
+	<CAMeQTsaknGLR2QCWwN8kYKh8y=JJtqN-ZSty6YTKnAOv2Vp3XQ@mail.gmail.com>
+	<CAH9NwWdmhmLB5io5RWVQBj6c7zjXT9hFa7OAHVrL6oY8P0kjaw@mail.gmail.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-6-12 13:57 , Dave Chinner wrote:
-> Nothing
-> wrong with MD, LVM, or XFS. The problem is either that EBS never
-> completed the IO, or Xen swallowed it and it never made to it to the
-> guest OS. Either way, it does not appear to be a problem in the
-> higher levels of the linux storage stack.
+> Works much better with this patch applied - I see a linux desktop on
+> the panel :)
 
-Thanks Dave for looking into this.
+Yay..
 
-I'll be sure to give Amazon ample opportunity to diagnose things from
-there side should the issue occur again and hopefully there won't be
-any more people reporting extraneous issues.
+> Is there a way to overwrite the found modeline?
 
---
-Regards,
-Jason Stubbs
+You can set modelines via the video interfaces and also by passing it as
+a boot parameter. The mode setting X server will also let you set modes.
+
+
+video=640x400@60
+
+or similar should work - you can set all kinds of bits this way.
+	
+
+If there is a way to identify the platform and that is needed to get it
+right then we can also hardcode a DMI match or similar for the device
+eventually.
+
+Alan
