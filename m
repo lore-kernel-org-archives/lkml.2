@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752287Ab2FLIpK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 04:45:10 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:35613 "EHLO
+	id S1752330Ab2FLIpc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 04:45:32 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:35714 "EHLO
 	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752233Ab2FLIpD (ORCPT
+	with ESMTP id S1752233Ab2FLIpb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 04:45:03 -0400
+	Tue, 12 Jun 2012 04:45:31 -0400
 From: Nicolas Ferre <nicolas.ferre@atmel.com>
 To: <vinod.koul@linux.intel.com>
 CC: <linux-arm-kernel@lists.infradead.org>, <plagnioj@jcrosoft.com>,
         <linux-kernel@vger.kernel.org>, <ludovic.desroches@atmel.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
+        <elen.song@atmel.com>, Nicolas Ferre <nicolas.ferre@atmel.com>
 Subject: [PATCH] dmaengine: at_hdmac: trivial: fix comment in header
-Date: Tue, 12 Jun 2012 10:44:55 +0200
-Message-ID: <1339490695-28796-1-git-send-email-nicolas.ferre@atmel.com>
+Date: Tue, 12 Jun 2012 10:45:26 +0200
+Message-ID: <1339490726-28836-1-git-send-email-nicolas.ferre@atmel.com>
 X-Mailer: git-send-email 1.7.10
 MIME-Version: 1.0
 Content-Type: text/plain
