@@ -1,72 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753721Ab2FLSVE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 14:21:04 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:54979 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751181Ab2FLSVC (ORCPT
+	id S1753441Ab2FLSXh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 14:23:37 -0400
+Received: from mail-bk0-f74.google.com ([209.85.214.74]:34271 "EHLO
+	mail-bk0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751790Ab2FLSXg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 14:21:02 -0400
-Date: Tue, 12 Jun 2012 19:20:36 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: David Brown <davidb@codeaurora.org>
-Cc: Kukjin Kim <kgene.kim@samsung.com>, Eric Miao <eric.y.miao@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tomasz Figa <tomasz.figa@gmail.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Paulo Marques <pmarques@grupopie.com>,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Jon Masters <jonathan@jonmasters.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: two possible fixes for the KALLSYMS build problem
-Message-ID: <20120612182036.GE7918@n2100.arm.linux.org.uk>
-References: <1338567721-19514-1-git-send-email-davidb@codeaurora.org> <20120611203748.GA16967@codeaurora.org> <20120612143249.GB7918@n2100.arm.linux.org.uk> <20120612160229.GA21389@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120612160229.GA21389@codeaurora.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Tue, 12 Jun 2012 14:23:36 -0400
+From: Ben Chan <benchan@chromium.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ben Chan <benchan@chromium.org>, Sage Ahn <syahn@gctsemi.com>
+Subject: [PATCH] staging: gdm72xx: Simplify spinlock fix for gdm_usb_send_complete
+Date: Tue, 12 Jun 2012 11:23:32 -0700
+Message-Id: <1339525412-20542-1-git-send-email-benchan@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 12, 2012 at 09:02:29AM -0700, David Brown wrote:
-> On Tue, Jun 12, 2012 at 03:32:49PM +0100, Russell King - ARM Linux wrote:
-> > On Mon, Jun 11, 2012 at 01:37:48PM -0700, David Brown wrote:
-> > > On Fri, Jun 01, 2012 at 09:21:59AM -0700, David Brown wrote:
-> > > 
-> > > > David Brown (1):
-> > > >   ARM: Prevent KALLSYM size mismatch on ARM.
-> > > > 
-> > > >  arch/arm/kernel/vmlinux.lds.S |    3 +++
-> > > >  1 file changed, 3 insertions(+)
-> > > 
-> > > Just wondering if anyone has had a chance to look at either of these,
-> > > or try them.  I haven't seen any KALLSYMS mismatch build errors with
-> > > either of these patches applied.
-> > 
-> > I think variant 2 is the better approach out of either as it doesn't add
-> > to the size of the resulting kernel image.
-> 
-> The first variant doesn't ever increase the size of the kernel,
-> either.  Variant two actually makes it a little smaller, since a few
-> symbols are eliminated.
+This patch simplifies the previous patch (commit
+dd13c86b0dae86efdde98119ffd7348e80719ade) for fixing the spinlock
+recursion issue on several call sites of gdm_usb_send_complete.
 
-Ok.
+Signed-off-by: Ben Chan <benchan@chromium.org>
+Cc: Sage Ahn <syahn@gctsemi.com>
+---
+ drivers/staging/gdm72xx/gdm_usb.c |   26 ++++++++++----------------
+ 1 files changed, 10 insertions(+), 16 deletions(-)
 
-> The second variant is cleaner, though as long as it is safe in every
-> configuration.
+diff --git a/drivers/staging/gdm72xx/gdm_usb.c b/drivers/staging/gdm72xx/gdm_usb.c
+index 646e0ac..89268c7 100644
+--- a/drivers/staging/gdm72xx/gdm_usb.c
++++ b/drivers/staging/gdm72xx/gdm_usb.c
+@@ -270,21 +270,17 @@ static void release_usb(struct usbwm_dev *udev)
+ 	}
+ }
+ 
+-static void gdm_usb_send_complete_impl(struct urb *urb, bool need_lock)
++static void __gdm_usb_send_complete(struct urb *urb)
+ {
+ 	struct usb_tx *t = urb->context;
+ 	struct tx_cxt *tx = t->tx_cxt;
+ 	u8 *pkt = t->buf;
+ 	u16 cmd_evt;
+-	unsigned long flags;
+ 
+ 	/* Completion by usb_unlink_urb */
+ 	if (urb->status == -ECONNRESET)
+ 		return;
+ 
+-	if (need_lock)
+-		spin_lock_irqsave(&tx->lock, flags);
+-
+ 	if (t->callback)
+ 		t->callback(t->cb_data);
+ 
+@@ -296,19 +292,17 @@ static void gdm_usb_send_complete_impl(struct urb *urb, bool need_lock)
+ 		put_tx_struct(tx, t);
+ 	else
+ 		free_tx_struct(t);
+-
+-	if (need_lock)
+-		spin_unlock_irqrestore(&tx->lock, flags);
+ }
+ 
+ static void gdm_usb_send_complete(struct urb *urb)
+ {
+-	gdm_usb_send_complete_impl(urb, true);
+-}
++	struct usb_tx *t = urb->context;
++	struct tx_cxt *tx = t->tx_cxt;
++	unsigned long flags;
+ 
+-static void gdm_usb_send_complete_no_lock(struct urb *urb)
+-{
+-	gdm_usb_send_complete_impl(urb, false);
++	spin_lock_irqsave(&tx->lock, flags);
++	__gdm_usb_send_complete(urb);
++	spin_unlock_irqrestore(&tx->lock, flags);
+ }
+ 
+ static int gdm_usb_send(void *priv_dev, void *data, int len,
+@@ -423,7 +417,7 @@ out:
+ 
+ send_fail:
+ 	t->callback = NULL;
+-	gdm_usb_send_complete_no_lock(t->urb);
++	__gdm_usb_send_complete(t->urb);
+ 	spin_unlock_irqrestore(&tx->lock, flags);
+ 	return ret;
+ }
+@@ -552,7 +546,7 @@ static void do_pm_control(struct work_struct *work)
+ 
+ 			if (ret) {
+ 				t->callback = NULL;
+-				gdm_usb_send_complete_no_lock(t->urb);
++				__gdm_usb_send_complete(t->urb);
+ 			}
+ 		}
+ 	}
+@@ -754,7 +748,7 @@ static int k_mode_thread(void *arg)
+ 
+ 				if (ret) {
+ 					t->callback = NULL;
+-					gdm_usb_send_complete_no_lock(t->urb);
++					__gdm_usb_send_complete(t->urb);
+ 				}
+ 			}
+ 
+-- 
+1.7.7.3
 
-Well, we don't have any per-CPU data unless we're building for SMP.
-See:
-
-#ifndef PER_CPU_BASE_SECTION
-#ifdef CONFIG_SMP
-#define PER_CPU_BASE_SECTION ".data..percpu"
-#else
-#define PER_CPU_BASE_SECTION ".data"
-#endif
-#endif
-
-in include/asm-generic/percpu.h.
