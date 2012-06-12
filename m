@@ -1,76 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753325Ab2FLNX0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 09:23:26 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:42773 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752917Ab2FLNXZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 09:23:25 -0400
-Message-ID: <4FD742C9.7090603@linaro.org>
-Date: Tue, 12 Jun 2012 14:23:21 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Linus Walleij <linus.walleij@linaro.org>, grant.likely@secretlab.ca,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH 06/14] mfd: Initialise the DB8500 PRCMU driver at core_initcall
- time
-References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org> <CACRpkdYoQFhBfRaPMBiVTiD979b+8708oS1qCPm+iyy5OZe2bw@mail.gmail.com> <4FD6FF6C.6040500@linaro.org> <201206121259.38807.arnd@arndb.de>
-In-Reply-To: <201206121259.38807.arnd@arndb.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1753354Ab2FLNXm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 09:23:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25353 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752917Ab2FLNXk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 09:23:40 -0400
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH EDAC 0/5] EDAC log cleanups
+Date: Tue, 12 Jun 2012 10:23:26 -0300
+Message-Id: <cover.1339507094.git.mchehab@redhat.com>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/12 13:59, Arnd Bergmann wrote:
-> On Tuesday 12 June 2012, Lee Jones wrote:
->> On 11/06/12 22:01, Linus Walleij wrote:
->>> Hm what shall we do when we run out of initlevels? I think this was the
->>> kind of thing that deferred probe should solve. Usually changing this kind
->>> of thing has side effects so I'm a bit hesitant.
->>
->> Ah yes, I remember now. The IRQ domain needs to be in place before the
->> Device Tree is parsed by the Open Firmware subsystem. If it's not the
->> error "no irq domain found" is triggered and the IRQs are never mapped.
->>
->> I'd be happy to take a second opinion, but I believe this (and the other
->> core_initcall patch) is required.
->
-> It's still just a hack. The real solution that we discussed last time it
-> came up is to defer the translation of irq numbers until device driver
-> probe time, and bail out with -EPROBE_DEFER if you try to use a device
-> whose interrupt is not available yet.
+Do some cleanups at the error logs:
+	- amd64_edac: don't print driver's name at the error strings;
+	- arch parameter is never used. Remove it from edac_mc_handle_error();
+	- Add error count parameter to edac_mc_handle_error();
+	- Use the error count parameter on sb_edac/i7core_edac.
 
-Ah yes, this:
+Mauro Carvalho Chehab (5):
+  amd64_edac: Don't pass driver name as an error parameter
+  edac: remove arch-specific parameter for the error handler
+  edac: allow to specify how many errors were received
+  i7core_edac: properly handle error count
+  sb_edac: properly handle error count
 
-> /*
->  * FIXME: Should we set up the GPIO domain here?
->  *
->  * The problem is that we cannot put the interrupt resources into the platform
->  * device until the irqdomain has been added. Right now, we set the GIC interrupt
->  * domain from init_irq(), then load the gpio driver from
->  * core_initcall(nmk_gpio_init) and add the platform devices from
->  * arch_initcall(customize_machine).
->  *
->  * This feels fragile because it depends on the gpio device getting probed
->  * _before_ any device uses the gpio interrupts.
-> */
-
-But your suggestion above involves some heavy refactoring of how Device 
-Tree works. Meanwhile the ab8500 will not work as an IRQ controller 
-until we either complete the work or use the same solution as we did for 
-the Nomadik GPIO controller. I think for now at least we should continue 
-to work on enablement and leave the 'nice to have's until last. We are 
-doing nothing new here, just bringing the ab8500 IRQ controller into 
-line with the Nomadik one.
+ drivers/edac/amd64_edac.c      |   53 +++++++++++++++++-----------------------
+ drivers/edac/amd76x_edac.c     |    8 +++---
+ drivers/edac/cell_edac.c       |    8 +++---
+ drivers/edac/cpc925_edac.c     |    8 +++---
+ drivers/edac/e752x_edac.c      |   16 ++++++------
+ drivers/edac/e7xxx_edac.c      |   16 ++++++------
+ drivers/edac/edac_core.h       |    4 +--
+ drivers/edac/edac_mc.c         |   32 ++++++++++++------------
+ drivers/edac/edac_mc_sysfs.c   |    4 +--
+ drivers/edac/i3000_edac.c      |   12 ++++-----
+ drivers/edac/i3200_edac.c      |   12 ++++-----
+ drivers/edac/i5000_edac.c      |   16 ++++++------
+ drivers/edac/i5100_edac.c      |    8 +++---
+ drivers/edac/i5400_edac.c      |    8 +++---
+ drivers/edac/i7300_edac.c      |    8 +++---
+ drivers/edac/i7core_edac.c     |   33 +++++++++----------------
+ drivers/edac/i82443bxgx_edac.c |    8 +++---
+ drivers/edac/i82860_edac.c     |   12 ++++-----
+ drivers/edac/i82875p_edac.c    |   12 ++++-----
+ drivers/edac/i82975x_edac.c    |   12 ++++-----
+ drivers/edac/mpc85xx_edac.c    |    8 +++---
+ drivers/edac/mv64x60_edac.c    |    8 +++---
+ drivers/edac/pasemi_edac.c     |    8 +++---
+ drivers/edac/ppc4xx_edac.c     |    8 +++---
+ drivers/edac/r82600_edac.c     |    8 +++---
+ drivers/edac/sb_edac.c         |   11 ++++-----
+ drivers/edac/tile_edac.c       |    4 +--
+ drivers/edac/x38_edac.c        |   12 ++++-----
+ 28 files changed, 171 insertions(+), 186 deletions(-)
 
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-M: +44 77 88 633 515
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.7.10.2
+
