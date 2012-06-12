@@ -1,420 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753906Ab2FLRZY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 13:25:24 -0400
-Received: from fieldses.org ([174.143.236.118]:59960 "EHLO fieldses.org"
+	id S1753893Ab2FLR0B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 13:26:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46467 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753749Ab2FLRZW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 13:25:22 -0400
-Date: Tue, 12 Jun 2012 13:25:16 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Jan Kara <jack@suse.cz>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@suse.cz, linux-nfs@vger.kernel.org
-Subject: Re: [PATCH 12/27] nfsd: Push mnt_want_write() outside of i_mutex
-Message-ID: <20120612172516.GA24476@fieldses.org>
-References: <1339510848-16992-1-git-send-email-jack@suse.cz>
- <1339510848-16992-13-git-send-email-jack@suse.cz>
+	id S1751437Ab2FLRZ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 13:25:59 -0400
+Message-ID: <4FD77B94.1030207@redhat.com>
+Date: Tue, 12 Jun 2012 19:25:40 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339510848-16992-13-git-send-email-jack@suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: linux-kernel@vger.kernel.org, axboe@kernel.dk, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH] scsi: allow persistent reservations without CAP_SYS_RAWIO
+References: <1339517312-18134-1-git-send-email-pbonzini@redhat.com>  <1339518069.3050.8.camel@dabdike.int.hansenpartnership.com>  <4FD76D57.5020709@redhat.com> <4FD77438.6090202@redhat.com> <1339521657.3050.13.camel@dabdike.int.hansenpartnership.com>
+In-Reply-To: <1339521657.3050.13.camel@dabdike.int.hansenpartnership.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 12, 2012 at 04:20:33PM +0200, Jan Kara wrote:
-> When mnt_want_write() starts to handle freezing it will get a full lock
-> semantics requiring proper lock ordering. So push mnt_want_write() call
-> consistently outside of i_mutex.
+Il 12/06/2012 19:20, James Bottomley ha scritto:
+> I don't think you understand how persistent reservations work.
 > 
-> CC: linux-nfs@vger.kernel.org
-> CC: "J. Bruce Fields" <bfields@fieldses.org>
+> The first thing I'll say is I agree with Alan.  Unless you can justify
+> why you want to relax permissions I'm not going to do it.
 
-Looks good to me.  (If you want:
-Acked-by: J. Bruce Fields <bfields@redhat.com>
-.)
+See my answer to John.  The reason is that I want to let VMs use
+persistent reservations without running them as root.
 
---b.
+> But secondly, the reason we're so up in arms about SCSI-3 PR is that
+> there's a feature called reservation by transport ID.  This is used to
+> reserve multipath devices when one of the paths is down.  Effectively it
+> allows a PR-OUT command to set a reservation on any LUN with access only
+> to one of them.  It's definitely a hack in the SCSI standard, but it's
+> not one that can be controlled by a unix like permission model.  Write
+> access to *any* LUN allows you to reserve *all* luns.
 
-> Signed-off-by: Jan Kara <jack@suse.cz>
-> ---
->  fs/nfsd/nfs4recover.c      |    9 +++--
->  fs/nfsd/nfsfh.c            |    1 +
->  fs/nfsd/nfsproc.c          |    9 ++++-
->  fs/nfsd/vfs.c              |   79 ++++++++++++++++++++++---------------------
->  fs/nfsd/vfs.h              |   11 +++++-
->  include/linux/nfsd/nfsfh.h |    1 +
->  6 files changed, 64 insertions(+), 46 deletions(-)
-> 
-> diff --git a/fs/nfsd/nfs4recover.c b/fs/nfsd/nfs4recover.c
-> index 5ff0b7b..43295d4 100644
-> --- a/fs/nfsd/nfs4recover.c
-> +++ b/fs/nfsd/nfs4recover.c
-> @@ -154,6 +154,10 @@ nfsd4_create_clid_dir(struct nfs4_client *clp)
->  	if (status < 0)
->  		return;
->  
-> +	status = mnt_want_write_file(rec_file);
-> +	if (status)
-> +		return;
-> +
->  	dir = rec_file->f_path.dentry;
->  	/* lock the parent */
->  	mutex_lock(&dir->d_inode->i_mutex);
-> @@ -173,11 +177,7 @@ nfsd4_create_clid_dir(struct nfs4_client *clp)
->  		 * as well be forgiving and just succeed silently.
->  		 */
->  		goto out_put;
-> -	status = mnt_want_write_file(rec_file);
-> -	if (status)
-> -		goto out_put;
->  	status = vfs_mkdir(dir->d_inode, dentry, S_IRWXU);
-> -	mnt_drop_write_file(rec_file);
->  out_put:
->  	dput(dentry);
->  out_unlock:
-> @@ -189,6 +189,7 @@ out_unlock:
->  				" (err %d); please check that %s exists"
->  				" and is writeable", status,
->  				user_recovery_dirname);
-> +	mnt_drop_write_file(rec_file);
->  	nfs4_reset_creds(original_cred);
->  }
->  
-> diff --git a/fs/nfsd/nfsfh.c b/fs/nfsd/nfsfh.c
-> index cc79300..032af38 100644
-> --- a/fs/nfsd/nfsfh.c
-> +++ b/fs/nfsd/nfsfh.c
-> @@ -635,6 +635,7 @@ fh_put(struct svc_fh *fhp)
->  		fhp->fh_post_saved = 0;
->  #endif
->  	}
-> +	fh_drop_write(fhp);
->  	if (exp) {
->  		exp_put(exp);
->  		fhp->fh_export = NULL;
-> diff --git a/fs/nfsd/nfsproc.c b/fs/nfsd/nfsproc.c
-> index e15dc45..aad6d45 100644
-> --- a/fs/nfsd/nfsproc.c
-> +++ b/fs/nfsd/nfsproc.c
-> @@ -196,6 +196,7 @@ nfsd_proc_create(struct svc_rqst *rqstp, struct nfsd_createargs *argp,
->  	struct dentry	*dchild;
->  	int		type, mode;
->  	__be32		nfserr;
-> +	int		hosterr;
->  	dev_t		rdev = 0, wanted = new_decode_dev(attr->ia_size);
->  
->  	dprintk("nfsd: CREATE   %s %.*s\n",
-> @@ -214,6 +215,12 @@ nfsd_proc_create(struct svc_rqst *rqstp, struct nfsd_createargs *argp,
->  	nfserr = nfserr_exist;
->  	if (isdotent(argp->name, argp->len))
->  		goto done;
-> +	hosterr = fh_want_write(dirfhp);
-> +	if (hosterr) {
-> +		nfserr = nfserrno(hosterr);
-> +		goto done;
-> +	}
-> +
->  	fh_lock_nested(dirfhp, I_MUTEX_PARENT);
->  	dchild = lookup_one_len(argp->name, dirfhp->fh_dentry, argp->len);
->  	if (IS_ERR(dchild)) {
-> @@ -330,7 +337,7 @@ nfsd_proc_create(struct svc_rqst *rqstp, struct nfsd_createargs *argp,
->  out_unlock:
->  	/* We don't really need to unlock, as fh_put does it. */
->  	fh_unlock(dirfhp);
-> -
-> +	fh_drop_write(dirfhp);
->  done:
->  	fh_put(dirfhp);
->  	return nfsd_return_dirop(nfserr, resp);
-> diff --git a/fs/nfsd/vfs.c b/fs/nfsd/vfs.c
-> index c8bd9c3..4503995 100644
-> --- a/fs/nfsd/vfs.c
-> +++ b/fs/nfsd/vfs.c
-> @@ -1276,6 +1276,10 @@ nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
->  	 * If it has, the parent directory should already be locked.
->  	 */
->  	if (!resfhp->fh_dentry) {
-> +		host_err = fh_want_write(fhp);
-> +		if (host_err)
-> +			goto out_nfserr;
-> +
->  		/* called from nfsd_proc_mkdir, or possibly nfsd3_proc_create */
->  		fh_lock_nested(fhp, I_MUTEX_PARENT);
->  		dchild = lookup_one_len(fname, dentry, flen);
-> @@ -1319,14 +1323,11 @@ nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
->  		goto out;
->  	}
->  
-> -	host_err = fh_want_write(fhp);
-> -	if (host_err)
-> -		goto out_nfserr;
-> -
->  	/*
->  	 * Get the dir op function pointer.
->  	 */
->  	err = 0;
-> +	host_err = 0;
->  	switch (type) {
->  	case S_IFREG:
->  		host_err = vfs_create(dirp, dchild, iap->ia_mode, NULL);
-> @@ -1343,10 +1344,8 @@ nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
->  		host_err = vfs_mknod(dirp, dchild, iap->ia_mode, rdev);
->  		break;
->  	}
-> -	if (host_err < 0) {
-> -		fh_drop_write(fhp);
-> +	if (host_err < 0)
->  		goto out_nfserr;
-> -	}
->  
->  	err = nfsd_create_setattr(rqstp, resfhp, iap);
->  
-> @@ -1358,7 +1357,6 @@ nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
->  	err2 = nfserrno(commit_metadata(fhp));
->  	if (err2)
->  		err = err2;
-> -	fh_drop_write(fhp);
->  	/*
->  	 * Update the file handle to get the new inode info.
->  	 */
-> @@ -1417,6 +1415,11 @@ do_nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
->  	err = nfserr_notdir;
->  	if (!dirp->i_op->lookup)
->  		goto out;
-> +
-> +	host_err = fh_want_write(fhp);
-> +	if (host_err)
-> +		goto out_nfserr;
-> +
->  	fh_lock_nested(fhp, I_MUTEX_PARENT);
->  
->  	/*
-> @@ -1449,9 +1452,6 @@ do_nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
->  		v_atime = verifier[1]&0x7fffffff;
->  	}
->  	
-> -	host_err = fh_want_write(fhp);
-> -	if (host_err)
-> -		goto out_nfserr;
->  	if (dchild->d_inode) {
->  		err = 0;
->  
-> @@ -1522,7 +1522,6 @@ do_nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
->  	if (!err)
->  		err = nfserrno(commit_metadata(fhp));
->  
-> -	fh_drop_write(fhp);
->  	/*
->  	 * Update the filehandle to get the new inode info.
->  	 */
-> @@ -1533,6 +1532,7 @@ do_nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
->  	fh_unlock(fhp);
->  	if (dchild && !IS_ERR(dchild))
->  		dput(dchild);
-> +	fh_drop_write(fhp);
->   	return err;
->   
->   out_nfserr:
-> @@ -1613,6 +1613,11 @@ nfsd_symlink(struct svc_rqst *rqstp, struct svc_fh *fhp,
->  	err = fh_verify(rqstp, fhp, S_IFDIR, NFSD_MAY_CREATE);
->  	if (err)
->  		goto out;
-> +
-> +	host_err = fh_want_write(fhp);
-> +	if (host_err)
-> +		goto out_nfserr;
-> +
->  	fh_lock(fhp);
->  	dentry = fhp->fh_dentry;
->  	dnew = lookup_one_len(fname, dentry, flen);
-> @@ -1620,10 +1625,6 @@ nfsd_symlink(struct svc_rqst *rqstp, struct svc_fh *fhp,
->  	if (IS_ERR(dnew))
->  		goto out_nfserr;
->  
-> -	host_err = fh_want_write(fhp);
-> -	if (host_err)
-> -		goto out_nfserr;
-> -
->  	if (unlikely(path[plen] != 0)) {
->  		char *path_alloced = kmalloc(plen+1, GFP_KERNEL);
->  		if (path_alloced == NULL)
-> @@ -1683,6 +1684,12 @@ nfsd_link(struct svc_rqst *rqstp, struct svc_fh *ffhp,
->  	if (isdotent(name, len))
->  		goto out;
->  
-> +	host_err = fh_want_write(tfhp);
-> +	if (host_err) {
-> +		err = nfserrno(host_err);
-> +		goto out;
-> +	}
-> +
->  	fh_lock_nested(ffhp, I_MUTEX_PARENT);
->  	ddir = ffhp->fh_dentry;
->  	dirp = ddir->d_inode;
-> @@ -1694,18 +1701,13 @@ nfsd_link(struct svc_rqst *rqstp, struct svc_fh *ffhp,
->  
->  	dold = tfhp->fh_dentry;
->  
-> -	host_err = fh_want_write(tfhp);
-> -	if (host_err) {
-> -		err = nfserrno(host_err);
-> -		goto out_dput;
-> -	}
->  	err = nfserr_noent;
->  	if (!dold->d_inode)
-> -		goto out_drop_write;
-> +		goto out_dput;
->  	host_err = nfsd_break_lease(dold->d_inode);
->  	if (host_err) {
->  		err = nfserrno(host_err);
-> -		goto out_drop_write;
-> +		goto out_dput;
->  	}
->  	host_err = vfs_link(dold, dirp, dnew);
->  	if (!host_err) {
-> @@ -1718,12 +1720,11 @@ nfsd_link(struct svc_rqst *rqstp, struct svc_fh *ffhp,
->  		else
->  			err = nfserrno(host_err);
->  	}
-> -out_drop_write:
-> -	fh_drop_write(tfhp);
->  out_dput:
->  	dput(dnew);
->  out_unlock:
->  	fh_unlock(ffhp);
-> +	fh_drop_write(tfhp);
->  out:
->  	return err;
->  
-> @@ -1766,6 +1767,12 @@ nfsd_rename(struct svc_rqst *rqstp, struct svc_fh *ffhp, char *fname, int flen,
->  	if (!flen || isdotent(fname, flen) || !tlen || isdotent(tname, tlen))
->  		goto out;
->  
-> +	host_err = fh_want_write(ffhp);
-> +	if (host_err) {
-> +		err = nfserrno(host_err);
-> +		goto out;
-> +	}
-> +
->  	/* cannot use fh_lock as we need deadlock protective ordering
->  	 * so do it by hand */
->  	trap = lock_rename(tdentry, fdentry);
-> @@ -1796,17 +1803,14 @@ nfsd_rename(struct svc_rqst *rqstp, struct svc_fh *ffhp, char *fname, int flen,
->  	host_err = -EXDEV;
->  	if (ffhp->fh_export->ex_path.mnt != tfhp->fh_export->ex_path.mnt)
->  		goto out_dput_new;
-> -	host_err = fh_want_write(ffhp);
-> -	if (host_err)
-> -		goto out_dput_new;
->  
->  	host_err = nfsd_break_lease(odentry->d_inode);
->  	if (host_err)
-> -		goto out_drop_write;
-> +		goto out_dput_new;
->  	if (ndentry->d_inode) {
->  		host_err = nfsd_break_lease(ndentry->d_inode);
->  		if (host_err)
-> -			goto out_drop_write;
-> +			goto out_dput_new;
->  	}
->  	host_err = vfs_rename(fdir, odentry, tdir, ndentry);
->  	if (!host_err) {
-> @@ -1814,8 +1818,6 @@ nfsd_rename(struct svc_rqst *rqstp, struct svc_fh *ffhp, char *fname, int flen,
->  		if (!host_err)
->  			host_err = commit_metadata(ffhp);
->  	}
-> -out_drop_write:
-> -	fh_drop_write(ffhp);
->   out_dput_new:
->  	dput(ndentry);
->   out_dput_old:
-> @@ -1831,6 +1833,7 @@ out_drop_write:
->  	fill_post_wcc(tfhp);
->  	unlock_rename(tdentry, fdentry);
->  	ffhp->fh_locked = tfhp->fh_locked = 0;
-> +	fh_drop_write(ffhp);
->  
->  out:
->  	return err;
-> @@ -1856,6 +1859,10 @@ nfsd_unlink(struct svc_rqst *rqstp, struct svc_fh *fhp, int type,
->  	if (err)
->  		goto out;
->  
-> +	host_err = fh_want_write(fhp);
-> +	if (host_err)
-> +		goto out_nfserr;
-> +
->  	fh_lock_nested(fhp, I_MUTEX_PARENT);
->  	dentry = fhp->fh_dentry;
->  	dirp = dentry->d_inode;
-> @@ -1874,21 +1881,15 @@ nfsd_unlink(struct svc_rqst *rqstp, struct svc_fh *fhp, int type,
->  	if (!type)
->  		type = rdentry->d_inode->i_mode & S_IFMT;
->  
-> -	host_err = fh_want_write(fhp);
-> -	if (host_err)
-> -		goto out_put;
-> -
->  	host_err = nfsd_break_lease(rdentry->d_inode);
->  	if (host_err)
-> -		goto out_drop_write;
-> +		goto out_put;
->  	if (type != S_IFDIR)
->  		host_err = vfs_unlink(dirp, rdentry);
->  	else
->  		host_err = vfs_rmdir(dirp, rdentry);
->  	if (!host_err)
->  		host_err = commit_metadata(fhp);
-> -out_drop_write:
-> -	fh_drop_write(fhp);
->  out_put:
->  	dput(rdentry);
->  
-> diff --git a/fs/nfsd/vfs.h b/fs/nfsd/vfs.h
-> index ec0611b..359594c 100644
-> --- a/fs/nfsd/vfs.h
-> +++ b/fs/nfsd/vfs.h
-> @@ -110,12 +110,19 @@ int nfsd_set_posix_acl(struct svc_fh *, int, struct posix_acl *);
->  
->  static inline int fh_want_write(struct svc_fh *fh)
->  {
-> -	return mnt_want_write(fh->fh_export->ex_path.mnt);
-> +	int ret = mnt_want_write(fh->fh_export->ex_path.mnt);
-> +
-> +	if (!ret)
-> +		fh->fh_want_write = 1;
-> +	return ret;
->  }
->  
->  static inline void fh_drop_write(struct svc_fh *fh)
->  {
-> -	mnt_drop_write(fh->fh_export->ex_path.mnt);
-> +	if (fh->fh_want_write) {
-> +		fh->fh_want_write = 0;
-> +		mnt_drop_write(fh->fh_export->ex_path.mnt);
-> +	}
->  }
->  
->  #endif /* LINUX_NFSD_VFS_H */
-> diff --git a/include/linux/nfsd/nfsfh.h b/include/linux/nfsd/nfsfh.h
-> index ce4743a..fa63048 100644
-> --- a/include/linux/nfsd/nfsfh.h
-> +++ b/include/linux/nfsd/nfsfh.h
-> @@ -143,6 +143,7 @@ typedef struct svc_fh {
->  	int			fh_maxsize;	/* max size for fh_handle */
->  
->  	unsigned char		fh_locked;	/* inode locked by us */
-> +	unsigned char		fh_want_write;	/* remount protection taken */
->  
->  #ifdef CONFIG_NFSD_V3
->  	unsigned char		fh_post_saved;	/* post-op attrs saved */
-> -- 
-> 1.7.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Thanks for taking the time to explain---I knew about this, but I thought
+it could (perhaps should) be disabled on the SAN.  Anybody could already
+use reservation by transport ID if they had root access on the local
+machine, no?
+
+Paolo
