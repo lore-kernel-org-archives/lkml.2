@@ -1,44 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753642Ab2FLQZU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 12:25:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40732 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753473Ab2FLQZT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 12:25:19 -0400
-Message-ID: <4FD76D57.5020709@redhat.com>
-Date: Tue, 12 Jun 2012 18:24:55 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1753786Ab2FLQZo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 12:25:44 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:34727 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753695Ab2FLQZn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 12:25:43 -0400
+Date: Tue, 12 Jun 2012 18:25:27 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: khali@linux-fr.org, ben-linux@fluff.org, swarren@wwwdotorg.org,
+        olof@lixom.net, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
+Subject: Re: [PATCH V2 3/4] i2c: tegra: support for I2C_M_NOSTART
+ functionality
+Message-ID: <20120612162527.GB24753@pengutronix.de>
+References: <1339497451-26260-1-git-send-email-ldewangan@nvidia.com>
+ <1339497451-26260-4-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: linux-kernel@vger.kernel.org, axboe@kernel.dk, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH] scsi: allow persistent reservations without CAP_SYS_RAWIO
-References: <1339517312-18134-1-git-send-email-pbonzini@redhat.com> <1339518069.3050.8.camel@dabdike.int.hansenpartnership.com>
-In-Reply-To: <1339518069.3050.8.camel@dabdike.int.hansenpartnership.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="GID0FwUMdk1T2AWN"
+Content-Disposition: inline
+In-Reply-To: <1339497451-26260-4-git-send-email-ldewangan@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 12/06/2012 18:21, James Bottomley ha scritto:
->> > Persistent reservations commands cannot be issued right now without
->> > giving CAP_SYS_RAWIO to the process who wishes to send them.  This
->> > is a bit heavy-handed, allow these two commands.
->
-> Why is this heavy handed?  If you remove CAP_SYS_RAWIO, any userspace
-> process can send these, which would allow any user to completely disrupt
-> a SAN by injecting spurious reservations ... that doesn't look to be
-> terribly safe for an operating system running in a data centre.
 
-It is heavy-handed because:
+--GID0FwUMdk1T2AWN
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-1) there are still other protections such as DAC (both Unix permissions
-and ACLs) and SELinux; CAP_SYS_RAWIO is effectively the same as root.
+On Tue, Jun 12, 2012 at 04:07:30PM +0530, Laxman Dewangan wrote:
+> Adding support for functionality I2C_M_NOSTART.
+> When multiple message transfer request made through i2c
+> and if any message is flagged with I2C_M_NOSTART then
+> it will not send the start/repeat-start and address of
+> that message i.e. sends data directly.
+>=20
+> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+> ---
+> This is rebased of earlier patch on same support.
+> At this time using the new flag I2C_FUNC_NOSTART.
+>=20
+> No change from V1.
 
-2) if any user could disrupt the SAN by injecting spurious reservations
-just by having his laptop's root password, that data centre wouldn't be
-terribly safe to begin with.
+There is a change. It is now dependant on the clk_prepare_enable change
+which will go in via arm-soc as discussed previously. Can you resend
+please?
 
-Paolo
+> @@ -564,8 +579,14 @@ static int tegra_i2c_xfer(struct i2c_adapter *adap, =
+struct i2c_msg msgs[],
+> =20
+>  	clk_prepare_enable(i2c_dev->clk);
+
+^^^^
+
+Thanks,
+
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--GID0FwUMdk1T2AWN
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAk/XbXcACgkQD27XaX1/VRtdqACfeEe0JtvcWCgbwSaFVHFCaPdp
+LpsAn1JhjLP8fwszNoQEA/2obYH2G1wl
+=+Iev
+-----END PGP SIGNATURE-----
+
+--GID0FwUMdk1T2AWN--
