@@ -1,147 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753764Ab2FLPoW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 11:44:22 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:57586 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753397Ab2FLPjo (ORCPT
+	id S1752802Ab2FLPqC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 11:46:02 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:39657 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752495Ab2FLPqA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 11:39:44 -0400
-From: Kent Overstreet <koverstreet@google.com>
-To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com
-Cc: Kent Overstreet <koverstreet@google.com>, tejun@google.com, agk@redhat.com,
-        dan.j.williams@intel.com
-Subject: [Bcache v14 00/16]
-Date: Tue, 12 Jun 2012 08:39:06 -0700
-Message-Id: <1339515562-14638-1-git-send-email-koverstreet@google.com>
-X-Mailer: git-send-email 1.7.9.3.327.g2980b
+	Tue, 12 Jun 2012 11:46:00 -0400
+Date: Tue, 12 Jun 2012 08:25:21 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Sasha Levin <levinsasha928@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>
+Subject: Re: rcu,sched: spinlock recursion on 3.5-rc2
+Message-ID: <20120612152521.GD2423@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1339500907.4999.99.camel@lappy>
+ <alpine.LFD.2.02.1206121535180.3086@ionos>
+ <20120612144705.GB2423@linux.vnet.ibm.com>
+ <alpine.LFD.2.02.1206121701350.3086@ionos>
+ <1339514114.31548.78.camel@twins>
+ <alpine.LFD.2.02.1206121716370.3086@ionos>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1206121716370.3086@ionos>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12061215-1780-0000-0000-0000065FF4D8
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000281; HX=3.00000190; KW=3.00000007;
+ PH=3.00000001; SC=3.00000002; SDB=6.00147434; UDB=6.00033660; UTC=2012-06-12
+ 15:45:53
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Augh. I had about two pages written out about what's changed since the
-last version, and then I accidentally reran git format-patch instead of
-git send-email, and poof.
+On Tue, Jun 12, 2012 at 05:20:10PM +0200, Thomas Gleixner wrote:
+> On Tue, 12 Jun 2012, Peter Zijlstra wrote:
+> 
+> > On Tue, 2012-06-12 at 17:07 +0200, Thomas Gleixner wrote:
+> > > Hmm, not sure. The deadlock was not triggered in switch_to. It was
+> > > just at the beginning of __schedule()
+> > > 
+> > > 
+> > How can you tell? switch_to() is a macro not a function, it won't ever
+> > show up on a stack-trace.. but I think you meant context_switch() but
+> > that typically gets inlined, similar problem.
+> 
+> Bah, I misread the trace and the rcu code. :(
+> 
+> So, yes the revert should solve the problem. Looks like I need more
+> coffee, not Paul :)
 
-stab. stab. stab.
+Well, given that the commit that I reverted was my own, I definitely
+needed more of something or another...  :-)
 
-So, here's the shortlog since the last version instead.
+							Thanx, Paul
 
-Dan Williams (5):
-      bcache: disable lockdep, enable CONFIG_BCACHE=m
-      bcache: drop select COMPACTION
-      bcache: fix symlink removal
-      bcache: move to drivers/md/
-      bcache: uplevel allocation of 'cached_dev' and 'cache'
-
-Kent Overstreet (81):
-      bcache: Add format string checking to cache_set_error()
-      bcache: Switch error macros to do {} while
-      bcache: Check queue_max_segments() in __bio_max_sector()
-      bcache: Document some things and incorporate some review feedback
-      bcache: Fix a bug in submit_bbio_split()
-      bcache: sprint_string_list() -> snprint_string_list()
-      bcache: Kill hprint()
-      bcache: Review feedback
-      bcache: Kill popcount()
-      bcache: Take out some nested functions
-      bcache: Documentation and coding style from review feedback
-      bcache: Kill contamination
-      bcache: BDEV_DATA_START
-      bcache: BUCKET_(GC|DISK)_GEN_MAX
-      bcache: MAX_IN_FLIGHT_DISCARDS
-      bcache: Capitalize constants
-      bcache: Convert macros to inline functions
-      bcache: Fix a deadlock between gc and allocation
-      bcache: Change pop_bucket() to take gc_mark instead of prio
-      bcache: Garbage collection cleanups
-      bcache: Split out gc mark and sectors used
-      bcache: Add looping macro for cached btree nodes
-      bcache: rename do_bio_hook() -> search_alloc()
-      bcache: Fix for discards in writeback mode
-      bcache: Don't unnecessarily init btree_op closure
-      bcache: Don't reissue no data bio to flash only dev
-      bcache: Refactor request path/control flow
-      bcache: Kill some dependencies on bcache_device ptr
-      bcache: Move bcache_device pointer to struct search
-      bcache: Move bio_insert_done to btree_op
-      bcache: Move cache_bio, skip to btree_op
-      bcache: Abstract out keybuf code
-      bcache: Pass write_prio to pop_bucket(), rework reserve handling
-      bcache: Factor out mca_reinit()
-      bcache: Change mca_reap() to check page_order
-      bcache: Refactor mca_bucket_alloc()
-      bcache: Factor out cannibalize_bucket()
-      bcache: Prefix all external symbols with bch_
-      bcache: Convert to struct closure_waitlist
-      bcache: Kill bch_bbio_kmalloc(), bi_destructor use
-      bcache: Kill bio_split_front() and other upstreamed code
-      remove some bio_puts() for new bio_reset() semantics
-      bcache: fix bio_map()
-      bcache: Kill submit_bio_split(), submit_bbio_split()
-      bcache: Kill bio passthrough split code
-      bcache: Use bio_clone_bioset()
-      bcache: Kill uuid_bio
-      bcache: Kill unnecessary bio_max_sectors() checks
-      bcache: Better naming in cached_dev_cache_miss()
-      bcache: Kill bio_get() in btree_bio_init()
-      bcache: Kill prio_bio
-      bcache: Get refcount when bio is submitted, not when it's split
-      bcache: Get refcount at the same time io is submitted
-      closures: closure_call()
-      bcache: Refactor flash_dev_make_request()
-      closures: continue_at_nobarrier()
-      bcache: Refactor request_(read|write)()
-      bcache: Get rid of set_closure_fn() in read_dirty()
-      bcache: Kill compat code for old kernels
-      bcache: next() -> bkey_next()
-      bcache: Document auxiliary search trees
-      bcache: Add bch_alloc_sectors()
-      bcache: Rename KEY_DEV() -> KEY_INODE(), introduce KEY_OFFSET()
-      bcache: Fix for CONFIG_TRACING=y
-      bcache: Clean up, comment bio_insert()
-      bcache: Move debugfs file to cache_set
-      bcache: Rename vars for consistency
-      bcache: Writeback refactoring/locking improvements
-      bcache: Factor out ratelimit code
-      closures: Destructors
-      closures: closure_sleep() -> closure_delay()
-      closures: closure_trylock_call
-      closure_sleep() -> closure_delay()
-      bcache: Fix readahead past end of the device
-      bcache: Convert background writeback to use a closure
-      bcache: Reorder writeback code
-      bcache: Fix dirty data accounting
-      bcache: Better bset stats
-      bcache: Fix detaching when unregistering cache set
-      bcache: Moving garbage collector
-      bcache: Update cgroup code
-
- drivers/md/bcache/Makefile    |   12 +-
- drivers/md/bcache/alloc.c     |  386 ++++++++-------
- drivers/md/bcache/bcache.h    |  429 ++++++++++------
- drivers/md/bcache/bset.c      |  334 ++++++++-----
- drivers/md/bcache/bset.h      |  125 ++---
- drivers/md/bcache/btree.c     |  946 ++++++++++++++++++++++--------------
- drivers/md/bcache/btree.h     |  108 +++--
- drivers/md/bcache/debug.c     |  112 ++---
- drivers/md/bcache/debug.h     |   39 +-
- drivers/md/bcache/io.c        |  128 ++---
- drivers/md/bcache/journal.c   |   93 ++--
- drivers/md/bcache/journal.h   |   20 +-
- drivers/md/bcache/movinggc.c  |  245 ++++++++++
- drivers/md/bcache/request.c   | 1077 ++++++++++++++++++-----------------------
- drivers/md/bcache/request.h   |   30 +-
- drivers/md/bcache/stats.c     |   50 +-
- drivers/md/bcache/stats.h     |   22 +-
- drivers/md/bcache/super.c     |  682 +++++++++++++-------------
- drivers/md/bcache/sysfs.c     |  228 ++++-----
- drivers/md/bcache/sysfs.h     |    8 -
- drivers/md/bcache/util.c      |  235 ++-------
- drivers/md/bcache/util.h      |   80 +--
- drivers/md/bcache/writeback.c |  534 ++++++++------------
- include/linux/closure.h       |   88 ++--
- include/trace/events/bcache.h |   32 +-
- lib/closure.c                 |   26 +-
- 26 files changed, 3177 insertions(+), 2892 deletions(-)
