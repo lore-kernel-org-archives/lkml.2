@@ -1,60 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753366Ab2FLRNk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 13:13:40 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:32797 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752027Ab2FLRNj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 13:13:39 -0400
-Message-ID: <1339521203.31548.92.camel@twins>
-Subject: Re: [PATCH] perf/x86: check ucode before disabling PEBS on
- SandyBridge
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Robert Richter <robert.richter@amd.com>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org, andi@firstfloor.org, mingo@elte.hu,
-        ming.m.lin@intel.com, Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Dimitri Sivanich <sivanich@sgi.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>
-Date: Tue, 12 Jun 2012 19:13:23 +0200
-In-Reply-To: <CABPqkBRJAA7yRcswM1iYESSwhiGD4SEbir=q=ouQSevi7OAxqQ@mail.gmail.com>
-References: <20120607071531.GA4849@quad> <1339064319.23343.13.camel@twins>
-	 <CABPqkBQ+p5rcuxpXCTLMXPM+awAHhQ6mP9-WzVh5GWtn2GyfrA@mail.gmail.com>
-	 <1339065932.23343.18.camel@twins>
-	 <CABPqkBQ=tLXXsgvzQx+i01Owm4MM8m=6cEVVi4ab64gOiTTBYQ@mail.gmail.com>
-	 <1339067757.23343.21.camel@twins> <20120608093513.GA22520@gmail.com>
-	 <1339149613.23343.52.camel@twins> <1339161972.2507.13.camel@laptop>
-	 <20120612170725.GE5046@erda.amd.com>
-	 <CABPqkBRJAA7yRcswM1iYESSwhiGD4SEbir=q=ouQSevi7OAxqQ@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1753740Ab2FLRNy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 13:13:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63769 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753411Ab2FLRNx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 13:13:53 -0400
+Message-ID: <4FD778BA.8040201@redhat.com>
+Date: Tue, 12 Jun 2012 19:13:30 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+MIME-Version: 1.0
+To: John Stoffel <john@stoffel.org>
+CC: linux-kernel@vger.kernel.org, axboe@kernel.dk, linux-scsi@vger.kernel.org,
+        jbottomley@parallels.com
+Subject: Re: [PATCH] scsi: allow persistent reservations without CAP_SYS_RAWIO
+References: <1339517312-18134-1-git-send-email-pbonzini@redhat.com> <20439.30634.460606.215696@quad.stoffel.home>
+In-Reply-To: <20439.30634.460606.215696@quad.stoffel.home>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-06-12 at 19:09 +0200, Stephane Eranian wrote:
-> > Instead of registering a microcode notifier, why not checking the
-> > availability of pebs dynamically with each syscall in
-> > intel_pmu_hw_config()? It looks like intel_snb_verify_ucode() is not
-> > that much expensive. We can perform the check only if the event
-> could
-> > be for pebs and if pebs is broken. The check could be repeated when
-> > setting up a new event after ucode could potentially has been
-> updated
-> > (e.g. after bringing a cpu online or so).
+Il 12/06/2012 19:08, John Stoffel ha scritto:
+> Paolo> Persistent reservations commands cannot be issued right now
+> Paolo> without giving CAP_SYS_RAWIO to the process who wishes to send
+> Paolo> them.  This is a bit heavy-handed, allow these two commands.
+> 
+> This seems like a bad idea, now anyone can just put in a SCSI
+> reservation on a system and then you have to hunt around trying to
+> figure it out.  
 
-Because you then end up with a for_each_online_cpu() loop in there,
-that's not pretty and quite horrible on large systems when you need to
-create nr_cpus events.
+What's the difference from anyone destroying data on a disk?  You still
+need write access to the block device node.  Also, you could already do
+the same if you have root permissions on your _local_ machine.
 
-Furthermore, ucode update is the rare thing, creating events happens
-much more frequently.
+(BTW, please reply to these objections where I already stated them, in
+the answer to James Bottomley).
 
-> That's what I had in my original version. 
+> What's the motivation here?  What's the use case this solves?  
 
-Right, but you really need to check all cpus, not just the one you
-happen to run on or the boot cpu.
+I would like to give access to persistent reservations to VMs, without
+having to run qemu as root.  One alternative is to run a userspace iSCSI
+initiator, but of course that would only work with iSCSI.
+
+Paolo
