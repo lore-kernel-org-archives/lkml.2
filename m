@@ -1,185 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753645Ab2FLWyb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 18:54:31 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9001 "EHLO
+	id S1753718Ab2FLWye (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 18:54:34 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16044 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752780Ab2FLWy0 (ORCPT
+	with ESMTP id S1752780Ab2FLWyb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 18:54:26 -0400
-X-Authority-Analysis: v=2.0 cv=T6AOvo2Q c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Ciwy3NGCPMMA:10 a=jXjFjLgCXEcA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=dwWg9rdAu8B17VaaaNQA:9 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+	Tue, 12 Jun 2012 18:54:31 -0400
+X-Authority-Analysis: v=2.0 cv=eIiRfQV1 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Ciwy3NGCPMMA:10 a=Uma7A4zuSYsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=3nbZYyFuAAAA:8 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=oGMlB6cnAAAA:8 a=VnNF1IyMAAAA:8 a=Z4Rwk6OoAAAA:8 a=pGLkceISAAAA:8 a=Y1Ot2RuyV6B7H7rStpgA:9 a=EvKJbDF4Ut8A:10 a=Zh68SRI7RUMA:10 a=jEp0ucaQiEUA:10 a=CY6gl2JlH4YA:10 a=jbrJJM5MRmoA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.80.29
-Message-Id: <20120612225424.495625483@goodmis.org>
+Message-Id: <20120612225427.457117696@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Tue, 12 Jun 2012 18:43:29 -0400
+Date: Tue, 12 Jun 2012 18:43:40 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [RFC][PATCH 02/13 v2] ftrace: Consolidate arch dependent functions with list function
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>
+Subject: [RFC][PATCH 13/13 v2] kprobes/x86: ftrace based optimization for x86
 References: <20120612224327.426900129@goodmis.org>
-Content-Disposition: inline; filename=0002-ftrace-Consolidate-arch-dependent-functions-with-lis.patch
+Content-Disposition: inline; filename=0013-kprobes-x86-ftrace-based-optimization-for-x86.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <srostedt@redhat.com>
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-As the function tracer starts to get more features, the support for
-theses features will spread out throughout the different architectures
-over time. These features boil down to what each arch does in the
-mcount trampoline (the ftrace_caller).
+Add function tracer based kprobe optimization support
+handlers on x86. This allows kprobes to use function
+tracer for probing on mcount call.
 
-Currently there's two features that are not the same throughout the
-archs.
+Link: http://lkml.kernel.org/r/20120605102838.27845.26317.stgit@localhost.localdomain
 
- 1) Support to stop function tracing before the callback
- 2) passing of the ftrace ops
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: "Frank Ch. Eigler" <fche@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-Both of these require placing an indirect function to support the
-features if the mcount trampoline does not.
-
-On a side note, for all architectures, when more than one callback
-is registered to the function tracer, an intermediate 'list' function
-is called by the mcount trampoline to iterate through the callbacks
-that are registered.
-
-Instead of making a separate function for each of these features,
-and requiring several indirect calls, just use the single 'list' function
-as the intermediate, to handle all cases. If an arch does not support
-the 'stop function tracing' or the passing of ftrace ops, just force
-it to use the list function that will handle the features required.
-
-This makes the code cleaner and simpler and removes a lot of
- #ifdefs in the code.
+[ Updated to new port of ftrace save regs functions ]
 
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/ftrace.h |   13 +++++++++++++
- kernel/trace/ftrace.c  |   45 ++++-----------------------------------------
- 2 files changed, 17 insertions(+), 41 deletions(-)
+ arch/x86/include/asm/kprobes.h |    1 +
+ arch/x86/kernel/kprobes.c      |   48 ++++++++++++++++++++++++++++++++++++++++
+ include/linux/kprobes.h        |    2 +-
+ kernel/kprobes.c               |    2 +-
+ 4 files changed, 51 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index 2d59641..3651fdc 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -27,6 +27,19 @@
- #define ARCH_SUPPORTS_FTRACE_OPS 0
- #endif
+diff --git a/arch/x86/include/asm/kprobes.h b/arch/x86/include/asm/kprobes.h
+index 5478825..d3ddd17 100644
+--- a/arch/x86/include/asm/kprobes.h
++++ b/arch/x86/include/asm/kprobes.h
+@@ -27,6 +27,7 @@
+ #include <asm/insn.h>
  
-+/*
-+ * If the arch's mcount caller does not support all of ftrace's
-+ * features, then it must call an indirect function that
-+ * does. Or at least does enough to prevent any unwelcomed side effects.
-+ */
-+#if !defined(CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST) || \
-+	!ARCH_SUPPORTS_FTRACE_OPS
-+# define FTRACE_FORCE_LIST_FUNC 1
-+#else
-+# define FTRACE_FORCE_LIST_FUNC 0
+ #define  __ARCH_WANT_KPROBES_INSN_SLOT
++#define  ARCH_SUPPORTS_KPROBES_ON_FTRACE
+ 
+ struct pt_regs;
+ struct kprobe;
+diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
+index e2f751e..47ae102 100644
+--- a/arch/x86/kernel/kprobes.c
++++ b/arch/x86/kernel/kprobes.c
+@@ -1052,6 +1052,54 @@ int __kprobes longjmp_break_handler(struct kprobe *p, struct pt_regs *regs)
+ 	return 0;
+ }
+ 
++#ifdef KPROBES_CAN_USE_FTRACE
++/* Ftrace callback handler for kprobes */
++void __kprobes kprobe_ftrace_handler(unsigned long ip, unsigned long parent_ip,
++				     struct ftrace_ops *ops, struct pt_regs *regs)
++{
++	struct kprobe *p;
++	struct kprobe_ctlblk *kcb;
++	unsigned long flags;
++
++	/* Disable irq for emulating a breakpoint and avoiding preempt */
++	local_irq_save(flags);
++
++	p = get_kprobe((kprobe_opcode_t *)ip);
++	if (unlikely(!p) || kprobe_disabled(p))
++		goto end;
++
++	kcb = get_kprobe_ctlblk();
++	if (kprobe_running()) {
++		kprobes_inc_nmissed_count(p);
++	} else {
++		regs->ip += sizeof(kprobe_opcode_t);
++
++		__this_cpu_write(current_kprobe, p);
++		kcb->kprobe_status = KPROBE_HIT_ACTIVE;
++		if (p->pre_handler)
++			p->pre_handler(p, regs);
++
++		if (unlikely(p->post_handler)) {
++			/* Emulate singlestep as if there is a 5byte nop */
++			regs->ip = ip + MCOUNT_INSN_SIZE;
++			kcb->kprobe_status = KPROBE_HIT_SSDONE;
++			p->post_handler(p, regs, 0);
++		}
++		__this_cpu_write(current_kprobe, NULL);
++		regs->ip = ip;	/* Recover for next callback */
++	}
++end:
++	local_irq_restore(flags);
++}
++
++int __kprobes arch_prepare_kprobe_ftrace(struct kprobe *p)
++{
++	p->ainsn.insn = NULL;
++	p->ainsn.boostable = -1;
++	return 0;
++}
 +#endif
 +
-+
- struct module;
- struct ftrace_hash;
- 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 6816741..2c6f19c 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -97,8 +97,6 @@ static struct ftrace_ops *ftrace_global_list __read_mostly = &ftrace_list_end;
- static struct ftrace_ops *ftrace_control_list __read_mostly = &ftrace_list_end;
- static struct ftrace_ops *ftrace_ops_list __read_mostly = &ftrace_list_end;
- ftrace_func_t ftrace_trace_function __read_mostly = ftrace_stub;
--static ftrace_func_t __ftrace_trace_function_delay __read_mostly = ftrace_stub;
--ftrace_func_t __ftrace_trace_function __read_mostly = ftrace_stub;
- ftrace_func_t ftrace_pid_function __read_mostly = ftrace_stub;
- static struct ftrace_ops global_ops;
- static struct ftrace_ops control_ops;
-@@ -162,26 +160,9 @@ static void set_ftrace_pid_function(ftrace_func_t func)
- void clear_ftrace_function(void)
+ int __init arch_init_kprobes(void)
  {
- 	ftrace_trace_function = ftrace_stub;
--	__ftrace_trace_function = ftrace_stub;
--	__ftrace_trace_function_delay = ftrace_stub;
- 	ftrace_pid_function = ftrace_stub;
- }
+ 	return arch_init_optprobes();
+diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
+index aa0d05e..23755ba 100644
+--- a/include/linux/kprobes.h
++++ b/include/linux/kprobes.h
+@@ -318,7 +318,7 @@ extern int proc_kprobes_optimization_handler(struct ctl_table *table,
+ #endif /* CONFIG_OPTPROBES */
+ #ifdef KPROBES_CAN_USE_FTRACE
+ extern void kprobe_ftrace_handler(unsigned long ip, unsigned long parent_ip,
+-				  struct pt_regs *regs);
++				  struct ftrace_ops *ops, struct pt_regs *regs);
+ extern int arch_prepare_kprobe_ftrace(struct kprobe *p);
+ #endif
  
--#ifndef CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST
--/*
-- * For those archs that do not test ftrace_trace_stop in their
-- * mcount call site, we need to do it from C.
-- */
--static void ftrace_test_stop_func(unsigned long ip, unsigned long parent_ip,
--				  struct ftrace_ops *op)
--{
--	if (function_trace_stop)
--		return;
--
--	__ftrace_trace_function(ip, parent_ip, op);
--}
--#endif
--
- static void control_ops_disable_all(struct ftrace_ops *ops)
- {
- 	int cpu;
-@@ -246,7 +227,7 @@ static void update_ftrace_function(void)
- 	if (ftrace_ops_list == &ftrace_list_end ||
- 	    (ftrace_ops_list->next == &ftrace_list_end &&
- 	     !(ftrace_ops_list->flags & FTRACE_OPS_FL_DYNAMIC) &&
--	     ARCH_SUPPORTS_FTRACE_OPS)) {
-+	     !FTRACE_FORCE_LIST_FUNC)) {
- 		/* Set the ftrace_ops that the arch callback uses */
- 		if (ftrace_ops_list == &global_ops)
- 			function_trace_op = ftrace_global_list;
-@@ -259,18 +240,7 @@ static void update_ftrace_function(void)
- 		func = ftrace_ops_list_func;
- 	}
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index 69c16ef..35b4315 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -921,7 +921,7 @@ static __kprobes struct kprobe *alloc_aggr_kprobe(struct kprobe *p)
  
--#ifdef CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST
- 	ftrace_trace_function = func;
--#else
--#ifdef CONFIG_DYNAMIC_FTRACE
--	/* do not update till all functions have been modified */
--	__ftrace_trace_function_delay = func;
--#else
--	__ftrace_trace_function = func;
--#endif
--	ftrace_trace_function =
--		(func == ftrace_stub) ? func : ftrace_test_stop_func;
--#endif
- }
- 
- static void add_ftrace_ops(struct ftrace_ops **list, struct ftrace_ops *ops)
-@@ -1902,16 +1872,6 @@ static void ftrace_run_update_code(int command)
- 	 */
- 	arch_ftrace_update_code(command);
- 
--#ifndef CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST
--	/*
--	 * For archs that call ftrace_test_stop_func(), we must
--	 * wait till after we update all the function callers
--	 * before we update the callback. This keeps different
--	 * ops that record different functions from corrupting
--	 * each other.
--	 */
--	__ftrace_trace_function = __ftrace_trace_function_delay;
--#endif
- 	function_trace_stop--;
- 
- 	ret = ftrace_arch_code_modify_post_process();
-@@ -3996,6 +3956,9 @@ __ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip,
- {
- 	struct ftrace_ops *op;
- 
-+	if (function_trace_stop)
-+		return;
-+
- 	if (unlikely(trace_recursion_test(TRACE_INTERNAL_BIT)))
- 		return;
- 
+ #ifdef KPROBES_CAN_USE_FTRACE
+ static struct ftrace_ops kprobe_ftrace_ops __read_mostly = {
+-	.regs_func = kprobe_ftrace_handler,
++	.func = kprobe_ftrace_handler,
+ 	.flags = FTRACE_OPS_FL_SAVE_REGS,
+ };
+ static int kprobe_ftrace_enabled;
 -- 
 1.7.10
 
