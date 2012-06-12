@@ -1,52 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751594Ab2FLKGI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 06:06:08 -0400
-Received: from sting.hengli.com.au ([178.18.18.71]:48653 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750985Ab2FLKGF (ORCPT
+	id S1751630Ab2FLKJR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 06:09:17 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:53837 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750905Ab2FLKJQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 06:06:05 -0400
-Date: Tue, 12 Jun 2012 18:05:51 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Jan Glauber <jang@linux.vnet.ibm.com>
-Cc: Paul Bolle <pebolle@tiscali.nl>, "David S. Miller" <davem@davemloft.net>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
-        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] crypto: s390 - clean up DES code a bit more
-Message-ID: <20120612100551.GF14078@gondor.apana.org.au>
-References: <1339194367.30984.18.camel@x61.thuisdomein>
- <1339403679.9116.0.camel@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339403679.9116.0.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 12 Jun 2012 06:09:16 -0400
+Date: Tue, 12 Jun 2012 11:12:59 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Mahmood Naderan <nt_mahmood@yahoo.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: CPU MTRRs and linux kernel
+Message-ID: <20120612111259.48862b67@pyramind.ukuu.org.uk>
+In-Reply-To: <1339493860.10145.YahooMailNeo@web111708.mail.gq1.yahoo.com>
+References: <1339493860.10145.YahooMailNeo@web111708.mail.gq1.yahoo.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 11, 2012 at 10:34:39AM +0200, Jan Glauber wrote:
-> On Sat, 2012-06-09 at 00:26 +0200, Paul Bolle wrote:
-> > Commit 98971f8439b1bb9a61682fe24a865ddd25167a6b ("crypto: s390 - cleanup
-> > DES code") should have also removed crypto_des.h. That file is unused
-> > and unneeded since that commit. So let's clean up that file too.
-> > 
-> > Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> > ---
-> > Untested. Ought to be correct.
-> > 
-> >  arch/s390/crypto/crypto_des.h |   18 ------------------
-> >  1 files changed, 0 insertions(+), 18 deletions(-)
-> >  delete mode 100644 arch/s390/crypto/crypto_des.h
-> 
-> Looks good!
-> 
-> Acked-by: Jan Glauber <jang@linux.vnet.ibm.com>
+On Tue, 12 Jun 2012 02:37:40 -0700 (PDT)
+Mahmood Naderan <nt_mahmood@yahoo.com> wrote:
 
-Patch applied.  Thanks!
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+> Hi everybody,
+> Abour rhis warnning in boot log:
+> 
+> WARNING: BIOS bug: CPU MTRRs don't cover all of memory, losing 61952MB of RAM
+
+           ^^^^^ Note what it says here
+
+> Should I upgrade?
+
+Your BIOS perhaps.
