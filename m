@@ -1,34 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753293Ab2FLO1Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 10:27:16 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:60555 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751623Ab2FLO1M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 10:27:12 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAHdPZaMEiJrDdw66KkODd_VuomV0TY6qPZn1z_W48j++ed5YJA@mail.gmail.com>
-References: <1339183331-4108-1-git-send-email-devendra.aaru@gmail.com>
-	<CACRpkdb0TefNMcXyTRkz6Kv5FifJMmSoXzFTQgKhCt6B0T5sDA@mail.gmail.com>
-	<CAHdPZaMEiJrDdw66KkODd_VuomV0TY6qPZn1z_W48j++ed5YJA@mail.gmail.com>
-Date: Tue, 12 Jun 2012 16:27:11 +0200
-Message-ID: <CACRpkdZji5DDoK=GEyCq5QJgksLYJsbgTCCU=dYA1i3Q0SXMqw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] pinctrl: pinctrl-imx: free allocated pinctrl_map
- structure only once and use kernel facilities for IMX_PMX_DUMP
-From: Linus Walleij <linus.walleij@linaro.org>
-To: "devendra.aaru" <devendra.aaru@gmail.com>
-Cc: Dong Aisheng <aisheng.dong@freescale.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753345Ab2FLO1r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 10:27:47 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57224 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751999Ab2FLOVA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 10:21:00 -0400
+From: Jan Kara <jack@suse.cz>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@suse.cz,
+        Jan Kara <jack@suse.cz>
+Subject: [PATCH 08/27] mm: Make default vm_ops provide ->page_mkwrite handler
+Date: Tue, 12 Jun 2012 16:20:29 +0200
+Message-Id: <1339510848-16992-9-git-send-email-jack@suse.cz>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1339510848-16992-1-git-send-email-jack@suse.cz>
+References: <1339510848-16992-1-git-send-email-jack@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 12, 2012 at 2:34 PM, devendra.aaru <devendra.aaru@gmail.com> wrote:
+Make default vm_ops provide ->page_mkwrite handler. Currently it only updates
+file's modification times and gets locked page but later it will also handle
+filesystem freezing.
 
-> so for every review, do we need to increment version count of the patch?
+BugLink: https://bugs.launchpad.net/bugs/897421
+Tested-by: Kamal Mostafa <kamal@canonical.com>
+Tested-by: Peter M. Petrakis <peter.petrakis@canonical.com>
+Tested-by: Dann Frazier <dann.frazier@canonical.com>
+Tested-by: Massimo Morana <massimo.morana@canonical.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+---
+ include/linux/mm.h |    1 +
+ mm/filemap.c       |   19 +++++++++++++++++++
+ mm/filemap_xip.c   |    1 +
+ 3 files changed, 21 insertions(+), 0 deletions(-)
 
-No, just make sure I can understand which is the latest one... any way you
-want :-)
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index b36d08c..15987d8 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1411,6 +1411,7 @@ extern void truncate_inode_pages_range(struct address_space *,
+ 
+ /* generic vm_area_ops exported for stackable file systems */
+ extern int filemap_fault(struct vm_area_struct *, struct vm_fault *);
++extern int filemap_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf);
+ 
+ /* mm/page-writeback.c */
+ int write_one_page(struct page *page, int wait);
+diff --git a/mm/filemap.c b/mm/filemap.c
+index a4a5260..51efee6 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -1712,8 +1712,27 @@ page_not_uptodate:
+ }
+ EXPORT_SYMBOL(filemap_fault);
+ 
++int filemap_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
++{
++	struct page *page = vmf->page;
++	struct inode *inode = vma->vm_file->f_path.dentry->d_inode;
++	int ret = VM_FAULT_LOCKED;
++
++	file_update_time(vma->vm_file);
++	lock_page(page);
++	if (page->mapping != inode->i_mapping) {
++		unlock_page(page);
++		ret = VM_FAULT_NOPAGE;
++		goto out;
++	}
++out:
++	return ret;
++}
++EXPORT_SYMBOL(filemap_page_mkwrite);
++
+ const struct vm_operations_struct generic_file_vm_ops = {
+ 	.fault		= filemap_fault,
++	.page_mkwrite	= filemap_page_mkwrite,
+ };
+ 
+ /* This is used for a general mmap of a disk file */
+diff --git a/mm/filemap_xip.c b/mm/filemap_xip.c
+index 213ca1f..80b34ef 100644
+--- a/mm/filemap_xip.c
++++ b/mm/filemap_xip.c
+@@ -304,6 +304,7 @@ out:
+ 
+ static const struct vm_operations_struct xip_file_vm_ops = {
+ 	.fault	= xip_file_fault,
++	.page_mkwrite	= filemap_page_mkwrite,
+ };
+ 
+ int xip_file_mmap(struct file * file, struct vm_area_struct * vma)
+-- 
+1.7.1
 
-Linus Walleij
