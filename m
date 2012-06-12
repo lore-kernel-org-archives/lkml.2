@@ -1,85 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752646Ab2FLLaB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 07:30:01 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:55310 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751916Ab2FLL37 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 07:29:59 -0400
-Date: Tue, 12 Jun 2012 19:29:49 +0800
-From: Wanpeng Li <liwp.linux@gmail.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: linux-kernel@vger.kernel.org, Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Wanpeng Li <liwp.linux@gmail.com>
-Subject: Re: [PATCH] writeback: avoid race when update bandwidth
-Message-ID: <20120612112936.GA3026@kernel>
-Reply-To: Wanpeng Li <liwp.linux@gmail.com>
-References: <1339496803-2885-1-git-send-email-liwp.linux@gmail.com>
- <20120612112129.GA16639@localhost>
+	id S1752652Ab2FLLa5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 07:30:57 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:51405 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751445Ab2FLLa4 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 07:30:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120612112129.GA16639@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4FD6E1DA.2090700@cn.fujitsu.com>
+References: <4FD5AFF2.3040306@cn.fujitsu.com> <CAErSpo6EnHFFPwcPhWy=ACTn5+7i72fUR+1jjZrpfEMQp1zv0A@mail.gmail.com>
+ <4FD6E1DA.2090700@cn.fujitsu.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 12 Jun 2012 04:30:33 -0700
+Message-ID: <CAErSpo6UwL6kY4rHeYQbn1kghJH-kQDeat7VXp95JE2pGER5ZA@mail.gmail.com>
+Subject: Re: [PATCH 1/2 v2] x86: add max_addr boot option
+To: Wen Congyang <wency@cn.fujitsu.com>
+Cc: rob@landley.net, tglx@linutronix.de, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 12, 2012 at 07:21:29PM +0800, Fengguang Wu wrote:
->On Tue, Jun 12, 2012 at 06:26:43PM +0800, Wanpeng Li wrote:
->> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
+On Mon, Jun 11, 2012 at 11:29 PM, Wen Congyang <wency@cn.fujitsu.com> wrote:
+> At 06/12/2012 01:35 AM, Bjorn Helgaas Wrote:
+>> On Mon, Jun 11, 2012 at 1:44 AM, Wen Congyang <wency@cn.fujitsu.com> wrote:
+>>> Currently, the boot option max_addr is only supported on ia64 platform.
+>>> We also need it on x86 platform.
+>>> For example:
+>>> There are two nodes:
+>>>  NODE#0  address range 0x00000000 00000000 - 0x00010000 00000000
+>>>  NODE#1  address range 0x00010000 00000000 - 0x00020000 00000000
+>>> If we only want to use node0, we can specify the max_addr. The boot
+>>> option "mem=" can do the same thing now. But the boot option "mem="
+>>> means the total memory used by the system. If we tell the user
+>>> that the boot option "mem=" can do this, it will confuse the user.
+>>> So we need an new boot option "max_addr" on x86 platform.
+>>
+>> I don't object to this patch (and thanks for tweaking the mem range printk).
+>>
+>> I don't know what your use case is, but from a user interface
+>> perspective, the "max_addr=" option feels like a bit of a hack.  If
+>> you're trying to avoid use of other nodes, "max_addr" is an awkward
+>> way to do it.  It requires the user to know the physical address ->
+>> node mappings, and it doesn't affect the CPUs and I/O resources on
+>> other nodes.  You could implement a "numa_node=" or similar parameter
+>> that would allow you to ignore remote memory, CPUs, and I/O.
 >
->That email address is no longer in use?
+> Currently, I only need to ignore the memory. If we need to ignore a node,
+> "numa_node=" or similar parameter is a better choice.
 
-No, :), you better use "Wanpeng Li <liwp@linux.vnet.ibm.com>" to commit
-my patch. Because next month this email address will be available again,
-and this also can help my colleagues to add my patches count this year,
-thanks a lot.
->
->> Since bdi->wb.list_lock is used to protect the b_* lists,
->> so the flushers who call wb_writeback to writeback pages will
->> stuck when bandwidth update policy holds this lock. In order
->> to avoid this race we can introduce a new bandwidth_lock who
->> is responsible for protecting bandwidth update policy.
->
->This looks good to me. wb.list_lock could be contended and it's better
->for bdi_update_bandwidth() to use a standalone and hardly contended
->lock.
->
->btw, with this change, the dirty_lock in global_update_bandwidth() can
->be eliminated.
+Doesn't the end user have to know the memory map of the system to use
+"max_addr="?  How do you know what value to supply?  Do you have to
+attempt a boot once to discover the highest address on node 0?  What
+if node 0 and node 1 memory are interleaved, so there's some node 1
+memory below the highest node 0 address?
 
-Ok, I will resend the patch.
-
-Regards,
-Wanpeng Li
+>>> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+>>> ---
+>>>  Documentation/kernel-parameters.txt |    2 +-
+>>>  arch/x86/kernel/e820.c              |   36 +++++++++++++++++++++++++++++++++++
+>>>  2 files changed, 37 insertions(+), 1 deletions(-)
+>>>
+>>> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+>>> index a92c5eb..034609d 100644
+>>> --- a/Documentation/kernel-parameters.txt
+>>> +++ b/Documentation/kernel-parameters.txt
+>>> @@ -1441,7 +1441,7 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>>>                         yeeloong laptop.
+>>>                        Example: machtype=lemote-yeeloong-2f-7inch
+>>>
+>>> -       max_addr=nn[KMG]        [KNL,BOOT,ia64] All physical memory greater
+>>> +       max_addr=nn[KMG]        [KNL,BOOT,ia64,X86] All physical memory greater
+>>>                        than or equal to this physical address is ignored.
+>>>
+>>>        maxcpus=        [SMP] Maximum number of processors that an SMP kernel
+>>> diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
+>>> index 4185797..cd07226 100644
+>>> --- a/arch/x86/kernel/e820.c
+>>> +++ b/arch/x86/kernel/e820.c
+>>> @@ -47,6 +47,7 @@ unsigned long pci_mem_start = 0xaeedbabe;
+>>>  #ifdef CONFIG_PCI
+>>>  EXPORT_SYMBOL(pci_mem_start);
+>>>  #endif
+>>> +static u64 max_addr = ~0ULL;
+>>>
+>>>  /*
+>>>  * This function checks if any part of the range <start,end> is mapped
+>>> @@ -119,6 +120,20 @@ static void __init __e820_add_region(struct e820map *e820x, u64 start, u64 size,
+>>>                return;
+>>>        }
+>>>
+>>> +       if (start >= max_addr) {
+>>> +               printk(KERN_ERR "e820: ignoring [mem %#010llx-%#010llx]\n",
+>>> +                      (unsigned long long)start,
+>>> +                      (unsigned long long)(start + size - 1));
+>>> +               return;
+>>> +       }
+>>> +
+>>> +       if (max_addr - start < size) {
+>>> +               printk(KERN_ERR "e820: ignoring [mem %#010llx-%#010llx]\n",
+>>> +                      (unsigned long long)max_addr,
+>>> +                      (unsigned long long)(start + size - 1));
+>>> +               size = max_addr - start;
+>>> +       }
+>>> +
+>>>        e820x->map[x].addr = start;
+>>>        e820x->map[x].size = size;
+>>>        e820x->map[x].type = type;
+>>> @@ -835,6 +850,22 @@ static int __init parse_memopt(char *p)
+>>>  }
+>>>  early_param("mem", parse_memopt);
+>>>
+>>> +static int __init parse_memmax_opt(char *p)
+>>> +{
+>>> +       char *oldp;
+>>> +
+>>> +       if (!p)
+>>> +               return -EINVAL;
+>>> +
+>>> +       oldp = p;
+>>> +       max_addr = memparse(p, &p);
+>>> +       if (p == oldp)
+>>> +               return -EINVAL;
+>>> +
+>>> +       return 0;
+>>> +}
+>>> +early_param("max_addr", parse_memmax_opt);
+>>> +
+>>>  static int __init parse_memmap_opt(char *p)
+>>>  {
+>>>        char *oldp;
+>>> @@ -881,6 +912,11 @@ early_param("memmap", parse_memmap_opt);
+>>>
+>>>  void __init finish_e820_parsing(void)
+>>>  {
+>>> +       if (max_addr != ~0ULL) {
+>>> +               userdef = 1;
+>>> +               e820_remove_range(max_addr, ULLONG_MAX - max_addr, E820_RAM, 1);
+>>> +       }
+>>> +
+>>>        if (userdef) {
+>>>                u32 nr = e820.nr_map;
+>>>
+>>> --
+>>> 1.7.1
+>>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
 >
->> Signed-off-by: Wanpeng Li <liswp@linux.vnet.ibm.com>
->> ---
->>  mm/page-writeback.c |    6 ++++--
->>  1 file changed, 4 insertions(+), 2 deletions(-)
->> 
->> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
->> index c8945e0..b3b08fb 100644
->> --- a/mm/page-writeback.c
->> +++ b/mm/page-writeback.c
->> @@ -1032,12 +1032,14 @@ static void bdi_update_bandwidth(struct backing_dev_info *bdi,
->>  				 unsigned long bdi_dirty,
->>  				 unsigned long start_time)
->>  {
->> +	static DEFINE_SPINLOCK(bandwidth_lock);
->> +
->>  	if (time_is_after_eq_jiffies(bdi->bw_time_stamp + BANDWIDTH_INTERVAL))
->>  		return;
->> -	spin_lock(&bdi->wb.list_lock);
->> +	spin_lock(&bandwidth_lock);
->>  	__bdi_update_bandwidth(bdi, thresh, bg_thresh, dirty,
->>  			       bdi_thresh, bdi_dirty, start_time);
->> -	spin_unlock(&bdi->wb.list_lock);
->> +	spin_unlock(&bandwidth_lock);
->>  }
->>  
->>  /*
->> -- 
->> 1.7.9.5
