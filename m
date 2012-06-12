@@ -1,131 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753854Ab2FLVZx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 17:25:53 -0400
-Received: from mga01.intel.com ([192.55.52.88]:62195 "EHLO mga01.intel.com"
+	id S1754385Ab2FLVZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 17:25:59 -0400
+Received: from mga14.intel.com ([143.182.124.37]:46499 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751758Ab2FLVZw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 17:25:52 -0400
+	id S1751758Ab2FLVZ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 17:25:56 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="179101041"
+   d="scan'208";a="111331316"
 From: Andi Kleen <andi@firstfloor.org>
 To: x86@kernel.org
 Cc: hpa@zytor.com, eranian@google.com, linux-kernel@vger.kernel.org,
         a.p.zijlstra@chello.nl, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 2/2] perf/x86: check ucode before disabling PEBS on SandyBridge v3
-Date: Tue, 12 Jun 2012 14:25:50 -0700
-Message-Id: <1339536350-10463-2-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 1/2] x86: Track minimum microcode revision globally v2
+Date: Tue, 12 Jun 2012 14:25:49 -0700
+Message-Id: <1339536350-10463-1-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1339536350-10463-1-git-send-email-andi@firstfloor.org>
-References: <1339536350-10463-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephane Eranian <eranian@google.com>
+From: Andi Kleen <ak@linux.intel.com>
 
-[AK: Updated version of Stephane's patch, now using the new global
-tracking microcode number and with the correct microcode revision
-for SandyBridge-E*. Also use pr_warn_once and checkpatch fixes.]
+For bug workarounds depending on microcode revisions we need to
+know the minimum microcode revision shared by all CPUs.
 
-This patch checks the microcode version before disabling
-PEBS on SandyBridge model 42 (desktop, mobile), and 45 (SNB-EP).
-PEBS was disabled for both models due to an erratum.
+This patch adds infrastructure to track this.
 
-A workaround is implemented by micro-code 0x28. This patch checks
-the microcode version and disables PEBS support if version < 0x28.
-The check is done each time a PEBS event is created and NOT at boot
-time because the micro-code update may only be done after the kernel
-has booted.
+Every time microcode is updated we update a global variable for
+the minimum microcode revision of all the CPUs in the system.
+At boot time we use the lowest available microcode (and warn
+if  they are inconsistent)
 
-Go to downloadcenter.intel.com to download microcode updates.
-Need microcode update 6/6/2012 or later.
+At CPU hotplug or S3 resume time there is a short race window
+where something might run on the CPUs but before the microcode
+update notifier runs. For the current workarounds that need this
+this is acceptable and shouldn't be a problem.
 
-v2: Was Stephane's old revision
-v3: Use boot_cpu_data.microcode (H. Peter Anvin)
-Signed-off-by: Stephane Eranian <eranian@google.com>
+Only tested on Intel CPUs, but should work for AMD too.
+
+v2: Use boot_cpu_data.microcode to track minimum revision (H. Peter Anvin)
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel.c |   37 +++++++++++++++++++++++--------
- 1 files changed, 27 insertions(+), 10 deletions(-)
+ arch/x86/include/asm/processor.h  |    2 +
+ arch/x86/kernel/cpu/amd.c         |    2 +
+ arch/x86/kernel/cpu/common.c      |   38 +++++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/cpu/cpu.h         |    3 ++
+ arch/x86/kernel/cpu/intel.c       |    2 +
+ arch/x86/kernel/microcode_amd.c   |    1 +
+ arch/x86/kernel/microcode_intel.c |    1 +
+ 7 files changed, 49 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 187c294..102d153 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -13,6 +13,7 @@
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index 39bc577..bc0d361 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -984,4 +984,6 @@ bool set_pm_idle_to_default(void);
  
- #include <asm/hardirq.h>
- #include <asm/apic.h>
-+#include <asm/processor.h>
+ void stop_this_cpu(void *dummy);
  
- #include "perf_event.h"
- 
-@@ -1392,6 +1393,25 @@ static void intel_pebs_aliases_snb(struct perf_event *event)
++void update_min_microcode(struct cpuinfo_x86 *c);
++
+ #endif /* _ASM_X86_PROCESSOR_H */
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index 146bb62..e3f9937 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -684,6 +684,8 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
  	}
+ 
+ 	rdmsr_safe(MSR_AMD64_PATCH_LEVEL, &c->microcode, &dummy);
++
++	boot_update_min_microcode(c);
  }
  
-+static int check_pebs_quirks(void)
-+{
-+	int model = cpu_data(smp_processor_id()).x86_model;
+ #ifdef CONFIG_X86_32
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index 6b9333b..cfc50e0 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -1168,6 +1168,44 @@ static void dbg_restore_debug_regs(void)
+ #define dbg_restore_debug_regs()
+ #endif /* ! CONFIG_KGDB */
+ 
 +
-+	/* do not have PEBS to begin with */
-+	if (!x86_pmu.pebs)
-+		return 0;
++/*
++ * Track the minimum global microcode version.  On early bootup assume
++ * the BIOS set all CPUs to the same revision. If that's not the case
++ * some code may be already running assuming the newer revision, but
++ * there's not much we can do about that (but it's unlikely to be
++ * problem in early bootup)
++ */
++__cpuinit void boot_update_min_microcode(struct cpuinfo_x86 *c)
++{	
++	static int boot_min_microcode;
 +
-+	/*
-+	 * check ucode version for SNB, SNB-EP
-+	 */
-+	if ((model == 42 && boot_cpu_data.microcode < 0x28) ||
-+		(model == 45 && boot_cpu_data.microcode < 0x618)) {
-+		pr_warn_once("SandyBridge PEBS unavailable due to CPU erratum, update microcode\n");
-+		return -ENOTSUPP;
++	if (!boot_min_microcode) {
++		boot_min_microcode = c->microcode;
++		boot_cpu_data.microcode = c->microcode;
++	} else if (c->microcode < boot_min_microcode) {
++		pr_warn("CPU %d has lower microcode revision %x at boot than boot CPU (%x)\n",
++			smp_processor_id(), 
++			c->microcode,
++			boot_min_microcode);
++		boot_cpu_data.microcode = c->microcode;
 +	}
-+	return 0;
 +}
 +
- static int intel_pmu_hw_config(struct perf_event *event)
- {
- 	int ret = x86_pmu_hw_config(event);
-@@ -1399,8 +1419,13 @@ static int intel_pmu_hw_config(struct perf_event *event)
- 	if (ret)
- 		return ret;
- 
--	if (event->attr.precise_ip && x86_pmu.pebs_aliases)
--		x86_pmu.pebs_aliases(event);
-+	if (event->attr.precise_ip) {
-+		if (check_pebs_quirks())
-+			return -ENOTSUPP;
++void update_min_microcode(struct cpuinfo_x86 *c)
++{
++	int i;
 +
-+		if (x86_pmu.pebs_aliases)
-+			x86_pmu.pebs_aliases(event);
++	for_each_online_cpu (i)
++		if (cpu_data(i).microcode < c->microcode)
++			return;
++	if (boot_cpu_data.microcode != c->microcode) {
++		boot_cpu_data.microcode = c->microcode;
++		pr_info("Minimum microcode revision updated to %x\n", c->microcode);
 +	}
++}
++EXPORT_SYMBOL_GPL(update_min_microcode);
++
+ /*
+  * cpu_init() initializes state that is per-CPU. Some data is already
+  * initialized (naturally) in the bootstrap process, such as the GDT
+diff --git a/arch/x86/kernel/cpu/cpu.h b/arch/x86/kernel/cpu/cpu.h
+index 8bacc78..7f92040 100644
+--- a/arch/x86/kernel/cpu/cpu.h
++++ b/arch/x86/kernel/cpu/cpu.h
+@@ -34,4 +34,7 @@ extern const struct cpu_dev *const __x86_cpu_dev_start[],
  
- 	if (intel_pmu_needs_lbr_smpl(event)) {
- 		ret = intel_pmu_setup_lbr_filter(event);
-@@ -1712,13 +1737,6 @@ static __init void intel_clovertown_quirk(void)
- 	x86_pmu.pebs_constraints = NULL;
+ extern void get_cpu_cap(struct cpuinfo_x86 *c);
+ extern void cpu_detect_cache_sizes(struct cpuinfo_x86 *c);
++
++extern void boot_update_min_microcode(struct cpuinfo_x86 *c);
++
+ #endif /* ARCH_X86_CPU_H */
+diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+index 3e6ff6c..d48a13c 100644
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -54,6 +54,8 @@ static void __cpuinit early_init_intel(struct cpuinfo_x86 *c)
+ 		/* Required by the SDM */
+ 		sync_core();
+ 		rdmsr(MSR_IA32_UCODE_REV, lower_word, c->microcode);
++
++		boot_update_min_microcode(c);
+ 	}
+ 
+ 	/*
+diff --git a/arch/x86/kernel/microcode_amd.c b/arch/x86/kernel/microcode_amd.c
+index 8a2ce8f..b589c7a 100644
+--- a/arch/x86/kernel/microcode_amd.c
++++ b/arch/x86/kernel/microcode_amd.c
+@@ -215,6 +215,7 @@ static int apply_microcode_amd(int cpu)
+ 	pr_info("CPU%d: new patch_level=0x%08x\n", cpu, rev);
+ 	uci->cpu_sig.rev = rev;
+ 	c->microcode = rev;
++	update_min_microcode(c);
+ 
+ 	return 0;
+ }
+diff --git a/arch/x86/kernel/microcode_intel.c b/arch/x86/kernel/microcode_intel.c
+index 0327e2b..50afbb9 100644
+--- a/arch/x86/kernel/microcode_intel.c
++++ b/arch/x86/kernel/microcode_intel.c
+@@ -326,6 +326,7 @@ static int apply_microcode(int cpu)
+ 	uci->cpu_sig.rev = val[1];
+ 	c->microcode = val[1];
+ 
++	update_min_microcode(c);
+ 	return 0;
  }
  
--static __init void intel_sandybridge_quirk(void)
--{
--	printk(KERN_WARNING "PEBS disabled due to CPU errata.\n");
--	x86_pmu.pebs = 0;
--	x86_pmu.pebs_constraints = NULL;
--}
--
- static const struct { int id; char *name; } intel_arch_events_map[] __initconst = {
- 	{ PERF_COUNT_HW_CPU_CYCLES, "cpu cycles" },
- 	{ PERF_COUNT_HW_INSTRUCTIONS, "instructions" },
-@@ -1910,7 +1928,6 @@ __init int intel_pmu_init(void)
- 
- 	case 42: /* SandyBridge */
- 	case 45: /* SandyBridge, "Romely-EP" */
--		x86_add_quirk(intel_sandybridge_quirk);
- 	case 58: /* IvyBridge */
- 		memcpy(hw_cache_event_ids, snb_hw_cache_event_ids,
- 		       sizeof(hw_cache_event_ids));
 -- 
 1.7.7.6
 
