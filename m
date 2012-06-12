@@ -1,112 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752659Ab2FLFdL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 01:33:11 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33671 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751492Ab2FLFdJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 01:33:09 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.4.0
-Message-ID: <4FD6D492.504@jp.fujitsu.com>
-Date: Tue, 12 Jun 2012 14:33:06 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI  : Implement ACPI_NOTIFY_EJECT_REQUEST for ACPI
- container
-References: <4FCDA69C.3040204@jp.fujitsu.com>
-In-Reply-To: <4FCDA69C.3040204@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	id S1753308Ab2FLFh6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 01:37:58 -0400
+Received: from mga14.intel.com ([143.182.124.37]:9195 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751409Ab2FLFh5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 01:37:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="111014168"
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+To: a.p.zijlstra@chello.nl, mingo@elte.hu, jolsa@redhat.com,
+        eranian@google.com, andi@firstfloor.org, linux-kernel@vger.kernel.org
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>
+Subject: [PATCH V5 01/13] perf: Export perf_assign_events
+Date: Tue, 12 Jun 2012 13:37:36 +0800
+Message-Id: <1339479468-3815-2-git-send-email-zheng.z.yan@intel.com>
+X-Mailer: git-send-email 1.7.10.2
+In-Reply-To: <1339479468-3815-1-git-send-email-zheng.z.yan@intel.com>
+References: <1339479468-3815-1-git-send-email-zheng.z.yan@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please ignore the patch.
-I found that ACPI container driver does not need to implement EJECT routine
-because it has already prepared eject file at userland.
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
 
-2012/06/05 15:26, Yasuaki Ishimatsu wrote:
-> Even if ACPI_NOTIFY_EJECT_REQUEST is notified to ACPI container, ACPI
-> container just calls kobject_uevent(). The patch implements a function
-> to remove all devices included in ACPI container.
-> 
-> Signed-off-by: Yasuaki Ishimatsu<isimatu.yasuaki@jp.fujitsu.com>
-> 
-> ---
->   drivers/acpi/container.c |   32 ++++++++++++++++++++++++++++++--
->   1 file changed, 30 insertions(+), 2 deletions(-)
-> 
-> Index: linux-3.5-rc1/drivers/acpi/container.c
-> ===================================================================
-> --- linux-3.5-rc1.orig/drivers/acpi/container.c	2012-06-05 14:01:54.000000000 +0900
-> +++ linux-3.5-rc1/drivers/acpi/container.c	2012-06-05 14:17:40.940836226 +0900
-> @@ -123,6 +123,8 @@ static int acpi_container_remove(struct
->   	acpi_status status = AE_OK;
->   	struct acpi_container *pc = NULL;
-> 
-> +	kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
-> +
->   	pc = acpi_driver_data(device);
->   	kfree(pc);
->   	return status;
-> @@ -152,6 +154,32 @@ static int container_device_add(struct a
->   	return result;
->   }
-> 
-> +static void container_device_remove(struct acpi_device *device,
-> +				    acpi_handle handle)
-> +{
-> +	struct acpi_object_list arg_list;
-> +	union acpi_object arg;
-> +	int result;
-> +	acpi_status status;
-> +
-> +	result = acpi_bus_trim(device, 1);
-> +	if (result) {
-> +		printk(KERN_WARNING "Removing contaier failed");
-> +		return;
-> +	}
-> +
-> +	arg_list.count = 1;
-> +	arg_list.pointer =&arg;
-> +	arg.type = ACPI_TYPE_INTEGER;
-> +	arg.integer.value = 1;
-> +
-> +	status = acpi_evaluate_object(handle, "_EJ0",&arg_list, NULL);
-> +	if (ACPI_FAILURE(status))
-> +		printk(KERN_WARNING "Eject device failed\n");
-> +
-> +	return;
-> +}
-> +
->   static void container_notify_cb(acpi_handle handle, u32 type, void *context)
->   {
->   	struct acpi_device *device = NULL;
-> @@ -183,13 +211,13 @@ static void container_notify_cb(acpi_han
->   		} else {
->   			if (ACPI_SUCCESS(status)) {
->   				/* device exist and this is a remove request */
-> -				kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
-> +				container_device_remove(device, handle);
->   			}
->   		}
->   		break;
->   	case ACPI_NOTIFY_EJECT_REQUEST:
->   		if (!acpi_bus_get_device(handle,&device)&&  device) {
-> -			kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
-> +			container_device_remove(device, handle);
->   		}
->   		break;
->   	default:
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
+Export perf_assign_events so the uncore code can use it to
+schedule events.
 
+Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
+---
+ arch/x86/kernel/cpu/perf_event.c |    6 +++---
+ arch/x86/kernel/cpu/perf_event.h |    2 ++
+ 2 files changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 9000590..0c9041c 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -626,7 +626,7 @@ static bool __perf_sched_find_counter(struct perf_sched *sched)
+ 	c = sched->constraints[sched->state.event];
+ 
+ 	/* Prefer fixed purpose counters */
+-	if (x86_pmu.num_counters_fixed) {
++	if (c->idxmsk64 & ((u64)-1 << X86_PMC_IDX_FIXED)) {
+ 		idx = X86_PMC_IDX_FIXED;
+ 		for_each_set_bit_from(idx, c->idxmsk, X86_PMC_IDX_MAX) {
+ 			if (!__test_and_set_bit(idx, sched->state.used))
+@@ -693,8 +693,8 @@ static bool perf_sched_next_event(struct perf_sched *sched)
+ /*
+  * Assign a counter for each event.
+  */
+-static int perf_assign_events(struct event_constraint **constraints, int n,
+-			      int wmin, int wmax, int *assign)
++int perf_assign_events(struct event_constraint **constraints, int n,
++			int wmin, int wmax, int *assign)
+ {
+ 	struct perf_sched sched;
+ 
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index 3df3de9..83238f2 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -481,6 +481,8 @@ static inline void __x86_pmu_enable_event(struct hw_perf_event *hwc,
+ 
+ void x86_pmu_enable_all(int added);
+ 
++int perf_assign_events(struct event_constraint **constraints, int n,
++			int wmin, int wmax, int *assign);
+ int x86_schedule_events(struct cpu_hw_events *cpuc, int n, int *assign);
+ 
+ void x86_pmu_stop(struct perf_event *event, int flags);
+-- 
+1.7.10.2
 
