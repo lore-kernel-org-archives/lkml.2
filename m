@@ -1,83 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753249Ab2FLBYI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Jun 2012 21:24:08 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:59546 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753013Ab2FLBYF (ORCPT
+	id S1753190Ab2FLB2t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Jun 2012 21:28:49 -0400
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:57084 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752761Ab2FLB2r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Jun 2012 21:24:05 -0400
-Message-ID: <4FD69984.3030702@us.ibm.com>
-Date: Mon, 11 Jun 2012 18:21:08 -0700
-From: John Stultz <johnstul@us.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Mon, 11 Jun 2012 21:28:47 -0400
+Message-ID: <4FD69B42.4070709@xenotime.net>
+Date: Mon, 11 Jun 2012 18:28:34 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Rik van Riel <riel@redhat.com>
-CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Chinner <david@fromorbit.com>,
-        Neil Brown <neilb@suse.de>, Andrea Righi <andrea@betterlinux.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Taras Glek <tgek@mozilla.com>, Mike Hommey <mh@glandium.org>,
-        Jan Kara <jack@suse.cz>
-Subject: Re: [PATCH 3/3] [RFC] tmpfs: Add FALLOC_FL_MARK_VOLATILE/UNMARK_VOLATILE
- handlers
-References: <1338575387-26972-1-git-send-email-john.stultz@linaro.org> <1338575387-26972-4-git-send-email-john.stultz@linaro.org> <4FC9235F.5000402@gmail.com>	<4FC92E30.4000906@linaro.org> <4FC9360B.4020401@gmail.com>	<4FC937AD.8040201@linaro.org> <4FC9438B.1000403@gmail.com>	<4FC94F61.20305@linaro.org> <4FCFB4F6.6070308@gmail.com>	<4FCFEE36.3010902@linaro.org> <CAO6Zf6D++8hOz19BmUwQ8iwbQknQRNsF4npP4r-830j04vbj=g@mail.gmail.com> <4FD13C30.2030401@linux.vnet.ibm.com> <4FD16B6E.8000307@linaro.org> <4FD1848B.7040102@gmail.com> <4FD2C6C5.1070900@linaro.org> <4FD515FA.2020708@redhat.com> <4FD63A55.3090505@linaro.org>
-In-Reply-To: <4FD63A55.3090505@linaro.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        LKML <linux-kernel@vger.kernel.org>
+CC: Leonid Froenchenko <lfroen@galileo.co.il>,
+        Jarod Wilson <jarod@wilsonet.com>
+Subject: [PATCH] staging/media/lirc: fix some lirc_bt829.c sparse warnings
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12061201-7282-0000-0000-000009D38064
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2012 11:35 AM, John Stultz wrote:
-> On 06/10/2012 02:47 PM, Rik van Riel wrote:
->> On 06/08/2012 11:45 PM, John Stultz wrote:
->>
->>> I *think* ideally, the pages in a volatile range should be similar to
->>> non-dirty file-backed pages. There is a cost to restore them, but
->>> freeing them is very cheap. The trick is that volatile ranges 
->>> introduces
->>
->> Easier to mark them dirty.
->>
->>> a new relationship between pages. Since the neighboring virtual 
->>> pages in
->>> a volatile range are in effect tied together, purging one effectively
->>> ruins the value of keeping the others, regardless of which zone they 
->>> are
->>> physically.
->>
->> Then the volatile ->writepage function can zap the whole
->> object.
->>
->
-> What about the concern that if we don't have swap, we'll not call 
-> writepage on tmpfs files?
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-So actually, a more concrete question might be: What is the value of the 
-active/inactive split of anonymous memory on a system without swap?
+Fix some sparse warnings in lirc_bt829.c:
 
-Basically I'm looking at trying to allow the writepage function to zap 
-the range as you suggest, but also changing the behavior when there is 
-no swap so that all anonymous pages stay active, unless they are 
-volatile.  Then, in both cases with swap and without, we would still 
-shrink the inactive list, call writepage and zap the volatile ranges. 
-Its just without swap, the only anonymous pages on the inactive list 
-would be volatile.
+drivers/staging/media/lirc/lirc_bt829.c:174:22: warning: non-ANSI function declaration of function 'poll_main'
+drivers/staging/media/lirc/lirc_bt829.c:161:29: warning: Using plain integer as NULL pointer
+drivers/staging/media/lirc/lirc_bt829.c:134:35: warning: Using plain integer as NULL pointer
 
-Does that make any sense?
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Leonid Froenchenko <lfroen@galileo.co.il>
+Cc: Jarod Wilson <jarod@wilsonet.com>
+---
+ drivers/staging/media/lirc/lirc_bt829.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-Hopefully will have a hackish patch to demonstrate what I'm describing 
-tomorrow.
-
-thanks
--john
-
+--- lnx-35-rc2.orig/drivers/staging/media/lirc/lirc_bt829.c
++++ lnx-35-rc2/drivers/staging/media/lirc/lirc_bt829.c
+@@ -131,7 +131,7 @@ int init_module(void)
+ 	atir_driver.minor       = -1;
+ 	atir_driver.code_length = 8;
+ 	atir_driver.sample_rate = 10;
+-	atir_driver.data        = 0;
++	atir_driver.data        = NULL;
+ 	atir_driver.add_to_buf  = atir_add_to_buf;
+ 	atir_driver.set_use_inc = atir_set_use_inc;
+ 	atir_driver.set_use_dec = atir_set_use_dec;
+@@ -158,7 +158,7 @@ void cleanup_module(void)
+ static int atir_init_start(void)
+ {
+ 	pci_addr_lin = ioremap(pci_addr_phys + DATA_PCI_OFF, 0x400);
+-	if (pci_addr_lin == 0) {
++	if (pci_addr_lin == NULL) {
+ 		printk(KERN_INFO DRIVER_NAME ": pci mem must be mapped\n");
+ 		return 0;
+ 	}
+@@ -171,7 +171,7 @@ static void cycle_delay(int cycle)
+ }
+ 
+ 
+-static int poll_main()
++static int poll_main(void)
+ {
+ 	unsigned char status_high, status_low;
+ 
