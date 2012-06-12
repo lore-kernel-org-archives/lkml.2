@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753912Ab2FLRzQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 13:55:16 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:38197 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752720Ab2FLRzN (ORCPT
+	id S1753892Ab2FLR5m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 13:57:42 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23973 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753441Ab2FLR5l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 13:55:13 -0400
-Date: Tue, 12 Jun 2012 10:55:06 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Javier =?iso-8859-1?Q?Mu=F1oz?= <jmunhoz@igalia.com>
-Cc: teddy.wang@siliconmotion.com.cn, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] staging: sm7xxfb: sm7xx becomes sm7xxfb
-Message-ID: <20120612175506.GA27756@kroah.com>
-References: <1339326744-17507-1-git-send-email-jmunhoz@igalia.com>
- <1339326744-17507-4-git-send-email-jmunhoz@igalia.com>
- <4FD4843F.6070602@igalia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4FD4843F.6070602@igalia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 12 Jun 2012 13:57:41 -0400
+X-Authority-Analysis: v=2.0 cv=D8PF24tj c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=6NGLv67nhmwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=57SyGIRnAAAA:8 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=kwcQnNxcl6P_UFH0E90A:9 a=PUjeQqilurYA:10 a=TIV7c6GJmisA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=LI9Vle30uBYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1339523859.13377.137.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 2/3] tools lib traceevent: Introduce pevent_errno
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Date: Tue, 12 Jun 2012 13:57:39 -0400
+In-Reply-To: <1339486959-25241-3-git-send-email-namhyung@kernel.org>
+References: <1339486959-25241-1-git-send-email-namhyung@kernel.org>
+	 <1339486959-25241-3-git-send-email-namhyung@kernel.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1+b1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 10, 2012 at 01:25:51PM +0200, Javier Muñoz wrote:
-> On 06/10/2012 01:12 PM, Javier M. Mellid wrote:
-> > From: "Javier M. Mellid" <jmunhoz@igalia.com>
-> > 
-> > Rename sm7xx driver to sm7xxfb. Fix Kconfig and Makefile to fit the new
-> > change.
-> > 
-> > Changes are coherent with the rest of stable framebuffer drivers. TODO
-> > updated.
+On Tue, 2012-06-12 at 16:42 +0900, Namhyung Kim wrote:
+> From: Namhyung Kim <namhyung.kim@lge.com>
 > 
-> Just one doubt. I am using 'git mv' here and it works Ok. 'git log
-> --follow' would be the way to see the whole history after this commit.
-> Should I follow another approach? I am using a 'similar approach' to
-> ed16648eb5b86917f0b90bdcdbc857202da72f90 commit to rename.
+> Define and use error numbers for pevent_parse_event()
+> and get rid of die() and do_warning() calls. If the
+> function returns non-zero value, the caller can check
+> the return code and do appropriate things.
 > 
-> Please, let me know if I should redo this patch.
+> I chose the error numbers to be negative not to clash
+> with standard errno, and as usual, 0 for success.
+> 
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
 
-When I apply it, git will detect the file being moved.
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
 
-Also, patch, and git, now support renames when generating patches, you
-should use that and it will be a bit more obvious that this really is
-just a rename.
+- Steve
 
-thanks,
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  tools/lib/traceevent/event-parse.c |   50 +++++++++++++++++++++---------------
+>  tools/lib/traceevent/event-parse.h |   26 +++++++++++++++++--
+>  2 files changed, 54 insertions(+), 22 deletions(-)
+> 
 
-greg k-h
+
