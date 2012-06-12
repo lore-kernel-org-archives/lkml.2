@@ -1,53 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751749Ab2FLN7g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 09:59:36 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:46653 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750961Ab2FLN7f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 09:59:35 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: VPS-1(zz98dIzz1202hzzz2dh668h839h93fhd25hf0ah)
-X-WSS-ID: 0M5IC71-02-C1R-02
-X-M-MSG: 
-Date: Tue, 12 Jun 2012 15:59:25 +0200
-From: Andreas Herrmann <andreas.herrmann3@amd.com>
-To: Mahmood Naderan <nt_mahmood@yahoo.com>
-CC: Borislav Petkov <bp@alien8.de>,
-        "\"linux-kernel@vger.kernel.org\"" <linux-kernel@vger.kernel.org>
-Subject: Re: CPU MTRRs and linux kernel
-Message-ID: <20120612135925.GJ17596@alberich.amd.com>
-References: <1339493860.10145.YahooMailNeo@web111708.mail.gq1.yahoo.com>
- <20120612103954.GB10124@x1.osrc.amd.com>
- <1339508890.39685.YahooMailNeo@web111705.mail.gq1.yahoo.com>
+	id S1751688Ab2FLOJR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 10:09:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34262 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751074Ab2FLOJO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 10:09:14 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Maya Erez <merez@codeaurora.org>
+Cc: linux-mmc@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-doc@vger.kernel.org (open list:DOCUMENTATION),
+        linux-kernel@vger.kernel.org (open list)
+Subject: Re: [PATCH v4 1/1] block: Add test-iosched scheduler
+References: <1339491984-8462-1-git-send-email-merez@codeaurora.org>
+	<1339491984-8462-2-git-send-email-merez@codeaurora.org>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Tue, 12 Jun 2012 10:09:11 -0400
+In-Reply-To: <1339491984-8462-2-git-send-email-merez@codeaurora.org> (Maya
+	Erez's message of "Tue, 12 Jun 2012 12:06:24 +0300")
+Message-ID: <x4962awk4fs.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <1339508890.39685.YahooMailNeo@web111705.mail.gq1.yahoo.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 12, 2012 at 06:48:10AM -0700, Mahmood Naderan wrote:
-> Thanks Borislav,
+Maya Erez <merez@codeaurora.org> writes:
 
-> I want to know, should I upgrade to the latest kernel or it is
-> possible to download the source of 2.6.32-24 from repository and
-> modify cleanup.c and then recompile?
+> The test scheduler allows testing a block device by dispatching
+> specific requests according to the test case and declare PASS/FAIL
+> according to the requests completion error code
 
+What sort of tests have you written that make use of this
+infrastructure?
 
-Trying to update to latest kernel package is the first thing to do.  I
-think they've provided kernels >=2.6.32-35 or so.
+> @@ -1072,8 +1072,6 @@ struct request *blk_get_request(struct request_queue *q, int rw, gfp_t gfp_mask)
+>  {
+>  	struct request *rq;
+>  
+> -	BUG_ON(rw != READ && rw != WRITE);
+> -
 
-So chances are high that they already have picked up the fix from
-2.6.32-stable tree updates.
+Please explain this.
 
-
-Regards,
-Andreas
-
-
+Cheers,
+Jeff
