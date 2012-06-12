@@ -1,81 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751515Ab2FLKXt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 06:23:49 -0400
-Received: from nm19-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.216]:27614 "HELO
-	nm19-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750875Ab2FLKXs convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 06:23:48 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 596914.49313.bm@omp1016.mail.sp2.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=doJuD/AVL5RugY8ACCo7jRHSvaDJk7gniRhq/SHTKbiStEcJmUDVIG/FztuSpq97la7rRSUVE3kr4/cHNskL25l8twNKGYZkH3TBcs+bXegI6UF9GQP/8cyt+9pFiVa2rXmXE49orfVnNWdQ1yMvVgJOoeeXB4lMHDPqXAoxsZI=;
-X-YMail-OSG: QkSr44AVM1lOQshX1sXjY.ON0NRjA1E.mdI7lwsBRQ7N88O
- odt8oh.oMQGBArWygjFLgo6e0ZJ8zMkSsGIqSlxkcUwXjyMFIFReadE9ySiC
- fB4LIP2FpG.iGh4twEP7hy62zcYth1pyAcvD0Jt0c73iJWxErcI0e2hjXuWR
- AozxDKjvEysn78SGnzDoOyZhGPs1q8L4LlSo7oh8zZGU0IEeL1xRlAICy41n
- O.o3o1yh27UCZdvKeVCWk2FafhYXjScw.4oUfblhg_yu9t8CzWNGjrMU1rVf
- udvNqaQkfye1pe0p9dAr1XUn2AqjiM5xmVRHRSb4a8bNe4XCp5aAxK08wcob
- kNhnbLU9mDo0m5VQnfeXHL9XoDtXnjkDUMIsfaM8VnaLd79RtqSOtttMMzmV
- 2M6I6fCPaqDmug4OsXRZ0wJ4ZdE_smXgVce2Rq8ghZIEli5M_A6009VqmrDV
- Dw60brGJVXGSRsawaXsBI6sThuI0lsPkZrWpFcVdhCPqIjS7CiBjCw0UUkFv
- StJ_B7g--
-X-Mailer: YahooMailWebService/0.8.118.349524
-References: <1339493860.10145.YahooMailNeo@web111708.mail.gq1.yahoo.com> <20120612111259.48862b67@pyramind.ukuu.org.uk> <1339496451.43175.YahooMailNeo@web111722.mail.gq1.yahoo.com>
-Message-ID: <1339496628.30704.YahooMailNeo@web111712.mail.gq1.yahoo.com>
-Date: Tue, 12 Jun 2012 03:23:48 -0700 (PDT)
-From: Mahmood Naderan <nt_mahmood@yahoo.com>
-Reply-To: Mahmood Naderan <nt_mahmood@yahoo.com>
-Subject: Re: CPU MTRRs and linux kernel
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1339496451.43175.YahooMailNeo@web111722.mail.gq1.yahoo.com>
+	id S1751852Ab2FLKYM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 06:24:12 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:55625 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751573Ab2FLKYH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 06:24:07 -0400
+Date: Tue, 12 Jun 2012 12:24:00 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Ingo Molnar <mingo@kernel.org>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] irq/core changes for v3.5
+In-Reply-To: <20120522032554.GA11358@gmail.com>
+Message-ID: <Pine.LNX.4.64.1206121201130.6800@axis700.grange>
+References: <20120522032554.GA11358@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:ZOg2wU0uns8wEeRtKQgruWQT5xsOsyNWGrTaHTW4lip
+ C+Mwq92OlE1kt8KUsoDtXLegLvo4x1T16Ci3P+jgG4Gp/vIe4+
+ N/8816KZNrY3U/ZihJctj/UnEa5b3wZemgpMu4WY6PMKIS7rI0
+ b8bAWTaxfnQJa+whwIkK5ENhyv8Mkj9/2mHxo7aA0JwUnmyPhM
+ h7Gg+wRJEpNyJIeHmq94y7MTkpvFO4w2dYGmU1CwAWhOlrldUz
+ 7UpjtHX7Txcm8uUYGzemynKc1yfJto2eMFyYEJ4VFHZs71Ou0+
+ uoyJ0yKTYpQkirXTnLnbH7fmZ0Bi7ezlPxTJDm8K0fOIBHNiA5
+ MjkjISYnO+kli5dV8iUSb5FpvcWFDN69JPWtEb5fqeh5ODQa5X
+ ij4sTvEunBQ+Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Ingo
 
+On Tue, 22 May 2012, Ingo Molnar wrote:
 
-BIOS has the latest version. We bought it 2 weeks ago.
-
-I have to say, the BIOS has an option, IOMMU. If it is disabled, in the boot log, there is a message that explicitly state you have to enable the IOMMU from BIOS.
-After enabling that, in the boot log it doesn't comlain about IOMMU. However it says that warnning.
-One thing that I want to know, is that if it is really a warnning, then there should be someway to bypass that.
-
-I think this is related to OS (here kernel I think). However I am not sure.
-~MN
-
-
-
-
------ Original Message -----
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Mahmood Naderan <nt_mahmood@yahoo.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Sent: Tuesday, June 12, 2012 2:42 PM
-Subject: Re: CPU MTRRs and linux kernel
-
-On Tue, 12 Jun 2012 02:37:40 -0700 (PDT)
-Mahmood Naderan <nt_mahmood@yahoo.com> wrote:
-
-> Hi everybody,
-> Abour rhis warnning in boot log:
+> Linus,
 > 
-> WARNING: BIOS bug: CPU MTRRs don't cover all of memory, losing 61952MB of RAM
+> Please pull the latest irq-core-for-linus git tree from:
+> 
+>    git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git irq-core-for-linus
+> 
+>    HEAD: e0d8ffd1df44518cb9ac9b1807d1f13cc100fc2f hexagon: Remove select of not longer existing Kconfig switches
+> 
+> A collection of small fixes.
+> 
+>  Thanks,
+> 
+> 	Ingo
+> 
+> ------------------>
+> Thomas Gleixner (7):
+>       genirq: Streamline irq_action
+>       genirq: Reject bogus threaded irq requests
 
-           ^^^^^ Note what it says here
+Correct me if I'm wrong, but the above patch, however good and correct in 
+principle, breaks all existing drivers, that currently use 
+request_threaded_irq() in this "bogus" way, namely, with NULL handler and 
+without the IRQF_ONESHOT flag? Of those drivers I counted 73 in today's 
+Linus' tree with a total of 92 call occurrences. Isn't this a bit too 
+brutal? How about either doing it more gently (first just issue a warning) 
+or first fixing them all? The current approach seems to just cause a bunch 
+of regressions to me? I can provide a list of affected files, if someone 
+volunteers to fix them all;-)
 
-> Should I upgrade?
+Thanks
+Guennadi
 
-Your BIOS perhaps.
---
-To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
-Please read the FAQ at  http://www.tux.org/lkml/
+>       genirq: Be more informative on irq type mismatch
+>       genirq: Allow check_wakeup_irqs to notice level-triggered interrupts
+>       genirq: Do not consider disabled wakeup irqs
+>       arm: Select core options instead of redefining them
+>       hexagon: Remove select of not longer existing Kconfig switches
+> 
+> 
+>  arch/arm/Kconfig          |   10 +-------
+>  arch/hexagon/Kconfig      |    2 -
+>  include/linux/interrupt.h |    8 +++---
+>  kernel/irq/chip.c         |    4 ++-
+>  kernel/irq/manage.c       |   46 ++++++++++++++++++++++++++++++--------------
+>  kernel/irq/pm.c           |    7 +++++-
+>  kernel/irq/resend.c       |    7 ++++-
+>  7 files changed, 51 insertions(+), 33 deletions(-)
+
+[snip]
+
+> diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+> index 89a3ea8..585f638 100644
+> --- a/kernel/irq/manage.c
+> +++ b/kernel/irq/manage.c
+> @@ -565,8 +565,8 @@ int __irq_set_trigger(struct irq_desc *desc, unsigned int irq,
+>  		 * IRQF_TRIGGER_* but the PIC does not support multiple
+>  		 * flow-types?
+>  		 */
+> -		pr_debug("No set_type function for IRQ %d (%s)\n", irq,
+> -				chip ? (chip->name ? : "unknown") : "unknown");
+> +		pr_debug("genirq: No set_type function for IRQ %d (%s)\n", irq,
+> +			 chip ? (chip->name ? : "unknown") : "unknown");
+>  		return 0;
+>  	}
+>  
+> @@ -600,7 +600,7 @@ int __irq_set_trigger(struct irq_desc *desc, unsigned int irq,
+>  		ret = 0;
+>  		break;
+>  	default:
+> -		pr_err("setting trigger mode %lu for irq %u failed (%pF)\n",
+> +		pr_err("genirq: Setting trigger mode %lu for irq %u failed (%pF)\n",
+>  		       flags, irq, chip->irq_set_type);
+>  	}
+>  	if (unmask)
+> @@ -837,8 +837,7 @@ void exit_irq_thread(void)
+>  
+>  	action = kthread_data(tsk);
+>  
+> -	printk(KERN_ERR
+> -	       "exiting task \"%s\" (%d) is an active IRQ thread (irq %d)\n",
+> +	pr_err("genirq: exiting task \"%s\" (%d) is an active IRQ thread (irq %d)\n",
+>  	       tsk->comm ? tsk->comm : "", tsk->pid, action->irq);
+>  
+>  	desc = irq_to_desc(action->irq);
+> @@ -878,7 +877,6 @@ static int
+>  __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
+>  {
+>  	struct irqaction *old, **old_ptr;
+> -	const char *old_name = NULL;
+>  	unsigned long flags, thread_mask = 0;
+>  	int ret, nested, shared = 0;
+>  	cpumask_var_t mask;
+> @@ -972,10 +970,8 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
+>  		 */
+>  		if (!((old->flags & new->flags) & IRQF_SHARED) ||
+>  		    ((old->flags ^ new->flags) & IRQF_TRIGGER_MASK) ||
+> -		    ((old->flags ^ new->flags) & IRQF_ONESHOT)) {
+> -			old_name = old->name;
+> +		    ((old->flags ^ new->flags) & IRQF_ONESHOT))
+>  			goto mismatch;
+> -		}
+>  
+>  		/* All handlers must agree on per-cpuness */
+>  		if ((old->flags & IRQF_PERCPU) !=
+> @@ -1031,6 +1027,27 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
+>  		 * all existing action->thread_mask bits.
+>  		 */
+>  		new->thread_mask = 1 << ffz(thread_mask);
+> +
+> +	} else if (new->handler == irq_default_primary_handler) {
+> +		/*
+> +		 * The interrupt was requested with handler = NULL, so
+> +		 * we use the default primary handler for it. But it
+> +		 * does not have the oneshot flag set. In combination
+> +		 * with level interrupts this is deadly, because the
+> +		 * default primary handler just wakes the thread, then
+> +		 * the irq lines is reenabled, but the device still
+> +		 * has the level irq asserted. Rinse and repeat....
+> +		 *
+> +		 * While this works for edge type interrupts, we play
+> +		 * it safe and reject unconditionally because we can't
+> +		 * say for sure which type this interrupt really
+> +		 * has. The type flags are unreliable as the
+> +		 * underlying chip implementation can override them.
+> +		 */
+> +		pr_err("genirq: Threaded irq requested with handler=NULL and !ONESHOT for irq %d\n",
+> +		       irq);
+> +		ret = -EINVAL;
+> +		goto out_mask;
+>  	}
+>  
+>  	if (!shared) {
+> @@ -1078,7 +1095,7 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
+>  
+>  		if (nmsk != omsk)
+>  			/* hope the handler works with current  trigger mode */
+> -			pr_warning("IRQ %d uses trigger mode %u; requested %u\n",
+> +			pr_warning("genirq: irq %d uses trigger mode %u; requested %u\n",
+>  				   irq, nmsk, omsk);
+>  	}
+>  
+> @@ -1115,14 +1132,13 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
+>  	return 0;
+>  
+>  mismatch:
+> -#ifdef CONFIG_DEBUG_SHIRQ
+>  	if (!(new->flags & IRQF_PROBE_SHARED)) {
+> -		printk(KERN_ERR "IRQ handler type mismatch for IRQ %d\n", irq);
+> -		if (old_name)
+> -			printk(KERN_ERR "current handler: %s\n", old_name);
+> +		pr_err("genirq: Flags mismatch irq %d. %08x (%s) vs. %08x (%s)\n",
+> +		       irq, new->flags, new->name, old->flags, old->name);
+> +#ifdef CONFIG_DEBUG_SHIRQ
+>  		dump_stack();
+> -	}
+>  #endif
+> +	}
+>  	ret = -EBUSY;
+>  
+>  out_mask:
+
+[snip]
+
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
