@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753480Ab2FLFjM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 01:39:12 -0400
-Received: from mga14.intel.com ([143.182.124.37]:42353 "EHLO mga14.intel.com"
+	id S1753454Ab2FLFjp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 01:39:45 -0400
+Received: from mga14.intel.com ([143.182.124.37]:55384 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753432Ab2FLFiM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 01:38:12 -0400
+	id S1753397Ab2FLFiH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 01:38:07 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="111014247"
+   d="scan'208";a="111014217"
 From: "Yan, Zheng" <zheng.z.yan@intel.com>
 To: a.p.zijlstra@chello.nl, mingo@elte.hu, jolsa@redhat.com,
         eranian@google.com, andi@firstfloor.org, linux-kernel@vger.kernel.org
-Cc: Zheng Yan <zheng.z.yan@intel.com>
-Subject: [PATCH V5 10/13] perf, tool: Make the event parser reentrantable
-Date: Tue, 12 Jun 2012 13:37:45 +0800
-Message-Id: <1339479468-3815-11-git-send-email-zheng.z.yan@intel.com>
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>
+Subject: [PATCH V5 07/13] perf: Generic pci uncore device support
+Date: Tue, 12 Jun 2012 13:37:42 +0800
+Message-Id: <1339479468-3815-8-git-send-email-zheng.z.yan@intel.com>
 X-Mailer: git-send-email 1.7.10.2
 In-Reply-To: <1339479468-3815-1-git-send-email-zheng.z.yan@intel.com>
 References: <1339479468-3815-1-git-send-email-zheng.z.yan@intel.com>
@@ -23,346 +23,375 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
 
-Making the event parser reentrantable by creating separate
-scanner for each parsing. The scanner is passed to the bison
-as and argument to the lexer.
+This patch adds generic support for uncore pmu presented as
+pci device.
 
 Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/util/parse-events.c |   35 ++++++++----
- tools/perf/util/parse-events.h |    2 +-
- tools/perf/util/parse-events.l |  116 +++++++++++++++++++++++-----------------
- tools/perf/util/parse-events.y |    9 ++--
- 4 files changed, 98 insertions(+), 64 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c |  175 ++++++++++++++++++++++++-
+ arch/x86/kernel/cpu/perf_event_intel_uncore.h |   66 ++++++++++
+ 2 files changed, 236 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index c71b29a..ca8665e 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -11,6 +11,7 @@
- #include "cache.h"
- #include "header.h"
- #include "debugfs.h"
-+#include "parse-events-bison.h"
- #include "parse-events-flex.h"
- #include "pmu.h"
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+index 84f9ae6..9a43fb4 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -2,6 +2,11 @@
  
-@@ -26,7 +27,7 @@ struct event_symbol {
- #ifdef PARSER_DEBUG
- extern int parse_events_debug;
- #endif
--int parse_events_parse(void *data);
-+int parse_events_parse(void *data, void *scanner);
+ static struct intel_uncore_type *empty_uncore[] = { NULL, };
+ static struct intel_uncore_type **msr_uncores = empty_uncore;
++static struct intel_uncore_type **pci_uncores = empty_uncore;
++/* pci bus to socket mapping */
++static int pcibus_to_physid[256] = { [0 ... 255] = -1, };
++
++static DEFINE_RAW_SPINLOCK(uncore_box_lock);
  
- #define CHW(x) .type = PERF_TYPE_HARDWARE, .config = PERF_COUNT_HW_##x
- #define CSW(x) .type = PERF_TYPE_SOFTWARE, .config = PERF_COUNT_SW_##x
-@@ -787,26 +788,38 @@ int parse_events_modifier(struct list_head *list, char *str)
- 	return 0;
+ /* mask of cpus that collect uncore events */
+ static cpumask_t uncore_cpu_mask;
+@@ -205,13 +210,13 @@ static void uncore_assign_hw_event(struct intel_uncore_box *box,
+ 	hwc->last_tag = ++box->tags[idx];
+ 
+ 	if (hwc->idx == UNCORE_PMC_IDX_FIXED) {
+-		hwc->event_base = uncore_msr_fixed_ctr(box);
+-		hwc->config_base = uncore_msr_fixed_ctl(box);
++		hwc->event_base = uncore_fixed_ctr(box);
++		hwc->config_base = uncore_fixed_ctl(box);
+ 		return;
+ 	}
+ 
+-	hwc->config_base = uncore_msr_event_ctl(box, hwc->idx);
+-	hwc->event_base =  uncore_msr_perf_ctr(box, hwc->idx);
++	hwc->config_base = uncore_event_ctl(box, hwc->idx);
++	hwc->event_base =  uncore_perf_ctr(box, hwc->idx);
  }
  
--int parse_events(struct perf_evlist *evlist, const char *str, int unset __used)
-+static int parse_events__scanner(const char *str, void *data)
+ static void uncore_perf_event_update(struct intel_uncore_box *box,
+@@ -305,6 +310,22 @@ struct intel_uncore_box *uncore_alloc_box(int cpu)
+ static struct intel_uncore_box *
+ uncore_pmu_to_box(struct intel_uncore_pmu *pmu, int cpu)
  {
--	struct parse_events_data__events data = {
--		.list = LIST_HEAD_INIT(data.list),
--		.idx  = evlist->nr_entries,
--	};
- 	YY_BUFFER_STATE buffer;
-+	void *scanner;
- 	int ret;
++	static struct intel_uncore_box *box;
++
++	box =  *per_cpu_ptr(pmu->box, cpu);
++	if (box)
++		return box;
++
++	raw_spin_lock(&uncore_box_lock);
++	list_for_each_entry(box, &pmu->box_list, list) {
++		if (box->phys_id == topology_physical_package_id(cpu)) {
++			atomic_inc(&box->refcnt);
++			*per_cpu_ptr(pmu->box, cpu) = box;
++			break;
++		}
++	}
++	raw_spin_unlock(&uncore_box_lock);
++
+ 	return *per_cpu_ptr(pmu->box, cpu);
+ }
  
--	buffer = parse_events__scan_string(str);
-+	ret = parse_events_lex_init(&scanner);
+@@ -706,6 +727,13 @@ static void __init uncore_type_exit(struct intel_uncore_type *type)
+ 	type->attr_groups[1] = NULL;
+ }
+ 
++static void uncore_types_exit(struct intel_uncore_type **types)
++{
++	int i;
++	for (i = 0; types[i]; i++)
++		uncore_type_exit(types[i]);
++}
++
+ static int __init uncore_type_init(struct intel_uncore_type *type)
+ {
+ 	struct intel_uncore_pmu *pmus;
+@@ -725,6 +753,7 @@ static int __init uncore_type_init(struct intel_uncore_type *type)
+ 		pmus[i].func_id = -1;
+ 		pmus[i].pmu_idx = i;
+ 		pmus[i].type = type;
++		INIT_LIST_HEAD(&pmus[i].box_list);
+ 		pmus[i].box = alloc_percpu(struct intel_uncore_box *);
+ 		if (!pmus[i].box)
+ 			goto fail;
+@@ -771,6 +800,127 @@ fail:
+ 	return ret;
+ }
+ 
++static struct pci_driver *uncore_pci_driver;
++static bool pcidrv_registered;
++
++/*
++ * add a pci uncore device
++ */
++static int __devinit uncore_pci_add(struct intel_uncore_type *type,
++				    struct pci_dev *pdev)
++{
++	struct intel_uncore_pmu *pmu;
++	struct intel_uncore_box *box;
++	int i,  phys_id;
++
++	phys_id = pcibus_to_physid[pdev->bus->number];
++	if (phys_id < 0)
++		return -ENODEV;
++
++	box = uncore_alloc_box(0);
++	if (!box)
++		return -ENOMEM;
++
++	/*
++	 * for performance monitoring unit with multiple boxes,
++	 * each box has a different function id.
++	 */
++	for (i = 0; i < type->num_boxes; i++) {
++		pmu = &type->pmus[i];
++		if (pmu->func_id == pdev->devfn)
++			break;
++		if (pmu->func_id < 0) {
++			pmu->func_id = pdev->devfn;
++			break;
++		}
++		pmu = NULL;
++	}
++
++	if (!pmu) {
++		kfree(box);
++		return -EINVAL;
++	}
++
++	box->phys_id = phys_id;
++	box->pci_dev = pdev;
++	box->pmu = pmu;
++	uncore_box_init(box);
++	pci_set_drvdata(pdev, box);
++
++	raw_spin_lock(&uncore_box_lock);
++	list_add_tail(&box->list, &pmu->box_list);
++	raw_spin_unlock(&uncore_box_lock);
++
++	return 0;
++}
++
++static void __devexit uncore_pci_remove(struct pci_dev *pdev)
++{
++	struct intel_uncore_box *box = pci_get_drvdata(pdev);
++	struct intel_uncore_pmu *pmu = box->pmu;
++	int cpu, phys_id = pcibus_to_physid[pdev->bus->number];
++
++	if (WARN_ON_ONCE(phys_id != box->phys_id))
++		return;
++
++	raw_spin_lock(&uncore_box_lock);
++	list_del(&box->list);
++	raw_spin_unlock(&uncore_box_lock);
++
++	for_each_possible_cpu(cpu) {
++		if (*per_cpu_ptr(pmu->box, cpu) == box) {
++			*per_cpu_ptr(pmu->box, cpu) = NULL;
++			atomic_dec(&box->refcnt);
++		}
++	}
++
++	WARN_ON_ONCE(atomic_read(&box->refcnt) != 1);
++	kfree(box);
++}
++
++static int __devinit uncore_pci_probe(struct pci_dev *pdev,
++				const struct pci_device_id *id)
++{
++	struct intel_uncore_type *type;
++
++	type = (struct intel_uncore_type *)id->driver_data;
++	return uncore_pci_add(type, pdev);
++}
++
++static int __init uncore_pci_init(void)
++{
++	int ret;
++
++	switch (boot_cpu_data.x86_model) {
++	default:
++		return 0;
++	}
++
++	ret =  uncore_types_init(pci_uncores);
 +	if (ret)
 +		return ret;
 +
-+	buffer = parse_events__scan_string(str, scanner);
- 
- #ifdef PARSER_DEBUG
- 	parse_events_debug = 1;
- #endif
--	ret = parse_events_parse(&data);
-+	ret = parse_events_parse(data, scanner);
++	uncore_pci_driver->probe = uncore_pci_probe;
++	uncore_pci_driver->remove = uncore_pci_remove;
 +
-+	parse_events__flush_buffer(buffer, scanner);
-+	parse_events__delete_buffer(buffer, scanner);
-+	parse_events_lex_destroy(scanner);
++	ret = pci_register_driver(uncore_pci_driver);
++	if (ret == 0)
++		pcidrv_registered = true;
++	else
++		uncore_types_exit(pci_uncores);
++
 +	return ret;
 +}
- 
--	parse_events__flush_buffer(buffer);
--	parse_events__delete_buffer(buffer);
--	parse_events_lex_destroy();
-+int parse_events(struct perf_evlist *evlist, const char *str, int unset __used)
++
++static void __init uncore_pci_exit(void)
 +{
-+	struct parse_events_data__events data = {
-+		.list = LIST_HEAD_INIT(data.list),
-+		.idx  = evlist->nr_entries,
-+	};
-+	int ret;
- 
-+	ret = parse_events__scanner(str, &data);
- 	if (!ret) {
- 		int entries = data.idx - evlist->nr_entries;
- 		perf_evlist__splice_list_tail(evlist, &data.list, entries);
-diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index dc3c83a..fa2b19b 100644
---- a/tools/perf/util/parse-events.h
-+++ b/tools/perf/util/parse-events.h
-@@ -88,7 +88,7 @@ int parse_events_add_pmu(struct list_head **list, int *idx,
- 			 char *pmu , struct list_head *head_config);
- void parse_events_update_lists(struct list_head *list_event,
- 			       struct list_head *list_all);
--void parse_events_error(void *data, char const *msg);
-+void parse_events_error(void *data, void *scanner, char const *msg);
- int parse_events__test(void);
- 
- void print_events(const char *event_glob);
-diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
-index 618a8e7..329794e 100644
---- a/tools/perf/util/parse-events.l
-+++ b/tools/perf/util/parse-events.l
-@@ -1,4 +1,6 @@
- 
-+%option reentrant
-+%option bison-bridge
- %option prefix="parse_events_"
- %option stack
- 
-@@ -8,7 +10,10 @@
- #include "parse-events-bison.h"
- #include "parse-events.h"
- 
--static int __value(char *str, int base, int token)
-+char *parse_events_get_text(yyscan_t yyscanner);
-+YYSTYPE *parse_events_get_lval(yyscan_t yyscanner);
++	if (pcidrv_registered) {
++		pcidrv_registered = false;
++		pci_unregister_driver(uncore_pci_driver);
++		uncore_types_exit(pci_uncores);
++	}
++}
 +
-+static int __value(YYSTYPE *yylval, char *str, int base, int token)
+ static void __cpuinit uncore_cpu_dying(int cpu)
  {
- 	long num;
+ 	struct intel_uncore_type *type;
+@@ -919,6 +1069,7 @@ static void __cpuinit uncore_event_exit_cpu(int cpu)
+ 		cpumask_set_cpu(target, &uncore_cpu_mask);
  
-@@ -17,35 +22,48 @@ static int __value(char *str, int base, int token)
- 	if (errno)
- 		return PE_ERROR;
- 
--	parse_events_lval.num = num;
-+	yylval->num = num;
- 	return token;
+ 	uncore_change_context(msr_uncores, cpu, target);
++	uncore_change_context(pci_uncores, cpu, target);
  }
  
--static int value(int base)
-+static int value(yyscan_t scanner, int base)
- {
--	return __value(parse_events_text, base, PE_VALUE);
-+	YYSTYPE *yylval = parse_events_get_lval(scanner);
-+	char *text = parse_events_get_text(scanner);
+ static void __cpuinit uncore_event_init_cpu(int cpu)
+@@ -934,6 +1085,7 @@ static void __cpuinit uncore_event_init_cpu(int cpu)
+ 	cpumask_set_cpu(cpu, &uncore_cpu_mask);
+ 
+ 	uncore_change_context(msr_uncores, -1, cpu);
++	uncore_change_context(pci_uncores, -1, cpu);
+ }
+ 
+ static int __cpuinit uncore_cpu_notifier(struct notifier_block *self,
+@@ -1048,6 +1200,14 @@ static int __init uncore_pmus_register(void)
+ 		}
+ 	}
+ 
++	for (i = 0; pci_uncores[i]; i++) {
++		type = pci_uncores[i];
++		for (j = 0; j < type->num_boxes; j++) {
++			pmu = &type->pmus[j];
++			uncore_pmu_register(pmu);
++		}
++	}
 +
-+	return __value(yylval, text, base, PE_VALUE);
+ 	return 0;
  }
  
--static int raw(void)
-+static int raw(yyscan_t scanner)
- {
--	return __value(parse_events_text + 1, 16, PE_RAW);
-+	YYSTYPE *yylval = parse_events_get_lval(scanner);
-+	char *text = parse_events_get_text(scanner);
+@@ -1058,9 +1218,14 @@ static int __init intel_uncore_init(void)
+ 	if (boot_cpu_data.x86_vendor != X86_VENDOR_INTEL)
+ 		return -ENODEV;
+ 
+-	ret = uncore_cpu_init();
++	ret = uncore_pci_init();
+ 	if (ret)
+ 		goto fail;
++	ret = uncore_cpu_init();
++	if (ret) {
++		uncore_pci_exit();
++		goto fail;
++	}
+ 
+ 	uncore_pmus_register();
+ 	return 0;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.h b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
+index eeb5ca5..aa01df8 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.h
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
+@@ -1,5 +1,6 @@
+ #include <linux/module.h>
+ #include <linux/slab.h>
++#include <linux/pci.h>
+ #include <linux/perf_event.h>
+ #include "perf_event.h"
+ 
+@@ -110,6 +111,7 @@ struct intel_uncore_pmu {
+ 	int func_id;
+ 	struct intel_uncore_type *type;
+ 	struct intel_uncore_box ** __percpu box;
++	struct list_head box_list;
+ };
+ 
+ struct intel_uncore_box {
+@@ -123,6 +125,7 @@ struct intel_uncore_box {
+ 	struct perf_event *event_list[UNCORE_PMC_IDX_MAX];
+ 	unsigned long active_mask[BITS_TO_LONGS(UNCORE_PMC_IDX_MAX)];
+ 	u64 tags[UNCORE_PMC_IDX_MAX];
++	struct pci_dev *pci_dev;
+ 	struct intel_uncore_pmu *pmu;
+ 	struct hrtimer hrtimer;
+ 	struct list_head list;
+@@ -161,6 +164,33 @@ static ssize_t uncore_event_show(struct kobject *kobj,
+ 	return sprintf(buf, "%s", event->config);
+ }
+ 
++static inline unsigned uncore_pci_box_ctl(struct intel_uncore_box *box)
++{
++	return box->pmu->type->box_ctl;
++}
 +
-+	return __value(yylval, text + 1, 16, PE_RAW);
- }
- 
--static int str(int token)
-+static int str(yyscan_t scanner, int token)
- {
--	parse_events_lval.str = strdup(parse_events_text);
-+	YYSTYPE *yylval = parse_events_get_lval(scanner);
-+	char *text = parse_events_get_text(scanner);
++static inline unsigned uncore_pci_fixed_ctl(struct intel_uncore_box *box)
++{
++	return box->pmu->type->fixed_ctl;
++}
 +
-+	yylval->str = strdup(text);
- 	return token;
- }
- 
--static int sym(int type, int config)
-+static int sym(yyscan_t scanner, int type, int config)
- {
--	parse_events_lval.num = (type << 16) + config;
-+	YYSTYPE *yylval = parse_events_get_lval(scanner);
++static inline unsigned uncore_pci_fixed_ctr(struct intel_uncore_box *box)
++{
++	return box->pmu->type->fixed_ctr;
++}
 +
-+	yylval->num = (type << 16) + config;
- 	return PE_VALUE_SYM;
- }
- 
--static int term(int type)
-+static int term(yyscan_t scanner, int type)
- {
--	parse_events_lval.num = type;
-+	YYSTYPE *yylval = parse_events_get_lval(scanner);
++static inline
++unsigned uncore_pci_event_ctl(struct intel_uncore_box *box, int idx)
++{
++	return idx * 4 + box->pmu->type->event_ctl;
++}
 +
-+	yylval->num = type;
- 	return PE_TERM;
- }
- 
-@@ -61,25 +79,25 @@ modifier_event	[ukhpGH]{1,8}
- modifier_bp	[rwx]
- 
- %%
--cpu-cycles|cycles				{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES); }
--stalled-cycles-frontend|idle-cycles-frontend	{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_STALLED_CYCLES_FRONTEND); }
--stalled-cycles-backend|idle-cycles-backend	{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_STALLED_CYCLES_BACKEND); }
--instructions					{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS); }
--cache-references				{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_CACHE_REFERENCES); }
--cache-misses					{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_CACHE_MISSES); }
--branch-instructions|branches			{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_INSTRUCTIONS); }
--branch-misses					{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_MISSES); }
--bus-cycles					{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_BUS_CYCLES); }
--ref-cycles					{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_REF_CPU_CYCLES); }
--cpu-clock					{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_CLOCK); }
--task-clock					{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK); }
--page-faults|faults				{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS); }
--minor-faults					{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MIN); }
--major-faults					{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MAJ); }
--context-switches|cs				{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CONTEXT_SWITCHES); }
--cpu-migrations|migrations			{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_MIGRATIONS); }
--alignment-faults				{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_ALIGNMENT_FAULTS); }
--emulation-faults				{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_EMULATION_FAULTS); }
-+cpu-cycles|cycles				{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES); }
-+stalled-cycles-frontend|idle-cycles-frontend	{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_STALLED_CYCLES_FRONTEND); }
-+stalled-cycles-backend|idle-cycles-backend	{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_STALLED_CYCLES_BACKEND); }
-+instructions					{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS); }
-+cache-references				{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_CACHE_REFERENCES); }
-+cache-misses					{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_CACHE_MISSES); }
-+branch-instructions|branches			{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_INSTRUCTIONS); }
-+branch-misses					{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_MISSES); }
-+bus-cycles					{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_BUS_CYCLES); }
-+ref-cycles					{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_REF_CPU_CYCLES); }
-+cpu-clock					{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_CLOCK); }
-+task-clock					{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK); }
-+page-faults|faults				{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS); }
-+minor-faults					{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MIN); }
-+major-faults					{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MAJ); }
-+context-switches|cs				{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CONTEXT_SWITCHES); }
-+cpu-migrations|migrations			{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_MIGRATIONS); }
-+alignment-faults				{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_ALIGNMENT_FAULTS); }
-+emulation-faults				{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_EMULATION_FAULTS); }
- 
- L1-dcache|l1-d|l1d|L1-data		|
- L1-icache|l1-i|l1i|L1-instruction	|
-@@ -87,14 +105,14 @@ LLC|L2					|
- dTLB|d-tlb|Data-TLB			|
- iTLB|i-tlb|Instruction-TLB		|
- branch|branches|bpu|btb|bpc		|
--node					{ return str(PE_NAME_CACHE_TYPE); }
-+node					{ return str(yyscanner, PE_NAME_CACHE_TYPE); }
- 
- load|loads|read				|
- store|stores|write			|
- prefetch|prefetches			|
- speculative-read|speculative-load	|
- refs|Reference|ops|access		|
--misses|miss				{ return str(PE_NAME_CACHE_OP_RESULT); }
-+misses|miss				{ return str(yyscanner, PE_NAME_CACHE_OP_RESULT); }
- 
- 	/*
- 	 * These are event config hardcoded term names to be specified
-@@ -102,20 +120,20 @@ misses|miss				{ return str(PE_NAME_CACHE_OP_RESULT); }
- 	 * so we can put them here directly. In case the we have a conflict
- 	 * in future, this needs to go into '//' condition block.
- 	 */
--config			{ return term(PARSE_EVENTS__TERM_TYPE_CONFIG); }
--config1			{ return term(PARSE_EVENTS__TERM_TYPE_CONFIG1); }
--config2			{ return term(PARSE_EVENTS__TERM_TYPE_CONFIG2); }
--name			{ return term(PARSE_EVENTS__TERM_TYPE_NAME); }
--period			{ return term(PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD); }
--branch_type		{ return term(PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE); }
-+config			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_CONFIG); }
-+config1			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_CONFIG1); }
-+config2			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_CONFIG2); }
-+name			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_NAME); }
-+period			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD); }
-+branch_type		{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE); }
- 
- mem:			{ BEGIN(mem); return PE_PREFIX_MEM; }
--r{num_raw_hex}		{ return raw(); }
--{num_dec}		{ return value(10); }
--{num_hex}		{ return value(16); }
-+r{num_raw_hex}		{ return raw(yyscanner); }
-+{num_dec}		{ return value(yyscanner, 10); }
-+{num_hex}		{ return value(yyscanner, 16); }
- 
--{modifier_event}	{ return str(PE_MODIFIER_EVENT); }
--{name}			{ return str(PE_NAME); }
-+{modifier_event}	{ return str(yyscanner, PE_MODIFIER_EVENT); }
-+{name}			{ return str(yyscanner, PE_NAME); }
- "/"			{ return '/'; }
- -			{ return '-'; }
- ,			{ return ','; }
-@@ -123,17 +141,17 @@ r{num_raw_hex}		{ return raw(); }
- =			{ return '='; }
- 
- <mem>{
--{modifier_bp}		{ return str(PE_MODIFIER_BP); }
-+{modifier_bp}		{ return str(yyscanner, PE_MODIFIER_BP); }
- :			{ return ':'; }
--{num_dec}		{ return value(10); }
--{num_hex}		{ return value(16); }
-+{num_dec}		{ return value(yyscanner, 10); }
-+{num_hex}		{ return value(yyscanner, 16); }
- 	/*
- 	 * We need to separate 'mem:' scanner part, in order to get specific
- 	 * modifier bits parsed out. Otherwise we would need to handle PE_NAME
- 	 * and we'd need to parse it manually. During the escape from <mem>
- 	 * state we need to put the escaping char back, so we dont miss it.
- 	 */
--.			{ unput(*parse_events_text); BEGIN(INITIAL); }
-+.			{ unput(*yytext); BEGIN(INITIAL); }
- 	/*
- 	 * We destroy the scanner after reaching EOF,
- 	 * but anyway just to be sure get back to INIT state.
-@@ -143,7 +161,7 @@ r{num_raw_hex}		{ return raw(); }
- 
- %%
- 
--int parse_events_wrap(void)
-+int parse_events_wrap(void *scanner __used)
++static inline
++unsigned uncore_pci_perf_ctr(struct intel_uncore_box *box, int idx)
++{
++	return idx * 8 + box->pmu->type->perf_ctr;
++}
++
+ static inline
+ unsigned uncore_msr_box_ctl(struct intel_uncore_box *box)
  {
- 	return 1;
+@@ -200,6 +230,42 @@ unsigned uncore_msr_perf_ctr(struct intel_uncore_box *box, int idx)
+ 		box->pmu->type->msr_offset * box->pmu->pmu_idx;
  }
-diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
-index e533bf7..2a93d5c 100644
---- a/tools/perf/util/parse-events.y
-+++ b/tools/perf/util/parse-events.y
-@@ -1,6 +1,8 @@
--
-+%pure-parser
- %name-prefix "parse_events_"
- %parse-param {void *_data}
-+%parse-param {void *scanner}
-+%lex-param {void* scanner}
  
- %{
- 
-@@ -11,8 +13,9 @@
- #include "types.h"
- #include "util.h"
- #include "parse-events.h"
-+#include "parse-events-bison.h"
- 
--extern int parse_events_lex (void);
-+extern int parse_events_lex (YYSTYPE* lvalp, void* scanner);
- 
- #define ABORT_ON(val) \
- do { \
-@@ -286,7 +289,7 @@ sep_slash_dc: '/' | ':' |
- 
- %%
- 
--void parse_events_error(void *data __used,
-+void parse_events_error(void *data __used, void *scanner __used,
- 			char const *msg __used)
++static inline
++unsigned uncore_fixed_ctl(struct intel_uncore_box *box)
++{
++	if (box->pci_dev)
++		return uncore_pci_fixed_ctl(box);
++	else
++		return uncore_msr_fixed_ctl(box);
++}
++
++static inline
++unsigned uncore_fixed_ctr(struct intel_uncore_box *box)
++{
++	if (box->pci_dev)
++		return uncore_pci_fixed_ctr(box);
++	else
++		return uncore_msr_fixed_ctr(box);
++}
++
++static inline
++unsigned uncore_event_ctl(struct intel_uncore_box *box, int idx)
++{
++	if (box->pci_dev)
++		return uncore_pci_event_ctl(box, idx);
++	else
++		return uncore_msr_event_ctl(box, idx);
++}
++
++static inline
++unsigned uncore_perf_ctr(struct intel_uncore_box *box, int idx)
++{
++	if (box->pci_dev)
++		return uncore_pci_perf_ctr(box, idx);
++	else
++		return uncore_msr_perf_ctr(box, idx);
++}
++
+ static inline int uncore_perf_ctr_bits(struct intel_uncore_box *box)
  {
- }
+ 	return box->pmu->type->perf_ctr_bits;
 -- 
 1.7.10.2
 
