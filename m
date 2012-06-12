@@ -1,75 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752296Ab2FLOba (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 10:31:30 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:48131 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751502Ab2FLOb3 (ORCPT
+	id S1752935Ab2FLOcN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 10:32:13 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:56321 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752004Ab2FLOcL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 10:31:29 -0400
-Date: Tue, 12 Jun 2012 10:31:28 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Namjae Jeon <linkinjeon@gmail.com>
-cc: James.Bottomley@HansenPartnership.com, <gregkh@linuxfoundation.org>,
-        <mdharm-usb@one-eyed-alien.net>, <sshtylyov@mvista.com>,
-        <bvanassche@acm.org>, <linux-usb@vger.kernel.org>,
-        <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Pankaj Kumar <pankaj.km@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [PATCH v4 3/3] usb: storage: update usb devices for write cache
- quirk in quirk list.
-In-Reply-To: <1339511190-2440-1-git-send-email-linkinjeon@gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1206121031160.1429-100000@iolanthe.rowland.org>
+	Tue, 12 Jun 2012 10:32:11 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <4FD6F7C6.80002@linaro.org>
+References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org>
+	<1339428307-3850-15-git-send-email-lee.jones@linaro.org>
+	<CACRpkdbJdA8rgcXX4Xc3sMrx==5jd-Scu1Xy0UKz0ot3_bbNzw@mail.gmail.com>
+	<4FD6F7C6.80002@linaro.org>
+Date: Tue, 12 Jun 2012 16:32:10 +0200
+Message-ID: <CACRpkdYiZkRT-XLbEBRzCBKJ+721OBVKmUF+v17seFiWxmndnw@mail.gmail.com>
+Subject: Re: [PATCH 14/14] ARM: ux500: Move rtc-pl031 registration to Device
+ Tree when enabled
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, arnd@arndb.de, grant.likely@secretlab.ca
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 12 Jun 2012, Namjae Jeon wrote:
+On Tue, Jun 12, 2012 at 10:03 AM, Lee Jones <lee.jones@linaro.org> wrote:
+> On 11/06/12 22:43, Linus Walleij wrote:
 
-> Update information of Seagate Portable HDD and WD My Passport HDD in
-> quirk list.
-> 
-> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-> Signed-off-by: Pankaj Kumar <pankaj.km@samsung.com>
-> Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
-> ---
->  drivers/usb/storage/unusual_devs.h |   12 ++++++++++++
->  1 file changed, 12 insertions(+)
-> 
-> diff --git a/drivers/usb/storage/unusual_devs.h b/drivers/usb/storage/unusual_devs.h
-> index 1719886..62a31be 100644
-> --- a/drivers/usb/storage/unusual_devs.h
-> +++ b/drivers/usb/storage/unusual_devs.h
-> @@ -1267,6 +1267,12 @@ UNUSUAL_DEV( 0x0af0, 0xd357, 0x0000, 0x0000,
->  		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
->  		0 ),
->  
-> +/* Reported by Namjae Jeon <namjae.jeon@samsung.com> */
-> +UNUSUAL_DEV(0x0bc2, 0x2300, 0x0000, 0x9999,
-> +		"Seagate",
-> +		"Portable HDD",
-> +		USB_SC_DEVICE, USB_PR_DEVICE, NULL, US_FL_WRITE_CACHE),
-> +
->  /* Reported by Ben Efros <ben@pc-doctor.com> */
->  UNUSUAL_DEV( 0x0bc2, 0x3010, 0x0000, 0x0000,
->  		"Seagate",
-> @@ -1468,6 +1474,12 @@ UNUSUAL_DEV(  0x1058, 0x0704, 0x0000, 0x9999,
->  		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
->  		US_FL_SANE_SENSE),
->  
-> +/* Reported by Namjae Jeon <namjae.jeon@samsung.com> */
-> +UNUSUAL_DEV(0x1058, 0x070a, 0x0000, 0x9999,
-> +		"Western Digital",
-> +		"My Passport HDD",
-> +		USB_SC_DEVICE, USB_PR_DEVICE, NULL, US_FL_WRITE_CACHE),
-> +
->  /* Reported by Fabio Venturi <f.venturi@tdnet.it>
->   * The device reports a vendor-specific bDeviceClass.
->   */
+>> Oh this is a bug fix really, well it's in the device tree so nevermind.
+>
+> It is? How so?
 
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+That the device tree was declaring a compatible node for something
+that never existed (stericsson,db8500-rtc) while the real node is
+"arm,rtc-pl031", "arm,primecell".
 
+Without this fix 3.4 will not have an PL031 RTC I guess?
+
+Yours,
+Linus Walleij
