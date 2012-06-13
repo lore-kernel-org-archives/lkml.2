@@ -1,74 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754890Ab2FMXK1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 19:10:27 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:36639 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752648Ab2FMXK0 (ORCPT
+	id S1754904Ab2FMXOk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 19:14:40 -0400
+Received: from usindpps03.hds.com ([207.126.252.16]:55108 "EHLO
+	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754556Ab2FMXOj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 19:10:26 -0400
-Message-ID: <4FD91D99.8050706@linaro.org>
-Date: Wed, 13 Jun 2012 16:09:13 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Wed, 13 Jun 2012 19:14:39 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: "Luck, Tony" <tony.luck@intel.com>, Mike Waychison <mikew@google.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
+        "gong.chen@linux.intel.com" <gong.chen@linux.intel.com>,
+        "keescook@chromium.org" <keescook@chromium.org>,
+        "rob@landley.net" <rob@landley.net>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Date: Wed, 13 Jun 2012 19:14:16 -0400
+Subject: RE: [RFC][Patch]efi_pstore:Introduce an efi_pstore_overwrite
+ parameter to avoid missing messages in NVRAM
+Thread-Topic: [RFC][Patch]efi_pstore:Introduce an efi_pstore_overwrite
+ parameter to avoid missing messages in NVRAM
+Thread-Index: Ac1Jaf3kQfy2nRzQSNG3UORn8S5p+AAc0YIAAA6J6JAAGwBGkA==
+Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2E5A4DB451@USINDEVS01.corp.hds.com>
+References: <5C4C569E8A4B9B42A84A977CF070A35B2E5A4DB2B8@USINDEVS01.corp.hds.com>
+ <CAGTjWtAb3XrsTtkvW=G0YN1RCVxYxcPksSh3jEogeEu4qWqv1Q@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F1930C820@ORSMSX103.amr.corp.intel.com>
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F1930C820@ORSMSX103.amr.corp.intel.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ja-JP, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Paul Mundt <lethal@linux-sh.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Arve Hj??nnev??g <arve@android.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>
-Subject: Re: [PATCH 01/15] ARM: etm: Don't require clock control
-References: <1339552887-17204-1-git-send-email-john.stultz@linaro.org> <1339552887-17204-2-git-send-email-john.stultz@linaro.org> <20120613083330.GB27673@linux-sh.org>
-In-Reply-To: <20120613083330.GB27673@linux-sh.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12061323-3270-0000-0000-00000727292E
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
+ definitions=main-1206130261
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/13/2012 01:33 AM, Paul Mundt wrote:
-> On Tue, Jun 12, 2012 at 07:01:19PM -0700, John Stultz wrote:
->> diff --git a/arch/arm/kernel/etm.c b/arch/arm/kernel/etm.c
->> index 36d20bd..bd295e8 100644
->> --- a/arch/arm/kernel/etm.c
->> +++ b/arch/arm/kernel/etm.c
->> @@ -362,13 +362,12 @@ static int __devinit etb_probe(struct amba_device *dev, const struct amba_id *id
->>   	if (ret)
->>   		goto out_unmap;
->>
->> +	/* Get optional clock. Currently used to select clock source on omap3 */
->>   	t->emu_clk = clk_get(&dev->dev, "emu_src_ck");
->> -	if (IS_ERR(t->emu_clk)) {
->> +	if (IS_ERR(t->emu_clk))
->>   		dev_dbg(&dev->dev, "Failed to obtain emu_src_ck.\n");
->> -		return -EFAULT;
->> -	}
->> -
->> -	clk_enable(t->emu_clk);
->> +	else
->> +		clk_enable(t->emu_clk);
->>
-> Optionally you could just:
->
-> 	if (IS_ERR(t->emu_clk))
-> 		t->emu_clk = NULL;
->
-> and use the clk API as you were, as it does handle NULL being passed in.
->
-> In this case you don't have too many callsites to worry about, but it's
-> reasonably convenient to be able to pass a NULL clk pointer around
-> without constant special-casing when those start to balloon up.
->
-Hrm. That's a good trick to remember for the future!
+Thank you for your comment.
 
-Although in this case I'm not sure it wins much (since the re-adding of 
-the braces and the null assignment is still more code then using the 
-else).  So unless this is a major style problem for you (and do let me 
-know if it is), I'll probably leave it alone.
+> Since the EFI backend has so little storage space ... perhaps it should have some overwrite rules built into it?
 
-thanks
--john
+I think so.
+If multiple triggers don't stride across the reboot, I think we can make an automated rule.
 
+> If this seems a plausible route ... we'd need to tabulate the overwrite rules.  I think they are:
+> 	shutdown/reboot/kexec - can be overwritten by OOPS
+
+In my usecase, emergency_restart can be overwritten by OOPS
+
+> 	OOPS can be overwritten by panic
+> 	panic can never be overwritten
+
+I can make a patch in accordance with the rule above.
+
+Should it be in pstore layer?
+  - introducing a new global variable storing a previous trigger.
+  - deciding if we can continue by checking a value of previous trigger at the beginning of pstore_dump().
+
+
+> I'd like to avoid a kernel parameter ... chances are too high that the machine would be automatically rebooted without the right boot
+> argument.
+
+ But, I'm not sure if we can simply apply the rule above in case where multiple triggers stride across the reboot...
+In this case,  emergency_restart cannot be overwritten by panic..
+
+Anyway, I will consider the possibility of avoiding a kernel parameter.
+
+Seiji
