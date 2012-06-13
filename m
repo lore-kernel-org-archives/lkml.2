@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754618Ab2FMPiu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 11:38:50 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53792 "EHLO mail.zytor.com"
+	id S1754364Ab2FMPoK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 11:44:10 -0400
+Received: from fifo99.com ([67.223.236.141]:45004 "EHLO fifo99.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751255Ab2FMPit (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 11:38:49 -0400
-Message-ID: <4FD8B3DA.5080802@zytor.com>
-Date: Wed, 13 Jun 2012 08:38:02 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1751899Ab2FMPoJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 11:44:09 -0400
+Date: Wed, 13 Jun 2012 08:43:55 -0700
+From: Daniel Walker <dwalker@fifo99.com>
+To: Muthu Kumar <muthu.lkml@gmail.com>
+Cc: Mandeep Baines <msb@google.com>, fweisbec@gmail.com, sshaiju@mvista.com,
+        mingo@elte.hu, akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: hung_task checking and sys_sync
+Message-ID: <20120613154355.GA25882@fifo99.com>
+References: <20120612220924.GA13376@fifo99.com> <20120612222912.GB16381@google.com> <20120612223422.GB13492@fifo99.com> <CACBanvo7DxYPWEtSAWV25Xq94vqJBugMAwbrEHz9DfSFTpSL_w@mail.gmail.com> <20120612225719.GA13605@fifo99.com> <CAFR8ueewu_bh52wYJgWG0BdY3c=5zDXmRZ=1a-T117qQg3ux0A@mail.gmail.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Borislav Petkov <bp@amd64.org>, Stephane Eranian <eranian@google.com>,
-        linux-kernel@vger.kernel.org, andi@firstfloor.org, mingo@elte.hu,
-        ming.m.lin@intel.com, "Yu, Fenghua" <fenghua.yu@intel.com>
-Subject: Re: [PATCH] perf/x86: check ucode before disabling PEBS on SandyBridge
-References: <20120607071531.GA4849@quad> <4FD78BE6.4060207@zytor.com>   <20120612190720.GA11137@aftab.osrc.amd.com>   <1339529614.31548.104.camel@twins>   <20120612194900.GC11137@aftab.osrc.amd.com>  <1339576348.31548.114.camel@twins> <4FD89CD3.8050005@zytor.com> <1339601552.8980.47.camel@twins>
-In-Reply-To: <1339601552.8980.47.camel@twins>
-X-Enigmail-Version: 1.4.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFR8ueewu_bh52wYJgWG0BdY3c=5zDXmRZ=1a-T117qQg3ux0A@mail.gmail.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/13/2012 08:32 AM, Peter Zijlstra wrote:
-> On Wed, 2012-06-13 at 06:59 -0700, H. Peter Anvin wrote:
->> On 06/13/2012 01:32 AM, Peter Zijlstra wrote:
->>> On Tue, 2012-06-12 at 21:49 +0200, Borislav Petkov wrote:
->>>>
->>>> But why, do you see a better option for how to tell the kernel to load a
->>>> binary blob early at boot? 
->>>
->>> built it in? There's this feature where you can included firmware blobs
->>> in the kernel image. It has all the benefits of initrd, since the only
->>> time I ever would update initrd if used it, would be when I install a
->>> new kernel, which I just built anyway.
->>>
->>
->> You know you can build in an initramfs blob in the kernel, right?  In
->> fact, there always is one there even if you don't create it explicitly.
-> 
-> Didn't know that..
-> 
->> Problem solved, methinks.
-> 
-> Yep.
-> 
+On Tue, Jun 12, 2012 at 06:03:20PM -0700, Muthu Kumar wrote:
+> On Tue, Jun 12, 2012 at 3:57 PM, Daniel Walker <dwalker@fifo99.com> wrote:
+> > On Tue, Jun 12, 2012 at 03:45:20PM -0700, Mandeep Baines wrote:
+> >> On Tue, Jun 12, 2012 at 3:34 PM, Daniel Walker <dwalker@fifo99.com> wrote:
+> >> > On Tue, Jun 12, 2012 at 03:29:12PM -0700, Mandeep Singh Baines wrote:
+> >> >>
+> >> >> But the time is not unbounded. You could mask the hung_task_detector for
+> >> >> this case but then you lose the ability to catch bugs in this code path.
+> >> >>
+> >> >> The timeout is configurable via /proc/sys/kernel/hung_task_timeout_secs.
+> >> >> Can you bump up the value at boot via sysctl.conf?
+> >> >
+> >> > Maybe, but I'm wondering if these types should just be stopped because Andrew
+> >> > had complained about them already.
+> >> >
+> >>
+> >> Fair enough. Actually, internally I had a patch where we'd use a task
+> >> flag to disable and enable the hang check but the approach in the
+> >> patch you pointed me to seems better.
+> >
+> > I'm not really in love with it actually.. It's not ifdef'd for one, but
+> > it's also changing potentially good kernel behavior to avoid warnings.
+> >
+> I totally agree with you (but, not the ifdef part :). The mentioned
+> change actually was masking a potential problem - see
+> https://lkml.org/lkml/2012/6/6/483. If not for that change, we would
+> have got hung task message for the case where blk_execute_req() would
+> have stuck forever without the completion being called.
 
-We have to be a bit careful about it, though; the early initramfs
-content can't be compressed.  It might end up making more sense to make
-the builtin version of that a separate blob from the main builtin blob.
 
-	-hpa
+Not sure how the link you gave relates here.
+
+The hang checker isn't always part of the kernel i.e. it's configurable.
+So this fix doesn't always need to exist, which is what I mean by
+ifdef'd ..
+
+Daniel
