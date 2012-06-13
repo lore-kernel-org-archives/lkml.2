@@ -1,49 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753648Ab2FMOMF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 10:12:05 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44477 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752603Ab2FMOMC (ORCPT
+	id S1753923Ab2FMOM6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 10:12:58 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:62244 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751540Ab2FMOM4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 10:12:02 -0400
-Date: Wed, 13 Jun 2012 07:11:57 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Aurelien Gerault <aurelien.gerault-xsig@stericsson.com>
-Cc: linux-kernel@vger.kernel.org,
-        Aurelien Gerault <aurelien.gerault-nonst@stericsson.com>
-Subject: Re: [PATCH] printk: Ensure oops printing if console is locked
-Message-ID: <20120613141157.GB11538@kroah.com>
-References: <1339578852-17617-1-git-send-email-aurelien.gerault-xsig@stericsson.com>
+	Wed, 13 Jun 2012 10:12:56 -0400
+Date: Wed, 13 Jun 2012 16:12:52 +0200
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, jolsa@redhat.com
+Subject: [PATCH] perf: fix ordering in perf_output_sample()
+Message-ID: <20120613141252.GA1417@quad>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1339578852-17617-1-git-send-email-aurelien.gerault-xsig@stericsson.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 13, 2012 at 11:14:12AM +0200, Aurelien Gerault wrote:
-> From: Aurelien Gerault <aurelien.gerault-nonst@stericsson.com>
-> 
-> Ensuring that oops & panic messages/backtraces will be printed
-> in console, even when the console is locked.
-> 
-> If console is locked by someone else but an oops is ongoing, force
-> unlocking / re-locking to display the oops.
-> 
-> Signed-off-by: Aurelien Gerault <aurelien.gerault-nonst@stericsson.com>
-> ST-Ericsson Linux next: NA
-> ST-Ericsson ID: 436456
-> ST-Ericsson FOSS-OUT ID: Trivial
 
-What are those fields for?
+It seems like the merge of commits a7ac67ea and bce38cd5
+caused an ordering problem in perf_output_sample().
+The watermark check must be done at the very end of the
+function and not in the middle of writing data to the buffer.
 
-> Change-Id: I9f571492fefc32291ecd0cc62f0ad7031cab7c6d
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
 
-What is this for?
-
-Please clean up the patch before sending it out publicly, we can't take
-stuff like this...
-
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index f85c015..721ba28 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -3979,20 +3979,6 @@ void perf_output_sample(struct perf_output_handle *handle,
+ 		}
+ 	}
+ 
+-	if (!event->attr.watermark) {
+-		int wakeup_events = event->attr.wakeup_events;
+-
+-		if (wakeup_events) {
+-			struct ring_buffer *rb = handle->rb;
+-			int events = local_inc_return(&rb->events);
+-
+-			if (events >= wakeup_events) {
+-				local_sub(wakeup_events, &rb->events);
+-				local_inc(&rb->wakeup);
+-			}
+-		}
+-	}
+-
+ 	if (sample_type & PERF_SAMPLE_BRANCH_STACK) {
+ 		if (data->br_stack) {
+ 			size_t size;
+@@ -4010,6 +3996,20 @@ void perf_output_sample(struct perf_output_handle *handle,
+ 			perf_output_put(handle, nr);
+ 		}
+ 	}
++
++	if (!event->attr.watermark) {
++		int wakeup_events = event->attr.wakeup_events;
++
++		if (wakeup_events) {
++			struct ring_buffer *rb = handle->rb;
++			int events = local_inc_return(&rb->events);
++
++			if (events >= wakeup_events) {
++				local_sub(wakeup_events, &rb->events);
++				local_inc(&rb->wakeup);
++			}
++		}
++	}
+ }
+ 
+ void perf_prepare_sample(struct perf_event_header *header,
