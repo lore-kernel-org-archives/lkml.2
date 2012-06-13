@@ -1,62 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751539Ab2FMEli (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 00:41:38 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:35022 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750786Ab2FMElh convert rfc822-to-8bit (ORCPT
+	id S1751746Ab2FMEmW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 00:42:22 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:45607 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751206Ab2FMEmV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 00:41:37 -0400
+	Wed, 13 Jun 2012 00:42:21 -0400
+X-AuditID: 9c93016f-b7c3cae000001954-b8-4fd81a29b1cd
+Message-ID: <4FD81A31.5080708@kernel.org>
+Date: Wed, 13 Jun 2012 13:42:25 +0900
+From: Minchan Kim <minchan@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-From: Bryan Wu <bryan.wu@canonical.com>
-Date: Wed, 13 Jun 2012 12:41:15 +0800
-X-Google-Sender-Auth: NWmgrBtpA9SPBzLTdBgEhtkDwzc
-Message-ID: <CAK5ve-L08mx3-wwpaXOjoaTBnOEgCFS3RqprQ+Jg0gUoqNY_zw@mail.gmail.com>
-Subject: [GIT PULL] LED subsystem fixes for 3.5-rc2
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>
+Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
+To: John Stultz <john.stultz@linaro.org>
+CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
+        Andrea Righi <andrea@betterlinux.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Taras Glek <tgek@mozilla.com>, Mike Hommey <mh@glandium.org>,
+        Jan Kara <jack@suse.cz>, "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH 3/3] [RFC] tmpfs: Add FALLOC_FL_MARK_VOLATILE/UNMARK_VOLATILE
+ handlers
+References: <1338575387-26972-1-git-send-email-john.stultz@linaro.org> <1338575387-26972-4-git-send-email-john.stultz@linaro.org> <4FC9235F.5000402@gmail.com>	<4FC92E30.4000906@linaro.org> <4FC9360B.4020401@gmail.com>	<4FC937AD.8040201@linaro.org> <4FC9438B.1000403@gmail.com>	<4FC94F61.20305@linaro.org> <4FCFB4F6.6070308@gmail.com>	<4FCFEE36.3010902@linaro.org> <CAO6Zf6D++8hOz19BmUwQ8iwbQknQRNsF4npP4r-830j04vbj=g@mail.gmail.com> <4FD13C30.2030401@linux.vnet.ibm.com> <4FD16B6E.8000307@linaro.org> <4FD1848B.7040102@gmail.com> <4FD2C6C5.1070900@linaro.org> <4FD6ECE2.6070901@kernel.org> <4FD79A14.5090801@linaro.org> <4FD7DA71.70500@kernel.org> <4FD7EAFF.1090509@linaro.org>
+In-Reply-To: <4FD7EAFF.1090509@linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus:
+On 06/13/2012 10:21 AM, John Stultz wrote:
 
-Please consider the following changes since commit
-cfaf025112d3856637ff34a767ef785ef5cf2ca9:
+> On 06/12/2012 05:10 PM, Minchan Kim wrote:
+>> On 06/13/2012 04:35 AM, John Stultz wrote:
+>>
+>>> On 06/12/2012 12:16 AM, Minchan Kim wrote:
+>>>> Please, Cced linux-mm.
+>>>>
+>>>> On 06/09/2012 12:45 PM, John Stultz wrote:
+>>>>
+>>>>
+>>>>> volatile.  Since we assume ranges are un-touched when volatile, that
+>>>>> should preserve LRU purging behavior on single node systems and on
+>>>>> multi-node systems it will approximate fairly closely.
+>>>>>
+>>>>> My main concern with this approach is marking and unmarking volatile
+>>>>> ranges needs to be fast, so I'm worried about the additional
+>>>>> overhead of
+>>>>> activating each of the containing pages on mark_volatile.
+>>>> Yes. it could be a problem if range is very large and populated
+>>>> already.
+>>>> Why can't we make new hooks?
+>>>>
+>>>> Just concept for showing my intention..
+>>>>
+>>>> +int shrink_volatile_pages(struct zone *zone)
+>>>> +{
+>>>> +       int ret = 0;
+>>>> +       if (zone_page_state(zone, NR_ZONE_VOLATILE))
+>>>> +               ret = shmem_purge_one_volatile_range();
+>>>> +       return ret;
+>>>> +}
+>>>> +
+>>>>    static void shrink_zone(struct zone *zone, struct scan_control *sc)
+>>>>    {
+>>>>           struct mem_cgroup *root = sc->target_mem_cgroup;
+>>>> @@ -1827,6 +1835,18 @@ static void shrink_zone(struct zone *zone,
+>>>> struct scan_control *sc)
+>>>>                   .priority = sc->priority,
+>>>>           };
+>>>>           struct mem_cgroup *memcg;
+>>>> +       int ret;
+>>>> +
+>>>> +       /*
+>>>> +        * Before we dive into trouble maker, let's look at easy-
+>>>> +        * reclaimable pages and avoid costly-reclaim if possible.
+>>>> +        */
+>>>> +       do {
+>>>> +               ret = shrink_volatile_pages();
+>>>> +               if (ret)
+>>>> +                       zone_watermark_ok(zone, sc->order, xxx);
+>>>> +                               return;
+>>>> +       } while(ret)
+>>> Hmm. I'm confused.
+>>> This doesn't seem that different from the shrinker approach.
+>>
+>> Shrinker is called after shrink_list so it means normal pages can be
+>> reclaimed
+>> before we reclaim volatile pages. We shouldn't do that.
+> 
+> 
+> Ah. Ok. Maybe that's a reasonable compromise between the shrinker
+> approach and the more complex approach I just posted to lkml?
+> (Forgive me for forgetting to CC you and linux-mm with my latest post!)
 
-  Linux 3.5-rc2 (2012-06-08 18:40:09 -0700)
 
-are available in the git repository at:
+NP.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/cooloney/linux-leds.git
-fixes-for-3.5
+> 
+>>> How does this resolve the numa-unawareness issue that Kosaki-san brought
+>>> up?
+>> Basically, I think your shrink function should be more smart.
+>>
+>> when fallocate is called, we can get mem_policy from shmem_inode_info
+>> and pass it to
+>> volatile_range so that volatile_range can keep the information of NUMA.
+> Hrm.. That sounds reasonable. I'll look into the mem_policy bits and try
+> to learn more.
+> 
+>> When shmem_purge_one_volatile_range is called, it receives zone
+>> information.
+>> So shmem_purge_one_volatile_range should find a range matched with
+>> NUMA policy and
+>> passed zone.
+>>
+>> Assumption:
+>>    A range may include same node/zone pages if possible.
+>>
+>> I am not familiar with NUMA handling code so KOSAKI/Rik can point out
+>> if I am wrong.
+> Right, the range may cross nodes/zones but maybe that's not a huge deal?
+> The only bit I'd worry about is the lru scanning being non-constant as
+> we searched for a range that matched the node we want to free from. I
+> guess we could have per-node/zone lrus.
 
-for you to fetch changes up to 9473c4c16700ec965904f23234fd0f8677ce6231:
 
-  leds: Make LEDS_ASIC3 and LEDS_RENESAS_TPU depend on LEDS_CLASS=y
-(2012-06-12 10:56:25 +0800)
+Good.
 
-----------------------------------------------------------------
-Axel Lin (1):
-      leds: Make LEDS_ASIC3 and LEDS_RENESAS_TPU depend on LEDS_CLASS=y
+> 
+> 
+>>>>> The other question I have with this approach is if we're on a system
+>>>>> that doesn't have swap, it *seems* (not totally sure I understand it
+>>>>> yet) the tmpfs file pages will be skipped over when we call
+>>>>> shrink_lruvec.  So it seems we may need to add a new lru_list enum and
+>>>>> nr[] entry (maybe LRU_VOLATILE?).   So then it may be that when we
+>>>>> mark
+>>>>> a range as volatile, instead of just activating it, we move it to the
+>>>>> volatile lru, and then when we shrink from that list, we call back to
+>>>>> the filesystem to trigger the entire range purging.
+>>>> Adding new LRU idea might make very slow fallocate(VOLATILE) so I hope
+>>>> we can avoid that if possible.
+>>> Indeed. This is a major concern. I'm currently prototyping it out so I
+>>> have a concrete sense of the performance cost.
+>> If performance loss isn't big, that would be a approach!
+> I've not had a chance yet to measure it, as I wanted to get my very
+> rough patches out for discussion first. But if folks don't nack it
+> outright I'll be providing some data there.  The hard part is that range
+> creation would have a linear cost with the number of pages in the range,
+> which at some point will be a pain.
 
-Jeffrin Jose (1):
-      leds: fixed a coding style issue.
 
-Rafal Prylowski (1):
-      leds: don't disable blinking when writing the same value to
-delay_on or delay_off
+That's right. So IMHO, my suggestion could be a solution.
+I looked through your new patchset[5/6]. I know your intention but code still have problems.
+But I didn't commented out. Before the detail review, I would like to hear opinions from others
+and am curious about that whether you decide turning the approach or not.
+It can save our precious time. :) 
 
- drivers/leds/Kconfig     |    4 ++--
- drivers/leds/led-class.c |    2 +-
- drivers/leds/led-core.c  |    7 -------
- 3 files changed, 3 insertions(+), 10 deletions(-)
+> 
+> Thanks again for your input!
+> -john
+
+
+Thanks for your effort!
 
 -- 
-Bryan Wu <bryan.wu@canonical.com>
-Kernel Developer    +86.186-168-78255 Mobile
-Canonical Ltd.      www.canonical.com
-Ubuntu - Linux for human beings | www.ubuntu.com
+Kind regards,
+Minchan Kim
