@@ -1,125 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752477Ab2FMGGc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 02:06:32 -0400
-Received: from audible.transient.net ([216.254.12.79]:60218 "HELO
-	audible.transient.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751342Ab2FMGGa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 02:06:30 -0400
-Date: Wed, 13 Jun 2012 06:06:28 +0000
-From: Jamie Heilman <jamie@audible.transient.net>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: "J. Bruce Fields" <bfields@redhat.com>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: NFSv4 regression, kernel BUG at fs/nfsd/nfs4state.c:1044!
-Message-ID: <20120613060627.GA11421@cucamonga.audible.transient.net>
-Mail-Followup-To: "J. Bruce Fields" <bfields@fieldses.org>,
-	"J. Bruce Fields" <bfields@redhat.com>, linux-nfs@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <20120610090342.GA5076@cucamonga.audible.transient.net>
- <20120611161425.GF31109@pad.fieldses.org>
- <20120612101339.GB30293@cucamonga.audible.transient.net>
- <20120612111802.GI31109@pad.fieldses.org>
- <20120612123644.GA16430@fieldses.org>
+	id S1752660Ab2FMGNh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 02:13:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3902 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752327Ab2FMGNf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 02:13:35 -0400
+Message-ID: <4FD82F89.80106@redhat.com>
+Date: Wed, 13 Jun 2012 08:13:29 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120612123644.GA16430@fieldses.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dave Chinner <david@fromorbit.com>
+CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>, xfs@oss.sgi.com
+Subject: Re: [PATCH 0/2] Add FALLOC_FL_ZERO_RANGE to fallocate
+References: <1339515364-17374-1-git-send-email-pbonzini@redhat.com> <20120613013549.GO22848@dastard> <20120613033052.GT22848@dastard>
+In-Reply-To: <20120613033052.GT22848@dastard>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-J. Bruce Fields wrote:
-> On Tue, Jun 12, 2012 at 07:18:03AM -0400, J. Bruce Fields wrote:
-> > On Tue, Jun 12, 2012 at 10:13:39AM +0000, Jamie Heilman wrote:
-> > > J. Bruce Fields wrote:
-> > > > On Sun, Jun 10, 2012 at 09:03:42AM +0000, Jamie Heilman wrote:
-> > > > > Upgrading my NFSv4 server from 3.3.8 to 3.4.2 I've managed to
-> > > > > reproduce this reliably:
-> > > > > 
-> > > > > ------------[ cut here ]------------
-> > > > > kernel BUG at fs/nfsd/nfs4state.c:1044!
-> > > > 
-> > > > That's 
-> > > > 
-> > > > 	free_client(struct nfs4_client *clp)
-> > > > 	{
-> > > > --->        	BUG_ON(!spin_is_locked(&client_lock));
-> > > > 
-> > > > 
-> > > > > invalid opcode: 0000 [#1] 
-> > > > > Modules linked in: md5 cpufreq_conservative cpufreq_stats cpufreq_powersave cpufreq_ondemand autofs4 quota_v2 quota_tree nfsd nfs_acl exportfs nfs lockd fscache auth_rpcgss sunrpc xt_mark xt_dscp cls_fw sch_htb iptable_nat nf_nat ipt_REJECT xt_multiport xt_mac xt_tcpudp iptable_mangle nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack xt_LOG xt_limit iptable_filter ip_tables x_tables dm_crypt dm_mod snd_hda_codec_via tpm_tis tpm via_rhine snd_hda_intel snd_hda_codec tpm_bios mii via_velocity snd_hwdep snd_pcm snd_timer snd soundcore snd_page_alloc evdev crc_ccitt via_agp agpgart button
-> > > > > 
-> > > > > Pid: 1804, comm: nfsd Not tainted 3.4.2 #3 To Be Filled By O.E.M. To Be Filled By O.E.M./To be filled by O.E.M.
-> > > > > EIP: 0060:[<f86ac683>] EFLAGS: 00010246 CPU: 0
-> > > > > EIP is at free_client.isra.47+0x3/0x5 [nfsd]
-> > > > > EAX: 00000000 EBX: e9d48800 ECX: e9d48030 EDX: f86b20f8
-> > > > > ESI: e9d48810 EDI: e9cf9ec0 EBP: e9cf9eb4 ESP: e9cf9eb4
-> > > > >  DS: 007b ES: 007b FS: 0000 GS: 00e0 SS: 0068
-> > > > > CR0: 8005003b CR2: b760bee0 CR3: 34d04000 CR4: 000006b0
-> > > > > DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
-> > > > > DR6: ffff0ff0 DR7: 00000400
-> > > > > Process nfsd (pid: 1804, ti=e9cf8000 task=e9cf4000 task.ti=e9cf8000)
-> > > > > Stack:
-> > > > >  e9cf9ed4 f86a6c00 e9d48828 e9cf9ec0 e9cf9ec0 e9d48800 e9d48000 00000000
-> > > > >  e9cf9f00 f86a6d36 00000000 000555c0 f53c0001 4fd43f69 00000001 7ad0b2a0
-> > > > >  f4c45000 f4c44060 00000360 e9cf9f3c f869f63c f86aff20 e9cb9000 00000000
-> > > > > Call Trace:
-> > > > >  [<f86a6c00>] expire_client+0xb1/0xb9 [nfsd]
-> > > > 
-> > > > And the only free_client call there is:
-> > > > 
-> > > > 	spin_lock(&client_lock);
-> > > > 	unhash_client_locked(clp);
-> > > > 	if (atomic_read(&clp->cl_refcount) == 0)
-> > > > --->		free_client(clp);
-> > > > 	spin_unlock(&client_lock);
-> > > > 
-> > > > So, that's strange.
-> > > 
-> > > OK, other observations which may or may not have any value:
-> > > - I can't trigger the BUG if I build with CONFIG_SMP (which obviously
-> > >   changes the RCU as well)
-> > > - I can't trigger the BUG if I build with CONFIG_DEBUG_SPINLOCK
-> > 
-> > Oh, OK, so probably spin_is_locked() just isn't reliable in the
-> > !CONFIG_SMP case.  That would make sense.
-> > 
-> > So at a minimum we should change that BUG_ON to a WARN_ON_ONCE.
-> 
-> Doh.  Googline around--looks like we want something like this.
-> 
-> I've got a couple other bugfixes to collect and then I'll try to get
-> this to Linus by the end of the week.
-> 
-> --b.
-> 
-> 
-> commit 4cdc12ca178dfa74a9619451be41419617424a07
-> Author: J. Bruce Fields <bfields@redhat.com>
-> Date:   Tue Jun 12 08:28:48 2012 -0400
-> 
->     nfsd4: BUG_ON(!is_spin_locked()) no good on UP kernels
->     
->     Most frequent symptom was a BUG triggering in expire_client, with the
->     server locking up shortly thereafter.
->     
->     Introduced by 508dc6e110c6dbdc0bbe84298ccfe22de7538486 "nfsd41:
->     free_session/free_client must be called under the client_lock".
->     
->     Cc: stable@kernel.org
->     Cc: Benny Halevy <bhalevy@tonian.com>
->     Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Il 13/06/2012 05:30, Dave Chinner ha scritto:
+>> > 
+>> > Also, a minor nit, but you should credit where this code has
+>> > originated from in the commit messages, and describe the use case
+>> > for requiring it. i.e. based on:
+>> > 
+>> > http://permalink.gmane.org/gmane.linux.file-systems/62449
 
-Yeah, this fixes the BUG for me.  It's looking like my issues with
-"RPC: fragment too large" may be something else entirely at this
-point, I've noticed other weird network behavior that I'm gonna have
-to try to isolate before I keep blaming nfs changes.  Though for some
-reason my /proc/fs/nfsd/max_block_size ends up only 128KiB w/3.4 where
-it was 512KiB w/3.3.  But all that aside, this patch fixes the BUG I was
-seeing, so thanks!
+Interesting, I didn't know this---I wrote the code from scratch.
 
--- 
-Jamie Heilman                     http://audible.transient.net/~jamie/
+I took the description from the man pages ("This operation is a fast
+method of overwriting any from the range specified with zeros without
+removing any blocks or having to write zeros to disk"), so perhaps those
+will have to be patched as well.
+
+> Oh, and you'll need to provide a new xfstests test based on 242 that
+> uses the new fallocate interface, and to do that you'll also need to
+> add support for the new fallocate function in xfs_io.
+
+Sure.  Thanks for the hints, I'll submit a v2 (may take a while as I'll
+leave for holiday soon).
+
+Paolo
