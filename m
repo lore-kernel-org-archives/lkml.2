@@ -1,80 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754406Ab2FMTPE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 15:15:04 -0400
-Received: from sd-mail-sa-01.sanoma.fi ([158.127.18.161]:41008 "EHLO
-	sd-mail-sa-01.sanoma.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752321Ab2FMTPC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 15:15:02 -0400
-Message-ID: <20120613221458.21085iwxklwljhwc@www.81.fi>
-Date: Wed, 13 Jun 2012 22:14:58 +0300
-From: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
-To: Johannes Goetzfried 
-	<Johannes.Goetzfried@informatik.stud.uni-erlangen.de>
-Cc: Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org,
-        David Miller <davem@davemloft.net>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: Re: linux-next: Tree for Jun 13 (crypto)
-References: <20120613155440.14672516ffaf5b01f91bb0a2@canb.auug.org.au>
- <4FD8BB95.4000307@xenotime.net> <20120613200317.20733xjrnmv47y04@www.81.fi>
- <20120613190540.GY17705@kronos.redsun>
-In-Reply-To: <20120613190540.GY17705@kronos.redsun>
+	id S1754565Ab2FMTPZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 15:15:25 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:48025 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754467Ab2FMTPS convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 15:15:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.7)
+In-Reply-To: <4FD8DDC3.1070903@arm.com>
+References: <1339596420-18127-1-git-send-email-javi.merino@arm.com>
+	<CAJe_Zhfv2WdQYyQZE9KrFYHQajmBh31jQk7N26BtYSL20TaCyQ@mail.gmail.com>
+	<4FD8DDC3.1070903@arm.com>
+Date: Thu, 14 Jun 2012 00:45:16 +0530
+Message-ID: <CAJe_ZheY6o3Sg5i5RJNfff4m5-m_UQJ8_VOFQTP1FuumOR3VbA@mail.gmail.com>
+Subject: Re: [PATCH] DMA: PL330: Fix racy mutex unlock
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: Javi Merino <javi.merino@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        "vinod.koul@intel.com" <vinod.koul@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Johannes Goetzfried  
-<Johannes.Goetzfried@informatik.stud.uni-erlangen.de>:
-
-> On Wed, Jun 13, 2012 at 08:03:17PM +0300, Jussi Kivilinna wrote:
->> >arch/x86/crypto/serpent-avx-x86_64.o: In function `serpent_xts_decrypt':
->> >(.text+0x856c): multiple definition of `serpent_xts_decrypt'
->> >arch/x86/crypto/serpent-sse2-x86_64.o:(.text+0xae8): first defined here
->>
->> Reverting commit e2f4d85d5b2049a90859aa10de914ed31a4f17a4, "crypto:
->> serpent - add common glue code for avx and sse2 implementation",
->> should help for most.
->>
->> >arch/x86/crypto/serpent-avx-x86_64.o: In function `serpent_dec_blk_8way':
->> >(.text+0x3d70): multiple definition of `serpent_dec_blk_8way'
->> >arch/x86/crypto/serpent-avx-x86_64.o: In function `__serpent_enc_blk_8way':
->> >(.text+0x0): multiple definition of `__serpent_enc_blk_8way'
->>
->> Attached patch should solve these (patch depends on above revert).
+On 14 June 2012 00:06, Javi Merino <javi.merino@arm.com> wrote:
 >
-> I'm really sorry about this, it shouldn't have happened. The most easiest
-> solution to this problem would be to make the choice between
-> CRYPTO_SERPENT_SSE2_X86_64 and CRYPTO_SERPENT_AVX_X86_64 an  
-> exclusive-or choice
-> in crypto/Kconfig. I don't think there is an use-case, where somebody would
-> want to link both implementations into the same kernel image or even  
-> load both
-> implementations as module. This would avoid duplicating the glue-code again.
-
-I'd think that most common use-case is distro-kernel, where all and  
-everything is enabled by default.
-
+> Ok, the description sucks.  Let me try to describe it with the scenario that
+> failed:
 >
-> Another possibility would be to add a serpent-common-x86_64 module, but this
-> wouldn't be a trivial change and imo a little bit too much just to avoid
-> duplicating this code.
+> Core 0:
+> - Two DMA transactions finish, in channels 0 and 1.
+> - pl330_update() is called, the "Event-Interrupt Status Register" (ES)
+>  is 0x3.
+> - In the "for (ev = 0;..." loop
+>  + two pointers are stored in pl330->req_done:
+>    pl330->channels[0]->req[0] and pl330->channels[1]->req[0]
+> - In the "while (!list_empty.." loop,
+>  + r = pl330->channels[0]->req[0]->r
+>  + Release the pl330_lock and call _callback()
+>
+> Core 1:
+> - pl330_submit_req() for channel 1
+> - Grab the pl330_lock
+> - Hook a request in pl330->channels[1]->req[0]->r
+> - Release the pl330_lock
+>
+> Core 0:
+> - _callback() returns
+> - Acquire the pl330_lock again
+> - second iteration of "while (!list_empty.." loop,
+>  + r = pl330->channels[1]->req[0]->r , but you get the r that has just
+>    been scheduled, not the one that finished.
+>
+Thanks for detailed explanation of the bug.
 
-I'm working on patch-set that takes common glue code from  
-serpent-sse2, serpent-avx, twofish-3way, twofish-avx and  
-camellia-x86_64, to shared ablk_helper and glue_helper modules.
+I see, it's not safe across channels. Another option could be taking
+channel's lock in update and submit.
 
--Jussi
-
-
-
+Acked-by: Jassi Brar <jaswinder.singh@linaro.org>
