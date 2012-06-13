@@ -1,267 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753238Ab2FMI2x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 04:28:53 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:40118 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753112Ab2FMI2t (ORCPT
+	id S1752744Ab2FMI2M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 04:28:12 -0400
+Received: from [65.55.88.11] ([65.55.88.11]:57978 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1751182Ab2FMI2C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 04:28:49 -0400
-X-AuditID: cbfee61b-b7fcc6d000003a7a-08-4fd84f40912e
-From: Sangbeom Kim <sbkim73@samsung.com>
-To: "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>,
-        "'Liam Girdwood'" <lrg@ti.com>
-Cc: linux-kernel@vger.kernel.org, sameo@linux.intel.com, sbkim01@gmail.com
-Subject: [PATCH 5/5] regulator: Support AP watchdog reset operation for s5m8767a
-Date: Wed, 13 Jun 2012 17:28:47 +0900
-Message-id: <042301cd493e$8d95d7e0$a8c187a0$@com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac1JPo1uIP2e6nyTSZ6oGo6nBAZ24w==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKLMWRmVeSWpSXmKPExsVy+t9jAV0H/xv+BmuPcllc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6M+Qu/sxZcsqk4c34dawPjKYMuRk4OCQETiYXv/rBA2GISF+6t
-	Z+ti5OIQEljEKPHkWRczhDOXSeLUxJlgVWwCGhIrd79lA7FFBMIkZs5aCRZnFvCSuNHcxghi
-	CwsESOy7v5QVxGYRUJX4vn8tWD2vgKHE1PZZLBC2oMSPyfegerUk1u88zgRhy0tsXvMWaDEH
-	0EXqEo/+6kKs0pPYsa6FHaJERGLfi3eMExgFZiGZNAvJpFlIJs1C0rKAkWUVo2hqQXJBcVJ6
-	rpFecWJucWleul5yfu4mRnBgPpPewbiqweIQowAHoxIPb5DbDX8h1sSy4srcQ4wSHMxKIrzF
-	W6/7C/GmJFZWpRblxxeV5qQWH2KU5mBREudtsr7gLySQnliSmp2aWpBaBJNl4uCUamBk1Ty5
-	J7Voda9flPe0GI7DBZatR04t+B23dq58K2urwx2rD7mxTMkT+JbtOvR8oXzzaTklYS6tjzOe
-	Tj0sIXt1otQcec1JfJGh9v4zBJTu1GxrTN7AHsQRXG7v77fPaN5umX/aJ68YqHaIKPu8dXqw
-	f6e+lqCGqHxWV9Pdn1e+8p29V9STEK7EUpyRaKjFXFScCABMLJwGSAIAAA==
-X-TM-AS-MML: No
+	Wed, 13 Jun 2012 04:28:02 -0400
+X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(zzzz1202hzz8275bhz2ei87h2a8h668h839hd24he5bhe96h)
+X-FB-DOMAIN-IP-MATCH: fail
+From: Sonic Zhang <sonic.adi@gmail.com>
+To: Wolfram Sang <w.sang@pengutronix.de>, Ben Dooks <ben-linux@fluff.org>
+CC: <linux-i2c@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        <uclinux-dist-devel@blackfin.uclinux.org>,
+        Sonic Zhang <sonic.zhang@analog.com>
+Subject: [PATCH 2/8 v2] i2c: i2c-bfin-twi: Improve the patch for bug "Illegal i2c bus lock upon certain transfer scenarios".
+Date: Wed, 13 Jun 2012 16:22:41 +0800
+Message-ID: <1339575767-22985-2-git-send-email-sonic.adi@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1339575767-22985-1-git-send-email-sonic.adi@gmail.com>
+References: <1339575767-22985-1-git-send-email-sonic.adi@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After AP watchdog reset, S5M8767A should be reset too.
-If AP is set on lowest voltage, AP can't execute boot sequence.
-This patch support watchdog reset of s5m8767.
+From: Sonic Zhang <sonic.zhang@analog.com>
 
-Signed-off-by: Sangbeom Kim <sbkim73@samsung.com>
+For transfer counts > 255 bytes i2c-bfin-twi sets the data
+transfer counter DCNT to 0xFF indicating unlimited transfers.
+It then uses a flag iface->manual_stop to manually issue the STOP
+condition, once the required amount of bytes are received.
+
+We found that on I2C receive operation issuing the STOP condition
+together with a FULL RCV FIFO (2bytes) will cause SDA and SCL be
+constantly driven low.
+
+This patch stops receiving operation immediately in last rx interrupt.
+This patch also wakes up waiting process when transfer completes.
+Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
 ---
- drivers/regulator/s5m8767.c          |  137 +++++++++++++++++++++++-----------
- include/linux/mfd/s5m87xx/s5m-core.h |    5 +
- 2 files changed, 98 insertions(+), 44 deletions(-)
+ drivers/i2c/busses/i2c-bfin-twi.c |   43 ++++++++++++++++++++----------------
+ 1 files changed, 24 insertions(+), 19 deletions(-)
 
-diff --git a/drivers/regulator/s5m8767.c b/drivers/regulator/s5m8767.c
-index 770e4df..533bde6 100644
---- a/drivers/regulator/s5m8767.c
-+++ b/drivers/regulator/s5m8767.c
-@@ -41,6 +41,7 @@ struct s5m8767_info {
- 	u8 buck3_vol[8];
- 	u8 buck4_vol[8];
- 	int buck_gpios[3];
-+	int buck_ds[3];
- 	int buck_gpioindex;
- };
- 
-@@ -283,17 +284,17 @@ static int s5m8767_get_voltage_register(struct regulator_dev *rdev, int *_reg)
- 		reg = S5M8767_REG_BUCK1CTRL2;
- 		break;
- 	case S5M8767_BUCK2:
--		reg = S5M8767_REG_BUCK2DVS1;
-+		reg = S5M8767_REG_BUCK2DVS2;
- 		if (s5m8767->buck2_gpiodvs)
- 			reg += s5m8767->buck_gpioindex;
- 		break;
- 	case S5M8767_BUCK3:
--		reg = S5M8767_REG_BUCK3DVS1;
-+		reg = S5M8767_REG_BUCK3DVS2;
- 		if (s5m8767->buck3_gpiodvs)
- 			reg += s5m8767->buck_gpioindex;
- 		break;
- 	case S5M8767_BUCK4:
--		reg = S5M8767_REG_BUCK4DVS1;
-+		reg = S5M8767_REG_BUCK4DVS2;
- 		if (s5m8767->buck4_gpiodvs)
- 			reg += s5m8767->buck_gpioindex;
- 		break;
-@@ -512,7 +513,7 @@ static __devinit int s5m8767_pmic_probe(struct platform_device *pdev)
- 	struct regulator_config config = { };
- 	struct regulator_dev **rdev;
- 	struct s5m8767_info *s5m8767;
--	int i, ret, size;
-+	int i, ret, size, buck_init;
- 
- 	if (!pdata) {
- 		dev_err(pdev->dev.parent, "Platform data not supplied\n");
-@@ -563,12 +564,37 @@ static __devinit int s5m8767_pmic_probe(struct platform_device *pdev)
- 	s5m8767->buck_gpios[0] = pdata->buck_gpios[0];
- 	s5m8767->buck_gpios[1] = pdata->buck_gpios[1];
- 	s5m8767->buck_gpios[2] = pdata->buck_gpios[2];
-+	s5m8767->buck_ds[0] = pdata->buck_ds[0];
-+	s5m8767->buck_ds[1] = pdata->buck_ds[1];
-+	s5m8767->buck_ds[2] = pdata->buck_ds[2];
+diff --git a/drivers/i2c/busses/i2c-bfin-twi.c b/drivers/i2c/busses/i2c-bfin-twi.c
+index 33031f0..dbe8fa0 100644
+--- a/drivers/i2c/busses/i2c-bfin-twi.c
++++ b/drivers/i2c/busses/i2c-bfin-twi.c
+@@ -130,21 +130,25 @@ static void bfin_twi_handle_interrupt(struct bfin_twi_iface *iface,
+ 			}
+ 			iface->transPtr++;
+ 			iface->readNum--;
+-		} else if (iface->manual_stop) {
+-			/* Temporary workaround to avoid possible bus stall -
+-			 * Flush FIFO before issuing the STOP condition
+-			 */
+-			read_RCV_DATA16(iface);
+-			write_MASTER_CTL(iface,
+-				read_MASTER_CTL(iface) | STOP);
+-		} else if (iface->cur_mode == TWI_I2C_MODE_REPEAT &&
+-		           iface->cur_msg + 1 < iface->msg_num) {
+-			if (iface->pmsg[iface->cur_msg + 1].flags & I2C_M_RD)
+-				write_MASTER_CTL(iface,
+-					read_MASTER_CTL(iface) | RSTART | MDIR);
+-			else
++		}
 +
- 	s5m8767->ramp_delay = pdata->buck_ramp_delay;
- 	s5m8767->buck2_ramp = pdata->buck2_ramp_enable;
- 	s5m8767->buck3_ramp = pdata->buck3_ramp_enable;
- 	s5m8767->buck4_ramp = pdata->buck4_ramp_enable;
- 	s5m8767->opmode = pdata->opmode;
- 
-+	buck_init = s5m8767_convert_voltage_to_sel(&buck_voltage_val2,
-+						pdata->buck2_init,
-+						pdata->buck2_init +
-+						buck_voltage_val2.step);
-+
-+	s5m_reg_write(s5m8767->iodev, S5M8767_REG_BUCK2DVS2, buck_init);
-+
-+	buck_init = s5m8767_convert_voltage_to_sel(&buck_voltage_val2,
-+						pdata->buck3_init,
-+						pdata->buck3_init +
-+						buck_voltage_val2.step);
-+
-+	s5m_reg_write(s5m8767->iodev, S5M8767_REG_BUCK3DVS2, buck_init);
-+
-+	buck_init = s5m8767_convert_voltage_to_sel(&buck_voltage_val2,
-+						pdata->buck4_init,
-+						pdata->buck4_init +
-+						buck_voltage_val2.step);
-+
-+	s5m_reg_write(s5m8767->iodev, S5M8767_REG_BUCK4DVS2, buck_init);
-+
- 	for (i = 0; i < 8; i++) {
- 		if (s5m8767->buck2_gpiodvs) {
- 			s5m8767->buck2_vol[i] =
-@@ -598,48 +624,71 @@ static __devinit int s5m8767_pmic_probe(struct platform_device *pdev)
++		if (iface->readNum == 0) {
++			if (iface->manual_stop) {
++				/* Temporary workaround to avoid possible bus stall -
++				 * Flush FIFO before issuing the STOP condition
++				 */
++				read_RCV_DATA16(iface);
+ 				write_MASTER_CTL(iface,
+-					(read_MASTER_CTL(iface) | RSTART) & ~MDIR);
++					read_MASTER_CTL(iface) | STOP);
++			} else if (iface->cur_mode == TWI_I2C_MODE_REPEAT &&
++					iface->cur_msg + 1 < iface->msg_num) {
++				if (iface->pmsg[iface->cur_msg + 1].flags & I2C_M_RD)
++					write_MASTER_CTL(iface,
++						read_MASTER_CTL(iface) | RSTART | MDIR);
++				else
++					write_MASTER_CTL(iface,
++						(read_MASTER_CTL(iface) | RSTART) & ~MDIR);
++			}
  		}
  	}
+ 	if (twi_int_status & MERR) {
+@@ -245,12 +249,13 @@ static void bfin_twi_handle_interrupt(struct bfin_twi_iface *iface,
+ 				}
+ 			}
  
--	if (pdata->buck2_gpiodvs || pdata->buck3_gpiodvs ||
--		pdata->buck4_gpiodvs) {
--		if (gpio_is_valid(pdata->buck_gpios[0]) &&
--			gpio_is_valid(pdata->buck_gpios[1]) &&
--			gpio_is_valid(pdata->buck_gpios[2])) {
--			ret = gpio_request(pdata->buck_gpios[0],
--						"S5M8767 SET1");
--			if (ret == -EBUSY)
--				dev_warn(&pdev->dev, "Duplicated gpio request for SET1\n");
--
--			ret = gpio_request(pdata->buck_gpios[1],
--					   "S5M8767 SET2");
--			if (ret == -EBUSY)
--				dev_warn(&pdev->dev, "Duplicated gpio request for SET2\n");
--
--			ret = gpio_request(pdata->buck_gpios[2],
--					   "S5M8767 SET3");
--			if (ret == -EBUSY)
--				dev_warn(&pdev->dev, "Duplicated gpio request for SET3\n");
--			/* SET1 GPIO */
--			gpio_direction_output(pdata->buck_gpios[0],
--					(s5m8767->buck_gpioindex >> 2) & 0x1);
--			/* SET2 GPIO */
--			gpio_direction_output(pdata->buck_gpios[1],
--					(s5m8767->buck_gpioindex >> 1) & 0x1);
--			/* SET3 GPIO */
--			gpio_direction_output(pdata->buck_gpios[2],
--					(s5m8767->buck_gpioindex >> 0) & 0x1);
--			ret = 0;
--		} else {
--			dev_err(&pdev->dev, "GPIO NOT VALID\n");
--			ret = -EINVAL;
--			return ret;
--		}
-+	if (gpio_is_valid(pdata->buck_gpios[0]) &&
-+		gpio_is_valid(pdata->buck_gpios[1]) &&
-+		gpio_is_valid(pdata->buck_gpios[2])) {
-+		ret = gpio_request(pdata->buck_gpios[0], "S5M8767 SET1");
-+		if (ret == -EBUSY)
-+			dev_warn(&pdev->dev, "Duplicated gpio request"
-+				" for SET1\n");
-+
-+		ret = gpio_request(pdata->buck_gpios[1], "S5M8767 SET2");
-+		if (ret == -EBUSY)
-+			dev_warn(&pdev->dev, "Duplicated gpio request"
-+				" for SET2\n");
-+
-+		ret = gpio_request(pdata->buck_gpios[2], "S5M8767 SET3");
-+		if (ret == -EBUSY)
-+			dev_warn(&pdev->dev, "Duplicated gpio request"
-+					" for SET3\n");
-+		/* SET1 GPIO */
-+		gpio_direction_output(pdata->buck_gpios[0],
-+				(s5m8767->buck_gpioindex >> 2) & 0x1);
-+		/* SET2 GPIO */
-+		gpio_direction_output(pdata->buck_gpios[1],
-+				(s5m8767->buck_gpioindex >> 1) & 0x1);
-+		/* SET3 GPIO */
-+		gpio_direction_output(pdata->buck_gpios[2],
-+				(s5m8767->buck_gpioindex >> 0) & 0x1);
-+		ret = 0;
-+
-+	} else {
-+		dev_err(&pdev->dev, "GPIO NOT VALID\n");
-+		ret = -EINVAL;
-+		return ret;
+-			if (iface->pmsg[iface->cur_msg].len <= 255)
+-					write_MASTER_CTL(iface,
++			if (iface->pmsg[iface->cur_msg].len <= 255) {
++				write_MASTER_CTL(iface,
+ 					(read_MASTER_CTL(iface) &
+ 					(~(0xff << 6))) |
+-				(iface->pmsg[iface->cur_msg].len << 6));
+-			else {
++					(iface->pmsg[iface->cur_msg].len << 6));
++				iface->manual_stop = 0;
++			} else {
+ 				write_MASTER_CTL(iface,
+ 					(read_MASTER_CTL(iface) |
+ 					(0xff << 6)));
+@@ -264,8 +269,8 @@ static void bfin_twi_handle_interrupt(struct bfin_twi_iface *iface,
+ 			write_INT_MASK(iface, 0);
+ 			write_MASTER_CTL(iface, 0);
+ 		}
++		complete(&iface->complete);
  	}
+-	complete(&iface->complete);
+ }
  
--	s5m_reg_update(s5m8767->iodev, S5M8767_REG_BUCK2CTRL,
--			(pdata->buck2_gpiodvs) ? (1 << 1) : (0 << 1), 1 << 1);
--	s5m_reg_update(s5m8767->iodev, S5M8767_REG_BUCK3CTRL,
--			(pdata->buck3_gpiodvs) ? (1 << 1) : (0 << 1), 1 << 1);
--	s5m_reg_update(s5m8767->iodev, S5M8767_REG_BUCK4CTRL,
--			(pdata->buck4_gpiodvs) ? (1 << 1) : (0 << 1), 1 << 1);
-+	ret = gpio_request(pdata->buck_ds[0], "S5M8767 DS2");
-+	if (ret == -EBUSY)
-+		dev_warn(&pdev->dev, "Duplicated gpio request for DS2\n");
-+
-+	ret = gpio_request(pdata->buck_ds[1], "S5M8767 DS3");
-+	if (ret == -EBUSY)
-+		dev_warn(&pdev->dev, "Duplicated gpio request for DS3\n");
-+
-+	ret = gpio_request(pdata->buck_ds[2], "S5M8767 DS4");
-+	if (ret == -EBUSY)
-+		dev_warn(&pdev->dev, "Duplicated gpio request for DS4\n");
-+
-+	/* DS2 GPIO */
-+	gpio_direction_output(pdata->buck_ds[0], 0x0);
-+	/* DS3 GPIO */
-+	gpio_direction_output(pdata->buck_ds[1], 0x0);
-+	/* DS4 GPIO */
-+	gpio_direction_output(pdata->buck_ds[2], 0x0);
-+
-+	if (pdata->buck2_gpiodvs || pdata->buck3_gpiodvs ||
-+	   pdata->buck4_gpiodvs) {
-+		s5m_reg_update(s5m8767->iodev, S5M8767_REG_BUCK2CTRL,
-+				(pdata->buck2_gpiodvs) ? (1 << 1) : (0 << 1),
-+				1 << 1);
-+		s5m_reg_update(s5m8767->iodev, S5M8767_REG_BUCK3CTRL,
-+				(pdata->buck3_gpiodvs) ? (1 << 1) : (0 << 1),
-+				1 << 1);
-+		s5m_reg_update(s5m8767->iodev, S5M8767_REG_BUCK4CTRL,
-+				(pdata->buck4_gpiodvs) ? (1 << 1) : (0 << 1),
-+				1 << 1);
-+	}
- 
- 	/* Initialize GPIO DVS registers */
- 	for (i = 0; i < 8; i++) {
-diff --git a/include/linux/mfd/s5m87xx/s5m-core.h b/include/linux/mfd/s5m87xx/s5m-core.h
-index 21603b4..0b2e0ed 100644
---- a/include/linux/mfd/s5m87xx/s5m-core.h
-+++ b/include/linux/mfd/s5m87xx/s5m-core.h
-@@ -347,6 +347,7 @@ struct s5m_platform_data {
- 	bool				buck_voltage_lock;
- 
- 	int				buck_gpios[3];
-+	int				buck_ds[3];
- 	int				buck2_voltage[8];
- 	bool				buck2_gpiodvs;
- 	int				buck3_voltage[8];
-@@ -369,6 +370,10 @@ struct s5m_platform_data {
- 	bool                            buck2_ramp_enable;
- 	bool                            buck3_ramp_enable;
- 	bool                            buck4_ramp_enable;
-+
-+	int				buck2_init;
-+	int				buck3_init;
-+	int				buck4_init;
- };
- 
- #endif /*  __LINUX_MFD_S5M_CORE_H */
+ /* Interrupt handler */
 -- 
-1.7.1
+1.7.0.4
 
 
