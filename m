@@ -1,99 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753641Ab2FMK2Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 06:28:16 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:34423 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753531Ab2FMK2M (ORCPT
+	id S1753403Ab2FMK2E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 06:28:04 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:55340 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752885Ab2FMK2B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 06:28:12 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
-        rientjes@google.com, mhocko@suse.cz, akpm@linux-foundation.org,
-        hannes@cmpxchg.org
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -V9 01/15] hugetlb: rename max_hstate to hugetlb_max_hstate
-Date: Wed, 13 Jun 2012 15:57:20 +0530
-Message-Id: <1339583254-895-2-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1339583254-895-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-References: <1339583254-895-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-x-cbid: 12061310-9574-0000-0000-00000328041E
+	Wed, 13 Jun 2012 06:28:01 -0400
+Date: Wed, 13 Jun 2012 11:31:33 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Christian Gmeiner <christian.gmeiner@gmail.com>
+Cc: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>,
+        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <greg@kroah.com>
+Subject: Re: gma500: Cannot find any crtc or sizes - going 1024x768
+Message-ID: <20120613113133.38c1ca8a@pyramind.ukuu.org.uk>
+In-Reply-To: <CAH9NwWdF+zukb1r1z6ES6ULeg3dkFzhvhBq1xzjrqjWx-O3cOA@mail.gmail.com>
+References: <CAH9NwWd1F3Vw2zrQJh8Jazm45C_BAH3H3-qupvm2XaLgDOM=QQ@mail.gmail.com>
+	<CAMeQTsZfE8_t6DCr3UWVqnOLyxNuNh7_VxJmqiP+enBBqM0o_A@mail.gmail.com>
+	<CAH9NwWc3W6zHCFf9rwKg5NMQaWnh4A=xVVysmG1Y=eUMzu=18Q@mail.gmail.com>
+	<CAMeQTsaknGLR2QCWwN8kYKh8y=JJtqN-ZSty6YTKnAOv2Vp3XQ@mail.gmail.com>
+	<CAH9NwWdmhmLB5io5RWVQBj6c7zjXT9hFa7OAHVrL6oY8P0kjaw@mail.gmail.com>
+	<20120612132736.642a4a5a@pyramind.ukuu.org.uk>
+	<CAMeQTsZZ0ay7YqkzUzkhe6D6FNsQXaDKHfJKB6_6icd=4VemrA@mail.gmail.com>
+	<20120612170412.359967ec@pyramind.ukuu.org.uk>
+	<CAH9NwWdF+zukb1r1z6ES6ULeg3dkFzhvhBq1xzjrqjWx-O3cOA@mail.gmail.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+> My company is using these cpu bords for our products:
+> http://www.congatec.com/en/products/qseven/dView/conga-qa6.html
+> 
+> With firmware you mean BIOS or VBios or ...? If you tell me what you need, I may
+> ask our supplier for more informations. I can tell you that the
+> following options can be
+> changed in the BIOS regarding gfx - see
+> https://www.dropbox.com/s/btlciurz0ih4fhu/IMG_20120612_143431.jpg
 
-Rename max_hstate to hugetlb_max_hstate. We will be using this from other
-subsystems like hugetlb controller in later patches.
+The basic question is:
 
-Acked-by: David Rientjes <rientjes@google.com>
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Acked-by: Hillf Danton <dhillf@gmail.com>
-Acked-by: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
----
- mm/hugetlb.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+Does this device use the Intel BIOS way of reporting mode information,
+or the embedded "GCT" style.
 
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index e198831..c868309 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -34,7 +34,7 @@ const unsigned long hugetlb_zero = 0, hugetlb_infinity = ~0UL;
- static gfp_t htlb_alloc_mask = GFP_HIGHUSER;
- unsigned long hugepages_treat_as_movable;
- 
--static int max_hstate;
-+static int hugetlb_max_hstate;
- unsigned int default_hstate_idx;
- struct hstate hstates[HUGE_MAX_HSTATE];
- 
-@@ -46,7 +46,7 @@ static unsigned long __initdata default_hstate_max_huge_pages;
- static unsigned long __initdata default_hstate_size;
- 
- #define for_each_hstate(h) \
--	for ((h) = hstates; (h) < &hstates[max_hstate]; (h)++)
-+	for ((h) = hstates; (h) < &hstates[hugetlb_max_hstate]; (h)++)
- 
- /*
-  * Protects updates to hugepage_freelists, nr_huge_pages, and free_huge_pages
-@@ -1897,9 +1897,9 @@ void __init hugetlb_add_hstate(unsigned order)
- 		printk(KERN_WARNING "hugepagesz= specified twice, ignoring\n");
- 		return;
- 	}
--	BUG_ON(max_hstate >= HUGE_MAX_HSTATE);
-+	BUG_ON(hugetlb_max_hstate >= HUGE_MAX_HSTATE);
- 	BUG_ON(order == 0);
--	h = &hstates[max_hstate++];
-+	h = &hstates[hugetlb_max_hstate++];
- 	h->order = order;
- 	h->mask = ~((1ULL << (order + PAGE_SHIFT)) - 1);
- 	h->nr_huge_pages = 0;
-@@ -1920,10 +1920,10 @@ static int __init hugetlb_nrpages_setup(char *s)
- 	static unsigned long *last_mhp;
- 
- 	/*
--	 * !max_hstate means we haven't parsed a hugepagesz= parameter yet,
-+	 * !hugetlb_max_hstate means we haven't parsed a hugepagesz= parameter yet,
- 	 * so this hugepages= parameter goes to the "default hstate".
- 	 */
--	if (!max_hstate)
-+	if (!hugetlb_max_hstate)
- 		mhp = &default_hstate_max_huge_pages;
- 	else
- 		mhp = &parsed_hstate->max_huge_pages;
-@@ -1942,7 +1942,7 @@ static int __init hugetlb_nrpages_setup(char *s)
- 	 * But we need to allocate >= MAX_ORDER hstates here early to still
- 	 * use the bootmem allocator.
- 	 */
--	if (max_hstate && parsed_hstate->order >= MAX_ORDER)
-+	if (hugetlb_max_hstate && parsed_hstate->order >= MAX_ORDER)
- 		hugetlb_hstate_alloc_pages(parsed_hstate);
- 
- 	last_mhp = mhp;
--- 
-1.7.10
+If you look in oaktrail_device.c you'll see it tries mid_chip_setup() and
+then if that fails to find data it calls psb_intel_init_bios(). Which is
+in use. Also if the mid style one is in use what happens if you change
+mid_get_vbt_data in mid_bios.c so that it just does
+
+	vbt->size = 0;
+	return;
+
+
+Alan
+
 
