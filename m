@@ -1,63 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752491Ab2FMHoY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 03:44:24 -0400
-Received: from mga11.intel.com ([192.55.52.93]:14959 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752178Ab2FMHoW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 03:44:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="179294523"
-Message-ID: <4FD8445E.9070502@intel.com>
-Date: Wed, 13 Jun 2012 15:42:22 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+	id S1752052Ab2FMHpb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 03:45:31 -0400
+Received: from smtprelay02.ispgateway.de ([80.67.18.44]:43789 "EHLO
+	smtprelay02.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750932Ab2FMHpa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 03:45:30 -0400
+X-Greylist: delayed 405 seconds by postgrey-1.27 at vger.kernel.org; Wed, 13 Jun 2012 03:45:30 EDT
+Date: Wed, 13 Jun 2012 09:38:49 +0200
+Message-ID: <20120613093849.Horde.mruRClm5A05P2EOJUErGqvA@mail.selhorst.net>
+From: Marcel Selhorst <tpmdd@selhorst.net>
+To: Peter Huewe <peter.huewe@infineon.com>
+Cc: srajiv@linux.vnet.ibm.com, tpmdd-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>,
+        Luigi Semenzato <semenzato@google.com>, andi.shyti@gmail.com,
+        Bryan Freed <bfreed@chromium.org>
+Subject: Re: [PATCH 2/2] CHROMIUM: tpm: tpm_i2c_infineon: Lock the I2C
+ adapter for a sequence of requests.
+References: <1339505034-6400-1-git-send-email-peter.huewe@infineon.com>
+ <1339505034-6400-2-git-send-email-peter.huewe@infineon.com>
+In-Reply-To: <1339505034-6400-2-git-send-email-peter.huewe@infineon.com>
+User-Agent: Internet Messaging Program (IMP) H4 (5.0.8)
+Content-Type: text/plain; charset=; format=flowed; DelSp=Yes
 MIME-Version: 1.0
-To: Alex Shi <alex.shi@intel.com>
-CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, arnd@arndb.de,
-        rostedt@goodmis.org, fweisbec@gmail.com, jeremy@goop.org,
-        seto.hidetoshi@jp.fujitsu.com, borislav.petkov@amd.com,
-        tony.luck@intel.com, luto@mit.edu, riel@redhat.com, avi@redhat.com,
-        len.brown@intel.com, tj@kernel.org, akpm@linux-foundation.org,
-        cl@gentwo.org, ak@linux.intel.com, jbeulich@suse.com,
-        eric.dumazet@gmail.com, akinobu.mita@gmail.com, cpw@sgi.com,
-        penberg@kernel.org, steiner@sgi.com, viro@zeniv.linux.org.uk,
-        kamezawa.hiroyu@jp.fujitsu.com, aarcange@redhat.com,
-        rientjes@google.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v8 0/8] x86 TLB flush range optimizing
-References: <1339492005-20241-1-git-send-email-alex.shi@intel.com>
-In-Reply-To: <1339492005-20241-1-git-send-email-alex.shi@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Df-Sender: MTc0NDk5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/12/2012 05:06 PM, Alex Shi wrote:
 
-> This version patches rebases on 3.5-rc2 kernel. It does some code clean up,
-> change patches sequency to make it looks more logical.
-> It also includes xen code change according to Jan Beulich's comments,
-> includes comments update of tlb flushing IPI according to PeterZ's suggestions.
-> 
-> And Adding the flush_tlb_kernel_range support by invlpg.
-> 
-> Thanks for all comments! and appreciate for more. :) 
+Signed-off-by: Marcel Selhorst <tpmdd@selhorst.net>
 
+Zitat von Peter Huewe <peter.huewe@infineon.com>:
 
-Any comments for this patch set. Specially on the 8th patch?
+> From: Bryan Freed <bfreed@chromium.org>
+>
+> This is derived from Peter Huewe's recommended fix:
+>
+> On some ChromeOS systems, a TPM sharing the I2C bus with another device
+> gets confused when it sees I2C requests to that other device.
+> This change locks the I2C adapter for the duration of the full sequence
+> of I2C requests the TPM needs to complete.
+>
+> smbus_xfer is not supported, but SMBUS is not supported by the original
+> driver, either.
+>
+> Signed-off-by: Bryan Freed <bfreed@chromium.org>
+> Signed-off-by: Peter Huewe <peter.huewe@infineon.com>
+> ---
+>  drivers/char/tpm/tpm_i2c_infineon.c |   45  
+> +++++++++++++++++++++++++++++++---
+>  1 files changed, 41 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/char/tpm/tpm_i2c_infineon.c  
+> b/drivers/char/tpm/tpm_i2c_infineon.c
+> index 54b9a5e..1794a09 100644
+> --- a/drivers/char/tpm/tpm_i2c_infineon.c
+> +++ b/drivers/char/tpm/tpm_i2c_infineon.c
+> @@ -68,6 +68,31 @@ struct tpm_inf_dev {
+>  static struct tpm_inf_dev tpm_dev;
+>  static struct i2c_driver tpm_tis_i2c_driver;
+>
+> +
+> +/*
+> + * Copy i2c-core:i2c_transfer() as close as possible without the  
+> adapter locks
+> + * and algorithm check.  These are done by the caller for atomicity.
+> + * Unfortunately we have to use this as a workaround in multislave  
+> environments
+> + * as no other suitable and working mechanism is available.
+> + */
+> +static int i2c_transfer_nolock(struct i2c_adapter *adap, struct  
+> i2c_msg *msgs,
+> +			       int num)
+> +{
+> +	unsigned long orig_jiffies;
+> +	int ret, try;
+> +
+> +	/* Retry automatically on arbitration loss */
+> +	orig_jiffies = jiffies;
+> +	for (ret = 0, try = 0; try <= adap->retries; try++) {
+> +		ret = adap->algo->master_xfer(adap, msgs, num);
+> +		if (ret != -EAGAIN)
+> +			break;
+> +		if (time_after(jiffies, orig_jiffies + adap->timeout))
+> +			break;
+> +	}
+> +	return ret;
+> +}
+> +
+>  /*
+>   * iic_tpm_read() - read from TPM register
+>   * @addr: register address to read from
+> @@ -96,8 +121,13 @@ static int iic_tpm_read(u8 addr, u8 *buffer, size_t len)
+>  	int rc;
+>  	int count;
+>
+> +	/* Lock the adapter for the duration of the whole sequence. */
+> +	if (!tpm_dev.client->adapter->algo->master_xfer)
+> +		return -EOPNOTSUPP;
+> +	i2c_lock_adapter(tpm_dev.client->adapter);
+> +
+>  	for (count = 0; count < MAX_COUNT; count++) {
+> -		rc = i2c_transfer(tpm_dev.client->adapter, &msg1, 1);
+> +		rc = i2c_transfer_nolock(tpm_dev.client->adapter, &msg1, 1);
+>  		if (rc > 0)
+>  			break;	/* break here to skip sleep */
+>
+> @@ -105,19 +135,21 @@ static int iic_tpm_read(u8 addr, u8 *buffer,  
+> size_t len)
+>  	}
+>
+>  	if (rc <= 0)
+> -		return -EIO;
+> +		goto out;
+>
+>  	/* After the TPM has successfully received the register address it needs
+>  	 * some time, thus we're sleeping here again, before retrieving the data
+>  	 */
+>  	for (count = 0; count < MAX_COUNT; count++) {
+>  		usleep_range(SLEEP_DURATION_LOW, SLEEP_DURATION_HI);
+> -		rc = i2c_transfer(tpm_dev.client->adapter, &msg2, 1);
+> +		rc = i2c_transfer_nolock(tpm_dev.client->adapter, &msg2, 1);
+>  		if (rc > 0)
+>  			break;
+>
+>  	}
+>
+> +out:
+> +	i2c_unlock_adapter(tpm_dev.client->adapter);
+>  	if (rc <= 0)
+>  		return -EIO;
+>
+> @@ -136,6 +168,10 @@ static int iic_tpm_write_generic(u8 addr, u8  
+> *buffer, size_t len,
+>  	if (len > TPM_BUFSIZE)
+>  		return -EINVAL;
+>
+> +	if (!tpm_dev.client->adapter->algo->master_xfer)
+> +		return -EOPNOTSUPP;
+> +	i2c_lock_adapter(tpm_dev.client->adapter);
+> +
+>  	/* prepend the 'register address' to the buffer */
+>  	tpm_dev.buf[0] = addr;
+>  	memcpy(&(tpm_dev.buf[1]), buffer, len);
+> @@ -145,13 +181,14 @@ static int iic_tpm_write_generic(u8 addr, u8  
+> *buffer, size_t len,
+>  	 * cannot rely on the standard behavior of i2c_transfer.
+>  	 */
+>  	for (count = 0; count < max_count; count++) {
+> -		rc = i2c_transfer(tpm_dev.client->adapter, &msg1, 1);
+> +		rc = i2c_transfer_nolock(tpm_dev.client->adapter, &msg1, 1);
+>  		if (rc > 0)
+>  			break;
+>
+>  		usleep_range(sleep_low, sleep_hi);
+>  	}
+>
+> +	i2c_unlock_adapter(tpm_dev.client->adapter);
+>  	if (rc <= 0)
+>  		return -EIO;
+>
+> --
+> 1.7.6.msysgit.0
 
-> 
-> Alex Shi
-> 
-> [PATCH v8 1/8] x86/tlb_info: get last level TLB entry number of CPU
-> [PATCH v8 2/8] x86/flush_tlb: try flush_tlb_single one by one in
-> [PATCH v8 3/8] x86/tlb: fall back to flush all when meet a THP large
-> [PATCH v8 4/8] x86/tlb: add tlb_flushall_shift for specific CPU
-> [PATCH v8 5/8] x86/tlb: add tlb_flushall_shift knob into debugfs
-> [PATCH v8 6/8] x86/tlb: enable tlb flush range support for generic
-> [PATCH v8 7/8] x86/tlb: replace INVALIDATE_TLB_VECTOR by
-> [PATCH v8 8/8] x86/tlb: do flush_tlb_kernel_range by 'invlpg'
 
 
