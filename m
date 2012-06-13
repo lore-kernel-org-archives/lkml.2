@@ -1,87 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753351Ab2FMIaM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 04:30:12 -0400
-Received: from [65.55.88.11] ([65.55.88.11]:57978 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1752335Ab2FMI2I (ORCPT
+	id S1752773Ab2FMIcp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 04:32:45 -0400
+Received: from casper.infradead.org ([85.118.1.10]:55968 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752144Ab2FMIcn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 04:28:08 -0400
-X-Forefront-Antispam-Report: CIP:137.71.25.55;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta1.analog.com;RD:nwd2mail10.analog.com;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(zzzz1202hzz8275bhz2ei87h2a8h668h839hd24he5bhe96h)
-X-FB-DOMAIN-IP-MATCH: fail
-From: Sonic Zhang <sonic.adi@gmail.com>
-To: Wolfram Sang <w.sang@pengutronix.de>, Ben Dooks <ben-linux@fluff.org>
-CC: <linux-i2c@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        <uclinux-dist-devel@blackfin.uclinux.org>,
-        Sonic Zhang <sonic.zhang@analog.com>
-Subject: [PATCH 7/8 v2] i2c: i2c-bfin-twi: Move TWI peripheral pin request array to platform data.
-Date: Wed, 13 Jun 2012 16:22:46 +0800
-Message-ID: <1339575767-22985-7-git-send-email-sonic.adi@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1339575767-22985-1-git-send-email-sonic.adi@gmail.com>
-References: <1339575767-22985-1-git-send-email-sonic.adi@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 13 Jun 2012 04:32:43 -0400
+Message-ID: <1339576348.31548.114.camel@twins>
+Subject: Re: [PATCH] perf/x86: check ucode before disabling PEBS on
+ SandyBridge
+From: Peter Zijlstra <peterz@infradead.org>
+To: Borislav Petkov <bp@amd64.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Stephane Eranian <eranian@google.com>,
+        linux-kernel@vger.kernel.org, andi@firstfloor.org, mingo@elte.hu,
+        ming.m.lin@intel.com, "Yu, Fenghua" <fenghua.yu@intel.com>
+Date: Wed, 13 Jun 2012 10:32:28 +0200
+In-Reply-To: <20120612194900.GC11137@aftab.osrc.amd.com>
+References: <20120607071531.GA4849@quad> <4FD78BE6.4060207@zytor.com>
+	 <20120612190720.GA11137@aftab.osrc.amd.com>
+	 <1339529614.31548.104.camel@twins>
+	 <20120612194900.GC11137@aftab.osrc.amd.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sonic Zhang <sonic.zhang@analog.com>
+On Tue, 2012-06-12 at 21:49 +0200, Borislav Petkov wrote:
+> 
+> But why, do you see a better option for how to tell the kernel to load a
+> binary blob early at boot? 
 
-Depend on commit cf93feb3a0dee97c7896016a352a3226139fbcf4
-
-Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
----
- drivers/i2c/busses/i2c-bfin-twi.c |   12 ++++--------
- 1 files changed, 4 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/i2c/busses/i2c-bfin-twi.c b/drivers/i2c/busses/i2c-bfin-twi.c
-index 5be1dc2..5c57623 100644
---- a/drivers/i2c/busses/i2c-bfin-twi.c
-+++ b/drivers/i2c/busses/i2c-bfin-twi.c
-@@ -78,11 +78,6 @@ DEFINE_TWI_REG(XMT_DATA16, 0x84)
- DEFINE_TWI_REG(RCV_DATA8, 0x88)
- DEFINE_TWI_REG(RCV_DATA16, 0x8C)
- 
--static const u16 pin_req[2][3] = {
--	{P_TWI0_SCL, P_TWI0_SDA, 0},
--	{P_TWI1_SCL, P_TWI1_SDA, 0},
--};
--
- static void bfin_twi_handle_interrupt(struct bfin_twi_iface *iface,
- 					unsigned short twi_int_status)
- {
-@@ -709,7 +704,8 @@ static int i2c_bfin_twi_probe(struct platform_device *pdev)
- 	p_adap->timeout = 5 * HZ;
- 	p_adap->retries = 3;
- 
--	rc = peripheral_request_list(pin_req[pdev->id], "i2c-bfin-twi");
-+	rc = peripheral_request_list((unsigned short *)pdev->dev.platform_data,
-+					"i2c-bfin-twi");
- 	if (rc) {
- 		dev_err(&pdev->dev, "Can't setup pin mux!\n");
- 		goto out_error_pin_mux;
-@@ -756,7 +752,7 @@ out_error_add_adapter:
- 	free_irq(iface->irq, iface);
- out_error_req_irq:
- out_error_no_irq:
--	peripheral_free_list(pin_req[pdev->id]);
-+	peripheral_free_list((unsigned short *)pdev->dev.platform_data);
- out_error_pin_mux:
- 	iounmap(iface->regs_base);
- out_error_ioremap:
-@@ -774,7 +770,7 @@ static int i2c_bfin_twi_remove(struct platform_device *pdev)
- 
- 	i2c_del_adapter(&(iface->adap));
- 	free_irq(iface->irq, iface);
--	peripheral_free_list(pin_req[pdev->id]);
-+	peripheral_free_list((unsigned short *)pdev->dev.platform_data);
- 	iounmap(iface->regs_base);
- 	kfree(iface);
- 
--- 
-1.7.0.4
+built it in? There's this feature where you can included firmware blobs
+in the kernel image. It has all the benefits of initrd, since the only
+time I ever would update initrd if used it, would be when I install a
+new kernel, which I just built anyway.
 
 
