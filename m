@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753261Ab2FMD53 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 23:57:29 -0400
-Received: from tama50.ecl.ntt.co.jp ([129.60.39.147]:42313 "EHLO
+	id S1753356Ab2FMD6N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 23:58:13 -0400
+Received: from tama50.ecl.ntt.co.jp ([129.60.39.147]:42324 "EHLO
 	tama50.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752471Ab2FMD50 (ORCPT
+	with ESMTP id S1751511Ab2FMD6L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 23:57:26 -0400
-Date: Wed, 13 Jun 2012 13:03:53 +0900
+	Tue, 12 Jun 2012 23:58:11 -0400
+Date: Wed, 13 Jun 2012 13:04:38 +0900
 From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
 To: akpm@linux-foundation.org
 Cc: bhutchings@solarflare.com, grundler@parisc-linux.org, arnd@arndb.de,
@@ -15,8 +15,8 @@ Cc: bhutchings@solarflare.com, grundler@parisc-linux.org, arnd@arndb.de,
         linux-net-drivers@solarflare.com, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
         kvm@vger.kernel.org, takuya.yoshikawa@gmail.com
-Subject: [PATCH 3/5] bitops: Introduce generic {clear,set}_bit_le()
-Message-Id: <20120613130353.ad204611.yoshikawa.takuya@oss.ntt.co.jp>
+Subject: [PATCH 4/5] powerpc: bitops: Introduce {clear,set}_bit_le()
+Message-Id: <20120613130438.b1cd04db.yoshikawa.takuya@oss.ntt.co.jp>
 In-Reply-To: <20120613130054.b5695621.yoshikawa.takuya@oss.ntt.co.jp>
 References: <20120613130054.b5695621.yoshikawa.takuya@oss.ntt.co.jp>
 X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
@@ -33,17 +33,17 @@ Needed to replace test_and_set_bit_le() in virt/kvm/kvm_main.c which is
 being used for this missing function.
 
 Signed-off-by: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 ---
- include/asm-generic/bitops/le.h |   10 ++++++++++
+ arch/powerpc/include/asm/bitops.h |   10 ++++++++++
  1 files changed, 10 insertions(+), 0 deletions(-)
 
-diff --git a/include/asm-generic/bitops/le.h b/include/asm-generic/bitops/le.h
-index f95c663..6173154 100644
---- a/include/asm-generic/bitops/le.h
-+++ b/include/asm-generic/bitops/le.h
-@@ -54,6 +54,16 @@ static inline int test_bit_le(int nr, const void *addr)
- 	return test_bit(nr ^ BITOP_LE_SWIZZLE, addr);
+diff --git a/arch/powerpc/include/asm/bitops.h b/arch/powerpc/include/asm/bitops.h
+index efdc926..dc2cf9c 100644
+--- a/arch/powerpc/include/asm/bitops.h
++++ b/arch/powerpc/include/asm/bitops.h
+@@ -288,6 +288,16 @@ static __inline__ int test_bit_le(unsigned long nr,
+ 	return (tmp[nr >> 3] >> (nr & 7)) & 1;
  }
  
 +static inline void set_bit_le(int nr, void *addr)
