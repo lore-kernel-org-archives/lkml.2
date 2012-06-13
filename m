@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754520Ab2FMO45 (ORCPT <rfc822;w@1wt.eu>);
+	id S1754537Ab2FMO47 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 10:56:59 -0400
+Received: from mga11.intel.com ([192.55.52.93]:35919 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754516Ab2FMO45 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 13 Jun 2012 10:56:57 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56209 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754490Ab2FMO4y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 10:56:54 -0400
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-scsi@vger.kernel.org, kvm@vger.kernel.org
-Subject: [PATCH 1/4] virtio-scsi: unlock during kick
-Date: Wed, 13 Jun 2012 16:56:31 +0200
-Message-Id: <1339599394-13880-2-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.7.10.2
-In-Reply-To: <1339599394-13880-1-git-send-email-pbonzini@redhat.com>
-References: <1339599394-13880-1-git-send-email-pbonzini@redhat.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="179480471"
+Date: Wed, 13 Jun 2012 07:56:56 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Alex Shi <alex.shi@intel.com>
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, arnd@arndb.de,
+        rostedt@goodmis.org, fweisbec@gmail.com, jeremy@goop.org,
+        seto.hidetoshi@jp.fujitsu.com, borislav.petkov@amd.com,
+        tony.luck@intel.com, luto@mit.edu, riel@redhat.com, avi@redhat.com,
+        len.brown@intel.com, tj@kernel.org, akpm@linux-foundation.org,
+        cl@gentwo.org, jbeulich@suse.com, eric.dumazet@gmail.com,
+        akinobu.mita@gmail.com, cpw@sgi.com, penberg@kernel.org,
+        steiner@sgi.com, viro@zeniv.linux.org.uk,
+        kamezawa.hiroyu@jp.fujitsu.com, aarcange@redhat.com,
+        rientjes@google.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v8 8/8] x86/tlb: do flush_tlb_kernel_range by 'invlpg'
+Message-ID: <20120613145656.GB32604@tassilo.jf.intel.com>
+References: <1339492005-20241-1-git-send-email-alex.shi@intel.com>
+ <1339492005-20241-9-git-send-email-alex.shi@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339492005-20241-9-git-send-email-alex.shi@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Separate virtqueue_kick_prepare from virtqueue_notify, so that the
-expensive vmexit is done without holding the lock.
+On Tue, Jun 12, 2012 at 05:06:45PM +0800, Alex Shi wrote:
+> This patch do flush_tlb_kernel_range by 'invlpg'. The performance pay
+> and gain was analyzed in my patch (x86/flush_tlb: try flush_tlb_single
+> one by one in flush_tlb_range). Now we move this logical into kernel
+> part. The pay is multiple 'invlpg' execution cost, that is same. but
+>  the gain(cost reducing of TLB entries refilling) is absoulutely
+> increased.
 
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
----
- drivers/scsi/virtio_scsi.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+The subtle point is whether INVLPG flushes global pages or not.
+After some digging I found a sentence in the SDM that says it does.
+So it may be safe.
 
-diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
-index 1b38431..b0ad5aa 100644
---- a/drivers/scsi/virtio_scsi.c
-+++ b/drivers/scsi/virtio_scsi.c
-@@ -264,9 +264,11 @@ static int virtscsi_kick_cmd(struct virtio_scsi *vscsi, struct virtqueue *vq,
- 
- 	ret = virtqueue_add_buf(vq, vscsi->sg, out_num, in_num, cmd, gfp);
- 	if (ret >= 0)
--		virtqueue_kick(vq);
-+		ret = virtqueue_kick_prepare(vq);
- 
- 	spin_unlock_irqrestore(&vscsi->vq_lock, flags);
-+	if (ret > 0)
-+		virtqueue_notify(vq);
- 	return ret;
- }
- 
--- 
-1.7.1
+What does it improve?
 
-
+-Andi
