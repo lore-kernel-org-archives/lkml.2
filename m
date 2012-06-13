@@ -1,149 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754602Ab2FMPgd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 11:36:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26940 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754526Ab2FMPgb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 11:36:31 -0400
-Message-ID: <4FD8B376.5030006@redhat.com>
-Date: Wed, 13 Jun 2012 12:36:22 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-CC: linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH v2 0/3] EDAC support for Calxeda Highbank
-References: <1339468334-9927-1-git-send-email-robherring2@gmail.com> <4FD7430B.6010005@redhat.com> <4FD8AA3C.6090100@gmail.com>
-In-Reply-To: <4FD8AA3C.6090100@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754469Ab2FMPh7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 11:37:59 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35049 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751802Ab2FMPh6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 11:37:58 -0400
+Message-ID: <1339601872.8980.52.camel@twins>
+Subject: Re: [PATCH] perf/x86: check ucode before disabling PEBS on
+ SandyBridge
+From: Peter Zijlstra <peterz@infradead.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Borislav Petkov <bp@amd64.org>, Stephane Eranian <eranian@google.com>,
+        linux-kernel@vger.kernel.org, andi@firstfloor.org, mingo@elte.hu,
+        ming.m.lin@intel.com, "Yu, Fenghua" <fenghua.yu@intel.com>
+Date: Wed, 13 Jun 2012 17:37:52 +0200
+In-Reply-To: <4FD89D09.6010800@zytor.com>
+References: <20120607071531.GA4849@quad> <4FD78BE6.4060207@zytor.com>
+	  <20120612190720.GA11137@aftab.osrc.amd.com>
+	  <1339529614.31548.104.camel@twins>
+	  <20120612194900.GC11137@aftab.osrc.amd.com> <4FD7A687.3040500@zytor.com>
+	  <20120612203730.GE11137@aftab.osrc.amd.com> <4FD7A99F.8030007@zytor.com>
+	  <20120612205609.GF11137@aftab.osrc.amd.com> <4FD7AD6F.6010008@zytor.com>
+	 <1339576681.31548.116.camel@twins> <4FD89D09.6010800@zytor.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rob,
+On Wed, 2012-06-13 at 07:00 -0700, H. Peter Anvin wrote:
+> On 06/13/2012 01:38 AM, Peter Zijlstra wrote:
+> > On Tue, 2012-06-12 at 13:58 -0700, H. Peter Anvin wrote:
+> >>  even things like Nehalem + Westmere in the same system
+> > 
+> > Uhm,.. how well do you expect Linux to run on a franken-system like
+> > that? I'm pretty sure perf will malfunction in such a setup.
+> > 
+> 
+> perf might, but I have seen such frankensystems in the field and they
+> work (although I haven't seen that particular combo, I have to admit.)
 
+Thing is, if we boot on the wsm, perf could fault the system with
+nonexistent MSR accesses, if we boot on the nhm worst is wrong numbers I
+think.
 
-Em 13-06-2012 11:57, Rob Herring escreveu:
-> Mauro,
-> 
-> On 06/12/2012 08:24 AM, Mauro Carvalho Chehab wrote:
->> Hi Rob,
->>
->> Em 11-06-2012 23:32, Rob Herring escreveu:
->>> From: Rob Herring <rob.herring@calxeda.com>
->>>
->>> This series adds EDAC support for Calxeda Highbank platform L2 and
->>> memory ECC hardware.
->>>
->>> This version is rebased current edac next tree for 3.6. Changes in
->>> this version are the addition of a common edac debugfs directory and
->>> coverting the highbank error injection to use debugfs.
->>
->> Thanks for the patches.
->>
->> It looks OK on my eyes, with regards to the EDAC API usage. While this patch
->> touches at the arm/devicetree stuff, most of the changes belong to EDAC, so
->> I'll apply them with my SOB on my tree.
->>
-> 
-> I found a build error when EDAC_DEBUG is turned off.
-> 
-> drivers/edac/highbank_mc_edac.c: In function 'highbank_mc_probe':
-> drivers/edac/highbank_mc_edac.c:215:9: error: 'struct mem_ctl_info' has no member named 'debugfs'
-> drivers/edac/highbank_mc_edac.c:216:50: error: 'struct mem_ctl_info' has no member named 'debugfs'
-> drivers/edac/highbank_mc_edac.c:218:10: error: 'highbank_mc_debug_inject_fops' undeclared (first use in this function)
-> 
-> 
-> Do you prefer I respin the patch or do you want a follow on patch?
-
-Both approaches work for me. As such patch fixes a compilation bug, fixing the existing
-patch is preferred.
-
-> This is what the fix looks like:
-> 
-> diff --git a/drivers/edac/highbank_mc_edac.c b/drivers/edac/highbank_mc_edac.c
-> index d00dc0b..3185961 100644
-> --- a/drivers/edac/highbank_mc_edac.c
-> +++ b/drivers/edac/highbank_mc_edac.c
-> @@ -124,6 +124,22 @@ static const struct file_operations highbank_mc_debug_inject_fops = {
->          .write = highbank_mc_err_inject_write,
->          .llseek = generic_file_llseek,
->   };
-> +
-> +static int __devinit highbank_mc_create_debugfs_nodes(struct mem_ctl_info *mci)
-> +{
-> +       if (!mci->debugfs)
-> +               return -ENODEV;
-> +
-> +       debugfs_create_file("inject_ctrl", S_IWUSR, mci->debugfs, mci,
-> +                           &highbank_mc_debug_inject_fops);
-> +
-> +       return 0;
-> +}
-> +#else
-> +static int __devinit highbank_mc_create_debugfs_nodes(struct mem_ctl_info *mci)
-> +{
-> +       return -ENODEV;
-> +}
->   #endif
->   
->   static int __devinit highbank_mc_probe(struct platform_device *pdev)
-> @@ -212,10 +228,7 @@ static int __devinit highbank_mc_probe(struct platform_device *pdev)
->          if (res < 0)
->                  goto err;
->   
-> -       if (mci->debugfs)
-> -               debugfs_create_file("inject_ctrl", S_IWUSR, mci->debugfs,
-> -                                   mci,
-> -                                   &highbank_mc_debug_inject_fops);
-> +       highbank_mc_create_debugfs_nodes(mci);
-
-I would just declare the function as void, as you're not using the returned argument.
-
->   
->          devres_close_group(&pdev->dev, NULL);
->          return 0;
-> 
-> 
-> Rob
-> 
->> Regards,
->> Mauro.
->>>
->>> Rob
->>>
->>> Rob Herring (3):
->>>     edac: create top-level debugfs directory
->>>     edac: add support for Calxeda highbank memory controller
->>>     edac: add support for Calxeda highbank L2 cache ecc
->>>
->>>    .../devicetree/bindings/arm/calxeda/l2ecc.txt      |   17 ++
->>>    .../devicetree/bindings/arm/calxeda/mem-ctrlr.txt  |   17 ++
->>>    arch/arm/boot/dts/highbank.dts                     |   12 +
->>>    drivers/edac/Kconfig                               |   16 +-
->>>    drivers/edac/Makefile                              |    4 +
->>>    drivers/edac/edac_mc_sysfs.c                       |   23 +-
->>>    drivers/edac/edac_module.c                         |    3 +
->>>    drivers/edac/edac_module.h                         |   14 ++
->>>    drivers/edac/highbank_l2_edac.c                    |  149 ++++++++++++
->>>    drivers/edac/highbank_mc_edac.c                    |  256 ++++++++++++++++++++
->>>    10 files changed, 509 insertions(+), 2 deletions(-)
->>>    create mode 100644 Documentation/devicetree/bindings/arm/calxeda/l2ecc.txt
->>>    create mode 100644 Documentation/devicetree/bindings/arm/calxeda/mem-ctrlr.txt
->>>    create mode 100644 drivers/edac/highbank_l2_edac.c
->>>    create mode 100644 drivers/edac/highbank_mc_edac.c
->>>
->>
->>
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-edac" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-
-
+I'm not really inclined to 'fix' this.. the best I'm willing to accept
+is a patch that would detect this situation and simply disable all
+hardware perf support for the platform.
