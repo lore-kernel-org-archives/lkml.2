@@ -1,47 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752426Ab2FMJGr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 05:06:47 -0400
-Received: from mail.fidal.it ([94.88.95.180]:58291 "EHLO server1.fidal.it"
+	id S1752560Ab2FMJJf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 05:09:35 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:60465 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751639Ab2FMJGp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 05:06:45 -0400
-X-Greylist: delayed 2456 seconds by postgrey-1.27 at vger.kernel.org; Wed, 13 Jun 2012 05:06:45 EDT
-Message-ID: <55843.41.58.45.101.1339575939.squirrel@webmail.fidal.it>
-Date: Wed, 13 Jun 2012 10:25:39 +0200 (CEST)
-Subject: ACHTUNG ACHTUNG (QUOTE ALERT)
-From: "WEBMAIL ADMIN" <tecnico.lazio@fidal.it>
-User-Agent: SquirrelMail/1.4.9a
+	id S1751144Ab2FMJJd convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 05:09:33 -0400
+From: "AnilKumar, Chimata" <anilkumar@ti.com>
+To: Axel Lin <axel.lin@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "Girdwood, Liam" <lrg@ti.com>
+Subject: RE: [PATCH RFT] regulator: tps65217: Convert to
+ regulator_[is_enabled|get_voltage_sel]_regmap
+Thread-Topic: [PATCH RFT] regulator: tps65217: Convert to
+ regulator_[is_enabled|get_voltage_sel]_regmap
+Thread-Index: AQHNSRRxSJBCL2eqoUaZnppvZVbxc5b39csQ
+Date: Wed, 13 Jun 2012 09:09:27 +0000
+Message-ID: <331ABD5ECB02734CA317220B2BBEABC13E9D5E60@DBDE01.ent.ti.com>
+References: <1339558031.26190.4.camel@phoenix>
+In-Reply-To: <1339558031.26190.4.camel@phoenix>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.133.24]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Scan: VAMS 1.60.2
-To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sehr geehrte Benutzer E-Mail,
+Hi Axel,
 
-Ihr Postfach hat es die Quote überschritten. Sie können nicht senden oder
-empfangen neue E-Mails, bis Sie Ihre account.if revalidate Sie nicht
-aktualisieren Sie Ihre E-Mail-Konto im Jahr 2012, müssen Sie es jetzt tun.
-Sie können erweitern 1GB E-Mail-Kontingent, verwenden Sie folgenden Link
-an:
+On Wed, Jun 13, 2012 at 08:57:11, Axel Lin wrote:
+> This patch converts .is_enabled and .get_voltage_sel to
+> regulator_is_enabled_regmap and regulator_get_voltage_sel_regmap.
+> 
+> For .enable, .disable, and .set_voltage_sel, the write protect level is either
+> 1 or 2. So we cannot use regulator_[enable|disable|set_voltage_sel]_regmap.
+> 
+> Now we store the enable reg/mask and vsel reg/mask in regulator_desc,
+> so we can remove enable_mask, set_vout_reg, and set_vout_mask from
+> struct tps_info.
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+> Hi AnilKumar,
+> Any chance to test this patch on your hardware?
 
-http://www.rochesterthecross.org/forms/use/editor/form1.html
+I will give the status in a day or two.
 
-Warnung!
-Wenn Sie dies nicht tun, werden in begrenztem Zugang zu Ihrem Postfach zur
-Folge haben. Scheitern auf Ihr Konto innerhalb von drei Tagen von diesem
-Update-Benachrichtigung aktualisieren, wird Ihr Konto dauerhaft
-geschlossen werden.
-
-Danke fuer die Benutzung unserer Web-Mail.
-
-unterzeichnet
-Es ist Service!
-Copyright © 2012 System Administrator ®
-
+Regards
+AnilKumar
