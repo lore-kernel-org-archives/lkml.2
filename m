@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754888Ab2FMXUU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 19:20:20 -0400
-Received: from mga09.intel.com ([134.134.136.24]:28906 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754470Ab2FMXUS convert rfc822-to-8bit (ORCPT
+	id S1754922Ab2FMXVM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 19:21:12 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:61445 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754836Ab2FMXVK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 19:20:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="152841868"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Seiji Aguchi <seiji.aguchi@hds.com>, Mike Waychison <mikew@google.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
-        "gong.chen@linux.intel.com" <gong.chen@linux.intel.com>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "rob@landley.net" <rob@landley.net>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: RE: [RFC][Patch]efi_pstore:Introduce an efi_pstore_overwrite
- parameter to avoid missing messages in NVRAM
-Thread-Topic: [RFC][Patch]efi_pstore:Introduce an efi_pstore_overwrite
- parameter to avoid missing messages in NVRAM
-Thread-Index: Ac1Jaf3kQfy2nRzQSNG3UORn8S5p+AAc0YIAAA6J6JAAGwBGkAAyPwIg
-Date: Wed, 13 Jun 2012 23:20:15 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F1930CA84@ORSMSX103.amr.corp.intel.com>
-References: <5C4C569E8A4B9B42A84A977CF070A35B2E5A4DB2B8@USINDEVS01.corp.hds.com>
- <CAGTjWtAb3XrsTtkvW=G0YN1RCVxYxcPksSh3jEogeEu4qWqv1Q@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F1930C820@ORSMSX103.amr.corp.intel.com>
- <5C4C569E8A4B9B42A84A977CF070A35B2E5A4DB451@USINDEVS01.corp.hds.com>
-In-Reply-To: <5C4C569E8A4B9B42A84A977CF070A35B2E5A4DB451@USINDEVS01.corp.hds.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 13 Jun 2012 19:21:10 -0400
 MIME-Version: 1.0
+In-Reply-To: <20120613105041.2d5dcdde6b9cf3dcfba3885d@canb.auug.org.au>
+References: <20120612145441.400975347f06785d391d0f8f@canb.auug.org.au>
+ <CAErSpo6LxpYz_WK2mHPW3RWkOMPLar0KUp1Pgh7shhOdmT49kw@mail.gmail.com> <20120613105041.2d5dcdde6b9cf3dcfba3885d@canb.auug.org.au>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 13 Jun 2012 17:20:46 -0600
+Message-ID: <CAErSpo5Lrk3=hgSd2j+OMLN7rS8kCo5Qr=bPCnDZQdyb=EbEzA@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the final tree (pci tree related)
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Should it be in pstore layer?
->  - introducing a new global variable storing a previous trigger.
->  - deciding if we can continue by checking a value of previous trigger at the beginning of pstore_dump().
+On Tue, Jun 12, 2012 at 6:50 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Bjorn,
+>
+> On Tue, 12 Jun 2012 09:31:49 -0600 Bjorn Helgaas <bhelgaas@google.com> wrote:
+>>
+>> Thanks, I folded this typo fix into the relevant patch.  I'll rebase
+>> "next" today.  Sorry for the trouble.
+>
+> I am not sure what you have done, but now you have a set of duplicated
+> commits in your tree including both versions of the one that caused the
+> build failure.
 
-I think not - the limitation is EFI (ERST can handle several errors, I think that the ramoops
-patches are working with the assumption that enough storage is available too).
+This is because of my inept git usage.  I think my "next" branch ended
+up with the right bits in it, but the history looked strange because I
+fixed the typo in the Yinghai branch, but had a second branch that
+depended on the original unfixed branch.
 
-The question is how easy is it for EFI to determine the "type" of the saved
-error (which may be from the previous booted kernel - so no use using a
-global variable ... the information needs to be in persistent store).
+I rebuilt my "next" branch again and I think it's more
+straightforward.  And I learned a tiny bit more about git, so thanks
+for pointing this out.
 
--Tony
+Bjorn
