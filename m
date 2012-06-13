@@ -1,48 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752660Ab2FMGNh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 02:13:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3902 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752327Ab2FMGNf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 02:13:35 -0400
-Message-ID: <4FD82F89.80106@redhat.com>
-Date: Wed, 13 Jun 2012 08:13:29 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>, xfs@oss.sgi.com
-Subject: Re: [PATCH 0/2] Add FALLOC_FL_ZERO_RANGE to fallocate
-References: <1339515364-17374-1-git-send-email-pbonzini@redhat.com> <20120613013549.GO22848@dastard> <20120613033052.GT22848@dastard>
-In-Reply-To: <20120613033052.GT22848@dastard>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752723Ab2FMGQS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 02:16:18 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:62494 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751104Ab2FMGQQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 02:16:16 -0400
+Subject: Re: [PATCH 1/3] net: lpc_eth: Replace WARN() trace with simple
+ pr_warn()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Roland Stigge <stigge@antcom.de>
+Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
+        srinivas.bakki@nxp.com, aletes.xgr@gmail.com,
+        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <1339442328.6001.2602.camel@edumazet-glaptop>
+References: <1339401793-12258-1-git-send-email-stigge@antcom.de>
+	 <1339403108.6001.1697.camel@edumazet-glaptop> <4FD5AE1D.9030807@antcom.de>
+	 <20120611.020352.1962768244524496467.davem@davemloft.net>
+	 <4FD5B9C8.4020800@antcom.de>  <1339442328.6001.2602.camel@edumazet-glaptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 13 Jun 2012 08:16:12 +0200
+Message-ID: <1339568172.22704.312.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 13/06/2012 05:30, Dave Chinner ha scritto:
->> > 
->> > Also, a minor nit, but you should credit where this code has
->> > originated from in the commit messages, and describe the use case
->> > for requiring it. i.e. based on:
->> > 
->> > http://permalink.gmane.org/gmane.linux.file-systems/62449
+On Mon, 2012-06-11 at 21:18 +0200, Eric Dumazet wrote:
+> On Mon, 2012-06-11 at 11:26 +0200, Roland Stigge wrote:
+> 
+> > Is it sensible at this point to increase the TX buffers anyway? For
+> > different reasons of course: We have enough SRAM available and TX
+> > buffers (16->32) are still more than RX buffers (48).
+> 
+> I doubt it has any impact on performance for a 100Mbit link ?
+> 
+> One thing that could be done would be to free skbs in
+> lpc_eth_hard_start_xmit() instead of __lpc_handle_xmit()
+> 
 
-Interesting, I didn't know this---I wrote the code from scratch.
+Here is the patch I was thinking about
 
-I took the description from the man pages ("This operation is a fast
-method of overwriting any from the range specified with zeros without
-removing any blocks or having to write zeros to disk"), so perhaps those
-will have to be patched as well.
+(on top of latest net-next)
 
-> Oh, and you'll need to provide a new xfstests test based on 242 that
-> uses the new fallocate interface, and to do that you'll also need to
-> add support for the new fallocate function in xfs_io.
+Could you please test it ?
 
-Sure.  Thanks for the hints, I'll submit a v2 (may take a while as I'll
-leave for holiday soon).
+ drivers/net/ethernet/nxp/lpc_eth.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-Paolo
+diff --git a/drivers/net/ethernet/nxp/lpc_eth.c b/drivers/net/ethernet/nxp/lpc_eth.c
+index 083d671..426f14c 100644
+--- a/drivers/net/ethernet/nxp/lpc_eth.c
++++ b/drivers/net/ethernet/nxp/lpc_eth.c
+@@ -440,7 +440,7 @@ struct netdata_local {
+ 	spinlock_t		lock;
+ 	void __iomem		*net_base;
+ 	u32			msg_enable;
+-	struct sk_buff		*skb[ENET_TX_DESC];
++	unsigned int		skblen[ENET_TX_DESC];
+ 	unsigned int		last_tx_idx;
+ 	unsigned int		num_used_tx_buffs;
+ 	struct mii_bus		*mii_bus;
+@@ -908,7 +908,7 @@ static void __lpc_handle_xmit(struct net_device *ndev)
+ 
+ 	txcidx = readl(LPC_ENET_TXCONSUMEINDEX(pldat->net_base));
+ 	while (pldat->last_tx_idx != txcidx) {
+-		skb = pldat->skb[pldat->last_tx_idx];
++		unsigned int skblen = pldat->skblen[pldat->last_tx_idx];
+ 
+ 		/* A buffer is available, get buffer status */
+ 		ptxstat = &pldat->tx_stat_v[pldat->last_tx_idx];
+@@ -945,9 +945,8 @@ static void __lpc_handle_xmit(struct net_device *ndev)
+ 		} else {
+ 			/* Update stats */
+ 			ndev->stats.tx_packets++;
+-			ndev->stats.tx_bytes += skb->len;
++			ndev->stats.tx_bytes += skblen;
+ 		}
+-		dev_kfree_skb_irq(skb);
+ 
+ 		txcidx = readl(LPC_ENET_TXCONSUMEINDEX(pldat->net_base));
+ 	}
+@@ -1132,7 +1131,7 @@ static int lpc_eth_hard_start_xmit(struct sk_buff *skb, struct net_device *ndev)
+ 	memcpy(pldat->tx_buff_v + txidx * ENET_MAXF_SIZE, skb->data, len);
+ 
+ 	/* Save the buffer and increment the buffer counter */
+-	pldat->skb[txidx] = skb;
++	pldat->skblen[txidx] = len;
+ 	pldat->num_used_tx_buffs++;
+ 
+ 	/* Start transmit */
+@@ -1147,6 +1146,7 @@ static int lpc_eth_hard_start_xmit(struct sk_buff *skb, struct net_device *ndev)
+ 
+ 	spin_unlock_irq(&pldat->lock);
+ 
++	dev_kfree_skb(skb);
+ 	return NETDEV_TX_OK;
+ }
+ 
+
+
