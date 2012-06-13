@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753577Ab2FMCB7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 22:01:59 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:59773 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752652Ab2FMCB5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 22:01:57 -0400
+	id S1753796Ab2FMCDk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 22:03:40 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:58361 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752913Ab2FMCDi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 22:03:38 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
@@ -14,9 +15,9 @@ Cc: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
         Alexander Shishkin <alexander.shishkin@linux.intel.com>,
         Mathieu Poirier <mathieu.poirier@linaro.org>,
         John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 07/15] ARM: etm: Return the entire trace buffer if it is empty after reset
-Date: Tue, 12 Jun 2012 19:01:25 -0700
-Message-Id: <1339552887-17204-8-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 03/15] ARM: etm: Don't try to clear the buffer full status after reading the buffer
+Date: Tue, 12 Jun 2012 19:01:21 -0700
+Message-Id: <1339552887-17204-4-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.3.2.146.gca209
 In-Reply-To: <1339552887-17204-1-git-send-email-john.stultz@linaro.org>
 References: <1339552887-17204-1-git-send-email-john.stultz@linaro.org>
@@ -24,18 +25,25 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12061302-5930-0000-0000-000008CBACAD
+x-cbid: 12061302-7282-0000-0000-000009DBDF1B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arve Hjønnevåg <arve@android.com>
 
-On some SOCs the read and write pointer are reset when the chip
-resets, but the trace buffer content is preserved. If the status
-bits indicates that the buffer is empty and we have never started
-tracing, assume the buffer is full instead. This can be useful
-if the system rebooted from a watchdog reset.
+If the write address was at the end of the buffer, toggling the trace
+capture bit would set the RAM-full status instead of clearing it, and
+if any of the stop bits in the formatter is set toggling the trace
+capture bit may not do anything.
+
+Instead use the read position to find out if the data has already
+been returned.
+
+This also fixes the read function so it works when the trace buffer is
+larger than the buffer passed in from user space. The old version
+would reset the trace buffer pointers after every read, so the second
+call to read would always return 0.
 
 CC: Russell King <linux@arm.linux.org.uk>
 CC: Paul Gortmaker <paul.gortmaker@windriver.com>
@@ -46,46 +54,122 @@ Acked-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 Signed-off-by: Arve Hjønnevåg <arve@android.com>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- arch/arm/kernel/etm.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+ arch/arm/kernel/etm.c |   58 ++++++++++++++++++++++---------------------------
+ 1 files changed, 26 insertions(+), 32 deletions(-)
 
 diff --git a/arch/arm/kernel/etm.c b/arch/arm/kernel/etm.c
-index 3d21cf6..74444e5 100644
+index d7622f9..a51bccc 100644
 --- a/arch/arm/kernel/etm.c
 +++ b/arch/arm/kernel/etm.c
-@@ -45,6 +45,7 @@ struct tracectx {
- 	unsigned long	range_end;
- 	unsigned long	data_range_start;
- 	unsigned long	data_range_end;
-+	bool		dump_initial_etb;
- 	struct device	*dev;
- 	struct clk	*emu_clk;
- 	struct mutex	mutex;
-@@ -106,6 +107,7 @@ static int trace_start(struct tracectx *t)
+@@ -92,6 +92,7 @@ static int trace_start(struct tracectx *t)
  
  	etb_unlock(t);
  
-+	t->dump_initial_etb = false;
- 	etb_writel(t, 0, ETBR_WRITEADDR);
++	etb_writel(t, 0, ETBR_WRITEADDR);
  	etb_writel(t, 0, ETBR_FORMATTERCTRL);
  	etb_writel(t, 1, ETBR_CTRL);
-@@ -312,6 +314,8 @@ static ssize_t etb_read(struct file *file, char __user *data,
- 	etb_unlock(t);
  
- 	total = etb_getdatalen(t);
-+	if (total == 0 && t->dump_initial_etb)
-+		total = t->etb_bufsz;
+@@ -185,24 +186,15 @@ static int trace_stop(struct tracectx *t)
+ static int etb_getdatalen(struct tracectx *t)
+ {
+ 	u32 v;
+-	int rp, wp;
++	int wp;
+ 
+ 	v = etb_readl(t, ETBR_STATUS);
+ 
+ 	if (v & 1)
+ 		return t->etb_bufsz;
+ 
+-	rp = etb_readl(t, ETBR_READADDR);
+ 	wp = etb_readl(t, ETBR_WRITEADDR);
+-
+-	if (rp > wp) {
+-		etb_writel(t, 0, ETBR_READADDR);
+-		etb_writel(t, 0, ETBR_WRITEADDR);
+-
+-		return 0;
+-	}
+-
+-	return wp - rp;
++	return wp;
+ }
+ 
+ /* sysrq+v will always stop the running trace and leave it at that */
+@@ -235,14 +227,6 @@ static void etm_dump(void)
+ 		printk("%08x", cpu_to_be32(etb_readl(t, ETBR_READMEM)));
+ 	printk(KERN_INFO "\n--- ETB buffer end ---\n");
+ 
+-	/* deassert the overflow bit */
+-	etb_writel(t, 1, ETBR_CTRL);
+-	etb_writel(t, 0, ETBR_CTRL);
+-
+-	etb_writel(t, 0, ETBR_TRIGGERCOUNT);
+-	etb_writel(t, 0, ETBR_READADDR);
+-	etb_writel(t, 0, ETBR_WRITEADDR);
+-
+ 	etb_lock(t);
+ }
+ 
+@@ -276,6 +260,10 @@ static ssize_t etb_read(struct file *file, char __user *data,
+ 	struct tracectx *t = file->private_data;
+ 	u32 first = 0;
+ 	u32 *buf;
++	int wpos;
++	int skip;
++	long wlength;
++	loff_t pos = *ppos;
+ 
+ 	mutex_lock(&t->mutex);
+ 
+@@ -290,28 +278,34 @@ static ssize_t etb_read(struct file *file, char __user *data,
  	if (total == t->etb_bufsz)
  		first = etb_readl(t, ETBR_WRITEADDR);
  
-@@ -386,6 +390,7 @@ static int __devinit etb_probe(struct amba_device *dev, const struct amba_id *id
- 		goto out_release;
- 	}
++	if (pos > total * 4) {
++		skip = 0;
++		wpos = total;
++	} else {
++		skip = (int)pos % 4;
++		wpos = (int)pos / 4;
++	}
++	total -= wpos;
++	first = (first + wpos) % t->etb_bufsz;
++
+ 	etb_writel(t, first, ETBR_READADDR);
  
-+	t->dump_initial_etb = true;
- 	amba_set_drvdata(dev, t);
+-	length = min(total * 4, (int)len);
+-	buf = vmalloc(length);
++	wlength = min(total, DIV_ROUND_UP(skip + (int)len, 4));
++	length = min(total * 4 - skip, (int)len);
++	buf = vmalloc(wlength * 4);
  
- 	etb_unlock(t);
+-	dev_dbg(t->dev, "ETB buffer length: %d\n", total);
++	dev_dbg(t->dev, "ETB read %ld bytes to %lld from %ld words at %d\n",
++		length, pos, wlength, first);
++	dev_dbg(t->dev, "ETB buffer length: %d\n", total + wpos);
+ 	dev_dbg(t->dev, "ETB status reg: %x\n", etb_readl(t, ETBR_STATUS));
+-	for (i = 0; i < length / 4; i++)
++	for (i = 0; i < wlength; i++)
+ 		buf[i] = etb_readl(t, ETBR_READMEM);
+ 
+-	/* the only way to deassert overflow bit in ETB status is this */
+-	etb_writel(t, 1, ETBR_CTRL);
+-	etb_writel(t, 0, ETBR_CTRL);
+-
+-	etb_writel(t, 0, ETBR_WRITEADDR);
+-	etb_writel(t, 0, ETBR_READADDR);
+-	etb_writel(t, 0, ETBR_TRIGGERCOUNT);
+-
+ 	etb_lock(t);
+ 
+-	length -= copy_to_user(data, buf, length);
++	length -= copy_to_user(data, (u8 *)buf + skip, length);
+ 	vfree(buf);
++	*ppos = pos + length;
+ 
+ out:
+ 	mutex_unlock(&t->mutex);
 -- 
 1.7.3.2.146.gca209
 
