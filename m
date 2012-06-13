@@ -1,215 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754653Ab2FMO6h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 10:58:37 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:48778 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754496Ab2FMO44 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 10:56:56 -0400
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-scsi@vger.kernel.org, kvm@vger.kernel.org
-Subject: [PATCH 2/4] virtio-scsi: split locking per vq
-Date: Wed, 13 Jun 2012 16:56:32 +0200
-Message-Id: <1339599394-13880-3-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.7.10.2
-In-Reply-To: <1339599394-13880-1-git-send-email-pbonzini@redhat.com>
-References: <1339599394-13880-1-git-send-email-pbonzini@redhat.com>
+	id S1752774Ab2FMO7a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 10:59:30 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56857 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751557Ab2FMO72 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 10:59:28 -0400
+Date: Wed, 13 Jun 2012 16:59:23 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
+        rientjes@google.com, akpm@linux-foundation.org, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH -V9 04/15] hugetlb: use mmu_gather instead of a temporary
+ linked list for accumulating pages
+Message-ID: <20120613145923.GA14777@tiehlicka.suse.cz>
+References: <1339583254-895-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <1339583254-895-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339583254-895-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Keep a separate lock for each virtqueue.  While not particularly
-important now, it prepares the code for when we will add support
-for multiple request queues.  It is also more tidy as soon as
-we introduce a separate lock for the sglist.
+On Wed 13-06-12 15:57:23, Aneesh Kumar K.V wrote:
+> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+> 
+> Use a mmu_gather instead of a temporary linked list for accumulating
+> pages when we unmap a hugepage range
 
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
----
- drivers/scsi/virtio_scsi.c |   77 +++++++++++++++++++++++++++++--------------
- 1 files changed, 52 insertions(+), 25 deletions(-)
+Sorry for coming up with the comment that late but you owe us an
+explanation _why_ you are doing this.
 
-diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
-index b0ad5aa..0ecf95e 100644
---- a/drivers/scsi/virtio_scsi.c
-+++ b/drivers/scsi/virtio_scsi.c
-@@ -43,15 +43,22 @@ struct virtio_scsi_cmd {
- 	} resp;
- } ____cacheline_aligned_in_smp;
- 
-+struct virtio_scsi_vq {
-+	/* Protects vq */
-+	spinlock_t vq_lock;
-+
-+	struct virtqueue *vq;
-+};
-+
- /* Driver instance state */
- struct virtio_scsi {
--	/* Protects ctrl_vq, req_vq and sg[] */
--	spinlock_t vq_lock;
-+	/* Protects sg[].  The lock hierarchy is sg_lock -> vq_lock. */
-+	spinlock_t sg_lock;
- 
- 	struct virtio_device *vdev;
--	struct virtqueue *ctrl_vq;
--	struct virtqueue *event_vq;
--	struct virtqueue *req_vq;
-+	struct virtio_scsi_vq ctrl_vq;
-+	struct virtio_scsi_vq event_vq;
-+	struct virtio_scsi_vq req_vq;
- 
- 	/* For sglist construction when adding commands to the virtqueue.  */
- 	struct scatterlist sg[];
-@@ -147,26 +154,25 @@ static void virtscsi_complete_cmd(void *buf)
- 
- static void virtscsi_vq_done(struct virtqueue *vq, void (*fn)(void *buf))
- {
--	struct Scsi_Host *sh = virtio_scsi_host(vq->vdev);
--	struct virtio_scsi *vscsi = shost_priv(sh);
- 	void *buf;
--	unsigned long flags;
- 	unsigned int len;
- 
--	spin_lock_irqsave(&vscsi->vq_lock, flags);
--
- 	do {
- 		virtqueue_disable_cb(vq);
- 		while ((buf = virtqueue_get_buf(vq, &len)) != NULL)
- 			fn(buf);
- 	} while (!virtqueue_enable_cb(vq));
--
--	spin_unlock_irqrestore(&vscsi->vq_lock, flags);
- }
- 
- static void virtscsi_req_done(struct virtqueue *vq)
- {
-+	struct Scsi_Host *sh = virtio_scsi_host(vq->vdev);
-+	struct virtio_scsi *vscsi = shost_priv(sh);
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&vscsi->req_vq.vq_lock, flags);
- 	virtscsi_vq_done(vq, virtscsi_complete_cmd);
-+	spin_unlock_irqrestore(&vscsi->req_vq.vq_lock, flags);
- };
- 
- static void virtscsi_complete_free(void *buf)
-@@ -181,12 +187,24 @@ static void virtscsi_complete_free(void *buf)
- 
- static void virtscsi_ctrl_done(struct virtqueue *vq)
- {
-+	struct Scsi_Host *sh = virtio_scsi_host(vq->vdev);
-+	struct virtio_scsi *vscsi = shost_priv(sh);
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&vscsi->ctrl_vq.vq_lock, flags);
- 	virtscsi_vq_done(vq, virtscsi_complete_free);
-+	spin_unlock_irqrestore(&vscsi->ctrl_vq.vq_lock, flags);
- };
- 
- static void virtscsi_event_done(struct virtqueue *vq)
- {
-+	struct Scsi_Host *sh = virtio_scsi_host(vq->vdev);
-+	struct virtio_scsi *vscsi = shost_priv(sh);
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&vscsi->event_vq.vq_lock, flags);
- 	virtscsi_vq_done(vq, virtscsi_complete_free);
-+	spin_unlock_irqrestore(&vscsi->event_vq.vq_lock, flags);
- };
- 
- static void virtscsi_map_sgl(struct scatterlist *sg, unsigned int *p_idx,
-@@ -250,7 +268,7 @@ static void virtscsi_map_cmd(struct virtio_scsi *vscsi,
- 	*in_num = idx - *out_num;
- }
- 
--static int virtscsi_kick_cmd(struct virtio_scsi *vscsi, struct virtqueue *vq,
-+static int virtscsi_kick_cmd(struct virtio_scsi *vscsi, struct virtio_scsi_vq *vq,
- 			     struct virtio_scsi_cmd *cmd,
- 			     size_t req_size, size_t resp_size, gfp_t gfp)
- {
-@@ -258,17 +276,19 @@ static int virtscsi_kick_cmd(struct virtio_scsi *vscsi, struct virtqueue *vq,
- 	unsigned long flags;
- 	int ret;
- 
--	spin_lock_irqsave(&vscsi->vq_lock, flags);
--
-+	spin_lock_irqsave(&vscsi->sg_lock, flags);
- 	virtscsi_map_cmd(vscsi, cmd, &out_num, &in_num, req_size, resp_size);
- 
--	ret = virtqueue_add_buf(vq, vscsi->sg, out_num, in_num, cmd, gfp);
-+	spin_lock(&vq->vq_lock);
-+	ret = virtqueue_add_buf(vq->vq, vscsi->sg, out_num, in_num, cmd, gfp);
- 	if (ret >= 0)
--		ret = virtqueue_kick_prepare(vq);
-+		ret = virtqueue_kick_prepare(vq->vq);
-+
-+	spin_unlock(&vq->vq_lock);
-+	spin_unlock_irqrestore(&vscsi->sg_lock, flags);
- 
--	spin_unlock_irqrestore(&vscsi->vq_lock, flags);
- 	if (ret > 0)
--		virtqueue_notify(vq);
-+		virtqueue_notify(vq->vq);
- 	return ret;
- }
- 
-@@ -302,7 +322,7 @@ static int virtscsi_queuecommand(struct Scsi_Host *sh, struct scsi_cmnd *sc)
- 	BUG_ON(sc->cmd_len > VIRTIO_SCSI_CDB_SIZE);
- 	memcpy(cmd->req.cmd.cdb, sc->cmnd, sc->cmd_len);
- 
--	if (virtscsi_kick_cmd(vscsi, vscsi->req_vq, cmd,
-+	if (virtscsi_kick_cmd(vscsi, &vscsi->req_vq, cmd,
- 			      sizeof cmd->req.cmd, sizeof cmd->resp.cmd,
- 			      GFP_ATOMIC) >= 0)
- 		ret = 0;
-@@ -317,7 +337,7 @@ static int virtscsi_tmf(struct virtio_scsi *vscsi, struct virtio_scsi_cmd *cmd)
- 	int ret = FAILED;
- 
- 	cmd->comp = &comp;
--	if (virtscsi_kick_cmd(vscsi, vscsi->ctrl_vq, cmd,
-+	if (virtscsi_kick_cmd(vscsi, &vscsi->ctrl_vq, cmd,
- 			      sizeof cmd->req.tmf, sizeof cmd->resp.tmf,
- 			      GFP_NOIO) < 0)
- 		goto out;
-@@ -410,6 +430,13 @@ static struct scsi_host_template virtscsi_host_template = {
- 				  &__val, sizeof(__val)); \
- 	})
- 
-+static void virtscsi_init_vq(struct virtio_scsi_vq *virtscsi_vq,
-+			     struct virtqueue *vq)
-+{
-+	spin_lock_init(&virtscsi_vq->vq_lock);
-+	virtscsi_vq->vq = vq;
-+}
-+
- static int virtscsi_init(struct virtio_device *vdev,
- 			 struct virtio_scsi *vscsi)
- {
-@@ -431,9 +458,9 @@ static int virtscsi_init(struct virtio_device *vdev,
- 	if (err)
- 		return err;
- 
--	vscsi->ctrl_vq = vqs[0];
--	vscsi->event_vq = vqs[1];
--	vscsi->req_vq = vqs[2];
-+	virtscsi_init_vq(&vscsi->ctrl_vq, vqs[0]);
-+	virtscsi_init_vq(&vscsi->event_vq, vqs[1]);
-+	virtscsi_init_vq(&vscsi->req_vq, vqs[2]);
- 
- 	virtscsi_config_set(vdev, cdb_size, VIRTIO_SCSI_CDB_SIZE);
- 	virtscsi_config_set(vdev, sense_size, VIRTIO_SCSI_SENSE_SIZE);
-@@ -466,7 +493,7 @@ static int __devinit virtscsi_probe(struct virtio_device *vdev)
- 	vdev->priv = shost;
- 
- 	/* Random initializations.  */
--	spin_lock_init(&vscsi->vq_lock);
-+	spin_lock_init(&vscsi->sg_lock);
- 	sg_init_table(vscsi->sg, sg_elems + 2);
- 
- 	err = virtscsi_init(vdev, vscsi);
+I assume that this fixes a real problem when we take i_mmap_mutex
+already up in 
+unmap_mapping_range
+  mutex_lock(&mapping->i_mmap_mutex);
+  unmap_mapping_range_tree | unmap_mapping_range_list 
+    unmap_mapping_range_vma
+      zap_page_range_single
+        unmap_single_vma
+	  unmap_hugepage_range
+	    mutex_lock(&vma->vm_file->f_mapping->i_mmap_mutex);
+
+And that this should have been marked for stable as well (I haven't
+checked when this has been introduced).
+
+But then I do not see how this help when you still do this:
+[...]
+> diff --git a/mm/memory.c b/mm/memory.c
+> index 1b7dc66..545e18a 100644
+> --- a/mm/memory.c
+> +++ b/mm/memory.c
+> @@ -1326,8 +1326,11 @@ static void unmap_single_vma(struct mmu_gather *tlb,
+>  			 * Since no pte has actually been setup, it is
+>  			 * safe to do nothing in this case.
+>  			 */
+> -			if (vma->vm_file)
+> -				unmap_hugepage_range(vma, start, end, NULL);
+> +			if (vma->vm_file) {
+> +				mutex_lock(&vma->vm_file->f_mapping->i_mmap_mutex);
+> +				__unmap_hugepage_range(tlb, vma, start, end, NULL);
+> +				mutex_unlock(&vma->vm_file->f_mapping->i_mmap_mutex);
+> +			}
+>  		} else
+>  			unmap_page_range(tlb, vma, start, end, details);
+>  	}
+
 -- 
-1.7.1
-
-
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
