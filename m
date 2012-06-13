@@ -1,50 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754922Ab2FMXVM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 19:21:12 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:61445 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754836Ab2FMXVK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 19:21:10 -0400
+	id S1754983Ab2FMXXz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 19:23:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16783 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754854Ab2FMXXw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 19:23:52 -0400
+Date: Wed, 13 Jun 2012 19:40:02 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v6 6/9] KVM: MMU: fast path of handling guest page fault
+Message-ID: <20120613224002.GE19290@amt.cnet>
+References: <4FC470C7.5040700@linux.vnet.ibm.com>
+ <4FC471B8.3070204@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <20120613105041.2d5dcdde6b9cf3dcfba3885d@canb.auug.org.au>
-References: <20120612145441.400975347f06785d391d0f8f@canb.auug.org.au>
- <CAErSpo6LxpYz_WK2mHPW3RWkOMPLar0KUp1Pgh7shhOdmT49kw@mail.gmail.com> <20120613105041.2d5dcdde6b9cf3dcfba3885d@canb.auug.org.au>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 13 Jun 2012 17:20:46 -0600
-Message-ID: <CAErSpo5Lrk3=hgSd2j+OMLN7rS8kCo5Qr=bPCnDZQdyb=EbEzA@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the final tree (pci tree related)
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FC471B8.3070204@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 12, 2012 at 6:50 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Bjorn,
->
-> On Tue, 12 Jun 2012 09:31:49 -0600 Bjorn Helgaas <bhelgaas@google.com> wrote:
->>
->> Thanks, I folded this typo fix into the relevant patch.  I'll rebase
->> "next" today.  Sorry for the trouble.
->
-> I am not sure what you have done, but now you have a set of duplicated
-> commits in your tree including both versions of the one that caused the
-> build failure.
+On Tue, May 29, 2012 at 02:50:32PM +0800, Xiao Guangrong wrote:
+> If the the present bit of page fault error code is set, it indicates
+> the shadow page is populated on all levels, it means what we do is
+> only modify the access bit which can be done out of mmu-lock
+> 
+> Currently, in order to simplify the code, we only fix the page fault
+> caused by write-protect on the fast path
+> 
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> ---
+>  arch/x86/kvm/mmu.c |  126 +++++++++++++++++++++++++++++++++++++++++++++++-----
+>  1 files changed, 114 insertions(+), 12 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index 150c5ad..d6101a8 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -445,6 +445,11 @@ static bool __check_direct_spte_mmio_pf(u64 spte)
+>  }
+>  #endif
+> 
+> +static bool spte_can_be_writable(u64 spte)
+> +{
+> +	return !(~spte & (SPTE_HOST_WRITEABLE | SPTE_MMU_WRITEABLE));
+> +}
+> +
 
-This is because of my inept git usage.  I think my "next" branch ended
-up with the right bits in it, but the history looked strange because I
-fixed the typo in the Yinghai branch, but had a second branch that
-depended on the original unfixed branch.
+spte_is_locklessly_modifiable(). Its easy to confuse
+"spte_can_be_writable" with different things.
 
-I rebuilt my "next" branch again and I think it's more
-straightforward.  And I learned a tiny bit more about git, so thanks
-for pointing this out.
+>  static bool spte_has_volatile_bits(u64 spte)
+>  {
+>  	if (!shadow_accessed_mask)
+> @@ -454,7 +459,7 @@ static bool spte_has_volatile_bits(u64 spte)
+>  		return false;
+> 
+>  	if ((spte & shadow_accessed_mask) &&
+> -	      (!is_writable_pte(spte) || (spte & shadow_dirty_mask)))
+> +	      (!spte_can_be_writable(spte) || (spte & shadow_dirty_mask)))
+>  		return false;
 
-Bjorn
+mmu_spte_update is handling several different cases. Please rewrite
+it, add a comment on top of it (or spread comments on top of each
+significant code line) with all cases it is handling (also recheck it
+regarding new EPT accessed/dirty bits code).
+
+For one thing, if spte can be updated locklessly the update must be
+atomic:
+
+if spte can be locklessly updated
+	read-and-modify must be atomic.
+
+
