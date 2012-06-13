@@ -1,131 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753961Ab2FMNup (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 09:50:45 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:37873 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753594Ab2FMNuo convert rfc822-to-8bit (ORCPT
+	id S1754027Ab2FMNvP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 09:51:15 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:39367 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753885Ab2FMNvM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 09:50:44 -0400
+	Wed, 13 Jun 2012 09:51:12 -0400
 MIME-Version: 1.0
-In-Reply-To: <1339594110.8980.38.camel@twins>
-References: <1339502524-10265-1-git-send-email-vincent.guittot@linaro.org>
-	<1339502524-10265-5-git-send-email-vincent.guittot@linaro.org>
-	<1339591819.8980.28.camel@twins>
-	<CAKfTPtCERCDdCSLyPAYAhxAB4wkDMVfMbfecv+vOMbgUXvYwYg@mail.gmail.com>
-	<1339594110.8980.38.camel@twins>
-Date: Wed, 13 Jun 2012 15:50:43 +0200
-Message-ID: <CAKfTPtAbmLy5hR-W7RMQpn1cf1jkirv0oNtS_h4dmPYx5gTm1w@mail.gmail.com>
-Subject: Re: [RFC 4/4] sched: cpu_power: enable ARCH_POWER
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, devicetree-discuss@lists.ozlabs.org,
-        linux@arm.linux.org.uk, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <CABPqkBRnMW=Zmi+DycUPMcYS9cgs8doKZqSR37e1gU6wQnT+nw@mail.gmail.com>
+References: <1339420814-7379-1-git-send-email-jolsa@redhat.com>
+	<1339420814-7379-3-git-send-email-jolsa@redhat.com>
+	<CABPqkBRsBegm6gv6agHcGb0Hh1EWCV5gjVnbbwPHh-eOfROCuw@mail.gmail.com>
+	<20120613131240.GB2538@m.brq.redhat.com>
+	<CABPqkBRdVMzocJu_SJbU81wg6Ef=KgbXw-18tb+bZEon79fVDA@mail.gmail.com>
+	<1339594802.8980.44.camel@twins>
+	<CABPqkBRnMW=Zmi+DycUPMcYS9cgs8doKZqSR37e1gU6wQnT+nw@mail.gmail.com>
+Date: Wed, 13 Jun 2012 15:51:11 +0200
+Message-ID: <CABPqkBTVBG92pUu-H+CSO4T1HojQsun7ngZ8Z8PJUFt-MwXkRg@mail.gmail.com>
+Subject: Re: [PATCH 02/19] perf: Add ability to attach user level registers
+ dump to sample
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Jiri Olsa <jolsa@redhat.com>, acme@redhat.com, mingo@elte.hu,
+        paulus@samba.org, cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
+        gorcunov@openvz.org, tzanussi@gmail.com, mhiramat@redhat.com,
+        robert.richter@amd.com, fche@redhat.com, linux-kernel@vger.kernel.org,
+        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
+        benjamin.redelings@nescent.org
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 June 2012 15:28, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Wed, 2012-06-13 at 15:20 +0200, Vincent Guittot wrote:
+On Wed, Jun 13, 2012 at 3:41 PM, Stephane Eranian <eranian@google.com> wrote:
+> On Wed, Jun 13, 2012 at 3:40 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+>> On Wed, 2012-06-13 at 15:18 +0200, Stephane Eranian wrote:
+>>>
+>>> If you look carefully at perf_output_sample(), you will notice that data is
+>>> written in the exact order of the enum perf_event_sample_format.
 >>
->> In v3.4, x86 hasn't got any specific declaration for
->> arch_scale_freq_power so it would now use the weak
->> arch_scale_freq_power which calls default_scale_freq_power. Isn't it
->> enough ?
+>> Not so actually.. CALLCHAIN is out of order. Not sure why we did that
+>> though.
+>>
+>>
+>> But it should match the comment near PERF_RECORD_SAMPLE.
 >
-> ---
-> Subject: sched, x86: Remove broken power estimation
-> From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Date: Wed Jun 13 15:24:45 CEST 2012
->
-> The x86 sched power implementation has been broken forever and gets in
-> the way of other stuff, remove it.
->
-> For archaeological interest, fixing this code would require dealing with
-> the cross-cpu calling of these functions and more importantly, we need
-> to filter idle time out of the a/m-perf stuff because the ratio will go
-> down to 0 when idle, giving a 0 capacity which is not what we'd want.
->
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Link: http://lkml.kernel.org/n/tip-wjjwelpti8f8k7i1pdnzmdr8@git.kernel.org
-> ---
->  arch/x86/kernel/cpu/Makefile |    2 -
->  arch/x86/kernel/cpu/sched.c  |   55 -------------------------------------------
->  2 files changed, 1 insertion(+), 56 deletions(-)
->
-> --- a/arch/x86/kernel/cpu/Makefile
-> +++ b/arch/x86/kernel/cpu/Makefile
-> @@ -14,7 +14,7 @@ CFLAGS_common.o               := $(nostackp)
->
->  obj-y                  := intel_cacheinfo.o scattered.o topology.o
->  obj-y                  += proc.o capflags.o powerflags.o common.o
-> -obj-y                  += vmware.o hypervisor.o sched.o mshyperv.o
-> +obj-y                  += vmware.o hypervisor.o mshyperv.o
->  obj-y                  += rdrand.o
->  obj-y                  += match.o
->
-> --- a/arch/x86/kernel/cpu/sched.c
-> +++ /dev/null
-> @@ -1,55 +0,0 @@
-> -#include <linux/sched.h>
-> -#include <linux/math64.h>
-> -#include <linux/percpu.h>
-> -#include <linux/irqflags.h>
-> -
-> -#include <asm/cpufeature.h>
-> -#include <asm/processor.h>
-> -
-> -#ifdef CONFIG_SMP
-> -
-> -static DEFINE_PER_CPU(struct aperfmperf, old_perf_sched);
-> -
-> -static unsigned long scale_aperfmperf(void)
-> -{
-> -       struct aperfmperf val, *old = &__get_cpu_var(old_perf_sched);
-> -       unsigned long ratio, flags;
-> -
-> -       local_irq_save(flags);
-> -       get_aperfmperf(&val);
-> -       local_irq_restore(flags);
-> -
-> -       ratio = calc_aperfmperf_ratio(old, &val);
-> -       *old = val;
-> -
-> -       return ratio;
-> -}
-> -
-> -unsigned long arch_scale_freq_power(struct sched_domain *sd, int cpu)
-> -{
-> -       /*
-> -        * do aperf/mperf on the cpu level because it includes things
-> -        * like turbo mode, which are relevant to full cores.
-> -        */
-> -       if (boot_cpu_has(X86_FEATURE_APERFMPERF))
-> -               return scale_aperfmperf();
-> -
-> -       /*
-> -        * maybe have something cpufreq here
-> -        */
-> -
-> -       return default_scale_freq_power(sd, cpu);
-> -}
-> -
-> -unsigned long arch_scale_smt_power(struct sched_domain *sd, int cpu)
-> -{
-> -       /*
-> -        * aperf/mperf already includes the smt gain
-> -        */
-> -       if (boot_cpu_has(X86_FEATURE_APERFMPERF))
-> -               return SCHED_LOAD_SCALE;
-> -
-> -       return default_scale_smt_power(sd, cpu);
-> -}
-> -
-> -#endif
->
+> Ok, yes that one. It would have been much nicer to follow the enum
+> order.
+In that case, the comment needs to be update to show the sample_user_regs[]
+in the right order.
 
-Sorry for the misses, I need to update my tags because this has been filtered.
+         *      { u32                   size;
+         *        char                  data[size];}&& PERF_SAMPLE_RAW
+         *
+         *      { u64 from, to, flags } lbr[nr];} && PERF_SAMPLE_BRANCH_STACK
+         *      { u64 size; u64 regs[size];} && PERF_SAMPLE_USER_REGS
+
+Same thing for the user stack.
