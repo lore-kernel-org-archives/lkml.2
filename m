@@ -1,109 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752725Ab2FMMof (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 08:44:35 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:43910 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751201Ab2FMMod convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 08:44:33 -0400
+	id S1753010Ab2FMMo6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 08:44:58 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:38066 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751201Ab2FMMo5 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 08:44:57 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAKfTPtBc-KuDg_1qe04TfYS4+66qQoiHCJQbCF9gnhga5ociow@mail.gmail.com>
-References: <1339502524-10265-1-git-send-email-vincent.guittot@linaro.org>
-	<1339502524-10265-4-git-send-email-vincent.guittot@linaro.org>
-	<CAORVsuWqWt0pJfewymh_ydAH61-uPsO0M7m7Gs4N3zJY=Vo9ZA@mail.gmail.com>
-	<CAKfTPtBc-KuDg_1qe04TfYS4+66qQoiHCJQbCF9gnhga5ociow@mail.gmail.com>
-Date: Wed, 13 Jun 2012 18:14:32 +0530
-Message-ID: <CAP245DXEOGLe1jq2Wj0rNW5qea63UyJu2jOvwV65Y4B9LLoQtg@mail.gmail.com>
-Subject: Re: [RFC 3/4] ARM: topology: Update cpu_power according to DT information
-From: Amit Kucheria <amit.kucheria@linaro.org>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: Jean Pihet <jean.pihet@newoldbits.com>, linux@arm.linux.org.uk,
-        peterz@infradead.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, rob.herring@calxeda.com,
-        linaro-dev@lists.linaro.org, linux-arm-kernel@lists.infradead.org
+X-Originating-IP: [87.66.97.133]
+In-Reply-To: <4FD27000.7000208@linaro.org>
+References: <1339171365-4098-1-git-send-email-daniel.lezcano@linaro.org>
+	<4FD23752.6090101@linux.vnet.ibm.com>
+	<4FD27000.7000208@linaro.org>
+Date: Wed, 13 Jun 2012 14:44:55 +0200
+Message-ID: <CAORVsuXEkyU_OkjqLDhe_OMq-uLEBaMLnz-pkJ1jtgnmcNxZpw@mail.gmail.com>
+Subject: Re: [linux-pm] [RFC 1/4] cpuidle: define the enter function in the
+ driver structure
+From: Jean Pihet <jean.pihet@newoldbits.com>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>, linux-acpi@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org, linaro-dev@lists.linaro.org,
+        linux-kernel@vger.kernel.org, Kevin Hilman <khilman@ti.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 13, 2012 at 3:14 PM, Vincent Guittot
-<vincent.guittot@linaro.org> wrote:
-> On 13 June 2012 10:59, Jean Pihet <jean.pihet@newoldbits.com> wrote:
->> Vincent,
+Hi Daniel,
+
+On Fri, Jun 8, 2012 at 11:34 PM, Daniel Lezcano
+<daniel.lezcano@linaro.org> wrote:
+> On 06/08/2012 07:33 PM, Deepthi Dharwar wrote:
+>> Hi Daniel,
+>
+> Hi Deepthi,
+>
+>> On 06/08/2012 09:32 PM, Daniel Lezcano wrote:
 >>
->> On Tue, Jun 12, 2012 at 2:02 PM, Vincent Guittot
->> <vincent.guittot@linaro.org> wrote:
->>> Use cpu compatibility field and clock-frequency field of DT to
->>> estimate the capacity of each core of the system
+>>> We have the state index passed as parameter to the 'enter' function.
+>>> Most of the drivers assign their 'enter' functions several times in
+>>> the cpuidle_state structure, as we have the index, we can delegate
+>>> to the driver to handle their own callback array.
 >>>
->>> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
->>> ---
->>>  arch/arm/kernel/topology.c |  122 ++++++++++++++++++++++++++++++++++++++++++++
->>>  1 file changed, 122 insertions(+)
+>>> That will have the benefit of removing multiple lines of code in the
+>>> different drivers.
 >>>
->>> diff --git a/arch/arm/kernel/topology.c b/arch/arm/kernel/topology.c
->>> index 2f85a64..0c2aee4 100644
->>> --- a/arch/arm/kernel/topology.c
->>> +++ b/arch/arm/kernel/topology.c
->>> @@ -17,6 +17,7 @@
->>>  #include <linux/percpu.h>
->>>  #include <linux/node.h>
->>>  #include <linux/nodemask.h>
->>> +#include <linux/of.h>
->>>  #include <linux/sched.h>
->>>
->>>  #include <asm/cputype.h>
->>> @@ -47,6 +48,122 @@ void set_power_scale(unsigned int cpu, unsigned long power)
->>>        per_cpu(cpu_scale, cpu) = power;
->>>  }
->>>
->>> +#ifdef CONFIG_OF
->>> +struct cpu_efficiency {
->>> +       const char *compatible;
->>> +       unsigned long efficiency;
->>> +};
->>> +
->>> +/*
->>> + * Table of relative efficiency of each processors
->>> + * The efficiency value must fit in 20bit. The final
->>> + * cpu_scale value must be in the range [1:2048[.
->> Typo here.
->
-> I realize that I have use absolute value instead of SCHED_POWER_SCALE.
-> The cpu_scale value must be in the range 0 < cpu_scale < 2*SCHED_POWER_SCALE
->
+>>> In order to smoothly modify the driver, the 'enter' function are in
+>>> the driver structure and in the cpuidle state structure. That will
+>>> let the time to modify the different drivers one by one.
+>>> So the 'cpuidle_enter' function checks if the 'enter' callback is
+>>> assigned in the driver structure and use it, otherwise it invokes
+>>> the 'enter' assigned to the cpuidle_state.
 >>
->>> + * Processors that are not defined in the table,
->>> + * use the default SCHED_POWER_SCALE value for cpu_scale.
->>> + */
->>> +struct cpu_efficiency table_efficiency[] = {
->>> +       {"arm,cortex-a15", 3891},
->>> +       {"arm,cortex-a7",  2048},
->> How are those results measured or computed? Is this purely related to
->> the number crunching performance?
->
-> These values are based on ARM's figures which say that Cortex-A15 is
-> 1,9 faster than Cortex-A7 at same frequency. So the inputs are ARM's
-> figures. Then, the absolute values are arbitrary with the constraint
-> of being large enough for precision and small enough to make the
-> computation in an unsigned long
->
 >>
->> Also more generally what if the cores frequencies are changing?
+>> Currently, the backend driver initializes
+>> all the cpuidle states supported on the platform,
+>> and each state can have its own enter routine
+>> which can be unique This is a clean approach.
 >
-> Up to now, the scheduler takes into account the maximum capacity of a
-> core when it checks the load balance of the system.
+> Yes, I perfectly understood the purpose of this field but as clean it is
+> it does not make sense as it is not used in this way. If it is supposed
+> to be done in the way you are describing here, we should have the same
+> number of states and enter functions. Here it is how it is used:
+>
+>  --------------------------------------------------
+> | Arch             | nr states | nr enter function |
+>  --------------------------------------------------
+> | x86 (nehalem)    |    3      |         1         |
+>  --------------------------------------------------
+> | x86 (snb)        |    4      |         1         |
+>  --------------------------------------------------
+> | x86 (atom)       |    4      |         1         |
+>  --------------------------------------------------
+> | ARM tegra        |    1      |         1         |
+>  --------------------------------------------------
+> | ARM omap3        |    7      |         2         |
+>  --------------------------------------------------
+> | ARM omap4        |    3      |         1         |
+>  --------------------------------------------------
+> | ARM ux500        |    2      |         1         |
+>  --------------------------------------------------
+> | ARM shmobile     |    1      |         1         |
+>  --------------------------------------------------
+> | ARM davinci      |    2      |         1         |
+>  --------------------------------------------------
+> | ARM at91         |    2      |         1         |
+>  --------------------------------------------------
+> | ARM s3c64xx      |    1      |         1         |
+>  --------------------------------------------------
+> | ARM exynos       |    2      |         1         |
+>  --------------------------------------------------
+> | ARM kirkwood     |    2      |         1         |
+>  --------------------------------------------------
+> | SH               |    3      |         1         |
+>  --------------------------------------------------
+> | PPC              |    2      |         2         |
+>  --------------------------------------------------
+> |                  |           |                   |
+> | TOTAL            |    39     |        17         |
+> |                  |           |                   |
+>  --------------------------------------------------
+>
+>
+> As you can see most of the enter functions are only used as one.
+> The Omap3 cpuidle driver enter function for C2 calls the enter function
+> of C1. Other arch, already use a table of callbacks or the index.
+There is a plan to remove the extra enter function as part of an
+optimization, cf. [1]. The fix is planned to reach the 3.6 mainline
+kernel via Kevin's tree [2].
 
-Jean,
+[1] http://marc.info/?l=linux-omap&m=133856365818099&w=2
+[2] http://git.kernel.org/?p=linux/kernel/git/khilman/linux-omap-pm.git;a=shortlog;h=refs/heads/for_3.6/pm/performance
 
-Various discussions around power-aware scheduling have amplified the
-need for the scheduler to have some knowledge of DVFS. This would then
-require the scheduler to track 'cpu_power' ( = max power) and perhaps
-a new variable 'current_power' that is changed by the DVFS framework.
+The result is that there will be only one enter function for OMAP3.
 
-The first goal, though, is to make sure that the scheduler can handle
-different cpu_power values due to asymmetric cores.
+Regards,
+Jean
 
-/Amit
+>> By moving the enter routine into the driver,
+>> we are enforcing in having only one enter state.
+>> There is unnecessary overhead involved
+>> in calling a wrapper routine just to
+>> index into the right idle state routine
+>> for many platforms at runtime.
+>
+> I don't agree. For the sake of encapsulated code, we duplicate n-times a
+> field and that is not used in this way. It is quite easy to have in the
+> driver specific code a common enter function to ventilate to the right
+> routine without adding extra overhead and let the common code use a
+> single enter routine (which is already the case today).
+>
+>
+> _______________________________________________
+> linux-pm mailing list
+> linux-pm@lists.linux-foundation.org
+> https://lists.linuxfoundation.org/mailman/listinfo/linux-pm
