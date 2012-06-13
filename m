@@ -1,221 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753269Ab2FMMvr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 08:51:47 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45134 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750987Ab2FMMvp (ORCPT
+	id S1753304Ab2FMMxA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 08:53:00 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:40881 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750987Ab2FMMw6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 08:51:45 -0400
-Message-ID: <1339591897.9672.6.camel@phoenix>
-Subject: [PATCH RFC/RFT] i2c/busses: Fix build error if
- CONFIG_I2C_DESIGNWARE_PLATFORM=y && CONFIG_I2C_DESIGNWARE_PCI=y
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        "Wolfram Sang (embedded platforms)" <w.sang@pengutronix.de>,
-        Baruch Siach <baruch@tkos.co.il>, Viresh Kumar <viresh.kumar@st.com>,
-        Deepak Sikri <deepak.sikri@st.com>,
-        Rajeev Kumar <rajeev-dlh.kumar@st.com>,
-        Dirk Brandewie <dirk.brandewie@gmail.com>, linux-i2c@vger.kernel.org
-Date: Wed, 13 Jun 2012 20:51:37 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	Wed, 13 Jun 2012 08:52:58 -0400
+Message-ID: <1339591969.8980.30.camel@twins>
+Subject: Re: [RFC 1/4] ARM: topology: Add arch_scale_freq_power function
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, devicetree-discuss@lists.ozlabs.org,
+        linux@arm.linux.org.uk, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, Andy Whitcroft <apw@canonical.com>
+Date: Wed, 13 Jun 2012 14:52:49 +0200
+In-Reply-To: <1339502524-10265-2-git-send-email-vincent.guittot@linaro.org>
+References: <1339502524-10265-1-git-send-email-vincent.guittot@linaro.org>
+	 <1339502524-10265-2-git-send-email-vincent.guittot@linaro.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds config I2C_DESIGNWARE_CORE in Kconfig, and let
-I2C_DESIGNWARE_PLATFORM and I2C_DESIGNWARE_PCI select I2C_DESIGNWARE_CORE.
+On Tue, 2012-06-12 at 14:02 +0200, Vincent Guittot wrote:
+>         }
+>         smp_wmb();
+>  } 
 
-Because both I2C_DESIGNWARE_PLATFORM and I2C_DESIGNWARE_PCI can be built as
-built-in or module, we also need to export the functions in i2c-designware-core.
+You know what.. we should make checkpatch report an error for memory
+barriers that don't have a comment. 
 
-This fixes below build error when CONFIG_I2C_DESIGNWARE_PLATFORM=y && CONFIG_I2C_DESIGNWARE_PCI=y:
-
-  LD      drivers/i2c/busses/built-in.o
-drivers/i2c/busses/i2c-designware-pci.o: In function `i2c_dw_clear_int':
-i2c-designware-core.c:(.text+0xa10): multiple definition of `i2c_dw_clear_int'
-drivers/i2c/busses/i2c-designware-platform.o:i2c-designware-platdrv.c:(.text+0x928): first defined here
-drivers/i2c/busses/i2c-designware-pci.o: In function `i2c_dw_init':
-i2c-designware-core.c:(.text+0x178): multiple definition of `i2c_dw_init'
-drivers/i2c/busses/i2c-designware-platform.o:i2c-designware-platdrv.c:(.text+0x90): first defined here
-drivers/i2c/busses/i2c-designware-pci.o: In function `dw_readl':
-i2c-designware-core.c:(.text+0xe8): multiple definition of `dw_readl'
-drivers/i2c/busses/i2c-designware-platform.o:i2c-designware-platdrv.c:(.text+0x0): first defined here
-drivers/i2c/busses/i2c-designware-pci.o: In function `i2c_dw_isr':
-i2c-designware-core.c:(.text+0x724): multiple definition of `i2c_dw_isr'
-drivers/i2c/busses/i2c-designware-platform.o:i2c-designware-platdrv.c:(.text+0x63c): first defined here
-drivers/i2c/busses/i2c-designware-pci.o: In function `i2c_dw_xfer':
-i2c-designware-core.c:(.text+0x4b0): multiple definition of `i2c_dw_xfer'
-drivers/i2c/busses/i2c-designware-platform.o:i2c-designware-platdrv.c:(.text+0x3c8): first defined here
-drivers/i2c/busses/i2c-designware-pci.o: In function `i2c_dw_is_enabled':
-i2c-designware-core.c:(.text+0x9d4): multiple definition of `i2c_dw_is_enabled'
-drivers/i2c/busses/i2c-designware-platform.o:i2c-designware-platdrv.c:(.text+0x8ec): first defined here
-drivers/i2c/busses/i2c-designware-pci.o: In function `dw_writel':
-i2c-designware-core.c:(.text+0x124): multiple definition of `dw_writel'
-drivers/i2c/busses/i2c-designware-platform.o:i2c-designware-platdrv.c:(.text+0x3c): first defined here
-drivers/i2c/busses/i2c-designware-pci.o: In function `i2c_dw_xfer_msg':
-i2c-designware-core.c:(.text+0x2e8): multiple definition of `i2c_dw_xfer_msg'
-drivers/i2c/busses/i2c-designware-platform.o:i2c-designware-platdrv.c:(.text+0x200): first defined here
-drivers/i2c/busses/i2c-designware-pci.o: In function `i2c_dw_enable':
-i2c-designware-core.c:(.text+0x9c8): multiple definition of `i2c_dw_enable'
-drivers/i2c/busses/i2c-designware-platform.o:i2c-designware-platdrv.c:(.text+0x8e0): first defined here
-drivers/i2c/busses/i2c-designware-pci.o: In function `i2c_dw_read_comp_param':
-i2c-designware-core.c:(.text+0xa24): multiple definition of `i2c_dw_read_comp_param'
-drivers/i2c/busses/i2c-designware-platform.o:i2c-designware-platdrv.c:(.text+0x93c): first defined here
-drivers/i2c/busses/i2c-designware-pci.o: In function `i2c_dw_disable':
-i2c-designware-core.c:(.text+0x9dc): multiple definition of `i2c_dw_disable'
-drivers/i2c/busses/i2c-designware-platform.o:i2c-designware-platdrv.c:(.text+0x8f4): first defined here
-drivers/i2c/busses/i2c-designware-pci.o: In function `i2c_dw_func':
-i2c-designware-core.c:(.text+0x710): multiple definition of `i2c_dw_func'
-drivers/i2c/busses/i2c-designware-platform.o:i2c-designware-platdrv.c:(.text+0x628): first defined here
-drivers/i2c/busses/i2c-designware-pci.o: In function `i2c_dw_disable_int':
-i2c-designware-core.c:(.text+0xa18): multiple definition of `i2c_dw_disable_int'
-drivers/i2c/busses/i2c-designware-platform.o:i2c-designware-platdrv.c:(.text+0x930): first defined here
-make[3]: *** [drivers/i2c/busses/built-in.o] Error 1
-make[2]: *** [drivers/i2c/busses] Error 2
-make[1]: *** [drivers/i2c] Error 2
-make: *** [drivers] Error 2
-
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
-I don't have this hardware, just try to fix the build error I found.
-
-Axel
- drivers/i2c/busses/Kconfig               |    5 +++++
- drivers/i2c/busses/Makefile              |    5 +++--
- drivers/i2c/busses/i2c-designware-core.c |   11 +++++++++++
- 3 files changed, 19 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
-index 7244c8b..b37a730 100644
---- a/drivers/i2c/busses/Kconfig
-+++ b/drivers/i2c/busses/Kconfig
-@@ -350,9 +350,13 @@ config I2C_DAVINCI
- 	  devices such as DaVinci NIC.
- 	  For details please see http://www.ti.com/davinci
- 
-+config I2C_DESIGNWARE_CORE
-+	tristate
-+
- config I2C_DESIGNWARE_PLATFORM
- 	tristate "Synopsys DesignWare Platform"
- 	depends on HAVE_CLK
-+	select I2C_DESIGNWARE_CORE
- 	help
- 	  If you say yes to this option, support will be included for the
- 	  Synopsys DesignWare I2C adapter. Only master mode is supported.
-@@ -363,6 +367,7 @@ config I2C_DESIGNWARE_PLATFORM
- config I2C_DESIGNWARE_PCI
- 	tristate "Synopsys DesignWare PCI"
- 	depends on PCI
-+	select I2C_DESIGNWARE_CORE
- 	help
- 	  If you say yes to this option, support will be included for the
- 	  Synopsys DesignWare I2C adapter. Only master mode is supported.
-diff --git a/drivers/i2c/busses/Makefile b/drivers/i2c/busses/Makefile
-index ce3c2be..37c4182 100644
---- a/drivers/i2c/busses/Makefile
-+++ b/drivers/i2c/busses/Makefile
-@@ -33,10 +33,11 @@ obj-$(CONFIG_I2C_AU1550)	+= i2c-au1550.o
- obj-$(CONFIG_I2C_BLACKFIN_TWI)	+= i2c-bfin-twi.o
- obj-$(CONFIG_I2C_CPM)		+= i2c-cpm.o
- obj-$(CONFIG_I2C_DAVINCI)	+= i2c-davinci.o
-+obj-$(CONFIG_I2C_DESIGNWARE_CORE)	+= i2c-designware-core.o
- obj-$(CONFIG_I2C_DESIGNWARE_PLATFORM)	+= i2c-designware-platform.o
--i2c-designware-platform-objs := i2c-designware-platdrv.o i2c-designware-core.o
-+i2c-designware-platform-objs := i2c-designware-platdrv.o
- obj-$(CONFIG_I2C_DESIGNWARE_PCI)	+= i2c-designware-pci.o
--i2c-designware-pci-objs := i2c-designware-pcidrv.o i2c-designware-core.o
-+i2c-designware-pci-objs := i2c-designware-pcidrv.o
- obj-$(CONFIG_I2C_EG20T)		+= i2c-eg20t.o
- obj-$(CONFIG_I2C_GPIO)		+= i2c-gpio.o
- obj-$(CONFIG_I2C_HIGHLANDER)	+= i2c-highlander.o
-diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-core.c
-index 1e48bec..7b8ebbe 100644
---- a/drivers/i2c/busses/i2c-designware-core.c
-+++ b/drivers/i2c/busses/i2c-designware-core.c
-@@ -25,6 +25,7 @@
-  * ----------------------------------------------------------------------------
-  *
-  */
-+#include <linux/export.h>
- #include <linux/clk.h>
- #include <linux/errno.h>
- #include <linux/err.h>
-@@ -316,6 +317,7 @@ int i2c_dw_init(struct dw_i2c_dev *dev)
- 	dw_writel(dev, dev->master_cfg , DW_IC_CON);
- 	return 0;
- }
-+EXPORT_SYMBOL_GPL(i2c_dw_init);
- 
- /*
-  * Waiting for bus not busy
-@@ -568,12 +570,14 @@ done:
- 
- 	return ret;
- }
-+EXPORT_SYMBOL_GPL(i2c_dw_xfer);
- 
- u32 i2c_dw_func(struct i2c_adapter *adap)
- {
- 	struct dw_i2c_dev *dev = i2c_get_adapdata(adap);
- 	return dev->functionality;
- }
-+EXPORT_SYMBOL_GPL(i2c_dw_func);
- 
- static u32 i2c_dw_read_clear_intrbits(struct dw_i2c_dev *dev)
- {
-@@ -678,17 +682,20 @@ tx_aborted:
- 
- 	return IRQ_HANDLED;
- }
-+EXPORT_SYMBOL_GPL(i2c_dw_isr);
- 
- void i2c_dw_enable(struct dw_i2c_dev *dev)
- {
-        /* Enable the adapter */
- 	dw_writel(dev, 1, DW_IC_ENABLE);
- }
-+EXPORT_SYMBOL_GPL(i2c_dw_enable);
- 
- u32 i2c_dw_is_enabled(struct dw_i2c_dev *dev)
- {
- 	return dw_readl(dev, DW_IC_ENABLE);
- }
-+EXPORT_SYMBOL_GPL(i2c_dw_is_enabled);
- 
- void i2c_dw_disable(struct dw_i2c_dev *dev)
- {
-@@ -699,18 +706,22 @@ void i2c_dw_disable(struct dw_i2c_dev *dev)
- 	dw_writel(dev, 0, DW_IC_INTR_MASK);
- 	dw_readl(dev, DW_IC_CLR_INTR);
- }
-+EXPORT_SYMBOL_GPL(i2c_dw_disable);
- 
- void i2c_dw_clear_int(struct dw_i2c_dev *dev)
- {
- 	dw_readl(dev, DW_IC_CLR_INTR);
- }
-+EXPORT_SYMBOL_GPL(i2c_dw_clear_int);
- 
- void i2c_dw_disable_int(struct dw_i2c_dev *dev)
- {
- 	dw_writel(dev, 0, DW_IC_INTR_MASK);
- }
-+EXPORT_SYMBOL_GPL(i2c_dw_disable_int);
- 
- u32 i2c_dw_read_comp_param(struct dw_i2c_dev *dev)
- {
- 	return dw_readl(dev, DW_IC_COMP_PARAM_1);
- }
-+EXPORT_SYMBOL_GPL(i2c_dw_read_comp_param);
--- 
-1.7.9.5
-
-
-
+I know this isn't added by this patch, but every time I see something
+like it I cry a little.
