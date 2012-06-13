@@ -1,76 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753711Ab2FMLSp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 07:18:45 -0400
-Received: from www.hansjkoch.de ([178.63.77.200]:49466 "EHLO www.hansjkoch.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753318Ab2FMLSo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 07:18:44 -0400
-Date: Wed, 13 Jun 2012 13:18:35 +0200
-From: "Hans J. Koch" <hjk@hansjkoch.de>
-To: Raymond Wu <wxy412@gmail.com>
-Cc: linux-kernel@vger.kernel.org, xywu@marvell.com
-Subject: Re: UIO driver multi-instance issue discussion
-Message-ID: <20120613111835.GB4763@local>
-References: <CANBwrj_i+VZiV1YFVhBduor5g=03mcM08NF1FteczWvQuCAjhw@mail.gmail.com>
- <CANBwrj_WAqQs+-Jnj+nTBVE-1YuK6XwFeZN6biLGge+9TvZXeg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CANBwrj_WAqQs+-Jnj+nTBVE-1YuK6XwFeZN6biLGge+9TvZXeg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753826Ab2FMLS4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 07:18:56 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:17982 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753726Ab2FMLSx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 07:18:53 -0400
+X-AuditID: cbfee61b-b7fcc6d000003a7a-eb-4fd8771c7be3
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'LKML'" <linux-kernel@vger.kernel.org>
+Cc: "'Richard Purdie'" <rpurdie@rpsys.net>,
+        "'Hans-Christian Egtvedt'" <egtvedt@samfundet.no>,
+        "'Jingoo Han'" <jg1.han@samsung.com>,
+        "'Axel Lin'" <axel.lin@gmail.com>
+Subject: [PATCH 1/7] backlight: atmel-pwm-bl: use devm_gpio_request()
+Date: Wed, 13 Jun 2012 20:18:51 +0900
+Message-id: <000201cd4956$4fdc5fb0$ef951f10$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac1JVk+FmcWUZ5YVRw2/7GzFDnpSBA==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCLMWRmVeSWpSXmKPExsVy+t9jQV2Z8hv+BgcWcVlc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6MjnuyBbcEK7a+/MHWwPiYr4uRk0NCwETiWOM8RghbTOLCvfVs
+	XYxcHEIC0xklvve9YIFwZjNJbFh/GqyKTUBN4suXw+wgtohAhETzjFnMIEXMAosYJba86gZq
+	5+AQFnCVaHipDFLDIqAqsXdTEwuIzStgK3Fm4j5GCFtQ4sfke2BxZgEtifU7jzNB2PISm9e8
+	ZQYZIyGgLvHory7EKj2Jt3t+QJWLSOx78Y5xAqPALCSTZiGZNAvJpFlIWhYwsqxiFE0tSC4o
+	TkrPNdIrTswtLs1L10vOz93ECA7LZ9I7GFc1WBxiFOBgVOLh5Si94S/EmlhWXJl7iFGCg1lJ
+	hPdZNlCINyWxsiq1KD++qDQntfgQozQHi5I4b5P1BX8hgfTEktTs1NSC1CKYLBMHp1QDo8zd
+	pPQ1dUZdBmruJ7ufHFfnFVwgYrD5orvCZONX3/521uwXu+h/UX1n/9NVKzQMN+9tVpBZnHgy
+	26Dk4aevgSYZTyXCvkvcL1pj3Dllk+CKWfumTZjWNr2+Mu74Qa4Urj2/RF7v3PDw5KdsJrnY
+	KYxHt/BMmTjzdq3pm+6+PTwn5iQ/yJnU+E2JpTgj0VCLuag4EQDA6UBmRwIAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 13, 2012 at 02:42:49PM +0800, Raymond Wu wrote:
-> Hi guys,
-> 
-> >
-> > I'm not sure who is the maintainer for UIO driver. Please help if you know something. Thanks in advance!
+The devm_ functions allocate memory that is released when a driver
+detaches. This patch uses devm_gpio_request of these functions.
 
-Please refer to the MAINTAINERS file in the kernel top level directory.
-You can also use the get_maintainer script under scripts/.
+Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Cc: Richard Purdie <rpurdie@rpsys.net>
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/video/backlight/atmel-pwm-bl.c |   14 +++++---------
+ 1 files changed, 5 insertions(+), 9 deletions(-)
 
-UIO maintainers are Greg Kroah-Hartman and myself.
+diff --git a/drivers/video/backlight/atmel-pwm-bl.c b/drivers/video/backlight/atmel-pwm-bl.c
+index cd64073..df1cbb7 100644
+--- a/drivers/video/backlight/atmel-pwm-bl.c
++++ b/drivers/video/backlight/atmel-pwm-bl.c
+@@ -155,7 +155,8 @@ static int atmel_pwm_bl_probe(struct platform_device *pdev)
+ 		goto err_free_mem;
+ 
+ 	if (pwmbl->gpio_on != -1) {
+-		retval = gpio_request(pwmbl->gpio_on, "gpio_atmel_pwm_bl");
++		retval = devm_gpio_request(&pdev->dev, pwmbl->gpio_on,
++					"gpio_atmel_pwm_bl");
+ 		if (retval) {
+ 			pwmbl->gpio_on = -1;
+ 			goto err_free_pwm;
+@@ -165,7 +166,7 @@ static int atmel_pwm_bl_probe(struct platform_device *pdev)
+ 		retval = gpio_direction_output(pwmbl->gpio_on,
+ 				0 ^ pdata->on_active_low);
+ 		if (retval)
+-			goto err_free_gpio;
++			goto err_free_pwm;
+ 	}
+ 
+ 	memset(&props, 0, sizeof(struct backlight_properties));
+@@ -175,7 +176,7 @@ static int atmel_pwm_bl_probe(struct platform_device *pdev)
+ 					  &atmel_pwm_bl_ops, &props);
+ 	if (IS_ERR(bldev)) {
+ 		retval = PTR_ERR(bldev);
+-		goto err_free_gpio;
++		goto err_free_pwm;
+ 	}
+ 
+ 	pwmbl->bldev = bldev;
+@@ -197,9 +198,6 @@ static int atmel_pwm_bl_probe(struct platform_device *pdev)
+ err_free_bl_dev:
+ 	platform_set_drvdata(pdev, NULL);
+ 	backlight_device_unregister(bldev);
+-err_free_gpio:
+-	if (pwmbl->gpio_on != -1)
+-		gpio_free(pwmbl->gpio_on);
+ err_free_pwm:
+ 	pwm_channel_free(&pwmbl->pwmc);
+ err_free_mem:
+@@ -210,10 +208,8 @@ static int __exit atmel_pwm_bl_remove(struct platform_device *pdev)
+ {
+ 	struct atmel_pwm_bl *pwmbl = platform_get_drvdata(pdev);
+ 
+-	if (pwmbl->gpio_on != -1) {
++	if (pwmbl->gpio_on != -1)
+ 		gpio_set_value(pwmbl->gpio_on, 0);
+-		gpio_free(pwmbl->gpio_on);
+-	}
+ 	pwm_channel_disable(&pwmbl->pwmc);
+ 	pwm_channel_free(&pwmbl->pwmc);
+ 	backlight_device_unregister(pwmbl->bldev);
+-- 
+1.7.1
 
-> >
-> >
-> > Recently, we have some trouble when using UIO as our VPU driver.
-> >
-> > Issue description:
-> >
-> > ·         This issue comes from the so called "multi-instance case". This means that for one H/W device, it can be opened multiple times.
-> >
-> > ·         Each instance will be assigned with a FD(file descriptor) and its own uio_listener.
-> >
-> > ·         After one H/W interrupt comes, the global uio_device.event has been +1 ( See atomic_inc(&idev->event); ) while all other instance’s uio_listener->event_count is not +1.
-> >
-> > ·         So, if we have 1+ instances waiting for interrupt, all of them will be woken up because listener->event_count != event_count.
-> >
-
-Please post the code of your kernel driver part. It's hard to talk about
-that verbal description.
-
-Your driver can be included in the mainline kernel, if you go through the
-normal review process, all of these problems will be sorted out.
-
-> >
-> >
-> > Solution:
-> >
-> > ·         Export uio_device definition to uio.h or uio_driver.h, so that we can sync the event_count for all instances in the private driver.
-> >
-> > ·         Add new uio_sync_event(struct file *filep) function in uio.c, so that we can call it directly when we want to sync the event count.
-> >
-> > Please advise which one is recommended or you can propose a new one. We have a plan to submit a patch to open source community to improve it.
-> >
-> > BTW, personally, I’m curious that why you put the uio_device definition within uio.c, is there any special reason for it?
-
-Yes, nobody is supposed to fiddle around with it in a driver.
-That is very much intentional.
-
-Thanks,
-Hans
 
