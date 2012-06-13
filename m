@@ -1,79 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755040Ab2FMX1M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 19:27:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52713 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754914Ab2FMX1L (ORCPT
+	id S1754969Ab2FMX2X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 19:28:23 -0400
+Received: from usindpps03.hds.com ([207.126.252.16]:58051 "EHLO
+	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753229Ab2FMX2V convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 19:27:11 -0400
-Date: Wed, 13 Jun 2012 16:27:10 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Paton Lewis <palewis@adobe.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Jason Baron <jbaron@redhat.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Holland <pholland@adobe.com>,
-        Davide Libenzi <davidel@xmailserver.org>
-Subject: Re: [PATCH] epoll: Improved support for multi-threaded clients
-Message-Id: <20120613162710.ab1d1cd8.akpm@linux-foundation.org>
-In-Reply-To: <F044A95E1307394EBA6055B1B7144CD2010CFB1B748F@NAMBX02.corp.adobe.com>
-References: <F044A95E1307394EBA6055B1B7144CD2010CFB1B748F@NAMBX02.corp.adobe.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 13 Jun 2012 19:28:21 -0400
+X-Greylist: delayed 822 seconds by postgrey-1.27 at vger.kernel.org; Wed, 13 Jun 2012 19:28:21 EDT
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: "Luck, Tony" <tony.luck@intel.com>, Mike Waychison <mikew@google.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
+        "gong.chen@linux.intel.com" <gong.chen@linux.intel.com>,
+        "keescook@chromium.org" <keescook@chromium.org>,
+        "rob@landley.net" <rob@landley.net>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Date: Wed, 13 Jun 2012 19:28:03 -0400
+Subject: RE: [RFC][Patch]efi_pstore:Introduce an efi_pstore_overwrite
+ parameter to avoid missing messages in NVRAM
+Thread-Topic: [RFC][Patch]efi_pstore:Introduce an efi_pstore_overwrite
+ parameter to avoid missing messages in NVRAM
+Thread-Index: Ac1Jaf3kQfy2nRzQSNG3UORn8S5p+AAc0YIAAA6J6JAAGwBGkAAyPwIgAGROu0A=
+Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2E5A4DB456@USINDEVS01.corp.hds.com>
+References: <5C4C569E8A4B9B42A84A977CF070A35B2E5A4DB2B8@USINDEVS01.corp.hds.com>
+ <CAGTjWtAb3XrsTtkvW=G0YN1RCVxYxcPksSh3jEogeEu4qWqv1Q@mail.gmail.com>
+ <3908561D78D1C84285E8C5FCA982C28F1930C820@ORSMSX103.amr.corp.intel.com>
+ <5C4C569E8A4B9B42A84A977CF070A35B2E5A4DB451@USINDEVS01.corp.hds.com>
+ <3908561D78D1C84285E8C5FCA982C28F1930CA84@ORSMSX103.amr.corp.intel.com>
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F1930CA84@ORSMSX103.amr.corp.intel.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ja-JP, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
+ definitions=main-1206130266
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Let's cc Davide.
-
-On Mon, 11 Jun 2012 15:34:49 -0700
-Paton Lewis <palewis@adobe.com> wrote:
-
+> I think not - the limitation is EFI (ERST can handle several errors, I think that the ramoops patches are working with the assumption that
+> enough storage is available too).
 > 
-> It is not currently possible to reliably delete epoll items when using the
-> same epoll set from multiple threads. After calling epoll_ctl with
-> EPOLL_CTL_DEL, another thread might still be executing code related to an
-> event for that epoll item (in response to epoll_wait). Therefore the deleting
-> thread does not know when it is safe to delete resources pertaining to the
-> associated epoll item because another thread might be using those resources.
 
-We often solve this sort of thing with refcounting - the EPOLL_CTL_DEL
-will drop the refcount and, if that fell to zero, remove the object. 
-So if the object is in use by another thread, that other thread will
-hold a refcount and that other thread will do the object removal when
-dropping its refcount.
+I see.
 
-I don't know if that model can be used here?
+> The question is how easy is it for EFI to determine the "type" of the saved error (which may be from the previous booted kernel - so
+> no use using a global variable ... the information needs to be in persistent store).
 
-> The deleting thread could wait an arbitrary amount of time after calling
-> epoll_ctl with EPOLL_CTL_DEL and before deleting the item, but this is
-> inefficient and could result in the destruction of resources before another
-> thread is done handling an event returned by epoll_wait.
-> 
-> This patch introduces the new epoll_ctl command EPOLL_CTL_DISABLE, which
-> disables the associated epoll item and returns -EBUSY if the epoll item is not
-> currently in the epoll ready queue. This allows multiple threads to use a
-> mutex to determine when it is safe to delete an epoll item and its associated
-> resources. This allows epoll items to be deleted and closed efficiently and
-> without error.
-> 
-> This patch has been tested against the following checklist:
-> http://kernelnewbies.org/UpstreamMerge/SubmitChecklist
-> 
-> The following psuedocode attempts to illustrate the problem as well as the
-> solution provided by this patch.
-> 
-> 
-> Pseudocode for the deleting thread:
+OK. I will not use the global variable.
+I can check the previous event from a header supplied by pstore ,such as "Panic#1 Part1".
 
-It would be nice to start accumulating epoll test code in
-tools/testing/selftests/epoll.  If you have something which can be used
-to kick that off, please do consider preparing it.
-
-Also, a user-visible feature wuch as this should be documented in Linux
-manpages.  So please do cc Michael Kerrisk <mtk.manpages@gmail.com> as
-we work on this.
+Seiji
