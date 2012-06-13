@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754829Ab2FMV03 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 17:26:29 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:49511 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752650Ab2FMV01 convert rfc822-to-8bit (ORCPT
+	id S1754762Ab2FMV3v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 17:29:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51675 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754420Ab2FMV3u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 17:26:27 -0400
-Message-ID: <1339622781.8980.63.camel@twins>
-Subject: Re: [PATCH 2/2] perf, x86: Enable PDIR precise instruction
- profiling on IvyBridge
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: mingo@elte.hu, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Date: Wed, 13 Jun 2012 23:26:21 +0200
-In-Reply-To: <1339615201-7456-2-git-send-email-andi@firstfloor.org>
-References: <1339615201-7456-1-git-send-email-andi@firstfloor.org>
-	 <1339615201-7456-2-git-send-email-andi@firstfloor.org>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
+	Wed, 13 Jun 2012 17:29:50 -0400
+Date: Wed, 13 Jun 2012 14:29:49 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH 2/2] msync: start async writeout when MS_ASYNC
+Message-Id: <20120613142949.734818a8.akpm@linux-foundation.org>
+In-Reply-To: <1338497035-13014-3-git-send-email-pbonzini@redhat.com>
+References: <1338497035-13014-1-git-send-email-pbonzini@redhat.com>
+	<1338497035-13014-3-git-send-email-pbonzini@redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-06-13 at 12:20 -0700, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> Even with precise profiling Intel CPUs have a "skid". The sample
-> triggers a few cycles later than the instruction, so in some
-> cases there can be systematic errors where expensive instructions never
-> show up in the profile log.
-> 
-> Sandy Bridge added a new PDIR instruction retired event that randomizes
-> the sampling slightly. This corrects for systematic errors, so that
-> you should in most cases see the correct instruction getting profile hits.
-> 
-> Unfortunately the SandyBridge version could only work with a otherwise
-> quiescent CPU and was difficult to use. But now on IvyBridge this
-> restriction is gone and can be more widely used.
-> 
-> This only works for retired instructions.
-> 
-> I enabled it -- somewhat arbitarily -- for two 'p's or more.
-> 
-> To use it
-> 
-> perf record -e instructions:pp ...
-> 
-> This provides a more precise alternative to the usual cycles:pp,
-> however it will not account for expensive instructions.
+On Thu, 31 May 2012 22:43:55 +0200
+Paolo Bonzini <pbonzini@redhat.com> wrote:
 
-This patch is just wrong on too many levels.. where do you want me to
-start. Lets go with the restriction you mention is lifted, the SDM
-doesn't mention this, nor does the patch actually lift it.
+> msync.c says that applications had better use fsync() or fadvise(FADV_DONTNEED)
+> instead of MS_ASYNC.  Both advices are really bad:
+> 
+> * fsync() can be a replacement for MS_SYNC, not for MS_ASYNC;
+> 
+> * fadvise(FADV_DONTNEED) invalidates the pages completely, which will make
+>   later accesses expensive.
+> 
+> Having the possibility to schedule a writeback immediately is an advantage
+> for the applications.  They can do the same thing that fadvise does,
+> but without the invalidation part.  The implementation is also similar
+> to fadvise, but with tag-and-write enabled.
+> 
+> One example is if you are implementing a persistent dirty bitmap.
+> Whenever you set bits to 1 you need to synchronize it with MS_SYNC, so
+> that dirtiness is reported properly after a host crash.  If you have set
+> any bits to 0, getting them to disk is not needed for correctness, but
+> it is still desirable to save some work after a host crash.  You could
+> simply use MS_SYNC in a separate thread, but MS_ASYNC provides exactly
+> the desired semantics and is easily done in the kernel.
+> 
+> If the application does not want to start I/O, it can simply call msync
+> with flags equal to MS_INVALIDATE.  This one remains a no-op, as it should
+> be on a reasonable implementation.
+
+Means that people will find that their msync(MS_ASYNC) call will newly
+start IO.  This may well be undesirable for some.
+
+Also, it hardwires into the kernel behaviour which userspace itself
+could have initiated, with sync_file_range().  ie: reduced flexibility.
+
+Perhaps we can update the msync.c code comments to direct people to
+sync_file_range()?
+
+
+One wonders how msync() works with nonlinear mappings.  I guess
+"badly".  I think this was all discussed when we merged
+remap_file_pages() (what a mistake that was) and we decided "too hard".
 
