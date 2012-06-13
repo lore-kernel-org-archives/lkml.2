@@ -1,60 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754750Ab2FMSJq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 14:09:46 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37466 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754507Ab2FMSJo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 14:09:44 -0400
-Date: Wed, 13 Jun 2012 19:09:42 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH] regmap: mmio: Staticize regmap_mmio_gen_context()
-Message-ID: <20120613180942.GA9171@opensource.wolfsonmicro.com>
-References: <1339599444.8531.1.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="tKW2IUtsqtDRztdT"
-Content-Disposition: inline
-In-Reply-To: <1339599444.8531.1.camel@phoenix>
-X-Cookie: You have a truly strong individuality.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754680Ab2FMSYA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 14:24:00 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:35788 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752648Ab2FMSX6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 14:23:58 -0400
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
+        Kent Yoder <key@linux.vnet.ibm.com>
+Subject: [PATCH 1/2] drivers: crypto: move nx build to driver/crypto Makefile
+Date: Wed, 13 Jun 2012 13:22:42 -0500
+Message-Id: <1339611763-14603-1-git-send-email-sjenning@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12061318-9360-0000-0000-0000074FB47B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+When the nx driver was pulled, the Makefile that actually
+builds it is arch/powerpc/Makefile. This is unnatural.
 
---tKW2IUtsqtDRztdT
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+This patch moves the line that builds the nx driver from
+arch/powerpc/Makefile to drivers/crypto/Makefile where it
+belongs.
 
-On Wed, Jun 13, 2012 at 10:57:24PM +0800, Axel Lin wrote:
-> regmap_mmio_gen_context() is only used in regmap-mmio.c. Thus make it static.
+Cc: Kent Yoder <key@linux.vnet.ibm.com>
+Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+---
+ arch/powerpc/Makefile   |    1 -
+ drivers/crypto/Makefile |    3 ++-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-Applied, thanks.
+diff --git a/arch/powerpc/Makefile b/arch/powerpc/Makefile
+index 950d1f7..159e94f 100644
+--- a/arch/powerpc/Makefile
++++ b/arch/powerpc/Makefile
+@@ -149,7 +149,6 @@ core-$(CONFIG_KVM) 		+= arch/powerpc/kvm/
+ core-$(CONFIG_PERF_EVENTS)	+= arch/powerpc/perf/
+ 
+ drivers-$(CONFIG_OPROFILE)	+= arch/powerpc/oprofile/
+-drivers-$(CONFIG_CRYPTO_DEV_NX) += drivers/crypto/nx/
+ 
+ # Default to zImage, override when needed
+ all: zImage
+diff --git a/drivers/crypto/Makefile b/drivers/crypto/Makefile
+index 0139032..67b4fbf 100644
+--- a/drivers/crypto/Makefile
++++ b/drivers/crypto/Makefile
+@@ -14,4 +14,5 @@ obj-$(CONFIG_CRYPTO_DEV_OMAP_AES) += omap-aes.o
+ obj-$(CONFIG_CRYPTO_DEV_PICOXCELL) += picoxcell_crypto.o
+ obj-$(CONFIG_CRYPTO_DEV_S5P) += s5p-sss.o
+ obj-$(CONFIG_CRYPTO_DEV_TEGRA_AES) += tegra-aes.o
+-obj-$(CONFIG_CRYPTO_DEV_UX500) += ux500/
+\ No newline at end of file
++obj-$(CONFIG_CRYPTO_DEV_UX500) += ux500/
++obj-$(CONFIG_CRYPTO_DEV_NX) += nx/
+-- 
+1.7.9.5
 
---tKW2IUtsqtDRztdT
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJP2Nb2AAoJEBus8iNuMP3dPYMP+wRD16R1NGHHzuVF+3eEaTuV
-+vy0pdO9Wj/52UKMn38aO5TUgNaiR47ymzQWTZfPs9JZiUYRiJ02RyA1yL37vHmZ
-PlAvFlMPXAY7WBlt6Mexi61rCNhJ2XMA4C09eraRd72COXceacEObP5e4V8/3tvs
-ER+xk4aGbjbmwqZin5i48UJeDePF5TVLIwKgJhZVCPo5s/zAijJHYByDDyKwihfj
-gcADmGSyW5XdETXCIumMmVKJhQ8zy6S7TYslyilsKXb7+DHnygCEAbnGuJV37em1
-4J1CsTalDG00JlstsAIjAKFt+X/eJNAOjkp1hLJ3ITos35MDCRXBfDV/21gIF0a8
-wKWBjhbyy28VrWPD5HskWzu7KDFKJ6kOcQLN8nnhMTt6Fn9UQu727E6mlQmroYIV
-hetFm0Z9ZhGJnIpmTB4D0reUjZ4FNxX0ZiZJD3wOvnkbxUKnf0XmV3YNHZrvYa6D
-TcChDaeCSjaFLtj5mb6cm+gagTqYeN30+LipjckinS+xstt3odU3qQQbQIEAfq1X
-DpY6xyhVeOnvTB/OcmqwBHdILNiW4YfRywgnzIif13Qz5DhnuQnkqgxBhVGwx7SW
-qMPL5DVjNGZWQUos3R2qe73uuAXbPJYL3zEBSSYfIfQAit99+bv/Wz5Qf1/EOH34
-Y4kCw9RwI17hF0eZI2ZM
-=PKsH
------END PGP SIGNATURE-----
-
---tKW2IUtsqtDRztdT--
