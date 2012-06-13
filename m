@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754222Ab2FMPrS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 11:47:18 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53872 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754107Ab2FMPrQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 11:47:16 -0400
-Message-ID: <4FD8B5DB.9080209@zytor.com>
-Date: Wed, 13 Jun 2012 08:46:35 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
+	id S1754402Ab2FMPzu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 11:55:50 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:43983 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754166Ab2FMPzo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 11:55:44 -0400
+Message-ID: <4FD8B7FC.3060708@wwwdotorg.org>
+Date: Wed, 13 Jun 2012 09:55:40 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Borislav Petkov <bp@amd64.org>, Stephane Eranian <eranian@google.com>,
-        linux-kernel@vger.kernel.org, andi@firstfloor.org, mingo@elte.hu,
-        ming.m.lin@intel.com, "Yu, Fenghua" <fenghua.yu@intel.com>
-Subject: Re: [PATCH] perf/x86: check ucode before disabling PEBS on SandyBridge
-References: <20120607071531.GA4849@quad> <4FD78BE6.4060207@zytor.com>   <20120612190720.GA11137@aftab.osrc.amd.com>   <1339529614.31548.104.camel@twins>   <20120612194900.GC11137@aftab.osrc.amd.com> <4FD7A687.3040500@zytor.com>   <20120612203730.GE11137@aftab.osrc.amd.com> <4FD7A99F.8030007@zytor.com>   <20120612205609.GF11137@aftab.osrc.amd.com> <4FD7AD6F.6010008@zytor.com>  <1339576681.31548.116.camel@twins> <4FD89D09.6010800@zytor.com> <1339601872.8980.52.camel@twins>
-In-Reply-To: <1339601872.8980.52.camel@twins>
-X-Enigmail-Version: 1.4.2
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: khali@linux-fr.org, w.sang@pengutronix.de, ben-linux@fluff.org,
+        olof@lixom.net, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
+Subject: Re: [PATCH V3 1/4] i2c: tegra: make sure register writes completes
+References: <1339582359-7911-1-git-send-email-ldewangan@nvidia.com> <1339582359-7911-2-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1339582359-7911-2-git-send-email-ldewangan@nvidia.com>
+X-Enigmail-Version: 1.5pre
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/13/2012 08:37 AM, Peter Zijlstra wrote:
->>
->> perf might, but I have seen such frankensystems in the field and they
->> work (although I haven't seen that particular combo, I have to admit.)
-> 
-> Thing is, if we boot on the wsm, perf could fault the system with
-> nonexistent MSR accesses, if we boot on the nhm worst is wrong numbers I
-> think.
-> 
-> I'm not really inclined to 'fix' this.. the best I'm willing to accept
-> is a patch that would detect this situation and simply disable all
-> hardware perf support for the platform.
-> 
+On 06/13/2012 04:12 AM, Laxman Dewangan wrote:
+> The Tegra PPSB (an peripheral bus) queues writes transactions.
+> In order to guarantee that writes have completed before a
+> certain time, a read transaction to a register on the same
+> bus must be executed.
+> This is necessary in situations such as when clearing an
+> interrupt status or enable, so that when returning from an
+> interrupt handler, the HW has already de-asserted its
+> interrupt status output, which will avoid spurious interrupts.
 
-BIOS is *supposed* to pick the least capable CPU as the BSP.  BIOS
-being, well, BIOS is known to not always do that, but on the other hand
-it is apparently common enough that at least *some* BIOSes are known to
-pay attention and do so.
+> diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
 
-Anyway, I'm not suggesting we should go out of our way to make perf work
-on these systems.  Most likely, as you point out, it is either "just
-going to work" or totally fail.
+> @@ -165,6 +165,10 @@ static void i2c_writel(struct tegra_i2c_dev *i2c_dev, u32 val,
+>  	unsigned long reg)
+>  {
+>  	writel(val, i2c_dev->base + tegra_i2c_reg_addr(i2c_dev, reg));
+> +
+> +	/* Read back register to make sure that register writes completed */
+> +	if (reg != I2C_TX_FIFO)
+> +		readl(i2c_dev->base + tegra_i2c_reg_addr(i2c_dev, reg));
 
-What I don't want to see is creating a new facility and encouraging
-people to use it, when it is known to be in error.  I'm trying to find
-out at the moment just where the practical cutoff is.
-
-	-hpa
+I guess that's fine, but it sure does seem rather heavy-weight. Don't
+you only need to do the readback if you just wrote to the IRQ status or
+mask registers, rather than if you wrote to /any/ register other than
+the FIFO?
