@@ -1,94 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753560Ab2FMHdx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 03:33:53 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:49048 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751924Ab2FMHdu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 03:33:50 -0400
-MIME-Version: 1.0
-Date: Wed, 13 Jun 2012 15:33:48 +0800
-Message-ID: <CAH3Oq6Sua5vmOioOQHZd6BYRvVGfeTrNCgCHpyhZAv2_HhhcZg@mail.gmail.com>
-Subject: Deprecate suspend/resume in device_driver
-From: Ning Jiang <ning.n.jiang@gmail.com>
-To: rjw@sisk.pl
-Cc: linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=e89a8f22c72ba48a9204c2559a29
+	id S1753595Ab2FMHeV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 03:34:21 -0400
+Received: from linux-sh.org ([111.68.239.195]:41663 "EHLO linux-sh.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752404Ab2FMHeR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 03:34:17 -0400
+From: Paul Mundt <lethal@linux-sh.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Paul Mundt <lethal@linux-sh.org>
+Subject: [PATCH 2/2] irqdomain: Support one-shot tear down of domain mappings.
+Date: Wed, 13 Jun 2012 16:34:01 +0900
+Message-Id: <1339572841-26175-2-git-send-email-lethal@linux-sh.org>
+X-Mailer: git-send-email 1.7.10.207.g0bb2e
+In-Reply-To: <1339572841-26175-1-git-send-email-lethal@linux-sh.org>
+References: <1339572841-26175-1-git-send-email-lethal@linux-sh.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---e89a8f22c72ba48a9204c2559a29
-Content-Type: text/plain; charset=ISO-8859-1
+This implements a sledgehammer approach for batched domain unmapping
+regardless of domain type. In the linear revmap case it's fairly easy to
+track state and iterate over the IRQs disposing of them one at a time,
+but it's not always so straightforward in the radix tree case.
 
-The suspend/resume will not be called if they are defined in
-device_driver directly,
-PM core will only use suspend/resume function in dev_pm_ops. Thus we shall
-mark the old suspend/resume deprecated and make them scheduled for removal.
+A new irq_domain_dispose_mappings() is added to ensure all of the
+mappings are appropriately discarded, and is to be used prior to domain
+removal. Gang lookups are batched, presently 16 at a time, for no reason
+other than it seemed like a good number at the time.
 
-
->From efee1b349a8abcb4702d93c1c12e7f27c96fbcfc Mon Sep 17 00:00:00 2001
-From: Ning Jiang <ning.n.jiang@gmail.com>
-Date: Wed, 13 Jun 2012 15:00:33 +0800
-Subject: [PATCH] PM: Deprecate suspend/resume in device_driver
-
-Make suspend/resume callbacks in device_driver deprecated and scheduled
-for removal since they are not used in PM core anymore.
-
-Legacy drivers who still use them need to move suspend/resume callbacks
-to dev_pm_ops.
-
-Signed-off-by: Ning Jiang <ning.n.jiang@gmail.com>
+Signed-off-by: Paul Mundt <lethal@linux-sh.org>
 ---
- include/linux/device.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ include/linux/irqdomain.h |    1 +
+ kernel/irq/irqdomain.c    |   43 +++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 44 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/device.h b/include/linux/device.h
-index e04f577..884d9a6 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -226,8 +226,8 @@ struct device_driver {
- 	int (*probe) (struct device *dev);
- 	int (*remove) (struct device *dev);
- 	void (*shutdown) (struct device *dev);
--	int (*suspend) (struct device *dev, pm_message_t state);
--	int (*resume) (struct device *dev);
-+	int (*suspend) (struct device *dev, pm_message_t state) __deprecated;
-+	int (*resume) (struct device *dev) __deprecated;
- 	const struct attribute_group **groups;
-
- 	const struct dev_pm_ops *pm;
+diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
+index 58defd5..6f27c55 100644
+--- a/include/linux/irqdomain.h
++++ b/include/linux/irqdomain.h
+@@ -149,6 +149,7 @@ static inline int irq_domain_associate(struct irq_domain *domain, unsigned int i
+ extern unsigned int irq_create_mapping(struct irq_domain *host,
+ 				       irq_hw_number_t hwirq);
+ extern void irq_dispose_mapping(unsigned int virq);
++extern void irq_domain_dispose_mappings(struct irq_domain *domain);
+ extern unsigned int irq_find_mapping(struct irq_domain *host,
+ 				     irq_hw_number_t hwirq);
+ extern unsigned int irq_create_direct_mapping(struct irq_domain *host);
+diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+index 8591cb6..40c9ba1 100644
+--- a/kernel/irq/irqdomain.c
++++ b/kernel/irq/irqdomain.c
+@@ -546,6 +546,49 @@ void irq_dispose_mapping(unsigned int virq)
+ }
+ EXPORT_SYMBOL_GPL(irq_dispose_mapping);
+ 
++#define IRQ_DOMAIN_BATCH_IRQS	16
++
++/**
++ * irq_domain_dispose_mappings() - Dispose of all mappings in a domain
++ * @domain: domain to tear down
++ */
++void irq_domain_dispose_mappings(struct irq_domain *domain)
++{
++	if (domain->revmap_type == IRQ_DOMAIN_MAP_NOMAP)
++		return;
++
++	if (domain->linear_size) {
++		int i;
++
++		for (i = 0; i < domain->linear_size; i++)
++			irq_dispose_mapping(domain->linear_revmap[i]);
++	} else {
++		struct irq_data *irq_data_batch[IRQ_DOMAIN_BATCH_IRQS];
++		unsigned int nr_found;
++		unsigned long index = 0;
++
++		rcu_read_lock();
++
++		for (;;) {
++			int i;
++
++			nr_found = radix_tree_gang_lookup(&domain->radix_tree,
++					(void **)irq_data_batch, index,
++					ARRAY_SIZE(irq_data_batch));
++			if (!nr_found)
++				break;
++
++			for (i = 0; i < nr_found; i++)
++				irq_dispose_mapping(irq_data_batch[i]->irq);
++
++			index += nr_found;
++		}
++
++		rcu_read_unlock();
++	}
++}
++EXPORT_SYMBOL_GPL(irq_domain_dispose_mappings);
++
+ /**
+  * irq_find_mapping() - Find a linux irq from an hw irq number.
+  * @domain: domain owning this hardware interrupt
 -- 
-1.7.1
+1.7.9.rc0.28.g0e1cf
 
---e89a8f22c72ba48a9204c2559a29
-Content-Type: application/octet-stream; 
-	name="0001-PM-Deprecate-suspend-resume-in-device_driver.patch"
-Content-Disposition: attachment; 
-	filename="0001-PM-Deprecate-suspend-resume-in-device_driver.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h3e2s9yh1
-
-RnJvbSBlZmVlMWIzNDlhOGFiY2I0NzAyZDkzYzFjMTJlN2YyN2M5NmZiY2ZjIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBOaW5nIEppYW5nIDxuaW5nLm4uamlhbmdAZ21haWwuY29tPgpE
-YXRlOiBXZWQsIDEzIEp1biAyMDEyIDE1OjAwOjMzICswODAwClN1YmplY3Q6IFtQQVRDSF0gUE06
-IERlcHJlY2F0ZSBzdXNwZW5kL3Jlc3VtZSBpbiBkZXZpY2VfZHJpdmVyCgpNYWtlIHN1c3BlbmQv
-cmVzdW1lIGNhbGxiYWNrcyBpbiBkZXZpY2VfZHJpdmVyIGRlcHJlY2F0ZWQgYW5kIHNjaGVkdWxl
-ZApmb3IgcmVtb3ZhbCBzaW5jZSB0aGV5IGFyZSBub3QgdXNlZCBpbiBQTSBjb3JlIGFueW1vcmUu
-CgpMZWdhY3kgZHJpdmVycyB3aG8gc3RpbGwgdXNlIHRoZW0gbmVlZCB0byBtb3ZlIHN1c3BlbmQv
-cmVzdW1lIGNhbGxiYWNrcwp0byBkZXZfcG1fb3BzLgoKU2lnbmVkLW9mZi1ieTogTmluZyBKaWFu
-ZyA8bmluZy5uLmppYW5nQGdtYWlsLmNvbT4KLS0tCiBpbmNsdWRlL2xpbnV4L2RldmljZS5oIHwg
-ICAgNCArKy0tCiAxIGZpbGVzIGNoYW5nZWQsIDIgaW5zZXJ0aW9ucygrKSwgMiBkZWxldGlvbnMo
-LSkKCmRpZmYgLS1naXQgYS9pbmNsdWRlL2xpbnV4L2RldmljZS5oIGIvaW5jbHVkZS9saW51eC9k
-ZXZpY2UuaAppbmRleCBlMDRmNTc3Li44ODRkOWE2IDEwMDY0NAotLS0gYS9pbmNsdWRlL2xpbnV4
-L2RldmljZS5oCisrKyBiL2luY2x1ZGUvbGludXgvZGV2aWNlLmgKQEAgLTIyNiw4ICsyMjYsOCBA
-QCBzdHJ1Y3QgZGV2aWNlX2RyaXZlciB7CiAJaW50ICgqcHJvYmUpIChzdHJ1Y3QgZGV2aWNlICpk
-ZXYpOwogCWludCAoKnJlbW92ZSkgKHN0cnVjdCBkZXZpY2UgKmRldik7CiAJdm9pZCAoKnNodXRk
-b3duKSAoc3RydWN0IGRldmljZSAqZGV2KTsKLQlpbnQgKCpzdXNwZW5kKSAoc3RydWN0IGRldmlj
-ZSAqZGV2LCBwbV9tZXNzYWdlX3Qgc3RhdGUpOwotCWludCAoKnJlc3VtZSkgKHN0cnVjdCBkZXZp
-Y2UgKmRldik7CisJaW50ICgqc3VzcGVuZCkgKHN0cnVjdCBkZXZpY2UgKmRldiwgcG1fbWVzc2Fn
-ZV90IHN0YXRlKSBfX2RlcHJlY2F0ZWQ7CisJaW50ICgqcmVzdW1lKSAoc3RydWN0IGRldmljZSAq
-ZGV2KSBfX2RlcHJlY2F0ZWQ7CiAJY29uc3Qgc3RydWN0IGF0dHJpYnV0ZV9ncm91cCAqKmdyb3Vw
-czsKIAogCWNvbnN0IHN0cnVjdCBkZXZfcG1fb3BzICpwbTsKLS0gCjEuNy4xCgo=
---e89a8f22c72ba48a9204c2559a29--
