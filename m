@@ -1,57 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752906Ab2FMGYB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 02:24:01 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:40679 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752401Ab2FMGYA (ORCPT
+	id S1753078Ab2FMGYW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 02:24:22 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:61902 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752518Ab2FMGYV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 02:24:00 -0400
-Date: Wed, 13 Jun 2012 09:23:35 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
-        "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 8/8] staging: comedi: cleanup comedi_alloc_subdevices
-Message-ID: <20120613062334.GS13539@mwanda>
-References: <201206121159.55522.hartleys@visionengravers.com>
- <20120612194940.GZ4400@mwanda>
- <ADE657CA350FB648AAC2C43247A983F0020698DBC78B@AUSP01VMBX24.collaborationhost.net>
+	Wed, 13 Jun 2012 02:24:21 -0400
+Message-ID: <4FD8320C.1060308@redhat.com>
+Date: Wed, 13 Jun 2012 08:24:12 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <ADE657CA350FB648AAC2C43247A983F0020698DBC78B@AUSP01VMBX24.collaborationhost.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: Dave Chinner <david@fromorbit.com>
+CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Dave Chinner <dchinner@redhat.com>, xfs@oss.sgi.com
+Subject: Re: [PATCH 2/2] xfs: add FALLOC_FL_ZERO_RANGE to fallocate
+References: <1339515364-17374-1-git-send-email-pbonzini@redhat.com> <1339515364-17374-3-git-send-email-pbonzini@redhat.com> <20120613021610.GQ22848@dastard>
+In-Reply-To: <20120613021610.GQ22848@dastard>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 12, 2012 at 03:20:32PM -0500, H Hartley Sweeten wrote:
-> On Tuesday, June 12, 2012 12:50 PM, Dan Carpenter wrote:
-> > On Tue, Jun 12, 2012 at 11:59:55AM -0700, H Hartley Sweeten wrote:
-> >>  	for (i = 0; i < num_subdevices; ++i) {
-> >> -		dev->subdevices[i].device = dev;
-> >> -		dev->subdevices[i].async_dma_dir = DMA_NONE;
-> >> -		spin_lock_init(&dev->subdevices[i].spin_lock);
-> >> -		dev->subdevices[i].minor = -1;
-> >> +		s = dev->subdevices + i;
-> >
-> > You don't have to resend, but I think this would look better as:
-> >
-> > 		s = &dev->subdevices[i];
-> 
-> I don't disagree but the "dev->subdevices +i" format is consistently
-> used in all the comedi stuff. If the format above is preferred we
-> should probably update everything,
+Il 13/06/2012 04:16, Dave Chinner ha scritto:
+>> > +	BUG_ON((mode & FALLOC_FL_PUNCH_HOLE) && (mode & FALLOC_FL_ZERO_RANGE));
+> Never put BUG_ON() or BUG() in XFS code that can return an error.
+> Return EINVAL if we chose not to support it, and if it's really
+> something we consider bad, emit a warning to syslog (i.e.
+> xfs_warn()) and potentially add a ASSERT() case so that debug
+> kernels will trip over it. Nobody should be panicing a production
+> system just because a user supplied a set of incorrect syscall
+> paramters....
 
-To me the one is way more clear than the other.  If we wanted we
-could write any array in terms of pointer math, but arrays are
-easier to understand.
+I know, the BUG_ON() is because it is ruled out in VFS code.  Of course
+if I remove that code, this will not be a BUG_ON() anymore.
 
-regards,
-dan carpenter
+Paolo
 
