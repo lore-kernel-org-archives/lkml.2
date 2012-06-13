@@ -1,83 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753705Ab2FMLMM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 07:12:12 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9530 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753558Ab2FMLML (ORCPT
+	id S1753863Ab2FMLMc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 07:12:32 -0400
+Received: from relay.parallels.com ([195.214.232.42]:49155 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753783Ab2FMLM3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 07:12:11 -0400
-X-Authority-Analysis: v=2.0 cv=eIiRfQV1 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=bavL_TnxFR0A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=-2auahfU0qTyA1z8OBEA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1339585929.13377.152.camel@gandalf.stny.rr.com>
-Subject: Re: [RFC][PATCH 00/13 v2] kprobes/ftrace: Making ftrace usable for
- kprobes
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        yrl.pp-manager.tt@hitachi.com
-Date: Wed, 13 Jun 2012 07:12:09 -0400
-In-Reply-To: <4FD84E84.1090001@hitachi.com>
-References: <20120612224327.426900129@goodmis.org>
-	 <4FD84E84.1090001@hitachi.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1+b1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 13 Jun 2012 07:12:29 -0400
+From: Roman Kagan <rkagan@parallels.com>
+To: Greg KH <greg@kroah.com>
+CC: David Miller <davem@davemloft.net>,
+        "jeffrey.t.kirsher@intel.com" <jeffrey.t.kirsher@intel.com>,
+        "tarbal@gmail.com" <tarbal@gmail.com>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "jesse.brandeburg@intel.com" <jesse.brandeburg@intel.com>,
+        "bruce.w.allan@intel.com" <bruce.w.allan@intel.com>,
+        "carolyn.wyborny@intel.com" <carolyn.wyborny@intel.com>,
+        "donald.c.skidmore@intel.com" <donald.c.skidmore@intel.com>,
+        "gregory.v.rose@intel.com" <gregory.v.rose@intel.com>,
+        "peter.p.waskiewicz.jr@intel.com" <peter.p.waskiewicz.jr@intel.com>,
+        "alexander.h.duyck@intel.com" <alexander.h.duyck@intel.com>,
+        "john.ronciak@intel.com" <john.ronciak@intel.com>,
+        "dnelson@redhat.com" <dnelson@redhat.com>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 13 Jun 2012 15:12:17 +0400
+Subject: Re: [PATCH] e1000: save skb counts in TX to avoid cache misses
+Thread-Topic: [PATCH] e1000: save skb counts in TX to avoid cache misses
+Thread-Index: Ac1JVWTKaag1BUjsQ/Ond77ug0oBTQ==
+Message-ID: <1339585937.17472.11.camel@rkaganb.sw.ru>
+References: <b838d871c0d507787373061e4edd91a624d62475.1339073391.git.rkagan@parallels.com>
+	 <4FD11F49.5060805@gmail.com>
+	 <20120607.144358.1732928576389957779.davem@davemloft.net>
+	 <20120608021542.GA10112@kroah.com> <1339141042.7850.51.camel@rkaganb.sw.ru>
+In-Reply-To: <1339141042.7850.51.camel@rkaganb.sw.ru>
+Accept-Language: en-US, ru-RU
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US, ru-RU
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q5DBCj2w024140
 
-On Wed, 2012-06-13 at 17:25 +0900, Masami Hiramatsu wrote:
-> (2012/06/13 7:43), Steven Rostedt wrote:
-> > If an arch supports passing of ftrace ops, it must also pass regs.
-> > But it does not need to support passing regs. By default
-> > an arch can just pass NULL. If it supports  regs, then
-> > it can allow tools like kprobes to ask for regs. Otherwise the
-> > regs parameter should just be NULL.
+On Fri, 2012-06-08 at 11:37 +0400, Roman Kagan wrote:
+> On Fri, 2012-06-08 at 06:15 +0400, Greg KH wrote:
+> > On Thu, Jun 07, 2012 at 02:43:58PM -0700, David Miller wrote:
+> > > From: Jeff Kirsher <tarbal@gmail.com>
+> > > Date: Thu, 07 Jun 2012 14:38:17 -0700
+> > > 
+> > > > Thanks! I have applied the patch to my queue
+> > > 
+> > > Why?
+> > > 
+> > > My impression is that this is a patch already in the tree, and it's
+> > > being submitted for -stable but such minor performance hacks are
+> > > absolutely not appropriate for -stable submission.
+> > 
+> > The patch description says it is fixing reported oopses,
 > 
-> Hmm, by default, will the ftrace_ops be also NULL? or NULL only if
-> the arch doesn't support passing ftrace ops?
-> I mean, should the generic handler always check if ftrace_ops
-> isn't NULL before using it?
+> Exactly.
+> 
+> > but the Subject: isn't all that helpful there.
+> 
+> Well I just preserved the original subject from the upstream commit.
+> Want me to resubmit with a more alarming one?
+> 
+> > So which is this?  Should I accept it for a stable release or not?
+> 
+> IMO yes ;)
 
-Nope, ftrace_ops will always be set with the ops that registered it for
-the callback. As suppose to regs, ftrace_ops is created by the generic
-core code and is arch agnostic. With regs, that's very arch specific and
-if an arch does not support passing regs, there's nothing that the core
-code can do about it but pass a NULL pointer telling the callback
-"Sorry!".
+What came out of this discussion?  Should I resubmit with a different
+subject, or the original one is good enough?
 
-Currently there's a few things that an arch needs to do in the mcount
-handler to support full dynamic ftrace. One is to check the
-function_trace_stop variable is not set before calling the callback. If
-an arch does not support this, then ftrace will only let the callback be
-a generic function that does the check on behalf of the arch and then
-calls the normal routine.
+The patch resolves a real oops; we've seen it multiple times when
+running Ubuntu-11.10 in virtual machines.  Upstream and RHEL have the
+fix since long.  Ubuntu is waiting for 3.0-stable to merge it
+(https://bugs.launchpad.net/bugs/1009545).
 
-Now the arch also needs to support sending in the 3rd parameter the
-ftrace_ops. If it does not support this ftrace generic code will.
-Luckily, it already has code to do this. If more than one ftrace_ops is
-registered (even if they register to different functions), a generic
-handler is called that iterates through all the registered ftrace_ops to
-call their callbacks. It also checks if the ftrace_ops has registered
-the current function before calling it.
+I'd appreciate any suggestion on how to proceed.
 
-Now if an arch does not pass the ftrace ops we simply call this list
-function instead. The list function already has access to what
-ftrace_ops is being used and passes that to the callback. Again, this is
-what must be done anyway if more than one ftrace_ops is registered to
-the function tracer.
-
-As this is another indirect call that must be made, I removed the old
-helper function that does the check against function_trace_stop variable
-and made the arch call the list code instead. The list code now does the
-check. If the arch does not support checking function_trace_stop, it
-most likely doesn't support passing ftrace_ops either.
-
--- Steve
-
-
+Thanks,
+Roman.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
