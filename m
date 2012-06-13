@@ -1,69 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754445Ab2FMRae (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 13:30:34 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36168 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754234Ab2FMRad convert rfc822-to-8bit (ORCPT
+	id S1754500Ab2FMRo3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 13:44:29 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50320 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752321Ab2FMRo2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 13:30:33 -0400
+	Wed, 13 Jun 2012 13:44:28 -0400
+Date: Wed, 13 Jun 2012 18:44:26 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Sangbeom Kim <sbkim73@samsung.com>
+Cc: "'Liam Girdwood'" <lrg@ti.com>, linux-kernel@vger.kernel.org,
+        sbkim01@gmail.com
+Subject: Re: [PATCH 2/5] regulator: Fix the s5m8767a problem of the division
+ by null
+Message-ID: <20120613174425.GB7804@opensource.wolfsonmicro.com>
+References: <042001cd493e$57920600$06b61200$@com>
 MIME-Version: 1.0
-In-Reply-To: <1339607167-26654-1-git-send-email-fabio.estevam@freescale.com>
-References: <1339607167-26654-1-git-send-email-fabio.estevam@freescale.com>
-Date: Wed, 13 Jun 2012 23:00:32 +0530
-Message-ID: <CAHdPZaPYOUctZpUoGgp8q3jBHpsJXJnA7bsn_uszBXDtWMQdvA@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: mxs: Use kfree to fix build error
-From: "devendra.aaru" <devendra.aaru@gmail.com>
-To: Fabio Estevam <fabio.estevam@freescale.com>
-Cc: linus.walleij@linaro.org, shawn.guo@freescale.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="qlTNgmc+xy1dBmNv"
+Content-Disposition: inline
+In-Reply-To: <042001cd493e$57920600$06b61200$@com>
+X-Cookie: Advancement in position.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Fabio,
 
-On Wed, Jun 13, 2012 at 10:36 PM, Fabio Estevam
-<fabio.estevam@freescale.com> wrote:
-> commit 0bf7481 (pinctrl: pinctrl-mxs: Take care of frees if the kzalloc fails)
-> introduced the following build error:
->
-> drivers/pinctrl/pinctrl-mxs.c:140:3: error: implicit declaration of function 'free'
->
-> Use kfree function instead.
->
-> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
-> ---
-> This applies against linux-next
->  drivers/pinctrl/pinctrl-mxs.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/pinctrl/pinctrl-mxs.c b/drivers/pinctrl/pinctrl-mxs.c
-> index afb50ee..4ba4636 100644
-> --- a/drivers/pinctrl/pinctrl-mxs.c
-> +++ b/drivers/pinctrl/pinctrl-mxs.c
-> @@ -137,7 +137,7 @@ static int mxs_dt_node_to_map(struct pinctrl_dev *pctldev,
->
->  free_group:
->        if (!purecfg)
-> -               free(group);
-> +               kfree(group);
->  free:
->        kfree(new_map);
->        return ret;
-> --
-> 1.7.1
->
->
+--qlTNgmc+xy1dBmNv
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
+On Wed, Jun 13, 2012 at 05:27:16PM +0900, Sangbeom Kim wrote:
+> If ramp_delay is 0, delay value can be divided by zero.
+> This patch can fix the problem.
 
+Applied, thanks.
 
-agh, i am very sorry that i didn't built this because it was not
-selectable in make allconfig. (mine is x86 intel corei3),
-anyway its wrong that i used  a userspace free instead kfree.
+--qlTNgmc+xy1dBmNv
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Thanks for fixing this.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Acked-by: Devendra Naga <devendra.aaru@gmail.com>
+iQIcBAEBAgAGBQJP2NFaAAoJEBus8iNuMP3dwT4QAIya/8VTSq+CtvSxQOhhXXW8
+hJTBBqa/PJJl2X+MBK5M4NAsREKRu0NNnb/l/y27/OBYR0POFYxEJqAQk1oviYex
+xHqpeufknSjZlqohYjI6Q2f8rvSOvTKWKYIIfoTbTeLwiJoJxVHiTpygX+sfpTJq
+ZfhJZmqMv4tQFrmOrL75yi8i2ok9xL23W407eh+Y2xUNrZTf/Qq6JpVFZnY8YwW2
+UeHhJ73Z4Fz91ixczYyp0gn/eDtasL+nvPOL9oTVc9UQtq1INYMTPB5nI/HEl9Xg
+tH+XFsfFzVFoY79xBxRu0nngNf9r39CYa2iLzr09zprwVxHXp6Yyo35NvGQ0Pwjx
+Jbrs9vLQDvxscK7tD+zM/EgpKEqwYCxp3ARppoT5jw9h6yBQD6+RsRaSDlfxgilB
+7vXKmSYHrFw22f+vEF+/IlWNHEVE+Cn+/2fhm60DEXNufnekDmsT1vipQE+lbfwq
+Dp+DTbTcsIfD8tNyZey2Bd2Ed6xseZ4wfzp2n/Iaf7oNIBV9JG6BaqqEDwOUo6av
+9Sc10o7yDDVELAUlxWIUg9SgaYd1+FMNGYZSLBhdWo1N87ckZEQ0Kiv53Wbwx24h
+cN3k/ukxBqWZiJjGBUSUXdZJFhbMIDU1TdfKCerv6YiZlx5o092pktCgZPs95qB8
+tggHQoighT+30HDmqs8M
+=voCG
+-----END PGP SIGNATURE-----
+
+--qlTNgmc+xy1dBmNv--
