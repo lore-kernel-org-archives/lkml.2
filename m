@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754942Ab2FMWWI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 18:22:08 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:43674 "HELO
+	id S1754998Ab2FMWWO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 18:22:14 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:44482 "HELO
 	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754890Ab2FMWWB (ORCPT
+	with SMTP id S1754946Ab2FMWWJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 18:22:01 -0400
+	Wed, 13 Jun 2012 18:22:09 -0400
 X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX1+CaSwEByKCkRfqdG1YirpWuM4yHuqoo44AbRE/Pl
-	phEOiOjBspft7R
+X-Provags-ID: V01U2FsdGVkX1/yMOZK+kryFOIchU77O83kD1laISj9gIeVqRmxqW
+	FiUte5ws19oCV6
 From: Peter Huewe <peterhuewe@gmx.de>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Arnaud Patard <arnaud.patard@rtp-net.org>,
@@ -17,9 +17,9 @@ Cc: Arnaud Patard <arnaud.patard@rtp-net.org>,
         Dan Carpenter <dan.carpenter@oracle.com>,
         Peter Huewe <peterhuewe@gmx.de>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 02/14] staging/xgifb: Add mutext for fb_mmap locking
-Date: Thu, 14 Jun 2012 00:21:40 +0200
-Message-Id: <1339626112-20671-2-git-send-email-peterhuewe@gmx.de>
+Subject: [PATCH 11/14] staging/xgifb: Remove useless function XGI_CloseCRTC
+Date: Thu, 14 Jun 2012 00:21:49 +0200
+Message-Id: <1339626112-20671-11-git-send-email-peterhuewe@gmx.de>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1339626112-20671-1-git-send-email-peterhuewe@gmx.de>
 References: <1339626112-20671-1-git-send-email-peterhuewe@gmx.de>
@@ -28,44 +28,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a mutex for fb_mmap around smem_start and smem_len
-so the mutex inside the fb_mmap() is actually used.  Changing of
-these fields before calling the framebuffer_register() are not mutexed.
-
-We check whether framebuffer_register has been called by reading
-fbinfo->count.
-
-See 537a1bf0 - "fbdev: add mutex for fb_mmap locking" by Krzysztof Helt
-for details.
+Since XGI_CloseCRTC does not perform anything useful we can simply
+remove it.
 
 Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 ---
- drivers/staging/xgifb/XGI_main_26.c |    9 ++++++++-
- 1 files changed, 8 insertions(+), 1 deletions(-)
+ drivers/staging/xgifb/vb_setmode.c |   12 ------------
+ 1 files changed, 0 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/staging/xgifb/XGI_main_26.c b/drivers/staging/xgifb/XGI_main_26.c
-index ff88f1d..f427b85 100644
---- a/drivers/staging/xgifb/XGI_main_26.c
-+++ b/drivers/staging/xgifb/XGI_main_26.c
-@@ -1350,10 +1350,17 @@ static int XGIfb_get_fix(struct fb_fix_screeninfo *fix, int con,
+diff --git a/drivers/staging/xgifb/vb_setmode.c b/drivers/staging/xgifb/vb_setmode.c
+index 3b9a0f7..2ffab45 100644
+--- a/drivers/staging/xgifb/vb_setmode.c
++++ b/drivers/staging/xgifb/vb_setmode.c
+@@ -6229,17 +6229,6 @@ static void XGI_SetCRT2ModeRegs(unsigned short ModeNo,
+ 	}
+ }
  
- 	strncpy(fix->id, "XGI", sizeof(fix->id) - 1);
+-static void XGI_CloseCRTC(struct xgi_hw_device_info *HwDeviceExtension,
+-		struct vb_device_info *pVBInfo)
+-{
+-	unsigned short tempbx;
+-
+-	tempbx = 0;
+-
+-	if (pVBInfo->VBInfo & XGI_SetCRT2ToLCDA)
+-		tempbx = 0x08A0;
+-
+-}
  
--	fix->smem_start = xgifb_info->video_base;
-+	/* if register_framebuffer has been called, we must lock */
-+	if (atomic_read(&info->count))
-+		mutex_lock(&info->mm_lock);
+ void XGI_UnLockCRT2(struct xgi_hw_device_info *HwDeviceExtension,
+ 		struct vb_device_info *pVBInfo)
+@@ -6831,7 +6820,6 @@ unsigned char XGISetModeNew(struct xgifb_video_info *xgifb_info,
  
-+	fix->smem_start = xgifb_info->video_base;
- 	fix->smem_len = xgifb_info->video_size;
- 
-+	/* if register_framebuffer has been called, we can unlock */
-+	if (atomic_read(&info->count))
-+		mutex_unlock(&info->mm_lock);
-+
- 	fix->type = FB_TYPE_PACKED_PIXELS;
- 	fix->type_aux = 0;
- 	if (xgifb_info->video_bpp == 8)
+ 		XGI_SetCRT2ModeRegs(ModeNo, HwDeviceExtension, pVBInfo);
+ 		XGI_OEM310Setting(ModeNo, ModeIdIndex, pVBInfo); /*0212*/
+-		XGI_CloseCRTC(HwDeviceExtension, pVBInfo);
+ 		XGI_EnableBridge(xgifb_info, HwDeviceExtension, pVBInfo);
+ 	} /* !XG20 */
+ 	else {
 -- 
 1.7.3.4
 
