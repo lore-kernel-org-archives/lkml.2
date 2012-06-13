@@ -1,72 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754476Ab2FMQtF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 12:49:05 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:51383 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754150Ab2FMQtD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 12:49:03 -0400
-Message-ID: <4FD8C476.3080904@atmel.com>
-Date: Wed, 13 Jun 2012 18:48:54 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1754555Ab2FMQw4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 12:52:56 -0400
+Received: from mga01.intel.com ([192.55.52.88]:16141 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753410Ab2FMQwz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 12:52:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="179543013"
+Message-ID: <4FD8C51C.4060404@linux.intel.com>
+Date: Wed, 13 Jun 2012 09:51:40 -0700
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>
-CC: Ludovic Desroches <ludovic.desroches@atmel.com>,
-        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] at91: platform data for atmel-mci (for 3.5)
-References: <4FBE4FE7.3010005@atmel.com> <4FC722B7.10409@atmel.com> <CAOesGMhq8uzei+Dn8=1iYrTiAOtuByjm58j9zgFyORVG5VZuNQ@mail.gmail.com> <4FCCD8D9.2070005@atmel.com>
-In-Reply-To: <4FCCD8D9.2070005@atmel.com>
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Hitoshi Mitake <h.mitake@gmail.com>
+CC: Ingo Molnar <mingo@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Michel Lespinasse <walken@google.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [PATCH] perf bench: add new benchmark subsystem and suite "futex
+ wait"
+References: <1337268092-6765-1-git-send-email-h.mitake@gmail.com> <4FB52636.3040604@linux.intel.com> <CAMO-S2g9fkg_KH0CPOsB_7GQTN2mu8zir+UZDp6=VC+7XDrfrg@mail.gmail.com> <CAMO-S2gyzK3VTQcTRw+FAO9ui_gy=1z=MVxUYM9sPN51KrDgkg@mail.gmail.com> <4FCE4D24.5040307@linux.intel.com> <20120606073909.GI17808@gmail.com> <CAMO-S2j_3tT3WEYiiSo1MWwRctMhKdaNOSTRUx+2Vpvp+eYCHQ@mail.gmail.com> <CAMO-S2j1GkBDFv3qXVcXrDk_D8jkVc3nCYe7+KQU3qpinLf5wQ@mail.gmail.com>
+In-Reply-To: <CAMO-S2j1GkBDFv3qXVcXrDk_D8jkVc3nCYe7+KQU3qpinLf5wQ@mail.gmail.com>
+X-Enigmail-Version: 1.4.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.159.245.112]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04/2012 05:48 PM, Nicolas Ferre :
-> On 05/31/2012 11:04 PM, Olof Johansson :
->> Hi Nicolas,
->>
->> On Thu, May 31, 2012 at 12:50 AM, Nicolas Ferre <nicolas.ferre@atmel.com
->> <mailto:nicolas.ferre@atmel.com>> wrote:
->>
->>     On 05/24/2012 05:12 PM, Nicolas Ferre :
->>     > Hi Arnd, hi Olof,
->>
->>     Ping?
->>
->>     (or maybe you will have a look at this after the merge window...)
->>
->>
->> So, I looked at this branch yesterday but I wasn't entirely happy with
->> the number of ifdefs it adds.
-> 
-> Unfortunately, this is the usual shape of any devices/boards files on
-> AT91. This amount will be reduced when we remove the old driver and when
-> we move newer/popular devices to Device Tree...
-> 
->> If the idea is to deprecate the old driver, wouldn't it make more sense
->> to just cut everyone over instead of having both sets of setup in the
->> kernel?
-> 
-> Well, the old driver has existed since a very long time and I think that
-> people are used to it on oldest platforms. This is why we put in place a
-> overlapping period. This way we hope that the transition will be smoother.
-> On the other hand, the old code will be removed in 3.7 so the
-> overlapping period will not be so long.
-> I hope that it will allow people to track bugs if some are remaining and
-> switch to newer driver easily.
 
-Olof, Arnd,
 
-So, do you have made up your mind about this pull request?
+On 06/07/2012 08:11 AM, Hitoshi Mitake wrote:
+> On Thu, Jun 7, 2012 at 1:02 AM, Hitoshi Mitake <h.mitake@gmail.com> wrote:
+>> On Wed, Jun 6, 2012 at 4:39 PM, Ingo Molnar <mingo@kernel.org> wrote:
+>>>
+>>> * Darren Hart <dvhart@linux.intel.com> wrote:
+>>>
+>>>> On 05/20/2012 02:37 AM, Hitoshi Mitake wrote:
+>>>>> On Sun, May 20, 2012 at 5:32 PM, Hitoshi Mitake <h.mitake@gmail.com> wrote:
+>>>>>> On Fri, May 18, 2012 at 1:24 AM, Darren Hart <dvhart@linux.intel.com> wrote:
+>>>>>>> On 05/17/2012 08:21 AM, Hitoshi Mitake wrote:
+>>>>>>>> Hi Ingo, Eric and Darren,
+>>>>>>>> (CCed perf and futex folks)
+>>>>>>>>
+>>>>>>>> I wrote this patch for adding new subsystem "futex" and its suite "wait" to perf
+>>>>>>>> bench on tip/master. This is based on futextest by Darren Hart.
+>>>>>>>>
+>>>>>>>> Could you allow me to import your source code of futextest to perf bench, Darren?
+>>>>>>>>
+>>>>>>>
+>>>>>>> I do have some concerns I'd like to address first.
+>>>>>>>
+>>>>>>> What is advantage of incorporating this into perf as opposed to running
+>>>>>>> it with perf?
+>>>>>>
+>>>>>> The main and direct advantage is that perf bench can share useful
+>>>>>> utilities stored under tools/perf/util/ directory e.g. parse-options[ch].
+>>>>>>
+>>>>>
+>>>>> BTW, I often feel parse-options.[ch] of perf (this was come from git,
+>>>>> right?) is very useful not only for perf and git but also other
+>>>>> projects. So I think these stuff are worth independence as a
+>>>>> library. If the library contains unified feature for parsing and
+>>>>> evaluating configuration files, the hell of managing configurable
+>>>>> options will be reduced. e.g. I often use "strace -e open <command>"
+>>>>> to detect configuration files read by the <command>...
+>>>>>
+>>>>> I thought that if perf bench can be independent from perf with such
+>>>>> efforts, it can be smaller sized and statically linked binary. From my
+>>>>> experience, this will be good for embedded systems people.
+>>>>>
+>>>>> This independence also has risk: less people can find it or is
+>>>>> attracted even if it stays in the kernel tree (e.g. tools/bench/). But
+>>>>> it seems that very few people know about perf bench, so this will not
+>>>>> be a serious problem ;)
+>>>>>
+>>>>> I'd like to hear your opinion.
+>>>>
+>>>> I haven't been involved with perf tools/bench so I haven't
+>>>> really formed an opinion. Ingo and Arnaldo, would either of
+>>>> you care to weigh in on the pros/cons of merging futextest
+>>>> into perf?
+>>>
+>>> No objections from me - 'perf bench futex' seems rather natural
+>>> to type to me and it would certainly make futex performance
+>>> testing easier and more widespread.
+>>>
+>>> So it all depends on whether you'd like to host it upstream and
+>>> within tools/perf/bench/.
+>>>
+> 
+> There is another problem. futextest containts code not for benchmark,
+> for functional tests. My understand is: Darren doesn't like the
+> situation that the benchmark part is imported into perf bench and the
+> functional test part remains in futextest. Because this situation is
+> not good for maintenance.
+> 
+> I think that the functional tests part is not suitable for perf bench
+> because of its purpose, but suitable for tools/ directly of Linux
+> kernel.
+> 
+> If both of benchmark part and functional test part of futextest can be
+> imported into kernel source tree, maintenance problem will be solved.
+> Even if the benchmark part (in perf bench) and functional test part
+> are devided, they will be able to share common header files. For
+> example, these headers can be placed in tools/include directory.
+> 
+> Thanks,
 
-Best regards,
+
+If tools/testing is an appropriate place for functional and stress tests
+that would make this easier. I really like the idea of more testing for
+futexes and more eyes on the futextest code itself.
+
+Is completely integrating futextest into linux/tools/perf and
+linux/tools/testing the approach everyone would like to see us take here?
+
 -- 
-Nicolas Ferre
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
+
+
