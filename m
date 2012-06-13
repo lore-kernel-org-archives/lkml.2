@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753719Ab2FMSlp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 14:41:45 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:49383 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752005Ab2FMSlo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 14:41:44 -0400
-Message-ID: <1339612902.28729.2.camel@joe2Laptop>
-Subject: [PATCH] get_maintainer: Fix --help warning
-From: Joe Perches <joe@perches.com>
-To: Paul Bolle <pebolle@tiscali.nl>, Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Date: Wed, 13 Jun 2012 11:41:42 -0700
-In-Reply-To: <1339610958.30984.158.camel@x61.thuisdomein>
-References: <1339610958.30984.158.camel@x61.thuisdomein>
+	id S1754504Ab2FMSmL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 14:42:11 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:6409 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754189Ab2FMSlu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 14:41:50 -0400
+Message-ID: <1339612907.13326.5.camel@lorien2>
+Subject: [PATCH] x86: kernel/cpu/mtrr/cleanup.c simple_strtoul cleanup
+From: Shuah Khan <shuahkhan@gmail.com>
+Reply-To: shuahkhan@gmail.com
+To: tglx@linutronix.de, hpa@zytor.com, mingo@redhat.com
+Cc: shuahkhan@gmail.com, x86@kernel.org, LKML <linux-kernel@vger.kernel.org>
+Date: Wed, 13 Jun 2012 12:41:47 -0600
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using --help emits a concatenation error.
-Fix it.
+Change parse_mtrr_spare_reg() to call kstrtoul() instead of calling obsoleted
+simple_strtoul().
 
-Reported-by: Paul Bolle <pebolle@tiscali.nl>
-Signed-off-by: Joe Perches <joe@perches.com>
+Signed-off-by: Shuah Khan <shuahkhan@gmail.com>
 ---
- scripts/get_maintainer.pl |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ arch/x86/kernel/cpu/mtrr/cleanup.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/scripts/get_maintainer.pl b/scripts/get_maintainer.pl
-index 0948c6b..8b673dd 100755
---- a/scripts/get_maintainer.pl
-+++ b/scripts/get_maintainer.pl
-@@ -83,6 +83,8 @@ push(@signature_tags, "Signed-off-by:");
- push(@signature_tags, "Reviewed-by:");
- push(@signature_tags, "Acked-by:");
- 
-+my $signature_pattern = "\(" . join("|", @signature_tags) . "\)";
-+
- # rfc822 email address - preloaded methods go here.
- my $rfc822_lwsp = "(?:(?:\\r\\n)?[ \\t])";
- my $rfc822_char = '[\\000-\\377]';
-@@ -473,7 +475,6 @@ my @subsystem = ();
- my @status = ();
- my %deduplicate_name_hash = ();
- my %deduplicate_address_hash = ();
--my $signature_pattern;
- 
- my @maintainers = get_maintainers();
- 
+diff --git a/arch/x86/kernel/cpu/mtrr/cleanup.c b/arch/x86/kernel/cpu/mtrr/cleanup.c
+index ac140c7..601aa4e 100644
+--- a/arch/x86/kernel/cpu/mtrr/cleanup.c
++++ b/arch/x86/kernel/cpu/mtrr/cleanup.c
+@@ -465,7 +465,7 @@ static unsigned long nr_mtrr_spare_reg __initdata =
+ static int __init parse_mtrr_spare_reg(char *arg)
+ {
+ 	if (arg)
+-		nr_mtrr_spare_reg = simple_strtoul(arg, NULL, 0);
++		kstrtoul(arg, 0, &nr_mtrr_spare_reg);
+ 	return 0;
+ }
+ early_param("mtrr_spare_reg_nr", parse_mtrr_spare_reg);
+-- 
+1.7.9.5
+
 
 
