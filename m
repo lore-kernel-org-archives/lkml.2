@@ -1,60 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754776Ab2FMV0R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 17:26:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51670 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754556Ab2FMV0Q (ORCPT
+	id S1754829Ab2FMV03 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 17:26:29 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:49511 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752650Ab2FMV01 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 17:26:16 -0400
-Date: Wed, 13 Jun 2012 14:26:14 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH 1/2] msync: support syncing a small part of the file
-Message-Id: <20120613142614.6af42ef5.akpm@linux-foundation.org>
-In-Reply-To: <1338497035-13014-2-git-send-email-pbonzini@redhat.com>
-References: <1338497035-13014-1-git-send-email-pbonzini@redhat.com>
-	<1338497035-13014-2-git-send-email-pbonzini@redhat.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
+	Wed, 13 Jun 2012 17:26:27 -0400
+Message-ID: <1339622781.8980.63.camel@twins>
+Subject: Re: [PATCH 2/2] perf, x86: Enable PDIR precise instruction
+ profiling on IvyBridge
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: mingo@elte.hu, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Date: Wed, 13 Jun 2012 23:26:21 +0200
+In-Reply-To: <1339615201-7456-2-git-send-email-andi@firstfloor.org>
+References: <1339615201-7456-1-git-send-email-andi@firstfloor.org>
+	 <1339615201-7456-2-git-send-email-andi@firstfloor.org>
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 31 May 2012 22:43:54 +0200
-Paolo Bonzini <pbonzini@redhat.com> wrote:
-
-> msync does not need to flush changes to the entire file, even with MS_SYNC.
-> Instead, it can use vfs_fsync_range to only synchronize a part of the file.
+On Wed, 2012-06-13 at 12:20 -0700, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
 > 
-> In addition, not all metadata has to be synced; msync is closer to
-> fdatasync than it is to msync.  So, pass 1 to vfs_fsync_range.
+> Even with precise profiling Intel CPUs have a "skid". The sample
+> triggers a few cycles later than the instruction, so in some
+> cases there can be systematic errors where expensive instructions never
+> show up in the profile log.
+> 
+> Sandy Bridge added a new PDIR instruction retired event that randomizes
+> the sampling slightly. This corrects for systematic errors, so that
+> you should in most cases see the correct instruction getting profile hits.
+> 
+> Unfortunately the SandyBridge version could only work with a otherwise
+> quiescent CPU and was difficult to use. But now on IvyBridge this
+> restriction is gone and can be more widely used.
+> 
+> This only works for retired instructions.
+> 
+> I enabled it -- somewhat arbitarily -- for two 'p's or more.
+> 
+> To use it
+> 
+> perf record -e instructions:pp ...
+> 
+> This provides a more precise alternative to the usual cycles:pp,
+> however it will not account for expensive instructions.
 
-Would be nice, but if applications were previously assuming that an
-msync() was syncing the whole file, this patch will secretly and subtly
-break them.  Convince me that this change won't weaken anyone's data
-integrity ;)
-
-> @@ -77,18 +79,23 @@ SYSCALL_DEFINE3(msync, unsigned long, start, size_t, len, int, flags)
->  			goto out_unlock;
->  		}
->  		file = vma->vm_file;
-> -		start = vma->vm_end;
-> +		next = min(end, vma->vm_end);
->  		if ((flags & MS_SYNC) && file &&
->  				(vma->vm_flags & VM_SHARED)) {
-> +			file_offset = vma->vm_pgoff * PAGE_SIZE;
->  			get_file(file);
->  			up_read(&mm->mmap_sem);
-> -			error = vfs_fsync(file, 0);
-> +			error = vfs_fsync_range(file,
-> +					start - vma->vm_start + file_offset,
-> +					next - vma->vm_start + file_offset, 1);
-
-Is that an off-by-one?  The "end" argument to vfs_fsync_range() is
-"inclusive".  ie, it indexes the last byte, not the last byte+1.  It's
-done this way so we can refer to end-of-file with -1UL.
+This patch is just wrong on too many levels.. where do you want me to
+start. Lets go with the restriction you mention is lifted, the SDM
+doesn't mention this, nor does the patch actually lift it.
 
