@@ -1,42 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754213Ab2FMOmL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 10:42:11 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:59261 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753531Ab2FMOmK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 10:42:10 -0400
-Date: Wed, 13 Jun 2012 10:42:06 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Vincent Guittot <vincent.guittot@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, devicetree-discuss@lists.ozlabs.org,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@secretlab.ca>, rob.herring@calxeda.com
-Subject: Re: [RFC 3/4] ARM: topology: Update cpu_power according to DT
- information
-In-Reply-To: <1339592984.8980.34.camel@twins>
-Message-ID: <alpine.LFD.2.02.1206131038060.23555@xanadu.home>
-References: <1339502524-10265-1-git-send-email-vincent.guittot@linaro.org> <1339502524-10265-4-git-send-email-vincent.guittot@linaro.org> <1339592984.8980.34.camel@twins>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1754241Ab2FMOmq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 10:42:46 -0400
+Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:53417 "EHLO
+	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754207Ab2FMOmp convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 10:42:45 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <CACRpkdYvLEkuFLPCAT15jpqfML_tDwXuR6kENZbwMDaWpunrxQ@mail.gmail.com>
+References: <1339429196-32584-1-git-send-email-linus.walleij@linaro.org>
+ <20120612230630.GK19410@gmail.com> <CACRpkdYvLEkuFLPCAT15jpqfML_tDwXuR6kENZbwMDaWpunrxQ@mail.gmail.com>
+From: "Turquette, Mike" <mturquette@ti.com>
+Date: Wed, 13 Jun 2012 07:42:21 -0700
+Message-ID: <CAJOA=zPfDUgK=QGU62PYUqfhV4YqTTYVs+7-w=wVTeQTNeUdzw@mail.gmail.com>
+Subject: Re: [PATCH 2/3] clk: add ICST307 driver
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, arm@kernel.org,
+        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Jun 2012, Peter Zijlstra wrote:
+On Wed, Jun 13, 2012 at 1:38 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Wed, Jun 13, 2012 at 1:06 AM, Mike Turquette <mturquette@ti.com> wrote:
+>> On 20120611-17:39, Linus Walleij wrote:
+>
+>>> +obj-$(CONFIG_CLK_ICST)               += clk-icst.o
+>>
+>> Is there a better place to put this than the top-level directory?
+>
+> I can put it alone in a subdirectory if you want to... It is used only
+> by the ARM reference designs AFAICT, shall I put these Integrator
+> things into clk/versatile as we use the "versatile" name to refer to all
+> ARM reference designs (i.e. arch/arm/plat-versatile).
+>
 
-> On Tue, 2012-06-12 at 14:02 +0200, Vincent Guittot wrote:
-> > +#ifdef CONFIG_OF
-> 
-> That must really be the worst CONFIG_ name ever..
+drivers/clk/versatile seems sensible.  I am just trying to prevent
+drivers/clk/ becoming very messy.  If other platforms are going to use
+this code then the top-level location makes sense, otherwise lets use
+drivers/clk/versatile.
 
-Indeed!  We must corner Grant to do a s/CONFIG_OF/CONFIG_DEVICE_TREE/
-on the whole tree and send the patch to Linus.  He just managed to 
-chicken away from doing it so far.
+>>> +struct clk * __init icst_clk_init(struct device *dev, const struct clk_icst_desc *desc)
+>>
+>> Nitpick: icst_clk_init should be renamed icst_clk_register to more
+>> closely resemble other clock registration functions which allocate
+>> memory dynamically.
+>
+> I'll fix!
+>
 
+Thanks!
+Mike
 
-Nicolas
+> Yours,
+> Linus Walleij
