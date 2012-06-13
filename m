@@ -1,132 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753899Ab2FMK2f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 06:28:35 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:34502 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753855Ab2FMK23 (ORCPT
+	id S1753880Ab2FMK2d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 06:28:33 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:52541 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753856Ab2FMK2a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 06:28:29 -0400
+	Wed, 13 Jun 2012 06:28:30 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
         rientjes@google.com, mhocko@suse.cz, akpm@linux-foundation.org,
         hannes@cmpxchg.org
 Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -V9 10/15] hugetlb/cgroup: Add the cgroup pointer to page lru
-Date: Wed, 13 Jun 2012 15:57:29 +0530
-Message-Id: <1339583254-895-11-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V9 11/15] hugetlb/cgroup: Add charge/uncharge routines for hugetlb cgroup
+Date: Wed, 13 Jun 2012 15:57:30 +0530
+Message-Id: <1339583254-895-12-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1339583254-895-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1339583254-895-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-x-cbid: 12061310-9574-0000-0000-000003280474
+x-cbid: 12061310-8256-0000-0000-000002E80A27
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-Add the hugetlb cgroup pointer to 3rd page lru.next. This limit
-the usage to hugetlb cgroup to only hugepages with 3 or more
-normal pages. I guess that is an acceptable limitation.
+This patchset add the charge and uncharge routines for hugetlb cgroup.
+We do cgroup charging in page alloc and uncharge in compound page
+destructor. Assigning page's hugetlb cgroup is protected by hugetlb_lock.
 
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- include/linux/hugetlb_cgroup.h |   37 +++++++++++++++++++++++++++++++++++++
- mm/hugetlb.c                   |    4 ++++
- 2 files changed, 41 insertions(+)
+ include/linux/hugetlb_cgroup.h |   38 +++++++++++++++++++
+ mm/hugetlb.c                   |   16 +++++++-
+ mm/hugetlb_cgroup.c            |   80 ++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 133 insertions(+), 1 deletion(-)
 
 diff --git a/include/linux/hugetlb_cgroup.h b/include/linux/hugetlb_cgroup.h
-index e9944b4..be1a9f8 100644
+index be1a9f8..e05871c 100644
 --- a/include/linux/hugetlb_cgroup.h
 +++ b/include/linux/hugetlb_cgroup.h
-@@ -20,6 +20,32 @@
- struct hugetlb_cgroup;
- 
- #ifdef CONFIG_CGROUP_HUGETLB_RES_CTLR
-+/*
-+ * Minimum page order trackable by hugetlb cgroup.
-+ * At least 3 pages are necessary for all the tracking information.
-+ */
-+#define HUGETLB_CGROUP_MIN_ORDER	2
-+
-+static inline struct hugetlb_cgroup *hugetlb_cgroup_from_page(struct page *page)
-+{
-+	VM_BUG_ON(!PageHuge(page));
-+
-+	if (compound_order(page) < HUGETLB_CGROUP_MIN_ORDER)
-+		return NULL;
-+	return (struct hugetlb_cgroup *)page[2].lru.next;
-+}
-+
-+static inline
-+int set_hugetlb_cgroup(struct page *page, struct hugetlb_cgroup *h_cg)
-+{
-+	VM_BUG_ON(!PageHuge(page));
-+
-+	if (compound_order(page) < HUGETLB_CGROUP_MIN_ORDER)
-+		return -1;
-+	page[2].lru.next = (void *)h_cg;
-+	return 0;
-+}
-+
- static inline bool hugetlb_cgroup_disabled(void)
- {
- 	if (hugetlb_subsys.disabled)
-@@ -28,6 +54,17 @@ static inline bool hugetlb_cgroup_disabled(void)
+@@ -53,6 +53,16 @@ static inline bool hugetlb_cgroup_disabled(void)
+ 	return false;
  }
  
- #else
-+static inline struct hugetlb_cgroup *hugetlb_cgroup_from_page(struct page *page)
-+{
-+	return NULL;
-+}
++extern int hugetlb_cgroup_charge_cgroup(int idx, unsigned long nr_pages,
++					struct hugetlb_cgroup **ptr);
++extern void hugetlb_cgroup_commit_charge(int idx, unsigned long nr_pages,
++					 struct hugetlb_cgroup *h_cg,
++					 struct page *page);
++extern void hugetlb_cgroup_uncharge_page(int idx, unsigned long nr_pages,
++					 struct page *page);
++extern void hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
++					   struct hugetlb_cgroup *h_cg);
 +
-+static inline
-+int set_hugetlb_cgroup(struct page *page, struct hugetlb_cgroup *h_cg)
+ #else
+ static inline struct hugetlb_cgroup *hugetlb_cgroup_from_page(struct page *page)
+ {
+@@ -70,5 +80,33 @@ static inline bool hugetlb_cgroup_disabled(void)
+ 	return true;
+ }
+ 
++static inline int
++hugetlb_cgroup_charge_cgroup(int idx, unsigned long nr_pages,
++			     struct hugetlb_cgroup **ptr)
 +{
 +	return 0;
 +}
 +
- static inline bool hugetlb_cgroup_disabled(void)
- {
- 	return true;
++static inline void
++hugetlb_cgroup_commit_charge(int idx, unsigned long nr_pages,
++			     struct hugetlb_cgroup *h_cg,
++			     struct page *page)
++{
++	return;
++}
++
++static inline void
++hugetlb_cgroup_uncharge_page(int idx, unsigned long nr_pages, struct page *page)
++{
++	return;
++}
++
++static inline void
++hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
++			       struct hugetlb_cgroup *h_cg)
++{
++	return;
++}
++
+ #endif  /* CONFIG_MEM_RES_CTLR_HUGETLB */
+ #endif
 diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index e899a2d..6a449c5 100644
+index 6a449c5..59720b1 100644
 --- a/mm/hugetlb.c
 +++ b/mm/hugetlb.c
-@@ -28,6 +28,7 @@
+@@ -627,6 +627,8 @@ static void free_huge_page(struct page *page)
+ 	BUG_ON(page_mapcount(page));
  
- #include <linux/io.h>
- #include <linux/hugetlb.h>
-+#include <linux/hugetlb_cgroup.h>
- #include <linux/node.h>
- #include "internal.h"
- 
-@@ -591,6 +592,7 @@ static void update_and_free_page(struct hstate *h, struct page *page)
- 				1 << PG_active | 1 << PG_reserved |
- 				1 << PG_private | 1 << PG_writeback);
- 	}
-+	VM_BUG_ON(hugetlb_cgroup_from_page(page));
- 	set_compound_page_dtor(page, NULL);
- 	set_page_refcounted(page);
- 	arch_release_hugepage(page);
-@@ -643,6 +645,7 @@ static void prep_new_huge_page(struct hstate *h, struct page *page, int nid)
- 	INIT_LIST_HEAD(&page->lru);
- 	set_compound_page_dtor(page, free_huge_page);
  	spin_lock(&hugetlb_lock);
-+	set_hugetlb_cgroup(page, NULL);
- 	h->nr_huge_pages++;
- 	h->nr_huge_pages_node[nid]++;
++	hugetlb_cgroup_uncharge_page(hstate_index(h),
++				     pages_per_huge_page(h), page);
+ 	if (h->surplus_huge_pages_node[nid] && huge_page_order(h) < MAX_ORDER) {
+ 		/* remove the page from active list */
+ 		list_del(&page->lru);
+@@ -1115,7 +1117,10 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+ 	struct hstate *h = hstate_vma(vma);
+ 	struct page *page;
+ 	long chg;
++	int ret, idx;
++	struct hugetlb_cgroup *h_cg;
+ 
++	idx = hstate_index(h);
+ 	/*
+ 	 * Processes that did not create the mapping will have no
+ 	 * reserves and will not have accounted against subpool
+@@ -1131,6 +1136,11 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+ 		if (hugepage_subpool_get_pages(spool, chg))
+ 			return ERR_PTR(-ENOSPC);
+ 
++	ret = hugetlb_cgroup_charge_cgroup(idx, pages_per_huge_page(h), &h_cg);
++	if (ret) {
++		hugepage_subpool_put_pages(spool, chg);
++		return ERR_PTR(-ENOSPC);
++	}
+ 	spin_lock(&hugetlb_lock);
+ 	page = dequeue_huge_page_vma(h, vma, addr, avoid_reserve);
  	spin_unlock(&hugetlb_lock);
-@@ -892,6 +895,7 @@ static struct page *alloc_buddy_huge_page(struct hstate *h, int nid)
- 		INIT_LIST_HEAD(&page->lru);
- 		r_nid = page_to_nid(page);
- 		set_compound_page_dtor(page, free_huge_page);
-+		set_hugetlb_cgroup(page, NULL);
- 		/*
- 		 * We incremented the global counters already
- 		 */
+@@ -1138,6 +1148,9 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+ 	if (!page) {
+ 		page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
+ 		if (!page) {
++			hugetlb_cgroup_uncharge_cgroup(idx,
++						       pages_per_huge_page(h),
++						       h_cg);
+ 			hugepage_subpool_put_pages(spool, chg);
+ 			return ERR_PTR(-ENOSPC);
+ 		}
+@@ -1146,7 +1159,8 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+ 	set_page_private(page, (unsigned long)spool);
+ 
+ 	vma_commit_reservation(h, vma, addr);
+-
++	/* update page cgroup details */
++	hugetlb_cgroup_commit_charge(idx, pages_per_huge_page(h), h_cg, page);
+ 	return page;
+ }
+ 
+diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
+index 5a4e71c..0f2f6ac 100644
+--- a/mm/hugetlb_cgroup.c
++++ b/mm/hugetlb_cgroup.c
+@@ -113,6 +113,86 @@ static int hugetlb_cgroup_pre_destroy(struct cgroup *cgroup)
+ 	   return -EBUSY;
+ }
+ 
++int hugetlb_cgroup_charge_cgroup(int idx, unsigned long nr_pages,
++				 struct hugetlb_cgroup **ptr)
++{
++	int ret = 0;
++	struct res_counter *fail_res;
++	struct hugetlb_cgroup *h_cg = NULL;
++	unsigned long csize = nr_pages * PAGE_SIZE;
++
++	if (hugetlb_cgroup_disabled())
++		goto done;
++	/*
++	 * We don't charge any cgroup if the compound page have less
++	 * than 3 pages.
++	 */
++	if (huge_page_order(&hstates[idx]) < HUGETLB_CGROUP_MIN_ORDER)
++		goto done;
++again:
++	rcu_read_lock();
++	h_cg = hugetlb_cgroup_from_task(current);
++	if (!h_cg)
++		h_cg = root_h_cgroup;
++
++	if (!css_tryget(&h_cg->css)) {
++		rcu_read_unlock();
++		goto again;
++	}
++	rcu_read_unlock();
++
++	ret = res_counter_charge(&h_cg->hugepage[idx], csize, &fail_res);
++	css_put(&h_cg->css);
++done:
++	*ptr = h_cg;
++	return ret;
++}
++
++void hugetlb_cgroup_commit_charge(int idx, unsigned long nr_pages,
++				  struct hugetlb_cgroup *h_cg,
++				  struct page *page)
++{
++	if (hugetlb_cgroup_disabled() || !h_cg)
++		return;
++
++	spin_lock(&hugetlb_lock);
++	set_hugetlb_cgroup(page, h_cg);
++	spin_unlock(&hugetlb_lock);
++	return;
++}
++
++/*
++ * Should be called with hugetlb_lock held
++ */
++void hugetlb_cgroup_uncharge_page(int idx, unsigned long nr_pages,
++				  struct page *page)
++{
++	struct hugetlb_cgroup *h_cg;
++	unsigned long csize = nr_pages * PAGE_SIZE;
++
++	if (hugetlb_cgroup_disabled())
++		return;
++	VM_BUG_ON(!spin_is_locked(&hugetlb_lock));
++	h_cg = hugetlb_cgroup_from_page(page);
++	if (unlikely(!h_cg))
++		return;
++	set_hugetlb_cgroup(page, NULL);
++	res_counter_uncharge(&h_cg->hugepage[idx], csize);
++	return;
++}
++
++void hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
++				    struct hugetlb_cgroup *h_cg)
++{
++	unsigned long csize = nr_pages * PAGE_SIZE;
++
++	if (hugetlb_cgroup_disabled() || !h_cg)
++		return;
++
++	res_counter_uncharge(&h_cg->hugepage[idx], csize);
++	return;
++}
++
+ struct cgroup_subsys hugetlb_subsys = {
+ 	.name = "hugetlb",
+ 	.create     = hugetlb_cgroup_create,
 -- 
 1.7.10
 
