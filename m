@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753578Ab2FMLBE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 07:01:04 -0400
-Received: from www.linutronix.de ([62.245.132.108]:48231 "EHLO
+	id S1753528Ab2FMLBC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 07:01:02 -0400
+Received: from www.linutronix.de ([62.245.132.108]:48229 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752252Ab2FMLBA (ORCPT
+	with ESMTP id S1751255Ab2FMLBA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 13 Jun 2012 07:01:00 -0400
-Message-Id: <20120613105815.278295912@linutronix.de>
+Message-Id: <20120613102823.373180763@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Wed, 13 Jun 2012 11:00:55 -0000
+Date: Wed, 13 Jun 2012 11:00:53 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
@@ -17,9 +17,7 @@ Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
         Rusty Russell <rusty@rustcorp.com.au>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Tejun Heo <tj@kernel.org>
-Subject: [RFC patch 3/5] softirq: Use hotplug thread infrastructure
-References: <20120613102823.373180763@linutronix.de>
-Content-Disposition: inline; filename=softirq-use-smboot-threads.patch
+Subject: [RFC patch 0/5] Per cpu thread hotplug infrastructure
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -27,154 +25,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/softirq.c |   84 +++++++++++--------------------------------------------
- 1 file changed, 18 insertions(+), 66 deletions(-)
+The following series implements the infrastructure for parking and
+unparking kernel threads to avoid the full teardown and fork on cpu
+hotplug operations along with management infrastructure for hotplug
+and users.
 
-Index: tip/kernel/softirq.c
-===================================================================
---- tip.orig/kernel/softirq.c
-+++ tip/kernel/softirq.c
-@@ -23,6 +23,7 @@
- #include <linux/rcupdate.h>
- #include <linux/ftrace.h>
- #include <linux/smp.h>
-+#include <linux/smpboot.h>
- #include <linux/tick.h>
- 
- #define CREATE_TRACE_POINTS
-@@ -733,24 +734,17 @@ void __init softirq_init(void)
- 	open_softirq(HI_SOFTIRQ, tasklet_hi_action);
- }
- 
--static int run_ksoftirqd(void * __bind_cpu)
-+static int run_ksoftirqd(void *td)
- {
--	set_current_state(TASK_INTERRUPTIBLE);
--
--	while (!kthread_should_stop()) {
-+	while (!smpboot_thread_check_parking(td)) {
-+		set_current_state(TASK_INTERRUPTIBLE);
- 		preempt_disable();
--		if (!local_softirq_pending()) {
-+		if (!local_softirq_pending())
- 			schedule_preempt_disabled();
--		}
- 
- 		__set_current_state(TASK_RUNNING);
- 
- 		while (local_softirq_pending()) {
--			/* Preempt disable stops cpu going offline.
--			   If already offline, we'll be on wrong CPU:
--			   don't process */
--			if (cpu_is_offline((long)__bind_cpu))
--				goto wait_to_die;
- 			local_irq_disable();
- 			if (local_softirq_pending())
- 				__do_softirq();
-@@ -758,23 +752,10 @@ static int run_ksoftirqd(void * __bind_c
- 			sched_preempt_enable_no_resched();
- 			cond_resched();
- 			preempt_disable();
--			rcu_note_context_switch((long)__bind_cpu);
-+			rcu_note_context_switch(smp_processor_id());
- 		}
- 		preempt_enable();
--		set_current_state(TASK_INTERRUPTIBLE);
- 	}
--	__set_current_state(TASK_RUNNING);
--	return 0;
--
--wait_to_die:
--	preempt_enable();
--	/* Wait for kthread_stop */
--	set_current_state(TASK_INTERRUPTIBLE);
--	while (!kthread_should_stop()) {
--		schedule();
--		set_current_state(TASK_INTERRUPTIBLE);
--	}
--	__set_current_state(TASK_RUNNING);
- 	return 0;
- }
- 
-@@ -841,50 +822,17 @@ static int __cpuinit cpu_callback(struct
- 				  unsigned long action,
- 				  void *hcpu)
- {
--	int hotcpu = (unsigned long)hcpu;
--	struct task_struct *p;
--
- 	switch (action) {
--	case CPU_UP_PREPARE:
--	case CPU_UP_PREPARE_FROZEN:
--		p = kthread_create_on_node(run_ksoftirqd,
--					   hcpu,
--					   cpu_to_node(hotcpu),
--					   "ksoftirqd/%d", hotcpu);
--		if (IS_ERR(p)) {
--			printk("ksoftirqd for %i failed\n", hotcpu);
--			return notifier_from_errno(PTR_ERR(p));
--		}
--		kthread_bind(p, hotcpu);
--  		per_cpu(ksoftirqd, hotcpu) = p;
-- 		break;
--	case CPU_ONLINE:
--	case CPU_ONLINE_FROZEN:
--		wake_up_process(per_cpu(ksoftirqd, hotcpu));
--		break;
- #ifdef CONFIG_HOTPLUG_CPU
--	case CPU_UP_CANCELED:
--	case CPU_UP_CANCELED_FROZEN:
--		if (!per_cpu(ksoftirqd, hotcpu))
--			break;
--		/* Unbind so it can run.  Fall thru. */
--		kthread_bind(per_cpu(ksoftirqd, hotcpu),
--			     cpumask_any(cpu_online_mask));
- 	case CPU_DEAD:
- 	case CPU_DEAD_FROZEN: {
--		static const struct sched_param param = {
--			.sched_priority = MAX_RT_PRIO-1
--		};
--
--		p = per_cpu(ksoftirqd, hotcpu);
--		per_cpu(ksoftirqd, hotcpu) = NULL;
--		sched_setscheduler_nocheck(p, SCHED_FIFO, &param);
--		kthread_stop(p);
-+		int hotcpu = (unsigned long)hcpu;
-+
- 		takeover_tasklets(hotcpu);
- 		break;
- 	}
- #endif /* CONFIG_HOTPLUG_CPU */
-- 	}
-+	}
- 	return NOTIFY_OK;
- }
- 
-@@ -892,14 +840,18 @@ static struct notifier_block __cpuinitda
- 	.notifier_call = cpu_callback
- };
- 
-+static struct smp_hotplug_thread softirq_threads = {
-+	.store		= &ksoftirqd,
-+	.thread_fn	= run_ksoftirqd,
-+	.thread_comm	= "ksoftirqd/%u",
-+};
-+
- static __init int spawn_ksoftirqd(void)
- {
--	void *cpu = (void *)(long)smp_processor_id();
--	int err = cpu_callback(&cpu_nfb, CPU_UP_PREPARE, cpu);
--
--	BUG_ON(err != NOTIFY_OK);
--	cpu_callback(&cpu_nfb, CPU_ONLINE, cpu);
- 	register_cpu_notifier(&cpu_nfb);
-+
-+	BUG_ON(smpboot_register_percpu_thread(&softirq_threads));
-+
- 	return 0;
- }
- early_initcall(spawn_ksoftirqd);
+I've converted the most obvious (and simple) users ksoftirqd and
+watchdog along with a driver (the latter is untested due to lack of
+hardware).
 
+Looking at the other (ab)users of per cpu kernel threads:
+
+ - drivers/* should be rather trivial to convert all users
+
+ - RCU needs more thought, but I'm sure that Paul will figure it out
+   in no time :)
+
+   The main issue with RCU are the per node threads, but it should be
+   simple to extend the infrastructure to allow registration and
+   handling of per node threads as well.
+
+ - workqueues. I did not even try to think about converting it. The
+   hotplug related code in there causes strong feelings related to
+   zombies and chainsaws. (See https://lwn.net/Articles/378036/)
+
+Thanks,
+
+	tglx
 
