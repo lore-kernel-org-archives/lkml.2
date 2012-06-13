@@ -1,52 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754839Ab2FMWG4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 18:06:56 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:48829 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753229Ab2FMWGy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 18:06:54 -0400
-Date: Thu, 14 Jun 2012 00:06:51 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Boszormenyi Zoltan <zboszor@pr.hu>
-Cc: Johannes Stezenbach <js@sig21.net>, linux-kernel@vger.kernel.org,
-        Andreas Herrmann <andreas.herrmann3@amd.com>
-Subject: Re: AMD FX CPU bug, not fixed by latest microcode?
-Message-ID: <20120613220651.GA12065@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Boszormenyi Zoltan <zboszor@pr.hu>,
-	Johannes Stezenbach <js@sig21.net>, linux-kernel@vger.kernel.org,
-	Andreas Herrmann <andreas.herrmann3@amd.com>
-References: <4FD4F45D.5050103@pr.hu>
- <20120611084318.GA1685@liondog.tnic>
- <20120611094905.GA10349@liondog.tnic>
- <20120611110557.GA4599@sig21.net>
- <4FD8417B.8020702@pr.hu>
- <20120613155733.GA17726@liondog.tnic>
- <4FD8DB3F.7050106@pr.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <4FD8DB3F.7050106@pr.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754864Ab2FMWIM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 18:08:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52048 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752231Ab2FMWIK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 18:08:10 -0400
+Date: Wed, 13 Jun 2012 15:08:09 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Zan Lynx <zlynx@acm.org>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org,
+        Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH 1/2] msync: support syncing a small part of the file
+Message-Id: <20120613150809.44149ef6.akpm@linux-foundation.org>
+In-Reply-To: <1339624293.2080.24.camel@knife>
+References: <1338497035-13014-1-git-send-email-pbonzini@redhat.com>
+	<1338497035-13014-2-git-send-email-pbonzini@redhat.com>
+	<20120613142614.6af42ef5.akpm@linux-foundation.org>
+	<1339624293.2080.24.camel@knife>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 13, 2012 at 08:26:07PM +0200, Boszormenyi Zoltan wrote:
-> I did exactly that, the remaining two 8GB modules don't have faults
-> according to memtest86+ and the machine is stable with "make -j8" in
-> the kernel tree. Neither thunderbird nor firefox crashed for a day,
-> these are the usual victims when hitting the bad memory address.
+On Wed, 13 Jun 2012 15:51:33 -0600
+Zan Lynx <zlynx@acm.org> wrote:
 
-Cool.
+> On Wed, 2012-06-13 at 14:26 -0700, Andrew Morton wrote:
+> > On Thu, 31 May 2012 22:43:54 +0200
+> > Paolo Bonzini <pbonzini@redhat.com> wrote:
+> > 
+> > > msync does not need to flush changes to the entire file, even with MS_SYNC.
+> > > Instead, it can use vfs_fsync_range to only synchronize a part of the file.
+> > > 
+> > > In addition, not all metadata has to be synced; msync is closer to
+> > > fdatasync than it is to msync.  So, pass 1 to vfs_fsync_range.
+> > 
+> > Would be nice, but if applications were previously assuming that an
+> > msync() was syncing the whole file, this patch will secretly and subtly
+> > break them.  Convince me that this change won't weaken anyone's data
+> > integrity ;)
+> 
+> As an interested observer and a programmer who uses msync()...
+> 
+> I never assumed msync() did the whole file.
 
-I guess you could try to limit it even further by taking a known-good
-8GB module and pairing it with one of the "bad" ones to see whether one
-of the "bad" 8GB modules is faulty or both of them are.
+OK, that's one user accounted for.  3 million to go.
 
-Or you could stop wasting time and go buy two new ones :-)
+Look, I'm not terribly averse to the change, but it does have this
+risk.  And it's a nasty risk because anyone who is hit by it simply
+will not know that his applcation has lost some of its data integrity.
 
--- 
-Regards/Gruss,
-    Boris.
+> It has an address and length
+> argument. I always assumed it only looked for dirty pages within that
+> range. That is also what the msync() documentation claims.
+> 
+> As for weakening data integrity because of assumptions programmers *may*
+> have made, I think this is a bad argument which followed to its logical
+> conclusion can only lead to requiring an implicit sync() before and
+> after every system call. :-)
+
+No, not at all.  The issue is the *removal* of a side-effect upon which
+some apps/designers may have been depending.  Perhaps unintentionally!
+
