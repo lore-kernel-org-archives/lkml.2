@@ -1,98 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752203Ab2FMBlf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 21:41:35 -0400
-Received: from mga09.intel.com ([134.134.136.24]:2142 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751620Ab2FMBle (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 21:41:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="156859546"
-Message-ID: <4FD7EFCB.6060005@intel.com>
-Date: Wed, 13 Jun 2012 09:41:31 +0800
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>
-CC: a.p.zijlstra@chello.nl, mingo@elte.hu, jolsa@redhat.com,
-        andi@firstfloor.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V5 0/13] perf: Intel uncore pmu counting support
-References: <1339479468-3815-1-git-send-email-zheng.z.yan@intel.com> <CABPqkBQu1hTa2R-PKsygLqOSSD9nu3+xR-79pT-8bB8Y16CBuw@mail.gmail.com>
-In-Reply-To: <CABPqkBQu1hTa2R-PKsygLqOSSD9nu3+xR-79pT-8bB8Y16CBuw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1752779Ab2FMBwX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 21:52:23 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:56031 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751561Ab2FMBwW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 21:52:22 -0400
+Date: Tue, 12 Jun 2012 18:52:20 -0700 (PDT)
+Message-Id: <20120612.185220.1209592106225618525.davem@davemloft.net>
+To: michel@digirati.com.br
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, kuznet@ms2.inr.ac.ru,
+        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
+        edumazet@google.com, jpirko@redhat.com, mirq-linux@rere.qmqm.pl,
+        bhutchings@solarflare.com
+Subject: Re: [PATCH 1/1] net-next: add dev_loopback_xmit() to avoid
+ duplicate code
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1339532195.2701.8.camel@Thor>
+References: <1339532195.2701.8.camel@Thor>
+X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/12/2012 11:38 PM, Stephane Eranian wrote:
-> On Tue, Jun 12, 2012 at 7:37 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
->> Hi, all
->>
->> Here is the V5 patches to add uncore counting support for Nehalem,
->> Sandy Bridge and Sandy Bridge-EP, applied on top of current tip.
->> The code is based on Lin Ming's old patches.
->>
->> For Nehalem and Sandy Bridge-EP, A few general events are exported
->> under sysfs directory:
->>  /sys/bus/event_source/devices/${uncore_dev}/events/
->>
-> On NHM, I tried:
->     perf stat -a -e Uncore/CLOCKTICKS/
-> invalid or unsupported event: 'Uncore/CLOCKTICKS/'
+From: Michel Machado <michel@digirati.com.br>
+Date: Tue, 12 Jun 2012 16:16:35 -0400
 
-Strange enough. Did you re-compile the perf tool? Are there
-files under directory /sys/bus/event_source/devices/Uncore/events
+> Add dev_loopback_xmit() in order to deduplicate functions
+> ip_dev_loopback_xmit() (in net/ipv4/ip_output.c) and
+> ip6_dev_loopback_xmit() (in net/ipv6/ip6_output.c).
 > 
-> I started tracking this down but gave up because it's coming
-> once again from the too complex parser. You are looking for
-> a format match (inv, edge, cmask) with the word CLOCKTICKS
-> instead of config.
+> I was about to reinvent the wheel when I noticed that
+> ip_dev_loopback_xmit() and ip6_dev_loopback_xmit() do exactly what I
+> need and are not IP-only functions, but they were not available to reuse
+> elsewhere.
 > 
-> Please fix this.
+> ip6_dev_loopback_xmit() does not have line "skb_dst_force(skb);", but I
+> understand that this is harmless, and should be in dev_loopback_xmit().
 > 
-> Also I don't think using upper case for the PMU name is a good idea.
-> Just call it uncore.
-> 
+> Signed-off-by: Michel Machado <michel@digirati.com.br>
 
-Peter suggests keeping the uncore names as they're listed in the intel
-doc. For Sandybirdge-EP, uncore names are something like: Cbo, iMC, QPI.
-I think Uncore_Cbo_0 appears better than uncore_Cbo_0
-
-Regards
-Yan, Zheng
-> 
->> Each file in the events directory defines an event. The content is
->> a string such as:
->>  config=1,config1=2
->>
->> You can use 'perf stat' to access to the uncore pmu. For example:
->>  perf stat -a -C 0 -e 'Uncore_iMC_0/CAS_COUNT_RD/' sleep 1
->>  perf stat -a -C 0 -e 'Uncore_iMC_0/event=CAS_COUNT_RD/' sleep 1
->>
->> Any comment is appreciated.
->> Thank you
->> ---
->> Changes since v1:
->>  - Modify perf tool to parse events from sysfs
->>  - A few minor code cleanup
->>
->> Changes since v2:
->>  - Place all events for a particular socket onto a single cpu
->>  - Make the events parser in perf tool reentrantable
->>  - A few code cleanup
->>
->> Changes since v3:
->>  - Use per cpu pointer to track uncore box
->>  - Rework the cpu hotplug code because topology_physical_package_id()
->>   return wrong result when the cpu is offline
->>  - Rework the event alias code, event terms are stored in the alias
->>   structure instead events string
->>
->> Changes since v4:
->>  - Include Jiri's uncore related changes patch set
->>  - Add pmu/event=alias/ syntax support
->>
-
-
+Applied.
