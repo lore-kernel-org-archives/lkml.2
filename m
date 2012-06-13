@@ -1,68 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752371Ab2FMITB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 04:19:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46483 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751362Ab2FMIS7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 04:18:59 -0400
-Date: Wed, 13 Jun 2012 11:19:24 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: x86@kernel.org, kvm@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Avi Kivity <avi@redhat.com>,
-        gleb@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCHv6 6/8] kvm: only sync when attention bits set
-Message-ID: <20120613081923.GA16162@redhat.com>
-References: <cover.1338474301.git.mst@redhat.com>
- <56ee14064ef307b7075f6977122781456cab5165.1338474301.git.mst@redhat.com>
- <20120612222748.GB1973@amt.cnet>
+	id S1752272Ab2FMIZz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 04:25:55 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:46128 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751362Ab2FMIZu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 04:25:50 -0400
+X-AuditID: b753bd60-996f1ba000000f6c-ff-4fd84e8c6125
+X-AuditID: b753bd60-996f1ba000000f6c-ff-4fd84e8c6125
+Message-ID: <4FD84E84.1090001@hitachi.com>
+Date: Wed, 13 Jun 2012 17:25:40 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120612222748.GB1973@amt.cnet>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        yrl.pp-manager.tt@hitachi.com
+Subject: Re: [RFC][PATCH 00/13 v2] kprobes/ftrace: Making ftrace usable for
+ kprobes
+References: <20120612224327.426900129@goodmis.org>
+In-Reply-To: <20120612224327.426900129@goodmis.org>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 12, 2012 at 07:27:48PM -0300, Marcelo Tosatti wrote:
-> On Sun, Jun 03, 2012 at 10:28:29AM +0300, Michael S. Tsirkin wrote:
-> > Commit eb0dc6d0368072236dcd086d7fdc17fd3c4574d4 introduced apic
-> > attention bitmask but kvm still syncs lapic unconditionally.
-> > As that commit suggested and in anticipation of adding more attention
-> > bits, only sync lapic if(apic_attention).
-> > 
-> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > ---
-> >  arch/x86/kvm/x86.c |    3 ++-
-> >  1 files changed, 2 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> > index be6d549..2f70861 100644
-> > --- a/arch/x86/kvm/x86.c
-> > +++ b/arch/x86/kvm/x86.c
-> > @@ -5388,7 +5388,8 @@ static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
-> >  	if (unlikely(vcpu->arch.tsc_always_catchup))
-> >  		kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
-> >  
-> > -	kvm_lapic_sync_from_vapic(vcpu);
-> > +	if (unlikely(vcpu->arch.apic_attention))
-> > +		kvm_lapic_sync_from_vapic(vcpu);
-> 
-> void kvm_lapic_sync_from_vapic(struct kvm_vcpu *vcpu)
-> {
->         u32 data;
->         void *vapic;
-> 
->         if (!test_bit(KVM_APIC_CHECK_VAPIC, &vcpu->arch.apic_attention))
->                 return;
-> 
-> Please use unlikely more carefully, when a gain is measureable:
-> http://lwn.net/Articles/420019/
+(2012/06/13 7:43), Steven Rostedt wrote:
+> If an arch supports passing of ftrace ops, it must also pass regs.
+> But it does not need to support passing regs. By default
+> an arch can just pass NULL. If it supports  regs, then
+> it can allow tools like kprobes to ask for regs. Otherwise the
+> regs parameter should just be NULL.
 
-Do we have to measure every single thing?
-Sometimes it's obvious: vapic is slow path, isn't it?
+Hmm, by default, will the ftrace_ops be also NULL? or NULL only if
+the arch doesn't support passing ftrace ops?
+I mean, should the generic handler always check if ftrace_ops
+isn't NULL before using it?
+
+> The second set is Masami's patches ported on top of these changes.
+> 
+> This is v2, and I've cleaned the patches up a bit and added a lot more
+> comments. This is a more serious RFC as this is the current way I plan
+> on pushing it to mainline. But I'm posting first in case someone spots
+> something that I missed. I'll also be doing more testing on it and if
+> someting comes up I'll obviously will fix it before pushing.
+> 
+> Some change since v1:
+> 
+>  Added fix for undefined ftrace_location() when compiling with !DYNAMIC_FTRACE.
+>  
+>  Added missing regs passed for x86_64 (segment regs, and r11).
+> 
+>  Saved flags for when regs are being saved. The cmp in the mcount trampoline
+>  that checks if function tracing is disabled will save flags before
+>  the compare, and restore flags before returning back to the function.
+
+Nice! :) this is what I hope in previous thread.
+
+>  Decided that passing partial regs is a bad idea. Either the arch should
+>  pass all regs or NULL. Even though partial regs are saved for calling the
+>  function, it does't make sense to give that to the callback. By making
+>  regs be full pt_regs or NULL, then the callbacks can simply check if
+>  regs is NULL and if it isn't it can do more functionality, but if it
+>  is NULL then it just does limited work. Having 'partial regs' would just
+>  complicate that for no good reason. If in the future we want partial regs,
+>  we can add another flag to request it.
+
+Agreed.
+
+Thank you,
 
 -- 
-MST
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
