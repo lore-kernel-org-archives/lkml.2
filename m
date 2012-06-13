@@ -1,70 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753709Ab2FMK2T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 06:28:19 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:58037 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753546Ab2FMK2O (ORCPT
+	id S1753641Ab2FMK2Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 06:28:16 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:34423 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753531Ab2FMK2M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 06:28:14 -0400
+	Wed, 13 Jun 2012 06:28:12 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
         rientjes@google.com, mhocko@suse.cz, akpm@linux-foundation.org,
         hannes@cmpxchg.org
 Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -V9 05/15] hugetlb: avoid taking i_mmap_mutex in unmap_single_vma() for hugetlb
-Date: Wed, 13 Jun 2012 15:57:24 +0530
-Message-Id: <1339583254-895-6-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V9 01/15] hugetlb: rename max_hstate to hugetlb_max_hstate
+Date: Wed, 13 Jun 2012 15:57:20 +0530
+Message-Id: <1339583254-895-2-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1339583254-895-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1339583254-895-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-x-cbid: 12061310-5816-0000-0000-00000321198F
+x-cbid: 12061310-9574-0000-0000-00000328041E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-i_mmap_mutex lock was added in unmap_single_vma by 502717f4e ("hugetlb:
-fix linked list corruption in unmap_hugepage_range()") but we don't use
-page->lru in unmap_hugepage_range any more.  Also the lock was taken
-higher up in the stack in some code path.  That would result in deadlock.
+Rename max_hstate to hugetlb_max_hstate. We will be using this from other
+subsystems like hugetlb controller in later patches.
 
-unmap_mapping_range (i_mmap_mutex)
- -> unmap_mapping_range_tree
-    -> unmap_mapping_range_vma
-       -> zap_page_range_single
-         -> unmap_single_vma
-	      -> unmap_hugepage_range (i_mmap_mutex)
-
-For shared pagetable support for huge pages, since pagetable pages are ref
-counted we don't need any lock during huge_pmd_unshare.  We do take
-i_mmap_mutex in huge_pmd_share while walking the vma_prio_tree in mapping.
-(39dde65c9940c97f ("shared page table for hugetlb page")).
-
+Acked-by: David Rientjes <rientjes@google.com>
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Acked-by: Hillf Danton <dhillf@gmail.com>
+Acked-by: Michal Hocko <mhocko@suse.cz>
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- mm/memory.c |    5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+ mm/hugetlb.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/mm/memory.c b/mm/memory.c
-index 545e18a..f6bc04f 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -1326,11 +1326,8 @@ static void unmap_single_vma(struct mmu_gather *tlb,
- 			 * Since no pte has actually been setup, it is
- 			 * safe to do nothing in this case.
- 			 */
--			if (vma->vm_file) {
--				mutex_lock(&vma->vm_file->f_mapping->i_mmap_mutex);
-+			if (vma->vm_file)
- 				__unmap_hugepage_range(tlb, vma, start, end, NULL);
--				mutex_unlock(&vma->vm_file->f_mapping->i_mmap_mutex);
--			}
- 		} else
- 			unmap_page_range(tlb, vma, start, end, details);
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index e198831..c868309 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -34,7 +34,7 @@ const unsigned long hugetlb_zero = 0, hugetlb_infinity = ~0UL;
+ static gfp_t htlb_alloc_mask = GFP_HIGHUSER;
+ unsigned long hugepages_treat_as_movable;
+ 
+-static int max_hstate;
++static int hugetlb_max_hstate;
+ unsigned int default_hstate_idx;
+ struct hstate hstates[HUGE_MAX_HSTATE];
+ 
+@@ -46,7 +46,7 @@ static unsigned long __initdata default_hstate_max_huge_pages;
+ static unsigned long __initdata default_hstate_size;
+ 
+ #define for_each_hstate(h) \
+-	for ((h) = hstates; (h) < &hstates[max_hstate]; (h)++)
++	for ((h) = hstates; (h) < &hstates[hugetlb_max_hstate]; (h)++)
+ 
+ /*
+  * Protects updates to hugepage_freelists, nr_huge_pages, and free_huge_pages
+@@ -1897,9 +1897,9 @@ void __init hugetlb_add_hstate(unsigned order)
+ 		printk(KERN_WARNING "hugepagesz= specified twice, ignoring\n");
+ 		return;
  	}
+-	BUG_ON(max_hstate >= HUGE_MAX_HSTATE);
++	BUG_ON(hugetlb_max_hstate >= HUGE_MAX_HSTATE);
+ 	BUG_ON(order == 0);
+-	h = &hstates[max_hstate++];
++	h = &hstates[hugetlb_max_hstate++];
+ 	h->order = order;
+ 	h->mask = ~((1ULL << (order + PAGE_SHIFT)) - 1);
+ 	h->nr_huge_pages = 0;
+@@ -1920,10 +1920,10 @@ static int __init hugetlb_nrpages_setup(char *s)
+ 	static unsigned long *last_mhp;
+ 
+ 	/*
+-	 * !max_hstate means we haven't parsed a hugepagesz= parameter yet,
++	 * !hugetlb_max_hstate means we haven't parsed a hugepagesz= parameter yet,
+ 	 * so this hugepages= parameter goes to the "default hstate".
+ 	 */
+-	if (!max_hstate)
++	if (!hugetlb_max_hstate)
+ 		mhp = &default_hstate_max_huge_pages;
+ 	else
+ 		mhp = &parsed_hstate->max_huge_pages;
+@@ -1942,7 +1942,7 @@ static int __init hugetlb_nrpages_setup(char *s)
+ 	 * But we need to allocate >= MAX_ORDER hstates here early to still
+ 	 * use the bootmem allocator.
+ 	 */
+-	if (max_hstate && parsed_hstate->order >= MAX_ORDER)
++	if (hugetlb_max_hstate && parsed_hstate->order >= MAX_ORDER)
+ 		hugetlb_hstate_alloc_pages(parsed_hstate);
+ 
+ 	last_mhp = mhp;
 -- 
 1.7.10
 
