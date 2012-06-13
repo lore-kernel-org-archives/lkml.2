@@ -1,67 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754561Ab2FMO5G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 10:57:06 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56209 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754274Ab2FMO5A (ORCPT
+	id S1754575Ab2FMO5V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 10:57:21 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:41165 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754439Ab2FMO5F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 10:57:00 -0400
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-scsi@vger.kernel.org, kvm@vger.kernel.org
-Subject: [PATCH 3/4] virtio-scsi: release sg_lock after add_buf
-Date: Wed, 13 Jun 2012 16:56:33 +0200
-Message-Id: <1339599394-13880-4-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.7.10.2
-In-Reply-To: <1339599394-13880-1-git-send-email-pbonzini@redhat.com>
-References: <1339599394-13880-1-git-send-email-pbonzini@redhat.com>
+	Wed, 13 Jun 2012 10:57:05 -0400
+Message-ID: <4FD8AA3C.6090100@gmail.com>
+Date: Wed, 13 Jun 2012 09:57:00 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+CC: linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH v2 0/3] EDAC support for Calxeda Highbank
+References: <1339468334-9927-1-git-send-email-robherring2@gmail.com> <4FD7430B.6010005@redhat.com>
+In-Reply-To: <4FD7430B.6010005@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We do not need the sglist after calling virtqueue_add_buf.  Hence we
-can "pipeline" the locked operations and start preparing the sglist
-for the next request while we kick the virtqueue.
+Mauro,
 
-Together with the previous two patches, this improves performance as
-follows.  For a simple "if=/dev/sda of=/dev/null bs=128M iflag=direct"
-(the source being a 10G disk, residing entirely in the host buffer cache),
-the additional locking does not cause any penalty with only one dd
-process, but 2 simultaneous I/O operations improve their times by 3%:
+On 06/12/2012 08:24 AM, Mauro Carvalho Chehab wrote:
+> Hi Rob,
+> 
+> Em 11-06-2012 23:32, Rob Herring escreveu:
+>> From: Rob Herring <rob.herring@calxeda.com>
+>>
+>> This series adds EDAC support for Calxeda Highbank platform L2 and
+>> memory ECC hardware.
+>>
+>> This version is rebased current edac next tree for 3.6. Changes in
+>> this version are the addition of a common edac debugfs directory and
+>> coverting the highbank error injection to use debugfs.
+> 
+> Thanks for the patches.
+> 
+> It looks OK on my eyes, with regards to the EDAC API usage. While this patch
+> touches at the arm/devicetree stuff, most of the changes belong to EDAC, so
+> I'll apply them with my SOB on my tree.
+> 
 
-               number of simultaneous dd
-                   1               2
- ----------------------------------------
- current        5.9958s        10.2640s
- patched        5.9531s         9.8663s
+I found a build error when EDAC_DEBUG is turned off. 
 
-(Times are best of 10).
+drivers/edac/highbank_mc_edac.c: In function 'highbank_mc_probe':
+drivers/edac/highbank_mc_edac.c:215:9: error: 'struct mem_ctl_info' has no member named 'debugfs'
+drivers/edac/highbank_mc_edac.c:216:50: error: 'struct mem_ctl_info' has no member named 'debugfs'
+drivers/edac/highbank_mc_edac.c:218:10: error: 'highbank_mc_debug_inject_fops' undeclared (first use in this function)
 
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
----
- drivers/scsi/virtio_scsi.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
-index 0ecf95e..facfc90 100644
---- a/drivers/scsi/virtio_scsi.c
-+++ b/drivers/scsi/virtio_scsi.c
-@@ -281,11 +281,11 @@ static int virtscsi_kick_cmd(struct virtio_scsi *vscsi, struct virtio_scsi_vq *v
+Do you prefer I respin the patch or do you want a follow on patch? This
+is what the fix looks like:
+
+diff --git a/drivers/edac/highbank_mc_edac.c b/drivers/edac/highbank_mc_edac.c
+index d00dc0b..3185961 100644
+--- a/drivers/edac/highbank_mc_edac.c
++++ b/drivers/edac/highbank_mc_edac.c
+@@ -124,6 +124,22 @@ static const struct file_operations highbank_mc_debug_inject_fops = {
+        .write = highbank_mc_err_inject_write,
+        .llseek = generic_file_llseek,
+ };
++
++static int __devinit highbank_mc_create_debugfs_nodes(struct mem_ctl_info *mci)
++{
++       if (!mci->debugfs)
++               return -ENODEV;
++
++       debugfs_create_file("inject_ctrl", S_IWUSR, mci->debugfs, mci,
++                           &highbank_mc_debug_inject_fops);
++
++       return 0;
++}
++#else
++static int __devinit highbank_mc_create_debugfs_nodes(struct mem_ctl_info *mci)
++{
++       return -ENODEV;
++}
+ #endif
  
- 	spin_lock(&vq->vq_lock);
- 	ret = virtqueue_add_buf(vq->vq, vscsi->sg, out_num, in_num, cmd, gfp);
-+	spin_unlock(&vscsi->sg_lock);
- 	if (ret >= 0)
- 		ret = virtqueue_kick_prepare(vq->vq);
+ static int __devinit highbank_mc_probe(struct platform_device *pdev)
+@@ -212,10 +228,7 @@ static int __devinit highbank_mc_probe(struct platform_device *pdev)
+        if (res < 0)
+                goto err;
  
--	spin_unlock(&vq->vq_lock);
--	spin_unlock_irqrestore(&vscsi->sg_lock, flags);
-+	spin_unlock_irqrestore(&vq->vq_lock, flags);
+-       if (mci->debugfs)
+-               debugfs_create_file("inject_ctrl", S_IWUSR, mci->debugfs,
+-                                   mci,
+-                                   &highbank_mc_debug_inject_fops);
++       highbank_mc_create_debugfs_nodes(mci);
  
- 	if (ret > 0)
- 		virtqueue_notify(vq->vq);
--- 
-1.7.1
+        devres_close_group(&pdev->dev, NULL);
+        return 0;
 
+
+Rob
+
+> Regards,
+> Mauro.
+>>
+>> Rob
+>>
+>> Rob Herring (3):
+>>    edac: create top-level debugfs directory
+>>    edac: add support for Calxeda highbank memory controller
+>>    edac: add support for Calxeda highbank L2 cache ecc
+>>
+>>   .../devicetree/bindings/arm/calxeda/l2ecc.txt      |   17 ++
+>>   .../devicetree/bindings/arm/calxeda/mem-ctrlr.txt  |   17 ++
+>>   arch/arm/boot/dts/highbank.dts                     |   12 +
+>>   drivers/edac/Kconfig                               |   16 +-
+>>   drivers/edac/Makefile                              |    4 +
+>>   drivers/edac/edac_mc_sysfs.c                       |   23 +-
+>>   drivers/edac/edac_module.c                         |    3 +
+>>   drivers/edac/edac_module.h                         |   14 ++
+>>   drivers/edac/highbank_l2_edac.c                    |  149 ++++++++++++
+>>   drivers/edac/highbank_mc_edac.c                    |  256 ++++++++++++++++++++
+>>   10 files changed, 509 insertions(+), 2 deletions(-)
+>>   create mode 100644 Documentation/devicetree/bindings/arm/calxeda/l2ecc.txt
+>>   create mode 100644 Documentation/devicetree/bindings/arm/calxeda/mem-ctrlr.txt
+>>   create mode 100644 drivers/edac/highbank_l2_edac.c
+>>   create mode 100644 drivers/edac/highbank_mc_edac.c
+>>
+> 
+> 
 
