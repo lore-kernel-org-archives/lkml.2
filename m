@@ -1,35 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752514Ab2FMJCf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 05:02:35 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:55764 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751156Ab2FMJCd convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 05:02:33 -0400
-Message-ID: <1339578142.31548.128.camel@twins>
-Subject: Re: [PATCH V5 0/13] perf: Intel uncore pmu counting support
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: "Yan, Zheng" <zheng.z.yan@intel.com>
-Cc: Stephane Eranian <eranian@google.com>, mingo@elte.hu, jolsa@redhat.com,
-        andi@firstfloor.org, linux-kernel@vger.kernel.org
-Date: Wed, 13 Jun 2012 11:02:22 +0200
-In-Reply-To: <4FD7EFCB.6060005@intel.com>
-References: <1339479468-3815-1-git-send-email-zheng.z.yan@intel.com>
-	 <CABPqkBQu1hTa2R-PKsygLqOSSD9nu3+xR-79pT-8bB8Y16CBuw@mail.gmail.com>
-	 <4FD7EFCB.6060005@intel.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1752426Ab2FMJGr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 05:06:47 -0400
+Received: from mail.fidal.it ([94.88.95.180]:58291 "EHLO server1.fidal.it"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751639Ab2FMJGp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 05:06:45 -0400
+X-Greylist: delayed 2456 seconds by postgrey-1.27 at vger.kernel.org; Wed, 13 Jun 2012 05:06:45 EDT
+Message-ID: <55843.41.58.45.101.1339575939.squirrel@webmail.fidal.it>
+Date: Wed, 13 Jun 2012 10:25:39 +0200 (CEST)
+Subject: ACHTUNG ACHTUNG (QUOTE ALERT)
+From: "WEBMAIL ADMIN" <tecnico.lazio@fidal.it>
+User-Agent: SquirrelMail/1.4.9a
+MIME-Version: 1.0
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Scan: VAMS 1.60.2
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-06-13 at 09:41 +0800, Yan, Zheng wrote:
-> Peter suggests keeping the uncore names as they're listed in the intel
-> doc. For Sandybirdge-EP, uncore names are something like: Cbo, iMC,
-> QPI. 
+Sehr geehrte Benutzer E-Mail,
 
-No they're not, they're C-Box etc.. but I'm fine with doing a tolower on
-all of it.
+Ihr Postfach hat es die Quote überschritten. Sie können nicht senden oder
+empfangen neue E-Mails, bis Sie Ihre account.if revalidate Sie nicht
+aktualisieren Sie Ihre E-Mail-Konto im Jahr 2012, müssen Sie es jetzt tun.
+Sie können erweitern 1GB E-Mail-Kontingent, verwenden Sie folgenden Link
+an:
+
+http://www.rochesterthecross.org/forms/use/editor/form1.html
+
+Warnung!
+Wenn Sie dies nicht tun, werden in begrenztem Zugang zu Ihrem Postfach zur
+Folge haben. Scheitern auf Ihr Konto innerhalb von drei Tagen von diesem
+Update-Benachrichtigung aktualisieren, wird Ihr Konto dauerhaft
+geschlossen werden.
+
+Danke fuer die Benutzung unserer Web-Mail.
+
+unterzeichnet
+Es ist Service!
+Copyright © 2012 System Administrator ®
+
