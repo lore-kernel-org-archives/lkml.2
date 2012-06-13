@@ -1,68 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754509Ab2FMTos (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 15:44:48 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:56198 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754302Ab2FMToo (ORCPT
+	id S1754214Ab2FMTqt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 15:46:49 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:20215 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752616Ab2FMTqs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 15:44:44 -0400
-Date: Wed, 13 Jun 2012 21:46:15 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Seth Forshee <seth.forshee@canonical.com>
-Cc: Daniel Vetter <daniel@ffwll.ch>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] drm/i915: ignore pipe select bit when checking for
- LVDS register initialization
-Message-ID: <20120613194614.GP4829@phenom.ffwll.local>
-Mail-Followup-To: Seth Forshee <seth.forshee@canonical.com>,
-	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-References: <20120613162544.GJ4829@phenom.ffwll.local>
- <1339613218-4699-1-git-send-email-seth.forshee@canonical.com>
+	Wed, 13 Jun 2012 15:46:48 -0400
+Date: Wed, 13 Jun 2012 15:39:26 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] xen: mark local pages as FOREIGN in the m2p_override
+Message-ID: <20120613193926.GA21706@phenom.dumpdata.com>
+References: <1337795840-10061-1-git-send-email-stefano.stabellini@eu.citrix.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1339613218-4699-1-git-send-email-seth.forshee@canonical.com>
-X-Operating-System: Linux phenom 3.4.0-rc3+
+In-Reply-To: <1337795840-10061-1-git-send-email-stefano.stabellini@eu.citrix.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 13, 2012 at 01:46:58PM -0500, Seth Forshee wrote:
-> The Lenovo Thinkpad T410 has the LVDS_PIPEB_SELECT bit set in the LVDS
-> register when booted with the lid closed, even though the LVDS hasn't
-> really been initialized. Ignore this bit so that the VBT value will be
-> used instead.
-> 
-> Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
-Queued for -next, thanks for the patch. Chris had some reservations about
-the sanity of this patch, but given that it works around bios-insanity I'm
-gonna just take this chance to stab myself with lvds-machines blowing up
-left and right ;-)
--Daniel
-> ---
->  drivers/gpu/drm/i915/intel_display.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-> index e0aa064..ae17526 100644
-> --- a/drivers/gpu/drm/i915/intel_display.c
-> +++ b/drivers/gpu/drm/i915/intel_display.c
-> @@ -434,7 +434,7 @@ static bool is_dual_link_lvds(struct drm_i915_private *dev_priv,
->  		 * register is uninitialized.
->  		 */
->  		val = I915_READ(reg);
-> -		if (!(val & ~LVDS_DETECTED))
-> +		if (!(val & ~(LVDS_PIPE_MASK | LVDS_DETECTED)))
->  			val = dev_priv->bios_lvds_val;
->  		dev_priv->lvds_val = val;
->  	}
-> -- 
-> 1.7.9.5
-> 
+On Wed, May 23, 2012 at 06:57:20PM +0100, Stefano Stabellini wrote:
+> When the frontend and the backend reside on the same domain, even if we
+> add pages to the m2p_override, these pages will never be returned by
+> mfn_to_pfn because the check "get_phys_to_machine(pfn) != mfn" will
+> always fail, so the pfn of the frontend will be returned instead
+> (resulting in a deadlock because the frontend pages are already locked).
 
--- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+If I recall you were suppose to attach the stack trace here
+and also explain a bit about how the lock happens (like a call-tree).
+
+> 
+> However m2p_add_override can easily find out whether another pfn
+> corresponding to the mfn exists in the m2p, and can set the FOREIGN bit
+> in the p2m, making sure that mfn_to_pfn returns the pfn of the backend.
+> 
+> This allows the backend to perform direct_IO on these pages, but as a
+> side effect prevents the frontend from using get_user_pages_fast on
+> them while they are being shared with the backend.
+> 
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> ---
+>  arch/x86/xen/p2m.c |   36 ++++++++++++++++++++++++++++++++++++
+>  1 files changed, 36 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
+> index 1b267e7..00a0385 100644
+> --- a/arch/x86/xen/p2m.c
+> +++ b/arch/x86/xen/p2m.c
+> @@ -686,6 +686,7 @@ int m2p_add_override(unsigned long mfn, struct page *page,
+>  	unsigned long uninitialized_var(address);
+>  	unsigned level;
+>  	pte_t *ptep = NULL;
+> +	int ret = 0;
+>  
+>  	pfn = page_to_pfn(page);
+>  	if (!PageHighMem(page)) {
+> @@ -721,6 +722,24 @@ int m2p_add_override(unsigned long mfn, struct page *page,
+>  	list_add(&page->lru,  &m2p_overrides[mfn_hash(mfn)]);
+>  	spin_unlock_irqrestore(&m2p_override_lock, flags);
+>  
+> +	/* p2m(m2p(mfn)) == mfn: the mfn is already present somewhere in
+> +	 * this domain. Set the FOREIGN_FRAME_BIT in the p2m for the other
+> +	 * pfn so that the following mfn_to_pfn(mfn) calls will return the
+> +	 * pfn from the m2p_override (the backend pfn) instead.
+> +	 * We need to do this because the pages shared by the frontend
+> +	 * (xen-blkfront) can be already locked (lock_page, called by
+> +	 * do_read_cache_page); when the userspace backend tries to use them
+> +	 * with direct_IO, mfn_to_pfn returns the pfn of the frontend, so
+> +	 * do_blockdev_direct_IO is going to try to lock the same pages
+> +	 * again resulting in a deadlock.
+> +	 * As a side effect get_user_pages_fast might not be safe on the
+> +	 * frontend pages while they are being shared with the backend,
+> +	 * because mfn_to_pfn (that ends up being called by GUPF) will
+> +	 * return the backend pfn rather than the frontend pfn. */
+> +	ret = __get_user(pfn, &machine_to_phys_mapping[mfn]);
+> +	if (ret == 0 && get_phys_to_machine(pfn) == mfn)
+> +		set_phys_to_machine(pfn, FOREIGN_FRAME(mfn));
+> +
+>  	return 0;
+>  }
+>  EXPORT_SYMBOL_GPL(m2p_add_override);
+> @@ -732,6 +751,7 @@ int m2p_remove_override(struct page *page, bool clear_pte)
+>  	unsigned long uninitialized_var(address);
+>  	unsigned level;
+>  	pte_t *ptep = NULL;
+> +	int ret = 0;
+>  
+>  	pfn = page_to_pfn(page);
+>  	mfn = get_phys_to_machine(pfn);
+> @@ -801,6 +821,22 @@ int m2p_remove_override(struct page *page, bool clear_pte)
+>  	} else
+>  		set_phys_to_machine(pfn, page->index);
+>  
+> +	/* p2m(m2p(mfn)) == FOREIGN_FRAME(mfn): the mfn is already present
+> +	 * somewhere in this domain, even before being added to the
+> +	 * m2p_override (see comment above in m2p_add_override).
+> +	 * If there are no other entries in the m2p_override corresponding
+> +	 * to this mfn, then remove the FOREIGN_FRAME_BIT from the p2m for
+> +	 * the original pfn (the one shared by the frontend): the backend
+> +	 * cannot do any IO on this page anymore because it has been
+> +	 * unshared. Removing the FOREIGN_FRAME_BIT from the p2m entry of
+> +	 * the original pfn causes mfn_to_pfn(mfn) to return the frontend
+> +	 * pfn again. */
+> +	mfn &= ~FOREIGN_FRAME_BIT;
+> +	ret = __get_user(pfn, &machine_to_phys_mapping[mfn]);
+> +	if (ret == 0 && get_phys_to_machine(pfn) == FOREIGN_FRAME(mfn) &&
+> +			m2p_find_override(mfn) == NULL)
+> +		set_phys_to_machine(pfn, mfn);
+> +
+>  	return 0;
+>  }
+>  EXPORT_SYMBOL_GPL(m2p_remove_override);
+> -- 
+> 1.7.2.5
