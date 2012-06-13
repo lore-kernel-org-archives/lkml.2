@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754541Ab2FMT1q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 15:27:46 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58858 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754371Ab2FMT1p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 15:27:45 -0400
-Date: Wed, 13 Jun 2012 20:27:40 +0100
-From: Andy Whitcroft <apw@canonical.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Vincent Guittot <vincent.guittot@linaro.org>,
+	id S1754676Ab2FMTa7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 15:30:59 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:44061 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754392Ab2FMTa6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 15:30:58 -0400
+Message-ID: <1339615857.28729.6.camel@joe2Laptop>
+Subject: Re: [RFC 1/4] ARM: topology: Add arch_scale_freq_power function
+From: Joe Perches <joe@perches.com>
+To: Andy Whitcroft <apw@canonical.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         linaro-dev@lists.linaro.org, devicetree-discuss@lists.ozlabs.org,
         linux@arm.linux.org.uk, grant.likely@secretlab.ca,
         rob.herring@calxeda.com
-Subject: Re: [RFC 1/4] ARM: topology: Add arch_scale_freq_power function
-Message-ID: <20120613192740.GZ5878@dm>
+Date: Wed, 13 Jun 2012 12:30:57 -0700
+In-Reply-To: <20120613192740.GZ5878@dm>
 References: <1339502524-10265-1-git-send-email-vincent.guittot@linaro.org>
- <1339502524-10265-2-git-send-email-vincent.guittot@linaro.org>
- <1339591969.8980.30.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339591969.8980.30.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	 <1339502524-10265-2-git-send-email-vincent.guittot@linaro.org>
+	 <1339591969.8980.30.camel@twins> <20120613192740.GZ5878@dm>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 13, 2012 at 02:52:49PM +0200, Peter Zijlstra wrote:
-> On Tue, 2012-06-12 at 14:02 +0200, Vincent Guittot wrote:
-> >         }
-> >         smp_wmb();
-> >  } 
+On Wed, 2012-06-13 at 20:27 +0100, Andy Whitcroft wrote:
+> On Wed, Jun 13, 2012 at 02:52:49PM +0200, Peter Zijlstra wrote:
+> > On Tue, 2012-06-12 at 14:02 +0200, Vincent Guittot wrote:
+> > >         }
+> > >         smp_wmb();
+> > >  } 
+> > 
+> > You know what.. we should make checkpatch report an error for memory
+> > barriers that don't have a comment. 
+> > 
+> > I know this isn't added by this patch, but every time I see something
+> > like it I cry a little.
 > 
-> You know what.. we should make checkpatch report an error for memory
-> barriers that don't have a comment. 
+> Actually if it was a new line, it would have been reported, at least in
+> theory:
 > 
-> I know this isn't added by this patch, but every time I see something
-> like it I cry a little.
+>     # check for memory barriers without a comment.
+> 		    if ($line =~
+>     /\b(mb|rmb|wmb|read_barrier_depends|smp_mb|smp_rmb|smp_wmb|smp_read_barrier_depends)\(/)
+>     {
+> 	if (!ctx_has_comment($first_line, $linenr)) {
+> 	    CHK("MEMORY_BARRIER",
+> 		"memory barrier without comment\n" . $herecurr);
+> 	}
+>     }
 
-Actually if it was a new line, it would have been reported, at least in
-theory:
+Maybe promote that CHK to a WARN.
 
-    # check for memory barriers without a comment.
-		    if ($line =~
-    /\b(mb|rmb|wmb|read_barrier_depends|smp_mb|smp_rmb|smp_wmb|smp_read_barrier_depends)\(/)
-    {
-	if (!ctx_has_comment($first_line, $linenr)) {
-	    CHK("MEMORY_BARRIER",
-		"memory barrier without comment\n" . $herecurr);
-	}
-    }
 
--apw
