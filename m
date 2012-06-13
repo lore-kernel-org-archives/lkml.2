@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753723Ab2FMLBc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 07:01:32 -0400
-Received: from www.linutronix.de ([62.245.132.108]:48238 "EHLO
+	id S1753765Ab2FMLBe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 07:01:34 -0400
+Received: from www.linutronix.de ([62.245.132.108]:48233 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753230Ab2FMLBA (ORCPT
+	with ESMTP id S1753022Ab2FMLBA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 13 Jun 2012 07:01:00 -0400
-Message-Id: <20120613105815.206105518@linutronix.de>
+Message-Id: <20120613105815.132283147@linutronix.de>
 User-Agent: quilt/0.48-1
 Date: Wed, 13 Jun 2012 11:00:54 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
@@ -17,11 +17,9 @@ Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
         Rusty Russell <rusty@rustcorp.com.au>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Tejun Heo <tj@kernel.org>
-Subject: [RFC patch 2/5] smpboot: Provide infrastructure for percpu hotplug
- threads
+Subject: [RFC patch 1/5] kthread: Implement park/unpark facility
 References: <20120613102823.373180763@linutronix.de>
-Content-Disposition: inline;
- filename=smpboot-percpu-thread-infrastructure.patch
+Content-Disposition: inline; filename=kthread-implement-park-and-percpu.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -29,348 +27,294 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide a generic interface for setting up and tearing down percpu
-threads.
-
-On registration the threads for already online cpus are created and
-started. On deregistration (modules) the threads are stoppped.
-
-During hotplug operations the threads are created, started, parked and
-unparked. The datastructure for registration provides a pointer to
-percpu storage space and optional setup, cleanup, park, unpark
-functions. These functions are called when the thread state changes.
-
-Thread functions should look like the following:
-
-int thread_fn(void *cookie)
-{
-	while (!smpboot_thread_check_parking(cookie)) {
-		do_stuff();
-	}
-	return 0;
-}
+To avoid the full teardown/setup of per cpu kthreads in the case of
+cpu hot(un)plug, provide a facility which allows to put the kthread
+into a park position and unpark it when the cpu comes online again.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- include/linux/smpboot.h |   40 +++++++++
- kernel/cpu.c            |    6 +
- kernel/smpboot.c        |  205 ++++++++++++++++++++++++++++++++++++++++++++++++
- kernel/smpboot.h        |    4 
- 4 files changed, 255 insertions(+)
+ include/linux/kthread.h |   11 ++-
+ kernel/kthread.c        |  165 ++++++++++++++++++++++++++++++++++++++++++++----
+ 2 files changed, 162 insertions(+), 14 deletions(-)
 
-Index: tip/include/linux/smpboot.h
+Index: tip/include/linux/kthread.h
 ===================================================================
---- /dev/null
-+++ tip/include/linux/smpboot.h
-@@ -0,0 +1,40 @@
-+#ifndef _LINUX_SMPBOOT_H
-+#define _LINUX_SMPBOOT_H
+--- tip.orig/include/linux/kthread.h
++++ tip/include/linux/kthread.h
+@@ -14,6 +14,11 @@ struct task_struct *kthread_create_on_no
+ 	kthread_create_on_node(threadfn, data, -1, namefmt, ##arg)
+ 
+ 
++struct task_struct *kthread_create_on_cpu(int (*threadfn)(void *data),
++					  void *data,
++					  unsigned int cpu,
++					  const char *namefmt);
 +
-+#include <linux/types.h>
-+
-+struct task_struct;
-+/* Cookie handed to the thread_fn*/
-+struct smpboot_thread_data;
-+
-+/**
-+ * struct smp_hotplug_thread - CPU hotplug related thread descriptor
-+ * @store:		Pointer to per cpu storage for the task pointers
-+ * @list:		List head for core management
-+ * @thread_fn:		The associated thread function
-+ * @setup:		Optional setup function, called when the thread gets
-+ *			operational the first time
-+ * @cleanup:		Optional cleanup function, called when the thread
-+ *			should stop (module exit)
-+ * @park:		Optional park function, called when the thread is
-+ *			parked (cpu offline)
-+ * @unpark:		Optional unpark function, called when the thread is
-+ *			unparked (cpu online)
-+ * @thread_comm:	The base name of the thread
-+ */
-+struct smp_hotplug_thread {
-+	struct task_struct __percpu	**store;
-+	struct list_head		list;
-+	int				(*thread_fn)(void *data);
-+	void				(*setup)(unsigned int cpu);
-+	void				(*cleanup)(unsigned int cpu, bool online);
-+	void				(*park)(unsigned int cpu);
-+	void				(*unpark)(unsigned int cpu);
-+	const char			*thread_comm;
+ /**
+  * kthread_run - create and wake a thread.
+  * @threadfn: the function to run until signal_pending(current).
+@@ -34,9 +39,13 @@ struct task_struct *kthread_create_on_no
+ 
+ void kthread_bind(struct task_struct *k, unsigned int cpu);
+ int kthread_stop(struct task_struct *k);
+-int kthread_should_stop(void);
++bool kthread_should_stop(void);
++bool kthread_should_park(void);
+ bool kthread_freezable_should_stop(bool *was_frozen);
+ void *kthread_data(struct task_struct *k);
++int kthread_park(struct task_struct *k);
++void kthread_unpark(struct task_struct *k);
++void kthread_parkme(void);
+ 
+ int kthreadd(void *unused);
+ extern struct task_struct *kthreadd_task;
+Index: tip/kernel/kthread.c
+===================================================================
+--- tip.orig/kernel/kthread.c
++++ tip/kernel/kthread.c
+@@ -37,11 +37,20 @@ struct kthread_create_info
+ };
+ 
+ struct kthread {
+-	int should_stop;
++	unsigned long flags;
++	unsigned int cpu;
+ 	void *data;
++	struct completion parked;
+ 	struct completion exited;
+ };
+ 
++enum KTHREAD_BITS {
++	KTHREAD_IS_PER_CPU = 0,
++	KTHREAD_SHOULD_STOP,
++	KTHREAD_SHOULD_PARK,
++	KTHREAD_IS_PARKED,
 +};
 +
-+int smpboot_register_percpu_thread(struct smp_hotplug_thread *plug_thread);
-+void smpboot_unregister_percpu_thread(struct smp_hotplug_thread *plug_thread);
-+int smpboot_thread_check_parking(struct smpboot_thread_data *td);
-+
-+#endif
-Index: tip/kernel/cpu.c
-===================================================================
---- tip.orig/kernel/cpu.c
-+++ tip/kernel/cpu.c
-@@ -280,6 +280,7 @@ static int __ref _cpu_down(unsigned int 
- 				__func__, cpu);
- 		goto out_release;
- 	}
-+	smpboot_park_threads(cpu);
+ #define to_kthread(tsk)	\
+ 	container_of((tsk)->vfork_done, struct kthread, exited)
  
- 	err = __stop_machine(take_cpu_down, &tcd_param, cpumask_of(cpu));
- 	if (err) {
-@@ -354,6 +355,10 @@ static int __cpuinit _cpu_up(unsigned in
- 		goto out;
- 	}
- 
-+	ret = smpboot_create_threads(cpu);
-+	if (ret)
-+		goto out;
-+
- 	ret = __cpu_notify(CPU_UP_PREPARE | mod, hcpu, -1, &nr_calls);
- 	if (ret) {
- 		nr_calls--;
-@@ -370,6 +375,7 @@ static int __cpuinit _cpu_up(unsigned in
- 
- 	/* Now call notifier in preparation. */
- 	cpu_notify(CPU_ONLINE | mod, hcpu);
-+	smpboot_unpark_threads(cpu);
- 
- out_notify:
- 	if (ret != 0)
-Index: tip/kernel/smpboot.c
-===================================================================
---- tip.orig/kernel/smpboot.c
-+++ tip/kernel/smpboot.c
-@@ -1,11 +1,17 @@
- /*
-  * Common SMP CPU bringup/teardown functions
+@@ -52,13 +61,29 @@ struct kthread {
+  * and this will return true.  You should then return, and your return
+  * value will be passed through to kthread_stop().
   */
-+#include <linux/cpu.h>
- #include <linux/err.h>
- #include <linux/smp.h>
- #include <linux/init.h>
-+#include <linux/list.h>
-+#include <linux/slab.h>
- #include <linux/sched.h>
-+#include <linux/export.h>
- #include <linux/percpu.h>
-+#include <linux/kthread.h>
-+#include <linux/smpboot.h>
- 
- #include "smpboot.h"
- 
-@@ -65,3 +71,202 @@ void __init idle_threads_init(void)
- 	}
+-int kthread_should_stop(void)
++bool kthread_should_stop(void)
+ {
+-	return to_kthread(current)->should_stop;
++	return test_bit(KTHREAD_SHOULD_STOP, &to_kthread(current)->flags);
  }
- #endif
-+
-+static LIST_HEAD(hotplug_threads);
-+static DEFINE_MUTEX(smpboot_threads_lock);
-+
-+struct smpboot_thread_data {
-+	unsigned int			cpu;
-+	unsigned int			status;
-+	struct smp_hotplug_thread	*ht;
-+};
-+
-+enum {
-+	HP_THREAD_NONE = 0,
-+	HP_THREAD_ACTIVE,
-+	HP_THREAD_PARKED,
-+};
-+
-+/**
-+ * smpboot_thread_check_parking - percpu hotplug thread loop function
-+ * @td:		thread data pointer
-+ *
-+ * Checks for thread stop and park conditions. Calls the necessary
-+ * setup, cleanup, park and unpark functions for the registered
-+ * thread.
-+ *
-+ * Returns 1 when the thread should exit, 0 otherwise.
-+ */
-+int smpboot_thread_check_parking(struct smpboot_thread_data *td)
-+{
-+	struct smp_hotplug_thread *ht = td->ht;
-+
-+again:
-+	if (kthread_should_stop()) {
-+		if (ht->cleanup)
-+			ht->cleanup(td->cpu, cpu_online(td->cpu));
-+		kfree(td);
-+		return 1;
-+	}
-+
-+	BUG_ON(td->cpu != smp_processor_id());
-+
-+	if (kthread_should_park()) {
-+		if (ht->park && td->status == HP_THREAD_ACTIVE) {
-+			ht->park(td->cpu);
-+			td->status = HP_THREAD_PARKED;
-+		}
-+		kthread_parkme();
-+		/* We might have been woken for stop */
-+		goto again;
-+	}
-+
-+	switch (td->status) {
-+	case HP_THREAD_NONE:
-+		if (ht->setup)
-+			ht->setup(td->cpu);
-+		td->status = HP_THREAD_ACTIVE;
-+		break;
-+	case HP_THREAD_PARKED:
-+		if (ht->unpark)
-+			ht->unpark(td->cpu);
-+		td->status = HP_THREAD_ACTIVE;
-+		break;
-+	}
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(smpboot_thread_check_parking);
-+
-+static int
-+__smpboot_create_thread(struct smp_hotplug_thread *ht, unsigned int cpu)
-+{
-+	struct task_struct *tsk = *per_cpu_ptr(ht->store, cpu);
-+	struct smpboot_thread_data *td;
-+
-+	if (tsk)
-+		return 0;
-+
-+	td = kzalloc_node(sizeof(*td), GFP_KERNEL, cpu_to_node(cpu));
-+	if (!td)
-+		return -ENOMEM;
-+	td->cpu = cpu;
-+	td->ht = ht;
-+
-+	tsk = kthread_create_on_cpu(ht->thread_fn, td, cpu, ht->thread_comm);
-+	if (IS_ERR(tsk))
-+		return PTR_ERR(tsk);
-+
-+	get_task_struct(tsk);
-+	*per_cpu_ptr(ht->store, cpu) = tsk;
-+	return 0;
-+}
-+
-+int smpboot_create_threads(unsigned int cpu)
-+{
-+	struct smp_hotplug_thread *cur;
-+	int ret = 0;
-+
-+	mutex_lock(&smpboot_threads_lock);
-+	list_for_each_entry(cur, &hotplug_threads, list) {
-+		ret = __smpboot_create_thread(cur, cpu);
-+		if (ret)
-+			break;
-+	}
-+	mutex_unlock(&smpboot_threads_lock);
-+	return ret;
-+}
-+
-+static void smpboot_unpark_thread(struct smp_hotplug_thread *ht, unsigned int cpu)
-+{
-+	struct task_struct *tsk = *per_cpu_ptr(ht->store, cpu);
-+
-+	kthread_unpark(tsk);
-+}
-+
-+void smpboot_unpark_threads(unsigned int cpu)
-+{
-+	struct smp_hotplug_thread *cur;
-+
-+	mutex_lock(&smpboot_threads_lock);
-+	list_for_each_entry(cur, &hotplug_threads, list)
-+		smpboot_unpark_thread(cur, cpu);
-+	mutex_unlock(&smpboot_threads_lock);
-+}
-+
-+static void smpboot_park_thread(struct smp_hotplug_thread *ht, unsigned int cpu)
-+{
-+	struct task_struct *tsk = *per_cpu_ptr(ht->store, cpu);
-+
-+	if (tsk)
-+		kthread_park(tsk);
-+}
-+
-+void smpboot_park_threads(unsigned int cpu)
-+{
-+	struct smp_hotplug_thread *cur;
-+
-+	mutex_lock(&smpboot_threads_lock);
-+	list_for_each_entry(cur, &hotplug_threads, list)
-+		smpboot_park_thread(cur, cpu);
-+	mutex_unlock(&smpboot_threads_lock);
-+}
-+
-+static void smpboot_destroy_threads(struct smp_hotplug_thread *ht)
-+{
-+	unsigned int cpu;
-+
-+	/* We need to destroy also the parked threads of offline cpus */
-+	for_each_possible_cpu(cpu) {
-+		struct task_struct *tsk = *per_cpu_ptr(ht->store, cpu);
-+
-+		if (tsk) {
-+			kthread_stop(tsk);
-+			put_task_struct(tsk);
-+			*per_cpu_ptr(ht->store, cpu) = NULL;
-+		}
-+	}
-+}
-+
-+/**
-+ * smpboot_register_percpu_thread - Register a per_cpu thread related to hotplug
-+ * @plug_thread:	Hotplug thread descriptor
-+ *
-+ * Creates and starts the threads on all online cpus.
-+ */
-+int smpboot_register_percpu_thread(struct smp_hotplug_thread *plug_thread)
-+{
-+	unsigned int cpu;
-+	int ret = 0;
-+
-+	mutex_lock(&smpboot_threads_lock);
-+	for_each_online_cpu(cpu) {
-+		ret = __smpboot_create_thread(plug_thread, cpu);
-+		if (ret) {
-+			smpboot_destroy_threads(plug_thread);
-+			goto out;
-+		}
-+		smpboot_unpark_thread(plug_thread, cpu);
-+	}
-+	list_add(&plug_thread->list, &hotplug_threads);
-+out:
-+	mutex_unlock(&smpboot_threads_lock);
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(smpboot_register_percpu_thread);
-+
-+/**
-+ * smpboot_unregister_percpu_thread - Unregister a per_cpu thread related to hotplug
-+ * @plug_thread:	Hotplug thread descriptor
-+ *
-+ * Stops all threads on all possible cpus.
-+ */
-+void smpboot_unregister_percpu_thread(struct smp_hotplug_thread *plug_thread)
-+{
-+	get_online_cpus();
-+	mutex_lock(&smpboot_threads_lock);
-+	list_del(&plug_thread->list);
-+	smpboot_destroy_threads(plug_thread);
-+	mutex_unlock(&smpboot_threads_lock);
-+	put_online_cpus();
-+}
-+EXPORT_SYMBOL_GPL(smpboot_unregister_percpu_thread);
-Index: tip/kernel/smpboot.h
-===================================================================
---- tip.orig/kernel/smpboot.h
-+++ tip/kernel/smpboot.h
-@@ -13,4 +13,8 @@ static inline void idle_thread_set_boot_
- static inline void idle_threads_init(void) { }
- #endif
+ EXPORT_SYMBOL(kthread_should_stop);
  
-+int smpboot_create_threads(unsigned int cpu);
-+void smpboot_park_threads(unsigned int cpu);
-+void smpboot_unpark_threads(unsigned int cpu);
+ /**
++ * kthread_should_park - should this kthread return now?
++ *
++ * When someone calls kthread_park() on your kthread, it will be woken
++ * and this will return true.  You should then return, and your return
++ * value will be passed through to kthread_park().
++ *
++ * Similar to kthread_should_stop(), but this keeps the thread alive
++ * and in a park position. kthread_unpark() "restart" the thread and
++ * calls the thread function again.
++ */
++bool kthread_should_park(void)
++{
++	return test_bit(KTHREAD_SHOULD_PARK, &to_kthread(current)->flags);
++}
 +
- #endif
++/**
+  * kthread_freezable_should_stop - should this freezable kthread return now?
+  * @was_frozen: optional out parameter, indicates whether %current was frozen
+  *
+@@ -96,6 +121,23 @@ void *kthread_data(struct task_struct *t
+ 	return to_kthread(task)->data;
+ }
+ 
++static void __kthread_parkme(struct kthread *self)
++{
++	__set_current_state(TASK_INTERRUPTIBLE);
++	while (test_bit(KTHREAD_SHOULD_PARK, &self->flags)) {
++		if (!test_and_set_bit(KTHREAD_IS_PARKED, &self->flags))
++			complete(&self->parked);
++		schedule();
++	}
++	clear_bit(KTHREAD_IS_PARKED, &self->flags);
++	__set_current_state(TASK_RUNNING);
++}
++
++void kthread_parkme(void)
++{
++	__kthread_parkme(to_kthread(current));
++}
++
+ static int kthread(void *_create)
+ {
+ 	/* Copy data: it's on kthread's stack */
+@@ -105,9 +147,10 @@ static int kthread(void *_create)
+ 	struct kthread self;
+ 	int ret;
+ 
+-	self.should_stop = 0;
++	self.flags = 0;
+ 	self.data = data;
+ 	init_completion(&self.exited);
++	init_completion(&self.parked);
+ 	current->vfork_done = &self.exited;
+ 
+ 	/* OK, tell user we're spawned, wait for stop or wakeup */
+@@ -117,9 +160,11 @@ static int kthread(void *_create)
+ 	schedule();
+ 
+ 	ret = -EINTR;
+-	if (!self.should_stop)
+-		ret = threadfn(data);
+ 
++	if (!test_bit(KTHREAD_SHOULD_STOP, &self.flags)) {
++		__kthread_parkme(&self);
++		ret = threadfn(data);
++	}
+ 	/* we can't just return, we must preserve "self" on stack */
+ 	do_exit(ret);
+ }
+@@ -172,8 +217,7 @@ static void create_kthread(struct kthrea
+  * Returns a task_struct or ERR_PTR(-ENOMEM).
+  */
+ struct task_struct *kthread_create_on_node(int (*threadfn)(void *data),
+-					   void *data,
+-					   int node,
++					   void *data, int node,
+ 					   const char namefmt[],
+ 					   ...)
+ {
+@@ -210,6 +254,13 @@ struct task_struct *kthread_create_on_no
+ }
+ EXPORT_SYMBOL(kthread_create_on_node);
+ 
++static void __kthread_bind(struct task_struct *p, unsigned int cpu)
++{
++	/* It's safe because the task is inactive. */
++	do_set_cpus_allowed(p, cpumask_of(cpu));
++	p->flags |= PF_THREAD_BOUND;
++}
++
+ /**
+  * kthread_bind - bind a just-created kthread to a cpu.
+  * @p: thread created by kthread_create().
+@@ -226,14 +277,102 @@ void kthread_bind(struct task_struct *p,
+ 		WARN_ON(1);
+ 		return;
+ 	}
+-
+-	/* It's safe because the task is inactive. */
+-	do_set_cpus_allowed(p, cpumask_of(cpu));
+-	p->flags |= PF_THREAD_BOUND;
++	__kthread_bind(p, cpu);
+ }
+ EXPORT_SYMBOL(kthread_bind);
+ 
+ /**
++ * kthread_create_on_cpu - Create a cpu bound kthread
++ * @threadfn: the function to run until signal_pending(current).
++ * @data: data ptr for @threadfn.
++ * @node: memory node number.
++ * @namefmt: printf-style name for the thread.
++ *
++ * Description: This helper function creates and names a kernel thread
++ * and binds it to a given CPU. The thread will be woken and put into
++ * park mode.
++ */
++struct task_struct *kthread_create_on_cpu(int (*threadfn)(void *data),
++					  void *data, unsigned int cpu,
++					  const char *namefmt)
++{
++	struct task_struct *p;
++
++	p = kthread_create_on_node(threadfn, data, cpu_to_node(cpu), namefmt,
++				   cpu);
++	if (IS_ERR(p))
++		return p;
++	/* Park the thread, mark it percpu and then bind it */
++	kthread_park(p);
++	set_bit(KTHREAD_IS_PER_CPU, &to_kthread(p)->flags);
++	to_kthread(p)->cpu = cpu;
++	__kthread_bind(p, cpu);
++	return p;
++}
++
++/**
++ * kthread_unpark - unpark a thread created by kthread_create().
++ * @k:		thread created by kthread_create().
++ *
++ * Sets kthread_should_park() for @k to return false, wakes it, and
++ * waits for it to return. If the thread is marked percpu then its
++ * bound to the cpu again.
++ */
++void kthread_unpark(struct task_struct *k)
++{
++	struct kthread *kthread;
++
++	get_task_struct(k);
++
++	kthread = to_kthread(k);
++	barrier(); /* it might have exited */
++	if (k->vfork_done != NULL) {
++		clear_bit(KTHREAD_SHOULD_PARK, &kthread->flags);
++		if (test_bit(KTHREAD_IS_PARKED, &kthread->flags)) {
++			if (test_bit(KTHREAD_IS_PER_CPU, &kthread->flags))
++				__kthread_bind(k, kthread->cpu);
++			wake_up_process(k);
++		}
++	}
++	put_task_struct(k);
++}
++
++/**
++ * kthread_park - park a thread created by kthread_create().
++ * @k: thread created by kthread_create().
++ *
++ * Sets kthread_should_park() for @k to return true, wakes it, and
++ * waits for it to return. This can also be called after kthread_create()
++ * instead of calling wake_up_process(): the thread will park without
++ * calling threadfn().
++ *
++ * Returns 0 if the thread is parked, -ENOSYS if the thread exited.
++ * If called by the kthread itself just the park bit is set.
++ */
++int kthread_park(struct task_struct *k)
++{
++	struct kthread *kthread;
++	int ret = -ENOSYS;
++
++	get_task_struct(k);
++
++	kthread = to_kthread(k);
++	barrier(); /* it might have exited */
++	if (k->vfork_done != NULL) {
++		if (!test_bit(KTHREAD_IS_PARKED, &kthread->flags)) {
++			set_bit(KTHREAD_SHOULD_PARK, &kthread->flags);
++			if (k != current) {
++				wake_up_process(k);
++				wait_for_completion(&kthread->parked);
++			}
++		}
++		ret = 0;
++	}
++	put_task_struct(k);
++	return ret;
++}
++
++/**
+  * kthread_stop - stop a thread created by kthread_create().
+  * @k: thread created by kthread_create().
+  *
+@@ -259,7 +398,7 @@ int kthread_stop(struct task_struct *k)
+ 	kthread = to_kthread(k);
+ 	barrier(); /* it might have exited */
+ 	if (k->vfork_done != NULL) {
+-		kthread->should_stop = 1;
++		set_bit(KTHREAD_SHOULD_STOP, &kthread->flags);
+ 		wake_up_process(k);
+ 		wait_for_completion(&kthread->exited);
+ 	}
 
 
