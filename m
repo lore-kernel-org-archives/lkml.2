@@ -1,60 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754124Ab2FMNcZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 09:32:25 -0400
-Received: from mga11.intel.com ([192.55.52.93]:49970 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754033Ab2FMNcX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 09:32:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="165142766"
-Date: Wed, 13 Jun 2012 21:32:17 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Intel Linux Wireless <ilw@linux.intel.com>,
-        linux-wireless@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] iwldvm lock oops
-Message-ID: <20120613133217.GA2170@localhost>
-References: <20120613131725.GA2052@localhost>
- <1339593640.4519.39.camel@jlt3.sipsolutions.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339593640.4519.39.camel@jlt3.sipsolutions.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754140Ab2FMNc6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 09:32:58 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41947 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754032Ab2FMNc5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 09:32:57 -0400
+Message-ID: <1339594368.8980.41.camel@twins>
+Subject: Re: [RFC 3/4] ARM: topology: Update cpu_power according to DT
+ information
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: Amit Kucheria <amit.kucheria@linaro.org>,
+        Jean Pihet <jean.pihet@newoldbits.com>, linux@arm.linux.org.uk,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        rob.herring@calxeda.com, linaro-dev@lists.linaro.org,
+        linux-arm-kernel@lists.infradead.org
+Date: Wed, 13 Jun 2012 15:32:48 +0200
+In-Reply-To: <CAKfTPtCyV389OTrun5Oyn8RCsDagza95wdmWr=r9poMiYrU0Mg@mail.gmail.com>
+References: <1339502524-10265-1-git-send-email-vincent.guittot@linaro.org>
+	 <1339502524-10265-4-git-send-email-vincent.guittot@linaro.org>
+	 <CAORVsuWqWt0pJfewymh_ydAH61-uPsO0M7m7Gs4N3zJY=Vo9ZA@mail.gmail.com>
+	 <CAKfTPtBc-KuDg_1qe04TfYS4+66qQoiHCJQbCF9gnhga5ociow@mail.gmail.com>
+	 <CAP245DXEOGLe1jq2Wj0rNW5qea63UyJu2jOvwV65Y4B9LLoQtg@mail.gmail.com>
+	 <1339591666.8980.26.camel@twins>
+	 <CAKfTPtCyV389OTrun5Oyn8RCsDagza95wdmWr=r9poMiYrU0Mg@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Johannes,
+On Wed, 2012-06-13 at 15:29 +0200, Vincent Guittot wrote:
+> In fact, there is 2 tracks, one for a power aware scheduler and one
+> for setting the capacity of each core of a big.LITTLE system. This
+> patch is for the latter and is not directly link to the power because
+> the default/performance mode of the scheduler should also take
+> advantage of this information 
 
-On Wed, Jun 13, 2012 at 03:20:40PM +0200, Johannes Berg wrote:
-> Hi Fengguang,
-> 
-> > The kernel compiled from commit b35032f ("iwlwifi: don't configure a
-> > txq that is being disabled") in
-> > 
-> >         git.kernel.org/pub/scm/linux/kernel/git/iwlwifi/iwlwifi.git  master
-> > 
-> > triggers a kernel oops below.
-> > 
-> > That particular commit may well not be the root cause. I'm just hoping
-> > you may have better idea which recent change may be relevant.
-> 
-> Thanks for the report. This particular problem is due to the fact that
-> we have the objects linked into the kernel in the wrong order, we have a
-> fix pending for it. git.kernel.org is down right now so I can't link to
-> it, but it's in the iwlwifi/iwlwifi-next.git tree:
-> 
-> commit 65fe593a519c4d7c62289d3b0a17ca412e95b037
-> Author: Brandon Misemer <brandon.misemer@intel.com>
-> Date:   Fri Jun 8 14:59:27 2012 -0700
-> 
->     iwlwifi: Fix Makefile build order for built-in driver
+Fair enough.. can you include a little blurp in the changelog on how
+this affects the capacity stuff for big.little and if that works as
+desired due to these patches?
 
-Good to know this. Thank you for the quick feedback!
 
-Thanks,
-Fengguang
