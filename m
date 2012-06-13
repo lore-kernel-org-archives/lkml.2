@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754379Ab2FMP1s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 11:27:48 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:43296 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751698Ab2FMP1q (ORCPT
+	id S1754495Ab2FMP17 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 11:27:59 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:17430 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754430Ab2FMP14 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 11:27:46 -0400
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: James.Bottomley@HansenPartnership.com, gregkh@linuxfoundation.org,
-        mdharm-usb@one-eyed-alien.net, stern@rowland.harvard.edu,
-        sshtylyov@mvista.com, bvanassche@acm.org
-Cc: linux-usb@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>
-Subject: [PATCH v4 0/3] scsi: fix internal write cache issue on usb hdd.
-Date: Wed, 13 Jun 2012 11:27:27 -0400
-Message-Id: <1339601248-3251-1-git-send-email-linkinjeon@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 13 Jun 2012 11:27:56 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 13 Jun 2012 08:27:34 -0700
+Date: Wed, 13 Jun 2012 18:26:58 +0300
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Rob Herring <robherring2@gmail.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "mturquette@linaro.org" <mturquette@linaro.org>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH v3 0/4] DT clock bindings
+Message-ID: <20120613152658.GE32111@tbergstrom-lnx.Nvidia.com>
+References: <1339512111-11172-1-git-send-email-robherring2@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1339512111-11172-1-git-send-email-robherring2@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namjae Jeon <namjae.jeon@samsung.com>
+On Tue, Jun 12, 2012 at 04:41:47PM +0200, Rob Herring wrote:
+> From: Rob Herring <rob.herring@calxeda.com>
+> 
+> This series defines clock bindings for Device-Tree and adds kernel
+> support using the common clock infrastructure. The last patch enables
+> DT clock support for the Calxeda Highbank platform.
+> 
+> I'm posting this again to solicit further review. There has been some
+> discussion[1], but no definite path forward. This series is not changed
+> from the last post other than rebasing to v3.5-rc2.
+> 
+> Rob
+> 
+> [1] http://lists.infradead.org/pipermail/linux-arm-kernel/2012-May/100932.html
+> 
 
-The numbers of USB HDDs(All USB HDD I checked) does not respond
-correctly to scsi mode sense command for retrieving the write cache
-page status. Even though write cache is enabled by default, due to
-scsi driver assume that cache is not enabled which in turn might lead
-to loss of data since data still will be in cache.
-This result that all filesystems is not stable on USB HDD when the
-device is unplugged abruptly, even though these are having journaling
-feature. Our first trying is that scsi driver send ATA command
-(ATA Pass through, #58) to USB HDD after failure from normal routine to
-know write cache enable.
-We have known it is dangerous after testing several USB HDD. some of
-HDD is stalled by this command(A-DATA HDD). So we tried to make the
-patch James's suggestion(usb quirk) on version 2 that add product ID
-and verdor ID of USB HDD to USB quirk list after checking write cache.
-All filesystem will be stable on USB HDD registered in quirk list.
-And it will be updated continuously.
+How would this binding work for clocks which can take a spinlock pointer as a
+init parameter (eg. clk-gate).
 
-	scsi: set to WCE if usb cache quirk is present.
-	usb: storage: add support for write cache quirk on usb hdd.
-	usb: storage: update usb devices for write cache quirk in quirk.
+Cheers,
 
- drivers/scsi/sd.c          |    9 +++++++--
- include/scsi/scsi_device.h |    1 +
- drivers/usb/storage/scsiglue.c |    5 +++++
- drivers/usb/storage/usb.c      |    5 ++++-
- include/linux/usb_usual.h      |    4 +++-
- drivers/usb/storage/unusual_devs.h |   24 ++++++++++++++++++++++++
- Documentation/kernel-parameters.txt |    2 ++
- 7 files changed, 46 insertions(+), 4 deletions(-)
--- 
-1.7.9.5
-
+Peter.
