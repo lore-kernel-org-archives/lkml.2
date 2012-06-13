@@ -1,60 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752191Ab2FMJOn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 05:14:43 -0400
-Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:49192 "EHLO
-	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751137Ab2FMJOl (ORCPT
+	id S1752104Ab2FMJUw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 05:20:52 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:39880 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750731Ab2FMJUv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 05:14:41 -0400
-From: Aurelien Gerault <aurelien.gerault-xsig@stericsson.com>
-To: <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Aurelien Gerault <aurelien.gerault-nonst@stericsson.com>
-Subject: [PATCH] printk: Ensure oops printing if console is locked
-Date: Wed, 13 Jun 2012 11:14:12 +0200
-Message-ID: <1339578852-17617-1-git-send-email-aurelien.gerault-xsig@stericsson.com>
-X-Mailer: git-send-email 1.7.10
+	Wed, 13 Jun 2012 05:20:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+Date: Wed, 13 Jun 2012 12:20:48 +0300
+Message-ID: <CAHn8xck=gL34Ht7nngiRJwOvRPz_pMCc5ySGYb_eCG073kzVpw@mail.gmail.com>
+Subject: fanotify hangs with multi-threaded programs
+From: Jussi Maki <joamaki@gmail.com>
+To: LinoSanfilippo@gmx.de, eparis@redhat.com
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Aurelien Gerault <aurelien.gerault-nonst@stericsson.com>
+Hi,
 
-Ensuring that oops & panic messages/backtraces will be printed
-in console, even when the console is locked.
+Ran into a hang in open with a fanotify event listener which delegated the
+processing via unix socket to a multi-threaded program that was opening
+files from several threads. A patch for fixing this was posted in december
+(http://marc.info/?l=linux-kernel&m=131822913806350&w=2), but it
+wasn't merged.
 
-If console is locked by someone else but an oops is ongoing, force
-unlocking / re-locking to display the oops.
+Are there any plans for fixing this? This is a show stopper here as we can't
+really use fanotify in production if there's a chance that multi-threaded
+programs might hang any time they use open.
 
-Signed-off-by: Aurelien Gerault <aurelien.gerault-nonst@stericsson.com>
-ST-Ericsson Linux next: NA
-ST-Ericsson ID: 436456
-ST-Ericsson FOSS-OUT ID: Trivial
+Here's test programs to reproduce this.
 
-Change-Id: I9f571492fefc32291ecd0cc62f0ad7031cab7c6d
----
- kernel/printk.c |    5 +++++
- 1 file changed, 5 insertions(+)
+First one marks mount "/" for open perm events and returns
+allow for everything and the second spawns 5 threads
+which all loop opening a temporary file. If the first program
+is running threads in the second will hang in
+fanotify_get_response_from_access.
 
-diff --git a/kernel/printk.c b/kernel/printk.c
-index 6d24237..be2a625 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -1014,6 +1014,11 @@ asmlinkage int vprintk(const char *fmt, va_list args)
- 	 */
- 	if (console_trylock_for_printk(this_cpu))
- 		console_unlock();
-+	else if (oops_in_progress) {
-+		/* force releasing / acquiring console lock to print oops */
-+		console_unlock();
-+		console_lock();
-+	}
- 
- 	lockdep_on();
- out_restore_irqs:
--- 
-1.7.10
+----
+#include <errno.h>
+#include <fcntl.h>
+#include <stdlib.h>
+#include <unistd.h>
 
+#include <linux/fanotify.h>
+
+#define xperror(args...) { perror(args); exit(1); }
+
+int main()
+{
+        int fd = fanotify_init(FAN_CLASS_CONTENT, O_RDONLY);
+        if (fd < 0) {
+                xperror("init");
+        }
+
+        int ret = fanotify_mark(fd, FAN_MARK_ADD|FAN_MARK_MOUNT,
+                                             FAN_OPEN_PERM, AT_FDCWD, "/");
+        if (ret < 0) {
+                xperror("mark");
+        }
+
+        for(;;) {
+                struct fanotify_event_metadata event;
+                if (read(fd, &event, sizeof(event)) < 0) {
+                        xperror("read");
+                }
+
+                struct fanotify_response resp = {
+                        .fd = event.fd,
+                        .response = FAN_ALLOW,
+                };
+
+                if (write(fd, &resp, sizeof(resp)) < 0) {
+                        xperror("write");
+                }
+
+                close(event.fd);
+        }
+}
+
+----
+
+#include <errno.h>
+#include <time.h>
+#include <unistd.h>
+#include <pthread.h>
+#include <fcntl.h>
+#include <stdlib.h>
+#include <string.h>
+
+static char *testfile;
+
+void *thread(void *ctx)
+{
+	char buf[512];
+	int fd;
+	for(;;) {
+		fd = open(testfile, O_RDONLY);
+		if (fd < 0) abort();
+		close(fd);
+	}
+}
+
+int main(int argc, char **argv)
+{
+	int i = 0;
+	testfile = strdup("/tmp/fantest.XXXXXX");
+	int fd = mkstemp(testfile);
+	close(fd);
+
+	for(i = 0; i < 5; i++) {
+		pthread_t tid;
+		pthread_create(&tid, NULL, thread, NULL);
+	}
+	sleep(5);
+	unlink(testfile);
+}
+
+----
+
+ -- Jussi
