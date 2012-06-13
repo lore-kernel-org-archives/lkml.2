@@ -1,111 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754013Ab2FMNZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 09:25:56 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:59061 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753688Ab2FMNZz convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 09:25:55 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120613132354.GC2538@m.brq.redhat.com>
-References: <1339420814-7379-1-git-send-email-jolsa@redhat.com>
-	<1339420814-7379-3-git-send-email-jolsa@redhat.com>
-	<CABPqkBRsBegm6gv6agHcGb0Hh1EWCV5gjVnbbwPHh-eOfROCuw@mail.gmail.com>
-	<20120613131240.GB2538@m.brq.redhat.com>
-	<CABPqkBRdVMzocJu_SJbU81wg6Ef=KgbXw-18tb+bZEon79fVDA@mail.gmail.com>
-	<20120613132354.GC2538@m.brq.redhat.com>
-Date: Wed, 13 Jun 2012 15:25:53 +0200
-Message-ID: <CABPqkBTqZjqtzikJJvX+ppiR3E=u0gfAXk0=EGhAMDdA8EiMqA@mail.gmail.com>
-Subject: Re: [PATCH 02/19] perf: Add ability to attach user level registers
- dump to sample
-From: Stephane Eranian <eranian@google.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, gorcunov@openvz.org,
-        tzanussi@gmail.com, mhiramat@redhat.com, robert.richter@amd.com,
-        fche@redhat.com, linux-kernel@vger.kernel.org,
-        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
-        benjamin.redelings@nescent.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1754030Ab2FMN2i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 09:28:38 -0400
+Received: from casper.infradead.org ([85.118.1.10]:60717 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753688Ab2FMN2h convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 09:28:37 -0400
+Message-ID: <1339594110.8980.38.camel@twins>
+Subject: Re: [RFC 4/4] sched: cpu_power: enable ARCH_POWER
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, devicetree-discuss@lists.ozlabs.org,
+        linux@arm.linux.org.uk, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com
+Date: Wed, 13 Jun 2012 15:28:30 +0200
+In-Reply-To: <CAKfTPtCERCDdCSLyPAYAhxAB4wkDMVfMbfecv+vOMbgUXvYwYg@mail.gmail.com>
+References: <1339502524-10265-1-git-send-email-vincent.guittot@linaro.org>
+	 <1339502524-10265-5-git-send-email-vincent.guittot@linaro.org>
+	 <1339591819.8980.28.camel@twins>
+	 <CAKfTPtCERCDdCSLyPAYAhxAB4wkDMVfMbfecv+vOMbgUXvYwYg@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 13, 2012 at 3:23 PM, Jiri Olsa <jolsa@redhat.com> wrote:
-> On Wed, Jun 13, 2012 at 03:18:54PM +0200, Stephane Eranian wrote:
->> On Wed, Jun 13, 2012 at 3:12 PM, Jiri Olsa <jolsa@redhat.com> wrote:
->> > On Wed, Jun 13, 2012 at 01:16:44PM +0200, Stephane Eranian wrote:
->> >> On Mon, Jun 11, 2012 at 3:19 PM, Jiri Olsa <jolsa@redhat.com> wrote:
->> >> > Introducing sample_regs_user bitmask into perf_event_attr
->> >> > struct to define the user level registers we want to attach
->> >> > to the sample. The dump itself is triggered once the
->> >> > sample_regs_user is not empty.
->> >> >
->> >> > Only user level registers are dump at the moment. Meaning the
->> >> > register values of the user space context as it was before the
->> >> > user entered the kernel for whatever reason (syscall, irq,
->> >> > exception, or a PMI happening in userspace).
->> >> >
->> >> > The layout of the sample_regs_user bitmap is described in
->> >> > asm/perf_regs.h for archs that support register dump.
->> >> >
->> >> > This is going to be useful to bring Dwarf CFI based stack
->> >> > unwinding on top of samples.
->> >> >
->> >> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
->> >> > Signed-off-by: Jiri Olsa <jolsa@redhat.com>
->> >> > ---
->> >> >  include/linux/perf_event.h |   10 ++++++-
->> >> >  kernel/events/core.c       |   61 ++++++++++++++++++++++++++++++++++++++++++++
->> >> >  2 files changed, 70 insertions(+), 1 deletions(-)
->> >> >
->> >> > diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
->> >> > index 1ce887a..d66cbeb 100644
->> >> > --- a/include/linux/perf_event.h
->> >> > +++ b/include/linux/perf_event.h
->> >> > @@ -271,7 +271,13 @@ struct perf_event_attr {
->> >> >                __u64           bp_len;
->> >> >                __u64           config2; /* extension of config1 */
->> >> >        };
->> >> > -       __u64   branch_sample_type; /* enum branch_sample_type */
->> >> > +       __u64   branch_sample_type; /* enum perf_branch_sample_type */
->> >> > +
->> >> > +       /*
->> >> > +        * Defines set of user regs to dump on samples.
->> >> > +        * See asm/perf_regs.h for details.
->> >> > +        */
->> >> > +       __u64   sample_regs_user;
->> >> >  };
->> >> That's not enough. You also need to define PERF_SAMPLE_USER_REGS
->> >> for sample_type. Although the sample_regs_users might look like it's enough
->> >> to capture regs, there is a problem when it comes to parsing the record. You
->> >> need an ordering guarantee that is explicitly spelled out in the API (the header
->> >> file). In your current patch, I have no way of knowing that sample_regs_users
->> >> are saved after BRANCH_STACK (should you have that enabled). Remember
->> >> that you can turn on/off sampled infos at will in sample_type. Yet to find the
->> >> infos when parsing, you need to know the order.
->> >
->> > Well, the sample_regs_user != 0 substitute the PERF_SAMPLE_USER_REGS bit.
->> > The behaviour is the same as if there was that bit defined..
->> >
->> No it's not the same.  Looking at sample_regs_user != 0, do you know in which
->> order the regs array is going to appear RELATIVE to the other captured
->> information?
->>
->> Take sample_type = IP|CPU|PERIOD, sample_regs_users = EAX
->>
->> Now, I get the raw record, want to parse it. Which comes first the user_regs
->> or the IP, CPU, PERIOD?
->>
->> Worst, I add more entries to PERF_SAMPLE_*, are they laid out before or
->> after the regs?
->
-> after.. but only because I know that.. yep, I think you're right,
-> we should track it in the sample_type enum.. I'll add those 2 bits
->
-Good thanks.
+On Wed, 2012-06-13 at 15:20 +0200, Vincent Guittot wrote:
+> 
+> In v3.4, x86 hasn't got any specific declaration for
+> arch_scale_freq_power so it would now use the weak
+> arch_scale_freq_power which calls default_scale_freq_power. Isn't it
+> enough ? 
 
-> jirka
+---
+Subject: sched, x86: Remove broken power estimation
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Wed Jun 13 15:24:45 CEST 2012
+
+The x86 sched power implementation has been broken forever and gets in
+the way of other stuff, remove it.
+
+For archaeological interest, fixing this code would require dealing with
+the cross-cpu calling of these functions and more importantly, we need
+to filter idle time out of the a/m-perf stuff because the ratio will go
+down to 0 when idle, giving a 0 capacity which is not what we'd want.
+
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/n/tip-wjjwelpti8f8k7i1pdnzmdr8@git.kernel.org
+---
+ arch/x86/kernel/cpu/Makefile |    2 -
+ arch/x86/kernel/cpu/sched.c  |   55 -------------------------------------------
+ 2 files changed, 1 insertion(+), 56 deletions(-)
+
+--- a/arch/x86/kernel/cpu/Makefile
++++ b/arch/x86/kernel/cpu/Makefile
+@@ -14,7 +14,7 @@ CFLAGS_common.o		:= $(nostackp)
+ 
+ obj-y			:= intel_cacheinfo.o scattered.o topology.o
+ obj-y			+= proc.o capflags.o powerflags.o common.o
+-obj-y			+= vmware.o hypervisor.o sched.o mshyperv.o
++obj-y			+= vmware.o hypervisor.o mshyperv.o
+ obj-y			+= rdrand.o
+ obj-y			+= match.o
+ 
+--- a/arch/x86/kernel/cpu/sched.c
++++ /dev/null
+@@ -1,55 +0,0 @@
+-#include <linux/sched.h>
+-#include <linux/math64.h>
+-#include <linux/percpu.h>
+-#include <linux/irqflags.h>
+-
+-#include <asm/cpufeature.h>
+-#include <asm/processor.h>
+-
+-#ifdef CONFIG_SMP
+-
+-static DEFINE_PER_CPU(struct aperfmperf, old_perf_sched);
+-
+-static unsigned long scale_aperfmperf(void)
+-{
+-	struct aperfmperf val, *old = &__get_cpu_var(old_perf_sched);
+-	unsigned long ratio, flags;
+-
+-	local_irq_save(flags);
+-	get_aperfmperf(&val);
+-	local_irq_restore(flags);
+-
+-	ratio = calc_aperfmperf_ratio(old, &val);
+-	*old = val;
+-
+-	return ratio;
+-}
+-
+-unsigned long arch_scale_freq_power(struct sched_domain *sd, int cpu)
+-{
+-	/*
+-	 * do aperf/mperf on the cpu level because it includes things
+-	 * like turbo mode, which are relevant to full cores.
+-	 */
+-	if (boot_cpu_has(X86_FEATURE_APERFMPERF))
+-		return scale_aperfmperf();
+-
+-	/*
+-	 * maybe have something cpufreq here
+-	 */
+-
+-	return default_scale_freq_power(sd, cpu);
+-}
+-
+-unsigned long arch_scale_smt_power(struct sched_domain *sd, int cpu)
+-{
+-	/*
+-	 * aperf/mperf already includes the smt gain
+-	 */
+-	if (boot_cpu_has(X86_FEATURE_APERFMPERF))
+-		return SCHED_LOAD_SCALE;
+-
+-	return default_scale_smt_power(sd, cpu);
+-}
+-
+-#endif
+
