@@ -1,64 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753497Ab2FMK51 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 06:57:27 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:55392 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752252Ab2FMK5Z convert rfc822-to-8bit (ORCPT
+	id S1753578Ab2FMLBE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 07:01:04 -0400
+Received: from www.linutronix.de ([62.245.132.108]:48231 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752252Ab2FMLBA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 06:57:25 -0400
-Date: Wed, 13 Jun 2012 12:00:50 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Jeff Garzik <jgarzik@pobox.com>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        Aaron Lu <aaron.lu@amd.com>, Holger Macht <holger@homac.de>,
-        Matthew Garrett <mjg@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-ide@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v4 02/13] libata: bind the Linux device tree to the ACPI
- device tree
-Message-ID: <20120613120050.164c3f29@pyramind.ukuu.org.uk>
-In-Reply-To: <CAF1ivSYBjw+UP3vP8RHaftjR8NJZEaHA1rtJ5ujDjkj-djHLTQ@mail.gmail.com>
-References: <1338181720-4149-1-git-send-email-ming.m.lin@intel.com>
-	<1338181720-4149-3-git-send-email-ming.m.lin@intel.com>
-	<20120528105131.67d74d45@pyramind.ukuu.org.uk>
-	<CAF1ivSYBjw+UP3vP8RHaftjR8NJZEaHA1rtJ5ujDjkj-djHLTQ@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 13 Jun 2012 07:01:00 -0400
+Message-Id: <20120613105815.278295912@linutronix.de>
+User-Agent: quilt/0.48-1
+Date: Wed, 13 Jun 2012 11:00:55 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: [RFC patch 3/5] softirq: Use hotplug thread infrastructure
+References: <20120613102823.373180763@linutronix.de>
+Content-Disposition: inline; filename=softirq-use-smboot-threads.patch
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Jun 2012 16:03:23 +0800
-Lin Ming <ming.m.lin@intel.com> wrote:
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/softirq.c |   84 +++++++++++--------------------------------------------
+ 1 file changed, 18 insertions(+), 66 deletions(-)
 
-> On Mon, May 28, 2012 at 5:51 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> >> +static int is_pci_ata(struct device *dev)
-> >> +{
-> >> +     struct pci_dev *pdev;
-> >> +
-> >> +     if (!is_pci_dev(dev))
-> >> +             return 0;
-> >> +
-> >> +     pdev = to_pci_dev(dev);
-> >> +
-> >> +     if ((pdev->class >> 8) != PCI_CLASS_STORAGE_SATA &&
-> >> +         (pdev->class >> 8) != PCI_CLASS_STORAGE_IDE)
-> >> +             return 0;
-> >
-> > This needs a better name. It doesn't check if a device is PCI ATA or
-> > anything of the sort, it checks if its probably a device in compatibility
-> > mode. A lot of controllers will in fact report RAID class or similar in
-> > native mode.
-> 
-> How about compat_pci_ata?
+Index: tip/kernel/softirq.c
+===================================================================
+--- tip.orig/kernel/softirq.c
++++ tip/kernel/softirq.c
+@@ -23,6 +23,7 @@
+ #include <linux/rcupdate.h>
+ #include <linux/ftrace.h>
+ #include <linux/smp.h>
++#include <linux/smpboot.h>
+ #include <linux/tick.h>
+ 
+ #define CREATE_TRACE_POINTS
+@@ -733,24 +734,17 @@ void __init softirq_init(void)
+ 	open_softirq(HI_SOFTIRQ, tasklet_hi_action);
+ }
+ 
+-static int run_ksoftirqd(void * __bind_cpu)
++static int run_ksoftirqd(void *td)
+ {
+-	set_current_state(TASK_INTERRUPTIBLE);
+-
+-	while (!kthread_should_stop()) {
++	while (!smpboot_thread_check_parking(td)) {
++		set_current_state(TASK_INTERRUPTIBLE);
+ 		preempt_disable();
+-		if (!local_softirq_pending()) {
++		if (!local_softirq_pending())
+ 			schedule_preempt_disabled();
+-		}
+ 
+ 		__set_current_state(TASK_RUNNING);
+ 
+ 		while (local_softirq_pending()) {
+-			/* Preempt disable stops cpu going offline.
+-			   If already offline, we'll be on wrong CPU:
+-			   don't process */
+-			if (cpu_is_offline((long)__bind_cpu))
+-				goto wait_to_die;
+ 			local_irq_disable();
+ 			if (local_softirq_pending())
+ 				__do_softirq();
+@@ -758,23 +752,10 @@ static int run_ksoftirqd(void * __bind_c
+ 			sched_preempt_enable_no_resched();
+ 			cond_resched();
+ 			preempt_disable();
+-			rcu_note_context_switch((long)__bind_cpu);
++			rcu_note_context_switch(smp_processor_id());
+ 		}
+ 		preempt_enable();
+-		set_current_state(TASK_INTERRUPTIBLE);
+ 	}
+-	__set_current_state(TASK_RUNNING);
+-	return 0;
+-
+-wait_to_die:
+-	preempt_enable();
+-	/* Wait for kthread_stop */
+-	set_current_state(TASK_INTERRUPTIBLE);
+-	while (!kthread_should_stop()) {
+-		schedule();
+-		set_current_state(TASK_INTERRUPTIBLE);
+-	}
+-	__set_current_state(TASK_RUNNING);
+ 	return 0;
+ }
+ 
+@@ -841,50 +822,17 @@ static int __cpuinit cpu_callback(struct
+ 				  unsigned long action,
+ 				  void *hcpu)
+ {
+-	int hotcpu = (unsigned long)hcpu;
+-	struct task_struct *p;
+-
+ 	switch (action) {
+-	case CPU_UP_PREPARE:
+-	case CPU_UP_PREPARE_FROZEN:
+-		p = kthread_create_on_node(run_ksoftirqd,
+-					   hcpu,
+-					   cpu_to_node(hotcpu),
+-					   "ksoftirqd/%d", hotcpu);
+-		if (IS_ERR(p)) {
+-			printk("ksoftirqd for %i failed\n", hotcpu);
+-			return notifier_from_errno(PTR_ERR(p));
+-		}
+-		kthread_bind(p, hotcpu);
+-  		per_cpu(ksoftirqd, hotcpu) = p;
+- 		break;
+-	case CPU_ONLINE:
+-	case CPU_ONLINE_FROZEN:
+-		wake_up_process(per_cpu(ksoftirqd, hotcpu));
+-		break;
+ #ifdef CONFIG_HOTPLUG_CPU
+-	case CPU_UP_CANCELED:
+-	case CPU_UP_CANCELED_FROZEN:
+-		if (!per_cpu(ksoftirqd, hotcpu))
+-			break;
+-		/* Unbind so it can run.  Fall thru. */
+-		kthread_bind(per_cpu(ksoftirqd, hotcpu),
+-			     cpumask_any(cpu_online_mask));
+ 	case CPU_DEAD:
+ 	case CPU_DEAD_FROZEN: {
+-		static const struct sched_param param = {
+-			.sched_priority = MAX_RT_PRIO-1
+-		};
+-
+-		p = per_cpu(ksoftirqd, hotcpu);
+-		per_cpu(ksoftirqd, hotcpu) = NULL;
+-		sched_setscheduler_nocheck(p, SCHED_FIFO, &param);
+-		kthread_stop(p);
++		int hotcpu = (unsigned long)hcpu;
++
+ 		takeover_tasklets(hotcpu);
+ 		break;
+ 	}
+ #endif /* CONFIG_HOTPLUG_CPU */
+- 	}
++	}
+ 	return NOTIFY_OK;
+ }
+ 
+@@ -892,14 +840,18 @@ static struct notifier_block __cpuinitda
+ 	.notifier_call = cpu_callback
+ };
+ 
++static struct smp_hotplug_thread softirq_threads = {
++	.store		= &ksoftirqd,
++	.thread_fn	= run_ksoftirqd,
++	.thread_comm	= "ksoftirqd/%u",
++};
++
+ static __init int spawn_ksoftirqd(void)
+ {
+-	void *cpu = (void *)(long)smp_processor_id();
+-	int err = cpu_callback(&cpu_nfb, CPU_UP_PREPARE, cpu);
+-
+-	BUG_ON(err != NOTIFY_OK);
+-	cpu_callback(&cpu_nfb, CPU_ONLINE, cpu);
+ 	register_cpu_notifier(&cpu_nfb);
++
++	BUG_ON(smpboot_register_percpu_thread(&softirq_threads));
++
+ 	return 0;
+ }
+ early_initcall(spawn_ksoftirqd);
 
-Sounds reasonable. I'm not btw sure the test is entirely right, but I'm
-not sure quite what you are trying to figure out from it and how ACPI
-expects this mapping to work.
 
-Alan
