@@ -1,50 +1,273 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752854Ab2FMCB0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 22:01:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52799 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751988Ab2FMCBZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 22:01:25 -0400
-Date: Tue, 12 Jun 2012 23:01:03 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v6 5/9] KVM: MMU: introduce SPTE_MMU_WRITEABLE bit
-Message-ID: <20120613020103.GB3119@amt.cnet>
-References: <4FC470C7.5040700@linux.vnet.ibm.com>
- <4FC4716A.8030304@linux.vnet.ibm.com>
- <20120611233212.GA29573@amt.cnet>
- <4FD6A833.6060206@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FD6A833.6060206@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753002Ab2FMCBn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 22:01:43 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:36297 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752697Ab2FMCBm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 22:01:42 -0400
+Message-ID: <1339552897.6436.5.camel@lorien2>
+Subject: [PATCH] leds: Rename led_set_brightness() to __led_set_brightness()
+From: Shuah Khan <shuahkhan@gmail.com>
+Reply-To: shuahkhan@gmail.com
+To: Bryan Wu <bryan.wu@canonical.com>
+Cc: shuahkhan@gmail.com, Fabio Baltieri <fabio.baltieri@gmail.com>,
+        linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Richard Purdie <rpurdie@rpsys.net>
+Date: Tue, 12 Jun 2012 20:01:37 -0600
+In-Reply-To: <1339521308.2628.13.camel@lorien2>
+References: <1339448260-1733-1-git-send-email-fabio.baltieri@gmail.com>
+	 <1339450705.23857.16.camel@lorien2> <20120612071649.GA1306@gmail.com>
+	 <CAK5ve-+D7vPO1U4gZDHRBmafJtF5T_EYBPCSAT2YOXjbc_u4zQ@mail.gmail.com>
+	 <1339521308.2628.13.camel@lorien2>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 12, 2012 at 10:23:47AM +0800, Xiao Guangrong wrote:
-> On 06/12/2012 07:32 AM, Marcelo Tosatti wrote:
-> 
-> > On Tue, May 29, 2012 at 02:49:14PM +0800, Xiao Guangrong wrote:
-> >> This bit indicates whether the spte can be writable on MMU, that means
-> >> the corresponding gpte is writable and the corresponding gfn is not
-> >> protected by shadow page protection
-> > 
-> > Why is this still necessary, now that only sptes of direct shadow pages 
-> > are updated locklessly? 
-> > 
-> 
-> 
-> Yes, but it is still needed, for nested npt/ept, we need protect
-> the nested page tables.
+Rename leds internal interface led_set_brightness() to __led_set_brightness()
+to reduce confusion between led_set_brightness() and the external interface
+led_brightness_set(). led_brightness_set() cancels the timer and then calls
+led_set_brightness().
 
-Sure, but shadowed L1 nested pagetables are not direct shadow pages.
 
-They are shadows of L1 nested pagetables. 
+Signed-off-by: Shuah Khan <shuahkhan@gmail.com>
+---
 
-Checking sp->direct should be enough (instead of the flags).
+Bryan,
+
+This is the first patch that renames led_set_brightness() to __led_set_brightness().
+Will send another patch that renames led_brightness_set() to led_set_brightness().
+
+-- Shuah
+
+
+ drivers/leds/led-class.c          |    6 +++---
+ drivers/leds/led-core.c           |    4 ++--
+ drivers/leds/led-triggers.c       |    2 +-
+ drivers/leds/leds.h               |    2 +-
+ drivers/leds/ledtrig-backlight.c  |    8 ++++----
+ drivers/leds/ledtrig-default-on.c |    2 +-
+ drivers/leds/ledtrig-gpio.c       |    6 +++---
+ drivers/leds/ledtrig-heartbeat.c  |    2 +-
+ drivers/leds/ledtrig-oneshot.c    |    4 ++--
+ drivers/leds/ledtrig-transient.c  |    8 ++++----
+ 10 files changed, 22 insertions(+), 22 deletions(-)
+
+diff --git a/drivers/leds/led-class.c b/drivers/leds/led-class.c
+index 81eb091..cb0a6eb 100644
+--- a/drivers/leds/led-class.c
++++ b/drivers/leds/led-class.c
+@@ -53,7 +53,7 @@ static ssize_t led_brightness_store(struct device *dev,
+ 
+ 	if (state == LED_OFF)
+ 		led_trigger_remove(led_cdev);
+-	led_set_brightness(led_cdev, state);
++	__led_set_brightness(led_cdev, state);
+ 
+ 	return size;
+ }
+@@ -82,7 +82,7 @@ static void led_timer_function(unsigned long data)
+ 	unsigned long delay;
+ 
+ 	if (!led_cdev->blink_delay_on || !led_cdev->blink_delay_off) {
+-		led_set_brightness(led_cdev, LED_OFF);
++		__led_set_brightness(led_cdev, LED_OFF);
+ 		return;
+ 	}
+ 
+@@ -105,7 +105,7 @@ static void led_timer_function(unsigned long data)
+ 		delay = led_cdev->blink_delay_off;
+ 	}
+ 
+-	led_set_brightness(led_cdev, brightness);
++	__led_set_brightness(led_cdev, brightness);
+ 
+ 	/* Return in next iteration if led is in one-shot mode and we are in
+ 	 * the final blink state so that the led is toggled each delay_on +
+diff --git a/drivers/leds/led-core.c b/drivers/leds/led-core.c
+index 31f1f78..176961b 100644
+--- a/drivers/leds/led-core.c
++++ b/drivers/leds/led-core.c
+@@ -45,7 +45,7 @@ static void led_set_software_blink(struct led_classdev *led_cdev,
+ 
+ 	/* never off - just set to brightness */
+ 	if (!delay_off) {
+-		led_set_brightness(led_cdev, led_cdev->blink_brightness);
++		__led_set_brightness(led_cdev, led_cdev->blink_brightness);
+ 		return;
+ 	}
+ 
+@@ -111,6 +111,6 @@ void led_brightness_set(struct led_classdev *led_cdev,
+ 	led_cdev->blink_delay_on = 0;
+ 	led_cdev->blink_delay_off = 0;
+ 
+-	led_set_brightness(led_cdev, brightness);
++	__led_set_brightness(led_cdev, brightness);
+ }
+ EXPORT_SYMBOL(led_brightness_set);
+diff --git a/drivers/leds/led-triggers.c b/drivers/leds/led-triggers.c
+index fa0b9be..f8b14dd 100644
+--- a/drivers/leds/led-triggers.c
++++ b/drivers/leds/led-triggers.c
+@@ -224,7 +224,7 @@ void led_trigger_event(struct led_trigger *trig,
+ 		struct led_classdev *led_cdev;
+ 
+ 		led_cdev = list_entry(entry, struct led_classdev, trig_list);
+-		led_set_brightness(led_cdev, brightness);
++		__led_set_brightness(led_cdev, brightness);
+ 	}
+ 	read_unlock(&trig->leddev_list_lock);
+ }
+diff --git a/drivers/leds/leds.h b/drivers/leds/leds.h
+index e77c7f8..d02acd4 100644
+--- a/drivers/leds/leds.h
++++ b/drivers/leds/leds.h
+@@ -17,7 +17,7 @@
+ #include <linux/rwsem.h>
+ #include <linux/leds.h>
+ 
+-static inline void led_set_brightness(struct led_classdev *led_cdev,
++static inline void __led_set_brightness(struct led_classdev *led_cdev,
+ 					enum led_brightness value)
+ {
+ 	if (value > led_cdev->max_brightness)
+diff --git a/drivers/leds/ledtrig-backlight.c b/drivers/leds/ledtrig-backlight.c
+index e272686..b941685 100644
+--- a/drivers/leds/ledtrig-backlight.c
++++ b/drivers/leds/ledtrig-backlight.c
+@@ -46,9 +46,9 @@ static int fb_notifier_callback(struct notifier_block *p,
+ 
+ 		if ((n->old_status == UNBLANK) ^ n->invert) {
+ 			n->brightness = led->brightness;
+-			led_set_brightness(led, LED_OFF);
++			__led_set_brightness(led, LED_OFF);
+ 		} else {
+-			led_set_brightness(led, n->brightness);
++			__led_set_brightness(led, n->brightness);
+ 		}
+ 
+ 		n->old_status = new_status;
+@@ -87,9 +87,9 @@ static ssize_t bl_trig_invert_store(struct device *dev,
+ 
+ 	/* After inverting, we need to update the LED. */
+ 	if ((n->old_status == BLANK) ^ n->invert)
+-		led_set_brightness(led, LED_OFF);
++		__led_set_brightness(led, LED_OFF);
+ 	else
+-		led_set_brightness(led, n->brightness);
++		__led_set_brightness(led, n->brightness);
+ 
+ 	return num;
+ }
+diff --git a/drivers/leds/ledtrig-default-on.c b/drivers/leds/ledtrig-default-on.c
+index a4ef54b..eac1f1b 100644
+--- a/drivers/leds/ledtrig-default-on.c
++++ b/drivers/leds/ledtrig-default-on.c
+@@ -19,7 +19,7 @@
+ 
+ static void defon_trig_activate(struct led_classdev *led_cdev)
+ {
+-	led_set_brightness(led_cdev, led_cdev->max_brightness);
++	__led_set_brightness(led_cdev, led_cdev->max_brightness);
+ }
+ 
+ static struct led_trigger defon_led_trigger = {
+diff --git a/drivers/leds/ledtrig-gpio.c b/drivers/leds/ledtrig-gpio.c
+index f057c10..ba215dc 100644
+--- a/drivers/leds/ledtrig-gpio.c
++++ b/drivers/leds/ledtrig-gpio.c
+@@ -54,12 +54,12 @@ static void gpio_trig_work(struct work_struct *work)
+ 
+ 	if (tmp) {
+ 		if (gpio_data->desired_brightness)
+-			led_set_brightness(gpio_data->led,
++			__led_set_brightness(gpio_data->led,
+ 					   gpio_data->desired_brightness);
+ 		else
+-			led_set_brightness(gpio_data->led, LED_FULL);
++			__led_set_brightness(gpio_data->led, LED_FULL);
+ 	} else {
+-		led_set_brightness(gpio_data->led, LED_OFF);
++		__led_set_brightness(gpio_data->led, LED_OFF);
+ 	}
+ }
+ 
+diff --git a/drivers/leds/ledtrig-heartbeat.c b/drivers/leds/ledtrig-heartbeat.c
+index 41dc76d..d3039f2 100644
+--- a/drivers/leds/ledtrig-heartbeat.c
++++ b/drivers/leds/ledtrig-heartbeat.c
+@@ -67,7 +67,7 @@ static void led_heartbeat_function(unsigned long data)
+ 		break;
+ 	}
+ 
+-	led_set_brightness(led_cdev, brightness);
++	__led_set_brightness(led_cdev, brightness);
+ 	mod_timer(&heartbeat_data->timer, jiffies + delay);
+ }
+ 
+diff --git a/drivers/leds/ledtrig-oneshot.c b/drivers/leds/ledtrig-oneshot.c
+index 5c9edf7..5cbab41 100644
+--- a/drivers/leds/ledtrig-oneshot.c
++++ b/drivers/leds/ledtrig-oneshot.c
+@@ -63,9 +63,9 @@ static ssize_t led_invert_store(struct device *dev,
+ 	oneshot_data->invert = !!state;
+ 
+ 	if (oneshot_data->invert)
+-		led_set_brightness(led_cdev, LED_FULL);
++		__led_set_brightness(led_cdev, LED_FULL);
+ 	else
+-		led_set_brightness(led_cdev, LED_OFF);
++		__led_set_brightness(led_cdev, LED_OFF);
+ 
+ 	return size;
+ }
+diff --git a/drivers/leds/ledtrig-transient.c b/drivers/leds/ledtrig-transient.c
+index 83179f4..398f104 100644
+--- a/drivers/leds/ledtrig-transient.c
++++ b/drivers/leds/ledtrig-transient.c
+@@ -41,7 +41,7 @@ static void transient_timer_function(unsigned long data)
+ 	struct transient_trig_data *transient_data = led_cdev->trigger_data;
+ 
+ 	transient_data->activate = 0;
+-	led_set_brightness(led_cdev, transient_data->restore_state);
++	__led_set_brightness(led_cdev, transient_data->restore_state);
+ }
+ 
+ static ssize_t transient_activate_show(struct device *dev,
+@@ -72,7 +72,7 @@ static ssize_t transient_activate_store(struct device *dev,
+ 	if (state == 0 && transient_data->activate == 1) {
+ 		del_timer(&transient_data->timer);
+ 		transient_data->activate = state;
+-		led_set_brightness(led_cdev, transient_data->restore_state);
++		__led_set_brightness(led_cdev, transient_data->restore_state);
+ 		return size;
+ 	}
+ 
+@@ -80,7 +80,7 @@ static ssize_t transient_activate_store(struct device *dev,
+ 	if (state == 1 && transient_data->activate == 0 &&
+ 	    transient_data->duration != 0) {
+ 		transient_data->activate = state;
+-		led_set_brightness(led_cdev, transient_data->state);
++		__led_set_brightness(led_cdev, transient_data->state);
+ 		transient_data->restore_state =
+ 		    (transient_data->state == LED_FULL) ? LED_OFF : LED_FULL;
+ 		mod_timer(&transient_data->timer,
+@@ -203,7 +203,7 @@ static void transient_trig_deactivate(struct led_classdev *led_cdev)
+ 
+ 	if (led_cdev->activated) {
+ 		del_timer_sync(&transient_data->timer);
+-		led_set_brightness(led_cdev, transient_data->restore_state);
++		__led_set_brightness(led_cdev, transient_data->restore_state);
+ 		device_remove_file(led_cdev->dev, &dev_attr_activate);
+ 		device_remove_file(led_cdev->dev, &dev_attr_duration);
+ 		device_remove_file(led_cdev->dev, &dev_attr_state);
+-- 
+1.7.9.5
+
+
 
