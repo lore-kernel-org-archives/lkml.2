@@ -1,69 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754497Ab2FMVKs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 17:10:48 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:46973 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751908Ab2FMVKq (ORCPT
+	id S1754489Ab2FMVYp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 17:24:45 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:49212 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752650Ab2FMVYo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 17:10:46 -0400
-MIME-Version: 1.0
-Date: Wed, 13 Jun 2012 16:10:45 -0500
-Message-ID: <CAL5oW025M1rtmf82gMGqi2t39N0Q9taiZt+-bzgw2R2JbsyOkg@mail.gmail.com>
-Subject: [PATCH] acpi_pad: fix hang while removing power_saving threads
-From: Stuart Hayes <stuart.w.hayes@gmail.com>
-To: lenb@kernel.org
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 13 Jun 2012 17:24:44 -0400
+Message-ID: <1339622672.8980.61.camel@twins>
+Subject: Re: [PATCH 1/2] perf, x86: Add basic Ivy Bridge support v3
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: mingo@elte.hu, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Date: Wed, 13 Jun 2012 23:24:32 +0200
+In-Reply-To: <1339615201-7456-1-git-send-email-andi@firstfloor.org>
+References: <1339615201-7456-1-git-send-email-andi@firstfloor.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The acpi_pad driver can get stuck in destroy_power_saving_task()
-waiting for kthread_stop() to stop a power_saving thread.  The problem
-is that the isolated_cpus_lock mutex is owned when
-destroy_power_saving_task() calls kthread_stop(), which waits for a
-power_saving thread to end, and the power_saving thread tries to
-acquire the isolated_cpus_lock when it calls round_robin_cpu().  This
-patch fixes the issue by making round_robin_cpu() use its own mutex.
+On Wed, 2012-06-13 at 12:20 -0700, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+> 
+> Very similar to Sandy Bridge, but there is no PEBS problem.
+> 
+> As Stephane pointed out .code=0xb1, .umask=0x01 is gone, so don't
+> do a generic backend stall event on IvyBridge.
+> 
+> v2: Remove stall event
+> v3: Fork init code from Sandy Bridge
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
+>  arch/x86/kernel/cpu/perf_event_intel.c |   23 +++++++++++++++++++++--
+>  1 files changed, 21 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+> index 187c294..abb29c2 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
+> @@ -1911,7 +1911,6 @@ __init int intel_pmu_init(void)
+>  	case 42: /* SandyBridge */
+>  	case 45: /* SandyBridge, "Romely-EP" */
+>  		x86_add_quirk(intel_sandybridge_quirk);
+> -	case 58: /* IvyBridge */
+>  		memcpy(hw_cache_event_ids, snb_hw_cache_event_ids,
+>  		       sizeof(hw_cache_event_ids));
+>  
+> @@ -1928,11 +1927,31 @@ __init int intel_pmu_init(void)
+>  		/* UOPS_ISSUED.ANY,c=1,i=1 to count stall cycles */
+>  		intel_perfmon_event_map[PERF_COUNT_HW_STALLED_CYCLES_FRONTEND] =
+>  			X86_CONFIG(.event=0x0e, .umask=0x01, .inv=1, .cmask=1);
+> +		pr_cont("SandyBridge events, ");
+> +		break;
+> +
+> +	case 58: /* IvyBridge */
+>  		/* UOPS_DISPATCHED.THREAD,c=1,i=1 to count stall cycles*/
+>  		intel_perfmon_event_map[PERF_COUNT_HW_STALLED_CYCLES_BACKEND] =
+>  			X86_CONFIG(.event=0xb1, .umask=0x01, .inv=1, .cmask=1);
+>  
+> -		pr_cont("SandyBridge events, ");
+> +		memcpy(hw_cache_event_ids, snb_hw_cache_event_ids,
+> +		       sizeof(hw_cache_event_ids));
+> +
+> +		intel_pmu_lbr_init_snb();
+> +
+> +		x86_pmu.event_constraints = intel_snb_event_constraints;
+> +		x86_pmu.pebs_constraints = intel_snb_pebs_event_constraints;
+> +		x86_pmu.extra_regs = intel_snb_extra_regs;
+> +		/* all extra regs are per-cpu when HT is on */
+> +		x86_pmu.er_flags |= ERF_HAS_RSP_1;
+> +		x86_pmu.er_flags |= ERF_NO_HT_SHARING;
+> +
+> +		/* UOPS_ISSUED.ANY,c=1,i=1 to count stall cycles */
+> +		intel_perfmon_event_map[PERF_COUNT_HW_STALLED_CYCLES_FRONTEND] =
+> +			X86_CONFIG(.event=0x0e, .umask=0x01, .inv=1, .cmask=1);
+> +		/* No backend stall event */
+> +		pr_cont("IvyBridge events, ");
+>  		break;
+>  
+>  	default:
 
-Signed-off-by: Stuart Hayes <stuart.w.hayes@gmail.com>
----
+I really don't see the point of this patch,.. it is in fact using the
+SandyBridge events.. also you appear to have removed the backend stalls
+which per SDM (may 2012) table 19-2 would be the very same.
 
---- linux-3.5-rc2/drivers/acpi/acpi_pad.c	2012-06-08 21:40:09.000000000 -0400
-+++ linux-3.5-rc2stu/drivers/acpi/acpi_pad.c	2012-06-13 20:14:17.154830840 -0400
-@@ -36,6 +36,7 @@
- #define ACPI_PROCESSOR_AGGREGATOR_DEVICE_NAME "Processor Aggregator"
- #define ACPI_PROCESSOR_AGGREGATOR_NOTIFY 0x80
- static DEFINE_MUTEX(isolated_cpus_lock);
-+static DEFINE_MUTEX(round_robin_lock);
 
- static unsigned long power_saving_mwait_eax;
-
-@@ -107,7 +108,7 @@ static void round_robin_cpu(unsigned int
- 	if (!alloc_cpumask_var(&tmp, GFP_KERNEL))
- 		return;
-
--	mutex_lock(&isolated_cpus_lock);
-+	mutex_lock(&round_robin_lock);
- 	cpumask_clear(tmp);
- 	for_each_cpu(cpu, pad_busy_cpus)
- 		cpumask_or(tmp, tmp, topology_thread_cpumask(cpu));
-@@ -116,7 +117,7 @@ static void round_robin_cpu(unsigned int
- 	if (cpumask_empty(tmp))
- 		cpumask_andnot(tmp, cpu_online_mask, pad_busy_cpus);
- 	if (cpumask_empty(tmp)) {
--		mutex_unlock(&isolated_cpus_lock);
-+		mutex_unlock(&round_robin_lock);
- 		return;
- 	}
- 	for_each_cpu(cpu, tmp) {
-@@ -131,7 +132,7 @@ static void round_robin_cpu(unsigned int
- 	tsk_in_cpu[tsk_index] = preferred_cpu;
- 	cpumask_set_cpu(preferred_cpu, pad_busy_cpus);
- 	cpu_weight[preferred_cpu]++;
--	mutex_unlock(&isolated_cpus_lock);
-+	mutex_unlock(&round_robin_lock);
-
- 	set_cpus_allowed_ptr(current, cpumask_of(preferred_cpu));
- }
