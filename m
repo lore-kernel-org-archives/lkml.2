@@ -1,60 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754143Ab2FMO15 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 10:27:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39684 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753946Ab2FMO14 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 10:27:56 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Wanpeng Li <liwp.linux@gmail.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Gavin Shan <shangw@linux.vnet.ibm.com>
-Subject: Re: [PATCH V2] writeback: fix hung_task alarm when sync block
-References: <1339562553-10035-1-git-send-email-liwp.linux@gmail.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Wed, 13 Jun 2012 10:27:50 -0400
-In-Reply-To: <1339562553-10035-1-git-send-email-liwp.linux@gmail.com> (Wanpeng
-	Li's message of "Wed, 13 Jun 2012 12:42:33 +0800")
-Message-ID: <x49txyf8exl.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1754171Ab2FMO2k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 10:28:40 -0400
+Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:42065 "EHLO
+	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754150Ab2FMO2h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 10:28:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20120612104803.GD10901@arwen.pp.htv.fi>
+References: <1338388466-3565-1-git-send-email-kishon@ti.com>
+	<20120612104803.GD10901@arwen.pp.htv.fi>
+Date: Wed, 13 Jun 2012 19:58:34 +0530
+Message-ID: <CAAe_U6JQ5rVoQWwyJLQBNR8uOp2zE0bmqFXH6HkBWYKPuqng+Q@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/3] usb: musb: add new phy driver
+From: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
+To: balbi@ti.com
+Cc: tony@atomide.com, linux@arm.linux.org.uk, gregkh@linuxfoundation.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wanpeng Li <liwp.linux@gmail.com> writes:
+Hi,
 
-> diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-> index f2d0109..df879ee 100644
-> --- a/fs/fs-writeback.c
-> +++ b/fs/fs-writeback.c
-> @@ -1311,7 +1311,11 @@ void writeback_inodes_sb_nr(struct super_block *sb,
->  
->  	WARN_ON(!rwsem_is_locked(&sb->s_umount));
->  	bdi_queue_work(sb->s_bdi, &work);
-> -	wait_for_completion(&done);
-> +	if (sysctl_hung_task_timeout_secs)
-> +		while (!wait_for_completion_timeout(&done, HZ/2))
-> +			;
-> +	else
-> +		wait_for_completion(&done);
->  }
->  EXPORT_SYMBOL(writeback_inodes_sb_nr);
+On Tue, Jun 12, 2012 at 4:18 PM, Felipe Balbi <balbi@ti.com> wrote:
+> On Wed, May 30, 2012 at 08:04:23PM +0530, Kishon Vijay Abraham I wrote:
+>> This series adds a new usb2 phy driver. The device for which is created
+>> by the ocp2scp driver. This also uses control module driver.
+>>
+>> This series converts twl6030 as a comparator driver (previously it was
+>> also the phy driver) and makes use of omap-usb2 as the phy driver.
+>>
+>> Instead of notification mechanism by power chip to omap glue to pass detection
+>> of any events, an export API has been added in omap glue. Both twl4030 and
+>> twl6030 will call to this API to pass any event. (twl6030 is used in omap4 and
+>> twl4030 is used in omap3).
+>>
+>> This series depends on:
+>> *[RFC PATCH 00/11] OMAP System Control Module* patch series
+>> However System Control Module driver has only dt support, so wouldn't
+>> be able to test this patch series. However I'll adapt omap usb2 phy
+>> driver and musb driver for dt and send it asap to the list.
+>>
+>> This series also depends on:
+>> *[PATCH v3 0/3] usb: multi-phy support* patch series
+>> *[RFC PATCH 0/5] omap: add ocp2scp as a misc driver* patch series
+>>
+>> Compile tested only.
+>
+> are we getting new version of this series ?
 
-Is it really expected that writeback_inodes_sb_nr will routinely queue
-up more than 2 seconds worth of I/O (Yes, I understand that it isn't the
-only entity issuing I/O)?  For devices that are really slow, it may make
-more sense to tune the system so that you don't have too much writeback
-I/O submitted at once.  Dropping nr_requests for the given queue should
-fix this situation, I would think.
+Yes. I'm planning to send a new version with only dt support by next week.
 
-This really feels like we're papering over the problem.
-
-Cheers,
-Jeff
+Thanks
+Kishon
