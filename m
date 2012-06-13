@@ -1,39 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753799Ab2FMLTt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 07:19:49 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:45271 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753318Ab2FMLTs (ORCPT
+	id S1752934Ab2FMLUb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 07:20:31 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:64709 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751144Ab2FMLUa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 07:19:48 -0400
-X-AuditID: cbfee61a-b7f9f6d0000016a8-85-4fd87752e6b0
+	Wed, 13 Jun 2012 07:20:30 -0400
+X-AuditID: cbfee61a-b7f9f6d0000016a8-22-4fd8777d3e24
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>,
         "'LKML'" <linux-kernel@vger.kernel.org>
 Cc: "'Richard Purdie'" <rpurdie@rpsys.net>,
-        "'Christian Gmeiner'" <christian.gmeiner@gmail.com>,
+        "'Dmitry Baryshkov'" <dbaryshkov@gmail.com>,
         "'Jingoo Han'" <jg1.han@samsung.com>,
         "'Axel Lin'" <axel.lin@gmail.com>
-Subject: [PATCH 2/7] backlight: ot200_bl: use devm_gpio_request()
-Date: Wed, 13 Jun 2012 20:19:46 +0900
-Message-id: <000301cd4956$70714920$5153db60$%han@samsung.com>
+Subject: [PATCH 3/7] backlight: tosa_lcd: use devm_gpio_request()
+Date: Wed, 13 Jun 2012 20:20:29 +0900
+Message-id: <000401cd4956$89e2a700$9da7f500$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac1JVnBZ+NHoIXcMR+WyzrsRxE91Yg==
+Thread-index: Ac1JVonNoJvbbksZQQi+Krp3oBcwLg==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCLMWRmVeSWpSXmKPExsVy+t9jAd2g8hv+BlNeGVhc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6M/s99TAV3eSsOvVnL1sC4jbuLkZNDQsBEYs7ldiYIW0ziwr31
-	bCC2kMAiRomfs+y7GLmA7NlMEuc3rgArYhNQk/jy5TA7iC0iECHRPGMWM4jNLLCEUeLYWrAa
-	YQFHif3H+hhBbBYBVYl/XWfA4rwCthJLV01ng7AFJX5MvscC0aslsX7ncSYIW15i85q3QDM5
-	gA5Sl3j0VxdilZ7Exb5LrBAlIhL7XrxjnMAoMAvJpFlIJs1CMmkWkpYFjCyrGEVTC5ILipPS
-	cw31ihNzi0vz0vWS83M3MYLD8pnUDsaVDRaHGAU4GJV4eDcU3fAXYk0sK67MPcQowcGsJML7
-	LBsoxJuSWFmVWpQfX1Sak1p8iFGag0VJnLfJ+oK/kEB6YklqdmpqQWoRTJaJg1OqgZGp8mBO
-	eXOVf//y8FWO7NPXaW84KFHx2OL6VN5DTn+/Bdu9vzf/oRurxF++eQvl7jFX9z3YxLi7//C/
-	M8JNZ0tL+oqbt9+enXLqUPOJBNVeVbkdy4NNfdburtrNL663Zfuynll3DN9+S+iY9Pd78/E9
-	s5fNvv3a/6/aot1PuTI6rvrf+HiJzeWYEktxRqKhFnNRcSIAo4X7+kcCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGLMWRmVeSWpSXmKPExsVy+t9jQd3a8hv+BtPfy1pc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6Mb+/OMRas4KnYNfUHewPjfK4uRk4OCQETiel7W9kgbDGJC/fW
+	A9lcHEIC0xklvi3+zgrhzGaS6Lj2kR2kik1ATeLLl8NgtohAhETzjFnMIEXMAnMYJda8XsAC
+	khAWcJTYd/M72FgWAVWJJ20bwWxeAVuJjvcHGSFsQYkfk++B1TMLaEms33mcCcKWl9i85i3Q
+	UA6gk9QlHv3VhdilJ3FlTx9UiYjEvhfvGCcwCsxCMmkWkkmzkEyahaRlASPLKkbR1ILkguKk
+	9FxDveLE3OLSvHS95PzcTYzg0HwmtYNxZYPFIUYBDkYlHt4NRTf8hVgTy4orcw8xSnAwK4nw
+	PssGCvGmJFZWpRblxxeV5qQWH2KU5mBREudtsr7gLySQnliSmp2aWpBaBJNl4uCUamBceGGN
+	5Z3gvTJ/u95+uTW9J6UveWXzKqb3Z6sCb6d/ZTio08izcPPLwghvZ8Vbk8ONZ/MrXth3IODh
+	Jm+Tm8UbXy1wbTA9mqK0z7torvGZtu3/pbbJP8sx1VvKk3AgV6CizUL1XPuLKE7fKlY1+Taz
+	xuvbl/FknBRhSTmldlfQTt6aVZJlZY4SS3FGoqEWc1FxIgAbqW+ZSQIAAA==
 X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -42,54 +42,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 The devm_ functions allocate memory that is released when a driver
 detaches. This patch uses devm_gpio_request of these functions.
 
-CC: Christian Gmeiner <christian.gmeiner@gmail.com>
+Cc: Dmitry Baryshkov <dbaryshkov@gmail.com>
 Cc: Richard Purdie <rpurdie@rpsys.net>
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/video/backlight/ot200_bl.c |    9 +++------
- 1 files changed, 3 insertions(+), 6 deletions(-)
+ drivers/video/backlight/tosa_lcd.c |    7 ++-----
+ 1 files changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/video/backlight/ot200_bl.c b/drivers/video/backlight/ot200_bl.c
-index ef637ff..469cf0f 100644
---- a/drivers/video/backlight/ot200_bl.c
-+++ b/drivers/video/backlight/ot200_bl.c
-@@ -84,7 +84,8 @@ static int ot200_backlight_probe(struct platform_device *pdev)
- 	int retval = 0;
+diff --git a/drivers/video/backlight/tosa_lcd.c b/drivers/video/backlight/tosa_lcd.c
+index 47823b8..33047a6 100644
+--- a/drivers/video/backlight/tosa_lcd.c
++++ b/drivers/video/backlight/tosa_lcd.c
+@@ -193,7 +193,7 @@ static int __devinit tosa_lcd_probe(struct spi_device *spi)
+ 	data->spi = spi;
+ 	dev_set_drvdata(&spi->dev, data);
  
- 	/* request gpio */
--	if (gpio_request(GPIO_DIMM, "ot200 backlight dimmer") < 0) {
-+	if (devm_gpio_request(&pdev->dev, GPIO_DIMM,
-+				"ot200 backlight dimmer") < 0) {
- 		dev_err(&pdev->dev, "failed to request GPIO %d\n", GPIO_DIMM);
- 		return -ENODEV;
- 	}
-@@ -93,8 +94,7 @@ static int ot200_backlight_probe(struct platform_device *pdev)
- 	pwm_timer = cs5535_mfgpt_alloc_timer(7, MFGPT_DOMAIN_ANY);
- 	if (!pwm_timer) {
- 		dev_err(&pdev->dev, "MFGPT 7 not available\n");
--		retval = -ENODEV;
--		goto error_mfgpt_alloc;
-+		return -ENODEV;
- 	}
+-	ret = gpio_request(TOSA_GPIO_TG_ON, "tg #pwr");
++	ret = devm_gpio_request(&spi->dev, TOSA_GPIO_TG_ON, "tg #pwr");
+ 	if (ret < 0)
+ 		goto err_gpio_tg;
  
- 	data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
-@@ -131,8 +131,6 @@ static int ot200_backlight_probe(struct platform_device *pdev)
+@@ -201,7 +201,7 @@ static int __devinit tosa_lcd_probe(struct spi_device *spi)
  
- error_devm_kzalloc:
- 	cs5535_mfgpt_free_timer(pwm_timer);
--error_mfgpt_alloc:
--	gpio_free(GPIO_DIMM);
- 	return retval;
- }
+ 	ret = gpio_direction_output(TOSA_GPIO_TG_ON, 0);
+ 	if (ret < 0)
+-		goto err_gpio_dir;
++		goto err_gpio_tg;
  
-@@ -149,7 +147,6 @@ static int ot200_backlight_remove(struct platform_device *pdev)
- 		MAX_COMP2 - dim_table[100]);
+ 	mdelay(60);
+ 	tosa_lcd_tg_init(data);
+@@ -221,8 +221,6 @@ static int __devinit tosa_lcd_probe(struct spi_device *spi)
  
- 	cs5535_mfgpt_free_timer(pwm_timer);
--	gpio_free(GPIO_DIMM);
+ err_register:
+ 	tosa_lcd_tg_off(data);
+-err_gpio_dir:
+-	gpio_free(TOSA_GPIO_TG_ON);
+ err_gpio_tg:
+ 	dev_set_drvdata(&spi->dev, NULL);
+ 	return ret;
+@@ -239,7 +237,6 @@ static int __devexit tosa_lcd_remove(struct spi_device *spi)
+ 
+ 	tosa_lcd_tg_off(data);
+ 
+-	gpio_free(TOSA_GPIO_TG_ON);
+ 	dev_set_drvdata(&spi->dev, NULL);
  
  	return 0;
- }
 -- 
 1.7.1
 
