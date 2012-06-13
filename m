@@ -1,46 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754705Ab2FMTS0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 15:18:26 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:60381 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754655Ab2FMTSY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 15:18:24 -0400
-X-Authenticated: #5108953
-X-Provags-ID: V01U2FsdGVkX1/mQXN19VvmbYPctV58klaiW7n09DtJqTmheApwWD
-	lzvX8hfk+Nu4Sf
-Message-ID: <4FD8E77C.1090605@gmx.de>
-Date: Wed, 13 Jun 2012 21:18:20 +0200
-From: =?ISO-8859-1?Q?Toralf_F=F6rster?= <toralf.foerster@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120606 Thunderbird/13.0
+	id S1754603Ab2FMTTW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 15:19:22 -0400
+Received: from [85.118.1.10] ([85.118.1.10]:38439 "EHLO casper.infradead.org"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754218Ab2FMTTV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 15:19:21 -0400
+Date: Wed, 13 Jun 2012 21:19:13 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        wdauchy@gmail.com, stefano.stabellini@eu.citrix.com, jbeulich@suse.com
+Subject: Re: [GIT PULL] (xen) stable/for-jens-3.5 for 3.5-rc2..
+Message-ID: <20120613191913.GD8230@kernel.dk>
+References: <20120612123524.GA559@phenom.dumpdata.com>
 MIME-Version: 1.0
-To: linux-pm@vger.kernel.org
-CC: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: suspend-to-disk issue with an external USB boot device
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120612123524.GA559@phenom.dumpdata.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I can successfully boot from an external USB drive (detected as
-/dev/sdb, the internal hard disk is always detected as /dev/sda).
-Suspend-to-ram works fine. Suspend-to-disk looks ok during hibernation
-phase. However when I wake up the system, then the hibernation isn't
-detected. The only message I get is from the Gentoo init scripts:
+On Tue, Jun 12 2012, Konrad Rzeszutek Wilk wrote:
+> Hey Jens,
+> 
+> Please pull:
+> 
+>  git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-jens-3.5
+> 
+> it has two critical fixes to deal with 32/64 guest/host combinations
+> when sending DISCARD commands. They weren't properly sent resulting
+> in the guest crashing (https://bugzilla.redhat.com/show_bug.cgi?id=824641)
+> The fix is in the backend (blkback) and the frontend has some extra
+> WARN_ON added to diagnose similar issues like this in the future.
+> 
+> Or if you prefer - I can stick those two patches in my tree and
+> send them to Linus in my git pull this Friday with your Ack-ed by tag.
 
-swapon: /dev/sdb2: software suspend data detected. Rewriting the swap
-signature.
+Thanks Konrad, pulled.
 
-I tried both my home-brewed kernel as well as initramfs kernel (created
-with genkernel) - no luck.
-
-Now I'm wondering where to start to find the root cause.
 -- 
-MfG/Sincerely
-Toralf Förster
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+Jens Axboe
 
