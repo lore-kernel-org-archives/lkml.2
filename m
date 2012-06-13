@@ -1,96 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752388Ab2FMJW5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 05:22:57 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:37560 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751306Ab2FMJW4 convert rfc822-to-8bit (ORCPT
+	id S1752563Ab2FMJZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 05:25:26 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:52721 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751137Ab2FMJZY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 05:22:56 -0400
+	Wed, 13 Jun 2012 05:25:24 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAORVsuWGE3=8DWRMG0Fq2+CGt9i7__JnfUnOAjbZgGcvhfVK5g@mail.gmail.com>
-References: <1339502524-10265-1-git-send-email-vincent.guittot@linaro.org>
-	<1339502524-10265-2-git-send-email-vincent.guittot@linaro.org>
-	<CAORVsuWGE3=8DWRMG0Fq2+CGt9i7__JnfUnOAjbZgGcvhfVK5g@mail.gmail.com>
-Date: Wed, 13 Jun 2012 11:22:56 +0200
-Message-ID: <CAKfTPtD8315c8o2354SoRLvUg2OEwjsuE2uwO+LKu=aT_EhELQ@mail.gmail.com>
-Subject: Re: [RFC 1/4] ARM: topology: Add arch_scale_freq_power function
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: Jean Pihet <jean.pihet@newoldbits.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, devicetree-discuss@lists.ozlabs.org,
-        linux@arm.linux.org.uk, peterz@infradead.org,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <CAH9NwWdF+zukb1r1z6ES6ULeg3dkFzhvhBq1xzjrqjWx-O3cOA@mail.gmail.com>
+References: <CAH9NwWd1F3Vw2zrQJh8Jazm45C_BAH3H3-qupvm2XaLgDOM=QQ@mail.gmail.com>
+ <CAMeQTsZfE8_t6DCr3UWVqnOLyxNuNh7_VxJmqiP+enBBqM0o_A@mail.gmail.com>
+ <CAH9NwWc3W6zHCFf9rwKg5NMQaWnh4A=xVVysmG1Y=eUMzu=18Q@mail.gmail.com>
+ <CAMeQTsaknGLR2QCWwN8kYKh8y=JJtqN-ZSty6YTKnAOv2Vp3XQ@mail.gmail.com>
+ <CAH9NwWdmhmLB5io5RWVQBj6c7zjXT9hFa7OAHVrL6oY8P0kjaw@mail.gmail.com>
+ <20120612132736.642a4a5a@pyramind.ukuu.org.uk> <CAMeQTsZZ0ay7YqkzUzkhe6D6FNsQXaDKHfJKB6_6icd=4VemrA@mail.gmail.com>
+ <20120612170412.359967ec@pyramind.ukuu.org.uk> <CAH9NwWdF+zukb1r1z6ES6ULeg3dkFzhvhBq1xzjrqjWx-O3cOA@mail.gmail.com>
+From: Christian Gmeiner <christian.gmeiner@gmail.com>
+Date: Wed, 13 Jun 2012 11:25:03 +0200
+Message-ID: <CAH9NwWdT7RhDfgLiF15m2yAExmb-Gsq1TCOGbvJEQ9Lzd3DH8A@mail.gmail.com>
+Subject: Re: gma500: Cannot find any crtc or sizes - going 1024x768
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>,
+        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <greg@kroah.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 June 2012 10:50, Jean Pihet <jean.pihet@newoldbits.com> wrote:
-> Hi Vincent,
+2012/6/12 Christian Gmeiner <christian.gmeiner@gmail.com>:
+> 2012/6/12 Alan Cox <alan@lxorguk.ukuu.org.uk>:
+>>> Was there a special reason for 0x4108 to be left out in the IS_MRST macro?
+>>> To me it looks like the bitmask should have been updated in commit:
+>>>
+>>> gma500: Add the E6xx PCI identifier we are missing
+>>> 56125db1eecf8d34d84f7925686110d90724edf0
+>>>
+>>> If this is the case, I'll send a proper patch since this also applies to
+>>> stable 3.3.x and 3.4.x
+>>
+>> Firstly it should never matter - there are no Moorestown devices in
+>> circulation. E600T is very similar to Oaktrail.
+>>
+>> So the real question here seems to be why does the IS_MRST macro matter.
+>> What weird firmware is involved here ?
 >
-> On Tue, Jun 12, 2012 at 2:02 PM, Vincent Guittot
-> <vincent.guittot@linaro.org> wrote:
->> Add infrastructure to be able to modify the cpu_power of each core
->>
->> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
->> ---
->>  arch/arm/include/asm/topology.h |    2 ++
->>  arch/arm/kernel/topology.c      |   36 +++++++++++++++++++++++++++++++++++-
->>  2 files changed, 37 insertions(+), 1 deletion(-)
->>
->> diff --git a/arch/arm/include/asm/topology.h b/arch/arm/include/asm/topology.h
->> index 58b8b84..78e4c85 100644
->> --- a/arch/arm/include/asm/topology.h
->> +++ b/arch/arm/include/asm/topology.h
->> @@ -27,11 +27,13 @@ void init_cpu_topology(void);
->>  void store_cpu_topology(unsigned int cpuid);
->>  const struct cpumask *cpu_coregroup_mask(int cpu);
->>
->> +void set_power_scale(unsigned int cpu, unsigned long power);
->>  #else
->>
->>  static inline void init_cpu_topology(void) { }
->>  static inline void store_cpu_topology(unsigned int cpuid) { }
->>
->> +static inline void set_power_scale(unsigned int cpu, unsigned long power) { }
->>  #endif
->>
->>  #include <asm-generic/topology.h>
->> diff --git a/arch/arm/kernel/topology.c b/arch/arm/kernel/topology.c
->> index 8200dea..00301a7 100644
->> --- a/arch/arm/kernel/topology.c
->> +++ b/arch/arm/kernel/topology.c
->> @@ -22,6 +22,35 @@
->>  #include <asm/cputype.h>
->>  #include <asm/topology.h>
->>
->> +/*
->> + * cpu power scale management
->> + */
->> +
->> +/*
->> + * cpu power table
->> + * This per cpu data structure describes the relative capacity of each core.
->> + * On a heteregenous system, cores don't have the same computation capacity
->> + * and we reflect that difference in the cpu_power field so the scheduler can
->> + * take this difference into account for load balance. A per cpu structure is
->> + * preferred because each cpu is mainly using its own cpu_power even it's not
->> + * always true because of nohz_idle_balance
-> The end of the comment is unclear IMO; Can you give more details on
-> the relation between cpu_power and nohz_idle_balance?
-
-When several cores are idle, one core runs the load balance for all
-idle cores. The update of the cpu_power can be done during rebalance
-and arch_scale_freq_power can be called by CPU0 for updating the
-cpu_power of CPU1.
-
-I was probably not clear enough in my first explanation. I will reword
-the comment
-
-Regards,
-Vincent
+> My company is using these cpu bords for our products:
+> http://www.congatec.com/en/products/qseven/dView/conga-qa6.html
 >
-> Regards,
-> Jean
+> With firmware you mean BIOS or VBios or ...? If you tell me what you need, I may
+> ask our supplier for more informations. I can tell you that the
+> following options can be
+> changed in the BIOS regarding gfx - see
+> https://www.dropbox.com/s/btlciurz0ih4fhu/IMG_20120612_143431.jpg
+>
+
+Here are some more informations. There seems to be a scaling problem.
+If i compare gma500 and the vesa framebuffer driver I see that gma500 shows
+the desktop "scaled" up --> not the whole desktop is on the screen. It
+gets better
+if i remove the video="..." parameter from kernel cmdline, but it
+still is too big for
+the screen.
+
+I really would love to get this beast up an running... so I will
+provide as much informations
+as needed - just ask :)
+
+---
+Christian Gmeiner, MSc
