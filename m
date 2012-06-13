@@ -1,37 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754054Ab2FMNi3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 09:38:29 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33317 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752600Ab2FMNi1 (ORCPT
+	id S1754129Ab2FMNjB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 09:39:01 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60293 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752600Ab2FMNi7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 09:38:27 -0400
-MIME-Version: 1.0
-In-Reply-To: <1339589919.53487.YahooMailNeo@web111718.mail.gq1.yahoo.com>
-References: <1339589919.53487.YahooMailNeo@web111718.mail.gq1.yahoo.com>
-Date: Wed, 13 Jun 2012 21:38:26 +0800
-Message-ID: <CAM_iQpXHXnHDnQZwYHwCWt=HxCA3K8EmJrikTNZryYfCPdeoPA@mail.gmail.com>
-Subject: Re: logging on kernel panic
-From: Cong Wang <xiyou.wangcong@gmail.com>
-To: Mahmood Naderan <nt_mahmood@yahoo.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 13 Jun 2012 09:38:59 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: linux-kernel@vger.kernel.org
+Cc: Lee Jones <lee.jones@linaro.org>, Fabio Estevam <festevam@gmail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] regmap: Remove warning on stubbed dev_get_regmap()
+Date: Wed, 13 Jun 2012 14:38:56 +0100
+Message-Id: <1339594736-6712-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 13, 2012 at 8:18 PM, Mahmood Naderan <nt_mahmood@yahoo.com> wrote:
-> Hi everybody
-> If a system receives kernel panic during boot, will it be logged somewhere?
-> In our diskless cluster, clients boot from an image located at /nfsroot
-> Normally /nfsroot/var/log/syslog should contain messages. However
-> on a kernel panic, there is no log in /nfsroot/var/log/syslog/
->
+It's perfectly sensible to ask if there's a regmap for a device which
+doesn't have one so the stubbed version shouldn't complain, the caller
+should be prepared for this.
 
-The kernel log may not hit /var/log/syslog when kernel panics,
-try other more reliable way to get the kernel log, there are some
-new ways to store the kernel log at panic/oops, pstore filesystem
-is one of them.
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ include/linux/regmap.h |    1 -
+ 1 file changed, 1 deletion(-)
 
-As Alan mentioned, netconsole may work too.
+diff --git a/include/linux/regmap.h b/include/linux/regmap.h
+index 4c9e642..c3508d0 100644
+--- a/include/linux/regmap.h
++++ b/include/linux/regmap.h
+@@ -388,7 +388,6 @@ static inline int regmap_register_patch(struct regmap *map,
+ static inline struct regmap *dev_get_regmap(struct device *dev,
+ 					    const char *name)
+ {
+-	WARN_ONCE(1, "regmap API is disabled");
+ 	return NULL;
+ }
+ 
+-- 
+1.7.10
+
