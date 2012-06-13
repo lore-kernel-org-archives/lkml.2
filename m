@@ -1,88 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754408Ab2FMPA1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 11:00:27 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:50255 "EHLO SMTP.CITRIX.COM"
+	id S1753400Ab2FMPDm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 11:03:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57142 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751714Ab2FMPA0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 11:00:26 -0400
-X-IronPort-AV: E=Sophos;i="4.75,763,1330923600"; 
-   d="scan'208";a="27928637"
-Message-ID: <4FD8AB07.7080004@citrix.com>
-Date: Wed, 13 Jun 2012 16:00:23 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120428 Icedove/3.0.11
+	id S1751802Ab2FMPDk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 11:03:40 -0400
+Date: Wed, 13 Jun 2012 17:03:38 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
+        rientjes@google.com, akpm@linux-foundation.org, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH -V9 04/15] hugetlb: use mmu_gather instead of a temporary
+ linked list for accumulating pages
+Message-ID: <20120613150338.GB14777@tiehlicka.suse.cz>
+References: <1339583254-895-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <1339583254-895-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <20120613145923.GA14777@tiehlicka.suse.cz>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/2] x86/mm: remove arch-specific PTE/PMD get-and-clear
- functions
-References: <1339582845-25659-1-git-send-email-david.vrabel@citrix.com> <20120613140404.GH5979@phenom.dumpdata.com>
-In-Reply-To: <20120613140404.GH5979@phenom.dumpdata.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120613145923.GA14777@tiehlicka.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/06/12 15:04, Konrad Rzeszutek Wilk wrote:
-> On Wed, Jun 13, 2012 at 11:20:43AM +0100, David Vrabel wrote:
->> This series removes the x86-specific implementation of
->> ptep_get_and_clear() and pmdp_get_and_clear().
->>
->> The principal reason for this is it allows Xen paravitualized guests
->> to batch the PTE clears which is a significant performance
->> optimization of munmap() and mremap() -- the number of entries into
->> the hypervisor is reduced by about a factor of about 30 (60 in 32-bit
->> guests) for munmap().
->>
->> There may be minimal gains on native and KVM guests due to the removal
->> of the locked xchg.
+On Wed 13-06-12 16:59:23, Michal Hocko wrote:
+> On Wed 13-06-12 15:57:23, Aneesh Kumar K.V wrote:
+> > From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+> > 
+> > Use a mmu_gather instead of a temporary linked list for accumulating
+> > pages when we unmap a hugepage range
 > 
-> What about lguest?
+> Sorry for coming up with the comment that late but you owe us an
+> explanation _why_ you are doing this.
+> 
+> I assume that this fixes a real problem when we take i_mmap_mutex
+> already up in 
+> unmap_mapping_range
+>   mutex_lock(&mapping->i_mmap_mutex);
+>   unmap_mapping_range_tree | unmap_mapping_range_list 
+>     unmap_mapping_range_vma
+>       zap_page_range_single
+>         unmap_single_vma
+> 	  unmap_hugepage_range
+> 	    mutex_lock(&vma->vm_file->f_mapping->i_mmap_mutex);
+> 
+> And that this should have been marked for stable as well (I haven't
+> checked when this has been introduced).
+> 
+> But then I do not see how this help when you still do this:
+> [...]
+> > diff --git a/mm/memory.c b/mm/memory.c
+> > index 1b7dc66..545e18a 100644
+> > --- a/mm/memory.c
+> > +++ b/mm/memory.c
+> > @@ -1326,8 +1326,11 @@ static void unmap_single_vma(struct mmu_gather *tlb,
+> >  			 * Since no pte has actually been setup, it is
+> >  			 * safe to do nothing in this case.
+> >  			 */
+> > -			if (vma->vm_file)
+> > -				unmap_hugepage_range(vma, start, end, NULL);
+> > +			if (vma->vm_file) {
+> > +				mutex_lock(&vma->vm_file->f_mapping->i_mmap_mutex);
+> > +				__unmap_hugepage_range(tlb, vma, start, end, NULL);
+> > +				mutex_unlock(&vma->vm_file->f_mapping->i_mmap_mutex);
+> > +			}
+> >  		} else
+> >  			unmap_page_range(tlb, vma, start, end, details);
+> >  	}
 
-As I note in the description of patch 1:
+Ahhh, you are removing the lock in the next patch. Really confusing and
+not nice for the stable backport.
+Could you merge those two patches and add Cc: stable? 
+Then you can add my
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
 
-"There may be a performance regression with lguest guests as
-an optimization for avoiding calling pte_update() when doing a full
-teardown of an mm is removed."
-
-I don't know how much this performance regression would be or if the
-performance of lguest guests is something people care about.
-
-We could have an x86-specific ptep_get_and_clear_full() which looks like:
-
-pte_t ptep_get_and_clear_full(
-	struct mm_struct *mm, unsigned long addr, pte_t *ptep,
-	int full)
-{
-	pte_t pte = *ptep;
-
-	pte_clear(mm, address, ptep);
-	if (!full)
-		pte_update(mm, addr, ptep);
-
-	return pte;
-}
-
-Which would have all the performance benefits of the proposed patch
-without the performance regression with lguest.
-
-David
-
->>
->> Removal of arch-specific functions where generic ones are suitable
->> seems to be a generally useful thing to me.
->>
->> The full reasoning for why this is safe is included in the commit
->> message of patch 1 but to summarize.  The atomic get-and-clear does
->> not guarantee that the latest dirty/accessed bits are returned as TLB
->> as there is a still a window after the get-and-clear and before the
->> TLB flush that the bits may be updated on other processors.  So, user
->> space applications accessing pages that are being unmapped or remapped
->> already have unpredictable behaviour.
->>
->> David
-
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
