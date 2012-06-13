@@ -1,149 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754053Ab2FMOVB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 10:21:01 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:33843 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753743Ab2FMOU6 (ORCPT
+	id S1753912Ab2FMOX7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 10:23:59 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:63871 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751540Ab2FMOX6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 10:20:58 -0400
-Date: Wed, 13 Jun 2012 10:12:12 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org, linaro-mm-sig@lists.linaro.org,
-        linux-mm@kvack.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>,
-        Krishna Reddy <vdumpa@nvidia.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>,
-        Subash Patel <subash.ramaswamy@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Abhinav Kochhar <abhinav.k@samsung.com>,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>
-Subject: Re: [PATCHv2 0/6] ARM: DMA-mapping: new extensions for buffer sharing
-Message-ID: <20120613141211.GJ5979@phenom.dumpdata.com>
-References: <1339588218-24398-1-git-send-email-m.szyprowski@samsung.com>
+	Wed, 13 Jun 2012 10:23:58 -0400
+Message-ID: <4FD81E27.4000006@landley.net>
+Date: Tue, 12 Jun 2012 23:59:19 -0500
+From: Rob Landley <rob@landley.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339588218-24398-1-git-send-email-m.szyprowski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>, Wen Congyang <wency@cn.fujitsu.com>,
+        tglx@linutronix.de, Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2 v2] x86: add max_addr boot option
+References: <4FD5AFF2.3040306@cn.fujitsu.com> <CAErSpo6EnHFFPwcPhWy=ACTn5+7i72fUR+1jjZrpfEMQp1zv0A@mail.gmail.com> <4FD6E1DA.2090700@cn.fujitsu.com> <CAErSpo6UwL6kY4rHeYQbn1kghJH-kQDeat7VXp95JE2pGER5ZA@mail.gmail.com> <4FD7F329.1000203@jp.fujitsu.com>
+In-Reply-To: <4FD7F329.1000203@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 13, 2012 at 01:50:12PM +0200, Marek Szyprowski wrote:
-> Hello,
+On 06/12/2012 08:55 PM, Kamezawa Hiroyuki wrote:
+>>> Currently, I only need to ignore the memory. If we need to ignore a
+>>> node,
+>>> "numa_node=" or similar parameter is a better choice.
+>>
+>> Doesn't the end user have to know the memory map of the system to use
+>> "max_addr="?  How do you know what value to supply?  Do you have to
+>> attempt a boot once to discover the highest address on node 0?  What
+>> if node 0 and node 1 memory are interleaved, so there's some node 1
+>> memory below the highest node 0 address?
 > 
-> This is an updated version of the patch series introducing a new
-> features to DMA mapping subsystem to let drivers share the allocated
-> buffers (preferably using recently introduced dma_buf framework) easy
-> and efficient.
-> 
-> The first extension is DMA_ATTR_NO_KERNEL_MAPPING attribute. It is
-> intended for use with dma_{alloc, mmap, free}_attrs functions. It can be
-> used to notify dma-mapping core that the driver will not use kernel
-> mapping for the allocated buffer at all, so the core can skip creating
-> it. This saves precious kernel virtual address space. Such buffer can be
-> accessed from userspace, after calling dma_mmap_attrs() for it (a
-> typical use case for multimedia buffers). The value returned by
-> dma_alloc_attrs() with this attribute should be considered as a DMA
-> cookie, which needs to be passed to dma_mmap_attrs() and
-> dma_free_attrs() funtions.
-> 
-> The second extension is required to let drivers to share the buffers
-> allocated by DMA-mapping subsystem. Right now the driver gets a dma
-> address of the allocated buffer and the kernel virtual mapping for it.
-> If it wants to share it with other device (= map into its dma address
-> space) it usually hacks around kernel virtual addresses to get pointers
-> to pages or assumes that both devices share the DMA address space. Both
-> solutions are just hacks for the special cases, which should be avoided
-> in the final version of buffer sharing. To solve this issue in a generic
-> way, a new call to DMA mapping has been introduced - dma_get_sgtable().
-> It allocates a scatter-list which describes the allocated buffer and
-> lets the driver(s) to use it with other device(s) by calling
-> dma_map_sg() on it.
+> Current our plan is to avoid asking end-user to fix their boot option by
+> hand even if memory size per node is changed. We'll ship a  hardware, which has
+> _fixed_ physical address range per each node regardless of equipped
+> memory size.
 
-What about the cases where the driver wants to share the buffer but there
-are multiple IOMMUs? So the DMA address returned initially would be
-different on the other IOMMUs? Would the driver have to figure this out
-or would the DMA/IOMMU implementation be in charge of that?
+I.E. you'll be configuring this yourself when you ship hardware.
 
-And what about IOMMU's that don't do DMA_ATTR_NO_KERNEL_MAPPING?
-Can they just ignore it and do what they did before ? (I presume yes).
+You're adding an option because you consider it less confusing for your
+end users who are digging into kernel parameters, but you will set this
+new option for your users because they haven't got the information to
+set it themselves?
 
+> Problem happens => reboot (disable some DIMM) => remove memmap= option
+> for avoiding
+> trouble => check memory layout again =>fix mem_map= => reboot again.
+> This reboot takes much time because the system which have
+> Dynamic-partitioning tends to
+> be big....so, we'd like to have some _relaxed_ way to specify the region
+> of memory.
 > 
-> The third extension solves the performance issues which we observed with
-> some advanced buffer sharing use cases, which require creating a dma
-> mapping for the same memory buffer for more than one device. From the
-> DMA-mapping perspective this requires to call one of the
-> dma_map_{page,single,sg} function for the given memory buffer a few
-> times, for each of the devices. Each dma_map_* call performs CPU cache
-> synchronization, what might be a time consuming operation, especially
-> when the buffers are large. We would like to avoid any useless and time
-> consuming operations, so that was the main reason for introducing
-> another attribute for DMA-mapping subsystem: DMA_ATTR_SKIP_CPU_SYNC,
-> which lets dma-mapping core to skip CPU cache synchronization in certain
-> cases.
-> 
-> The proposed patches have been rebased on the latest Linux kernel
-> v3.5-rc2 with 'ARM: replace custom consistent dma region with vmalloc'
-> patches applied (for more information, please refer to the 
-> http://www.spinics.net/lists/arm-kernel/msg179202.html thread).
-> 
-> The patches together with all dependences are also available on the
-> following GIT branch:
-> 
-> git://git.linaro.org/people/mszyprowski/linux-dma-mapping.git 3.5-rc2-dma-ext-v2
-> 
-> Best regards
-> Marek Szyprowski
-> Samsung Poland R&D Center
-> 
-> Changelog:
-> 
-> v2:
-> - rebased onto v3.5-rc2 and adapted for CMA and dma-mapping changes
-> - renamed dma_get_sgtable() to dma_get_sgtable_attrs() to match the convention
->   of the other dma-mapping calls with attributes
-> - added generic fallback function for dma_get_sgtable() for architectures with
->   simple dma-mapping implementations
-> 
-> v1: http://thread.gmane.org/gmane.linux.kernel.mm/78644
->     http://thread.gmane.org/gmane.linux.kernel.cross-arch/14435 (part 2)
-> - initial version
-> 
-> Patch summary:
-> 
-> Marek Szyprowski (6):
->   common: DMA-mapping: add DMA_ATTR_NO_KERNEL_MAPPING attribute
->   ARM: dma-mapping: add support for DMA_ATTR_NO_KERNEL_MAPPING
->     attribute
->   common: dma-mapping: introduce dma_get_sgtable() function
->   ARM: dma-mapping: add support for dma_get_sgtable()
->   common: DMA-mapping: add DMA_ATTR_SKIP_CPU_SYNC attribute
->   ARM: dma-mapping: add support for DMA_ATTR_SKIP_CPU_SYNC attribute
-> 
->  Documentation/DMA-attributes.txt         |   42 ++++++++++++++++++
->  arch/arm/common/dmabounce.c              |    1 +
->  arch/arm/include/asm/dma-mapping.h       |    3 +
->  arch/arm/mm/dma-mapping.c                |   69 ++++++++++++++++++++++++------
->  drivers/base/dma-mapping.c               |   18 ++++++++
->  include/asm-generic/dma-mapping-common.h |   18 ++++++++
->  include/linux/dma-attrs.h                |    2 +
->  include/linux/dma-mapping.h              |    3 +
->  8 files changed, 142 insertions(+), 14 deletions(-)
-> 
-> -- 
-> 1.7.1.569.g6f426
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> Problem happens => reboot (disable some DIMM) => no changes required
+> (because we have enough memory hole between Node0 and Node1.)
+
+I'm guessing the above means "or you'll be providing some tool that does
+it when they install/remove memory in the hardware"...
+
+> BTW, how do you think about mem= boot option which works as max_addr=,
+> now ?
+> This caused troubles some times on our support-desk, saying
+> Q. I specified mem=8G boot option but it seems the system has only 7GB....
+> A. it's because of PCI configuration area on 3G-4G address range...
+
+So you're saying there are already two ways to do this, but you want to
+add a third to be less confusing for end users who are modifying the
+linux kernel boot parameters by hand using information only you can
+supply to them?
+
+I'm confused...
+
+> Even if our requirement can be covered current mem= option, I'd like to
+> have max_addr= option and make mem= option to be sane as ia64.
+
+"sane as ia64".
+
+Ok, I've read that phrase five times and the words still don't fit together.
+
+I'm going to admit defeat on my attempt to understand this thread, and
+move on...
+
+Rob
+-- 
+GNU/Linux isn't: Linux=GPLv2, GNU=GPLv3+, they can't share code.
+Either it's "mere aggregation", or a license violation.  Pick one.
