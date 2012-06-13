@@ -1,178 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751746Ab2FMEmW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 00:42:22 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:45607 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751206Ab2FMEmV (ORCPT
+	id S1752090Ab2FMEm6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 00:42:58 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:54833 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751620Ab2FMEm4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 00:42:21 -0400
-X-AuditID: 9c93016f-b7c3cae000001954-b8-4fd81a29b1cd
-Message-ID: <4FD81A31.5080708@kernel.org>
-Date: Wed, 13 Jun 2012 13:42:25 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
-To: John Stultz <john.stultz@linaro.org>
-CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
-        Andrea Righi <andrea@betterlinux.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Taras Glek <tgek@mozilla.com>, Mike Hommey <mh@glandium.org>,
-        Jan Kara <jack@suse.cz>, "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 3/3] [RFC] tmpfs: Add FALLOC_FL_MARK_VOLATILE/UNMARK_VOLATILE
- handlers
-References: <1338575387-26972-1-git-send-email-john.stultz@linaro.org> <1338575387-26972-4-git-send-email-john.stultz@linaro.org> <4FC9235F.5000402@gmail.com>	<4FC92E30.4000906@linaro.org> <4FC9360B.4020401@gmail.com>	<4FC937AD.8040201@linaro.org> <4FC9438B.1000403@gmail.com>	<4FC94F61.20305@linaro.org> <4FCFB4F6.6070308@gmail.com>	<4FCFEE36.3010902@linaro.org> <CAO6Zf6D++8hOz19BmUwQ8iwbQknQRNsF4npP4r-830j04vbj=g@mail.gmail.com> <4FD13C30.2030401@linux.vnet.ibm.com> <4FD16B6E.8000307@linaro.org> <4FD1848B.7040102@gmail.com> <4FD2C6C5.1070900@linaro.org> <4FD6ECE2.6070901@kernel.org> <4FD79A14.5090801@linaro.org> <4FD7DA71.70500@kernel.org> <4FD7EAFF.1090509@linaro.org>
-In-Reply-To: <4FD7EAFF.1090509@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 13 Jun 2012 00:42:56 -0400
+From: Wanpeng Li <liwp.linux@gmail.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Gavin Shan <shangw@linux.vnet.ibm.com>,
+        Wanpeng Li <liwp.linux@gmail.com>
+Subject: [PATCH V2] writeback: fix hung_task alarm when sync block
+Date: Wed, 13 Jun 2012 12:42:33 +0800
+Message-Id: <1339562553-10035-1-git-send-email-liwp.linux@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/13/2012 10:21 AM, John Stultz wrote:
+Hi Fengguang,
 
-> On 06/12/2012 05:10 PM, Minchan Kim wrote:
->> On 06/13/2012 04:35 AM, John Stultz wrote:
->>
->>> On 06/12/2012 12:16 AM, Minchan Kim wrote:
->>>> Please, Cced linux-mm.
->>>>
->>>> On 06/09/2012 12:45 PM, John Stultz wrote:
->>>>
->>>>
->>>>> volatile.  Since we assume ranges are un-touched when volatile, that
->>>>> should preserve LRU purging behavior on single node systems and on
->>>>> multi-node systems it will approximate fairly closely.
->>>>>
->>>>> My main concern with this approach is marking and unmarking volatile
->>>>> ranges needs to be fast, so I'm worried about the additional
->>>>> overhead of
->>>>> activating each of the containing pages on mark_volatile.
->>>> Yes. it could be a problem if range is very large and populated
->>>> already.
->>>> Why can't we make new hooks?
->>>>
->>>> Just concept for showing my intention..
->>>>
->>>> +int shrink_volatile_pages(struct zone *zone)
->>>> +{
->>>> +       int ret = 0;
->>>> +       if (zone_page_state(zone, NR_ZONE_VOLATILE))
->>>> +               ret = shmem_purge_one_volatile_range();
->>>> +       return ret;
->>>> +}
->>>> +
->>>>    static void shrink_zone(struct zone *zone, struct scan_control *sc)
->>>>    {
->>>>           struct mem_cgroup *root = sc->target_mem_cgroup;
->>>> @@ -1827,6 +1835,18 @@ static void shrink_zone(struct zone *zone,
->>>> struct scan_control *sc)
->>>>                   .priority = sc->priority,
->>>>           };
->>>>           struct mem_cgroup *memcg;
->>>> +       int ret;
->>>> +
->>>> +       /*
->>>> +        * Before we dive into trouble maker, let's look at easy-
->>>> +        * reclaimable pages and avoid costly-reclaim if possible.
->>>> +        */
->>>> +       do {
->>>> +               ret = shrink_volatile_pages();
->>>> +               if (ret)
->>>> +                       zone_watermark_ok(zone, sc->order, xxx);
->>>> +                               return;
->>>> +       } while(ret)
->>> Hmm. I'm confused.
->>> This doesn't seem that different from the shrinker approach.
->>
->> Shrinker is called after shrink_list so it means normal pages can be
->> reclaimed
->> before we reclaim volatile pages. We shouldn't do that.
-> 
-> 
-> Ah. Ok. Maybe that's a reasonable compromise between the shrinker
-> approach and the more complex approach I just posted to lkml?
-> (Forgive me for forgetting to CC you and linux-mm with my latest post!)
+This time it works well after testing.
+
+Regards,
+Wanpeng Li
+
+From: Wanpeng Li <liwp@linux.vnet.ibm.com>
+
+"V1 -> V2"
+* remove redundant hangcheck variable
+
+I use several dd processes to write a slow SD card
+dd if=/dev/sda1 of=/dev/sdc4 bs=1M count=4000
+and several sync commands(maybe > 10),dmesg show this:
+
+[  366.888741] INFO: task sync:3518 blocked for more than 120 seconds.
+[  366.888742] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+[  366.888746] sync            D 00000201     0  3518   3462 0x00000000
+[  366.888752]  dcde5e54 00000082 00000000 00000201 00000000 c180d220 c1933d00 c1933d00
+[  366.888758]  614a7ae7 00000023 f6bc0d00 ebecb280 c180d220 f6bc0d6c f04acbfc 00000000
+[  366.888786]  f6bc0d6c dcde5e2c 00000023 f6bc0d44 00000000 00000000 ebd8b2b4 dcde5e6c
+[  366.888788] Call Trace:
+[  366.888792]  [<c107a0ee>] ? enqueue_entity+0xee/0x5a0
+[  366.888795]  [<c15abc83>] schedule+0x23/0x60
+[  366.888798]  [<c15aa5ad>] schedule_timeout+0x22d/0x2a0
+[  366.888801]  [<c1071ce2>] ? check_preempt_curr+0x72/0x90
+[  366.888804]  [<c1071d28>] ? ttwu_do_wakeup+0x28/0x130
+[  366.888807]  [<c1037f28>] ? default_spin_lock_flags+0x8/0x10
+[  366.888810]  [<c15acaad>] ? _raw_spin_lock_irqsave+0x2d/0x40
+[  366.888813]  [<c15abb17>] wait_for_common+0xa7/0x110
+[  366.888816]  [<c1074690>] ? try_to_wake_up+0x220/0x220
+[  366.888819]  [<c15abc57>] wait_for_completion+0x17/0x20
+[  366.888822]  [<c116ad80>] writeback_inodes_sb_nr+0x70/0x90
+[  366.888825]  [<c116af75>] writeback_inodes_sb+0x25/0x30
+[  366.888828]  [<c117159f>] __sync_filesystem+0x4f/0x90
+[  366.888831]  [<c11715f7>] sync_one_sb+0x17/0x20
+[  366.888834]  [<c114c430>] iterate_supers+0xc0/0xd0
+[  366.888837]  [<c11715e0>] ? __sync_filesystem+0x90/0x90
+[  366.888831]  [<c11715f7>] sync_one_sb+0x17/0x20
+[  366.888834]  [<c114c430>] iterate_supers+0xc0/0xd0
+[  366.888837]  [<c11715e0>] ? __sync_filesystem+0x90/0x90
+[  366.888840]  [<c117167b>] sys_sync+0x2b/0x60
+[  366.888842]  [<c15b385f>] sysenter_do_call+0x12/0x28
+
+Too many similar messages flood the logs. So I use a present method to
+fix this issue.
+------------------------------------------
+Author: Mark Lord <kernel@teksavvy.com>
+Date:   Fri Sep 24 09:51:13 2010 -0400
+
+    block: Prevent hang_check firing during long I/O
+------------------------------------------
+
+Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
 
 
-NP.
+---
+ fs/fs-writeback.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-> 
->>> How does this resolve the numa-unawareness issue that Kosaki-san brought
->>> up?
->> Basically, I think your shrink function should be more smart.
->>
->> when fallocate is called, we can get mem_policy from shmem_inode_info
->> and pass it to
->> volatile_range so that volatile_range can keep the information of NUMA.
-> Hrm.. That sounds reasonable. I'll look into the mem_policy bits and try
-> to learn more.
-> 
->> When shmem_purge_one_volatile_range is called, it receives zone
->> information.
->> So shmem_purge_one_volatile_range should find a range matched with
->> NUMA policy and
->> passed zone.
->>
->> Assumption:
->>    A range may include same node/zone pages if possible.
->>
->> I am not familiar with NUMA handling code so KOSAKI/Rik can point out
->> if I am wrong.
-> Right, the range may cross nodes/zones but maybe that's not a huge deal?
-> The only bit I'd worry about is the lru scanning being non-constant as
-> we searched for a range that matched the node we want to free from. I
-> guess we could have per-node/zone lrus.
-
-
-Good.
-
-> 
-> 
->>>>> The other question I have with this approach is if we're on a system
->>>>> that doesn't have swap, it *seems* (not totally sure I understand it
->>>>> yet) the tmpfs file pages will be skipped over when we call
->>>>> shrink_lruvec.  So it seems we may need to add a new lru_list enum and
->>>>> nr[] entry (maybe LRU_VOLATILE?).   So then it may be that when we
->>>>> mark
->>>>> a range as volatile, instead of just activating it, we move it to the
->>>>> volatile lru, and then when we shrink from that list, we call back to
->>>>> the filesystem to trigger the entire range purging.
->>>> Adding new LRU idea might make very slow fallocate(VOLATILE) so I hope
->>>> we can avoid that if possible.
->>> Indeed. This is a major concern. I'm currently prototyping it out so I
->>> have a concrete sense of the performance cost.
->> If performance loss isn't big, that would be a approach!
-> I've not had a chance yet to measure it, as I wanted to get my very
-> rough patches out for discussion first. But if folks don't nack it
-> outright I'll be providing some data there.  The hard part is that range
-> creation would have a linear cost with the number of pages in the range,
-> which at some point will be a pain.
-
-
-That's right. So IMHO, my suggestion could be a solution.
-I looked through your new patchset[5/6]. I know your intention but code still have problems.
-But I didn't commented out. Before the detail review, I would like to hear opinions from others
-and am curious about that whether you decide turning the approach or not.
-It can save our precious time. :) 
-
-> 
-> Thanks again for your input!
-> -john
-
-
-Thanks for your effort!
-
+diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+index f2d0109..df879ee 100644
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -1311,7 +1311,11 @@ void writeback_inodes_sb_nr(struct super_block *sb,
+ 
+ 	WARN_ON(!rwsem_is_locked(&sb->s_umount));
+ 	bdi_queue_work(sb->s_bdi, &work);
+-	wait_for_completion(&done);
++	if (sysctl_hung_task_timeout_secs)
++		while (!wait_for_completion_timeout(&done, HZ/2))
++			;
++	else
++		wait_for_completion(&done);
+ }
+ EXPORT_SYMBOL(writeback_inodes_sb_nr);
+ 
 -- 
-Kind regards,
-Minchan Kim
+1.7.9.5
+
