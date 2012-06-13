@@ -1,73 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752570Ab2FMD4R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 23:56:17 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:59785 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752069Ab2FMD4P (ORCPT
+	id S1752960Ab2FMD4k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 23:56:40 -0400
+Received: from tama500.ecl.ntt.co.jp ([129.60.39.148]:59751 "EHLO
+	tama500.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752110Ab2FMD4i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 23:56:15 -0400
-Subject: [ANNOUNCE] Target development work-flow re-org
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: target-devel <target-devel@vger.kernel.org>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
-        Roland Dreier <roland@kernel.org>, Andy Grover <agrover@redhat.com>,
-        Hannes Reinecke <mail@hannes-reinecke.de>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>,
-        Arun Easi <arun.easi@qlogic.com>, Chad Dupuis <chad.dupuis@qlogic.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 12 Jun 2012 20:55:59 -0700
-Message-ID: <1339559759.13709.228.camel@haakon2.linux-iscsi.org>
+	Tue, 12 Jun 2012 23:56:38 -0400
+Date: Wed, 13 Jun 2012 13:03:04 +0900
+From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+To: akpm@linux-foundation.org
+Cc: bhutchings@solarflare.com, grundler@parisc-linux.org, arnd@arndb.de,
+        benh@kernel.crashing.org, avi@redhat.com, mtosatti@redhat.com,
+        linux-net-drivers@solarflare.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        kvm@vger.kernel.org, takuya.yoshikawa@gmail.com
+Subject: [PATCH 2/5] drivers/net/ethernet/dec/tulip: Use standard
+ __set_bit_le() function
+Message-Id: <20120613130304.0186fa9d.yoshikawa.takuya@oss.ntt.co.jp>
+In-Reply-To: <20120613130054.b5695621.yoshikawa.takuya@oss.ntt.co.jp>
+References: <20120613130054.b5695621.yoshikawa.takuya@oss.ntt.co.jp>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello target devels & Co,
+From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
 
-I'd like to announce that target development work-flow has been
-re-organized for v3.5 to follow a model similar to what Linux/KVM has
-adopted for recent mainline releases.
+To introduce generic set_bit_le() later, we remove our own definition
+and use a proper non-atomic bitops function: __set_bit_le().
 
-The target-pending.git tree will now be the main development tree, and
-the location target developers should be basing their work on:
+Signed-off-by: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+Acked-by: Grant Grundler <grundler@parisc-linux.org>
+---
+ drivers/net/ethernet/dec/tulip/de2104x.c    |    7 ++-----
+ drivers/net/ethernet/dec/tulip/tulip_core.c |    7 ++-----
+ 2 files changed, 4 insertions(+), 10 deletions(-)
 
-http://git.kernel.org/?p=linux/kernel/git/nab/target-pending.git;a=summary
-
-This tree is now setup using the following branch structure:
-
-*) master: contains latest target rc-fixes for the current release
-*) for-next: contains developmental patches for next merge window
-*) for-next-merge: contains new fabric drivers for next merge window
-*) queue: contains untested patches (usually) headed into for-next*
-*) auto-next: combination of current master + for-next* (rebased often)
-
-These branches are currently based on v3.5-rc2, and master + for-next
-branches have been updated to include the latest patches outstanding on
-target-devel.
-
-So from this point onwards, the old development tree (lio-core.git)
-should be considered deprecated.  For working with the new layout here
-are some simple guidelines from KVM's docs:
-
-If you're a developer, usually developing against 'for-next' is okay. If
-'for-next' is unstable for you or you need a new upstream API, work
-against 'auto-next', but let the maintainers know that when posting your
-patch.
-
-If you're working on a fix for the current cycle, work against upstream
-or 'master' (they should be equivalent most of the time).
-
-If you're a submaintainer, post git pull requests against 'for-next' or
-'master', according to your merge target.
-
-So I'm really quite happy with the new layout as it will end up saving
-me extra work, and should make life easier for other developers as
-well.  ;)
-
---nab
+diff --git a/drivers/net/ethernet/dec/tulip/de2104x.c b/drivers/net/ethernet/dec/tulip/de2104x.c
+index 61cc093..77335853 100644
+--- a/drivers/net/ethernet/dec/tulip/de2104x.c
++++ b/drivers/net/ethernet/dec/tulip/de2104x.c
+@@ -661,9 +661,6 @@ static netdev_tx_t de_start_xmit (struct sk_buff *skb,
+    new frame, not around filling de->setup_frame.  This is non-deterministic
+    when re-entered but still correct. */
+ 
+-#undef set_bit_le
+-#define set_bit_le(i,p) do { ((char *)(p))[(i)/8] |= (1<<((i)%8)); } while(0)
+-
+ static void build_setup_frame_hash(u16 *setup_frm, struct net_device *dev)
+ {
+ 	struct de_private *de = netdev_priv(dev);
+@@ -673,12 +670,12 @@ static void build_setup_frame_hash(u16 *setup_frm, struct net_device *dev)
+ 	u16 *eaddrs;
+ 
+ 	memset(hash_table, 0, sizeof(hash_table));
+-	set_bit_le(255, hash_table); 			/* Broadcast entry */
++	__set_bit_le(255, hash_table);			/* Broadcast entry */
+ 	/* This should work on big-endian machines as well. */
+ 	netdev_for_each_mc_addr(ha, dev) {
+ 		int index = ether_crc_le(ETH_ALEN, ha->addr) & 0x1ff;
+ 
+-		set_bit_le(index, hash_table);
++		__set_bit_le(index, hash_table);
+ 	}
+ 
+ 	for (i = 0; i < 32; i++) {
+diff --git a/drivers/net/ethernet/dec/tulip/tulip_core.c b/drivers/net/ethernet/dec/tulip/tulip_core.c
+index c4f37ac..885700a 100644
+--- a/drivers/net/ethernet/dec/tulip/tulip_core.c
++++ b/drivers/net/ethernet/dec/tulip/tulip_core.c
+@@ -1010,9 +1010,6 @@ static int private_ioctl (struct net_device *dev, struct ifreq *rq, int cmd)
+    new frame, not around filling tp->setup_frame.  This is non-deterministic
+    when re-entered but still correct. */
+ 
+-#undef set_bit_le
+-#define set_bit_le(i,p) do { ((char *)(p))[(i)/8] |= (1<<((i)%8)); } while(0)
+-
+ static void build_setup_frame_hash(u16 *setup_frm, struct net_device *dev)
+ {
+ 	struct tulip_private *tp = netdev_priv(dev);
+@@ -1022,12 +1019,12 @@ static void build_setup_frame_hash(u16 *setup_frm, struct net_device *dev)
+ 	u16 *eaddrs;
+ 
+ 	memset(hash_table, 0, sizeof(hash_table));
+-	set_bit_le(255, hash_table); 			/* Broadcast entry */
++	__set_bit_le(255, hash_table);			/* Broadcast entry */
+ 	/* This should work on big-endian machines as well. */
+ 	netdev_for_each_mc_addr(ha, dev) {
+ 		int index = ether_crc_le(ETH_ALEN, ha->addr) & 0x1ff;
+ 
+-		set_bit_le(index, hash_table);
++		__set_bit_le(index, hash_table);
+ 	}
+ 	for (i = 0; i < 32; i++) {
+ 		*setup_frm++ = hash_table[i];
+-- 
+1.7.5.4
 
