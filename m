@@ -1,55 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753386Ab2FMQf6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 12:35:58 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:51056 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751688Ab2FMQf5 (ORCPT
+	id S1754039Ab2FMQhS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 12:37:18 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:42165 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752624Ab2FMQhQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 12:35:57 -0400
-Date: Wed, 13 Jun 2012 18:35:53 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@ti.com>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
-Subject: Re: [RFC GIT PULL] nohz: Basic cputime accounting for adaptive
- tickless
-Message-ID: <20120613163550.GA8665@somewhere>
-References: <1339604397-8758-1-git-send-email-fweisbec@gmail.com>
+	Wed, 13 Jun 2012 12:37:16 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
+        rientjes@google.com, akpm@linux-foundation.org, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH -V9 04/15] hugetlb: use mmu_gather instead of a temporary linked list for accumulating pages
+In-Reply-To: <20120613145923.GA14777@tiehlicka.suse.cz>
+References: <1339583254-895-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1339583254-895-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20120613145923.GA14777@tiehlicka.suse.cz>
+User-Agent: Notmuch/0.13.2+35~g0ff57e7 (http://notmuchmail.org) Emacs/24.1.50.1 (x86_64-unknown-linux-gnu)
+Date: Wed, 13 Jun 2012 22:07:06 +0530
+Message-ID: <871uljnp71.fsf@skywalker.in.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339604397-8758-1-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+x-cbid: 12061316-2674-0000-0000-000004E365B8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 13, 2012 at 06:19:50PM +0200, Frederic Weisbecker wrote:
-> Ingo, Thomas,
-> 
-> This starts the basic code that allow accounting of cputime spent tickless
-> outside idle, which is a first step to prepare for the adaptive nohz
-> infrastructure.
-> 
-> I hope we can set a tree in -tip for that. If you're fine with it
-> this is pullable from:
-> 
-> git://github.com/fweisbec/linux-dynticks.git
-> 	nohz-for-tip
-> 
-> Thanks.
+Michal Hocko <mhocko@suse.cz> writes:
 
-As you may have noticed, this is based on tip:timers/core
+> On Wed 13-06-12 15:57:23, Aneesh Kumar K.V wrote:
+>> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+>> 
+>> Use a mmu_gather instead of a temporary linked list for accumulating
+>> pages when we unmap a hugepage range
+>
+> Sorry for coming up with the comment that late but you owe us an
+> explanation _why_ you are doing this.
+>
+> I assume that this fixes a real problem when we take i_mmap_mutex
+> already up in 
+> unmap_mapping_range
+>   mutex_lock(&mapping->i_mmap_mutex);
+>   unmap_mapping_range_tree | unmap_mapping_range_list 
+>     unmap_mapping_range_vma
+>       zap_page_range_single
+>         unmap_single_vma
+> 	  unmap_hugepage_range
+> 	    mutex_lock(&vma->vm_file->f_mapping->i_mmap_mutex);
+>
+> And that this should have been marked for stable as well (I haven't
+> checked when this has been introduced).
+
+Switch to mmu_gather is to get rid of the use of page->lru so that i can use it for
+active list.
+
+
+-aneesh
+
