@@ -1,45 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754082Ab2FMNbP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 09:31:15 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:41128 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753743Ab2FMNbN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 09:31:13 -0400
+	id S1754124Ab2FMNcZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 09:32:25 -0400
+Received: from mga11.intel.com ([192.55.52.93]:49970 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754033Ab2FMNcX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 09:32:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="165142766"
+Date: Wed, 13 Jun 2012 21:32:17 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Intel Linux Wireless <ilw@linux.intel.com>,
+        linux-wireless@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG] iwldvm lock oops
+Message-ID: <20120613133217.GA2170@localhost>
+References: <20120613131725.GA2052@localhost>
+ <1339593640.4519.39.camel@jlt3.sipsolutions.net>
 MIME-Version: 1.0
-In-Reply-To: <20120613214157.0a5179d5358ec7f1b2646606@gmail.com>
-References: <20120613130054.b5695621.yoshikawa.takuya@oss.ntt.co.jp>
-	<20120613130304.0186fa9d.yoshikawa.takuya@oss.ntt.co.jp>
-	<CAC5umyj582T+9GbOYDzOAanmMcVZ-Fdxr7i-8GWf3gTSmtAKUA@mail.gmail.com>
-	<20120613214157.0a5179d5358ec7f1b2646606@gmail.com>
-Date: Wed, 13 Jun 2012 22:31:13 +0900
-Message-ID: <CAC5umygutE35hVObuooWj=ADP6PZDy4cqLtxGnRtxRX8uTtGSw@mail.gmail.com>
-Subject: Re: [PATCH 2/5] drivers/net/ethernet/dec/tulip: Use standard
- __set_bit_le() function
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-Cc: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>,
-        akpm@linux-foundation.org, bhutchings@solarflare.com,
-        grundler@parisc-linux.org, arnd@arndb.de, benh@kernel.crashing.org,
-        avi@redhat.com, mtosatti@redhat.com, linux-net-drivers@solarflare.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, kvm@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339593640.4519.39.camel@jlt3.sipsolutions.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/6/13 Takuya Yoshikawa <takuya.yoshikawa@gmail.com>:
-> On Wed, 13 Jun 2012 18:43:40 +0900
-> Akinobu Mita <akinobu.mita@gmail.com> wrote:
->
->> Should this hash_table be converted from u16 hash_table[32] to
->> DECLARE_BITMAP(hash_table, 16 * 32) to ensure that it is aligned
->> on long-word boundary?
->
-> I think hash_table is already long-word aligned because it is placed
-> right after a pointer.
+Hi Johannes,
 
-I recommend converting to proper bitmap.  Because such an implicit
-assumption is easily broken by someone touching this function.
+On Wed, Jun 13, 2012 at 03:20:40PM +0200, Johannes Berg wrote:
+> Hi Fengguang,
+> 
+> > The kernel compiled from commit b35032f ("iwlwifi: don't configure a
+> > txq that is being disabled") in
+> > 
+> >         git.kernel.org/pub/scm/linux/kernel/git/iwlwifi/iwlwifi.git  master
+> > 
+> > triggers a kernel oops below.
+> > 
+> > That particular commit may well not be the root cause. I'm just hoping
+> > you may have better idea which recent change may be relevant.
+> 
+> Thanks for the report. This particular problem is due to the fact that
+> we have the objects linked into the kernel in the wrong order, we have a
+> fix pending for it. git.kernel.org is down right now so I can't link to
+> it, but it's in the iwlwifi/iwlwifi-next.git tree:
+> 
+> commit 65fe593a519c4d7c62289d3b0a17ca412e95b037
+> Author: Brandon Misemer <brandon.misemer@intel.com>
+> Date:   Fri Jun 8 14:59:27 2012 -0700
+> 
+>     iwlwifi: Fix Makefile build order for built-in driver
+
+Good to know this. Thank you for the quick feedback!
+
+Thanks,
+Fengguang
