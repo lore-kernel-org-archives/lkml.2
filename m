@@ -1,72 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753297Ab2FMAux (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 20:50:53 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:56735 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752400Ab2FMAuv (ORCPT
+	id S1753440Ab2FMAxM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 20:53:12 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:55258 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753002Ab2FMAxJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 20:50:51 -0400
-Date: Wed, 13 Jun 2012 10:50:41 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree (pci
- tree related)
-Message-Id: <20120613105041.2d5dcdde6b9cf3dcfba3885d@canb.auug.org.au>
-In-Reply-To: <CAErSpo6LxpYz_WK2mHPW3RWkOMPLar0KUp1Pgh7shhOdmT49kw@mail.gmail.com>
-References: <20120612145441.400975347f06785d391d0f8f@canb.auug.org.au>
-	<CAErSpo6LxpYz_WK2mHPW3RWkOMPLar0KUp1Pgh7shhOdmT49kw@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__13_Jun_2012_10_50_41_+1000_6vYAvXUgcl5rGlJ/"
+	Tue, 12 Jun 2012 20:53:09 -0400
+From: Wanpeng Li <liwp.linux@gmail.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Gavin Shan <shangw@linux.vnet.ibm.com>,
+        Wanpeng Li <liwp.linux@gmail.com>
+Subject: [PATCH] writeback: fix hung_task alarm when sync block
+Date: Wed, 13 Jun 2012 08:52:53 +0800
+Message-Id: <1339548774-4834-1-git-send-email-liwp.linux@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__13_Jun_2012_10_50_41_+1000_6vYAvXUgcl5rGlJ/
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Wanpeng Li <liwp@linux.vnet.ibm.com>
 
-Hi Bjorn,
+I use several dd processes to write a slow SD card
+dd if=/dev/sda1 of=/dev/sdc4 bs=1M count=4000
+and several sync commands(maybe > 10),dmesg show this:
 
-On Tue, 12 Jun 2012 09:31:49 -0600 Bjorn Helgaas <bhelgaas@google.com> wrot=
-e:
->
-> Thanks, I folded this typo fix into the relevant patch.  I'll rebase
-> "next" today.  Sorry for the trouble.
+[  366.888741] INFO: task sync:3518 blocked for more than 120 seconds.
+[  366.888742] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+[  366.888746] sync            D 00000201     0  3518   3462 0x00000000
+[  366.888752]  dcde5e54 00000082 00000000 00000201 00000000 c180d220 c1933d00 c1933d00
+[  366.888758]  614a7ae7 00000023 f6bc0d00 ebecb280 c180d220 f6bc0d6c f04acbfc 00000000
+[  366.888786]  f6bc0d6c dcde5e2c 00000023 f6bc0d44 00000000 00000000 ebd8b2b4 dcde5e6c
+[  366.888788] Call Trace:
+[  366.888792]  [<c107a0ee>] ? enqueue_entity+0xee/0x5a0
+[  366.888795]  [<c15abc83>] schedule+0x23/0x60
+[  366.888798]  [<c15aa5ad>] schedule_timeout+0x22d/0x2a0
+[  366.888801]  [<c1071ce2>] ? check_preempt_curr+0x72/0x90
+[  366.888804]  [<c1071d28>] ? ttwu_do_wakeup+0x28/0x130
+[  366.888807]  [<c1037f28>] ? default_spin_lock_flags+0x8/0x10
+[  366.888810]  [<c15acaad>] ? _raw_spin_lock_irqsave+0x2d/0x40
+[  366.888813]  [<c15abb17>] wait_for_common+0xa7/0x110
+[  366.888816]  [<c1074690>] ? try_to_wake_up+0x220/0x220
+[  366.888819]  [<c15abc57>] wait_for_completion+0x17/0x20
+[  366.888822]  [<c116ad80>] writeback_inodes_sb_nr+0x70/0x90
+[  366.888825]  [<c116af75>] writeback_inodes_sb+0x25/0x30
+[  366.888828]  [<c117159f>] __sync_filesystem+0x4f/0x90
+[  366.888831]  [<c11715f7>] sync_one_sb+0x17/0x20
+[  366.888834]  [<c114c430>] iterate_supers+0xc0/0xd0
+[  366.888837]  [<c11715e0>] ? __sync_filesystem+0x90/0x90
+[  366.888840]  [<c117167b>] sys_sync+0x2b/0x60
+[  366.888842]  [<c15b385f>] sysenter_do_call+0x12/0x28
 
-I am not sure what you have done, but now you have a set of duplicated
-commits in your tree including both versions of the one that caused the
-build failure.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Too many similar messages flood the logs. So I use a present method to 
+fix this issue.
+------------------------------------------
+Author: Mark Lord <kernel@teksavvy.com>
+Date:   Fri Sep 24 09:51:13 2010 -0400
 
---Signature=_Wed__13_Jun_2012_10_50_41_+1000_6vYAvXUgcl5rGlJ/
-Content-Type: application/pgp-signature
+    block: Prevent hang_check firing during long I/O
+------------------------------------------
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
 
-iQIcBAEBCAAGBQJP1+PhAAoJEECxmPOUX5FEYtwP+QFdFE2JnVbn+3LOYiStpBPq
-2hWCWGP84s27F7XtX8PAXK/01IBfLppyUuSp9IHHJkttRFQIcWBN995VwXCT3ebz
-iYk4T1Ik40s+qscDaBixQUN4RBzU0TI/nOYhhLKYJ9VqJ+lz86qi1t7emcQoLCiS
-NE9i0SlBrpzD2l47uQ/WbwjNKAAxChcttS/olQhwz5feYHhe6nkL26zyr8NDE09g
-BkZ04hYnyN52GrLwfkvjB8U0JO25qUsr9bjo4WRkAT73YMuQAj/ahxXJQDEEziIP
-brfJAqy09OpLcLXmKBczWODCwWIYHC61jX2kI+XtjFZTxzXYCACpR23yRq0TLy3R
-M7Uk4P/CNQi31jR6ovVBUQ2zShR0Mm0PUIyvm2FNcMf/M3/RmaI9+yKKNeLY8NMP
-MYYwk4Ojepr3hAxkY4gRHRiFfNQk3SB+plQV9bwOPOx42wEJyt4AvfY1PGTgiXxt
-O51ysVhN+vMNUT8Txn9AQKYUjqX7AuHAVpcy2NHVwzruxoEe5x3ZMarHqZ0RkOOL
-agrxANV/+RniSQ6Wark9D6fgM14OZ8b5/rf/zM3/BzF1S/UVzOIN/NFxUM9nuPcx
-F+FDiCJLfcma20TSxZ3YonILyVAjmzxdEfkdD4X3SgP61nVMzcofmZLBQrIZnIrS
-yD1dEmTjVPgySm6bKLk7
-=tQSY
------END PGP SIGNATURE-----
+---
+ fs/fs-writeback.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---Signature=_Wed__13_Jun_2012_10_50_41_+1000_6vYAvXUgcl5rGlJ/--
+diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+index f2d0109..5d403a1 100644
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -1300,6 +1300,7 @@ void writeback_inodes_sb_nr(struct super_block *sb,
+ 			    enum wb_reason reason)
+ {
+ 	DECLARE_COMPLETION_ONSTACK(done);
++	unsigned long hangcheck;
+ 	struct wb_writeback_work work = {
+ 		.sb			= sb,
+ 		.sync_mode		= WB_SYNC_NONE,
+@@ -1311,7 +1312,12 @@ void writeback_inodes_sb_nr(struct super_block *sb,
+ 
+ 	WARN_ON(!rwsem_is_locked(&sb->s_umount));
+ 	bdi_queue_work(sb->s_bdi, &work);
+-	wait_for_completion(&done);
++	hangcheck = sysctl_hung_task_timeout_secs;
++	if (hangcheck)
++		while (!wait_for_completion_timeout(&done, HZ/2))
++			;
++	else
++		wait_for_completion(&done);
+ }
+ EXPORT_SYMBOL(writeback_inodes_sb_nr);
+ 
+-- 
+1.7.9.5
+
