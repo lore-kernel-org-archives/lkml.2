@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754067Ab2FMPqx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 11:46:53 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:56150 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753106Ab2FMPqw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 11:46:52 -0400
+	id S1754222Ab2FMPrS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 11:47:18 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:53872 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754107Ab2FMPrQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 11:47:16 -0400
+Message-ID: <4FD8B5DB.9080209@zytor.com>
+Date: Wed, 13 Jun 2012 08:46:35 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120612161946.GA11244@redhat.com>
-References: <1338332348-3469-1-git-send-email-filbranden@gmail.com>
-	<1339464499-10270-2-git-send-email-filbranden@gmail.com>
-	<20120612161946.GA11244@redhat.com>
-Date: Wed, 13 Jun 2012 11:46:51 -0400
-Message-ID: <CABfYdSpnAB6mHWSjy91wvUB91vb74a1JG=TVxKh4XwAvKqeKiQ@mail.gmail.com>
-Subject: Re: [PATCHv2 1/1] prctl: move pdeath_signal from task_struct to signal_struct
-From: Albert Cahalan <acahalan@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Filipe Brandenburger <filbranden@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Roland McGrath <roland@hack.frob.com>, linux-kernel@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Borislav Petkov <bp@amd64.org>, Stephane Eranian <eranian@google.com>,
+        linux-kernel@vger.kernel.org, andi@firstfloor.org, mingo@elte.hu,
+        ming.m.lin@intel.com, "Yu, Fenghua" <fenghua.yu@intel.com>
+Subject: Re: [PATCH] perf/x86: check ucode before disabling PEBS on SandyBridge
+References: <20120607071531.GA4849@quad> <4FD78BE6.4060207@zytor.com>   <20120612190720.GA11137@aftab.osrc.amd.com>   <1339529614.31548.104.camel@twins>   <20120612194900.GC11137@aftab.osrc.amd.com> <4FD7A687.3040500@zytor.com>   <20120612203730.GE11137@aftab.osrc.amd.com> <4FD7A99F.8030007@zytor.com>   <20120612205609.GF11137@aftab.osrc.amd.com> <4FD7AD6F.6010008@zytor.com>  <1339576681.31548.116.camel@twins> <4FD89D09.6010800@zytor.com> <1339601872.8980.52.camel@twins>
+In-Reply-To: <1339601872.8980.52.camel@twins>
+X-Enigmail-Version: 1.4.2
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 12, 2012 at 12:19 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> On 06/11, Filipe Brandenburger wrote:
+On 06/13/2012 08:37 AM, Peter Zijlstra wrote:
+>>
+>> perf might, but I have seen such frankensystems in the field and they
+>> work (although I haven't seen that particular combo, I have to admit.)
+> 
+> Thing is, if we boot on the wsm, perf could fault the system with
+> nonexistent MSR accesses, if we boot on the nhm worst is wrong numbers I
+> think.
+> 
+> I'm not really inclined to 'fix' this.. the best I'm willing to accept
+> is a patch that would detect this situation and simply disable all
+> hardware perf support for the platform.
+> 
 
-> However. This code is very, very old. I simply do not know if we can
-> change the current behaviour or not. In particular, Albert Cahalan
-> didn't like this change when it was last discussed because it can
-> break his application.
-...
->> Documentation clearly states that PR_SET_PDEATHSIG and PR_GET_PDEATHSIG should
->> act on processes, in particular case #1 is very counter intuitive because the
->> child process should not care whether the parent is multi-threaded or not.
+BIOS is *supposed* to pick the least capable CPU as the BSP.  BIOS
+being, well, BIOS is known to not always do that, but on the other hand
+it is apparently common enough that at least *some* BIOSes are known to
+pay attention and do so.
 
-You are assuming that the child and parent are normal separate
-applications, developed by separate people, with one just being
-run by the other. That is actually the odd case AFAIK, because
-why then would there be reason to care about parent death?
-The more normal case IMHO is that the child and parent are
-deeply aware of each other. Most likely they are the same program.
+Anyway, I'm not suggesting we should go out of our way to make perf work
+on these systems.  Most likely, as you point out, it is either "just
+going to work" or totally fail.
 
-In my case I have an in-process emulator, kind of like valgrind,
-that uses real threads for accuracy and performance. It makes
-extra threads for monitoring and control. These extra threads
-keep an eye on the app being examined; obviously none of this
-would work if the death signal were not per-thread.
+What I don't want to see is creating a new facility and encouraging
+people to use it, when it is known to be in error.  I'm trying to find
+out at the moment just where the practical cutoff is.
 
-Fix the documentation to match reality, then add a per-process one
-if there is any use for it. I don't think I've ever seen use for a
-per-process death signal, so perhaps it shouldn't be added even
-though it does make sense.
+	-hpa
