@@ -1,71 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751317Ab2FMH4K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 03:56:10 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:43694 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750727Ab2FMH4I convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 03:56:08 -0400
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: x86@kernel.org, linux-kernel@vger.kernel.org,
-        "Marek Szyprowski" <m.szyprowski@samsung.com>
-Cc: "Kyungmin Park" <kyungmin.park@samsung.com>,
-        "Thomas Gleixner" <tglx@linutronix.de>,
-        "Konrad Rzeszutek Wilk" <konrad@darnok.org>,
-        "Arnd Bergmann" <arnd@arndb.de>
-Subject: Re: [PATCH] x86: dma-mapping: fix broken allocation when dma_mask has
- been provided
-References: <1339567046-2264-1-git-send-email-m.szyprowski@samsung.com>
-Date: Wed, 13 Jun 2012 09:56:05 +0200
+	id S1752003Ab2FMH4W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 03:56:22 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:53459 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751643Ab2FMH4U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 03:56:20 -0400
+X-IronPort-AV: E=Sophos;i="4.77,402,1336320000"; 
+   d="scan'208";a="5177420"
+Message-ID: <4FD8488F.6040707@cn.fujitsu.com>
+Date: Wed, 13 Jun 2012 16:00:15 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-From: "Michal Nazarewicz" <mina86@mina86.com>
-Message-ID: <op.wft0brk93l0zgt@mpn-glaptop>
-In-Reply-To: <1339567046-2264-1-git-send-email-m.szyprowski@samsung.com>
-User-Agent: Opera Mail/12.00 (Linux)
+To: Paolo Bonzini <pbonzini@redhat.com>
+CC: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Avi Kivity <avi@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
+Subject: Re: [PATCH 3/3] deal with guest panicked event
+References: <4FB9E4CE.8060709@cn.fujitsu.com> <4FB9E5CB.2020208@cn.fujitsu.com> <4FD74447.2090906@redhat.com> <4FD83B20.9060203@cn.fujitsu.com> <4FD8470B.8010507@redhat.com>
+In-Reply-To: <4FD8470B.8010507@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/06/13 15:56:42,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/06/13 15:56:50,
+	Serialize complete at 2012/06/13 15:56:50
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Jun 2012 07:57:26 +0200, Marek Szyprowski <m.szyprowski@samsung.com> wrote:
+At 06/13/2012 03:53 PM, Paolo Bonzini Wrote:
+> Il 13/06/2012 09:02, Wen Congyang ha scritto:
+>>>>>> +Other possible actions are:
+>>>>>> +@code{pause} (emit QEVENT_GUEST_PANICKED and pause VM),
+>>>>>> +@code{quit} (emit QEVENT_GUEST_PANICKED and quit VM).
+>>>>
+>>>> Rather than just "quit", there should be choices for "shutdown",
+>>>> "poweroff" and "reset" for consistency with -watchdog-action.
+>> Hmm, quit means poweroff. I will add reset, but I think we donot
+>> need shutdown, because we cannot shutdown the system when it is
+>> panicked.
+> 
+> Right. :)
+> 
+> Can you also rename quit to poweroff?
 
-> Commit 0a2b9a6ea93 ("X86: integrate CMA with DMA-mapping subsystem")
-> broke memory allocation with dma_mask. This patch fixes possible kernel
-> ops caused by lack of resetting page variable when jumping to 'again' label.
->
-> Reported-by: Konrad Rzeszutek Wilk <konrad@darnok.org>
-> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+OK.
 
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
+Thanks
+Wen Congyang
+> 
+>>>> Also, this option should also be accessible from "-machine", please.
+>> I don't understand this. Do you mean we can also specify this action
+>> in -machine option?
+> 
+> Yes, like -machine panic_action=poweroff.
+> 
+> Paolo
+> 
 
-> ---
->  arch/x86/kernel/pci-dma.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
->
-> diff --git a/arch/x86/kernel/pci-dma.c b/arch/x86/kernel/pci-dma.c
-> index 62c9457..c0f420f 100644
-> --- a/arch/x86/kernel/pci-dma.c
-> +++ b/arch/x86/kernel/pci-dma.c
-> @@ -100,7 +100,7 @@ void *dma_generic_alloc_coherent(struct device *dev, size_t size,
->  				 struct dma_attrs *attrs)
->  {
->  	unsigned long dma_mask;
-> -	struct page *page = NULL;
-> +	struct page *page;
->  	unsigned int count = PAGE_ALIGN(size) >> PAGE_SHIFT;
->  	dma_addr_t addr;
->@@ -108,6 +108,7 @@ void *dma_generic_alloc_coherent(struct device *dev, size_t size,
-> 	flag |= __GFP_ZERO;
->  again:
-> +	page = NULL;
->  	if (!(flag & GFP_ATOMIC))
->  		page = dma_alloc_from_contiguous(dev, count, get_order(size));
->  	if (!page)
-
-
--- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
-ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
