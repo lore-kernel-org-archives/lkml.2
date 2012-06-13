@@ -1,48 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752396Ab2FMIib (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 04:38:31 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:43814 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751255Ab2FMIi2 convert rfc822-to-8bit (ORCPT
+	id S1752106Ab2FMInr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 04:43:47 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:35162 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751207Ab2FMInp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 04:38:28 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120612230630.GK19410@gmail.com>
-References: <1339429196-32584-1-git-send-email-linus.walleij@linaro.org>
-	<20120612230630.GK19410@gmail.com>
-Date: Wed, 13 Jun 2012 10:38:26 +0200
-Message-ID: <CACRpkdYvLEkuFLPCAT15jpqfML_tDwXuR6kENZbwMDaWpunrxQ@mail.gmail.com>
-Subject: Re: [PATCH 2/3] clk: add ICST307 driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mike Turquette <mturquette@ti.com>
-Cc: linux-arm-kernel@lists.infradead.org, arm@kernel.org,
-        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 13 Jun 2012 04:43:45 -0400
+Message-ID: <1339577020.4519.19.camel@jlt3.sipsolutions.net>
+Subject: [PATCH] Documentation: fix DOCBOOKS=... building
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Date: Wed, 13 Jun 2012 10:43:40 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2-1+b1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 13, 2012 at 1:06 AM, Mike Turquette <mturquette@ti.com> wrote:
-> On 20120611-17:39, Linus Walleij wrote:
+From: Johannes Berg <johannes.berg@intel.com>
 
->> +obj-$(CONFIG_CLK_ICST)               += clk-icst.o
->
-> Is there a better place to put this than the top-level directory?
+Prior to 
+commit 4266129964b8238526936d723de65b419d8069c6
+Author: Mauro Carvalho Chehab <mchehab@redhat.com>
+Date:   Tue May 31 16:27:44 2011 -0300
 
-I can put it alone in a subdirectory if you want to... It is used only
-by the ARM reference designs AFAICT, shall I put these Integrator
-things into clk/versatile as we use the "versatile" name to refer to all
-ARM reference designs (i.e. arch/arm/plat-versatile).
+    [media] DocBook: Move all media docbook stuff into its own directory
 
->> +struct clk * __init icst_clk_init(struct device *dev, const struct clk_icst_desc *desc)
->
-> Nitpick: icst_clk_init should be renamed icst_clk_register to more
-> closely resemble other clock registration functions which allocate
-> memory dynamically.
+it was possible to build only a single (or more)
+book(s) by calling, for example
+	make htmldocs DOCBOOKS=80211.xml
 
-I'll fix!
+This now fails:
+cp: target `.../Documentation/DocBook//media_api' is not a directory
 
-Yours,
-Linus Walleij
+Ignore errors from that copy to make this possible again.
+
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+---
+I complained about this a long time ago, but now it finally bothered me
+enough to fix it ... :-)
+
+ Documentation/DocBook/media/Makefile |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/Documentation/DocBook/media/Makefile	2012-06-13 10:39:58.000000000 +0200
++++ b/Documentation/DocBook/media/Makefile	2012-06-13 10:40:05.000000000 +0200
+@@ -195,7 +195,7 @@ DVB_DOCUMENTED = \
+ #
+ 
+ install_media_images = \
+-	$(Q)cp $(OBJIMGFILES) $(MEDIA_SRC_DIR)/v4l/*.svg $(MEDIA_OBJ_DIR)/media_api
++	$(Q)-cp $(OBJIMGFILES) $(MEDIA_SRC_DIR)/v4l/*.svg $(MEDIA_OBJ_DIR)/media_api
+ 
+ $(MEDIA_OBJ_DIR)/%: $(MEDIA_SRC_DIR)/%.b64
+ 	$(Q)base64 -d $< >$@
+
+
