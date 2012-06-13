@@ -1,115 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754637Ab2FMVlQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 17:41:16 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:48708 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750770Ab2FMVlO (ORCPT
+	id S1754827Ab2FMVnb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 17:43:31 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:5338 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754420Ab2FMVna (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 17:41:14 -0400
-X-Sasl-enc: 77ypXa3cX/fa/3S3uRq13KaX0o0Eue9OmS+hJcFGnF6h 1339623673
-Date: Wed, 13 Jun 2012 18:41:10 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Borislav Petkov <bp@amd64.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Robert Richter <robert.richter@amd.com>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        andi@firstfloor.org, mingo@elte.hu, ming.m.lin@intel.com,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Dimitri Sivanich <sivanich@sgi.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>
-Subject: Re: [PATCH] perf/x86: check ucode before disabling PEBS on
- SandyBridge
-Message-ID: <20120613214110.GB6647@khazad-dum.debian.net>
-References: <1339521203.31548.92.camel@twins>
- <20120612171734.GI8404@aftab.osrc.amd.com>
- <1339521493.31548.93.camel@twins>
- <20120612172352.GA4802@aftab.osrc.amd.com>
- <1339521996.31548.95.camel@twins>
- <20120612173506.GB4802@aftab.osrc.amd.com>
- <20120613010413.GA28174@khazad-dum.debian.net>
- <20120613065119.GB15661@aftab.osrc.amd.com>
- <20120613123649.GA26012@khazad-dum.debian.net>
- <20120613161139.GA18450@aftab.osrc.amd.com>
+	Wed, 13 Jun 2012 17:43:30 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6741"; a="200789025"
+Message-ID: <1476f0476a2dcfc6f7db9dbb4be0ab2b.squirrel@www.codeaurora.org>
+In-Reply-To: <CANfBPZ_+=keFgv-xDbzkZi2uVFvd46_JGoxweMKa1CvfX=X7=g@mail.gmail.com>
+References: <000601cd47ab$8ad77c50$a08674f0$%jun@samsung.com>
+    <CANfBPZ9dwwAOBbXPqGV64k-sB-MzRtTO8x7tXnZBjtYN+V88XQ@mail.gmail.com>
+    <000001cd489c$115f03b0$341d0b10$%jun@samsung.com>
+    <113bb1f38dbc386f1adfc580e10dc2e5.squirrel@www.codeaurora.org>
+    <CANfBPZ_+=keFgv-xDbzkZi2uVFvd46_JGoxweMKa1CvfX=X7=g@mail.gmail.com>
+Date: Wed, 13 Jun 2012 14:43:25 -0700 (PDT)
+Subject: Re: [PATCH v7 1/3] mmc: core: Add packed command feature of eMMC4.5
+From: merez@codeaurora.org
+To: "S, Venkatraman" <svenkatr@ti.com>
+Cc: merez@codeaurora.org, "Seungwon Jeon" <tgih.jun@samsung.com>,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Chris Ball" <cjb@laptop.org>,
+        "Subhash Jadavani" <subhashj@codeaurora.org>
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120613161139.GA18450@aftab.osrc.amd.com>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Jun 2012, Borislav Petkov wrote:
-> On Wed, Jun 13, 2012 at 09:36:49AM -0300, Henrique de Moraes Holschuh wrote:
-> > Yes, please. I suggest we use core 0 for that. Using my Debian
-> > maintainer hat, I'd rather you got rid of the sysfs entries for every
-> > other core while at it, as it will make our life a lot simpler,
-> > distro-side.
-> 
-> Wouldn't we have some sort of ABI breakage if I remove the sysfs files?
 
-It wouldn't cause any problems in Debian, because currently our crap only
-uses the deprecated /dev interface for Intel, and doesn't support AMD at
-all.  This is something I am already addressing.
+On Wed, June 13, 2012 12:49 pm, S, Venkatraman wrote:
+> On Wed, Jun 13, 2012 at 12:45 AM,  <merez@codeaurora.org> wrote:
+>>
+>>> S, Venkatraman <svenkatr@ti.com> wrote:
+>>>> On Mon, Jun 11, 2012 at 1:53 PM, Seungwon Jeon <tgih.jun@samsung.com>
+>>>> wrote:
+>>>> > This patch adds packed command feature of eMMC4.5.
+>>>> > The maximum number for packing read(or write) is offered
+>>>> > and exception event relevant to packed command which is
+>>>> > used for error handling is enabled. If host wants to use
+>>>> > this feature, MMC_CAP2_PACKED_CMD should be set.
+>>>> >
+>>>> > Signed-off-by: Seungwon Jeon <tgih.jun@samsung.com>
+>>>>
+>>>> Can you please post some clear performance benchmarks with your
+>>>> patchset
+>>>> ?
+>>>> Given that #merez claims to see a significant performance drop for
+>>>> reads, it will be
+>>>> good to compare notes.
+>>>> If it's not too much trouble, both CFQ and deadline scheduler figures
+>>>> would be useful, on a
+>>>> set of read only, write only and parallel read write usecases.
+>>>>
+>>>> I can also try to replicate your results if you can publish the exact
+>>>> configuration you used
+>>>> for testing (example: iozone parameters)
+>>> I'm checking the merez's result.
+>>> Currently packed command is effective on write.
+>>> When running packed write with iozone, there is 25% performance gains.
+>>> (ex: iozone -az -i0 -I -s 10m -f /target/test -e)
+>>>
+>> Our tests shows performance gain of 50-60% in scenarios of only write
+>> lmdd
+>> operations.
+>>
+>> As I mentioned in the write packing control thread the degradation of
+>> read
+>> performance in case of mix read/write operations appears also without
+>> write packing. Therefore I don't think it should stop us from approving
+>> the write packing patch, that gives a significant improvement to the
+>> write
+>> performance.
+>> The read performance degradation should be resolved regardless of the
+>> write packing patch.
+>>
+>
+> One further question - when you say "degradation of read performance
+> in case of mix
+> read/write operations appears also without write packing", what
+> exactly does that mean?
+> Degradation w.r.to to read-only test ? Or any expected throughput ?
 
-We would have to check the other distros, so maybe your -EINVAL idea is
-better.
+I meant w.r. to read only test.
 
-> Instead, I was thinking of having the rest of the files not on the BSP
-> return -EINVAL and only the BSP reload ucode on the whole system.
+>
+> If the scenario you mention is accurate, I was actually thinking that
+> we should recommend to merge
+> read packing first, then merge write packing once the read performance
+> issue is well understood.
 
-That will work as well, although it will cause userspace to waste time
-looping all CPUs for no good reason.  But userspace can be smart enough to
-skip this on boot in the most common cases (modular microcode, with the
-microcode already available at /lib/firmware at the time the module loads),
-so I guess that doesn't matter much.
+I don't know if you followed the early discussion of this patch but the
+read throughput was not proved as efficient and in some of the cases it
+also caused degradation of the read performance. Therefore, we don't
+intend to merge it yet.
+>
+> I am all for better performance with packing control etc, but the
+> overall code complexity is really
+> increasing more than necessary. I want to make sure that it is really
+> worth the effort.
 
-And obviously as soon as the system-wide microcode update sysfs node is
-available, we can just test for the existence of that node, and ignore the
-broken per-node interface when the system-wide node exists.
+In my opinion a gain of 50%-60% of the write performance worth the
+complexity of the code and the effort to fix the issues it reveals.
 
-> > This is still not the proper fix, which would be to add a new sysfs node
-> > to access the proper update-every-core functionality, but it is a damn
-> > good start in the right direction and required to make it safe without
-> > ripping out the old ABI entirely without a deprecation period.
-> 
-> Yes, I'd like to have the system-wide sysfs node somewhere under
-> /sys/devices/system/cpu/microcode/ but we'll see how that goes.
+>
+> Thanks,
+> Venkat.
+>
 
-Please set the sysfs node name ASAP, so that I can make sure the next Debian
-stable ships knowing how to handle it :-)
-
-> > Ok. Please CC me in the patches, if the new ABI arrives in time, I'll
-> > even be able to get it supported on the next Debian stable (and push
-> > to get this stuff backported to the kernel 3.2 which we will ship,
-> > I consider this an important bug-fix to a pontentially very serious
-> > issue. We have *zero* chance of finding out what's wrong if an users'
-> > system start getting subtly crazy because it is running with skewed
-> > microcode among cores.
-> 
-> Ok, will do.
-
-Thank you!
-
-> Btw, I have to think about whether we really want to backport this to
-> stable since it is not a regression fix but functionality change which
-> kinda fixes a some sort of bug. Hmm, the stable rules are kinda blurry
-> here. I could write a minimal fix with stable in mind though... we'll
-> see.
-
-It is not a regression fix, but it is a major bugfix to the microcode
-core...
-
-> hpa, what is our take here, should we backport a minimal change
-> disabling reloading of ucode per-cpu for stable? It is the wrong thing
-> to do anyway.
 
 -- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+Sent by consultant of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+
