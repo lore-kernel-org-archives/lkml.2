@@ -1,130 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753970Ab2FMK2v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 06:28:51 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:38474 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753830Ab2FMK2t (ORCPT
+	id S1753899Ab2FMK2f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 06:28:35 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:34502 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753855Ab2FMK23 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 06:28:49 -0400
+	Wed, 13 Jun 2012 06:28:29 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
         rientjes@google.com, mhocko@suse.cz, akpm@linux-foundation.org,
         hannes@cmpxchg.org
 Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -V9 07/15] hugetlb: add a list for tracking in-use HugeTLB pages
-Date: Wed, 13 Jun 2012 15:57:26 +0530
-Message-Id: <1339583254-895-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V9 10/15] hugetlb/cgroup: Add the cgroup pointer to page lru
+Date: Wed, 13 Jun 2012 15:57:29 +0530
+Message-Id: <1339583254-895-11-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1339583254-895-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1339583254-895-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-x-cbid: 12061310-2000-0000-0000-000007E6F9EA
+x-cbid: 12061310-9574-0000-0000-000003280474
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-hugepage_activelist will be used to track currently used HugeTLB pages.
-We need to find the in-use HugeTLB pages to support HugeTLB cgroup removal.
-On cgroup removal we update the page's HugeTLB cgroup to point to parent
-cgroup.
+Add the hugetlb cgroup pointer to 3rd page lru.next. This limit
+the usage to hugetlb cgroup to only hugepages with 3 or more
+normal pages. I guess that is an acceptable limitation.
 
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- include/linux/hugetlb.h |    1 +
- mm/hugetlb.c            |   12 +++++++-----
- 2 files changed, 8 insertions(+), 5 deletions(-)
+ include/linux/hugetlb_cgroup.h |   37 +++++++++++++++++++++++++++++++++++++
+ mm/hugetlb.c                   |    4 ++++
+ 2 files changed, 41 insertions(+)
 
-diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-index 0f23c18..ed550d8 100644
---- a/include/linux/hugetlb.h
-+++ b/include/linux/hugetlb.h
-@@ -211,6 +211,7 @@ struct hstate {
- 	unsigned long resv_huge_pages;
- 	unsigned long surplus_huge_pages;
- 	unsigned long nr_overcommit_huge_pages;
-+	struct list_head hugepage_activelist;
- 	struct list_head hugepage_freelists[MAX_NUMNODES];
- 	unsigned int nr_huge_pages_node[MAX_NUMNODES];
- 	unsigned int free_huge_pages_node[MAX_NUMNODES];
+diff --git a/include/linux/hugetlb_cgroup.h b/include/linux/hugetlb_cgroup.h
+index e9944b4..be1a9f8 100644
+--- a/include/linux/hugetlb_cgroup.h
++++ b/include/linux/hugetlb_cgroup.h
+@@ -20,6 +20,32 @@
+ struct hugetlb_cgroup;
+ 
+ #ifdef CONFIG_CGROUP_HUGETLB_RES_CTLR
++/*
++ * Minimum page order trackable by hugetlb cgroup.
++ * At least 3 pages are necessary for all the tracking information.
++ */
++#define HUGETLB_CGROUP_MIN_ORDER	2
++
++static inline struct hugetlb_cgroup *hugetlb_cgroup_from_page(struct page *page)
++{
++	VM_BUG_ON(!PageHuge(page));
++
++	if (compound_order(page) < HUGETLB_CGROUP_MIN_ORDER)
++		return NULL;
++	return (struct hugetlb_cgroup *)page[2].lru.next;
++}
++
++static inline
++int set_hugetlb_cgroup(struct page *page, struct hugetlb_cgroup *h_cg)
++{
++	VM_BUG_ON(!PageHuge(page));
++
++	if (compound_order(page) < HUGETLB_CGROUP_MIN_ORDER)
++		return -1;
++	page[2].lru.next = (void *)h_cg;
++	return 0;
++}
++
+ static inline bool hugetlb_cgroup_disabled(void)
+ {
+ 	if (hugetlb_subsys.disabled)
+@@ -28,6 +54,17 @@ static inline bool hugetlb_cgroup_disabled(void)
+ }
+ 
+ #else
++static inline struct hugetlb_cgroup *hugetlb_cgroup_from_page(struct page *page)
++{
++	return NULL;
++}
++
++static inline
++int set_hugetlb_cgroup(struct page *page, struct hugetlb_cgroup *h_cg)
++{
++	return 0;
++}
++
+ static inline bool hugetlb_cgroup_disabled(void)
+ {
+ 	return true;
 diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index e54b695..b5b6e15 100644
+index e899a2d..6a449c5 100644
 --- a/mm/hugetlb.c
 +++ b/mm/hugetlb.c
-@@ -510,7 +510,7 @@ void copy_huge_page(struct page *dst, struct page *src)
- static void enqueue_huge_page(struct hstate *h, struct page *page)
- {
- 	int nid = page_to_nid(page);
--	list_add(&page->lru, &h->hugepage_freelists[nid]);
-+	list_move(&page->lru, &h->hugepage_freelists[nid]);
- 	h->free_huge_pages++;
- 	h->free_huge_pages_node[nid]++;
- }
-@@ -522,7 +522,7 @@ static struct page *dequeue_huge_page_node(struct hstate *h, int nid)
- 	if (list_empty(&h->hugepage_freelists[nid]))
- 		return NULL;
- 	page = list_entry(h->hugepage_freelists[nid].next, struct page, lru);
--	list_del(&page->lru);
-+	list_move(&page->lru, &h->hugepage_activelist);
+@@ -28,6 +28,7 @@
+ 
+ #include <linux/io.h>
+ #include <linux/hugetlb.h>
++#include <linux/hugetlb_cgroup.h>
+ #include <linux/node.h>
+ #include "internal.h"
+ 
+@@ -591,6 +592,7 @@ static void update_and_free_page(struct hstate *h, struct page *page)
+ 				1 << PG_active | 1 << PG_reserved |
+ 				1 << PG_private | 1 << PG_writeback);
+ 	}
++	VM_BUG_ON(hugetlb_cgroup_from_page(page));
+ 	set_compound_page_dtor(page, NULL);
  	set_page_refcounted(page);
- 	h->free_huge_pages--;
- 	h->free_huge_pages_node[nid]--;
-@@ -626,10 +626,11 @@ static void free_huge_page(struct page *page)
- 	page->mapping = NULL;
- 	BUG_ON(page_count(page));
- 	BUG_ON(page_mapcount(page));
--	INIT_LIST_HEAD(&page->lru);
- 
- 	spin_lock(&hugetlb_lock);
- 	if (h->surplus_huge_pages_node[nid] && huge_page_order(h) < MAX_ORDER) {
-+		/* remove the page from active list */
-+		list_del(&page->lru);
- 		update_and_free_page(h, page);
- 		h->surplus_huge_pages--;
- 		h->surplus_huge_pages_node[nid]--;
-@@ -642,6 +643,7 @@ static void free_huge_page(struct page *page)
- 
- static void prep_new_huge_page(struct hstate *h, struct page *page, int nid)
- {
-+	INIT_LIST_HEAD(&page->lru);
+ 	arch_release_hugepage(page);
+@@ -643,6 +645,7 @@ static void prep_new_huge_page(struct hstate *h, struct page *page, int nid)
+ 	INIT_LIST_HEAD(&page->lru);
  	set_compound_page_dtor(page, free_huge_page);
  	spin_lock(&hugetlb_lock);
++	set_hugetlb_cgroup(page, NULL);
  	h->nr_huge_pages++;
-@@ -890,6 +892,7 @@ static struct page *alloc_buddy_huge_page(struct hstate *h, int nid)
- 
- 	spin_lock(&hugetlb_lock);
- 	if (page) {
-+		INIT_LIST_HEAD(&page->lru);
+ 	h->nr_huge_pages_node[nid]++;
+ 	spin_unlock(&hugetlb_lock);
+@@ -892,6 +895,7 @@ static struct page *alloc_buddy_huge_page(struct hstate *h, int nid)
+ 		INIT_LIST_HEAD(&page->lru);
  		r_nid = page_to_nid(page);
  		set_compound_page_dtor(page, free_huge_page);
++		set_hugetlb_cgroup(page, NULL);
  		/*
-@@ -994,7 +997,6 @@ retry:
- 	list_for_each_entry_safe(page, tmp, &surplus_list, lru) {
- 		if ((--needed) < 0)
- 			break;
--		list_del(&page->lru);
- 		/*
- 		 * This page is now managed by the hugetlb allocator and has
- 		 * no users -- drop the buddy allocator's reference.
-@@ -1009,7 +1011,6 @@ free:
- 	/* Free unnecessary surplus pages to the buddy allocator */
- 	if (!list_empty(&surplus_list)) {
- 		list_for_each_entry_safe(page, tmp, &surplus_list, lru) {
--			list_del(&page->lru);
- 			put_page(page);
- 		}
- 	}
-@@ -1909,6 +1910,7 @@ void __init hugetlb_add_hstate(unsigned order)
- 	h->free_huge_pages = 0;
- 	for (i = 0; i < MAX_NUMNODES; ++i)
- 		INIT_LIST_HEAD(&h->hugepage_freelists[i]);
-+	INIT_LIST_HEAD(&h->hugepage_activelist);
- 	h->next_nid_to_alloc = first_node(node_states[N_HIGH_MEMORY]);
- 	h->next_nid_to_free = first_node(node_states[N_HIGH_MEMORY]);
- 	snprintf(h->name, HSTATE_NAME_LEN, "hugepages-%lukB",
+ 		 * We incremented the global counters already
+ 		 */
 -- 
 1.7.10
 
