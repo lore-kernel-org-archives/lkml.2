@@ -1,37 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753572Ab2FMNKO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 09:10:14 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:61530 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752831Ab2FMNKM (ORCPT
+	id S1753749Ab2FMNKe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 09:10:34 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:46592 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752262Ab2FMNKc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 09:10:12 -0400
+	Wed, 13 Jun 2012 09:10:32 -0400
+Message-ID: <4FD89144.7000203@linaro.org>
+Date: Wed, 13 Jun 2012 15:10:28 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <1339592667.8980.32.camel@twins>
-References: <CABPqkBQa8ndydqkMDvc3kzu84_96FbK77TUkrfO3eSPXmv3dhQ@mail.gmail.com>
-	<1339592667.8980.32.camel@twins>
-Date: Wed, 13 Jun 2012 15:10:10 +0200
-Message-ID: <CABPqkBTM7xcy_BdB2cHL4cvbk0wihB1PonC4nZCSxiNtkMyX4Q@mail.gmail.com>
-Subject: Re: [BUG] perf: perf_output_sample() merge issue?
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, mingo@elte.hu
+To: Jean Pihet <jean.pihet@newoldbits.com>
+CC: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>, linux-acpi@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org, linaro-dev@lists.linaro.org,
+        linux-kernel@vger.kernel.org, Kevin Hilman <khilman@ti.com>
+Subject: Re: [linux-pm] [RFC 1/4] cpuidle: define the enter function in the
+ driver structure
+References: <1339171365-4098-1-git-send-email-daniel.lezcano@linaro.org> <4FD23752.6090101@linux.vnet.ibm.com> <4FD27000.7000208@linaro.org> <CAORVsuXEkyU_OkjqLDhe_OMq-uLEBaMLnz-pkJ1jtgnmcNxZpw@mail.gmail.com>
+In-Reply-To: <CAORVsuXEkyU_OkjqLDhe_OMq-uLEBaMLnz-pkJ1jtgnmcNxZpw@mail.gmail.com>
 Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 13, 2012 at 3:04 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Wed, 2012-06-13 at 14:51 +0200, Stephane Eranian wrote:
->> I think the intent of this commit was to add the watermark check
->> at the very end of the perf_output_sample() and NOT between processing
->> of RAW and BRANCH_STACK. Something may have gone wrong
->> in the merge.
+On 06/13/2012 02:44 PM, Jean Pihet wrote:
+> Hi Daniel,
+> 
+> On Fri, Jun 8, 2012 at 11:34 PM, Daniel Lezcano
+> <daniel.lezcano@linaro.org> wrote:
+>> On 06/08/2012 07:33 PM, Deepthi Dharwar wrote:
+>>> Hi Daniel,
 >>
->> Can you confirm this?
->
-> Yes very much so, good spotting. Weird stuff this merging.
+>> Hi Deepthi,
+>>
+>>> On 06/08/2012 09:32 PM, Daniel Lezcano wrote:
+>>>
+>>>> We have the state index passed as parameter to the 'enter' function.
+>>>> Most of the drivers assign their 'enter' functions several times in
+>>>> the cpuidle_state structure, as we have the index, we can delegate
+>>>> to the driver to handle their own callback array.
+>>>>
+>>>> That will have the benefit of removing multiple lines of code in the
+>>>> different drivers.
+>>>>
+>>>> In order to smoothly modify the driver, the 'enter' function are in
+>>>> the driver structure and in the cpuidle state structure. That will
+>>>> let the time to modify the different drivers one by one.
+>>>> So the 'cpuidle_enter' function checks if the 'enter' callback is
+>>>> assigned in the driver structure and use it, otherwise it invokes
+>>>> the 'enter' assigned to the cpuidle_state.
+>>>
+>>>
+>>> Currently, the backend driver initializes
+>>> all the cpuidle states supported on the platform,
+>>> and each state can have its own enter routine
+>>> which can be unique This is a clean approach.
+>>
+>> Yes, I perfectly understood the purpose of this field but as clean it is
+>> it does not make sense as it is not used in this way. If it is supposed
+>> to be done in the way you are describing here, we should have the same
+>> number of states and enter functions. Here it is how it is used:
+>>
+>>  --------------------------------------------------
+>> | Arch             | nr states | nr enter function |
+>>  --------------------------------------------------
+>> | x86 (nehalem)    |    3      |         1         |
+>>  --------------------------------------------------
+>> | x86 (snb)        |    4      |         1         |
+>>  --------------------------------------------------
+>> | x86 (atom)       |    4      |         1         |
+>>  --------------------------------------------------
+>> | ARM tegra        |    1      |         1         |
+>>  --------------------------------------------------
+>> | ARM omap3        |    7      |         2         |
+>>  --------------------------------------------------
+>> | ARM omap4        |    3      |         1         |
+>>  --------------------------------------------------
+>> | ARM ux500        |    2      |         1         |
+>>  --------------------------------------------------
+>> | ARM shmobile     |    1      |         1         |
+>>  --------------------------------------------------
+>> | ARM davinci      |    2      |         1         |
+>>  --------------------------------------------------
+>> | ARM at91         |    2      |         1         |
+>>  --------------------------------------------------
+>> | ARM s3c64xx      |    1      |         1         |
+>>  --------------------------------------------------
+>> | ARM exynos       |    2      |         1         |
+>>  --------------------------------------------------
+>> | ARM kirkwood     |    2      |         1         |
+>>  --------------------------------------------------
+>> | SH               |    3      |         1         |
+>>  --------------------------------------------------
+>> | PPC              |    2      |         2         |
+>>  --------------------------------------------------
+>> |                  |           |                   |
+>> | TOTAL            |    39     |        17         |
+>> |                  |           |                   |
+>>  --------------------------------------------------
+>>
+>>
+>> As you can see most of the enter functions are only used as one.
+>> The Omap3 cpuidle driver enter function for C2 calls the enter function
+>> of C1. Other arch, already use a table of callbacks or the index.
+> There is a plan to remove the extra enter function as part of an
+> optimization, cf. [1]. The fix is planned to reach the 3.6 mainline
+> kernel via Kevin's tree [2].
+> 
+> [1] http://marc.info/?l=linux-omap&m=133856365818099&w=2
+> [2] http://git.kernel.org/?p=linux/kernel/git/khilman/linux-omap-pm.git;a=shortlog;h=refs/heads/for_3.6/pm/performance
+> 
+> The result is that there will be only one enter function for OMAP3.
 
-Ok, so I will post a patch to fix that then.
+Another argument in favor of moving this field to the driver structure.
+
+Thanks Jean for the information.
+
+  -- Daniel
+
+
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
