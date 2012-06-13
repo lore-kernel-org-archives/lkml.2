@@ -1,67 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752670Ab2FMJaT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 05:30:19 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51970 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752033Ab2FMJaS (ORCPT
+	id S1752684Ab2FMJdE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 05:33:04 -0400
+Received: from e06smtp18.uk.ibm.com ([195.75.94.114]:37272 "EHLO
+	e06smtp18.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752050Ab2FMJdB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 05:30:18 -0400
-Date: Wed, 13 Jun 2012 17:30:16 +0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH 1/2] regulator: wm831x-ldo: Convert to
- devm_request_threaded_irq
-Message-ID: <20120613093015.GF4545@opensource.wolfsonmicro.com>
-References: <1339552767.26190.1.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="2FkSFaIQeDFoAt0B"
-Content-Disposition: inline
-In-Reply-To: <1339552767.26190.1.camel@phoenix>
-X-Cookie: You now have Asian Flu.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 13 Jun 2012 05:33:01 -0400
+Date: Wed, 13 Jun 2012 11:32:23 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: T Makphaibulchoke <tmac@hp.com>, linux@arm.linux.org.uk,
+        heiko.carstens@de.ibm.com, linux390@de.ibm.com, lethal@linux-sh.org,
+        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+        kaloz@openwrt.org, nicolas.pitre@linaro.org, jj@chaosbits.net,
+        matt.fleming@intel.com, lasse.collin@tukaani.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org
+Subject: Re: [PATCH v2] lib/decompress_unxz.c: removing all memory helper
+ functions
+Message-ID: <20120613113223.0fc3c490@de.ibm.com>
+In-Reply-To: <4FD6B472.7040609@zytor.com>
+References: <1339470307-28223-1-git-send-email-tmac@hp.com>
+	<4FD6B472.7040609@zytor.com>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+x-cbid: 12061309-6892-0000-0000-0000021D0B10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 11 Jun 2012 20:16:02 -0700
+"H. Peter Anvin" <hpa@zytor.com> wrote:
 
---2FkSFaIQeDFoAt0B
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> On 06/11/2012 08:05 PM, T Makphaibulchoke wrote:
+> > Cleaning up the file lib/decompress_unxz.c, moving all memory helper functions,
+> > e.g. memmove, to a new common source file, lib/boot/mem.c.
+> > 
+> > In additon to including the decompressor, any architecture supporting the XZ
+> > decompression needs to also include this new source file.
+> > 
+> > Also moving some other duplicated memory helper functions to this new source
+> > file from the arm, s390, sh and x86 preboot environments.  All 4 architectures
+> > build without error when using any compression.
+> > 
+> > Adding a new file lib/boot/mem.c, containing memory helper functions required
+> > by different compression types.
+> > 
+> > Adding memcmp declaration workaround and removing the memmove and memcpy
+> > defines workaround from arch/arm/boot/compressed/decompress.c
+> > 
+> > Removing the common functions, memmove, memcmp and memset, and adding the new
+> > source file include to arch/arm/boot/compressed/string.c.
+> > 
+> > Removing the memcpy and memmove functions and adding the new source file
+> > include to arch/s390/boot/compressed/misc.c.
+> > 
+> > Removing the memset function and adding the new source file include to
+> > arch/sh/boot/compressed/misc.c
+> > 
+> > Removing the memset function from arch/x86/boot/compressed/misc.c and move
+> > the memcpy function to the file arch/x86/boot/compressed/string.c
+> > 
+> > Adding the memcpy function and the new source file include to
+> > arch/x86/boot/compressed/string.c
+> > 
+> 
+> I can take this if Russell, Martin or Heiko, and Paul are willing to ack it.
 
-On Wed, Jun 13, 2012 at 09:59:27AM +0800, Axel Lin wrote:
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Just tested kernel compression with all five compression algorithms,
+works fine for s390.
 
-No, this (and generally a large proportion of possible usages of
-devm_request_threaded_irq()) is a bad idea - we need to ensure that the
-interrupt cannot fire when we're not in a position to handle it which in
-thi case means after the regulator is unregistered.  Since we're not
-doing anything to explicitly quiesce the interrupt other than free it we
-need to ensure that the free_irq() happens strictly before the regulator
-is unregistered.
+Acked-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
---2FkSFaIQeDFoAt0B
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+-- 
+blue skies,
+   Martin.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+"Reality continues to ruin my life." - Calvin.
 
-iQIcBAEBAgAGBQJP2F2hAAoJEBus8iNuMP3d80MP/1N00G4QO2jQChjE/9N/i6G6
-uYDqaFomRGipxLvBHZrPe2OoER4xCU7kvwRHkwx1KXSilU4JQQ5cNxd9kO0dWAzl
-XJbrWREmDBUAJmWPD4Nbc5gs4GWBKShbrpkl0c5pJmnBLv+sJgrnbfCjCj3DbbZB
-Hs/RuXV6+4ZGbPZSFDOskyOwu7R1XtXd4wegKHRhuyHlnfbBJBSvi/E9cQUdKWAQ
-pyxbwV1FGsj+c3yIFues/cgzzrVkUKLXu4FocwLAFe2SCG8fC+rNTAqETS8G3Qr/
-A9Q33B6R0oW5kUp1ZPPLikqBpepWLqfsoYGzsYlchlQ0nkE4YMgWh59e16SUdi5d
-vFVgLGpxhSA2W8jYcNdFH5y1vuvE+nxtjQ1Erk/yac/KSqyjtL4n+i3OCnVl4x2l
-Ve11UjJuYhx/WfbXLwOSDvj8d+Rt5d4uxK+QVAoQAhBBQUEYROGfRGTEmv6V6CLc
-jPSOQ2Z3muTVU6vscubSQW3se8fd5VHJxhksfrdiesUUaOfURZLZlqZ0eMF5HhKi
-LjtRZVk1eEpEy8toEiNu/fgATO0cTkow2Gp8PKBkJF226DNdjV3CqkQVPNQC1aZb
-VuJL3DYxPfhgZVHOm3XpMNSai7w0+WtJOl/Ceu9YOyObc0retkzGXygIZybat6Vd
-+Pe+5UUlPh6nRy1SKrVW
-=Eze7
------END PGP SIGNATURE-----
-
---2FkSFaIQeDFoAt0B--
