@@ -1,53 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754402Ab2FMPzu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 11:55:50 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:43983 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754166Ab2FMPzo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 11:55:44 -0400
-Message-ID: <4FD8B7FC.3060708@wwwdotorg.org>
-Date: Wed, 13 Jun 2012 09:55:40 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1754463Ab2FMP4x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 11:56:53 -0400
+Received: from fieldses.org ([174.143.236.118]:38091 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751324Ab2FMP4w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 11:56:52 -0400
+Date: Wed, 13 Jun 2012 11:56:51 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: "J. Bruce Fields" <bfields@redhat.com>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: RPC: fragment too large with transition to 3.4
+Message-ID: <20120613155651.GB1178@fieldses.org>
+References: <20120610090342.GA5076@cucamonga.audible.transient.net>
+ <20120611161425.GF31109@pad.fieldses.org>
+ <20120612101339.GB30293@cucamonga.audible.transient.net>
+ <20120612111802.GI31109@pad.fieldses.org>
+ <20120612123644.GA16430@fieldses.org>
+ <20120613060627.GA11421@cucamonga.audible.transient.net>
+ <20120613092703.GA4701@cucamonga.audible.transient.net>
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: khali@linux-fr.org, w.sang@pengutronix.de, ben-linux@fluff.org,
-        olof@lixom.net, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
-Subject: Re: [PATCH V3 1/4] i2c: tegra: make sure register writes completes
-References: <1339582359-7911-1-git-send-email-ldewangan@nvidia.com> <1339582359-7911-2-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1339582359-7911-2-git-send-email-ldewangan@nvidia.com>
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120613092703.GA4701@cucamonga.audible.transient.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/13/2012 04:12 AM, Laxman Dewangan wrote:
-> The Tegra PPSB (an peripheral bus) queues writes transactions.
-> In order to guarantee that writes have completed before a
-> certain time, a read transaction to a register on the same
-> bus must be executed.
-> This is necessary in situations such as when clearing an
-> interrupt status or enable, so that when returning from an
-> interrupt handler, the HW has already de-asserted its
-> interrupt status output, which will avoid spurious interrupts.
+On Wed, Jun 13, 2012 at 09:27:03AM +0000, Jamie Heilman wrote:
+> Jamie Heilman wrote:
+> > It's looking like my issues with "RPC: fragment too large" may be
+> > something else entirely at this point, I've noticed other weird
+> > network behavior that I'm gonna have to try to isolate before I keep
+> > blaming nfs changes.  Though for some reason my
+> > /proc/fs/nfsd/max_block_size ends up only 128KiB w/3.4 where it was
+> > 512KiB w/3.3.
+> 
+> OK, I get it now.  32-bit PAE system w/4G of RAM (minus a chunk for
+> the IGP video etc.) for my NFS server, and the max_block_size
+> calculation changed significantly in commit
+> 508f92275624fc755104b17945bdc822936f1918 to account for rpc buffers
+> only being in low memory.  That means whereas in 3.3 the math came out
+> to having a target size of roughly 843241 my new target size in 3.4 is
+> only 219959-ish, so choosing 128KiB is understandable.  The problem
+> was that all my clients had negotiated their nfs mounts against the
+> v3.3 value of 512KiB, and when I rebooted into 3.4... they hit the
+> wall attempting larger transfers and become uselessly stuck at that
+> point.  If I remount everything before doing any large transfers, then
+> it negotiates a lower wsize and things work fine.  So everything is
+> working as planned I suppose... the transition between 3.3 and 3.4 is
+> just a bit rough.
 
-> diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
+Oh, got it, thanks.  Yes, now I remember I've seen that problem before.
 
-> @@ -165,6 +165,10 @@ static void i2c_writel(struct tegra_i2c_dev *i2c_dev, u32 val,
->  	unsigned long reg)
->  {
->  	writel(val, i2c_dev->base + tegra_i2c_reg_addr(i2c_dev, reg));
-> +
-> +	/* Read back register to make sure that register writes completed */
-> +	if (reg != I2C_TX_FIFO)
-> +		readl(i2c_dev->base + tegra_i2c_reg_addr(i2c_dev, reg));
+Perhaps we should be more careful about tweaks to that calculation that
+may result in a decreased r/wsize.  You could also get into the same
+situation if you took the server down to change the amount of RAM, but
+only if you were *removing* memory, which is probably unusual.
 
-I guess that's fine, but it sure does seem rather heavy-weight. Don't
-you only need to do the readback if you just wrote to the IRQ status or
-mask registers, rather than if you wrote to /any/ register other than
-the FIFO?
+Best might be if distributions set max_block_size--it should be easier
+for userspace to remember the value across reboots.
+
+While we're at it we also want to create an /etc/nfsd.conf that rpc.nfsd
+could read, for setting this, and number of threads, and a few other
+things.  The systemd people would prefer that to the current practice of
+sourcing a shell script in /etc/sysconfig or /etc/default.
+
+We could warn about this problem ("don't decrease max_block_size on a
+server without unmounting clients first") next to that variable in the
+config file.
+
+I think we can do the same calculation as nfsd_create_serv() does from
+userspace to set an initial default.  I don't know if that should happen
+on package install or on first run of rpc.nfsd.
+
+For now that's a project looking for a volunteer, though.
+
+--b.
