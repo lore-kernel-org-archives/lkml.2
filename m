@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754762Ab2FMV3v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 17:29:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51675 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754420Ab2FMV3u (ORCPT
+	id S1754690Ab2FMVbF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 17:31:05 -0400
+Received: from casper.infradead.org ([85.118.1.10]:40214 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754484Ab2FMVbD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 17:29:50 -0400
-Date: Wed, 13 Jun 2012 14:29:49 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH 2/2] msync: start async writeout when MS_ASYNC
-Message-Id: <20120613142949.734818a8.akpm@linux-foundation.org>
-In-Reply-To: <1338497035-13014-3-git-send-email-pbonzini@redhat.com>
-References: <1338497035-13014-1-git-send-email-pbonzini@redhat.com>
-	<1338497035-13014-3-git-send-email-pbonzini@redhat.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
+	Wed, 13 Jun 2012 17:31:03 -0400
+Message-ID: <1339623054.8980.64.camel@twins>
+Subject: Re: [PATCH 3/4] perf, x86: check ucode before disabling PEBS on
+ SandyBridge v3
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org, eranian@google.com,
+        Andi Kleen <ak@linux.intel.com>
+Date: Wed, 13 Jun 2012 23:30:54 +0200
+In-Reply-To: <1339618842-26636-4-git-send-email-andi@firstfloor.org>
+References: <1339618842-26636-1-git-send-email-andi@firstfloor.org>
+	 <1339618842-26636-4-git-send-email-andi@firstfloor.org>
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 31 May 2012 22:43:55 +0200
-Paolo Bonzini <pbonzini@redhat.com> wrote:
+On Wed, 2012-06-13 at 13:20 -0700, Andi Kleen wrote:
 
-> msync.c says that applications had better use fsync() or fadvise(FADV_DONTNEED)
-> instead of MS_ASYNC.  Both advices are really bad:
-> 
-> * fsync() can be a replacement for MS_SYNC, not for MS_ASYNC;
-> 
-> * fadvise(FADV_DONTNEED) invalidates the pages completely, which will make
->   later accesses expensive.
-> 
-> Having the possibility to schedule a writeback immediately is an advantage
-> for the applications.  They can do the same thing that fadvise does,
-> but without the invalidation part.  The implementation is also similar
-> to fadvise, but with tag-and-write enabled.
-> 
-> One example is if you are implementing a persistent dirty bitmap.
-> Whenever you set bits to 1 you need to synchronize it with MS_SYNC, so
-> that dirtiness is reported properly after a host crash.  If you have set
-> any bits to 0, getting them to disk is not needed for correctness, but
-> it is still desirable to save some work after a host crash.  You could
-> simply use MS_SYNC in a separate thread, but MS_ASYNC provides exactly
-> the desired semantics and is easily done in the kernel.
-> 
-> If the application does not want to start I/O, it can simply call msync
-> with flags equal to MS_INVALIDATE.  This one remains a no-op, as it should
-> be on a reasonable implementation.
+> +static int check_pebs_quirks(void)
+> +{
+> +	int model = cpu_data(smp_processor_id()).x86_model;
+> +
+> +	/* do not have PEBS to begin with */
+> +	if (!x86_pmu.pebs)
+> +		return 0;
+> +
+> +	/*
+> +	 * check ucode version for SNB, SNB-EP
+> +	 */
+> +	if ((model == 42 && boot_cpu_data.microcode < 0x28) ||
+> +		(model == 45 && boot_cpu_data.microcode < 0x618)) {
 
-Means that people will find that their msync(MS_ASYNC) call will newly
-start IO.  This may well be undesirable for some.
+Stephane actually wrote:
 
-Also, it hardwires into the kernel behaviour which userspace itself
-could have initiated, with sync_file_range().  ie: reduced flexibility.
+"Ok, so to close on this, I tried the 6/6/2012 ucode update on a few
+SNB-EP systems.
 
-Perhaps we can update the msync.c code comments to direct people to
-sync_file_range()?
+I got two answers depending on the stepping:
+C1 (stepping 6) -> 0x618
+C2 (stepping 7) -> 0x70c
 
-
-One wonders how msync() works with nonlinear mappings.  I guess
-"badly".  I think this was all discussed when we merged
-remap_file_pages() (what a mistake that was) and we decided "too hard".
+So we need to check x86_mask for stepping and adjust the value of
+snb_ucode_rev accordingly for model 45."
 
