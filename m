@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753347Ab2FMQUu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 12:20:50 -0400
+	id S1754430Ab2FMQUs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 12:20:48 -0400
 Received: from mail-ee0-f46.google.com ([74.125.83.46]:40424 "EHLO
 	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754277Ab2FMQUV (ORCPT
+	with ESMTP id S1754256Ab2FMQUS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 12:20:21 -0400
+	Wed, 13 Jun 2012 12:20:18 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -24,9 +24,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Stephen Hemminger <shemminger@vyatta.com>,
         Steven Rostedt <rostedt@goodmis.org>,
         Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
-Subject: [PATCH 5/7] x86: Syscall hooks for adaptive nohz mode
-Date: Wed, 13 Jun 2012 18:19:55 +0200
-Message-Id: <1339604397-8758-6-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 4/7] nohz: Account user and system times in adaptive nohz mode
+Date: Wed, 13 Jun 2012 18:19:54 +0200
+Message-Id: <1339604397-8758-5-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1339604397-8758-1-git-send-email-fweisbec@gmail.com>
 References: <1339604397-8758-1-git-send-email-fweisbec@gmail.com>
@@ -34,9 +34,22 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add syscall hooks to notify syscall entry and exit on
-CPUs running in full adative nohz mode. This way we
-can account the cputime elapsed in kernel boundaries.
+When we'll run in adaptive tickless mode, the tick won't be
+there anymore to maintain the user/system cputime on every jiffy.
+
+To solve this, save a snapshot of the jiffies on the boundaries of
+the kernel and keep track of where we saved it: user or system entry.
+On top of this, we account the cputime elapsed when we cross
+back the kernel boundaries and when we deschedule the task.
+
+We do this only when requested through the TIF_NOHZ thread flag.
+This will later be used by the timer engine when the tick gets
+stopped.
+
+This only settles system and user cputime accounting on kernel
+boundaries. Further patches will complete the handling of adaptive
+tickless cputime by saving and flushing the time on well defined
+points: tick stop, tick restart, cputime report to user, etc...
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Alessio Igor Bogani <abogani@kernel.org>
@@ -58,84 +71,136 @@ Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/x86/include/asm/thread_info.h |   10 +++++++---
- arch/x86/kernel/ptrace.c           |    5 +++++
- 2 files changed, 12 insertions(+), 3 deletions(-)
+ include/linux/tick.h     |   14 ++++++++
+ kernel/sched/core.c      |    1 +
+ kernel/time/tick-sched.c |   79 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 94 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/thread_info.h b/arch/x86/include/asm/thread_info.h
-index 89f794f..c535d84 100644
---- a/arch/x86/include/asm/thread_info.h
-+++ b/arch/x86/include/asm/thread_info.h
-@@ -89,6 +89,7 @@ struct thread_info {
- #define TIF_NOTSC		16	/* TSC is not accessible in userland */
- #define TIF_IA32		17	/* IA32 compatibility process */
- #define TIF_FORK		18	/* ret_from_fork */
-+#define TIF_NOHZ		19	/* in adaptive nohz mode */
- #define TIF_MEMDIE		20	/* is terminating due to OOM killer */
- #define TIF_DEBUG		21	/* uses debug registers */
- #define TIF_IO_BITMAP		22	/* uses I/O bitmap */
-@@ -114,6 +115,7 @@ struct thread_info {
- #define _TIF_NOTSC		(1 << TIF_NOTSC)
- #define _TIF_IA32		(1 << TIF_IA32)
- #define _TIF_FORK		(1 << TIF_FORK)
-+#define _TIF_NOHZ		(1 << TIF_NOHZ)
- #define _TIF_DEBUG		(1 << TIF_DEBUG)
- #define _TIF_IO_BITMAP		(1 << TIF_IO_BITMAP)
- #define _TIF_FORCED_TF		(1 << TIF_FORCED_TF)
-@@ -126,12 +128,13 @@ struct thread_info {
- /* work to do in syscall_trace_enter() */
- #define _TIF_WORK_SYSCALL_ENTRY	\
- 	(_TIF_SYSCALL_TRACE | _TIF_SYSCALL_EMU | _TIF_SYSCALL_AUDIT |	\
--	 _TIF_SECCOMP | _TIF_SINGLESTEP | _TIF_SYSCALL_TRACEPOINT)
-+	 _TIF_SECCOMP | _TIF_SINGLESTEP | _TIF_SYSCALL_TRACEPOINT |	\
-+	 _TIF_NOHZ)
+diff --git a/include/linux/tick.h b/include/linux/tick.h
+index 0578207..79623fc 100644
+--- a/include/linux/tick.h
++++ b/include/linux/tick.h
+@@ -151,4 +151,18 @@ static inline u64 get_cpu_idle_time_us(int cpu, u64 *unused) { return -1; }
+ static inline u64 get_cpu_iowait_time_us(int cpu, u64 *unused) { return -1; }
+ # endif /* !NO_HZ */
  
- /* work to do in syscall_trace_leave() */
- #define _TIF_WORK_SYSCALL_EXIT	\
- 	(_TIF_SYSCALL_TRACE | _TIF_SYSCALL_AUDIT | _TIF_SINGLESTEP |	\
--	 _TIF_SYSCALL_TRACEPOINT)
-+	 _TIF_SYSCALL_TRACEPOINT | _TIF_NOHZ)
- 
- /* work to do on interrupt/exception return */
- #define _TIF_WORK_MASK							\
-@@ -141,7 +144,8 @@ struct thread_info {
- 
- /* work to do on any return to user space */
- #define _TIF_ALLWORK_MASK						\
--	((0x0000FFFF & ~_TIF_SECCOMP) | _TIF_SYSCALL_TRACEPOINT)
-+	((0x0000FFFF & ~_TIF_SECCOMP) | _TIF_SYSCALL_TRACEPOINT |	\
-+	_TIF_NOHZ)
- 
- /* Only used for 64 bit */
- #define _TIF_DO_NOTIFY_MASK						\
-diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
-index c4c6a5c..e9dfd40 100644
---- a/arch/x86/kernel/ptrace.c
-+++ b/arch/x86/kernel/ptrace.c
-@@ -21,6 +21,7 @@
- #include <linux/signal.h>
- #include <linux/perf_event.h>
- #include <linux/hw_breakpoint.h>
-+#include <linux/tick.h>
- 
- #include <asm/uaccess.h>
- #include <asm/pgtable.h>
-@@ -1463,6 +1464,8 @@ long syscall_trace_enter(struct pt_regs *regs)
++#ifdef CONFIG_NO_HZ_FULL
++extern void tick_nohz_enter_kernel(void);
++extern void tick_nohz_exit_kernel(void);
++extern void tick_nohz_enter_exception(struct pt_regs *regs);
++extern void tick_nohz_exit_exception(struct pt_regs *regs);
++extern void tick_nohz_pre_schedule(void);
++#else
++static inline void tick_nohz_enter_kernel(void) { }
++static inline void tick_nohz_exit_kernel(void) { }
++static inline void tick_nohz_enter_exception(struct pt_regs *regs) { }
++static inline void tick_nohz_exit_exception(struct pt_regs *regs) { }
++static inline void tick_nohz_pre_schedule(void) { }
++#endif /* !NO_HZ_FULL */
++
+ #endif
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 013e6f2..72acb05 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1910,6 +1910,7 @@ static inline void
+ prepare_task_switch(struct rq *rq, struct task_struct *prev,
+ 		    struct task_struct *next)
  {
- 	long ret = 0;
- 
-+	tick_nohz_enter_kernel();
-+
- 	/*
- 	 * If we stepped into a sysenter/syscall insn, it trapped in
- 	 * kernel mode; do_debug() cleared TF and set TIF_SINGLESTEP.
-@@ -1526,4 +1529,6 @@ void syscall_trace_leave(struct pt_regs *regs)
- 			!test_thread_flag(TIF_SYSCALL_EMU);
- 	if (step || test_thread_flag(TIF_SYSCALL_TRACE))
- 		tracehook_report_syscall_exit(regs, step);
-+
-+	tick_nohz_exit_kernel();
++	tick_nohz_pre_schedule();
+ 	sched_info_switch(prev, next);
+ 	perf_event_task_sched_out(prev, next);
+ 	fire_sched_out_preempt_notifiers(prev, next);
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 66ae73a..3807d71 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -786,6 +786,85 @@ static inline void tick_check_nohz(int cpu)
+ 	}
  }
+ 
++#ifdef CONFIG_NO_HZ_FULL
++void tick_nohz_exit_kernel(void)
++{
++	unsigned long flags;
++	struct tick_sched *ts;
++	unsigned long delta_jiffies;
++
++	if (!test_thread_flag(TIF_NOHZ))
++		return;
++
++	local_irq_save(flags);
++
++	ts = &__get_cpu_var(tick_cpu_sched);
++
++	WARN_ON_ONCE(!ts->tick_stopped);
++	WARN_ON_ONCE(ts->saved_jiffies_whence != JIFFIES_SAVED_SYS);
++
++	delta_jiffies = jiffies - ts->saved_jiffies;
++	account_system_ticks(current, delta_jiffies);
++
++	ts->saved_jiffies = jiffies;
++	ts->saved_jiffies_whence = JIFFIES_SAVED_USER;
++
++	local_irq_restore(flags);
++}
++
++void tick_nohz_enter_kernel(void)
++{
++	unsigned long flags;
++	struct tick_sched *ts;
++	unsigned long delta_jiffies;
++
++	if (!test_thread_flag(TIF_NOHZ))
++		return;
++
++	local_irq_save(flags);
++
++	ts = &__get_cpu_var(tick_cpu_sched);
++
++	WARN_ON_ONCE(!ts->tick_stopped);
++	WARN_ON_ONCE(ts->saved_jiffies_whence != JIFFIES_SAVED_USER);
++
++	delta_jiffies = jiffies - ts->saved_jiffies;
++	account_user_ticks(current, delta_jiffies);
++
++	ts->saved_jiffies = jiffies;
++	ts->saved_jiffies_whence = JIFFIES_SAVED_SYS;
++
++	local_irq_restore(flags);
++}
++
++void tick_nohz_enter_exception(struct pt_regs *regs)
++{
++	if (user_mode(regs))
++		tick_nohz_enter_kernel();
++}
++
++void tick_nohz_exit_exception(struct pt_regs *regs)
++{
++	if (user_mode(regs))
++		tick_nohz_exit_kernel();
++}
++
++/*
++ * Flush cputime and clear hooks before context switch so that
++ * we account the time spent tickless.
++ */
++void tick_nohz_pre_schedule(void)
++{
++	struct tick_sched *ts;
++
++	if (test_thread_flag(TIF_NOHZ)) {
++		ts = &__get_cpu_var(tick_cpu_sched);
++		tick_nohz_account_ticks(ts);
++		clear_thread_flag(TIF_NOHZ);
++	}
++}
++#endif /* CONFIG_NO_HZ_FULL */
++
+ #else
+ 
+ static inline void tick_nohz_switch_to_nohz(void) { }
 -- 
 1.7.5.4
 
