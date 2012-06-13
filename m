@@ -1,175 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753796Ab2FMCDk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 22:03:40 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:58361 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752913Ab2FMCDi (ORCPT
+	id S1752968Ab2FMCQQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 22:16:16 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:17768 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751035Ab2FMCQO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 22:03:38 -0400
-From: John Stultz <john.stultz@linaro.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 03/15] ARM: etm: Don't try to clear the buffer full status after reading the buffer
-Date: Tue, 12 Jun 2012 19:01:21 -0700
-Message-Id: <1339552887-17204-4-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.7.3.2.146.gca209
-In-Reply-To: <1339552887-17204-1-git-send-email-john.stultz@linaro.org>
-References: <1339552887-17204-1-git-send-email-john.stultz@linaro.org>
+	Tue, 12 Jun 2012 22:16:14 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ak4JAJ731095LKXc/2dsb2JhbABFtAQEgS2BCIIYAQEEATocIwULCAMOCi4UJQMhE4gGBLlbFIsTSYVIA5UgiSWGWIJy
+Date: Wed, 13 Jun 2012 12:16:10 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Dave Chinner <dchinner@redhat.com>, xfs@oss.sgi.com
+Subject: Re: [PATCH 2/2] xfs: add FALLOC_FL_ZERO_RANGE to fallocate
+Message-ID: <20120613021610.GQ22848@dastard>
+References: <1339515364-17374-1-git-send-email-pbonzini@redhat.com>
+ <1339515364-17374-3-git-send-email-pbonzini@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12061302-7282-0000-0000-000009DBDF1B
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339515364-17374-3-git-send-email-pbonzini@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arve Hjønnevåg <arve@android.com>
+On Tue, Jun 12, 2012 at 05:36:04PM +0200, Paolo Bonzini wrote:
+> This is implemented in the same way as the other fallocate modes.  All of
+> them map to XFS ioctls that are implemented by xfs_change_file_space.
+> 
+> However, we need to cap the length to the inode size if the user requested
+> FALLOC_FL_KEEP_SIZE.
 
-If the write address was at the end of the buffer, toggling the trace
-capture bit would set the RAM-full status instead of clearing it, and
-if any of the stop bits in the formatter is set toggling the trace
-capture bit may not do anything.
+That's done on purpose.  fallocate() explicitly allows preallocation
+beyond EOF and that's what the FALLOC_FL_KEEP_SIZE flag is for - to
+allow both offset and offset+len to lie beyond the current inode
+size and have the preallocation succeed without changing the file
+size.
 
-Instead use the read position to find out if the data has already
-been returned.
+This is so that we can prevent fragmentation of slow growing
+append-only files like log files - we can preallocate way beyond EOF
+without changing EOF so as the file grows over days and weeks it
+does not fragment.
 
-This also fixes the read function so it works when the trace buffer is
-larger than the buffer passed in from user space. The old version
-would reset the trace buffer pointers after every read, so the second
-call to read would always return 0.
+Similarly, hole punch needs to be able to punch out such
+preallocated extents beyond EOF if requested, and it definitely must
+not change EOF. So capping/erroring out when offset/offset+len is
+definitely the wrong thing to do when FALLOC_FL_KEEP_SIZE is set.
 
-CC: Russell King <linux@arm.linux.org.uk>
-CC: Paul Gortmaker <paul.gortmaker@windriver.com>
-CC: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-CC: Mathieu Poirier <mathieu.poirier@linaro.org>
+> Cc: Dave Chinner <dchinner@redhat.com>
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> ---
+>  fs/xfs/xfs_file.c |   36 ++++++++++++++++++++++++------------
+>  1 files changed, 24 insertions(+), 12 deletions(-)
+> 
+> diff --git a/fs/xfs/xfs_file.c b/fs/xfs/xfs_file.c
+> index 9f7ec15..c811cf9 100644
+> --- a/fs/xfs/xfs_file.c
+> +++ b/fs/xfs/xfs_file.c
+> @@ -818,33 +818,45 @@ xfs_file_fallocate(
+>  	loff_t		new_size = 0;
+>  	xfs_flock64_t	bf;
+>  	xfs_inode_t	*ip = XFS_I(inode);
+> -	int		cmd = XFS_IOC_RESVSP;
+> +	int		cmd;
+>  	int		attr_flags = XFS_ATTR_NOLOCK;
+>  
+> -	if (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE))
+> +	if (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE |
+> +		     FALLOC_FL_ZERO_RANGE))
+>  		return -EOPNOTSUPP;
+>  
+> +	BUG_ON((mode & FALLOC_FL_PUNCH_HOLE) && (mode & FALLOC_FL_ZERO_RANGE));
 
-Acked-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Signed-off-by: Arve Hjønnevåg <arve@android.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- arch/arm/kernel/etm.c |   58 ++++++++++++++++++++++---------------------------
- 1 files changed, 26 insertions(+), 32 deletions(-)
+Never put BUG_ON() or BUG() in XFS code that can return an error.
+Return EINVAL if we chose not to support it, and if it's really
+something we consider bad, emit a warning to syslog (i.e.
+xfs_warn()) and potentially add a ASSERT() case so that debug
+kernels will trip over it. Nobody should be panicing a production
+system just because a user supplied a set of incorrect syscall
+paramters....
 
-diff --git a/arch/arm/kernel/etm.c b/arch/arm/kernel/etm.c
-index d7622f9..a51bccc 100644
---- a/arch/arm/kernel/etm.c
-+++ b/arch/arm/kernel/etm.c
-@@ -92,6 +92,7 @@ static int trace_start(struct tracectx *t)
- 
- 	etb_unlock(t);
- 
-+	etb_writel(t, 0, ETBR_WRITEADDR);
- 	etb_writel(t, 0, ETBR_FORMATTERCTRL);
- 	etb_writel(t, 1, ETBR_CTRL);
- 
-@@ -185,24 +186,15 @@ static int trace_stop(struct tracectx *t)
- static int etb_getdatalen(struct tracectx *t)
- {
- 	u32 v;
--	int rp, wp;
-+	int wp;
- 
- 	v = etb_readl(t, ETBR_STATUS);
- 
- 	if (v & 1)
- 		return t->etb_bufsz;
- 
--	rp = etb_readl(t, ETBR_READADDR);
- 	wp = etb_readl(t, ETBR_WRITEADDR);
--
--	if (rp > wp) {
--		etb_writel(t, 0, ETBR_READADDR);
--		etb_writel(t, 0, ETBR_WRITEADDR);
--
--		return 0;
--	}
--
--	return wp - rp;
-+	return wp;
- }
- 
- /* sysrq+v will always stop the running trace and leave it at that */
-@@ -235,14 +227,6 @@ static void etm_dump(void)
- 		printk("%08x", cpu_to_be32(etb_readl(t, ETBR_READMEM)));
- 	printk(KERN_INFO "\n--- ETB buffer end ---\n");
- 
--	/* deassert the overflow bit */
--	etb_writel(t, 1, ETBR_CTRL);
--	etb_writel(t, 0, ETBR_CTRL);
--
--	etb_writel(t, 0, ETBR_TRIGGERCOUNT);
--	etb_writel(t, 0, ETBR_READADDR);
--	etb_writel(t, 0, ETBR_WRITEADDR);
--
- 	etb_lock(t);
- }
- 
-@@ -276,6 +260,10 @@ static ssize_t etb_read(struct file *file, char __user *data,
- 	struct tracectx *t = file->private_data;
- 	u32 first = 0;
- 	u32 *buf;
-+	int wpos;
-+	int skip;
-+	long wlength;
-+	loff_t pos = *ppos;
- 
- 	mutex_lock(&t->mutex);
- 
-@@ -290,28 +278,34 @@ static ssize_t etb_read(struct file *file, char __user *data,
- 	if (total == t->etb_bufsz)
- 		first = etb_readl(t, ETBR_WRITEADDR);
- 
-+	if (pos > total * 4) {
-+		skip = 0;
-+		wpos = total;
-+	} else {
-+		skip = (int)pos % 4;
-+		wpos = (int)pos / 4;
-+	}
-+	total -= wpos;
-+	first = (first + wpos) % t->etb_bufsz;
-+
- 	etb_writel(t, first, ETBR_READADDR);
- 
--	length = min(total * 4, (int)len);
--	buf = vmalloc(length);
-+	wlength = min(total, DIV_ROUND_UP(skip + (int)len, 4));
-+	length = min(total * 4 - skip, (int)len);
-+	buf = vmalloc(wlength * 4);
- 
--	dev_dbg(t->dev, "ETB buffer length: %d\n", total);
-+	dev_dbg(t->dev, "ETB read %ld bytes to %lld from %ld words at %d\n",
-+		length, pos, wlength, first);
-+	dev_dbg(t->dev, "ETB buffer length: %d\n", total + wpos);
- 	dev_dbg(t->dev, "ETB status reg: %x\n", etb_readl(t, ETBR_STATUS));
--	for (i = 0; i < length / 4; i++)
-+	for (i = 0; i < wlength; i++)
- 		buf[i] = etb_readl(t, ETBR_READMEM);
- 
--	/* the only way to deassert overflow bit in ETB status is this */
--	etb_writel(t, 1, ETBR_CTRL);
--	etb_writel(t, 0, ETBR_CTRL);
--
--	etb_writel(t, 0, ETBR_WRITEADDR);
--	etb_writel(t, 0, ETBR_READADDR);
--	etb_writel(t, 0, ETBR_TRIGGERCOUNT);
--
- 	etb_lock(t);
- 
--	length -= copy_to_user(data, buf, length);
-+	length -= copy_to_user(data, (u8 *)buf + skip, length);
- 	vfree(buf);
-+	*ppos = pos + length;
- 
- out:
- 	mutex_unlock(&t->mutex);
+Cheers,
+
+Dave.
 -- 
-1.7.3.2.146.gca209
-
+Dave Chinner
+david@fromorbit.com
