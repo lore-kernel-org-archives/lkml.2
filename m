@@ -1,134 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753776Ab2FMLen (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 07:34:43 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:40200 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753594Ab2FMLel (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 07:34:41 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
-        rientjes@google.com, mhocko@suse.cz, akpm@linux-foundation.org,
-        hannes@cmpxchg.org
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -V9 [updated] 10/15] hugetlb/cgroup: Add the cgroup pointer to page lru
-Date: Wed, 13 Jun 2012 17:04:30 +0530
-Message-Id: <1339587270-5831-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1339583254-895-11-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-References: <1339583254-895-11-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-x-cbid: 12061311-2000-0000-0000-000007E72F53
+	id S1753731Ab2FMLgd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 07:36:33 -0400
+Received: from mga09.intel.com ([134.134.136.24]:16557 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753436Ab2FMLgc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 07:36:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="157039697"
+From: Artem Bityutskiy <dedekind1@gmail.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/4] hfsplus: stop using write_supers and s_dirt
+Date: Wed, 13 Jun 2012 14:37:47 +0300
+Message-Id: <1339587471-2713-1-git-send-email-dedekind1@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+This patch-set makes HFSPLUS file-system stop using the VFS '->write_supers()'
+call-back and the '->s_dirt' superblock field because I plan to remove them
+once all users are gone.
 
-Add the hugetlb cgroup pointer to 3rd page lru.next. This limit
-the usage to hugetlb cgroup to only hugepages with 3 or more
-normal pages. I guess that is an acceptable limitation.
+Like the other similar patch-sets, we switch to a delayed job for writing out
+the superblock instead of using the 's_dirt' flag. Additionally, this patch-set
+includes several clean-ups.
 
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
----
- include/linux/hugetlb_cgroup.h |   37 +++++++++++++++++++++++++++++++++++++
- mm/hugetlb.c                   |    4 ++++
- 2 files changed, 41 insertions(+)
+Reminder:
 
-diff --git a/include/linux/hugetlb_cgroup.h b/include/linux/hugetlb_cgroup.h
-index e9944b4..2e4cb6b 100644
---- a/include/linux/hugetlb_cgroup.h
-+++ b/include/linux/hugetlb_cgroup.h
-@@ -18,8 +18,34 @@
- #include <linux/res_counter.h>
- 
- struct hugetlb_cgroup;
-+/*
-+ * Minimum page order trackable by hugetlb cgroup.
-+ * At least 3 pages are necessary for all the tracking information.
-+ */
-+#define HUGETLB_CGROUP_MIN_ORDER	2
- 
- #ifdef CONFIG_CGROUP_HUGETLB_RES_CTLR
-+
-+static inline struct hugetlb_cgroup *hugetlb_cgroup_from_page(struct page *page)
-+{
-+	VM_BUG_ON(!PageHuge(page));
-+
-+	if (compound_order(page) < HUGETLB_CGROUP_MIN_ORDER)
-+		return NULL;
-+	return (struct hugetlb_cgroup *)page[2].lru.next;
-+}
-+
-+static inline
-+int set_hugetlb_cgroup(struct page *page, struct hugetlb_cgroup *h_cg)
-+{
-+	VM_BUG_ON(!PageHuge(page));
-+
-+	if (compound_order(page) < HUGETLB_CGROUP_MIN_ORDER)
-+		return -1;
-+	page[2].lru.next = (void *)h_cg;
-+	return 0;
-+}
-+
- static inline bool hugetlb_cgroup_disabled(void)
- {
- 	if (hugetlb_subsys.disabled)
-@@ -28,6 +54,17 @@ static inline bool hugetlb_cgroup_disabled(void)
- }
- 
- #else
-+static inline struct hugetlb_cgroup *hugetlb_cgroup_from_page(struct page *page)
-+{
-+	return NULL;
-+}
-+
-+static inline
-+int set_hugetlb_cgroup(struct page *page, struct hugetlb_cgroup *h_cg)
-+{
-+	return 0;
-+}
-+
- static inline bool hugetlb_cgroup_disabled(void)
- {
- 	return true;
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index e899a2d..6a449c5 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -28,6 +28,7 @@
- 
- #include <linux/io.h>
- #include <linux/hugetlb.h>
-+#include <linux/hugetlb_cgroup.h>
- #include <linux/node.h>
- #include "internal.h"
- 
-@@ -591,6 +592,7 @@ static void update_and_free_page(struct hstate *h, struct page *page)
- 				1 << PG_active | 1 << PG_reserved |
- 				1 << PG_private | 1 << PG_writeback);
- 	}
-+	VM_BUG_ON(hugetlb_cgroup_from_page(page));
- 	set_compound_page_dtor(page, NULL);
- 	set_page_refcounted(page);
- 	arch_release_hugepage(page);
-@@ -643,6 +645,7 @@ static void prep_new_huge_page(struct hstate *h, struct page *page, int nid)
- 	INIT_LIST_HEAD(&page->lru);
- 	set_compound_page_dtor(page, free_huge_page);
- 	spin_lock(&hugetlb_lock);
-+	set_hugetlb_cgroup(page, NULL);
- 	h->nr_huge_pages++;
- 	h->nr_huge_pages_node[nid]++;
- 	spin_unlock(&hugetlb_lock);
-@@ -892,6 +895,7 @@ static struct page *alloc_buddy_huge_page(struct hstate *h, int nid)
- 		INIT_LIST_HEAD(&page->lru);
- 		r_nid = page_to_nid(page);
- 		set_compound_page_dtor(page, free_huge_page);
-+		set_hugetlb_cgroup(page, NULL);
- 		/*
- 		 * We incremented the global counters already
- 		 */
--- 
-1.7.10
+The goal is to get rid of the 'sync_supers()' kernel thread. This kernel thread
+wakes up every 5 seconds (by default) and calls '->write_super()' for all
+mounted file-systems. And the bad thing is that this is done even if all the
+superblocks are clean. Moreover, many file-systems do not even need this end
+they do not register the '->write_super()' method at all (e.g., btrfs).
 
+So 'sync_supers()' most often just generates useless wake-ups and wastes power.
+I am trying to make all file-systems independent of '->write_super()' and plan
+to remove 'sync_supers()' and '->write_super()' completely once there are no
+more users.
+
+Al, in the past I was trying to upstream patches which optimized 'sync_super()',
+but you wanted me to kill it completely instead, which I am trying to do
+now, see http://lkml.org/lkml/2010/7/22/96
+
+Tested using the fsstress test from the LTP project.
+
+======
+Overall status:
+
+1.  ext4: patches submitted, waiting for review from Ted Ts'o:
+    https://lkml.org/lkml/2012/4/2/111
+2.  hfs: patches submitted, see
+    http://lkml.org/lkml/2012/6/12/82
+3.  hfsplus: this patch-set
+4.  udf: patch submitted, should be in Jan Kara's tree:
+    https://lkml.org/lkml/2012/6/4/233
+5.  exofs: patch submitted, not sure if it will go to the exofs tree:
+    https://lkml.org/lkml/2012/6/4/211
+6.  affs: patches submitted, should be in Al Viro's tree:
+    https://lkml.org/lkml/2012/6/6/400
+7.  ext2:     done, see commit f72cf5e223a28d3b3ea7dc9e40464fd534e359e8
+8.  vfat:     done, see commit 78491189ddb6d84d4a4abae992ed891a236d0263
+9.  jffs2:    done, see commit 208b14e507c00ff7f108e1a388dd3d8cc805a443
+10. reiserfs: done, see commit 033369d1af1264abc23bea2e174aa47cdd212f6f
+
+TODO: sysv, ufs
+======
+
+ fs/hfsplus/bitmap.c     |    4 ++--
+ fs/hfsplus/dir.c        |    2 +-
+ fs/hfsplus/hfsplus_fs.h |    7 +++++--
+ fs/hfsplus/inode.c      |    6 +++---
+ fs/hfsplus/super.c      |   46 ++++++++++++++++++++++++++++++++++------------
+ 5 files changed, 45 insertions(+), 20 deletions(-)
+
+Thanks,
+Artem.
