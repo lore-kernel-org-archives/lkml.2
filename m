@@ -1,69 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754164Ab2FMPNJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 11:13:09 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:40239 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753044Ab2FMPNH convert rfc822-to-8bit (ORCPT
+	id S1754282Ab2FMPO2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 11:14:28 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:50895 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751324Ab2FMPOZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 11:13:07 -0400
+	Wed, 13 Jun 2012 11:14:25 -0400
+Message-ID: <1339600457.2612.2.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: [PATCH 2/5] drivers/net/ethernet/dec/tulip: Use standard
+ __set_bit_le() function
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+CC: Akinobu Mita <akinobu.mita@gmail.com>,
+        Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>,
+        <akpm@linux-foundation.org>, <grundler@parisc-linux.org>,
+        <arnd@arndb.de>, <benh@kernel.crashing.org>, <avi@redhat.com>,
+        <mtosatti@redhat.com>, <linux-net-drivers@solarflare.com>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arch@vger.kernel.org>, <kvm@vger.kernel.org>
+Date: Wed, 13 Jun 2012 16:14:17 +0100
+In-Reply-To: <20120613230013.3cc59bf908616e94bb4ccef2@gmail.com>
+References: <20120613130054.b5695621.yoshikawa.takuya@oss.ntt.co.jp>
+	 <20120613130304.0186fa9d.yoshikawa.takuya@oss.ntt.co.jp>
+	 <CAC5umyj582T+9GbOYDzOAanmMcVZ-Fdxr7i-8GWf3gTSmtAKUA@mail.gmail.com>
+	 <20120613214157.0a5179d5358ec7f1b2646606@gmail.com>
+	 <CAC5umygutE35hVObuooWj=ADP6PZDy4cqLtxGnRtxRX8uTtGSw@mail.gmail.com>
+	 <20120613230013.3cc59bf908616e94bb4ccef2@gmail.com>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-In-Reply-To: <1339596420-18127-1-git-send-email-javi.merino@arm.com>
-References: <1339596420-18127-1-git-send-email-javi.merino@arm.com>
-Date: Wed, 13 Jun 2012 20:43:05 +0530
-Message-ID: <CAJe_Zhfv2WdQYyQZE9KrFYHQajmBh31jQk7N26BtYSL20TaCyQ@mail.gmail.com>
-Subject: Re: [PATCH] DMA: PL330: Fix racy mutex unlock
-From: Jassi Brar <jaswinder.singh@linaro.org>
-To: Javi Merino <javi.merino@arm.com>
-Cc: linux-kernel@vger.kernel.org, dan.j.williams@intel.com,
-        vinod.koul@intel.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [10.17.20.137]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 June 2012 19:37, Javi Merino <javi.merino@arm.com> wrote:
-> pl330_update() stores a pointer to the thrd->req that finished, which
-> contains a pointer to the corresponding pl330_req.  This is done with
-> the pl330_lock held.  Then, it iterates through the req_done list,
-> calling the callback for each of the requests that are done.  The
-> problem is that the driver releases the lock before calling the
-> callback for each of the callbacks.  pl330_submit_req() running in
-> another processor can then acquire the lock and insert another request
-> in one of the thrd->req that hasn't been processed yet, replacing the
-> pointer to pl330_req there.  When the callback returns in
-> pl330_update() and the next rqdone is popped from the list, it
-> dereferences the pl330_req pointer to the just scheduled pl330_req,
-> instead of the one that has finished, calling pl330 with the wrong r.
->
-> This patch fixes this by storing the pointer to pl330_req directly in
-> the list.
->
-.....
-> @@ -1683,7 +1683,7 @@ static void pl330_dotask(unsigned long data)
->  /* Returns 1 if state was updated, 0 otherwise */
->  static int pl330_update(const struct pl330_info *pi)
->  {
-> -       struct _pl330_req *rqdone;
-> +       struct pl330_req *rqdone, *tmp;
->        struct pl330_dmac *pl330;
->        unsigned long flags;
->        void __iomem *regs;
-> @@ -1750,7 +1750,10 @@ static int pl330_update(const struct pl330_info *pi)
->                        if (active == -1) /* Aborted */
->                                continue;
->
-> -                       rqdone = &thrd->req[active];
-> +                       /* Detach the req */
-> +                       rqdone = thrd->req[active].r;
-> +                       thrd->req[active].r = NULL;
-> +
-Doesn't this movement of "Detach the req" chunk effectively remain the
-same? Since that was already protected by the same lock. I thought I
-deliberately took care of that already.
+On Wed, 2012-06-13 at 23:00 +0900, Takuya Yoshikawa wrote:
+> On Wed, 13 Jun 2012 22:31:13 +0900
+> Akinobu Mita <akinobu.mita@gmail.com> wrote:
+> 
+> > >> Should this hash_table be converted from u16 hash_table[32] to
+> > >> DECLARE_BITMAP(hash_table, 16 * 32) to ensure that it is aligned
+> > >> on long-word boundary?
+> > >
+> > > I think hash_table is already long-word aligned because it is placed
+> > > right after a pointer.
+> > 
+> > I recommend converting to proper bitmap.  Because such an implicit
+> > assumption is easily broken by someone touching this function.
+> 
+> Do you mean something like:
+> 	DECLARE_BITMAP(__hash_table, 16 * 32);
+> 	u16 *hash_table = (u16 *)__hash_table;
+> ?
+[...]
 
-Do you see some real problem fixed by this patch? Info about that
-could help me better understand if I missed something here.
+Could this driver perhaps use:
 
-Thanks.
+	union hash_table {
+		DECLARE_BITMAP(bits, 16 * 32);
+		__le16 words[32];
+	};
+
+Ben.
+
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
