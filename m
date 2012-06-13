@@ -1,33 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753411Ab2FMMyS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 08:54:18 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:42519 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752885Ab2FMMyQ convert rfc822-to-8bit (ORCPT
+	id S1753568Ab2FMMyY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 08:54:24 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:52319 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753320Ab2FMMyX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 08:54:16 -0400
-Message-ID: <1339592046.8980.31.camel@twins>
-Subject: Re: [RFC 2/4] ARM: topology: factorize the update of sibling masks
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, devicetree-discuss@lists.ozlabs.org,
-        linux@arm.linux.org.uk, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Date: Wed, 13 Jun 2012 14:54:06 +0200
-In-Reply-To: <1339502524-10265-3-git-send-email-vincent.guittot@linaro.org>
-References: <1339502524-10265-1-git-send-email-vincent.guittot@linaro.org>
-	 <1339502524-10265-3-git-send-email-vincent.guittot@linaro.org>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Wed, 13 Jun 2012 08:54:23 -0400
+X-Authenticated: #7313500
+X-Provags-ID: V01U2FsdGVkX1+c4upRt02cNlmmnGMkgR2i2AqyxbGAqz4dJmFZlb
+	oXR27xN/NpgGrB
+From: "Jan-Simon =?iso-8859-1?q?M=F6ller?=" <dl9pf@gmx.de>
+To: linux-kernel@vger.kernel.org
+Subject: KDB and usb or dbgp - status ?
+Date: Wed, 13 Jun 2012 14:54:15 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0-rc2-ftrace1-00012-gb0a4c6f; KDE/4.6.0; x86_64; ; )
+Cc: Jason Wessel <jason.wessel@windriver.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201206131454.15218.dl9pf@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-06-12 at 14:02 +0200, Vincent Guittot wrote:
-> +       smp_wmb();
+Hi all!
 
-No cookies for Vince!
+I sat down an tried to figure out how to use KDB (also through dbgp) with 
+latest mainline. It turned out to be a no-go unless I have hardware with PS/2 
+for keyboard. 
+I wonder whats the status regarding USB keyboards and the USB EHCI debugport.
+
+Am I right or is USB keyboard support not available in KDB/mainline ?
+
+How well does the EHCI debugport work and what steps are needed to reproduce ?
+I tried it with g_dbgp on a beagleboard as "host" for the debugging session.
+
+Whats the status ?
+
+Best,
+Jan-Simon
