@@ -1,105 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752747Ab2FMDzn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 23:55:43 -0400
-Received: from tama50.ecl.ntt.co.jp ([129.60.39.147]:42293 "EHLO
-	tama50.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751182Ab2FMDzk (ORCPT
+	id S1752570Ab2FMD4R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 23:56:17 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:59785 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752069Ab2FMD4P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 23:55:40 -0400
-Date: Wed, 13 Jun 2012 13:02:06 +0900
-From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-To: akpm@linux-foundation.org
-Cc: bhutchings@solarflare.com, grundler@parisc-linux.org, arnd@arndb.de,
-        benh@kernel.crashing.org, avi@redhat.com, mtosatti@redhat.com,
-        linux-net-drivers@solarflare.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        kvm@vger.kernel.org, takuya.yoshikawa@gmail.com
-Subject: [PATCH 1/5] sfc: Use standard __{clear,set}_bit_le() functions
-Message-Id: <20120613130206.2bf3a675.yoshikawa.takuya@oss.ntt.co.jp>
-In-Reply-To: <20120613130054.b5695621.yoshikawa.takuya@oss.ntt.co.jp>
-References: <20120613130054.b5695621.yoshikawa.takuya@oss.ntt.co.jp>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+	Tue, 12 Jun 2012 23:56:15 -0400
+Subject: [ANNOUNCE] Target development work-flow re-org
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: target-devel <target-devel@vger.kernel.org>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
+        Roland Dreier <roland@kernel.org>, Andy Grover <agrover@redhat.com>,
+        Hannes Reinecke <mail@hannes-reinecke.de>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        Arun Easi <arun.easi@qlogic.com>, Chad Dupuis <chad.dupuis@qlogic.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 12 Jun 2012 20:55:59 -0700
+Message-ID: <1339559759.13709.228.camel@haakon2.linux-iscsi.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Hutchings <bhutchings@solarflare.com>
+Hello target devels & Co,
 
-There are now standard functions for dealing with little-endian bit
-arrays, so use them instead of our own implementations.
+I'd like to announce that target development work-flow has been
+re-organized for v3.5 to follow a model similar to what Linux/KVM has
+adopted for recent mainline releases.
 
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
-Signed-off-by: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
----
- drivers/net/ethernet/sfc/efx.c        |    4 ++--
- drivers/net/ethernet/sfc/net_driver.h |   12 ------------
- drivers/net/ethernet/sfc/nic.c        |    4 ++--
- 3 files changed, 4 insertions(+), 16 deletions(-)
+The target-pending.git tree will now be the main development tree, and
+the location target developers should be basing their work on:
 
-diff --git a/drivers/net/ethernet/sfc/efx.c b/drivers/net/ethernet/sfc/efx.c
-index b95f2e1..ca2a348 100644
---- a/drivers/net/ethernet/sfc/efx.c
-+++ b/drivers/net/ethernet/sfc/efx.c
-@@ -1976,14 +1976,14 @@ static void efx_set_rx_mode(struct net_device *net_dev)
- 		netdev_for_each_mc_addr(ha, net_dev) {
- 			crc = ether_crc_le(ETH_ALEN, ha->addr);
- 			bit = crc & (EFX_MCAST_HASH_ENTRIES - 1);
--			set_bit_le(bit, mc_hash->byte);
-+			__set_bit_le(bit, mc_hash);
- 		}
- 
- 		/* Broadcast packets go through the multicast hash filter.
- 		 * ether_crc_le() of the broadcast address is 0xbe2612ff
- 		 * so we always add bit 0xff to the mask.
- 		 */
--		set_bit_le(0xff, mc_hash->byte);
-+		__set_bit_le(0xff, mc_hash);
- 	}
- 
- 	if (efx->port_enabled)
-diff --git a/drivers/net/ethernet/sfc/net_driver.h b/drivers/net/ethernet/sfc/net_driver.h
-index 0e57535..6f1a7f7 100644
---- a/drivers/net/ethernet/sfc/net_driver.h
-+++ b/drivers/net/ethernet/sfc/net_driver.h
-@@ -1080,18 +1080,6 @@ static inline struct efx_rx_buffer *efx_rx_buffer(struct efx_rx_queue *rx_queue,
- 	return &rx_queue->buffer[index];
- }
- 
--/* Set bit in a little-endian bitfield */
--static inline void set_bit_le(unsigned nr, unsigned char *addr)
--{
--	addr[nr / 8] |= (1 << (nr % 8));
--}
--
--/* Clear bit in a little-endian bitfield */
--static inline void clear_bit_le(unsigned nr, unsigned char *addr)
--{
--	addr[nr / 8] &= ~(1 << (nr % 8));
--}
--
- 
- /**
-  * EFX_MAX_FRAME_LEN - calculate maximum frame length
-diff --git a/drivers/net/ethernet/sfc/nic.c b/drivers/net/ethernet/sfc/nic.c
-index 4a9a5be..bb0172d 100644
---- a/drivers/net/ethernet/sfc/nic.c
-+++ b/drivers/net/ethernet/sfc/nic.c
-@@ -473,9 +473,9 @@ void efx_nic_init_tx(struct efx_tx_queue *tx_queue)
- 
- 		efx_reado(efx, &reg, FR_AA_TX_CHKSM_CFG);
- 		if (tx_queue->queue & EFX_TXQ_TYPE_OFFLOAD)
--			clear_bit_le(tx_queue->queue, (void *)&reg);
-+			__clear_bit_le(tx_queue->queue, &reg);
- 		else
--			set_bit_le(tx_queue->queue, (void *)&reg);
-+			__set_bit_le(tx_queue->queue, &reg);
- 		efx_writeo(efx, &reg, FR_AA_TX_CHKSM_CFG);
- 	}
- 
--- 
-1.7.5.4
+http://git.kernel.org/?p=linux/kernel/git/nab/target-pending.git;a=summary
+
+This tree is now setup using the following branch structure:
+
+*) master: contains latest target rc-fixes for the current release
+*) for-next: contains developmental patches for next merge window
+*) for-next-merge: contains new fabric drivers for next merge window
+*) queue: contains untested patches (usually) headed into for-next*
+*) auto-next: combination of current master + for-next* (rebased often)
+
+These branches are currently based on v3.5-rc2, and master + for-next
+branches have been updated to include the latest patches outstanding on
+target-devel.
+
+So from this point onwards, the old development tree (lio-core.git)
+should be considered deprecated.  For working with the new layout here
+are some simple guidelines from KVM's docs:
+
+If you're a developer, usually developing against 'for-next' is okay. If
+'for-next' is unstable for you or you need a new upstream API, work
+against 'auto-next', but let the maintainers know that when posting your
+patch.
+
+If you're working on a fix for the current cycle, work against upstream
+or 'master' (they should be equivalent most of the time).
+
+If you're a submaintainer, post git pull requests against 'for-next' or
+'master', according to your merge target.
+
+So I'm really quite happy with the new layout as it will end up saving
+me extra work, and should make life easier for other developers as
+well.  ;)
+
+--nab
 
