@@ -1,114 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753829Ab2FMNS5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 09:18:57 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:46717 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752600Ab2FMNS4 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 09:18:56 -0400
+	id S1753917Ab2FMNTp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 09:19:45 -0400
+Received: from e24smtp03.br.ibm.com ([32.104.18.24]:58515 "EHLO
+	e24smtp03.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753354Ab2FMNTn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 09:19:43 -0400
+Date: Wed, 13 Jun 2012 10:19:28 -0300
+From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: Marcel Selhorst <tpmdd@selhorst.net>,
+        Peter Huewe <peter.huewe@infineon.com>,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Luigi Semenzato <semenzato@google.com>, andi.shyti@gmail.com,
+        key@linux.vnet.ibm.com
+Subject: Re: [PATCH 1/2] char/tpm: Add new driver for Infineon I2C TIS TPM
+Message-ID: <20120613131927.GA8806@localhost.br.ibm.com>
+References: <1339505034-6400-1-git-send-email-peter.huewe@infineon.com>
+ <20120613093744.Horde.0yc-Slm5A05P2ENIeQK2pwA@mail.selhorst.net>
+ <CAOesGMh6wkHk6mwJ29RJ-wnc0uUd5SVMqgboG590CTrYzWfJ_w@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20120613131240.GB2538@m.brq.redhat.com>
-References: <1339420814-7379-1-git-send-email-jolsa@redhat.com>
-	<1339420814-7379-3-git-send-email-jolsa@redhat.com>
-	<CABPqkBRsBegm6gv6agHcGb0Hh1EWCV5gjVnbbwPHh-eOfROCuw@mail.gmail.com>
-	<20120613131240.GB2538@m.brq.redhat.com>
-Date: Wed, 13 Jun 2012 15:18:54 +0200
-Message-ID: <CABPqkBRdVMzocJu_SJbU81wg6Ef=KgbXw-18tb+bZEon79fVDA@mail.gmail.com>
-Subject: Re: [PATCH 02/19] perf: Add ability to attach user level registers
- dump to sample
-From: Stephane Eranian <eranian@google.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, gorcunov@openvz.org,
-        tzanussi@gmail.com, mhiramat@redhat.com, robert.richter@amd.com,
-        fche@redhat.com, linux-kernel@vger.kernel.org,
-        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
-        benjamin.redelings@nescent.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOesGMh6wkHk6mwJ29RJ-wnc0uUd5SVMqgboG590CTrYzWfJ_w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12061313-9254-0000-0000-00000947A9E1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 13, 2012 at 3:12 PM, Jiri Olsa <jolsa@redhat.com> wrote:
-> On Wed, Jun 13, 2012 at 01:16:44PM +0200, Stephane Eranian wrote:
->> On Mon, Jun 11, 2012 at 3:19 PM, Jiri Olsa <jolsa@redhat.com> wrote:
->> > Introducing sample_regs_user bitmask into perf_event_attr
->> > struct to define the user level registers we want to attach
->> > to the sample. The dump itself is triggered once the
->> > sample_regs_user is not empty.
->> >
->> > Only user level registers are dump at the moment. Meaning the
->> > register values of the user space context as it was before the
->> > user entered the kernel for whatever reason (syscall, irq,
->> > exception, or a PMI happening in userspace).
->> >
->> > The layout of the sample_regs_user bitmap is described in
->> > asm/perf_regs.h for archs that support register dump.
->> >
->> > This is going to be useful to bring Dwarf CFI based stack
->> > unwinding on top of samples.
->> >
->> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
->> > Signed-off-by: Jiri Olsa <jolsa@redhat.com>
->> > ---
->> >  include/linux/perf_event.h |   10 ++++++-
->> >  kernel/events/core.c       |   61 ++++++++++++++++++++++++++++++++++++++++++++
->> >  2 files changed, 70 insertions(+), 1 deletions(-)
->> >
->> > diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
->> > index 1ce887a..d66cbeb 100644
->> > --- a/include/linux/perf_event.h
->> > +++ b/include/linux/perf_event.h
->> > @@ -271,7 +271,13 @@ struct perf_event_attr {
->> >                __u64           bp_len;
->> >                __u64           config2; /* extension of config1 */
->> >        };
->> > -       __u64   branch_sample_type; /* enum branch_sample_type */
->> > +       __u64   branch_sample_type; /* enum perf_branch_sample_type */
->> > +
->> > +       /*
->> > +        * Defines set of user regs to dump on samples.
->> > +        * See asm/perf_regs.h for details.
->> > +        */
->> > +       __u64   sample_regs_user;
->> >  };
->> That's not enough. You also need to define PERF_SAMPLE_USER_REGS
->> for sample_type. Although the sample_regs_users might look like it's enough
->> to capture regs, there is a problem when it comes to parsing the record. You
->> need an ordering guarantee that is explicitly spelled out in the API (the header
->> file). In your current patch, I have no way of knowing that sample_regs_users
->> are saved after BRANCH_STACK (should you have that enabled). Remember
->> that you can turn on/off sampled infos at will in sample_type. Yet to find the
->> infos when parsing, you need to know the order.
+On Wed, 13 Jun 2012, Olof Johansson wrote:
+
+> Marcel,
+> 
+> On Wed, Jun 13, 2012 at 12:37 AM, Marcel Selhorst <tpmdd@selhorst.net> wrote:
+> >
+> > Signed-off-by: Marcel Selhorst <tpmdd@selhorst.net>
+> 
+> Signed-off-by usually means "I touched this patch", as in applied it,
+> or forwarded it (or modified and forwarded it). See
+> Documentation/SubmittingPatches for full explanation. Do you mean
+> Acked-by or Reviewed-by here instead?
+> 
+> Who picks up this patch and feeds it upstream for linux-next and 3.6? Rajiv?
 >
-> Well, the sample_regs_user != 0 substitute the PERF_SAMPLE_USER_REGS bit.
-> The behaviour is the same as if there was that bit defined..
->
-No it's not the same.  Looking at sample_regs_user != 0, do you know in which
-order the regs array is going to appear RELATIVE to the other captured
-information?
 
-Take sample_type = IP|CPU|PERIOD, sample_regs_users = EAX
+Hi Olof,
 
-Now, I get the raw record, want to parse it. Which comes first the user_regs
-or the IP, CPU, PERIOD?
+It's currently me, and very soon will start being Kent Yoder
+<key@linux.vnet.ibm.com> given this:
 
-Worst, I add more entries to PERF_SAMPLE_*, are they laid out before or
-after the regs?
+https://github.com/srajiv/tpm/commit/cbb2d5e459f4e10b3f1d11c23c31aa5d7c21e34c
 
-If you look carefully at perf_output_sample(), you will notice that data is
-written in the exact order of the enum perf_event_sample_format. Otherwise
-there is no way to parse this in the right order without looking at the kernel
-source code, which is not the right way....
+I'll review it and have Kent taking a look as well.
+
+Thanks,
+Rajiv
 
 
-> After last discussion the idea was to keep this just with sample_regs_user != 0.
->
-> I dont see any limitation except for being incosistent with the rest of
-> the sample dumps. I'm all for having that PERF_SAMPLE_USER_REGS bit and
-> the user stack bit as well.
->
-> jirka
