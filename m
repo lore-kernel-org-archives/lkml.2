@@ -1,20 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753264Ab2FMNEe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 09:04:34 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:54607 "EHLO
+	id S1752641Ab2FMNHq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 09:07:46 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:55098 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750987Ab2FMNEd convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751132Ab2FMNHp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 09:04:33 -0400
-Message-ID: <1339592667.8980.32.camel@twins>
-Subject: Re: [BUG] perf: perf_output_sample() merge issue?
+	Wed, 13 Jun 2012 09:07:45 -0400
+Message-ID: <1339592856.8980.33.camel@twins>
+Subject: Re: [RFC 3/4] ARM: topology: Update cpu_power according to DT
+ information
 From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, mingo@elte.hu
-Date: Wed, 13 Jun 2012 15:04:27 +0200
-In-Reply-To: <CABPqkBQa8ndydqkMDvc3kzu84_96FbK77TUkrfO3eSPXmv3dhQ@mail.gmail.com>
-References: <CABPqkBQa8ndydqkMDvc3kzu84_96FbK77TUkrfO3eSPXmv3dhQ@mail.gmail.com>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, devicetree-discuss@lists.ozlabs.org,
+        linux@arm.linux.org.uk, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com
+Date: Wed, 13 Jun 2012 15:07:36 +0200
+In-Reply-To: <1339502524-10265-4-git-send-email-vincent.guittot@linaro.org>
+References: <1339502524-10265-1-git-send-email-vincent.guittot@linaro.org>
+	 <1339502524-10265-4-git-send-email-vincent.guittot@linaro.org>
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7BIT
 X-Mailer: Evolution 3.2.2- 
@@ -23,12 +28,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-06-13 at 14:51 +0200, Stephane Eranian wrote:
-> I think the intent of this commit was to add the watermark check
-> at the very end of the perf_output_sample() and NOT between processing
-> of RAW and BRANCH_STACK. Something may have gone wrong
-> in the merge.
-> 
-> Can you confirm this? 
+On Tue, 2012-06-12 at 14:02 +0200, Vincent Guittot wrote:
+> +struct cpu_capacity cpu_capacity[NR_CPUS];
 
-Yes very much so, good spotting. Weird stuff this merging.
+I know ARM isn't likely to suffer from the 4k cpu issue, but is there a
+reason to use a NR_CPUS array over a per-cpu variable?
