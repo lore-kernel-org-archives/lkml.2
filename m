@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754894Ab2FMWWB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 18:22:01 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:43551 "HELO
+	id S1754942Ab2FMWWI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 18:22:08 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:43674 "HELO
 	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753229Ab2FMWV6 (ORCPT
+	with SMTP id S1754890Ab2FMWWB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 18:21:58 -0400
+	Wed, 13 Jun 2012 18:22:01 -0400
 X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX1+LQ5ISMy+Lj3uv1nItp47pARaoFE8ZW5vnmmQZL6
-	Qp42mwTGBtjz4H
+X-Provags-ID: V01U2FsdGVkX1+CaSwEByKCkRfqdG1YirpWuM4yHuqoo44AbRE/Pl
+	phEOiOjBspft7R
 From: Peter Huewe <peterhuewe@gmx.de>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Arnaud Patard <arnaud.patard@rtp-net.org>,
@@ -17,49 +17,55 @@ Cc: Arnaud Patard <arnaud.patard@rtp-net.org>,
         Dan Carpenter <dan.carpenter@oracle.com>,
         Peter Huewe <peterhuewe@gmx.de>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 01/14] staging/xgifb: Remove assignments without effect
-Date: Thu, 14 Jun 2012 00:21:39 +0200
-Message-Id: <1339626112-20671-1-git-send-email-peterhuewe@gmx.de>
+Subject: [PATCH 02/14] staging/xgifb: Add mutext for fb_mmap locking
+Date: Thu, 14 Jun 2012 00:21:40 +0200
+Message-Id: <1339626112-20671-2-git-send-email-peterhuewe@gmx.de>
 X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1339626112-20671-1-git-send-email-peterhuewe@gmx.de>
+References: <1339626112-20671-1-git-send-email-peterhuewe@gmx.de>
 X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes assignments to the fb_fix_screeninfo struct which are
-overwritten by the memset in XGIfb_get_fix() a few lines later.
-Since the name/id might be useful this was moved to XGIfb_get_fix().
+This adds a mutex for fb_mmap around smem_start and smem_len
+so the mutex inside the fb_mmap() is actually used.  Changing of
+these fields before calling the framebuffer_register() are not mutexed.
+
+We check whether framebuffer_register has been called by reading
+fbinfo->count.
+
+See 537a1bf0 - "fbdev: add mutex for fb_mmap locking" by Krzysztof Helt
+for details.
 
 Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 ---
- drivers/staging/xgifb/XGI_main_26.c |    7 ++-----
- 1 files changed, 2 insertions(+), 5 deletions(-)
+ drivers/staging/xgifb/XGI_main_26.c |    9 ++++++++-
+ 1 files changed, 8 insertions(+), 1 deletions(-)
 
 diff --git a/drivers/staging/xgifb/XGI_main_26.c b/drivers/staging/xgifb/XGI_main_26.c
-index 85dbf32..ff88f1d 100644
+index ff88f1d..f427b85 100644
 --- a/drivers/staging/xgifb/XGI_main_26.c
 +++ b/drivers/staging/xgifb/XGI_main_26.c
-@@ -1348,6 +1348,8 @@ static int XGIfb_get_fix(struct fb_fix_screeninfo *fix, int con,
- 	DEBUGPRN("inside get_fix");
- 	memset(fix, 0, sizeof(struct fb_fix_screeninfo));
+@@ -1350,10 +1350,17 @@ static int XGIfb_get_fix(struct fb_fix_screeninfo *fix, int con,
  
-+	strncpy(fix->id, "XGI", sizeof(fix->id) - 1);
-+
- 	fix->smem_start = xgifb_info->video_base;
+ 	strncpy(fix->id, "XGI", sizeof(fix->id) - 1);
  
+-	fix->smem_start = xgifb_info->video_base;
++	/* if register_framebuffer has been called, we must lock */
++	if (atomic_read(&info->count))
++		mutex_lock(&info->mm_lock);
+ 
++	fix->smem_start = xgifb_info->video_base;
  	fix->smem_len = xgifb_info->video_size;
-@@ -2230,11 +2232,6 @@ static int __devinit xgifb_probe(struct pci_dev *pdev,
  
- 	}
- 
--	strncpy(fb_info->fix.id, "XGI", sizeof(fb_info->fix.id) - 1);
--	fb_info->fix.type	= FB_TYPE_PACKED_PIXELS;
--	fb_info->fix.xpanstep	= 1;
--	fb_info->fix.ypanstep	= 1;
--
- 	fb_info->flags = FBINFO_FLAG_DEFAULT;
- 	fb_info->screen_base = xgifb_info->video_vbase;
- 	fb_info->fbops = &XGIfb_ops;
++	/* if register_framebuffer has been called, we can unlock */
++	if (atomic_read(&info->count))
++		mutex_unlock(&info->mm_lock);
++
+ 	fix->type = FB_TYPE_PACKED_PIXELS;
+ 	fix->type_aux = 0;
+ 	if (xgifb_info->video_bpp == 8)
 -- 
 1.7.3.4
 
