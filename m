@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754682Ab2FMQUz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 12:20:55 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:40424 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754361Ab2FMQU3 (ORCPT
+	id S1754670Ab2FMQUx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 12:20:53 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:34893 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754336Ab2FMQUY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 12:20:29 -0400
+	Wed, 13 Jun 2012 12:20:24 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -24,9 +24,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Stephen Hemminger <shemminger@vyatta.com>,
         Steven Rostedt <rostedt@goodmis.org>,
         Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
-Subject: [PATCH 7/7] x86: Exception hooks for adaptive tickless
-Date: Wed, 13 Jun 2012 18:19:57 +0200
-Message-Id: <1339604397-8758-8-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 6/7] x86: Add adaptive tickless hooks on do_notify_resume()
+Date: Wed, 13 Jun 2012 18:19:56 +0200
+Message-Id: <1339604397-8758-7-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1339604397-8758-1-git-send-email-fweisbec@gmail.com>
 References: <1339604397-8758-1-git-send-email-fweisbec@gmail.com>
@@ -34,11 +34,14 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add necessary hooks to x86 exception for adaptive nohz
-support so that the time spent on exceptions handling is
-considered as system cputime.
+Before resuming to userspace, we may fall into do_notify_resume()
+to handle signals or other things. And because we may be coming
+from syscall/exception or interrupt exit, the current cputime is
+considered as happening in userspace.
 
-This includes traps, page fault, debug exceptions, etc...
+However we want do_notify_resume() cputime to be considered as
+system time. Put the kernel boundaries hook in this function
+to ensure that.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Alessio Igor Bogani <abogani@kernel.org>
@@ -60,132 +63,37 @@ Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/x86/Kconfig        |    1 +
- arch/x86/kernel/traps.c |   14 ++++++++++----
- arch/x86/mm/fault.c     |   13 +++++++++++--
- 3 files changed, 22 insertions(+), 6 deletions(-)
+ arch/x86/kernel/signal.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index c70684f..af77028 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -95,6 +95,7 @@ config X86
- 	select KTIME_SCALAR if X86_32
- 	select GENERIC_STRNCPY_FROM_USER
- 	select GENERIC_STRNLEN_USER
-+	select HAVE_NO_HZ_FULL
- 
- config INSTRUCTION_DECODER
- 	def_bool (KPROBES || PERF_EVENTS || UPROBES)
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index 05b31d9..196e641 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -26,6 +26,7 @@
- #include <linux/sched.h>
- #include <linux/timer.h>
- #include <linux/init.h>
-+#include <linux/tick.h>
- #include <linux/bug.h>
- #include <linux/nmi.h>
- #include <linux/mm.h>
-@@ -311,6 +312,7 @@ dotraplinkage void __kprobes notrace do_int3(struct pt_regs *regs, long error_co
- 	    ftrace_int3_handler(regs))
- 		return;
- #endif
-+	tick_nohz_enter_exception(regs);
- #ifdef CONFIG_KGDB_LOW_LEVEL_TRAP
- 	if (kgdb_ll_trap(DIE_INT3, "int3", regs, error_code, X86_TRAP_BP,
- 				SIGTRAP) == NOTIFY_STOP)
-@@ -330,6 +332,7 @@ dotraplinkage void __kprobes notrace do_int3(struct pt_regs *regs, long error_co
- 	do_trap(X86_TRAP_BP, SIGTRAP, "int3", regs, error_code, NULL);
- 	preempt_conditional_cli(regs);
- 	debug_stack_usage_dec();
-+	tick_nohz_exit_exception(regs);
- }
- 
- #ifdef CONFIG_X86_64
-@@ -390,6 +393,8 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
- 	unsigned long dr6;
- 	int si_code;
- 
-+	tick_nohz_enter_exception(regs);
-+
- 	get_debugreg(dr6, 6);
- 
- 	/* Filter out all the reserved bits which are preset to 1 */
-@@ -405,7 +410,7 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
- 
- 	/* Catch kmemcheck conditions first of all! */
- 	if ((dr6 & DR_STEP) && kmemcheck_trap(regs))
--		return;
-+		goto exit;
- 
- 	/* DR6 may or may not be cleared by the CPU */
- 	set_debugreg(0, 6);
-@@ -420,7 +425,7 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
- 
- 	if (notify_die(DIE_DEBUG, "debug", regs, PTR_ERR(&dr6), error_code,
- 							SIGTRAP) == NOTIFY_STOP)
--		return;
-+		goto exit;
- 
- 	/*
- 	 * Let others (NMI) know that the debug stack is in use
-@@ -436,7 +441,7 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
- 					X86_TRAP_DB);
- 		preempt_conditional_cli(regs);
- 		debug_stack_usage_dec();
--		return;
-+		goto exit;
- 	}
- 
- 	/*
-@@ -457,7 +462,8 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
- 	preempt_conditional_cli(regs);
- 	debug_stack_usage_dec();
- 
--	return;
-+exit:
-+	tick_nohz_exit_exception(regs);
- }
- 
- /*
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index 76dcd9d..6b1ee80 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -13,6 +13,7 @@
- #include <linux/perf_event.h>		/* perf_sw_event		*/
- #include <linux/hugetlb.h>		/* hstate_index_to_shift	*/
- #include <linux/prefetch.h>		/* prefetchw			*/
+diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
+index 21af737..9031fbb 100644
+--- a/arch/x86/kernel/signal.c
++++ b/arch/x86/kernel/signal.c
+@@ -19,6 +19,7 @@
+ #include <linux/uaccess.h>
+ #include <linux/user-return-notifier.h>
+ #include <linux/uprobes.h>
 +#include <linux/tick.h>
  
- #include <asm/traps.h>			/* dotraplinkage, ...		*/
- #include <asm/pgalloc.h>		/* pgd_*(), ...			*/
-@@ -1000,8 +1001,8 @@ static int fault_in_kernel_space(unsigned long address)
-  * and the problem, and then passes it off to one of the appropriate
-  * routines.
-  */
--dotraplinkage void __kprobes
--do_page_fault(struct pt_regs *regs, unsigned long error_code)
-+static void __kprobes
-+__do_page_fault(struct pt_regs *regs, unsigned long error_code)
+ #include <asm/processor.h>
+ #include <asm/ucontext.h>
+@@ -776,6 +777,7 @@ static void do_signal(struct pt_regs *regs)
+ void
+ do_notify_resume(struct pt_regs *regs, void *unused, __u32 thread_info_flags)
  {
- 	struct vm_area_struct *vma;
- 	struct task_struct *tsk;
-@@ -1209,3 +1210,11 @@ good_area:
- 
- 	up_read(&mm->mmap_sem);
++	tick_nohz_enter_kernel();
+ #ifdef CONFIG_X86_MCE
+ 	/* notify userspace of pending MCEs */
+ 	if (thread_info_flags & _TIF_MCE_NOTIFY)
+@@ -801,6 +803,7 @@ do_notify_resume(struct pt_regs *regs, void *unused, __u32 thread_info_flags)
+ #ifdef CONFIG_X86_32
+ 	clear_thread_flag(TIF_IRET);
+ #endif /* CONFIG_X86_32 */
++	tick_nohz_exit_kernel();
  }
-+
-+dotraplinkage void __kprobes
-+do_page_fault(struct pt_regs *regs, unsigned long error_code)
-+{
-+	tick_nohz_enter_exception(regs);
-+	__do_page_fault(regs, error_code);
-+	tick_nohz_exit_exception(regs);
-+}
+ 
+ void signal_fault(struct pt_regs *regs, void __user *frame, char *where)
 -- 
 1.7.5.4
 
