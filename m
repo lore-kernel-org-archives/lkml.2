@@ -1,153 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754070Ab2FMLve (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 07:51:34 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:42698 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753663Ab2FMLv3 (ORCPT
+	id S1754034Ab2FMLvV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 07:51:21 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35605 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753952Ab2FMLvB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 07:51:29 -0400
-X-AuditID: cbfee61b-b7fcc6d000003a7a-4f-4fd87ec0f54c
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-To: linux-arm-kernel@lists.infradead.org, linaro-mm-sig@lists.linaro.org,
-        linux-mm@kvack.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>,
-        Krishna Reddy <vdumpa@nvidia.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Hiroshi Doyu <hdoyu@nvidia.com>,
-        Subash Patel <subash.ramaswamy@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Abhinav Kochhar <abhinav.k@samsung.com>,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>
-Subject: [PATCHv2 6/6] ARM: dma-mapping: add support for DMA_ATTR_SKIP_CPU_SYNC
- attribute
-Date: Wed, 13 Jun 2012 13:50:18 +0200
-Message-id: <1339588218-24398-7-git-send-email-m.szyprowski@samsung.com>
-X-Mailer: git-send-email 1.7.10
-In-reply-to: <1339588218-24398-1-git-send-email-m.szyprowski@samsung.com>
-References: <1339588218-24398-1-git-send-email-m.szyprowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBJMWRmVeSWpSXmKPExsVy+t9jAd0DdTf8Df48Erfo2PWVxeLyrjls
-	DkwenzfJBTBGcdmkpOZklqUW6dslcGWs+viTrWCSUkVH13SmBsb/0l2MnBwSAiYSb3/sYIOw
-	xSQu3FsPZHNxCAksYpQ4u/IAO4TTxSRx7tBeVpAqNgFDia63XWAdIgIzGCV29aWBFDEL7GOR
-	6Nx8ghEkISwQLTHp6gUwm0VAVeLas0UsIDavgIfEj0drmSDWyUs8vd8HNohTwFPi97N9YHEh
-	oJrf0w4zT2DkXcDIsIpRNLUguaA4KT3XSK84Mbe4NC9dLzk/dxMj2P/PpHcwrmqwOMQowMGo
-	xMObAQwLIdbEsuLK3EOMEhzMSiK8z7KBQrwpiZVVqUX58UWlOanFhxilOViUxHmbrC/4Cwmk
-	J5akZqemFqQWwWSZODilGhhNZv6u/Z323q7dnM27q7q7QjUtRD/tgSdrSrRyGLNg09tS2++3
-	yyet/7vxSfyeB/+P7GM5G+Rj/3W2+s6fVzVeZCm12Keer6wzZly6UXXXgcfeGf921K0NDZtz
-	Su+7aE7e484wofagKbcOO+Rurue24T+g2Z//q4rzqkX/Ec3N2QtcZmo5eiixFGckGmoxFxUn
-	AgBs5OAw+wEAAA==
-X-TM-AS-MML: No
+	Wed, 13 Jun 2012 07:51:01 -0400
+Date: Wed, 13 Jun 2012 12:50:58 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH RFT 3/4] regulator: wm831x-dcdc: Convert wm831x_buckv_ops
+ to set_voltage_sel and map_voltage
+Message-ID: <20120613115058.GJ4545@opensource.wolfsonmicro.com>
+References: <1339467650.22991.1.camel@phoenix>
+ <1339467789.22991.4.camel@phoenix>
+ <20120613100342.GI4545@opensource.wolfsonmicro.com>
+ <CAF+7xWnQNGL8Q0mCLMTHrUnW-cbOuNLydFW+b6Nws_Pg-ePUJg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="9aCKuHbn5v2q3RVc"
+Content-Disposition: inline
+In-Reply-To: <CAF+7xWnQNGL8Q0mCLMTHrUnW-cbOuNLydFW+b6Nws_Pg-ePUJg@mail.gmail.com>
+X-Cookie: You now have Asian Flu.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for DMA_ATTR_SKIP_CPU_SYNC attribute for
-dma_(un)map_(single,page,sg) functions family. It lets dma mapping clients
-to create a mapping for the buffer for the given device without performing
-a CPU cache synchronization. CPU cache synchronization can be skipped for
-the buffers which it is known that they are already in 'device' domain (CPU
-caches have been already synchronized or there are only coherent mappings
-for the buffer). For advanced users only, please use it with care.
 
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-Reviewed-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- arch/arm/mm/dma-mapping.c |   20 +++++++++++---------
- 1 files changed, 11 insertions(+), 9 deletions(-)
+--9aCKuHbn5v2q3RVc
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
-index 3840997..939cdc2 100644
---- a/arch/arm/mm/dma-mapping.c
-+++ b/arch/arm/mm/dma-mapping.c
-@@ -73,7 +73,7 @@ static dma_addr_t arm_dma_map_page(struct device *dev, struct page *page,
- 	     unsigned long offset, size_t size, enum dma_data_direction dir,
- 	     struct dma_attrs *attrs)
- {
--	if (!arch_is_coherent())
-+	if (!arch_is_coherent() && !dma_get_attr(DMA_ATTR_SKIP_CPU_SYNC, attrs))
- 		__dma_page_cpu_to_dev(page, offset, size, dir);
- 	return pfn_to_dma(dev, page_to_pfn(page)) + offset;
- }
-@@ -96,7 +96,7 @@ static void arm_dma_unmap_page(struct device *dev, dma_addr_t handle,
- 		size_t size, enum dma_data_direction dir,
- 		struct dma_attrs *attrs)
- {
--	if (!arch_is_coherent())
-+	if (!arch_is_coherent() && !dma_get_attr(DMA_ATTR_SKIP_CPU_SYNC, attrs))
- 		__dma_page_dev_to_cpu(pfn_to_page(dma_to_pfn(dev, handle)),
- 				      handle & ~PAGE_MASK, size, dir);
- }
-@@ -1206,7 +1206,7 @@ static int arm_iommu_get_sgtable(struct device *dev, struct sg_table *sgt,
-  */
- static int __map_sg_chunk(struct device *dev, struct scatterlist *sg,
- 			  size_t size, dma_addr_t *handle,
--			  enum dma_data_direction dir)
-+			  enum dma_data_direction dir, struct dma_attrs *attrs)
- {
- 	struct dma_iommu_mapping *mapping = dev->archdata.mapping;
- 	dma_addr_t iova, iova_base;
-@@ -1225,7 +1225,8 @@ static int __map_sg_chunk(struct device *dev, struct scatterlist *sg,
- 		phys_addr_t phys = page_to_phys(sg_page(s));
- 		unsigned int len = PAGE_ALIGN(s->offset + s->length);
- 
--		if (!arch_is_coherent())
-+		if (!arch_is_coherent() &&
-+		    !dma_get_attr(DMA_ATTR_SKIP_CPU_SYNC, attrs))
- 			__dma_page_cpu_to_dev(sg_page(s), s->offset, s->length, dir);
- 
- 		ret = iommu_map(mapping->domain, iova, phys, len, 0);
-@@ -1272,7 +1273,7 @@ int arm_iommu_map_sg(struct device *dev, struct scatterlist *sg, int nents,
- 
- 		if (s->offset || (size & ~PAGE_MASK) || size + s->length > max) {
- 			if (__map_sg_chunk(dev, start, size, &dma->dma_address,
--			    dir) < 0)
-+			    dir, attrs) < 0)
- 				goto bad_mapping;
- 
- 			dma->dma_address += offset;
-@@ -1285,7 +1286,7 @@ int arm_iommu_map_sg(struct device *dev, struct scatterlist *sg, int nents,
- 		}
- 		size += s->length;
- 	}
--	if (__map_sg_chunk(dev, start, size, &dma->dma_address, dir) < 0)
-+	if (__map_sg_chunk(dev, start, size, &dma->dma_address, dir, attrs) < 0)
- 		goto bad_mapping;
- 
- 	dma->dma_address += offset;
-@@ -1319,7 +1320,8 @@ void arm_iommu_unmap_sg(struct device *dev, struct scatterlist *sg, int nents,
- 		if (sg_dma_len(s))
- 			__iommu_remove_mapping(dev, sg_dma_address(s),
- 					       sg_dma_len(s));
--		if (!arch_is_coherent())
-+		if (!arch_is_coherent() &&
-+		    !dma_get_attr(DMA_ATTR_SKIP_CPU_SYNC, attrs))
- 			__dma_page_dev_to_cpu(sg_page(s), s->offset,
- 					      s->length, dir);
- 	}
-@@ -1381,7 +1383,7 @@ static dma_addr_t arm_iommu_map_page(struct device *dev, struct page *page,
- 	dma_addr_t dma_addr;
- 	int ret, len = PAGE_ALIGN(size + offset);
- 
--	if (!arch_is_coherent())
-+	if (!arch_is_coherent() && !dma_get_attr(DMA_ATTR_SKIP_CPU_SYNC, attrs))
- 		__dma_page_cpu_to_dev(page, offset, size, dir);
- 
- 	dma_addr = __alloc_iova(mapping, len);
-@@ -1420,7 +1422,7 @@ static void arm_iommu_unmap_page(struct device *dev, dma_addr_t handle,
- 	if (!iova)
- 		return;
- 
--	if (!arch_is_coherent())
-+	if (!arch_is_coherent() && !dma_get_attr(DMA_ATTR_SKIP_CPU_SYNC, attrs))
- 		__dma_page_dev_to_cpu(page, offset, size, dir);
- 
- 	iommu_unmap(mapping->domain, iova, len);
--- 
-1.7.1.569.g6f426
+On Wed, Jun 13, 2012 at 07:41:26PM +0800, Axel Lin wrote:
 
+> Or do you prefer I chenge the prototype to:
+
+> static int wm831x_buckv_set_voltage_sel(struct regulator_dev *rdev,
+>                                         unsigned vsel)
+
+> Then the diff can be smaller.
+
+Yes, this is the point.  A huge proportion of the change is a cosmetic
+change for this rename which makes it much harder to read and review.
+
+--9aCKuHbn5v2q3RVc
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP2H6NAAoJEBus8iNuMP3dU8wQAIbJAIElRn8vYgeA5GJ+unGA
+9NZz3+I+rEAMZGxVxW10OIBFmqExr6eGQQgUWqtpp372A7TJpZyVBol131glEwuI
+rXe4WNuC/D6MP+aBhnEpvW5DPoE0GlJd5JhmL7Ooa/ObmxtOV64D8kojXtsk5kj0
+KwiAGsWKwNcXG0geSOxxEsyouIMtbVp+e9Up83Vk5soiKBAY7Ynu8rJY1bibbm2G
+UmAUoqjXe4hP+IJXWxnYxiljYDqkwKg4RSnyXX1wik4KGW4Nfk0+hhS7SuokoDQx
+V4JD2flTquz/cIWUuqn1rPwfOb5Nov9ZhBVPaYVUgdnJ2UjBCeziQ6DKDQTQL395
+uPxq0Go4zoe4nlrskkZVdkWj/HNndmERN84dg/r993c5p9RJi0jW3C50brAFh1bA
+I+s3K8vB8ahgAwiO62NrBSctNAda/mAjyXnLXgGppOkxmOQCzI/6wv7Zddv6CZZu
+rFYTVzsrXVZxGGDXdztaDZOnlmUoGwcnVXyKQzInucmsCEUKylPGKnWtkkkWO3aW
+vvsYrKNQJFfwFUX2PPZmqLKwh7WB2Js5oNZ6dKoxikBdmOLUonBp1gvbqjq4OGVA
+akWZ47xAZFb5VEba4qqWXYM0Iji3PENxJJ+JBkLvhwLSaCVHMvl1yTeIQjQB/vvf
+kbDIxXNP/UPj22bMqpfA
+=3NB3
+-----END PGP SIGNATURE-----
+
+--9aCKuHbn5v2q3RVc--
