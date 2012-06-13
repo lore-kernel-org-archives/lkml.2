@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754442Ab2FMPYa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 11:24:30 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35743 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752390Ab2FMPY3 (ORCPT
+	id S1754379Ab2FMP1s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 11:27:48 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:43296 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751698Ab2FMP1q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 11:24:29 -0400
-Date: Wed, 13 Jun 2012 16:24:26 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH RESEND 1/3] regulator: wm831x-dcdc: Convert
- wm831x_buckp_ops to regulator_list_voltage_linear
-Message-ID: <20120613152426.GQ4545@opensource.wolfsonmicro.com>
-References: <1339590434.9672.1.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="hIO1AjEoFJ7b3ahE"
-Content-Disposition: inline
-In-Reply-To: <1339590434.9672.1.camel@phoenix>
-X-Cookie: You now have Asian Flu.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 13 Jun 2012 11:27:46 -0400
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: James.Bottomley@HansenPartnership.com, gregkh@linuxfoundation.org,
+        mdharm-usb@one-eyed-alien.net, stern@rowland.harvard.edu,
+        sshtylyov@mvista.com, bvanassche@acm.org
+Cc: linux-usb@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>
+Subject: [PATCH v4 0/3] scsi: fix internal write cache issue on usb hdd.
+Date: Wed, 13 Jun 2012 11:27:27 -0400
+Message-Id: <1339601248-3251-1-git-send-email-linkinjeon@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Namjae Jeon <namjae.jeon@samsung.com>
 
---hIO1AjEoFJ7b3ahE
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+The numbers of USB HDDs(All USB HDD I checked) does not respond
+correctly to scsi mode sense command for retrieving the write cache
+page status. Even though write cache is enabled by default, due to
+scsi driver assume that cache is not enabled which in turn might lead
+to loss of data since data still will be in cache.
+This result that all filesystems is not stable on USB HDD when the
+device is unplugged abruptly, even though these are having journaling
+feature. Our first trying is that scsi driver send ATA command
+(ATA Pass through, #58) to USB HDD after failure from normal routine to
+know write cache enable.
+We have known it is dangerous after testing several USB HDD. some of
+HDD is stalled by this command(A-DATA HDD). So we tried to make the
+patch James's suggestion(usb quirk) on version 2 that add product ID
+and verdor ID of USB HDD to USB quirk list after checking write cache.
+All filesystem will be stable on USB HDD registered in quirk list.
+And it will be updated continuously.
 
-On Wed, Jun 13, 2012 at 08:27:14PM +0800, Axel Lin wrote:
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+	scsi: set to WCE if usb cache quirk is present.
+	usb: storage: add support for write cache quirk on usb hdd.
+	usb: storage: update usb devices for write cache quirk in quirk.
 
-Please don't resend stuff so quickly, give me time to get through my
-inbox...
+ drivers/scsi/sd.c          |    9 +++++++--
+ include/scsi/scsi_device.h |    1 +
+ drivers/usb/storage/scsiglue.c |    5 +++++
+ drivers/usb/storage/usb.c      |    5 ++++-
+ include/linux/usb_usual.h      |    4 +++-
+ drivers/usb/storage/unusual_devs.h |   24 ++++++++++++++++++++++++
+ Documentation/kernel-parameters.txt |    2 ++
+ 7 files changed, 46 insertions(+), 4 deletions(-)
+-- 
+1.7.9.5
 
---hIO1AjEoFJ7b3ahE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJP2LCkAAoJEBus8iNuMP3dOeYP+wUWv0ZU7YtjhUZ6hI+A7wS4
-UP5p4TfZYAHtMzYFMtRB1Oj1hqRMz2JP8vua6RO5PXuGRghFzM+kbDKyQdq6h9Kq
-62X6Mb8OTfUAIq/9ySqysi+fO/wim877f17ZNluvo2R4kAm4ZFFBOOtasHZn+oDN
-MtmhTotDmph6ywd7gn1xflCsuIDxmy+HG3Z0a+FN1Huu5woB+VEomFBY6at7hVgU
-iKcTZHQX3aHl7vrpjHot0oeD1GZbwnp4BuLzyU/LkV1kwrdaPIyWDq02R1dZteRJ
-GP1Gc5rVAMSvOF2SGweAX6hpHhz4nbsPqFoWtV83WSeFeXgWWjLNgyVByZB7XjT1
-bWYhwYu4cF6Ik7I+kiNcqNQWgTPcm1gJSkjPkviWOZfmgVgHdwaGrBtrrvtu43s2
-myPpX5feyLOxdo/F905+HzNa2IiYAKAY3MvRf1h47JrEKoaUDnhGc9axlA8PQSBW
-eDUA/ZUp4MNfswYIn+3p366EWwY3THDeNEjqtuC4Sv4NKZKlTofS4yzs5bqqLklx
-a2ZJoeYlyUO9sJa46fBXaGV0vzB7LOcR5mh4Dlq4uzAKN4VskUcTUxGchNupnr5t
-NDSHkD0KgXSK2j0Q9Xd7VQdKiKXMI3I7bvp6FWvb+jKUiDHDb9WJzHXLGRkk8NTi
-mhSMQ1Z95I9UKfGE5t+F
-=vUhf
------END PGP SIGNATURE-----
-
---hIO1AjEoFJ7b3ahE--
