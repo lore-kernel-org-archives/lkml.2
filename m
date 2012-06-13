@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753936Ab2FMKa5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 06:30:57 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:58092 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753546Ab2FMK2U (ORCPT
+	id S1753902Ab2FMKbP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 06:31:15 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:54239 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753700Ab2FMK2U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 13 Jun 2012 06:28:20 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
@@ -13,110 +13,109 @@ To: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
         hannes@cmpxchg.org
 Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -V9 12/15] hugetlb/cgroup: Add support for cgroup removal
-Date: Wed, 13 Jun 2012 15:57:31 +0530
-Message-Id: <1339583254-895-13-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V9 14/15] hugetlb/cgroup: migrate hugetlb cgroup info from oldpage to new page during migration
+Date: Wed, 13 Jun 2012 15:57:33 +0530
+Message-Id: <1339583254-895-15-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1339583254-895-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1339583254-895-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-x-cbid: 12061310-5816-0000-0000-0000032119A7
+x-cbid: 12061310-4790-0000-0000-000003370E38
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-This patch add support for cgroup removal. If we don't have parent
-cgroup, the charges are moved to root cgroup.
+With HugeTLB pages, hugetlb cgroup is uncharged in compound page destructor.  Since
+we are holding a hugepage reference, we can be sure that old page won't
+get uncharged till the last put_page().
 
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- mm/hugetlb_cgroup.c |   70 +++++++++++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 68 insertions(+), 2 deletions(-)
+ include/linux/hugetlb_cgroup.h |    8 ++++++++
+ mm/hugetlb_cgroup.c            |   20 ++++++++++++++++++++
+ mm/migrate.c                   |    5 +++++
+ 3 files changed, 33 insertions(+)
 
-diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
-index 0f2f6ac..a3a68a4 100644
---- a/mm/hugetlb_cgroup.c
-+++ b/mm/hugetlb_cgroup.c
-@@ -107,10 +107,76 @@ static void hugetlb_cgroup_destroy(struct cgroup *cgroup)
- 	kfree(h_cgroup);
+diff --git a/include/linux/hugetlb_cgroup.h b/include/linux/hugetlb_cgroup.h
+index bd8bc98..e9e6d74 100644
+--- a/include/linux/hugetlb_cgroup.h
++++ b/include/linux/hugetlb_cgroup.h
+@@ -63,6 +63,8 @@ extern void hugetlb_cgroup_uncharge_page(int idx, unsigned long nr_pages,
+ extern void hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
+ 					   struct hugetlb_cgroup *h_cg);
+ extern int hugetlb_cgroup_file_init(int idx) __init;
++extern void hugetlb_cgroup_migrate(struct page *oldhpage,
++				   struct page *newhpage);
+ 
+ #else
+ static inline struct hugetlb_cgroup *hugetlb_cgroup_from_page(struct page *page)
+@@ -114,5 +116,11 @@ static inline int __init hugetlb_cgroup_file_init(int idx)
+ 	return 0;
  }
  
-+
-+/*
-+ * Should be called with hugetlb_lock held.
-+ * Since we are holding hugetlb_lock, pages cannot get moved from
-+ * active list or uncharged from the cgroup, So no need to get
-+ * page reference and test for page active here. This function
-+ * cannot fail.
-+ */
-+static void hugetlb_cgroup_move_parent(int idx, struct cgroup *cgroup,
-+				       struct page *page)
++static inline void hugetlb_cgroup_migrate(struct page *oldhpage,
++					  struct page *newhpage)
 +{
-+	int csize;
-+	struct res_counter *counter;
-+	struct res_counter *fail_res;
-+	struct hugetlb_cgroup *page_hcg;
-+	struct hugetlb_cgroup *h_cg   = hugetlb_cgroup_from_cgroup(cgroup);
-+	struct hugetlb_cgroup *parent = parent_hugetlb_cgroup(cgroup);
-+
-+	page_hcg = hugetlb_cgroup_from_page(page);
-+	/*
-+	 * We can have pages in active list without any cgroup
-+	 * ie, hugepage with less than 3 pages. We can safely
-+	 * ignore those pages.
-+	 */
-+	if (!page_hcg || page_hcg != h_cg)
-+		goto out;
-+
-+	csize = PAGE_SIZE << compound_order(page);
-+	if (!parent) {
-+		parent = root_h_cgroup;
-+		/* root has no limit */
-+		res_counter_charge_nofail(&parent->hugepage[idx],
-+					  csize, &fail_res);
-+	}
-+	counter = &h_cg->hugepage[idx];
-+	res_counter_uncharge_until(counter, counter->parent, csize);
-+
-+	set_hugetlb_cgroup(page, parent);
-+out:
 +	return;
 +}
 +
-+/*
-+ * Force the hugetlb cgroup to empty the hugetlb resources by moving them to
-+ * the parent cgroup.
-+ */
- static int hugetlb_cgroup_pre_destroy(struct cgroup *cgroup)
- {
--	/* We will add the cgroup removal support in later patches */
--	   return -EBUSY;
-+	struct hstate *h;
-+	struct page *page;
-+	int ret = 0, idx = 0;
-+
-+	do {
-+		if (cgroup_task_count(cgroup) ||
-+		    !list_empty(&cgroup->children)) {
-+			ret = -EBUSY;
-+			goto out;
-+		}
-+		for_each_hstate(h) {
-+			spin_lock(&hugetlb_lock);
-+			list_for_each_entry(page, &h->hugepage_activelist, lru)
-+				hugetlb_cgroup_move_parent(idx, cgroup, page);
-+
-+			spin_unlock(&hugetlb_lock);
-+			idx++;
-+		}
-+		cond_resched();
-+	} while (hugetlb_cgroup_have_usage(cgroup));
-+out:
-+	return ret;
+ #endif  /* CONFIG_MEM_RES_CTLR_HUGETLB */
+ #endif
+diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
+index 64e93e0..8e7ca0a 100644
+--- a/mm/hugetlb_cgroup.c
++++ b/mm/hugetlb_cgroup.c
+@@ -388,6 +388,26 @@ int __init hugetlb_cgroup_file_init(int idx)
+ 	return 0;
  }
  
- int hugetlb_cgroup_charge_cgroup(int idx, unsigned long nr_pages,
++void hugetlb_cgroup_migrate(struct page *oldhpage, struct page *newhpage)
++{
++	struct hugetlb_cgroup *h_cg;
++
++	if (hugetlb_cgroup_disabled())
++		return;
++
++	VM_BUG_ON(!PageHuge(oldhpage));
++	spin_lock(&hugetlb_lock);
++	h_cg = hugetlb_cgroup_from_page(oldhpage);
++	set_hugetlb_cgroup(oldhpage, NULL);
++	cgroup_exclude_rmdir(&h_cg->css);
++
++	/* move the h_cg details to new cgroup */
++	set_hugetlb_cgroup(newhpage, h_cg);
++	spin_unlock(&hugetlb_lock);
++	cgroup_release_and_wakeup_rmdir(&h_cg->css);
++	return;
++}
++
+ struct cgroup_subsys hugetlb_subsys = {
+ 	.name = "hugetlb",
+ 	.create     = hugetlb_cgroup_create,
+diff --git a/mm/migrate.c b/mm/migrate.c
+index fdce3a2..6c37c51 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -33,6 +33,7 @@
+ #include <linux/memcontrol.h>
+ #include <linux/syscalls.h>
+ #include <linux/hugetlb.h>
++#include <linux/hugetlb_cgroup.h>
+ #include <linux/gfp.h>
+ 
+ #include <asm/tlbflush.h>
+@@ -931,6 +932,10 @@ static int unmap_and_move_huge_page(new_page_t get_new_page,
+ 
+ 	if (anon_vma)
+ 		put_anon_vma(anon_vma);
++
++	if (!rc)
++		hugetlb_cgroup_migrate(hpage, new_hpage);
++
+ 	unlock_page(hpage);
+ out:
+ 	put_page(new_hpage);
 -- 
 1.7.10
 
