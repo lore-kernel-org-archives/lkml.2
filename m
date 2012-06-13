@@ -1,52 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754626Ab2FMTVm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 15:21:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29441 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754332Ab2FMTVk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 15:21:40 -0400
-Date: Wed, 13 Jun 2012 21:19:28 +0200
-From: Oleg Nesterov <oleg@redhat.com>
+	id S1754541Ab2FMT1q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 15:27:46 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58858 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754371Ab2FMT1p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 15:27:45 -0400
+Date: Wed, 13 Jun 2012 20:27:40 +0100
+From: Andy Whitcroft <apw@canonical.com>
 To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>, linuxppc-dev@lists.ozlabs.org,
-        lkml <linux-kernel@vger.kernel.org>, michael@ellerman.id.au,
-        antonb@thinktux.localdomain, Paul Mackerras <paulus@samba.org>,
-        benh@kernel.crashing.org, Ingo Molnar <mingo@elte.hu>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Jim Keniston <jkenisto@us.ibm.com>
-Subject: Re: Q: a_ops->readpage() && struct file
-Message-ID: <20120613191928.GB14246@redhat.com>
-References: <20120608093257.GG13409@in.ibm.com> <20120611161215.GA12116@redhat.com> <20120611190902.GA19869@redhat.com> <1339581492.31548.133.camel@twins>
+Cc: Vincent Guittot <vincent.guittot@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, devicetree-discuss@lists.ozlabs.org,
+        linux@arm.linux.org.uk, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com
+Subject: Re: [RFC 1/4] ARM: topology: Add arch_scale_freq_power function
+Message-ID: <20120613192740.GZ5878@dm>
+References: <1339502524-10265-1-git-send-email-vincent.guittot@linaro.org>
+ <1339502524-10265-2-git-send-email-vincent.guittot@linaro.org>
+ <1339591969.8980.30.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1339581492.31548.133.camel@twins>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1339591969.8980.30.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/13, Peter Zijlstra wrote:
->
-> On Mon, 2012-06-11 at 21:09 +0200, Oleg Nesterov wrote:
-> > Stupid question. I'm afraid the answer is "no" but I'll ask anyway.
-> > Is it safe to pass filp == NULL to mapping->readpage()? In fact
-> > I do not understand why it needs "struct file*" and I do not see
-> > any example of actual usage.
->
-> Looking at afs_readpage it looks like its OK to pass in NULL. Same for
-> nfs_readpage. They use the file, if provided, to avoid some lookups, but
-> seem to deal with not having it.
+On Wed, Jun 13, 2012 at 02:52:49PM +0200, Peter Zijlstra wrote:
+> On Tue, 2012-06-12 at 14:02 +0200, Vincent Guittot wrote:
+> >         }
+> >         smp_wmb();
+> >  } 
+> 
+> You know what.. we should make checkpatch report an error for memory
+> barriers that don't have a comment. 
+> 
+> I know this isn't added by this patch, but every time I see something
+> like it I cry a little.
 
-Yes, and reiser4 does the same.
+Actually if it was a new line, it would have been reported, at least in
+theory:
 
-> This answer by example is of course not authorative nor complete.
+    # check for memory barriers without a comment.
+		    if ($line =~
+    /\b(mb|rmb|wmb|read_barrier_depends|smp_mb|smp_rmb|smp_wmb|smp_read_barrier_depends)\(/)
+    {
+	if (!ctx_has_comment($first_line, $linenr)) {
+	    CHK("MEMORY_BARRIER",
+		"memory barrier without comment\n" . $herecurr);
+	}
+    }
 
-Yes... perhaps we should simply change this code to use NULL and
-collect the bug-reports ;)
-
-Oleg.
-
+-apw
