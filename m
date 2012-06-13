@@ -1,53 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754855Ab2FMVhE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 17:37:04 -0400
-Received: from casper.infradead.org ([85.118.1.10]:40315 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754134Ab2FMVhB convert rfc822-to-8bit (ORCPT
+	id S1754824Ab2FMVh5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 17:37:57 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:64930 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754134Ab2FMVh4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 17:37:01 -0400
-Message-ID: <1339623417.8980.68.camel@twins>
-Subject: Re: [PATCH 3/4] perf, x86: check ucode before disabling PEBS on
- SandyBridge v3
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, eranian@google.com
-Date: Wed, 13 Jun 2012 23:36:57 +0200
-In-Reply-To: <20120613213451.GC32604@tassilo.jf.intel.com>
-References: <1339618842-26636-1-git-send-email-andi@firstfloor.org>
-	 <1339618842-26636-4-git-send-email-andi@firstfloor.org>
-	 <1339623054.8980.64.camel@twins>
-	 <20120613213451.GC32604@tassilo.jf.intel.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
+	Wed, 13 Jun 2012 17:37:56 -0400
+Message-ID: <1339623535.3321.4.camel@lappy>
+Subject: Early boot panic on machine with lots of memory
+From: Sasha Levin <levinsasha928@gmail.com>
+To: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>, hpa@linux.intel.com
+Cc: linux-mm <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 13 Jun 2012 23:38:55 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-06-13 at 14:34 -0700, Andi Kleen wrote:
-> > Stephane actually wrote:
-> > 
-> > "Ok, so to close on this, I tried the 6/6/2012 ucode update on a few
-> > SNB-EP systems.
-> > 
-> > I got two answers depending on the stepping:
-> > C1 (stepping 6) -> 0x618
-> > C2 (stepping 7) -> 0x70c
-> > 
-> > So we need to check x86_mask for stepping and adjust the value of
-> > snb_ucode_rev accordingly for model 45."
-> 
-> not sure i understood your point? 
-> What do you want me to change?
-> 
-> I check different numbers on the different models.
-> 
-> FWIW it works on a Sandy Bridge E and I believe I didn't change
-> the logic for non E, which Stephane tested.
+Hi all,
 
-Is there a ucode revision for C2 higher than 0x618 but lower than
-0x70c ? If so, your code is wrong for it would enable PEBS on that chip.
+I'm seeing the following when booting a KVM guest with 65gb of RAM, on latest linux-next.
+
+Note that it happens with numa=off.
+
+[    0.000000] BUG: unable to handle kernel paging request at ffff88102febd948
+[    0.000000] IP: [<ffffffff836a6f37>] __next_free_mem_range+0x9b/0x155
+[    0.000000] PGD 4826063 PUD cf67a067 PMD cf7fa067 PTE 800000102febd160
+[    0.000000] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[    0.000000] CPU 0 
+[    0.000000] Pid: 0, comm: swapper Not tainted 3.5.0-rc2-next-20120612-sasha-00015-g996227e #395  
+[    0.000000] RIP: 0010:[<ffffffff836a6f37>]  [<ffffffff836a6f37>] __next_free_mem_range+0x9b/0x155
+[    0.000000] RSP: 0000:ffffffff84801db8  EFLAGS: 00010006
+[    0.000000] RAX: 0000000000000109 RBX: 000000000000011a RCX: 0000000000000000
+[    0.000000] RDX: 0000000000000109 RSI: 0000000000000400 RDI: ffffffff84801e60
+[    0.000000] RBP: ffffffff84801e18 R08: ffff88102febd958 R09: 0000000100000000
+[    0.000000] R10: 0000001030000000 R11: 0000000000000119 R12: ffff88102febc080
+[    0.000000] R13: ffffffff84e1beb0 R14: 0000000000000000 R15: 0000000000000002
+[    0.000000] FS:  0000000000000000(0000) GS:ffff880fcfa00000(0000) knlGS:0000000000000000
+[    0.000000] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[    0.000000] CR2: ffff88102febd948 CR3: 0000000004825000 CR4: 00000000000006b0
+[    0.000000] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[    0.000000] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[    0.000000] Process swapper (pid: 0, threadinfo ffffffff84800000, task ffffffff8482d400)
+[    0.000000] Stack:
+[    0.000000]  0000000000000000 ffffffff84801e68 ffffffff84801e70 ffffffff84801e60
+[    0.000000]  ffffffff84e1be80 0000000000000003 0000010900000002 0000000000f9122f
+[    0.000000]  ffffffff84801e60 ffffffff84801e70 ffffffff84801e68 ffffea0000000000
+[    0.000000] Call Trace:
+[    0.000000]  [<ffffffff850e8a98>] free_low_memory_core_early+0x1e4/0x206
+[    0.000000]  [<ffffffff850dab50>] numa_free_all_bootmem+0x82/0x8e
+[    0.000000]  [<ffffffff836b4352>] ? bad_to_user+0x149c/0x149c
+[    0.000000]  [<ffffffff850d8ff9>] mem_init+0x1e/0xec
+[    0.000000]  [<ffffffff850c0eb9>] start_kernel+0x209/0x3e9
+[    0.000000]  [<ffffffff850c0ade>] ? kernel_init+0x28a/0x28a
+[    0.000000]  [<ffffffff850c0324>] x86_64_start_reservations+0xff/0x104
+[    0.000000]  [<ffffffff850c047e>] x86_64_start_kernel+0x155/0x164
+[    0.000000] Code: 55 08 81 fe 00 04 00 00 0f 84 9a 00 00 00 41 3b 75 10 0f 85 9c 00 00 00 e9 8b 00 00 00 4c 6b c0 18 31 c9 4f 8d 04 04 85 d2 74 08 <49> 8b 48 f0 49 03 48 e8 48 83 cf ff 4c 39 d8 73 03 49 8b 38 4c 
+[    0.000000] RIP  [<ffffffff836a6f37>] __next_free_mem_range+0x9b/0x155
+[    0.000000]  RSP <ffffffff84801db8>
+[    0.000000] CR2: ffff88102febd948
+[    0.000000] ---[ end trace a7919e7f17c0a725 ]---
+
