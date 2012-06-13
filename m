@@ -1,99 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752582Ab2FMF4U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 01:56:20 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:45241 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751182Ab2FMF4T (ORCPT
+	id S1752440Ab2FMGAy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 02:00:54 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:22166 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750906Ab2FMGAx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 01:56:19 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/KTC0xFKbKmFmesaM6n2lhgf44hCqxdRIRmJGGKX
-	mFMxBFhwOAJunS
-Message-ID: <1339566974.7472.45.camel@marge.simpson.net>
-Subject: Re: rcu: endless stalls
-From: Mike Galbraith <efault@gmx.de>
-To: Hugh Dickins <hughd@google.com>
-Cc: paulmck@linux.vnet.ibm.com, LKML <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>
-Date: Wed, 13 Jun 2012 07:56:14 +0200
-In-Reply-To: <alpine.LSU.2.00.1206122120460.5221@eggly.anvils>
-References: <1339409176.7350.26.camel@marge.simpson.net>
-	 <20120611133953.GI2425@linux.vnet.ibm.com>
-	 <1339424543.7350.101.camel@marge.simpson.net>
-	 <1339435214.7358.43.camel@marge.simpson.net>
-	 <20120611180112.GD2521@linux.vnet.ibm.com>
-	 <1339438242.7358.62.camel@marge.simpson.net>
-	 <1339558508.7472.26.camel@marge.simpson.net>
-	 <alpine.LSU.2.00.1206122120460.5221@eggly.anvils>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	Wed, 13 Jun 2012 02:00:53 -0400
+X-AuditID: cbfee61a-b7f9f6d0000016a8-73-4fd82c94b7d7
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+To: x86@kernel.org, linux-kernel@vger.kernel.org
+Cc: Michal Nazarewicz <mina86@mina86.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH] x86: dma-mapping: fix broken allocation when dma_mask has been
+ provided
+Date: Wed, 13 Jun 2012 07:57:26 +0200
+Message-id: <1339567046-2264-1-git-send-email-m.szyprowski@samsung.com>
+X-Mailer: git-send-email 1.7.10
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJJMWRmVeSWpSXmKPExsVy+t9jQd0pOjf8De4d5bC4vGsOmwOjx+dN
+	cgGMUVw2Kak5mWWpRfp2CVwZDR/TCpo4K9ZtamJtYNzF3sXIySEhYCJx708nI4QtJnHh3nq2
+	LkYuDiGB6YwSbVP+s0A4q5kkXny5wARSxSZgKNH1tosNxBYRMJDYsvIFK0gRs8BPRol1tzvA
+	xgoLREm0/VjOAmKzCKhK3J4xAyjOwcEr4C7x+p8zxDZ5iaf3+9gmMHIvYGRYxSiaWpBcUJyU
+	nmuoV5yYW1yal66XnJ+7iRHswWdSOxhXNlgcYhTgYFTi4f2idsNfiDWxrLgy9xCjBAezkghv
+	8dbr/kK8KYmVValF+fFFpTmpxYcYpTlYlMR5m6wv+AsJpCeWpGanphakFsFkmTg4pRoY9XUZ
+	Q+fI8slErO45ILjfVTq1csN8l/mXxXx/TDty9PHJ26q9Fscv3U25d2UdQ8jb9x1N+p9kvE9q
+	FU9KfynH8e5XwrKfX2dK7LJIKVlt/dzBT0vEVma/jqtPj/N7ifVZq7ynJswJCbiRteSy3sSt
+	1UIZLZn7hTa9/7Gq6wVXbeizYwfn/fq9SImlOCPRUIu5qDgRACmEzHvcAQAA
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-06-12 at 21:31 -0700, Hugh Dickins wrote: 
-> On Wed, 13 Jun 2012, Mike Galbraith wrote:
-> > On Mon, 2012-06-11 at 20:10 +0200, Mike Galbraith wrote: 
-> > > On Mon, 2012-06-11 at 11:01 -0700, Paul E. McKenney wrote: 
-> > 
-> > > > > 2aa15890 - mm: prevent concurrent unmap_mapping_range() on the same inode
-> > > > 
-> > > > I confess, you lost me on this one.  You believe that this commit is
-> > > > the cause of the RCU CPU stall warnings?
-> > > 
-> > > 4096 tasks on 4096 CPUs exit (well, try to) simultaneously.
-> > > 
-> > > Call Trace:
-> > >                 __mutex_lock_slowpath+0x94/0x150
-> > >                 mutex_lock+0x1a/0x40
-> > >                 unlink_file_vma+0x3f/0xf0
-> > >                 free_pgtables+0x40/0x100
-> > >                 exit_mmap+0xb0/0x120
-> > >                 mmput+0x49/0x120
-> > >                 exit_mm+0x122/0x160
-> > >                 do_exit+0x179/0x8d0
-> > >                 do_group_exit+0x3d/0xb0
-> > >                 sys_exit_group+0x12/0x20
-> > > 
-> > > Monster box dies screaming.
-> > 
-> > That commit landed in stable, box with way too many cores (NR_CPUS=0!!)
-> > chokes instantly with loads of spinners.  Ok, so zillion CPUs grabbing a
-> > mutex in lockstep is a bad idea (_having_ zillion?), but is there pilot
-> > error involved in a logjam like this?
-> 
-> Surely some mistake...
+Commit 0a2b9a6ea93 ("X86: integrate CMA with DMA-mapping subsystem")
+broke memory allocation with dma_mask. This patch fixes possible kernel
+ops caused by lack of resetting page variable when jumping to 'again' label.
 
-Yup.
+Reported-by: Konrad Rzeszutek Wilk <konrad@darnok.org>
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+---
+ arch/x86/kernel/pci-dma.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-> I can't find any mention of which kernel release you're talking about.
-> 
-> But Miklos's 2aa15890 unmap_mutex was introduced in 2.6.38 and removed
-> in 3.0, when PeterZ converted i_mmap_lock to i_mmap_mutex, and removed
-> the need for the additional unmap_mutex.
-> 
-> The unmap_mutex would never have been taken in unlink_file_vma(),
-> shown in your stacktrace above: it was for truncation and invalidation.
-> 
-> The likely mutex in unlink_file_vma() would be the i_mmap_mutex.
-> So I expect you're talking about a 3.0 or later kernel.
-
-Yeah.
-
-> But then why would someone "backport" Miklos's patch to stable for it?
-> 
-> You lost me too!
-
-Sorry, /me is hopping around vigorously between too many darn trees,
-it's already there, not a stable addition.
-
-Question remains though.  Maybe the box hit some other problem that led
-to death by RCU gripage, but the info I received indicated the box was
-in the midst of a major spin-fest.
-
--Mike
+diff --git a/arch/x86/kernel/pci-dma.c b/arch/x86/kernel/pci-dma.c
+index 62c9457..c0f420f 100644
+--- a/arch/x86/kernel/pci-dma.c
++++ b/arch/x86/kernel/pci-dma.c
+@@ -100,7 +100,7 @@ void *dma_generic_alloc_coherent(struct device *dev, size_t size,
+ 				 struct dma_attrs *attrs)
+ {
+ 	unsigned long dma_mask;
+-	struct page *page = NULL;
++	struct page *page;
+ 	unsigned int count = PAGE_ALIGN(size) >> PAGE_SHIFT;
+ 	dma_addr_t addr;
+ 
+@@ -108,6 +108,7 @@ void *dma_generic_alloc_coherent(struct device *dev, size_t size,
+ 
+ 	flag |= __GFP_ZERO;
+ again:
++	page = NULL;
+ 	if (!(flag & GFP_ATOMIC))
+ 		page = dma_alloc_from_contiguous(dev, count, get_order(size));
+ 	if (!page)
+-- 
+1.7.1.569.g6f426
 
