@@ -1,101 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753295Ab2FMJor (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 05:44:47 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:52479 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752807Ab2FMJoq convert rfc822-to-8bit (ORCPT
+	id S1753391Ab2FMJpO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 05:45:14 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41190 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752664Ab2FMJpM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 05:44:46 -0400
+	Wed, 13 Jun 2012 05:45:12 -0400
+Date: Wed, 13 Jun 2012 10:45:09 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Sangbeom Kim <sbkim73@samsung.com>
+Cc: "'Liam Girdwood'" <lrg@ti.com>, linux-kernel@vger.kernel.org,
+        sbkim01@gmail.com
+Subject: Re: [PATCH 1/5] regulator: Remove s5m8767a buck initialization
+Message-ID: <20120613094509.GG4545@opensource.wolfsonmicro.com>
+References: <041f01cd493e$32e99020$98bcb060$@com>
 MIME-Version: 1.0
-In-Reply-To: <CAORVsuWqWt0pJfewymh_ydAH61-uPsO0M7m7Gs4N3zJY=Vo9ZA@mail.gmail.com>
-References: <1339502524-10265-1-git-send-email-vincent.guittot@linaro.org>
-	<1339502524-10265-4-git-send-email-vincent.guittot@linaro.org>
-	<CAORVsuWqWt0pJfewymh_ydAH61-uPsO0M7m7Gs4N3zJY=Vo9ZA@mail.gmail.com>
-Date: Wed, 13 Jun 2012 11:44:45 +0200
-Message-ID: <CAKfTPtBc-KuDg_1qe04TfYS4+66qQoiHCJQbCF9gnhga5ociow@mail.gmail.com>
-Subject: Re: [RFC 3/4] ARM: topology: Update cpu_power according to DT information
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: Jean Pihet <jean.pihet@newoldbits.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, devicetree-discuss@lists.ozlabs.org,
-        linux@arm.linux.org.uk, peterz@infradead.org,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Wtrm9ATX0sn6fFKv"
+Content-Disposition: inline
+In-Reply-To: <041f01cd493e$32e99020$98bcb060$@com>
+X-Cookie: You now have Asian Flu.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 June 2012 10:59, Jean Pihet <jean.pihet@newoldbits.com> wrote:
-> Vincent,
->
-> On Tue, Jun 12, 2012 at 2:02 PM, Vincent Guittot
-> <vincent.guittot@linaro.org> wrote:
->> Use cpu compatibility field and clock-frequency field of DT to
->> estimate the capacity of each core of the system
->>
->> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
->> ---
->>  arch/arm/kernel/topology.c |  122 ++++++++++++++++++++++++++++++++++++++++++++
->>  1 file changed, 122 insertions(+)
->>
->> diff --git a/arch/arm/kernel/topology.c b/arch/arm/kernel/topology.c
->> index 2f85a64..0c2aee4 100644
->> --- a/arch/arm/kernel/topology.c
->> +++ b/arch/arm/kernel/topology.c
->> @@ -17,6 +17,7 @@
->>  #include <linux/percpu.h>
->>  #include <linux/node.h>
->>  #include <linux/nodemask.h>
->> +#include <linux/of.h>
->>  #include <linux/sched.h>
->>
->>  #include <asm/cputype.h>
->> @@ -47,6 +48,122 @@ void set_power_scale(unsigned int cpu, unsigned long power)
->>        per_cpu(cpu_scale, cpu) = power;
->>  }
->>
->> +#ifdef CONFIG_OF
->> +struct cpu_efficiency {
->> +       const char *compatible;
->> +       unsigned long efficiency;
->> +};
->> +
->> +/*
->> + * Table of relative efficiency of each processors
->> + * The efficiency value must fit in 20bit. The final
->> + * cpu_scale value must be in the range [1:2048[.
-> Typo here.
 
-I realize that I have use absolute value instead of SCHED_POWER_SCALE.
-The cpu_scale value must be in the range 0 < cpu_scale < 2*SCHED_POWER_SCALE
+--Wtrm9ATX0sn6fFKv
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->
->> + * Processors that are not defined in the table,
->> + * use the default SCHED_POWER_SCALE value for cpu_scale.
->> + */
->> +struct cpu_efficiency table_efficiency[] = {
->> +       {"arm,cortex-a15", 3891},
->> +       {"arm,cortex-a7",  2048},
-> How are those results measured or computed? Is this purely related to
-> the number crunching performance?
+On Wed, Jun 13, 2012 at 05:26:15PM +0900, Sangbeom Kim wrote:
+> As s5m8767a is revisioned, remove unnecessary buck 2,3,4 initialization routine.
 
-These values are based on ARM's figures which say that Cortex-A15 is
-1,9 faster than Cortex-A7 at same frequency. So the inputs are ARM's
-figures. Then, the absolute values are arbitrary with the constraint
-of being large enough for precision and small enough to make the
-computation in an unsigned long
+Applied, thanks.
 
->
-> Also more generally what if the cores frequencies are changing?
+--Wtrm9ATX0sn6fFKv
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Up to now, the scheduler takes into account the maximum capacity of a
-core when it checks the load balance of the system.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Regards,
-Vincent
+iQIcBAEBAgAGBQJP2GEeAAoJEBus8iNuMP3dDYUP/35PJpalr72bKuEbw/Eiv5eu
+2Ze2zyX42477ax7a3YN18crNZ5aZmNdXOiottl3WjdroMmO/IByByi3LkVrgwI/m
+VsWcb2FS21yF+aVBVZY//qZ7zcLa9HFWq85eT8rO29MrChWFQMwRynBkx8jHMueP
+vAB6lKNEN1Jb6WIJc7iUvb9OVqs/nfc78rRaLpSjZb/KhvaUwUXss2tMqAiuZYP5
+4HAy1Z19DytjlnZ6YJUPokQHiDPAU7lmApQUseR13skuCWu2n64jEIK7KbOShyUW
+NcYOreacFLQ/FLYimKZWESLcz9xNKeBn/LDN643waZh3ohCAl10Q11oyTTEYvQjT
+ApdObsWBas0ujSji1KrQCyKWvoThs2l/pydF0z1Bc6BdQhsyZbPVNyfBmGbrzt9I
+NHm64ozp0IO/rOVxZFMI3eW41711Mr5MTm9s4tgCgkNbR7pfaDcRzQLKhXviMsZo
+pRst+naOITFzaUDx0a7v+bv08YLZ2bC5gRIeyRWgluiJNa5x4Xk1GhysVbChASO+
+IM8Xs8JCQ59K1/LcBqWE91cPUJ2IfRAcwm8RhP1iwZQu4e3Z2cKly+9E0lLgAs6O
+iVXpjNlmkwHL/NqMw/F8XHbgE7wwYm5kaRpVqjrJaCWSLIlR6RhM5olKVZqPoSpl
+mGCRWPCCeLOCGXwI9qhj
+=CtpW
+-----END PGP SIGNATURE-----
 
->
-> Regards,
-> Jean
+--Wtrm9ATX0sn6fFKv--
