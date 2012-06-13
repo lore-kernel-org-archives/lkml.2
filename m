@@ -1,67 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754557Ab2FMS41 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 14:56:27 -0400
-Received: from www.linutronix.de ([62.245.132.108]:50762 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753525Ab2FMS40 (ORCPT
+	id S1754576Ab2FMS6K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 14:58:10 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:37326 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752476Ab2FMS6I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 14:56:26 -0400
-Date: Wed, 13 Jun 2012 20:56:18 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+	Wed, 13 Jun 2012 14:58:08 -0400
+Date: Wed, 13 Jun 2012 11:57:48 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
         Ingo Molnar <mingo@kernel.org>,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
         Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>
 Subject: Re: [RFC patch 2/5] smpboot: Provide infrastructure for percpu
  hotplug threads
-In-Reply-To: <20120613183301.GE2427@linux.vnet.ibm.com>
-Message-ID: <alpine.LFD.2.02.1206132050270.3086@ionos>
-References: <20120613102823.373180763@linutronix.de> <20120613105815.206105518@linutronix.de> <20120613183301.GE2427@linux.vnet.ibm.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+Message-ID: <20120613185748.GF2427@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120613102823.373180763@linutronix.de>
+ <20120613105815.206105518@linutronix.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120613105815.206105518@linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12061318-6148-0000-0000-000006AC274B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Jun 2012, Paul E. McKenney wrote:
-> On Wed, Jun 13, 2012 at 11:00:54AM -0000, Thomas Gleixner wrote:
->
-> So I am currently trying to apply this to RCU's per-CPU kthread.
-> I don't believe that I need to mess with RCU's per-rcu_node kthread
-> because it can just have its affinity adjusted when the first CPU
-> onlines and the last CPU offlines for the corresponding rcu_node.
+On Wed, Jun 13, 2012 at 11:00:54AM -0000, Thomas Gleixner wrote:
+> Provide a generic interface for setting up and tearing down percpu
+> threads.
 > 
-> One question below about the order of parking.
+> On registration the threads for already online cpus are created and
+> started. On deregistration (modules) the threads are stoppped.
 > 
-> Also, I have not yet figured out how this avoids a parked thread waking
-> up while the CPU is offline, but I am probably still missing something.
-
-If it's just a spurious wakeup then it goes back to sleep right away
-as nothing cleared the park bit.
-
-If something calls unpark(), then it's toast. I should put a warning
-into the code somewhere to catch that case.
-
-> > +void smpboot_park_threads(unsigned int cpu)
-> > +{
-> > +	struct smp_hotplug_thread *cur;
-> > +
-> > +	mutex_lock(&smpboot_threads_lock);
-> > +	list_for_each_entry(cur, &hotplug_threads, list)
+> During hotplug operations the threads are created, started, parked and
+> unparked. The datastructure for registration provides a pointer to
+> percpu storage space and optional setup, cleanup, park, unpark
+> functions. These functions are called when the thread state changes.
 > 
-> Shouldn't this be list_for_each_entry_reverse()?  Yes, the notifiers
-> still run in the same order for both online and offline, but all uses
-> of smpboot_park_threads() would be new, so should be OK with the
-> proper ordering, right?
+> Thread functions should look like the following:
+> 
+> int thread_fn(void *cookie)
+> {
+> 	while (!smpboot_thread_check_parking(cookie)) {
+> 		do_stuff();
+> 	}
+> 	return 0;
+> }
+> 
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 
-Duh, yes
+[ . . . ]
 
-Thanks,
+> Index: tip/kernel/cpu.c
+> ===================================================================
+> --- tip.orig/kernel/cpu.c
+> +++ tip/kernel/cpu.c
+> @@ -280,6 +280,7 @@ static int __ref _cpu_down(unsigned int 
+>  				__func__, cpu);
+>  		goto out_release;
+>  	}
+> +	smpboot_park_threads(cpu);
+> 
+>  	err = __stop_machine(take_cpu_down, &tcd_param, cpumask_of(cpu));
+>  	if (err) {
+> @@ -354,6 +355,10 @@ static int __cpuinit _cpu_up(unsigned in
+>  		goto out;
+>  	}
+> 
+> +	ret = smpboot_create_threads(cpu);
+> +	if (ret)
+> +		goto out;
+> +
+>  	ret = __cpu_notify(CPU_UP_PREPARE | mod, hcpu, -1, &nr_calls);
+>  	if (ret) {
+>  		nr_calls--;
+> @@ -370,6 +375,7 @@ static int __cpuinit _cpu_up(unsigned in
+> 
+>  	/* Now call notifier in preparation. */
+>  	cpu_notify(CPU_ONLINE | mod, hcpu);
+> +	smpboot_unpark_threads(cpu);
 
-	tglx
+OK, RCU must use the lower-level interfaces, given that one of
+then CPU_ONLINE notifiers might invoke synchronize_rcu().
+
+							Thanx, Paul
+
