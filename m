@@ -1,194 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753309Ab2FMAhS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 20:37:18 -0400
-Received: from mail132.messagelabs.com ([216.82.242.115]:3685 "EHLO
-	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751847Ab2FMAhQ (ORCPT
+	id S1753297Ab2FMAux (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 20:50:53 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:56735 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752400Ab2FMAuv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 20:37:16 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-12.tower-132.messagelabs.com!1339547835!11255719!1
-X-Originating-IP: [216.166.12.32]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] staging: comedi: Kconfig: cleanup depends on logic
-Date: Tue, 12 Jun 2012 17:37:10 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201206121737.11308.hartleys@visionengravers.com>
+	Tue, 12 Jun 2012 20:50:51 -0400
+Date: Wed, 13 Jun 2012 10:50:41 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree (pci
+ tree related)
+Message-Id: <20120613105041.2d5dcdde6b9cf3dcfba3885d@canb.auug.org.au>
+In-Reply-To: <CAErSpo6LxpYz_WK2mHPW3RWkOMPLar0KUp1Pgh7shhOdmT49kw@mail.gmail.com>
+References: <20120612145441.400975347f06785d391d0f8f@canb.auug.org.au>
+	<CAErSpo6LxpYz_WK2mHPW3RWkOMPLar0KUp1Pgh7shhOdmT49kw@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__13_Jun_2012_10_50_41_+1000_6vYAvXUgcl5rGlJ/"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All of the config options for comedi depend on COMEDI being
-selected. Wrap everything in an 'if COMEDI/endif' block and
-remove all the individual 'depends on COMEDI' in the Kconfig.
+--Signature=_Wed__13_Jun_2012_10_50_41_+1000_6vYAvXUgcl5rGlJ/
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Also, remove the redundant && ISA/PCI/PCMCIA/USB for the if
-blocks with those driver types.
+Hi Bjorn,
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbott@mev.co.uk>
-Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/staging/comedi/Kconfig |   30 ++++++++++++------------------
- 1 files changed, 12 insertions(+), 18 deletions(-)
+On Tue, 12 Jun 2012 09:31:49 -0600 Bjorn Helgaas <bhelgaas@google.com> wrot=
+e:
+>
+> Thanks, I folded this typo fix into the relevant patch.  I'll rebase
+> "next" today.  Sorry for the trouble.
 
-diff --git a/drivers/staging/comedi/Kconfig b/drivers/staging/comedi/Kconfig
-index 54e32da..848cf7e 100644
---- a/drivers/staging/comedi/Kconfig
-+++ b/drivers/staging/comedi/Kconfig
-@@ -6,9 +6,10 @@ config COMEDI
- 	  Enable support a wide range of data acquisition devices
- 	  for Linux.
- 
-+if COMEDI
-+
- config COMEDI_DEBUG
- 	bool "Comedi debugging"
--	depends on COMEDI != n
- 	---help---
- 	  This is an option for use by developers; most people should
- 	  say N here. This enables comedi core and driver debugging.
-@@ -16,7 +17,6 @@ config COMEDI_DEBUG
- config COMEDI_DEFAULT_BUF_SIZE_KB
- 	int "Comedi default initial asynchronous buffer size in KiB"
- 	default "2048"
--	depends on COMEDI != n
- 	---help---
- 	  This is the default asynchronous buffer size which is used for
- 	  commands running in the background in kernel space.  This
-@@ -26,7 +26,6 @@ config COMEDI_DEFAULT_BUF_SIZE_KB
- config COMEDI_DEFAULT_BUF_MAXSIZE_KB
- 	int "Comedi default maximum asynchronous buffer size in KiB"
- 	default "20480"
--	depends on COMEDI != n
- 	---help---
- 	  This is the default maximum asynchronous buffer size which can
- 	  be requested by a userspace program without root privileges.
-@@ -35,7 +34,6 @@ config COMEDI_DEFAULT_BUF_MAXSIZE_KB
- 
- menuconfig COMEDI_MISC_DRIVERS
- 	tristate "Comedi misc drivers"
--	depends on COMEDI
- 	---help---
- 	  Enable comedi misc drivers to be built
- 
-@@ -103,7 +101,7 @@ endif # COMEDI_MISC_DRIVERS
- 
- menuconfig COMEDI_ISA_DRIVERS
- 	tristate "Comedi ISA and PC/104 drivers"
--	depends on COMEDI && ISA
-+	depends on ISA
- 	---help---
- 	  Enable comedi ISA and PC/104 drivers to be built
- 
-@@ -111,7 +109,7 @@ menuconfig COMEDI_ISA_DRIVERS
- 	  kernel: saying N will just cause the configurator to skip all
- 	  the questions about ISA and PC/104 comedi drivers.
- 
--if COMEDI_ISA_DRIVERS && ISA
-+if COMEDI_ISA_DRIVERS
- 
- config COMEDI_ACL7225B
- 	tristate "ADlink NuDAQ ACL-7225b and compatibles support"
-@@ -543,7 +541,7 @@ endif # COMEDI_ISA_DRIVERS
- 
- menuconfig COMEDI_PCI_DRIVERS
- 	tristate "Comedi PCI drivers"
--	depends on COMEDI && PCI
-+	depends on PCI
- 	---help---
- 	  Enable comedi PCI drivers to be built
- 
-@@ -551,7 +549,7 @@ menuconfig COMEDI_PCI_DRIVERS
- 	  kernel: saying N will just cause the configurator to skip all
- 	  the questions about PCI comedi drivers.
- 
--if COMEDI_PCI_DRIVERS && PCI
-+if COMEDI_PCI_DRIVERS
- 
- config COMEDI_ADDI_APCI_035
- 	tristate "ADDI-DATA APCI_035 support"
-@@ -1099,7 +1097,7 @@ endif # COMEDI_PCI_DRIVERS
- 
- menuconfig COMEDI_PCMCIA_DRIVERS
- 	tristate "Comedi PCMCIA drivers"
--	depends on COMEDI && (PCMCIA || PCCARD)
-+	depends on (PCMCIA || PCCARD)
- 	---help---
- 	  Enable comedi PCMCIA and PCCARD drivers to be built
- 
-@@ -1107,7 +1105,7 @@ menuconfig COMEDI_PCMCIA_DRIVERS
- 	  kernel: saying N will just cause the configurator to skip all
- 	  the questions about PCMCIA comedi drivers.
- 
--if COMEDI_PCMCIA_DRIVERS && PCMCIA
-+if COMEDI_PCMCIA_DRIVERS
- 
- config COMEDI_CB_DAS16_CS
- 	tristate "CB DAS16 series PCMCIA support"
-@@ -1182,7 +1180,7 @@ endif # COMEDI_PCMCIA_DRIVERS
- 
- menuconfig COMEDI_USB_DRIVERS
- 	tristate "Comedi USB drivers"
--	depends on COMEDI && USB
-+	depends on USB
- 	---help---
- 	  Enable comedi USB drivers to be built
- 
-@@ -1190,7 +1188,7 @@ menuconfig COMEDI_USB_DRIVERS
- 	  kernel: saying N will just cause the configurator to skip all
- 	  the questions about USB comedi drivers.
- 
--if COMEDI_USB_DRIVERS && USB
-+if COMEDI_USB_DRIVERS
- 
- config COMEDI_DT9812
- 	tristate "DataTranslation DT9812 USB module support"
-@@ -1290,7 +1288,6 @@ endif # COMEDI_NI_COMMON
- 
- config COMEDI_8255
- 	tristate "Generic 8255 support"
--	depends on COMEDI
- 	---help---
- 	  Enable generic 8255 support.
- 
-@@ -1306,23 +1303,20 @@ config COMEDI_8255
- 
- config COMEDI_FC
- 	tristate
--	depends on COMEDI
- 
- config COMEDI_AMPLC_DIO200
- 	tristate
--	depends on COMEDI
- 	select COMEDI_8255
- 
- config COMEDI_AMPLC_PC236
- 	tristate
--	depends on COMEDI
- 	select COMEDI_8255
- 
- config COMEDI_AMPLC_PC263
- 	tristate
--	depends on COMEDI
- 
- config COMEDI_DAS08
- 	tristate
--	depends on COMEDI
- 	select COMEDI_8255
-+
-+endif # COMEDI
--- 
-1.7.7
+I am not sure what you have done, but now you have a set of duplicated
+commits in your tree including both versions of the one that caused the
+build failure.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Signature=_Wed__13_Jun_2012_10_50_41_+1000_6vYAvXUgcl5rGlJ/
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJP1+PhAAoJEECxmPOUX5FEYtwP+QFdFE2JnVbn+3LOYiStpBPq
+2hWCWGP84s27F7XtX8PAXK/01IBfLppyUuSp9IHHJkttRFQIcWBN995VwXCT3ebz
+iYk4T1Ik40s+qscDaBixQUN4RBzU0TI/nOYhhLKYJ9VqJ+lz86qi1t7emcQoLCiS
+NE9i0SlBrpzD2l47uQ/WbwjNKAAxChcttS/olQhwz5feYHhe6nkL26zyr8NDE09g
+BkZ04hYnyN52GrLwfkvjB8U0JO25qUsr9bjo4WRkAT73YMuQAj/ahxXJQDEEziIP
+brfJAqy09OpLcLXmKBczWODCwWIYHC61jX2kI+XtjFZTxzXYCACpR23yRq0TLy3R
+M7Uk4P/CNQi31jR6ovVBUQ2zShR0Mm0PUIyvm2FNcMf/M3/RmaI9+yKKNeLY8NMP
+MYYwk4Ojepr3hAxkY4gRHRiFfNQk3SB+plQV9bwOPOx42wEJyt4AvfY1PGTgiXxt
+O51ysVhN+vMNUT8Txn9AQKYUjqX7AuHAVpcy2NHVwzruxoEe5x3ZMarHqZ0RkOOL
+agrxANV/+RniSQ6Wark9D6fgM14OZ8b5/rf/zM3/BzF1S/UVzOIN/NFxUM9nuPcx
+F+FDiCJLfcma20TSxZ3YonILyVAjmzxdEfkdD4X3SgP61nVMzcofmZLBQrIZnIrS
+yD1dEmTjVPgySm6bKLk7
+=tQSY
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__13_Jun_2012_10_50_41_+1000_6vYAvXUgcl5rGlJ/--
