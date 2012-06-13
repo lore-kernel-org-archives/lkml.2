@@ -1,44 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753568Ab2FMMyY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 08:54:24 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:52319 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753320Ab2FMMyX (ORCPT
+	id S1753264Ab2FMNEe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 09:04:34 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:54607 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750987Ab2FMNEd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 08:54:23 -0400
-X-Authenticated: #7313500
-X-Provags-ID: V01U2FsdGVkX1+c4upRt02cNlmmnGMkgR2i2AqyxbGAqz4dJmFZlb
-	oXR27xN/NpgGrB
-From: "Jan-Simon =?iso-8859-1?q?M=F6ller?=" <dl9pf@gmx.de>
-To: linux-kernel@vger.kernel.org
-Subject: KDB and usb or dbgp - status ?
-Date: Wed, 13 Jun 2012 14:54:15 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0-rc2-ftrace1-00012-gb0a4c6f; KDE/4.6.0; x86_64; ; )
-Cc: Jason Wessel <jason.wessel@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201206131454.15218.dl9pf@gmx.de>
-X-Y-GMX-Trusted: 0
+	Wed, 13 Jun 2012 09:04:33 -0400
+Message-ID: <1339592667.8980.32.camel@twins>
+Subject: Re: [BUG] perf: perf_output_sample() merge issue?
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, mingo@elte.hu
+Date: Wed, 13 Jun 2012 15:04:27 +0200
+In-Reply-To: <CABPqkBQa8ndydqkMDvc3kzu84_96FbK77TUkrfO3eSPXmv3dhQ@mail.gmail.com>
+References: <CABPqkBQa8ndydqkMDvc3kzu84_96FbK77TUkrfO3eSPXmv3dhQ@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all!
+On Wed, 2012-06-13 at 14:51 +0200, Stephane Eranian wrote:
+> I think the intent of this commit was to add the watermark check
+> at the very end of the perf_output_sample() and NOT between processing
+> of RAW and BRANCH_STACK. Something may have gone wrong
+> in the merge.
+> 
+> Can you confirm this? 
 
-I sat down an tried to figure out how to use KDB (also through dbgp) with 
-latest mainline. It turned out to be a no-go unless I have hardware with PS/2 
-for keyboard. 
-I wonder whats the status regarding USB keyboards and the USB EHCI debugport.
-
-Am I right or is USB keyboard support not available in KDB/mainline ?
-
-How well does the EHCI debugport work and what steps are needed to reproduce ?
-I tried it with g_dbgp on a beagleboard as "host" for the debugging session.
-
-Whats the status ?
-
-Best,
-Jan-Simon
+Yes very much so, good spotting. Weird stuff this merging.
