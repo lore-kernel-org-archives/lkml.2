@@ -1,114 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753463Ab2FMHeT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 03:34:19 -0400
-Received: from linux-sh.org ([111.68.239.195]:41662 "EHLO linux-sh.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752252Ab2FMHeQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 03:34:16 -0400
-From: Paul Mundt <lethal@linux-sh.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: [PATCH 1/2] irqdomain: Fix up linear revmap for non-zero hwirq displacement.
-Date: Wed, 13 Jun 2012 16:34:00 +0900
-Message-Id: <1339572841-26175-1-git-send-email-lethal@linux-sh.org>
-X-Mailer: git-send-email 1.7.10.207.g0bb2e
+	id S1751185Ab2FMHix (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 03:38:53 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:62610 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750727Ab2FMHiv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 03:38:51 -0400
+Date: Wed, 13 Jun 2012 09:38:46 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, a.p.zijlstra@chello.nl,
+        mingo@elte.hu, jolsa@redhat.com, andi@firstfloor.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V5 0/13] perf: Intel uncore pmu counting support
+Message-ID: <20120613073846.GA8057@gmail.com>
+References: <1339479468-3815-1-git-send-email-zheng.z.yan@intel.com>
+ <CABPqkBQu1hTa2R-PKsygLqOSSD9nu3+xR-79pT-8bB8Y16CBuw@mail.gmail.com>
+ <4FD7EFCB.6060005@intel.com>
+ <CABPqkBQmdyfxJ1iFoGt45c84zzzUphosY8Qg76MACX=xdtk_mw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBQmdyfxJ1iFoGt45c84zzzUphosY8Qg76MACX=xdtk_mw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Presently the linear revmap code assumes that all hwirqs start at 0,
-using the hwirq directly as an index value for the lookup. In the case of
-legacy revmaps this isn't necessarily the case, as the first_hwirq value
-passed in can be non-zero, causing those types of users to silently have
-their IRQs placed in the radix tree instead.
 
-With this change, hwirq displacement is factored in at association time
-directly. This also makes it possible for non-legacy users to use linear
-revmaps regardless of hwirq base position. This could potentially lead to
-a bug if there's an attempt to associate multiple times in to the linear
-map in a nonsensical and non-linear order, but at that point being
-silently punted to the radix tree is likely to be the least of your
-concerns (in such a case it's fairly trivial to simply extend
-irq_domain_add_linear() to take a hwirq base and move the linear base
-assignment there).
+* Stephane Eranian <eranian@google.com> wrote:
 
-Signed-off-by: Paul Mundt <lethal@linux-sh.org>
----
- include/linux/irqdomain.h |    1 +
- kernel/irq/irqdomain.c    |   18 +++++++++++++-----
- 2 files changed, 14 insertions(+), 5 deletions(-)
+> > Peter suggests keeping the uncore names as they're listed in 
+> > the intel doc. For Sandybirdge-EP, uncore names are 
+> > something like: Cbo, iMC, QPI. I think Uncore_Cbo_0 appears 
+> > better than uncore_Cbo_0
+>
+> Keeping the name is different from keeping the upper vs. lower 
+> case letters. I think this need to be case insensitive. What 
+> does it buy you to be case sensitive? Don't think Intel is 
+> ever going to create two events which differ only by the lower 
+> vs. upper case. And, I think that's extra frustration when you 
+> type the event name because you have to also remember the 
+> letter case.
 
-diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
-index 775765d..58defd5 100644
---- a/include/linux/irqdomain.h
-+++ b/include/linux/irqdomain.h
-@@ -97,6 +97,7 @@ struct irq_domain {
- 	/* Reverse mapping data */
- 	unsigned int nomap_max_irq;
- 	struct radix_tree_root radix_tree;
-+	unsigned int linear_start;
- 	unsigned int linear_size;
- 	unsigned int linear_revmap[];
- };
-diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-index 906307b..8591cb6 100644
---- a/kernel/irq/irqdomain.c
-+++ b/kernel/irq/irqdomain.c
-@@ -55,6 +55,7 @@ static struct irq_domain *irq_domain_alloc(struct device_node *of_node,
- 	domain->ops = ops;
- 	domain->host_data = host_data;
- 	domain->of_node = of_node_get(of_node);
-+	domain->linear_start = 0;
- 	domain->linear_size = size;
- 
- 	return domain;
-@@ -268,8 +269,8 @@ static void irq_domain_disassociate_many(struct irq_domain *domain,
- 		irq_data->hwirq = 0;
- 
- 		/* Clear reverse map */
--		if (hwirq < domain->linear_size)
--			domain->linear_revmap[hwirq] = 0;
-+		if (hwirq - domain->linear_start < domain->linear_size)
-+			domain->linear_revmap[hwirq - domain->linear_start] = 0;
- 		else {
- 			mutex_lock(&revmap_trees_mutex);
- 			radix_tree_delete(&domain->radix_tree, hwirq);
-@@ -288,6 +289,13 @@ int irq_domain_associate_many(struct irq_domain *domain, unsigned int irq_base,
- 	pr_debug("%s(%s, irqbase=%i, hwbase=%i, count=%i)\n", __func__,
- 		of_node_full_name(domain->of_node), irq_base, (int)hwirq_base, count);
- 
-+	/*
-+	 * The linear revmap may not begin at 0, factor in the hwirq
-+	 * displacement here.
-+	 */
-+	if (domain->linear_size)
-+		domain->linear_start = hwirq_base;
-+
- 	for (i = 0; i < count; i++) {
- 		struct irq_data *irq_data = irq_get_irq_data(virq + i);
- 
-@@ -311,8 +319,8 @@ int irq_domain_associate_many(struct irq_domain *domain, unsigned int irq_base,
- 			goto err_unmap;
- 		}
- 
--		if (hwirq < domain->linear_size)
--			domain->linear_revmap[hwirq] = virq;
-+		if (hwirq - domain->linear_start < domain->linear_size)
-+			domain->linear_revmap[hwirq - domain->linear_start] = virq;
- 		else {
- 			mutex_lock(&revmap_trees_mutex);
- 			radix_tree_insert(&domain->radix_tree, hwirq, irq_data);
-@@ -585,7 +593,7 @@ unsigned int irq_linear_revmap(struct irq_domain *domain,
- 	BUG_ON(domain->revmap_type != IRQ_DOMAIN_MAP_LINEAR);
- 
- 	/* Check revmap bounds; complain if exceeded */
--	if (hwirq >= domain->linear_size) {
-+	if (hwirq - domain->linear_start >= domain->linear_size) {
- 		rcu_read_lock();
- 		data = radix_tree_lookup(&domain->radix_tree, hwirq);
- 		rcu_read_unlock();
--- 
-1.7.9.rc0.28.g0e1cf
+Yeah - the right approach is to make it all lowercase in sysfs - 
+then user-space can tolower() the string provided by the user.
 
+There should be no case sensitivity in event specifications 
+anywhere.
+
+Thanks,
+
+	Ingo
