@@ -1,69 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754661Ab2FMUZk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 16:25:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64238 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754536Ab2FMUZi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 16:25:38 -0400
-Message-ID: <4FD8F70F.7080405@redhat.com>
-Date: Wed, 13 Jun 2012 16:24:47 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1754699Ab2FMU0G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 16:26:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59063 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752233Ab2FMU0F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 16:26:05 -0400
+Date: Wed, 13 Jun 2012 15:26:00 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] drm/i915: ignore pipe select bit when checking for
+ LVDS register initialization
+Message-ID: <20120613202600.GA3761@thinkpad-t410>
+Mail-Followup-To: dri-devel@lists.freedesktop.org,
+	linux-kernel@vger.kernel.org
+References: <20120613162544.GJ4829@phenom.ffwll.local>
+ <1339613218-4699-1-git-send-email-seth.forshee@canonical.com>
+ <20120613194614.GP4829@phenom.ffwll.local>
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH] MM: Support more pagesizes for MAP_HUGETLB/SHM_HUGETLB
- v2
-References: <1339542816-21663-1-git-send-email-andi@firstfloor.org>
-In-Reply-To: <1339542816-21663-1-git-send-email-andi@firstfloor.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120613194614.GP4829@phenom.ffwll.local>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/12/2012 07:13 PM, Andi Kleen wrote:
-> From: Andi Kleen<ak@linux.intel.com>
+On Wed, Jun 13, 2012 at 09:46:15PM +0200, Daniel Vetter wrote:
+> On Wed, Jun 13, 2012 at 01:46:58PM -0500, Seth Forshee wrote:
+> > The Lenovo Thinkpad T410 has the LVDS_PIPEB_SELECT bit set in the LVDS
+> > register when booted with the lid closed, even though the LVDS hasn't
+> > really been initialized. Ignore this bit so that the VBT value will be
+> > used instead.
+> > 
+> > Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+> Queued for -next, thanks for the patch. Chris had some reservations about
+> the sanity of this patch, but given that it works around bios-insanity I'm
+> gonna just take this chance to stab myself with lvds-machines blowing up
+> left and right ;-)
 
-Acked-by: Rik van Riel <riel@redhat.com>
+Let's hope that doesn't happen ;)
 
-> There was some desire in large applications using MAP_HUGETLB/SHM_HUGETLB
-> to use 1GB huge pages on some mappings, and stay with 2MB on others. This
-> is useful together with NUMA policy: use 2MB interleaving on some mappings,
-> but 1GB on local mappings.
->
-> This patch extends the IPC/SHM syscall interfaces slightly to allow specifying
-> the page size.
+I do find myself wondering though whether it might be better to prefer
+the value from the VBT whenever there's one available, and only rely on
+the actual register value as a fallback, since the bios can't be trusted
+to initialize the register. I'm pretty ignorant about all this graphics
+stuff though; I assume there's a reason it isn't done this way?
 
-This would also be useful for emulators such as qemu-kvm,
-which want the guest memory to be 2MB aligned.
-
-That would require extending mmap to specify the desired
-alignment, which may be possible using the upper bits of
-the mmap flags, like you did for the shm interface.
-
-> +#define MAP_HUGE_2MB    (21<<  MAP_HUGE_SHIFT)
-> +#define MAP_HUGE_1GB    (30<<  MAP_HUGE_SHIFT)
-
-Nice idea, that way each architecture can define the
-names for possible offsets, yet the numeric values
-will always line up between all of them.
-
-> + * Assume these are all power of twos.
-> + * When 0 use the default page size.
-> + */
-> +#define SHM_HUGE_SHIFT  26
-> +#define SHM_HUGE_MASK   0x3f
-> +#define SHM_HUGE_2MB    (21<<  SHM_HUGE_SHIFT)
-> +#define SHM_HUGE_1GB    (30<<  SHM_HUGE_SHIFT)
-> +
-> +#ifdef __KERNEL__
-
-Excellent, this is very similar to what I was
-thinking about implementing myself, in order
-to pass "desired alignment" information to my
-implementation of arch_get_unmapped_area(_topdown) :)
-
+Seth
 
