@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752401Ab2FMIDf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 04:03:35 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:33629 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750982Ab2FMIDY convert rfc822-to-8bit (ORCPT
+	id S1751662Ab2FMIMK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 04:12:10 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:34163 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750982Ab2FMIMF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 04:03:24 -0400
+	Wed, 13 Jun 2012 04:12:05 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120528105131.67d74d45@pyramind.ukuu.org.uk>
-References: <1338181720-4149-1-git-send-email-ming.m.lin@intel.com>
-	<1338181720-4149-3-git-send-email-ming.m.lin@intel.com>
-	<20120528105131.67d74d45@pyramind.ukuu.org.uk>
-Date: Wed, 13 Jun 2012 16:03:23 +0800
-X-Google-Sender-Auth: is96NzF2trz0eYUsnd8GwzMKn_Q
-Message-ID: <CAF1ivSYBjw+UP3vP8RHaftjR8NJZEaHA1rtJ5ujDjkj-djHLTQ@mail.gmail.com>
-Subject: Re: [PATCH v4 02/13] libata: bind the Linux device tree to the ACPI
- device tree
-From: Lin Ming <ming.m.lin@intel.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Jeff Garzik <jgarzik@pobox.com>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        Aaron Lu <aaron.lu@amd.com>, Holger Macht <holger@homac.de>,
-        Matthew Garrett <mjg@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-ide@vger.kernel.org, linux-acpi@vger.kernel.org
+In-Reply-To: <4FD83AAD.2010701@linaro.org>
+References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org>
+	<1339428307-3850-10-git-send-email-lee.jones@linaro.org>
+	<CACRpkdaMDbH4NkiHRLAfbJZ_j4QXbwg94bvaWsdYRPH+dSfc8Q@mail.gmail.com>
+	<4FD6F0E8.5040606@linaro.org>
+	<CACRpkdYxiT-0x4aetMxB2x8SkB+Mmy8rk8uSzgU_anemSayhMw@mail.gmail.com>
+	<4FD83AAD.2010701@linaro.org>
+Date: Wed, 13 Jun 2012 10:12:03 +0200
+Message-ID: <CACRpkdZC8E6izDpdnWy6DMjOdA6KsqTaPoaq9pErWoNW0Ewytw@mail.gmail.com>
+Subject: Re: [PATCH 09/14] i2c: Add Device Tree support to the Nomadik I2C driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, arnd@arndb.de, grant.likely@secretlab.ca,
+        linux-i2c@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 28, 2012 at 5:51 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
->> +static int is_pci_ata(struct device *dev)
->> +{
->> +     struct pci_dev *pdev;
->> +
->> +     if (!is_pci_dev(dev))
->> +             return 0;
->> +
->> +     pdev = to_pci_dev(dev);
->> +
->> +     if ((pdev->class >> 8) != PCI_CLASS_STORAGE_SATA &&
->> +         (pdev->class >> 8) != PCI_CLASS_STORAGE_IDE)
->> +             return 0;
->
-> This needs a better name. It doesn't check if a device is PCI ATA or
-> anything of the sort, it checks if its probably a device in compatibility
-> mode. A lot of controllers will in fact report RAID class or similar in
-> native mode.
+On Wed, Jun 13, 2012 at 9:01 AM, Lee Jones <lee.jones@linaro.org> wrote:
 
-How about compat_pci_ata?
+> Board specific is fine, as the data is protected by a board specific
+> property. Do you mean that the properties are *bus specific*? In which case
+> I see your point and will apply the correct bindings.
 
->
-> Alan
+I cannot parse this, the board for me is a SoC, busses and a
+number of components connected via e.g. I2C.
+
+Can you define what you mean with a "board specific property"?
+It seems you are talking about what I would call an
+"SoC-specific property", i.e. something out of a .dtsi file for
+a certain SoC, whereas the .dts for an entire board is,
+well, for a board, a set of components on a PCB.
+
+The arrangement of accelerometers and battery monitors on a
+certain board is board-specific, and it is also by definition
+bus-specific.
+
+Yours,
+Linus Walleij
