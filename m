@@ -1,44 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754531Ab2FMP5j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 11:57:39 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:46717 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752911Ab2FMP5h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 11:57:37 -0400
-Date: Wed, 13 Jun 2012 17:57:33 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Boszormenyi Zoltan <zboszor@pr.hu>
-Cc: Johannes Stezenbach <js@sig21.net>, linux-kernel@vger.kernel.org,
-        Andreas Herrmann <andreas.herrmann3@amd.com>
-Subject: Re: AMD FX CPU bug, not fixed by latest microcode?
-Message-ID: <20120613155733.GA17726@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Boszormenyi Zoltan <zboszor@pr.hu>,
-	Johannes Stezenbach <js@sig21.net>, linux-kernel@vger.kernel.org,
-	Andreas Herrmann <andreas.herrmann3@amd.com>
-References: <4FD4F45D.5050103@pr.hu>
- <20120611084318.GA1685@liondog.tnic>
- <20120611094905.GA10349@liondog.tnic>
- <20120611110557.GA4599@sig21.net>
- <4FD8417B.8020702@pr.hu>
+	id S1754455Ab2FMQBE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 12:01:04 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:48644 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752172Ab2FMQBC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 12:01:02 -0400
+Message-ID: <4FD8B93B.9020807@wwwdotorg.org>
+Date: Wed, 13 Jun 2012 10:00:59 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <4FD8417B.8020702@pr.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Axel Lin <axel.lin@gmail.com>
+CC: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH] regmap: mmio: Staticize regmap_mmio_gen_context()
+References: <1339599444.8531.1.camel@phoenix>
+In-Reply-To: <1339599444.8531.1.camel@phoenix>
+X-Enigmail-Version: 1.5pre
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 13, 2012 at 09:30:03AM +0200, Boszormenyi Zoltan wrote:
-> This one locked up on my machine but memtest86+ 4.20 detected 12
-> different addresses with faulty bits in the lower 16GB. Applying for
-> warranty.
+On 06/13/2012 08:57 AM, Axel Lin wrote:
+> regmap_mmio_gen_context() is only used in regmap-mmio.c. Thus make it static.
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-If you have multiple DIMMs, you can also take out the DIMM which
-contains the 16GB and rerun memtest to confirm it really is the culprit.
-
--- 
-Regards/Gruss,
-    Boris.
+Acked-by: Stephen Warren <swarren@wwwdotorg.org>
