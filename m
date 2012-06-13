@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752905Ab2FMCCK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 22:02:10 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:44029 "EHLO e4.ny.us.ibm.com"
+	id S1753770Ab2FMCCQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 22:02:16 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:55249 "EHLO e2.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752260Ab2FMCCH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 22:02:07 -0400
+	id S1753703Ab2FMCCM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 22:02:12 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
@@ -14,9 +14,9 @@ Cc: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
         Alexander Shishkin <alexander.shishkin@linux.intel.com>,
         Mathieu Poirier <mathieu.poirier@linaro.org>,
         John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 05/15] ARM: etm: Configure data tracing
-Date: Tue, 12 Jun 2012 19:01:23 -0700
-Message-Id: <1339552887-17204-6-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 04/15] ARM: etm: Allow range selection
+Date: Tue, 12 Jun 2012 19:01:22 -0700
+Message-Id: <1339552887-17204-5-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.3.2.146.gca209
 In-Reply-To: <1339552887-17204-1-git-send-email-john.stultz@linaro.org>
 References: <1339552887-17204-1-git-send-email-john.stultz@linaro.org>
@@ -24,17 +24,16 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12061302-3534-0000-0000-0000094E4549
+x-cbid: 12061302-5112-0000-0000-000008F691F5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arve Hjønnevåg <arve@android.com>
 
-The old code enabled data tracing, but did not configure the
-range. We now configure it to trace all data addresses by default,
-and add a trace_data_range attribute to change the range or disable
-data tracing.
+Trace kernel text segment by default as before, allow tracing of other
+ranges by writing a range to /sys/devices/etm/trace_range, or to trace
+everything by writing 0 0.
 
 CC: Russell King <linux@arm.linux.org.uk>
 CC: Paul Gortmaker <paul.gortmaker@windriver.com>
@@ -45,176 +44,99 @@ Acked-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 Signed-off-by: Arve Hjønnevåg <arve@android.com>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- arch/arm/include/asm/hardware/coresight.h |   10 +++-
- arch/arm/kernel/etm.c                     |   77 +++++++++++++++++++++++++++-
- 2 files changed, 83 insertions(+), 4 deletions(-)
+ arch/arm/kernel/etm.c |   49 ++++++++++++++++++++++++++++++++++++++++++++++---
+ 1 files changed, 46 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/include/asm/hardware/coresight.h b/arch/arm/include/asm/hardware/coresight.h
-index 7ecd793..6ea507f 100644
---- a/arch/arm/include/asm/hardware/coresight.h
-+++ b/arch/arm/include/asm/hardware/coresight.h
-@@ -17,9 +17,11 @@
- #define TRACER_ACCESSED_BIT	0
- #define TRACER_RUNNING_BIT	1
- #define TRACER_CYCLE_ACC_BIT	2
-+#define TRACER_TRACE_DATA_BIT	3
- #define TRACER_ACCESSED		BIT(TRACER_ACCESSED_BIT)
- #define TRACER_RUNNING		BIT(TRACER_RUNNING_BIT)
- #define TRACER_CYCLE_ACC	BIT(TRACER_CYCLE_ACC_BIT)
-+#define TRACER_TRACE_DATA	BIT(TRACER_TRACE_DATA_BIT)
- 
- #define TRACER_TIMEOUT 10000
- 
-@@ -113,8 +115,14 @@
- #define ETMR_TRACEENCTRL	0x24
- #define ETMTE_INCLEXCL		BIT(24)
- #define ETMR_TRACEENEVT		0x20
-+
-+#define ETMR_VIEWDATAEVT	0x30
-+#define ETMR_VIEWDATACTRL1	0x34
-+#define ETMR_VIEWDATACTRL2	0x38
-+#define ETMR_VIEWDATACTRL3	0x3c
-+#define ETMVDC3_EXCLONLY	BIT(16)
-+
- #define ETMCTRL_OPTS		(ETMCTRL_DO_CPRT | \
--				ETMCTRL_DATA_DO_ADDR | \
- 				ETMCTRL_BRANCH_OUTPUT | \
- 				ETMCTRL_DO_CONTEXTID)
- 
 diff --git a/arch/arm/kernel/etm.c b/arch/arm/kernel/etm.c
-index bf34d34..c651cf9 100644
+index a51bccc..bf34d34 100644
 --- a/arch/arm/kernel/etm.c
 +++ b/arch/arm/kernel/etm.c
-@@ -43,6 +43,8 @@ struct tracectx {
+@@ -41,12 +41,17 @@ struct tracectx {
+ 	unsigned long	flags;
+ 	int		ncmppairs;
  	int		etm_portsz;
- 	unsigned long	range_start;
- 	unsigned long	range_end;
-+	unsigned long	data_range_start;
-+	unsigned long	data_range_end;
++	unsigned long	range_start;
++	unsigned long	range_end;
  	struct device	*dev;
  	struct clk	*emu_clk;
  	struct mutex	mutex;
-@@ -84,8 +86,15 @@ static int etm_setup_address_range(struct tracectx *t, int n,
- 	etm_writel(t, flags, ETMR_COMP_ACC_TYPE(n * 2 + 1));
- 	etm_writel(t, end, ETMR_COMP_VAL(n * 2 + 1));
+ };
  
--	flags = exclude ? ETMTE_INCLEXCL : 0;
--	etm_writel(t, flags | (1 << n), ETMR_TRACEENCTRL);
-+	if (data) {
-+		flags = exclude ? ETMVDC3_EXCLONLY : 0;
-+		if (exclude)
-+			n += 8;
-+		etm_writel(t, flags | BIT(n), ETMR_VIEWDATACTRL3);
-+	} else {
-+		flags = exclude ? ETMTE_INCLEXCL : 0;
-+		etm_writel(t, flags | (1 << n), ETMR_TRACEENCTRL);
-+	}
+-static struct tracectx tracer;
++static struct tracectx tracer = {
++	.range_start = (unsigned long)_stext,
++	.range_end = (unsigned long)_etext,
++};
  
- 	return 0;
- }
-@@ -109,6 +118,9 @@ static int trace_start(struct tracectx *t)
- 	if (t->flags & TRACER_CYCLE_ACC)
- 		v |= ETMCTRL_CYCLEACCURATE;
+ static inline bool trace_isrunning(struct tracectx *t)
+ {
+@@ -116,8 +121,12 @@ static int trace_start(struct tracectx *t)
+ 		return -EFAULT;
+ 	}
  
-+	if (t->flags & TRACER_TRACE_DATA)
-+		v |= ETMCTRL_DATA_DO_ADDR;
+-	etm_setup_address_range(t, 1, (unsigned long)_stext,
+-			(unsigned long)_etext, 0, 0);
++	if (t->range_start || t->range_end)
++		etm_setup_address_range(t, 1,
++					t->range_start, t->range_end, 0, 0);
++	else
++		etm_writel(t, ETMTE_INCLEXCL, ETMR_TRACEENCTRL);
 +
- 	etm_unlock(t);
- 
- 	etm_writel(t, v, ETMR_CTRL);
-@@ -131,6 +143,17 @@ static int trace_start(struct tracectx *t)
+ 	etm_writel(t, 0, ETMR_TRACEENCTRL2);
  	etm_writel(t, 0, ETMR_TRACESSCTRL);
  	etm_writel(t, 0x6f, ETMR_TRACEENEVT);
+@@ -526,6 +535,35 @@ static ssize_t trace_mode_store(struct kobject *kobj,
+ static struct kobj_attribute trace_mode_attr =
+ 	__ATTR(trace_mode, 0644, trace_mode_show, trace_mode_store);
  
-+	etm_writel(t, 0, ETMR_VIEWDATACTRL1);
-+	etm_writel(t, 0, ETMR_VIEWDATACTRL2);
-+
-+	if (t->data_range_start || t->data_range_end)
-+		etm_setup_address_range(t, 2, t->data_range_start,
-+					t->data_range_end, 0, 1);
-+	else
-+		etm_writel(t, ETMVDC3_EXCLONLY, ETMR_VIEWDATACTRL3);
-+
-+	etm_writel(t, 0x6f, ETMR_VIEWDATAEVT);
-+
- 	v &= ~ETMCTRL_PROGRAM;
- 	v |= ETMCTRL_PORTSEL;
- 
-@@ -564,6 +587,48 @@ static ssize_t trace_range_store(struct kobject *kobj,
- static struct kobj_attribute trace_range_attr =
- 	__ATTR(trace_range, 0644, trace_range_show, trace_range_store);
- 
-+static ssize_t trace_data_range_show(struct kobject *kobj,
++static ssize_t trace_range_show(struct kobject *kobj,
 +				  struct kobj_attribute *attr,
 +				  char *buf)
 +{
-+	unsigned long range_start;
-+	u64 range_end;
-+	mutex_lock(&tracer.mutex);
-+	range_start = tracer.data_range_start;
-+	range_end = tracer.data_range_end;
-+	if (!range_end && (tracer.flags & TRACER_TRACE_DATA))
-+		range_end = 0x100000000ULL;
-+	mutex_unlock(&tracer.mutex);
-+	return sprintf(buf, "%08lx %08llx\n", range_start, range_end);
++	return sprintf(buf, "%08lx %08lx\n",
++			tracer.range_start, tracer.range_end);
 +}
 +
-+static ssize_t trace_data_range_store(struct kobject *kobj,
++static ssize_t trace_range_store(struct kobject *kobj,
 +				   struct kobj_attribute *attr,
 +				   const char *buf, size_t n)
 +{
-+	unsigned long range_start;
-+	u64 range_end;
++	unsigned long range_start, range_end;
 +
-+	if (sscanf(buf, "%lx %llx", &range_start, &range_end) != 2)
++	if (sscanf(buf, "%lx %lx", &range_start, &range_end) != 2)
 +		return -EINVAL;
 +
 +	mutex_lock(&tracer.mutex);
-+	tracer.data_range_start = range_start;
-+	tracer.data_range_end = (unsigned long)range_end;
-+	if (range_end)
-+		tracer.flags |= TRACER_TRACE_DATA;
-+	else
-+		tracer.flags &= ~TRACER_TRACE_DATA;
++	tracer.range_start = range_start;
++	tracer.range_end = range_end;
 +	mutex_unlock(&tracer.mutex);
 +
 +	return n;
 +}
 +
 +
-+static struct kobj_attribute trace_data_range_attr =
-+	__ATTR(trace_data_range, 0644,
-+		trace_data_range_show, trace_data_range_store);
++static struct kobj_attribute trace_range_attr =
++	__ATTR(trace_range, 0644, trace_range_show, trace_range_store);
 +
  static int __devinit etm_probe(struct amba_device *dev, const struct amba_id *id)
  {
  	struct tracectx *t = &tracer;
-@@ -589,7 +654,7 @@ static int __devinit etm_probe(struct amba_device *dev, const struct amba_id *id
- 
- 	mutex_init(&t->mutex);
- 	t->dev = &dev->dev;
--	t->flags = TRACER_CYCLE_ACC;
-+	t->flags = TRACER_CYCLE_ACC | TRACER_TRACE_DATA;
- 	t->etm_portsz = 1;
- 
- 	etm_unlock(t);
-@@ -619,6 +684,11 @@ static int __devinit etm_probe(struct amba_device *dev, const struct amba_id *id
+@@ -577,6 +615,10 @@ static int __devinit etm_probe(struct amba_device *dev, const struct amba_id *id
  	if (ret)
- 		dev_dbg(&dev->dev, "Failed to create trace_range in sysfs\n");
+ 		dev_dbg(&dev->dev, "Failed to create trace_mode in sysfs\n");
  
-+	ret = sysfs_create_file(&dev->dev.kobj, &trace_data_range_attr.attr);
++	ret = sysfs_create_file(&dev->dev.kobj, &trace_range_attr.attr);
 +	if (ret)
-+		dev_dbg(&dev->dev,
-+			"Failed to create trace_data_range in sysfs\n");
++		dev_dbg(&dev->dev, "Failed to create trace_range in sysfs\n");
 +
  	dev_dbg(t->dev, "ETM AMBA driver initialized.\n");
  
  out:
-@@ -649,6 +719,7 @@ static int etm_remove(struct amba_device *dev)
+@@ -606,6 +648,7 @@ static int etm_remove(struct amba_device *dev)
+ 	sysfs_remove_file(&dev->dev.kobj, &trace_running_attr.attr);
  	sysfs_remove_file(&dev->dev.kobj, &trace_info_attr.attr);
  	sysfs_remove_file(&dev->dev.kobj, &trace_mode_attr.attr);
- 	sysfs_remove_file(&dev->dev.kobj, &trace_range_attr.attr);
-+	sysfs_remove_file(&dev->dev.kobj, &trace_data_range_attr.attr);
++	sysfs_remove_file(&dev->dev.kobj, &trace_range_attr.attr);
  
  	return 0;
  }
