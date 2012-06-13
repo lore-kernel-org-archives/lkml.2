@@ -1,91 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752968Ab2FMCQQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 22:16:16 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:17768 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751035Ab2FMCQO (ORCPT
+	id S1752990Ab2FMCX6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 22:23:58 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:57674 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752260Ab2FMCX5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 22:16:14 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ak4JAJ731095LKXc/2dsb2JhbABFtAQEgS2BCIIYAQEEATocIwULCAMOCi4UJQMhE4gGBLlbFIsTSYVIA5UgiSWGWIJy
-Date: Wed, 13 Jun 2012 12:16:10 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Dave Chinner <dchinner@redhat.com>, xfs@oss.sgi.com
-Subject: Re: [PATCH 2/2] xfs: add FALLOC_FL_ZERO_RANGE to fallocate
-Message-ID: <20120613021610.GQ22848@dastard>
-References: <1339515364-17374-1-git-send-email-pbonzini@redhat.com>
- <1339515364-17374-3-git-send-email-pbonzini@redhat.com>
+	Tue, 12 Jun 2012 22:23:57 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FD7F937.2010101@jp.fujitsu.com>
+Date: Wed, 13 Jun 2012 11:21:43 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339515364-17374-3-git-send-email-pbonzini@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Wen Congyang <wency@cn.fujitsu.com>, rob@landley.net, tglx@linutronix.de,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        bhelgaas@google.com
+Subject: Re: [PATCH 1/2 v2] x86: add max_addr boot option
+References: <4FD5AFF2.3040306@cn.fujitsu.com> <4FD65FD4.4060705@zytor.com> <4FD6E101.3010106@cn.fujitsu.com> <d468fc51-04f6-4e88-aeaa-c4642531325e@email.android.com>
+In-Reply-To: <d468fc51-04f6-4e88-aeaa-c4642531325e@email.android.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 12, 2012 at 05:36:04PM +0200, Paolo Bonzini wrote:
-> This is implemented in the same way as the other fallocate modes.  All of
-> them map to XFS ioctls that are implemented by xfs_change_file_space.
-> 
-> However, we need to cap the length to the inode size if the user requested
-> FALLOC_FL_KEEP_SIZE.
+(2012/06/13 1:10), H. Peter Anvin wrote:
+> If what you care about is nodes, why not have an option to specify a map?
+>
 
-That's done on purpose.  fallocate() explicitly allows preallocation
-beyond EOF and that's what the FALLOC_FL_KEEP_SIZE flag is for - to
-allow both offset and offset+len to lie beyond the current inode
-size and have the preallocation succeed without changing the file
-size.
+At the first time of our project, we discussed passing node-id as boot option.
+But, we found Node-ID is just determined by the pxm ID order in SRAT. That means,
+we and our firmware team need to take care of the order of SRAT. But that node-ID
+v.s. SRAT relationship is just determined by implemenation, there is no spec,
+we thought we can't keep this way in future.
 
-This is so that we can prevent fragmentation of slow growing
-append-only files like log files - we can preallocate way beyond EOF
-without changing EOF so as the file grows over days and weeks it
-does not fragment.
+The second thought was specifying PXM. But, with hardware-partitioning-system,
+dynamic implementation of SRAT for a partutuion is very confusing...
 
-Similarly, hole punch needs to be able to punch out such
-preallocated extents beyond EOF if requested, and it definitely must
-not change EOF. So capping/erroring out when offset/offset+len is
-definitely the wrong thing to do when FALLOC_FL_KEEP_SIZE is set.
+Then, alternative idea was using mem= boot option. Because our partition system
+has fixed address range per each node, it works well.
 
-> Cc: Dave Chinner <dchinner@redhat.com>
-> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-> ---
->  fs/xfs/xfs_file.c |   36 ++++++++++++++++++++++++------------
->  1 files changed, 24 insertions(+), 12 deletions(-)
-> 
-> diff --git a/fs/xfs/xfs_file.c b/fs/xfs/xfs_file.c
-> index 9f7ec15..c811cf9 100644
-> --- a/fs/xfs/xfs_file.c
-> +++ b/fs/xfs/xfs_file.c
-> @@ -818,33 +818,45 @@ xfs_file_fallocate(
->  	loff_t		new_size = 0;
->  	xfs_flock64_t	bf;
->  	xfs_inode_t	*ip = XFS_I(inode);
-> -	int		cmd = XFS_IOC_RESVSP;
-> +	int		cmd;
->  	int		attr_flags = XFS_ATTR_NOLOCK;
->  
-> -	if (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE))
-> +	if (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE |
-> +		     FALLOC_FL_ZERO_RANGE))
->  		return -EOPNOTSUPP;
->  
-> +	BUG_ON((mode & FALLOC_FL_PUNCH_HOLE) && (mode & FALLOC_FL_ZERO_RANGE));
+But now, we know mem= boot option is buggy....it acts as max_addr= option, we
+have concerns that 'someone may fix mem= option as sane as ia64. because it's buggy".
 
-Never put BUG_ON() or BUG() in XFS code that can return an error.
-Return EINVAL if we chose not to support it, and if it's really
-something we consider bad, emit a warning to syslog (i.e.
-xfs_warn()) and potentially add a ASSERT() case so that debug
-kernels will trip over it. Nobody should be panicing a production
-system just because a user supplied a set of incorrect syscall
-paramters....
+We'd like to fix mem= boot option by ourselves and preserve old behavior with max_addr=
+boot option, which ia64 has.
 
-Cheers,
+Thanks,
+-Kame
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
