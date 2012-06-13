@@ -1,74 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753806Ab2FMCDD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 22:03:03 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:59325 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753864Ab2FMCCr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 22:02:47 -0400
+	id S1753577Ab2FMCB7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 22:01:59 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:59773 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752652Ab2FMCB5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 22:01:57 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>,
+Cc: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
         Russell King <linux@arm.linux.org.uk>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
         Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
-Subject: [PATCH 00/15][RFC] Android ETM driver changes
-Date: Tue, 12 Jun 2012 19:01:18 -0700
-Message-Id: <1339552887-17204-1-git-send-email-john.stultz@linaro.org>
+        Mathieu Poirier <mathieu.poirier@linaro.org>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [PATCH 07/15] ARM: etm: Return the entire trace buffer if it is empty after reset
+Date: Tue, 12 Jun 2012 19:01:25 -0700
+Message-Id: <1339552887-17204-8-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.3.2.146.gca209
+In-Reply-To: <1339552887-17204-1-git-send-email-john.stultz@linaro.org>
+References: <1339552887-17204-1-git-send-email-john.stultz@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12061302-6148-0000-0000-000006A6D426
+x-cbid: 12061302-5930-0000-0000-000008CBACAD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Android kernel tree has a number of changes to the ETM driver.
-Arve sent the first 9 of these to the list over a year ago and
-got very little response.
+From: Arve Hjønnevåg <arve@android.com>
 
-I didn't want these to get lost, so I pinged Alexander about
-these privately and he stated that he wasn't actively
-maintaining the driver, but after skimming the entire set
-acked the series and suggested I send it on to Russel for
-review and possible inclusion.
-
-So here they are. Please let me know if there are any
-objections to merging these, or if further changes are
-needed.
-
+On some SOCs the read and write pointer are reset when the chip
+resets, but the trace buffer content is preserved. If the status
+bits indicates that the buffer is empty and we have never started
+tracing, assume the buffer is full instead. This can be useful
+if the system rebooted from a watchdog reset.
 
 CC: Russell King <linux@arm.linux.org.uk>
 CC: Paul Gortmaker <paul.gortmaker@windriver.com>
 CC: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-CC: Arve Hjønnevåg <arve@android.com>
+CC: Mathieu Poirier <mathieu.poirier@linaro.org>
 
-Arve Hjønnevåg (15):
-  ARM: etm: Don't require clock control
-  ARM: etm: Don't limit tracing to only non-secure code.
-  ARM: etm: Don't try to clear the buffer full status after reading the
-    buffer
-  ARM: etm: Allow range selection
-  ARM: etm: Configure data tracing
-  ARM: etm: Add some missing locks and error checks
-  ARM: etm: Return the entire trace buffer if it is empty after reset
-  ARM: etm: Support multiple ETMs/PTMs.
-  ARM: etm: Power down etm(s) when tracing is not enabled
-  ARM: etm: Wait for etm/ptm(s) to stop before requesting PowerDown
-  ARM: etm: Check arch version and disable data tracing for ptm
-  ARM: etm: Add sysfs entry to enable timestamps if supported
-  ARM: etm: Add sysfs entry to set context-id-size
-  ARM: etm: Add sysfs entry to disable branch_output flag
-  ARM: etm: Add sysfs entry to enable return stack if supported
+Acked-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Signed-off-by: Arve Hjønnevåg <arve@android.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
+ arch/arm/kernel/etm.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
- arch/arm/include/asm/hardware/coresight.h |   50 ++-
- arch/arm/kernel/etm.c                     |  680 +++++++++++++++++++++++------
- 2 files changed, 587 insertions(+), 143 deletions(-)
-
+diff --git a/arch/arm/kernel/etm.c b/arch/arm/kernel/etm.c
+index 3d21cf6..74444e5 100644
+--- a/arch/arm/kernel/etm.c
++++ b/arch/arm/kernel/etm.c
+@@ -45,6 +45,7 @@ struct tracectx {
+ 	unsigned long	range_end;
+ 	unsigned long	data_range_start;
+ 	unsigned long	data_range_end;
++	bool		dump_initial_etb;
+ 	struct device	*dev;
+ 	struct clk	*emu_clk;
+ 	struct mutex	mutex;
+@@ -106,6 +107,7 @@ static int trace_start(struct tracectx *t)
+ 
+ 	etb_unlock(t);
+ 
++	t->dump_initial_etb = false;
+ 	etb_writel(t, 0, ETBR_WRITEADDR);
+ 	etb_writel(t, 0, ETBR_FORMATTERCTRL);
+ 	etb_writel(t, 1, ETBR_CTRL);
+@@ -312,6 +314,8 @@ static ssize_t etb_read(struct file *file, char __user *data,
+ 	etb_unlock(t);
+ 
+ 	total = etb_getdatalen(t);
++	if (total == 0 && t->dump_initial_etb)
++		total = t->etb_bufsz;
+ 	if (total == t->etb_bufsz)
+ 		first = etb_readl(t, ETBR_WRITEADDR);
+ 
+@@ -386,6 +390,7 @@ static int __devinit etb_probe(struct amba_device *dev, const struct amba_id *id
+ 		goto out_release;
+ 	}
+ 
++	t->dump_initial_etb = true;
+ 	amba_set_drvdata(dev, t);
+ 
+ 	etb_unlock(t);
 -- 
 1.7.3.2.146.gca209
 
