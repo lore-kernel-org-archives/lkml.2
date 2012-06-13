@@ -1,62 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751884Ab2FMGmw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 02:42:52 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:65530 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751094Ab2FMGmv convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 02:42:51 -0400
+	id S1752061Ab2FMGu1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 02:50:27 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:7490 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751621Ab2FMGuZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 02:50:25 -0400
+X-IronPort-AV: E=Sophos;i="4.77,401,1336320000"; 
+   d="scan'208";a="5176742"
+Message-ID: <4FD83924.8020208@cn.fujitsu.com>
+Date: Wed, 13 Jun 2012 14:54:28 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <CANBwrj_i+VZiV1YFVhBduor5g=03mcM08NF1FteczWvQuCAjhw@mail.gmail.com>
-References: <CANBwrj_i+VZiV1YFVhBduor5g=03mcM08NF1FteczWvQuCAjhw@mail.gmail.com>
-Date: Wed, 13 Jun 2012 14:42:49 +0800
-Message-ID: <CANBwrj_WAqQs+-Jnj+nTBVE-1YuK6XwFeZN6biLGge+9TvZXeg@mail.gmail.com>
-Subject: Re: UIO driver multi-instance issue discussion
-From: Raymond Wu <wxy412@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: xywu@marvell.com
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+To: Luiz Capitulino <lcapitulino@redhat.com>
+CC: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Avi Kivity <avi@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
+Subject: Re: [Qemu-devel] [PATCH 1/3] start vm after reseting it
+References: <4FB9E4CE.8060709@cn.fujitsu.com>	<4FB9E57C.5040003@cn.fujitsu.com> <20120530161720.7c9b88b9@doriath.home>
+In-Reply-To: <20120530161720.7c9b88b9@doriath.home>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/06/13 14:50:55,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/06/13 14:50:55,
+	Serialize complete at 2012/06/13 14:50:55
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
+At 05/31/2012 03:17 AM, Luiz Capitulino Wrote:
+> On Mon, 21 May 2012 14:49:32 +0800
+> Wen Congyang <wency@cn.fujitsu.com> wrote:
+> 
+>> The guest should run after reseting it, but it does not
+>> run if its old state is RUN_STATE_INTERNAL_ERROR or RUN_STATE_PAUSED.
+>>
+>> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+>> ---
+>>  vl.c |    1 +
+>>  1 files changed, 1 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/vl.c b/vl.c
+>> index 23ab3a3..7f5fed8 100644
+>> --- a/vl.c
+>> +++ b/vl.c
+>> @@ -1539,6 +1539,7 @@ static bool main_loop_should_exit(void)
+>>          if (runstate_check(RUN_STATE_INTERNAL_ERROR) ||
+>>              runstate_check(RUN_STATE_SHUTDOWN)) {
+>>              runstate_set(RUN_STATE_PAUSED);
+>> +            vm_start();
+> 
+> Please, drop the runstate_set() call. I think you also have to
+> to call bdrv_iostatus_reset(), as qmp_cont() does.
 
->
-> I'm not sure who is the maintainer for UIO driver. Please help if you know something. Thanks in advance!
->
->
-> Recently, we have some trouble when using UIO as our VPU driver.
->
-> Issue description:
->
-> ·         This issue comes from the so called "multi-instance case". This means that for one H/W device, it can be opened multiple times.
->
-> ·         Each instance will be assigned with a FD(file descriptor) and its own uio_listener.
->
-> ·         After one H/W interrupt comes, the global uio_device.event has been +1 ( See atomic_inc(&idev->event); ) while all other instance’s uio_listener->event_count is not +1.
->
-> ·         So, if we have 1+ instances waiting for interrupt, all of them will be woken up because listener->event_count != event_count.
->
->
->
-> Solution:
->
-> ·         Export uio_device definition to uio.h or uio_driver.h, so that we can sync the event_count for all instances in the private driver.
->
-> ·         Add new uio_sync_event(struct file *filep) function in uio.c, so that we can call it directly when we want to sync the event count.
->
->
->
-> Please advise which one is recommended or you can propose a new one. We have a plan to submit a patch to open source community to improve it.
->
->
->
-> BTW, personally, I’m curious that why you put the uio_device definition within uio.c, is there any special reason for it?
->
->
->
-> Thanks,
-> Raymond
+Hmm, if we drop the runstate_set() call here, we should update
+runstate_transitions_def too.
+
+Thanks
+Wen Congyang
+
+> 
+>>          }
+>>      }
+>>      if (qemu_powerdown_requested()) {
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
