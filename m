@@ -1,59 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754955Ab2FMXim (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 19:38:42 -0400
-Received: from usindpps03.hds.com ([207.126.252.16]:60478 "EHLO
-	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751373Ab2FMXil convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 19:38:41 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: "Luck, Tony" <tony.luck@intel.com>, Mike Waychison <mikew@google.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
-        "gong.chen@linux.intel.com" <gong.chen@linux.intel.com>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "rob@landley.net" <rob@landley.net>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Date: Wed, 13 Jun 2012 19:38:27 -0400
-Subject: RE: [RFC][Patch]efi_pstore:Introduce an efi_pstore_overwrite
- parameter to avoid missing messages in NVRAM
-Thread-Topic: [RFC][Patch]efi_pstore:Introduce an efi_pstore_overwrite
- parameter to avoid missing messages in NVRAM
-Thread-Index: Ac1Jaf3kQfy2nRzQSNG3UORn8S5p+AAc0YIAAA6J6JAAGwBGkAAyPwIgAGROu0AAyB10UA==
-Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2E5A4DB459@USINDEVS01.corp.hds.com>
-References: <5C4C569E8A4B9B42A84A977CF070A35B2E5A4DB2B8@USINDEVS01.corp.hds.com>
- <CAGTjWtAb3XrsTtkvW=G0YN1RCVxYxcPksSh3jEogeEu4qWqv1Q@mail.gmail.com>
- <3908561D78D1C84285E8C5FCA982C28F1930C820@ORSMSX103.amr.corp.intel.com>
- <5C4C569E8A4B9B42A84A977CF070A35B2E5A4DB451@USINDEVS01.corp.hds.com>
- <3908561D78D1C84285E8C5FCA982C28F1930CA84@ORSMSX103.amr.corp.intel.com>
- <32727E9A83EE9A42A1F0906295A3A77B2EE701160E@USINDEVS01.corp.hds.com>
-In-Reply-To: <32727E9A83EE9A42A1F0906295A3A77B2EE701160E@USINDEVS01.corp.hds.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ja-JP, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755070Ab2FMXjE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 19:39:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16216 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754843Ab2FMXjB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 19:39:01 -0400
+Date: Wed, 13 Jun 2012 20:38:46 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: x86@kernel.org, kvm@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Avi Kivity <avi@redhat.com>,
+        gleb@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCHv6 6/8] kvm: only sync when attention bits set
+Message-ID: <20120613233846.GA23955@amt.cnet>
+References: <cover.1338474301.git.mst@redhat.com>
+ <56ee14064ef307b7075f6977122781456cab5165.1338474301.git.mst@redhat.com>
+ <20120612222748.GB1973@amt.cnet>
+ <20120613081923.GA16162@redhat.com>
+ <20120613083506.GA17190@redhat.com>
+ <20120613205336.GB19290@amt.cnet>
+ <20120613210423.GA24932@redhat.com>
 MIME-Version: 1.0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
- definitions=main-1206130269
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120613210423.GA24932@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tony,
+On Thu, Jun 14, 2012 at 12:04:23AM +0300, Michael S. Tsirkin wrote:
+> On Wed, Jun 13, 2012 at 05:53:36PM -0300, Marcelo Tosatti wrote:
+> > On Wed, Jun 13, 2012 at 11:35:07AM +0300, Michael S. Tsirkin wrote:
+> > > On Wed, Jun 13, 2012 at 11:19:24AM +0300, Michael S. Tsirkin wrote:
+> > > > On Tue, Jun 12, 2012 at 07:27:48PM -0300, Marcelo Tosatti wrote:
+> > > > > On Sun, Jun 03, 2012 at 10:28:29AM +0300, Michael S. Tsirkin wrote:
+> > > > > > Commit eb0dc6d0368072236dcd086d7fdc17fd3c4574d4 introduced apic
+> > > > > > attention bitmask but kvm still syncs lapic unconditionally.
+> > > > > > As that commit suggested and in anticipation of adding more attention
+> > > > > > bits, only sync lapic if(apic_attention).
+> > > > > > 
+> > > > > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > > > > > ---
+> > > > > >  arch/x86/kvm/x86.c |    3 ++-
+> > > > > >  1 files changed, 2 insertions(+), 1 deletions(-)
+> > > > > > 
+> > > > > > diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> > > > > > index be6d549..2f70861 100644
+> > > > > > --- a/arch/x86/kvm/x86.c
+> > > > > > +++ b/arch/x86/kvm/x86.c
+> > > > > > @@ -5388,7 +5388,8 @@ static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
+> > > > > >  	if (unlikely(vcpu->arch.tsc_always_catchup))
+> > > > > >  		kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
+> > > > > >  
+> > > > > > -	kvm_lapic_sync_from_vapic(vcpu);
+> > > > > > +	if (unlikely(vcpu->arch.apic_attention))
+> > > > > > +		kvm_lapic_sync_from_vapic(vcpu);
+> > > > > 
+> > > > > void kvm_lapic_sync_from_vapic(struct kvm_vcpu *vcpu)
+> > > > > {
+> > > > >         u32 data;
+> > > > >         void *vapic;
+> > > > > 
+> > > > >         if (!test_bit(KVM_APIC_CHECK_VAPIC, &vcpu->arch.apic_attention))
+> > > > >                 return;
+> > > > > 
+> > > > > Please use unlikely more carefully, when a gain is measureable:
+> > > > > http://lwn.net/Articles/420019/
+> > > > 
+> > > > Do we have to measure every single thing?
+> > > > Sometimes it's obvious: vapic is slow path, isn't it?
+> > > 
+> > > Just to clarify the question: I think it's obvious this condition is
+> > > false more often than true. By how much, depends on the workload.
+> > > Do you think this is enough to tag this unlikely?
+> > 
+> > Depends whether your processor supports flexpriority or not. I don't
+> > want to argue in favour/against the particular instance
+> > 
+> > GCC docs:
+> > 
+> > "
+> > — Built-in Function: long __builtin_expect (long exp, long c)
+> > 
+> >     You may use __builtin_expect to provide the compiler with branch
+> > prediction information. In general, you should prefer to use actual
+> > profile feedback for this (-fprofile-arcs), as programmers are
+> > notoriously bad at predicting how their programs actually perform.
+> > However, there are applications in which this data is hard to collect.
+> > "
+> > 
+> > Lately half of branches in your patches are annotated.
+> 
+> So if I instrument and show that branch is almost never taken that is enough?
+> This citation does not require measuring the perf impact.
 
-> - the limitation is EFI
+Without flexpriority its always taken.
 
-I have one question. (It is not directly related to a discussion here.)
-Do you mean the limitation is due to EFI specification?
-Or do you mean there is no EFI server capable of a much amount of NVRAM? 
 
-Seiji
