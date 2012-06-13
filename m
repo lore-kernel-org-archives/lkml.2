@@ -1,197 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753230Ab2FMLVR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 07:21:17 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:40789
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751144Ab2FMLVQ (ORCPT
+	id S1753195Ab2FMLX7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 07:23:59 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:36018 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751144Ab2FMLX6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 07:21:16 -0400
-Date: Wed, 13 Jun 2012 07:21:12 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, hch@infradead.org,
-        torvalds@linux-foundation.org, dhowells@redhat.com, mszeredi@suse.cz
-Subject: Re: [PATCH 00/21] vfs: atomic open v6 (part 2)
-Message-ID: <20120613112112.GA10597@infradead.org>
-References: <1338901832-14049-1-git-send-email-miklos@szeredi.hu>
- <20120610034921.GB30000@ZenIV.linux.org.uk>
- <20120610111056.GD30000@ZenIV.linux.org.uk>
- <20120610175605.GE30000@ZenIV.linux.org.uk>
- <20120610222745.GG30000@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120610222745.GG30000@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 13 Jun 2012 07:23:58 -0400
+X-AuditID: cbfee61b-b7fcc6d000003a7a-5f-4fd8783d4815
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'LKML'" <linux-kernel@vger.kernel.org>
+Cc: "'Richard Purdie'" <rpurdie@rpsys.net>,
+        "'Dmitry Baryshkov'" <dbaryshkov@gmail.com>,
+        "'Jingoo Han'" <jg1.han@samsung.com>,
+        "'Axel Lin'" <axel.lin@gmail.com>
+Subject: [PATCH 4/7] backlight: tosa_bl: use devm_gpio_request()
+Date: Wed, 13 Jun 2012 20:23:41 +0900
+Message-id: <000501cd4956$fc9daf60$f5d90e20$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac1JVvyMF9a1cLecQPafP9CojyKfnA==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKLMWRmVeSWpSXmKPExsVy+t9jQV3bihv+Bo+PWFtc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6M9/O2sRRM5qk4fb2DvYGxk6uLkZNDQsBE4uDBjYwQtpjEhXvr
+	2UBsIYHpjBILdup1MXIB2bOZJH4c7mcBSbAJqEl8+XKYHcQWEYiQaJ4xixmkiFlgDqPEmtcL
+	wIqEBRwk+nZNZwaxWQRUJRYtv8oKYvMK2EpMP/GLGcIWlPgx+R5YPbOAlsT6nceZIGx5ic1r
+	3gLVcABdpC7x6K8uxC49iWVLPzNClIhI7HvxjnECo8AsJJNmIZk0C8mkWUhaFjCyrGIUTS1I
+	LihOSs810itOzC0uzUvXS87P3cQIDsxn0jsYVzVYHGIU4GBU4uHlKL3hL8SaWFZcmXuIUYKD
+	WUmE91k2UIg3JbGyKrUoP76oNCe1+BCjNAeLkjhvk/UFfyGB9MSS1OzU1ILUIpgsEwenVANj
+	7I7mbRX7XPW/z4yR+/FaWcmr8uGLPRoevloFzS+DpwRKbJ569mNdYlfn/BvXvkl/XPr2gtxP
+	7s06YTnHL7zjOqjLnuye/ba7zilVrOl56ceP15SsZTanXngowZYZ8v37Y4mOrTZlL0yW1DVE
+	ntpqbK/ytmBqxoyejJjj/j9L72Wqlm4NrJNSYinOSDTUYi4qTgQAy+6glUgCAAA=
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 10, 2012 at 11:27:45PM +0100, Al Viro wrote:
-> And in vfs.git#master there's a followup to that.  ->d_revalidate(),
-> ->lookup() and ->create() are nameidata-free now.  IOW, open intents
-> crap is well and truly dead.  Good riddance.
-> 
-> Miklos, if I see you at Kernel Summit (or anywhere else, for that matter),
-> I owe you a bottle of booze of your choice.
+The devm_ functions allocate memory that is released when a driver
+detaches. This patch uses devm_gpio_request of these functions.
 
-It also shows that were are really close to getting nameidata out of the
-filesystem.  The remaning issues are kern_path_parent usages in devtmpfs
-and audit_watch, as well as direct access to nd->path in
-proc_pid_follow_link.  A hacky patch to demonstrate this is below (not
-intended for submission).
+Cc: Dmitry Baryshkov <dbaryshkov@gmail.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/video/backlight/tosa_bl.c |    8 ++------
+ 1 files changed, 2 insertions(+), 6 deletions(-)
 
-
-diff --git a/drivers/base/devtmpfs.c b/drivers/base/devtmpfs.c
-index 765c3a2..b5e907b 100644
---- a/drivers/base/devtmpfs.c
-+++ b/drivers/base/devtmpfs.c
-@@ -25,6 +25,8 @@
- #include <linux/slab.h>
- #include <linux/kthread.h>
+diff --git a/drivers/video/backlight/tosa_bl.c b/drivers/video/backlight/tosa_bl.c
+index 0d54e60..49342e1 100644
+--- a/drivers/video/backlight/tosa_bl.c
++++ b/drivers/video/backlight/tosa_bl.c
+@@ -92,14 +92,14 @@ static int __devinit tosa_bl_probe(struct i2c_client *client,
  
-+#include "../internal.h"
-+
- static struct task_struct *thread;
+ 	data->comadj = sharpsl_param.comadj == -1 ? COMADJ_DEFAULT : sharpsl_param.comadj;
  
- #if defined CONFIG_DEVTMPFS_MOUNT
-diff --git a/fs/internal.h b/fs/internal.h
-index 8a9f5fa..3826dcc 100644
---- a/fs/internal.h
-+++ b/fs/internal.h
-@@ -115,3 +115,23 @@ extern int invalidate_inodes(struct super_block *, bool);
-  * dcache.c
-  */
- extern struct dentry *__d_alloc(struct super_block *, const struct qstr *);
-+
-+
-+enum { MAX_NESTED_LINKS = 8 };
-+
-+struct nameidata {
-+	struct path	path;
-+	struct qstr	last;
-+	struct path	root;
-+	struct inode	*inode; /* path.dentry.d_inode */
-+	unsigned int	flags;
-+	unsigned	seq;
-+	int		last_type;
-+	unsigned	depth;
-+	char *saved_names[MAX_NESTED_LINKS + 1];
-+};
-+
-+/*
-+ * Type of the last component on LOOKUP_PARENT
-+ */
-+enum {LAST_NORM, LAST_ROOT, LAST_DOT, LAST_DOTDOT, LAST_BIND};
-diff --git a/fs/namei.c b/fs/namei.c
-index 1fc02ff..2ea6608 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -3629,6 +3629,18 @@ out:
- 	return len;
+-	ret = gpio_request(TOSA_GPIO_BL_C20MA, "backlight");
++	ret = devm_gpio_request(&client->dev, TOSA_GPIO_BL_C20MA, "backlight");
+ 	if (ret) {
+ 		dev_dbg(&data->bl->dev, "Unable to request gpio!\n");
+ 		return ret;
+ 	}
+ 	ret = gpio_direction_output(TOSA_GPIO_BL_C20MA, 0);
+ 	if (ret)
+-		goto err_gpio_dir;
++		return ret;
+ 
+ 	i2c_set_clientdata(client, data);
+ 	data->i2c = client;
+@@ -123,8 +123,6 @@ static int __devinit tosa_bl_probe(struct i2c_client *client,
+ 
+ err_reg:
+ 	data->bl = NULL;
+-err_gpio_dir:
+-	gpio_free(TOSA_GPIO_BL_C20MA);
+ 	return ret;
  }
  
-+void nd_set_link(struct nameidata *nd, char *path)
-+{
-+	nd->saved_names[nd->depth] = path;
-+}
-+EXPORT_SYMBOL(nd_set_link);
-+
-+char *nd_get_link(struct nameidata *nd)
-+{
-+	return nd->saved_names[nd->depth];
-+}
-+EXPORT_SYMBOL(nd_get_link);
-+
- /*
-  * A helper for ->readlink().  This should be used *ONLY* for symlinks that
-  * have ->follow_link() touching nd only in nd_set_link().  Using (or not
-diff --git a/fs/proc/base.c b/fs/proc/base.c
-index 8eaa5ea..5453fdd 100644
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -90,6 +90,7 @@
- #endif
- #include <trace/events/oom.h>
- #include "internal.h"
-+#include "../internal.h"
+@@ -135,8 +133,6 @@ static int __devexit tosa_bl_remove(struct i2c_client *client)
+ 	backlight_device_unregister(data->bl);
+ 	data->bl = NULL;
  
- /* NOTE:
-  *	Implementing inode permission operations in /proc is almost
-diff --git a/include/linux/namei.h b/include/linux/namei.h
-index 54dadda..5d92c0a 100644
---- a/include/linux/namei.h
-+++ b/include/linux/namei.h
-@@ -5,26 +5,7 @@
- #include <linux/linkage.h>
- #include <linux/path.h>
- 
--struct vfsmount;
+-	gpio_free(TOSA_GPIO_BL_C20MA);
 -
--enum { MAX_NESTED_LINKS = 8 };
--
--struct nameidata {
--	struct path	path;
--	struct qstr	last;
--	struct path	root;
--	struct inode	*inode; /* path.dentry.d_inode */
--	unsigned int	flags;
--	unsigned	seq;
--	int		last_type;
--	unsigned	depth;
--	char *saved_names[MAX_NESTED_LINKS + 1];
--};
--
--/*
-- * Type of the last component on LOOKUP_PARENT
-- */
--enum {LAST_NORM, LAST_ROOT, LAST_DOT, LAST_DOTDOT, LAST_BIND};
-+struct nameidata;
+ 	return 0;
+ }
  
- /*
-  * The bitmask for a lookup event:
-@@ -71,9 +52,6 @@ extern int kern_path_parent(const char *, struct nameidata *);
- extern int vfs_path_lookup(struct dentry *, struct vfsmount *,
- 			   const char *, unsigned int, struct path *);
- 
--extern struct file *lookup_instantiate_filp(struct nameidata *nd, struct dentry *dentry,
--		int (*open)(struct inode *, struct file *));
--
- extern struct dentry *lookup_one_len(const char *, struct dentry *, int);
- 
- extern int follow_down_one(struct path *);
-@@ -83,15 +61,8 @@ extern int follow_up(struct path *);
- extern struct dentry *lock_rename(struct dentry *, struct dentry *);
- extern void unlock_rename(struct dentry *, struct dentry *);
- 
--static inline void nd_set_link(struct nameidata *nd, char *path)
--{
--	nd->saved_names[nd->depth] = path;
--}
--
--static inline char *nd_get_link(struct nameidata *nd)
--{
--	return nd->saved_names[nd->depth];
--}
-+extern void nd_set_link(struct nameidata *nd, char *path);
-+extern char *nd_get_link(struct nameidata *nd);
- 
- static inline void nd_terminate_link(void *name, size_t len, size_t maxlen)
- {
-diff --git a/kernel/audit_watch.c b/kernel/audit_watch.c
-index e683869..0943897 100644
---- a/kernel/audit_watch.c
-+++ b/kernel/audit_watch.c
-@@ -32,6 +32,8 @@
- #include <linux/security.h>
- #include "audit.h"
- 
-+#include "../fs/internal.h"
-+
- /*
-  * Reference counting:
-  *
+-- 
+1.7.1
+
+
