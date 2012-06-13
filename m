@@ -1,87 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753506Ab2FMK2F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 06:28:05 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:52401 "EHLO
+	id S1753839Ab2FMK2Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 06:28:25 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:52430 "EHLO
 	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753022Ab2FMK2D (ORCPT
+	with ESMTP id S1753022Ab2FMK2M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 06:28:03 -0400
+	Wed, 13 Jun 2012 06:28:12 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
         rientjes@google.com, mhocko@suse.cz, akpm@linux-foundation.org,
         hannes@cmpxchg.org
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: [PATCH -V9 00/15] hugetlb: Add HugeTLB controller to control HugeTLB allocation
-Date: Wed, 13 Jun 2012 15:57:19 +0530
-Message-Id: <1339583254-895-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V9 04/15] hugetlb: use mmu_gather instead of a temporary linked list for accumulating pages
+Date: Wed, 13 Jun 2012 15:57:23 +0530
+Message-Id: <1339583254-895-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.10
-x-cbid: 12061310-8256-0000-0000-000002E809C8
+In-Reply-To: <1339583254-895-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+References: <1339583254-895-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+x-cbid: 12061310-8256-0000-0000-000002E809E7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-This patchset implements a cgroup resource controller for HugeTLB
-pages. The controller allows to limit the HugeTLB usage per control
-group and enforces the controller limit during page fault. Since
-HugeTLB doesn't support page reclaim, enforcing the limit at page
-fault time implies that, the application will get SIGBUS signal if
-it tries to access HugeTLB pages beyond its limit. This requires
-the application to know beforehand how much HugeTLB pages it would
-require for its use.
+Use a mmu_gather instead of a temporary linked list for accumulating
+pages when we unmap a hugepage range
 
-The goal is to control how many HugeTLB pages a group of task can
-allocate. It can be looked at as an extension of the existing quota
-interface which limits the number of HugeTLB pages per hugetlbfs
-superblock. HPC job scheduler requires jobs to specify their resource
-requirements in the job file. Once their requirements can be met,
-job schedulers like (SLURM) will schedule the job. We need to make sure
-that the jobs won't consume more resources than requested. If they do
-we should either error out or kill the application.
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+---
+ fs/hugetlbfs/inode.c    |    4 ++--
+ include/linux/hugetlb.h |   22 ++++++++++++++----
+ mm/hugetlb.c            |   59 ++++++++++++++++++++++++++++-------------------
+ mm/memory.c             |    7 ++++--
+ 4 files changed, 59 insertions(+), 33 deletions(-)
 
-Patches are on top of v3.5-rc2
-
-Changes from V8:
-  * Address review feedback
-
-Changes from V7:
-  * Remove dependency on page_cgroup.
-  * Use page[2].lru.next to store HugeTLB cgroup information.
-
-Changes from V6:
- * Implement the controller as a seperate HugeTLB cgroup.
- * Folded fixup patches in -mm to the original patches
-
-Changes from V5:
- * Address review feedback.
-
-Changes from V4:
- * Add support for charge/uncharge during page migration
- * Drop the usage of page->lru in unmap_hugepage_range.
-
-Changes from v3:
- * Address review feedback.
- * Fix a bug in cgroup removal related parent charging with use_hierarchy set
-
-Changes from V2:
-* Changed the implementation to limit the HugeTLB usage during page
-  fault time. This simplifies the extension and keep it closer to
-  memcg design. This also allows to support cgroup removal with less
-  complexity. Only caveat is the application should ensure its HugeTLB
-  usage doesn't cross the cgroup limit.
-
-Changes from V1:
-* Changed the implementation as a memcg extension. We still use
-  the same logic to track the cgroup and range.
-
-Changes from RFC post:
-* Added support for HugeTLB cgroup hierarchy
-* Added support for task migration
-* Added documentation patch
-* Other bug fixes
-
--aneesh
-
+diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
+index cc9281b..ff233e4 100644
+--- a/fs/hugetlbfs/inode.c
++++ b/fs/hugetlbfs/inode.c
+@@ -416,8 +416,8 @@ hugetlb_vmtruncate_list(struct prio_tree_root *root, pgoff_t pgoff)
+ 		else
+ 			v_offset = 0;
+ 
+-		__unmap_hugepage_range(vma,
+-				vma->vm_start + v_offset, vma->vm_end, NULL);
++		unmap_hugepage_range(vma, vma->vm_start + v_offset,
++				     vma->vm_end, NULL);
+ 	}
+ }
+ 
+diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+index 217f528..0f23c18 100644
+--- a/include/linux/hugetlb.h
++++ b/include/linux/hugetlb.h
+@@ -7,6 +7,7 @@
+ 
+ struct ctl_table;
+ struct user_struct;
++struct mmu_gather;
+ 
+ #ifdef CONFIG_HUGETLB_PAGE
+ 
+@@ -40,9 +41,10 @@ int follow_hugetlb_page(struct mm_struct *, struct vm_area_struct *,
+ 			struct page **, struct vm_area_struct **,
+ 			unsigned long *, int *, int, unsigned int flags);
+ void unmap_hugepage_range(struct vm_area_struct *,
+-			unsigned long, unsigned long, struct page *);
+-void __unmap_hugepage_range(struct vm_area_struct *,
+-			unsigned long, unsigned long, struct page *);
++			  unsigned long, unsigned long, struct page *);
++void __unmap_hugepage_range(struct mmu_gather *tlb, struct vm_area_struct *vma,
++				unsigned long start, unsigned long end,
++				struct page *ref_page);
+ int hugetlb_prefault(struct address_space *, struct vm_area_struct *);
+ void hugetlb_report_meminfo(struct seq_file *);
+ int hugetlb_report_node_meminfo(int, char *);
+@@ -98,7 +100,6 @@ static inline unsigned long hugetlb_total_pages(void)
+ #define follow_huge_addr(mm, addr, write)	ERR_PTR(-EINVAL)
+ #define copy_hugetlb_page_range(src, dst, vma)	({ BUG(); 0; })
+ #define hugetlb_prefault(mapping, vma)		({ BUG(); 0; })
+-#define unmap_hugepage_range(vma, start, end, page)	BUG()
+ static inline void hugetlb_report_meminfo(struct seq_file *m)
+ {
+ }
+@@ -112,13 +113,24 @@ static inline void hugetlb_report_meminfo(struct seq_file *m)
+ #define hugetlb_free_pgd_range(tlb, addr, end, floor, ceiling) ({BUG(); 0; })
+ #define hugetlb_fault(mm, vma, addr, flags)	({ BUG(); 0; })
+ #define huge_pte_offset(mm, address)	0
+-#define dequeue_hwpoisoned_huge_page(page)	0
++static inline int dequeue_hwpoisoned_huge_page(struct page *page)
++{
++	return 0;
++}
++
+ static inline void copy_huge_page(struct page *dst, struct page *src)
+ {
+ }
+ 
+ #define hugetlb_change_protection(vma, address, end, newprot)
+ 
++static inline void __unmap_hugepage_range(struct mmu_gather *tlb,
++			struct vm_area_struct *vma, unsigned long start,
++			unsigned long end, struct page *ref_page)
++{
++	BUG();
++}
++
+ #endif /* !CONFIG_HUGETLB_PAGE */
+ 
+ #define HUGETLB_ANON_FILE "anon_hugepage"
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index b1e0ed1..e54b695 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -24,8 +24,9 @@
+ 
+ #include <asm/page.h>
+ #include <asm/pgtable.h>
+-#include <linux/io.h>
++#include <asm/tlb.h>
+ 
++#include <linux/io.h>
+ #include <linux/hugetlb.h>
+ #include <linux/node.h>
+ #include "internal.h"
+@@ -2310,30 +2311,26 @@ static int is_hugetlb_entry_hwpoisoned(pte_t pte)
+ 		return 0;
+ }
+ 
+-void __unmap_hugepage_range(struct vm_area_struct *vma, unsigned long start,
+-			    unsigned long end, struct page *ref_page)
++void __unmap_hugepage_range(struct mmu_gather *tlb, struct vm_area_struct *vma,
++			    unsigned long start, unsigned long end,
++			    struct page *ref_page)
+ {
++	int force_flush = 0;
+ 	struct mm_struct *mm = vma->vm_mm;
+ 	unsigned long address;
+ 	pte_t *ptep;
+ 	pte_t pte;
+ 	struct page *page;
+-	struct page *tmp;
+ 	struct hstate *h = hstate_vma(vma);
+ 	unsigned long sz = huge_page_size(h);
+ 
+-	/*
+-	 * A page gathering list, protected by per file i_mmap_mutex. The
+-	 * lock is used to avoid list corruption from multiple unmapping
+-	 * of the same page since we are using page->lru.
+-	 */
+-	LIST_HEAD(page_list);
+-
+ 	WARN_ON(!is_vm_hugetlb_page(vma));
+ 	BUG_ON(start & ~huge_page_mask(h));
+ 	BUG_ON(end & ~huge_page_mask(h));
+ 
++	tlb_start_vma(tlb, vma);
+ 	mmu_notifier_invalidate_range_start(mm, start, end);
++again:
+ 	spin_lock(&mm->page_table_lock);
+ 	for (address = start; address < end; address += sz) {
+ 		ptep = huge_pte_offset(mm, address);
+@@ -2372,30 +2369,45 @@ void __unmap_hugepage_range(struct vm_area_struct *vma, unsigned long start,
+ 		}
+ 
+ 		pte = huge_ptep_get_and_clear(mm, address, ptep);
++		tlb_remove_tlb_entry(tlb, ptep, address);
+ 		if (pte_dirty(pte))
+ 			set_page_dirty(page);
+-		list_add(&page->lru, &page_list);
+ 
++		page_remove_rmap(page);
++		force_flush = !__tlb_remove_page(tlb, page);
++		if (force_flush)
++			break;
+ 		/* Bail out after unmapping reference page if supplied */
+ 		if (ref_page)
+ 			break;
+ 	}
+-	flush_tlb_range(vma, start, end);
+ 	spin_unlock(&mm->page_table_lock);
+-	mmu_notifier_invalidate_range_end(mm, start, end);
+-	list_for_each_entry_safe(page, tmp, &page_list, lru) {
+-		page_remove_rmap(page);
+-		list_del(&page->lru);
+-		put_page(page);
++	/*
++	 * mmu_gather ran out of room to batch pages, we break out of
++	 * the PTE lock to avoid doing the potential expensive TLB invalidate
++	 * and page-free while holding it.
++	 */
++	if (force_flush) {
++		force_flush = 0;
++		tlb_flush_mmu(tlb);
++		if (address < end && !ref_page)
++			goto again;
+ 	}
++	mmu_notifier_invalidate_range_end(mm, start, end);
++	tlb_end_vma(tlb, vma);
+ }
+ 
+ void unmap_hugepage_range(struct vm_area_struct *vma, unsigned long start,
+ 			  unsigned long end, struct page *ref_page)
+ {
+-	mutex_lock(&vma->vm_file->f_mapping->i_mmap_mutex);
+-	__unmap_hugepage_range(vma, start, end, ref_page);
+-	mutex_unlock(&vma->vm_file->f_mapping->i_mmap_mutex);
++	struct mm_struct *mm;
++	struct mmu_gather tlb;
++
++	mm = vma->vm_mm;
++
++	tlb_gather_mmu(&tlb, mm, 0);
++	__unmap_hugepage_range(&tlb, vma, start, end, ref_page);
++	tlb_finish_mmu(&tlb, start, end);
+ }
+ 
+ /*
+@@ -2440,9 +2452,8 @@ static int unmap_ref_private(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		 * from the time of fork. This would look like data corruption
+ 		 */
+ 		if (!is_vma_resv_set(iter_vma, HPAGE_RESV_OWNER))
+-			__unmap_hugepage_range(iter_vma,
+-				address, address + huge_page_size(h),
+-				page);
++			unmap_hugepage_range(iter_vma, address,
++					     address + huge_page_size(h), page);
+ 	}
+ 	mutex_unlock(&mapping->i_mmap_mutex);
+ 
+diff --git a/mm/memory.c b/mm/memory.c
+index 1b7dc66..545e18a 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -1326,8 +1326,11 @@ static void unmap_single_vma(struct mmu_gather *tlb,
+ 			 * Since no pte has actually been setup, it is
+ 			 * safe to do nothing in this case.
+ 			 */
+-			if (vma->vm_file)
+-				unmap_hugepage_range(vma, start, end, NULL);
++			if (vma->vm_file) {
++				mutex_lock(&vma->vm_file->f_mapping->i_mmap_mutex);
++				__unmap_hugepage_range(tlb, vma, start, end, NULL);
++				mutex_unlock(&vma->vm_file->f_mapping->i_mmap_mutex);
++			}
+ 		} else
+ 			unmap_page_range(tlb, vma, start, end, details);
+ 	}
+-- 
+1.7.10
 
