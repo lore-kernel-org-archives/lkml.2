@@ -1,64 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754730Ab2FMSJl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 14:09:41 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:47662 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754507Ab2FMSJk (ORCPT
+	id S1754750Ab2FMSJq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 14:09:46 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37466 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754507Ab2FMSJo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 14:09:40 -0400
-Message-ID: <4FD8D760.3070406@gmail.com>
-Date: Wed, 13 Jun 2012 13:09:36 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Wed, 13 Jun 2012 14:09:44 -0400
+Date: Wed, 13 Jun 2012 19:09:42 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH] regmap: mmio: Staticize regmap_mmio_gen_context()
+Message-ID: <20120613180942.GA9171@opensource.wolfsonmicro.com>
+References: <1339599444.8531.1.camel@phoenix>
 MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "mturquette@linaro.org" <mturquette@linaro.org>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "sboyd@codeaurora.org" <sboyd@codeaurora.org>
-Subject: Re: [PATCH v3 0/4] DT clock bindings
-References: <1339512111-11172-1-git-send-email-robherring2@gmail.com> <20120613152658.GE32111@tbergstrom-lnx.Nvidia.com>
-In-Reply-To: <20120613152658.GE32111@tbergstrom-lnx.Nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="tKW2IUtsqtDRztdT"
+Content-Disposition: inline
+In-Reply-To: <1339599444.8531.1.camel@phoenix>
+X-Cookie: You have a truly strong individuality.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter,
 
-On 06/13/2012 10:26 AM, Peter De Schrijver wrote:
-> On Tue, Jun 12, 2012 at 04:41:47PM +0200, Rob Herring wrote:
->> From: Rob Herring <rob.herring@calxeda.com>
->>
->> This series defines clock bindings for Device-Tree and adds kernel
->> support using the common clock infrastructure. The last patch enables
->> DT clock support for the Calxeda Highbank platform.
->>
->> I'm posting this again to solicit further review. There has been some
->> discussion[1], but no definite path forward. This series is not changed
->> from the last post other than rebasing to v3.5-rc2.
->>
->> Rob
->>
->> [1] http://lists.infradead.org/pipermail/linux-arm-kernel/2012-May/100932.html
->>
-> 
-> How would this binding work for clocks which can take a spinlock pointer as a
-> init parameter (eg. clk-gate).
+--tKW2IUtsqtDRztdT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Other than fixed clocks, this makes no attempt at generic bindings.
-There is still per clock init required which can allocate a spinlock if
-necessary. If you look at the highbank code, it would be trivial to
-initialize spinlocks as needed.
+On Wed, Jun 13, 2012 at 10:57:24PM +0800, Axel Lin wrote:
+> regmap_mmio_gen_context() is only used in regmap-mmio.c. Thus make it static.
 
-Rob
+Applied, thanks.
 
-> Cheers,
-> 
-> Peter.
+--tKW2IUtsqtDRztdT
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP2Nb2AAoJEBus8iNuMP3dPYMP+wRD16R1NGHHzuVF+3eEaTuV
++vy0pdO9Wj/52UKMn38aO5TUgNaiR47ymzQWTZfPs9JZiUYRiJ02RyA1yL37vHmZ
+PlAvFlMPXAY7WBlt6Mexi61rCNhJ2XMA4C09eraRd72COXceacEObP5e4V8/3tvs
+ER+xk4aGbjbmwqZin5i48UJeDePF5TVLIwKgJhZVCPo5s/zAijJHYByDDyKwihfj
+gcADmGSyW5XdETXCIumMmVKJhQ8zy6S7TYslyilsKXb7+DHnygCEAbnGuJV37em1
+4J1CsTalDG00JlstsAIjAKFt+X/eJNAOjkp1hLJ3ITos35MDCRXBfDV/21gIF0a8
+wKWBjhbyy28VrWPD5HskWzu7KDFKJ6kOcQLN8nnhMTt6Fn9UQu727E6mlQmroYIV
+hetFm0Z9ZhGJnIpmTB4D0reUjZ4FNxX0ZiZJD3wOvnkbxUKnf0XmV3YNHZrvYa6D
+TcChDaeCSjaFLtj5mb6cm+gagTqYeN30+LipjckinS+xstt3odU3qQQbQIEAfq1X
+DpY6xyhVeOnvTB/OcmqwBHdILNiW4YfRywgnzIif13Qz5DhnuQnkqgxBhVGwx7SW
+qMPL5DVjNGZWQUos3R2qe73uuAXbPJYL3zEBSSYfIfQAit99+bv/Wz5Qf1/EOH34
+Y4kCw9RwI17hF0eZI2ZM
+=PKsH
+-----END PGP SIGNATURE-----
+
+--tKW2IUtsqtDRztdT--
