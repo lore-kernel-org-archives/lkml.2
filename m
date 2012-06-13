@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751623Ab2FMDFs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 23:05:48 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:49134 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751069Ab2FMDFr (ORCPT
+	id S1751957Ab2FMDLe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 23:11:34 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:38814 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751283Ab2FMDLd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 23:05:47 -0400
-X-AuditID: 9c930179-b7bb9ae000000ea5-4d-4fd8038941d8
-From: Namhyung Kim <namhyung@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 3/3] tools lib traceevent: Introduce pevent_strerror
-References: <1339486959-25241-1-git-send-email-namhyung@kernel.org>
-	<1339486959-25241-4-git-send-email-namhyung@kernel.org>
-	<1339524114.13377.140.camel@gandalf.stny.rr.com>
-Date: Wed, 13 Jun 2012 12:02:51 +0900
-In-Reply-To: <1339524114.13377.140.camel@gandalf.stny.rr.com> (Steven
-	Rostedt's message of "Tue, 12 Jun 2012 14:01:54 -0400")
-Message-ID: <87ehpj6hic.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.95 (gnu/linux)
+	Tue, 12 Jun 2012 23:11:33 -0400
+Message-ID: <4FD804D7.5000802@linux.vnet.ibm.com>
+Date: Wed, 13 Jun 2012 11:11:19 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v6 5/9] KVM: MMU: introduce SPTE_MMU_WRITEABLE bit
+References: <4FC470C7.5040700@linux.vnet.ibm.com> <4FC4716A.8030304@linux.vnet.ibm.com> <20120611233212.GA29573@amt.cnet> <4FD6A833.6060206@linux.vnet.ibm.com> <20120613020103.GB3119@amt.cnet>
+In-Reply-To: <20120613020103.GB3119@amt.cnet>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12061217-0260-0000-0000-000001555AA9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 06/13/2012 10:01 AM, Marcelo Tosatti wrote:
 
-On Tue, 12 Jun 2012 14:01:54 -0400, Steven Rostedt wrote:
-> On Tue, 2012-06-12 at 16:42 +0900, Namhyung Kim wrote:
->> +int pevent_strerror(struct pevent *pevent, enum pevent_errno errnum,
->> +		    char *buf, size_t buflen)
->
-> Hmm, actually I wonder if we should put the error into the pevent
-> structure. Then we wouldn't even need to waste time to pass the data
-> through.
->
-> That is, you can simply do:
->
-> 	ret = pevent_foo();
-> 	if (ret < 0) {
-> 		pevent_strerr(pevent, buf, buflen);
-> 		printf("%s\n", buf);
-> 	}
->
-> Perhaps even include a pevent_perror(), to just do:
->
-> 	if (ret < 0) {
-> 		pevent_perror(pevent);
-> 		return ret;
-> 	}
->
+> On Tue, Jun 12, 2012 at 10:23:47AM +0800, Xiao Guangrong wrote:
+>> On 06/12/2012 07:32 AM, Marcelo Tosatti wrote:
+>>
+>>> On Tue, May 29, 2012 at 02:49:14PM +0800, Xiao Guangrong wrote:
+>>>> This bit indicates whether the spte can be writable on MMU, that means
+>>>> the corresponding gpte is writable and the corresponding gfn is not
+>>>> protected by shadow page protection
+>>>
+>>> Why is this still necessary, now that only sptes of direct shadow pages 
+>>> are updated locklessly? 
+>>>
+>>
+>>
+>> Yes, but it is still needed, for nested npt/ept, we need protect
+>> the nested page tables.
+> 
+> Sure, but shadowed L1 nested pagetables are not direct shadow pages.
+> 
+> They are shadows of L1 nested pagetables. 
+> 
+> Checking sp->direct should be enough (instead of the flags).
+> 
 
-I thought something like this, but worried about the thread-safety. What
-about if more than one thread call pevent functions for a same pevent
-concurrently?  Should we make the pevent->errno TLS?
+Hi Marcelo,
 
-Thanks,
-Namhyung
+I think it is not enough, for example:
+
+- In host (L0), spte1 is pointing to gfn1, spte1 is a direct spte.
+
+- in L1, L1 guest is using gfn1 in L1's ept page table for L2 guest,
+  so, in host, we have a indirect spte (named spte2) whose sp->gfn = gfn1.
+
+Since spte2 is a indirect spte, we need protect it, so, we walk all gfn1's
+rmaps, spte1 will be found, then, we write-protect on spte1 to track L1
+modifying gfn1.
+
+In this case, spte1 is direct but need write-protect. :)
+
