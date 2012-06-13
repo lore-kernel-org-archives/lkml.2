@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754863Ab2FMVpP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 17:45:15 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:57294 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754681Ab2FMVpN (ORCPT
+	id S1754788Ab2FMVug (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 17:50:36 -0400
+Received: from h1749472.stratoserver.net ([85.214.139.110]:36909 "EHLO
+	h1749472.stratoserver.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752226Ab2FMVuf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 17:45:13 -0400
-Date: Wed, 13 Jun 2012 14:45:09 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: "Winkler, Tomas" <tomas.winkler@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
-Subject: Re: misc: mei: fixes for 3.5
-Message-ID: <20120613214509.GA9051@kroah.com>
-References: <1338298752-15445-1-git-send-email-tomas.winkler@intel.com>
- <20120613203729.GA11326@kroah.com>
- <5B8DA87D05A7694D9FA63FD143655C1B12A780@HASMSX103.ger.corp.intel.com>
+	Wed, 13 Jun 2012 17:50:35 -0400
+X-Greylist: delayed 1890 seconds by postgrey-1.27 at vger.kernel.org; Wed, 13 Jun 2012 17:50:35 EDT
+Message-ID: <4FD903BC.3040200@xorn.org>
+Date: Wed, 13 Jun 2012 23:18:52 +0200
+From: Dennis Gnad <dennis@xorn.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5B8DA87D05A7694D9FA63FD143655C1B12A780@HASMSX103.ger.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 78.42.27.74
+X-SA-Exim-Rcpt-To: linux-kernel@vger.kernel.org
+X-SA-Exim-Mail-From: dennis@xorn.org
+Subject: USB issues on Fujitsu T2020 since a424948dde8421089826e2f782d0efe9e565707e
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on h1749472.stratoserver.net)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 13, 2012 at 09:09:14PM +0000, Winkler, Tomas wrote:
-> 
-> 
-> > > Hi Greg,
-> > > please consider this batch for queuing into 3.5 1. patch 2/4 bug in
-> > > probe: visible only after merging with the trunk 2. patch 3/4 fixes
-> > > kernel oops that was revealed when probe failed 3. patch 4/4 is
-> > > regression fix and should be merged also to stable 3.4 4. patch 1/4 is
-> > > a minor documentation fix
-> > 
-> > Grammer fixes are not ok for 3.5 at this point in time, sorry.  I'll queue up the
-> > other 3 though.
-> 
-> Thanks reasonable. 
-> 
-> Please consider also  this two:
-> 
-> This one is one more fix connected to the same issue as the 3 patches. (From Samuel Oritz) 
-> http://marc.info/?l=linux-kernel&m=133940653731271&w=2
-> 
-> This one is just adding a flag to WATCHDOG devices that was only possible after merging the watchdog tree into 3.5-rc1. 
-> This one is not must so I leave it for you to decide. 
-> http://marc.info/?l=linux-kernel&m=133940653831272&w=2
+After commit a424948dde8421089826e2f782d0efe9e565707e (see below), and
+still in Kernel 3.4.2, USB will not work at all when the power controls
+of the according PCI device and in the usb subdirectory are set to "auto".
+For example:
+echo auto > /sys/devices/pci0000:00/0000:00:1a.7/power/control
+echo auto > /sys/devices/pci0000:00/0000:00:1a.7/usb1/power/control
 
-Yes, they are still in my queue, I'll get to them...
+It only stops working when *both* are set to "auto". This is also
+triggered by the tunables of the powertop program.
 
-greg k-h
+Tested on a Fujitsu Lifebook T2020.
+
+If this behavior is not specific to this notebook, the commit should
+maybe get reverted?
+
+Thanks for any comment!
+ -Dennis
+
+
+a424948dde8421089826e2f782d0efe9e565707e is the first bad commit
+commit a424948dde8421089826e2f782d0efe9e565707e
+Author: Rafael J. Wysocki <rjw@sisk.pl>
+Date:   Sun Nov 6 22:21:46 2011 +0100
+
+    PCI/ACPI/PM: Avoid resuming devices that don't signal PME
+
+    Modify pci_acpi_wake_dev() to avoid resuming PME-capable devices
+    whose PME Status bits are not set, which may happen currently if
+    several devices are associated with the same wakeup GPE and all
+    of them are notified whenever at least one of them signals PME.
+
+    Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+    Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+
+:040000 040000 bd5d78ae9ff2b75713725ed6e16d997b0017937d
+f801b576ab380baa48b8c19523323aa6cca0b8cb M      drivers
