@@ -1,93 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754576Ab2FMS6K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 14:58:10 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:37326 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752476Ab2FMS6I (ORCPT
+	id S1754659Ab2FMTAG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 15:00:06 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:34725 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754384Ab2FMTAB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 14:58:08 -0400
-Date: Wed, 13 Jun 2012 11:57:48 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>
-Subject: Re: [RFC patch 2/5] smpboot: Provide infrastructure for percpu
- hotplug threads
-Message-ID: <20120613185748.GF2427@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120613102823.373180763@linutronix.de>
- <20120613105815.206105518@linutronix.de>
+	Wed, 13 Jun 2012 15:00:01 -0400
+Date: Wed, 13 Jun 2012 21:01:31 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>, linux-arch@vger.kernel.org,
+        Abhinav Kochhar <abhinav.k@samsung.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org,
+        Subash Patel <subash.ramaswamy@linaro.org>,
+        linaro-mm-sig@lists.linaro.org, linux-mm@kvack.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [Linaro-mm-sig] [PATCHv2 0/6] ARM: DMA-mapping: new extensions
+ for buffer sharing
+Message-ID: <20120613190131.GO4829@phenom.ffwll.local>
+Mail-Followup-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+	Marek Szyprowski <m.szyprowski@samsung.com>,
+	linux-arch@vger.kernel.org, Abhinav Kochhar <abhinav.k@samsung.com>,
+	Russell King - ARM Linux <linux@arm.linux.org.uk>,
+	Arnd Bergmann <arnd@arndb.de>,
+	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+	linux-kernel@vger.kernel.org,
+	Subash Patel <subash.ramaswamy@linaro.org>,
+	linaro-mm-sig@lists.linaro.org, linux-mm@kvack.org,
+	Kyungmin Park <kyungmin.park@samsung.com>,
+	linux-arm-kernel@lists.infradead.org
+References: <1339588218-24398-1-git-send-email-m.szyprowski@samsung.com>
+ <20120613141211.GJ5979@phenom.dumpdata.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120613105815.206105518@linutronix.de>
+In-Reply-To: <20120613141211.GJ5979@phenom.dumpdata.com>
+X-Operating-System: Linux phenom 3.4.0-rc3+
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12061318-6148-0000-0000-000006AC274B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 13, 2012 at 11:00:54AM -0000, Thomas Gleixner wrote:
-> Provide a generic interface for setting up and tearing down percpu
-> threads.
+On Wed, Jun 13, 2012 at 10:12:12AM -0400, Konrad Rzeszutek Wilk wrote:
+> On Wed, Jun 13, 2012 at 01:50:12PM +0200, Marek Szyprowski wrote:
+> > Hello,
+> > 
+> > This is an updated version of the patch series introducing a new
+> > features to DMA mapping subsystem to let drivers share the allocated
+> > buffers (preferably using recently introduced dma_buf framework) easy
+> > and efficient.
+> > 
+> > The first extension is DMA_ATTR_NO_KERNEL_MAPPING attribute. It is
+> > intended for use with dma_{alloc, mmap, free}_attrs functions. It can be
+> > used to notify dma-mapping core that the driver will not use kernel
+> > mapping for the allocated buffer at all, so the core can skip creating
+> > it. This saves precious kernel virtual address space. Such buffer can be
+> > accessed from userspace, after calling dma_mmap_attrs() for it (a
+> > typical use case for multimedia buffers). The value returned by
+> > dma_alloc_attrs() with this attribute should be considered as a DMA
+> > cookie, which needs to be passed to dma_mmap_attrs() and
+> > dma_free_attrs() funtions.
+> > 
+> > The second extension is required to let drivers to share the buffers
+> > allocated by DMA-mapping subsystem. Right now the driver gets a dma
+> > address of the allocated buffer and the kernel virtual mapping for it.
+> > If it wants to share it with other device (= map into its dma address
+> > space) it usually hacks around kernel virtual addresses to get pointers
+> > to pages or assumes that both devices share the DMA address space. Both
+> > solutions are just hacks for the special cases, which should be avoided
+> > in the final version of buffer sharing. To solve this issue in a generic
+> > way, a new call to DMA mapping has been introduced - dma_get_sgtable().
+> > It allocates a scatter-list which describes the allocated buffer and
+> > lets the driver(s) to use it with other device(s) by calling
+> > dma_map_sg() on it.
 > 
-> On registration the threads for already online cpus are created and
-> started. On deregistration (modules) the threads are stoppped.
-> 
-> During hotplug operations the threads are created, started, parked and
-> unparked. The datastructure for registration provides a pointer to
-> percpu storage space and optional setup, cleanup, park, unpark
-> functions. These functions are called when the thread state changes.
-> 
-> Thread functions should look like the following:
-> 
-> int thread_fn(void *cookie)
-> {
-> 	while (!smpboot_thread_check_parking(cookie)) {
-> 		do_stuff();
-> 	}
-> 	return 0;
-> }
-> 
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> What about the cases where the driver wants to share the buffer but there
+> are multiple IOMMUs? So the DMA address returned initially would be
+> different on the other IOMMUs? Would the driver have to figure this out
+> or would the DMA/IOMMU implementation be in charge of that?
 
-[ . . . ]
+You still have to map the allocated sg table into each device address
+space, so I think this is all covered. The reason dma-buf specs that the
+returned sg list must be mapped into device address space already is to
+support special-purpose remapping units that are not handled by the core
+dma api.
 
-> Index: tip/kernel/cpu.c
-> ===================================================================
-> --- tip.orig/kernel/cpu.c
-> +++ tip/kernel/cpu.c
-> @@ -280,6 +280,7 @@ static int __ref _cpu_down(unsigned int 
->  				__func__, cpu);
->  		goto out_release;
->  	}
-> +	smpboot_park_threads(cpu);
+> And what about IOMMU's that don't do DMA_ATTR_NO_KERNEL_MAPPING?
+> Can they just ignore it and do what they did before ? (I presume yes).
 > 
->  	err = __stop_machine(take_cpu_down, &tcd_param, cpumask_of(cpu));
->  	if (err) {
-> @@ -354,6 +355,10 @@ static int __cpuinit _cpu_up(unsigned in
->  		goto out;
->  	}
+> > 
+> > The third extension solves the performance issues which we observed with
+> > some advanced buffer sharing use cases, which require creating a dma
+> > mapping for the same memory buffer for more than one device. From the
+> > DMA-mapping perspective this requires to call one of the
+> > dma_map_{page,single,sg} function for the given memory buffer a few
+> > times, for each of the devices. Each dma_map_* call performs CPU cache
+> > synchronization, what might be a time consuming operation, especially
+> > when the buffers are large. We would like to avoid any useless and time
+> > consuming operations, so that was the main reason for introducing
+> > another attribute for DMA-mapping subsystem: DMA_ATTR_SKIP_CPU_SYNC,
+> > which lets dma-mapping core to skip CPU cache synchronization in certain
+> > cases.
+
+Ah, here's the use-case I've missed ;-) I'm a bit vary of totally insane
+platforms that have additional caches only on the device side, and only
+for some devices. Well, tlbs belong to that, but the iommu needs to handle
+that anyway.
+
+I think it would be good to add a blurb to the documentation that any
+device-side flushing (of tlbs or special caches or whatever) still needs
+to happen and that this is only a performance optimization to avoid the
+costly cpu cache flushing. This way the dma-buf exporter could keep track
+of whether it's 'device-coherent' and set that flag if the cpu caches don't
+need to be flushed.
+
+Maybe also make it clear that implementing this bit is optional (like your
+doc already mentions for NO_KERNEL_MAPPING).
+
+Yours, Daniel
+
+
+> > 
+> > The proposed patches have been rebased on the latest Linux kernel
+> > v3.5-rc2 with 'ARM: replace custom consistent dma region with vmalloc'
+> > patches applied (for more information, please refer to the 
+> > http://www.spinics.net/lists/arm-kernel/msg179202.html thread).
+> > 
+> > The patches together with all dependences are also available on the
+> > following GIT branch:
+> > 
+> > git://git.linaro.org/people/mszyprowski/linux-dma-mapping.git 3.5-rc2-dma-ext-v2
+> > 
+> > Best regards
+> > Marek Szyprowski
+> > Samsung Poland R&D Center
+> > 
+> > Changelog:
+> > 
+> > v2:
+> > - rebased onto v3.5-rc2 and adapted for CMA and dma-mapping changes
+> > - renamed dma_get_sgtable() to dma_get_sgtable_attrs() to match the convention
+> >   of the other dma-mapping calls with attributes
+> > - added generic fallback function for dma_get_sgtable() for architectures with
+> >   simple dma-mapping implementations
+> > 
+> > v1: http://thread.gmane.org/gmane.linux.kernel.mm/78644
+> >     http://thread.gmane.org/gmane.linux.kernel.cross-arch/14435 (part 2)
+> > - initial version
+> > 
+> > Patch summary:
+> > 
+> > Marek Szyprowski (6):
+> >   common: DMA-mapping: add DMA_ATTR_NO_KERNEL_MAPPING attribute
+> >   ARM: dma-mapping: add support for DMA_ATTR_NO_KERNEL_MAPPING
+> >     attribute
+> >   common: dma-mapping: introduce dma_get_sgtable() function
+> >   ARM: dma-mapping: add support for dma_get_sgtable()
+> >   common: DMA-mapping: add DMA_ATTR_SKIP_CPU_SYNC attribute
+> >   ARM: dma-mapping: add support for DMA_ATTR_SKIP_CPU_SYNC attribute
+> > 
+> >  Documentation/DMA-attributes.txt         |   42 ++++++++++++++++++
+> >  arch/arm/common/dmabounce.c              |    1 +
+> >  arch/arm/include/asm/dma-mapping.h       |    3 +
+> >  arch/arm/mm/dma-mapping.c                |   69 ++++++++++++++++++++++++------
+> >  drivers/base/dma-mapping.c               |   18 ++++++++
+> >  include/asm-generic/dma-mapping-common.h |   18 ++++++++
+> >  include/linux/dma-attrs.h                |    2 +
+> >  include/linux/dma-mapping.h              |    3 +
+> >  8 files changed, 142 insertions(+), 14 deletions(-)
+> > 
+> > -- 
+> > 1.7.1.569.g6f426
+> > 
+> > --
+> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> > the body to majordomo@kvack.org.  For more info on Linux MM,
+> > see: http://www.linux-mm.org/ .
+> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 > 
-> +	ret = smpboot_create_threads(cpu);
-> +	if (ret)
-> +		goto out;
-> +
->  	ret = __cpu_notify(CPU_UP_PREPARE | mod, hcpu, -1, &nr_calls);
->  	if (ret) {
->  		nr_calls--;
-> @@ -370,6 +375,7 @@ static int __cpuinit _cpu_up(unsigned in
-> 
->  	/* Now call notifier in preparation. */
->  	cpu_notify(CPU_ONLINE | mod, hcpu);
-> +	smpboot_unpark_threads(cpu);
+> _______________________________________________
+> Linaro-mm-sig mailing list
+> Linaro-mm-sig@lists.linaro.org
+> http://lists.linaro.org/mailman/listinfo/linaro-mm-sig
 
-OK, RCU must use the lower-level interfaces, given that one of
-then CPU_ONLINE notifiers might invoke synchronize_rcu().
-
-							Thanx, Paul
-
+-- 
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
