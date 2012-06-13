@@ -1,72 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750981Ab2FMEKu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 00:10:50 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:36977 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750793Ab2FMEKt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 00:10:49 -0400
-Date: Wed, 13 Jun 2012 14:10:41 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Bryan Wu <bryan.wu@canonical.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Fabio Baltieri <fabio.baltieri@gmail.com>
-Subject: linux-next: build failure after merge of the leds tree
-Message-Id: <20120613141041.199421c4b922655cbcfbe14d@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__13_Jun_2012_14_10_41_+1000_IWT_TDRgs9oyqlQH"
+	id S1751591Ab2FMEVi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 00:21:38 -0400
+Received: from mga01.intel.com ([192.55.52.88]:46811 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750761Ab2FMEVh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 00:21:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="164932956"
+Date: Wed, 13 Jun 2012 12:21:15 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Wanpeng Li <liwp.linux@gmail.com>, linux-kernel@vger.kernel.org,
+        Gavin Shan <shangw@linux.vnet.ibm.com>,
+        Wanpeng Li <liswp@linux.vnet.ibm.com>
+Subject: Re: [PATCH] writeback: avoid race when update bandwidth
+Message-ID: <20120613042115.GA25842@localhost>
+References: <1339496803-2885-1-git-send-email-liwp.linux@gmail.com>
+ <20120612112129.GA16639@localhost>
+ <20120613035647.GU22848@dastard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120613035647.GU22848@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__13_Jun_2012_14_10_41_+1000_IWT_TDRgs9oyqlQH
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Jun 13, 2012 at 01:56:47PM +1000, Dave Chinner wrote:
+> On Tue, Jun 12, 2012 at 07:21:29PM +0800, Fengguang Wu wrote:
+> > On Tue, Jun 12, 2012 at 06:26:43PM +0800, Wanpeng Li wrote:
+> > > From: Wanpeng Li <liwp@linux.vnet.ibm.com>
+> > 
+> > That email address is no longer in use?
+> > 
+> > > Since bdi->wb.list_lock is used to protect the b_* lists,
+> > > so the flushers who call wb_writeback to writeback pages will
+> > > stuck when bandwidth update policy holds this lock. In order
+> > > to avoid this race we can introduce a new bandwidth_lock who
+> > > is responsible for protecting bandwidth update policy.
+> 
+> This is not a race condition - it is a lock contention condition.
 
-Hi Bryan,
+Nod.
 
-After merging the leds tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+> > This looks good to me. wb.list_lock could be contended and it's better
+> > for bdi_update_bandwidth() to use a standalone and hardly contended
+> > lock.
+> 
+> I'm not sure it will be "hardly contended". That's a global lock, so
+> now we'll end up with updates on different bdis contending and it's
+> not uncommon to see a couple of thousand processes on large machines
+> beating on balance_dirty_pages().  Putting a global scope lock
+> around such a function doesn't seem like a good solution to me.
 
-drivers/leds/led-core.c: In function 'led_set_software_blink':
-drivers/leds/led-core.c:44:2: error: implicit declaration of function 'led_=
-stop_software_blink' [-Werror=3Dimplicit-function-declaration]
+It's more about the number of bdi's than the number of processes that matters.
+Because here is a per-bdi 200ms ratelimit:
 
-Caused by commit eb91300a9786 ("leds: fix led_brightness_set when
-soft-blinking").
+bdi_update_bandwidth():
 
-This is exactly the problem I reported on June 8 and was fixed in
-next-20120612 ...
+       if (time_is_after_eq_jiffies(bdi->bw_time_stamp + BANDWIDTH_INTERVAL))
+                return;         
+       // lock it
 
-I have used the leds tree from next-20120612 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+So a global should be enough when there are only dozens of disks.
 
---Signature=_Wed__13_Jun_2012_14_10_41_+1000_IWT_TDRgs9oyqlQH
-Content-Type: application/pgp-signature
+However, the global bandwidth_lock will probably become a problem when
+there comes hundreds of disks. If there are (or will be) such setups,
+I'm fine to revert to the old per-bdi locking.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+> Oh, and if you want to remove the dirty_lock from
+> global_update_limit(), then replacing the lock with a cmpxchg loop
+> will do it just fine....
 
-iQIcBAEBCAAGBQJP2BLBAAoJEECxmPOUX5FEPG8P/20RLffNi3lDs7RgDh67ra6X
-jTPY/EQdnEJwd8SY6LdlLUm8r6FovTYUBqJsu3GyYGZ37IE8Y7rJei7OEGrZWMPR
-2Zase5DHSBsiwy5ukkErBiwXDYxrdqcMuykQccsQI3UbZiRr/8M3HdpSLUNefwbF
-z/BR0roRNoQ8XlbxPC47H5jj7cN0YnahTlA7paSenH9teZZ0TFqGM/YJe3bjFHeh
-A3WXDWlRZ3U3RqxW5thti3izKm6agi/S0uZbAF6+adWp/cx521vN7T13fCXPE2Cc
-ELmwQwuePn+u9/wiqEuDGFMchp3Hlt7dRMWeJe29GULkEW246M16bzGwfE2tfUxc
-Z9YDmpoITnCeGhDJ/Myi0J9z5JD+qYfjPFzi4fKn4ctNKDhL9XTh6krsrayOvqcO
-3ExVkVJTiu2CWL4SSxMwopTO2xo3hyozNnAQnELnbTc46OJLdjceUmzJXoOzeTER
-kTZndamCNbRjembZ0nKpkb0J/4QuiarUv73B5sFfghFU6BHIetn4IpI1jRYvSPZT
-JxujpMyRjS94rlqJWCf7WkRi8JKp2Lxd5sg7WvdJ9W3aCS5hjR0pmHULtUtUQ8y9
-AY2EJFn7+JbGDWYPSEQUhMrA/0XM6RD+DKPODRxX+aLgx2ige9xtgZk3mc8QZVxa
-CVtrCCBXCpQK3RpKyzJy
-=ztVb
------END PGP SIGNATURE-----
+Yes. But to be frank, I don't care about that dirty_lock at all,
+because it has its own 200ms rate limiting :-)
 
---Signature=_Wed__13_Jun_2012_14_10_41_+1000_IWT_TDRgs9oyqlQH--
+Thanks,
+Fengguang
