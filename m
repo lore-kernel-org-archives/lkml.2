@@ -1,71 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752360Ab2FMBac (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 21:30:32 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:61256 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750918Ab2FMBab (ORCPT
+	id S1752179Ab2FMBgD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 21:36:03 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:21344 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750905Ab2FMBgB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 21:30:31 -0400
-Date: Wed, 13 Jun 2012 09:30:19 +0800
-From: Wanpeng Li <liwp.linux@gmail.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Wanpeng Li <liwp.linux@gmail.com>
-Subject: Re: [PATCH] writeback: fix hung_task alarm when sync block
-Message-ID: <20120613013018.GA5432@kernel>
-Reply-To: Wanpeng Li <liwp.linux@gmail.com>
-References: <1339548774-4834-1-git-send-email-liwp.linux@gmail.com>
- <20120613005945.GA24091@localhost>
- <20120613011151.GA2181@kernel>
- <20120613011817.GA24315@localhost>
+	Tue, 12 Jun 2012 21:36:01 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ak0JABju1095LKXc/2dsb2JhbABFtAMEgS2BCIIYAQEFOhwjEAgDDgouFCUDIROICgy5TBSLE1CFQQOVHoETiBGGWIJy
+Date: Wed, 13 Jun 2012 11:35:49 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>, xfs@oss.sgi.com
+Subject: Re: [PATCH 0/2] Add FALLOC_FL_ZERO_RANGE to fallocate
+Message-ID: <20120613013549.GO22848@dastard>
+References: <1339515364-17374-1-git-send-email-pbonzini@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120613011817.GA24315@localhost>
+In-Reply-To: <1339515364-17374-1-git-send-email-pbonzini@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 13, 2012 at 09:18:17AM +0800, Fengguang Wu wrote:
->> >> @@ -1311,7 +1312,12 @@ void writeback_inodes_sb_nr(struct super_block *sb,
->> >>  
->> >>  	WARN_ON(!rwsem_is_locked(&sb->s_umount));
->> >>  	bdi_queue_work(sb->s_bdi, &work);
->> >> -	wait_for_completion(&done);
->> >> +	hangcheck = sysctl_hung_task_timeout_secs;
->> >> +	if (hangcheck)
->> >
->> >The hangcheck variable looks redundant.
->> 
->> if sysctl_hung_task_timeout_secs is equal to ZERO, it means 
->> timeout -- no checking done. So I think wait_for_completion_timeout 
->> makes no sense this time.
->
->I mean, you can test sysctl_hung_task_timeout_secs directly?
->It's a one shot test anyway.
+On Tue, Jun 12, 2012 at 05:36:02PM +0200, Paolo Bonzini wrote:
+> This patch adds the FALLOC_FL_ZERO_RANGE operation mode to fallocate,
+> resembling the similar XFS ioctl.  The new mode can be used with
+> or without FALLOC_FL_KEEP_SIZE, but of course not together with
+> FALLOC_FL_PUNCH_HOLE.
 
-/*
- * Zero means infinite timeout - no checking done:
- */
-unsigned long __read_mostly sysctl_hung_task_timeout_secs = CONFIG_DEFAULT_HUNG_TASK_TIMEOUT;
+!FALLOC_FL_KEEP_SIZE makes no sense for this operation. It is for
+zeroing an existing section of a file while retaining the allocated
+space, not for extending or truncating the file. It's the same
+reason that FALLOC_FL_PUNCH_HOLE must have FALLOC_FL_KEEP_SIZE set.
 
-The comment in kernel/hung_task.c says "Zero means infinite timeout - no
-cheking done". Maybe I can just test if this time alarm doesn't flood my
-logs. Do you have more suggestion. :-)
+Also, a minor nit, but you should credit where this code has
+originated from in the commit messages, and describe the use case
+for requiring it. i.e. based on:
 
-Regards,
-Wanpeng Li
+http://permalink.gmane.org/gmane.linux.file-systems/62449
 
->
->> >> +		while (!wait_for_completion_timeout(&done, HZ/2))
->> >> +			;
->> >> +	else
->> >> +		wait_for_completion(&done);
->> >>  }
->> >>  EXPORT_SYMBOL(writeback_inodes_sb_nr);
->> >>  
->> >> -- 
->> >> 1.7.9.5
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
