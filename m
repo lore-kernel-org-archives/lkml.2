@@ -1,62 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752230Ab2FMVEp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 17:04:45 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:55149 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750732Ab2FMVEo (ORCPT
+	id S1754162Ab2FMVJk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 17:09:40 -0400
+Received: from mga14.intel.com ([143.182.124.37]:31544 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751908Ab2FMVJj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 17:04:44 -0400
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] staging: zsmalloc: fix uninit'ed variable warning
-Date: Wed, 13 Jun 2012 16:03:42 -0500
-Message-Id: <1339621422-8449-1-git-send-email-sjenning@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12061321-4242-0000-0000-000001F59E3C
+	Wed, 13 Jun 2012 17:09:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="111836291"
+From: "Winkler, Tomas" <tomas.winkler@intel.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alan@linux.intel.com" <alan@linux.intel.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+Subject: RE: misc: mei: fixes for 3.5
+Thread-Topic: misc: mei: fixes for 3.5
+Thread-Index: AQHNSaRfBG8z7OzU9kWYSomehzL8KJb4vB/A
+Date: Wed, 13 Jun 2012 21:09:14 +0000
+Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B12A780@HASMSX103.ger.corp.intel.com>
+References: <1338298752-15445-1-git-send-email-tomas.winkler@intel.com>
+ <20120613203729.GA11326@kroah.com>
+In-Reply-To: <20120613203729.GA11326@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.184.70.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes an uninitialized variable warning in
-alloc_zspage().  It also fixes the secondary issue of
-prev_page leaving scope on each loop iteration.  The only
-reason this ever worked was because prev_page was occupying
-the same space on the stack on each iteration.
 
-Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
----
- drivers/staging/zsmalloc/zsmalloc-main.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
-index fb54a9b..4af3dd6 100644
---- a/drivers/staging/zsmalloc/zsmalloc-main.c
-+++ b/drivers/staging/zsmalloc/zsmalloc-main.c
-@@ -400,7 +400,7 @@ static void init_zspage(struct page *first_page, struct size_class *class)
- static struct page *alloc_zspage(struct size_class *class, gfp_t flags)
- {
- 	int i, error;
--	struct page *first_page = NULL;
-+	struct page *first_page = NULL, *uninitialized_var(prev_page);
- 
- 	/*
- 	 * Allocate individual pages and link them together as:
-@@ -415,7 +415,7 @@ static struct page *alloc_zspage(struct size_class *class, gfp_t flags)
- 	 */
- 	error = -ENOMEM;
- 	for (i = 0; i < class->pages_per_zspage; i++) {
--		struct page *page, *prev_page;
-+		struct page *page;
- 
- 		page = alloc_page(flags);
- 		if (!page)
--- 
-1.7.9.5
+> > Hi Greg,
+> > please consider this batch for queuing into 3.5 1. patch 2/4 bug in
+> > probe: visible only after merging with the trunk 2. patch 3/4 fixes
+> > kernel oops that was revealed when probe failed 3. patch 4/4 is
+> > regression fix and should be merged also to stable 3.4 4. patch 1/4 is
+> > a minor documentation fix
+> 
+> Grammer fixes are not ok for 3.5 at this point in time, sorry.  I'll queue up the
+> other 3 though.
 
+Thanks reasonable. 
+
+Please consider also  this two:
+
+This one is one more fix connected to the same issue as the 3 patches. (From Samuel Oritz) 
+http://marc.info/?l=linux-kernel&m=133940653731271&w=2
+
+This one is just adding a flag to WATCHDOG devices that was only possible after merging the watchdog tree into 3.5-rc1. 
+This one is not must so I leave it for you to decide. 
+http://marc.info/?l=linux-kernel&m=133940653831272&w=2
+
+
+Thanks
+Tomas
