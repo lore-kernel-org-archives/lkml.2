@@ -1,103 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755070Ab2FMXjE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 19:39:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16216 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754843Ab2FMXjB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 19:39:01 -0400
-Date: Wed, 13 Jun 2012 20:38:46 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: x86@kernel.org, kvm@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Avi Kivity <avi@redhat.com>,
-        gleb@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCHv6 6/8] kvm: only sync when attention bits set
-Message-ID: <20120613233846.GA23955@amt.cnet>
-References: <cover.1338474301.git.mst@redhat.com>
- <56ee14064ef307b7075f6977122781456cab5165.1338474301.git.mst@redhat.com>
- <20120612222748.GB1973@amt.cnet>
- <20120613081923.GA16162@redhat.com>
- <20120613083506.GA17190@redhat.com>
- <20120613205336.GB19290@amt.cnet>
- <20120613210423.GA24932@redhat.com>
+	id S1755073Ab2FMXo5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 19:44:57 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:33358 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754865Ab2FMXo4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 19:44:56 -0400
+Date: Wed, 13 Jun 2012 16:44:52 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Alan Cox <alan@linux.intel.com>,
+        Rabin Vincent <rabin.vincent@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, rabin@rab.in
+Subject: Re: [PATCH] vt: fix race in vt_waitactive()
+Message-ID: <20120613234452.GA12764@kroah.com>
+References: <20120518180628.GA27021@kroah.com>
+ <1337587722-19809-1-git-send-email-rabin.vincent@stericsson.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120613210423.GA24932@redhat.com>
+In-Reply-To: <1337587722-19809-1-git-send-email-rabin.vincent@stericsson.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 14, 2012 at 12:04:23AM +0300, Michael S. Tsirkin wrote:
-> On Wed, Jun 13, 2012 at 05:53:36PM -0300, Marcelo Tosatti wrote:
-> > On Wed, Jun 13, 2012 at 11:35:07AM +0300, Michael S. Tsirkin wrote:
-> > > On Wed, Jun 13, 2012 at 11:19:24AM +0300, Michael S. Tsirkin wrote:
-> > > > On Tue, Jun 12, 2012 at 07:27:48PM -0300, Marcelo Tosatti wrote:
-> > > > > On Sun, Jun 03, 2012 at 10:28:29AM +0300, Michael S. Tsirkin wrote:
-> > > > > > Commit eb0dc6d0368072236dcd086d7fdc17fd3c4574d4 introduced apic
-> > > > > > attention bitmask but kvm still syncs lapic unconditionally.
-> > > > > > As that commit suggested and in anticipation of adding more attention
-> > > > > > bits, only sync lapic if(apic_attention).
-> > > > > > 
-> > > > > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > > > > > ---
-> > > > > >  arch/x86/kvm/x86.c |    3 ++-
-> > > > > >  1 files changed, 2 insertions(+), 1 deletions(-)
-> > > > > > 
-> > > > > > diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> > > > > > index be6d549..2f70861 100644
-> > > > > > --- a/arch/x86/kvm/x86.c
-> > > > > > +++ b/arch/x86/kvm/x86.c
-> > > > > > @@ -5388,7 +5388,8 @@ static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
-> > > > > >  	if (unlikely(vcpu->arch.tsc_always_catchup))
-> > > > > >  		kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
-> > > > > >  
-> > > > > > -	kvm_lapic_sync_from_vapic(vcpu);
-> > > > > > +	if (unlikely(vcpu->arch.apic_attention))
-> > > > > > +		kvm_lapic_sync_from_vapic(vcpu);
-> > > > > 
-> > > > > void kvm_lapic_sync_from_vapic(struct kvm_vcpu *vcpu)
-> > > > > {
-> > > > >         u32 data;
-> > > > >         void *vapic;
-> > > > > 
-> > > > >         if (!test_bit(KVM_APIC_CHECK_VAPIC, &vcpu->arch.apic_attention))
-> > > > >                 return;
-> > > > > 
-> > > > > Please use unlikely more carefully, when a gain is measureable:
-> > > > > http://lwn.net/Articles/420019/
-> > > > 
-> > > > Do we have to measure every single thing?
-> > > > Sometimes it's obvious: vapic is slow path, isn't it?
-> > > 
-> > > Just to clarify the question: I think it's obvious this condition is
-> > > false more often than true. By how much, depends on the workload.
-> > > Do you think this is enough to tag this unlikely?
-> > 
-> > Depends whether your processor supports flexpriority or not. I don't
-> > want to argue in favour/against the particular instance
-> > 
-> > GCC docs:
-> > 
-> > "
-> > — Built-in Function: long __builtin_expect (long exp, long c)
-> > 
-> >     You may use __builtin_expect to provide the compiler with branch
-> > prediction information. In general, you should prefer to use actual
-> > profile feedback for this (-fprofile-arcs), as programmers are
-> > notoriously bad at predicting how their programs actually perform.
-> > However, there are applications in which this data is hard to collect.
-> > "
-> > 
-> > Lately half of branches in your patches are annotated.
+On Mon, May 21, 2012 at 01:38:42PM +0530, Rabin Vincent wrote:
+> pm_restore_console() is called from the suspend/resume path, and this
+> calls vt_move_to_console(), which calls vt_waitactive().
 > 
-> So if I instrument and show that branch is almost never taken that is enough?
-> This citation does not require measuring the perf impact.
+> There's a race in this path which causes the process which requests the
+> suspend to sleep indefinitely waiting for an event which already
+> happened:
+> 
+> P1                                      P2
+>  vt_move_to_console()
+>   set_console()
+>     schedule_console_callback()
+>   vt_waitactive()
+>     check n == fg_console +1
+>                                        console_callback()
+>                                          switch_screen()
+>                                          vt_event_post() // no waiters
+> 
+>     vt_event_wait() // forever
+> 
+> Fix the race by ensuring we're registered for the event before we check
+> if it's already completed.
+> 
+> Cc: Alan Cox <alan@linux.intel.com>
+> Signed-off-by: Rabin Vincent <rabin.vincent@stericsson.com>
+> ---
+>  drivers/tty/vt/vt_ioctl.c |   47 ++++++++++++++++++++++++++++++++------------
+>  1 files changed, 34 insertions(+), 13 deletions(-)
 
-Without flexpriority its always taken.
+Alan, any thoughts on this patch?
 
+thanks,
 
+greg k-h
+
+> 
+> diff --git a/drivers/tty/vt/vt_ioctl.c b/drivers/tty/vt/vt_ioctl.c
+> index ede2ef1..1d02e32 100644
+> --- a/drivers/tty/vt/vt_ioctl.c
+> +++ b/drivers/tty/vt/vt_ioctl.c
+> @@ -110,16 +110,7 @@ void vt_event_post(unsigned int event, unsigned int old, unsigned int new)
+>  		wake_up_interruptible(&vt_event_waitqueue);
+>  }
+>  
+> -/**
+> - *	vt_event_wait		-	wait for an event
+> - *	@vw: our event
+> - *
+> - *	Waits for an event to occur which completes our vt_event_wait
+> - *	structure. On return the structure has wv->done set to 1 for success
+> - *	or 0 if some event such as a signal ended the wait.
+> - */
+> -
+> -static void vt_event_wait(struct vt_event_wait *vw)
+> +static void __vt_event_queue(struct vt_event_wait *vw)
+>  {
+>  	unsigned long flags;
+>  	/* Prepare the event */
+> @@ -129,8 +120,18 @@ static void vt_event_wait(struct vt_event_wait *vw)
+>  	spin_lock_irqsave(&vt_event_lock, flags);
+>  	list_add(&vw->list, &vt_events);
+>  	spin_unlock_irqrestore(&vt_event_lock, flags);
+> +}
+> +
+> +static void __vt_event_wait(struct vt_event_wait *vw)
+> +{
+>  	/* Wait for it to pass */
+>  	wait_event_interruptible(vt_event_waitqueue, vw->done);
+> +}
+> +
+> +static void __vt_event_dequeue(struct vt_event_wait *vw)
+> +{
+> +	unsigned long flags;
+> +
+>  	/* Dequeue it */
+>  	spin_lock_irqsave(&vt_event_lock, flags);
+>  	list_del(&vw->list);
+> @@ -138,6 +139,22 @@ static void vt_event_wait(struct vt_event_wait *vw)
+>  }
+>  
+>  /**
+> + *	vt_event_wait		-	wait for an event
+> + *	@vw: our event
+> + *
+> + *	Waits for an event to occur which completes our vt_event_wait
+> + *	structure. On return the structure has wv->done set to 1 for success
+> + *	or 0 if some event such as a signal ended the wait.
+> + */
+> +
+> +static void vt_event_wait(struct vt_event_wait *vw)
+> +{
+> +	__vt_event_queue(vw);
+> +	__vt_event_wait(vw);
+> +	__vt_event_dequeue(vw);
+> +}
+> +
+> +/**
+>   *	vt_event_wait_ioctl	-	event ioctl handler
+>   *	@arg: argument to ioctl
+>   *
+> @@ -177,10 +194,14 @@ int vt_waitactive(int n)
+>  {
+>  	struct vt_event_wait vw;
+>  	do {
+> -		if (n == fg_console + 1)
+> -			break;
+>  		vw.event.event = VT_EVENT_SWITCH;
+> -		vt_event_wait(&vw);
+> +		__vt_event_queue(&vw);
+> +		if (n == fg_console + 1) {
+> +			__vt_event_dequeue(&vw);
+> +			break;
+> +		}
+> +		__vt_event_wait(&vw);
+> +		__vt_event_dequeue(&vw);
+>  		if (vw.done == 0)
+>  			return -EINTR;
+>  	} while (vw.event.newev != n);
+> -- 
+> 1.7.4.3
