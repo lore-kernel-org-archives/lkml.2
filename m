@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752146Ab2FMDa5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 23:30:57 -0400
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:46519 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751069Ab2FMDa4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 23:30:56 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ak0JAEoI2E95LKXc/2dsb2JhbABFtAUEgS2BCIIYAQEFOhwjEAgDDgouFCUDIROICgy5ThSLE0mFSAOVIIETiBKGWIJy
-Date: Wed, 13 Jun 2012 13:30:52 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>, xfs@oss.sgi.com
-Subject: Re: [PATCH 0/2] Add FALLOC_FL_ZERO_RANGE to fallocate
-Message-ID: <20120613033052.GT22848@dastard>
-References: <1339515364-17374-1-git-send-email-pbonzini@redhat.com>
- <20120613013549.GO22848@dastard>
+	id S1752249Ab2FMDbv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 23:31:51 -0400
+Received: from mga14.intel.com ([143.182.124.37]:57815 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751573Ab2FMDbu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 23:31:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="155572143"
+From: Andi Kleen <andi@firstfloor.org>
+To: "Yan\, Zheng" <zheng.z.yan@intel.com>
+Cc: Stephane Eranian <eranian@google.com>, a.p.zijlstra@chello.nl,
+        mingo@elte.hu, jolsa@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V5 0/13] perf: Intel uncore pmu counting support
+References: <1339479468-3815-1-git-send-email-zheng.z.yan@intel.com>
+	<CABPqkBQu1hTa2R-PKsygLqOSSD9nu3+xR-79pT-8bB8Y16CBuw@mail.gmail.com>
+	<4FD7EFCB.6060005@intel.com>
+Date: Tue, 12 Jun 2012 20:31:44 -0700
+In-Reply-To: <4FD7EFCB.6060005@intel.com> (Zheng Yan's message of "Wed, 13 Jun
+	2012 09:41:31 +0800")
+Message-ID: <m2obonj3a7.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120613013549.GO22848@dastard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 13, 2012 at 11:35:49AM +1000, Dave Chinner wrote:
-> On Tue, Jun 12, 2012 at 05:36:02PM +0200, Paolo Bonzini wrote:
-> > This patch adds the FALLOC_FL_ZERO_RANGE operation mode to fallocate,
-> > resembling the similar XFS ioctl.  The new mode can be used with
-> > or without FALLOC_FL_KEEP_SIZE, but of course not together with
-> > FALLOC_FL_PUNCH_HOLE.
-> 
-> !FALLOC_FL_KEEP_SIZE makes no sense for this operation. It is for
-> zeroing an existing section of a file while retaining the allocated
-> space, not for extending or truncating the file. It's the same
-> reason that FALLOC_FL_PUNCH_HOLE must have FALLOC_FL_KEEP_SIZE set.
-> 
-> Also, a minor nit, but you should credit where this code has
-> originated from in the commit messages, and describe the use case
-> for requiring it. i.e. based on:
-> 
-> http://permalink.gmane.org/gmane.linux.file-systems/62449
+"Yan, Zheng" <zheng.z.yan@intel.com> writes:
 
-Oh, and you'll need to provide a new xfstests test based on 242 that
-uses the new fallocate interface, and to do that you'll also need to
-add support for the new fallocate function in xfs_io.
+> Peter suggests keeping the uncore names as they're listed in the intel
+> doc. For Sandybirdge-EP, uncore names are something like: Cbo, iMC, QPI.
+> I think Uncore_Cbo_0 appears better than uncore_Cbo_0
 
-Adding generic filesystem functionality is not as simple as writing a
-kernel patch anymore... :/
+How about a case insensitive match for the sysfs directories? That can
+be implemented in user land with nftw(). Since sysfs is all virtual
+it should not be too expensive, as long as you only walk the pmu
+parts.
 
-Cheers,
+I think that would be most user friendly.
 
-Dave.
+-Andi
+
 -- 
-Dave Chinner
-david@fromorbit.com
+ak@linux.intel.com -- Speaking for myself only
