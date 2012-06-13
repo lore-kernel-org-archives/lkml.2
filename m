@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754000Ab2FMBM1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 21:12:27 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:51554 "EHLO
+	id S1753966Ab2FMBMZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 21:12:25 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:51551 "EHLO
 	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753795Ab2FMBLo (ORCPT
+	with ESMTP id S1753776Ab2FMBLo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 12 Jun 2012 21:11:44 -0400
 From: John Stultz <john.stultz@linaro.org>
@@ -21,14 +21,14 @@ Cc: John Stultz <john.stultz@linaro.org>,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
         Taras Glek <tgek@mozilla.com>, Mike Hommey <mh@glandium.org>,
         Jan Kara <jack@suse.cz>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Subject: [PATCH 6/6] [RFC][HACK] mm: Change memory management of anonymous pages on swapless systems
-Date: Tue, 12 Jun 2012 18:11:01 -0700
-Message-Id: <1339549862-653-7-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 1/6] [RFC] Interval tree implementation
+Date: Tue, 12 Jun 2012 18:10:56 -0700
+Message-Id: <1339549862-653-2-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.3.2.146.gca209
 In-Reply-To: <1339549862-653-1-git-send-email-john.stultz@linaro.org>
 References: <1339549862-653-1-git-send-email-john.stultz@linaro.org>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12061301-1780-0000-0000-00000663E8FC
+x-cbid: 12061301-1780-0000-0000-00000663E8FF
 X-IBM-ISS-SpamDetectors: 
 X-IBM-ISS-DetailInfo: BY=3.00000281; HX=3.00000190; KW=3.00000007;
  PH=3.00000001; SC=3.00000002; SDB=6.00147547; UDB=6.00033679; UTC=2012-06-13
@@ -37,33 +37,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Due to my newbie-ness, the following may not be precise, but
-I think it conveys the intent of what I'm trying to do here.
+After Andrew suggested something like his mumbletree idea
+to better store a list of intervals, I worked on a few different
+approaches, and this is what I've finally managed to get working.
 
-Anonymous memory is tracked on two LRU lists: LRU_INACTIVE_ANON
-and LRU_ACTIVE_ANON. This split is useful when we need to free
-up pages and are trying to decide what to swap out.
+The idea of storing intervals in a tree is nice, but has a number
+of complications. When adding an interval, its possible that a
+large interval will consume and merge a number of smaller intervals.
+When removing a interval, its possible you may end up splitting an
+existing interval, causing one interval to become two. This makes it
+very difficult to provide generic list_head like behavior, as
+the parent structures would need to be duplicated and removed,
+and that has lots of memory ownership issues.
 
-However, on systems that do no have swap, this partition is less
-clear. In many cases the code avoids aging active anonymous pages
-onto the inactive list. However in some cases pages do get moved
-to the inactive list, but we never call writepage, as there isn't
-anything to swap out.
+So, this is a much simplified and more list_head like
+implementation. You can add a node to a tree, or remove a node
+to a tree, but the generic implementation doesn't do the
+merging or splitting for you. But it does provide helpers to
+find overlapping and adjacent intervals.
 
-This patch changes some of the active/inactive list management of
-anonymous memory when there is no swap. In that case pages are
-always added to the active lru. The intent is that since anonymous
-pages cannot be swapped out, they all shoudld be active.
+Andrew also really wanted this interval-tree implementation to be
+resuable so we don't duplicate the file locking logic. I'm not
+totally convinced that the requirements between the volatile
+intervals and file locking are really equivelent, but this reduced
+impelementation may make it possible.
 
-The one exception is volatile pages, which can be moved to
-the inactive lru by calling deactivate_page().
+Changelog:
+v2:
+* Reworked code to use an rbtree instead of splaying
 
-In addition, I've changed the logic so we also do try to shrink
-the inactive anonymous lru, and call writepage. This should only
-be done if there are volatile pages on the inactive lru.
+v3:
+* Added range_tree_next_in_range() to avoid having to start
+  lookups from the root every time.
+* Fixed some comments and return NULL instead of 0, as suggested
+  by Aneesh Kumar K.V
 
-This allows us to purge volatile pages in writepage when the system
-does not have swap.
+v6:
+* Fixed range_tree_in_range() so that it finds the earliest range,
+  rather then the first. This allows the next_in_range() function
+  to properly cover all the ranges in the tree.
+* Minor clenaups to simplify some of the functions
+
+v7:
+* Changed terminology from rangetree to intervaltree as suggested
+  by Jan Kara
 
 CC: Andrew Morton <akpm@linux-foundation.org>
 CC: Android Kernel Team <kernel-team@android.com>
@@ -83,126 +100,212 @@ CC: Jan Kara <jack@suse.cz>
 CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- include/linux/pagevec.h |    5 +----
- include/linux/swap.h    |   23 +++++++++++++++--------
- mm/swap.c               |   13 ++++++++++++-
- mm/vmscan.c             |    9 ---------
- 4 files changed, 28 insertions(+), 22 deletions(-)
+ include/linux/intervaltree.h |   55 +++++++++++++++++++
+ lib/Makefile                 |    2 +-
+ lib/intervaltree.c           |  119 ++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 175 insertions(+), 1 deletions(-)
+ create mode 100644 include/linux/intervaltree.h
+ create mode 100644 lib/intervaltree.c
 
-diff --git a/include/linux/pagevec.h b/include/linux/pagevec.h
-index 2aa12b8..e1312a5 100644
---- a/include/linux/pagevec.h
-+++ b/include/linux/pagevec.h
-@@ -22,6 +22,7 @@ struct pagevec {
+diff --git a/include/linux/intervaltree.h b/include/linux/intervaltree.h
+new file mode 100644
+index 0000000..cfaa174
+--- /dev/null
++++ b/include/linux/intervaltree.h
+@@ -0,0 +1,55 @@
++#ifndef _LINUX_INTERVALTREE_H
++#define _LINUX_INTERVALTREE_H
++
++#include <linux/types.h>
++#include <linux/rbtree.h>
++
++struct interval_tree_node {
++	struct rb_node rb;
++	u64 start;
++	u64 end;
++};
++
++struct interval_tree_root {
++	struct rb_root head;
++};
++
++static inline void interval_tree_init(struct interval_tree_root *root)
++{
++	root->head = RB_ROOT;
++}
++
++static inline void interval_tree_node_init(struct interval_tree_node *node)
++{
++	rb_init_node(&node->rb);
++	node->start = 0;
++	node->end = 0;
++}
++
++static inline int interval_tree_empty(struct interval_tree_root *root)
++{
++	return RB_EMPTY_ROOT(&root->head);
++}
++
++static inline
++struct interval_tree_node *interval_tree_root_node(
++						struct interval_tree_root *root)
++{
++	struct interval_tree_node *ret;
++	ret = container_of(root->head.rb_node, struct interval_tree_node, rb);
++	return ret;
++}
++
++extern struct interval_tree_node *interval_tree_in_interval(
++						struct interval_tree_root *root,
++						 u64 start, u64 end);
++extern struct interval_tree_node *interval_tree_next_in_interval(
++						struct interval_tree_node *node,
++						u64 start, u64 end);
++extern void interval_tree_add(struct interval_tree_root *root,
++					struct interval_tree_node *node);
++extern void interval_tree_remove(struct interval_tree_root *root,
++					struct interval_tree_node *node);
++#endif
++
++
+diff --git a/lib/Makefile b/lib/Makefile
+index 8c31a0c..2bbad25 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -12,7 +12,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
+ 	 idr.o int_sqrt.o extable.o prio_tree.o \
+ 	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
+ 	 proportions.o prio_heap.o ratelimit.o show_mem.o \
+-	 is_single_threaded.o plist.o decompress.o
++	 is_single_threaded.o plist.o decompress.o intervaltree.o
  
- void __pagevec_release(struct pagevec *pvec);
- void __pagevec_lru_add(struct pagevec *pvec, enum lru_list lru);
-+void __pagevec_lru_add_anon(struct pagevec *pvec);
- unsigned pagevec_lookup(struct pagevec *pvec, struct address_space *mapping,
- 		pgoff_t start, unsigned nr_pages);
- unsigned pagevec_lookup_tag(struct pagevec *pvec,
-@@ -64,10 +65,6 @@ static inline void pagevec_release(struct pagevec *pvec)
- 		__pagevec_release(pvec);
- }
- 
--static inline void __pagevec_lru_add_anon(struct pagevec *pvec)
--{
--	__pagevec_lru_add(pvec, LRU_INACTIVE_ANON);
--}
- 
- static inline void __pagevec_lru_add_active_anon(struct pagevec *pvec)
- {
-diff --git a/include/linux/swap.h b/include/linux/swap.h
-index c84ec68..639936f 100644
---- a/include/linux/swap.h
-+++ b/include/linux/swap.h
-@@ -238,14 +238,6 @@ extern void swap_setup(void);
- 
- extern void add_page_to_unevictable_list(struct page *page);
- 
--/**
-- * lru_cache_add: add a page to the page lists
-- * @page: the page to add
-- */
--static inline void lru_cache_add_anon(struct page *page)
--{
--	__lru_cache_add(page, LRU_INACTIVE_ANON);
--}
- 
- static inline void lru_cache_add_file(struct page *page)
- {
-@@ -474,5 +466,20 @@ mem_cgroup_uncharge_swapcache(struct page *page, swp_entry_t ent)
- }
- 
- #endif /* CONFIG_SWAP */
+ lib-$(CONFIG_MMU) += ioremap.o
+ lib-$(CONFIG_SMP) += cpumask.o
+diff --git a/lib/intervaltree.c b/lib/intervaltree.c
+new file mode 100644
+index 0000000..47c52e0
+--- /dev/null
++++ b/lib/intervaltree.c
+@@ -0,0 +1,119 @@
++#include <linux/intervaltree.h>
++#include <linux/kernel.h>
++#include <linux/slab.h>
++
++/* This code implements a naive interval tree, which stores a series of
++ * non-intersecting intervals.
++ * More complex interval trees can be read about here:
++ *		http://en.wikipedia.org/wiki/Interval_tree
++ */
++
 +
 +/**
-+ * lru_cache_add: add a page to the page lists
-+ * @page: the page to add
++ * interval_tree_in_interval - Returns the first node that intersects with the
++ *                             given interval
++ * @root: interval_tree root
++ * @start: interval start
++ * @end: interval end
++ *
 + */
-+static inline void lru_cache_add_anon(struct page *page)
++struct interval_tree_node *interval_tree_in_interval(
++						struct interval_tree_root *root,
++						u64 start, u64 end)
 +{
-+	int lru = LRU_INACTIVE_ANON;
-+	if (!total_swap_pages)
-+		lru = LRU_ACTIVE_ANON;
++	struct rb_node *p = root->head.rb_node;
++	struct interval_tree_node *candidate, *match = NULL;
 +
-+	__lru_cache_add(page, lru);
++	while (p) {
++		candidate = rb_entry(p, struct interval_tree_node, rb);
++		if (end < candidate->start)
++			p = p->rb_left;
++		else if (start > candidate->end)
++			p = p->rb_right;
++		else {
++			/* We found one, but try to find an earlier match */
++			match = candidate;
++			p = p->rb_left;
++		}
++	}
++
++	return match;
 +}
 +
 +
- #endif /* __KERNEL__*/
- #endif /* _LINUX_SWAP_H */
-diff --git a/mm/swap.c b/mm/swap.c
-index 4e7e2ec..f35df46 100644
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -691,7 +691,7 @@ void lru_add_page_tail(struct page *page, struct page *page_tail,
- 	SetPageLRU(page_tail);
- 
- 	if (page_evictable(page_tail, NULL)) {
--		if (PageActive(page)) {
-+		if (PageActive(page) || !total_swap_pages) {
- 			SetPageActive(page_tail);
- 			active = 1;
- 			lru = LRU_ACTIVE_ANON;
-@@ -755,6 +755,17 @@ void __pagevec_lru_add(struct pagevec *pvec, enum lru_list lru)
- }
- EXPORT_SYMBOL(__pagevec_lru_add);
- 
-+
-+void __pagevec_lru_add_anon(struct pagevec *pvec)
++/**
++ * interval_tree_next_in_interval - Return the next interval in a intervaltree
++ *                                  thatintersects with a specified interval.
++ * @root: interval_tree root
++ * @start: interval start
++ * @end: interval end
++ *
++ */
++struct interval_tree_node *interval_tree_next_in_interval(
++						struct interval_tree_node *node,
++						u64 start, u64 end)
 +{
-+	if (!total_swap_pages)
-+		__pagevec_lru_add(pvec, LRU_ACTIVE_ANON);
-+	else
-+		__pagevec_lru_add(pvec, LRU_INACTIVE_ANON);
++	struct rb_node *next;
++	struct interval_tree_node *candidate;
++	if (!node)
++		return NULL;
++	next = rb_next(&node->rb);
++	if (!next)
++		return NULL;
++
++	candidate = container_of(next, struct interval_tree_node, rb);
++
++	if ((candidate->start > end) || (candidate->end < start))
++		return NULL;
++
++	return candidate;
 +}
-+EXPORT_SYMBOL(__pagevec_lru_add_anon);
++
++/**
++ * interval_tree_add - Add a node to a interval tree
++ * @root: interval tree to be added to
++ * @node: interval_tree_node to be added
++ *
++ * Adds a node to the interval tree. Added interval should not intersect with
++ * existing intervals in the tree.
++ */
++void interval_tree_add(struct interval_tree_root *root,
++					struct interval_tree_node *node)
++{
++	struct rb_node **p = &root->head.rb_node;
++	struct rb_node *parent = NULL;
++	struct interval_tree_node *ptr;
++
++	WARN_ON_ONCE(!RB_EMPTY_NODE(&node->rb));
++
++	/* XXX might want to conditionalize this on debugging checks */
++	WARN_ON_ONCE(!!interval_tree_in_interval(root, node->start, node->end));
++
++	while (*p) {
++		parent = *p;
++		ptr = rb_entry(parent, struct interval_tree_node, rb);
++		if (node->start < ptr->start)
++			p = &(*p)->rb_left;
++		else
++			p = &(*p)->rb_right;
++	}
++	rb_link_node(&node->rb, parent, p);
++	rb_insert_color(&node->rb, &root->head);
++}
 +
 +
- /**
-  * pagevec_lookup - gang pagecache lookup
-  * @pvec:	Where the resulting pages are placed
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index eeb3bc9..52d8ad9 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1597,15 +1597,6 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
- 	if (!global_reclaim(sc))
- 		force_scan = true;
- 
--	/* If we have no swap space, do not bother scanning anon pages. */
--	if (!sc->may_swap || (nr_swap_pages <= 0)) {
--		noswap = 1;
--		fraction[0] = 0;
--		fraction[1] = 1;
--		denominator = 1;
--		goto out;
--	}
--
- 	anon  = get_lru_size(lruvec, LRU_ACTIVE_ANON) +
- 		get_lru_size(lruvec, LRU_INACTIVE_ANON);
- 	file  = get_lru_size(lruvec, LRU_ACTIVE_FILE) +
++/**
++ * interval_tree_remove: Removes a given node from the tree
++ * @root: root of tree
++ * @node: Node to be removed
++ *
++ * Removes a node and splays the tree
++ */
++void interval_tree_remove(struct interval_tree_root *root,
++					struct interval_tree_node *node)
++{
++	WARN_ON_ONCE(RB_EMPTY_NODE(&node->rb));
++
++	rb_erase(&node->rb, &root->head);
++	RB_CLEAR_NODE(&node->rb);
++}
 -- 
 1.7.3.2.146.gca209
 
