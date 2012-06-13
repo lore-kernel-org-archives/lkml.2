@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754039Ab2FMQhS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 12:37:18 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:42165 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752624Ab2FMQhQ (ORCPT
+	id S1754251Ab2FMQkh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 12:40:37 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:33670 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752119Ab2FMQkg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 12:37:16 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
-        rientjes@google.com, akpm@linux-foundation.org, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH -V9 04/15] hugetlb: use mmu_gather instead of a temporary linked list for accumulating pages
-In-Reply-To: <20120613145923.GA14777@tiehlicka.suse.cz>
-References: <1339583254-895-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1339583254-895-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20120613145923.GA14777@tiehlicka.suse.cz>
-User-Agent: Notmuch/0.13.2+35~g0ff57e7 (http://notmuchmail.org) Emacs/24.1.50.1 (x86_64-unknown-linux-gnu)
-Date: Wed, 13 Jun 2012 22:07:06 +0530
-Message-ID: <871uljnp71.fsf@skywalker.in.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-x-cbid: 12061316-2674-0000-0000-000004E365B8
+	Wed, 13 Jun 2012 12:40:36 -0400
+From: Chris Yungmann <yungmann.chris@gmail.com>
+To: samuel.thibault@ens-lyon.org
+Cc: w.d.hubbs@gmail.com, chris@the-brannons.com, kirk@braille.uwo.ca,
+        gregkh@linuxfoundation.org, speakup@braille.uwo.ca,
+        linux-kernel@vger.kernel.org, kernelnewbies@kernelnewbies.org,
+        Chris Yungmann <yungmann.chris@gmail.com>
+Subject: [PATCH][RESEND] staging: speakup: fixed checkpatch and sparse warnings in selection.c
+Date: Wed, 13 Jun 2012 12:39:55 -0400
+Message-Id: <1339605595-27368-1-git-send-email-yungmann.chris@gmail.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michal Hocko <mhocko@suse.cz> writes:
+Signed-off-by: Chris Yungmann <yungmann.chris@gmail.com>
+---
+ drivers/staging/speakup/selection.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-> On Wed 13-06-12 15:57:23, Aneesh Kumar K.V wrote:
->> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
->> 
->> Use a mmu_gather instead of a temporary linked list for accumulating
->> pages when we unmap a hugepage range
->
-> Sorry for coming up with the comment that late but you owe us an
-> explanation _why_ you are doing this.
->
-> I assume that this fixes a real problem when we take i_mmap_mutex
-> already up in 
-> unmap_mapping_range
->   mutex_lock(&mapping->i_mmap_mutex);
->   unmap_mapping_range_tree | unmap_mapping_range_list 
->     unmap_mapping_range_vma
->       zap_page_range_single
->         unmap_single_vma
-> 	  unmap_hugepage_range
-> 	    mutex_lock(&vma->vm_file->f_mapping->i_mmap_mutex);
->
-> And that this should have been marked for stable as well (I haven't
-> checked when this has been introduced).
-
-Switch to mmu_gather is to get rid of the use of page->lru so that i can use it for
-active list.
-
-
--aneesh
+diff --git a/drivers/staging/speakup/selection.c b/drivers/staging/speakup/selection.c
+index fe1f405..0612df0 100644
+--- a/drivers/staging/speakup/selection.c
++++ b/drivers/staging/speakup/selection.c
+@@ -68,7 +68,7 @@ int speakup_set_selection(struct tty_struct *tty)
+ 	if (spk_sel_cons != vc_cons[fg_console].d) {
+ 		speakup_clear_selection();
+ 		spk_sel_cons = vc_cons[fg_console].d;
+-		printk(KERN_WARNING
++		dev_warn(tty->dev,
+ 			"Selection: mark console not the same as cut\n");
+ 		return -EINVAL;
+ 	}
+@@ -95,7 +95,7 @@ int speakup_set_selection(struct tty_struct *tty)
+ 	/* Allocate a new buffer before freeing the old one ... */
+ 	bp = kmalloc((sel_end-sel_start)/2+1, GFP_ATOMIC);
+ 	if (!bp) {
+-		printk(KERN_WARNING "selection: kmalloc() failed\n");
++		dev_warn(tty->dev, "selection: kmalloc() failed\n");
+ 		speakup_clear_selection();
+ 		return -ENOMEM;
+ 	}
+@@ -141,7 +141,7 @@ int speakup_paste_selection(struct tty_struct *tty)
+ 		count = sel_buffer_lth - pasted;
+ 		count = min_t(int, count, tty->receive_room);
+ 		tty->ldisc->ops->receive_buf(tty, sel_buffer + pasted,
+-			0, count);
++			NULL, count);
+ 		pasted += count;
+ 	}
+ 	remove_wait_queue(&vc->paste_wait, &wait);
+-- 
+1.7.10
 
