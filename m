@@ -1,48 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754140Ab2FMNc6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 09:32:58 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41947 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754032Ab2FMNc5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 09:32:57 -0400
-Message-ID: <1339594368.8980.41.camel@twins>
-Subject: Re: [RFC 3/4] ARM: topology: Update cpu_power according to DT
- information
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: Amit Kucheria <amit.kucheria@linaro.org>,
-        Jean Pihet <jean.pihet@newoldbits.com>, linux@arm.linux.org.uk,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        rob.herring@calxeda.com, linaro-dev@lists.linaro.org,
-        linux-arm-kernel@lists.infradead.org
-Date: Wed, 13 Jun 2012 15:32:48 +0200
-In-Reply-To: <CAKfTPtCyV389OTrun5Oyn8RCsDagza95wdmWr=r9poMiYrU0Mg@mail.gmail.com>
-References: <1339502524-10265-1-git-send-email-vincent.guittot@linaro.org>
-	 <1339502524-10265-4-git-send-email-vincent.guittot@linaro.org>
-	 <CAORVsuWqWt0pJfewymh_ydAH61-uPsO0M7m7Gs4N3zJY=Vo9ZA@mail.gmail.com>
-	 <CAKfTPtBc-KuDg_1qe04TfYS4+66qQoiHCJQbCF9gnhga5ociow@mail.gmail.com>
-	 <CAP245DXEOGLe1jq2Wj0rNW5qea63UyJu2jOvwV65Y4B9LLoQtg@mail.gmail.com>
-	 <1339591666.8980.26.camel@twins>
-	 <CAKfTPtCyV389OTrun5Oyn8RCsDagza95wdmWr=r9poMiYrU0Mg@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1753546Ab2FMNgD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 09:36:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54984 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752975Ab2FMNgB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 09:36:01 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: nzimmer@sgi.com, joe@perches.com, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Don Zickus <dzickus@redhat.com>
+Subject: [PATCH v5] watchdog: Quiet down the boot messages
+Date: Wed, 13 Jun 2012 09:35:48 -0400
+Message-Id: <1339594548-17227-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-06-13 at 15:29 +0200, Vincent Guittot wrote:
-> In fact, there is 2 tracks, one for a power aware scheduler and one
-> for setting the capacity of each core of a big.LITTLE system. This
-> patch is for the latter and is not directly link to the power because
-> the default/performance mode of the scheduler should also take
-> advantage of this information 
+A bunch of bugzillas have complained how noisy the nmi_watchdog is during
+boot-up especially with its expected failure cases (like virt and bios
+resource contention).
 
-Fair enough.. can you include a little blurp in the changelog on how
-this affects the capacity stuff for big.little and if that works as
-desired due to these patches?
+This is my attempt to quiet them down and keep it less confusing for the end
+user.  What I did is print the message for cpu0 and save it for future
+comparisons.  If future cpus have an identical message as cpu0, then don't
+print the redundant info.  However, if a future cpu has a different message,
+happily print that loudly.
 
+Before the change, you would see something like:
+
+    ..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
+    CPU0: Intel(R) Core(TM)2 Quad CPU    Q9550  @ 2.83GHz stepping 0a
+    Performance Events: PEBS fmt0+, Core2 events, Intel PMU driver.
+    ... version:                2
+    ... bit width:              40
+    ... generic registers:      2
+    ... value mask:             000000ffffffffff
+    ... max period:             000000007fffffff
+    ... fixed-purpose events:   3
+    ... event mask:             0000000700000003
+    NMI watchdog enabled, takes one hw-pmu counter.
+    Booting Node   0, Processors  #1
+    NMI watchdog enabled, takes one hw-pmu counter.
+     #2
+    NMI watchdog enabled, takes one hw-pmu counter.
+     #3 Ok.
+    NMI watchdog enabled, takes one hw-pmu counter.
+    Brought up 4 CPUs
+    Total of 4 processors activated (22607.24 BogoMIPS).
+
+After the change, it is simplified to:
+
+    ..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
+    CPU0: Intel(R) Core(TM)2 Quad CPU    Q9550  @ 2.83GHz stepping 0a
+    Performance Events: PEBS fmt0+, Core2 events, Intel PMU driver.
+    ... version:                2
+    ... bit width:              40
+    ... generic registers:      2
+    ... value mask:             000000ffffffffff
+    ... max period:             000000007fffffff
+    ... fixed-purpose events:   3
+    ... event mask:             0000000700000003
+    NMI watchdog: enabled on all CPUs, permanently consumes one hw-PMU counter.
+    Booting Node   0, Processors  #1 #2 #3 Ok.
+    Brought up 4 CPUs
+
+V2: little changes based on Joe Perches' feedback
+V3: printk cleanup based on Ingo's feedback; checkpatch fix
+V4: keep printk as one long line
+V5: Ingo fix ups
+
+Reported-and-tested-by: Nathan Zimmer <nzimmer@sgi.com>
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+---
+ kernel/watchdog.c |   19 ++++++++++++++++++-
+ 1 files changed, 18 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index e5e1d85..4b1dfba 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -372,6 +372,13 @@ static int watchdog(void *unused)
+ 
+ 
+ #ifdef CONFIG_HARDLOCKUP_DETECTOR
++/*
++ * People like the simple clean cpu node info on boot.
++ * Reduce the watchdog noise by only printing messages
++ * that are different from what cpu0 displayed.
++ */
++static unsigned long cpu0_err;
++
+ static int watchdog_nmi_enable(int cpu)
+ {
+ 	struct perf_event_attr *wd_attr;
+@@ -390,11 +397,21 @@ static int watchdog_nmi_enable(int cpu)
+ 
+ 	/* Try to register using hardware perf events */
+ 	event = perf_event_create_kernel_counter(wd_attr, cpu, NULL, watchdog_overflow_callback, NULL);
++
++	/* save cpu0 error for future comparision */
++	if (cpu == 0 && IS_ERR(event))
++		cpu0_err = PTR_ERR(event);
++
+ 	if (!IS_ERR(event)) {
+-		pr_info("enabled, takes one hw-pmu counter.\n");
++		/* only print for cpu0 or different than cpu0 */
++		if (cpu == 0 || cpu0_err)
++			pr_info("enabled on all CPUs, permanently consumes one hw-PMU counter.\n");
+ 		goto out_save;
+ 	}
+ 
++	/* skip displaying the same error again */
++	if (cpu > 0 && (PTR_ERR(event) == cpu0_err))
++		return PTR_ERR(event);
+ 
+ 	/* vary the KERN level based on the returned errno */
+ 	if (PTR_ERR(event) == -EOPNOTSUPP)
+-- 
+1.7.7.6
 
