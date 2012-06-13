@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752560Ab2FMJJf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 05:09:35 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:60465 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751144Ab2FMJJd convert rfc822-to-8bit (ORCPT
+	id S1752191Ab2FMJOn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 05:14:43 -0400
+Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:49192 "EHLO
+	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751137Ab2FMJOl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 05:09:33 -0400
-From: "AnilKumar, Chimata" <anilkumar@ti.com>
-To: Axel Lin <axel.lin@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "Girdwood, Liam" <lrg@ti.com>
-Subject: RE: [PATCH RFT] regulator: tps65217: Convert to
- regulator_[is_enabled|get_voltage_sel]_regmap
-Thread-Topic: [PATCH RFT] regulator: tps65217: Convert to
- regulator_[is_enabled|get_voltage_sel]_regmap
-Thread-Index: AQHNSRRxSJBCL2eqoUaZnppvZVbxc5b39csQ
-Date: Wed, 13 Jun 2012 09:09:27 +0000
-Message-ID: <331ABD5ECB02734CA317220B2BBEABC13E9D5E60@DBDE01.ent.ti.com>
-References: <1339558031.26190.4.camel@phoenix>
-In-Reply-To: <1339558031.26190.4.camel@phoenix>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.133.24]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 13 Jun 2012 05:14:41 -0400
+From: Aurelien Gerault <aurelien.gerault-xsig@stericsson.com>
+To: <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Aurelien Gerault <aurelien.gerault-nonst@stericsson.com>
+Subject: [PATCH] printk: Ensure oops printing if console is locked
+Date: Wed, 13 Jun 2012 11:14:12 +0200
+Message-ID: <1339578852-17617-1-git-send-email-aurelien.gerault-xsig@stericsson.com>
+X-Mailer: git-send-email 1.7.10
 MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Axel,
+From: Aurelien Gerault <aurelien.gerault-nonst@stericsson.com>
 
-On Wed, Jun 13, 2012 at 08:57:11, Axel Lin wrote:
-> This patch converts .is_enabled and .get_voltage_sel to
-> regulator_is_enabled_regmap and regulator_get_voltage_sel_regmap.
-> 
-> For .enable, .disable, and .set_voltage_sel, the write protect level is either
-> 1 or 2. So we cannot use regulator_[enable|disable|set_voltage_sel]_regmap.
-> 
-> Now we store the enable reg/mask and vsel reg/mask in regulator_desc,
-> so we can remove enable_mask, set_vout_reg, and set_vout_mask from
-> struct tps_info.
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
-> Hi AnilKumar,
-> Any chance to test this patch on your hardware?
+Ensuring that oops & panic messages/backtraces will be printed
+in console, even when the console is locked.
 
-I will give the status in a day or two.
+If console is locked by someone else but an oops is ongoing, force
+unlocking / re-locking to display the oops.
 
-Regards
-AnilKumar
+Signed-off-by: Aurelien Gerault <aurelien.gerault-nonst@stericsson.com>
+ST-Ericsson Linux next: NA
+ST-Ericsson ID: 436456
+ST-Ericsson FOSS-OUT ID: Trivial
+
+Change-Id: I9f571492fefc32291ecd0cc62f0ad7031cab7c6d
+---
+ kernel/printk.c |    5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 6d24237..be2a625 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -1014,6 +1014,11 @@ asmlinkage int vprintk(const char *fmt, va_list args)
+ 	 */
+ 	if (console_trylock_for_printk(this_cpu))
+ 		console_unlock();
++	else if (oops_in_progress) {
++		/* force releasing / acquiring console lock to print oops */
++		console_unlock();
++		console_lock();
++	}
+ 
+ 	lockdep_on();
+ out_restore_irqs:
+-- 
+1.7.10
+
