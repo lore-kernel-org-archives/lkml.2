@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754758Ab2FMSxL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 14:53:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54512 "EHLO mx1.redhat.com"
+	id S1754713Ab2FMSxZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 14:53:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33579 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752476Ab2FMSxJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 14:53:09 -0400
-Date: Wed, 13 Jun 2012 20:51:06 +0200
+	id S1753525Ab2FMSxY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 14:53:24 -0400
+Date: Wed, 13 Jun 2012 20:51:22 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>
@@ -14,8 +14,8 @@ Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Anton Arapov <anton@redhat.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 5/6] uprobes: don't use loff_t for the valid virtual address
-Message-ID: <20120613185106.GE13878@redhat.com>
+Subject: [PATCH 6/6] uprobes: __copy_insn() needs "loff_t offset"
+Message-ID: <20120613185122.GF13878@redhat.com>
 References: <20120613184933.GA13870@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -26,115 +26,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-loff_t looks confusing when it is used for the virtual address.
-Change map_info and install_breakpoint/remove_breakpoint paths
-to use "unsigned long".
+1. __copy_insn() needs "loff_t offset", not "unsigned long",
+   to read the file.
 
-The patch doesn't change vma_address(), it can't return "long"
-because it is used to verify the mapping. But probably this
-needs some cleanups too.
+2. use pgoff_t for "idx" and remove the unnecessary typecast.
+
+3. fix the typo, "&=" is not what we want
+
+4. can't resist, rename off1 to off.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- kernel/events/uprobes.c |   24 ++++++++----------------
- 1 files changed, 8 insertions(+), 16 deletions(-)
+ kernel/events/uprobes.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
 diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index a4dc9fa..773bb37 100644
+index 773bb37..5ad1d77 100644
 --- a/kernel/events/uprobes.c
 +++ b/kernel/events/uprobes.c
-@@ -663,9 +663,8 @@ static int copy_insn(struct uprobe *uprobe, struct file *filp)
-  */
+@@ -581,20 +581,20 @@ static bool consumer_del(struct uprobe *uprobe, struct uprobe_consumer *uc)
+ 
  static int
- install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
--			struct vm_area_struct *vma, loff_t vaddr)
-+			struct vm_area_struct *vma, unsigned long vaddr)
+ __copy_insn(struct address_space *mapping, struct file *filp, char *insn,
+-			unsigned long nbytes, unsigned long offset)
++			unsigned long nbytes, loff_t offset)
  {
--	unsigned long addr;
- 	int ret;
+ 	struct page *page;
+ 	void *vaddr;
+-	unsigned long off1;
+-	unsigned long idx;
++	unsigned long off;
++	pgoff_t idx;
+ 
+ 	if (!filp)
+ 		return -EINVAL;
+ 	if (!mapping->a_ops->readpage)
+ 		return -EIO;
+ 
+-	idx = (unsigned long)(offset >> PAGE_CACHE_SHIFT);
+-	off1 = offset &= ~PAGE_MASK;
++	idx = offset >> PAGE_CACHE_SHIFT;
++	off = offset & ~PAGE_MASK;
  
  	/*
-@@ -678,8 +677,6 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
- 	if (!uprobe->consumers)
- 		return -EEXIST;
+ 	 * Ensure that the page that has the original instruction is
+@@ -605,7 +605,7 @@ __copy_insn(struct address_space *mapping, struct file *filp, char *insn,
+ 		return PTR_ERR(page);
  
--	addr = (unsigned long)vaddr;
--
- 	if (!(uprobe->flags & UPROBE_COPY_INSN)) {
- 		ret = copy_insn(uprobe, vma->vm_file);
- 		if (ret)
-@@ -708,7 +705,7 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
- 	 * Hence increment before and decrement on failure.
- 	 */
- 	atomic_inc(&mm->uprobes_state.count);
--	ret = set_swbp(&uprobe->arch, mm, addr);
-+	ret = set_swbp(&uprobe->arch, mm, vaddr);
- 	if (ret)
- 		atomic_dec(&mm->uprobes_state.count);
+ 	vaddr = kmap_atomic(page);
+-	memcpy(insn, vaddr + off1, nbytes);
++	memcpy(insn, vaddr + off, nbytes);
+ 	kunmap_atomic(vaddr);
+ 	page_cache_release(page);
  
-@@ -716,9 +713,9 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
- }
- 
- static void
--remove_breakpoint(struct uprobe *uprobe, struct mm_struct *mm, loff_t vaddr)
-+remove_breakpoint(struct uprobe *uprobe, struct mm_struct *mm, unsigned long vaddr)
- {
--	if (!set_orig_insn(&uprobe->arch, mm, (unsigned long)vaddr, true))
-+	if (!set_orig_insn(&uprobe->arch, mm, vaddr, true))
- 		atomic_dec(&mm->uprobes_state.count);
- }
- 
-@@ -742,7 +739,7 @@ static void delete_uprobe(struct uprobe *uprobe)
- struct map_info {
- 	struct map_info *next;
- 	struct mm_struct *mm;
--	loff_t vaddr;
-+	unsigned long vaddr;
- };
- 
- static inline struct map_info *free_map_info(struct map_info *info)
-@@ -836,7 +833,6 @@ static int register_for_each_vma(struct uprobe *uprobe, bool is_register)
- 	while (info) {
- 		struct mm_struct *mm = info->mm;
- 		struct vm_area_struct *vma;
--		loff_t vaddr;
- 
- 		if (err)
- 			goto free;
-@@ -846,9 +842,8 @@ static int register_for_each_vma(struct uprobe *uprobe, bool is_register)
- 		if (!vma || !valid_vma(vma, is_register))
- 			goto unlock;
- 
--		vaddr = vma_address(vma, uprobe->offset);
- 		if (vma->vm_file->f_mapping->host != uprobe->inode ||
--						vaddr != info->vaddr)
-+		    vma_address(vma, uprobe->offset) != info->vaddr)
- 			goto unlock;
- 
- 		if (is_register) {
-@@ -1054,10 +1049,8 @@ int uprobe_mmap(struct vm_area_struct *vma)
- 	count = 0;
- 
- 	list_for_each_entry(uprobe, &tmp_list, pending_list) {
--		loff_t vaddr;
--
- 		if (!ret) {
--			vaddr = vma_address(vma, uprobe->offset);
-+			loff_t vaddr = vma_address(vma, uprobe->offset);
- 
- 			if (vaddr < vma->vm_start || vaddr >= vma->vm_end) {
- 				put_uprobe(uprobe);
-@@ -1121,9 +1114,8 @@ void uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned lon
- 	build_probe_list(inode, &tmp_list);
- 
- 	list_for_each_entry(uprobe, &tmp_list, pending_list) {
--		loff_t vaddr;
-+		loff_t vaddr = vma_address(vma, uprobe->offset);
- 
--		vaddr = vma_address(vma, uprobe->offset);
- 		if (vaddr >= start && vaddr < end) {
- 			/*
- 			 * An unregister could have removed the probe before
 -- 
 1.5.5.1
 
