@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753403Ab2FMK2E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 06:28:04 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:55340 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752885Ab2FMK2B (ORCPT
+	id S1753441Ab2FMKmA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 06:42:00 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:59991 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752885Ab2FMKl6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 06:28:01 -0400
-Date: Wed, 13 Jun 2012 11:31:33 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Christian Gmeiner <christian.gmeiner@gmail.com>
-Cc: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>,
-        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <greg@kroah.com>
-Subject: Re: gma500: Cannot find any crtc or sizes - going 1024x768
-Message-ID: <20120613113133.38c1ca8a@pyramind.ukuu.org.uk>
-In-Reply-To: <CAH9NwWdF+zukb1r1z6ES6ULeg3dkFzhvhBq1xzjrqjWx-O3cOA@mail.gmail.com>
-References: <CAH9NwWd1F3Vw2zrQJh8Jazm45C_BAH3H3-qupvm2XaLgDOM=QQ@mail.gmail.com>
-	<CAMeQTsZfE8_t6DCr3UWVqnOLyxNuNh7_VxJmqiP+enBBqM0o_A@mail.gmail.com>
-	<CAH9NwWc3W6zHCFf9rwKg5NMQaWnh4A=xVVysmG1Y=eUMzu=18Q@mail.gmail.com>
-	<CAMeQTsaknGLR2QCWwN8kYKh8y=JJtqN-ZSty6YTKnAOv2Vp3XQ@mail.gmail.com>
-	<CAH9NwWdmhmLB5io5RWVQBj6c7zjXT9hFa7OAHVrL6oY8P0kjaw@mail.gmail.com>
-	<20120612132736.642a4a5a@pyramind.ukuu.org.uk>
-	<CAMeQTsZZ0ay7YqkzUzkhe6D6FNsQXaDKHfJKB6_6icd=4VemrA@mail.gmail.com>
-	<20120612170412.359967ec@pyramind.ukuu.org.uk>
-	<CAH9NwWdF+zukb1r1z6ES6ULeg3dkFzhvhBq1xzjrqjWx-O3cOA@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 13 Jun 2012 06:41:58 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120611085404.GB11439@opensource.wolfsonmicro.com>
+References: <CANKRQnj_LdGQPYPV7d5NNZBx8oM5aAGHu4qZidiiS6C4eNtNJQ@mail.gmail.com>
+	<1337941231.1580.19.camel@vkoul-udesk3>
+	<20120527221956.GB25019@opensource.wolfsonmicro.com>
+	<CANKRQnhwkhGUHi6WQhw-sRJuKari3SLcipCJXVp27OZ29=Vxkw@mail.gmail.com>
+	<20120530121449.GI9947@opensource.wolfsonmicro.com>
+	<CANKRQni4uqQJ99ycOScHmn-g1kz2_XH7ePL+n1taG5jAbDSubw@mail.gmail.com>
+	<20120531104538.GA2666@opensource.wolfsonmicro.com>
+	<CANKRQnjdiV+e=N+n_ZP04jmCAhxKjgZ+wab+anbgO+VJPNo=PQ@mail.gmail.com>
+	<20120601083018.GH24139@opensource.wolfsonmicro.com>
+	<CANKRQnjeYtBucmGoDUg7oTK82rvnkakWRB0Siezyz-kbhyPC+g@mail.gmail.com>
+	<20120611085404.GB11439@opensource.wolfsonmicro.com>
+Date: Wed, 13 Jun 2012 19:41:57 +0900
+Message-ID: <CANKRQngP3e3U+VZDgA7fQfxBti9vri-AEAR8iTmhLYiqXP_kiw@mail.gmail.com>
+Subject: Re: [alsa-devel] [PATCH v5] sound/soc/lapis: add platform driver for ML7213
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Vinod Koul <vinod.koul@linux.intel.com>, alsa-devel@alsa-project.org,
+        lars@metafoo.de, Takashi Iwai <tiwai@suse.de>,
+        linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> My company is using these cpu bords for our products:
-> http://www.congatec.com/en/products/qseven/dView/conga-qa6.html
-> 
-> With firmware you mean BIOS or VBios or ...? If you tell me what you need, I may
-> ask our supplier for more informations. I can tell you that the
-> following options can be
-> changed in the BIOS regarding gfx - see
-> https://www.dropbox.com/s/btlciurz0ih4fhu/IMG_20120612_143431.jpg
+On Mon, Jun 11, 2012 at 5:54 PM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> There are some drivers that predate the availibility of the dmaengine
+> framework.
 
-The basic question is:
+In case, you develop a new ASoC framework,  all previous ASoC drivers
+should be adopted to the framework by yourself, don't you ?
+Because a new developer must be confused by this.
 
-Does this device use the Intel BIOS way of reporting mode information,
-or the embedded "GCT" style.
+> This, and the fact that the PCH driver uses dmaengine without using any
+> shared code, is the topic of the discussion.  It is entirely natural
+> that there are no open coded drivers using cyclic DMA via dmaengine,
+> they have all had that code factored out.
+>
+> Please stop this and at least look at factoring this code out.  If it
+> turns out that there's some reason why it's a lot of work that's one
+> thing but it seems clear that you've not even looked yet.  It's like the
+> previous issues where you were sending patches which would clearly not
+> run successfully, it's not a very positive approach.
 
-If you look in oaktrail_device.c you'll see it tries mid_chip_setup() and
-then if that fails to find data it calls psb_intel_init_bios(). Which is
-in use. Also if the mid style one is in use what happens if you change
-mid_get_vbt_data in mid_bios.c so that it just does
+OK, I'll stop this.
 
-	vbt->size = 0;
-	return;
+I wanted to finish adding these patch series to upstream because we
+spent much resource on this.
+But I'm involved in other work, so I can't start now.
 
+Until now thank you for your support.
+Regards.
 
-Alan
-
-
+-- 
+ROHM Co., Ltd.
+tomoya
