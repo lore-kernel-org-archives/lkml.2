@@ -1,71 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754597Ab2FMP2j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 11:28:39 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45105 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754326Ab2FMP2g (ORCPT
+	id S1754481Ab2FMP3A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 11:29:00 -0400
+Received: from na3sys009aog119.obsmtp.com ([74.125.149.246]:55181 "EHLO
+	na3sys009aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754463Ab2FMP25 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 11:28:36 -0400
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: James.Bottomley@HansenPartnership.com, gregkh@linuxfoundation.org,
-        mdharm-usb@one-eyed-alien.net, stern@rowland.harvard.edu,
-        sshtylyov@mvista.com, bvanassche@acm.org
-Cc: linux-usb@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Pankaj Kumar <pankaj.km@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: [PATCH v4 3/3] usb: storage: update usb devices for write cache quirk in quirk list.
-Date: Wed, 13 Jun 2012 11:28:27 -0400
-Message-Id: <1339601307-3358-1-git-send-email-linkinjeon@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 13 Jun 2012 11:28:57 -0400
+MIME-Version: 1.0
+In-Reply-To: <CACVXFVP16UmHe-GGydrSMgGHwnkSvYhnY339=zr=BfCehvS8Kw@mail.gmail.com>
+References: <CACVXFVO-Wm1Qwporby1M=+yPz81AWHpZRBZSbr5tgT32b6sSEA@mail.gmail.com>
+	<CANrkHUYd8Ww6De4MiZ8_oPfcnhvtsZXOySLRiWSBU4QUQ6beHw@mail.gmail.com>
+	<CACVXFVP16UmHe-GGydrSMgGHwnkSvYhnY339=zr=BfCehvS8Kw@mail.gmail.com>
+Date: Wed, 13 Jun 2012 20:58:54 +0530
+Message-ID: <CANrkHUaxJGcv2bdUWTCB_oKct-iFCKCdb7OQPTUjS4MuKeCS2w@mail.gmail.com>
+Subject: Re: MMC: commit dba3c29 ruins mmc card data on beagle-xm revB
+From: "T Krishnamoorthy, Balaji" <balajitk@ti.com>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: linux-mmc@vger.kernel.org,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Chris Ball <cjb@laptop.org>, Venkatraman S <svenkatr@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namjae Jeon <namjae.jeon@samsung.com>
+On Mon, Jun 11, 2012 at 12:50 PM, Ming Lei <ming.lei@canonical.com> wrote:
+>
+> On Mon, Jun 11, 2012 at 2:21 PM, T Krishnamoorthy, Balaji
+> <balajitk@ti.com> wrote:
+> > Hi Ming Lei,
+> > Can you let me know if you noticed any write/timeout errors ?
+>
+> Nothing error logs found during writing.
+Hi,
 
-Update information of Seagate Portable HDD and WD My Passport HDD in
-quirk list.
+Couldn't reproduce the issue with BeagleXM rev C, Might be a combination
+of rev and SD card. How often do you see mis-match in file content?
 
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-Signed-off-by: Pankaj Kumar <pankaj.km@samsung.com>
-Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Can you please try the inlined patch to get more info?
+
 ---
- drivers/usb/storage/unusual_devs.h |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
+index 9a7a60a..77aabe6 100644
+--- a/drivers/mmc/host/omap_hsmmc.c
++++ b/drivers/mmc/host/omap_hsmmc.c
+@@ -60,6 +60,7 @@
+ #define OMAP_HSMMC_STAT		0x0130
+ #define OMAP_HSMMC_IE		0x0134
+ #define OMAP_HSMMC_ISE		0x0138
++#define OMAP_HSMMC_AC12		0x013C
+ #define OMAP_HSMMC_CAPA		0x0140
 
-diff --git a/drivers/usb/storage/unusual_devs.h b/drivers/usb/storage/unusual_devs.h
-index 1719886..62a31be 100644
---- a/drivers/usb/storage/unusual_devs.h
-+++ b/drivers/usb/storage/unusual_devs.h
-@@ -1267,6 +1267,12 @@ UNUSUAL_DEV( 0x0af0, 0xd357, 0x0000, 0x0000,
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
- 		0 ),
- 
-+/* Reported by Namjae Jeon <namjae.jeon@samsung.com> */
-+UNUSUAL_DEV(0x0bc2, 0x2300, 0x0000, 0x9999,
-+		"Seagate",
-+		"Portable HDD",
-+		USB_SC_DEVICE, USB_PR_DEVICE, NULL, US_FL_WRITE_CACHE),
-+
- /* Reported by Ben Efros <ben@pc-doctor.com> */
- UNUSUAL_DEV( 0x0bc2, 0x3010, 0x0000, 0x0000,
- 		"Seagate",
-@@ -1468,6 +1474,12 @@ UNUSUAL_DEV(  0x1058, 0x0704, 0x0000, 0x9999,
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
- 		US_FL_SANE_SENSE),
- 
-+/* Reported by Namjae Jeon <namjae.jeon@samsung.com> */
-+UNUSUAL_DEV(0x1058, 0x070a, 0x0000, 0x9999,
-+		"Western Digital",
-+		"My Passport HDD",
-+		USB_SC_DEVICE, USB_PR_DEVICE, NULL, US_FL_WRITE_CACHE),
-+
- /* Reported by Fabio Venturi <f.venturi@tdnet.it>
-  * The device reports a vendor-specific bDeviceClass.
-  */
--- 
-1.7.9.5
+ #define VS18			(1 << 26)
+@@ -177,6 +178,7 @@ struct omap_hsmmc_host {
+ 	int			reqs_blocked;
+ 	int			use_reg;
+ 	int			req_in_progress;
++	int			autocmd_err;
+ 	unsigned int		flags;
+ 	struct omap_hsmmc_next	next_data;
 
+@@ -983,6 +985,7 @@ static void omap_hsmmc_do_irq(struct
+omap_hsmmc_host *host, int status)
+ {
+ 	struct mmc_data *data;
+ 	int end_cmd = 0, end_trans = 0;
++	u32 autocmd12;
+
+ 	if (!host->req_in_progress) {
+ 		do {
+@@ -998,6 +1001,13 @@ static void omap_hsmmc_do_irq(struct
+omap_hsmmc_host *host, int status)
+
+ 	if (status & ERR) {
+ 		omap_hsmmc_dbg_report_irq(host, status);
++		if (status & (1 << 24)) {
++			host->autocmd_err = 1;
++			dev_err(mmc_dev(host->mmc), "AutoCMD error STAT 0x%x\n", status);
++			autocmd12 = OMAP_HSMMC_READ(host->base, AC12);
++			dev_err(mmc_dev(host->mmc), "AutoCMD error 0x%x\n", autocmd12);
++		}
++
+ 		if ((status & CMD_TIMEOUT) ||
+ 			(status & CMD_CRC)) {
+ 			if (host->cmd) {
+---
+>
+> Below is one of my test case.
+>
+> root@beagleboard:~# upk
+> updateing kernel...
+> flush storage...
+> root@beagleboard:~# cat bin/upk
+> #!/bin/sh
+>
+> echo "updateing kernel..."
+> cp -f /mnt/nfs/t/uImage /media/mmcblk0p1/
+>
+> echo "flush storage..."
+> sync
+> root@beagleboard:~# diff /mnt/nfs/t/uImage /media/mmcblk0p1/uImage
+> Binary files /mnt/nfs/t/uImage and /media/mmcblk0p1/uImage differ
+> root@beagleboard:~# umount /media/mmcblk0p1
+> root@beagleboard:~# mount -t vfat /dev/mmcblk0p1 /media/mmcblk0p1
+> root@beagleboard:~#
+> root@beagleboard:~#
+> root@beagleboard:~# diff /mnt/nfs/t/uImage /media/mmcblk0p1/uImage
+> Binary files /mnt/nfs/t/uImage and /media/mmcblk0p1/uImage differ
+>
+>
+> Thanks,
+> --
+> Ming Lei
