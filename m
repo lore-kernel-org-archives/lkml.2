@@ -1,89 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753930Ab2FMKak (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 06:30:40 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:51500 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753743Ab2FMK2W (ORCPT
+	id S1753740Ab2FMK2V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 06:28:21 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:54199 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753548Ab2FMK2O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 06:28:22 -0400
+	Wed, 13 Jun 2012 06:28:14 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
         rientjes@google.com, mhocko@suse.cz, akpm@linux-foundation.org,
         hannes@cmpxchg.org
 Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -V9 15/15] hugetlb/cgroup: add HugeTLB controller documentation
-Date: Wed, 13 Jun 2012 15:57:34 +0530
-Message-Id: <1339583254-895-16-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V9 03/15] hugetlb: add an inline helper for finding hstate index
+Date: Wed, 13 Jun 2012 15:57:22 +0530
+Message-Id: <1339583254-895-4-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1339583254-895-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1339583254-895-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-x-cbid: 12061310-5564-0000-0000-0000032F7643
+x-cbid: 12061310-4790-0000-0000-000003370E18
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
+Add an inline helper and use it in the code.
+
+Acked-by: David Rientjes <rientjes@google.com>
+Acked-by: Michal Hocko <mhocko@suse.cz>
 Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- Documentation/cgroups/hugetlb.txt |   45 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 45 insertions(+)
- create mode 100644 Documentation/cgroups/hugetlb.txt
+ include/linux/hugetlb.h |    6 ++++++
+ mm/hugetlb.c            |   20 +++++++++++---------
+ 2 files changed, 17 insertions(+), 9 deletions(-)
 
-diff --git a/Documentation/cgroups/hugetlb.txt b/Documentation/cgroups/hugetlb.txt
-new file mode 100644
-index 0000000..a9faaca
---- /dev/null
-+++ b/Documentation/cgroups/hugetlb.txt
-@@ -0,0 +1,45 @@
-+HugeTLB Controller
-+-------------------
+diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+index d5d6bbe..217f528 100644
+--- a/include/linux/hugetlb.h
++++ b/include/linux/hugetlb.h
+@@ -302,6 +302,11 @@ static inline unsigned hstate_index_to_shift(unsigned index)
+ 	return hstates[index].order + PAGE_SHIFT;
+ }
+ 
++static inline int hstate_index(struct hstate *h)
++{
++	return h - hstates;
++}
 +
-+The HugeTLB controller allows to limit the HugeTLB usage per control group and
-+enforces the controller limit during page fault. Since HugeTLB doesn't
-+support page reclaim, enforcing the limit at page fault time implies that,
-+the application will get SIGBUS signal if it tries to access HugeTLB pages
-+beyond its limit. This requires the application to know beforehand how much
-+HugeTLB pages it would require for its use.
-+
-+HugeTLB controller can be created by first mounting the cgroup filesystem.
-+
-+# mount -t cgroup -o hugetlb none /sys/fs/cgroup
-+
-+With the above step, the initial or the parent HugeTLB group becomes
-+visible at /sys/fs/cgroup. At bootup, this group includes all the tasks in
-+the system. /sys/fs/cgroup/tasks lists the tasks in this cgroup.
-+
-+New groups can be created under the parent group /sys/fs/cgroup.
-+
-+# cd /sys/fs/cgroup
-+# mkdir g1
-+# echo $$ > g1/tasks
-+
-+The above steps create a new group g1 and move the current shell
-+process (bash) into it.
-+
-+Brief summary of control files
-+
-+ hugetlb.<hugepagesize>.limit_in_bytes     # set/show limit of "hugepagesize" hugetlb usage
-+ hugetlb.<hugepagesize>.max_usage_in_bytes # show max "hugepagesize" hugetlb  usage recorded
-+ hugetlb.<hugepagesize>.usage_in_bytes     # show current res_counter usage for "hugepagesize" hugetlb
-+ hugetlb.<hugepagesize>.failcnt		   # show the number of allocation failure due to HugeTLB limit
-+
-+For a system supporting two hugepage size (16M and 16G) the control
-+files include:
-+
-+hugetlb.16GB.limit_in_bytes
-+hugetlb.16GB.max_usage_in_bytes
-+hugetlb.16GB.usage_in_bytes
-+hugetlb.16GB.failcnt
-+hugetlb.16MB.limit_in_bytes
-+hugetlb.16MB.max_usage_in_bytes
-+hugetlb.16MB.usage_in_bytes
-+hugetlb.16MB.failcnt
+ #else
+ struct hstate {};
+ #define alloc_huge_page_node(h, nid) NULL
+@@ -320,6 +325,7 @@ static inline unsigned int pages_per_huge_page(struct hstate *h)
+ 	return 1;
+ }
+ #define hstate_index_to_shift(index) 0
++#define hstate_index(h) 0
+ #endif
+ 
+ #endif /* _LINUX_HUGETLB_H */
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 34a7e23..b1e0ed1 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -1646,7 +1646,7 @@ static int hugetlb_sysfs_add_hstate(struct hstate *h, struct kobject *parent,
+ 				    struct attribute_group *hstate_attr_group)
+ {
+ 	int retval;
+-	int hi = h - hstates;
++	int hi = hstate_index(h);
+ 
+ 	hstate_kobjs[hi] = kobject_create_and_add(h->name, parent);
+ 	if (!hstate_kobjs[hi])
+@@ -1741,11 +1741,13 @@ void hugetlb_unregister_node(struct node *node)
+ 	if (!nhs->hugepages_kobj)
+ 		return;		/* no hstate attributes */
+ 
+-	for_each_hstate(h)
+-		if (nhs->hstate_kobjs[h - hstates]) {
+-			kobject_put(nhs->hstate_kobjs[h - hstates]);
+-			nhs->hstate_kobjs[h - hstates] = NULL;
++	for_each_hstate(h) {
++		int idx = hstate_index(h);
++		if (nhs->hstate_kobjs[idx]) {
++			kobject_put(nhs->hstate_kobjs[idx]);
++			nhs->hstate_kobjs[idx] = NULL;
+ 		}
++	}
+ 
+ 	kobject_put(nhs->hugepages_kobj);
+ 	nhs->hugepages_kobj = NULL;
+@@ -1848,7 +1850,7 @@ static void __exit hugetlb_exit(void)
+ 	hugetlb_unregister_all_nodes();
+ 
+ 	for_each_hstate(h) {
+-		kobject_put(hstate_kobjs[h - hstates]);
++		kobject_put(hstate_kobjs[hstate_index(h)]);
+ 	}
+ 
+ 	kobject_put(hugepages_kobj);
+@@ -1869,7 +1871,7 @@ static int __init hugetlb_init(void)
+ 		if (!size_to_hstate(default_hstate_size))
+ 			hugetlb_add_hstate(HUGETLB_PAGE_ORDER);
+ 	}
+-	default_hstate_idx = size_to_hstate(default_hstate_size) - hstates;
++	default_hstate_idx = hstate_index(size_to_hstate(default_hstate_size));
+ 	if (default_hstate_max_huge_pages)
+ 		default_hstate.max_huge_pages = default_hstate_max_huge_pages;
+ 
+@@ -2687,7 +2689,7 @@ retry:
+ 		 */
+ 		if (unlikely(PageHWPoison(page))) {
+ 			ret = VM_FAULT_HWPOISON |
+-			      VM_FAULT_SET_HINDEX(h - hstates);
++				VM_FAULT_SET_HINDEX(hstate_index(h));
+ 			goto backout_unlocked;
+ 		}
+ 	}
+@@ -2760,7 +2762,7 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 			return 0;
+ 		} else if (unlikely(is_hugetlb_entry_hwpoisoned(entry)))
+ 			return VM_FAULT_HWPOISON_LARGE |
+-			       VM_FAULT_SET_HINDEX(h - hstates);
++				VM_FAULT_SET_HINDEX(hstate_index(h));
+ 	}
+ 
+ 	ptep = huge_pte_alloc(mm, address, huge_page_size(h));
 -- 
 1.7.10
 
