@@ -1,199 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753703Ab2FMLQs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 07:16:48 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:50167 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753318Ab2FMLQq convert rfc822-to-8bit (ORCPT
+	id S1753762Ab2FMLRZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 07:17:25 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:45722 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753546Ab2FMLRX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 07:16:46 -0400
+	Wed, 13 Jun 2012 07:17:23 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FD87646.8020206@jp.fujitsu.com>
+Date: Wed, 13 Jun 2012 20:15:18 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <1339420814-7379-3-git-send-email-jolsa@redhat.com>
-References: <1339420814-7379-1-git-send-email-jolsa@redhat.com>
-	<1339420814-7379-3-git-send-email-jolsa@redhat.com>
-Date: Wed, 13 Jun 2012 13:16:44 +0200
-Message-ID: <CABPqkBRsBegm6gv6agHcGb0Hh1EWCV5gjVnbbwPHh-eOfROCuw@mail.gmail.com>
-Subject: Re: [PATCH 02/19] perf: Add ability to attach user level registers
- dump to sample
-From: Stephane Eranian <eranian@google.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, gorcunov@openvz.org,
-        tzanussi@gmail.com, mhiramat@redhat.com, robert.richter@amd.com,
-        fche@redhat.com, linux-kernel@vger.kernel.org,
-        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
-        benjamin.redelings@nescent.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+CC: linux-mm@kvack.org, dhillf@gmail.com, rientjes@google.com, mhocko@suse.cz,
+        akpm@linux-foundation.org, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH -V8 15/16] hugetlb/cgroup: migrate hugetlb cgroup info
+ from oldpage to new page during migration
+References: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1339232401-14392-16-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <4FD70329.4080009@jp.fujitsu.com> <87aa08okvz.fsf@skywalker.in.ibm.com>
+In-Reply-To: <87aa08okvz.fsf@skywalker.in.ibm.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 11, 2012 at 3:19 PM, Jiri Olsa <jolsa@redhat.com> wrote:
-> Introducing sample_regs_user bitmask into perf_event_attr
-> struct to define the user level registers we want to attach
-> to the sample. The dump itself is triggered once the
-> sample_regs_user is not empty.
->
-> Only user level registers are dump at the moment. Meaning the
-> register values of the user space context as it was before the
-> user entered the kernel for whatever reason (syscall, irq,
-> exception, or a PMI happening in userspace).
->
-> The layout of the sample_regs_user bitmap is described in
-> asm/perf_regs.h for archs that support register dump.
->
-> This is going to be useful to bring Dwarf CFI based stack
-> unwinding on top of samples.
->
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> ---
->  include/linux/perf_event.h |   10 ++++++-
->  kernel/events/core.c       |   61 ++++++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 70 insertions(+), 1 deletions(-)
->
-> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-> index 1ce887a..d66cbeb 100644
-> --- a/include/linux/perf_event.h
-> +++ b/include/linux/perf_event.h
-> @@ -271,7 +271,13 @@ struct perf_event_attr {
->                __u64           bp_len;
->                __u64           config2; /* extension of config1 */
->        };
-> -       __u64   branch_sample_type; /* enum branch_sample_type */
-> +       __u64   branch_sample_type; /* enum perf_branch_sample_type */
-> +
-> +       /*
-> +        * Defines set of user regs to dump on samples.
-> +        * See asm/perf_regs.h for details.
-> +        */
-> +       __u64   sample_regs_user;
->  };
-That's not enough. You also need to define PERF_SAMPLE_USER_REGS
-for sample_type. Although the sample_regs_users might look like it's enough
-to capture regs, there is a problem when it comes to parsing the record. You
-need an ordering guarantee that is explicitly spelled out in the API (the header
-file). In your current patch, I have no way of knowing that sample_regs_users
-are saved after BRANCH_STACK (should you have that enabled). Remember
-that you can turn on/off sampled infos at will in sample_type. Yet to find the
-infos when parsing, you need to know the order.
+(2012/06/12 20:00), Aneesh Kumar K.V wrote:
+> Kamezawa Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>  writes:
+> 
+>> (2012/06/09 18:00), Aneesh Kumar K.V wrote:
+>>> From: "Aneesh Kumar K.V"<aneesh.kumar@linux.vnet.ibm.com>
+>>>
+>>> With HugeTLB pages, hugetlb cgroup is uncharged in compound page destructor.  Since
+>>> we are holding a hugepage reference, we can be sure that old page won't
+>>> get uncharged till the last put_page().
+>>>
+>>> Signed-off-by: Aneesh Kumar K.V<aneesh.kumar@linux.vnet.ibm.com>
+>>
+>> one comment.
+>>
+>>> ---
+>>>    include/linux/hugetlb_cgroup.h |    8 ++++++++
+>>>    mm/hugetlb_cgroup.c            |   21 +++++++++++++++++++++
+>>>    mm/migrate.c                   |    5 +++++
+>>>    3 files changed, 34 insertions(+)
+>>>
+>>> diff --git a/include/linux/hugetlb_cgroup.h b/include/linux/hugetlb_cgroup.h
+>>> index ba4836f..b64d067 100644
+>>> --- a/include/linux/hugetlb_cgroup.h
+>>> +++ b/include/linux/hugetlb_cgroup.h
+>>> @@ -63,6 +63,8 @@ extern void hugetlb_cgroup_uncharge_page(int idx, unsigned long nr_pages,
+>>>    extern void hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
+>>>    					   struct hugetlb_cgroup *h_cg);
+>>>    extern int hugetlb_cgroup_file_init(int idx) __init;
+>>> +extern void hugetlb_cgroup_migrate(struct page *oldhpage,
+>>> +				   struct page *newhpage);
+>>>    #else
+>>>    static inline struct hugetlb_cgroup *hugetlb_cgroup_from_page(struct page *page)
+>>>    {
+>>> @@ -112,5 +114,11 @@ static inline int __init hugetlb_cgroup_file_init(int idx)
+>>>    {
+>>>    	return 0;
+>>>    }
+>>> +
+>>> +static inline void hugetlb_cgroup_migrate(struct page *oldhpage,
+>>> +					  struct page *newhpage)
+>>> +{
+>>> +	return;
+>>> +}
+>>>    #endif  /* CONFIG_MEM_RES_CTLR_HUGETLB */
+>>>    #endif
+>>> diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
+>>> index c2b7b8e..2d384fe 100644
+>>> --- a/mm/hugetlb_cgroup.c
+>>> +++ b/mm/hugetlb_cgroup.c
+>>> @@ -394,6 +394,27 @@ int __init hugetlb_cgroup_file_init(int idx)
+>>>    	return 0;
+>>>    }
+>>>
+>>> +void hugetlb_cgroup_migrate(struct page *oldhpage, struct page *newhpage)
+>>> +{
+>>> +	struct hugetlb_cgroup *h_cg;
+>>> +
+>>> +	VM_BUG_ON(!PageHuge(oldhpage));
+>>> +
+>>> +	if (hugetlb_cgroup_disabled())
+>>> +		return;
+>>> +
+>>> +	spin_lock(&hugetlb_lock);
+>>> +	h_cg = hugetlb_cgroup_from_page(oldhpage);
+>>> +	set_hugetlb_cgroup(oldhpage, NULL);
+>>> +	cgroup_exclude_rmdir(&h_cg->css);
+>>> +
+>>> +	/* move the h_cg details to new cgroup */
+>>> +	set_hugetlb_cgroup(newhpage, h_cg);
+>>> +	spin_unlock(&hugetlb_lock);
+>>> +	cgroup_release_and_wakeup_rmdir(&h_cg->css);
+>>> +	return;
+>>
+>>
+>> Why do you need  cgroup_exclude/release rmdir here ? you holds hugetlb_lock()
+>> and charges will not be empty, here.
+>>
+> 
+>   But even without empty charge, we can still remove the cgroup right ?
+>   ie if we don't have any task but some charge in the cgroup because of
+>   shared mmap in hugetlbfs.
+> 
 
-The enum perf_event_sample_format provides that ordering information. You
-need to add a new type for sampling user regs.
+IIUC, cgroup_exclude_rmdir() is for putting rmdir() task under sleep state
+and avoiding busy retries. Here, current thread is invoking rmdir() against
+the cgroup.....
 
->
->  /*
-> @@ -609,6 +615,7 @@ struct perf_guest_info_callbacks {
->  #include <linux/static_key.h>
->  #include <linux/atomic.h>
->  #include <linux/sysfs.h>
-> +#include <linux/perf_regs.h>
->  #include <asm/local.h>
->
->  struct perf_callchain_entry {
-> @@ -1131,6 +1138,7 @@ struct perf_sample_data {
->        struct perf_callchain_entry     *callchain;
->        struct perf_raw_record          *raw;
->        struct perf_branch_stack        *br_stack;
-> +       struct pt_regs                  *regs_user;
->  };
->
->  static inline void perf_sample_data_init(struct perf_sample_data *data,
-> diff --git a/kernel/events/core.c b/kernel/events/core.c
-> index f85c015..e4df59d 100644
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -3750,6 +3750,33 @@ int perf_unregister_guest_info_callbacks(struct perf_guest_info_callbacks *cbs)
->  }
->  EXPORT_SYMBOL_GPL(perf_unregister_guest_info_callbacks);
->
-> +static void
-> +perf_output_sample_regs(struct perf_output_handle *handle,
-> +                       struct pt_regs *regs, u64 mask)
-> +{
-> +       int bit;
-> +
-> +       for_each_set_bit(bit, (const unsigned long *) &mask,
-> +                        sizeof(mask) * BITS_PER_BYTE) {
-> +               u64 val;
-> +
-> +               val = perf_reg_value(regs, bit);
-> +               perf_output_put(handle, val);
-> +       }
-> +}
-> +
-> +static struct pt_regs *perf_sample_regs_user(struct pt_regs *regs)
-> +{
-> +       if (!user_mode(regs)) {
-> +               if (current->mm)
-> +                       regs = task_pt_regs(current);
-> +               else
-> +                       regs = NULL;
-> +       }
-> +
-> +       return regs;
-> +}
-> +
->  static void __perf_event_header__init_id(struct perf_event_header *header,
->                                         struct perf_sample_data *data,
->                                         struct perf_event *event)
-> @@ -4010,6 +4037,23 @@ void perf_output_sample(struct perf_output_handle *handle,
->                        perf_output_put(handle, nr);
->                }
->        }
-> +
-> +       if (event->attr.sample_regs_user) {
-> +               u64 avail = (data->regs_user != NULL);
-> +
-> +               /*
-> +                * If there are no regs to dump, notice it through
-> +                * first u64 being zero.
-> +                */
-> +               perf_output_put(handle, avail);
-> +
-> +               if (avail) {
-> +                       u64 mask = event->attr.sample_regs_user;
-> +                       perf_output_sample_regs(handle,
-> +                                               data->regs_user,
-> +                                               mask);
-> +               }
-> +       }
->  }
->
->  void perf_prepare_sample(struct perf_event_header *header,
-> @@ -4061,6 +4105,19 @@ void perf_prepare_sample(struct perf_event_header *header,
->                }
->                header->size += size;
->        }
-> +
-> +       if (event->attr.sample_regs_user) {
-> +               /* regs dump available bool */
-> +               int size = sizeof(u64);
-> +
-> +               data->regs_user = perf_sample_regs_user(regs);
-> +               if (data->regs_user) {
-> +                       u64 mask = event->attr.sample_regs_user;
-> +                       size += hweight64(mask) * sizeof(u64);
-> +               }
-> +
-> +               header->size += size;
-> +       }
->  }
->
->  static void perf_event_output(struct perf_event *event,
-> @@ -6110,6 +6167,10 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
->                        attr->branch_sample_type = mask;
->                }
->        }
-> +
-> +       if (attr->sample_regs_user)
-> +               ret = perf_reg_validate(attr->sample_regs_user);
-> +
->  out:
->        return ret;
->
-> --
-> 1.7.7.6
->
+from kernel/cgroup.c
+
+	set RMDIR bit.
+	mutex_unlock(&cgroup_mutex);
+
+	call  ->pre_destroy()  
+
+	mutex_lock(&cgroup_mutex);
+	
+	if cgroup has some refcnt, sleep and wait for
+	an event some thread calls cgroup_release_and_wakeup_rmdir().
+
+
+So, the waiter should call ->pre_destroy() and get succeeded.
+wating for a wakeup-event of cgroup_release_and_wakeup_rmdir() by some
+other thread holding refcnt on the cgroup.
+
+In memcg case, kswapd or some may hold reference count of memcg and wake
+up event in (2) will be issued.
+
+In this hugetlb case, it doesn't seem to happen.
+
+Thanks,
+-Kame
+
+
+
+
+
+
