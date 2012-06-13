@@ -1,90 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754372Ab2FMQni (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 12:43:38 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:35939 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752917Ab2FMQng (ORCPT
+	id S1754476Ab2FMQtF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 12:49:05 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:51383 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754150Ab2FMQtD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 12:43:36 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
-        rientjes@google.com, akpm@linux-foundation.org, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH -V9 04/15] hugetlb: use mmu_gather instead of a temporary linked list for accumulating pages
-In-Reply-To: <20120613150338.GB14777@tiehlicka.suse.cz>
-References: <1339583254-895-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1339583254-895-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20120613145923.GA14777@tiehlicka.suse.cz> <20120613150338.GB14777@tiehlicka.suse.cz>
-User-Agent: Notmuch/0.13.2+35~g0ff57e7 (http://notmuchmail.org) Emacs/24.1.50.1 (x86_64-unknown-linux-gnu)
-Date: Wed, 13 Jun 2012 22:13:00 +0530
-Message-ID: <87y5nrmacr.fsf@skywalker.in.ibm.com>
+	Wed, 13 Jun 2012 12:49:03 -0400
+Message-ID: <4FD8C476.3080904@atmel.com>
+Date: Wed, 13 Jun 2012 18:48:54 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-x-cbid: 12061316-2674-0000-0000-000004E368C3
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>
+CC: Ludovic Desroches <ludovic.desroches@atmel.com>,
+        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] at91: platform data for atmel-mci (for 3.5)
+References: <4FBE4FE7.3010005@atmel.com> <4FC722B7.10409@atmel.com> <CAOesGMhq8uzei+Dn8=1iYrTiAOtuByjm58j9zgFyORVG5VZuNQ@mail.gmail.com> <4FCCD8D9.2070005@atmel.com>
+In-Reply-To: <4FCCD8D9.2070005@atmel.com>
+X-Enigmail-Version: 1.5pre
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.159.245.112]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michal Hocko <mhocko@suse.cz> writes:
+On 06/04/2012 05:48 PM, Nicolas Ferre :
+> On 05/31/2012 11:04 PM, Olof Johansson :
+>> Hi Nicolas,
+>>
+>> On Thu, May 31, 2012 at 12:50 AM, Nicolas Ferre <nicolas.ferre@atmel.com
+>> <mailto:nicolas.ferre@atmel.com>> wrote:
+>>
+>>     On 05/24/2012 05:12 PM, Nicolas Ferre :
+>>     > Hi Arnd, hi Olof,
+>>
+>>     Ping?
+>>
+>>     (or maybe you will have a look at this after the merge window...)
+>>
+>>
+>> So, I looked at this branch yesterday but I wasn't entirely happy with
+>> the number of ifdefs it adds.
+> 
+> Unfortunately, this is the usual shape of any devices/boards files on
+> AT91. This amount will be reduced when we remove the old driver and when
+> we move newer/popular devices to Device Tree...
+> 
+>> If the idea is to deprecate the old driver, wouldn't it make more sense
+>> to just cut everyone over instead of having both sets of setup in the
+>> kernel?
+> 
+> Well, the old driver has existed since a very long time and I think that
+> people are used to it on oldest platforms. This is why we put in place a
+> overlapping period. This way we hope that the transition will be smoother.
+> On the other hand, the old code will be removed in 3.7 so the
+> overlapping period will not be so long.
+> I hope that it will allow people to track bugs if some are remaining and
+> switch to newer driver easily.
 
-> On Wed 13-06-12 16:59:23, Michal Hocko wrote:
->> On Wed 13-06-12 15:57:23, Aneesh Kumar K.V wrote:
->> > From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
->> > 
->> > Use a mmu_gather instead of a temporary linked list for accumulating
->> > pages when we unmap a hugepage range
->> 
->> Sorry for coming up with the comment that late but you owe us an
->> explanation _why_ you are doing this.
->> 
->> I assume that this fixes a real problem when we take i_mmap_mutex
->> already up in 
->> unmap_mapping_range
->>   mutex_lock(&mapping->i_mmap_mutex);
->>   unmap_mapping_range_tree | unmap_mapping_range_list 
->>     unmap_mapping_range_vma
->>       zap_page_range_single
->>         unmap_single_vma
->> 	  unmap_hugepage_range
->> 	    mutex_lock(&vma->vm_file->f_mapping->i_mmap_mutex);
->> 
->> And that this should have been marked for stable as well (I haven't
->> checked when this has been introduced).
->> 
->> But then I do not see how this help when you still do this:
->> [...]
->> > diff --git a/mm/memory.c b/mm/memory.c
->> > index 1b7dc66..545e18a 100644
->> > --- a/mm/memory.c
->> > +++ b/mm/memory.c
->> > @@ -1326,8 +1326,11 @@ static void unmap_single_vma(struct mmu_gather *tlb,
->> >  			 * Since no pte has actually been setup, it is
->> >  			 * safe to do nothing in this case.
->> >  			 */
->> > -			if (vma->vm_file)
->> > -				unmap_hugepage_range(vma, start, end, NULL);
->> > +			if (vma->vm_file) {
->> > +				mutex_lock(&vma->vm_file->f_mapping->i_mmap_mutex);
->> > +				__unmap_hugepage_range(tlb, vma, start, end, NULL);
->> > +				mutex_unlock(&vma->vm_file->f_mapping->i_mmap_mutex);
->> > +			}
->> >  		} else
->> >  			unmap_page_range(tlb, vma, start, end, details);
->> >  	}
->
-> Ahhh, you are removing the lock in the next patch. Really confusing and
-> not nice for the stable backport.
-> Could you merge those two patches and add Cc: stable? 
-> Then you can add my
-> Reviewed-by: Michal Hocko <mhocko@suse.cz>
->
+Olof, Arnd,
 
-In the last review cycle I was asked to see if we can get a lockdep
-report for the above and what I found was we don't really cause the
-above deadlock with the current codebase because for hugetlb we don't
-directly call unmap_mapping_range. But still it is good to remove the
-i_mmap_mutex, because we don't need that protection now. I didn't
-mark it for stable because of the above reason.
+So, do you have made up your mind about this pull request?
 
--aneesh
-
+Best regards,
+-- 
+Nicolas Ferre
