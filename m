@@ -1,80 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754463Ab2FMP4x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 11:56:53 -0400
-Received: from fieldses.org ([174.143.236.118]:38091 "EHLO fieldses.org"
+	id S1754531Ab2FMP5j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 11:57:39 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:46717 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751324Ab2FMP4w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 11:56:52 -0400
-Date: Wed, 13 Jun 2012 11:56:51 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: "J. Bruce Fields" <bfields@redhat.com>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: RPC: fragment too large with transition to 3.4
-Message-ID: <20120613155651.GB1178@fieldses.org>
-References: <20120610090342.GA5076@cucamonga.audible.transient.net>
- <20120611161425.GF31109@pad.fieldses.org>
- <20120612101339.GB30293@cucamonga.audible.transient.net>
- <20120612111802.GI31109@pad.fieldses.org>
- <20120612123644.GA16430@fieldses.org>
- <20120613060627.GA11421@cucamonga.audible.transient.net>
- <20120613092703.GA4701@cucamonga.audible.transient.net>
+	id S1752911Ab2FMP5h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 11:57:37 -0400
+Date: Wed, 13 Jun 2012 17:57:33 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Boszormenyi Zoltan <zboszor@pr.hu>
+Cc: Johannes Stezenbach <js@sig21.net>, linux-kernel@vger.kernel.org,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+Subject: Re: AMD FX CPU bug, not fixed by latest microcode?
+Message-ID: <20120613155733.GA17726@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Boszormenyi Zoltan <zboszor@pr.hu>,
+	Johannes Stezenbach <js@sig21.net>, linux-kernel@vger.kernel.org,
+	Andreas Herrmann <andreas.herrmann3@amd.com>
+References: <4FD4F45D.5050103@pr.hu>
+ <20120611084318.GA1685@liondog.tnic>
+ <20120611094905.GA10349@liondog.tnic>
+ <20120611110557.GA4599@sig21.net>
+ <4FD8417B.8020702@pr.hu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20120613092703.GA4701@cucamonga.audible.transient.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4FD8417B.8020702@pr.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 13, 2012 at 09:27:03AM +0000, Jamie Heilman wrote:
-> Jamie Heilman wrote:
-> > It's looking like my issues with "RPC: fragment too large" may be
-> > something else entirely at this point, I've noticed other weird
-> > network behavior that I'm gonna have to try to isolate before I keep
-> > blaming nfs changes.  Though for some reason my
-> > /proc/fs/nfsd/max_block_size ends up only 128KiB w/3.4 where it was
-> > 512KiB w/3.3.
-> 
-> OK, I get it now.  32-bit PAE system w/4G of RAM (minus a chunk for
-> the IGP video etc.) for my NFS server, and the max_block_size
-> calculation changed significantly in commit
-> 508f92275624fc755104b17945bdc822936f1918 to account for rpc buffers
-> only being in low memory.  That means whereas in 3.3 the math came out
-> to having a target size of roughly 843241 my new target size in 3.4 is
-> only 219959-ish, so choosing 128KiB is understandable.  The problem
-> was that all my clients had negotiated their nfs mounts against the
-> v3.3 value of 512KiB, and when I rebooted into 3.4... they hit the
-> wall attempting larger transfers and become uselessly stuck at that
-> point.  If I remount everything before doing any large transfers, then
-> it negotiates a lower wsize and things work fine.  So everything is
-> working as planned I suppose... the transition between 3.3 and 3.4 is
-> just a bit rough.
+On Wed, Jun 13, 2012 at 09:30:03AM +0200, Boszormenyi Zoltan wrote:
+> This one locked up on my machine but memtest86+ 4.20 detected 12
+> different addresses with faulty bits in the lower 16GB. Applying for
+> warranty.
 
-Oh, got it, thanks.  Yes, now I remember I've seen that problem before.
+If you have multiple DIMMs, you can also take out the DIMM which
+contains the 16GB and rerun memtest to confirm it really is the culprit.
 
-Perhaps we should be more careful about tweaks to that calculation that
-may result in a decreased r/wsize.  You could also get into the same
-situation if you took the server down to change the amount of RAM, but
-only if you were *removing* memory, which is probably unusual.
-
-Best might be if distributions set max_block_size--it should be easier
-for userspace to remember the value across reboots.
-
-While we're at it we also want to create an /etc/nfsd.conf that rpc.nfsd
-could read, for setting this, and number of threads, and a few other
-things.  The systemd people would prefer that to the current practice of
-sourcing a shell script in /etc/sysconfig or /etc/default.
-
-We could warn about this problem ("don't decrease max_block_size on a
-server without unmounting clients first") next to that variable in the
-config file.
-
-I think we can do the same calculation as nfsd_create_serv() does from
-userspace to set an initial default.  I don't know if that should happen
-on package install or on first run of rpc.nfsd.
-
-For now that's a project looking for a volunteer, though.
-
---b.
+-- 
+Regards/Gruss,
+    Boris.
