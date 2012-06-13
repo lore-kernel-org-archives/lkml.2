@@ -1,65 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754788Ab2FMVug (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 17:50:36 -0400
-Received: from h1749472.stratoserver.net ([85.214.139.110]:36909 "EHLO
-	h1749472.stratoserver.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752226Ab2FMVuf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 17:50:35 -0400
-X-Greylist: delayed 1890 seconds by postgrey-1.27 at vger.kernel.org; Wed, 13 Jun 2012 17:50:35 EDT
-Message-ID: <4FD903BC.3040200@xorn.org>
-Date: Wed, 13 Jun 2012 23:18:52 +0200
-From: Dennis Gnad <dennis@xorn.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
+	id S1754665Ab2FMVvY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 17:51:24 -0400
+Received: from mga02.intel.com ([134.134.136.20]:15166 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751373Ab2FMVvX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 17:51:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="157291395"
+Date: Wed, 13 Jun 2012 14:51:22 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, eranian@google.com
+Subject: Re: [PATCH 2/4] x86: Track minimum microcode revision globally v2
+Message-ID: <20120613215122.GF32604@tassilo.jf.intel.com>
+References: <1339618842-26636-1-git-send-email-andi@firstfloor.org>
+ <1339618842-26636-3-git-send-email-andi@firstfloor.org>
+ <1339623321.8980.66.camel@twins>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 78.42.27.74
-X-SA-Exim-Rcpt-To: linux-kernel@vger.kernel.org
-X-SA-Exim-Mail-From: dennis@xorn.org
-Subject: USB issues on Fujitsu T2020 since a424948dde8421089826e2f782d0efe9e565707e
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on h1749472.stratoserver.net)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339623321.8980.66.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After commit a424948dde8421089826e2f782d0efe9e565707e (see below), and
-still in Kernel 3.4.2, USB will not work at all when the power controls
-of the according PCI device and in the usb subdirectory are set to "auto".
-For example:
-echo auto > /sys/devices/pci0000:00/0000:00:1a.7/power/control
-echo auto > /sys/devices/pci0000:00/0000:00:1a.7/usb1/power/control
+> This would really much better live in common code where it can be
+> preemptible in some sites. There really is no need for this to be
+> non-preemptible.
 
-It only stops working when *both* are set to "auto". This is also
-triggered by the tunables of the powertop program.
+Okay I can look. But you're really optimizing the wrong things here.
+Even on a 4096 CPU system such a loop is miniscule compared to the
+actual cost of the microcode update, which stops the complete CPU
+for quite some time.
 
-Tested on a Fujitsu Lifebook T2020.
+Basically microcode updates and low latency are incompatible
+Don't do it when it hurts.
 
-If this behavior is not specific to this notebook, the commit should
-maybe get reverted?
+Unfortunately i'm changing all the callers two patches further,
+so it'll be messy too.
 
-Thanks for any comment!
- -Dennis
+-Andi
 
-
-a424948dde8421089826e2f782d0efe9e565707e is the first bad commit
-commit a424948dde8421089826e2f782d0efe9e565707e
-Author: Rafael J. Wysocki <rjw@sisk.pl>
-Date:   Sun Nov 6 22:21:46 2011 +0100
-
-    PCI/ACPI/PM: Avoid resuming devices that don't signal PME
-
-    Modify pci_acpi_wake_dev() to avoid resuming PME-capable devices
-    whose PME Status bits are not set, which may happen currently if
-    several devices are associated with the same wakeup GPE and all
-    of them are notified whenever at least one of them signals PME.
-
-    Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-    Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-
-:040000 040000 bd5d78ae9ff2b75713725ed6e16d997b0017937d
-f801b576ab380baa48b8c19523323aa6cca0b8cb M      drivers
+-- 
+ak@linux.intel.com -- Speaking for myself only
