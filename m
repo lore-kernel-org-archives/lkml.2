@@ -1,81 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754471Ab2FMP3r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 11:29:47 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41001 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751255Ab2FMP3p (ORCPT
+	id S1754186Ab2FMP3m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 11:29:42 -0400
+Received: from casper.infradead.org ([85.118.1.10]:34847 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752534Ab2FMP3k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 11:29:45 -0400
+	Wed, 13 Jun 2012 11:29:40 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Dmitry Antipov <dmitry.antipov@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jim Cromie <jim.cromie@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
+Cc: linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
+        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@elte.hu>,
         Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, arnaldo.melo@gmail.com,
+        Jim Cromie <jim.cromie@gmail.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [GIT PULL 0/3] perf/urgent fixes
-Date: Wed, 13 Jun 2012 12:29:24 -0300
-Message-Id: <1339601367-17834-1-git-send-email-acme@infradead.org>
+Subject: [PATCH 2/3] perf stat: Fix default output file
+Date: Wed, 13 Jun 2012 12:29:26 -0300
+Message-Id: <1339601367-17834-3-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
+In-Reply-To: <1339601367-17834-1-git-send-email-acme@infradead.org>
+References: <1339601367-17834-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+From: Stephane Eranian <eranian@google.com>
 
-	Please consider pulling,
+The following commit:
 
-- Arnaldo
+commit 56f3bae70638b33477a6015fd362ccfe354fd3ee
+Author: Jim Cromie <jim.cromie@gmail.com>
+Date:   Wed Sep 7 17:14:00 2011 -0600
 
-The following changes since commit 9ee6ddc9dada9cc4b2201631bc74fbf203183a10:
+    perf stat: Add --log-fd <N> option to redirect stderr elsewhere
 
-  Merge branch 'tip/perf/urgent' of git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace into perf/urgent (2012-06-08 12:23:22 +0200)
+introduced a bug in the way perf stat outputs the results by default,
+i.e., without the --log-fd or --output option. It would default to
+writing to file descriptor 0, i.e., stdin. Writing to stdin is allowed
+and is equivalent to writing to stdout. However, there is a major
+difference for any script that was already capturing the output of perf
+stat via redirection:
 
-are available in the git repository at:
+    perf stat >/tmp/log .... or perf stat 2>/tmp/log ....
 
+They would not capture anything anymore. They would have to do:
+    perf stat 0>/tmp/log ...
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-urgent-for-mingo
+This breaks compatibility with existing scripts and does not look very
+natural.
 
-for you to fetch changes up to cb9dd49e11f83d548c822d7022ac180b0518b25c:
+This patch fixes the problem by looking at output_fd only when it was
+modified by user (> 0). It also checks that the value if positive.
+Passing --log-fd 0 is ignored.
 
-  perf tools: Fix synthesizing tracepoint names from the perf.data headers (2012-06-12 11:28:09 -0300)
+I would also argue that defaulting to stderr for the results is not the
+right thing to do, though this patch does not address this specific
+issue.
 
-----------------------------------------------------------------
-Fixes for perf/urgent
-
-. Set name of tracepoints when reading the perf.data headers, so that
-  we don't end up using the local ones, from /sys.
-
-. Fix default output file for perf stat, from Stephane Eranian.
-
-. Fix endian handling of features bitmask in perf.data header, from David Ahern
-
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Jim Cromie <jim.cromie@gmail.com>
+Link: http://lkml.kernel.org/r/20120515111111.GA9870@quad
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-stat.c |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
 
-----------------------------------------------------------------
-Arnaldo Carvalho de Melo (1):
-      perf tools: Fix synthesizing tracepoint names from the perf.data headers
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index 2625899..07b5c77 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -1179,6 +1179,12 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
+ 		fprintf(stderr, "cannot use both --output and --log-fd\n");
+ 		usage_with_options(stat_usage, options);
+ 	}
++
++	if (output_fd < 0) {
++		fprintf(stderr, "argument to --log-fd must be a > 0\n");
++		usage_with_options(stat_usage, options);
++	}
++
+ 	if (!output) {
+ 		struct timespec tm;
+ 		mode = append_file ? "a" : "w";
+@@ -1190,7 +1196,7 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
+ 		}
+ 		clock_gettime(CLOCK_REALTIME, &tm);
+ 		fprintf(output, "# started on %s\n", ctime(&tm.tv_sec));
+-	} else if (output_fd != 2) {
++	} else if (output_fd > 0) {
+ 		mode = append_file ? "a" : "w";
+ 		output = fdopen(output_fd, mode);
+ 		if (!output) {
+-- 
+1.7.1
 
-David Ahern (1):
-      perf tools: Fix endianity swapping for adds_features bitmask
-
-Stephane Eranian (1):
-      perf stat: Fix default output file
-
- tools/perf/builtin-stat.c              |    8 +++++-
- tools/perf/util/header.c               |   48 +++++++++++++++++++++++++++-----
- tools/perf/util/include/linux/bitops.h |    2 ++
- tools/perf/util/session.c              |   10 +++++++
- tools/perf/util/session.h              |    1 +
- 5 files changed, 61 insertions(+), 8 deletions(-)
