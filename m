@@ -1,112 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752268Ab2FMGvC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 02:51:02 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:60812 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752144Ab2FMGu7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 02:50:59 -0400
-Date: Wed, 13 Jun 2012 08:51:19 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: Borislav Petkov <bp@amd64.org>, Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Robert Richter <robert.richter@amd.com>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        andi@firstfloor.org, mingo@elte.hu, ming.m.lin@intel.com,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Dimitri Sivanich <sivanich@sgi.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>
-Subject: Re: [PATCH] perf/x86: check ucode before disabling PEBS on
- SandyBridge
-Message-ID: <20120613065119.GB15661@aftab.osrc.amd.com>
-References: <1339161972.2507.13.camel@laptop>
- <20120612170725.GE5046@erda.amd.com>
- <CABPqkBRJAA7yRcswM1iYESSwhiGD4SEbir=q=ouQSevi7OAxqQ@mail.gmail.com>
- <1339521203.31548.92.camel@twins>
- <20120612171734.GI8404@aftab.osrc.amd.com>
- <1339521493.31548.93.camel@twins>
- <20120612172352.GA4802@aftab.osrc.amd.com>
- <1339521996.31548.95.camel@twins>
- <20120612173506.GB4802@aftab.osrc.amd.com>
- <20120613010413.GA28174@khazad-dum.debian.net>
+	id S1752403Ab2FMGxQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 02:53:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55236 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751621Ab2FMGxP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 02:53:15 -0400
+Date: Wed, 13 Jun 2012 08:53:13 +0200
+From: Jan Kara <jack@suse.cz>
+To: Wallak <wallak@free.fr>
+Cc: Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org
+Subject: Re: File copy is very slow on linux-3.4.2 (or linux-3.3x) on a
+ specific hardware: AMD FX-8150 + 990FX
+Message-ID: <20120613065313.GA25425@quack.suse.cz>
+References: <1108815600.134531433.1339443818361.JavaMail.root@zimbra44-e7.priv.proxad.net>
+ <437497008.134549481.1339444456294.JavaMail.root@zimbra44-e7.priv.proxad.net>
+ <20120612165357.GI6021@quack.suse.cz>
+ <4FD78CE4.4000209@free.fr>
+ <20120612210947.GB20007@quack.suse.cz>
+ <4FD7C595.202@free.fr>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120613010413.GA28174@khazad-dum.debian.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4FD7C595.202@free.fr>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 12, 2012 at 10:04:13PM -0300, Henrique de Moraes Holschuh wrote:
-> On Tue, 12 Jun 2012, Borislav Petkov wrote:
-> > I'd guess this is still there to support mixed ucode revisions for some
+On Wed 13-06-12 00:41:25, Wallak wrote:
+> Jan Kara wrote:
+> >On Tue 12-06-12 20:39:32, Wallak wrote:
+> >>Jan Kara wrote:
+> >>>On Mon 11-06-12 21:54:16, wallak@free.fr wrote:
+> >>>>I've a very annoying issue on recent kernel (linux-3.4.2-SMP) with my main motherboard (AMD FX-8150 + 990FX - 8 cores 4.1GHz), file copy is very slow (see below). The same kernel works flawlessly on an AMD E450 2 cores motherboard.
+> >>>>
+> >>>>Linux-3.2.20 works properly on this hardware.
+> >>>>hdparm -t gives good results on both kernels.
+> >>>>
+> >>>>I've no idea where this bug come from. Do you have this issue on your hardware ? A patch is available ?
+> >>>>
+> >>>>
+> >>>>*linux-3.4.2
+> >>>>dd if=../in/file_8gb.tmp of=tmp.tmp bs=1024k count=100
+> >>>>100+0 records in
+> >>>>100+0 records out
+> >>>>104857600 bytes (105 MB) copied, 132.884 s, 789 kB/s
+> >>>>
+> >>>>
+> >>>>*linux-3.2.20
+> >>>>dd if=../in/file_8gb.tmp of=tmp.tmp bs=1024k count=100
+> >>>>100+0 records in
+> >>>>100+0 records out
+> >>>>104857600 bytes (105 MB) copied, 3.30793 s, 31.7 MB/s
+> >>>   So let's separate reading and writing part first. What is the speed of
+> >>>dd if=../in/file_8gb.tmp of=/dev/null bs=1M count=100
+> >>>   on both kernels?
+> >>>And what is the speed of:
+> >>>dd if=/dev/zero of=tmp.tm bs=1M count=100
+> >>You're right, the issue is only while writing. The results are below:
+> >>
+> >>#linux-3.4.2
+> >>dd if=/dev/zero of=tmp.tm bs=1M count=100
+> >>100+0 records in
+> >>100+0 records out
+> >>104857600 bytes (105 MB) copied, 151.347 s, 693 kB/s
+> >>dd if=../in/file_8gb.tmp of=/dev/null bs=1M count=100
+> >>100+0 records in
+> >>100+0 records out
+> >>104857600 bytes (105 MB) copied, 1.26228 s, 83.1 MB/s
+> >>
+> >>#linux-3.2.20
+> >>dd if=/dev/zero of=tmp.tm bs=1M count=100
+> >>100+0 records in
+> >>100+0 records out
+> >>104857600 bytes (105 MB) copied, 1.00838 s, 104 MB/s
+> >>dd if=../in/file_8gb.tmp of=/dev/null bs=1M count=100
+> >>100+0 records in
+> >>100+0 records out
+> >>104857600 bytes (105 MB) copied, 1.26947 s, 82.6 MB/s
+> >>
+> >>
+> >>>   Also what filesystems are you using?
+> >>This is an ext2 file system:
+> >>
+> >>/dev/sda6      ext2    464463364 323380956 141082408  70% /backup
+> >   OK, I'm surprised by one thing - how come the writes do no end up cached
+> >in memory (thus you should get much higher throughput). Is the filesystem
+> >mounted with -o sync option by any chance?
+> >
+> >								Honza
 > 
-> It is still there because of the stable ABI rules.  As far as I can tell,
-> it was a crap interface when it got in, and it still is a crap interface
-> now because there simply isn't any sane usercase that requires it, it is
-> dangerous as implemented right now (at least in the Intel case), and even
-> if we fixed the kernel to do the right thing, userspace would not be able
-> to know that and would still need to request 1 microcode refresh per core.
-
-Well, I'm disabling it on AMD.
-
-We could make it iterate over _all_ cores and do the update on each one
-of them even though the user does a sysfs write only for a single core..
-
-> As far as I know, we always want to refresh the microcode on every core,
-> use the firmware interface to pick up a copy of the newest version of the
-> microcode matching the signature of each core, and leave no core behind
-> without an update.
-
-Yep.
-
-> And preferably, we want to request_firmware() only once per microcode,
-> which is rather easy to do: cache every microcode that will be needed,
-> check cache first before doing request_firmware() in the per-core
-> worker threads, and invalidate the cache when the user requests
-> "refresh_all_microcode". So, the cache speeds up multi-core updates,
-> and is also usable when restoring the system from suspend/hibernation,
-> but doesn't get in the way of userspace trying to apply a microcode
-> update.
-
-Yes, agreed too.
-
-> This would make my pathetic system do one request_firmware instead of
-> eight. And even the old junk with mixed-stepping SMP at work would
-> only require two, instead of four (or eight? I don't recall how many
-> cores per die it has) request_firmware calls.
-
-Ok.
-
-> > described above. Maybe this interface should be behind a family, model
-> > check or so, so that users don't shoot themselves in the foot but it is
-> > root-only anyway.
+>     I've tried with an nfs mounted drive, the issue is still there,
+> it seems to be global. With sync enabled, the output is quite
+> faster, that's quite unexpected.
+> On my AMD E450 motherboard this kernel works fine - Are you able to
+> reproduce this behavior ?
 > 
-> This interface should _DIE_.
+> 
+> #/dev/sda6 /backup ext2 rw,relatime,errors=continue 0 0
+> (/proc/mount)
+> 100+0 records in
+> 100+0 records out
+> 104857600 bytes (105 MB) copied, 155.407 s, 675 kB/s
+> 
+> #/dev/sda6 /backup ext2 rw,sync,relatime,errors=continue 0 0
+> 100+0 records in
+> 100+0 records out
+> 104857600 bytes (105 MB) copied, 69.7868 s, 1.5 MB/s
+> 
+> #nfs drive - same issue:
+> 100+0 records in
+> 100+0 records out
+> 104857600 bytes (105 MB) copied, 221.572 s, 473 kB/s
+  That's really curious. I have not seen your issue although I use current
+kernels for development & testing a lot. Also if it was some generic issue
+with 3.4 I'm pretty sure we would have heard *much* more complaints from
+other users as well. So I think it must be something specific to your setup
+/ kernel config.
 
-Yeppers! :-)
+Can you run:
+while true; do
+  cat /proc/vmstat
+  echo "---"
+  cat /proc/meminfo
+  echo "------------------"
+  sleep 5
+done >/tmp/vmstat.out
 
-> Perhaps we could make it work only for CPU 0 and return EBUSY or whatever
-> for all others (or just don't publish the sysfs attribute for the others),
-> and change the CPU0 refresh firmware request into a refresh all cores call.
+while the dd is running and send the output please? Also does the problem
+go away if you run a 64-bit kernel on the machine?
 
-That could also work, it sounds like a sane thing to do having in mind
-the current sysfs layout. I will cook up something soonish.
-
-> We could then add a new sysfs attribute to cleanly do the
-> update-all-cores request.
-
-That's what Fenghua is doing.
-
+								Honza
 -- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
