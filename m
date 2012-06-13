@@ -1,143 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754433Ab2FMSoW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 14:44:22 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:57345 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752476Ab2FMSoU (ORCPT
+	id S1754664Ab2FMSom (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 14:44:42 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:45017 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754492Ab2FMSoj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 14:44:20 -0400
-Date: Wed, 13 Jun 2012 20:45:49 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org, linaro-mm-sig@lists.linaro.org,
-        linux-mm@kvack.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Abhinav Kochhar <abhinav.k@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Subash Patel <subash.ramaswamy@linaro.org>
-Subject: Re: [Linaro-mm-sig] [PATCHv2 5/6] common: DMA-mapping: add
- DMA_ATTR_SKIP_CPU_SYNC attribute
-Message-ID: <20120613184549.GL4829@phenom.ffwll.local>
-Mail-Followup-To: Marek Szyprowski <m.szyprowski@samsung.com>,
-	linux-arm-kernel@lists.infradead.org,
-	linaro-mm-sig@lists.linaro.org, linux-mm@kvack.org,
-	linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-	Abhinav Kochhar <abhinav.k@samsung.com>,
-	Russell King - ARM Linux <linux@arm.linux.org.uk>,
-	Arnd Bergmann <arnd@arndb.de>,
-	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-	Kyungmin Park <kyungmin.park@samsung.com>,
-	Subash Patel <subash.ramaswamy@linaro.org>
-References: <1339588218-24398-1-git-send-email-m.szyprowski@samsung.com>
- <1339588218-24398-6-git-send-email-m.szyprowski@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339588218-24398-6-git-send-email-m.szyprowski@samsung.com>
-X-Operating-System: Linux phenom 3.4.0-rc3+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 13 Jun 2012 14:44:39 -0400
+Message-ID: <1339613130.28242.12.camel@key-ThinkPad-W510>
+Subject: Re: [PATCH 1/2] drivers: crypto: move nx build to driver/crypto
+ Makefile
+From: Kent Yoder <key@linux.vnet.ibm.com>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
+Date: Wed, 13 Jun 2012 13:45:30 -0500
+In-Reply-To: <1339611763-14603-1-git-send-email-sjenning@linux.vnet.ibm.com>
+References: <1339611763-14603-1-git-send-email-sjenning@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12061318-4242-0000-0000-000001F5374D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 13, 2012 at 01:50:17PM +0200, Marek Szyprowski wrote:
-> This patch adds DMA_ATTR_SKIP_CPU_SYNC attribute to the DMA-mapping
-> subsystem.
+On Wed, 2012-06-13 at 13:22 -0500, Seth Jennings wrote:
+> When the nx driver was pulled, the Makefile that actually
+> builds it is arch/powerpc/Makefile. This is unnatural.
 > 
-> By default dma_map_{single,page,sg} functions family transfer a given
-> buffer from CPU domain to device domain. Some advanced use cases might
-> require sharing a buffer between more than one device. This requires
-> having a mapping created separately for each device and is usually
-> performed by calling dma_map_{single,page,sg} function more than once
-> for the given buffer with device pointer to each device taking part in
-> the buffer sharing. The first call transfers a buffer from 'CPU' domain
-> to 'device' domain, what synchronizes CPU caches for the given region
-> (usually it means that the cache has been flushed or invalidated
-> depending on the dma direction). However, next calls to
-> dma_map_{single,page,sg}() for other devices will perform exactly the
-> same sychronization operation on the CPU cache. CPU cache sychronization
-> might be a time consuming operation, especially if the buffers are
-> large, so it is highly recommended to avoid it if possible.
-> DMA_ATTR_SKIP_CPU_SYNC allows platform code to skip synchronization of
-> the CPU cache for the given buffer assuming that it has been already
-> transferred to 'device' domain. This attribute can be also used for
-> dma_unmap_{single,page,sg} functions family to force buffer to stay in
-> device domain after releasing a mapping for it. Use this attribute with
-> care!
-> 
-> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-> Reviewed-by: Kyungmin Park <kyungmin.park@samsung.com>
+> This patch moves the line that builds the nx driver from
+> arch/powerpc/Makefile to drivers/crypto/Makefile where it
+> belongs.
 
-Curious question: What's the use-case for this? Is this just to
-work-around the fact that dma-buf atm doesn't support streaming dma so
-that we could optimize this all (and keep around the mappings)? Or is
-there a different use-case that I don't see?
--Daniel
+Acked-by: Kent Yoder <key@linux.vnet.ibm.com>
 
+> Cc: Kent Yoder <key@linux.vnet.ibm.com>
+> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
 > ---
->  Documentation/DMA-attributes.txt |   24 ++++++++++++++++++++++++
->  include/linux/dma-attrs.h        |    1 +
->  2 files changed, 25 insertions(+), 0 deletions(-)
+>  arch/powerpc/Makefile   |    1 -
+>  drivers/crypto/Makefile |    3 ++-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
 > 
-> diff --git a/Documentation/DMA-attributes.txt b/Documentation/DMA-attributes.txt
-> index 725580d..f503090 100644
-> --- a/Documentation/DMA-attributes.txt
-> +++ b/Documentation/DMA-attributes.txt
-> @@ -67,3 +67,27 @@ set on each call.
->  Since it is optional for platforms to implement
->  DMA_ATTR_NO_KERNEL_MAPPING, those that do not will simply ignore the
->  attribute and exhibit default behavior.
-> +
-> +DMA_ATTR_SKIP_CPU_SYNC
-> +----------------------
-> +
-> +By default dma_map_{single,page,sg} functions family transfer a given
-> +buffer from CPU domain to device domain. Some advanced use cases might
-> +require sharing a buffer between more than one device. This requires
-> +having a mapping created separately for each device and is usually
-> +performed by calling dma_map_{single,page,sg} function more than once
-> +for the given buffer with device pointer to each device taking part in
-> +the buffer sharing. The first call transfers a buffer from 'CPU' domain
-> +to 'device' domain, what synchronizes CPU caches for the given region
-> +(usually it means that the cache has been flushed or invalidated
-> +depending on the dma direction). However, next calls to
-> +dma_map_{single,page,sg}() for other devices will perform exactly the
-> +same sychronization operation on the CPU cache. CPU cache sychronization
-> +might be a time consuming operation, especially if the buffers are
-> +large, so it is highly recommended to avoid it if possible.
-> +DMA_ATTR_SKIP_CPU_SYNC allows platform code to skip synchronization of
-> +the CPU cache for the given buffer assuming that it has been already
-> +transferred to 'device' domain. This attribute can be also used for
-> +dma_unmap_{single,page,sg} functions family to force buffer to stay in
-> +device domain after releasing a mapping for it. Use this attribute with
-> +care!
-> diff --git a/include/linux/dma-attrs.h b/include/linux/dma-attrs.h
-> index a37c10c..f83f793 100644
-> --- a/include/linux/dma-attrs.h
-> +++ b/include/linux/dma-attrs.h
-> @@ -16,6 +16,7 @@ enum dma_attr {
->  	DMA_ATTR_WRITE_COMBINE,
->  	DMA_ATTR_NON_CONSISTENT,
->  	DMA_ATTR_NO_KERNEL_MAPPING,
-> +	DMA_ATTR_SKIP_CPU_SYNC,
->  	DMA_ATTR_MAX,
->  };
->  
-> -- 
-> 1.7.1.569.g6f426
+> diff --git a/arch/powerpc/Makefile b/arch/powerpc/Makefile
+> index 950d1f7..159e94f 100644
+> --- a/arch/powerpc/Makefile
+> +++ b/arch/powerpc/Makefile
+> @@ -149,7 +149,6 @@ core-$(CONFIG_KVM) 		+= arch/powerpc/kvm/
+>  core-$(CONFIG_PERF_EVENTS)	+= arch/powerpc/perf/
 > 
+>  drivers-$(CONFIG_OPROFILE)	+= arch/powerpc/oprofile/
+> -drivers-$(CONFIG_CRYPTO_DEV_NX) += drivers/crypto/nx/
 > 
-> _______________________________________________
-> Linaro-mm-sig mailing list
-> Linaro-mm-sig@lists.linaro.org
-> http://lists.linaro.org/mailman/listinfo/linaro-mm-sig
+>  # Default to zImage, override when needed
+>  all: zImage
+> diff --git a/drivers/crypto/Makefile b/drivers/crypto/Makefile
+> index 0139032..67b4fbf 100644
+> --- a/drivers/crypto/Makefile
+> +++ b/drivers/crypto/Makefile
+> @@ -14,4 +14,5 @@ obj-$(CONFIG_CRYPTO_DEV_OMAP_AES) += omap-aes.o
+>  obj-$(CONFIG_CRYPTO_DEV_PICOXCELL) += picoxcell_crypto.o
+>  obj-$(CONFIG_CRYPTO_DEV_S5P) += s5p-sss.o
+>  obj-$(CONFIG_CRYPTO_DEV_TEGRA_AES) += tegra-aes.o
+> -obj-$(CONFIG_CRYPTO_DEV_UX500) += ux500/
+> \ No newline at end of file
+> +obj-$(CONFIG_CRYPTO_DEV_UX500) += ux500/
+> +obj-$(CONFIG_CRYPTO_DEV_NX) += nx/
 
--- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+
