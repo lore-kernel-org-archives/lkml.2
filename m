@@ -1,120 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754214Ab2FMTqt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 15:46:49 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:20215 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752616Ab2FMTqs (ORCPT
+	id S1754332Ab2FMTuV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 15:50:21 -0400
+Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:43970 "EHLO
+	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752669Ab2FMTuT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 15:46:48 -0400
-Date: Wed, 13 Jun 2012 15:39:26 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] xen: mark local pages as FOREIGN in the m2p_override
-Message-ID: <20120613193926.GA21706@phenom.dumpdata.com>
-References: <1337795840-10061-1-git-send-email-stefano.stabellini@eu.citrix.com>
+	Wed, 13 Jun 2012 15:50:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337795840-10061-1-git-send-email-stefano.stabellini@eu.citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+In-Reply-To: <113bb1f38dbc386f1adfc580e10dc2e5.squirrel@www.codeaurora.org>
+References: <000601cd47ab$8ad77c50$a08674f0$%jun@samsung.com>
+ <CANfBPZ9dwwAOBbXPqGV64k-sB-MzRtTO8x7tXnZBjtYN+V88XQ@mail.gmail.com>
+ <000001cd489c$115f03b0$341d0b10$%jun@samsung.com> <113bb1f38dbc386f1adfc580e10dc2e5.squirrel@www.codeaurora.org>
+From: "S, Venkatraman" <svenkatr@ti.com>
+Date: Thu, 14 Jun 2012 01:19:56 +0530
+Message-ID: <CANfBPZ_+=keFgv-xDbzkZi2uVFvd46_JGoxweMKa1CvfX=X7=g@mail.gmail.com>
+Subject: Re: [PATCH v7 1/3] mmc: core: Add packed command feature of eMMC4.5
+To: merez@codeaurora.org
+Cc: Seungwon Jeon <tgih.jun@samsung.com>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Chris Ball <cjb@laptop.org>,
+        Subhash Jadavani <subhashj@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 23, 2012 at 06:57:20PM +0100, Stefano Stabellini wrote:
-> When the frontend and the backend reside on the same domain, even if we
-> add pages to the m2p_override, these pages will never be returned by
-> mfn_to_pfn because the check "get_phys_to_machine(pfn) != mfn" will
-> always fail, so the pfn of the frontend will be returned instead
-> (resulting in a deadlock because the frontend pages are already locked).
+On Wed, Jun 13, 2012 at 12:45 AM,  <merez@codeaurora.org> wrote:
+>
+>> S, Venkatraman <svenkatr@ti.com> wrote:
+>>> On Mon, Jun 11, 2012 at 1:53 PM, Seungwon Jeon <tgih.jun@samsung.com>
+>>> wrote:
+>>> > This patch adds packed command feature of eMMC4.5.
+>>> > The maximum number for packing read(or write) is offered
+>>> > and exception event relevant to packed command which is
+>>> > used for error handling is enabled. If host wants to use
+>>> > this feature, MMC_CAP2_PACKED_CMD should be set.
+>>> >
+>>> > Signed-off-by: Seungwon Jeon <tgih.jun@samsung.com>
+>>>
+>>> Can you please post some clear performance benchmarks with your patchset
+>>> ?
+>>> Given that #merez claims to see a significant performance drop for
+>>> reads, it will be
+>>> good to compare notes.
+>>> If it's not too much trouble, both CFQ and deadline scheduler figures
+>>> would be useful, on a
+>>> set of read only, write only and parallel read write usecases.
+>>>
+>>> I can also try to replicate your results if you can publish the exact
+>>> configuration you used
+>>> for testing (example: iozone parameters)
+>> I'm checking the merez's result.
+>> Currently packed command is effective on write.
+>> When running packed write with iozone, there is 25% performance gains.
+>> (ex: iozone -az -i0 -I -s 10m -f /target/test -e)
+>>
+> Our tests shows performance gain of 50-60% in scenarios of only write lmdd
+> operations.
+>
+> As I mentioned in the write packing control thread the degradation of read
+> performance in case of mix read/write operations appears also without
+> write packing. Therefore I don't think it should stop us from approving
+> the write packing patch, that gives a significant improvement to the write
+> performance.
+> The read performance degradation should be resolved regardless of the
+> write packing patch.
+>
 
-If I recall you were suppose to attach the stack trace here
-and also explain a bit about how the lock happens (like a call-tree).
+One further question - when you say "degradation of read performance
+in case of mix
+read/write operations appears also without write packing", what
+exactly does that mean?
+Degradation w.r.to to read-only test ? Or any expected throughput ?
 
-> 
-> However m2p_add_override can easily find out whether another pfn
-> corresponding to the mfn exists in the m2p, and can set the FOREIGN bit
-> in the p2m, making sure that mfn_to_pfn returns the pfn of the backend.
-> 
-> This allows the backend to perform direct_IO on these pages, but as a
-> side effect prevents the frontend from using get_user_pages_fast on
-> them while they are being shared with the backend.
-> 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> ---
->  arch/x86/xen/p2m.c |   36 ++++++++++++++++++++++++++++++++++++
->  1 files changed, 36 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-> index 1b267e7..00a0385 100644
-> --- a/arch/x86/xen/p2m.c
-> +++ b/arch/x86/xen/p2m.c
-> @@ -686,6 +686,7 @@ int m2p_add_override(unsigned long mfn, struct page *page,
->  	unsigned long uninitialized_var(address);
->  	unsigned level;
->  	pte_t *ptep = NULL;
-> +	int ret = 0;
->  
->  	pfn = page_to_pfn(page);
->  	if (!PageHighMem(page)) {
-> @@ -721,6 +722,24 @@ int m2p_add_override(unsigned long mfn, struct page *page,
->  	list_add(&page->lru,  &m2p_overrides[mfn_hash(mfn)]);
->  	spin_unlock_irqrestore(&m2p_override_lock, flags);
->  
-> +	/* p2m(m2p(mfn)) == mfn: the mfn is already present somewhere in
-> +	 * this domain. Set the FOREIGN_FRAME_BIT in the p2m for the other
-> +	 * pfn so that the following mfn_to_pfn(mfn) calls will return the
-> +	 * pfn from the m2p_override (the backend pfn) instead.
-> +	 * We need to do this because the pages shared by the frontend
-> +	 * (xen-blkfront) can be already locked (lock_page, called by
-> +	 * do_read_cache_page); when the userspace backend tries to use them
-> +	 * with direct_IO, mfn_to_pfn returns the pfn of the frontend, so
-> +	 * do_blockdev_direct_IO is going to try to lock the same pages
-> +	 * again resulting in a deadlock.
-> +	 * As a side effect get_user_pages_fast might not be safe on the
-> +	 * frontend pages while they are being shared with the backend,
-> +	 * because mfn_to_pfn (that ends up being called by GUPF) will
-> +	 * return the backend pfn rather than the frontend pfn. */
-> +	ret = __get_user(pfn, &machine_to_phys_mapping[mfn]);
-> +	if (ret == 0 && get_phys_to_machine(pfn) == mfn)
-> +		set_phys_to_machine(pfn, FOREIGN_FRAME(mfn));
-> +
->  	return 0;
->  }
->  EXPORT_SYMBOL_GPL(m2p_add_override);
-> @@ -732,6 +751,7 @@ int m2p_remove_override(struct page *page, bool clear_pte)
->  	unsigned long uninitialized_var(address);
->  	unsigned level;
->  	pte_t *ptep = NULL;
-> +	int ret = 0;
->  
->  	pfn = page_to_pfn(page);
->  	mfn = get_phys_to_machine(pfn);
-> @@ -801,6 +821,22 @@ int m2p_remove_override(struct page *page, bool clear_pte)
->  	} else
->  		set_phys_to_machine(pfn, page->index);
->  
-> +	/* p2m(m2p(mfn)) == FOREIGN_FRAME(mfn): the mfn is already present
-> +	 * somewhere in this domain, even before being added to the
-> +	 * m2p_override (see comment above in m2p_add_override).
-> +	 * If there are no other entries in the m2p_override corresponding
-> +	 * to this mfn, then remove the FOREIGN_FRAME_BIT from the p2m for
-> +	 * the original pfn (the one shared by the frontend): the backend
-> +	 * cannot do any IO on this page anymore because it has been
-> +	 * unshared. Removing the FOREIGN_FRAME_BIT from the p2m entry of
-> +	 * the original pfn causes mfn_to_pfn(mfn) to return the frontend
-> +	 * pfn again. */
-> +	mfn &= ~FOREIGN_FRAME_BIT;
-> +	ret = __get_user(pfn, &machine_to_phys_mapping[mfn]);
-> +	if (ret == 0 && get_phys_to_machine(pfn) == FOREIGN_FRAME(mfn) &&
-> +			m2p_find_override(mfn) == NULL)
-> +		set_phys_to_machine(pfn, mfn);
-> +
->  	return 0;
->  }
->  EXPORT_SYMBOL_GPL(m2p_remove_override);
-> -- 
-> 1.7.2.5
+If the scenario you mention is accurate, I was actually thinking that
+we should recommend to merge
+read packing first, then merge write packing once the read performance
+issue is well understood.
+
+I am all for better performance with packing control etc, but the
+overall code complexity is really
+increasing more than necessary. I want to make sure that it is really
+worth the effort.
+
+Thanks,
+Venkat.
