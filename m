@@ -1,66 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753281Ab2FMKXF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 06:23:05 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:6067 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753019Ab2FMKW2 (ORCPT
+	id S1753576Ab2FMKYQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 06:24:16 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:55328 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752954Ab2FMKYN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 06:22:28 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 13 Jun 2012 03:21:51 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <khali@linux-fr.org>, <w.sang@pengutronix.de>, <ben-linux@fluff.org>,
-        <swarren@wwwdotorg.org>, <olof@lixom.net>
-CC: <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH V3 1/4] i2c: tegra: make sure register writes completes
-Date: Wed, 13 Jun 2012 15:42:36 +0530
-Message-ID: <1339582359-7911-2-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <1339582359-7911-1-git-send-email-ldewangan@nvidia.com>
-References: <1339582359-7911-1-git-send-email-ldewangan@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 13 Jun 2012 06:24:13 -0400
+Date: Wed, 13 Jun 2012 11:27:52 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Christian Gmeiner <christian.gmeiner@gmail.com>
+Cc: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>,
+        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <greg@kroah.com>
+Subject: Re: gma500: Cannot find any crtc or sizes - going 1024x768
+Message-ID: <20120613112752.787a3b2e@pyramind.ukuu.org.uk>
+In-Reply-To: <CAH9NwWdT7RhDfgLiF15m2yAExmb-Gsq1TCOGbvJEQ9Lzd3DH8A@mail.gmail.com>
+References: <CAH9NwWd1F3Vw2zrQJh8Jazm45C_BAH3H3-qupvm2XaLgDOM=QQ@mail.gmail.com>
+	<CAMeQTsZfE8_t6DCr3UWVqnOLyxNuNh7_VxJmqiP+enBBqM0o_A@mail.gmail.com>
+	<CAH9NwWc3W6zHCFf9rwKg5NMQaWnh4A=xVVysmG1Y=eUMzu=18Q@mail.gmail.com>
+	<CAMeQTsaknGLR2QCWwN8kYKh8y=JJtqN-ZSty6YTKnAOv2Vp3XQ@mail.gmail.com>
+	<CAH9NwWdmhmLB5io5RWVQBj6c7zjXT9hFa7OAHVrL6oY8P0kjaw@mail.gmail.com>
+	<20120612132736.642a4a5a@pyramind.ukuu.org.uk>
+	<CAMeQTsZZ0ay7YqkzUzkhe6D6FNsQXaDKHfJKB6_6icd=4VemrA@mail.gmail.com>
+	<20120612170412.359967ec@pyramind.ukuu.org.uk>
+	<CAH9NwWdF+zukb1r1z6ES6ULeg3dkFzhvhBq1xzjrqjWx-O3cOA@mail.gmail.com>
+	<CAH9NwWdT7RhDfgLiF15m2yAExmb-Gsq1TCOGbvJEQ9Lzd3DH8A@mail.gmail.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Tegra PPSB (an peripheral bus) queues writes transactions.
-In order to guarantee that writes have completed before a
-certain time, a read transaction to a register on the same
-bus must be executed.
-This is necessary in situations such as when clearing an
-interrupt status or enable, so that when returning from an
-interrupt handler, the HW has already de-asserted its
-interrupt status output, which will avoid spurious interrupts.
+> Here are some more informations. There seems to be a scaling problem.
+> If i compare gma500 and the vesa framebuffer driver I see that gma500 shows
+> the desktop "scaled" up --> not the whole desktop is on the screen. It
+> gets better
+> if i remove the video="..." parameter from kernel cmdline, but it
+> still is too big for
+> the screen.
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
-Changes from V1:
-- Using the readback for mask/unmask of irq also.
+"scaled up" meaning what - pixel sizes. I don't really understand what
+you are trying to describe ?
 
-Changes from V2:
-- Read back is done whenever write happen in i2c register other than TX FIFO.
-
- drivers/i2c/busses/i2c-tegra.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
-index 8b2e555..785f7f7 100644
---- a/drivers/i2c/busses/i2c-tegra.c
-+++ b/drivers/i2c/busses/i2c-tegra.c
-@@ -165,6 +165,10 @@ static void i2c_writel(struct tegra_i2c_dev *i2c_dev, u32 val,
- 	unsigned long reg)
- {
- 	writel(val, i2c_dev->base + tegra_i2c_reg_addr(i2c_dev, reg));
-+
-+	/* Read back register to make sure that register writes completed */
-+	if (reg != I2C_TX_FIFO)
-+		readl(i2c_dev->base + tegra_i2c_reg_addr(i2c_dev, reg));
- }
- 
- static u32 i2c_readl(struct tegra_i2c_dev *i2c_dev, unsigned long reg)
--- 
-1.7.1.1
+What size is the desktop reported at, what created the "desktop" ?
 
