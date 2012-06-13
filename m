@@ -1,85 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754713Ab2FMSxZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 14:53:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33579 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753525Ab2FMSxY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 14:53:24 -0400
-Date: Wed, 13 Jun 2012 20:51:22 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 6/6] uprobes: __copy_insn() needs "loff_t offset"
-Message-ID: <20120613185122.GF13878@redhat.com>
-References: <20120613184933.GA13870@redhat.com>
+	id S1754557Ab2FMS41 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 14:56:27 -0400
+Received: from www.linutronix.de ([62.245.132.108]:50762 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753525Ab2FMS40 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 14:56:26 -0400
+Date: Wed, 13 Jun 2012 20:56:18 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>
+Subject: Re: [RFC patch 2/5] smpboot: Provide infrastructure for percpu
+ hotplug threads
+In-Reply-To: <20120613183301.GE2427@linux.vnet.ibm.com>
+Message-ID: <alpine.LFD.2.02.1206132050270.3086@ionos>
+References: <20120613102823.373180763@linutronix.de> <20120613105815.206105518@linutronix.de> <20120613183301.GE2427@linux.vnet.ibm.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120613184933.GA13870@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1. __copy_insn() needs "loff_t offset", not "unsigned long",
-   to read the file.
+On Wed, 13 Jun 2012, Paul E. McKenney wrote:
+> On Wed, Jun 13, 2012 at 11:00:54AM -0000, Thomas Gleixner wrote:
+>
+> So I am currently trying to apply this to RCU's per-CPU kthread.
+> I don't believe that I need to mess with RCU's per-rcu_node kthread
+> because it can just have its affinity adjusted when the first CPU
+> onlines and the last CPU offlines for the corresponding rcu_node.
+> 
+> One question below about the order of parking.
+> 
+> Also, I have not yet figured out how this avoids a parked thread waking
+> up while the CPU is offline, but I am probably still missing something.
 
-2. use pgoff_t for "idx" and remove the unnecessary typecast.
+If it's just a spurious wakeup then it goes back to sleep right away
+as nothing cleared the park bit.
 
-3. fix the typo, "&=" is not what we want
+If something calls unpark(), then it's toast. I should put a warning
+into the code somewhere to catch that case.
 
-4. can't resist, rename off1 to off.
+> > +void smpboot_park_threads(unsigned int cpu)
+> > +{
+> > +	struct smp_hotplug_thread *cur;
+> > +
+> > +	mutex_lock(&smpboot_threads_lock);
+> > +	list_for_each_entry(cur, &hotplug_threads, list)
+> 
+> Shouldn't this be list_for_each_entry_reverse()?  Yes, the notifiers
+> still run in the same order for both online and offline, but all uses
+> of smpboot_park_threads() would be new, so should be OK with the
+> proper ordering, right?
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- kernel/events/uprobes.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+Duh, yes
 
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 773bb37..5ad1d77 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -581,20 +581,20 @@ static bool consumer_del(struct uprobe *uprobe, struct uprobe_consumer *uc)
- 
- static int
- __copy_insn(struct address_space *mapping, struct file *filp, char *insn,
--			unsigned long nbytes, unsigned long offset)
-+			unsigned long nbytes, loff_t offset)
- {
- 	struct page *page;
- 	void *vaddr;
--	unsigned long off1;
--	unsigned long idx;
-+	unsigned long off;
-+	pgoff_t idx;
- 
- 	if (!filp)
- 		return -EINVAL;
- 	if (!mapping->a_ops->readpage)
- 		return -EIO;
- 
--	idx = (unsigned long)(offset >> PAGE_CACHE_SHIFT);
--	off1 = offset &= ~PAGE_MASK;
-+	idx = offset >> PAGE_CACHE_SHIFT;
-+	off = offset & ~PAGE_MASK;
- 
- 	/*
- 	 * Ensure that the page that has the original instruction is
-@@ -605,7 +605,7 @@ __copy_insn(struct address_space *mapping, struct file *filp, char *insn,
- 		return PTR_ERR(page);
- 
- 	vaddr = kmap_atomic(page);
--	memcpy(insn, vaddr + off1, nbytes);
-+	memcpy(insn, vaddr + off, nbytes);
- 	kunmap_atomic(vaddr);
- 	page_cache_release(page);
- 
--- 
-1.5.5.1
+Thanks,
 
-
+	tglx
