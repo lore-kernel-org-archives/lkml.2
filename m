@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754612Ab2FMQUm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 12:20:42 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:40424 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754225Ab2FMQUM (ORCPT
+	id S1754578Ab2FMQUj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 12:20:39 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:34893 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754202Ab2FMQUK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 12:20:12 -0400
+	Wed, 13 Jun 2012 12:20:10 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -24,9 +24,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Stephen Hemminger <shemminger@vyatta.com>,
         Steven Rostedt <rostedt@goodmis.org>,
         Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
-Subject: [PATCH 2/7] nohz: Introduce adaptive nohz config
-Date: Wed, 13 Jun 2012 18:19:52 +0200
-Message-Id: <1339604397-8758-3-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 1/7] nohz: Add more comment about CONFIG_NO_HZ
+Date: Wed, 13 Jun 2012 18:19:51 +0200
+Message-Id: <1339604397-8758-2-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1339604397-8758-1-git-send-email-fweisbec@gmail.com>
 References: <1339604397-8758-1-git-send-email-fweisbec@gmail.com>
@@ -34,9 +34,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prepare a config option for the full adaptive nohz feature.
-This way we can start to put the related code under appropriate
-ifdefs.
+In order to prepare for adding a new config to implement
+adaptive tickless, clarify that CONFIG_NO_HZ alone only
+stops the tick on idle.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Alessio Igor Bogani <abogani@kernel.org>
@@ -58,47 +58,30 @@ Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/Kconfig        |    8 ++++++++
- kernel/time/Kconfig |    7 +++++++
- 2 files changed, 15 insertions(+), 0 deletions(-)
+ kernel/time/Kconfig |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/arch/Kconfig b/arch/Kconfig
-index 8c3d957..a71c698 100644
---- a/arch/Kconfig
-+++ b/arch/Kconfig
-@@ -251,6 +251,14 @@ config HAVE_CMPXCHG_DOUBLE
- config ARCH_WANT_OLD_COMPAT_IPC
- 	bool
- 
-+config HAVE_NO_HZ_FULL
-+        bool
-+	help
-+	 An arch should select this symbols if it provides
-+	 the kernel entry/exit hooks necessary to implement
-+	 full tickless support. This includes syscall entry/exit,
-+	 exceptions entry/exit and do_notify_resume() hooks.
-+
- config HAVE_ARCH_SECCOMP_FILTER
- 	bool
- 	help
 diff --git a/kernel/time/Kconfig b/kernel/time/Kconfig
-index 0883fa1..5ac4b74 100644
+index fd42bd4..0883fa1 100644
 --- a/kernel/time/Kconfig
 +++ b/kernel/time/Kconfig
-@@ -65,6 +65,13 @@ config NO_HZ
- 	  This option enables a tickless idle system: timer interrupts will
- 	  only trigger on an as-needed basis when the system is idle.
+@@ -58,13 +58,12 @@ config TICK_ONESHOT
+ 	bool
  
-+config NO_HZ_FULL
-+        bool "Full tickless system (Dynamic Ticks)"
-+	depends on NO_HZ && HAVE_NO_HZ_FULL
-+	help
-+	  This option enables a full adaptive tickless system: timer
-+	  interrupts will globally only trigger on an as-needed basis.
-+
+ config NO_HZ
+-	bool "Tickless System (Dynamic Ticks)"
++	bool "Tickless idle system (Dynamic idle Ticks)"
+ 	depends on !ARCH_USES_GETTIMEOFFSET && GENERIC_CLOCKEVENTS
+ 	select TICK_ONESHOT
+ 	help
+-	  This option enables a tickless system: timer interrupts will
+-	  only trigger on an as-needed basis both when the system is
+-	  busy and when the system is idle.
++	  This option enables a tickless idle system: timer interrupts will
++	  only trigger on an as-needed basis when the system is idle.
+ 
  config HIGH_RES_TIMERS
  	bool "High Resolution Timer Support"
- 	depends on !ARCH_USES_GETTIMEOFFSET && GENERIC_CLOCKEVENTS
 -- 
 1.7.5.4
 
