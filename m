@@ -1,95 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754547Ab2FMQLf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 12:11:35 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:35231 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754150Ab2FMQLU (ORCPT
+	id S1754682Ab2FMQUz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 12:20:55 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:40424 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754361Ab2FMQU3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 12:11:20 -0400
-Date: Wed, 13 Jun 2012 18:11:39 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: Borislav Petkov <bp@amd64.org>, Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Robert Richter <robert.richter@amd.com>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        andi@firstfloor.org, mingo@elte.hu, ming.m.lin@intel.com,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Dimitri Sivanich <sivanich@sgi.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>
-Subject: Re: [PATCH] perf/x86: check ucode before disabling PEBS on
- SandyBridge
-Message-ID: <20120613161139.GA18450@aftab.osrc.amd.com>
-References: <CABPqkBRJAA7yRcswM1iYESSwhiGD4SEbir=q=ouQSevi7OAxqQ@mail.gmail.com>
- <1339521203.31548.92.camel@twins>
- <20120612171734.GI8404@aftab.osrc.amd.com>
- <1339521493.31548.93.camel@twins>
- <20120612172352.GA4802@aftab.osrc.amd.com>
- <1339521996.31548.95.camel@twins>
- <20120612173506.GB4802@aftab.osrc.amd.com>
- <20120613010413.GA28174@khazad-dum.debian.net>
- <20120613065119.GB15661@aftab.osrc.amd.com>
- <20120613123649.GA26012@khazad-dum.debian.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120613123649.GA26012@khazad-dum.debian.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 13 Jun 2012 12:20:29 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@ti.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
+Subject: [PATCH 7/7] x86: Exception hooks for adaptive tickless
+Date: Wed, 13 Jun 2012 18:19:57 +0200
+Message-Id: <1339604397-8758-8-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1339604397-8758-1-git-send-email-fweisbec@gmail.com>
+References: <1339604397-8758-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 13, 2012 at 09:36:49AM -0300, Henrique de Moraes Holschuh wrote:
-> Yes, please. I suggest we use core 0 for that. Using my Debian
-> maintainer hat, I'd rather you got rid of the sysfs entries for every
-> other core while at it, as it will make our life a lot simpler,
-> distro-side.
+Add necessary hooks to x86 exception for adaptive nohz
+support so that the time spent on exceptions handling is
+considered as system cputime.
 
-Wouldn't we have some sort of ABI breakage if I remove the sysfs files?
-Instead, I was thinking of having the rest of the files not on the BSP
-return -EINVAL and only the BSP reload ucode on the whole system.
+This includes traps, page fault, debug exceptions, etc...
 
-> This is still not the proper fix, which would be to add a new sysfs node
-> to access the proper update-every-core functionality, but it is a damn
-> good start in the right direction and required to make it safe without
-> ripping out the old ABI entirely without a deprecation period.
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Alessio Igor Bogani <abogani@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Avi Kivity <avi@redhat.com>
+Cc: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Geoff Levand <geoff@infradead.org>
+Cc: Gilad Ben Yossef <gilad@benyossef.com>
+Cc: Hakan Akkan <hakanakkan@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Kevin Hilman <khilman@ti.com>
+Cc: Max Krasnyansky <maxk@qualcomm.com>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephen Hemminger <shemminger@vyatta.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/x86/Kconfig        |    1 +
+ arch/x86/kernel/traps.c |   14 ++++++++++----
+ arch/x86/mm/fault.c     |   13 +++++++++++--
+ 3 files changed, 22 insertions(+), 6 deletions(-)
 
-Yes, I'd like to have the system-wide sysfs node somewhere under
-/sys/devices/system/cpu/microcode/ but we'll see how that goes.
-
-> Since Intel processors don't want the per-core behaviour either, you
-> could fix it in the microcode core itself...
-
-Yes.
-
-> Ok. Please CC me in the patches, if the new ABI arrives in time, I'll
-> even be able to get it supported on the next Debian stable (and push
-> to get this stuff backported to the kernel 3.2 which we will ship,
-> I consider this an important bug-fix to a pontentially very serious
-> issue. We have *zero* chance of finding out what's wrong if an users'
-> system start getting subtly crazy because it is running with skewed
-> microcode among cores.
-
-Ok, will do.
-
-Btw, I have to think about whether we really want to backport this to
-stable since it is not a regression fix but functionality change which
-kinda fixes a some sort of bug. Hmm, the stable rules are kinda blurry
-here. I could write a minimal fix with stable in mind though... we'll
-see.
-
-hpa, what is our take here, should we backport a minimal change
-disabling reloading of ucode per-cpu for stable? It is the wrong thing
-to do anyway.
-
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index c70684f..af77028 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -95,6 +95,7 @@ config X86
+ 	select KTIME_SCALAR if X86_32
+ 	select GENERIC_STRNCPY_FROM_USER
+ 	select GENERIC_STRNLEN_USER
++	select HAVE_NO_HZ_FULL
+ 
+ config INSTRUCTION_DECODER
+ 	def_bool (KPROBES || PERF_EVENTS || UPROBES)
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index 05b31d9..196e641 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -26,6 +26,7 @@
+ #include <linux/sched.h>
+ #include <linux/timer.h>
+ #include <linux/init.h>
++#include <linux/tick.h>
+ #include <linux/bug.h>
+ #include <linux/nmi.h>
+ #include <linux/mm.h>
+@@ -311,6 +312,7 @@ dotraplinkage void __kprobes notrace do_int3(struct pt_regs *regs, long error_co
+ 	    ftrace_int3_handler(regs))
+ 		return;
+ #endif
++	tick_nohz_enter_exception(regs);
+ #ifdef CONFIG_KGDB_LOW_LEVEL_TRAP
+ 	if (kgdb_ll_trap(DIE_INT3, "int3", regs, error_code, X86_TRAP_BP,
+ 				SIGTRAP) == NOTIFY_STOP)
+@@ -330,6 +332,7 @@ dotraplinkage void __kprobes notrace do_int3(struct pt_regs *regs, long error_co
+ 	do_trap(X86_TRAP_BP, SIGTRAP, "int3", regs, error_code, NULL);
+ 	preempt_conditional_cli(regs);
+ 	debug_stack_usage_dec();
++	tick_nohz_exit_exception(regs);
+ }
+ 
+ #ifdef CONFIG_X86_64
+@@ -390,6 +393,8 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
+ 	unsigned long dr6;
+ 	int si_code;
+ 
++	tick_nohz_enter_exception(regs);
++
+ 	get_debugreg(dr6, 6);
+ 
+ 	/* Filter out all the reserved bits which are preset to 1 */
+@@ -405,7 +410,7 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
+ 
+ 	/* Catch kmemcheck conditions first of all! */
+ 	if ((dr6 & DR_STEP) && kmemcheck_trap(regs))
+-		return;
++		goto exit;
+ 
+ 	/* DR6 may or may not be cleared by the CPU */
+ 	set_debugreg(0, 6);
+@@ -420,7 +425,7 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
+ 
+ 	if (notify_die(DIE_DEBUG, "debug", regs, PTR_ERR(&dr6), error_code,
+ 							SIGTRAP) == NOTIFY_STOP)
+-		return;
++		goto exit;
+ 
+ 	/*
+ 	 * Let others (NMI) know that the debug stack is in use
+@@ -436,7 +441,7 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
+ 					X86_TRAP_DB);
+ 		preempt_conditional_cli(regs);
+ 		debug_stack_usage_dec();
+-		return;
++		goto exit;
+ 	}
+ 
+ 	/*
+@@ -457,7 +462,8 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
+ 	preempt_conditional_cli(regs);
+ 	debug_stack_usage_dec();
+ 
+-	return;
++exit:
++	tick_nohz_exit_exception(regs);
+ }
+ 
+ /*
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index 76dcd9d..6b1ee80 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -13,6 +13,7 @@
+ #include <linux/perf_event.h>		/* perf_sw_event		*/
+ #include <linux/hugetlb.h>		/* hstate_index_to_shift	*/
+ #include <linux/prefetch.h>		/* prefetchw			*/
++#include <linux/tick.h>
+ 
+ #include <asm/traps.h>			/* dotraplinkage, ...		*/
+ #include <asm/pgalloc.h>		/* pgd_*(), ...			*/
+@@ -1000,8 +1001,8 @@ static int fault_in_kernel_space(unsigned long address)
+  * and the problem, and then passes it off to one of the appropriate
+  * routines.
+  */
+-dotraplinkage void __kprobes
+-do_page_fault(struct pt_regs *regs, unsigned long error_code)
++static void __kprobes
++__do_page_fault(struct pt_regs *regs, unsigned long error_code)
+ {
+ 	struct vm_area_struct *vma;
+ 	struct task_struct *tsk;
+@@ -1209,3 +1210,11 @@ good_area:
+ 
+ 	up_read(&mm->mmap_sem);
+ }
++
++dotraplinkage void __kprobes
++do_page_fault(struct pt_regs *regs, unsigned long error_code)
++{
++	tick_nohz_enter_exception(regs);
++	__do_page_fault(regs, error_code);
++	tick_nohz_exit_exception(regs);
++}
 -- 
-Regards/Gruss,
-Boris.
+1.7.5.4
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
