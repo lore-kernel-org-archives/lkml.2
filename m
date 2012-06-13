@@ -1,42 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752773Ab2FMIcp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 04:32:45 -0400
-Received: from casper.infradead.org ([85.118.1.10]:55968 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752144Ab2FMIcn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 04:32:43 -0400
-Message-ID: <1339576348.31548.114.camel@twins>
-Subject: Re: [PATCH] perf/x86: check ucode before disabling PEBS on
- SandyBridge
-From: Peter Zijlstra <peterz@infradead.org>
-To: Borislav Petkov <bp@amd64.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Stephane Eranian <eranian@google.com>,
-        linux-kernel@vger.kernel.org, andi@firstfloor.org, mingo@elte.hu,
-        ming.m.lin@intel.com, "Yu, Fenghua" <fenghua.yu@intel.com>
-Date: Wed, 13 Jun 2012 10:32:28 +0200
-In-Reply-To: <20120612194900.GC11137@aftab.osrc.amd.com>
-References: <20120607071531.GA4849@quad> <4FD78BE6.4060207@zytor.com>
-	 <20120612190720.GA11137@aftab.osrc.amd.com>
-	 <1339529614.31548.104.camel@twins>
-	 <20120612194900.GC11137@aftab.osrc.amd.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1752867Ab2FMId5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 04:33:57 -0400
+Received: from linux-sh.org ([111.68.239.195]:35253 "EHLO linux-sh.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751679Ab2FMIdy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 04:33:54 -0400
+Date: Wed, 13 Jun 2012 17:33:31 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Arve Hj??nnev??g <arve@android.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        Mathieu Poirier <mathieu.poirier@linaro.org>
+Subject: Re: [PATCH 01/15] ARM: etm: Don't require clock control
+Message-ID: <20120613083330.GB27673@linux-sh.org>
+References: <1339552887-17204-1-git-send-email-john.stultz@linaro.org>
+ <1339552887-17204-2-git-send-email-john.stultz@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339552887-17204-2-git-send-email-john.stultz@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-06-12 at 21:49 +0200, Borislav Petkov wrote:
-> 
-> But why, do you see a better option for how to tell the kernel to load a
-> binary blob early at boot? 
+On Tue, Jun 12, 2012 at 07:01:19PM -0700, John Stultz wrote:
+> diff --git a/arch/arm/kernel/etm.c b/arch/arm/kernel/etm.c
+> index 36d20bd..bd295e8 100644
+> --- a/arch/arm/kernel/etm.c
+> +++ b/arch/arm/kernel/etm.c
+> @@ -362,13 +362,12 @@ static int __devinit etb_probe(struct amba_device *dev, const struct amba_id *id
+>  	if (ret)
+>  		goto out_unmap;
+>  
+> +	/* Get optional clock. Currently used to select clock source on omap3 */
+>  	t->emu_clk = clk_get(&dev->dev, "emu_src_ck");
+> -	if (IS_ERR(t->emu_clk)) {
+> +	if (IS_ERR(t->emu_clk))
+>  		dev_dbg(&dev->dev, "Failed to obtain emu_src_ck.\n");
+> -		return -EFAULT;
+> -	}
+> -
+> -	clk_enable(t->emu_clk);
+> +	else
+> +		clk_enable(t->emu_clk);
+>  
+Optionally you could just:
 
-built it in? There's this feature where you can included firmware blobs
-in the kernel image. It has all the benefits of initrd, since the only
-time I ever would update initrd if used it, would be when I install a
-new kernel, which I just built anyway.
+	if (IS_ERR(t->emu_clk))
+		t->emu_clk = NULL;
 
+and use the clk API as you were, as it does handle NULL being passed in.
 
+In this case you don't have too many callsites to worry about, but it's
+reasonably convenient to be able to pass a NULL clk pointer around
+without constant special-casing when those start to balloon up.
