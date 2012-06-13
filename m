@@ -1,63 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752848Ab2FMCA1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 22:00:27 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:54642 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751988Ab2FMCA0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 22:00:26 -0400
-Message-ID: <1339552821.26190.2.camel@phoenix>
-Subject: [PATCH 2/2] regulator: wm831x-isink: Convert to
- devm_request_threaded_irq
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Wed, 13 Jun 2012 10:00:21 +0800
-In-Reply-To: <1339552767.26190.1.camel@phoenix>
-References: <1339552767.26190.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752854Ab2FMCB0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 22:01:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52799 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751988Ab2FMCBZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 22:01:25 -0400
+Date: Tue, 12 Jun 2012 23:01:03 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v6 5/9] KVM: MMU: introduce SPTE_MMU_WRITEABLE bit
+Message-ID: <20120613020103.GB3119@amt.cnet>
+References: <4FC470C7.5040700@linux.vnet.ibm.com>
+ <4FC4716A.8030304@linux.vnet.ibm.com>
+ <20120611233212.GA29573@amt.cnet>
+ <4FD6A833.6060206@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FD6A833.6060206@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/wm831x-isink.c |    8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+On Tue, Jun 12, 2012 at 10:23:47AM +0800, Xiao Guangrong wrote:
+> On 06/12/2012 07:32 AM, Marcelo Tosatti wrote:
+> 
+> > On Tue, May 29, 2012 at 02:49:14PM +0800, Xiao Guangrong wrote:
+> >> This bit indicates whether the spte can be writable on MMU, that means
+> >> the corresponding gpte is writable and the corresponding gfn is not
+> >> protected by shadow page protection
+> > 
+> > Why is this still necessary, now that only sptes of direct shadow pages 
+> > are updated locklessly? 
+> > 
+> 
+> 
+> Yes, but it is still needed, for nested npt/ept, we need protect
+> the nested page tables.
 
-diff --git a/drivers/regulator/wm831x-isink.c b/drivers/regulator/wm831x-isink.c
-index 0d207c2..1d414d2 100644
---- a/drivers/regulator/wm831x-isink.c
-+++ b/drivers/regulator/wm831x-isink.c
-@@ -203,8 +203,9 @@ static __devinit int wm831x_isink_probe(struct platform_device *pdev)
- 	}
- 
- 	irq = wm831x_irq(wm831x, platform_get_irq(pdev, 0));
--	ret = request_threaded_irq(irq, NULL, wm831x_isink_irq,
--				   IRQF_TRIGGER_RISING, isink->name, isink);
-+	ret = devm_request_threaded_irq(&pdev->dev, irq, NULL,
-+					wm831x_isink_irq, IRQF_TRIGGER_RISING,
-+					isink->name, isink);
- 	if (ret != 0) {
- 		dev_err(&pdev->dev, "Failed to request ISINK IRQ %d: %d\n",
- 			irq, ret);
-@@ -226,9 +227,6 @@ static __devexit int wm831x_isink_remove(struct platform_device *pdev)
- 	struct wm831x_isink *isink = platform_get_drvdata(pdev);
- 
- 	platform_set_drvdata(pdev, NULL);
--
--	free_irq(wm831x_irq(isink->wm831x, platform_get_irq(pdev, 0)), isink);
--
- 	regulator_unregister(isink->regulator);
- 
- 	return 0;
--- 
-1.7.9.5
+Sure, but shadowed L1 nested pagetables are not direct shadow pages.
 
+They are shadows of L1 nested pagetables. 
 
+Checking sp->direct should be enough (instead of the flags).
 
