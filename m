@@ -1,57 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754495Ab2FMP17 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 11:27:59 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:17430 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754430Ab2FMP14 (ORCPT
+	id S1754534Ab2FMP2J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 11:28:09 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35987 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754468Ab2FMP2F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 11:27:56 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 13 Jun 2012 08:27:34 -0700
-Date: Wed, 13 Jun 2012 18:26:58 +0300
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Rob Herring <robherring2@gmail.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "mturquette@linaro.org" <mturquette@linaro.org>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH v3 0/4] DT clock bindings
-Message-ID: <20120613152658.GE32111@tbergstrom-lnx.Nvidia.com>
-References: <1339512111-11172-1-git-send-email-robherring2@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1339512111-11172-1-git-send-email-robherring2@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 13 Jun 2012 11:28:05 -0400
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: James.Bottomley@HansenPartnership.com, gregkh@linuxfoundation.org,
+        mdharm-usb@one-eyed-alien.net, stern@rowland.harvard.edu,
+        sshtylyov@mvista.com, bvanassche@acm.org
+Cc: linux-usb@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Pankaj Kumar <pankaj.km@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: [PATCH v4 1/3]  scsi: set to WCE if usb cache quirk is present.
+Date: Wed, 13 Jun 2012 11:27:53 -0400
+Message-Id: <1339601273-3285-1-git-send-email-linkinjeon@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 12, 2012 at 04:41:47PM +0200, Rob Herring wrote:
-> From: Rob Herring <rob.herring@calxeda.com>
-> 
-> This series defines clock bindings for Device-Tree and adds kernel
-> support using the common clock infrastructure. The last patch enables
-> DT clock support for the Calxeda Highbank platform.
-> 
-> I'm posting this again to solicit further review. There has been some
-> discussion[1], but no definite path forward. This series is not changed
-> from the last post other than rebasing to v3.5-rc2.
-> 
-> Rob
-> 
-> [1] http://lists.infradead.org/pipermail/linux-arm-kernel/2012-May/100932.html
-> 
+From: Namjae Jeon <namjae.jeon@samsung.com>
 
-How would this binding work for clocks which can take a spinlock pointer as a
-init parameter (eg. clk-gate).
+Make use of USB quirk method to identify such HDD while reading
+the cache status in sd_probe(). If cache quirk is present for
+the HDD, lets assume that cache is enabled and make WCE bit
+equal to 1.
 
-Cheers,
+Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+Signed-off-by: Pankaj Kumar <pankaj.km@samsung.com>
+Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
+---
+ drivers/scsi/sd.c          |    9 +++++++--
+ include/scsi/scsi_device.h |    1 +
+ 2 files changed, 8 insertions(+), 2 deletions(-)
 
-Peter.
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index 6f0a4c6..e63e363 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -2259,8 +2259,13 @@ bad_sense:
+ 		sd_printk(KERN_ERR, sdkp, "Asking for cache data failed\n");
+ 
+ defaults:
+-	sd_printk(KERN_ERR, sdkp, "Assuming drive cache: write through\n");
+-	sdkp->WCE = 0;
++	if (sdp->wce_default_on) {
++		sd_printk(KERN_NOTICE, sdkp, "Assuming drive cache: write back\n");
++		sdkp->WCE = 1;
++	} else {
++		sd_printk(KERN_ERR, sdkp, "Assuming drive cache: write through\n");
++		sdkp->WCE = 0;
++	}
+ 	sdkp->RCD = 0;
+ 	sdkp->DPOFUA = 0;
+ }
+diff --git a/include/scsi/scsi_device.h b/include/scsi/scsi_device.h
+index 6efb2e1..8be0247 100644
+--- a/include/scsi/scsi_device.h
++++ b/include/scsi/scsi_device.h
+@@ -152,6 +152,7 @@ struct scsi_device {
+ 	unsigned no_read_disc_info:1;	/* Avoid READ_DISC_INFO cmds */
+ 	unsigned no_read_capacity_16:1; /* Avoid READ_CAPACITY_16 cmds */
+ 	unsigned is_visible:1;	/* is the device visible in sysfs */
++	unsigned wce_default_on:1; /* Cache is ON by default */
+ 
+ 	DECLARE_BITMAP(supported_events, SDEV_EVT_MAXBITS); /* supported events */
+ 	struct list_head event_list;	/* asserted events */
+-- 
+1.7.9.5
+
