@@ -1,78 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754258Ab2FMToj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 15:44:39 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:55846 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752005Ab2FMToi convert rfc822-to-8bit (ORCPT
+	id S1754509Ab2FMTos (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 15:44:48 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:56198 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754302Ab2FMToo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 15:44:38 -0400
+	Wed, 13 Jun 2012 15:44:44 -0400
+Date: Wed, 13 Jun 2012 21:46:15 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Seth Forshee <seth.forshee@canonical.com>
+Cc: Daniel Vetter <daniel@ffwll.ch>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] drm/i915: ignore pipe select bit when checking for
+ LVDS register initialization
+Message-ID: <20120613194614.GP4829@phenom.ffwll.local>
+Mail-Followup-To: Seth Forshee <seth.forshee@canonical.com>,
+	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+References: <20120613162544.GJ4829@phenom.ffwll.local>
+ <1339613218-4699-1-git-send-email-seth.forshee@canonical.com>
 MIME-Version: 1.0
-In-Reply-To: <1339535645.22704.293.camel@edumazet-glaptop>
-References: <CAGh0HCDhF_nKP+YKQDyfuYKcx2YKBuAPkMHxa0x265Rgs0haMg@mail.gmail.com>
-	<1339535645.22704.293.camel@edumazet-glaptop>
-Date: Wed, 13 Jun 2012 21:44:37 +0200
-X-Google-Sender-Auth: XQIOMWg6UX6pck05XCiBoE1iCDM
-Message-ID: <CAGh0HCCK2pi6NtOaSc1zw_OurtpN9wskCdjT5FXo117vjKT0RQ@mail.gmail.com>
-Subject: Re: PROBLEM: Keyboard/mouse freeze with high network usage (r8169/brcmsmac/broadcom-wl)
-From: Guillaume Bouchard <guillaume.bouchard@liris.cnrs.fr>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339613218-4699-1-git-send-email-seth.forshee@canonical.com>
+X-Operating-System: Linux phenom 3.4.0-rc3+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Tue, Jun 12, 2012 at 11:14 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> If your script can trigger the freeze in less than 5 minutes, you could
-> start a background job to check /proc/meminfo, it sounds there is a mem
-> leak ?
->
-> while :
-> do
->  date
->  cat /proc/meminfo
->  cat /proc/slabinfo
->  sleep 10
-> done
-
-Today it tooks 55 minutes to freeze. Kind of an heisenbug.
-
-I have the /proc/meminfo and slabinfo trace, but it is around 4Mo, so
-I put them on a separate host
-
-http://gobpower.free.fr/meminfo/
-
-This directory contains the cat of meminfo/slabinfo
-(dump_meminfo_slabinfo), and *commands* and *data.dat* files which are
-gnuplot files to display the curve of meminfo values. (gnuplot > load
-'commands' to display it).
-
-I don't know what I'm supposed to look for, so I tried to get closer
-look on different part of the graph but it does not really talk to me.
-
-I included an image of the graph, the .png in the same directory.  X
-axis is the time (in 10 seconds).
-
-between 0 and 180 in x (0 to 1800 seconds), some curves are really
-noisy, but it may coincide with the time I was using the computer and
-tried to make it freeze.
-
-The committed AS, inactive and inactive file are increasing through
-time, and the so call "Mem Free" is decreasing.
-
-Between 250 and 300 did the freeze happened. At approximately 300, I
-noticed it and unload the psmouse module. We can notice some sharp cut
-in some curves at this moment.
-
-Sorry, I'm a bit lost to interpret those stuffs, all I can do for now
-is following your advices, so if you find something in this log and
-need more experimentations, I'll be happy to do them.
-
-Thank you for your time.
+On Wed, Jun 13, 2012 at 01:46:58PM -0500, Seth Forshee wrote:
+> The Lenovo Thinkpad T410 has the LVDS_PIPEB_SELECT bit set in the LVDS
+> register when booted with the lid closed, even though the LVDS hasn't
+> really been initialized. Ignore this bit so that the VBT value will be
+> used instead.
+> 
+> Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+Queued for -next, thanks for the patch. Chris had some reservations about
+the sanity of this patch, but given that it works around bios-insanity I'm
+gonna just take this chance to stab myself with lvds-machines blowing up
+left and right ;-)
+-Daniel
+> ---
+>  drivers/gpu/drm/i915/intel_display.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+> index e0aa064..ae17526 100644
+> --- a/drivers/gpu/drm/i915/intel_display.c
+> +++ b/drivers/gpu/drm/i915/intel_display.c
+> @@ -434,7 +434,7 @@ static bool is_dual_link_lvds(struct drm_i915_private *dev_priv,
+>  		 * register is uninitialized.
+>  		 */
+>  		val = I915_READ(reg);
+> -		if (!(val & ~LVDS_DETECTED))
+> +		if (!(val & ~(LVDS_PIPE_MASK | LVDS_DETECTED)))
+>  			val = dev_priv->bios_lvds_val;
+>  		dev_priv->lvds_val = val;
+>  	}
+> -- 
+> 1.7.9.5
+> 
 
 -- 
-Guillaume
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
