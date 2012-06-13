@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753807Ab2FMLBf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 07:01:35 -0400
-Received: from www.linutronix.de ([62.245.132.108]:48234 "EHLO
+	id S1753665Ab2FMLBb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 07:01:31 -0400
+Received: from www.linutronix.de ([62.245.132.108]:48240 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752992Ab2FMLBA (ORCPT
+	with ESMTP id S1753033Ab2FMLBA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 13 Jun 2012 07:01:00 -0400
-Message-Id: <20120613105815.347526936@linutronix.de>
+Message-Id: <20120613105815.416416492@linutronix.de>
 User-Agent: quilt/0.48-1
 Date: Wed, 13 Jun 2012 11:00:56 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
@@ -17,9 +17,9 @@ Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
         Rusty Russell <rusty@rustcorp.com.au>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Tejun Heo <tj@kernel.org>
-Subject: [RFC patch 4/5] watchdog: Use hotplug thread infrastructure
+Subject: [RFC patch 5/5] infiniband: ehca: Use hotplug thread infrastructure
 References: <20120613102823.373180763@linutronix.de>
-Content-Disposition: inline; filename=watchdog-use-smb-kthreads.patch
+Content-Disposition: inline; filename=infiniband-ehca-use-smp-threads.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -27,354 +27,363 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Get rid of the hotplug notifiers and use the generic hotplug thread
+infrastructure.
+
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- kernel/watchdog.c |  232 ++++++++++++++++--------------------------------------
- 1 file changed, 69 insertions(+), 163 deletions(-)
+ drivers/infiniband/hw/ehca/ehca_irq.c |  240 ++++++++++++----------------------
+ drivers/infiniband/hw/ehca/ehca_irq.h |    5 
+ 2 files changed, 92 insertions(+), 153 deletions(-)
 
-Index: tip/kernel/watchdog.c
+Index: tip/drivers/infiniband/hw/ehca/ehca_irq.c
 ===================================================================
---- tip.orig/kernel/watchdog.c
-+++ tip/kernel/watchdog.c
-@@ -22,6 +22,7 @@
- #include <linux/notifier.h>
- #include <linux/module.h>
- #include <linux/sysctl.h>
+--- tip.orig/drivers/infiniband/hw/ehca/ehca_irq.c
++++ tip/drivers/infiniband/hw/ehca/ehca_irq.c
+@@ -42,6 +42,7 @@
+  */
+ 
+ #include <linux/slab.h>
 +#include <linux/smpboot.h>
  
- #include <asm/irq_regs.h>
- #include <linux/kvm_para.h>
-@@ -29,6 +30,7 @@
- 
- int watchdog_enabled = 1;
- int __read_mostly watchdog_thresh = 10;
-+static int __read_mostly watchdog_disabled;
- 
- static DEFINE_PER_CPU(unsigned long, watchdog_touch_ts);
- static DEFINE_PER_CPU(struct task_struct *, softlockup_watchdog);
-@@ -256,6 +258,9 @@ static void watchdog_interrupt_count(voi
- static inline void watchdog_interrupt_count(void) { return; }
- #endif /* CONFIG_HARDLOCKUP_DETECTOR */
- 
-+static int watchdog_nmi_enable(unsigned int cpu);
-+static void watchdog_nmi_disable(unsigned int cpu);
-+
- /* watchdog kicker functions */
- static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
- {
-@@ -327,23 +332,46 @@ static enum hrtimer_restart watchdog_tim
- 	return HRTIMER_RESTART;
+ #include "ehca_classes.h"
+ #include "ehca_irq.h"
+@@ -652,7 +653,7 @@ void ehca_tasklet_eq(unsigned long data)
+ 	ehca_process_eq((struct ehca_shca*)data, 1);
  }
  
--
--/*
-- * The watchdog thread - touches the timestamp.
-- */
--static int watchdog(void *unused)
-+static void watchdog_enable(unsigned int cpu)
+-static inline int find_next_online_cpu(struct ehca_comp_pool *pool)
++static int find_next_online_cpu(struct ehca_comp_pool *pool)
  {
--	struct sched_param param = { .sched_priority = 0 };
- 	struct hrtimer *hrtimer = &__raw_get_cpu_var(watchdog_hrtimer);
+ 	int cpu;
+ 	unsigned long flags;
+@@ -662,10 +663,15 @@ static inline int find_next_online_cpu(s
+ 		ehca_dmp(cpu_online_mask, cpumask_size(), "");
  
--	/* initialize timestamp */
--	__touch_watchdog();
-+	/* Enable the perf event */
-+	watchdog_nmi_enable(cpu);
+ 	spin_lock_irqsave(&pool->last_cpu_lock, flags);
+-	cpu = cpumask_next(pool->last_cpu, cpu_online_mask);
+-	if (cpu >= nr_cpu_ids)
+-		cpu = cpumask_first(cpu_online_mask);
+-	pool->last_cpu = cpu;
++	while (1) {
++		cpu = cpumask_next(pool->last_cpu, cpu_online_mask);
++		if (cpu >= nr_cpu_ids)
++			cpu = cpumask_first(cpu_online_mask);
++		pool->last_cpu = cpu;
++		/* Might be on the way out */
++		if (per_cpu_ptr(pool->cpu_comp_tasks, cpu)->active)
++			break;
++	}
+ 	spin_unlock_irqrestore(&pool->last_cpu_lock, flags);
  
- 	/* kick off the timer for the hardlockup detector */
-+	hrtimer_init(hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-+	hrtimer->function = watchdog_timer_fn;
+ 	return cpu;
+@@ -719,19 +725,18 @@ static void queue_comp_task(struct ehca_
+ static void run_comp_task(struct ehca_cpu_comp_task *cct)
+ {
+ 	struct ehca_cq *cq;
+-	unsigned long flags;
+ 
+-	spin_lock_irqsave(&cct->task_lock, flags);
++	spin_lock_irq(&cct->task_lock);
+ 
+ 	while (!list_empty(&cct->cq_list)) {
+ 		cq = list_entry(cct->cq_list.next, struct ehca_cq, entry);
+-		spin_unlock_irqrestore(&cct->task_lock, flags);
++		spin_unlock_irq(&cct->task_lock);
+ 
+ 		comp_event_callback(cq);
+ 		if (atomic_dec_and_test(&cq->nr_events))
+ 			wake_up(&cq->wait_completion);
+ 
+-		spin_lock_irqsave(&cct->task_lock, flags);
++		spin_lock_irq(&cct->task_lock);
+ 		spin_lock(&cq->task_lock);
+ 		cq->nr_callbacks--;
+ 		if (!cq->nr_callbacks) {
+@@ -741,17 +746,51 @@ static void run_comp_task(struct ehca_cp
+ 		spin_unlock(&cq->task_lock);
+ 	}
+ 
+-	spin_unlock_irqrestore(&cct->task_lock, flags);
++	spin_unlock_irq(&cct->task_lock);
+ }
+ 
+-static int comp_task(void *__cct)
++static void comp_task_park(unsigned int cpu)
+ {
+-	struct ehca_cpu_comp_task *cct = __cct;
+-	int cql_empty;
++	struct ehca_cpu_comp_task *cct = per_cpu_ptr(pool->cpu_comp_tasks, cpu);
++	struct ehca_cpu_comp_task *target;
++	struct ehca_cq *cq, *tmp;
++	LIST_HEAD(list);
 +
- 	/* done here because hrtimer_start can only pin to smp_processor_id() */
- 	hrtimer_start(hrtimer, ns_to_ktime(get_sample_period()),
- 		      HRTIMER_MODE_REL_PINNED);
- 
-+	/* initialize timestamp */
-+	__touch_watchdog();
++	spin_lock_irq(&cct->task_lock);
++	cct->cq_jobs = 0;
++	cct->active = 0;
++	list_splice_init(&cct->cq_list, &list);
++	spin_unlock_irq(&cct->task_lock);
++
++	cpu = find_next_online_cpu(pool);
++	target = per_cpu_ptr(pool->cpu_comp_tasks, cpu);
++	spin_lock_irq(&target->task_lock);
++	list_for_each_entry_safe(cq, tmp, &list, entry) {
++		list_del(&cq->entry);
++		__queue_comp_task(cq, target);
++	}
++	spin_unlock_irq(&target->task_lock);
 +}
 +
-+static void watchdog_disable(unsigned int cpu)
++static void comp_task_stop(unsigned int cpu, bool online)
 +{
-+	struct hrtimer *hrtimer = &__raw_get_cpu_var(watchdog_hrtimer);
++	struct ehca_cpu_comp_task *cct = per_cpu_ptr(pool->cpu_comp_tasks, cpu);
 +
-+	hrtimer_cancel(hrtimer);
-+	/* disable the perf event */
-+	watchdog_nmi_disable(cpu);
++	spin_lock_irq(&cct->task_lock);
++	cct->cq_jobs = 0;
++	cct->active = 0;
++	WARN_ON(!list_empty(&cct->cq_list));
++	spin_unlock_irq(&cct->task_lock);
 +}
 +
-+/*
-+ * The watchdog thread - touches the timestamp.
-+ */
-+static int watchdog(void *td)
++static int comp_task(void *td)
 +{
-+	struct sched_param param = { .sched_priority = MAX_RT_PRIO - 1 };
-+
-+	if (!watchdog_enabled)
-+		kthread_park(current);
-+
-+	sched_setscheduler(current, SCHED_FIFO, &param);
-+
- 	set_current_state(TASK_INTERRUPTIBLE);
- 	/*
- 	 * Run briefly (kicked by the hrtimer callback function) once every
-@@ -352,27 +380,16 @@ static int watchdog(void *unused)
- 	 * 2*watchdog_thresh seconds then the debug-printout triggers in
- 	 * watchdog_timer_fn().
- 	 */
++	struct ehca_cpu_comp_task *cct = this_cpu_ptr(pool->cpu_comp_tasks);
+ 	DECLARE_WAITQUEUE(wait, current);
++	int cql_empty;
+ 
+-	set_current_state(TASK_INTERRUPTIBLE);
 -	while (!kthread_should_stop()) {
 +	while (!smpboot_thread_check_parking(td)) {
 +		set_current_state(TASK_INTERRUPTIBLE);
- 		__touch_watchdog();
- 		schedule();
--
--		if (kthread_should_stop())
--			break;
+ 		add_wait_queue(&cct->wait_queue, &wait);
+ 
+ 		spin_lock_irq(&cct->task_lock);
+@@ -768,131 +807,21 @@ static int comp_task(void *__cct)
+ 		cql_empty = list_empty(&cct->cq_list);
+ 		spin_unlock_irq(&cct->task_lock);
+ 		if (!cql_empty)
+-			run_comp_task(__cct);
 -
 -		set_current_state(TASK_INTERRUPTIBLE);
++			run_comp_task(cct);
  	}
--	/*
--	 * Drop the policy/priority elevation during thread exit to avoid a
--	 * scheduling latency spike.
--	 */
 -	__set_current_state(TASK_RUNNING);
--	sched_setscheduler(current, SCHED_NORMAL, &param);
+-
  	return 0;
  }
  
--
- #ifdef CONFIG_HARDLOCKUP_DETECTOR
--static int watchdog_nmi_enable(int cpu)
-+static int watchdog_nmi_enable(unsigned int cpu)
- {
- 	struct perf_event_attr *wd_attr;
- 	struct perf_event *event = per_cpu(watchdog_ev, cpu);
-@@ -395,7 +412,6 @@ static int watchdog_nmi_enable(int cpu)
- 		goto out_save;
- 	}
- 
--
- 	/* vary the KERN level based on the returned errno */
- 	if (PTR_ERR(event) == -EOPNOTSUPP)
- 		pr_info("disabled (cpu%i): not supported (no LAPIC?)\n", cpu);
-@@ -416,7 +432,7 @@ out:
- 	return 0;
- }
- 
--static void watchdog_nmi_disable(int cpu)
-+static void watchdog_nmi_disable(unsigned int cpu)
- {
- 	struct perf_event *event = per_cpu(watchdog_ev, cpu);
- 
-@@ -430,107 +446,35 @@ static void watchdog_nmi_disable(int cpu
- 	return;
- }
- #else
--static int watchdog_nmi_enable(int cpu) { return 0; }
--static void watchdog_nmi_disable(int cpu) { return; }
-+static int watchdog_nmi_enable(unsigned int cpu) { return 0; }
-+static void watchdog_nmi_disable(unsigned int cpu) { return; }
- #endif /* CONFIG_HARDLOCKUP_DETECTOR */
- 
- /* prepare/enable/disable routines */
--static void watchdog_prepare_cpu(int cpu)
+-static struct task_struct *create_comp_task(struct ehca_comp_pool *pool,
+-					    int cpu)
 -{
--	struct hrtimer *hrtimer = &per_cpu(watchdog_hrtimer, cpu);
+-	struct ehca_cpu_comp_task *cct;
 -
--	WARN_ON(per_cpu(softlockup_watchdog, cpu));
--	hrtimer_init(hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
--	hrtimer->function = watchdog_timer_fn;
+-	cct = per_cpu_ptr(pool->cpu_comp_tasks, cpu);
+-	spin_lock_init(&cct->task_lock);
+-	INIT_LIST_HEAD(&cct->cq_list);
+-	init_waitqueue_head(&cct->wait_queue);
+-	cct->task = kthread_create_on_node(comp_task, cct, cpu_to_node(cpu),
+-					   "ehca_comp/%d", cpu);
+-
+-	return cct->task;
 -}
 -
--static int watchdog_enable(int cpu)
+-static void destroy_comp_task(struct ehca_comp_pool *pool,
+-			      int cpu)
 -{
--	struct task_struct *p = per_cpu(softlockup_watchdog, cpu);
--	int err = 0;
+-	struct ehca_cpu_comp_task *cct;
+-	struct task_struct *task;
+-	unsigned long flags_cct;
 -
--	/* enable the perf event */
--	err = watchdog_nmi_enable(cpu);
+-	cct = per_cpu_ptr(pool->cpu_comp_tasks, cpu);
 -
--	/* Regardless of err above, fall through and start softlockup */
+-	spin_lock_irqsave(&cct->task_lock, flags_cct);
 -
--	/* create the watchdog thread */
--	if (!p) {
--		struct sched_param param = { .sched_priority = MAX_RT_PRIO-1 };
--		p = kthread_create_on_node(watchdog, NULL, cpu_to_node(cpu), "watchdog/%d", cpu);
--		if (IS_ERR(p)) {
--			pr_err("softlockup watchdog for %i failed\n", cpu);
--			if (!err) {
--				/* if hardlockup hasn't already set this */
--				err = PTR_ERR(p);
--				/* and disable the perf event */
--				watchdog_nmi_disable(cpu);
--			}
--			goto out;
--		}
--		sched_setscheduler(p, SCHED_FIFO, &param);
--		kthread_bind(p, cpu);
--		per_cpu(watchdog_touch_ts, cpu) = 0;
--		per_cpu(softlockup_watchdog, cpu) = p;
--		wake_up_process(p);
+-	task = cct->task;
+-	cct->task = NULL;
+-	cct->cq_jobs = 0;
+-
+-	spin_unlock_irqrestore(&cct->task_lock, flags_cct);
+-
+-	if (task)
+-		kthread_stop(task);
+-}
+-
+-static void __cpuinit take_over_work(struct ehca_comp_pool *pool, int cpu)
+-{
+-	struct ehca_cpu_comp_task *cct = per_cpu_ptr(pool->cpu_comp_tasks, cpu);
+-	LIST_HEAD(list);
+-	struct ehca_cq *cq;
+-	unsigned long flags_cct;
+-
+-	spin_lock_irqsave(&cct->task_lock, flags_cct);
+-
+-	list_splice_init(&cct->cq_list, &list);
+-
+-	while (!list_empty(&list)) {
+-		cq = list_entry(cct->cq_list.next, struct ehca_cq, entry);
+-
+-		list_del(&cq->entry);
+-		__queue_comp_task(cq, this_cpu_ptr(pool->cpu_comp_tasks));
 -	}
 -
--out:
--	return err;
+-	spin_unlock_irqrestore(&cct->task_lock, flags_cct);
+-
 -}
 -
--static void watchdog_disable(int cpu)
+-static int __cpuinit comp_pool_callback(struct notifier_block *nfb,
+-					unsigned long action,
+-					void *hcpu)
 -{
--	struct task_struct *p = per_cpu(softlockup_watchdog, cpu);
--	struct hrtimer *hrtimer = &per_cpu(watchdog_hrtimer, cpu);
--
--	/*
--	 * cancel the timer first to stop incrementing the stats
--	 * and waking up the kthread
--	 */
--	hrtimer_cancel(hrtimer);
--
--	/* disable the perf event */
--	watchdog_nmi_disable(cpu);
--
--	/* stop the watchdog thread */
--	if (p) {
--		per_cpu(softlockup_watchdog, cpu) = NULL;
--		kthread_stop(p);
--	}
--}
--
- /* sysctl functions */
- #ifdef CONFIG_SYSCTL
- static void watchdog_enable_all_cpus(void)
- {
--	int cpu;
--
--	watchdog_enabled = 0;
--
--	for_each_online_cpu(cpu)
--		if (!watchdog_enable(cpu))
--			/* if any cpu succeeds, watchdog is considered
--			   enabled for the system */
--			watchdog_enabled = 1;
--
--	if (!watchdog_enabled)
--		pr_err("failed to be enabled on some cpus\n");
-+	unsigned int cpu;
- 
-+	if (watchdog_disabled) {
-+		watchdog_disabled = 0;
-+		for_each_online_cpu(cpu)
-+			kthread_unpark(per_cpu(softlockup_watchdog, cpu));
-+	}
- }
- 
- static void watchdog_disable_all_cpus(void)
- {
--	int cpu;
-+	unsigned int cpu;
- 
--	for_each_online_cpu(cpu)
--		watchdog_disable(cpu);
--
--	/* if all watchdogs are disabled, then they are disabled for the system */
--	watchdog_enabled = 0;
-+	if (!watchdog_disabled) {
-+		watchdog_disabled = 1;
-+		for_each_online_cpu(cpu)
-+			kthread_park(per_cpu(softlockup_watchdog, cpu));
-+	}
- }
- 
--
- /*
-  * proc handler for /proc/sys/kernel/nmi_watchdog,watchdog_thresh
-  */
-@@ -540,73 +484,35 @@ int proc_dowatchdog(struct ctl_table *ta
- {
- 	int ret;
- 
-+	if (watchdog_disabled < 0)
-+		return -ENODEV;
-+
- 	ret = proc_dointvec_minmax(table, write, buffer, lenp, ppos);
- 	if (ret || !write)
--		goto out;
-+		return ret;
- 
- 	if (watchdog_enabled && watchdog_thresh)
- 		watchdog_enable_all_cpus();
- 	else
- 		watchdog_disable_all_cpus();
- 
--out:
- 	return ret;
- }
- #endif /* CONFIG_SYSCTL */
- 
--
--/*
-- * Create/destroy watchdog threads as CPUs come and go:
-- */
--static int __cpuinit
--cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
--{
--	int hotcpu = (unsigned long)hcpu;
+-	unsigned int cpu = (unsigned long)hcpu;
+-	struct ehca_cpu_comp_task *cct;
 -
 -	switch (action) {
 -	case CPU_UP_PREPARE:
 -	case CPU_UP_PREPARE_FROZEN:
--		watchdog_prepare_cpu(hotcpu);
+-		ehca_gen_dbg("CPU: %x (CPU_PREPARE)", cpu);
+-		if (!create_comp_task(pool, cpu)) {
+-			ehca_gen_err("Can't create comp_task for cpu: %x", cpu);
+-			return notifier_from_errno(-ENOMEM);
+-		}
+-		break;
+-	case CPU_UP_CANCELED:
+-	case CPU_UP_CANCELED_FROZEN:
+-		ehca_gen_dbg("CPU: %x (CPU_CANCELED)", cpu);
+-		cct = per_cpu_ptr(pool->cpu_comp_tasks, cpu);
+-		kthread_bind(cct->task, cpumask_any(cpu_online_mask));
+-		destroy_comp_task(pool, cpu);
 -		break;
 -	case CPU_ONLINE:
 -	case CPU_ONLINE_FROZEN:
--		if (watchdog_enabled)
--			watchdog_enable(hotcpu);
+-		ehca_gen_dbg("CPU: %x (CPU_ONLINE)", cpu);
+-		cct = per_cpu_ptr(pool->cpu_comp_tasks, cpu);
+-		kthread_bind(cct->task, cpu);
+-		wake_up_process(cct->task);
 -		break;
--#ifdef CONFIG_HOTPLUG_CPU
--	case CPU_UP_CANCELED:
--	case CPU_UP_CANCELED_FROZEN:
--		watchdog_disable(hotcpu);
+-	case CPU_DOWN_PREPARE:
+-	case CPU_DOWN_PREPARE_FROZEN:
+-		ehca_gen_dbg("CPU: %x (CPU_DOWN_PREPARE)", cpu);
+-		break;
+-	case CPU_DOWN_FAILED:
+-	case CPU_DOWN_FAILED_FROZEN:
+-		ehca_gen_dbg("CPU: %x (CPU_DOWN_FAILED)", cpu);
 -		break;
 -	case CPU_DEAD:
 -	case CPU_DEAD_FROZEN:
--		watchdog_disable(hotcpu);
+-		ehca_gen_dbg("CPU: %x (CPU_DEAD)", cpu);
+-		destroy_comp_task(pool, cpu);
+-		take_over_work(pool, cpu);
 -		break;
--#endif /* CONFIG_HOTPLUG_CPU */
 -	}
 -
--	/*
--	 * hardlockup and softlockup are not important enough
--	 * to block cpu bring up.  Just always succeed and
--	 * rely on printk output to flag problems.
--	 */
 -	return NOTIFY_OK;
 -}
 -
--static struct notifier_block __cpuinitdata cpu_nfb = {
--	.notifier_call = cpu_callback
-+static struct smp_hotplug_thread watchdog_threads = {
-+	.store		= &softlockup_watchdog,
-+	.thread_fn	= watchdog,
-+	.thread_comm	= "watchdog/%u",
-+	.setup		= watchdog_enable,
-+	.park		= watchdog_disable,
-+	.unpark		= watchdog_enable,
+-static struct notifier_block comp_pool_callback_nb __cpuinitdata = {
+-	.notifier_call	= comp_pool_callback,
+-	.priority	= 0,
++static struct smp_hotplug_thread comp_pool_threads = {
++	.thread_fn	= comp_task,
++	.thread_comm	= "ehca_comp/%u",
++	.cleanup	= comp_task_stop,
++	.park		= comp_task_park,
  };
  
- void __init lockup_detector_init(void)
+ int ehca_create_comp_pool(void)
  {
--	void *cpu = (void *)(long)smp_processor_id();
--	int err;
--
--	err = cpu_callback(&cpu_nfb, CPU_UP_PREPARE, cpu);
--	WARN_ON(notifier_to_errno(err));
--
--	cpu_callback(&cpu_nfb, CPU_ONLINE, cpu);
--	register_cpu_notifier(&cpu_nfb);
--
--	return;
-+	if (smpboot_register_percpu_thread(&watchdog_threads)) {
-+		pr_err("Failed to create watchdog threads, disabled\n");
-+		watchdog_disabled = -ENODEV;
-+	}
+-	int cpu;
+-	struct task_struct *task;
++	int cpu, ret = -ENOMEM;
+ 
+ 	if (!ehca_scaling_code)
+ 		return 0;
+@@ -905,38 +834,47 @@ int ehca_create_comp_pool(void)
+ 	pool->last_cpu = cpumask_any(cpu_online_mask);
+ 
+ 	pool->cpu_comp_tasks = alloc_percpu(struct ehca_cpu_comp_task);
+-	if (pool->cpu_comp_tasks == NULL) {
+-		kfree(pool);
+-		return -EINVAL;
+-	}
++	if (!pool->cpu_comp_tasks)
++		goto out_pool;
+ 
+-	for_each_online_cpu(cpu) {
+-		task = create_comp_task(pool, cpu);
+-		if (task) {
+-			kthread_bind(task, cpu);
+-			wake_up_process(task);
+-		}
++	pool->cpu_comp_threads = alloc_percpu(struct task_struct *);
++	if (!pool->cpu_comp_threads)
++		goto out_tasks;
++
++	for_each_present_cpu(cpu) {
++		struct ehca_cpu_comp_task *cct;
++
++		cct = per_cpu_ptr(pool->cpu_comp_tasks, cpu);
++		spin_lock_init(&cct->task_lock);
++		INIT_LIST_HEAD(&cct->cq_list);
++		init_waitqueue_head(&cct->wait_queue);
+ 	}
+ 
+-	register_hotcpu_notifier(&comp_pool_callback_nb);
++	comp_pool_threads.store = pool->cpu_comp_threads;
++	ret = smpboot_register_percpu_thread(&comp_pool_threads);
++	if (ret)
++		goto out_threads;
+ 
+-	printk(KERN_INFO "eHCA scaling code enabled\n");
++	pr_info("eHCA scaling code enabled\n");
++	return ret;
+ 
+-	return 0;
++out_threads:
++	free_percpu(pool->cpu_comp_threads);
++out_tasks:
++	free_percpu(pool->cpu_comp_tasks);
++out_pool:
++	kfree(pool);
++	return ret;
  }
+ 
+ void ehca_destroy_comp_pool(void)
+ {
+-	int i;
+-
+ 	if (!ehca_scaling_code)
+ 		return;
+ 
+-	unregister_hotcpu_notifier(&comp_pool_callback_nb);
+-
+-	for_each_online_cpu(i)
+-		destroy_comp_task(pool, i);
++	smpboot_unregister_percpu_thread(&comp_pool_threads);
+ 
++	free_percpu(pool->cpu_comp_threads);
+ 	free_percpu(pool->cpu_comp_tasks);
+ 	kfree(pool);
+ }
+Index: tip/drivers/infiniband/hw/ehca/ehca_irq.h
+===================================================================
+--- tip.orig/drivers/infiniband/hw/ehca/ehca_irq.h
++++ tip/drivers/infiniband/hw/ehca/ehca_irq.h
+@@ -60,13 +60,14 @@ void ehca_process_eq(struct ehca_shca *s
+ struct ehca_cpu_comp_task {
+ 	wait_queue_head_t wait_queue;
+ 	struct list_head cq_list;
+-	struct task_struct *task;
+ 	spinlock_t task_lock;
+ 	int cq_jobs;
++	int active;
+ };
+ 
+ struct ehca_comp_pool {
+-	struct ehca_cpu_comp_task *cpu_comp_tasks;
++	struct ehca_cpu_comp_task __percpu *cpu_comp_tasks;
++	struct task_struct * __percpu *cpu_comp_threads;
+ 	int last_cpu;
+ 	spinlock_t last_cpu_lock;
+ };
 
 
