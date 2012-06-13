@@ -1,134 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752838Ab2FMI2P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 04:28:15 -0400
-Received: from [216.32.180.30] ([216.32.180.30]:23156 "EHLO
-	va3outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1752104Ab2FMI2D (ORCPT
+	id S1753026Ab2FMI22 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 04:28:28 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:39822 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752104Ab2FMI2U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 04:28:03 -0400
-X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(zzzz1202hzz8275bhz2ei87h2a8h668h839hd24he5bhe96h)
-X-FB-DOMAIN-IP-MATCH: fail
-From: Sonic Zhang <sonic.adi@gmail.com>
-To: Wolfram Sang <w.sang@pengutronix.de>, Ben Dooks <ben-linux@fluff.org>
-CC: <linux-i2c@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        <uclinux-dist-devel@blackfin.uclinux.org>,
-        Sonic Zhang <sonic.zhang@analog.com>
-Subject: [PATCH 5/8 v2] i2c:i2c-bfin-twi: TWI fails to restart next transfer in high system load.
-Date: Wed, 13 Jun 2012 16:22:44 +0800
-Message-ID: <1339575767-22985-5-git-send-email-sonic.adi@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1339575767-22985-1-git-send-email-sonic.adi@gmail.com>
-References: <1339575767-22985-1-git-send-email-sonic.adi@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 13 Jun 2012 04:28:20 -0400
+X-AuditID: cbfee61a-b7f9f6d0000016a8-fb-4fd84f221744
+From: Sangbeom Kim <sbkim73@samsung.com>
+To: "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>,
+        "'Liam Girdwood'" <lrg@ti.com>
+Cc: linux-kernel@vger.kernel.org, sbkim01@gmail.com
+Subject: [PATCH 4/5] regulator: Replace set_voltage with set_voltage_sel
+Date: Wed, 13 Jun 2012 17:28:18 +0900
+Message-id: <042201cd493e$7c459f70$74d0de50$@com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac1JPnwWE0pOKXAuR/+6h6AjxYsGcw==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCLMWRmVeSWpSXmKPExsVy+t9jAV0l/xv+Bru2W1tc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6ML9dushXskaq4eHkjWwPjedEuRg4OCQETiQWf3LoYOYFMMYkL
+	99azdTFycQgJLGKUWH5rIpQzl0ni7P/pTCBVbAIaEit3v2UDsUUEwiRmzlrJAmIzCxhLnFj4
+	nh3EFhbwkHh/9A8riM0ioCqx5dE6ZhCbV8BQ4vr3bWwQtqDEj8n3oHq1JNbvPM4EYctLbF7z
+	lhniOHWJR391IVbpScxtXM0KUSIise/FO8YJjAKzkEyahWTSLCSTZiFpWcDIsopRNLUguaA4
+	KT3XUK84Mbe4NC9dLzk/dxMjOCyfSe1gXNlgcYhRgINRiYe3wOqGvxBrYllxZe4hRgkOZiUR
+	3uKt1/2FeFMSK6tSi/Lji0pzUosPMUpzsCiJ8zZZX/AXEkhPLEnNTk0tSC2CyTJxcEo1MApw
+	9633lBV5v/ZW6eqHPfPVZp3WO3Pz/Z/HHiuY7qhNSp5sfWN+tOtMnZk8h6aJCE2seWBbtuWE
+	4/VFm83Kjk1ZZt+gdDd+itScsD/asmbsmhH79zpU90sacJ1UyPlRbiu+JnxCQY7QnQdxTD1V
+	1WGpKvzpyz0tCvTcZ+k1vjzRcH9bnUOKkBJLcUaioRZzUXEiAJ1t0CZHAgAA
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sonic Zhang <sonic.zhang@analog.com>
+To apply delay time for voltage change,
+replace s5m8767_set_voltage with s5m8767_set_voltage_sel.
 
-Current driver was developed based on BF537 0.2 HRM. In high system load, BUFRDERR error
-interrupt may be raised if XMTSERV interrupt of last TX byte is not served in time
-(set RSTART bit), which breaks restart tranfer as expected.
-
-"Buffer Read Error (BUFRDERR)" description in Blackfin HRM only applys to BF537
-rev. < 0.3. In later rev. and later announced Blackfin chips, such as BF527 and
-BF548, a new TWI master feature "Clock Stretching" is added into the TWI controller,
-BUFRDERR interrupt is not triggered after TX FIFO is empty.
-
-This patch sets RSTART bit at the beginning of the first transfer. The SCL and SDA
-is hold till XMTSERV interrupt of last TX byte is served. Restart transfer is not broken
-in high system load.
-
-Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
+Signed-off-by: Sangbeom Kim <sbkim73@samsung.com>
 ---
- drivers/i2c/busses/i2c-bfin-twi.c |   23 +++++++++++++----------
- 1 files changed, 13 insertions(+), 10 deletions(-)
+ drivers/regulator/s5m8767.c |   38 ++++++++++++++------------------------
+ 1 files changed, 14 insertions(+), 24 deletions(-)
 
-diff --git a/drivers/i2c/busses/i2c-bfin-twi.c b/drivers/i2c/busses/i2c-bfin-twi.c
-index 2e59bbd..e75ee91 100644
---- a/drivers/i2c/busses/i2c-bfin-twi.c
-+++ b/drivers/i2c/busses/i2c-bfin-twi.c
-@@ -99,7 +99,7 @@ static void bfin_twi_handle_interrupt(struct bfin_twi_iface *iface,
- 		 */
- 		else if (iface->cur_mode == TWI_I2C_MODE_COMBINED)
- 			write_MASTER_CTL(iface,
--				read_MASTER_CTL(iface) | MDIR | RSTART);
-+				read_MASTER_CTL(iface) | MDIR);
- 		else if (iface->manual_stop)
- 			write_MASTER_CTL(iface,
- 				read_MASTER_CTL(iface) | STOP);
-@@ -107,10 +107,10 @@ static void bfin_twi_handle_interrupt(struct bfin_twi_iface *iface,
- 		         iface->cur_msg + 1 < iface->msg_num) {
- 			if (iface->pmsg[iface->cur_msg + 1].flags & I2C_M_RD)
- 				write_MASTER_CTL(iface,
--					read_MASTER_CTL(iface) | RSTART | MDIR);
-+					read_MASTER_CTL(iface) | MDIR);
- 			else
- 				write_MASTER_CTL(iface,
--					(read_MASTER_CTL(iface) | RSTART) & ~MDIR);
-+					read_MASTER_CTL(iface) & ~MDIR);
- 		}
- 	}
- 	if (twi_int_status & RCVSERV) {
-@@ -144,10 +144,10 @@ static void bfin_twi_handle_interrupt(struct bfin_twi_iface *iface,
- 					iface->cur_msg + 1 < iface->msg_num) {
- 				if (iface->pmsg[iface->cur_msg + 1].flags & I2C_M_RD)
- 					write_MASTER_CTL(iface,
--						read_MASTER_CTL(iface) | RSTART | MDIR);
-+						read_MASTER_CTL(iface) | MDIR);
- 				else
- 					write_MASTER_CTL(iface,
--						(read_MASTER_CTL(iface) | RSTART) & ~MDIR);
-+						read_MASTER_CTL(iface) & ~MDIR);
- 			}
- 		}
- 	}
-@@ -262,9 +262,10 @@ static void bfin_twi_handle_interrupt(struct bfin_twi_iface *iface,
- 					(0xff << 6)));
- 				iface->manual_stop = 1;
- 			}
--			/* remove restart bit and enable master receive */
--			write_MASTER_CTL(iface,
--				read_MASTER_CTL(iface) & ~RSTART);
-+			/* remove restart bit before last message */
-+			if (iface->cur_msg+1 == iface->msg_num)
-+				write_MASTER_CTL(iface,
-+					read_MASTER_CTL(iface) & ~RSTART);
- 		} else {
- 			iface->result = 1;
- 			write_INT_MASK(iface, 0);
-@@ -321,7 +322,8 @@ static int bfin_twi_do_master_xfer(struct i2c_adapter *adap,
+diff --git a/drivers/regulator/s5m8767.c b/drivers/regulator/s5m8767.c
+index 924968a..770e4df 100644
+--- a/drivers/regulator/s5m8767.c
++++ b/drivers/regulator/s5m8767.c
+@@ -357,32 +357,34 @@ static int s5m8767_convert_voltage_to_sel(
+ 	return selector;
+ }
+ 
+-static inline void s5m8767_set_high(struct s5m8767_info *s5m8767)
++static inline int s5m8767_set_high(struct s5m8767_info *s5m8767)
+ {
+ 	int temp_index = s5m8767->buck_gpioindex;
+ 
+ 	gpio_set_value(s5m8767->buck_gpios[0], (temp_index >> 2) & 0x1);
+ 	gpio_set_value(s5m8767->buck_gpios[1], (temp_index >> 1) & 0x1);
+ 	gpio_set_value(s5m8767->buck_gpios[2], temp_index & 0x1);
++
++	return 0;
+ }
+ 
+-static inline void s5m8767_set_low(struct s5m8767_info *s5m8767)
++static inline int s5m8767_set_low(struct s5m8767_info *s5m8767)
+ {
+ 	int temp_index = s5m8767->buck_gpioindex;
+ 
+ 	gpio_set_value(s5m8767->buck_gpios[2], temp_index & 0x1);
+ 	gpio_set_value(s5m8767->buck_gpios[1], (temp_index >> 1) & 0x1);
+ 	gpio_set_value(s5m8767->buck_gpios[0], (temp_index >> 2) & 0x1);
++
++	return 0;
+ }
+ 
+-static int s5m8767_set_voltage(struct regulator_dev *rdev,
+-				int min_uV, int max_uV, unsigned *selector)
++static int s5m8767_set_voltage_sel(struct regulator_dev *rdev,
++				   unsigned selector)
+ {
+ 	struct s5m8767_info *s5m8767 = rdev_get_drvdata(rdev);
+-	const struct s5m_voltage_desc *desc;
+ 	int reg_id = rdev_get_id(rdev);
+-	int sel, reg, mask, ret = 0, old_index, index = 0;
+-	u8 val;
++	int reg, mask, ret = 0, old_index, index = 0;
+ 	u8 *buck234_vol = NULL;
+ 
+ 	switch (reg_id) {
+@@ -407,15 +409,9 @@ static int s5m8767_set_voltage(struct regulator_dev *rdev,
  		return -EINVAL;
  	}
  
--	iface->cur_mode = TWI_I2C_MODE_REPEAT;
-+	if (iface->msg_num > 1)
-+		iface->cur_mode = TWI_I2C_MODE_REPEAT;
- 	iface->manual_stop = 0;
- 	iface->transPtr = pmsg->buf;
- 	iface->writeNum = iface->readNum = pmsg->len;
-@@ -366,6 +368,7 @@ static int bfin_twi_do_master_xfer(struct i2c_adapter *adap,
+-	desc = reg_voltage_map[reg_id];
+-
+-	sel = s5m8767_convert_voltage_to_sel(desc, min_uV, max_uV);
+-	if (sel < 0)
+-		return sel;
+-
+ 	/* buck234_vol != NULL means to control buck234 voltage via DVS GPIO */
+ 	if (buck234_vol) {
+-		while (*buck234_vol != sel) {
++		while (*buck234_vol != selector) {
+ 			buck234_vol++;
+ 			index++;
+ 		}
+@@ -423,22 +419,16 @@ static int s5m8767_set_voltage(struct regulator_dev *rdev,
+ 		s5m8767->buck_gpioindex = index;
  
- 	/* Master enable */
- 	write_MASTER_CTL(iface, read_MASTER_CTL(iface) | MEN |
-+		(iface->msg_num > 1 ? RSTART : 0) |
- 		((iface->read_write == I2C_SMBUS_READ) ? MDIR : 0) |
- 		((CONFIG_I2C_BLACKFIN_TWI_CLK_KHZ > 100) ? FAST : 0));
- 	SSYNC();
-@@ -530,7 +533,7 @@ int bfin_twi_do_smbus_xfer(struct i2c_adapter *adap, u16 addr,
+ 		if (index > old_index)
+-			s5m8767_set_high(s5m8767);
++			return s5m8767_set_high(s5m8767);
  		else
- 			write_MASTER_CTL(iface, 0x1 << 6);
- 		/* Master enable */
--		write_MASTER_CTL(iface, read_MASTER_CTL(iface) | MEN |
-+		write_MASTER_CTL(iface, read_MASTER_CTL(iface) | MEN | RSTART |
- 			((CONFIG_I2C_BLACKFIN_TWI_CLK_KHZ>100) ? FAST : 0));
- 		break;
- 	default:
+-			s5m8767_set_low(s5m8767);
++			return s5m8767_set_low(s5m8767);
+ 	} else {
+ 		ret = s5m8767_get_voltage_register(rdev, &reg);
+ 		if (ret)
+ 			return ret;
+ 
+-		s5m_reg_read(s5m8767->iodev, reg, &val);
+-		val = (val & ~mask) | sel;
+-
+-		ret = s5m_reg_write(s5m8767->iodev, reg, val);
++		return s5m_reg_update(s5m8767->iodev, reg, selector, mask);
+ 	}
+-
+-	*selector = sel;
+-	return ret;
+ }
+ 
+ static int s5m8767_set_voltage_time_sel(struct regulator_dev *rdev,
+@@ -463,7 +453,7 @@ static struct regulator_ops s5m8767_ops = {
+ 	.enable			= s5m8767_reg_enable,
+ 	.disable		= s5m8767_reg_disable,
+ 	.get_voltage_sel	= s5m8767_get_voltage_sel,
+-	.set_voltage		= s5m8767_set_voltage,
++	.set_voltage_sel	= s5m8767_set_voltage_sel,
+ 	.set_voltage_time_sel	= s5m8767_set_voltage_time_sel,
+ };
+ 
 -- 
-1.7.0.4
+1.7.1
 
 
