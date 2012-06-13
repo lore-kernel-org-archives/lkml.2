@@ -1,111 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752756Ab2FMJ2O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 05:28:14 -0400
-Received: from antcom.de ([188.40.178.216]:33012 "EHLO chuck.antcom.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751639Ab2FMJ2N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 05:28:13 -0400
-Message-ID: <4FD85D27.5090509@antcom.de>
-Date: Wed, 13 Jun 2012 11:28:07 +0200
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
+	id S1752670Ab2FMJaT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 05:30:19 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51970 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752033Ab2FMJaS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 05:30:18 -0400
+Date: Wed, 13 Jun 2012 17:30:16 +0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH 1/2] regulator: wm831x-ldo: Convert to
+ devm_request_threaded_irq
+Message-ID: <20120613093015.GF4545@opensource.wolfsonmicro.com>
+References: <1339552767.26190.1.camel@phoenix>
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
-        srinivas.bakki@nxp.com, aletes.xgr@gmail.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/3] net: lpc_eth: Replace WARN() trace with simple pr_warn()
-References: <1339401793-12258-1-git-send-email-stigge@antcom.de>  <1339403108.6001.1697.camel@edumazet-glaptop> <4FD5AE1D.9030807@antcom.de>  <20120611.020352.1962768244524496467.davem@davemloft.net>  <4FD5B9C8.4020800@antcom.de>  <1339442328.6001.2602.camel@edumazet-glaptop> <1339568172.22704.312.camel@edumazet-glaptop>
-In-Reply-To: <1339568172.22704.312.camel@edumazet-glaptop>
-X-Enigmail-Version: 1.4
-OpenPGP: url=subkeys.pgp.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="2FkSFaIQeDFoAt0B"
+Content-Disposition: inline
+In-Reply-To: <1339552767.26190.1.camel@phoenix>
+X-Cookie: You now have Asian Flu.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/13/2012 08:16 AM, Eric Dumazet wrote:
-> On Mon, 2012-06-11 at 21:18 +0200, Eric Dumazet wrote:
->> On Mon, 2012-06-11 at 11:26 +0200, Roland Stigge wrote:
->>
->>> Is it sensible at this point to increase the TX buffers anyway? For
->>> different reasons of course: We have enough SRAM available and TX
->>> buffers (16->32) are still more than RX buffers (48).
->>
->> I doubt it has any impact on performance for a 100Mbit link ?
->>
->> One thing that could be done would be to free skbs in
->> lpc_eth_hard_start_xmit() instead of __lpc_handle_xmit()
->>
-> 
-> Here is the patch I was thinking about
-> 
-> (on top of latest net-next)
-> 
-> Could you please test it ?
->
->  drivers/net/ethernet/nxp/lpc_eth.c |   10 +++++-----
->  1 file changed, 5 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/net/ethernet/nxp/lpc_eth.c b/drivers/net/ethernet/nxp/lpc_eth.c
-> index 083d671..426f14c 100644
-> --- a/drivers/net/ethernet/nxp/lpc_eth.c
-> +++ b/drivers/net/ethernet/nxp/lpc_eth.c
-> @@ -440,7 +440,7 @@ struct netdata_local {
->  	spinlock_t		lock;
->  	void __iomem		*net_base;
->  	u32			msg_enable;
-> -	struct sk_buff		*skb[ENET_TX_DESC];
-> +	unsigned int		skblen[ENET_TX_DESC];
->  	unsigned int		last_tx_idx;
->  	unsigned int		num_used_tx_buffs;
->  	struct mii_bus		*mii_bus;
-> @@ -908,7 +908,7 @@ static void __lpc_handle_xmit(struct net_device *ndev)
->  
->  	txcidx = readl(LPC_ENET_TXCONSUMEINDEX(pldat->net_base));
->  	while (pldat->last_tx_idx != txcidx) {
-> -		skb = pldat->skb[pldat->last_tx_idx];
-> +		unsigned int skblen = pldat->skblen[pldat->last_tx_idx];
->  
->  		/* A buffer is available, get buffer status */
->  		ptxstat = &pldat->tx_stat_v[pldat->last_tx_idx];
-> @@ -945,9 +945,8 @@ static void __lpc_handle_xmit(struct net_device *ndev)
->  		} else {
->  			/* Update stats */
->  			ndev->stats.tx_packets++;
-> -			ndev->stats.tx_bytes += skb->len;
-> +			ndev->stats.tx_bytes += skblen;
->  		}
-> -		dev_kfree_skb_irq(skb);
->  
->  		txcidx = readl(LPC_ENET_TXCONSUMEINDEX(pldat->net_base));
->  	}
-> @@ -1132,7 +1131,7 @@ static int lpc_eth_hard_start_xmit(struct sk_buff *skb, struct net_device *ndev)
->  	memcpy(pldat->tx_buff_v + txidx * ENET_MAXF_SIZE, skb->data, len);
->  
->  	/* Save the buffer and increment the buffer counter */
-> -	pldat->skb[txidx] = skb;
-> +	pldat->skblen[txidx] = len;
->  	pldat->num_used_tx_buffs++;
->  
->  	/* Start transmit */
-> @@ -1147,6 +1146,7 @@ static int lpc_eth_hard_start_xmit(struct sk_buff *skb, struct net_device *ndev)
->  
->  	spin_unlock_irq(&pldat->lock);
->  
-> +	dev_kfree_skb(skb);
->  	return NETDEV_TX_OK;
->  }
 
-Works fine for a while now.
+--2FkSFaIQeDFoAt0B
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-We can remove the unused variable skb from __lpc_handle_xmit() now,
-maybe just do in your patch?
+On Wed, Jun 13, 2012 at 09:59:27AM +0800, Axel Lin wrote:
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-Thanks!
+No, this (and generally a large proportion of possible usages of
+devm_request_threaded_irq()) is a bad idea - we need to ensure that the
+interrupt cannot fire when we're not in a position to handle it which in
+thi case means after the regulator is unregistered.  Since we're not
+doing anything to explicitly quiesce the interrupt other than free it we
+need to ensure that the free_irq() happens strictly before the regulator
+is unregistered.
 
-Tested-by: Roland Stigge <stigge@antcom.de>
+--2FkSFaIQeDFoAt0B
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP2F2hAAoJEBus8iNuMP3d80MP/1N00G4QO2jQChjE/9N/i6G6
+uYDqaFomRGipxLvBHZrPe2OoER4xCU7kvwRHkwx1KXSilU4JQQ5cNxd9kO0dWAzl
+XJbrWREmDBUAJmWPD4Nbc5gs4GWBKShbrpkl0c5pJmnBLv+sJgrnbfCjCj3DbbZB
+Hs/RuXV6+4ZGbPZSFDOskyOwu7R1XtXd4wegKHRhuyHlnfbBJBSvi/E9cQUdKWAQ
+pyxbwV1FGsj+c3yIFues/cgzzrVkUKLXu4FocwLAFe2SCG8fC+rNTAqETS8G3Qr/
+A9Q33B6R0oW5kUp1ZPPLikqBpepWLqfsoYGzsYlchlQ0nkE4YMgWh59e16SUdi5d
+vFVgLGpxhSA2W8jYcNdFH5y1vuvE+nxtjQ1Erk/yac/KSqyjtL4n+i3OCnVl4x2l
+Ve11UjJuYhx/WfbXLwOSDvj8d+Rt5d4uxK+QVAoQAhBBQUEYROGfRGTEmv6V6CLc
+jPSOQ2Z3muTVU6vscubSQW3se8fd5VHJxhksfrdiesUUaOfURZLZlqZ0eMF5HhKi
+LjtRZVk1eEpEy8toEiNu/fgATO0cTkow2Gp8PKBkJF226DNdjV3CqkQVPNQC1aZb
+VuJL3DYxPfhgZVHOm3XpMNSai7w0+WtJOl/Ceu9YOyObc0retkzGXygIZybat6Vd
++Pe+5UUlPh6nRy1SKrVW
+=Eze7
+-----END PGP SIGNATURE-----
+
+--2FkSFaIQeDFoAt0B--
