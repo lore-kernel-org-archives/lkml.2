@@ -1,123 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753546Ab2FMNgD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 09:36:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54984 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752975Ab2FMNgB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 09:36:01 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: nzimmer@sgi.com, joe@perches.com, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Don Zickus <dzickus@redhat.com>
-Subject: [PATCH v5] watchdog: Quiet down the boot messages
-Date: Wed, 13 Jun 2012 09:35:48 -0400
-Message-Id: <1339594548-17227-1-git-send-email-dzickus@redhat.com>
+	id S1754005Ab2FMNhc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 09:37:32 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52719 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753106Ab2FMNh3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 09:37:29 -0400
+Date: Wed, 13 Jun 2012 06:36:22 -0700
+From: tip-bot for David Rientjes <rientjes@google.com>
+Message-ID: <tip-1f49a99116069a8d9dc6027862277a766c2ef17e@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        lee.schermerhorn@hp.com, tglx@linutronix.de, sfr@canb.auug.org.au,
+        rientjes@google.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        lee.schermerhorn@hp.com, tglx@linutronix.de, sfr@canb.auug.org.au,
+        rientjes@google.com
+In-Reply-To: <alpine.DEB.2.00.1205222116160.32649@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1205222116160.32649@chino.kir.corp.google.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/numa] sched/numa: Allocate 'struct node_queue'
+  on any node for offline nodes
+Git-Commit-ID: 1f49a99116069a8d9dc6027862277a766c2ef17e
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 13 Jun 2012 06:36:28 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A bunch of bugzillas have complained how noisy the nmi_watchdog is during
-boot-up especially with its expected failure cases (like virt and bios
-resource contention).
+Commit-ID:  1f49a99116069a8d9dc6027862277a766c2ef17e
+Gitweb:     http://git.kernel.org/tip/1f49a99116069a8d9dc6027862277a766c2ef17e
+Author:     David Rientjes <rientjes@google.com>
+AuthorDate: Tue, 22 May 2012 21:17:56 -0700
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 13 Jun 2012 15:25:37 +0200
 
-This is my attempt to quiet them down and keep it less confusing for the end
-user.  What I did is print the message for cpu0 and save it for future
-comparisons.  If future cpus have an identical message as cpu0, then don't
-print the redundant info.  However, if a future cpu has a different message,
-happily print that loudly.
+sched/numa: Allocate 'struct node_queue' on any node for offline nodes
 
-Before the change, you would see something like:
+'struct node_queue' must be allocated with NUMA_NO_NODE for nodes
+that are not (yet) online, otherwise the page allocator has a
+bad zonelist and results in an early crash.
 
-    ..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
-    CPU0: Intel(R) Core(TM)2 Quad CPU    Q9550  @ 2.83GHz stepping 0a
-    Performance Events: PEBS fmt0+, Core2 events, Intel PMU driver.
-    ... version:                2
-    ... bit width:              40
-    ... generic registers:      2
-    ... value mask:             000000ffffffffff
-    ... max period:             000000007fffffff
-    ... fixed-purpose events:   3
-    ... event mask:             0000000700000003
-    NMI watchdog enabled, takes one hw-pmu counter.
-    Booting Node   0, Processors  #1
-    NMI watchdog enabled, takes one hw-pmu counter.
-     #2
-    NMI watchdog enabled, takes one hw-pmu counter.
-     #3 Ok.
-    NMI watchdog enabled, takes one hw-pmu counter.
-    Brought up 4 CPUs
-    Total of 4 processors activated (22607.24 BogoMIPS).
-
-After the change, it is simplified to:
-
-    ..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
-    CPU0: Intel(R) Core(TM)2 Quad CPU    Q9550  @ 2.83GHz stepping 0a
-    Performance Events: PEBS fmt0+, Core2 events, Intel PMU driver.
-    ... version:                2
-    ... bit width:              40
-    ... generic registers:      2
-    ... value mask:             000000ffffffffff
-    ... max period:             000000007fffffff
-    ... fixed-purpose events:   3
-    ... event mask:             0000000700000003
-    NMI watchdog: enabled on all CPUs, permanently consumes one hw-PMU counter.
-    Booting Node   0, Processors  #1 #2 #3 Ok.
-    Brought up 4 CPUs
-
-V2: little changes based on Joe Perches' feedback
-V3: printk cleanup based on Ingo's feedback; checkpatch fix
-V4: keep printk as one long line
-V5: Ingo fix ups
-
-Reported-and-tested-by: Nathan Zimmer <nzimmer@sgi.com>
-Signed-off-by: Don Zickus <dzickus@redhat.com>
+Tested-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: David Rientjes <rientjes@google.com>
+Cc: linuxppc-dev@lists.ozlabs.org
+Cc: Lee Schermerhorn <lee.schermerhorn@hp.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/alpine.DEB.2.00.1205222116160.32649@chino.kir.corp.google.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/watchdog.c |   19 ++++++++++++++++++-
- 1 files changed, 18 insertions(+), 1 deletions(-)
+ kernel/sched/numa.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index e5e1d85..4b1dfba 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -372,6 +372,13 @@ static int watchdog(void *unused)
+diff --git a/kernel/sched/numa.c b/kernel/sched/numa.c
+index 77fa7d4..002f71c 100644
+--- a/kernel/sched/numa.c
++++ b/kernel/sched/numa.c
+@@ -829,7 +829,8 @@ static __init int numa_init(void)
  
+ 	for_each_node(node) {
+ 		struct node_queue *nq = kmalloc_node(sizeof(*nq),
+-				GFP_KERNEL | __GFP_ZERO, node);
++				GFP_KERNEL | __GFP_ZERO,
++				node_online(node) ? node : NUMA_NO_NODE);
+ 		BUG_ON(!nq);
  
- #ifdef CONFIG_HARDLOCKUP_DETECTOR
-+/*
-+ * People like the simple clean cpu node info on boot.
-+ * Reduce the watchdog noise by only printing messages
-+ * that are different from what cpu0 displayed.
-+ */
-+static unsigned long cpu0_err;
-+
- static int watchdog_nmi_enable(int cpu)
- {
- 	struct perf_event_attr *wd_attr;
-@@ -390,11 +397,21 @@ static int watchdog_nmi_enable(int cpu)
- 
- 	/* Try to register using hardware perf events */
- 	event = perf_event_create_kernel_counter(wd_attr, cpu, NULL, watchdog_overflow_callback, NULL);
-+
-+	/* save cpu0 error for future comparision */
-+	if (cpu == 0 && IS_ERR(event))
-+		cpu0_err = PTR_ERR(event);
-+
- 	if (!IS_ERR(event)) {
--		pr_info("enabled, takes one hw-pmu counter.\n");
-+		/* only print for cpu0 or different than cpu0 */
-+		if (cpu == 0 || cpu0_err)
-+			pr_info("enabled on all CPUs, permanently consumes one hw-PMU counter.\n");
- 		goto out_save;
- 	}
- 
-+	/* skip displaying the same error again */
-+	if (cpu > 0 && (PTR_ERR(event) == cpu0_err))
-+		return PTR_ERR(event);
- 
- 	/* vary the KERN level based on the returned errno */
- 	if (PTR_ERR(event) == -EOPNOTSUPP)
--- 
-1.7.7.6
-
+ 		spin_lock_init(&nq->lock);
