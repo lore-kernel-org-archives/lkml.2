@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751878Ab2FME5j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 00:57:39 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:20805 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751206Ab2FME5i (ORCPT
+	id S1751992Ab2FMFQq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 01:16:46 -0400
+Received: from na3sys009aog132.obsmtp.com ([74.125.149.250]:52007 "EHLO
+	na3sys009aog132.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751153Ab2FMFQp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 00:57:38 -0400
-X-AuditID: cbfee610-b7fcc6d00000671d-f6-4fd81dc05a5b
-Date: Wed, 13 Jun 2012 04:57:36 +0000 (GMT)
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: [PATCH 2/2] PM: Devfreq: Add frequency get function in profile
-To: Xiaoguang Chen <chenxg@marvell.com>,
+	Wed, 13 Jun 2012 01:16:45 -0400
+X-Greylist: delayed 2068 seconds by postgrey-1.27 at vger.kernel.org; Wed, 13 Jun 2012 01:16:43 EDT
+From: Xiaoguang Chen <chenxg@marvell.com>
+To: "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: =?euc-kr?Q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>,
+CC: =?ks_c_5601-1987?B?udqw5rnO?= <kyungmin.park@samsung.com>,
         "linux-pm@lists.linux-foundation.org" 
 	<linux-pm@lists.linux-foundation.org>
-Reply-to: myungjoo.ham@samsung.com
-MIME-version: 1.0
-X-MTR: 20120613045449328@myungjoo.ham
-Msgkey: 20120613045449328@myungjoo.ham
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20120613045449328@myungjoo.ham
-X-ParentMTR: 
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <1290271.915811339563455292.JavaMail.weblogic@epml04>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrIIsWRmVeSWpSXmKPExsVy+t/tmboHZG/4G2yJtri8aw6bA6PH501y
-	AYxRXDYpqTmZZalF+nYJXBk3l/AWHJKteLfwC3MD4x2ZLkZODiEBdYlFS06ydTFycEgImEgs
-	aqoGCUsIiElcuLceKMwFVDKfUeLJyguMIAkWAVWJI5v3s4PUswnoScz8nAwSFhbwlpjyfSE7
-	iC0ikCXRv+gHO0gvs8AERoljr3ayQ+xSkliz7xULiM0rIChxcuYTFohlqhInT55khoirSfxo
-	2csIEZeQmDX9AiuEzSsxo/0pVL2cxLSva5ghbGmJ87M2MMIcvfj7Y6g4v8Sx2zuYIP7ilXhy
-	PxhmzO7NX9ggbAGJqWcOQrVqSbTPfAgV55NYs/At2CpmAUWJKd0P2SFsLYkvP/axoTufV8BR
-	4ljbSsYJjDKzkKRmIWmfhaQdWc0CRpZVjKKpBckFxUnpqWZ6xYm5xaV56XrJ+bmbGMER+0xg
-	B+OSBotDjAIcjEo8vAskb/gLsSaWFVfmHmKU4GBWEuEt3nrdX4g3JbGyKrUoP76oNCe1+BCj
-	NAeLkjhvr/UFfyGB9MSS1OzU1ILUIpgsEwenVANjH4/emfgIkWvnjX6u/lMTqD331KmCwuNi
-	3gsv52hPnBpbIrChiuHJ5ualwbeUpPu8VIqYvQ9b3DSYkaVS3Pxsf9nyq8YFK6YLNh0yuHxX
-	fAnjVVNNvp3tLSs7GItSb6c/c/6yU+TXu1aeH1mhvNvdRc/N2jpdrsFQW/nxip3JsypFVpZ3
-	qdUrsRRnJBpqMRcVJwIAwirwz9QCAAA=
-X-TM-AS-MML: No
+Date: Tue, 12 Jun 2012 22:16:29 -0700
+Subject: RE: [PATCH 2/2] PM: Devfreq: Add frequency get function in profile
+Thread-Topic: [PATCH 2/2] PM: Devfreq: Add frequency get function in profile
+Thread-Index: Ac1JIQ7iNVZAOjXDRp6x23iyJ9epZwAAmHTg
+Message-ID: <4737A960563B524DA805CA602BE04B3064CBDF6710@SC-VEXCH2.marvell.com>
+References: <1290271.915811339563455292.JavaMail.weblogic@epml04>
+In-Reply-To: <1290271.915811339563455292.JavaMail.weblogic@epml04>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: zh-CN, en-US
+Content-Type: text/plain; charset="ks_c_5601-1987"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q5D4vjQr022385
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q5D5H3Lq022426
 
-> when devfreq set one frequency, the final frequency may not
-> the same as the requested frequency. Add get function in profile
-> to let devfreq driver return the final frequency.
+Ok, I got it. So this patch has no too much use.
+
+Thanks
+Xiaoguang
+
+
+-----Original Message-----
+From: MyungJoo Ham [mailto:myungjoo.ham@samsung.com] 
+Sent: 2012“¥6Í≈13ÏÌ 12:58
+To: Xiaoguang Chen; linux-kernel@vger.kernel.org
+Cc: π⁄∞ÊπŒ; linux-pm@lists.linux-foundation.org
+Subject: Re: [PATCH 2/2] PM: Devfreq: Add frequency get function in profile
+
+> when devfreq set one frequency, the final frequency may not the same 
+> as the requested frequency. Add get function in profile to let devfreq 
+> driver return the final frequency.
 > 
 > Signed-off-by: Xiaoguang Chen <chenxg@marvell.com>
 
@@ -68,8 +62,7 @@ not
 err = devfreq->profile->target(devfreq->dev.parent, freq, flags);
 
 The target function will return the configured frequency right there.
-Calling "__devfreq_get()" at the same location wouldn't help as long as
-the "target()" callback is implemented correctly.
+Calling "__devfreq_get()" at the same location wouldn't help as long as the "target()" callback is implemented correctly.
 
 
 
@@ -81,7 +74,7 @@ MyungJoo
 >  include/linux/devfreq.h   |    2 ++
 >  2 files changed, 13 insertions(+), 1 deletions(-)
 > 
-> diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
+> diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c 
 > index 2144200..50a4fc0 100644
 > --- a/drivers/devfreq/devfreq.c
 > +++ b/drivers/devfreq/devfreq.c
@@ -89,8 +82,7 @@ MyungJoo
 >  	return ERR_PTR(-ENODEV);
 >  }
 >  
-> +static unsigned long __devfreq_get(struct device *dev)
-> +{
+> +static unsigned long __devfreq_get(struct device *dev) {
 > +	struct devfreq *devfreq = to_devfreq(dev);
 > +	unsigned long ret_freq = devfreq->previous_freq;
 > +	if (!devfreq->profile->get)
@@ -111,8 +103,8 @@ MyungJoo
 >  	return err;
 >  }
 >  
-> diff --git a/include/linux/devfreq.h b/include/linux/devfreq.h
-> index e5e4036..f789314 100644
+> diff --git a/include/linux/devfreq.h b/include/linux/devfreq.h index 
+> e5e4036..f789314 100644
 > --- a/include/linux/devfreq.h
 > +++ b/include/linux/devfreq.h
 > @@ -65,6 +65,7 @@ struct devfreq_frequency_table {
@@ -131,6 +123,6 @@ MyungJoo
 >  	int (*target)(struct device *dev, unsigned long *freq, u32 flags);
 >  	int (*get_dev_status)(struct device *dev,
 >  			      struct devfreq_dev_status *stat);
-> -- 
+> --
 > 1.7.0.4
 ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
