@@ -1,40 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752853Ab2FMARR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 20:17:17 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47055 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751640Ab2FMARQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 20:17:16 -0400
-Message-ID: <4FD7DBFE.3050203@zytor.com>
-Date: Tue, 12 Jun 2012 17:17:02 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1753184Ab2FMASe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 20:18:34 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60137 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751997Ab2FMASd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 20:18:33 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FD7DBDA.2070403@jp.fujitsu.com>
+Date: Wed, 13 Jun 2012 09:16:26 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-CC: Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Hans Rosenfeld <hans.rosenfeld@amd.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, tglx@linutronix.de
-Subject: Re: [RFC] x86, fpu: unify signal handling code paths for x86 and
- x86_64 kernels
-References: <1339545814.28766.148.camel@sbsiddha-desk.sc.intel.com>
-In-Reply-To: <1339545814.28766.148.camel@sbsiddha-desk.sc.intel.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+CC: linux-mm@kvack.org, dhillf@gmail.com, rientjes@google.com, mhocko@suse.cz,
+        akpm@linux-foundation.org, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH -V8 13/16] hugetlb/cgroup: add hugetlb cgroup control
+ files
+References: <1339232401-14392-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1339232401-14392-14-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <4FD6FF47.8080200@jp.fujitsu.com> <87d354okzb.fsf@skywalker.in.ibm.com>
+In-Reply-To: <87d354okzb.fsf@skywalker.in.ibm.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/12/2012 05:03 PM, Suresh Siddha wrote:
->  7 files changed, 256 insertions(+), 402 deletions(-)
+(2012/06/12 19:58), Aneesh Kumar K.V wrote:
+> Kamezawa Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>  writes:
+> 
+>> (2012/06/09 17:59), Aneesh Kumar K.V wrote:
+>>> From: "Aneesh Kumar K.V"<aneesh.kumar@linux.vnet.ibm.com>
+>>>
+>>> Add the control files for hugetlb controller
+>>>
+>>> Signed-off-by: Aneesh Kumar K.V<aneesh.kumar@linux.vnet.ibm.com>
+>>> ---
+>>>    include/linux/hugetlb.h        |    5 ++
+>>>    include/linux/hugetlb_cgroup.h |    6 ++
+>>>    mm/hugetlb.c                   |    8 +++
+>>>    mm/hugetlb_cgroup.c            |  130 ++++++++++++++++++++++++++++++++++++++++
+>>>    4 files changed, 149 insertions(+)
+>>>
+>>> diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+>>> index 4aca057..9650bb1 100644
+>>> --- a/include/linux/hugetlb.h
+>>> +++ b/include/linux/hugetlb.h
+>>> @@ -4,6 +4,7 @@
+>>>    #include<linux/mm_types.h>
+>>>    #include<linux/fs.h>
+>>>    #include<linux/hugetlb_inline.h>
+>>> +#include<linux/cgroup.h>
+>>>
+>>>    struct ctl_table;
+>>>    struct user_struct;
+>>> @@ -221,6 +222,10 @@ struct hstate {
+>>>    	unsigned int nr_huge_pages_node[MAX_NUMNODES];
+>>>    	unsigned int free_huge_pages_node[MAX_NUMNODES];
+>>>    	unsigned int surplus_huge_pages_node[MAX_NUMNODES];
+>>> +#ifdef CONFIG_CGROUP_HUGETLB_RES_CTLR
+>>> +	/* cgroup control files */
+>>> +	struct cftype cgroup_files[5];
+>>> +#endif
+>>>    	char name[HSTATE_NAME_LEN];
+>>>    };
+>>>
+>>> diff --git a/include/linux/hugetlb_cgroup.h b/include/linux/hugetlb_cgroup.h
+>>> index ceff1d5..ba4836f 100644
+>>> --- a/include/linux/hugetlb_cgroup.h
+>>> +++ b/include/linux/hugetlb_cgroup.h
+>>> @@ -62,6 +62,7 @@ extern void hugetlb_cgroup_uncharge_page(int idx, unsigned long nr_pages,
+>>>    					 struct page *page);
+>>>    extern void hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
+>>>    					   struct hugetlb_cgroup *h_cg);
+>>> +extern int hugetlb_cgroup_file_init(int idx) __init;
+>>>    #else
+>>>    static inline struct hugetlb_cgroup *hugetlb_cgroup_from_page(struct page *page)
+>>>    {
+>>> @@ -106,5 +107,10 @@ hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
+>>>    {
+>>>    	return;
+>>>    }
+>>> +
+>>> +static inline int __init hugetlb_cgroup_file_init(int idx)
+>>> +{
+>>> +	return 0;
+>>> +}
+>>>    #endif  /* CONFIG_MEM_RES_CTLR_HUGETLB */
+>>>    #endif
+>>> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+>>> index 1ca2d8f..bf79131 100644
+>>> --- a/mm/hugetlb.c
+>>> +++ b/mm/hugetlb.c
+>>> @@ -30,6 +30,7 @@
+>>>    #include<linux/hugetlb.h>
+>>>    #include<linux/hugetlb_cgroup.h>
+>>>    #include<linux/node.h>
+>>> +#include<linux/hugetlb_cgroup.h>
+>>>    #include "internal.h"
+>>>
+>>>    const unsigned long hugetlb_zero = 0, hugetlb_infinity = ~0UL;
+>>> @@ -1916,6 +1917,13 @@ void __init hugetlb_add_hstate(unsigned order)
+>>>    	h->next_nid_to_free = first_node(node_states[N_HIGH_MEMORY]);
+>>>    	snprintf(h->name, HSTATE_NAME_LEN, "hugepages-%lukB",
+>>>    					huge_page_size(h)/1024);
+>>> +	/*
+>>> +	 * Add cgroup control files only if the huge page consists
+>>> +	 * of more than two normal pages. This is because we use
+>>> +	 * page[2].lru.next for storing cgoup details.
+>>> +	 */
+>>> +	if (order>= 2)
+>>> +		hugetlb_cgroup_file_init(hugetlb_max_hstate - 1);
+>>>
+>>
+>> What happens at hugetlb module exit ? please see hugetlb_exit().
+>>
+>> BTW, module unload of hugetlbfs is restricted if hugetlb cgroup is mounted ??
+>>
+> 
+> hugetlb is a binary config
+> 
+> config HUGETLBFS
+> 	bool "HugeTLB file system support"
+> 
+> config HUGETLB_PAGE
+> 	def_bool HUGETLBFS
+> 
+ok, so....hugetlb_exit() is never called ?
 
-I like what I see so far ;)
-
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Thanks,
+-Kame
 
