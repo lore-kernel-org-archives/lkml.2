@@ -1,67 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752259Ab2FMHaZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 03:30:25 -0400
-Received: from mail.pr.hu ([87.242.0.5]:37256 "EHLO mail.pr.hu"
+	id S1752611Ab2FMHbU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 03:31:20 -0400
+Received: from linux-sh.org ([111.68.239.195]:55575 "EHLO linux-sh.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751222Ab2FMHaY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 03:30:24 -0400
-Message-ID: <4FD8417B.8020702@pr.hu>
-Date: Wed, 13 Jun 2012 09:30:03 +0200
-From: Boszormenyi Zoltan <zboszor@pr.hu>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1750778Ab2FMHbS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 03:31:18 -0400
+Date: Wed, 13 Jun 2012 16:31:14 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] irqdomain: Support for static IRQ mapping and
+ association.
+Message-ID: <20120613073114.GM10170@linux-sh.org>
+References: <1337576792-5347-1-git-send-email-lethal@linux-sh.org>
+ <1337576792-5347-2-git-send-email-lethal@linux-sh.org>
+ <20120526015049.1616D3E2336@localhost>
+ <20120611032547.GB10170@linux-sh.org>
+ <CACxGe6sRVk3sef0X9Q_FDcMx5=y0mKJ-pUM-S2-CitUFQ7koGA@mail.gmail.com>
 MIME-Version: 1.0
-To: Johannes Stezenbach <js@sig21.net>
-CC: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
-        Andreas Herrmann <andreas.herrmann3@amd.com>
-Subject: Re: AMD FX CPU bug, not fixed by latest microcode?
-References: <4FD4F45D.5050103@pr.hu> <20120611084318.GA1685@liondog.tnic> <20120611094905.GA10349@liondog.tnic> <20120611110557.GA4599@sig21.net>
-In-Reply-To: <20120611110557.GA4599@sig21.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Spam-Score: -2.8 (--)
-X-Scan-Signature: 7a6493e989a703e6709937009417634f
-X-Spam-Tracer: backend.mail.pr.hu -2.8 20120613072936Z
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACxGe6sRVk3sef0X9Q_FDcMx5=y0mKJ-pUM-S2-CitUFQ7koGA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012-06-11 13:05 keltezéssel, Johannes Stezenbach írta:
-> On Mon, Jun 11, 2012 at 11:49:05AM +0200, Borislav Petkov wrote:
->> On Mon, Jun 11, 2012 at 10:43:18AM +0200, Borislav Petkov wrote:
->>> On Sun, Jun 10, 2012 at 09:24:13PM +0200, Boszormenyi Zoltan wrote:
->>>> I have an AMD FX-8120 boxed CPU in an ASUS M5A99X-EVO mainboard
->>>> with 32GB DDR3/1600 memory, running Fedora 17, upgraded from 16.
->>>> memtest86+ show no problems.
->> Ohe other thing: if there's an option in the BIOS to disable the IOMMU,
->> can you do that and try reproducing the issue with IOMMU disabled?
-> Maybe not related, but I had bad memory in my Intel Core-i5
-> based system some months ago which resulted in rare crashes,
-> usually manifested itself as g++ ICEs when compiling a
-> mid-sized  C++ project -- compiling a kernel with make -p4 showed
-> no problem.  Also memtest86+ didn't show the issue,
-> so I tried memtest86-4.0a which claims to find more errors
-> due to SMP support.  An overnight run left me with a screen
-> full of garbage and a crashed memtest86-4.0.  I replaced
-> the RAM anyway and the box was stable since then.
->
-> memtest86-4.0a is at
-> http://memtest86.com/
->
-> The page claims:
->    With a single CPU it is not possible to drive multi-channel memory
->    controllers at full speed making it impossible to detect some types of errors
->
-> Maybe someone knowledgable could comment if this is true.
+On Sun, Jun 10, 2012 at 11:02:16PM -0600, Grant Likely wrote:
+> On Sun, Jun 10, 2012 at 9:25 PM, Paul Mundt <lethal@linux-sh.org> wrote:
+> > On Fri, May 25, 2012 at 07:50:49PM -0600, Grant Likely wrote:
+> >> It would be really good to make sure the hwirqs aren't already
+> >> associated before trying to associate them again. ?Unfortunately that
+> >> can't be done (nicely) until I get rid of the slow path lookup. ?I've
+> >> got a patch for that which I'll rebase on top of this one and post soon.
+> >>
+> > Any updates on this? I have quite a few more changes I intend on making,
+> > but there's no point in starting in on that until these existing patches
+> > are sorted out.
+> 
+> Yeah, I made some progress and have a whole bunch of patches to post
+> which I had hoped to do last week.  Unfortunately the move to the UK
+> has meant that the last 7 days have been non-stop cleaning, packing
+> and throwing out stuff.  I've not been able to do a final cleanup.
+> The house gets cleaned on Tuesday so it can go on the market on
+> Wednesday which means all the house stuff must be done by Monday
+> evening.  Hopefully I'll get some time on Tuesday to do some hacking.
+> 
+No worries, life happens. Just wanted to make sure you hadn't forgotten
+about them!
 
-This one locked up on my machine but memtest86+ 4.20 detected
-12 different addresses with faulty bits in the lower 16GB. Applying
-for warranty.
+> If you want to look at them I've pushed them out to the irqdomain/test
+> branch on git.secretlab.ca.
+> 
+Thanks, I've fetched them and been hacking on them a bit. Fortunately you
+already did some the work I had intended on doing, particularly in
+relation to slow vs fast-path lookups, so there hasn't been much more for
+me to do.
 
-With only two modules, "make -j8" succeeded a lot of times.
+That being said, you forgot about legacy domains with non-zero hwirq
+bases in your legacy -> linear revmap conversion, so some (or all) of
+those IRQs will now find themselves stuffed in the radix tree instead..
 
-Thanks for everyone who tried to help.
+I already got bitten by this trying to figure out why my batched disposal
+helper wasn't doing its job and my linear domain was tripping over the
+non-zero radix root height warn at domain removal time, so that's fixed
+now.
 
-Best regards,
-Zoltán Böszörményi
-
+Patches to follow (also in the common/irqdomain topic branch in my github
+tree).
