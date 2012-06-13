@@ -1,133 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753740Ab2FMK2V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 06:28:21 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:54199 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753548Ab2FMK2O (ORCPT
+	id S1753936Ab2FMKa5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 06:30:57 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:58092 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753546Ab2FMK2U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 06:28:14 -0400
+	Wed, 13 Jun 2012 06:28:20 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
         rientjes@google.com, mhocko@suse.cz, akpm@linux-foundation.org,
         hannes@cmpxchg.org
 Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -V9 03/15] hugetlb: add an inline helper for finding hstate index
-Date: Wed, 13 Jun 2012 15:57:22 +0530
-Message-Id: <1339583254-895-4-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V9 12/15] hugetlb/cgroup: Add support for cgroup removal
+Date: Wed, 13 Jun 2012 15:57:31 +0530
+Message-Id: <1339583254-895-13-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1339583254-895-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1339583254-895-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-x-cbid: 12061310-4790-0000-0000-000003370E18
+x-cbid: 12061310-5816-0000-0000-0000032119A7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-Add an inline helper and use it in the code.
+This patch add support for cgroup removal. If we don't have parent
+cgroup, the charges are moved to root cgroup.
 
-Acked-by: David Rientjes <rientjes@google.com>
-Acked-by: Michal Hocko <mhocko@suse.cz>
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- include/linux/hugetlb.h |    6 ++++++
- mm/hugetlb.c            |   20 +++++++++++---------
- 2 files changed, 17 insertions(+), 9 deletions(-)
+ mm/hugetlb_cgroup.c |   70 +++++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 68 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-index d5d6bbe..217f528 100644
---- a/include/linux/hugetlb.h
-+++ b/include/linux/hugetlb.h
-@@ -302,6 +302,11 @@ static inline unsigned hstate_index_to_shift(unsigned index)
- 	return hstates[index].order + PAGE_SHIFT;
+diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
+index 0f2f6ac..a3a68a4 100644
+--- a/mm/hugetlb_cgroup.c
++++ b/mm/hugetlb_cgroup.c
+@@ -107,10 +107,76 @@ static void hugetlb_cgroup_destroy(struct cgroup *cgroup)
+ 	kfree(h_cgroup);
  }
  
-+static inline int hstate_index(struct hstate *h)
++
++/*
++ * Should be called with hugetlb_lock held.
++ * Since we are holding hugetlb_lock, pages cannot get moved from
++ * active list or uncharged from the cgroup, So no need to get
++ * page reference and test for page active here. This function
++ * cannot fail.
++ */
++static void hugetlb_cgroup_move_parent(int idx, struct cgroup *cgroup,
++				       struct page *page)
 +{
-+	return h - hstates;
++	int csize;
++	struct res_counter *counter;
++	struct res_counter *fail_res;
++	struct hugetlb_cgroup *page_hcg;
++	struct hugetlb_cgroup *h_cg   = hugetlb_cgroup_from_cgroup(cgroup);
++	struct hugetlb_cgroup *parent = parent_hugetlb_cgroup(cgroup);
++
++	page_hcg = hugetlb_cgroup_from_page(page);
++	/*
++	 * We can have pages in active list without any cgroup
++	 * ie, hugepage with less than 3 pages. We can safely
++	 * ignore those pages.
++	 */
++	if (!page_hcg || page_hcg != h_cg)
++		goto out;
++
++	csize = PAGE_SIZE << compound_order(page);
++	if (!parent) {
++		parent = root_h_cgroup;
++		/* root has no limit */
++		res_counter_charge_nofail(&parent->hugepage[idx],
++					  csize, &fail_res);
++	}
++	counter = &h_cg->hugepage[idx];
++	res_counter_uncharge_until(counter, counter->parent, csize);
++
++	set_hugetlb_cgroup(page, parent);
++out:
++	return;
 +}
 +
- #else
- struct hstate {};
- #define alloc_huge_page_node(h, nid) NULL
-@@ -320,6 +325,7 @@ static inline unsigned int pages_per_huge_page(struct hstate *h)
- 	return 1;
- }
- #define hstate_index_to_shift(index) 0
-+#define hstate_index(h) 0
- #endif
- 
- #endif /* _LINUX_HUGETLB_H */
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 34a7e23..b1e0ed1 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -1646,7 +1646,7 @@ static int hugetlb_sysfs_add_hstate(struct hstate *h, struct kobject *parent,
- 				    struct attribute_group *hstate_attr_group)
++/*
++ * Force the hugetlb cgroup to empty the hugetlb resources by moving them to
++ * the parent cgroup.
++ */
+ static int hugetlb_cgroup_pre_destroy(struct cgroup *cgroup)
  {
- 	int retval;
--	int hi = h - hstates;
-+	int hi = hstate_index(h);
+-	/* We will add the cgroup removal support in later patches */
+-	   return -EBUSY;
++	struct hstate *h;
++	struct page *page;
++	int ret = 0, idx = 0;
++
++	do {
++		if (cgroup_task_count(cgroup) ||
++		    !list_empty(&cgroup->children)) {
++			ret = -EBUSY;
++			goto out;
++		}
++		for_each_hstate(h) {
++			spin_lock(&hugetlb_lock);
++			list_for_each_entry(page, &h->hugepage_activelist, lru)
++				hugetlb_cgroup_move_parent(idx, cgroup, page);
++
++			spin_unlock(&hugetlb_lock);
++			idx++;
++		}
++		cond_resched();
++	} while (hugetlb_cgroup_have_usage(cgroup));
++out:
++	return ret;
+ }
  
- 	hstate_kobjs[hi] = kobject_create_and_add(h->name, parent);
- 	if (!hstate_kobjs[hi])
-@@ -1741,11 +1741,13 @@ void hugetlb_unregister_node(struct node *node)
- 	if (!nhs->hugepages_kobj)
- 		return;		/* no hstate attributes */
- 
--	for_each_hstate(h)
--		if (nhs->hstate_kobjs[h - hstates]) {
--			kobject_put(nhs->hstate_kobjs[h - hstates]);
--			nhs->hstate_kobjs[h - hstates] = NULL;
-+	for_each_hstate(h) {
-+		int idx = hstate_index(h);
-+		if (nhs->hstate_kobjs[idx]) {
-+			kobject_put(nhs->hstate_kobjs[idx]);
-+			nhs->hstate_kobjs[idx] = NULL;
- 		}
-+	}
- 
- 	kobject_put(nhs->hugepages_kobj);
- 	nhs->hugepages_kobj = NULL;
-@@ -1848,7 +1850,7 @@ static void __exit hugetlb_exit(void)
- 	hugetlb_unregister_all_nodes();
- 
- 	for_each_hstate(h) {
--		kobject_put(hstate_kobjs[h - hstates]);
-+		kobject_put(hstate_kobjs[hstate_index(h)]);
- 	}
- 
- 	kobject_put(hugepages_kobj);
-@@ -1869,7 +1871,7 @@ static int __init hugetlb_init(void)
- 		if (!size_to_hstate(default_hstate_size))
- 			hugetlb_add_hstate(HUGETLB_PAGE_ORDER);
- 	}
--	default_hstate_idx = size_to_hstate(default_hstate_size) - hstates;
-+	default_hstate_idx = hstate_index(size_to_hstate(default_hstate_size));
- 	if (default_hstate_max_huge_pages)
- 		default_hstate.max_huge_pages = default_hstate_max_huge_pages;
- 
-@@ -2687,7 +2689,7 @@ retry:
- 		 */
- 		if (unlikely(PageHWPoison(page))) {
- 			ret = VM_FAULT_HWPOISON |
--			      VM_FAULT_SET_HINDEX(h - hstates);
-+				VM_FAULT_SET_HINDEX(hstate_index(h));
- 			goto backout_unlocked;
- 		}
- 	}
-@@ -2760,7 +2762,7 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 			return 0;
- 		} else if (unlikely(is_hugetlb_entry_hwpoisoned(entry)))
- 			return VM_FAULT_HWPOISON_LARGE |
--			       VM_FAULT_SET_HINDEX(h - hstates);
-+				VM_FAULT_SET_HINDEX(hstate_index(h));
- 	}
- 
- 	ptep = huge_pte_alloc(mm, address, huge_page_size(h));
+ int hugetlb_cgroup_charge_cgroup(int idx, unsigned long nr_pages,
 -- 
 1.7.10
 
