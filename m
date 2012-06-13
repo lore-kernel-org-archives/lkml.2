@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753206Ab2FMQZj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 12:25:39 -0400
-Received: from oproxy9.bluehost.com ([69.89.24.6]:45168 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752163Ab2FMQZh (ORCPT
+	id S1753386Ab2FMQf6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 12:35:58 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:51056 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751688Ab2FMQf5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 12:25:37 -0400
-Message-ID: <4FD8BEF1.6020304@xenotime.net>
-Date: Wed, 13 Jun 2012 09:25:21 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Wed, 13 Jun 2012 12:35:57 -0400
+Date: Wed, 13 Jun 2012 18:35:53 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@ti.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
+Subject: Re: [RFC GIT PULL] nohz: Basic cputime accounting for adaptive
+ tickless
+Message-ID: <20120613163550.GA8665@somewhere>
+References: <1339604397-8758-1-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        x86@kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH -next] x86: fix apic non-ISO code warnings
-References: <20120613155440.14672516ffaf5b01f91bb0a2@canb.auug.org.au>
-In-Reply-To: <20120613155440.14672516ffaf5b01f91bb0a2@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339604397-8758-1-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
+On Wed, Jun 13, 2012 at 06:19:50PM +0200, Frederic Weisbecker wrote:
+> Ingo, Thomas,
+> 
+> This starts the basic code that allow accounting of cputime spent tickless
+> outside idle, which is a first step to prepare for the adaptive nohz
+> infrastructure.
+> 
+> I hope we can set a tree in -tip for that. If you're fine with it
+> this is pullable from:
+> 
+> git://github.com/fweisbec/linux-dynticks.git
+> 	nohz-for-tip
+> 
+> Thanks.
 
-Fix x86 apic code warnings:
-
-arch/x86/kernel/apic/summit_32.c:297:2: warning: ISO C90 forbids mixed declarations and code
-arch/x86/kernel/apic/es7000_32.c:558:2: warning: ISO C90 forbids mixed declarations and code
-
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
----
- arch/x86/kernel/apic/es7000_32.c |    3 ++-
- arch/x86/kernel/apic/summit_32.c |    3 ++-
- 2 files changed, 4 insertions(+), 2 deletions(-)
-
---- linux-next-20120613.orig/arch/x86/kernel/apic/es7000_32.c
-+++ linux-next-20120613/arch/x86/kernel/apic/es7000_32.c
-@@ -554,9 +554,10 @@ es7000_cpu_mask_to_apicid_and(const stru
- 			      const struct cpumask *andmask,
- 			      unsigned int *apicid)
- {
--	*apicid = early_per_cpu(x86_cpu_to_logical_apicid, 0);
- 	cpumask_var_t cpumask;
- 
-+	*apicid = early_per_cpu(x86_cpu_to_logical_apicid, 0);
-+
- 	if (!alloc_cpumask_var(&cpumask, GFP_ATOMIC))
- 		return 0;
- 
---- linux-next-20120613.orig/arch/x86/kernel/apic/summit_32.c
-+++ linux-next-20120613/arch/x86/kernel/apic/summit_32.c
-@@ -293,9 +293,10 @@ summit_cpu_mask_to_apicid_and(const stru
- 			      const struct cpumask *andmask,
- 			      unsigned int *apicid)
- {
--	*apicid = early_per_cpu(x86_cpu_to_logical_apicid, 0);
- 	cpumask_var_t cpumask;
- 
-+	*apicid = early_per_cpu(x86_cpu_to_logical_apicid, 0);
-+
- 	if (!alloc_cpumask_var(&cpumask, GFP_ATOMIC))
- 		return 0;
- 
+As you may have noticed, this is based on tip:timers/core
