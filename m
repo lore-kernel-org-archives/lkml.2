@@ -1,32 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752315Ab2FMBhc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Jun 2012 21:37:32 -0400
-Received: from linux-sh.org ([111.68.239.195]:33933 "EHLO linux-sh.org"
+	id S1752203Ab2FMBlf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Jun 2012 21:41:35 -0400
+Received: from mga09.intel.com ([134.134.136.24]:2142 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750918Ab2FMBhb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Jun 2012 21:37:31 -0400
-Date: Wed, 13 Jun 2012 10:37:25 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sh: Kill off last dead UBC header
-Message-ID: <20120613013724.GL10170@linux-sh.org>
-References: <1339188557.30984.10.camel@x61.thuisdomein>
+	id S1751620Ab2FMBle (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Jun 2012 21:41:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="156859546"
+Message-ID: <4FD7EFCB.6060005@intel.com>
+Date: Wed, 13 Jun 2012 09:41:31 +0800
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339188557.30984.10.camel@x61.thuisdomein>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephane Eranian <eranian@google.com>
+CC: a.p.zijlstra@chello.nl, mingo@elte.hu, jolsa@redhat.com,
+        andi@firstfloor.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V5 0/13] perf: Intel uncore pmu counting support
+References: <1339479468-3815-1-git-send-email-zheng.z.yan@intel.com> <CABPqkBQu1hTa2R-PKsygLqOSSD9nu3+xR-79pT-8bB8Y16CBuw@mail.gmail.com>
+In-Reply-To: <CABPqkBQu1hTa2R-PKsygLqOSSD9nu3+xR-79pT-8bB8Y16CBuw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 08, 2012 at 10:49:17PM +0200, Paul Bolle wrote:
-> Commit 7025bec9125b0a02edcaf22c2dce753bf2c95480 ("sh: Kill off dead UBC
-> headers.") skipped arch/sh/include/cpu-sh2a/cpu/ubc.h. Since nothing is
-> using that header either, kill it off too.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+On 06/12/2012 11:38 PM, Stephane Eranian wrote:
+> On Tue, Jun 12, 2012 at 7:37 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
+>> Hi, all
+>>
+>> Here is the V5 patches to add uncore counting support for Nehalem,
+>> Sandy Bridge and Sandy Bridge-EP, applied on top of current tip.
+>> The code is based on Lin Ming's old patches.
+>>
+>> For Nehalem and Sandy Bridge-EP, A few general events are exported
+>> under sysfs directory:
+>>  /sys/bus/event_source/devices/${uncore_dev}/events/
+>>
+> On NHM, I tried:
+>     perf stat -a -e Uncore/CLOCKTICKS/
+> invalid or unsupported event: 'Uncore/CLOCKTICKS/'
 
-Applied, thanks.
+Strange enough. Did you re-compile the perf tool? Are there
+files under directory /sys/bus/event_source/devices/Uncore/events
+> 
+> I started tracking this down but gave up because it's coming
+> once again from the too complex parser. You are looking for
+> a format match (inv, edge, cmask) with the word CLOCKTICKS
+> instead of config.
+> 
+> Please fix this.
+> 
+> Also I don't think using upper case for the PMU name is a good idea.
+> Just call it uncore.
+> 
+
+Peter suggests keeping the uncore names as they're listed in the intel
+doc. For Sandybirdge-EP, uncore names are something like: Cbo, iMC, QPI.
+I think Uncore_Cbo_0 appears better than uncore_Cbo_0
+
+Regards
+Yan, Zheng
+> 
+>> Each file in the events directory defines an event. The content is
+>> a string such as:
+>>  config=1,config1=2
+>>
+>> You can use 'perf stat' to access to the uncore pmu. For example:
+>>  perf stat -a -C 0 -e 'Uncore_iMC_0/CAS_COUNT_RD/' sleep 1
+>>  perf stat -a -C 0 -e 'Uncore_iMC_0/event=CAS_COUNT_RD/' sleep 1
+>>
+>> Any comment is appreciated.
+>> Thank you
+>> ---
+>> Changes since v1:
+>>  - Modify perf tool to parse events from sysfs
+>>  - A few minor code cleanup
+>>
+>> Changes since v2:
+>>  - Place all events for a particular socket onto a single cpu
+>>  - Make the events parser in perf tool reentrantable
+>>  - A few code cleanup
+>>
+>> Changes since v3:
+>>  - Use per cpu pointer to track uncore box
+>>  - Rework the cpu hotplug code because topology_physical_package_id()
+>>   return wrong result when the cpu is offline
+>>  - Rework the event alias code, event terms are stored in the alias
+>>   structure instead events string
+>>
+>> Changes since v4:
+>>  - Include Jiri's uncore related changes patch set
+>>  - Add pmu/event=alias/ syntax support
+>>
+
+
