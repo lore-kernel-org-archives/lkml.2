@@ -1,47 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753443Ab2FMKW6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 06:22:58 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:6060 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752974Ab2FMKW1 (ORCPT
+	id S1753506Ab2FMK2F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 06:28:05 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:52401 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753022Ab2FMK2D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 06:22:27 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Wed, 13 Jun 2012 03:21:43 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <khali@linux-fr.org>, <w.sang@pengutronix.de>, <ben-linux@fluff.org>,
-        <swarren@wwwdotorg.org>, <olof@lixom.net>
-CC: <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH v3 0/4]  i2c: tegra: Bug fixes, cleanups and M_NOSTART support
-Date: Wed, 13 Jun 2012 15:42:35 +0530
-Message-ID: <1339582359-7911-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 13 Jun 2012 06:28:03 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
+        rientjes@google.com, mhocko@suse.cz, akpm@linux-foundation.org,
+        hannes@cmpxchg.org
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: [PATCH -V9 00/15] hugetlb: Add HugeTLB controller to control HugeTLB allocation
+Date: Wed, 13 Jun 2012 15:57:19 +0530
+Message-Id: <1339583254-895-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.10
+x-cbid: 12061310-8256-0000-0000-000002E809C8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series having the:
-- Handling of late register write due to Tegra PPSB design.
-- support for I2C_M_NOSTART
-- Use devm_* for all allocation.
+Hi,
 
-Changes from V1:
-- Using the readback for mask/unmask of irq also.
+This patchset implements a cgroup resource controller for HugeTLB
+pages. The controller allows to limit the HugeTLB usage per control
+group and enforces the controller limit during page fault. Since
+HugeTLB doesn't support page reclaim, enforcing the limit at page
+fault time implies that, the application will get SIGBUS signal if
+it tries to access HugeTLB pages beyond its limit. This requires
+the application to know beforehand how much HugeTLB pages it would
+require for its use.
+
+The goal is to control how many HugeTLB pages a group of task can
+allocate. It can be looked at as an extension of the existing quota
+interface which limits the number of HugeTLB pages per hugetlbfs
+superblock. HPC job scheduler requires jobs to specify their resource
+requirements in the job file. Once their requirements can be met,
+job schedulers like (SLURM) will schedule the job. We need to make sure
+that the jobs won't consume more resources than requested. If they do
+we should either error out or kill the application.
+
+Patches are on top of v3.5-rc2
+
+Changes from V8:
+  * Address review feedback
+
+Changes from V7:
+  * Remove dependency on page_cgroup.
+  * Use page[2].lru.next to store HugeTLB cgroup information.
+
+Changes from V6:
+ * Implement the controller as a seperate HugeTLB cgroup.
+ * Folded fixup patches in -mm to the original patches
+
+Changes from V5:
+ * Address review feedback.
+
+Changes from V4:
+ * Add support for charge/uncharge during page migration
+ * Drop the usage of page->lru in unmap_hugepage_range.
+
+Changes from v3:
+ * Address review feedback.
+ * Fix a bug in cgroup removal related parent charging with use_hierarchy set
 
 Changes from V2:
-- Read back is done whenever write happen in i2c register other than TX FIFO.
+* Changed the implementation to limit the HugeTLB usage during page
+  fault time. This simplifies the extension and keep it closer to
+  memcg design. This also allows to support cgroup removal with less
+  complexity. Only caveat is the application should ensure its HugeTLB
+  usage doesn't cross the cgroup limit.
 
+Changes from V1:
+* Changed the implementation as a memcg extension. We still use
+  the same logic to track the cgroup and range.
 
-Laxman Dewangan (4):
-  i2c: tegra: make sure register writes completes
-  i2c: tegra: add PROTOCOL_MANGLING as supported functionality.
-  i2c: tegra: support for I2C_M_NOSTART functionality
-  i2c: tegra: make all resource allocation through devm_*
+Changes from RFC post:
+* Added support for HugeTLB cgroup hierarchy
+* Added support for task migration
+* Added documentation patch
+* Other bug fixes
 
- drivers/i2c/busses/i2c-tegra.c |  110 ++++++++++++++++++++++------------------
- 1 files changed, 60 insertions(+), 50 deletions(-)
+-aneesh
+
 
