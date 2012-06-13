@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754849Ab2FMVoG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 17:44:06 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:53264 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754538Ab2FMVoF convert rfc822-to-8bit (ORCPT
+	id S1754863Ab2FMVpP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 17:45:15 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:57294 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754681Ab2FMVpN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 17:44:05 -0400
-Message-ID: <1339623838.8980.71.camel@twins>
-Subject: Re: [PATCH 2/2] perf, x86: Enable PDIR precise instruction
- profiling on IvyBridge
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: Andi Kleen <andi@firstfloor.org>, mingo@elte.hu,
-        linux-kernel@vger.kernel.org
-Date: Wed, 13 Jun 2012 23:43:58 +0200
-In-Reply-To: <20120613213651.GD32604@tassilo.jf.intel.com>
-References: <1339615201-7456-1-git-send-email-andi@firstfloor.org>
-	 <1339615201-7456-2-git-send-email-andi@firstfloor.org>
-	 <1339622781.8980.63.camel@twins>
-	 <20120613213651.GD32604@tassilo.jf.intel.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Wed, 13 Jun 2012 17:45:13 -0400
+Date: Wed, 13 Jun 2012 14:45:09 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "Winkler, Tomas" <tomas.winkler@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alan@linux.intel.com" <alan@linux.intel.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+Subject: Re: misc: mei: fixes for 3.5
+Message-ID: <20120613214509.GA9051@kroah.com>
+References: <1338298752-15445-1-git-send-email-tomas.winkler@intel.com>
+ <20120613203729.GA11326@kroah.com>
+ <5B8DA87D05A7694D9FA63FD143655C1B12A780@HASMSX103.ger.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5B8DA87D05A7694D9FA63FD143655C1B12A780@HASMSX103.ger.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-06-13 at 14:36 -0700, Andi Kleen wrote:
-> > This patch is just wrong on too many levels.. where do you want me to
-> > start. Lets go with the restriction you mention is lifted, the SDM
-> > doesn't mention this, 
+On Wed, Jun 13, 2012 at 09:09:14PM +0000, Winkler, Tomas wrote:
 > 
-> The SDM is wrong. The restriction is Sandy Bridge only.
-
-It would be good to mention this -- at the very least until the SDM is
-revised.
-
-> >nor does the patch actually lift it.
 > 
-> Why not? It works for me on a Ivy Bridge.
+> > > Hi Greg,
+> > > please consider this batch for queuing into 3.5 1. patch 2/4 bug in
+> > > probe: visible only after merging with the trunk 2. patch 3/4 fixes
+> > > kernel oops that was revealed when probe failed 3. patch 4/4 is
+> > > regression fix and should be merged also to stable 3.4 4. patch 1/4 is
+> > > a minor documentation fix
+> > 
+> > Grammer fixes are not ok for 3.5 at this point in time, sorry.  I'll queue up the
+> > other 3 though.
+> 
+> Thanks reasonable. 
+> 
+> Please consider also  this two:
+> 
+> This one is one more fix connected to the same issue as the 3 patches. (From Samuel Oritz) 
+> http://marc.info/?l=linux-kernel&m=133940653731271&w=2
+> 
+> This one is just adding a flag to WATCHDOG devices that was only possible after merging the watchdog tree into 3.5-rc1. 
+> This one is not must so I leave it for you to decide. 
+> http://marc.info/?l=linux-kernel&m=133940653831272&w=2
 
-I'm very sure you didn't test it properly then. Clearly you need a hint:
+Yes, they are still in my queue, I'll get to them...
 
-struct event_constraint intel_snb_pebs_event_constraints[] = {
-        INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PRECDIST */
-
-Is still in effect, isn't it..
+greg k-h
