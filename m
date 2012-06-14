@@ -1,90 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755622Ab2FNOcF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 10:32:05 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:17410 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753985Ab2FNOcE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 10:32:04 -0400
-X-Authority-Analysis: v=2.0 cv=T6AOvo2Q c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Pk-anzhfY00A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=vPFr32TSczNc_ThjeC4A:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1339684321.13377.215.camel@gandalf.stny.rr.com>
-Subject: Re: [RFC][PATCH 2/4] sched: Push put_prev_task() into
- pick_next_task()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: mingo@kernel.org, pjt@google.com, venki@google.com, efault@gmx.de,
-        glommer@parallels.com, linux-kernel@vger.kernel.org
-Date: Thu, 14 Jun 2012 10:32:01 -0400
-In-Reply-To: <20120614133212.690691207@chello.nl>
-References: <20120614132902.800827488@chello.nl>
-	 <20120614133212.690691207@chello.nl>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1+b1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1756019Ab2FNOcg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 10:32:36 -0400
+Received: from h9.dl5rb.org.uk ([81.2.74.9]:35142 "EHLO h5.dl5rb.org.uk"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753972Ab2FNOce (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 10:32:34 -0400
+Date: Thu, 14 Jun 2012 15:31:49 +0100
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        sjhill@mips.com, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Nicolas Pitre <nico@linaro.org>
+Subject: Re: bugs in page colouring code
+Message-ID: <20120614143149.GE12068@linux-mips.org>
+References: <20120613152936.363396d5@cuia.bos.redhat.com>
+ <20120614103627.GA25940@aftab.osrc.amd.com>
+ <4FD9DFCE.1070609@redhat.com>
+ <20120614132007.GC25940@aftab.osrc.amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120614132007.GC25940@aftab.osrc.amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-06-14 at 15:29 +0200, Peter Zijlstra wrote:
+On Thu, Jun 14, 2012 at 03:20:07PM +0200, Borislav Petkov wrote:
 
+> > However, I expect that on x86 many applications expect
+> > MAP_FIXED to just work, and enforcing that would be
+> > more trouble than it's worth.
+> 
+> Right, but if MAP_FIXED mappings succeed, then all processes sharing
+> that mapping will have it at the same virtual address, correct? And
+> if so, then we don't have the aliasing issue either so MAP_FIXED is a
+> don't-care from that perspective.
 
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -3176,7 +3176,7 @@ static void put_prev_task(struct rq *rq,
->   * Pick up the highest-prio task:
->   */
->  static inline struct task_struct *
-> -pick_next_task(struct rq *rq)
-> +pick_next_task(struct rq *rq, struct task_struct *prev)
->  {
->  	const struct sched_class *class;
->  	struct task_struct *p;
-> @@ -3186,13 +3186,13 @@ pick_next_task(struct rq *rq)
->  	 * the fair class we can call that function directly:
->  	 */
->  	if (likely(rq->nr_running == rq->cfs.h_nr_running)) {
-> -		p = fair_sched_class.pick_next_task(rq);
-> +		p = fair_sched_class.pick_next_task(rq, prev);
->  		if (likely(p))
->  			return p;
->  	}
->  
->  	for_each_class(class) {
-> -		p = class->pick_next_task(rq);
-> +		p = class->pick_next_task(rq, prev);
->  		if (p)
->  			return p;
->  	}
-> @@ -3253,8 +3253,9 @@ static void __sched __schedule(void)
->  	if (unlikely(!rq->nr_running))
->  		idle_balance(cpu, rq);
->  
-> -	put_prev_task(rq, prev);
+Once upon a time every real program carried its own malloc around.  I'm
+sure many of these malloc implementations rely on MAP_FIXED.
 
-You remove the call to put_prev_task() which looks to be the only user
-of this static function. But I don't see the deletion of this function.
+These days the big user of MAP_FIXED is glibc's dynamic loader.  It
+doesn't use MAP_FIXED for the first segment, only for all subsequent
+segments and the addresses are chosen such this will succeed.  ld(1)
+has the necessary knowledge about alignment.
 
--- Steve
+Problem: If you raise the alignment for mappings you want to make damn
+sure that any non-broken executable ever created uses sufficient alignment
+or bad things may happen.
 
-> -	next = pick_next_task(rq);
-> +	if (prev->on_rq || rq->skip_clock_update < 0)
-> +		update_rq_clock(rq);
-> +	next = pick_next_task(rq, prev);
->  	clear_tsk_need_resched(prev);
->  	rq->skip_clock_update = 0;
->  
-> @@ -5200,7 +5201,7 @@ static void migrate_tasks(unsigned int d
->  		if (rq->nr_running == 1)
->  			break;
->  
-> -		next = pick_next_task(rq);
-> +		next = pick_next_task(rq, NULL);
->  		BUG_ON(!next);
->  		next->sched_class->put_prev_task(rq, next);
->  
+MIPS used to use a very large alignment in ld linker scripts allowing
+for up to 1MB page size.  Then somebody clueless who shall smoulder in
+hell reduced it to a very small value, something like 4k or 16k.  When
+we went for bigger page size (MIPS allows 64K page size) all binaries
+created with the broken linker had to be rebuilt.
 
+So you probably want to do a little dumpster diving in very old binutils
+before doing anything that raises alignment of file mappings.
 
+> > >Linus said that without this we are probably breaking old userspace
+> > >which can't stomach ASLR so we had to respect such userspace which
+> > >clears that flag.
+> > 
+> > I wonder if that is true, since those userspace programs
+> > probably run fine on ARM, MIPS and other architectures...
+> 
+> Well, I'm too young to know that :) Reportedly, those were some obscure
+> old binaries and we added the PF_RANDOMIZE check out of caution, so as
+> to not break them, if at all.
+
+See above - ld linker scripts are a big part of why things are working :)
+I'm however not aware of any breakage caused by PF_RANDOMIZE.
+
+  Ralf
