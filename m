@@ -1,38 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756119Ab2FNOBp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 10:01:45 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:57851 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756011Ab2FNOBo (ORCPT
+	id S1756114Ab2FNOFm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 10:05:42 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:51081 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756017Ab2FNOFl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 10:01:44 -0400
-Date: Thu, 14 Jun 2012 15:05:25 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Kamil Dudka <kdudka@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2o: avoid returning pointer to a local array in
- chtostr()
-Message-ID: <20120614150525.5c0ed7f0@pyramind.ukuu.org.uk>
-In-Reply-To: <1339678302-23770-1-git-send-email-kdudka@redhat.com>
-References: <1339678302-23770-1-git-send-email-kdudka@redhat.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 14 Jun 2012 10:05:41 -0400
+MIME-Version: 1.0
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <CAPM=9tzL-TyDLKWdmCdi5d6PzQTs3sTLnqnLG_s7K2h9WNOEvQ@mail.gmail.com>
+References: <4FD9E69A.4090708@cwi.nl>
+	<CAPM=9tzL-TyDLKWdmCdi5d6PzQTs3sTLnqnLG_s7K2h9WNOEvQ@mail.gmail.com>
+Date: Thu, 14 Jun 2012 16:05:40 +0200
+Message-ID: <CAKMK7uGokt5cW0R+LKXRmE_kecqmnv4Zgy-WiSZA-GPP8htE-A@mail.gmail.com>
+Subject: Re: [3.4 regression] [bisected] DisplayPort fails to come on
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Dave Airlie <airlied@gmail.com>
+Cc: "Wouter M. Koolen" <W.M.Koolen-Wijkstra@cwi.nl>,
+        intergalactic.anonymous@gmail.com, len.brown@intel.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        "Barnes, Jesse" <jbarnes@virtuousgeek.org>,
+        "Wilson, Chris" <chris.wilson@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 14 Jun 2012 14:51:42 +0200
-Kamil Dudka <kdudka@redhat.com> wrote:
+On Thu, Jun 14, 2012 at 4:00 PM, Dave Airlie <airlied@gmail.com> wrote:
+> On Thu, Jun 14, 2012 at 2:26 PM, Wouter M. Koolen
+> <W.M.Koolen-Wijkstra@cwi.nl> wrote:
+> cc'ing Daniel.
+>
+>> Hi Igor and Len,
+>>
+>> When I cold boot 3.4 on my laptop the second monitor attached to the
+>> displayport stays blank. It works fine with 3.3.8 and earlier.
+>>
+>> I get two error messages in dmesg:
+>>
+>> kernel: video: probe of LNXVIDEO:00 failed with error -5
+>>
+>> kernel: [drm:intel_dp_complete_link_train] *ERROR* failed to train DP,
+>> aborting
+>>
+>> When I warm boot 3.4 after running kernel 3.3.8 first, only the first
+>> message appears and the display works fine.
 
-> The pointer returned from chtostr() points to an array which is no longer valid
-> when being used in the calling function.  Although it may work, the behavior is
-> undefined.  Detected by cppcheck.
-> 
-> Signed-off-by: Kamil Dudka <kdudka@redhat.com>
+Ok, the second message is actually the one explaining the black
+screen. Can you please boot with drm.debug=0xe added to your kernel
+cmdline and attach the full dmesg, so we know a bit what your display
+hw looks like?
 
-Acked-by: Alan Cox <alan@linux.intel.com>
+Also, please redo the bisect if possible (with coldboots) and hunt for
+the black screen/the "failed to train DP" message.
 
+Thanks, Daniel
+-- 
+Daniel Vetter
+daniel.vetter@ffwll.ch - +41 (0) 79 365 57 48 - http://blog.ffwll.ch
