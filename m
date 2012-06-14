@@ -1,59 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756470Ab2FNSb0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 14:31:26 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:23614 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755484Ab2FNSbZ (ORCPT
+	id S1756562Ab2FNSbh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 14:31:37 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:47852 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756513Ab2FNSbg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 14:31:25 -0400
-Date: Thu, 14 Jun 2012 21:31:13 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: liplianin@me.by
-Cc: linux-kernel@vger.kernel.org
-Subject: re: [media] Altera FPGA firmware download module
-Message-ID: <20120614183113.GB6383@elgon.mountain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Thu, 14 Jun 2012 14:31:36 -0400
+From: Fabio Baltieri <fabio.baltieri@gmail.com>
+To: Bryan Wu <bryan.wu@canonical.com>, Shuah Khan <shuahkhan@gmail.com>
+Cc: linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Fabio Baltieri <fabio.baltieri@gmail.com>
+Subject: [PATCH v2] leds: use led_set_brightness in led_trigger_event
+Date: Thu, 14 Jun 2012 20:33:35 +0200
+Message-Id: <1339698815-1806-1-git-send-email-fabio.baltieri@gmail.com>
+X-Mailer: git-send-email 1.7.10.3
+In-Reply-To: <1339619670.13326.22.camel@lorien2>
+References: <1339619670.13326.22.camel@lorien2>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Igor M. Liplianin,
+Fix led_trigger_event() to use led_set_brightness() instead of
+__led_set_brightness(), so that any pending blink timer is stopped before
+setting the new brightness value.  Without this fix LED status may be
+overridden by a pending timer.
 
-The patch fa766c9be58b: "[media] Altera FPGA firmware download 
-module" from Jan 25, 2011, leads to the following warning:
-drivers/misc/altera-stapl/altera.c:2204 altera_get_note()
-	 error: strlcpy() 'key' too small (33 vs 256)
+This allows a trigger to use a mix of led_trigger_event(),
+led_trigger_blink() and led_trigger_blink_oneshot() without races.
 
-drivers/misc/altera-stapl/altera.c
-  2200                  if ((i >= 0) && (i < note_count)) {
-  2201                          status = 0;
-  2202  
-  2203                          if (key != NULL)
-  2204                                  strlcpy(key, &p[note_strings +
-  2205                                                  get_unaligned_be32(
-  2206                                                  &p[note_table + (8 * i)])],
-  2207                                          length);
-  2208  
-  2209                          if (value != NULL)
-  2210                                  strlcpy(value, &p[note_strings +
-  2211                                                  get_unaligned_be32(
-  2212                                                  &p[note_table + (8 * i) + 4])],
-  2213                                          length);
-  2214  
-  2215                          *offset = i + 1;
+(applied over: leds: Rename led_brightness_set() to led_set_brightness())
 
-The problem is that strlcpy() is using 256 as the size of "key" but
-actually it is the size of "value".  Except that "value" is 257 bytes so
-it is an off by one of the size of "value".
+Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
+Cc: Shuah Khan <shuahkhan@gmail.com>
+Cc: Bryan Wu <bryan.wu@canonical.com>
+---
 
-It probably doesn't cause a problem, but it upsets the static checkers
-and it's pretty ugly.
+Hi Shuah,
 
-regards,
-dan carpenter
+thanks for the renaming, looks much more clear now, so that's my
+led_trigger_event patch which applies on top of your latest patch - which
+should still be needed if I didn't lost anything.
+
+Fabio
+
+ drivers/leds/led-triggers.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/leds/led-triggers.c b/drivers/leds/led-triggers.c
+index 57721f2..de1c59d 100644
+--- a/drivers/leds/led-triggers.c
++++ b/drivers/leds/led-triggers.c
+@@ -224,7 +224,7 @@ void led_trigger_event(struct led_trigger *trig,
+ 		struct led_classdev *led_cdev;
+ 
+ 		led_cdev = list_entry(entry, struct led_classdev, trig_list);
+-		__led_set_brightness(led_cdev, brightness);
++		led_set_brightness(led_cdev, brightness);
+ 	}
+ 	read_unlock(&trig->leddev_list_lock);
+ }
+-- 
+1.7.11.rc1.9.gf623ca1.dirty
 
