@@ -1,96 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756102Ab2FNNiP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 09:38:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42884 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756065Ab2FNNiN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 09:38:13 -0400
-Message-ID: <4FD9E936.3030001@redhat.com>
-Date: Thu, 14 Jun 2012 16:37:58 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: zhangyanfei <zhangyanfei@cn.fujitsu.com>
-CC: mtosatti@redhat.com, ebiederm@xmission.com, luto@mit.edu,
-        Joerg Roedel <joerg.roedel@amd.com>, dzickus@redhat.com,
-        paul.gortmaker@windriver.com, ludwig.nussel@suse.de,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        kexec@lists.infradead.org, Greg KH <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH v2 3/5] KVM-INTEL: Add new module vmcsinfo-intel to fill
- VMCSINFO
-References: <4FB35C48.30708@cn.fujitsu.com> <4FB35D60.6050009@cn.fujitsu.com>
-In-Reply-To: <4FB35D60.6050009@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1756144Ab2FNNlp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 09:41:45 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:55704 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756028Ab2FNNln (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 09:41:43 -0400
+Date: Thu, 14 Jun 2012 15:41:42 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andi Kleen <andi@firstfloor.org>, mingo@elte.hu,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 1/2] perf, x86: Add basic Ivy Bridge support v3
+Message-ID: <20120614134142.GI11413@one.firstfloor.org>
+References: <1339615201-7456-1-git-send-email-andi@firstfloor.org> <1339622672.8980.61.camel@twins>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339622672.8980.61.camel@twins>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/16/2012 10:55 AM, zhangyanfei wrote:
-> This patch implements a new module named vmcsinfo-intel. The
-> module fills VMCSINFO with the VMCS revision identifier,
-> and encoded offsets of VMCS fields.
-> 
-> Note, offsets of fields below will not be filled into VMCSINFO:
-> 1. fields defined in Intel specification (Intel® 64 and
->    IA-32 Architectures Software Developer’s Manual, Volume
->    3C) but not defined in *vmcs_field*.
-> 2. fields don't exist because their corresponding control bits
->    are not set.
-> 
-> +
-> +/*
-> + * We separate these five control fields from other fields
-> + * because some fields only exist on processors that support
-> + * the 1-setting of control bits in the five control fields.
-> + */
+> I really don't see the point of this patch,.. it is in fact using the
+> SandyBridge events.. 
 
-I thought this was checked only during VMENTRY.  So perhaps you don't
-need this special casing.
+It needs a separate path for the PDIR change and for not doing the PEBS
+workaround and for printing Ivy instead of Sandy. I had it originally merged in v1 with a 
+goto, but Ingo thought it was obfuscated, so it became a separate block.
+If you disagree with Ingo please take it up with him.
 
-In fact you might be able to
+> also you appear to have removed the backend stalls
+> which per SDM (may 2012) table 19-2 would be the very same.
 
-   // pre-fill vmcs with patterns
+Stephane said that event doesn't exist anymore and I agree with him.
+You cannot just base it on the SDM, it's SDM plus whatever is currently
+known.
 
-  for (i = 0; i < 64k; ++i)
-      if (vmcs_read_checking(i, &pattern)) {
-           // decode pattern
-      } else
-           // field does not exist (VM Instruction error 12), ignore
+Besides they are misleading and wrong in any case.
 
-with no knowledge of the control fields, or of any field name.
-
-
-> +
-> +/*
-> + * The format of VMCSINFO is given below:
-> + *   +-------------+--------------------------+
-> + *   | Byte offset | Contents                 |
-> + *   +-------------+--------------------------+
-> + *   | 0           | VMCS revision identifier |
-> + *   +-------------+--------------------------+
-> + *   | 4           | <field><encoded offset>  |
-> + *   +-------------+--------------------------+
-> + *   | 16          | <field><encoded offset>  |
-> + *   +-------------+--------------------------+
-> + *   ......
-> + *
-> + * The first 32 bits of VMCSINFO contains the VMCS revision
-> + * identifier.
-> + * The remainder of VMCSINFO is used for <field><encoded offset>
-> + * sets. Each set takes 12 bytes: field occupys 4 bytes
-> + * and its corresponding encoded offset occupys 8 bytes.
-> + *
-> + * Encoded offsets are raw values read by vmcs_read{16, 64, 32, l},
-> + * and they are all unsigned extended to 8 bytes for each
-> + * <field><encoded offset> set has the same size.
-> + * We do not decode offsets here. The decoding work is delayed
-> + * in userspace tools.
-
-It's better to do the decoding here, or no one will know how to do it.
-Also have an nfields field.
+-Andi
 -- 
-error compiling committee.c: too many arguments to function
-
-
+ak@linux.intel.com -- Speaking for myself only.
