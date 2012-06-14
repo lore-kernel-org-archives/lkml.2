@@ -1,79 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756019Ab2FNOcg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 10:32:36 -0400
-Received: from h9.dl5rb.org.uk ([81.2.74.9]:35142 "EHLO h5.dl5rb.org.uk"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753972Ab2FNOce (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 10:32:34 -0400
-Date: Thu, 14 Jun 2012 15:31:49 +0100
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        sjhill@mips.com, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Nicolas Pitre <nico@linaro.org>
-Subject: Re: bugs in page colouring code
-Message-ID: <20120614143149.GE12068@linux-mips.org>
-References: <20120613152936.363396d5@cuia.bos.redhat.com>
- <20120614103627.GA25940@aftab.osrc.amd.com>
- <4FD9DFCE.1070609@redhat.com>
- <20120614132007.GC25940@aftab.osrc.amd.com>
+	id S1755951Ab2FNOgk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 10:36:40 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:44573 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751270Ab2FNOgj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 10:36:39 -0400
+Date: Thu, 14 Jun 2012 16:36:33 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@ti.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "Luck,Tony" <tony.luck@intel.com>
+Subject: Re: [RFC GIT PULL] nohz: Basic cputime accounting for adaptive
+ tickless
+Message-ID: <20120614143633.GA32094@gmail.com>
+References: <1339604397-8758-1-git-send-email-fweisbec@gmail.com>
+ <1339664829.2559.14.camel@twins>
+ <20120614111241.GA16848@somewhere>
+ <20120614111638.GA16676@gmail.com>
+ <alpine.LFD.2.02.1206141321010.3086@ionos>
+ <20120614112241.GB16848@somewhere>
+ <20120614144815.1401af49@de.ibm.com>
+ <20120614130425.GC16848@somewhere>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120614132007.GC25940@aftab.osrc.amd.com>
+In-Reply-To: <20120614130425.GC16848@somewhere>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 14, 2012 at 03:20:07PM +0200, Borislav Petkov wrote:
 
-> > However, I expect that on x86 many applications expect
-> > MAP_FIXED to just work, and enforcing that would be
-> > more trouble than it's worth.
+* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+
+> > > > > > I'll try something with that.
+> > > > > 
+> > > > > Maybe sanitize all the variants under a single set of 
+> > > > > wrappers/callbacks?
+> > > > 
+> > > > Yes, please!
+> > > 
+> > > Sure, I'm working in it.
+> >  
+> > Please keep me in the loop, I want to avoid that things 
+> > break on s390. Thanks.
 > 
-> Right, but if MAP_FIXED mappings succeed, then all processes sharing
-> that mapping will have it at the same virtual address, correct? And
-> if so, then we don't have the aliasing issue either so MAP_FIXED is a
-> don't-care from that perspective.
+> Well, I realize I can't consolidate much between ia64, s390 
+> and ppc because they all handle virtual cpu time accounting 
+> very differently. I'm also not what the virtual timer is for.
 
-Once upon a time every real program carried its own malloc around.  I'm
-sure many of these malloc implementations rely on MAP_FIXED.
+As a first step I'd suggest to create a superset of all existing 
+and relied-upon wrappers/callbacks, into a single obvious 
+sched_*() or time_*() namespace, without breaking functionality.
 
-These days the big user of MAP_FIXED is glibc's dynamic loader.  It
-doesn't use MAP_FIXED for the first segment, only for all subsequent
-segments and the addresses are chosen such this will succeed.  ld(1)
-has the necessary knowledge about alignment.
+Once that is done we can eliminate individual, conceptually 
+redundant callbacks, by carefully morphing the affected arches 
+step by step.
 
-Problem: If you raise the alignment for mappings you want to make damn
-sure that any non-broken executable ever created uses sufficient alignment
-or bad things may happen.
+No arch will be left behind.
 
-MIPS used to use a very large alignment in ld linker scripts allowing
-for up to 1MB page size.  Then somebody clueless who shall smoulder in
-hell reduced it to a very small value, something like 4k or 16k.  When
-we went for bigger page size (MIPS allows 64K page size) all binaries
-created with the broken linker had to be rebuilt.
+Thanks,
 
-So you probably want to do a little dumpster diving in very old binutils
-before doing anything that raises alignment of file mappings.
-
-> > >Linus said that without this we are probably breaking old userspace
-> > >which can't stomach ASLR so we had to respect such userspace which
-> > >clears that flag.
-> > 
-> > I wonder if that is true, since those userspace programs
-> > probably run fine on ARM, MIPS and other architectures...
-> 
-> Well, I'm too young to know that :) Reportedly, those were some obscure
-> old binaries and we added the PF_RANDOMIZE check out of caution, so as
-> to not break them, if at all.
-
-See above - ld linker scripts are a big part of why things are working :)
-I'm however not aware of any breakage caused by PF_RANDOMIZE.
-
-  Ralf
+	Ingo
