@@ -1,59 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755686Ab2FNKpT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 06:45:19 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:54163 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755484Ab2FNKpR (ORCPT
+	id S1755727Ab2FNKpq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 06:45:46 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:35372 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755510Ab2FNKpp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 06:45:17 -0400
+	Thu, 14 Jun 2012 06:45:45 -0400
+Message-ID: <4FD9C0D2.20500@kernel.dk>
+Date: Thu, 14 Jun 2012 12:45:38 +0200
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-In-Reply-To: <1339663013.2559.10.camel@twins>
-References: <1339420814-7379-1-git-send-email-jolsa@redhat.com>
-	<1339420814-7379-3-git-send-email-jolsa@redhat.com>
-	<CABPqkBRsBegm6gv6agHcGb0Hh1EWCV5gjVnbbwPHh-eOfROCuw@mail.gmail.com>
-	<20120613131240.GB2538@m.brq.redhat.com>
-	<CABPqkBRdVMzocJu_SJbU81wg6Ef=KgbXw-18tb+bZEon79fVDA@mail.gmail.com>
-	<1339594802.8980.44.camel@twins>
-	<CABPqkBRnMW=Zmi+DycUPMcYS9cgs8doKZqSR37e1gU6wQnT+nw@mail.gmail.com>
-	<1339663013.2559.10.camel@twins>
-Date: Thu, 14 Jun 2012 12:45:15 +0200
-Message-ID: <CABPqkBT54L=CuC_gJF3dnOOn6Tr1adVtedLOgzZQbmpZ5B-szA@mail.gmail.com>
-Subject: Re: [PATCH 02/19] perf: Add ability to attach user level registers
- dump to sample
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Jiri Olsa <jolsa@redhat.com>, acme@redhat.com, mingo@elte.hu,
-        paulus@samba.org, cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
-        gorcunov@openvz.org, tzanussi@gmail.com, mhiramat@redhat.com,
-        robert.richter@amd.com, fche@redhat.com, linux-kernel@vger.kernel.org,
-        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
-        benjamin.redelings@nescent.org
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+To: Fengguang Wu <wfg@linux.intel.com>
+CC: linux-scsi@vger.kernel.org, linux-raid@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: drivers/block/cpqarray.c:938:2: error: too many arguments to
+ function lk_rq_map_sg
+References: <4fd91c3f.KAwMcygw9fFGn9Cx%wfg@linux.intel.com> <4FD984F3.3070502@kernel.dk> <20120614090151.GA12013@localhost> <4FD9A95D.40903@kernel.dk> <20120614100205.GA13217@localhost>
+In-Reply-To: <20120614100205.GA13217@localhost>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 14, 2012 at 10:36 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Wed, 2012-06-13 at 15:41 +0200, Stephane Eranian wrote:
->> Ok, yes that one. It would have been much nicer to follow the enum
->> order.
->
-> Yes.. I should make a list of all the things we should've done
-> differently. Maybe if that list grows long enough someone gets motivated
-> enough to rev the format as a whole.
->
-Yeah, that would be good.
+On 06/14/2012 12:02 PM, Fengguang Wu wrote:
+> On Thu, Jun 14, 2012 at 11:05:33AM +0200, Jens Axboe wrote:
+>> On 06/14/2012 11:01 AM, Fengguang Wu wrote:
+>>> Hi Jens,
+>>>
+>>> On Thu, Jun 14, 2012 at 08:30:11AM +0200, Jens Axboe wrote:
+>>>> On 06/14/2012 01:03 AM, wfg@linux.intel.com wrote:
+>>>>> FYI, kernel build failed on
+>>>>>
+>>>>> tree:   git://git.kernel.org/pub/scm/linux/kernel/git/axboe/linux-block.git multiqueue
+>>>>> head:   e9a6aa8a0b7b93195774a9fcf551632bf3abcd97
+>>>>> commit: 67db7275fa4325d46853a4bfcb79acf32e48eca8 [1/3] multiqueue: a hodge podge of things
+>>>>
+>>>> The multiqueue branch is a private branch, it's known broken on many
+>>>> configs at the moment.
+>>>
+>>> OK. Sorry my script just blindly build tests every new/updated branches
+>>> in the tree. It does try to reduce noise level by remembering all warned
+>>> error messages. However if it still presents a problem to the private
+>>> branches, I can either explicitly blacklist "multiqueue", or let the
+>>> script automatically skip commits whose "^Signed-off-by:" is still missing.
+>>
+>> It's not a problem that you're building various branches, as long as you
+>> are expecting a bit of noise :-). In fact I applaud your effort on
+>> expanding the scope of building others branches.
+>>
+>> But it does raise the question of how do we best signal intermediate
+>> branches like this, so they can be avoided until they are ready. The
+>> blacklist doesn't seem like a great choice, since then I have to
+>> remember to remind you when it _is_ ok to build it.
+>>
+>> How about some arbitrary tag? Instead of checking a Signed-off-by, I
+>> could just add a Dont-Auto-Build or something like that. What do you
+>> think?
+> 
+> OK, I'll add a grep for "Dont-Auto-Build". If it's found in *any*
+> commit of the branch, the build script will skip the whole branch.
+> Does this make sense to you?
 
-I will soon post a patch to extend that format to make it possible to
-have distinct sample_type per event and yet be able to parse them.
-I am still waiting for Arnaldo to take my perf patches concerning pipe
-mode first. Can't have too many patch sets in flight at the same time.
+Yeah that'll work for me. A description or tag might be more elegant,
+but this is easier...
 
-> It would be a tedious endeavour since you'd need to have both output
-> paths available for a good while, but it might be worth it in the long
-> run depending on how painful the current format becomes.
+-- 
+Jens Axboe
 
-True. What we don't know however, it how many other tools are out
-there using the kernel API directly.
