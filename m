@@ -1,58 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756519Ab2FNUph (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 16:45:37 -0400
-Received: from mga01.intel.com ([192.55.52.88]:13302 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755358Ab2FNUpg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 16:45:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="165799701"
-Subject: Re: [RFC] x86, fpu: unify signal handling code paths for x86 and
- x86_64 kernels
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Hans Rosenfeld <hans.rosenfeld@amd.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, tglx@linutronix.de,
-        robert.richter@amd.com, andreas.herrmann3@amd.com
-Date: Thu, 14 Jun 2012 13:45:34 -0700
-In-Reply-To: <20120614143727.GF7922@escobedo.osrc.amd.com>
-References: <1339545814.28766.148.camel@sbsiddha-desk.sc.intel.com>
-	 <20120614143727.GF7922@escobedo.osrc.amd.com>
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1339706734.3475.34.camel@sbsiddha-desk.sc.intel.com>
-Mime-Version: 1.0
+	id S1756491Ab2FNUsM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 16:48:12 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:36070 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754352Ab2FNUsL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 16:48:11 -0400
+From: Marko Kohtala <marko.kohtala@gmail.com>
+To: Olof Johansson <olof@lixom.net>, Matthew Garrett <mjg@redhat.com>
+Cc: Marko Kohtala <marko.kohtala@gmail.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] efivars: prevent Oops if efi_enabled but no EFI runtime
+Date: Thu, 14 Jun 2012 23:47:30 +0300
+Message-Id: <1339706851-10618-1-git-send-email-marko.kohtala@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-06-14 at 16:37 +0200, Hans Rosenfeld wrote:
-> Thank you for working on this.
-> 
-> I didn't see anything obviously wrong in a quick review of this code,
-> but this stuff is too complex for this to mean anything :)
-> 
-> I ran a quick test of your code. I found a signal frame corruption when
-> running a 32bit test program on a 64bit kernel. I didn't try to find out
-> why it failed, but I'll send you the test program in a private mail so
-> you can look at it yourself.
-> 
+Since v3.3-rc4-5-g1adbfa3, there has been an Oops in register_efivars
+calling ops->get_next_variable and ending up at EIP 0 during module init.
 
-Ok. The problem was that I was using is_ia32_task() (which uses
-TS_COMPAT) to check if the task is a compat task or not. And that flag
-is not set during the signal delivery paths for the compat task.
+I boot 32-bit x86 kernel from 64-bit EFI bootloader.
 
-I guess I should be using TIF_IA32 check instead. Using TIF_IA32 check
-makes your test case run fine.
+The efi_enabled is true, but runtime is not available. The functions
+are NULL due to 32/64-bit mismatch between kernel and EFI.
 
-Will update it accordingly.
+Signed-off-by: Marko Kohtala <marko.kohtala@gmail.com>
+---
+I currently see this on v3.4.2.
 
-thanks,
-suresh
+I could not figure out how I'm supposed to detect lack of runtime, so
+I ended up with this quick and overly precise check that all required
+functions are available. There may be other drivers that need to take
+this new condition into account, so maybe Olof wants to make a better
+fix.
+
+ drivers/firmware/efivars.c |   20 ++++++++++++--------
+ 1 file changed, 12 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
+index 47408e8..612a097 100644
+--- a/drivers/firmware/efivars.c
++++ b/drivers/firmware/efivars.c
+@@ -1223,12 +1223,16 @@ efivars_init(void)
+ 		return -ENOMEM;
+ 	}
+ 
+-	ops.get_variable = efi.get_variable;
+-	ops.set_variable = efi.set_variable;
+-	ops.get_next_variable = efi.get_next_variable;
+-	error = register_efivars(&__efivars, &ops, efi_kobj);
+-	if (error)
+-		goto err_put;
++	/* We may have efi_enabled for systab, but no runtime for variables.
++	 * Check the functions we need before proceeding. */
++	if (efi.get_variable && efi.set_variable && efi.get_next_variable) {
++		ops.get_variable = efi.get_variable;
++		ops.set_variable = efi.set_variable;
++		ops.get_next_variable = efi.get_next_variable;
++		error = register_efivars(&__efivars, &ops, efi_kobj);
++		if (error)
++			goto err_put;
++	}
+ 
+ 	/* Don't forget the systab entry */
+ 	error = sysfs_create_group(efi_kobj, &efi_subsys_attr_group);
+@@ -1251,10 +1255,10 @@ err_put:
+ static void __exit
+ efivars_exit(void)
+ {
+-	if (efi_enabled) {
++	if (__efivars.kset)
+ 		unregister_efivars(&__efivars);
++	if (efi_kobj)
+ 		kobject_put(efi_kobj);
+-	}
+ }
+ 
+ module_init(efivars_init);
+-- 
+1.7.10.4
 
