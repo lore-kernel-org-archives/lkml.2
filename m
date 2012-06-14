@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932140Ab2FNQ1G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 12:27:06 -0400
-Received: from na3sys009aog137.obsmtp.com ([74.125.149.18]:40612 "EHLO
-	na3sys009aog137.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932099Ab2FNQ1A (ORCPT
+	id S932159Ab2FNQ1L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 12:27:11 -0400
+Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:48101 "EHLO
+	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932142Ab2FNQ1I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 12:27:00 -0400
+	Thu, 14 Jun 2012 12:27:08 -0400
 From: Felipe Balbi <balbi@ti.com>
 To: ben-linux@fluff.org
 Cc: Tony Lindgren <tony@atomide.com>,
@@ -18,9 +18,9 @@ Cc: Tony Lindgren <tony@atomide.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         w.sang@pengutronix.de, Shubhrajyoti Datta <shubhrajyoti@ti.com>,
         Felipe Balbi <balbi@ti.com>
-Subject: [PATCH v2 07/17] i2c: omap: re-factor receive/transmit data loop
-Date: Thu, 14 Jun 2012 19:24:17 +0300
-Message-Id: <1339691067-919-8-git-send-email-balbi@ti.com>
+Subject: [PATCH v2 11/17] i2c: omap: switch to devm_* API
+Date: Thu, 14 Jun 2012 19:24:21 +0300
+Message-Id: <1339691067-919-12-git-send-email-balbi@ti.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1339691067-919-1-git-send-email-balbi@ti.com>
 References: <1339691067-919-1-git-send-email-balbi@ti.com>
@@ -28,276 +28,124 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-re-factor the common parts to a separate function,
-so that code is easier to read and understand.
-
-No functional changes.
+that helps deleting some boiler plate code
+and lets driver-core manage our resources
+for us.
 
 Signed-off-by: Felipe Balbi <balbi@ti.com>
 ---
- drivers/i2c/busses/i2c-omap.c |  208 +++++++++++++++++------------------------
- 1 file changed, 84 insertions(+), 124 deletions(-)
+ drivers/i2c/busses/i2c-omap.c |   43 +++++++++++------------------------------
+ 1 file changed, 11 insertions(+), 32 deletions(-)
 
 diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-omap.c
-index 41cec32..94d6c6a 100644
+index 7171ea1..e368f67 100644
 --- a/drivers/i2c/busses/i2c-omap.c
 +++ b/drivers/i2c/busses/i2c-omap.c
-@@ -795,12 +795,81 @@ static int errata_omap3_1p153(struct omap_i2c_dev *dev)
+@@ -1044,7 +1044,7 @@ omap_i2c_probe(struct platform_device *pdev)
+ {
+ 	struct omap_i2c_dev	*dev;
+ 	struct i2c_adapter	*adap;
+-	struct resource		*mem, *irq, *ioarea;
++	struct resource		*mem, *irq;
+ 	struct omap_i2c_bus_platform_data *pdata = pdev->dev.platform_data;
+ 	struct device_node	*node = pdev->dev.of_node;
+ 	const struct of_device_id *match;
+@@ -1057,23 +1057,17 @@ omap_i2c_probe(struct platform_device *pdev)
+ 		dev_err(&pdev->dev, "no mem resource?\n");
+ 		return -ENODEV;
+ 	}
++
+ 	irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+ 	if (!irq) {
+ 		dev_err(&pdev->dev, "no irq resource?\n");
+ 		return -ENODEV;
+ 	}
+ 
+-	ioarea = request_mem_region(mem->start, resource_size(mem),
+-			pdev->name);
+-	if (!ioarea) {
+-		dev_err(&pdev->dev, "I2C region already claimed\n");
+-		return -EBUSY;
+-	}
+-
+-	dev = kzalloc(sizeof(struct omap_i2c_dev), GFP_KERNEL);
++	dev = devm_kzalloc(&pdev->dev, sizeof(struct omap_i2c_dev), GFP_KERNEL);
+ 	if (!dev) {
+-		r = -ENOMEM;
+-		goto err_release_region;
++		dev_err(&pdev->dev, "not enough memory\n");
++		return -ENOMEM;
+ 	}
+ 
+ 	match = of_match_device(of_match_ptr(omap_i2c_of_match), &pdev->dev);
+@@ -1096,10 +1090,10 @@ omap_i2c_probe(struct platform_device *pdev)
+ 
+ 	dev->dev = &pdev->dev;
+ 	dev->irq = irq->start;
+-	dev->base = ioremap(mem->start, resource_size(mem));
++	dev->base = devm_request_and_ioremap(&pdev->dev, mem);
+ 	if (!dev->base) {
+-		r = -ENOMEM;
+-		goto err_free_mem;
++		dev_err(&pdev->dev, "ioremap failed\n");
++		return -ENOMEM;
+ 	}
+ 
+ 	platform_set_drvdata(pdev, dev);
+@@ -1150,7 +1144,7 @@ omap_i2c_probe(struct platform_device *pdev)
+ 
+ 	isr = (dev->rev < OMAP_I2C_OMAP1_REV_2) ? omap_i2c_omap1_isr :
+ 								   omap_i2c_isr;
+-	r = request_irq(dev->irq, isr, 0, pdev->name, dev);
++	r = devm_request_irq(&pdev->dev, dev->irq, isr, 0, pdev->name, dev);
+ 
+ 	if (r) {
+ 		dev_err(dev->dev, "failure requesting irq %i\n", dev->irq);
+@@ -1176,24 +1170,16 @@ omap_i2c_probe(struct platform_device *pdev)
+ 	r = i2c_add_numbered_adapter(adap);
+ 	if (r) {
+ 		dev_err(dev->dev, "failure adding adapter\n");
+-		goto err_free_irq;
++		goto err_unuse_clocks;
+ 	}
+ 
+ 	of_i2c_register_devices(adap);
+ 
+ 	return 0;
+ 
+-err_free_irq:
+-	free_irq(dev->irq, dev);
+ err_unuse_clocks:
+ 	omap_i2c_write_reg(dev, OMAP_I2C_CON_REG, 0);
+ 	pm_runtime_put(dev->dev);
+-	iounmap(dev->base);
+-err_free_mem:
+-	platform_set_drvdata(pdev, NULL);
+-	kfree(dev);
+-err_release_region:
+-	release_mem_region(mem->start, resource_size(mem));
+ 
+ 	return r;
+ }
+@@ -1202,17 +1188,10 @@ static int
+ omap_i2c_remove(struct platform_device *pdev)
+ {
+ 	struct omap_i2c_dev	*dev = platform_get_drvdata(pdev);
+-	struct resource		*mem;
+ 
+-	platform_set_drvdata(pdev, NULL);
+-
+-	free_irq(dev->irq, dev);
+ 	i2c_del_adapter(&dev->adapter);
+ 	omap_i2c_write_reg(dev, OMAP_I2C_CON_REG, 0);
+-	iounmap(dev->base);
+-	kfree(dev);
+-	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	release_mem_region(mem->start, resource_size(mem));
++
  	return 0;
  }
  
-+static void omap_i2c_receive_data(struct omap_i2c_dev *dev, u8 num_bytes,
-+		bool is_rdr)
-+{
-+	u16		w;
-+
-+	while (num_bytes--) {
-+		if (!dev->buf_len) {
-+			dev_err(dev->dev, "%s without data",
-+					is_rdr ? "RDR" : "RRDY");
-+			break;
-+		}
-+
-+		w = omap_i2c_read_reg(dev, OMAP_I2C_DATA_REG);
-+		*dev->buf++ = w;
-+		dev->buf_len--;
-+
-+		/*
-+		 * Data reg in 2430, omap3 and
-+		 * omap4 is 8 bit wide
-+		 */
-+		if (dev->flags & OMAP_I2C_FLAG_16BIT_DATA_REG) {
-+			if (dev->buf_len) {
-+				*dev->buf++ = w >> 8;
-+				dev->buf_len--;
-+			}
-+		}
-+	}
-+}
-+
-+static int omap_i2c_transmit_data(struct omap_i2c_dev *dev, u8 num_bytes,
-+		bool is_xdr)
-+{
-+	u16		w;
-+
-+	while (num_bytes--) {
-+		if (!dev->buf_len) {
-+			dev_err(dev->dev, "%s without data",
-+					is_xdr ? "XDR" : "XRDY");
-+			break;
-+		}
-+
-+		w = *dev->buf++;
-+		dev->buf_len--;
-+
-+		/*
-+		 * Data reg in 2430, omap3 and
-+		 * omap4 is 8 bit wide
-+		 */
-+		if (dev->flags & OMAP_I2C_FLAG_16BIT_DATA_REG) {
-+			if (dev->buf_len) {
-+				w |= *dev->buf++ << 8;
-+				dev->buf_len--;
-+			}
-+		}
-+
-+		if (dev->errata & I2C_OMAP3_1P153) {
-+			int ret;
-+
-+			ret = errata_omap3_1p153(dev);
-+			if (ret < 0)
-+				return ret;
-+		}
-+
-+		omap_i2c_write_reg(dev, OMAP_I2C_DATA_REG, w);
-+	}
-+
-+	return 0;
-+}
-+
- static irqreturn_t
- omap_i2c_isr(int this_irq, void *dev_id)
- {
- 	struct omap_i2c_dev *dev = dev_id;
- 	u16 bits;
--	u16 stat, w;
-+	u16 stat;
- 	int err, count = 0;
- 
- 	if (pm_runtime_suspended(dev->dev))
-@@ -853,30 +922,7 @@ complete:
- 			if (dev->fifo_size)
- 				num_bytes = dev->fifo_size;
- 
--			while (num_bytes--) {
--				if (!dev->buf_len) {
--					dev_err(dev->dev,
--							"RDR IRQ while no data"
--							" requested\n");
--					break;
--				}
--
--				w = omap_i2c_read_reg(dev, OMAP_I2C_DATA_REG);
--				*dev->buf++ = w;
--				dev->buf_len--;
--
--				/*
--				 * Data reg in 2430, omap3 and
--				 * omap4 is 8 bit wide
--				 */
--				if (dev->flags &
--						OMAP_I2C_FLAG_16BIT_DATA_REG) {
--					if (dev->buf_len) {
--						*dev->buf++ = w >> 8;
--						dev->buf_len--;
--					}
--				}
--			}
-+			omap_i2c_receive_data(dev, num_bytes, true);
- 
- 			if (dev->errata & I2C_OMAP_ERRATA_I207)
- 				i2c_omap_errata_i207(dev, stat);
-@@ -891,78 +937,23 @@ complete:
- 			if (dev->fifo_size)
- 				num_bytes = dev->fifo_size;
- 
--			while (num_bytes--) {
--				if (!dev->buf_len) {
--					dev_err(dev->dev,
--							"RRDY IRQ while no data"
--							" requested\n");
--					break;
--				}
--
--				w = omap_i2c_read_reg(dev, OMAP_I2C_DATA_REG);
--				*dev->buf++ = w;
--				dev->buf_len--;
--
--				/*
--				 * Data reg in 2430, omap3 and
--				 * omap4 is 8 bit wide
--				 */
--				if (dev->flags &
--						OMAP_I2C_FLAG_16BIT_DATA_REG) {
--					if (dev->buf_len) {
--						*dev->buf++ = w >> 8;
--						dev->buf_len--;
--					}
--				}
--			}
--
-+			omap_i2c_receive_data(dev, num_bytes, false);
- 			omap_i2c_ack_stat(dev, OMAP_I2C_STAT_RRDY);
- 			continue;
- 		}
- 
- 		if (stat & OMAP_I2C_STAT_XDR) {
-+			int ret;
- 			u8 num_bytes = 1;
- 
- 			if (dev->fifo_size)
- 				num_bytes = dev->fifo_size;
- 
--			while (num_bytes--) {
--				if (!dev->buf_len) {
--					dev_err(dev->dev,
--							"XDR IRQ while no "
--							"data to send\n");
--					break;
--				}
--
--				w = *dev->buf++;
--				dev->buf_len--;
--
--				/*
--				 * Data reg in 2430, omap3 and
--				 * omap4 is 8 bit wide
--				 */
--				if (dev->flags &
--						OMAP_I2C_FLAG_16BIT_DATA_REG) {
--					if (dev->buf_len) {
--						w |= *dev->buf++ << 8;
--						dev->buf_len--;
--					}
--				}
--
--				if (dev->errata & I2C_OMAP3_1P153) {
--					int ret;
--
--					ret = errata_omap3_1p153(dev);
--					stat = omap_i2c_read_reg(dev,
--							OMAP_I2C_STAT_REG);
--
--					if (ret < 0) {
--						err |= OMAP_I2C_STAT_XUDF;
--						goto complete;
--					}
--				}
--
--				omap_i2c_write_reg(dev, OMAP_I2C_DATA_REG, w);
-+			ret = omap_i2c_transmit_data(dev, num_bytes, true);
-+			stat = omap_i2c_read_reg(dev, OMAP_I2C_STAT_REG);
-+			if (ret < 0) {
-+				err |= OMAP_I2C_STAT_XUDF;
-+				goto complete;
- 			}
- 
- 			omap_i2c_ack_stat(dev, OMAP_I2C_STAT_XDR);
-@@ -970,48 +961,17 @@ complete:
- 		}
- 
- 		if (stat & OMAP_I2C_STAT_XRDY) {
-+			int ret;
- 			u8 num_bytes = 1;
- 
- 			if (dev->fifo_size)
- 				num_bytes = dev->fifo_size;
- 
--			while (num_bytes--) {
--				if (!dev->buf_len) {
--					dev_err(dev->dev,
--							"XRDY IRQ while no "
--							"data to send\n");
--					break;
--				}
--
--				w = *dev->buf++;
--				dev->buf_len--;
--
--				/*
--				 * Data reg in 2430, omap3 and
--				 * omap4 is 8 bit wide
--				 */
--				if (dev->flags &
--						OMAP_I2C_FLAG_16BIT_DATA_REG) {
--					if (dev->buf_len) {
--						w |= *dev->buf++ << 8;
--						dev->buf_len--;
--					}
--				}
--
--				if (dev->errata & I2C_OMAP3_1P153) {
--					int ret;
--
--					ret = errata_omap3_1p153(dev);
--					stat = omap_i2c_read_reg(dev,
--							OMAP_I2C_STAT_REG);
--
--					if (ret < 0) {
--						err |= OMAP_I2C_STAT_XUDF;
--						goto complete;
--					}
--				}
--
--				omap_i2c_write_reg(dev, OMAP_I2C_DATA_REG, w);
-+			ret = omap_i2c_transmit_data(dev, num_bytes, false);
-+			stat = omap_i2c_read_reg(dev, OMAP_I2C_STAT_REG);
-+			if (ret < 0) {
-+				err |= OMAP_I2C_STAT_XUDF;
-+				goto complete;
- 			}
- 
- 			omap_i2c_ack_stat(dev, OMAP_I2C_STAT_XRDY);
 -- 
 1.7.10.4
 
