@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755136Ab2FNIRh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 04:17:37 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:60158 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754981Ab2FNIRe convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 04:17:34 -0400
-Message-ID: <1339661848.2559.7.camel@twins>
-Subject: Re: [RFC patch 2/5] smpboot: Provide infrastructure for percpu
- hotplug threads
-From: Peter Zijlstra <peterz@infradead.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>
-Date: Thu, 14 Jun 2012 10:17:28 +0200
-In-Reply-To: <1339661331.2559.5.camel@twins>
-References: <20120613102823.373180763@linutronix.de>
-	 <20120613105815.206105518@linutronix.de>
-	 <20120613183301.GE2427@linux.vnet.ibm.com>
-	 <alpine.LFD.2.02.1206132050270.3086@ionos> <1339661331.2559.5.camel@twins>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1755182Ab2FNISf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 04:18:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61890 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754595Ab2FNISc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 04:18:32 -0400
+Message-ID: <4FD99EA2.5010608@redhat.com>
+Date: Thu, 14 Jun 2012 16:19:46 +0800
+From: Asias He <asias@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+MIME-Version: 1.0
+To: Jens Axboe <axboe@kernel.dk>
+CC: Tejun Heo <tj@kernel.org>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Shaohua Li <shli@kernel.org>, Christoph Hellwig <hch@lst.de>,
+        Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH RFC 1/2] block: Add blk_bio_map_sg() helper
+References: <1339573307-11537-1-git-send-email-asias@redhat.com> <1339573307-11537-2-git-send-email-asias@redhat.com> <20120614023156.GB3766@dhcp-172-17-108-109.mtv.corp.google.com> <4FD992F7.5050800@kernel.dk>
+In-Reply-To: <4FD992F7.5050800@kernel.dk>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-06-14 at 10:08 +0200, Peter Zijlstra wrote:
-> On Wed, 2012-06-13 at 20:56 +0200, Thomas Gleixner wrote:
-> > If it's just a spurious wakeup then it goes back to sleep right away
-> > as nothing cleared the park bit. 
-> 
-> Your spurious wakeup will have destroyed the binding though. So you need
-> to be careful.
+On 06/14/2012 03:29 PM, Jens Axboe wrote:
+> On 2012-06-14 04:31, Tejun Heo wrote:
+>> On Wed, Jun 13, 2012 at 03:41:46PM +0800, Asias He wrote:
+>>> Add a helper to map a bio to a scatterlist, modelled after
+>>> blk_rq_map_sg.
+>>>
+>>> This helper is useful for any driver that wants to create
+>>> a scatterlist from its ->make_request_fn method.
+>>
+>> This may not be possible but I really wanna avoid having two copies of
+>> that complex logic.  Any chance blk_rq_map_bio() can be implemented in
+>> a way that allows blk_rq_map_sg() can be built on top of it?  Also,
+>
+> Was thinking the same thing, definitely code we don't want to have
+> duplicated. We've had mapping bugs in the past.
+>
+> Asias, this should be trivial to do, except that blk_rq_map_sg()
+> potentially maps across bio's as well. The tracking of the prev bio_vec
+> does not care about cross bio boundaries.
 
-We should probably do something like the below..
+Sure. I will try this and send v2.
 
-TJ does this wreck workqueues? Its somewhat 'creative' in that regard
-and really wants fixing.
 
----
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -5018,6 +5018,8 @@ void do_set_cpus_allowed(struct task_str
- 
- 	cpumask_copy(&p->cpus_allowed, new_mask);
- 	p->nr_cpus_allowed = cpumask_weight(new_mask);
-+	if (p->nr_cpus_allowed != 1)
-+		p->flags &= ~PF_THREAD_BOUND;
- }
- 
- /*
+-- 
+Asias
+
 
