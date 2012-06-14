@@ -1,73 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755300Ab2FNIjN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 04:39:13 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:55311 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753985Ab2FNIjI (ORCPT
+	id S1755238Ab2FNIjo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 04:39:44 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60682 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754667Ab2FNIjl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 04:39:08 -0400
-Message-ID: <4FD9A328.9080000@linaro.org>
-Date: Thu, 14 Jun 2012 09:39:04 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	Thu, 14 Jun 2012 04:39:41 -0400
+Date: Thu, 14 Jun 2012 01:39:21 -0700
+From: tip-bot for Borislav Petkov <borislav.petkov@amd.com>
+Message-ID: <tip-161270fc1f9ddfc17154e0d49291472a9cdef7db@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, andreas.herrmann3@amd.com, tglx@linutronix.de,
+        borislav.petkov@amd.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        andreas.herrmann3@amd.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        borislav.petkov@amd.com
+In-Reply-To: <20120529135442.GE29157@aftab.osrc.amd.com>
+References: <20120529135442.GE29157@aftab.osrc.amd.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86/smp: Fix topology checks on AMD MCM CPUs
+Git-Commit-ID: 161270fc1f9ddfc17154e0d49291472a9cdef7db
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Alessandro Rubini <rubini@gnudd.com>
-CC: arnd@arndb.de, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, giancarlo.asnaghi@st.com,
-        linux@arm.linux.org.uk, linus.walleij@stericsson.com,
-        srinidhi.kasagar@stericsson.com, w.sang@pengutronix.de,
-        khali@linux-fr.org, linux-i2c@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, alan@linux.intel.com
-Subject: Re: [PATCH V3 2/3] i2c-nomadik: turn the platform driver to an amba
- driver
-References: <201206140804.39083.arnd@arndb.de>  <cover.1339447570.git.rubini@gnudd.com> <4a198618063924b68182279ffd56c335d621f542.1339447570.git.rubini@gnudd.com> <20120614081758.GA19648@mail.gnudd.com>
-In-Reply-To: <20120614081758.GA19648@mail.gnudd.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 14 Jun 2012 01:39:27 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/06/12 09:17, Alessandro Rubini wrote:
->> You change only one half of ux500 here: the part where the device
->> gets defined statically, but not not the definition in the
->> device-tree.
->
-> Yes, I'm aware. That's why I added Lee Jones as Cc:, on Linusw's
-> suggestion.  Lee told me to go ahead and he'll fix the DT stuff.
+Commit-ID:  161270fc1f9ddfc17154e0d49291472a9cdef7db
+Gitweb:     http://git.kernel.org/tip/161270fc1f9ddfc17154e0d49291472a9cdef7db
+Author:     Borislav Petkov <borislav.petkov@amd.com>
+AuthorDate: Wed, 6 Jun 2012 17:31:26 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 13 Jun 2012 14:56:12 +0200
 
-I did?
+x86/smp: Fix topology checks on AMD MCM CPUs
 
-I have already DT:ed this driver. There are 3 patches on the MLs currently.
+The warning below triggers on AMD MCM packages because physical package
+IDs on the cores of a _physical_ socket are the same. I.e., this field
+says which CPUs belong to the same physical package.
 
-> [PATCH 1/3] i2c: Add Device Tree support to the Nomadik I2C driver
-> [PATCH 2/3] ARM: ux500: Add i2c configurations to the Device Tree for DB8500 based devices
-> [PATCH 3/3] Documentation: Device Tree binding information for i2c-nomadik driver
+However, the same two CPUs belong to two different internal, i.e.
+"logical" nodes in the same physical socket which is reflected in the
+CPU-to-node map on x86 with NUMA.
 
-I'm more than happy for you to base your patches on these and make the 
-necessary changes. Off hand, I think the only changes you'll need to 
-make is the probing from DT itself.
+Which makes this check wrong on the above topologies so circumvent it.
 
-So something like:
+[    0.444413] Booting Node   0, Processors  #1 #2 #3 #4 #5 Ok.
+[    0.461388] ------------[ cut here ]------------
+[    0.465997] WARNING: at arch/x86/kernel/smpboot.c:310 topology_sane.clone.1+0x6e/0x81()
+[    0.473960] Hardware name: Dinar
+[    0.477170] sched: CPU #6's mc-sibling CPU #0 is not on the same node! [node: 1 != 0]. Ignoring dependency.
+[    0.486860] Booting Node   1, Processors  #6
+[    0.491104] Modules linked in:
+[    0.494141] Pid: 0, comm: swapper/6 Not tainted 3.4.0+ #1
+[    0.499510] Call Trace:
+[    0.501946]  [<ffffffff8144bf92>] ? topology_sane.clone.1+0x6e/0x81
+[    0.508185]  [<ffffffff8102f1fc>] warn_slowpath_common+0x85/0x9d
+[    0.514163]  [<ffffffff8102f2b7>] warn_slowpath_fmt+0x46/0x48
+[    0.519881]  [<ffffffff8144bf92>] topology_sane.clone.1+0x6e/0x81
+[    0.525943]  [<ffffffff8144c234>] set_cpu_sibling_map+0x251/0x371
+[    0.532004]  [<ffffffff8144c4ee>] start_secondary+0x19a/0x218
+[    0.537729] ---[ end trace 4eaa2a86a8e2da22 ]---
+[    0.628197]  #7 #8 #9 #10 #11 Ok.
+[    0.807108] Booting Node   3, Processors  #12 #13 #14 #15 #16 #17 Ok.
+[    0.897587] Booting Node   2, Processors  #18 #19 #20 #21 #22 #23 Ok.
+[    0.917443] Brought up 24 CPUs
 
-> --- a/arch/arm/boot/dts/db8500.dtsi
-> +++ b/arch/arm/boot/dts/db8500.dtsi
-> @@ -449,7 +449,7 @@
->                 };
->
->                 i2c@80004000 {
-> -                       compatible = "stericsson,db8500-i2c", "st,nomadik-i2c";
-> +                       compatible = "st,nomadik-i2c", "arm,primecell";
->                         reg = <0x80004000 0x1000>;
->                         interrupts = <0 21 0x4>;
->                         #address-cells = <1>;
+We ran a topology sanity check test we have here on it and
+it all looks ok... hopefully :).
 
-... for each of the controllers.
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+Cc: Andreas Herrmann <andreas.herrmann3@amd.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/20120529135442.GE29157@aftab.osrc.amd.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/kernel/smpboot.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-M: +44 77 88 633 515
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index fd019d7..c3a6bac 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -349,9 +349,12 @@ static bool __cpuinit match_llc(struct cpuinfo_x86 *c, struct cpuinfo_x86 *o)
+ 
+ static bool __cpuinit match_mc(struct cpuinfo_x86 *c, struct cpuinfo_x86 *o)
+ {
+-	if (c->phys_proc_id == o->phys_proc_id)
+-		return topology_sane(c, o, "mc");
++	if (c->phys_proc_id == o->phys_proc_id) {
++		if (cpu_has(c, X86_FEATURE_AMD_DCM))
++			return true;
+ 
++		return topology_sane(c, o, "mc");
++	}
+ 	return false;
+ }
+ 
