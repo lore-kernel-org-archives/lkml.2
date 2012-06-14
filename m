@@ -1,107 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755464Ab2FNJQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 05:16:58 -0400
-Received: from casper.infradead.org ([85.118.1.10]:48714 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755443Ab2FNJQz (ORCPT
+	id S1755456Ab2FNJSu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 05:18:50 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:50803 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755400Ab2FNJSs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 05:16:55 -0400
-Message-ID: <4FD9ABFE.8060603@kernel.dk>
-Date: Thu, 14 Jun 2012 11:16:46 +0200
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>
-CC: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        "jirisl >> Jiri Slaby" <jirislaby@gmail.com>,
-        Asias He <asias@redhat.com>
-Subject: Re: NULL pointer dereference at blk_drain_queue
-References: <4FD9A908.90307@suse.cz>
-In-Reply-To: <4FD9A908.90307@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-2
+	Thu, 14 Jun 2012 05:18:48 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.5.1
+Date: Thu, 14 Jun 2012 18:18:44 +0900
+From: Taku Izumi <izumi.taku@jp.fujitsu.com>
+To: Jiang Liu <jiang.liu@huawei.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Jiang Liu <liuj97@gmail.com>, Don Dutile <ddutile@redhat.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Yijing Wang <wangyijing@huawei.com>,
+        Keping Chen <chenkeping@huawei.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v1 1/6] PCI: change PCI device management logic to
+ better follow device model
+Message-Id: <20120614181844.760bc0c7.izumi.taku@jp.fujitsu.com>
+In-Reply-To: <1338787022-400-1-git-send-email-jiang.liu@huawei.com>
+References: <1338787022-400-1-git-send-email-jiang.liu@huawei.com>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/14/2012 11:04 AM, Jiri Slaby wrote:
-> Hi,
+
+Hi Jiang,
+
+   Looks good for me.
+
+ Best regards,
+ Taku Izumi
+
+On Mon, 04 Jun 2012 13:16:57 +0800
+Jiang Liu <jiang.liu@huawei.com> wrote:
+
+> From: Jiang Liu <liuj97@gmail.com>
 > 
-> with today's -next I'm (reproducibly) getting this while updating packages:
-> BUG: unable to handle kernel NULL pointer dereference at           (null)
-> IP: [<ffffffff8108cd16>] __wake_up_common+0x26/0x90
-> PGD 463f1067 PUD 463f2067 PMD 0
-> Oops: 0000 [#1] SMP
-> CPU 1
-> Modules linked in:
-> Pid: 2711, comm: kworker/1:0 Not tainted 3.5.0-rc2-next-20120614_64+
-> #1752 Bochs Bochs
-> RIP: 0010:[<ffffffff8108cd16>]  [<ffffffff8108cd16>]
-> __wake_up_common+0x26/0x90
-> RSP: 0018:ffff880047221cb0  EFLAGS: 00010082
-> RAX: 0000000000000086 RBX: ffff880046350888 RCX: 0000000000000000
-> RDX: 0000000000000000 RSI: 0000000000000003 RDI: ffff880046350888
-> RBP: ffff880047221cf0 R08: 0000000000000000 R09: 00000001000c0009
-> R10: ffff880047804480 R11: 0000000000000000 R12: ffff880046350890
-> R13: 0000000000000003 R14: 0000000000000000 R15: 0000000000000003
-> FS:  0000000000000000(0000) GS:ffff880049700000(0000) knlGS:0000000000000000
-> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> CR2: 0000000000000000 CR3: 0000000045ced000 CR4: 00000000000006e0
-> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> Process kworker/1:0 (pid: 2711, threadinfo ffff880047220000, task
-> ffff8800435bc5c0)
-> Stack:
->  000000004628da68 0000000000000000 ffff88004970d340 ffff880046350888
->  0000000000000086 0000000000000003 0000000000000000 0000000000000000
->  ffff880047221d30 ffffffff8108d9a3 ffff88004970d340 ffff880046350848
-> Call Trace:
->  [<ffffffff8108d9a3>] __wake_up+0x43/0x70
->  [<ffffffff81267f96>] blk_drain_queue+0xf6/0x120
->  [<ffffffff8126803f>] blk_cleanup_queue+0x7f/0xd0
->  [<ffffffff814a9a80>] md_free+0x50/0x70
->  [<ffffffff8127b3c2>] kobject_cleanup+0x82/0x1b0
->  [<ffffffff8127b24b>] kobject_put+0x2b/0x60
->  [<ffffffff814a97ef>] mddev_delayed_delete+0x2f/0x40
->  [<ffffffff8107e1ab>] process_one_work+0x11b/0x3f0
->  [<ffffffff814a97c0>] ? restart_array+0xc0/0xc0
->  [<ffffffff8107f94e>] worker_thread+0x12e/0x340
->  [<ffffffff8107f820>] ? manage_workers.isra.29+0x1f0/0x1f0
->  [<ffffffff81084e1e>] kthread+0x8e/0xa0
->  [<ffffffff8160add4>] kernel_thread_helper+0x4/0x10
->  [<ffffffff81084d90>] ? flush_kthread_worker+0x70/0x70
->  [<ffffffff8160add0>] ? gs_change+0xb/0xb
-> Code: 80 00 00 00 00 55 48 89 e5 41 57 41 89 f7 41 56 41 89 ce 41 55 41
-> 54 4c 8d 67 08 53 48 83 ec 18 89 55 c4 48 8b 57 08 4c 89 45 c8 <4c> 8b
-> 2a 48 8d 42 e8 49 83 ed 18 49 39 d4 75 0d eb 40 0f 1f 84
-
-It's a bug in local commit bc85cf83, for stacked devices we have not
-initialized the wait queues. So the below should fix it, as would always
-initializing all queue structures even for the partial use case.
-
-
-diff --git a/block/blk-core.c b/block/blk-core.c
-index b477fa0..93eb3e4 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -415,10 +415,12 @@ void blk_drain_queue(struct request_queue *q, bool drain_all)
- 	 * allocation path, so the wakeup chaining is lost and we're
- 	 * left with hung waiters. We need to wake up those waiters.
- 	 */
--	spin_lock_irq(q->queue_lock);
--	for (i = 0; i < ARRAY_SIZE(q->rq.wait); i++)
--		wake_up_all(&q->rq.wait[i]);
--	spin_unlock_irq(q->queue_lock);
-+	if (q->request_fn) {
-+		spin_lock_irq(q->queue_lock);
-+		for (i = 0; i < ARRAY_SIZE(q->rq.wait); i++)
-+			wake_up_all(&q->rq.wait[i]);
-+		spin_unlock_irq(q->queue_lock);
-+	}
- }
- 
- /**
-
--- 
-Jens Axboe
+> According to device model documentation, the way to add/remove device
+> object should be symmetric.
+> 
+> /**
+>  * device_del - delete device from system.
+>  * @dev: device.
+>  *
+>  * This is the first part of the device unregistration
+>  * sequence. This removes the device from the lists we control
+>  * from here, has it removed from the other driver model
+>  * subsystems it was added to in device_add(), and removes it
+>  * from the kobject hierarchy.
+>  *
+>  * NOTE: this should be called manually _iff_ device_add() was
+>  * also called manually.
+>  */
+> 
+> The rule here is to either use
+> 1) device_register()/device_unregister()
+> or
+> 2) device_initialize()/device_add()/device_del()/put_device().
+> 
+> So change PCI core to follow the rule and get rid of the redundant
+> pci_dev_get()/pci_dev_put() pair.
+> 
+> Signed-off-by: Jiang Liu <liuj97@gmail.com>
+> ---
+>  drivers/pci/probe.c  |    1 -
+>  drivers/pci/remove.c |    4 ++--
+>  2 files changed, 2 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+> index 0840409..dacca26 100644
+> --- a/drivers/pci/probe.c
+> +++ b/drivers/pci/probe.c
+> @@ -1294,7 +1294,6 @@ void pci_device_add(struct pci_dev *dev, struct pci_bus *bus)
+>  {
+>  	device_initialize(&dev->dev);
+>  	dev->dev.release = pci_release_dev;
+> -	pci_dev_get(dev);
+>  
+>  	dev->dev.dma_mask = &dev->dma_mask;
+>  	dev->dev.dma_parms = &dev->dma_parms;
+> diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
+> index 04a4861..6c07bc5 100644
+> --- a/drivers/pci/remove.c
+> +++ b/drivers/pci/remove.c
+> @@ -22,7 +22,7 @@ static void pci_stop_dev(struct pci_dev *dev)
+>  	if (dev->is_added) {
+>  		pci_proc_detach_device(dev);
+>  		pci_remove_sysfs_dev_files(dev);
+> -		device_unregister(&dev->dev);
+> +		device_del(&dev->dev);
+>  		dev->is_added = 0;
+>  	}
+>  
+> @@ -40,7 +40,7 @@ static void pci_destroy_dev(struct pci_dev *dev)
+>  	up_write(&pci_bus_sem);
+>  
+>  	pci_free_resources(dev);
+> -	pci_dev_put(dev);
+> +	put_device(&dev->dev);
+>  }
+>  
+>  /**
+> -- 
+> 1.7.1
+> 
+> 
+> 
 
