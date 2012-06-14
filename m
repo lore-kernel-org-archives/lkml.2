@@ -1,54 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753210Ab2FNAMb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 20:12:31 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:57607 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751857Ab2FNAMa (ORCPT
+	id S1755008Ab2FNATF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 20:19:05 -0400
+Received: from smtp-fw-4101.amazon.com ([72.21.198.25]:42104 "EHLO
+	smtp-fw-4101.amazon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752015Ab2FNATD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 20:12:30 -0400
-Message-ID: <4FD92C5E.6070602@linaro.org>
-Date: Wed, 13 Jun 2012 17:12:14 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Wed, 13 Jun 2012 20:19:03 -0400
+X-IronPort-AV: E=Sophos;i="4.77,407,1336348800"; 
+   d="scan'208";a="750577256"
+Date: Wed, 13 Jun 2012 17:18:55 -0700
+From: Matt Wilson <msw@amazon.com>
+To: Jason Stubbs <jasonbstubbs@gmail.com>
+Cc: Dave Chinner <david@fromorbit.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
+Subject: Re: PROBLEM: Possible race between xen, md, dm and/or xfs
+Message-ID: <20120614001855.GA2136@US-SEA-R8XVZTX>
+References: <4FD1918A.2060908@gmail.com>
+ <20120612035737.GL22848@dastard>
+ <4FD731F9.8070509@gmail.com>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
-        Tony Luck <tony.luck@intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Shuah Khan <shuahkhan@gmail.com>, arve@android.com,
-        Rebecca Schultz Zavin <rebecca@android.com>,
-        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: Re: [PATCH v5 0/11] Merge ram_console into pstore
-References: <20120526131747.GA15054@lizard> <20120614000504.GA11990@kroah.com>
-In-Reply-To: <20120614000504.GA11990@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12061400-5518-0000-0000-00000526B5F9
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FD731F9.8070509@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/13/2012 05:05 PM, Greg Kroah-Hartman wrote:
-> On Sat, May 26, 2012 at 06:17:48AM -0700, Anton Vorontsov wrote:
->> The old ram_console driver is removed. This might probably cause
->> some pain for out-of-tree code, as it would need to be adjusted...
->> but "no pain, no gain"? :-) Though, if there's some serious resistance,
->> we can probably postpone the last two patches.
-> What out-of-tree code would care about this?
-I think he's referring to the persistent_ftrace work in the Android tree.
+On Tue, Jun 12, 2012 at 05:11:37AM -0700, Jason Stubbs wrote:
+> On 2012-6-12 13:57 , Dave Chinner wrote:
+> > Nothing
+> > wrong with MD, LVM, or XFS. The problem is either that EBS never
+> > completed the IO, or Xen swallowed it and it never made to it to the
+> > guest OS. Either way, it does not appear to be a problem in the
+> > higher levels of the linux storage stack.
+> 
+> Thanks Dave for looking into this.
+> 
+> I'll be sure to give Amazon ample opportunity to diagnose things from
+> there side should the issue occur again and hopefully there won't be
+> any more people reporting extraneous issues.
 
-Anton did send out patches to try to get equivalent functionality 
-working with pstore, but I don't know if Colin or anyone else from the 
-Android team has had a chance to review it and make sure its sufficient.
+Hi Jason,
 
-thanks
--john
+If you're able to reproduce this hang, I'm sure that we can get to the
+root of the problem quite quickly. Short of that, if you can provide a
+running instance that is exhibiting the problem we can do some
+live-system debugging. It is much more difficult to determine root
+cause and verify fixes without reproduction instructions.
 
+Given the kernel version you reported in your traces, I can at least
+rule out one known bug that caused blkfront to wait forever for an IO
+to complete: 
+  http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=dffe2e1
+
+The kernel version you're using using includes the follow-on change to
+use fasteoi:
+  http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=3588fe2
+
+I'm sorry that I can't be more of more immediate help. If you
+encounter the problem again, please contact developer support.
+
+Matt
