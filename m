@@ -1,73 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756525Ab2FNUcT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 16:32:19 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:38363 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756410Ab2FNUcS (ORCPT
+	id S1756554Ab2FNUdM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 16:33:12 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:59201 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756449Ab2FNUdJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 16:32:18 -0400
-Date: Thu, 14 Jun 2012 16:24:49 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Cc: xen-devel@lists.xensource.com
-Subject: [GIT PULL] (xen) stable/for-linus-3.5-rc2-tag
-Message-ID: <20120614202449.GA24693@phenom.dumpdata.com>
+	Thu, 14 Jun 2012 16:33:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <1339701783.5981.5.camel@x61.thuisdomein>
+References: <20120612105913.GA8404@aftab.osrc.amd.com> <1339699862-3731-1-git-send-email-jim.cromie@gmail.com>
+ <1339701783.5981.5.camel@x61.thuisdomein>
+From: Jim Cromie <jim.cromie@gmail.com>
+Date: Thu, 14 Jun 2012 14:32:38 -0600
+Message-ID: <CAJfuBxxBD5eiMMTW5+q6LEpv+WLcbcsxxY6eEjbaTVCFqBeKmA@mail.gmail.com>
+Subject: Re: [PATCH] init: add comments to keep initcall-names in sync with
+ initcall levels
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: rusty@rustcorp.com.au, linux-kernel@vger.kernel.org, bp@amd64.org,
+        pawel.moll@arm.com, jbaron@redhat.com, gregkh@linuxfoundation.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Linus,
-
-Please pull my tag:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-linus-3.5-rc2-tag
-
-which has accumulated some good bug-fixes. The tag itself has the description - which
-I am copying here:
-
-Five bug-fixes:
- - When booting as PVHVM we would try to use PV console - but would not validate
-   the parameters causing us to crash during restore b/c we re-use the wrong event
-   channel.
- - When booting on machines with SR-IOV PCI bridge we didn't check for the bridge
-   and tried to use it.
- - Under AMD machines would advertise the APERFMPERF resulting in needless amount
-   of MSRs from the guest.
- - A global value (xen_released_pages) was not subtracted at bootup when pages
-   were added back in. This resulted in the balloon worker having the wrong
-   account of how many pages were truly released.
- - Fix dead-lock when xen-blkfront is run in the same domain as xen-blkback.
+On Thu, Jun 14, 2012 at 1:23 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
+> On Thu, 2012-06-14 at 12:51 -0600, Jim Cromie wrote:
 
 
-Please pull!
+>>   *
+>>   * This only exists for built-in code, not for modules.
+>> + * Keep main.c:initcall_level_names[] in sync. */
+>>   */
 
-Andre Przywara (1):
-      xen/setup: filter APERFMPERF cpuid feature out
+> This comment now ends with "*/" twice. Perhaps that's legal (I haven't
+> even bothered to check) but it is really too ugly.
 
-Konrad Rzeszutek Wilk (5):
-      xen/hvc: Collapse error logic.
-      xen/hvc: Fix error cases around HVM_PARAM_CONSOLE_PFN
-      xen/hvc: Check HVM_PARAM_CONSOLE_[EVTCHN|PFN] for correctness.
-      xen/events: Add WARN_ON when quick lookup found invalid type.
-      xen/balloon: Subtract from xen_released_pages the count that is populated.
+Guilty as charged, revision forthcoming.
 
-Stefano Stabellini (1):
-      xen: mark local pages as FOREIGN in the m2p_override
 
-Zhang, Yang Z (1):
-      xen/pci: Check for PCI bridge before using it.
+>>
+>> -/* Don't use these in modules, but some people do... */
+>> +/* Don't use these in loadable modules, but some people do... */
+>
+> What problem does this solve?
+>
 
- arch/x86/xen/enlighten.c  |    8 ++++++++
- arch/x86/xen/p2m.c        |   36 ++++++++++++++++++++++++++++++++++++
- arch/x86/xen/setup.c      |    3 ++-
- drivers/tty/hvc/hvc_xen.c |   31 +++++++++++++++++--------------
- drivers/xen/events.c      |    9 +++++++++
- drivers/xen/pci.c         |    2 +-
- 6 files changed, 73 insertions(+), 16 deletions(-)
+
+kernel/params.c  and other builtins are also modules - at least wrt
+how theyre reported by dynamic_debug:
+
+kernel/params.c:121 [params]parse_one =_ "Unknown argument `%s'\012"
+kernel/params.c:117 [params]parse_one =_ "Unknown argument: calling %p\012"
+kernel/params.c:108 [params]parse_one =_ "They are equal!  Calling %p\012"
+kernel/params.c:188 [params]parse_args =_ "Parsing ARGS: %s\012"
+
+The advice to avoid those macros does not apply to builtin "modules"
