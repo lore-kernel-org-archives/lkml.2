@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755422Ab2FNJKI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 05:10:08 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:40910 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755346Ab2FNJKG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 05:10:06 -0400
-Date: Thu, 14 Jun 2012 11:10:01 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org, eranian@google.com,
-        peterz@infradead.org, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 2/4] x86: Track minimum microcode revision globally v2
-Message-ID: <20120614091001.GA22155@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
-	linux-kernel@vger.kernel.org, eranian@google.com,
-	peterz@infradead.org, Andi Kleen <ak@linux.intel.com>
-References: <1339618842-26636-1-git-send-email-andi@firstfloor.org>
- <1339618842-26636-3-git-send-email-andi@firstfloor.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1339618842-26636-3-git-send-email-andi@firstfloor.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755446Ab2FNJKe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 05:10:34 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:36613 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755346Ab2FNJKd convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 05:10:33 -0400
+Message-ID: <1339665015.2559.16.camel@twins>
+Subject: Re: [RFC GIT PULL] nohz: Basic cputime accounting for adaptive
+ tickless
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@ti.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "Luck,Tony" <tony.luck@intel.com>,
+        Venkatesh Pallipadi <venki@google.com>
+Date: Thu, 14 Jun 2012 11:10:15 +0200
+In-Reply-To: <1339664829.2559.14.camel@twins>
+References: <1339604397-8758-1-git-send-email-fweisbec@gmail.com>
+	 <1339664829.2559.14.camel@twins>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 13, 2012 at 01:20:40PM -0700, Andi Kleen wrote:
-> +/*
-> + * Track the minimum global microcode version.  On early bootup assume
-> + * the BIOS set all CPUs to the same revision. If that's not the case
-> + * some code may be already running assuming the newer revision, but
-> + * there's not much we can do about that (but it's unlikely to be
-> + * problem in early bootup)
-> + */
-> +__cpuinit void boot_update_min_microcode(struct cpuinfo_x86 *c)
-> +{	
-> +	static int boot_min_microcode;
-> +
-> +	if (!boot_min_microcode) {
-> +		boot_min_microcode = c->microcode;
-> +		boot_cpu_data.microcode = c->microcode;
-> +	} else if (c->microcode < boot_min_microcode) {
-> +		pr_warn("CPU %d has lower microcode revision %x at boot than boot CPU (%x)\n",
-> +			smp_processor_id(), 
-> +			c->microcode,
-> +			boot_min_microcode);
+On Thu, 2012-06-14 at 11:07 +0200, Peter Zijlstra wrote:
+> On Wed, 2012-06-13 at 18:19 +0200, Frederic Weisbecker wrote:
+> > Ingo, Thomas,
+> > 
+> > This starts the basic code that allow accounting of cputime spent tickless
+> > outside idle, which is a first step to prepare for the adaptive nohz
+> > infrastructure.
+> > 
+> > I hope we can set a tree in -tip for that. If you're fine with it
+> > this is pullable from:
+> 
+> There's a number of architecture that already does fine grained
+> user/kernel time accounting on syscall boundaries etc.. s390, powerpc
+> and ia64.
+> 
+> You're now adding a 3rd way of accounting user/kernel time.. I'm not
+> much looking fwd to that..
 
-You still haven't told me what's the use of this printk statement to the
-user. Should she update her microcode, buy a new box or go up in flames?
+Note there's also the whole IRQ_TIME_ACCOUNTING muck.. all in all its
+getting quite ridiculous.
 
--- 
-Regards/Gruss,
-    Boris.
+
