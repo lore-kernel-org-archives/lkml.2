@@ -1,62 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756114Ab2FNOFm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 10:05:42 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:51081 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756017Ab2FNOFl (ORCPT
+	id S1756167Ab2FNOHy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 10:07:54 -0400
+Received: from www.linutronix.de ([62.245.132.108]:57299 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756039Ab2FNOHx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 10:05:41 -0400
+	Thu, 14 Jun 2012 10:07:53 -0400
+Date: Thu, 14 Jun 2012 16:07:39 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Chen Gong <gong.chen@linux.intel.com>
+cc: tony.luck@intel.com, borislav.petkov@amd.com, x86@kernel.org,
+        peterz@infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tmp patch to fix hotplug issue in CMCI storm
+In-Reply-To: <1339681786-8418-1-git-send-email-gong.chen@linux.intel.com>
+Message-ID: <alpine.LFD.2.02.1206141554290.3086@ionos>
+References: <alpine.LFD.2.02.1206080940360.3086@ionos> <1339681786-8418-1-git-send-email-gong.chen@linux.intel.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <CAPM=9tzL-TyDLKWdmCdi5d6PzQTs3sTLnqnLG_s7K2h9WNOEvQ@mail.gmail.com>
-References: <4FD9E69A.4090708@cwi.nl>
-	<CAPM=9tzL-TyDLKWdmCdi5d6PzQTs3sTLnqnLG_s7K2h9WNOEvQ@mail.gmail.com>
-Date: Thu, 14 Jun 2012 16:05:40 +0200
-Message-ID: <CAKMK7uGokt5cW0R+LKXRmE_kecqmnv4Zgy-WiSZA-GPP8htE-A@mail.gmail.com>
-Subject: Re: [3.4 regression] [bisected] DisplayPort fails to come on
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Dave Airlie <airlied@gmail.com>
-Cc: "Wouter M. Koolen" <W.M.Koolen-Wijkstra@cwi.nl>,
-        intergalactic.anonymous@gmail.com, len.brown@intel.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        "Barnes, Jesse" <jbarnes@virtuousgeek.org>,
-        "Wilson, Chris" <chris.wilson@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 14, 2012 at 4:00 PM, Dave Airlie <airlied@gmail.com> wrote:
-> On Thu, Jun 14, 2012 at 2:26 PM, Wouter M. Koolen
-> <W.M.Koolen-Wijkstra@cwi.nl> wrote:
-> cc'ing Daniel.
->
->> Hi Igor and Len,
->>
->> When I cold boot 3.4 on my laptop the second monitor attached to the
->> displayport stays blank. It works fine with 3.3.8 and earlier.
->>
->> I get two error messages in dmesg:
->>
->> kernel: video: probe of LNXVIDEO:00 failed with error -5
->>
->> kernel: [drm:intel_dp_complete_link_train] *ERROR* failed to train DP,
->> aborting
->>
->> When I warm boot 3.4 after running kernel 3.3.8 first, only the first
->> message appears and the display works fine.
+On Thu, 14 Jun 2012, Chen Gong wrote:
+> this patch is based on tip tree and previous 5 patches.
 
-Ok, the second message is actually the one explaining the black
-screen. Can you please boot with drm.debug=0xe added to your kernel
-cmdline and attach the full dmesg, so we know a bit what your display
-hw looks like?
+You really don't need all this complexity to handle that. The main
+thing is that you clear the storm state and adjust the storm counter
+when the cpu goes offline (in case the state is ACTIVE).
 
-Also, please redo the bisect if possible (with coldboots) and hunt for
-the black screen/the "failed to train DP" message.
+When it comes online again then you can simply let it restart cmci. If
+the storm on this cpu (or node) still exists then it will notice and
+everything falls in place.
 
-Thanks, Daniel
--- 
-Daniel Vetter
-daniel.vetter@ffwll.ch - +41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Keep it simple, really!
+
+Thanks,
+
+	tglx
