@@ -1,55 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755182Ab2FNISf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 04:18:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61890 "EHLO mx1.redhat.com"
+	id S1755270Ab2FNISo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 04:18:44 -0400
+Received: from mail2.gnudd.com ([213.203.150.91]:51687 "EHLO mail.gnudd.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754595Ab2FNISc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 04:18:32 -0400
-Message-ID: <4FD99EA2.5010608@redhat.com>
-Date: Thu, 14 Jun 2012 16:19:46 +0800
-From: Asias He <asias@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1754595Ab2FNISl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 04:18:41 -0400
+Date: Thu, 14 Jun 2012 10:17:58 +0200
+From: Alessandro Rubini <rubini@gnudd.com>
+To: arnd@arndb.de
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        giancarlo.asnaghi@st.com, linux@arm.linux.org.uk,
+        linus.walleij@stericsson.com, srinidhi.kasagar@stericsson.com,
+        w.sang@pengutronix.de, khali@linux-fr.org, linux-i2c@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, lee.jones@linaro.org,
+        alan@linux.intel.com
+Subject: Re: [PATCH V3 2/3] i2c-nomadik: turn the platform driver to an
+ amba driver
+Message-ID: <20120614081758.GA19648@mail.gnudd.com>
 MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>
-CC: Tejun Heo <tj@kernel.org>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Shaohua Li <shli@kernel.org>, Christoph Hellwig <hch@lst.de>,
-        Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH RFC 1/2] block: Add blk_bio_map_sg() helper
-References: <1339573307-11537-1-git-send-email-asias@redhat.com> <1339573307-11537-2-git-send-email-asias@redhat.com> <20120614023156.GB3766@dhcp-172-17-108-109.mtv.corp.google.com> <4FD992F7.5050800@kernel.dk>
-In-Reply-To: <4FD992F7.5050800@kernel.dk>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: GnuDD, Device Drivers, Embedded Systems, Courses
+In-Reply-To: <201206140804.39083.arnd@arndb.de>
+References: <201206140804.39083.arnd@arndb.de>
+  <cover.1339447570.git.rubini@gnudd.com>
+ <4a198618063924b68182279ffd56c335d621f542.1339447570.git.rubini@gnudd.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/14/2012 03:29 PM, Jens Axboe wrote:
-> On 2012-06-14 04:31, Tejun Heo wrote:
->> On Wed, Jun 13, 2012 at 03:41:46PM +0800, Asias He wrote:
->>> Add a helper to map a bio to a scatterlist, modelled after
->>> blk_rq_map_sg.
->>>
->>> This helper is useful for any driver that wants to create
->>> a scatterlist from its ->make_request_fn method.
->>
->> This may not be possible but I really wanna avoid having two copies of
->> that complex logic.  Any chance blk_rq_map_bio() can be implemented in
->> a way that allows blk_rq_map_sg() can be built on top of it?  Also,
->
-> Was thinking the same thing, definitely code we don't want to have
-> duplicated. We've had mapping bugs in the past.
->
-> Asias, this should be trivial to do, except that blk_rq_map_sg()
-> potentially maps across bio's as well. The tracking of the prev bio_vec
-> does not care about cross bio boundaries.
+> You change only one half of ux500 here: the part where the device
+> gets defined statically, but not not the definition in the
+> device-tree.
 
-Sure. I will try this and send v2.
+Yes, I'm aware. That's why I added Lee Jones as Cc:, on Linusw's
+suggestion.  Lee told me to go ahead and he'll fix the DT stuff.
+Lee?
 
-
--- 
-Asias
-
-
+thanks
+/alessandro
