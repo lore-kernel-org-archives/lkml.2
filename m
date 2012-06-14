@@ -1,72 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756141Ab2FNOuP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 10:50:15 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35500 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755575Ab2FNOuN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 10:50:13 -0400
-Date: Thu, 14 Jun 2012 07:50:02 -0700
-From: tip-bot for Alexander Gordeev <agordeev@redhat.com>
-Message-ID: <tip-5a0a2a308113086cc800a203d903271c9caa1611@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, agordeev@redhat.com, hpa@zytor.com,
-        mingo@kernel.org, yinghai@kernel.org, suresh.b.siddha@intel.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, agordeev@redhat.com,
-        linux-kernel@vger.kernel.org, yinghai@kernel.org,
-        suresh.b.siddha@intel.com, tglx@linutronix.de
-In-Reply-To: <20120614075043.GI3383@dhcp-26-207.brq.redhat.com>
-References: <20120614075043.GI3383@dhcp-26-207.brq.redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86/apic/es7000: Make apicid of a cluster (not CPU)
-  from a cpumask
-Git-Commit-ID: 5a0a2a308113086cc800a203d903271c9caa1611
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1756163Ab2FNOux (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 10:50:53 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:49483 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755451Ab2FNOuv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 10:50:51 -0400
+Date: Thu, 14 Jun 2012 07:50:38 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>
+Subject: Re: [RFC patch 2/5] smpboot: Provide infrastructure for percpu
+ hotplug threads
+Message-ID: <20120614145038.GB2458@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120613102823.373180763@linutronix.de>
+ <20120613105815.206105518@linutronix.de>
+ <20120613185748.GF2427@linux.vnet.ibm.com>
+ <alpine.LFD.2.02.1206132101440.3086@ionos>
+ <20120613191745.GG2427@linux.vnet.ibm.com>
+ <20120613204725.GA9858@linux.vnet.ibm.com>
+ <20120614045125.GA30257@linux.vnet.ibm.com>
+ <alpine.LFD.2.02.1206141234400.3086@ionos>
+ <20120614125939.GC2443@linux.vnet.ibm.com>
+ <alpine.LFD.2.02.1206141527580.3086@ionos>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 14 Jun 2012 07:50:07 -0700 (PDT)
+In-Reply-To: <alpine.LFD.2.02.1206141527580.3086@ionos>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12061414-5806-0000-0000-00001634A366
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5a0a2a308113086cc800a203d903271c9caa1611
-Gitweb:     http://git.kernel.org/tip/5a0a2a308113086cc800a203d903271c9caa1611
-Author:     Alexander Gordeev <agordeev@redhat.com>
-AuthorDate: Thu, 14 Jun 2012 09:50:44 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 14 Jun 2012 12:53:16 +0200
+On Thu, Jun 14, 2012 at 03:32:19PM +0200, Thomas Gleixner wrote:
+> On Thu, 14 Jun 2012, Paul E. McKenney wrote:
+> > On Thu, Jun 14, 2012 at 01:20:39PM +0200, Thomas Gleixner wrote:
+> > > I gave it a quick shot, but I was not able to reproduce the hang yet.
+> > 
+> > Really?  I have a strictly Western-Hemisphere bug?  ;-)
+> 
+> I guess I need to fire up rcu torture to make it surface.
 
-x86/apic/es7000: Make apicid of a cluster (not CPU) from a cpumask
+A simple offline was triggering it for me.  Perhaps some of my debug
+code was inappropriate, will retry.
 
-cpu_mask_to_apicid_and() always returns apicid of a single CPU,
-even in case multiple CPUs were requested. This update fixes a
-typo and forces apicid of a cluster to be returned.
+> > > But looking at the thread function made me look into rcu_yield() and I
+> > > really wonder what kind of drug induced that particular piece of
+> > > horror.
+> > 
+> > When you are working on something like RCU priority boosting, no other
+> > drug is in any way necessary.  ;-)
+> 
+> And how do we protect minors from that ?
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Link: http://lkml.kernel.org/r/20120614075043.GI3383@dhcp-26-207.brq.redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/apic/es7000_32.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+We rely on their own sense of self-preservation preventing them from
+getting involved in such insanity.
 
-diff --git a/arch/x86/kernel/apic/es7000_32.c b/arch/x86/kernel/apic/es7000_32.c
-index 9882093..0874799 100644
---- a/arch/x86/kernel/apic/es7000_32.c
-+++ b/arch/x86/kernel/apic/es7000_32.c
-@@ -542,7 +542,7 @@ es7000_cpu_mask_to_apicid(const struct cpumask *cpumask, unsigned int *dest_id)
- 
- 			return -EINVAL;
- 		}
--		apicid = new_apicid;
-+		apicid |= new_apicid;
- 		round++;
- 	}
- 	if (!round)
+> > > I can't figure out why this yield business is necessary at all. The
+> > > commit logs are as helpful as the missing code comments :)
+> > > 
+> > > I suspect that it's some starvation issue. But if we need it, then
+> > > can't we replace it with something sane like the (untested) patch
+> > > below?
+> > 
+> > Yep, starvation.  I will take a look at your approach after I wake
+> > up a bit more.
+> 
+> Btw, if that simpler yield approach is working and I can't see why it
+> shouldn't then you can get rid of the node task as well. The only
+> purpose of it is to push up the priority of yielding tasks, right?
+
+It also boosts the priority of preempted RCU read-side critical sections.
+
+							Thanx, Paul
+
