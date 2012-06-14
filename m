@@ -1,91 +1,309 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755710Ab2FNLb4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 07:31:56 -0400
-Received: from mga01.intel.com ([192.55.52.88]:24769 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752826Ab2FNLby (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 07:31:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="165581249"
-Date: Thu, 14 Jun 2012 19:31:42 +0800
-From: Fengguang Wu <wfg@linux.intel.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-scsi@vger.kernel.org, linux-raid@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        "git@vger.kernel.org" <git@vger.kernel.org>
-Subject: Re: drivers/block/cpqarray.c:938:2: error: too many arguments to
- function lk_rq_map_sg
-Message-ID: <20120614113142.GA13954@localhost>
-References: <4fd91c3f.KAwMcygw9fFGn9Cx%wfg@linux.intel.com>
- <4FD984F3.3070502@kernel.dk>
- <20120614090151.GA12013@localhost>
- <4FD9A95D.40903@kernel.dk>
- <20120614100205.GA13217@localhost>
- <4FD9C0D2.20500@kernel.dk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FD9C0D2.20500@kernel.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755764Ab2FNLkx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 07:40:53 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:52396 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752852Ab2FNLkv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 07:40:51 -0400
+From: Federico Vaga <federico.vaga@gmail.com>
+To: Wolfgang Grandegger <wg@grandegger.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Cc: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
+        Alan Cox <alan@linux.intel.com>, linux-can@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Bhupesh SHARMA <bhupesh.sharma@st.com>,
+        AnilKumar Chimata <anilkumar@ti.com>,
+        Alessandro Rubini <rubini@gnudd.com>,
+        Federico Vaga <federico.vaga@gmail.com>
+Subject: [PATCH] c_can_pci: generic module for C_CAN/D_CAN on PCI
+Date: Thu, 14 Jun 2012 13:43:42 +0200
+Message-Id: <1339674222-27699-1-git-send-email-federico.vaga@gmail.com>
+X-Mailer: git-send-email 1.7.10.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 14, 2012 at 12:45:38PM +0200, Jens Axboe wrote:
-> On 06/14/2012 12:02 PM, Fengguang Wu wrote:
-> > On Thu, Jun 14, 2012 at 11:05:33AM +0200, Jens Axboe wrote:
-> >> On 06/14/2012 11:01 AM, Fengguang Wu wrote:
-> >>> Hi Jens,
-> >>>
-> >>> On Thu, Jun 14, 2012 at 08:30:11AM +0200, Jens Axboe wrote:
-> >>>> On 06/14/2012 01:03 AM, wfg@linux.intel.com wrote:
-> >>>>> FYI, kernel build failed on
-> >>>>>
-> >>>>> tree:   git://git.kernel.org/pub/scm/linux/kernel/git/axboe/linux-block.git multiqueue
-> >>>>> head:   e9a6aa8a0b7b93195774a9fcf551632bf3abcd97
-> >>>>> commit: 67db7275fa4325d46853a4bfcb79acf32e48eca8 [1/3] multiqueue: a hodge podge of things
-> >>>>
-> >>>> The multiqueue branch is a private branch, it's known broken on many
-> >>>> configs at the moment.
-> >>>
-> >>> OK. Sorry my script just blindly build tests every new/updated branches
-> >>> in the tree. It does try to reduce noise level by remembering all warned
-> >>> error messages. However if it still presents a problem to the private
-> >>> branches, I can either explicitly blacklist "multiqueue", or let the
-> >>> script automatically skip commits whose "^Signed-off-by:" is still missing.
-> >>
-> >> It's not a problem that you're building various branches, as long as you
-> >> are expecting a bit of noise :-). In fact I applaud your effort on
-> >> expanding the scope of building others branches.
-> >>
-> >> But it does raise the question of how do we best signal intermediate
-> >> branches like this, so they can be avoided until they are ready. The
-> >> blacklist doesn't seem like a great choice, since then I have to
-> >> remember to remind you when it _is_ ok to build it.
-> >>
-> >> How about some arbitrary tag? Instead of checking a Signed-off-by, I
-> >> could just add a Dont-Auto-Build or something like that. What do you
-> >> think?
-> > 
-> > OK, I'll add a grep for "Dont-Auto-Build". If it's found in *any*
-> > commit of the branch, the build script will skip the whole branch.
-> > Does this make sense to you?
-> 
-> Yeah that'll work for me. A description or tag might be more elegant,
-> but this is easier...
+Signed-off-by: Federico Vaga <federico.vaga@gmail.com>
+Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
+Cc: Alan Cox <alan@linux.intel.com>
+---
+ drivers/net/can/c_can/Kconfig     |    7 ++
+ drivers/net/can/c_can/Makefile    |    1 +
+ drivers/net/can/c_can/c_can_pci.c |  236 +++++++++++++++++++++++++++++++++++++
+ 3 files changed, 244 insertions(+)
+ create mode 100644 drivers/net/can/c_can/c_can_pci.c
 
-Great, let's settle with the in-commit tag "Dont-Auto-Build" for now :)
+diff --git a/drivers/net/can/c_can/Kconfig b/drivers/net/can/c_can/Kconfig
+index 25d371c..3b83baf 100644
+--- a/drivers/net/can/c_can/Kconfig
++++ b/drivers/net/can/c_can/Kconfig
+@@ -13,4 +13,11 @@ config CAN_C_CAN_PLATFORM
+ 	  boards from ST Microelectronics (http://www.st.com) like the
+ 	  SPEAr1310 and SPEAr320 evaluation boards & TI (www.ti.com)
+ 	  boards like am335x, dm814x, dm813x and dm811x.
++
++config CAN_C_CAN_PCI
++	tristate "Generic PCI Bus based C_CAN/D_CAN driver"
++	depends on PCI
++	---help---
++	  This driver adds support for the C_CAN/D_CAN chips connected
++	  to the PCI bus.
+ endif
+diff --git a/drivers/net/can/c_can/Makefile b/drivers/net/can/c_can/Makefile
+index 9273f6d..ad1cc84 100644
+--- a/drivers/net/can/c_can/Makefile
++++ b/drivers/net/can/c_can/Makefile
+@@ -4,5 +4,6 @@
+ 
+ obj-$(CONFIG_CAN_C_CAN) += c_can.o
+ obj-$(CONFIG_CAN_C_CAN_PLATFORM) += c_can_platform.o
++obj-$(CONFIG_CAN_C_CAN_PCI) += c_can_pci.o
+ 
+ ccflags-$(CONFIG_CAN_DEBUG_DEVICES) := -DDEBUG
+diff --git a/drivers/net/can/c_can/c_can_pci.c b/drivers/net/can/c_can/c_can_pci.c
+new file mode 100644
+index 0000000..7bdb793
+--- /dev/null
++++ b/drivers/net/can/c_can/c_can_pci.c
+@@ -0,0 +1,236 @@
++/*
++ * PCI bus driver for Bosch C_CAN/D_CAN controller
++ *
++ * Copyright (C) 2012 Federico Vaga <federico.vaga@gmail.com>
++ *
++ * Borrowed from c_can_platform.c
++ *
++ * This file is licensed under the terms of the GNU General Public
++ * License version 2. This program is licensed "as is" without any
++ * warranty of any kind, whether express or implied.
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/netdevice.h>
++#include <linux/clk.h>
++#include <linux/pci.h>
++
++#include <linux/can/dev.h>
++
++#include "c_can.h"
++
++enum c_can_pci_reg_align {
++	C_CAN_REG_ALIGN_16,
++	C_CAN_REG_ALIGN_32,
++};
++
++struct c_can_pci_data {
++	/* Specify if is C_CAN or D_CAN */
++	enum c_can_dev_id type;
++	/* Set the register alignment in the memory */
++	enum c_can_pci_reg_align reg_align;
++	/* Set the frequency if clk is not usable */
++	unsigned int freq;
++};
++
++/*
++ * 16-bit c_can registers can be arranged differently in the memory
++ * architecture of different implementations. For example: 16-bit
++ * registers can be aligned to a 16-bit boundary or 32-bit boundary etc.
++ * Handle the same by providing a common read/write interface.
++ */
++static u16 c_can_pci_read_reg_aligned_to_16bit(struct c_can_priv *priv,
++						enum reg index)
++{
++	return readw(priv->base + priv->regs[index]);
++}
++
++static void c_can_pci_write_reg_aligned_to_16bit(struct c_can_priv *priv,
++						enum reg index, u16 val)
++{
++	writew(val, priv->base + priv->regs[index]);
++}
++
++static u16 c_can_pci_read_reg_aligned_to_32bit(struct c_can_priv *priv,
++						enum reg index)
++{
++	return readw(priv->base + 2 * priv->regs[index]);
++}
++
++static void c_can_pci_write_reg_aligned_to_32bit(struct c_can_priv *priv,
++						enum reg index, u16 val)
++{
++	writew(val, priv->base + 2 * priv->regs[index]);
++}
++
++static int __devinit c_can_pci_probe(struct pci_dev *pdev,
++				     const struct pci_device_id *ent)
++{
++	struct c_can_pci_data *c_can_pci_data = (void *)ent->driver_data;
++	struct c_can_priv *priv;
++	struct net_device *dev;
++	void __iomem *addr;
++	struct clk *clk;
++	int ret;
++
++	ret = pci_enable_device(pdev);
++	if (ret) {
++		dev_err(&pdev->dev, "pci_enable_device FAILED\n");
++		goto out;
++	}
++
++	ret = pci_request_regions(pdev, KBUILD_MODNAME);
++	if (ret) {
++		dev_err(&pdev->dev, "pci_request_regions FAILED\n");
++		goto out_disable_device;
++	}
++
++	pci_set_master(pdev);
++	pci_enable_msi(pdev);
++
++	addr = pci_iomap(pdev, 0, pci_resource_len(pdev, 0));
++	if (!addr) {
++		dev_err(&pdev->dev,
++			"device has no PCI memory resources, "
++			"failing adapter\n");
++		ret = -ENOMEM;
++		goto out_release_regions;
++	}
++
++	/* allocate the c_can device */
++	dev = alloc_c_can_dev();
++	if (!dev) {
++		ret = -ENOMEM;
++		goto out_iounmap;
++	}
++
++	priv = netdev_priv(dev);
++	pci_set_drvdata(pdev, dev);
++	SET_NETDEV_DEV(dev, &pdev->dev);
++
++	dev->irq = pdev->irq;
++	priv->base = addr;
++
++	if (!c_can_pci_data->freq) {
++		/* get the appropriate clk */
++		clk = clk_get(&pdev->dev, NULL);
++		if (IS_ERR(clk)) {
++			dev_err(&pdev->dev, "no clock defined\n");
++			ret = -ENODEV;
++			goto out_free_c_can;
++		}
++		priv->can.clock.freq = clk_get_rate(clk);
++		priv->priv = clk;
++	} else {
++		priv->can.clock.freq = c_can_pci_data->freq;
++		priv->priv = NULL;
++	}
++
++	/* Configure CAN type */
++	switch (c_can_pci_data->type) {
++	case C_CAN_DEVTYPE:
++		priv->regs = reg_map_c_can;
++		break;
++	case D_CAN_DEVTYPE:
++		priv->regs = reg_map_d_can;
++		priv->can.ctrlmode_supported |= CAN_CTRLMODE_3_SAMPLES;
++		break;
++	default:
++		ret = -EINVAL;
++		goto out_free_clock;
++	}
++
++	/* Configure access to registers */
++	switch (c_can_pci_data->reg_align) {
++	case C_CAN_REG_ALIGN_32:
++		priv->read_reg = c_can_pci_read_reg_aligned_to_32bit;
++		priv->write_reg = c_can_pci_write_reg_aligned_to_32bit;
++		break;
++	case C_CAN_REG_ALIGN_16:
++		priv->read_reg = c_can_pci_read_reg_aligned_to_16bit;
++		priv->write_reg = c_can_pci_write_reg_aligned_to_16bit;
++		break;
++	default:
++		ret = -EINVAL;
++		goto out_free_clock;
++	}
++
++	ret = register_c_can_dev(dev);
++	if (ret) {
++		dev_err(&pdev->dev, "registering %s failed (err=%d)\n",
++			KBUILD_MODNAME, ret);
++		goto out_free_clock;
++	}
++
++	dev_dbg(&pdev->dev, "%s device registered (regs=%p, irq=%d)\n",
++		 KBUILD_MODNAME, priv->regs, dev->irq);
++
++	return 0;
++
++out_free_clock:
++	if (priv->priv)
++		clk_put(priv->priv);
++out_free_c_can:
++	pci_set_drvdata(pdev, NULL);
++	free_c_can_dev(dev);
++out_iounmap:
++	pci_iounmap(pdev, priv->base);
++out_release_regions:
++	pci_disable_msi(pdev);
++	pci_clear_master(pdev);
++	pci_release_regions(pdev);
++out_disable_device:
++	pci_disable_device(pdev);
++out:
++	return ret;
++}
++
++static void __devexit c_can_pci_remove(struct pci_dev *pdev)
++{
++	struct net_device *dev = pci_get_drvdata(pdev);
++	struct c_can_priv *priv = netdev_priv(dev);
++
++	unregister_c_can_dev(dev);
++
++	if (priv->priv)
++		clk_put(priv->priv);
++
++	pci_set_drvdata(pdev, NULL);
++	free_c_can_dev(dev);
++
++	pci_iounmap(pdev, priv->base);
++	pci_disable_msi(pdev);
++	pci_clear_master(pdev);
++	pci_release_regions(pdev);
++	pci_disable_device(pdev);
++}
++
++static struct c_can_pci_data c_can_sta2x11= {
++	.type = C_CAN_DEVTYPE,
++	.reg_align = C_CAN_REG_ALIGN_32,
++	.freq = 52000000, /* 52 Mhz */
++};
++
++#define C_CAN_ID(_vend, _dev, _driverdata) {		\
++	PCI_DEVICE(_vend, _dev),			\
++	.driver_data = (unsigned long)&_driverdata,	\
++}
++static DEFINE_PCI_DEVICE_TABLE(c_can_pci_tbl) = {
++	C_CAN_ID(PCI_VENDOR_ID_STMICRO, PCI_DEVICE_ID_STMICRO_CAN,
++		 c_can_sta2x11),
++	{},
++};
++static struct pci_driver c_can_pci_driver = {
++	.name = KBUILD_MODNAME,
++	.id_table = c_can_pci_tbl,
++	.probe = c_can_pci_probe,
++	.remove = __devexit_p(c_can_pci_remove),
++};
++
++module_pci_driver(c_can_pci_driver);
++
++MODULE_AUTHOR("Federico Vaga <federico.vaga@gmail.com>");
++MODULE_LICENSE("GPL v2");
++MODULE_DESCRIPTION("PCI CAN bus driver for Bosch C_CAN/D_CAN controller");
++MODULE_DEVICE_TABLE(pci, c_can_pci_tbl);
+-- 
+1.7.10.2
 
-"git branch --edit-description" could potentially be the most elegant
-solution, unfortunately for now there seems no way for me to retrieve
-the branch description edited by you..
-
-Another alternative, git tag, has the problem that it goes out of sync
-every time you do rebase, which will sure happen a lot for early RFC
-patches.
-
-Thanks,
-Fengguang
