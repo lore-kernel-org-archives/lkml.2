@@ -1,46 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756629Ab2FNTBL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 15:01:11 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:41090 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755628Ab2FNTBK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 15:01:10 -0400
-Date: Thu, 14 Jun 2012 21:01:30 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Jim Cromie <jim.cromie@gmail.com>
-Cc: rusty@rustcorp.com.au, linux-kernel@vger.kernel.org, pawel.moll@arm.com,
-        jbaron@redhat.com, gregkh@linuxfoundation.org
-Subject: Re: [PATCH] init: add comments to keep initcall-names in sync with
- initcall levels
-Message-ID: <20120614190130.GC31640@aftab.osrc.amd.com>
-References: <20120612105913.GA8404@aftab.osrc.amd.com>
- <1339699862-3731-1-git-send-email-jim.cromie@gmail.com>
+	id S1756640Ab2FNTGX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 15:06:23 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:42658 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756084Ab2FNTGV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 15:06:21 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Greg KH <gregkh@linuxfoundation.org>
+Subject: Re: Deprecate suspend/resume in device_driver
+Date: Thu, 14 Jun 2012 21:11:39 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0+; KDE/4.6.0; x86_64; ; )
+Cc: Ning Jiang <ning.n.jiang@gmail.com>, linux-kernel@vger.kernel.org,
+        Linux PM mailing list <linux-pm@vger.kernel.org>
+References: <CAH3Oq6Sua5vmOioOQHZd6BYRvVGfeTrNCgCHpyhZAv2_HhhcZg@mail.gmail.com>
+In-Reply-To: <CAH3Oq6Sua5vmOioOQHZd6BYRvVGfeTrNCgCHpyhZAv2_HhhcZg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339699862-3731-1-git-send-email-jim.cromie@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201206142111.39618.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 14, 2012 at 12:51:02PM -0600, Jim Cromie wrote:
-> main.c has initcall_level_names[] for parse_args to print in debug messages,
-> add comments to keep them in sync with initcalls defined in init.h.
-> Also tweak comment re not using *_initcall macros in loadable modules.
+On Wednesday, June 13, 2012, Ning Jiang wrote:
+> The suspend/resume will not be called if they are defined in
+> device_driver directly,
+> PM core will only use suspend/resume function in dev_pm_ops. Thus we shall
+> mark the old suspend/resume deprecated and make them scheduled for removal.
 > 
-> Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
+> 
+> From efee1b349a8abcb4702d93c1c12e7f27c96fbcfc Mon Sep 17 00:00:00 2001
+> From: Ning Jiang <ning.n.jiang@gmail.com>
+> Date: Wed, 13 Jun 2012 15:00:33 +0800
+> Subject: [PATCH] PM: Deprecate suspend/resume in device_driver
+> 
+> Make suspend/resume callbacks in device_driver deprecated and scheduled
+> for removal since they are not used in PM core anymore.
+> 
+> Legacy drivers who still use them need to move suspend/resume callbacks
+> to dev_pm_ops.
+> 
+> Signed-off-by: Ning Jiang <ning.n.jiang@gmail.com>
 
-Acked-by: Borislav Petkov <borislav.petkov@amd.com>.
+Greg, do you have any objections here?
 
--- 
-Regards/Gruss,
-Boris.
+Rafael
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+
+> ---
+>  include/linux/device.h |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/linux/device.h b/include/linux/device.h
+> index e04f577..884d9a6 100644
+> --- a/include/linux/device.h
+> +++ b/include/linux/device.h
+> @@ -226,8 +226,8 @@ struct device_driver {
+>  	int (*probe) (struct device *dev);
+>  	int (*remove) (struct device *dev);
+>  	void (*shutdown) (struct device *dev);
+> -	int (*suspend) (struct device *dev, pm_message_t state);
+> -	int (*resume) (struct device *dev);
+> +	int (*suspend) (struct device *dev, pm_message_t state) __deprecated;
+> +	int (*resume) (struct device *dev) __deprecated;
+>  	const struct attribute_group **groups;
+> 
+>  	const struct dev_pm_ops *pm;
+> 
+
