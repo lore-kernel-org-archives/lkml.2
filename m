@@ -1,81 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755289Ab2FNIUw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 04:20:52 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:59632 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754607Ab2FNIUt (ORCPT
+	id S1753456Ab2FNIYJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 04:24:09 -0400
+Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:39889 "EHLO
+	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751710Ab2FNIYH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 04:20:49 -0400
-Date: Thu, 14 Jun 2012 01:20:10 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Simon Baatz <gmbnomis@gmail.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Stephane Marchesin <marcheu@chromium.org>,
-        Andi Kleen <andi@firstfloor.org>, Dave Airlie <airlied@gmail.com>,
-        Daniel Vetter <daniel@ffwll.ch>, Rob Clark <rob.clark@linaro.org>,
-        Cong Wang <xiyou.wangcong@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-mm@kvack.org, linux-fsdevel@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] shmem: replace_page must flush_dcache and others
-In-Reply-To: <20120608084033.GA21818@schnuecks.de>
-Message-ID: <alpine.LSU.2.00.1206140049350.5499@eggly.anvils>
-References: <alpine.LSU.2.00.1205311524160.4512@eggly.anvils> <20120608084033.GA21818@schnuecks.de>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 14 Jun 2012 04:24:07 -0400
+From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+To: apw@canonical.com
+Cc: srinivas.kandagatla@st.com, linux-kernel@vger.kernel.org
+Subject: [PATCH 3.5.0-rc2] checkpatch:Fix un-necessary whitespace warning.
+Date: Thu, 14 Jun 2012 09:16:31 +0100
+Message-Id: <1339661791-18185-1-git-send-email-srinivas.kandagatla@st.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 8 Jun 2012, Simon Baatz wrote:
-> On Thu, May 31, 2012 at 03:31:27PM -0700, Hugh Dickins wrote:
-> > * shmem_replace_page must flush_dcache_page after copy_highpage [akpm]
-> 
-> >  
-> > -	*pagep = newpage;
-> >  	page_cache_get(newpage);
-> >  	copy_highpage(newpage, oldpage);
-> > +	flush_dcache_page(newpage);
-> >  
-> 
-> Couldn't we use the lighter flush_kernel_dcache_page() here (like in
-> fs/exec.c copy_strings())?  If I got this correctly, the page is
-> copied via the kernel mapping and thus, only the kernel mapping needs
-> to be flushed.
+From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 
-Sorry for being so slow to respond, I had to focus on something else.
+This patch fixes "check spaces before a quoted newline" to consider
+only new lines added in the patch, rather than checking all the lines in
+the patch.
 
-That's an interesting question you raise: I think you are almost right.
+Without this patch the "check spaces before a quoted newline" will check
+all the lines in the patch and throw un-nessary warnings.
 
-You are correct that it's copied via kernel mapping; and this page
-cannot yet be visible to userspace.
+Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+---
+ scripts/checkpatch.pl |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-But I have to say that you're "almost" right, because when I look up
-flush_kernel_dcache_page(), I notice that it's supposed to be called
-while the page is still kmapped (if kmap() or kmap_atomic() were
-necessary).  So I would have to pull apart copy_highpage() and
-do it inside there.
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index e5bd60f..6fdd2a3 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -1788,7 +1788,7 @@ sub process {
+ 		}
+ 
+ # check for spaces before a quoted newline
+-		if ($rawline =~ /^.*\".*\s\\n/) {
++		if ($rawline =~ /^\+.*\".*\s\\n/) {
+ 			WARN("QUOTED_WHITESPACE_BEFORE_NEWLINE",
+ 			     "unnecessary whitespace before a quoted newline\n" . $herecurr);
+ 		}
+-- 
+1.7.0.4
 
-There are four uses of flush_dcache_page() in mm/shmem.c.  One of
-those (in do_shmem_file_read()) should certainly not be converted
-to flush_kernel_dcache_page(), but the rest could be.
-
-However, I'm reluctant to do so myself, since I don't test on any
-architecture which has a non-default flush_kernel_dcache_page(),
-and I'm not at all familiar with it either.
-
-fs/exec.c is rather an exception to be using it.  I believe it was
-introduced to solve a coherency issue at the block or driver level,
-and generally nothing in fs or mm has been using it.
-
-You may well be right that savings (on arm, mips, parisc) could be
-made in various places by using it in place of flush_dcache_page().
-But I'd rather leave that exercise to someone who understands better
-what they're doing, and can see the results if they get it wrong.
-
-Hugh
