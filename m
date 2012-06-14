@@ -1,69 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756424Ab2FNUWv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 16:22:51 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:36457 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755502Ab2FNUWu (ORCPT
+	id S1756525Ab2FNUcT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 16:32:19 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:38363 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756410Ab2FNUcS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 16:22:50 -0400
-Message-ID: <4FDA4816.7000405@landley.net>
-Date: Thu, 14 Jun 2012 15:22:46 -0500
-From: Rob Landley <rob@landley.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Thu, 14 Jun 2012 16:32:18 -0400
+Date: Thu, 14 Jun 2012 16:24:49 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: xen-devel@lists.xensource.com
+Subject: [GIT PULL] (xen) stable/for-linus-3.5-rc2-tag
+Message-ID: <20120614202449.GA24693@phenom.dumpdata.com>
 MIME-Version: 1.0
-To: Wen Congyang <wency@cn.fujitsu.com>
-CC: tglx@linutronix.de, Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        bhelgaas@google.com, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 1/2] doc: update mem= option's spec
-References: <4FD99C88.2010002@cn.fujitsu.com>
-In-Reply-To: <4FD99C88.2010002@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/14/2012 03:10 AM, Wen Congyang wrote:
-> Current mem= implementation seems buggy because specification and
-> implementation doesn't match. Current mem= has been working
-> for many years and it's not buggy, it works as expected. So
-> we should update the specification.
-> 
-> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
-> ---
->  Documentation/kernel-parameters.txt |    7 ++++---
->  1 files changed, 4 insertions(+), 3 deletions(-)
-> 
-> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> index a92c5eb..924b1a4 100644
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -1471,9 +1471,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->  	mem=nn[KMG]	[KNL,BOOT] Force usage of a specific amount of memory
->  			Amount of memory to be used when the kernel is not able
->  			to see the whole system memory or for test.
-> -			[X86-32] Use together with memmap= to avoid physical
-> -			address space collisions. Without memmap= PCI devices
-> -			could be placed at addresses belonging to unused RAM.
-> +			[X86-32] Work as limiting max address. Use together
-> +			with memmap= to avoid physical address space collisions.
-> +			Without memmap= PCI devices could be placed at addresses
-> +			belonging to unused RAM.
->  
->  	mem=nopentium	[BUGS=X86-32] Disable usage of 4MB pages for kernel
->  			memory.
+Hey Linus,
 
-I have no objection to this but can't confirm it's true or not without
-an awful lot more digging through the code I don't have time for right
-now. (All the x86-32 machines I've used just had the 640k->1m hole and
-the rest was contiguous memory, so the behavior would be the same either
-way...)
+Please pull my tag:
 
-Sort-of-tentatively-acked-by: Rob Landley <rob@landley.net>
+git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-linus-3.5-rc2-tag
 
-Rob
--- 
-GNU/Linux isn't: Linux=GPLv2, GNU=GPLv3+, they can't share code.
-Either it's "mere aggregation", or a license violation.  Pick one.
+which has accumulated some good bug-fixes. The tag itself has the description - which
+I am copying here:
+
+Five bug-fixes:
+ - When booting as PVHVM we would try to use PV console - but would not validate
+   the parameters causing us to crash during restore b/c we re-use the wrong event
+   channel.
+ - When booting on machines with SR-IOV PCI bridge we didn't check for the bridge
+   and tried to use it.
+ - Under AMD machines would advertise the APERFMPERF resulting in needless amount
+   of MSRs from the guest.
+ - A global value (xen_released_pages) was not subtracted at bootup when pages
+   were added back in. This resulted in the balloon worker having the wrong
+   account of how many pages were truly released.
+ - Fix dead-lock when xen-blkfront is run in the same domain as xen-blkback.
+
+
+Please pull!
+
+Andre Przywara (1):
+      xen/setup: filter APERFMPERF cpuid feature out
+
+Konrad Rzeszutek Wilk (5):
+      xen/hvc: Collapse error logic.
+      xen/hvc: Fix error cases around HVM_PARAM_CONSOLE_PFN
+      xen/hvc: Check HVM_PARAM_CONSOLE_[EVTCHN|PFN] for correctness.
+      xen/events: Add WARN_ON when quick lookup found invalid type.
+      xen/balloon: Subtract from xen_released_pages the count that is populated.
+
+Stefano Stabellini (1):
+      xen: mark local pages as FOREIGN in the m2p_override
+
+Zhang, Yang Z (1):
+      xen/pci: Check for PCI bridge before using it.
+
+ arch/x86/xen/enlighten.c  |    8 ++++++++
+ arch/x86/xen/p2m.c        |   36 ++++++++++++++++++++++++++++++++++++
+ arch/x86/xen/setup.c      |    3 ++-
+ drivers/tty/hvc/hvc_xen.c |   31 +++++++++++++++++--------------
+ drivers/xen/events.c      |    9 +++++++++
+ drivers/xen/pci.c         |    2 +-
+ 6 files changed, 73 insertions(+), 16 deletions(-)
