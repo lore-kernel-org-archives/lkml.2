@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756777Ab2FNX72 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 19:59:28 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45611 "EHLO
+	id S1756793Ab2FNX7d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 19:59:33 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:46571 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756727Ab2FNX7Z (ORCPT
+	with ESMTP id S1756778Ab2FNX72 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 19:59:25 -0400
-Message-Id: <20120614235624.973120740@linuxfoundation.org>
+	Thu, 14 Jun 2012 19:59:28 -0400
+Message-Id: <20120614235624.253607282@linuxfoundation.org>
 User-Agent: quilt/0.60-20.1
-Date: Thu, 14 Jun 2012 16:56:35 -0700
+Date: Thu, 14 Jun 2012 16:56:27 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Peter Korsgaard <jacmet@sunsite.dk>,
-        George Pontis <GPontis@z9.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: [ 12/42] hwrng: atmel-rng - fix race condition leading to repeated bits
+        alan@lxorguk.ukuu.org.uk, Roland Dreier <roland@purestorage.com>,
+        Joern Engel <joern@logfs.org>
+Subject: [ 04/42] btree: fix tree corruption in btree_get_prev()
 In-Reply-To: <20120614235636.GA5275@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,82 +25,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Korsgaard <jacmet@sunsite.dk>
+From: Roland Dreier <roland@purestorage.com>
 
-commit 121daad8fd1dce63076fa55aaedd5dc3f981b334 upstream.
+commit cbf8ae32f66a9ceb8907ad9e16663c2a29e48990 upstream.
 
-Data valid gets cleared by reading the ISR (status register) and NOT from
-reading ODATA (data register). A new data word can become available between
-checking ISR and reading ODATA, causing us to reuse the same data word next
-time atmel_trng_read() gets called, if that happens before the following
-data word is ready.
+The memory the parameter __key points to is used as an iterator in
+btree_get_prev(), so if we save off a bkey() pointer in retry_key and
+then assign that to __key, we'll end up corrupting the btree internals
+when we do eg
 
-With this fixed, rngtest no longer complains of 'Continous run' errors.
-Before:
+	longcpy(__key, bkey(geo, node, i), geo->keylen);
 
-rngtest -c 1000 < /dev/hwrng
-rngtest 3
-Copyright (c) 2004 by Henrique de Moraes Holschuh
-This is free software; see the source for copying conditions.  There is NO warr.
+to return the key value.  What we should do instead is use longcpy() to
+copy the key value that retry_key points to __key.
 
-rngtest: starting FIPS tests...
-rngtest: bits received from input: 20000032
-rngtest: FIPS 140-2 successes: 923
-rngtest: FIPS 140-2 failures: 77
-rngtest: FIPS 140-2(2001-10-10) Monobit: 0
-rngtest: FIPS 140-2(2001-10-10) Poker: 0
-rngtest: FIPS 140-2(2001-10-10) Runs: 1
-rngtest: FIPS 140-2(2001-10-10) Long run: 0
-rngtest: FIPS 140-2(2001-10-10) Continuous run: 76
-rngtest: input channel speed: (min=721.402; avg=46003.510; max=49321.338)Kibitss
-rngtest: FIPS tests speed: (min=11.442; avg=12.714; max=12.801)Mibits/s
-rngtest: Program run time: 1931860 microseconds
+This can cause a btree to get corrupted by seemingly read-only
+operations such as btree_for_each_safe.
 
-After:
-
-rngtest -c 1000 < /dev/hwrng
-rngtest 3
-Copyright (c) 2004 by Henrique de Moraes Holschuh
-This is free software; see the source for copying conditions.  There is NO warr.
-
-rngtest: starting FIPS tests...
-rngtest: bits received from input: 20000032
-rngtest: FIPS 140-2 successes: 1000
-rngtest: FIPS 140-2 failures: 0
-rngtest: FIPS 140-2(2001-10-10) Monobit: 0
-rngtest: FIPS 140-2(2001-10-10) Poker: 0
-rngtest: FIPS 140-2(2001-10-10) Runs: 0
-rngtest: FIPS 140-2(2001-10-10) Long run: 0
-rngtest: FIPS 140-2(2001-10-10) Continuous run: 0
-rngtest: input channel speed: (min=777.518; avg=36988.482; max=43115.342)Kibitss
-rngtest: FIPS tests speed: (min=11.951; avg=12.715; max=12.887)Mibits/s
-rngtest: Program run time: 2035543 microseconds
-
-Signed-off-by: Peter Korsgaard <jacmet@sunsite.dk>
-Reported-by: George Pontis <GPontis@z9.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+[akpm@linux-foundation.org: avoid the double longcpy()]
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Acked-by: Joern Engel <joern@logfs.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/char/hw_random/atmel-rng.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ lib/btree.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/char/hw_random/atmel-rng.c
-+++ b/drivers/char/hw_random/atmel-rng.c
-@@ -36,6 +36,13 @@ static int atmel_trng_read(struct hwrng
- 	/* data ready? */
- 	if (readl(trng->base + TRNG_ODATA) & 1) {
- 		*data = readl(trng->base + TRNG_ODATA);
-+		/*
-+		  ensure data ready is only set again AFTER the next data
-+		  word is ready in case it got set between checking ISR
-+		  and reading ODATA, so we don't risk re-reading the
-+		  same word
-+		*/
-+		readl(trng->base + TRNG_ISR);
- 		return 4;
- 	} else
- 		return 0;
+--- a/lib/btree.c
++++ b/lib/btree.c
+@@ -319,8 +319,8 @@ void *btree_get_prev(struct btree_head *
+ 
+ 	if (head->height == 0)
+ 		return NULL;
+-retry:
+ 	longcpy(key, __key, geo->keylen);
++retry:
+ 	dec_key(geo, key);
+ 
+ 	node = head->node;
+@@ -351,7 +351,7 @@ retry:
+ 	}
+ miss:
+ 	if (retry_key) {
+-		__key = retry_key;
++		longcpy(key, retry_key, geo->keylen);
+ 		retry_key = NULL;
+ 		goto retry;
+ 	}
 
 
