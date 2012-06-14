@@ -1,91 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756162Ab2FNPNz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 11:13:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49512 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753594Ab2FNPNy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 11:13:54 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH] VFS: Fix the banner comment on lookup_open()
-To: viro@ZenIV.linux.org.uk
-Cc: miklos@szeredi.hu, dhowells@redhat.com, linux-fsdevel@vger.kernel.or,
-        linux-kernel@vger.kernel.org
-Date: Thu, 14 Jun 2012 16:13:46 +0100
-Message-ID: <20120614151346.7905.28763.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1756215Ab2FNPSN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 11:18:13 -0400
+Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:50747 "EHLO
+	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752931Ab2FNPSK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 11:18:10 -0400
+Date: Thu, 14 Jun 2012 17:18:00 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@ti.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "Luck,Tony" <tony.luck@intel.com>
+Subject: Re: [RFC GIT PULL] nohz: Basic cputime accounting for adaptive
+ tickless
+Message-ID: <20120614171800.72f02152@de.ibm.com>
+In-Reply-To: <20120614134238.GD16848@somewhere>
+References: <1339604397-8758-1-git-send-email-fweisbec@gmail.com>
+	<1339664829.2559.14.camel@twins>
+	<20120614111241.GA16848@somewhere>
+	<20120614111638.GA16676@gmail.com>
+	<alpine.LFD.2.02.1206141321010.3086@ionos>
+	<20120614112241.GB16848@somewhere>
+	<20120614144815.1401af49@de.ibm.com>
+	<20120614134238.GD16848@somewhere>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+x-cbid: 12061415-1948-0000-0000-000002181265
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit 197e37d9, the banner comment on lookup_open() no longer matches
-what the function returns.  It used to return a struct file pointer or NULL and
-now it returns an integer and is passed the struct file pointer it is to use
-amongst its arguments.  Update the comment to reflect this.
+On Thu, 14 Jun 2012 15:42:44 +0200
+Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-Also add a banner comment to atomic_open().
-
-Signed-off-by: David Howells <dhowells@redhat.com>
----
-
- fs/namei.c |   29 ++++++++++++++++++++++++++---
- 1 files changed, 26 insertions(+), 3 deletions(-)
-
-diff --git a/fs/namei.c b/fs/namei.c
-index 1fc02ff..42006b7 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -2185,6 +2185,19 @@ static int may_o_create(struct path *dir, struct dentry *dentry, umode_t mode)
- 	return security_inode_create(dir->dentry->d_inode, dentry, mode);
- }
+> On Thu, Jun 14, 2012 at 02:48:15PM +0200, Martin Schwidefsky wrote:
+> > On Thu, 14 Jun 2012 13:22:45 +0200
+> > Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > 
+> > > On Thu, Jun 14, 2012 at 01:21:23PM +0200, Thomas Gleixner wrote:
+> > > > On Thu, 14 Jun 2012, Ingo Molnar wrote:
+> > > > > * Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > > > > > You're right, I should have looked into CONFIG_VIRT_CPU_ACCOUNTING sooner
+> > > > > > and see if I can reuse it.
+> > > > > > 
+> > > > > > I'll try something with that.
+> > > > > 
+> > > > > Maybe sanitize all the variants under a single set of 
+> > > > > wrappers/callbacks?
+> > > > 
+> > > > Yes, please!
+> > > 
+> > > Sure, I'm working in it.
+> >  
+> > Please keep me in the loop, I want to avoid that things break on s390. Thanks.
+> 
+> Do you have any idea why s390 counts idle time from asm deep in the idle code
+> rather than just hooking in account_system_vtime() like ppc or ia64?
  
-+/*
-+ * Attempt to atomically look up, create and open a file from a negative
-+ * dentry.
-+ *
-+ * Returns 0 if successful.  The file will have been created and attached to
-+ * @file by the filesystem calling finish_open().
-+ *
-+ * Returns 1 if the file was looked up only or didn't need creating.  The
-+ * caller will need to perform the open themselves.  @path will have been
-+ * updated to point to the new dentry.  This may be negative.
-+ *
-+ * Returns an error code otherwise.
-+ */
- static int atomic_open(struct nameidata *nd, struct dentry *dentry,
- 			struct path *path, struct file *file,
- 			const struct open_flags *op,
-@@ -2329,12 +2342,22 @@ looked_up:
- }
- 
- /*
-- * Lookup, maybe create and open the last component
-+ * Look up and maybe create and open the last component.
-  *
-  * Must be called with i_mutex held on parent.
-  *
-- * Returns open file or NULL on success, error otherwise.  NULL means no open
-- * was performed, only lookup.
-+ * Returns 0 if the file was successfully atomically created (if necessary) and
-+ * opened.  In this case the file will be returned attached to @file.
-+ *
-+ * Returns 1 if the file was not completely opened at this time, though lookups
-+ * and creations will have been performed and the dentry returned in @path will
-+ * be positive upon return if O_CREAT was specified.  If O_CREAT wasn't
-+ * specified then a negative dentry may be returned.
-+ *
-+ * An error code is returned otherwise.
-+ *
-+ * FILE_CREATE will be set in @*opened if the dentry was created and will be
-+ * cleared otherwise prior to returning.
-  */
- static int lookup_open(struct nameidata *nd, struct path *path,
- 			struct file *file,
+Well what is idle time? For s390 it is the difference in the TOD clock between
+the instruction that loaded the enabled-wait-PSW and the first instruction on
+the interrupt handler. To get the best precision you need to get the TOD time
+stamps as close to these two instructions as possible. For s390 it is the
+following sequence:
+
+        STCK    __IDLE_ENTER(%r2)	# idle enter time stamp
+        ltr     %r5,%r5
+        stpt    __VQ_IDLE_ENTER(%r3)
+        jz      psw_idle_lpsw
+        spt     0(%r1)
+psw_idle_lpsw:
+        lpswe   __SF_EMPTY(%r15)
+
+<<< sleeping >>>
+
+int_handler:
+        STCK    __LC_INT_CLOCK		# idle exit time stamp
+
+There are at maximum 5 instructions between the STCK for the idle
+enter time stamp and the lpswe that puts the cpu to sleep.
+
+-- 
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
 
