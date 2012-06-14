@@ -1,160 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756369Ab2FNUQT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 16:16:19 -0400
-Received: from tru75-7-88-161-131-83.fbx.proxad.net ([88.161.131.83]:47689
-	"EHLO next.fork.zz" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756195Ab2FNUQS (ORCPT
+	id S1756392Ab2FNUTB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 16:19:01 -0400
+Received: from mail-qc0-f202.google.com ([209.85.216.202]:53391 "EHLO
+	mail-qc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755876Ab2FNUS7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 16:16:18 -0400
-Message-ID: <4FDA4683.6030905@free.fr>
-Date: Thu, 14 Jun 2012 22:16:03 +0200
-From: Wallak <wallak@free.fr>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120604 Firefox/12.0 SeaMonkey/2.9.1
-MIME-Version: 1.0
-To: Johannes Weiner <jweiner@redhat.com>
-CC: Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org
-Subject: Re: File copy is very slow on linux-3.4.2 (or linux-3.3x) on a specific
- hardware: AMD FX-8150 + 990FX (solved?)
-References: <1108815600.134531433.1339443818361.JavaMail.root@zimbra44-e7.priv.proxad.net> <437497008.134549481.1339444456294.JavaMail.root@zimbra44-e7.priv.proxad.net> <20120612165357.GI6021@quack.suse.cz> <4FD78CE4.4000209@free.fr> <20120612210947.GB20007@quack.suse.cz> <4FD7C595.202@free.fr> <20120613065313.GA25425@quack.suse.cz> <4FD8F9F1.2000205@free.fr> <20120613223851.GA17060@redhat.com>
-In-Reply-To: <20120613223851.GA17060@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 14 Jun 2012 16:18:59 -0400
+From: Ben Chan <benchan@chromium.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ben Chan <benchan@chromium.org>, Sage Ahn <syahn@gctsemi.com>
+Subject: [PATCH] staging: gdm72xx: Release netlink socket properly
+Date: Thu, 14 Jun 2012 13:18:56 -0700
+Message-Id: <1339705136-12503-1-git-send-email-benchan@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Johannes Weiner wrote:
-> On Wed, Jun 13, 2012 at 10:37:05PM +0200, Wallak wrote:
->> Jan Kara wrote:
->>> On Wed 13-06-12 00:41:25, Wallak wrote:
->>>> Jan Kara wrote:
->>>>> On Tue 12-06-12 20:39:32, Wallak wrote:
->>>>>> Jan Kara wrote:
->>>>>>> On Mon 11-06-12 21:54:16, wallak@free.fr wrote:
->>>>>>>> I've a very annoying issue on recent kernel (linux-3.4.2-SMP) with my main motherboard (AMD FX-8150 + 990FX - 8 cores 4.1GHz), file copy is very slow (see below). The same kernel works flawlessly on an AMD E450 2 cores motherboard.
->>>>>>>>
->>>>>>>> Linux-3.2.20 works properly on this hardware.
->>>>>>>> hdparm -t gives good results on both kernels.
->>>>>>>>
->>>>>>>> I've no idea where this bug come from. Do you have this issue on your hardware ? A patch is available ?
->>>>>>>>
->>>>>>>>
->>>>>>>> *linux-3.4.2
->>>>>>>> dd if=../in/file_8gb.tmp of=tmp.tmp bs=1024k count=100
->>>>>>>> 100+0 records in
->>>>>>>> 100+0 records out
->>>>>>>> 104857600 bytes (105 MB) copied, 132.884 s, 789 kB/s
->>>>>>>>
->>>>>>>>
->>>>>>>> *linux-3.2.20
->>>>>>>> dd if=../in/file_8gb.tmp of=tmp.tmp bs=1024k count=100
->>>>>>>> 100+0 records in
->>>>>>>> 100+0 records out
->>>>>>>> 104857600 bytes (105 MB) copied, 3.30793 s, 31.7 MB/s
->>>>>>>    So let's separate reading and writing part first. What is the speed of
->>>>>>> dd if=../in/file_8gb.tmp of=/dev/null bs=1M count=100
->>>>>>>    on both kernels?
->>>>>>> And what is the speed of:
->>>>>>> dd if=/dev/zero of=tmp.tm bs=1M count=100
->>>>>> You're right, the issue is only while writing. The results are below:
->>>>>>
->>>>>> #linux-3.4.2
->>>>>> dd if=/dev/zero of=tmp.tm bs=1M count=100
->>>>>> 100+0 records in
->>>>>> 100+0 records out
->>>>>> 104857600 bytes (105 MB) copied, 151.347 s, 693 kB/s
->>>>>> dd if=../in/file_8gb.tmp of=/dev/null bs=1M count=100
->>>>>> 100+0 records in
->>>>>> 100+0 records out
->>>>>> 104857600 bytes (105 MB) copied, 1.26228 s, 83.1 MB/s
->>>>>>
->>>>>> #linux-3.2.20
->>>>>> dd if=/dev/zero of=tmp.tm bs=1M count=100
->>>>>> 100+0 records in
->>>>>> 100+0 records out
->>>>>> 104857600 bytes (105 MB) copied, 1.00838 s, 104 MB/s
->>>>>> dd if=../in/file_8gb.tmp of=/dev/null bs=1M count=100
->>>>>> 100+0 records in
->>>>>> 100+0 records out
->>>>>> 104857600 bytes (105 MB) copied, 1.26947 s, 82.6 MB/s
->>>>>>
->>>>>>
->>>>>>>    Also what filesystems are you using?
->>>>>> This is an ext2 file system:
->>>>>>
->>>>>> /dev/sda6      ext2    464463364 323380956 141082408  70% /backup
->>>>>    OK, I'm surprised by one thing - how come the writes do no end up cached
->>>>> in memory (thus you should get much higher throughput). Is the filesystem
->>>>> mounted with -o sync option by any chance?
->>>>>
->>>>> 								Honza
->>>>      I've tried with an nfs mounted drive, the issue is still there,
->>>> it seems to be global. With sync enabled, the output is quite
->>>> faster, that's quite unexpected.
->>>> On my AMD E450 motherboard this kernel works fine - Are you able to
->>>> reproduce this behavior ?
->>>>
->>>>
->>>> #/dev/sda6 /backup ext2 rw,relatime,errors=continue 0 0
->>>> (/proc/mount)
->>>> 100+0 records in
->>>> 100+0 records out
->>>> 104857600 bytes (105 MB) copied, 155.407 s, 675 kB/s
->>>>
->>>> #/dev/sda6 /backup ext2 rw,sync,relatime,errors=continue 0 0
->>>> 100+0 records in
->>>> 100+0 records out
->>>> 104857600 bytes (105 MB) copied, 69.7868 s, 1.5 MB/s
->>>>
->>>> #nfs drive - same issue:
->>>> 100+0 records in
->>>> 100+0 records out
->>>> 104857600 bytes (105 MB) copied, 221.572 s, 473 kB/s
->>>    That's really curious. I have not seen your issue although I use current
->>> kernels for development&   testing a lot. Also if it was some generic issue
->>> with 3.4 I'm pretty sure we would have heard *much* more complaints from
->>> other users as well. So I think it must be something specific to your setup
->>> / kernel config.
->> I've bisected the linux kernel, and I've found the commit that is
->> related to this issue:
->> commit ab8fabd46f811d5153d8a0cd2fac9a0d41fb593d
->> Author: Johannes Weiner<jweiner@redhat.com>
->> Date:   Tue Jan 10 15:07:42 2012 -0800
->>
->>      mm: exclude reserved pages from dirtyable memory
-> Thanks for the bisect, this makes sense.
->
->> HighTotal:       8052692 kB
->> HighTotal:       8052692 kB
->> HighFree:        7978664 kB                                   |
->> HighFree:        6227412 kB
->> LowTotal:         229508 kB
->> LowTotal:         229508 kB
->> LowFree:          195804 kB                                   |
->> LowFree:          148948 kB
-> 224M total lowmem with 8G highmem.  Sigh.  Even without this patch,
-> the standard dirty ratios would grant you only 29MB of dirty pages.
-> Subtracting the dirty reserves will take the rest.
->
-> You can make highmem dirtyable by setting
->
-> 	sysctl vm.highmem_is_dirtyable=1
->
-> But this will make the number of dirtyable pages very high compared to
-> your lowmem.
->
-> I wonder if it would be best to just enforce a minimum amount of
-> dirtyable memory.  A percentage of lowmem or so to keep it from
-> expanding with highmem.
->
+This patch modifies the gdm72xx driver to properly release a netlink
+socket using netlink_kernel_release. It fixes the following kernel
+crash, which occurs after repeatedly suspending and resuming a system.
 
-You're right, it is probably advisable to set a minimum value, or at 
-least to display a warning message. This is probably a rare case 
-depending on the memory configuration, but it may occur.
+   kernel BUG at /home/benchan/trunk/src/third_party/kernel/files/mm/slub.c:3471!
+   invalid opcode: 0000 [#1] SMP
+   CPU 2
+   Modules linked in: asix usbnet snd_hda_codec_hdmi
+   snd_hda_codec_cirrus i2c_dev uinput snd_hda_intel snd_hda_codec
+   snd_hwdep snd_pcm snd_timer bluetooth snd_page_alloc fuse aesni_intel
+   cryptd isl29018(C) aes_x86_64 industrialio(C) memconsole nm10_gpio
+   rtc_cmos nf_conntrack_ipv6 nf_defrag_ipv6 r8169 ath9k mac80211
+   ip6table_filter ath9k_common ath9k_hw ath cfg80211 xt_mark ip6_tables
+   uvcvideo videobuf2_core videodev videobuf2_vmalloc videobuf2_memops
+   gdmwm(C) joydev
 
-Thanks,
+   Pid: 3125, comm: kworker/u:30 Tainted: G        WC   3.4.0 #1
+   RIP: 0010:[<ffffffff810cda19>]  [<ffffffff810cda19>] kfree+0x67/0xca
+   RSP: 0018:ffff880134977d60  EFLAGS: 00010246
+   RAX: 4000000000000400 RBX: ffffffff818832a0 RCX: 0000000000000000
+   RDX: 4000000000000000 RSI: 0000000000000000 RDI: ffffffff818832a0
+   RBP: ffff880134977d80 R08: 00000000ffffffff R09: ffffea00000620c0
+   R10: ffffffff8111b729 R11: ffff880149fb3840 R12: ffffffff81a08840
+   R13: ffffffff813f5bc3 R14: ffffffff8138ed84 R15: 0000000000000000
+   FS:  0000000000000000(0000) GS:ffff88014fb00000(0000) knlGS:0000000000000000
+   CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+   CR2: 00007f7cad963110 CR3: 000000000180b000 CR4: 00000000000407e0
+   DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+   DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+   Process kworker/u:30 (pid: 3125, threadinfo ffff880134976000, task ffff8801330647e0)
+   Stack:
+    0000000000000002 ffffffff818832a0 ffffffff81a08840 ffff880134977df0
+    ffff880134977da0 ffffffff813f5bc3 ffff880134977df0 ffffffff81883250
+    ffff880134977dd0 ffffffff8138e64c 0000000180150010 ffffffff81883250
+   Call Trace:
+    [<ffffffff813f5bc3>] ipv4_sysctl_exit_net+0x23/0x27
+    [<ffffffff8138e64c>] ops_exit_list+0x27/0x50
+    [<ffffffff8138ee72>] cleanup_net+0xee/0x17c
+    [<ffffffff81040c64>] process_one_work+0x199/0x2b8
+    [<ffffffff810416e4>] worker_thread+0x13c/0x222
+    [<ffffffff810415a8>] ? manage_workers.isra.26+0x171/0x171
+    [<ffffffff8104506d>] kthread+0x8b/0x93
+    [<ffffffff8145b414>] kernel_thread_helper+0x4/0x10
+    [<ffffffff81044fe2>] ? __init_kthread_worker+0x39/0x39
+    [<ffffffff8145b410>] ? gs_change+0xb/0xb
+   Code: 83 c4 10 49 83 3c 24 00 eb e4 48 83 fb 10 76 76 48 89 df e8 17
+   e1 ff ff 49 89 c1 48 8b 00 a8 80 75 15 49 f7 01 00 c0 00 00 75 02
+   <0f> 0b 4c 89 cf e8 b8 b4 fd ff eb 4f 4c 8b 55 08 49 8b 79 30 48
+   RIP  [<ffffffff810cda19>] kfree+0x67/0xca
+    RSP <ffff880134977d60>
 
-                                                                         
-     Wallak.
+Signed-off-by: Ben Chan <benchan@chromium.org>
+Cc: Sage Ahn <syahn@gctsemi.com>
+---
+ drivers/staging/gdm72xx/netlink_k.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/staging/gdm72xx/netlink_k.c b/drivers/staging/gdm72xx/netlink_k.c
+index 1c74b08..9fa432d 100644
+--- a/drivers/staging/gdm72xx/netlink_k.c
++++ b/drivers/staging/gdm72xx/netlink_k.c
+@@ -103,7 +103,7 @@ struct sock *netlink_init(int unit, void (*cb)(struct net_device *dev, u16 type,
+ 
+ void netlink_exit(struct sock *sock)
+ {
+-	sock_release(sock->sk_socket);
++	netlink_kernel_release(sock);
+ }
+ 
+ int netlink_send(struct sock *sock, int group, u16 type, void *msg, int len)
+-- 
+1.7.7.3
 
