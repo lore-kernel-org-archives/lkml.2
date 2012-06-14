@@ -1,60 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755850Ab2FNKvj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 06:51:39 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:61325 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755589Ab2FNKvg (ORCPT
+	id S1755828Ab2FNKww (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 06:52:52 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40006 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755514Ab2FNKwv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 06:51:36 -0400
-Date: Thu, 14 Jun 2012 12:51:31 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Ido Yariv <ido@wizery.com>
-Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, shai@scalemp.com,
-        kiran.thirumalai@gmail.com, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org, Fengguang Wu <wfg@linux.intel.com>
-Subject: Re: [tip:x86/platform] x86/vsmp: Ignore IOAPIC IRQ affinity if
- possible
-Message-ID: <20120614105130.GB8683@gmail.com>
-References: <1338675095-27260-2-git-send-email-ido@wizery.com>
- <tip-3aabb53ce5849605cee731bbc32f37120b4c4ceb@git.kernel.org>
- <20120608085229.GA10638@gmail.com>
- <20120608154301.GA11242@NoteStation>
- <20120611085843.GL31556@gmail.com>
- <20120611194117.GA19302@NoteStation.sbx07338.cambrma.wayport.net>
+	Thu, 14 Jun 2012 06:52:51 -0400
+Date: Thu, 14 Jun 2012 18:52:42 +0800
+From: Wanpeng Li <liwp.linux@gmail.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Gavin Shan <shangw@linux.vnet.ibm.com>,
+        Wanpeng Li <liwp.linux@gmail.com>
+Subject: Re: [PATCH V2] writeback: fix hung_task alarm when sync block
+Message-ID: <20120614105242.GB18190@kernel>
+Reply-To: Wanpeng Li <liwp.linux@gmail.com>
+References: <1339562553-10035-1-git-send-email-liwp.linux@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120611194117.GA19302@NoteStation.sbx07338.cambrma.wayport.net>
+In-Reply-To: <1339562553-10035-1-git-send-email-liwp.linux@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jun 13, 2012 at 12:42:33PM +0800, Wanpeng Li wrote:
 
-* Ido Yariv <ido@wizery.com> wrote:
+Hi Fengguang,
 
-> Hi Ingo,
+This patch need improve or ..., any comments or suggetions?
+
+Best Regards,
+Wanpeng Li
+
+>
+>From: Wanpeng Li <liwp@linux.vnet.ibm.com>
+>
+>"V1 -> V2"
+>* remove redundant hangcheck variable
+>
+>I use several dd processes to write a slow SD card
+>dd if=/dev/sda1 of=/dev/sdc4 bs=1M count=4000
+>and several sync commands(maybe > 10),dmesg show this:
+>
+>[  366.888741] INFO: task sync:3518 blocked for more than 120 seconds.
+>[  366.888742] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+>[  366.888746] sync            D 00000201     0  3518   3462 0x00000000
+>[  366.888752]  dcde5e54 00000082 00000000 00000201 00000000 c180d220 c1933d00 c1933d00
+>[  366.888758]  614a7ae7 00000023 f6bc0d00 ebecb280 c180d220 f6bc0d6c f04acbfc 00000000
+>[  366.888786]  f6bc0d6c dcde5e2c 00000023 f6bc0d44 00000000 00000000 ebd8b2b4 dcde5e6c
+>[  366.888788] Call Trace:
+>[  366.888792]  [<c107a0ee>] ? enqueue_entity+0xee/0x5a0
+>[  366.888795]  [<c15abc83>] schedule+0x23/0x60
+>[  366.888798]  [<c15aa5ad>] schedule_timeout+0x22d/0x2a0
+>[  366.888801]  [<c1071ce2>] ? check_preempt_curr+0x72/0x90
+>[  366.888804]  [<c1071d28>] ? ttwu_do_wakeup+0x28/0x130
+>[  366.888807]  [<c1037f28>] ? default_spin_lock_flags+0x8/0x10
+>[  366.888810]  [<c15acaad>] ? _raw_spin_lock_irqsave+0x2d/0x40
+>[  366.888813]  [<c15abb17>] wait_for_common+0xa7/0x110
+>[  366.888816]  [<c1074690>] ? try_to_wake_up+0x220/0x220
+>[  366.888819]  [<c15abc57>] wait_for_completion+0x17/0x20
+>[  366.888822]  [<c116ad80>] writeback_inodes_sb_nr+0x70/0x90
+>[  366.888825]  [<c116af75>] writeback_inodes_sb+0x25/0x30
+>[  366.888828]  [<c117159f>] __sync_filesystem+0x4f/0x90
+>[  366.888831]  [<c11715f7>] sync_one_sb+0x17/0x20
+>[  366.888834]  [<c114c430>] iterate_supers+0xc0/0xd0
+>[  366.888837]  [<c11715e0>] ? __sync_filesystem+0x90/0x90
+>[  366.888831]  [<c11715f7>] sync_one_sb+0x17/0x20
+>[  366.888834]  [<c114c430>] iterate_supers+0xc0/0xd0
+>[  366.888837]  [<c11715e0>] ? __sync_filesystem+0x90/0x90
+>[  366.888840]  [<c117167b>] sys_sync+0x2b/0x60
+>[  366.888842]  [<c15b385f>] sysenter_do_call+0x12/0x28
+>
+>Too many similar messages flood the logs. So I use a present method to
+>fix this issue.
+>------------------------------------------
+>Author: Mark Lord <kernel@teksavvy.com>
+>Date:   Fri Sep 24 09:51:13 2010 -0400
+>
+>    block: Prevent hang_check firing during long I/O
+>------------------------------------------
+>
+>Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
+>
+>
+>---
+> fs/fs-writeback.c |    6 +++++-
+> 1 file changed, 5 insertions(+), 1 deletion(-)
+>
+>diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+>index f2d0109..df879ee 100644
+>--- a/fs/fs-writeback.c
+>+++ b/fs/fs-writeback.c
+>@@ -1311,7 +1311,11 @@ void writeback_inodes_sb_nr(struct super_block *sb,
 > 
-> On Mon, Jun 11, 2012 at 10:58:43AM +0200, Ingo Molnar wrote:
-> > 
-> > * Ido Yariv <ido@wizery.com> wrote:
-> > 
-> > > This seems to break when CONFIG_PARAVIRT is set but CONFIG_SMP 
-> > > isn't. Since there's little point in optimizing IOAPIC routing 
-> > > for UP kernels, how about the following fix?
-> > 
-> > Looks good to me, I'll give it some testing.
+> 	WARN_ON(!rwsem_is_locked(&sb->s_umount));
+> 	bdi_queue_work(sb->s_bdi, &work);
+>-	wait_for_completion(&done);
+>+	if (sysctl_hung_task_timeout_secs)
+>+		while (!wait_for_completion_timeout(&done, HZ/2))
+>+			;
+>+	else
+>+		wait_for_completion(&done);
+> }
+> EXPORT_SYMBOL(writeback_inodes_sb_nr);
 > 
-> I'm afraid this patch is missing one more config dependency. Since
-> no_irq_affinity is declared in proc.c, we need to verify that
-> CONFIG_PROC_FS is set before referencing this variable. The below patch
-> fixes this.
-> 
-> Thanks to Fengguang Wu for reporting this.
-
-Please send a delta fix patch on top of latest -tip to fix this.
-
-Thanks,
-
-	Ingo
+>-- 
+>1.7.9.5
+>
