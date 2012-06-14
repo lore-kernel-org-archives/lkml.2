@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756533Ab2FNQV1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 12:21:27 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:65273 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756133Ab2FNQV0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 12:21:26 -0400
-Message-ID: <4FDA0F82.2030708@gmail.com>
-Date: Thu, 14 Jun 2012 12:21:22 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1756517Ab2FNQXJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 12:23:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14764 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754452Ab2FNQXH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 12:23:07 -0400
+Date: Thu, 14 Jun 2012 12:22:57 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: 3.5.rc2 tty buffering bug ?
+Message-ID: <20120614162257.GA5238@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Alan Cox <alan@lxorguk.ukuu.org.uk>
+References: <20120614161331.GA29687@redhat.com>
 MIME-Version: 1.0
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Dave Jones <davej@redhat.com>, Cong Wang <amwang@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
-        Rik van Riel <riel@redhat.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH 2/2] mm: compaction: add /proc/vmstat entry for rescued
- MIGRATE_UNMOVABLE pageblocks
-References: <201206141802.50075.b.zolnierkie@samsung.com>
-In-Reply-To: <201206141802.50075.b.zolnierkie@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120614161331.GA29687@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(6/14/12 12:02 PM), Bartlomiej Zolnierkiewicz wrote:
-> From: Bartlomiej Zolnierkiewicz<b.zolnierkie@samsung.com>
-> Subject: [PATCH] mm: compaction: add /proc/vmstat entry for rescued MIGRATE_UNMOVABLE pageblocks
->
-> compact_rescued_unmovable_blocks shows the number of MIGRATE_UNMOVABLE
-> pageblocks converted back to MIGRATE_MOVABLE type by the memory compaction
-> code.  Non-zero values indicate that large kernel-originated allocations
-> of MIGRATE_UNMOVABLE type happen in the system and need special handling
-> from the memory compaction code.
->
-> This new vmstat entry is optional but useful for development and understanding
-> the system.
+On Thu, Jun 14, 2012 at 12:13:31PM -0400, Dave Jones wrote:
+ 
+ > #include <stdio.h>
+ > 
+ > void main()
+ > {
+ > 	printf("begin\n");
+ > 
+ > 	if (fork() != 0)
+ > 		printf("child\n");
+ > 	else
+ > 		printf("parent\n");
+ > 
+ > 	printf("end\n");
+ > }
+ > 
+ > How does 'begin' get printed a second time ?
 
-This description don't describe why admin need this stat and how to use it.
+Someone pointed out that an fflush is needed before the fork.
+Somehow I've managed to go all these years without knowing that.
 
+	Dave
 
+ 
