@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756909Ab2FOAFe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 20:05:34 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:46571 "EHLO
+	id S1756872Ab2FOAGQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 20:06:16 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45611 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756720Ab2FOAAE (ORCPT
+	with ESMTP id S1756730Ab2FNX7v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 20:00:04 -0400
-Message-Id: <20120614235626.030837885@linuxfoundation.org>
+	Thu, 14 Jun 2012 19:59:51 -0400
+Message-Id: <20120614235625.693489625@linuxfoundation.org>
 User-Agent: quilt/0.60-20.1
-Date: Thu, 14 Jun 2012 16:56:47 -0700
+Date: Thu, 14 Jun 2012 16:56:43 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 24/42] ASoC: wm8994: Apply volume updates with clocks enabled
+        Meenakshi Venkataraman <meenakshi.venkataraman@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 20/42] mac80211: fix error in station state transitions during reconfig
 In-Reply-To: <20120614235636.GA5275@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,168 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Meenakshi Venkataraman <meenakshi.venkataraman@intel.com>
 
-commit bfd37bb5f681961e255fd2f346c20fdae2ef3f27 upstream.
+commit bd34ab62a3297bd7685da11b0cbe05ae4cd8b02c upstream.
 
-Volume updates may not be acted upon if there is no clock applied when
-the volume update is written. Ensure this doesn't happen by writing out
-registers with volume updates after we enable each of the clocks.
+As part of hardware reconfig mac80211 tries
+to restore the station state to its values
+before the hardware reconfig, but it only
+goes to the last-state - 1. Fix this
+off-by-one error.
 
-There are more registers updated than before as previously we were
-relying on wm_hubs to set those for controls it manages.
-
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Meenakshi Venkataraman <meenakshi.venkataraman@intel.com>
+Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/wm8994.c |   93 ++++++++++++++++++++++++++++------------------
- 1 file changed, 58 insertions(+), 35 deletions(-)
+ net/mac80211/util.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/soc/codecs/wm8994.c
-+++ b/sound/soc/codecs/wm8994.c
-@@ -46,6 +46,39 @@
- #define WM8994_NUM_DRC 3
- #define WM8994_NUM_EQ  3
+--- a/net/mac80211/util.c
++++ b/net/mac80211/util.c
+@@ -1224,7 +1224,7 @@ int ieee80211_reconfig(struct ieee80211_
+ 			enum ieee80211_sta_state state;
  
-+static struct {
-+	unsigned int reg;
-+	unsigned int mask;
-+} wm8994_vu_bits[] = {
-+	{ WM8994_LEFT_LINE_INPUT_1_2_VOLUME, WM8994_IN1_VU },
-+	{ WM8994_RIGHT_LINE_INPUT_1_2_VOLUME, WM8994_IN1_VU },
-+	{ WM8994_LEFT_LINE_INPUT_3_4_VOLUME, WM8994_IN2_VU },
-+	{ WM8994_RIGHT_LINE_INPUT_3_4_VOLUME, WM8994_IN2_VU },
-+	{ WM8994_SPEAKER_VOLUME_LEFT, WM8994_SPKOUT_VU },
-+	{ WM8994_SPEAKER_VOLUME_RIGHT, WM8994_SPKOUT_VU },
-+	{ WM8994_LEFT_OUTPUT_VOLUME, WM8994_HPOUT1_VU },
-+	{ WM8994_RIGHT_OUTPUT_VOLUME, WM8994_HPOUT1_VU },
-+	{ WM8994_LEFT_OPGA_VOLUME, WM8994_MIXOUT_VU },
-+	{ WM8994_RIGHT_OPGA_VOLUME, WM8994_MIXOUT_VU },
-+
-+	{ WM8994_AIF1_DAC1_LEFT_VOLUME, WM8994_AIF1DAC1_VU },
-+	{ WM8994_AIF1_DAC1_RIGHT_VOLUME, WM8994_AIF1DAC1_VU },
-+	{ WM8994_AIF1_DAC2_LEFT_VOLUME, WM8994_AIF1DAC2_VU },
-+	{ WM8994_AIF1_DAC2_RIGHT_VOLUME, WM8994_AIF1DAC2_VU },
-+	{ WM8994_AIF2_DAC_LEFT_VOLUME, WM8994_AIF2DAC_VU },
-+	{ WM8994_AIF2_DAC_RIGHT_VOLUME, WM8994_AIF2DAC_VU },
-+	{ WM8994_AIF1_ADC1_LEFT_VOLUME, WM8994_AIF1ADC1_VU },
-+	{ WM8994_AIF1_ADC1_RIGHT_VOLUME, WM8994_AIF1ADC1_VU },
-+	{ WM8994_AIF1_ADC2_LEFT_VOLUME, WM8994_AIF1ADC2_VU },
-+	{ WM8994_AIF1_ADC2_RIGHT_VOLUME, WM8994_AIF1ADC2_VU },
-+	{ WM8994_AIF2_ADC_LEFT_VOLUME, WM8994_AIF2ADC_VU },
-+	{ WM8994_AIF2_ADC_RIGHT_VOLUME, WM8994_AIF1ADC2_VU },
-+	{ WM8994_DAC1_LEFT_VOLUME, WM8994_DAC1_VU },
-+	{ WM8994_DAC1_RIGHT_VOLUME, WM8994_DAC1_VU },
-+	{ WM8994_DAC2_LEFT_VOLUME, WM8994_DAC2_VU },
-+	{ WM8994_DAC2_RIGHT_VOLUME, WM8994_DAC2_VU },
-+};
-+
- static int wm8994_drc_base[] = {
- 	WM8994_AIF1_DRC1_1,
- 	WM8994_AIF1_DRC2_1,
-@@ -1006,6 +1039,7 @@ static int aif1clk_ev(struct snd_soc_dap
- 	struct snd_soc_codec *codec = w->codec;
- 	struct wm8994 *control = codec->control_data;
- 	int mask = WM8994_AIF1DAC1L_ENA | WM8994_AIF1DAC1R_ENA;
-+	int i;
- 	int dac;
- 	int adc;
- 	int val;
-@@ -1064,6 +1098,13 @@ static int aif1clk_ev(struct snd_soc_dap
- 				    WM8994_AIF1DAC2L_ENA);
- 		break;
- 
-+	case SND_SOC_DAPM_POST_PMU:
-+		for (i = 0; i < ARRAY_SIZE(wm8994_vu_bits); i++)
-+			snd_soc_write(codec, wm8994_vu_bits[i].reg,
-+				      snd_soc_read(codec,
-+						   wm8994_vu_bits[i].reg));
-+		break;
-+
- 	case SND_SOC_DAPM_PRE_PMD:
- 	case SND_SOC_DAPM_POST_PMD:
- 		snd_soc_update_bits(codec, WM8994_POWER_MANAGEMENT_5,
-@@ -1089,6 +1130,7 @@ static int aif2clk_ev(struct snd_soc_dap
- 		      struct snd_kcontrol *kcontrol, int event)
- {
- 	struct snd_soc_codec *codec = w->codec;
-+	int i;
- 	int dac;
- 	int adc;
- 	int val;
-@@ -1139,6 +1181,13 @@ static int aif2clk_ev(struct snd_soc_dap
- 				    WM8994_AIF2DACR_ENA);
- 		break;
- 
-+	case SND_SOC_DAPM_POST_PMU:
-+		for (i = 0; i < ARRAY_SIZE(wm8994_vu_bits); i++)
-+			snd_soc_write(codec, wm8994_vu_bits[i].reg,
-+				      snd_soc_read(codec,
-+						   wm8994_vu_bits[i].reg));
-+		break;
-+
- 	case SND_SOC_DAPM_PRE_PMD:
- 	case SND_SOC_DAPM_POST_PMD:
- 		snd_soc_update_bits(codec, WM8994_POWER_MANAGEMENT_5,
-@@ -1587,9 +1636,11 @@ SND_SOC_DAPM_POST("Late Disable PGA", la
- 
- static const struct snd_soc_dapm_widget wm8994_lateclk_widgets[] = {
- SND_SOC_DAPM_SUPPLY("AIF1CLK", WM8994_AIF1_CLOCKING_1, 0, 0, aif1clk_ev,
--		    SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_PRE_PMD),
-+		    SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMU |
-+		    SND_SOC_DAPM_PRE_PMD),
- SND_SOC_DAPM_SUPPLY("AIF2CLK", WM8994_AIF2_CLOCKING_1, 0, 0, aif2clk_ev,
--		    SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_PRE_PMD),
-+		    SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMU |
-+		    SND_SOC_DAPM_PRE_PMD),
- SND_SOC_DAPM_PGA("Direct Voice", SND_SOC_NOPM, 0, 0, NULL, 0),
- SND_SOC_DAPM_MIXER("SPKL", WM8994_POWER_MANAGEMENT_3, 8, 0,
- 		   left_speaker_mixer, ARRAY_SIZE(left_speaker_mixer)),
-@@ -3943,39 +3994,11 @@ static int wm8994_codec_probe(struct snd
- 
- 	pm_runtime_put(codec->dev);
- 
--	/* Latch volume updates (right only; we always do left then right). */
--	snd_soc_update_bits(codec, WM8994_AIF1_DAC1_LEFT_VOLUME,
--			    WM8994_AIF1DAC1_VU, WM8994_AIF1DAC1_VU);
--	snd_soc_update_bits(codec, WM8994_AIF1_DAC1_RIGHT_VOLUME,
--			    WM8994_AIF1DAC1_VU, WM8994_AIF1DAC1_VU);
--	snd_soc_update_bits(codec, WM8994_AIF1_DAC2_LEFT_VOLUME,
--			    WM8994_AIF1DAC2_VU, WM8994_AIF1DAC2_VU);
--	snd_soc_update_bits(codec, WM8994_AIF1_DAC2_RIGHT_VOLUME,
--			    WM8994_AIF1DAC2_VU, WM8994_AIF1DAC2_VU);
--	snd_soc_update_bits(codec, WM8994_AIF2_DAC_LEFT_VOLUME,
--			    WM8994_AIF2DAC_VU, WM8994_AIF2DAC_VU);
--	snd_soc_update_bits(codec, WM8994_AIF2_DAC_RIGHT_VOLUME,
--			    WM8994_AIF2DAC_VU, WM8994_AIF2DAC_VU);
--	snd_soc_update_bits(codec, WM8994_AIF1_ADC1_LEFT_VOLUME,
--			    WM8994_AIF1ADC1_VU, WM8994_AIF1ADC1_VU);
--	snd_soc_update_bits(codec, WM8994_AIF1_ADC1_RIGHT_VOLUME,
--			    WM8994_AIF1ADC1_VU, WM8994_AIF1ADC1_VU);
--	snd_soc_update_bits(codec, WM8994_AIF1_ADC2_LEFT_VOLUME,
--			    WM8994_AIF1ADC2_VU, WM8994_AIF1ADC2_VU);
--	snd_soc_update_bits(codec, WM8994_AIF1_ADC2_RIGHT_VOLUME,
--			    WM8994_AIF1ADC2_VU, WM8994_AIF1ADC2_VU);
--	snd_soc_update_bits(codec, WM8994_AIF2_ADC_LEFT_VOLUME,
--			    WM8994_AIF2ADC_VU, WM8994_AIF1ADC2_VU);
--	snd_soc_update_bits(codec, WM8994_AIF2_ADC_RIGHT_VOLUME,
--			    WM8994_AIF2ADC_VU, WM8994_AIF1ADC2_VU);
--	snd_soc_update_bits(codec, WM8994_DAC1_LEFT_VOLUME,
--			    WM8994_DAC1_VU, WM8994_DAC1_VU);
--	snd_soc_update_bits(codec, WM8994_DAC1_RIGHT_VOLUME,
--			    WM8994_DAC1_VU, WM8994_DAC1_VU);
--	snd_soc_update_bits(codec, WM8994_DAC2_LEFT_VOLUME,
--			    WM8994_DAC2_VU, WM8994_DAC2_VU);
--	snd_soc_update_bits(codec, WM8994_DAC2_RIGHT_VOLUME,
--			    WM8994_DAC2_VU, WM8994_DAC2_VU);
-+	/* Latch volume update bits */
-+	for (i = 0; i < ARRAY_SIZE(wm8994_vu_bits); i++)
-+		snd_soc_update_bits(codec, wm8994_vu_bits[i].reg,
-+				    wm8994_vu_bits[i].mask,
-+				    wm8994_vu_bits[i].mask);
- 
- 	/* Set the low bit of the 3D stereo depth so TLV matches */
- 	snd_soc_update_bits(codec, WM8994_AIF1_DAC1_FILTERS_2,
+ 			for (state = IEEE80211_STA_NOTEXIST;
+-			     state < sta->sta_state - 1; state++)
++			     state < sta->sta_state; state++)
+ 				WARN_ON(drv_sta_state(local, sta->sdata, sta,
+ 						      state, state + 1));
+ 		}
 
 
