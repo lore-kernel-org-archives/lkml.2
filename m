@@ -1,111 +1,243 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755779Ab2FNLUh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 07:20:37 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56122 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754313Ab2FNLUg (ORCPT
+	id S1755880Ab2FNLUu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 07:20:50 -0400
+Received: from www.linutronix.de ([62.245.132.108]:55821 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755859Ab2FNLUs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 07:20:36 -0400
-Date: Thu, 14 Jun 2012 12:20:17 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Felipe Balbi <balbi@ti.com>
-Cc: ben-linux@fluff.org, Tony Lindgren <tony@atomide.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        w.sang@pengutronix.de, linux-i2c@vger.kernel.org,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 09/17] i2c: omap: ack IRQ in parts
-Message-ID: <20120614112017.GC31187@n2100.arm.linux.org.uk>
-References: <1339669250-9183-1-git-send-email-balbi@ti.com> <1339669250-9183-10-git-send-email-balbi@ti.com>
+	Thu, 14 Jun 2012 07:20:48 -0400
+Date: Thu, 14 Jun 2012 13:20:39 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>
+Subject: Re: [RFC patch 2/5] smpboot: Provide infrastructure for percpu
+ hotplug threads
+In-Reply-To: <20120614045125.GA30257@linux.vnet.ibm.com>
+Message-ID: <alpine.LFD.2.02.1206141234400.3086@ionos>
+References: <20120613102823.373180763@linutronix.de> <20120613105815.206105518@linutronix.de> <20120613185748.GF2427@linux.vnet.ibm.com> <alpine.LFD.2.02.1206132101440.3086@ionos> <20120613191745.GG2427@linux.vnet.ibm.com> <20120613204725.GA9858@linux.vnet.ibm.com>
+ <20120614045125.GA30257@linux.vnet.ibm.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339669250-9183-10-git-send-email-balbi@ti.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 14, 2012 at 01:20:42PM +0300, Felipe Balbi wrote:
-> According to flow diagrams on OMAP TRMs,
-> we should ACK the IRQ as they happen.
+B1;2601;0cOn Wed, 13 Jun 2012, Paul E. McKenney wrote:
 
-You don't explain that you're adding a new dev_err() statement into the
-driver for a missing acknowledge.
+> On Wed, Jun 13, 2012 at 01:47:25PM -0700, Paul E. McKenney wrote:
+> > On Wed, Jun 13, 2012 at 12:17:45PM -0700, Paul E. McKenney wrote:
+> > > On Wed, Jun 13, 2012 at 09:02:55PM +0200, Thomas Gleixner wrote:
+> > > > On Wed, 13 Jun 2012, Paul E. McKenney wrote:
+> > > > > On Wed, Jun 13, 2012 at 11:00:54AM -0000, Thomas Gleixner wrote:
+> > > > > >  	/* Now call notifier in preparation. */
+> > > > > >  	cpu_notify(CPU_ONLINE | mod, hcpu);
+> > > > > > +	smpboot_unpark_threads(cpu);
+> > > > > 
+> > > > > OK, RCU must use the lower-level interfaces, given that one of
+> > > > > then CPU_ONLINE notifiers might invoke synchronize_rcu().
+> > > > 
+> > > > We can start the threads before the notifiers. There is no
+> > > > restriction.
+> > > 
+> > > Sounds very good in both cases!
+> > 
+> > Just for reference, here is what I am using.
+> 
+> And here is a buggy first attempt to make RCU use the smpboot interfaces.
+> Probably still bugs in my adaptation, as it still hangs in the first
+> attempt to offline a CPU.  If I revert the softirq smpboot commit, the
+> offline still hangs somewhere near the __stop_machine() processing, but
+> the system continues running otherwise.  Will continue debugging tomorrow.
 
-What if you're probing for a device - can this cause spam to the kernel
-console?  What if you have protocol mangling enabled with the "ignore
-lack of ack bit set" ?
+I gave it a quick shot, but I was not able to reproduce the hang yet.
 
-> 
-> Signed-off-by: Felipe Balbi <balbi@ti.com>
-> ---
->  drivers/i2c/busses/i2c-omap.c |   29 +++++++++++++++++------------
->  1 file changed, 17 insertions(+), 12 deletions(-)
-> 
-> diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-omap.c
-> index f978b14..c00ba7d 100644
-> --- a/drivers/i2c/busses/i2c-omap.c
-> +++ b/drivers/i2c/busses/i2c-omap.c
-> @@ -894,21 +894,20 @@ omap_i2c_isr(int this_irq, void *dev_id)
->  		}
->  
->  complete:
-> -		/*
-> -		 * Ack the stat in one go, but [R/X]DR and [R/X]RDY should be
-> -		 * acked after the data operation is complete.
-> -		 * Ref: TRM SWPU114Q Figure 18-31
-> -		 */
-> -		omap_i2c_write_reg(dev, OMAP_I2C_STAT_REG, stat &
-> -				~(OMAP_I2C_STAT_RRDY | OMAP_I2C_STAT_RDR |
-> -				OMAP_I2C_STAT_XRDY | OMAP_I2C_STAT_XDR));
-> -
-> -		if (stat & OMAP_I2C_STAT_NACK)
-> +		if (stat & OMAP_I2C_STAT_NACK) {
-> +			dev_err(dev->dev, "No Acknowledge\n");
->  			err |= OMAP_I2C_STAT_NACK;
-> +			omap_i2c_ack_stat(dev, OMAP_I2C_STAT_NACK);
-> +			omap_i2c_complete_cmd(dev, err);
-> +			return IRQ_HANDLED;
-> +		}
->  
->  		if (stat & OMAP_I2C_STAT_AL) {
->  			dev_err(dev->dev, "Arbitration lost\n");
->  			err |= OMAP_I2C_STAT_AL;
-> +			omap_i2c_ack_stat(dev, OMAP_I2C_STAT_NACK);
-> +			omap_i2c_complete_cmd(dev, err);
-> +			return IRQ_HANDLED;
->  		}
->  
->  		/*
-> @@ -989,12 +988,18 @@ complete:
->  
->  		if (stat & OMAP_I2C_STAT_ROVR) {
->  			dev_err(dev->dev, "Receive overrun\n");
-> -			dev->cmd_err |= OMAP_I2C_STAT_ROVR;
-> +			err |= OMAP_I2C_STAT_ROVR;
-> +			omap_i2c_ack_stat(dev, OMAP_I2C_STAT_ROVR);
-> +			omap_i2c_complete_cmd(dev, err);
-> +			return IRQ_HANDLED;
->  		}
->  
->  		if (stat & OMAP_I2C_STAT_XUDF) {
->  			dev_err(dev->dev, "Transmit underflow\n");
-> -			dev->cmd_err |= OMAP_I2C_STAT_XUDF;
-> +			err |= OMAP_I2C_STAT_XUDF;
-> +			omap_i2c_ack_stat(dev, OMAP_I2C_STAT_XUDF);
-> +			omap_i2c_complete_cmd(dev, err);
-> +			return IRQ_HANDLED;
->  		}
->  	} while (stat);
->  
-> -- 
-> 1.7.10.4
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+But looking at the thread function made me look into rcu_yield() and I
+really wonder what kind of drug induced that particular piece of
+horror.
+
+I can't figure out why this yield business is necessary at all. The
+commit logs are as helpful as the missing code comments :)
+
+I suspect that it's some starvation issue. But if we need it, then
+can't we replace it with something sane like the (untested) patch
+below?
+
+Thanks,
+
+	tglx
+---
+ kernel/rcutree.h        |    2 -
+ kernel/rcutree_plugin.h |   89 ++++++++++--------------------------------------
+ 2 files changed, 19 insertions(+), 72 deletions(-)
+
+Index: tip/kernel/rcutree.h
+===================================================================
+--- tip.orig/kernel/rcutree.h
++++ tip/kernel/rcutree.h
+@@ -469,8 +469,6 @@ static void rcu_boost_kthread_setaffinit
+ static int __cpuinit rcu_spawn_one_boost_kthread(struct rcu_state *rsp,
+ 						 struct rcu_node *rnp,
+ 						 int rnp_index);
+-static void invoke_rcu_node_kthread(struct rcu_node *rnp);
+-static void rcu_yield(void (*f)(unsigned long), unsigned long arg);
+ #endif /* #ifdef CONFIG_RCU_BOOST */
+ static void rcu_cpu_kthread_setrt(int cpu, int to_rt);
+ static void __cpuinit rcu_prepare_kthreads(int cpu);
+Index: tip/kernel/rcutree_plugin.h
+===================================================================
+--- tip.orig/kernel/rcutree_plugin.h
++++ tip/kernel/rcutree_plugin.h
+@@ -1217,6 +1217,16 @@ static void rcu_initiate_boost_trace(str
+ 
+ #endif /* #else #ifdef CONFIG_RCU_TRACE */
+ 
++static void rcu_wake_cond(struct task_struct *t, int status)
++{
++	/*
++	 * If the thread is yielding, only wake it when this
++	 * is invoked from idle
++	 */
++	if (status != RCU_KTHREAD_YIELDING || is_idle_task(current))
++		wake_up_process(t);
++}
++
+ /*
+  * Carry out RCU priority boosting on the task indicated by ->exp_tasks
+  * or ->boost_tasks, advancing the pointer to the next task in the
+@@ -1289,17 +1299,6 @@ static int rcu_boost(struct rcu_node *rn
+ }
+ 
+ /*
+- * Timer handler to initiate waking up of boost kthreads that
+- * have yielded the CPU due to excessive numbers of tasks to
+- * boost.  We wake up the per-rcu_node kthread, which in turn
+- * will wake up the booster kthread.
+- */
+-static void rcu_boost_kthread_timer(unsigned long arg)
+-{
+-	invoke_rcu_node_kthread((struct rcu_node *)arg);
+-}
+-
+-/*
+  * Priority-boosting kthread.  One per leaf rcu_node and one for the
+  * root rcu_node.
+  */
+@@ -1322,8 +1321,9 @@ static int rcu_boost_kthread(void *arg)
+ 		else
+ 			spincnt = 0;
+ 		if (spincnt > 10) {
++			rnp->boost_kthread_status = RCU_KTHREAD_YIELDING;
+ 			trace_rcu_utilization("End boost kthread@rcu_yield");
+-			rcu_yield(rcu_boost_kthread_timer, (unsigned long)rnp);
++			schedule_timeout_interruptible(2);
+ 			trace_rcu_utilization("Start boost kthread@rcu_yield");
+ 			spincnt = 0;
+ 		}
+@@ -1361,8 +1361,8 @@ static void rcu_initiate_boost(struct rc
+ 			rnp->boost_tasks = rnp->gp_tasks;
+ 		raw_spin_unlock_irqrestore(&rnp->lock, flags);
+ 		t = rnp->boost_kthread_task;
+-		if (t != NULL)
+-			wake_up_process(t);
++		if (t)
++			rcu_wake_cond(t, rnp->boost_kthread_status);
+ 	} else {
+ 		rcu_initiate_boost_trace(rnp);
+ 		raw_spin_unlock_irqrestore(&rnp->lock, flags);
+@@ -1379,8 +1379,10 @@ static void invoke_rcu_callbacks_kthread
+ 	local_irq_save(flags);
+ 	__this_cpu_write(rcu_cpu_has_work, 1);
+ 	if (__this_cpu_read(rcu_cpu_kthread_task) != NULL &&
+-	    current != __this_cpu_read(rcu_cpu_kthread_task))
+-		wake_up_process(__this_cpu_read(rcu_cpu_kthread_task));
++	    current != __this_cpu_read(rcu_cpu_kthread_task)) {
++		rcu_wake_cond(__this_cpu_read(rcu_cpu_kthread_task),
++			      __this_cpu_read(rcu_cpu_kthread_status));
++	}
+ 	local_irq_restore(flags);
+ }
+ 
+@@ -1476,20 +1478,6 @@ static void rcu_kthread_do_work(void)
+ }
+ 
+ /*
+- * Wake up the specified per-rcu_node-structure kthread.
+- * Because the per-rcu_node kthreads are immortal, we don't need
+- * to do anything to keep them alive.
+- */
+-static void invoke_rcu_node_kthread(struct rcu_node *rnp)
+-{
+-	struct task_struct *t;
+-
+-	t = rnp->node_kthread_task;
+-	if (t != NULL)
+-		wake_up_process(t);
+-}
+-
+-/*
+  * Set the specified CPU's kthread to run RT or not, as specified by
+  * the to_rt argument.  The CPU-hotplug locks are held, so the task
+  * is not going away.
+@@ -1514,45 +1502,6 @@ static void rcu_cpu_kthread_setrt(int cp
+ }
+ 
+ /*
+- * Timer handler to initiate the waking up of per-CPU kthreads that
+- * have yielded the CPU due to excess numbers of RCU callbacks.
+- * We wake up the per-rcu_node kthread, which in turn will wake up
+- * the booster kthread.
+- */
+-static void rcu_cpu_kthread_timer(unsigned long arg)
+-{
+-	struct rcu_data *rdp = per_cpu_ptr(rcu_state->rda, arg);
+-	struct rcu_node *rnp = rdp->mynode;
+-
+-	atomic_or(rdp->grpmask, &rnp->wakemask);
+-	invoke_rcu_node_kthread(rnp);
+-}
+-
+-/*
+- * Drop to non-real-time priority and yield, but only after posting a
+- * timer that will cause us to regain our real-time priority if we
+- * remain preempted.  Either way, we restore our real-time priority
+- * before returning.
+- */
+-static void rcu_yield(void (*f)(unsigned long), unsigned long arg)
+-{
+-	struct sched_param sp;
+-	struct timer_list yield_timer;
+-	int prio = current->rt_priority;
+-
+-	setup_timer_on_stack(&yield_timer, f, arg);
+-	mod_timer(&yield_timer, jiffies + 2);
+-	sp.sched_priority = 0;
+-	sched_setscheduler_nocheck(current, SCHED_NORMAL, &sp);
+-	set_user_nice(current, 19);
+-	schedule();
+-	set_user_nice(current, 0);
+-	sp.sched_priority = prio;
+-	sched_setscheduler_nocheck(current, SCHED_FIFO, &sp);
+-	del_timer(&yield_timer);
+-}
+-
+-/*
+  * Handle cases where the rcu_cpu_kthread() ends up on the wrong CPU.
+  * This can happen while the corresponding CPU is either coming online
+  * or going offline.  We cannot wait until the CPU is fully online
+@@ -1624,7 +1573,7 @@ static int rcu_cpu_kthread(void *arg)
+ 		if (spincnt > 10) {
+ 			*statusp = RCU_KTHREAD_YIELDING;
+ 			trace_rcu_utilization("End CPU kthread@rcu_yield");
+-			rcu_yield(rcu_cpu_kthread_timer, (unsigned long)cpu);
++			schedule_timeout_interruptible(2);
+ 			trace_rcu_utilization("Start CPU kthread@rcu_yield");
+ 			spincnt = 0;
+ 		}
