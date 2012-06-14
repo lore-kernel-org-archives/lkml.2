@@ -1,57 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755488Ab2FNJ1T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 05:27:19 -0400
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:51788
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755483Ab2FNJ0U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 05:26:20 -0400
-X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
-X-SpamScore: 8
-X-BigFish: VS8(zzzz1202hzz8275bhz2ei87h2a8h668h839hd24he5bhe96hff4o)
-X-FB-DOMAIN-IP-MATCH: fail
-From: Sonic Zhang <sonic.adi@gmail.com>
-To: Chris Ball <cjb@laptop.org>, <linux-mmc@vger.kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        <uclinux-dist-devel@blackfin.uclinux.org>,
-        Sonic Zhang <sonic.zhang@analog.com>
-Subject: [PATCH 1/5 v2] mmc: bfin_sdh: limit mmc DMA segment len to 1 for bf518.
-Date: Thu, 14 Jun 2012 17:22:19 +0800
-Message-ID: <1339665743-7947-1-git-send-email-sonic.adi@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1755509Ab2FNJbI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 05:31:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35207 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755460Ab2FNJbF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 05:31:05 -0400
+Date: Thu, 14 Jun 2012 11:31:03 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
+        rientjes@google.com, akpm@linux-foundation.org, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH -V9 12/15] hugetlb/cgroup: Add support for cgroup removal
+Message-ID: <20120614093103.GJ27397@tiehlicka.suse.cz>
+References: <1339583254-895-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <1339583254-895-13-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339583254-895-13-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sonic Zhang <sonic.zhang@analog.com>
+On Wed 13-06-12 15:57:31, Aneesh Kumar K.V wrote:
+> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+> 
+> This patch add support for cgroup removal. If we don't have parent
+> cgroup, the charges are moved to root cgroup.
+> 
+> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 
-bf518 RSI dma doesn't work in array mode.
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
 
-Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
----
- drivers/mmc/host/bfin_sdh.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+> ---
+>  mm/hugetlb_cgroup.c |   70 +++++++++++++++++++++++++++++++++++++++++++++++++--
+>  1 file changed, 68 insertions(+), 2 deletions(-)
+> 
+> diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
+> index 0f2f6ac..a3a68a4 100644
+> --- a/mm/hugetlb_cgroup.c
+> +++ b/mm/hugetlb_cgroup.c
+> @@ -107,10 +107,76 @@ static void hugetlb_cgroup_destroy(struct cgroup *cgroup)
+>  	kfree(h_cgroup);
+>  }
+>  
+> +
+> +/*
+> + * Should be called with hugetlb_lock held.
+> + * Since we are holding hugetlb_lock, pages cannot get moved from
+> + * active list or uncharged from the cgroup, So no need to get
+> + * page reference and test for page active here. This function
+> + * cannot fail.
+> + */
+> +static void hugetlb_cgroup_move_parent(int idx, struct cgroup *cgroup,
+> +				       struct page *page)
+> +{
+> +	int csize;
+> +	struct res_counter *counter;
+> +	struct res_counter *fail_res;
+> +	struct hugetlb_cgroup *page_hcg;
+> +	struct hugetlb_cgroup *h_cg   = hugetlb_cgroup_from_cgroup(cgroup);
+> +	struct hugetlb_cgroup *parent = parent_hugetlb_cgroup(cgroup);
+> +
+> +	page_hcg = hugetlb_cgroup_from_page(page);
+> +	/*
+> +	 * We can have pages in active list without any cgroup
+> +	 * ie, hugepage with less than 3 pages. We can safely
+> +	 * ignore those pages.
+> +	 */
+> +	if (!page_hcg || page_hcg != h_cg)
+> +		goto out;
+> +
+> +	csize = PAGE_SIZE << compound_order(page);
+> +	if (!parent) {
+> +		parent = root_h_cgroup;
+> +		/* root has no limit */
+> +		res_counter_charge_nofail(&parent->hugepage[idx],
+> +					  csize, &fail_res);
+> +	}
+> +	counter = &h_cg->hugepage[idx];
+> +	res_counter_uncharge_until(counter, counter->parent, csize);
+> +
+> +	set_hugetlb_cgroup(page, parent);
+> +out:
+> +	return;
+> +}
+> +
+> +/*
+> + * Force the hugetlb cgroup to empty the hugetlb resources by moving them to
+> + * the parent cgroup.
+> + */
+>  static int hugetlb_cgroup_pre_destroy(struct cgroup *cgroup)
+>  {
+> -	/* We will add the cgroup removal support in later patches */
+> -	   return -EBUSY;
+> +	struct hstate *h;
+> +	struct page *page;
+> +	int ret = 0, idx = 0;
+> +
+> +	do {
+> +		if (cgroup_task_count(cgroup) ||
+> +		    !list_empty(&cgroup->children)) {
+> +			ret = -EBUSY;
+> +			goto out;
+> +		}
+> +		for_each_hstate(h) {
+> +			spin_lock(&hugetlb_lock);
+> +			list_for_each_entry(page, &h->hugepage_activelist, lru)
+> +				hugetlb_cgroup_move_parent(idx, cgroup, page);
+> +
+> +			spin_unlock(&hugetlb_lock);
+> +			idx++;
+> +		}
+> +		cond_resched();
+> +	} while (hugetlb_cgroup_have_usage(cgroup));
+> +out:
+> +	return ret;
+>  }
+>  
+>  int hugetlb_cgroup_charge_cgroup(int idx, unsigned long nr_pages,
+> -- 
+> 1.7.10
+> 
 
-diff --git a/drivers/mmc/host/bfin_sdh.c b/drivers/mmc/host/bfin_sdh.c
-index 0366617..fd25b0c 100644
---- a/drivers/mmc/host/bfin_sdh.c
-+++ b/drivers/mmc/host/bfin_sdh.c
-@@ -469,7 +469,11 @@ static int __devinit sdh_probe(struct platform_device *pdev)
- 	}
- 
- 	mmc->ops = &sdh_ops;
-+#if defined(CONFIG_BF54x)
- 	mmc->max_segs = 32;
-+#elif defined(CONFIG_BF51x)
-+	mmc->max_segs = 1;
-+#endif
- 	mmc->max_seg_size = 1 << 16;
- 	mmc->max_blk_size = 1 << 11;
- 	mmc->max_blk_count = 1 << 11;
 -- 
-1.7.0.4
-
-
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
