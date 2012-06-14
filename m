@@ -1,110 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752839Ab2FNHO2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 03:14:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56090 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751208Ab2FNHO1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 03:14:27 -0400
-Date: Thu, 14 Jun 2012 09:14:23 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
-        rientjes@google.com, akpm@linux-foundation.org, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH -V9 04/15] hugetlb: use mmu_gather instead of a temporary
- linked list for accumulating pages
-Message-ID: <20120614071423.GA27397@tiehlicka.suse.cz>
-References: <1339583254-895-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <1339583254-895-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <20120613145923.GA14777@tiehlicka.suse.cz>
- <20120613150338.GB14777@tiehlicka.suse.cz>
- <87y5nrmacr.fsf@skywalker.in.ibm.com>
+	id S1753027Ab2FNHOz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 03:14:55 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:56752 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751679Ab2FNHOx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 03:14:53 -0400
+Message-ID: <4FD98F69.3010302@linaro.org>
+Date: Thu, 14 Jun 2012 08:14:49 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87y5nrmacr.fsf@skywalker.in.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linus.walleij@stericsson.com,
+        grant.likely@secretlab.ca, Alessandro Zummo <a.zummo@towertech.it>,
+        rtc-linux@googlegroups.com, stable@vger.kernel.org
+Subject: Re: [PATCH 01/14] rtc: ab8500-rtc: IRQF_ONESHOT when requesting a
+ threaded IRQ
+References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org> <1339428307-3850-2-git-send-email-lee.jones@linaro.org> <201206111531.20468.arnd@arndb.de> <4FD70481.6020207@linaro.org> <20120613152558.e6025b04.akpm@linux-foundation.org>
+In-Reply-To: <20120613152558.e6025b04.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 13-06-12 22:13:00, Aneesh Kumar K.V wrote:
-> Michal Hocko <mhocko@suse.cz> writes:
-> 
-> > On Wed 13-06-12 16:59:23, Michal Hocko wrote:
-> >> On Wed 13-06-12 15:57:23, Aneesh Kumar K.V wrote:
-> >> > From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-> >> > 
-> >> > Use a mmu_gather instead of a temporary linked list for accumulating
-> >> > pages when we unmap a hugepage range
-> >> 
-> >> Sorry for coming up with the comment that late but you owe us an
-> >> explanation _why_ you are doing this.
-> >> 
-> >> I assume that this fixes a real problem when we take i_mmap_mutex
-> >> already up in 
-> >> unmap_mapping_range
-> >>   mutex_lock(&mapping->i_mmap_mutex);
-> >>   unmap_mapping_range_tree | unmap_mapping_range_list 
-> >>     unmap_mapping_range_vma
-> >>       zap_page_range_single
-> >>         unmap_single_vma
-> >> 	  unmap_hugepage_range
-> >> 	    mutex_lock(&vma->vm_file->f_mapping->i_mmap_mutex);
-> >> 
-> >> And that this should have been marked for stable as well (I haven't
-> >> checked when this has been introduced).
-> >> 
-> >> But then I do not see how this help when you still do this:
-> >> [...]
-> >> > diff --git a/mm/memory.c b/mm/memory.c
-> >> > index 1b7dc66..545e18a 100644
-> >> > --- a/mm/memory.c
-> >> > +++ b/mm/memory.c
-> >> > @@ -1326,8 +1326,11 @@ static void unmap_single_vma(struct mmu_gather *tlb,
-> >> >  			 * Since no pte has actually been setup, it is
-> >> >  			 * safe to do nothing in this case.
-> >> >  			 */
-> >> > -			if (vma->vm_file)
-> >> > -				unmap_hugepage_range(vma, start, end, NULL);
-> >> > +			if (vma->vm_file) {
-> >> > +				mutex_lock(&vma->vm_file->f_mapping->i_mmap_mutex);
-> >> > +				__unmap_hugepage_range(tlb, vma, start, end, NULL);
-> >> > +				mutex_unlock(&vma->vm_file->f_mapping->i_mmap_mutex);
-> >> > +			}
-> >> >  		} else
-> >> >  			unmap_page_range(tlb, vma, start, end, details);
-> >> >  	}
-> >
-> > Ahhh, you are removing the lock in the next patch. Really confusing and
-> > not nice for the stable backport.
-> > Could you merge those two patches and add Cc: stable? 
-> > Then you can add my
-> > Reviewed-by: Michal Hocko <mhocko@suse.cz>
-> >
-> 
-> In the last review cycle I was asked to see if we can get a lockdep
-> report for the above and what I found was we don't really cause the
-> above deadlock with the current codebase because for hugetlb we don't
-> directly call unmap_mapping_range. 
+On 13/06/12 23:25, Andrew Morton wrote:
+> On Tue, 12 Jun 2012 09:57:37 +0100
+> Lee Jones<lee.jones@linaro.org>  wrote:
+>
+>> The kernel now forces IRQs to be ONESHOT if no IRQ handler is passed.
+>
+> What does this mean.  The kernel crashes?  The registration fails?  A
+> warning is emitted?
+>
+> When fixing a bug, please fully describe the consequences of that bug.
+>
+>> Cc: stable@vger.kernel.org
+>
+> Especially when suggesting a -stable backport.
 
-Ahh, ok I missed that.
+No problem. I'll try to remember that for next time.
 
-> But still it is good to remove the i_mmap_mutex, because we don't need
-> that protection now. I didn't mark it for stable because of the above
-> reason.
-
-Thanks for clarification
-
-> 
-> -aneesh
-> 
+I see that you've taken the patch into your tree however. So do you want 
+me to update the commit log and resubmit, or are you going to 'let this 
+one slide'?
 
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+M: +44 77 88 633 515
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
