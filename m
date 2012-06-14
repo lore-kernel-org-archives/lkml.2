@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755286Ab2FNX57 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 19:57:59 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56620 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753836Ab2FNX54 (ORCPT
+	id S932100Ab2FOANM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 20:13:12 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:46571 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753836Ab2FNX6C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 19:57:56 -0400
-Message-Id: <20120614235644.573550251@linuxfoundation.org>
+	Thu, 14 Jun 2012 19:58:02 -0400
+Message-Id: <20120614235644.829469855@linuxfoundation.org>
 User-Agent: quilt/0.60-20.1
-Date: Thu, 14 Jun 2012 16:56:47 -0700
+Date: Thu, 14 Jun 2012 16:56:50 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Steffen Rumler <steffen.rumler.ext@nsn.com>,
-        Paul Mackerras <paulus@samba.org>
-Subject: [ 03/20] powerpc: Fix kernel panic during kernel module load
+        alan@lxorguk.ukuu.org.uk,
+        Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 06/20] cfg80211: fix interface combinations check
 In-Reply-To: <20120614235648.GA6552@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,68 +27,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steffen Rumler <steffen.rumler.ext@nsn.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 3c75296562f43e6fbc6cddd3de948a7b3e4e9bcf upstream.
+commit 463454b5dbd8dbab6e2fc6c557329e5b811b9c32 upstream.
 
-This fixes a problem which can causes kernel oopses while loading
-a kernel module.
+If a given interface combination doesn't contain
+a required interface type then we missed checking
+that and erroneously allowed it even though iface
+type wasn't there at all. Add a check that makes
+sure that all interface types are accounted for.
 
-According to the PowerPC EABI specification, GPR r11 is assigned
-the dedicated function to point to the previous stack frame.
-In the powerpc-specific kernel module loader, do_plt_call()
-(in arch/powerpc/kernel/module_32.c), GPR r11 is also used
-to generate trampoline code.
-
-This combination crashes the kernel, in the case where the compiler
-chooses to use a helper function for saving GPRs on entry, and the
-module loader has placed the .init.text section far away from the
-.text section, meaning that it has to generate a trampoline for
-functions in the .init.text section to call the GPR save helper.
-Because the trampoline trashes r11, references to the stack frame
-using r11 can cause an oops.
-
-The fix just uses GPR r12 instead of GPR r11 for generating the
-trampoline code.  According to the statements from Freescale, this is
-safe from an EABI perspective.
-
-I've tested the fix for kernel 2.6.33 on MPC8541.
-
-Signed-off-by: Steffen Rumler <steffen.rumler.ext@nsn.com>
-[paulus@samba.org: reworded the description]
-Signed-off-by: Paul Mackerras <paulus@samba.org>
+Reported-by: Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/module_32.c |   11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+ net/wireless/util.c |   19 ++++++++++++++++++-
+ 1 file changed, 18 insertions(+), 1 deletion(-)
 
---- a/arch/powerpc/kernel/module_32.c
-+++ b/arch/powerpc/kernel/module_32.c
-@@ -187,8 +187,8 @@ int apply_relocate(Elf32_Shdr *sechdrs,
- 
- static inline int entry_matches(struct ppc_plt_entry *entry, Elf32_Addr val)
+--- a/net/wireless/util.c
++++ b/net/wireless/util.c
+@@ -937,6 +937,7 @@ int cfg80211_can_change_interface(struct
+ 				  enum nl80211_iftype iftype)
  {
--	if (entry->jump[0] == 0x3d600000 + ((val + 0x8000) >> 16)
--	    && entry->jump[1] == 0x396b0000 + (val & 0xffff))
-+	if (entry->jump[0] == 0x3d800000 + ((val + 0x8000) >> 16)
-+	    && entry->jump[1] == 0x398c0000 + (val & 0xffff))
- 		return 1;
- 	return 0;
- }
-@@ -215,10 +215,9 @@ static uint32_t do_plt_call(void *locati
- 		entry++;
+ 	struct wireless_dev *wdev_iter;
++	u32 used_iftypes = BIT(iftype);
+ 	int num[NUM_NL80211_IFTYPES];
+ 	int total = 1;
+ 	int i, j;
+@@ -970,12 +971,14 @@ int cfg80211_can_change_interface(struct
+ 
+ 		num[wdev_iter->iftype]++;
+ 		total++;
++		used_iftypes |= BIT(wdev_iter->iftype);
  	}
+ 	mutex_unlock(&rdev->devlist_mtx);
  
--	/* Stolen from Paul Mackerras as well... */
--	entry->jump[0] = 0x3d600000+((val+0x8000)>>16);	/* lis r11,sym@ha */
--	entry->jump[1] = 0x396b0000 + (val&0xffff);	/* addi r11,r11,sym@l*/
--	entry->jump[2] = 0x7d6903a6;			/* mtctr r11 */
-+	entry->jump[0] = 0x3d800000+((val+0x8000)>>16); /* lis r12,sym@ha */
-+	entry->jump[1] = 0x398c0000 + (val&0xffff);     /* addi r12,r12,sym@l*/
-+	entry->jump[2] = 0x7d8903a6;                    /* mtctr r12 */
- 	entry->jump[3] = 0x4e800420;			/* bctr */
+ 	for (i = 0; i < rdev->wiphy.n_iface_combinations; i++) {
+ 		const struct ieee80211_iface_combination *c;
+ 		struct ieee80211_iface_limit *limits;
++		u32 all_iftypes = 0;
  
- 	DEBUGP("Initialized plt for 0x%x at %p\n", val, entry);
+ 		c = &rdev->wiphy.iface_combinations[i];
+ 
+@@ -990,6 +993,7 @@ int cfg80211_can_change_interface(struct
+ 			if (rdev->wiphy.software_iftypes & BIT(iftype))
+ 				continue;
+ 			for (j = 0; j < c->n_limits; j++) {
++				all_iftypes |= limits[j].types;
+ 				if (!(limits[j].types & BIT(iftype)))
+ 					continue;
+ 				if (limits[j].max < num[iftype])
+@@ -997,7 +1001,20 @@ int cfg80211_can_change_interface(struct
+ 				limits[j].max -= num[iftype];
+ 			}
+ 		}
+-		/* yay, it fits */
++
++		/*
++		 * Finally check that all iftypes that we're currently
++		 * using are actually part of this combination. If they
++		 * aren't then we can't use this combination and have
++		 * to continue to the next.
++		 */
++		if ((all_iftypes & used_iftypes) != used_iftypes)
++			goto cont;
++
++		/*
++		 * This combination covered all interface types and
++		 * supported the requested numbers, so we're good.
++		 */
+ 		kfree(limits);
+ 		return 0;
+  cont:
 
 
