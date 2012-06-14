@@ -1,55 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755515Ab2FNJZs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 05:25:48 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:44800 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755400Ab2FNJZq convert rfc822-to-8bit (ORCPT
+	id S1755547Ab2FNJ0X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 05:26:23 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:26906
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755475Ab2FNJ0T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 05:25:46 -0400
+	Thu, 14 Jun 2012 05:26:19 -0400
+X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
+X-SpamScore: 8
+X-BigFish: VS8(zzzz1202hzz8275bhz2ei87h2a8h668h839hd24he5bhe96hff4o)
+X-FB-DOMAIN-IP-MATCH: fail
+From: Sonic Zhang <sonic.adi@gmail.com>
+To: Chris Ball <cjb@laptop.org>, <linux-mmc@vger.kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        <uclinux-dist-devel@blackfin.uclinux.org>,
+        Sonic Zhang <sonic.zhang@analog.com>
+Subject: [PATCH 5/5 v2] mmc: bfin_sdh: Reset SD controller when resume from power saving mode.
+Date: Thu, 14 Jun 2012 17:22:23 +0800
+Message-ID: <1339665743-7947-5-git-send-email-sonic.adi@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1339665743-7947-1-git-send-email-sonic.adi@gmail.com>
+References: <1339665743-7947-1-git-send-email-sonic.adi@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20120613152045.81ab66d9.akpm@linux-foundation.org>
-References: <CAJRGBZw2TctmBxRuA-byaGNCs=1v+M-1PXSm+OuwWApSqu7UjA@mail.gmail.com>
-	<20120613152045.81ab66d9.akpm@linux-foundation.org>
-Date: Thu, 14 Jun 2012 05:25:44 -0400
-Message-ID: <CAJRGBZy_wqUgN_jx9PinXHSGM30XjrRm49xFXkfumucAeaQ2bw@mail.gmail.com>
-Subject: Re: What is the right practice to get new code upstream( was Fwd:
- [patch] a simple hardware detector for latency as well as throughput ver. 0.1.0)
-From: Luming Yu <luming.yu@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, tglx@linutronix.de,
-        sfr@canb.auug.org.au, jcm@jonmasters.org, linux-next@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, torvalds@linux-foundation.org,
-        Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 13, 2012 at 6:20 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Tue, 12 Jun 2012 20:57:02 +0800
-> Luming Yu <luming.yu@gmail.com> wrote:
->
->> I need to know what the right practice is to get your attention to
->> accept a new tool upstream like this one.
->
-> Seems that you have some good feedback from Arnd to be looking at.  I'm
-> usually the guy for mysterious misc stuff such as this, so please cc me
-> on future revisions.
+From: Sonic Zhang <sonic.zhang@analog.com>
 
-Andrew, Thanks a lot :-) The community is really helpful after find
-right people for right things.
+Without reset, SD controller may stay in disable mode, SD card can't
+be detected when resume from power saving mode.
 
->
-> The name "hw_test" and "HW_TEST" is too vague.  The topic "testing
-> hardware" is very broad, and this module only touches a small fraction
-> of it, so please think up a far more specific name.
->
+Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
+---
+ drivers/mmc/host/bfin_sdh.c |   35 +++++++++++++++++++----------------
+ 1 files changed, 19 insertions(+), 16 deletions(-)
 
-I'm working on Version 2 of the tool which would be renamed to
-cpu_latency_test, or simply misc_latency_test?
+diff --git a/drivers/mmc/host/bfin_sdh.c b/drivers/mmc/host/bfin_sdh.c
+index 7776614..b9b463e 100644
+--- a/drivers/mmc/host/bfin_sdh.c
++++ b/drivers/mmc/host/bfin_sdh.c
+@@ -505,6 +505,23 @@ static irqreturn_t sdh_stat_irq(int irq, void *devid)
+ 	return IRQ_RETVAL(handled);
+ }
+ 
++static void sdh_reset(void)
++{
++#if defined(CONFIG_BF54x)
++	/* Secure Digital Host shares DMA with Nand controller */
++	bfin_write_DMAC1_PERIMUX(bfin_read_DMAC1_PERIMUX() | 0x1);
++#endif
++
++	bfin_write_SDH_CFG(bfin_read_SDH_CFG() | CLKS_EN);
++	SSYNC();
++
++	/* Disable card inserting detection pin. set MMC_CAP_NEEDS_POLL, and
++	 * mmc stack will do the detection.
++	 */
++	bfin_write_SDH_CFG((bfin_read_SDH_CFG() & 0x1F) | (PUP_SDDAT | PUP_SDDAT3));
++	SSYNC();
++}
++
+ static int __devinit sdh_probe(struct platform_device *pdev)
+ {
+ 	struct mmc_host *mmc;
+@@ -581,19 +598,8 @@ static int __devinit sdh_probe(struct platform_device *pdev)
+ 		dev_err(&pdev->dev, "unable to request peripheral pins\n");
+ 		goto out4;
+ 	}
+-#if defined(CONFIG_BF54x)
+-	/* Secure Digital Host shares DMA with Nand controller */
+-	bfin_write_DMAC1_PERIMUX(bfin_read_DMAC1_PERIMUX() | 0x1);
+-#endif
+ 
+-	bfin_write_SDH_CFG(bfin_read_SDH_CFG() | CLKS_EN);
+-	SSYNC();
+-
+-	/* Disable card inserting detection pin. set MMC_CAP_NEEDS_POLL, and
+-	 * mmc stack will do the detection.
+-	 */
+-	bfin_write_SDH_CFG((bfin_read_SDH_CFG() & 0x1F) | (PUP_SDDAT | PUP_SDDAT3));
+-	SSYNC();
++	sdh_reset();
+ 
+ 	mmc_add_host(mmc);
+ 	return 0;
+@@ -660,10 +666,7 @@ static int sdh_resume(struct platform_device *dev)
+ 		return ret;
+ 	}
+ 
+-#if defined(CONFIG_BF54x)
+-	/* Secure Digital Host shares DMA with Nand controller */
+-	bfin_write_DMAC1_PERIMUX(bfin_read_DMAC1_PERIMUX() | 0x1);
+-#endif
++	sdh_reset();
+ 
+ 	if (mmc)
+ 		ret = mmc_resume_host(mmc);
+-- 
+1.7.0.4
 
-thanks!!! /l
+
