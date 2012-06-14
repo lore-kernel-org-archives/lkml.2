@@ -1,44 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755792Ab2FNMXN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 08:23:13 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:33147 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753345Ab2FNMXL (ORCPT
+	id S1755696Ab2FNMY4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 08:24:56 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:63621 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750961Ab2FNMYz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 08:23:11 -0400
+	Thu, 14 Jun 2012 08:24:55 -0400
+Message-ID: <4FD9D813.1010203@redhat.com>
+Date: Thu, 14 Jun 2012 14:24:51 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Date: Thu, 14 Jun 2012 20:23:10 +0800
-Message-ID: <CAJd=RBDh44Ka2YPrEGy1SYBngNDmD76O92+D11f8nJh-oNjf4g@mail.gmail.com>
-Subject: [patch] BFS 421: use NS_TO_MS
-From: Hillf Danton <dhillf@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>, Hillf Danton <dhillf@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH 2/2] msync: start async writeout when MS_ASYNC
+References: <1338497035-13014-1-git-send-email-pbonzini@redhat.com> <1338497035-13014-3-git-send-email-pbonzini@redhat.com> <20120613142949.734818a8.akpm@linux-foundation.org>
+In-Reply-To: <20120613142949.734818a8.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lets easy reader once more.
+Il 13/06/2012 23:29, Andrew Morton ha scritto:
+> Also, it hardwires into the kernel behaviour which userspace itself
+> could have initiated, with sync_file_range().  ie: reduced flexibility.
 
+Actually sync_file_range calls filemap_fdatawrite_range with
+WB_SYNC_ALL, hence it does the writeout synchronously and can block for
+an extended period of time.  Hence sync_file_range is more similar to
+MS_SYNC except without the metadata write.
 
---- a/kernel/sched/bfs.c	Thu Jun 14 20:01:50 2012
-+++ b/kernel/sched/bfs.c	Thu Jun 14 20:03:42 2012
-@@ -992,15 +992,11 @@ static void activate_task(struct task_st
- {
- 	update_clocks(rq);
+Instead, this patch uses WB_SYNC_NONE, while still using tag-and-write
+to avoid livelock.
 
--	/*
--	 * Sleep time is in units of nanosecs, so shift by 20 to get a
--	 * milliseconds-range estimation of the amount of time that the task
--	 * spent sleeping:
--	 */
-+	/* Sleep time is tracked in units of nanosecs, but reported in ms */
- 	if (unlikely(prof_on == SLEEP_PROFILING)) {
- 		if (p->state == TASK_UNINTERRUPTIBLE)
- 			profile_hits(SLEEP_PROFILING, (void *)get_wchan(p),
--				     (rq->clock - p->last_ran) >> 20);
-+					NS_TO_MS(rq->clock - p->last_ran));
- 	}
+I'll wait a day or two to let others voice their opinions, and then send
+a fixed v2 with updated commit messages from this discussion.
 
- 	p->prio = effective_prio(p);
---
+Paolo
