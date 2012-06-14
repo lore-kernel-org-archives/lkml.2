@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756602Ab2FOAAN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 20:00:13 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45611 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756817Ab2FOAAI (ORCPT
+	id S1756979Ab2FOAAe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 20:00:34 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45919 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756953Ab2FOAAb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 20:00:08 -0400
-Message-Id: <20120614235626.117961775@linuxfoundation.org>
+	Thu, 14 Jun 2012 20:00:31 -0400
+Message-Id: <20120614235626.729224401@linuxfoundation.org>
 User-Agent: quilt/0.60-20.1
-Date: Thu, 14 Jun 2012 16:56:48 -0700
+Date: Thu, 14 Jun 2012 16:56:55 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Arend van Spriel <arend@broadcom.com>,
-        Hauke Mehrtens <hauke@hauke-m.de>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 25/42] bcma: add ext PA workaround for BCM4331 and BCM43431
+        alan@lxorguk.ukuu.org.uk, AnilKumar Ch <anilkumar@ti.com>,
+        Wolfgang Grandegger <wg@grandegger.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [ 32/42] can: c_can: fix "BUG! echo_skb is occupied!" during transmit
 In-Reply-To: <20120614235636.GA5275@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,58 +26,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Seth Forshee <seth.forshee@canonical.com>
+From: AnilKumar Ch <anilkumar@ti.com>
 
-commit 69aaedd3cfd23b2c732e3cf1227370a35f5c89d4 upstream.
+commit 617caccebe451716df21c069b079d5936ed7b0f3 upstream.
 
-MacBook Pro models with BCM4331 wireless have been found to have the ext
-PA lines disabled after resuming from S3 without external power attach.
-This causes them to be unable to transmit. Add a workaround to ensure
-that the ext PA lines are enabled on BCM4331. Also extend all handling
-of ext PA line muxing to BCM43431 as is done in the Broadcom SDK.
+This patch fixes an issue with transmit routine, which causes
+"can_put_echo_skb: BUG! echo_skb is occupied!" message when
+using "cansequence -p" on D_CAN controller.
 
-BugLink: http://bugs.launchpad.net/bugs/925577
-Cc: Arend van Spriel <arend@broadcom.com>
-Cc: Hauke Mehrtens <hauke@hauke-m.de>
-Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+In c_can driver, while transmitting packets tx_echo flag holds
+the no of can frames put for transmission into the hardware.
+
+As the comment above c_can_do_tx() indicates, if we find any packet
+which is not transmitted then we should stop looking for more.
+In the current implementation this is not taken care of causing the
+said message.
+
+Also, fix the condition used to find if the packet is transmitted
+or not. Current code skips the first tx message object and ends up
+checking one extra invalid object.
+
+While at it, fix the comment on top of c_can_do_tx() to use the
+terminology "packet" instead of "package" since it is more
+standard.
+
+Signed-off-by: AnilKumar Ch <anilkumar@ti.com>
+Acked-by: Wolfgang Grandegger <wg@grandegger.com>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/bcma/driver_chipcommon_pmu.c |    4 +++-
- drivers/bcma/sprom.c                 |    4 ++--
- 2 files changed, 5 insertions(+), 3 deletions(-)
+ drivers/net/can/c_can/c_can.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/bcma/driver_chipcommon_pmu.c
-+++ b/drivers/bcma/driver_chipcommon_pmu.c
-@@ -139,7 +139,9 @@ void bcma_pmu_workarounds(struct bcma_dr
- 		bcma_chipco_chipctl_maskset(cc, 0, ~0, 0x7);
- 		break;
- 	case 0x4331:
--		/* BCM4331 workaround is SPROM-related, we put it in sprom.c */
-+	case 43431:
-+		/* Ext PA lines must be enabled for tx on BCM4331 */
-+		bcma_chipco_bcm4331_ext_pa_lines_ctl(cc, true);
- 		break;
- 	case 43224:
- 		if (bus->chipinfo.rev == 0) {
---- a/drivers/bcma/sprom.c
-+++ b/drivers/bcma/sprom.c
-@@ -432,13 +432,13 @@ int bcma_sprom_get(struct bcma_bus *bus)
- 	if (!sprom)
- 		return -ENOMEM;
+--- a/drivers/net/can/c_can/c_can.c
++++ b/drivers/net/can/c_can/c_can.c
+@@ -686,7 +686,7 @@ static int c_can_get_berr_counter(const
+  *
+  * We iterate from priv->tx_echo to priv->tx_next and check if the
+  * packet has been transmitted, echo it back to the CAN framework.
+- * If we discover a not yet transmitted package, stop looking for more.
++ * If we discover a not yet transmitted packet, stop looking for more.
+  */
+ static void c_can_do_tx(struct net_device *dev)
+ {
+@@ -698,7 +698,7 @@ static void c_can_do_tx(struct net_devic
+ 	for (/* nix */; (priv->tx_next - priv->tx_echo) > 0; priv->tx_echo++) {
+ 		msg_obj_no = get_tx_echo_msg_obj(priv);
+ 		val = c_can_read_reg32(priv, &priv->regs->txrqst1);
+-		if (!(val & (1 << msg_obj_no))) {
++		if (!(val & (1 << (msg_obj_no - 1)))) {
+ 			can_get_echo_skb(dev,
+ 					msg_obj_no - C_CAN_MSG_OBJ_TX_FIRST);
+ 			stats->tx_bytes += priv->read_reg(priv,
+@@ -706,6 +706,8 @@ static void c_can_do_tx(struct net_devic
+ 					& IF_MCONT_DLC_MASK;
+ 			stats->tx_packets++;
+ 			c_can_inval_msg_object(dev, 0, msg_obj_no);
++		} else {
++			break;
+ 		}
+ 	}
  
--	if (bus->chipinfo.id == 0x4331)
-+	if (bus->chipinfo.id == 0x4331 || bus->chipinfo.id == 43431)
- 		bcma_chipco_bcm4331_ext_pa_lines_ctl(&bus->drv_cc, false);
- 
- 	pr_debug("SPROM offset 0x%x\n", offset);
- 	bcma_sprom_read(bus, offset, sprom);
- 
--	if (bus->chipinfo.id == 0x4331)
-+	if (bus->chipinfo.id == 0x4331 || bus->chipinfo.id == 43431)
- 		bcma_chipco_bcm4331_ext_pa_lines_ctl(&bus->drv_cc, true);
- 
- 	err = bcma_sprom_valid(sprom);
 
 
