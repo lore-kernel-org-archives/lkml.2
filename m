@@ -1,245 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752917Ab2FNXNb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 19:13:31 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:36561 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751551Ab2FNXN3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 19:13:29 -0400
-Date: Thu, 14 Jun 2012 16:13:25 -0700
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>
-Subject: [PATCH] audit: replace defines with C stubs
-Message-ID: <20120614231325.GA9695@www.outflux.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-HELO: www.outflux.net
+	id S1752795Ab2FNXXO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 19:23:14 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:45219 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751551Ab2FNXXN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 19:23:13 -0400
+Subject: [GIT PULL] target rc-fixes for v3.5-rc3
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Roland Dreier <roland@kernel.org>,
+        =?ISO-8859-1?Q?J=F6rn?= Engel <joern@purestorage.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        Giridhar Malavali <giridhar.malavali@qlogic.com>,
+        Chad Dupuis <chad.dupuis@qlogic.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 14 Jun 2012 16:23:09 -0700
+Message-ID: <1339716189.12064.96.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This replaces the #defines used when CONFIG_AUDIT or CONFIG_AUDIT_SYSCALLS
-are disabled so we get type checking during those builds.
+Hello Linus!
 
-Suggested-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
- include/linux/audit.h |  173 ++++++++++++++++++++++++++++++++++++-------------
- 1 files changed, 127 insertions(+), 46 deletions(-)
+Here is the outstanding series of target 3.5-rc-fixes currently pending
+for v3.5-rc3 merge.  As mentioned in the tree work-flow re-org
+announcement, target bug-fixes slated for the current release will now
+be coming via branch master following Linux/KVM's tree workflow.
 
-diff --git a/include/linux/audit.h b/include/linux/audit.h
-index 22f292a..fa55743 100644
---- a/include/linux/audit.h
-+++ b/include/linux/audit.h
-@@ -622,37 +622,92 @@ static inline void audit_mmap_fd(int fd, int flags)
- extern int audit_n_rules;
- extern int audit_signals;
- #else /* CONFIG_AUDITSYSCALL */
--#define audit_alloc(t) ({ 0; })
--#define audit_free(t) do { ; } while (0)
--#define audit_syscall_entry(ta,a,b,c,d,e) do { ; } while (0)
--#define audit_syscall_exit(r) do { ; } while (0)
--#define audit_dummy_context() 1
--#define audit_getname(n) do { ; } while (0)
--#define audit_putname(n) do { ; } while (0)
--#define __audit_inode(n,d) do { ; } while (0)
--#define __audit_inode_child(i,p) do { ; } while (0)
--#define audit_inode(n,d) do { (void)(d); } while (0)
--#define audit_inode_child(i,p) do { ; } while (0)
--#define audit_core_dumps(i) do { ; } while (0)
--#define audit_seccomp(i,s,c) do { ; } while (0)
--#define auditsc_get_stamp(c,t,s) (0)
-+static inline int  audit_alloc(struct task_struct *task)
-+{
-+	return 0;
-+}
-+static inline void audit_free(struct task_struct *task)
-+{ }
-+static inline void audit_syscall_entry(int arch, int major, unsigned long a0,
-+				       unsigned long a1, unsigned long a2,
-+				       unsigned long a3)
-+{ }
-+static inline void audit_syscall_exit(void *pt_regs)
-+{ }
-+static inline int audit_dummy_context(void)
-+{
-+	return 1;
-+}
-+static inline void audit_getname(const char *name)
-+{ }
-+static inline void audit_putname(const char *name)
-+{ }
-+static inline void __audit_inode(const char *name, const struct dentry *dentry)
-+{ }
-+static inline void __audit_inode_child(const struct dentry *dentry,
-+					const struct inode *parent)
-+{ }
-+static inline void audit_inode(const char *name, const struct dentry *dentry)
-+{ }
-+static inline void audit_inode_child(const struct dentry *dentry,
-+				     const struct inode *parent)
-+{ }
-+static inline void audit_core_dumps(long signr)
-+{ }
-+static inline void __audit_seccomp(unsigned long syscall, long signr, int code)
-+{ }
-+static inline void audit_seccomp(unsigned long syscall, long signr, int code)
-+{ }
-+static inline int auditsc_get_stamp(struct audit_context *ctx,
-+			      struct timespec *t, unsigned int *serial)
-+{
-+	return 0;
-+}
- #define audit_get_loginuid(t) (-1)
- #define audit_get_sessionid(t) (-1)
--#define audit_log_task_context(b) do { ; } while (0)
--#define audit_ipc_obj(i) ((void)0)
--#define audit_ipc_set_perm(q,u,g,m) ((void)0)
--#define audit_bprm(p) ({ 0; })
--#define audit_socketcall(n,a) ((void)0)
--#define audit_fd_pair(n,a) ((void)0)
--#define audit_sockaddr(len, addr) ({ 0; })
--#define audit_mq_open(o,m,a) ((void)0)
--#define audit_mq_sendrecv(d,l,p,t) ((void)0)
--#define audit_mq_notify(d,n) ((void)0)
--#define audit_mq_getsetattr(d,s) ((void)0)
--#define audit_log_bprm_fcaps(b, ncr, ocr) ({ 0; })
--#define audit_log_capset(pid, ncr, ocr) ((void)0)
--#define audit_mmap_fd(fd, flags) ((void)0)
--#define audit_ptrace(t) ((void)0)
-+static inline void audit_log_task_context(struct audit_buffer *ab)
-+{ }
-+static inline void audit_ipc_obj(struct kern_ipc_perm *ipcp)
-+{ }
-+static inline void audit_ipc_set_perm(unsigned long qbytes, uid_t uid,
-+					gid_t gid, umode_t mode)
-+{ }
-+static inline int audit_bprm(struct linux_binprm *bprm)
-+{
-+	return 0;
-+}
-+static inline void audit_socketcall(int nargs, unsigned long *args)
-+{ }
-+static inline void audit_fd_pair(int fd1, int fd2)
-+{ }
-+static inline int audit_sockaddr(int len, void *addr)
-+{
-+	return 0;
-+}
-+static inline void audit_mq_open(int oflag, umode_t mode, struct mq_attr *attr)
-+{ }
-+static inline void audit_mq_sendrecv(mqd_t mqdes, size_t msg_len,
-+				     unsigned int msg_prio,
-+				     const struct timespec *abs_timeout)
-+{ }
-+static inline void audit_mq_notify(mqd_t mqdes,
-+				   const struct sigevent *notification)
-+{ }
-+static inline void audit_mq_getsetattr(mqd_t mqdes, struct mq_attr *mqstat)
-+{ }
-+static inline int audit_log_bprm_fcaps(struct linux_binprm *bprm,
-+				       const struct cred *new,
-+				       const struct cred *old)
-+{
-+	return 0;
-+}
-+static inline void audit_log_capset(pid_t pid, const struct cred *new,
-+				   const struct cred *old)
-+{ }
-+static inline void audit_mmap_fd(int fd, int flags)
-+{ }
-+static inline void audit_ptrace(struct task_struct *t)
-+{ }
- #define audit_n_rules 0
- #define audit_signals 0
- #endif /* CONFIG_AUDITSYSCALL */
-@@ -676,7 +731,6 @@ extern void		    audit_log_n_hex(struct audit_buffer *ab,
- extern void		    audit_log_n_string(struct audit_buffer *ab,
- 					       const char *buf,
- 					       size_t n);
--#define audit_log_string(a,b) audit_log_n_string(a, b, strlen(b));
- extern void		    audit_log_n_untrustedstring(struct audit_buffer *ab,
- 							const char *string,
- 							size_t n);
-@@ -691,7 +745,8 @@ extern void		    audit_log_lost(const char *message);
- #ifdef CONFIG_SECURITY
- extern void 		    audit_log_secctx(struct audit_buffer *ab, u32 secid);
- #else
--#define audit_log_secctx(b,s) do { ; } while (0)
-+static inline void	    audit_log_secctx(struct audit_buffer *ab, u32 secid)
-+{ }
- #endif
- 
- extern int		    audit_update_lsm_rules(void);
-@@ -703,21 +758,47 @@ extern int  audit_receive_filter(int type, int pid, int uid, int seq,
- 				void *data, size_t datasz, uid_t loginuid,
- 				u32 sessionid, u32 sid);
- extern int audit_enabled;
--#else
--#define audit_log(c,g,t,f,...) do { ; } while (0)
--#define audit_log_start(c,g,t) ({ NULL; })
--#define audit_log_vformat(b,f,a) do { ; } while (0)
--#define audit_log_format(b,f,...) do { ; } while (0)
--#define audit_log_end(b) do { ; } while (0)
--#define audit_log_n_hex(a,b,l) do { ; } while (0)
--#define audit_log_n_string(a,c,l) do { ; } while (0)
--#define audit_log_string(a,c) do { ; } while (0)
--#define audit_log_n_untrustedstring(a,n,s) do { ; } while (0)
--#define audit_log_untrustedstring(a,s) do { ; } while (0)
--#define audit_log_d_path(b, p, d) do { ; } while (0)
--#define audit_log_key(b, k) do { ; } while (0)
--#define audit_log_secctx(b,s) do { ; } while (0)
-+#else /* CONFIG_AUDIT */
-+static inline __printf(4, 5)
-+void audit_log(struct audit_context *ctx, gfp_t gfp_mask, int type,
-+	       const char *fmt, ...)
-+{ }
-+static inline struct audit_buffer *audit_log_start(struct audit_context *ctx,
-+						   gfp_t gfp_mask, int type)
-+{
-+	return NULL;
-+}
-+static inline __printf(2, 3)
-+void audit_log_format(struct audit_buffer *ab, const char *fmt, ...)
-+{ }
-+static inline void audit_log_end(struct audit_buffer *ab)
-+{ }
-+static inline void audit_log_n_hex(struct audit_buffer *ab,
-+				   const unsigned char *buf, size_t len)
-+{ }
-+static inline void audit_log_n_string(struct audit_buffer *ab,
-+				      const char *buf, size_t n)
-+{ }
-+static inline void  audit_log_n_untrustedstring(struct audit_buffer *ab,
-+						const char *string, size_t n)
-+{ }
-+static inline void audit_log_untrustedstring(struct audit_buffer *ab,
-+					     const char *string)
-+{ }
-+static inline void audit_log_d_path(struct audit_buffer *ab,
-+				    const char *prefix,
-+				    const struct path *path)
-+{ }
-+static inline void audit_log_key(struct audit_buffer *ab, char *key)
-+{ }
-+static inline void audit_log_secctx(struct audit_buffer *ab, u32 secid)
-+{ }
- #define audit_enabled 0
--#endif
-+#endif /* CONFIG_AUDIT */
-+static inline void audit_log_string(struct audit_buffer *ab, const char *buf)
-+{
-+	audit_log_n_string(ab, buf, strlen(buf));
-+}
-+
- #endif
- #endif
--- 
-1.7.0.4
+The branch master is based upon:
 
--- 
-Kees Cook
-Chrome OS Security
+commit cfaf025112d3856637ff34a767ef785ef5cf2ca9
+Author: Linus Torvalds <torvalds@linux-foundation.org>
+Date:   Fri Jun 8 18:40:09 2012 -0700
+
+    Linux 3.5-rc2
+
+Please go ahead and pull:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git master
+
+This series contains post merge qla_target.c / tcm_qla2xxx bugfixes from
+the past weeks, including the patch to allow target-core to use an
+optional session shutdown callback to help address an active I/O
+shutdown bug in tcm_qla2xxx code (Joern).
+
+Also included is a target regression bugfix releated to explict ALUA
+target port group CDB emulation that is CC'ed to stable (Roland).
+
+Thank you!
+
+--nab
+
+Joern Engel (2):
+  target: Add TFO->put_session() caller for HW fabric session shutdown
+  tcm_qla2xxx: Convert to TFO->put_session() usage
+
+Nicholas Bellinger (1):
+  tcm_qla2xxx: Clear session s_id + loop_id earlier during shutdown
+
+Roland Dreier (6):
+  target: Return error to initiator if SET TARGET PORT GROUPS emulation
+    fails
+  tcm_qla2xxx: Don't insert nacls without sessions into the btree
+  qla2xxx: Don't crash if we can't find cmd for failed CTIO
+  qla2xxx: Don't leak commands we give up on in qlt_do_work()
+  tcm_qla2xxx: tcm_qla2xxx_handle_tmr() can be static
+  tcm_qla2xxx: Handle malformed wwn strings properly
+
+Sachin Kamat (1):
+  qla2xxx: Remove version.h header file inclusion
+
+ drivers/scsi/qla2xxx/qla_target.c      |   11 +--
+ drivers/scsi/qla2xxx/qla_target.h      |    1 -
+ drivers/scsi/qla2xxx/tcm_qla2xxx.c     |  152 ++++++++++++--------------------
+ drivers/target/target_core_alua.c      |    5 +-
+ drivers/target/target_core_transport.c |    8 ++-
+ include/target/target_core_fabric.h    |    1 +
+ 6 files changed, 74 insertions(+), 104 deletions(-)
+
+
