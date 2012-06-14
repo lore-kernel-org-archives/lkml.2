@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755623Ab2FNTR7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 15:17:59 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:41400 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753340Ab2FNTR5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 15:17:57 -0400
-Date: Thu, 14 Jun 2012 12:17:43 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: ning.n.jiang@gmail.com, linux-kernel@vger.kernel.org,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH] PM: Deprecate suspend/resume in device_driver
-Message-ID: <20120614191743.GA2721@kroah.com>
-References: <1339656138-28060-1-git-send-email-ning.n.jiang@gmail.com>
- <20120614153730.GB17140@kroah.com>
- <201206142115.47601.rjw@sisk.pl>
+	id S1755635Ab2FNTTs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 15:19:48 -0400
+Received: from smtp1-g21.free.fr ([212.27.42.1]:59363 "EHLO smtp1-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753340Ab2FNTTq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 15:19:46 -0400
+From: Robert Jarzmik <robert.jarzmik@free.fr>
+To: swarren@nvidia.com
+Cc: linux-kernel@vger.kernel.org, haojian.zhuang@gmail.com,
+        linux-arm-kernel@lists.infradead.org, jic23@cam.ac.uk, kay@vrfy.org
+Subject: Follow-up to remaining issue with alignment of __log_buf in printk.c
+X-URL: http://belgarath.falguerolles.org/
+Date: Thu, 14 Jun 2012 21:19:31 +0200
+Message-ID: <87aa05vgzg.fsf@free.fr>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201206142115.47601.rjw@sisk.pl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 14, 2012 at 09:15:47PM +0200, Rafael J. Wysocki wrote:
-> On Thursday, June 14, 2012, Greg KH wrote:
-> > On Thu, Jun 14, 2012 at 02:42:17PM +0800, ning.n.jiang@gmail.com wrote:
-> > > From: Ning Jiang <ning.n.jiang@gmail.com>
-> > > 
-> > > Make suspend/resume callbacks in device_driver deprecated and scheduled
-> > > for removal since they are not used in PM core anymore.
-> > > 
-> > > Legacy drivers who still use them need to move suspend/resume callbacks
-> > > to dev_pm_ops.
-> > 
-> > How many complier warnings does this patch produce?
-> > 
-> > Please fix them before submitting this patch.  The way kernel
-> > development is is that you fix the problems up with the api, you don't
-> > just mark them and hope someone else will do it for you.
-> > 
-> > Sorry, I can't take this.
-> 
-> Right.
 
-To provide a bit more "constructive" review, the proper thing is to fix
-up the whole kernel to never set these fields, and then just delete
-them.  Ning, feel free to start working on that task, it's a good one to
-accomplish and should be pretty well defined.
+Hi Stephen and others,
 
-thanks,
+I have a XScale PXA based board with has the alignement issue which makes the
+kernel trap during its early stage.
 
-greg k-h
+I wonder what is the status now, is there a fix available ?
+
+I have tracked what happens on PXA. The pxa is an ARM v5TE chip. The new printk
+version you submitted is translated to the following assembly on the line :
+        msg->ts_nsec = local_clock();
+Into:
+=> 0xc001bbe0 <log_store+496>:	strd	r0, [r4, r5]
+
+In ARMv5, the "strd" assembly opcode expects the address to be 64bits aligned,
+hence the bug.
+
+Now the solutions I have seen so far in the mailing lists :
+ - #define LOG_ALIGN (__alignof__(u64))
+   Does always work.
+ - #define LOG_ALIGN (__alignof__(struct log))
+   Doesn't work with my toolchain, as __alignof__(struct log) is 4, not 8
+
+What are you intending to do to solve the ARMv5 issue ? Are you waiting for
+someone to submit a patch ?
+
+Cheers.
+
+-- 
+Robert
