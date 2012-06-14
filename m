@@ -1,71 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757093Ab2FOABB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 20:01:01 -0400
-Received: from www.linutronix.de ([62.245.132.108]:34128 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757050Ab2FOAAy (ORCPT
+	id S1757139Ab2FOABN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 20:01:13 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45611 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757056Ab2FOABC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 20:00:54 -0400
-Date: Fri, 15 Jun 2012 02:00:44 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [PATCH] tracing: Fix the outmost stupidity of tracing_off()
-In-Reply-To: <1339717703.13377.285.camel@gandalf.stny.rr.com>
-Message-ID: <alpine.LFD.2.02.1206150154540.3086@ionos>
-References: <alpine.LFD.2.02.1206142345100.3086@ionos>  <1339714725.13377.252.camel@gandalf.stny.rr.com>  <alpine.LFD.2.02.1206150106511.3086@ionos> <1339717703.13377.285.camel@gandalf.stny.rr.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Thu, 14 Jun 2012 20:01:02 -0400
+Message-Id: <20120614235627.607134302@linuxfoundation.org>
+User-Agent: quilt/0.60-20.1
+Date: Thu, 14 Jun 2012 16:57:05 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Andy Whitcroft <apw@canonical.com>,
+        Jeff Garzik <jgarzik@redhat.com>, Victor Miasnikov <vvm@tut.by>
+Subject: [ 42/42] ata_piix: defer disks to the Hyper-V drivers by default
+In-Reply-To: <20120614235636.GA5275@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 14 Jun 2012, Steven Rostedt wrote:
-> On Fri, 2012-06-15 at 01:12 +0200, Thomas Gleixner wrote:
-> 
-> > That's still not an excuse for utter stupidity, really. Just check the
-> > commit date vs. your discovery time.
-> > 
-> > I told you often enough to be more careful, but that one is really
-> > beyond comprehension.
-> 
-> I'm really thinking that this was due to a bad push. As I believe I had
-> stale code (made this fix locally, but pushed the broken branch) and all
-> my changes were on top of it. When updating to the latest tip, I had
-> code I didn't want to merge, or conflicts happened, that I ended up
-> cherry-picking changes. Which breaks from my normal workflow, which is
-> to make sure my old changes fast forward to tip before doing a rebase of
-> my new code.
-> 
-> I have several branches that I work on and when they are ready, I rebase
-> them on top of tip, run a bunch of tests, and then push them out.
-> 
-> I'm a heavy user of tracing_off() too, and since the development of my
-> work is usually on older branches, I would not have noticed the bug. As
-> after I get things working I usually rebase on top of tip before doing
-> my final tests and asking for the pull request.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Bla, bla, bla.....
+------------------
 
- commit 499e547057f5bba5cd6f87ebe59b05d0c59da905
- Author: Steven Rostedt <srostedt@redhat.com>
- Date:   Wed Feb 22 15:50:28 2012 -0500
+From: Andy Whitcroft <apw@canonical.com>
 
-Did you actually read what I wrote above?
+commit cd006086fa5d91414d8ff9ff2b78fbb593878e3c upstream.
 
-> > That's still not an excuse for utter stupidity, really. Just check the
-> > commit date vs. your discovery time.
+When we are hosted on a Microsoft Hyper-V hypervisor the guest disks
+are exposed both via the Hyper-V paravirtualised drivers and via an
+emulated SATA disk drive.  In this case we want to use the paravirtualised
+drivers if we can as they are much more efficient.  Note that the Hyper-V
+paravirtualised drivers only expose the virtual hard disk devices, the
+CDROM/DVD devices must still be enumerated.
 
-Emphasis on discovery time.
+Mark the host controller ATA_HOST_IGNORE_ATA to prevent enumeration of
+disk devices.
 
-Si tacuisses, philosophus mansisses
+BugLink: http://bugs.launchpad.net/bugs/929545
+BugLink: http://bugs.launchpad.net/bugs/942316
+Signed-off-by: Andy Whitcroft <apw@canonical.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Cc: Victor Miasnikov <vvm@tut.by>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/ata/ata_piix.c |   36 ++++++++++++++++++++++++++++++++++++
+ 1 file changed, 36 insertions(+)
+
+--- a/drivers/ata/ata_piix.c
++++ b/drivers/ata/ata_piix.c
+@@ -1554,6 +1554,39 @@ static bool piix_broken_system_poweroff(
+ 	return false;
+ }
+ 
++static int prefer_ms_hyperv = 1;
++module_param(prefer_ms_hyperv, int, 0);
++
++static void piix_ignore_devices_quirk(struct ata_host *host)
++{
++#if IS_ENABLED(CONFIG_HYPERV_STORAGE)
++	static const struct dmi_system_id ignore_hyperv[] = {
++		{
++			/* On Hyper-V hypervisors the disks are exposed on
++			 * both the emulated SATA controller and on the
++			 * paravirtualised drivers.  The CD/DVD devices
++			 * are only exposed on the emulated controller.
++			 * Request we ignore ATA devices on this host.
++			 */
++			.ident = "Hyper-V Virtual Machine",
++			.matches = {
++				DMI_MATCH(DMI_SYS_VENDOR,
++						"Microsoft Corporation"),
++				DMI_MATCH(DMI_PRODUCT_NAME, "Virtual Machine"),
++			},
++		},
++		{ }	/* terminate list */
++	};
++	const struct dmi_system_id *dmi = dmi_first_match(ignore_hyperv);
++
++	if (dmi && prefer_ms_hyperv) {
++		host->flags |= ATA_HOST_IGNORE_ATA;
++		dev_info(host->dev, "%s detected, ATA device ignore set\n",
++			dmi->ident);
++	}
++#endif
++}
++
+ /**
+  *	piix_init_one - Register PIIX ATA PCI device with kernel services
+  *	@pdev: PCI device to register
+@@ -1669,6 +1702,9 @@ static int __devinit piix_init_one(struc
+ 	}
+ 	host->flags |= ATA_HOST_PARALLEL_SCAN;
+ 
++	/* Allow hosts to specify device types to ignore when scanning. */
++	piix_ignore_devices_quirk(host);
++
+ 	pci_set_master(pdev);
+ 	return ata_pci_sff_activate_host(host, ata_bmdma_interrupt, sht);
+ }
+
 
