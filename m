@@ -1,47 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755430Ab2FNK2w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 06:28:52 -0400
-Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:58544 "EHLO
-	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754461Ab2FNK2v (ORCPT
+	id S1755582Ab2FNKdi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 06:33:38 -0400
+Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:39196 "EHLO
+	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753202Ab2FNKdg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 06:28:51 -0400
-From: Felipe Balbi <balbi@ti.com>
-To: a.zummo@towertech.it
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        rtc-linux@googlegroups.com, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH] rtc: twl: add missing IRQF_ONESHOT
-Date: Thu, 14 Jun 2012 13:26:46 +0300
-Message-Id: <1339669606-9579-1-git-send-email-balbi@ti.com>
-X-Mailer: git-send-email 1.7.10.4
+	Thu, 14 Jun 2012 06:33:36 -0400
+MIME-Version: 1.0
+In-Reply-To: <1339669250-9183-2-git-send-email-balbi@ti.com>
+References: <1339669250-9183-1-git-send-email-balbi@ti.com> <1339669250-9183-2-git-send-email-balbi@ti.com>
+From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+Date: Thu, 14 Jun 2012 16:03:14 +0530
+Message-ID: <CAMQu2gyw8LpT8sXQ_DBkbTTQqxLinwCYgh3N0OJkUyKz8P7JUA@mail.gmail.com>
+Subject: Re: [PATCH 01/17] i2c: omap: simplify num_bytes handling
+To: Felipe Balbi <balbi@ti.com>
+Cc: ben-linux@fluff.org, Tony Lindgren <tony@atomide.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        w.sang@pengutronix.de, linux-i2c@vger.kernel.org,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch gets rid of the following warning:
-
-[    2.825378] genirq: Threaded irq requested with \
-	handler=NULL and !ONESHOT for irq 363
-
-Signed-off-by: Felipe Balbi <balbi@ti.com>
----
- drivers/rtc/rtc-twl.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/rtc/rtc-twl.c b/drivers/rtc/rtc-twl.c
-index 258abea..c5d06fe 100644
---- a/drivers/rtc/rtc-twl.c
-+++ b/drivers/rtc/rtc-twl.c
-@@ -510,7 +510,7 @@ static int __devinit twl_rtc_probe(struct platform_device *pdev)
- 	}
- 
- 	ret = request_threaded_irq(irq, NULL, twl_rtc_interrupt,
--				   IRQF_TRIGGER_RISING,
-+				   IRQF_TRIGGER_RISING | IRQF_ONESHOT,
- 				   dev_name(&rtc->dev), rtc);
- 	if (ret < 0) {
- 		dev_err(&pdev->dev, "IRQ is not free.\n");
--- 
-1.7.10.4
-
+On Thu, Jun 14, 2012 at 3:50 PM, Felipe Balbi <balbi@ti.com> wrote:
+> trivial patch, no functional changes
+>
+> Signed-off-by: Felipe Balbi <balbi@ti.com>
+> ---
+Looks good.
+Reviewed-by : Santosh Shilimkar <santosh.shilimkar@ti.com>
