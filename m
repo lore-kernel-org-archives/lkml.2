@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757139Ab2FOABN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 20:01:13 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45611 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757056Ab2FOABC (ORCPT
+	id S1757122Ab2FOABL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 20:01:11 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45919 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757098Ab2FOABF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 20:01:02 -0400
-Message-Id: <20120614235627.607134302@linuxfoundation.org>
+	Thu, 14 Jun 2012 20:01:05 -0400
+Message-Id: <20120614235627.349117919@linuxfoundation.org>
 User-Agent: quilt/0.60-20.1
-Date: Thu, 14 Jun 2012 16:57:05 -0700
+Date: Thu, 14 Jun 2012 16:57:02 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Andy Whitcroft <apw@canonical.com>,
-        Jeff Garzik <jgarzik@redhat.com>, Victor Miasnikov <vvm@tut.by>
-Subject: [ 42/42] ata_piix: defer disks to the Hyper-V drivers by default
+        alan@lxorguk.ukuu.org.uk, Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 39/42] drm/i915: Mark the ringbuffers as being in the GTT domain
 In-Reply-To: <20120614235636.GA5275@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,82 +25,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Whitcroft <apw@canonical.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit cd006086fa5d91414d8ff9ff2b78fbb593878e3c upstream.
+commit 3eef8918ff440837f6af791942d8dd07e1a268ee upstream.
 
-When we are hosted on a Microsoft Hyper-V hypervisor the guest disks
-are exposed both via the Hyper-V paravirtualised drivers and via an
-emulated SATA disk drive.  In this case we want to use the paravirtualised
-drivers if we can as they are much more efficient.  Note that the Hyper-V
-paravirtualised drivers only expose the virtual hard disk devices, the
-CDROM/DVD devices must still be enumerated.
+By correctly describing the rinbuffers as being in the GTT domain, it
+appears that we are more careful with the management of the CPU cache
+upon resume and so prevent some coherency issue when submitting commands
+to the GPU later. A secondary effect is that the debug logs are then
+consistent with the actual usage (i.e. they no longer describe the
+ringbuffers as being in the CPU write domain when we are accessing them
+through an wc iomapping.)
 
-Mark the host controller ATA_HOST_IGNORE_ATA to prevent enumeration of
-disk devices.
-
-BugLink: http://bugs.launchpad.net/bugs/929545
-BugLink: http://bugs.launchpad.net/bugs/942316
-Signed-off-by: Andy Whitcroft <apw@canonical.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
-Cc: Victor Miasnikov <vvm@tut.by>
+Reported-and-tested-by: Daniel Gnoutcheff <daniel@gnoutcheff.name>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=41092
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- drivers/ata/ata_piix.c |   36 ++++++++++++++++++++++++++++++++++++
- 1 file changed, 36 insertions(+)
 
---- a/drivers/ata/ata_piix.c
-+++ b/drivers/ata/ata_piix.c
-@@ -1554,6 +1554,39 @@ static bool piix_broken_system_poweroff(
- 	return false;
- }
+---
+ drivers/gpu/drm/i915/intel_ringbuffer.c |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+--- a/drivers/gpu/drm/i915/intel_ringbuffer.c
++++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
+@@ -1027,6 +1027,10 @@ int intel_init_ring_buffer(struct drm_de
+ 	if (ret)
+ 		goto err_unref;
  
-+static int prefer_ms_hyperv = 1;
-+module_param(prefer_ms_hyperv, int, 0);
++	ret = i915_gem_object_set_to_gtt_domain(obj, true);
++	if (ret)
++		goto err_unpin;
 +
-+static void piix_ignore_devices_quirk(struct ata_host *host)
-+{
-+#if IS_ENABLED(CONFIG_HYPERV_STORAGE)
-+	static const struct dmi_system_id ignore_hyperv[] = {
-+		{
-+			/* On Hyper-V hypervisors the disks are exposed on
-+			 * both the emulated SATA controller and on the
-+			 * paravirtualised drivers.  The CD/DVD devices
-+			 * are only exposed on the emulated controller.
-+			 * Request we ignore ATA devices on this host.
-+			 */
-+			.ident = "Hyper-V Virtual Machine",
-+			.matches = {
-+				DMI_MATCH(DMI_SYS_VENDOR,
-+						"Microsoft Corporation"),
-+				DMI_MATCH(DMI_PRODUCT_NAME, "Virtual Machine"),
-+			},
-+		},
-+		{ }	/* terminate list */
-+	};
-+	const struct dmi_system_id *dmi = dmi_first_match(ignore_hyperv);
-+
-+	if (dmi && prefer_ms_hyperv) {
-+		host->flags |= ATA_HOST_IGNORE_ATA;
-+		dev_info(host->dev, "%s detected, ATA device ignore set\n",
-+			dmi->ident);
-+	}
-+#endif
-+}
-+
- /**
-  *	piix_init_one - Register PIIX ATA PCI device with kernel services
-  *	@pdev: PCI device to register
-@@ -1669,6 +1702,9 @@ static int __devinit piix_init_one(struc
- 	}
- 	host->flags |= ATA_HOST_PARALLEL_SCAN;
- 
-+	/* Allow hosts to specify device types to ignore when scanning. */
-+	piix_ignore_devices_quirk(host);
-+
- 	pci_set_master(pdev);
- 	return ata_pci_sff_activate_host(host, ata_bmdma_interrupt, sht);
- }
+ 	ring->map.size = ring->size;
+ 	ring->map.offset = dev->agp->base + obj->gtt_offset;
+ 	ring->map.type = 0;
 
 
