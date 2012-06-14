@@ -1,112 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755828Ab2FNKww (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 06:52:52 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40006 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755514Ab2FNKwv (ORCPT
+	id S1755813Ab2FNKyJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 06:54:09 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:61220 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754775Ab2FNKyH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 06:52:51 -0400
-Date: Thu, 14 Jun 2012 18:52:42 +0800
-From: Wanpeng Li <liwp.linux@gmail.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Wanpeng Li <liwp.linux@gmail.com>
-Subject: Re: [PATCH V2] writeback: fix hung_task alarm when sync block
-Message-ID: <20120614105242.GB18190@kernel>
-Reply-To: Wanpeng Li <liwp.linux@gmail.com>
-References: <1339562553-10035-1-git-send-email-liwp.linux@gmail.com>
+	Thu, 14 Jun 2012 06:54:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339562553-10035-1-git-send-email-liwp.linux@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1339667937.9598.97.camel@linux-s257.site>
+References: <1339572727-24744-1-git-send-email-corentin.chary@gmail.com>
+	<1339572727-24744-3-git-send-email-corentin.chary@gmail.com>
+	<1339667937.9598.97.camel@linux-s257.site>
+Date: Thu, 14 Jun 2012 12:54:05 +0200
+Message-ID: <CAHR064i_0vunKzB_Yg9SGrWQcPxJs2sTekWk6LuP2qf0FEqBOQ@mail.gmail.com>
+Subject: Re: [PATCH 2/7] drivers-platform-x86: use acpi_video_dmi_promote_vendor()
+From: Corentin Chary <corentin.chary@gmail.com>
+To: joeyli <jlee@suse.com>
+Cc: Len Brown <lenb@kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        linux-acpi@vger.kernel.org, platform-driver-x86@vger.kernel.org,
+        Joey Lee <jlee@novell.com>, Matthew Garrett <mjg@redhat.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 13, 2012 at 12:42:33PM +0800, Wanpeng Li wrote:
+On Thu, Jun 14, 2012 at 11:58 AM, joeyli <jlee@suse.com> wrote:
+> Hi Corentin,
+>
+> 於 三，2012-06-13 於 09:32 +0200，Corentin Chary 提到：
+>> Instead of using directly acpi_video_unregister(), use
+>> acpi_video_dmi_promote_vendor() (and make it call
+>> acpi_video_unregister() if needed)
+>>
+>> Signed-off-by: Corentin Chary <corentin.chary@gmail.com>
+>> ---
+>>  drivers/platform/x86/acer-wmi.c       |   16 +++++++++-------
+>>  drivers/platform/x86/apple-gmux.c     |    6 ++++++
+>>  drivers/platform/x86/samsung-laptop.c |   22 ++++++++++++----------
+>>  3 files changed, 27 insertions(+), 17 deletions(-)
+>>
+>> diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
+>> index ce875dc..ffc53df 100644
+>> --- a/drivers/platform/x86/acer-wmi.c
+>> +++ b/drivers/platform/x86/acer-wmi.c
+>> @@ -2060,14 +2060,16 @@ static int __init acer_wmi_init(void)
+>>
+>>       set_quirks();
+>>
+>> +     if (dmi_check_system(video_vendor_dmi_table))
+>> +             acpi_video_dmi_promote_vendor();
+>>       if (acpi_video_backlight_support()) {
+>> -             if (dmi_check_system(video_vendor_dmi_table)) {
+>> -                     acpi_video_unregister();
+>> -             } else {
+>> -                     interface->capability &= ~ACER_CAP_BRIGHTNESS;
+>> -                     pr_info("Brightness must be controlled by "
+>> -                             "acpi video driver\n");
+>> -             }
+>> +             interface->capability &= ~ACER_CAP_BRIGHTNESS;
+>> +             pr_info("Brightness must be controlled by acpi video driver\n");
+>> +     } else {
+>> +#ifdef CONFIG_ACPI_VIDEO
+>
+> The 'ifdef CONFIG_ACPI_VIDEO' didn't work on my machine with v3.4
+> kernel, the acpi video didn't unregister.
+>
+> My autoconf.h like following:
+>
+> include/generated/autoconf.h:#define CONFIG_ACPI_VIDEO_MODULE 1
+>
+>
+> Need use:
+>
+> -#ifdef CONFIG_ACPI_VIDEO
+> +#if (defined CONFIG_ACPI_VIDEO || defined CONFIG_ACPI_VIDEO_MODULE)
+>        pr_info("Disabling ACPI video driver\n");
+>        acpi_video_unregister();
+> #endif
+>
+> I tested the above change works to me.
 
-Hi Fengguang,
+I checked include/acpi/video.h and I could in fact remove all #ifdef stuff...
+Thanks ! Will update the patches.
 
-This patch need improve or ..., any comments or suggetions?
 
-Best Regards,
-Wanpeng Li
-
->
->From: Wanpeng Li <liwp@linux.vnet.ibm.com>
->
->"V1 -> V2"
->* remove redundant hangcheck variable
->
->I use several dd processes to write a slow SD card
->dd if=/dev/sda1 of=/dev/sdc4 bs=1M count=4000
->and several sync commands(maybe > 10),dmesg show this:
->
->[  366.888741] INFO: task sync:3518 blocked for more than 120 seconds.
->[  366.888742] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
->[  366.888746] sync            D 00000201     0  3518   3462 0x00000000
->[  366.888752]  dcde5e54 00000082 00000000 00000201 00000000 c180d220 c1933d00 c1933d00
->[  366.888758]  614a7ae7 00000023 f6bc0d00 ebecb280 c180d220 f6bc0d6c f04acbfc 00000000
->[  366.888786]  f6bc0d6c dcde5e2c 00000023 f6bc0d44 00000000 00000000 ebd8b2b4 dcde5e6c
->[  366.888788] Call Trace:
->[  366.888792]  [<c107a0ee>] ? enqueue_entity+0xee/0x5a0
->[  366.888795]  [<c15abc83>] schedule+0x23/0x60
->[  366.888798]  [<c15aa5ad>] schedule_timeout+0x22d/0x2a0
->[  366.888801]  [<c1071ce2>] ? check_preempt_curr+0x72/0x90
->[  366.888804]  [<c1071d28>] ? ttwu_do_wakeup+0x28/0x130
->[  366.888807]  [<c1037f28>] ? default_spin_lock_flags+0x8/0x10
->[  366.888810]  [<c15acaad>] ? _raw_spin_lock_irqsave+0x2d/0x40
->[  366.888813]  [<c15abb17>] wait_for_common+0xa7/0x110
->[  366.888816]  [<c1074690>] ? try_to_wake_up+0x220/0x220
->[  366.888819]  [<c15abc57>] wait_for_completion+0x17/0x20
->[  366.888822]  [<c116ad80>] writeback_inodes_sb_nr+0x70/0x90
->[  366.888825]  [<c116af75>] writeback_inodes_sb+0x25/0x30
->[  366.888828]  [<c117159f>] __sync_filesystem+0x4f/0x90
->[  366.888831]  [<c11715f7>] sync_one_sb+0x17/0x20
->[  366.888834]  [<c114c430>] iterate_supers+0xc0/0xd0
->[  366.888837]  [<c11715e0>] ? __sync_filesystem+0x90/0x90
->[  366.888831]  [<c11715f7>] sync_one_sb+0x17/0x20
->[  366.888834]  [<c114c430>] iterate_supers+0xc0/0xd0
->[  366.888837]  [<c11715e0>] ? __sync_filesystem+0x90/0x90
->[  366.888840]  [<c117167b>] sys_sync+0x2b/0x60
->[  366.888842]  [<c15b385f>] sysenter_do_call+0x12/0x28
->
->Too many similar messages flood the logs. So I use a present method to
->fix this issue.
->------------------------------------------
->Author: Mark Lord <kernel@teksavvy.com>
->Date:   Fri Sep 24 09:51:13 2010 -0400
->
->    block: Prevent hang_check firing during long I/O
->------------------------------------------
->
->Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
->
->
->---
-> fs/fs-writeback.c |    6 +++++-
-> 1 file changed, 5 insertions(+), 1 deletion(-)
->
->diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
->index f2d0109..df879ee 100644
->--- a/fs/fs-writeback.c
->+++ b/fs/fs-writeback.c
->@@ -1311,7 +1311,11 @@ void writeback_inodes_sb_nr(struct super_block *sb,
-> 
-> 	WARN_ON(!rwsem_is_locked(&sb->s_umount));
-> 	bdi_queue_work(sb->s_bdi, &work);
->-	wait_for_completion(&done);
->+	if (sysctl_hung_task_timeout_secs)
->+		while (!wait_for_completion_timeout(&done, HZ/2))
->+			;
->+	else
->+		wait_for_completion(&done);
-> }
-> EXPORT_SYMBOL(writeback_inodes_sb_nr);
-> 
->-- 
->1.7.9.5
->
+-- 
+Corentin Chary
+http://xf.iksaif.net
