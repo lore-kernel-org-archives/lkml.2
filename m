@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756831Ab2FNX7x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 19:59:53 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45919 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932108Ab2FNX7r (ORCPT
+	id S1756851Ab2FNX75 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 19:59:57 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:46571 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756837Ab2FNX7y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 19:59:47 -0400
-Message-Id: <20120614235625.609881878@linuxfoundation.org>
+	Thu, 14 Jun 2012 19:59:54 -0400
+Message-Id: <20120614235625.064975651@linuxfoundation.org>
 User-Agent: quilt/0.60-20.1
-Date: Thu, 14 Jun 2012 16:56:42 -0700
+Date: Thu, 14 Jun 2012 16:56:36 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 19/42] iwlwifi: disable the buggy chain extension feature in HW
+        alan@lxorguk.ukuu.org.uk, Daniel <garkein@mailueberfall.de>,
+        Mathias Krause <minipli@googlemail.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: [ 13/42] crypto: aesni-intel - fix unaligned cbc decrypt for x86-32
 In-Reply-To: <20120614235636.GA5275@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,46 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Mathias Krause <minipli@googlemail.com>
 
-commit d012d04e4d6312ea157b6cf19e9689af934f5aa7 upstream.
+commit 7c8d51848a88aafdb68f42b6b650c83485ea2f84 upstream.
 
-This feature has been reported to be buggy and enabled by
-default. We therefore need to disable it manually.
+The 32 bit variant of cbc(aes) decrypt is using instructions requiring
+128 bit aligned memory locations but fails to ensure this constraint in
+the code. Fix this by loading the data into intermediate registers with
+load unaligned instructions.
 
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This fixes reported general protection faults related to aesni.
+
+References: https://bugzilla.kernel.org/show_bug.cgi?id=43223
+Reported-by: Daniel <garkein@mailueberfall.de>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/iwl-prph.h       |    1 +
- drivers/net/wireless/iwlwifi/iwl-trans-pcie.c |    5 +++++
- 2 files changed, 6 insertions(+)
+ arch/x86/crypto/aesni-intel_asm.S |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/iwl-prph.h
-+++ b/drivers/net/wireless/iwlwifi/iwl-prph.h
-@@ -224,6 +224,7 @@
- #define SCD_TXFACT		(SCD_BASE + 0x10)
- #define SCD_ACTIVE		(SCD_BASE + 0x14)
- #define SCD_QUEUECHAIN_SEL	(SCD_BASE + 0xe8)
-+#define SCD_CHAINEXT_EN		(SCD_BASE + 0x244)
- #define SCD_AGGR_SEL		(SCD_BASE + 0x248)
- #define SCD_INTERRUPT_MASK	(SCD_BASE + 0x108)
- 
---- a/drivers/net/wireless/iwlwifi/iwl-trans-pcie.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-trans-pcie.c
-@@ -1128,6 +1128,11 @@ static void iwl_tx_start(struct iwl_tran
- 	iwl_write_prph(trans, SCD_DRAM_BASE_ADDR,
- 		       trans_pcie->scd_bc_tbls.dma >> 10);
- 
-+	/* The chain extension of the SCD doesn't work well. This feature is
-+	 * enabled by default by the HW, so we need to disable it manually.
-+	 */
-+	iwl_write_prph(trans, SCD_CHAINEXT_EN, 0);
-+
- 	/* Enable DMA channel */
- 	for (chan = 0; chan < FH_TCSR_CHNL_NUM ; chan++)
- 		iwl_write_direct32(trans, FH_TCSR_CHNL_TX_CONFIG_REG(chan),
+--- a/arch/x86/crypto/aesni-intel_asm.S
++++ b/arch/x86/crypto/aesni-intel_asm.S
+@@ -2460,10 +2460,12 @@ ENTRY(aesni_cbc_dec)
+ 	pxor IN3, STATE4
+ 	movaps IN4, IV
+ #else
+-	pxor (INP), STATE2
+-	pxor 0x10(INP), STATE3
+ 	pxor IN1, STATE4
+ 	movaps IN2, IV
++	movups (INP), IN1
++	pxor IN1, STATE2
++	movups 0x10(INP), IN2
++	pxor IN2, STATE3
+ #endif
+ 	movups STATE1, (OUTP)
+ 	movups STATE2, 0x10(OUTP)
 
 
