@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756589Ab2FNQ0v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 12:26:51 -0400
-Received: from na3sys009aog138.obsmtp.com ([74.125.149.19]:44538 "EHLO
-	na3sys009aog138.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756570Ab2FNQ0t (ORCPT
+	id S1756574Ab2FNQ0s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 12:26:48 -0400
+Received: from na3sys009aog127.obsmtp.com ([74.125.149.107]:53809 "EHLO
+	na3sys009aog127.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756553Ab2FNQ0p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 12:26:49 -0400
+	Thu, 14 Jun 2012 12:26:45 -0400
 From: Felipe Balbi <balbi@ti.com>
 To: ben-linux@fluff.org
 Cc: Tony Lindgren <tony@atomide.com>,
@@ -18,9 +18,9 @@ Cc: Tony Lindgren <tony@atomide.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         w.sang@pengutronix.de, Shubhrajyoti Datta <shubhrajyoti@ti.com>,
         Felipe Balbi <balbi@ti.com>
-Subject: [PATCH v2 05/17] i2c: omap: split out [XR]DR and [XR]RDY
-Date: Thu, 14 Jun 2012 19:24:15 +0300
-Message-Id: <1339691067-919-6-git-send-email-balbi@ti.com>
+Subject: [PATCH v2 04/17] i2c: omap: simplify omap_i2c_ack_stat()
+Date: Thu, 14 Jun 2012 19:24:14 +0300
+Message-Id: <1339691067-919-5-git-send-email-balbi@ti.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1339691067-919-1-git-send-email-balbi@ti.com>
 References: <1339691067-919-1-git-send-email-balbi@ti.com>
@@ -28,199 +28,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While they do pretty much the same thing, there
-are a few peculiarities. Specially WRT erratas,
-it's best to split those out and re-factor the
-read/write loop to another function which both
-cases call.
-
-This last part will be done on another patch.
-
-While at that, also avoid an unncessary register
-read since dev->fifo_len will always contain the
-correct amount of data to be transferred.
+stat & BIT(1) is the same as BIT(1), so let's
+simplify things a bit by removing "stat &" from
+all omap_i2c_ack_stat() calls.
 
 Signed-off-by: Felipe Balbi <balbi@ti.com>
+Reviewed-by : Santosh Shilimkar <santosh.shilimkar@ti.com>
 ---
- drivers/i2c/busses/i2c-omap.c |  126 ++++++++++++++++++++++++++++++-----------
- 1 file changed, 92 insertions(+), 34 deletions(-)
+ drivers/i2c/busses/i2c-omap.c |   21 +++++++++++----------
+ 1 file changed, 11 insertions(+), 10 deletions(-)
 
 diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-omap.c
-index fa9ddb6..0661ca1 100644
+index 07ae391..fa9ddb6 100644
 --- a/drivers/i2c/busses/i2c-omap.c
 +++ b/drivers/i2c/busses/i2c-omap.c
-@@ -844,36 +844,62 @@ complete:
+@@ -774,8 +774,8 @@ static int errata_omap3_1p153(struct omap_i2c_dev *dev, u16 *stat, int *err)
+ 
+ 	while (--timeout && !(*stat & OMAP_I2C_STAT_XUDF)) {
+ 		if (*stat & (OMAP_I2C_STAT_NACK | OMAP_I2C_STAT_AL)) {
+-			omap_i2c_ack_stat(dev, *stat & (OMAP_I2C_STAT_XRDY |
+-							OMAP_I2C_STAT_XDR));
++			omap_i2c_ack_stat(dev, (OMAP_I2C_STAT_XRDY |
++					OMAP_I2C_STAT_XDR));
+ 			*err |= OMAP_I2C_STAT_XUDF;
+ 			return -ETIMEDOUT;
+ 		}
+@@ -835,10 +835,11 @@ complete:
+ 		 */
+ 		if (stat & (OMAP_I2C_STAT_ARDY | OMAP_I2C_STAT_NACK |
+ 					OMAP_I2C_STAT_AL)) {
+-			omap_i2c_ack_stat(dev, stat &
+-				(OMAP_I2C_STAT_RRDY | OMAP_I2C_STAT_RDR |
+-				OMAP_I2C_STAT_XRDY | OMAP_I2C_STAT_XDR |
+-				OMAP_I2C_STAT_ARDY));
++			omap_i2c_ack_stat(dev, (OMAP_I2C_STAT_RRDY |
++						OMAP_I2C_STAT_RDR |
++						OMAP_I2C_STAT_XRDY |
++						OMAP_I2C_STAT_XDR |
++						OMAP_I2C_STAT_ARDY));
+ 			omap_i2c_complete_cmd(dev, err);
  			return IRQ_HANDLED;
  		}
- 
--		if (stat & (OMAP_I2C_STAT_RRDY | OMAP_I2C_STAT_RDR)) {
-+		if (stat & OMAP_I2C_STAT_RDR) {
- 			u8 num_bytes = 1;
- 
-+			if (dev->fifo_size)
-+				num_bytes = dev->fifo_size;
-+
-+			while (num_bytes--) {
-+				if (!dev->buf_len) {
-+					dev_err(dev->dev,
-+							"RDR IRQ while no data"
-+							" requested\n");
-+					break;
-+				}
-+
-+				w = omap_i2c_read_reg(dev, OMAP_I2C_DATA_REG);
-+				*dev->buf++ = w;
-+				dev->buf_len--;
-+
-+				/*
-+				 * Data reg in 2430, omap3 and
-+				 * omap4 is 8 bit wide
-+				 */
-+				if (dev->flags &
-+						OMAP_I2C_FLAG_16BIT_DATA_REG) {
-+					if (dev->buf_len) {
-+						*dev->buf++ = w >> 8;
-+						dev->buf_len--;
-+					}
-+				}
-+			}
-+
- 			if (dev->errata & I2C_OMAP_ERRATA_I207)
- 				i2c_omap_errata_i207(dev, stat);
- 
--			if (dev->fifo_size) {
--				if (stat & OMAP_I2C_STAT_RRDY)
--					num_bytes = dev->fifo_size;
--				else    /* read RXSTAT on RDR interrupt */
--					num_bytes = (omap_i2c_read_reg(dev,
--							OMAP_I2C_BUFSTAT_REG)
--							>> 8) & 0x3F;
--			}
-+			omap_i2c_ack_stat(dev, OMAP_I2C_STAT_RDR);
-+			continue;
-+		}
-+
-+		if (stat & OMAP_I2C_STAT_RRDY) {
-+			u8 num_bytes = 1;
-+
-+			if (dev->fifo_size)
-+				num_bytes = dev->fifo_size;
-+
- 			while (num_bytes--) {
- 				if (!dev->buf_len) {
--					if (stat & OMAP_I2C_STAT_RRDY)
--						dev_err(dev->dev,
-+					dev_err(dev->dev,
- 							"RRDY IRQ while no data"
--								" requested\n");
--					if (stat & OMAP_I2C_STAT_RDR)
--						dev_err(dev->dev,
--							"RDR IRQ while no data"
--								" requested\n");
-+							" requested\n");
- 					break;
- 				}
- 
- 				w = omap_i2c_read_reg(dev, OMAP_I2C_DATA_REG);
- 				*dev->buf++ = w;
- 				dev->buf_len--;
-+
- 				/*
- 				 * Data reg in 2430, omap3 and
- 				 * omap4 is 8 bit wide
-@@ -886,36 +912,68 @@ complete:
+@@ -885,8 +886,8 @@ complete:
  					}
  				}
  			}
--			omap_i2c_ack_stat(dev, (OMAP_I2C_STAT_RRDY |
--						OMAP_I2C_STAT_RDR));
-+
-+			omap_i2c_ack_stat(dev, OMAP_I2C_STAT_RRDY);
+-			omap_i2c_ack_stat(dev,
+-				stat & (OMAP_I2C_STAT_RRDY | OMAP_I2C_STAT_RDR));
++			omap_i2c_ack_stat(dev, (OMAP_I2C_STAT_RRDY |
++						OMAP_I2C_STAT_RDR));
  			continue;
  		}
  
--		if (stat & (OMAP_I2C_STAT_XRDY | OMAP_I2C_STAT_XDR)) {
-+		if (stat & OMAP_I2C_STAT_XDR) {
- 			u8 num_bytes = 1;
--			if (dev->fifo_size) {
--				if (stat & OMAP_I2C_STAT_XRDY)
--					num_bytes = dev->fifo_size;
--				else    /* read TXSTAT on XDR interrupt */
--					num_bytes = omap_i2c_read_reg(dev,
--							OMAP_I2C_BUFSTAT_REG)
--							& 0x3F;
-+
-+			if (dev->fifo_size)
-+				num_bytes = dev->fifo_size;
-+
-+			while (num_bytes--) {
-+				if (!dev->buf_len) {
-+					dev_err(dev->dev,
-+							"XDR IRQ while no "
-+							"data to send\n");
-+					break;
-+				}
-+
-+				w = *dev->buf++;
-+				dev->buf_len--;
-+
-+				/*
-+				 * Data reg in 2430, omap3 and
-+				 * omap4 is 8 bit wide
-+				 */
-+				if (dev->flags &
-+						OMAP_I2C_FLAG_16BIT_DATA_REG) {
-+					if (dev->buf_len) {
-+						w |= *dev->buf++ << 8;
-+						dev->buf_len--;
-+					}
-+				}
-+
-+				if ((dev->errata & I2C_OMAP3_1P153) &&
-+				    errata_omap3_1p153(dev, &stat, &err))
-+					goto complete;
-+
-+				omap_i2c_write_reg(dev, OMAP_I2C_DATA_REG, w);
- 			}
-+
-+			omap_i2c_ack_stat(dev, OMAP_I2C_STAT_XDR);
-+			continue;
-+		}
-+
-+		if (stat & OMAP_I2C_STAT_XRDY) {
-+			u8 num_bytes = 1;
-+
-+			if (dev->fifo_size)
-+				num_bytes = dev->fifo_size;
-+
- 			while (num_bytes--) {
- 				if (!dev->buf_len) {
--					if (stat & OMAP_I2C_STAT_XRDY)
--						dev_err(dev->dev,
-+					dev_err(dev->dev,
- 							"XRDY IRQ while no "
- 							"data to send\n");
--					if (stat & OMAP_I2C_STAT_XDR)
--						dev_err(dev->dev,
--							"XDR IRQ while no "
--							"data to send\n");
- 					break;
- 				}
- 
- 				w = *dev->buf++;
- 				dev->buf_len--;
-+
- 				/*
- 				 * Data reg in 2430, omap3 and
- 				 * omap4 is 8 bit wide
-@@ -934,8 +992,8 @@ complete:
+@@ -933,8 +934,8 @@ complete:
  
  				omap_i2c_write_reg(dev, OMAP_I2C_DATA_REG, w);
  			}
--			omap_i2c_ack_stat(dev, (OMAP_I2C_STAT_XRDY |
--						OMAP_I2C_STAT_XDR));
-+
-+			omap_i2c_ack_stat(dev, OMAP_I2C_STAT_XRDY);
+-			omap_i2c_ack_stat(dev,
+-				stat & (OMAP_I2C_STAT_XRDY | OMAP_I2C_STAT_XDR));
++			omap_i2c_ack_stat(dev, (OMAP_I2C_STAT_XRDY |
++						OMAP_I2C_STAT_XDR));
  			continue;
  		}
  
