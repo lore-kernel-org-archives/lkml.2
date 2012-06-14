@@ -1,90 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754957Ab2FNCmJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 22:42:09 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:35970 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752870Ab2FNCmI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 22:42:08 -0400
-Message-ID: <4FD94F76.9090508@linux.vnet.ibm.com>
-Date: Thu, 14 Jun 2012 10:41:58 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1755147Ab2FNCzw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 22:55:52 -0400
+Received: from mga03.intel.com ([143.182.124.21]:12607 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755065Ab2FNCzt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 22:55:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="156129381"
+Message-ID: <4FD95200.1090701@intel.com>
+Date: Thu, 14 Jun 2012 10:52:48 +0800
+From: ShuoX Liu <shuox.liu@intel.com>
+Reply-To: shuox.liu@intel.com
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v6 5/9] KVM: MMU: introduce SPTE_MMU_WRITEABLE bit
-References: <4FC470C7.5040700@linux.vnet.ibm.com> <4FC4716A.8030304@linux.vnet.ibm.com>	<20120613213905.GD19290@amt.cnet> <20120614101328.c23ab94b.yoshikawa.takuya@oss.ntt.co.jp>
-In-Reply-To: <20120614101328.c23ab94b.yoshikawa.takuya@oss.ntt.co.jp>
-Content-Type: text/plain; charset=UTF-8
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "Brown, Len" <len.brown@intel.com>,
+        "Zhang, Yanmin" <yanmin.zhang@intel.com>,
+        "Andrew J. Schorr" <aschorr@telemetry-investments.com>,
+        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+Subject: [PATCH] cpuidle: move field disable from per-driver to per-cpu
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-x-cbid: 12061402-5564-0000-0000-00000331E5A1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/14/2012 09:13 AM, Takuya Yoshikawa wrote:
+From: ShuoX Liu <shuox.liu@intel.com>
 
-> On Wed, 13 Jun 2012 18:39:05 -0300
-> Marcelo Tosatti <mtosatti@redhat.com> wrote:
-> 
->>>  /* Return true if the spte is dropped. */
->>> -static bool spte_write_protect(struct kvm *kvm, u64 *sptep, bool *flush)
->>> +static bool
->>> +spte_write_protect(struct kvm *kvm, u64 *sptep, bool *flush, bool pt_protect)
->>>  {
->>>  	u64 spte = *sptep;
->>>
->>> -	if (!is_writable_pte(spte))
->>> +	if (!is_writable_pte(spte) &&
->>> +	      !(pt_protect && spte_can_be_writable(spte)))
->>>  		return false;
->>>
->>>  	rmap_printk("rmap_write_protect: spte %p %llx\n", sptep, *sptep);
->>>
->>> -	*flush |= true;
->>>  	if (is_large_pte(spte)) {
->>>  		WARN_ON(page_header(__pa(sptep))->role.level ==
->>>  		       PT_PAGE_TABLE_LEVEL);
->>> +
->>> +		*flush |= true;
->>>  		drop_spte(kvm, sptep);
->>>  		--kvm->stat.lpages;
->>>  		return true;
->>>  	}
->>>
->>> +	if (pt_protect)
->>> +		spte &= ~SPTE_MMU_WRITEABLE;
->>>  	spte = spte & ~PT_WRITABLE_MASK;
->>> -	mmu_spte_update(sptep, spte);
->>> +
->>> +	*flush = mmu_spte_update(sptep, spte);
->>
->> This clears previous flush value when looping over multiple sptes in 
->> a single rmapp.
->>
-> 
-> I'm sorry but I have to say that this function is hard to understand.
-> 
-> /* Return true if the spte is dropped. */
-> static bool
-> spte_write_protect(struct kvm *kvm, u64 *sptep, bool *flush, bool pt_protect)
-> 
-> Even with the comment above, can we guess what this function will do
-> for us without reading the body?
-> 
-> My feeling is that separate roles have been put into this one without
-> explaining each parameter.
-> 
-> I think there are two solutions:
-> 	1. separate this into a few functions
-> 	2. explain each parameter/role properly in the comment
->
+Andrew J.Schorr raises a question. When he changes the disable setting
+on a single CPU, it affects all the other CPUs. Basically, currently,
+the disable field is per-driver instead of per-cpu. All the C states of
+the same driver are shared by all CPU in the same machine.
 
+Below patch changes field disable to per-cpu, so we could set this
+separately for each cpu.
 
-Okay.
+Reported-by: Andrew J.Schorr <aschorr@telemetry-investments.com>
+Reviewed-by: Yanmin Zhang <yanmin_zhang@intel.com>
+Signed-off-by: ShuoX Liu <shuox.liu@intel.com>
+---
+ drivers/cpuidle/cpuidle.c        |    1 -
+ drivers/cpuidle/governors/menu.c |    5 +++--
+ drivers/cpuidle/sysfs.c          |   21 ++++++++++++---------
+ include/linux/cpuidle.h          |    2 +-
+ 4 files changed, 16 insertions(+), 13 deletions(-)
 
-I will add more comments and use drop_large_spte to cleanup it.
-
+diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+index d90519c..04e4b76 100644
+--- a/drivers/cpuidle/cpuidle.c
++++ b/drivers/cpuidle/cpuidle.c
+@@ -265,7 +265,6 @@ static void poll_idle_init(struct cpuidle_driver *drv)
+ 	state->power_usage = -1;
+ 	state->flags = 0;
+ 	state->enter = poll_idle;
+-	state->disable = 0;
+ }
+ #else
+ static void poll_idle_init(struct cpuidle_driver *drv) {}
+diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
+index 0633575..8391d93 100644
+--- a/drivers/cpuidle/governors/menu.c
++++ b/drivers/cpuidle/governors/menu.c
+@@ -281,7 +281,7 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+ 	 * unless the timer is happening really really soon.
+ 	 */
+ 	if (data->expected_us > 5 &&
+-		drv->states[CPUIDLE_DRIVER_STATE_START].disable == 0)
++		dev->states_usage[CPUIDLE_DRIVER_STATE_START].disable == 0)
+ 		data->last_state_idx = CPUIDLE_DRIVER_STATE_START;
+ 
+ 	/*
+@@ -290,8 +290,9 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+ 	 */
+ 	for (i = CPUIDLE_DRIVER_STATE_START; i < drv->state_count; i++) {
+ 		struct cpuidle_state *s = &drv->states[i];
++		struct cpuidle_state_usage *su = &dev->states_usage[i];
+ 
+-		if (s->disable)
++		if (su->disable)
+ 			continue;
+ 		if (s->target_residency > data->predicted_us)
+ 			continue;
+diff --git a/drivers/cpuidle/sysfs.c b/drivers/cpuidle/sysfs.c
+index 88032b4..5f809e3 100644
+--- a/drivers/cpuidle/sysfs.c
++++ b/drivers/cpuidle/sysfs.c
+@@ -217,7 +217,8 @@ struct cpuidle_state_attr {
+ 	struct attribute attr;
+ 	ssize_t (*show)(struct cpuidle_state *, \
+ 					struct cpuidle_state_usage *, char *);
+-	ssize_t (*store)(struct cpuidle_state *, const char *, size_t);
++	ssize_t (*store)(struct cpuidle_state *, \
++			struct cpuidle_state_usage *, const char *, size_t);
+ };
+ 
+ #define define_one_state_ro(_name, show) \
+@@ -233,21 +234,22 @@ static ssize_t show_state_##_name(struct cpuidle_state *state, \
+ 	return sprintf(buf, "%u\n", state->_name);\
+ }
+ 
+-#define define_store_state_function(_name) \
++#define define_store_state_ull_function(_name) \
+ static ssize_t store_state_##_name(struct cpuidle_state *state, \
++		struct cpuidle_state_usage *state_usage, \
+ 		const char *buf, size_t size) \
+ { \
+-	long value; \
++	unsigned long long value; \
+ 	int err; \
+ 	if (!capable(CAP_SYS_ADMIN)) \
+ 		return -EPERM; \
+-	err = kstrtol(buf, 0, &value); \
++	err = kstrtoull(buf, 0, &value); \
+ 	if (err) \
+ 		return err; \
+ 	if (value) \
+-		state->disable = 1; \
++		state_usage->_name = 1; \
+ 	else \
+-		state->disable = 0; \
++		state_usage->_name = 0; \
+ 	return size; \
+ }
+ 
+@@ -273,8 +275,8 @@ define_show_state_ull_function(usage)
+ define_show_state_ull_function(time)
+ define_show_state_str_function(name)
+ define_show_state_str_function(desc)
+-define_show_state_function(disable)
+-define_store_state_function(disable)
++define_show_state_ull_function(disable)
++define_store_state_ull_function(disable)
+ 
+ define_one_state_ro(name, show_state_name);
+ define_one_state_ro(desc, show_state_desc);
+@@ -318,10 +320,11 @@ static ssize_t cpuidle_state_store(struct kobject *kobj,
+ {
+ 	int ret = -EIO;
+ 	struct cpuidle_state *state = kobj_to_state(kobj);
++	struct cpuidle_state_usage *state_usage = kobj_to_state_usage(kobj);
+ 	struct cpuidle_state_attr *cattr = attr_to_stateattr(attr);
+ 
+ 	if (cattr->store)
+-		ret = cattr->store(state, buf, size);
++		ret = cattr->store(state, state_usage, buf, size);
+ 
+ 	return ret;
+ }
+diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
+index 6c26a3d..8570012 100644
+--- a/include/linux/cpuidle.h
++++ b/include/linux/cpuidle.h
+@@ -34,6 +34,7 @@ struct cpuidle_driver;
+ struct cpuidle_state_usage {
+ 	void		*driver_data;
+ 
++	unsigned long long	disable;
+ 	unsigned long long	usage;
+ 	unsigned long long	time; /* in US */
+ };
+@@ -46,7 +47,6 @@ struct cpuidle_state {
+ 	unsigned int	exit_latency; /* in US */
+ 	int		power_usage; /* in mW */
+ 	unsigned int	target_residency; /* in US */
+-	unsigned int    disable;
+ 
+ 	int (*enter)	(struct cpuidle_device *dev,
+ 			struct cpuidle_driver *drv,
+-- 
+1.7.1
