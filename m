@@ -1,49 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756476Ab2FNQNt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 12:13:49 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:37470 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756453Ab2FNQNq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 12:13:46 -0400
-From: Leed Aguilar <leed.aguilar@ti.com>
-To: <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>
-CC: <leed.aguilar@ti.com>, Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH] staging:iio:gyro:adis16080: remove sparse warnings
-Date: Thu, 14 Jun 2012 11:05:31 -0400
-Message-ID: <1339686331-9788-1-git-send-email-leed.aguilar@ti.com>
+	id S1756440Ab2FNQQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 12:16:27 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:42409 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754157Ab2FNQQZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 12:16:25 -0400
+From: kosaki.motohiro@gmail.com
+To: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org, akpm@linux-foundation.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>
+Subject: [PATCH] mm: clear pages_scanned only if draining a pcp adds pages to the buddy allocator again
+Date: Thu, 14 Jun 2012 12:16:10 -0400
+Message-Id: <1339690570-7471-1-git-send-email-kosaki.motohiro@gmail.com>
 X-Mailer: git-send-email 1.7.1
-MIME-Version: 1.0
-Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removed the following sparse warning:
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-In function 'adis16080_read_raw':
-warning: 'ut' may be used uninitialized in this function
+commit 2ff754fa8f (mm: clear pages_scanned only if draining a pcp adds pages
+to the buddy allocator again) fixed one free_pcppages_bulk() misuse. But two
+another miuse still exist.
 
-Signed-off-by: Leed Aguilar <leed.aguilar@ti.com>
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Jonathan Cameron <jic23@kernel.org>
+This patch fixes it.
+
+Cc: David Rientjes <rientjes@google.com>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Minchan Kim <minchan.kim@gmail.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 ---
- drivers/staging/iio/gyro/adis16080_core.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ mm/page_alloc.c |    9 ++++++---
+ 1 files changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/staging/iio/gyro/adis16080_core.c b/drivers/staging/iio/gyro/adis16080_core.c
-index 11f1dcc..345e4fa 100644
---- a/drivers/staging/iio/gyro/adis16080_core.c
-+++ b/drivers/staging/iio/gyro/adis16080_core.c
-@@ -82,7 +82,7 @@ static int adis16080_read_raw(struct iio_dev *indio_dev,
- 			     long mask)
- {
- 	int ret = -EINVAL;
--	u16 ut;
-+	u16 ut = 0;
- 	/* Take the iio_dev status lock */
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 5716b00..4e7059d 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1157,8 +1157,10 @@ void drain_zone_pages(struct zone *zone, struct per_cpu_pages *pcp)
+ 		to_drain = pcp->batch;
+ 	else
+ 		to_drain = pcp->count;
+-	free_pcppages_bulk(zone, to_drain, pcp);
+-	pcp->count -= to_drain;
++	if (to_drain > 0) {
++		free_pcppages_bulk(zone, to_drain, pcp);
++		pcp->count -= to_drain;
++	}
+ 	local_irq_restore(flags);
+ }
+ #endif
+@@ -3914,7 +3916,8 @@ static int __zone_pcp_update(void *data)
+ 		pcp = &pset->pcp;
  
- 	mutex_lock(&indio_dev->mlock);
+ 		local_irq_save(flags);
+-		free_pcppages_bulk(zone, pcp->count, pcp);
++		if (pcp->count > 0)
++			free_pcppages_bulk(zone, pcp->count, pcp);
+ 		setup_pageset(pset, batch);
+ 		local_irq_restore(flags);
+ 	}
 -- 
 1.7.1
 
