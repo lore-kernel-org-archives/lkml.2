@@ -1,126 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756669Ab2FOAKn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 20:10:43 -0400
-Received: from mga14.intel.com ([143.182.124.37]:20656 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756439Ab2FOAKh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 20:10:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="112292279"
-Subject: Re: [RFC] x86, fpu: unify signal handling code paths for x86 and
- x86_64 kernels
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Hans Rosenfeld <hans.rosenfeld@amd.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, tglx@linutronix.de,
-        robert.richter@amd.com, andreas.herrmann3@amd.com
-Date: Thu, 14 Jun 2012 17:10:35 -0700
-References: <1339545814.28766.148.camel@sbsiddha-desk.sc.intel.com>
-	 <20120614143727.GF7922@escobedo.osrc.amd.com>
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1339719035.3475.52.camel@sbsiddha-desk.sc.intel.com>
-Mime-Version: 1.0
+	id S1756616Ab2FOALN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 20:11:13 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56620 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756445Ab2FNX6e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 19:58:34 -0400
+Message-Id: <20120614235645.672269148@linuxfoundation.org>
+User-Agent: quilt/0.60-20.1
+Date: Thu, 14 Jun 2012 16:57:00 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Pavel Shilovsky <piastry@etersoft.ru>,
+        Miklos Szeredi <mszeredi@suse.cz>
+Subject: [ 16/20] fuse: fix stat call on 32 bit platforms
+In-Reply-To: <20120614235648.GA6552@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-06-14 at 13:45 -0700, Suresh Siddha wrote:
-> On Thu, 2012-06-14 at 16:37 +0200, Hans Rosenfeld wrote:
-> > Thank you for working on this.
-> > 
-> > I didn't see anything obviously wrong in a quick review of this code,
-> > but this stuff is too complex for this to mean anything :)
-> > 
-> > I ran a quick test of your code. I found a signal frame corruption when
-> > running a 32bit test program on a 64bit kernel. I didn't try to find out
-> > why it failed, but I'll send you the test program in a private mail so
-> > you can look at it yourself.
-> > 
-> 
-> Ok. The problem was that I was using is_ia32_task() (which uses
-> TS_COMPAT) to check if the task is a compat task or not. And that flag
-> is not set during the signal delivery paths for the compat task.
-> 
-> I guess I should be using TIF_IA32 check instead. Using TIF_IA32 check
-> makes your test case run fine.
-> 
-> Will update it accordingly.
-> 
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-For the above mentioned reason, I guess the current usage of
-is_ia32_task() in copy_siginfo_to_user32() (added recently for x32
-support) is broken, as the TS_COMPAT flag may not be set for the x86
-compat mode apps in those paths.
+------------------
 
-Peter offline suggested that the signal  delivery path should probably
-set/clear the TS_COMPAT flag (just like we do it for syscall paths), so
-that is_ia32_task() will work in those paths.
+From: Pavel Shilovsky <piastry@etersoft.ru>
 
-But the exception paths for the 32bit and 64bit apps in the 64-bit
-kernel is same. So I really need to use something like TIF_IA32 to find
-out the compat mode of the task. Anyways, the comment in the below patch
-explains the problem ;) What should we do? Just remove the
-is_ia32_task() checks in signal paths and just use TIF_IA32 or do
-something like below.
+commit 45c72cd73c788dd18c8113d4a404d6b4a01decf1 upstream.
 
-My personal preference is to use TIF_IA32 check and avoid  the usage of
-is_ia32_task() in the signal delivery paths.
+Now we store attr->ino at inode->i_ino, return attr->ino at the
+first time and then return inode->i_ino if the attribute timeout
+isn't expired. That's wrong on 32 bit platforms because attr->ino
+is 64 bit and inode->i_ino is 32 bit in this case.
 
-Signal return goes through a system call which already sets the
-TS_COMPAT. It is the signal delivery that is causing the asymmetry.
+Fix this by saving 64 bit ino in fuse_inode structure and returning
+it every time we call getattr. Also squash attr->ino into inode->i_ino
+explicitly.
+
+Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
+ fs/fuse/dir.c    |    1 +
+ fs/fuse/fuse_i.h |    3 +++
+ fs/fuse/inode.c  |   17 ++++++++++++++++-
+ 3 files changed, 20 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
-index b280908..d7f01fc 100644
---- a/arch/x86/kernel/signal.c
-+++ b/arch/x86/kernel/signal.c
-@@ -791,9 +791,39 @@ do_notify_resume(struct pt_regs *regs, void *unused, __u32 thread_info_flags)
+--- a/fs/fuse/dir.c
++++ b/fs/fuse/dir.c
+@@ -858,6 +858,7 @@ int fuse_update_attributes(struct inode
+ 		if (stat) {
+ 			generic_fillattr(inode, stat);
+ 			stat->mode = fi->orig_i_mode;
++			stat->ino = fi->orig_ino;
+ 		}
  	}
  
- 	/* deal with pending signal delivery */
--	if (thread_info_flags & _TIF_SIGPENDING)
-+	if (thread_info_flags & _TIF_SIGPENDING) {
-+		bool compat_flag = false;
-+
-+		/*
-+		 * Check if the task is a compat task and we are here
-+		 * in a non-syscall path. If so, set TS_COMPAT explicitly
-+		 * so that do_signal() can use is_compat_task()/is_ia32_task().
-+		 *
-+		 * Or Should we just use test_thread_flag(TIF_IA32) check
-+		 * (which is called just 'is_ia32' in this file) instead of
-+		 * using is_ia32_task() in signal delivery paths.
-+		 *
-+		 * BTW, ideally is_[ia32|x32|compat]_task() should be really
-+		 * called as is_[ia32|x32|compat]_syscall() and the
-+		 * TIF_IA32 check can then be called as is_ia32_task etc..
-+		 *
-+		 * Sigh...
-+		 *
-+		 */
-+		if (is_ia32 && !is_ia32_task()) {
-+			current_thread_info()->status |= TS_COMPAT;
-+			compat_flag = true;
-+		}
-+
- 		do_signal(regs);
+--- a/fs/fuse/fuse_i.h
++++ b/fs/fuse/fuse_i.h
+@@ -82,6 +82,9 @@ struct fuse_inode {
+ 	    preserve the original mode */
+ 	mode_t orig_i_mode;
  
-+		/*
-+		 * Clear the TS_COMPAT only if we set it above.
-+		 */
-+		if (compat_flag)
-+			current_thread_info()->status &= ~TS_COMPAT;
-+	}
++	/** 64 bit inode number */
++	u64 orig_ino;
 +
- 	if (thread_info_flags & _TIF_NOTIFY_RESUME) {
- 		clear_thread_flag(TIF_NOTIFY_RESUME);
- 		tracehook_notify_resume(regs);
+ 	/** Version of last attribute change */
+ 	u64 attr_version;
+ 
+--- a/fs/fuse/inode.c
++++ b/fs/fuse/inode.c
+@@ -91,6 +91,7 @@ static struct inode *fuse_alloc_inode(st
+ 	fi->nlookup = 0;
+ 	fi->attr_version = 0;
+ 	fi->writectr = 0;
++	fi->orig_ino = 0;
+ 	INIT_LIST_HEAD(&fi->write_files);
+ 	INIT_LIST_HEAD(&fi->queued_writes);
+ 	INIT_LIST_HEAD(&fi->writepages);
+@@ -140,6 +141,18 @@ static int fuse_remount_fs(struct super_
+ 	return 0;
+ }
+ 
++/*
++ * ino_t is 32-bits on 32-bit arch. We have to squash the 64-bit value down
++ * so that it will fit.
++ */
++static ino_t fuse_squash_ino(u64 ino64)
++{
++	ino_t ino = (ino_t) ino64;
++	if (sizeof(ino_t) < sizeof(u64))
++		ino ^= ino64 >> (sizeof(u64) - sizeof(ino_t)) * 8;
++	return ino;
++}
++
+ void fuse_change_attributes_common(struct inode *inode, struct fuse_attr *attr,
+ 				   u64 attr_valid)
+ {
+@@ -149,7 +162,7 @@ void fuse_change_attributes_common(struc
+ 	fi->attr_version = ++fc->attr_version;
+ 	fi->i_time = attr_valid;
+ 
+-	inode->i_ino     = attr->ino;
++	inode->i_ino     = fuse_squash_ino(attr->ino);
+ 	inode->i_mode    = (inode->i_mode & S_IFMT) | (attr->mode & 07777);
+ 	inode->i_nlink   = attr->nlink;
+ 	inode->i_uid     = attr->uid;
+@@ -175,6 +188,8 @@ void fuse_change_attributes_common(struc
+ 	fi->orig_i_mode = inode->i_mode;
+ 	if (!(fc->flags & FUSE_DEFAULT_PERMISSIONS))
+ 		inode->i_mode &= ~S_ISVTX;
++
++	fi->orig_ino = attr->ino;
+ }
+ 
+ void fuse_change_attributes(struct inode *inode, struct fuse_attr *attr,
 
 
