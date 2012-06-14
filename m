@@ -1,83 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756031Ab2FNN3G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 09:29:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9873 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755286Ab2FNN3E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 09:29:04 -0400
-Message-ID: <4FD9E70A.9090507@redhat.com>
-Date: Thu, 14 Jun 2012 16:28:42 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1755988Ab2FNNc0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 09:32:26 -0400
+Received: from www.linutronix.de ([62.245.132.108]:57102 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753073Ab2FNNcZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 09:32:25 -0400
+Date: Thu, 14 Jun 2012 15:32:19 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>
+Subject: Re: [RFC patch 2/5] smpboot: Provide infrastructure for percpu
+ hotplug threads
+In-Reply-To: <20120614125939.GC2443@linux.vnet.ibm.com>
+Message-ID: <alpine.LFD.2.02.1206141527580.3086@ionos>
+References: <20120613102823.373180763@linutronix.de> <20120613105815.206105518@linutronix.de> <20120613185748.GF2427@linux.vnet.ibm.com> <alpine.LFD.2.02.1206132101440.3086@ionos> <20120613191745.GG2427@linux.vnet.ibm.com> <20120613204725.GA9858@linux.vnet.ibm.com>
+ <20120614045125.GA30257@linux.vnet.ibm.com> <alpine.LFD.2.02.1206141234400.3086@ionos> <20120614125939.GC2443@linux.vnet.ibm.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: zhangyanfei <zhangyanfei@cn.fujitsu.com>
-CC: mtosatti@redhat.com, ebiederm@xmission.com, luto@mit.edu,
-        Joerg Roedel <joerg.roedel@amd.com>, dzickus@redhat.com,
-        paul.gortmaker@windriver.com, ludwig.nussel@suse.de,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        kexec@lists.infradead.org, Greg KH <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH v2 1/5] x86: Add helper variables and functions to hold
- VMCSINFO
-References: <4FB35C48.30708@cn.fujitsu.com> <4FB35CD4.3080801@cn.fujitsu.com>
-In-Reply-To: <4FB35CD4.3080801@cn.fujitsu.com>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/16/2012 10:52 AM, zhangyanfei wrote:
-> This patch provides a set of variables to hold the VMCSINFO and also
-> some helper functions to help fill the VMCSINFO.
-
-Need to document the format.
-
-
-> +void vmcsinfo_append_id(u32 id)
-> +{
-> +	size_t r;
-> +
-> +	r = sizeof(id);
-> +	if (r + vmcsinfo_size > vmcsinfo_max_size)
-> +		return;
-> +
-> +	memcpy(&vmcsinfo_data[vmcsinfo_size], &id, r);
-> +	vmcsinfo_size += r;
-> +}
-> +EXPORT_SYMBOL_GPL(vmcsinfo_append_id);
-> +
-> +void vmcsinfo_append_field(u32 field, u64 offset)
-
-Why u64?  It's guaranteed to fit within a page.
-
-> +{
-> +	size_t r;
-> +
-> +	r = sizeof(field) + sizeof(offset);
-> +	if (r + vmcsinfo_size > vmcsinfo_max_size)
-> +		return;
-> +
-> +	memcpy(&vmcsinfo_data[vmcsinfo_size], &field, sizeof(field));
-> +	vmcsinfo_size += sizeof(field);
-> +	memcpy(&vmcsinfo_data[vmcsinfo_size], &offset, sizeof(offset));
-> +	vmcsinfo_size += sizeof(offset);
-
-Instead of this vmcsinfo_data, how about a struct with fields for the
-revision ID and field count, and an array for the fields?  Should be a
-lot simpler.
-
-> +}
-> +EXPORT_SYMBOL_GPL(vmcsinfo_append_field);
-> +
-> +unsigned long paddr_vmcsinfo_note(void)
-> +{
-> +	return __pa((unsigned long)(char *)&vmcsinfo_note);
-> +}
+On Thu, 14 Jun 2012, Paul E. McKenney wrote:
+> On Thu, Jun 14, 2012 at 01:20:39PM +0200, Thomas Gleixner wrote:
+> > I gave it a quick shot, but I was not able to reproduce the hang yet.
 > 
+> Really?  I have a strictly Western-Hemisphere bug?  ;-)
 
+I guess I need to fire up rcu torture to make it surface.
+ 
+> > But looking at the thread function made me look into rcu_yield() and I
+> > really wonder what kind of drug induced that particular piece of
+> > horror.
+> 
+> When you are working on something like RCU priority boosting, no other
+> drug is in any way necessary.  ;-)
 
--- 
-error compiling committee.c: too many arguments to function
+And how do we protect minors from that ?
+ 
+> > I can't figure out why this yield business is necessary at all. The
+> > commit logs are as helpful as the missing code comments :)
+> > 
+> > I suspect that it's some starvation issue. But if we need it, then
+> > can't we replace it with something sane like the (untested) patch
+> > below?
+> 
+> Yep, starvation.  I will take a look at your approach after I wake
+> up a bit more.
 
+Btw, if that simpler yield approach is working and I can't see why it
+shouldn't then you can get rid of the node task as well. The only
+purpose of it is to push up the priority of yielding tasks, right?
+
+Thanks,
+
+	tglx
 
