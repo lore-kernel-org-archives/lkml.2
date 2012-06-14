@@ -1,55 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755626Ab2FNKIA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 06:08:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56302 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755572Ab2FNKH5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 06:07:57 -0400
-Date: Thu, 14 Jun 2012 03:07:53 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH 2/2] msync: start async writeout when MS_ASYNC
-Message-Id: <20120614030753.048eec9a.akpm@linux-foundation.org>
-In-Reply-To: <4FD9A88A.8040701@redhat.com>
-References: <1338497035-13014-1-git-send-email-pbonzini@redhat.com>
-	<1338497035-13014-3-git-send-email-pbonzini@redhat.com>
-	<20120613142949.734818a8.akpm@linux-foundation.org>
-	<4FD9A88A.8040701@redhat.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755609Ab2FNKH7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 06:07:59 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38536 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755571Ab2FNKH4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 06:07:56 -0400
+Date: Thu, 14 Jun 2012 12:07:55 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
+        rientjes@google.com, akpm@linux-foundation.org, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH -V9 15/15] hugetlb/cgroup: add HugeTLB controller
+ documentation
+Message-ID: <20120614100755.GM27397@tiehlicka.suse.cz>
+References: <1339583254-895-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <1339583254-895-16-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339583254-895-16-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 14 Jun 2012 11:02:02 +0200 Paolo Bonzini <pbonzini@redhat.com> wrote:
-
-> Il 13/06/2012 23:29, Andrew Morton ha scritto:
-> > > If the application does not want to start I/O, it can simply call msync
-> > > with flags equal to MS_INVALIDATE.  This one remains a no-op, as it should
-> > > be on a reasonable implementation.
-> > 
-> > Means that people will find that their msync(MS_ASYNC) call will newly
-> > start IO.  This may well be undesirable for some.
+On Wed 13-06-12 15:57:34, Aneesh Kumar K.V wrote:
+> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 > 
-> If they knew it was a no-op, and relying on it, they might as well not
-> have called it at all and save a syscall.
+> Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 
-Nope.  Back in the day (3+ years ago?), msync(MS_ASYNC) would flush
-pte-dirty bits into page->flags:PG_Dirty.  So it was used to make the
-filesystem aware that userspace had modified some MAP_SHARED memory. 
-The fs would then perform writeback within (typically) 30 seconds.  So
-a legitimate use would be for the app to periodically run
-msync(MS_ASYNC) to avoid having modified data floating about
-un-written-back for arbitrarily long periods.
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
 
-Nowadays we mark the pte's read-only and take a fault on first write,
-and mark the page dirty at that time.
+Minor nid below
+> ---
+>  Documentation/cgroups/hugetlb.txt |   45 +++++++++++++++++++++++++++++++++++++
+>  1 file changed, 45 insertions(+)
+>  create mode 100644 Documentation/cgroups/hugetlb.txt
+> 
+> diff --git a/Documentation/cgroups/hugetlb.txt b/Documentation/cgroups/hugetlb.txt
+> new file mode 100644
+> index 0000000..a9faaca
+> --- /dev/null
+> +++ b/Documentation/cgroups/hugetlb.txt
+[...]
+> +With the above step, the initial or the parent HugeTLB group becomes
+> +visible at /sys/fs/cgroup. At bootup, this group includes all the tasks in
+> +the system. /sys/fs/cgroup/tasks lists the tasks in this cgroup.
+> +
+> +New groups can be created under the parent group /sys/fs/cgroup.
+> +
+> +# cd /sys/fs/cgroup
+> +# mkdir g1
+> +# echo $$ > g1/tasks
+> +
+> +The above steps create a new group g1 and move the current shell
+> +process (bash) into it.
 
-So it wasn't a no-op, and with this patch, such applications will newly
-find themselves to be starting I/O within the msync() call.
+This is probably not needed as it is already described in the generic
+cgroups description
 
+> +
+> +Brief summary of control files
+> +
+> + hugetlb.<hugepagesize>.limit_in_bytes     # set/show limit of "hugepagesize" hugetlb usage
+> + hugetlb.<hugepagesize>.max_usage_in_bytes # show max "hugepagesize" hugetlb  usage recorded
+> + hugetlb.<hugepagesize>.usage_in_bytes     # show current res_counter usage for "hugepagesize" hugetlb
+> + hugetlb.<hugepagesize>.failcnt		   # show the number of allocation failure due to HugeTLB limit
+> +
+> +For a system supporting two hugepage size (16M and 16G) the control
+> +files include:
+> +
+> +hugetlb.16GB.limit_in_bytes
+> +hugetlb.16GB.max_usage_in_bytes
+> +hugetlb.16GB.usage_in_bytes
+> +hugetlb.16GB.failcnt
+> +hugetlb.16MB.limit_in_bytes
+> +hugetlb.16MB.max_usage_in_bytes
+> +hugetlb.16MB.usage_in_bytes
+> +hugetlb.16MB.failcnt
+> -- 
+> 1.7.10
+> 
+
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
