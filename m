@@ -1,43 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756250Ab2FNPCe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 11:02:34 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:59034 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756054Ab2FNPCc (ORCPT
+	id S1756229Ab2FNPDw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 11:03:52 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:39453 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756075Ab2FNPDv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 11:02:32 -0400
-Date: Fri, 15 Jun 2012 00:02:23 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Wanpeng Li <liwp.linux@gmail.com>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
-        linux-kernel@vger.kernel.org, trivial@kernel.org,
-        Gavin Shan <shangw@linux.vnet.ibm.com>
-Subject: Re: [PATCH] mm: fix page reclaim comment error
-Message-ID: <20120614150223.GB2097@barrios>
-References: <1339677662-25942-1-git-send-email-liwp.linux@gmail.com>
+	Thu, 14 Jun 2012 11:03:51 -0400
+Date: Thu, 14 Jun 2012 08:01:18 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>
+Subject: Re: [RFC patch 2/5] smpboot: Provide infrastructure for percpu
+ hotplug threads
+Message-ID: <20120614150118.GC2458@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120613185748.GF2427@linux.vnet.ibm.com>
+ <alpine.LFD.2.02.1206132101440.3086@ionos>
+ <20120613191745.GG2427@linux.vnet.ibm.com>
+ <20120613204725.GA9858@linux.vnet.ibm.com>
+ <20120614045125.GA30257@linux.vnet.ibm.com>
+ <alpine.LFD.2.02.1206141234400.3086@ionos>
+ <20120614125939.GC2443@linux.vnet.ibm.com>
+ <alpine.LFD.2.02.1206141527580.3086@ionos>
+ <alpine.LFD.2.02.1206141545510.3086@ionos>
+ <alpine.LFD.2.02.1206141610090.3086@ionos>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1339677662-25942-1-git-send-email-liwp.linux@gmail.com>
+In-Reply-To: <alpine.LFD.2.02.1206141610090.3086@ionos>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12061415-7606-0000-0000-0000011F06C3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 14, 2012 at 08:41:02PM +0800, Wanpeng Li wrote:
-> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
+On Thu, Jun 14, 2012 at 04:12:14PM +0200, Thomas Gleixner wrote:
+> On Thu, 14 Jun 2012, Thomas Gleixner wrote:
+> > On Thu, 14 Jun 2012, Thomas Gleixner wrote:
+> > 
+> > > On Thu, 14 Jun 2012, Paul E. McKenney wrote:
+> > > > On Thu, Jun 14, 2012 at 01:20:39PM +0200, Thomas Gleixner wrote:
+> > > > > I gave it a quick shot, but I was not able to reproduce the hang yet.
+> > > > 
+> > > > Really?  I have a strictly Western-Hemisphere bug?  ;-)
+> > > 
+> > > I guess I need to fire up rcu torture to make it surface.
+> > >  
+> > > > > But looking at the thread function made me look into rcu_yield() and I
+> > > > > really wonder what kind of drug induced that particular piece of
+> > > > > horror.
+> > > > 
+> > > > When you are working on something like RCU priority boosting, no other
+> > > > drug is in any way necessary.  ;-)
+> > > 
+> > > And how do we protect minors from that ?
+> > >  
+> > > > > I can't figure out why this yield business is necessary at all. The
+> > > > > commit logs are as helpful as the missing code comments :)
+> > > > > 
+> > > > > I suspect that it's some starvation issue. But if we need it, then
+> > > > > can't we replace it with something sane like the (untested) patch
+> > > > > below?
+> > > > 
+> > > > Yep, starvation.  I will take a look at your approach after I wake
+> > > > up a bit more.
+> > > 
+> > > Btw, if that simpler yield approach is working and I can't see why it
+> > > shouldn't then you can get rid of the node task as well. The only
+> > > purpose of it is to push up the priority of yielding tasks, right?
+> > 
+> > Ah, missed that it calls rcu_initiate_boost() as well....
 > 
-> Since there are five lists in LRU cache, the array nr in get_scan_count
-> should be:
-> 
-> nr[0] = anon inactive pages to scan; nr[1] = anon active pages to scan
-> nr[2] = file inactive pages to scan; nr[3] = file active pages to scan
-> 
-> Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
-Acked-by: Minchan Kim <minchan@kernel.org>
+> And looking further, I really don't understand why it's doing
+> that. That node thread is only woken by these weird yield timers.
 
-Thanks!
- 
+If your patch works out, it indeed might be possible to get rid of
+->node_kthread_task.  The ->boost_kthread_task needs to stay, however.
+
+							Thanx, Paul
+
