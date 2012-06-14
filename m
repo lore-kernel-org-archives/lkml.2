@@ -1,78 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756440Ab2FNQQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 12:16:27 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:42409 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754157Ab2FNQQZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 12:16:25 -0400
-From: kosaki.motohiro@gmail.com
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, akpm@linux-foundation.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>
-Subject: [PATCH] mm: clear pages_scanned only if draining a pcp adds pages to the buddy allocator again
-Date: Thu, 14 Jun 2012 12:16:10 -0400
-Message-Id: <1339690570-7471-1-git-send-email-kosaki.motohiro@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	id S1756509Ab2FNQQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 12:16:58 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:36191 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756356Ab2FNQQ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 12:16:56 -0400
+Message-ID: <4FDA0E3F.3030603@zytor.com>
+Date: Thu, 14 Jun 2012 09:15:59 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: nicolas.pitre@linaro.org, linux-s390@vger.kernel.org,
+        matt.fleming@intel.com, lasse.collin@tukaani.org, jj@chaosbits.net,
+        linux-sh@vger.kernel.org, x86@kernel.org, heiko.carstens@de.ibm.com,
+        linux-kernel@vger.kernel.org, lethal@linux-sh.org,
+        T Makphaibulchoke <tmac@hp.com>, schwidefsky@de.ibm.com,
+        linux390@de.ibm.com, tglx@linutronix.de, kaloz@openwrt.org,
+        mingo@redhat.com, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2] lib/decompress_unxz.c: removing all memory helper
+ functions
+References: <1339470307-28223-1-git-send-email-tmac@hp.com> <4FD6B472.7040609@zytor.com> <20120612143545.GC7918@n2100.arm.linux.org.uk> <20120614134715.GE28714@n2100.arm.linux.org.uk> <4FD9F6AD.6060407@zytor.com> <20120614154414.GA7628@n2100.arm.linux.org.uk>
+In-Reply-To: <20120614154414.GA7628@n2100.arm.linux.org.uk>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+On 06/14/2012 08:44 AM, Russell King - ARM Linux wrote:
+>>>
+>>> Okay, given the issue raised with memcpy() calling __builtin_memcpy(),
+>>> I don't think there's any value to me actually testing this, because
+>>> that seems to need to be solved first?
+>>
+>> You mean __builtin_memcpy() calling memcpy(), right?
+> 
+> Indeed I do.
 
-commit 2ff754fa8f (mm: clear pages_scanned only if draining a pcp adds pages
-to the buddy allocator again) fixed one free_pcppages_bulk() misuse. But two
-another miuse still exist.
+Right... that would manifest itself as a build failure, but it needs to
+be fixed, so...
 
-This patch fixes it.
+	-hpa
 
-Cc: David Rientjes <rientjes@google.com>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
----
- mm/page_alloc.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
-
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 5716b00..4e7059d 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1157,8 +1157,10 @@ void drain_zone_pages(struct zone *zone, struct per_cpu_pages *pcp)
- 		to_drain = pcp->batch;
- 	else
- 		to_drain = pcp->count;
--	free_pcppages_bulk(zone, to_drain, pcp);
--	pcp->count -= to_drain;
-+	if (to_drain > 0) {
-+		free_pcppages_bulk(zone, to_drain, pcp);
-+		pcp->count -= to_drain;
-+	}
- 	local_irq_restore(flags);
- }
- #endif
-@@ -3914,7 +3916,8 @@ static int __zone_pcp_update(void *data)
- 		pcp = &pset->pcp;
- 
- 		local_irq_save(flags);
--		free_pcppages_bulk(zone, pcp->count, pcp);
-+		if (pcp->count > 0)
-+			free_pcppages_bulk(zone, pcp->count, pcp);
- 		setup_pageset(pset, batch);
- 		local_irq_restore(flags);
- 	}
 -- 
-1.7.1
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
