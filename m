@@ -1,82 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755951Ab2FNOgk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 10:36:40 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:44573 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751270Ab2FNOgj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 10:36:39 -0400
-Date: Thu, 14 Jun 2012 16:36:33 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@ti.com>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "Luck,Tony" <tony.luck@intel.com>
-Subject: Re: [RFC GIT PULL] nohz: Basic cputime accounting for adaptive
- tickless
-Message-ID: <20120614143633.GA32094@gmail.com>
-References: <1339604397-8758-1-git-send-email-fweisbec@gmail.com>
- <1339664829.2559.14.camel@twins>
- <20120614111241.GA16848@somewhere>
- <20120614111638.GA16676@gmail.com>
- <alpine.LFD.2.02.1206141321010.3086@ionos>
- <20120614112241.GB16848@somewhere>
- <20120614144815.1401af49@de.ibm.com>
- <20120614130425.GC16848@somewhere>
+	id S1756065Ab2FNOgv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 10:36:51 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35315 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755958Ab2FNOgs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 10:36:48 -0400
+Message-ID: <4FD9F6AD.6060407@zytor.com>
+Date: Thu, 14 Jun 2012 07:35:25 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120614130425.GC16848@somewhere>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: nicolas.pitre@linaro.org, linux-s390@vger.kernel.org,
+        matt.fleming@intel.com, lasse.collin@tukaani.org, jj@chaosbits.net,
+        linux-sh@vger.kernel.org, x86@kernel.org, heiko.carstens@de.ibm.com,
+        linux-kernel@vger.kernel.org, lethal@linux-sh.org,
+        T Makphaibulchoke <tmac@hp.com>, schwidefsky@de.ibm.com,
+        linux390@de.ibm.com, tglx@linutronix.de, kaloz@openwrt.org,
+        mingo@redhat.com, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2] lib/decompress_unxz.c: removing all memory helper
+ functions
+References: <1339470307-28223-1-git-send-email-tmac@hp.com> <4FD6B472.7040609@zytor.com> <20120612143545.GC7918@n2100.arm.linux.org.uk> <20120614134715.GE28714@n2100.arm.linux.org.uk>
+In-Reply-To: <20120614134715.GE28714@n2100.arm.linux.org.uk>
+X-Enigmail-Version: 1.4.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
-
-> > > > > > I'll try something with that.
-> > > > > 
-> > > > > Maybe sanitize all the variants under a single set of 
-> > > > > wrappers/callbacks?
-> > > > 
-> > > > Yes, please!
-> > > 
-> > > Sure, I'm working in it.
-> >  
-> > Please keep me in the loop, I want to avoid that things 
-> > break on s390. Thanks.
+On 06/14/2012 06:47 AM, Russell King - ARM Linux wrote:
+> On Tue, Jun 12, 2012 at 03:35:45PM +0100, Russell King - ARM Linux wrote:
+>> I'd like to toss this into my kautobuild+boot, but at the moment that's
+>> rather pointless because OMAP has been broken since towards the end of
+>> the merge window, and so far no sign of the fix hitting mainline any
+>> time soon...
 > 
-> Well, I realize I can't consolidate much between ia64, s390 
-> and ppc because they all handle virtual cpu time accounting 
-> very differently. I'm also not what the virtual timer is for.
+> Okay, given the issue raised with memcpy() calling __builtin_memcpy(),
+> I don't think there's any value to me actually testing this, because
+> that seems to need to be solved first?
 
-As a first step I'd suggest to create a superset of all existing 
-and relied-upon wrappers/callbacks, into a single obvious 
-sched_*() or time_*() namespace, without breaking functionality.
+You mean __builtin_memcpy() calling memcpy(), right?
 
-Once that is done we can eliminate individual, conceptually 
-redundant callbacks, by carefully morphing the affected arches 
-step by step.
+	-hpa
 
-No arch will be left behind.
-
-Thanks,
-
-	Ingo
