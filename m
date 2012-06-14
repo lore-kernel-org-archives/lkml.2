@@ -1,44 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755178Ab2FNBVP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 21:21:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54282 "EHLO mx1.redhat.com"
+	id S1754889Ab2FNBWV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 21:22:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39783 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751357Ab2FNBVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 21:21:13 -0400
-Date: Thu, 14 Jun 2012 03:21:03 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>
-Subject: Re: [PATCH] mm: do not use page_count without a page pin
-Message-ID: <20120614012103.GY3094@redhat.com>
-References: <1339373872-31969-1-git-send-email-minchan@kernel.org>
- <4FD59C31.6000606@jp.fujitsu.com>
- <20120611074440.GI3094@redhat.com>
- <20120611133043.GA2340@barrios>
- <20120611144132.GT3094@redhat.com>
- <4FD675FE.1060202@kernel.org>
+	id S1751357Ab2FNBWU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 21:22:20 -0400
+Date: Thu, 14 Jun 2012 11:22:09 +1000
+From: Dave Chinner <dchinner@redhat.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: xfs ip->i_lock: inconsistent {IN-RECLAIM_FS-W} ->
+ {RECLAIM_FS-ON-W} usage
+Message-ID: <20120614012209.GM3019@devil.redhat.com>
+References: <20120612012134.GA7706@localhost>
+ <20120613123932.GA1445@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4FD675FE.1060202@kernel.org>
+In-Reply-To: <20120613123932.GA1445@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 12, 2012 at 07:49:34AM +0900, Minchan Kim wrote:
-> If THP page isn't LRU and it's still PageTransHuge, I think it's rather rare and
-> although it happens, it means migration/reclaimer is about to split or isolate/putback
-> so it ends up making THP page movable pages.
+On Wed, Jun 13, 2012 at 08:39:32PM +0800, Fengguang Wu wrote:
+> Hi Christoph, Dave,
 > 
-> IMHO, it would be better to account it by movable pages.
-> What do you think about it?
+> I got this lockdep warning on XFS when running the xfs tests:
 
-Agreed. Besides THP don't fragment pageblocks. It was just about
-speeding up the scanning the same way it happens with the pagebuddy
-check, but probably not worth it because we're in a racy area here not
-holding locks. pagebuddy is safe because the zone lock is hold, or
-it'd run in the same problem.
+BTW, Fengguang, can you report XFS things to the xfs@oss.sgi.com
+list rather than LKML? I only noticed this because of the CC, but I
+pay much closer attention to the XFS list than I do LKML...
+
+Thanks,
+
+Dave.
+-- 
+Dave Chinner
+dchinner@redhat.com
