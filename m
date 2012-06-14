@@ -1,59 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754241Ab2FMOmq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 10:42:46 -0400
-Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:53417 "EHLO
-	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754207Ab2FMOmp convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 10:42:45 -0400
+	id S1754235Ab2FMOpv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 10:45:51 -0400
+Received: from betty.ans.com.au ([203.132.0.3]:44940 "EHLO www.ans.com.au"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754049Ab2FMOpu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 10:45:50 -0400
+X-Greylist: delayed 2103 seconds by postgrey-1.27 at vger.kernel.org; Wed, 13 Jun 2012 10:45:50 EDT
+Message-ID: <20120614105817.b2u725huy9pcockc@secure.ans.com.au>
+Date: Thu, 14 Jun 2012 10:58:17 +1000
+From: Peter Luk <peteruk386@yahoo.com.hk>
+Reply-To: peterluk386@yahoo.com.hk
+To: undisclosed-recipients:;
+Subject: Note
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdYvLEkuFLPCAT15jpqfML_tDwXuR6kENZbwMDaWpunrxQ@mail.gmail.com>
-References: <1339429196-32584-1-git-send-email-linus.walleij@linaro.org>
- <20120612230630.GK19410@gmail.com> <CACRpkdYvLEkuFLPCAT15jpqfML_tDwXuR6kENZbwMDaWpunrxQ@mail.gmail.com>
-From: "Turquette, Mike" <mturquette@ti.com>
-Date: Wed, 13 Jun 2012 07:42:21 -0700
-Message-ID: <CAJOA=zPfDUgK=QGU62PYUqfhV4YqTTYVs+7-w=wVTeQTNeUdzw@mail.gmail.com>
-Subject: Re: [PATCH 2/3] clk: add ICST307 driver
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, arm@kernel.org,
-        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+	charset=ISO-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.0.2)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 13, 2012 at 1:38 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Wed, Jun 13, 2012 at 1:06 AM, Mike Turquette <mturquette@ti.com> wrote:
->> On 20120611-17:39, Linus Walleij wrote:
->
->>> +obj-$(CONFIG_CLK_ICST)               += clk-icst.o
->>
->> Is there a better place to put this than the top-level directory?
->
-> I can put it alone in a subdirectory if you want to... It is used only
-> by the ARM reference designs AFAICT, shall I put these Integrator
-> things into clk/versatile as we use the "versatile" name to refer to all
-> ARM reference designs (i.e. arch/arm/plat-versatile).
->
+Hello,
 
-drivers/clk/versatile seems sensible.  I am just trying to prevent
-drivers/clk/ becoming very messy.  If other platforms are going to use
-this code then the top-level location makes sense, otherwise lets use
-drivers/clk/versatile.
+My name is Mr. Luk, Foreign Operations Manager in Bank of China Hong Kong I am
+presently in Hong Kong, I would like to share some highly personal classified
+information with you, please contact me via my private box: peterluk@w.cn I
+have something to tell you urgent.
 
->>> +struct clk * __init icst_clk_init(struct device *dev, const struct clk_icst_desc *desc)
->>
->> Nitpick: icst_clk_init should be renamed icst_clk_register to more
->> closely resemble other clock registration functions which allocate
->> memory dynamically.
->
-> I'll fix!
->
+Respectfully,
+Mr. Luk,
 
-Thanks!
-Mike
 
-> Yours,
-> Linus Walleij
