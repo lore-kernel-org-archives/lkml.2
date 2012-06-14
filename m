@@ -1,48 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756217Ab2FNO4h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 10:56:37 -0400
-Received: from casper.infradead.org ([85.118.1.10]:55232 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753835Ab2FNO4g convert rfc822-to-8bit (ORCPT
+	id S1756233Ab2FNO5D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 10:57:03 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:35869 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753835Ab2FNO5B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 10:56:36 -0400
-Message-ID: <1339685789.2559.37.camel@twins>
-Subject: Re: [RFC patch 2/5] smpboot: Provide infrastructure for percpu
- hotplug threads
-From: Peter Zijlstra <peterz@infradead.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>
-Date: Thu, 14 Jun 2012 16:56:29 +0200
-In-Reply-To: <20120614144734.GA2458@linux.vnet.ibm.com>
-References: <20120613102823.373180763@linutronix.de>
-	 <20120613105815.206105518@linutronix.de>
-	 <20120613185748.GF2427@linux.vnet.ibm.com>
-	 <alpine.LFD.2.02.1206132101440.3086@ionos>
-	 <20120613191745.GG2427@linux.vnet.ibm.com>
-	 <20120613204725.GA9858@linux.vnet.ibm.com>
-	 <20120614045125.GA30257@linux.vnet.ibm.com>
-	 <alpine.LFD.2.02.1206141234400.3086@ionos>
-	 <20120614125939.GC2443@linux.vnet.ibm.com> <1339678887.2559.30.camel@twins>
-	 <20120614144734.GA2458@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
+	Thu, 14 Jun 2012 10:57:01 -0400
+Message-ID: <1339685816.3107.29.camel@dabdike.int.hansenpartnership.com>
+Subject: [GIT PULL] SCSI fixes for 3.5-rc2
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Thu, 14 Jun 2012 15:56:56 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-06-14 at 07:47 -0700, Paul E. McKenney wrote:
-> RCU callback processing consumes the entire CPU in RCU_BOOST case where
-> processing runs at real-time priority.  This is analogous to RT throttling
-> in the scheduler. 
+This is a couple of minor fixes, one for a preempt warning in the
+mpt2sas driver and one is a config failure with the new sd async domain.
 
-But previously we can in non-preemptible softirq context, why would if
-behave differently when done from a RT task?
+The patch is available here:
 
-Also, no its not quite like the throttling, that really idles the cpu
-even if there's no SCHED_OTHER tasks to run.
+git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi.git scsi-fixes
+
+The short changelog is:
+
+James Bottomley (1):
+      Fix sd_probe_domain config problem
+
+nagalakshmi.nandigama@lsi.com (1):
+      mpt2sas: Fix unsafe using smp_processor_id() in preemptible
+
+
+And the diffstat:
+
+ drivers/scsi/mpt2sas/mpt2sas_base.c |    2 +-
+ drivers/scsi/scsi.c                 |    4 +---
+ 2 files changed, 2 insertions(+), 4 deletions(-)
+
+Full diff is below.
+
+James
+
+---
+
+diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.c b/drivers/scsi/mpt2sas/mpt2sas_base.c
+index 6102ef2..9d46fcb 100644
+--- a/drivers/scsi/mpt2sas/mpt2sas_base.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
+@@ -1792,7 +1792,7 @@ static inline void _base_writeq(__u64 b, volatile void __iomem *addr,
+ static inline u8
+ _base_get_msix_index(struct MPT2SAS_ADAPTER *ioc)
+ {
+-	return ioc->cpu_msix_table[smp_processor_id()];
++	return ioc->cpu_msix_table[raw_smp_processor_id()];
+ }
+ 
+ /**
+diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
+index 61c82a3..bbbc9c9 100644
+--- a/drivers/scsi/scsi.c
++++ b/drivers/scsi/scsi.c
+@@ -90,11 +90,9 @@ unsigned int scsi_logging_level;
+ EXPORT_SYMBOL(scsi_logging_level);
+ #endif
+ 
+-#if IS_ENABLED(CONFIG_PM) || IS_ENABLED(CONFIG_BLK_DEV_SD)
+-/* sd and scsi_pm need to coordinate flushing async actions */
++/* sd, scsi core and power management need to coordinate flushing async actions */
+ LIST_HEAD(scsi_sd_probe_domain);
+ EXPORT_SYMBOL(scsi_sd_probe_domain);
+-#endif
+ 
+ /* NB: These are exposed through /proc/scsi/scsi and form part of the ABI.
+  * You may not alter any existing entry (although adding new ones is
+
+
