@@ -1,107 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755210Ab2FNIDu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 04:03:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26531 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754392Ab2FNIDm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 04:03:42 -0400
-Date: Thu, 14 Jun 2012 11:04:05 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: x86@kernel.org, kvm@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Avi Kivity <avi@redhat.com>,
-        gleb@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCHv6 6/8] kvm: only sync when attention bits set
-Message-ID: <20120614080404.GB26869@redhat.com>
-References: <cover.1338474301.git.mst@redhat.com>
- <56ee14064ef307b7075f6977122781456cab5165.1338474301.git.mst@redhat.com>
- <20120612222748.GB1973@amt.cnet>
- <20120613081923.GA16162@redhat.com>
- <20120613083506.GA17190@redhat.com>
- <20120613205336.GB19290@amt.cnet>
- <20120613210423.GA24932@redhat.com>
- <20120613233846.GA23955@amt.cnet>
+	id S1755025Ab2FNIF1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 04:05:27 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:50792 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752305Ab2FNIFS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 04:05:18 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH V3 2/3] i2c-nomadik: turn the platform driver to an amba driver
+Date: Thu, 14 Jun 2012 08:04:38 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: Alessandro Rubini <rubini@gnudd.com>, linux-kernel@vger.kernel.org,
+        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Jean Delvare <khali@linux-fr.org>, linux-i2c@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, Lee Jones <lee.jones@linaro.org>,
+        Alan Cox <alan@linux.intel.com>
+References: <cover.1339447570.git.rubini@gnudd.com> <4a198618063924b68182279ffd56c335d621f542.1339447570.git.rubini@gnudd.com>
+In-Reply-To: <4a198618063924b68182279ffd56c335d621f542.1339447570.git.rubini@gnudd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120613233846.GA23955@amt.cnet>
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201206140804.39083.arnd@arndb.de>
+X-Provags-ID: V02:K0:yZHC88KwugOpF1wAtwSKMmfAAvdtrv3iYSaolZgXOGg
+ au8iisUNUSJMsQpam4xjA4iX3c1xDJAo9B3xZnpioW+dMEg5gf
+ JSOi7FAE/7jnXr6es3x89r+wuoRkX+fm3ElO3nLRV1zlG1tLgl
+ wTRnahkmDDAF7mLFmoiU3kZj6XaP2LFf/56UOSKchuM3PDAlo8
+ GZuzEIzW0oyBsYo7Q2hFHMEVJjGEvRot3QHvzosYpY5VO1qWt2
+ kQY1II/cv0gB5kTxlP3wdb+az4aKqImuuGue5+RE6bsalq8U9u
+ t1edJ8LYmdPWjzCnehicPjQ1F28ZgCd0ozKwPg31jHSAXvhz4A
+ SLD5y+PzyiXANce9Er7M=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 13, 2012 at 08:38:46PM -0300, Marcelo Tosatti wrote:
-> On Thu, Jun 14, 2012 at 12:04:23AM +0300, Michael S. Tsirkin wrote:
-> > On Wed, Jun 13, 2012 at 05:53:36PM -0300, Marcelo Tosatti wrote:
-> > > On Wed, Jun 13, 2012 at 11:35:07AM +0300, Michael S. Tsirkin wrote:
-> > > > On Wed, Jun 13, 2012 at 11:19:24AM +0300, Michael S. Tsirkin wrote:
-> > > > > On Tue, Jun 12, 2012 at 07:27:48PM -0300, Marcelo Tosatti wrote:
-> > > > > > On Sun, Jun 03, 2012 at 10:28:29AM +0300, Michael S. Tsirkin wrote:
-> > > > > > > Commit eb0dc6d0368072236dcd086d7fdc17fd3c4574d4 introduced apic
-> > > > > > > attention bitmask but kvm still syncs lapic unconditionally.
-> > > > > > > As that commit suggested and in anticipation of adding more attention
-> > > > > > > bits, only sync lapic if(apic_attention).
-> > > > > > > 
-> > > > > > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > > > > > > ---
-> > > > > > >  arch/x86/kvm/x86.c |    3 ++-
-> > > > > > >  1 files changed, 2 insertions(+), 1 deletions(-)
-> > > > > > > 
-> > > > > > > diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> > > > > > > index be6d549..2f70861 100644
-> > > > > > > --- a/arch/x86/kvm/x86.c
-> > > > > > > +++ b/arch/x86/kvm/x86.c
-> > > > > > > @@ -5388,7 +5388,8 @@ static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
-> > > > > > >  	if (unlikely(vcpu->arch.tsc_always_catchup))
-> > > > > > >  		kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
-> > > > > > >  
-> > > > > > > -	kvm_lapic_sync_from_vapic(vcpu);
-> > > > > > > +	if (unlikely(vcpu->arch.apic_attention))
-> > > > > > > +		kvm_lapic_sync_from_vapic(vcpu);
-> > > > > > 
-> > > > > > void kvm_lapic_sync_from_vapic(struct kvm_vcpu *vcpu)
-> > > > > > {
-> > > > > >         u32 data;
-> > > > > >         void *vapic;
-> > > > > > 
-> > > > > >         if (!test_bit(KVM_APIC_CHECK_VAPIC, &vcpu->arch.apic_attention))
-> > > > > >                 return;
-> > > > > > 
-> > > > > > Please use unlikely more carefully, when a gain is measureable:
-> > > > > > http://lwn.net/Articles/420019/
-> > > > > 
-> > > > > Do we have to measure every single thing?
-> > > > > Sometimes it's obvious: vapic is slow path, isn't it?
-> > > > 
-> > > > Just to clarify the question: I think it's obvious this condition is
-> > > > false more often than true. By how much, depends on the workload.
-> > > > Do you think this is enough to tag this unlikely?
-> > > 
-> > > Depends whether your processor supports flexpriority or not. I don't
-> > > want to argue in favour/against the particular instance
-> > > 
-> > > GCC docs:
-> > > 
-> > > "
-> > > — Built-in Function: long __builtin_expect (long exp, long c)
-> > > 
-> > >     You may use __builtin_expect to provide the compiler with branch
-> > > prediction information. In general, you should prefer to use actual
-> > > profile feedback for this (-fprofile-arcs), as programmers are
-> > > notoriously bad at predicting how their programs actually perform.
-> > > However, there are applications in which this data is hard to collect.
-> > > "
-> > > 
-> > > Lately half of branches in your patches are annotated.
-> > 
-> > So if I instrument and show that branch is almost never taken that is enough?
-> > This citation does not require measuring the perf impact.
+On Monday 11 June 2012, Alessandro Rubini wrote:
+> The i2c-nomadik gateware is really a PrimeCell APB device. By hosting
+> the driver under the amba bus we can access it more easily, for
+> example using the generic pci-amba driver. The patch also fixes the
+> mach-ux500 users, so they register an amba device instead than a
+> platform device.
 > 
-> Without flexpriority its always taken.
+> Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
+> Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
+> Tested-by: Linus Walleij <linus.walleij@linaro.org>
+> ---
+>  arch/arm/mach-ux500/devices-common.h |   22 +----
+>  drivers/i2c/busses/i2c-nomadik.c     |  142 +++++++++++++++++----------------
+>  2 files changed, 78 insertions(+), 86 deletions(-)
 
-OK I will remove this one and keep around the unlikely
-for the cases that my measurements show occur in
-less than 1% of cases.
+You change only one half of ux500 here: the part where the device gets defined
+statically, but not not the definition in the device-tree.
 
+I think all you need to do is mark the device compatible with primecell
+and add an ID if necessary, but we should definitely make sure that that
+path still works, because the one you patch is going away.
+
+	Arnd
