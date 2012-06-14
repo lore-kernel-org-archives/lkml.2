@@ -1,40 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755898Ab2FNMAF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 08:00:05 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:44922 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755261Ab2FNMAD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 08:00:03 -0400
+	id S1755916Ab2FNMUX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 08:20:23 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:33437 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755793Ab2FNMUW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 08:20:22 -0400
+Date: Thu, 14 Jun 2012 14:20:22 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org, eranian@google.com,
+        peterz@infradead.org, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 2/4] x86: Track minimum microcode revision globally v2
+Message-ID: <20120614122022.GB13629@x1.osrc.amd.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
+	linux-kernel@vger.kernel.org, eranian@google.com,
+	peterz@infradead.org, Andi Kleen <ak@linux.intel.com>
+References: <1339618842-26636-1-git-send-email-andi@firstfloor.org>
+ <1339618842-26636-3-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
-In-Reply-To: <1339663776-196-1-git-send-email-jiang.liu@huawei.com>
-References: <4FD97718.6060008@kernel.org> <1339663776-196-1-git-send-email-jiang.liu@huawei.com>
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date: Thu, 14 Jun 2012 07:59:42 -0400
-X-Google-Sender-Auth: NFAai6VCu-tGJOMUnGBW1VlmQ30
-Message-ID: <CAHGf_=p0E9_iXuDS_RNCGp2KPiU+=BO5AB6ZxqnSE57mNiyQGw@mail.gmail.com>
-Subject: Re: [PATCH] trivial, memory hotplug: add kswapd_is_running() for
- better readability
-To: Jiang Liu <jiang.liu@huawei.com>
-Cc: Minchan Kim <minchan@kernel.org>, Keping Chen <chenkeping@huawei.com>,
-        Mel Gorman <mgorman@suse.de>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Tony Luck <tony.luck@intel.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Jiang Liu <liuj97@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1339618842-26636-3-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 14, 2012 at 4:49 AM, Jiang Liu <jiang.liu@huawei.com> wrote:
-> Add kswapd_is_running() to check whether the kswapd worker thread is already
-> running before calling kswapd_run() when onlining memory pages.
->
-> It's based on a draft version from Minchan Kim <minchan@kernel.org>.
->
-> Signed-off-by: Jiang Liu <liuj97@gmail.com>
+On Wed, Jun 13, 2012 at 01:20:40PM -0700, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+> 
+> For bug workarounds depending on microcode revisions we need to
+> know the minimum microcode revision shared by all CPUs.
+> 
+> This patch adds infrastructure to track this.
+> 
+> Every time microcode is updated we update a global variable for
+> the minimum microcode revision of all the CPUs in the system.
+> At boot time we use the lowest available microcode (and warn
+> if  they are inconsistent)
+> 
+> At CPU hotplug or S3 resume time there is a short race window
+> where something might run on the CPUs but before the microcode
+> update notifier runs. For the current workarounds that need this
+> this is acceptable and shouldn't be a problem.
+> 
+> Only tested on Intel CPUs, but should work for AMD too.
+> 
+> v2: Use boot_cpu_data.microcode to track minimum revision (H. Peter Anvin)
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
 
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+[ … ]
+
+> +/*
+> + * Track the minimum global microcode version.  On early bootup assume
+> + * the BIOS set all CPUs to the same revision. If that's not the case
+> + * some code may be already running assuming the newer revision, but
+> + * there's not much we can do about that (but it's unlikely to be
+> + * problem in early bootup)
+> + */
+> +__cpuinit void boot_update_min_microcode(struct cpuinfo_x86 *c)
+> +{	
+> +	static int boot_min_microcode;
+> +
+> +	if (!boot_min_microcode) {
+> +		boot_min_microcode = c->microcode;
+> +		boot_cpu_data.microcode = c->microcode;
+> +	} else if (c->microcode < boot_min_microcode) {
+> +		pr_warn("CPU %d has lower microcode revision %x at boot than boot CPU (%x)\n",
+> +			smp_processor_id(), 
+> +			c->microcode,
+> +			boot_min_microcode);
+> +		boot_cpu_data.microcode = c->microcode;
+> +	}
+
+
+Apply? [y]es/[n]o/[e]dit/[v]iew patch/[a]ccept all y
+Applying: x86: Track minimum microcode revision globally v2
+/home/boris/kernel/.git/rebase-apply/patch:52: trailing whitespace.
+{
+/home/boris/kernel/.git/rebase-apply/patch:60: trailing whitespace.
+                        smp_processor_id(), 
+warning: 2 lines add whitespace errors.
+
+-- 
+Regards/Gruss,
+Boris.
