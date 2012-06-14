@@ -1,174 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755147Ab2FNCzw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 22:55:52 -0400
-Received: from mga03.intel.com ([143.182.124.21]:12607 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755065Ab2FNCzt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 22:55:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="156129381"
-Message-ID: <4FD95200.1090701@intel.com>
-Date: Thu, 14 Jun 2012 10:52:48 +0800
-From: ShuoX Liu <shuox.liu@intel.com>
-Reply-To: shuox.liu@intel.com
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1754994Ab2FNCzK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 22:55:10 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29498 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752590Ab2FNCzI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 22:55:08 -0400
+X-Authority-Analysis: v=2.0 cv=NbpkJh/4 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=wom5GMh1gUkA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=DJ6KdbPuidDsZ8YjXZgA:9 a=CjuIK1q_8ugA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Date: Wed, 13 Jun 2012 22:55:04 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: Re: rcu-torture boot hang
+Message-ID: <20120614025504.GE30024@home.goodmis.org>
+References: <20120612012134.GA7706@localhost>
+ <20120612121122.GA17891@localhost>
+ <20120613124900.GA1741@localhost>
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "Brown, Len" <len.brown@intel.com>,
-        "Zhang, Yanmin" <yanmin.zhang@intel.com>,
-        "Andrew J. Schorr" <aschorr@telemetry-investments.com>,
-        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-Subject: [PATCH] cpuidle: move field disable from per-driver to per-cpu
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120613124900.GA1741@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: ShuoX Liu <shuox.liu@intel.com>
+Just a note. Please use my goodmis email and not my Red Hat email. My
+Red Hat email is not checked as often, and I don't usually tag emails
+there as "reply to". I only author with that email to give credit to the
+one that pays me to do the work (and I don't mean just for the LWN
+stats).
 
-Andrew J.Schorr raises a question. When he changes the disable setting
-on a single CPU, it affects all the other CPUs. Basically, currently,
-the disable field is per-driver instead of per-cpu. All the C states of
-the same driver are shared by all CPU in the same machine.
+On Wed, Jun 13, 2012 at 08:49:00PM +0800, Fengguang Wu wrote:
+> Hi Steven,
+> 
+> On Tue, Jun 12, 2012 at 08:11:22PM +0800, Fengguang Wu wrote:
+> > Hi Paul,
+> > 
+> > In kernel boot tests with the attached config, I find the 3.5-rc2+
+> > kernels all hang here:
+> > 
+> > [    6.522546] rcu-torture:--- Start of test: nreaders=2
+> > nfakewriters=4 stat_interval=0 verbose=0 test_no_idle_hz=0
+> > shuffle_interval=3 stutter=5 irqreader=1 fqs_duration=0 fqs_holdoff=0
+> > fqs_stutter=3 test_boost=1/0 test_boost_interval=7
+> > test_boost_duration=4 shutdown_secs=0 onoff_interval=0 onoff_holdoff=0
+> 
+> It turns out that commit 5963e317b1e9d2a4511503916d8fd664bb8fa8fb
+> ("ftrace/x86: Do not change stacks in DEBUG when calling lockdep") is
+> the root cause of this boot hang. The commit is reported by git bisect
+> and confirmed to fix the boot hang by reverting in on 3.5-rc2.
 
-Below patch changes field disable to per-cpu, so we could set this
-separately for each cpu.
+I get the hang with your config too. If I disable both LOCKDEP and
+IRQSOFF_TRACER which turns off TRACE_IRQFLAGS then the lockup goes away.
+This is consistent with your findings, as the patch you found is only
+enabled when TRACE_IRQFLAGS is on.
 
-Reported-by: Andrew J.Schorr <aschorr@telemetry-investments.com>
-Reviewed-by: Yanmin Zhang <yanmin_zhang@intel.com>
-Signed-off-by: ShuoX Liu <shuox.liu@intel.com>
----
- drivers/cpuidle/cpuidle.c        |    1 -
- drivers/cpuidle/governors/menu.c |    5 +++--
- drivers/cpuidle/sysfs.c          |   21 ++++++++++++---------
- include/linux/cpuidle.h          |    2 +-
- 4 files changed, 16 insertions(+), 13 deletions(-)
+> 
+>         [ rcu torture tests ]
+> 
+> ...It would hang here before reverting the commit...
+> 
+>         [    1.611901] Testing tracer function: PASSED
 
-diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
-index d90519c..04e4b76 100644
---- a/drivers/cpuidle/cpuidle.c
-+++ b/drivers/cpuidle/cpuidle.c
-@@ -265,7 +265,6 @@ static void poll_idle_init(struct cpuidle_driver *drv)
- 	state->power_usage = -1;
- 	state->flags = 0;
- 	state->enter = poll_idle;
--	state->disable = 0;
- }
+I did a bit more investigation and found that the problem comes from the
+load_idt() command that is used to avoid reseting the debug stack. When
+the function tracer is enabled it adds breakpoints to all locations that
+it is about to trace in order to convert the nops in the functions into
+calls to the tracer. But if the breakpoint handler is traced, the
+breakpoint in the handler will reset the stack and cause a crash.
+
+Your above observation is correct. Actually I added a printk in my
+testing and found that the 'Testing trace function:' does output before
+the lockup. I think printk changed recently that prevents it to print
+out right away if a '\n' is not supplied. The function tracer self test
+prints:
+
+  'Testing tracer function: '
+
+Runs the test, and when it succeeds it prints 'PASSED\n'. Because the
+first part wasn't printed, we never saw that the function tracer was
+being tested when the lockup occurred.
+
+This is a major flaw with the new printk(). It hides what is being
+tested. I need to write a patch to create a fflush() for printk.
+
+Anyway, load_idt() shouldn't be traced, but with PARAVIRT_GUEST it makes
+functions that are even always_inlined not inlined, and allows things
+like native_load_idt() to be traced, and that causes bad things as we
+want to call load_idt to prevent recursion of the int3 handler.
+
+
+If it works, can you give me your 'Tested-by'.
+
+Thanks!
+
+-- Steve
+
+diff --git a/include/linux/compiler-gcc.h b/include/linux/compiler-gcc.h
+index e5834aa..6a6d7ae 100644
+--- a/include/linux/compiler-gcc.h
++++ b/include/linux/compiler-gcc.h
+@@ -47,9 +47,9 @@
+  */
+ #if !defined(CONFIG_ARCH_SUPPORTS_OPTIMIZED_INLINING) || \
+     !defined(CONFIG_OPTIMIZE_INLINING) || (__GNUC__ < 4)
+-# define inline		inline		__attribute__((always_inline))
+-# define __inline__	__inline__	__attribute__((always_inline))
+-# define __inline	__inline	__attribute__((always_inline))
++# define inline		inline		__attribute__((always_inline)) notrace
++# define __inline__	__inline__	__attribute__((always_inline)) notrace
++# define __inline	__inline	__attribute__((always_inline)) notrace
  #else
- static void poll_idle_init(struct cpuidle_driver *drv) {}
-diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
-index 0633575..8391d93 100644
---- a/drivers/cpuidle/governors/menu.c
-+++ b/drivers/cpuidle/governors/menu.c
-@@ -281,7 +281,7 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
- 	 * unless the timer is happening really really soon.
- 	 */
- 	if (data->expected_us > 5 &&
--		drv->states[CPUIDLE_DRIVER_STATE_START].disable == 0)
-+		dev->states_usage[CPUIDLE_DRIVER_STATE_START].disable == 0)
- 		data->last_state_idx = CPUIDLE_DRIVER_STATE_START;
- 
- 	/*
-@@ -290,8 +290,9 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
- 	 */
- 	for (i = CPUIDLE_DRIVER_STATE_START; i < drv->state_count; i++) {
- 		struct cpuidle_state *s = &drv->states[i];
-+		struct cpuidle_state_usage *su = &dev->states_usage[i];
- 
--		if (s->disable)
-+		if (su->disable)
- 			continue;
- 		if (s->target_residency > data->predicted_us)
- 			continue;
-diff --git a/drivers/cpuidle/sysfs.c b/drivers/cpuidle/sysfs.c
-index 88032b4..5f809e3 100644
---- a/drivers/cpuidle/sysfs.c
-+++ b/drivers/cpuidle/sysfs.c
-@@ -217,7 +217,8 @@ struct cpuidle_state_attr {
- 	struct attribute attr;
- 	ssize_t (*show)(struct cpuidle_state *, \
- 					struct cpuidle_state_usage *, char *);
--	ssize_t (*store)(struct cpuidle_state *, const char *, size_t);
-+	ssize_t (*store)(struct cpuidle_state *, \
-+			struct cpuidle_state_usage *, const char *, size_t);
- };
- 
- #define define_one_state_ro(_name, show) \
-@@ -233,21 +234,22 @@ static ssize_t show_state_##_name(struct cpuidle_state *state, \
- 	return sprintf(buf, "%u\n", state->_name);\
- }
- 
--#define define_store_state_function(_name) \
-+#define define_store_state_ull_function(_name) \
- static ssize_t store_state_##_name(struct cpuidle_state *state, \
-+		struct cpuidle_state_usage *state_usage, \
- 		const char *buf, size_t size) \
- { \
--	long value; \
-+	unsigned long long value; \
- 	int err; \
- 	if (!capable(CAP_SYS_ADMIN)) \
- 		return -EPERM; \
--	err = kstrtol(buf, 0, &value); \
-+	err = kstrtoull(buf, 0, &value); \
- 	if (err) \
- 		return err; \
- 	if (value) \
--		state->disable = 1; \
-+		state_usage->_name = 1; \
- 	else \
--		state->disable = 0; \
-+		state_usage->_name = 0; \
- 	return size; \
- }
- 
-@@ -273,8 +275,8 @@ define_show_state_ull_function(usage)
- define_show_state_ull_function(time)
- define_show_state_str_function(name)
- define_show_state_str_function(desc)
--define_show_state_function(disable)
--define_store_state_function(disable)
-+define_show_state_ull_function(disable)
-+define_store_state_ull_function(disable)
- 
- define_one_state_ro(name, show_state_name);
- define_one_state_ro(desc, show_state_desc);
-@@ -318,10 +320,11 @@ static ssize_t cpuidle_state_store(struct kobject *kobj,
- {
- 	int ret = -EIO;
- 	struct cpuidle_state *state = kobj_to_state(kobj);
-+	struct cpuidle_state_usage *state_usage = kobj_to_state_usage(kobj);
- 	struct cpuidle_state_attr *cattr = attr_to_stateattr(attr);
- 
- 	if (cattr->store)
--		ret = cattr->store(state, buf, size);
-+		ret = cattr->store(state, state_usage, buf, size);
- 
- 	return ret;
- }
-diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
-index 6c26a3d..8570012 100644
---- a/include/linux/cpuidle.h
-+++ b/include/linux/cpuidle.h
-@@ -34,6 +34,7 @@ struct cpuidle_driver;
- struct cpuidle_state_usage {
- 	void		*driver_data;
- 
-+	unsigned long long	disable;
- 	unsigned long long	usage;
- 	unsigned long long	time; /* in US */
- };
-@@ -46,7 +47,6 @@ struct cpuidle_state {
- 	unsigned int	exit_latency; /* in US */
- 	int		power_usage; /* in mW */
- 	unsigned int	target_residency; /* in US */
--	unsigned int    disable;
- 
- 	int (*enter)	(struct cpuidle_device *dev,
- 			struct cpuidle_driver *drv,
--- 
-1.7.1
+ /* A lot of inline functions can cause havoc with function tracing */
+ # define inline		inline		notrace
