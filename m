@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753027Ab2FNHOz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 03:14:55 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:56752 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751679Ab2FNHOx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 03:14:53 -0400
-Message-ID: <4FD98F69.3010302@linaro.org>
-Date: Thu, 14 Jun 2012 08:14:49 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	id S1752851Ab2FNHQj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 03:16:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56137 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751208Ab2FNHQi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 03:16:38 -0400
+Date: Thu, 14 Jun 2012 09:16:37 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
+        rientjes@google.com, akpm@linux-foundation.org, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH -V9 04/15] hugetlb: use mmu_gather instead of a temporary
+ linked list for accumulating pages
+Message-ID: <20120614071637.GB27397@tiehlicka.suse.cz>
+References: <1339583254-895-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <1339583254-895-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <20120613145923.GA14777@tiehlicka.suse.cz>
+ <871uljnp71.fsf@skywalker.in.ibm.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linus.walleij@stericsson.com,
-        grant.likely@secretlab.ca, Alessandro Zummo <a.zummo@towertech.it>,
-        rtc-linux@googlegroups.com, stable@vger.kernel.org
-Subject: Re: [PATCH 01/14] rtc: ab8500-rtc: IRQF_ONESHOT when requesting a
- threaded IRQ
-References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org> <1339428307-3850-2-git-send-email-lee.jones@linaro.org> <201206111531.20468.arnd@arndb.de> <4FD70481.6020207@linaro.org> <20120613152558.e6025b04.akpm@linux-foundation.org>
-In-Reply-To: <20120613152558.e6025b04.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <871uljnp71.fsf@skywalker.in.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/06/12 23:25, Andrew Morton wrote:
-> On Tue, 12 Jun 2012 09:57:37 +0100
-> Lee Jones<lee.jones@linaro.org>  wrote:
->
->> The kernel now forces IRQs to be ONESHOT if no IRQ handler is passed.
->
-> What does this mean.  The kernel crashes?  The registration fails?  A
-> warning is emitted?
->
-> When fixing a bug, please fully describe the consequences of that bug.
->
->> Cc: stable@vger.kernel.org
->
-> Especially when suggesting a -stable backport.
+On Wed 13-06-12 22:07:06, Aneesh Kumar K.V wrote:
+> Michal Hocko <mhocko@suse.cz> writes:
+> 
+> > On Wed 13-06-12 15:57:23, Aneesh Kumar K.V wrote:
+> >> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+> >> 
+> >> Use a mmu_gather instead of a temporary linked list for accumulating
+> >> pages when we unmap a hugepage range
+> >
+> > Sorry for coming up with the comment that late but you owe us an
+> > explanation _why_ you are doing this.
+> >
+> > I assume that this fixes a real problem when we take i_mmap_mutex
+> > already up in 
+> > unmap_mapping_range
+> >   mutex_lock(&mapping->i_mmap_mutex);
+> >   unmap_mapping_range_tree | unmap_mapping_range_list 
+> >     unmap_mapping_range_vma
+> >       zap_page_range_single
+> >         unmap_single_vma
+> > 	  unmap_hugepage_range
+> > 	    mutex_lock(&vma->vm_file->f_mapping->i_mmap_mutex);
+> >
+> > And that this should have been marked for stable as well (I haven't
+> > checked when this has been introduced).
+> 
+> Switch to mmu_gather is to get rid of the use of page->lru so that i can use it for
+> active list.
 
-No problem. I'll try to remember that for next time.
-
-I see that you've taken the patch into your tree however. So do you want 
-me to update the commit log and resubmit, or are you going to 'let this 
-one slide'?
+So can we get this to the changelog please?
 
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-M: +44 77 88 633 515
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
