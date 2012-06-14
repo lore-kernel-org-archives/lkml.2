@@ -1,58 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755283Ab2FNBtu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 21:49:50 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:45875 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755045Ab2FNBts (ORCPT
+	id S1755151Ab2FNBzu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 21:55:50 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:51127 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754842Ab2FNBzs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 21:49:48 -0400
-X-AuditID: 9c930179-b7bb9ae000000ea5-6b-4fd9433a627d
-Message-ID: <4FD9433C.4060503@kernel.org>
-Date: Thu, 14 Jun 2012 10:49:48 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
-To: Andrea Arcangeli <aarcange@redhat.com>
-CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>
-Subject: Re: [PATCH] mm: do not use page_count without a page pin
-References: <1339373872-31969-1-git-send-email-minchan@kernel.org> <4FD59C31.6000606@jp.fujitsu.com> <20120611074440.GI3094@redhat.com> <20120611133043.GA2340@barrios> <20120611144132.GT3094@redhat.com> <4FD675FE.1060202@kernel.org> <20120614012103.GY3094@redhat.com>
-In-Reply-To: <20120614012103.GY3094@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 13 Jun 2012 21:55:48 -0400
+From: Ashish Sangwan <ashishsangwan2@gmail.com>
+To: Ted Tso <tytso@mit.edu>
+Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        Ashish Sangwan <ashish.sangwan2@gmail.com>,
+        Namjae Jeon <linkinjeon@gmail.com>
+Subject: [PATCH v2] ext4: fix hole punch failure when depth is greater than 0
+Date: Thu, 14 Jun 2012 07:23:56 +0530
+Message-Id: <1339638836-19990-1-git-send-email-ashish.sangwan2@gmail.com>
+X-Mailer: git-send-email 1.7.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/14/2012 10:21 AM, Andrea Arcangeli wrote:
+The current implementation of hole punch uses the same code path as for
+truncate in which the block removal starts from the end of the file and
+continue backwards removing extents and in the process decreases the
+count of valid entries in the extent header of extent index.
+If all the extents under current extent index are removed than this index
+is also removed and the number of valid entries in the "depth -1"
+extent header is decreased by 1.
 
-> On Tue, Jun 12, 2012 at 07:49:34AM +0900, Minchan Kim wrote:
->> If THP page isn't LRU and it's still PageTransHuge, I think it's rather rare and
->> although it happens, it means migration/reclaimer is about to split or isolate/putback
->> so it ends up making THP page movable pages.
->>
->> IMHO, it would be better to account it by movable pages.
->> What do you think about it?
-> 
-> Agreed. Besides THP don't fragment pageblocks. It was just about
-> speeding up the scanning the same way it happens with the pagebuddy
-> check, but probably not worth it because we're in a racy area here not
-> holding locks. pagebuddy is safe because the zone lock is hold, or
-> it'd run in the same problem.
+Whether to continue removing extents or not is decided by the return value
+of function ext4_ext_more_to_rm() which checks 2 conditions:
+a) if there are no more indexes to process.
+b) if the number of entries are decreased in the header of "depth -1".
 
+In case of hole punch, if the last block to be removed is not part of the
+last extent index than this index will not be deleted, hence the number of
+valid entries in the extent header of "depth - 1" will remain as it is and
+ext4_ext_more_to_rm will return 0 although the required blocks are not
+yet removed.
 
-Yeb. zone lock is already hold so pagebuddy check is safe but THP still in a racy so let's leave it as it is.
-If you don't have concern about this patch any more, could you add Acked-by in my latest patch for Andrew
-to pick up? Although you have a concern, let's make it as separate patch because it's optimization patch and 
-other patch is pending by this.
+This patch fixes the above mentioned problem as instead of removing the
+extents from the end of file, it starts removing the blocks from the
+particular extent from which removing blocks is actually required and
+continue backward until done.
 
-Thanks, Andrea.
+Signed-off-by: Ashish Sangwan <ashish.sangwan2@gmail.com>
+Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+---
+ fs/ext4/extents.c |   43 +++++++++++++++++++++++++++----------------
+ 1 files changed, 27 insertions(+), 16 deletions(-)
 
+diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
+index 91341ec..27c3a30 100644
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -2570,10 +2570,10 @@ static int ext4_ext_remove_space(struct inode *inode, ext4_lblk_t start,
+ {
+ 	struct super_block *sb = inode->i_sb;
+ 	int depth = ext_depth(inode);
+-	struct ext4_ext_path *path;
++	struct ext4_ext_path *path = NULL;
+ 	ext4_fsblk_t partial_cluster = 0;
+ 	handle_t *handle;
+-	int i, err;
++	int i = 0, err;
+ 
+ 	ext_debug("truncate since %u to %u\n", start, end);
+ 
+@@ -2606,8 +2606,12 @@ again:
+ 		}
+ 		depth = ext_depth(inode);
+ 		ex = path[depth].p_ext;
+-		if (!ex)
++		if (!ex) {
++			ext4_ext_drop_refs(path);
++			kfree(path);
++			path = NULL;
+ 			goto cont;
++		}
+ 
+ 		ee_block = le32_to_cpu(ex->ee_block);
+ 
+@@ -2637,8 +2641,6 @@ again:
+ 			if (err < 0)
+ 				goto out;
+ 		}
+-		ext4_ext_drop_refs(path);
+-		kfree(path);
+ 	}
+ cont:
+ 
+@@ -2647,19 +2649,27 @@ cont:
+ 	 * after i_size and walking into the tree depth-wise.
+ 	 */
+ 	depth = ext_depth(inode);
+-	path = kzalloc(sizeof(struct ext4_ext_path) * (depth + 1), GFP_NOFS);
+-	if (path == NULL) {
+-		ext4_journal_stop(handle);
+-		return -ENOMEM;
+-	}
+-	path[0].p_depth = depth;
+-	path[0].p_hdr = ext_inode_hdr(inode);
++	if (path) {
++		int k = i = depth;
++		while (--k >= 0)
++			path[k].p_block =
++			le16_to_cpu(path[k].p_hdr->eh_entries)+1;
++	} else {
++		path =
++		kzalloc(sizeof(struct ext4_ext_path) * (depth + 1), GFP_NOFS);
++		if (path == NULL) {
++			ext4_journal_stop(handle);
++			return -ENOMEM;
++		}
++		path[0].p_depth = depth;
++		path[0].p_hdr = ext_inode_hdr(inode);
+ 
+-	if (ext4_ext_check(inode, path[0].p_hdr, depth)) {
+-		err = -EIO;
+-		goto out;
++		if (ext4_ext_check(inode, path[0].p_hdr, depth)) {
++			err = -EIO;
++			goto out;
++		}
+ 	}
+-	i = err = 0;
++	err = 0;
+ 
+ 	while (i >= 0 && err == 0) {
+ 		if (i == depth) {
+@@ -2773,6 +2783,7 @@ cont:
+ out:
+ 	ext4_ext_drop_refs(path);
+ 	kfree(path);
++	path = NULL;
+ 	if (err == -EAGAIN)
+ 		goto again;
+ 	ext4_journal_stop(handle);
 -- 
-Kind regards,
-Minchan Kim
+1.7.2.3
+
