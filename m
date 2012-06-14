@@ -1,96 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756096Ab2FNM6P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 08:58:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18215 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755847Ab2FNM6O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 08:58:14 -0400
-Message-ID: <4FD9DFCE.1070609@redhat.com>
-Date: Thu, 14 Jun 2012 08:57:50 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, sjhill@mips.com, ralf@linux-mips.org,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Nicolas Pitre <nico@linaro.org>
-Subject: Re: bugs in page colouring code
-References: <20120613152936.363396d5@cuia.bos.redhat.com> <20120614103627.GA25940@aftab.osrc.amd.com>
-In-Reply-To: <20120614103627.GA25940@aftab.osrc.amd.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1756145Ab2FNM6u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 08:58:50 -0400
+Received: from nat.nue.novell.com ([195.135.221.2]:55252 "EHLO
+	nat.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755930Ab2FNM6q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 08:58:46 -0400
+Subject: Re: [PATCH 2/7] drivers-platform-x86: use
+ acpi_video_dmi_promote_vendor()
+From: joeyli <jlee@suse.com>
+To: Corentin Chary <corentin.chary@gmail.com>
+Cc: Len Brown <lenb@kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        linux-acpi@vger.kernel.org, platform-driver-x86@vger.kernel.org,
+        Joey Lee <jlee@novell.com>, Matthew Garrett <mjg@redhat.com>,
+        Corentin Chary <corentincj@iksaif.net>, linux-kernel@vger.kernel.org
+In-Reply-To: <1339671870-27624-1-git-send-email-corentin.chary@gmail.com>
+References: <CAHR064i_0vunKzB_Yg9SGrWQcPxJs2sTekWk6LuP2qf0FEqBOQ@mail.gmail.com>
+	 <1339671870-27624-1-git-send-email-corentin.chary@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 14 Jun 2012 20:53:51 +0800
+Message-ID: <1339678431.9598.99.camel@linux-s257.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/14/2012 06:36 AM, Borislav Petkov wrote:
-> On Wed, Jun 13, 2012 at 03:29:36PM -0400, Rik van Riel wrote:
+於 四，2012-06-14 於 13:04 +0200，Corentin Chary 提到：
+> Instead of using directly acpi_video_unregister(), use
+> acpi_video_dmi_promote_vendor() (and make it call
+> acpi_video_unregister() if needed)
+> 
+> Signed-off-by: Corentin Chary <corentin.chary@gmail.com>
 
->> For one, there are separate kernel boot arguments to control whether
->> 32 and 64 bit processes need to have their addresses aligned for
->> page colouring.
->>
->> Do we really need that?
->
-> Yes.
+It's good to me!
 
-What do we need it for?
+Acked-by: Lee, Chun-Yi <jlee@suse.com>
 
-I can see wanting a big knob to disable page colouring
-globally for both 32 and 64 bit processes, but why do
-we need to control it separately?
 
-I am not too keen on x86 keeping a slightly changed
-private copy of arch_align_addr :)
+Thanks a lot!
+Joey Lee
 
-> Mind you, this is only enabled on AMD F15h - all other x86 simply can't
-> tweak it without code change.
->
->> Would it be a problem if I discarded that code, in order to get to one
->> common cache colouring implementation?
->
-> Sorry, but, we'd like to keep it in.
+> ---
+>  drivers/platform/x86/acer-wmi.c       |   14 +++++++-------
+>  drivers/platform/x86/apple-gmux.c     |    2 ++
+>  drivers/platform/x86/samsung-laptop.c |   20 +++++++++-----------
+>  3 files changed, 18 insertions(+), 18 deletions(-)
+> 
+> diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
+> index ce875dc..7057aef 100644
+> --- a/drivers/platform/x86/acer-wmi.c
+> +++ b/drivers/platform/x86/acer-wmi.c
+> @@ -2060,14 +2060,14 @@ static int __init acer_wmi_init(void)
+>  
+>  	set_quirks();
+>  
+> +	if (dmi_check_system(video_vendor_dmi_table))
+> +		acpi_video_dmi_promote_vendor();
+>  	if (acpi_video_backlight_support()) {
+> -		if (dmi_check_system(video_vendor_dmi_table)) {
+> -			acpi_video_unregister();
+> -		} else {
+> -			interface->capability &= ~ACER_CAP_BRIGHTNESS;
+> -			pr_info("Brightness must be controlled by "
+> -				"acpi video driver\n");
+> -		}
+> +		interface->capability &= ~ACER_CAP_BRIGHTNESS;
+> +		pr_info("Brightness must be controlled by acpi video driver\n");
+> +	} else {
+> +		pr_info("Disabling ACPI video driver\n");
+> +		acpi_video_unregister();
+>  	}
+>  
+>  	if (wmi_has_guid(WMID_GUID3)) {
+> diff --git a/drivers/platform/x86/apple-gmux.c b/drivers/platform/x86/apple-gmux.c
+> index 694a15a..fd61502 100644
+> --- a/drivers/platform/x86/apple-gmux.c
+> +++ b/drivers/platform/x86/apple-gmux.c
+> @@ -193,6 +193,7 @@ static int __devinit gmux_probe(struct pnp_dev *pnp,
+>  	 * backlight control and supports more levels than other options.
+>  	 * Disable the other backlight choices.
+>  	 */
+> +	acpi_video_dmi_promote_vendor();
+>  	acpi_video_unregister();
+>  	apple_bl_unregister();
+>  
+> @@ -213,6 +214,7 @@ static void __devexit gmux_remove(struct pnp_dev *pnp)
+>  	release_region(gmux_data->iostart, gmux_data->iolen);
+>  	kfree(gmux_data);
+>  
+> +	acpi_video_dmi_demote_vendor();
+>  	acpi_video_register();
+>  	apple_bl_register();
+>  }
+> diff --git a/drivers/platform/x86/samsung-laptop.c b/drivers/platform/x86/samsung-laptop.c
+> index e2a34b4..b822784 100644
+> --- a/drivers/platform/x86/samsung-laptop.c
+> +++ b/drivers/platform/x86/samsung-laptop.c
+> @@ -26,9 +26,7 @@
+>  #include <linux/seq_file.h>
+>  #include <linux/debugfs.h>
+>  #include <linux/ctype.h>
+> -#if (defined CONFIG_ACPI_VIDEO || defined CONFIG_ACPI_VIDEO_MODULE)
+>  #include <acpi/video.h>
+> -#endif
+>  
+>  /*
+>   * This driver is needed because a number of Samsung laptops do not hook
+> @@ -1530,15 +1528,16 @@ static int __init samsung_init(void)
+>  	samsung->quirks = quirks;
+>  
+> 
+> -#if (defined CONFIG_ACPI_VIDEO || defined CONFIG_ACPI_VIDEO_MODULE)
+> +#ifdef CONFIG_ACPI
+> +	if (samsung->quirks->broken_acpi_video)
+> +		acpi_video_dmi_promote_vendor();
+> +
+>  	/* Don't handle backlight here if the acpi video already handle it */
+>  	if (acpi_video_backlight_support()) {
+> -		if (samsung->quirks->broken_acpi_video) {
+> -			pr_info("Disabling ACPI video driver\n");
+> -			acpi_video_unregister();
+> -		} else {
+> -			samsung->handle_backlight = false;
+> -		}
+> +		samsung->handle_backlight = false;
+> +	} else if (samsung->quirks->broken_acpi_video) {
+> +		pr_info("Disabling ACPI video driver\n");
+> +		acpi_video_unregister();
+>  	}
+>  #endif
+>  
+> @@ -1552,8 +1551,7 @@ static int __init samsung_init(void)
+>  
+>  #ifdef CONFIG_ACPI
+>  	/* Only log that if we are really on a sabi platform */
+> -	if (acpi_video_backlight_support() &&
+> -	    !samsung->quirks->broken_acpi_video)
+> +	if (acpi_video_backlight_support())
+>  		pr_info("Backlight controlled by ACPI video driver\n");
+>  #endif
+>  
 
-What is it used for?
 
->> Secondly, MAP_FIXED never checks for page colouring alignment. I
->> assume the cache aliasing on AMD Bulldozer is merely a performance
->> issue, and we can simply ignore page colouring for MAP_FIXED?
->
-> Right, AFAICR, MAP_FIXED is not generally used for shared libs (correct
-> me if I'm wrong here, my memory is very fuzzy about it) and since we see
-> the perf issue with shared libs, this was fine.
-
-Try stracing /bin/mount one of these days. A whole bunch
-of libraries are mapped with MAP_FIXED :)
-
-However, I expect that on x86 many applications expect
-MAP_FIXED to just work, and enforcing that would be
-more trouble than it's worth.
-
->> That will be easy to get right in an architecture-independent
->> implementation.
->>
->>
->> A third issue is this:
->>
->>          if (!(current->flags&  PF_RANDOMIZE))
->>                  return addr;
->>
->> Do we really want to skip page colouring merely because the
->> application does not have PF_RANDOMIZE set?  What is this
->> conditional supposed to do?
->
-> Linus said that without this we are probably breaking old userspace
-> which can't stomach ASLR so we had to respect such userspace which
-> clears that flag.
-
-I wonder if that is true, since those userspace programs
-probably run fine on ARM, MIPS and other architectures...
-
--- 
-All rights reversed
