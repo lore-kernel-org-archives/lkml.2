@@ -1,84 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753043Ab2FNHU4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 03:20:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56254 "EHLO mx2.suse.de"
+	id S1753066Ab2FNHXf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 03:23:35 -0400
+Received: from linux-sh.org ([111.68.239.195]:43191 "EHLO linux-sh.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752618Ab2FNHUy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 03:20:54 -0400
-Date: Thu, 14 Jun 2012 09:20:53 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
-        rientjes@google.com, akpm@linux-foundation.org, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH -V9 05/15] hugetlb: avoid taking i_mmap_mutex in
- unmap_single_vma() for hugetlb
-Message-ID: <20120614072053.GC27397@tiehlicka.suse.cz>
-References: <1339583254-895-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <1339583254-895-6-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	id S1752195Ab2FNHXe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 03:23:34 -0400
+Date: Thu, 14 Jun 2012 16:23:23 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Kuninori Morimoto <kuninori.morimoto.gx@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2 v2][resend] gpio: pcf857x: enable gpio_to_irq()
+ support
+Message-ID: <20120614072322.GC22007@linux-sh.org>
+References: <877gw2uis5.wl%kuninori.morimoto.gx@renesas.com>
+ <87d352qymy.wl%kuninori.morimoto.gx@renesas.com>
+ <87aa06qykw.wl%kuninori.morimoto.gx@renesas.com>
+ <20120614061519.GB22007@linux-sh.org>
+ <878vfqqsnw.wl%kuninori.morimoto.gx@renesas.com>
+ <877gvaqsfz.wl%kuninori.morimoto.gx@renesas.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1339583254-895-6-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+In-Reply-To: <877gvaqsfz.wl%kuninori.morimoto.gx@renesas.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 13-06-12 15:57:24, Aneesh Kumar K.V wrote:
-> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-> 
-> i_mmap_mutex lock was added in unmap_single_vma by 502717f4e ("hugetlb:
-> fix linked list corruption in unmap_hugepage_range()") but we don't use
-> page->lru in unmap_hugepage_range any more.  Also the lock was taken
-> higher up in the stack in some code path.  That would result in deadlock.
+On Thu, Jun 14, 2012 at 12:10:59AM -0700, Kuninori Morimoto wrote:
+> +	for (i = 0; i < gpio->chip.ngpio; i++)
+> +		if (change & BIT(i))
+> +			generic_handle_irq(irq_find_mapping(gpio->irq_domain, i));
+> +
+You can probably get away with using for_each_set_bit() as well, which
+would simplify this a bit.
 
-This sounds like the deadlock is real but in the other email you wrote
-that the deadlock cannot happen so it would be good to mention it here.
- 
-> unmap_mapping_range (i_mmap_mutex)
->  -> unmap_mapping_range_tree
->     -> unmap_mapping_range_vma
->        -> zap_page_range_single
->          -> unmap_single_vma
-> 	      -> unmap_hugepage_range (i_mmap_mutex)
-> 
-> For shared pagetable support for huge pages, since pagetable pages are ref
-> counted we don't need any lock during huge_pmd_unshare.  We do take
-> i_mmap_mutex in huge_pmd_share while walking the vma_prio_tree in mapping.
-> (39dde65c9940c97f ("shared page table for hugetlb page")).
-> 
-> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-> ---
->  mm/memory.c |    5 +----
->  1 file changed, 1 insertion(+), 4 deletions(-)
-> 
-> diff --git a/mm/memory.c b/mm/memory.c
-> index 545e18a..f6bc04f 100644
-> --- a/mm/memory.c
-> +++ b/mm/memory.c
-> @@ -1326,11 +1326,8 @@ static void unmap_single_vma(struct mmu_gather *tlb,
->  			 * Since no pte has actually been setup, it is
->  			 * safe to do nothing in this case.
->  			 */
-> -			if (vma->vm_file) {
-> -				mutex_lock(&vma->vm_file->f_mapping->i_mmap_mutex);
-> +			if (vma->vm_file)
->  				__unmap_hugepage_range(tlb, vma, start, end, NULL);
-> -				mutex_unlock(&vma->vm_file->f_mapping->i_mmap_mutex);
-> -			}
->  		} else
->  			unmap_page_range(tlb, vma, start, end, details);
->  	}
-> -- 
-> 1.7.10
-> 
-
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Also, do you not have to worry about masking the parent IRQ while
+iterating through the dispatch loop?
