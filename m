@@ -1,77 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756230Ab2FNOPW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 10:15:22 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:34950 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756040Ab2FNOPS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 10:15:18 -0400
+	id S1755929Ab2FNOaF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 10:30:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31013 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755876Ab2FNO3M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 10:29:12 -0400
+Message-ID: <4FD9F4EB.7080108@redhat.com>
+Date: Thu, 14 Jun 2012 10:27:55 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <1339668296.2559.25.camel@twins>
-References: <CAJRGBZw2TctmBxRuA-byaGNCs=1v+M-1PXSm+OuwWApSqu7UjA@mail.gmail.com>
-	<1339668296.2559.25.camel@twins>
-Date: Thu, 14 Jun 2012 22:15:16 +0800
-Message-ID: <CAJRGBZx2QAfZeTmfc-LodECqsea7Be0jzz+7Y=X85wmYB3RgWg@mail.gmail.com>
-Subject: Re: What is the right practice to get new code upstream( was Fwd:
- [patch] a simple hardware detector for latency as well as throughput ver. 0.1.0)
-From: Luming Yu <luming.yu@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: LKML <linux-kernel@vger.kernel.org>, tglx@linutronix.de,
-        sfr@canb.auug.org.au, Andrew Morton <akpm@linux-foundation.org>,
-        jcm@jonmasters.org, linux-next@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, torvalds@linux-foundation.org,
-        Robert Richter <robert.richter@amd.com>
-Content-Type: text/plain; charset=UTF-8
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, sjhill@mips.com, ralf@linux-mips.org,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Rob Herring <rob.herring@calxeda.com>, Nicolas Pitre <nico@linaro.org>
+Subject: Re: bugs in page colouring code
+References: <20120613152936.363396d5@cuia.bos.redhat.com> <20120614132053.GD28714@n2100.arm.linux.org.uk>
+In-Reply-To: <20120614132053.GD28714@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 14, 2012 at 6:04 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Tue, 2012-06-12 at 20:57 +0800, Luming Yu wrote:
->> The Goal is to test out hardware/BIOS caused
->> problems in 2 minutes. To me, capable of measuring the intrinsic of
->> hardware on which we build our software is always a better idea than
->> blindly looking for data from any documents. In current version of the
->> tool, we have a basic sampling facility and TSC test ready for x86. I
->> plan to add more test into this tool to enrich our tool set in Linux.
+On 06/14/2012 09:20 AM, Russell King - ARM Linux wrote:
+> On Wed, Jun 13, 2012 at 03:29:36PM -0400, Rik van Riel wrote:
+>> COLOUR_ALIGN_DOWN can use the pgoff % shm_align_mask either positively
+>>     or negatively, depending on the address initially found by
+>>     get_unmapped_area
 >>
+>> static inline unsigned long COLOUR_ALIGN_DOWN(unsigned long addr,
+>>                                                unsigned long pgoff)
+>> {
+>>          unsigned long base = addr&  ~shm_align_mask;
+>>          unsigned long off = (pgoff<<  PAGE_SHIFT)&  shm_align_mask;
 >>
-> There's SMI damage around on much longer periods than 2 minutes.
-
-Right, it's a problem that if we run the tool when SMI is not triggered.
-My rough idea  is to come up with some ideas to scan the system. Not entirely
-sure but  2 minutes could be sufficient to finish such scan on a normal
-laptop. The question is how we scan? We may need to adjust the 2 minutes
-goal accordingly based on the method of scan and the size of machine to scan.
-
+>>          if (base + off<= addr)
+>>                  return base + off;
+>>
+>>          return base - off;
+>> }
 >
-> Also, you can't really do stop_machine for 2 minutes and expect the
-> system to survive.
-
-By design, the test thread suppose to, by default, for tsc
-measurement, spend sample_width/sample_window of cpu cycles in
-stop_machine context on sampling. The left cpu cycles yields to other
-threads in msleep_interruptible.  The default sample_width is 500us,
-the default sample_window is 1ms.
-
+> Yes, that is bollocks code, introduced by this commit:
 >
-> Furthermore, I think esp. on more recent chips there's better ways of
-> doing it.
+> commit 7dbaa466780a754154531b44c2086f6618cee3a8
+> Author: Rob Herring<rob.herring@calxeda.com>
+> Date:   Tue Nov 22 04:01:07 2011 +0100
 
-Right , the reference to PMU counts will make the tool more useful.
+It's not just ARM that has this bug. It appears to
+be cut'n'pasted from other architectures (MIPS? SPARC?).
 
+>> The fix would be to return an address that is a whole shm_align_mask
+>> lower: (((base - shm_align_mask)&  ~shm_align_mask) + off
 >
-> For Intel there's a IA32_DEBUGCTL.FREEZE_WHILE_SMM_EN [bit 14], if you
-> program a PMU event that ticks at the same rate as the TSC and enable
-> the FREEZE_WHILE_SMM stuff, any drift observed between that and the TSC
-> is time lost to SMM. It also has MSR_SMI_COUNT [MSR 34H] which counts
-> the number of SMIs.
+> Yes, agreed.
+
+I will make sure the arch-independent colouring
+code does that.
+
+> This brings up the question: should a MAP_PRIVATE mapping see updates
+> to the backing file made via a shared mapping and/or writing the file
+> directly?  After all, a r/w MAP_PRIVATE mapping which has been CoW'd
+> won't see the updates.
 >
-> For AMD there's only event 02Bh, which is SMIs Received. I'm not sure it
-> has anything like the FREEZE or if the event is modifyable to count the
-> cycles in SMI.
+> So I'd argue that a file mapped MAP_SHARED must be mapped according to
+> the colour rules, but a MAP_PRIVATE is free not to be so.
 
-It's in to-do-list for version 0.2 of the tool.
+OK, fair enough.
 
-Thanks!!!
+>> Secondly, MAP_FIXED never checks for page colouring alignment.
+>> I assume the cache aliasing on AMD Bulldozer is merely a performance
+>> issue, and we can simply ignore page colouring for MAP_FIXED?
+>> That will be easy to get right in an architecture-independent
+>> implementation.
+>
+> There's a whole bunch of issues with MAP_FIXED, specifically address
+> space overflow has been discussed previously, and resulted in this patch:
+>
+> [PATCH 0/6] get rid of extra check for TASK_SIZE in get_unmapped_area
+
+Turns out, get_unmapped_area_prot (the function
+that calls arch_get_unmapped_area) checks for
+these overflows, so we should be fine.
