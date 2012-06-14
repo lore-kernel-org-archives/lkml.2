@@ -1,78 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756413Ab2FNQLM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 12:11:12 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:41015 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756313Ab2FNQLJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 12:11:09 -0400
+	id S1756448Ab2FNQNp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 12:13:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8673 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755286Ab2FNQNn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 12:13:43 -0400
+Date: Thu, 14 Jun 2012 12:13:31 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: 3.5.rc2 tty buffering bug ?
+Message-ID: <20120614161331.GA29687@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Alan Cox <alan@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <20120614145716.GA2097@barrios>
-References: <1339661592-3915-1-git-send-email-kosaki.motohiro@gmail.com> <20120614145716.GA2097@barrios>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Thu, 14 Jun 2012 12:10:47 -0400
-Message-ID: <CAHGf_=qcA5OfuNgk0BiwyshcLftNWoPfOO_VW9H6xQTX2tAbuA@mail.gmail.com>
-Subject: Re: [resend][PATCH] mm, vmscan: fix do_try_to_free_pages() livelock
-To: Minchan Kim <minchan@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        akpm@linux-foundation.org, Nick Piggin <npiggin@gmail.com>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Mel Gorman <mel@csn.ul.ie>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 14, 2012 at 10:57 AM, Minchan Kim <minchan@kernel.org> wrote:
-> Hi KOSAKI,
->
-> Sorry for late response.
-> Let me ask a question about description.
->
-> On Thu, Jun 14, 2012 at 04:13:12AM -0400, kosaki.motohiro@gmail.com wrote:
->> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->>
->> Currently, do_try_to_free_pages() can enter livelock. Because of,
->> now vmscan has two conflicted policies.
->>
->> 1) kswapd sleep when it couldn't reclaim any page when reaching
->>    priority 0. This is because to avoid kswapd() infinite
->>    loop. That said, kswapd assume direct reclaim makes enough
->>    free pages to use either regular page reclaim or oom-killer.
->>    This logic makes kswapd -> direct-reclaim dependency.
->> 2) direct reclaim continue to reclaim without oom-killer until
->>    kswapd turn on zone->all_unreclaimble. This is because
->>    to avoid too early oom-kill.
->>    This logic makes direct-reclaim -> kswapd dependency.
->>
->> In worst case, direct-reclaim may continue to page reclaim forever
->> when kswapd sleeps forever.
->
-> I have tried imagined scenario you mentioned above with code level but
-> unfortunately I got failed.
-> If kswapd can't meet high watermark on order-0, it doesn't sleep if I don't miss something.
+I found something odd that happens with redirection.
 
-pgdat_balanced() doesn't recognized zone. Therefore kswapd may sleep
-if node has multiple zones. Hm ok, I realized my descriptions was
-slightly misleading. priority 0 is not needed. bakance_pddat() calls
-pgdat_balanced()
-every priority. Most easy case is, movable zone has a lot of free pages and
-normal zone has no reclaimable page.
-
-btw, current pgdat_balanced() logic seems not correct. kswapd should
-sleep only if every zones have much free pages than high water mark
-_and_ 25% of present pages in node are free.
+this code...
 
 
 
-> So if kswapd sleeps, it means we already have enough order-0 free pages.
-> Hmm, could you describe scenario you found in detail with code level?
->
-> Anyway, as I look at your patch, I can't find any problem.
-> I just want to understand scenario you mentioned completely in my head.
-> Maybe It can help making description clear.
->
+#include <stdio.h>
+
+void main()
+{
+	printf("begin\n");
+
+	if (fork() != 0)
+		printf("child\n");
+	else
+		printf("parent\n");
+
+	printf("end\n");
+}
+
+usually exits before the child gets to print anything, so stdout looks like..
+
+begin
+parent
+end
+
+but when redirected to a file, sometimes it prints what we expect, but other times
+(if the child exits first) it seems to print..
+
+begin
+child
+end
+begin
+parent
+end
+
+
+How does 'begin' get printed a second time ?
+
+	Dave
+
