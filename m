@@ -1,56 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755990Ab2FNNDN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 09:03:13 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:46426 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755534Ab2FNNDL (ORCPT
+	id S1755986Ab2FNNEf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 09:04:35 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:36723 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755682Ab2FNNEe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 09:03:11 -0400
-Date: Thu, 14 Jun 2012 08:59:53 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sujith Manoharan <c_manoha@qca.qualcomm.com>
-Subject: Re: linux-next: manual merge of the net-next tree with the wireless
- tree
-Message-ID: <20120614125953.GA3128@tuxdriver.com>
-References: <20120614131256.2fed671219b8d571a47987c2@canb.auug.org.au>
- <4FD96D85.4010505@qca.qualcomm.com>
+	Thu, 14 Jun 2012 09:04:34 -0400
+Date: Thu, 14 Jun 2012 15:04:29 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@ti.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "Luck,Tony" <tony.luck@intel.com>
+Subject: Re: [RFC GIT PULL] nohz: Basic cputime accounting for adaptive
+ tickless
+Message-ID: <20120614130425.GC16848@somewhere>
+References: <1339604397-8758-1-git-send-email-fweisbec@gmail.com>
+ <1339664829.2559.14.camel@twins>
+ <20120614111241.GA16848@somewhere>
+ <20120614111638.GA16676@gmail.com>
+ <alpine.LFD.2.02.1206141321010.3086@ionos>
+ <20120614112241.GB16848@somewhere>
+ <20120614144815.1401af49@de.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4FD96D85.4010505@qca.qualcomm.com>
+In-Reply-To: <20120614144815.1401af49@de.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 14, 2012 at 10:20:13AM +0530, Mohammed Shafi Shajakhan wrote:
-> Hi Stephen,
+On Thu, Jun 14, 2012 at 02:48:15PM +0200, Martin Schwidefsky wrote:
+> On Thu, 14 Jun 2012 13:22:45 +0200
+> Frederic Weisbecker <fweisbec@gmail.com> wrote:
 > 
-> On Thursday 14 June 2012 08:42 AM, Stephen Rothwell wrote:
-> >Hi all,
-> >
-> >Today's linux-next merge of the net-next tree got a conflict in
-> >drivers/net/wireless/ath/ath9k/main.c between commit bcb7ad7bcbef
-> >("ath9k: Fix softlockup in AR9485") from the wireless tree and commit
-> >ef1b6cd9a1ba ("ath9k: Group link monitoring logic") from the net-next
-> >tree.
-> >
-> >The latter removes the code modified by the former, so I did that.  The
-> >fix from the former patch may be needed elsewhere now.
+> > On Thu, Jun 14, 2012 at 01:21:23PM +0200, Thomas Gleixner wrote:
+> > > On Thu, 14 Jun 2012, Ingo Molnar wrote:
+> > > > * Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > > > > You're right, I should have looked into CONFIG_VIRT_CPU_ACCOUNTING sooner
+> > > > > and see if I can reuse it.
+> > > > > 
+> > > > > I'll try something with that.
+> > > > 
+> > > > Maybe sanitize all the variants under a single set of 
+> > > > wrappers/callbacks?
+> > > 
+> > > Yes, please!
+> > 
+> > Sure, I'm working in it.
+>  
+> Please keep me in the loop, I want to avoid that things break on s390. Thanks.
 
-That sounds right.
+Well, I realize I can't consolidate much between ia64, s390 and ppc because they
+all handle virtual cpu time accounting very differently. I'm also not what the
+virtual timer is for.
 
-> the back ported version of this patch is recently sent
-> http://www.spinics.net/lists/linux-wireless/msg92125.html
-
-I have it in wireless-next already...thanks!
-
-John
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+Also it seems only powerpc flushes the time when a task is descheduled. May be
+I'm missing something.
