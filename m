@@ -1,79 +1,279 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754784Ab2FNJgq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 05:36:46 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:56523 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752184Ab2FNJgn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 05:36:43 -0400
+	id S1755208Ab2FNJg6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 05:36:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35413 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754793Ab2FNJgz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 05:36:55 -0400
+Date: Thu, 14 Jun 2012 11:36:52 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
+        rientjes@google.com, akpm@linux-foundation.org, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH -V9 13/15] hugetlb/cgroup: add hugetlb cgroup control
+ files
+Message-ID: <20120614093652.GK27397@tiehlicka.suse.cz>
+References: <1339583254-895-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <1339583254-895-14-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <20120614072831.63845f6ddf024ece28e49f5e@gmail.com>
-References: <20120613130054.b5695621.yoshikawa.takuya@oss.ntt.co.jp>
-	<20120613130304.0186fa9d.yoshikawa.takuya@oss.ntt.co.jp>
-	<CAC5umyj582T+9GbOYDzOAanmMcVZ-Fdxr7i-8GWf3gTSmtAKUA@mail.gmail.com>
-	<20120613214157.0a5179d5358ec7f1b2646606@gmail.com>
-	<CAC5umygutE35hVObuooWj=ADP6PZDy4cqLtxGnRtxRX8uTtGSw@mail.gmail.com>
-	<20120613230013.3cc59bf908616e94bb4ccef2@gmail.com>
-	<CAP6odji_JvRkJP1dSzGK5ww3y71h4k6pXyj4pOQBpqP-X7Nn-A@mail.gmail.com>
-	<20120614072831.63845f6ddf024ece28e49f5e@gmail.com>
-Date: Thu, 14 Jun 2012 18:36:42 +0900
-Message-ID: <CAC5umyjkdDqavCo3Dk+WOggCnH+_CZz5jrOr3SougS4HSgV3OA@mail.gmail.com>
-Subject: Re: [PATCH 2/5] drivers/net/ethernet/dec/tulip: Use standard
- __set_bit_le() function
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-Cc: Grant Grundler <grantgrundler@gmail.com>,
-        Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>,
-        akpm@linux-foundation.org, bhutchings@solarflare.com,
-        grundler@parisc-linux.org, arnd@arndb.de, benh@kernel.crashing.org,
-        avi@redhat.com, mtosatti@redhat.com, linux-net-drivers@solarflare.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, kvm@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339583254-895-14-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/6/14 Takuya Yoshikawa <takuya.yoshikawa@gmail.com>:
-> On Wed, 13 Jun 2012 08:21:18 -0700
-> Grant Grundler <grantgrundler@gmail.com> wrote:
->
->> >> >> Should this hash_table be converted from u16 hash_table[32] to
->> >> >> DECLARE_BITMAP(hash_table, 16 * 32) to ensure that it is aligned
->> >> >> on long-word boundary?
->> >> >
->> >> > I think hash_table is already long-word aligned because it is placed
->> >> > right after a pointer.
->> >>
->> >> I recommend converting to proper bitmap.  Because such an implicit
->> >> assumption is easily broken by someone touching this function.
->> >
->> > Do you mean something like:
->> >        DECLARE_BITMAP(__hash_table, 16 * 32);
->> >        u16 *hash_table = (u16 *)__hash_table;
->> > ?
->> >
->> > Grant, what do you think about this?
->>
->> Hi Takuya,
->> two thoughts:
->> 1) while I agree with Akinobu and thank him for pointing out a
->> _potential_ alignment problem, this is a separate issue and your
->> existing patch should go in anyway. There are probably other drivers
->> with _potential_ alignment issues. Akinobu could get credit for
->> finding them by submitting patches after reviewing calls to set_bit
->> and set_bit_le() - similar to what you are doing now.
->
-> I prefer approach 1.
->
-> hash_table is local in build_setup_frame_hash(), so if further
-> improvement is also required, we can do that locally there later.
+On Wed 13-06-12 15:57:32, Aneesh Kumar K.V wrote:
+> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+> 
+> Add the control files for hugetlb controller
+> 
+> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 
-This potential alignment problem is introduced by this patch.  Because
-the original set_bit_le() in tulip driver can handle unaligned bitmap.
-This is why I recommended it should be fixed in this patch.
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
 
-But please just ignore me if I'm too much paranoid.  And I'll handle
-this issue if no one wants to do it.
+> ---
+>  include/linux/hugetlb.h        |    5 ++
+>  include/linux/hugetlb_cgroup.h |    6 ++
+>  mm/hugetlb.c                   |    8 +++
+>  mm/hugetlb_cgroup.c            |  129 ++++++++++++++++++++++++++++++++++++++++
+>  4 files changed, 148 insertions(+)
+> 
+> diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+> index 4aca057..9650bb1 100644
+> --- a/include/linux/hugetlb.h
+> +++ b/include/linux/hugetlb.h
+> @@ -4,6 +4,7 @@
+>  #include <linux/mm_types.h>
+>  #include <linux/fs.h>
+>  #include <linux/hugetlb_inline.h>
+> +#include <linux/cgroup.h>
+>  
+>  struct ctl_table;
+>  struct user_struct;
+> @@ -221,6 +222,10 @@ struct hstate {
+>  	unsigned int nr_huge_pages_node[MAX_NUMNODES];
+>  	unsigned int free_huge_pages_node[MAX_NUMNODES];
+>  	unsigned int surplus_huge_pages_node[MAX_NUMNODES];
+> +#ifdef CONFIG_CGROUP_HUGETLB_RES_CTLR
+> +	/* cgroup control files */
+> +	struct cftype cgroup_files[5];
+> +#endif
+>  	char name[HSTATE_NAME_LEN];
+>  };
+>  
+> diff --git a/include/linux/hugetlb_cgroup.h b/include/linux/hugetlb_cgroup.h
+> index e05871c..bd8bc98 100644
+> --- a/include/linux/hugetlb_cgroup.h
+> +++ b/include/linux/hugetlb_cgroup.h
+> @@ -62,6 +62,7 @@ extern void hugetlb_cgroup_uncharge_page(int idx, unsigned long nr_pages,
+>  					 struct page *page);
+>  extern void hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
+>  					   struct hugetlb_cgroup *h_cg);
+> +extern int hugetlb_cgroup_file_init(int idx) __init;
+>  
+>  #else
+>  static inline struct hugetlb_cgroup *hugetlb_cgroup_from_page(struct page *page)
+> @@ -108,5 +109,10 @@ hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
+>  	return;
+>  }
+>  
+> +static inline int __init hugetlb_cgroup_file_init(int idx)
+> +{
+> +	return 0;
+> +}
+> +
+>  #endif  /* CONFIG_MEM_RES_CTLR_HUGETLB */
+>  #endif
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index 59720b1..a5a30bf 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -30,6 +30,7 @@
+>  #include <linux/hugetlb.h>
+>  #include <linux/hugetlb_cgroup.h>
+>  #include <linux/node.h>
+> +#include <linux/hugetlb_cgroup.h>
+>  #include "internal.h"
+>  
+>  const unsigned long hugetlb_zero = 0, hugetlb_infinity = ~0UL;
+> @@ -1930,6 +1931,13 @@ void __init hugetlb_add_hstate(unsigned order)
+>  	h->next_nid_to_free = first_node(node_states[N_HIGH_MEMORY]);
+>  	snprintf(h->name, HSTATE_NAME_LEN, "hugepages-%lukB",
+>  					huge_page_size(h)/1024);
+> +	/*
+> +	 * Add cgroup control files only if the huge page consists
+> +	 * of more than two normal pages. This is because we use
+> +	 * page[2].lru.next for storing cgoup details.
+> +	 */
+> +	if (order >= HUGETLB_CGROUP_MIN_ORDER)
+> +		hugetlb_cgroup_file_init(hugetlb_max_hstate - 1);
+>  
+>  	parsed_hstate = h;
+>  }
+> diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
+> index a3a68a4..64e93e0 100644
+> --- a/mm/hugetlb_cgroup.c
+> +++ b/mm/hugetlb_cgroup.c
+> @@ -26,6 +26,10 @@ struct hugetlb_cgroup {
+>  	struct res_counter hugepage[HUGE_MAX_HSTATE];
+>  };
+>  
+> +#define MEMFILE_PRIVATE(x, val)	(((x) << 16) | (val))
+> +#define MEMFILE_IDX(val)	(((val) >> 16) & 0xffff)
+> +#define MEMFILE_ATTR(val)	((val) & 0xffff)
+> +
+>  struct cgroup_subsys hugetlb_subsys __read_mostly;
+>  struct hugetlb_cgroup *root_h_cgroup __read_mostly;
+>  
+> @@ -259,6 +263,131 @@ void hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
+>  	return;
+>  }
+>  
+> +static ssize_t hugetlb_cgroup_read(struct cgroup *cgroup, struct cftype *cft,
+> +				   struct file *file, char __user *buf,
+> +				   size_t nbytes, loff_t *ppos)
+> +{
+> +	u64 val;
+> +	char str[64];
+> +	int idx, name, len;
+> +	struct hugetlb_cgroup *h_cg = hugetlb_cgroup_from_cgroup(cgroup);
+> +
+> +	idx = MEMFILE_IDX(cft->private);
+> +	name = MEMFILE_ATTR(cft->private);
+> +
+> +	val = res_counter_read_u64(&h_cg->hugepage[idx], name);
+> +	len = scnprintf(str, sizeof(str), "%llu\n", (unsigned long long)val);
+> +	return simple_read_from_buffer(buf, nbytes, ppos, str, len);
+> +}
+> +
+> +static int hugetlb_cgroup_write(struct cgroup *cgroup, struct cftype *cft,
+> +				const char *buffer)
+> +{
+> +	int idx, name, ret;
+> +	unsigned long long val;
+> +	struct hugetlb_cgroup *h_cg = hugetlb_cgroup_from_cgroup(cgroup);
+> +
+> +	idx = MEMFILE_IDX(cft->private);
+> +	name = MEMFILE_ATTR(cft->private);
+> +
+> +	switch (name) {
+> +	case RES_LIMIT:
+> +		if (hugetlb_cgroup_is_root(h_cg)) {
+> +			/* Can't set limit on root */
+> +			ret = -EINVAL;
+> +			break;
+> +		}
+> +		/* This function does all necessary parse...reuse it */
+> +		ret = res_counter_memparse_write_strategy(buffer, &val);
+> +		if (ret)
+> +			break;
+> +		ret = res_counter_set_limit(&h_cg->hugepage[idx], val);
+> +		break;
+> +	default:
+> +		ret = -EINVAL;
+> +		break;
+> +	}
+> +	return ret;
+> +}
+> +
+> +static int hugetlb_cgroup_reset(struct cgroup *cgroup, unsigned int event)
+> +{
+> +	int idx, name, ret = 0;
+> +	struct hugetlb_cgroup *h_cg = hugetlb_cgroup_from_cgroup(cgroup);
+> +
+> +	idx = MEMFILE_IDX(event);
+> +	name = MEMFILE_ATTR(event);
+> +
+> +	switch (name) {
+> +	case RES_MAX_USAGE:
+> +		res_counter_reset_max(&h_cg->hugepage[idx]);
+> +		break;
+> +	case RES_FAILCNT:
+> +		res_counter_reset_failcnt(&h_cg->hugepage[idx]);
+> +		break;
+> +	default:
+> +		ret = -EINVAL;
+> +		break;
+> +	}
+> +	return ret;
+> +}
+> +
+> +static char *mem_fmt(char *buf, int size, unsigned long hsize)
+> +{
+> +	if (hsize >= (1UL << 30))
+> +		snprintf(buf, size, "%luGB", hsize >> 30);
+> +	else if (hsize >= (1UL << 20))
+> +		snprintf(buf, size, "%luMB", hsize >> 20);
+> +	else
+> +		snprintf(buf, size, "%luKB", hsize >> 10);
+> +	return buf;
+> +}
+> +
+> +int __init hugetlb_cgroup_file_init(int idx)
+> +{
+> +	char buf[32];
+> +	struct cftype *cft;
+> +	struct hstate *h = &hstates[idx];
+> +
+> +	/* format the size */
+> +	mem_fmt(buf, 32, huge_page_size(h));
+> +
+> +	/* Add the limit file */
+> +	cft = &h->cgroup_files[0];
+> +	snprintf(cft->name, MAX_CFTYPE_NAME, "%s.limit_in_bytes", buf);
+> +	cft->private = MEMFILE_PRIVATE(idx, RES_LIMIT);
+> +	cft->read = hugetlb_cgroup_read;
+> +	cft->write_string = hugetlb_cgroup_write;
+> +
+> +	/* Add the usage file */
+> +	cft = &h->cgroup_files[1];
+> +	snprintf(cft->name, MAX_CFTYPE_NAME, "%s.usage_in_bytes", buf);
+> +	cft->private = MEMFILE_PRIVATE(idx, RES_USAGE);
+> +	cft->read = hugetlb_cgroup_read;
+> +
+> +	/* Add the MAX usage file */
+> +	cft = &h->cgroup_files[2];
+> +	snprintf(cft->name, MAX_CFTYPE_NAME, "%s.max_usage_in_bytes", buf);
+> +	cft->private = MEMFILE_PRIVATE(idx, RES_MAX_USAGE);
+> +	cft->trigger = hugetlb_cgroup_reset;
+> +	cft->read = hugetlb_cgroup_read;
+> +
+> +	/* Add the failcntfile */
+> +	cft = &h->cgroup_files[3];
+> +	snprintf(cft->name, MAX_CFTYPE_NAME, "%s.failcnt", buf);
+> +	cft->private  = MEMFILE_PRIVATE(idx, RES_FAILCNT);
+> +	cft->trigger  = hugetlb_cgroup_reset;
+> +	cft->read = hugetlb_cgroup_read;
+> +
+> +	/* NULL terminate the last cft */
+> +	cft = &h->cgroup_files[4];
+> +	memset(cft, 0, sizeof(*cft));
+> +
+> +	WARN_ON(cgroup_add_cftypes(&hugetlb_subsys, h->cgroup_files));
+> +
+> +	return 0;
+> +}
+> +
+>  struct cgroup_subsys hugetlb_subsys = {
+>  	.name = "hugetlb",
+>  	.create     = hugetlb_cgroup_create,
+> -- 
+> 1.7.10
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
