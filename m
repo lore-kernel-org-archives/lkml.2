@@ -1,67 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753775Ab2FNX5C (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 19:57:02 -0400
+	id S1753908Ab2FNX5X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 19:57:23 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:46571 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752157Ab2FNX4v (ORCPT
+	with ESMTP id S1753237Ab2FNX5T convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 19:56:51 -0400
-Date: Thu, 14 Jun 2012 16:56:48 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: [ 00/20] 3.0.35-stable review
-Message-ID: <20120614235648.GA6552@kroah.com>
+	Thu, 14 Jun 2012 19:57:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1339709672.3321.11.camel@lappy>
+References: <1339623535.3321.4.camel@lappy>
+	<20120614032005.GC3766@dhcp-172-17-108-109.mtv.corp.google.com>
+	<1339667440.3321.7.camel@lappy>
+	<CAE9FiQVJ-q3gQxfBqfRnG+RvEh2bZ2-Ki=CRUATmCKjJp8MNuw@mail.gmail.com>
+	<1339709672.3321.11.camel@lappy>
+Date: Thu, 14 Jun 2012 16:57:18 -0700
+X-Google-Sender-Auth: v_IpTUn_bx_0LXQYHTAcz3yA7qo
+Message-ID: <CAE9FiQVXxnjccSErjrZ9B-APGf5ZpKNovJwr5vNBMr1G2f8Y4Q@mail.gmail.com>
+Subject: Re: Early boot panic on machine with lots of memory
+From: Yinghai Lu <yinghai@kernel.org>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>, hpa@linux.intel.com,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.0.35 release.
-There are 20 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+On Thu, Jun 14, 2012 at 2:34 PM, Sasha Levin <levinsasha928@gmail.com> wrote:
+> On Thu, 2012-06-14 at 13:56 -0700, Yinghai Lu wrote:
+>> On Thu, Jun 14, 2012 at 2:50 AM, Sasha Levin <levinsasha928@gmail.com> wrote:
+>> > On Thu, 2012-06-14 at 12:20 +0900, Tejun Heo wrote:
+>> >> On Wed, Jun 13, 2012 at 11:38:55PM +0200, Sasha Levin wrote:
+>> >> > Hi all,
+>> >> >
+>> >> > I'm seeing the following when booting a KVM guest with 65gb of RAM, on latest linux-next.
+>> >> >
+>> >> > Note that it happens with numa=off.
+>> >> >
+>> >> > [    0.000000] BUG: unable to handle kernel paging request at ffff88102febd948
+>> >> > [    0.000000] IP: [<ffffffff836a6f37>] __next_free_mem_range+0x9b/0x155
+>> >>
+>> >> Can you map it back to the source line please?
+>> >
+>> > mm/memblock.c:583
+>> >
+>> >                        phys_addr_t r_start = ri ? r[-1].base + r[-1].size : 0;
+>> >  97:   85 d2                   test   %edx,%edx
+>> >  99:   74 08                   je     a3 <__next_free_mem_range+0xa3>
+>> >  9b:   49 8b 48 f0             mov    -0x10(%r8),%rcx
+>> >  9f:   49 03 48 e8             add    -0x18(%r8),%rcx
+>> >
+>> > It's the deref on 9b (r8=ffff88102febd958).
+>>
+>> that reserved.region is allocated by memblock.
+>>
+>> can you boot with "memblock=debug debug ignore_loglevel" and post
+>> whole boot log?
+>
+> Attached below. I've also noticed it doesn't always happen, but
+> increasing the vcpu count (to something around 254) makes it happen
+> almost every time.
+>
+...
+[    0.000000] memblock: reserved array is doubled to 512 at
+[0x102febc080-0x102febf07f]
+[    0.000000]    memblock_free: [0x0000102febf080-0x0000102fec0880]
+memblock_double_array+0x1b0/0x1e2
+[    0.000000] memblock_reserve: [0x0000102febc080-0x0000102febf080]
+memblock_double_array+0x1c5/0x1e2
 
-Responses should be made by Sat Jun 16 23:56:43 UTC 2012.
-Anything received after that time might be too late.
+the reserved regions get double two times to 512.
+....
+> [    0.000000]    memblock_free: [0x0000102febc080-0x0000102febf080] memblock_free_reserved_regions+0x37/0x39
+> [    0.000000] BUG: unable to handle kernel paging request at ffff88102febd948
+> [    0.000000] IP: [<ffffffff836a5774>] __next_free_mem_range+0x9b/0x155
+> [    0.000000] PGD 4826063 PUD cf67a067 PMD cf7fa067 PTE 800000102febd160
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.35-rc1.gz
-and the diffstat can be found below.
+that page table for them is
 
-thanks,
+[    0.000000] kernel direct mapping tables up to 0x102fffffff @ [mem
+0xc7e3e000-0xcfffffff]
+[    0.000000] memblock_reserve: [0x000000c7e3e000-0x000000cf7fb000]
+native_pagetable_reserve+0xc/0xe
 
-greg k-h
+only near by allocation is swiotlb.
 
--------------
- Makefile                                   |    4 +-
- arch/powerpc/kernel/module_32.c            |   11 +++---
- arch/x86/crypto/aesni-intel_asm.S          |    6 ++-
- arch/x86/kernel/cpu/mcheck/mce_amd.c       |   55 ++++++++++++++++++++++------
- drivers/acpi/video.c                       |    5 ++-
- drivers/char/agp/intel-agp.c               |    1 +
- drivers/char/agp/intel-agp.h               |    1 +
- drivers/hwmon/fam15h_power.c               |    8 ++--
- drivers/net/can/c_can/c_can.c              |   16 ++++----
- drivers/net/can/c_can/c_can.h              |    1 +
- drivers/net/e1000/e1000.h                  |    2 +
- drivers/net/e1000/e1000_main.c             |   18 ++++-----
- drivers/net/usb/sierra_net.c               |   14 +++++--
- drivers/net/wireless/iwlwifi/iwl-agn-sta.c |    2 +-
- fs/fuse/dir.c                              |    1 +
- fs/fuse/fuse_i.h                           |    3 ++
- fs/fuse/inode.c                            |   17 ++++++++-
- kernel/sched.c                             |    9 ++---
- lib/btree.c                                |    4 +-
- mm/hugetlb.c                               |   29 ++++++++++++---
- mm/vmalloc.c                               |   11 +++---
- net/mac80211/iface.c                       |   12 ++++++
- net/mac80211/offchannel.c                  |   16 ++++++++
- net/wireless/util.c                        |   19 +++++++++-
- 24 files changed, 196 insertions(+), 69 deletions(-)
+[    0.000000] __ex_table already sorted, skipping sort
+[    0.000000] memblock_reserve: [0x000000c3e3e000-0x000000c7e3e000]
+__alloc_memory_core_early+0x5c/0x73
+...
+[    0.000000] memblock_reserve: [0x000000cfff8000-0x000000d0000000]
+__alloc_memory_core_early+0x5c/0x73
+[    0.000000] Checking aperture...
 
+so the memblock allocation is ok...
+
+can you please boot with "memtest" to see if there is any memory problem?
+
+Thanks
+
+Yinghai
