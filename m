@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756839Ab2FOAHH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 20:07:07 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56620 "EHLO
+	id S1756800Ab2FOAHo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 20:07:44 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45919 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756701Ab2FNX7h (ORCPT
+	with ESMTP id S1756727Ab2FNX7b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 19:59:37 -0400
-Message-Id: <20120614235625.344806126@linuxfoundation.org>
+	Thu, 14 Jun 2012 19:59:31 -0400
+Message-Id: <20120614235625.157134606@linuxfoundation.org>
 User-Agent: quilt/0.60-20.1
-Date: Thu, 14 Jun 2012 16:56:39 -0700
+Date: Thu, 14 Jun 2012 16:56:37 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Sebastian Kemper <sebastian_ml@gmx.net>,
-        Johannes Berg <johannes.berg@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 16/42] iwlwifi: disable WoWLAN if !CONFIG_PM_SLEEP
+        alan@lxorguk.ukuu.org.uk, Thomas Hellstrom <thellstrom@vmware.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jerome Glisse <jglisse@redhat.com>, Dave Airlie <airlied@redhat.com>
+Subject: [ 14/42] drm/ttm: Fix buffer object metadata accounting regression v2
 In-Reply-To: <20120614235636.GA5275@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,41 +26,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Thomas Hellstrom <thellstrom@vmware.com>
 
-commit fcb6ff5e2cb83e1de10631f6621f45ca3401bf61 upstream.
+commit a393c730ab69617c3291a3b0b2a228c9be2fc28c upstream.
 
-If CONFIG_PM_SLEEP is disabled, then iwlwifi doesn't
-support suspend/resume handlers and thus mac80211
-(correctly) refuses advertising WoWLAN. Disable
-WoWLAN in the driver in this case.
+A regression was introduced in the 3.3 rc series, commit
+"drm/ttm: simplify memory accounting for ttm user v2",
+causing the metadata of buffer objects created using the ttm_bo_create()
+function to be accounted twice.
+That causes massive leaks with the vmwgfx driver running for example
+SpecViewperf Catia-03 test 2, eventually killing the app.
 
-Reported-by: Sebastian Kemper <sebastian_ml@gmx.net>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Furthermore, the same commit introduces a regression where
+metadata accounting is leaked if a buffer object is
+initialized with an illegal size. This is also fixed with this commit.
+
+v2: Fixed an error path and removed an unused variable.
+
+Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Jerome Glisse <jglisse@redhat.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/iwl-mac80211.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/gpu/drm/ttm/ttm_bo.c |   13 +++----------
+ 1 file changed, 3 insertions(+), 10 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/iwl-mac80211.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-mac80211.c
-@@ -196,6 +196,7 @@ int iwlagn_mac_setup_register(struct iwl
- 			    WIPHY_FLAG_DISABLE_BEACON_HINTS |
- 			    WIPHY_FLAG_IBSS_RSN;
- 
-+#ifdef CONFIG_PM_SLEEP
- 	if (priv->fw->img[IWL_UCODE_WOWLAN].sec[0].len &&
- 	    trans(priv)->ops->wowlan_suspend &&
- 	    device_can_wakeup(trans(priv)->dev)) {
-@@ -214,6 +215,7 @@ int iwlagn_mac_setup_register(struct iwl
- 		hw->wiphy->wowlan.pattern_max_len =
- 					IWLAGN_WOWLAN_MAX_PATTERN_LEN;
+--- a/drivers/gpu/drm/ttm/ttm_bo.c
++++ b/drivers/gpu/drm/ttm/ttm_bo.c
+@@ -1193,6 +1193,7 @@ int ttm_bo_init(struct ttm_bo_device *bd
+ 			(*destroy)(bo);
+ 		else
+ 			kfree(bo);
++		ttm_mem_global_free(mem_glob, acc_size);
+ 		return -EINVAL;
  	}
-+#endif
+ 	bo->destroy = destroy;
+@@ -1294,22 +1295,14 @@ int ttm_bo_create(struct ttm_bo_device *
+ 			struct ttm_buffer_object **p_bo)
+ {
+ 	struct ttm_buffer_object *bo;
+-	struct ttm_mem_global *mem_glob = bdev->glob->mem_glob;
+ 	size_t acc_size;
+ 	int ret;
  
- 	if (iwlagn_mod_params.power_save)
- 		hw->wiphy->flags |= WIPHY_FLAG_PS_ON_BY_DEFAULT;
+-	acc_size = ttm_bo_acc_size(bdev, size, sizeof(struct ttm_buffer_object));
+-	ret = ttm_mem_global_alloc(mem_glob, acc_size, false, false);
+-	if (unlikely(ret != 0))
+-		return ret;
+-
+ 	bo = kzalloc(sizeof(*bo), GFP_KERNEL);
+-
+-	if (unlikely(bo == NULL)) {
+-		ttm_mem_global_free(mem_glob, acc_size);
++	if (unlikely(bo == NULL))
+ 		return -ENOMEM;
+-	}
+ 
++	acc_size = ttm_bo_acc_size(bdev, size, sizeof(struct ttm_buffer_object));
+ 	ret = ttm_bo_init(bdev, bo, size, type, placement, page_alignment,
+ 				buffer_start, interruptible,
+ 				persistent_swap_storage, acc_size, NULL);
 
 
