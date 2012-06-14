@@ -1,71 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756129Ab2FNNmx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 09:42:53 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:59154 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756028Ab2FNNmw (ORCPT
+	id S1756146Ab2FNNoS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 09:44:18 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:62114 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755992Ab2FNNoQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 09:42:52 -0400
-Date: Thu, 14 Jun 2012 15:42:44 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@ti.com>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "Luck,Tony" <tony.luck@intel.com>
-Subject: Re: [RFC GIT PULL] nohz: Basic cputime accounting for adaptive
- tickless
-Message-ID: <20120614134238.GD16848@somewhere>
-References: <1339604397-8758-1-git-send-email-fweisbec@gmail.com>
- <1339664829.2559.14.camel@twins>
- <20120614111241.GA16848@somewhere>
- <20120614111638.GA16676@gmail.com>
- <alpine.LFD.2.02.1206141321010.3086@ionos>
- <20120614112241.GB16848@somewhere>
- <20120614144815.1401af49@de.ibm.com>
+	Thu, 14 Jun 2012 09:44:16 -0400
+Message-ID: <4FD9EAAC.1060100@gmail.com>
+Date: Thu, 14 Jun 2012 09:44:12 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120614144815.1401af49@de.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Wanpeng Li <liwp.linux@gmail.com>
+CC: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
+        trivial@kernel.org, Gavin Shan <shangw@linux.vnet.ibm.com>,
+        kosaki.motohiro@gmail.com
+Subject: Re: [PATCH] mm: complement page reclaim comment
+References: <1339680158-26657-1-git-send-email-liwp.linux@gmail.com>
+In-Reply-To: <1339680158-26657-1-git-send-email-liwp.linux@gmail.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 14, 2012 at 02:48:15PM +0200, Martin Schwidefsky wrote:
-> On Thu, 14 Jun 2012 13:22:45 +0200
-> Frederic Weisbecker <fweisbec@gmail.com> wrote:
+(6/14/12 9:22 AM), Wanpeng Li wrote:
+> From: Wanpeng Li<liwp@linux.vnet.ibm.com>
 > 
-> > On Thu, Jun 14, 2012 at 01:21:23PM +0200, Thomas Gleixner wrote:
-> > > On Thu, 14 Jun 2012, Ingo Molnar wrote:
-> > > > * Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> > > > > You're right, I should have looked into CONFIG_VIRT_CPU_ACCOUNTING sooner
-> > > > > and see if I can reuse it.
-> > > > > 
-> > > > > I'll try something with that.
-> > > > 
-> > > > Maybe sanitize all the variants under a single set of 
-> > > > wrappers/callbacks?
-> > > 
-> > > Yes, please!
-> > 
-> > Sure, I'm working in it.
->  
-> Please keep me in the loop, I want to avoid that things break on s390. Thanks.
+> Signed-off-by: Wanpeng Li<liwp.linux@gmail.com>
+> ---
+>   mm/vmscan.c |    1 +
+>   1 file changed, 1 insertion(+)
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index ed823df..603c96f 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -3203,6 +3203,7 @@ int zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
+>    * Reasons page might not be evictable:
+>    * (1) page's mapping marked unevictable
+>    * (2) page is part of an mlocked VMA
+> + * (3) page mapped into SHM_LOCK'd shared memory regions
 
-Do you have any idea why s390 counts idle time from asm deep in the idle code
-rather than just hooking in account_system_vtime() like ppc or ia64?
+This is one of "marked unevictable".
+
+
+>    *
+>    */
+>   int page_evictable(struct page *page, struct vm_area_struct *vma)
+
