@@ -1,75 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755341Ab2FNIyj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 04:54:39 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:39131 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752987Ab2FNIyh (ORCPT
+	id S1755315Ab2FNI4U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 04:56:20 -0400
+Received: from mga02.intel.com ([134.134.136.20]:65460 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754981Ab2FNI4S convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 04:54:37 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FD9A625.1050300@jp.fujitsu.com>
-Date: Thu, 14 Jun 2012 17:51:49 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Thu, 14 Jun 2012 04:56:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="157477088"
+From: "Liu, Jinsong" <jinsong.liu@intel.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: xen/mce - mcelog at 100% cpu
+Thread-Topic: xen/mce - mcelog at 100% cpu
+Thread-Index: AQHNSZLddQXy2gd5YkW4phd9182UzZb5g2gw
+Date: Thu, 14 Jun 2012 08:56:11 +0000
+Message-ID: <DE8DF0795D48FD4CA783C40EC829233523183E@SHSMSX101.ccr.corp.intel.com>
+References: <DE8DF0795D48FD4CA783C40EC8292335228748@SHSMSX101.ccr.corp.intel.com>
+ <20120612124015.GB559@phenom.dumpdata.com>
+ <20120613182458.GA5813@phenom.dumpdata.com>
+In-Reply-To: <20120613182458.GA5813@phenom.dumpdata.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: kosaki.motohiro@gmail.com
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        akpm@linux-foundation.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Nick Piggin <npiggin@gmail.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [resend][PATCH] mm, vmscan: fix do_try_to_free_pages() livelock
-References: <1339661592-3915-1-git-send-email-kosaki.motohiro@gmail.com>
-In-Reply-To: <1339661592-3915-1-git-send-email-kosaki.motohiro@gmail.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/06/14 17:13), kosaki.motohiro@gmail.com wrote:
-> From: KOSAKI Motohiro<kosaki.motohiro@jp.fujitsu.com>
+Konrad Rzeszutek Wilk wrote:
+> On Tue, Jun 12, 2012 at 08:40:15AM -0400, Konrad Rzeszutek Wilk wrote:
+>> On Tue, Jun 12, 2012 at 07:51:03AM +0000, Liu, Jinsong wrote:
+>>>> From aa2ce7440f16002266dc8464f749992d0c8ac0e5 Mon Sep 17 00:00:00
+>>>> 2001 
+>>> From: Liu, Jinsong <jinsong.liu@intel.com>
+>>> Date: Tue, 12 Jun 2012 23:11:16 +0800
+>>> Subject: [PATCH] xen/mce: schedule a workqueue to avoid sleep in
+>>> atomic context 
+>>> 
+>>> copy_to_user might sleep and print a stack trace if it is executed
+>>> in an atomic spinlock context.
+>>> 
+>>> This patch schedule a workqueue for IRQ handler to poll the data,
+>>> and use mutex instead of spinlock, so copy_to_user sleep in atomic
+>>> context would not occur.
+>> 
+>> Ah much better. Usually one also includes the report of what the
+>> stack trace was. So I've added that in.
 > 
-> Currently, do_try_to_free_pages() can enter livelock. Because of,
-> now vmscan has two conflicted policies.
+> So another bug which is that mcelog is spinning at 100% CPU (and only
+> under Xen).
 > 
-> 1) kswapd sleep when it couldn't reclaim any page when reaching
->     priority 0. This is because to avoid kswapd() infinite
->     loop. That said, kswapd assume direct reclaim makes enough
->     free pages to use either regular page reclaim or oom-killer.
->     This logic makes kswapd ->  direct-reclaim dependency.
-> 2) direct reclaim continue to reclaim without oom-killer until
->     kswapd turn on zone->all_unreclaimble. This is because
->     to avoid too early oom-kill.
->     This logic makes direct-reclaim ->  kswapd dependency.
+> It seems to be doing:
 > 
-> In worst case, direct-reclaim may continue to page reclaim forever
-> when kswapd sleeps forever.
+> ppoll([{fd=4, events=POLLIN}, {fd=3, events=POLLIN}], 2, NULL, [], 8)
+> = 1 ([{fd=3, revents=POLLIN}]) read(3, "", 2816)                     
+> = 0 
+> ppoll([{fd=4, events=POLLIN}, {fd=3, events=POLLIN}], 2, NULL, [], 8)
+> = 1 ([{fd=3, revents=POLLIN}]) read(3, "", 2816)
 > 
-> We can't turn on zone->all_unreclaimable from direct reclaim path
-> because direct reclaim path don't take any lock and this way is racy.
-> 
-> Thus this patch removes zone->all_unreclaimable field completely and
-> recalculates zone reclaimable state every time.
-> 
-> Note: we can't take the idea that direct-reclaim see zone->pages_scanned
-> directly and kswapd continue to use zone->all_unreclaimable. Because, it
-> is racy. commit 929bea7c71 (vmscan: all_unreclaimable() use
-> zone->all_unreclaimable as a name) describes the detail.
-> 
-> Reported-by: Aaditya Kumar<aaditya.kumar.30@gmail.com>
-> Reported-by: Ying Han<yinghan@google.com>
-> Cc: Nick Piggin<npiggin@gmail.com>
-> Acked-by: Rik van Riel<riel@redhat.com>
-> Cc: Michal Hocko<mhocko@suse.cz>
-> Cc: Johannes Weiner<hannes@cmpxchg.org>
-> Cc: Mel Gorman<mel@csn.ul.ie>
-> Cc: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Minchan Kim<minchan.kim@gmail.com>
-> Signed-off-by: KOSAKI Motohiro<kosaki.motohiro@jp.fujitsu.com>
+> constantly.
 
-I like this.
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+I will debug it. I have try at my platform, but fail to reproduce it. (You still use the config you send me last time, right?)
+Would you tell me your step?
 
+Thanks,
+Jinsong
