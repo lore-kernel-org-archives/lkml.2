@@ -1,57 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755814Ab2FNMpD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 08:45:03 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:6790 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753881Ab2FNMpA (ORCPT
+	id S1755991Ab2FNMu0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 08:50:26 -0400
+Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:53054 "EHLO
+	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755975Ab2FNMuY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 08:45:00 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 14 Jun 2012 05:44:59 -0700
-Message-ID: <4FD9DAAC.5000709@nvidia.com>
-Date: Thu, 14 Jun 2012 18:05:56 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "khali@linux-fr.org" <khali@linux-fr.org>,
-        "w.sang@pengutronix.de" <w.sang@pengutronix.de>,
-        "ben-linux@fluff.org" <ben-linux@fluff.org>,
-        "olof@lixom.net" <olof@lixom.net>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH V3 1/4] i2c: tegra: make sure register writes completes
-References: <1339582359-7911-1-git-send-email-ldewangan@nvidia.com> <1339582359-7911-2-git-send-email-ldewangan@nvidia.com> <4FD8B7FC.3060708@wwwdotorg.org>
-In-Reply-To: <4FD8B7FC.3060708@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	Thu, 14 Jun 2012 08:50:24 -0400
+Date: Thu, 14 Jun 2012 14:48:15 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@ti.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "Luck,Tony" <tony.luck@intel.com>
+Subject: Re: [RFC GIT PULL] nohz: Basic cputime accounting for adaptive
+ tickless
+Message-ID: <20120614144815.1401af49@de.ibm.com>
+In-Reply-To: <20120614112241.GB16848@somewhere>
+References: <1339604397-8758-1-git-send-email-fweisbec@gmail.com>
+	<1339664829.2559.14.camel@twins>
+	<20120614111241.GA16848@somewhere>
+	<20120614111638.GA16676@gmail.com>
+	<alpine.LFD.2.02.1206141321010.3086@ionos>
+	<20120614112241.GB16848@somewhere>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+x-cbid: 12061412-3548-0000-0000-0000023920CF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 13 June 2012 09:25 PM, Stephen Warren wrote:
-> On 06/13/2012 04:12 AM, Laxman Dewangan wrote:
-> @@ -165,6 +165,10 @@ static void i2c_writel(struct tegra_i2c_dev 
-> *i2c_dev, u32 val,
->>   	unsigned long reg)
->>   {
->>   	writel(val, i2c_dev->base + tegra_i2c_reg_addr(i2c_dev, reg));
->> +
->> +	/* Read back register to make sure that register writes completed */
->> +	if (reg != I2C_TX_FIFO)
->> +		readl(i2c_dev->base + tegra_i2c_reg_addr(i2c_dev, reg));
-> I guess that's fine, but it sure does seem rather heavy-weight. Don't
-> you only need to do the readback if you just wrote to the IRQ status or
-> mask registers, rather than if you wrote to /any/ register other than
-> the FIFO?
+On Thu, 14 Jun 2012 13:22:45 +0200
+Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-That's what my second patch but based on your earlier review comment, I 
-did for every register.
+> On Thu, Jun 14, 2012 at 01:21:23PM +0200, Thomas Gleixner wrote:
+> > On Thu, 14 Jun 2012, Ingo Molnar wrote:
+> > > * Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > > > You're right, I should have looked into CONFIG_VIRT_CPU_ACCOUNTING sooner
+> > > > and see if I can reuse it.
+> > > > 
+> > > > I'll try something with that.
+> > > 
+> > > Maybe sanitize all the variants under a single set of 
+> > > wrappers/callbacks?
+> > 
+> > Yes, please!
+> 
+> Sure, I'm working in it.
+ 
+Please keep me in the loop, I want to avoid that things break on s390. Thanks.
 
-I think it will not matter much as we dont write all register with every 
-transaction, only during initialization.
-Then for each transfer we write manly on Tx fifo and interrupt 
-mask/status register and hence not too much overweight.
+-- 
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
 
