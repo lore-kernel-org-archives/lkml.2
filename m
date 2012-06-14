@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757168Ab2FOACc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 20:02:32 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45919 "EHLO
+	id S1757002Ab2FOACz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 20:02:55 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56620 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757037Ab2FOAAu (ORCPT
+	with ESMTP id S1757003Ab2FOAAo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 20:00:50 -0400
-Message-Id: <20120614235627.262959505@linuxfoundation.org>
+	Thu, 14 Jun 2012 20:00:44 -0400
+Message-Id: <20120614235627.084485130@linuxfoundation.org>
 User-Agent: quilt/0.60-20.1
-Date: Thu, 14 Jun 2012 16:57:01 -0700
+Date: Thu, 14 Jun 2012 16:56:59 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jerome Glisse <jglisse@redhat.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 38/42] drm/radeon: fix tiling and command stream checking on evergreen v3
+        alan@lxorguk.ukuu.org.uk, Alan Cox <alan@linux.intel.com>,
+        Matthew Garrett <mjg@redhat.com>, Len Brown <len.brown@intel.com>
+Subject: [ 36/42] acpi_video: fix leaking PCI references
 In-Reply-To: <20120614235636.GA5275@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,174 +25,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jerome Glisse <jglisse@redhat.com>
+From: Alan Cox <alan@linux.intel.com>
 
-commit d26098759cf6d32148649c165f87a7590bc25b89 upstream.
+commit cfb46f433a4da97c31780e08a259fac2cb6bd61f upstream.
 
-Fix regresson since the introduction of command stream checking on
-evergreen (thread referenced below). Issue is cause by ddx allocating
-bo with formula width*height*bpp while programming the GPU command
-stream with ALIGN(height, 8). In some case (where page alignment does
-not hide the extra size bo should be according to height alignment)
-the kernel will reject the command stream.
-
-This patch reprogram the command stream to slice - 1 (slice is
-a derivative value from height) which avoid rejecting the command
-stream while keeping the value of command stream checking from a
-security point of view.
-
-This patch also fix wrong computation of layer size for 2D tiled
-surface. Which should fix issue when 2D color tiling is enabled.
-This dump the radeon KMS_DRIVER_MINOR so userspace can know if
-they are on a fixed kernel or not.
-
-https://lkml.org/lkml/2012/6/3/80
-https://bugs.freedesktop.org/show_bug.cgi?id=50892
-https://bugs.freedesktop.org/show_bug.cgi?id=50857
-
-!!! STABLE need a custom version of this patch for 3.4 !!!
-
-v2: actually bump the minor version and add comment about stable
-v3: do compute the height the ddx was trying to use
-
-[airlied: drop left over debug]
-
-Signed-off-by: Jerome Glisse <jglisse@redhat.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Acked-by: Matthew Garrett <mjg@redhat.com>
+Signed-off-by: Len Brown <len.brown@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/evergreen_cs.c |   49 +++++++++++++++++++++++++++++++---
- drivers/gpu/drm/radeon/radeon_drv.c   |    3 +-
- 2 files changed, 47 insertions(+), 5 deletions(-)
+ drivers/acpi/video.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/radeon/evergreen_cs.c
-+++ b/drivers/gpu/drm/radeon/evergreen_cs.c
-@@ -52,6 +52,7 @@ struct evergreen_cs_track {
- 	u32			cb_color_view[12];
- 	u32			cb_color_pitch[12];
- 	u32			cb_color_slice[12];
-+	u32			cb_color_slice_idx[12];
- 	u32			cb_color_attrib[12];
- 	u32			cb_color_cmask_slice[8];/* unused */
- 	u32			cb_color_fmask_slice[8];/* unused */
-@@ -127,12 +128,14 @@ static void evergreen_cs_track_init(stru
- 		track->cb_color_info[i] = 0;
- 		track->cb_color_view[i] = 0xFFFFFFFF;
- 		track->cb_color_pitch[i] = 0;
--		track->cb_color_slice[i] = 0;
-+		track->cb_color_slice[i] = 0xfffffff;
-+		track->cb_color_slice_idx[i] = 0;
- 	}
- 	track->cb_target_mask = 0xFFFFFFFF;
- 	track->cb_shader_mask = 0xFFFFFFFF;
- 	track->cb_dirty = true;
+--- a/drivers/acpi/video.c
++++ b/drivers/acpi/video.c
+@@ -1745,6 +1745,7 @@ static int acpi_video_bus_remove(struct
  
-+	track->db_depth_slice = 0xffffffff;
- 	track->db_depth_view = 0xFFFFC000;
- 	track->db_depth_size = 0xFFFFFFFF;
- 	track->db_depth_control = 0xFFFFFFFF;
-@@ -250,10 +253,9 @@ static int evergreen_surface_check_2d(st
+ static int __init intel_opregion_present(void)
  {
- 	struct evergreen_cs_track *track = p->track;
- 	unsigned palign, halign, tileb, slice_pt;
-+	unsigned mtile_pr, mtile_ps, mtileb;
- 
- 	tileb = 64 * surf->bpe * surf->nsamples;
--	palign = track->group_size / (8 * surf->bpe * surf->nsamples);
--	palign = MAX(8, palign);
- 	slice_pt = 1;
- 	if (tileb > surf->tsplit) {
- 		slice_pt = tileb / surf->tsplit;
-@@ -262,7 +264,10 @@ static int evergreen_surface_check_2d(st
- 	/* macro tile width & height */
- 	palign = (8 * surf->bankw * track->npipes) * surf->mtilea;
- 	halign = (8 * surf->bankh * surf->nbanks) / surf->mtilea;
--	surf->layer_size = surf->nbx * surf->nby * surf->bpe * slice_pt;
-+	mtileb = (palign / 8) * (halign / 8) * tileb;;
-+	mtile_pr = surf->nbx / palign;
-+	mtile_ps = (mtile_pr * surf->nby) / halign;
-+	surf->layer_size = mtile_ps * mtileb * slice_pt;
- 	surf->base_align = (palign / 8) * (halign / 8) * tileb;
- 	surf->palign = palign;
- 	surf->halign = halign;
-@@ -434,6 +439,39 @@ static int evergreen_cs_track_validate_c
- 
- 	offset += surf.layer_size * mslice;
- 	if (offset > radeon_bo_size(track->cb_color_bo[id])) {
-+		/* old ddx are broken they allocate bo with w*h*bpp but
-+		 * program slice with ALIGN(h, 8), catch this and patch
-+		 * command stream.
-+		 */
-+		if (!surf.mode) {
-+			volatile u32 *ib = p->ib->ptr;
-+			unsigned long tmp, nby, bsize, size, min = 0;
-+
-+			/* find the height the ddx wants */
-+			if (surf.nby > 8) {
-+				min = surf.nby - 8;
-+			}
-+			bsize = radeon_bo_size(track->cb_color_bo[id]);
-+			tmp = track->cb_color_bo_offset[id] << 8;
-+			for (nby = surf.nby; nby > min; nby--) {
-+				size = nby * surf.nbx * surf.bpe * surf.nsamples;
-+				if ((tmp + size * mslice) <= bsize) {
-+					break;
-+				}
-+			}
-+			if (nby > min) {
-+				surf.nby = nby;
-+				slice = ((nby * surf.nbx) / 64) - 1;
-+				if (!evergreen_surface_check(p, &surf, "cb")) {
-+					/* check if this one works */
-+					tmp += surf.layer_size * mslice;
-+					if (tmp <= bsize) {
-+						ib[track->cb_color_slice_idx[id]] = slice;
-+						goto old_ddx_ok;
-+					}
-+				}
-+			}
-+		}
- 		dev_warn(p->dev, "%s:%d cb[%d] bo too small (layer size %d, "
- 			 "offset %d, max layer %d, bo size %ld, slice %d)\n",
- 			 __func__, __LINE__, id, surf.layer_size,
-@@ -446,6 +484,7 @@ static int evergreen_cs_track_validate_c
- 			surf.tsplit, surf.mtilea);
- 		return -EINVAL;
++	int i915 = 0;
+ #if defined(CONFIG_DRM_I915) || defined(CONFIG_DRM_I915_MODULE)
+ 	struct pci_dev *dev = NULL;
+ 	u32 address;
+@@ -1757,10 +1758,10 @@ static int __init intel_opregion_present
+ 		pci_read_config_dword(dev, 0xfc, &address);
+ 		if (!address)
+ 			continue;
+-		return 1;
++		i915 = 1;
  	}
-+old_ddx_ok:
- 
- 	return 0;
+ #endif
+-	return 0;
++	return i915;
  }
-@@ -1532,6 +1571,7 @@ static int evergreen_cs_check_reg(struct
- 	case CB_COLOR7_SLICE:
- 		tmp = (reg - CB_COLOR0_SLICE) / 0x3c;
- 		track->cb_color_slice[tmp] = radeon_get_ib_value(p, idx);
-+		track->cb_color_slice_idx[tmp] = idx;
- 		track->cb_dirty = true;
- 		break;
- 	case CB_COLOR8_SLICE:
-@@ -1540,6 +1580,7 @@ static int evergreen_cs_check_reg(struct
- 	case CB_COLOR11_SLICE:
- 		tmp = ((reg - CB_COLOR8_SLICE) / 0x1c) + 8;
- 		track->cb_color_slice[tmp] = radeon_get_ib_value(p, idx);
-+		track->cb_color_slice_idx[tmp] = idx;
- 		track->cb_dirty = true;
- 		break;
- 	case CB_COLOR0_ATTRIB:
---- a/drivers/gpu/drm/radeon/radeon_drv.c
-+++ b/drivers/gpu/drm/radeon/radeon_drv.c
-@@ -57,9 +57,10 @@
-  *   2.13.0 - virtual memory support, streamout
-  *   2.14.0 - add evergreen tiling informations
-  *   2.15.0 - add max_pipes query
-+ *   2.16.0 - fix evergreen 2D tiled surface calculation
-  */
- #define KMS_DRIVER_MAJOR	2
--#define KMS_DRIVER_MINOR	15
-+#define KMS_DRIVER_MINOR	16
- #define KMS_DRIVER_PATCHLEVEL	0
- int radeon_driver_load_kms(struct drm_device *dev, unsigned long flags);
- int radeon_driver_unload_kms(struct drm_device *dev);
+ 
+ int acpi_video_register(void)
 
 
