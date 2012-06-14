@@ -1,42 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756353Ab2FNS3f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 14:29:35 -0400
-Received: from hera.cwi.nl ([192.16.191.8]:61444 "EHLO hera.cwi.nl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755409Ab2FNS3d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 14:29:33 -0400
-Message-ID: <4FDA2D7E.8010109@cwi.nl>
-Date: Thu, 14 Jun 2012 19:29:18 +0100
-From: "Wouter M. Koolen" <W.M.Koolen-Wijkstra@cwi.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
+	id S1756470Ab2FNSb0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 14:31:26 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:23614 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755484Ab2FNSbZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 14:31:25 -0400
+Date: Thu, 14 Jun 2012 21:31:13 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: liplianin@me.by
+Cc: linux-kernel@vger.kernel.org
+Subject: re: [media] Altera FPGA firmware download module
+Message-ID: <20120614183113.GB6383@elgon.mountain>
 MIME-Version: 1.0
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-CC: "Wouter M. Koolen" <W.M.Koolen-Wijkstra@cwi.nl>,
-        Dave Airlie <airlied@gmail.com>, intergalactic.anonymous@gmail.com,
-        len.brown@intel.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        "Barnes, Jesse" <jbarnes@virtuousgeek.org>,
-        "Wilson, Chris" <chris.wilson@intel.com>
-Subject: Re: [3.4 regression] [bisected] DisplayPort fails to come on
-References: <4FD9E69A.4090708@cwi.nl> <CAPM=9tzL-TyDLKWdmCdi5d6PzQTs3sTLnqnLG_s7K2h9WNOEvQ@mail.gmail.com> <CAKMK7uGokt5cW0R+LKXRmE_kecqmnv4Zgy-WiSZA-GPP8htE-A@mail.gmail.com> <4FD9F9B0.9030204@cwi.nl> <4FDA1C03.3020404@cwi.nl> <CAKMK7uESK+CPkXVA5wFjL5B_38AAFnZLX6pY2aRfAYyWZAZ5nA@mail.gmail.com>
-In-Reply-To: <CAKMK7uESK+CPkXVA5wFjL5B_38AAFnZLX6pY2aRfAYyWZAZ5nA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/14/2012 06:27 PM, Daniel Vetter wrote:
-> Well, can you revert this patch (or just replace the 5 with 3 in the
-> code) on top of latest 3.4.x and test whether this is indeed the cause
-> of your regression? Just to make sure that we have the right culprit.
-Hi Daniel,
+Hello Igor M. Liplianin,
 
-Yes, 3.4.2 with 092945e11c5b84f66dd08f0b87fb729715d377bc  does enable 
-the screen.
+The patch fa766c9be58b: "[media] Altera FPGA firmware download 
+module" from Jan 25, 2011, leads to the following warning:
+drivers/misc/altera-stapl/altera.c:2204 altera_get_note()
+	 error: strlcpy() 'key' too small (33 vs 256)
 
-With kind regards,
+drivers/misc/altera-stapl/altera.c
+  2200                  if ((i >= 0) && (i < note_count)) {
+  2201                          status = 0;
+  2202  
+  2203                          if (key != NULL)
+  2204                                  strlcpy(key, &p[note_strings +
+  2205                                                  get_unaligned_be32(
+  2206                                                  &p[note_table + (8 * i)])],
+  2207                                          length);
+  2208  
+  2209                          if (value != NULL)
+  2210                                  strlcpy(value, &p[note_strings +
+  2211                                                  get_unaligned_be32(
+  2212                                                  &p[note_table + (8 * i) + 4])],
+  2213                                          length);
+  2214  
+  2215                          *offset = i + 1;
 
-Wouter
+The problem is that strlcpy() is using 256 as the size of "key" but
+actually it is the size of "value".  Except that "value" is 257 bytes so
+it is an off by one of the size of "value".
+
+It probably doesn't cause a problem, but it upsets the static checkers
+and it's pretty ugly.
+
+regards,
+dan carpenter
+
