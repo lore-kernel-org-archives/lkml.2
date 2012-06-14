@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756302Ab2FNX6X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 19:58:23 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56620 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755640Ab2FNX6S (ORCPT
+	id S1756391Ab2FNX62 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 19:58:28 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45611 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755358Ab2FNX6Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 19:58:18 -0400
-Message-Id: <20120614235645.255779542@linuxfoundation.org>
+	Thu, 14 Jun 2012 19:58:24 -0400
+Message-Id: <20120614235645.420656608@linuxfoundation.org>
 User-Agent: quilt/0.60-20.1
-Date: Thu, 14 Jun 2012 16:56:55 -0700
+Date: Thu, 14 Jun 2012 16:56:57 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Andre Przywara <andre.przywara@amd.com>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Tim Gardner <tim.gardner@canonical.com>
-Subject: [ 11/20] hwmon: (fam15h_power) Increase output resolution
+        alan@lxorguk.ukuu.org.uk, Dimitri Sivanich <sivanich@sgi.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [ 13/20] sched: Fix the relax_domain_level boot parameter
 In-Reply-To: <20120614235648.GA6552@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,54 +26,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andre Przywara <andre.przywara@amd.com>
+From: Dimitri Sivanich <sivanich@sgi.com>
 
-commit 941a956b0e387b21f385f486c34ef67576775cfc upstream.
+commit a841f8cef4bb124f0f5563314d0beaf2e1249d72 upstream.
 
-On high CPU load the accumulating values in the running_avg_cap
-register are very low (below 10), so averaging them too early leads
-to unnecessary poor output resolution. Since we pretend to output
-micro-Watt we better keep all the bits we have as long as possible.
+It does not get processed because sched_domain_level_max is 0 at the
+time that setup_relax_domain_level() is run.
 
-Signed-off-by: Andre Przywara <andre.przywara@amd.com>
-Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
-Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+Simply accept the value as it is, as we don't know the value of
+sched_domain_level_max until sched domain construction is completed.
+
+Fix sched_relax_domain_level in cpuset.  The build_sched_domain() routine calls
+the set_domain_attribute() routine prior to setting the sd->level, however,
+the set_domain_attribute() routine relies on the sd->level to decide whether
+idle load balancing will be off/on.
+
+Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/20120605184436.GA15668@sgi.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/fam15h_power.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ kernel/sched.c |    9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
---- a/drivers/hwmon/fam15h_power.c
-+++ b/drivers/hwmon/fam15h_power.c
-@@ -61,14 +61,14 @@ static ssize_t show_power(struct device
- 				  REG_TDP_RUNNING_AVERAGE, &val);
- 	running_avg_capture = (val >> 4) & 0x3fffff;
- 	running_avg_capture = sign_extend32(running_avg_capture, 21);
--	running_avg_range = val & 0xf;
-+	running_avg_range = (val & 0xf) + 1;
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -7220,11 +7220,8 @@ int sched_domain_level_max;
  
- 	pci_bus_read_config_dword(f4->bus, PCI_DEVFN(PCI_SLOT(f4->devfn), 5),
- 				  REG_TDP_LIMIT3, &val);
+ static int __init setup_relax_domain_level(char *str)
+ {
+-	unsigned long val;
+-
+-	val = simple_strtoul(str, NULL, 0);
+-	if (val < sched_domain_level_max)
+-		default_relax_domain_level = val;
++	if (kstrtoint(str, 0, &default_relax_domain_level))
++		pr_warn("Unable to set relax_domain_level\n");
  
- 	tdp_limit = val >> 16;
--	curr_pwr_watts = tdp_limit + data->base_tdp -
--		(s32)(running_avg_capture >> (running_avg_range + 1));
-+	curr_pwr_watts = (tdp_limit + data->base_tdp) << running_avg_range;
-+	curr_pwr_watts -= running_avg_capture;
- 	curr_pwr_watts *= data->tdp_to_watts;
- 
- 	/*
-@@ -78,7 +78,7 @@ static ssize_t show_power(struct device
- 	 * scaling factor 1/(2^16).  For conversion we use
- 	 * (10^6)/(2^16) = 15625/(2^10)
- 	 */
--	curr_pwr_watts = (curr_pwr_watts * 15625) >> 10;
-+	curr_pwr_watts = (curr_pwr_watts * 15625) >> (10 + running_avg_range);
- 	return sprintf(buf, "%u\n", (unsigned int) curr_pwr_watts);
+ 	return 1;
  }
- static DEVICE_ATTR(power1_input, S_IRUGO, show_power, NULL);
+@@ -7417,7 +7414,6 @@ struct sched_domain *build_sched_domain(
+ 	if (!sd)
+ 		return child;
+ 
+-	set_domain_attribute(sd, attr);
+ 	cpumask_and(sched_domain_span(sd), cpu_map, tl->mask(cpu));
+ 	if (child) {
+ 		sd->level = child->level + 1;
+@@ -7425,6 +7421,7 @@ struct sched_domain *build_sched_domain(
+ 		child->parent = sd;
+ 	}
+ 	sd->child = child;
++	set_domain_attribute(sd, attr);
+ 
+ 	return sd;
+ }
 
 
