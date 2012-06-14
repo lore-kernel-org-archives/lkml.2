@@ -1,37 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755796Ab2FNKqU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 06:46:20 -0400
-Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:57890 "EHLO
-	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755765Ab2FNKqS (ORCPT
+	id S1755734Ab2FNKsZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 06:48:25 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:62326 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754775Ab2FNKsY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 06:46:18 -0400
+	Thu, 14 Jun 2012 06:48:24 -0400
+Date: Thu, 14 Jun 2012 12:48:19 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Shuah Khan <shuahkhan@gmail.com>
+Cc: tglx@linutronix.de, hpa@zytor.com, mingo@redhat.com, x86@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86: kernel/cpu/mtrr/cleanup.c simple_strtoul cleanup
+Message-ID: <20120614104819.GA8683@gmail.com>
+References: <1339612907.13326.5.camel@lorien2>
 MIME-Version: 1.0
-In-Reply-To: <1339669250-9183-5-git-send-email-balbi@ti.com>
-References: <1339669250-9183-1-git-send-email-balbi@ti.com> <1339669250-9183-5-git-send-email-balbi@ti.com>
-From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-Date: Thu, 14 Jun 2012 16:15:55 +0530
-Message-ID: <CAMQu2gydS0qFCq705pHj6jZbyqLEMmtdw1dNYAezBowpxbk9Ow@mail.gmail.com>
-Subject: Re: [PATCH 04/17] i2c: omap: simplify omap_i2c_ack_stat()
-To: Felipe Balbi <balbi@ti.com>
-Cc: ben-linux@fluff.org, Tony Lindgren <tony@atomide.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        w.sang@pengutronix.de, linux-i2c@vger.kernel.org,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339612907.13326.5.camel@lorien2>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 14, 2012 at 3:50 PM, Felipe Balbi <balbi@ti.com> wrote:
-> stat & BIT(1) is the same as BIT(1), so let's
-> simplify things a bit by removing "stat &" from
-> all omap_i2c_ack_stat() calls.
->
-> Signed-off-by: Felipe Balbi <balbi@ti.com>
+
+* Shuah Khan <shuahkhan@gmail.com> wrote:
+
+> Change parse_mtrr_spare_reg() to call kstrtoul() instead of calling obsoleted
+> simple_strtoul().
+> 
+> Signed-off-by: Shuah Khan <shuahkhan@gmail.com>
 > ---
-Indeed. Looks good to me.
-Reviewed-by : Santosh Shilimkar <santosh.shilimkar@ti.com>
+>  arch/x86/kernel/cpu/mtrr/cleanup.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+
+There's about 22 simple_strto*() uses remaining in arch/x86/ - 
+please send a single patch that addresses them in one go, 
+instead of these peacemail patches...
+
+Thanks,
+
+	Ingo
