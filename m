@@ -1,83 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755152Ab2FNA6P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 20:58:15 -0400
-Received: from mail127.messagelabs.com ([216.82.250.115]:59972 "EHLO
-	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752688Ab2FNA6O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 20:58:14 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-8.tower-127.messagelabs.com!1339635493!1182923!1
-X-Originating-IP: [216.166.12.31]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] staging: comedi: pcl812: remove unneeded tests in pcl812_ai_cmdtest
-Date: Wed, 13 Jun 2012 17:58:07 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1755112Ab2FNBFz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 21:05:55 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:46155 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754134Ab2FNBFy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 21:05:54 -0400
+Message-ID: <1339635953.28729.8.camel@joe2Laptop>
+Subject: Re: [PATCH] writeback: Maintainer Record
+From: Joe Perches <joe@perches.com>
+To: Wanpeng Li <liwp.linux@gmail.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, linux-kernel@vger.kernel.org,
+        Gavin Shan <shangw@linux.vnet.ibm.com>
+Date: Wed, 13 Jun 2012 18:05:53 -0700
+In-Reply-To: <1339633873-12729-1-git-send-email-liwp.linux@gmail.com>
+References: <1339633873-12729-1-git-send-email-liwp.linux@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201206131758.07899.hartleys@visionengravers.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The step 2 tests to make sure that the triggers are unique is not
-needed for single source triggers. These were already trivially
-validated in step 1.
+On Thu, 2012-06-14 at 08:31 +0800, Wanpeng Li wrote:
+>  MAINTAINERS |   10 ++++++++++
+[]
+> diff --git a/MAINTAINERS b/MAINTAINERS
+[]
+> +WRITEBACK
+> +M:  Fengguang Wu <fengguang.wu@intel.com>
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/staging/comedi/drivers/pcl812.c |   27 ---------------------------
- 1 files changed, 0 insertions(+), 27 deletions(-)
+Generally the actual maintainer submits a patch
+to this file.
 
-diff --git a/drivers/staging/comedi/drivers/pcl812.c b/drivers/staging/comedi/drivers/pcl812.c
-index 0a4074a..511c901 100644
---- a/drivers/staging/comedi/drivers/pcl812.c
-+++ b/drivers/staging/comedi/drivers/pcl812.c
-@@ -612,33 +612,6 @@ static int pcl812_ai_cmdtest(struct comedi_device *dev,
- 	 * unique and mutually compatible
- 	 */
- 
--	if (cmd->start_src != TRIG_NOW) {
--		cmd->start_src = TRIG_NOW;
--		err++;
--	}
--
--	if (cmd->scan_begin_src != TRIG_FOLLOW) {
--		cmd->scan_begin_src = TRIG_FOLLOW;
--		err++;
--	}
--
--	if (devpriv->use_ext_trg) {
--		if (cmd->convert_src != TRIG_EXT) {
--			cmd->convert_src = TRIG_EXT;
--			err++;
--		}
--	} else {
--		if (cmd->convert_src != TRIG_TIMER) {
--			cmd->convert_src = TRIG_TIMER;
--			err++;
--		}
--	}
--
--	if (cmd->scan_end_src != TRIG_COUNT) {
--		cmd->scan_end_src = TRIG_COUNT;
--		err++;
--	}
--
- 	if (cmd->stop_src != TRIG_NONE && cmd->stop_src != TRIG_COUNT)
- 		err++;
- 
--- 
-1.7.7
+Please use a single tab after each :
+
+> +T:  git://git.kernel.org/pub/scm/linux/kernel/git/wfg/linux.git tags/writeback
+> +S:  Maintained
+> +F:  include/linux/backing-dev.h
+> +F:  mm/backing-dev.c
+> +F:  include/linux/writeback.h
+> +F:  fs/fs-writeback.c
+> +F:  mm/page-writeback.c
+> +
+
+
 
