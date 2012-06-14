@@ -1,69 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755180Ab2FNBMO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 21:12:14 -0400
-Received: from mga03.intel.com ([143.182.124.21]:64936 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754826Ab2FNBMN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 21:12:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="156095459"
-Message-ID: <4FD939F2.3090605@intel.com>
-Date: Thu, 14 Jun 2012 09:10:10 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
-MIME-Version: 1.0
-To: Andi Kleen <ak@linux.intel.com>, android-kernel@googlegroups.com
-CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, arnd@arndb.de,
-        rostedt@goodmis.org, fweisbec@gmail.com, jeremy@goop.org,
-        seto.hidetoshi@jp.fujitsu.com, borislav.petkov@amd.com,
-        tony.luck@intel.com, luto@mit.edu, riel@redhat.com, avi@redhat.com,
-        len.brown@intel.com, tj@kernel.org, akpm@linux-foundation.org,
-        cl@gentwo.org, jbeulich@suse.com, eric.dumazet@gmail.com,
-        akinobu.mita@gmail.com, cpw@sgi.com, penberg@kernel.org,
-        steiner@sgi.com, viro@zeniv.linux.org.uk,
-        kamezawa.hiroyu@jp.fujitsu.com, aarcange@redhat.com,
-        rientjes@google.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v8 8/8] x86/tlb: do flush_tlb_kernel_range by 'invlpg'
-References: <1339492005-20241-1-git-send-email-alex.shi@intel.com> <1339492005-20241-9-git-send-email-alex.shi@intel.com> <20120613145656.GB32604@tassilo.jf.intel.com>
-In-Reply-To: <20120613145656.GB32604@tassilo.jf.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1755243Ab2FNBMe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 21:12:34 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:46924 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755186Ab2FNBMU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 21:12:20 -0400
+X-AuditID: 9c930179-b7bb9ae000000ea5-48-4fd93a6d51ca
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Minchan Kim <minchan@kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Michal Hocko <mhocko@suse.cz>
+Subject: [PATCH v2 2/2] mm: clean up __count_immobile_pages
+Date: Thu, 14 Jun 2012 10:12:14 +0900
+Message-Id: <1339636334-9238-2-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1339636334-9238-1-git-send-email-minchan@kernel.org>
+References: <1339636334-9238-1-git-send-email-minchan@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/13/2012 10:56 PM, Andi Kleen wrote:
+__count_immobile_pages naming is rather awkward.
+This patch changes function name more clear and add comment.
 
-> On Tue, Jun 12, 2012 at 05:06:45PM +0800, Alex Shi wrote:
->> This patch do flush_tlb_kernel_range by 'invlpg'. The performance pay
->> and gain was analysed in my patch (x86/flush_tlb: try flush_tlb_single
->> one by one in flush_tlb_range). Now we move this logical into kernel
->> part. The pay is multiple 'invlpg' execution cost, that is same. but
->>  the gain(cost reducing of TLB entries refilling) is absolutely
->> increased.
-> 
-> The subtle point is whether INVLPG flushes global pages or not.
-> After some digging I found a sentence in the SDM that says it does.
-> So it may be safe.
+* changelog from v1
+  - write down page flag race in function comment
+  - commit change log change
 
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Michal Hocko <mhocko@suse.cz>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+---
+ mm/page_alloc.c |   34 ++++++++++++++++++----------------
+ 1 file changed, 18 insertions(+), 16 deletions(-)
 
-Many thanks for your time!
-
-> 
-> What does it improve?
-
-
-I have not specific benchmark for this. partly due to the gain theory
-was proved since it is same as previous user process's page table flush.
-
-The user of tlb kernel flush in kernel is vmalloc. and Android binder
-IPC subsystem is using it(drivers/staging/android/binder.c)
-
-I am wondering if it can help Andriod on this?
-So, add cc to android-kernel@googlegroups.com
-
-> -Andi
-
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 543cc2d..dc7f8c5 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -5467,26 +5467,28 @@ void set_pageblock_flags_group(struct page *page, unsigned long flags,
+ }
+ 
+ /*
+- * This is designed as sub function...plz see page_isolation.c also.
+- * set/clear page block's type to be ISOLATE.
+- * page allocater never alloc memory from ISOLATE block.
++ * This function checks whether pageblock includes unmovable pages or not.
++ * If @count is not zero, it is okay to include less @count unmovable pages
++ *
++ * PageLRU check wihtout isolation or lru_lock could race so that
++ * MIGRATE_MOVABLE block might include unmovable pages. It means you can't
++ * expect this function should be exact.
+  */
+-
+-static int
+-__count_immobile_pages(struct zone *zone, struct page *page, int count)
++static bool
++__has_unmovable_pages(struct zone *zone, struct page *page, int count)
+ {
+ 	unsigned long pfn, iter, found;
+ 	int mt;
+ 
+ 	/*
+ 	 * For avoiding noise data, lru_add_drain_all() should be called
+-	 * If ZONE_MOVABLE, the zone never contains immobile pages
++	 * If ZONE_MOVABLE, the zone never contains unmovable pages
+ 	 */
+ 	if (zone_idx(zone) == ZONE_MOVABLE)
+-		return true;
++		return false;
+ 	mt = get_pageblock_migratetype(page);
+ 	if (mt == MIGRATE_MOVABLE || is_migrate_cma(mt))
+-		return true;
++		return false;
+ 
+ 	pfn = page_to_pfn(page);
+ 	for (found = 0, iter = 0; iter < pageblock_nr_pages; iter++) {
+@@ -5524,9 +5526,9 @@ __count_immobile_pages(struct zone *zone, struct page *page, int count)
+ 		 * page at boot.
+ 		 */
+ 		if (found > count)
+-			return false;
++			return true;
+ 	}
+-	return true;
++	return false;
+ }
+ 
+ bool is_pageblock_removable_nolock(struct page *page)
+@@ -5550,7 +5552,7 @@ bool is_pageblock_removable_nolock(struct page *page)
+ 			zone->zone_start_pfn + zone->spanned_pages <= pfn)
+ 		return false;
+ 
+-	return __count_immobile_pages(zone, page, 0);
++	return !__has_unmovable_pages(zone, page, 0);
+ }
+ 
+ int set_migratetype_isolate(struct page *page)
+@@ -5589,12 +5591,12 @@ int set_migratetype_isolate(struct page *page)
+ 	 * FIXME: Now, memory hotplug doesn't call shrink_slab() by itself.
+ 	 * We just check MOVABLE pages.
+ 	 */
+-	if (__count_immobile_pages(zone, page, arg.pages_found))
++	if (!__has_unmovable_pages(zone, page, arg.pages_found))
+ 		ret = 0;
+-
+ 	/*
+-	 * immobile means "not-on-lru" paes. If immobile is larger than
+-	 * removable-by-driver pages reported by notifier, we'll fail.
++	 * Unmovable means "not-on-lru" pages. If Unmovable pages are
++	 * larger than removable-by-driver pages reported by notifier,
++	 * we'll fail.
+ 	 */
+ 
+ out:
+-- 
+1.7.9.5
 
