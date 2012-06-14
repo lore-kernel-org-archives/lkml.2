@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754139Ab2FNX5z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 19:57:55 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56620 "EHLO
+	id S1755507Ab2FNX6E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 19:58:04 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45919 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753836Ab2FNX5x (ORCPT
+	with ESMTP id S1755358Ab2FNX6A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 19:57:53 -0400
-Message-Id: <20120614235644.492193053@linuxfoundation.org>
+	Thu, 14 Jun 2012 19:58:00 -0400
+Message-Id: <20120614235644.744223603@linuxfoundation.org>
 User-Agent: quilt/0.60-20.1
-Date: Thu, 14 Jun 2012 16:56:46 -0700
+Date: Thu, 14 Jun 2012 16:56:49 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Roland Dreier <roland@purestorage.com>,
-        Joern Engel <joern@logfs.org>
-Subject: [ 02/20] btree: fix tree corruption in btree_get_prev()
+        alan@lxorguk.ukuu.org.uk, Nirav Shah <nirav.j2.shah@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 05/20] mac80211: clean up remain-on-channel on interface stop
 In-Reply-To: <20120614235648.GA6552@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,54 +26,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roland Dreier <roland@purestorage.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit cbf8ae32f66a9ceb8907ad9e16663c2a29e48990 upstream.
+commit 71ecfa1893034eeb1c93e02e22ee2ad26d080858 upstream.
 
-The memory the parameter __key points to is used as an iterator in
-btree_get_prev(), so if we save off a bkey() pointer in retry_key and
-then assign that to __key, we'll end up corrupting the btree internals
-when we do eg
+When any interface goes down, it could be the one that we
+were doing a remain-on-channel with. We therefore need to
+cancel the remain-on-channel and flush the related work
+structs so they don't run after the interface has been
+removed or even destroyed.
 
-	longcpy(__key, bkey(geo, node, i), geo->keylen);
+It's also possible in this case that an off-channel SKB
+was never transmitted, so free it if this is the case.
+Note that this can also happen if the driver finishes
+the off-channel period without ever starting it.
 
-to return the key value.  What we should do instead is use longcpy() to
-copy the key value that retry_key points to __key.
-
-This can cause a btree to get corrupted by seemingly read-only
-operations such as btree_for_each_safe.
-
-[akpm@linux-foundation.org: avoid the double longcpy()]
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Acked-by: Joern Engel <joern@logfs.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Nirav Shah <nirav.j2.shah@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- lib/btree.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/mac80211/iface.c      |   12 ++++++++++++
+ net/mac80211/offchannel.c |   16 ++++++++++++++++
+ 2 files changed, 28 insertions(+)
 
---- a/lib/btree.c
-+++ b/lib/btree.c
-@@ -319,8 +319,8 @@ void *btree_get_prev(struct btree_head *
- 
- 	if (head->height == 0)
- 		return NULL;
--retry:
- 	longcpy(key, __key, geo->keylen);
-+retry:
- 	dec_key(geo, key);
- 
- 	node = head->node;
-@@ -351,7 +351,7 @@ retry:
+--- a/net/mac80211/iface.c
++++ b/net/mac80211/iface.c
+@@ -498,6 +498,18 @@ static void ieee80211_do_stop(struct iee
+ 		ieee80211_configure_filter(local);
+ 		break;
+ 	default:
++		mutex_lock(&local->mtx);
++		if (local->hw_roc_dev == sdata->dev &&
++		    local->hw_roc_channel) {
++			/* ignore return value since this is racy */
++			drv_cancel_remain_on_channel(local);
++			ieee80211_queue_work(&local->hw, &local->hw_roc_done);
++		}
++		mutex_unlock(&local->mtx);
++
++		flush_work(&local->hw_roc_start);
++		flush_work(&local->hw_roc_done);
++
+ 		flush_work(&sdata->work);
+ 		/*
+ 		 * When we get here, the interface is marked down.
+--- a/net/mac80211/offchannel.c
++++ b/net/mac80211/offchannel.c
+@@ -251,6 +251,22 @@ static void ieee80211_hw_roc_done(struct
+ 		return;
  	}
- miss:
- 	if (retry_key) {
--		__key = retry_key;
-+		longcpy(key, retry_key, geo->keylen);
- 		retry_key = NULL;
- 		goto retry;
- 	}
+ 
++	/* was never transmitted */
++	if (local->hw_roc_skb) {
++		u64 cookie;
++
++		cookie = local->hw_roc_cookie ^ 2;
++
++		cfg80211_mgmt_tx_status(local->hw_roc_dev, cookie,
++					local->hw_roc_skb->data,
++					local->hw_roc_skb->len, false,
++					GFP_KERNEL);
++
++		kfree_skb(local->hw_roc_skb);
++		local->hw_roc_skb = NULL;
++		local->hw_roc_skb_for_status = NULL;
++	}
++
+ 	if (!local->hw_roc_for_tx)
+ 		cfg80211_remain_on_channel_expired(local->hw_roc_dev,
+ 						   local->hw_roc_cookie,
 
 
