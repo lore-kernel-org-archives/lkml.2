@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756866Ab2FOAAA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 20:00:00 -0400
+	id S1756879Ab2FOAAH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 20:00:07 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:45611 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756853Ab2FNX76 (ORCPT
+	with ESMTP id S1756867Ab2FOAAB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 19:59:58 -0400
-Message-Id: <20120614235625.864991902@linuxfoundation.org>
+	Thu, 14 Jun 2012 20:00:01 -0400
+Message-Id: <20120614235625.948416564@linuxfoundation.org>
 User-Agent: quilt/0.60-20.1
-Date: Thu, 14 Jun 2012 16:56:45 -0700
+Date: Thu, 14 Jun 2012 16:56:46 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Eyal Shapira <eyal@wizery.com>,
-        Arik Nemtsov <arik@wizery.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 22/42] mac80211: fix non RCU-safe sta_list manipulation
+        alan@lxorguk.ukuu.org.uk,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 23/42] ASoC: wm8994: Ensure all AIFnCLK events are run from the _late variants
 In-Reply-To: <20120614235636.GA5275@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,44 +25,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arik Nemtsov <arik@wizery.com>
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-commit 794454ce72a298de6f4536ade597bdcc7dcde7c7 upstream.
+commit c8fdc1b56611faa7b38eab6b99da5e20113661ff upstream.
 
-sta_info_cleanup locks the sta_list using rcu_read_lock however
-the delete operation isn't rcu safe. A race between sta_info_cleanup
-timer being called and a STA being removed can occur which leads
-to a panic while traversing sta_list. Fix this by switching to the
-RCU-safe versions.
+Ensure that all the actions get taken at appropriate times by calling the
+_PRE and _POST events for the aifNclk_ev functions explicitly.
 
-Reported-by: Eyal Shapira <eyal@wizery.com>
-Signed-off-by: Arik Nemtsov <arik@wizery.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/sta_info.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ sound/soc/codecs/wm8994.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
---- a/net/mac80211/sta_info.c
-+++ b/net/mac80211/sta_info.c
-@@ -378,7 +378,7 @@ static int sta_info_insert_finish(struct
- 	/* make the station visible */
- 	sta_info_hash_add(local, sta);
- 
--	list_add(&sta->list, &local->sta_list);
-+	list_add_rcu(&sta->list, &local->sta_list);
- 
- 	set_sta_flag(sta, WLAN_STA_INSERTED);
- 
-@@ -688,7 +688,7 @@ int __must_check __sta_info_destroy(stru
- 	if (ret)
- 		return ret;
- 
--	list_del(&sta->list);
-+	list_del_rcu(&sta->list);
- 
- 	mutex_lock(&local->key_mtx);
- 	for (i = 0; i < NUM_DEFAULT_KEYS; i++)
+--- a/sound/soc/codecs/wm8994.c
++++ b/sound/soc/codecs/wm8994.c
+@@ -1207,17 +1207,19 @@ static int late_enable_ev(struct snd_soc
+ 	switch (event) {
+ 	case SND_SOC_DAPM_PRE_PMU:
+ 		if (wm8994->aif1clk_enable) {
+-			aif1clk_ev(w, kcontrol, event);
++			aif1clk_ev(w, kcontrol, SND_SOC_DAPM_PRE_PMU);
+ 			snd_soc_update_bits(codec, WM8994_AIF1_CLOCKING_1,
+ 					    WM8994_AIF1CLK_ENA_MASK,
+ 					    WM8994_AIF1CLK_ENA);
++			aif1clk_ev(w, kcontrol, SND_SOC_DAPM_POST_PMU);
+ 			wm8994->aif1clk_enable = 0;
+ 		}
+ 		if (wm8994->aif2clk_enable) {
+-			aif2clk_ev(w, kcontrol, event);
++			aif2clk_ev(w, kcontrol, SND_SOC_DAPM_PRE_PMU);
+ 			snd_soc_update_bits(codec, WM8994_AIF2_CLOCKING_1,
+ 					    WM8994_AIF2CLK_ENA_MASK,
+ 					    WM8994_AIF2CLK_ENA);
++			aif2clk_ev(w, kcontrol, SND_SOC_DAPM_POST_PMU);
+ 			wm8994->aif2clk_enable = 0;
+ 		}
+ 		break;
+@@ -1238,15 +1240,17 @@ static int late_disable_ev(struct snd_so
+ 	switch (event) {
+ 	case SND_SOC_DAPM_POST_PMD:
+ 		if (wm8994->aif1clk_disable) {
++			aif1clk_ev(w, kcontrol, SND_SOC_DAPM_PRE_PMD);
+ 			snd_soc_update_bits(codec, WM8994_AIF1_CLOCKING_1,
+ 					    WM8994_AIF1CLK_ENA_MASK, 0);
+-			aif1clk_ev(w, kcontrol, event);
++			aif1clk_ev(w, kcontrol, SND_SOC_DAPM_POST_PMD);
+ 			wm8994->aif1clk_disable = 0;
+ 		}
+ 		if (wm8994->aif2clk_disable) {
++			aif2clk_ev(w, kcontrol, SND_SOC_DAPM_PRE_PMD);
+ 			snd_soc_update_bits(codec, WM8994_AIF2_CLOCKING_1,
+ 					    WM8994_AIF2CLK_ENA_MASK, 0);
+-			aif2clk_ev(w, kcontrol, event);
++			aif2clk_ev(w, kcontrol, SND_SOC_DAPM_POST_PMD);
+ 			wm8994->aif2clk_disable = 0;
+ 		}
+ 		break;
 
 
