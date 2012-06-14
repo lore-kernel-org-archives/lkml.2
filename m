@@ -1,50 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756642Ab2FNSrH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 14:47:07 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:57699 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756579Ab2FNSrE (ORCPT
+	id S1756630Ab2FNSvM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 14:51:12 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:40933 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756455Ab2FNSvK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 14:47:04 -0400
-Date: Thu, 14 Jun 2012 19:46:58 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linus.walleij@stericsson.com, arnd@arndb.de,
-        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        grant.likely@secretlab.ca, linux-i2c@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 09/14] i2c: Add Device Tree support to the Nomadik I2C
- driver
-Message-ID: <20120614184656.GD30185@sirena.org.uk>
-References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org>
- <1339428307-3850-10-git-send-email-lee.jones@linaro.org>
- <CACRpkdaMDbH4NkiHRLAfbJZ_j4QXbwg94bvaWsdYRPH+dSfc8Q@mail.gmail.com>
- <4FD6F0E8.5040606@linaro.org>
- <CACRpkdYxiT-0x4aetMxB2x8SkB+Mmy8rk8uSzgU_anemSayhMw@mail.gmail.com>
- <4FD83AAD.2010701@linaro.org>
- <CACRpkdZC8E6izDpdnWy6DMjOdA6KsqTaPoaq9pErWoNW0Ewytw@mail.gmail.com>
- <4FD88761.9050703@linaro.org>
- <20120614183636.GB30185@sirena.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120614183636.GB30185@sirena.org.uk>
-X-Cookie: Do not try this at home.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+	Thu, 14 Jun 2012 14:51:10 -0400
+From: Jim Cromie <jim.cromie@gmail.com>
+To: rusty@rustcorp.com.au, linux-kernel@vger.kernel.org
+Cc: bp@amd64.org, pawel.moll@arm.com, jbaron@redhat.com,
+        gregkh@linuxfoundation.org, Jim Cromie <jim.cromie@gmail.com>
+Subject: [PATCH] init: add comments to keep initcall-names in sync with initcall levels
+Date: Thu, 14 Jun 2012 12:51:02 -0600
+Message-Id: <1339699862-3731-1-git-send-email-jim.cromie@gmail.com>
+X-Mailer: git-send-email 1.7.10.2
+In-Reply-To: <20120612105913.GA8404@aftab.osrc.amd.com>
+References: <20120612105913.GA8404@aftab.osrc.amd.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 14, 2012 at 07:36:36PM +0100, Mark Brown wrote:
+main.c has initcall_level_names[] for parse_args to print in debug messages,
+add comments to keep them in sync with initcalls defined in init.h.
+Also tweak comment re not using *_initcall macros in loadable modules.
 
-> You're not understanding Linus' point.  The compatible string isn't
-> useful here because properties like the maximum clock rate of the bus
-> depend on the board design, not the silicon.  The controller may be
-> perfectly happy to run at a given rate but other devices on the bus or
-> the electrical engineering of the PCB itself may restrict this further.
+Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
+---
+ include/linux/init.h |    3 ++-
+ init/main.c          |    1 +
+ 2 files changed, 3 insertions(+), 1 deletion(-)
 
-Sorry, I read the next revision and see this was actually resolved OK.
+diff --git a/include/linux/init.h b/include/linux/init.h
+index 6b95109..da6f6f9 100644
+--- a/include/linux/init.h
++++ b/include/linux/init.h
+@@ -191,6 +191,7 @@ extern bool initcall_debug;
+  * initializes variables that couldn't be statically initialized.
+  *
+  * This only exists for built-in code, not for modules.
++ * Keep main.c:initcall_level_names[] in sync. */
+  */
+ #define pure_initcall(fn)		__define_initcall("0",fn,0)
+ 
+@@ -280,7 +281,7 @@ void __init parse_early_options(char *cmdline);
+ 
+ #else /* MODULE */
+ 
+-/* Don't use these in modules, but some people do... */
++/* Don't use these in loadable modules, but some people do... */
+ #define early_initcall(fn)		module_init(fn)
+ #define core_initcall(fn)		module_init(fn)
+ #define postcore_initcall(fn)		module_init(fn)
+diff --git a/init/main.c b/init/main.c
+index b5cc0a7..7a74087 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -724,6 +724,7 @@ static initcall_t *initcall_levels[] __initdata = {
+ 	__initcall_end,
+ };
+ 
++/* Keep these in sync with initcalls in include/linux/init.h */
+ static char *initcall_level_names[] __initdata = {
+ 	"early",
+ 	"core",
+-- 
+1.7.10.2
+
