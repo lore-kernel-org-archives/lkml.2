@@ -1,309 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755764Ab2FNLkx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 07:40:53 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:52396 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752852Ab2FNLkv (ORCPT
+	id S1755786Ab2FNLrz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 07:47:55 -0400
+Received: from na3sys009aog121.obsmtp.com ([74.125.149.145]:43916 "EHLO
+	na3sys009aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752852Ab2FNLrx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 07:40:51 -0400
-From: Federico Vaga <federico.vaga@gmail.com>
-To: Wolfgang Grandegger <wg@grandegger.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Cc: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
-        Alan Cox <alan@linux.intel.com>, linux-can@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bhupesh SHARMA <bhupesh.sharma@st.com>,
-        AnilKumar Chimata <anilkumar@ti.com>,
-        Alessandro Rubini <rubini@gnudd.com>,
-        Federico Vaga <federico.vaga@gmail.com>
-Subject: [PATCH] c_can_pci: generic module for C_CAN/D_CAN on PCI
-Date: Thu, 14 Jun 2012 13:43:42 +0200
-Message-Id: <1339674222-27699-1-git-send-email-federico.vaga@gmail.com>
-X-Mailer: git-send-email 1.7.10.2
+	Thu, 14 Jun 2012 07:47:53 -0400
+Date: Thu, 14 Jun 2012 14:45:50 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Felipe Balbi <balbi@ti.com>, ben-linux@fluff.org,
+        Tony Lindgren <tony@atomide.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        w.sang@pengutronix.de, linux-i2c@vger.kernel.org,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 04/17] i2c: omap: simplify omap_i2c_ack_stat()
+Message-ID: <20120614114546.GP13602@arwen.pp.htv.fi>
+Reply-To: balbi@ti.com
+References: <1339669250-9183-1-git-send-email-balbi@ti.com>
+ <1339669250-9183-5-git-send-email-balbi@ti.com>
+ <20120614111333.GA31187@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="qd/SZIFVu+MYwfCR"
+Content-Disposition: inline
+In-Reply-To: <20120614111333.GA31187@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Federico Vaga <federico.vaga@gmail.com>
-Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
-Cc: Alan Cox <alan@linux.intel.com>
----
- drivers/net/can/c_can/Kconfig     |    7 ++
- drivers/net/can/c_can/Makefile    |    1 +
- drivers/net/can/c_can/c_can_pci.c |  236 +++++++++++++++++++++++++++++++++++++
- 3 files changed, 244 insertions(+)
- create mode 100644 drivers/net/can/c_can/c_can_pci.c
 
-diff --git a/drivers/net/can/c_can/Kconfig b/drivers/net/can/c_can/Kconfig
-index 25d371c..3b83baf 100644
---- a/drivers/net/can/c_can/Kconfig
-+++ b/drivers/net/can/c_can/Kconfig
-@@ -13,4 +13,11 @@ config CAN_C_CAN_PLATFORM
- 	  boards from ST Microelectronics (http://www.st.com) like the
- 	  SPEAr1310 and SPEAr320 evaluation boards & TI (www.ti.com)
- 	  boards like am335x, dm814x, dm813x and dm811x.
-+
-+config CAN_C_CAN_PCI
-+	tristate "Generic PCI Bus based C_CAN/D_CAN driver"
-+	depends on PCI
-+	---help---
-+	  This driver adds support for the C_CAN/D_CAN chips connected
-+	  to the PCI bus.
- endif
-diff --git a/drivers/net/can/c_can/Makefile b/drivers/net/can/c_can/Makefile
-index 9273f6d..ad1cc84 100644
---- a/drivers/net/can/c_can/Makefile
-+++ b/drivers/net/can/c_can/Makefile
-@@ -4,5 +4,6 @@
- 
- obj-$(CONFIG_CAN_C_CAN) += c_can.o
- obj-$(CONFIG_CAN_C_CAN_PLATFORM) += c_can_platform.o
-+obj-$(CONFIG_CAN_C_CAN_PCI) += c_can_pci.o
- 
- ccflags-$(CONFIG_CAN_DEBUG_DEVICES) := -DDEBUG
-diff --git a/drivers/net/can/c_can/c_can_pci.c b/drivers/net/can/c_can/c_can_pci.c
-new file mode 100644
-index 0000000..7bdb793
---- /dev/null
-+++ b/drivers/net/can/c_can/c_can_pci.c
-@@ -0,0 +1,236 @@
-+/*
-+ * PCI bus driver for Bosch C_CAN/D_CAN controller
-+ *
-+ * Copyright (C) 2012 Federico Vaga <federico.vaga@gmail.com>
-+ *
-+ * Borrowed from c_can_platform.c
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2. This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/netdevice.h>
-+#include <linux/clk.h>
-+#include <linux/pci.h>
-+
-+#include <linux/can/dev.h>
-+
-+#include "c_can.h"
-+
-+enum c_can_pci_reg_align {
-+	C_CAN_REG_ALIGN_16,
-+	C_CAN_REG_ALIGN_32,
-+};
-+
-+struct c_can_pci_data {
-+	/* Specify if is C_CAN or D_CAN */
-+	enum c_can_dev_id type;
-+	/* Set the register alignment in the memory */
-+	enum c_can_pci_reg_align reg_align;
-+	/* Set the frequency if clk is not usable */
-+	unsigned int freq;
-+};
-+
-+/*
-+ * 16-bit c_can registers can be arranged differently in the memory
-+ * architecture of different implementations. For example: 16-bit
-+ * registers can be aligned to a 16-bit boundary or 32-bit boundary etc.
-+ * Handle the same by providing a common read/write interface.
-+ */
-+static u16 c_can_pci_read_reg_aligned_to_16bit(struct c_can_priv *priv,
-+						enum reg index)
-+{
-+	return readw(priv->base + priv->regs[index]);
-+}
-+
-+static void c_can_pci_write_reg_aligned_to_16bit(struct c_can_priv *priv,
-+						enum reg index, u16 val)
-+{
-+	writew(val, priv->base + priv->regs[index]);
-+}
-+
-+static u16 c_can_pci_read_reg_aligned_to_32bit(struct c_can_priv *priv,
-+						enum reg index)
-+{
-+	return readw(priv->base + 2 * priv->regs[index]);
-+}
-+
-+static void c_can_pci_write_reg_aligned_to_32bit(struct c_can_priv *priv,
-+						enum reg index, u16 val)
-+{
-+	writew(val, priv->base + 2 * priv->regs[index]);
-+}
-+
-+static int __devinit c_can_pci_probe(struct pci_dev *pdev,
-+				     const struct pci_device_id *ent)
-+{
-+	struct c_can_pci_data *c_can_pci_data = (void *)ent->driver_data;
-+	struct c_can_priv *priv;
-+	struct net_device *dev;
-+	void __iomem *addr;
-+	struct clk *clk;
-+	int ret;
-+
-+	ret = pci_enable_device(pdev);
-+	if (ret) {
-+		dev_err(&pdev->dev, "pci_enable_device FAILED\n");
-+		goto out;
-+	}
-+
-+	ret = pci_request_regions(pdev, KBUILD_MODNAME);
-+	if (ret) {
-+		dev_err(&pdev->dev, "pci_request_regions FAILED\n");
-+		goto out_disable_device;
-+	}
-+
-+	pci_set_master(pdev);
-+	pci_enable_msi(pdev);
-+
-+	addr = pci_iomap(pdev, 0, pci_resource_len(pdev, 0));
-+	if (!addr) {
-+		dev_err(&pdev->dev,
-+			"device has no PCI memory resources, "
-+			"failing adapter\n");
-+		ret = -ENOMEM;
-+		goto out_release_regions;
-+	}
-+
-+	/* allocate the c_can device */
-+	dev = alloc_c_can_dev();
-+	if (!dev) {
-+		ret = -ENOMEM;
-+		goto out_iounmap;
-+	}
-+
-+	priv = netdev_priv(dev);
-+	pci_set_drvdata(pdev, dev);
-+	SET_NETDEV_DEV(dev, &pdev->dev);
-+
-+	dev->irq = pdev->irq;
-+	priv->base = addr;
-+
-+	if (!c_can_pci_data->freq) {
-+		/* get the appropriate clk */
-+		clk = clk_get(&pdev->dev, NULL);
-+		if (IS_ERR(clk)) {
-+			dev_err(&pdev->dev, "no clock defined\n");
-+			ret = -ENODEV;
-+			goto out_free_c_can;
-+		}
-+		priv->can.clock.freq = clk_get_rate(clk);
-+		priv->priv = clk;
-+	} else {
-+		priv->can.clock.freq = c_can_pci_data->freq;
-+		priv->priv = NULL;
-+	}
-+
-+	/* Configure CAN type */
-+	switch (c_can_pci_data->type) {
-+	case C_CAN_DEVTYPE:
-+		priv->regs = reg_map_c_can;
-+		break;
-+	case D_CAN_DEVTYPE:
-+		priv->regs = reg_map_d_can;
-+		priv->can.ctrlmode_supported |= CAN_CTRLMODE_3_SAMPLES;
-+		break;
-+	default:
-+		ret = -EINVAL;
-+		goto out_free_clock;
-+	}
-+
-+	/* Configure access to registers */
-+	switch (c_can_pci_data->reg_align) {
-+	case C_CAN_REG_ALIGN_32:
-+		priv->read_reg = c_can_pci_read_reg_aligned_to_32bit;
-+		priv->write_reg = c_can_pci_write_reg_aligned_to_32bit;
-+		break;
-+	case C_CAN_REG_ALIGN_16:
-+		priv->read_reg = c_can_pci_read_reg_aligned_to_16bit;
-+		priv->write_reg = c_can_pci_write_reg_aligned_to_16bit;
-+		break;
-+	default:
-+		ret = -EINVAL;
-+		goto out_free_clock;
-+	}
-+
-+	ret = register_c_can_dev(dev);
-+	if (ret) {
-+		dev_err(&pdev->dev, "registering %s failed (err=%d)\n",
-+			KBUILD_MODNAME, ret);
-+		goto out_free_clock;
-+	}
-+
-+	dev_dbg(&pdev->dev, "%s device registered (regs=%p, irq=%d)\n",
-+		 KBUILD_MODNAME, priv->regs, dev->irq);
-+
-+	return 0;
-+
-+out_free_clock:
-+	if (priv->priv)
-+		clk_put(priv->priv);
-+out_free_c_can:
-+	pci_set_drvdata(pdev, NULL);
-+	free_c_can_dev(dev);
-+out_iounmap:
-+	pci_iounmap(pdev, priv->base);
-+out_release_regions:
-+	pci_disable_msi(pdev);
-+	pci_clear_master(pdev);
-+	pci_release_regions(pdev);
-+out_disable_device:
-+	pci_disable_device(pdev);
-+out:
-+	return ret;
-+}
-+
-+static void __devexit c_can_pci_remove(struct pci_dev *pdev)
-+{
-+	struct net_device *dev = pci_get_drvdata(pdev);
-+	struct c_can_priv *priv = netdev_priv(dev);
-+
-+	unregister_c_can_dev(dev);
-+
-+	if (priv->priv)
-+		clk_put(priv->priv);
-+
-+	pci_set_drvdata(pdev, NULL);
-+	free_c_can_dev(dev);
-+
-+	pci_iounmap(pdev, priv->base);
-+	pci_disable_msi(pdev);
-+	pci_clear_master(pdev);
-+	pci_release_regions(pdev);
-+	pci_disable_device(pdev);
-+}
-+
-+static struct c_can_pci_data c_can_sta2x11= {
-+	.type = C_CAN_DEVTYPE,
-+	.reg_align = C_CAN_REG_ALIGN_32,
-+	.freq = 52000000, /* 52 Mhz */
-+};
-+
-+#define C_CAN_ID(_vend, _dev, _driverdata) {		\
-+	PCI_DEVICE(_vend, _dev),			\
-+	.driver_data = (unsigned long)&_driverdata,	\
-+}
-+static DEFINE_PCI_DEVICE_TABLE(c_can_pci_tbl) = {
-+	C_CAN_ID(PCI_VENDOR_ID_STMICRO, PCI_DEVICE_ID_STMICRO_CAN,
-+		 c_can_sta2x11),
-+	{},
-+};
-+static struct pci_driver c_can_pci_driver = {
-+	.name = KBUILD_MODNAME,
-+	.id_table = c_can_pci_tbl,
-+	.probe = c_can_pci_probe,
-+	.remove = __devexit_p(c_can_pci_remove),
-+};
-+
-+module_pci_driver(c_can_pci_driver);
-+
-+MODULE_AUTHOR("Federico Vaga <federico.vaga@gmail.com>");
-+MODULE_LICENSE("GPL v2");
-+MODULE_DESCRIPTION("PCI CAN bus driver for Bosch C_CAN/D_CAN controller");
-+MODULE_DEVICE_TABLE(pci, c_can_pci_tbl);
--- 
-1.7.10.2
+--qd/SZIFVu+MYwfCR
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi,
+
+On Thu, Jun 14, 2012 at 12:13:33PM +0100, Russell King - ARM Linux wrote:
+> On Thu, Jun 14, 2012 at 01:20:37PM +0300, Felipe Balbi wrote:
+> > stat & BIT(1) is the same as BIT(1), so let's
+> > simplify things a bit by removing "stat &" from
+> > all omap_i2c_ack_stat() calls.
+>=20
+> This doesn't feel right, and the explanation is definitely wrong.
+>=20
+> "stat & BIT(1)" is not the same as "BIT(1)" _unless_ you're saying that
+> stat always has BIT(1) already set.  Can you guarantee that in this code?
+> If so, how?
+>=20
+> What happens if you read the status register, and it has bit 1 clear.
+> immediately after the read, the status register bit 1 becomes set, and
+> then you write bit 1 set (because you've dropped the stat & BIT(1) from
+> the code.)
+>=20
+> Is it not going to acknowledge that bit-1-set but because you haven't
+> read it, you're going to miss that event?
+>=20
+> This feels like a buggy change to me.
+
+I fail to see that situation would happen with this driver. See what it
+does (extremely simplified):
+
+if (stat & NACK) {
+	...
+	omap_i2c_ack_stat(dev, stat & NACK);
+}
+
+if (stat & RDR) {
+	...
+	omap_i2c_ack_stat(dev, stat & RDR);
+}
+
+and so on. The tricky place is only WRT errata handling, for example:
+
+if (*stat & (NACK | AL)) {
+	omap_i2c_ack_stat(dev, *stat & (XRDY | XDR));
+	...
+}
+
+but in this case, the errata says we must clear XRDY and XDR if that
+errata triggers, so if they just got enabled or not, it doesn't matter.
+
+Another tricky place is RDR | RRDY (likewise for XDR | XRDY):
+
+if (stat & (RDR | RRDY)) {
+	...
+	omap_i2c_ack_stat(dev, stat & (RDR | RRDY));
+}
+
+again here there will be no issues because those IRQs never fire
+simultaneously and one will only after after we have handled the
+previous, that's because the same FIFO is used anyway and we won't shift
+data into FIFO until we tell the IP "hey, I'm done with the FIFO, you
+can shift more data". Right ?
+
+--=20
+balbi
+
+--qd/SZIFVu+MYwfCR
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP2c7qAAoJEIaOsuA1yqRE+hEQAKHB1QxoORbpdUAna54oWtKo
+ynsOCQB5n5u9EAzUncuBJEjacgS6rsZ4LNogmBclXtp+uqHLoiT6yJi+oyKm7POk
++kLe4aUFKaUnYr4bBzBoIxIqqsGylYgDhv/+QGgtXs5l1WN6gLBrM+X1a5LfGn+q
+jssJg52nLQi2HTLykxdJP73FVnGxcpat1dVTbic9O4O0JQCRaofjhPCU8vDDsAOl
+H1kyFgcQSpU8h+L4rayn7SKmoafee09gzMQe1BtG5YV22vwMNMk+M3CcpgyIhMzm
+HzSQwRAr2OXQnA7MwQVi0brNCkGim6GntsiUgC2UrXaMVByTTjEeJpM082H/Y9f8
+a3EymJm6B3g0QWmRPFDFdpFtH4MrzhyhLYJigfsQq8XoqnSyfE3gjAnp2ypvJV3H
+Ium4pug3xdq4DA5R+Qv9GGxEsSTwyjQ03INCdJOLdomXJWk6dth79Xu4iR1j5CTO
+Pp9wJhjIDiBwNaTTg/BpnjTghXdqYC8YFSt/aqOrTi8SdWy+gZEqtdWJdL/BFFPH
+kq2JDrSEcj9xxdLlAAy0T0aapqnvTk9o6Ef5nnua/CXwZgJEWMMWzjLq9bFvll5i
+fGC23OAN2IDkqufrnn4O39sU92pV7sJMeYVVVbec7wXpH/LiXO/PJPK40mADtZCz
+nnQhw8yxwm8xjmLzTB0b
+=TeSf
+-----END PGP SIGNATURE-----
+
+--qd/SZIFVu+MYwfCR--
