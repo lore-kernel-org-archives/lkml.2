@@ -1,74 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755206Ab2FNIiv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 04:38:51 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60666 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753293Ab2FNIir (ORCPT
+	id S1755300Ab2FNIjN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 04:39:13 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:55311 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753985Ab2FNIjI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 04:38:47 -0400
-Date: Thu, 14 Jun 2012 01:38:29 -0700
-From: tip-bot for Dan Carpenter <dan.carpenter@oracle.com>
-Message-ID: <tip-ed88bed881c9948c4035828c5d63f60c7b015f86@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, agordeev@redhat.com, hpa@zytor.com,
-        mingo@kernel.org, yinghai@kernel.org, joerg.roedel@amd.com,
-        suresh.b.siddha@intel.com, tglx@linutronix.de,
-        dan.carpenter@oracle.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, agordeev@redhat.com,
-        linux-kernel@vger.kernel.org, yinghai@kernel.org, joerg.roedel@amd.com,
-        suresh.b.siddha@intel.com, tglx@linutronix.de,
-        dan.carpenter@oracle.com
-In-Reply-To: <20120612162633.GA11077@elgon.mountain>
-References: <20120612162633.GA11077@elgon.mountain>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86/apic/irq_remap: Silence a bogus pr_err()
-Git-Commit-ID: ed88bed881c9948c4035828c5d63f60c7b015f86
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 14 Jun 2012 04:39:08 -0400
+Message-ID: <4FD9A328.9080000@linaro.org>
+Date: Thu, 14 Jun 2012 09:39:04 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
+To: Alessandro Rubini <rubini@gnudd.com>
+CC: arnd@arndb.de, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, giancarlo.asnaghi@st.com,
+        linux@arm.linux.org.uk, linus.walleij@stericsson.com,
+        srinidhi.kasagar@stericsson.com, w.sang@pengutronix.de,
+        khali@linux-fr.org, linux-i2c@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, alan@linux.intel.com
+Subject: Re: [PATCH V3 2/3] i2c-nomadik: turn the platform driver to an amba
+ driver
+References: <201206140804.39083.arnd@arndb.de>  <cover.1339447570.git.rubini@gnudd.com> <4a198618063924b68182279ffd56c335d621f542.1339447570.git.rubini@gnudd.com> <20120614081758.GA19648@mail.gnudd.com>
+In-Reply-To: <20120614081758.GA19648@mail.gnudd.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 14 Jun 2012 01:38:34 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ed88bed881c9948c4035828c5d63f60c7b015f86
-Gitweb:     http://git.kernel.org/tip/ed88bed881c9948c4035828c5d63f60c7b015f86
-Author:     Dan Carpenter <dan.carpenter@oracle.com>
-AuthorDate: Tue, 12 Jun 2012 19:26:33 +0300
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 13 Jun 2012 09:51:04 +0200
+On 14/06/12 09:17, Alessandro Rubini wrote:
+>> You change only one half of ux500 here: the part where the device
+>> gets defined statically, but not not the definition in the
+>> device-tree.
+>
+> Yes, I'm aware. That's why I added Lee Jones as Cc:, on Linusw's
+> suggestion.  Lee told me to go ahead and he'll fix the DT stuff.
 
-x86/apic/irq_remap: Silence a bogus pr_err()
+I did?
 
-There is an extra semicolon here so the pr_err() message is
-printed when it is not intended.
+I have already DT:ed this driver. There are 3 patches on the MLs currently.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Alexander Gordeev <agordeev@redhat.com>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Joerg Roedel <joerg.roedel@amd.com>
-Link: http://lkml.kernel.org/r/20120612162633.GA11077@elgon.mountain
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- drivers/iommu/intel_irq_remapping.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> [PATCH 1/3] i2c: Add Device Tree support to the Nomadik I2C driver
+> [PATCH 2/3] ARM: ux500: Add i2c configurations to the Device Tree for DB8500 based devices
+> [PATCH 3/3] Documentation: Device Tree binding information for i2c-nomadik driver
 
-diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
-index dafbad0..853902a 100644
---- a/drivers/iommu/intel_irq_remapping.c
-+++ b/drivers/iommu/intel_irq_remapping.c
-@@ -938,7 +938,7 @@ intel_ioapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
- 
- 	err = apic->cpu_mask_to_apicid_and(cfg->domain, mask, &dest);
- 	if (err) {
--		if (assign_irq_vector(irq, cfg, data->affinity));
-+		if (assign_irq_vector(irq, cfg, data->affinity))
- 			pr_err("Failed to recover vector for irq %d\n", irq);
- 		return err;
- 	}
+I'm more than happy for you to base your patches on these and make the 
+necessary changes. Off hand, I think the only changes you'll need to 
+make is the probing from DT itself.
+
+So something like:
+
+> --- a/arch/arm/boot/dts/db8500.dtsi
+> +++ b/arch/arm/boot/dts/db8500.dtsi
+> @@ -449,7 +449,7 @@
+>                 };
+>
+>                 i2c@80004000 {
+> -                       compatible = "stericsson,db8500-i2c", "st,nomadik-i2c";
+> +                       compatible = "st,nomadik-i2c", "arm,primecell";
+>                         reg = <0x80004000 0x1000>;
+>                         interrupts = <0 21 0x4>;
+>                         #address-cells = <1>;
+
+... for each of the controllers.
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+M: +44 77 88 633 515
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
