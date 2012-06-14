@@ -1,84 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932076Ab2FNN6J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 09:58:09 -0400
-Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:54909 "EHLO
-	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756014Ab2FNN6H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 09:58:07 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4FD9EDEC.9020707@cam.ac.uk>
-Date: Thu, 14 Jun 2012 14:58:04 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1756100Ab2FNOAT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 10:00:19 -0400
+Received: from mga11.intel.com ([192.55.52.93]:24180 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755951Ab2FNOAR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 10:00:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="165654805"
+Date: Thu, 14 Jun 2012 22:00:06 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Wanpeng Li <liwp.linux@gmail.com>, linux-kernel@vger.kernel.org,
+        Gavin Shan <shangw@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2] writeback: avoid race when update bandwidth
+Message-ID: <20120614140006.GB15553@localhost>
+References: <1339501561-4570-1-git-send-email-liwp.linux@gmail.com>
+ <20120612115219.GA17348@localhost>
+ <20120613035920.GV22848@dastard>
+ <20120613121434.GA937@localhost>
+ <20120614020559.GB7339@dastard>
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] iio: let the doc follow core code move
-References: <alpine.LNX.2.00.1206141527230.8644@pobox.suse.cz> <4FD9E917.8020602@cam.ac.uk> <alpine.LNX.2.00.1206141544080.8644@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1206141544080.8644@pobox.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120614020559.GB7339@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/14/2012 2:45 PM, Jiri Kosina wrote:
-> On Thu, 14 Jun 2012, Jonathan Cameron wrote:
->
->>> As the IIO core code has been moved out of staging, let the appropriate
->>> documentation appear in Documentation/iio (which is what
->>> drivers/iio/Kconfig suggests as a location to look for it anyway).
->>>
->> I'd really rather not do this just yet.  There are elements that are out
->> of date or downright wrong in here. Much like the drivers, these should
->> get some careful review before they go anywhere.
->>
->> For now we have carefully only moved abi docs that have been
->> carefully sanity checked first (and even then a few 'interesting'
->> corners made it through).
->>
->> Obviously we'd like to do that pretty soon!
->> In the meantime it comes down to that old story of wrong docs
->> perhaps being worse than no docs.
->
-> Oh well, I see.
->
-> So at least we need the patch below.
-Fair enough I suppose.
->
->
->
->
-> From: Jiri Kosina<jkosina@suse.cz>
-> Subject: [PATCH] iio: drop wrong reference from Kconfig
->
-> The documentation lives in drivers/staging/iio/Documentation, but
-> according to Jonathan it's obsolete and needs fixing.
->
-> Signed-off-by: Jiri Kosina<jkosina@suse.cz>
-Acked-by: Jonathan Cameron <jic23@kernel.org>
-> ---
->   drivers/iio/Kconfig |    3 +--
->   1 files changed, 1 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/iio/Kconfig b/drivers/iio/Kconfig
-> index 56eecef..2ec93da 100644
-> --- a/drivers/iio/Kconfig
-> +++ b/drivers/iio/Kconfig
-> @@ -8,8 +8,7 @@ menuconfig IIO
->   	help
->   	  The industrial I/O subsystem provides a unified framework for
->   	  drivers for many different types of embedded sensors using a
-> -	  number of different physical interfaces (i2c, spi, etc). See
-> -	  Documentation/iio for more information.
-> +	  number of different physical interfaces (i2c, spi, etc).
->
->   if IIO
->
->
+On Thu, Jun 14, 2012 at 12:05:59PM +1000, Dave Chinner wrote:
+> On Wed, Jun 13, 2012 at 08:14:34PM +0800, Fengguang Wu wrote:
+> > On Wed, Jun 13, 2012 at 01:59:20PM +1000, Dave Chinner wrote:
+> > > On Tue, Jun 12, 2012 at 07:52:19PM +0800, Fengguang Wu wrote:
+> > > > On Tue, Jun 12, 2012 at 07:46:01PM +0800, Wanpeng Li wrote:
+> > > > > From: Wanpeng Li <liwp@linux.vnet.ibm.com>
+> > > > > 
+> > > > > "V1 -> V2"
+> > > > > * remove dirty_lock
+> > > > > 
+> > > > > Since bdi->wb.list_lock is used to protect the b_* lists,
+> > > > > so the flushers who call wb_writeback to writeback pages will
+> > > > > stuck when bandwidth update policy holds this lock. In order
+> > > > > to avoid this race we can introduce a new bandwidth_lock who
+> > > > > is responsible for protecting bandwidth update policy.
+> > > > > 
+> > > > > Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
+> > > > 
+> > > > Applied with a new title "writeback: use a standalone lock for
+> > > > updating write bandwidth". "race" is sensitive because it often
+> > > > refers to some locking error.
+> > > 
+> > > Fengguang - can we get some evidence that this is a contended lock
+> > > before changing the scope of it? All of the previous "breaking up
+> > > global locks" have been done based on lock contention data, so
+> > > moving back to a global lock for this needs to have the same
+> > > analysis provided...
+> > 
+> > Good point. Attached is the lockstat for the case "10 disks each runs
+> > 100 dd dirtier tasks":
+> > 
+> >         lkp-ne02/JBOD-10HDD-thresh=4G/xfs-100dd-1-3.2.0-rc5
+> 
+> (nothing attached)
+> 
+> > The wb->list_lock contention is much better than I expected, which is
+> > good.  What stand out are
+> >                                                         waittime-total
+> > - &rq->lock             by double_rq_lock()             6738952.13
+> > - clockevents_lock      by clockevents_notify()         2155554.37
+> > - mapping->tree_lock    by test_clear_page_writeback()   931550.13
+> > - sb_lock               by grab_super_passive()          918815.87
+> > - &zone->lru_lock       by pagevec_lru_move_fn()         912681.05
+> > 
+> > - sysfs_mutex           by sysfs_permission()           24029975.20 # mutex
+> > - ip->i_lock            by xfs_ilock()                  18428284.10 # mrlock
+> 
+> The wait time is not really an indication of contention problems.
+> Large wait time is usually an indication that the lock is being used
+> a lot.
 
+Right.
+
+> What matters is the number of contentions vs the number of
+> acquisitions, and the number of those contentions that bounced the
+> lock. If the number of contentions is >= 0.5% of the acquisitions,
+> then the lock can be considered hot and needing some work. If I look
+> here:
+
+I wonder if anyone has a simple script for sorting lock_stat output
+based on that (and perhaps other selectable) criterion? It should be
+possible to write on myself, but still.. ;-)
+
+Default lock_stat output is sorted by absolute number of contentions.
+
+> http://lists.linux.hp.com/~enw/ext4/3.2/3.2-full-lockstats.2/ffsb_fsscale.xfs.large_file_creates_threads=192/profiling/iteration.1/lock_stat
+> 
+> Which is a 192 thread concurrent write on a 48-core machine, the
+> wb.list_lock shows 5,532 acquistions for the entire test, while the
+> mapping tree lock took 440 million!. So your test isn't really one
+> that shows wb.list_lock contention. The 192-thread mailserver
+> workload from the same machine:
+> 
+> http://lists.linux.hp.com/~enw/ext4/3.2/3.2-full-lockstats.2/ffsb_fsscale.xfs.mail_server_threads=192/profiling/iteration.1/lock_stat
+> 
+> Shows about 7.1m acquisitions of the wb.list_lock, but only 28,000
+> contentions. So it isn't really contended enough to justify
+> replacing it with a global lock.
+
+Right.
+
+> FWIW, the third most contended lock on that workload is the XFS
+> delayed write queue lock - 25M acquisitions for 600k contentions - a
+> rate of about 2% which means quite severe contention.  That lock no
+> longer exists in 3.5 - Christoph completely reworked the delayed
+> write buffer support to remove the global list and lock because it
+> was showing up in profiles like this...
+> 
+> Indeed, that profile shows that XFS owns 7 of the 10 most contended
+> locks, and 3 of them have had significant work done to reduce the
+> contention since 3.2 as a result of recent profile results like this.
+
+Nice work!
+
+Thanks,
+Fengguang
