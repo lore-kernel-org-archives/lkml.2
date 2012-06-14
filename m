@@ -1,88 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755277Ab2FNCMc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 22:12:32 -0400
-Received: from mga14.intel.com ([143.182.124.37]:55486 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755238Ab2FNCM3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 22:12:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="111912881"
-Message-ID: <4FD94811.9060806@intel.com>
-Date: Thu, 14 Jun 2012 10:10:25 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+	id S1755291Ab2FNCMn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 22:12:43 -0400
+Received: from mail160.messagelabs.com ([216.82.253.99]:44704 "EHLO
+	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755053Ab2FNCMk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 22:12:40 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-8.tower-160.messagelabs.com!1339639959!9438789!1
+X-Originating-IP: [216.166.12.97]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 2/5] staging: comedi: me4000: remove PORT_PDEBUG macro
+Date: Wed, 13 Jun 2012 19:12:35 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
 MIME-Version: 1.0
-To: Andi Kleen <ak@linux.intel.com>, linux-tegra@vger.kernel.org,
-        linux-omap@vger.kernel.org
-CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, arnd@arndb.de,
-        rostedt@goodmis.org, fweisbec@gmail.com, jeremy@goop.org,
-        seto.hidetoshi@jp.fujitsu.com, borislav.petkov@amd.com,
-        tony.luck@intel.com, luto@mit.edu, riel@redhat.com, avi@redhat.com,
-        len.brown@intel.com, tj@kernel.org, akpm@linux-foundation.org,
-        cl@gentwo.org, jbeulich@suse.com, eric.dumazet@gmail.com,
-        akinobu.mita@gmail.com, cpw@sgi.com, penberg@kernel.org,
-        steiner@sgi.com, viro@zeniv.linux.org.uk,
-        kamezawa.hiroyu@jp.fujitsu.com, aarcange@redhat.com,
-        rientjes@google.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v8 8/8] x86/tlb: do flush_tlb_kernel_range by 'invlpg'
-References: <1339492005-20241-1-git-send-email-alex.shi@intel.com> <1339492005-20241-9-git-send-email-alex.shi@intel.com> <20120613145656.GB32604@tassilo.jf.intel.com> <4FD939F2.3090605@intel.com> <4FD93DC7.8020501@intel.com>
-In-Reply-To: <4FD93DC7.8020501@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201206131912.36216.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/14/2012 09:26 AM, Alex Shi wrote:
+The PORT_PDEBUG macro is used to output the result of every port
+io operation. This shouldn't be in a mainline driver. Remove it.
 
-> On 06/14/2012 09:10 AM, Alex Shi wrote:
-> 
->> On 06/13/2012 10:56 PM, Andi Kleen wrote:
->>
->>> On Tue, Jun 12, 2012 at 05:06:45PM +0800, Alex Shi wrote:
->>>> This patch do flush_tlb_kernel_range by 'invlpg'. The performance pay
->>>> and gain was analysed in my patch (x86/flush_tlb: try flush_tlb_single
->>>> one by one in flush_tlb_range). Now we move this logical into kernel
->>>> part. The pay is multiple 'invlpg' execution cost, that is same. but
->>>>  the gain(cost reducing of TLB entries refilling) is absolutely
->>>> increased.
->>>
->>> The subtle point is whether INVLPG flushes global pages or not.
->>> After some digging I found a sentence in the SDM that says it does.
->>> So it may be safe.
->>
->>
->> Many thanks for your time!
->>
->>>
->>> What does it improve?
->>
->>
->> I have not specific benchmark for this. partly due to the gain theory
->> was proved since it is same as previous user process's page table flush.
->>
->> The user of tlb kernel flush in kernel is vmalloc. and Android binder
->> IPC subsystem is using it(drivers/staging/android/binder.c)
->>
->> I am wondering if it can help Andriod on this?
->> So, add cc to android-kernel@googlegroups.com
-> 
-> 
-> Sorry, Andriod reject posting without register, so cc to
-> linux-omap@vger.kernel.org and linux-tegra@vger.kernel.org instead.
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/staging/comedi/drivers/me4000.c |    4 ----
+ drivers/staging/comedi/drivers/me4000.h |    8 --------
+ 2 files changed, 0 insertions(+), 12 deletions(-)
 
-
-Ops, forget the architecture different again
-This will help x86 android, not arm system. Forget above 2 mailing lists. :(
-
-> 
->>
->>> -Andi
->>
->>
-> 
-> 
-
+diff --git a/drivers/staging/comedi/drivers/me4000.c b/drivers/staging/comedi/drivers/me4000.c
+index f5a0bcf..ddb9384 100644
+--- a/drivers/staging/comedi/drivers/me4000.c
++++ b/drivers/staging/comedi/drivers/me4000.c
+@@ -111,14 +111,12 @@ static int ai_write_chanlist(struct comedi_device *dev,
+ static inline void me4000_outb(struct comedi_device *dev, unsigned char value,
+ 			       unsigned long port)
+ {
+-	PORT_PDEBUG("--> 0x%02X port 0x%04lX\n", value, port);
+ 	outb(value, port);
+ }
+ 
+ static inline void me4000_outl(struct comedi_device *dev, unsigned long value,
+ 			       unsigned long port)
+ {
+-	PORT_PDEBUG("--> 0x%08lX port 0x%04lX\n", value, port);
+ 	outl(value, port);
+ }
+ 
+@@ -127,7 +125,6 @@ static inline unsigned long me4000_inl(struct comedi_device *dev,
+ {
+ 	unsigned long value;
+ 	value = inl(port);
+-	PORT_PDEBUG("<-- 0x%08lX port 0x%04lX\n", value, port);
+ 	return value;
+ }
+ 
+@@ -136,7 +133,6 @@ static inline unsigned char me4000_inb(struct comedi_device *dev,
+ {
+ 	unsigned char value;
+ 	value = inb(port);
+-	PORT_PDEBUG("<-- 0x%08X port 0x%04lX\n", value, port);
+ 	return value;
+ }
+ 
+diff --git a/drivers/staging/comedi/drivers/me4000.h b/drivers/staging/comedi/drivers/me4000.h
+index 7087da2..d9ee3fb 100644
+--- a/drivers/staging/comedi/drivers/me4000.h
++++ b/drivers/staging/comedi/drivers/me4000.h
+@@ -28,17 +28,9 @@
+   Debug section
+   ===========================================================================*/
+ 
+-#undef ME4000_PORT_DEBUG	/*  Debug port access */
+ #undef ME4000_ISR_DEBUG		/*  Debug the interrupt service routine */
+ #undef ME4000_DEBUG		/*  General purpose debug masseges */
+ 
+-#ifdef ME4000_PORT_DEBUG
+-#undef PORT_PDEBUG
+-#define PORT_PDEBUG(fmt, args...) printk(KERN_DEBUG"comedi%d: me4000: " fmt, dev->minor,  ##args)
+-#else
+-#define PORT_PDEBUG(fmt, args...)	/*  no debugging, do nothing */
+-#endif
+-
+ #ifdef ME4000_ISR_DEBUG
+ #undef ISR_PDEBUG
+ #define ISR_PDEBUG(fmt, args...) printk(KERN_DEBUG"comedi%d: me4000: " fmt, dev->minor,  ##args)
+-- 
+1.7.7
 
