@@ -1,60 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753780Ab2FNLWw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 07:22:52 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:39774 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750961Ab2FNLWv (ORCPT
+	id S1755450Ab2FNLW6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 07:22:58 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46119 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753916Ab2FNLWz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 07:22:51 -0400
-Date: Thu, 14 Jun 2012 13:22:45 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@ti.com>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "Luck,Tony" <tony.luck@intel.com>
-Subject: Re: [RFC GIT PULL] nohz: Basic cputime accounting for adaptive
- tickless
-Message-ID: <20120614112241.GB16848@somewhere>
-References: <1339604397-8758-1-git-send-email-fweisbec@gmail.com>
- <1339664829.2559.14.camel@twins>
- <20120614111241.GA16848@somewhere>
- <20120614111638.GA16676@gmail.com>
- <alpine.LFD.2.02.1206141321010.3086@ionos>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1206141321010.3086@ionos>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 14 Jun 2012 07:22:55 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sam Ravnborg <sam@ravnborg.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] clkdev: Add default clkdev.h
+Date: Thu, 14 Jun 2012 12:22:45 +0100
+Message-Id: <1339672966-7553-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 14, 2012 at 01:21:23PM +0200, Thomas Gleixner wrote:
-> On Thu, 14 Jun 2012, Ingo Molnar wrote:
-> > * Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> > > You're right, I should have looked into CONFIG_VIRT_CPU_ACCOUNTING sooner
-> > > and see if I can reuse it.
-> > > 
-> > > I'll try something with that.
-> > 
-> > Maybe sanitize all the variants under a single set of 
-> > wrappers/callbacks?
-> 
-> Yes, please!
+Ease the deployment of clkdev by providing a default asm/clkdev.h which
+will be used if the arch does not have an include/asm/clkdev.h.
 
-Sure, I'm working in it.
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ include/asm-generic/Kbuild.asm |    4 ++++
+ include/asm-generic/clkdev.h   |   26 ++++++++++++++++++++++++++
+ 2 files changed, 30 insertions(+)
+ create mode 100644 include/asm-generic/clkdev.h
+
+diff --git a/include/asm-generic/Kbuild.asm b/include/asm-generic/Kbuild.asm
+index c5d2e5d..da121e0 100644
+--- a/include/asm-generic/Kbuild.asm
++++ b/include/asm-generic/Kbuild.asm
+@@ -13,6 +13,10 @@ ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/a.out.h \
+ header-y += a.out.h
+ endif
+ 
++ifeq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/clkdev.h),)
++generic-y += clkdev.h
++endif
++
+ header-y += auxvec.h
+ header-y += bitsperlong.h
+ header-y += byteorder.h
+diff --git a/include/asm-generic/clkdev.h b/include/asm-generic/clkdev.h
+new file mode 100644
+index 0000000..c362a9d
+--- /dev/null
++++ b/include/asm-generic/clkdev.h
+@@ -0,0 +1,26 @@
++/*
++ *  include/asm-generic/clkdev.h
++ *
++ * Based on the ARM clkdev.h:
++ *  Copyright (C) 2008 Russell King.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * Helper for the clk API to assist looking up a struct clk.
++ */
++#ifndef __ASM_CLKDEV_H
++#define __ASM_CLKDEV_H
++
++#include <linux/slab.h>
++
++#define __clk_get(clk)	({ 1; })
++#define __clk_put(clk)	do { } while (0)
++
++static inline struct clk_lookup_alloc *__clkdev_alloc(size_t size)
++{
++	return kzalloc(size, GFP_KERNEL);
++}
++
++#endif
+-- 
+1.7.10
+
