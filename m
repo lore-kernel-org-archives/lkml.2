@@ -1,40 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756354Ab2FNRww (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 13:52:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10306 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752154Ab2FNRwv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 13:52:51 -0400
-Message-ID: <4FDA24BA.7070306@redhat.com>
-Date: Thu, 14 Jun 2012 13:51:54 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1756538Ab2FNSAK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 14:00:10 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:50711 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755962Ab2FNSAI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 14:00:08 -0400
+Date: Thu, 14 Jun 2012 19:59:50 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Felipe Balbi <balbi@ti.com>
+Cc: ben-linux@fluff.org, Tony Lindgren <tony@atomide.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Shubhrajyoti Datta <shubhrajyoti@ti.com>
+Subject: Re: [PATCH v2 00/17] Big OMAP I2C Cleanup
+Message-ID: <20120614175950.GE14419@pengutronix.de>
+References: <1339691067-919-1-git-send-email-balbi@ti.com>
 MIME-Version: 1.0
-To: Wanpeng Li <liwp.linux@gmail.com>
-CC: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
-        linux-kernel@vger.kernel.org, trivial@kernel.org,
-        Gavin Shan <shangw@linux.vnet.ibm.com>
-Subject: Re: [PATCH] mm: fix page reclaim comment error
-References: <1339677662-25942-1-git-send-email-liwp.linux@gmail.com>
-In-Reply-To: <1339677662-25942-1-git-send-email-liwp.linux@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="xJK8B5Wah2CMJs8h"
+Content-Disposition: inline
+In-Reply-To: <1339691067-919-1-git-send-email-balbi@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/14/2012 08:41 AM, Wanpeng Li wrote:
-> From: Wanpeng Li<liwp@linux.vnet.ibm.com>
->
-> Since there are five lists in LRU cache, the array nr in get_scan_count
-> should be:
->
-> nr[0] = anon inactive pages to scan; nr[1] = anon active pages to scan
-> nr[2] = file inactive pages to scan; nr[3] = file active pages to scan
->
-> Signed-off-by: Wanpeng Li<liwp.linux@gmail.com>
 
-Reviewed-by: Rik van Riel <riel@redhat.com>
+--xJK8B5Wah2CMJs8h
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Thu, Jun 14, 2012 at 07:24:10PM +0300, Felipe Balbi wrote:
+> Hi guys,
+>=20
+> I have dropped a few patches from the series and also
+> tested every single patch on my pandaboard. I2C messages
+> are still working fine with panda after each patch.
+>=20
+> There's still lots of work to be done on the i2c-omap.c
+> driver but it's now easier to read, IMO.
+>=20
+> Changes since v1:
+> 	- removed tabification on patch 6/17
+> 	- removed dev_err() which was introduced on patch 09/17
+
+To prevent the list being flooded, I would appreciate if you could wait
+a few days to collect reviews before resending. It will take some time
+until I pick this series anyhow, because I want people to have time to
+donate Tested-by tags.
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--xJK8B5Wah2CMJs8h
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAk/aJpYACgkQD27XaX1/VRtM3gCfZY41dY4bD+w/iHITlDLm3VOV
+Ww4AnidaJyBM8GHHLfCi+4FgLmS8Pawr
+=g4ZL
+-----END PGP SIGNATURE-----
+
+--xJK8B5Wah2CMJs8h--
