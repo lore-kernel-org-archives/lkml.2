@@ -1,47 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754306Ab2FNPIM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 11:08:12 -0400
-Received: from www.linutronix.de ([62.245.132.108]:58362 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753155Ab2FNPIK (ORCPT
+	id S1754230Ab2FNPL4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 11:11:56 -0400
+Received: from casper.infradead.org ([85.118.1.10]:55510 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752151Ab2FNPLz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 11:08:10 -0400
-Date: Thu, 14 Jun 2012 17:08:08 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>
-Subject: Re: [RFC patch 2/5] smpboot: Provide infrastructure for percpu
- hotplug threads
-In-Reply-To: <20120614150118.GC2458@linux.vnet.ibm.com>
-Message-ID: <alpine.LFD.2.02.1206141707420.3086@ionos>
-References: <20120613185748.GF2427@linux.vnet.ibm.com> <alpine.LFD.2.02.1206132101440.3086@ionos> <20120613191745.GG2427@linux.vnet.ibm.com> <20120613204725.GA9858@linux.vnet.ibm.com> <20120614045125.GA30257@linux.vnet.ibm.com> <alpine.LFD.2.02.1206141234400.3086@ionos>
- <20120614125939.GC2443@linux.vnet.ibm.com> <alpine.LFD.2.02.1206141527580.3086@ionos> <alpine.LFD.2.02.1206141545510.3086@ionos> <alpine.LFD.2.02.1206141610090.3086@ionos> <20120614150118.GC2458@linux.vnet.ibm.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Thu, 14 Jun 2012 11:11:55 -0400
+Date: Thu, 14 Jun 2012 12:11:42 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Dmitry Antipov <dmitry.antipov@linaro.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jim Cromie <jim.cromie@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [GIT PULL 0/3] perf/urgent fixes
+Message-ID: <20120614151142.GD9449@infradead.org>
+References: <1339601367-17834-1-git-send-email-acme@infradead.org>
+ <20120614100710.GB19531@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120614100710.GB19531@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 14 Jun 2012, Paul E. McKenney wrote:
-> On Thu, Jun 14, 2012 at 04:12:14PM +0200, Thomas Gleixner wrote:
-> > > > Btw, if that simpler yield approach is working and I can't see why it
-> > > > shouldn't then you can get rid of the node task as well. The only
-> > > > purpose of it is to push up the priority of yielding tasks, right?
-> > > 
-> > > Ah, missed that it calls rcu_initiate_boost() as well....
-> > 
-> > And looking further, I really don't understand why it's doing
-> > that. That node thread is only woken by these weird yield timers.
+Em Thu, Jun 14, 2012 at 12:07:10PM +0200, Ingo Molnar escreveu:
+> * Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+> Hm, fails to build here:
 > 
-> If your patch works out, it indeed might be possible to get rid of
-> ->node_kthread_task.  The ->boost_kthread_task needs to stay, however.
+>     CC util/parse-events-bison.o
+> util/parse-events.l: In function ‘__value’:
+> util/parse-events.l:18:10: error: ‘PE_ERROR’ undeclared (first 
+> use in this function)
+> util/parse-events.l:18:10: note: each undeclared identifier is 
+> reported only once for each function it appears in
+> util/parse-events.l:20:2: error: ‘parse_events_lval’ undeclared 
+> (first use in this function)
+> util/parse-events.l: In function ‘value’:
+> util/parse-events.l:26:42: error: ‘PE_VALUE’ undeclared (first 
+> use in this function)
+> util/parse-events.l: In function ‘raw’:
+> util/parse-events.l:31:44: error: ‘PE_RAW’ undeclared (first use 
+> in this function)
+> util/parse-events.l: In function ‘str’:
+> 
+> stock Fedora 17 install. 25f42985825d builds fine.
 
-That's right.
+Oops, fixing...
+
+- Arnaldo
