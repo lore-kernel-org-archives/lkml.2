@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757162Ab2FOAE5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 20:04:57 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56620 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756867Ab2FOAAL (ORCPT
+	id S1756909Ab2FOAFe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 20:05:34 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:46571 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756720Ab2FOAAE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 20:00:11 -0400
-Message-Id: <20120614235626.203530407@linuxfoundation.org>
+	Thu, 14 Jun 2012 20:00:04 -0400
+Message-Id: <20120614235626.030837885@linuxfoundation.org>
 User-Agent: quilt/0.60-20.1
-Date: Thu, 14 Jun 2012 16:56:49 -0700
+Date: Thu, 14 Jun 2012 16:56:47 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk,
-        David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 26/42] ALSA: HDA: Pin fixup for Zotac Z68 motherboard
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 24/42] ASoC: wm8994: Apply volume updates with clocks enabled
 In-Reply-To: <20120614235636.GA5275@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,54 +25,168 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Henningsson <david.henningsson@canonical.com>
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-commit edfe3bfc1b779ddda9bcff523eb022dda37b93c8 upstream.
+commit bfd37bb5f681961e255fd2f346c20fdae2ef3f27 upstream.
 
-Pin 0x1b was connected to the front panel connector, which according to
-the HDA standard should contain a mic and a headphone. In this case,
-the headphone was listed as "line out" by BIOS.
+Volume updates may not be acted upon if there is no clock applied when
+the volume update is written. Ensure this doesn't happen by writing out
+registers with volume updates after we enable each of the clocks.
 
-BugLink: https://bugs.launchpad.net/bugs/993162
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+There are more registers updated than before as previously we were
+relying on wm_hubs to set those for controls it manages.
+
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ sound/soc/codecs/wm8994.c |   93 ++++++++++++++++++++++++++++------------------
+ 1 file changed, 58 insertions(+), 35 deletions(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -6606,6 +6606,7 @@ enum {
- 	ALC662_FIXUP_ASUS_MODE7,
- 	ALC662_FIXUP_ASUS_MODE8,
- 	ALC662_FIXUP_NO_JACK_DETECT,
-+	ALC662_FIXUP_ZOTAC_Z68,
- };
+--- a/sound/soc/codecs/wm8994.c
++++ b/sound/soc/codecs/wm8994.c
+@@ -46,6 +46,39 @@
+ #define WM8994_NUM_DRC 3
+ #define WM8994_NUM_EQ  3
  
- static const struct alc_fixup alc662_fixups[] = {
-@@ -6755,6 +6756,13 @@ static const struct alc_fixup alc662_fix
- 		.type = ALC_FIXUP_FUNC,
- 		.v.func = alc_fixup_no_jack_detect,
- 	},
-+	[ALC662_FIXUP_ZOTAC_Z68] = {
-+		.type = ALC_FIXUP_PINS,
-+		.v.pins = (const struct alc_pincfg[]) {
-+			{ 0x1b, 0x02214020 }, /* Front HP */
-+			{ }
-+		}
-+	},
- };
++static struct {
++	unsigned int reg;
++	unsigned int mask;
++} wm8994_vu_bits[] = {
++	{ WM8994_LEFT_LINE_INPUT_1_2_VOLUME, WM8994_IN1_VU },
++	{ WM8994_RIGHT_LINE_INPUT_1_2_VOLUME, WM8994_IN1_VU },
++	{ WM8994_LEFT_LINE_INPUT_3_4_VOLUME, WM8994_IN2_VU },
++	{ WM8994_RIGHT_LINE_INPUT_3_4_VOLUME, WM8994_IN2_VU },
++	{ WM8994_SPEAKER_VOLUME_LEFT, WM8994_SPKOUT_VU },
++	{ WM8994_SPEAKER_VOLUME_RIGHT, WM8994_SPKOUT_VU },
++	{ WM8994_LEFT_OUTPUT_VOLUME, WM8994_HPOUT1_VU },
++	{ WM8994_RIGHT_OUTPUT_VOLUME, WM8994_HPOUT1_VU },
++	{ WM8994_LEFT_OPGA_VOLUME, WM8994_MIXOUT_VU },
++	{ WM8994_RIGHT_OPGA_VOLUME, WM8994_MIXOUT_VU },
++
++	{ WM8994_AIF1_DAC1_LEFT_VOLUME, WM8994_AIF1DAC1_VU },
++	{ WM8994_AIF1_DAC1_RIGHT_VOLUME, WM8994_AIF1DAC1_VU },
++	{ WM8994_AIF1_DAC2_LEFT_VOLUME, WM8994_AIF1DAC2_VU },
++	{ WM8994_AIF1_DAC2_RIGHT_VOLUME, WM8994_AIF1DAC2_VU },
++	{ WM8994_AIF2_DAC_LEFT_VOLUME, WM8994_AIF2DAC_VU },
++	{ WM8994_AIF2_DAC_RIGHT_VOLUME, WM8994_AIF2DAC_VU },
++	{ WM8994_AIF1_ADC1_LEFT_VOLUME, WM8994_AIF1ADC1_VU },
++	{ WM8994_AIF1_ADC1_RIGHT_VOLUME, WM8994_AIF1ADC1_VU },
++	{ WM8994_AIF1_ADC2_LEFT_VOLUME, WM8994_AIF1ADC2_VU },
++	{ WM8994_AIF1_ADC2_RIGHT_VOLUME, WM8994_AIF1ADC2_VU },
++	{ WM8994_AIF2_ADC_LEFT_VOLUME, WM8994_AIF2ADC_VU },
++	{ WM8994_AIF2_ADC_RIGHT_VOLUME, WM8994_AIF1ADC2_VU },
++	{ WM8994_DAC1_LEFT_VOLUME, WM8994_DAC1_VU },
++	{ WM8994_DAC1_RIGHT_VOLUME, WM8994_DAC1_VU },
++	{ WM8994_DAC2_LEFT_VOLUME, WM8994_DAC2_VU },
++	{ WM8994_DAC2_RIGHT_VOLUME, WM8994_DAC2_VU },
++};
++
+ static int wm8994_drc_base[] = {
+ 	WM8994_AIF1_DRC1_1,
+ 	WM8994_AIF1_DRC2_1,
+@@ -1006,6 +1039,7 @@ static int aif1clk_ev(struct snd_soc_dap
+ 	struct snd_soc_codec *codec = w->codec;
+ 	struct wm8994 *control = codec->control_data;
+ 	int mask = WM8994_AIF1DAC1L_ENA | WM8994_AIF1DAC1R_ENA;
++	int i;
+ 	int dac;
+ 	int adc;
+ 	int val;
+@@ -1064,6 +1098,13 @@ static int aif1clk_ev(struct snd_soc_dap
+ 				    WM8994_AIF1DAC2L_ENA);
+ 		break;
  
- static const struct snd_pci_quirk alc662_fixup_tbl[] = {
-@@ -6768,6 +6776,7 @@ static const struct snd_pci_quirk alc662
- 	SND_PCI_QUIRK(0x144d, 0xc051, "Samsung R720", ALC662_FIXUP_IDEAPAD),
- 	SND_PCI_QUIRK(0x17aa, 0x38af, "Lenovo Ideapad Y550P", ALC662_FIXUP_IDEAPAD),
- 	SND_PCI_QUIRK(0x17aa, 0x3a0d, "Lenovo Ideapad Y550", ALC662_FIXUP_IDEAPAD),
-+	SND_PCI_QUIRK(0x19da, 0xa130, "Zotac Z68", ALC662_FIXUP_ZOTAC_Z68),
- 	SND_PCI_QUIRK(0x1b35, 0x2206, "CZC P10T", ALC662_FIXUP_CZC_P10T),
++	case SND_SOC_DAPM_POST_PMU:
++		for (i = 0; i < ARRAY_SIZE(wm8994_vu_bits); i++)
++			snd_soc_write(codec, wm8994_vu_bits[i].reg,
++				      snd_soc_read(codec,
++						   wm8994_vu_bits[i].reg));
++		break;
++
+ 	case SND_SOC_DAPM_PRE_PMD:
+ 	case SND_SOC_DAPM_POST_PMD:
+ 		snd_soc_update_bits(codec, WM8994_POWER_MANAGEMENT_5,
+@@ -1089,6 +1130,7 @@ static int aif2clk_ev(struct snd_soc_dap
+ 		      struct snd_kcontrol *kcontrol, int event)
+ {
+ 	struct snd_soc_codec *codec = w->codec;
++	int i;
+ 	int dac;
+ 	int adc;
+ 	int val;
+@@ -1139,6 +1181,13 @@ static int aif2clk_ev(struct snd_soc_dap
+ 				    WM8994_AIF2DACR_ENA);
+ 		break;
  
- #if 0
++	case SND_SOC_DAPM_POST_PMU:
++		for (i = 0; i < ARRAY_SIZE(wm8994_vu_bits); i++)
++			snd_soc_write(codec, wm8994_vu_bits[i].reg,
++				      snd_soc_read(codec,
++						   wm8994_vu_bits[i].reg));
++		break;
++
+ 	case SND_SOC_DAPM_PRE_PMD:
+ 	case SND_SOC_DAPM_POST_PMD:
+ 		snd_soc_update_bits(codec, WM8994_POWER_MANAGEMENT_5,
+@@ -1587,9 +1636,11 @@ SND_SOC_DAPM_POST("Late Disable PGA", la
+ 
+ static const struct snd_soc_dapm_widget wm8994_lateclk_widgets[] = {
+ SND_SOC_DAPM_SUPPLY("AIF1CLK", WM8994_AIF1_CLOCKING_1, 0, 0, aif1clk_ev,
+-		    SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_PRE_PMD),
++		    SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMU |
++		    SND_SOC_DAPM_PRE_PMD),
+ SND_SOC_DAPM_SUPPLY("AIF2CLK", WM8994_AIF2_CLOCKING_1, 0, 0, aif2clk_ev,
+-		    SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_PRE_PMD),
++		    SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMU |
++		    SND_SOC_DAPM_PRE_PMD),
+ SND_SOC_DAPM_PGA("Direct Voice", SND_SOC_NOPM, 0, 0, NULL, 0),
+ SND_SOC_DAPM_MIXER("SPKL", WM8994_POWER_MANAGEMENT_3, 8, 0,
+ 		   left_speaker_mixer, ARRAY_SIZE(left_speaker_mixer)),
+@@ -3943,39 +3994,11 @@ static int wm8994_codec_probe(struct snd
+ 
+ 	pm_runtime_put(codec->dev);
+ 
+-	/* Latch volume updates (right only; we always do left then right). */
+-	snd_soc_update_bits(codec, WM8994_AIF1_DAC1_LEFT_VOLUME,
+-			    WM8994_AIF1DAC1_VU, WM8994_AIF1DAC1_VU);
+-	snd_soc_update_bits(codec, WM8994_AIF1_DAC1_RIGHT_VOLUME,
+-			    WM8994_AIF1DAC1_VU, WM8994_AIF1DAC1_VU);
+-	snd_soc_update_bits(codec, WM8994_AIF1_DAC2_LEFT_VOLUME,
+-			    WM8994_AIF1DAC2_VU, WM8994_AIF1DAC2_VU);
+-	snd_soc_update_bits(codec, WM8994_AIF1_DAC2_RIGHT_VOLUME,
+-			    WM8994_AIF1DAC2_VU, WM8994_AIF1DAC2_VU);
+-	snd_soc_update_bits(codec, WM8994_AIF2_DAC_LEFT_VOLUME,
+-			    WM8994_AIF2DAC_VU, WM8994_AIF2DAC_VU);
+-	snd_soc_update_bits(codec, WM8994_AIF2_DAC_RIGHT_VOLUME,
+-			    WM8994_AIF2DAC_VU, WM8994_AIF2DAC_VU);
+-	snd_soc_update_bits(codec, WM8994_AIF1_ADC1_LEFT_VOLUME,
+-			    WM8994_AIF1ADC1_VU, WM8994_AIF1ADC1_VU);
+-	snd_soc_update_bits(codec, WM8994_AIF1_ADC1_RIGHT_VOLUME,
+-			    WM8994_AIF1ADC1_VU, WM8994_AIF1ADC1_VU);
+-	snd_soc_update_bits(codec, WM8994_AIF1_ADC2_LEFT_VOLUME,
+-			    WM8994_AIF1ADC2_VU, WM8994_AIF1ADC2_VU);
+-	snd_soc_update_bits(codec, WM8994_AIF1_ADC2_RIGHT_VOLUME,
+-			    WM8994_AIF1ADC2_VU, WM8994_AIF1ADC2_VU);
+-	snd_soc_update_bits(codec, WM8994_AIF2_ADC_LEFT_VOLUME,
+-			    WM8994_AIF2ADC_VU, WM8994_AIF1ADC2_VU);
+-	snd_soc_update_bits(codec, WM8994_AIF2_ADC_RIGHT_VOLUME,
+-			    WM8994_AIF2ADC_VU, WM8994_AIF1ADC2_VU);
+-	snd_soc_update_bits(codec, WM8994_DAC1_LEFT_VOLUME,
+-			    WM8994_DAC1_VU, WM8994_DAC1_VU);
+-	snd_soc_update_bits(codec, WM8994_DAC1_RIGHT_VOLUME,
+-			    WM8994_DAC1_VU, WM8994_DAC1_VU);
+-	snd_soc_update_bits(codec, WM8994_DAC2_LEFT_VOLUME,
+-			    WM8994_DAC2_VU, WM8994_DAC2_VU);
+-	snd_soc_update_bits(codec, WM8994_DAC2_RIGHT_VOLUME,
+-			    WM8994_DAC2_VU, WM8994_DAC2_VU);
++	/* Latch volume update bits */
++	for (i = 0; i < ARRAY_SIZE(wm8994_vu_bits); i++)
++		snd_soc_update_bits(codec, wm8994_vu_bits[i].reg,
++				    wm8994_vu_bits[i].mask,
++				    wm8994_vu_bits[i].mask);
+ 
+ 	/* Set the low bit of the 3D stereo depth so TLV matches */
+ 	snd_soc_update_bits(codec, WM8994_AIF1_DAC1_FILTERS_2,
 
 
