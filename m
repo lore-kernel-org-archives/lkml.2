@@ -1,71 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756390Ab2FNQIU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 12:08:20 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:55662 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755997Ab2FNQIS (ORCPT
+	id S1756413Ab2FNQLM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 12:11:12 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:41015 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756313Ab2FNQLJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 12:08:18 -0400
-Date: Thu, 14 Jun 2012 18:07:58 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>,
-        "khali@linux-fr.org" <khali@linux-fr.org>,
-        "ben-linux@fluff.org" <ben-linux@fluff.org>,
-        "olof@lixom.net" <olof@lixom.net>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH V3 1/4] i2c: tegra: make sure register writes completes
-Message-ID: <20120614160758.GD14419@pengutronix.de>
-References: <1339582359-7911-1-git-send-email-ldewangan@nvidia.com>
- <1339582359-7911-2-git-send-email-ldewangan@nvidia.com>
- <4FD8B7FC.3060708@wwwdotorg.org>
- <4FD9DAAC.5000709@nvidia.com>
- <4FDA09FC.1010307@wwwdotorg.org>
+	Thu, 14 Jun 2012 12:11:09 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="C+ts3FVlLX8+P6JN"
-Content-Disposition: inline
-In-Reply-To: <4FDA09FC.1010307@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <20120614145716.GA2097@barrios>
+References: <1339661592-3915-1-git-send-email-kosaki.motohiro@gmail.com> <20120614145716.GA2097@barrios>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Thu, 14 Jun 2012 12:10:47 -0400
+Message-ID: <CAHGf_=qcA5OfuNgk0BiwyshcLftNWoPfOO_VW9H6xQTX2tAbuA@mail.gmail.com>
+Subject: Re: [resend][PATCH] mm, vmscan: fix do_try_to_free_pages() livelock
+To: Minchan Kim <minchan@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        akpm@linux-foundation.org, Nick Piggin <npiggin@gmail.com>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Mel Gorman <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jun 14, 2012 at 10:57 AM, Minchan Kim <minchan@kernel.org> wrote:
+> Hi KOSAKI,
+>
+> Sorry for late response.
+> Let me ask a question about description.
+>
+> On Thu, Jun 14, 2012 at 04:13:12AM -0400, kosaki.motohiro@gmail.com wrote:
+>> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>>
+>> Currently, do_try_to_free_pages() can enter livelock. Because of,
+>> now vmscan has two conflicted policies.
+>>
+>> 1) kswapd sleep when it couldn't reclaim any page when reaching
+>>    priority 0. This is because to avoid kswapd() infinite
+>>    loop. That said, kswapd assume direct reclaim makes enough
+>>    free pages to use either regular page reclaim or oom-killer.
+>>    This logic makes kswapd -> direct-reclaim dependency.
+>> 2) direct reclaim continue to reclaim without oom-killer until
+>>    kswapd turn on zone->all_unreclaimble. This is because
+>>    to avoid too early oom-kill.
+>>    This logic makes direct-reclaim -> kswapd dependency.
+>>
+>> In worst case, direct-reclaim may continue to page reclaim forever
+>> when kswapd sleeps forever.
+>
+> I have tried imagined scenario you mentioned above with code level but
+> unfortunately I got failed.
+> If kswapd can't meet high watermark on order-0, it doesn't sleep if I don't miss something.
 
---C+ts3FVlLX8+P6JN
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+pgdat_balanced() doesn't recognized zone. Therefore kswapd may sleep
+if node has multiple zones. Hm ok, I realized my descriptions was
+slightly misleading. priority 0 is not needed. bakance_pddat() calls
+pgdat_balanced()
+every priority. Most easy case is, movable zone has a lot of free pages and
+normal zone has no reclaimable page.
+
+btw, current pgdat_balanced() logic seems not correct. kswapd should
+sleep only if every zones have much free pages than high water mark
+_and_ 25% of present pages in node are free.
 
 
-> probably doesn't impact performance. It'd be more self-documenting if
-> this readback was limited to the specific registers where it was needed
-> though.
 
-I'd think this is easier to maintain in case code gets
-rewritten/shuffled around.
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---C+ts3FVlLX8+P6JN
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAk/aDF4ACgkQD27XaX1/VRuSwACfX57hbCpT7GodrAIdUbIuFfIc
-CMcAnRVfF4Qc6PoJLlvor0/OIW8MAsl6
-=mpfj
------END PGP SIGNATURE-----
-
---C+ts3FVlLX8+P6JN--
+> So if kswapd sleeps, it means we already have enough order-0 free pages.
+> Hmm, could you describe scenario you found in detail with code level?
+>
+> Anyway, as I look at your patch, I can't find any problem.
+> I just want to understand scenario you mentioned completely in my head.
+> Maybe It can help making description clear.
+>
