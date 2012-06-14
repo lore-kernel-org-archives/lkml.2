@@ -1,49 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755112Ab2FNBFz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 21:05:55 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:46155 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754134Ab2FNBFy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 21:05:54 -0400
-Message-ID: <1339635953.28729.8.camel@joe2Laptop>
-Subject: Re: [PATCH] writeback: Maintainer Record
-From: Joe Perches <joe@perches.com>
-To: Wanpeng Li <liwp.linux@gmail.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, linux-kernel@vger.kernel.org,
-        Gavin Shan <shangw@linux.vnet.ibm.com>
-Date: Wed, 13 Jun 2012 18:05:53 -0700
-In-Reply-To: <1339633873-12729-1-git-send-email-liwp.linux@gmail.com>
-References: <1339633873-12729-1-git-send-email-liwp.linux@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
+	id S1754913Ab2FNBGv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 21:06:51 -0400
+Received: from tama50.ecl.ntt.co.jp ([129.60.39.147]:50165 "EHLO
+	tama50.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755156Ab2FNBGu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 21:06:50 -0400
+Date: Thu, 14 Jun 2012 10:13:28 +0900
+From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v6 5/9] KVM: MMU: introduce SPTE_MMU_WRITEABLE bit
+Message-Id: <20120614101328.c23ab94b.yoshikawa.takuya@oss.ntt.co.jp>
+In-Reply-To: <20120613213905.GD19290@amt.cnet>
+References: <4FC470C7.5040700@linux.vnet.ibm.com>
+	<4FC4716A.8030304@linux.vnet.ibm.com>
+	<20120613213905.GD19290@amt.cnet>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-06-14 at 08:31 +0800, Wanpeng Li wrote:
->  MAINTAINERS |   10 ++++++++++
-[]
-> diff --git a/MAINTAINERS b/MAINTAINERS
-[]
-> +WRITEBACK
-> +M:  Fengguang Wu <fengguang.wu@intel.com>
+On Wed, 13 Jun 2012 18:39:05 -0300
+Marcelo Tosatti <mtosatti@redhat.com> wrote:
 
-Generally the actual maintainer submits a patch
-to this file.
+> >  /* Return true if the spte is dropped. */
+> > -static bool spte_write_protect(struct kvm *kvm, u64 *sptep, bool *flush)
+> > +static bool
+> > +spte_write_protect(struct kvm *kvm, u64 *sptep, bool *flush, bool pt_protect)
+> >  {
+> >  	u64 spte = *sptep;
+> > 
+> > -	if (!is_writable_pte(spte))
+> > +	if (!is_writable_pte(spte) &&
+> > +	      !(pt_protect && spte_can_be_writable(spte)))
+> >  		return false;
+> > 
+> >  	rmap_printk("rmap_write_protect: spte %p %llx\n", sptep, *sptep);
+> > 
+> > -	*flush |= true;
+> >  	if (is_large_pte(spte)) {
+> >  		WARN_ON(page_header(__pa(sptep))->role.level ==
+> >  		       PT_PAGE_TABLE_LEVEL);
+> > +
+> > +		*flush |= true;
+> >  		drop_spte(kvm, sptep);
+> >  		--kvm->stat.lpages;
+> >  		return true;
+> >  	}
+> > 
+> > +	if (pt_protect)
+> > +		spte &= ~SPTE_MMU_WRITEABLE;
+> >  	spte = spte & ~PT_WRITABLE_MASK;
+> > -	mmu_spte_update(sptep, spte);
+> > +
+> > +	*flush = mmu_spte_update(sptep, spte);
+> 
+> This clears previous flush value when looping over multiple sptes in 
+> a single rmapp.
+> 
 
-Please use a single tab after each :
+I'm sorry but I have to say that this function is hard to understand.
 
-> +T:  git://git.kernel.org/pub/scm/linux/kernel/git/wfg/linux.git tags/writeback
-> +S:  Maintained
-> +F:  include/linux/backing-dev.h
-> +F:  mm/backing-dev.c
-> +F:  include/linux/writeback.h
-> +F:  fs/fs-writeback.c
-> +F:  mm/page-writeback.c
-> +
+/* Return true if the spte is dropped. */
+static bool
+spte_write_protect(struct kvm *kvm, u64 *sptep, bool *flush, bool pt_protect)
 
+Even with the comment above, can we guess what this function will do
+for us without reading the body?
 
+My feeling is that separate roles have been put into this one without
+explaining each parameter.
 
+I think there are two solutions:
+	1. separate this into a few functions
+	2. explain each parameter/role properly in the comment
+
+Gaining a bit of lines by putting many things into one function will
+not help us IMO.
+
+Thanks,
+	Takuya
