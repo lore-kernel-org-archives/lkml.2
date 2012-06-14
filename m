@@ -1,141 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751534Ab2FNFfx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 01:35:53 -0400
-Received: from mga01.intel.com ([192.55.52.88]:39320 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750724Ab2FNFfw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 01:35:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="165453256"
-Date: Thu, 14 Jun 2012 13:35:47 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: Re: rcu-torture boot hang
-Message-ID: <20120614053547.GA10745@localhost>
-References: <20120612012134.GA7706@localhost>
- <20120612121122.GA17891@localhost>
- <20120613124900.GA1741@localhost>
- <20120614025504.GE30024@home.goodmis.org>
+	id S1751427Ab2FNFkI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 01:40:08 -0400
+Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:57720 "EHLO
+	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750740Ab2FNFkH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 01:40:07 -0400
+From: Xiaoguang Chen <chenxg@marvell.com>
+To: "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
+        Xiaoguang Chen <chenxg.marvell@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        =?ks_c_5601-1987?B?udqw5rnO?= <kyungmin.park@samsung.com>,
+        "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>
+Date: Wed, 13 Jun 2012 22:39:59 -0700
+Subject: RE: Re: [PATCH 1/2] PM: devfreq: add freq table and available_freqs
+Thread-Topic: Re: [PATCH 1/2] PM: devfreq: add freq table and available_freqs
+Thread-Index: Ac1J6CZCZJJPgeVKReyqKbpvswDehwABwxZA
+Message-ID: <4737A960563B524DA805CA602BE04B3064CBDF6AA3@SC-VEXCH2.marvell.com>
+References: <29439113.474411339649027694.JavaMail.weblogic@epml17>
+In-Reply-To: <29439113.474411339649027694.JavaMail.weblogic@epml17>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: zh-CN, en-US
+Content-Type: text/plain; charset="ks_c_5601-1987"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120614025504.GE30024@home.goodmis.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q5E5eFLe029423
 
-Hi Steven,
+Hi, Myungjoo
 
-On Wed, Jun 13, 2012 at 10:55:04PM -0400, Steven Rostedt wrote:
-> Just a note. Please use my goodmis email and not my Red Hat email. My
-> Red Hat email is not checked as often, and I don't usually tag emails
-> there as "reply to". I only author with that email to give credit to the
-> one that pays me to do the work (and I don't mean just for the LWN
-> stats).
+the API is optional, but I think one frequency table is better to have.
+if user space want to see what is the supported frequencies for the specific devfreq driver, then where do you think we can see this interface?
+do we have to go to OPP framework to get it ? or we can just add it in our devfreq ? for example: sys/class/devfreq/xxx-devfreq/available_freqs
+I think it is best for us to see this in the same sysfs path.
 
-OK, got it!
+Thanks
+Xiaoguang
 
-> On Wed, Jun 13, 2012 at 08:49:00PM +0800, Fengguang Wu wrote:
-> > Hi Steven,
+
+-----Original Message-----
+From: ÇÔ¸íÁÖ [mailto:myungjoo.ham@samsung.com] 
+Sent: 2012Ò´6êÅ14ìí 12:44
+To: Xiaoguang Chen
+Cc: Xiaoguang Chen; linux-kernel@vger.kernel.org; ¹Ú°æ¹Î; linux-pm@lists.linux-foundation.org
+Subject: Re: Re: [PATCH 1/2] PM: devfreq: add freq table and available_freqs
+
+> Hi, Myungjoo
+> 
+> 
+> what's your opinion?
+
+Hello Xiaoguang,
+
+Still, I don't think we need additional API and ABI for a simple frequency table. Why a devfreq device driver would want to register a table in struct devfreq while it can hold one either with its dev-data, private data of devfreq, or even OPP.
+
+1. Devfreq is not "combined" with OPP. OPP is optional.
+
+2. I guess filling voltage column with some arbitrary values in OPP table won't hurt anything if the device does not care voltage values. (just a suggestion and speculation) Thus, you can still use OPP in your case as long as the frequency values are discrete and not too many.
+
+3. Devfreq and its governors recommends the base frequency to devfreq drivers. Frequency table is only needed to be visible to devfreq drivers, not to governors or devfreq itself. The frequency table you've suggested is not need to be visible to devfreq subsystem.
+
+
+I still object to adding a frequency table (which is already supported by OPP by not specifying voltage or specifying arbitrary voltage values). However, even if I don't, we won't need that API (devfreq_set_freq_table), which should've been added in device profile at devfreq_add_device() time.
+
+
+Cheers!
+MyungJoo.
+
+> 
+> 
+> Thanks
+> Xiaoguang
+> 
+> 
+> > 2012/6/13 Xiaoguang Chen <chenxg.marvell@gmail.com>
 > > 
-> > On Tue, Jun 12, 2012 at 08:11:22PM +0800, Fengguang Wu wrote:
-> > > Hi Paul,
+> > I think Devfreq should not be combined with OPP, OPP framework does 
+> > contain one frequency table, but the frequency is combined with voltage. some platforms may don't want to use this but handling voltage seperately in their clock driver.
+> > 
+> > 
+> > and some platforms don't use OPP, and they want a frequency list.
+> > then this is necessary. also devfreq should contain a frequency list even without any other frameworks, don't you think so ?
+> > 
+> > 
+> > Thanks
+> > Xiaoguang
+> > 
+> > 
+> > 
+> > 2012/6/13 MyungJoo Ham <myungjoo.ham@samsung.com>
 > > > 
-> > > In kernel boot tests with the attached config, I find the 3.5-rc2+
-> > > kernels all hang here:
+> > > > Devfreq framework don't have a frequency table, add it for easy 
+> > > > use.
+> > > >
+> > > > Signed-off-by: Xiaoguang Chen <chenxg@marvell.com>
 > > > 
-> > > [    6.522546] rcu-torture:--- Start of test: nreaders=2
-> > > nfakewriters=4 stat_interval=0 verbose=0 test_no_idle_hz=0
-> > > shuffle_interval=3 stutter=5 irqreader=1 fqs_duration=0 fqs_holdoff=0
-> > > fqs_stutter=3 test_boost=1/0 test_boost_interval=7
-> > > test_boost_duration=4 shutdown_secs=0 onoff_interval=0 onoff_holdoff=0
-> > 
-> > It turns out that commit 5963e317b1e9d2a4511503916d8fd664bb8fa8fb
-> > ("ftrace/x86: Do not change stacks in DEBUG when calling lockdep") is
-> > the root cause of this boot hang. The commit is reported by git bisect
-> > and confirmed to fix the boot hang by reverting in on 3.5-rc2.
-> 
-> I get the hang with your config too. If I disable both LOCKDEP and
-> IRQSOFF_TRACER which turns off TRACE_IRQFLAGS then the lockup goes away.
-> This is consistent with your findings, as the patch you found is only
-> enabled when TRACE_IRQFLAGS is on.
-> 
-> > 
-> >         [ rcu torture tests ]
-> > 
-> > ...It would hang here before reverting the commit...
-> > 
-> >         [    1.611901] Testing tracer function: PASSED
-> 
-> I did a bit more investigation and found that the problem comes from the
-> load_idt() command that is used to avoid reseting the debug stack. When
-> the function tracer is enabled it adds breakpoints to all locations that
-> it is about to trace in order to convert the nops in the functions into
-> calls to the tracer. But if the breakpoint handler is traced, the
-> breakpoint in the handler will reset the stack and cause a crash.
-> 
-> Your above observation is correct. Actually I added a printk in my
-> testing and found that the 'Testing trace function:' does output before
-> the lockup. I think printk changed recently that prevents it to print
-> out right away if a '\n' is not supplied. The function tracer self test
-> prints:
-> 
->   'Testing tracer function: '
-> 
-> Runs the test, and when it succeeds it prints 'PASSED\n'. Because the
-> first part wasn't printed, we never saw that the function tracer was
-> being tested when the lockup occurred.
-> 
-> This is a major flaw with the new printk(). It hides what is being
-> tested. I need to write a patch to create a fflush() for printk.
-
-Yes, it would definitely help if the printk message was flushed!
-
-> Anyway, load_idt() shouldn't be traced, but with PARAVIRT_GUEST it makes
-> functions that are even always_inlined not inlined, and allows things
-> like native_load_idt() to be traced, and that causes bad things as we
-> want to call load_idt to prevent recursion of the int3 handler.
-> 
-> 
-> If it works, can you give me your 'Tested-by'.
-
-It worked, thank you very much!
-
-I apply the patch on linus master (which is confirmed to hang) and
-it boots successfully for 3 times:
-
-[    1.450495] Kprobe smoke test started
-[    1.459965] Kprobe smoke test passed successfully
-[    1.461578] rcu-torture:--- Start of test: nreaders=2 nfakewriters=4 stat_interval=0 verbose=0 test_no_idle_hz=0 shuffle_interval=3 stutter=5 irqreader=1 fqs_duration=0 fqs_holdoff=0 fqs_stutter=3 test_boost=1/0 test_boost_interval=7 test_boost_duration=4 shutdown_secs=0 onoff_interval=0 onoff_holdoff=0
-[    1.689860] Testing tracer function: PASSED
-[    2.047064] Testing dynamic ftrace: PASSED
-[    2.378968] Testing dynamic ftrace ops #1: (1 0 1 1 0) (1 1 2 1 0) (2 1 3 1 3) (2 2 4 1 21) PASSED
-
-Tested-by: Fengguang Wu <wfg@linux.intel.com>
-
-Thanks,
-Fengguang
-
-> diff --git a/include/linux/compiler-gcc.h b/include/linux/compiler-gcc.h
-> index e5834aa..6a6d7ae 100644
-> --- a/include/linux/compiler-gcc.h
-> +++ b/include/linux/compiler-gcc.h
-> @@ -47,9 +47,9 @@
->   */
->  #if !defined(CONFIG_ARCH_SUPPORTS_OPTIMIZED_INLINING) || \
->      !defined(CONFIG_OPTIMIZE_INLINING) || (__GNUC__ < 4)
-> -# define inline		inline		__attribute__((always_inline))
-> -# define __inline__	__inline__	__attribute__((always_inline))
-> -# define __inline	__inline	__attribute__((always_inline))
-> +# define inline		inline		__attribute__((always_inline)) notrace
-> +# define __inline__	__inline__	__attribute__((always_inline)) notrace
-> +# define __inline	__inline	__attribute__((always_inline)) notrace
->  #else
->  /* A lot of inline functions can cause havoc with function tracing */
->  # define inline		inline		notrace
+> > > 
+> > > If you need a predefined data structure to support frequency 
+> > > table, you can simply use OPP, which has helper functions 
+> > > implemented in devfreq subsystem. Is there any reason not to use 
+> > > OPP and to implement another data structure to store a frequency table attached to a device?
+> > > 
+> > > 
+> > > Cheers!
+> > > MyungJoo.
+> > > 
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
