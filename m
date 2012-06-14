@@ -1,292 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754903Ab2FNIBi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 04:01:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22466 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754323Ab2FNIBh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 04:01:37 -0400
-Date: Thu, 14 Jun 2012 11:01:59 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: x86@kernel.org, kvm@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Avi Kivity <avi@redhat.com>,
-        gleb@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCHv6 8/8] kvm: host side for eoi optimization
-Message-ID: <20120614080159.GA26869@redhat.com>
-References: <cover.1338474301.git.mst@redhat.com>
- <b72e6a7da4ba17313a867276752aeb64d55ada1e.1338474301.git.mst@redhat.com>
- <20120613211015.GC19290@amt.cnet>
+	id S1754911Ab2FNICe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 04:02:34 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:64024 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752305Ab2FNIC3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 04:02:29 -0400
+Message-ID: <4FD99A91.9040801@linaro.org>
+Date: Thu, 14 Jun 2012 09:02:25 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120613211015.GC19290@amt.cnet>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linus.walleij@stericsson.com,
+        grant.likely@secretlab.ca, Alessandro Zummo <a.zummo@towertech.it>,
+        rtc-linux@googlegroups.com, stable@vger.kernel.org
+Subject: Re: [PATCH 01/14] rtc: ab8500-rtc: IRQF_ONESHOT when requesting a
+ threaded IRQ
+References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org> <1339428307-3850-2-git-send-email-lee.jones@linaro.org> <201206111531.20468.arnd@arndb.de> <4FD70481.6020207@linaro.org> <20120613152558.e6025b04.akpm@linux-foundation.org> <4FD98F69.3010302@linaro.org> <20120614003006.68d77b37.akpm@linux-foundation.org>
+In-Reply-To: <20120614003006.68d77b37.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 13, 2012 at 06:10:15PM -0300, Marcelo Tosatti wrote:
-> On Sun, Jun 03, 2012 at 10:28:43AM +0300, Michael S. Tsirkin wrote:
-> > Implementation of PV EOI using shared memory.
-> > This reduces the number of exits an interrupt
-> > causes as much as by half.
-> > 
-> > The idea is simple: there's a bit, per APIC, in guest memory,
-> > that tells the guest that it does not need EOI.
-> > We set it before injecting an interrupt and clear
-> > before injecting a nested one. Guest tests it using
-> > a test and clear operation - this is necessary
-> > so that host can detect interrupt nesting -
-> > and if set, it can skip the EOI MSR.
-> > 
-> > There's a new MSR to set the address of said register
-> > in guest memory. Otherwise not much changed:
-> > - Guest EOI is not required
-> > - Register is tested & ISR is automatically cleared on exit
-> > 
-> > For testing results see description of previous patch
-> > 'kvm_para: guest side for eoi avoidance'.
-> > 
-> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > ---
-> >  arch/x86/include/asm/kvm_host.h |   12 ++++
-> >  arch/x86/kvm/cpuid.c            |    1 +
-> >  arch/x86/kvm/lapic.c            |  140 +++++++++++++++++++++++++++++++++++++-
-> >  arch/x86/kvm/lapic.h            |    2 +
-> >  arch/x86/kvm/trace.h            |   34 ++++++++++
-> >  arch/x86/kvm/x86.c              |    7 ++
-> >  6 files changed, 192 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-> > index db7c1f2..dfc066c 100644
-> > --- a/arch/x86/include/asm/kvm_host.h
-> > +++ b/arch/x86/include/asm/kvm_host.h
-> > @@ -175,6 +175,13 @@ enum {
-> >  
-> >  /* apic attention bits */
-> >  #define KVM_APIC_CHECK_VAPIC	0
-> > +/*
-> > + * The following bit is set with PV-EOI, unset on EOI.
-> > + * We detect PV-EOI changes by guest by comparing
-> > + * this bit with PV-EOI in guest memory.
-> > + * See the implementation in apic_update_pv_eoi.
-> > + */ 
-> > +#define KVM_APIC_PV_EOI_PENDING	1
-> >  
-> >  /*
-> >   * We don't want allocation failures within the mmu code, so we preallocate
-> > @@ -484,6 +491,11 @@ struct kvm_vcpu_arch {
-> >  		u64 length;
-> >  		u64 status;
-> >  	} osvw;
-> > +
-> > +	struct {
-> > +		u64 msr_val;
-> > +		struct gfn_to_hva_cache data;
-> > +	} pv_eoi;
-> >  };
-> >  
-> >  struct kvm_lpage_info {
-> > diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
-> > index 7df1c6d..61ccbdf 100644
-> > --- a/arch/x86/kvm/cpuid.c
-> > +++ b/arch/x86/kvm/cpuid.c
-> > @@ -409,6 +409,7 @@ static int do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
-> >  			     (1 << KVM_FEATURE_NOP_IO_DELAY) |
-> >  			     (1 << KVM_FEATURE_CLOCKSOURCE2) |
-> >  			     (1 << KVM_FEATURE_ASYNC_PF) |
-> > +			     (1 << KVM_FEATURE_PV_EOI) |
-> >  			     (1 << KVM_FEATURE_CLOCKSOURCE_STABLE_BIT);
-> >  
-> >  		if (sched_info_on())
-> > diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
-> > index db54e63..d16cfc5 100644
-> > --- a/arch/x86/kvm/lapic.c
-> > +++ b/arch/x86/kvm/lapic.c
-> > @@ -306,6 +306,54 @@ int kvm_apic_set_irq(struct kvm_vcpu *vcpu, struct kvm_lapic_irq *irq)
-> >  			irq->level, irq->trig_mode);
-> >  }
-> >  
-> > +static int pv_eoi_put_user(struct kvm_vcpu *vcpu, u8 val)
-> > +{
-> > +
-> > +	return kvm_write_guest_cached(vcpu->kvm, &vcpu->arch.pv_eoi.data, &val,
-> > +				      sizeof(val));
-> > +}
-> > +
-> > +static int pv_eoi_get_user(struct kvm_vcpu *vcpu, u8 *val)
-> > +{
-> > +
-> > +	return kvm_read_guest_cached(vcpu->kvm, &vcpu->arch.pv_eoi.data, val,
-> > +				      sizeof(*val));
-> > +}
-> > +
-> > +static inline bool pv_eoi_enabled(struct kvm_vcpu *vcpu)
-> > +{
-> > +	return vcpu->arch.pv_eoi.msr_val & KVM_MSR_ENABLED;
-> > +}
-> > +
-> > +static bool pv_eoi_get_pending(struct kvm_vcpu *vcpu)
-> > +{
-> > +	u8 val;
-> > +	if (pv_eoi_get_user(vcpu, &val) < 0)
-> > +		apic_debug("Can't read EOI MSR value: 0x%llx\n",
-> > +			   (unsigned long long)vcpi->arch.pv_eoi.msr_val);
-> > +	return val & 0x1;
-> > +}
-> > +
-> > +static void pv_eoi_set_pending(struct kvm_vcpu *vcpu)
-> > +{
-> > +	if (pv_eoi_put_user(vcpu, KVM_PV_EOI_ENABLED) < 0) {
-> > +		apic_debug("Can't set EOI MSR value: 0x%llx\n",
-> > +			   (unsigned long long)vcpi->arch.pv_eoi.msr_val);
-> > +		return;
-> > +	}
-> > +	__set_bit(KVM_APIC_PV_EOI_PENDING, &vcpu->arch.apic_attention);
-> > +}
-> > +
-> > +static void pv_eoi_clr_pending(struct kvm_vcpu *vcpu)
-> > +{
-> > +	if (pv_eoi_put_user(vcpu, KVM_PV_EOI_DISABLED) < 0) {
-> > +		apic_debug("Can't clear EOI MSR value: 0x%llx\n",
-> > +			   (unsigned long long)vcpi->arch.pv_eoi.msr_val);
-> > +		return;
-> > +	}
-> > +	__clear_bit(KVM_APIC_PV_EOI_PENDING, &vcpu->arch.apic_attention);
-> > +}
-> > +
-> >  static inline int apic_find_highest_isr(struct kvm_lapic *apic)
-> >  {
-> >  	int result;
-> > @@ -522,15 +570,18 @@ int kvm_apic_compare_prio(struct kvm_vcpu *vcpu1, struct kvm_vcpu *vcpu2)
-> >  	return vcpu1->arch.apic_arb_prio - vcpu2->arch.apic_arb_prio;
-> >  }
-> >  
-> > -static void apic_set_eoi(struct kvm_lapic *apic)
-> > +static int apic_set_eoi(struct kvm_lapic *apic)
-> >  {
-> >  	int vector = apic_find_highest_isr(apic);
-> > +
-> > +	trace_kvm_eoi(apic, vector);
-> > +
-> >  	/*
-> >  	 * Not every write EOI will has corresponding ISR,
-> >  	 * one example is when Kernel check timer on setup_IO_APIC
-> >  	 */
-> >  	if (vector == -1)
-> > -		return;
-> > +		return vector;
-> >  
-> >  	apic_clear_isr(vector, apic);
-> >  	apic_update_ppr(apic);
-> > @@ -545,6 +596,7 @@ static void apic_set_eoi(struct kvm_lapic *apic)
-> >  		kvm_ioapic_update_eoi(apic->vcpu->kvm, vector, trigger_mode);
-> >  	}
-> >  	kvm_make_request(KVM_REQ_EVENT, apic->vcpu);
-> > +	return vector;
-> >  }
-> >  
-> >  static void apic_send_ipi(struct kvm_lapic *apic)
-> > @@ -1127,6 +1179,7 @@ void kvm_lapic_reset(struct kvm_vcpu *vcpu)
-> >  	atomic_set(&apic->lapic_timer.pending, 0);
-> >  	if (kvm_vcpu_is_bsp(vcpu))
-> >  		vcpu->arch.apic_base |= MSR_IA32_APICBASE_BSP;
-> > +	vcpu->arch.pv_eoi.msr_val = 0;
-> >  	apic_update_ppr(apic);
-> >  
-> >  	vcpu->arch.apic_arb_prio = 0;
-> > @@ -1327,11 +1380,51 @@ void __kvm_migrate_apic_timer(struct kvm_vcpu *vcpu)
-> >  		hrtimer_start_expires(timer, HRTIMER_MODE_ABS);
-> >  }
-> >  
-> > +/*
-> > + * apic_sync_pv_eoi_from_guest - called on vmexit or cancel interrupt
-> > + *
-> > + * Detect whether guest triggered PV EOI since the
-> > + * last entry. If yes, set EOI on guests's behalf.
-> > + * Clear PV EOI in guest memory in any case.
-> > + */
-> > +static void apic_sync_pv_eoi_from_guest(struct kvm_vcpu *vcpu,
-> > +					struct kvm_lapic *apic)
-> > +{
-> > +	bool pending;
-> > +	int vector;
-> > +	/*
-> > +	 * PV EOI state is derived from KVM_APIC_PV_EOI_PENDING in host
-> > +	 * and KVM_PV_EOI_ENABLED in guest memory as follows:
-> > +	 *
-> > +	 * KVM_APIC_PV_EOI_PENDING is unset:
-> > +	 * 	-> host disabled PV EOI.
-> > +	 * KVM_APIC_PV_EOI_PENDING is set, KVM_PV_EOI_ENABLED is set:
-> > +	 * 	-> host enabled PV EOI, guest did not execute EOI yet.
-> > +	 * KVM_APIC_PV_EOI_PENDING is set, KVM_PV_EOI_ENABLED is unset:
-> > +	 * 	-> host enabled PV EOI, guest executed EOI.
-> > +	 */
-> > +	BUG_ON(!pv_eoi_enabled(vcpu));
-> > +	pending = pv_eoi_get_pending(vcpu);
-> > +	/*
-> > +	 * Clear pending bit in any case: it will be set again on vmentry.
-> > +	 * While this might not be ideal from performance point of view,
-> > +	 * this makes sure pv eoi is only enabled when we know it's safe.
-> > +	 */
-> > +	pv_eoi_clr_pending(vcpu);
-> > +	if (pending)
-> > +		return;
-> > +	vector = apic_set_eoi(apic);
-> > +	trace_kvm_pv_eoi(apic, vector);
-> > +}
-> > +
-> >  void kvm_lapic_sync_from_vapic(struct kvm_vcpu *vcpu)
-> >  {
-> >  	u32 data;
-> >  	void *vapic;
-> >  
-> > +	if (test_bit(KVM_APIC_PV_EOI_PENDING, &vcpu->arch.apic_attention))
-> > +		apic_sync_pv_eoi_from_guest(vcpu, vcpu->arch.apic);
-> > +
-> >  	if (!test_bit(KVM_APIC_CHECK_VAPIC, &vcpu->arch.apic_attention))
-> >  		return;
-> >  
-> > @@ -1342,17 +1435,44 @@ void kvm_lapic_sync_from_vapic(struct kvm_vcpu *vcpu)
-> >  	apic_set_tpr(vcpu->arch.apic, data & 0xff);
-> >  }
-> >  
-> > +/*
-> > + * apic_sync_pv_eoi_to_guest - called before vmentry
-> > + *
-> > + * Detect whether it's safe to enable PV EOI and
-> > + * if yes do so.
-> > + */
-> > +static void apic_sync_pv_eoi_to_guest(struct kvm_vcpu *vcpu,
-> > +					struct kvm_lapic *apic)
-> > +{
-> > +	if (!pv_eoi_enabled(vcpu) ||
-> > +	    /* IRR set or many bits in ISR: could be nested. */
-> > +	    unlikely(apic->irr_pending) ||
-> > +	    /* Cache not set: could be safe but we don't bother. */
-> > +	    unlikely(apic->isr_cache == -1) ||
-> > +	    /* Need EOI to update ioapic. */
-> > +	    unlikely(kvm_ioapic_handles_vector(vcpu->kvm, apic->isr_cache))) {
+On 14/06/12 08:30, Andrew Morton wrote:
+> On Thu, 14 Jun 2012 08:14:49 +0100 Lee Jones<lee.jones@linaro.org>  wrote:
 > 
-> This adds an lfence.
+>> On 13/06/12 23:25, Andrew Morton wrote:
+>>> On Tue, 12 Jun 2012 09:57:37 +0100
+>>> Lee Jones<lee.jones@linaro.org>   wrote:
+>>>
+>>>> The kernel now forces IRQs to be ONESHOT if no IRQ handler is passed.
+>>>
+>>> What does this mean.  The kernel crashes?  The registration fails?  A
+>>> warning is emitted?
+>>>
+>>> When fixing a bug, please fully describe the consequences of that bug.
+>>>
+>>>> Cc: stable@vger.kernel.org
+>>>
+>>> Especially when suggesting a -stable backport.
+>>
+>> No problem. I'll try to remember that for next time.
+>>
+>> I see that you've taken the patch into your tree however. So do you want
+>> me to update the commit log and resubmit, or are you going to 'let this
+>> one slide'?
+> 
+> Please read my emails - they're very nice!  "What does this mean.  The
+> kernel crashes?  The registration fails?  A warning is emitted?".  You
+> answer that, I copy-n-paste into changelog and we're done.
 
-It's an smp_rmb:
-#ifdef CONFIG_X86_PPRO_FENCE
-# define smp_rmb()      rmb()
-#else
-# define smp_rmb()      barrier()
-#endif
+Ah, you're a star!
 
-So only lfence on pentium pro.
-Is there a pentium pro CPU with kvm support?
+Registration fails:
 
-> Can't you move this logic to ioapic configuration
-> time?
+> __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
+> {
+<snip>
+> 	if (new->flags & IRQF_ONESHOT) {
+<snip>
+> 	} else if (new->handler == irq_default_primary_handler) {
+> 		/*
+> 		 * The interrupt was requested with handler = NULL, so
+> 		 * we use the default primary handler for it. But it
+> 		 * does not have the oneshot flag set. In combination
+> 		 * with level interrupts this is deadly, because the
+> 		 * default primary handler just wakes the thread, then
+> 		 * the irq lines is reenabled, but the device still
+> 		 * has the level irq asserted. Rinse and repeat....
+> 		 *
+> 		 * While this works for edge type interrupts, we play
+> 		 * it safe and reject unconditionally because we can't
+> 		 * say for sure which type this interrupt really
+> 		 * has. The type flags are unreliable as the
+> 		 * underlying chip implementation can override them.
+> 		 */
+> 		pr_err("Threaded irq requested with handler=NULL and !ONESHOT for irq %d\n", irq);
+> 		ret = -EINVAL;
+> 		goto out_mask;
+> 	}
+<snip>
 
-Not sure how to do this yet.  My testing shows avoiding the exit helps
-so much we hardly notice the ioapic lookup cost. The code will
-become much less well contained if I need to touch the ioapic.
-Really worth the complication?
-
-> Otherwise looks good (clear and very well commented).
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+M: +44 77 88 633 515 
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
