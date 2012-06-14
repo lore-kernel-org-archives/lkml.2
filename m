@@ -1,71 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756264Ab2FNVKM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 17:10:12 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:59742 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754206Ab2FNVKL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 17:10:11 -0400
-Message-ID: <1339708192.2559.40.camel@twins>
-Subject: Re: [PATCH 1/6] perf, x86: Making hardware events tranlations sysfs
- available
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: acme@redhat.com, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, eranian@google.com,
-        linux-kernel@vger.kernel.org
-Date: Thu, 14 Jun 2012 23:09:52 +0200
-In-Reply-To: <1339706321-8802-2-git-send-email-jolsa@redhat.com>
-References: <1339706321-8802-1-git-send-email-jolsa@redhat.com>
-	 <1339706321-8802-2-git-send-email-jolsa@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1756384Ab2FNVPa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 17:15:30 -0400
+Received: from mga01.intel.com ([192.55.52.88]:36729 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755286Ab2FNVP3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 17:15:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="165810868"
+Message-ID: <4FDA5413.9080400@linux.intel.com>
+Date: Thu, 14 Jun 2012 14:13:55 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Rik van Riel <riel@redhat.com>
+CC: Borislav Petkov <bp@amd64.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        sjhill@mips.com, ralf@linux-mips.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Nicolas Pitre <nico@linaro.org>
+Subject: Re: bugs in page colouring code
+References: <20120613152936.363396d5@cuia.bos.redhat.com> <20120614103627.GA25940@aftab.osrc.amd.com> <4FD9DFCE.1070609@redhat.com> <4FDA5087.7090606@linux.intel.com> <4FDA519F.4080204@redhat.com>
+In-Reply-To: <4FDA519F.4080204@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-06-14 at 22:38 +0200, Jiri Olsa wrote:
-> Making hardware events tranlations available throught the sysfs.
-> Adding 'events' group attribute under the sysfs x86 PMU record
-> with attribute/file for each hardware event:
+On 06/14/2012 02:03 PM, Rik van Riel wrote:
+> On 06/14/2012 04:58 PM, H. Peter Anvin wrote:
+>> On 06/14/2012 05:57 AM, Rik van Riel wrote:
+>>>
+>>> However, I expect that on x86 many applications expect
+>>> MAP_FIXED to just work, and enforcing that would be
+>>> more trouble than it's worth.
+>>>
+>>
+>> MAP_FIXED, is well, fixed.  It means that performance be screwed, if we
+>> can fulfill the request we MUST do so.
 > 
->   # ls  /sys/devices/cpu/events/
->   branch_instructions
->   branch_misses
->   bus_cycles
->   cache_misses
->   cache_references
->   cycles
->   instructions
->   ref_cycles
->   stalled_cycles_backend
->   stalled_cycles_frontend
-> 
-> The file - ID mappings is:
-> 
->   file                      hw id
->   ----------------------------------------------------------------
->   cycles                    PERF_COUNT_HW_CPU_CYCLES
->   instructions              PERF_COUNT_HW_INSTRUCTIONS
->   cache_references          PERF_COUNT_HW_CACHE_REFERENCES
->   cache_misses              PERF_COUNT_HW_CACHE_MISSES
->   branch_instructions       PERF_COUNT_HW_BRANCH_INSTRUCTIONS
->   branch_misses             PERF_COUNT_HW_BRANCH_MISSES
->   bus_cycles                PERF_COUNT_HW_BUS_CYCLES
->   stalled_cycles_frontend   PERF_COUNT_HW_STALLED_CYCLES_FRONTEND
->   stalled_cycles_backend    PERF_COUNT_HW_STALLED_CYCLES_BACKEND
->   ref_cycles                PERF_COUNT_HW_REF_CPU_CYCLES
-> 
-> Each attribute/file contains HW ID event translation for the currently
-> running CPU model
-> 
->   # cat /sys/devices/cpu/events/instructions
->   0xc0
+> My codebase now has a separate arch_align_addr function
+> for x86, which is surprisingly similar to the generic
+> one :)
 
-Why not have it consistent with the stuff done for uncore where events
-read: 'event=0xc0', ie the regular field=value stuff.
+I am much more skeptical to disabling page coloring in the !PF_RANDOMIZE
+case when no address hint is proposed.  I would like to at least try
+running without it, perhaps with a chicken bit in a sysctl.
 
+	-hpa
 
