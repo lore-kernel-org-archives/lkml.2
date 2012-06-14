@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757002Ab2FOACz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 20:02:55 -0400
+	id S1757151Ab2FOADU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 20:03:20 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:56620 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757003Ab2FOAAo (ORCPT
+	with ESMTP id S1756982Ab2FOAAi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 20:00:44 -0400
-Message-Id: <20120614235627.084485130@linuxfoundation.org>
+	Thu, 14 Jun 2012 20:00:38 -0400
+Message-Id: <20120614235626.897774272@linuxfoundation.org>
 User-Agent: quilt/0.60-20.1
-Date: Thu, 14 Jun 2012 16:56:59 -0700
+Date: Thu, 14 Jun 2012 16:56:57 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alan Cox <alan@linux.intel.com>,
-        Matthew Garrett <mjg@redhat.com>, Len Brown <len.brown@intel.com>
-Subject: [ 36/42] acpi_video: fix leaking PCI references
+        alan@lxorguk.ukuu.org.uk, AnilKumar Ch <anilkumar@ti.com>,
+        Wolfgang Grandegger <wg@grandegger.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [ 34/42] can: c_can: fix race condition in c_can_open()
 In-Reply-To: <20120614235636.GA5275@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,41 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Cox <alan@linux.intel.com>
+From: AnilKumar Ch <anilkumar@ti.com>
 
-commit cfb46f433a4da97c31780e08a259fac2cb6bd61f upstream.
+commit f461f27a4436dbe691908fe08b867ef888848cc3 upstream.
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Acked-by: Matthew Garrett <mjg@redhat.com>
-Signed-off-by: Len Brown <len.brown@intel.com>
+Fix the issue of C_CAN interrupts getting disabled forever when canconfig
+utility is used multiple times. According to NAPI usage we disable all
+the hardware interrupts in ISR and re-enable them in poll(). Current
+implementation calls napi_enable() after hardware interrupts are enabled.
+If we get any interrupts between these two steps then we do not process
+those interrupts because napi is not enabled. Mostly these interrupts
+come because of STATUS is not 0x7 or ERROR interrupts. If napi_enable()
+happens before HW interrupts enabled then c_can_poll() function will be
+called eventual re-enabling.
+
+This patch moves the napi_enable() call before interrupts enabled.
+
+Signed-off-by: AnilKumar Ch <anilkumar@ti.com>
+Acked-by: Wolfgang Grandegger <wg@grandegger.com>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/video.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/net/can/c_can/c_can.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/acpi/video.c
-+++ b/drivers/acpi/video.c
-@@ -1745,6 +1745,7 @@ static int acpi_video_bus_remove(struct
- 
- static int __init intel_opregion_present(void)
- {
-+	int i915 = 0;
- #if defined(CONFIG_DRM_I915) || defined(CONFIG_DRM_I915_MODULE)
- 	struct pci_dev *dev = NULL;
- 	u32 address;
-@@ -1757,10 +1758,10 @@ static int __init intel_opregion_present
- 		pci_read_config_dword(dev, 0xfc, &address);
- 		if (!address)
- 			continue;
--		return 1;
-+		i915 = 1;
+--- a/drivers/net/can/c_can/c_can.c
++++ b/drivers/net/can/c_can/c_can.c
+@@ -1064,10 +1064,11 @@ static int c_can_open(struct net_device
+ 		goto exit_irq_fail;
  	}
- #endif
--	return 0;
-+	return i915;
- }
  
- int acpi_video_register(void)
++	napi_enable(&priv->napi);
++
+ 	/* start the c_can controller */
+ 	c_can_start(dev);
+ 
+-	napi_enable(&priv->napi);
+ 	netif_start_queue(dev);
+ 
+ 	return 0;
 
 
