@@ -1,113 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756112Ab2FNOwX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 10:52:23 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:13811 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756020Ab2FNOwW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756209Ab2FNOwf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 10:52:35 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:38794 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756029Ab2FNOwW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 14 Jun 2012 10:52:22 -0400
-X-IronPort-AV: E=Sophos;i="4.75,770,1330923600"; 
-   d="scan'208";a="28090039"
-Message-ID: <4FD9FAA3.6090303@citrix.com>
-Date: Thu, 14 Jun 2012 15:52:19 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120428 Icedove/3.0.11
-MIME-Version: 1.0
-To: David Vrabel <david.vrabel@citrix.com>
-CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH] x86/xen: avoid updating TLS descriptors if they haven't
- changed
-References: <1339088494-23528-1-git-send-email-david.vrabel@citrix.com>
-In-Reply-To: <1339088494-23528-1-git-send-email-david.vrabel@citrix.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+Message-ID: <1339685540.2603.1.camel@lorien2>
+Subject: Re: [PATCH] leds: Rename led_brightness_set() to
+ led_set_brightness()
+From: Shuah Khan <shuahkhan@gmail.com>
+Reply-To: shuahkhan@gmail.com
+To: bryan.wu@canonical.com
+Cc: shuahkhan@gmail.com, rpurdie@rpsys.net, johannes@sipsolutions.net,
+        linville@tuxdriver.com, davem@davemloft.net,
+        LKML <linux-kernel@vger.kernel.org>, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-leds@vger.kernel.org
+Date: Thu, 14 Jun 2012 08:52:20 -0600
+In-Reply-To: <1339619670.13326.22.camel@lorien2>
+References: <1339619670.13326.22.camel@lorien2>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/06/12 18:01, David Vrabel wrote:
-> From: David Vrabel <david.vrabel@citrix.com>
+On Wed, 2012-06-13 at 14:34 -0600, Shuah Khan wrote:
+> Rename leds external interface led_brightness_set() to led_set_brightness().
+> This is the second phase of the change to reduce confusion between the
+> leds internal and external interfaces that set brightness. With this change,
+> now the external interface is led_set_brightness(). The first phase renamed
+> the internal interface led_set_brightness() to __led_set_brightness().
+> There are no changes to the interface implementations.
 > 
-> When switching tasks in a Xen PV guest, avoid updating the TLS
-> descriptors if they haven't changed.  This improves the speed of
-> context switches by almost 10% as much of the time the descriptors are
-> the same or only one is different.
-> 
-> The descriptors written into the GDT by Xen are modified from the
-> values passed in the update_descriptor hypercall so we keep shadow
-> copies of the three TLS descriptors to compare against.
-> 
-> lmbench3 test     Before  After  Improvement
-> --------------------------------------------
-> lat_ctx -s 32 24   7.19    6.52  9%
-> lat_pipe          12.56   11.66  7%
-> 
-> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-> ---
-> I note that the comment in asm/desc_defs.h says the 'a' and 'b' fields
-> in desc_struct as deprecated but there seems to be no suitable
-> alternatives.
+> Signed-off-by: Shuah Khan <shuahkhan@gmail.com>
 
-ping?  Any opinion on this patch from the x86 side?  If it's okay can we
-get an ack so Konrad can take the patch via his tree.
+Bryan,
 
-Thanks.
+Just in case you didn't see this patch. cc'ing linux-leds
 
-David
+-- Shuah
 
 > ---
->  arch/x86/xen/enlighten.c |   30 +++++++++++++++++++++++++++---
->  1 files changed, 27 insertions(+), 3 deletions(-)
+>  drivers/leds/led-class.c       |    2 +-
+>  drivers/leds/led-core.c        |    4 ++--
+>  drivers/leds/led-triggers.c    |    2 +-
+>  drivers/leds/ledtrig-oneshot.c |    2 +-
+>  drivers/leds/ledtrig-timer.c   |    2 +-
+>  include/linux/leds.h           |    4 ++--
+>  net/mac80211/led.c             |    2 +-
+>  7 files changed, 9 insertions(+), 9 deletions(-)
 > 
-> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-> index e74df95..18e14af 100644
-> --- a/arch/x86/xen/enlighten.c
-> +++ b/arch/x86/xen/enlighten.c
-> @@ -124,6 +124,19 @@ struct shared_info *HYPERVISOR_shared_info = (void *)&xen_dummy_shared_info;
->   */
->  static int have_vcpu_info_placement = 1;
+> diff --git a/drivers/leds/led-class.c b/drivers/leds/led-class.c
+> index cb0a6eb..c599095 100644
+> --- a/drivers/leds/led-class.c
+> +++ b/drivers/leds/led-class.c
+> @@ -222,7 +222,7 @@ void led_classdev_unregister(struct led_classdev *led_cdev)
+>  #endif
 >  
-> +struct tls_descs {
-> +	struct desc_struct desc[3];
-> +};
-> +
-> +/*
-> + * Updating the 3 TLS descriptors in the GDT on every task switch is
-> + * surprisingly expensive so we avoid updating them if they haven't
-> + * changed.  Since Xen writes different descriptors than the one
-> + * passed in the update_descriptor hypercall we keep shadow copies to
-> + * compare against.
-> + */
-> +static DEFINE_PER_CPU(struct tls_descs, shadow_tls_desc);
-> +
->  static void clamp_max_cpus(void)
->  {
->  #ifdef CONFIG_SMP
-> @@ -535,9 +548,20 @@ static void __init xen_load_gdt_boot(const struct desc_ptr *dtr)
->  static void load_TLS_descriptor(struct thread_struct *t,
->  				unsigned int cpu, unsigned int i)
->  {
-> -	struct desc_struct *gdt = get_cpu_gdt_table(cpu);
-> -	xmaddr_t maddr = arbitrary_virt_to_machine(&gdt[GDT_ENTRY_TLS_MIN+i]);
-> -	struct multicall_space mc = __xen_mc_entry(0);
-> +	struct desc_struct *shadow = &per_cpu(shadow_tls_desc, cpu).desc[i];
-> +	struct desc_struct *gdt;
-> +	xmaddr_t maddr;
-> +	struct multicall_space mc;
-> +
-> +	if (shadow->a == t->tls_array[i].a && shadow->b == t->tls_array[i].b)
-> +		return;
-> +
-> +	shadow->a = t->tls_array[i].a;
-> +	shadow->b = t->tls_array[i].b;
-> +
-> +	gdt = get_cpu_gdt_table(cpu);
-> +	maddr = arbitrary_virt_to_machine(&gdt[GDT_ENTRY_TLS_MIN+i]);
-> +	mc = __xen_mc_entry(0);
+>  	/* Stop blinking */
+> -	led_brightness_set(led_cdev, LED_OFF);
+> +	led_set_brightness(led_cdev, LED_OFF);
 >  
->  	MULTI_update_descriptor(mc.mc, maddr.maddr, t->tls_array[i]);
+>  	device_unregister(led_cdev->dev);
+>  
+> diff --git a/drivers/leds/led-core.c b/drivers/leds/led-core.c
+> index 176961b..8a09c5f 100644
+> --- a/drivers/leds/led-core.c
+> +++ b/drivers/leds/led-core.c
+> @@ -103,7 +103,7 @@ void led_blink_set_oneshot(struct led_classdev *led_cdev,
 >  }
+>  EXPORT_SYMBOL(led_blink_set_oneshot);
+>  
+> -void led_brightness_set(struct led_classdev *led_cdev,
+> +void led_set_brightness(struct led_classdev *led_cdev,
+>  			enum led_brightness brightness)
+>  {
+>  	/* stop and clear soft-blink timer */
+> @@ -113,4 +113,4 @@ void led_brightness_set(struct led_classdev *led_cdev,
+>  
+>  	__led_set_brightness(led_cdev, brightness);
+>  }
+> -EXPORT_SYMBOL(led_brightness_set);
+> +EXPORT_SYMBOL(led_set_brightness);
+> diff --git a/drivers/leds/led-triggers.c b/drivers/leds/led-triggers.c
+> index f8b14dd..57721f2 100644
+> --- a/drivers/leds/led-triggers.c
+> +++ b/drivers/leds/led-triggers.c
+> @@ -112,7 +112,7 @@ void led_trigger_set(struct led_classdev *led_cdev, struct led_trigger *trig)
+>  		if (led_cdev->trigger->deactivate)
+>  			led_cdev->trigger->deactivate(led_cdev);
+>  		led_cdev->trigger = NULL;
+> -		led_brightness_set(led_cdev, LED_OFF);
+> +		led_set_brightness(led_cdev, LED_OFF);
+>  	}
+>  	if (trig) {
+>  		write_lock_irqsave(&trig->leddev_list_lock, flags);
+> diff --git a/drivers/leds/ledtrig-oneshot.c b/drivers/leds/ledtrig-oneshot.c
+> index 5cbab41..2c029aa 100644
+> --- a/drivers/leds/ledtrig-oneshot.c
+> +++ b/drivers/leds/ledtrig-oneshot.c
+> @@ -177,7 +177,7 @@ static void oneshot_trig_deactivate(struct led_classdev *led_cdev)
+>  	}
+>  
+>  	/* Stop blinking */
+> -	led_brightness_set(led_cdev, LED_OFF);
+> +	led_set_brightness(led_cdev, LED_OFF);
+>  }
+>  
+>  static struct led_trigger oneshot_led_trigger = {
+> diff --git a/drivers/leds/ledtrig-timer.c b/drivers/leds/ledtrig-timer.c
+> index 9010f7a..f774d05 100644
+> --- a/drivers/leds/ledtrig-timer.c
+> +++ b/drivers/leds/ledtrig-timer.c
+> @@ -104,7 +104,7 @@ static void timer_trig_deactivate(struct led_classdev *led_cdev)
+>  	}
+>  
+>  	/* Stop blinking */
+> -	led_brightness_set(led_cdev, LED_OFF);
+> +	led_set_brightness(led_cdev, LED_OFF);
+>  }
+>  
+>  static struct led_trigger timer_led_trigger = {
+> diff --git a/include/linux/leds.h b/include/linux/leds.h
+> index dd93a22..3aade1d 100644
+> --- a/include/linux/leds.h
+> +++ b/include/linux/leds.h
+> @@ -124,7 +124,7 @@ extern void led_blink_set_oneshot(struct led_classdev *led_cdev,
+>  				  unsigned long *delay_off,
+>  				  int invert);
+>  /**
+> - * led_brightness_set - set LED brightness
+> + * led_set_brightness - set LED brightness
+>   * @led_cdev: the LED to set
+>   * @brightness: the brightness to set it to
+>   *
+> @@ -132,7 +132,7 @@ extern void led_blink_set_oneshot(struct led_classdev *led_cdev,
+>   * software blink timer that implements blinking when the
+>   * hardware doesn't.
+>   */
+> -extern void led_brightness_set(struct led_classdev *led_cdev,
+> +extern void led_set_brightness(struct led_classdev *led_cdev,
+>  			       enum led_brightness brightness);
+>  
+>  /*
+> diff --git a/net/mac80211/led.c b/net/mac80211/led.c
+> index 1bf7903..bcffa69 100644
+> --- a/net/mac80211/led.c
+> +++ b/net/mac80211/led.c
+> @@ -276,7 +276,7 @@ static void ieee80211_stop_tpt_led_trig(struct ieee80211_local *local)
+>  
+>  	read_lock(&tpt_trig->trig.leddev_list_lock);
+>  	list_for_each_entry(led_cdev, &tpt_trig->trig.led_cdevs, trig_list)
+> -		led_brightness_set(led_cdev, LED_OFF);
+> +		led_set_brightness(led_cdev, LED_OFF);
+>  	read_unlock(&tpt_trig->trig.leddev_list_lock);
+>  }
+>  
+
 
