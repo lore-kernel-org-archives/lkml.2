@@ -1,62 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755541Ab2FNU4L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 16:56:11 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33571 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753835Ab2FNU4K convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 16:56:10 -0400
+	id S1755718Ab2FNU6i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 16:58:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40407 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754025Ab2FNU6h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 16:58:37 -0400
+Message-ID: <4FDA5048.5000107@redhat.com>
+Date: Thu, 14 Jun 2012 16:57:44 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <1339667440.3321.7.camel@lappy>
-References: <1339623535.3321.4.camel@lappy>
-	<20120614032005.GC3766@dhcp-172-17-108-109.mtv.corp.google.com>
-	<1339667440.3321.7.camel@lappy>
-Date: Thu, 14 Jun 2012 13:56:09 -0700
-X-Google-Sender-Auth: 3VmPLTZ-VmpukIDERIDTgtOaNSU
-Message-ID: <CAE9FiQVJ-q3gQxfBqfRnG+RvEh2bZ2-Ki=CRUATmCKjJp8MNuw@mail.gmail.com>
-Subject: Re: Early boot panic on machine with lots of memory
-From: Yinghai Lu <yinghai@kernel.org>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>, hpa@linux.intel.com,
-        linux-mm <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Wallak <wallak@free.fr>
+CC: Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org, jweiner@redhat.com
+Subject: Re: File copy is very slow on linux-3.4.2 (or linux-3.3x) on a specific
+ hardware: AMD FX-8150 + 990FX (solved?)
+References: <1108815600.134531433.1339443818361.JavaMail.root@zimbra44-e7.priv.proxad.net> <437497008.134549481.1339444456294.JavaMail.root@zimbra44-e7.priv.proxad.net> <20120612165357.GI6021@quack.suse.cz> <4FD78CE4.4000209@free.fr> <20120612210947.GB20007@quack.suse.cz> <4FD7C595.202@free.fr> <20120613065313.GA25425@quack.suse.cz> <4FD8F9F1.2000205@free.fr>
+In-Reply-To: <4FD8F9F1.2000205@free.fr>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 14, 2012 at 2:50 AM, Sasha Levin <levinsasha928@gmail.com> wrote:
-> On Thu, 2012-06-14 at 12:20 +0900, Tejun Heo wrote:
->> On Wed, Jun 13, 2012 at 11:38:55PM +0200, Sasha Levin wrote:
->> > Hi all,
->> >
->> > I'm seeing the following when booting a KVM guest with 65gb of RAM, on latest linux-next.
->> >
->> > Note that it happens with numa=off.
->> >
->> > [    0.000000] BUG: unable to handle kernel paging request at ffff88102febd948
->> > [    0.000000] IP: [<ffffffff836a6f37>] __next_free_mem_range+0x9b/0x155
->>
->> Can you map it back to the source line please?
->
-> mm/memblock.c:583
->
->                        phys_addr_t r_start = ri ? r[-1].base + r[-1].size : 0;
->  97:   85 d2                   test   %edx,%edx
->  99:   74 08                   je     a3 <__next_free_mem_range+0xa3>
->  9b:   49 8b 48 f0             mov    -0x10(%r8),%rcx
->  9f:   49 03 48 e8             add    -0x18(%r8),%rcx
->
-> It's the deref on 9b (r8=ffff88102febd958).
+On 06/13/2012 04:37 PM, Wallak wrote:
 
-that reserved.region is allocated by memblock.
+> HighTotal: 8052692 kB HighTotal: 8052692 kB
+> HighFree: 7978664 kB | HighFree: 6227412 kB
+> LowTotal: 229508 kB LowTotal: 229508 kB
+> LowFree: 195804 kB | LowFree: 148948 kB
 
-can you boot with "memblock=debug debug ignore_loglevel" and post
-whole boot log?
+Did the BIOS remap essentially all of the low memory
+to end up above the 1GB boundary?
 
-Thanks
-
-Yinghai
+This does not look like a system that should be run
+with a 32 bit kernel, since it only has 200MB of lowmem,
+giving you a 40:1 highmem:lowmem ratio, which is really
+too much to run well.
