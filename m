@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757054Ab2FOAEn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 20:04:43 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45919 "EHLO
+	id S1757162Ab2FOAE5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 20:04:57 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56620 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756312Ab2FOAAS (ORCPT
+	with ESMTP id S1756867Ab2FOAAL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 20:00:18 -0400
-Message-Id: <20120614235626.367789531@linuxfoundation.org>
+	Thu, 14 Jun 2012 20:00:11 -0400
+Message-Id: <20120614235626.203530407@linuxfoundation.org>
 User-Agent: quilt/0.60-20.1
-Date: Thu, 14 Jun 2012 16:56:51 -0700
+Date: Thu, 14 Jun 2012 16:56:49 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Stanislaw Gruszka <sgruszka@redhat.com>,
-        Helmut Schaa <helmut.schaa@googlemail.com>,
-        Gertjan van Wingerde <gwingerde@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 28/42] rt2x00: use atomic variable for seqno
+        alan@lxorguk.ukuu.org.uk,
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 26/42] ALSA: HDA: Pin fixup for Zotac Z68 motherboard
 In-Reply-To: <20120614235636.GA5275@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,168 +26,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit e5851dac2c95af7159716832300b9f50c62c648e upstream.
+commit edfe3bfc1b779ddda9bcff523eb022dda37b93c8 upstream.
 
-Remove spinlock as atomic_t can be used instead. Note we use only 16
-lower bits, upper bits are changed but we impilcilty cast to u16.
+Pin 0x1b was connected to the front panel connector, which according to
+the HDA standard should contain a mic and a headphone. In this case,
+the headphone was listed as "line out" by BIOS.
 
-This fix possible deadlock on IBSS mode reproted by lockdep:
-
-=================================
-[ INFO: inconsistent lock state ]
-3.4.0-wl+ #4 Not tainted
----------------------------------
-inconsistent {IN-SOFTIRQ-W} -> {SOFTIRQ-ON-W} usage.
-kworker/u:2/30374 [HC0[0]:SC0[0]:HE1:SE1] takes:
- (&(&intf->seqlock)->rlock){+.?...}, at: [<f9979a20>] rt2x00queue_create_tx_descriptor+0x380/0x490 [rt2x00lib]
-{IN-SOFTIRQ-W} state was registered at:
-  [<c04978ab>] __lock_acquire+0x47b/0x1050
-  [<c0498504>] lock_acquire+0x84/0xf0
-  [<c0835733>] _raw_spin_lock+0x33/0x40
-  [<f9979a20>] rt2x00queue_create_tx_descriptor+0x380/0x490 [rt2x00lib]
-  [<f9979f2a>] rt2x00queue_write_tx_frame+0x1a/0x300 [rt2x00lib]
-  [<f997834f>] rt2x00mac_tx+0x7f/0x380 [rt2x00lib]
-  [<f98fe363>] __ieee80211_tx+0x1b3/0x300 [mac80211]
-  [<f98ffdf5>] ieee80211_tx+0x105/0x130 [mac80211]
-  [<f99000dd>] ieee80211_xmit+0xad/0x100 [mac80211]
-  [<f9900519>] ieee80211_subif_start_xmit+0x2d9/0x930 [mac80211]
-  [<c0782e87>] dev_hard_start_xmit+0x307/0x660
-  [<c079bb71>] sch_direct_xmit+0xa1/0x1e0
-  [<c0784bb3>] dev_queue_xmit+0x183/0x730
-  [<c078c27a>] neigh_resolve_output+0xfa/0x1e0
-  [<c07b436a>] ip_finish_output+0x24a/0x460
-  [<c07b4897>] ip_output+0xb7/0x100
-  [<c07b2d60>] ip_local_out+0x20/0x60
-  [<c07e01ff>] igmpv3_sendpack+0x4f/0x60
-  [<c07e108f>] igmp_ifc_timer_expire+0x29f/0x330
-  [<c04520fc>] run_timer_softirq+0x15c/0x2f0
-  [<c0449e3e>] __do_softirq+0xae/0x1e0
-irq event stamp: 18380437
-hardirqs last  enabled at (18380437): [<c0526027>] __slab_alloc.clone.3+0x67/0x5f0
-hardirqs last disabled at (18380436): [<c0525ff3>] __slab_alloc.clone.3+0x33/0x5f0
-softirqs last  enabled at (18377616): [<c0449eb3>] __do_softirq+0x123/0x1e0
-softirqs last disabled at (18377611): [<c041278d>] do_softirq+0x9d/0xe0
-
-other info that might help us debug this:
- Possible unsafe locking scenario:
-
-       CPU0
-       ----
-  lock(&(&intf->seqlock)->rlock);
-  <Interrupt>
-    lock(&(&intf->seqlock)->rlock);
-
- *** DEADLOCK ***
-
-4 locks held by kworker/u:2/30374:
- #0:  (wiphy_name(local->hw.wiphy)){++++.+}, at: [<c045cf99>] process_one_work+0x109/0x3f0
- #1:  ((&sdata->work)){+.+.+.}, at: [<c045cf99>] process_one_work+0x109/0x3f0
- #2:  (&ifibss->mtx){+.+.+.}, at: [<f98f005b>] ieee80211_ibss_work+0x1b/0x470 [mac80211]
- #3:  (&intf->beacon_skb_mutex){+.+...}, at: [<f997a644>] rt2x00queue_update_beacon+0x24/0x50 [rt2x00lib]
-
-stack backtrace:
-Pid: 30374, comm: kworker/u:2 Not tainted 3.4.0-wl+ #4
-Call Trace:
- [<c04962a6>] print_usage_bug+0x1f6/0x220
- [<c0496a12>] mark_lock+0x2c2/0x300
- [<c0495ff0>] ? check_usage_forwards+0xc0/0xc0
- [<c04978ec>] __lock_acquire+0x4bc/0x1050
- [<c0527890>] ? __kmalloc_track_caller+0x1c0/0x1d0
- [<c0777fb6>] ? copy_skb_header+0x26/0x90
- [<c0498504>] lock_acquire+0x84/0xf0
- [<f9979a20>] ? rt2x00queue_create_tx_descriptor+0x380/0x490 [rt2x00lib]
- [<c0835733>] _raw_spin_lock+0x33/0x40
- [<f9979a20>] ? rt2x00queue_create_tx_descriptor+0x380/0x490 [rt2x00lib]
- [<f9979a20>] rt2x00queue_create_tx_descriptor+0x380/0x490 [rt2x00lib]
- [<f997a5cf>] rt2x00queue_update_beacon_locked+0x5f/0xb0 [rt2x00lib]
- [<f997a64d>] rt2x00queue_update_beacon+0x2d/0x50 [rt2x00lib]
- [<f9977e3a>] rt2x00mac_bss_info_changed+0x1ca/0x200 [rt2x00lib]
- [<f9977c70>] ? rt2x00mac_remove_interface+0x70/0x70 [rt2x00lib]
- [<f98e4dd0>] ieee80211_bss_info_change_notify+0xe0/0x1d0 [mac80211]
- [<f98ef7b8>] __ieee80211_sta_join_ibss+0x3b8/0x610 [mac80211]
- [<c0496ab4>] ? mark_held_locks+0x64/0xc0
- [<c0440012>] ? virt_efi_query_capsule_caps+0x12/0x50
- [<f98efb09>] ieee80211_sta_join_ibss+0xf9/0x140 [mac80211]
- [<f98f0456>] ieee80211_ibss_work+0x416/0x470 [mac80211]
- [<c0496d8b>] ? trace_hardirqs_on+0xb/0x10
- [<c077683b>] ? skb_dequeue+0x4b/0x70
- [<f98f207f>] ieee80211_iface_work+0x13f/0x230 [mac80211]
- [<c045cf99>] ? process_one_work+0x109/0x3f0
- [<c045d015>] process_one_work+0x185/0x3f0
- [<c045cf99>] ? process_one_work+0x109/0x3f0
- [<f98f1f40>] ? ieee80211_teardown_sdata+0xa0/0xa0 [mac80211]
- [<c045ed86>] worker_thread+0x116/0x270
- [<c045ec70>] ? manage_workers+0x1e0/0x1e0
- [<c0462f64>] kthread+0x84/0x90
- [<c0462ee0>] ? __init_kthread_worker+0x60/0x60
- [<c083d382>] kernel_thread_helper+0x6/0x10
-
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Acked-by: Helmut Schaa <helmut.schaa@googlemail.com>
-Acked-by: Gertjan van Wingerde <gwingerde@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+BugLink: https://bugs.launchpad.net/bugs/993162
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rt2x00/rt2x00.h      |    3 +--
- drivers/net/wireless/rt2x00/rt2x00mac.c   |    1 -
- drivers/net/wireless/rt2x00/rt2x00queue.c |   13 ++++++-------
- 3 files changed, 7 insertions(+), 10 deletions(-)
+ sound/pci/hda/patch_realtek.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/drivers/net/wireless/rt2x00/rt2x00.h
-+++ b/drivers/net/wireless/rt2x00/rt2x00.h
-@@ -396,8 +396,7 @@ struct rt2x00_intf {
- 	 * for hardware which doesn't support hardware
- 	 * sequence counting.
- 	 */
--	spinlock_t seqlock;
--	u16 seqno;
-+	atomic_t seqno;
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -6606,6 +6606,7 @@ enum {
+ 	ALC662_FIXUP_ASUS_MODE7,
+ 	ALC662_FIXUP_ASUS_MODE8,
+ 	ALC662_FIXUP_NO_JACK_DETECT,
++	ALC662_FIXUP_ZOTAC_Z68,
  };
  
- static inline struct rt2x00_intf* vif_to_intf(struct ieee80211_vif *vif)
---- a/drivers/net/wireless/rt2x00/rt2x00mac.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00mac.c
-@@ -277,7 +277,6 @@ int rt2x00mac_add_interface(struct ieee8
- 	else
- 		rt2x00dev->intf_sta_count++;
+ static const struct alc_fixup alc662_fixups[] = {
+@@ -6755,6 +6756,13 @@ static const struct alc_fixup alc662_fix
+ 		.type = ALC_FIXUP_FUNC,
+ 		.v.func = alc_fixup_no_jack_detect,
+ 	},
++	[ALC662_FIXUP_ZOTAC_Z68] = {
++		.type = ALC_FIXUP_PINS,
++		.v.pins = (const struct alc_pincfg[]) {
++			{ 0x1b, 0x02214020 }, /* Front HP */
++			{ }
++		}
++	},
+ };
  
--	spin_lock_init(&intf->seqlock);
- 	mutex_init(&intf->beacon_skb_mutex);
- 	intf->beacon = entry;
+ static const struct snd_pci_quirk alc662_fixup_tbl[] = {
+@@ -6768,6 +6776,7 @@ static const struct snd_pci_quirk alc662
+ 	SND_PCI_QUIRK(0x144d, 0xc051, "Samsung R720", ALC662_FIXUP_IDEAPAD),
+ 	SND_PCI_QUIRK(0x17aa, 0x38af, "Lenovo Ideapad Y550P", ALC662_FIXUP_IDEAPAD),
+ 	SND_PCI_QUIRK(0x17aa, 0x3a0d, "Lenovo Ideapad Y550", ALC662_FIXUP_IDEAPAD),
++	SND_PCI_QUIRK(0x19da, 0xa130, "Zotac Z68", ALC662_FIXUP_ZOTAC_Z68),
+ 	SND_PCI_QUIRK(0x1b35, 0x2206, "CZC P10T", ALC662_FIXUP_CZC_P10T),
  
---- a/drivers/net/wireless/rt2x00/rt2x00queue.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00queue.c
-@@ -207,6 +207,7 @@ static void rt2x00queue_create_tx_descri
- 	struct ieee80211_tx_info *tx_info = IEEE80211_SKB_CB(skb);
- 	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)skb->data;
- 	struct rt2x00_intf *intf = vif_to_intf(tx_info->control.vif);
-+	u16 seqno;
- 
- 	if (!(tx_info->flags & IEEE80211_TX_CTL_ASSIGN_SEQ))
- 		return;
-@@ -227,15 +228,13 @@ static void rt2x00queue_create_tx_descri
- 	 * sequence counting per-frame, since those will override the
- 	 * sequence counter given by mac80211.
- 	 */
--	spin_lock(&intf->seqlock);
--
- 	if (test_bit(ENTRY_TXD_FIRST_FRAGMENT, &txdesc->flags))
--		intf->seqno += 0x10;
--	hdr->seq_ctrl &= cpu_to_le16(IEEE80211_SCTL_FRAG);
--	hdr->seq_ctrl |= cpu_to_le16(intf->seqno);
--
--	spin_unlock(&intf->seqlock);
-+		seqno = atomic_add_return(0x10, &intf->seqno);
-+	else
-+		seqno = atomic_read(&intf->seqno);
- 
-+	hdr->seq_ctrl &= cpu_to_le16(IEEE80211_SCTL_FRAG);
-+	hdr->seq_ctrl |= cpu_to_le16(seqno);
- }
- 
- static void rt2x00queue_create_tx_descriptor_plcp(struct rt2x00_dev *rt2x00dev,
+ #if 0
 
 
