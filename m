@@ -1,117 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755456Ab2FNJSu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 05:18:50 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:50803 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755400Ab2FNJSs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 05:18:48 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.5.1
-Date: Thu, 14 Jun 2012 18:18:44 +0900
-From: Taku Izumi <izumi.taku@jp.fujitsu.com>
-To: Jiang Liu <jiang.liu@huawei.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Jiang Liu <liuj97@gmail.com>, Don Dutile <ddutile@redhat.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Yijing Wang <wangyijing@huawei.com>,
-        Keping Chen <chenkeping@huawei.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v1 1/6] PCI: change PCI device management logic to
- better follow device model
-Message-Id: <20120614181844.760bc0c7.izumi.taku@jp.fujitsu.com>
-In-Reply-To: <1338787022-400-1-git-send-email-jiang.liu@huawei.com>
-References: <1338787022-400-1-git-send-email-jiang.liu@huawei.com>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755474Ab2FNJYs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 05:24:48 -0400
+Received: from mprc.pku.edu.cn ([162.105.203.9]:60766 "EHLO mprc.pku.edu.cn"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755400Ab2FNJYr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 05:24:47 -0400
+From: Guan Xuetao <gxt@mprc.pku.edu.cn>
+To: linux-kernel@vger.kernel.org
+Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Subject: [PATCH 1/2] UniCore32-bugfix: fix mismatch return value of __xchg_bad_pointer
+Date: Thu, 14 Jun 2012 17:24:27 +0800
+Message-Id: <1339665868-22602-1-git-send-email-gxt@mprc.pku.edu.cn>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+When disintegrate system.h, I left an error in asm/cmpxchg.h, which
+will result in following error:
 
-Hi Jiang,
+arch/unicore32/include/asm/cmpxchg.h: In function '__xchg':
+arch/unicore32/include/asm/cmpxchg.h:38: error: void value not ignored as it ought to be
 
-   Looks good for me.
+Signed-off-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
+---
+ arch/unicore32/include/asm/cmpxchg.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
- Best regards,
- Taku Izumi
-
-On Mon, 04 Jun 2012 13:16:57 +0800
-Jiang Liu <jiang.liu@huawei.com> wrote:
-
-> From: Jiang Liu <liuj97@gmail.com>
-> 
-> According to device model documentation, the way to add/remove device
-> object should be symmetric.
-> 
-> /**
->  * device_del - delete device from system.
->  * @dev: device.
->  *
->  * This is the first part of the device unregistration
->  * sequence. This removes the device from the lists we control
->  * from here, has it removed from the other driver model
->  * subsystems it was added to in device_add(), and removes it
->  * from the kobject hierarchy.
->  *
->  * NOTE: this should be called manually _iff_ device_add() was
->  * also called manually.
->  */
-> 
-> The rule here is to either use
-> 1) device_register()/device_unregister()
-> or
-> 2) device_initialize()/device_add()/device_del()/put_device().
-> 
-> So change PCI core to follow the rule and get rid of the redundant
-> pci_dev_get()/pci_dev_put() pair.
-> 
-> Signed-off-by: Jiang Liu <liuj97@gmail.com>
-> ---
->  drivers/pci/probe.c  |    1 -
->  drivers/pci/remove.c |    4 ++--
->  2 files changed, 2 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-> index 0840409..dacca26 100644
-> --- a/drivers/pci/probe.c
-> +++ b/drivers/pci/probe.c
-> @@ -1294,7 +1294,6 @@ void pci_device_add(struct pci_dev *dev, struct pci_bus *bus)
->  {
->  	device_initialize(&dev->dev);
->  	dev->dev.release = pci_release_dev;
-> -	pci_dev_get(dev);
->  
->  	dev->dev.dma_mask = &dev->dma_mask;
->  	dev->dev.dma_parms = &dev->dma_parms;
-> diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
-> index 04a4861..6c07bc5 100644
-> --- a/drivers/pci/remove.c
-> +++ b/drivers/pci/remove.c
-> @@ -22,7 +22,7 @@ static void pci_stop_dev(struct pci_dev *dev)
->  	if (dev->is_added) {
->  		pci_proc_detach_device(dev);
->  		pci_remove_sysfs_dev_files(dev);
-> -		device_unregister(&dev->dev);
-> +		device_del(&dev->dev);
->  		dev->is_added = 0;
->  	}
->  
-> @@ -40,7 +40,7 @@ static void pci_destroy_dev(struct pci_dev *dev)
->  	up_write(&pci_bus_sem);
->  
->  	pci_free_resources(dev);
-> -	pci_dev_put(dev);
-> +	put_device(&dev->dev);
->  }
->  
->  /**
-> -- 
-> 1.7.1
-> 
-> 
-> 
+diff --git a/arch/unicore32/include/asm/cmpxchg.h b/arch/unicore32/include/asm/cmpxchg.h
+index df4d5ac..8e797ad 100644
+--- a/arch/unicore32/include/asm/cmpxchg.h
++++ b/arch/unicore32/include/asm/cmpxchg.h
+@@ -35,7 +35,7 @@ static inline unsigned long __xchg(unsigned long x, volatile void *ptr,
+ 			: "memory", "cc");
+ 		break;
+ 	default:
+-		ret = __xchg_bad_pointer();
++		__xchg_bad_pointer();
+ 	}
+ 
+ 	return ret;
+-- 
+1.7.0.4
 
