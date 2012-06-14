@@ -1,88 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755267Ab2FNInm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 04:43:42 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:46684 "EHLO zene.cmpxchg.org"
+	id S1755351Ab2FNIoF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 04:44:05 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:51332 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753478Ab2FNInk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 04:43:40 -0400
-Date: Thu, 14 Jun 2012 10:43:32 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: kosaki.motohiro@gmail.com
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        akpm@linux-foundation.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Nick Piggin <npiggin@gmail.com>, Michal Hocko <mhocko@suse.cz>,
-        Mel Gorman <mel@csn.ul.ie>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [resend][PATCH] mm, vmscan: fix do_try_to_free_pages() livelock
-Message-ID: <20120614084332.GN1761@cmpxchg.org>
-References: <1339661592-3915-1-git-send-email-kosaki.motohiro@gmail.com>
+	id S1755315Ab2FNIoB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 04:44:01 -0400
+Date: Thu, 14 Jun 2012 14:13:00 +0530
+From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Anton Arapov <anton@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/6] uprobes: don't use loff_t for the valid virtual
+	address
+Message-ID: <20120614084300.GC9089@in.ibm.com>
+Reply-To: ananth@in.ibm.com
+References: <20120613184933.GA13870@redhat.com> <20120613185106.GE13878@redhat.com> <20120614052430.GA9089@in.ibm.com> <20120614083826.GA2964@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1339661592-3915-1-git-send-email-kosaki.motohiro@gmail.com>
+In-Reply-To: <20120614083826.GA2964@gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12061408-8974-0000-0000-00000A0FE677
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 14, 2012 at 04:13:12AM -0400, kosaki.motohiro@gmail.com wrote:
-> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+On Thu, Jun 14, 2012 at 10:38:26AM +0200, Ingo Molnar wrote:
 > 
-> Currently, do_try_to_free_pages() can enter livelock. Because of,
-> now vmscan has two conflicted policies.
+> * Ananth N Mavinakayanahalli <ananth@in.ibm.com> wrote:
 > 
-> 1) kswapd sleep when it couldn't reclaim any page when reaching
->    priority 0. This is because to avoid kswapd() infinite
->    loop. That said, kswapd assume direct reclaim makes enough
->    free pages to use either regular page reclaim or oom-killer.
->    This logic makes kswapd -> direct-reclaim dependency.
-> 2) direct reclaim continue to reclaim without oom-killer until
->    kswapd turn on zone->all_unreclaimble. This is because
->    to avoid too early oom-kill.
->    This logic makes direct-reclaim -> kswapd dependency.
+> > On Wed, Jun 13, 2012 at 08:51:06PM +0200, Oleg Nesterov wrote:
+> > > loff_t looks confusing when it is used for the virtual address.
+> > > Change map_info and install_breakpoint/remove_breakpoint paths
+> > > to use "unsigned long".
+> > > 
+> > > The patch doesn't change vma_address(), it can't return "long"
+> > > because it is used to verify the mapping. But probably this
+> > > needs some cleanups too.
+> > 
+> > Oleg,
+> > 
+> > As you mentioned in another email, this conflicts with my 
+> > [1/2] preparatory patch for the powerpc port. [...]
 > 
-> In worst case, direct-reclaim may continue to page reclaim forever
-> when kswapd sleeps forever.
+> Note, I already merged your preparatory patch into tip:perf/core 
+> a couple of days ago:
 > 
-> We can't turn on zone->all_unreclaimable from direct reclaim path
-> because direct reclaim path don't take any lock and this way is racy.
+>  7eb9ba5ed312 uprobes: Pass probed vaddr to arch_uprobe_analyze_insn()
 > 
-> Thus this patch removes zone->all_unreclaimable field completely and
-> recalculates zone reclaimable state every time.
-> 
-> Note: we can't take the idea that direct-reclaim see zone->pages_scanned
-> directly and kswapd continue to use zone->all_unreclaimable. Because, it
-> is racy. commit 929bea7c71 (vmscan: all_unreclaimable() use
-> zone->all_unreclaimable as a name) describes the detail.
-> 
-> Reported-by: Aaditya Kumar <aaditya.kumar.30@gmail.com>
-> Reported-by: Ying Han <yinghan@google.com>
-> Cc: Nick Piggin <npiggin@gmail.com>
-> Acked-by: Rik van Riel <riel@redhat.com>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Mel Gorman <mel@csn.ul.ie>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Minchan Kim <minchan.kim@gmail.com>
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> So as long as Oleg is working on top of -tip there should be no 
+> conflict.
 
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Ah.. thanks Ingo. I missed that tip commit email.
 
-> @@ -2497,12 +2490,11 @@ loop_again:
->  				shrink_zone(zone, &sc);
->  
->  				reclaim_state->reclaimed_slab = 0;
-> -				nr_slab = shrink_slab(&shrink, sc.nr_scanned, lru_pages);
-> +				shrink_slab(&shrink, sc.nr_scanned, lru_pages);
->  				sc.nr_reclaimed += reclaim_state->reclaimed_slab;
->  				total_scanned += sc.nr_scanned;
->  
-> -				if (nr_slab == 0 && !zone_reclaimable(zone))
-> -					zone->all_unreclaimable = 1;
-> +
+Ananth
 
-That IS a slight change in behaviour.  But then, if you scanned 6
-times the amount of reclaimable pages without freeing a single slab
-page, it's probably not worth going on.
