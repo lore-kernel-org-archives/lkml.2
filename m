@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756600Ab2FNX6q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 19:58:46 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:46571 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753663Ab2FNX6n (ORCPT
+	id S1756651Ab2FNX6w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 19:58:52 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45919 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753663Ab2FNX6t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 19:58:43 -0400
-Message-Id: <20120614235645.932553729@linuxfoundation.org>
+	Thu, 14 Jun 2012 19:58:49 -0400
+Message-Id: <20120614235645.341332018@linuxfoundation.org>
 User-Agent: quilt/0.60-20.1
-Date: Thu, 14 Jun 2012 16:57:03 -0700
+Date: Thu, 14 Jun 2012 16:56:56 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, KyongHo Cho <pullip.cho@samsung.com>,
-        "Olav Haugan" <ohaugan@codeaurora.org>
-Subject: [ 19/20] mm: fix faulty initialization in vmalloc_init()
+        alan@lxorguk.ukuu.org.uk, Alan Cox <alan@linux.intel.com>,
+        Matthew Garrett <mjg@redhat.com>, Len Brown <len.brown@intel.com>
+Subject: [ 12/20] acpi_video: fix leaking PCI references
 In-Reply-To: <20120614235648.GA6552@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,49 +25,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: KyongHo <pullip.cho@samsung.com>
+From: Alan Cox <alan@linux.intel.com>
 
-commit dbda591d920b4c7692725b13e3f68ecb251e9080 upstream.
+commit cfb46f433a4da97c31780e08a259fac2cb6bd61f upstream.
 
-The transfer of ->flags causes some of the static mapping virtual
-addresses to be prematurely freed (before the mapping is removed) because
-VM_LAZY_FREE gets "set" if tmp->flags has VM_IOREMAP set.  This might
-cause subsequent vmalloc/ioremap calls to fail because it might allocate
-one of the freed virtual address ranges that aren't unmapped.
-
-va->flags has different types of flags from tmp->flags.  If a region with
-VM_IOREMAP set is registered with vm_area_add_early(), it will be removed
-by __purge_vmap_area_lazy().
-
-Fix vmalloc_init() to correctly initialize vmap_area for the given
-vm_struct.
-
-Also initialise va->vm.  If it is not set, find_vm_area() for the early
-vm regions will always fail.
-
-Signed-off-by: KyongHo Cho <pullip.cho@samsung.com>
-Cc: "Olav Haugan" <ohaugan@codeaurora.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Acked-by: Matthew Garrett <mjg@redhat.com>
+Signed-off-by: Len Brown <len.brown@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/vmalloc.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/acpi/video.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -1174,9 +1174,10 @@ void __init vmalloc_init(void)
- 	/* Import existing vmlist entries. */
- 	for (tmp = vmlist; tmp; tmp = tmp->next) {
- 		va = kzalloc(sizeof(struct vmap_area), GFP_NOWAIT);
--		va->flags = tmp->flags | VM_VM_AREA;
-+		va->flags = VM_VM_AREA;
- 		va->va_start = (unsigned long)tmp->addr;
- 		va->va_end = va->va_start + tmp->size;
-+		va->vm = tmp;
- 		__insert_vmap_area(va);
- 	}
+--- a/drivers/acpi/video.c
++++ b/drivers/acpi/video.c
+@@ -1732,6 +1732,7 @@ static int acpi_video_bus_remove(struct
  
+ static int __init intel_opregion_present(void)
+ {
++	int i915 = 0;
+ #if defined(CONFIG_DRM_I915) || defined(CONFIG_DRM_I915_MODULE)
+ 	struct pci_dev *dev = NULL;
+ 	u32 address;
+@@ -1744,10 +1745,10 @@ static int __init intel_opregion_present
+ 		pci_read_config_dword(dev, 0xfc, &address);
+ 		if (!address)
+ 			continue;
+-		return 1;
++		i915 = 1;
+ 	}
+ #endif
+-	return 0;
++	return i915;
+ }
+ 
+ int acpi_video_register(void)
 
 
