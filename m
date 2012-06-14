@@ -1,118 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755071Ab2FNCGF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 22:06:05 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:41310 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752590Ab2FNCGD (ORCPT
+	id S1755186Ab2FNCH5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 22:07:57 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:54740 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754897Ab2FNCHz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 22:06:03 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlEJAMZF2U95LAcV/2dsb2JhbABFFrN2BIEwgQiCGAEBAQMBAQIkExwjBQsIAxUDLhQNBxEDIROHfQMGBAywWw2JThSKOmJJhGhgA5J7giWBE4lthH2Ccg
-Date: Thu, 14 Jun 2012 12:05:59 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Wanpeng Li <liwp.linux@gmail.com>, linux-kernel@vger.kernel.org,
-        Gavin Shan <shangw@linux.vnet.ibm.com>
-Subject: Re: [PATCH v2] writeback: avoid race when update bandwidth
-Message-ID: <20120614020559.GB7339@dastard>
-References: <1339501561-4570-1-git-send-email-liwp.linux@gmail.com>
- <20120612115219.GA17348@localhost>
- <20120613035920.GV22848@dastard>
- <20120613121434.GA937@localhost>
+	Wed, 13 Jun 2012 22:07:55 -0400
+X-AuditID: 9c93016f-b7c3cae000001954-f5-4fd947782330
+Message-ID: <4FD94779.3030108@kernel.org>
+Date: Thu, 14 Jun 2012 11:07:53 +0900
+From: Minchan Kim <minchan@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120613121434.GA937@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Newsgroups: gmane.linux.kernel.mm,gmane.linux.file-systems,gmane.linux.kernel
+To: Fengguang Wu <fengguang.wu@intel.com>
+CC: Dave Chinner <dchinner@redhat.com>, Christoph Hellwig <hch@infradead.org>,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>, xfs@oss.sgi.com
+Subject: Re: [PATCH] mm: add gfp_mask parameter to vm_map_ram()
+References: <20120612012134.GA7706@localhost> <20120613123932.GA1445@localhost> <20120614012026.GL3019@devil.redhat.com> <20120614014902.GB7289@localhost>
+In-Reply-To: <20120614014902.GB7289@localhost>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 13, 2012 at 08:14:34PM +0800, Fengguang Wu wrote:
-> On Wed, Jun 13, 2012 at 01:59:20PM +1000, Dave Chinner wrote:
-> > On Tue, Jun 12, 2012 at 07:52:19PM +0800, Fengguang Wu wrote:
-> > > On Tue, Jun 12, 2012 at 07:46:01PM +0800, Wanpeng Li wrote:
-> > > > From: Wanpeng Li <liwp@linux.vnet.ibm.com>
-> > > > 
-> > > > "V1 -> V2"
-> > > > * remove dirty_lock
-> > > > 
-> > > > Since bdi->wb.list_lock is used to protect the b_* lists,
-> > > > so the flushers who call wb_writeback to writeback pages will
-> > > > stuck when bandwidth update policy holds this lock. In order
-> > > > to avoid this race we can introduce a new bandwidth_lock who
-> > > > is responsible for protecting bandwidth update policy.
-> > > > 
-> > > > Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
-> > > 
-> > > Applied with a new title "writeback: use a standalone lock for
-> > > updating write bandwidth". "race" is sensitive because it often
-> > > refers to some locking error.
-> > 
-> > Fengguang - can we get some evidence that this is a contended lock
-> > before changing the scope of it? All of the previous "breaking up
-> > global locks" have been done based on lock contention data, so
-> > moving back to a global lock for this needs to have the same
-> > analysis provided...
+Hi Fengguang,
+
+On 06/14/2012 10:49 AM, Fengguang Wu wrote:
+
+> On Thu, Jun 14, 2012 at 11:20:26AM +1000, Dave Chinner wrote:
+>> On Wed, Jun 13, 2012 at 08:39:32PM +0800, Fengguang Wu wrote:
+>>> Hi Christoph, Dave,
+>>>
+>>> I got this lockdep warning on XFS when running the xfs tests:
+>>>
+>>> [  704.832019] =================================
+>>> [  704.832019] [ INFO: inconsistent lock state ]
+>>> [  704.832019] 3.5.0-rc1+ #8 Tainted: G        W   
+>>> [  704.832019] ---------------------------------
+>>> [  704.832019] inconsistent {IN-RECLAIM_FS-W} -> {RECLAIM_FS-ON-W} usage.
+>>> [  704.832019] fsstress/11619 [HC0[0]:SC0[0]:HE1:SE1] takes:
+>>> [  704.832019]  (&(&ip->i_lock)->mr_lock){++++?.}, at: [<ffffffff8143953d>] xfs_ilock_nowait+0xd7/0x1d0
+>>> [  704.832019] {IN-RECLAIM_FS-W} state was registered at:
+>>> [  704.832019]   [<ffffffff810e30a2>] mark_irqflags+0x12d/0x13e
+>>> [  704.832019]   [<ffffffff810e32f6>] __lock_acquire+0x243/0x3f9
+>>> [  704.832019]   [<ffffffff810e3a1c>] lock_acquire+0x112/0x13d
+>>> [  704.832019]   [<ffffffff810b8931>] down_write_nested+0x54/0x8b
+>>> [  704.832019]   [<ffffffff81438fab>] xfs_ilock+0xd8/0x17d
+>>> [  704.832019]   [<ffffffff814431b8>] xfs_reclaim_inode+0x4a/0x2cb
+>>> [  704.832019]   [<ffffffff814435ee>] xfs_reclaim_inodes_ag+0x1b5/0x28e
+>>> [  704.832019]   [<ffffffff814437d7>] xfs_reclaim_inodes_nr+0x33/0x3a
+>>> [  704.832019]   [<ffffffff8144050e>] xfs_fs_free_cached_objects+0x15/0x17
+>>> [  704.832019]   [<ffffffff81196076>] prune_super+0x103/0x154
+>>> [  704.832019]   [<ffffffff81152fa7>] shrink_slab+0x1ec/0x316
+>>> [  704.832019]   [<ffffffff8115574f>] balance_pgdat+0x308/0x618
+>>> [  704.832019]   [<ffffffff81155c22>] kswapd+0x1c3/0x1dc
+>>> [  704.832019]   [<ffffffff810b3f77>] kthread+0xaf/0xb7
+>>> [  704.832019]   [<ffffffff82f480b4>] kernel_thread_helper+0x4/0x10
+>>
+>> ......
+>>> [  704.832019] stack backtrace:
+>>> [  704.832019] Pid: 11619, comm: fsstress Tainted: G        W    3.5.0-rc1+ #8
+>>> [  704.832019] Call Trace:
+>>> [  704.832019]  [<ffffffff82e92243>] print_usage_bug+0x1f5/0x206
+>>> [  704.832019]  [<ffffffff810e2220>] ? check_usage_forwards+0xa6/0xa6
+>>> [  704.832019]  [<ffffffff82e922c3>] mark_lock_irq+0x6f/0x120
+>>> [  704.832019]  [<ffffffff810e2f02>] mark_lock+0xaf/0x122
+>>> [  704.832019]  [<ffffffff810e3d4e>] mark_held_locks+0x6d/0x95
+>>> [  704.832019]  [<ffffffff810c5cd1>] ? local_clock+0x36/0x4d
+>>> [  704.832019]  [<ffffffff810e3de3>] __lockdep_trace_alloc+0x6d/0x6f
+>>> [  704.832019]  [<ffffffff810e42e7>] lockdep_trace_alloc+0x3d/0x57
+>>> [  704.832019]  [<ffffffff811837c8>] kmem_cache_alloc_node_trace+0x47/0x1b4
+>>> [  704.832019]  [<ffffffff810e377d>] ? lock_release_nested+0x9f/0xa6
+>>> [  704.832019]  [<ffffffff81431650>] ? _xfs_buf_find+0xaa/0x302
+>>> [  704.832019]  [<ffffffff811710a2>] ? new_vmap_block.constprop.18+0x3a/0x1de
+>>> [  704.832019]  [<ffffffff811710a2>] new_vmap_block.constprop.18+0x3a/0x1de
+>>> [  704.832019]  [<ffffffff8117144a>] vb_alloc.constprop.16+0x204/0x225
+>>> [  704.832019]  [<ffffffff8117149d>] vm_map_ram+0x32/0xaa
+>>> [  704.832019]  [<ffffffff81430c95>] _xfs_buf_map_pages+0xb3/0xf5
+>>> [  704.832019]  [<ffffffff81431a6a>] xfs_buf_get+0xd3/0x1ac
+>>> [  704.832019]  [<ffffffff81492dd9>] xfs_trans_get_buf+0x180/0x244
+>>> [  704.832019]  [<ffffffff8146947a>] xfs_da_do_buf+0x2a0/0x5cc
+>>> [  704.832019]  [<ffffffff81469826>] xfs_da_get_buf+0x21/0x23
+>>> [  704.832019]  [<ffffffff8146f894>] xfs_dir2_data_init+0x44/0xf9
+>>> [  704.832019]  [<ffffffff8146e94f>] xfs_dir2_sf_to_block+0x1ef/0x5d8
+>>
+>> Bug in vm_map_ram - it does an unconditional GFP_KERNEL allocation
+>> here, and we are in a GFP_NOFS context. We can't pass a gfp_mask to
+>> vm_map_ram(), so until vm_map_ram() grows that we can't fix it...
 > 
-> Good point. Attached is the lockstat for the case "10 disks each runs
-> 100 dd dirtier tasks":
+> This trivial patch should fix it.
 > 
->         lkp-ne02/JBOD-10HDD-thresh=4G/xfs-100dd-1-3.2.0-rc5
-
-(nothing attached)
-
-> The wb->list_lock contention is much better than I expected, which is
-> good.  What stand out are
->                                                         waittime-total
-> - &rq->lock             by double_rq_lock()             6738952.13
-> - clockevents_lock      by clockevents_notify()         2155554.37
-> - mapping->tree_lock    by test_clear_page_writeback()   931550.13
-> - sb_lock               by grab_super_passive()          918815.87
-> - &zone->lru_lock       by pagevec_lru_move_fn()         912681.05
+> The only behavior change is the XFS part:
 > 
-> - sysfs_mutex           by sysfs_permission()           24029975.20 # mutex
-> - ip->i_lock            by xfs_ilock()                  18428284.10 # mrlock
+> @@ -406,7 +406,7 @@ _xfs_buf_map_pages(
+>  
+>                 do {
+>                         bp->b_addr = vm_map_ram(bp->b_pages, bp->b_page_count,
+> -                                               -1, PAGE_KERNEL);
+> +                                               -1, GFP_NOFS, PAGE_KERNEL);
+>                         if (bp->b_addr)
+>                                 break;
+>                         vm_unmap_aliases();
+> 
+> Does that look fine to you?
 
-The wait time is not really an indication of contention problems.
-Large wait time is usually an indication that the lock is being used
-a lot.
+> 
+> Thanks,
 
-What matters is the number of contentions vs the number of
-acquisitions, and the number of those contentions that bounced the
-lock. If the number of contentions is >= 0.5% of the acquisitions,
-then the lock can be considered hot and needing some work. If I look
-here:
+> Fengguang
+> ---
+> 
+> From 7301975d3211da2ce07723c294cf3260229fe84b Mon Sep 17 00:00:00 2001
+> From: Fengguang Wu <fengguang.wu@intel.com>
+> Date: Thu, 14 Jun 2012 09:38:33 +0800
+> Subject: [PATCH] mm: add @gfp_mask parameter to vm_map_ram()
+> 
+> XFS needs GFP_NOFS allocation.
+> 
+> Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+> ---
+>  drivers/firewire/ohci.c                 |    2 +-
+>  drivers/media/video/videobuf2-dma-sg.c  |    1 +
+>  drivers/media/video/videobuf2-vmalloc.c |    2 +-
+>  fs/xfs/xfs_buf.c                        |    2 +-
+>  include/linux/vmalloc.h                 |    2 +-
+>  mm/nommu.c                              |    3 ++-
+>  mm/vmalloc.c                            |    7 ++++---
+>  7 files changed, 11 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/firewire/ohci.c b/drivers/firewire/ohci.c
+> index c1af05e..b53f5a9 100644
+> --- a/drivers/firewire/ohci.c
+> +++ b/drivers/firewire/ohci.c
+> @@ -1000,7 +1000,7 @@ static int ar_context_init(struct ar_context *ctx, struct fw_ohci *ohci,
+>  	for (i = 0; i < AR_WRAPAROUND_PAGES; i++)
+>  		pages[AR_BUFFERS + i] = ctx->pages[i];
+>  	ctx->buffer = vm_map_ram(pages, AR_BUFFERS + AR_WRAPAROUND_PAGES,
+> -				 -1, PAGE_KERNEL);
+> +				 -1, GFP_KERNEL, PAGE_KERNEL);
+>  	if (!ctx->buffer)
+>  		goto out_of_memory;
+>  
+> diff --git a/drivers/media/video/videobuf2-dma-sg.c b/drivers/media/video/videobuf2-dma-sg.c
+> index 25c3b36..d087f52 100644
+> --- a/drivers/media/video/videobuf2-dma-sg.c
+> +++ b/drivers/media/video/videobuf2-dma-sg.c
+> @@ -209,6 +209,7 @@ static void *vb2_dma_sg_vaddr(void *buf_priv)
+>  		buf->vaddr = vm_map_ram(buf->pages,
+>  					buf->sg_desc.num_pages,
+>  					-1,
+> +					GFP_KERNEL,
+>  					PAGE_KERNEL);
+>  
+>  	/* add offset in case userptr is not page-aligned */
+> diff --git a/drivers/media/video/videobuf2-vmalloc.c b/drivers/media/video/videobuf2-vmalloc.c
+> index 6b5ca6c..548ebda 100644
+> --- a/drivers/media/video/videobuf2-vmalloc.c
+> +++ b/drivers/media/video/videobuf2-vmalloc.c
+> @@ -111,7 +111,7 @@ static void *vb2_vmalloc_get_userptr(void *alloc_ctx, unsigned long vaddr,
+>  			goto fail_get_user_pages;
+>  
+>  		buf->vaddr = vm_map_ram(buf->pages, buf->n_pages, -1,
+> -					PAGE_KERNEL);
+> +					GFP_KERNEL, PAGE_KERNEL);
+>  		if (!buf->vaddr)
+>  			goto fail_get_user_pages;
+>  	}
+> diff --git a/fs/xfs/xfs_buf.c b/fs/xfs/xfs_buf.c
+> index 172d3cc..b3e7289 100644
+> --- a/fs/xfs/xfs_buf.c
+> +++ b/fs/xfs/xfs_buf.c
+> @@ -406,7 +406,7 @@ _xfs_buf_map_pages(
+>  
+>  		do {
+>  			bp->b_addr = vm_map_ram(bp->b_pages, bp->b_page_count,
+> -						-1, PAGE_KERNEL);
+> +						-1, GFP_NOFS, PAGE_KERNEL);
+>  			if (bp->b_addr)
+>  				break;
+>  			vm_unmap_aliases();
+> diff --git a/include/linux/vmalloc.h b/include/linux/vmalloc.h
+> index dcdfc2b..c811763 100644
+> --- a/include/linux/vmalloc.h
+> +++ b/include/linux/vmalloc.h
+> @@ -40,7 +40,7 @@ struct vm_struct {
+>   */
+>  extern void vm_unmap_ram(const void *mem, unsigned int count);
+>  extern void *vm_map_ram(struct page **pages, unsigned int count,
+> -				int node, pgprot_t prot);
+> +				int node, gfp_t gfp_mask, pgprot_t prot);
+>  extern void vm_unmap_aliases(void);
+>  
+>  #ifdef CONFIG_MMU
+> diff --git a/mm/nommu.c b/mm/nommu.c
+> index d4b0c10..2fb4ec1 100644
+> --- a/mm/nommu.c
+> +++ b/mm/nommu.c
+> @@ -416,7 +416,8 @@ void vunmap(const void *addr)
+>  }
+>  EXPORT_SYMBOL(vunmap);
+>  
+> -void *vm_map_ram(struct page **pages, unsigned int count, int node, pgprot_t prot)
+> +void *vm_map_ram(struct page **pages, unsigned int count,
+> +		 int node, gfp_t gfp_mask, pgprot_t prot)
+>  {
+>  	BUG();
+>  	return NULL;
+> diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+> index 2aad499..3f736d1 100644
+> --- a/mm/vmalloc.c
+> +++ b/mm/vmalloc.c
+> @@ -1088,21 +1088,22 @@ EXPORT_SYMBOL(vm_unmap_ram);
+>   *
+>   * Returns: a pointer to the address that has been mapped, or %NULL on failure
+>   */
+> -void *vm_map_ram(struct page **pages, unsigned int count, int node, pgprot_t prot)
+> +void *vm_map_ram(struct page **pages, unsigned int count,
+> +		 int node, gfp_t gfp_mask, pgprot_t prot)
+>  {
+>  	unsigned long size = count << PAGE_SHIFT;
+>  	unsigned long addr;
+>  	void *mem;
+>  
+>  	if (likely(count <= VMAP_MAX_ALLOC)) {
+> -		mem = vb_alloc(size, GFP_KERNEL);
+> +		mem = vb_alloc(size, gfp_mask);
+>  		if (IS_ERR(mem))
+>  			return NULL;
+>  		addr = (unsigned long)mem;
+>  	} else {
+>  		struct vmap_area *va;
+>  		va = alloc_vmap_area(size, PAGE_SIZE,
+> -				VMALLOC_START, VMALLOC_END, node, GFP_KERNEL);
+> +				VMALLOC_START, VMALLOC_END, node, gfp_mask);
+>  		if (IS_ERR(va))
+>  			return NULL;
+>  
 
-http://lists.linux.hp.com/~enw/ext4/3.2/3.2-full-lockstats.2/ffsb_fsscale.xfs.large_file_creates_threads=192/profiling/iteration.1/lock_stat
 
-Which is a 192 thread concurrent write on a 48-core machine, the
-wb.list_lock shows 5,532 acquistions for the entire test, while the
-mapping tree lock took 440 million!. So your test isn't really one
-that shows wb.list_lock contention. The 192-thread mailserver
-workload from the same machine:
+It shouldn't work because vmap_page_range still can allocate GFP_KERNEL by pud_alloc in vmap_pud_range.
+For it, I tried [1] but other mm guys want to add WARNING [2] so let's avoiding gfp context passing.
 
-http://lists.linux.hp.com/~enw/ext4/3.2/3.2-full-lockstats.2/ffsb_fsscale.xfs.mail_server_threads=192/profiling/iteration.1/lock_stat
+[1] https://lkml.org/lkml/2012/4/23/77
+[2] https://lkml.org/lkml/2012/5/2/340
 
-Shows about 7.1m acquisitions of the wb.list_lock, but only 28,000
-contentions. So it isn't really contended enough to justify
-replacing it with a global lock.
-
-FWIW, the third most contended lock on that workload is the XFS
-delayed write queue lock - 25M acquisitions for 600k contentions - a
-rate of about 2% which means quite severe contention.  That lock no
-longer exists in 3.5 - Christoph completely reworked the delayed
-write buffer support to remove the global list and lock because it
-was showing up in profiles like this...
-
-Indeed, that profile shows that XFS owns 7 of the 10 most contended
-locks, and 3 of them have had significant work done to reduce the
-contention since 3.2 as a result of recent profile results like this.
-
-Cheers,
-
-Dave.
+Thanks.
 -- 
-Dave Chinner
-david@fromorbit.com
+Kind regards,
+Minchan Kim
