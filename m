@@ -1,77 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932238Ab2FNR0F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 13:26:05 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:57169 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753971Ab2FNRZt convert rfc822-to-8bit (ORCPT
+	id S1756401Ab2FNR1L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 13:27:11 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:40786 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753971Ab2FNR1J convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 13:25:49 -0400
+	Thu, 14 Jun 2012 13:27:09 -0400
 MIME-Version: 1.0
-In-Reply-To: <4FD9A328.9080000@linaro.org>
-References: <201206140804.39083.arnd@arndb.de>
-	<cover.1339447570.git.rubini@gnudd.com>
-	<4a198618063924b68182279ffd56c335d621f542.1339447570.git.rubini@gnudd.com>
-	<20120614081758.GA19648@mail.gnudd.com>
-	<4FD9A328.9080000@linaro.org>
-Date: Thu, 14 Jun 2012 19:25:48 +0200
-Message-ID: <CACRpkdZfherHBEXcwaco1zeK-gW=3x-rGXTfNc4QwwWfLk_JRA@mail.gmail.com>
-Subject: Re: [PATCH V3 2/3] i2c-nomadik: turn the platform driver to an amba driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
-        w.sang@pengutronix.de
-Cc: Alessandro Rubini <rubini@gnudd.com>, arnd@arndb.de,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        giancarlo.asnaghi@st.com, linux@arm.linux.org.uk,
-        linus.walleij@stericsson.com, srinidhi.kasagar@stericsson.com,
-        linux-i2c@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
-        alan@linux.intel.com
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <4FDA1C03.3020404@cwi.nl>
+References: <4FD9E69A.4090708@cwi.nl>
+	<CAPM=9tzL-TyDLKWdmCdi5d6PzQTs3sTLnqnLG_s7K2h9WNOEvQ@mail.gmail.com>
+	<CAKMK7uGokt5cW0R+LKXRmE_kecqmnv4Zgy-WiSZA-GPP8htE-A@mail.gmail.com>
+	<4FD9F9B0.9030204@cwi.nl>
+	<4FDA1C03.3020404@cwi.nl>
+Date: Thu, 14 Jun 2012 19:27:08 +0200
+Message-ID: <CAKMK7uESK+CPkXVA5wFjL5B_38AAFnZLX6pY2aRfAYyWZAZ5nA@mail.gmail.com>
+Subject: Re: [3.4 regression] [bisected] DisplayPort fails to come on
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: "Wouter M. Koolen" <W.M.Koolen-Wijkstra@cwi.nl>
+Cc: Dave Airlie <airlied@gmail.com>, intergalactic.anonymous@gmail.com,
+        len.brown@intel.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        "Barnes, Jesse" <jbarnes@virtuousgeek.org>,
+        "Wilson, Chris" <chris.wilson@intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 14, 2012 at 10:39 AM, Lee Jones <lee.jones@linaro.org> wrote:
-> On 14/06/12 09:17, Alessandro Rubini wrote:
->>>
->>> You change only one half of ux500 here: the part where the device
->>> gets defined statically, but not not the definition in the
->>> device-tree.
+On Thu, Jun 14, 2012 at 7:14 PM, Wouter M. Koolen
+<W.M.Koolen-Wijkstra@cwi.nl> wrote:
+> On 06/14/2012 03:48 PM, Wouter M. Koolen wrote:
 >>
->> Yes, I'm aware. That's why I added Lee Jones as Cc:, on Linusw's
->> suggestion.  Lee told me to go ahead and he'll fix the DT stuff.
+>> In the mean while I will redo the bisect.
 >
-> I did?
-
-Yes :-)
-
-> I have already DT:ed this driver. There are 3 patches on the MLs currently.
+> Hi guys,
 >
->> [PATCH 1/3] i2c: Add Device Tree support to the Nomadik I2C driver
->> [PATCH 2/3] ARM: ux500: Add i2c configurations to the Device Tree for
->> DB8500 based devices
->> [PATCH 3/3] Documentation: Device Tree binding information for i2c-nomadik
->> driver
+> I did a bisect on the actual problem (and not on the maybe-related second
+> error message). It results in 092945e11c5b84f66dd08f0b87fb729715d377bc:
 >
-> I'm more than happy for you to base your patches on these and make the
-> necessary changes. Off hand, I think the only changes you'll need to make is
-> the probing from DT itself.
-
-Depends on whether this patch or yours go in first I guess. Which
-is up to Wolfram. What I know is that Alessandros patches are
-ready to merge IMO.
-
-> So something like:
+> Author: Adam Jackson <ajax@redhat.com>  2011-07-26 20:39:45
+> Committer: Daniel Vetter <daniel.vetter@ffwll.ch>  2012-01-17 15:46:56
+> Parent: 6919132e7a307b1f181d7655b3ef64cc7581a5ef (drm/i915/dp: Tweak auxch
+> clock divider for PCH)
+> Branches: linux-3.4.y, remotes/origin/linux-3.4.y, remotes/origin/master
+> Follows: v3.2-rc6
+> Precedes: v3.4-rc1
 >
->    -                       compatible = "stericsson,db8500-i2c", "st,nomadik-i2c";
->    +                       compatible = "st,nomadik-i2c", "arm,primecell";
+>    drm/i915/dp: Use auxch precharge value of 5 everywhere
+>
+>    The default in the Sandybridge docs is 5, as on Ironlake, and I have no
+>    reason to believe 3 would work any better.
+>
+>    Signed-off-by: Adam Jackson <ajax@redhat.com>
+>    Acked-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+>    Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+>
+> I guess there is your reason for 3 :)
+>
+> Any advice on how to proceed would be very helpful.
 
-Yep that should do it.
+Well, can you revert this patch (or just replace the 5 with 3 in the
+code) on top of latest 3.4.x and test whether this is indeed the cause
+of your regression? Just to make sure that we have the right culprit.
 
-Which brings me to the fear of what happens the day we have
-deployed device trees out there and just cannot change things
-like this easily :-/
-
-Yours,
-Linus Walleij
+Thanks, Daniel
+-- 
+Daniel Vetter
+daniel.vetter@ffwll.ch - +41 (0) 79 365 57 48 - http://blog.ffwll.ch
