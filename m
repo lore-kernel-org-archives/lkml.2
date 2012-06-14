@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756523Ab2FNX6f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 19:58:35 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45919 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756415Ab2FNX6b (ORCPT
+	id S1756568Ab2FNX6l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 19:58:41 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:46571 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756449Ab2FNX6h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 19:58:31 -0400
-Message-Id: <20120614235645.580470128@linuxfoundation.org>
+	Thu, 14 Jun 2012 19:58:37 -0400
+Message-Id: <20120614235645.759520610@linuxfoundation.org>
 User-Agent: quilt/0.60-20.1
-Date: Thu, 14 Jun 2012 16:56:59 -0700
+Date: Thu, 14 Jun 2012 16:57:01 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Borislav Petkov <borislav.petkov@amd.com>,
-        Robert Richter <robert.richter@amd.com>
-Subject: [ 15/20] x86, MCE, AMD: Make APIC LVT thresholding interrupt optional
+        alan@lxorguk.ukuu.org.uk, Dean Nelson <dnelson@redhat.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Roman Kagan <rkagan@parallels.com>
+Subject: [ 17/20] e1000: save skb counts in TX to avoid cache misses
 In-Reply-To: <20120614235648.GA6552@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,141 +27,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+From: Dean Nelson <dnelson@redhat.com>
 
-commit f227d4306cf30e1d5b6f231e8ef9006c34f3d186 upstream.
+commit 31c15a2f24ebdab14333d9bf5df49757842ae2ec upstream.
 
-Currently, the APIC LVT interrupt for error thresholding is implicitly
-enabled. However, there are models in the F15h range which do not enable
-it. Make the code machinery which sets up the APIC interrupt support
-an optional setting and add an ->interrupt_capable member to the bank
-representation mirroring that capability and enable the interrupt offset
-programming only if it is true.
+Virtual Machines with emulated e1000 network adapter running on Parallels'
+server were seeing kernel panics due to the e1000 driver dereferencing an
+unexpected NULL pointer retrieved from buffer_info->skb.
 
-Simplify code and fixup comment style while at it.
+The problem has been addressed for the e1000e driver, but not for the e1000.
+Since the two drivers share similar code in the affected area, a port of the
+following e1000e driver commit solves the issue for the e1000 driver:
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-Signed-off-by: Robert Richter <robert.richter@amd.com>
+commit 9ed318d546a29d7a591dbe648fd1a2efe3be1180
+Author: Tom Herbert <therbert@google.com>
+Date:   Wed May 5 14:02:27 2010 +0000
 
+    e1000e: save skb counts in TX to avoid cache misses
+
+    In e1000_tx_map, precompute number of segements and bytecounts which
+    are derived from fields in skb; these are stored in buffer_info.  When
+    cleaning tx in e1000_clean_tx_irq use the values in the associated
+    buffer_info for statistics counting, this eliminates cache misses
+    on skb fields.
+
+Signed-off-by: Dean Nelson <dnelson@redhat.com>
+Acked-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Roman Kagan <rkagan@parallels.com>
 
 ---
- arch/x86/kernel/cpu/mcheck/mce_amd.c |   55 ++++++++++++++++++++++++++++-------
- 1 file changed, 44 insertions(+), 11 deletions(-)
+ drivers/net/e1000/e1000.h      |    2 ++
+ drivers/net/e1000/e1000_main.c |   18 +++++++++---------
+ 2 files changed, 11 insertions(+), 9 deletions(-)
 
---- a/arch/x86/kernel/cpu/mcheck/mce_amd.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce_amd.c
-@@ -52,6 +52,7 @@ struct threshold_block {
- 	unsigned int		cpu;
- 	u32			address;
- 	u16			interrupt_enable;
-+	bool			interrupt_capable;
- 	u16			threshold_limit;
- 	struct kobject		kobj;
- 	struct list_head	miscj;
-@@ -86,6 +87,21 @@ struct thresh_restart {
- 	u16			old_limit;
+--- a/drivers/net/e1000/e1000.h
++++ b/drivers/net/e1000/e1000.h
+@@ -150,6 +150,8 @@ struct e1000_buffer {
+ 	unsigned long time_stamp;
+ 	u16 length;
+ 	u16 next_to_watch;
++	unsigned int segs;
++	unsigned int bytecount;
+ 	u16 mapped_as_page;
  };
  
-+static bool lvt_interrupt_supported(unsigned int bank, u32 msr_high_bits)
-+{
-+	/*
-+	 * bank 4 supports APIC LVT interrupts implicitly since forever.
-+	 */
-+	if (bank == 4)
-+		return true;
-+
-+	/*
-+	 * IntP: interrupt present; if this bit is set, the thresholding
-+	 * bank can generate APIC LVT interrupts
-+	 */
-+	return msr_high_bits & BIT(28);
-+}
-+
- static int lvt_off_valid(struct threshold_block *b, int apic, u32 lo, u32 hi)
- {
- 	int msr = (hi & MASK_LVTOFF_HI) >> 20;
-@@ -107,8 +123,10 @@ static int lvt_off_valid(struct threshol
- 	return 1;
- };
+--- a/drivers/net/e1000/e1000_main.c
++++ b/drivers/net/e1000/e1000_main.c
+@@ -2798,7 +2798,7 @@ static int e1000_tx_map(struct e1000_ada
+ 	struct e1000_buffer *buffer_info;
+ 	unsigned int len = skb_headlen(skb);
+ 	unsigned int offset = 0, size, count = 0, i;
+-	unsigned int f;
++	unsigned int f, bytecount, segs;
  
--/* must be called with correct cpu affinity */
--/* Called via smp_call_function_single() */
-+/*
-+ * Called via smp_call_function_single(), must be called with correct
-+ * cpu affinity.
-+ */
- static void threshold_restart_bank(void *_tr)
- {
- 	struct thresh_restart *tr = _tr;
-@@ -131,6 +149,12 @@ static void threshold_restart_bank(void
- 		    (new_count & THRESHOLD_MAX);
- 	}
+ 	i = tx_ring->next_to_use;
  
-+	/* clear IntType */
-+	hi &= ~MASK_INT_TYPE_HI;
-+
-+	if (!tr->b->interrupt_capable)
-+		goto done;
-+
- 	if (tr->set_lvt_off) {
- 		if (lvt_off_valid(tr->b, tr->lvt_off, lo, hi)) {
- 			/* set new lvt offset */
-@@ -139,9 +163,10 @@ static void threshold_restart_bank(void
+@@ -2899,7 +2899,13 @@ static int e1000_tx_map(struct e1000_ada
  		}
  	}
  
--	tr->b->interrupt_enable ?
--	    (hi = (hi & ~MASK_INT_TYPE_HI) | INT_TYPE_APIC) :
--	    (hi &= ~MASK_INT_TYPE_HI);
-+	if (tr->b->interrupt_enable)
-+		hi |= INT_TYPE_APIC;
++	segs = skb_shinfo(skb)->gso_segs ?: 1;
++	/* multiply data chunks by size of headers */
++	bytecount = ((segs - 1) * skb_headlen(skb)) + skb->len;
 +
-+ done:
+ 	tx_ring->buffer_info[i].skb = skb;
++	tx_ring->buffer_info[i].segs = segs;
++	tx_ring->buffer_info[i].bytecount = bytecount;
+ 	tx_ring->buffer_info[first].next_to_watch = i;
  
- 	hi |= MASK_COUNT_EN_HI;
- 	wrmsr(tr->b->address, lo, hi);
-@@ -206,14 +231,18 @@ void mce_amd_feature_init(struct cpuinfo
- 			if (shared_bank[bank] && c->cpu_core_id)
- 				break;
- #endif
--			offset = setup_APIC_mce(offset,
--						(high & MASK_LVTOFF_HI) >> 20);
+ 	return count;
+@@ -3573,14 +3579,8 @@ static bool e1000_clean_tx_irq(struct e1
+ 			cleaned = (i == eop);
  
- 			memset(&b, 0, sizeof(b));
--			b.cpu		= cpu;
--			b.bank		= bank;
--			b.block		= block;
--			b.address	= address;
-+			b.cpu			= cpu;
-+			b.bank			= bank;
-+			b.block			= block;
-+			b.address		= address;
-+			b.interrupt_capable	= lvt_interrupt_supported(bank, high);
-+
-+			if (b.interrupt_capable) {
-+				int new = (high & MASK_LVTOFF_HI) >> 20;
-+				offset  = setup_APIC_mce(offset, new);
-+			}
- 
- 			mce_threshold_block_init(&b, offset);
- 			mce_threshold_vector = amd_threshold_interrupt;
-@@ -313,6 +342,9 @@ store_interrupt_enable(struct threshold_
- 	struct thresh_restart tr;
- 	unsigned long new;
- 
-+	if (!b->interrupt_capable)
-+		return -EINVAL;
-+
- 	if (strict_strtoul(buf, 0, &new) < 0)
- 		return -EINVAL;
- 
-@@ -471,6 +503,7 @@ static __cpuinit int allocate_threshold_
- 	b->cpu			= cpu;
- 	b->address		= address;
- 	b->interrupt_enable	= 0;
-+	b->interrupt_capable	= lvt_interrupt_supported(bank, high);
- 	b->threshold_limit	= THRESHOLD_MAX;
- 
- 	INIT_LIST_HEAD(&b->miscj);
+ 			if (cleaned) {
+-				struct sk_buff *skb = buffer_info->skb;
+-				unsigned int segs, bytecount;
+-				segs = skb_shinfo(skb)->gso_segs ?: 1;
+-				/* multiply data chunks by size of headers */
+-				bytecount = ((segs - 1) * skb_headlen(skb)) +
+-				            skb->len;
+-				total_tx_packets += segs;
+-				total_tx_bytes += bytecount;
++				total_tx_packets += buffer_info->segs;
++				total_tx_bytes += buffer_info->bytecount;
+ 			}
+ 			e1000_unmap_and_free_tx_resource(adapter, buffer_info);
+ 			tx_desc->upper.data = 0;
 
 
