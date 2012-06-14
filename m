@@ -1,58 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756125Ab2FNTaA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 15:30:00 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:40682 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753908Ab2FNT37 (ORCPT
+	id S1755981Ab2FNTiZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 15:38:25 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:45301 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751632Ab2FNTiX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 15:29:59 -0400
-Message-ID: <4FDA3BB4.9040607@wwwdotorg.org>
-Date: Thu, 14 Jun 2012 13:29:56 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Robert Jarzmik <robert.jarzmik@free.fr>
-CC: swarren@nvidia.com, linux-kernel@vger.kernel.org, haojian.zhuang@gmail.com,
-        linux-arm-kernel@lists.infradead.org, jic23@cam.ac.uk, kay@vrfy.org
-Subject: Re: Follow-up to remaining issue with alignment of __log_buf in printk.c
-References: <87aa05vgzg.fsf@free.fr>
-In-Reply-To: <87aa05vgzg.fsf@free.fr>
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 14 Jun 2012 15:38:23 -0400
+Date: Thu, 14 Jun 2012 21:38:04 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Andrew Armenia <andrew@asquaredlabs.com>
+Cc: Ben Dooks <ben-linux@fluff.org>, Wolfram Sang <w.sang@pengutronix.de>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] i2c-piix4: separate registration and probing code
+Message-ID: <20120614213804.46ffe67d@endymion.delvare>
+In-Reply-To: <1339606749-4578-3-git-send-email-andrew@asquaredlabs.com>
+References: <20120613094739.360967aa@endymion.delvare>
+ <1339606749-4578-1-git-send-email-andrew@asquaredlabs.com>
+ <1339606749-4578-3-git-send-email-andrew@asquaredlabs.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/14/2012 01:19 PM, Robert Jarzmik wrote:
-> 
-> Hi Stephen and others,
-> 
-> I have a XScale PXA based board with has the alignement issue which makes the
-> kernel trap during its early stage.
-> 
-> I wonder what is the status now, is there a fix available ?
-> 
-> I have tracked what happens on PXA. The pxa is an ARM v5TE chip. The new printk
-> version you submitted is translated to the following assembly on the line :
->         msg->ts_nsec = local_clock();
-> Into:
-> => 0xc001bbe0 <log_store+496>:	strd	r0, [r4, r5]
-> 
-> In ARMv5, the "strd" assembly opcode expects the address to be 64bits aligned,
-> hence the bug.
-> 
-> Now the solutions I have seen so far in the mailing lists :
->  - #define LOG_ALIGN (__alignof__(u64))
->    Does always work.
->  - #define LOG_ALIGN (__alignof__(struct log))
->    Doesn't work with my toolchain, as __alignof__(struct log) is 4, not 8
+Hi Andrew,
 
-Isn't that a bug in the toolchain; isn't the alignment of a struct
-required to be the greatest alignment of any of its members? Otherwise,
-this problem could arise with any usage of that struct.
+On Wed, 13 Jun 2012 12:59:08 -0400, Andrew Armenia wrote:
+> Some chipsets have multiple sets of SMBus registers each controlling a
+> separate SMBus. Supporting these chipsets properly will require registering
+> multiple I2C adapters for one piix4.
+> 
+> The code to initialize and register the i2c_adapter structure has been
+> separated from piix4_probe and allows registration of a piix4 adapter
+> given its base address. Note that the i2c_adapter and i2c_piix4_adapdata
+> structures are now dynamically allocated.
+> 
+> Signed-off-by: Andrew Armenia <andrew@asquaredlabs.com>
+> ---
+>  drivers/i2c/busses/i2c-piix4.c |  113 ++++++++++++++++++++++++++--------------
+>  1 file changed, 73 insertions(+), 40 deletions(-)
+> (...)
 
-I suppose this could be worked around with something like:
+Applied, with the minor changes below:
 
-#define LOG_ALIGN max(__alignof__(struct log), __alignof__(u64))
+> -static int piix4_transaction(unsigned short piix4_smba)
+> +static int piix4_transaction(struct i2c_adapter *piix4_adapter)
+>  {
+>  	int temp;
+>  	int result = 0;
+>  	int timeout = 0;
+>  
+> -	dev_dbg(&piix4_adapter.dev, "Transaction (pre): CNT=%02x, CMD=%02x, "
+> +	struct i2c_piix4_adapdata *adapdata;
+> +	unsigned short piix4_smba;
+> +
+> +	adapdata = i2c_get_adapdata(piix4_adapter);
+> +	piix4_smba = adapdata->smba;
+
+It is customary to declare and assign all at once in this case:
+
+	struct i2c_piix4_adapdata *adapdata = i2c_get_adapdata(piix4_adapter);
+	unsigned short piix4_smba = adapdata->smba;
+
+This makes the code more compact and more readable too. I've fixed it
+and everywhere else.
+
+> (...)
+> +static int __devinit piix4_add_adapter(struct pci_dev *dev,
+> +					unsigned short smba,
+> +					struct i2c_adapter **padap)
+> +{
+> +	struct i2c_adapter *adap;
+> +	struct i2c_piix4_adapdata *adapdata;
+> +
+> +	int retval;
+> +
+> +	adap = kzalloc(sizeof(*adap), GFP_KERNEL);
+> +	if (NULL == adap)
+
+There's no point in inverting comparisons this way. Compilers would let
+you know if you had it wrong, they do for at least 10 years now.
+
+-- 
+Jean Delvare
