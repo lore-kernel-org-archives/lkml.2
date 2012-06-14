@@ -1,46 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752056Ab2FNFl2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 01:41:28 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:56321 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750800Ab2FNFl1 (ORCPT
+	id S1752358Ab2FNFll (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 01:41:41 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:36088 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752115Ab2FNFlk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 01:41:27 -0400
+	Thu, 14 Jun 2012 01:41:40 -0400
 MIME-Version: 1.0
-In-Reply-To: <4FD949FF.7060207@intel.com>
-References: <1339479468-3815-1-git-send-email-zheng.z.yan@intel.com>
-	<CABPqkBQu1hTa2R-PKsygLqOSSD9nu3+xR-79pT-8bB8Y16CBuw@mail.gmail.com>
-	<4FD7EFCB.6060005@intel.com>
-	<1339578142.31548.128.camel@twins>
-	<4FD949FF.7060207@intel.com>
-Date: Thu, 14 Jun 2012 07:41:25 +0200
-Message-ID: <CABPqkBTPah786S+GR=TdGCTxGzBEVg-Q2r0YAUFrYAm5iVEf=w@mail.gmail.com>
-Subject: Re: [PATCH V5 0/13] perf: Intel uncore pmu counting support
-From: Stephane Eranian <eranian@google.com>
-To: "Yan, Zheng" <zheng.z.yan@intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, mingo@elte.hu, jolsa@redhat.com,
-        andi@firstfloor.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+In-Reply-To: <1339645491-5656-1-git-send-email-jiang.liu@huawei.com>
+References: <1339645491-5656-1-git-send-email-jiang.liu@huawei.com>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Date: Thu, 14 Jun 2012 01:41:19 -0400
+X-Google-Sender-Auth: uyZbcIGIFEm7QVRCSEXEXQ_6NsI
+Message-ID: <CAHGf_=r+XnzfBD3EWe9O7iQqSPLwD5ijP5FtBHsc88mTm8mRrA@mail.gmail.com>
+Subject: Re: [PATCH] memory hotplug: fix invalid memory access caused by stale
+ kswapd pointer
+To: Jiang Liu <jiang.liu@huawei.com>
+Cc: Mel Gorman <mgorman@suse.de>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan@kernel.org>, Hugh Dickins <hughd@google.com>,
+        Keping Chen <chenkeping@huawei.com>, Tony Luck <tony.luck@intel.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Xishi Qiu <qiuxishi@huawei.com>, Jiang Liu <liuj97@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 14, 2012 at 4:18 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
-> On 06/13/2012 05:02 PM, Peter Zijlstra wrote:
->> On Wed, 2012-06-13 at 09:41 +0800, Yan, Zheng wrote:
->>> Peter suggests keeping the uncore names as they're listed in the intel
->>> doc. For Sandybirdge-EP, uncore names are something like: Cbo, iMC,
->>> QPI.
->>
->> No they're not, they're C-Box etc.. but I'm fine with doing a tolower on
->> all of it.
->>
+On Wed, Jun 13, 2012 at 11:44 PM, Jiang Liu <jiang.liu@huawei.com> wrote:
+> Function kswapd_stop() will be called to destroy the kswapd work thread
+> when all memory of a NUMA node has been offlined. But kswapd_stop() only
+> terminates the work thread without resetting NODE_DATA(nid)->kswapd to NULL.
+> The stale pointer will prevent kswapd_run() from creating a new work thread
+> when adding memory to the memory-less NUMA node again. Eventually the stale
+> pointer may cause invalid memory access.
 >
-> The reason I choose CBox instead of C-Box is that '-' is a separate symbol
-> in the flex rules. '-' is used for matching events such as LLC-load-misses.
-> I don't know how to allow letter '-' in the pmu name, but without leading
-> to ambiguity.
->
-I would drop the -, just call it cbox.
+> Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+> Signed-off-by: Jiang Liu <liuj97@gmail.com>
+
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
