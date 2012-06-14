@@ -1,88 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755981Ab2FNTiZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 15:38:25 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:45301 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751632Ab2FNTiX (ORCPT
+	id S1756069Ab2FNTrD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 15:47:03 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:41216 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752975Ab2FNTrB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 15:38:23 -0400
-Date: Thu, 14 Jun 2012 21:38:04 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Andrew Armenia <andrew@asquaredlabs.com>
-Cc: Ben Dooks <ben-linux@fluff.org>, Wolfram Sang <w.sang@pengutronix.de>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] i2c-piix4: separate registration and probing code
-Message-ID: <20120614213804.46ffe67d@endymion.delvare>
-In-Reply-To: <1339606749-4578-3-git-send-email-andrew@asquaredlabs.com>
-References: <20120613094739.360967aa@endymion.delvare>
- <1339606749-4578-1-git-send-email-andrew@asquaredlabs.com>
- <1339606749-4578-3-git-send-email-andrew@asquaredlabs.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 14 Jun 2012 15:47:01 -0400
+Date: Thu, 14 Jun 2012 21:47:21 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Jim Cromie <jim.cromie@gmail.com>, rusty@rustcorp.com.au,
+        linux-kernel@vger.kernel.org, bp@amd64.org, pawel.moll@arm.com,
+        jbaron@redhat.com, gregkh@linuxfoundation.org
+Subject: Re: [PATCH] init: add comments to keep initcall-names in sync with
+ initcall levels
+Message-ID: <20120614194721.GA32312@aftab.osrc.amd.com>
+References: <20120612105913.GA8404@aftab.osrc.amd.com>
+ <1339699862-3731-1-git-send-email-jim.cromie@gmail.com>
+ <1339701783.5981.5.camel@x61.thuisdomein>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1339701783.5981.5.camel@x61.thuisdomein>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
-
-On Wed, 13 Jun 2012 12:59:08 -0400, Andrew Armenia wrote:
-> Some chipsets have multiple sets of SMBus registers each controlling a
-> separate SMBus. Supporting these chipsets properly will require registering
-> multiple I2C adapters for one piix4.
+On Thu, Jun 14, 2012 at 09:23:03PM +0200, Paul Bolle wrote:
+> On Thu, 2012-06-14 at 12:51 -0600, Jim Cromie wrote:
+> > main.c has initcall_level_names[] for parse_args to print in debug messages,
+> > add comments to keep them in sync with initcalls defined in init.h.
+> > Also tweak comment re not using *_initcall macros in loadable modules.
+> > 
+> > Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
+> > ---
+> >  include/linux/init.h |    3 ++-
+> >  init/main.c          |    1 +
+> >  2 files changed, 3 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/include/linux/init.h b/include/linux/init.h
+> > index 6b95109..da6f6f9 100644
+> > --- a/include/linux/init.h
+> > +++ b/include/linux/init.h
+> > @@ -191,6 +191,7 @@ extern bool initcall_debug;
+> >   * initializes variables that couldn't be statically initialized.
+> >   *
+> >   * This only exists for built-in code, not for modules.
+> > + * Keep main.c:initcall_level_names[] in sync. */
+> >   */
 > 
-> The code to initialize and register the i2c_adapter structure has been
-> separated from piix4_probe and allows registration of a piix4 adapter
-> given its base address. Note that the i2c_adapter and i2c_piix4_adapdata
-> structures are now dynamically allocated.
-> 
-> Signed-off-by: Andrew Armenia <andrew@asquaredlabs.com>
-> ---
->  drivers/i2c/busses/i2c-piix4.c |  113 ++++++++++++++++++++++++++--------------
->  1 file changed, 73 insertions(+), 40 deletions(-)
-> (...)
+> This comment now ends with "*/" twice. Perhaps that's legal
 
-Applied, with the minor changes below:
+Of course it isn't, good catch Paul:
 
-> -static int piix4_transaction(unsigned short piix4_smba)
-> +static int piix4_transaction(struct i2c_adapter *piix4_adapter)
->  {
->  	int temp;
->  	int result = 0;
->  	int timeout = 0;
->  
-> -	dev_dbg(&piix4_adapter.dev, "Transaction (pre): CNT=%02x, CMD=%02x, "
-> +	struct i2c_piix4_adapdata *adapdata;
-> +	unsigned short piix4_smba;
-> +
-> +	adapdata = i2c_get_adapdata(piix4_adapter);
-> +	piix4_smba = adapdata->smba;
+In file included from include/linux/printk.h:4:0,
+                 from include/linux/kernel.h:22,
+                 from include/asm-generic/bug.h:5,
+                 from /usr/src/linux-2.6/arch/x86/include/asm/bug.h:38,
+                 from include/linux/bug.h:4,
+                 from include/linux/page-flags.h:9,
+                 from kernel/bounds.c:9:
+include/linux/init.h:195:3: error: expected identifier or ‘(’ before ‘/’ token
+make[1]: *** [kernel/bounds.s] Error 1
+make: *** [prepare0] Error 2
 
-It is customary to declare and assign all at once in this case:
-
-	struct i2c_piix4_adapdata *adapdata = i2c_get_adapdata(piix4_adapter);
-	unsigned short piix4_smba = adapdata->smba;
-
-This makes the code more compact and more readable too. I've fixed it
-and everywhere else.
-
-> (...)
-> +static int __devinit piix4_add_adapter(struct pci_dev *dev,
-> +					unsigned short smba,
-> +					struct i2c_adapter **padap)
-> +{
-> +	struct i2c_adapter *adap;
-> +	struct i2c_piix4_adapdata *adapdata;
-> +
-> +	int retval;
-> +
-> +	adap = kzalloc(sizeof(*adap), GFP_KERNEL);
-> +	if (NULL == adap)
-
-There's no point in inverting comparisons this way. Compilers would let
-you know if you had it wrong, they do for at least 10 years now.
+Jim, you need to test-build your patches no matter how trivial they are.
 
 -- 
-Jean Delvare
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
