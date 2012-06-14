@@ -1,51 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756509Ab2FNQQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 12:16:58 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:36191 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756356Ab2FNQQ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 12:16:56 -0400
-Message-ID: <4FDA0E3F.3030603@zytor.com>
-Date: Thu, 14 Jun 2012 09:15:59 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1756472Ab2FNQT5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 12:19:57 -0400
+Received: from www.linutronix.de ([62.245.132.108]:58850 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756133Ab2FNQTz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 12:19:55 -0400
+Date: Thu, 14 Jun 2012 18:19:50 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>
+Subject: Re: [RFC patch 2/5] smpboot: Provide infrastructure for percpu
+ hotplug threads
+In-Reply-To: <20120614153828.GA31135@linux.vnet.ibm.com>
+Message-ID: <alpine.LFD.2.02.1206141817180.3086@ionos>
+References: <20120613105815.206105518@linutronix.de> <20120613185748.GF2427@linux.vnet.ibm.com> <alpine.LFD.2.02.1206132101440.3086@ionos> <20120613191745.GG2427@linux.vnet.ibm.com> <20120613204725.GA9858@linux.vnet.ibm.com> <20120614045125.GA30257@linux.vnet.ibm.com>
+ <alpine.LFD.2.02.1206141234400.3086@ionos> <20120614125939.GC2443@linux.vnet.ibm.com> <alpine.LFD.2.02.1206141527580.3086@ionos> <20120614145038.GB2458@linux.vnet.ibm.com> <20120614153828.GA31135@linux.vnet.ibm.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: nicolas.pitre@linaro.org, linux-s390@vger.kernel.org,
-        matt.fleming@intel.com, lasse.collin@tukaani.org, jj@chaosbits.net,
-        linux-sh@vger.kernel.org, x86@kernel.org, heiko.carstens@de.ibm.com,
-        linux-kernel@vger.kernel.org, lethal@linux-sh.org,
-        T Makphaibulchoke <tmac@hp.com>, schwidefsky@de.ibm.com,
-        linux390@de.ibm.com, tglx@linutronix.de, kaloz@openwrt.org,
-        mingo@redhat.com, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2] lib/decompress_unxz.c: removing all memory helper
- functions
-References: <1339470307-28223-1-git-send-email-tmac@hp.com> <4FD6B472.7040609@zytor.com> <20120612143545.GC7918@n2100.arm.linux.org.uk> <20120614134715.GE28714@n2100.arm.linux.org.uk> <4FD9F6AD.6060407@zytor.com> <20120614154414.GA7628@n2100.arm.linux.org.uk>
-In-Reply-To: <20120614154414.GA7628@n2100.arm.linux.org.uk>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/14/2012 08:44 AM, Russell King - ARM Linux wrote:
->>>
->>> Okay, given the issue raised with memcpy() calling __builtin_memcpy(),
->>> I don't think there's any value to me actually testing this, because
->>> that seems to need to be solved first?
->>
->> You mean __builtin_memcpy() calling memcpy(), right?
+On Thu, 14 Jun 2012, Paul E. McKenney wrote:
+
+> On Thu, Jun 14, 2012 at 07:50:38AM -0700, Paul E. McKenney wrote:
+> > On Thu, Jun 14, 2012 at 03:32:19PM +0200, Thomas Gleixner wrote:
+> > > On Thu, 14 Jun 2012, Paul E. McKenney wrote:
+> > > > On Thu, Jun 14, 2012 at 01:20:39PM +0200, Thomas Gleixner wrote:
+> > > > > I gave it a quick shot, but I was not able to reproduce the hang yet.
+> > > > 
+> > > > Really?  I have a strictly Western-Hemisphere bug?  ;-)
+> > > 
+> > > I guess I need to fire up rcu torture to make it surface.
+> > 
+> > A simple offline was triggering it for me.  Perhaps some of my debug
+> > code was inappropriate, will retry.
 > 
-> Indeed I do.
+> And removing my debug code did the trick.  I guess some of it was really
+> just bug code.  In any case, it now passes short rcutorture testing for
+> me as well.
+> 
+> However, I do see the splat shown below.  The splat confuses me greatly,
+> as I thought that this kthread should be affinitied to a single CPU and
+> thus smp_processor_id() should refrain from splatting.  I don't see any
+> sort of "I broke affinity" message from the scheduler.
 
-Right... that would manifest itself as a build failure, but it needs to
-be fixed, so...
-
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Hmm. Is that reproducible ?
