@@ -1,111 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756067Ab2FNQD1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 12:03:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52579 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753436Ab2FNQDZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 12:03:25 -0400
-Date: Thu, 14 Jun 2012 18:01:29 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrey Vagin <avagin@openvz.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pavel Emelyanov <xemul@openvz.org>
-Subject: Re: general protection fault on finalizing task
-Message-ID: <20120614160129.GA3433@redhat.com>
-References: <CANaxB-xyBw+O9h7OrFRNM93+Gp+GX63C-OgOZ2ZK2QbKMDBJ7g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANaxB-xyBw+O9h7OrFRNM93+Gp+GX63C-OgOZ2ZK2QbKMDBJ7g@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S932070Ab2FNQFN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 12:05:13 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:11431 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754256Ab2FNQFJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 12:05:09 -0400
+X-AuditID: cbfee61a-b7f9f6d0000016a8-94-4fda0bb329d1
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] mm: compaction: add /proc/vmstat entry for rescued
+ MIGRATE_UNMOVABLE pageblocks
+Date: Thu, 14 Jun 2012 18:02:49 +0200
+User-Agent: KMail/1.13.2 (Linux/3.2.6; KDE/4.4.5; i686; ; )
+Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Dave Jones <davej@redhat.com>, Cong Wang <amwang@redhat.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+        Rik van Riel <riel@redhat.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+MIME-version: 1.0
+Content-type: Text/Plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+Message-id: <201206141802.50075.b.zolnierkie@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprELMWRmVeSWpSXmKPExsVy+t9jAd0t3Lf8DbbzWVzeNYfNgdHj8ya5
+	AMYoLpuU1JzMstQifbsErozrB+cwFXwVqdh86hZTA+NXwS5GTg4JAROJt5OvsUDYYhIX7q1n
+	62Lk4hASWMQocfvrLSYIZzWTxJ3lX1lBqtgErCQmtq9iBLFFgLp3N88Fs4UF0iSu7n3MDGKz
+	CKhK7F/eBFYvKmAtcfTCPUaQQcwCK5klbj9axg6S4BUQlPgx+R7YamYBLYnmN5sYIWx5ic1r
+	3jJD1FhKLD9zmXECI98sJC2zkLTMQtKygJF5FaNoakFyQXFSeq6hXnFibnFpXrpecn7uJkZw
+	SD2T2sG4ssHiEKMAB6MSD68i4y1/IdbEsuLK3EOMEhzMSiK8AT9u+gvxpiRWVqUW5ccXleak
+	Fh9ilOZgURLnbbK+4C8kkJ5YkpqdmlqQWgSTZeLglGpg5Pl4TnJj+DLl5XNed/Mm1Zj92t+3
+	LmT5u1JZztKfOsJLyuO1/jyav98w7oaeTe0Uzx15v/Z6vPr+ZC3fxruRW8K/3zeNXO1rf+nt
+	tg7GNzZea8+q7OwqfHLOTt/BnPv8lOO6Vtf/cSRv26O8/VTgofdOCZVPg3+buBjP2nvh/sHr
+	sRWLc3venVJiKc5INNRiLipOBAB2eysHJQIAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrey,
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: [PATCH] mm: compaction: add /proc/vmstat entry for rescued MIGRATE_UNMOVABLE pageblocks
 
-On 06/14, Andrey Vagin wrote:
->
-> Hello,
->
-> I'm developing CRIU (criu.org) and got this GP. I have seen it a few
-> time with the same stack trace.
-> It's not reproduced on 3.4.0-rc4+.
->
-> general protection fault: 0000 [#1] SMP
-> CPU 0
-> Modules linked in: udp_diag bridge stp llc ipv6 ext4 jbd2 dm_mirror
-> dm_region_hash dm_log dm_mod pcspkr virtio_balloon 8139too 8139cp mii
-> i2c_piix4 i2c_core ext3 jbd mbcache virtio_blk virtio_pci virtio_ring
-> virtio pata_acpi ata_generic ata_piix floppy [last unloaded:
-> scsi_wait_scan]
->
-> Pid: 1647, comm: crtools Not tainted 3.5.0-rc2+ #203 Red Hat KVM
-> RIP: 0010:[<ffffffff811b453a>]  [<ffffffff811b453a>] d_hash_and_lookup+0x2a/0x70
+compact_rescued_unmovable_blocks shows the number of MIGRATE_UNMOVABLE
+pageblocks converted back to MIGRATE_MOVABLE type by the memory compaction
+code.  Non-zero values indicate that large kernel-originated allocations
+of MIGRATE_UNMOVABLE type happen in the system and need special handling 
+from the memory compaction code.
 
-Could you please re-test with these
+This new vmstat entry is optional but useful for development and understanding
+the system.
 
-	http://marc.info/?l=linux-mm-commits&m=133962463616232
-	http://marc.info/?l=linux-mm-commits&m=133962463616231
+Cc: Hugh Dickins <hughd@google.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Cong Wang <amwang@redhat.com>
+Cc: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
 
-patches applied?
+ include/linux/vm_event_item.h |    1 +
+ mm/compaction.c               |    2 ++
+ mm/vmstat.c                   |    1 +
+ 3 files changed, 4 insertions(+)
 
-
-> RSP: 0018:ffff88001651bd28  EFLAGS: 00010246
-> RAX: 0000000000003531 RBX: ffff88001651bd68 RCX: 0000000000000010
-> RDX: 0000000000000000 RSI: 0000000000000002 RDI: 0000000000003531
-> RBP: ffff88001651bd38 R08: 000000000000fffa R09: 0000000000000002
-> R10: 0000000000000000 R11: 000000000000fffd R12: 6b6b6b6b6b6b6b6b
-> R13: ffff88001a3b3db0 R14: ffff88001651bd68 R15: 000000000000000f
-> FS:  00007ff80c4a2700(0000) GS:ffff88001f800000(0000) knlGS:0000000000000000
-> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> CR2: 00007ff80c4ac000 CR3: 0000000001a0b000 CR4: 00000000000006f0
-> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> Process crtools (pid: 1647, threadinfo ffff88001651a000, task ffff880017154c40)
-> Stack:
->  ffff88001651bd78 0000000000000001 ffff88001651bdc8 ffffffff812050c0
->  ffff8800185b44b0 ffff88001721e4a0 ffff88001721e4a0 0000000f81057b6c
->  0000000200003531 ffff88001651bd78 ffff880032003531 0000000000000246
-> Call Trace:
->  [<ffffffff812050c0>] proc_flush_task+0xa0/0x1e0
->  [<ffffffff81057c0e>] release_task+0xce/0x690
->  [<ffffffff81057b6c>] ? release_task+0x2c/0x690
->  [<ffffffff810622c2>] exit_ptrace+0x102/0x140
->  [<ffffffff81059c64>] do_exit+0x214/0xa70
->  [<ffffffff81553cbb>] ? _raw_read_unlock+0x2b/0x50
->  [<ffffffff8105a51b>] do_group_exit+0x5b/0xd0
->  [<ffffffff8105a5a7>] sys_exit_group+0x17/0x20
->  [<ffffffff8155cee9>] system_call_fastpath+0x16/0x1b
-> Code: 00 55 48 89 e5 48 83 ec 10 48 89 1c 24 4c 89 64 24 08 66 66 66
-> 66 90 48 89 f3 49 89 fc 8b 76 04 48 8b 7b 08 e8 58 0c ff ff 89 03 <41>
-> f6 04 24 01 75 1f 48 89 de 4c 89 e7 e8 64 ff ff ff 48 8b 1c
-> RIP  [<ffffffff811b453a>] d_hash_and_lookup+0x2a/0x70
->  RSP <ffff88001651bd28>
-> ---[ end trace 250bb1fa95f4b805 ]---
-> Fixing recursive fault but reboot is needed!
->
-> Steps to reproduce:
-> * # git clone git://github.com/avagin/crtools.git -b gp-3.5
-> * # cd crtools
-> * # make && make -C test
-> * # while :; do bash test/zdtm.sh pidns/static/session00 || break; done
-> * Wait a few seconds
->
-> session00 is a test case for checking, that session ids restored correctly.
-> it create about 10 processes in a separate pidns, some of them wait
-> children, other ones
-> wait on read from pipe. crtools freezes and dumps state of this
-> processes and kill processes.
->
-> The bug is reproduced, when crtools try to kill tasks (in this moment
-> crtools attached to this tasks by ptrace).
-> The meta code looks like:
-> for_each_task(pid) {
->   kill(pid, SIGKILL);
->   ptrace(PTRACE_DETACH, pid, NULL, NULL);
-> }
-
+Index: b/include/linux/vm_event_item.h
+===================================================================
+--- a/include/linux/vm_event_item.h	2012-06-14 11:28:48.812775316 +0200
++++ b/include/linux/vm_event_item.h	2012-06-14 11:31:17.132775300 +0200
+@@ -39,6 +39,7 @@ enum vm_event_item { PGPGIN, PGPGOUT, PS
+ #ifdef CONFIG_COMPACTION
+ 		COMPACTBLOCKS, COMPACTPAGES, COMPACTPAGEFAILED,
+ 		COMPACTSTALL, COMPACTFAIL, COMPACTSUCCESS,
++		COMPACT_RESCUED_UNMOVABLE_BLOCKS,
+ #endif
+ #ifdef CONFIG_HUGETLB_PAGE
+ 		HTLB_BUDDY_PGALLOC, HTLB_BUDDY_PGALLOC_FAIL,
+Index: b/mm/compaction.c
+===================================================================
+--- a/mm/compaction.c	2012-06-14 11:31:24.800775299 +0200
++++ b/mm/compaction.c	2012-06-14 11:31:31.612775298 +0200
+@@ -387,6 +387,8 @@ static void rescue_unmovable_pageblock(s
+ {
+ 	set_pageblock_migratetype(page, MIGRATE_MOVABLE);
+ 	move_freepages_block(page_zone(page), page, MIGRATE_MOVABLE);
++
++	count_vm_event(COMPACT_RESCUED_UNMOVABLE_BLOCKS);
+ }
+ 
+ /*
+Index: b/mm/vmstat.c
+===================================================================
+--- a/mm/vmstat.c	2012-06-14 11:28:48.824775319 +0200
++++ b/mm/vmstat.c	2012-06-14 11:31:17.132775300 +0200
+@@ -767,6 +767,7 @@ const char * const vmstat_text[] = {
+ 	"compact_stall",
+ 	"compact_fail",
+ 	"compact_success",
++	"compact_rescued_unmovable_blocks",
+ #endif
+ 
+ #ifdef CONFIG_HUGETLB_PAGE
