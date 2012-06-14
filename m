@@ -1,46 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755687Ab2FNLSH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 07:18:07 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56111 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755418Ab2FNLSF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 07:18:05 -0400
-Date: Thu, 14 Jun 2012 12:17:46 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+	id S1755795Ab2FNLTU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 07:19:20 -0400
+Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:38701 "EHLO
+	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754304Ab2FNLTS convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 07:19:18 -0400
+MIME-Version: 1.0
+In-Reply-To: <1339669250-9183-16-git-send-email-balbi@ti.com>
+References: <1339669250-9183-1-git-send-email-balbi@ti.com> <1339669250-9183-16-git-send-email-balbi@ti.com>
+From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+Date: Thu, 14 Jun 2012 16:48:56 +0530
+Message-ID: <CAMQu2gzbK+ObetarwRiEz9A7=awEffAhrMMAqSMfiv4H6BZAuw@mail.gmail.com>
+Subject: Re: [PATCH 15/17] i2c: omap: always return IRQ_HANDLED
 To: Felipe Balbi <balbi@ti.com>
 Cc: ben-linux@fluff.org, Tony Lindgren <tony@atomide.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        w.sang@pengutronix.de, linux-i2c@vger.kernel.org,
+        w.sang@pengutronix.de,
         Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        linux-i2c@vger.kernel.org,
         Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 06/17] i2c: omap: improve 1p153 errata handling
-Message-ID: <20120614111746.GB31187@n2100.arm.linux.org.uk>
-References: <1339669250-9183-1-git-send-email-balbi@ti.com> <1339669250-9183-7-git-send-email-balbi@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339669250-9183-7-git-send-email-balbi@ti.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 14, 2012 at 01:20:39PM +0300, Felipe Balbi wrote:
-> -static int errata_omap3_1p153(struct omap_i2c_dev *dev, u16 *stat, int *err)
-> +static int errata_omap3_1p153(struct omap_i2c_dev *dev)
->  {
-> -	unsigned long timeout = 10000;
-> +	unsigned long	timeout = 10000;
-> +	u16		stat;
+On Thu, Jun 14, 2012 at 3:50 PM, Felipe Balbi <balbi@ti.com> wrote:
+> otherwise we could get our IRQ line disabled due
+> to many spurious IRQs.
+>
+> Signed-off-by: Felipe Balbi <balbi@ti.com>
+> ---
+>  drivers/i2c/busses/i2c-omap.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-omap.c
+> index fc5b8bc..5b78a73 100644
+> --- a/drivers/i2c/busses/i2c-omap.c
+> +++ b/drivers/i2c/busses/i2c-omap.c
+> @@ -1015,7 +1015,7 @@ omap_i2c_isr(int this_irq, void *dev_id)
+>                }
+>        } while (stat);
+>
+> -       return count ? IRQ_HANDLED : IRQ_NONE;
+> +       return IRQ_HANDLED;
 
-Eww, no, not more of this "lets add tabs to align auto variable
-declarations".  This is detrimental when you add another variable whose
-type is longer than the current indentation - you have to reformat the
-entire block.
+no sure if this is correct. if you have IRQ flood and instead of _actually_
+handling it, if you return handled, you still have interrupt pending, right?
 
-It's really not worth it.  Stick to just using one space, like the rest
-of the kernel code.  Like the code which Linus writes.  And thereby help
-to avoid future "pointless churn" whinges.
+ if (count++ == 100) {
+                        dev_warn(dev->dev, "Too much work in one IRQ\n");
+                        break;
+                }
+ofcourse we do get warning message already, so as such the change
+should be fine.
+
+Just want to understand the change bit more.
+
+Regards
+Santosh
+
+
+
+Regards
+santosh
