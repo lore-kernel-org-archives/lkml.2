@@ -1,65 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756147Ab2FNQ0i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 12:26:38 -0400
-Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:51627 "EHLO
-	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754352Ab2FNQ0h (ORCPT
+	id S1756239Ab2FNQiO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 12:38:14 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:58159 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756084Ab2FNQiN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 12:26:37 -0400
-From: Felipe Balbi <balbi@ti.com>
-To: ben-linux@fluff.org
-Cc: Tony Lindgren <tony@atomide.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        w.sang@pengutronix.de, Shubhrajyoti Datta <shubhrajyoti@ti.com>,
-        Felipe Balbi <balbi@ti.com>
-Subject: [PATCH v2 01/17] i2c: omap: simplify num_bytes handling
-Date: Thu, 14 Jun 2012 19:24:11 +0300
-Message-Id: <1339691067-919-2-git-send-email-balbi@ti.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1339691067-919-1-git-send-email-balbi@ti.com>
-References: <1339691067-919-1-git-send-email-balbi@ti.com>
+	Thu, 14 Jun 2012 12:38:13 -0400
+Date: Thu, 14 Jun 2012 17:41:53 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Dave Jones <davej@redhat.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: 3.5.rc2 tty buffering bug ?
+Message-ID: <20120614174153.7f732e4a@pyramind.ukuu.org.uk>
+In-Reply-To: <20120614161331.GA29687@redhat.com>
+References: <20120614161331.GA29687@redhat.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-trivial patch, no functional changes
+> How does 'begin' get printed a second time ?
 
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-Reviewed-by : Santosh Shilimkar <santosh.shilimkar@ti.com>
----
- drivers/i2c/busses/i2c-omap.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+You've been away from user space too long. Read the documentation for
+stdio. Stdio is buffering, both forks get the buffer, both write it.
 
-diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-omap.c
-index 801df60..9b532cd 100644
---- a/drivers/i2c/busses/i2c-omap.c
-+++ b/drivers/i2c/busses/i2c-omap.c
-@@ -855,8 +855,7 @@ complete:
- 							OMAP_I2C_BUFSTAT_REG)
- 							>> 8) & 0x3F;
- 			}
--			while (num_bytes) {
--				num_bytes--;
-+			while (num_bytes--) {
- 				w = omap_i2c_read_reg(dev, OMAP_I2C_DATA_REG);
- 				if (dev->buf_len) {
- 					*dev->buf++ = w;
-@@ -898,8 +897,7 @@ complete:
- 							OMAP_I2C_BUFSTAT_REG)
- 							& 0x3F;
- 			}
--			while (num_bytes) {
--				num_bytes--;
-+			while (num_bytes--) {
- 				w = 0;
- 				if (dev->buf_len) {
- 					w = *dev->buf++;
--- 
-1.7.10.4
+Try the experiment with write()
 
+Alan
