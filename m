@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753419Ab2FNH24 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 03:28:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55003 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752835Ab2FNH2y (ORCPT
+	id S1753388Ab2FNHaJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 03:30:09 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:56141 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752075Ab2FNHaI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 03:28:54 -0400
-Date: Thu, 14 Jun 2012 00:30:06 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linus.walleij@stericsson.com,
-        grant.likely@secretlab.ca, Alessandro Zummo <a.zummo@towertech.it>,
-        rtc-linux@googlegroups.com, stable@vger.kernel.org
-Subject: Re: [PATCH 01/14] rtc: ab8500-rtc: IRQF_ONESHOT when requesting a
- threaded IRQ
-Message-Id: <20120614003006.68d77b37.akpm@linux-foundation.org>
-In-Reply-To: <4FD98F69.3010302@linaro.org>
-References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org>
-	<1339428307-3850-2-git-send-email-lee.jones@linaro.org>
-	<201206111531.20468.arnd@arndb.de>
-	<4FD70481.6020207@linaro.org>
-	<20120613152558.e6025b04.akpm@linux-foundation.org>
-	<4FD98F69.3010302@linaro.org>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 14 Jun 2012 03:30:08 -0400
+Message-ID: <4FD992F7.5050800@kernel.dk>
+Date: Thu, 14 Jun 2012 09:29:59 +0200
+From: Jens Axboe <axboe@kernel.dk>
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Asias He <asias@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Shaohua Li <shli@kernel.org>, Christoph Hellwig <hch@lst.de>,
+        Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH RFC 1/2] block: Add blk_bio_map_sg() helper
+References: <1339573307-11537-1-git-send-email-asias@redhat.com> <1339573307-11537-2-git-send-email-asias@redhat.com> <20120614023156.GB3766@dhcp-172-17-108-109.mtv.corp.google.com>
+In-Reply-To: <20120614023156.GB3766@dhcp-172-17-108-109.mtv.corp.google.com>
+X-Enigmail-Version: 1.4.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 14 Jun 2012 08:14:49 +0100 Lee Jones <lee.jones@linaro.org> wrote:
-
-> On 13/06/12 23:25, Andrew Morton wrote:
-> > On Tue, 12 Jun 2012 09:57:37 +0100
-> > Lee Jones<lee.jones@linaro.org>  wrote:
-> >
-> >> The kernel now forces IRQs to be ONESHOT if no IRQ handler is passed.
-> >
-> > What does this mean.  The kernel crashes?  The registration fails?  A
-> > warning is emitted?
-> >
-> > When fixing a bug, please fully describe the consequences of that bug.
-> >
-> >> Cc: stable@vger.kernel.org
-> >
-> > Especially when suggesting a -stable backport.
+On 2012-06-14 04:31, Tejun Heo wrote:
+> On Wed, Jun 13, 2012 at 03:41:46PM +0800, Asias He wrote:
+>> Add a helper to map a bio to a scatterlist, modelled after
+>> blk_rq_map_sg.
+>>
+>> This helper is useful for any driver that wants to create
+>> a scatterlist from its ->make_request_fn method.
 > 
-> No problem. I'll try to remember that for next time.
-> 
-> I see that you've taken the patch into your tree however. So do you want 
-> me to update the commit log and resubmit, or are you going to 'let this 
-> one slide'?
+> This may not be possible but I really wanna avoid having two copies of
+> that complex logic.  Any chance blk_rq_map_bio() can be implemented in
+> a way that allows blk_rq_map_sg() can be built on top of it?  Also,
 
-Please read my emails - they're very nice!  "What does this mean.  The
-kernel crashes?  The registration fails?  A warning is emitted?".  You
-answer that, I copy-n-paste into changelog and we're done.
+Was thinking the same thing, definitely code we don't want to have
+duplicated. We've had mapping bugs in the past.
+
+Asias, this should be trivial to do, except that blk_rq_map_sg()
+potentially maps across bio's as well. The tracking of the prev bio_vec
+does not care about cross bio boundaries.
+
+-- 
+Jens Axboe
+
