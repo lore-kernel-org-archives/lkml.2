@@ -1,66 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755202Ab2FNCPy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 22:15:54 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:50706 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753167Ab2FNCPw (ORCPT
+	id S1755306Ab2FNCQY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 22:16:24 -0400
+Received: from sting.hengli.com.au ([178.18.18.71]:56393 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755129Ab2FNCQW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 22:15:52 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ak0JABZI2U95LAcV/2dsb2JhbABFtAwEgTCBCIIYAQEFJxMcIxAIAxguFCUDIROICrpFFIscSYRoYAOVIIklhliCcg
-Date: Thu, 14 Jun 2012 12:15:47 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Dave Chinner <dchinner@redhat.com>, Christoph Hellwig <hch@infradead.org>,
-        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>, xfs@oss.sgi.com
-Subject: Re: [PATCH] mm: add gfp_mask parameter to vm_map_ram()
-Message-ID: <20120614021547.GC7339@dastard>
-References: <20120612012134.GA7706@localhost>
- <20120613123932.GA1445@localhost>
- <20120614012026.GL3019@devil.redhat.com>
- <20120614014902.GB7289@localhost>
+	Wed, 13 Jun 2012 22:16:22 -0400
+Date: Thu, 14 Jun 2012 10:16:12 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
+Cc: Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org,
+        David Miller <davem@davemloft.net>,
+        Johannes Goetzfried 
+	<Johannes.Goetzfried@informatik.stud.uni-erlangen.de>
+Subject: Re: linux-next: Tree for Jun 13 (crypto)
+Message-ID: <20120614021612.GA29544@gondor.apana.org.au>
+References: <20120613155440.14672516ffaf5b01f91bb0a2@canb.auug.org.au>
+ <4FD8BB95.4000307@xenotime.net>
+ <20120613200317.20733xjrnmv47y04@www.81.fi>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120614014902.GB7289@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120613200317.20733xjrnmv47y04@www.81.fi>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 14, 2012 at 09:49:02AM +0800, Fengguang Wu wrote:
-> On Thu, Jun 14, 2012 at 11:20:26AM +1000, Dave Chinner wrote:
-> > 
-> > Bug in vm_map_ram - it does an unconditional GFP_KERNEL allocation
-> > here, and we are in a GFP_NOFS context. We can't pass a gfp_mask to
-> > vm_map_ram(), so until vm_map_ram() grows that we can't fix it...
+On Wed, Jun 13, 2012 at 08:03:17PM +0300, Jussi Kivilinna wrote:
 > 
-> This trivial patch should fix it.
+> Reverting commit e2f4d85d5b2049a90859aa10de914ed31a4f17a4, "crypto:
+> serpent - add common glue code for avx and sse2 implementation",
+> should help for most.
 > 
-> The only behavior change is the XFS part:
+> >arch/x86/crypto/serpent-avx-x86_64.o: In function `serpent_dec_blk_8way':
+> >(.text+0x3d70): multiple definition of `serpent_dec_blk_8way'
+> >arch/x86/crypto/serpent-avx-x86_64.o: In function `__serpent_enc_blk_8way':
+> >(.text+0x0): multiple definition of `__serpent_enc_blk_8way'
 > 
-> @@ -406,7 +406,7 @@ _xfs_buf_map_pages(
->  
->                 do {
->                         bp->b_addr = vm_map_ram(bp->b_pages, bp->b_page_count,
-> -                                               -1, PAGE_KERNEL);
-> +                                               -1, GFP_NOFS, PAGE_KERNEL);
+> Attached patch should solve these (patch depends on above revert).
+> 
+> -Jussi
 
-This function isn't always called in GFP_NOFS context - readahead
-uses different memory allocation semantics (no retry, no warn), so
-there are flags that tell it what to do. i.e.
+> crypto: serpent-sse2/avx - allow both to be built into kernel
+> 
+> From: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
+> 
+> Rename serpent-avx assembler functions so that they do not collide with
+> serpent-sse2 assembler functions when linking both versions in to same
+> kernel image.
+> 
+> Reported-by: Randy Dunlap <rdunlap@xenotime.net>
+> Cc: Johannes Goetzfried <Johannes.Goetzfried@informatik.stud.uni-erlangen.de>
+> Signed-off-by: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
 
--						-1, PAGE_KERNEL);
-+						-1, xb_to_gfp(flags), PAGE_KERNEL);
+OK I have reverted e2f4d85d and applied your patch.  In the process
+I have rebased all patches on top of the original one so watch out if
+you're pulling my tree.
 
-Otherwise looks fine to me...
-
-Cheers,
-
-Dave.
+Thanks!
 -- 
-Dave Chinner
-david@fromorbit.com
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
