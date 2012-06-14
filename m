@@ -1,48 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754968Ab2FNIhV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 04:37:21 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38386 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753293Ab2FNIhL convert rfc822-to-8bit (ORCPT
+	id S1755181Ab2FNIiB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 04:38:01 -0400
+Received: from www.linutronix.de ([62.245.132.108]:54557 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752987Ab2FNIhK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 04:37:11 -0400
-Message-ID: <1339663013.2559.10.camel@twins>
-Subject: Re: [PATCH 02/19] perf: Add ability to attach user level registers
- dump to sample
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Stephane Eranian <eranian@google.com>
-Cc: Jiri Olsa <jolsa@redhat.com>, acme@redhat.com, mingo@elte.hu,
-        paulus@samba.org, cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
-        gorcunov@openvz.org, tzanussi@gmail.com, mhiramat@redhat.com,
-        robert.richter@amd.com, fche@redhat.com, linux-kernel@vger.kernel.org,
-        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
-        benjamin.redelings@nescent.org
-Date: Thu, 14 Jun 2012 10:36:53 +0200
-In-Reply-To: <CABPqkBRnMW=Zmi+DycUPMcYS9cgs8doKZqSR37e1gU6wQnT+nw@mail.gmail.com>
-References: <1339420814-7379-1-git-send-email-jolsa@redhat.com>
-	 <1339420814-7379-3-git-send-email-jolsa@redhat.com>
-	 <CABPqkBRsBegm6gv6agHcGb0Hh1EWCV5gjVnbbwPHh-eOfROCuw@mail.gmail.com>
-	 <20120613131240.GB2538@m.brq.redhat.com>
-	 <CABPqkBRdVMzocJu_SJbU81wg6Ef=KgbXw-18tb+bZEon79fVDA@mail.gmail.com>
-	 <1339594802.8980.44.camel@twins>
-	 <CABPqkBRnMW=Zmi+DycUPMcYS9cgs8doKZqSR37e1gU6wQnT+nw@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Thu, 14 Jun 2012 04:37:10 -0400
+Date: Thu, 14 Jun 2012 10:37:08 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>
+Subject: Re: [RFC patch 2/5] smpboot: Provide infrastructure for percpu
+ hotplug threads
+In-Reply-To: <1339661331.2559.5.camel@twins>
+Message-ID: <alpine.LFD.2.02.1206141036310.3086@ionos>
+References: <20120613102823.373180763@linutronix.de>  <20120613105815.206105518@linutronix.de>  <20120613183301.GE2427@linux.vnet.ibm.com>  <alpine.LFD.2.02.1206132050270.3086@ionos> <1339661331.2559.5.camel@twins>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-06-13 at 15:41 +0200, Stephane Eranian wrote:
-> Ok, yes that one. It would have been much nicer to follow the enum
-> order. 
+On Thu, 14 Jun 2012, Peter Zijlstra wrote:
 
-Yes.. I should make a list of all the things we should've done
-differently. Maybe if that list grows long enough someone gets motivated
-enough to rev the format as a whole.
+> On Wed, 2012-06-13 at 20:56 +0200, Thomas Gleixner wrote:
+> > If it's just a spurious wakeup then it goes back to sleep right away
+> > as nothing cleared the park bit. 
+> 
+> Your spurious wakeup will have destroyed the binding though. So you need
+> to be careful.
 
-It would be a tedious endeavour since you'd need to have both output
-paths available for a good while, but it might be worth it in the long
-run depending on how painful the current format becomes.
+We explicitely rebind it on unpark().
