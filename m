@@ -1,105 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756718Ab2FNUkA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 16:40:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56122 "EHLO mx1.redhat.com"
+	id S1756657Ab2FNUjS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 16:39:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60632 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756596Ab2FNUjT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 16:39:19 -0400
+	id S1756596Ab2FNUjL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 16:39:11 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, eranian@google.com
 Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 3/6] perf, tool: Properly free format data
-Date: Thu, 14 Jun 2012 22:38:38 +0200
-Message-Id: <1339706321-8802-4-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 1/6] perf, x86: Making hardware events tranlations sysfs available
+Date: Thu, 14 Jun 2012 22:38:36 +0200
+Message-Id: <1339706321-8802-2-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1339706321-8802-1-git-send-email-jolsa@redhat.com>
 References: <1339706321-8802-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Release format data in case there's failure during PMU load.
+Making hardware events tranlations available throught the sysfs.
+Adding 'events' group attribute under the sysfs x86 PMU record
+with attribute/file for each hardware event:
 
-Format data are allocated during PMU lookup. If the lookup
-fails in next steps, we dont release the format data.
+  # ls  /sys/devices/cpu/events/
+  branch_instructions
+  branch_misses
+  bus_cycles
+  cache_misses
+  cache_references
+  cycles
+  instructions
+  ref_cycles
+  stalled_cycles_backend
+  stalled_cycles_frontend
+
+The file - ID mappings is:
+
+  file                      hw id
+  ----------------------------------------------------------------
+  cycles                    PERF_COUNT_HW_CPU_CYCLES
+  instructions              PERF_COUNT_HW_INSTRUCTIONS
+  cache_references          PERF_COUNT_HW_CACHE_REFERENCES
+  cache_misses              PERF_COUNT_HW_CACHE_MISSES
+  branch_instructions       PERF_COUNT_HW_BRANCH_INSTRUCTIONS
+  branch_misses             PERF_COUNT_HW_BRANCH_MISSES
+  bus_cycles                PERF_COUNT_HW_BUS_CYCLES
+  stalled_cycles_frontend   PERF_COUNT_HW_STALLED_CYCLES_FRONTEND
+  stalled_cycles_backend    PERF_COUNT_HW_STALLED_CYCLES_BACKEND
+  ref_cycles                PERF_COUNT_HW_REF_CPU_CYCLES
+
+Each attribute/file contains HW ID event translation for the currently
+running CPU model
+
+  # cat /sys/devices/cpu/events/instructions
+  0xc0
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/util/pmu.c |   50 +++++++++++++++++++++++++++++++-----------------
- 1 files changed, 32 insertions(+), 18 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c |   44 ++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 44 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index bda0563..1d73131 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -15,6 +15,14 @@ extern FILE *perf_pmu_in;
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 53cc997..aaa8d85 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1666,9 +1666,53 @@ static struct attribute_group x86_pmu_attr_group = {
+ 	.attrs = x86_pmu_attrs,
+ };
  
- static LIST_HEAD(pmus);
- 
-+static void pmu_format_release(struct list_head *head)
-+{
-+	struct perf_pmu__format *format, *h;
++#define PMU_EVENTS_ATTR(_name, _id)					\
++static ssize_t								\
++_name##_show(struct device *dev,					\
++                               struct device_attribute *attr,		\
++                               char *page)				\
++{									\
++	u64 val = x86_pmu.event_map(_id);				\
++	BUILD_BUG_ON(_id >= PERF_COUNT_HW_MAX);				\
++	return sprintf(page, "0x%llx\n", val);				\
++}									\
++									\
++static struct device_attribute event_attr_##_name = __ATTR_RO(_name)
 +
-+	list_for_each_entry_safe(format, h, head, list)
-+		free(format);
-+}
++PMU_EVENTS_ATTR(cycles, PERF_COUNT_HW_CPU_CYCLES);
++PMU_EVENTS_ATTR(instructions, PERF_COUNT_HW_INSTRUCTIONS);
++PMU_EVENTS_ATTR(cache_references, PERF_COUNT_HW_CACHE_REFERENCES);
++PMU_EVENTS_ATTR(cache_misses, PERF_COUNT_HW_CACHE_MISSES);
++PMU_EVENTS_ATTR(branch_instructions, PERF_COUNT_HW_BRANCH_INSTRUCTIONS);
++PMU_EVENTS_ATTR(branch_misses, PERF_COUNT_HW_BRANCH_MISSES);
++PMU_EVENTS_ATTR(bus_cycles, PERF_COUNT_HW_BUS_CYCLES);
++PMU_EVENTS_ATTR(stalled_cycles_frontend, PERF_COUNT_HW_STALLED_CYCLES_FRONTEND);
++PMU_EVENTS_ATTR(stalled_cycles_backend, PERF_COUNT_HW_STALLED_CYCLES_BACKEND);
++PMU_EVENTS_ATTR(ref_cycles, PERF_COUNT_HW_REF_CPU_CYCLES);
 +
- /*
-  * Parse & process all the sysfs attributes located under
-  * the directory specified in 'dir' parameter.
-@@ -120,27 +128,33 @@ static struct perf_pmu *pmu_lookup(char *name)
- 	LIST_HEAD(format);
- 	__u32 type;
- 
--	/*
--	 * The pmu data we store & need consists of the pmu
--	 * type value and format definitions. Load both right
--	 * now.
--	 */
--	if (pmu_format(name, &format))
--		return NULL;
-+	do {
-+		/*
-+		 * The pmu data we store & need consists of the pmu
-+		 * type value and format definitions. Load both right
-+		 * now.
-+		 */
-+		if (pmu_format(name, &format))
-+			break;
- 
--	if (pmu_type(name, &type))
--		return NULL;
-+		if (pmu_type(name, &type))
-+			break;
- 
--	pmu = zalloc(sizeof(*pmu));
--	if (!pmu)
--		return NULL;
-+		pmu = zalloc(sizeof(*pmu));
-+		if (!pmu)
-+			break;
- 
--	INIT_LIST_HEAD(&pmu->format);
--	list_splice(&format, &pmu->format);
--	pmu->name = strdup(name);
--	pmu->type = type;
--	list_add_tail(&pmu->list, &pmus);
--	return pmu;
-+		INIT_LIST_HEAD(&pmu->format);
-+		list_splice(&format, &pmu->format);
-+		pmu->name = strdup(name);
-+		pmu->type = type;
-+		list_add_tail(&pmu->list, &pmus);
-+		return pmu;
++static struct attribute *events_attr[] = {
++        &event_attr_cycles.attr,
++        &event_attr_instructions.attr,
++        &event_attr_cache_references.attr,
++        &event_attr_cache_misses.attr,
++        &event_attr_branch_instructions.attr,
++        &event_attr_branch_misses.attr,
++        &event_attr_bus_cycles.attr,
++        &event_attr_stalled_cycles_frontend.attr,
++        &event_attr_stalled_cycles_backend.attr,
++        &event_attr_ref_cycles.attr,
++        NULL,
++};
 +
-+	} while (0);
++static struct attribute_group x86_pmu_events_group = {
++	.name = "events",
++	.attrs = events_attr,
++};
 +
-+	pmu_format_release(&format);
-+	return NULL;
- }
+ static const struct attribute_group *x86_pmu_attr_groups[] = {
+ 	&x86_pmu_attr_group,
+ 	&x86_pmu_format_group,
++	&x86_pmu_events_group,
+ 	NULL,
+ };
  
- static struct perf_pmu *pmu_find(char *name)
 -- 
 1.7.7.6
 
