@@ -1,57 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755590Ab2FNKFW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 06:05:22 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49395 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755540Ab2FNKFU convert rfc822-to-8bit (ORCPT
+	id S1755583Ab2FNKHS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 06:07:18 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:51185 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753370Ab2FNKHQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 06:05:20 -0400
-Message-ID: <1339668296.2559.25.camel@twins>
-Subject: Re: What is the right practice to get new code upstream( was Fwd:
- [patch] a simple hardware detector for latency as well as throughput ver.
- 0.1.0)
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Luming Yu <luming.yu@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, tglx@linutronix.de,
-        sfr@canb.auug.org.au, Andrew Morton <akpm@linux-foundation.org>,
-        jcm@jonmasters.org, linux-next@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, torvalds@linux-foundation.org,
-        Robert Richter <robert.richter@amd.com>
-Date: Thu, 14 Jun 2012 12:04:56 +0200
-In-Reply-To: <CAJRGBZw2TctmBxRuA-byaGNCs=1v+M-1PXSm+OuwWApSqu7UjA@mail.gmail.com>
-References: <CAJRGBZw2TctmBxRuA-byaGNCs=1v+M-1PXSm+OuwWApSqu7UjA@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Thu, 14 Jun 2012 06:07:16 -0400
+Date: Thu, 14 Jun 2012 12:07:10 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Dmitry Antipov <dmitry.antipov@linaro.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jim Cromie <jim.cromie@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, arnaldo.melo@gmail.com,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [GIT PULL 0/3] perf/urgent fixes
+Message-ID: <20120614100710.GB19531@gmail.com>
+References: <1339601367-17834-1-git-send-email-acme@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1339601367-17834-1-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-06-12 at 20:57 +0800, Luming Yu wrote:
-> The Goal is to test out hardware/BIOS caused
-> problems in 2 minutes. To me, capable of measuring the intrinsic of
-> hardware on which we build our software is always a better idea than
-> blindly looking for data from any documents. In current version of the
-> tool, we have a basic sampling facility and TSC test ready for x86. I
-> plan to add more test into this tool to enrich our tool set in Linux.
+
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+
+> Hi Ingo,
+> 
+> 	Please consider pulling,
+> 
+> - Arnaldo
+> 
+> The following changes since commit 9ee6ddc9dada9cc4b2201631bc74fbf203183a10:
+> 
+>   Merge branch 'tip/perf/urgent' of git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace into perf/urgent (2012-06-08 12:23:22 +0200)
+> 
+> are available in the git repository at:
 > 
 > 
-There's SMI damage around on much longer periods than 2 minutes.
+>   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-urgent-for-mingo
+> 
+> for you to fetch changes up to cb9dd49e11f83d548c822d7022ac180b0518b25c:
+> 
+>   perf tools: Fix synthesizing tracepoint names from the perf.data headers (2012-06-12 11:28:09 -0300)
+> 
+> ----------------------------------------------------------------
+> Fixes for perf/urgent
+> 
+> . Set name of tracepoints when reading the perf.data headers, so that
+>   we don't end up using the local ones, from /sys.
+> 
+> . Fix default output file for perf stat, from Stephane Eranian.
+> 
+> . Fix endian handling of features bitmask in perf.data header, from David Ahern
+> 
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> 
+> ----------------------------------------------------------------
+> Arnaldo Carvalho de Melo (1):
+>       perf tools: Fix synthesizing tracepoint names from the perf.data headers
+> 
+> David Ahern (1):
+>       perf tools: Fix endianity swapping for adds_features bitmask
+> 
+> Stephane Eranian (1):
+>       perf stat: Fix default output file
+> 
+>  tools/perf/builtin-stat.c              |    8 +++++-
+>  tools/perf/util/header.c               |   48 +++++++++++++++++++++++++++-----
+>  tools/perf/util/include/linux/bitops.h |    2 ++
+>  tools/perf/util/session.c              |   10 +++++++
+>  tools/perf/util/session.h              |    1 +
+>  5 files changed, 61 insertions(+), 8 deletions(-)
 
-Also, you can't really do stop_machine for 2 minutes and expect the
-system to survive.
+Hm, fails to build here:
 
-Furthermore, I think esp. on more recent chips there's better ways of
-doing it.
+    CC util/parse-events-bison.o
+util/parse-events.l: In function ‘__value’:
+util/parse-events.l:18:10: error: ‘PE_ERROR’ undeclared (first 
+use in this function)
+util/parse-events.l:18:10: note: each undeclared identifier is 
+reported only once for each function it appears in
+util/parse-events.l:20:2: error: ‘parse_events_lval’ undeclared 
+(first use in this function)
+util/parse-events.l: In function ‘value’:
+util/parse-events.l:26:42: error: ‘PE_VALUE’ undeclared (first 
+use in this function)
+util/parse-events.l: In function ‘raw’:
+util/parse-events.l:31:44: error: ‘PE_RAW’ undeclared (first use 
+in this function)
+util/parse-events.l: In function ‘str’:
 
-For Intel there's a IA32_DEBUGCTL.FREEZE_WHILE_SMM_EN [bit 14], if you
-program a PMU event that ticks at the same rate as the TSC and enable
-the FREEZE_WHILE_SMM stuff, any drift observed between that and the TSC
-is time lost to SMM. It also has MSR_SMI_COUNT [MSR 34H] which counts
-the number of SMIs.
+stock Fedora 17 install. 25f42985825d builds fine.
 
-For AMD there's only event 02Bh, which is SMIs Received. I'm not sure it
-has anything like the FREEZE or if the event is modifyable to count the
-cycles in SMI.
+Thanks,
+
+	Ingo
