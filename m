@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932244Ab2FNQvo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 12:51:44 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:33205 "EHLO
+	id S932223Ab2FNQvn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 12:51:43 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:53680 "EHLO
 	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932129Ab2FNQvd (ORCPT
+	with ESMTP id S932127Ab2FNQvc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 12:51:33 -0400
+	Thu, 14 Jun 2012 12:51:32 -0400
 From: Roland Stigge <stigge@antcom.de>
 To: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
         srinivas.bakki@nxp.com, aletes.xgr@gmail.com
 Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH v2 01/23] ARM: LPC32xx: Add NAND flash timing to PHY3250 board dts
-Date: Thu, 14 Jun 2012 18:50:51 +0200
-Message-Id: <1339692673-7848-2-git-send-email-stigge@antcom.de>
+Subject: [PATCH v2 05/23] ARM: LPC32xx: Adjust dtsi file for MLC controller configuration
+Date: Thu, 14 Jun 2012 18:50:55 +0200
+Message-Id: <1339692673-7848-6-git-send-email-stigge@antcom.de>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1339692673-7848-1-git-send-email-stigge@antcom.de>
 References: <1339692673-7848-1-git-send-email-stigge@antcom.de>
@@ -23,33 +23,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds necessary NAND flash timings to the board specific dts file of
-the PHY3250 reference board of the LPC32xx SoC.
+This patch takes into account that the MTD NAND MLC controller needs more
+registers, located actually before the previously allocated memory range,
+already starting at 200a8000 instead of 200b0000.
+
+Further, the interrupt for the controller is configured.
 
 Signed-off-by: Roland Stigge <stigge@antcom.de>
 Tested-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
 
 ---
- arch/arm/boot/dts/phy3250.dts |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+ arch/arm/boot/dts/lpc32xx.dtsi |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- linux-2.6.orig/arch/arm/boot/dts/phy3250.dts
-+++ linux-2.6/arch/arm/boot/dts/phy3250.dts
-@@ -54,6 +54,17 @@
- 			#address-cells = <1>;
- 			#size-cells = <1>;
+--- linux-2.6.orig/arch/arm/boot/dts/lpc32xx.dtsi
++++ linux-2.6/arch/arm/boot/dts/lpc32xx.dtsi
+@@ -38,9 +38,10 @@
+ 			status = "disable";
+ 		};
  
-+			nxp,wdr-clks = <14>;
-+			nxp,wwidth = <40000000>;
-+			nxp,whold = <100000000>;
-+			nxp,wsetup = <100000000>;
-+			nxp,rdr-clks = <14>;
-+			nxp,rwidth = <40000000>;
-+			nxp,rhold = <66666666>;
-+			nxp,rsetup = <100000000>;
-+			nand-on-flash-bbt;
-+			gpios = <&gpio 5 19 1>; /* GPO_P3 19, active low */
-+
- 			mtd0@00000000 {
- 				label = "phy3250-boot";
- 				reg = <0x00000000 0x00064000>;
+-		mlc: flash@200B0000 {
++		mlc: flash@200a8000 {
+ 			compatible = "nxp,lpc3220-mlc";
+-			reg = <0x200B0000 0x1000>;
++			reg = <0x200a8000 0x11000>;
++			interrupts = <11 0>;
+ 			status = "disable";
+ 		};
+ 
