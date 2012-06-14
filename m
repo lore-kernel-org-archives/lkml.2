@@ -1,156 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755912Ab2FNMwl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 08:52:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4728 "EHLO mx1.redhat.com"
+	id S1756107Ab2FNM4a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 08:56:30 -0400
+Received: from mga02.intel.com ([134.134.136.20]:8006 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753881Ab2FNMwk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 08:52:40 -0400
-From: Kamil Dudka <kdudka@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: alan@lxorguk.ukuu.org.uk, Kamil Dudka <kdudka@redhat.com>
-Subject: [PATCH] i2o: avoid returning pointer to a local array in chtostr()
-Date: Thu, 14 Jun 2012 14:51:42 +0200
-Message-Id: <1339678302-23770-1-git-send-email-kdudka@redhat.com>
+	id S1756050Ab2FNM4U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 08:56:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208,223";a="157563078"
+From: "Liu, Jinsong" <jinsong.liu@intel.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] xen/mce: add .poll method for mcelog device driver
+Thread-Topic: [PATCH] xen/mce: add .poll method for mcelog device driver
+Thread-Index: AQHNSZLddQXy2gd5YkW4phd9182UzZb5g2gwgABBt3A=
+Date: Thu, 14 Jun 2012 12:55:48 +0000
+Message-ID: <DE8DF0795D48FD4CA783C40EC82923352321AB@SHSMSX101.ccr.corp.intel.com>
+References: <DE8DF0795D48FD4CA783C40EC8292335228748@SHSMSX101.ccr.corp.intel.com>
+ <20120612124015.GB559@phenom.dumpdata.com>
+ <20120613182458.GA5813@phenom.dumpdata.com> 
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: multipart/mixed;
+	boundary="_002_DE8DF0795D48FD4CA783C40EC82923352321ABSHSMSX101ccrcorpi_"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The pointer returned from chtostr() points to an array which is no longer valid
-when being used in the calling function.  Although it may work, the behavior is
-undefined.  Detected by cppcheck.
+--_002_DE8DF0795D48FD4CA783C40EC82923352321ABSHSMSX101ccrcorpi_
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Kamil Dudka <kdudka@redhat.com>
+>>=20
+>> So another bug which is that mcelog is spinning at 100% CPU (and
+>> only under Xen).=20
+>>=20
+>> It seems to be doing:
+>>=20
+>> ppoll([{fd=3D4, events=3DPOLLIN}, {fd=3D3, events=3DPOLLIN}], 2, NULL, [=
+], 8)
+>> =3D 1 ([{fd=3D3, revents=3DPOLLIN}]) read(3, "", 2816)
+>> =3D 0
+>> ppoll([{fd=3D4, events=3DPOLLIN}, {fd=3D3, events=3DPOLLIN}], 2, NULL, [=
+], 8)
+>> =3D 1 ([{fd=3D3, revents=3DPOLLIN}]) read(3, "", 2816)
+>>=20
+>> constantly.
+>=20
+> I will debug it. I have try at my platform, but fail to reproduce it.
+> (You still use the config you send me last time, right?) Would you
+> tell me your step?=20
+>=20
+> Thanks,
+> Jinsong
+
+Have a look at it, it caused by NULL .poll method.
+Attached is the patch to fix this bug, but I cannot reproduce the bug at my=
+ platform, so would you please help me to test it at your side?
+
+Thanks,
+Jinsong
+
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+>From fb664590ce4198539d96b6bc245c5d70cc079129 Mon Sep 17 00:00:00 2001
+From: Liu, Jinsong <jinsong.liu@intel.com>
+Date: Fri, 15 Jun 2012 04:16:52 +0800
+Subject: [PATCH] xen/mce: add .poll method for mcelog device driver
+
+If a driver leaves its poll method NULL, the device is assumed to
+be both readable and writable without blocking.
+
+This patch add .poll method to xen mcelog device driver, so that
+when mcelog use system calls like ppoll or select, it would be
+blocked when no data available, and avoid spinning at CPU.
+
+Reported-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Liu, Jinsong <jinsong.liu@intel.com>
 ---
- drivers/message/i2o/i2o_proc.c |   37 ++++++++++++++++++++++---------------
- 1 files changed, 22 insertions(+), 15 deletions(-)
+ drivers/xen/mcelog.c |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/message/i2o/i2o_proc.c b/drivers/message/i2o/i2o_proc.c
-index 506c36f..8001aa6 100644
---- a/drivers/message/i2o/i2o_proc.c
-+++ b/drivers/message/i2o/i2o_proc.c
-@@ -255,9 +255,8 @@ static char *scsi_devices[] = {
- 	"Array Controller Device"
- };
- 
--static char *chtostr(u8 * chars, int n)
-+static char *chtostr(char *tmp, u8 *chars, int n)
+diff --git a/drivers/xen/mcelog.c b/drivers/xen/mcelog.c
+index 804aa3c..c0b39c9 100644
+--- a/drivers/xen/mcelog.c
++++ b/drivers/xen/mcelog.c
+@@ -41,6 +41,7 @@
+ #include <linux/miscdevice.h>
+ #include <linux/uaccess.h>
+ #include <linux/capability.h>
++#include <linux/poll.h>
+=20
+ #include <xen/interface/xen.h>
+ #include <xen/events.h>
+@@ -135,6 +136,14 @@ out:
+ 	return err ? err : buf - ubuf;
+ }
+=20
++static unsigned int xen_mce_chrdev_poll(struct file *file, poll_table *wai=
+t)
++{
++	if (xen_mcelog.next)
++		return POLLIN | POLLRDNORM;
++
++	return 0;
++}
++
+ static long xen_mce_chrdev_ioctl(struct file *f, unsigned int cmd,
+ 				unsigned long arg)
  {
--	char tmp[256];
- 	tmp[0] = 0;
- 	return strncat(tmp, (char *)chars, n);
- }
-@@ -791,6 +790,7 @@ static int i2o_seq_show_ddm_table(struct seq_file *seq, void *v)
- 	} *result;
- 
- 	i2o_exec_execute_ddm_table ddm_table;
-+	char tmp[28 + 1];
- 
- 	result = kmalloc(sizeof(*result), GFP_KERNEL);
- 	if (!result)
-@@ -826,7 +826,7 @@ static int i2o_seq_show_ddm_table(struct seq_file *seq, void *v)
- 		seq_printf(seq, "%-#7x", ddm_table.i2o_vendor_id);
- 		seq_printf(seq, "%-#8x", ddm_table.module_id);
- 		seq_printf(seq, "%-29s",
--			   chtostr(ddm_table.module_name_version, 28));
-+			   chtostr(tmp, ddm_table.module_name_version, 28));
- 		seq_printf(seq, "%9d  ", ddm_table.data_size);
- 		seq_printf(seq, "%8d", ddm_table.code_size);
- 
-@@ -893,6 +893,7 @@ static int i2o_seq_show_drivers_stored(struct seq_file *seq, void *v)
- 
- 	i2o_driver_result_table *result;
- 	i2o_driver_store_table *dst;
-+	char tmp[28 + 1];
- 
- 	result = kmalloc(sizeof(i2o_driver_result_table), GFP_KERNEL);
- 	if (result == NULL)
-@@ -927,8 +928,9 @@ static int i2o_seq_show_drivers_stored(struct seq_file *seq, void *v)
- 
- 		seq_printf(seq, "%-#7x", dst->i2o_vendor_id);
- 		seq_printf(seq, "%-#8x", dst->module_id);
--		seq_printf(seq, "%-29s", chtostr(dst->module_name_version, 28));
--		seq_printf(seq, "%-9s", chtostr(dst->date, 8));
-+		seq_printf(seq, "%-29s",
-+			   chtostr(tmp, dst->module_name_version, 28));
-+		seq_printf(seq, "%-9s", chtostr(tmp, dst->date, 8));
- 		seq_printf(seq, "%8d ", dst->module_size);
- 		seq_printf(seq, "%8d ", dst->mpb_size);
- 		seq_printf(seq, "0x%04x", dst->module_flags);
-@@ -1248,6 +1250,7 @@ static int i2o_seq_show_dev_identity(struct seq_file *seq, void *v)
- 	// == (allow) 512d bytes (max)
- 	static u16 *work16 = (u16 *) work32;
- 	int token;
-+	char tmp[16 + 1];
- 
- 	token = i2o_parm_field_get(d, 0xF100, -1, &work32, sizeof(work32));
- 
-@@ -1260,13 +1263,13 @@ static int i2o_seq_show_dev_identity(struct seq_file *seq, void *v)
- 	seq_printf(seq, "Owner TID     : %0#5x\n", work16[2]);
- 	seq_printf(seq, "Parent TID    : %0#5x\n", work16[3]);
- 	seq_printf(seq, "Vendor info   : %s\n",
--		   chtostr((u8 *) (work32 + 2), 16));
-+		   chtostr(tmp, (u8 *) (work32 + 2), 16));
- 	seq_printf(seq, "Product info  : %s\n",
--		   chtostr((u8 *) (work32 + 6), 16));
-+		   chtostr(tmp, (u8 *) (work32 + 6), 16));
- 	seq_printf(seq, "Description   : %s\n",
--		   chtostr((u8 *) (work32 + 10), 16));
-+		   chtostr(tmp, (u8 *) (work32 + 10), 16));
- 	seq_printf(seq, "Product rev.  : %s\n",
--		   chtostr((u8 *) (work32 + 14), 8));
-+		   chtostr(tmp, (u8 *) (work32 + 14), 8));
- 
- 	seq_printf(seq, "Serial number : ");
- 	print_serial_number(seq, (u8 *) (work32 + 16),
-@@ -1303,6 +1306,8 @@ static int i2o_seq_show_ddm_identity(struct seq_file *seq, void *v)
- 		u8 pad[256];	// allow up to 256 byte (max) serial number
- 	} result;
- 
-+	char tmp[24 + 1];
-+
- 	token = i2o_parm_field_get(d, 0xF101, -1, &result, sizeof(result));
- 
- 	if (token < 0) {
-@@ -1312,9 +1317,9 @@ static int i2o_seq_show_ddm_identity(struct seq_file *seq, void *v)
- 
- 	seq_printf(seq, "Registering DDM TID : 0x%03x\n", result.ddm_tid);
- 	seq_printf(seq, "Module name         : %s\n",
--		   chtostr(result.module_name, 24));
-+		   chtostr(tmp, result.module_name, 24));
- 	seq_printf(seq, "Module revision     : %s\n",
--		   chtostr(result.module_rev, 8));
-+		   chtostr(tmp, result.module_rev, 8));
- 
- 	seq_printf(seq, "Serial number       : ");
- 	print_serial_number(seq, result.serial_number, sizeof(result) - 36);
-@@ -1338,6 +1343,8 @@ static int i2o_seq_show_uinfo(struct seq_file *seq, void *v)
- 		u8 instance_number[4];
- 	} result;
- 
-+	char tmp[64 + 1];
-+
- 	token = i2o_parm_field_get(d, 0xF102, -1, &result, sizeof(result));
- 
- 	if (token < 0) {
-@@ -1346,13 +1353,13 @@ static int i2o_seq_show_uinfo(struct seq_file *seq, void *v)
- 	}
- 
- 	seq_printf(seq, "Device name     : %s\n",
--		   chtostr(result.device_name, 64));
-+		   chtostr(tmp, result.device_name, 64));
- 	seq_printf(seq, "Service name    : %s\n",
--		   chtostr(result.service_name, 64));
-+		   chtostr(tmp, result.service_name, 64));
- 	seq_printf(seq, "Physical name   : %s\n",
--		   chtostr(result.physical_location, 64));
-+		   chtostr(tmp, result.physical_location, 64));
- 	seq_printf(seq, "Instance number : %s\n",
--		   chtostr(result.instance_number, 4));
-+		   chtostr(tmp, result.instance_number, 4));
- 
- 	return 0;
- }
--- 
+@@ -166,6 +175,7 @@ static const struct file_operations xen_mce_chrdev_ops =
+=3D {
+ 	.open			=3D xen_mce_chrdev_open,
+ 	.release		=3D xen_mce_chrdev_release,
+ 	.read			=3D xen_mce_chrdev_read,
++	.poll			=3D xen_mce_chrdev_poll,
+ 	.unlocked_ioctl		=3D xen_mce_chrdev_ioctl,
+ 	.llseek			=3D no_llseek,
+ };
+--=20
 1.7.1
 
+--_002_DE8DF0795D48FD4CA783C40EC82923352321ABSHSMSX101ccrcorpi_
+Content-Type: application/octet-stream;
+	name="0001-xen-mce-add-.poll-method-for-mcelog-device-driver.patch"
+Content-Description: 0001-xen-mce-add-.poll-method-for-mcelog-device-driver.patch
+Content-Disposition: attachment;
+	filename="0001-xen-mce-add-.poll-method-for-mcelog-device-driver.patch";
+	size=1677; creation-date="Thu, 14 Jun 2012 12:49:08 GMT";
+	modification-date="Thu, 14 Jun 2012 20:35:18 GMT"
+Content-Transfer-Encoding: base64
+
+RnJvbSBmYjY2NDU5MGNlNDE5ODUzOWQ5NmI2YmMyNDVjNWQ3MGNjMDc5MTI5IE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBMaXUsIEppbnNvbmcgPGppbnNvbmcubGl1QGludGVsLmNvbT4K
+RGF0ZTogRnJpLCAxNSBKdW4gMjAxMiAwNDoxNjo1MiArMDgwMApTdWJqZWN0OiBbUEFUQ0hdIHhl
+bi9tY2U6IGFkZCAucG9sbCBtZXRob2QgZm9yIG1jZWxvZyBkZXZpY2UgZHJpdmVyCgpJZiBhIGRy
+aXZlciBsZWF2ZXMgaXRzIHBvbGwgbWV0aG9kIE5VTEwsIHRoZSBkZXZpY2UgaXMgYXNzdW1lZCB0
+bwpiZSBib3RoIHJlYWRhYmxlIGFuZCB3cml0YWJsZSB3aXRob3V0IGJsb2NraW5nLgoKVGhpcyBw
+YXRjaCBhZGQgLnBvbGwgbWV0aG9kIHRvIHhlbiBtY2Vsb2cgZGV2aWNlIGRyaXZlciwgc28gdGhh
+dAp3aGVuIG1jZWxvZyB1c2Ugc3lzdGVtIGNhbGxzIGxpa2UgcHBvbGwgb3Igc2VsZWN0LCBpdCB3
+b3VsZCBiZQpibG9ja2VkIHdoZW4gbm8gZGF0YSBhdmFpbGFibGUsIGFuZCBhdm9pZCBzcGlubmlu
+ZyBhdCBDUFUuCgpSZXBvcnRlZC1ieTogS29ucmFkIFJ6ZXN6dXRlayBXaWxrIDxrb25yYWQud2ls
+a0BvcmFjbGUuY29tPgpTaWduZWQtb2ZmLWJ5OiBMaXUsIEppbnNvbmcgPGppbnNvbmcubGl1QGlu
+dGVsLmNvbT4KLS0tCiBkcml2ZXJzL3hlbi9tY2Vsb2cuYyB8ICAgMTAgKysrKysrKysrKwogMSBm
+aWxlcyBjaGFuZ2VkLCAxMCBpbnNlcnRpb25zKCspLCAwIGRlbGV0aW9ucygtKQoKZGlmZiAtLWdp
+dCBhL2RyaXZlcnMveGVuL21jZWxvZy5jIGIvZHJpdmVycy94ZW4vbWNlbG9nLmMKaW5kZXggODA0
+YWEzYy4uYzBiMzljOSAxMDA2NDQKLS0tIGEvZHJpdmVycy94ZW4vbWNlbG9nLmMKKysrIGIvZHJp
+dmVycy94ZW4vbWNlbG9nLmMKQEAgLTQxLDYgKzQxLDcgQEAKICNpbmNsdWRlIDxsaW51eC9taXNj
+ZGV2aWNlLmg+CiAjaW5jbHVkZSA8bGludXgvdWFjY2Vzcy5oPgogI2luY2x1ZGUgPGxpbnV4L2Nh
+cGFiaWxpdHkuaD4KKyNpbmNsdWRlIDxsaW51eC9wb2xsLmg+CiAKICNpbmNsdWRlIDx4ZW4vaW50
+ZXJmYWNlL3hlbi5oPgogI2luY2x1ZGUgPHhlbi9ldmVudHMuaD4KQEAgLTEzNSw2ICsxMzYsMTQg
+QEAgb3V0OgogCXJldHVybiBlcnIgPyBlcnIgOiBidWYgLSB1YnVmOwogfQogCitzdGF0aWMgdW5z
+aWduZWQgaW50IHhlbl9tY2VfY2hyZGV2X3BvbGwoc3RydWN0IGZpbGUgKmZpbGUsIHBvbGxfdGFi
+bGUgKndhaXQpCit7CisJaWYgKHhlbl9tY2Vsb2cubmV4dCkKKwkJcmV0dXJuIFBPTExJTiB8IFBP
+TExSRE5PUk07CisKKwlyZXR1cm4gMDsKK30KKwogc3RhdGljIGxvbmcgeGVuX21jZV9jaHJkZXZf
+aW9jdGwoc3RydWN0IGZpbGUgKmYsIHVuc2lnbmVkIGludCBjbWQsCiAJCQkJdW5zaWduZWQgbG9u
+ZyBhcmcpCiB7CkBAIC0xNjYsNiArMTc1LDcgQEAgc3RhdGljIGNvbnN0IHN0cnVjdCBmaWxlX29w
+ZXJhdGlvbnMgeGVuX21jZV9jaHJkZXZfb3BzID0gewogCS5vcGVuCQkJPSB4ZW5fbWNlX2NocmRl
+dl9vcGVuLAogCS5yZWxlYXNlCQk9IHhlbl9tY2VfY2hyZGV2X3JlbGVhc2UsCiAJLnJlYWQJCQk9
+IHhlbl9tY2VfY2hyZGV2X3JlYWQsCisJLnBvbGwJCQk9IHhlbl9tY2VfY2hyZGV2X3BvbGwsCiAJ
+LnVubG9ja2VkX2lvY3RsCQk9IHhlbl9tY2VfY2hyZGV2X2lvY3RsLAogCS5sbHNlZWsJCQk9IG5v
+X2xsc2VlaywKIH07Ci0tIAoxLjcuMQoK
+
+--_002_DE8DF0795D48FD4CA783C40EC82923352321ABSHSMSX101ccrcorpi_--
