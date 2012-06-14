@@ -1,73 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755552Ab2FNKCN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 06:02:13 -0400
-Received: from mga01.intel.com ([192.55.52.88]:37183 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755448Ab2FNKCL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 06:02:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="165555701"
-Date: Thu, 14 Jun 2012 18:02:05 +0800
-From: Fengguang Wu <wfg@linux.intel.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-scsi@vger.kernel.org, linux-raid@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: drivers/block/cpqarray.c:938:2: error: too many arguments to
- function lk_rq_map_sg
-Message-ID: <20120614100205.GA13217@localhost>
-References: <4fd91c3f.KAwMcygw9fFGn9Cx%wfg@linux.intel.com>
- <4FD984F3.3070502@kernel.dk>
- <20120614090151.GA12013@localhost>
- <4FD9A95D.40903@kernel.dk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FD9A95D.40903@kernel.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755448Ab2FNKEE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 06:04:04 -0400
+Received: from charybdis-ext.suse.de ([195.135.221.2]:26144 "EHLO
+	nat.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753202Ab2FNKEC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 06:04:02 -0400
+Subject: Re: [PATCH 2/7] drivers-platform-x86: use
+ acpi_video_dmi_promote_vendor()
+From: joeyli <jlee@suse.com>
+To: Corentin Chary <corentin.chary@gmail.com>
+Cc: Len Brown <lenb@kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        linux-acpi@vger.kernel.org, platform-driver-x86@vger.kernel.org,
+        Joey Lee <jlee@novell.com>, Matthew Garrett <mjg@redhat.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1339572727-24744-3-git-send-email-corentin.chary@gmail.com>
+References: <1339572727-24744-1-git-send-email-corentin.chary@gmail.com>
+	 <1339572727-24744-3-git-send-email-corentin.chary@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 14 Jun 2012 17:58:57 +0800
+Message-ID: <1339667937.9598.97.camel@linux-s257.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 14, 2012 at 11:05:33AM +0200, Jens Axboe wrote:
-> On 06/14/2012 11:01 AM, Fengguang Wu wrote:
-> > Hi Jens,
-> > 
-> > On Thu, Jun 14, 2012 at 08:30:11AM +0200, Jens Axboe wrote:
-> >> On 06/14/2012 01:03 AM, wfg@linux.intel.com wrote:
-> >>> FYI, kernel build failed on
-> >>>
-> >>> tree:   git://git.kernel.org/pub/scm/linux/kernel/git/axboe/linux-block.git multiqueue
-> >>> head:   e9a6aa8a0b7b93195774a9fcf551632bf3abcd97
-> >>> commit: 67db7275fa4325d46853a4bfcb79acf32e48eca8 [1/3] multiqueue: a hodge podge of things
-> >>
-> >> The multiqueue branch is a private branch, it's known broken on many
-> >> configs at the moment.
-> > 
-> > OK. Sorry my script just blindly build tests every new/updated branches
-> > in the tree. It does try to reduce noise level by remembering all warned
-> > error messages. However if it still presents a problem to the private
-> > branches, I can either explicitly blacklist "multiqueue", or let the
-> > script automatically skip commits whose "^Signed-off-by:" is still missing.
-> 
-> It's not a problem that you're building various branches, as long as you
-> are expecting a bit of noise :-). In fact I applaud your effort on
-> expanding the scope of building others branches.
-> 
-> But it does raise the question of how do we best signal intermediate
-> branches like this, so they can be avoided until they are ready. The
-> blacklist doesn't seem like a great choice, since then I have to
-> remember to remind you when it _is_ ok to build it.
-> 
-> How about some arbitrary tag? Instead of checking a Signed-off-by, I
-> could just add a Dont-Auto-Build or something like that. What do you
-> think?
+Hi Corentin, 
 
-OK, I'll add a grep for "Dont-Auto-Build". If it's found in *any*
-commit of the branch, the build script will skip the whole branch.
-Does this make sense to you?
+於 三，2012-06-13 於 09:32 +0200，Corentin Chary 提到：
+> Instead of using directly acpi_video_unregister(), use
+> acpi_video_dmi_promote_vendor() (and make it call
+> acpi_video_unregister() if needed)
+> 
+> Signed-off-by: Corentin Chary <corentin.chary@gmail.com>
+> ---
+>  drivers/platform/x86/acer-wmi.c       |   16 +++++++++-------
+>  drivers/platform/x86/apple-gmux.c     |    6 ++++++
+>  drivers/platform/x86/samsung-laptop.c |   22 ++++++++++++----------
+>  3 files changed, 27 insertions(+), 17 deletions(-)
+> 
+> diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
+> index ce875dc..ffc53df 100644
+> --- a/drivers/platform/x86/acer-wmi.c
+> +++ b/drivers/platform/x86/acer-wmi.c
+> @@ -2060,14 +2060,16 @@ static int __init acer_wmi_init(void)
+>  
+>  	set_quirks();
+>  
+> +	if (dmi_check_system(video_vendor_dmi_table))
+> +		acpi_video_dmi_promote_vendor();
+>  	if (acpi_video_backlight_support()) {
+> -		if (dmi_check_system(video_vendor_dmi_table)) {
+> -			acpi_video_unregister();
+> -		} else {
+> -			interface->capability &= ~ACER_CAP_BRIGHTNESS;
+> -			pr_info("Brightness must be controlled by "
+> -				"acpi video driver\n");
+> -		}
+> +		interface->capability &= ~ACER_CAP_BRIGHTNESS;
+> +		pr_info("Brightness must be controlled by acpi video driver\n");
+> +	} else {
+> +#ifdef CONFIG_ACPI_VIDEO
 
-Thanks,
-Fengguang
+The 'ifdef CONFIG_ACPI_VIDEO' didn't work on my machine with v3.4
+kernel, the acpi video didn't unregister. 
+
+My autoconf.h like following:
+
+include/generated/autoconf.h:#define CONFIG_ACPI_VIDEO_MODULE 1
+
+
+Need use:
+
+-#ifdef CONFIG_ACPI_VIDEO
++#if (defined CONFIG_ACPI_VIDEO || defined CONFIG_ACPI_VIDEO_MODULE)
+	pr_info("Disabling ACPI video driver\n"); 
+	acpi_video_unregister();
+#endif
+
+I tested the above change works to me.
+
+
+Thanks a lot!
+Joey Lee
+
