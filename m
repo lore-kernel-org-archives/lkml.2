@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755724Ab2FNMjq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 08:39:46 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:57498 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753881Ab2FNMjp (ORCPT
+	id S1755899Ab2FNMla (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 08:41:30 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:57194 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754006Ab2FNMla (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 08:39:45 -0400
-From: =?UTF-8?B?G1tB?= <liwp.linux@gmail.com>
+	Thu, 14 Jun 2012 08:41:30 -0400
+From: Wanpeng Li <liwp.linux@gmail.com>
 To: linux-mm@kvack.org
 Cc: Andrew Morton <akpm@linux-foundation.org>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
@@ -16,14 +16,12 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Gavin Shan <shangw@linux.vnet.ibm.com>,
         Wanpeng Li <liwp.linux@gmail.com>
 Subject: [PATCH] mm: fix page reclaim comment error
-Date: Thu, 14 Jun 2012 20:38:59 +0800
-Message-Id: <4fd9db8d.c4e2440a.6bf6.4a46@mx.google.com>
+Date: Thu, 14 Jun 2012 20:41:02 +0800
+Message-Id: <1339677662-25942-1-git-send-email-liwp.linux@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-From: Wanpeng Li <liwp.linux@gmail.com>
 
 From: Wanpeng Li <liwp@linux.vnet.ibm.com>
 
