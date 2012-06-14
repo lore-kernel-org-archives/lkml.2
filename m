@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932287Ab2FNQ5V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 12:57:21 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:37332 "EHLO
+	id S932254Ab2FNQ5p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 12:57:45 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:37341 "EHLO
 	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932145Ab2FNQvk (ORCPT
+	with ESMTP id S932139Ab2FNQvj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 12:51:40 -0400
+	Thu, 14 Jun 2012 12:51:39 -0400
 From: Roland Stigge <stigge@antcom.de>
 To: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
         srinivas.bakki@nxp.com, aletes.xgr@gmail.com
 Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH v2 10/23] ARM: LPC32xx: Add MMC controller support
-Date: Thu, 14 Jun 2012 18:51:00 +0200
-Message-Id: <1339692673-7848-11-git-send-email-stigge@antcom.de>
+Subject: [PATCH v2 09/23] ARM: LPC32xx: Defconfig update
+Date: Thu, 14 Jun 2012 18:50:59 +0200
+Message-Id: <1339692673-7848-10-git-send-email-stigge@antcom.de>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1339692673-7848-1-git-send-email-stigge@antcom.de>
 References: <1339692673-7848-1-git-send-email-stigge@antcom.de>
@@ -23,104 +23,113 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for the MMC controller of the LPC32xx SoC to the
-platform initialization via the pl08x primecell driver. Lacking more complete
-DT support, done via DT auxdata.
+This defconfig update for the LPC32xx SoC platform adds the new drivers in v3.5
+and drivers typically used in systems with the LPC32xx chip.
 
 Signed-off-by: Roland Stigge <stigge@antcom.de>
 Acked-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
 
 ---
- arch/arm/mach-lpc32xx/phy3250.c |   43 ++++++++++++++++++++++++++++++++++++----
- 1 file changed, 39 insertions(+), 4 deletions(-)
+ arch/arm/configs/lpc32xx_defconfig |   24 ++++++++++++++++++------
+ 1 file changed, 18 insertions(+), 6 deletions(-)
 
---- linux-2.6.orig/arch/arm/mach-lpc32xx/phy3250.c
-+++ linux-2.6/arch/arm/mach-lpc32xx/phy3250.c
-@@ -30,12 +30,13 @@
- #include <linux/amba/bus.h>
- #include <linux/amba/clcd.h>
- #include <linux/amba/pl022.h>
-+#include <linux/amba/pl08x.h>
-+#include <linux/amba/mmci.h>
- #include <linux/of.h>
- #include <linux/of_address.h>
- #include <linux/of_irq.h>
- #include <linux/of_platform.h>
- #include <linux/clk.h>
--#include <linux/amba/pl08x.h>
- 
- #include <asm/setup.h>
- #include <asm/mach-types.h>
-@@ -50,9 +51,12 @@
- /*
-  * Mapped GPIOLIB GPIOs
-  */
--#define SPI0_CS_GPIO	LPC32XX_GPIO(LPC32XX_GPIO_P3_GRP, 5)
--#define LCD_POWER_GPIO	LPC32XX_GPIO(LPC32XX_GPO_P3_GRP, 0)
--#define BKL_POWER_GPIO	LPC32XX_GPIO(LPC32XX_GPO_P3_GRP, 4)
-+#define SPI0_CS_GPIO		LPC32XX_GPIO(LPC32XX_GPIO_P3_GRP, 5)
-+#define LCD_POWER_GPIO		LPC32XX_GPIO(LPC32XX_GPO_P3_GRP, 0)
-+#define BKL_POWER_GPIO		LPC32XX_GPIO(LPC32XX_GPO_P3_GRP, 4)
-+#define MMC_PWR_ENABLE_GPIO	LPC32XX_GPIO(LPC32XX_GPO_P3_GRP, 5)
-+#define MMC_CD_GPIO		LPC32XX_GPIO(LPC32XX_GPIO_P3_GRP, 1)
-+#define MMC_WP_GPIO		LPC32XX_GPIO(LPC32XX_GPIO_P3_GRP, 0)
- 
- /*
-  * AMBA LCD controller
-@@ -260,11 +264,32 @@ static struct pl08x_platform_data pl08x_
- 	.mem_buses = PL08X_AHB1,
- };
- 
-+static int mmc_handle_ios(struct device *dev, struct mmc_ios *ios)
-+{
-+	/* Only on and off are supported */
-+	if (ios->power_mode == MMC_POWER_OFF)
-+		gpio_set_value(MMC_PWR_ENABLE_GPIO, 0);
-+	else
-+		gpio_set_value(MMC_PWR_ENABLE_GPIO, 1);
-+	return 0;
-+}
-+
-+static struct mmci_platform_data lpc32xx_mmci_data = {
-+	.ocr_mask	= MMC_VDD_30_31 | MMC_VDD_31_32 |
-+			  MMC_VDD_32_33 | MMC_VDD_33_34,
-+	.ios_handler	= mmc_handle_ios,
-+	.dma_filter	= NULL,
-+	/* No DMA for now since AMBA PL080 dmaengine driver only does scatter
-+	 * gather, and the MMCI driver doesn't do it this way */
-+};
-+
- static const struct of_dev_auxdata lpc32xx_auxdata_lookup[] __initconst = {
- 	OF_DEV_AUXDATA("arm,pl022", 0x20084000, "dev:ssp0", &lpc32xx_ssp0_data),
- 	OF_DEV_AUXDATA("arm,pl022", 0x2008C000, "dev:ssp1", &lpc32xx_ssp1_data),
- 	OF_DEV_AUXDATA("arm,pl110", 0x31040000, "dev:clcd", &lpc32xx_clcd_data),
- 	OF_DEV_AUXDATA("arm,pl080", 0x31000000, "pl08xdmac", &pl08x_pd),
-+	OF_DEV_AUXDATA("arm,pl18x", 0x20098000, "20098000.sd",
-+		       &lpc32xx_mmci_data),
- 	{ }
- };
- 
-@@ -308,6 +333,11 @@ static void __init lpc3250_machine_init(
- 	 * detection or a data fault will occur, so enable the clocks
- 	 * here.
- 	 */
-+	tmp = __raw_readl(LPC32XX_CLKPWR_MS_CTRL);
-+	tmp |= LPC32XX_CLKPWR_MSCARD_SDCARD_EN |
-+		LPC32XX_CLKPWR_MSCARD_MSDIO_PU_EN;
-+	__raw_writel(tmp, LPC32XX_CLKPWR_MS_CTRL);
-+
- 	tmp = __raw_readl(LPC32XX_CLKPWR_LCDCLK_CTRL);
- 	__raw_writel((tmp | LPC32XX_CLKPWR_LCDCTRL_CLK_EN),
- 		LPC32XX_CLKPWR_LCDCLK_CTRL);
-@@ -335,6 +365,11 @@ static void __init lpc3250_machine_init(
- 	else if (gpio_direction_output(SPI0_CS_GPIO, 1))
- 		printk(KERN_ERR "Error setting gpio %u to output",
- 			SPI0_CS_GPIO);
-+
-+	if (gpio_request(MMC_PWR_ENABLE_GPIO, "mmc_power_en"))
-+		pr_err("Error requesting gpio %u", MMC_PWR_ENABLE_GPIO);
-+	else if (gpio_direction_output(MMC_PWR_ENABLE_GPIO, 1))
-+		pr_err("Error setting gpio %u to output", MMC_PWR_ENABLE_GPIO);
- }
- 
- static char const *lpc32xx_dt_compat[] __initdata = {
+--- linux-2.6.orig/arch/arm/configs/lpc32xx_defconfig
++++ linux-2.6/arch/arm/configs/lpc32xx_defconfig
+@@ -1,5 +1,7 @@
+ CONFIG_EXPERIMENTAL=y
+ CONFIG_SYSVIPC=y
++CONFIG_NO_HZ=y
++CONFIG_HIGH_RES_TIMERS=y
+ CONFIG_IKCONFIG=y
+ CONFIG_IKCONFIG_PROC=y
+ CONFIG_LOG_BUF_SHIFT=16
+@@ -16,8 +18,6 @@ CONFIG_MODULE_UNLOAD=y
+ # CONFIG_BLK_DEV_BSG is not set
+ CONFIG_PARTITION_ADVANCED=y
+ CONFIG_ARCH_LPC32XX=y
+-CONFIG_NO_HZ=y
+-CONFIG_HIGH_RES_TIMERS=y
+ CONFIG_PREEMPT=y
+ CONFIG_AEABI=y
+ CONFIG_ZBOOT_ROM_TEXT=0x0
+@@ -52,13 +52,17 @@ CONFIG_MTD=y
+ CONFIG_MTD_CMDLINE_PARTS=y
+ CONFIG_MTD_CHAR=y
+ CONFIG_MTD_BLOCK=y
++CONFIG_MTD_M25P80=y
+ CONFIG_MTD_NAND=y
+ CONFIG_MTD_NAND_MUSEUM_IDS=y
++CONFIG_MTD_NAND_SLC_LPC32XX=y
++CONFIG_MTD_NAND_MLC_LPC32XX=y
+ CONFIG_BLK_DEV_LOOP=y
+ CONFIG_BLK_DEV_CRYPTOLOOP=y
+ CONFIG_BLK_DEV_RAM=y
+ CONFIG_BLK_DEV_RAM_COUNT=1
+ CONFIG_BLK_DEV_RAM_SIZE=16384
++CONFIG_EEPROM_AT24=y
+ CONFIG_EEPROM_AT25=y
+ CONFIG_SCSI=y
+ CONFIG_BLK_DEV_SD=y
+@@ -79,16 +83,22 @@ CONFIG_LPC_ENET=y
+ # CONFIG_NET_VENDOR_STMICRO is not set
+ CONFIG_SMSC_PHY=y
+ # CONFIG_WLAN is not set
++CONFIG_INPUT_MATRIXKMAP=y
+ # CONFIG_INPUT_MOUSEDEV_PSAUX is not set
+ CONFIG_INPUT_MOUSEDEV_SCREEN_X=240
+ CONFIG_INPUT_MOUSEDEV_SCREEN_Y=320
+ CONFIG_INPUT_EVDEV=y
++# CONFIG_KEYBOARD_ATKBD is not set
++CONFIG_KEYBOARD_LPC32XX=y
+ # CONFIG_INPUT_MOUSE is not set
+ CONFIG_INPUT_TOUCHSCREEN=y
+ CONFIG_TOUCHSCREEN_LPC32XX=y
++CONFIG_SERIO_LIBPS2=y
+ # CONFIG_LEGACY_PTYS is not set
+ CONFIG_SERIAL_8250=y
+ CONFIG_SERIAL_8250_CONSOLE=y
++CONFIG_SERIAL_HS_LPC32XX=y
++CONFIG_SERIAL_OF_PLATFORM=y
+ # CONFIG_HW_RANDOM is not set
+ CONFIG_I2C=y
+ CONFIG_I2C_CHARDEV=y
+@@ -96,7 +106,8 @@ CONFIG_I2C_PNX=y
+ CONFIG_SPI=y
+ CONFIG_SPI_PL022=y
+ CONFIG_GPIO_SYSFS=y
+-# CONFIG_HWMON is not set
++CONFIG_SENSORS_DS620=y
++CONFIG_SENSORS_MAX6639=y
+ CONFIG_WATCHDOG=y
+ CONFIG_PNX4008_WATCHDOG=y
+ CONFIG_FB=y
+@@ -133,6 +144,8 @@ CONFIG_MMC=y
+ CONFIG_MMC_ARMMMCI=y
+ CONFIG_NEW_LEDS=y
+ CONFIG_LEDS_CLASS=y
++CONFIG_LEDS_PCA9532=y
++CONFIG_LEDS_PCA9532_GPIO=y
+ CONFIG_LEDS_GPIO=y
+ CONFIG_LEDS_TRIGGERS=y
+ CONFIG_LEDS_TRIGGER_TIMER=y
+@@ -146,10 +159,10 @@ CONFIG_RTC_DRV_DS1374=y
+ CONFIG_RTC_DRV_PCF8563=y
+ CONFIG_RTC_DRV_LPC32XX=y
+ CONFIG_DMADEVICES=y
+-CONFIG_AMBA_PL08X=y
+ CONFIG_STAGING=y
+-CONFIG_IIO=y
+ CONFIG_LPC32XX_ADC=y
++CONFIG_MAX517=y
++CONFIG_IIO=y
+ CONFIG_EXT2_FS=y
+ CONFIG_AUTOFS4_FS=y
+ CONFIG_MSDOS_FS=y
+@@ -159,7 +172,6 @@ CONFIG_JFFS2_FS=y
+ CONFIG_JFFS2_FS_WBUF_VERIFY=y
+ CONFIG_CRAMFS=y
+ CONFIG_NFS_FS=y
+-CONFIG_NFS_V3=y
+ CONFIG_ROOT_NFS=y
+ CONFIG_NLS_CODEPAGE_437=y
+ CONFIG_NLS_ASCII=y
