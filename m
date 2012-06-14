@@ -1,117 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755187Ab2FNIIt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 04:08:49 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:52246 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753725Ab2FNIIo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 04:08:44 -0400
-X-IronPort-AV: E=Sophos;i="4.77,408,1336320000"; 
-   d="scan'208";a="5186978"
-Message-ID: <4FD99CFA.6060801@cn.fujitsu.com>
-Date: Thu, 14 Jun 2012 16:12:42 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: rob@landley.net, tglx@linutronix.de, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        bhelgaas@google.com, "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 2/2] x86: reimplement mem boot option
-References: <4FD99C88.2010002@cn.fujitsu.com>
-In-Reply-To: <4FD99C88.2010002@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/06/14 16:09:06,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/06/14 16:09:15,
-	Serialize complete at 2012/06/14 16:09:15
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755254Ab2FNIJG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 04:09:06 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:52344 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751632Ab2FNII7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 04:08:59 -0400
+Message-ID: <1339661331.2559.5.camel@twins>
+Subject: Re: [RFC patch 2/5] smpboot: Provide infrastructure for percpu
+ hotplug threads
+From: Peter Zijlstra <peterz@infradead.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>
+Date: Thu, 14 Jun 2012 10:08:51 +0200
+In-Reply-To: <alpine.LFD.2.02.1206132050270.3086@ionos>
+References: <20120613102823.373180763@linutronix.de>
+	 <20120613105815.206105518@linutronix.de>
+	 <20120613183301.GE2427@linux.vnet.ibm.com>
+	 <alpine.LFD.2.02.1206132050270.3086@ionos>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current mem boot option only can work for non efi environment. If the user
-specifies add_efi_memmap, it cannot work for efi environment. In
-the efi environment, we call e820_add_region() to add the memory map. So
-we can modify __e820_add_region() and the mem boot option can work for
-efi environment.
+On Wed, 2012-06-13 at 20:56 +0200, Thomas Gleixner wrote:
+> If it's just a spurious wakeup then it goes back to sleep right away
+> as nothing cleared the park bit. 
 
-Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
----
- arch/x86/kernel/e820.c |   29 +++++++++++++++++++++++++----
- 1 files changed, 25 insertions(+), 4 deletions(-)
+Your spurious wakeup will have destroyed the binding though. So you need
+to be careful.
 
-diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
-index 4185797..20bc467 100644
---- a/arch/x86/kernel/e820.c
-+++ b/arch/x86/kernel/e820.c
-@@ -47,6 +47,7 @@ unsigned long pci_mem_start = 0xaeedbabe;
- #ifdef CONFIG_PCI
- EXPORT_SYMBOL(pci_mem_start);
- #endif
-+static u64 mem_limit = ~0ULL;
- 
- /*
-  * This function checks if any part of the range <start,end> is mapped
-@@ -119,6 +120,20 @@ static void __init __e820_add_region(struct e820map *e820x, u64 start, u64 size,
- 		return;
- 	}
- 
-+	if (start >= mem_limit) {
-+		printk(KERN_ERR "e820: ignoring [mem %#010llx-%#010llx]\n",
-+		       (unsigned long long)start,
-+		       (unsigned long long)(start + size - 1));
-+		return;
-+	}
-+
-+	if (mem_limit - start < size) {
-+		printk(KERN_ERR "e820: ingoring [mem %#010llx-%#010llx]\n",
-+		       (unsigned long long)mem_limit,
-+		       (unsigned long long)(start + size - 1));
-+		size = mem_limit - start;
-+	}
-+
- 	e820x->map[x].addr = start;
- 	e820x->map[x].size = size;
- 	e820x->map[x].type = type;
-@@ -809,7 +824,7 @@ static int userdef __initdata;
- /* "mem=nopentium" disables the 4MB page tables. */
- static int __init parse_memopt(char *p)
- {
--	u64 mem_size;
-+	char *oldp;
- 
- 	if (!p)
- 		return -EINVAL;
-@@ -825,11 +840,11 @@ static int __init parse_memopt(char *p)
- 	}
- 
- 	userdef = 1;
--	mem_size = memparse(p, &p);
-+	oldp = p;
-+	mem_limit = memparse(p, &p);
- 	/* don't remove all of memory when handling "mem={invalid}" param */
--	if (mem_size == 0)
-+	if (mem_limit == 0 || p == oldp)
- 		return -EINVAL;
--	e820_remove_range(mem_size, ULLONG_MAX - mem_size, E820_RAM, 1);
- 
- 	return 0;
- }
-@@ -881,6 +896,12 @@ early_param("memmap", parse_memmap_opt);
- 
- void __init finish_e820_parsing(void)
- {
-+	if (mem_limit != ~0ULL) {
-+		userdef = 1;
-+		e820_remove_range(mem_limit, ULLONG_MAX - mem_limit,
-+				  E820_RAM, 1);
-+	}
-+
- 	if (userdef) {
- 		u32 nr = e820.nr_map;
- 
--- 
-1.7.1
 
