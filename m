@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932087Ab2FNX7E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 19:59:04 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45611 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756667Ab2FNX65 (ORCPT
+	id S1756674Ab2FNX66 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 19:58:58 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56620 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753663Ab2FNX6y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 19:58:57 -0400
-Message-Id: <20120614235624.171581123@linuxfoundation.org>
+	Thu, 14 Jun 2012 19:58:54 -0400
+Message-Id: <20120614235624.085907695@linuxfoundation.org>
 User-Agent: quilt/0.60-20.1
-Date: Thu, 14 Jun 2012 16:56:26 -0700
+Date: Thu, 14 Jun 2012 16:56:25 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Eugeni Dodonov <eugeni.dodonov@intel.com>,
+        alan@lxorguk.ukuu.org.uk, Chris Wilson <chris@chris-wilson.co.uk>,
         Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 03/42] char/agp: add another Ironlake host bridge
+Subject: [ 02/42] drm/i915: Reset last_retired_head when resetting ring
 In-Reply-To: <20120614235636.GA5275@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,42 +25,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eugeni Dodonov <eugeni.dodonov@intel.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 67384fe3fd450536342330f684ea1f7dcaef8130 upstream.
+commit c3b20037926e607b6cdaecbf9d3103e2ca63bc31 upstream.
 
-This seems to come on Gigabyte H55M-S2V and was discovered through the
-https://bugs.freedesktop.org/show_bug.cgi?id=50381 debugging.
+When we reset the ring control registers, including the HEAD and TAIL of
+the ring, we also need to reset associated state. In this instance, we
+were failing to reset the cached value of ring->last_retired_head and so
+upon the first request for more space following a resume would
+potentially (depending on a narrow race window) believe that the HEAD had
+advanced much further than reality.
 
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=50381
-Signed-off-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
+This is a regression from:
+
+commit a71d8d94525e8fd855c0466fb586ae1cb008f3a2
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Wed Feb 15 11:25:36 2012 +0000
+
+    drm/i915: Record the tail at each request and use it to estimate the head
+
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/char/agp/intel-agp.c |    1 +
- drivers/char/agp/intel-agp.h |    1 +
- 2 files changed, 2 insertions(+)
+ drivers/gpu/drm/i915/intel_ringbuffer.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/char/agp/intel-agp.c
-+++ b/drivers/char/agp/intel-agp.c
-@@ -898,6 +898,7 @@ static struct pci_device_id agp_intel_pc
- 	ID(PCI_DEVICE_ID_INTEL_B43_HB),
- 	ID(PCI_DEVICE_ID_INTEL_B43_1_HB),
- 	ID(PCI_DEVICE_ID_INTEL_IRONLAKE_D_HB),
-+	ID(PCI_DEVICE_ID_INTEL_IRONLAKE_D2_HB),
- 	ID(PCI_DEVICE_ID_INTEL_IRONLAKE_M_HB),
- 	ID(PCI_DEVICE_ID_INTEL_IRONLAKE_MA_HB),
- 	ID(PCI_DEVICE_ID_INTEL_IRONLAKE_MC2_HB),
---- a/drivers/char/agp/intel-agp.h
-+++ b/drivers/char/agp/intel-agp.h
-@@ -211,6 +211,7 @@
- #define PCI_DEVICE_ID_INTEL_G41_HB          0x2E30
- #define PCI_DEVICE_ID_INTEL_G41_IG          0x2E32
- #define PCI_DEVICE_ID_INTEL_IRONLAKE_D_HB	    0x0040
-+#define PCI_DEVICE_ID_INTEL_IRONLAKE_D2_HB	    0x0069
- #define PCI_DEVICE_ID_INTEL_IRONLAKE_D_IG	    0x0042
- #define PCI_DEVICE_ID_INTEL_IRONLAKE_M_HB	    0x0044
- #define PCI_DEVICE_ID_INTEL_IRONLAKE_MA_HB	    0x0062
+--- a/drivers/gpu/drm/i915/intel_ringbuffer.c
++++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
+@@ -309,6 +309,7 @@ static int init_ring_common(struct intel
+ 		ring->head = I915_READ_HEAD(ring);
+ 		ring->tail = I915_READ_TAIL(ring) & TAIL_ADDR;
+ 		ring->space = ring_space(ring);
++		ring->last_retired_head = -1;
+ 	}
+ 
+ 	return 0;
 
 
