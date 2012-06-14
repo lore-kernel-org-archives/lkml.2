@@ -1,77 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755668Ab2FNLQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 07:16:56 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:54076 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755261Ab2FNLQz (ORCPT
+	id S1755687Ab2FNLSH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 07:18:07 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56111 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755418Ab2FNLSF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 07:16:55 -0400
-Date: Thu, 14 Jun 2012 13:16:38 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@ti.com>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "Luck,Tony" <tony.luck@intel.com>
-Subject: Re: [RFC GIT PULL] nohz: Basic cputime accounting for adaptive
- tickless
-Message-ID: <20120614111638.GA16676@gmail.com>
-References: <1339604397-8758-1-git-send-email-fweisbec@gmail.com>
- <1339664829.2559.14.camel@twins>
- <20120614111241.GA16848@somewhere>
+	Thu, 14 Jun 2012 07:18:05 -0400
+Date: Thu, 14 Jun 2012 12:17:46 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Felipe Balbi <balbi@ti.com>
+Cc: ben-linux@fluff.org, Tony Lindgren <tony@atomide.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        w.sang@pengutronix.de, linux-i2c@vger.kernel.org,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 06/17] i2c: omap: improve 1p153 errata handling
+Message-ID: <20120614111746.GB31187@n2100.arm.linux.org.uk>
+References: <1339669250-9183-1-git-send-email-balbi@ti.com> <1339669250-9183-7-git-send-email-balbi@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120614111241.GA16848@somewhere>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1339669250-9183-7-git-send-email-balbi@ti.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jun 14, 2012 at 01:20:39PM +0300, Felipe Balbi wrote:
+> -static int errata_omap3_1p153(struct omap_i2c_dev *dev, u16 *stat, int *err)
+> +static int errata_omap3_1p153(struct omap_i2c_dev *dev)
+>  {
+> -	unsigned long timeout = 10000;
+> +	unsigned long	timeout = 10000;
+> +	u16		stat;
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+Eww, no, not more of this "lets add tabs to align auto variable
+declarations".  This is detrimental when you add another variable whose
+type is longer than the current indentation - you have to reformat the
+entire block.
 
-> On Thu, Jun 14, 2012 at 11:07:09AM +0200, Peter Zijlstra wrote:
-> > On Wed, 2012-06-13 at 18:19 +0200, Frederic Weisbecker wrote:
-> > > Ingo, Thomas,
-> > > 
-> > > This starts the basic code that allow accounting of cputime spent tickless
-> > > outside idle, which is a first step to prepare for the adaptive nohz
-> > > infrastructure.
-> > > 
-> > > I hope we can set a tree in -tip for that. If you're fine with it
-> > > this is pullable from:
-> > 
-> > There's a number of architecture that already does fine grained
-> > user/kernel time accounting on syscall boundaries etc.. s390, powerpc
-> > and ia64.
-> > 
-> > You're now adding a 3rd way of accounting user/kernel time.. I'm not
-> > much looking fwd to that..
-> 
-> You're right, I should have looked into CONFIG_VIRT_CPU_ACCOUNTING sooner
-> and see if I can reuse it.
-> 
-> I'll try something with that.
-
-Maybe sanitize all the variants under a single set of 
-wrappers/callbacks?
-
-Thanks,
-
-	Ingo
+It's really not worth it.  Stick to just using one space, like the rest
+of the kernel code.  Like the code which Linus writes.  And thereby help
+to avoid future "pointless churn" whinges.
