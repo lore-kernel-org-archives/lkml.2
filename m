@@ -1,94 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755165Ab2FNID3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 04:03:29 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:60324 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754810Ab2FNIDE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 04:03:04 -0400
+	id S1755210Ab2FNIDu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 04:03:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26531 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754392Ab2FNIDm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 04:03:42 -0400
+Date: Thu, 14 Jun 2012 11:04:05 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: x86@kernel.org, kvm@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Avi Kivity <avi@redhat.com>,
+        gleb@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCHv6 6/8] kvm: only sync when attention bits set
+Message-ID: <20120614080404.GB26869@redhat.com>
+References: <cover.1338474301.git.mst@redhat.com>
+ <56ee14064ef307b7075f6977122781456cab5165.1338474301.git.mst@redhat.com>
+ <20120612222748.GB1973@amt.cnet>
+ <20120613081923.GA16162@redhat.com>
+ <20120613083506.GA17190@redhat.com>
+ <20120613205336.GB19290@amt.cnet>
+ <20120613210423.GA24932@redhat.com>
+ <20120613233846.GA23955@amt.cnet>
 MIME-Version: 1.0
-Date: Thu, 14 Jun 2012 12:03:02 +0400
-X-Google-Sender-Auth: V_rPIhcJl7goAZu9eJBakAsXvvc
-Message-ID: <CANaxB-xyBw+O9h7OrFRNM93+Gp+GX63C-OgOZ2ZK2QbKMDBJ7g@mail.gmail.com>
-Subject: general protection fault on finalizing task
-From: Andrey Vagin <avagin@openvz.org>
-To: LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pavel Emelyanov <xemul@openvz.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120613233846.GA23955@amt.cnet>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, Jun 13, 2012 at 08:38:46PM -0300, Marcelo Tosatti wrote:
+> On Thu, Jun 14, 2012 at 12:04:23AM +0300, Michael S. Tsirkin wrote:
+> > On Wed, Jun 13, 2012 at 05:53:36PM -0300, Marcelo Tosatti wrote:
+> > > On Wed, Jun 13, 2012 at 11:35:07AM +0300, Michael S. Tsirkin wrote:
+> > > > On Wed, Jun 13, 2012 at 11:19:24AM +0300, Michael S. Tsirkin wrote:
+> > > > > On Tue, Jun 12, 2012 at 07:27:48PM -0300, Marcelo Tosatti wrote:
+> > > > > > On Sun, Jun 03, 2012 at 10:28:29AM +0300, Michael S. Tsirkin wrote:
+> > > > > > > Commit eb0dc6d0368072236dcd086d7fdc17fd3c4574d4 introduced apic
+> > > > > > > attention bitmask but kvm still syncs lapic unconditionally.
+> > > > > > > As that commit suggested and in anticipation of adding more attention
+> > > > > > > bits, only sync lapic if(apic_attention).
+> > > > > > > 
+> > > > > > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > > > > > > ---
+> > > > > > >  arch/x86/kvm/x86.c |    3 ++-
+> > > > > > >  1 files changed, 2 insertions(+), 1 deletions(-)
+> > > > > > > 
+> > > > > > > diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> > > > > > > index be6d549..2f70861 100644
+> > > > > > > --- a/arch/x86/kvm/x86.c
+> > > > > > > +++ b/arch/x86/kvm/x86.c
+> > > > > > > @@ -5388,7 +5388,8 @@ static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
+> > > > > > >  	if (unlikely(vcpu->arch.tsc_always_catchup))
+> > > > > > >  		kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
+> > > > > > >  
+> > > > > > > -	kvm_lapic_sync_from_vapic(vcpu);
+> > > > > > > +	if (unlikely(vcpu->arch.apic_attention))
+> > > > > > > +		kvm_lapic_sync_from_vapic(vcpu);
+> > > > > > 
+> > > > > > void kvm_lapic_sync_from_vapic(struct kvm_vcpu *vcpu)
+> > > > > > {
+> > > > > >         u32 data;
+> > > > > >         void *vapic;
+> > > > > > 
+> > > > > >         if (!test_bit(KVM_APIC_CHECK_VAPIC, &vcpu->arch.apic_attention))
+> > > > > >                 return;
+> > > > > > 
+> > > > > > Please use unlikely more carefully, when a gain is measureable:
+> > > > > > http://lwn.net/Articles/420019/
+> > > > > 
+> > > > > Do we have to measure every single thing?
+> > > > > Sometimes it's obvious: vapic is slow path, isn't it?
+> > > > 
+> > > > Just to clarify the question: I think it's obvious this condition is
+> > > > false more often than true. By how much, depends on the workload.
+> > > > Do you think this is enough to tag this unlikely?
+> > > 
+> > > Depends whether your processor supports flexpriority or not. I don't
+> > > want to argue in favour/against the particular instance
+> > > 
+> > > GCC docs:
+> > > 
+> > > "
+> > > — Built-in Function: long __builtin_expect (long exp, long c)
+> > > 
+> > >     You may use __builtin_expect to provide the compiler with branch
+> > > prediction information. In general, you should prefer to use actual
+> > > profile feedback for this (-fprofile-arcs), as programmers are
+> > > notoriously bad at predicting how their programs actually perform.
+> > > However, there are applications in which this data is hard to collect.
+> > > "
+> > > 
+> > > Lately half of branches in your patches are annotated.
+> > 
+> > So if I instrument and show that branch is almost never taken that is enough?
+> > This citation does not require measuring the perf impact.
+> 
+> Without flexpriority its always taken.
 
-I'm developing CRIU (criu.org) and got this GP. I have seen it a few
-time with the same stack trace.
-It's not reproduced on 3.4.0-rc4+.
+OK I will remove this one and keep around the unlikely
+for the cases that my measurements show occur in
+less than 1% of cases.
 
-general protection fault: 0000 [#1] SMP
-CPU 0
-Modules linked in: udp_diag bridge stp llc ipv6 ext4 jbd2 dm_mirror
-dm_region_hash dm_log dm_mod pcspkr virtio_balloon 8139too 8139cp mii
-i2c_piix4 i2c_core ext3 jbd mbcache virtio_blk virtio_pci virtio_ring
-virtio pata_acpi ata_generic ata_piix floppy [last unloaded:
-scsi_wait_scan]
-
-Pid: 1647, comm: crtools Not tainted 3.5.0-rc2+ #203 Red Hat KVM
-RIP: 0010:[<ffffffff811b453a>]  [<ffffffff811b453a>] d_hash_and_lookup+0x2a/0x70
-RSP: 0018:ffff88001651bd28  EFLAGS: 00010246
-RAX: 0000000000003531 RBX: ffff88001651bd68 RCX: 0000000000000010
-RDX: 0000000000000000 RSI: 0000000000000002 RDI: 0000000000003531
-RBP: ffff88001651bd38 R08: 000000000000fffa R09: 0000000000000002
-R10: 0000000000000000 R11: 000000000000fffd R12: 6b6b6b6b6b6b6b6b
-R13: ffff88001a3b3db0 R14: ffff88001651bd68 R15: 000000000000000f
-FS:  00007ff80c4a2700(0000) GS:ffff88001f800000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 00007ff80c4ac000 CR3: 0000000001a0b000 CR4: 00000000000006f0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process crtools (pid: 1647, threadinfo ffff88001651a000, task ffff880017154c40)
-Stack:
- ffff88001651bd78 0000000000000001 ffff88001651bdc8 ffffffff812050c0
- ffff8800185b44b0 ffff88001721e4a0 ffff88001721e4a0 0000000f81057b6c
- 0000000200003531 ffff88001651bd78 ffff880032003531 0000000000000246
-Call Trace:
- [<ffffffff812050c0>] proc_flush_task+0xa0/0x1e0
- [<ffffffff81057c0e>] release_task+0xce/0x690
- [<ffffffff81057b6c>] ? release_task+0x2c/0x690
- [<ffffffff810622c2>] exit_ptrace+0x102/0x140
- [<ffffffff81059c64>] do_exit+0x214/0xa70
- [<ffffffff81553cbb>] ? _raw_read_unlock+0x2b/0x50
- [<ffffffff8105a51b>] do_group_exit+0x5b/0xd0
- [<ffffffff8105a5a7>] sys_exit_group+0x17/0x20
- [<ffffffff8155cee9>] system_call_fastpath+0x16/0x1b
-Code: 00 55 48 89 e5 48 83 ec 10 48 89 1c 24 4c 89 64 24 08 66 66 66
-66 90 48 89 f3 49 89 fc 8b 76 04 48 8b 7b 08 e8 58 0c ff ff 89 03 <41>
-f6 04 24 01 75 1f 48 89 de 4c 89 e7 e8 64 ff ff ff 48 8b 1c
-RIP  [<ffffffff811b453a>] d_hash_and_lookup+0x2a/0x70
- RSP <ffff88001651bd28>
----[ end trace 250bb1fa95f4b805 ]---
-Fixing recursive fault but reboot is needed!
-
-Steps to reproduce:
-* # git clone git://github.com/avagin/crtools.git -b gp-3.5
-* # cd crtools
-* # make && make -C test
-* # while :; do bash test/zdtm.sh pidns/static/session00 || break; done
-* Wait a few seconds
-
-session00 is a test case for checking, that session ids restored correctly.
-it create about 10 processes in a separate pidns, some of them wait
-children, other ones
-wait on read from pipe. crtools freezes and dumps state of this
-processes and kill processes.
-
-The bug is reproduced, when crtools try to kill tasks (in this moment
-crtools attached to this tasks by ptrace).
-The meta code looks like:
-for_each_task(pid) {
-  kill(pid, SIGKILL);
-  ptrace(PTRACE_DETACH, pid, NULL, NULL);
-}
