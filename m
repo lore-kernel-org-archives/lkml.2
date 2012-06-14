@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755885Ab2FNMiZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 08:38:25 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:57689 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753345Ab2FNMiY (ORCPT
+	id S1755724Ab2FNMjq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 08:39:46 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:57498 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753881Ab2FNMjp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 08:38:24 -0400
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH] smia: Fix compile failures
-To: sakari.ailus@maxwell.research.nokia.com, linux-kernel@vger.kernel.org
-Date: Thu, 14 Jun 2012 13:54:07 +0100
-Message-ID: <20120614125347.18351.78744.stgit@bob.linux.org.uk>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	Thu, 14 Jun 2012 08:39:45 -0400
+From: =?UTF-8?B?G1tB?= <liwp.linux@gmail.com>
+To: linux-mm@kvack.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+        linux-kernel@vger.kernel.org, trivial@kernel.org,
+        Gavin Shan <shangw@linux.vnet.ibm.com>,
+        Wanpeng Li <liwp.linux@gmail.com>
+Subject: [PATCH] mm: fix page reclaim comment error
+Date: Thu, 14 Jun 2012 20:38:59 +0800
+Message-Id: <4fd9db8d.c4e2440a.6bf6.4a46@mx.google.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Cox <alan@linux.intel.com>
+From: Wanpeng Li <liwp.linux@gmail.com>
 
-Fix compile of smia code.
+From: Wanpeng Li <liwp@linux.vnet.ibm.com>
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Resolves-bug: https://bugzilla.kernel.org/show_bug.cgi?id=43337
+Since there are five lists in LRU cache, the array nr in get_scan_count
+should be:
+
+nr[0] = anon inactive pages to scan; nr[1] = anon active pages to scan
+nr[2] = file inactive pages to scan; nr[3] = file active pages to scan
+
+Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
 ---
+ mm/vmscan.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
- drivers/media/video/smiapp/Kconfig       |    2 +-
- drivers/media/video/smiapp/smiapp-core.c |    1 +
- 2 files changed, 2 insertions(+), 1 deletions(-)
-
-
-diff --git a/drivers/media/video/smiapp/Kconfig b/drivers/media/video/smiapp/Kconfig
-index f7b35ff..fb99ff1 100644
---- a/drivers/media/video/smiapp/Kconfig
-+++ b/drivers/media/video/smiapp/Kconfig
-@@ -1,6 +1,6 @@
- config VIDEO_SMIAPP
- 	tristate "SMIA++/SMIA sensor support"
--	depends on I2C && VIDEO_V4L2 && VIDEO_V4L2_SUBDEV_API
-+	depends on I2C && VIDEO_V4L2 && VIDEO_V4L2_SUBDEV_API && HAVE_CLK
- 	select VIDEO_SMIAPP_PLL
- 	---help---
- 	  This is a generic driver for SMIA++/SMIA camera modules.
-diff --git a/drivers/media/video/smiapp/smiapp-core.c b/drivers/media/video/smiapp/smiapp-core.c
-index f518026..e8c93c8 100644
---- a/drivers/media/video/smiapp/smiapp-core.c
-+++ b/drivers/media/video/smiapp/smiapp-core.c
-@@ -32,6 +32,7 @@
- #include <linux/gpio.h>
- #include <linux/module.h>
- #include <linux/regulator/consumer.h>
-+#include <linux/slab.h>
- #include <linux/v4l2-mediabus.h>
- #include <media/v4l2-device.h>
- 
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index eeb3bc9..ed823df 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1567,7 +1567,8 @@ static int vmscan_swappiness(struct scan_control *sc)
+  * by looking at the fraction of the pages scanned we did rotate back
+  * onto the active list instead of evict.
+  *
+- * nr[0] = anon pages to scan; nr[1] = file pages to scan
++ * nr[0] = anon inactive pages to scan; nr[1] = anon active pages to scan
++ * nr[2] = file inactive pages to scan; nr[3] = file active pages to scan
+  */
+ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
+ 			   unsigned long *nr)
+-- 
+1.7.9.5
 
