@@ -1,80 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756512Ab2FNSCD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 14:02:03 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:48900 "EHLO mail.skyhub.de"
+	id S1756340Ab2FNSFh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 14:05:37 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:12125 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755962Ab2FNSCB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 14:02:01 -0400
-Date: Thu, 14 Jun 2012 20:02:02 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org, eranian@google.com,
-        peterz@infradead.org, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 4/4] x86: Detect model/family mismatches for common
- microcode revision
-Message-ID: <20120614180202.GD13629@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
-	linux-kernel@vger.kernel.org, eranian@google.com,
-	peterz@infradead.org, Andi Kleen <ak@linux.intel.com>
-References: <1339618842-26636-1-git-send-email-andi@firstfloor.org>
- <1339618842-26636-5-git-send-email-andi@firstfloor.org>
+	id S1753083Ab2FNSFg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 14:05:36 -0400
+X-IronPort-AV: E=Sophos;i="4.75,770,1330923600"; 
+   d="scan'208";a="28120282"
+Message-ID: <4FDA27ED.1080404@citrix.com>
+Date: Thu, 14 Jun 2012 19:05:33 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120428 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1339618842-26636-5-git-send-email-andi@firstfloor.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] x86/xen: avoid updating TLS descriptors if they haven't
+ changed
+References: <1339088494-23528-1-git-send-email-david.vrabel@citrix.com> <4FD9FAA3.6090303@citrix.com> <20120614164926.GC333@phenom.dumpdata.com>
+In-Reply-To: <20120614164926.GC333@phenom.dumpdata.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 13, 2012 at 01:20:42PM -0700, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
+On 14/06/12 17:49, Konrad Rzeszutek Wilk wrote:
+> On Thu, Jun 14, 2012 at 03:52:19PM +0100, David Vrabel wrote:
+>> On 07/06/12 18:01, David Vrabel wrote:
+>>> From: David Vrabel <david.vrabel@citrix.com>
+>>>
+>>> When switching tasks in a Xen PV guest, avoid updating the TLS
+>>> descriptors if they haven't changed.  This improves the speed of
+>>> context switches by almost 10% as much of the time the descriptors are
+>>> the same or only one is different.
+>>>
+>>> The descriptors written into the GDT by Xen are modified from the
+>>> values passed in the update_descriptor hypercall so we keep shadow
+>>> copies of the three TLS descriptors to compare against.
+>>>
+>>> lmbench3 test     Before  After  Improvement
+>>> --------------------------------------------
+>>> lat_ctx -s 32 24   7.19    6.52  9%
+>>> lat_pipe          12.56   11.66  7%
+>>>
+>>> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+>>> ---
+>>> I note that the comment in asm/desc_defs.h says the 'a' and 'b' fields
+>>> in desc_struct as deprecated but there seems to be no suitable
+>>> alternatives.
+>>
+>> ping?  Any opinion on this patch from the x86 side?  If it's okay can we
+>> get an ack so Konrad can take the patch via his tree.
 > 
-> When the model/family don't match force the common microcode to zero.
-> On such configurations there is no sane way to check for microcode
-> revisions, so don't even try.
-> 
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  arch/x86/kernel/cpu/common.c |   26 ++++++++++++++++++++------
->  1 files changed, 20 insertions(+), 6 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-> index cfc50e0..9642929 100644
-> --- a/arch/x86/kernel/cpu/common.c
-> +++ b/arch/x86/kernel/cpu/common.c
-> @@ -1183,12 +1183,26 @@ __cpuinit void boot_update_min_microcode(struct cpuinfo_x86 *c)
->  	if (!boot_min_microcode) {
->  		boot_min_microcode = c->microcode;
->  		boot_cpu_data.microcode = c->microcode;
-> -	} else if (c->microcode < boot_min_microcode) {
-> -		pr_warn("CPU %d has lower microcode revision %x at boot than boot CPU (%x)\n",
-> -			smp_processor_id(), 
-> -			c->microcode,
-> -			boot_min_microcode);
-> -		boot_cpu_data.microcode = c->microcode;
-> +	} else {
-> +		if (c->microcode < boot_min_microcode) {
-> +			pr_warn("CPU %d has lower microcode revision %x at boot than boot CPU (%x)\n",
-> +				smp_processor_id(), 
-> +				c->microcode,
-> +				boot_min_microcode);
-> +			boot_cpu_data.microcode = c->microcode;
-> +		}
-> +		/* Assume steppings have common microcode version numbers */
-> +		if (c->x86 != boot_cpu_data.x86 || 
+> It breaks my all my bootup tests - so NACK until at least that is fixed.
+> I think I sent you the whole serial log - is there something else that would help
+> narrow it down?
 
+You're mixing up this patch with "xen/mm: do direct hypercall in
+xen_set_pte() if batching is unavailable" which is broken on 64-bit and
+I am looking into it.
 
-Apply? [y]es/[n]o/[e]dit/[v]iew patch/[a]ccept all y
-Applying: x86: Detect model/family mismatches for common microcode revision
-/home/boris/kernel/.git/rebase-apply/patch:22: trailing whitespace.
-                                smp_processor_id(), 
-/home/boris/kernel/.git/rebase-apply/patch:28: trailing whitespace.
-                if (c->x86 != boot_cpu_data.x86 || 
-warning: 2 lines add whitespace errors.
-
--- 
-Regards/Gruss,
-Boris.
+David
