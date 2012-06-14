@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755761Ab2FNX6M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 19:58:12 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45919 "EHLO
+	id S1756302Ab2FNX6X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 19:58:23 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56620 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755560Ab2FNX6G (ORCPT
+	with ESMTP id S1755640Ab2FNX6S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 19:58:06 -0400
-Message-Id: <20120614235644.921166164@linuxfoundation.org>
+	Thu, 14 Jun 2012 19:58:18 -0400
+Message-Id: <20120614235645.255779542@linuxfoundation.org>
 User-Agent: quilt/0.60-20.1
-Date: Thu, 14 Jun 2012 16:56:51 -0700
+Date: Thu, 14 Jun 2012 16:56:55 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Autif Khan <autif.mlist@gmail.com>,
-        Tom Cassidy <tomas.cassidy@gmail.com>,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 07/20] net: sierra_net: device IDs for Aircard 320U++
+        alan@lxorguk.ukuu.org.uk, Andre Przywara <andre.przywara@amd.com>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Guenter Roeck <guenter.roeck@ericsson.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        Tim Gardner <tim.gardner@canonical.com>
+Subject: [ 11/20] hwmon: (fam15h_power) Increase output resolution
 In-Reply-To: <20120614235648.GA6552@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,65 +28,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Andre Przywara <andre.przywara@amd.com>
 
-commit dd03cff23d694cfb0fdae80cb618e7ced05ea696 upstream.
+commit 941a956b0e387b21f385f486c34ef67576775cfc upstream.
 
-Adding device IDs for Aircard 320U and two other devices
-found in the out-of-tree version of this driver.
+On high CPU load the accumulating values in the running_avg_cap
+register are very low (below 10), so averaging them too early leads
+to unnecessary poor output resolution. Since we pretend to output
+micro-Watt we better keep all the bits we have as long as possible.
 
-Cc: linux@sierrawireless.com
-Cc: Autif Khan <autif.mlist@gmail.com>
-Cc: Tom Cassidy <tomas.cassidy@gmail.com>
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Andre Przywara <andre.przywara@amd.com>
+Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/usb/sierra_net.c |   14 ++++++++++----
- 1 file changed, 10 insertions(+), 4 deletions(-)
+ drivers/hwmon/fam15h_power.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/net/usb/sierra_net.c
-+++ b/drivers/net/usb/sierra_net.c
-@@ -943,7 +943,7 @@ struct sk_buff *sierra_net_tx_fixup(stru
+--- a/drivers/hwmon/fam15h_power.c
++++ b/drivers/hwmon/fam15h_power.c
+@@ -61,14 +61,14 @@ static ssize_t show_power(struct device
+ 				  REG_TDP_RUNNING_AVERAGE, &val);
+ 	running_avg_capture = (val >> 4) & 0x3fffff;
+ 	running_avg_capture = sign_extend32(running_avg_capture, 21);
+-	running_avg_range = val & 0xf;
++	running_avg_range = (val & 0xf) + 1;
+ 
+ 	pci_bus_read_config_dword(f4->bus, PCI_DEVFN(PCI_SLOT(f4->devfn), 5),
+ 				  REG_TDP_LIMIT3, &val);
+ 
+ 	tdp_limit = val >> 16;
+-	curr_pwr_watts = tdp_limit + data->base_tdp -
+-		(s32)(running_avg_capture >> (running_avg_range + 1));
++	curr_pwr_watts = (tdp_limit + data->base_tdp) << running_avg_range;
++	curr_pwr_watts -= running_avg_capture;
+ 	curr_pwr_watts *= data->tdp_to_watts;
+ 
+ 	/*
+@@ -78,7 +78,7 @@ static ssize_t show_power(struct device
+ 	 * scaling factor 1/(2^16).  For conversion we use
+ 	 * (10^6)/(2^16) = 15625/(2^10)
+ 	 */
+-	curr_pwr_watts = (curr_pwr_watts * 15625) >> 10;
++	curr_pwr_watts = (curr_pwr_watts * 15625) >> (10 + running_avg_range);
+ 	return sprintf(buf, "%u\n", (unsigned int) curr_pwr_watts);
  }
- 
- static const u8 sierra_net_ifnum_list[] = { 7, 10, 11 };
--static const struct sierra_net_info_data sierra_net_info_data_68A3 = {
-+static const struct sierra_net_info_data sierra_net_info_data_direct_ip = {
- 	.rx_urb_size = 8 * 1024,
- 	.whitelist = {
- 		.infolen = ARRAY_SIZE(sierra_net_ifnum_list),
-@@ -951,7 +951,7 @@ static const struct sierra_net_info_data
- 	}
- };
- 
--static const struct driver_info sierra_net_info_68A3 = {
-+static const struct driver_info sierra_net_info_direct_ip = {
- 	.description = "Sierra Wireless USB-to-WWAN Modem",
- 	.flags = FLAG_WWAN | FLAG_SEND_ZLP,
- 	.bind = sierra_net_bind,
-@@ -959,12 +959,18 @@ static const struct driver_info sierra_n
- 	.status = sierra_net_status,
- 	.rx_fixup = sierra_net_rx_fixup,
- 	.tx_fixup = sierra_net_tx_fixup,
--	.data = (unsigned long)&sierra_net_info_data_68A3,
-+	.data = (unsigned long)&sierra_net_info_data_direct_ip,
- };
- 
- static const struct usb_device_id products[] = {
- 	{USB_DEVICE(0x1199, 0x68A3), /* Sierra Wireless USB-to-WWAN modem */
--	.driver_info = (unsigned long) &sierra_net_info_68A3},
-+	.driver_info = (unsigned long) &sierra_net_info_direct_ip},
-+	{USB_DEVICE(0x0F3D, 0x68A3), /* AT&T Direct IP modem */
-+	.driver_info = (unsigned long) &sierra_net_info_direct_ip},
-+	{USB_DEVICE(0x1199, 0x68AA), /* Sierra Wireless Direct IP LTE modem */
-+	.driver_info = (unsigned long) &sierra_net_info_direct_ip},
-+	{USB_DEVICE(0x0F3D, 0x68AA), /* AT&T Direct IP LTE modem */
-+	.driver_info = (unsigned long) &sierra_net_info_direct_ip},
- 
- 	{}, /* last item */
- };
+ static DEVICE_ATTR(power1_input, S_IRUGO, show_power, NULL);
 
 
