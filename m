@@ -1,242 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755230Ab2FNBtK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 21:49:10 -0400
-Received: from mga11.intel.com ([192.55.52.93]:6118 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754968Ab2FNBtI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 21:49:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="165400150"
-Date: Thu, 14 Jun 2012 09:49:02 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Dave Chinner <dchinner@redhat.com>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>, xfs@oss.sgi.com
-Subject: [PATCH] mm: add gfp_mask parameter to vm_map_ram()
-Message-ID: <20120614014902.GB7289@localhost>
-References: <20120612012134.GA7706@localhost>
- <20120613123932.GA1445@localhost>
- <20120614012026.GL3019@devil.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120614012026.GL3019@devil.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755269Ab2FNBtX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 21:49:23 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45151 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755026Ab2FNBtT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Jun 2012 21:49:19 -0400
+From: Woody Hung <Woody.Hung@mediatek.com>
+To: dwmw2@infradead.org
+Cc: linux-kernel@vger.kernel.org, gwingerde@gmail.com, xose.vazquez@gmail.com,
+        linux-wireless@vger.kernel.org, users@rt2x00.serialmonkey.com,
+        Woody Hung <Woody.Hung@mediatek.com>
+Subject: [PATCH] rt2800pci:Firmware update
+Date: Thu, 14 Jun 2012 09:48:43 +0800
+Message-Id: <1339638523-17971-1-git-send-email-Woody.Hung@mediatek.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 14, 2012 at 11:20:26AM +1000, Dave Chinner wrote:
-> On Wed, Jun 13, 2012 at 08:39:32PM +0800, Fengguang Wu wrote:
-> > Hi Christoph, Dave,
-> > 
-> > I got this lockdep warning on XFS when running the xfs tests:
-> > 
-> > [  704.832019] =================================
-> > [  704.832019] [ INFO: inconsistent lock state ]
-> > [  704.832019] 3.5.0-rc1+ #8 Tainted: G        W   
-> > [  704.832019] ---------------------------------
-> > [  704.832019] inconsistent {IN-RECLAIM_FS-W} -> {RECLAIM_FS-ON-W} usage.
-> > [  704.832019] fsstress/11619 [HC0[0]:SC0[0]:HE1:SE1] takes:
-> > [  704.832019]  (&(&ip->i_lock)->mr_lock){++++?.}, at: [<ffffffff8143953d>] xfs_ilock_nowait+0xd7/0x1d0
-> > [  704.832019] {IN-RECLAIM_FS-W} state was registered at:
-> > [  704.832019]   [<ffffffff810e30a2>] mark_irqflags+0x12d/0x13e
-> > [  704.832019]   [<ffffffff810e32f6>] __lock_acquire+0x243/0x3f9
-> > [  704.832019]   [<ffffffff810e3a1c>] lock_acquire+0x112/0x13d
-> > [  704.832019]   [<ffffffff810b8931>] down_write_nested+0x54/0x8b
-> > [  704.832019]   [<ffffffff81438fab>] xfs_ilock+0xd8/0x17d
-> > [  704.832019]   [<ffffffff814431b8>] xfs_reclaim_inode+0x4a/0x2cb
-> > [  704.832019]   [<ffffffff814435ee>] xfs_reclaim_inodes_ag+0x1b5/0x28e
-> > [  704.832019]   [<ffffffff814437d7>] xfs_reclaim_inodes_nr+0x33/0x3a
-> > [  704.832019]   [<ffffffff8144050e>] xfs_fs_free_cached_objects+0x15/0x17
-> > [  704.832019]   [<ffffffff81196076>] prune_super+0x103/0x154
-> > [  704.832019]   [<ffffffff81152fa7>] shrink_slab+0x1ec/0x316
-> > [  704.832019]   [<ffffffff8115574f>] balance_pgdat+0x308/0x618
-> > [  704.832019]   [<ffffffff81155c22>] kswapd+0x1c3/0x1dc
-> > [  704.832019]   [<ffffffff810b3f77>] kthread+0xaf/0xb7
-> > [  704.832019]   [<ffffffff82f480b4>] kernel_thread_helper+0x4/0x10
-> 
-> ......
-> > [  704.832019] stack backtrace:
-> > [  704.832019] Pid: 11619, comm: fsstress Tainted: G        W    3.5.0-rc1+ #8
-> > [  704.832019] Call Trace:
-> > [  704.832019]  [<ffffffff82e92243>] print_usage_bug+0x1f5/0x206
-> > [  704.832019]  [<ffffffff810e2220>] ? check_usage_forwards+0xa6/0xa6
-> > [  704.832019]  [<ffffffff82e922c3>] mark_lock_irq+0x6f/0x120
-> > [  704.832019]  [<ffffffff810e2f02>] mark_lock+0xaf/0x122
-> > [  704.832019]  [<ffffffff810e3d4e>] mark_held_locks+0x6d/0x95
-> > [  704.832019]  [<ffffffff810c5cd1>] ? local_clock+0x36/0x4d
-> > [  704.832019]  [<ffffffff810e3de3>] __lockdep_trace_alloc+0x6d/0x6f
-> > [  704.832019]  [<ffffffff810e42e7>] lockdep_trace_alloc+0x3d/0x57
-> > [  704.832019]  [<ffffffff811837c8>] kmem_cache_alloc_node_trace+0x47/0x1b4
-> > [  704.832019]  [<ffffffff810e377d>] ? lock_release_nested+0x9f/0xa6
-> > [  704.832019]  [<ffffffff81431650>] ? _xfs_buf_find+0xaa/0x302
-> > [  704.832019]  [<ffffffff811710a2>] ? new_vmap_block.constprop.18+0x3a/0x1de
-> > [  704.832019]  [<ffffffff811710a2>] new_vmap_block.constprop.18+0x3a/0x1de
-> > [  704.832019]  [<ffffffff8117144a>] vb_alloc.constprop.16+0x204/0x225
-> > [  704.832019]  [<ffffffff8117149d>] vm_map_ram+0x32/0xaa
-> > [  704.832019]  [<ffffffff81430c95>] _xfs_buf_map_pages+0xb3/0xf5
-> > [  704.832019]  [<ffffffff81431a6a>] xfs_buf_get+0xd3/0x1ac
-> > [  704.832019]  [<ffffffff81492dd9>] xfs_trans_get_buf+0x180/0x244
-> > [  704.832019]  [<ffffffff8146947a>] xfs_da_do_buf+0x2a0/0x5cc
-> > [  704.832019]  [<ffffffff81469826>] xfs_da_get_buf+0x21/0x23
-> > [  704.832019]  [<ffffffff8146f894>] xfs_dir2_data_init+0x44/0xf9
-> > [  704.832019]  [<ffffffff8146e94f>] xfs_dir2_sf_to_block+0x1ef/0x5d8
-> 
-> Bug in vm_map_ram - it does an unconditional GFP_KERNEL allocation
-> here, and we are in a GFP_NOFS context. We can't pass a gfp_mask to
-> vm_map_ram(), so until vm_map_ram() grows that we can't fix it...
+Update firmwrae that support the rt3290 chip.
 
-This trivial patch should fix it.
-
-The only behavior change is the XFS part:
-
-@@ -406,7 +406,7 @@ _xfs_buf_map_pages(
- 
-                do {
-                        bp->b_addr = vm_map_ram(bp->b_pages, bp->b_page_count,
--                                               -1, PAGE_KERNEL);
-+                                               -1, GFP_NOFS, PAGE_KERNEL);
-                        if (bp->b_addr)
-                                break;
-                        vm_unmap_aliases();
-
-Does that look fine to you?
-
-Thanks,
-Fengguang
+Signed-off-by: Woody Hung <Woody.Hung@mediatek.com>
 ---
+ rt3290.bin |  Bin 0 -> 4096 bytes
+ 1 files changed, 0 insertions(+), 0 deletions(-)
+ create mode 100644 rt3290.bin
 
->From 7301975d3211da2ce07723c294cf3260229fe84b Mon Sep 17 00:00:00 2001
-From: Fengguang Wu <fengguang.wu@intel.com>
-Date: Thu, 14 Jun 2012 09:38:33 +0800
-Subject: [PATCH] mm: add @gfp_mask parameter to vm_map_ram()
+diff --git a/rt3290.bin b/rt3290.bin
+new file mode 100644
+index 0000000000000000000000000000000000000000..6ca33a59950e80ba27d29ab8df7acd7c12915ac8
+GIT binary patch
+literal 4096
+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
+T@+=C4#oC|e|Lm_d_S63W=k%O=
 
-XFS needs GFP_NOFS allocation.
+literal 0
+HcmV?d00001
 
-Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
----
- drivers/firewire/ohci.c                 |    2 +-
- drivers/media/video/videobuf2-dma-sg.c  |    1 +
- drivers/media/video/videobuf2-vmalloc.c |    2 +-
- fs/xfs/xfs_buf.c                        |    2 +-
- include/linux/vmalloc.h                 |    2 +-
- mm/nommu.c                              |    3 ++-
- mm/vmalloc.c                            |    7 ++++---
- 7 files changed, 11 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/firewire/ohci.c b/drivers/firewire/ohci.c
-index c1af05e..b53f5a9 100644
---- a/drivers/firewire/ohci.c
-+++ b/drivers/firewire/ohci.c
-@@ -1000,7 +1000,7 @@ static int ar_context_init(struct ar_context *ctx, struct fw_ohci *ohci,
- 	for (i = 0; i < AR_WRAPAROUND_PAGES; i++)
- 		pages[AR_BUFFERS + i] = ctx->pages[i];
- 	ctx->buffer = vm_map_ram(pages, AR_BUFFERS + AR_WRAPAROUND_PAGES,
--				 -1, PAGE_KERNEL);
-+				 -1, GFP_KERNEL, PAGE_KERNEL);
- 	if (!ctx->buffer)
- 		goto out_of_memory;
- 
-diff --git a/drivers/media/video/videobuf2-dma-sg.c b/drivers/media/video/videobuf2-dma-sg.c
-index 25c3b36..d087f52 100644
---- a/drivers/media/video/videobuf2-dma-sg.c
-+++ b/drivers/media/video/videobuf2-dma-sg.c
-@@ -209,6 +209,7 @@ static void *vb2_dma_sg_vaddr(void *buf_priv)
- 		buf->vaddr = vm_map_ram(buf->pages,
- 					buf->sg_desc.num_pages,
- 					-1,
-+					GFP_KERNEL,
- 					PAGE_KERNEL);
- 
- 	/* add offset in case userptr is not page-aligned */
-diff --git a/drivers/media/video/videobuf2-vmalloc.c b/drivers/media/video/videobuf2-vmalloc.c
-index 6b5ca6c..548ebda 100644
---- a/drivers/media/video/videobuf2-vmalloc.c
-+++ b/drivers/media/video/videobuf2-vmalloc.c
-@@ -111,7 +111,7 @@ static void *vb2_vmalloc_get_userptr(void *alloc_ctx, unsigned long vaddr,
- 			goto fail_get_user_pages;
- 
- 		buf->vaddr = vm_map_ram(buf->pages, buf->n_pages, -1,
--					PAGE_KERNEL);
-+					GFP_KERNEL, PAGE_KERNEL);
- 		if (!buf->vaddr)
- 			goto fail_get_user_pages;
- 	}
-diff --git a/fs/xfs/xfs_buf.c b/fs/xfs/xfs_buf.c
-index 172d3cc..b3e7289 100644
---- a/fs/xfs/xfs_buf.c
-+++ b/fs/xfs/xfs_buf.c
-@@ -406,7 +406,7 @@ _xfs_buf_map_pages(
- 
- 		do {
- 			bp->b_addr = vm_map_ram(bp->b_pages, bp->b_page_count,
--						-1, PAGE_KERNEL);
-+						-1, GFP_NOFS, PAGE_KERNEL);
- 			if (bp->b_addr)
- 				break;
- 			vm_unmap_aliases();
-diff --git a/include/linux/vmalloc.h b/include/linux/vmalloc.h
-index dcdfc2b..c811763 100644
---- a/include/linux/vmalloc.h
-+++ b/include/linux/vmalloc.h
-@@ -40,7 +40,7 @@ struct vm_struct {
-  */
- extern void vm_unmap_ram(const void *mem, unsigned int count);
- extern void *vm_map_ram(struct page **pages, unsigned int count,
--				int node, pgprot_t prot);
-+				int node, gfp_t gfp_mask, pgprot_t prot);
- extern void vm_unmap_aliases(void);
- 
- #ifdef CONFIG_MMU
-diff --git a/mm/nommu.c b/mm/nommu.c
-index d4b0c10..2fb4ec1 100644
---- a/mm/nommu.c
-+++ b/mm/nommu.c
-@@ -416,7 +416,8 @@ void vunmap(const void *addr)
- }
- EXPORT_SYMBOL(vunmap);
- 
--void *vm_map_ram(struct page **pages, unsigned int count, int node, pgprot_t prot)
-+void *vm_map_ram(struct page **pages, unsigned int count,
-+		 int node, gfp_t gfp_mask, pgprot_t prot)
- {
- 	BUG();
- 	return NULL;
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index 2aad499..3f736d1 100644
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -1088,21 +1088,22 @@ EXPORT_SYMBOL(vm_unmap_ram);
-  *
-  * Returns: a pointer to the address that has been mapped, or %NULL on failure
-  */
--void *vm_map_ram(struct page **pages, unsigned int count, int node, pgprot_t prot)
-+void *vm_map_ram(struct page **pages, unsigned int count,
-+		 int node, gfp_t gfp_mask, pgprot_t prot)
- {
- 	unsigned long size = count << PAGE_SHIFT;
- 	unsigned long addr;
- 	void *mem;
- 
- 	if (likely(count <= VMAP_MAX_ALLOC)) {
--		mem = vb_alloc(size, GFP_KERNEL);
-+		mem = vb_alloc(size, gfp_mask);
- 		if (IS_ERR(mem))
- 			return NULL;
- 		addr = (unsigned long)mem;
- 	} else {
- 		struct vmap_area *va;
- 		va = alloc_vmap_area(size, PAGE_SIZE,
--				VMALLOC_START, VMALLOC_END, node, GFP_KERNEL);
-+				VMALLOC_START, VMALLOC_END, node, gfp_mask);
- 		if (IS_ERR(va))
- 			return NULL;
- 
 -- 
-1.7.10
+1.7.5.4
 
