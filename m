@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932274Ab2FNQ4l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 12:56:41 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:35311 "EHLO
-	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932205Ab2FNQvn (ORCPT
+	id S932272Ab2FNQ47 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 12:56:59 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:24702 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932205Ab2FNQ45 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 12:51:43 -0400
-From: Roland Stigge <stigge@antcom.de>
-To: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
-        srinivas.bakki@nxp.com, aletes.xgr@gmail.com
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH v2 11/23] ARM: LPC32xx: DTS adjustment for using pl18x primecell
-Date: Thu, 14 Jun 2012 18:51:01 +0200
-Message-Id: <1339692673-7848-12-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1339692673-7848-1-git-send-email-stigge@antcom.de>
-References: <1339692673-7848-1-git-send-email-stigge@antcom.de>
-X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
+	Thu, 14 Jun 2012 12:56:57 -0400
+Date: Thu, 14 Jun 2012 12:49:26 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: David Vrabel <david.vrabel@citrix.com>
+Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] x86/xen: avoid updating TLS descriptors if they haven't
+ changed
+Message-ID: <20120614164926.GC333@phenom.dumpdata.com>
+References: <1339088494-23528-1-git-send-email-david.vrabel@citrix.com>
+ <4FD9FAA3.6090303@citrix.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FD9FAA3.6090303@citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adjusts the dts files to reference the pl18x primecell driver
-correctly.
+On Thu, Jun 14, 2012 at 03:52:19PM +0100, David Vrabel wrote:
+> On 07/06/12 18:01, David Vrabel wrote:
+> > From: David Vrabel <david.vrabel@citrix.com>
+> > 
+> > When switching tasks in a Xen PV guest, avoid updating the TLS
+> > descriptors if they haven't changed.  This improves the speed of
+> > context switches by almost 10% as much of the time the descriptors are
+> > the same or only one is different.
+> > 
+> > The descriptors written into the GDT by Xen are modified from the
+> > values passed in the update_descriptor hypercall so we keep shadow
+> > copies of the three TLS descriptors to compare against.
+> > 
+> > lmbench3 test     Before  After  Improvement
+> > --------------------------------------------
+> > lat_ctx -s 32 24   7.19    6.52  9%
+> > lat_pipe          12.56   11.66  7%
+> > 
+> > Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+> > ---
+> > I note that the comment in asm/desc_defs.h says the 'a' and 'b' fields
+> > in desc_struct as deprecated but there seems to be no suitable
+> > alternatives.
+> 
+> ping?  Any opinion on this patch from the x86 side?  If it's okay can we
+> get an ack so Konrad can take the patch via his tree.
 
-Signed-off-by: Roland Stigge <stigge@antcom.de>
----
- arch/arm/boot/dts/lpc32xx.dtsi |    3 ++-
- arch/arm/boot/dts/phy3250.dts  |    8 ++++++++
- 2 files changed, 10 insertions(+), 1 deletion(-)
-
---- linux-2.6.orig/arch/arm/boot/dts/lpc32xx.dtsi
-+++ linux-2.6/arch/arm/boot/dts/lpc32xx.dtsi
-@@ -115,9 +115,10 @@
- 			};
- 
- 			sd@20098000 {
--				compatible = "arm,pl180", "arm,primecell";
-+				compatible = "arm,pl18x", "arm,primecell";
- 				reg = <0x20098000 0x1000>;
- 				interrupts = <0x0f 0>, <0x0d 0>;
-+				status = "disabled";
- 			};
- 
- 			i2s1: i2s@2009C000 {
---- linux-2.6.orig/arch/arm/boot/dts/phy3250.dts
-+++ linux-2.6/arch/arm/boot/dts/phy3250.dts
-@@ -129,6 +129,14 @@
- 					compatible = "atmel,at25";
- 				};
- 			};
-+
-+			sd@20098000 {
-+				wp-gpios = <&gpio 3 0 0>;
-+				cd-gpios = <&gpio 3 1 0>;
-+				cd-inverted;
-+				bus-width = <4>;
-+				status = "okay";
-+			};
- 		};
- 
- 		fab {
+It breaks my all my bootup tests - so NACK until at least that is fixed.
+I think I sent you the whole serial log - is there something else that would help
+narrow it down?
