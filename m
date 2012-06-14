@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756562Ab2FNSbh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 14:31:37 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:47852 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756513Ab2FNSbg (ORCPT
+	id S1756513Ab2FNSch (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 14:32:37 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:48302 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755484Ab2FNScg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 14:31:36 -0400
-From: Fabio Baltieri <fabio.baltieri@gmail.com>
-To: Bryan Wu <bryan.wu@canonical.com>, Shuah Khan <shuahkhan@gmail.com>
-Cc: linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Fabio Baltieri <fabio.baltieri@gmail.com>
-Subject: [PATCH v2] leds: use led_set_brightness in led_trigger_event
-Date: Thu, 14 Jun 2012 20:33:35 +0200
-Message-Id: <1339698815-1806-1-git-send-email-fabio.baltieri@gmail.com>
-X-Mailer: git-send-email 1.7.10.3
-In-Reply-To: <1339619670.13326.22.camel@lorien2>
-References: <1339619670.13326.22.camel@lorien2>
+	Thu, 14 Jun 2012 14:32:36 -0400
+Date: Thu, 14 Jun 2012 19:32:32 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        grant.likely@secretlab.ca, linus.walleij@stericsson.com, arnd@arndb.de,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH 08/14] mfd: Add IRQ domain support for the AB8500
+Message-ID: <20120614183231.GA30185@sirena.org.uk>
+References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org>
+ <1339428307-3850-9-git-send-email-lee.jones@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339428307-3850-9-git-send-email-lee.jones@linaro.org>
+X-Cookie: Do not try this at home.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix led_trigger_event() to use led_set_brightness() instead of
-__led_set_brightness(), so that any pending blink timer is stopped before
-setting the new brightness value.  Without this fix LED status may be
-overridden by a pending timer.
+On Mon, Jun 11, 2012 at 04:25:01PM +0100, Lee Jones wrote:
 
-This allows a trigger to use a mix of led_trigger_event(),
-led_trigger_blink() and led_trigger_blink_oneshot() without races.
+> +	if (np) {
+> +		ab8500->domain = irq_domain_add_linear(
+> +			np, num_irqs, &ab8500_irq_ops, ab8500);
+> +	}
+> +	else {
+> +		ab8500->domain = irq_domain_add_legacy(
+> +			NULL, num_irqs, ab8500->irq_base,
+> +			0, &ab8500_irq_ops, ab8500);
+> +	}
 
-(applied over: leds: Rename led_brightness_set() to led_set_brightness())
+This is odd, why are you forcing non-DT systems to use a legacy mapping?
+The more usual approach is to use a legacy mapping if and only if a base
+for the legacy range has been provided, otherwise the system will
+needlessly fail to initialise the device...
 
-Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
-Cc: Shuah Khan <shuahkhan@gmail.com>
-Cc: Bryan Wu <bryan.wu@canonical.com>
----
+> +	if (!(ab8500->irq_base || np)) {
+> +		dev_info(&pdev->dev, "couldn't find irq-base and not doing DT boot\n");
 
-Hi Shuah,
-
-thanks for the renaming, looks much more clear now, so that's my
-led_trigger_event patch which applies on top of your latest patch - which
-should still be needed if I didn't lost anything.
-
-Fabio
-
- drivers/leds/led-triggers.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/leds/led-triggers.c b/drivers/leds/led-triggers.c
-index 57721f2..de1c59d 100644
---- a/drivers/leds/led-triggers.c
-+++ b/drivers/leds/led-triggers.c
-@@ -224,7 +224,7 @@ void led_trigger_event(struct led_trigger *trig,
- 		struct led_classdev *led_cdev;
- 
- 		led_cdev = list_entry(entry, struct led_classdev, trig_list);
--		__led_set_brightness(led_cdev, brightness);
-+		led_set_brightness(led_cdev, brightness);
- 	}
- 	read_unlock(&trig->leddev_list_lock);
- }
--- 
-1.7.11.rc1.9.gf623ca1.dirty
-
+...like this.  See regmap_irq for an example.
