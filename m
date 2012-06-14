@@ -1,99 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752121Ab2FNWrc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 18:47:32 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15195 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751229Ab2FNWrb (ORCPT
+	id S1753173Ab2FNWsJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 18:48:09 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33701 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752139Ab2FNWrs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 18:47:31 -0400
-X-Authority-Analysis: v=2.0 cv=T6AOvo2Q c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=hQlCdkBRFk4A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=VwQbUJbxAAAA:8 a=QyXUC8HyAAAA:8 a=gNcOBdI-9ui-iY9un5oA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1339714048.13377.246.camel@gandalf.stny.rr.com>
-Subject: [PATCH][GIT PULL][v3.5] ftrace: Make all inline tags also include
- notrace
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Fengguang Wu <wfg@linux.intel.com>
-Date: Thu, 14 Jun 2012 18:47:28 -0400
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1+b1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 14 Jun 2012 18:47:48 -0400
+Date: Fri, 15 Jun 2012 00:47:38 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: [PATCH] tracing: Fix the outmost stupidity of tracing_off()
+Message-ID: <alpine.LFD.2.02.1206142345100.3086@ionos>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I lost another day of waiting for a complex bug to trigger and turn
+off tracing, which did not happen due to:
 
-Ingo,
+ commit 499e54705(tracing/ring-buffer: Only have tracing_on disable
+ tracing buffers)
 
-Please pull the latest tip/perf/urgent tree, which can be found at:
+The subject line itself is supsicious itself:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-tip/perf/urgent
+  Only have tracing_on disable tracing buffers
 
-Head SHA1: 0e326ac2529387468a0c7923f573e16399a031ce
+tracing_on as far as I'm concerned is supposed to start tracing. So
+disabling trace buffers on tracing_on is counterproductive.
 
+The patch description is not really a better source of enlightment:
 
-Steven Rostedt (1):
-      ftrace: Make all inline tags also include notrace
-
-----
- include/linux/compiler-gcc.h |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
----------------------------
-commit 0e326ac2529387468a0c7923f573e16399a031ce
-Author: Steven Rostedt <rostedt@goodmis.org>
-Date:   Thu Jun 14 10:54:28 2012 -0400
-
-    ftrace: Make all inline tags also include notrace
+  As the ring-buffer code is being used by other facilities in the
+  kernel, having tracing_on file disable *all* buffers is not a desired
+  affect. It should only disable the ftrace buffers that are being used.
     
-    Commit 5963e317b1 ftrace/x86: Do not change stacks in DEBUG when calling lockdep
-    prevented lockdep calls from the int3 breakpoint handler from reseting the
-    stack if a function that was called was in the process of being converted
-    for tracing and had a breakpoint on it. The idea is, before calling
-    the lockdep code, do a load_idt() to the special IDT that kept the breakpoint
-    stack from reseting. This worked well as a quick fix for this kernel
-    release, until a certain config caused a lockup in the function tracer
-    start up tests.
-    
-    Investigating it, I found that the load_idt that was used to prevent
-    the int3 from changing stacks was itself being traced!
-    
-    Even though the config had CONFIG_OPTIMIZE_INLINING disabled, and
-    all 'inline' tags were set to always inline, there were still cases that
-    it did not inline! This was caused by CONFIG_PARAVIRT_GUEST, where it
-    would add a pointer to the native_load_idt() which made that function
-    to be traced.
-    
-    Commit 45959ee7 ftrace: Do not function trace inlined functions
-    only touched the 'inline' tags when CONFIG_OPMITIZE_INLINING was enabled.
-    PARAVIRT_GUEST shows that this was not enough and we need to also
-    mark always_inline with notrace as well.
-    
-    Reported-by: Fengguang Wu <wfg@linux.intel.com>
-    Tested-by: Fengguang Wu <wfg@linux.intel.com>
-    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+  Move the code into the trace.c file and use the buffer disabling
+  for tracing_on() and tracing_off(). This way only the ftrace buffers
+  will be affected by them and other kernel utilities will not be
+  confused to why their output suddenly stopped.
 
-diff --git a/include/linux/compiler-gcc.h b/include/linux/compiler-gcc.h
-index e5834aa..6a6d7ae 100644
---- a/include/linux/compiler-gcc.h
-+++ b/include/linux/compiler-gcc.h
-@@ -47,9 +47,9 @@
-  */
- #if !defined(CONFIG_ARCH_SUPPORTS_OPTIMIZED_INLINING) || \
-     !defined(CONFIG_OPTIMIZE_INLINING) || (__GNUC__ < 4)
--# define inline		inline		__attribute__((always_inline))
--# define __inline__	__inline__	__attribute__((always_inline))
--# define __inline	__inline	__attribute__((always_inline))
-+# define inline		inline		__attribute__((always_inline)) notrace
-+# define __inline__	__inline__	__attribute__((always_inline)) notrace
-+# define __inline	__inline	__attribute__((always_inline)) notrace
- #else
- /* A lot of inline functions can cause havoc with function tracing */
- # define inline		inline		notrace
+How should the casual reader of this commit message figure out that
+tracing_on is a debugfs file which accepts 0 resp. 1 to it, where 0
+causes the buffers to be disabled?
 
+Yes, it's obvious to the patch author, but ....
 
+While I account that to the usual inability to write proper
+changelogs, I'm amazed about the following parts of the patch
+
+-void tracing_off(void)
+-{
+-       clear_bit(RB_BUFFERS_ON_BIT, &ring_buffer_flags);
+-}
+
+...
+
++void tracing_off(void)
++{
++       if (global_trace.buffer)
++               ring_buffer_record_on(global_trace.buffer);
+
+This is so amazingly stupid, that it's not even funny anymore.
+
+Is it really too much to expect that a patch of the size
+
+ 4 files changed, 171 insertions(+), 97 deletions(-)
+
+which touches fundamental functionality of a subsystem is at least
+tested to maintain the previous functionality?
+
+Signed-off-by: Thomas [royally annoyed] Gleixner <tglx@linutronix.de>
+
+---
+ kernel/trace/trace.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: linux-2.6/kernel/trace/trace.c
+===================================================================
+--- linux-2.6.orig/kernel/trace/trace.c
++++ linux-2.6/kernel/trace/trace.c
+@@ -371,7 +371,7 @@ EXPORT_SYMBOL_GPL(tracing_on);
+ void tracing_off(void)
+ {
+ 	if (global_trace.buffer)
+-		ring_buffer_record_on(global_trace.buffer);
++		ring_buffer_record_off(global_trace.buffer);
+ 	/*
+ 	 * This flag is only looked at when buffers haven't been
+ 	 * allocated yet. We don't really care about the race
