@@ -1,63 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756111Ab2FNS2I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 14:28:08 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:22153 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755387Ab2FNS2H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 14:28:07 -0400
-Date: Thu, 14 Jun 2012 21:27:45 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: manish.rangankar@qlogic.com
-Cc: Mike Christie <michaelc@cs.wisc.edu>, open-iscsi@googlegroups.com,
-        linux-kernel@vger.kernel.org
-Subject: re: [SCSI] qla4xxx: support iscsiadm session mgmt
-Message-ID: <20120614182745.GA6383@elgon.mountain>
+	id S1756353Ab2FNS3f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 14:29:35 -0400
+Received: from hera.cwi.nl ([192.16.191.8]:61444 "EHLO hera.cwi.nl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755409Ab2FNS3d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 14:29:33 -0400
+Message-ID: <4FDA2D7E.8010109@cwi.nl>
+Date: Thu, 14 Jun 2012 19:29:18 +0100
+From: "Wouter M. Koolen" <W.M.Koolen-Wijkstra@cwi.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+CC: "Wouter M. Koolen" <W.M.Koolen-Wijkstra@cwi.nl>,
+        Dave Airlie <airlied@gmail.com>, intergalactic.anonymous@gmail.com,
+        len.brown@intel.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        "Barnes, Jesse" <jbarnes@virtuousgeek.org>,
+        "Wilson, Chris" <chris.wilson@intel.com>
+Subject: Re: [3.4 regression] [bisected] DisplayPort fails to come on
+References: <4FD9E69A.4090708@cwi.nl> <CAPM=9tzL-TyDLKWdmCdi5d6PzQTs3sTLnqnLG_s7K2h9WNOEvQ@mail.gmail.com> <CAKMK7uGokt5cW0R+LKXRmE_kecqmnv4Zgy-WiSZA-GPP8htE-A@mail.gmail.com> <4FD9F9B0.9030204@cwi.nl> <4FDA1C03.3020404@cwi.nl> <CAKMK7uESK+CPkXVA5wFjL5B_38AAFnZLX6pY2aRfAYyWZAZ5nA@mail.gmail.com>
+In-Reply-To: <CAKMK7uESK+CPkXVA5wFjL5B_38AAFnZLX6pY2aRfAYyWZAZ5nA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Manish,
+On 06/14/2012 06:27 PM, Daniel Vetter wrote:
+> Well, can you revert this patch (or just replace the 5 with 3 in the
+> code) on top of latest 3.4.x and test whether this is indeed the cause
+> of your regression? Just to make sure that we have the right culprit.
+Hi Daniel,
 
-The patch b3a271a94d00: "[SCSI] qla4xxx: support iscsiadm session 
-mgmt" from Jul 25, 2011, leads to the following warning:
-drivers/scsi/qla4xxx/ql4_os.c:4479 qla4xxx_get_ep_fwdb()
-	 warn: casting from 16 to 28 bytes
+Yes, 3.4.2 with 092945e11c5b84f66dd08f0b87fb729715d377bc  does enable 
+the screen.
 
-(Sort of).
+With kind regards,
 
-drivers/scsi/qla4xxx/ql4_os.c qla4xxx_ep_connect()
-   705          qla_ep = ep->dd_data;
-   706          memset(qla_ep, 0, sizeof(struct qla_endpoint));
-   707          if (dst_addr->sa_family == AF_INET) {
-   708                  memcpy(&qla_ep->dst_addr, dst_addr, sizeof(struct sockaddr_in));
-   709                  addr = (struct sockaddr_in *)&qla_ep->dst_addr;
-   710                  DEBUG2(ql4_printk(KERN_INFO, ha, "%s: %pI4\n", __func__,
-   711                                    (char *)&addr->sin_addr));
-   712          } else if (dst_addr->sa_family == AF_INET6) {
-   713                  memcpy(&qla_ep->dst_addr, dst_addr,
-                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   714                         sizeof(struct sockaddr_in6));
-                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Both qla_ep->dst_addr and dst_addr are type struct sockaddr.  We are
-copying sizeof(struct sockaddr_in6) bytes which is 12 bytes larger.  I
-don't know the actual size of qla_ep->dst_addr but dst_addr is allocated
-in qla4xxx_get_ep_fwdb() as a struct sockaddr.  So we are copying past
-the end of the struct here and it's possibly an information leak or even
-a memory corruption issue depending on how much space ep->dd_data has.
-
-   715                  addr6 = (struct sockaddr_in6 *)&qla_ep->dst_addr;
-   716                  DEBUG2(ql4_printk(KERN_INFO, ha, "%s: %pI6\n", __func__,
-   717                                    (char *)&addr6->sin6_addr));
-   718          }
-
-regards,
-dan carpenter
-
+Wouter
