@@ -1,62 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756625Ab2FNUjQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 16:39:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2409 "EHLO mx1.redhat.com"
+	id S1756519Ab2FNUph (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 16:45:37 -0400
+Received: from mga01.intel.com ([192.55.52.88]:13302 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756486Ab2FNUjM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 16:39:12 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, eranian@google.com
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 2/6] perf tools: Fix generation of pmu list
-Date: Thu, 14 Jun 2012 22:38:37 +0200
-Message-Id: <1339706321-8802-3-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1339706321-8802-1-git-send-email-jolsa@redhat.com>
-References: <1339706321-8802-1-git-send-email-jolsa@redhat.com>
+	id S1755358Ab2FNUpg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 16:45:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="165799701"
+Subject: Re: [RFC] x86, fpu: unify signal handling code paths for x86 and
+ x86_64 kernels
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Hans Rosenfeld <hans.rosenfeld@amd.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, tglx@linutronix.de,
+        robert.richter@amd.com, andreas.herrmann3@amd.com
+Date: Thu, 14 Jun 2012 13:45:34 -0700
+In-Reply-To: <20120614143727.GF7922@escobedo.osrc.amd.com>
+References: <1339545814.28766.148.camel@sbsiddha-desk.sc.intel.com>
+	 <20120614143727.GF7922@escobedo.osrc.amd.com>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1339706734.3475.34.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Robert Richter <robert.richter@amd.com>
+On Thu, 2012-06-14 at 16:37 +0200, Hans Rosenfeld wrote:
+> Thank you for working on this.
+> 
+> I didn't see anything obviously wrong in a quick review of this code,
+> but this stuff is too complex for this to mean anything :)
+> 
+> I ran a quick test of your code. I found a signal frame corruption when
+> running a 32bit test program on a 64bit kernel. I didn't try to find out
+> why it failed, but I'll send you the test program in a private mail so
+> you can look at it yourself.
+> 
 
-The internal pmu list was never used. With each perf_pmu__find() call
-the pmu structure was created new by parsing sysfs. Beside this it
-caused memory leaks. We now keep all pmus by adding them to the list.
+Ok. The problem was that I was using is_ia32_task() (which uses
+TS_COMPAT) to check if the task is a compat task or not. And that flag
+is not set during the signal delivery paths for the compat task.
 
-Also, pmu_lookup() should return pmus that do not expose the format
-specifier in sysfs.
+I guess I should be using TIF_IA32 check instead. Using TIF_IA32 check
+makes your test case run fine.
 
-We need a valid internal pmu list in a later patch to iterate over all
-pmus that exist in the system.
+Will update it accordingly.
 
-Signed-off-by: Robert Richter <robert.richter@amd.com>
----
- tools/perf/util/pmu.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index a119a53..bda0563 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -72,7 +72,7 @@ static int pmu_format(char *name, struct list_head *format)
- 		 "%s/bus/event_source/devices/%s/format", sysfs, name);
- 
- 	if (stat(path, &st) < 0)
--		return -1;
-+		return 0;	/* no error if format does not exist */
- 
- 	if (pmu_format_parse(path, format))
- 		return -1;
-@@ -139,6 +139,7 @@ static struct perf_pmu *pmu_lookup(char *name)
- 	list_splice(&format, &pmu->format);
- 	pmu->name = strdup(name);
- 	pmu->type = type;
-+	list_add_tail(&pmu->list, &pmus);
- 	return pmu;
- }
- 
--- 
-1.7.7.6
+thanks,
+suresh
 
