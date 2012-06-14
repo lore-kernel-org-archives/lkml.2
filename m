@@ -1,74 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756218Ab2FNOMT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 10:12:19 -0400
-Received: from www.linutronix.de ([62.245.132.108]:57328 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756101Ab2FNOMS (ORCPT
+	id S1756182Ab2FNOOU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 10:14:20 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:39000 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756038Ab2FNOOS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 10:12:18 -0400
-Date: Thu, 14 Jun 2012 16:12:14 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>
-Subject: Re: [RFC patch 2/5] smpboot: Provide infrastructure for percpu
- hotplug threads
-In-Reply-To: <alpine.LFD.2.02.1206141545510.3086@ionos>
-Message-ID: <alpine.LFD.2.02.1206141610090.3086@ionos>
-References: <20120613102823.373180763@linutronix.de> <20120613105815.206105518@linutronix.de> <20120613185748.GF2427@linux.vnet.ibm.com> <alpine.LFD.2.02.1206132101440.3086@ionos> <20120613191745.GG2427@linux.vnet.ibm.com> <20120613204725.GA9858@linux.vnet.ibm.com>
- <20120614045125.GA30257@linux.vnet.ibm.com> <alpine.LFD.2.02.1206141234400.3086@ionos> <20120614125939.GC2443@linux.vnet.ibm.com> <alpine.LFD.2.02.1206141527580.3086@ionos> <alpine.LFD.2.02.1206141545510.3086@ionos>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Thu, 14 Jun 2012 10:14:18 -0400
+Message-ID: <4FD9F19E.4000209@linux.vnet.ibm.com>
+Date: Thu, 14 Jun 2012 09:13:50 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Minchan Kim <minchan@kernel.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH] staging: zsmalloc: fix uninit'ed variable warning
+References: <1339621422-8449-1-git-send-email-sjenning@linux.vnet.ibm.com> <4FD93FE8.1030102@kernel.org>
+In-Reply-To: <4FD93FE8.1030102@kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12061414-1780-0000-0000-0000067045D9
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000281; HX=3.00000190; KW=3.00000007;
+ PH=3.00000001; SC=3.00000002; SDB=6.00147990; UDB=6.00033754; UTC=2012-06-14
+ 14:14:16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 14 Jun 2012, Thomas Gleixner wrote:
-> On Thu, 14 Jun 2012, Thomas Gleixner wrote:
-> 
-> > On Thu, 14 Jun 2012, Paul E. McKenney wrote:
-> > > On Thu, Jun 14, 2012 at 01:20:39PM +0200, Thomas Gleixner wrote:
-> > > > I gave it a quick shot, but I was not able to reproduce the hang yet.
-> > > 
-> > > Really?  I have a strictly Western-Hemisphere bug?  ;-)
-> > 
-> > I guess I need to fire up rcu torture to make it surface.
-> >  
-> > > > But looking at the thread function made me look into rcu_yield() and I
-> > > > really wonder what kind of drug induced that particular piece of
-> > > > horror.
-> > > 
-> > > When you are working on something like RCU priority boosting, no other
-> > > drug is in any way necessary.  ;-)
-> > 
-> > And how do we protect minors from that ?
-> >  
-> > > > I can't figure out why this yield business is necessary at all. The
-> > > > commit logs are as helpful as the missing code comments :)
-> > > > 
-> > > > I suspect that it's some starvation issue. But if we need it, then
-> > > > can't we replace it with something sane like the (untested) patch
-> > > > below?
-> > > 
-> > > Yep, starvation.  I will take a look at your approach after I wake
-> > > up a bit more.
-> > 
-> > Btw, if that simpler yield approach is working and I can't see why it
-> > shouldn't then you can get rid of the node task as well. The only
-> > purpose of it is to push up the priority of yielding tasks, right?
-> 
-> Ah, missed that it calls rcu_initiate_boost() as well....
+On 06/13/2012 08:35 PM, Minchan Kim wrote:
 
-And looking further, I really don't understand why it's doing
-that. That node thread is only woken by these weird yield timers.
+> Nice catch!
 
-Thanks,
 
-	tglx
+by Andrew!
+
+> Nitpick:
+> I can't see the warning.
+> My gcc version is gcc (Ubuntu/Linaro 4.6.3-1ubuntu5) 4.6.3.
+
+
+I couldn't either but Andrew could and he verified the fix.
+
+Not sure what gcc version he is running.
+
+> Please, Cced linux-mm, too.
+> Some guys in mm might have a interest in zsmalloc. :)
+
+
+Meant to include linux-mm :-/  I'll be sure to include
+them in future zsmalloc patches.
+
