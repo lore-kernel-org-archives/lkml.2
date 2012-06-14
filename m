@@ -1,133 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755550Ab2FNK16 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 06:27:58 -0400
-Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:37031 "EHLO
-	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755401Ab2FNKXE (ORCPT
+	id S1755430Ab2FNK2w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 06:28:52 -0400
+Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:58544 "EHLO
+	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754461Ab2FNK2v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 06:23:04 -0400
+	Thu, 14 Jun 2012 06:28:51 -0400
 From: Felipe Balbi <balbi@ti.com>
-To: ben-linux@fluff.org
-Cc: Tony Lindgren <tony@atomide.com>, w.sang@pengutronix.de,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        linux-i2c@vger.kernel.org,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 02/17] i2c: omap: decrease indentation level on data handling
-Date: Thu, 14 Jun 2012 13:20:35 +0300
-Message-Id: <1339669250-9183-3-git-send-email-balbi@ti.com>
+To: a.zummo@towertech.it
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        rtc-linux@googlegroups.com, Felipe Balbi <balbi@ti.com>
+Subject: [PATCH] rtc: twl: add missing IRQF_ONESHOT
+Date: Thu, 14 Jun 2012 13:26:46 +0300
+Message-Id: <1339669606-9579-1-git-send-email-balbi@ti.com>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1339669250-9183-1-git-send-email-balbi@ti.com>
-References: <1339669250-9183-1-git-send-email-balbi@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-trivial patch, no functional changes.
+This patch gets rid of the following warning:
+
+[    2.825378] genirq: Threaded irq requested with \
+	handler=NULL and !ONESHOT for irq 363
 
 Signed-off-by: Felipe Balbi <balbi@ti.com>
 ---
- drivers/i2c/busses/i2c-omap.c |   63 ++++++++++++++++++++---------------------
- 1 file changed, 31 insertions(+), 32 deletions(-)
+ drivers/rtc/rtc-twl.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-omap.c
-index 9b532cd..39d5583 100644
---- a/drivers/i2c/busses/i2c-omap.c
-+++ b/drivers/i2c/busses/i2c-omap.c
-@@ -856,22 +856,7 @@ complete:
- 							>> 8) & 0x3F;
- 			}
- 			while (num_bytes--) {
--				w = omap_i2c_read_reg(dev, OMAP_I2C_DATA_REG);
--				if (dev->buf_len) {
--					*dev->buf++ = w;
--					dev->buf_len--;
--					/*
--					 * Data reg in 2430, omap3 and
--					 * omap4 is 8 bit wide
--					 */
--					if (dev->flags &
--						 OMAP_I2C_FLAG_16BIT_DATA_REG) {
--						if (dev->buf_len) {
--							*dev->buf++ = w >> 8;
--							dev->buf_len--;
--						}
--					}
--				} else {
-+				if (!dev->buf_len) {
- 					if (stat & OMAP_I2C_STAT_RRDY)
- 						dev_err(dev->dev,
- 							"RRDY IRQ while no data"
-@@ -882,6 +867,21 @@ complete:
- 								" requested\n");
- 					break;
- 				}
-+
-+				w = omap_i2c_read_reg(dev, OMAP_I2C_DATA_REG);
-+				*dev->buf++ = w;
-+				dev->buf_len--;
-+				/*
-+				 * Data reg in 2430, omap3 and
-+				 * omap4 is 8 bit wide
-+				 */
-+				if (dev->flags &
-+						OMAP_I2C_FLAG_16BIT_DATA_REG) {
-+					if (dev->buf_len) {
-+						*dev->buf++ = w >> 8;
-+						dev->buf_len--;
-+					}
-+				}
- 			}
- 			omap_i2c_ack_stat(dev,
- 				stat & (OMAP_I2C_STAT_RRDY | OMAP_I2C_STAT_RDR));
-@@ -898,22 +898,7 @@ complete:
- 							& 0x3F;
- 			}
- 			while (num_bytes--) {
--				w = 0;
--				if (dev->buf_len) {
--					w = *dev->buf++;
--					dev->buf_len--;
--					/*
--					 * Data reg in 2430, omap3 and
--					 * omap4 is 8 bit wide
--					 */
--					if (dev->flags &
--						 OMAP_I2C_FLAG_16BIT_DATA_REG) {
--						if (dev->buf_len) {
--							w |= *dev->buf++ << 8;
--							dev->buf_len--;
--						}
--					}
--				} else {
-+				if (!dev->buf_len) {
- 					if (stat & OMAP_I2C_STAT_XRDY)
- 						dev_err(dev->dev,
- 							"XRDY IRQ while no "
-@@ -925,6 +910,20 @@ complete:
- 					break;
- 				}
+diff --git a/drivers/rtc/rtc-twl.c b/drivers/rtc/rtc-twl.c
+index 258abea..c5d06fe 100644
+--- a/drivers/rtc/rtc-twl.c
++++ b/drivers/rtc/rtc-twl.c
+@@ -510,7 +510,7 @@ static int __devinit twl_rtc_probe(struct platform_device *pdev)
+ 	}
  
-+				w = *dev->buf++;
-+				dev->buf_len--;
-+				/*
-+				 * Data reg in 2430, omap3 and
-+				 * omap4 is 8 bit wide
-+				 */
-+				if (dev->flags &
-+						OMAP_I2C_FLAG_16BIT_DATA_REG) {
-+					if (dev->buf_len) {
-+						w |= *dev->buf++ << 8;
-+						dev->buf_len--;
-+					}
-+				}
-+
- 				if ((dev->errata & I2C_OMAP3_1P153) &&
- 				    errata_omap3_1p153(dev, &stat, &err))
- 					goto complete;
+ 	ret = request_threaded_irq(irq, NULL, twl_rtc_interrupt,
+-				   IRQF_TRIGGER_RISING,
++				   IRQF_TRIGGER_RISING | IRQF_ONESHOT,
+ 				   dev_name(&rtc->dev), rtc);
+ 	if (ret < 0) {
+ 		dev_err(&pdev->dev, "IRQ is not free.\n");
 -- 
 1.7.10.4
 
