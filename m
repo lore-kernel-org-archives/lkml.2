@@ -1,160 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756282Ab2FNUCT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 16:02:19 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35715 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755919Ab2FNUCR (ORCPT
+	id S1756258Ab2FNUFK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 16:05:10 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:47165 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755489Ab2FNUFI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 16:02:17 -0400
-Date: Thu, 14 Jun 2012 15:02:10 -0500
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Corentin Chary <corentin.chary@gmail.com>
-Cc: Len Brown <lenb@kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        linux-acpi@vger.kernel.org, platform-driver-x86@vger.kernel.org,
-        Joey Lee <jlee@novell.com>, Matthew Garrett <mjg@redhat.com>,
-        Corentin Chary <corentincj@iksaif.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/7] drivers-platform-x86: use
- acpi_video_dmi_promote_vendor()
-Message-ID: <20120614200210.GG13448@thinkpad-t410>
-Mail-Followup-To: Corentin Chary <corentin.chary@gmail.com>,
-	Len Brown <lenb@kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>,
-	linux-acpi@vger.kernel.org, platform-driver-x86@vger.kernel.org,
-	Joey Lee <jlee@novell.com>, Matthew Garrett <mjg@redhat.com>,
-	Corentin Chary <corentincj@iksaif.net>,
-	linux-kernel@vger.kernel.org
-References: <CAHR064i_0vunKzB_Yg9SGrWQcPxJs2sTekWk6LuP2qf0FEqBOQ@mail.gmail.com>
- <1339671870-27624-1-git-send-email-corentin.chary@gmail.com>
+	Thu, 14 Jun 2012 16:05:08 -0400
+Date: Thu, 14 Jun 2012 13:01:29 -0700
+From: Silas Boyd-Wickizer <sbw@mit.edu>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [RFC patch 1/5] kthread: Implement park/unpark facility
+Message-ID: <20120614200125.GA26852@mit.edu>
+References: <20120613102823.373180763@linutronix.de>
+ <20120613105815.132283147@linutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1339671870-27624-1-git-send-email-corentin.chary@gmail.com>
+In-Reply-To: <20120613105815.132283147@linutronix.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 14, 2012 at 01:04:30PM +0200, Corentin Chary wrote:
-> Instead of using directly acpi_video_unregister(), use
-> acpi_video_dmi_promote_vendor() (and make it call
-> acpi_video_unregister() if needed)
-> 
-> Signed-off-by: Corentin Chary <corentin.chary@gmail.com>
+Hello,
 
-The changes to apple-gmux.c get rid of the acpi_video backlight under
-EFI boot on the Macbook Pro 8,2. Unfortunately userspace still prefers
-intel_backlight on this machine, which also doesn't work. I can't help
-but think that we need a more generic way of specifying the preferred
-backlight for a machine.
+I've taken a stab at converting stop_machine to use kthread_park and
+kthread_unpark.  I don't think stop_machine can use
+smpboot_park_threads (in their current implementation) because, among
+other reasons, _cpu_down calls __stop_machine after parking the
+stopper threads via smpboot_park_threads.
 
-All the same, if this gets picked up feel free to add
+Silas
 
-Tested-by: Seth Forshee <seth.forshee@canonical.com>
+Signed-off-by: Silas Boyd-Wickizer <sbw@mit.edu>
+---
+ kernel/stop_machine.c |   41 ++++++++++++++++++-----------------------
+ 1 file changed, 18 insertions(+), 23 deletions(-)
 
-> ---
->  drivers/platform/x86/acer-wmi.c       |   14 +++++++-------
->  drivers/platform/x86/apple-gmux.c     |    2 ++
->  drivers/platform/x86/samsung-laptop.c |   20 +++++++++-----------
->  3 files changed, 18 insertions(+), 18 deletions(-)
-> 
-> diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
-> index ce875dc..7057aef 100644
-> --- a/drivers/platform/x86/acer-wmi.c
-> +++ b/drivers/platform/x86/acer-wmi.c
-> @@ -2060,14 +2060,14 @@ static int __init acer_wmi_init(void)
->  
->  	set_quirks();
->  
-> +	if (dmi_check_system(video_vendor_dmi_table))
-> +		acpi_video_dmi_promote_vendor();
->  	if (acpi_video_backlight_support()) {
-> -		if (dmi_check_system(video_vendor_dmi_table)) {
-> -			acpi_video_unregister();
-> -		} else {
-> -			interface->capability &= ~ACER_CAP_BRIGHTNESS;
-> -			pr_info("Brightness must be controlled by "
-> -				"acpi video driver\n");
-> -		}
-> +		interface->capability &= ~ACER_CAP_BRIGHTNESS;
-> +		pr_info("Brightness must be controlled by acpi video driver\n");
-> +	} else {
-> +		pr_info("Disabling ACPI video driver\n");
-> +		acpi_video_unregister();
->  	}
->  
->  	if (wmi_has_guid(WMID_GUID3)) {
-> diff --git a/drivers/platform/x86/apple-gmux.c b/drivers/platform/x86/apple-gmux.c
-> index 694a15a..fd61502 100644
-> --- a/drivers/platform/x86/apple-gmux.c
-> +++ b/drivers/platform/x86/apple-gmux.c
-> @@ -193,6 +193,7 @@ static int __devinit gmux_probe(struct pnp_dev *pnp,
->  	 * backlight control and supports more levels than other options.
->  	 * Disable the other backlight choices.
->  	 */
-> +	acpi_video_dmi_promote_vendor();
->  	acpi_video_unregister();
->  	apple_bl_unregister();
->  
-> @@ -213,6 +214,7 @@ static void __devexit gmux_remove(struct pnp_dev *pnp)
->  	release_region(gmux_data->iostart, gmux_data->iolen);
->  	kfree(gmux_data);
->  
-> +	acpi_video_dmi_demote_vendor();
->  	acpi_video_register();
->  	apple_bl_register();
->  }
-> diff --git a/drivers/platform/x86/samsung-laptop.c b/drivers/platform/x86/samsung-laptop.c
-> index e2a34b4..b822784 100644
-> --- a/drivers/platform/x86/samsung-laptop.c
-> +++ b/drivers/platform/x86/samsung-laptop.c
-> @@ -26,9 +26,7 @@
->  #include <linux/seq_file.h>
->  #include <linux/debugfs.h>
->  #include <linux/ctype.h>
-> -#if (defined CONFIG_ACPI_VIDEO || defined CONFIG_ACPI_VIDEO_MODULE)
->  #include <acpi/video.h>
-> -#endif
->  
->  /*
->   * This driver is needed because a number of Samsung laptops do not hook
-> @@ -1530,15 +1528,16 @@ static int __init samsung_init(void)
->  	samsung->quirks = quirks;
->  
->  
-> -#if (defined CONFIG_ACPI_VIDEO || defined CONFIG_ACPI_VIDEO_MODULE)
-> +#ifdef CONFIG_ACPI
-> +	if (samsung->quirks->broken_acpi_video)
-> +		acpi_video_dmi_promote_vendor();
-> +
->  	/* Don't handle backlight here if the acpi video already handle it */
->  	if (acpi_video_backlight_support()) {
-> -		if (samsung->quirks->broken_acpi_video) {
-> -			pr_info("Disabling ACPI video driver\n");
-> -			acpi_video_unregister();
-> -		} else {
-> -			samsung->handle_backlight = false;
-> -		}
-> +		samsung->handle_backlight = false;
-> +	} else if (samsung->quirks->broken_acpi_video) {
-> +		pr_info("Disabling ACPI video driver\n");
-> +		acpi_video_unregister();
->  	}
->  #endif
->  
-> @@ -1552,8 +1551,7 @@ static int __init samsung_init(void)
->  
->  #ifdef CONFIG_ACPI
->  	/* Only log that if we are really on a sabi platform */
-> -	if (acpi_video_backlight_support() &&
-> -	    !samsung->quirks->broken_acpi_video)
-> +	if (acpi_video_backlight_support())
->  		pr_info("Backlight controlled by ACPI video driver\n");
->  #endif
->  
-> -- 
-> 1.7.9.5
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe platform-driver-x86" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
+index 2f194e9..631f133 100644
+--- a/kernel/stop_machine.c
++++ b/kernel/stop_machine.c
+@@ -244,7 +244,7 @@ int try_stop_cpus(const struct cpumask *cpumask, cpu_stop_fn_t fn, void *arg)
+ 	return ret;
+ }
+ 
+-static int cpu_stopper_thread(void *data)
++static __noreturn int cpu_stopper_thread(void *data)
+ {
+ 	struct cpu_stopper *stopper = data;
+ 	struct cpu_stop_work *work;
+@@ -253,10 +253,8 @@ static int cpu_stopper_thread(void *data)
+ repeat:
+ 	set_current_state(TASK_INTERRUPTIBLE);	/* mb paired w/ kthread_stop */
+ 
+-	if (kthread_should_stop()) {
+-		__set_current_state(TASK_RUNNING);
+-		return 0;
+-	}
++	if (kthread_should_park())
++		kthread_parkme();
+ 
+ 	work = NULL;
+ 	spin_lock_irq(&stopper->lock);
+@@ -308,23 +306,23 @@ static int __cpuinit cpu_stop_cpu_callback(struct notifier_block *nfb,
+ 
+ 	switch (action & ~CPU_TASKS_FROZEN) {
+ 	case CPU_UP_PREPARE:
+-		BUG_ON(stopper->thread || stopper->enabled ||
+-		       !list_empty(&stopper->works));
+-		p = kthread_create_on_node(cpu_stopper_thread,
+-					   stopper,
+-					   cpu_to_node(cpu),
+-					   "migration/%d", cpu);
+-		if (IS_ERR(p))
+-			return notifier_from_errno(PTR_ERR(p));
+-		get_task_struct(p);
+-		kthread_bind(p, cpu);
+-		sched_set_stop_task(cpu, p);
+-		stopper->thread = p;
++		if (!stopper->thread) {
++			BUG_ON(stopper->enabled ||
++			       !list_empty(&stopper->works));
++			p = kthread_create_on_cpu(cpu_stopper_thread,
++						  stopper,
++						  cpu,
++						  "migration/%d");
++			if (IS_ERR(p))
++				return notifier_from_errno(PTR_ERR(p));
++			get_task_struct(p);
++			stopper->thread = p;
++		}
++		sched_set_stop_task(cpu, stopper->thread);
+ 		break;
+ 
+ 	case CPU_ONLINE:
+-		/* strictly unnecessary, as first user will wake it */
+-		wake_up_process(stopper->thread);
++		kthread_unpark(stopper->thread);
+ 		/* mark enabled */
+ 		spin_lock_irq(&stopper->lock);
+ 		stopper->enabled = true;
+@@ -339,16 +337,13 @@ static int __cpuinit cpu_stop_cpu_callback(struct notifier_block *nfb,
+ 
+ 		sched_set_stop_task(cpu, NULL);
+ 		/* kill the stopper */
+-		kthread_stop(stopper->thread);
++		kthread_park(stopper->thread);
+ 		/* drain remaining works */
+ 		spin_lock_irq(&stopper->lock);
+ 		list_for_each_entry(work, &stopper->works, list)
+ 			cpu_stop_signal_done(work->done, false);
+ 		stopper->enabled = false;
+ 		spin_unlock_irq(&stopper->lock);
+-		/* release the stopper */
+-		put_task_struct(stopper->thread);
+-		stopper->thread = NULL;
+ 		break;
+ 	}
+ #endif
