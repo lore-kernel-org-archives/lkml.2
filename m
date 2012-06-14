@@ -1,193 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754636Ab2FNHwW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 03:52:22 -0400
-Received: from idcmail-mo1so.shaw.ca ([24.71.223.10]:20464 "EHLO
-	idcmail-mo1so.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753148Ab2FNHwU convert rfc822-to-8bit (ORCPT
+	id S1754807Ab2FNHww (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 03:52:52 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:42077 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753073Ab2FNHwu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 03:52:20 -0400
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.1 cv=2TvZ7eE48NdEYeaL5Xf58dNzJU178UzT+2lxUZ5Mhss= c=1 sm=1
- a=2xMy4U34kMcA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10
- a=akHhUqyx16pf1Jmt3m6W8Q==:17 a=D19gQVrFAAAA:8 a=7-415B0cAAAA:8
- a=VwQbUJbxAAAA:8 a=-JuH-FiwPhXKxymqBeQA:9 a=CjuIK1q_8ugA:10
- a=x8gzFH9gYPwA:10 a=FtYAf7_czLgA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-Subject: Re: [PATCH] mm: add gfp_mask parameter to vm_map_ram()
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Andreas Dilger <adilger@dilger.ca>
-In-Reply-To: <20120614033429.GD7339@dastard>
-Date: Thu, 14 Jun 2012 01:52:18 -0600
-Cc: Minchan Kim <minchan@kernel.org>, Fengguang Wu <fengguang.wu@intel.com>,
-        Dave Chinner <dchinner@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>, xfs@oss.sgi.com
-Content-Transfer-Encoding: 8BIT
-Message-Id: <BCBB024C-7320-4275-BB1D-97ECEA5FEFDA@dilger.ca>
-References: <20120612012134.GA7706@localhost> <20120613123932.GA1445@localhost> <20120614012026.GL3019@devil.redhat.com> <20120614014902.GB7289@localhost> <4FD94779.3030108@kernel.org> <20120614033429.GD7339@dastard>
-To: Dave Chinner <david@fromorbit.com>
-X-Mailer: Apple Mail (2.1084)
+	Thu, 14 Jun 2012 03:52:50 -0400
+X-AuditID: 9c93016f-b7bd9ae000000ea6-d2-4fd9984fc452
+From: Namhyung Kim <namhyung@kernel.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: lenb@kernel.org, linux-pm@lists.linux-foundation.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org
+Subject: Re: [RFC 1/4] cpuidle: define the enter function in the driver structure
+References: <1339171365-4098-1-git-send-email-daniel.lezcano@linaro.org>
+Date: Thu, 14 Jun 2012 16:49:58 +0900
+In-Reply-To: <1339171365-4098-1-git-send-email-daniel.lezcano@linaro.org>
+	(Daniel Lezcano's message of "Fri, 8 Jun 2012 18:02:42 +0200")
+Message-ID: <87r4ti49jt.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.95 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-06-13, at 9:34 PM, Dave Chinner wrote:
-> On Thu, Jun 14, 2012 at 11:07:53AM +0900, Minchan Kim wrote:
->> Hi Fengguang,
->> 
->> On 06/14/2012 10:49 AM, Fengguang Wu wrote:
->> 
->>> On Thu, Jun 14, 2012 at 11:20:26AM +1000, Dave Chinner wrote:
->>>> On Wed, Jun 13, 2012 at 08:39:32PM +0800, Fengguang Wu wrote:
->>>>> Hi Christoph, Dave,
->>>>> 
->>>>> I got this lockdep warning on XFS when running the xfs tests:
-> 
-> [rant warning]
+Hi,
 
-I heartily agree with Dave on this.  There are plenty of places
-that would be simplified by making vmalloc() work better.  Instead,
-there are workarounds (e.g. allocating 2-level trees of pointers
-to smaller kmalloc'd elements, instead of a single large array)
-spread around that add to code complexity and memory inefficiency.
+On Fri,  8 Jun 2012 18:02:42 +0200, Daniel Lezcano wrote:
+> We have the state index passed as parameter to the 'enter' function.
+> Most of the drivers assign their 'enter' functions several times in
+> the cpuidle_state structure, as we have the index, we can delegate
+> to the driver to handle their own callback array.
+>
+> That will have the benefit of removing multiple lines of code in the
+> different drivers.
+>
+> In order to smoothly modify the driver, the 'enter' function are in
+> the driver structure and in the cpuidle state structure. That will
+> let the time to modify the different drivers one by one.
+> So the 'cpuidle_enter' function checks if the 'enter' callback is
+> assigned in the driver structure and use it, otherwise it invokes
+> the 'enter' assigned to the cpuidle_state.
+>
+> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+> ---
+>  drivers/cpuidle/cpuidle.c |    4 +++-
+>  include/linux/cpuidle.h   |    1 +
+>  2 files changed, 4 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+> index d90519c..155dee7 100644
+> --- a/drivers/cpuidle/cpuidle.c
+> +++ b/drivers/cpuidle/cpuidle.c
+> @@ -46,7 +46,9 @@ static inline int cpuidle_enter(struct cpuidle_device *dev,
+>  				struct cpuidle_driver *drv, int index)
+>  {
+>  	struct cpuidle_state *target_state = &drv->states[index];
+> -	return target_state->enter(dev, drv, index);
+> +
+> +	return drv->enter(dev, drv, index) ? drv->enter(dev, drv, index) :
 
-I don't think there is a real danger of people starting to abuse
-vmalloc() for everything, but does it really make sense to keep
-some component of the kernel at sub-par functionality/efficiency
-just to discourage its use?
+Do you mean:
+	       drv->enter ? drv->enter(dev, drv, index) :
+?
 
-Cheers, Andreas
-
->>>> Bug in vm_map_ram - it does an unconditional GFP_KERNEL allocation
->>>> here, and we are in a GFP_NOFS context. We can't pass a gfp_mask to
->>>> vm_map_ram(), so until vm_map_ram() grows that we can't fix it...
->>> 
->>> This trivial patch should fix it.
-> .....
->> 
->> It shouldn't work because vmap_page_range still can allocate GFP_KERNEL by pud_alloc in vmap_pud_range.
->> For it, I tried [1] but other mm guys want to add WARNING [2] so let's avoiding gfp context passing.
-> 
-> Oh, wonderful, you're pulling the "it's not a MM issue, don't use
-> vmalloc" card.
-> 
->> [1] https://lkml.org/lkml/2012/4/23/77
-> 
-> https://lkml.org/lkml/2012/4/24/29
-> 
-> "vmalloc was never supposed to use gfp flags for allocation
-> "context" restriction. I.e., it was always supposed to have
-> blocking, fs, and io capable allocation context."
-> 
-> vmalloc always was a badly neglected, ugly step-sister of kmalloc
-> that was kept in the basement and only brought out when the tax
-> collector called.  But that inner ugliness doesn't change the fact
-> that beatiful things have been built around it. XFS has used
-> vm_map_ram() and it's predecessor since it was first ported to linux
-> some 13 or 14 years ago, so the above claim is way out of date. i.e.
-> vmalloc has been used in GFP_NOFS context since before that flag
-> even existed....
-> 
-> http://lkml.org/lkml/2012/4/24/67
-> 
-> "I would say add a bit of warnings and documentation, and see what
-> can be done about callers."
-> 
-> Wonderful. Well, there's about 2 years of work queued up for me
-> before I even get to the do the open heart surgery that would allow
-> XFS to handle memory allocation failures at this level without
-> causing the filesystem to shut down.
-> 
-> Andrew Morton's response:
-> 
-> https://lkml.org/lkml/2012/4/24/413
-> 
-> "There are gruesome problems in block/blk-throttle.c (thread
-> "mempool, percpu, blkcg: fix percpu stat allocation and remove
-> stats_lock").  It wants to do an alloc_percpu()->vmalloc() from the
-> IO submission path, under GFP_NOIO.
-> 
-> Changing vmalloc() to take a gfp_t does make lots of sense, although
-> I worry a bit about making vmalloc() easier to use!"
-> 
-> OK, so according to Andrew there is no technical reason why it can't
-> be done, it's just handwaving about "vmalloc is bad"....
-> 
-> 
->> [2] https://lkml.org/lkml/2012/5/2/340
-> 
-> https://lkml.org/lkml/2012/5/2/452
-> 
-> "> Where are these offending callsites?
-> 
-> dm:
-> ...
-> ubi:
-> ....
-> ext4:
-> ....
-> ntfs:
-> ....
-> ubifs:
-> ....
-> mm:
-> ....
-> ceph:
-> ...."
-> 
-> So, we've got a bunch of filesystems that require vmalloc under
-> GFP_NOFS conditions. Perhaps there's a reason for needing to be able
-> to do this in filesystem code? Like, perhaps, avoiding memory
-> reclaim deadlocks?
-> 
-> https://lkml.org/lkml/2012/5/3/27
-> 
-> "Note that in writeback paths, a "good citizen" filesystem should
-> not require any allocations, or at least it should be able to
-> tolerate allocation failures.  So fixing that would be a good idea
-> anyway."
-> 
-> Oh, please. I have been hearing this for years, and are we any
-> closer to it? No, we are further away from ever being able to
-> acheive this than ever. Face it, filesystems require memory
-> allocation to write dirty data to disk, and the amount is almost
-> impossible to define. Hence mempools can't be used because we can't
-> give any guarantees of forward progress. And for vmalloc?
-> 
-> Filesystems widely use vmalloc/vm_map_ram because kmalloc fails on
-> large contiguous allocations. This renders kmalloc unfit for
-> purpose, so we have to fall back to single page allocation and
-> vm_map_ram or vmalloc so that the filesystem can function properly.
-> And to avoid deadlocks, all memory allocation must be able to
-> specify GFP_NOFS to prevent the MM subsystem from recursing into the
-> filesystem. Therefore, vmalloc needs to support GFP_NOFS.
-> 
-> I don't care how you make it happen, just fix it. Trying to place
-> the blame on the filesystem folk for using vmalloc in GFP_NOFS
-> contexts is a total and utter cop-out, because mm folk of all people
-> should know that non-zero order kmalloc is not a reliable
-> alternative....
-> 
-> [end rant]
-> 
-> Cheers,
-> 
-> Dave.
-> -- 
-> Dave Chinner
-> david@fromorbit.com
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Thanks,
+Namhyung
 
 
-Cheers, Andreas
-
-
-
-
-
+> +		target_state->enter(dev, drv, index);
+>  }
+>  
+>  static inline int cpuidle_enter_tk(struct cpuidle_device *dev,
+> diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
+> index 6c26a3d..d82e169 100644
+> --- a/include/linux/cpuidle.h
+> +++ b/include/linux/cpuidle.h
+> @@ -130,6 +130,7 @@ struct cpuidle_driver {
+>  	struct cpuidle_state	states[CPUIDLE_STATE_MAX];
+>  	int			state_count;
+>  	int			safe_state_index;
+> +	int (*enter)(struct cpuidle_device *, struct cpuidle_driver *, int);
+>  };
+>  
+>  #ifdef CONFIG_CPU_IDLE
