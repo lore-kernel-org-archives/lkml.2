@@ -1,72 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756131Ab2FNSYz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 14:24:55 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56560 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755387Ab2FNSYy (ORCPT
+	id S1756111Ab2FNS2I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 14:28:08 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:22153 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755387Ab2FNS2H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 14:24:54 -0400
-Date: Thu, 14 Jun 2012 19:23:50 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: T Makphaibulchoke <tmac@hp.com>, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, linux390@de.ibm.com, lethal@linux-sh.org,
-        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
-        kaloz@openwrt.org, nicolas.pitre@linaro.org, jj@chaosbits.net,
-        matt.fleming@intel.com, lasse.collin@tukaani.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org
-Subject: Re: [PATCH v2] lib/decompress_unxz.c: removing all memory helper
-	functions
-Message-ID: <20120614182350.GB7628@n2100.arm.linux.org.uk>
-References: <1339470307-28223-1-git-send-email-tmac@hp.com> <4FD6B472.7040609@zytor.com>
+	Thu, 14 Jun 2012 14:28:07 -0400
+Date: Thu, 14 Jun 2012 21:27:45 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: manish.rangankar@qlogic.com
+Cc: Mike Christie <michaelc@cs.wisc.edu>, open-iscsi@googlegroups.com,
+        linux-kernel@vger.kernel.org
+Subject: re: [SCSI] qla4xxx: support iscsiadm session mgmt
+Message-ID: <20120614182745.GA6383@elgon.mountain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4FD6B472.7040609@zytor.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 11, 2012 at 08:16:02PM -0700, H. Peter Anvin wrote:
-> On 06/11/2012 08:05 PM, T Makphaibulchoke wrote:
-> > Cleaning up the file lib/decompress_unxz.c, moving all memory helper functions,
-> > e.g. memmove, to a new common source file, lib/boot/mem.c.
-> > 
-> > In additon to including the decompressor, any architecture supporting the XZ
-> > decompression needs to also include this new source file.
-> > 
-> > Also moving some other duplicated memory helper functions to this new source
-> > file from the arm, s390, sh and x86 preboot environments.  All 4 architectures
-> > build without error when using any compression.
-> > 
-> > Adding a new file lib/boot/mem.c, containing memory helper functions required
-> > by different compression types.
-> > 
-> > Adding memcmp declaration workaround and removing the memmove and memcpy
-> > defines workaround from arch/arm/boot/compressed/decompress.c
-> > 
-> > Removing the common functions, memmove, memcmp and memset, and adding the new
-> > source file include to arch/arm/boot/compressed/string.c.
-> > 
-> > Removing the memcpy and memmove functions and adding the new source file
-> > include to arch/s390/boot/compressed/misc.c.
-> > 
-> > Removing the memset function and adding the new source file include to
-> > arch/sh/boot/compressed/misc.c
-> > 
-> > Removing the memset function from arch/x86/boot/compressed/misc.c and move
-> > the memcpy function to the file arch/x86/boot/compressed/string.c
-> > 
-> > Adding the memcpy function and the new source file include to
-> > arch/x86/boot/compressed/string.c
-> > 
-> 
-> I can take this if Russell, Martin or Heiko, and Paul are willing to ack it.
+Hi Manish,
 
-Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Tested-by: Russell King <rmk+kernel@arm.linux.org.uk>
+The patch b3a271a94d00: "[SCSI] qla4xxx: support iscsiadm session 
+mgmt" from Jul 25, 2011, leads to the following warning:
+drivers/scsi/qla4xxx/ql4_os.c:4479 qla4xxx_get_ep_fwdb()
+	 warn: casting from 16 to 28 bytes
 
-(Tested on OMAP4430SDP).
+(Sort of).
+
+drivers/scsi/qla4xxx/ql4_os.c qla4xxx_ep_connect()
+   705          qla_ep = ep->dd_data;
+   706          memset(qla_ep, 0, sizeof(struct qla_endpoint));
+   707          if (dst_addr->sa_family == AF_INET) {
+   708                  memcpy(&qla_ep->dst_addr, dst_addr, sizeof(struct sockaddr_in));
+   709                  addr = (struct sockaddr_in *)&qla_ep->dst_addr;
+   710                  DEBUG2(ql4_printk(KERN_INFO, ha, "%s: %pI4\n", __func__,
+   711                                    (char *)&addr->sin_addr));
+   712          } else if (dst_addr->sa_family == AF_INET6) {
+   713                  memcpy(&qla_ep->dst_addr, dst_addr,
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   714                         sizeof(struct sockaddr_in6));
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Both qla_ep->dst_addr and dst_addr are type struct sockaddr.  We are
+copying sizeof(struct sockaddr_in6) bytes which is 12 bytes larger.  I
+don't know the actual size of qla_ep->dst_addr but dst_addr is allocated
+in qla4xxx_get_ep_fwdb() as a struct sockaddr.  So we are copying past
+the end of the struct here and it's possibly an information leak or even
+a memory corruption issue depending on how much space ep->dd_data has.
+
+   715                  addr6 = (struct sockaddr_in6 *)&qla_ep->dst_addr;
+   716                  DEBUG2(ql4_printk(KERN_INFO, ha, "%s: %pI6\n", __func__,
+   717                                    (char *)&addr6->sin6_addr));
+   718          }
+
+regards,
+dan carpenter
+
