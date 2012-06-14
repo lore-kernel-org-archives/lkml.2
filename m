@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756173Ab2FNX6U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 19:58:20 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45919 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755903Ab2FNX6P (ORCPT
+	id S1756684Ab2FOAMD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 20:12:03 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:46571 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756195Ab2FNX6V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 19:58:15 -0400
-Message-Id: <20120614235645.163459203@linuxfoundation.org>
+	Thu, 14 Jun 2012 19:58:21 -0400
+Message-Id: <20120614235644.653396192@linuxfoundation.org>
 User-Agent: quilt/0.60-20.1
-Date: Thu, 14 Jun 2012 16:56:54 -0700
+Date: Thu, 14 Jun 2012 16:56:48 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, AnilKumar Ch <anilkumar@ti.com>,
-        Wolfgang Grandegger <wg@grandegger.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [ 10/20] can: c_can: fix race condition in c_can_open()
+        alan@lxorguk.ukuu.org.uk, Daniel <garkein@mailueberfall.de>,
+        Mathias Krause <minipli@googlemail.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: [ 04/20] crypto: aesni-intel - fix unaligned cbc decrypt for x86-32
 In-Reply-To: <20120614235648.GA6552@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,45 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: AnilKumar Ch <anilkumar@ti.com>
+From: Mathias Krause <minipli@googlemail.com>
 
-commit f461f27a4436dbe691908fe08b867ef888848cc3 upstream.
+commit 7c8d51848a88aafdb68f42b6b650c83485ea2f84 upstream.
 
-Fix the issue of C_CAN interrupts getting disabled forever when canconfig
-utility is used multiple times. According to NAPI usage we disable all
-the hardware interrupts in ISR and re-enable them in poll(). Current
-implementation calls napi_enable() after hardware interrupts are enabled.
-If we get any interrupts between these two steps then we do not process
-those interrupts because napi is not enabled. Mostly these interrupts
-come because of STATUS is not 0x7 or ERROR interrupts. If napi_enable()
-happens before HW interrupts enabled then c_can_poll() function will be
-called eventual re-enabling.
+The 32 bit variant of cbc(aes) decrypt is using instructions requiring
+128 bit aligned memory locations but fails to ensure this constraint in
+the code. Fix this by loading the data into intermediate registers with
+load unaligned instructions.
 
-This patch moves the napi_enable() call before interrupts enabled.
+This fixes reported general protection faults related to aesni.
 
-Signed-off-by: AnilKumar Ch <anilkumar@ti.com>
-Acked-by: Wolfgang Grandegger <wg@grandegger.com>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+References: https://bugzilla.kernel.org/show_bug.cgi?id=43223
+Reported-by: Daniel <garkein@mailueberfall.de>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/can/c_can/c_can.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/x86/crypto/aesni-intel_asm.S |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/net/can/c_can/c_can.c
-+++ b/drivers/net/can/c_can/c_can.c
-@@ -1066,10 +1066,11 @@ static int c_can_open(struct net_device
- 		goto exit_irq_fail;
- 	}
- 
-+	napi_enable(&priv->napi);
-+
- 	/* start the c_can controller */
- 	c_can_start(dev);
- 
--	napi_enable(&priv->napi);
- 	netif_start_queue(dev);
- 
- 	return 0;
+--- a/arch/x86/crypto/aesni-intel_asm.S
++++ b/arch/x86/crypto/aesni-intel_asm.S
+@@ -2460,10 +2460,12 @@ ENTRY(aesni_cbc_dec)
+ 	pxor IN3, STATE4
+ 	movaps IN4, IV
+ #else
+-	pxor (INP), STATE2
+-	pxor 0x10(INP), STATE3
+ 	pxor IN1, STATE4
+ 	movaps IN2, IV
++	movups (INP), IN1
++	pxor IN1, STATE2
++	movups 0x10(INP), IN2
++	pxor IN2, STATE3
+ #endif
+ 	movups STATE1, (OUTP)
+ 	movups STATE2, 0x10(OUTP)
 
 
