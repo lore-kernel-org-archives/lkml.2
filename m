@@ -1,44 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755415Ab2FNJCJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 05:02:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44111 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751582Ab2FNJCH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 05:02:07 -0400
-Message-ID: <4FD9A88A.8040701@redhat.com>
-Date: Thu, 14 Jun 2012 11:02:02 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1755428Ab2FNJDJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 05:03:09 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:38905 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751582Ab2FNJDI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 05:03:08 -0400
+Message-ID: <4FD9A79D.9030303@huawei.com>
+Date: Thu, 14 Jun 2012 16:58:05 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120312 Thunderbird/11.0
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH 2/2] msync: start async writeout when MS_ASYNC
-References: <1338497035-13014-1-git-send-email-pbonzini@redhat.com> <1338497035-13014-3-git-send-email-pbonzini@redhat.com> <20120613142949.734818a8.akpm@linux-foundation.org>
-In-Reply-To: <20120613142949.734818a8.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+CC: <linux-mm@kvack.org>, <kamezawa.hiroyu@jp.fujitsu.com>, <dhillf@gmail.com>,
+        <rientjes@google.com>, <mhocko@suse.cz>, <akpm@linux-foundation.org>,
+        <hannes@cmpxchg.org>, <linux-kernel@vger.kernel.org>,
+        <cgroups@vger.kernel.org>
+Subject: Re: [PATCH -V9 11/15] hugetlb/cgroup: Add charge/uncharge routines
+ for hugetlb cgroup
+References: <1339583254-895-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1339583254-895-12-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+In-Reply-To: <1339583254-895-12-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="GB2312"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.166.88.162]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 13/06/2012 23:29, Andrew Morton ha scritto:
-> > If the application does not want to start I/O, it can simply call msync
-> > with flags equal to MS_INVALIDATE.  This one remains a no-op, as it should
-> > be on a reasonable implementation.
-> 
-> Means that people will find that their msync(MS_ASYNC) call will newly
-> start IO.  This may well be undesirable for some.
+> +int hugetlb_cgroup_charge_cgroup(int idx, unsigned long nr_pages,
 
-If they knew it was a no-op, and relying on it, they might as well not
-have called it at all and save a syscall.
+> +				 struct hugetlb_cgroup **ptr)
+> +{
+> +	int ret = 0;
+> +	struct res_counter *fail_res;
+> +	struct hugetlb_cgroup *h_cg = NULL;
+> +	unsigned long csize = nr_pages * PAGE_SIZE;
+> +
+> +	if (hugetlb_cgroup_disabled())
+> +		goto done;
+> +	/*
+> +	 * We don't charge any cgroup if the compound page have less
+> +	 * than 3 pages.
+> +	 */
+> +	if (huge_page_order(&hstates[idx]) < HUGETLB_CGROUP_MIN_ORDER)
+> +		goto done;
+> +again:
+> +	rcu_read_lock();
+> +	h_cg = hugetlb_cgroup_from_task(current);
+> +	if (!h_cg)
 
-> Also, it hardwires into the kernel behaviour which userspace itself
-> could have initiated, with sync_file_range().  ie: reduced flexibility.
 
-No, it hardwires into the kernel behaviour which is mentioned in the
-spec.   Strictly speaking it is correct that an asynchronous operation
-is never done (the two are indistinguishable), but still this patch
-improves the fidelity to the specification and in a portable manner.
+In no circumstances should h_cg be NULL.
 
-Paolo
+> +		h_cg = root_h_cgroup;
+> +
+> +	if (!css_tryget(&h_cg->css)) {
+> +		rcu_read_unlock();
+> +		goto again;
+> +	}
+> +	rcu_read_unlock();
+> +
+> +	ret = res_counter_charge(&h_cg->hugepage[idx], csize, &fail_res);
+> +	css_put(&h_cg->css);
+> +done:
+> +	*ptr = h_cg;
+> +	return ret;
+> +}
+
+
