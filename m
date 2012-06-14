@@ -1,134 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755153Ab2FNAvz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Jun 2012 20:51:55 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:49335 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753039Ab2FNAvy (ORCPT
+	id S1755002Ab2FNA5M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Jun 2012 20:57:12 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54009 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752499Ab2FNA5K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Jun 2012 20:51:54 -0400
-X-AuditID: 9c930197-b7b5dae000004b23-f1-4fd935a49449
-Message-ID: <4FD935A4.3040207@kernel.org>
-Date: Thu, 14 Jun 2012 09:51:48 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Wed, 13 Jun 2012 20:57:10 -0400
+Message-ID: <4FD936E4.6070904@gmail.com>
+Date: Thu, 14 Jun 2012 10:57:08 +1000
+From: Jason Stubbs <jasonbstubbs@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:13.0) Gecko/20120601 Thunderbird/13.0
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH] mm: clean up __count_immobile_pages
-References: <1339380442-1137-1-git-send-email-minchan@kernel.org> <20120611144011.60fd76c8.akpm@linux-foundation.org> <4FD67E00.4040700@kernel.org> <20120613161921.e791d469.akpm@linux-foundation.org>
-In-Reply-To: <20120613161921.e791d469.akpm@linux-foundation.org>
+To: Matt Wilson <msw@amazon.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
+Subject: Re: PROBLEM: Possible race between xen, md, dm and/or xfs
+References: <4FD1918A.2060908@gmail.com> <20120612035737.GL22848@dastard> <4FD731F9.8070509@gmail.com> <20120614001855.GA2136@US-SEA-R8XVZTX>
+In-Reply-To: <20120614001855.GA2136@US-SEA-R8XVZTX>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/14/2012 08:19 AM, Andrew Morton wrote:
-
-> On Tue, 12 Jun 2012 08:23:44 +0900
-> Minchan Kim <minchan@kernel.org> wrote:
+On 2012-6-14 10:18 , Matt Wilson wrote:
+> On Tue, Jun 12, 2012 at 05:11:37AM -0700, Jason Stubbs wrote:
+>> I'll be sure to give Amazon ample opportunity to diagnose things from
+>> there side should the issue occur again and hopefully there won't be
+>> any more people reporting extraneous issues.
 > 
->> On 06/12/2012 06:40 AM, Andrew Morton wrote:
->>
->>> On Mon, 11 Jun 2012 11:07:22 +0900
->>> Minchan Kim <minchan@kernel.org> wrote:
->>>
->>>> __count_immobile_pages naming is rather awkward.
->>>> This patch clean up the function and add comment.
->>>
->>> This conflicts with
->>> mm-compaction-handle-incorrect-migrate_unmovable-type-pageblocks.patch
->>> and its fixes.
->>
+> If you're able to reproduce this hang, I'm sure that we can get to the
+> root of the problem quite quickly. Short of that, if you can provide a
+> running instance that is exhibiting the problem we can do some
+> live-system debugging. It is much more difficult to determine root
+> cause and verify fixes without reproduction instructions.
+
+We've got about 50 instances using the same disk layout, but have only
+been running these new instances for a couple of months. We've been
+using EC2 and EBS for three years now though, which is why I thought
+it was likely something to do with the disk layout of the new instances.
+Thinking that, my first concern was to get the instance working again
+to keep the service running smoothly.
+
+Come to think of it though, I think I might have had this issue once
+before with EBS. Still, that makes two occurrences in somewhere around
+70 years combined uptime, so it was either a one off or a very rare
+corner case.
+
+Either way, I think all that can be done is to wait for it to happen
+again, at which time I'll take it out of production, leave it running
+and set up a new instance for production instead.
+
+> Given the kernel version you reported in your traces, I can at least
+> rule out one known bug that caused blkfront to wait forever for an IO
+> to complete: 
+>   http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=dffe2e1
 > 
-> It would be useful to Cc Bart when we're discussing his patch...
-> 
->> I wanted to revert [1] and friends and merge again based on [2] and this patch.
->> Because [1] has still bug I explained in [2]. If it is merged without [2], it simply can
->> spread bug from one place(memory hotplug) to two place(memory hotplug and compaction).
->>
->> We discussed real effectiveness of [1] because the patch is rather complicated than
->> expectation. I don't want to add unnecessary maintain cost if it doesn't have proved benefit.
->>
->> KOSAKI and me : doesn't want to merge without proving (https://lkml.org/lkml/2012/6/5/3)
->> Mel: Pass the decision to CMA guys (https://lkml.org/lkml/2012/6/11/242)
->> Rik: want to test it based on THP alloc ratio (https://lkml.org/lkml/2012/6/11/293)
->>
->> I guess anyone has no sure for needing it, at least.
->>
->> Even, [1] added new vmstat "compact_rescued_unmovable_blocks". 
->> Why I firstly suggest is just for the proving the effectiveness easily and wanted to
->> revert the vmstat later before merging mainline if we prove it.
->> (But it seems that KOSAKI doesn't like it - https://lkml.org/lkml/2012/6/5/282)
->> But now Bartlomiej want to maintain it permanently in vmstat.
->> IMHO, it's not a good idea.
->> Anyway, adding new vmstat part should be careful and get a agreement from mm guys.
->>
->> [1] mm-compaction-handle-incorrect-migrate_unmovable-type-pageblocks.patch
->> [2] [PATCH] mm: do not use page_count without a page pin
-> 
-> Right now I'm inclined to drop
-> mm-compaction-handle-incorrect-migrate_unmovable-type-pageblocks.patch
-> then sit back and let you guys hash out a new patch(set).
+> The kernel version you're using using includes the follow-on change to
+> use fasteoi:
+>   http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=3588fe2
 
+Yep, this is exactly the sort of corner case I though it might be.
+I've confirmed that this change against the sources for the kernel
+I'm using, though.
 
-Bartlomiej already agreed resending based on [2].
+> I'm sorry that I can't be more of more immediate help. If you
+> encounter the problem again, please contact developer support.
 
-Quote from last discussion with Bart
-<<
-On Monday 11 June 2012 03:26:49 Minchan Kim wrote:
-> Hi Bartlomiej,
-> 
-> On 06/08/2012 05:46 PM, Bartlomiej Zolnierkiewicz wrote:
-> 
-> > 
-> > Hi,
-> > 
-> > This version is much simpler as it just uses __count_immobile_pages()
-> > instead of using its own open coded version and it integrates changes
-> 
-> 
-> That's a good idea. I don't have noticed that function is there.
-> When I look at the function, it has a problem, too.
-> Please, look at this.
-> 
-> https://lkml.org/lkml/2012/6/10/180
-> 
-> If reviewer is okay that patch, I would like to resend your patch based on that. 
+No problem. We have a support contract and I did go there first, but
+the response was basically that nothing can be done without the instance
+running. I supplied the traces, but it wasn't clear whether they'd
+actually been investigated or not, hence I chose to report here. 
+In hindsight, I realize I should have kept the instance running, but
+I don't tend to think so clearly when it's the middle of the night. ;)
 
-Ok, I would later merge all changes into v11 and rebase on top of your patch."
->>
+As for not being able to solve the problem, I don't mind at all. I just
+wanted to make sure that an adequate attempt had been made to solve the
+problem. We "architect for failure" as much as possible, so the problem
+in itself is not such a big deal. Thanks for looking into it!
 
-Remain thing is that I should resend [2] with Andrea's two suggestion.
-
-(1) add comment THP tail page skip
-(2) find unmovable page improvement on THP page
-
-(1) is trivial so I am happy to add in my patch but (2) is going on discuss so didn't complete now
-And (2) is optimization patch, not critical BUG fix so I will make it as another patch.
-
-So, I will resend [2] and this patch mm: clean up __count_immobile_pages as soon as possible.
-I hope Bartlomiej resend his patch based on them.
-
-Thanks, Andrew.
-
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
-
-
-
--- 
-Kind regards,
-Minchan Kim
+--
+Regards,
+Jason Stubbs
