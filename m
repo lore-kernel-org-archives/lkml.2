@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756759Ab2FNX7Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 19:59:24 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:46571 "EHLO
+	id S1756777Ab2FNX72 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 19:59:28 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45611 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756727Ab2FNX7T (ORCPT
+	with ESMTP id S1756727Ab2FNX7Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 19:59:19 -0400
-Message-Id: <20120614235624.784930302@linuxfoundation.org>
+	Thu, 14 Jun 2012 19:59:25 -0400
+Message-Id: <20120614235624.973120740@linuxfoundation.org>
 User-Agent: quilt/0.60-20.1
-Date: Thu, 14 Jun 2012 16:56:33 -0700
+Date: Thu, 14 Jun 2012 16:56:35 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Cliff Wickman <cpw@sgi.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [ 10/42] x86/uv: Fix UV2 BAU legacy mode
+        alan@lxorguk.ukuu.org.uk, Peter Korsgaard <jacmet@sunsite.dk>,
+        George Pontis <GPontis@z9.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: [ 12/42] hwrng: atmel-rng - fix race condition leading to repeated bits
 In-Reply-To: <20120614235636.GA5275@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,49 +27,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Cliff Wickman <cpw@sgi.com>
+From: Peter Korsgaard <jacmet@sunsite.dk>
 
-commit d5d2d2eea84b0d8450b082edbc3dbde41fb8bfd8 upstream.
+commit 121daad8fd1dce63076fa55aaedd5dc3f981b334 upstream.
 
-The SGI Altix UV2 BAU (Broadcast Assist Unit) as used for
-tlb-shootdown (selective broadcast mode) always uses UV2
-broadcast descriptor format. There is no need to clear the
-'legacy' (UV1) mode, because the hardware always uses UV2 mode
-for selective broadcast.
+Data valid gets cleared by reading the ISR (status register) and NOT from
+reading ODATA (data register). A new data word can become available between
+checking ISR and reading ODATA, causing us to reuse the same data word next
+time atmel_trng_read() gets called, if that happens before the following
+data word is ready.
 
-But the BIOS uses general broadcast and legacy mode, and the
-hardware pays attention to the legacy mode bit for general
-broadcast. So the kernel must not clear that mode bit.
+With this fixed, rngtest no longer complains of 'Continous run' errors.
+Before:
 
-Signed-off-by: Cliff Wickman <cpw@sgi.com>
-Link: http://lkml.kernel.org/r/E1SccoO-0002Lh-Cb@eag09.americas.sgi.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+rngtest -c 1000 < /dev/hwrng
+rngtest 3
+Copyright (c) 2004 by Henrique de Moraes Holschuh
+This is free software; see the source for copying conditions.  There is NO warr.
+
+rngtest: starting FIPS tests...
+rngtest: bits received from input: 20000032
+rngtest: FIPS 140-2 successes: 923
+rngtest: FIPS 140-2 failures: 77
+rngtest: FIPS 140-2(2001-10-10) Monobit: 0
+rngtest: FIPS 140-2(2001-10-10) Poker: 0
+rngtest: FIPS 140-2(2001-10-10) Runs: 1
+rngtest: FIPS 140-2(2001-10-10) Long run: 0
+rngtest: FIPS 140-2(2001-10-10) Continuous run: 76
+rngtest: input channel speed: (min=721.402; avg=46003.510; max=49321.338)Kibitss
+rngtest: FIPS tests speed: (min=11.442; avg=12.714; max=12.801)Mibits/s
+rngtest: Program run time: 1931860 microseconds
+
+After:
+
+rngtest -c 1000 < /dev/hwrng
+rngtest 3
+Copyright (c) 2004 by Henrique de Moraes Holschuh
+This is free software; see the source for copying conditions.  There is NO warr.
+
+rngtest: starting FIPS tests...
+rngtest: bits received from input: 20000032
+rngtest: FIPS 140-2 successes: 1000
+rngtest: FIPS 140-2 failures: 0
+rngtest: FIPS 140-2(2001-10-10) Monobit: 0
+rngtest: FIPS 140-2(2001-10-10) Poker: 0
+rngtest: FIPS 140-2(2001-10-10) Runs: 0
+rngtest: FIPS 140-2(2001-10-10) Long run: 0
+rngtest: FIPS 140-2(2001-10-10) Continuous run: 0
+rngtest: input channel speed: (min=777.518; avg=36988.482; max=43115.342)Kibitss
+rngtest: FIPS tests speed: (min=11.951; avg=12.715; max=12.887)Mibits/s
+rngtest: Program run time: 2035543 microseconds
+
+Signed-off-by: Peter Korsgaard <jacmet@sunsite.dk>
+Reported-by: George Pontis <GPontis@z9.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/uv/uv_bau.h |    1 -
- arch/x86/platform/uv/tlb_uv.c    |    1 -
- 2 files changed, 2 deletions(-)
+ drivers/char/hw_random/atmel-rng.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/arch/x86/include/asm/uv/uv_bau.h
-+++ b/arch/x86/include/asm/uv/uv_bau.h
-@@ -149,7 +149,6 @@
- /* 4 bits of software ack period */
- #define UV2_ACK_MASK			0x7UL
- #define UV2_ACK_UNITS_SHFT		3
--#define UV2_LEG_SHFT UV2H_LB_BAU_MISC_CONTROL_USE_LEGACY_DESCRIPTOR_FORMATS_SHFT
- #define UV2_EXT_SHFT UV2H_LB_BAU_MISC_CONTROL_ENABLE_EXTENDED_SB_STATUS_SHFT
- 
- /*
---- a/arch/x86/platform/uv/tlb_uv.c
-+++ b/arch/x86/platform/uv/tlb_uv.c
-@@ -1295,7 +1295,6 @@ static void __init enable_timeouts(void)
- 		 */
- 		mmr_image |= (1L << SOFTACK_MSHIFT);
- 		if (is_uv2_hub()) {
--			mmr_image &= ~(1L << UV2_LEG_SHFT);
- 			mmr_image |= (1L << UV2_EXT_SHFT);
- 		}
- 		write_mmr_misc_control(pnode, mmr_image);
+--- a/drivers/char/hw_random/atmel-rng.c
++++ b/drivers/char/hw_random/atmel-rng.c
+@@ -36,6 +36,13 @@ static int atmel_trng_read(struct hwrng
+ 	/* data ready? */
+ 	if (readl(trng->base + TRNG_ODATA) & 1) {
+ 		*data = readl(trng->base + TRNG_ODATA);
++		/*
++		  ensure data ready is only set again AFTER the next data
++		  word is ready in case it got set between checking ISR
++		  and reading ODATA, so we don't risk re-reading the
++		  same word
++		*/
++		readl(trng->base + TRNG_ISR);
+ 		return 4;
+ 	} else
+ 		return 0;
 
 
