@@ -1,108 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756548Ab2FORh3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 13:37:29 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:37972 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752210Ab2FORh2 (ORCPT
+	id S1755977Ab2FORj7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 13:39:59 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:53744 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751899Ab2FORj6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 13:37:28 -0400
-Date: Fri, 15 Jun 2012 19:37:18 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@ti.com>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "Luck,Tony" <tony.luck@intel.com>
-Subject: Re: [RFC GIT PULL] nohz: Basic cputime accounting for adaptive
- tickless
-Message-ID: <20120615173713.GA23238@somewhere.redhat.com>
-References: <1339604397-8758-1-git-send-email-fweisbec@gmail.com>
- <1339664829.2559.14.camel@twins>
- <20120614111241.GA16848@somewhere>
- <20120614111638.GA16676@gmail.com>
- <alpine.LFD.2.02.1206141321010.3086@ionos>
- <20120614112241.GB16848@somewhere>
- <20120614144815.1401af49@de.ibm.com>
- <20120614134238.GD16848@somewhere>
- <20120614171800.72f02152@de.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120614171800.72f02152@de.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 15 Jun 2012 13:39:58 -0400
+Message-ID: <1339781988.15222.6.camel@twins>
+Subject: Re: [PATCH] sched: Folding nohz load accounting more accurate
+From: Peter Zijlstra <peterz@infradead.org>
+To: Charles Wang <muming.wq@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Tao Ma <tm@tao.ma>,
+        =?UTF-8?Q?=E5=90=AB=E9=BB=9B?= <handai.szj@taobao.com>,
+        Doug Smythies <dsmythies@telus.net>
+Date: Fri, 15 Jun 2012 19:39:48 +0200
+In-Reply-To: <4FDB4642.5070509@gmail.com>
+References: <1339239295-18591-1-git-send-email-muming.wq@taobao.com>
+	  <1339429374.30462.54.camel@twins> <4FD70D12.5030404@gmail.com>
+	 <1339494970.31548.66.camel@twins> <4FDB4642.5070509@gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 14, 2012 at 05:18:00PM +0200, Martin Schwidefsky wrote:
-> On Thu, 14 Jun 2012 15:42:44 +0200
-> Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> 
-> > On Thu, Jun 14, 2012 at 02:48:15PM +0200, Martin Schwidefsky wrote:
-> > > On Thu, 14 Jun 2012 13:22:45 +0200
-> > > Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> > > 
-> > > > On Thu, Jun 14, 2012 at 01:21:23PM +0200, Thomas Gleixner wrote:
-> > > > > On Thu, 14 Jun 2012, Ingo Molnar wrote:
-> > > > > > * Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> > > > > > > You're right, I should have looked into CONFIG_VIRT_CPU_ACCOUNTING sooner
-> > > > > > > and see if I can reuse it.
-> > > > > > > 
-> > > > > > > I'll try something with that.
-> > > > > > 
-> > > > > > Maybe sanitize all the variants under a single set of 
-> > > > > > wrappers/callbacks?
-> > > > > 
-> > > > > Yes, please!
-> > > > 
-> > > > Sure, I'm working in it.
-> > >  
-> > > Please keep me in the loop, I want to avoid that things break on s390. Thanks.
-> > 
-> > Do you have any idea why s390 counts idle time from asm deep in the idle code
-> > rather than just hooking in account_system_vtime() like ppc or ia64?
->  
-> Well what is idle time? For s390 it is the difference in the TOD clock between
-> the instruction that loaded the enabled-wait-PSW and the first instruction on
-> the interrupt handler. To get the best precision you need to get the TOD time
-> stamps as close to these two instructions as possible. For s390 it is the
-> following sequence:
-> 
->         STCK    __IDLE_ENTER(%r2)	# idle enter time stamp
->         ltr     %r5,%r5
->         stpt    __VQ_IDLE_ENTER(%r3)
->         jz      psw_idle_lpsw
->         spt     0(%r1)
-> psw_idle_lpsw:
->         lpswe   __SF_EMPTY(%r15)
-> 
-> <<< sleeping >>>
-> 
-> int_handler:
->         STCK    __LC_INT_CLOCK		# idle exit time stamp
-> 
-> There are at maximum 5 instructions between the STCK for the idle
-> enter time stamp and the lpswe that puts the cpu to sleep.
+Wednesday I ended up with something like the below.. but I haven't
+gotten round to trying Doug's latest testing method, nor did I really
+read the email I'm now replying to.
 
-I see. So s390 accounts only the time spent in low power mode whereas
-ppc/ia64 accounts everything that happens in the idle task.
+I think it does something like what Wang described... every time I try
+and write comments related to why it does this I get stuck though. 
 
-I don't know which one has chosen the right semantics but this complicates
-any possible unification.
+I ran out of time again for this week, I'll try and prod at it a little
+more next week (and try and catch up with the thread).
 
-BTW, aren't you accounting the idle time as system time as well with
-account_sys_vtime()?
+In the meantime I thought I might as well post this.. who knows somebody
+might be bored over the weekend, it might actually work, or not :-)
+
+---
+ kernel/sched/core.c |   77 +++++++++++++++++++++++++++++++++++----------------
+ 1 file changed, 53 insertions(+), 24 deletions(-)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index ca07ee0..4101a0e 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2198,26 +2198,49 @@ calc_load(unsigned long load, unsigned long exp, unsigned long active)
+  *
+  * When making the ILB scale, we should try to pull this in as well.
+  */
+-static atomic_long_t calc_load_tasks_idle;
++static atomic_long_t calc_load_idle[2];
++static int calc_load_idx;
++
++static inline int calc_load_write_idx(void)
++{
++	int idx = calc_load_idx;
++
++	/*
++	 * See calc_global_nohz(), if we observe the new index, we also
++	 * need to observe the new update time.
++	 */
++	smp_rmb();
++
++	if (!time_before(jiffies, calc_load_update))
++		idx++;
++
++	return idx & 1;
++}
++
++static inline int calc_load_read_idx(void)
++{
++	return calc_load_idx & 1;
++}
+ 
+ void calc_load_account_idle(struct rq *this_rq)
+ {
+ 	long delta;
++	int idx;
+ 
+ 	delta = calc_load_fold_active(this_rq);
+-	if (delta)
+-		atomic_long_add(delta, &calc_load_tasks_idle);
++	if (delta) {
++		idx = calc_load_write_idx();
++		atomic_long_add(delta, &calc_load_idle[idx]);
++	}
+ }
+ 
+ static long calc_load_fold_idle(void)
+ {
++	int idx = calc_load_read_idx();
+ 	long delta = 0;
+ 
+-	/*
+-	 * Its got a race, we don't care...
+-	 */
+-	if (atomic_long_read(&calc_load_tasks_idle))
+-		delta = atomic_long_xchg(&calc_load_tasks_idle, 0);
++	if (atomic_long_read(&calc_load_idle[idx]))
++		delta = atomic_long_xchg(&calc_load_idle[idx], 0);
+ 
+ 	return delta;
+ }
+@@ -2313,26 +2336,32 @@ static void calc_global_nohz(void)
+ 	if (delta)
+ 		atomic_long_add(delta, &calc_load_tasks);
+ 
+-	/*
+-	 * It could be the one fold was all it took, we done!
+-	 */
+-	if (time_before(jiffies, calc_load_update + 10))
+-		return;
++	if (!time_before(jiffies, calc_load_update + 10)) {
++		/*
++		 * Catch-up, fold however many we are behind still
++		 */
++		delta = jiffies - calc_load_update - 10;
++		n = 1 + (delta / LOAD_FREQ);
+ 
+-	/*
+-	 * Catch-up, fold however many we are behind still
+-	 */
+-	delta = jiffies - calc_load_update - 10;
+-	n = 1 + (delta / LOAD_FREQ);
++		active = atomic_long_read(&calc_load_tasks);
++		active = active > 0 ? active * FIXED_1 : 0;
+ 
+-	active = atomic_long_read(&calc_load_tasks);
+-	active = active > 0 ? active * FIXED_1 : 0;
++		avenrun[0] = calc_load_n(avenrun[0], EXP_1, active, n);
++		avenrun[1] = calc_load_n(avenrun[1], EXP_5, active, n);
++		avenrun[2] = calc_load_n(avenrun[2], EXP_15, active, n);
+ 
+-	avenrun[0] = calc_load_n(avenrun[0], EXP_1, active, n);
+-	avenrun[1] = calc_load_n(avenrun[1], EXP_5, active, n);
+-	avenrun[2] = calc_load_n(avenrun[2], EXP_15, active, n);
++		calc_load_update += n * LOAD_FREQ;
++	}
+ 
+-	calc_load_update += n * LOAD_FREQ;
++	/*
++	 * Flip the idle index...
++	 *
++	 * Make sure we first write the new time then flip the index, so that
++	 * calc_load_write_idx() will see the new time when it reads the new
++	 * index, this avoids a double flip messing things up.
++	 */
++	smp_wmb();
++	calc_load_idx++;
+ }
+ #else
+ void calc_load_account_idle(struct rq *this_rq)
+
