@@ -1,138 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756825Ab2FOMiB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 08:38:01 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:44069 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756789Ab2FOMha (ORCPT
+	id S1756813Ab2FOMjf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 08:39:35 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7840 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756398Ab2FOMje (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 08:37:30 -0400
-Date: Fri, 15 Jun 2012 14:37:49 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: LKML <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>
-Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Dimitri Sivanich <sivanich@sgi.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Greg Kroah-Hartman <greg@kroah.com>
-Subject: Re: [PATCH] perf/x86: check ucode before disabling PEBS on
- SandyBridge
-Message-ID: <20120615123749.GC6083@aftab.osrc.amd.com>
-References: <1339521203.31548.92.camel@twins>
- <20120612171734.GI8404@aftab.osrc.amd.com>
- <1339521493.31548.93.camel@twins>
- <20120612172352.GA4802@aftab.osrc.amd.com>
- <1339521996.31548.95.camel@twins>
- <20120612173506.GB4802@aftab.osrc.amd.com>
- <20120613010413.GA28174@khazad-dum.debian.net>
- <20120613065119.GB15661@aftab.osrc.amd.com>
- <20120613123649.GA26012@khazad-dum.debian.net>
- <20120613161139.GA18450@aftab.osrc.amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120613161139.GA18450@aftab.osrc.amd.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 15 Jun 2012 08:39:34 -0400
+X-Authority-Analysis: v=2.0 cv=eIiRfQV1 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=ag8JG7z7P3cA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=CpiED0NXJNzBxhH2BZMA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1339763971.13377.370.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 3/3] tools lib traceevent: Introduce pevent_strerror
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Date: Fri, 15 Jun 2012 08:39:31 -0400
+In-Reply-To: <1339486959-25241-4-git-send-email-namhyung@kernel.org>
+References: <1339486959-25241-1-git-send-email-namhyung@kernel.org>
+	 <1339486959-25241-4-git-send-email-namhyung@kernel.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1+b1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ok,
+On Tue, 2012-06-12 at 16:42 +0900, Namhyung Kim wrote:
 
-so at least Henrique and I feel that this per-core reloading interface
-is crap and it should go. Below is a first attempt to fix that. It is
-supposed to be a minimal fix so that it can be backported to stable.
+> +/*
+> + * This must have a same ordering as the enum pevent_errno.
+> + */
+> +static const char * const pevent_error_str[] = {
+> +	"failed to allocate memory",
+> +	"failed to parse event",
+> +	"failed to read event id",
+> +	"failed to read event format",
+> +	"failed to read event print fmt",
+> +	"failed to allocate field name for ftrace",
+> +};
+> +
 
-I know, I know, it is not a fully stable-rules compatible patch but
-having in mind the stupidity of the interface and how dangerous it can
-be for users who want to shoot themselves in the foot with microcode, we
-better backport it everywhere we can.
+Here's a little macro trick to keep the strings and enums always in
+sync:
 
-So guys, please have a look and let me know of any objections.
+#define __PEVENT_ERRNO_CODES \
+ _C(PEVENT_ERRNO__MEM_ALLOC_FAILED,	"failed to allocate memory"),	\
+ _C(PEVENT_ERRNO__PARSE_EVENT_FAILED,	"failed to parse event"),	\
+ _C(PEVENT_ERRNO__READ_ID_FAILED,	"failed to read event id"),	\
+ _C(PEVENT_ERRNO__READ_FORMAT_FAILED,	"failed to read event format"),	\
+ _C(PEVENT_ERRNO__READ_PRINT_FAILED,	"failed to read event print fmt"),\
+ _C(PEVENT_ERRNO__OLD_FTRACE_ARG_FAILED,"failed to allocate field name for ftrace"),
 
-It is lightly tested here and it seems to work.
+#undef _C
+#define _C(a,b) b
+static const char * const pevent_error_str[] = { __PEVENT_ERROR_CODES };
 
-Thanks.
+#undef _C
+#define _C(a, b) a
 
-From: Borislav Petkov <borislav.petkov@amd.com>
-Date: Fri, 15 Jun 2012 14:19:55 +0200
-Subject: [PATCH] x86, microcode: Sanitize per-cpu microcode reloading
- interface
+enum pevent_errno {
+	__PEVENT_ERRNO__BEFORE_START		= -100000 - 1,
+	__PEVENT_ERRNO_CODES
+	__PEVENT_ERRNO__END,
+};
 
-Microcode reloading in a per-core manner is a very bad idea for both
-major x86 vendors. And the thing is, we have such interface with which
-we can end up with different microcode versions applied on different
-cores of an otherwise homogeneous wrt (family,model,stepping) system.
+#define __PEVENT_ERRNO__START (__PEVENT_ERRNO__BEFORE_START + 1)
 
-So turn off the possibility of doing that per core and allow it only
-system-wide.
+Just saying ;-)
 
-This is a minimal fix which we'd like to see in stable too thus the
-more-or-less arbitrary decision to allow system-wide reloading only on
-the BSP:
+-- Steve
 
-$ echo 1 > /sys/devices/system/cpu/cpu0/microcode/reload
-...
 
-and disable the interface on the other cores:
 
-$ echo 1 > /sys/devices/system/cpu/cpu23/microcode/reload
--bash: echo: write error: Invalid argument
-
-A more generic fix will follow.
-
-Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: stable@vger.kernel.org
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- arch/x86/kernel/microcode_core.c | 26 +++++++++++++++++++-------
- 1 file changed, 19 insertions(+), 7 deletions(-)
-
-diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/microcode_core.c
-index fbdfc6917180..24b852b61be3 100644
---- a/arch/x86/kernel/microcode_core.c
-+++ b/arch/x86/kernel/microcode_core.c
-@@ -298,19 +298,31 @@ static ssize_t reload_store(struct device *dev,
- 			    const char *buf, size_t size)
- {
- 	unsigned long val;
--	int cpu = dev->id;
--	ssize_t ret = 0;
-+	int cpu;
-+	ssize_t ret = 0, tmp_ret;
-+
-+	/* allow reload only from the BSP */
-+	if (boot_cpu_data.cpu_index != dev->id)
-+		return -EINVAL;
- 
- 	ret = kstrtoul(buf, 0, &val);
- 	if (ret)
- 		return ret;
- 
--	if (val == 1) {
--		get_online_cpus();
--		if (cpu_online(cpu))
--			ret = reload_for_cpu(cpu);
--		put_online_cpus();
-+	if (val != 1)
-+		return size;
-+
-+	get_online_cpus();
-+	for_each_online_cpu(cpu) {
-+		tmp_ret = reload_for_cpu(cpu);
-+		if (tmp_ret != 0)
-+			pr_warn("Error reloading microcode on CPU %d\n", cpu);
-+
-+		/* save retval of the first encountered reload error */
-+		if (!ret)
-+			ret = tmp_ret;
- 	}
-+	put_online_cpus();
- 
- 	if (!ret)
- 		ret = size;
--- 
-1.7.11.rc1
 
