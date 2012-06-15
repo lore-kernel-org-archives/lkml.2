@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932255Ab2FOPkN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 11:40:13 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:45608 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754326Ab2FOPkM (ORCPT
+	id S1757181Ab2FOPoJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 11:44:09 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48571 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754326Ab2FOPoI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 11:40:12 -0400
-Message-ID: <4FDB5756.3010402@wwwdotorg.org>
-Date: Fri, 15 Jun 2012 09:40:06 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Fri, 15 Jun 2012 11:44:08 -0400
+Date: Fri, 15 Jun 2012 16:43:59 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: Matt Fleming <matt@console-pimps.org>,
+        Robert Richter <robert.richter@amd.com>
+Subject: Re: [PATCH] oprofile: perf: use NR_CPUS instead or nr_cpumask_bits
+ for static array
+Message-ID: <20120615154359.GE12031@mudshark.cambridge.arm.com>
+References: <1339168564-30008-1-git-send-email-will.deacon@arm.com>
 MIME-Version: 1.0
-To: Shawn Guo <shawn.guo@linaro.org>
-CC: Rob Herring <robherring2@gmail.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Grant Likely <grant.likely@secretlab.ca>, mturquette@linaro.org,
-        sboyd@codeaurora.org, skannan@codeaurora.org, s.hauer@pengutronix.de,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH v3 0/4] DT clock bindings
-References: <1339512111-11172-1-git-send-email-robherring2@gmail.com> <20120615083937.GH31565@S2101-09.ap.freescale.net>
-In-Reply-To: <20120615083937.GH31565@S2101-09.ap.freescale.net>
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339168564-30008-1-git-send-email-will.deacon@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/15/2012 02:39 AM, Shawn Guo wrote:
-> On Tue, Jun 12, 2012 at 09:41:47AM -0500, Rob Herring wrote:
->> I'm posting this again to solicit further review. There has been some
->> discussion[1], but no definite path forward. This series is not changed
->> from the last post other than rebasing to v3.5-rc2.
->>
-> Hi Rob,
+Robert,
+
+On Fri, Jun 08, 2012 at 04:16:04PM +0100, Will Deacon wrote:
+> The OProfile perf backend uses a static array to keep track of the
+> perf events on the system. When compiling with CONFIG_CPUMASK_OFFSTACK=y
+> && SMP, nr_cpumask_bits is not a compile-time constant and the build
+> will fail with:
 > 
-> Per your comment[1], the patch below takes imx6q as example to define
-> single CCM node with a whole bunch of outputs to support clk lookup
-> with device tree.  (Only uart and usdhc clocks are being put there for
-> demonstration.)  Though it seems working, going through the patch you
-> will see a couple problems which may need to be solved to make the
-> binding useful for cases like imx.
-...
-> * phandle argument is not easy for engineering
+> oprofile_perf.c:28: error: variably modified 'perf_events' at file scope
 > 
-> As we will have a whole bunch of clock outputs listed in ccm node,
-> which will be referenced by peripheral phandle in form of <&clks index>.
-> When the list gets long, it becomes hard for people to find the correct
-> index number for the clock referenced.
+> This patch uses NR_CPUs instead of nr_cpumask_bits for the array
+> initialisation. If this causes space problems in the future, we can
+> always move to dynamic allocation for the events array.
+> 
+> Cc: Matt Fleming <matt@console-pimps.org>
+> Cc: Robert Richter <robert.richter@amd.com>
+> Reported-by: Russell King - ARM Linux <linux@arm.linux.org.uk>
+> Signed-off-by: Will Deacon <will.deacon@arm.com>
+> ---
+>  drivers/oprofile/oprofile_perf.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/oprofile/oprofile_perf.c b/drivers/oprofile/oprofile_perf.c
+> index da14432..efc4b7f 100644
+> --- a/drivers/oprofile/oprofile_perf.c
+> +++ b/drivers/oprofile/oprofile_perf.c
+> @@ -25,7 +25,7 @@ static int oprofile_perf_enabled;
+>  static DEFINE_MUTEX(oprofile_perf_mutex);
+>  
+>  static struct op_counter_config *counter_config;
+> -static struct perf_event **perf_events[nr_cpumask_bits];
+> +static struct perf_event **perf_events[NR_CPUS];
+>  static int num_counters;
+>  
+>  /*
+> -- 
+> 1.7.4.1
 
-You can (well, probably /should/) list the clock IDs as well as names in
-the binding documentation. Then, there's no guess-work or counting
-involved. I did this in a very early Tegra clock binding proposal:
+Given both the lack of feedback and the trivial nature of this patch would
+you be able to pick this up please? I'd rather not push it via the ARM tree
+as the change is under drivers/.
 
-http://patchwork.ozlabs.org/patch/141359/
+Thanks,
 
-Hopefully, dtc will grow named-constants or a pre-processor sometime and
-help this too.
+Will
