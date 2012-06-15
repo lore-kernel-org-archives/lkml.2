@@ -1,163 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755469Ab2FOJCV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 05:02:21 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:57239 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754570Ab2FOJCT (ORCPT
+	id S1755005Ab2FOJGp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 05:06:45 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:47919 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751355Ab2FOJGn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 05:02:19 -0400
-Message-ID: <4FDAFA17.6050502@linaro.org>
-Date: Fri, 15 Jun 2012 10:02:15 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, arnd@arndb.de, grant.likely@secretlab.ca,
-        linux-i2c@vger.kernel.org
-Subject: Re: [PATCH 1/3] i2c: Add Device Tree support to the Nomadik I2C driver
-References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org> <1339428307-3850-10-git-send-email-lee.jones@linaro.org> <CACRpkdaMDbH4NkiHRLAfbJZ_j4QXbwg94bvaWsdYRPH+dSfc8Q@mail.gmail.com> <4FD8BAD2.50703@linaro.org> <CACRpkdZFi34nChnMEo6yik67zk9owZLk-6zcdP7mmOXyLz8uqQ@mail.gmail.com>
-In-Reply-To: <CACRpkdZFi34nChnMEo6yik67zk9owZLk-6zcdP7mmOXyLz8uqQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 15 Jun 2012 05:06:43 -0400
+From: Wanpeng Li <liwp.linux@gmail.com>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+        linux-kernel@vger.kernel.org, Gavin Shan <shangw@linux.vnet.ibm.com>,
+        Wanpeng Li <liwp.linux@gmail.com>
+Subject: [PATCH][TRIVIAL][resend] mm: fix page reclaim comment error
+Date: Fri, 15 Jun 2012 17:06:29 +0800
+Message-Id: <1339751189-6055-1-git-send-email-liwp.linux@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lee Jones <lee.jones@linaro.org>
-Date: Tue, 17 Apr 2012 16:04:13 +0100
-Subject: [PATCH 1/1] i2c: Add Device Tree support to the Nomadik I2C driver
+From: Wanpeng Li <liwp@linux.vnet.ibm.com>
 
-Here we apply the bindings required for successful Device Tree
-probing of the i2c-nomadik driver. We also apply a fall-back
-configuration in case either one is not provided, or a required
-element is missing from the one supplied.
+Since there are five lists in LRU cache, the array nr in get_scan_count
+should be:
 
-Cc: linux-i2c@vger.kernel.org
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+nr[0] = anon inactive pages to scan; nr[1] = anon active pages to scan
+nr[2] = file inactive pages to scan; nr[3] = file active pages to scan
+
+Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Acked-by: Minchan Kim <minchan@kernel.org>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+
 ---
- drivers/i2c/busses/i2c-nomadik.c |   82 +++++++++++++++++++++++++++++++++++++-
- 1 file changed, 80 insertions(+), 2 deletions(-)
+ mm/vmscan.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/i2c/busses/i2c-nomadik.c b/drivers/i2c/busses/i2c-nomadik.c
-index a92440d..58e8114 100644
---- a/drivers/i2c/busses/i2c-nomadik.c
-+++ b/drivers/i2c/busses/i2c-nomadik.c
-@@ -23,6 +23,7 @@
- #include <linux/io.h>
- #include <linux/regulator/consumer.h>
- #include <linux/pm_runtime.h>
-+#include <linux/of.h>
- 
- #include <plat/i2c.h>
- 
-@@ -899,15 +900,86 @@ static const struct i2c_algorithm nmk_i2c_algo = {
- 	.functionality	= nmk_i2c_functionality
- };
- 
-+static struct nmk_i2c_controller u8500_i2c = {
-+	/*
-+	 * Slave data setup time; 250ns, 100ns, and 10ns, which
-+	 * is 14, 6 and 2 respectively for a 48Mhz i2c clock.
-+	 */
-+	.slsu           = 0xe,
-+	.tft            = 1,      /* Tx FIFO threshold */
-+	.rft            = 8,      /* Rx FIFO threshold */
-+	.clk_freq       = 100000, /* std. mode operation */
-+	.timeout        = 200,    /* Slave response timeout(ms) */
-+	.sm             = I2C_FREQ_MODE_FAST,
-+};
-+
-+static int __devinit
-+nmk_i2c_of_probe(struct device_node *np, struct nmk_i2c_controller *pdata)
-+{
-+	of_property_read_u32(np, "clock-frequency", (u32*)&pdata->clk_freq);
-+	if (!pdata->clk_freq) {
-+		pr_warn("%s: Clock frequency not found\n", np->full_name);
-+		return -EINVAL;
-+	}
-+
-+	of_property_read_u32(np, "stericsson,slsu", (u32*)&pdata->slsu);
-+	if (!pdata->slsu) {
-+		pr_warn("%s: Data line delay not found\n", np->full_name);
-+		return -EINVAL;
-+	}
-+
-+	of_property_read_u32(np, "stericsson,tft", (u32*)&pdata->tft);
-+	if (!pdata->tft) {
-+		pr_warn("%s: Tx FIFO threshold not found\n", np->full_name);
-+		return -EINVAL;
-+	}
-+
-+	of_property_read_u32(np, "stericsson,rft", (u32*)&pdata->rft);
-+	if (!pdata->rft) {
-+		pr_warn("%s: Rx FIFO threshold not found\n", np->full_name);
-+		return -EINVAL;
-+	}
-+
-+	of_property_read_u32(np, "stericsson,timeout", (u32*)&pdata->timeout);
-+	if (!pdata->timeout) {
-+		pr_warn("%s: Timeout not found\n", np->full_name);
-+		return -EINVAL;
-+	}
-+
-+	if (of_get_property(np, "stericsson,i2c_freq_mode_fast", NULL))
-+		pdata->sm = I2C_FREQ_MODE_FAST;
-+	else
-+		pdata->sm = I2C_FREQ_MODE_STANDARD;
-+
-+	return 0;
-+}
-+
- static int __devinit nmk_i2c_probe(struct platform_device *pdev)
- {
- 	int ret = 0;
- 	struct resource *res;
--	struct nmk_i2c_controller *pdata =
--			pdev->dev.platform_data;
-+	struct nmk_i2c_controller *pdata = pdev->dev.platform_data;
-+	struct device_node *np = pdev->dev.of_node;
- 	struct nmk_i2c_dev	*dev;
- 	struct i2c_adapter *adap;
- 
-+	if (np) {
-+		if (!pdata) {
-+			pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
-+			if (!pdata) {
-+				ret = -ENOMEM;
-+				goto err_no_mem;
-+			}
-+		}
-+		ret = nmk_i2c_of_probe(np, pdata);
-+		if (ret)
-+			kfree(pdata);
-+	}
-+
-+	if (!pdata)
-+		/* No i2c configuration found, using the default. */
-+		pdata = &u8500_i2c;
-+
- 	dev = kzalloc(sizeof(struct nmk_i2c_dev), GFP_KERNEL);
- 	if (!dev) {
- 		dev_err(&pdev->dev, "cannot allocate memory\n");
-@@ -1038,11 +1110,17 @@ static int __devexit nmk_i2c_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
-+static const struct of_device_id nmk_gpio_match[] = {
-+	{ .compatible = "st,nomadik-i2c", },
-+	{},
-+};
-+
- static struct platform_driver nmk_i2c_driver = {
- 	.driver = {
- 		.owner = THIS_MODULE,
- 		.name = DRIVER_NAME,
- 		.pm = &nmk_i2c_pm,
-+		.of_match_table = nmk_gpio_match,
- 	},
- 	.probe = nmk_i2c_probe,
- 	.remove = __devexit_p(nmk_i2c_remove),
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index eeb3bc9..ed823df 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1567,7 +1567,8 @@ static int vmscan_swappiness(struct scan_control *sc)
+  * by looking at the fraction of the pages scanned we did rotate back
+  * onto the active list instead of evict.
+  *
+- * nr[0] = anon pages to scan; nr[1] = file pages to scan
++ * nr[0] = anon inactive pages to scan; nr[1] = anon active pages to scan
++ * nr[2] = file inactive pages to scan; nr[3] = file active pages to scan
+  */
+ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
+ 			   unsigned long *nr)
 -- 
 1.7.9.5
+
