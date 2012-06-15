@@ -1,115 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758292Ab2FOWYw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 18:24:52 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:48715 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758183Ab2FOWYv (ORCPT
+	id S1758330Ab2FOWZO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 18:25:14 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:57767 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758195Ab2FOWZL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 18:24:51 -0400
-Date: Fri, 15 Jun 2012 15:24:42 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH tip/core/rcu 03/14] rcu: Add ACCESS_ONCE() to ->qlen
- accesses
-Message-ID: <20120615222442.GO2389@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120615201256.GA26120@linux.vnet.ibm.com>
- <1339791195-26389-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1339791195-26389-3-git-send-email-paulmck@linux.vnet.ibm.com>
- <20120615204500.GH31184@leaf>
+	Fri, 15 Jun 2012 18:25:11 -0400
+From: Namhyung Kim <namhyung@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 3/3] tools lib traceevent: Introduce pevent_strerror
+In-Reply-To: <1339763971.13377.370.camel@gandalf.stny.rr.com> (Steven
+	Rostedt's message of "Fri, 15 Jun 2012 08:39:31 -0400")
+References: <1339486959-25241-1-git-send-email-namhyung@kernel.org>
+	<1339486959-25241-4-git-send-email-namhyung@kernel.org>
+	<1339763971.13377.370.camel@gandalf.stny.rr.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+Date: Sat, 16 Jun 2012 07:25:02 +0900
+Message-ID: <87k3z843i9.fsf@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120615204500.GH31184@leaf>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12061522-1780-0000-0000-0000067CA370
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000281; HX=3.00000190; KW=3.00000007;
- PH=3.00000001; SC=3.00000002; SDB=6.00148371; UDB=6.00033818; UTC=2012-06-15
- 22:24:50
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 15, 2012 at 01:45:00PM -0700, Josh Triplett wrote:
-> On Fri, Jun 15, 2012 at 01:13:04PM -0700, Paul E. McKenney wrote:
-> > From: "Paul E. McKenney" <paul.mckenney@linaro.org>
-> > 
-> > The _rcu_barrier() function accesses other CPUs' rcu_data structure's
-> > ->qlen field without benefit of locking.  This commit therefore adds
-> > the required ACCESS_ONCE() wrappers around accesses and updates that
-> > need it.
-> 
-> This type of restriction makes me wonder if we could add some kind of
-> attribute to fields like qlen to make GCC or sparse help enforce this.
+Steven Rostedt <rostedt@goodmis.org> writes:
 
-It is worth thinking about.  Should spark some spirited discussions.  ;-)
+> On Tue, 2012-06-12 at 16:42 +0900, Namhyung Kim wrote:
+>
+>> +/*
+>> + * This must have a same ordering as the enum pevent_errno.
+>> + */
+>> +static const char * const pevent_error_str[] = {
+>> +	"failed to allocate memory",
+>> +	"failed to parse event",
+>> +	"failed to read event id",
+>> +	"failed to read event format",
+>> +	"failed to read event print fmt",
+>> +	"failed to allocate field name for ftrace",
+>> +};
+>> +
+>
+> Here's a little macro trick to keep the strings and enums always in
+> sync:
+>
+> #define __PEVENT_ERRNO_CODES \
+>  _C(PEVENT_ERRNO__MEM_ALLOC_FAILED,	"failed to allocate memory"),	\
+>  _C(PEVENT_ERRNO__PARSE_EVENT_FAILED,	"failed to parse event"),	\
+>  _C(PEVENT_ERRNO__READ_ID_FAILED,	"failed to read event id"),	\
+>  _C(PEVENT_ERRNO__READ_FORMAT_FAILED,	"failed to read event format"),	\
+>  _C(PEVENT_ERRNO__READ_PRINT_FAILED,	"failed to read event print fmt"),\
+>  _C(PEVENT_ERRNO__OLD_FTRACE_ARG_FAILED,"failed to allocate field name for ftrace"),
+>
+> #undef _C
+> #define _C(a,b) b
+> static const char * const pevent_error_str[] = { __PEVENT_ERROR_CODES };
+>
 
-> > ACCESS_ONCE() is not needed when a CPU accesses its own ->qlen, or
-> > in code that cannot run while _rcu_barrier() is sampling ->qlen fields.
-> >
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> 
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Cool. Maybe even shorter:
 
-Thank you!
+#define __PEVENT_ERRNO_CODES \
+ _C(MEM_ALLOC_FAILED,	"failed to allocate memory"),	\
+ _C(PARSE_EVENT_FAILED,	"failed to parse event"),	\
+ _C(READ_ID_FAILED,	"failed to read event id"),	\
+ _C(READ_FORMAT_FAILED,	"failed to read event format"),	\
+ _C(READ_PRINT_FAILED,	"failed to read event print fmt"), \
+ _C(OLD_FTRACE_ARG_FAILED, "failed to allocate field name for ftrace"),
 
-							Thanx, Paul
+#undef _C
+#define _C(a,b) PEVENT_ERRNO__ ## a
+static const char * const pevent_error_str[] = { __PEVENT_ERROR_CODES };
 
-> >  kernel/rcutree.c |    8 ++++----
-> >  1 files changed, 4 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> > index d938671..cdc101e 100644
-> > --- a/kernel/rcutree.c
-> > +++ b/kernel/rcutree.c
-> > @@ -1349,7 +1349,7 @@ rcu_send_cbs_to_orphanage(int cpu, struct rcu_state *rsp,
-> >  		rsp->qlen += rdp->qlen;
-> >  		rdp->n_cbs_orphaned += rdp->qlen;
-> >  		rdp->qlen_lazy = 0;
-> > -		rdp->qlen = 0;
-> > +		ACCESS_ONCE(rdp->qlen) = 0;
-> >  	}
-> >  
-> >  	/*
-> > @@ -1597,7 +1597,7 @@ static void rcu_do_batch(struct rcu_state *rsp, struct rcu_data *rdp)
-> >  	}
-> >  	smp_mb(); /* List handling before counting for rcu_barrier(). */
-> >  	rdp->qlen_lazy -= count_lazy;
-> > -	rdp->qlen -= count;
-> > +	ACCESS_ONCE(rdp->qlen) -= count;
-> >  	rdp->n_cbs_invoked += count;
-> >  
-> >  	/* Reinstate batch limit if we have worked down the excess. */
-> > @@ -1886,7 +1886,7 @@ __call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu),
-> >  	rdp = this_cpu_ptr(rsp->rda);
-> >  
-> >  	/* Add the callback to our list. */
-> > -	rdp->qlen++;
-> > +	ACCESS_ONCE(rdp->qlen)++;
-> >  	if (lazy)
-> >  		rdp->qlen_lazy++;
-> >  	else
-> > @@ -2420,7 +2420,7 @@ rcu_boot_init_percpu_data(int cpu, struct rcu_state *rsp)
-> >  	rdp->grpmask = 1UL << (cpu - rdp->mynode->grplo);
-> >  	init_callback_list(rdp);
-> >  	rdp->qlen_lazy = 0;
-> > -	rdp->qlen = 0;
-> > +	ACCESS_ONCE(rdp->qlen) = 0;
-> >  	rdp->dynticks = &per_cpu(rcu_dynticks, cpu);
-> >  	WARN_ON_ONCE(rdp->dynticks->dynticks_nesting != DYNTICK_TASK_EXIT_IDLE);
-> >  	WARN_ON_ONCE(atomic_read(&rdp->dynticks->dynticks) != 1);
-> > -- 
-> > 1.7.8
-> > 
-> 
+But it make them less grep-able?
 
+Thanks,
+Namhyung
+
+
+> #undef _C
+> #define _C(a, b) a
+>
+> enum pevent_errno {
+> 	__PEVENT_ERRNO__BEFORE_START		= -100000 - 1,
+> 	__PEVENT_ERRNO_CODES
+> 	__PEVENT_ERRNO__END,
+> };
+>
+> #define __PEVENT_ERRNO__START (__PEVENT_ERRNO__BEFORE_START + 1)
+>
+> Just saying ;-)
+>
+> -- Steve
