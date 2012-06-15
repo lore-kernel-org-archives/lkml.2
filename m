@@ -1,95 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753166Ab2FOLML (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 07:12:11 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:45989 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751361Ab2FOLMJ convert rfc822-to-8bit (ORCPT
+	id S1754010Ab2FOLRA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 07:17:00 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:59303 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751678Ab2FOLQ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 07:12:09 -0400
+	Fri, 15 Jun 2012 07:16:58 -0400
+Message-ID: <8425C79FA89A469FA8D6E7CA779FF655@local.st.by>
+From: "Victor Miasnikov" <vvm@tut.by>
+To: "Andy Whitcroft" <apw@canonical.com>,
+        "Greg KH" <gregkh@linuxfoundation.org>,
+        <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
+        "Alan Cox" <alan@lxorguk.ukuu.org.uk>,
+        "Jeff Garzik" <jgarzik@redhat.com>
+Cc: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
+References: <20120614235627.607134302@linuxfoundation.org>
+Subject: From all Hyper-V admins: Big thanks! Re: [ 41/42] libata + [ 42/42] ata_piix: defer disks to the Hyper-V drivers by default has been added to the 3.4-stable tree
+Date: Fri, 15 Jun 2012 14:16:52 +0300
 MIME-Version: 1.0
-Reply-To: axel.lin@gmail.com
-In-Reply-To: <A874F61F95741C4A9BA573A70FE3998FB5C6@DQHE02.ent.ti.com>
-References: <A874F61F95741C4A9BA573A70FE3998FB5C6@DQHE02.ent.ti.com>
-From: Axel Lin <axel.lin@gmail.com>
-Date: Fri, 15 Jun 2012 19:11:48 +0800
-Message-ID: <CAF+7xW=Cb3b64khdNsnyfkJiS4Yt+j8tGFQExAoddXrtu=+5=Q@mail.gmail.com>
-Subject: Re: [PATCH v2] regulator: add new regulator driver for lp872x
-To: "Kim, Milo" <Milo.Kim@ti.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Girdwood, Liam" <lrg@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+	format=flowed;
+	charset="koi8-r";
+	reply-type=original
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.3790.4548
+x-mimeole: Produced By Microsoft MimeOLE V6.00.3790.4862
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +
-> +static int lp872x_init_dvs(struct lp872x *lp)
-> +{
-> +       int ret, gpio;
-> +       struct lp872x_dvs *dvs = lp->pdata->dvs;
-> +
-> +       ret = lp872x_check_dvs_validity(lp);
-> +       if (ret) {
-> +               dev_warn(lp->dev, "invalid dvs data: %d\n", ret);
-> +               return ret;
-> +       }
-> +
-> +       gpio = dvs->gpio;
-> +
-> +       if (!gpio_is_valid(gpio)) {
-> +               dev_err(lp->dev, "invalid gpio: %d\n", gpio);
-> +               return -EINVAL;
-> +       }
-> +
-> +       ret = gpio_request(gpio, "LP872X DVS");
-devm_gpio_request
-
-> +       if (ret) {
-> +               dev_err(lp->dev, "gpio request err: %d\n", ret);
-> +               return ret;
-> +       }
-> +
-> +       gpio_direction_output(gpio, dvs->init_state);
-> +       lp->dvs_pin = dvs->init_state;
-> +       lp->dvs_gpio = gpio;
-> +
-> +       return 0;
-> +}
-> +
-> +static void lp872x_deinit_dvs(struct lp872x *lp)
-> +{
-> +       if (lp->dvs_gpio)
-> +               gpio_free(lp->dvs_gpio);
-> +}
-
-If you are using devm_gpio_request in lp872x_init_dvs() , you can just
-kill lp872x_deinit_dvs() function.
+Hi!
 
 
-> +static struct regulator_init_data
-> +*lp872x_find_regulator_init_data(int idx, struct lp872x *lp)
-> +{
-> +       int i;
-> +       int base = lp->chipid == LP8725 ? LP8725_ID_BASE : 0;
-> +       int id = idx + base;
-> +
-> +       for (i = 0 ; i < LP872X_MAX_REGULATORS ; i++)
-> +               if (lp->pdata->regulator_data[i].id == id)
-> +                       break;
-                            return lp->pdata->regulator_data[i].init_data;
-> +
-> +       return (i == LP872X_MAX_REGULATORS) ? NULL :
-> +                       lp->pdata->regulator_data[i].init_data;
-            return NULL; // seems better readability this way
-> +}
-> +
+==
+From: "Greg KH"
+Sent: Friday, June 15, 2012 2:57 AM
+> 3.4-stable review patches:
+has been added to the 3.4-stable tree
 
-> +module_i2c_driver(lp872x_driver);
 
-I think you need to use subsys_initcall() here.
+[ 41/42] libata: add a host flag to ignore detected ATA devices
 
-Regulators need to be available early in init in order to allow them
-to be available for consumers when requested.
+[ 42/42] ata_piix: defer disks to the Hyper-V drivers by default
+==
+
+>From all Hyper-V admins: Big thanks!
+
+
+
+Best regards, Victor Miasnikov
+Blog:  http://vvm.blog.tut.by/
+
+
