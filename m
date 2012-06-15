@@ -1,67 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757519Ab2FOTZo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 15:25:44 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:41735 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753900Ab2FOTZn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 15:25:43 -0400
-Message-ID: <4FDB8C25.4070502@xenotime.net>
-Date: Fri, 15 Jun 2012 12:25:25 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	id S1757529Ab2FOTaM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 15:30:12 -0400
+Received: from mail2.charite.de ([141.42.206.200]:35742 "EHLO mail2.charite.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757441Ab2FOTaL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 15:30:11 -0400
+X-Greylist: delayed 633 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Jun 2012 15:30:10 EDT
+Date: Fri, 15 Jun 2012 21:19:34 +0200
+From: Ralf Hildebrandt <Ralf.Hildebrandt@charite.de>
+To: linux-kernel@vger.kernel.org
+Subject: BUG: Bad rss-counter state
+Message-ID: <20120615191934.GB19364@charite.de>
+Mail-Followup-To: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>, devel@driverdev.osuosl.org,
-        fmhess@users.sourceforge.net, abbotti@mev.co.uk,
-        gregkh@linuxfoundation.org
-Subject: Re: [PATCH] staging: comedi: fix Kconfig for COMEDI_PCMCIA_DRIVERS
-References: <201206150918.55593.hartleys@visionengravers.com>
-In-Reply-To: <201206150918.55593.hartleys@visionengravers.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/15/2012 09:18 AM, H Hartley Sweeten wrote:
+With 3.4.2, I got a few of those:
 
-> The depends on PCCARD is redundant. All of the comedi PCMCIA
-> drivers depend on PCMCIA which can only be enabled if PCCARD
-> is enabled. Remove the extra depends check.
-> 
-> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-> Cc: Ian Abbott <abbotti@mev.co.uk>
-> Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfondation.org>
+# fgrep -1 "BUG: Bad rss-counter state" kern.log
+Jun 10 17:35:57 mail kernel: [436940.510027] BUG: Bad rss-counter state mm:f09c8700 idx:1 val:-2
+Jun 10 17:35:57 mail kernel: [436940.510044] BUG: Bad rss-counter state mm:f09c8700 idx:2 val:2
 
-
-Reported-by: Randy Dunlap <rdunlap@xenotime.net>
-Acked-by: Randy Dunlap <rdunlap@xenotime.net>
-
-Thanks.
-
-> ---
->  drivers/staging/comedi/Kconfig |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/staging/comedi/Kconfig b/drivers/staging/comedi/Kconfig
-> index 848cf7e..2ca7f08 100644
-> --- a/drivers/staging/comedi/Kconfig
-> +++ b/drivers/staging/comedi/Kconfig
-> @@ -1097,7 +1097,7 @@ endif # COMEDI_PCI_DRIVERS
->  
->  menuconfig COMEDI_PCMCIA_DRIVERS
->  	tristate "Comedi PCMCIA drivers"
-> -	depends on (PCMCIA || PCCARD)
-> +	depends on PCMCIA
->  	---help---
->  	  Enable comedi PCMCIA and PCCARD drivers to be built
->  
-
-
+Jun 14 08:52:09 mail kernel: [314161.698470] BUG: Bad rss-counter state mm:f052c700 idx:1 val:-4
+Jun 14 08:52:09 mail kernel: [314161.698487] BUG: Bad rss-counter state mm:f052c700 idx:2 val:4
 
 -- 
-~Randy
+Ralf Hildebrandt                   Charite Universitätsmedizin Berlin
+ralf.hildebrandt@charite.de        Campus Benjamin Franklin
+http://www.charite.de              Hindenburgdamm 30, 12203 Berlin
+Geschäftsbereich IT, Abt. Netzwerk fon: +49-30-450.570.155
