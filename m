@@ -1,40 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756861Ab2FOOD3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 10:03:29 -0400
-Received: from casper.infradead.org ([85.118.1.10]:44752 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754218Ab2FOOD2 convert rfc822-to-8bit (ORCPT
+	id S1756920Ab2FOOIK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 10:08:10 -0400
+Received: from mx.scalarmail.ca ([98.158.95.75]:47747 "EHLO
+	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755043Ab2FOOII (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 10:03:28 -0400
-Message-ID: <1339768999.2559.69.camel@twins>
-Subject: Re: [RFC][PATCH 4/4] sched/fair: Optimize cgroup pick_next_task_fair
-From: Peter Zijlstra <peterz@infradead.org>
-To: mingo@kernel.org
-Cc: pjt@google.com, venki@google.com, efault@gmx.de, rostedt@goodmis.org,
-        glommer@parallels.com, linux-kernel@vger.kernel.org
-Date: Fri, 15 Jun 2012 16:03:19 +0200
-In-Reply-To: <1339708758.2559.42.camel@twins>
-References: <20120614132902.800827488@chello.nl>
-	 <20120614133212.810726968@chello.nl> <1339708758.2559.42.camel@twins>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Fri, 15 Jun 2012 10:08:08 -0400
+X-Greylist: delayed 578 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Jun 2012 10:08:08 EDT
+Date: Fri, 15 Jun 2012 09:58:25 -0400
+From: Nick Bowler <nbowler@elliptictech.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        linux-scsi@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>,
+        James Bottomley <JBottomley@parallels.com>
+Subject: Re: [PATCH] scsi: Silence unnecessary warnings about ioctl to
+ partition
+Message-ID: <20120615135825.GA12847@elliptictech.com>
+References: <1339757457-15646-1-git-send-email-jack@suse.cz>
+ <4FDB13B1.8040100@kernel.dk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FDB13B1.8040100@kernel.dk>
+Organization: Elliptic Technologies Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-06-14 at 23:19 +0200, Peter Zijlstra wrote:
-> On Thu, 2012-06-14 at 15:29 +0200, Peter Zijlstra wrote:
-> > Since commit 2f36825b1 ("sched: Next buddy hint on sleep and preempt
-> > path") it is likely we pick a new task from the same cgroup, doing a put
-> > and then set on all intermediate entities is a waste of time, so try to
-> > avoid this. 
+On 2012-06-15 12:51 +0200, Jens Axboe wrote:
+> On 06/15/2012 12:50 PM, Jan Kara wrote:
+> > Sometimes, warnings about ioctls to partition happen often enough that they
+> > form majority of the warnings in the kernel log and users complain. In some
+> > cases warnings are about ioctls such as SG_IO so it's not good to get rid of
+> > the warnings completely as they can ease debugging of userspace problems
+> > when ioctl is refused.
+> > 
+> > Since I have seen warnings from lots of commands, including some proprietary
+> > userspace applications, I don't think disallowing the ioctls for processes
+> > with CAP_SYS_RAWIO will happen in the near future if ever. So lets just
+> > stop warning for processes with CAP_SYS_RAWIO for which ioctl is allowed.
 > 
-> I just noticed put_prev_entity() also does the bandwidth enforcement
-> stuff, I think I just broke that. Will have a peek at fixing that
-> tomorrow or so.
+> Agree, merged, finally.
 
-Damn, that's annoying, that wants to be done bottom-up, while we're now
-doing a top-down selection. pjt any sane ideas?
+Hurray!
+
+This should be -stable material as well, as >=3.2.y kernel versions are
+affected (I think 3.0.y is OK?).
+
+Thanks,
+-- 
+Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+
