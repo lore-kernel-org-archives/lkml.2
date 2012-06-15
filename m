@@ -1,52 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758447Ab2FOWjP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 18:39:15 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:46674 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756177Ab2FOWjN convert rfc822-to-8bit (ORCPT
+	id S1757553Ab2FOWmA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 18:42:00 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:51900 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751324Ab2FOWl7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 18:39:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <1339794567-17784-1-git-send-email-greg.pearson@hp.com>
-References: <1339794567-17784-1-git-send-email-greg.pearson@hp.com>
-Date: Fri, 15 Jun 2012 15:39:13 -0700
-X-Google-Sender-Auth: sHglSMrmYWDIJ3GlEAImiZZlI4g
-Message-ID: <CAE9FiQWGSDw7R2gbVYKfL6wmRVivaKhSALqXof1TsjgMNNf1hQ@mail.gmail.com>
-Subject: Re: [PATCH] mm/memblock: fix overlapping allocation when doubling
- reserved array
-From: Yinghai Lu <yinghai@kernel.org>
-To: Greg Pearson <greg.pearson@hp.com>
-Cc: tj@kernel.org, hpa@linux.intel.com, akpm@linux-foundation.org,
-        shangw@linux.vnet.ibm.com, mingo@elte.hu, linux-mm@kvack.org,
+	Fri, 15 Jun 2012 18:41:59 -0400
+Date: Fri, 15 Jun 2012 15:41:58 -0700 (PDT)
+Message-Id: <20120615.154158.1041407437357556690.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Subject: [GIT] Sparc
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 15, 2012 at 2:09 PM, Greg Pearson <greg.pearson@hp.com> wrote:
-> The __alloc_memory_core_early() routine will ask memblock for a range
-> of memory then try to reserve it. If the reserved region array lacks
-> space for the new range, memblock_double_array() is called to allocate
-> more space for the array. If memblock is used to allocate memory for
-> the new array it can end up using a range that overlaps with the range
-> originally allocated in __alloc_memory_core_early(), leading to possible
-> data corruption.
->
-> @@ -399,7 +401,8 @@ repeat:
->         */
->        if (!insert) {
->                while (type->cnt + nr_new > type->max)
-> -                       if (memblock_double_array(type) < 0)
-> +                       /* Avoid possible overlap if range is being reserved */
-> +                       if (memblock_double_array(type, base) < 0)
 
-should use obase here.
+This just removes some sparc headers that were never, ever, used.
 
-Yinghai
+Please pull, thanks a lot!
 
->                                return -ENOMEM;
->                insert = true;
->                goto repeat;
+The following changes since commit 4e3c8a1b1c63482403e9d5e3148dee1a711e4b91:
+
+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/herbert/crypto-2.6 (2012-06-11 16:31:52 +0300)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc.git master
+
+for you to fetch changes up to 8a51178ed64dca418478996697611ef087fa22df:
+
+  sparc: remove two unused headers (2012-06-11 17:05:54 -0700)
+
+----------------------------------------------------------------
+Paul Bolle (1):
+      sparc: remove two unused headers
+
+ arch/sparc/include/asm/cmt.h    |   59 ----------------------------------------------------
+ arch/sparc/include/asm/mpmbox.h |   67 -----------------------------------------------------------
+ 2 files changed, 126 deletions(-)
+ delete mode 100644 arch/sparc/include/asm/cmt.h
+ delete mode 100644 arch/sparc/include/asm/mpmbox.h
