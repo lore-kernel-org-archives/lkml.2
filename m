@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932225Ab2FOGdk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 02:33:40 -0400
-Received: from mga14.intel.com ([143.182.124.37]:60116 "EHLO mga14.intel.com"
+	id S932122Ab2FOGcl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 02:32:41 -0400
+Received: from mga14.intel.com ([143.182.124.37]:52316 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932120Ab2FOGcm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 02:32:42 -0400
+	id S1755420Ab2FOGcf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 02:32:35 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="156658760"
+   d="scan'208";a="156658733"
 From: "Yan, Zheng" <zheng.z.yan@intel.com>
 To: a.p.zijlstra@chello.nl, mingo@elte.hu, jolsa@redhat.com,
         eranian@google.com, andi@firstfloor.org, linux-kernel@vger.kernel.org
-Cc: Zheng Yan <zheng.z.yan@intel.com>
-Subject: [PATCH V6 10/13] perf, tool: Make the event parser reentrantable
-Date: Fri, 15 Jun 2012 14:31:39 +0800
-Message-Id: <1339741902-8449-11-git-send-email-zheng.z.yan@intel.com>
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>
+Subject: [PATCH V6 06/13] perf: Add Nehalem and Sandy Bridge uncore support
+Date: Fri, 15 Jun 2012 14:31:35 +0800
+Message-Id: <1339741902-8449-7-git-send-email-zheng.z.yan@intel.com>
 X-Mailer: git-send-email 1.7.10.2
 In-Reply-To: <1339741902-8449-1-git-send-email-zheng.z.yan@intel.com>
 References: <1339741902-8449-1-git-send-email-zheng.z.yan@intel.com>
@@ -23,346 +23,289 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
 
-Making the event parser reentrantable by creating separate
-scanner for each parsing. The scanner is passed to the bison
-as and argument to the lexer.
+Add Intel Nehalem and Sandy Bridge uncore pmu support.
 
 Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/util/parse-events.c |   35 ++++++++----
- tools/perf/util/parse-events.h |    2 +-
- tools/perf/util/parse-events.l |  116 +++++++++++++++++++++++-----------------
- tools/perf/util/parse-events.y |    9 ++-
- 4 files changed, 98 insertions(+), 64 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c |  194 +++++++++++++++++++++++++
+ arch/x86/kernel/cpu/perf_event_intel_uncore.h |   50 +++++++
+ 2 files changed, 244 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index c71b29a..ca8665e 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -11,6 +11,7 @@
- #include "cache.h"
- #include "header.h"
- #include "debugfs.h"
-+#include "parse-events-bison.h"
- #include "parse-events-flex.h"
- #include "pmu.h"
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+index ef79e49..4849ada 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -10,6 +10,192 @@ static cpumask_t uncore_cpu_mask;
+ static struct event_constraint constraint_fixed =
+ 	EVENT_CONSTRAINT((u64)-1, 1 << UNCORE_PMC_IDX_FIXED, (u64)-1);
  
-@@ -26,7 +27,7 @@ struct event_symbol {
- #ifdef PARSER_DEBUG
- extern int parse_events_debug;
- #endif
--int parse_events_parse(void *data);
-+int parse_events_parse(void *data, void *scanner);
- 
- #define CHW(x) .type = PERF_TYPE_HARDWARE, .config = PERF_COUNT_HW_##x
- #define CSW(x) .type = PERF_TYPE_SOFTWARE, .config = PERF_COUNT_SW_##x
-@@ -787,26 +788,38 @@ int parse_events_modifier(struct list_head *list, char *str)
- 	return 0;
- }
- 
--int parse_events(struct perf_evlist *evlist, const char *str, int unset __used)
-+static int parse_events__scanner(const char *str, void *data)
- {
--	struct parse_events_data__events data = {
--		.list = LIST_HEAD_INIT(data.list),
--		.idx  = evlist->nr_entries,
--	};
- 	YY_BUFFER_STATE buffer;
-+	void *scanner;
- 	int ret;
- 
--	buffer = parse_events__scan_string(str);
-+	ret = parse_events_lex_init(&scanner);
-+	if (ret)
-+		return ret;
++DEFINE_UNCORE_FORMAT_ATTR(event, event, "config:0-7");
++DEFINE_UNCORE_FORMAT_ATTR(umask, umask, "config:8-15");
++DEFINE_UNCORE_FORMAT_ATTR(edge, edge, "config:18");
++DEFINE_UNCORE_FORMAT_ATTR(inv, inv, "config:23");
++DEFINE_UNCORE_FORMAT_ATTR(cmask5, cmask, "config:24-28");
++DEFINE_UNCORE_FORMAT_ATTR(cmask8, cmask, "config:24-31");
 +
-+	buffer = parse_events__scan_string(str, scanner);
- 
- #ifdef PARSER_DEBUG
- 	parse_events_debug = 1;
- #endif
--	ret = parse_events_parse(&data);
-+	ret = parse_events_parse(data, scanner);
-+
-+	parse_events__flush_buffer(buffer, scanner);
-+	parse_events__delete_buffer(buffer, scanner);
-+	parse_events_lex_destroy(scanner);
-+	return ret;
-+}
- 
--	parse_events__flush_buffer(buffer);
--	parse_events__delete_buffer(buffer);
--	parse_events_lex_destroy();
-+int parse_events(struct perf_evlist *evlist, const char *str, int unset __used)
++/* Sandy Bridge uncore support */
++static void snb_uncore_msr_enable_event(struct intel_uncore_box *box,
++					struct perf_event *event)
 +{
-+	struct parse_events_data__events data = {
-+		.list = LIST_HEAD_INIT(data.list),
-+		.idx  = evlist->nr_entries,
-+	};
-+	int ret;
- 
-+	ret = parse_events__scanner(str, &data);
- 	if (!ret) {
- 		int entries = data.idx - evlist->nr_entries;
- 		perf_evlist__splice_list_tail(evlist, &data.list, entries);
-diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index dc3c83a..fa2b19b 100644
---- a/tools/perf/util/parse-events.h
-+++ b/tools/perf/util/parse-events.h
-@@ -88,7 +88,7 @@ int parse_events_add_pmu(struct list_head **list, int *idx,
- 			 char *pmu , struct list_head *head_config);
- void parse_events_update_lists(struct list_head *list_event,
- 			       struct list_head *list_all);
--void parse_events_error(void *data, char const *msg);
-+void parse_events_error(void *data, void *scanner, char const *msg);
- int parse_events__test(void);
- 
- void print_events(const char *event_glob);
-diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
-index 618a8e7..329794e 100644
---- a/tools/perf/util/parse-events.l
-+++ b/tools/perf/util/parse-events.l
-@@ -1,4 +1,6 @@
- 
-+%option reentrant
-+%option bison-bridge
- %option prefix="parse_events_"
- %option stack
- 
-@@ -8,7 +10,10 @@
- #include "parse-events-bison.h"
- #include "parse-events.h"
- 
--static int __value(char *str, int base, int token)
-+char *parse_events_get_text(yyscan_t yyscanner);
-+YYSTYPE *parse_events_get_lval(yyscan_t yyscanner);
++	struct hw_perf_event *hwc = &event->hw;
 +
-+static int __value(YYSTYPE *yylval, char *str, int base, int token)
- {
- 	long num;
- 
-@@ -17,35 +22,48 @@ static int __value(char *str, int base, int token)
- 	if (errno)
- 		return PE_ERROR;
- 
--	parse_events_lval.num = num;
-+	yylval->num = num;
- 	return token;
- }
- 
--static int value(int base)
-+static int value(yyscan_t scanner, int base)
- {
--	return __value(parse_events_text, base, PE_VALUE);
-+	YYSTYPE *yylval = parse_events_get_lval(scanner);
-+	char *text = parse_events_get_text(scanner);
++	if (hwc->idx < UNCORE_PMC_IDX_FIXED)
++		wrmsrl(hwc->config_base, hwc->config | SNB_UNC_CTL_EN);
++	else
++		wrmsrl(hwc->config_base, SNB_UNC_CTL_EN);
++}
 +
-+	return __value(yylval, text, base, PE_VALUE);
- }
- 
--static int raw(void)
-+static int raw(yyscan_t scanner)
- {
--	return __value(parse_events_text + 1, 16, PE_RAW);
-+	YYSTYPE *yylval = parse_events_get_lval(scanner);
-+	char *text = parse_events_get_text(scanner);
++static void snb_uncore_msr_disable_event(struct intel_uncore_box *box,
++					struct perf_event *event)
++{
++	wrmsrl(event->hw.config_base, 0);
++}
 +
-+	return __value(yylval, text + 1, 16, PE_RAW);
- }
- 
--static int str(int token)
-+static int str(yyscan_t scanner, int token)
- {
--	parse_events_lval.str = strdup(parse_events_text);
-+	YYSTYPE *yylval = parse_events_get_lval(scanner);
-+	char *text = parse_events_get_text(scanner);
++static u64 snb_uncore_msr_read_counter(struct intel_uncore_box *box,
++					struct perf_event *event)
++{
++	u64 count;
++	rdmsrl(event->hw.event_base, count);
++	return count;
++}
 +
-+	yylval->str = strdup(text);
- 	return token;
- }
- 
--static int sym(int type, int config)
-+static int sym(yyscan_t scanner, int type, int config)
- {
--	parse_events_lval.num = (type << 16) + config;
-+	YYSTYPE *yylval = parse_events_get_lval(scanner);
++static void snb_uncore_msr_init_box(struct intel_uncore_box *box)
++{
++	if (box->pmu->pmu_idx == 0) {
++		wrmsrl(SNB_UNC_PERF_GLOBAL_CTL,
++			SNB_UNC_GLOBAL_CTL_EN | SNB_UNC_GLOBAL_CTL_CORE_ALL);
++	}
++}
 +
-+	yylval->num = (type << 16) + config;
- 	return PE_VALUE_SYM;
- }
- 
--static int term(int type)
-+static int term(yyscan_t scanner, int type)
- {
--	parse_events_lval.num = type;
-+	YYSTYPE *yylval = parse_events_get_lval(scanner);
++static struct attribute *snb_uncore_formats_attr[] = {
++	&format_attr_event.attr,
++	&format_attr_umask.attr,
++	&format_attr_edge.attr,
++	&format_attr_inv.attr,
++	&format_attr_cmask5.attr,
++	NULL,
++};
 +
-+	yylval->num = type;
- 	return PE_TERM;
- }
- 
-@@ -61,25 +79,25 @@ modifier_event	[ukhpGH]{1,8}
- modifier_bp	[rwx]
- 
- %%
--cpu-cycles|cycles				{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES); }
--stalled-cycles-frontend|idle-cycles-frontend	{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_STALLED_CYCLES_FRONTEND); }
--stalled-cycles-backend|idle-cycles-backend	{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_STALLED_CYCLES_BACKEND); }
--instructions					{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS); }
--cache-references				{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_CACHE_REFERENCES); }
--cache-misses					{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_CACHE_MISSES); }
--branch-instructions|branches			{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_INSTRUCTIONS); }
--branch-misses					{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_MISSES); }
--bus-cycles					{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_BUS_CYCLES); }
--ref-cycles					{ return sym(PERF_TYPE_HARDWARE, PERF_COUNT_HW_REF_CPU_CYCLES); }
--cpu-clock					{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_CLOCK); }
--task-clock					{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK); }
--page-faults|faults				{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS); }
--minor-faults					{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MIN); }
--major-faults					{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MAJ); }
--context-switches|cs				{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CONTEXT_SWITCHES); }
--cpu-migrations|migrations			{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_MIGRATIONS); }
--alignment-faults				{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_ALIGNMENT_FAULTS); }
--emulation-faults				{ return sym(PERF_TYPE_SOFTWARE, PERF_COUNT_SW_EMULATION_FAULTS); }
-+cpu-cycles|cycles				{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES); }
-+stalled-cycles-frontend|idle-cycles-frontend	{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_STALLED_CYCLES_FRONTEND); }
-+stalled-cycles-backend|idle-cycles-backend	{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_STALLED_CYCLES_BACKEND); }
-+instructions					{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS); }
-+cache-references				{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_CACHE_REFERENCES); }
-+cache-misses					{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_CACHE_MISSES); }
-+branch-instructions|branches			{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_INSTRUCTIONS); }
-+branch-misses					{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_MISSES); }
-+bus-cycles					{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_BUS_CYCLES); }
-+ref-cycles					{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_REF_CPU_CYCLES); }
-+cpu-clock					{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_CLOCK); }
-+task-clock					{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_TASK_CLOCK); }
-+page-faults|faults				{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS); }
-+minor-faults					{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MIN); }
-+major-faults					{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_PAGE_FAULTS_MAJ); }
-+context-switches|cs				{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CONTEXT_SWITCHES); }
-+cpu-migrations|migrations			{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_CPU_MIGRATIONS); }
-+alignment-faults				{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_ALIGNMENT_FAULTS); }
-+emulation-faults				{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_EMULATION_FAULTS); }
- 
- L1-dcache|l1-d|l1d|L1-data		|
- L1-icache|l1-i|l1i|L1-instruction	|
-@@ -87,14 +105,14 @@ LLC|L2					|
- dTLB|d-tlb|Data-TLB			|
- iTLB|i-tlb|Instruction-TLB		|
- branch|branches|bpu|btb|bpc		|
--node					{ return str(PE_NAME_CACHE_TYPE); }
-+node					{ return str(yyscanner, PE_NAME_CACHE_TYPE); }
- 
- load|loads|read				|
- store|stores|write			|
- prefetch|prefetches			|
- speculative-read|speculative-load	|
- refs|Reference|ops|access		|
--misses|miss				{ return str(PE_NAME_CACHE_OP_RESULT); }
-+misses|miss				{ return str(yyscanner, PE_NAME_CACHE_OP_RESULT); }
- 
- 	/*
- 	 * These are event config hardcoded term names to be specified
-@@ -102,20 +120,20 @@ misses|miss				{ return str(PE_NAME_CACHE_OP_RESULT); }
- 	 * so we can put them here directly. In case the we have a conflict
- 	 * in future, this needs to go into '//' condition block.
- 	 */
--config			{ return term(PARSE_EVENTS__TERM_TYPE_CONFIG); }
--config1			{ return term(PARSE_EVENTS__TERM_TYPE_CONFIG1); }
--config2			{ return term(PARSE_EVENTS__TERM_TYPE_CONFIG2); }
--name			{ return term(PARSE_EVENTS__TERM_TYPE_NAME); }
--period			{ return term(PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD); }
--branch_type		{ return term(PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE); }
-+config			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_CONFIG); }
-+config1			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_CONFIG1); }
-+config2			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_CONFIG2); }
-+name			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_NAME); }
-+period			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD); }
-+branch_type		{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE); }
- 
- mem:			{ BEGIN(mem); return PE_PREFIX_MEM; }
--r{num_raw_hex}		{ return raw(); }
--{num_dec}		{ return value(10); }
--{num_hex}		{ return value(16); }
-+r{num_raw_hex}		{ return raw(yyscanner); }
-+{num_dec}		{ return value(yyscanner, 10); }
-+{num_hex}		{ return value(yyscanner, 16); }
- 
--{modifier_event}	{ return str(PE_MODIFIER_EVENT); }
--{name}			{ return str(PE_NAME); }
-+{modifier_event}	{ return str(yyscanner, PE_MODIFIER_EVENT); }
-+{name}			{ return str(yyscanner, PE_NAME); }
- "/"			{ return '/'; }
- -			{ return '-'; }
- ,			{ return ','; }
-@@ -123,17 +141,17 @@ r{num_raw_hex}		{ return raw(); }
- =			{ return '='; }
- 
- <mem>{
--{modifier_bp}		{ return str(PE_MODIFIER_BP); }
-+{modifier_bp}		{ return str(yyscanner, PE_MODIFIER_BP); }
- :			{ return ':'; }
--{num_dec}		{ return value(10); }
--{num_hex}		{ return value(16); }
-+{num_dec}		{ return value(yyscanner, 10); }
-+{num_hex}		{ return value(yyscanner, 16); }
- 	/*
- 	 * We need to separate 'mem:' scanner part, in order to get specific
- 	 * modifier bits parsed out. Otherwise we would need to handle PE_NAME
- 	 * and we'd need to parse it manually. During the escape from <mem>
- 	 * state we need to put the escaping char back, so we dont miss it.
- 	 */
--.			{ unput(*parse_events_text); BEGIN(INITIAL); }
-+.			{ unput(*yytext); BEGIN(INITIAL); }
- 	/*
- 	 * We destroy the scanner after reaching EOF,
- 	 * but anyway just to be sure get back to INIT state.
-@@ -143,7 +161,7 @@ r{num_raw_hex}		{ return raw(); }
- 
- %%
- 
--int parse_events_wrap(void)
-+int parse_events_wrap(void *scanner __used)
++static struct attribute_group snb_uncore_format_group = {
++	.name = "format",
++	.attrs = snb_uncore_formats_attr,
++};
++
++static struct intel_uncore_ops snb_uncore_msr_ops = {
++	.init_box	= snb_uncore_msr_init_box,
++	.disable_event	= snb_uncore_msr_disable_event,
++	.enable_event	= snb_uncore_msr_enable_event,
++	.read_counter	= snb_uncore_msr_read_counter,
++};
++
++static struct event_constraint snb_uncore_cbo_constraints[] = {
++	UNCORE_EVENT_CONSTRAINT(0x80, 0x1),
++	UNCORE_EVENT_CONSTRAINT(0x83, 0x1),
++	EVENT_CONSTRAINT_END
++};
++
++static struct intel_uncore_type snb_uncore_cbo = {
++	.name		= "cbox",
++	.num_counters   = 2,
++	.num_boxes	= 4,
++	.perf_ctr_bits	= 44,
++	.fixed_ctr_bits	= 48,
++	.perf_ctr	= SNB_UNC_CBO_0_PER_CTR0,
++	.event_ctl	= SNB_UNC_CBO_0_PERFEVTSEL0,
++	.fixed_ctr	= SNB_UNC_FIXED_CTR,
++	.fixed_ctl	= SNB_UNC_FIXED_CTR_CTRL,
++	.single_fixed	= 1,
++	.event_mask	= SNB_UNC_RAW_EVENT_MASK,
++	.msr_offset	= SNB_UNC_CBO_MSR_OFFSET,
++	.constraints	= snb_uncore_cbo_constraints,
++	.ops		= &snb_uncore_msr_ops,
++	.format_group	= &snb_uncore_format_group,
++};
++
++static struct intel_uncore_type *snb_msr_uncores[] = {
++	&snb_uncore_cbo,
++	NULL,
++};
++/* end of Sandy Bridge uncore support */
++
++/* Nehalem uncore support */
++static void nhm_uncore_msr_disable_box(struct intel_uncore_box *box)
++{
++	wrmsrl(NHM_UNC_PERF_GLOBAL_CTL, 0);
++}
++
++static void nhm_uncore_msr_enable_box(struct intel_uncore_box *box)
++{
++	wrmsrl(NHM_UNC_PERF_GLOBAL_CTL,
++		NHM_UNC_GLOBAL_CTL_EN_PC_ALL | NHM_UNC_GLOBAL_CTL_EN_FC);
++}
++
++static void nhm_uncore_msr_enable_event(struct intel_uncore_box *box,
++					struct perf_event *event)
++{
++	struct hw_perf_event *hwc = &event->hw;
++
++	if (hwc->idx < UNCORE_PMC_IDX_FIXED)
++		wrmsrl(hwc->config_base, hwc->config | SNB_UNC_CTL_EN);
++	else
++		wrmsrl(hwc->config_base, NHM_UNC_FIXED_CTR_CTL_EN);
++}
++
++static struct attribute *nhm_uncore_formats_attr[] = {
++	&format_attr_event.attr,
++	&format_attr_umask.attr,
++	&format_attr_edge.attr,
++	&format_attr_inv.attr,
++	&format_attr_cmask8.attr,
++	NULL,
++};
++
++static struct attribute_group nhm_uncore_format_group = {
++	.name = "format",
++	.attrs = nhm_uncore_formats_attr,
++};
++
++static struct uncore_event_desc nhm_uncore_events[] = {
++	INTEL_UNCORE_EVENT_DESC(CLOCKTICKS, "config=0xffff"),
++	/* full cache line writes to DRAM */
++	INTEL_UNCORE_EVENT_DESC(QMC_WRITES_FULL_ANY, "event=0x2f,umask=0xf"),
++	/* Quickpath Memory Controller normal priority read requests */
++	INTEL_UNCORE_EVENT_DESC(QMC_NORMAL_READS_ANY, "event=0x2c,umask=0xf"),
++	/* Quickpath Home Logic read requests from the IOH */
++	INTEL_UNCORE_EVENT_DESC(QHL_REQUEST_IOH_READS,
++				"event=0x20,umask=0x1"),
++	/* Quickpath Home Logic write requests from the IOH */
++	INTEL_UNCORE_EVENT_DESC(QHL_REQUEST_IOH_WRITES,
++				"event=0x20,umask=0x2"),
++	/* Quickpath Home Logic read requests from a remote socket */
++	INTEL_UNCORE_EVENT_DESC(QHL_REQUEST_REMOTE_READS,
++				"event=0x20,umask=0x4"),
++	/* Quickpath Home Logic write requests from a remote socket */
++	INTEL_UNCORE_EVENT_DESC(QHL_REQUEST_REMOTE_WRITES,
++				"event=0x20,umask=0x8"),
++	/* Quickpath Home Logic read requests from the local socket */
++	INTEL_UNCORE_EVENT_DESC(QHL_REQUEST_LOCAL_READS,
++				"event=0x20,umask=0x10"),
++	/* Quickpath Home Logic write requests from the local socket */
++	INTEL_UNCORE_EVENT_DESC(QHL_REQUEST_LOCAL_WRITES,
++				"event=0x20,umask=0x20"),
++	{ /* end: all zeroes */ },
++};
++
++static struct intel_uncore_ops nhm_uncore_msr_ops = {
++	.disable_box	= nhm_uncore_msr_disable_box,
++	.enable_box	= nhm_uncore_msr_enable_box,
++	.disable_event	= snb_uncore_msr_disable_event,
++	.enable_event	= nhm_uncore_msr_enable_event,
++	.read_counter	= snb_uncore_msr_read_counter,
++};
++
++static struct intel_uncore_type nhm_uncore = {
++	.name		= "",
++	.num_counters   = 8,
++	.num_boxes	= 1,
++	.perf_ctr_bits	= 48,
++	.fixed_ctr_bits	= 48,
++	.event_ctl	= NHM_UNC_PERFEVTSEL0,
++	.perf_ctr	= NHM_UNC_UNCORE_PMC0,
++	.fixed_ctr	= NHM_UNC_FIXED_CTR,
++	.fixed_ctl	= NHM_UNC_FIXED_CTR_CTRL,
++	.event_mask	= NHM_UNC_RAW_EVENT_MASK,
++	.event_descs	= nhm_uncore_events,
++	.ops		= &nhm_uncore_msr_ops,
++	.format_group	= &nhm_uncore_format_group,
++};
++
++static struct intel_uncore_type *nhm_msr_uncores[] = {
++	&nhm_uncore,
++	NULL,
++};
++/* end of Nehalem uncore support */
++
+ static void uncore_assign_hw_event(struct intel_uncore_box *box,
+ 				struct perf_event *event, int idx)
  {
- 	return 1;
- }
-diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
-index e533bf7..2a93d5c 100644
---- a/tools/perf/util/parse-events.y
-+++ b/tools/perf/util/parse-events.y
-@@ -1,6 +1,8 @@
--
-+%pure-parser
- %name-prefix "parse_events_"
- %parse-param {void *_data}
-+%parse-param {void *scanner}
-+%lex-param {void* scanner}
+@@ -808,6 +994,14 @@ static int __init uncore_cpu_init(void)
+ 	int ret, cpu;
  
- %{
+ 	switch (boot_cpu_data.x86_model) {
++	case 26: /* Nehalem */
++	case 30:
++	case 37: /* Westmere */
++		msr_uncores = nhm_msr_uncores;
++		break;
++	case 42: /* Sandy Bridge */
++		msr_uncores = snb_msr_uncores;
++		break;
+ 	default:
+ 		return 0;
+ 	}
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.h b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
+index 49a6bfb..eeb5ca5 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.h
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
+@@ -15,6 +15,56 @@
  
-@@ -11,8 +13,9 @@
- #include "types.h"
- #include "util.h"
- #include "parse-events.h"
-+#include "parse-events-bison.h"
+ #define UNCORE_EVENT_CONSTRAINT(c, n) EVENT_CONSTRAINT(c, n, 0xff)
  
--extern int parse_events_lex (void);
-+extern int parse_events_lex (YYSTYPE* lvalp, void* scanner);
- 
- #define ABORT_ON(val) \
- do { \
-@@ -286,7 +289,7 @@ sep_slash_dc: '/' | ':' |
- 
- %%
- 
--void parse_events_error(void *data __used,
-+void parse_events_error(void *data __used, void *scanner __used,
- 			char const *msg __used)
- {
- }
++/* SNB event control */
++#define SNB_UNC_CTL_EV_SEL_MASK			0x000000ff
++#define SNB_UNC_CTL_UMASK_MASK			0x0000ff00
++#define SNB_UNC_CTL_EDGE_DET			(1 << 18)
++#define SNB_UNC_CTL_EN				(1 << 22)
++#define SNB_UNC_CTL_INVERT			(1 << 23)
++#define SNB_UNC_CTL_CMASK_MASK			0x1f000000
++#define NHM_UNC_CTL_CMASK_MASK			0xff000000
++#define NHM_UNC_FIXED_CTR_CTL_EN		(1 << 0)
++
++#define SNB_UNC_RAW_EVENT_MASK			(SNB_UNC_CTL_EV_SEL_MASK | \
++						 SNB_UNC_CTL_UMASK_MASK | \
++						 SNB_UNC_CTL_EDGE_DET | \
++						 SNB_UNC_CTL_INVERT | \
++						 SNB_UNC_CTL_CMASK_MASK)
++
++#define NHM_UNC_RAW_EVENT_MASK			(SNB_UNC_CTL_EV_SEL_MASK | \
++						 SNB_UNC_CTL_UMASK_MASK | \
++						 SNB_UNC_CTL_EDGE_DET | \
++						 SNB_UNC_CTL_INVERT | \
++						 NHM_UNC_CTL_CMASK_MASK)
++
++/* SNB global control register */
++#define SNB_UNC_PERF_GLOBAL_CTL                 0x391
++#define SNB_UNC_FIXED_CTR_CTRL                  0x394
++#define SNB_UNC_FIXED_CTR                       0x395
++
++/* SNB uncore global control */
++#define SNB_UNC_GLOBAL_CTL_CORE_ALL             ((1 << 4) - 1)
++#define SNB_UNC_GLOBAL_CTL_EN                   (1 << 29)
++
++/* SNB Cbo register */
++#define SNB_UNC_CBO_0_PERFEVTSEL0               0x700
++#define SNB_UNC_CBO_0_PER_CTR0                  0x706
++#define SNB_UNC_CBO_MSR_OFFSET                  0x10
++
++/* NHM global control register */
++#define NHM_UNC_PERF_GLOBAL_CTL                 0x391
++#define NHM_UNC_FIXED_CTR                       0x394
++#define NHM_UNC_FIXED_CTR_CTRL                  0x395
++
++/* NHM uncore global control */
++#define NHM_UNC_GLOBAL_CTL_EN_PC_ALL            ((1ULL << 8) - 1)
++#define NHM_UNC_GLOBAL_CTL_EN_FC                (1ULL << 32)
++
++/* NHM uncore register */
++#define NHM_UNC_PERFEVTSEL0                     0x3c0
++#define NHM_UNC_UNCORE_PMC0                     0x3b0
++
++
+ struct intel_uncore_ops;
+ struct intel_uncore_pmu;
+ struct intel_uncore_box;
 -- 
 1.7.6.5
 
