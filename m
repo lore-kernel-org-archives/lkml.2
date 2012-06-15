@@ -1,47 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932279Ab2FOP2h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 11:28:37 -0400
-Received: from casper.infradead.org ([85.118.1.10]:46162 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932138Ab2FOP2g convert rfc822-to-8bit (ORCPT
+	id S932266Ab2FOPct (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 11:32:49 -0400
+Received: from mail-ee0-f74.google.com ([74.125.83.74]:40537 "EHLO
+	mail-ee0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754335Ab2FOPcq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 11:28:36 -0400
-Message-ID: <1339774107.2559.73.camel@twins>
-Subject: Re: [PATCH V6 06/13] perf: Add Nehalem and Sandy Bridge uncore
- support
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: "Yan, Zheng" <zheng.z.yan@intel.com>
-Cc: mingo@elte.hu, jolsa@redhat.com, eranian@google.com, andi@firstfloor.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 15 Jun 2012 17:28:27 +0200
-In-Reply-To: <1339741902-8449-7-git-send-email-zheng.z.yan@intel.com>
-References: <1339741902-8449-1-git-send-email-zheng.z.yan@intel.com>
-	 <1339741902-8449-7-git-send-email-zheng.z.yan@intel.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Fri, 15 Jun 2012 11:32:46 -0400
+From: Greg Thelen <gthelen@google.com>
+To: Sha Zhengju <handai.szj@gmail.com>
+Cc: linux-mm@kvack.org, cgroups@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, yinghan@google.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Sha Zhengju <handai.szj@taobao.com>
+Subject: Re: [PATCH 2/2] memcg: add per cgroup dirty pages accounting
+References: <1339761611-29033-1-git-send-email-handai.szj@taobao.com>
+	<1339761717-29070-1-git-send-email-handai.szj@taobao.com>
+Date: Fri, 15 Jun 2012 08:32:43 -0700
+In-Reply-To: <1339761717-29070-1-git-send-email-handai.szj@taobao.com> (Sha
+	Zhengju's message of "Fri, 15 Jun 2012 20:01:57 +0800")
+Message-ID: <xr93k3z8twtg.fsf@gthelen.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-06-15 at 14:31 +0800, Yan, Zheng wrote:
-> @@ -808,6 +994,14 @@ static int __init uncore_cpu_init(void)
->         int ret, cpu;
+On Fri, Jun 15 2012, Sha Zhengju wrote:
+
+> This patch adds memcg routines to count dirty pages. I notice that
+> the list has talked about per-cgroup dirty page limiting
+> (http://lwn.net/Articles/455341/) before, but it did not get merged.
+
+Good timing, I was just about to make another effort to get some of
+these patches upstream.  Like you, I was going to start with some basic
+counters.
+
+Your approach is similar to what I have in mind.  While it is good to
+use the existing PageDirty flag, rather than introducing a new
+page_cgroup flag, there are locking complications (see below) to handle
+races between moving pages between memcg and the pages being {un}marked
+dirty.
+
+> I've no idea how is this going now, but maybe we can add per cgroup
+> dirty pages accounting first. This allows the memory controller to
+> maintain an accurate view of the amount of its memory that is dirty
+> and can provide some infomation while group's direct reclaim is working.
+>
+> After commit 89c06bd5 (memcg: use new logic for page stat accounting),
+> we do not need per page_cgroup flag anymore and can directly use
+> struct page flag.
+>
+>
+> Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
+> ---
+>  include/linux/memcontrol.h |    1 +
+>  mm/filemap.c               |    1 +
+>  mm/memcontrol.c            |   32 +++++++++++++++++++++++++-------
+>  mm/page-writeback.c        |    2 ++
+>  mm/truncate.c              |    1 +
+>  5 files changed, 30 insertions(+), 7 deletions(-)
+>
+> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> index a337c2e..8154ade 100644
+> --- a/include/linux/memcontrol.h
+> +++ b/include/linux/memcontrol.h
+> @@ -39,6 +39,7 @@ enum mem_cgroup_stat_index {
+>  	MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
+>  	MEM_CGROUP_STAT_SWAPOUT, /* # of pages, swapped out */
+>  	MEM_CGROUP_STAT_DATA, /* end of data requires synchronization */
+> +	MEM_CGROUP_STAT_FILE_DIRTY,  /* # of dirty pages in page cache */
+>  	MEM_CGROUP_STAT_NSTATS,
+>  };
 >  
->         switch (boot_cpu_data.x86_model) {
-> +       case 26: /* Nehalem */
-> +       case 30:
-> +       case 37: /* Westmere */
-> +               msr_uncores = nhm_msr_uncores;
-> +               break;
-> +       case 42: /* Sandy Bridge */
-> +               msr_uncores = snb_msr_uncores;
-> +               break; 
+> diff --git a/mm/filemap.c b/mm/filemap.c
+> index 79c4b2b..5b5c121 100644
+> --- a/mm/filemap.c
+> +++ b/mm/filemap.c
+> @@ -141,6 +141,7 @@ void __delete_from_page_cache(struct page *page)
+>  	 * having removed the page entirely.
+>  	 */
+>  	if (PageDirty(page) && mapping_cap_account_dirty(mapping)) {
+> +		mem_cgroup_dec_page_stat(page, MEM_CGROUP_STAT_FILE_DIRTY);
 
-What about WSP-EP (44)? Does it have an uncore similar to the regular
-WSM (37) or WSM-EX / Xeon-E7 (47) ?
+You need to use mem_cgroup_{begin,end}_update_page_stat around critical
+sections that:
+1) check PageDirty
+2) update MEM_CGROUP_STAT_FILE_DIRTY counter
 
-NHM-EX and WSM-EX are similar again, and not (yet) supported by these
-patches, right?
+This protects against the page from being moved between memcg while
+accounting.  Same comment applies to all of your new calls to
+mem_cgroup_{dec,inc}_page_stat.  For usage pattern, see
+page_add_file_rmap.
+
+>  		dec_zone_page_state(page, NR_FILE_DIRTY);
+>  		dec_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
+>  	}
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 9102b8c..d200ad1 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -2548,6 +2548,18 @@ void mem_cgroup_split_huge_fixup(struct page *head)
+>  }
+>  #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
+>  
+> +static inline
+> +void mem_cgroup_move_account_page_stat(struct mem_cgroup *from,
+> +					struct mem_cgroup *to,
+> +					enum mem_cgroup_stat_index idx)
+> +{
+> +	/* Update stat data for mem_cgroup */
+> +	preempt_disable();
+> +	__this_cpu_dec(from->stat->count[idx]);
+> +	__this_cpu_inc(to->stat->count[idx]);
+> +	preempt_enable();
+> +}
+> +
+>  /**
+>   * mem_cgroup_move_account - move account of the page
+>   * @page: the page
+> @@ -2597,13 +2609,14 @@ static int mem_cgroup_move_account(struct page *page,
+>  
+>  	move_lock_mem_cgroup(from, &flags);
+>  
+> -	if (!anon && page_mapped(page)) {
+> -		/* Update mapped_file data for mem_cgroup */
+> -		preempt_disable();
+> -		__this_cpu_dec(from->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
+> -		__this_cpu_inc(to->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
+> -		preempt_enable();
+> -	}
+> +	if (!anon && page_mapped(page))
+> +		mem_cgroup_move_account_page_stat(from, to,
+> +					MEM_CGROUP_STAT_FILE_MAPPED);
+> +
+> +	if (PageDirty(page))
+> +		mem_cgroup_move_account_page_stat(from, to,
+> +					MEM_CGROUP_STAT_FILE_DIRTY);
+> +
+>  	mem_cgroup_charge_statistics(from, anon, -nr_pages);
+>  	if (uncharge)
+>  		/* This is not "cancel", but cancel_charge does all we need. */
+> @@ -4023,6 +4036,7 @@ enum {
+>  	MCS_SWAP,
+>  	MCS_PGFAULT,
+>  	MCS_PGMAJFAULT,
+> +	MCS_FILE_DIRTY,
+>  	MCS_INACTIVE_ANON,
+>  	MCS_ACTIVE_ANON,
+>  	MCS_INACTIVE_FILE,
+> @@ -4047,6 +4061,7 @@ struct {
+>  	{"swap", "total_swap"},
+>  	{"pgfault", "total_pgfault"},
+>  	{"pgmajfault", "total_pgmajfault"},
+> +	{"dirty", "total_dirty"},
+
+Please add something to Documentation/cgroups/memory.txt describing this
+new user visible data.  See my previous patch
+http://thread.gmane.org/gmane.linux.kernel.mm/67114 for example text.
+
+>  	{"inactive_anon", "total_inactive_anon"},
+>  	{"active_anon", "total_active_anon"},
+>  	{"inactive_file", "total_inactive_file"},
+> @@ -4080,6 +4095,9 @@ mem_cgroup_get_local_stat(struct mem_cgroup *memcg, struct mcs_total_stat *s)
+>  	val = mem_cgroup_read_events(memcg, MEM_CGROUP_EVENTS_PGMAJFAULT);
+>  	s->stat[MCS_PGMAJFAULT] += val;
+>  
+> +	val = mem_cgroup_read_stat(memcg, MEM_CGROUP_STAT_FILE_DIRTY);
+> +	s->stat[MCS_FILE_DIRTY] += val * PAGE_SIZE;
+> +
+>  	/* per zone stat */
+>  	val = mem_cgroup_nr_lru_pages(memcg, BIT(LRU_INACTIVE_ANON));
+>  	s->stat[MCS_INACTIVE_ANON] += val * PAGE_SIZE;
+> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+> index 26adea8..b17c692 100644
+> --- a/mm/page-writeback.c
+> +++ b/mm/page-writeback.c
+> @@ -1936,6 +1936,7 @@ int __set_page_dirty_no_writeback(struct page *page)
+>  void account_page_dirtied(struct page *page, struct address_space *mapping)
+>  {
+>  	if (mapping_cap_account_dirty(mapping)) {
+> +		mem_cgroup_inc_page_stat(page, MEM_CGROUP_STAT_FILE_DIRTY);
+>  		__inc_zone_page_state(page, NR_FILE_DIRTY);
+>  		__inc_zone_page_state(page, NR_DIRTIED);
+>  		__inc_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
+> @@ -2155,6 +2156,7 @@ int clear_page_dirty_for_io(struct page *page)
+>  		 * for more comments.
+>  		 */
+>  		if (TestClearPageDirty(page)) {
+> +			mem_cgroup_dec_page_stat(page, MEM_CGROUP_STAT_FILE_DIRTY);
+>  			dec_zone_page_state(page, NR_FILE_DIRTY);
+>  			dec_bdi_stat(mapping->backing_dev_info,
+>  					BDI_RECLAIMABLE);
+> diff --git a/mm/truncate.c b/mm/truncate.c
+> index 61a183b..fe8363e 100644
+> --- a/mm/truncate.c
+> +++ b/mm/truncate.c
+> @@ -76,6 +76,7 @@ void cancel_dirty_page(struct page *page, unsigned int account_size)
+>  	if (TestClearPageDirty(page)) {
+>  		struct address_space *mapping = page->mapping;
+>  		if (mapping && mapping_cap_account_dirty(mapping)) {
+> +			mem_cgroup_dec_page_stat(page, MEM_CGROUP_STAT_FILE_DIRTY);
+>  			dec_zone_page_state(page, NR_FILE_DIRTY);
+>  			dec_bdi_stat(mapping->backing_dev_info,
+>  					BDI_RECLAIMABLE);
