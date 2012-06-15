@@ -1,69 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758569Ab2FOXF0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 19:05:26 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:55009 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758360Ab2FOXFZ (ORCPT
+	id S1758529Ab2FOXM1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 19:12:27 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51801 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758479Ab2FOXMY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 19:05:25 -0400
-X-Originating-IP: 217.70.178.142
-X-Originating-IP: 50.43.46.74
-Date: Fri, 15 Jun 2012 16:05:07 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH tip/core/rcu 14/14] rcu: Fix rcu_is_cpu_idle() #ifdef in
- TINY_RCU
-Message-ID: <20120615230507.GA7554@leaf>
-References: <20120615201256.GA26120@linux.vnet.ibm.com>
- <1339791195-26389-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1339791195-26389-14-git-send-email-paulmck@linux.vnet.ibm.com>
- <20120615212827.GR31184@leaf>
- <20120615225749.GQ2389@linux.vnet.ibm.com>
+	Fri, 15 Jun 2012 19:12:24 -0400
+Date: Fri, 15 Jun 2012 16:12:20 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
+        USB list <linux-usb@vger.kernel.org>, linux-kernel@vger.kernel.org,
+        Linux-Next <linux-next@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        Linux/m68k <linux-m68k@vger.kernel.org>
+Subject: Re: [-next] FATAL: drivers/gpu/drm/udl/udl: sizeof(struct
+ usb_device_id)=24 is not a modulo of the size of section
+ __mod_usb_device_table=44.
+Message-ID: <20120615231220.GC8205@kroah.com>
+References: <CAMuHMdXk6pByz14JcDgY+UE6QM0sHD8cbXye9CgOVSRRtr7J+Q@mail.gmail.com>
+ <20120615201021.GB14544@kroah.com>
+ <CAMuHMdUj6tAcWhkSkV43Kw3-2-3+JzgP6W=2w3fjL2KBfRh9ZQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20120615225749.GQ2389@linux.vnet.ibm.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAMuHMdUj6tAcWhkSkV43Kw3-2-3+JzgP6W=2w3fjL2KBfRh9ZQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 15, 2012 at 03:57:49PM -0700, Paul E. McKenney wrote:
-> On Fri, Jun 15, 2012 at 02:28:28PM -0700, Josh Triplett wrote:
-> > On Fri, Jun 15, 2012 at 01:13:15PM -0700, Paul E. McKenney wrote:
-> > > From: "Paul E. McKenney" <paul.mckenney@linaro.org>
-> > > 
-> > > The rcu_is_cpu_idle() function is used if CONFIG_DEBUG_LOCK_ALLOC,
-> > > but TINY_RCU defines it only when CONFIG_PROVE_RCU.  This causes
-> > > build failures when CONFIG_DEBUG_LOCK_ALLOC=y but CONFIG_PROVE_RCU=n.
-> > > This commit therefore adjusts the #ifdefs for rcu_is_cpu_idle() so
-> > > that it is defined when CONFIG_DEBUG_LOCK_ALLOC=y.
-> > > 
-> > > Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-> > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > 
-> > Given that an earlier patch in this series makes rcupdate.h
-> > unconditionally prototype rcu_is_cpu_idle, shouldn't rcutiny.c define it
-> > unconditionally?  (And do so before the earlier patch in this series
-> > makes it available unconditionally?)
+On Fri, Jun 15, 2012 at 11:02:55PM +0200, Geert Uytterhoeven wrote:
+> Hi Greg,
 > 
-> Or update that earlier patch so that it keeps rcu_is_cpu_idle() under
-> #ifdef CONFIG_DEBUG_LOCK_ALLOC.  Either way, good catch!
+> On Fri, Jun 15, 2012 at 10:10 PM, Greg Kroah-Hartman
+> <gregkh@linuxfoundation.org> wrote:
+> > On Fri, Jun 15, 2012 at 07:42:08PM +0200, Geert Uytterhoeven wrote:
+> >> commit 81df2d594340dcb6d1a02191976be88a1ca8120c ("USB: allow match
+> >> on bInterfaceNumber") added a byte to the interior of struct usb_device_id,
+> >> enabling implicit padding:
+> >>
+> >> --- a/include/linux/mod_devicetable.h
+> >> +++ b/include/linux/mod_devicetable.h
+> >> @@ -115,6 +118,9 @@ struct usb_device_id {
+> >>         __u8            bInterfaceSubClass;
+> >>         __u8            bInterfaceProtocol;
+> >>
+> >> +       /* Used for vendor-specific interface matches */
+> >> +       __u8            bInterfaceNumber;
+> >> +
+> >>         /* not matched against */
+> >>         kernel_ulong_t  driver_info;
+> >>  };
+> >>
+> >> On m68k, this causes failures like:
+> >>
+> >> | FATAL: drivers/gpu/drm/udl/udl: sizeof(struct usb_device_id)=24 is
+> >> not a modulo of the size of section __mod_usb_device_table=44.
+> >> | Fix definition of struct usb_device_id in mod_devicetable.h
+> >>
+> >> M68k is special in that it uses 2 for the alignment of 32-bit entities, hence
+> >> sizeof(struct usb_device_id) = 22.
+> >>
+> >> However, when cross-compiling on amd64, sizeof(struct usb_device_id) = 24
+> >> in scripts/mod/file2alias.c.
+> >
+> > I don't really understand, what is the problem here?  The fact that we
+> > added one byte to the structure?  And now something breaks?  How?
+> >
+> > What can we do to resolve it?
 > 
-> Hmmm...  I want it under CONFIG_DEBUG_LOCK_ALLOC for TINY_RCU (memory
-> footprint and all that), but unconditional for TREE_RCU.  That can
-> be arranged...
+> As "kernel_ulong_t  driver_info" is no longer naturally aligned, the
+> compiler will
+> add implicit padding. But the padding depends on the architecture.
 
-Seems reasonable to me, as long as the availability of the prototype at
-compile time always matches the availability of the function at link
-time.
+Ah, so we were "lucky" before, nice.
 
-- Josh Triplett
+> It can be fixed by adding explicit padding. Probably it should be padded by
+> 7 bytes (not 3), as kernel_ulong_t may require 8-byte alignment on some 64-bit
+> platforms. Or by an explicit alignment attribute.
+> 
+> See also
+>   * commit 8175fe2dda1c93a9c596921c8ed4a0b4baccdefe ("HID: fix
+> hid_device_id for cross compiling")
+>   * commit 7492d4a416d68ab4bd254b36ffcc4e0138daa8ff ("sdio: fix module
+> device table definition for m68k")
+>   * commit 9e2d3cd34a159948dc753a14573e16bffc04dba8 ("[PATCH]
+> mod_devicetable.h fixes")
+
+So would the patch below fix this?  It should force alignment of the
+driver_data field, which is all you want here, right?
+
+> Still, there's a bug in file2alias (which is compiled by the host
+> compiler), in that
+> it may use different padding than the target platform when cross-compiling.
+
+That's not good, but outside of this specific issue, right?  Have we
+just been fortunate it hasn't really hit us yet?
+
+thanks,
+
+greg k-h
+
+diff --git a/include/linux/mod_devicetable.h b/include/linux/mod_devicetable.h
+index 7771d45..6955045 100644
+--- a/include/linux/mod_devicetable.h
++++ b/include/linux/mod_devicetable.h
+@@ -122,7 +122,8 @@ struct usb_device_id {
+ 	__u8		bInterfaceNumber;
+ 
+ 	/* not matched against */
+-	kernel_ulong_t	driver_info;
++	kernel_ulong_t	driver_info
++		__attribute__((aligned(sizeof(kernel_ulong_t))));
+ };
+ 
+ /* Some useful macros to use to create struct usb_device_id */
