@@ -1,83 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751082Ab2FOEPE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 00:15:04 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:54028 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750765Ab2FOEPB convert rfc822-to-8bit (ORCPT
+	id S1751029Ab2FOESm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 00:18:42 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27913 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750759Ab2FOESl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 00:15:01 -0400
-MIME-Version: 1.0
-In-Reply-To: <1339698815-1806-1-git-send-email-fabio.baltieri@gmail.com>
-References: <1339619670.13326.22.camel@lorien2> <1339698815-1806-1-git-send-email-fabio.baltieri@gmail.com>
-From: Bryan Wu <bryan.wu@canonical.com>
-Date: Fri, 15 Jun 2012 12:14:40 +0800
-X-Google-Sender-Auth: iFC2XwoEvK24IK2bhA7oSDm12Y8
-Message-ID: <CAK5ve-KM68yfZyFxQ73nJcq2TcgjvWcRymSMHM2yLufXftLzaQ@mail.gmail.com>
-Subject: Re: [PATCH v2] leds: use led_set_brightness in led_trigger_event
-To: Fabio Baltieri <fabio.baltieri@gmail.com>
-Cc: Shuah Khan <shuahkhan@gmail.com>, linux-leds@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 15 Jun 2012 00:18:41 -0400
+X-Authority-Analysis: v=2.0 cv=NbpkJh/4 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=G0s97Kyuy1EA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=6tMNxHDDvYhHf27NXjwA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1339733919.13377.328.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH] tracing: Fix the outmost stupidity of tracing_off()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Date: Fri, 15 Jun 2012 00:18:39 -0400
+In-Reply-To: <1339717703.13377.285.camel@gandalf.stny.rr.com>
+References: <alpine.LFD.2.02.1206142345100.3086@ionos>
+	 <1339714725.13377.252.camel@gandalf.stny.rr.com>
+	 <alpine.LFD.2.02.1206150106511.3086@ionos>
+	 <1339717703.13377.285.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1+b1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 15, 2012 at 2:33 AM, Fabio Baltieri
-<fabio.baltieri@gmail.com> wrote:
-> Fix led_trigger_event() to use led_set_brightness() instead of
-> __led_set_brightness(), so that any pending blink timer is stopped before
-> setting the new brightness value.  Without this fix LED status may be
-> overridden by a pending timer.
->
-> This allows a trigger to use a mix of led_trigger_event(),
-> led_trigger_blink() and led_trigger_blink_oneshot() without races.
->
-> (applied over: leds: Rename led_brightness_set() to led_set_brightness())
->
-> Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
-> Cc: Shuah Khan <shuahkhan@gmail.com>
-> Cc: Bryan Wu <bryan.wu@canonical.com>
+On Thu, 2012-06-14 at 19:48 -0400, Steven Rostedt wrote:
 
-Thanks, applied to for-next branch on top of Shuah's renaming patch.
+> I have several branches that I work on and when they are ready, I rebase
+> them on top of tip, run a bunch of tests, and then push them out.
 
--Bryan
+One more thing. I do run specific tests during development aimed at the
+changes I make. I may rebase on top of tip afterward, run generic tests,
+and then push out. These activities are not always done right after each
+other. I probably screwed up by either cherry-picking or rebasing a
+separate branch, noticing the bug (I remember fixing it before) but then
+get side-tracked, and use the original branch that didn't have the fix.
+Or it could have simply gotten reverted with a git reset --hard, where I
+forgot to do the --amend. For testing something like this, I would have
+added tracing_off() in the code, and I do reset --hard to remove my
+testing code. If I made the fix and forgot to --amend it, the fix was
+lost.
 
-> ---
->
-> Hi Shuah,
->
-> thanks for the renaming, looks much more clear now, so that's my
-> led_trigger_event patch which applies on top of your latest patch - which
-> should still be needed if I didn't lost anything.
->
-> Fabio
->
->  drivers/leds/led-triggers.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/leds/led-triggers.c b/drivers/leds/led-triggers.c
-> index 57721f2..de1c59d 100644
-> --- a/drivers/leds/led-triggers.c
-> +++ b/drivers/leds/led-triggers.c
-> @@ -224,7 +224,7 @@ void led_trigger_event(struct led_trigger *trig,
->                struct led_classdev *led_cdev;
->
->                led_cdev = list_entry(entry, struct led_classdev, trig_list);
-> -               __led_set_brightness(led_cdev, brightness);
-> +               led_set_brightness(led_cdev, brightness);
->        }
->        read_unlock(&trig->leddev_list_lock);
->  }
-> --
-> 1.7.11.rc1.9.gf623ca1.dirty
->
+Anyway, I added to my generic tests: testing
+ 'echo schedule:traceon > set_ftrace_filter' as well as
+ 'echo schedule:traceoff > set_ftrace_filter' and make sure that they do
+enable and disable tracing.
+
+The traceon and traceoff triggers use tracing_on() and tracing_off()
+underneath the covers. If they break, the test will fail (I tested the
+broken patch and it does fail). This regression wont appear again.
+
+Since the last time you've yelled at me, I've added a lot of stress
+tests to ftrace. I test the tracing_on file to make sure it enables and
+disables. But my generic tests did not include the internal
+tracing_off() testing. My mistake, and yes I screwed up.
+
+-- Steve
 
 
-
--- 
-Bryan Wu <bryan.wu@canonical.com>
-Kernel Developer    +86.186-168-78255 Mobile
-Canonical Ltd.      www.canonical.com
-Ubuntu - Linux for human beings | www.ubuntu.com
