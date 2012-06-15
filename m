@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755706Ab2FORKv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 13:10:51 -0400
+	id S1756403Ab2FORK7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 13:10:59 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:55158 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752247Ab2FORKr (ORCPT
+	with ESMTP id S1756171Ab2FORK4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 13:10:47 -0400
+	Fri, 15 Jun 2012 13:10:56 -0400
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
@@ -23,9 +23,9 @@ Cc: Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
         WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
         devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
         patches@linaro.org, kernel-team@android.com
-Subject: [PATCH 3/6] pstore: Add persistent function tracing
-Date: Fri, 15 Jun 2012 10:08:28 -0700
-Message-Id: <1339780111-12075-3-git-send-email-anton.vorontsov@linaro.org>
+Subject: [PATCH 6/6] pstore/ram: Add ftrace messages handling
+Date: Fri, 15 Jun 2012 10:08:31 -0700
+Message-Id: <1339780111-12075-6-git-send-email-anton.vorontsov@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <20120615170659.GA4060@lizard>
 References: <20120615170659.GA4060@lizard>
@@ -33,354 +33,195 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With this support kernel can save function call chain log into a
-persistent ram buffer that can be decoded and dumped after reboot
-through pstore filesystem. It can be used to determine what function
-was last called before a reset or panic.
-
-We store the log in a binary format and then decode it at read time.
-
-p.s.
-Mostly the code comes from trace_persistent.c driver found in the
-Android git tree, written by Colin Cross <ccross@android.com>
-(according to sign-off history). I reworked the driver a little bit,
-and ported it to pstore.
+The ftrace log size is configurable via ramoops.ftrace_size
+module option, and the log itself is available via
+<pstore-mount>/ftrace-ramoops file.
 
 Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 ---
- fs/pstore/Kconfig      |   12 ++++++
- fs/pstore/Makefile     |    6 +++
- fs/pstore/ftrace.c     |   35 +++++++++++++++
- fs/pstore/inode.c      |  111 ++++++++++++++++++++++++++++++++++++++++++++++--
- fs/pstore/internal.h   |   49 +++++++++++++++++++++
- fs/pstore/platform.c   |    2 +-
- include/linux/pstore.h |    9 ++++
- 7 files changed, 219 insertions(+), 5 deletions(-)
- create mode 100644 fs/pstore/ftrace.c
+ Documentation/ramoops.txt  |   25 +++++++++++++++++++++++++
+ fs/pstore/ram.c            |   37 +++++++++++++++++++++++++++++++++----
+ include/linux/pstore_ram.h |    1 +
+ 3 files changed, 59 insertions(+), 4 deletions(-)
 
-diff --git a/fs/pstore/Kconfig b/fs/pstore/Kconfig
-index d044de6..d39bb5c 100644
---- a/fs/pstore/Kconfig
-+++ b/fs/pstore/Kconfig
-@@ -19,6 +19,18 @@ config PSTORE_CONSOLE
- 	  When the option is enabled, pstore will log all kernel
- 	  messages, even if no oops or panic happened.
+diff --git a/Documentation/ramoops.txt b/Documentation/ramoops.txt
+index 59a74a8..197ad59 100644
+--- a/Documentation/ramoops.txt
++++ b/Documentation/ramoops.txt
+@@ -94,3 +94,28 @@ timestamp and a new line. The dump then continues with the actual data.
+ The dump data can be read from the pstore filesystem. The format for these
+ files is "dmesg-ramoops-N", where N is the record number in memory. To delete
+ a stored record from RAM, simply unlink the respective pstore file.
++
++5. Persistent function tracing
++
++Persistent function tracing might be useful for debugging software or hardware
++related hangs. The functions call chain log is stored in a "ftrace-ramoops"
++file. Here is an example of usage:
++
++ # mount -t debugfs debugfs /sys/kernel/debug/
++ # cd /sys/kernel/debug/tracing
++ # echo function > current_tracer
++ # echo 1 > options/func_pstore
++ # reboot -f
++ [...]
++ # mount -t pstore pstore /mnt/
++ # tail /mnt/ftrace-ramoops
++ 0 ffffffff8101ea64  ffffffff8101bcda  native_apic_mem_read <- disconnect_bsp_APIC+0x6a/0xc0
++ 0 ffffffff8101ea44  ffffffff8101bcf6  native_apic_mem_write <- disconnect_bsp_APIC+0x86/0xc0
++ 0 ffffffff81020084  ffffffff8101a4b5  hpet_disable <- native_machine_shutdown+0x75/0x90
++ 0 ffffffff81005f94  ffffffff8101a4bb  iommu_shutdown_noop <- native_machine_shutdown+0x7b/0x90
++ 0 ffffffff8101a6a1  ffffffff8101a437  native_machine_emergency_restart <- native_machine_restart+0x37/0x40
++ 0 ffffffff811f9876  ffffffff8101a73a  acpi_reboot <- native_machine_emergency_restart+0xaa/0x1e0
++ 0 ffffffff8101a514  ffffffff8101a772  mach_reboot_fixups <- native_machine_emergency_restart+0xe2/0x1e0
++ 0 ffffffff811d9c54  ffffffff8101a7a0  __const_udelay <- native_machine_emergency_restart+0x110/0x1e0
++ 0 ffffffff811d9c34  ffffffff811d9c80  __delay <- __const_udelay+0x30/0x40
++ 0 ffffffff811d9d14  ffffffff811d9c3f  delay_tsc <- __delay+0xf/0x20
+diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
+index 96dbd1e..018d895 100644
+--- a/fs/pstore/ram.c
++++ b/fs/pstore/ram.c
+@@ -45,6 +45,10 @@ static ulong ramoops_console_size = MIN_MEM_SIZE;
+ module_param_named(console_size, ramoops_console_size, ulong, 0400);
+ MODULE_PARM_DESC(console_size, "size of kernel console log");
  
-+config PSTORE_FTRACE
-+	bool "Persistent function tracer"
-+	depends on PSTORE
-+	depends on FUNCTION_TRACER
-+	help
-+	  With this option kernel traces function calls into a persistent
-+	  ram buffer that can be decoded and dumped after reboot through
-+	  pstore filesystem. It can be used to determine what function
-+	  was last called before a reset or panic.
++static ulong ramoops_ftrace_size = MIN_MEM_SIZE;
++module_param_named(ftrace_size, ramoops_ftrace_size, ulong, 0400);
++MODULE_PARM_DESC(ftrace_size, "size of ftrace log");
 +
-+	  If unsure, say N.
-+
- config PSTORE_RAM
- 	tristate "Log panic/oops to a RAM buffer"
- 	depends on PSTORE
-diff --git a/fs/pstore/Makefile b/fs/pstore/Makefile
-index 278a44e..cc6aa3d 100644
---- a/fs/pstore/Makefile
-+++ b/fs/pstore/Makefile
-@@ -7,4 +7,10 @@ obj-y += pstore.o
- pstore-objs += inode.o platform.o
- 
- ramoops-objs += ram.o ram_core.o
-+
-+ifeq ($(CONFIG_PSTORE_FTRACE),y)
-+ramoops-objs += ftrace.o
-+CFLAGS_REMOVE_ftrace.o = -pg
-+endif
-+
- obj-$(CONFIG_PSTORE_RAM)	+= ramoops.o
-diff --git a/fs/pstore/ftrace.c b/fs/pstore/ftrace.c
-new file mode 100644
-index 0000000..8e2ef07
---- /dev/null
-+++ b/fs/pstore/ftrace.c
-@@ -0,0 +1,35 @@
-+/*
-+ * Copyright 2012  Google, Inc.
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/compiler.h>
-+#include <linux/irqflags.h>
-+#include <linux/percpu.h>
-+#include <linux/smp.h>
-+#include <linux/atomic.h>
-+#include <asm/barrier.h>
-+#include "internal.h"
-+
-+void pstore_ftrace_call(unsigned long ip, unsigned long parent_ip)
-+{
-+	struct pstore_ftrace_record rec = {};
-+
-+	if (unlikely(oops_in_progress))
-+		return;
-+
-+	rec.ip = ip;
-+	rec.parent_ip = parent_ip;
-+	pstore_ftrace_encode_cpu(&rec, raw_smp_processor_id());
-+	psinfo->write_buf(PSTORE_TYPE_FTRACE, 0, NULL, 0, (void *)&rec,
-+			  sizeof(rec), psinfo);
-+}
-diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
-index 45bff54..4ab572e 100644
---- a/fs/pstore/inode.c
-+++ b/fs/pstore/inode.c
-@@ -27,6 +27,7 @@
- #include <linux/list.h>
- #include <linux/string.h>
- #include <linux/mount.h>
-+#include <linux/seq_file.h>
- #include <linux/ramfs.h>
- #include <linux/parser.h>
- #include <linux/sched.h>
-@@ -52,18 +53,117 @@ struct pstore_private {
- 	char	data[];
+ static ulong mem_address;
+ module_param(mem_address, ulong, 0400);
+ MODULE_PARM_DESC(mem_address,
+@@ -68,16 +72,19 @@ MODULE_PARM_DESC(ramoops_ecc,
+ struct ramoops_context {
+ 	struct persistent_ram_zone **przs;
+ 	struct persistent_ram_zone *cprz;
++	struct persistent_ram_zone *fprz;
+ 	phys_addr_t phys_addr;
+ 	unsigned long size;
+ 	size_t record_size;
+ 	size_t console_size;
++	size_t ftrace_size;
+ 	int dump_oops;
+ 	bool ecc;
+ 	unsigned int max_dump_cnt;
+ 	unsigned int dump_write_cnt;
+ 	unsigned int dump_read_cnt;
+ 	unsigned int console_read_cnt;
++	unsigned int ftrace_read_cnt;
+ 	struct pstore_info pstore;
  };
  
-+struct pstore_ftrace_seq_data {
-+	const void *ptr;
-+	size_t off;
-+	size_t size;
-+};
-+
-+#define REC_SIZE sizeof(struct pstore_ftrace_record)
-+
-+static void *pstore_ftrace_seq_start(struct seq_file *s, loff_t *pos)
-+{
-+	struct pstore_private *ps = s->private;
-+	struct pstore_ftrace_seq_data *data;
-+
-+	data = kzalloc(sizeof(*data), GFP_KERNEL);
-+	if (!data)
-+		return NULL;
-+
-+	data->off = ps->size % REC_SIZE;
-+	data->off += *pos * REC_SIZE;
-+	if (data->off + REC_SIZE > ps->size) {
-+		kfree(data);
-+		return NULL;
-+	}
-+
-+	return data;
-+
-+}
-+
-+static void pstore_ftrace_seq_stop(struct seq_file *s, void *v)
-+{
-+	kfree(v);
-+}
-+
-+static void *pstore_ftrace_seq_next(struct seq_file *s, void *v, loff_t *pos)
-+{
-+	struct pstore_private *ps = s->private;
-+	struct pstore_ftrace_seq_data *data = v;
-+
-+	data->off += REC_SIZE;
-+	if (data->off + REC_SIZE > ps->size)
-+		return NULL;
-+
-+	(*pos)++;
-+	return data;
-+}
-+
-+static int pstore_ftrace_seq_show(struct seq_file *s, void *v)
-+{
-+	struct pstore_private *ps = s->private;
-+	struct pstore_ftrace_seq_data *data = v;
-+	struct pstore_ftrace_record *rec = (void *)(ps->data + data->off);
-+
-+	seq_printf(s, "%d %08lx  %08lx  %pf <- %pF\n",
-+		pstore_ftrace_decode_cpu(rec), rec->ip, rec->parent_ip,
-+		(void *)rec->ip, (void *)rec->parent_ip);
-+
-+	return 0;
-+}
-+
-+static const struct seq_operations pstore_ftrace_seq_ops = {
-+	.start	= pstore_ftrace_seq_start,
-+	.next	= pstore_ftrace_seq_next,
-+	.stop	= pstore_ftrace_seq_stop,
-+	.show	= pstore_ftrace_seq_show,
-+};
-+
- static ssize_t pstore_file_read(struct file *file, char __user *userbuf,
- 						size_t count, loff_t *ppos)
- {
--	struct pstore_private *ps = file->private_data;
-+	struct seq_file *sf = file->private_data;
-+	struct pstore_private *ps = sf->private;
+@@ -136,6 +143,9 @@ static ssize_t ramoops_pstore_read(u64 *id, enum pstore_type_id *type,
+ 		prz = ramoops_get_next_prz(&cxt->cprz, &cxt->console_read_cnt,
+ 					   1, id, type, PSTORE_TYPE_CONSOLE, 0);
+ 	if (!prz)
++		prz = ramoops_get_next_prz(&cxt->fprz, &cxt->ftrace_read_cnt,
++					   1, id, type, PSTORE_TYPE_FTRACE, 0);
++	if (!prz)
+ 		return 0;
  
-+	if (ps->type == PSTORE_TYPE_FTRACE)
-+		return seq_read(file, userbuf, count, ppos);
- 	return simple_read_from_buffer(userbuf, count, ppos, ps->data, ps->size);
- }
+ 	/* TODO(kees): Bogus time for the moment. */
+@@ -184,6 +194,11 @@ static int ramoops_pstore_write_buf(enum pstore_type_id type,
+ 			return -ENOMEM;
+ 		persistent_ram_write(cxt->cprz, buf, size);
+ 		return 0;
++	} else if (type == PSTORE_TYPE_FTRACE) {
++		if (!cxt->fprz)
++			return -ENOMEM;
++		persistent_ram_write(cxt->fprz, buf, size);
++		return 0;
+ 	}
  
-+static int pstore_file_open(struct inode *inode, struct file *file)
-+{
-+	struct pstore_private *ps = inode->i_private;
-+	struct seq_file *sf;
-+	int err;
-+	const struct seq_operations *sops = NULL;
-+
-+	if (ps->type == PSTORE_TYPE_FTRACE)
-+		sops = &pstore_ftrace_seq_ops;
-+
-+	err = seq_open(file, sops);
-+	if (err < 0)
-+		return err;
-+
-+	sf = file->private_data;
-+	sf->private = ps;
-+
-+	return 0;
-+}
-+
-+static loff_t pstore_file_llseek(struct file *file, loff_t off, int origin)
-+{
-+	struct seq_file *sf = file->private_data;
-+
-+	if (sf->op)
-+		return seq_lseek(file, off, origin);
-+	return default_llseek(file, off, origin);
-+}
-+
- static const struct file_operations pstore_file_operations = {
--	.open	= simple_open,
--	.read	= pstore_file_read,
--	.llseek	= default_llseek,
-+	.open		= pstore_file_open,
-+	.read		= pstore_file_read,
-+	.llseek		= pstore_file_llseek,
-+	.release	= seq_release,
- };
- 
- /*
-@@ -215,6 +315,9 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id,
+ 	if (type != PSTORE_TYPE_DMESG)
+@@ -233,6 +248,9 @@ static int ramoops_pstore_erase(enum pstore_type_id type, u64 id,
  	case PSTORE_TYPE_CONSOLE:
- 		sprintf(name, "console-%s", psname);
+ 		prz = cxt->cprz;
  		break;
 +	case PSTORE_TYPE_FTRACE:
-+		sprintf(name, "ftrace-%s", psname);
++		prz = cxt->fprz;
 +		break;
- 	case PSTORE_TYPE_MCE:
- 		sprintf(name, "mce-%s-%lld", psname, id);
- 		break;
-diff --git a/fs/pstore/internal.h b/fs/pstore/internal.h
-index 3bde461..6e09673 100644
---- a/fs/pstore/internal.h
-+++ b/fs/pstore/internal.h
-@@ -1,6 +1,55 @@
-+#ifndef __PSTORE_INTERNAL_H__
-+#define __PSTORE_INTERNAL_H__
-+
-+#include <linux/pstore.h>
-+
-+#if NR_CPUS <= 2 && defined(CONFIG_ARM_THUMB)
-+#define PSTORE_CPU_IN_IP 0x1
-+#elif NR_CPUS <= 4 && defined(CONFIG_ARM)
-+#define PSTORE_CPU_IN_IP 0x3
-+#endif
-+
-+struct pstore_ftrace_record {
-+	unsigned long ip;
-+	unsigned long parent_ip;
-+#ifndef PSTORE_CPU_IN_IP
-+	unsigned int cpu;
-+#endif
-+};
-+
-+static inline void
-+pstore_ftrace_encode_cpu(struct pstore_ftrace_record *rec, unsigned int cpu)
-+{
-+#ifndef PSTORE_CPU_IN_IP
-+	rec->cpu = cpu;
-+#else
-+	rec->ip |= cpu;
-+#endif
-+}
-+
-+static inline unsigned int
-+pstore_ftrace_decode_cpu(struct pstore_ftrace_record *rec)
-+{
-+#ifndef PSTORE_CPU_IN_IP
-+	return rec->cpu;
-+#else
-+	return rec->ip & PSTORE_CPU_IN_IP;
-+#endif
-+}
-+
-+#ifdef CONFIG_PSTORE_FTRACE
-+extern void pstore_register_ftrace(void);
-+#else
-+static inline void pstore_register_ftrace(void) {}
-+#endif
-+
-+extern struct pstore_info *psinfo;
-+
- extern void	pstore_set_kmsg_bytes(int);
- extern void	pstore_get_records(int);
- extern int	pstore_mkfile(enum pstore_type_id, char *psname, u64 id,
- 			      char *data, size_t size,
- 			      struct timespec time, struct pstore_info *psi);
- extern int	pstore_is_mounted(void);
-+
-+#endif
-diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
-index e7c0a52..86af54e 100644
---- a/fs/pstore/platform.c
-+++ b/fs/pstore/platform.c
-@@ -61,7 +61,7 @@ static DECLARE_WORK(pstore_work, pstore_dowork);
-  * calls to pstore_register()
-  */
- static DEFINE_SPINLOCK(pstore_lock);
--static struct pstore_info *psinfo;
-+struct pstore_info *psinfo;
+ 	default:
+ 		return -EINVAL;
+ 	}
+@@ -346,7 +364,8 @@ static int __init ramoops_probe(struct platform_device *pdev)
+ 	if (cxt->max_dump_cnt)
+ 		goto fail_out;
  
- static char *backend;
+-	if (!pdata->mem_size || (!pdata->record_size && !pdata->console_size)) {
++	if (!pdata->mem_size || (!pdata->record_size && !pdata->console_size &&
++			!pdata->ftrace_size)) {
+ 		pr_err("The memory size and the record/console size must be "
+ 			"non-zero\n");
+ 		goto fail_out;
+@@ -355,18 +374,20 @@ static int __init ramoops_probe(struct platform_device *pdev)
+ 	pdata->mem_size = rounddown_pow_of_two(pdata->mem_size);
+ 	pdata->record_size = rounddown_pow_of_two(pdata->record_size);
+ 	pdata->console_size = rounddown_pow_of_two(pdata->console_size);
++	pdata->ftrace_size = rounddown_pow_of_two(pdata->ftrace_size);
  
-diff --git a/include/linux/pstore.h b/include/linux/pstore.h
-index b107484..120443b 100644
---- a/include/linux/pstore.h
-+++ b/include/linux/pstore.h
-@@ -30,6 +30,7 @@ enum pstore_type_id {
- 	PSTORE_TYPE_DMESG	= 0,
- 	PSTORE_TYPE_MCE		= 1,
- 	PSTORE_TYPE_CONSOLE	= 2,
-+	PSTORE_TYPE_FTRACE	= 3,
- 	PSTORE_TYPE_UNKNOWN	= 255
+ 	cxt->dump_read_cnt = 0;
+ 	cxt->size = pdata->mem_size;
+ 	cxt->phys_addr = pdata->mem_address;
+ 	cxt->record_size = pdata->record_size;
+ 	cxt->console_size = pdata->console_size;
++	cxt->ftrace_size = pdata->ftrace_size;
+ 	cxt->dump_oops = pdata->dump_oops;
+ 	cxt->ecc = pdata->ecc;
+ 
+ 	paddr = cxt->phys_addr;
+ 
+-	dump_mem_sz = cxt->size - cxt->console_size;
++	dump_mem_sz = cxt->size - cxt->console_size - cxt->ftrace_size;
+ 	err = ramoops_init_przs(dev, cxt, &paddr, dump_mem_sz);
+ 	if (err)
+ 		goto fail_out;
+@@ -375,9 +396,14 @@ static int __init ramoops_probe(struct platform_device *pdev)
+ 	if (err)
+ 		goto fail_init_cprz;
+ 
+-	if (!cxt->przs && !cxt->cprz) {
++	err = ramoops_init_prz(dev, cxt, &cxt->fprz, &paddr, cxt->ftrace_size);
++	if (err)
++		goto fail_init_fprz;
++
++	if (!cxt->przs && !cxt->cprz && !cxt->fprz) {
+ 		pr_err("memory size too small, minimum is %lu\n",
+-			cxt->console_size + cxt->record_size);
++			cxt->console_size + cxt->record_size +
++			cxt->ftrace_size);
+ 		goto fail_cnt;
+ 	}
+ 
+@@ -424,6 +450,8 @@ fail_clear:
+ 	cxt->pstore.bufsize = 0;
+ 	cxt->max_dump_cnt = 0;
+ fail_cnt:
++	kfree(cxt->fprz);
++fail_init_fprz:
+ 	kfree(cxt->cprz);
+ fail_init_cprz:
+ 	ramoops_free_przs(cxt);
+@@ -478,6 +506,7 @@ static int __init ramoops_init(void)
+ 		dummy_data->mem_address = mem_address;
+ 		dummy_data->record_size = record_size;
+ 		dummy_data->console_size = ramoops_console_size;
++		dummy_data->ftrace_size = ramoops_ftrace_size;
+ 		dummy_data->dump_oops = dump_oops;
+ 		dummy_data->ecc = ramoops_ecc;
+ 		dummy = platform_create_bundle(&ramoops_driver, ramoops_probe,
+diff --git a/include/linux/pstore_ram.h b/include/linux/pstore_ram.h
+index 2470bb5..368da13 100644
+--- a/include/linux/pstore_ram.h
++++ b/include/linux/pstore_ram.h
+@@ -75,6 +75,7 @@ struct ramoops_platform_data {
+ 	unsigned long	mem_address;
+ 	unsigned long	record_size;
+ 	unsigned long	console_size;
++	unsigned long	ftrace_size;
+ 	int		dump_oops;
+ 	bool		ecc;
  };
- 
-@@ -57,6 +58,14 @@ struct pstore_info {
- 	void		*data;
- };
- 
-+
-+#ifdef CONFIG_PSTORE_FTRACE
-+extern void pstore_ftrace_call(unsigned long ip, unsigned long parent_ip);
-+#else
-+static inline void pstore_ftrace_call(unsigned long ip, unsigned long parent_ip)
-+{ }
-+#endif
-+
- #ifdef CONFIG_PSTORE
- extern int pstore_register(struct pstore_info *);
- #else
 -- 
 1.7.10.4
 
