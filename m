@@ -1,76 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756583Ab2FOKAb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 06:00:31 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:41063 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756032Ab2FOKA3 (ORCPT
+	id S1756603Ab2FOKDU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 06:03:20 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41261 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756275Ab2FOKDT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 06:00:29 -0400
-Message-ID: <4FDB07B9.5010303@linaro.org>
-Date: Fri, 15 Jun 2012 11:00:25 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Linus Walleij <linus.walleij@linaro.org>, linus.walleij@stericsson.com,
-        arnd@arndb.de, linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
-        linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 09/14] i2c: Add Device Tree support to the Nomadik I2C
- driver
-References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org> <1339428307-3850-10-git-send-email-lee.jones@linaro.org> <CACRpkdaMDbH4NkiHRLAfbJZ_j4QXbwg94bvaWsdYRPH+dSfc8Q@mail.gmail.com> <4FD6F0E8.5040606@linaro.org> <CACRpkdYxiT-0x4aetMxB2x8SkB+Mmy8rk8uSzgU_anemSayhMw@mail.gmail.com> <4FD83AAD.2010701@linaro.org> <CACRpkdZC8E6izDpdnWy6DMjOdA6KsqTaPoaq9pErWoNW0Ewytw@mail.gmail.com> <4FD88761.9050703@linaro.org> <20120614183636.GB30185@sirena.org.uk> <4FDA341C.8010501@linaro.org> <20120615093231.GB3898@opensource.wolfsonmicro.com>
-In-Reply-To: <20120615093231.GB3898@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Fri, 15 Jun 2012 06:03:19 -0400
+Message-ID: <1339754590.2559.51.camel@twins>
+Subject: Re: [RFC][PATCH 2/4] sched: Push put_prev_task() into
+ pick_next_task()
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Glauber Costa <glommer@parallels.com>
+Cc: mingo@kernel.org, pjt@google.com, venki@google.com, efault@gmx.de,
+        rostedt@goodmis.org, linux-kernel@vger.kernel.org
+Date: Fri, 15 Jun 2012 12:03:10 +0200
+In-Reply-To: <4FDB050F.7040503@parallels.com>
+References: <20120614132902.800827488@chello.nl>
+	 <20120614133212.690691207@chello.nl> <4FDB050F.7040503@parallels.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/06/12 10:32, Mark Brown wrote:
-> On Thu, Jun 14, 2012 at 07:57:32PM +0100, Lee Jones wrote:
->> On 14/06/12 19:36, Mark Brown wrote:
->
->>> You're not understanding Linus' point.  The compatible string isn't
->>> useful here because properties like the maximum clock rate of the bus
->>> depend on the board design, not the silicon.  The controller may be
->>> perfectly happy to run at a given rate but other devices on the bus or
->>> the electrical engineering of the PCB itself may restrict this further.
->
->> And you're not understanding mine. ;)
->
-> I think we are (or at least I do)...
->
->> You can have multiple compatible strings for a single driver. Which
->> one you reference from the Device Tree will dictate which group of
->> settings are used, including variation of clock rates.
->
-> I'm certainly well aware of that.  The problem is that the compatible
-> strings should identify a particular IP or piece of silicon and be
-> unchanging properties of that hardware - for example, working out how
-> big a FIFO in a device is from the compatible information is totally
-> sensible and reasonable.  Things like the I2C bus clock speed on the
-> other hand depend not on the individual device but on how it's been
-> integrated into the system so you'd end up saying things like
-> "nomadik-i2c-100khz-bus" in the compatible string which isn't great.
->
-> If there's something like variation in the maximum speed that can be
-> supported by the different silicon the driver handles then working that
-> out from compatible and using it as the default is sensible but that's
-> not the same thing as providing customisation of the system bus
-> frequency to the user and if there's only one of those two that's
-> configurable it should be the system bus frequency.
+On Fri, 2012-06-15 at 13:49 +0400, Glauber Costa wrote:
+> On 06/14/2012 05:29 PM, Peter Zijlstra wrote:
+> > +static struct task_struct *
+> > +pick_next_task_rt(struct rq *rq, struct task_struct *prev)
+> >   {
+> > -	struct task_struct *p = _pick_next_task_rt(rq);
+> > +	struct task_struct *p;
+> > +	struct rt_rq *rt_rq =&rq->rt;
+> > +
+> > +	if (!rt_rq->rt_nr_running)
+> > +		return NULL;
+> > +
+> > +	if (rt_rq_throttled(rt_rq))
+> > +		return NULL;
+> > +
+> > +	if (prev)
+> > +		prev->sched_class->put_prev_task(rq, prev);
+> > +
+> it might be me, but this one sounds strange. If the responsibility of 
+> putting the task now lays with pic_next_task, you can't return NULL 
+> without doing this first.
 
-All agreed. I think we're singing off the same hymn-sheet here. :)
+Its the responsibility of the sched_class::pick_next_task implementation
+that will return the next task. Not of the first one called.
 
-I was just saying that it was possible to pick a selection of 
-configurations from a compatible string alone. I also mentioned that on 
-reflection it would be neater to specify the properties individually 
-from Device Tree in case of small variations in configuration, 
-preventing us from using compatible strings like the one you mentioned.
+Clearly this needs a comment.. /me adds.
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-M: +44 77 88 633 515
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+---
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1096,6 +1096,11 @@ struct sched_class {
+ 
+ 	void (*check_preempt_curr) (struct rq *rq, struct task_struct *p, int flags);
+ 
++	/*
++	 * It is the responsibility of the pick_next_task() method that will
++	 * return the next task to call put_prev_task() on the @prev task or
++	 * something equivalent.
++	 */
+ 	struct task_struct * (*pick_next_task) (struct rq *rq,
+ 						struct task_struct *prev);
+ 	void (*put_prev_task) (struct rq *rq, struct task_struct *p);
+
