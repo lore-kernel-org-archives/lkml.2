@@ -1,42 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757087Ab2FOSJg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 14:09:36 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49976 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756906Ab2FOSJf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 14:09:35 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Liam Girdwood <lrg@ti.com>
-Cc: linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] regulator: core: Actually use the data in _notifier_call_chain()
-Date: Fri, 15 Jun 2012 19:09:33 +0100
-Message-Id: <1339783773-18788-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.10
+	id S1757236Ab2FOSKF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 14:10:05 -0400
+Received: from mx1.fusionio.com ([66.114.96.30]:42770 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757034Ab2FOSKB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 14:10:01 -0400
+X-ASG-Debug-ID: 1339783800-03d6a50312181070001-xx1T2L
+X-Barracuda-Envelope-From: clmason@fusionio.com
+Date: Fri, 15 Jun 2012 14:09:57 -0400
+From: Chris Mason <chris.mason@fusionio.com>
+To: <torvalds@linux-foundation.org>, <linux-btrfs@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] Btrfs updates
+Message-ID: <20120615180957.GE19150@shiny>
+X-ASG-Orig-Subj: [GIT PULL] Btrfs updates
+Mail-Followup-To: Chris Mason <chris.mason@fusionio.com>,
+	torvalds@linux-foundation.org, linux-btrfs@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1339783800
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.0012 1.0000 -2.0131
+X-Barracuda-Spam-Score: -2.01
+X-Barracuda-Spam-Status: No, SCORE=-2.01 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.99940
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/regulator/core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Hi Linus,
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index a2c5cfb..770f08e 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -2690,7 +2690,7 @@ static void _notifier_call_chain(struct regulator_dev *rdev,
- 				  unsigned long event, void *data)
- {
- 	/* call rdev chain first */
--	blocking_notifier_call_chain(&rdev->notifier, event, NULL);
-+	blocking_notifier_call_chain(&rdev->notifier, event, data);
- }
- 
- /**
--- 
-1.7.10
+Please pull my for-linus branch:
 
+git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
+
+The dates look like I had to rebase this morning because there was a compiler
+warning for a printk arg that I had missed earlier.
+
+These are all fixes, including one to prevent using stale pointers for
+device names, and lots of fixes around transaction abort cleanups
+(Josef, Liu Bo).
+
+Jan Schmidt also sent in a number of fixes for the new reference number
+tracking code.
+
+Liu Bo beat me to updating the MAINTAINERS file.  Since he thought to
+also fix the git url, I kept his commit.
+
+Josef Bacik (10) commits (+303/-102):
+    Btrfs: pass locked_page into extent_clear_unlock_delalloc if theres an error (+2/-2)
+    Btrfs: unlock everything properly in the error case for nocow (+35/-2)
+    Btrfs: wake up transaction waiters when aborting a transaction (+7/-6)
+    Btrfs: call filemap_fdatawrite twice for compression (+31/-7)
+    Btrfs: fix locking in btrfs_destroy_delayed_refs (+17/-13)
+    Btrfs: keep inode pinned when compressing writes (+6/-2)
+    Btrfs: abort the transaction if the commit fails (+8/-2)
+    Btrfs: use rcu to protect device->name (+162/-64)
+    Btrfs: fix btrfs_destroy_marked_extents (+2/-4)
+    Btrfs: implement ->show_devname (+33/-0)
+
+Jan Schmidt (6) commits (+72/-37):
+    Btrfs: remove obsolete btrfs_next_leaf call from __resolve_indirect_ref (+1/-9)
+    Btrfs: remove call to btrfs_header_nritems with no effect (+0/-3)
+    Btrfs: fix return value for __tree_mod_log_oldest_root (+20/-13)
+    Btrfs: use btrfs_read_lock_root_node in get_old_root (+16/-4)
+    Btrfs: fix race in tree mod log addition (+19/-4)
+    Btrfs: add btrfs_next_old_leaf (+16/-4)
+
+Liu Bo (5) commits (+29/-5):
+    Btrfs: avoid memory leak of extent state in error handling routine (+2/-0)
+    Btrfs: make sure that we've made everything in pinned tree clean (+11/-0)
+    Btrfs: update MAINTAINERS info for BTRFS FILE SYSTEM (+2/-2)
+    Btrfs: fix missing inherited flag in rename (+6/-3)
+    Btrfs: do not resize a seeding device (+8/-0)
+
+Li Zefan (2) commits (+50/-49):
+    Btrfs: fix incompat flags setting (+1/-1)
+    Btrfs: fix defrag regression (+49/-48)
+
+Miao Xie (1) commits (+27/-0):
+    Btrfs: destroy the items of the delayed inodes in error handling routine
+
+Total: (24) commits (+481/-193)
+
+ MAINTAINERS                |    4 +-
+ fs/btrfs/backref.c         |   17 ++-----
+ fs/btrfs/btrfs_inode.h     |    1 +
+ fs/btrfs/check-integrity.c |   16 +++---
+ fs/btrfs/ctree.c           |   86 +++++++++++++++++++++++---------
+ fs/btrfs/ctree.h           |    2 +
+ fs/btrfs/delayed-inode.c   |   18 +++++++
+ fs/btrfs/delayed-inode.h   |    3 ++
+ fs/btrfs/disk-io.c         |   76 +++++++++++++++++-----------
+ fs/btrfs/extent_io.c       |    7 +--
+ fs/btrfs/inode.c           |   73 +++++++++++++++++++++------
+ fs/btrfs/ioctl.c           |  118 +++++++++++++++++++++++++-------------------
+ fs/btrfs/ordered-data.c    |   22 ++++++++-
+ fs/btrfs/rcu-string.h      |   56 +++++++++++++++++++++
+ fs/btrfs/scrub.c           |   30 ++++++-----
+ fs/btrfs/super.c           |   33 +++++++++++++
+ fs/btrfs/transaction.c     |   14 +++++-
+ fs/btrfs/volumes.c         |   92 +++++++++++++++++++++-------------
+ fs/btrfs/volumes.h         |    2 +-
+ 19 files changed, 479 insertions(+), 191 deletions(-)
