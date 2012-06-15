@@ -1,92 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757536Ab2FOTyS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 15:54:18 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63506 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757440Ab2FOTyR (ORCPT
+	id S1757564Ab2FOTyl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 15:54:41 -0400
+Received: from ironport2-out.teksavvy.com ([206.248.154.182]:64667 "EHLO
+	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757440Ab2FOTyj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 15:54:17 -0400
-Message-ID: <4FDB92CF.1070603@vflare.org>
-Date: Fri, 15 Jun 2012 12:53:51 -0700
-From: Nitin Gupta <ngupta@vflare.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Minchan Kim <minchan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Tejun Heo <tj@kernel.org>, David Howells <dhowells@redhat.com>,
-        x86@kernel.org, Nick Piggin <npiggin@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>
-Subject: Re: [PATCH v2 3/3] x86: Support local_flush_tlb_kernel_range
-References: <1337133919-4182-1-git-send-email-minchan@kernel.org> <1337133919-4182-3-git-send-email-minchan@kernel.org> <4FB4B29C.4010908@kernel.org> <1337266310.4281.30.camel@twins> <4FDB5107.3000308@linux.vnet.ibm.com> <7e925563-082b-468f-a7d8-829e819eeac0@default> <4FDB66B7.2010803@vflare.org> <10ea9d19-bd24-400c-8131-49f0b4e9e5ae@default> <4FDB8808.9010508@linux.vnet.ibm.com> <9c6c8ae0-0212-402d-a906-0d0c61e5e058@default>
-In-Reply-To: <9c6c8ae0-0212-402d-a906-0d0c61e5e058@default>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 15 Jun 2012 15:54:39 -0400
+X-Greylist: delayed 583 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Jun 2012 15:54:39 EDT
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EAG6Zu0/O+Ip3/2dsb2JhbABEtBGBCIIVAQEEAScTGwEjBQsLRhQlJBOICQW6CY9iYgOVGokfhHqBWIMF
+X-IronPort-AV: E=Sophos;i="4.75,637,1330923600"; 
+   d="scan'208";a="191509236"
+Date: Fri, 15 Jun 2012 15:44:54 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
+        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+        rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
+        eric.dumazet@gmail.com, darren@dvhart.com, fweisbec@gmail.com,
+        patches@linaro.org, "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH tip/core/rcu 4/6] rcu: Fix bug in rcu_barrier() torture
+ test
+Message-ID: <20120615194454.GA6366@Krystal>
+References: <20120615185725.GA25163@linux.vnet.ibm.com>
+ <1339786674-25265-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1339786674-25265-4-git-send-email-paulmck@linux.vnet.ibm.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <1339786674-25265-4-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Editor: vi
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/15/2012 12:39 PM, Dan Magenheimer wrote:
->> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
->>> The compression code already compresses to a per-cpu page-pair
->>> already and then that "zpage" is copied into the space allocated
->>> for it by zsmalloc.  For that final copy, if the copy code knows
->>> the target may cross a page boundary, has both target pages
->>> kmap'ed, and is smart about doing the copy, the "pair mapping"
->>> can be avoided for compression.
->>
->> The problem is that by "smart" you mean "has access to zsmalloc
->> internals".  zcache, or any user, would need the know the kmapped
->> address of the first page, the offset to start at within that page, and
->> the kmapped address of the second page in order to do the smart copy
->> you're talking about.  Then the complexity to do the smart copy that
->> would have to be implemented in each user.
-> 
-> Or simply add a zsmalloc_copy in zsmalloc and require that
-> it be used by the caller (instead of a memcpy).
-> 
->>> The decompression path calls lzo1x directly and it would be
->>> a huge pain to make lzo1x smart about page boundaries.  BUT
->>> since we know that the decompressed result will always fit
->>> into a page (actually exactly a page), you COULD do an extra
->>> copy to the end of the target page (using the same smart-
->>> about-page-boundaries copying code from above) and then do
->>> in-place decompression, knowing that the decompression will
->>> not cross a page boundary.  So, with the extra copy, the "pair
->>> mapping" can be avoided for decompression as well.
->>
->> This is an interesting thought.
->>
->> But this does result in a copy in the decompression (i.e. page fault)
->> path, where right now, it is copy free.  The compressed data is
->> decompressed directly from its zsmalloc allocation to the page allocated
->> in the fault path.
-> 
-> The page fault occurs as soon as the lzo1x compression code starts anyway,
-> a
-
-s do all the cache faults... both just occur earlier, so the only
-> additional cost is the actual cpu instructions to move the sequence of
-> (compressed) bytes from the zsmalloc-allocated area to the end
-> of the target page.
-> 
-> TLB operations can be very expensive, not to mention (as the
-> subject of this thread attests) non-portable.
+* Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+[...]
+> @@ -1642,6 +1643,7 @@ void rcu_torture_barrier_cbf(struct rcu_head *rcu)
+>  static int rcu_torture_barrier_cbs(void *arg)
+>  {
+>  	long myid = (long)arg;
+> +	bool lastphase = 0;
+>  	struct rcu_head rcu;
 >  
+>  	init_rcu_head_on_stack(&rcu);
+> @@ -1649,9 +1651,11 @@ static int rcu_torture_barrier_cbs(void *arg)
+>  	set_user_nice(current, 19);
+>  	do {
+>  		wait_event(barrier_cbs_wq[myid],
+> -			   atomic_read(&barrier_cbs_count) == n_barrier_cbs ||
+> +			   barrier_phase != lastphase ||
+>  			   kthread_should_stop() ||
+>  			   fullstop != FULLSTOP_DONTSTOP);
+> +		lastphase = barrier_phase;
+> +		smp_mb();
 
-Even if you go for copying chunks followed by decompression, it still
-requires two kmaps and kunmaps. Each of these require one local TLB
-invlpg. So, a total of 2 local maps + unmaps even with this approach.
+Hi Paul,
 
-The only additional requirement of zsmalloc is that it requires two
-mappings which are virtually contiguous. The cost is the same in both
-approaches but the current zsmalloc approach presents a much cleaner
-interface.
+Documenting this barrier, and the barrier below, along with the variable
+accesses they order, would appear to be a good idea, especially since
+the bug this is correcting was caused by the lack of appropriate
+smp_mb().
 
 Thanks,
-Nitin
+
+Mathieu
+
+>  		if (kthread_should_stop() || fullstop != FULLSTOP_DONTSTOP)
+>  			break;
+>  		cur_ops->call(&rcu, rcu_torture_barrier_cbf);
+> @@ -1676,7 +1680,8 @@ static int rcu_torture_barrier(void *arg)
+>  	do {
+>  		atomic_set(&barrier_cbs_invoked, 0);
+>  		atomic_set(&barrier_cbs_count, n_barrier_cbs);
+> -		/* wake_up() path contains the required barriers. */
+> +		smp_mb();
+> +		barrier_phase = !barrier_phase;
+>  		for (i = 0; i < n_barrier_cbs; i++)
+>  			wake_up(&barrier_cbs_wq[i]);
+>  		wait_event(barrier_wq,
+> -- 
+> 1.7.8
+> 
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
