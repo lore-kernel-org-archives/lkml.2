@@ -1,88 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757497Ab2FOTSr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 15:18:47 -0400
-Received: from na3sys009aog120.obsmtp.com ([74.125.149.140]:35523 "EHLO
-	na3sys009aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753793Ab2FOTSp convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 15:18:45 -0400
-From: Philip Rakity <prakity@marvell.com>
-To: Pankaj Jangra <jangra.pankaj9@gmail.com>
-CC: Philip Rakity <philipspatches@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
-Date: Fri, 15 Jun 2012 12:18:38 -0700
-Subject: Re: [PATCH 1/2] regulator: core.c Pass voltage to notifier when
- setting voltage
-Thread-Topic: [PATCH 1/2] regulator: core.c Pass voltage to notifier when
- setting voltage
-Thread-Index: Ac1LK6tEXBFq1GnvQE6kaBDnlwOJPQ==
-Message-ID: <DFD0DA03-D72C-4B5D-9E56-AA214202400A@marvell.com>
-References: <1339784856-1779-1-git-send-email-prakity@marvell.com>
- <CADTbHxpfQpKMkwzUakUUzt1mKO5rQ2A7_vuh9SA7i6Cq0VinZg@mail.gmail.com>
-In-Reply-To: <CADTbHxpfQpKMkwzUakUUzt1mKO5rQ2A7_vuh9SA7i6Cq0VinZg@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1757505Ab2FOTTj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 15:19:39 -0400
+Received: from oproxy9.bluehost.com ([69.89.24.6]:40997 "HELO
+	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757374Ab2FOTTh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 15:19:37 -0400
+Message-ID: <4FDB8AB8.6060703@xenotime.net>
+Date: Fri, 15 Jun 2012 12:19:20 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        Kees Cook <keescook@chromium.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH -next] pstore: fix printk format warning in ram.c
+References: <20120615143303.3b88edcbc3efc7b1bf81839b@canb.auug.org.au>
+In-Reply-To: <20120615143303.3b88edcbc3efc7b1bf81839b@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-On Jun 15, 2012, at 11:50 AM, Pankaj Jangra wrote:
+Fix printk format warning (on i386) in pstore:
 
-> Hi,
-> 
-> On Fri, Jun 15, 2012 at 11:57 PM, Philip Rakity
-> <philipspatches@gmail.com> wrote:
->> V3
->> --
->> 
->> Fix type where data argument was not passed in
->> blocking_notifier_call_chain.
->> 
->> edits to check in comments (below)
->> 
->> V2
->> --
->> 
->> Incorporate performance suggestions made by Mark Brown
->> Use linux-next as base code rather than mmc-next
->> 
->> The voltage being set should be passed to the call in handler
->> requesting the callback.  Currently this is not done.
->> 
->> The callin handler cannot call regulator_get_voltage() to get the
-> 
-> "The calling"
+fs/pstore/ram.c:378:3: warning: format '%lu' expects type 'long unsigned int', but argument 2 has type 'size_t'
 
-I am not sure what the correct term for this.  The blocking_notifier_call_chain calls 
-what ?   calling might imply blocking_notifier_call_chain() since it is doing the calling.
-What is the receiver of the call named ?
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+---
+ fs/pstore/ram.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> 
->> information since the mutex is held by the regulator and
->> deadlock occurs.
->> 
->> Without this change the receiver of the call in cannot know what
->> action to take.  This is used, for example, to set PAD voltages
->> when doing SD vccq voltage changes.
->> 
->> Signed-off-by: Philip Rakity <prakity@marvell.com>
->> ---
-> 
-> Since you are submitting your patch from the different email than your
-> Singed-off email. So you should put in first line of message
-> From: <your real email>.
-> 
-> Regards,
-> Pankaj Jangra
-
+--- linux-next-20120615.orig/fs/pstore/ram.c
++++ linux-next-20120615/fs/pstore/ram.c
+@@ -375,7 +375,7 @@ static int __init ramoops_probe(struct p
+ 		goto fail_init_cprz;
+ 
+ 	if (!cxt->przs && !cxt->cprz) {
+-		pr_err("memory size too small, minimum is %lu\n",
++		pr_err("memory size too small, minimum is %zu\n",
+ 			cxt->console_size + cxt->record_size);
+ 		goto fail_cnt;
+ 	}
