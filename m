@@ -1,30 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756947Ab2FONvW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 09:51:22 -0400
-Received: from out.jmg.gov.my ([175.28.12.37]:34845 "EHLO out.jmg.gov.my"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756359Ab2FONvV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 09:51:21 -0400
-X-Greylist: delayed 1958 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Jun 2012 09:51:21 EDT
-Date: Fri, 15 Jun 2012 21:15:40 +0800 (MYT)
-From: WEBMAIL UPGRADE TEAM <maling@jmg.gov.my>
-Message-ID: <60241966.252567.1339766140628.JavaMail.root@tantalum.jmg.gov.my>
-Subject: ATTENTION WEBMAIL USER
+	id S1756954Ab2FONxo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 09:53:44 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:39697 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752650Ab2FONxn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 09:53:43 -0400
+Date: Fri, 15 Jun 2012 16:53:19 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Peter Senna Tschudin <peter.senna@gmail.com>
+Cc: Julia Lawall <julia.lawall@lip6.fr>, Fengguang Wu <wfg@linux.intel.com>,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Josh Triplett <josh@freedesktop.org>
+Subject: Re: automated warning notifications
+Message-ID: <20120615135319.GF4400@mwanda>
+References: <20120614172523.GB4400@mwanda>
+ <20120615014835.GA5695@localhost>
+ <20120615071222.GZ13539@mwanda>
+ <20120615075810.GA13206@localhost>
+ <alpine.DEB.2.02.1206150639130.1864@hadrien>
+ <20120615111913.GA13539@mwanda>
+ <CA+MoWDrKJwiK66zpBxQ=q+qS7n_P4qLySgBRdj2txq20wa7bvA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Mailer: Zimbra 6.0.3_GA_1915.RHEL5_64 (zclient/6.0.3_GA_1915.RHEL5_64)
-To: undisclosed-recipients:;
-X-JMG-MailScanner-Information: Please contact the ISP for more information
-X-JMG-MailScanner-ID: A10B33A8878.9CD20
-X-JMG-MailScanner: Found to be clean
-X-JMG-MailScanner-SpamScore: s
-X-JMG-MailScanner-From: maling@jmg.gov.my
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+MoWDrKJwiK66zpBxQ=q+qS7n_P4qLySgBRdj2txq20wa7bvA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Dropped the Sparse people from the CC list.
 
+On Fri, Jun 15, 2012 at 10:33:50AM -0300, Peter Senna Tschudin wrote:
+> Added git-blame support...
+> 
 
-Your Email account has exceeded the storage limit which is 20GB as set by your administrator,you are currently running on 20.9GB,you may not be able to send or receive new mail until you re-validate your mailbox.To re-validate your mailbox please click this link below: http://www.mediacorp.webedgedev.com/admintools/
+No.  I meant that it would run git blame on the offending line, take
+the hash and then do a git show $hash.
+
+regards,
+dan carpenter
+
