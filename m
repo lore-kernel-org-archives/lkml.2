@@ -1,76 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756634Ab2FOKp4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 06:45:56 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:43512 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756267Ab2FOKpz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 06:45:55 -0400
-Date: Fri, 15 Jun 2012 11:45:51 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: kosaki.motohiro@gmail.com
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        akpm@linux-foundation.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Nick Piggin <npiggin@gmail.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [resend][PATCH] mm, vmscan: fix do_try_to_free_pages() livelock
-Message-ID: <20120615104551.GB20303@csn.ul.ie>
-References: <1339661592-3915-1-git-send-email-kosaki.motohiro@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1339661592-3915-1-git-send-email-kosaki.motohiro@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756650Ab2FOKr4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 06:47:56 -0400
+Received: from mailrelay1.diasemi.com ([82.210.246.133]:32666 "EHLO
+	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756398Ab2FOKrz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 06:47:55 -0400
+Message-Id: <201206151046.q5FAke4x002812@sw-eng-lt-dc-vm2>
+From: Krystian Garbaciak <krystian.garbaciak@diasemi.com>
+Date: Fri, 15 Jun 2012 11:23:56 +0100
+Subject: [PATCH 1/2 v2] regmap: Move lock out from internal function _regmap_update_bits().
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org,
+        Anthony Olech <Anthony.Olech@diasemi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 14, 2012 at 04:13:12AM -0400, kosaki.motohiro@gmail.com wrote:
-> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> 
-> Currently, do_try_to_free_pages() can enter livelock. Because of,
-> now vmscan has two conflicted policies.
-> 
-> 1) kswapd sleep when it couldn't reclaim any page when reaching
->    priority 0. This is because to avoid kswapd() infinite
->    loop. That said, kswapd assume direct reclaim makes enough
->    free pages to use either regular page reclaim or oom-killer.
->    This logic makes kswapd -> direct-reclaim dependency.
-> 2) direct reclaim continue to reclaim without oom-killer until
->    kswapd turn on zone->all_unreclaimble. This is because
->    to avoid too early oom-kill.
->    This logic makes direct-reclaim -> kswapd dependency.
-> 
-> In worst case, direct-reclaim may continue to page reclaim forever
-> when kswapd sleeps forever.
-> 
-> We can't turn on zone->all_unreclaimable from direct reclaim path
-> because direct reclaim path don't take any lock and this way is racy.
-> 
-> Thus this patch removes zone->all_unreclaimable field completely and
-> recalculates zone reclaimable state every time.
-> 
-> Note: we can't take the idea that direct-reclaim see zone->pages_scanned
-> directly and kswapd continue to use zone->all_unreclaimable. Because, it
-> is racy. commit 929bea7c71 (vmscan: all_unreclaimable() use
-> zone->all_unreclaimable as a name) describes the detail.
-> 
-> Reported-by: Aaditya Kumar <aaditya.kumar.30@gmail.com>
-> Reported-by: Ying Han <yinghan@google.com>
-> Cc: Nick Piggin <npiggin@gmail.com>
-> Acked-by: Rik van Riel <riel@redhat.com>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Mel Gorman <mel@csn.ul.ie>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Minchan Kim <minchan.kim@gmail.com>
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Locks are moved to regmap_update_bits(), which allows to reenter internal
+function _regmap_update_bits() from inside of regmap read/write routines.
 
-Acked-by: Mel Gorman <mel@csn.ul.ie>
+Signed-off-by: Krystian Garbaciak <krystian.garbaciak@diasemi.com>
+---
+ drivers/base/regmap/regmap.c |   22 ++++++++++++++--------
+ 1 files changed, 14 insertions(+), 8 deletions(-)
 
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index 0bcda48..ce35b8c 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -980,11 +980,9 @@ static int _regmap_update_bits(struct regmap *map, unsigned int reg,
+ 	int ret;
+ 	unsigned int tmp, orig;
+ 
+-	map->lock(map);
+-
+ 	ret = _regmap_read(map, reg, &orig);
+ 	if (ret != 0)
+-		goto out;
++		return ret;
+ 
+ 	tmp = orig & ~mask;
+ 	tmp |= val & mask;
+@@ -996,9 +994,6 @@ static int _regmap_update_bits(struct regmap *map, unsigned int reg,
+ 		*change = false;
+ 	}
+ 
+-out:
+-	map->unlock(map);
+-
+ 	return ret;
+ }
+ 
+@@ -1016,7 +1011,13 @@ int regmap_update_bits(struct regmap *map, unsigned int reg,
+ 		       unsigned int mask, unsigned int val)
+ {
+ 	bool change;
+-	return _regmap_update_bits(map, reg, mask, val, &change);
++	int ret;
++
++	map->lock(map);
++	ret = _regmap_update_bits(map, reg, mask, val, &change);
++	map->unlock(map);
++
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(regmap_update_bits);
+ 
+@@ -1036,7 +1037,12 @@ int regmap_update_bits_check(struct regmap *map, unsigned int reg,
+ 			     unsigned int mask, unsigned int val,
+ 			     bool *change)
+ {
+-	return _regmap_update_bits(map, reg, mask, val, change);
++	int ret;
++
++	map->lock(map);
++	ret = _regmap_update_bits(map, reg, mask, val, change);
++	map->unlock(map);
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(regmap_update_bits_check);
+ 
 -- 
-Mel Gorman
-SUSE Labs
+1.7.0.4
+
