@@ -1,75 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752977Ab2FOGbf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 02:31:35 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:33937 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751361Ab2FOGbe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 02:31:34 -0400
-Date: Fri, 15 Jun 2012 11:55:34 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] uprobes: __copy_insn() should ensure
- a_ops->readpage	!= NULL
-Message-ID: <20120615062534.GB3811@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20120607165942.GA31966@redhat.com>
- <20120607170018.GB31974@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20120607170018.GB31974@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12061506-1780-0000-0000-000006761ADB
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000281; HX=3.00000190; KW=3.00000007;
- PH=3.00000001; SC=3.00000002; SDB=6.00148183; UDB=6.00033786; UTC=2012-06-15
- 06:31:32
+	id S1753611Ab2FOGc0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 02:32:26 -0400
+Received: from mga14.intel.com ([143.182.124.37]:19105 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752078Ab2FOGcZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 02:32:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="156658653"
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+To: a.p.zijlstra@chello.nl, mingo@elte.hu, jolsa@redhat.com,
+        eranian@google.com, andi@firstfloor.org, linux-kernel@vger.kernel.org
+Subject: [PATCH V6 0/13] perf: Intel uncore pmu counting support
+Date: Fri, 15 Jun 2012 14:31:29 +0800
+Message-Id: <1339741902-8449-1-git-send-email-zheng.z.yan@intel.com>
+X-Mailer: git-send-email 1.7.10.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2012-06-07 19:00:18]:
+Hi, all
 
-> __copy_insn() blindly calls read_mapping_page(), this will crash
-> the kernel if ->readpage == NULL, add the necessary check. For
-> example, hugetlbfs_aops->readpage is NULL. Perhaps we should change
-> read_mapping_page() instead.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
->  kernel/events/uprobes.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-> index 48d53af..9c53bc2 100644
-> --- a/kernel/events/uprobes.c
-> +++ b/kernel/events/uprobes.c
-> @@ -616,6 +616,8 @@ __copy_insn(struct address_space *mapping, struct vm_area_struct *vma, char *ins
-> 
->  	if (!filp)
->  		return -EINVAL;
-> +	if (!mapping->a_ops->readpage)
-> +		return -EIO;
+Here is the V6 patches to add uncore counting support for Nehalem,
+Sandy Bridge and Sandy Bridge-EP, applied on top of current tip.
+The code is based on Lin Ming's old patches.
 
-Nit: Should there be a blank line before the if. Ingo had insisted on
-these coding style changes.
+For Nehalem and Sandy Bridge-EP, A few general events are exported
+under sysfs directory:
+  /sys/bus/event_source/devices/${uncore_dev}/events/
 
->  	idx = (unsigned long)(offset >> PAGE_CACHE_SHIFT);
->  	off1 = offset &= ~PAGE_MASK;
+Each file in the events directory defines an event. The content is
+a string such as:
+  config=1,config1=2
 
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+You can use 'perf stat' to access to the uncore pmu. For example:
+  perf stat -a -C 0 -e 'uncore_imc_0/CAS_COUNT_RD/' sleep 1
+  perf stat -a -C 0 -e 'uncore_imc_0/event=CAS_COUNT_RD/' sleep 1
 
--- 
-Thanks and Regards
-Srikar
+Any comment is appreciated.
+Thank you
+---
+Changes since v1:
+ - Modify perf tool to parse events from sysfs
+ - A few minor code cleanup
+
+Changes since v2:
+ - Place all events for a particular socket onto a single cpu
+ - Make the events parser in perf tool reentrantable
+ - A few code cleanup 
+
+Changes since v3:
+ - Use per cpu pointer to track uncore box
+ - Rework the cpu hotplug code because topology_physical_package_id()
+   return wrong result when the cpu is offline
+ - Rework the event alias code, event terms are stored in the alias
+   structure instead events string
+
+Changes since v4:
+ - Include Jiri's uncore related changes patch set
+ - Add pmu/event=alias/ syntax support
+
+Changes since v5:
+ - All lower case letters for uncore pmu name
+ - Make event alias case insensitive
 
