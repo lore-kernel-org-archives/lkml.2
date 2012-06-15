@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932156Ab2FOGcn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 02:32:43 -0400
-Received: from mga14.intel.com ([143.182.124.37]:19105 "EHLO mga14.intel.com"
+	id S1755565Ab2FOGcs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 02:32:48 -0400
+Received: from mga14.intel.com ([143.182.124.37]:60116 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754043Ab2FOGce (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 02:32:34 -0400
+	id S932162Ab2FOGco (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 02:32:44 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="156658722"
+   d="scan'208";a="156658771"
 From: "Yan, Zheng" <zheng.z.yan@intel.com>
 To: a.p.zijlstra@chello.nl, mingo@elte.hu, jolsa@redhat.com,
         eranian@google.com, andi@firstfloor.org, linux-kernel@vger.kernel.org
-Cc: "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: [PATCH V6 05/13] perf: Generic intel uncore support
-Date: Fri, 15 Jun 2012 14:31:34 +0800
-Message-Id: <1339741902-8449-6-git-send-email-zheng.z.yan@intel.com>
+Cc: Zheng Yan <zheng.z.yan@intel.com>
+Subject: [PATCH V6 12/13] perf, tool: Add pmu event alias support
+Date: Fri, 15 Jun 2012 14:31:41 +0800
+Message-Id: <1339741902-8449-13-git-send-email-zheng.z.yan@intel.com>
 X-Mailer: git-send-email 1.7.10.2
 In-Reply-To: <1339741902-8449-1-git-send-email-zheng.z.yan@intel.com>
 References: <1339741902-8449-1-git-send-email-zheng.z.yan@intel.com>
@@ -23,1133 +23,302 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+From: Jiri Olsa <jolsa@redhat.com>
 
-This patch adds the generic intel uncore pmu support, including helper
-functions that add/delete uncore events, a hrtimer that periodically
-polls the counters to avoid overflow and code that places all events
-for a particular socket onto a single cpu. The code design is based on
-the structure of Sandy Bridge-EP's uncore subsystem, which consists of
-a variety of components, each component contain one or more boxes.
+Adding support to specify alias term within the event description.
+
+The definition of pmu event alias is located at:
+  ${sysfs_mount}/bus/event_source/devices/${pmu}/events/
+
+Each file in the 'events' directory defines a event alias. Its contents
+is like:
+  config=1,config1=2
+
+Using pmu event alias, event could be now specified like:
+  uncore/CLOCKTICKS/ or uncore/event=CLOCKTICKS/
 
 Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- arch/x86/kernel/cpu/Makefile                  |    4 +-
- arch/x86/kernel/cpu/perf_event_intel_uncore.c |  878 +++++++++++++++++++++++++
- arch/x86/kernel/cpu/perf_event_intel_uncore.h |  204 ++++++
- 3 files changed, 1085 insertions(+), 1 deletions(-)
- create mode 100644 arch/x86/kernel/cpu/perf_event_intel_uncore.c
- create mode 100644 arch/x86/kernel/cpu/perf_event_intel_uncore.h
+ tools/perf/util/parse-events.c |   10 +++
+ tools/perf/util/parse-events.h |    2 +
+ tools/perf/util/pmu.c          |  166 ++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/pmu.h          |   11 +++-
+ 4 files changed, 188 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
-index 6ab6aa2..bac4c38 100644
---- a/arch/x86/kernel/cpu/Makefile
-+++ b/arch/x86/kernel/cpu/Makefile
-@@ -32,7 +32,9 @@ obj-$(CONFIG_PERF_EVENTS)		+= perf_event.o
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index d002170..3339424 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -701,6 +701,9 @@ int parse_events_add_pmu(struct list_head **list, int *idx,
  
- ifdef CONFIG_PERF_EVENTS
- obj-$(CONFIG_CPU_SUP_AMD)		+= perf_event_amd.o
--obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_p6.o perf_event_p4.o perf_event_intel_lbr.o perf_event_intel_ds.o perf_event_intel.o
-+obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_p6.o perf_event_p4.o
-+obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_lbr.o perf_event_intel_ds.o perf_event_intel.o
-+obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_uncore.o
- endif
+ 	memset(&attr, 0, sizeof(attr));
  
- obj-$(CONFIG_X86_MCE)			+= mcheck/
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-new file mode 100644
-index 0000000..ef79e49
---- /dev/null
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -0,0 +1,878 @@
-+#include "perf_event_intel_uncore.h"
++	if (perf_pmu__check_alias(pmu, head_config))
++		return -EINVAL;
 +
-+static struct intel_uncore_type *empty_uncore[] = { NULL, };
-+static struct intel_uncore_type **msr_uncores = empty_uncore;
-+
-+/* mask of cpus that collect uncore events */
-+static cpumask_t uncore_cpu_mask;
-+
-+/* constraint for the fixed counter */
-+static struct event_constraint constraint_fixed =
-+	EVENT_CONSTRAINT((u64)-1, 1 << UNCORE_PMC_IDX_FIXED, (u64)-1);
-+
-+static void uncore_assign_hw_event(struct intel_uncore_box *box,
-+				struct perf_event *event, int idx)
+ 	/*
+ 	 * Configure hardcoded terms first, no need to check
+ 	 * return value when called with fail == 0 ;)
+@@ -1143,6 +1146,13 @@ int parse_events__term_str(struct parse_events__term **term,
+ 			config, str, 0);
+ }
+ 
++int parse_events__term_clone(struct parse_events__term **new,
++			     struct parse_events__term *term)
 +{
-+	struct hw_perf_event *hwc = &event->hw;
-+
-+	hwc->idx = idx;
-+	hwc->last_tag = ++box->tags[idx];
-+
-+	if (hwc->idx == UNCORE_PMC_IDX_FIXED) {
-+		hwc->event_base = uncore_msr_fixed_ctr(box);
-+		hwc->config_base = uncore_msr_fixed_ctl(box);
-+		return;
-+	}
-+
-+	hwc->config_base = uncore_msr_event_ctl(box, hwc->idx);
-+	hwc->event_base =  uncore_msr_perf_ctr(box, hwc->idx);
++	return new_term(new, term->type_val, term->type_term, term->config,
++			term->val.str, term->val.num);
 +}
 +
-+static void uncore_perf_event_update(struct intel_uncore_box *box,
-+					struct perf_event *event)
+ void parse_events__free_terms(struct list_head *terms)
+ {
+ 	struct parse_events__term *term, *h;
+diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
+index 9896eda..a2c7168 100644
+--- a/tools/perf/util/parse-events.h
++++ b/tools/perf/util/parse-events.h
+@@ -78,6 +78,8 @@ int parse_events__term_num(struct parse_events__term **_term,
+ 			   int type_term, char *config, long num);
+ int parse_events__term_str(struct parse_events__term **_term,
+ 			   int type_term, char *config, char *str);
++int parse_events__term_clone(struct parse_events__term **new,
++			     struct parse_events__term *term);
+ void parse_events__free_terms(struct list_head *terms);
+ int parse_events_modifier(struct list_head *list, char *str);
+ int parse_events_add_tracepoint(struct list_head **list, int *idx,
+diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+index a119a53..74d0948e 100644
+--- a/tools/perf/util/pmu.c
++++ b/tools/perf/util/pmu.c
+@@ -80,6 +80,114 @@ static int pmu_format(char *name, struct list_head *format)
+ 	return 0;
+ }
+ 
++static int perf_pmu__new_alias(struct list_head *list, char *name, FILE *file)
 +{
-+	u64 prev_count, new_count, delta;
-+	int shift;
++	struct perf_pmu__alias *alias;
++	char buf[256];
++	int ret;
 +
-+	if (event->hw.idx >= UNCORE_PMC_IDX_FIXED)
-+		shift = 64 - uncore_fixed_ctr_bits(box);
-+	else
-+		shift = 64 - uncore_perf_ctr_bits(box);
++	ret = fread(buf, 1, sizeof(buf), file);
++	if (ret == 0)
++		return -EINVAL;
++	buf[ret] = 0;
 +
-+	/* the hrtimer might modify the previous event value */
-+again:
-+	prev_count = local64_read(&event->hw.prev_count);
-+	new_count = uncore_read_counter(box, event);
-+	if (local64_xchg(&event->hw.prev_count, new_count) != prev_count)
-+		goto again;
++	alias = malloc(sizeof(*alias));
++	if (!alias)
++		return -ENOMEM;
 +
-+	delta = (new_count << shift) - (prev_count << shift);
-+	delta >>= shift;
++	INIT_LIST_HEAD(&alias->terms);
++	ret = parse_events_terms(&alias->terms, buf);
++	if (ret) {
++		free(alias);
++		return ret;
++	}
 +
-+	local64_add(delta, &event->count);
++	alias->name = strdup(name);
++	list_add_tail(&alias->list, list);
++	return 0;
 +}
 +
 +/*
-+ * The overflow interrupt is unavailable for SandyBridge-EP, is broken
-+ * for SandyBridge. So we use hrtimer to periodically poll the counter
-+ * to avoid overflow.
++ * Process all the sysfs attributes located under the directory
++ * specified in 'dir' parameter.
 + */
-+static enum hrtimer_restart uncore_pmu_hrtimer(struct hrtimer *hrtimer)
++static int pmu_aliases_parse(char *dir, struct list_head *head)
 +{
-+	struct intel_uncore_box *box;
-+	unsigned long flags;
-+	int bit;
++	struct dirent *evt_ent;
++	DIR *event_dir;
++	int ret = 0;
 +
-+	box = container_of(hrtimer, struct intel_uncore_box, hrtimer);
-+	if (!box->n_active || box->cpu != smp_processor_id())
-+		return HRTIMER_NORESTART;
-+	/*
-+	 * disable local interrupt to prevent uncore_pmu_event_start/stop
-+	 * to interrupt the update process
-+	 */
-+	local_irq_save(flags);
++	event_dir = opendir(dir);
++	if (!event_dir)
++		return -EINVAL;
 +
-+	for_each_set_bit(bit, box->active_mask, UNCORE_PMC_IDX_MAX)
-+		uncore_perf_event_update(box, box->events[bit]);
++	while (!ret && (evt_ent = readdir(event_dir))) {
++		char path[PATH_MAX];
++		char *name = evt_ent->d_name;
++		FILE *file;
 +
-+	local_irq_restore(flags);
++		if (!strcmp(name, ".") || !strcmp(name, ".."))
++			continue;
 +
-+	hrtimer_forward_now(hrtimer, ns_to_ktime(UNCORE_PMU_HRTIMER_INTERVAL));
-+	return HRTIMER_RESTART;
++		snprintf(path, PATH_MAX, "%s/%s", dir, name);
++
++		ret = -EINVAL;
++		file = fopen(path, "r");
++		if (!file)
++			break;
++		ret = perf_pmu__new_alias(head, name, file);
++		fclose(file);
++	}
++
++	closedir(event_dir);
++	return ret;
 +}
 +
-+static void uncore_pmu_start_hrtimer(struct intel_uncore_box *box)
++/*
++ * Reading the pmu event aliases definition, which should be located at:
++ * /sys/bus/event_source/devices/<dev>/events as sysfs group attributes.
++ */
++static int pmu_aliases(char *name, struct list_head *head)
 +{
-+	__hrtimer_start_range_ns(&box->hrtimer,
-+			ns_to_ktime(UNCORE_PMU_HRTIMER_INTERVAL), 0,
-+			HRTIMER_MODE_REL_PINNED, 0);
++	struct stat st;
++	char path[PATH_MAX];
++	const char *sysfs;
++
++	sysfs = sysfs_find_mountpoint();
++	if (!sysfs)
++		return -1;
++
++	snprintf(path, PATH_MAX,
++		 "%s/bus/event_source/devices/%s/events", sysfs, name);
++
++	if (stat(path, &st) < 0)
++		return -1;
++
++	if (pmu_aliases_parse(path, head))
++		return -1;
++
++	return 0;
 +}
 +
-+static void uncore_pmu_cancel_hrtimer(struct intel_uncore_box *box)
++static int pmu_alias_terms(struct perf_pmu__alias *alias,
++			   struct list_head *terms)
 +{
-+	hrtimer_cancel(&box->hrtimer);
++	struct parse_events__term *term, *clone;
++	LIST_HEAD(list);
++	int ret;
++
++	list_for_each_entry(term, &alias->terms, list) {
++		ret = parse_events__term_clone(&clone, term);
++		if (ret) {
++			parse_events__free_terms(&list);
++			return ret;
++		}
++		list_add_tail(&clone->list, &list);
++	}
++	list_splice(&list, terms);
++	return 0;
 +}
 +
-+static void uncore_pmu_init_hrtimer(struct intel_uncore_box *box)
-+{
-+	hrtimer_init(&box->hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-+	box->hrtimer.function = uncore_pmu_hrtimer;
-+}
+ /*
+  * Reading/parsing the default pmu type value, which should be
+  * located at:
+@@ -118,6 +226,7 @@ static struct perf_pmu *pmu_lookup(char *name)
+ {
+ 	struct perf_pmu *pmu;
+ 	LIST_HEAD(format);
++	LIST_HEAD(aliases);
+ 	__u32 type;
+ 
+ 	/*
+@@ -135,8 +244,12 @@ static struct perf_pmu *pmu_lookup(char *name)
+ 	if (!pmu)
+ 		return NULL;
+ 
++	pmu_aliases(name, &aliases);
 +
-+struct intel_uncore_box *uncore_alloc_box(int cpu)
+ 	INIT_LIST_HEAD(&pmu->format);
++	INIT_LIST_HEAD(&pmu->aliases);
+ 	list_splice(&format, &pmu->format);
++	list_splice(&aliases, &pmu->aliases);
+ 	pmu->name = strdup(name);
+ 	pmu->type = type;
+ 	return pmu;
+@@ -279,6 +392,59 @@ int perf_pmu__config(struct perf_pmu *pmu, struct perf_event_attr *attr,
+ 	return pmu_config(&pmu->format, attr, head_terms);
+ }
+ 
++static struct perf_pmu__alias *pmu_find_alias(struct perf_pmu *pmu,
++					      struct parse_events__term *term)
 +{
-+	struct intel_uncore_box *box;
++	struct perf_pmu__alias *alias;
++	char *name;
 +
-+	box = kmalloc_node(sizeof(*box), GFP_KERNEL | __GFP_ZERO,
-+			   cpu_to_node(cpu));
-+	if (!box)
++	if (parse_events__is_hardcoded_term(term))
 +		return NULL;
 +
-+	uncore_pmu_init_hrtimer(box);
-+	atomic_set(&box->refcnt, 1);
-+	box->cpu = -1;
-+	box->phys_id = -1;
-+
-+	return box;
-+}
-+
-+static struct intel_uncore_box *
-+uncore_pmu_to_box(struct intel_uncore_pmu *pmu, int cpu)
-+{
-+	return *per_cpu_ptr(pmu->box, cpu);
-+}
-+
-+static struct intel_uncore_pmu *uncore_event_to_pmu(struct perf_event *event)
-+{
-+	return container_of(event->pmu, struct intel_uncore_pmu, pmu);
-+}
-+
-+static struct intel_uncore_box *uncore_event_to_box(struct perf_event *event)
-+{
-+	/*
-+	 * perf core schedules event on the basis of cpu, uncore events are
-+	 * collected by one of the cpus inside a physical package.
-+	 */
-+	return uncore_pmu_to_box(uncore_event_to_pmu(event),
-+				 smp_processor_id());
-+}
-+
-+static int uncore_collect_events(struct intel_uncore_box *box,
-+				struct perf_event *leader, bool dogrp)
-+{
-+	struct perf_event *event;
-+	int n, max_count;
-+
-+	max_count = box->pmu->type->num_counters;
-+	if (box->pmu->type->fixed_ctl)
-+		max_count++;
-+
-+	if (box->n_events >= max_count)
-+		return -EINVAL;
-+
-+	n = box->n_events;
-+	box->event_list[n] = leader;
-+	n++;
-+	if (!dogrp)
-+		return n;
-+
-+	list_for_each_entry(event, &leader->sibling_list, group_entry) {
-+		if (event->state <= PERF_EVENT_STATE_OFF)
-+			continue;
-+
-+		if (n >= max_count)
-+			return -EINVAL;
-+
-+		box->event_list[n] = event;
-+		n++;
-+	}
-+	return n;
-+}
-+
-+static struct event_constraint *
-+uncore_event_constraint(struct intel_uncore_type *type,
-+			struct perf_event *event)
-+{
-+	struct event_constraint *c;
-+
-+	if (event->hw.config == (u64)-1)
-+		return &constraint_fixed;
-+
-+	if (type->constraints) {
-+		for_each_event_constraint(c, type->constraints) {
-+			if ((event->hw.config & c->cmask) == c->code)
-+				return c;
-+		}
++	if (term->type_val == PARSE_EVENTS__TERM_TYPE_NUM) {
++		if (term->val.num != 1)
++			return NULL;
++		if (pmu_find_format(&pmu->format, term->config))
++			return NULL;
++		name = term->config;
++	} else if (term->type_val == PARSE_EVENTS__TERM_TYPE_STR) {
++		if (strcasecmp(term->config, "event"))
++			return NULL;
++		name = term->val.str;
++	} else {
++		return NULL;
 +	}
 +
-+	return &type->unconstrainted;
-+}
-+
-+static int uncore_assign_events(struct intel_uncore_box *box,
-+				int assign[], int n)
-+{
-+	unsigned long used_mask[BITS_TO_LONGS(UNCORE_PMC_IDX_MAX)];
-+	struct event_constraint *c, *constraints[UNCORE_PMC_IDX_MAX];
-+	int i, ret, wmin, wmax;
-+	struct hw_perf_event *hwc;
-+
-+	bitmap_zero(used_mask, UNCORE_PMC_IDX_MAX);
-+
-+	for (i = 0, wmin = UNCORE_PMC_IDX_MAX, wmax = 0; i < n; i++) {
-+		c = uncore_event_constraint(box->pmu->type,
-+				box->event_list[i]);
-+		constraints[i] = c;
-+		wmin = min(wmin, c->weight);
-+		wmax = max(wmax, c->weight);
++	list_for_each_entry(alias, &pmu->aliases, list) {
++		if (!strcasecmp(alias->name, name))
++			return alias;
 +	}
-+
-+	/* fastpath, try to reuse previous register */
-+	for (i = 0; i < n; i++) {
-+		hwc = &box->event_list[i]->hw;
-+		c = constraints[i];
-+
-+		/* never assigned */
-+		if (hwc->idx == -1)
-+			break;
-+
-+		/* constraint still honored */
-+		if (!test_bit(hwc->idx, c->idxmsk))
-+			break;
-+
-+		/* not already used */
-+		if (test_bit(hwc->idx, used_mask))
-+			break;
-+
-+		__set_bit(hwc->idx, used_mask);
-+		assign[i] = hwc->idx;
-+	}
-+	if (i == n)
-+		return 0;
-+
-+	/* slow path */
-+	ret = perf_assign_events(constraints, n, wmin, wmax, assign);
-+	return ret ? -EINVAL : 0;
-+}
-+
-+static void uncore_pmu_event_start(struct perf_event *event, int flags)
-+{
-+	struct intel_uncore_box *box = uncore_event_to_box(event);
-+	int idx = event->hw.idx;
-+
-+	if (WARN_ON_ONCE(!(event->hw.state & PERF_HES_STOPPED)))
-+		return;
-+
-+	if (WARN_ON_ONCE(idx == -1 || idx >= UNCORE_PMC_IDX_MAX))
-+		return;
-+
-+	event->hw.state = 0;
-+	box->events[idx] = event;
-+	box->n_active++;
-+	__set_bit(idx, box->active_mask);
-+
-+	local64_set(&event->hw.prev_count, uncore_read_counter(box, event));
-+	uncore_enable_event(box, event);
-+
-+	if (box->n_active == 1) {
-+		uncore_enable_box(box);
-+		uncore_pmu_start_hrtimer(box);
-+	}
-+}
-+
-+static void uncore_pmu_event_stop(struct perf_event *event, int flags)
-+{
-+	struct intel_uncore_box *box = uncore_event_to_box(event);
-+	struct hw_perf_event *hwc = &event->hw;
-+
-+	if (__test_and_clear_bit(hwc->idx, box->active_mask)) {
-+		uncore_disable_event(box, event);
-+		box->n_active--;
-+		box->events[hwc->idx] = NULL;
-+		WARN_ON_ONCE(hwc->state & PERF_HES_STOPPED);
-+		hwc->state |= PERF_HES_STOPPED;
-+
-+		if (box->n_active == 0) {
-+			uncore_disable_box(box);
-+			uncore_pmu_cancel_hrtimer(box);
-+		}
-+	}
-+
-+	if ((flags & PERF_EF_UPDATE) && !(hwc->state & PERF_HES_UPTODATE)) {
-+		/*
-+		 * Drain the remaining delta count out of a event
-+		 * that we are disabling:
-+		 */
-+		uncore_perf_event_update(box, event);
-+		hwc->state |= PERF_HES_UPTODATE;
-+	}
-+}
-+
-+static int uncore_pmu_event_add(struct perf_event *event, int flags)
-+{
-+	struct intel_uncore_box *box = uncore_event_to_box(event);
-+	struct hw_perf_event *hwc = &event->hw;
-+	int assign[UNCORE_PMC_IDX_MAX];
-+	int i, n, ret;
-+
-+	if (!box)
-+		return -ENODEV;
-+
-+	ret = n = uncore_collect_events(box, event, false);
-+	if (ret < 0)
-+		return ret;
-+
-+	hwc->state = PERF_HES_UPTODATE | PERF_HES_STOPPED;
-+	if (!(flags & PERF_EF_START))
-+		hwc->state |= PERF_HES_ARCH;
-+
-+	ret = uncore_assign_events(box, assign, n);
-+	if (ret)
-+		return ret;
-+
-+	/* save events moving to new counters */
-+	for (i = 0; i < box->n_events; i++) {
-+		event = box->event_list[i];
-+		hwc = &event->hw;
-+
-+		if (hwc->idx == assign[i] &&
-+			hwc->last_tag == box->tags[assign[i]])
-+			continue;
-+		/*
-+		 * Ensure we don't accidentally enable a stopped
-+		 * counter simply because we rescheduled.
-+		 */
-+		if (hwc->state & PERF_HES_STOPPED)
-+			hwc->state |= PERF_HES_ARCH;
-+
-+		uncore_pmu_event_stop(event, PERF_EF_UPDATE);
-+	}
-+
-+	/* reprogram moved events into new counters */
-+	for (i = 0; i < n; i++) {
-+		event = box->event_list[i];
-+		hwc = &event->hw;
-+
-+		if (hwc->idx != assign[i] ||
-+			hwc->last_tag != box->tags[assign[i]])
-+			uncore_assign_hw_event(box, event, assign[i]);
-+		else if (i < box->n_events)
-+			continue;
-+
-+		if (hwc->state & PERF_HES_ARCH)
-+			continue;
-+
-+		uncore_pmu_event_start(event, 0);
-+	}
-+	box->n_events = n;
-+
-+	return 0;
-+}
-+
-+static void uncore_pmu_event_del(struct perf_event *event, int flags)
-+{
-+	struct intel_uncore_box *box = uncore_event_to_box(event);
-+	int i;
-+
-+	uncore_pmu_event_stop(event, PERF_EF_UPDATE);
-+
-+	for (i = 0; i < box->n_events; i++) {
-+		if (event == box->event_list[i]) {
-+			while (++i < box->n_events)
-+				box->event_list[i - 1] = box->event_list[i];
-+
-+			--box->n_events;
-+			break;
-+		}
-+	}
-+
-+	event->hw.idx = -1;
-+	event->hw.last_tag = ~0ULL;
-+}
-+
-+static void uncore_pmu_event_read(struct perf_event *event)
-+{
-+	struct intel_uncore_box *box = uncore_event_to_box(event);
-+	uncore_perf_event_update(box, event);
++	return NULL;
 +}
 +
 +/*
-+ * validation ensures the group can be loaded onto the
-+ * PMU if it was the only group available.
++ * Find alias in the terms list and replace it with the terms
++ * defined for the alias
 + */
-+static int uncore_validate_group(struct intel_uncore_pmu *pmu,
-+				struct perf_event *event)
++int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms)
 +{
-+	struct perf_event *leader = event->group_leader;
-+	struct intel_uncore_box *fake_box;
-+	int assign[UNCORE_PMC_IDX_MAX];
-+	int ret = -EINVAL, n;
-+
-+	fake_box = uncore_alloc_box(smp_processor_id());
-+	if (!fake_box)
-+		return -ENOMEM;
-+
-+	fake_box->pmu = pmu;
-+	/*
-+	 * the event is not yet connected with its
-+	 * siblings therefore we must first collect
-+	 * existing siblings, then add the new event
-+	 * before we can simulate the scheduling
-+	 */
-+	n = uncore_collect_events(fake_box, leader, true);
-+	if (n < 0)
-+		goto out;
-+
-+	fake_box->n_events = n;
-+	n = uncore_collect_events(fake_box, event, false);
-+	if (n < 0)
-+		goto out;
-+
-+	fake_box->n_events = n;
-+
-+	ret = uncore_assign_events(fake_box, assign, n);
-+out:
-+	kfree(fake_box);
-+	return ret;
-+}
-+
-+int uncore_pmu_event_init(struct perf_event *event)
-+{
-+	struct intel_uncore_pmu *pmu;
-+	struct intel_uncore_box *box;
-+	struct hw_perf_event *hwc = &event->hw;
++	struct parse_events__term *term, *h;
++	struct perf_pmu__alias *alias;
 +	int ret;
 +
-+	if (event->attr.type != event->pmu->type)
-+		return -ENOENT;
-+
-+	pmu = uncore_event_to_pmu(event);
-+	/* no device found for this pmu */
-+	if (pmu->func_id < 0)
-+		return -ENOENT;
-+
-+	/*
-+	 * Uncore PMU does measure at all privilege level all the time.
-+	 * So it doesn't make sense to specify any exclude bits.
-+	 */
-+	if (event->attr.exclude_user || event->attr.exclude_kernel ||
-+			event->attr.exclude_hv || event->attr.exclude_idle)
-+		return -EINVAL;
-+
-+	/* Sampling not supported yet */
-+	if (hwc->sample_period)
-+		return -EINVAL;
-+
-+	/*
-+	 * Place all uncore events for a particular physical package
-+	 * onto a single cpu
-+	 */
-+	if (event->cpu < 0)
-+		return -EINVAL;
-+	box = uncore_pmu_to_box(pmu, event->cpu);
-+	if (!box || box->cpu < 0)
-+		return -EINVAL;
-+	event->cpu = box->cpu;
-+
-+	if (event->attr.config == UNCORE_FIXED_EVENT) {
-+		/* no fixed counter */
-+		if (!pmu->type->fixed_ctl)
-+			return -EINVAL;
-+		/*
-+		 * if there is only one fixed counter, only the first pmu
-+		 * can access the fixed counter
-+		 */
-+		if (pmu->type->single_fixed && pmu->pmu_idx > 0)
-+			return -EINVAL;
-+		hwc->config = (u64)-1;
-+	} else {
-+		hwc->config = event->attr.config & pmu->type->event_mask;
-+	}
-+
-+	event->hw.idx = -1;
-+	event->hw.last_tag = ~0ULL;
-+
-+	if (event->group_leader != event)
-+		ret = uncore_validate_group(pmu, event);
-+	else
-+		ret = 0;
-+
-+	return ret;
-+}
-+
-+static int __init uncore_pmu_register(struct intel_uncore_pmu *pmu)
-+{
-+	int ret;
-+
-+	pmu->pmu = (struct pmu) {
-+		.attr_groups	= pmu->type->attr_groups,
-+		.task_ctx_nr	= perf_invalid_context,
-+		.event_init	= uncore_pmu_event_init,
-+		.add		= uncore_pmu_event_add,
-+		.del		= uncore_pmu_event_del,
-+		.start		= uncore_pmu_event_start,
-+		.stop		= uncore_pmu_event_stop,
-+		.read		= uncore_pmu_event_read,
-+	};
-+
-+	if (pmu->type->num_boxes == 1) {
-+		if (strlen(pmu->type->name) > 0)
-+			sprintf(pmu->name, "uncore_%s", pmu->type->name);
-+		else
-+			sprintf(pmu->name, "uncore");
-+	} else {
-+		sprintf(pmu->name, "uncore_%s_%d", pmu->type->name,
-+			pmu->pmu_idx);
-+	}
-+
-+	ret = perf_pmu_register(&pmu->pmu, pmu->name, -1);
-+	return ret;
-+}
-+
-+static void __init uncore_type_exit(struct intel_uncore_type *type)
-+{
-+	int i;
-+
-+	for (i = 0; i < type->num_boxes; i++)
-+		free_percpu(type->pmus[i].box);
-+	kfree(type->pmus);
-+	type->pmus = NULL;
-+	kfree(type->attr_groups[1]);
-+	type->attr_groups[1] = NULL;
-+}
-+
-+static int __init uncore_type_init(struct intel_uncore_type *type)
-+{
-+	struct intel_uncore_pmu *pmus;
-+	struct attribute_group *events_group;
-+	struct attribute **attrs;
-+	int i, j;
-+
-+	pmus = kzalloc(sizeof(*pmus) * type->num_boxes, GFP_KERNEL);
-+	if (!pmus)
-+		return -ENOMEM;
-+
-+	type->unconstrainted = (struct event_constraint)
-+		__EVENT_CONSTRAINT(0, (1ULL << type->num_counters) - 1,
-+				0, type->num_counters, 0);
-+
-+	for (i = 0; i < type->num_boxes; i++) {
-+		pmus[i].func_id = -1;
-+		pmus[i].pmu_idx = i;
-+		pmus[i].type = type;
-+		pmus[i].box = alloc_percpu(struct intel_uncore_box *);
-+		if (!pmus[i].box)
-+			goto fail;
-+	}
-+
-+	if (type->event_descs) {
-+		i = 0;
-+		while (type->event_descs[i].attr.attr.name)
-+			i++;
-+
-+		events_group = kzalloc(sizeof(struct attribute *) * (i + 1) +
-+					sizeof(*events_group), GFP_KERNEL);
-+		if (!events_group)
-+			goto fail;
-+
-+		attrs = (struct attribute **)(events_group + 1);
-+		events_group->name = "events";
-+		events_group->attrs = attrs;
-+
-+		for (j = 0; j < i; j++)
-+			attrs[j] = &type->event_descs[j].attr.attr;
-+
-+		type->attr_groups[1] = events_group;
-+	}
-+
-+	type->pmus = pmus;
-+	return 0;
-+fail:
-+	uncore_type_exit(type);
-+	return -ENOMEM;
-+}
-+
-+static int __init uncore_types_init(struct intel_uncore_type **types)
-+{
-+	int i, ret;
-+
-+	for (i = 0; types[i]; i++) {
-+		ret = uncore_type_init(types[i]);
++	list_for_each_entry_safe(term, h, head_terms, list) {
++		alias = pmu_find_alias(pmu, term);
++		if (!alias)
++			continue;
++		ret = pmu_alias_terms(alias, &term->list);
 +		if (ret)
-+			goto fail;
-+	}
-+	return 0;
-+fail:
-+	while (--i >= 0)
-+		uncore_type_exit(types[i]);
-+	return ret;
-+}
-+
-+static void __cpuinit uncore_cpu_dying(int cpu)
-+{
-+	struct intel_uncore_type *type;
-+	struct intel_uncore_pmu *pmu;
-+	struct intel_uncore_box *box;
-+	int i, j;
-+
-+	for (i = 0; msr_uncores[i]; i++) {
-+		type = msr_uncores[i];
-+		for (j = 0; j < type->num_boxes; j++) {
-+			pmu = &type->pmus[j];
-+			box = *per_cpu_ptr(pmu->box, cpu);
-+			*per_cpu_ptr(pmu->box, cpu) = NULL;
-+			if (box && atomic_dec_and_test(&box->refcnt))
-+				kfree(box);
-+		}
-+	}
-+}
-+
-+static int __cpuinit uncore_cpu_starting(int cpu)
-+{
-+	struct intel_uncore_type *type;
-+	struct intel_uncore_pmu *pmu;
-+	struct intel_uncore_box *box, *exist;
-+	int i, j, k, phys_id;
-+
-+	phys_id = topology_physical_package_id(cpu);
-+
-+	for (i = 0; msr_uncores[i]; i++) {
-+		type = msr_uncores[i];
-+		for (j = 0; j < type->num_boxes; j++) {
-+			pmu = &type->pmus[j];
-+			box = *per_cpu_ptr(pmu->box, cpu);
-+			/* called by uncore_cpu_init? */
-+			if (box && box->phys_id >= 0) {
-+				uncore_box_init(box);
-+				continue;
-+			}
-+
-+			for_each_online_cpu(k) {
-+				exist = *per_cpu_ptr(pmu->box, k);
-+				if (exist && exist->phys_id == phys_id) {
-+					atomic_inc(&exist->refcnt);
-+					*per_cpu_ptr(pmu->box, cpu) = exist;
-+					kfree(box);
-+					box = NULL;
-+					break;
-+				}
-+			}
-+
-+			if (box) {
-+				box->phys_id = phys_id;
-+				uncore_box_init(box);
-+			}
-+		}
++			return ret;
++		list_del(&term->list);
++		free(term);
 +	}
 +	return 0;
 +}
 +
-+static int __cpuinit uncore_cpu_prepare(int cpu, int phys_id)
-+{
-+	struct intel_uncore_type *type;
-+	struct intel_uncore_pmu *pmu;
-+	struct intel_uncore_box *box;
-+	int i, j;
-+
-+	for (i = 0; msr_uncores[i]; i++) {
-+		type = msr_uncores[i];
-+		for (j = 0; j < type->num_boxes; j++) {
-+			pmu = &type->pmus[j];
-+			if (pmu->func_id < 0)
-+				pmu->func_id = j;
-+
-+			box = uncore_alloc_box(cpu);
-+			if (!box)
-+				return -ENOMEM;
-+
-+			box->pmu = pmu;
-+			box->phys_id = phys_id;
-+			*per_cpu_ptr(pmu->box, cpu) = box;
-+		}
-+	}
-+	return 0;
-+}
-+
-+static void __cpuinit uncore_change_context(struct intel_uncore_type **uncores,
-+					    int old_cpu, int new_cpu)
-+{
-+	struct intel_uncore_type *type;
-+	struct intel_uncore_pmu *pmu;
-+	struct intel_uncore_box *box;
-+	int i, j;
-+
-+	for (i = 0; uncores[i]; i++) {
-+		type = uncores[i];
-+		for (j = 0; j < type->num_boxes; j++) {
-+			pmu = &type->pmus[j];
-+			if (old_cpu < 0)
-+				box = uncore_pmu_to_box(pmu, new_cpu);
-+			else
-+				box = uncore_pmu_to_box(pmu, old_cpu);
-+			if (!box)
-+				continue;
-+
-+			if (old_cpu < 0) {
-+				WARN_ON_ONCE(box->cpu != -1);
-+				box->cpu = new_cpu;
-+				continue;
-+			}
-+
-+			WARN_ON_ONCE(box->cpu != old_cpu);
-+			if (new_cpu >= 0) {
-+				uncore_pmu_cancel_hrtimer(box);
-+				perf_pmu_migrate_context(&pmu->pmu,
-+						old_cpu, new_cpu);
-+				box->cpu = new_cpu;
-+			} else {
-+				box->cpu = -1;
-+			}
-+		}
-+	}
-+}
-+
-+static void __cpuinit uncore_event_exit_cpu(int cpu)
-+{
-+	int i, phys_id, target;
-+
-+	/* if exiting cpu is used for collecting uncore events */
-+	if (!cpumask_test_and_clear_cpu(cpu, &uncore_cpu_mask))
-+		return;
-+
-+	/* find a new cpu to collect uncore events */
-+	phys_id = topology_physical_package_id(cpu);
-+	target = -1;
-+	for_each_online_cpu(i) {
-+		if (i == cpu)
-+			continue;
-+		if (phys_id == topology_physical_package_id(i)) {
-+			target = i;
-+			break;
-+		}
-+	}
-+
-+	/* migrate uncore events to the new cpu */
-+	if (target >= 0)
-+		cpumask_set_cpu(target, &uncore_cpu_mask);
-+
-+	uncore_change_context(msr_uncores, cpu, target);
-+}
-+
-+static void __cpuinit uncore_event_init_cpu(int cpu)
-+{
-+	int i, phys_id;
-+
-+	phys_id = topology_physical_package_id(cpu);
-+	for_each_cpu(i, &uncore_cpu_mask) {
-+		if (phys_id == topology_physical_package_id(i))
-+			return;
-+	}
-+
-+	cpumask_set_cpu(cpu, &uncore_cpu_mask);
-+
-+	uncore_change_context(msr_uncores, -1, cpu);
-+}
-+
-+static int __cpuinit uncore_cpu_notifier(struct notifier_block *self,
-+					 unsigned long action, void *hcpu)
-+{
-+	unsigned int cpu = (long)hcpu;
-+
-+	/* allocate/free data structure for uncore box */
-+	switch (action & ~CPU_TASKS_FROZEN) {
-+	case CPU_UP_PREPARE:
-+		uncore_cpu_prepare(cpu, -1);
-+		break;
-+	case CPU_STARTING:
-+		uncore_cpu_starting(cpu);
-+		break;
-+	case CPU_UP_CANCELED:
-+	case CPU_DYING:
-+		uncore_cpu_dying(cpu);
-+		break;
-+	default:
-+		break;
-+	}
-+
-+	/* select the cpu that collects uncore events */
-+	switch (action & ~CPU_TASKS_FROZEN) {
-+	case CPU_DOWN_FAILED:
-+	case CPU_STARTING:
-+		uncore_event_init_cpu(cpu);
-+		break;
-+	case CPU_DOWN_PREPARE:
-+		uncore_event_exit_cpu(cpu);
-+		break;
-+	default:
-+		break;
-+	}
-+
-+	return NOTIFY_OK;
-+}
-+
-+static struct notifier_block uncore_cpu_nb __cpuinitdata = {
-+	.notifier_call = uncore_cpu_notifier,
-+	/*
-+	 * to migrate uncore events, our notifier should be executed
-+	 * before perf core's notifier.
-+	 */
-+	.priority = CPU_PRI_PERF + 1,
-+};
-+
-+static void __init uncore_cpu_setup(void *dummy)
-+{
-+	uncore_cpu_starting(smp_processor_id());
-+}
-+
-+static int __init uncore_cpu_init(void)
-+{
-+	int ret, cpu;
-+
-+	switch (boot_cpu_data.x86_model) {
-+	default:
-+		return 0;
-+	}
-+
-+	ret = uncore_types_init(msr_uncores);
-+	if (ret)
-+		return ret;
-+
-+	get_online_cpus();
-+
-+	for_each_online_cpu(cpu) {
-+		int i, phys_id = topology_physical_package_id(cpu);
-+
-+		for_each_cpu(i, &uncore_cpu_mask) {
-+			if (phys_id == topology_physical_package_id(i)) {
-+				phys_id = -1;
-+				break;
-+			}
-+		}
-+		if (phys_id < 0)
-+			continue;
-+
-+		uncore_cpu_prepare(cpu, phys_id);
-+		uncore_event_init_cpu(cpu);
-+	}
-+	on_each_cpu(uncore_cpu_setup, NULL, 1);
-+
-+	register_cpu_notifier(&uncore_cpu_nb);
-+
-+	put_online_cpus();
-+
-+	return 0;
-+}
-+
-+static int __init uncore_pmus_register(void)
-+{
-+	struct intel_uncore_pmu *pmu;
-+	struct intel_uncore_type *type;
-+	int i, j;
-+
-+	for (i = 0; msr_uncores[i]; i++) {
-+		type = msr_uncores[i];
-+		for (j = 0; j < type->num_boxes; j++) {
-+			pmu = &type->pmus[j];
-+			uncore_pmu_register(pmu);
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+static int __init intel_uncore_init(void)
-+{
-+	int ret;
-+
-+	if (boot_cpu_data.x86_vendor != X86_VENDOR_INTEL)
-+		return -ENODEV;
-+
-+	ret = uncore_cpu_init();
-+	if (ret)
-+		goto fail;
-+
-+	uncore_pmus_register();
-+	return 0;
-+fail:
-+	return ret;
-+}
-+device_initcall(intel_uncore_init);
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.h b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-new file mode 100644
-index 0000000..49a6bfb
---- /dev/null
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-@@ -0,0 +1,204 @@
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include <linux/perf_event.h>
-+#include "perf_event.h"
-+
-+#define UNCORE_PMU_NAME_LEN		32
-+#define UNCORE_BOX_HASH_SIZE		8
-+
-+#define UNCORE_PMU_HRTIMER_INTERVAL	(60 * NSEC_PER_SEC)
-+
-+#define UNCORE_FIXED_EVENT		0xffff
-+#define UNCORE_PMC_IDX_MAX_GENERIC	8
-+#define UNCORE_PMC_IDX_FIXED		UNCORE_PMC_IDX_MAX_GENERIC
-+#define UNCORE_PMC_IDX_MAX		(UNCORE_PMC_IDX_FIXED + 1)
-+
-+#define UNCORE_EVENT_CONSTRAINT(c, n) EVENT_CONSTRAINT(c, n, 0xff)
-+
-+struct intel_uncore_ops;
-+struct intel_uncore_pmu;
-+struct intel_uncore_box;
-+struct uncore_event_desc;
-+
-+struct intel_uncore_type {
-+	const char *name;
-+	int num_counters;
-+	int num_boxes;
-+	int perf_ctr_bits;
-+	int fixed_ctr_bits;
-+	int single_fixed;
-+	unsigned perf_ctr;
-+	unsigned event_ctl;
-+	unsigned event_mask;
-+	unsigned fixed_ctr;
-+	unsigned fixed_ctl;
-+	unsigned box_ctl;
-+	unsigned msr_offset;
-+	struct event_constraint unconstrainted;
-+	struct event_constraint *constraints;
-+	struct intel_uncore_pmu *pmus;
-+	struct intel_uncore_ops *ops;
-+	struct uncore_event_desc *event_descs;
-+	const struct attribute_group *attr_groups[3];
-+};
-+
-+#define format_group attr_groups[0]
-+
-+struct intel_uncore_ops {
-+	void (*init_box)(struct intel_uncore_box *);
-+	void (*disable_box)(struct intel_uncore_box *);
-+	void (*enable_box)(struct intel_uncore_box *);
-+	void (*disable_event)(struct intel_uncore_box *, struct perf_event *);
-+	void (*enable_event)(struct intel_uncore_box *, struct perf_event *);
-+	u64 (*read_counter)(struct intel_uncore_box *, struct perf_event *);
-+};
-+
-+struct intel_uncore_pmu {
-+	struct pmu pmu;
-+	char name[UNCORE_PMU_NAME_LEN];
-+	int pmu_idx;
-+	int func_id;
-+	struct intel_uncore_type *type;
-+	struct intel_uncore_box ** __percpu box;
-+};
-+
-+struct intel_uncore_box {
-+	int phys_id;
-+	int n_active;	/* number of active events */
-+	int n_events;
-+	int cpu;	/* cpu to collect events */
-+	unsigned long flags;
-+	atomic_t refcnt;
-+	struct perf_event *events[UNCORE_PMC_IDX_MAX];
-+	struct perf_event *event_list[UNCORE_PMC_IDX_MAX];
-+	unsigned long active_mask[BITS_TO_LONGS(UNCORE_PMC_IDX_MAX)];
-+	u64 tags[UNCORE_PMC_IDX_MAX];
-+	struct intel_uncore_pmu *pmu;
-+	struct hrtimer hrtimer;
+ int perf_pmu__new_format(struct list_head *list, char *name,
+ 			 int config, unsigned long *bits)
+ {
+diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
+index 68c0db9..535f2c5 100644
+--- a/tools/perf/util/pmu.h
++++ b/tools/perf/util/pmu.h
+@@ -19,17 +19,26 @@ struct perf_pmu__format {
+ 	struct list_head list;
+ };
+ 
++struct perf_pmu__alias {
++	char *name;
++	struct list_head terms;
 +	struct list_head list;
 +};
 +
-+#define UNCORE_BOX_FLAG_INITIATED	0
-+
-+struct uncore_event_desc {
-+	struct kobj_attribute attr;
-+	const char *config;
-+};
-+
-+#define INTEL_UNCORE_EVENT_DESC(_name, _config)			\
-+{								\
-+	.attr	= __ATTR(_name, 0444, uncore_event_show, NULL),	\
-+	.config	= _config,					\
-+}
-+
-+#define DEFINE_UNCORE_FORMAT_ATTR(_var, _name, _format)			\
-+static ssize_t __uncore_##_var##_show(struct kobject *kobj,		\
-+				struct kobj_attribute *attr,		\
-+				char *page)				\
-+{									\
-+	BUILD_BUG_ON(sizeof(_format) >= PAGE_SIZE);			\
-+	return sprintf(page, _format "\n");				\
-+}									\
-+static struct kobj_attribute format_attr_##_var =			\
-+	__ATTR(_name, 0444, __uncore_##_var##_show, NULL)
-+
-+
-+static ssize_t uncore_event_show(struct kobject *kobj,
-+				struct kobj_attribute *attr, char *buf)
-+{
-+	struct uncore_event_desc *event =
-+		container_of(attr, struct uncore_event_desc, attr);
-+	return sprintf(buf, "%s", event->config);
-+}
-+
-+static inline
-+unsigned uncore_msr_box_ctl(struct intel_uncore_box *box)
-+{
-+	if (!box->pmu->type->box_ctl)
-+		return 0;
-+	return box->pmu->type->box_ctl +
-+		box->pmu->type->msr_offset * box->pmu->pmu_idx;
-+}
-+
-+static inline
-+unsigned uncore_msr_fixed_ctl(struct intel_uncore_box *box)
-+{
-+	if (!box->pmu->type->fixed_ctl)
-+		return 0;
-+	return box->pmu->type->fixed_ctl +
-+		box->pmu->type->msr_offset * box->pmu->pmu_idx;
-+}
-+
-+static inline
-+unsigned uncore_msr_fixed_ctr(struct intel_uncore_box *box)
-+{
-+	return box->pmu->type->fixed_ctr +
-+		box->pmu->type->msr_offset * box->pmu->pmu_idx;
-+}
-+
-+static inline
-+unsigned uncore_msr_event_ctl(struct intel_uncore_box *box, int idx)
-+{
-+	return idx + box->pmu->type->event_ctl +
-+		box->pmu->type->msr_offset * box->pmu->pmu_idx;
-+}
-+
-+static inline
-+unsigned uncore_msr_perf_ctr(struct intel_uncore_box *box, int idx)
-+{
-+	return idx + box->pmu->type->perf_ctr +
-+		box->pmu->type->msr_offset * box->pmu->pmu_idx;
-+}
-+
-+static inline int uncore_perf_ctr_bits(struct intel_uncore_box *box)
-+{
-+	return box->pmu->type->perf_ctr_bits;
-+}
-+
-+static inline int uncore_fixed_ctr_bits(struct intel_uncore_box *box)
-+{
-+	return box->pmu->type->fixed_ctr_bits;
-+}
-+
-+static inline int uncore_num_counters(struct intel_uncore_box *box)
-+{
-+	return box->pmu->type->num_counters;
-+}
-+
-+static inline void uncore_disable_box(struct intel_uncore_box *box)
-+{
-+	if (box->pmu->type->ops->disable_box)
-+		box->pmu->type->ops->disable_box(box);
-+}
-+
-+static inline void uncore_enable_box(struct intel_uncore_box *box)
-+{
-+	if (box->pmu->type->ops->enable_box)
-+		box->pmu->type->ops->enable_box(box);
-+}
-+
-+static inline void uncore_disable_event(struct intel_uncore_box *box,
-+				struct perf_event *event)
-+{
-+	box->pmu->type->ops->disable_event(box, event);
-+}
-+
-+static inline void uncore_enable_event(struct intel_uncore_box *box,
-+				struct perf_event *event)
-+{
-+	box->pmu->type->ops->enable_event(box, event);
-+}
-+
-+static inline u64 uncore_read_counter(struct intel_uncore_box *box,
-+				struct perf_event *event)
-+{
-+	return box->pmu->type->ops->read_counter(box, event);
-+}
-+
-+static inline void uncore_box_init(struct intel_uncore_box *box)
-+{
-+	if (!test_and_set_bit(UNCORE_BOX_FLAG_INITIATED, &box->flags)) {
-+		if (box->pmu->type->ops->init_box)
-+			box->pmu->type->ops->init_box(box);
-+	}
-+}
+ struct perf_pmu {
+ 	char *name;
+ 	__u32 type;
+ 	struct list_head format;
++	struct list_head aliases;
+ 	struct list_head list;
+ };
+ 
+ struct perf_pmu *perf_pmu__find(char *name);
+ int perf_pmu__config(struct perf_pmu *pmu, struct perf_event_attr *attr,
+ 		     struct list_head *head_terms);
+-
++int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms);
++struct list_head *perf_pmu__alias(struct perf_pmu *pmu,
++				struct list_head *head_terms);
+ int perf_pmu_wrap(void);
+ void perf_pmu_error(struct list_head *list, char *name, char const *msg);
+ 
 -- 
 1.7.6.5
 
