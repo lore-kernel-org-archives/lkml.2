@@ -1,82 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756736Ab2FOLl2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 07:41:28 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35467 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755660Ab2FOLl1 (ORCPT
+	id S1756758Ab2FOLoF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 07:44:05 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:48676 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756682Ab2FOLoB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 07:41:27 -0400
-Date: Fri, 15 Jun 2012 12:41:25 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: "Kim, Milo" <Milo.Kim@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Girdwood, Liam" <lrg@ti.com>
-Subject: Re: [PATCH v2] regulator: add new regulator driver for lp872x
-Message-ID: <20120615114125.GC4482@opensource.wolfsonmicro.com>
-References: <A874F61F95741C4A9BA573A70FE3998FB5C6@DQHE02.ent.ti.com>
- <CAF+7xW=Cb3b64khdNsnyfkJiS4Yt+j8tGFQExAoddXrtu=+5=Q@mail.gmail.com>
+	Fri, 15 Jun 2012 07:44:01 -0400
+Message-ID: <4FDB1FFD.7040204@linaro.org>
+Date: Fri, 15 Jun 2012 12:43:57 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="xXmbgvnjoT4axfJE"
-Content-Disposition: inline
-In-Reply-To: <CAF+7xW=Cb3b64khdNsnyfkJiS4Yt+j8tGFQExAoddXrtu=+5=Q@mail.gmail.com>
-X-Cookie: Give him an evasive answer.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linus.walleij@stericsson.com, arnd@arndb.de,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        grant.likely@secretlab.ca, linux-i2c@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 09/14] i2c: Add Device Tree support to the Nomadik I2C
+ driver
+References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org> <1339428307-3850-10-git-send-email-lee.jones@linaro.org> <CACRpkdaMDbH4NkiHRLAfbJZ_j4QXbwg94bvaWsdYRPH+dSfc8Q@mail.gmail.com> <4FD6F0E8.5040606@linaro.org> <CACRpkdYxiT-0x4aetMxB2x8SkB+Mmy8rk8uSzgU_anemSayhMw@mail.gmail.com> <4FD83AAD.2010701@linaro.org> <CACRpkdZC8E6izDpdnWy6DMjOdA6KsqTaPoaq9pErWoNW0Ewytw@mail.gmail.com> <4FD88761.9050703@linaro.org> <20120614183636.GB30185@sirena.org.uk> <4FDA341C.8010501@linaro.org> <20120615103233.GA19046@n2100.arm.linux.org.uk>
+In-Reply-To: <20120615103233.GA19046@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 15/06/12 11:32, Russell King - ARM Linux wrote:
+> On Thu, Jun 14, 2012 at 07:57:32PM +0100, Lee Jones wrote:
+>> On 14/06/12 19:36, Mark Brown wrote:
+>>> On Wed, Jun 13, 2012 at 01:28:17PM +0100, Lee Jones wrote:
+>>>
+>>>> Device Tree. However, we have just as much control by keeping them
+>>>> in separate structs in the C file and selecting the right one using
+>>>> the compatible sting.
+>>>
+>>> You're not understanding Linus' point.  The compatible string isn't
+>>> useful here because properties like the maximum clock rate of the bus
+>>> depend on the board design, not the silicon.  The controller may be
+>>> perfectly happy to run at a given rate but other devices on the bus or
+>>> the electrical engineering of the PCB itself may restrict this further.
+>>
+>> And you're not understanding mine. ;)
+>>
+>> You can have multiple compatible strings for a single driver. Which one
+>> you reference from the Device Tree will dictate which group of settings
+>> are used, including variation of clock rates.
+>
+> However, if you list these settings separately, rather than selecting them
+> based on a compatible string, it means when other board designs come along,
+> you don't have to modify the kernel code to provide yet another compatible
+> to settings translation in the code - you can keep all that information
+> entirely within DT with no kernel code mods.
+>
+> I thought that was partly the point of DT...
 
---xXmbgvnjoT4axfJE
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Right. See my most recent emails on the subject. :)
 
-On Fri, Jun 15, 2012 at 07:11:48PM +0800, Axel Lin wrote:
-
-> > + =A0 =A0 =A0 ret =3D gpio_request(gpio, "LP872X DVS");
-
-> devm_gpio_request
-
-Better yet...
-
-> > + =A0 =A0 =A0 gpio_direction_output(gpio, dvs->init_state);
-
-=2E..devm_gpio_request_one().
-
-> > +module_i2c_driver(lp872x_driver);
-
-> I think you need to use subsys_initcall() here.
-
-> Regulators need to be available early in init in order to allow them
-> to be available for consumers when requested.
-
-Well, it depends on the regulator.  Those with DCDCs that might supply
-cpufreq do because cpufreq can't use deferred probes.  Others should now
-be able to use deferred probes which should removed the need for this.
-
---xXmbgvnjoT4axfJE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJP2x8zAAoJEBus8iNuMP3dELgP/3fyJ+jPisOmGU9G6E23JAk9
-xkpkb8NBc3iaMZpHDcWoro0LdGdQgcb9RQl4zE6wt4zU2B6SYAb+RYfA472mrpgR
-1nX+r7HrwJs01kmnEaQL8ntUzJGvhIDrrn0PAVo3Cp3p0U5x7UePqE2ZIE/woGmH
-VwMLKjgD9rz0Cc2wvREnEWYEef7g/RVaMHI829skLM3rRJRo/6kUuvzx1eW5fuzZ
-Hp/8BIyldG1V5X0qsgWxTH3X0dJ+N3zQJ2Ur1bF1F+vJVGY5xNAwjx62FhFoMXHw
-UQ57PgWiUg3pLvCfQ76InAR4zr4HnMHFatP6i+FUWeNgoXzh1ufjFQDoL8nl8Y38
-aOOZ+FlvFASajIk10gdpTG7I2HNDUFtvSAzuOTruLReBUhV+GkV8SWqPQ8gG5/aq
-ViXnkFiYvdJkc1dU3f9GCy3OzyS/pGaBzU/DCNTmSMWM0wlqio4XRBQ6JHsq5bup
-j7BVJ23Ams763hxqDW/80yTrdIbQREimL+aww2awNtPe0c+5cJOotN44mwQSrFVR
-suA87qczSzPTVow4hIX8r2rsIN0jvvJhu+XDs7gicnvW4ddCJZjCQlYtosY9lipf
-yAWGgphuDpPSbkHfmHASm4juR6g2PcXVNV3/voOetzROhTbKrhLl43/IfTWOc+k1
-aRB9Kq2Uhl8wCrcC3I5m
-=oTki
------END PGP SIGNATURE-----
-
---xXmbgvnjoT4axfJE--
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+M: +44 77 88 633 515
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
