@@ -1,54 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756586Ab2FOKEY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 06:04:24 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:35395 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756216Ab2FOKEX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 06:04:23 -0400
-Message-ID: <4FDB080F.8050907@parallels.com>
-Date: Fri, 15 Jun 2012 14:01:51 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1756622Ab2FOKGX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 06:06:23 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:58942 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756247Ab2FOKGV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 06:06:21 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
+        rientjes@google.com, akpm@linux-foundation.org, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH -V9 11/15] hugetlb/cgroup: Add charge/uncharge routines for hugetlb cgroup
+In-Reply-To: <20120614092539.GI27397@tiehlicka.suse.cz>
+References: <1339583254-895-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1339583254-895-12-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20120614092539.GI27397@tiehlicka.suse.cz>
+User-Agent: Notmuch/0.13.2+35~g0ff57e7 (http://notmuchmail.org) Emacs/24.1.50.1 (x86_64-unknown-linux-gnu)
+Date: Fri, 15 Jun 2012 15:36:10 +0530
+Message-ID: <87k3z8nb3h.fsf@skywalker.in.ibm.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: <mingo@kernel.org>, <pjt@google.com>, <venki@google.com>, <efault@gmx.de>,
-        <rostedt@goodmis.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH 2/4] sched: Push put_prev_task() into pick_next_task()
-References: <20120614132902.800827488@chello.nl>  <20120614133212.690691207@chello.nl> <4FDB050F.7040503@parallels.com> <1339754590.2559.51.camel@twins>
-In-Reply-To: <1339754590.2559.51.camel@twins>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+x-cbid: 12061423-5490-0000-0000-000001993D76
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/15/2012 02:03 PM, Peter Zijlstra wrote:
-> On Fri, 2012-06-15 at 13:49 +0400, Glauber Costa wrote:
->> On 06/14/2012 05:29 PM, Peter Zijlstra wrote:
->>> +static struct task_struct *
->>> +pick_next_task_rt(struct rq *rq, struct task_struct *prev)
->>>    {
->>> -	struct task_struct *p = _pick_next_task_rt(rq);
->>> +	struct task_struct *p;
->>> +	struct rt_rq *rt_rq =&rq->rt;
->>> +
->>> +	if (!rt_rq->rt_nr_running)
->>> +		return NULL;
->>> +
->>> +	if (rt_rq_throttled(rt_rq))
->>> +		return NULL;
->>> +
->>> +	if (prev)
->>> +		prev->sched_class->put_prev_task(rq, prev);
->>> +
->> it might be me, but this one sounds strange. If the responsibility of
->> putting the task now lays with pic_next_task, you can't return NULL
->> without doing this first.
->
-> Its the responsibility of the sched_class::pick_next_task implementation
-> that will return the next task. Not of the first one called.
->
-> Clearly this needs a comment.. /me adds.
+Michal Hocko <mhocko@suse.cz> writes:
 
-hummmm, yeah, you are right. The comment does make it clearer.
+> On Wed 13-06-12 15:57:30, Aneesh Kumar K.V wrote:
+>> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+>> 
+>> This patchset add the charge and uncharge routines for hugetlb cgroup.
+>> We do cgroup charging in page alloc and uncharge in compound page
+>> destructor. Assigning page's hugetlb cgroup is protected by hugetlb_lock.
+>> 
+>> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+>
+> Reviewed-by: Michal Hocko <mhocko@suse.cz>
+>
+> One minor comment
+> [...]
+>> +void hugetlb_cgroup_commit_charge(int idx, unsigned long nr_pages,
+>> +				  struct hugetlb_cgroup *h_cg,
+>> +				  struct page *page)
+>> +{
+>> +	if (hugetlb_cgroup_disabled() || !h_cg)
+>> +		return;
+>> +
+>> +	spin_lock(&hugetlb_lock);
+>> +	set_hugetlb_cgroup(page, h_cg);
+>> +	spin_unlock(&hugetlb_lock);
+>> +	return;
+>> +}
+>
+> I guess we can remove the lock here because nobody can see the page yet,
+> right?
+>
+
+We need that to make sure when we remove cgroup we find correct page
+hugetlb cgroup values. But i guess we have a bug here. How about the
+below ?
+
+NOTE: We also need another patch to update active list during soft
+offline. I will send that in reply.
+
+commit e4c3fd3cc0f0faa30ea283cb48ba478a5c0d3e74
+Author: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Date:   Fri Jun 15 14:42:27 2012 +0530
+
+    hugetlb/cgroup: Assign the page hugetlb cgroup when we move the page to active list.
+    
+    page's hugetlb cgroup assign and moving to active list should happen with
+    hugetlb_lock held. Otherwise when we remove the hugetlb cgroup we would
+    iterate the active list and will find page with NULL hugetlb cgroup values.
+    
+    Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index ee4da3b..b90dfb4 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -1146,9 +1146,12 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+ 	}
+ 	spin_lock(&hugetlb_lock);
+ 	page = dequeue_huge_page_vma(h, vma, addr, avoid_reserve);
+-	spin_unlock(&hugetlb_lock);
+-
+-	if (!page) {
++	if (page) {
++		/* update page cgroup details */
++		hugetlb_cgroup_commit_charge(idx, pages_per_huge_page(h), h_cg, page);
++		spin_unlock(&hugetlb_lock);
++	} else {
++		spin_unlock(&hugetlb_lock);
+ 		page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
+ 		if (!page) {
+ 			hugetlb_cgroup_uncharge_cgroup(idx,
+@@ -1159,14 +1162,13 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+ 		}
+ 		spin_lock(&hugetlb_lock);
+ 		list_move(&page->lru, &h->hugepage_activelist);
++		hugetlb_cgroup_commit_charge(idx, pages_per_huge_page(h), h_cg, page);
+ 		spin_unlock(&hugetlb_lock);
+ 	}
+ 
+ 	set_page_private(page, (unsigned long)spool);
+ 
+ 	vma_commit_reservation(h, vma, addr);
+-	/* update page cgroup details */
+-	hugetlb_cgroup_commit_charge(idx, pages_per_huge_page(h), h_cg, page);
+ 	return page;
+ }
+ 
+diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
+index 8e7ca0a..d4f3f7b 100644
+--- a/mm/hugetlb_cgroup.c
++++ b/mm/hugetlb_cgroup.c
+@@ -218,6 +218,7 @@ done:
+ 	return ret;
+ }
+ 
++/* Should be called with hugetlb_lock held */
+ void hugetlb_cgroup_commit_charge(int idx, unsigned long nr_pages,
+ 				  struct hugetlb_cgroup *h_cg,
+ 				  struct page *page)
+@@ -225,9 +226,7 @@ void hugetlb_cgroup_commit_charge(int idx, unsigned long nr_pages,
+ 	if (hugetlb_cgroup_disabled() || !h_cg)
+ 		return;
+ 
+-	spin_lock(&hugetlb_lock);
+ 	set_hugetlb_cgroup(page, h_cg);
+-	spin_unlock(&hugetlb_lock);
+ 	return;
+ }
+ 
+
