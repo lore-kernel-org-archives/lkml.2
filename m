@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758041Ab2FOVGj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 17:06:39 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:40209 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757987Ab2FOVGd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 17:06:33 -0400
+	id S932211Ab2FOVGw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 17:06:52 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:49094 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757971Ab2FOVGp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 17:06:45 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -14,396 +15,92 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
         fweisbec@gmail.com, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 13/15] rcu: Introduce for_each_rcu_flavor() and use it
-Date: Fri, 15 Jun 2012 14:06:08 -0700
-Message-Id: <1339794370-28119-13-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 08/15] rcu: Move rcu_barrier_mutex to rcu_state structure
+Date: Fri, 15 Jun 2012 14:06:03 -0700
+Message-Id: <1339794370-28119-8-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
 In-Reply-To: <1339794370-28119-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20120615210550.GA27506@linux.vnet.ibm.com>
  <1339794370-28119-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12061521-7182-0000-0000-000001C1D904
+x-cbid: 12061521-3270-0000-0000-000007375E19
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 
-The arrival of TREE_PREEMPT_RCU some years back included some ugly
-code involving either #ifdef or #ifdef'ed wrapper functions to iterate
-over all non-SRCU flavors of RCU.  This commit therefore introduces
-a for_each_rcu_flavor() iterator over the rcu_state structures for each
-flavor of RCU to clean up a bit of the ugliness.
+In order to allow each RCU flavor to concurrently execute its
+rcu_barrier() function, it is necessary to move the relevant
+state to the rcu_state structure.  This commit therefore moves the
+rcu_barrier_mutex global variable to a new ->barrier_mutex field
+in the rcu_state structure.
 
+Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/rcutree.c        |   53 +++++++++++++---------
- kernel/rcutree.h        |   12 ++---
- kernel/rcutree_plugin.h |  116 -----------------------------------------------
- 3 files changed, 36 insertions(+), 145 deletions(-)
+ kernel/rcutree.c |   11 +++--------
+ kernel/rcutree.h |    1 +
+ 2 files changed, 4 insertions(+), 8 deletions(-)
 
 diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index bd4e41c..75ad92a 100644
+index a946437..93358d4 100644
 --- a/kernel/rcutree.c
 +++ b/kernel/rcutree.c
-@@ -84,6 +84,7 @@ struct rcu_state rcu_bh_state = RCU_STATE_INITIALIZER(rcu_bh, call_rcu_bh);
- DEFINE_PER_CPU(struct rcu_data, rcu_bh_data);
- 
- static struct rcu_state *rcu_state;
-+LIST_HEAD(rcu_struct_flavors);
- 
- /* Increase (but not decrease) the CONFIG_RCU_FANOUT_LEAF at boot time. */
- static int rcu_fanout_leaf = CONFIG_RCU_FANOUT_LEAF;
-@@ -859,9 +860,10 @@ static int rcu_panic(struct notifier_block *this, unsigned long ev, void *ptr)
-  */
- void rcu_cpu_stall_reset(void)
- {
--	rcu_sched_state.jiffies_stall = jiffies + ULONG_MAX / 2;
--	rcu_bh_state.jiffies_stall = jiffies + ULONG_MAX / 2;
--	rcu_preempt_stall_reset();
-+	struct rcu_state *rsp;
-+
-+	for_each_rcu_flavor(rsp)
-+		rsp->jiffies_stall = jiffies + ULONG_MAX / 2;
+@@ -71,9 +71,8 @@ static struct lock_class_key rcu_node_class[RCU_NUM_LVLS];
+ 	.onofflock = __RAW_SPIN_LOCK_UNLOCKED(&sname##_state.onofflock), \
+ 	.orphan_nxttail = &sname##_state.orphan_nxtlist, \
+ 	.orphan_donetail = &sname##_state.orphan_donelist, \
++	.barrier_mutex = __MUTEX_INITIALIZER(sname##_state.barrier_mutex), \
+ 	.fqslock = __RAW_SPIN_LOCK_UNLOCKED(&sname##_state.fqslock), \
+-	.n_force_qs = 0, \
+-	.n_force_qs_ngp = 0, \
+ 	.name = #sname, \
  }
  
- static struct notifier_block rcu_panic_block = {
-@@ -1824,10 +1826,11 @@ __rcu_process_callbacks(struct rcu_state *rsp)
-  */
- static void rcu_process_callbacks(struct softirq_action *unused)
- {
-+	struct rcu_state *rsp;
-+
- 	trace_rcu_utilization("Start RCU core");
--	__rcu_process_callbacks(&rcu_sched_state);
--	__rcu_process_callbacks(&rcu_bh_state);
--	rcu_preempt_process_callbacks();
-+	for_each_rcu_flavor(rsp)
-+		__rcu_process_callbacks(rsp);
- 	trace_rcu_utilization("End RCU core");
- }
+@@ -155,10 +154,6 @@ static void invoke_rcu_callbacks(struct rcu_state *rsp, struct rcu_data *rdp);
+ unsigned long rcutorture_testseq;
+ unsigned long rcutorture_vernum;
  
-@@ -2238,9 +2241,12 @@ static int __rcu_pending(struct rcu_state *rsp, struct rcu_data *rdp)
-  */
- static int rcu_pending(int cpu)
- {
--	return __rcu_pending(&rcu_sched_state, &per_cpu(rcu_sched_data, cpu)) ||
--	       __rcu_pending(&rcu_bh_state, &per_cpu(rcu_bh_data, cpu)) ||
--	       rcu_preempt_pending(cpu);
-+	struct rcu_state *rsp;
-+
-+	for_each_rcu_flavor(rsp)
-+		if (__rcu_pending(rsp, per_cpu_ptr(rsp->rda, cpu)))
-+			return 1;
-+	return 0;
- }
- 
+-/* State information for rcu_barrier() and friends. */
+-
+-static DEFINE_MUTEX(rcu_barrier_mutex);
+-
  /*
-@@ -2250,10 +2256,13 @@ static int rcu_pending(int cpu)
-  */
- static int rcu_cpu_has_callbacks(int cpu)
- {
-+	struct rcu_state *rsp;
-+
- 	/* RCU callbacks either ready or pending? */
--	return per_cpu(rcu_sched_data, cpu).nxtlist ||
--	       per_cpu(rcu_bh_data, cpu).nxtlist ||
--	       rcu_preempt_cpu_has_callbacks(cpu);
-+	for_each_rcu_flavor(rsp)
-+		if (per_cpu_ptr(rsp->rda, cpu)->nxtlist)
-+			return 1;
-+	return 0;
+  * Return true if an RCU grace period is in progress.  The ACCESS_ONCE()s
+  * permit this function to be invoked without holding the root rcu_node
+@@ -2300,7 +2295,7 @@ static void _rcu_barrier(struct rcu_state *rsp)
+ 	init_rcu_head_on_stack(&rd.barrier_head);
+ 
+ 	/* Take mutex to serialize concurrent rcu_barrier() requests. */
+-	mutex_lock(&rcu_barrier_mutex);
++	mutex_lock(&rsp->barrier_mutex);
+ 
+ 	smp_mb();  /* Prevent any prior operations from leaking in. */
+ 
+@@ -2377,7 +2372,7 @@ static void _rcu_barrier(struct rcu_state *rsp)
+ 	wait_for_completion(&rsp->barrier_completion);
+ 
+ 	/* Other rcu_barrier() invocations can now safely proceed. */
+-	mutex_unlock(&rcu_barrier_mutex);
++	mutex_unlock(&rsp->barrier_mutex);
+ 
+ 	destroy_rcu_head_on_stack(&rd.barrier_head);
  }
- 
- /*
-@@ -2539,9 +2548,10 @@ rcu_init_percpu_data(int cpu, struct rcu_state *rsp, int preemptible)
- 
- static void __cpuinit rcu_prepare_cpu(int cpu)
- {
--	rcu_init_percpu_data(cpu, &rcu_sched_state, 0);
--	rcu_init_percpu_data(cpu, &rcu_bh_state, 0);
--	rcu_preempt_init_percpu_data(cpu);
-+	struct rcu_state *rsp;
-+
-+	for_each_rcu_flavor(rsp)
-+		rcu_init_percpu_data(cpu, rsp, 0);
- }
- 
- /*
-@@ -2553,6 +2563,7 @@ static int __cpuinit rcu_cpu_notify(struct notifier_block *self,
- 	long cpu = (long)hcpu;
- 	struct rcu_data *rdp = per_cpu_ptr(rcu_state->rda, cpu);
- 	struct rcu_node *rnp = rdp->mynode;
-+	struct rcu_state *rsp;
- 
- 	trace_rcu_utilization("Start CPU hotplug");
- 	switch (action) {
-@@ -2577,18 +2588,15 @@ static int __cpuinit rcu_cpu_notify(struct notifier_block *self,
- 		 * touch any data without introducing corruption. We send the
- 		 * dying CPU's callbacks to an arbitrarily chosen online CPU.
- 		 */
--		rcu_cleanup_dying_cpu(&rcu_bh_state);
--		rcu_cleanup_dying_cpu(&rcu_sched_state);
--		rcu_preempt_cleanup_dying_cpu();
--		rcu_cleanup_after_idle(cpu);
-+		for_each_rcu_flavor(rsp)
-+			rcu_cleanup_dying_cpu(rsp);
- 		break;
- 	case CPU_DEAD:
- 	case CPU_DEAD_FROZEN:
- 	case CPU_UP_CANCELED:
- 	case CPU_UP_CANCELED_FROZEN:
--		rcu_cleanup_dead_cpu(cpu, &rcu_bh_state);
--		rcu_cleanup_dead_cpu(cpu, &rcu_sched_state);
--		rcu_preempt_cleanup_dead_cpu(cpu);
-+		for_each_rcu_flavor(rsp)
-+			rcu_cleanup_dead_cpu(cpu, rsp);
- 		break;
- 	default:
- 		break;
-@@ -2705,6 +2713,7 @@ static void __init rcu_init_one(struct rcu_state *rsp,
- 		per_cpu_ptr(rsp->rda, i)->mynode = rnp;
- 		rcu_boot_init_percpu_data(i, rsp);
- 	}
-+	list_add(&rsp->flavors, &rcu_struct_flavors);
- }
- 
- /*
 diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-index a294f7f..138fb33 100644
+index 56fb8d4..d9ac82f 100644
 --- a/kernel/rcutree.h
 +++ b/kernel/rcutree.h
-@@ -408,8 +408,13 @@ struct rcu_state {
- 	unsigned long gp_max;			/* Maximum GP duration in */
- 						/*  jiffies. */
- 	char *name;				/* Name of structure. */
-+	struct list_head flavors;		/* List of RCU flavors. */
- };
- 
-+extern struct list_head rcu_struct_flavors;
-+#define for_each_rcu_flavor(rsp) \
-+	list_for_each_entry((rsp), &rcu_struct_flavors, flavors)
-+
- /* Return values for rcu_preempt_offline_tasks(). */
- 
- #define RCU_OFL_TASKS_NORM_GP	0x1		/* Tasks blocking normal */
-@@ -451,25 +456,18 @@ static void rcu_stop_cpu_kthread(int cpu);
- #endif /* #ifdef CONFIG_HOTPLUG_CPU */
- static void rcu_print_detail_task_stall(struct rcu_state *rsp);
- static int rcu_print_task_stall(struct rcu_node *rnp);
--static void rcu_preempt_stall_reset(void);
- static void rcu_preempt_check_blocked_tasks(struct rcu_node *rnp);
- #ifdef CONFIG_HOTPLUG_CPU
- static int rcu_preempt_offline_tasks(struct rcu_state *rsp,
- 				     struct rcu_node *rnp,
- 				     struct rcu_data *rdp);
- #endif /* #ifdef CONFIG_HOTPLUG_CPU */
--static void rcu_preempt_cleanup_dead_cpu(int cpu);
- static void rcu_preempt_check_callbacks(int cpu);
--static void rcu_preempt_process_callbacks(void);
- void call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu));
- #if defined(CONFIG_HOTPLUG_CPU) || defined(CONFIG_TREE_PREEMPT_RCU)
- static void rcu_report_exp_rnp(struct rcu_state *rsp, struct rcu_node *rnp,
- 			       bool wake);
- #endif /* #if defined(CONFIG_HOTPLUG_CPU) || defined(CONFIG_TREE_PREEMPT_RCU) */
--static int rcu_preempt_pending(int cpu);
--static int rcu_preempt_cpu_has_callbacks(int cpu);
--static void __cpuinit rcu_preempt_init_percpu_data(int cpu);
--static void rcu_preempt_cleanup_dying_cpu(void);
- static void __init __rcu_init_preempt(void);
- static void rcu_initiate_boost(struct rcu_node *rnp, unsigned long flags);
- static void rcu_preempt_boost_start_gp(struct rcu_node *rnp);
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index 686cb55..41ce563 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -545,16 +545,6 @@ static int rcu_print_task_stall(struct rcu_node *rnp)
- }
- 
- /*
-- * Suppress preemptible RCU's CPU stall warnings by pushing the
-- * time of the next stall-warning message comfortably far into the
-- * future.
-- */
--static void rcu_preempt_stall_reset(void)
--{
--	rcu_preempt_state.jiffies_stall = jiffies + ULONG_MAX / 2;
--}
--
--/*
-  * Check that the list of blocked tasks for the newly completed grace
-  * period is in fact empty.  It is a serious bug to complete a grace
-  * period that still has RCU readers blocked!  This function must be
-@@ -655,14 +645,6 @@ static int rcu_preempt_offline_tasks(struct rcu_state *rsp,
- #endif /* #ifdef CONFIG_HOTPLUG_CPU */
- 
- /*
-- * Do CPU-offline processing for preemptible RCU.
-- */
--static void rcu_preempt_cleanup_dead_cpu(int cpu)
--{
--	rcu_cleanup_dead_cpu(cpu, &rcu_preempt_state);
--}
--
--/*
-  * Check for a quiescent state from the current CPU.  When a task blocks,
-  * the task is recorded in the corresponding CPU's rcu_node structure,
-  * which is checked elsewhere.
-@@ -682,14 +664,6 @@ static void rcu_preempt_check_callbacks(int cpu)
- 		t->rcu_read_unlock_special |= RCU_READ_UNLOCK_NEED_QS;
- }
- 
--/*
-- * Process callbacks for preemptible RCU.
-- */
--static void rcu_preempt_process_callbacks(void)
--{
--	__rcu_process_callbacks(&rcu_preempt_state);
--}
--
- #ifdef CONFIG_RCU_BOOST
- 
- static void rcu_preempt_do_callbacks(void)
-@@ -921,24 +895,6 @@ mb_ret:
- }
- EXPORT_SYMBOL_GPL(synchronize_rcu_expedited);
- 
--/*
-- * Check to see if there is any immediate preemptible-RCU-related work
-- * to be done.
-- */
--static int rcu_preempt_pending(int cpu)
--{
--	return __rcu_pending(&rcu_preempt_state,
--			     &per_cpu(rcu_preempt_data, cpu));
--}
--
--/*
-- * Does preemptible RCU have callbacks on this CPU?
-- */
--static int rcu_preempt_cpu_has_callbacks(int cpu)
--{
--	return !!per_cpu(rcu_preempt_data, cpu).nxtlist;
--}
--
- /**
-  * rcu_barrier - Wait until all in-flight call_rcu() callbacks complete.
-  */
-@@ -949,23 +905,6 @@ void rcu_barrier(void)
- EXPORT_SYMBOL_GPL(rcu_barrier);
- 
- /*
-- * Initialize preemptible RCU's per-CPU data.
-- */
--static void __cpuinit rcu_preempt_init_percpu_data(int cpu)
--{
--	rcu_init_percpu_data(cpu, &rcu_preempt_state, 1);
--}
--
--/*
-- * Move preemptible RCU's callbacks from dying CPU to other online CPU
-- * and record a quiescent state.
-- */
--static void rcu_preempt_cleanup_dying_cpu(void)
--{
--	rcu_cleanup_dying_cpu(&rcu_preempt_state);
--}
--
--/*
-  * Initialize preemptible RCU's state structures.
-  */
- static void __init __rcu_init_preempt(void)
-@@ -1042,14 +981,6 @@ static int rcu_print_task_stall(struct rcu_node *rnp)
- }
- 
- /*
-- * Because preemptible RCU does not exist, there is no need to suppress
-- * its CPU stall warnings.
-- */
--static void rcu_preempt_stall_reset(void)
--{
--}
--
--/*
-  * Because there is no preemptible RCU, there can be no readers blocked,
-  * so there is no need to check for blocked tasks.  So check only for
-  * bogus qsmask values.
-@@ -1077,14 +1008,6 @@ static int rcu_preempt_offline_tasks(struct rcu_state *rsp,
- #endif /* #ifdef CONFIG_HOTPLUG_CPU */
- 
- /*
-- * Because preemptible RCU does not exist, it never needs CPU-offline
-- * processing.
-- */
--static void rcu_preempt_cleanup_dead_cpu(int cpu)
--{
--}
--
--/*
-  * Because preemptible RCU does not exist, it never has any callbacks
-  * to check.
-  */
-@@ -1093,14 +1016,6 @@ static void rcu_preempt_check_callbacks(int cpu)
- }
- 
- /*
-- * Because preemptible RCU does not exist, it never has any callbacks
-- * to process.
-- */
--static void rcu_preempt_process_callbacks(void)
--{
--}
--
--/*
-  * Queue an RCU callback for lazy invocation after a grace period.
-  * This will likely be later named something like "call_rcu_lazy()",
-  * but this change will require some way of tagging the lazy RCU
-@@ -1141,22 +1056,6 @@ static void rcu_report_exp_rnp(struct rcu_state *rsp, struct rcu_node *rnp,
- #endif /* #ifdef CONFIG_HOTPLUG_CPU */
- 
- /*
-- * Because preemptible RCU does not exist, it never has any work to do.
-- */
--static int rcu_preempt_pending(int cpu)
--{
--	return 0;
--}
--
--/*
-- * Because preemptible RCU does not exist, it never has callbacks
-- */
--static int rcu_preempt_cpu_has_callbacks(int cpu)
--{
--	return 0;
--}
--
--/*
-  * Because preemptible RCU does not exist, rcu_barrier() is just
-  * another name for rcu_barrier_sched().
-  */
-@@ -1167,21 +1066,6 @@ void rcu_barrier(void)
- EXPORT_SYMBOL_GPL(rcu_barrier);
- 
- /*
-- * Because preemptible RCU does not exist, there is no per-CPU
-- * data to initialize.
-- */
--static void __cpuinit rcu_preempt_init_percpu_data(int cpu)
--{
--}
--
--/*
-- * Because there is no preemptible RCU, there is no cleanup to do.
-- */
--static void rcu_preempt_cleanup_dying_cpu(void)
--{
--}
--
--/*
-  * Because preemptible RCU does not exist, it need not be initialized.
-  */
- static void __init __rcu_init_preempt(void)
+@@ -386,6 +386,7 @@ struct rcu_state {
+ 	struct task_struct *rcu_barrier_in_progress;
+ 						/* Task doing rcu_barrier(), */
+ 						/*  or NULL if no barrier. */
++	struct mutex barrier_mutex;		/* Guards barrier fields. */
+ 	atomic_t barrier_cpu_count;		/* # CPUs waiting on. */
+ 	struct completion barrier_completion;	/* Wake at barrier end. */
+ 	raw_spinlock_t fqslock;			/* Only one task forcing */
 -- 
 1.7.8
 
