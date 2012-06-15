@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752460Ab2FOHuz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 03:50:55 -0400
-Received: from mga01.intel.com ([192.55.52.88]:31298 "EHLO mga01.intel.com"
+	id S1753163Ab2FOHxL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 03:53:11 -0400
+Received: from mga09.intel.com ([134.134.136.24]:53367 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750875Ab2FOHux (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 03:50:53 -0400
+	id S1752144Ab2FOHxK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 03:53:10 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="180385916"
-Date: Fri, 15 Jun 2012 10:50:50 +0300
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="157938132"
+Date: Fri, 15 Jun 2012 10:53:06 +0300
 From: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>
 To: Masatake YAMATO <yamato@redhat.com>
 Cc: linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org
-Subject: Re: [PATCH 5/8] Added /proc/net/hidp via bt_procfs_init()
-Message-ID: <20120615075049.GB7205@aemeltch-MOBL1>
+Subject: Re: [PATCH 7/8] Added /proc/net/rfcomm via bt_procfs_init()
+Message-ID: <20120615075305.GC7205@aemeltch-MOBL1>
 Mail-Followup-To: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>,
 	Masatake YAMATO <yamato@redhat.com>, linux-kernel@vger.kernel.org,
 	linux-bluetooth@vger.kernel.org
-References: <20120615.021742.1385079555521232550.yamato@redhat.com>
+References: <20120615.021835.1759601069982013045.yamato@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120615.021742.1385079555521232550.yamato@redhat.com>
+In-Reply-To: <20120615.021835.1759601069982013045.yamato@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,27 +30,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Masatake,
 
-On Fri, Jun 15, 2012 at 02:17:42AM +0900, Masatake YAMATO wrote:
-> Added /proc/net/hidp via bt_procfs_init().
+On Fri, Jun 15, 2012 at 02:18:35AM +0900, Masatake YAMATO wrote:
+> Added /proc/net/rfcomm via bt_procfs_init().
 > 
 > Signed-off-by: Masatake YAMATO <yamato@redhat.com>
 > ---
->  net/bluetooth/hidp/sock.c |   24 ++++++++++++++++++++++--
->  1 file changed, 22 insertions(+), 2 deletions(-)
+>  net/bluetooth/rfcomm/sock.c |   15 +++++++++++++--
+>  1 file changed, 13 insertions(+), 2 deletions(-)
 > 
-> diff --git a/net/bluetooth/hidp/sock.c b/net/bluetooth/hidp/sock.c
-> index 73a32d7..dd31d8f 100644
-> --- a/net/bluetooth/hidp/sock.c
-> +++ b/net/bluetooth/hidp/sock.c
-> @@ -39,6 +39,11 @@
+> diff --git a/net/bluetooth/rfcomm/sock.c b/net/bluetooth/rfcomm/sock.c
+> index e8707de..0d0a35f 100644
+> --- a/net/bluetooth/rfcomm/sock.c
+> +++ b/net/bluetooth/rfcomm/sock.c
+> @@ -1052,8 +1052,18 @@ int __init rfcomm_init_sockets(void)
+>  		return err;
 >  
->  #include "hidp.h"
->  
+>  	err = bt_sock_register(BTPROTO_RFCOMM, &rfcomm_sock_family_ops);
+> -	if (err < 0)
+> +	if (err < 0) {
+> +	  	BT_ERR("RFCOMM socket layer registration failed");
+>  		goto error;
+> +	}
 > +
+> +	err = bt_procfs_init(THIS_MODULE, &init_net, "rfcomm", &rfcomm_sk_list, NULL);
+> +	if (err < 0) {
+> +		BT_ERR("Failed to create RFCOMM proc file");
+> +		bt_sock_unregister(BTPROTO_RFCOMM);
+> +		goto error;
+> +	}
+> +
+>  
 
-Extra space here
+Extra space here.
 
 Best regards 
-Andrei Emeltchenko 
+Andrei Emeltchenko
 
 
