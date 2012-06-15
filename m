@@ -1,99 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752721Ab2FOQuI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 12:50:08 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:45685 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751190Ab2FOQuF (ORCPT
+	id S1753060Ab2FOQwO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 12:52:14 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:44948 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751654Ab2FOQwN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 12:50:05 -0400
-Message-ID: <4FDB674C.9070304@linux.vnet.ibm.com>
-Date: Fri, 15 Jun 2012 11:48:12 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Fri, 15 Jun 2012 12:52:13 -0400
+Date: Fri, 15 Jun 2012 18:52:31 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: LKML <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Dimitri Sivanich <sivanich@sgi.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Greg Kroah-Hartman <greg@kroah.com>
+Subject: [PATCH] x86, microcode: Make reload interface per system
+Message-ID: <20120615165231.GA9169@aftab.osrc.amd.com>
+References: <20120612172352.GA4802@aftab.osrc.amd.com>
+ <1339521996.31548.95.camel@twins>
+ <20120612173506.GB4802@aftab.osrc.amd.com>
+ <20120613010413.GA28174@khazad-dum.debian.net>
+ <20120613065119.GB15661@aftab.osrc.amd.com>
+ <20120613123649.GA26012@khazad-dum.debian.net>
+ <20120613161139.GA18450@aftab.osrc.amd.com>
+ <20120615123749.GC6083@aftab.osrc.amd.com>
+ <1339764161.2559.63.camel@twins>
+ <20120615125240.GD6083@aftab.osrc.amd.com>
 MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Minchan Kim <minchan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
-        David Howells <dhowells@redhat.com>, x86@kernel.org,
-        Nick Piggin <npiggin@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>
-Subject: Re: [PATCH v2 3/3] x86: Support local_flush_tlb_kernel_range
-References: <1337133919-4182-1-git-send-email-minchan@kernel.org> <1337133919-4182-3-git-send-email-minchan@kernel.org> <4FB4B29C.4010908@kernel.org> <1337266310.4281.30.camel@twins> <4FDB5107.3000308@linux.vnet.ibm.com> <7e925563-082b-468f-a7d8-829e819eeac0@default>
-In-Reply-To: <7e925563-082b-468f-a7d8-829e819eeac0@default>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12061516-5518-0000-0000-00000532F81D
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120615125240.GD6083@aftab.osrc.amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/15/2012 11:35 AM, Dan Magenheimer wrote:
-
->> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
->> Sent: Friday, June 15, 2012 9:13 AM
->> To: Peter Zijlstra
->> Cc: Minchan Kim; Greg Kroah-Hartman; Nitin Gupta; Dan Magenheimer; linux-kernel@vger.kernel.org;
->> linux-mm@kvack.org; Thomas Gleixner; Ingo Molnar; Tejun Heo; David Howells; x86@kernel.org; Nick
->> Piggin
->> Subject: Re: [PATCH v2 3/3] x86: Support local_flush_tlb_kernel_range
->>
->> On 05/17/2012 09:51 AM, Peter Zijlstra wrote:
->>
->>> On Thu, 2012-05-17 at 17:11 +0900, Minchan Kim wrote:
->>>>> +++ b/arch/x86/include/asm/tlbflush.h
->>>>> @@ -172,4 +172,16 @@ static inline void flush_tlb_kernel_range(unsigned long start,
->>>>>       flush_tlb_all();
->>>>>  }
->>>>>
->>>>> +static inline void local_flush_tlb_kernel_range(unsigned long start,
->>>>> +             unsigned long end)
->>>>> +{
->>>>> +     if (cpu_has_invlpg) {
->>>>> +             while (start < end) {
->>>>> +                     __flush_tlb_single(start);
->>>>> +                     start += PAGE_SIZE;
->>>>> +             }
->>>>> +     } else
->>>>> +             local_flush_tlb();
->>>>> +}
->>>
->>> It would be much better if you wait for Alex Shi's patch to mature.
->>> doing the invlpg thing for ranges is not an unconditional win.
->>
->> From what I can tell Alex's patches have stalled.  The last post was v6
->> on 5/17 and there wasn't a single reply to them afaict.
->>
->> According to Alex's investigation of this "tipping point", it seems that
->> a good generic value is 8.  In other words, on most x86 hardware, it is
->> cheaper to flush up to 8 tlb entries one by one rather than doing a
->> complete flush.
->>
->> So we can do something like:
->>
->>      if (cpu_has_invlpg && (end - start)/PAGE_SIZE <= 8) {
->>              while (start < end) {
->>
->> Would this be acceptable?
+On Fri, Jun 15, 2012 at 02:52:40PM +0200, Borislav Petkov wrote:
+> Actually, the BSP thing was more-or-less an arbitrary deal. What we want as an
+> endresult is to do:
 > 
-> Hey Seth, Nitin --
+> $ echo 1 > /sys/devices/system/cpu/microcode/reload
 > 
-> After more work digging around zsmalloc and zbud, I really think
-> this TLB flushing, as well as the "page pair mapping" code can be
-> completely eliminated IFF zsmalloc is limited to items PAGE_SIZE or
-> less.
+> (notice this is in the toplevel "cpu" directory in sysfs)
+> 
+> and do the system-wide reload there.
 
-
-To add to what Nitin just sent, without the page mapping, zsmalloc and
-the late xvmalloc have the same issue.  Say you have a whole class of
-objects that are 3/4 of a page.  Without the mapping, you can't cross
-non-contiguous page boundaries and you'll have 25% fragmentation in the
-memory pool.  This is the whole point of zsmalloc.
+Actually, that was easier than I thought, see below. And it seems to
+workie too.
 
 --
-Seth
+From: Borislav Petkov <borislav.petkov@amd.com>
+Date: Fri, 15 Jun 2012 18:46:05 +0200
+Subject: [PATCH] x86, microcode: Make reload interface per system
 
+The reload interface should be per-system so that a full system ucode
+reload happens (on each core) when doing
+
+echo 1 > /sys/devices/system/cpu/microcode/reload
+
+Move it to the cpu subsys directory instead of it being per-cpu.
+
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
+ arch/x86/kernel/microcode_core.c | 32 ++++++++++++++++++++++++++++----
+ 1 file changed, 28 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/microcode_core.c
+index 24b852b61be3..4c6f3b37ed3c 100644
+--- a/arch/x86/kernel/microcode_core.c
++++ b/arch/x86/kernel/microcode_core.c
+@@ -351,7 +351,6 @@ static DEVICE_ATTR(version, 0400, version_show, NULL);
+ static DEVICE_ATTR(processor_flags, 0400, pf_show, NULL);
+ 
+ static struct attribute *mc_default_attrs[] = {
+-	&dev_attr_reload.attr,
+ 	&dev_attr_version.attr,
+ 	&dev_attr_processor_flags.attr,
+ 	NULL
+@@ -528,6 +527,16 @@ static const struct x86_cpu_id microcode_id[] = {
+ MODULE_DEVICE_TABLE(x86cpu, microcode_id);
+ #endif
+ 
++static struct attribute *cpu_root_microcode_attrs[] = {
++	&dev_attr_reload.attr,
++	NULL
++};
++
++static struct attribute_group cpu_root_microcode_group = {
++	.name  = "microcode",
++	.attrs = cpu_root_microcode_attrs,
++};
++
+ static int __init microcode_init(void)
+ {
+ 	struct cpuinfo_x86 *c = &cpu_data(0);
+@@ -559,9 +568,17 @@ static int __init microcode_init(void)
+ 	if (error)
+ 		goto out_pdev;
+ 
++	error = sysfs_create_group(&cpu_subsys.dev_root->kobj,
++				   &cpu_root_microcode_group);
++
++	if (error) {
++		pr_err("Error creating microcode group!\n");
++		goto out_driver;
++	}
++
+ 	error = microcode_dev_init();
+ 	if (error)
+-		goto out_driver;
++		goto out_ucode_group;
+ 
+ 	register_syscore_ops(&mc_syscore_ops);
+ 	register_hotcpu_notifier(&mc_cpu_notifier);
+@@ -571,7 +588,11 @@ static int __init microcode_init(void)
+ 
+ 	return 0;
+ 
+-out_driver:
++ out_ucode_group:
++	sysfs_remove_group(&cpu_subsys.dev_root->kobj,
++			   &cpu_root_microcode_group);
++
++ out_driver:
+ 	get_online_cpus();
+ 	mutex_lock(&microcode_mutex);
+ 
+@@ -580,7 +601,7 @@ out_driver:
+ 	mutex_unlock(&microcode_mutex);
+ 	put_online_cpus();
+ 
+-out_pdev:
++ out_pdev:
+ 	platform_device_unregister(microcode_pdev);
+ 	return error;
+ 
+@@ -596,6 +617,9 @@ static void __exit microcode_exit(void)
+ 	unregister_hotcpu_notifier(&mc_cpu_notifier);
+ 	unregister_syscore_ops(&mc_syscore_ops);
+ 
++	sysfs_remove_group(&cpu_subsys.dev_root->kobj,
++			   &cpu_root_microcode_group);
++
+ 	get_online_cpus();
+ 	mutex_lock(&microcode_mutex);
+ 
+-- 
+1.7.11.rc1
+
+
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
