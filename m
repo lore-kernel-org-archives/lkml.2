@@ -1,95 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756590Ab2FOKmO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 06:42:14 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:49227 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752229Ab2FOKmM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 06:42:12 -0400
-Message-ID: <1339756931.24527.16.camel@joe2Laptop>
-Subject: Re: [PATCH wireless-next 18/20] ti: Use pr_<level>
-From: Joe Perches <joe@perches.com>
-To: Luciano Coelho <coelho@ti.com>
-Cc: linux-kernel@vger.kernel.org, "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org
-Date: Fri, 15 Jun 2012 03:42:11 -0700
-In-Reply-To: <1339749374.4502.80.camel@cumari.coelho.fi>
-References: <cover.1339739415.git.joe@perches.com>
-	 <a4533db379be3689e3b29ed9b0d170263d875f7d.1339739416.git.joe@perches.com>
-	 <1339749374.4502.80.camel@cumari.coelho.fi>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1756634Ab2FOKp4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 06:45:56 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:43512 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756267Ab2FOKpz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 06:45:55 -0400
+Date: Fri, 15 Jun 2012 11:45:51 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: kosaki.motohiro@gmail.com
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        akpm@linux-foundation.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Nick Piggin <npiggin@gmail.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [resend][PATCH] mm, vmscan: fix do_try_to_free_pages() livelock
+Message-ID: <20120615104551.GB20303@csn.ul.ie>
+References: <1339661592-3915-1-git-send-email-kosaki.motohiro@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1339661592-3915-1-git-send-email-kosaki.motohiro@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-06-15 at 11:36 +0300, Luciano Coelho wrote:
-> Hi Joe,
-
-Hi Luciano.
-
-> As Johannes already mentioned, I have to also ask why do you need to do
-> this?
-
-To use a more consistent logging style.
-To minimize unnecessary changes when adding
-similar drivers based on this code.
-
->  I see the point, slightly, with the wl1251 code, because it is
-> still using printks, but with wlcore and friends, there's no functional
-> change.
-
-Using a consistent logging style minimizes defects.
-
-> As mentioned above, this change here is acceptable, but removing the \n
-> from the macro and adding it at the end of each and every call is
-> useless and will just skew git-blame and make it harder to do rebase or
-> apply patches because of conflicts.
-
-In practice, the merging won't be much of an issue.
-Neither will git blame.
-
-> > -#define wl1271_warning(fmt, arg...) \
-> > -	pr_warning(DRIVER_PREFIX "WARNING " fmt "\n", ##arg)
-> > +#define wl1271_warn(fmt, arg...)				\
-> > +	pr_warn(DRIVER_PREFIX "WARNING " fmt, ##arg)
+On Thu, Jun 14, 2012 at 04:13:12AM -0400, kosaki.motohiro@gmail.com wrote:
+> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 > 
-> Using pr_warn instead of pr_warning is pointless.  pr_warning is the
-> main definition, actually, and pr_warn is just a "mirror".
-
-I expect one day to reverse the definitions.
-
-The kernel is moving, albeit slowly to prefer
-pr_warn to mirror dev_warn, netdev_warn, etc.
-
-Most of these uses will eventually become netdev_warn.
-netdev_warn still uses a \n.
-
-> Again, moving the \n from the macro definition and changing all the
-> callers is an unnecessary, intrusive change.
+> Currently, do_try_to_free_pages() can enter livelock. Because of,
+> now vmscan has two conflicted policies.
 > 
-> We have wanted to change "wl1271" to "wl12xx" for a long time, but we
-> don't do it exactly because this means we need to change the calls
-> everywhere.
+> 1) kswapd sleep when it couldn't reclaim any page when reaching
+>    priority 0. This is because to avoid kswapd() infinite
+>    loop. That said, kswapd assume direct reclaim makes enough
+>    free pages to use either regular page reclaim or oom-killer.
+>    This logic makes kswapd -> direct-reclaim dependency.
+> 2) direct reclaim continue to reclaim without oom-killer until
+>    kswapd turn on zone->all_unreclaimble. This is because
+>    to avoid too early oom-kill.
+>    This logic makes direct-reclaim -> kswapd dependency.
+> 
+> In worst case, direct-reclaim may continue to page reclaim forever
+> when kswapd sleeps forever.
+> 
+> We can't turn on zone->all_unreclaimable from direct reclaim path
+> because direct reclaim path don't take any lock and this way is racy.
+> 
+> Thus this patch removes zone->all_unreclaimable field completely and
+> recalculates zone reclaimable state every time.
+> 
+> Note: we can't take the idea that direct-reclaim see zone->pages_scanned
+> directly and kswapd continue to use zone->all_unreclaimable. Because, it
+> is racy. commit 929bea7c71 (vmscan: all_unreclaimable() use
+> zone->all_unreclaimable as a name) describes the detail.
+> 
+> Reported-by: Aaditya Kumar <aaditya.kumar.30@gmail.com>
+> Reported-by: Ying Han <yinghan@google.com>
+> Cc: Nick Piggin <npiggin@gmail.com>
+> Acked-by: Rik van Riel <riel@redhat.com>
+> Cc: Michal Hocko <mhocko@suse.cz>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Mel Gorman <mel@csn.ul.ie>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: Minchan Kim <minchan.kim@gmail.com>
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-Nothing in ever _needed_, no child will go
-hungry or fed here.  This is a consistency change.
+Acked-by: Mel Gorman <mel@csn.ul.ie>
 
-There are a couple of instances where \n is
-currently used unnecessarily that are fixed in
-the conversion.
-
-$ git grep -E  "\bwl12[0-9]+_[a-z]+\s*\(.*\\\\n\"" drivers/net/wireless/ti
-drivers/net/wireless/ti/wl12xx/cmd.c:   wl1271_debug(DEBUG_CMD, "FEM autodetect: %s, manufacturer: %d\n",
-drivers/net/wireless/ti/wl12xx/cmd.c:   wl1271_debug(DEBUG_CMD, "FEM autodetect: %s, manufacturer: %d\n",
-drivers/net/wireless/ti/wlcore/main.c:          wl1271_error("Incorrect ampdu action id=%x\n", action);
-
-People make these mistakes because the more
-common and adjacent dev_<level> code _use_
-a newline.  Using a consistent style minimzes
-these defects.
-
-cheers, Joe
-
+-- 
+Mel Gorman
+SUSE Labs
