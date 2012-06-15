@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756775Ab2FOKyc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 06:54:32 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:34519 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756449Ab2FOKy3 (ORCPT
+	id S1756791Ab2FOKyh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 06:54:37 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37788 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756449Ab2FOKyf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 06:54:29 -0400
+	Fri, 15 Jun 2012 06:54:35 -0400
 From: Kelvin Cheung <keguang.zhang@gmail.com>
 To: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
         ralf@linux-mips.org
 Cc: wuzhangjin@gmail.com, zhzhl555@gmail.com,
         Kelvin Cheung <keguang.zhang@gmail.com>
-Subject: [PATCH V7 3/4] MIPS: Add Makefile and Kconfig for Loongson1B
-Date: Fri, 15 Jun 2012 18:53:36 +0800
-Message-Id: <1339757617-2187-4-git-send-email-keguang.zhang@gmail.com>
+Subject: [PATCH V7 4/4] MIPS: Add defconfig for Loongson1B
+Date: Fri, 15 Jun 2012 18:53:37 +0800
+Message-Id: <1339757617-2187-5-git-send-email-keguang.zhang@gmail.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1339757617-2187-1-git-send-email-keguang.zhang@gmail.com>
 References: <1339757617-2187-1-git-send-email-keguang.zhang@gmail.com>
@@ -22,185 +22,128 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds Makefile and Kconfig related to Loongson1B.
+This patch adds defconfig for Loongson1B.
 
 Signed-off-by: Kelvin Cheung <keguang.zhang@gmail.com>
 ---
- arch/mips/Kbuild.platforms          |    1 +
- arch/mips/Kconfig                   |   31 +++++++++++++++++++++++++++++++
- arch/mips/loongson1/Kconfig         |   21 +++++++++++++++++++++
- arch/mips/loongson1/Makefile        |   11 +++++++++++
- arch/mips/loongson1/Platform        |    7 +++++++
- arch/mips/loongson1/common/Makefile |    5 +++++
- arch/mips/loongson1/ls1b/Makefile   |    5 +++++
- 7 files changed, 81 insertions(+), 0 deletions(-)
- create mode 100644 arch/mips/loongson1/Kconfig
- create mode 100644 arch/mips/loongson1/Makefile
- create mode 100644 arch/mips/loongson1/Platform
- create mode 100644 arch/mips/loongson1/common/Makefile
- create mode 100644 arch/mips/loongson1/ls1b/Makefile
+ arch/mips/configs/ls1b_defconfig |  108 ++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 108 insertions(+), 0 deletions(-)
+ create mode 100644 arch/mips/configs/ls1b_defconfig
 
-diff --git a/arch/mips/Kbuild.platforms b/arch/mips/Kbuild.platforms
-index 5ce8029..d64786d 100644
---- a/arch/mips/Kbuild.platforms
-+++ b/arch/mips/Kbuild.platforms
-@@ -14,6 +14,7 @@ platforms += jz4740
- platforms += lantiq
- platforms += lasat
- platforms += loongson
-+platforms += loongson1
- platforms += mipssim
- platforms += mti-malta
- platforms += netlogic
-diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index 08dfc79..61e1459 100644
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -265,6 +265,17 @@ config MACH_LOONGSON
- 	  Chinese Academy of Sciences (CAS) in the People's Republic
- 	  of China. The chief architect is Professor Weiwu Hu.
- 
-+config MACH_LOONGSON1
-+	bool "Loongson1 family of machines"
-+	select SYS_SUPPORTS_ZBOOT
-+	help
-+	  This enables the support of Loongson1 family of machines.
-+
-+	  Loongson1 is a family of 32-bit MIPS-compatible SoCs.
-+	  developed at Institute of Computing Technology (ICT),
-+	  Chinese Academy of Sciences (CAS) in the People's Republic
-+	  of China.
-+
- config MIPS_MALTA
- 	bool "MIPS Malta board"
- 	select ARCH_MAY_HAVE_PC_FDC
-@@ -838,6 +849,7 @@ source "arch/mips/txx9/Kconfig"
- source "arch/mips/vr41xx/Kconfig"
- source "arch/mips/cavium-octeon/Kconfig"
- source "arch/mips/loongson/Kconfig"
-+source "arch/mips/loongson1/Kconfig"
- source "arch/mips/netlogic/Kconfig"
- 
- endmenu
-@@ -1219,6 +1231,14 @@ config CPU_LOONGSON2F
- 	  have a similar programming interface with FPGA northbridge used in
- 	  Loongson2E.
- 
-+config CPU_LOONGSON1B
-+	bool "Loongson 1B"
-+	depends on SYS_HAS_CPU_LOONGSON1B
-+	select CPU_LOONGSON1
-+	help
-+	  The Loongson 1B is a 32-bit SoC, which implements the MIPS32
-+	  release 2 instruction set.
-+
- config CPU_MIPS32_R1
- 	bool "MIPS32 Release 1"
- 	depends on SYS_HAS_CPU_MIPS32_R1
-@@ -1548,6 +1568,14 @@ config CPU_LOONGSON2
- 	select CPU_SUPPORTS_64BIT_KERNEL
- 	select CPU_SUPPORTS_HIGHMEM
- 
-+config CPU_LOONGSON1
-+	bool
-+	select CPU_MIPS32
-+	select CPU_MIPSR2
-+	select CPU_HAS_PREFETCH
-+	select CPU_SUPPORTS_32BIT_KERNEL
-+	select CPU_SUPPORTS_HIGHMEM
-+
- config CPU_BMIPS
- 	bool
- 	select CPU_MIPS32
-@@ -1566,6 +1594,9 @@ config SYS_HAS_CPU_LOONGSON2F
- 	select CPU_SUPPORTS_ADDRWINCFG if 64BIT
- 	select CPU_SUPPORTS_UNCACHED_ACCELERATED
- 
-+config SYS_HAS_CPU_LOONGSON1B
-+	bool
-+
- config SYS_HAS_CPU_MIPS32_R1
- 	bool
- 
-diff --git a/arch/mips/loongson1/Kconfig b/arch/mips/loongson1/Kconfig
+diff --git a/arch/mips/configs/ls1b_defconfig b/arch/mips/configs/ls1b_defconfig
 new file mode 100644
-index 0000000..237fa21
+index 0000000..5c2c3a1
 --- /dev/null
-+++ b/arch/mips/loongson1/Kconfig
-@@ -0,0 +1,21 @@
-+if MACH_LOONGSON1
-+
-+choice
-+	prompt "Machine Type"
-+
-+config LOONGSON1_LS1B
-+	bool "Loongson LS1B board"
-+	select CEVT_R4K
-+	select CSRC_R4K
-+	select SYS_HAS_CPU_LOONGSON1B
-+	select DMA_NONCOHERENT
-+	select BOOT_ELF32
-+	select IRQ_CPU
-+	select SYS_SUPPORTS_32BIT_KERNEL
-+	select SYS_SUPPORTS_LITTLE_ENDIAN
-+	select SYS_SUPPORTS_HIGHMEM
-+	select SYS_HAS_EARLY_PRINTK
-+
-+endchoice
-+
-+endif # MACH_LOONGSON1
-diff --git a/arch/mips/loongson1/Makefile b/arch/mips/loongson1/Makefile
-new file mode 100644
-index 0000000..e9123c2
---- /dev/null
-+++ b/arch/mips/loongson1/Makefile
-@@ -0,0 +1,11 @@
-+#
-+# Common code for all Loongson1 based systems
-+#
-+
-+obj-$(CONFIG_MACH_LOONGSON1) += common/
-+
-+#
-+# Loongson LS1B board
-+#
-+
-+obj-$(CONFIG_LOONGSON1_LS1B)  += ls1b/
-diff --git a/arch/mips/loongson1/Platform b/arch/mips/loongson1/Platform
-new file mode 100644
-index 0000000..92804c6
---- /dev/null
-+++ b/arch/mips/loongson1/Platform
-@@ -0,0 +1,7 @@
-+cflags-$(CONFIG_CPU_LOONGSON1)  += \
-+	$(call cc-option,-march=mips32r2,-mips32r2 -U_MIPS_ISA -D_MIPS_ISA=_MIPS_ISA_MIPS32) \
-+	-Wa,-mips32r2 -Wa,--trap
-+
-+platform-$(CONFIG_MACH_LOONGSON1)	+= loongson1/
-+cflags-$(CONFIG_MACH_LOONGSON1)		+= -I$(srctree)/arch/mips/include/asm/mach-loongson1
-+load-$(CONFIG_LOONGSON1_LS1B)		+= 0xffffffff80010000
-diff --git a/arch/mips/loongson1/common/Makefile b/arch/mips/loongson1/common/Makefile
-new file mode 100644
-index 0000000..b279770
---- /dev/null
-+++ b/arch/mips/loongson1/common/Makefile
-@@ -0,0 +1,5 @@
-+#
-+# Makefile for common code of loongson1 based machines.
-+#
-+
-+obj-y	+= clock.o irq.o platform.o prom.o reset.o setup.o
-diff --git a/arch/mips/loongson1/ls1b/Makefile b/arch/mips/loongson1/ls1b/Makefile
-new file mode 100644
-index 0000000..891eac4
---- /dev/null
-+++ b/arch/mips/loongson1/ls1b/Makefile
-@@ -0,0 +1,5 @@
-+#
-+# Makefile for loongson1B based machines.
-+#
-+
-+obj-y += board.o
++++ b/arch/mips/configs/ls1b_defconfig
+@@ -0,0 +1,108 @@
++CONFIG_MACH_LOONGSON1=y
++CONFIG_PREEMPT=y
++# CONFIG_SECCOMP is not set
++CONFIG_EXPERIMENTAL=y
++# CONFIG_LOCALVERSION_AUTO is not set
++CONFIG_SYSVIPC=y
++CONFIG_BSD_PROCESS_ACCT=y
++CONFIG_BSD_PROCESS_ACCT_V3=y
++CONFIG_HIGH_RES_TIMERS=y
++CONFIG_IKCONFIG=y
++CONFIG_IKCONFIG_PROC=y
++CONFIG_LOG_BUF_SHIFT=16
++CONFIG_NAMESPACES=y
++CONFIG_BLK_DEV_INITRD=y
++CONFIG_RD_BZIP2=y
++CONFIG_RD_LZMA=y
++CONFIG_EXPERT=y
++CONFIG_PERF_EVENTS=y
++# CONFIG_COMPAT_BRK is not set
++CONFIG_MODULES=y
++CONFIG_MODULE_UNLOAD=y
++CONFIG_MODVERSIONS=y
++# CONFIG_LBDAF is not set
++# CONFIG_BLK_DEV_BSG is not set
++# CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
++# CONFIG_SUSPEND is not set
++CONFIG_NET=y
++CONFIG_PACKET=y
++CONFIG_UNIX=y
++CONFIG_INET=y
++CONFIG_IP_PNP=y
++CONFIG_IP_PNP_DHCP=y
++CONFIG_SYN_COOKIES=y
++# CONFIG_INET_XFRM_MODE_TRANSPORT is not set
++# CONFIG_INET_XFRM_MODE_TUNNEL is not set
++# CONFIG_INET_XFRM_MODE_BEET is not set
++# CONFIG_INET_DIAG is not set
++# CONFIG_IPV6 is not set
++# CONFIG_WIRELESS is not set
++CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
++CONFIG_DEVTMPFS=y
++CONFIG_DEVTMPFS_MOUNT=y
++# CONFIG_STANDALONE is not set
++CONFIG_BLK_DEV_LOOP=y
++CONFIG_SCSI=m
++# CONFIG_SCSI_PROC_FS is not set
++CONFIG_BLK_DEV_SD=m
++# CONFIG_SCSI_LOWLEVEL is not set
++CONFIG_NETDEVICES=y
++# CONFIG_NET_VENDOR_BROADCOM is not set
++# CONFIG_NET_VENDOR_CHELSIO is not set
++# CONFIG_NET_VENDOR_INTEL is not set
++# CONFIG_NET_VENDOR_MARVELL is not set
++# CONFIG_NET_VENDOR_MICREL is not set
++# CONFIG_NET_VENDOR_NATSEMI is not set
++# CONFIG_NET_VENDOR_SEEQ is not set
++# CONFIG_NET_VENDOR_SMSC is not set
++CONFIG_STMMAC_ETH=y
++CONFIG_STMMAC_DA=y
++# CONFIG_NET_VENDOR_WIZNET is not set
++# CONFIG_WLAN is not set
++CONFIG_INPUT_EVDEV=y
++# CONFIG_INPUT_KEYBOARD is not set
++# CONFIG_INPUT_MOUSE is not set
++# CONFIG_SERIO is not set
++CONFIG_VT_HW_CONSOLE_BINDING=y
++CONFIG_LEGACY_PTY_COUNT=8
++# CONFIG_DEVKMEM is not set
++CONFIG_SERIAL_8250=y
++CONFIG_SERIAL_8250_CONSOLE=y
++# CONFIG_HW_RANDOM is not set
++# CONFIG_HWMON is not set
++# CONFIG_VGA_CONSOLE is not set
++CONFIG_USB_HID=m
++CONFIG_HID_GENERIC=m
++CONFIG_USB=y
++CONFIG_USB_EHCI_HCD=y
++# CONFIG_USB_EHCI_TT_NEWSCHED is not set
++CONFIG_USB_STORAGE=m
++CONFIG_USB_SERIAL=m
++CONFIG_USB_SERIAL_PL2303=m
++CONFIG_RTC_CLASS=y
++CONFIG_RTC_DRV_LOONGSON1=y
++# CONFIG_IOMMU_SUPPORT is not set
++CONFIG_EXT2_FS=y
++CONFIG_EXT2_FS_XATTR=y
++CONFIG_EXT2_FS_POSIX_ACL=y
++CONFIG_EXT2_FS_SECURITY=y
++CONFIG_EXT3_FS=y
++CONFIG_EXT3_FS_POSIX_ACL=y
++CONFIG_EXT3_FS_SECURITY=y
++# CONFIG_DNOTIFY is not set
++CONFIG_VFAT_FS=y
++CONFIG_PROC_KCORE=y
++CONFIG_TMPFS=y
++CONFIG_TMPFS_POSIX_ACL=y
++# CONFIG_MISC_FILESYSTEMS is not set
++CONFIG_NFS_FS=y
++CONFIG_ROOT_NFS=y
++CONFIG_NLS_CODEPAGE_437=m
++CONFIG_NLS_ISO8859_1=m
++# CONFIG_ENABLE_WARN_DEPRECATED is not set
++# CONFIG_ENABLE_MUST_CHECK is not set
++CONFIG_MAGIC_SYSRQ=y
++# CONFIG_SCHED_DEBUG is not set
++# CONFIG_DEBUG_PREEMPT is not set
++# CONFIG_FTRACE is not set
++# CONFIG_EARLY_PRINTK is not set
 -- 
 1.7.1
 
