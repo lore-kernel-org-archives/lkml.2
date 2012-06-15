@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758660Ab2FOXZD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 19:25:03 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18091 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758494Ab2FOXZB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 19:25:01 -0400
-X-Authority-Analysis: v=2.0 cv=D8PF24tj c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=EwAfToejOIUA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=4IMKUPfyF6xLaM3MNq4A:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1339802699.25903.47.camel@gandalf.stny.rr.com>
-Subject: kbuild: Document oldnoconfig to what it really does
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>
-Cc: Michal Marek <mmarek@suse.cz>
-Date: Fri, 15 Jun 2012 19:24:59 -0400
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1+b1 
+	id S1758703Ab2FOX0m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 19:26:42 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:48422 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758494Ab2FOX0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 19:26:40 -0400
+Message-ID: <4FDBC4A7.8050507@linux.vnet.ibm.com>
+Date: Fri, 15 Jun 2012 18:26:31 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: Nitin Gupta <ngupta@vflare.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Minchan Kim <minchan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Tejun Heo <tj@kernel.org>, David Howells <dhowells@redhat.com>,
+        x86@kernel.org, Nick Piggin <npiggin@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>
+Subject: Re: [PATCH v2 3/3] x86: Support local_flush_tlb_kernel_range
+References: <1337133919-4182-1-git-send-email-minchan@kernel.org> <1337133919-4182-3-git-send-email-minchan@kernel.org> <4FB4B29C.4010908@kernel.org> <1337266310.4281.30.camel@twins> <4FDB5107.3000308@linux.vnet.ibm.com> <7e925563-082b-468f-a7d8-829e819eeac0@default> <4FDB66B7.2010803@vflare.org> <10ea9d19-bd24-400c-8131-49f0b4e9e5ae@default> <4FDB8808.9010508@linux.vnet.ibm.com> <9c6c8ae0-0212-402d-a906-0d0c61e5e058@default> <4FDB92CF.1070603@vflare.org> <4ffbc3e8-900b-4669-b6ab-e8c066f28c63@default> <4FDBA7CC.6060407@vflare.org>
+In-Reply-To: <4FDBA7CC.6060407@vflare.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12061523-3534-0000-0000-00000967DF19
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The make target 'oldnoconfig' is a misnomer. It doesn't set new symbols
-to 'n', but instead sets it to their default values.
+On 06/15/2012 04:23 PM, Nitin Gupta wrote:
 
-Unfortunately, assuming that it actually did this, broke ktest in some
-of its tests. For example, the tests to create a minimum config and even
-a config bisect, depends on removing various configs and using
-oldnoconfig to get rid of other configs that may have depended on it.
+> On 06/15/2012 01:13 PM, Dan Magenheimer wrote:
 
-But because some configs that it was trying to disable, were in fact
-default enabled, this caused those configs to re-enable and corrupt the
-test.
+>>
 
-I thought about fixing oldnoconfig, but I'm afraid that people are
-already dependent on its current behavior. Instead, I'm just updating
-the documentation to state that it sets the new symbols to their default
-values and not to 'n'.
+>> OK, it's your code and I'm just making a suggestion. I will shut up now ;-)
+>>
+> 
+> I'm always glad to hear your opinions and was just trying to discuss the
+> points you raised. I apologize if I sounded rude.
 
-Ideally, this would be called, 'olddefconfig' and we have an
-'oldnoconfig' that actually disables the new symbols. But it's useless
-for me now. If it changed, ktest would need to be consistent between
-each version, and that would be to difficult to detect. I'll handle this
-issue with ktest with other means.
+Same here. It's always good to go back and rethink your assumptions.
+Thanks Dan!
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
-index 7966265..da36bde 100644
---- a/scripts/kconfig/Makefile
-+++ b/scripts/kconfig/Makefile
-@@ -114,7 +114,7 @@ help:
- 	@echo  '  alldefconfig    - New config with all symbols set to default'
- 	@echo  '  randconfig	  - New config with random answer to all options'
- 	@echo  '  listnewconfig   - List new options'
--	@echo  '  oldnoconfig     - Same as silentoldconfig but set new symbols to n (unset)'
-+	@echo  '  oldnoconfig     - Same as silentoldconfig but sets new symbols to their default value'
- 
- # lxdialog stuff
- check-lxdialog  := $(srctree)/$(src)/lxdialog/check-lxdialog.sh
-
+Thanks,
+Seth
 
