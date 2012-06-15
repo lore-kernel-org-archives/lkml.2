@@ -1,166 +1,351 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752763Ab2FOGQz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 02:16:55 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:53727 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752021Ab2FOGQx (ORCPT
+	id S1753093Ab2FOGTT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 02:19:19 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:15401 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751379Ab2FOGTP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 02:16:53 -0400
-Date: Fri, 15 Jun 2012 11:42:17 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] uprobes: write_opcode()->__replace_page() can race
- with try_to_unmap()
-Message-ID: <20120615061217.GC12051@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20120607165942.GA31966@redhat.com>
- <20120607170041.GC31974@redhat.com>
- <20120608165551.GA30683@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20120608165551.GA30683@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12061506-1780-0000-0000-000006760E20
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000281; HX=3.00000190; KW=3.00000007;
- PH=3.00000001; SC=3.00000002; SDB=6.00148180; UDB=6.00033785; UTC=2012-06-15
- 06:16:52
+	Fri, 15 Jun 2012 02:19:15 -0400
+X-AuditID: cbfee61b-b7fcc6d000003a7a-44-4fdad3e223fe
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+To: linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
+        linaro-mm-sig@lists.linaro.org, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Subash Patel <subash.ramaswamy@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>
+Subject: [PATCH] common: dma-mapping: add support for generic dma_mmap_* calls
+Date: Fri, 15 Jun 2012 08:18:55 +0200
+Message-id: <1339741135-7841-1-git-send-email-m.szyprowski@samsung.com>
+X-Mailer: git-send-email 1.7.10
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrIJMWRmVeSWpSXmKPExsVy+t9jQd1Hl2/5G9x7xGPRsesri8XlXXPY
+	HJg8Pm+SC2CM4rJJSc3JLEst0rdL4MqYM/c0U8GDxIq99zpYGxhfB3QxcnJICJhInDl7mA3C
+	FpO4cG89kM3FISQwnVHi4Jz1zBBOF5PEzL8XWECq2AQMJbredoFViQjsZJS4sGIfC4jDLDCX
+	WWLP33msIFXCAn4Sa57NALNZBFQlNr+/wAhi8wq4S6w//B1qn7zE0/t9bBMYuRcwMqxiFE0t
+	SC4oTkrPNdIrTswtLs1L10vOz93ECPboM+kdjKsaLA4xCnAwKvHwWmy45S/EmlhWXJl7iFGC
+	g1lJhFcoCijEm5JYWZValB9fVJqTWnyIUZqDRUmct8n6gr+QQHpiSWp2ampBahFMlomDU6qB
+	UTNp/ung/yaSvI32k0+cDyq4v23nN6U/2rcu8TeUv1vDlvxiyazJ4a9bbEtY890vVQUrb568
+	LOMu5+YzC+aXPN660fSl3nm3SxvCC6buq96belly8Y/numxprH+3dew6cvtYhNsR80Jxubqp
+	9hf7F3t1VwY1qYVe2r76laJc84qghZXneLM/ySuxFGckGmoxFxUnAgBNyqqw5AEAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> ---
-> Subject: [PATCH] uprobes: write_opcode()->__replace_page() can race with try_to_unmap()
-> 
-> write_opcode() gets old_page via get_user_pages() and then calls
-> __replace_page() which assumes that this old_page is still mapped
-> after pte_offset_map_lock().
-> 
-> This is not true if this old_page was already try_to_unmap()'ed,
-> and in this case everything __replace_page() does with old_page
-> is wrong. Just for example, put_page() is not balanced.
-> 
-> I think it is possible to teach __replace_page() to handle this
-> unlikely case correctly, but this patch simply changes it to use
-> page_check_address() and return -EAGAIN if it fails. The caller
-> should notice this error code and retry.
-> 
-> Note: write_opcode() asks for the cleanups, I'll try to do this
-> in a separate patch.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
->  kernel/events/uprobes.c |   41 +++++++++++++----------------------------
->  1 files changed, 13 insertions(+), 28 deletions(-)
-> 
-> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-> index 9c53bc2..54c8780 100644
-> --- a/kernel/events/uprobes.c
-> +++ b/kernel/events/uprobes.c
-> @@ -135,33 +135,17 @@ static loff_t vma_address(struct vm_area_struct *vma, loff_t offset)
->  static int __replace_page(struct vm_area_struct *vma, struct page *page, struct page *kpage)
->  {
->  	struct mm_struct *mm = vma->vm_mm;
-> -	pgd_t *pgd;
-> -	pud_t *pud;
-> -	pmd_t *pmd;
-> -	pte_t *ptep;
-> -	spinlock_t *ptl;
->  	unsigned long addr;
-> -	int err = -EFAULT;
-> +	spinlock_t *ptl;
-> +	pte_t *ptep;
-> 
->  	addr = page_address_in_vma(page, vma);
->  	if (addr == -EFAULT)
-> -		goto out;
-> -
-> -	pgd = pgd_offset(mm, addr);
-> -	if (!pgd_present(*pgd))
-> -		goto out;
-> -
-> -	pud = pud_offset(pgd, addr);
-> -	if (!pud_present(*pud))
-> -		goto out;
-> +		return -EFAULT;
-> 
-> -	pmd = pmd_offset(pud, addr);
-> -	if (!pmd_present(*pmd))
-> -		goto out;
-> -
-> -	ptep = pte_offset_map_lock(mm, pmd, addr, &ptl);
-> +	ptep = page_check_address(page, mm, addr, &ptl, 0);
->  	if (!ptep)
-> -		goto out;
-> +		return -EAGAIN;
-> 
->  	get_page(kpage);
->  	page_add_new_anon_rmap(kpage, vma, addr);
-> @@ -180,10 +164,8 @@ static int __replace_page(struct vm_area_struct *vma, struct page *page, struct
->  		try_to_free_swap(page);
->  	put_page(page);
->  	pte_unmap_unlock(ptep, ptl);
-> -	err = 0;
-> 
-> -out:
-> -	return err;
-> +	return 0;
->  }
-> 
->  /**
-> @@ -228,9 +210,10 @@ static int write_opcode(struct arch_uprobe *auprobe, struct mm_struct *mm,
->  	void *vaddr_old, *vaddr_new;
->  	struct vm_area_struct *vma;
->  	struct uprobe *uprobe;
-> +	unsigned long pgoff;
->  	loff_t addr;
->  	int ret;
-> -
-> +retry:
+Commit 9adc5374 ('common: dma-mapping: introduce mmap method') added a
+generic method for implementing mmap user call to dma_map_ops structure.
 
-Just a check on coding style: Shouldnt we have a preceeding blank
-line before the goto label.
+This patch converts ARM and PowerPC architectures (the only providers of
+dma_mmap_coherent/dma_mmap_writecombine calls) to use this generic
+dma_map_ops based call and adds a generic cross architecture
+definition for dma_mmap_attrs, dma_mmap_coherent, dma_mmap_writecombine
+functions.
 
->  	/* Read the page with vaddr into memory */
->  	ret = get_user_pages(NULL, mm, vaddr, 1, 0, 0, &old_page, &vma);
->  	if (ret <= 0)
-> @@ -275,9 +258,9 @@ static int write_opcode(struct arch_uprobe *auprobe, struct mm_struct *mm,
->  	memcpy(vaddr_new, vaddr_old, PAGE_SIZE);
-> 
->  	/* poke the new insn in, ASSUMES we don't cross page boundary */
-> -	vaddr &= ~PAGE_MASK;
-> -	BUG_ON(vaddr + UPROBE_SWBP_INSN_SIZE > PAGE_SIZE);
-> -	memcpy(vaddr_new + vaddr, &opcode, UPROBE_SWBP_INSN_SIZE);
-> +	pgoff = (vaddr & ~PAGE_MASK);
-> +	BUG_ON(pgoff + UPROBE_SWBP_INSN_SIZE > PAGE_SIZE);
-> +	memcpy(vaddr_new + pgoff, &opcode, UPROBE_SWBP_INSN_SIZE);
-> 
->  	kunmap_atomic(vaddr_new);
->  	kunmap_atomic(vaddr_old);
-> @@ -297,6 +280,8 @@ unlock_out:
->  put_out:
->  	put_page(old_page);
-> 
-> +	if (unlikely(ret == -EAGAIN))
-> +		goto retry;
->  	return ret;
->  }
-> 
+The generic mmap virt_to_page-based fallback implementation is provided for
+architectures which don't provide their own implementation for mmap method.
 
-Looks good. 
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+Reviewed-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+Hello,
 
+This patch is a continuation of my works on dma-mapping cleanup and
+unification. Previous works (commit 58bca4a8fa ('Merge branch
+'for-linus' of git://git.linaro.org/people/mszyprowski/linux-dma-mapping')
+has been merged to v3.4-rc2. Now I've focuses on providing implementation 
+for all architectures so the drivers and some cross-architecture common 
+helpers (like for example videobuf2) can start using this new api.
+
+I'm not 100% sure if the PowerPC changes are correct. The cases of
+dma_iommu_ops and vio_dma_mapping_ops are a bit suspicious for me, but I
+have no way to test and check if my changes works for that hardware.
+
+Best regards
+Marek Szyprowski
+Samsung Poland R&D Center
+
+---
+ arch/arm/include/asm/dma-mapping.h       |   19 ---------------
+ arch/powerpc/include/asm/dma-mapping.h   |    8 +++---
+ arch/powerpc/kernel/dma-iommu.c          |    1 +
+ arch/powerpc/kernel/dma-swiotlb.c        |    1 +
+ arch/powerpc/kernel/dma.c                |   36 +++++++++++++++-------------
+ arch/powerpc/kernel/vio.c                |    1 +
+ drivers/base/dma-mapping.c               |   31 +++++++++++++++++++++++++
+ include/asm-generic/dma-coherent.h       |    1 +
+ include/asm-generic/dma-mapping-common.h |   37 ++++++++++++++++++++++++++++++
+ 9 files changed, 95 insertions(+), 40 deletions(-)
+
+diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
+index bbef15d..8645088 100644
+--- a/arch/arm/include/asm/dma-mapping.h
++++ b/arch/arm/include/asm/dma-mapping.h
+@@ -186,17 +186,6 @@ extern int arm_dma_mmap(struct device *dev, struct vm_area_struct *vma,
+ 			void *cpu_addr, dma_addr_t dma_addr, size_t size,
+ 			struct dma_attrs *attrs);
+ 
+-#define dma_mmap_coherent(d, v, c, h, s) dma_mmap_attrs(d, v, c, h, s, NULL)
+-
+-static inline int dma_mmap_attrs(struct device *dev, struct vm_area_struct *vma,
+-				  void *cpu_addr, dma_addr_t dma_addr,
+-				  size_t size, struct dma_attrs *attrs)
+-{
+-	struct dma_map_ops *ops = get_dma_ops(dev);
+-	BUG_ON(!ops);
+-	return ops->mmap(dev, vma, cpu_addr, dma_addr, size, attrs);
+-}
+-
+ static inline void *dma_alloc_writecombine(struct device *dev, size_t size,
+ 				       dma_addr_t *dma_handle, gfp_t flag)
+ {
+@@ -213,14 +202,6 @@ static inline void dma_free_writecombine(struct device *dev, size_t size,
+ 	return dma_free_attrs(dev, size, cpu_addr, dma_handle, &attrs);
+ }
+ 
+-static inline int dma_mmap_writecombine(struct device *dev, struct vm_area_struct *vma,
+-		      void *cpu_addr, dma_addr_t dma_addr, size_t size)
+-{
+-	DEFINE_DMA_ATTRS(attrs);
+-	dma_set_attr(DMA_ATTR_WRITE_COMBINE, &attrs);
+-	return dma_mmap_attrs(dev, vma, cpu_addr, dma_addr, size, &attrs);
+-}
+-
+ /*
+  * This can be called during boot to increase the size of the consistent
+  * DMA region above it's default value of 2MB. It must be called before the
+diff --git a/arch/powerpc/include/asm/dma-mapping.h b/arch/powerpc/include/asm/dma-mapping.h
+index 62678e3..7816087 100644
+--- a/arch/powerpc/include/asm/dma-mapping.h
++++ b/arch/powerpc/include/asm/dma-mapping.h
+@@ -27,7 +27,10 @@ extern void *dma_direct_alloc_coherent(struct device *dev, size_t size,
+ extern void dma_direct_free_coherent(struct device *dev, size_t size,
+ 				     void *vaddr, dma_addr_t dma_handle,
+ 				     struct dma_attrs *attrs);
+-
++extern int dma_direct_mmap_coherent(struct device *dev,
++				    struct vm_area_struct *vma,
++				    void *cpu_addr, dma_addr_t handle,
++				    size_t size, struct dma_attrs *attrs);
+ 
+ #ifdef CONFIG_NOT_COHERENT_CACHE
+ /*
+@@ -207,11 +210,8 @@ static inline phys_addr_t dma_to_phys(struct device *dev, dma_addr_t daddr)
+ #define dma_alloc_noncoherent(d, s, h, f) dma_alloc_coherent(d, s, h, f)
+ #define dma_free_noncoherent(d, s, v, h) dma_free_coherent(d, s, v, h)
+ 
+-extern int dma_mmap_coherent(struct device *, struct vm_area_struct *,
+-			     void *, dma_addr_t, size_t);
+ #define ARCH_HAS_DMA_MMAP_COHERENT
+ 
+-
+ static inline void dma_cache_sync(struct device *dev, void *vaddr, size_t size,
+ 		enum dma_data_direction direction)
+ {
+diff --git a/arch/powerpc/kernel/dma-iommu.c b/arch/powerpc/kernel/dma-iommu.c
+index bcfdcd2..2d7bb8c 100644
+--- a/arch/powerpc/kernel/dma-iommu.c
++++ b/arch/powerpc/kernel/dma-iommu.c
+@@ -109,6 +109,7 @@ static u64 dma_iommu_get_required_mask(struct device *dev)
+ struct dma_map_ops dma_iommu_ops = {
+ 	.alloc			= dma_iommu_alloc_coherent,
+ 	.free			= dma_iommu_free_coherent,
++	.mmap			= dma_direct_mmap_coherent,
+ 	.map_sg			= dma_iommu_map_sg,
+ 	.unmap_sg		= dma_iommu_unmap_sg,
+ 	.dma_supported		= dma_iommu_dma_supported,
+diff --git a/arch/powerpc/kernel/dma-swiotlb.c b/arch/powerpc/kernel/dma-swiotlb.c
+index 4ab88da..4694365 100644
+--- a/arch/powerpc/kernel/dma-swiotlb.c
++++ b/arch/powerpc/kernel/dma-swiotlb.c
+@@ -49,6 +49,7 @@ static u64 swiotlb_powerpc_get_required(struct device *dev)
+ struct dma_map_ops swiotlb_dma_ops = {
+ 	.alloc = dma_direct_alloc_coherent,
+ 	.free = dma_direct_free_coherent,
++	.mmap = dma_direct_mmap_coherent,
+ 	.map_sg = swiotlb_map_sg_attrs,
+ 	.unmap_sg = swiotlb_unmap_sg_attrs,
+ 	.dma_supported = swiotlb_dma_supported,
+diff --git a/arch/powerpc/kernel/dma.c b/arch/powerpc/kernel/dma.c
+index b1ec983..062bf20 100644
+--- a/arch/powerpc/kernel/dma.c
++++ b/arch/powerpc/kernel/dma.c
+@@ -65,6 +65,24 @@ void dma_direct_free_coherent(struct device *dev, size_t size,
+ #endif
+ }
+ 
++int dma_direct_mmap_coherent(struct device *dev, struct vm_area_struct *vma,
++			     void *cpu_addr, dma_addr_t handle, size_t size,
++			     struct dma_attrs *attrs)
++{
++	unsigned long pfn;
++
++#ifdef CONFIG_NOT_COHERENT_CACHE
++	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
++	pfn = __dma_get_coherent_pfn((unsigned long)cpu_addr);
++#else
++	pfn = page_to_pfn(virt_to_page(cpu_addr));
++#endif
++	return remap_pfn_range(vma, vma->vm_start,
++			       pfn + vma->vm_pgoff,
++			       vma->vm_end - vma->vm_start,
++			       vma->vm_page_prot);
++}
++
+ static int dma_direct_map_sg(struct device *dev, struct scatterlist *sgl,
+ 			     int nents, enum dma_data_direction direction,
+ 			     struct dma_attrs *attrs)
+@@ -154,6 +172,7 @@ static inline void dma_direct_sync_single(struct device *dev,
+ struct dma_map_ops dma_direct_ops = {
+ 	.alloc				= dma_direct_alloc_coherent,
+ 	.free				= dma_direct_free_coherent,
++	.mmap				= dma_direct_mmap_coherent,
+ 	.map_sg				= dma_direct_map_sg,
+ 	.unmap_sg			= dma_direct_unmap_sg,
+ 	.dma_supported			= dma_direct_dma_supported,
+@@ -211,20 +230,3 @@ static int __init dma_init(void)
+ }
+ fs_initcall(dma_init);
+ 
+-int dma_mmap_coherent(struct device *dev, struct vm_area_struct *vma,
+-		      void *cpu_addr, dma_addr_t handle, size_t size)
+-{
+-	unsigned long pfn;
+-
+-#ifdef CONFIG_NOT_COHERENT_CACHE
+-	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+-	pfn = __dma_get_coherent_pfn((unsigned long)cpu_addr);
+-#else
+-	pfn = page_to_pfn(virt_to_page(cpu_addr));
+-#endif
+-	return remap_pfn_range(vma, vma->vm_start,
+-			       pfn + vma->vm_pgoff,
+-			       vma->vm_end - vma->vm_start,
+-			       vma->vm_page_prot);
+-}
+-EXPORT_SYMBOL_GPL(dma_mmap_coherent);
+diff --git a/arch/powerpc/kernel/vio.c b/arch/powerpc/kernel/vio.c
+index cb87301..dda3d9a 100644
+--- a/arch/powerpc/kernel/vio.c
++++ b/arch/powerpc/kernel/vio.c
+@@ -613,6 +613,7 @@ static u64 vio_dma_get_required_mask(struct device *dev)
+ struct dma_map_ops vio_dma_mapping_ops = {
+ 	.alloc             = vio_dma_iommu_alloc_coherent,
+ 	.free              = vio_dma_iommu_free_coherent,
++	.mmap		   = dma_direct_mmap_coherent,
+ 	.map_sg            = vio_dma_iommu_map_sg,
+ 	.unmap_sg          = vio_dma_iommu_unmap_sg,
+ 	.map_page          = vio_dma_iommu_map_page,
+diff --git a/drivers/base/dma-mapping.c b/drivers/base/dma-mapping.c
+index 6f3676f..db5db02 100644
+--- a/drivers/base/dma-mapping.c
++++ b/drivers/base/dma-mapping.c
+@@ -10,6 +10,7 @@
+ #include <linux/dma-mapping.h>
+ #include <linux/export.h>
+ #include <linux/gfp.h>
++#include <asm-generic/dma-coherent.h>
+ 
+ /*
+  * Managed DMA API
+@@ -218,3 +219,33 @@ void dmam_release_declared_memory(struct device *dev)
+ EXPORT_SYMBOL(dmam_release_declared_memory);
+ 
+ #endif
++
++/*
++ * Create userspace mapping for the DMA-coherent memory.
++ */
++int dma_common_mmap(struct device *dev, struct vm_area_struct *vma,
++		    void *cpu_addr, dma_addr_t dma_addr, size_t size)
++{
++	int ret = -ENXIO;
++#ifdef CONFIG_MMU
++	unsigned long user_count = (vma->vm_end - vma->vm_start) >> PAGE_SHIFT;
++	unsigned long count = PAGE_ALIGN(size) >> PAGE_SHIFT;
++	unsigned long pfn = page_to_pfn(virt_to_page(cpu_addr));
++	unsigned long off = vma->vm_pgoff;
++
++	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
++
++	if (dma_mmap_from_coherent(dev, vma, cpu_addr, size, &ret))
++		return ret;
++
++	if (off < count && user_count <= (count - off)) {
++		ret = remap_pfn_range(vma, vma->vm_start,
++				      pfn + off,
++				      user_count << PAGE_SHIFT,
++				      vma->vm_page_prot);
++	}
++#endif	/* CONFIG_MMU */
++
++	return ret;
++}
++EXPORT_SYMBOL(dma_common_mmap);
+diff --git a/include/asm-generic/dma-coherent.h b/include/asm-generic/dma-coherent.h
+index abfb268..2be8a2d 100644
+--- a/include/asm-generic/dma-coherent.h
++++ b/include/asm-generic/dma-coherent.h
+@@ -29,6 +29,7 @@ dma_mark_declared_memory_occupied(struct device *dev,
+ #else
+ #define dma_alloc_from_coherent(dev, size, handle, ret) (0)
+ #define dma_release_from_coherent(dev, order, vaddr) (0)
++#define dma_mmap_from_coherent(dev, vma, vaddr, order, ret) (0)
+ #endif
+ 
+ #endif
+diff --git a/include/asm-generic/dma-mapping-common.h b/include/asm-generic/dma-mapping-common.h
+index 2e248d8..9073aeb 100644
+--- a/include/asm-generic/dma-mapping-common.h
++++ b/include/asm-generic/dma-mapping-common.h
+@@ -176,4 +176,41 @@ dma_sync_sg_for_device(struct device *dev, struct scatterlist *sg,
+ #define dma_map_sg(d, s, n, r) dma_map_sg_attrs(d, s, n, r, NULL)
+ #define dma_unmap_sg(d, s, n, r) dma_unmap_sg_attrs(d, s, n, r, NULL)
+ 
++extern int dma_common_mmap(struct device *dev, struct vm_area_struct *vma,
++			   void *cpu_addr, dma_addr_t dma_addr, size_t size);
++
++/**
++ * dma_mmap_attrs - map a coherent DMA allocation into user space
++ * @dev: valid struct device pointer, or NULL for ISA and EISA-like devices
++ * @vma: vm_area_struct describing requested user mapping
++ * @cpu_addr: kernel CPU-view address returned from dma_alloc_attrs
++ * @handle: device-view address returned from dma_alloc_attrs
++ * @size: size of memory originally requested in dma_alloc_attrs
++ * @attrs: attributes of mapping properties requested in dma_alloc_attrs
++ *
++ * Map a coherent DMA buffer previously allocated by dma_alloc_attrs
++ * into user space.  The coherent DMA buffer must not be freed by the
++ * driver until the user space mapping has been released.
++ */
++static inline int
++dma_mmap_attrs(struct device *dev, struct vm_area_struct *vma, void *cpu_addr,
++	       dma_addr_t dma_addr, size_t size, struct dma_attrs *attrs)
++{
++	struct dma_map_ops *ops = get_dma_ops(dev);
++	BUG_ON(!ops);
++	if (ops->mmap)
++		return ops->mmap(dev, vma, cpu_addr, dma_addr, size, attrs);
++	return dma_common_mmap(dev, vma, cpu_addr, dma_addr, size);
++}
++
++#define dma_mmap_coherent(d, v, c, h, s) dma_mmap_attrs(d, v, c, h, s, NULL)
++
++static inline int dma_mmap_writecombine(struct device *dev, struct vm_area_struct *vma,
++		      void *cpu_addr, dma_addr_t dma_addr, size_t size)
++{
++	DEFINE_DMA_ATTRS(attrs);
++	dma_set_attr(DMA_ATTR_WRITE_COMBINE, &attrs);
++	return dma_mmap_attrs(dev, vma, cpu_addr, dma_addr, size, &attrs);
++}
++
+ #endif
 -- 
-Thanks and Regards
-Srikar
+1.7.1.569.g6f426
 
