@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932514Ab2FOPqX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 11:46:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61543 "EHLO mx1.redhat.com"
+	id S932527Ab2FOPqh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 11:46:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12872 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932158Ab2FOPqS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 11:46:18 -0400
-Date: Fri, 15 Jun 2012 17:43:28 +0200
+	id S932135Ab2FOPqf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 11:46:35 -0400
+Date: Fri, 15 Jun 2012 17:43:53 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Anton Arapov <anton@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 03/15] uprobes: write_opcode()->__replace_page() can race
-	with try_to_unmap()
-Message-ID: <20120615154328.GA9571@redhat.com>
+Subject: [PATCH 12/15] uprobes: simplify the usage of uprobe->pending_list
+Message-ID: <20120615154353.GA9614@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -25,117 +24,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-write_opcode() gets old_page via get_user_pages() and then calls
-__replace_page() which assumes that this old_page is still mapped
-after pte_offset_map_lock().
+uprobe->pending_list is only used to create the temporary list,
+it has no meaning after we drop uprobes_mmap_hash(inode).
 
-This is not true if this old_page was already try_to_unmap()'ed,
-and in this case everything __replace_page() does with old_page
-is wrong. Just for example, put_page() is not balanced.
-
-I think it is possible to teach __replace_page() to handle this
-unlikely case correctly, but this patch simply changes it to use
-page_check_address() and return -EAGAIN if it fails. The caller
-should notice this error code and retry.
-
-Note: write_opcode() asks for the cleanups, I'll try to do this
-in a separate patch.
+No need to initialize this node or remove it from tmp_list, and
+we can use list_for_each_entry().
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 ---
- kernel/events/uprobes.c |   41 +++++++++++++----------------------------
- 1 files changed, 13 insertions(+), 28 deletions(-)
+ kernel/events/uprobes.c |   12 ++++--------
+ 1 files changed, 4 insertions(+), 8 deletions(-)
 
 diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 604930b..3ccdb29 100644
+index b9c61bd..7d5c78f 100644
 --- a/kernel/events/uprobes.c
 +++ b/kernel/events/uprobes.c
-@@ -129,33 +129,17 @@ static loff_t vma_address(struct vm_area_struct *vma, loff_t offset)
- static int __replace_page(struct vm_area_struct *vma, struct page *page, struct page *kpage)
+@@ -513,7 +513,6 @@ static struct uprobe *alloc_uprobe(struct inode *inode, loff_t offset)
+ 	uprobe->inode = igrab(inode);
+ 	uprobe->offset = offset;
+ 	init_rwsem(&uprobe->consumer_rwsem);
+-	INIT_LIST_HEAD(&uprobe->pending_list);
+ 
+ 	/* add to uprobes_tree, sorted on inode:offset */
+ 	cur_uprobe = insert_uprobe(uprobe);
+@@ -1037,7 +1036,7 @@ static void build_probe_list(struct inode *inode, struct list_head *head)
+ int uprobe_mmap(struct vm_area_struct *vma)
  {
- 	struct mm_struct *mm = vma->vm_mm;
--	pgd_t *pgd;
--	pud_t *pud;
--	pmd_t *pmd;
--	pte_t *ptep;
--	spinlock_t *ptl;
- 	unsigned long addr;
--	int err = -EFAULT;
-+	spinlock_t *ptl;
-+	pte_t *ptep;
+ 	struct list_head tmp_list;
+-	struct uprobe *uprobe, *u;
++	struct uprobe *uprobe;
+ 	struct inode *inode;
+ 	int ret, count;
  
- 	addr = page_address_in_vma(page, vma);
- 	if (addr == -EFAULT)
--		goto out;
+@@ -1055,10 +1054,9 @@ int uprobe_mmap(struct vm_area_struct *vma)
+ 	ret = 0;
+ 	count = 0;
+ 
+-	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
++	list_for_each_entry(uprobe, &tmp_list, pending_list) {
+ 		loff_t vaddr;
+ 
+-		list_del(&uprobe->pending_list);
+ 		if (!ret) {
+ 			vaddr = vma_address(vma, uprobe->offset);
+ 
+@@ -1106,7 +1104,7 @@ int uprobe_mmap(struct vm_area_struct *vma)
+ void uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned long end)
+ {
+ 	struct list_head tmp_list;
+-	struct uprobe *uprobe, *u;
++	struct uprobe *uprobe;
+ 	struct inode *inode;
+ 
+ 	if (!atomic_read(&uprobe_events) || !valid_vma(vma, false))
+@@ -1123,12 +1121,10 @@ void uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned lon
+ 	mutex_lock(uprobes_mmap_hash(inode));
+ 	build_probe_list(inode, &tmp_list);
+ 
+-	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
++	list_for_each_entry(uprobe, &tmp_list, pending_list) {
+ 		loff_t vaddr;
+ 
+-		list_del(&uprobe->pending_list);
+ 		vaddr = vma_address(vma, uprobe->offset);
 -
--	pgd = pgd_offset(mm, addr);
--	if (!pgd_present(*pgd))
--		goto out;
--
--	pud = pud_offset(pgd, addr);
--	if (!pud_present(*pud))
--		goto out;
-+		return -EFAULT;
- 
--	pmd = pmd_offset(pud, addr);
--	if (!pmd_present(*pmd))
--		goto out;
--
--	ptep = pte_offset_map_lock(mm, pmd, addr, &ptl);
-+	ptep = page_check_address(page, mm, addr, &ptl, 0);
- 	if (!ptep)
--		goto out;
-+		return -EAGAIN;
- 
- 	get_page(kpage);
- 	page_add_new_anon_rmap(kpage, vma, addr);
-@@ -174,10 +158,8 @@ static int __replace_page(struct vm_area_struct *vma, struct page *page, struct
- 		try_to_free_swap(page);
- 	put_page(page);
- 	pte_unmap_unlock(ptep, ptl);
--	err = 0;
- 
--out:
--	return err;
-+	return 0;
- }
- 
- /**
-@@ -222,9 +204,10 @@ static int write_opcode(struct arch_uprobe *auprobe, struct mm_struct *mm,
- 	void *vaddr_old, *vaddr_new;
- 	struct vm_area_struct *vma;
- 	struct uprobe *uprobe;
-+	unsigned long pgoff;
- 	loff_t addr;
- 	int ret;
--
-+retry:
- 	/* Read the page with vaddr into memory */
- 	ret = get_user_pages(NULL, mm, vaddr, 1, 0, 0, &old_page, &vma);
- 	if (ret <= 0)
-@@ -269,9 +252,9 @@ static int write_opcode(struct arch_uprobe *auprobe, struct mm_struct *mm,
- 	memcpy(vaddr_new, vaddr_old, PAGE_SIZE);
- 
- 	/* poke the new insn in, ASSUMES we don't cross page boundary */
--	vaddr &= ~PAGE_MASK;
--	BUG_ON(vaddr + UPROBE_SWBP_INSN_SIZE > PAGE_SIZE);
--	memcpy(vaddr_new + vaddr, &opcode, UPROBE_SWBP_INSN_SIZE);
-+	pgoff = (vaddr & ~PAGE_MASK);
-+	BUG_ON(pgoff + UPROBE_SWBP_INSN_SIZE > PAGE_SIZE);
-+	memcpy(vaddr_new + pgoff, &opcode, UPROBE_SWBP_INSN_SIZE);
- 
- 	kunmap_atomic(vaddr_new);
- 	kunmap_atomic(vaddr_old);
-@@ -291,6 +274,8 @@ unlock_out:
- put_out:
- 	put_page(old_page);
- 
-+	if (unlikely(ret == -EAGAIN))
-+		goto retry;
- 	return ret;
- }
- 
+ 		if (vaddr >= start && vaddr < end) {
+ 			/*
+ 			 * An unregister could have removed the probe before
 -- 
 1.5.5.1
 
