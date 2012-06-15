@@ -1,33 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753329Ab2FOKZU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 06:25:20 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41558 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751127Ab2FOKZS convert rfc822-to-8bit (ORCPT
+	id S1752332Ab2FOK2s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 06:28:48 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:43483 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751002Ab2FOK2r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 06:25:18 -0400
-Message-ID: <1339755916.2559.53.camel@twins>
-Subject: Re: Need of automatic scripts for beginners
-From: Peter Zijlstra <peterz@infradead.org>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Anil Nair <anilcoll90@gmail.com>, lkml <linux-kernel@vger.kernel.org>,
-        linux-usb@vger.kernel.org
-Date: Fri, 15 Jun 2012 12:25:16 +0200
-In-Reply-To: <20120615034410.GA6380@kroah.com>
-References: <CAHkwNTnsVW6psWORXAEWVeQ+-ZQauY43SbE0P+be3FQD61PaOA@mail.gmail.com>
-	 <20120615034410.GA6380@kroah.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Fri, 15 Jun 2012 06:28:47 -0400
+Date: Fri, 15 Jun 2012 12:29:06 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Jim Cromie <jim.cromie@gmail.com>
+Cc: rusty@rustcorp.com.au, linux-kernel@vger.kernel.org, pebolle@tiscali.nl,
+        bp@amd64.org, pawel.moll@arm.com, jbaron@redhat.com,
+        gregkh@linuxfoundation.org
+Subject: Re: [PATCH] init: add comments to keep initcall-names in sync with
+ initcall levels
+Message-ID: <20120615102906.GA6083@aftab.osrc.amd.com>
+References: <1339711260-1349-1-git-send-email-jim.cromie@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339711260-1349-1-git-send-email-jim.cromie@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-06-14 at 20:44 -0700, Greg KH wrote:
-> If your distro is set up properly, that should be all that you need to
-> do. 
+On Thu, Jun 14, 2012 at 04:00:59PM -0600, Jim Cromie wrote:
+> main.c has initcall_level_names[] for parse_args to print in debug messages,
+> add comments to keep them in sync with initcalls defined in init.h.
+> 
+> Also add "loadable" into comment re not using *_initcall macros in
+> modules, to disambiguate from kernel/params.c and other builtins.
+> 
+> Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
 
-Last time I tried that it didn't actually work due to a lot
-of /sbin/installkernel scrips omitting to generate an initrd or whatnot.
+This time I actually build-tested it.
+
+Acked-by: Borislav Petkov <borislav.petkov@amd.com>
+
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
