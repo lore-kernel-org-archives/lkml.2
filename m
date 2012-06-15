@@ -1,84 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758470Ab2FOWvq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 18:51:46 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41949 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758052Ab2FOWvp (ORCPT
+	id S1758514Ab2FOWvx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 18:51:53 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:57513 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758478Ab2FOWvv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 18:51:45 -0400
-From: Namhyung Kim <namhyung@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 3/3] tools lib traceevent: Introduce pevent_strerror
-In-Reply-To: <1339800312.25903.29.camel@gandalf.stny.rr.com> (Steven Rostedt's
-	message of "Fri, 15 Jun 2012 18:45:12 -0400")
-References: <1339486959-25241-1-git-send-email-namhyung@kernel.org>
-	<1339486959-25241-4-git-send-email-namhyung@kernel.org>
-	<1339763971.13377.370.camel@gandalf.stny.rr.com>
-	<87k3z843i9.fsf@gmail.com>
-	<1339800312.25903.29.camel@gandalf.stny.rr.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
-Date: Sat, 16 Jun 2012 07:51:36 +0900
-Message-ID: <87d350429z.fsf@gmail.com>
+	Fri, 15 Jun 2012 18:51:51 -0400
+X-Originating-IP: 217.70.178.145
+X-Originating-IP: 50.43.46.74
+Date: Fri, 15 Jun 2012 15:51:30 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH tip/core/rcu 07/15] rcu: Move rcu_barrier_completion to
+ rcu_state structure
+Message-ID: <20120615225130.GC5226@leaf>
+References: <20120615210550.GA27506@linux.vnet.ibm.com>
+ <1339794370-28119-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1339794370-28119-7-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339794370-28119-7-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven Rostedt <rostedt@goodmis.org> writes:
-> On Sat, 2012-06-16 at 07:25 +0900, Namhyung Kim wrote:
->> Steven Rostedt <rostedt@goodmis.org> writes:
->> > Here's a little macro trick to keep the strings and enums always in
->> > sync:
->> >
->> > #define __PEVENT_ERRNO_CODES \
->> >  _C(PEVENT_ERRNO__MEM_ALLOC_FAILED,	"failed to allocate memory"),	\
->> >  _C(PEVENT_ERRNO__PARSE_EVENT_FAILED,	"failed to parse event"),	\
->> >  _C(PEVENT_ERRNO__READ_ID_FAILED,	"failed to read event id"),	\
->> >  _C(PEVENT_ERRNO__READ_FORMAT_FAILED,	"failed to read event format"),	\
->> >  _C(PEVENT_ERRNO__READ_PRINT_FAILED,	"failed to read event print fmt"),\
->> >  _C(PEVENT_ERRNO__OLD_FTRACE_ARG_FAILED,"failed to allocate field name for ftrace"),
->> >
->> > #undef _C
->> > #define _C(a,b) b
->> > static const char * const pevent_error_str[] = { __PEVENT_ERROR_CODES };
->> >
->> 
->> Cool. Maybe even shorter:
->> 
->> #define __PEVENT_ERRNO_CODES \
->>  _C(MEM_ALLOC_FAILED,	"failed to allocate memory"),	\
->>  _C(PARSE_EVENT_FAILED,	"failed to parse event"),	\
->>  _C(READ_ID_FAILED,	"failed to read event id"),	\
->>  _C(READ_FORMAT_FAILED,	"failed to read event format"),	\
->>  _C(READ_PRINT_FAILED,	"failed to read event print fmt"), \
->>  _C(OLD_FTRACE_ARG_FAILED, "failed to allocate field name for ftrace"),
->> 
->> #undef _C
->> #define _C(a,b) PEVENT_ERRNO__ ## a
->
-> I think you wanted b on this one. ;-)
->
+On Fri, Jun 15, 2012 at 02:06:02PM -0700, Paul E. McKenney wrote:
+> From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+> 
+> In order to allow each RCU flavor to concurrently execute its
+> rcu_barrier() function, it is necessary to move the relevant
+> state to the rcu_state structure.  This commit therefore moves the
+> rcu_barrier_completion global variable to a new ->barrier_completion
+> field in the rcu_state structure.
+> 
+> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-Oops, right. :)
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
-
->> static const char * const pevent_error_str[] = { __PEVENT_ERROR_CODES };
->> 
->> But it make them less grep-able?
->
-> Yeah, that is a problem, although we could perhaps teach ctags and etags
-> how to find them.
->
-
-Ok, then I'll go with yours.
-
-Thanks,
-Namhyung
+>  kernel/rcutree.c |    9 ++++-----
+>  kernel/rcutree.h |    1 +
+>  2 files changed, 5 insertions(+), 5 deletions(-)
+> 
+> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> index d363416..a946437 100644
+> --- a/kernel/rcutree.c
+> +++ b/kernel/rcutree.c
+> @@ -158,7 +158,6 @@ unsigned long rcutorture_vernum;
+>  /* State information for rcu_barrier() and friends. */
+>  
+>  static DEFINE_MUTEX(rcu_barrier_mutex);
+> -static struct completion rcu_barrier_completion;
+>  
+>  /*
+>   * Return true if an RCU grace period is in progress.  The ACCESS_ONCE()s
+> @@ -2272,7 +2271,7 @@ static void rcu_barrier_callback(struct rcu_head *rhp)
+>  	struct rcu_state *rsp = rdp->rsp;
+>  
+>  	if (atomic_dec_and_test(&rsp->barrier_cpu_count))
+> -		complete(&rcu_barrier_completion);
+> +		complete(&rsp->barrier_completion);
+>  }
+>  
+>  /*
+> @@ -2322,7 +2321,7 @@ static void _rcu_barrier(struct rcu_state *rsp)
+>  	 * 6.	Both rcu_barrier_callback() callbacks are invoked, awakening
+>  	 *	us -- but before CPU 1's orphaned callbacks are invoked!!!
+>  	 */
+> -	init_completion(&rcu_barrier_completion);
+> +	init_completion(&rsp->barrier_completion);
+>  	atomic_set(&rsp->barrier_cpu_count, 1);
+>  	raw_spin_lock_irqsave(&rsp->onofflock, flags);
+>  	rsp->rcu_barrier_in_progress = current;
+> @@ -2372,10 +2371,10 @@ static void _rcu_barrier(struct rcu_state *rsp)
+>  	 * CPU, and thus each counted, remove the initial count.
+>  	 */
+>  	if (atomic_dec_and_test(&rsp->barrier_cpu_count))
+> -		complete(&rcu_barrier_completion);
+> +		complete(&rsp->barrier_completion);
+>  
+>  	/* Wait for all rcu_barrier_callback() callbacks to be invoked. */
+> -	wait_for_completion(&rcu_barrier_completion);
+> +	wait_for_completion(&rsp->barrier_completion);
+>  
+>  	/* Other rcu_barrier() invocations can now safely proceed. */
+>  	mutex_unlock(&rcu_barrier_mutex);
+> diff --git a/kernel/rcutree.h b/kernel/rcutree.h
+> index e7d29b7..56fb8d4 100644
+> --- a/kernel/rcutree.h
+> +++ b/kernel/rcutree.h
+> @@ -387,6 +387,7 @@ struct rcu_state {
+>  						/* Task doing rcu_barrier(), */
+>  						/*  or NULL if no barrier. */
+>  	atomic_t barrier_cpu_count;		/* # CPUs waiting on. */
+> +	struct completion barrier_completion;	/* Wake at barrier end. */
+>  	raw_spinlock_t fqslock;			/* Only one task forcing */
+>  						/*  quiescent states. */
+>  	unsigned long jiffies_force_qs;		/* Time at which to invoke */
+> -- 
+> 1.7.8
+> 
