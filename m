@@ -1,60 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757434Ab2FYV0N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jun 2012 17:26:13 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13021 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756364Ab2FYV0L (ORCPT
+	id S1757406Ab2FYV3q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jun 2012 17:29:46 -0400
+Received: from mail-lb0-f202.google.com ([209.85.217.202]:39763 "EHLO
+	mail-lb0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756237Ab2FYV3o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jun 2012 17:26:11 -0400
-X-Authority-Analysis: v=2.0 cv=cIliQyiN c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=VwQbUJbxAAAA:8 a=a97AsXnzBnMjU2zO5usA:9 a=PUjeQqilurYA:10 a=E6k37eg1NvgA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1340659570.26736.6.camel@gandalf.stny.rr.com>
-Subject: [ANNOUNCE] 3.4.4-rt13
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Date: Mon, 25 Jun 2012 17:26:10 -0400
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1+b1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 25 Jun 2012 17:29:44 -0400
+Message-Id: <4fe8d847.0fbd0e0a.7895.ffffa29fSMTPIN_ADDED@gmr-mx.google.com>
+From: Andrew Hunter <ahh@google.com>
+Date: Fri, 15 Jun 2012 15:18:26 -0700
+Subject: [PATCH 1/1] core-kernel: use multiply instead of shifts in hash_64
+Apparently-To: <ahh@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+To: unlisted-recipients:; (no To-header on input)
 
+hash_64(val) = val * (a 64-bit constant).  It is "optimized" by
+replacing the multiply by a bunch of shifts and adds.  On modern
+machines, this is not an optimization; remove it.
 
-Dear RT Folks,
+Running this hash function in a independent benchmark, it's about three times
+as fast (1ns vs 3ns) with a multiply as with a shift on Westmere. It's also
+considerably smaller (and since we inline this function often, that matters.)
 
-I'm pleased to announce the 3.4.4-rt13 stable release.
+Signed-off-by: Andrew Hunter <ahh@google.com>
+Reviewed-by: Paul Turner <pjt@google.com>
+---
+ include/linux/hash.h |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
-
-This release is just an update to the new stable 3.4.4 version
-and no RT specific changes have been made.
-
-
-You can get this release via the git tree at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
-
-  Head SHA1: aca52edc9051d2b3ed11ee56bfac5e8e0a68e2b3
-
-
-Or to build 3.4.4-rt13 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.4.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.4.4.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/patch-3.4.4-rt13.patch.xz
-
-
-
-Enjoy,
-
--- Steve
-
-
-
+diff --git a/include/linux/hash.h b/include/linux/hash.h
+index b80506b..daabc3d 100644
+--- a/include/linux/hash.h
++++ b/include/linux/hash.h
+@@ -34,7 +34,9 @@
+ static inline u64 hash_64(u64 val, unsigned int bits)
+ {
+ 	u64 hash = val;
+-
++#if BITS_PER_LONG == 64
++	hash *= GOLDEN_RATIO_PRIME_64;
++#else
+ 	/*  Sigh, gcc can't optimise this alone like it does for 32 bits. */
+ 	u64 n = hash;
+ 	n <<= 18;
+@@ -49,7 +51,7 @@ static inline u64 hash_64(u64 val, unsigned int bits)
+ 	hash += n;
+ 	n <<= 2;
+ 	hash += n;
+-
++#endif
+ 	/* High bits are more random, so use them. */
+ 	return hash >> (64 - bits);
+ }
+-- 
+1.7.7.3
