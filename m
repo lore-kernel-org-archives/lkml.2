@@ -1,104 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932507Ab2FOQXA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 12:23:00 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49478 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932432Ab2FOQWr (ORCPT
+	id S932454Ab2FOQ1d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 12:27:33 -0400
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:42458 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932369Ab2FOQ1b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 12:22:47 -0400
-From: Will Deacon <will.deacon@arm.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, nico@fluxnic.net,
-        Will Deacon <will.deacon@arm.com>
-Subject: [PATCH v2 2/2] ARM: dcache: select DCACHE_WORD_ACCESS for little-endian ARMv6+ CPUs
-Date: Fri, 15 Jun 2012 17:22:37 +0100
-Message-Id: <1339777357-32479-3-git-send-email-will.deacon@arm.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1339777357-32479-1-git-send-email-will.deacon@arm.com>
-References: <1339777357-32479-1-git-send-email-will.deacon@arm.com>
+	Fri, 15 Jun 2012 12:27:31 -0400
+Message-ID: <4FDB6261.2030400@xenotime.net>
+Date: Fri, 15 Jun 2012 09:27:13 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Fengguang Wu <fengguang.wu@intel.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: error: implicit declarations of BUG/BUG_ON/WARN_ON/WARN_ON_ONCE
+References: <20120615143303.3b88edcbc3efc7b1bf81839b@canb.auug.org.au> <20120615065231.GA12272@localhost>
+In-Reply-To: <20120615065231.GA12272@localhost>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-DCACHE_WORD_ACCESS uses the word-at-a-time API for optimised string
-comparisons in the vfs layer.
+On 06/14/2012 11:52 PM, Fengguang Wu wrote:
 
-This patch implements support for load_unaligned_zeropad for ARM CPUs
-with native support for unaligned memory accesses (v6+) when running
-little-endian.
+> On Fri, Jun 15, 2012 at 02:33:03PM +1000, Stephen Rothwell wrote:
+>> Hi all,
+>>
+>> Changes since 20120614:
+>>
+>> My fixes tree contains:
+>> 	fix bug.h's inclusion of kernel.h
+> 
+> I got these errors with the attached randconfig. Not sure which change
+> triggers them.
 
-Reviewed-by: Nicolas Pitre <nico@linaro.org>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
----
- arch/arm/Kconfig                      |    1 +
- arch/arm/include/asm/word-at-a-time.h |   41 +++++++++++++++++++++++++++++++++
- 2 files changed, 42 insertions(+), 0 deletions(-)
+Ditto.  When CONFIG_BUG is not enabled.
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 77a2fad..bba8a56 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -47,6 +47,7 @@ config ARM
- 	select GENERIC_CLOCKEVENTS_BROADCAST if SMP
- 	select GENERIC_STRNCPY_FROM_USER
- 	select GENERIC_STRNLEN_USER
-+	select DCACHE_WORD_ACCESS if (CPU_V6 || CPU_V6K || CPU_V7) && !CPU_BIG_ENDIAN
- 	help
- 	  The ARM series is a line of low-power-consumption RISC chip designs
- 	  licensed by ARM Ltd and targeted at embedded applications and
-diff --git a/arch/arm/include/asm/word-at-a-time.h b/arch/arm/include/asm/word-at-a-time.h
-index 74b2d45..4d52f92 100644
---- a/arch/arm/include/asm/word-at-a-time.h
-+++ b/arch/arm/include/asm/word-at-a-time.h
-@@ -48,6 +48,47 @@ static inline unsigned long find_zero(unsigned long mask)
- 	return ret;
- }
- 
-+#ifdef CONFIG_DCACHE_WORD_ACCESS
-+
-+#define zero_bytemask(mask) (mask)
-+
-+/*
-+ * Load an unaligned word from kernel space.
-+ *
-+ * In the (very unlikely) case of the word being a page-crosser
-+ * and the next page not being mapped, take the exception and
-+ * return zeroes in the non-existing part.
-+ */
-+static inline unsigned long load_unaligned_zeropad(const void *addr)
-+{
-+	unsigned long ret, offset;
-+
-+	/* Load word from unaligned pointer addr */
-+	asm(
-+	"1:	ldr	%0, [%2]\n"
-+	"2:\n"
-+	"	.pushsection .fixup,\"ax\"\n"
-+	"	.align 2\n"
-+	"3:	and	%1, %2, #0x3\n"
-+	"	bic	%2, %2, #0x3\n"
-+	"	ldr	%0, [%2]\n"
-+	"	lsl	%1, %1, #0x3\n"
-+	"	lsr	%0, %0, %1\n"
-+	"	b	2b\n"
-+	"	.popsection\n"
-+	"	.pushsection __ex_table,\"a\"\n"
-+	"	.align	3\n"
-+	"	.long	1b, 3b\n"
-+	"	.popsection"
-+	: "=&r" (ret), "=&r" (offset)
-+	: "r" (addr), "Qo" (*(unsigned long *)addr));
-+
-+	return ret;
-+}
-+
-+
-+#endif	/* DCACHE_WORD_ACCESS */
-+
- #else	/* __ARMEB__ */
- #include <asm-generic/word-at-a-time.h>
- #endif
+
+>   CC      arch/x86/kernel/asm-offsets.s
+> In file included from /c/kernel-tests/mm/arch/x86/include/asm/atomic.h:6:0,
+>                  from /c/kernel-tests/mm/include/linux/atomic.h:4,
+>                  from /c/kernel-tests/mm/include/linux/crypto.h:20,
+>                  from /c/kernel-tests/mm/arch/x86/kernel/asm-offsets.c:8:
+> /c/kernel-tests/mm/arch/x86/include/asm/processor.h: In function ‘get_aperfmperf’:
+> /c/kernel-tests/mm/arch/x86/include/asm/processor.h:937:2: error: implicit declaration of function ‘WARN_ON_ONCE’ [-Werror=implicit-function-declaration]
+> In file included from /c/kernel-tests/mm/include/linux/thread_info.h:54:0,
+>                  from /c/kernel-tests/mm/include/linux/preempt.h:9,
+>                  from /c/kernel-tests/mm/include/linux/spinlock.h:50,
+>                  from /c/kernel-tests/mm/include/linux/mmzone.h:7,
+>                  from /c/kernel-tests/mm/include/linux/gfp.h:4,
+>                  from /c/kernel-tests/mm/include/linux/slab.h:12,
+>                  from /c/kernel-tests/mm/include/linux/crypto.h:24,
+>                  from /c/kernel-tests/mm/arch/x86/kernel/asm-offsets.c:8:
+> /c/kernel-tests/mm/arch/x86/include/asm/thread_info.h: In function ‘set_restore_sigmask’:
+> /c/kernel-tests/mm/arch/x86/include/asm/thread_info.h:250:2: error: implicit declaration of function ‘WARN_ON’ [-Werror=implicit-function-declaration]
+> In file included from /c/kernel-tests/mm/include/linux/mmzone.h:717:0,
+>                  from /c/kernel-tests/mm/include/linux/gfp.h:4,
+>                  from /c/kernel-tests/mm/include/linux/slab.h:12,
+>                  from /c/kernel-tests/mm/include/linux/crypto.h:24,
+>                  from /c/kernel-tests/mm/arch/x86/kernel/asm-offsets.c:8:
+> /c/kernel-tests/mm/include/linux/memory_hotplug.h: In function ‘generic_alloc_nodedata’:
+> /c/kernel-tests/mm/include/linux/memory_hotplug.h:152:2: error: implicit declaration of function ‘BUG’ [-Werror=implicit-function-declaration]                                               
+> In file included from /c/kernel-tests/mm/arch/x86/include/asm/apic.h:12:0,                                                                
+>                  from /c/kernel-tests/mm/arch/x86/include/asm/smp.h:13,
+>                  from /c/kernel-tests/mm/include/linux/smp.h:38,
+>                  from /c/kernel-tests/mm/include/linux/topology.h:33,
+>                  from /c/kernel-tests/mm/include/linux/gfp.h:7,
+>                  from /c/kernel-tests/mm/include/linux/slab.h:12,
+>                  from /c/kernel-tests/mm/include/linux/crypto.h:24,
+>                  from /c/kernel-tests/mm/arch/x86/kernel/asm-offsets.c:8:
+> /c/kernel-tests/mm/arch/x86/include/asm/fixmap.h: In function ‘virt_to_fix’:
+> /c/kernel-tests/mm/arch/x86/include/asm/fixmap.h:220:2: error: implicit declaration of function ‘BUG_ON’ [-Werror=implicit-function-declaration]
+>   HOSTLD  scripts/genksyms/genksyms
+> cc1: some warnings being treated as errors
+> make[2]: *** [arch/x86/kernel/asm-offsets.s] Error 1
+> make[1]: *** [prepare0] Error 2
+> make[1]: *** Waiting for unfinished jobs....
+> 
+> Thanks,
+> Fengguang
+
+
+
 -- 
-1.7.4.1
-
+~Randy
