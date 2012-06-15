@@ -1,91 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757791Ab2FOUO4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 16:14:56 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:34905 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757774Ab2FOUOx convert rfc822-to-8bit (ORCPT
+	id S1757595Ab2FOUNj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 16:13:39 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:34136 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755737Ab2FOUNd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 16:14:53 -0400
-MIME-Version: 1.0
-Message-ID: <4ffbc3e8-900b-4669-b6ab-e8c066f28c63@default>
-Date: Fri, 15 Jun 2012 13:13:29 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Nitin Gupta <ngupta@vflare.org>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Minchan Kim <minchan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Tejun Heo <tj@kernel.org>, David Howells <dhowells@redhat.com>,
-        x86@kernel.org, Nick Piggin <npiggin@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>
-Subject: RE: [PATCH v2 3/3] x86: Support local_flush_tlb_kernel_range
-References: <1337133919-4182-1-git-send-email-minchan@kernel.org>
- <1337133919-4182-3-git-send-email-minchan@kernel.org>
- <4FB4B29C.4010908@kernel.org> <1337266310.4281.30.camel@twins>
- <4FDB5107.3000308@linux.vnet.ibm.com>
- <7e925563-082b-468f-a7d8-829e819eeac0@default> <4FDB66B7.2010803@vflare.org>
- <10ea9d19-bd24-400c-8131-49f0b4e9e5ae@default>
- <4FDB8808.9010508@linux.vnet.ibm.com>
- <9c6c8ae0-0212-402d-a906-0d0c61e5e058@default> <4FDB92CF.1070603@vflare.org>
-In-Reply-To: <4FDB92CF.1070603@vflare.org>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.6  (510070) [OL
- 12.0.6607.1000 (x86)]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Fri, 15 Jun 2012 16:13:33 -0400
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 03/14] rcu: Add ACCESS_ONCE() to ->qlen accesses
+Date: Fri, 15 Jun 2012 13:13:04 -0700
+Message-Id: <1339791195-26389-3-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.8
+In-Reply-To: <1339791195-26389-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20120615201256.GA26120@linux.vnet.ibm.com>
+ <1339791195-26389-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12061520-7282-0000-0000-000009F3A8B1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Nitin Gupta [mailto:ngupta@vflare.org]
-> Subject: Re: [PATCH v2 3/3] x86: Support local_flush_tlb_kernel_range
-> 
-> On 06/15/2012 12:39 PM, Dan Magenheimer wrote:
-> >> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
-> >>> The decompression path calls lzo1x directly and it would be
-> >>> a huge pain to make lzo1x smart about page boundaries.  BUT
-> >>> since we know that the decompressed result will always fit
-> >>> into a page (actually exactly a page), you COULD do an extra
-> >>> copy to the end of the target page (using the same smart-
-> >>> about-page-boundaries copying code from above) and then do
-> >>> in-place decompression, knowing that the decompression will
-> >>> not cross a page boundary.  So, with the extra copy, the "pair
-> >>> mapping" can be avoided for decompression as well.
-> >>
-> >> This is an interesting thought.
-> >>
-> >> But this does result in a copy in the decompression (i.e. page fault)
-> >> path, where right now, it is copy free.  The compressed data is
-> >> decompressed directly from its zsmalloc allocation to the page allocated
-> >> in the fault path.
-> >
-> > The page fault occurs as soon as the lzo1x compression code starts anyway,
-> > as do all the cache faults... both just occur earlier, so the only
-> > additional cost is the actual cpu instructions to move the sequence of
-> > (compressed) bytes from the zsmalloc-allocated area to the end
-> > of the target page.
-> >
-> > TLB operations can be very expensive, not to mention (as the
-> > subject of this thread attests) non-portable.
-> 
-> Even if you go for copying chunks followed by decompression, it still
-> requires two kmaps and kunmaps. Each of these require one local TLB
-> invlpg. So, a total of 2 local maps + unmaps even with this approach.
+From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 
-That may be true for i386, but on a modern (non-highmem) machine those
-kmaps/kunmaps are free and "pair mappings" in the TLB are still expensive
-and not very portable.  Doesn't make sense to me to design for better
-performance on highmem and poorer performance on non-highmem.
+The _rcu_barrier() function accesses other CPUs' rcu_data structure's
+->qlen field without benefit of locking.  This commit therefore adds
+the required ACCESS_ONCE() wrappers around accesses and updates that
+need it.
+
+ACCESS_ONCE() is not needed when a CPU accesses its own ->qlen, or
+in code that cannot run while _rcu_barrier() is sampling ->qlen fields.
+
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+ kernel/rcutree.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index d938671..cdc101e 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -1349,7 +1349,7 @@ rcu_send_cbs_to_orphanage(int cpu, struct rcu_state *rsp,
+ 		rsp->qlen += rdp->qlen;
+ 		rdp->n_cbs_orphaned += rdp->qlen;
+ 		rdp->qlen_lazy = 0;
+-		rdp->qlen = 0;
++		ACCESS_ONCE(rdp->qlen) = 0;
+ 	}
  
-> The only additional requirement of zsmalloc is that it requires two
-> mappings which are virtually contiguous. The cost is the same in both
-> approaches but the current zsmalloc approach presents a much cleaner
-> interface.
+ 	/*
+@@ -1597,7 +1597,7 @@ static void rcu_do_batch(struct rcu_state *rsp, struct rcu_data *rdp)
+ 	}
+ 	smp_mb(); /* List handling before counting for rcu_barrier(). */
+ 	rdp->qlen_lazy -= count_lazy;
+-	rdp->qlen -= count;
++	ACCESS_ONCE(rdp->qlen) -= count;
+ 	rdp->n_cbs_invoked += count;
+ 
+ 	/* Reinstate batch limit if we have worked down the excess. */
+@@ -1886,7 +1886,7 @@ __call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu),
+ 	rdp = this_cpu_ptr(rsp->rda);
+ 
+ 	/* Add the callback to our list. */
+-	rdp->qlen++;
++	ACCESS_ONCE(rdp->qlen)++;
+ 	if (lazy)
+ 		rdp->qlen_lazy++;
+ 	else
+@@ -2420,7 +2420,7 @@ rcu_boot_init_percpu_data(int cpu, struct rcu_state *rsp)
+ 	rdp->grpmask = 1UL << (cpu - rdp->mynode->grplo);
+ 	init_callback_list(rdp);
+ 	rdp->qlen_lazy = 0;
+-	rdp->qlen = 0;
++	ACCESS_ONCE(rdp->qlen) = 0;
+ 	rdp->dynticks = &per_cpu(rcu_dynticks, cpu);
+ 	WARN_ON_ONCE(rdp->dynticks->dynticks_nesting != DYNTICK_TASK_EXIT_IDLE);
+ 	WARN_ON_ONCE(atomic_read(&rdp->dynticks->dynticks) != 1);
+-- 
+1.7.8
 
-OK, it's your code and I'm just making a suggestion. I will shut up now ;-)
-
-Dan
