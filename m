@@ -1,37 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756237Ab2FOKkN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 06:40:13 -0400
-Received: from mailrelay1.diasemi.com ([82.210.246.133]:32810 "EHLO
-	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751127Ab2FOKkM (ORCPT
+	id S1756578Ab2FOKk6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 06:40:58 -0400
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:25754 "EHLO
+	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754407Ab2FOKk5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 06:40:12 -0400
-Message-Id: <201206151038.q5FAcciG000985@sw-eng-lt-dc-vm2>
-From: Krystian Garbaciak <krystian.garbaciak@diasemi.com>
-Date: Fri, 15 Jun 2012 11:23:56 +0100
-Subject: [PATCH 0/2 v2] regmap: Add support for indirect addressing/paging into regmap.
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org,
-        Anthony Olech <Anthony.Olech@diasemi.com>
+	Fri, 15 Jun 2012 06:40:57 -0400
+X-IronPort-AV: E=Sophos;i="4.75,776,1330902000"; 
+   d="scan'208";a="163040177"
+Date: Fri, 15 Jun 2012 06:40:51 -0400 (EDT)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Fengguang Wu <wfg@linux.intel.com>
+cc: Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Christopher Li <sparse@chrisli.org>,
+        Josh Triplett <josh@freedesktop.org>,
+        Linus Torvalds <torvalds@ppc970.osdl.org>
+Subject: Re: automated warning notifications
+In-Reply-To: <20120615075810.GA13206@localhost>
+Message-ID: <alpine.DEB.2.02.1206150639130.1864@hadrien>
+References: <20120614172523.GB4400@mwanda> <20120615014835.GA5695@localhost> <20120615071222.GZ13539@mwanda> <20120615075810.GA13206@localhost>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Following patches bring simple, virtual address range based paging feature.
-This implementation requires bulk read/write to address single page
-(data window).
-Configuration let you define several virtual ranges for independent paging.
-At this version, it don't allow to nest virtual range into the other virtual
-range.
+> > Eventually I think we will want to set up a mailing list for this or
+> > we will start sending duplicate messages.
+>
+> Fair enough. How can we setup the mailing list? Once the list up, it
+> would be trivial for me to send sparse warnings out there.
 
-Krystian Garbaciak (2):
-  regmap: Move lock out from internal function _regmap_update_bits().
-  regmap: Add support for register indirect addressing.
+I'm not completely sure that a mailing list would completely eliminate
+duplicate messages.  But still, it could be the place for people who are
+interested in seeing such messages to go to, so it seems like a good
+thing.  I would be happy to contribute content :)
 
- drivers/base/regmap/internal.h |   17 +++
- drivers/base/regmap/regmap.c   |  217 ++++++++++++++++++++++++++++++++++++++--
- include/linux/regmap.h         |   39 +++++++
- 3 files changed, 263 insertions(+), 10 deletions(-)
-
+julia
