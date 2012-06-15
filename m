@@ -1,28 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757431Ab2FOTMM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 15:12:12 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47999 "EHLO
+	id S1757437Ab2FOTNF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 15:13:05 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48015 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756316Ab2FOTMJ (ORCPT
+	with ESMTP id S1753793Ab2FOTNC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 15:12:09 -0400
-Date: Fri, 15 Jun 2012 12:11:46 -0700
-From: tip-bot for Stephane Eranian <eranian@google.com>
-Message-ID: <tip-fc3e4d077d5c7a7bc1ad5bc143895b4e070e5a8b@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        jim.cromie@gmail.com, dsahern@gmail.com, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, acme@redhat.com, peterz@infradead.org,
-        jim.cromie@gmail.com, dsahern@gmail.com, tglx@linutronix.de,
-        mingo@elte.hu
-In-Reply-To: <20120515111111.GA9870@quad>
-References: <20120515111111.GA9870@quad>
+	Fri, 15 Jun 2012 15:13:02 -0400
+Date: Fri, 15 Jun 2012 12:12:39 -0700
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Message-ID: <tip-auwks8fpuhmrdpiefs55o5oz@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de,
+        dmitry.antipov@linaro.org
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, dmitry.antipov@linaro.org,
+        tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf stat: Fix default output file
-Git-Commit-ID: fc3e4d077d5c7a7bc1ad5bc143895b4e070e5a8b
+Subject: [tip:perf/urgent] perf tools:
+  Fix synthesizing tracepoint names from the perf.data headers
+Git-Commit-ID: cb9dd49e11f83d548c822d7022ac180b0518b25c
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,85 +32,116 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 15 Jun 2012 12:11:52 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 15 Jun 2012 12:12:45 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  fc3e4d077d5c7a7bc1ad5bc143895b4e070e5a8b
-Gitweb:     http://git.kernel.org/tip/fc3e4d077d5c7a7bc1ad5bc143895b4e070e5a8b
-Author:     Stephane Eranian <eranian@google.com>
-AuthorDate: Tue, 15 May 2012 13:11:11 +0200
+Commit-ID:  cb9dd49e11f83d548c822d7022ac180b0518b25c
+Gitweb:     http://git.kernel.org/tip/cb9dd49e11f83d548c822d7022ac180b0518b25c
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Mon, 11 Jun 2012 19:03:32 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 11 Jun 2012 11:20:21 -0300
+CommitDate: Tue, 12 Jun 2012 11:28:09 -0300
 
-perf stat: Fix default output file
+perf tools: Fix synthesizing tracepoint names from the perf.data headers
 
-The following commit:
+We need to use the per event info snapshoted at record time to
+synthesize the events name, so do it just after reading the perf.data
+headers, when we already processed the /sys events data, otherwise we'll
+end up using the local /sys that only by sheer luck will have the same
+tracepoint ID -> real event association.
 
-commit 56f3bae70638b33477a6015fd362ccfe354fd3ee
-Author: Jim Cromie <jim.cromie@gmail.com>
-Date:   Wed Sep 7 17:14:00 2011 -0600
+Example:
 
-    perf stat: Add --log-fd <N> option to redirect stderr elsewhere
+  # uname -a
+  Linux felicio.ghostprotocols.net 3.4.0-rc5+ #1 SMP Sat May 19 15:27:11 BRT 2012 x86_64 x86_64 x86_64 GNU/Linux
+  # perf record -e sched:sched_switch usleep 1
+  [ perf record: Woken up 1 times to write data ]
+  [ perf record: Captured and wrote 0.015 MB perf.data (~648 samples) ]
+  # cat /t/events/sched/sched_switch/id
+  279
+  # perf evlist -v
+  sched:sched_switch: sample_freq=1, type: 2, config: 279, size: 80, sample_type: 1159, read_format: 7, disabled: 1, inherit: 1, mmap: 1, comm: 1, enable_on_exec: 1, sample_id_all: 1, exclude_guest: 1
+  #
 
-introduced a bug in the way perf stat outputs the results by default,
-i.e., without the --log-fd or --output option. It would default to
-writing to file descriptor 0, i.e., stdin. Writing to stdin is allowed
-and is equivalent to writing to stdout. However, there is a major
-difference for any script that was already capturing the output of perf
-stat via redirection:
+So on the above machine the sched:sched_switch has tracepoint id 279, but on
+the machine were we'll analyse it it has a different id:
 
-    perf stat >/tmp/log .... or perf stat 2>/tmp/log ....
+  $ cat /t/events/sched/sched_switch/id
+  56
+  $ perf evlist -i /tmp/perf.data
+  kmem:mm_balancedirty_writeout
+  $ cat /t/events/kmem/mm_balancedirty_writeout/id
+  279
 
-They would not capture anything anymore. They would have to do:
-    perf stat 0>/tmp/log ...
+With this fix:
 
-This breaks compatibility with existing scripts and does not look very
-natural.
+  $ perf evlist -i /tmp/perf.data
+  sched:sched_switch
 
-This patch fixes the problem by looking at output_fd only when it was
-modified by user (> 0). It also checks that the value if positive.
-Passing --log-fd 0 is ignored.
-
-I would also argue that defaulting to stderr for the results is not the
-right thing to do, though this patch does not address this specific
-issue.
-
-Signed-off-by: Stephane Eranian <eranian@google.com>
+Reported-by: Dmitry Antipov <dmitry.antipov@linaro.org>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Jim Cromie <jim.cromie@gmail.com>
-Link: http://lkml.kernel.org/r/20120515111111.GA9870@quad
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-auwks8fpuhmrdpiefs55o5oz@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-stat.c |    8 +++++++-
- 1 files changed, 7 insertions(+), 1 deletions(-)
+ tools/perf/util/header.c |   32 ++++++++++++++++++++++++++++++++
+ 1 files changed, 32 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 2625899..07b5c77 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -1179,6 +1179,12 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
- 		fprintf(stderr, "cannot use both --output and --log-fd\n");
- 		usage_with_options(stat_usage, options);
- 	}
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 4f9b247..e909d43 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -2093,6 +2093,35 @@ static int read_attr(int fd, struct perf_header *ph,
+ 	return ret <= 0 ? -1 : 0;
+ }
+ 
++static int perf_evsel__set_tracepoint_name(struct perf_evsel *evsel)
++{
++	struct event_format *event = trace_find_event(evsel->attr.config);
++	char bf[128];
 +
-+	if (output_fd < 0) {
-+		fprintf(stderr, "argument to --log-fd must be a > 0\n");
-+		usage_with_options(stat_usage, options);
++	if (event == NULL)
++		return -1;
++
++	snprintf(bf, sizeof(bf), "%s:%s", event->system, event->name);
++	evsel->name = strdup(bf);
++	if (event->name == NULL)
++		return -1;
++
++	return 0;
++}
++
++static int perf_evlist__set_tracepoint_names(struct perf_evlist *evlist)
++{
++	struct perf_evsel *pos;
++
++	list_for_each_entry(pos, &evlist->entries, node) {
++		if (pos->attr.type == PERF_TYPE_TRACEPOINT &&
++		    perf_evsel__set_tracepoint_name(pos))
++			return -1;
 +	}
 +
- 	if (!output) {
- 		struct timespec tm;
- 		mode = append_file ? "a" : "w";
-@@ -1190,7 +1196,7 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
- 		}
- 		clock_gettime(CLOCK_REALTIME, &tm);
- 		fprintf(output, "# started on %s\n", ctime(&tm.tv_sec));
--	} else if (output_fd != 2) {
-+	} else if (output_fd > 0) {
- 		mode = append_file ? "a" : "w";
- 		output = fdopen(output_fd, mode);
- 		if (!output) {
++	return 0;
++}
++
+ int perf_session__read_header(struct perf_session *session, int fd)
+ {
+ 	struct perf_header *header = &session->header;
+@@ -2174,6 +2203,9 @@ int perf_session__read_header(struct perf_session *session, int fd)
+ 
+ 	lseek(fd, header->data_offset, SEEK_SET);
+ 
++	if (perf_evlist__set_tracepoint_names(session->evlist))
++		goto out_delete_evlist;
++
+ 	header->frozen = 1;
+ 	return 0;
+ out_errno:
