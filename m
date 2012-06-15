@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758024Ab2FOVGh (ORCPT <rfc822;w@1wt.eu>);
+	id S1758068Ab2FOVKN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 17:10:13 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:60120 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758013Ab2FOVGh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 15 Jun 2012 17:06:37 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:49633 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757882Ab2FOVGc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 17:06:32 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -14,91 +15,194 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
         fweisbec@gmail.com, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 07/15] rcu: Move rcu_barrier_completion to rcu_state structure
-Date: Fri, 15 Jun 2012 14:06:02 -0700
-Message-Id: <1339794370-28119-7-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 14/15] rcu: Use for_each_rcu_flavor() in TREE_RCU tracing
+Date: Fri, 15 Jun 2012 14:06:09 -0700
+Message-Id: <1339794370-28119-14-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
 In-Reply-To: <1339794370-28119-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20120615210550.GA27506@linux.vnet.ibm.com>
  <1339794370-28119-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12061521-5806-0000-0000-00001643FB2E
+x-cbid: 12061521-6148-0000-0000-000006BD8713
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-In order to allow each RCU flavor to concurrently execute its
-rcu_barrier() function, it is necessary to move the relevant
-state to the rcu_state structure.  This commit therefore moves the
-rcu_barrier_completion global variable to a new ->barrier_completion
-field in the rcu_state structure.
+This commit applies the new for_each_rcu_flavor() macro to the
+kernel/rcutree_trace.c file.
 
-Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/rcutree.c |    9 ++++-----
- kernel/rcutree.h |    1 +
- 2 files changed, 5 insertions(+), 5 deletions(-)
+ kernel/rcutree_trace.c |   95 +++++++++++++++++++-----------------------------
+ 1 files changed, 38 insertions(+), 57 deletions(-)
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index d363416..a946437 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -158,7 +158,6 @@ unsigned long rcutorture_vernum;
- /* State information for rcu_barrier() and friends. */
+diff --git a/kernel/rcutree_trace.c b/kernel/rcutree_trace.c
+index 057408b..c618665 100644
+--- a/kernel/rcutree_trace.c
++++ b/kernel/rcutree_trace.c
+@@ -48,22 +48,18 @@
  
- static DEFINE_MUTEX(rcu_barrier_mutex);
--static struct completion rcu_barrier_completion;
- 
- /*
-  * Return true if an RCU grace period is in progress.  The ACCESS_ONCE()s
-@@ -2272,7 +2271,7 @@ static void rcu_barrier_callback(struct rcu_head *rhp)
- 	struct rcu_state *rsp = rdp->rsp;
- 
- 	if (atomic_dec_and_test(&rsp->barrier_cpu_count))
--		complete(&rcu_barrier_completion);
-+		complete(&rsp->barrier_completion);
+ static void print_rcubarrier(struct seq_file *m, struct rcu_state *rsp)
+ {
+-	seq_printf(m, "%c bcc: %d nbd: %lu\n",
+-		   rsp->rcu_barrier_in_progress ? 'B' : '.',
++	seq_printf(m, "%s: %c bcc: %d nbd: %lu\n",
++		   rsp->name, rsp->rcu_barrier_in_progress ? 'B' : '.',
+ 		   atomic_read(&rsp->barrier_cpu_count),
+ 		   rsp->n_barrier_done);
  }
  
- /*
-@@ -2322,7 +2321,7 @@ static void _rcu_barrier(struct rcu_state *rsp)
- 	 * 6.	Both rcu_barrier_callback() callbacks are invoked, awakening
- 	 *	us -- but before CPU 1's orphaned callbacks are invoked!!!
- 	 */
--	init_completion(&rcu_barrier_completion);
-+	init_completion(&rsp->barrier_completion);
- 	atomic_set(&rsp->barrier_cpu_count, 1);
- 	raw_spin_lock_irqsave(&rsp->onofflock, flags);
- 	rsp->rcu_barrier_in_progress = current;
-@@ -2372,10 +2371,10 @@ static void _rcu_barrier(struct rcu_state *rsp)
- 	 * CPU, and thus each counted, remove the initial count.
- 	 */
- 	if (atomic_dec_and_test(&rsp->barrier_cpu_count))
--		complete(&rcu_barrier_completion);
-+		complete(&rsp->barrier_completion);
+ static int show_rcubarrier(struct seq_file *m, void *unused)
+ {
+-#ifdef CONFIG_TREE_PREEMPT_RCU
+-	seq_puts(m, "rcu_preempt: ");
+-	print_rcubarrier(m, &rcu_preempt_state);
+-#endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
+-	seq_puts(m, "rcu_sched: ");
+-	print_rcubarrier(m, &rcu_sched_state);
+-	seq_puts(m, "rcu_bh: ");
+-	print_rcubarrier(m, &rcu_bh_state);
++	struct rcu_state *rsp;
++
++	for_each_rcu_flavor(rsp)
++		print_rcubarrier(m, rsp);
+ 	return 0;
+ }
  
- 	/* Wait for all rcu_barrier_callback() callbacks to be invoked. */
--	wait_for_completion(&rcu_barrier_completion);
-+	wait_for_completion(&rsp->barrier_completion);
+@@ -129,24 +125,16 @@ static void print_one_rcu_data(struct seq_file *m, struct rcu_data *rdp)
+ 		   rdp->n_cbs_invoked, rdp->n_cbs_orphaned, rdp->n_cbs_adopted);
+ }
  
- 	/* Other rcu_barrier() invocations can now safely proceed. */
- 	mutex_unlock(&rcu_barrier_mutex);
-diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-index e7d29b7..56fb8d4 100644
---- a/kernel/rcutree.h
-+++ b/kernel/rcutree.h
-@@ -387,6 +387,7 @@ struct rcu_state {
- 						/* Task doing rcu_barrier(), */
- 						/*  or NULL if no barrier. */
- 	atomic_t barrier_cpu_count;		/* # CPUs waiting on. */
-+	struct completion barrier_completion;	/* Wake at barrier end. */
- 	raw_spinlock_t fqslock;			/* Only one task forcing */
- 						/*  quiescent states. */
- 	unsigned long jiffies_force_qs;		/* Time at which to invoke */
+-#define PRINT_RCU_DATA(name, func, m) \
+-	do { \
+-		int _p_r_d_i; \
+-		\
+-		for_each_possible_cpu(_p_r_d_i) \
+-			func(m, &per_cpu(name, _p_r_d_i)); \
+-	} while (0)
+-
+ static int show_rcudata(struct seq_file *m, void *unused)
+ {
+-#ifdef CONFIG_TREE_PREEMPT_RCU
+-	seq_puts(m, "rcu_preempt:\n");
+-	PRINT_RCU_DATA(rcu_preempt_data, print_one_rcu_data, m);
+-#endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
+-	seq_puts(m, "rcu_sched:\n");
+-	PRINT_RCU_DATA(rcu_sched_data, print_one_rcu_data, m);
+-	seq_puts(m, "rcu_bh:\n");
+-	PRINT_RCU_DATA(rcu_bh_data, print_one_rcu_data, m);
++	int cpu;
++	struct rcu_state *rsp;
++
++	for_each_rcu_flavor(rsp) {
++		seq_printf(m, "%s:\n", rsp->name);
++		for_each_possible_cpu(cpu)
++		print_one_rcu_data(m, per_cpu_ptr(rsp->rda, cpu));
++	}
+ 	return 0;
+ }
+ 
+@@ -200,6 +188,9 @@ static void print_one_rcu_data_csv(struct seq_file *m, struct rcu_data *rdp)
+ 
+ static int show_rcudata_csv(struct seq_file *m, void *unused)
+ {
++	int cpu;
++	struct rcu_state *rsp;
++
+ 	seq_puts(m, "\"CPU\",\"Online?\",\"c\",\"g\",\"pq\",\"pgp\",\"pq\",");
+ 	seq_puts(m, "\"dt\",\"dt nesting\",\"dt NMI nesting\",\"df\",");
+ 	seq_puts(m, "\"of\",\"qll\",\"ql\",\"qs\"");
+@@ -207,14 +198,11 @@ static int show_rcudata_csv(struct seq_file *m, void *unused)
+ 	seq_puts(m, "\"kt\",\"ktl\"");
+ #endif /* #ifdef CONFIG_RCU_BOOST */
+ 	seq_puts(m, ",\"b\",\"ci\",\"co\",\"ca\"\n");
+-#ifdef CONFIG_TREE_PREEMPT_RCU
+-	seq_puts(m, "\"rcu_preempt:\"\n");
+-	PRINT_RCU_DATA(rcu_preempt_data, print_one_rcu_data_csv, m);
+-#endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
+-	seq_puts(m, "\"rcu_sched:\"\n");
+-	PRINT_RCU_DATA(rcu_sched_data, print_one_rcu_data_csv, m);
+-	seq_puts(m, "\"rcu_bh:\"\n");
+-	PRINT_RCU_DATA(rcu_bh_data, print_one_rcu_data_csv, m);
++	for_each_rcu_flavor(rsp) {
++		seq_printf(m, "\"%s:\"\n", rsp->name);
++		for_each_possible_cpu(cpu)
++			print_one_rcu_data_csv(m, per_cpu_ptr(rsp->rda, cpu));
++	}
+ 	return 0;
+ }
+ 
+@@ -304,9 +292,9 @@ static void print_one_rcu_state(struct seq_file *m, struct rcu_state *rsp)
+ 	struct rcu_node *rnp;
+ 
+ 	gpnum = rsp->gpnum;
+-	seq_printf(m, "c=%lu g=%lu s=%d jfq=%ld j=%x "
++	seq_printf(m, "%s: c=%lu g=%lu s=%d jfq=%ld j=%x "
+ 		      "nfqs=%lu/nfqsng=%lu(%lu) fqlh=%lu oqlen=%ld/%ld\n",
+-		   rsp->completed, gpnum, rsp->fqs_state,
++		   rsp->name, rsp->completed, gpnum, rsp->fqs_state,
+ 		   (long)(rsp->jiffies_force_qs - jiffies),
+ 		   (int)(jiffies & 0xffff),
+ 		   rsp->n_force_qs, rsp->n_force_qs_ngp,
+@@ -329,14 +317,10 @@ static void print_one_rcu_state(struct seq_file *m, struct rcu_state *rsp)
+ 
+ static int show_rcuhier(struct seq_file *m, void *unused)
+ {
+-#ifdef CONFIG_TREE_PREEMPT_RCU
+-	seq_puts(m, "rcu_preempt:\n");
+-	print_one_rcu_state(m, &rcu_preempt_state);
+-#endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
+-	seq_puts(m, "rcu_sched:\n");
+-	print_one_rcu_state(m, &rcu_sched_state);
+-	seq_puts(m, "rcu_bh:\n");
+-	print_one_rcu_state(m, &rcu_bh_state);
++	struct rcu_state *rsp;
++
++	for_each_rcu_flavor(rsp)
++		print_one_rcu_state(m, rsp);
+ 	return 0;
+ }
+ 
+@@ -377,11 +361,10 @@ static void show_one_rcugp(struct seq_file *m, struct rcu_state *rsp)
+ 
+ static int show_rcugp(struct seq_file *m, void *unused)
+ {
+-#ifdef CONFIG_TREE_PREEMPT_RCU
+-	show_one_rcugp(m, &rcu_preempt_state);
+-#endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
+-	show_one_rcugp(m, &rcu_sched_state);
+-	show_one_rcugp(m, &rcu_bh_state);
++	struct rcu_state *rsp;
++
++	for_each_rcu_flavor(rsp)
++		show_one_rcugp(m, rsp);
+ 	return 0;
+ }
+ 
+@@ -430,14 +413,12 @@ static void print_rcu_pendings(struct seq_file *m, struct rcu_state *rsp)
+ 
+ static int show_rcu_pending(struct seq_file *m, void *unused)
+ {
+-#ifdef CONFIG_TREE_PREEMPT_RCU
+-	seq_puts(m, "rcu_preempt:\n");
+-	print_rcu_pendings(m, &rcu_preempt_state);
+-#endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
+-	seq_puts(m, "rcu_sched:\n");
+-	print_rcu_pendings(m, &rcu_sched_state);
+-	seq_puts(m, "rcu_bh:\n");
+-	print_rcu_pendings(m, &rcu_bh_state);
++	struct rcu_state *rsp;
++
++	for_each_rcu_flavor(rsp) {
++		seq_printf(m, "%s:\n", rsp->name);
++		print_rcu_pendings(m, rsp);
++	}
+ 	return 0;
+ }
+ 
 -- 
 1.7.8
 
