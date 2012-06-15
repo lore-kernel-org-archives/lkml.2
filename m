@@ -1,144 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692Ab2FOGD4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 02:03:56 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:44630 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751469Ab2FOGDy (ORCPT
+	id S1752763Ab2FOGQz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 02:16:55 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:53727 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752021Ab2FOGQx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 02:03:54 -0400
-X-AuditID: b753bd60-9f483ba000000655-cf-4fdad0474b27
-X-AuditID: b753bd60-9f483ba000000655-cf-4fdad0474b27
-Message-ID: <4FDAD044.7020706@hitachi.com>
-Date: Fri, 15 Jun 2012 15:03:48 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Fri, 15 Jun 2012 02:16:53 -0400
+Date: Fri, 15 Jun 2012 11:42:17 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] uprobes: write_opcode()->__replace_page() can race
+ with try_to_unmap()
+Message-ID: <20120615061217.GC12051@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20120607165942.GA31966@redhat.com>
+ <20120607170041.GC31974@redhat.com>
+ <20120608165551.GA30683@redhat.com>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        yrl.pp-manager.tt@hitachi.com
-Subject: Re: [RFC][PATCH 06/13 v2] ftrace/x86: Add save_regs for i386 function
- calls
-References: <20120612224327.426900129@goodmis.org> <20120612225425.673392850@goodmis.org>
-In-Reply-To: <20120612225425.673392850@goodmis.org>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20120608165551.GA30683@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12061506-1780-0000-0000-000006760E20
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000281; HX=3.00000190; KW=3.00000007;
+ PH=3.00000001; SC=3.00000002; SDB=6.00148180; UDB=6.00033785; UTC=2012-06-15
+ 06:16:52
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/06/13 7:43), Steven Rostedt wrote:
-> From: Steven Rostedt <srostedt@redhat.com>
-> 
-> Add saving full regs for function tracing on i386.
-> The saving of regs was influenced by patches sent out by
-> Masami Hiramatsu.
-> 
-> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 > ---
->  arch/x86/include/asm/ftrace.h |    2 --
->  arch/x86/kernel/entry_32.S    |   53 +++++++++++++++++++++++++++++++++++++++++
->  arch/x86/kernel/ftrace.c      |    4 ----
->  3 files changed, 53 insertions(+), 6 deletions(-)
+> Subject: [PATCH] uprobes: write_opcode()->__replace_page() can race with try_to_unmap()
 > 
-> diff --git a/arch/x86/include/asm/ftrace.h b/arch/x86/include/asm/ftrace.h
-> index fd10faf..2b396cf 100644
-> --- a/arch/x86/include/asm/ftrace.h
-> +++ b/arch/x86/include/asm/ftrace.h
-> @@ -40,10 +40,8 @@
->  
->  #ifdef CONFIG_DYNAMIC_FTRACE
->  #define ARCH_SUPPORTS_FTRACE_OPS 1
-> -#ifdef CONFIG_X86_64
->  #define ARCH_SUPPORTS_FTRACE_SAVE_REGS
->  #endif
-> -#endif
->  
->  #ifndef __ASSEMBLY__
->  extern void mcount(void);
-> diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-> index acd4963..f22802c 100644
-> --- a/arch/x86/kernel/entry_32.S
-> +++ b/arch/x86/kernel/entry_32.S
-> @@ -1123,6 +1123,7 @@ ftrace_call:
->  	popl %edx
->  	popl %ecx
->  	popl %eax
-> +ftrace_ret:
->  #ifdef CONFIG_FUNCTION_GRAPH_TRACER
->  .globl ftrace_graph_call
->  ftrace_graph_call:
-> @@ -1134,6 +1135,58 @@ ftrace_stub:
->  	ret
->  END(ftrace_caller)
->  
-> +ENTRY(ftrace_regs_caller)
-> +	pushf	/* push flags before compare */
-> +	cmpl $0, function_trace_stop
-> +	jne ftrace_exit
-> +
-> +	subl $8, %esp	/* skip ip and orig_ax */
-> +	pushl %gs
-> +	pushl %fs
-> +	pushl %es
-> +	pushl %ds
-> +	pushl %eax
-> +	pushl %ebp
-> +	pushl %edi
-> +	pushl %esi
-> +	pushl %edx
-> +	pushl %ecx
-> +	pushl %ebx
-> +	movl 14*4(%esp), %eax	/* Load return address */
-> +	pushl %eax		/* Save return address (+4) */
-> +	subl $MCOUNT_INSN_SIZE, %eax
-> +	movl %eax, 12*4+4(%esp)	/* Store IP */
-> +	movl 13*4+4(%esp), %edx	/* Load flags */
-> +	movl %edx, 14*4+4(%esp)	/* Store flags */
-> +	movl $__KERNEL_CS, %edx
-> +	movl %edx, 13*4+4(%esp)	/* Store CS */
-> +
-> +	movl 0x4(%ebp), %edx
-> +	lea  4(%esp), %ecx
-> +	pushl %ecx		/* Save pt_regs as 4th parameter */
-> +	leal function_trace_op, %ecx
-> +
-> +GLOBAL(ftrace_regs_call)
-> +	call ftrace_stub
-> +
-> +	addl $4,%esp		/* Skip pt_regs */
-> +	popl %eax
-> +	movl %eax, 14*4(%esp)	/* Restore return address */
-> +	popl %ebx
-> +	popl %ecx
-> +	popl %edx
-> +	popl %esi
-> +	popl %edi
-> +	popl %ebp
-> +	popl %eax
-> +	popl %ds
-> +	popl %es
-> +	popl %fs
-> +	popl %gs
-> +	addl $8, %esp
-> +ftrace_exit:
-> +	addl $4, %esp		/* Skip eflags */
+> write_opcode() gets old_page via get_user_pages() and then calls
+> __replace_page() which assumes that this old_page is still mapped
+> after pte_offset_map_lock().
+> 
+> This is not true if this old_page was already try_to_unmap()'ed,
+> and in this case everything __replace_page() does with old_page
+> is wrong. Just for example, put_page() is not balanced.
+> 
+> I think it is possible to teach __replace_page() to handle this
+> unlikely case correctly, but this patch simply changes it to use
+> page_check_address() and return -EAGAIN if it fails. The caller
+> should notice this error code and retry.
+> 
+> Note: write_opcode() asks for the cleanups, I'll try to do this
+> in a separate patch.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> ---
+>  kernel/events/uprobes.c |   41 +++++++++++++----------------------------
+>  1 files changed, 13 insertions(+), 28 deletions(-)
+> 
+> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+> index 9c53bc2..54c8780 100644
+> --- a/kernel/events/uprobes.c
+> +++ b/kernel/events/uprobes.c
+> @@ -135,33 +135,17 @@ static loff_t vma_address(struct vm_area_struct *vma, loff_t offset)
+>  static int __replace_page(struct vm_area_struct *vma, struct page *page, struct page *kpage)
+>  {
+>  	struct mm_struct *mm = vma->vm_mm;
+> -	pgd_t *pgd;
+> -	pud_t *pud;
+> -	pmd_t *pmd;
+> -	pte_t *ptep;
+> -	spinlock_t *ptl;
+>  	unsigned long addr;
+> -	int err = -EFAULT;
+> +	spinlock_t *ptl;
+> +	pte_t *ptep;
+> 
+>  	addr = page_address_in_vma(page, vma);
+>  	if (addr == -EFAULT)
+> -		goto out;
+> -
+> -	pgd = pgd_offset(mm, addr);
+> -	if (!pgd_present(*pgd))
+> -		goto out;
+> -
+> -	pud = pud_offset(pgd, addr);
+> -	if (!pud_present(*pud))
+> -		goto out;
+> +		return -EFAULT;
+> 
+> -	pmd = pmd_offset(pud, addr);
+> -	if (!pmd_present(*pmd))
+> -		goto out;
+> -
+> -	ptep = pte_offset_map_lock(mm, pmd, addr, &ptl);
+> +	ptep = page_check_address(page, mm, addr, &ptl, 0);
+>  	if (!ptep)
+> -		goto out;
+> +		return -EAGAIN;
+> 
+>  	get_page(kpage);
+>  	page_add_new_anon_rmap(kpage, vma, addr);
+> @@ -180,10 +164,8 @@ static int __replace_page(struct vm_area_struct *vma, struct page *page, struct
+>  		try_to_free_swap(page);
+>  	put_page(page);
+>  	pte_unmap_unlock(ptep, ptl);
+> -	err = 0;
+> 
+> -out:
+> -	return err;
+> +	return 0;
+>  }
+> 
+>  /**
+> @@ -228,9 +210,10 @@ static int write_opcode(struct arch_uprobe *auprobe, struct mm_struct *mm,
+>  	void *vaddr_old, *vaddr_new;
+>  	struct vm_area_struct *vma;
+>  	struct uprobe *uprobe;
+> +	unsigned long pgoff;
+>  	loff_t addr;
+>  	int ret;
+> -
+> +retry:
 
-Hmm, why don't you recover eflags, as x86-64 has done?
-IMHO, it should be recovered if ftrace-based kprobe is
-a transparent acceleration.
+Just a check on coding style: Shouldnt we have a preceeding blank
+line before the goto label.
 
-Thank you,
+>  	/* Read the page with vaddr into memory */
+>  	ret = get_user_pages(NULL, mm, vaddr, 1, 0, 0, &old_page, &vma);
+>  	if (ret <= 0)
+> @@ -275,9 +258,9 @@ static int write_opcode(struct arch_uprobe *auprobe, struct mm_struct *mm,
+>  	memcpy(vaddr_new, vaddr_old, PAGE_SIZE);
+> 
+>  	/* poke the new insn in, ASSUMES we don't cross page boundary */
+> -	vaddr &= ~PAGE_MASK;
+> -	BUG_ON(vaddr + UPROBE_SWBP_INSN_SIZE > PAGE_SIZE);
+> -	memcpy(vaddr_new + vaddr, &opcode, UPROBE_SWBP_INSN_SIZE);
+> +	pgoff = (vaddr & ~PAGE_MASK);
+> +	BUG_ON(pgoff + UPROBE_SWBP_INSN_SIZE > PAGE_SIZE);
+> +	memcpy(vaddr_new + pgoff, &opcode, UPROBE_SWBP_INSN_SIZE);
+> 
+>  	kunmap_atomic(vaddr_new);
+>  	kunmap_atomic(vaddr_old);
+> @@ -297,6 +280,8 @@ unlock_out:
+>  put_out:
+>  	put_page(old_page);
+> 
+> +	if (unlikely(ret == -EAGAIN))
+> +		goto retry;
+>  	return ret;
+>  }
+> 
 
-
+Looks good. 
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+Thanks and Regards
+Srikar
+
