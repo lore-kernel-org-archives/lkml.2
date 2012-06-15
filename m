@@ -1,459 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757121Ab2FOOXa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 10:23:30 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45246 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756951Ab2FOOX2 (ORCPT
+	id S1757057Ab2FOO0F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 10:26:05 -0400
+Received: from dgate20.ts.fujitsu.com ([80.70.172.51]:64539 "EHLO
+	dgate20.ts.fujitsu.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754780Ab2FOO0D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 10:23:28 -0400
-Date: Fri, 15 Jun 2012 07:23:11 -0700
-From: tip-bot for Suresh Siddha <suresh.b.siddha@intel.com>
-Message-ID: <tip-7eb9ae0799b1e9f0b77733b432bc5f6f055b020b@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        sam@ravnborg.org, suresh.b.siddha@intel.com, tglx@linutronix.de,
-        paul.gortmaker@windriver.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        sam@ravnborg.org, suresh.b.siddha@intel.com, tglx@linutronix.de,
-        paul.gortmaker@windriver.com
-In-Reply-To: <1339723729.3475.63.camel@sbsiddha-desk.sc.intel.com>
-References: <1339723729.3475.63.camel@sbsiddha-desk.sc.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] irq/apic: Use config_enabled(CONFIG_SMP)
-  checks to clean up irq_set_affinity() for UP
-Git-Commit-ID: 7eb9ae0799b1e9f0b77733b432bc5f6f055b020b
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 15 Jun 2012 10:26:03 -0400
+X-Greylist: delayed 599 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Jun 2012 10:26:02 EDT
+DomainKey-Signature: s=s1536a; d=ts.fujitsu.com; c=nofws; q=dns;
+  h=X-SBRSScore:X-IronPort-AV:Received:X-IronPort-AV:
+   Received:Message-ID:Date:From:Organization:User-Agent:
+   MIME-Version:To:CC:Subject:X-Enigmail-Version:
+   Content-Type:Content-Transfer-Encoding;
+  b=Y1HrIhxP+2psw7B6BVLd4fu+AL0fCC2Nb9cVFreoD/KR7lycSpgQcfyV
+   EOEwsuBiYN30xNchZh1vVHHODBcmoGk0y4Bw6DclpeueNeiFIfoGzvxdc
+   P3oKvx2SnKrU7qc1TjAbMn+ywhoHCRFaOkb5vo46FDeaySDaLdvdO3+QK
+   7iCYJU0C/Q08rAQ4/bqBZa9h3qcULakGU7NJE5xZXu93XT5kPAxSm8GH7
+   AgkvbjlFVjZrXgzwFEjebLkw5jxug;
+X-SBRSScore: None
+X-IronPort-AV: E=Sophos;i="4.75,778,1330902000"; 
+   d="scan'208";a="96101970"
+X-IronPort-AV: E=Sophos;i="4.75,778,1330902000"; 
+   d="scan'208";a="136241575"
+Message-ID: <4FDB4253.90102@ts.fujitsu.com>
+Date: Fri, 15 Jun 2012 16:10:27 +0200
+From: Martin Wilck <martin.wilck@ts.fujitsu.com>
+Organization: Fujitsu Technology Solutions
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 15 Jun 2012 07:23:18 -0700 (PDT)
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: mhocko@suse.cz
+Subject: linux 3.4.2: Strange readings in /proc/stat with NO_HZ and softirq
+ activity
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7eb9ae0799b1e9f0b77733b432bc5f6f055b020b
-Gitweb:     http://git.kernel.org/tip/7eb9ae0799b1e9f0b77733b432bc5f6f055b020b
-Author:     Suresh Siddha <suresh.b.siddha@intel.com>
-AuthorDate: Thu, 14 Jun 2012 18:28:49 -0700
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 15 Jun 2012 14:17:29 +0200
+Hello,
 
-irq/apic: Use config_enabled(CONFIG_SMP) checks to clean up irq_set_affinity() for UP
+I am seeing the following weird behavior of /proc/stat with 3.4.2 and NO_HZ.
 
-Move the ->irq_set_affinity() routines out of the #ifdef CONFIG_SMP
-sections and use config_enabled(CONFIG_SMP) checks inside those
-routines. Thus making those routines simple null stubs for
-!CONFIG_SMP and retaining those routines with no additional
-runtime overhead for CONFIG_SMP kernels.
+I expect that the sum of all counters for each cpu advances by 100 every
+second in /proc/stat (please forgive my ignorance if that expectation is
+incorrect).
 
-Cleans up the ifdef CONFIG_SMP in and around routines related to
-irq_set_affinity in io_apic and irq_remapping subsystems.
+I am running the fio benchmark (http://freecode.com/projects/fio) with a
+load that is trying to generate a lot of IOP/s (job file below), and I
+look at /proc/stat before and after the test. I am running on a 4-socket
+10-core machine (80 CPUs total with HT). The problem is best
+demonstrated in the case with 160 threads running on CPUs 0-39, 40-79
+being idle. (I might as well choose any other 40 CPUs).
 
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: torvalds@linux-foundation.org
-Cc: joerg.roedel@amd.com
-Cc: Sam Ravnborg <sam@ravnborg.org>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Link: http://lkml.kernel.org/r/1339723729.3475.63.camel@sbsiddha-desk.sc.intel.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/apic/io_apic.c      |  180 ++++++++++++++++-------------------
- drivers/iommu/intel_irq_remapping.c |    7 +-
- drivers/iommu/irq_remapping.c       |    5 +-
- drivers/iommu/irq_remapping.h       |    2 -
- include/linux/irq.h                 |    2 -
- 5 files changed, 86 insertions(+), 110 deletions(-)
+For the idle CPUs, the stats look like this, as expected (30s run):
 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 7cbd397..a951ef7 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -2224,81 +2224,6 @@ void send_cleanup_vector(struct irq_cfg *cfg)
- 	cfg->move_in_progress = 0;
- }
- 
--static void __target_IO_APIC_irq(unsigned int irq, unsigned int dest, struct irq_cfg *cfg)
--{
--	int apic, pin;
--	struct irq_pin_list *entry;
--	u8 vector = cfg->vector;
--
--	for_each_irq_pin(entry, cfg->irq_2_pin) {
--		unsigned int reg;
--
--		apic = entry->apic;
--		pin = entry->pin;
--		/*
--		 * With interrupt-remapping, destination information comes
--		 * from interrupt-remapping table entry.
--		 */
--		if (!irq_remapped(cfg))
--			io_apic_write(apic, 0x11 + pin*2, dest);
--		reg = io_apic_read(apic, 0x10 + pin*2);
--		reg &= ~IO_APIC_REDIR_VECTOR_MASK;
--		reg |= vector;
--		io_apic_modify(apic, 0x10 + pin*2, reg);
--	}
--}
--
--/*
-- * Either sets data->affinity to a valid value, and returns
-- * ->cpu_mask_to_apicid of that in dest_id, or returns -1 and
-- * leaves data->affinity untouched.
-- */
--int __ioapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
--			  unsigned int *dest_id)
--{
--	struct irq_cfg *cfg = data->chip_data;
--	unsigned int irq = data->irq;
--	int err;
--
--	if (!cpumask_intersects(mask, cpu_online_mask))
--		return -EINVAL;
--
--	err = assign_irq_vector(irq, cfg, mask);
--	if (err)
--		return err;
--
--	err = apic->cpu_mask_to_apicid_and(mask, cfg->domain, dest_id);
--	if (err) {
--		if (assign_irq_vector(irq, cfg, data->affinity))
--			pr_err("Failed to recover vector for irq %d\n", irq);
--		return err;
--	}
--
--	cpumask_copy(data->affinity, mask);
--
--	return 0;
--}
--
--static int
--ioapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
--		    bool force)
--{
--	unsigned int dest, irq = data->irq;
--	unsigned long flags;
--	int ret;
--
--	raw_spin_lock_irqsave(&ioapic_lock, flags);
--	ret = __ioapic_set_affinity(data, mask, &dest);
--	if (!ret) {
--		/* Only the high 8 bits are valid. */
--		dest = SET_APIC_LOGICAL_ID(dest);
--		__target_IO_APIC_irq(irq, dest, data->chip_data);
--		ret = IRQ_SET_MASK_OK_NOCOPY;
--	}
--	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
--	return ret;
--}
--
- asmlinkage void smp_irq_move_cleanup_interrupt(void)
- {
- 	unsigned vector, me;
-@@ -2386,6 +2311,87 @@ void irq_force_complete_move(int irq)
- static inline void irq_complete_move(struct irq_cfg *cfg) { }
- #endif
- 
-+static void __target_IO_APIC_irq(unsigned int irq, unsigned int dest, struct irq_cfg *cfg)
-+{
-+	int apic, pin;
-+	struct irq_pin_list *entry;
-+	u8 vector = cfg->vector;
-+
-+	for_each_irq_pin(entry, cfg->irq_2_pin) {
-+		unsigned int reg;
-+
-+		apic = entry->apic;
-+		pin = entry->pin;
-+		/*
-+		 * With interrupt-remapping, destination information comes
-+		 * from interrupt-remapping table entry.
-+		 */
-+		if (!irq_remapped(cfg))
-+			io_apic_write(apic, 0x11 + pin*2, dest);
-+		reg = io_apic_read(apic, 0x10 + pin*2);
-+		reg &= ~IO_APIC_REDIR_VECTOR_MASK;
-+		reg |= vector;
-+		io_apic_modify(apic, 0x10 + pin*2, reg);
-+	}
-+}
-+
-+/*
-+ * Either sets data->affinity to a valid value, and returns
-+ * ->cpu_mask_to_apicid of that in dest_id, or returns -1 and
-+ * leaves data->affinity untouched.
-+ */
-+int __ioapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
-+			  unsigned int *dest_id)
-+{
-+	struct irq_cfg *cfg = data->chip_data;
-+	unsigned int irq = data->irq;
-+	int err;
-+
-+	if (!config_enabled(CONFIG_SMP))
-+		return -1;
-+
-+	if (!cpumask_intersects(mask, cpu_online_mask))
-+		return -EINVAL;
-+
-+	err = assign_irq_vector(irq, cfg, mask);
-+	if (err)
-+		return err;
-+
-+	err = apic->cpu_mask_to_apicid_and(mask, cfg->domain, dest_id);
-+	if (err) {
-+		if (assign_irq_vector(irq, cfg, data->affinity))
-+			pr_err("Failed to recover vector for irq %d\n", irq);
-+		return err;
-+	}
-+
-+	cpumask_copy(data->affinity, mask);
-+
-+	return 0;
-+}
-+
-+static int
-+ioapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
-+		    bool force)
-+{
-+	unsigned int dest, irq = data->irq;
-+	unsigned long flags;
-+	int ret;
-+
-+	if (!config_enabled(CONFIG_SMP))
-+		return -1;
-+
-+	raw_spin_lock_irqsave(&ioapic_lock, flags);
-+	ret = __ioapic_set_affinity(data, mask, &dest);
-+	if (!ret) {
-+		/* Only the high 8 bits are valid. */
-+		dest = SET_APIC_LOGICAL_ID(dest);
-+		__target_IO_APIC_irq(irq, dest, data->chip_data);
-+		ret = IRQ_SET_MASK_OK_NOCOPY;
-+	}
-+	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
-+	return ret;
-+}
-+
- static void ack_apic_edge(struct irq_data *data)
- {
- 	irq_complete_move(data->chip_data);
-@@ -2565,9 +2571,7 @@ static void irq_remap_modify_chip_defaults(struct irq_chip *chip)
- 	chip->irq_ack = ir_ack_apic_edge;
- 	chip->irq_eoi = ir_ack_apic_level;
- 
--#ifdef CONFIG_SMP
- 	chip->irq_set_affinity = set_remapped_irq_affinity;
--#endif
- }
- #endif /* CONFIG_IRQ_REMAP */
- 
-@@ -2578,9 +2582,7 @@ static struct irq_chip ioapic_chip __read_mostly = {
- 	.irq_unmask		= unmask_ioapic_irq,
- 	.irq_ack		= ack_apic_edge,
- 	.irq_eoi		= ack_apic_level,
--#ifdef CONFIG_SMP
- 	.irq_set_affinity	= ioapic_set_affinity,
--#endif
- 	.irq_retrigger		= ioapic_retrigger_irq,
- };
- 
-@@ -3099,7 +3101,6 @@ static int msi_compose_msg(struct pci_dev *pdev, unsigned int irq,
- 	return err;
- }
- 
--#ifdef CONFIG_SMP
- static int
- msi_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
- {
-@@ -3121,7 +3122,6 @@ msi_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
- 
- 	return IRQ_SET_MASK_OK_NOCOPY;
- }
--#endif /* CONFIG_SMP */
- 
- /*
-  * IRQ Chip for MSI PCI/PCI-X/PCI-Express Devices,
-@@ -3132,9 +3132,7 @@ static struct irq_chip msi_chip = {
- 	.irq_unmask		= unmask_msi_irq,
- 	.irq_mask		= mask_msi_irq,
- 	.irq_ack		= ack_apic_edge,
--#ifdef CONFIG_SMP
- 	.irq_set_affinity	= msi_set_affinity,
--#endif
- 	.irq_retrigger		= ioapic_retrigger_irq,
- };
- 
-@@ -3219,7 +3217,6 @@ void native_teardown_msi_irq(unsigned int irq)
- }
- 
- #ifdef CONFIG_DMAR_TABLE
--#ifdef CONFIG_SMP
- static int
- dmar_msi_set_affinity(struct irq_data *data, const struct cpumask *mask,
- 		      bool force)
-@@ -3244,16 +3241,12 @@ dmar_msi_set_affinity(struct irq_data *data, const struct cpumask *mask,
- 	return IRQ_SET_MASK_OK_NOCOPY;
- }
- 
--#endif /* CONFIG_SMP */
--
- static struct irq_chip dmar_msi_type = {
- 	.name			= "DMAR_MSI",
- 	.irq_unmask		= dmar_msi_unmask,
- 	.irq_mask		= dmar_msi_mask,
- 	.irq_ack		= ack_apic_edge,
--#ifdef CONFIG_SMP
- 	.irq_set_affinity	= dmar_msi_set_affinity,
--#endif
- 	.irq_retrigger		= ioapic_retrigger_irq,
- };
- 
-@@ -3274,7 +3267,6 @@ int arch_setup_dmar_msi(unsigned int irq)
- 
- #ifdef CONFIG_HPET_TIMER
- 
--#ifdef CONFIG_SMP
- static int hpet_msi_set_affinity(struct irq_data *data,
- 				 const struct cpumask *mask, bool force)
- {
-@@ -3297,16 +3289,12 @@ static int hpet_msi_set_affinity(struct irq_data *data,
- 	return IRQ_SET_MASK_OK_NOCOPY;
- }
- 
--#endif /* CONFIG_SMP */
--
- static struct irq_chip hpet_msi_type = {
- 	.name = "HPET_MSI",
- 	.irq_unmask = hpet_msi_unmask,
- 	.irq_mask = hpet_msi_mask,
- 	.irq_ack = ack_apic_edge,
--#ifdef CONFIG_SMP
- 	.irq_set_affinity = hpet_msi_set_affinity,
--#endif
- 	.irq_retrigger = ioapic_retrigger_irq,
- };
- 
-@@ -3341,8 +3329,6 @@ int arch_setup_hpet_msi(unsigned int irq, unsigned int id)
-  */
- #ifdef CONFIG_HT_IRQ
- 
--#ifdef CONFIG_SMP
--
- static void target_ht_irq(unsigned int irq, unsigned int dest, u8 vector)
- {
- 	struct ht_irq_msg msg;
-@@ -3370,16 +3356,12 @@ ht_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
- 	return IRQ_SET_MASK_OK_NOCOPY;
- }
- 
--#endif
--
- static struct irq_chip ht_irq_chip = {
- 	.name			= "PCI-HT",
- 	.irq_mask		= mask_ht_irq,
- 	.irq_unmask		= unmask_ht_irq,
- 	.irq_ack		= ack_apic_edge,
--#ifdef CONFIG_SMP
- 	.irq_set_affinity	= ht_set_affinity,
--#endif
- 	.irq_retrigger		= ioapic_retrigger_irq,
- };
- 
-diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
-index 853902a..e0b18f3 100644
---- a/drivers/iommu/intel_irq_remapping.c
-+++ b/drivers/iommu/intel_irq_remapping.c
-@@ -902,7 +902,6 @@ static int intel_setup_ioapic_entry(int irq,
- 	return 0;
- }
- 
--#ifdef CONFIG_SMP
- /*
-  * Migrate the IO-APIC irq in the presence of intr-remapping.
-  *
-@@ -926,6 +925,9 @@ intel_ioapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
- 	struct irte irte;
- 	int err;
- 
-+	if (!config_enabled(CONFIG_SMP))
-+		return -EINVAL;
-+
- 	if (!cpumask_intersects(mask, cpu_online_mask))
- 		return -EINVAL;
- 
-@@ -963,7 +965,6 @@ intel_ioapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
- 	cpumask_copy(data->affinity, mask);
- 	return 0;
- }
--#endif
- 
- static void intel_compose_msi_msg(struct pci_dev *pdev,
- 				  unsigned int irq, unsigned int dest,
-@@ -1065,9 +1066,7 @@ struct irq_remap_ops intel_irq_remap_ops = {
- 	.reenable		= reenable_irq_remapping,
- 	.enable_faulting	= enable_drhd_fault_handling,
- 	.setup_ioapic_entry	= intel_setup_ioapic_entry,
--#ifdef CONFIG_SMP
- 	.set_affinity		= intel_ioapic_set_affinity,
--#endif
- 	.free_irq		= free_irte,
- 	.compose_msi_msg	= intel_compose_msi_msg,
- 	.msi_alloc_irq		= intel_msi_alloc_irq,
-diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
-index 40cda8e..1d29b1c 100644
---- a/drivers/iommu/irq_remapping.c
-+++ b/drivers/iommu/irq_remapping.c
-@@ -111,16 +111,15 @@ int setup_ioapic_remapped_entry(int irq,
- 					     vector, attr);
- }
- 
--#ifdef CONFIG_SMP
- int set_remapped_irq_affinity(struct irq_data *data, const struct cpumask *mask,
- 			      bool force)
- {
--	if (!remap_ops || !remap_ops->set_affinity)
-+	if (!config_enabled(CONFIG_SMP) || !remap_ops ||
-+	    !remap_ops->set_affinity)
- 		return 0;
- 
- 	return remap_ops->set_affinity(data, mask, force);
- }
--#endif
- 
- void free_remapped_irq(int irq)
- {
-diff --git a/drivers/iommu/irq_remapping.h b/drivers/iommu/irq_remapping.h
-index be9d729..b12974c 100644
---- a/drivers/iommu/irq_remapping.h
-+++ b/drivers/iommu/irq_remapping.h
-@@ -59,11 +59,9 @@ struct irq_remap_ops {
- 				  unsigned int, int,
- 				  struct io_apic_irq_attr *);
- 
--#ifdef CONFIG_SMP
- 	/* Set the CPU affinity of a remapped interrupt */
- 	int (*set_affinity)(struct irq_data *data, const struct cpumask *mask,
- 			    bool force);
--#endif
- 
- 	/* Free an IRQ */
- 	int (*free_irq)(int);
-diff --git a/include/linux/irq.h b/include/linux/irq.h
-index 61f5cec..47a937c 100644
---- a/include/linux/irq.h
-+++ b/include/linux/irq.h
-@@ -150,9 +150,7 @@ struct irq_data {
- 	void			*handler_data;
- 	void			*chip_data;
- 	struct msi_desc		*msi_desc;
--#ifdef CONFIG_SMP
- 	cpumask_var_t		affinity;
--#endif
- };
- 
- /*
+cpu40: 1 0 3 3030 0 0 0 0 0 total=3034
+cpu41: 0 0 0 3040 0 0 0 0 0 total=3040
+
+(these lines show the changes in the CPU stats before/after the run; the
+"total" number is the sum of all columns)
+
+But I am seeing strange things going on for the busy CPUs:
+
+cpu10: 0 0 27 38 0 0 2978 0 0 total=3043
+cpu18: 14 0 2075 39 913 0 0 0 0 total=3041
+cpu19: 14 0 2077 39 914 0 0 0 0 total=3044
+cpu20: 9 0 1014 56 826 0 153 0 0 total=2058   <==
+cpu21: 8 0 1011 56 826 0 148 0 0 total=2049   <==
+
+CPUs that show some activity in the "softirq" column (7th number) have a
+"total" that is low by ~1000 ticks (3000 are expected). The notable
+exception is CPU 10 which seems to be running ksoftirqd all the time
+during the test.
+
+This doesn't happen with nohz=off, suggesting that there's some problem
+accounting for softirq time in nohz mode.
+
+Any ideas?
+Martin
+
+
+PS: Here is my fio job file:
+[global]
+directory=/mnt/fio1
+group_reporting
+size=16M
+runtime=30
+time_based
+direct=1
+cpus_allowed=0-39
+[file1]
+rw=randread
+bs=4k
+numjobs=160
+
+
+Here is the full output of changes in /proc/stat:
+
+cpu: 493 0 49319 123193 32506 0 7598 0 0 total=213109
+cpu0: 5 0 978 50 705 0 174 0 0 total=1912
+cpu1: 7 0 996 54 799 0 170 0 0 total=2026
+cpu2: 10 0 975 58 791 0 172 0 0 total=2006
+cpu3: 10 0 997 41 806 0 150 0 0 total=2004
+cpu4: 7 0 987 49 799 0 142 0 0 total=1984
+cpu5: 7 0 993 58 801 0 174 0 0 total=2033
+cpu6: 6 0 1010 56 804 0 143 0 0 total=2019
+cpu7: 8 0 1000 53 805 0 138 0 0 total=2004
+cpu8: 8 0 973 53 801 0 166 0 0 total=2001
+cpu9: 9 0 987 59 799 0 166 0 0 total=2020
+cpu10: 0 0 27 38 0 0 2978 0 0 total=3043
+cpu11: 15 0 2072 39 907 0 0 0 0 total=3033
+cpu12: 19 0 2087 38 902 0 0 0 0 total=3046
+cpu13: 19 0 2084 38 922 0 0 0 0 total=3063
+cpu14: 23 0 2089 39 901 0 0 0 0 total=3052
+cpu15: 19 0 2076 39 911 0 0 0 0 total=3045
+cpu16: 17 0 2088 39 912 0 0 0 0 total=3056
+cpu17: 17 0 2084 38 907 0 0 0 0 total=3046
+cpu18: 14 0 2075 39 913 0 0 0 0 total=3041
+cpu19: 14 0 2077 39 914 0 0 0 0 total=3044
+cpu20: 9 0 1014 56 826 0 153 0 0 total=2058
+cpu21: 8 0 1011 56 826 0 148 0 0 total=2049
+cpu22: 8 0 1015 58 819 0 169 0 0 total=2069
+cpu23: 9 0 1035 53 832 0 148 0 0 total=2077
+cpu24: 8 0 1026 57 825 0 170 0 0 total=2086
+cpu25: 10 0 1014 55 827 0 148 0 0 total=2054
+cpu26: 12 0 1008 56 824 0 165 0 0 total=2065
+cpu27: 8 0 1032 52 828 0 139 0 0 total=2059
+cpu28: 10 0 1037 52 830 0 136 0 0 total=2065
+cpu29: 10 0 1029 52 831 0 136 0 0 total=2058
+cpu30: 10 0 1012 63 812 0 142 0 0 total=2039
+cpu31: 8 0 1013 70 811 0 142 0 0 total=2044
+cpu32: 10 0 1001 69 804 0 186 0 0 total=2070
+cpu33: 12 0 999 68 812 0 160 0 0 total=2051
+cpu34: 10 0 1008 69 809 0 167 0 0 total=2063
+cpu35: 12 0 1020 64 815 0 127 0 0 total=2038
+cpu36: 13 0 1004 69 809 0 151 0 0 total=2046
+cpu37: 10 0 1011 66 816 0 148 0 0 total=2051
+cpu38: 14 0 1003 65 815 0 137 0 0 total=2034
+cpu39: 8 0 1012 67 814 0 147 0 0 total=2048
+cpu40: 1 0 3 3030 0 0 0 0 0 total=3034
+cpu41: 0 0 0 3040 0 0 0 0 0 total=3040
+cpu42: 0 0 2 3037 1 0 1 0 0 total=3041
+cpu43: 1 0 10 3029 0 0 1 0 0 total=3041
+cpu44: 0 0 0 3044 0 0 0 0 0 total=3044
+cpu45: 0 0 6 3036 0 0 0 0 0 total=3042
+cpu46: 6 0 1 3037 0 0 0 0 0 total=3044
+
+[...] boring below here
+
+
+-- 
+Dr. Martin Wilck
+PRIMERGY System Software Engineer
+x86 Server Engineering
+
+FUJITSU
+Fujitsu Technology Solutions GmbH
+Heinz-Nixdorf-Ring 1
+33106 Paderborn, Germany
+Phone:			++49 5251 525 2796
+Fax:			++49 5251 525 2820
+Email:			martin.wilck@ts.fujitsu.com
+Internet:		http://ts.fujitsu.com
+Company Details:	http://ts.fujitsu.com/imprint
