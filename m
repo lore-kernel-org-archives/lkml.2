@@ -1,65 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932367Ab2FOPwl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 11:52:41 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:38473 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932305Ab2FOPwk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 11:52:40 -0400
-Message-ID: <4FDB5A42.9020707@gmail.com>
-Date: Fri, 15 Jun 2012 11:52:34 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1757188Ab2FOPyU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 11:54:20 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:57158 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753453Ab2FOPyS convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 11:54:18 -0400
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: kosaki.motohiro@gmail.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, akpm@linux-foundation.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH] mm: clear pages_scanned only if draining a pcp adds pages
- to the buddy allocator again
-References: <1339690570-7471-1-git-send-email-kosaki.motohiro@gmail.com> <4FDAE1F0.4030708@kernel.org>
-In-Reply-To: <4FDAE1F0.4030708@kernel.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120614191743.GA2721@kroah.com>
+References: <1339656138-28060-1-git-send-email-ning.n.jiang@gmail.com>
+	<20120614153730.GB17140@kroah.com>
+	<201206142115.47601.rjw@sisk.pl>
+	<20120614191743.GA2721@kroah.com>
+Date: Fri, 15 Jun 2012 23:54:16 +0800
+Message-ID: <CAH3Oq6Qt=JzCXJsZFNd8WrCFhiPazHomou+GbFpyQ8Lq34fOdA@mail.gmail.com>
+Subject: Re: [PATCH] PM: Deprecate suspend/resume in device_driver
+From: Ning Jiang <ning.n.jiang@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
+        Linux PM mailing list <linux-pm@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(6/15/12 3:19 AM), Minchan Kim wrote:
-> On 06/15/2012 01:16 AM, kosaki.motohiro@gmail.com wrote:
->
->> From: KOSAKI Motohiro<kosaki.motohiro@jp.fujitsu.com>
+2012/6/15 Greg KH <gregkh@linuxfoundation.org>:
+> On Thu, Jun 14, 2012 at 09:15:47PM +0200, Rafael J. Wysocki wrote:
+>> On Thursday, June 14, 2012, Greg KH wrote:
+>> > On Thu, Jun 14, 2012 at 02:42:17PM +0800, ning.n.jiang@gmail.com wrote:
+>> > > From: Ning Jiang <ning.n.jiang@gmail.com>
+>> > >
+>> > > Make suspend/resume callbacks in device_driver deprecated and scheduled
+>> > > for removal since they are not used in PM core anymore.
+>> > >
+>> > > Legacy drivers who still use them need to move suspend/resume callbacks
+>> > > to dev_pm_ops.
+>> >
+>> > How many complier warnings does this patch produce?
+>> >
+>> > Please fix them before submitting this patch.  The way kernel
+>> > development is is that you fix the problems up with the api, you don't
+>> > just mark them and hope someone else will do it for you.
+>> >
+>> > Sorry, I can't take this.
 >>
->> commit 2ff754fa8f (mm: clear pages_scanned only if draining a pcp adds pages
->> to the buddy allocator again) fixed one free_pcppages_bulk() misuse. But two
->> another miuse still exist.
->>
->> This patch fixes it.
->>
->> Cc: David Rientjes<rientjes@google.com>
->> Cc: Mel Gorman<mel@csn.ul.ie>
->> Cc: Johannes Weiner<hannes@cmpxchg.org>
->> Cc: Minchan Kim<minchan.kim@gmail.com>
->> Cc: Wu Fengguang<fengguang.wu@intel.com>
->> Cc: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
->> Cc: Rik van Riel<riel@redhat.com>
->> Cc: Andrew Morton<akpm@linux-foundation.org>
->> Signed-off-by: KOSAKI Motohiro<kosaki.motohiro@jp.fujitsu.com>
+>> Right.
 >
-> Reviewed-by: Minchan Kim<minchan@kernel.org>
->
-> Just nitpick.
-> Personally, I want to fix it follwing as
-> It's more simple and reduce vulnerable error in future.
->
-> If you mind, go ahead with your version. I am not against with it, either.
+> To provide a bit more "constructive" review, the proper thing is to fix
+> up the whole kernel to never set these fields, and then just delete
+> them.  Ning, feel free to start working on that task, it's a good one to
+> accomplish and should be pretty well defined.
 
-I don't like your version because free_pcppages_bulk() can be called from
-free_pages() hotpath. then, i wouldn't like to put a branch if we can avoid it.
+All right. I'm working on it.
