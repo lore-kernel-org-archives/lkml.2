@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932421Ab2FOPps (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 11:45:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21704 "EHLO mx1.redhat.com"
+	id S932460Ab2FOPqE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 11:46:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6412 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932135Ab2FOPpp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 11:45:45 -0400
-Date: Fri, 15 Jun 2012 17:43:42 +0200
+	id S932430Ab2FOPpx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 11:45:53 -0400
+Date: Fri, 15 Jun 2012 17:43:50 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Anton Arapov <anton@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 08/15] uprobes: copy_insn() shouldn't depend on mm/vma/vaddr
-Message-ID: <20120615154342.GA9598@redhat.com>
+Subject: [PATCH 11/15] uprobes: move BUG_ON(UPROBE_SWBP_INSN_SIZE) from
+	write_opcode() to install_breakpoint()
+Message-ID: <20120615154350.GA9611@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -24,80 +25,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1. copy_insn() doesn't need "addr", it can use uprobe->offset.
-   Remove this argument.
-
-2. Change copy_insn/__copy_insn to accept "struct file*" instead
-   of vma.
-
-copy_insn() is called only once and mm/vma/vaddr are random, it
-shouldn't depend on them.
+write_opcode() ensures that UPROBE_SWBP_INSN doesn't cross the
+page boundary. This looks a bit confusing, the check does not
+depend on vaddr and it is enough to do it only once right after
+install_breakpoint()->arch_uprobe_analyze_insn().
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Acked-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
 ---
- kernel/events/uprobes.c |   15 ++++++---------
- 1 files changed, 6 insertions(+), 9 deletions(-)
+ kernel/events/uprobes.c |   11 +++++------
+ 1 files changed, 5 insertions(+), 6 deletions(-)
 
 diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 2671d9a..08ef566 100644
+index 14c71a2..b9c61bd 100644
 --- a/kernel/events/uprobes.c
 +++ b/kernel/events/uprobes.c
-@@ -591,10 +591,9 @@ static bool consumer_del(struct uprobe *uprobe, struct uprobe_consumer *uc)
- }
+@@ -210,7 +210,6 @@ static int write_opcode(struct arch_uprobe *auprobe, struct mm_struct *mm,
+ 	void *vaddr_old, *vaddr_new;
+ 	struct vm_area_struct *vma;
+ 	struct uprobe *uprobe;
+-	unsigned long pgoff;
+ 	int ret;
+ retry:
+ 	/* Read the page with vaddr into memory */
+@@ -251,11 +250,7 @@ retry:
+ 	vaddr_new = kmap_atomic(new_page);
  
- static int
--__copy_insn(struct address_space *mapping, struct vm_area_struct *vma, char *insn,
-+__copy_insn(struct address_space *mapping, struct file *filp, char *insn,
- 			unsigned long nbytes, unsigned long offset)
- {
--	struct file *filp = vma->vm_file;
- 	struct page *page;
- 	void *vaddr;
- 	unsigned long off1;
-@@ -625,15 +624,13 @@ __copy_insn(struct address_space *mapping, struct vm_area_struct *vma, char *ins
- 	return 0;
- }
+ 	memcpy(vaddr_new, vaddr_old, PAGE_SIZE);
+-
+-	/* poke the new insn in, ASSUMES we don't cross page boundary */
+-	pgoff = (vaddr & ~PAGE_MASK);
+-	BUG_ON(pgoff + UPROBE_SWBP_INSN_SIZE > PAGE_SIZE);
+-	memcpy(vaddr_new + pgoff, &opcode, UPROBE_SWBP_INSN_SIZE);
++	memcpy(vaddr_new + (vaddr & ~PAGE_MASK), &opcode, UPROBE_SWBP_INSN_SIZE);
  
--static int
--copy_insn(struct uprobe *uprobe, struct vm_area_struct *vma, unsigned long addr)
-+static int copy_insn(struct uprobe *uprobe, struct file *filp)
- {
- 	struct address_space *mapping;
- 	unsigned long nbytes;
- 	int bytes;
- 
--	addr &= ~PAGE_MASK;
--	nbytes = PAGE_SIZE - addr;
-+	nbytes = PAGE_SIZE - (uprobe->offset & ~PAGE_MASK);
- 	mapping = uprobe->inode->i_mapping;
- 
- 	/* Instruction at end of binary; copy only available bytes */
-@@ -644,13 +641,13 @@ copy_insn(struct uprobe *uprobe, struct vm_area_struct *vma, unsigned long addr)
- 
- 	/* Instruction at the page-boundary; copy bytes in second page */
- 	if (nbytes < bytes) {
--		if (__copy_insn(mapping, vma, uprobe->arch.insn + nbytes,
-+		if (__copy_insn(mapping, filp, uprobe->arch.insn + nbytes,
- 				bytes - nbytes, uprobe->offset + nbytes))
- 			return -ENOMEM;
- 
- 		bytes = nbytes;
- 	}
--	return __copy_insn(mapping, vma, uprobe->arch.insn, bytes, uprobe->offset);
-+	return __copy_insn(mapping, filp, uprobe->arch.insn, bytes, uprobe->offset);
- }
- 
- /*
-@@ -696,7 +693,7 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
- 	addr = (unsigned long)vaddr;
- 
- 	if (!(uprobe->flags & UPROBE_COPY_INSN)) {
--		ret = copy_insn(uprobe, vma, addr);
-+		ret = copy_insn(uprobe, vma->vm_file);
+ 	kunmap_atomic(vaddr_new);
+ 	kunmap_atomic(vaddr_old);
+@@ -699,6 +694,10 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
  		if (ret)
  			return ret;
+ 
++		/* write_opcode() assumes we don't cross page boundary */
++		BUG_ON((uprobe->offset & ~PAGE_MASK) +
++				UPROBE_SWBP_INSN_SIZE > PAGE_SIZE);
++
+ 		uprobe->flags |= UPROBE_COPY_INSN;
+ 	}
  
 -- 
 1.5.5.1
