@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756020Ab2FOBEj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 21:04:39 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6641 "EHLO
+	id S1755359Ab2FOBDm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 21:03:42 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7972 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752887Ab2FOBDj (ORCPT
+	with ESMTP id S1752474Ab2FOBDj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 14 Jun 2012 21:03:39 -0400
-X-Authority-Analysis: v=2.0 cv=T6AOvo2Q c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Ciwy3NGCPMMA:10 a=QlFg8caRMX4A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=8mR9c8h7AAAA:8 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=zd2uoN0lAAAA:8 a=qAMg_Q32op5xTYuzupIA:9 a=QEXdDO2ut3YA:10 a=LdTqRQehjdcA:10 a=jEp0ucaQiEUA:10 a=wu_e27o_rKQA:10 a=jeBq3FmKZ4MA:10 a=lFmHPrPKd9m4kTlzslcA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Authority-Analysis: v=2.0 cv=NbpkJh/4 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Ciwy3NGCPMMA:10 a=76z5FlY3WM0A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=f2o29hxsxEOxOyM2U7AA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=0hJLlp-nx6MoPAkpMtwA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.80.29
-Message-Id: <20120615010337.333269218@goodmis.org>
+Message-Id: <20120615010337.907377904@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 14 Jun 2012 21:01:24 -0400
+Date: Thu, 14 Jun 2012 21:01:25 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@amd64.org>,
-        John Kacur <jkacur@redhat.com>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH 1/3] ftrace: Remove a superfluous check
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 2/3] tracing: Add comments for the other bits of ftrace_event_call.flags
 References: <20120615010123.722084844@goodmis.org>
-Content-Disposition: inline; filename=0001-ftrace-Remove-a-superfluous-check.patch
+Content-Disposition: inline; filename=0002-tracing-Add-comments-for-the-other-bits-of-ftrace_ev.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,58 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-From: Borislav Petkov <bp@amd64.org>
+From: Steven Rostedt <srostedt@redhat.com>
 
-register_ftrace_function() checks ftrace_disabled and calls
-__register_ftrace_function which does it again.
+	TRACE_EVENT_FL_ENABLED_BIT,
+	TRACE_EVENT_FL_FILTERED_BIT,
+	TRACE_EVENT_FL_RECORDED_CMD_BIT,
 
-Drop the first check and add the unlikely hint to the second one. Also,
-drop the label as John correctly notices.
+Have comments about what they are, but:
 
-No functional change.
+	TRACE_EVENT_FL_CAP_ANY_BIT,
+	TRACE_EVENT_FL_NO_SET_FILTER_BIT,
+	TRACE_EVENT_FL_IGNORE_ENABLE_BIT,
 
-Link: http://lkml.kernel.org/r/20120329171140.GE6409@aftab
+do not, making them second class citizens. To prevent another
+class warfare, these bits have protested for their right to be
+commented. And By Golly! I'll give them what they want!
 
-Cc: Borislav Petkov <bp@amd64.org>
-Cc: John Kacur <jkacur@redhat.com>
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/ftrace.c |    8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ include/linux/ftrace_event.h |    3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index a008663..b4f20fb 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -312,7 +312,7 @@ static int remove_ftrace_list_ops(struct ftrace_ops **l=
-ist,
-=20
- static int __register_ftrace_function(struct ftrace_ops *ops)
- {
--	if (ftrace_disabled)
-+	if (unlikely(ftrace_disabled))
- 		return -ENODEV;
-=20
- 	if (FTRACE_WARN_ON(ops =3D=3D &global_ops))
-@@ -4299,16 +4299,12 @@ int register_ftrace_function(struct ftrace_ops *ops)
-=20
- 	mutex_lock(&ftrace_lock);
-=20
--	if (unlikely(ftrace_disabled))
--		goto out_unlock;
--
- 	ret =3D __register_ftrace_function(ops);
- 	if (!ret)
- 		ret =3D ftrace_startup(ops, 0);
-=20
--
-- out_unlock:
- 	mutex_unlock(&ftrace_lock);
-+
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(register_ftrace_function);
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index 176a939..1aff183 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -207,6 +207,9 @@ struct ftrace_event_call {
+ 	 *   bit 1:		enabled
+ 	 *   bit 2:		filter_active
+ 	 *   bit 3:		enabled cmd record
++	 *   bit 4:		allow trace by non root (cap any)
++	 *   bit 5:		failed to apply filter
++	 *   bit 6:		ftrace internal event (do not enable)
+ 	 *
+ 	 * Changes to flags must hold the event_mutex.
+ 	 *
 --=20
 1.7.10
 
@@ -95,19 +76,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAABAgAGBQJP2onpAAoJEIy3vGnGbaoAbsYP/3KfEtX7/MAgxoHZ3MxyisJT
-ZS0IZIyxyo+ezIqXfY3kBOQQdneCefZZu9dEqqB0hGKGDnlxUKhViQ+JdMD9Uo8k
-4J1n9f3e4PjwwBGjB/+i/8vzpqbHgsdn2hel5WneNPPSs46hPgiI10rsFhDGQ3Hz
-1qCjRh+2z7lVVQi11/ruCFRNn0EDF4rmODWAHC9Qj+CqyLMraOdns51gcZznCZu/
-gDuzr/MgQIZLSqejiiHPpAS0MynFj2tlT2ZX8Hg0jNc7daWf62px3wgRMWuGODLc
-Lipvb0+G+zHFtbxZMdP+g9nrvKDeTGN+V9EvQLe4FKzPXHVBOOd29u8P3UWk6vRO
-2yLR9YZiHqw4w4BfT3Ew/aAVWjLl+UhecvzcZyGLfs7P/ov3ifMnOGkcjbZ4H1Tk
-mjAWsQQFs+An2c0WmHkg/Ff5eu2zQAvzWM2c5wNDmYeIaqUmXTweqeukR9qYc377
-P7lmTawevrAdTXII+uieNgl4PE8L7p4hFsINIUrV01khi+hmJ2oLGchUJzDqVqfS
-+V3nvLJO3NtZKRgTXr4g3zPsvVsFeEgMVPEn8HUN3iqnkOXu1eY5IcNdeSbHFsaR
-SsiR7kSW9naoNMy6WhOPC2MuPmamjL1HGx/DNdAGd1m/FS3zhbkqHFYFrp5S3TZH
-yYs3ekOgZPvJ373uo2x7
-=hjOv
+iQIcBAABAgAGBQJP2onpAAoJEIy3vGnGbaoA2nkQAOQ8ULgFRsEHBGxT1ZnkCVov
+T5NPN0h1dpU/uVXqIHluLCO6oOjObIg/5/pSqCtfbHdz34lkT9wLK28o29556iPd
+RVli+BAINU21NBX1bLaocz/5GshMSy16pD7MtIt8WEA8d6DG4OQc96kYbs+1ZQ3A
+TLSrEz9QZlXUAFh+9pnvlAEWRPzf4QZ/gdW70FZjBZR1bCxUL1L1E/5zTDLC+2l1
+77ZWgjgnseMJmeHuTkQLKhNCElaFq/YX1mPKDpIai48v/hEvyyBexb04Ac1EhPyd
+ABifQAEviexEb2PL5zc1FinhVBUfIzO5FaxVVw9eTKtRGh1gqcl3AO22vXJW1tLE
+lTG6foo5lda9YAatTG6dPojIYK9kHrJsa+pBmrwNT5jYqKBOe2rpTd3S7Cu6Vhsu
+3aISDHut1MRtCy7t3fJaiaqbJmlgK9E4c0Qv2B1/79LARYJsFuQHfNazcqw42Gfq
+QuMmiyhzoo3cAEItzLAORA/IPQhAep15IwcrsSMlPSn7F6oHMYqG5DvhrQXze2zV
+Eq6DgMt/SPVaVrWIqG5coRv0Oq3YkRl19tuXhapriD+I+j6AVOZWg5yV9bkySapi
+9gqG6/W6oJHH2+mlFTiTQgC02FuwtmZOEFf7Wfz2D7Tuk11VeGT9Hd7q6XtRXIza
+qG1TUaKOH+LyiQdUmE+Z
+=KyhO
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
