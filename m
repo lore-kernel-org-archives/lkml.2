@@ -1,47 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756730Ab2FOLrc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 07:47:32 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:60776 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754923Ab2FOLrb (ORCPT
+	id S1755018Ab2FOLvH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 07:51:07 -0400
+Received: from eu1sys200aog103.obsmtp.com ([207.126.144.115]:45654 "EHLO
+	eu1sys200aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751619Ab2FOLvE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 07:47:31 -0400
-Date: Fri, 15 Jun 2012 12:47:25 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] irq/core changes for v3.5
-Message-ID: <20120615114725.GC24246@sirena.org.uk>
-References: <20120522032554.GA11358@gmail.com>
- <Pine.LNX.4.64.1206121201130.6800@axis700.grange>
- <alpine.LFD.2.02.1206121639420.3086@ionos>
- <CA+55aFxNy2-DnWVDUiOuF+NncRBUC=frZN+CTLsJ+o2ofXtZYQ@mail.gmail.com>
- <alpine.LFD.2.02.1206121732230.3086@ionos>
- <CA+55aFxC0436vCDwX8nUnKNa3ZZi=ZhL0w6eMk0hM3oKTz4LJw@mail.gmail.com>
- <Pine.LNX.4.64.1206130857070.17854@axis700.grange>
+	Fri, 15 Jun 2012 07:51:04 -0400
+Date: Fri, 15 Jun 2012 17:20:43 +0530
+From: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+To: <lee.jones@linaro.org>
+Cc: <linus.walleij@stericsson.com>, <arnd@arndb.de>,
+        <linux-kernel@vger.kernel.org>, <grant.likely@secretlab.ca>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-i2c@vger.kernel.org>
+Subject: Re: Fwd: [PATCH 1/3] i2c: Add Device Tree support to the Nomadik
+ I2C driver
+Message-ID: <20120615115042.GA27480@bnru02>
+References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org>
+ <1339428307-3850-10-git-send-email-lee.jones@linaro.org>
+ <CACRpkdaMDbH4NkiHRLAfbJZ_j4QXbwg94bvaWsdYRPH+dSfc8Q@mail.gmail.com>
+ <4FD8BAD2.50703@linaro.org>
+ <CACRpkdZFi34nChnMEo6yik67zk9owZLk-6zcdP7mmOXyLz8uqQ@mail.gmail.com>
+ <4FDAFA17.6050502@linaro.org>
+ <CAE2-_9rRYxjU9QQgtBv9ReMY5x+oRiJG1cDQahYHanjDrwVUYA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1206130857070.17854@axis700.grange>
-X-Cookie: Flame on!
+In-Reply-To: <CAE2-_9rRYxjU9QQgtBv9ReMY5x+oRiJG1cDQahYHanjDrwVUYA@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 13, 2012 at 09:03:27AM +0200, Guennadi Liakhovetski wrote:
+[...]
+> 
+> 
+> From: Lee Jones <lee.jones@linaro.org>
+> Date: Tue, 17 Apr 2012 16:04:13 +0100
+> Subject: [PATCH 1/1] i2c: Add Device Tree support to the Nomadik I2C driver
+> 
+> Here we apply the bindings required for successful Device Tree
+> probing of the i2c-nomadik driver. We also apply a fall-back
+> configuration in case either one is not provided, or a required
+> element is missing from the one supplied.
+> 
+> Cc: linux-i2c@vger.kernel.org
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  drivers/i2c/busses/i2c-nomadik.c |   82 +++++++++++++++++++++++++++++++++++++-
+>  1 file changed, 80 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/i2c/busses/i2c-nomadik.c b/drivers/i2c/busses/i2c-nomadik.c
+> index a92440d..58e8114 100644
+> --- a/drivers/i2c/busses/i2c-nomadik.c
+> +++ b/drivers/i2c/busses/i2c-nomadik.c
+> @@ -23,6 +23,7 @@
+>  #include <linux/io.h>
+>  #include <linux/regulator/consumer.h>
+>  #include <linux/pm_runtime.h>
+> +#include <linux/of.h>
+> 
+>  #include <plat/i2c.h>
+> 
+> @@ -899,15 +900,86 @@ static const struct i2c_algorithm nmk_i2c_algo = {
+>        .functionality  = nmk_i2c_functionality
+>  };
+> 
+> +static struct nmk_i2c_controller u8500_i2c = {
+> +       /*
+> +        * Slave data setup time; 250ns, 100ns, and 10ns, which
+> +        * is 14, 6 and 2 respectively for a 48Mhz i2c clock.
+> +        */
+> +       .slsu           = 0xe,
+> +       .tft            = 1,      /* Tx FIFO threshold */
+> +       .rft            = 8,      /* Rx FIFO threshold */
+> +       .clk_freq       = 100000, /* std. mode operation */
+> +       .timeout        = 200,    /* Slave response timeout(ms) */
+> +       .sm             = I2C_FREQ_MODE_FAST,
 
-> To make this simpler I'm attaching below a list of (I think) all 
-> occurrences of the invalid request_threaded_irq() uses.
+How is this possible? you are setting clk_freq as 100kb/s and mode
+as fast mode which is supposed to be 400kb/s.
 
-Scanning through the list most of these are for internal IRQs from MFDs
-where it'd be a bug if the primary IRQ ever existed in the first place
-as we're already in threaded context, though obviously there's no
-problem with them marking themselves as _ONESHOT.
+> +};
+> +
+> +static int __devinit
+> +nmk_i2c_of_probe(struct device_node *np, struct nmk_i2c_controller *pdata)
+> +{
+> +       of_property_read_u32(np, "clock-frequency", (u32*)&pdata->clk_freq);
+> +       if (!pdata->clk_freq) {
+> +               pr_warn("%s: Clock frequency not found\n", np->full_name);
+> +               return -EINVAL;
+> +       }
+> +
+> +       of_property_read_u32(np, "stericsson,slsu", (u32*)&pdata->slsu);
+> +       if (!pdata->slsu) {
+> +               pr_warn("%s: Data line delay not found\n", np->full_name);
+> +               return -EINVAL;
+> +       }
+> +
+> +       of_property_read_u32(np, "stericsson,tft", (u32*)&pdata->tft);
+> +       if (!pdata->tft) {
+> +               pr_warn("%s: Tx FIFO threshold not found\n", np->full_name);
+> +               return -EINVAL;
+> +       }
+> +
+> +       of_property_read_u32(np, "stericsson,rft", (u32*)&pdata->rft);
+> +       if (!pdata->rft) {
+> +               pr_warn("%s: Rx FIFO threshold not found\n", np->full_name);
+> +               return -EINVAL;
+> +       }
+> +
+> +       of_property_read_u32(np, "stericsson,timeout", (u32*)&pdata->timeout);
+> +       if (!pdata->timeout) {
+> +               pr_warn("%s: Timeout not found\n", np->full_name);
+> +               return -EINVAL;
+> +       }
+> +
+> +       if (of_get_property(np, "stericsson,i2c_freq_mode_fast", NULL))
+> +               pdata->sm = I2C_FREQ_MODE_FAST;
+> +       else
+> +               pdata->sm = I2C_FREQ_MODE_STANDARD;
+
+The controller has more modes like fast mode plus and high speed mode. You can't make
+assumptions like this.
+
+> +
+> +       return 0;
+> +}
+> +
+>  static int __devinit nmk_i2c_probe(struct platform_device *pdev)
+>  {
+>        int ret = 0;
+>        struct resource *res;
+> -       struct nmk_i2c_controller *pdata =
+> -                       pdev->dev.platform_data;
+> +       struct nmk_i2c_controller *pdata = pdev->dev.platform_data;
+> +       struct device_node *np = pdev->dev.of_node;
+>        struct nmk_i2c_dev      *dev;
+>        struct i2c_adapter *adap;
+> 
+> +       if (np) {
+> +               if (!pdata) {
+> +                       pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
+> +                       if (!pdata) {
+> +                               ret = -ENOMEM;
+> +                               goto err_no_mem;
+> +                       }
+> +               }
+> +               ret = nmk_i2c_of_probe(np, pdata);
+> +               if (ret)
+> +                       kfree(pdata);
+> +       }
+> +
+> +       if (!pdata)
+> +               /* No i2c configuration found, using the default. */
+> +               pdata = &u8500_i2c;
+
+There are redundant fallback configurations exists in the driver. You might need to remove 
+those, if you want to fallback here.
+
+> +
+>        dev = kzalloc(sizeof(struct nmk_i2c_dev), GFP_KERNEL);
+>        if (!dev) {
+>                dev_err(&pdev->dev, "cannot allocate memory\n");
+> @@ -1038,11 +1110,17 @@ static int __devexit nmk_i2c_remove(struct platform_device *pdev)
+>        return 0;
+>  }
+> 
+> +static const struct of_device_id nmk_gpio_match[] = {
+> +       { .compatible = "st,nomadik-i2c", },
+> +       {},
+> +};
+> +
+>  static struct platform_driver nmk_i2c_driver = {
+>        .driver = {
+>                .owner = THIS_MODULE,
+>                .name = DRIVER_NAME,
+>                .pm = &nmk_i2c_pm,
+> +               .of_match_table = nmk_gpio_match,
+>        },
+>        .probe = nmk_i2c_probe,
+>        .remove = __devexit_p(nmk_i2c_remove),
+> --
+> 1.7.9.5
+> 
+
+/srinidhi 
