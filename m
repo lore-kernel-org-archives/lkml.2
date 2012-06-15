@@ -1,67 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757317Ab2FOSuI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 14:50:08 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:60035 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757187Ab2FOSuF convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 14:50:05 -0400
+	id S1757320Ab2FOSvZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 14:51:25 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:55910 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757231Ab2FOSvX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 14:51:23 -0400
+Message-ID: <4FDB8382.8090501@linaro.org>
+Date: Fri, 15 Jun 2012 11:48:34 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <1339784856-1779-1-git-send-email-prakity@marvell.com>
-References: <1339784856-1779-1-git-send-email-prakity@marvell.com>
-Date: Sat, 16 Jun 2012 00:20:04 +0530
-Message-ID: <CADTbHxpfQpKMkwzUakUUzt1mKO5rQ2A7_vuh9SA7i6Cq0VinZg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] regulator: core.c Pass voltage to notifier when
- setting voltage
-From: Pankaj Jangra <jangra.pankaj9@gmail.com>
-To: Philip Rakity <philipspatches@gmail.com>
-Cc: linux-kernel@vger.kernel.org, broonie@opensource.wolfsonmicro.com,
-        linux-mmc@vger.kernel.org, Philip Rakity <prakity@marvell.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Fedora Kernel Team <kernel-team@fedoraproject.org>
+Subject: Re: missing leap second patches in stable.
+References: <20120615152007.GA11793@redhat.com>
+In-Reply-To: <20120615152007.GA11793@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12061518-6078-0000-0000-00000C1AFD62
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 06/15/2012 08:20 AM, Dave Jones wrote:
+> Should these be in -stable ? Looks like all the other recent changes
+> in that area are present.  With the leap second just two weeks away,
+> it seems like they should be.
+>
+> Looks like 6b43ae8a619d17c4935c3320d2ef9e92bdeed05d is in 3.4-stable,
+> (haven't checked earlier -stable trees).
 
-On Fri, Jun 15, 2012 at 11:57 PM, Philip Rakity
-<philipspatches@gmail.com> wrote:
-> V3
-> --
->
-> Fix type where data argument was not passed in
-> blocking_notifier_call_chain.
->
-> edits to check in comments (below)
->
-> V2
-> --
->
-> Incorporate performance suggestions made by Mark Brown
-> Use linux-next as base code rather than mmc-next
->
-> The voltage being set should be passed to the call in handler
-> requesting the callback.  Currently this is not done.
->
-> The callin handler cannot call regulator_get_voltage() to get the
+So the second patch has been sent out for stable review as of yesterday. 
+So it should be on its way, but you're right that I forgot to CC stable 
+on the first TAI offset fix.
 
-"The calling"
+I'll generate the patch and send it to Greg.  Thanks for the close 
+review here!
 
-> information since the mutex is held by the regulator and
-> deadlock occurs.
->
-> Without this change the receiver of the call in cannot know what
-> action to take.  This is used, for example, to set PAD voltages
-> when doing SD vccq voltage changes.
->
-> Signed-off-by: Philip Rakity <prakity@marvell.com>
-> ---
+thanks
+-john
 
-Since you are submitting your patch from the different email than your
-Singed-off email. So you should put in first line of message
-From: <your real email>.
-
-Regards,
-Pankaj Jangra
