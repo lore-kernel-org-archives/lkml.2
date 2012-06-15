@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756528Ab2FOJvi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 05:51:38 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:37151 "EHLO mx2.parallels.com"
+	id S1756511Ab2FOJzF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 05:55:05 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:43646 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756267Ab2FOJvg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 05:51:36 -0400
-Message-ID: <4FDB050F.7040503@parallels.com>
-Date: Fri, 15 Jun 2012 13:49:03 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1756032Ab2FOJzD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 05:55:03 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Greg KH <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH v2] power: add knob for printing device resume times
+Date: Fri, 15 Jun 2012 12:00:20 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0+; KDE/4.6.0; x86_64; ; )
+Cc: Sameer Nanda <snanda@chromium.org>, rob@landley.net, len.brown@intel.com,
+        pavel@ucw.cz, linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
+References: <20120522202453.GA30723@kroah.com> <1337791532-15820-1-git-send-email-snanda@chromium.org> <20120615001924.GA8874@kroah.com>
+In-Reply-To: <20120615001924.GA8874@kroah.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: <mingo@kernel.org>, <pjt@google.com>, <venki@google.com>, <efault@gmx.de>,
-        <rostedt@goodmis.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH 2/4] sched: Push put_prev_task() into pick_next_task()
-References: <20120614132902.800827488@chello.nl> <20120614133212.690691207@chello.nl>
-In-Reply-To: <20120614133212.690691207@chello.nl>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201206151200.21225.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/14/2012 05:29 PM, Peter Zijlstra wrote:
-> +static struct task_struct *
-> +pick_next_task_rt(struct rq *rq, struct task_struct *prev)
->   {
-> -	struct task_struct *p = _pick_next_task_rt(rq);
-> +	struct task_struct *p;
-> +	struct rt_rq *rt_rq =&rq->rt;
-> +
-> +	if (!rt_rq->rt_nr_running)
-> +		return NULL;
-> +
-> +	if (rt_rq_throttled(rt_rq))
-> +		return NULL;
-> +
-> +	if (prev)
-> +		prev->sched_class->put_prev_task(rq, prev);
-> +
-it might be me, but this one sounds strange. If the responsibility of 
-putting the task now lays with pic_next_task, you can't return NULL 
-without doing this first.
+On Friday, June 15, 2012, Greg KH wrote:
+> On Wed, May 23, 2012 at 09:45:32AM -0700, Sameer Nanda wrote:
+> > Added a new knob called /sys/power/pm_print_times. Setting it to 1
+> > enables printing of time taken by devices to suspend and resume.
+> > Setting it to 0 disables this printing (unless overridden by
+> > initcall_debug kernel command line option).
+> > 
+> > Signed-off-by: Sameer Nanda <snanda@chromium.org>
+> > cc: Greg KH <gregkh@linuxfoundation.org>
+> > cc: Rafael J. Wysocki <rjw@sisk.pl>
+> > cc: Steven Rostedt <rostedt@goodmis.org>
+> > ---
+> >  Documentation/ABI/testing/sysfs-power |   13 ++++++++++++
+> >  drivers/base/power/main.c             |    4 +-
+> >  drivers/base/power/power.h            |   11 ++++++++++
+> >  kernel/power/main.c                   |   34 +++++++++++++++++++++++++++++++++
+> >  4 files changed, 60 insertions(+), 2 deletions(-)
+> 
+> This patch fails against the linux-next tree, care to fix it up so that
+> I can apply it?
 
+I'd prefer it to go through my tree if you don't mind.
 
+Rafael
