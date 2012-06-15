@@ -1,51 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755506Ab2FOIwl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 04:52:41 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:61661 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753060Ab2FOIwk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 04:52:40 -0400
-From: Wanpeng Li <liwp.linux@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Jiri Kosina <trivial@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Michal Hocko <mhocko@suse.cz>,
-        Minchan Kim <minchan@kernel.org>,
-        Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Wanpeng Li <liwp.linux@gmail.com>
-Subject: [PATCH][TRIVIAL][resend] mm: cleanup on the comments of zone_reclaim_stat
-Date: Fri, 15 Jun 2012 16:52:29 +0800
-Message-Id: <1339750349-5601-1-git-send-email-liwp.linux@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1755195Ab2FOIyO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 04:54:14 -0400
+Received: from mga11.intel.com ([192.55.52.93]:61010 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753203Ab2FOIyM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 04:54:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="165999851"
+Date: Fri, 15 Jun 2012 16:54:05 +0800
+From: Fengguang Wu <wfg@linux.intel.com>
+To: Josh Triplett <josh@freedesktop.org>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Christopher Li <sparse@chrisli.org>,
+        Linus Torvalds <torvalds@ppc970.osdl.org>
+Subject: Re: automated warning notifications
+Message-ID: <20120615085405.GB13933@localhost>
+References: <20120614172523.GB4400@mwanda>
+ <20120615014835.GA5695@localhost>
+ <20120615071222.GZ13539@mwanda>
+ <20120615075810.GA13206@localhost>
+ <20120615083100.GA29692@leaf>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120615083100.GA29692@leaf>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wanpeng Li <liwp@linux.vnet.ibm.com>
+On Fri, Jun 15, 2012 at 01:31:00AM -0700, Josh Triplett wrote:
+> On Fri, Jun 15, 2012 at 03:58:10PM +0800, Fengguang Wu wrote:
+> > On Fri, Jun 15, 2012 at 10:12:22AM +0300, Dan Carpenter wrote:
+> > > On Fri, Jun 15, 2012 at 09:48:35AM +0800, Fengguang Wu wrote:
+> > > > In an average working day, 1-2 build errors will be caught and email
+> > > > notified. I guess there will be more sparse warnings if it's turned
+> > > > on.
+> > > > 
+> > > > Perhaps the sparse warnings can be enabled, but only sent to the patch
+> > > > author. If you and anyone else are interested, they could be sent to
+> > > > some mailing list, too. One thing I'm sure is, we probably never want
+> > > > to disturb the busy maintainers with these warnings.
+> > > 
+> > > Eventually I think we will want to set up a mailing list for this or
+> > > we will start sending duplicate messages.
+> > 
+> > Fair enough. How can we setup the mailing list? Once the list up, it
+> > would be trivial for me to send sparse warnings out there.
+> 
+> Rather than a mailing list, how about something like test.kernel.org for
+> sparse warnings?
 
-Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
-Acked-by: Minchan Kim <minchan@kernel.org>
+It's much more trivial to send new build/sparse errors/warnings to a
+list than to setup a website :-) As the errors come and go every day,
+and they are mostly unstructured, it seems the mailing list would be a
+more natural fit. People can search for known errors there and/or CC
+fixes there.
 
----
- include/linux/mmzone.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Anyway, we just sent an request for creating
 
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 2427706..d6a5f83 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -188,7 +188,7 @@ static inline int is_unevictable_lru(enum lru_list lru)
- struct zone_reclaim_stat {
- 	/*
- 	 * The pageout code in vmscan.c keeps track of how many of the
--	 * mem/swap backed and file backed pages are refeferenced.
-+	 * mem/swap backed and file backed pages are referenced.
- 	 * The higher the rotated/scanned ratio, the more valuable
- 	 * that cache is.
- 	 *
--- 
-1.7.9.5
+        automated-warnings@vger.kernel.org
 
+Thanks,
+Fengguang
