@@ -1,60 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932468Ab2FOQWs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 12:22:48 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49477 "EHLO
+	id S932507Ab2FOQXA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 12:23:00 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49478 "EHLO
 	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932218Ab2FOQWq (ORCPT
+	by vger.kernel.org with ESMTP id S932432Ab2FOQWr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 12:22:46 -0400
+	Fri, 15 Jun 2012 12:22:47 -0400
 From: Will Deacon <will.deacon@arm.com>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, nico@fluxnic.net,
         Will Deacon <will.deacon@arm.com>
-Subject: [PATCH v2 0/2] Implement word-at-a-time string functions for ARM
-Date: Fri, 15 Jun 2012 17:22:35 +0100
-Message-Id: <1339777357-32479-1-git-send-email-will.deacon@arm.com>
+Subject: [PATCH v2 2/2] ARM: dcache: select DCACHE_WORD_ACCESS for little-endian ARMv6+ CPUs
+Date: Fri, 15 Jun 2012 17:22:37 +0100
+Message-Id: <1339777357-32479-3-git-send-email-will.deacon@arm.com>
 X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1339777357-32479-1-git-send-email-will.deacon@arm.com>
+References: <1339777357-32479-1-git-send-email-will.deacon@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+DCACHE_WORD_ACCESS uses the word-at-a-time API for optimised string
+comparisons in the vfs layer.
 
-This is version 2 of the patches originally posted here:
+This patch implements support for load_unaligned_zeropad for ARM CPUs
+with native support for unaligned memory accesses (v6+) when running
+little-endian.
 
-  http://lists.infradead.org/pipermail/linux-arm-kernel/2012-June/103290.html
+Reviewed-by: Nicolas Pitre <nico@linaro.org>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+---
+ arch/arm/Kconfig                      |    1 +
+ arch/arm/include/asm/word-at-a-time.h |   41 +++++++++++++++++++++++++++++++++
+ 2 files changed, 42 insertions(+), 0 deletions(-)
 
-There are only cosmetic changes from v1:
-	- Added Nico's reviewed-by tags
-	- Removed RFC prefix
-	- Fixed changelog to echo the fact that we may use clz
-
-I'm still interested in any pathname-heavy benchmarks that people may
-have to stress the name hashing code. My simple find test does show an
-improvement but I don't know how realistic that is.
-
-Cheers,
-
-Will
-
-
-Will Deacon (2):
-  ARM: use generic strnlen_user and strncpy_from_user functions
-  ARM: dcache: select DCACHE_WORD_ACCESS for little-endian ARMv6+ CPUs
-
- arch/arm/Kconfig                      |    3 +
- arch/arm/include/asm/uaccess.h        |   27 ++-------
- arch/arm/include/asm/word-at-a-time.h |   96 +++++++++++++++++++++++++++++++++
- arch/arm/kernel/armksyms.c            |    4 --
- arch/arm/lib/Makefile                 |    1 -
- arch/arm/lib/strncpy_from_user.S      |   43 ---------------
- arch/arm/lib/strnlen_user.S           |   40 --------------
- 7 files changed, 105 insertions(+), 109 deletions(-)
- create mode 100644 arch/arm/include/asm/word-at-a-time.h
- delete mode 100644 arch/arm/lib/strncpy_from_user.S
- delete mode 100644 arch/arm/lib/strnlen_user.S
-
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 77a2fad..bba8a56 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -47,6 +47,7 @@ config ARM
+ 	select GENERIC_CLOCKEVENTS_BROADCAST if SMP
+ 	select GENERIC_STRNCPY_FROM_USER
+ 	select GENERIC_STRNLEN_USER
++	select DCACHE_WORD_ACCESS if (CPU_V6 || CPU_V6K || CPU_V7) && !CPU_BIG_ENDIAN
+ 	help
+ 	  The ARM series is a line of low-power-consumption RISC chip designs
+ 	  licensed by ARM Ltd and targeted at embedded applications and
+diff --git a/arch/arm/include/asm/word-at-a-time.h b/arch/arm/include/asm/word-at-a-time.h
+index 74b2d45..4d52f92 100644
+--- a/arch/arm/include/asm/word-at-a-time.h
++++ b/arch/arm/include/asm/word-at-a-time.h
+@@ -48,6 +48,47 @@ static inline unsigned long find_zero(unsigned long mask)
+ 	return ret;
+ }
+ 
++#ifdef CONFIG_DCACHE_WORD_ACCESS
++
++#define zero_bytemask(mask) (mask)
++
++/*
++ * Load an unaligned word from kernel space.
++ *
++ * In the (very unlikely) case of the word being a page-crosser
++ * and the next page not being mapped, take the exception and
++ * return zeroes in the non-existing part.
++ */
++static inline unsigned long load_unaligned_zeropad(const void *addr)
++{
++	unsigned long ret, offset;
++
++	/* Load word from unaligned pointer addr */
++	asm(
++	"1:	ldr	%0, [%2]\n"
++	"2:\n"
++	"	.pushsection .fixup,\"ax\"\n"
++	"	.align 2\n"
++	"3:	and	%1, %2, #0x3\n"
++	"	bic	%2, %2, #0x3\n"
++	"	ldr	%0, [%2]\n"
++	"	lsl	%1, %1, #0x3\n"
++	"	lsr	%0, %0, %1\n"
++	"	b	2b\n"
++	"	.popsection\n"
++	"	.pushsection __ex_table,\"a\"\n"
++	"	.align	3\n"
++	"	.long	1b, 3b\n"
++	"	.popsection"
++	: "=&r" (ret), "=&r" (offset)
++	: "r" (addr), "Qo" (*(unsigned long *)addr));
++
++	return ret;
++}
++
++
++#endif	/* DCACHE_WORD_ACCESS */
++
+ #else	/* __ARMEB__ */
+ #include <asm-generic/word-at-a-time.h>
+ #endif
 -- 
 1.7.4.1
 
