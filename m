@@ -1,108 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757782Ab2FOUQz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 16:16:55 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:34134 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756886Ab2FOUNd (ORCPT
+	id S1757821Ab2FOURB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 16:17:01 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:50968 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757788Ab2FOUQ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 16:13:33 -0400
+	Fri, 15 Jun 2012 16:16:58 -0400
+Date: Fri, 15 Jun 2012 13:16:32 -0700
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 02/14] rcu: Consolidate duplicate callback-list initialization
-Date: Fri, 15 Jun 2012 13:13:03 -0700
-Message-Id: <1339791195-26389-2-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.8
-In-Reply-To: <1339791195-26389-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20120615201256.GA26120@linux.vnet.ibm.com>
- <1339791195-26389-1-git-send-email-paulmck@linux.vnet.ibm.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
+        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+        rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
+        eric.dumazet@gmail.com, darren@dvhart.com, fweisbec@gmail.com,
+        patches@linaro.org, "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH tip/core/rcu 4/6] rcu: Fix bug in rcu_barrier() torture
+ test
+Message-ID: <20120615201632.GI2389@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120615185725.GA25163@linux.vnet.ibm.com>
+ <1339786674-25265-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1339786674-25265-4-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20120615194454.GA6366@Krystal>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120615194454.GA6366@Krystal>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12061520-7282-0000-0000-000009F3A8A9
+x-cbid: 12061520-7408-0000-0000-000005E497C9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+On Fri, Jun 15, 2012 at 03:44:54PM -0400, Mathieu Desnoyers wrote:
+> * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> [...]
+> > @@ -1642,6 +1643,7 @@ void rcu_torture_barrier_cbf(struct rcu_head *rcu)
+> >  static int rcu_torture_barrier_cbs(void *arg)
+> >  {
+> >  	long myid = (long)arg;
+> > +	bool lastphase = 0;
+> >  	struct rcu_head rcu;
+> >  
+> >  	init_rcu_head_on_stack(&rcu);
+> > @@ -1649,9 +1651,11 @@ static int rcu_torture_barrier_cbs(void *arg)
+> >  	set_user_nice(current, 19);
+> >  	do {
+> >  		wait_event(barrier_cbs_wq[myid],
+> > -			   atomic_read(&barrier_cbs_count) == n_barrier_cbs ||
+> > +			   barrier_phase != lastphase ||
+> >  			   kthread_should_stop() ||
+> >  			   fullstop != FULLSTOP_DONTSTOP);
+> > +		lastphase = barrier_phase;
+> > +		smp_mb();
+> 
+> Hi Paul,
+> 
+> Documenting this barrier, and the barrier below, along with the variable
+> accesses they order, would appear to be a good idea, especially since
+> the bug this is correcting was caused by the lack of appropriate
+> smp_mb().
 
-There are a couple of open-coded initializations of the rcu_data
-structure's RCU callback list.  This commit therefore consolidates
-them into a new init_callback_list() function.
+Fair point, even in rcutorture.  Or maybe especially in rcutorture...
 
-Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
- kernel/rcutree.c |   23 ++++++++++++++---------
- 1 files changed, 14 insertions(+), 9 deletions(-)
+Will fix!
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 0f04480..d938671 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -936,6 +936,18 @@ check_for_new_grace_period(struct rcu_state *rsp, struct rcu_data *rdp)
- }
- 
- /*
-+ * Initialize the specified rcu_data structure's callback list to empty.
-+ */
-+static void init_callback_list(struct rcu_data *rdp)
-+{
-+	int i;
-+
-+	rdp->nxtlist = NULL;
-+	for (i = 0; i < RCU_NEXT_SIZE; i++)
-+		rdp->nxttail[i] = &rdp->nxtlist;
-+}
-+
-+/*
-  * Advance this CPU's callbacks, but only if the current grace period
-  * has ended.  This may be called only from the CPU to whom the rdp
-  * belongs.  In addition, the corresponding leaf rcu_node structure's
-@@ -1327,8 +1339,6 @@ static void
- rcu_send_cbs_to_orphanage(int cpu, struct rcu_state *rsp,
- 			  struct rcu_node *rnp, struct rcu_data *rdp)
- {
--	int i;
--
- 	/*
- 	 * Orphan the callbacks.  First adjust the counts.  This is safe
- 	 * because ->onofflock excludes _rcu_barrier()'s adoption of
-@@ -1368,9 +1378,7 @@ rcu_send_cbs_to_orphanage(int cpu, struct rcu_state *rsp,
- 	}
- 
- 	/* Finally, initialize the rcu_data structure's list to empty.  */
--	rdp->nxtlist = NULL;
--	for (i = 0; i < RCU_NEXT_SIZE; i++)
--		rdp->nxttail[i] = &rdp->nxtlist;
-+	init_callback_list(rdp);
- }
- 
- /*
-@@ -2404,16 +2412,13 @@ static void __init
- rcu_boot_init_percpu_data(int cpu, struct rcu_state *rsp)
- {
- 	unsigned long flags;
--	int i;
- 	struct rcu_data *rdp = per_cpu_ptr(rsp->rda, cpu);
- 	struct rcu_node *rnp = rcu_get_root(rsp);
- 
- 	/* Set up local state, ensuring consistent view of global state. */
- 	raw_spin_lock_irqsave(&rnp->lock, flags);
- 	rdp->grpmask = 1UL << (cpu - rdp->mynode->grplo);
--	rdp->nxtlist = NULL;
--	for (i = 0; i < RCU_NEXT_SIZE; i++)
--		rdp->nxttail[i] = &rdp->nxtlist;
-+	init_callback_list(rdp);
- 	rdp->qlen_lazy = 0;
- 	rdp->qlen = 0;
- 	rdp->dynticks = &per_cpu(rcu_dynticks, cpu);
--- 
-1.7.8
+							Thanx, Paul
+
+> Thanks,
+> 
+> Mathieu
+> 
+> >  		if (kthread_should_stop() || fullstop != FULLSTOP_DONTSTOP)
+> >  			break;
+> >  		cur_ops->call(&rcu, rcu_torture_barrier_cbf);
+> > @@ -1676,7 +1680,8 @@ static int rcu_torture_barrier(void *arg)
+> >  	do {
+> >  		atomic_set(&barrier_cbs_invoked, 0);
+> >  		atomic_set(&barrier_cbs_count, n_barrier_cbs);
+> > -		/* wake_up() path contains the required barriers. */
+> > +		smp_mb();
+> > +		barrier_phase = !barrier_phase;
+> >  		for (i = 0; i < n_barrier_cbs; i++)
+> >  			wake_up(&barrier_cbs_wq[i]);
+> >  		wait_event(barrier_wq,
+> > -- 
+> > 1.7.8
+> > 
+> 
+> -- 
+> Mathieu Desnoyers
+> Operating System Efficiency R&D Consultant
+> EfficiOS Inc.
+> http://www.efficios.com
+> 
 
