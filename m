@@ -1,125 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758134Ab2FOWDt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 18:03:49 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59032 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757954Ab2FOWDs (ORCPT
+	id S1758147Ab2FOWFP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 18:05:15 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:33393 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757954Ab2FOWFN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 18:03:48 -0400
-Date: Fri, 15 Jun 2012 15:03:43 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>, stable@vger.kernel.org
-Subject: Re: [PATCH] driver core: fix shutdown races with probe/remove(v2)
-Message-ID: <20120615220343.GA8928@kroah.com>
-References: <1339391600-17815-1-git-send-email-ming.lei@canonical.com>
+	Fri, 15 Jun 2012 18:05:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339391600-17815-1-git-send-email-ming.lei@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1339794567-17784-1-git-send-email-greg.pearson@hp.com>
+References: <1339794567-17784-1-git-send-email-greg.pearson@hp.com>
+Date: Fri, 15 Jun 2012 15:05:12 -0700
+X-Google-Sender-Auth: FwtBjzM3NqSsRMlAXRq7c5zSu00
+Message-ID: <CAE9FiQWh9bjBQZEbEp=Wti=qNJVR2G-CuEa8bC3TtfN5hSWKxg@mail.gmail.com>
+Subject: Re: [PATCH] mm/memblock: fix overlapping allocation when doubling
+ reserved array
+From: Yinghai Lu <yinghai@kernel.org>
+To: Greg Pearson <greg.pearson@hp.com>
+Cc: tj@kernel.org, hpa@linux.intel.com, akpm@linux-foundation.org,
+        shangw@linux.vnet.ibm.com, mingo@elte.hu, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 11, 2012 at 01:13:20PM +0800, Ming Lei wrote:
-> Firstly, .shutdown callback may touch a uninitialized hardware
-> if dev->driver is set and .probe is not completed.
-> 
-> Secondly, device_shutdown() may dereference a null pointer to cause
-> oops when dev->driver is cleared after it is checked in
-> device_shutdown().
-> 
-> So just try to hold device lock and its parent lock(if it has) to
-> fix the races.
-> 
-> Cc: Alan Stern <stern@rowland.harvard.edu>
-> Cc: stable@vger.kernel.org
+On Fri, Jun 15, 2012 at 2:09 PM, Greg Pearson <greg.pearson@hp.com> wrote:
+> The __alloc_memory_core_early() routine will ask memblock for a range
+> of memory then try to reserve it. If the reserved region array lacks
+> space for the new range, memblock_double_array() is called to allocate
+> more space for the array. If memblock is used to allocate memory for
+> the new array it can end up using a range that overlaps with the range
+> originally allocated in __alloc_memory_core_early(), leading to possible
+> data corruption.
+>
+> With this patch memblock_double_array() now calls memblock_find_in_range()
+> with a narrowed candidate range so any memory allocated will not overlap
+> with the original range that was being reserved. The range is narrowed by
+> passing in the starting address of the previously allocated range as the
+> end of the candidate range. Since memblock_find_in_range_node() looks for
+> a free range by walking the free memory list in reverse order (highest
+> memory address to lowest address) this change should not unnecessarily
+> exclude chunks of memory that could otherwise be used to satisfy the
+> request.
 
-Why stable?  Are there known systems that crash right now without this
-change?  I don't think we ever heard back from the original poster about
-this issue as to what exactly was going wrong.
+old early_res version have exclude_start/exclude_end.
 
-
-> Signed-off-by: Ming Lei <ming.lei@canonical.com>
+>
+> Signed-off-by: Greg Pearson <greg.pearson@hp.com>
 > ---
-> v2:
-> 	- take Alan's suggestion to use device_trylock to avoid
-> 	hanging during shutdown by buggy device or driver
-> 	- hold parent reference counter
-> 
->  drivers/base/core.c |   32 ++++++++++++++++++++++++++++++++
->  1 file changed, 32 insertions(+)
-> 
-> diff --git a/drivers/base/core.c b/drivers/base/core.c
-> index 346be8b..f2fc989 100644
-> --- a/drivers/base/core.c
-> +++ b/drivers/base/core.c
-> @@ -1796,6 +1796,16 @@ out:
->  }
->  EXPORT_SYMBOL_GPL(device_move);
->  
-> +static int __try_lock(struct device *dev)
-> +{
-> +	int i = 0;
-> +
-> +	while (!device_trylock(dev) && i++ < 100)
-> +		msleep(10);
-> +
-> +	return i < 100;
-> +}
+>  mm/memblock.c |   11 +++++++----
+>  1 files changed, 7 insertions(+), 4 deletions(-)
+>
+> diff --git a/mm/memblock.c b/mm/memblock.c
+> index 952123e..599519c 100644
+> --- a/mm/memblock.c
+> +++ b/mm/memblock.c
+> @@ -184,7 +184,8 @@ static void __init_memblock memblock_remove_region(struct memblock_type *type, u
+>        }
+>  }
+>
+> -static int __init_memblock memblock_double_array(struct memblock_type *type)
+> +static int __init_memblock memblock_double_array(struct memblock_type *type,
+> +                                               phys_addr_t skip_base)
 
-That's a totally arbritary time, why does this work and other times do
-not?  And what is this returning, if the lock was grabbed successfully?
-What's with the __ naming?
+could pass phys_addr_t exclude_base, phys_addr_t execlude_end
 
-I really don't like this at all.
+>  {
+>        struct memblock_region *new_array, *old_array;
+>        phys_addr_t old_size, new_size, addr;
+> @@ -222,7 +223,8 @@ static int __init_memblock memblock_double_array(struct memblock_type *type)
+>                new_array = kmalloc(new_size, GFP_KERNEL);
+>                addr = new_array ? __pa(new_array) : 0;
+>        } else {
+> -               addr = memblock_find_in_range(0, MEMBLOCK_ALLOC_ACCESSIBLE, new_size, sizeof(phys_addr_t));
+> +               addr = memblock_find_in_range(0, skip_base,
+> +                               new_size, sizeof(phys_addr_t));
 
+could try to search [exclude_end, MEMBLOCK_ALLOC_ACCESSIBLE) at first.
+then try [0, execlude_start).
 
-> +
->  /**
->   * device_shutdown - call ->shutdown() on each device to shutdown.
->   */
-> @@ -1810,8 +1820,11 @@ void device_shutdown(void)
->  	 * devices offline, even as the system is shutting down.
->  	 */
->  	while (!list_empty(&devices_kset->list)) {
-> +		int nonlocked;
-> +
->  		dev = list_entry(devices_kset->list.prev, struct device,
->  				kobj.entry);
-> +		get_device(dev->parent);
-
-Why grab the parent reference?
-
->  		get_device(dev);
->  		/*
->  		 * Make sure the device is off the kset list, in the
-> @@ -1820,6 +1833,18 @@ void device_shutdown(void)
->  		list_del_init(&dev->kobj.entry);
->  		spin_unlock(&devices_kset->list_lock);
->  
-> +		/* hold lock to avoid race with .probe/.release */
-> +		if (dev->parent && !__try_lock(dev->parent))
-> +			nonlocked = 2;
-> +		else if (!__try_lock(dev))
-> +			nonlocked = 1;
-> +		else
-> +			nonlocked = 0;
-
-Ick ick ick.  Why can't we just grab the lock to try to only call these
-callbacks one at a time?  What is causing the big problem here that I am
-missing?
-
-> +
-> +		if (nonlocked)
-> +			dev_err(dev, "can't hold %slock for shutdown\n",
-> +					nonlocked == 1 ? "" : "parent ");
-
-What can anyone do with this message?  I sure wouldn't know what to do
-with it, do you?  If so, what?
-
-greg k-h
-
+Yinghai
