@@ -1,176 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755639Ab2FOMCF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 08:02:05 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56406 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752296Ab2FOMCC (ORCPT
+	id S1755756Ab2FOMEh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 08:04:37 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:54290 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751868Ab2FOMEf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 08:02:02 -0400
-From: Sha Zhengju <handai.szj@gmail.com>
-To: linux-mm@kvack.org, cgroups@vger.kernel.org
-Cc: kamezawa.hiroyu@jp.fujitsu.com, gthelen@google.com, yinghan@google.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Sha Zhengju <handai.szj@taobao.com>
-Subject: [PATCH 2/2] memcg: add per cgroup dirty pages accounting
-Date: Fri, 15 Jun 2012 20:01:57 +0800
-Message-Id: <1339761717-29070-1-git-send-email-handai.szj@taobao.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1339761611-29033-1-git-send-email-handai.szj@taobao.com>
-References: <1339761611-29033-1-git-send-email-handai.szj@taobao.com>
+	Fri, 15 Jun 2012 08:04:35 -0400
+Date: Fri, 15 Jun 2012 14:04:30 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Fengguang Wu <fengguang.wu@intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "kay.sievers" <kay.sievers@vrfy.org>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] printk: Add printk_flush() to force buffered text to
+ console
+Message-ID: <20120615120430.GB23681@gmail.com>
+References: <1339649173.13377.191.camel@gandalf.stny.rr.com>
+ <20120614045930.GA10508@kroah.com>
+ <1339671715.13377.209.camel@gandalf.stny.rr.com>
+ <20120614154153.GD17140@kroah.com>
+ <1339693625.13377.242.camel@gandalf.stny.rr.com>
+ <20120615042233.GA10973@localhost>
+ <20120615043017.GA9587@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120615043017.GA9587@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds memcg routines to count dirty pages. I notice that
-the list has talked about per-cgroup dirty page limiting
-(http://lwn.net/Articles/455341/) before, but it did not get merged.
-I've no idea how is this going now, but maybe we can add per cgroup
-dirty pages accounting first. This allows the memory controller to
-maintain an accurate view of the amount of its memory that is dirty
-and can provide some infomation while group's direct reclaim is working.
 
-After commit 89c06bd5 (memcg: use new logic for page stat accounting),
-we do not need per page_cgroup flag anymore and can directly use
-struct page flag.
+* Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
 
+> On Fri, Jun 15, 2012 at 12:22:33PM +0800, Fengguang Wu wrote:
+> > > I actually would like to make these more compact. As all my test box
+> > > consoles go through serial ports, just booting through this takes more
+> > > time the the compile itself.
+> > 
+> > The tests took 23 seconds boot time on one kernel:
+> > 
+> >         [    0.152934] Testing tracer nop: PASSED
+> >         ...1577 lines total...
+> >         [   23.206550] Testing kprobe tracing: OK
+> > 
+> > And 135 seconds in another bloated kernel:
+> > 
+> >         [  115.396441] Testing event 9p_client_req: OK
+> >         ...2545 lines total...
+> >         [  240.268783] Testing kprobe tracing: OK
+> > 
+> > I'd appreciate if the boot time can be reduced. Because I'm doing
+> > kernel boot tests for *every single* commits.
+> > 
+> > It may look insane amount of work, but it's still manageable: with 10
+> > kvm instances each take 1 minute to boot test a kernel, I can boot
+> > test 60*24*10=14400 kernels in one day. That's a rather big number.
+> > That allows me to run more cpu/vm/io stress tests for each kernel :-)
+> 
+> Do you really want to enable those tests for your test 
+> kernels?  Can they fail if we mess up other parts of the 
+> kernel, or do they only test the tracing portions?
 
-Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
----
- include/linux/memcontrol.h |    1 +
- mm/filemap.c               |    1 +
- mm/memcontrol.c            |   32 +++++++++++++++++++++++++-------
- mm/page-writeback.c        |    2 ++
- mm/truncate.c              |    1 +
- 5 files changed, 30 insertions(+), 7 deletions(-)
+These printk's are useful, are used for a specific (albeit 
+limited) purpose and were and continue to be useful in that 
+role.
 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index a337c2e..8154ade 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -39,6 +39,7 @@ enum mem_cgroup_stat_index {
- 	MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
- 	MEM_CGROUP_STAT_SWAPOUT, /* # of pages, swapped out */
- 	MEM_CGROUP_STAT_DATA, /* end of data requires synchronization */
-+	MEM_CGROUP_STAT_FILE_DIRTY,  /* # of dirty pages in page cache */
- 	MEM_CGROUP_STAT_NSTATS,
- };
- 
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 79c4b2b..5b5c121 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -141,6 +141,7 @@ void __delete_from_page_cache(struct page *page)
- 	 * having removed the page entirely.
- 	 */
- 	if (PageDirty(page) && mapping_cap_account_dirty(mapping)) {
-+		mem_cgroup_dec_page_stat(page, MEM_CGROUP_STAT_FILE_DIRTY);
- 		dec_zone_page_state(page, NR_FILE_DIRTY);
- 		dec_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
- 	}
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 9102b8c..d200ad1 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2548,6 +2548,18 @@ void mem_cgroup_split_huge_fixup(struct page *head)
- }
- #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
- 
-+static inline
-+void mem_cgroup_move_account_page_stat(struct mem_cgroup *from,
-+					struct mem_cgroup *to,
-+					enum mem_cgroup_stat_index idx)
-+{
-+	/* Update stat data for mem_cgroup */
-+	preempt_disable();
-+	__this_cpu_dec(from->stat->count[idx]);
-+	__this_cpu_inc(to->stat->count[idx]);
-+	preempt_enable();
-+}
-+
- /**
-  * mem_cgroup_move_account - move account of the page
-  * @page: the page
-@@ -2597,13 +2609,14 @@ static int mem_cgroup_move_account(struct page *page,
- 
- 	move_lock_mem_cgroup(from, &flags);
- 
--	if (!anon && page_mapped(page)) {
--		/* Update mapped_file data for mem_cgroup */
--		preempt_disable();
--		__this_cpu_dec(from->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
--		__this_cpu_inc(to->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
--		preempt_enable();
--	}
-+	if (!anon && page_mapped(page))
-+		mem_cgroup_move_account_page_stat(from, to,
-+					MEM_CGROUP_STAT_FILE_MAPPED);
-+
-+	if (PageDirty(page))
-+		mem_cgroup_move_account_page_stat(from, to,
-+					MEM_CGROUP_STAT_FILE_DIRTY);
-+
- 	mem_cgroup_charge_statistics(from, anon, -nr_pages);
- 	if (uncharge)
- 		/* This is not "cancel", but cancel_charge does all we need. */
-@@ -4023,6 +4036,7 @@ enum {
- 	MCS_SWAP,
- 	MCS_PGFAULT,
- 	MCS_PGMAJFAULT,
-+	MCS_FILE_DIRTY,
- 	MCS_INACTIVE_ANON,
- 	MCS_ACTIVE_ANON,
- 	MCS_INACTIVE_FILE,
-@@ -4047,6 +4061,7 @@ struct {
- 	{"swap", "total_swap"},
- 	{"pgfault", "total_pgfault"},
- 	{"pgmajfault", "total_pgmajfault"},
-+	{"dirty", "total_dirty"},
- 	{"inactive_anon", "total_inactive_anon"},
- 	{"active_anon", "total_active_anon"},
- 	{"inactive_file", "total_inactive_file"},
-@@ -4080,6 +4095,9 @@ mem_cgroup_get_local_stat(struct mem_cgroup *memcg, struct mcs_total_stat *s)
- 	val = mem_cgroup_read_events(memcg, MEM_CGROUP_EVENTS_PGMAJFAULT);
- 	s->stat[MCS_PGMAJFAULT] += val;
- 
-+	val = mem_cgroup_read_stat(memcg, MEM_CGROUP_STAT_FILE_DIRTY);
-+	s->stat[MCS_FILE_DIRTY] += val * PAGE_SIZE;
-+
- 	/* per zone stat */
- 	val = mem_cgroup_nr_lru_pages(memcg, BIT(LRU_INACTIVE_ANON));
- 	s->stat[MCS_INACTIVE_ANON] += val * PAGE_SIZE;
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index 26adea8..b17c692 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -1936,6 +1936,7 @@ int __set_page_dirty_no_writeback(struct page *page)
- void account_page_dirtied(struct page *page, struct address_space *mapping)
- {
- 	if (mapping_cap_account_dirty(mapping)) {
-+		mem_cgroup_inc_page_stat(page, MEM_CGROUP_STAT_FILE_DIRTY);
- 		__inc_zone_page_state(page, NR_FILE_DIRTY);
- 		__inc_zone_page_state(page, NR_DIRTIED);
- 		__inc_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
-@@ -2155,6 +2156,7 @@ int clear_page_dirty_for_io(struct page *page)
- 		 * for more comments.
- 		 */
- 		if (TestClearPageDirty(page)) {
-+			mem_cgroup_dec_page_stat(page, MEM_CGROUP_STAT_FILE_DIRTY);
- 			dec_zone_page_state(page, NR_FILE_DIRTY);
- 			dec_bdi_stat(mapping->backing_dev_info,
- 					BDI_RECLAIMABLE);
-diff --git a/mm/truncate.c b/mm/truncate.c
-index 61a183b..fe8363e 100644
---- a/mm/truncate.c
-+++ b/mm/truncate.c
-@@ -76,6 +76,7 @@ void cancel_dirty_page(struct page *page, unsigned int account_size)
- 	if (TestClearPageDirty(page)) {
- 		struct address_space *mapping = page->mapping;
- 		if (mapping && mapping_cap_account_dirty(mapping)) {
-+			mem_cgroup_dec_page_stat(page, MEM_CGROUP_STAT_FILE_DIRTY);
- 			dec_zone_page_state(page, NR_FILE_DIRTY);
- 			dec_bdi_stat(mapping->backing_dev_info,
- 					BDI_RECLAIMABLE);
--- 
-1.7.1
+The changes Steve bisected to broke this use of printk(). Please 
+apply Steve's fix, fix it yourself or revert the changes that 
+regressed printk().
 
+Thanks,
+
+	Ingo
