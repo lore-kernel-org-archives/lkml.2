@@ -1,54 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754873Ab2FORKn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 13:10:43 -0400
-Received: from casper.infradead.org ([85.118.1.10]:47952 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752247Ab2FORKl convert rfc822-to-8bit (ORCPT
+	id S1755370Ab2FORKq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 13:10:46 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:55158 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752247Ab2FORKo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 13:10:41 -0400
-Message-ID: <1339780230.2559.86.camel@twins>
-Subject: Re: [PATCH V6 08/13] perf: Add Sandy Bridge-EP uncore support
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: "Yan, Zheng" <zheng.z.yan@intel.com>
-Cc: mingo@elte.hu, jolsa@redhat.com, eranian@google.com, andi@firstfloor.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 15 Jun 2012 19:10:30 +0200
-In-Reply-To: <1339741902-8449-9-git-send-email-zheng.z.yan@intel.com>
-References: <1339741902-8449-1-git-send-email-zheng.z.yan@intel.com>
-	 <1339741902-8449-9-git-send-email-zheng.z.yan@intel.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Fri, 15 Jun 2012 13:10:44 -0400
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
+        Tony Luck <tony.luck@intel.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
+        Shuah Khan <shuahkhan@gmail.com>, arve@android.com,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Subject: [PATCH 2/6] pstore: Introduce write_buf backend callback
+Date: Fri, 15 Jun 2012 10:08:27 -0700
+Message-Id: <1339780111-12075-2-git-send-email-anton.vorontsov@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <20120615170659.GA4060@lizard>
+References: <20120615170659.GA4060@lizard>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-06-15 at 14:31 +0800, Yan, Zheng wrote:
-> +static struct event_constraint snbep_uncore_r2pcie_constraints[] = {
-> +       UNCORE_EVENT_CONSTRAINT(0x10, 0x3),
-> +       UNCORE_EVENT_CONSTRAINT(0x11, 0x3),
-> +       UNCORE_EVENT_CONSTRAINT(0x12, 0x1),
-> +       UNCORE_EVENT_CONSTRAINT(0x23, 0x3),
-> +       UNCORE_EVENT_CONSTRAINT(0x24, 0x3),
-> +       UNCORE_EVENT_CONSTRAINT(0x25, 0x3),
-> +       UNCORE_EVENT_CONSTRAINT(0x26, 0x3),
-> +       UNCORE_EVENT_CONSTRAINT(0x32, 0x3),
-> +       UNCORE_EVENT_CONSTRAINT(0x33, 0x3),
-> +       UNCORE_EVENT_CONSTRAINT(0x34, 0x3),
-> +       EVENT_CONSTRAINT_END
-> +}; 
+For function tracing we need to stop using pstore.buf directly, since
+in a tracing callback we can't use spinlocks, and thus we can't safely
+use the global buffer.
 
-My E5-2600 Uncore Perf. Mon. Guide, March 2012 (Ref.# 327043-001)
-doesn't seem to list events 0x26 and up. 
+With write_buf callback, backends no longer need to access pstore.buf
+directly, and thus we can pass any buffers (e.g. allocated on stack).
 
-I'm staring at 2.8.5, table 2-108.
+Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+---
+ fs/pstore/platform.c   |   10 ++++++++++
+ include/linux/pstore.h |    4 ++++
+ 2 files changed, 14 insertions(+)
 
-Is my document out-dated or what's up?
+diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
+index be4614f..e7c0a52 100644
+--- a/fs/pstore/platform.c
++++ b/fs/pstore/platform.c
+@@ -198,6 +198,14 @@ static void pstore_register_console(void)
+ static void pstore_register_console(void) {}
+ #endif
+ 
++static int pstore_write_compat(enum pstore_type_id type,
++			       enum kmsg_dump_reason reason,
++			       u64 *id, unsigned int part,
++			       size_t size, struct pstore_info *psi)
++{
++	return psi->write_buf(type, reason, id, part, psinfo->buf, size, psi);
++}
++
+ /*
+  * platform specific persistent storage driver registers with
+  * us here. If pstore is already mounted, call the platform
+@@ -222,6 +230,8 @@ int pstore_register(struct pstore_info *psi)
+ 		return -EINVAL;
+ 	}
+ 
++	if (!psi->write)
++		psi->write = pstore_write_compat;
+ 	psinfo = psi;
+ 	mutex_init(&psinfo->read_mutex);
+ 	spin_unlock(&pstore_lock);
+diff --git a/include/linux/pstore.h b/include/linux/pstore.h
+index 1bd014b..b107484 100644
+--- a/include/linux/pstore.h
++++ b/include/linux/pstore.h
+@@ -48,6 +48,10 @@ struct pstore_info {
+ 	int		(*write)(enum pstore_type_id type,
+ 			enum kmsg_dump_reason reason, u64 *id,
+ 			unsigned int part, size_t size, struct pstore_info *psi);
++	int		(*write_buf)(enum pstore_type_id type,
++			enum kmsg_dump_reason reason, u64 *id,
++			unsigned int part, const char *buf, size_t size,
++			struct pstore_info *psi);
+ 	int		(*erase)(enum pstore_type_id type, u64 id,
+ 			struct pstore_info *psi);
+ 	void		*data;
+-- 
+1.7.10.4
 
-the r3qpi table seems to match, but the cbox one is funny again, event
-0x01 doesn't appear in the doc, nor does 0x3b, 0x38, 0x23.
-
-FWIW, cbox event constraint 0x1f needs to be an
-EVENT_CONSTRAINT_OVERLAP, see the comment near that macro definition.
