@@ -1,65 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932356Ab2FOPph (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 11:45:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25244 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932326Ab2FOPpe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 11:45:34 -0400
-Date: Fri, 15 Jun 2012 17:43:31 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 04/15] uprobes: install_breakpoint() should fail if
-	is_swbp_insn() == T
-Message-ID: <20120615154331.GA9578@redhat.com>
+	id S932409Ab2FOPtN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 11:49:13 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:33907 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932315Ab2FOPtK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 11:49:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120615154241.GA9524@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20120615135319.GF4400@mwanda>
+References: <20120614172523.GB4400@mwanda>
+	<20120615014835.GA5695@localhost>
+	<20120615071222.GZ13539@mwanda>
+	<20120615075810.GA13206@localhost>
+	<alpine.DEB.2.02.1206150639130.1864@hadrien>
+	<20120615111913.GA13539@mwanda>
+	<CA+MoWDrKJwiK66zpBxQ=q+qS7n_P4qLySgBRdj2txq20wa7bvA@mail.gmail.com>
+	<20120615135319.GF4400@mwanda>
+Date: Fri, 15 Jun 2012 12:49:08 -0300
+Message-ID: <CA+MoWDrrk3q+019h=q2Uxue3ZDy4tFEVv5nBwaQhrLxDYOBHJQ@mail.gmail.com>
+Subject: Re: automated warning notifications
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Julia Lawall <julia.lawall@lip6.fr>, Fengguang Wu <wfg@linux.intel.com>,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Josh Triplett <josh@freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-install_breakpoint() returns -EEXIST if is_swbp_insn(orig_insn) == T,
-the caller treats this code as success.
+On Fri, Jun 15, 2012 at 10:53 AM, Dan Carpenter
+<dan.carpenter@oracle.com> wrote:
+> Dropped the Sparse people from the CC list.
+>
+> On Fri, Jun 15, 2012 at 10:33:50AM -0300, Peter Senna Tschudin wrote:
+>> Added git-blame support...
+>>
+>
+> No.  I meant that it would run git blame on the offending line, take
+> the hash and then do a git show $hash.
 
-This is doubly wrong. The successful return should set UPROBE_COPY_INSN,
-but the real problem is that it shouldn't succeed. If the probed insn is
-int3 the application should get SIGTRAP, this won't happen with uprobe.
+http://pastebin.com/cZCPQuzH
 
-Probably we can fix this, we can add the UPROBE_SHARED_BP flag and teach
-handle_swbp/set_orig_insn to handle this case correctly. But this needs
-some complications and we have other insns which can't be probed, lets
-make a simple fix for now.
+>
+> regards,
+> dan carpenter
+>
 
-I think this needs a cleanup. UPROBE_COPY_INSN should die, copy_insn()
-should be called by alloc_uprobe(). arch_uprobe_analyze_insn() depends
-on ->mm (ia32_compat) but it is called only once.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
----
- kernel/events/uprobes.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 3ccdb29..ec78152 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -693,7 +693,7 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
- 			return ret;
- 
- 		if (is_swbp_insn((uprobe_opcode_t *)uprobe->arch.insn))
--			return -EEXIST;
-+			return -ENOTSUPP;
- 
- 		ret = arch_uprobe_analyze_insn(&uprobe->arch, mm, addr);
- 		if (ret)
 -- 
-1.5.5.1
-
+Peter Senna Tschudin
+peter.senna@gmail.com
+gpg id: 48274C36
