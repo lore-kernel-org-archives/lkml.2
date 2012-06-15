@@ -1,101 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757074Ab2FOAA7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 20:00:59 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56620 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756989Ab2FOAAx (ORCPT
+	id S1757093Ab2FOABB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 20:01:01 -0400
+Received: from www.linutronix.de ([62.245.132.108]:34128 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757050Ab2FOAAy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 20:00:53 -0400
-Message-Id: <20120614235626.543287219@linuxfoundation.org>
-User-Agent: quilt/0.60-20.1
-Date: Thu, 14 Jun 2012 16:56:53 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Xose Vazquez Perez <xose.vazquez@gmail.com>,
-        Gertjan van Wingerde <gwingerde@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 30/42] wireless: rt2x00: rt2800usb more devices were identified
-In-Reply-To: <20120614235636.GA5275@kroah.com>
+	Thu, 14 Jun 2012 20:00:54 -0400
+Date: Fri, 15 Jun 2012 02:00:44 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [PATCH] tracing: Fix the outmost stupidity of tracing_off()
+In-Reply-To: <1339717703.13377.285.camel@gandalf.stny.rr.com>
+Message-ID: <alpine.LFD.2.02.1206150154540.3086@ionos>
+References: <alpine.LFD.2.02.1206142345100.3086@ionos>  <1339714725.13377.252.camel@gandalf.stny.rr.com>  <alpine.LFD.2.02.1206150106511.3086@ionos> <1339717703.13377.285.camel@gandalf.stny.rr.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Thu, 14 Jun 2012, Steven Rostedt wrote:
+> On Fri, 2012-06-15 at 01:12 +0200, Thomas Gleixner wrote:
+> 
+> > That's still not an excuse for utter stupidity, really. Just check the
+> > commit date vs. your discovery time.
+> > 
+> > I told you often enough to be more careful, but that one is really
+> > beyond comprehension.
+> 
+> I'm really thinking that this was due to a bad push. As I believe I had
+> stale code (made this fix locally, but pushed the broken branch) and all
+> my changes were on top of it. When updating to the latest tip, I had
+> code I didn't want to merge, or conflicts happened, that I ended up
+> cherry-picking changes. Which breaks from my normal workflow, which is
+> to make sure my old changes fast forward to tip before doing a rebase of
+> my new code.
+> 
+> I have several branches that I work on and when they are ready, I rebase
+> them on top of tip, run a bunch of tests, and then push them out.
+> 
+> I'm a heavy user of tracing_off() too, and since the development of my
+> work is usually on older branches, I would not have noticed the bug. As
+> after I get things working I usually rebase on top of tip before doing
+> my final tests and asking for the pull request.
 
-------------------
+Bla, bla, bla.....
 
-From: Xose Vazquez Perez <xose.vazquez@gmail.com>
+ commit 499e547057f5bba5cd6f87ebe59b05d0c59da905
+ Author: Steven Rostedt <srostedt@redhat.com>
+ Date:   Wed Feb 22 15:50:28 2012 -0500
 
-commit e828b9fb4f6c3513950759d5fb902db5bd054048 upstream.
+Did you actually read what I wrote above?
 
-found in 2012_03_22_RT5572_Linux_STA_v2.6.0.0_DPO
+> > That's still not an excuse for utter stupidity, really. Just check the
+> > commit date vs. your discovery time.
 
-RT3070:
-(0x2019,0x5201)  Planex Communications, Inc. RT8070
-(0x7392,0x4085)  2L Central Europe BV 8070
-7392 is Edimax
+Emphasis on discovery time.
 
-RT35xx:
-(0x1690,0x0761) Askey
-was Fujitsu Stylistic 550, but 1690 is Askey
-
-Signed-off-by: Xose Vazquez Perez <xose.vazquez@gmail.com>
-Acked-by: Gertjan van Wingerde <gwingerde@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/net/wireless/rt2x00/rt2800usb.c |    8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
-
---- a/drivers/net/wireless/rt2x00/rt2800usb.c
-+++ b/drivers/net/wireless/rt2x00/rt2800usb.c
-@@ -992,6 +992,7 @@ static struct usb_device_id rt2800usb_de
- 	/* DVICO */
- 	{ USB_DEVICE(0x0fe9, 0xb307) },
- 	/* Edimax */
-+	{ USB_DEVICE(0x7392, 0x4085) },
- 	{ USB_DEVICE(0x7392, 0x7711) },
- 	{ USB_DEVICE(0x7392, 0x7717) },
- 	{ USB_DEVICE(0x7392, 0x7718) },
-@@ -1067,6 +1068,7 @@ static struct usb_device_id rt2800usb_de
- 	/* Philips */
- 	{ USB_DEVICE(0x0471, 0x200f) },
- 	/* Planex */
-+	{ USB_DEVICE(0x2019, 0x5201) },
- 	{ USB_DEVICE(0x2019, 0xab25) },
- 	{ USB_DEVICE(0x2019, 0xed06) },
- 	/* Quanta */
-@@ -1150,6 +1152,7 @@ static struct usb_device_id rt2800usb_de
- 	{ USB_DEVICE(0x8516, 0x3572) },
- 	/* Askey */
- 	{ USB_DEVICE(0x1690, 0x0744) },
-+	{ USB_DEVICE(0x1690, 0x0761) },
- 	{ USB_DEVICE(0x1690, 0x0764) },
- 	/* Cisco */
- 	{ USB_DEVICE(0x167b, 0x4001) },
-@@ -1235,12 +1238,8 @@ static struct usb_device_id rt2800usb_de
- 	{ USB_DEVICE(0x07d1, 0x3c0b) },
- 	{ USB_DEVICE(0x07d1, 0x3c17) },
- 	{ USB_DEVICE(0x2001, 0x3c17) },
--	/* Edimax */
--	{ USB_DEVICE(0x7392, 0x4085) },
- 	/* Encore */
- 	{ USB_DEVICE(0x203d, 0x14a1) },
--	/* Fujitsu Stylistic 550 */
--	{ USB_DEVICE(0x1690, 0x0761) },
- 	/* Gemtek */
- 	{ USB_DEVICE(0x15a9, 0x0010) },
- 	/* Gigabyte */
-@@ -1261,7 +1260,6 @@ static struct usb_device_id rt2800usb_de
- 	{ USB_DEVICE(0x05a6, 0x0101) },
- 	{ USB_DEVICE(0x1d4d, 0x0010) },
- 	/* Planex */
--	{ USB_DEVICE(0x2019, 0x5201) },
- 	{ USB_DEVICE(0x2019, 0xab24) },
- 	/* Qcom */
- 	{ USB_DEVICE(0x18e8, 0x6259) },
-
+Si tacuisses, philosophus mansisses
 
