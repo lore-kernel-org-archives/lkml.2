@@ -1,144 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753998Ab2FOAQV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 20:16:21 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:60879 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751477Ab2FOAQT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 20:16:19 -0400
-Date: Fri, 15 Jun 2012 01:16:35 +0100
-From: "Carlos R. Mafra" <crmafra@gmail.com>
-To: Igor Murzov <intergalactic.anonymous@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Len Brown <len.brown@intel.com>
-Subject: Re: 3.5.0-rc2 bisected regression: Can't change brightness on Vaio
- laptop
-Message-ID: <20120615001635.GA2694@Pilar>
-References: <20120610163813.GA5721@Pilar.maths.private.cam.ac.uk>
- <20120615022641.1556677f@garik>
+	id S1754361Ab2FOARD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 20:17:03 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40003 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751477Ab2FOARB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 20:17:01 -0400
+Message-ID: <4FDA7EDE.3070408@zytor.com>
+Date: Thu, 14 Jun 2012 17:16:30 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120615022641.1556677f@garik>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+CC: Hans Rosenfeld <hans.rosenfeld@amd.com>, Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, tglx@linutronix.de,
+        robert.richter@amd.com, andreas.herrmann3@amd.com
+Subject: Re: [RFC] x86, fpu: unify signal handling code paths for x86 and
+ x86_64 kernels
+References: <1339545814.28766.148.camel@sbsiddha-desk.sc.intel.com>  <20120614143727.GF7922@escobedo.osrc.amd.com> <1339719035.3475.52.camel@sbsiddha-desk.sc.intel.com>
+In-Reply-To: <1339719035.3475.52.camel@sbsiddha-desk.sc.intel.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 15 Jun 2012 at  2:26:41 +0400, Igor Murzov wrote:
-> Please follow the discussion here:
-> https://bugzilla.kernel.org/show_bug.cgi?id=43168
+On 06/14/2012 05:10 PM, Suresh Siddha wrote:
+> 
+> For the above mentioned reason, I guess the current usage of
+> is_ia32_task() in copy_siginfo_to_user32() (added recently for x32
+> support) is broken, as the TS_COMPAT flag may not be set for the x86
+> compat mode apps in those paths.
+> 
+> Peter offline suggested that the signal  delivery path should probably
+> set/clear the TS_COMPAT flag (just like we do it for syscall paths), so
+> that is_ia32_task() will work in those paths.
+> 
+> But the exception paths for the 32bit and 64bit apps in the 64-bit
+> kernel is same. So I really need to use something like TIF_IA32 to find
+> out the compat mode of the task. Anyways, the comment in the below patch
+> explains the problem ;) What should we do? Just remove the
+> is_ia32_task() checks in signal paths and just use TIF_IA32 or do
+> something like below.
+> 
+> My personal preference is to use TIF_IA32 check and avoid  the usage of
+> is_ia32_task() in the signal delivery paths.
 
-I tested the patch from Zhang Rui on comment #15 and it fixes
-the issue in the latest mainline.
+That is the quick fix, but...
 
- 
-> > Commit ea9f8856bd6d4 ("ACPI video: Harden video bus adding") breaks the
-> > backlight controls on my Vaio laptop.
-> > 
-> > After this patch the folder /sys/class/backlight becomes empty and
-> > I can't change the lcd brightness anymore.
-> > 
-> > This regression is present in v3.4.2 as well as in the current
-> > v3.5.0-rc2. 
-> > 
-> > I tried to manually revert that commit from v3.5.0-rc2, and the resulting
-> > patch below fixes the issue for me.
-> > 
-> > My config is here:
-> > http://www.damtp.cam.ac.uk/user/crm66/config-3.5-rc1
-> > 
-> > and the dmesg of v3.5.0-rc2 plus the patch below is here:
-> > http://www.damtp.cam.ac.uk/user/crm66/dmesg_v3.5-rc2+patch.txt
-> > 
-> > diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
-> > index a576575..4612b1c 100644
-> > --- a/drivers/acpi/video.c
-> > +++ b/drivers/acpi/video.c
-> > @@ -548,27 +548,27 @@ acpi_video_device_EDID(struct acpi_video_device *device,
-> >   *		1. 	The system BIOS should NOT automatically control the brightness 
-> >   *			level of the LCD when the power changes from AC to DC.
-> >   * Return Value:
-> > - *		-EINVAL	wrong arg.
-> > + * 		-1	wrong arg.
-> >   */
-> >  
-> >  static int
-> >  acpi_video_bus_DOS(struct acpi_video_bus *video, int bios_flag, int lcd_flag)
-> >  {
-> > -	acpi_status status;
-> > +	u64 status = 0;
-> >  	union acpi_object arg0 = { ACPI_TYPE_INTEGER };
-> >  	struct acpi_object_list args = { 1, &arg0 };
-> >  
-> >  
-> > -	if (bios_flag < 0 || bios_flag > 3 || lcd_flag < 0 || lcd_flag > 1)
-> > -		return -EINVAL;
-> > +	if (bios_flag < 0 || bios_flag > 3 || lcd_flag < 0 || lcd_flag > 1) {
-> > +		status = -1;
-> > +		goto Failed;
-> > +	}
-> >  	arg0.integer.value = (lcd_flag << 2) | bios_flag;
-> >  	video->dos_setting = arg0.integer.value;
-> > -	status = acpi_evaluate_object(video->device->handle, "_DOS",
-> > -		&args, NULL);
-> > -	if (ACPI_FAILURE(status))
-> > -		return -EIO;
-> > +	acpi_evaluate_object(video->device->handle, "_DOS", &args, NULL);
-> >  
-> > -	return 0;
-> > +      Failed:
-> > +	return status;
-> >  }
-> >  
-> >  /*
-> > @@ -1343,17 +1343,15 @@ static int
-> >  acpi_video_bus_get_devices(struct acpi_video_bus *video,
-> >  			   struct acpi_device *device)
-> >  {
-> > -	int status;
-> > +	int status = 0;
-> >  	struct acpi_device *dev;
-> >  
-> > -	status = acpi_video_device_enumerate(video);
-> > -	if (status)
-> > -		return status;
-> > +	acpi_video_device_enumerate(video);
-> >  
-> >  	list_for_each_entry(dev, &device->children, node) {
-> >  
-> >  		status = acpi_video_bus_get_one_device(dev, video);
-> > -		if (status) {
-> > +		if (ACPI_FAILURE(status)) {
-> >  			printk(KERN_WARNING PREFIX
-> >  					"Can't attach device\n");
-> >  			continue;
-> > @@ -1655,9 +1653,8 @@ static int acpi_video_bus_add(struct acpi_device *device)
-> >  	mutex_init(&video->device_list_lock);
-> >  	INIT_LIST_HEAD(&video->video_device_list);
-> >  
-> > -	error = acpi_video_bus_get_devices(video, device);
-> > -	if (error)
-> > -		goto err_free_video;
-> > +	acpi_video_bus_get_devices(video, device);
-> > +	acpi_video_bus_start_devices(video);
-> >  
-> >  	video->input = input = input_allocate_device();
-> >  	if (!input) {
-> > @@ -1695,13 +1692,9 @@ static int acpi_video_bus_add(struct acpi_device *device)
-> >  
-> >  	video->pm_nb.notifier_call = acpi_video_resume;
-> >  	video->pm_nb.priority = 0;
-> > -	error = register_pm_notifier(&video->pm_nb);
-> > -	if (error)
-> > -		goto err_stop_video;
-> >  
-> > -	error = input_register_device(input);
-> > -	if (error)
-> > -		goto err_unregister_pm_notifier;
-> > +	register_pm_notifier(&video->pm_nb);
-> > +	input_register_device(input);
-> >  
-> >  	return 0;
-> >  
-> > 
+> Signal return goes through a system call which already sets the
+> TS_COMPAT. It is the signal delivery that is causing the asymmetry.
+
+Yes, and I think you missed some aspects of my statement: the notion
+would be that TS_COMPAT would be set from the TIF_IA32 flag at the time
+we decide to deliver a signal, the signal being a pseudo-system-call.
+However, the more I wonder about if that will confuse the crap out of
+ptrace, so using TIF_IA32 might just be the best thing anyway.
+
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
