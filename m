@@ -1,108 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756313Ab2FOQqK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 12:46:10 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:44837 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752265Ab2FOQqI (ORCPT
+	id S1752392Ab2FOQsp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 12:48:45 -0400
+Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:40697 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751190Ab2FOQso (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 12:46:08 -0400
-Message-ID: <4FDB66B7.2010803@vflare.org>
-Date: Fri, 15 Jun 2012 09:45:43 -0700
-From: Nitin Gupta <ngupta@vflare.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	Fri, 15 Jun 2012 12:48:44 -0400
+Message-ID: <4FDB675A.7040808@xenotime.net>
+Date: Fri, 15 Jun 2012 09:48:26 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Minchan Kim <minchan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Tejun Heo <tj@kernel.org>, David Howells <dhowells@redhat.com>,
-        x86@kernel.org, Nick Piggin <npiggin@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>
-Subject: Re: [PATCH v2 3/3] x86: Support local_flush_tlb_kernel_range
-References: <1337133919-4182-1-git-send-email-minchan@kernel.org> <1337133919-4182-3-git-send-email-minchan@kernel.org> <4FB4B29C.4010908@kernel.org> <1337266310.4281.30.camel@twins> <4FDB5107.3000308@linux.vnet.ibm.com> <7e925563-082b-468f-a7d8-829e819eeac0@default>
-In-Reply-To: <7e925563-082b-468f-a7d8-829e819eeac0@default>
+To: Fengguang Wu <wfg@linux.intel.com>
+CC: Josh Triplett <josh@freedesktop.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Christopher Li <sparse@chrisli.org>,
+        Linus Torvalds <torvalds@ppc970.osdl.org>
+Subject: Re: automated warning notifications
+References: <20120614172523.GB4400@mwanda> <20120615014835.GA5695@localhost> <20120615071222.GZ13539@mwanda> <20120615075810.GA13206@localhost> <20120615083100.GA29692@leaf> <20120615085405.GB13933@localhost>
+In-Reply-To: <20120615085405.GB13933@localhost>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/15/2012 09:35 AM, Dan Magenheimer wrote:
->> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
->> Sent: Friday, June 15, 2012 9:13 AM
->> To: Peter Zijlstra
->> Cc: Minchan Kim; Greg Kroah-Hartman; Nitin Gupta; Dan Magenheimer; linux-kernel@vger.kernel.org;
->> linux-mm@kvack.org; Thomas Gleixner; Ingo Molnar; Tejun Heo; David Howells; x86@kernel.org; Nick
->> Piggin
->> Subject: Re: [PATCH v2 3/3] x86: Support local_flush_tlb_kernel_range
->>
->> On 05/17/2012 09:51 AM, Peter Zijlstra wrote:
->>
->>> On Thu, 2012-05-17 at 17:11 +0900, Minchan Kim wrote:
->>>>> +++ b/arch/x86/include/asm/tlbflush.h
->>>>> @@ -172,4 +172,16 @@ static inline void flush_tlb_kernel_range(unsigned long start,
->>>>>       flush_tlb_all();
->>>>>  }
+On 06/15/2012 01:54 AM, Fengguang Wu wrote:
+
+> On Fri, Jun 15, 2012 at 01:31:00AM -0700, Josh Triplett wrote:
+>> On Fri, Jun 15, 2012 at 03:58:10PM +0800, Fengguang Wu wrote:
+>>> On Fri, Jun 15, 2012 at 10:12:22AM +0300, Dan Carpenter wrote:
+>>>> On Fri, Jun 15, 2012 at 09:48:35AM +0800, Fengguang Wu wrote:
+>>>>> In an average working day, 1-2 build errors will be caught and email
+>>>>> notified. I guess there will be more sparse warnings if it's turned
+>>>>> on.
 >>>>>
->>>>> +static inline void local_flush_tlb_kernel_range(unsigned long start,
->>>>> +             unsigned long end)
->>>>> +{
->>>>> +     if (cpu_has_invlpg) {
->>>>> +             while (start < end) {
->>>>> +                     __flush_tlb_single(start);
->>>>> +                     start += PAGE_SIZE;
->>>>> +             }
->>>>> +     } else
->>>>> +             local_flush_tlb();
->>>>> +}
+>>>>> Perhaps the sparse warnings can be enabled, but only sent to the patch
+>>>>> author. If you and anyone else are interested, they could be sent to
+>>>>> some mailing list, too. One thing I'm sure is, we probably never want
+>>>>> to disturb the busy maintainers with these warnings.
+>>>>
+>>>> Eventually I think we will want to set up a mailing list for this or
+>>>> we will start sending duplicate messages.
 >>>
->>> It would be much better if you wait for Alex Shi's patch to mature.
->>> doing the invlpg thing for ranges is not an unconditional win.
+>>> Fair enough. How can we setup the mailing list? Once the list up, it
+>>> would be trivial for me to send sparse warnings out there.
 >>
->> From what I can tell Alex's patches have stalled.  The last post was v6
->> on 5/17 and there wasn't a single reply to them afaict.
->>
->> According to Alex's investigation of this "tipping point", it seems that
->> a good generic value is 8.  In other words, on most x86 hardware, it is
->> cheaper to flush up to 8 tlb entries one by one rather than doing a
->> complete flush.
->>
->> So we can do something like:
->>
->>      if (cpu_has_invlpg && (end - start)/PAGE_SIZE <= 8) {
->>              while (start < end) {
->>
->> Would this be acceptable?
+>> Rather than a mailing list, how about something like test.kernel.org for
+>> sparse warnings?
 > 
-> Hey Seth, Nitin --
+> It's much more trivial to send new build/sparse errors/warnings to a
+> list than to setup a website :-) As the errors come and go every day,
+> and they are mostly unstructured, it seems the mailing list would be a
+> more natural fit. People can search for known errors there and/or CC
+> fixes there.
 > 
-> After more work digging around zsmalloc and zbud, I really think
-> this TLB flushing, as well as the "page pair mapping" code can be
-> completely eliminated IFF zsmalloc is limited to items PAGE_SIZE or
-> less.  Since this is already true of zram (and in-tree zcache), and
-> zsmalloc currently has no other users, I think you should seriously
-> consider limiting zsmalloc in that way, or possibly splitting out
-> one version of zsmalloc which handles items PAGE_SIZE or less,
-> and a second version that can handle larger items but has (AFAIK)
-> no users.
+> Anyway, we just sent an request for creating
 > 
-> If you consider it an option to have (a version of) zsmalloc
-> limited to items PAGE_SIZE or less, let me know and we can
-> get into the details.
-> 
+>         automated-warnings@vger.kernel.org
 
 
-zsmalloc is already limited to objects of size PAGE_SIZE or less. This
-two-page splitting is for efficiently storing objects in range
-(PAGE_SIZE/2, PAGE_SIZE) which is very common in both zram and zcache.
+and you will let us know when it has been created??
 
-SLUB achieves this efficiency by allocating higher order pages but that
-is not an option for zsmalloc.
+Although I had just as soon use an existing list, like
+kernel-janitors or kernel-testers.
 
-Thanks,
-Nitin
-
+thanks,
+-- 
+~Randy
