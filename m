@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757343Ab2FOS55 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 14:57:57 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:49841 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751715Ab2FOS54 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 14:57:56 -0400
-Date: Fri, 15 Jun 2012 11:57:25 -0700
+	id S1757354Ab2FOS6T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 14:58:19 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:38984 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751715Ab2FOS6R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 14:58:17 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
         josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, patches@linaro.org
-Subject: [PATCH tip/core/rcu 0/6] rcutorture and documentation patches for 3.6
-Message-ID: <20120615185725.GA25163@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        fweisbec@gmail.com, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 5/6] rcu: Fix diagnostic-printk typo in rcutorture
+Date: Fri, 15 Jun 2012 11:57:53 -0700
+Message-Id: <1339786674-25265-5-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.8
+In-Reply-To: <1339786674-25265-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20120615185725.GA25163@linux.vnet.ibm.com>
+ <1339786674-25265-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12061518-6148-0000-0000-000006BC9D10
+x-cbid: 12061518-5112-0000-0000-000009136D6E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 
-This patch series updates documentation and rcutorture:
+The rcu_torture_barrier() function has a copy-and-paste typo in the
+string passed to rcutorture_shutdown_absorb(), which this commit fixes.
 
-1.	Update documentation to allow for the new call_srcu() and
-	srcu_barrier() functions.
-2.	Fix ordering of the torture_ops list.
-3.	Make rcutorture actually test the new srcu_barrier() function.
-4.	Fix synchronization of the kthreads testing the various
-	rcu_barrier() functions.
-5.	Fix an incorrect (and quite confusing) message in rcutorture.
-6.	Make rcutorture's fakewriters occasionally invoke the appropriate
-	rcu_barrier() function so that we test concurrent rcu_barrier()
-	calls.
+Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+ kernel/rcutorture.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-							Thanx, Paul
-
- b/Documentation/RCU/checklist.txt  |   39 ++++++++++++++++++-------------------
- b/Documentation/RCU/rcubarrier.txt |    6 +++--
- b/Documentation/RCU/torture.txt    |    9 ++++++++
- b/Documentation/RCU/whatisRCU.txt  |    6 ++---
- b/kernel/rcutorture.c              |    4 +--
- kernel/rcutorture.c                |   32 ++++++++++++++++++++++++------
- 6 files changed, 64 insertions(+), 32 deletions(-)
+diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
+index 08d8537..54a3745 100644
+--- a/kernel/rcutorture.c
++++ b/kernel/rcutorture.c
+@@ -1700,7 +1700,7 @@ static int rcu_torture_barrier(void *arg)
+ 		schedule_timeout_interruptible(HZ / 10);
+ 	} while (!kthread_should_stop() && fullstop == FULLSTOP_DONTSTOP);
+ 	VERBOSE_PRINTK_STRING("rcu_torture_barrier task stopping");
+-	rcutorture_shutdown_absorb("rcu_torture_barrier_cbs");
++	rcutorture_shutdown_absorb("rcu_torture_barrier");
+ 	while (!kthread_should_stop())
+ 		schedule_timeout_interruptible(1);
+ 	return 0;
+-- 
+1.7.8
 
