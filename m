@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758239Ab2FOWVh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 18:21:37 -0400
-Received: from mail209.messagelabs.com ([216.82.255.3]:63119 "EHLO
-	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758136Ab2FOWVg (ORCPT
+	id S1758268Ab2FOWXT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 18:23:19 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5300 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758136Ab2FOWXS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 18:21:36 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-6.tower-209.messagelabs.com!1339798765!6030443!2
-X-Originating-IP: [216.166.12.178]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 4/4] staging: comedi: Kconfig: remove a couple redundant depends on tests
-Date: Fri, 15 Jun 2012 15:20:59 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Fri, 15 Jun 2012 18:23:18 -0400
+X-Authority-Analysis: v=2.0 cv=D8PF24tj c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=ag8JG7z7P3cA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=ynTyILHRb4zuNaQRQaYA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1339798996.25903.19.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 3/3] tools lib traceevent: Introduce pevent_strerror
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Date: Fri, 15 Jun 2012 18:23:16 -0400
+In-Reply-To: <87pq9043tk.fsf@gmail.com>
+References: <1339486959-25241-1-git-send-email-namhyung@kernel.org>
+	 <1339486959-25241-4-git-send-email-namhyung@kernel.org>
+	 <1339524114.13377.140.camel@gandalf.stny.rr.com>
+	 <87ehpj6hic.fsf@sejong.aot.lge.com>
+	 <1339730825.13377.311.camel@gandalf.stny.rr.com>
+	 <87ipet3pzf.fsf@sejong.aot.lge.com>
+	 <1339763129.13377.357.camel@gandalf.stny.rr.com> <87pq9043tk.fsf@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1+b1 
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201206151521.00135.hartleys@visionengravers.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 'depends on COMEDI_ISA_DRIVERS' for COMEDI_AMPLC_DIO200_ISA is
-not needed. This option is already in an if/endif block that will
-satisfy the check.
+On Sat, 2012-06-16 at 07:18 +0900, Namhyung Kim wrote:
 
-The 'depends on COMEDI' for COMEDI_NI_COMMON was missed when all the
-comedi options were wrapped in an if/endif block.
+> So, for now, passing the return value only would be enough. But I think
+> passing pevent into a function name started by pevent_ looks natural. :)
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/staging/comedi/Kconfig |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+Yeah, I agree, and who knows, maybe in the future it will be useful.
 
-diff --git a/drivers/staging/comedi/Kconfig b/drivers/staging/comedi/Kconfig
-index 88ef0c7..d3de368 100644
---- a/drivers/staging/comedi/Kconfig
-+++ b/drivers/staging/comedi/Kconfig
-@@ -213,7 +213,6 @@ config COMEDI_PCM3730
- config COMEDI_AMPLC_DIO200_ISA
- 	tristate "Amplicon PC212E/PC214E/PC215E/PC218E/PC272E"
- 	select COMEDI_AMPLC_DIO200
--	depends on COMEDI_ISA_DRIVERS
- 	---help---
- 	  Enable support for Amplicon PC212E, PC214E, PC215E, PC218E and
- 	  PC272E ISA DIO boards
-@@ -1237,7 +1236,6 @@ endif # COMEDI_USB_DRIVERS
- 
- menuconfig COMEDI_NI_COMMON
- 	tristate "Comedi National Instruments card support"
--	depends on COMEDI
- 	---help---
- 	  Enable comedi support for National Instruments cards.
- 	  Modules in this section are used by many comedi NI drivers.
--- 
-1.7.7
+Perhaps, we should add a note that says pevent can be NULL. Just in case
+you just want to convert a return value and you do not have an available
+pevent at hand.
+
+-- Steve
+
 
