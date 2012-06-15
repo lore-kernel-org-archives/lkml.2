@@ -1,64 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757591Ab2FOVXI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 17:23:08 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:57688 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752247Ab2FOVXF (ORCPT
+	id S1757640Ab2FOVXx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 17:23:53 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44927 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757255Ab2FOVXw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 17:23:05 -0400
-Date: Fri, 15 Jun 2012 14:22:13 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, patches@linaro.org
-Subject: Re: [PATCH tip/core/rcu 04/14] rcu: Add a gcc-style structure
- initializer for RCU pointers
-Message-ID: <20120615212213.GL2389@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120615201256.GA26120@linux.vnet.ibm.com>
- <1339791195-26389-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1339791195-26389-4-git-send-email-paulmck@linux.vnet.ibm.com>
- <20120615204813.GI31184@leaf>
+	Fri, 15 Jun 2012 17:23:52 -0400
+Message-ID: <4FDBA7CC.6060407@vflare.org>
+Date: Fri, 15 Jun 2012 14:23:24 -0700
+From: Nitin Gupta <ngupta@vflare.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120615204813.GI31184@leaf>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12061521-4242-0000-0000-000001FB3803
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Minchan Kim <minchan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Tejun Heo <tj@kernel.org>, David Howells <dhowells@redhat.com>,
+        x86@kernel.org, Nick Piggin <npiggin@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>
+Subject: Re: [PATCH v2 3/3] x86: Support local_flush_tlb_kernel_range
+References: <1337133919-4182-1-git-send-email-minchan@kernel.org> <1337133919-4182-3-git-send-email-minchan@kernel.org> <4FB4B29C.4010908@kernel.org> <1337266310.4281.30.camel@twins> <4FDB5107.3000308@linux.vnet.ibm.com> <7e925563-082b-468f-a7d8-829e819eeac0@default> <4FDB66B7.2010803@vflare.org> <10ea9d19-bd24-400c-8131-49f0b4e9e5ae@default> <4FDB8808.9010508@linux.vnet.ibm.com> <9c6c8ae0-0212-402d-a906-0d0c61e5e058@default> <4FDB92CF.1070603@vflare.org> <4ffbc3e8-900b-4669-b6ab-e8c066f28c63@default>
+In-Reply-To: <4ffbc3e8-900b-4669-b6ab-e8c066f28c63@default>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 15, 2012 at 01:48:14PM -0700, Josh Triplett wrote:
-> On Fri, Jun 15, 2012 at 01:13:05PM -0700, Paul E. McKenney wrote:
-> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > 
-> > RCU_INIT_POINTER() returns a value that is never used, and which should
-> > be abolished due to terminal ugliness:
-> > 
-> > 	q = RCU_INIT_POINTER(global_p, p);
-> > 
-> > However, there are two uses that cannot be handled by a do-while
-> > formulation because they do gcc-style initialization:
-> > 
-> > 	RCU_INIT_POINTER(.real_cred, &init_cred),
-> > 	RCU_INIT_POINTER(.cred, &init_cred),
-> > 
-> > This usage is clever, but not necessarily the nicest approach.  This
-> > commit therefore creates an INIT_RCU_POINTER() macro that is specifically
-> > designed for gcc-style initialization.
+On 06/15/2012 01:13 PM, Dan Magenheimer wrote:
+>> From: Nitin Gupta [mailto:ngupta@vflare.org]
+>> Subject: Re: [PATCH v2 3/3] x86: Support local_flush_tlb_kernel_range
+>>
+>> On 06/15/2012 12:39 PM, Dan Magenheimer wrote:
+>>>> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
+>>>>> The decompression path calls lzo1x directly and it would be
+>>>>> a huge pain to make lzo1x smart about page boundaries.  BUT
+>>>>> since we know that the decompressed result will always fit
+>>>>> into a page (actually exactly a page), you COULD do an extra
+>>>>> copy to the end of the target page (using the same smart-
+>>>>> about-page-boundaries copying code from above) and then do
+>>>>> in-place decompression, knowing that the decompression will
+>>>>> not cross a page boundary.  So, with the extra copy, the "pair
+>>>>> mapping" can be avoided for decompression as well.
+>>>>
+>>>> This is an interesting thought.
+>>>>
+>>>> But this does result in a copy in the decompression (i.e. page fault)
+>>>> path, where right now, it is copy free.  The compressed data is
+>>>> decompressed directly from its zsmalloc allocation to the page allocated
+>>>> in the fault path.
+>>>
+>>> The page fault occurs as soon as the lzo1x compression code starts anyway,
+>>> as do all the cache faults... both just occur earlier, so the only
+>>> additional cost is the actual cpu instructions to move the sequence of
+>>> (compressed) bytes from the zsmalloc-allocated area to the end
+>>> of the target page.
+>>>
+>>> TLB operations can be very expensive, not to mention (as the
+>>> subject of this thread attests) non-portable.
+>>
+>> Even if you go for copying chunks followed by decompression, it still
+>> requires two kmaps and kunmaps. Each of these require one local TLB
+>> invlpg. So, a total of 2 local maps + unmaps even with this approach.
 > 
-> The concept seems fine, but the names seem entirely non-obvious.
-> RCU_INIT_POINTER versus INIT_RCU_POINTER?
+> That may be true for i386, but on a modern (non-highmem) machine those
+> kmaps/kunmaps are free and "pair mappings" in the TLB are still expensive
+> and not very portable.  Doesn't make sense to me to design for better
+> performance on highmem and poorer performance on non-highmem.
+>  
 
-I was following things like INIT_THREAD_INFO(), with the leading "INIT_"
-for gcc initialization.
+True, but it seem hard to believe that mapping+unmappig+two local TLB
+invlpg's will be more costly than copying, on average, PAGE_SIZE/2 data.
 
-							Thanx, Paul
+Anyways, I just looked up the LZO documentation and it supposedly allows
+in place decompression (hopefully we didn't mess up this feature during
+kernel port). Considering cache effects, this may really make copying
+overhead much less than expected.  Additionally, in case we go for
+copying approach, we can further simplify compaction since any client
+can never directly reference pool memory.
 
+
+>> The only additional requirement of zsmalloc is that it requires two
+>> mappings which are virtually contiguous. The cost is the same in both
+>> approaches but the current zsmalloc approach presents a much cleaner
+>> interface.
+> 
+> OK, it's your code and I'm just making a suggestion. I will shut up now ;-)
+> 
+
+I'm always glad to hear your opinions and was just trying to discuss the
+points you raised. I apologize if I sounded rude.
+
+Thanks,
+Nitin
