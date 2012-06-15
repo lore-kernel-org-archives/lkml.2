@@ -1,45 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932232Ab2FOPYR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 11:24:17 -0400
-Received: from ferdi.naasa.net ([87.106.227.76]:51389 "EHLO ferdi.naasa.net"
+	id S932296Ab2FOPYg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 11:24:36 -0400
+Received: from webmail.umm.ac.id ([202.52.52.15]:40607 "EHLO webmail.umm.ac.id"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932111Ab2FOPYQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 11:24:16 -0400
-Message-ID: <4FDB539A.8060409@naasa.net>
-Date: Fri, 15 Jun 2012 17:24:10 +0200
-From: Joerg Platte <jplatte@naasa.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120418 Icedove/11.0
-MIME-Version: 1.0
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-CC: Joerg Platte <jplatte@naasa.net>, bfields <bfields@fieldses.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>
-Subject: Re: Kernel 3.4.X NFS server regression
-References: <4FD47D4E.9070307@naasa.net> <1339340441.4751.1.camel@lade.trondhjem.org>
-In-Reply-To: <1339340441.4751.1.camel@lade.trondhjem.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S932111Ab2FOPYb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 11:24:31 -0400
+X-Greylist: delayed 8421 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Jun 2012 11:24:31 EDT
+X-DKIM: OpenDKIM Filter v2.3.2 webmail.umm.ac.id 394282522383
+Date: Fri, 15 Jun 2012 20:03:19 +0700 (WIT)
+From: "Mrs. Helen Wong" <junai23639@webmail.umm.ac.id>
+Reply-To: "Mrs. Helen Wong" <helen_wong606@yahoo.co.jp>
+Subject: 
+Message-ID: <49163bad-5f21-445c-b331-b077647cd522@webmail.umm.ac.id>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+X-Originating-IP: [95.141.28.51]
+X-Mailer: Zimbra 7.1.1_GA_3196 (ZimbraWebClient - FF3.0 (Win)/7.1.1_GA_3196)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm replying to this bug report since I found another nfs server 
-regression with the same kernel version (3.4.2), so the subject matches. 
-This time it is a "kernel BUG at fs/nfsd/nfs4state.c:1044"
+Greetings to you,
 
-Since the machine was not responsive after the BUG and rebooted I was 
-only able to take a picture of the full stacktrace. You can download it 
-from here:
+I am Mrs.Helen Wong, from Shanghai Banking Corporation Limited. (China) I have a business proposal of USD$30,000,000 (Thirty Million United States Dollars Only) for you to transact with me
 
-https://ferdi.naasa.net/url/jplatte/IMG_3139.JPG
+Contact me via my email address: helen_wong606@yahoo.co.jp
 
-The patch "[PATCH] rpc_pipefs: allow rpc_purge_list to take a NULL waitq 
-pointer" was not applied for this trace, but the bug is the same with 
-this patch applied. So there must be another problem.
-
-The crash is reproducable just by creating some nfs traffic and I can 
-hit it within minutes.
-
-regards,
-Joerg
+Mrs. Helen Wong
