@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756494Ab2FORLg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 13:11:36 -0400
+	id S1754318Ab2FORKm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 13:10:42 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:55158 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752377Ab2FORKu (ORCPT
+	with ESMTP id S1751081Ab2FORKl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 13:10:50 -0400
+	Fri, 15 Jun 2012 13:10:41 -0400
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
@@ -23,9 +23,9 @@ Cc: Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
         WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
         devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
         patches@linaro.org, kernel-team@android.com
-Subject: [PATCH 4/6] tracing/function: Introduce persistent trace option
-Date: Fri, 15 Jun 2012 10:08:29 -0700
-Message-Id: <1339780111-12075-4-git-send-email-anton.vorontsov@linaro.org>
+Subject: [PATCH 1/6] tracing: Fix initialization failure path in tracing_set_tracer()
+Date: Fri, 15 Jun 2012 10:08:26 -0700
+Message-Id: <1339780111-12075-1-git-send-email-anton.vorontsov@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <20120615170659.GA4060@lizard>
 References: <20120615170659.GA4060@lizard>
@@ -33,86 +33,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces 'func_ptrace' option, now available in
-/sys/kernel/debug/tracing/options when function tracer
-is selected.
+If tracer->init() fails, current code will leave current_tracer pointing
+to an unusable tracer, which at best makes 'current_tracer' report
+inaccurate value.
 
-The patch also adds some tiny code that calls back to pstore
-to record the trace. The callback is no-op when PSTORE=n.
+Fix the issue by pointing current_tracer to nop tracer, and only update
+current_tracer with the new one after all the initialization succeeds.
 
 Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 ---
- kernel/trace/trace_functions.c |   25 ++++++++++++++++++++-----
- 1 file changed, 20 insertions(+), 5 deletions(-)
+ kernel/trace/trace.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/trace/trace_functions.c b/kernel/trace/trace_functions.c
-index c7b0c6a..269627c 100644
---- a/kernel/trace/trace_functions.c
-+++ b/kernel/trace/trace_functions.c
-@@ -13,6 +13,7 @@
- #include <linux/debugfs.h>
- #include <linux/uaccess.h>
- #include <linux/ftrace.h>
-+#include <linux/pstore.h>
- #include <linux/fs.h>
- 
- #include "trace.h"
-@@ -74,6 +75,14 @@ function_trace_call_preempt_only(unsigned long ip, unsigned long parent_ip)
- 	preempt_enable_notrace();
- }
- 
-+/* Our two options */
-+enum {
-+	TRACE_FUNC_OPT_STACK	= 0x1,
-+	TRACE_FUNC_OPT_PSTORE	= 0x2,
-+};
-+
-+static struct tracer_flags func_flags;
-+
- static void
- function_trace_call(unsigned long ip, unsigned long parent_ip)
- {
-@@ -97,6 +106,12 @@ function_trace_call(unsigned long ip, unsigned long parent_ip)
- 	disabled = atomic_inc_return(&data->disabled);
- 
- 	if (likely(disabled == 1)) {
-+		/*
-+		 * So far tracing doesn't support multiple buffers, so
-+		 * we make an explicit call for now.
-+		 */
-+		if (unlikely(func_flags.val & TRACE_FUNC_OPT_PSTORE))
-+			pstore_ftrace_call(ip, parent_ip);
- 		pc = preempt_count();
- 		trace_function(tr, ip, parent_ip, flags, pc);
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index a7fa070..7647d33 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -3172,10 +3172,10 @@ static int tracing_set_tracer(const char *buf)
  	}
-@@ -158,15 +173,13 @@ static struct ftrace_ops trace_stack_ops __read_mostly =
- 	.flags = FTRACE_OPS_FL_GLOBAL,
- };
+ 	destroy_trace_option_files(topts);
  
--/* Our two options */
--enum {
--	TRACE_FUNC_OPT_STACK = 0x1,
--};
--
- static struct tracer_opt func_opts[] = {
- #ifdef CONFIG_STACKTRACE
- 	{ TRACER_OPT(func_stack_trace, TRACE_FUNC_OPT_STACK) },
- #endif
-+#ifdef CONFIG_PSTORE_FTRACE
-+	{ TRACER_OPT(func_pstore, TRACE_FUNC_OPT_PSTORE) },
-+#endif
- 	{ } /* Always set a last empty entry */
- };
+-	current_trace = t;
++	current_trace = &nop_trace;
  
-@@ -219,6 +232,8 @@ static int func_set_flag(u32 old_flags, u32 bit, int set)
- 
- 		return 0;
+-	topts = create_trace_option_files(current_trace);
+-	if (current_trace->use_max_tr) {
++	topts = create_trace_option_files(t);
++	if (t->use_max_tr) {
+ 		int cpu;
+ 		/* we need to make per cpu buffer sizes equivalent */
+ 		for_each_tracing_cpu(cpu) {
+@@ -3195,6 +3195,7 @@ static int tracing_set_tracer(const char *buf)
+ 			goto out;
  	}
-+	if (bit == TRACE_FUNC_OPT_PSTORE)
-+		return 0;
  
- 	return -EINVAL;
- }
++	current_trace = t;
+ 	trace_branch_enable(tr);
+  out:
+ 	mutex_unlock(&trace_types_lock);
 -- 
 1.7.10.4
 
