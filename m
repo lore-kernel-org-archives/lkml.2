@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932122Ab2FOGcl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 02:32:41 -0400
-Received: from mga14.intel.com ([143.182.124.37]:52316 "EHLO mga14.intel.com"
+	id S932194Ab2FOGeF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 02:34:05 -0400
+Received: from mga14.intel.com ([143.182.124.37]:57530 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755420Ab2FOGcf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 02:32:35 -0400
+	id S1755485Ab2FOGck (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 02:32:40 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="156658733"
+   d="scan'208";a="156658751"
 From: "Yan, Zheng" <zheng.z.yan@intel.com>
 To: a.p.zijlstra@chello.nl, mingo@elte.hu, jolsa@redhat.com,
         eranian@google.com, andi@firstfloor.org, linux-kernel@vger.kernel.org
-Cc: "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: [PATCH V6 06/13] perf: Add Nehalem and Sandy Bridge uncore support
-Date: Fri, 15 Jun 2012 14:31:35 +0800
-Message-Id: <1339741902-8449-7-git-send-email-zheng.z.yan@intel.com>
+Subject: [PATCH V6 09/13] perf, tool: Use data struct for arg passing in event parse function
+Date: Fri, 15 Jun 2012 14:31:38 +0800
+Message-Id: <1339741902-8449-10-git-send-email-zheng.z.yan@intel.com>
 X-Mailer: git-send-email 1.7.10.2
 In-Reply-To: <1339741902-8449-1-git-send-email-zheng.z.yan@intel.com>
 References: <1339741902-8449-1-git-send-email-zheng.z.yan@intel.com>
@@ -23,289 +22,272 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+From: Jiri Olsa <jolsa@redhat.com>
 
-Add Intel Nehalem and Sandy Bridge uncore pmu support.
+Moving all the bison arguments into the structure. In upcomming
+patches we are going to
+  - add more arguments
+  - reuse the grammer for term parsing
 
-Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
+so it's more clear to pack/separate related arguments.
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel_uncore.c |  194 +++++++++++++++++++++++++
- arch/x86/kernel/cpu/perf_event_intel_uncore.h |   50 +++++++
- 2 files changed, 244 insertions(+), 0 deletions(-)
+ tools/perf/util/parse-events.c |   16 +++++++-----
+ tools/perf/util/parse-events.h |    8 ++++-
+ tools/perf/util/parse-events.y |   52 +++++++++++++++++++++++++++-------------
+ 3 files changed, 50 insertions(+), 26 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index ef79e49..4849ada 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -10,6 +10,192 @@ static cpumask_t uncore_cpu_mask;
- static struct event_constraint constraint_fixed =
- 	EVENT_CONSTRAINT((u64)-1, 1 << UNCORE_PMC_IDX_FIXED, (u64)-1);
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 05dbc8b..c71b29a 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -26,7 +26,7 @@ struct event_symbol {
+ #ifdef PARSER_DEBUG
+ extern int parse_events_debug;
+ #endif
+-int parse_events_parse(struct list_head *list, int *idx);
++int parse_events_parse(void *data);
  
-+DEFINE_UNCORE_FORMAT_ATTR(event, event, "config:0-7");
-+DEFINE_UNCORE_FORMAT_ATTR(umask, umask, "config:8-15");
-+DEFINE_UNCORE_FORMAT_ATTR(edge, edge, "config:18");
-+DEFINE_UNCORE_FORMAT_ATTR(inv, inv, "config:23");
-+DEFINE_UNCORE_FORMAT_ATTR(cmask5, cmask, "config:24-28");
-+DEFINE_UNCORE_FORMAT_ATTR(cmask8, cmask, "config:24-31");
-+
-+/* Sandy Bridge uncore support */
-+static void snb_uncore_msr_enable_event(struct intel_uncore_box *box,
-+					struct perf_event *event)
-+{
-+	struct hw_perf_event *hwc = &event->hw;
-+
-+	if (hwc->idx < UNCORE_PMC_IDX_FIXED)
-+		wrmsrl(hwc->config_base, hwc->config | SNB_UNC_CTL_EN);
-+	else
-+		wrmsrl(hwc->config_base, SNB_UNC_CTL_EN);
-+}
-+
-+static void snb_uncore_msr_disable_event(struct intel_uncore_box *box,
-+					struct perf_event *event)
-+{
-+	wrmsrl(event->hw.config_base, 0);
-+}
-+
-+static u64 snb_uncore_msr_read_counter(struct intel_uncore_box *box,
-+					struct perf_event *event)
-+{
-+	u64 count;
-+	rdmsrl(event->hw.event_base, count);
-+	return count;
-+}
-+
-+static void snb_uncore_msr_init_box(struct intel_uncore_box *box)
-+{
-+	if (box->pmu->pmu_idx == 0) {
-+		wrmsrl(SNB_UNC_PERF_GLOBAL_CTL,
-+			SNB_UNC_GLOBAL_CTL_EN | SNB_UNC_GLOBAL_CTL_CORE_ALL);
-+	}
-+}
-+
-+static struct attribute *snb_uncore_formats_attr[] = {
-+	&format_attr_event.attr,
-+	&format_attr_umask.attr,
-+	&format_attr_edge.attr,
-+	&format_attr_inv.attr,
-+	&format_attr_cmask5.attr,
-+	NULL,
-+};
-+
-+static struct attribute_group snb_uncore_format_group = {
-+	.name = "format",
-+	.attrs = snb_uncore_formats_attr,
-+};
-+
-+static struct intel_uncore_ops snb_uncore_msr_ops = {
-+	.init_box	= snb_uncore_msr_init_box,
-+	.disable_event	= snb_uncore_msr_disable_event,
-+	.enable_event	= snb_uncore_msr_enable_event,
-+	.read_counter	= snb_uncore_msr_read_counter,
-+};
-+
-+static struct event_constraint snb_uncore_cbo_constraints[] = {
-+	UNCORE_EVENT_CONSTRAINT(0x80, 0x1),
-+	UNCORE_EVENT_CONSTRAINT(0x83, 0x1),
-+	EVENT_CONSTRAINT_END
-+};
-+
-+static struct intel_uncore_type snb_uncore_cbo = {
-+	.name		= "cbox",
-+	.num_counters   = 2,
-+	.num_boxes	= 4,
-+	.perf_ctr_bits	= 44,
-+	.fixed_ctr_bits	= 48,
-+	.perf_ctr	= SNB_UNC_CBO_0_PER_CTR0,
-+	.event_ctl	= SNB_UNC_CBO_0_PERFEVTSEL0,
-+	.fixed_ctr	= SNB_UNC_FIXED_CTR,
-+	.fixed_ctl	= SNB_UNC_FIXED_CTR_CTRL,
-+	.single_fixed	= 1,
-+	.event_mask	= SNB_UNC_RAW_EVENT_MASK,
-+	.msr_offset	= SNB_UNC_CBO_MSR_OFFSET,
-+	.constraints	= snb_uncore_cbo_constraints,
-+	.ops		= &snb_uncore_msr_ops,
-+	.format_group	= &snb_uncore_format_group,
-+};
-+
-+static struct intel_uncore_type *snb_msr_uncores[] = {
-+	&snb_uncore_cbo,
-+	NULL,
-+};
-+/* end of Sandy Bridge uncore support */
-+
-+/* Nehalem uncore support */
-+static void nhm_uncore_msr_disable_box(struct intel_uncore_box *box)
-+{
-+	wrmsrl(NHM_UNC_PERF_GLOBAL_CTL, 0);
-+}
-+
-+static void nhm_uncore_msr_enable_box(struct intel_uncore_box *box)
-+{
-+	wrmsrl(NHM_UNC_PERF_GLOBAL_CTL,
-+		NHM_UNC_GLOBAL_CTL_EN_PC_ALL | NHM_UNC_GLOBAL_CTL_EN_FC);
-+}
-+
-+static void nhm_uncore_msr_enable_event(struct intel_uncore_box *box,
-+					struct perf_event *event)
-+{
-+	struct hw_perf_event *hwc = &event->hw;
-+
-+	if (hwc->idx < UNCORE_PMC_IDX_FIXED)
-+		wrmsrl(hwc->config_base, hwc->config | SNB_UNC_CTL_EN);
-+	else
-+		wrmsrl(hwc->config_base, NHM_UNC_FIXED_CTR_CTL_EN);
-+}
-+
-+static struct attribute *nhm_uncore_formats_attr[] = {
-+	&format_attr_event.attr,
-+	&format_attr_umask.attr,
-+	&format_attr_edge.attr,
-+	&format_attr_inv.attr,
-+	&format_attr_cmask8.attr,
-+	NULL,
-+};
-+
-+static struct attribute_group nhm_uncore_format_group = {
-+	.name = "format",
-+	.attrs = nhm_uncore_formats_attr,
-+};
-+
-+static struct uncore_event_desc nhm_uncore_events[] = {
-+	INTEL_UNCORE_EVENT_DESC(CLOCKTICKS, "config=0xffff"),
-+	/* full cache line writes to DRAM */
-+	INTEL_UNCORE_EVENT_DESC(QMC_WRITES_FULL_ANY, "event=0x2f,umask=0xf"),
-+	/* Quickpath Memory Controller normal priority read requests */
-+	INTEL_UNCORE_EVENT_DESC(QMC_NORMAL_READS_ANY, "event=0x2c,umask=0xf"),
-+	/* Quickpath Home Logic read requests from the IOH */
-+	INTEL_UNCORE_EVENT_DESC(QHL_REQUEST_IOH_READS,
-+				"event=0x20,umask=0x1"),
-+	/* Quickpath Home Logic write requests from the IOH */
-+	INTEL_UNCORE_EVENT_DESC(QHL_REQUEST_IOH_WRITES,
-+				"event=0x20,umask=0x2"),
-+	/* Quickpath Home Logic read requests from a remote socket */
-+	INTEL_UNCORE_EVENT_DESC(QHL_REQUEST_REMOTE_READS,
-+				"event=0x20,umask=0x4"),
-+	/* Quickpath Home Logic write requests from a remote socket */
-+	INTEL_UNCORE_EVENT_DESC(QHL_REQUEST_REMOTE_WRITES,
-+				"event=0x20,umask=0x8"),
-+	/* Quickpath Home Logic read requests from the local socket */
-+	INTEL_UNCORE_EVENT_DESC(QHL_REQUEST_LOCAL_READS,
-+				"event=0x20,umask=0x10"),
-+	/* Quickpath Home Logic write requests from the local socket */
-+	INTEL_UNCORE_EVENT_DESC(QHL_REQUEST_LOCAL_WRITES,
-+				"event=0x20,umask=0x20"),
-+	{ /* end: all zeroes */ },
-+};
-+
-+static struct intel_uncore_ops nhm_uncore_msr_ops = {
-+	.disable_box	= nhm_uncore_msr_disable_box,
-+	.enable_box	= nhm_uncore_msr_enable_box,
-+	.disable_event	= snb_uncore_msr_disable_event,
-+	.enable_event	= nhm_uncore_msr_enable_event,
-+	.read_counter	= snb_uncore_msr_read_counter,
-+};
-+
-+static struct intel_uncore_type nhm_uncore = {
-+	.name		= "",
-+	.num_counters   = 8,
-+	.num_boxes	= 1,
-+	.perf_ctr_bits	= 48,
-+	.fixed_ctr_bits	= 48,
-+	.event_ctl	= NHM_UNC_PERFEVTSEL0,
-+	.perf_ctr	= NHM_UNC_UNCORE_PMC0,
-+	.fixed_ctr	= NHM_UNC_FIXED_CTR,
-+	.fixed_ctl	= NHM_UNC_FIXED_CTR_CTRL,
-+	.event_mask	= NHM_UNC_RAW_EVENT_MASK,
-+	.event_descs	= nhm_uncore_events,
-+	.ops		= &nhm_uncore_msr_ops,
-+	.format_group	= &nhm_uncore_format_group,
-+};
-+
-+static struct intel_uncore_type *nhm_msr_uncores[] = {
-+	&nhm_uncore,
-+	NULL,
-+};
-+/* end of Nehalem uncore support */
-+
- static void uncore_assign_hw_event(struct intel_uncore_box *box,
- 				struct perf_event *event, int idx)
+ #define CHW(x) .type = PERF_TYPE_HARDWARE, .config = PERF_COUNT_HW_##x
+ #define CSW(x) .type = PERF_TYPE_SOFTWARE, .config = PERF_COUNT_SW_##x
+@@ -789,25 +789,27 @@ int parse_events_modifier(struct list_head *list, char *str)
+ 
+ int parse_events(struct perf_evlist *evlist, const char *str, int unset __used)
  {
-@@ -808,6 +994,14 @@ static int __init uncore_cpu_init(void)
- 	int ret, cpu;
+-	LIST_HEAD(list);
+-	LIST_HEAD(list_tmp);
++	struct parse_events_data__events data = {
++		.list = LIST_HEAD_INIT(data.list),
++		.idx  = evlist->nr_entries,
++	};
+ 	YY_BUFFER_STATE buffer;
+-	int ret, idx = evlist->nr_entries;
++	int ret;
  
- 	switch (boot_cpu_data.x86_model) {
-+	case 26: /* Nehalem */
-+	case 30:
-+	case 37: /* Westmere */
-+		msr_uncores = nhm_msr_uncores;
-+		break;
-+	case 42: /* Sandy Bridge */
-+		msr_uncores = snb_msr_uncores;
-+		break;
- 	default:
+ 	buffer = parse_events__scan_string(str);
+ 
+ #ifdef PARSER_DEBUG
+ 	parse_events_debug = 1;
+ #endif
+-	ret = parse_events_parse(&list, &idx);
++	ret = parse_events_parse(&data);
+ 
+ 	parse_events__flush_buffer(buffer);
+ 	parse_events__delete_buffer(buffer);
+ 	parse_events_lex_destroy();
+ 
+ 	if (!ret) {
+-		int entries = idx - evlist->nr_entries;
+-		perf_evlist__splice_list_tail(evlist, &list, entries);
++		int entries = data.idx - evlist->nr_entries;
++		perf_evlist__splice_list_tail(evlist, &data.list, entries);
  		return 0;
  	}
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.h b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-index 49a6bfb..eeb5ca5 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-@@ -15,6 +15,56 @@
  
- #define UNCORE_EVENT_CONSTRAINT(c, n) EVENT_CONSTRAINT(c, n, 0xff)
+diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
+index 8cac57a..dc3c83a 100644
+--- a/tools/perf/util/parse-events.h
++++ b/tools/perf/util/parse-events.h
+@@ -63,6 +63,11 @@ struct parse_events__term {
+ 	struct list_head list;
+ };
  
-+/* SNB event control */
-+#define SNB_UNC_CTL_EV_SEL_MASK			0x000000ff
-+#define SNB_UNC_CTL_UMASK_MASK			0x0000ff00
-+#define SNB_UNC_CTL_EDGE_DET			(1 << 18)
-+#define SNB_UNC_CTL_EN				(1 << 22)
-+#define SNB_UNC_CTL_INVERT			(1 << 23)
-+#define SNB_UNC_CTL_CMASK_MASK			0x1f000000
-+#define NHM_UNC_CTL_CMASK_MASK			0xff000000
-+#define NHM_UNC_FIXED_CTR_CTL_EN		(1 << 0)
++struct parse_events_data__events {
++	struct list_head list;
++	int idx;
++};
 +
-+#define SNB_UNC_RAW_EVENT_MASK			(SNB_UNC_CTL_EV_SEL_MASK | \
-+						 SNB_UNC_CTL_UMASK_MASK | \
-+						 SNB_UNC_CTL_EDGE_DET | \
-+						 SNB_UNC_CTL_INVERT | \
-+						 SNB_UNC_CTL_CMASK_MASK)
+ int parse_events__is_hardcoded_term(struct parse_events__term *term);
+ int parse_events__term_num(struct parse_events__term **_term,
+ 			   int type_term, char *config, long num);
+@@ -83,8 +88,7 @@ int parse_events_add_pmu(struct list_head **list, int *idx,
+ 			 char *pmu , struct list_head *head_config);
+ void parse_events_update_lists(struct list_head *list_event,
+ 			       struct list_head *list_all);
+-void parse_events_error(struct list_head *list_all,
+-			int *idx, char const *msg);
++void parse_events_error(void *data, char const *msg);
+ int parse_events__test(void);
+ 
+ void print_events(const char *event_glob);
+diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
+index 362cc59..e533bf7 100644
+--- a/tools/perf/util/parse-events.y
++++ b/tools/perf/util/parse-events.y
+@@ -1,7 +1,6 @@
+ 
+ %name-prefix "parse_events_"
+-%parse-param {struct list_head *list_all}
+-%parse-param {int *idx}
++%parse-param {void *_data}
+ 
+ %{
+ 
+@@ -64,18 +63,22 @@ events ',' event | event
+ event:
+ event_def PE_MODIFIER_EVENT
+ {
++	struct parse_events_data__events *data = _data;
 +
-+#define NHM_UNC_RAW_EVENT_MASK			(SNB_UNC_CTL_EV_SEL_MASK | \
-+						 SNB_UNC_CTL_UMASK_MASK | \
-+						 SNB_UNC_CTL_EDGE_DET | \
-+						 SNB_UNC_CTL_INVERT | \
-+						 NHM_UNC_CTL_CMASK_MASK)
+ 	/*
+ 	 * Apply modifier on all events added by single event definition
+ 	 * (there could be more events added for multiple tracepoint
+ 	 * definitions via '*?'.
+ 	 */
+ 	ABORT_ON(parse_events_modifier($1, $2));
+-	parse_events_update_lists($1, list_all);
++	parse_events_update_lists($1, &data->list);
+ }
+ |
+ event_def
+ {
+-	parse_events_update_lists($1, list_all);
++	struct parse_events_data__events *data = _data;
 +
-+/* SNB global control register */
-+#define SNB_UNC_PERF_GLOBAL_CTL                 0x391
-+#define SNB_UNC_FIXED_CTR_CTRL                  0x394
-+#define SNB_UNC_FIXED_CTR                       0x395
-+
-+/* SNB uncore global control */
-+#define SNB_UNC_GLOBAL_CTL_CORE_ALL             ((1 << 4) - 1)
-+#define SNB_UNC_GLOBAL_CTL_EN                   (1 << 29)
-+
-+/* SNB Cbo register */
-+#define SNB_UNC_CBO_0_PERFEVTSEL0               0x700
-+#define SNB_UNC_CBO_0_PER_CTR0                  0x706
-+#define SNB_UNC_CBO_MSR_OFFSET                  0x10
-+
-+/* NHM global control register */
-+#define NHM_UNC_PERF_GLOBAL_CTL                 0x391
-+#define NHM_UNC_FIXED_CTR                       0x394
-+#define NHM_UNC_FIXED_CTR_CTRL                  0x395
-+
-+/* NHM uncore global control */
-+#define NHM_UNC_GLOBAL_CTL_EN_PC_ALL            ((1ULL << 8) - 1)
-+#define NHM_UNC_GLOBAL_CTL_EN_FC                (1ULL << 32)
-+
-+/* NHM uncore register */
-+#define NHM_UNC_PERFEVTSEL0                     0x3c0
-+#define NHM_UNC_UNCORE_PMC0                     0x3b0
-+
-+
- struct intel_uncore_ops;
- struct intel_uncore_pmu;
- struct intel_uncore_box;
++	parse_events_update_lists($1, &data->list);
+ }
+ 
+ event_def: event_pmu |
+@@ -89,9 +92,10 @@ event_def: event_pmu |
+ event_pmu:
+ PE_NAME '/' event_config '/'
+ {
++	struct parse_events_data__events *data = _data;
+ 	struct list_head *list = NULL;
+ 
+-	ABORT_ON(parse_events_add_pmu(&list, idx, $1, $3));
++	ABORT_ON(parse_events_add_pmu(&list, &data->idx, $1, $3));
+ 	parse_events__free_terms($3);
+ 	$$ = list;
+ }
+@@ -99,91 +103,106 @@ PE_NAME '/' event_config '/'
+ event_legacy_symbol:
+ PE_VALUE_SYM '/' event_config '/'
+ {
++	struct parse_events_data__events *data = _data;
+ 	struct list_head *list = NULL;
+ 	int type = $1 >> 16;
+ 	int config = $1 & 255;
+ 
+-	ABORT_ON(parse_events_add_numeric(&list, idx, type, config, $3));
++	ABORT_ON(parse_events_add_numeric(&list, &data->idx,
++					  type, config, $3));
+ 	parse_events__free_terms($3);
+ 	$$ = list;
+ }
+ |
+ PE_VALUE_SYM sep_slash_dc
+ {
++	struct parse_events_data__events *data = _data;
+ 	struct list_head *list = NULL;
+ 	int type = $1 >> 16;
+ 	int config = $1 & 255;
+ 
+-	ABORT_ON(parse_events_add_numeric(&list, idx, type, config, NULL));
++	ABORT_ON(parse_events_add_numeric(&list, &data->idx,
++					  type, config, NULL));
+ 	$$ = list;
+ }
+ 
+ event_legacy_cache:
+ PE_NAME_CACHE_TYPE '-' PE_NAME_CACHE_OP_RESULT '-' PE_NAME_CACHE_OP_RESULT
+ {
++	struct parse_events_data__events *data = _data;
+ 	struct list_head *list = NULL;
+ 
+-	ABORT_ON(parse_events_add_cache(&list, idx, $1, $3, $5));
++	ABORT_ON(parse_events_add_cache(&list, &data->idx, $1, $3, $5));
+ 	$$ = list;
+ }
+ |
+ PE_NAME_CACHE_TYPE '-' PE_NAME_CACHE_OP_RESULT
+ {
++	struct parse_events_data__events *data = _data;
+ 	struct list_head *list = NULL;
+ 
+-	ABORT_ON(parse_events_add_cache(&list, idx, $1, $3, NULL));
++	ABORT_ON(parse_events_add_cache(&list, &data->idx, $1, $3, NULL));
+ 	$$ = list;
+ }
+ |
+ PE_NAME_CACHE_TYPE
+ {
++	struct parse_events_data__events *data = _data;
+ 	struct list_head *list = NULL;
+ 
+-	ABORT_ON(parse_events_add_cache(&list, idx, $1, NULL, NULL));
++	ABORT_ON(parse_events_add_cache(&list, &data->idx, $1, NULL, NULL));
+ 	$$ = list;
+ }
+ 
+ event_legacy_mem:
+ PE_PREFIX_MEM PE_VALUE ':' PE_MODIFIER_BP sep_dc
+ {
++	struct parse_events_data__events *data = _data;
+ 	struct list_head *list = NULL;
+ 
+-	ABORT_ON(parse_events_add_breakpoint(&list, idx, (void *) $2, $4));
++	ABORT_ON(parse_events_add_breakpoint(&list, &data->idx,
++					     (void *) $2, $4));
+ 	$$ = list;
+ }
+ |
+ PE_PREFIX_MEM PE_VALUE sep_dc
+ {
++	struct parse_events_data__events *data = _data;
+ 	struct list_head *list = NULL;
+ 
+-	ABORT_ON(parse_events_add_breakpoint(&list, idx, (void *) $2, NULL));
++	ABORT_ON(parse_events_add_breakpoint(&list, &data->idx,
++					     (void *) $2, NULL));
+ 	$$ = list;
+ }
+ 
+ event_legacy_tracepoint:
+ PE_NAME ':' PE_NAME
+ {
++	struct parse_events_data__events *data = _data;
+ 	struct list_head *list = NULL;
+ 
+-	ABORT_ON(parse_events_add_tracepoint(&list, idx, $1, $3));
++	ABORT_ON(parse_events_add_tracepoint(&list, &data->idx, $1, $3));
+ 	$$ = list;
+ }
+ 
+ event_legacy_numeric:
+ PE_VALUE ':' PE_VALUE
+ {
++	struct parse_events_data__events *data = _data;
+ 	struct list_head *list = NULL;
+ 
+-	ABORT_ON(parse_events_add_numeric(&list, idx, $1, $3, NULL));
++	ABORT_ON(parse_events_add_numeric(&list, &data->idx, $1, $3, NULL));
+ 	$$ = list;
+ }
+ 
+ event_legacy_raw:
+ PE_RAW
+ {
++	struct parse_events_data__events *data = _data;
+ 	struct list_head *list = NULL;
+ 
+-	ABORT_ON(parse_events_add_numeric(&list, idx, PERF_TYPE_RAW, $1, NULL));
++	ABORT_ON(parse_events_add_numeric(&list, &data->idx,
++					  PERF_TYPE_RAW, $1, NULL));
+ 	$$ = list;
+ }
+ 
+@@ -267,8 +286,7 @@ sep_slash_dc: '/' | ':' |
+ 
+ %%
+ 
+-void parse_events_error(struct list_head *list_all __used,
+-			int *idx __used,
++void parse_events_error(void *data __used,
+ 			char const *msg __used)
+ {
+ }
 -- 
 1.7.6.5
 
