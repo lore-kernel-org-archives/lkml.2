@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755719Ab2FOHGK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 03:06:10 -0400
-Received: from mga01.intel.com ([192.55.52.88]:37602 "EHLO mga01.intel.com"
+	id S1755741Ab2FOHGh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 03:06:37 -0400
+Received: from mga03.intel.com ([143.182.124.21]:46085 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754760Ab2FOHFh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 03:05:37 -0400
+	id S1754076Ab2FOHFg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 03:05:36 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="165961733"
+   d="scan'208";a="112384706"
 From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: Viresh Kumar <viresh.kumar@st.com>, Vinod Koul <vinod.koul@intel.com>,
         Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH 8/9] dw_dmac: introduce dwc_fast_fls()
-Date: Fri, 15 Jun 2012 10:05:12 +0300
-Message-Id: <1339743913-6236-9-git-send-email-andriy.shevchenko@linux.intel.com>
+Subject: [PATCH 6/9] dw_dmac: disable dma in optimal way in probe
+Date: Fri, 15 Jun 2012 10:05:10 +0300
+Message-Id: <1339743913-6236-7-git-send-email-andriy.shevchenko@linux.intel.com>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1339743913-6236-1-git-send-email-andriy.shevchenko@linux.intel.com>
 References: <1339743913-6236-1-git-send-email-andriy.shevchenko@linux.intel.com>
@@ -23,93 +23,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There were three places where such function is used. We still avoid to use
-native fls() because in one case it requires to use 64bit version which is
-suboptimal in our case.
+The dw_dma_off call needs to have the all_chan_mask calculated. So, done this
+calculations before the call. Moreover, remove duplicate code that masks the
+DMA interrupts.
 
 Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 ---
- drivers/dma/dw_dmac.c |   46 ++++++++++++++++++----------------------------
- 1 file changed, 18 insertions(+), 28 deletions(-)
+ drivers/dma/dw_dmac.c |   10 +++-------
+ 1 file changed, 3 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index b2586bd..5d025d3 100644
+index e2ea243..cffe630 100644
 --- a/drivers/dma/dw_dmac.c
 +++ b/drivers/dma/dw_dmac.c
-@@ -193,6 +193,21 @@ static void dwc_initialize(struct dw_dma_chan *dwc)
- 
- /*----------------------------------------------------------------------*/
- 
-+static inline unsigned int dwc_fast_fls(unsigned long long v)
-+{
-+	/*
-+	 * We can be a lot more clever here, but this should take care
-+	 * of the most common optimization.
-+	 */
-+	if (!(v & 7))
-+		return 3;
-+	else if (!(v & 3))
-+		return 2;
-+	else if (!(v & 1))
-+		return 1;
-+	return 0;
-+}
-+
- static void dwc_dump_chan_regs(struct dw_dma_chan *dwc)
- {
- 	dev_err(chan2dev(&dwc->chan),
-@@ -644,18 +659,7 @@ dwc_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
- 		return NULL;
+@@ -1433,6 +1433,9 @@ static int __init dw_probe(struct platform_device *pdev)
  	}
+ 	clk_prepare_enable(dw->clk);
  
--	/*
--	 * We can be a lot more clever here, but this should take care
--	 * of the most common optimization.
--	 */
--	if (!((src | dest  | len) & 7))
--		src_width = dst_width = 3;
--	else if (!((src | dest  | len) & 3))
--		src_width = dst_width = 2;
--	else if (!((src | dest | len) & 1))
--		src_width = dst_width = 1;
--	else
--		src_width = dst_width = 0;
-+	src_width = dst_width = dwc_fast_fls(src | dest | len);
++	/* Calculate all channel mask before DMA setup */
++	dw->all_chan_mask = (1 << pdata->nr_channels) - 1;
++
+ 	/* force dma off, just in case */
+ 	dw_dma_off(dw);
  
- 	ctllo = DWC_DEFAULT_CTLLO(chan)
- 			| DWC_CTLL_DST_WIDTH(dst_width)
-@@ -755,14 +759,7 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
- 			mem = sg_dma_address(sg);
- 			len = sg_dma_len(sg);
+@@ -1444,8 +1447,6 @@ static int __init dw_probe(struct platform_device *pdev)
  
--			if (!((mem | len) & 7))
--				mem_width = 3;
--			else if (!((mem | len) & 3))
--				mem_width = 2;
--			else if (!((mem | len) & 1))
--				mem_width = 1;
--			else
--				mem_width = 0;
-+			mem_width = dwc_fast_fls(mem | len);
+ 	tasklet_init(&dw->tasklet, dw_dma_tasklet, (unsigned long)dw);
  
- slave_sg_todev_fill_desc:
- 			desc = dwc_desc_get(dwc);
-@@ -822,14 +819,7 @@ slave_sg_todev_fill_desc:
- 			mem = sg_dma_address(sg);
- 			len = sg_dma_len(sg);
+-	dw->all_chan_mask = (1 << pdata->nr_channels) - 1;
+-
+ 	INIT_LIST_HEAD(&dw->dma.channels);
+ 	for (i = 0; i < pdata->nr_channels; i++) {
+ 		struct dw_dma_chan	*dwc = &dw->chan[i];
+@@ -1481,11 +1482,6 @@ static int __init dw_probe(struct platform_device *pdev)
+ 	dma_writel(dw, CLEAR.DST_TRAN, dw->all_chan_mask);
+ 	dma_writel(dw, CLEAR.ERROR, dw->all_chan_mask);
  
--			if (!((mem | len) & 7))
--				mem_width = 3;
--			else if (!((mem | len) & 3))
--				mem_width = 2;
--			else if (!((mem | len) & 1))
--				mem_width = 1;
--			else
--				mem_width = 0;
-+			mem_width = dwc_fast_fls(mem | len);
- 
- slave_sg_fromdev_fill_desc:
- 			desc = dwc_desc_get(dwc);
+-	channel_clear_bit(dw, MASK.XFER, dw->all_chan_mask);
+-	channel_clear_bit(dw, MASK.SRC_TRAN, dw->all_chan_mask);
+-	channel_clear_bit(dw, MASK.DST_TRAN, dw->all_chan_mask);
+-	channel_clear_bit(dw, MASK.ERROR, dw->all_chan_mask);
+-
+ 	dma_cap_set(DMA_MEMCPY, dw->dma.cap_mask);
+ 	dma_cap_set(DMA_SLAVE, dw->dma.cap_mask);
+ 	if (pdata->is_private)
 -- 
 1.7.10
 
