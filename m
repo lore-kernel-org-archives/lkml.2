@@ -1,188 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755018Ab2FOLvH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 07:51:07 -0400
-Received: from eu1sys200aog103.obsmtp.com ([207.126.144.115]:45654 "EHLO
-	eu1sys200aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751619Ab2FOLvE (ORCPT
+	id S1752907Ab2FOLyX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 07:54:23 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25753 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751127Ab2FOLyW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 07:51:04 -0400
-Date: Fri, 15 Jun 2012 17:20:43 +0530
-From: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
-To: <lee.jones@linaro.org>
-Cc: <linus.walleij@stericsson.com>, <arnd@arndb.de>,
-        <linux-kernel@vger.kernel.org>, <grant.likely@secretlab.ca>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-i2c@vger.kernel.org>
-Subject: Re: Fwd: [PATCH 1/3] i2c: Add Device Tree support to the Nomadik
- I2C driver
-Message-ID: <20120615115042.GA27480@bnru02>
-References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org>
- <1339428307-3850-10-git-send-email-lee.jones@linaro.org>
- <CACRpkdaMDbH4NkiHRLAfbJZ_j4QXbwg94bvaWsdYRPH+dSfc8Q@mail.gmail.com>
- <4FD8BAD2.50703@linaro.org>
- <CACRpkdZFi34nChnMEo6yik67zk9owZLk-6zcdP7mmOXyLz8uqQ@mail.gmail.com>
- <4FDAFA17.6050502@linaro.org>
- <CAE2-_9rRYxjU9QQgtBv9ReMY5x+oRiJG1cDQahYHanjDrwVUYA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <CAE2-_9rRYxjU9QQgtBv9ReMY5x+oRiJG1cDQahYHanjDrwVUYA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 15 Jun 2012 07:54:22 -0400
+X-Authority-Analysis: v=2.0 cv=T6AOvo2Q c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=G0s97Kyuy1EA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=mz5n7y54v8WvLf5km8YA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1339761261.13377.353.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH] tracing: Fix the outmost stupidity of tracing_off()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Date: Fri, 15 Jun 2012 07:54:21 -0400
+In-Reply-To: <1339733919.13377.328.camel@gandalf.stny.rr.com>
+References: <alpine.LFD.2.02.1206142345100.3086@ionos>
+	 <1339714725.13377.252.camel@gandalf.stny.rr.com>
+	 <alpine.LFD.2.02.1206150106511.3086@ionos>
+	 <1339717703.13377.285.camel@gandalf.stny.rr.com>
+	 <1339733919.13377.328.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1+b1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[...]
-> 
-> 
-> From: Lee Jones <lee.jones@linaro.org>
-> Date: Tue, 17 Apr 2012 16:04:13 +0100
-> Subject: [PATCH 1/1] i2c: Add Device Tree support to the Nomadik I2C driver
-> 
-> Here we apply the bindings required for successful Device Tree
-> probing of the i2c-nomadik driver. We also apply a fall-back
-> configuration in case either one is not provided, or a required
-> element is missing from the one supplied.
-> 
-> Cc: linux-i2c@vger.kernel.org
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  drivers/i2c/busses/i2c-nomadik.c |   82 +++++++++++++++++++++++++++++++++++++-
->  1 file changed, 80 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/i2c/busses/i2c-nomadik.c b/drivers/i2c/busses/i2c-nomadik.c
-> index a92440d..58e8114 100644
-> --- a/drivers/i2c/busses/i2c-nomadik.c
-> +++ b/drivers/i2c/busses/i2c-nomadik.c
-> @@ -23,6 +23,7 @@
->  #include <linux/io.h>
->  #include <linux/regulator/consumer.h>
->  #include <linux/pm_runtime.h>
-> +#include <linux/of.h>
-> 
->  #include <plat/i2c.h>
-> 
-> @@ -899,15 +900,86 @@ static const struct i2c_algorithm nmk_i2c_algo = {
->        .functionality  = nmk_i2c_functionality
->  };
-> 
-> +static struct nmk_i2c_controller u8500_i2c = {
-> +       /*
-> +        * Slave data setup time; 250ns, 100ns, and 10ns, which
-> +        * is 14, 6 and 2 respectively for a 48Mhz i2c clock.
-> +        */
-> +       .slsu           = 0xe,
-> +       .tft            = 1,      /* Tx FIFO threshold */
-> +       .rft            = 8,      /* Rx FIFO threshold */
-> +       .clk_freq       = 100000, /* std. mode operation */
-> +       .timeout        = 200,    /* Slave response timeout(ms) */
-> +       .sm             = I2C_FREQ_MODE_FAST,
+On Fri, 2012-06-15 at 00:18 -0400, Steven Rostedt wrote:
+> For testing something like this, I would have
+> added tracing_off() in the code, and I do reset --hard to remove my
+> testing code. If I made the fix and forgot to --amend it, the fix was
+> lost.
 
-How is this possible? you are setting clk_freq as 100kb/s and mode
-as fast mode which is supposed to be 400kb/s.
+I'm almost positive this is what happened.
 
-> +};
-> +
-> +static int __devinit
-> +nmk_i2c_of_probe(struct device_node *np, struct nmk_i2c_controller *pdata)
-> +{
-> +       of_property_read_u32(np, "clock-frequency", (u32*)&pdata->clk_freq);
-> +       if (!pdata->clk_freq) {
-> +               pr_warn("%s: Clock frequency not found\n", np->full_name);
-> +               return -EINVAL;
-> +       }
-> +
-> +       of_property_read_u32(np, "stericsson,slsu", (u32*)&pdata->slsu);
-> +       if (!pdata->slsu) {
-> +               pr_warn("%s: Data line delay not found\n", np->full_name);
-> +               return -EINVAL;
-> +       }
-> +
-> +       of_property_read_u32(np, "stericsson,tft", (u32*)&pdata->tft);
-> +       if (!pdata->tft) {
-> +               pr_warn("%s: Tx FIFO threshold not found\n", np->full_name);
-> +               return -EINVAL;
-> +       }
-> +
-> +       of_property_read_u32(np, "stericsson,rft", (u32*)&pdata->rft);
-> +       if (!pdata->rft) {
-> +               pr_warn("%s: Rx FIFO threshold not found\n", np->full_name);
-> +               return -EINVAL;
-> +       }
-> +
-> +       of_property_read_u32(np, "stericsson,timeout", (u32*)&pdata->timeout);
-> +       if (!pdata->timeout) {
-> +               pr_warn("%s: Timeout not found\n", np->full_name);
-> +               return -EINVAL;
-> +       }
-> +
-> +       if (of_get_property(np, "stericsson,i2c_freq_mode_fast", NULL))
-> +               pdata->sm = I2C_FREQ_MODE_FAST;
-> +       else
-> +               pdata->sm = I2C_FREQ_MODE_STANDARD;
+tracing_off() is similar to trace_printk(), it's something that is
+usually added during development and not something that is normally
+executed in production. With an unmodified kernel, to test it, you need
+to start tracing and trigger a crash and have ftrace_dump_on_opps set,
+and have something to read it so that you know the tracing stopped. Not
+very reliable, and not something to put into generic testing.
 
-The controller has more modes like fast mode plus and high speed mode. You can't make
-assumptions like this.
+I forgot that the function tracer 'traceoff' trigger uses it, otherwise
+I would have added that new test a while ago.
 
-> +
-> +       return 0;
-> +}
-> +
->  static int __devinit nmk_i2c_probe(struct platform_device *pdev)
->  {
->        int ret = 0;
->        struct resource *res;
-> -       struct nmk_i2c_controller *pdata =
-> -                       pdev->dev.platform_data;
-> +       struct nmk_i2c_controller *pdata = pdev->dev.platform_data;
-> +       struct device_node *np = pdev->dev.of_node;
->        struct nmk_i2c_dev      *dev;
->        struct i2c_adapter *adap;
-> 
-> +       if (np) {
-> +               if (!pdata) {
-> +                       pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
-> +                       if (!pdata) {
-> +                               ret = -ENOMEM;
-> +                               goto err_no_mem;
-> +                       }
-> +               }
-> +               ret = nmk_i2c_of_probe(np, pdata);
-> +               if (ret)
-> +                       kfree(pdata);
-> +       }
-> +
-> +       if (!pdata)
-> +               /* No i2c configuration found, using the default. */
-> +               pdata = &u8500_i2c;
+For my testing, I put in tracing_off() at various places in the kernel,
+and made sure that it worked. I did see that it was broken before and
+fixed it. But for some reason, maybe I was distracted by other work, I
+never did the git commit --amend (similar to forgetting to do a quilt
+refresh). All my tests worked, and I reverted the test code I added with
+either a 'git reset --hard', or a 'git diff | patch -p1 -R', both of
+which would have removed my fix.
 
-There are redundant fallback configurations exists in the driver. You might need to remove 
-those, if you want to fallback here.
+I usually scan the 'git diff' before doing the revert, but as this
+change was a one liner, it could easily have been missed.
 
-> +
->        dev = kzalloc(sizeof(struct nmk_i2c_dev), GFP_KERNEL);
->        if (!dev) {
->                dev_err(&pdev->dev, "cannot allocate memory\n");
-> @@ -1038,11 +1110,17 @@ static int __devexit nmk_i2c_remove(struct platform_device *pdev)
->        return 0;
->  }
-> 
-> +static const struct of_device_id nmk_gpio_match[] = {
-> +       { .compatible = "st,nomadik-i2c", },
-> +       {},
-> +};
-> +
->  static struct platform_driver nmk_i2c_driver = {
->        .driver = {
->                .owner = THIS_MODULE,
->                .name = DRIVER_NAME,
->                .pm = &nmk_i2c_pm,
-> +               .of_match_table = nmk_gpio_match,
->        },
->        .probe = nmk_i2c_probe,
->        .remove = __devexit_p(nmk_i2c_remove),
-> --
-> 1.7.9.5
-> 
+The code I've been working on for the last few months was debugging the
+breakpoint code, which, when it failed, triple faulted the box. Tracing
+was never an option. Which means that I would not have played with
+tracing_off() then. And the older code that I've been working with
+(3.2-rt), did not have this bug.
 
-/srinidhi 
+Again, I know you are one of the biggest users of ftrace, and I'm very
+sorry (and ashamed) that his bug got in and caused you a days worth of
+frustration.
+
+-- Steve
+
+
