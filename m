@@ -1,42 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757381Ab2FOTDp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 15:03:45 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:38250 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751361Ab2FOTDo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 15:03:44 -0400
-Date: Fri, 15 Jun 2012 21:03:38 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Dmitry Antipov <dmitry.antipov@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jim Cromie <jim.cromie@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [GIT PULL 0/3] perf/urgent fixes
-Message-ID: <20120615190338.GB24394@gmail.com>
-References: <1339601367-17834-1-git-send-email-acme@infradead.org>
- <20120614100710.GB19531@gmail.com>
- <20120615171310.GD11550@infradead.org>
+	id S1757398Ab2FOTEi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 15:04:38 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:44428 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751361Ab2FOTEh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 15:04:37 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Takashi Iwai <tiwai@suse.de>
+Subject: Re: [PATCH] x86: revert "x86: Fix S4 regression"
+Date: Fri, 15 Jun 2012 21:09:54 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0+; KDE/4.6.0; x86_64; ; )
+Cc: Cong Wang <xiyou.wangcong@gmail.com>, Cong Wang <amwang@redhat.com>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Young <dyoung@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Yinghai Lu <yinghai.lu@oracle.com>
+References: <1339478463-31172-1-git-send-email-amwang@redhat.com> <CAM_iQpUq39+VQMU6rq78iqpy2m-PnSwWUW4M3WYjpecVVv4jhw@mail.gmail.com> <s5h8vfoojns.wl%tiwai@suse.de>
+In-Reply-To: <s5h8vfoojns.wl%tiwai@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120615171310.GD11550@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201206152109.55091.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Friday, June 15, 2012, Takashi Iwai wrote:
+> At Fri, 15 Jun 2012 19:11:12 +0800,
+> Cong Wang wrote:
+> > 
+> > On Tue, Jun 12, 2012 at 1:21 PM, Cong Wang <amwang@redhat.com> wrote:
+> > >
+> > > Takashi, could you help to test if the S4 regression is still
+> > > there after this patch?
+> > 
+> > Hello,
+> > 
+> > Any comments?
+> > 
+> > I have tested this revert on my laptop, with running simple
+> > "suspend and resume" test for several times, I didn't see any
+> > problem.
+> 
+> Sorry for the late response.
+> 
+> The problem happens only on certain laptops.  I've tested the recent
+> IvyBridge laptops and these were OK with the reverted patch.  But a
+> SandyBridge laptop, the one I tested in the last year, still hits the
+> S4 problem with the reverted kernel.
+> 
+> But, the recent kernels seem to have other S4 problems on this
+> machine, so it's not 100% clear whether it's triggered by that.
+> At least, it jumpts to the boot at S4 resume more frequently when the
+> patch is reverted.
+> 
+> So, I need to start from 2.6.32 again to see what regressions have
+> been introduced.  It'll take time, since I'd have to S4 20 cycles
+> for reproducing the bug.
 
-so, the build dependency bug is hard to trigger and I've pulled 
-your fixes for the time being because they seem to be unrelated.
+Thanks for doing this, please let me know if there's any way I can help.
 
-Thanks,
-
-	Ingo
+Rafael
