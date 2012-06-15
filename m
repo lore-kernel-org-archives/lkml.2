@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932543Ab2FOPsE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 11:48:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65460 "EHLO mx1.redhat.com"
+	id S932356Ab2FOPph (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 11:45:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25244 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932400Ab2FOPpq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 11:45:46 -0400
-Date: Fri, 15 Jun 2012 17:43:36 +0200
+	id S932326Ab2FOPpe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 11:45:34 -0400
+Date: Fri, 15 Jun 2012 17:43:31 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Anton Arapov <anton@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 06/15] uprobes: change build_map_info() to try
-	kmalloc(GFP_NOWAIT) first
-Message-ID: <20120615154336.GA9588@redhat.com>
+Subject: [PATCH 04/15] uprobes: install_breakpoint() should fail if
+	is_swbp_insn() == T
+Message-ID: <20120615154331.GA9578@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -25,39 +25,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-build_map_info() doesn't allocate the memory under i_mmap_mutex
-to avoid the deadlock with page reclaim. But it can try GFP_NOWAIT
-first, it should work in the likely case and thus we almost never
-need the pre-alloc-and-retry path.
+install_breakpoint() returns -EEXIST if is_swbp_insn(orig_insn) == T,
+the caller treats this code as success.
+
+This is doubly wrong. The successful return should set UPROBE_COPY_INSN,
+but the real problem is that it shouldn't succeed. If the probed insn is
+int3 the application should get SIGTRAP, this won't happen with uprobe.
+
+Probably we can fix this, we can add the UPROBE_SHARED_BP flag and teach
+handle_swbp/set_orig_insn to handle this case correctly. But this needs
+some complications and we have other insns which can't be probed, lets
+make a simple fix for now.
+
+I think this needs a cleanup. UPROBE_COPY_INSN should die, copy_insn()
+should be called by alloc_uprobe(). arch_uprobe_analyze_insn() depends
+on ->mm (ia32_compat) but it is called only once.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Acked-by: Peter Zijlstra <peterz@infradead.org>
 ---
- kernel/events/uprobes.c |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+ kernel/events/uprobes.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 4e0db34..897417d 100644
+index 3ccdb29..ec78152 100644
 --- a/kernel/events/uprobes.c
 +++ b/kernel/events/uprobes.c
-@@ -761,6 +761,16 @@ build_map_info(struct address_space *mapping, loff_t offset, bool is_register)
- 		if (!valid_vma(vma, is_register))
- 			continue;
+@@ -693,7 +693,7 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
+ 			return ret;
  
-+		if (!prev && !more) {
-+			/*
-+			 * Needs GFP_NOWAIT to avoid i_mmap_mutex recursion through
-+			 * reclaim. This is optimistic, no harm done if it fails.
-+			 */
-+			prev = kmalloc(sizeof(struct map_info),
-+					GFP_NOWAIT | __GFP_NOMEMALLOC | __GFP_NOWARN);
-+			if (prev)
-+				prev->next = NULL;
-+		}
- 		if (!prev) {
- 			more++;
- 			continue;
+ 		if (is_swbp_insn((uprobe_opcode_t *)uprobe->arch.insn))
+-			return -EEXIST;
++			return -ENOTSUPP;
+ 
+ 		ret = arch_uprobe_analyze_insn(&uprobe->arch, mm, addr);
+ 		if (ret)
 -- 
 1.5.5.1
 
