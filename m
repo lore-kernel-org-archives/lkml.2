@@ -1,99 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755703Ab2FOBEh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 21:04:37 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7972 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752932Ab2FOBDk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 21:03:40 -0400
-X-Authority-Analysis: v=2.0 cv=NbpkJh/4 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Ciwy3NGCPMMA:10 a=WYgrp5RFnWoA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=xqPperEbOc1BrG7CF0sA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=py1D0jqhPT4ovLKgul8A:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-Id: <20120615010338.377961366@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Thu, 14 Jun 2012 21:01:26 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 3/3] tracing: Register the ftrace internal events during early boot
-References: <20120615010123.722084844@goodmis.org>
-Content-Disposition: inline; filename=0003-tracing-Register-the-ftrace-internal-events-during-e.patch
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
+	id S1754157Ab2FOBHS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 21:07:18 -0400
+Received: from mga11.intel.com ([192.55.52.93]:34516 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752157Ab2FOBHQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 21:07:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="165880697"
+Subject: Re: [RFC] x86, fpu: unify signal handling code paths for x86 and
+ x86_64 kernels
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Hans Rosenfeld <hans.rosenfeld@amd.com>, Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, tglx@linutronix.de,
+        robert.richter@amd.com, andreas.herrmann3@amd.com
+Date: Thu, 14 Jun 2012 18:07:15 -0700
+In-Reply-To: <4FDA7EDE.3070408@zytor.com>
+References: <1339545814.28766.148.camel@sbsiddha-desk.sc.intel.com>
+	  <20120614143727.GF7922@escobedo.osrc.amd.com>
+	 <1339719035.3475.52.camel@sbsiddha-desk.sc.intel.com>
+	 <4FDA7EDE.3070408@zytor.com>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1339722435.3475.57.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---00GvhwF7k39YY
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Thu, 2012-06-14 at 17:16 -0700, H. Peter Anvin wrote:
+> On 06/14/2012 05:10 PM, Suresh Siddha wrote:
+> > 
+> > My personal preference is to use TIF_IA32 check and avoid  the usage of
+> > is_ia32_task() in the signal delivery paths.
+> 
+> That is the quick fix, but...
+> 
+> > Signal return goes through a system call which already sets the
+> > TS_COMPAT. It is the signal delivery that is causing the asymmetry.
+> 
+> Yes, and I think you missed some aspects of my statement: the notion
+> would be that TS_COMPAT would be set from the TIF_IA32 flag at the time
+> we decide to deliver a signal, the signal being a pseudo-system-call.
+> However, the more I wonder about if that will confuse the crap out of
+> ptrace, so using TIF_IA32 might just be the best thing anyway.
+> 
 
-From: Steven Rostedt <srostedt@redhat.com>
-
-All trace events including ftrace internel events (like trace_printk
-and function tracing), register functions that describe how to print
-their output. The events may be recorded as soon as the ring buffer
-is allocated, but they are just raw binary in the buffer. The mapping
-of event ids to how to print them are held within a structure that
-is registered on system boot.
-
-If a crash happens in boot up before these functions are registered
-then their output (via ftrace_dump_on_oops) will be useless:
-
-Dumping ftrace buffer:
----------------------------------
-   <...>-1       0.... 319705us : Unknown type 6
----------------------------------
-
-This can be quite frustrating for a kernel developer trying to see
-what is going wrong.
-
-There's no reason to register them so late in the boot up process.
-They can be registered by early_initcall().
-
-Reported-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Ok. Fix for the existing mainline code appended. Can you queue this
+separately?
 ---
- kernel/trace/trace_output.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: x86, compat: use test_thread_flag(TIF_IA32) in compat signal delivery
 
-diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
-index df611a0..123b189 100644
---- a/kernel/trace/trace_output.c
-+++ b/kernel/trace/trace_output.c
-@@ -1325,4 +1325,4 @@ __init static int init_events(void)
-=20
- 	return 0;
- }
--device_initcall(init_events);
-+early_initcall(init_events);
---=20
-1.7.10
+Signal delivery compat path may not have the 'TS_COMPAT' flag set. So use
+test_thread_flag(TIF_IA32) instead of is_ia32_task().
+
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: stable@kernel.org	# v3.4
+---
+ arch/x86/ia32/ia32_signal.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/ia32/ia32_signal.c b/arch/x86/ia32/ia32_signal.c
+index daeca56..673ac9b 100644
+--- a/arch/x86/ia32/ia32_signal.c
++++ b/arch/x86/ia32/ia32_signal.c
+@@ -38,7 +38,7 @@
+ int copy_siginfo_to_user32(compat_siginfo_t __user *to, siginfo_t *from)
+ {
+ 	int err = 0;
+-	bool ia32 = is_ia32_task();
++	bool ia32 = test_thread_flag(TIF_IA32);
+ 
+ 	if (!access_ok(VERIFY_WRITE, to, sizeof(compat_siginfo_t)))
+ 		return -EFAULT;
 
 
-
---00GvhwF7k39YY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJP2onqAAoJEIy3vGnGbaoASlEP/2nKiaS6LxWpyRrluVBrcBY3
-YGIw5BdkkOoqJwwHMT7Eurt3APb0xtDcyOOUiTng5Hq5w0abHMb+gWmWz9bSFw7K
-O4jqrGl2569vB+7RXI3Kxm2lNd/ToXDHMOkWrUXy3XpjDZK6sYMeYUvu6VoMEsv9
-knIFMWgmslU4ydTEJvfxFsn/uFyVa7Dvki6CPdMCVHST7u3X/WY0cS84ncbmpMF5
-1j3cqjqx70m9+G89AeZ5vMyRx+5Ytl89+34dR0SdjVrlIbzr/8A6jig1wYW6ZVL2
-L+K1au+yMmHnuig3Id6PE1C81X+A7umVm4gQnWSif/FuRz3S47WFa5NMMivQvy/w
-juYqLNBW/1Hiobkw7Dlu6E1b5cY6QMP1TO5KV0D4Hi2eod6/HiHIUnyQSVuZ5tZy
-sekMCal7Q/WKIQrEzOq37sk9dOvE4sNlOj0ZMV4XstveeJxygdpqzFJY4Gf00zkN
-OEKpUIXcxgsZhchb6NB/krMncMBfeI/HjlLzTOfSChhZ2zTzUbiN7v5DTxqfcW8c
-yG9FTqkZdCIpm4kzc9gsr6p0EjuaL063YvAZ9qwMhZuLuc73DaMZztFkV+S9xzMh
-cM/wK0d7xHbnf2WCJHR/34zwtNm+PpREa/IZampM7dtJ8SoKBcXC7qNzHPRi8ADA
-ZVdKLsipPDRLZHjQIldG
-=tEJs
------END PGP SIGNATURE-----
-
---00GvhwF7k39YY--
