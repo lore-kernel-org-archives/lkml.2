@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758068Ab2FOVKN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 17:10:13 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:60120 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758013Ab2FOVGh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 17:06:37 -0400
+	id S1758004Ab2FOVGg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 17:06:36 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:44543 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757981Ab2FOVGc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 17:06:32 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -16,193 +15,65 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
         fweisbec@gmail.com, patches@linaro.org,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 14/15] rcu: Use for_each_rcu_flavor() in TREE_RCU tracing
-Date: Fri, 15 Jun 2012 14:06:09 -0700
-Message-Id: <1339794370-28119-14-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 02/15] rcu: Size rcu_node tree from nr_cpu_ids rather than NR_CPUS
+Date: Fri, 15 Jun 2012 14:05:57 -0700
+Message-Id: <1339794370-28119-2-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
 In-Reply-To: <1339794370-28119-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20120615210550.GA27506@linux.vnet.ibm.com>
  <1339794370-28119-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12061521-6148-0000-0000-000006BD8713
+x-cbid: 12061521-3534-0000-0000-00000966C5B9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-This commit applies the new for_each_rcu_flavor() macro to the
-kernel/rcutree_trace.c file.
+The rcu_node tree array is sized based on compile-time constants,
+including NR_CPUS.  Although this approach has worked well in the past,
+the recent trend by many distros to define NR_CPUS=4096 results in
+excessive grace-period-initialization latencies.
+
+This commit therefore substitutes the run-time computed nr_cpu_ids for
+the compile-time NR_CPUS when building the tree.  This can result in
+much of the compile-time-allocated rcu_node array being unused.  If
+this is a major problem, you are in a specialized situation anyway,
+so you can manually adjust the NR_CPUS, RCU_FANOUT, and RCU_FANOUT_LEAF
+kernel config parameters.
 
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/rcutree_trace.c |   95 +++++++++++++++++++-----------------------------
- 1 files changed, 38 insertions(+), 57 deletions(-)
+ kernel/rcutree.c        |    2 +-
+ kernel/rcutree_plugin.h |    2 ++
+ 2 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/rcutree_trace.c b/kernel/rcutree_trace.c
-index 057408b..c618665 100644
---- a/kernel/rcutree_trace.c
-+++ b/kernel/rcutree_trace.c
-@@ -48,22 +48,18 @@
- 
- static void print_rcubarrier(struct seq_file *m, struct rcu_state *rsp)
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index a151184..9098910 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -2672,7 +2672,7 @@ static void __init rcu_init_geometry(void)
  {
--	seq_printf(m, "%c bcc: %d nbd: %lu\n",
--		   rsp->rcu_barrier_in_progress ? 'B' : '.',
-+	seq_printf(m, "%s: %c bcc: %d nbd: %lu\n",
-+		   rsp->name, rsp->rcu_barrier_in_progress ? 'B' : '.',
- 		   atomic_read(&rsp->barrier_cpu_count),
- 		   rsp->n_barrier_done);
+ 	int i;
+ 	int j;
+-	int n = NR_CPUS;
++	int n = nr_cpu_ids;
+ 	int rcu_capacity[MAX_RCU_LVLS + 1];
+ 
+ 	/* If the compile-time values are accurate, just leave. */
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index e9b44c3..7cb86ae 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -72,6 +72,8 @@ static void __init rcu_bootup_announce_oddness(void)
+ #endif
+ 	if (rcu_fanout_leaf != CONFIG_RCU_FANOUT_LEAF)
+ 		printk(KERN_INFO "\tExperimental boot-time adjustment of leaf fanout.\n");
++	if (nr_cpu_ids != NR_CPUS)
++		printk(KERN_INFO "\tRCU restricting CPUs from NR_CPUS=%d to nr_cpu_ids=%d.\n", NR_CPUS, nr_cpu_ids);
  }
  
- static int show_rcubarrier(struct seq_file *m, void *unused)
- {
--#ifdef CONFIG_TREE_PREEMPT_RCU
--	seq_puts(m, "rcu_preempt: ");
--	print_rcubarrier(m, &rcu_preempt_state);
--#endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
--	seq_puts(m, "rcu_sched: ");
--	print_rcubarrier(m, &rcu_sched_state);
--	seq_puts(m, "rcu_bh: ");
--	print_rcubarrier(m, &rcu_bh_state);
-+	struct rcu_state *rsp;
-+
-+	for_each_rcu_flavor(rsp)
-+		print_rcubarrier(m, rsp);
- 	return 0;
- }
- 
-@@ -129,24 +125,16 @@ static void print_one_rcu_data(struct seq_file *m, struct rcu_data *rdp)
- 		   rdp->n_cbs_invoked, rdp->n_cbs_orphaned, rdp->n_cbs_adopted);
- }
- 
--#define PRINT_RCU_DATA(name, func, m) \
--	do { \
--		int _p_r_d_i; \
--		\
--		for_each_possible_cpu(_p_r_d_i) \
--			func(m, &per_cpu(name, _p_r_d_i)); \
--	} while (0)
--
- static int show_rcudata(struct seq_file *m, void *unused)
- {
--#ifdef CONFIG_TREE_PREEMPT_RCU
--	seq_puts(m, "rcu_preempt:\n");
--	PRINT_RCU_DATA(rcu_preempt_data, print_one_rcu_data, m);
--#endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
--	seq_puts(m, "rcu_sched:\n");
--	PRINT_RCU_DATA(rcu_sched_data, print_one_rcu_data, m);
--	seq_puts(m, "rcu_bh:\n");
--	PRINT_RCU_DATA(rcu_bh_data, print_one_rcu_data, m);
-+	int cpu;
-+	struct rcu_state *rsp;
-+
-+	for_each_rcu_flavor(rsp) {
-+		seq_printf(m, "%s:\n", rsp->name);
-+		for_each_possible_cpu(cpu)
-+		print_one_rcu_data(m, per_cpu_ptr(rsp->rda, cpu));
-+	}
- 	return 0;
- }
- 
-@@ -200,6 +188,9 @@ static void print_one_rcu_data_csv(struct seq_file *m, struct rcu_data *rdp)
- 
- static int show_rcudata_csv(struct seq_file *m, void *unused)
- {
-+	int cpu;
-+	struct rcu_state *rsp;
-+
- 	seq_puts(m, "\"CPU\",\"Online?\",\"c\",\"g\",\"pq\",\"pgp\",\"pq\",");
- 	seq_puts(m, "\"dt\",\"dt nesting\",\"dt NMI nesting\",\"df\",");
- 	seq_puts(m, "\"of\",\"qll\",\"ql\",\"qs\"");
-@@ -207,14 +198,11 @@ static int show_rcudata_csv(struct seq_file *m, void *unused)
- 	seq_puts(m, "\"kt\",\"ktl\"");
- #endif /* #ifdef CONFIG_RCU_BOOST */
- 	seq_puts(m, ",\"b\",\"ci\",\"co\",\"ca\"\n");
--#ifdef CONFIG_TREE_PREEMPT_RCU
--	seq_puts(m, "\"rcu_preempt:\"\n");
--	PRINT_RCU_DATA(rcu_preempt_data, print_one_rcu_data_csv, m);
--#endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
--	seq_puts(m, "\"rcu_sched:\"\n");
--	PRINT_RCU_DATA(rcu_sched_data, print_one_rcu_data_csv, m);
--	seq_puts(m, "\"rcu_bh:\"\n");
--	PRINT_RCU_DATA(rcu_bh_data, print_one_rcu_data_csv, m);
-+	for_each_rcu_flavor(rsp) {
-+		seq_printf(m, "\"%s:\"\n", rsp->name);
-+		for_each_possible_cpu(cpu)
-+			print_one_rcu_data_csv(m, per_cpu_ptr(rsp->rda, cpu));
-+	}
- 	return 0;
- }
- 
-@@ -304,9 +292,9 @@ static void print_one_rcu_state(struct seq_file *m, struct rcu_state *rsp)
- 	struct rcu_node *rnp;
- 
- 	gpnum = rsp->gpnum;
--	seq_printf(m, "c=%lu g=%lu s=%d jfq=%ld j=%x "
-+	seq_printf(m, "%s: c=%lu g=%lu s=%d jfq=%ld j=%x "
- 		      "nfqs=%lu/nfqsng=%lu(%lu) fqlh=%lu oqlen=%ld/%ld\n",
--		   rsp->completed, gpnum, rsp->fqs_state,
-+		   rsp->name, rsp->completed, gpnum, rsp->fqs_state,
- 		   (long)(rsp->jiffies_force_qs - jiffies),
- 		   (int)(jiffies & 0xffff),
- 		   rsp->n_force_qs, rsp->n_force_qs_ngp,
-@@ -329,14 +317,10 @@ static void print_one_rcu_state(struct seq_file *m, struct rcu_state *rsp)
- 
- static int show_rcuhier(struct seq_file *m, void *unused)
- {
--#ifdef CONFIG_TREE_PREEMPT_RCU
--	seq_puts(m, "rcu_preempt:\n");
--	print_one_rcu_state(m, &rcu_preempt_state);
--#endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
--	seq_puts(m, "rcu_sched:\n");
--	print_one_rcu_state(m, &rcu_sched_state);
--	seq_puts(m, "rcu_bh:\n");
--	print_one_rcu_state(m, &rcu_bh_state);
-+	struct rcu_state *rsp;
-+
-+	for_each_rcu_flavor(rsp)
-+		print_one_rcu_state(m, rsp);
- 	return 0;
- }
- 
-@@ -377,11 +361,10 @@ static void show_one_rcugp(struct seq_file *m, struct rcu_state *rsp)
- 
- static int show_rcugp(struct seq_file *m, void *unused)
- {
--#ifdef CONFIG_TREE_PREEMPT_RCU
--	show_one_rcugp(m, &rcu_preempt_state);
--#endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
--	show_one_rcugp(m, &rcu_sched_state);
--	show_one_rcugp(m, &rcu_bh_state);
-+	struct rcu_state *rsp;
-+
-+	for_each_rcu_flavor(rsp)
-+		show_one_rcugp(m, rsp);
- 	return 0;
- }
- 
-@@ -430,14 +413,12 @@ static void print_rcu_pendings(struct seq_file *m, struct rcu_state *rsp)
- 
- static int show_rcu_pending(struct seq_file *m, void *unused)
- {
--#ifdef CONFIG_TREE_PREEMPT_RCU
--	seq_puts(m, "rcu_preempt:\n");
--	print_rcu_pendings(m, &rcu_preempt_state);
--#endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
--	seq_puts(m, "rcu_sched:\n");
--	print_rcu_pendings(m, &rcu_sched_state);
--	seq_puts(m, "rcu_bh:\n");
--	print_rcu_pendings(m, &rcu_bh_state);
-+	struct rcu_state *rsp;
-+
-+	for_each_rcu_flavor(rsp) {
-+		seq_printf(m, "%s:\n", rsp->name);
-+		print_rcu_pendings(m, rsp);
-+	}
- 	return 0;
- }
- 
+ #ifdef CONFIG_TREE_PREEMPT_RCU
 -- 
 1.7.8
 
