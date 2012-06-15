@@ -1,76 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758246Ab2FOWT7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 18:19:59 -0400
-Received: from mga02.intel.com ([134.134.136.20]:7078 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758121Ab2FOWT4 convert rfc822-to-8bit (ORCPT
+	id S1758224Ab2FOWUg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 18:20:36 -0400
+Received: from mail160.messagelabs.com ([216.82.253.99]:24882 "EHLO
+	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758121Ab2FOWUe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 18:19:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="153971069"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        John Stultz <john.stultz@linaro.org>, Shuah Khan <shuahkhan@gmail.com>,
-        "arve@android.com" <arve@android.com>,
-        Rebecca Schultz Zavin <rebecca@android.com>,
-        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "kernel-team@android.com" <kernel-team@android.com>
-Subject: RE: [PATCH 3/6] pstore: Add persistent function tracing
-Thread-Topic: [PATCH 3/6] pstore: Add persistent function tracing
-Thread-Index: AQHNSxnUyTWscCuSSEGw988jRX6OJpb758LAgAB6cQD//4uj0IAAeJUA//+LT0A=
-Date: Fri, 15 Jun 2012 22:19:54 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F19320CC9@ORSMSX104.amr.corp.intel.com>
-References: <20120615170659.GA4060@lizard>
-	 <1339780111-12075-3-git-send-email-anton.vorontsov@linaro.org>
-	 <3908561D78D1C84285E8C5FCA982C28F1931FC30@ORSMSX104.amr.corp.intel.com>
-	 <1339797308.25903.8.camel@gandalf.stny.rr.com>
-	 <3908561D78D1C84285E8C5FCA982C28F1931FC85@ORSMSX104.amr.corp.intel.com>
- <1339798214.25903.17.camel@gandalf.stny.rr.com>
-In-Reply-To: <1339798214.25903.17.camel@gandalf.stny.rr.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 15 Jun 2012 18:20:34 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-5.tower-160.messagelabs.com!1339798794!6867175!13
+X-Originating-IP: [216.166.12.180]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/4] staging: comedi: Kconfig: menuconfig options should be bool not tristate
+Date: Fri, 15 Jun 2012 15:20:04 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201206151520.04455.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> milli-seconds for recording? This would cripple the kernel. On slow
-> machines, incorporating lockdep into function tracing (and other debug
-> options) causes the system to live lock. Tracing the timer interrupt
-> took so long that by the time it finished, the next timer triggered
-> again.
+The menuconfig options to enable the misc, isa, pci, pcmcia, and usb
+comedi driver selections should be bool not tristate. They don't
+directly affect the building of the kernel they just allow other
+options to be selected.
 
-Ah - I think I misunderstood how this works ... I thought the function
-trace was taken at some point in the crash/shutdown path.  Now I see
-that it is being generated repeatedly as the kernel runs ... with the
-idea that if a hang happens, you can see the last call trace that was
-successful.
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/staging/comedi/Kconfig |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
-Ok then - clearly this is only useful with a ram backend for pstore.
+diff --git a/drivers/staging/comedi/Kconfig b/drivers/staging/comedi/Kconfig
+index 2ca7f08..88ef0c7 100644
+--- a/drivers/staging/comedi/Kconfig
++++ b/drivers/staging/comedi/Kconfig
+@@ -33,7 +33,7 @@ config COMEDI_DEFAULT_BUF_MAXSIZE_KB
+ 	  channels running at 100 kHz has 2-4 seconds of buffer.
+ 
+ menuconfig COMEDI_MISC_DRIVERS
+-	tristate "Comedi misc drivers"
++	bool "Comedi misc drivers"
+ 	---help---
+ 	  Enable comedi misc drivers to be built
+ 
+@@ -100,7 +100,7 @@ config COMEDI_SKEL
+ endif # COMEDI_MISC_DRIVERS
+ 
+ menuconfig COMEDI_ISA_DRIVERS
+-	tristate "Comedi ISA and PC/104 drivers"
++	bool "Comedi ISA and PC/104 drivers"
+ 	depends on ISA
+ 	---help---
+ 	  Enable comedi ISA and PC/104 drivers to be built
+@@ -540,7 +540,7 @@ config COMEDI_POC
+ endif # COMEDI_ISA_DRIVERS
+ 
+ menuconfig COMEDI_PCI_DRIVERS
+-	tristate "Comedi PCI drivers"
++	bool "Comedi PCI drivers"
+ 	depends on PCI
+ 	---help---
+ 	  Enable comedi PCI drivers to be built
+@@ -1096,7 +1096,7 @@ config COMEDI_SSV_DNP
+ endif # COMEDI_PCI_DRIVERS
+ 
+ menuconfig COMEDI_PCMCIA_DRIVERS
+-	tristate "Comedi PCMCIA drivers"
++	bool "Comedi PCMCIA drivers"
+ 	depends on PCMCIA
+ 	---help---
+ 	  Enable comedi PCMCIA and PCCARD drivers to be built
+@@ -1179,7 +1179,7 @@ config COMEDI_QUATECH_DAQP_CS
+ endif # COMEDI_PCMCIA_DRIVERS
+ 
+ menuconfig COMEDI_USB_DRIVERS
+-	tristate "Comedi USB drivers"
++	bool "Comedi USB drivers"
+ 	depends on USB
+ 	---help---
+ 	  Enable comedi USB drivers to be built
+-- 
+1.7.7
 
-Binary makes sense too - but I'll stick with my comment that a different
-kernel must be able to do the decode. Or we need to spell out clearly
-that you must have the same, or compatible kernel booted to make any
-sense of the saved ftrace record.
-
--Tony
