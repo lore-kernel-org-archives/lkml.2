@@ -1,350 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758073Ab2FOVJf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 17:09:35 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:60157 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758045Ab2FOVGp (ORCPT
+	id S1758105Ab2FOVJr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 17:09:47 -0400
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:32187 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758017Ab2FOVJo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 17:06:45 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, patches@linaro.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 01/15] rcu: Control RCU_FANOUT_LEAF from boot-time parameter
-Date: Fri, 15 Jun 2012 14:05:56 -0700
-Message-Id: <1339794370-28119-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.8
-In-Reply-To: <20120615210550.GA27506@linux.vnet.ibm.com>
-References: <20120615210550.GA27506@linux.vnet.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12061521-6148-0000-0000-000006BD8756
+	Fri, 15 Jun 2012 17:09:44 -0400
+From: Greg Pearson <greg.pearson@hp.com>
+To: tj@kernel.org, hpa@linux.intel.com, akpm@linux-foundation.org,
+        shangw@linux.vnet.ibm.com, mingo@elte.hu
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, greg.pearson@hp.com
+Subject: [PATCH] mm/memblock: fix overlapping allocation when doubling reserved array
+Date: Fri, 15 Jun 2012 15:09:27 -0600
+Message-Id: <1339794567-17784-1-git-send-email-greg.pearson@hp.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+The __alloc_memory_core_early() routine will ask memblock for a range
+of memory then try to reserve it. If the reserved region array lacks
+space for the new range, memblock_double_array() is called to allocate
+more space for the array. If memblock is used to allocate memory for
+the new array it can end up using a range that overlaps with the range
+originally allocated in __alloc_memory_core_early(), leading to possible
+data corruption.
 
-Although making RCU_FANOUT_LEAF a kernel configuration parameter rather
-than a fixed constant makes it easier for people to decrease cache-miss
-overhead for large systems, it is of little help for people who must
-run a single pre-built kernel binary.
+With this patch memblock_double_array() now calls memblock_find_in_range()
+with a narrowed candidate range so any memory allocated will not overlap
+with the original range that was being reserved. The range is narrowed by
+passing in the starting address of the previously allocated range as the
+end of the candidate range. Since memblock_find_in_range_node() looks for
+a free range by walking the free memory list in reverse order (highest
+memory address to lowest address) this change should not unnecessarily
+exclude chunks of memory that could otherwise be used to satisfy the
+request.
 
-This commit therefore allows the value of RCU_FANOUT_LEAF to be
-increased (but not decreased!) via a boot-time parameter named
-rcutree.rcu_fanout_leaf.
-
-Reported-by: Mike Galbraith <efault@gmx.de>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Greg Pearson <greg.pearson@hp.com>
 ---
- Documentation/kernel-parameters.txt |    4 ++
- kernel/rcutree.c                    |   97 ++++++++++++++++++++++++++++++-----
- kernel/rcutree.h                    |   23 +++++----
- kernel/rcutree_plugin.h             |    4 +-
- kernel/rcutree_trace.c              |    2 +-
- 5 files changed, 104 insertions(+), 26 deletions(-)
+ mm/memblock.c |   11 +++++++----
+ 1 files changed, 7 insertions(+), 4 deletions(-)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index c45513d..88bd3ef 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -2367,6 +2367,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			Set maximum number of finished RCU callbacks to process
- 			in one batch.
- 
-+	rcutree.fanout_leaf=	[KNL,BOOT]
-+			Set maximum number of finished RCU callbacks to process
-+			in one batch.
-+
- 	rcutree.qhimark=	[KNL,BOOT]
- 			Set threshold of queued
- 			RCU callbacks over which batch limiting is disabled.
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 0da7b88..a151184 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -60,17 +60,10 @@
- 
- /* Data structures. */
- 
--static struct lock_class_key rcu_node_class[NUM_RCU_LVLS];
-+static struct lock_class_key rcu_node_class[RCU_NUM_LVLS];
- 
- #define RCU_STATE_INITIALIZER(structname) { \
- 	.level = { &structname##_state.node[0] }, \
--	.levelcnt = { \
--		NUM_RCU_LVL_0,  /* root of hierarchy. */ \
--		NUM_RCU_LVL_1, \
--		NUM_RCU_LVL_2, \
--		NUM_RCU_LVL_3, \
--		NUM_RCU_LVL_4, /* == MAX_RCU_LVLS */ \
--	}, \
- 	.fqs_state = RCU_GP_IDLE, \
- 	.gpnum = -300, \
- 	.completed = -300, \
-@@ -91,6 +84,19 @@ DEFINE_PER_CPU(struct rcu_data, rcu_bh_data);
- 
- static struct rcu_state *rcu_state;
- 
-+/* Increase (but not decrease) the CONFIG_RCU_FANOUT_LEAF at boot time. */
-+static int rcu_fanout_leaf = CONFIG_RCU_FANOUT_LEAF;
-+module_param(rcu_fanout_leaf, int, 0);
-+int rcu_num_lvls = RCU_NUM_LVLS;
-+static int num_rcu_lvl[] = {  /* Number of rcu_nodes at specified level. */
-+	NUM_RCU_LVL_0,
-+	NUM_RCU_LVL_1,
-+	NUM_RCU_LVL_2,
-+	NUM_RCU_LVL_3,
-+	NUM_RCU_LVL_4,
-+};
-+int rcu_num_nodes = NUM_RCU_NODES; /* Total number of rcu_nodes in use. */
-+
- /*
-  * The rcu_scheduler_active variable transitions from zero to one just
-  * before the first task is spawned.  So when this variable is zero, RCU
-@@ -2571,9 +2577,9 @@ static void __init rcu_init_levelspread(struct rcu_state *rsp)
- {
- 	int i;
- 
--	for (i = NUM_RCU_LVLS - 1; i > 0; i--)
-+	for (i = rcu_num_lvls - 1; i > 0; i--)
- 		rsp->levelspread[i] = CONFIG_RCU_FANOUT;
--	rsp->levelspread[0] = CONFIG_RCU_FANOUT_LEAF;
-+	rsp->levelspread[0] = rcu_fanout_leaf;
- }
- #else /* #ifdef CONFIG_RCU_FANOUT_EXACT */
- static void __init rcu_init_levelspread(struct rcu_state *rsp)
-@@ -2583,7 +2589,7 @@ static void __init rcu_init_levelspread(struct rcu_state *rsp)
- 	int i;
- 
- 	cprv = NR_CPUS;
--	for (i = NUM_RCU_LVLS - 1; i >= 0; i--) {
-+	for (i = rcu_num_lvls - 1; i >= 0; i--) {
- 		ccur = rsp->levelcnt[i];
- 		rsp->levelspread[i] = (cprv + ccur - 1) / ccur;
- 		cprv = ccur;
-@@ -2610,13 +2616,15 @@ static void __init rcu_init_one(struct rcu_state *rsp,
- 
- 	/* Initialize the level-tracking arrays. */
- 
--	for (i = 1; i < NUM_RCU_LVLS; i++)
-+	for (i = 0; i < rcu_num_lvls; i++)
-+		rsp->levelcnt[i] = num_rcu_lvl[i];
-+	for (i = 1; i < rcu_num_lvls; i++)
- 		rsp->level[i] = rsp->level[i - 1] + rsp->levelcnt[i - 1];
- 	rcu_init_levelspread(rsp);
- 
- 	/* Initialize the elements themselves, starting from the leaves. */
- 
--	for (i = NUM_RCU_LVLS - 1; i >= 0; i--) {
-+	for (i = rcu_num_lvls - 1; i >= 0; i--) {
- 		cpustride *= rsp->levelspread[i];
- 		rnp = rsp->level[i];
- 		for (j = 0; j < rsp->levelcnt[i]; j++, rnp++) {
-@@ -2646,7 +2654,7 @@ static void __init rcu_init_one(struct rcu_state *rsp,
- 	}
- 
- 	rsp->rda = rda;
--	rnp = rsp->level[NUM_RCU_LVLS - 1];
-+	rnp = rsp->level[rcu_num_lvls - 1];
- 	for_each_possible_cpu(i) {
- 		while (i > rnp->grphi)
- 			rnp++;
-@@ -2655,11 +2663,72 @@ static void __init rcu_init_one(struct rcu_state *rsp,
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 952123e..599519c 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -184,7 +184,8 @@ static void __init_memblock memblock_remove_region(struct memblock_type *type, u
  	}
  }
  
-+/*
-+ * Compute the rcu_node tree geometry from kernel parameters.  This cannot
-+ * replace the definitions in rcutree.h because those are needed to size
-+ * the ->node array in the rcu_state structure.
-+ */
-+static void __init rcu_init_geometry(void)
-+{
-+	int i;
-+	int j;
-+	int n = NR_CPUS;
-+	int rcu_capacity[MAX_RCU_LVLS + 1];
-+
-+	/* If the compile-time values are accurate, just leave. */
-+	if (rcu_fanout_leaf == CONFIG_RCU_FANOUT_LEAF)
-+		return;
-+
-+	/*
-+	 * Compute number of nodes that can be handled an rcu_node tree
-+	 * with the given number of levels.  Setting rcu_capacity[0] makes
-+	 * some of the arithmetic easier.
-+	 */
-+	rcu_capacity[0] = 1;
-+	rcu_capacity[1] = rcu_fanout_leaf;
-+	for (i = 2; i <= MAX_RCU_LVLS; i++)
-+		rcu_capacity[i] = rcu_capacity[i - 1] * CONFIG_RCU_FANOUT;
-+
-+	/*
-+	 * The boot-time rcu_fanout_leaf parameter is only permitted
-+	 * to increase the leaf-level fanout, not decrease it.  Of course,
-+	 * the leaf-level fanout cannot exceed the number of bits in
-+	 * the rcu_node masks.  Finally, the tree must be able to accommodate
-+	 * the configured number of CPUs.  Complain and fall back to the
-+	 * compile-timer values if these limits are exceeded.
-+	 */
-+	if (rcu_fanout_leaf < CONFIG_RCU_FANOUT_LEAF ||
-+	    rcu_fanout_leaf > sizeof(unsigned long) * 8 ||
-+	    n > rcu_capacity[4]) {
-+		WARN_ON(1);
-+		return;
-+	}
-+
-+	/* Calculate the number of rcu_nodes at each level of the tree. */
-+	for (i = 1; i <= MAX_RCU_LVLS; i++)
-+		if (n <= rcu_capacity[i]) {
-+			for (j = 0; j <= i; j++)
-+				num_rcu_lvl[j] =
-+					DIV_ROUND_UP(n, rcu_capacity[i - j]);
-+			rcu_num_lvls = i;
-+			for (j = i + 1; j <= MAX_RCU_LVLS; j++)
-+				num_rcu_lvl[j] = 0;
-+			break;
-+		}
-+
-+	/* Calculate the total number of rcu_node structures. */
-+	rcu_num_nodes = 0;
-+	for (i = 0; i <= MAX_RCU_LVLS; i++)
-+		rcu_num_nodes += num_rcu_lvl[i];
-+	rcu_num_nodes -= n;
-+}
-+
- void __init rcu_init(void)
+-static int __init_memblock memblock_double_array(struct memblock_type *type)
++static int __init_memblock memblock_double_array(struct memblock_type *type,
++						phys_addr_t skip_base)
  {
- 	int cpu;
+ 	struct memblock_region *new_array, *old_array;
+ 	phys_addr_t old_size, new_size, addr;
+@@ -222,7 +223,8 @@ static int __init_memblock memblock_double_array(struct memblock_type *type)
+ 		new_array = kmalloc(new_size, GFP_KERNEL);
+ 		addr = new_array ? __pa(new_array) : 0;
+ 	} else {
+-		addr = memblock_find_in_range(0, MEMBLOCK_ALLOC_ACCESSIBLE, new_size, sizeof(phys_addr_t));
++		addr = memblock_find_in_range(0, skip_base,
++				new_size, sizeof(phys_addr_t));
+ 		new_array = addr ? __va(addr) : 0;
+ 	}
+ 	if (!addr) {
+@@ -399,7 +401,8 @@ repeat:
+ 	 */
+ 	if (!insert) {
+ 		while (type->cnt + nr_new > type->max)
+-			if (memblock_double_array(type) < 0)
++			/* Avoid possible overlap if range is being reserved */
++			if (memblock_double_array(type, base) < 0)
+ 				return -ENOMEM;
+ 		insert = true;
+ 		goto repeat;
+@@ -450,7 +453,7 @@ static int __init_memblock memblock_isolate_range(struct memblock_type *type,
  
- 	rcu_bootup_announce();
-+	rcu_init_geometry();
- 	rcu_init_one(&rcu_sched_state, &rcu_sched_data);
- 	rcu_init_one(&rcu_bh_state, &rcu_bh_data);
- 	__rcu_init_preempt();
-diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-index 7f5d138..df3c2c8 100644
---- a/kernel/rcutree.h
-+++ b/kernel/rcutree.h
-@@ -42,28 +42,28 @@
- #define RCU_FANOUT_4	      (RCU_FANOUT_3 * CONFIG_RCU_FANOUT)
+ 	/* we'll create at most two more regions */
+ 	while (type->cnt + 2 > type->max)
+-		if (memblock_double_array(type) < 0)
++		if (memblock_double_array(type, MEMBLOCK_ALLOC_ACCESSIBLE) < 0)
+ 			return -ENOMEM;
  
- #if NR_CPUS <= RCU_FANOUT_1
--#  define NUM_RCU_LVLS	      1
-+#  define RCU_NUM_LVLS	      1
- #  define NUM_RCU_LVL_0	      1
- #  define NUM_RCU_LVL_1	      (NR_CPUS)
- #  define NUM_RCU_LVL_2	      0
- #  define NUM_RCU_LVL_3	      0
- #  define NUM_RCU_LVL_4	      0
- #elif NR_CPUS <= RCU_FANOUT_2
--#  define NUM_RCU_LVLS	      2
-+#  define RCU_NUM_LVLS	      2
- #  define NUM_RCU_LVL_0	      1
- #  define NUM_RCU_LVL_1	      DIV_ROUND_UP(NR_CPUS, RCU_FANOUT_1)
- #  define NUM_RCU_LVL_2	      (NR_CPUS)
- #  define NUM_RCU_LVL_3	      0
- #  define NUM_RCU_LVL_4	      0
- #elif NR_CPUS <= RCU_FANOUT_3
--#  define NUM_RCU_LVLS	      3
-+#  define RCU_NUM_LVLS	      3
- #  define NUM_RCU_LVL_0	      1
- #  define NUM_RCU_LVL_1	      DIV_ROUND_UP(NR_CPUS, RCU_FANOUT_2)
- #  define NUM_RCU_LVL_2	      DIV_ROUND_UP(NR_CPUS, RCU_FANOUT_1)
- #  define NUM_RCU_LVL_3	      (NR_CPUS)
- #  define NUM_RCU_LVL_4	      0
- #elif NR_CPUS <= RCU_FANOUT_4
--#  define NUM_RCU_LVLS	      4
-+#  define RCU_NUM_LVLS	      4
- #  define NUM_RCU_LVL_0	      1
- #  define NUM_RCU_LVL_1	      DIV_ROUND_UP(NR_CPUS, RCU_FANOUT_3)
- #  define NUM_RCU_LVL_2	      DIV_ROUND_UP(NR_CPUS, RCU_FANOUT_2)
-@@ -76,6 +76,9 @@
- #define RCU_SUM (NUM_RCU_LVL_0 + NUM_RCU_LVL_1 + NUM_RCU_LVL_2 + NUM_RCU_LVL_3 + NUM_RCU_LVL_4)
- #define NUM_RCU_NODES (RCU_SUM - NR_CPUS)
- 
-+extern int rcu_num_lvls;
-+extern int rcu_num_nodes;
-+
- /*
-  * Dynticks per-CPU state.
-  */
-@@ -192,7 +195,7 @@ struct rcu_node {
-  */
- #define rcu_for_each_node_breadth_first(rsp, rnp) \
- 	for ((rnp) = &(rsp)->node[0]; \
--	     (rnp) < &(rsp)->node[NUM_RCU_NODES]; (rnp)++)
-+	     (rnp) < &(rsp)->node[rcu_num_nodes]; (rnp)++)
- 
- /*
-  * Do a breadth-first scan of the non-leaf rcu_node structures for the
-@@ -201,7 +204,7 @@ struct rcu_node {
-  */
- #define rcu_for_each_nonleaf_node_breadth_first(rsp, rnp) \
- 	for ((rnp) = &(rsp)->node[0]; \
--	     (rnp) < (rsp)->level[NUM_RCU_LVLS - 1]; (rnp)++)
-+	     (rnp) < (rsp)->level[rcu_num_lvls - 1]; (rnp)++)
- 
- /*
-  * Scan the leaves of the rcu_node hierarchy for the specified rcu_state
-@@ -210,8 +213,8 @@ struct rcu_node {
-  * It is still a leaf node, even if it is also the root node.
-  */
- #define rcu_for_each_leaf_node(rsp, rnp) \
--	for ((rnp) = (rsp)->level[NUM_RCU_LVLS - 1]; \
--	     (rnp) < &(rsp)->node[NUM_RCU_NODES]; (rnp)++)
-+	for ((rnp) = (rsp)->level[rcu_num_lvls - 1]; \
-+	     (rnp) < &(rsp)->node[rcu_num_nodes]; (rnp)++)
- 
- /* Index values for nxttail array in struct rcu_data. */
- #define RCU_DONE_TAIL		0	/* Also RCU_WAIT head. */
-@@ -343,9 +346,9 @@ do {									\
-  */
- struct rcu_state {
- 	struct rcu_node node[NUM_RCU_NODES];	/* Hierarchy. */
--	struct rcu_node *level[NUM_RCU_LVLS];	/* Hierarchy levels. */
-+	struct rcu_node *level[RCU_NUM_LVLS];	/* Hierarchy levels. */
- 	u32 levelcnt[MAX_RCU_LVLS + 1];		/* # nodes in each level. */
--	u8 levelspread[NUM_RCU_LVLS];		/* kids/node in each level. */
-+	u8 levelspread[RCU_NUM_LVLS];		/* kids/node in each level. */
- 	struct rcu_data __percpu *rda;		/* pointer of percu rcu_data. */
- 
- 	/* The following fields are guarded by the root rcu_node's lock. */
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index 2411000..e9b44c3 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -68,8 +68,10 @@ static void __init rcu_bootup_announce_oddness(void)
- 	printk(KERN_INFO "\tAdditional per-CPU info printed with stalls.\n");
- #endif
- #if NUM_RCU_LVL_4 != 0
--	printk(KERN_INFO "\tExperimental four-level hierarchy is enabled.\n");
-+	printk(KERN_INFO "\tFour-level hierarchy is enabled.\n");
- #endif
-+	if (rcu_fanout_leaf != CONFIG_RCU_FANOUT_LEAF)
-+		printk(KERN_INFO "\tExperimental boot-time adjustment of leaf fanout.\n");
- }
- 
- #ifdef CONFIG_TREE_PREEMPT_RCU
-diff --git a/kernel/rcutree_trace.c b/kernel/rcutree_trace.c
-index d4bc16d..a3556a2 100644
---- a/kernel/rcutree_trace.c
-+++ b/kernel/rcutree_trace.c
-@@ -278,7 +278,7 @@ static void print_one_rcu_state(struct seq_file *m, struct rcu_state *rsp)
- 		   rsp->n_force_qs, rsp->n_force_qs_ngp,
- 		   rsp->n_force_qs - rsp->n_force_qs_ngp,
- 		   rsp->n_force_qs_lh, rsp->qlen_lazy, rsp->qlen);
--	for (rnp = &rsp->node[0]; rnp - &rsp->node[0] < NUM_RCU_NODES; rnp++) {
-+	for (rnp = &rsp->node[0]; rnp - &rsp->node[0] < rcu_num_nodes; rnp++) {
- 		if (rnp->level != level) {
- 			seq_puts(m, "\n");
- 			level = rnp->level;
+ 	for (i = 0; i < type->cnt; i++) {
 -- 
-1.7.8
+1.7.5.4
 
