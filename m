@@ -1,46 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755888Ab2FOCVg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 22:21:36 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52338 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752932Ab2FOCVd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 22:21:33 -0400
-MIME-Version: 1.0
-In-Reply-To: <1339721952.3321.14.camel@lappy>
-References: <1339623535.3321.4.camel@lappy>
-	<20120614032005.GC3766@dhcp-172-17-108-109.mtv.corp.google.com>
-	<1339667440.3321.7.camel@lappy>
-	<CAE9FiQVJ-q3gQxfBqfRnG+RvEh2bZ2-Ki=CRUATmCKjJp8MNuw@mail.gmail.com>
-	<1339709672.3321.11.camel@lappy>
-	<CAE9FiQVXxnjccSErjrZ9B-APGf5ZpKNovJwr5vNBMr1G2f8Y4Q@mail.gmail.com>
-	<1339721952.3321.14.camel@lappy>
-Date: Thu, 14 Jun 2012 19:21:33 -0700
-X-Google-Sender-Auth: CaMa9ikTqDVGVauxKs4almhM6dA
-Message-ID: <CAE9FiQWP0vWQCUV3MjEhpCEwUHRG38VQwEeVEN_mKtDZYo8eOw@mail.gmail.com>
-Subject: Re: Early boot panic on machine with lots of memory
-From: Yinghai Lu <yinghai@kernel.org>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>, hpa@linux.intel.com,
-        linux-mm <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kvm <kvm@vger.kernel.org>, avi@redhat.com,
-        Marcelo Tosatti <mtosatti@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756029Ab2FOCeX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 22:34:23 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:58168 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753131Ab2FOCeW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 22:34:22 -0400
+Message-ID: <1339727661.25607.22.camel@joe2Laptop>
+Subject: MAINTAINERS: missing git trees
+From: Joe Perches <joe@perches.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Date: Thu, 14 Jun 2012 19:34:21 -0700
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 14, 2012 at 5:59 PM, Sasha Levin <levinsasha928@gmail.com> wrote:
-> On Thu, 2012-06-14 at 16:57 -0700, Yinghai Lu wrote:
->> can you please boot with "memtest" to see if there is any memory problem?
->
-> The host got a memtest treatment, nothing found.
+These git trees listed in MAINTAINERS don't seem to exist.
+Should they be deleted?
 
-can you try to boot guest with memtest?
+git://git.fluff.org/bjdooks/linux.git
+git://git.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git
+git://git.kernel.org/pub/scm/linux/kernel/git/arnd/asm-generic.git
+git://git.kernel.org/pub/scm/linux/kernel/git/brodo/pcmcia-2.6.git
+git://git.kernel.org/pub/scm/linux/kernel/git/dad/srp-initiator.git
+git://git.kernel.org/pub/scm/linux/kernel/git/djbw/async_tx.git
+git://git.kernel.org/pub/scm/linux/kernel/git/epip/linux-2.6-unicore32.git
+git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/linux.git
+git://git.kernel.org/pub/scm/linux/kernel/git/hpa/linux-2.6-x86setup.git
+git://git.kernel.org/pub/scm/linux/kernel/git/ivd/rt2x00.git
+git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi-misc-2.6.git
+git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi-pending-2.6.git
+git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi-rc-fixes-2.6.git
+git://git.kernel.org/pub/scm/linux/kernel/git/jj/apparmor-dev.git
+git://git.kernel.org/pub/scm/linux/kernel/git/kkeil/isdn-2.6.git
+git://git.kernel.org/pub/scm/linux/kernel/git/kvalo/ath6kl.git
+git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-sfi-2.6.git
+git://git.kernel.org/pub/scm/linux/kernel/git/lethal/sh-2.6.git rmobile-latest
+git://git.kernel.org/pub/scm/linux/kernel/git/lowpan/lowpan.git
+git://git.kernel.org/pub/scm/linux/kernel/git/mason/btrfs-unstable.git
+git://git.kernel.org/pub/scm/linux/kernel/git/mjg59/platform-drivers-x86.git
+git://git.kernel.org/pub/scm/linux/kernel/git/mnc/linux-2.6-iscsi.git
+git://git.kernel.org/pub/scm/linux/kernel/git/netfilter/nf-2.6.git
+git://git.kernel.org/pub/scm/linux/kernel/git/netfilter/nf-next-2.6.git
+git://git.kernel.org/pub/scm/linux/kernel/git/rydberg/input-mt.git
+git://git.kernel.org/pub/scm/linux/kernel/git/ryusuke/nilfs2.git
+git://git.kernel.org/pub/scm/linux/kernel/git/sameo/irda-2.6.git
+git://git.kernel.org/pub/scm/linux/kernel/git/sfrench/cifs-2.6.git
+git://git.kernel.org/pub/scm/linux/kernel/git/shaggy/jfs-2.6.git
+git://git.kernel.org/pub/scm/linux/kernel/git/teigland/dlm.git
+git://git.kernel.org/pub/scm/linux/kernel/git/viro/audit-current.git
+git://git.kernel.org/pub/scm/utils/util-linux-ng/util-linux-ng.git
+git://ltp.git.sourceforge.net/gitroot/ltp/ltp-dev
 
-Thanks
 
-Yinghai
+
