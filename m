@@ -1,49 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755812Ab2FOHkm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 03:40:42 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:49831 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753203Ab2FOHkk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 03:40:40 -0400
-Message-ID: <1339746105.3321.15.camel@lappy>
-Subject: Re: Early boot panic on machine with lots of memory
-From: Sasha Levin <levinsasha928@gmail.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>, hpa@linux.intel.com,
-        linux-mm <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kvm <kvm@vger.kernel.org>, avi@redhat.com,
-        Marcelo Tosatti <mtosatti@redhat.com>
-Date: Fri, 15 Jun 2012 09:41:45 +0200
-In-Reply-To: <CAE9FiQWP0vWQCUV3MjEhpCEwUHRG38VQwEeVEN_mKtDZYo8eOw@mail.gmail.com>
-References: <1339623535.3321.4.camel@lappy>
-	 <20120614032005.GC3766@dhcp-172-17-108-109.mtv.corp.google.com>
-	 <1339667440.3321.7.camel@lappy>
-	 <CAE9FiQVJ-q3gQxfBqfRnG+RvEh2bZ2-Ki=CRUATmCKjJp8MNuw@mail.gmail.com>
-	 <1339709672.3321.11.camel@lappy>
-	 <CAE9FiQVXxnjccSErjrZ9B-APGf5ZpKNovJwr5vNBMr1G2f8Y4Q@mail.gmail.com>
-	 <1339721952.3321.14.camel@lappy>
-	 <CAE9FiQWP0vWQCUV3MjEhpCEwUHRG38VQwEeVEN_mKtDZYo8eOw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1751849Ab2FOHn2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 03:43:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47688 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750875Ab2FOHn1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 03:43:27 -0400
+Date: Fri, 15 Jun 2012 09:43:11 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, acme@redhat.com, mingo@elte.hu,
+        paulus@samba.org, cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/6] perf, x86: Making hardware events tranlations sysfs
+ available
+Message-ID: <20120615074311.GA2650@m.brq.redhat.com>
+References: <1339706321-8802-1-git-send-email-jolsa@redhat.com>
+ <1339706321-8802-2-git-send-email-jolsa@redhat.com>
+ <1339708192.2559.40.camel@twins>
+ <CABPqkBTjr2YiHYPT=32G-pqh6ca7BrtxcA8Nv-xFeG-eZrGtVA@mail.gmail.com>
+ <20120615072904.GA1767@m.brq.redhat.com>
+ <CABPqkBT4GPTp3k6Ko-t4Q5Kgz54O5yBZ7L+9M6Uc660rxTtrAA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CABPqkBT4GPTp3k6Ko-t4Q5Kgz54O5yBZ7L+9M6Uc660rxTtrAA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-06-14 at 19:21 -0700, Yinghai Lu wrote:
-> On Thu, Jun 14, 2012 at 5:59 PM, Sasha Levin <levinsasha928@gmail.com> wrote:
-> > On Thu, 2012-06-14 at 16:57 -0700, Yinghai Lu wrote:
-> >> can you please boot with "memtest" to see if there is any memory problem?
+On Fri, Jun 15, 2012 at 09:32:20AM +0200, Stephane Eranian wrote:
+> On Fri, Jun 15, 2012 at 9:29 AM, Jiri Olsa <jolsa@redhat.com> wrote:
+> > On Thu, Jun 14, 2012 at 11:36:51PM +0200, Stephane Eranian wrote:
+> >> On Thu, Jun 14, 2012 at 11:09 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> >> > On Thu, 2012-06-14 at 22:38 +0200, Jiri Olsa wrote:
+> >> >> Making hardware events tranlations available throught the sysfs.
+> >> >> Adding 'events' group attribute under the sysfs x86 PMU record
+> >> >> with attribute/file for each hardware event:
+> >> >>
+> >> >>   # ls  /sys/devices/cpu/events/
+> >> >>   branch_instructions
+> >> >>   branch_misses
+> >> >>   bus_cycles
+> >> >>   cache_misses
+> >> >>   cache_references
+> >> >>   cycles
+> >> >>   instructions
+> >> >>   ref_cycles
+> >> >>   stalled_cycles_backend
+> >> >>   stalled_cycles_frontend
+> >> >>
+> >> >> The file - ID mappings is:
+> >> >>
+> >> >>   file                      hw id
+> >> >>   ----------------------------------------------------------------
+> >> >>   cycles                    PERF_COUNT_HW_CPU_CYCLES
+> >> >>   instructions              PERF_COUNT_HW_INSTRUCTIONS
+> >> >>   cache_references          PERF_COUNT_HW_CACHE_REFERENCES
+> >> >>   cache_misses              PERF_COUNT_HW_CACHE_MISSES
+> >> >>   branch_instructions       PERF_COUNT_HW_BRANCH_INSTRUCTIONS
+> >> >>   branch_misses             PERF_COUNT_HW_BRANCH_MISSES
+> >> >>   bus_cycles                PERF_COUNT_HW_BUS_CYCLES
+> >> >>   stalled_cycles_frontend   PERF_COUNT_HW_STALLED_CYCLES_FRONTEND
+> >> >>   stalled_cycles_backend    PERF_COUNT_HW_STALLED_CYCLES_BACKEND
+> >> >>   ref_cycles                PERF_COUNT_HW_REF_CPU_CYCLES
+> >> >>
+> >> >> Each attribute/file contains HW ID event translation for the currently
+> >> >> running CPU model
+> >> >>
+> >> >>   # cat /sys/devices/cpu/events/instructions
+> >> >>   0xc0
+> >> >
+> >> > Why not have it consistent with the stuff done for uncore where events
+> >> > read: 'event=0xc0', ie the regular field=value stuff.
+> >> >
+> >> Yes, you want that. Because those events may need more than a code.
+> >> You want full syntax capability. So return a string.
 > >
-> > The host got a memtest treatment, nothing found.
-> 
-> can you try to boot guest with memtest?
+> > humm... right :)
+> >
+> > how about the term name 'event=...', could I always assume it's 'event',
+> > or do we want some arch specific connection for that?
+> >
+> You should not assume anything. You grab the string from sysfs and put it
+> through your regular parser. It could have arch specific terms in it. That's
+> how I suspect this is done for uncore.
 
-Tried that, memtest on guest didn't reveal anything but the guest
-proceeded to crashing anyway.
+I was talking about the kernel part
 
+jirka
