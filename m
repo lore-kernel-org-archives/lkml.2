@@ -1,72 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758634Ab2FOXWE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 19:22:04 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40798 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758549Ab2FOXWB (ORCPT
+	id S1758660Ab2FOXZD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 19:25:03 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18091 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758494Ab2FOXZB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 19:22:01 -0400
-Date: Sat, 16 Jun 2012 08:21:51 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: Minchan Kim <minchan@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, akpm@linux-foundation.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH] mm: clear pages_scanned only if draining a pcp adds
- pages to the buddy allocator again
-Message-ID: <20120615232151.GA2749@barrios>
-References: <1339690570-7471-1-git-send-email-kosaki.motohiro@gmail.com>
- <4FDAE1F0.4030708@kernel.org>
- <4FDB5A42.9020707@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FDB5A42.9020707@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 15 Jun 2012 19:25:01 -0400
+X-Authority-Analysis: v=2.0 cv=D8PF24tj c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=EwAfToejOIUA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=4IMKUPfyF6xLaM3MNq4A:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1339802699.25903.47.camel@gandalf.stny.rr.com>
+Subject: kbuild: Document oldnoconfig to what it really does
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>
+Cc: Michal Marek <mmarek@suse.cz>
+Date: Fri, 15 Jun 2012 19:24:59 -0400
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1+b1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 15, 2012 at 11:52:34AM -0400, KOSAKI Motohiro wrote:
-> (6/15/12 3:19 AM), Minchan Kim wrote:
-> >On 06/15/2012 01:16 AM, kosaki.motohiro@gmail.com wrote:
-> >
-> >>From: KOSAKI Motohiro<kosaki.motohiro@jp.fujitsu.com>
-> >>
-> >>commit 2ff754fa8f (mm: clear pages_scanned only if draining a pcp adds pages
-> >>to the buddy allocator again) fixed one free_pcppages_bulk() misuse. But two
-> >>another miuse still exist.
-> >>
-> >>This patch fixes it.
-> >>
-> >>Cc: David Rientjes<rientjes@google.com>
-> >>Cc: Mel Gorman<mel@csn.ul.ie>
-> >>Cc: Johannes Weiner<hannes@cmpxchg.org>
-> >>Cc: Minchan Kim<minchan.kim@gmail.com>
-> >>Cc: Wu Fengguang<fengguang.wu@intel.com>
-> >>Cc: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
-> >>Cc: Rik van Riel<riel@redhat.com>
-> >>Cc: Andrew Morton<akpm@linux-foundation.org>
-> >>Signed-off-by: KOSAKI Motohiro<kosaki.motohiro@jp.fujitsu.com>
-> >
-> >Reviewed-by: Minchan Kim<minchan@kernel.org>
-> >
-> >Just nitpick.
-> >Personally, I want to fix it follwing as
-> >It's more simple and reduce vulnerable error in future.
-> >
-> >If you mind, go ahead with your version. I am not against with it, either.
-> 
-> I don't like your version because free_pcppages_bulk() can be called from
-> free_pages() hotpath. then, i wouldn't like to put a branch if we can avoid it.
+The make target 'oldnoconfig' is a misnomer. It doesn't set new symbols
+to 'n', but instead sets it to their default values.
 
-Fair enough.
+Unfortunately, assuming that it actually did this, broke ktest in some
+of its tests. For example, the tests to create a minimum config and even
+a config bisect, depends on removing various configs and using
+oldnoconfig to get rid of other configs that may have depended on it.
 
-Thanks.
+But because some configs that it was trying to disable, were in fact
+default enabled, this caused those configs to re-enable and corrupt the
+test.
+
+I thought about fixing oldnoconfig, but I'm afraid that people are
+already dependent on its current behavior. Instead, I'm just updating
+the documentation to state that it sets the new symbols to their default
+values and not to 'n'.
+
+Ideally, this would be called, 'olddefconfig' and we have an
+'oldnoconfig' that actually disables the new symbols. But it's useless
+for me now. If it changed, ktest would need to be consistent between
+each version, and that would be to difficult to detect. I'll handle this
+issue with ktest with other means.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
+index 7966265..da36bde 100644
+--- a/scripts/kconfig/Makefile
++++ b/scripts/kconfig/Makefile
+@@ -114,7 +114,7 @@ help:
+ 	@echo  '  alldefconfig    - New config with all symbols set to default'
+ 	@echo  '  randconfig	  - New config with random answer to all options'
+ 	@echo  '  listnewconfig   - List new options'
+-	@echo  '  oldnoconfig     - Same as silentoldconfig but set new symbols to n (unset)'
++	@echo  '  oldnoconfig     - Same as silentoldconfig but sets new symbols to their default value'
+ 
+ # lxdialog stuff
+ check-lxdialog  := $(srctree)/$(src)/lxdialog/check-lxdialog.sh
+
+
