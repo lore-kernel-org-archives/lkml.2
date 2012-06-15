@@ -1,133 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932108Ab2FOVZp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 17:25:45 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:42015 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754195Ab2FOVZn (ORCPT
+	id S1754254Ab2FOV2c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 17:28:32 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:57394 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751749Ab2FOV2a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 17:25:43 -0400
-X-Originating-IP: 217.70.178.129
-X-Originating-IP: 50.43.46.74
-Date: Fri, 15 Jun 2012 14:25:27 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, patches@linaro.org
-Subject: Re: [PATCH tip/core/rcu 13/14] rcu: Split RCU core processing out of
- __call_rcu()
-Message-ID: <20120615212527.GQ31184@leaf>
-References: <20120615201256.GA26120@linux.vnet.ibm.com>
- <1339791195-26389-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1339791195-26389-13-git-send-email-paulmck@linux.vnet.ibm.com>
+	Fri, 15 Jun 2012 17:28:30 -0400
+Date: Fri, 15 Jun 2012 14:28:24 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
+        Tony Luck <tony.luck@intel.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, devel@driverdev.osuosl.org,
+        linaro-kernel@lists.linaro.org, Arnd Bergmann <arnd@arndb.de>,
+        patches@linaro.org, Marco Stornelli <marco.stornelli@gmail.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        arve@android.com, Jesper Juhl <jj@chaosbits.net>,
+        John Stultz <john.stultz@linaro.org>, Shuah Khan <shuahkhan@gmail.com>,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, kernel-team@android.com,
+        Thomas Meyer <thomas@m3y3r.de>
+Subject: Re: [PATCH v2 0/6] Function tracing support for pstore
+Message-ID: <20120615212824.GA23338@kroah.com>
+References: <20120615170659.GA4060@lizard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1339791195-26389-13-git-send-email-paulmck@linux.vnet.ibm.com>
+In-Reply-To: <20120615170659.GA4060@lizard>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 15, 2012 at 01:13:14PM -0700, Paul E. McKenney wrote:
-> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+On Fri, Jun 15, 2012 at 10:07:00AM -0700, Anton Vorontsov wrote:
+> Hi all,
 > 
-> The __call_rcu() function is a bit overweight, so this commit splits
-> it into actual enqueuing of and accounting for the callback (__call_rcu())
-> and associated RCU-core processing (__call_rcu_core()).
+> In v2:
+> - Do not introduce a separate 'persistent' tracer, but introduce an
+>   option to the existing 'function' tracer.
 > 
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Rationale for this patch set:
+> 
+> With this support kernel can save functions call chain log into a
+> persistent ram buffer that can be decoded and dumped after reboot
+> through pstore filesystem. It can be used to determine what function
+> was last called before a hang or an unexpected reset (caused by, for
+> example, a buggy driver that abuses HW).
+> 
+> Here's a "nano howto", to get the idea:
+> 
+>  # mount -t debugfs debugfs /sys/kernel/debug/
+>  # cd /sys/kernel/debug/tracing
+>  # echo function > current_tracer
+>  # echo 1 > options/func_pstore
+>  # reboot -f
+>  [...]
+>  # mount -t pstore pstore /mnt/
+>  # tail /mnt/ftrace-ramoops
+>  0 ffffffff8101ea64  ffffffff8101bcda  native_apic_mem_read <- disconnect_bsp_APIC+0x6a/0xc0
+>  0 ffffffff8101ea44  ffffffff8101bcf6  native_apic_mem_write <- disconnect_bsp_APIC+0x86/0xc0
+>  0 ffffffff81020084  ffffffff8101a4b5  hpet_disable <- native_machine_shutdown+0x75/0x90
+>  0 ffffffff81005f94  ffffffff8101a4bb  iommu_shutdown_noop <- native_machine_shutdown+0x7b/0x90
+>  0 ffffffff8101a6a1  ffffffff8101a437  native_machine_emergency_restart <- native_machine_restart+0x37/0x40
+>  0 ffffffff811f9876  ffffffff8101a73a  acpi_reboot <- native_machine_emergency_restart+0xaa/0x1e0
+>  0 ffffffff8101a514  ffffffff8101a772  mach_reboot_fixups <- native_machine_emergency_restart+0xe2/0x1e0
+>  0 ffffffff811d9c54  ffffffff8101a7a0  __const_udelay <- native_machine_emergency_restart+0x110/0x1e0
+>  0 ffffffff811d9c34  ffffffff811d9c80  __delay <- __const_udelay+0x30/0x40
+>  0 ffffffff811d9d14  ffffffff811d9c3f  delay_tsc <- __delay+0xf/0x20
+> 
+> Mostly the code comes from trace_persistent.c driver found in the
+> Android git tree, written by Colin Cross <ccross@android.com>
+> (according to sign-off history). I reworked the driver a little bit,
+> and ported it to pstore subsystem.
 
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
->  kernel/rcutree.c |   55 ++++++++++++++++++++++++++++++++++++++++++++++++-----
->  1 files changed, 49 insertions(+), 6 deletions(-)
-> 
-> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> index 9419ebf..6940a81 100644
-> --- a/kernel/rcutree.c
-> +++ b/kernel/rcutree.c
-> @@ -1858,9 +1858,11 @@ static void invoke_rcu_core(void)
->  	raise_softirq(RCU_SOFTIRQ);
->  }
->  
-> -static void
-> -__call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu),
-> -	   struct rcu_state *rsp, bool lazy)
-> +/*
-> + * Handle any core-RCU processing required by a call_rcu() invocation.
-> + */
-> +static void __call_rcu_core(struct rcu_state *rsp, struct rcu_data *rdp,
-> +			    struct rcu_head *head, unsigned long flags)
->  {
->  	unsigned long flags;
->  	struct rcu_data *rdp;
-> @@ -1905,10 +1907,8 @@ __call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu),
->  		invoke_rcu_core();
->  
->  	/* If interrupts were disabled or CPU offline, don't invoke RCU core. */
-> -	if (irqs_disabled_flags(flags) || cpu_is_offline(smp_processor_id())) {
-> -		local_irq_restore(flags);
-> +	if (irqs_disabled_flags(flags) || cpu_is_offline(smp_processor_id()))
->  		return;
-> -	}
->  
->  	/*
->  	 * Force the grace period if too many callbacks or too long waiting.
-> @@ -1941,6 +1941,49 @@ __call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu),
->  		}
->  	} else if (ULONG_CMP_LT(ACCESS_ONCE(rsp->jiffies_force_qs), jiffies))
->  		force_quiescent_state(rsp, 1);
-> +}
-> +
-> +static void
-> +__call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu),
-> +	   struct rcu_state *rsp, bool lazy)
-> +{
-> +	unsigned long flags;
-> +	struct rcu_data *rdp;
-> +
-> +	WARN_ON_ONCE((unsigned long)head & 0x3); /* Misaligned rcu_head! */
-> +	debug_rcu_head_queue(head);
-> +	head->func = func;
-> +	head->next = NULL;
-> +
-> +	smp_mb(); /* Ensure RCU update seen before callback registry. */
-> +
-> +	/*
-> +	 * Opportunistically note grace-period endings and beginnings.
-> +	 * Note that we might see a beginning right after we see an
-> +	 * end, but never vice versa, since this CPU has to pass through
-> +	 * a quiescent state betweentimes.
-> +	 */
-> +	local_irq_save(flags);
-> +	rdp = this_cpu_ptr(rsp->rda);
-> +
-> +	/* Add the callback to our list. */
-> +	ACCESS_ONCE(rdp->qlen)++;
-> +	if (lazy)
-> +		rdp->qlen_lazy++;
-> +	else
-> +		rcu_idle_count_callbacks_posted();
-> +	smp_mb();  /* Count before adding callback for rcu_barrier(). */
-> +	*rdp->nxttail[RCU_NEXT_TAIL] = head;
-> +	rdp->nxttail[RCU_NEXT_TAIL] = &head->next;
-> +
-> +	if (__is_kfree_rcu_offset((unsigned long)func))
-> +		trace_rcu_kfree_callback(rsp->name, head, (unsigned long)func,
-> +					 rdp->qlen_lazy, rdp->qlen);
-> +	else
-> +		trace_rcu_callback(rsp->name, head, rdp->qlen_lazy, rdp->qlen);
-> +
-> +	/* Go handle any RCU core processing required. */
-> +	__call_rcu_core(rsp, rdp, head, flags);
->  	local_irq_restore(flags);
->  }
->  
-> -- 
-> 1.7.8
-> 
+This looks fine to me, but as it touches pstore and tracing code, I
+can't apply it without acks from the relevant maintainers/owners.
+
+thanks,
+
+greg k-h
