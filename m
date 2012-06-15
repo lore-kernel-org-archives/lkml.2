@@ -1,204 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755362Ab2FODTe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 23:19:34 -0400
-Received: from exprod5og117.obsmtp.com ([64.18.0.149]:54106 "HELO
-	exprod5og117.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752157Ab2FODTc convert rfc822-to-8bit (ORCPT
+	id S1754999Ab2FOD1J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 23:27:09 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24139 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753335Ab2FOD1G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 23:19:32 -0400
-From: Vinh Huu Tuong Nguyen <vhtnguyen@apm.com>
-References: <1336362768-31326-1-git-send-email-vhtnguyen@apm.com> <CA+5PVA7vnLvqwsDAboR4s-QCLWSDm34N2tE+sFiBMsE2f=qYEg@mail.gmail.com>
-In-Reply-To: <CA+5PVA7vnLvqwsDAboR4s-QCLWSDm34N2tE+sFiBMsE2f=qYEg@mail.gmail.com>
-MIME-Version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: Ac1KVcTqWOEfZVUQQOu3b5t+RYvKXwATGTDQ
-Date: Fri, 15 Jun 2012 10:19:28 +0700
-Message-ID: <6fdd89bf8de637de13a4ed9d0b5b839c@mail.gmail.com>
-Subject: RE: [PATCH] powerpc/44x: Support OCM(On Chip Memory) for APM821xx SoC
- and Bluestone board
-To: Josh Boyer <jwboyer@gmail.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Duc Dang <dhdang@apm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Kumar Gala <galak@kernel.crashing.org>, Li Yang <leoli@freescale.com>,
-        Anatolij Gustschin <agust@denx.de>, Liu Gang <Gang.Liu@freescale.com>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 14 Jun 2012 23:27:06 -0400
+X-Authority-Analysis: v=2.0 cv=D8PF24tj c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=ag8JG7z7P3cA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=htBDhw327rwAgFoJTnUA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1339730825.13377.311.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 3/3] tools lib traceevent: Introduce pevent_strerror
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Date: Thu, 14 Jun 2012 23:27:05 -0400
+In-Reply-To: <87ehpj6hic.fsf@sejong.aot.lge.com>
+References: <1339486959-25241-1-git-send-email-namhyung@kernel.org>
+	 <1339486959-25241-4-git-send-email-namhyung@kernel.org>
+	 <1339524114.13377.140.camel@gandalf.stny.rr.com>
+	 <87ehpj6hic.fsf@sejong.aot.lge.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1+b1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Josh Boyer [mailto:jwboyer@gmail.com]
-> Sent: Friday, June 15, 2012 12:47 AM
-> To: Vinh Nguyen Huu Tuong
-> Cc: Benjamin Herrenschmidt; Paul Mackerras; Matt Porter; Grant Likely;
-> Rob Herring; Duc Dang; David S. Miller; Kumar Gala; Li Yang; Ashish
-> Kalra; Anatolij Gustschin; Liu Gang; linuxppc-dev@lists.ozlabs.org;
-> linux-kernel@vger.kernel.org; devicetree-discuss@lists.ozlabs.org
-> Subject: Re: [PATCH] powerpc/44x: Support OCM(On Chip Memory) for
-> APM821xx SoC and Bluestone board
->
-> On Sun, May 6, 2012 at 11:52 PM, Vinh Nguyen Huu Tuong
-> <vhtnguyen@apm.com> wrote:
-> > This patch consists of:
-> > - Add driver for OCM component
-> > - Export OCM Information at /sys/class/ocm/ocminfo
->
-> Again, apologies for the delay.  Aside from the incorrect sysfs usage I
-> pointed out in my other reply, I have just a few comments/questions
-> below.
-[Vinh Nguyen] You're welcome. About the files on sysfs, the first place of
-ocm is in procfs, but procfs is deprecated and replaced by sysfs, then I
-decided to move it to sysfs. With your comments, I think I can move it to
-debugfs.
->
-> > diff --git a/arch/powerpc/boot/dts/bluestone.dts
-> > b/arch/powerpc/boot/dts/bluestone.dts
-> > index 7bda373..2687c11 100644
-> > --- a/arch/powerpc/boot/dts/bluestone.dts
-> > +++ b/arch/powerpc/boot/dts/bluestone.dts
-> > @@ -107,6 +107,14 @@
-> >                interrupt-parent = <&UIC0>;
-> >        };
+On Wed, 2012-06-13 at 12:02 +0900, Namhyung Kim wrote:
+> Hi,
+> 
+> On Tue, 12 Jun 2012 14:01:54 -0400, Steven Rostedt wrote:
+> > On Tue, 2012-06-12 at 16:42 +0900, Namhyung Kim wrote:
+> >> +int pevent_strerror(struct pevent *pevent, enum pevent_errno errnum,
+> >> +		    char *buf, size_t buflen)
 > >
-> > +       OCM1: ocm@400040000 {
-> > +               compatible = "ibm,ocm";
-> > +               status = "ok";
-> > +               cell-index = <1>;
-> > +               /* configured in U-Boot */
-> > +               reg = <4 0x00040000 0x8000>; /* 32K */
-> > +       };
-> > +
-> >        SDR0: sdr {
-> >                compatible = "ibm,sdr-apm821xx";
-> >                dcr-reg = <0x00e 0x002>; diff --git
-> > a/arch/powerpc/include/asm/ppc4xx_ocm.h
-> > b/arch/powerpc/include/asm/ppc4xx_ocm.h
-> > new file mode 100644
-> > index 0000000..ff7f386
-> > --- /dev/null
-> > +++ b/arch/powerpc/include/asm/ppc4xx_ocm.h
-> > @@ -0,0 +1,47 @@
-> > +/*
-> > + * PowerPC 4xx OCM memory allocation support
-> > + *
-> > + * (C) Copyright 2009, Applied Micro Circuits Corporation
-> > + * Victor Gallardo (vgallardo@amcc.com)
-> > + *
-> > + * See file CREDITS for list of people who contributed to this
-> > + * project.
-> > + *
-> > + * This program is free software; you can redistribute it and/or
-> > + * modify it under the terms of the GNU General Public License as
-> > + * published by the Free Software Foundation; either version 2 of
-> > + * the License, or (at your option) any later version.
-> > + *
-> > + * This program is distributed in the hope that it will be useful,
-> > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-> > + * GNU General Public License for more details.
-> > + *
-> > + * You should have received a copy of the GNU General Public License
-> > + * along with this program; if not, write to the Free Software
-> > + * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
-> > + * MA 02111-1307 USA
-> > + */
-> > +
-> > +#ifndef __ASM_POWERPC_PPC4xx_OCM_H__
-> > +#define __ASM_POWERPC_PPC4xx_OCM_H__
-> > +
-> > +#include <linux/types.h>
-> > +
-> > +#define OCM_NON_CACHED 0
-> > +#define OCM_CACHED     1
-> > +
-> > +#if defined(CONFIG_PPC4xx_OCM)
-> > +
-> > +void *ocm_alloc(phys_addr_t *phys, int size, int align,
-> > +                 int flags, const char *owner); void ocm_free(const
-> > +void *virt);
-> > +
-> > +#else
-> > +
-> > +#define ocm_alloc(phys, size, align, flags, owner)     NULL #define
-> > +ocm_free(addr) ((void)0)
-> > +
-> > +#endif /* CONFIG_PPC4xx_OCM */
-> > +
-> > +#endif  /* __ASM_POWERPC_PPC4xx_OCM_H__ */
->
-> I don't see any users of this header included in the patch.  I'm going
-> to guess that follow-on drivers/users are queued once this is in the
-> tree?  Also, you might want to name these 'ppc4xx_ocm_alloc' or
-> similar.  The concept of OCM isn't limited to ppc4xx or even SoCs, so
-> just using 'ocm' in the global kernel namespace might not be great.
->
-[Vinh Nguyen] With our plan, the next submit of IBM NEW EMAC will use it
-for speedup. About the naming convention, I will change as your comments.
+> > Hmm, actually I wonder if we should put the error into the pevent
+> > structure. Then we wouldn't even need to waste time to pass the data
+> > through.
+> >
+> > That is, you can simply do:
+> >
+> > 	ret = pevent_foo();
+> > 	if (ret < 0) {
+> > 		pevent_strerr(pevent, buf, buflen);
+> > 		printf("%s\n", buf);
+> > 	}
+> >
+> > Perhaps even include a pevent_perror(), to just do:
+> >
+> > 	if (ret < 0) {
+> > 		pevent_perror(pevent);
+> > 		return ret;
+> > 	}
+> >
+> 
+> I thought something like this, but worried about the thread-safety. What
+> about if more than one thread call pevent functions for a same pevent
+> concurrently?  Should we make the pevent->errno TLS?
 
-> > diff --git a/arch/powerpc/sysdev/ppc4xx_ocm.c
-> > b/arch/powerpc/sysdev/ppc4xx_ocm.c
-> > new file mode 100644
-> > index 0000000..ba3e450
-> > --- /dev/null
-> > +++ b/arch/powerpc/sysdev/ppc4xx_ocm.c
-> > @@ -0,0 +1,420 @@
-> > +#include <linux/kernel.h>
-> > +#include <linux/errno.h>
-> > +#include <linux/proc_fs.h>
->
-> Why do you need proc_fs.h?
-[Vinh Nguyen] I will remove it.
->
-> > +#include <linux/seq_file.h>
-> > +#include <linux/spinlock.h>
-> > +#include <linux/dma-mapping.h>
-> > +#include <linux/list.h>
-> > +#include <asm/uaccess.h>
-> > +#include <asm/prom.h>
-> > +#include <asm/dcr.h>
-> > +#include <asm/rheap.h>
-> > +#include <asm/mmu.h>
-> > +#include <asm/ppc4xx_ocm.h>
-> > +#include <linux/export.h>
-> > +
-> > +#define OCM_DISABLED   0
-> > +#define OCM_ENABLED            1
-> > +
-> > +struct ocm_block {
-> > +       struct list_head        list;
-> > +       void __iomem            *addr;
-> > +       int                                     size;
-> > +       const char                      *owner; };
-> > +
-> > +/* non-cached or cached region */
-> > +struct ocm_region {
-> > +       phys_addr_t                     phys;
-> > +       void __iomem            *virt;
-> > +
-> > +       int                                     memtotal;
-> > +       int                                     memfree;
-> > +
-> > +       rh_info_t                       *rh;
-> > +       struct list_head        list;
-> > +};
->
-> There's some interesting whitespace usage in these struct definitions.
-[Vinh Nguyen] I'll check again and remove them. I used the scripts check
-in kernel but it can't remove them all.
->
-> josh
+I hate threads :-)
 
-I'll update the patch soon but I need send out to internal review first
-before sending out to community. It takes one or two week, please be
-patient for the next review.
+Anyway, there's a couple of things that can be done:
 
-Best regards,
-Vinh Nguyen
+1) have two functions. A simple 'pevent_stderr()' that does the above,
+and perhaps a pevent_get_error() that can be passed the return value of
+a previous command, and give you the error string for it. This is thread
+safe for programs that require it. The ret is always returned.
+
+2) Make it TLS, although honestly I've never made dynamic variables
+that, and didn't even realize that you could.
+
+I'm liking the explicit 'make this thread safe' method (#1). As it may
+be for a gui, a separate thread may be used to print out the error
+messages, and making it thread unique will make that difficult.
+
+If you need the code to be thread safe, have all errors do:
+
+	ret = pevent_foo();
+	if (ret < 0) {
+		pevent_strerr_val(ret, buf, buflen);
+
+
+For programs that do not need to be thread safe, then:
+
+	ret = pevent_foo();
+	if (ret < 0) {
+		pevent_strerr(pevent, buf, buflen);
+
+
+-- Steve
+
+
