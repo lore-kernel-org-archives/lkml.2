@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757647Ab2FOUQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 16:16:27 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:48876 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757466Ab2FOUNe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 16:13:34 -0400
+	id S1757732Ab2FOUQm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 16:16:42 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:44380 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757014Ab2FOUNd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 16:13:33 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -16,60 +15,42 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
         fweisbec@gmail.com, patches@linaro.org,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 10/14] rcu: Remove function versions of __kfree_rcu and __is_kfree_rcu_offset
-Date: Fri, 15 Jun 2012 13:13:11 -0700
-Message-Id: <1339791195-26389-10-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 07/14] key: Remove extraneous parentheses from rcu_assign_keypointer()
+Date: Fri, 15 Jun 2012 13:13:08 -0700
+Message-Id: <1339791195-26389-7-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
 In-Reply-To: <1339791195-26389-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20120615201256.GA26120@linux.vnet.ibm.com>
  <1339791195-26389-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12061520-6148-0000-0000-000006BD37ED
+x-cbid: 12061520-7182-0000-0000-000001C1C9A8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-Commit d8169d4c (Make __kfree_rcu() less dependent on compiler choices)
-added cpp macro versions of __kfree_rcu() and __is_kfree_rcu_offset(),
-but failed to remove the old inline-function versions.  This commit does
-this cleanup.
+This commit removes the extraneous parentheses from rcu_assign_keypointer()
+so that rcu_assign_pointer() can be wrapped in do-while.
 
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- include/linux/rcupdate.h |   18 ------------------
- 1 files changed, 0 insertions(+), 18 deletions(-)
+ include/linux/key.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index f773a4a..4874d26 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -917,24 +917,6 @@ static inline notrace void rcu_read_unlock_sched_notrace(void)
- #define INIT_RCU_POINTER(p, v) \
- 		.p = (typeof(*v) __force __rcu *)(v)
+diff --git a/include/linux/key.h b/include/linux/key.h
+index 4cd22ed..6fafcf4 100644
+--- a/include/linux/key.h
++++ b/include/linux/key.h
+@@ -303,7 +303,7 @@ static inline bool key_is_instantiated(const struct key *key)
+ 				   rwsem_is_locked(&((struct key *)(KEY))->sem)))
  
--static __always_inline bool __is_kfree_rcu_offset(unsigned long offset)
--{
--	return offset < 4096;
--}
--
--static __always_inline
--void __kfree_rcu(struct rcu_head *head, unsigned long offset)
--{
--	typedef void (*rcu_callback)(struct rcu_head *);
--
--	BUILD_BUG_ON(!__builtin_constant_p(offset));
--
--	/* See the kfree_rcu() header comment. */
--	BUILD_BUG_ON(!__is_kfree_rcu_offset(offset));
--
--	kfree_call_rcu(head, (rcu_callback)offset);
--}
--
- /*
-  * Does the specified offset indicate that the corresponding rcu_head
-  * structure can be handled by kfree_rcu()?
+ #define rcu_assign_keypointer(KEY, PAYLOAD)				\
+-	(rcu_assign_pointer((KEY)->payload.rcudata, PAYLOAD))
++	rcu_assign_pointer((KEY)->payload.rcudata, PAYLOAD)
+ 
+ #ifdef CONFIG_SYSCTL
+ extern ctl_table key_sysctls[];
 -- 
 1.7.8
 
