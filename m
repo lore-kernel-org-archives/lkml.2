@@ -1,127 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756721Ab2FOLeB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 07:34:01 -0400
-Received: from tama50.ecl.ntt.co.jp ([129.60.39.147]:39726 "EHLO
-	tama50.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755628Ab2FOLd7 (ORCPT
+	id S932077Ab2FOLiS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 07:38:18 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:64561 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755539Ab2FOLiQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 07:33:59 -0400
-Date: Fri, 15 Jun 2012 20:33:15 +0900
-From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-To: avi@redhat.com, mtosatti@redhat.com
-Cc: agraf@suse.de, paulus@samba.org, aarcange@redhat.com, kvm@vger.kernel.org,
-        kvm-ppc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        takuya.yoshikawa@gmail.com
-Subject: [PATCH 4/4] KVM: Introduce kvm_unmap_hva_range() for
- kvm_mmu_notifier_invalidate_range_start()
-Message-Id: <20120615203315.ce122966.yoshikawa.takuya@oss.ntt.co.jp>
-In-Reply-To: <20120615203007.4f61bb17.yoshikawa.takuya@oss.ntt.co.jp>
-References: <20120615203007.4f61bb17.yoshikawa.takuya@oss.ntt.co.jp>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 15 Jun 2012 07:38:16 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Paul Mundt <lethal@linux-sh.org>
+Subject: Re: linux-next: build failure in Linus' tree
+Date: Fri, 15 Jun 2012 11:38:01 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>
+References: <20120614114722.0fd16fb906b6a5503cfbc51a@canb.auug.org.au> <20120614030606.GC27673@linux-sh.org> <20120614034036.GE27673@linux-sh.org>
+In-Reply-To: <20120614034036.GE27673@linux-sh.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201206151138.01510.arnd@arndb.de>
+X-Provags-ID: V02:K0:FkAm4VRCU+pLs5idii36yYJNcjj70XXyqxYmt3hfUYV
+ yUJpJiCHfrPjhSOOsagWKjugN0Evauvc3N6BrUZ/grOdhiGRLx
+ RF0H4wM23+yxyQydu93kSKZSlMWvhGjftVvxGZxTTV6Tg3eeH2
+ C/t9mec1lRsIkLZ/dqZ3aiy/Z6f5buJpyGdNBLUjUzyAML6MEa
+ zjj9SWa/x3aLoFMo0MeOGutOVxDzTJmhKZzAZDwT08nZnh13FZ
+ 0Qgar6mUePtNYJyusnJ+y625RNHkjPZ8LboXqa5YlPPSlsjebu
+ 598HFBKPdwwQ3Y4OkTOFuhGDXTzcOunxn6T84HIrgQpRftAZ2s
+ Df28V67591ZFT/8FjhCA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we tested KVM under memory pressure, with THP enabled on the host,
-we noticed that MMU notifier took a long time to invalidate huge pages.
+On Thursday 14 June 2012, Paul Mundt wrote:
+> Ok, it's because the asm-generic/bug.h __ASSEMBLY__ guarding is
+> completely bogus. This should hopefully fix it once and for all.
+> Sorry for the trouble.
+> 
+> Signed-off-by: Paul Mundt <lethal@linux-sh.org>
 
-Since the invalidation was done with mmu_lock held, it not only wasted
-the CPU but also made the host harder to respond.
-
-This patch mitigates this by using kvm_handle_hva_range().
-
-On our x86 host, with a minimum configuration for the guest, the
-invalidation became 40% faster on average and the worst case was also
-improved to the same degree.
-
-Signed-off-by: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-Cc: Alexander Graf <agraf@suse.de>
-Cc: Paul Mackerras <paulus@samba.org>
----
- arch/powerpc/include/asm/kvm_host.h |    2 ++
- arch/powerpc/kvm/book3s_64_mmu_hv.c |    7 +++++++
- arch/x86/include/asm/kvm_host.h     |    1 +
- arch/x86/kvm/mmu.c                  |    5 +++++
- virt/kvm/kvm_main.c                 |    3 +--
- 5 files changed, 16 insertions(+), 2 deletions(-)
-
-diff --git a/arch/powerpc/include/asm/kvm_host.h b/arch/powerpc/include/asm/kvm_host.h
-index 50ea12f..572ad01 100644
---- a/arch/powerpc/include/asm/kvm_host.h
-+++ b/arch/powerpc/include/asm/kvm_host.h
-@@ -52,6 +52,8 @@
- 
- struct kvm;
- extern int kvm_unmap_hva(struct kvm *kvm, unsigned long hva);
-+extern int kvm_unmap_hva_range(struct kvm *kvm,
-+			       unsigned long start, unsigned long end);
- extern int kvm_age_hva(struct kvm *kvm, unsigned long hva);
- extern int kvm_test_age_hva(struct kvm *kvm, unsigned long hva);
- extern void kvm_set_spte_hva(struct kvm *kvm, unsigned long hva, pte_t pte);
-diff --git a/arch/powerpc/kvm/book3s_64_mmu_hv.c b/arch/powerpc/kvm/book3s_64_mmu_hv.c
-index 97465ba..9de45b1 100644
---- a/arch/powerpc/kvm/book3s_64_mmu_hv.c
-+++ b/arch/powerpc/kvm/book3s_64_mmu_hv.c
-@@ -861,6 +861,13 @@ int kvm_unmap_hva(struct kvm *kvm, unsigned long hva)
- 	return 0;
- }
- 
-+int kvm_unmap_hva_range(struct kvm *kvm, unsigned long start, unsigned long end)
-+{
-+	if (kvm->arch.using_mmu_notifiers)
-+		kvm_handle_hva_range(kvm, start, end, kvm_unmap_rmapp);
-+	return 0;
-+}
-+
- static int kvm_age_rmapp(struct kvm *kvm, unsigned long *rmapp,
- 			 unsigned long gfn)
- {
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index db7c1f2..d6ad50d 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -930,6 +930,7 @@ extern bool kvm_rebooting;
- 
- #define KVM_ARCH_WANT_MMU_NOTIFIER
- int kvm_unmap_hva(struct kvm *kvm, unsigned long hva);
-+int kvm_unmap_hva_range(struct kvm *kvm, unsigned long start, unsigned long end);
- int kvm_age_hva(struct kvm *kvm, unsigned long hva);
- int kvm_test_age_hva(struct kvm *kvm, unsigned long hva);
- void kvm_set_spte_hva(struct kvm *kvm, unsigned long hva, pte_t pte);
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 3629f9b..6601d1c 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -1241,6 +1241,11 @@ int kvm_unmap_hva(struct kvm *kvm, unsigned long hva)
- 	return kvm_handle_hva(kvm, hva, 0, kvm_unmap_rmapp);
- }
- 
-+int kvm_unmap_hva_range(struct kvm *kvm, unsigned long start, unsigned long end)
-+{
-+	return kvm_handle_hva_range(kvm, start, end, 0, kvm_unmap_rmapp);
-+}
-+
- void kvm_set_spte_hva(struct kvm *kvm, unsigned long hva, pte_t pte)
- {
- 	kvm_handle_hva(kvm, hva, (unsigned long)&pte, kvm_set_pte_rmapp);
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 02cb440..44e44c0 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -332,8 +332,7 @@ static void kvm_mmu_notifier_invalidate_range_start(struct mmu_notifier *mn,
- 	 * count is also read inside the mmu_lock critical section.
- 	 */
- 	kvm->mmu_notifier_count++;
--	for (; start < end; start += PAGE_SIZE)
--		need_tlb_flush |= kvm_unmap_hva(kvm, start);
-+	need_tlb_flush = kvm_unmap_hva_range(kvm, start, end);
- 	need_tlb_flush |= kvm->tlbs_dirty;
- 	/* we've to flush the tlb before the pages can be freed */
- 	if (need_tlb_flush)
--- 
-1.7.5.4
-
+Acked-by: Arnd Bergmann <arnd@arndb.de>
