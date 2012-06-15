@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756814Ab2FOM0K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 08:26:10 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:38547 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756710Ab2FOM0H (ORCPT
+	id S1756797Ab2FOM2H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 08:28:07 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:52703 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756627Ab2FOM2D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 08:26:07 -0400
-Message-ID: <4FDB29D3.9000202@linux.vnet.ibm.com>
-Date: Fri, 15 Jun 2012 17:55:55 +0530
+	Fri, 15 Jun 2012 08:28:03 -0400
+Message-ID: <4FDB2A46.6040905@linux.vnet.ibm.com>
+Date: Fri, 15 Jun 2012 17:57:50 +0530
 From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
@@ -30,7 +30,7 @@ References: <4FD87249.6010302@linux.vnet.ibm.com> <201206132201.26058.rjw@sisk.p
 In-Reply-To: <4FDB279F.7020801@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-x-cbid: 12061502-1618-0000-0000-000001D7339E
+x-cbid: 12061502-0260-0000-0000-000001590110
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -48,10 +48,6 @@ On 06/15/2012 05:46 PM, Deepthi Dharwar wrote:
 
 > Please include this in -stable tree, as this is a regression fix which
 > affects older kernels ( 3.1 onwards )
-
-
-  Sorry for the typo. :(
-
 > Link to the patch : 
 > http://permalink.gmane.org/gmane.linux.power-management.general/27614
 > 
