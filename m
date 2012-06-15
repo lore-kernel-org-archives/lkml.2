@@ -1,67 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756758Ab2FOLoF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 07:44:05 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:48676 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756682Ab2FOLoB (ORCPT
+	id S1756730Ab2FOLrc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 07:47:32 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:60776 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754923Ab2FOLrb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 07:44:01 -0400
-Message-ID: <4FDB1FFD.7040204@linaro.org>
-Date: Fri, 15 Jun 2012 12:43:57 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	Fri, 15 Jun 2012 07:47:31 -0400
+Date: Fri, 15 Jun 2012 12:47:25 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] irq/core changes for v3.5
+Message-ID: <20120615114725.GC24246@sirena.org.uk>
+References: <20120522032554.GA11358@gmail.com>
+ <Pine.LNX.4.64.1206121201130.6800@axis700.grange>
+ <alpine.LFD.2.02.1206121639420.3086@ionos>
+ <CA+55aFxNy2-DnWVDUiOuF+NncRBUC=frZN+CTLsJ+o2ofXtZYQ@mail.gmail.com>
+ <alpine.LFD.2.02.1206121732230.3086@ionos>
+ <CA+55aFxC0436vCDwX8nUnKNa3ZZi=ZhL0w6eMk0hM3oKTz4LJw@mail.gmail.com>
+ <Pine.LNX.4.64.1206130857070.17854@axis700.grange>
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linus.walleij@stericsson.com, arnd@arndb.de,
-        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        grant.likely@secretlab.ca, linux-i2c@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 09/14] i2c: Add Device Tree support to the Nomadik I2C
- driver
-References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org> <1339428307-3850-10-git-send-email-lee.jones@linaro.org> <CACRpkdaMDbH4NkiHRLAfbJZ_j4QXbwg94bvaWsdYRPH+dSfc8Q@mail.gmail.com> <4FD6F0E8.5040606@linaro.org> <CACRpkdYxiT-0x4aetMxB2x8SkB+Mmy8rk8uSzgU_anemSayhMw@mail.gmail.com> <4FD83AAD.2010701@linaro.org> <CACRpkdZC8E6izDpdnWy6DMjOdA6KsqTaPoaq9pErWoNW0Ewytw@mail.gmail.com> <4FD88761.9050703@linaro.org> <20120614183636.GB30185@sirena.org.uk> <4FDA341C.8010501@linaro.org> <20120615103233.GA19046@n2100.arm.linux.org.uk>
-In-Reply-To: <20120615103233.GA19046@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1206130857070.17854@axis700.grange>
+X-Cookie: Flame on!
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/06/12 11:32, Russell King - ARM Linux wrote:
-> On Thu, Jun 14, 2012 at 07:57:32PM +0100, Lee Jones wrote:
->> On 14/06/12 19:36, Mark Brown wrote:
->>> On Wed, Jun 13, 2012 at 01:28:17PM +0100, Lee Jones wrote:
->>>
->>>> Device Tree. However, we have just as much control by keeping them
->>>> in separate structs in the C file and selecting the right one using
->>>> the compatible sting.
->>>
->>> You're not understanding Linus' point.  The compatible string isn't
->>> useful here because properties like the maximum clock rate of the bus
->>> depend on the board design, not the silicon.  The controller may be
->>> perfectly happy to run at a given rate but other devices on the bus or
->>> the electrical engineering of the PCB itself may restrict this further.
->>
->> And you're not understanding mine. ;)
->>
->> You can have multiple compatible strings for a single driver. Which one
->> you reference from the Device Tree will dictate which group of settings
->> are used, including variation of clock rates.
->
-> However, if you list these settings separately, rather than selecting them
-> based on a compatible string, it means when other board designs come along,
-> you don't have to modify the kernel code to provide yet another compatible
-> to settings translation in the code - you can keep all that information
-> entirely within DT with no kernel code mods.
->
-> I thought that was partly the point of DT...
+On Wed, Jun 13, 2012 at 09:03:27AM +0200, Guennadi Liakhovetski wrote:
 
-Right. See my most recent emails on the subject. :)
+> To make this simpler I'm attaching below a list of (I think) all 
+> occurrences of the invalid request_threaded_irq() uses.
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-M: +44 77 88 633 515
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Scanning through the list most of these are for internal IRQs from MFDs
+where it'd be a bug if the primary IRQ ever existed in the first place
+as we're already in threaded context, though obviously there's no
+problem with them marking themselves as _ONESHOT.
