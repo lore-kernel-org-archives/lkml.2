@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757123Ab2FOOOG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 10:14:06 -0400
-Received: from www.linutronix.de ([62.245.132.108]:41567 "EHLO
+	id S1757108Ab2FOOOF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 10:14:05 -0400
+Received: from www.linutronix.de ([62.245.132.108]:41577 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756052Ab2FOONZ (ORCPT
+	with ESMTP id S1756844Ab2FOONZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 15 Jun 2012 10:13:25 -0400
-Message-Id: <20120615140714.384340306@linutronix.de>
+Message-Id: <20120615140714.659751548@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Fri, 15 Jun 2012 14:13:20 -0000
+Date: Fri, 15 Jun 2012 14:13:23 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
@@ -17,9 +17,9 @@ Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
         Rusty Russell <rusty@rustcorp.com.au>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Tejun Heo <tj@kernel.org>
-Subject: [RFC patch V2 1/7] rcu: Yield simpler
+Subject: [RFC patch V2 5/7] watchdog: Use hotplug thread infrastructure
 References: <20120615140217.933711648@linutronix.de>
-Content-Disposition: inline; filename=rcu-yield-simpler.patch
+Content-Disposition: inline; filename=watchdog-use-smb-kthreads.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -27,444 +27,354 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The rcu_yield() code is amazing. It's there to avoid starvation of the
-system when lots of (boosting) work is to be done.
-
-Now looking at the code it's functionality is:
-
- Make the thread SCHED_OTHER and very nice, i.e. get it out of the way
- Arm a timer with 2 ticks
- schedule()
-
-Now if the system goes idle the rcu task returns, regains SCHED_FIFO
-and plugs on. If the systems stays busy the timer fires and wakes a
-per node kthread which in turn makes the per cpu thread SCHED_FIFO and
-brings it back on the cpu. For the boosting thread the "make it FIFO"
-bit is missing and it just runs some magic boost checks. Now this is a
-lot of code with extra threads and complexity.
-
-It's way simpler to let the tasks when they detect overload schedule
-away for 2 ticks and defer the normal wakeup as long as they are in
-yielded state and the cpu is not idle.
-
-That solves the same problem and the only difference is that when the
-cpu goes idle it's not guaranteed that the thread returns right away,
-but it won't be longer out than two ticks, so no harm is done. If
-that's an issue than it is way simpler just to wake the task from
-idle as RCU has callbacks there anyway.
-
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- kernel/rcutree.c        |    8 -
- kernel/rcutree.h        |    7 -
- kernel/rcutree_plugin.h |  210 ++++++++----------------------------------------
- 3 files changed, 41 insertions(+), 184 deletions(-)
+ kernel/watchdog.c |  232 ++++++++++++++++--------------------------------------
+ 1 file changed, 69 insertions(+), 163 deletions(-)
 
-Index: tip/kernel/rcutree.c
+Index: tip/kernel/watchdog.c
 ===================================================================
---- tip.orig/kernel/rcutree.c
-+++ tip/kernel/rcutree.c
-@@ -131,7 +131,7 @@ DEFINE_PER_CPU(char, rcu_cpu_has_work);
+--- tip.orig/kernel/watchdog.c
++++ tip/kernel/watchdog.c
+@@ -22,6 +22,7 @@
+ #include <linux/notifier.h>
+ #include <linux/module.h>
+ #include <linux/sysctl.h>
++#include <linux/smpboot.h>
  
- #endif /* #ifdef CONFIG_RCU_BOOST */
+ #include <asm/irq_regs.h>
+ #include <linux/kvm_para.h>
+@@ -29,6 +30,7 @@
  
--static void rcu_node_kthread_setaffinity(struct rcu_node *rnp, int outgoingcpu);
-+static void rcu_boost_kthread_setaffinity(struct rcu_node *rnp, int outgoingcpu);
- static void invoke_rcu_core(void);
- static void invoke_rcu_callbacks(struct rcu_state *rsp, struct rcu_data *rdp);
+ int watchdog_enabled = 1;
+ int __read_mostly watchdog_thresh = 10;
++static int __read_mostly watchdog_disabled;
  
-@@ -1459,7 +1459,7 @@ static void rcu_cleanup_dead_cpu(int cpu
+ static DEFINE_PER_CPU(unsigned long, watchdog_touch_ts);
+ static DEFINE_PER_CPU(struct task_struct *, softlockup_watchdog);
+@@ -256,6 +258,9 @@ static void watchdog_interrupt_count(voi
+ static inline void watchdog_interrupt_count(void) { return; }
+ #endif /* CONFIG_HARDLOCKUP_DETECTOR */
  
- 	/* Adjust any no-longer-needed kthreads. */
- 	rcu_stop_cpu_kthread(cpu);
--	rcu_node_kthread_setaffinity(rnp, -1);
-+	rcu_boost_kthread_setaffinity(rnp, -1);
++static int watchdog_nmi_enable(unsigned int cpu);
++static void watchdog_nmi_disable(unsigned int cpu);
++
+ /* watchdog kicker functions */
+ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
+ {
+@@ -327,23 +332,46 @@ static enum hrtimer_restart watchdog_tim
+ 	return HRTIMER_RESTART;
+ }
  
- 	/* Remove the dead CPU from the bitmasks in the rcu_node hierarchy. */
+-
+-/*
+- * The watchdog thread - touches the timestamp.
+- */
+-static int watchdog(void *unused)
++static void watchdog_enable(unsigned int cpu)
+ {
+-	struct sched_param param = { .sched_priority = 0 };
+ 	struct hrtimer *hrtimer = &__raw_get_cpu_var(watchdog_hrtimer);
  
-@@ -2513,11 +2513,11 @@ static int __cpuinit rcu_cpu_notify(stru
- 		break;
- 	case CPU_ONLINE:
- 	case CPU_DOWN_FAILED:
--		rcu_node_kthread_setaffinity(rnp, -1);
-+		rcu_boost_kthread_setaffinity(rnp, -1);
- 		rcu_cpu_kthread_setrt(cpu, 1);
- 		break;
- 	case CPU_DOWN_PREPARE:
--		rcu_node_kthread_setaffinity(rnp, cpu);
-+		rcu_boost_kthread_setaffinity(rnp, cpu);
- 		rcu_cpu_kthread_setrt(cpu, 0);
- 		break;
- 	case CPU_DYING:
-Index: tip/kernel/rcutree.h
-===================================================================
---- tip.orig/kernel/rcutree.h
-+++ tip/kernel/rcutree.h
-@@ -464,13 +464,8 @@ static void invoke_rcu_callbacks_kthread
- static bool rcu_is_callbacks_kthread(void);
- #ifdef CONFIG_RCU_BOOST
- static void rcu_preempt_do_callbacks(void);
--static void rcu_boost_kthread_setaffinity(struct rcu_node *rnp,
--					  cpumask_var_t cm);
- static int __cpuinit rcu_spawn_one_boost_kthread(struct rcu_state *rsp,
--						 struct rcu_node *rnp,
--						 int rnp_index);
--static void invoke_rcu_node_kthread(struct rcu_node *rnp);
--static void rcu_yield(void (*f)(unsigned long), unsigned long arg);
-+						 struct rcu_node *rnp);
- #endif /* #ifdef CONFIG_RCU_BOOST */
- static void rcu_cpu_kthread_setrt(int cpu, int to_rt);
- static void __cpuinit rcu_prepare_kthreads(int cpu);
-Index: tip/kernel/rcutree_plugin.h
-===================================================================
---- tip.orig/kernel/rcutree_plugin.h
-+++ tip/kernel/rcutree_plugin.h
-@@ -1217,6 +1217,16 @@ static void rcu_initiate_boost_trace(str
+-	/* initialize timestamp */
+-	__touch_watchdog();
++	/* Enable the perf event */
++	watchdog_nmi_enable(cpu);
  
- #endif /* #else #ifdef CONFIG_RCU_TRACE */
+ 	/* kick off the timer for the hardlockup detector */
++	hrtimer_init(hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
++	hrtimer->function = watchdog_timer_fn;
++
+ 	/* done here because hrtimer_start can only pin to smp_processor_id() */
+ 	hrtimer_start(hrtimer, ns_to_ktime(get_sample_period()),
+ 		      HRTIMER_MODE_REL_PINNED);
  
-+static void rcu_wake_cond(struct task_struct *t, int status)
-+{
-+	/*
-+	 * If the thread is yielding, only wake it when this
-+	 * is invoked from idle
-+	 */
-+	if (status != RCU_KTHREAD_YIELDING || is_idle_task(current))
-+		wake_up_process(t);
++	/* initialize timestamp */
++	__touch_watchdog();
 +}
 +
- /*
-  * Carry out RCU priority boosting on the task indicated by ->exp_tasks
-  * or ->boost_tasks, advancing the pointer to the next task in the
-@@ -1289,17 +1299,6 @@ static int rcu_boost(struct rcu_node *rn
- }
- 
- /*
-- * Timer handler to initiate waking up of boost kthreads that
-- * have yielded the CPU due to excessive numbers of tasks to
-- * boost.  We wake up the per-rcu_node kthread, which in turn
-- * will wake up the booster kthread.
-- */
--static void rcu_boost_kthread_timer(unsigned long arg)
--{
--	invoke_rcu_node_kthread((struct rcu_node *)arg);
--}
--
--/*
-  * Priority-boosting kthread.  One per leaf rcu_node and one for the
-  * root rcu_node.
-  */
-@@ -1322,8 +1321,9 @@ static int rcu_boost_kthread(void *arg)
- 		else
- 			spincnt = 0;
- 		if (spincnt > 10) {
-+			rnp->boost_kthread_status = RCU_KTHREAD_YIELDING;
- 			trace_rcu_utilization("End boost kthread@rcu_yield");
--			rcu_yield(rcu_boost_kthread_timer, (unsigned long)rnp);
-+			schedule_timeout_interruptible(2);
- 			trace_rcu_utilization("Start boost kthread@rcu_yield");
- 			spincnt = 0;
- 		}
-@@ -1361,8 +1361,8 @@ static void rcu_initiate_boost(struct rc
- 			rnp->boost_tasks = rnp->gp_tasks;
- 		raw_spin_unlock_irqrestore(&rnp->lock, flags);
- 		t = rnp->boost_kthread_task;
--		if (t != NULL)
--			wake_up_process(t);
-+		if (t)
-+			rcu_wake_cond(t, rnp->boost_kthread_status);
- 	} else {
- 		rcu_initiate_boost_trace(rnp);
- 		raw_spin_unlock_irqrestore(&rnp->lock, flags);
-@@ -1379,8 +1379,10 @@ static void invoke_rcu_callbacks_kthread
- 	local_irq_save(flags);
- 	__this_cpu_write(rcu_cpu_has_work, 1);
- 	if (__this_cpu_read(rcu_cpu_kthread_task) != NULL &&
--	    current != __this_cpu_read(rcu_cpu_kthread_task))
--		wake_up_process(__this_cpu_read(rcu_cpu_kthread_task));
-+	    current != __this_cpu_read(rcu_cpu_kthread_task)) {
-+		rcu_wake_cond(__this_cpu_read(rcu_cpu_kthread_task),
-+			      __this_cpu_read(rcu_cpu_kthread_status));
-+	}
- 	local_irq_restore(flags);
- }
- 
-@@ -1393,21 +1395,6 @@ static bool rcu_is_callbacks_kthread(voi
- 	return __get_cpu_var(rcu_cpu_kthread_task) == current;
- }
- 
--/*
-- * Set the affinity of the boost kthread.  The CPU-hotplug locks are
-- * held, so no one should be messing with the existence of the boost
-- * kthread.
-- */
--static void rcu_boost_kthread_setaffinity(struct rcu_node *rnp,
--					  cpumask_var_t cm)
--{
--	struct task_struct *t;
--
--	t = rnp->boost_kthread_task;
--	if (t != NULL)
--		set_cpus_allowed_ptr(rnp->boost_kthread_task, cm);
--}
--
- #define RCU_BOOST_DELAY_JIFFIES DIV_ROUND_UP(CONFIG_RCU_BOOST_DELAY * HZ, 1000)
- 
- /*
-@@ -1424,15 +1411,19 @@ static void rcu_preempt_boost_start_gp(s
-  * Returns zero if all is well, a negated errno otherwise.
-  */
- static int __cpuinit rcu_spawn_one_boost_kthread(struct rcu_state *rsp,
--						 struct rcu_node *rnp,
--						 int rnp_index)
-+						 struct rcu_node *rnp)
- {
-+	int rnp_index = rnp - &rsp->node[0];
- 	unsigned long flags;
- 	struct sched_param sp;
- 	struct task_struct *t;
- 
- 	if (&rcu_preempt_state != rsp)
- 		return 0;
++static void watchdog_disable(unsigned int cpu)
++{
++	struct hrtimer *hrtimer = &__raw_get_cpu_var(watchdog_hrtimer);
 +
-+	if (!rcu_scheduler_fully_active || rnp->qsmaskinit == 0)
-+		return 0;
++	hrtimer_cancel(hrtimer);
++	/* disable the perf event */
++	watchdog_nmi_disable(cpu);
++}
 +
- 	rsp->boost = 1;
- 	if (rnp->boost_kthread_task != NULL)
- 		return 0;
-@@ -1476,20 +1467,6 @@ static void rcu_kthread_do_work(void)
- }
- 
- /*
-- * Wake up the specified per-rcu_node-structure kthread.
-- * Because the per-rcu_node kthreads are immortal, we don't need
-- * to do anything to keep them alive.
-- */
--static void invoke_rcu_node_kthread(struct rcu_node *rnp)
--{
--	struct task_struct *t;
++/*
++ * The watchdog thread - touches the timestamp.
++ */
++static int watchdog(void *td)
++{
++	struct sched_param param = { .sched_priority = MAX_RT_PRIO - 1 };
++
++	if (!watchdog_enabled)
++		kthread_park(current);
++
++	sched_setscheduler(current, SCHED_FIFO, &param);
++
+ 	set_current_state(TASK_INTERRUPTIBLE);
+ 	/*
+ 	 * Run briefly (kicked by the hrtimer callback function) once every
+@@ -352,27 +380,16 @@ static int watchdog(void *unused)
+ 	 * 2*watchdog_thresh seconds then the debug-printout triggers in
+ 	 * watchdog_timer_fn().
+ 	 */
+-	while (!kthread_should_stop()) {
++	while (!smpboot_thread_check_parking(td)) {
++		set_current_state(TASK_INTERRUPTIBLE);
+ 		__touch_watchdog();
+ 		schedule();
 -
--	t = rnp->node_kthread_task;
--	if (t != NULL)
--		wake_up_process(t);
--}
+-		if (kthread_should_stop())
+-			break;
 -
--/*
-  * Set the specified CPU's kthread to run RT or not, as specified by
-  * the to_rt argument.  The CPU-hotplug locks are held, so the task
-  * is not going away.
-@@ -1514,45 +1491,6 @@ static void rcu_cpu_kthread_setrt(int cp
- }
- 
- /*
-- * Timer handler to initiate the waking up of per-CPU kthreads that
-- * have yielded the CPU due to excess numbers of RCU callbacks.
-- * We wake up the per-rcu_node kthread, which in turn will wake up
-- * the booster kthread.
-- */
--static void rcu_cpu_kthread_timer(unsigned long arg)
--{
--	struct rcu_data *rdp = per_cpu_ptr(rcu_state->rda, arg);
--	struct rcu_node *rnp = rdp->mynode;
--
--	atomic_or(rdp->grpmask, &rnp->wakemask);
--	invoke_rcu_node_kthread(rnp);
--}
--
--/*
-- * Drop to non-real-time priority and yield, but only after posting a
-- * timer that will cause us to regain our real-time priority if we
-- * remain preempted.  Either way, we restore our real-time priority
-- * before returning.
-- */
--static void rcu_yield(void (*f)(unsigned long), unsigned long arg)
--{
--	struct sched_param sp;
--	struct timer_list yield_timer;
--	int prio = current->rt_priority;
--
--	setup_timer_on_stack(&yield_timer, f, arg);
--	mod_timer(&yield_timer, jiffies + 2);
--	sp.sched_priority = 0;
--	sched_setscheduler_nocheck(current, SCHED_NORMAL, &sp);
--	set_user_nice(current, 19);
--	schedule();
--	set_user_nice(current, 0);
--	sp.sched_priority = prio;
--	sched_setscheduler_nocheck(current, SCHED_FIFO, &sp);
--	del_timer(&yield_timer);
--}
--
--/*
-  * Handle cases where the rcu_cpu_kthread() ends up on the wrong CPU.
-  * This can happen while the corresponding CPU is either coming online
-  * or going offline.  We cannot wait until the CPU is fully online
-@@ -1624,7 +1562,7 @@ static int rcu_cpu_kthread(void *arg)
- 		if (spincnt > 10) {
- 			*statusp = RCU_KTHREAD_YIELDING;
- 			trace_rcu_utilization("End CPU kthread@rcu_yield");
--			rcu_yield(rcu_cpu_kthread_timer, (unsigned long)cpu);
-+			schedule_timeout_interruptible(2);
- 			trace_rcu_utilization("Start CPU kthread@rcu_yield");
- 			spincnt = 0;
- 		}
-@@ -1681,48 +1619,6 @@ static int __cpuinit rcu_spawn_one_cpu_k
- }
- 
- /*
-- * Per-rcu_node kthread, which is in charge of waking up the per-CPU
-- * kthreads when needed.  We ignore requests to wake up kthreads
-- * for offline CPUs, which is OK because force_quiescent_state()
-- * takes care of this case.
-- */
--static int rcu_node_kthread(void *arg)
--{
--	int cpu;
--	unsigned long flags;
--	unsigned long mask;
--	struct rcu_node *rnp = (struct rcu_node *)arg;
--	struct sched_param sp;
--	struct task_struct *t;
--
--	for (;;) {
--		rnp->node_kthread_status = RCU_KTHREAD_WAITING;
--		rcu_wait(atomic_read(&rnp->wakemask) != 0);
--		rnp->node_kthread_status = RCU_KTHREAD_RUNNING;
--		raw_spin_lock_irqsave(&rnp->lock, flags);
--		mask = atomic_xchg(&rnp->wakemask, 0);
--		rcu_initiate_boost(rnp, flags); /* releases rnp->lock. */
--		for (cpu = rnp->grplo; cpu <= rnp->grphi; cpu++, mask >>= 1) {
--			if ((mask & 0x1) == 0)
--				continue;
--			preempt_disable();
--			t = per_cpu(rcu_cpu_kthread_task, cpu);
--			if (!cpu_online(cpu) || t == NULL) {
--				preempt_enable();
--				continue;
--			}
--			per_cpu(rcu_cpu_has_work, cpu) = 1;
--			sp.sched_priority = RCU_KTHREAD_PRIO;
--			sched_setscheduler_nocheck(t, SCHED_FIFO, &sp);
--			preempt_enable();
--		}
--	}
--	/* NOTREACHED */
--	rnp->node_kthread_status = RCU_KTHREAD_STOPPED;
--	return 0;
--}
--
--/*
-  * Set the per-rcu_node kthread's affinity to cover all CPUs that are
-  * served by the rcu_node in question.  The CPU hotplug lock is still
-  * held, so the value of rnp->qsmaskinit will be stable.
-@@ -1731,17 +1627,17 @@ static int rcu_node_kthread(void *arg)
-  * no outgoing CPU.  If there are no CPUs left in the affinity set,
-  * this function allows the kthread to execute on any CPU.
-  */
--static void rcu_node_kthread_setaffinity(struct rcu_node *rnp, int outgoingcpu)
-+static void rcu_boost_kthread_setaffinity(struct rcu_node *rnp, int outgoingcpu)
- {
-+	struct task_struct *t = rnp->boost_kthread_task;
-+	unsigned long mask = rnp->qsmaskinit;
- 	cpumask_var_t cm;
- 	int cpu;
--	unsigned long mask = rnp->qsmaskinit;
- 
--	if (rnp->node_kthread_task == NULL)
-+	if (!t)
- 		return;
--	if (!alloc_cpumask_var(&cm, GFP_KERNEL))
-+	if (!zalloc_cpumask_var(&cm, GFP_KERNEL))
- 		return;
--	cpumask_clear(cm);
- 	for (cpu = rnp->grplo; cpu <= rnp->grphi; cpu++, mask >>= 1)
- 		if ((mask & 0x1) && cpu != outgoingcpu)
- 			cpumask_set_cpu(cpu, cm);
-@@ -1751,50 +1647,17 @@ static void rcu_node_kthread_setaffinity
- 			cpumask_clear_cpu(cpu, cm);
- 		WARN_ON_ONCE(cpumask_weight(cm) == 0);
+-		set_current_state(TASK_INTERRUPTIBLE);
  	}
--	set_cpus_allowed_ptr(rnp->node_kthread_task, cm);
--	rcu_boost_kthread_setaffinity(rnp, cm);
-+	set_cpus_allowed_ptr(t, cm);
- 	free_cpumask_var(cm);
- }
- 
- /*
-- * Spawn a per-rcu_node kthread, setting priority and affinity.
-- * Called during boot before online/offline can happen, or, if
-- * during runtime, with the main CPU-hotplug locks held.  So only
-- * one of these can be executing at a time.
-- */
--static int __cpuinit rcu_spawn_one_node_kthread(struct rcu_state *rsp,
--						struct rcu_node *rnp)
--{
--	unsigned long flags;
--	int rnp_index = rnp - &rsp->node[0];
--	struct sched_param sp;
--	struct task_struct *t;
--
--	if (!rcu_scheduler_fully_active ||
--	    rnp->qsmaskinit == 0)
--		return 0;
--	if (rnp->node_kthread_task == NULL) {
--		t = kthread_create(rcu_node_kthread, (void *)rnp,
--				   "rcun/%d", rnp_index);
--		if (IS_ERR(t))
--			return PTR_ERR(t);
--		raw_spin_lock_irqsave(&rnp->lock, flags);
--		rnp->node_kthread_task = t;
--		raw_spin_unlock_irqrestore(&rnp->lock, flags);
--		sp.sched_priority = 99;
--		sched_setscheduler_nocheck(t, SCHED_FIFO, &sp);
--		wake_up_process(t); /* get to TASK_INTERRUPTIBLE quickly. */
--	}
--	return rcu_spawn_one_boost_kthread(rsp, rnp, rnp_index);
--}
--
--/*
-  * Spawn all kthreads -- called as soon as the scheduler is running.
-  */
- static int __init rcu_spawn_kthreads(void)
- {
--	int cpu;
- 	struct rcu_node *rnp;
-+	int cpu;
- 
- 	rcu_scheduler_fully_active = 1;
- 	for_each_possible_cpu(cpu) {
-@@ -1803,10 +1666,10 @@ static int __init rcu_spawn_kthreads(voi
- 			(void)rcu_spawn_one_cpu_kthread(cpu);
- 	}
- 	rnp = rcu_get_root(rcu_state);
--	(void)rcu_spawn_one_node_kthread(rcu_state, rnp);
-+	(void)rcu_spawn_one_boost_kthread(rcu_state, rnp);
- 	if (NUM_RCU_NODES > 1) {
- 		rcu_for_each_leaf_node(rcu_state, rnp)
--			(void)rcu_spawn_one_node_kthread(rcu_state, rnp);
-+			(void)rcu_spawn_one_boost_kthread(rcu_state, rnp);
- 	}
+-	/*
+-	 * Drop the policy/priority elevation during thread exit to avoid a
+-	 * scheduling latency spike.
+-	 */
+-	__set_current_state(TASK_RUNNING);
+-	sched_setscheduler(current, SCHED_NORMAL, &param);
  	return 0;
  }
-@@ -1820,8 +1683,7 @@ static void __cpuinit rcu_prepare_kthrea
- 	/* Fire up the incoming CPU's kthread and leaf rcu_node kthread. */
- 	if (rcu_scheduler_fully_active) {
- 		(void)rcu_spawn_one_cpu_kthread(cpu);
--		if (rnp->node_kthread_task == NULL)
--			(void)rcu_spawn_one_node_kthread(rcu_state, rnp);
-+		(void)rcu_spawn_one_boost_kthread(rcu_state, rnp);
- 	}
- }
  
-@@ -1854,7 +1716,7 @@ static void rcu_stop_cpu_kthread(int cpu
- 
- #endif /* #ifdef CONFIG_HOTPLUG_CPU */
- 
--static void rcu_node_kthread_setaffinity(struct rcu_node *rnp, int outgoingcpu)
-+static void rcu_boost_kthread_setaffinity(struct rcu_node *rnp, int outgoingcpu)
+-
+ #ifdef CONFIG_HARDLOCKUP_DETECTOR
+-static int watchdog_nmi_enable(int cpu)
++static int watchdog_nmi_enable(unsigned int cpu)
  {
+ 	struct perf_event_attr *wd_attr;
+ 	struct perf_event *event = per_cpu(watchdog_ev, cpu);
+@@ -395,7 +412,6 @@ static int watchdog_nmi_enable(int cpu)
+ 		goto out_save;
+ 	}
+ 
+-
+ 	/* vary the KERN level based on the returned errno */
+ 	if (PTR_ERR(event) == -EOPNOTSUPP)
+ 		pr_info("disabled (cpu%i): not supported (no LAPIC?)\n", cpu);
+@@ -416,7 +432,7 @@ out:
+ 	return 0;
  }
  
+-static void watchdog_nmi_disable(int cpu)
++static void watchdog_nmi_disable(unsigned int cpu)
+ {
+ 	struct perf_event *event = per_cpu(watchdog_ev, cpu);
+ 
+@@ -430,107 +446,35 @@ static void watchdog_nmi_disable(int cpu
+ 	return;
+ }
+ #else
+-static int watchdog_nmi_enable(int cpu) { return 0; }
+-static void watchdog_nmi_disable(int cpu) { return; }
++static int watchdog_nmi_enable(unsigned int cpu) { return 0; }
++static void watchdog_nmi_disable(unsigned int cpu) { return; }
+ #endif /* CONFIG_HARDLOCKUP_DETECTOR */
+ 
+ /* prepare/enable/disable routines */
+-static void watchdog_prepare_cpu(int cpu)
+-{
+-	struct hrtimer *hrtimer = &per_cpu(watchdog_hrtimer, cpu);
+-
+-	WARN_ON(per_cpu(softlockup_watchdog, cpu));
+-	hrtimer_init(hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+-	hrtimer->function = watchdog_timer_fn;
+-}
+-
+-static int watchdog_enable(int cpu)
+-{
+-	struct task_struct *p = per_cpu(softlockup_watchdog, cpu);
+-	int err = 0;
+-
+-	/* enable the perf event */
+-	err = watchdog_nmi_enable(cpu);
+-
+-	/* Regardless of err above, fall through and start softlockup */
+-
+-	/* create the watchdog thread */
+-	if (!p) {
+-		struct sched_param param = { .sched_priority = MAX_RT_PRIO-1 };
+-		p = kthread_create_on_node(watchdog, NULL, cpu_to_node(cpu), "watchdog/%d", cpu);
+-		if (IS_ERR(p)) {
+-			pr_err("softlockup watchdog for %i failed\n", cpu);
+-			if (!err) {
+-				/* if hardlockup hasn't already set this */
+-				err = PTR_ERR(p);
+-				/* and disable the perf event */
+-				watchdog_nmi_disable(cpu);
+-			}
+-			goto out;
+-		}
+-		sched_setscheduler(p, SCHED_FIFO, &param);
+-		kthread_bind(p, cpu);
+-		per_cpu(watchdog_touch_ts, cpu) = 0;
+-		per_cpu(softlockup_watchdog, cpu) = p;
+-		wake_up_process(p);
+-	}
+-
+-out:
+-	return err;
+-}
+-
+-static void watchdog_disable(int cpu)
+-{
+-	struct task_struct *p = per_cpu(softlockup_watchdog, cpu);
+-	struct hrtimer *hrtimer = &per_cpu(watchdog_hrtimer, cpu);
+-
+-	/*
+-	 * cancel the timer first to stop incrementing the stats
+-	 * and waking up the kthread
+-	 */
+-	hrtimer_cancel(hrtimer);
+-
+-	/* disable the perf event */
+-	watchdog_nmi_disable(cpu);
+-
+-	/* stop the watchdog thread */
+-	if (p) {
+-		per_cpu(softlockup_watchdog, cpu) = NULL;
+-		kthread_stop(p);
+-	}
+-}
+-
+ /* sysctl functions */
+ #ifdef CONFIG_SYSCTL
+ static void watchdog_enable_all_cpus(void)
+ {
+-	int cpu;
+-
+-	watchdog_enabled = 0;
+-
+-	for_each_online_cpu(cpu)
+-		if (!watchdog_enable(cpu))
+-			/* if any cpu succeeds, watchdog is considered
+-			   enabled for the system */
+-			watchdog_enabled = 1;
+-
+-	if (!watchdog_enabled)
+-		pr_err("failed to be enabled on some cpus\n");
++	unsigned int cpu;
+ 
++	if (watchdog_disabled) {
++		watchdog_disabled = 0;
++		for_each_online_cpu(cpu)
++			kthread_unpark(per_cpu(softlockup_watchdog, cpu));
++	}
+ }
+ 
+ static void watchdog_disable_all_cpus(void)
+ {
+-	int cpu;
++	unsigned int cpu;
+ 
+-	for_each_online_cpu(cpu)
+-		watchdog_disable(cpu);
+-
+-	/* if all watchdogs are disabled, then they are disabled for the system */
+-	watchdog_enabled = 0;
++	if (!watchdog_disabled) {
++		watchdog_disabled = 1;
++		for_each_online_cpu(cpu)
++			kthread_park(per_cpu(softlockup_watchdog, cpu));
++	}
+ }
+ 
+-
+ /*
+  * proc handler for /proc/sys/kernel/nmi_watchdog,watchdog_thresh
+  */
+@@ -540,73 +484,35 @@ int proc_dowatchdog(struct ctl_table *ta
+ {
+ 	int ret;
+ 
++	if (watchdog_disabled < 0)
++		return -ENODEV;
++
+ 	ret = proc_dointvec_minmax(table, write, buffer, lenp, ppos);
+ 	if (ret || !write)
+-		goto out;
++		return ret;
+ 
+ 	if (watchdog_enabled && watchdog_thresh)
+ 		watchdog_enable_all_cpus();
+ 	else
+ 		watchdog_disable_all_cpus();
+ 
+-out:
+ 	return ret;
+ }
+ #endif /* CONFIG_SYSCTL */
+ 
+-
+-/*
+- * Create/destroy watchdog threads as CPUs come and go:
+- */
+-static int __cpuinit
+-cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
+-{
+-	int hotcpu = (unsigned long)hcpu;
+-
+-	switch (action) {
+-	case CPU_UP_PREPARE:
+-	case CPU_UP_PREPARE_FROZEN:
+-		watchdog_prepare_cpu(hotcpu);
+-		break;
+-	case CPU_ONLINE:
+-	case CPU_ONLINE_FROZEN:
+-		if (watchdog_enabled)
+-			watchdog_enable(hotcpu);
+-		break;
+-#ifdef CONFIG_HOTPLUG_CPU
+-	case CPU_UP_CANCELED:
+-	case CPU_UP_CANCELED_FROZEN:
+-		watchdog_disable(hotcpu);
+-		break;
+-	case CPU_DEAD:
+-	case CPU_DEAD_FROZEN:
+-		watchdog_disable(hotcpu);
+-		break;
+-#endif /* CONFIG_HOTPLUG_CPU */
+-	}
+-
+-	/*
+-	 * hardlockup and softlockup are not important enough
+-	 * to block cpu bring up.  Just always succeed and
+-	 * rely on printk output to flag problems.
+-	 */
+-	return NOTIFY_OK;
+-}
+-
+-static struct notifier_block __cpuinitdata cpu_nfb = {
+-	.notifier_call = cpu_callback
++static struct smp_hotplug_thread watchdog_threads = {
++	.store		= &softlockup_watchdog,
++	.thread_fn	= watchdog,
++	.thread_comm	= "watchdog/%u",
++	.setup		= watchdog_enable,
++	.park		= watchdog_disable,
++	.unpark		= watchdog_enable,
+ };
+ 
+ void __init lockup_detector_init(void)
+ {
+-	void *cpu = (void *)(long)smp_processor_id();
+-	int err;
+-
+-	err = cpu_callback(&cpu_nfb, CPU_UP_PREPARE, cpu);
+-	WARN_ON(notifier_to_errno(err));
+-
+-	cpu_callback(&cpu_nfb, CPU_ONLINE, cpu);
+-	register_cpu_notifier(&cpu_nfb);
+-
+-	return;
++	if (smpboot_register_percpu_thread(&watchdog_threads)) {
++		pr_err("Failed to create watchdog threads, disabled\n");
++		watchdog_disabled = -ENODEV;
++	}
+ }
 
 
