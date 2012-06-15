@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757799Ab2FOUZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 16:25:28 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:41581 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757589Ab2FOUZ0 (ORCPT
+	id S1757834Ab2FOUaY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 16:30:24 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:53143 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757465Ab2FOUaX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 16:25:26 -0400
-X-Originating-IP: 217.70.178.142
+	Fri, 15 Jun 2012 16:30:23 -0400
+X-Originating-IP: 217.70.178.136
 X-Originating-IP: 50.43.46.74
-Date: Fri, 15 Jun 2012 13:25:11 -0700
+Date: Fri, 15 Jun 2012 13:30:08 -0700
 From: Josh Triplett <josh@joshtriplett.org>
 To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
@@ -17,81 +17,51 @@ Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
         mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, patches@linaro.org
-Subject: Re: [PATCH tip/core/rcu 3/6] rcu: Test srcu_barrier() from
- rcutorture test suite
-Message-ID: <20120615202511.GC31184@leaf>
+        fweisbec@gmail.com, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH tip/core/rcu 5/6] rcu: Fix diagnostic-printk typo in
+ rcutorture
+Message-ID: <20120615203008.GD31184@leaf>
 References: <20120615185725.GA25163@linux.vnet.ibm.com>
  <1339786674-25265-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1339786674-25265-3-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1339786674-25265-5-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1339786674-25265-3-git-send-email-paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1339786674-25265-5-git-send-email-paulmck@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 15, 2012 at 11:57:51AM -0700, Paul E. McKenney wrote:
-> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+On Fri, Jun 15, 2012 at 11:57:53AM -0700, Paul E. McKenney wrote:
+> From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 > 
-> SRCU now has a call_srcu() and an srcu_barrier(), but rcutorture does
-> not test srcu_barrier().  This commit adds the machinery to allow
-> rcutorture's existing rcu_barrier() tests to apply to SRCU.
+> The rcu_torture_barrier() function has a copy-and-paste typo in the
+> string passed to rcutorture_shutdown_absorb(), which this commit fixes.
 > 
+> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
 > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-
-This commit message suggests that the commit only adds support for
-testing srcu_barrier, but it adds both call_srcu and srcu_barrier.  You
-might want to wordsmith it a bit:
-
-SRCU now has a call_srcu() and an srcu_barrier(), but rcutorture does
-not test them.  This commit adds the machinery to allow rcutorture's
-existing tests for call_rcu() and rcu_barrier() to apply to the SRCU
-equivalents.
-
-With that change:
 
 Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
 > ---
->  kernel/rcutorture.c |   15 +++++++++++++--
->  1 files changed, 13 insertions(+), 2 deletions(-)
+>  kernel/rcutorture.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
 > diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
-> index 9850479..7b6935e 100644
+> index 08d8537..54a3745 100644
 > --- a/kernel/rcutorture.c
 > +++ b/kernel/rcutorture.c
-> @@ -635,6 +635,17 @@ static void srcu_torture_synchronize(void)
->  	synchronize_srcu(&srcu_ctl);
->  }
->  
-> +static void srcu_torture_call(struct rcu_head *head,
-> +			      void (*func)(struct rcu_head *head))
-> +{
-> +	call_srcu(&srcu_ctl, head, func);
-> +}
-> +
-> +static void srcu_torture_barrier(void)
-> +{
-> +	srcu_barrier(&srcu_ctl);
-> +}
-> +
->  static int srcu_torture_stats(char *page)
->  {
->  	int cnt = 0;
-> @@ -661,8 +672,8 @@ static struct rcu_torture_ops srcu_ops = {
->  	.completed	= srcu_torture_completed,
->  	.deferred_free	= srcu_torture_deferred_free,
->  	.sync		= srcu_torture_synchronize,
-> -	.call		= NULL,
-> -	.cb_barrier	= NULL,
-> +	.call		= srcu_torture_call,
-> +	.cb_barrier	= srcu_torture_barrier,
->  	.stats		= srcu_torture_stats,
->  	.name		= "srcu"
->  };
+> @@ -1700,7 +1700,7 @@ static int rcu_torture_barrier(void *arg)
+>  		schedule_timeout_interruptible(HZ / 10);
+>  	} while (!kthread_should_stop() && fullstop == FULLSTOP_DONTSTOP);
+>  	VERBOSE_PRINTK_STRING("rcu_torture_barrier task stopping");
+> -	rcutorture_shutdown_absorb("rcu_torture_barrier_cbs");
+> +	rcutorture_shutdown_absorb("rcu_torture_barrier");
+>  	while (!kthread_should_stop())
+>  		schedule_timeout_interruptible(1);
+>  	return 0;
 > -- 
 > 1.7.8
 > 
