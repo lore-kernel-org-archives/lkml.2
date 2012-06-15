@@ -1,56 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757188Ab2FOPyU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 11:54:20 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:57158 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753453Ab2FOPyS convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 11:54:18 -0400
+	id S932391Ab2FOPzD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 11:55:03 -0400
+Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:43425 "EHLO
+	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757030Ab2FOPzA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 11:55:00 -0400
+Date: Fri, 15 Jun 2012 17:54:32 +0200
+From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>
+Subject: [PATCH 02.5] mm: sl[au]b: first remove PFMEMALLOC flag then SLAB flag
+Message-ID: <20120615155432.GA5498@breakpoint.cc>
+References: <1337266231-8031-1-git-send-email-mgorman@suse.de>
+ <1337266231-8031-3-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
-In-Reply-To: <20120614191743.GA2721@kroah.com>
-References: <1339656138-28060-1-git-send-email-ning.n.jiang@gmail.com>
-	<20120614153730.GB17140@kroah.com>
-	<201206142115.47601.rjw@sisk.pl>
-	<20120614191743.GA2721@kroah.com>
-Date: Fri, 15 Jun 2012 23:54:16 +0800
-Message-ID: <CAH3Oq6Qt=JzCXJsZFNd8WrCFhiPazHomou+GbFpyQ8Lq34fOdA@mail.gmail.com>
-Subject: Re: [PATCH] PM: Deprecate suspend/resume in device_driver
-From: Ning Jiang <ning.n.jiang@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337266231-8031-3-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/6/15 Greg KH <gregkh@linuxfoundation.org>:
-> On Thu, Jun 14, 2012 at 09:15:47PM +0200, Rafael J. Wysocki wrote:
->> On Thursday, June 14, 2012, Greg KH wrote:
->> > On Thu, Jun 14, 2012 at 02:42:17PM +0800, ning.n.jiang@gmail.com wrote:
->> > > From: Ning Jiang <ning.n.jiang@gmail.com>
->> > >
->> > > Make suspend/resume callbacks in device_driver deprecated and scheduled
->> > > for removal since they are not used in PM core anymore.
->> > >
->> > > Legacy drivers who still use them need to move suspend/resume callbacks
->> > > to dev_pm_ops.
->> >
->> > How many complier warnings does this patch produce?
->> >
->> > Please fix them before submitting this patch.  The way kernel
->> > development is is that you fix the problems up with the api, you don't
->> > just mark them and hope someone else will do it for you.
->> >
->> > Sorry, I can't take this.
->>
->> Right.
->
-> To provide a bit more "constructive" review, the proper thing is to fix
-> up the whole kernel to never set these fields, and then just delete
-> them.  Ning, feel free to start working on that task, it's a good one to
-> accomplish and should be pretty well defined.
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-All right. I'm working on it.
+If we first remove the SLAB flag followed by the PFMEMALLOC flag then the
+removal of the latter will trigger the VM_BUG_ON() as it can be seen in
+| kernel BUG at include/linux/page-flags.h:474!
+| invalid opcode: 0000 [#1] PREEMPT SMP
+| Call Trace:
+|  [<c10e2d77>] slab_destroy+0x27/0x70
+|  [<c10e3285>] drain_freelist+0x55/0x90
+|  [<c10e344e>] __cache_shrink+0x6e/0x90
+|  [<c14e3211>] ? acpi_sleep_init+0xcf/0xcf
+|  [<c10e349d>] kmem_cache_shrink+0x2d/0x40
+
+because the SLAB flag is gone. This patch simply changes the order.
+
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+ mm/slab.c |    2 +-
+ mm/slub.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/mm/slab.c b/mm/slab.c
+index 00c601b..b1a39f7 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -2007,8 +2007,8 @@ static void kmem_freepages(struct kmem_cache *cachep, void *addr)
+ 				NR_SLAB_UNRECLAIMABLE, nr_freed);
+ 	while (i--) {
+ 		BUG_ON(!PageSlab(page));
+-		__ClearPageSlab(page);
+ 		__ClearPageSlabPfmemalloc(page);
++		__ClearPageSlab(page);
+ 		page++;
+ 	}
+ 	if (current->reclaim_state)
+diff --git a/mm/slub.c b/mm/slub.c
+index f8cbec4..d753146 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -1417,8 +1417,8 @@ static void __free_slab(struct kmem_cache *s, struct page *page)
+ 		NR_SLAB_RECLAIMABLE : NR_SLAB_UNRECLAIMABLE,
+ 		-pages);
+ 
+-	__ClearPageSlab(page);
+ 	__ClearPageSlabPfmemalloc(page);
++	__ClearPageSlab(page);
+ 	reset_page_mapcount(page);
+ 	if (current->reclaim_state)
+ 		current->reclaim_state->reclaimed_slab += pages;
+-- 
+1.7.10
+
