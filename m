@@ -1,89 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758652Ab2FOXNY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 19:13:24 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:47921 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758479Ab2FOXNW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 19:13:22 -0400
-Date: Fri, 15 Jun 2012 16:13:18 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Fengguang Wu <fengguang.wu@intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "kay.sievers" <kay.sievers@vrfy.org>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] printk: Add printk_flush() to force buffered text to
- console
-Message-ID: <20120615231318.GD8205@kroah.com>
-References: <1339649173.13377.191.camel@gandalf.stny.rr.com>
- <20120614045930.GA10508@kroah.com>
- <1339671715.13377.209.camel@gandalf.stny.rr.com>
- <20120614154153.GD17140@kroah.com>
- <1339693625.13377.242.camel@gandalf.stny.rr.com>
- <20120615042233.GA10973@localhost>
- <20120615043017.GA9587@kroah.com>
- <20120615120430.GB23681@gmail.com>
+	id S1758670Ab2FOXOZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 19:14:25 -0400
+Received: from linux-sh.org ([111.68.239.195]:38024 "EHLO linux-sh.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758574Ab2FOXOW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 19:14:22 -0400
+Date: Sat, 16 Jun 2012 08:14:19 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] irqdomain: Fix up linear revmap for non-zero hwirq
+ displacement.
+Message-ID: <20120615231419.GC7357@linux-sh.org>
+References: <1339572841-26175-1-git-send-email-lethal@linux-sh.org>
+ <20120615182540.489133E0ACE@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120615120430.GB23681@gmail.com>
+In-Reply-To: <20120615182540.489133E0ACE@localhost>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 15, 2012 at 02:04:30PM +0200, Ingo Molnar wrote:
-> 
-> * Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
-> 
-> > On Fri, Jun 15, 2012 at 12:22:33PM +0800, Fengguang Wu wrote:
-> > > > I actually would like to make these more compact. As all my test box
-> > > > consoles go through serial ports, just booting through this takes more
-> > > > time the the compile itself.
-> > > 
-> > > The tests took 23 seconds boot time on one kernel:
-> > > 
-> > >         [    0.152934] Testing tracer nop: PASSED
-> > >         ...1577 lines total...
-> > >         [   23.206550] Testing kprobe tracing: OK
-> > > 
-> > > And 135 seconds in another bloated kernel:
-> > > 
-> > >         [  115.396441] Testing event 9p_client_req: OK
-> > >         ...2545 lines total...
-> > >         [  240.268783] Testing kprobe tracing: OK
-> > > 
-> > > I'd appreciate if the boot time can be reduced. Because I'm doing
-> > > kernel boot tests for *every single* commits.
-> > > 
-> > > It may look insane amount of work, but it's still manageable: with 10
-> > > kvm instances each take 1 minute to boot test a kernel, I can boot
-> > > test 60*24*10=14400 kernels in one day. That's a rather big number.
-> > > That allows me to run more cpu/vm/io stress tests for each kernel :-)
+On Fri, Jun 15, 2012 at 12:25:40PM -0600, Grant Likely wrote:
+> On Wed, 13 Jun 2012 16:34:00 +0900, Paul Mundt <lethal@linux-sh.org> wrote:
+> > Presently the linear revmap code assumes that all hwirqs start at 0,
+> > using the hwirq directly as an index value for the lookup. In the case of
+> > legacy revmaps this isn't necessarily the case, as the first_hwirq value
+> > passed in can be non-zero, causing those types of users to silently have
+> > their IRQs placed in the radix tree instead.
 > > 
-> > Do you really want to enable those tests for your test 
-> > kernels?  Can they fail if we mess up other parts of the 
-> > kernel, or do they only test the tracing portions?
+> > With this change, hwirq displacement is factored in at association time
+> > directly. This also makes it possible for non-legacy users to use linear
+> > revmaps regardless of hwirq base position. This could potentially lead to
+> > a bug if there's an attempt to associate multiple times in to the linear
+> > map in a nonsensical and non-linear order, but at that point being
+> > silently punted to the radix tree is likely to be the least of your
+> > concerns (in such a case it's fairly trivial to simply extend
+> > irq_domain_add_linear() to take a hwirq base and move the linear base
+> > assignment there).
 > 
-> These printk's are useful, are used for a specific (albeit 
-> limited) purpose and were and continue to be useful in that 
-> role.
+> I actually hoped to be rid of the whole hwirq start offset thing.
+> Doing without it simplifies the code, is slightly faster.  I suspect
+> very few controllers actually need it, and for those that do I'm
+> hoping the wasted space is in the order of 0-32 words.
 > 
-> The changes Steve bisected to broke this use of printk().
+> Instead of this, can we change the affected controllers to use the
+> maximum hwirq number when setting the size of the linear map?
+> 
+> Do you have hardware where the first hwirq is a >32 number?
+> 
+Yes. On the CPU I was just working on I have two linear ranges and a
+tree, one of the linear ranges begins at hwirq 56. On other CPUs we have
+linear ranges that begin at 64, 72, etc. most of which are fairly low in
+the space. On newer parts on the ARM side there are also controllers with
+ranges that begin > 400.
 
-And note, fixed others :)
-
-> Please apply Steve's fix, fix it yourself or revert the changes that
-> regressed printk().
-
-I thought Steve's patch was just a RFC thing, is it really something
-that everyone wants to see applied?
-
-thanks,
-
-greg k-h
+I don't particularly care for the linear_start hack myself either, but I
+couldn't think of any cleaner approach for it. The simplest might be if
+we can just bury these details in a domain-specific canonicalization op
+(distinctly different from xlate), and plug it in for the few cases that
+need a non-zero hwirq base. I don't mind hacking that up if you're more
+agreeable to that approach.
