@@ -1,66 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757130Ab2FOObN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 10:31:13 -0400
-Received: from mx.scalarmail.ca ([98.158.95.75]:26584 "EHLO
-	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757025Ab2FOObL (ORCPT
+	id S1757147Ab2FOOdL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 10:33:11 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:40701 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757035Ab2FOOdJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 10:31:11 -0400
-Date: Fri, 15 Jun 2012 10:31:06 -0400
-From: Nick Bowler <nbowler@elliptictech.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Jens Axboe <axboe@kernel.dk>, LKML <linux-kernel@vger.kernel.org>,
-        linux-scsi@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>,
-        James Bottomley <JBottomley@parallels.com>
-Subject: Re: [PATCH] scsi: Silence unnecessary warnings about ioctl to
- partition
-Message-ID: <20120615143106.GA16540@elliptictech.com>
-References: <1339757457-15646-1-git-send-email-jack@suse.cz>
- <4FDB13B1.8040100@kernel.dk>
- <20120615135825.GA12847@elliptictech.com>
- <20120615142303.GB19045@quack.suse.cz>
+	Fri, 15 Jun 2012 10:33:09 -0400
+Date: Fri, 15 Jun 2012 17:33:00 +0300
+From: Ido Yariv <ido@wizery.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, shai@scalemp.com,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/platform] x86/platform: Introduce APIC
+ post-initialization callback
+Message-ID: <20120615143259.GA2545@WorkStation.localnet>
+References: <1338675095-27260-1-git-send-email-ido@wizery.com>
+ <tip-7db971b235480849aa5b9209b67b62e987b3181b@git.kernel.org>
+ <4FDA208B.2010900@zytor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120615142303.GB19045@quack.suse.cz>
-Organization: Elliptic Technologies Inc.
+In-Reply-To: <4FDA208B.2010900@zytor.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-06-15 16:23 +0200, Jan Kara wrote:
-> On Fri 15-06-12 09:58:25, Nick Bowler wrote:
-> > On 2012-06-15 12:51 +0200, Jens Axboe wrote:
-> > > On 06/15/2012 12:50 PM, Jan Kara wrote:
-> > > > Sometimes, warnings about ioctls to partition happen often enough that they
-> > > > form majority of the warnings in the kernel log and users complain. In some
-> > > > cases warnings are about ioctls such as SG_IO so it's not good to get rid of
-> > > > the warnings completely as they can ease debugging of userspace problems
-> > > > when ioctl is refused.
-> > > > 
-> > > > Since I have seen warnings from lots of commands, including some proprietary
-> > > > userspace applications, I don't think disallowing the ioctls for processes
-> > > > with CAP_SYS_RAWIO will happen in the near future if ever. So lets just
-> > > > stop warning for processes with CAP_SYS_RAWIO for which ioctl is allowed.
-> > > 
-> > > Agree, merged, finally.
-> > 
-> > Hurray!
-> > 
-> > This should be -stable material as well, as >=3.2.y kernel versions are
-> > affected (I think 3.0.y is OK?).
->   3.0 also spits those warnings. But I'm not convinced this is really a
-> -stable material. I don't see anybody loosing sleep over this...
+Hi Peter,
 
-These messages are quite annoying on my raid boxes (currently running
-3.2.y) where mdadm spews a whole pile of these whenever you do anything.
+On Thu, Jun 14, 2012 at 10:34:03AM -0700, H. Peter Anvin wrote:
+> On 06/06/2012 08:01 AM, tip-bot for Ido Yariv wrote:
+> > Some subarchitectures (such as vSMP)
+> 
+> Ido, could you please stop using this formula unless you actually have
+> evidence of anything other than vSMP having use for it?  It chronically
+> comes across as dishonest.
 
-Even with the rate limiting, they make up a substantial proportion of
-the total log messages.
+It was not my intention to disguise vSMP specific features as generic
+ones, and I'm sorry if it seemed that way. I assumed other
+virtualization architectures might benefit from these features, but at
+least initially vSMP is the sole user.
 
-Cheers,
--- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+Having said that, I'll be more specific in the future.
 
+Thanks,
+Ido.
