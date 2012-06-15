@@ -1,97 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757332Ab2FOS5L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 14:57:11 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:42149 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751715Ab2FOS5J (ORCPT
+	id S1757343Ab2FOS55 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 14:57:57 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:49841 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751715Ab2FOS54 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 14:57:09 -0400
-Message-ID: <4FDB8563.3030805@us.ibm.com>
-Date: Fri, 15 Jun 2012 11:56:35 -0700
-From: John Stultz <johnstul@us.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Fri, 15 Jun 2012 14:57:56 -0400
+Date: Fri, 15 Jun 2012 11:57:25 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, patches@linaro.org
+Subject: [PATCH tip/core/rcu 0/6] rcutorture and documentation patches for 3.6
+Message-ID: <20120615185725.GA25163@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 MIME-Version: 1.0
-To: stable@vger.kernel.org
-CC: Richard Cochran <richardcochran@gmail.com>, Dave Jones <davej@redhat.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: [PATCH -stable]  ntp: Correct TAI offset during leap second
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12061518-2398-0000-0000-0000078A26FF
+x-cbid: 12061518-6148-0000-0000-000006BC9D10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Greg,
-     Forgot to cc stable on this one. Thanks to Dave Jones for noticing!
--john
+Hello!
 
-------------------
+This patch series updates documentation and rcutorture:
 
-From: Richard Cochran<richardcochran@gmail.com>
+1.	Update documentation to allow for the new call_srcu() and
+	srcu_barrier() functions.
+2.	Fix ordering of the torture_ops list.
+3.	Make rcutorture actually test the new srcu_barrier() function.
+4.	Fix synchronization of the kthreads testing the various
+	rcu_barrier() functions.
+5.	Fix an incorrect (and quite confusing) message in rcutorture.
+6.	Make rcutorture's fakewriters occasionally invoke the appropriate
+	rcu_barrier() function so that we test concurrent rcu_barrier()
+	calls.
 
-commit dd48d708ff3e917f6d6b6c2b696c3f18c019feed upstream.
+							Thanx, Paul
 
-When repeating a UTC time value during a leap second (when the UTC
-
-time should be 23:59:60), the TAI timescale should not stop. The kernel
-
-NTP code increments the TAI offset one second too late. This patch fixes
-
-the issue by incrementing the offset during the leap second itself.
-
-Signed-off-by: Richard Cochran<richardcochran@gmail.com>
-
-Signed-off-by: John Stultz<john.stultz@linaro.org>
-
----
-
-  kernel/time/ntp.c |    2 +-
-
-  1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
-
-index f03fd83..e8c8671 100644
-
---- a/kernel/time/ntp.c
-
-+++ b/kernel/time/ntp.c
-
-@@ -412,6 +412,7 @@ int second_overflow(unsigned long secs)
-
-  		if (secs % 86400 == 0) {
-
-  			leap = -1;
-
-  			time_state = TIME_OOP;
-
-+			time_tai++;
-
-  			printk(KERN_NOTICE
-
-  				"Clock: inserting leap second 23:59:60 UTC\n");
-
-  		}
-
-@@ -426,7 +427,6 @@ int second_overflow(unsigned long secs)
-
-  		}
-
-  		break;
-
-  	case TIME_OOP:
-
--		time_tai++;
-
-  		time_state = TIME_WAIT;
-
-  		break;
-
--- 
-
-1.7.9.5
-
+ b/Documentation/RCU/checklist.txt  |   39 ++++++++++++++++++-------------------
+ b/Documentation/RCU/rcubarrier.txt |    6 +++--
+ b/Documentation/RCU/torture.txt    |    9 ++++++++
+ b/Documentation/RCU/whatisRCU.txt  |    6 ++---
+ b/kernel/rcutorture.c              |    4 +--
+ kernel/rcutorture.c                |   32 ++++++++++++++++++++++++------
+ 6 files changed, 64 insertions(+), 32 deletions(-)
 
