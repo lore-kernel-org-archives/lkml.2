@@ -1,70 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756324Ab2FOBsm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 21:48:42 -0400
-Received: from mga11.intel.com ([192.55.52.93]:33650 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756062Ab2FOBsl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 21:48:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="165890511"
-Date: Fri, 15 Jun 2012 09:48:35 +0800
-From: Fengguang Wu <wfg@linux.intel.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: automated warning notifications
-Message-ID: <20120615014835.GA5695@localhost>
-References: <20120614172523.GB4400@mwanda>
+	id S1756289Ab2FOBxj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 21:53:39 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:40414 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755537Ab2FOBxi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Jun 2012 21:53:38 -0400
+Date: Fri, 15 Jun 2012 10:53:31 +0900
+From: Tejun Heo <tj@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [RFC patch 2/5] smpboot: Provide infrastructure for percpu
+ hotplug threads
+Message-ID: <20120615015331.GC12624@mtj.dyndns.org>
+References: <20120613102823.373180763@linutronix.de>
+ <20120613105815.206105518@linutronix.de>
+ <20120613183301.GE2427@linux.vnet.ibm.com>
+ <alpine.LFD.2.02.1206132050270.3086@ionos>
+ <1339661331.2559.5.camel@twins>
+ <1339661848.2559.7.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120614172523.GB4400@mwanda>
+In-Reply-To: <1339661848.2559.7.camel@twins>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dan,
-
-On Thu, Jun 14, 2012 at 08:25:23PM +0300, Dan Carpenter wrote:
-> Hi Fengguang,
+On Thu, Jun 14, 2012 at 10:17:28AM +0200, Peter Zijlstra wrote:
+> On Thu, 2012-06-14 at 10:08 +0200, Peter Zijlstra wrote:
+> > On Wed, 2012-06-13 at 20:56 +0200, Thomas Gleixner wrote:
+> > > If it's just a spurious wakeup then it goes back to sleep right away
+> > > as nothing cleared the park bit. 
+> > 
+> > Your spurious wakeup will have destroyed the binding though. So you need
+> > to be careful.
 > 
-> I also check new static checker warnings and sometimes email people.
-
-That would be nice!
-
-> I wonder if we are duplicating each others work.  For example, did
-> you send an email asking about the following Sparse warning:
+> We should probably do something like the below..
 > 
-> sound/soc/codecs/ab8500-codec.c:1959:53: warning: cast truncates bits from constant value (1013 becomes 13)
+> TJ does this wreck workqueues? Its somewhat 'creative' in that regard
+> and really wants fixing.
+> 
+> ---
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -5018,6 +5018,8 @@ void do_set_cpus_allowed(struct task_str
+>  
+>  	cpumask_copy(&p->cpus_allowed, new_mask);
+>  	p->nr_cpus_allowed = cpumask_weight(new_mask);
+> +	if (p->nr_cpus_allowed != 1)
+> +		p->flags &= ~PF_THREAD_BOUND;
 
-I did try sending out sparse warnings to people, some time ago...
+The only reason wq workers use PF_THREAD_BOUND is to prevent userland
+from mucking with cpus_allowed, so the above wouldn't break anything
+in itself although userland would be able to wreck it afterwards.
 
-> Quite often those messages are false positive and the value is
-> truncated deliberately.  In this case it looks suspicious and I
-> would maybe email about it.  If I knew what kind of messages you
-> check and which you ignore that would help me.
+Thanks.
 
-The lots of false warnings are a big problem. It makes the automated
-notification more noises than signals to people. So I end up disabling
-the sparse check totally..
-
-These days I only send out gcc errors/warnings to the commit author,
-committer, signers and relevant mailing lists reported by
-scripts/get_maintainer.pl (but minus LKML).
-
-> Perhaps there is an email list I could subscribe to to see if you
-> had already sent a message.
-
-In an average working day, 1-2 build errors will be caught and email
-notified. I guess there will be more sparse warnings if it's turned
-on.
-
-Perhaps the sparse warnings can be enabled, but only sent to the patch
-author. If you and anyone else are interested, they could be sent to
-some mailing list, too. One thing I'm sure is, we probably never want
-to disturb the busy maintainers with these warnings.
-
-Thanks,
-Fengguang
+-- 
+tejun
