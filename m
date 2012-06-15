@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755565Ab2FOGcs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 02:32:48 -0400
+	id S932208Ab2FOGcq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 02:32:46 -0400
 Received: from mga14.intel.com ([143.182.124.37]:60116 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932162Ab2FOGco (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 02:32:44 -0400
+	id S932138Ab2FOGcn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 02:32:43 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="156658771"
+   d="scan'208";a="156658761"
 From: "Yan, Zheng" <zheng.z.yan@intel.com>
 To: a.p.zijlstra@chello.nl, mingo@elte.hu, jolsa@redhat.com,
         eranian@google.com, andi@firstfloor.org, linux-kernel@vger.kernel.org
-Cc: Zheng Yan <zheng.z.yan@intel.com>
-Subject: [PATCH V6 12/13] perf, tool: Add pmu event alias support
-Date: Fri, 15 Jun 2012 14:31:41 +0800
-Message-Id: <1339741902-8449-13-git-send-email-zheng.z.yan@intel.com>
+Subject: [PATCH V6 11/13] perf, tool: Add support to reuse event grammar to parse out terms
+Date: Fri, 15 Jun 2012 14:31:40 +0800
+Message-Id: <1339741902-8449-12-git-send-email-zheng.z.yan@intel.com>
 X-Mailer: git-send-email 1.7.10.2
 In-Reply-To: <1339741902-8449-1-git-send-email-zheng.z.yan@intel.com>
 References: <1339741902-8449-1-git-send-email-zheng.z.yan@intel.com>
@@ -25,300 +24,179 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiri Olsa <jolsa@redhat.com>
 
-Adding support to specify alias term within the event description.
+We want to reuse the event grammar for parsing aliased terms.
+The obvious reason is we dont need to add new code when there's
+already support for this in event grammar.
 
-The definition of pmu event alias is located at:
-  ${sysfs_mount}/bus/event_source/devices/${pmu}/events/
+Doing this by adding terms and event start entries into event
+parse grammar. The grammar forks on the begining based on the
+starting token, which is supplied via bison interface into the
+lexer.  The lexer then returns the starting token as the first
+token, thus making the grammar switch accordingly.
 
-Each file in the 'events' directory defines a event alias. Its contents
-is like:
-  config=1,config1=2
+Currently 2 starting tokens/grammars are supported:
+	PE_START_TERMS, PE_START_EVENTS
 
-Using pmu event alias, event could be now specified like:
-  uncore/CLOCKTICKS/ or uncore/event=CLOCKTICKS/
+The PE_START_TERMS related grammar uses 'event_config' part
+of the grammar for term parsing.
 
-Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/util/parse-events.c |   10 +++
- tools/perf/util/parse-events.h |    2 +
- tools/perf/util/pmu.c          |  166 ++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/pmu.h          |   11 +++-
- 4 files changed, 188 insertions(+), 1 deletions(-)
+ tools/perf/util/parse-events.c |   28 +++++++++++++++++++++++++---
+ tools/perf/util/parse-events.h |    5 +++++
+ tools/perf/util/parse-events.l |   13 +++++++++++++
+ tools/perf/util/parse-events.y |   12 ++++++++++++
+ 4 files changed, 55 insertions(+), 3 deletions(-)
 
 diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index d002170..3339424 100644
+index ca8665e..d002170 100644
 --- a/tools/perf/util/parse-events.c
 +++ b/tools/perf/util/parse-events.c
-@@ -701,6 +701,9 @@ int parse_events_add_pmu(struct list_head **list, int *idx,
+@@ -12,6 +12,7 @@
+ #include "header.h"
+ #include "debugfs.h"
+ #include "parse-events-bison.h"
++#define YY_EXTRA_TYPE int
+ #include "parse-events-flex.h"
+ #include "pmu.h"
  
- 	memset(&attr, 0, sizeof(attr));
- 
-+	if (perf_pmu__check_alias(pmu, head_config))
-+		return -EINVAL;
-+
- 	/*
- 	 * Configure hardcoded terms first, no need to check
- 	 * return value when called with fail == 0 ;)
-@@ -1143,6 +1146,13 @@ int parse_events__term_str(struct parse_events__term **term,
- 			config, str, 0);
- }
- 
-+int parse_events__term_clone(struct parse_events__term **new,
-+			     struct parse_events__term *term)
-+{
-+	return new_term(new, term->type_val, term->type_term, term->config,
-+			term->val.str, term->val.num);
-+}
-+
- void parse_events__free_terms(struct list_head *terms)
- {
- 	struct parse_events__term *term, *h;
-diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index 9896eda..a2c7168 100644
---- a/tools/perf/util/parse-events.h
-+++ b/tools/perf/util/parse-events.h
-@@ -78,6 +78,8 @@ int parse_events__term_num(struct parse_events__term **_term,
- 			   int type_term, char *config, long num);
- int parse_events__term_str(struct parse_events__term **_term,
- 			   int type_term, char *config, char *str);
-+int parse_events__term_clone(struct parse_events__term **new,
-+			     struct parse_events__term *term);
- void parse_events__free_terms(struct list_head *terms);
- int parse_events_modifier(struct list_head *list, char *str);
- int parse_events_add_tracepoint(struct list_head **list, int *idx,
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index a119a53..74d0948e 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -80,6 +80,114 @@ static int pmu_format(char *name, struct list_head *format)
+@@ -788,13 +789,13 @@ int parse_events_modifier(struct list_head *list, char *str)
  	return 0;
  }
  
-+static int perf_pmu__new_alias(struct list_head *list, char *name, FILE *file)
+-static int parse_events__scanner(const char *str, void *data)
++static int parse_events__scanner(const char *str, void *data, int start_token)
+ {
+ 	YY_BUFFER_STATE buffer;
+ 	void *scanner;
+ 	int ret;
+ 
+-	ret = parse_events_lex_init(&scanner);
++	ret = parse_events_lex_init_extra(start_token, &scanner);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -811,6 +812,27 @@ static int parse_events__scanner(const char *str, void *data)
+ 	return ret;
+ }
+ 
++/*
++ * parse event config string, return a list of event terms.
++ */
++int parse_events_terms(struct list_head *terms, const char *str)
 +{
-+	struct perf_pmu__alias *alias;
-+	char buf[256];
++	struct parse_events_data__terms data = {
++		.terms = NULL,
++	};
 +	int ret;
 +
-+	ret = fread(buf, 1, sizeof(buf), file);
-+	if (ret == 0)
-+		return -EINVAL;
-+	buf[ret] = 0;
-+
-+	alias = malloc(sizeof(*alias));
-+	if (!alias)
-+		return -ENOMEM;
-+
-+	INIT_LIST_HEAD(&alias->terms);
-+	ret = parse_events_terms(&alias->terms, buf);
-+	if (ret) {
-+		free(alias);
-+		return ret;
++	ret = parse_events__scanner(str, &data, PE_START_TERMS);
++	if (!ret) {
++		list_splice(data.terms, terms);
++		free(data.terms);
++		return 0;
 +	}
 +
-+	alias->name = strdup(name);
-+	list_add_tail(&alias->list, list);
-+	return 0;
-+}
-+
-+/*
-+ * Process all the sysfs attributes located under the directory
-+ * specified in 'dir' parameter.
-+ */
-+static int pmu_aliases_parse(char *dir, struct list_head *head)
-+{
-+	struct dirent *evt_ent;
-+	DIR *event_dir;
-+	int ret = 0;
-+
-+	event_dir = opendir(dir);
-+	if (!event_dir)
-+		return -EINVAL;
-+
-+	while (!ret && (evt_ent = readdir(event_dir))) {
-+		char path[PATH_MAX];
-+		char *name = evt_ent->d_name;
-+		FILE *file;
-+
-+		if (!strcmp(name, ".") || !strcmp(name, ".."))
-+			continue;
-+
-+		snprintf(path, PATH_MAX, "%s/%s", dir, name);
-+
-+		ret = -EINVAL;
-+		file = fopen(path, "r");
-+		if (!file)
-+			break;
-+		ret = perf_pmu__new_alias(head, name, file);
-+		fclose(file);
-+	}
-+
-+	closedir(event_dir);
++	parse_events__free_terms(data.terms);
 +	return ret;
 +}
 +
-+/*
-+ * Reading the pmu event aliases definition, which should be located at:
-+ * /sys/bus/event_source/devices/<dev>/events as sysfs group attributes.
-+ */
-+static int pmu_aliases(char *name, struct list_head *head)
-+{
-+	struct stat st;
-+	char path[PATH_MAX];
-+	const char *sysfs;
-+
-+	sysfs = sysfs_find_mountpoint();
-+	if (!sysfs)
-+		return -1;
-+
-+	snprintf(path, PATH_MAX,
-+		 "%s/bus/event_source/devices/%s/events", sysfs, name);
-+
-+	if (stat(path, &st) < 0)
-+		return -1;
-+
-+	if (pmu_aliases_parse(path, head))
-+		return -1;
-+
-+	return 0;
-+}
-+
-+static int pmu_alias_terms(struct perf_pmu__alias *alias,
-+			   struct list_head *terms)
-+{
-+	struct parse_events__term *term, *clone;
-+	LIST_HEAD(list);
-+	int ret;
-+
-+	list_for_each_entry(term, &alias->terms, list) {
-+		ret = parse_events__term_clone(&clone, term);
-+		if (ret) {
-+			parse_events__free_terms(&list);
-+			return ret;
-+		}
-+		list_add_tail(&clone->list, &list);
-+	}
-+	list_splice(&list, terms);
-+	return 0;
-+}
-+
- /*
-  * Reading/parsing the default pmu type value, which should be
-  * located at:
-@@ -118,6 +226,7 @@ static struct perf_pmu *pmu_lookup(char *name)
+ int parse_events(struct perf_evlist *evlist, const char *str, int unset __used)
  {
- 	struct perf_pmu *pmu;
- 	LIST_HEAD(format);
-+	LIST_HEAD(aliases);
- 	__u32 type;
+ 	struct parse_events_data__events data = {
+@@ -819,7 +841,7 @@ int parse_events(struct perf_evlist *evlist, const char *str, int unset __used)
+ 	};
+ 	int ret;
  
- 	/*
-@@ -135,8 +244,12 @@ static struct perf_pmu *pmu_lookup(char *name)
- 	if (!pmu)
- 		return NULL;
+-	ret = parse_events__scanner(str, &data);
++	ret = parse_events__scanner(str, &data, PE_START_EVENTS);
+ 	if (!ret) {
+ 		int entries = data.idx - evlist->nr_entries;
+ 		perf_evlist__splice_list_tail(evlist, &data.list, entries);
+diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
+index fa2b19b..9896eda 100644
+--- a/tools/perf/util/parse-events.h
++++ b/tools/perf/util/parse-events.h
+@@ -33,6 +33,7 @@ extern int parse_events_option(const struct option *opt, const char *str,
+ 			       int unset);
+ extern int parse_events(struct perf_evlist *evlist, const char *str,
+ 			int unset);
++extern int parse_events_terms(struct list_head *terms, const char *str);
+ extern int parse_filter(const struct option *opt, const char *str, int unset);
  
-+	pmu_aliases(name, &aliases);
-+
- 	INIT_LIST_HEAD(&pmu->format);
-+	INIT_LIST_HEAD(&pmu->aliases);
- 	list_splice(&format, &pmu->format);
-+	list_splice(&aliases, &pmu->aliases);
- 	pmu->name = strdup(name);
- 	pmu->type = type;
- 	return pmu;
-@@ -279,6 +392,59 @@ int perf_pmu__config(struct perf_pmu *pmu, struct perf_event_attr *attr,
- 	return pmu_config(&pmu->format, attr, head_terms);
- }
- 
-+static struct perf_pmu__alias *pmu_find_alias(struct perf_pmu *pmu,
-+					      struct parse_events__term *term)
-+{
-+	struct perf_pmu__alias *alias;
-+	char *name;
-+
-+	if (parse_events__is_hardcoded_term(term))
-+		return NULL;
-+
-+	if (term->type_val == PARSE_EVENTS__TERM_TYPE_NUM) {
-+		if (term->val.num != 1)
-+			return NULL;
-+		if (pmu_find_format(&pmu->format, term->config))
-+			return NULL;
-+		name = term->config;
-+	} else if (term->type_val == PARSE_EVENTS__TERM_TYPE_STR) {
-+		if (strcasecmp(term->config, "event"))
-+			return NULL;
-+		name = term->val.str;
-+	} else {
-+		return NULL;
-+	}
-+
-+	list_for_each_entry(alias, &pmu->aliases, list) {
-+		if (!strcasecmp(alias->name, name))
-+			return alias;
-+	}
-+	return NULL;
-+}
-+
-+/*
-+ * Find alias in the terms list and replace it with the terms
-+ * defined for the alias
-+ */
-+int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms)
-+{
-+	struct parse_events__term *term, *h;
-+	struct perf_pmu__alias *alias;
-+	int ret;
-+
-+	list_for_each_entry_safe(term, h, head_terms, list) {
-+		alias = pmu_find_alias(pmu, term);
-+		if (!alias)
-+			continue;
-+		ret = pmu_alias_terms(alias, &term->list);
-+		if (ret)
-+			return ret;
-+		list_del(&term->list);
-+		free(term);
-+	}
-+	return 0;
-+}
-+
- int perf_pmu__new_format(struct list_head *list, char *name,
- 			 int config, unsigned long *bits)
- {
-diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
-index 68c0db9..535f2c5 100644
---- a/tools/perf/util/pmu.h
-+++ b/tools/perf/util/pmu.h
-@@ -19,17 +19,26 @@ struct perf_pmu__format {
- 	struct list_head list;
+ #define EVENTS_HELP_MAX (128*1024)
+@@ -68,6 +69,10 @@ struct parse_events_data__events {
+ 	int idx;
  };
  
-+struct perf_pmu__alias {
-+	char *name;
-+	struct list_head terms;
-+	struct list_head list;
++struct parse_events_data__terms {
++	struct list_head *terms;
 +};
 +
- struct perf_pmu {
- 	char *name;
- 	__u32 type;
- 	struct list_head format;
-+	struct list_head aliases;
- 	struct list_head list;
- };
+ int parse_events__is_hardcoded_term(struct parse_events__term *term);
+ int parse_events__term_num(struct parse_events__term **_term,
+ 			   int type_term, char *config, long num);
+diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
+index 329794e..488362e 100644
+--- a/tools/perf/util/parse-events.l
++++ b/tools/perf/util/parse-events.l
+@@ -79,6 +79,19 @@ modifier_event	[ukhpGH]{1,8}
+ modifier_bp	[rwx]
  
- struct perf_pmu *perf_pmu__find(char *name);
- int perf_pmu__config(struct perf_pmu *pmu, struct perf_event_attr *attr,
- 		     struct list_head *head_terms);
--
-+int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms);
-+struct list_head *perf_pmu__alias(struct perf_pmu *pmu,
-+				struct list_head *head_terms);
- int perf_pmu_wrap(void);
- void perf_pmu_error(struct list_head *list, char *name, char const *msg);
+ %%
++
++%{
++	{
++		int start_token;
++
++		start_token = (int) parse_events_get_extra(yyscanner);
++		if (start_token) {
++			parse_events_set_extra(NULL, yyscanner);
++			return start_token;
++		}
++         }
++%}
++
+ cpu-cycles|cycles				{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES); }
+ stalled-cycles-frontend|idle-cycles-frontend	{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_STALLED_CYCLES_FRONTEND); }
+ stalled-cycles-backend|idle-cycles-backend	{ return sym(yyscanner, PERF_TYPE_HARDWARE, PERF_COUNT_HW_STALLED_CYCLES_BACKEND); }
+diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
+index 2a93d5c..9525c45 100644
+--- a/tools/perf/util/parse-events.y
++++ b/tools/perf/util/parse-events.y
+@@ -25,6 +25,7 @@ do { \
  
+ %}
+ 
++%token PE_START_EVENTS PE_START_TERMS
+ %token PE_VALUE PE_VALUE_SYM PE_RAW PE_TERM
+ %token PE_NAME
+ %token PE_MODIFIER_EVENT PE_MODIFIER_BP
+@@ -60,6 +61,11 @@ do { \
+ }
+ %%
+ 
++start:
++PE_START_EVENTS events
++|
++PE_START_TERMS  terms
++
+ events:
+ events ',' event | event
+ 
+@@ -209,6 +215,12 @@ PE_RAW
+ 	$$ = list;
+ }
+ 
++terms: event_config
++{
++	struct parse_events_data__terms *data = _data;
++	data->terms = $1;
++}
++
+ event_config:
+ event_config ',' event_term
+ {
 -- 
 1.7.6.5
 
