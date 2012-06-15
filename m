@@ -1,105 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756913Ab2FOAAV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 20:00:21 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:46571 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756895Ab2FOAAP (ORCPT
+	id S1756970Ab2FOAEa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 20:04:30 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46836 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756870Ab2FOAE1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 20:00:15 -0400
-Message-Id: <20120614235626.284238506@linuxfoundation.org>
-User-Agent: quilt/0.60-20.1
-Date: Thu, 14 Jun 2012 16:56:50 -0700
+	Thu, 14 Jun 2012 20:04:27 -0400
+Date: Thu, 14 Jun 2012 17:04:22 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 27/42] cfg80211: fix interface combinations check
-In-Reply-To: <20120614235636.GA5275@kroah.com>
+To: Kay Sievers <kay@vrfy.org>
+Cc: Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
+        Tony Luck <tony.luck@intel.com>, John Stultz <john.stultz@linaro.org>
+Subject: Re: [PATCH RESEND 1/3] printk: convert byte-buffer to
+ variable-length record buffer
+Message-ID: <20120615000422.GA8591@kroah.com>
+References: <1336004953.4240.9.camel@mop>
+ <20120526111143.GA32304@lizard>
+ <CAPXgP10--rmzK8joBSrs3Abk7uuamJTDBbvrm6W6w_xODqZVtg@mail.gmail.com>
+ <1338307620.886.21.camel@mop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1338307620.886.21.camel@mop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Tue, May 29, 2012 at 06:07:00PM +0200, Kay Sievers wrote:
+> On Sun, 2012-05-27 at 16:23 +0200, Kay Sievers wrote:
+> > On Sat, May 26, 2012 at 1:11 PM, Anton Vorontsov <anton.vorontsov@linaro.org> wrote:
+> 
+> > > So, starting from this patch every kmsg_dump user is getting the
+> > > binary stuff, which is barely usable, and breaks a longstanding
+> > > user-visible ABIs (e.g. mtdoops, oops dumping into nvram on PowerPC,
+> > > and ramoops of course).
+> > 
+> > These cases export their own format, it's just that the dump routines
+> > could copy the buffer in only two steps (beginning and end of the ring
+> > buffer), while in the future their code would need an update to copy
+> > it record for record now. The exported format in the dump does not
+> > necessarily need to change.
+> 
+> Here is an untested patch, which should restore the old plain text
+> export format of the kmsg buffer. I adds an iterator to the dumper
+> routine, which can be used by the dumper to properly copy the data out
+> of the kmsg record buffer. All current users are converted in the same
+> patch.
+> 
+> Any feedback/help in testing/updating and getting this thing into a
+> mergeable state would be greatly appreciated.
+> 
+> There are two versions of the iterator:
+> kmsg_dump_get_line() starts with the oldest records. With the next call,
+> the iterator retrieves one line after the other. Useful for cases like
+> printing to a console or any other stream device.
+> 
+> kmsg_dump_get_buffer() fills a buffer with as many of the youngest
+> records as fit into it. With the next call, the iterator retrieves the
+> next block of older messages. Useful to dump the entire buffer with one
+> shot, or chunk the data into blocks and store them, with the youngest
+> messages being the most important, retrieved first.
+> 
+> Unlike the old logic, there are no stale pointers handed out to the
+> dumper, if case things get overwritten while a dump is in progress,
+> lines are not truncated or overwritten.
 
-------------------
+As no one seems to have responded, care to resend this with a
+signed-off-by so I can queue it up for 3.6?  If people complain, it can
+still go to 3.5, but given that no one is saying anything, I guess no
+one cares...
 
-From: Johannes Berg <johannes.berg@intel.com>
+thanks,
 
-commit 463454b5dbd8dbab6e2fc6c557329e5b811b9c32 upstream.
-
-If a given interface combination doesn't contain
-a required interface type then we missed checking
-that and erroneously allowed it even though iface
-type wasn't there at all. Add a check that makes
-sure that all interface types are accounted for.
-
-Reported-by: Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- net/wireless/util.c |   19 ++++++++++++++++++-
- 1 file changed, 18 insertions(+), 1 deletion(-)
-
---- a/net/wireless/util.c
-+++ b/net/wireless/util.c
-@@ -936,6 +936,7 @@ int cfg80211_can_change_interface(struct
- 				  enum nl80211_iftype iftype)
- {
- 	struct wireless_dev *wdev_iter;
-+	u32 used_iftypes = BIT(iftype);
- 	int num[NUM_NL80211_IFTYPES];
- 	int total = 1;
- 	int i, j;
-@@ -969,12 +970,14 @@ int cfg80211_can_change_interface(struct
- 
- 		num[wdev_iter->iftype]++;
- 		total++;
-+		used_iftypes |= BIT(wdev_iter->iftype);
- 	}
- 	mutex_unlock(&rdev->devlist_mtx);
- 
- 	for (i = 0; i < rdev->wiphy.n_iface_combinations; i++) {
- 		const struct ieee80211_iface_combination *c;
- 		struct ieee80211_iface_limit *limits;
-+		u32 all_iftypes = 0;
- 
- 		c = &rdev->wiphy.iface_combinations[i];
- 
-@@ -989,6 +992,7 @@ int cfg80211_can_change_interface(struct
- 			if (rdev->wiphy.software_iftypes & BIT(iftype))
- 				continue;
- 			for (j = 0; j < c->n_limits; j++) {
-+				all_iftypes |= limits[j].types;
- 				if (!(limits[j].types & BIT(iftype)))
- 					continue;
- 				if (limits[j].max < num[iftype])
-@@ -996,7 +1000,20 @@ int cfg80211_can_change_interface(struct
- 				limits[j].max -= num[iftype];
- 			}
- 		}
--		/* yay, it fits */
-+
-+		/*
-+		 * Finally check that all iftypes that we're currently
-+		 * using are actually part of this combination. If they
-+		 * aren't then we can't use this combination and have
-+		 * to continue to the next.
-+		 */
-+		if ((all_iftypes & used_iftypes) != used_iftypes)
-+			goto cont;
-+
-+		/*
-+		 * This combination covered all interface types and
-+		 * supported the requested numbers, so we're good.
-+		 */
- 		kfree(limits);
- 		return 0;
-  cont:
-
-
+greg k-h
