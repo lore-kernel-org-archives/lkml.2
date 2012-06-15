@@ -1,73 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751637Ab2FOFyr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 01:54:47 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:53085 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751379Ab2FOFyq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 01:54:46 -0400
-X-AuditID: cbfee61b-b7fcc6d000003a7a-99-4fdace2436e5
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
-        linaro-mm-sig@lists.linaro.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: [GIT PULL] DMA-mapping fixes for v3.5-rc3
-Date: Fri, 15 Jun 2012 07:54:24 +0200
-Message-id: <1339739664-31736-1-git-send-email-m.szyprowski@samsung.com>
-X-Mailer: git-send-email 1.7.10
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNJMWRmVeSWpSXmKPExsVy+t9jQV2Vc7f8Dfb/0rG4vGsOmwOjx+dN
-	cgGMUVw2Kak5mWWpRfp2CVwZu/4dZSy4zlnx+sMztgbGs+xdjJwcEgImEg83PmCEsMUkLtxb
-	z9bFyMUhJDCdUWLn8zOsEM5qJonJz3Yxg1SxCRhKdL3tYgOxRQSMJD6/uAJWxCzQxSTx7cIc
-	sFHCQIlVDQ1gNouAqkTfxGtg63gFPCSu3z/HBLFOXuLp/T62CYzcCxgZVjGKphYkFxQnpeca
-	6RUn5haX5qXrJefnbmIEe/GZ9A7GVQ0WhxgFOBiVeHgtNtzyF2JNLCuuzD3EKMHBrCTCKxQF
-	FOJNSaysSi3Kjy8qzUktPsQozcGiJM7bZH3BX0ggPbEkNTs1tSC1CCbLxMEp1cBoI95eZyL2
-	hkPuvZLQGnvB6g1vjzt1npR2Lgg6fEvr3hHfiM8lVxqPP+yJv7fW22H1QaeY8K1Kj36c66jN
-	2tb0qpNxbcZOBuGm5p+nvfm8jPI0hepmu2tqn50mnPZE4e+CXaoRC1+z7Gu2UuxLD7mY8WTK
-	N8YDW32k+/6f3eY/s/jJ7q3976cqsRRnJBpqMRcVJwIAqVs8ct4BAAA=
-X-TM-AS-MML: No
+	id S1752386Ab2FOFzM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 01:55:12 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:46819 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751827Ab2FOFzG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 01:55:06 -0400
+From: Joe Perches <joe@perches.com>
+To: linux-wireless@vger.kernel.org, b43-dev@lists.infradead.org,
+        libertas-dev@lists.infradead.org
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH wireless-next 00/20] Use pr_<level>
+Date: Thu, 14 Jun 2012 22:53:40 -0700
+Message-Id: <cover.1339739415.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.8.111.gad25c.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Update logging style
 
-I would like to ask for pulling a set of minor fixes for dma-mapping
-code (ARM and x86) required for Contiguous Memory Allocator (CMA)
-patches merged in v3.5-rc1.
+Joe Perches (20):
+  adm8211: Use pr_<level>
+  airo_cs: Use pr_<level>
+  at76c50x-usb: Use pr_<level>
+  atmel: atmel_cs: Use pr_<level>
+  b43: Use pr_<level>
+  b43legacy: Use pr_<level>
+  hostap: Use pr_<level>
+  ipw2x00: Use pr_<level>
+  libertas: Use pr_<level>
+  libertas_tf: Use pr_<level>
+  mac80211_hwsim: Use pr_<level>
+  mwl8k: Use pr_<level>
+  orinoco: Use pr_<level>
+  p54: Use pr_<level>
+  prism54: Use pr_<level>
+  ray_cs: Use pr_<level>
+  rtl818x: Use pr_<level>
+  ti: Use pr_<level>
+  wl3501_cs: Use pr_<level>
+  zd_usb: Use pr_<level>
 
-The following changes since commit cfaf025112d3856637ff34a767ef785ef5cf2ca9:
+ drivers/net/wireless/adm8211.c                |   67 ++--
+ drivers/net/wireless/airo_cs.c                |    4 +-
+ drivers/net/wireless/at76c50x-usb.c           |   15 +-
+ drivers/net/wireless/atmel.c                  |   71 ++--
+ drivers/net/wireless/atmel_cs.c               |    4 +-
+ drivers/net/wireless/b43/debugfs.c            |   20 +-
+ drivers/net/wireless/b43/main.c               |   41 +--
+ drivers/net/wireless/b43/pcmcia.c             |    5 +-
+ drivers/net/wireless/b43legacy/b43legacy.h    |   14 +-
+ drivers/net/wireless/b43legacy/debugfs.c      |    4 +-
+ drivers/net/wireless/b43legacy/dma.c          |    2 +
+ drivers/net/wireless/b43legacy/main.c         |   16 +-
+ drivers/net/wireless/b43legacy/phy.c          |    2 +
+ drivers/net/wireless/b43legacy/radio.c        |    5 +-
+ drivers/net/wireless/b43legacy/xmit.c         |    2 +
+ drivers/net/wireless/hostap/hostap_80211_rx.c |  125 ++++----
+ drivers/net/wireless/hostap/hostap_80211_tx.c |   78 ++---
+ drivers/net/wireless/hostap/hostap_ap.c       |   77 ++---
+ drivers/net/wireless/hostap/hostap_cs.c       |   53 ++--
+ drivers/net/wireless/hostap/hostap_download.c |  143 ++++-----
+ drivers/net/wireless/hostap/hostap_hw.c       |  438 +++++++++++--------------
+ drivers/net/wireless/hostap/hostap_info.c     |   36 +-
+ drivers/net/wireless/hostap/hostap_ioctl.c    |  175 +++++------
+ drivers/net/wireless/hostap/hostap_main.c     |  142 ++++-----
+ drivers/net/wireless/hostap/hostap_pci.c      |   26 +-
+ drivers/net/wireless/hostap/hostap_plx.c      |   69 ++---
+ drivers/net/wireless/hostap/hostap_proc.c     |   18 +-
+ drivers/net/wireless/hostap/hostap_wlan.h     |   16 +-
+ drivers/net/wireless/ipw2x00/ipw2100.c        |  225 +++++--------
+ drivers/net/wireless/ipw2x00/ipw2100.h        |    4 +-
+ drivers/net/wireless/ipw2x00/ipw2200.c        |   54 ++--
+ drivers/net/wireless/ipw2x00/ipw2200.h        |   36 ++-
+ drivers/net/wireless/ipw2x00/libipw.h         |   24 +-
+ drivers/net/wireless/ipw2x00/libipw_geo.c     |    3 +
+ drivers/net/wireless/ipw2x00/libipw_module.c  |    9 +-
+ drivers/net/wireless/ipw2x00/libipw_rx.c      |   49 ++--
+ drivers/net/wireless/ipw2x00/libipw_tx.c      |   11 +-
+ drivers/net/wireless/ipw2x00/libipw_wx.c      |    4 +-
+ drivers/net/wireless/libertas/cmd.c           |    2 +
+ drivers/net/wireless/libertas/cmdresp.c       |    2 +
+ drivers/net/wireless/libertas/if_cs.c         |   14 +-
+ drivers/net/wireless/libertas/if_sdio.c       |    6 +-
+ drivers/net/wireless/libertas/if_spi.c        |    4 +-
+ drivers/net/wireless/libertas/if_usb.c        |    4 +-
+ drivers/net/wireless/libertas/tx.c            |    3 +
+ drivers/net/wireless/libertas_tf/cmd.c        |   12 +-
+ drivers/net/wireless/libertas_tf/deb_defs.h   |  105 ++++--
+ drivers/net/wireless/libertas_tf/if_usb.c     |    2 +-
+ drivers/net/wireless/libertas_tf/main.c       |   14 +-
+ drivers/net/wireless/mac80211_hwsim.c         |   61 ++--
+ drivers/net/wireless/mwl8k.c                  |   53 ++--
+ drivers/net/wireless/orinoco/airport.c        |   28 +-
+ drivers/net/wireless/orinoco/cfg.c            |    9 +-
+ drivers/net/wireless/orinoco/hermes.c         |   71 ++--
+ drivers/net/wireless/orinoco/hw.c             |   79 ++---
+ drivers/net/wireless/orinoco/main.c           |  194 +++++------
+ drivers/net/wireless/orinoco/mic.c            |   13 +-
+ drivers/net/wireless/orinoco/orinoco.h        |   13 +-
+ drivers/net/wireless/orinoco/orinoco_cs.c     |   11 +-
+ drivers/net/wireless/orinoco/orinoco_nortel.c |   40 ++--
+ drivers/net/wireless/orinoco/orinoco_pci.c    |   23 +-
+ drivers/net/wireless/orinoco/orinoco_pci.h    |    6 +-
+ drivers/net/wireless/orinoco/orinoco_plx.c    |   40 ++--
+ drivers/net/wireless/orinoco/orinoco_tmd.c    |   25 +-
+ drivers/net/wireless/orinoco/orinoco_usb.c    |  145 ++++-----
+ drivers/net/wireless/orinoco/scan.c           |   16 +-
+ drivers/net/wireless/orinoco/spectrum_cs.c    |    6 +-
+ drivers/net/wireless/orinoco/wext.c           |   28 +-
+ drivers/net/wireless/p54/fwio.c               |    6 +-
+ drivers/net/wireless/p54/p54spi.c             |    4 +-
+ drivers/net/wireless/prism54/isl_ioctl.c      |   69 ++--
+ drivers/net/wireless/prism54/islpci_dev.c     |   57 ++--
+ drivers/net/wireless/prism54/islpci_eth.c     |   25 +-
+ drivers/net/wireless/prism54/islpci_hotplug.c |   34 +-
+ drivers/net/wireless/prism54/islpci_mgt.c     |   75 ++---
+ drivers/net/wireless/prism54/islpci_mgt.h     |    9 +-
+ drivers/net/wireless/prism54/oid_mgt.c        |   23 +-
+ drivers/net/wireless/ray_cs.c                 |  147 ++++-----
+ drivers/net/wireless/rtl818x/rtl8180/dev.c    |   35 +--
+ drivers/net/wireless/rtl818x/rtl8187/dev.c    |   15 +-
+ drivers/net/wireless/rtl818x/rtl8187/leds.c   |    6 +-
+ drivers/net/wireless/rtl818x/rtl8187/rfkill.c |    9 +-
+ drivers/net/wireless/ti/wl1251/acx.c          |  151 +++++-----
+ drivers/net/wireless/ti/wl1251/boot.c         |   51 ++--
+ drivers/net/wireless/ti/wl1251/cmd.c          |   76 +++---
+ drivers/net/wireless/ti/wl1251/init.c         |   16 +-
+ drivers/net/wireless/ti/wl1251/io.c           |   27 +-
+ drivers/net/wireless/ti/wl1251/main.c         |  103 +++---
+ drivers/net/wireless/ti/wl1251/ps.c           |   16 +-
+ drivers/net/wireless/ti/wl1251/rx.c           |    8 +-
+ drivers/net/wireless/ti/wl1251/sdio.c         |   20 +-
+ drivers/net/wireless/ti/wl1251/spi.c          |   20 +-
+ drivers/net/wireless/ti/wl1251/tx.c           |   21 +-
+ drivers/net/wireless/ti/wl1251/wl1251.h       |   20 +-
+ drivers/net/wireless/ti/wl12xx/acx.c          |    2 +-
+ drivers/net/wireless/ti/wl12xx/cmd.c          |   18 +-
+ drivers/net/wireless/ti/wl12xx/main.c         |   39 ++-
+ drivers/net/wireless/ti/wl18xx/acx.c          |   12 +-
+ drivers/net/wireless/ti/wl18xx/main.c         |   54 ++--
+ drivers/net/wireless/ti/wl18xx/tx.c           |   10 +-
+ drivers/net/wireless/ti/wlcore/acx.c          |  229 +++++++-------
+ drivers/net/wireless/ti/wlcore/boot.c         |   56 ++--
+ drivers/net/wireless/ti/wlcore/cmd.c          |  164 +++++-----
+ drivers/net/wireless/ti/wlcore/debug.h        |   22 +-
+ drivers/net/wireless/ti/wlcore/debugfs.c      |   42 ++--
+ drivers/net/wireless/ti/wlcore/event.c        |   16 +-
+ drivers/net/wireless/ti/wlcore/main.c         |  281 ++++++++--------
+ drivers/net/wireless/ti/wlcore/ps.c           |   34 +-
+ drivers/net/wireless/ti/wlcore/rx.c           |   33 +-
+ drivers/net/wireless/ti/wlcore/scan.c         |   68 ++--
+ drivers/net/wireless/ti/wlcore/sdio.c         |    3 +-
+ drivers/net/wireless/ti/wlcore/testmode.c     |   16 +-
+ drivers/net/wireless/ti/wlcore/tx.c           |   23 +-
+ drivers/net/wireless/wl3501_cs.c              |   80 +++---
+ drivers/net/wireless/zd1211rw/zd_usb.c        |   13 +-
+ 115 files changed, 2579 insertions(+), 2795 deletions(-)
 
-  Linux 3.5-rc2 (2012-06-08 18:40:09 -0700)
-
-with the top-most commit c080e26edc3a2a3cdfa4c430c663ee1c3bbd8fae
-
-  x86: dma-mapping: fix broken allocation when dma_mask has been provided
-
-are available in the git repository at:
-  git://git.linaro.org/people/mszyprowski/linux-dma-mapping.git fixes-for-linus
-
-Marek Szyprowski (3):
-      ARM: mm: fix type of the arm_dma_limit global variable
-      ARM: dma-mapping: fix debug messages in dmabounce code
-      x86: dma-mapping: fix broken allocation when dma_mask has been provided
-
-Sachin Kamat (1):
-      ARM: dma-mapping: Add missing static storage class specifier
-
- arch/arm/common/dmabounce.c |   16 ++++++++--------
- arch/arm/mm/dma-mapping.c   |    4 ++--
- arch/arm/mm/init.c          |    2 +-
- arch/arm/mm/mm.h            |    2 +-
- arch/x86/kernel/pci-dma.c   |    3 ++-
- 5 files changed, 14 insertions(+), 13 deletions(-)
-
-Thanks!
-
-Best regards
-Marek Szyprowski
-Samsung Poland R&D Center
+-- 
+1.7.8.111.gad25c.dirty
 
