@@ -1,137 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756622Ab2FOKGX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 06:06:23 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:58942 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756247Ab2FOKGV (ORCPT
+	id S1751651Ab2FOKPS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 06:15:18 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:55771 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751127Ab2FOKPQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 06:06:21 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
-        rientjes@google.com, akpm@linux-foundation.org, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH -V9 11/15] hugetlb/cgroup: Add charge/uncharge routines for hugetlb cgroup
-In-Reply-To: <20120614092539.GI27397@tiehlicka.suse.cz>
-References: <1339583254-895-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1339583254-895-12-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20120614092539.GI27397@tiehlicka.suse.cz>
-User-Agent: Notmuch/0.13.2+35~g0ff57e7 (http://notmuchmail.org) Emacs/24.1.50.1 (x86_64-unknown-linux-gnu)
-Date: Fri, 15 Jun 2012 15:36:10 +0530
-Message-ID: <87k3z8nb3h.fsf@skywalker.in.ibm.com>
+	Fri, 15 Jun 2012 06:15:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-x-cbid: 12061423-5490-0000-0000-000001993D76
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CA+icZUURfHZwcrVxgy+co+crKFOOT+Pp_EMR9PRTr8vXYU-sEA@mail.gmail.com>
+References: <20120614114722.0fd16fb906b6a5503cfbc51a@canb.auug.org.au>
+	<20120614030606.GC27673@linux-sh.org>
+	<20120614034036.GE27673@linux-sh.org>
+	<20120615101407.369c754da872e18c854ab481@canb.auug.org.au>
+	<CA+icZUURfHZwcrVxgy+co+crKFOOT+Pp_EMR9PRTr8vXYU-sEA@mail.gmail.com>
+Date: Fri, 15 Jun 2012 12:15:15 +0200
+Message-ID: <CA+icZUUxEgdZ6iKz-eg9ztaxaJx_bmWDmuxpnqLXMYLbBO6cDQ@mail.gmail.com>
+Subject: Re: linux-next: build failure in Linus' tree
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Paul Mundt <lethal@linux-sh.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michal Hocko <mhocko@suse.cz> writes:
-
-> On Wed 13-06-12 15:57:30, Aneesh Kumar K.V wrote:
->> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
->> 
->> This patchset add the charge and uncharge routines for hugetlb cgroup.
->> We do cgroup charging in page alloc and uncharge in compound page
->> destructor. Assigning page's hugetlb cgroup is protected by hugetlb_lock.
->> 
->> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+On Fri, Jun 15, 2012 at 11:23 AM, Sedat Dilek
+<sedat.dilek@googlemail.com> wrote:
+> On Fri, Jun 15, 2012 at 2:14 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>> Hi Paul,
+>>
+>> On Thu, 14 Jun 2012 12:40:36 +0900 Paul Mundt <lethal@linux-sh.org> wrote:
+>>>
+>>> (adding Arnd to Cc, who I forgot to include previously)
+>>>
+>>> On Thu, Jun 14, 2012 at 12:06:06PM +0900, Paul Mundt wrote:
+>>> > On Thu, Jun 14, 2012 at 11:47:22AM +1000, Stephen Rothwell wrote:
+>>> > > While building Linus' tree, today's linux-next build (powerpc
+>>> > > ppc64_defconfig) failed like this:
+>>> > >
+>>> > > In file included from include/asm-generic/bug.h:5:0,
+>>> > >                  from arch/powerpc/include/asm/bug.h:127,
+>>> > >                  from arch/powerpc/kernel/head_64.S:31:
+>>> > > include/linux/kernel.h:44:0: warning: "ALIGN" redefined [enabled by default]
+>>> > > include/linux/linkage.h:57:0: note: this is the location of the previous definition
+>>> > > include/linux/sysinfo.h: Assembler messages:
+>>> > > include/linux/sysinfo.h:7: Error: Unrecognized opcode: `struct'
+>>> > > include/linux/sysinfo.h:8: Error: Unrecognized opcode: `__kernel_long_t'
+>>> > >
+>>> > > And it went downhill from there :-(
+>>> > >
+>>> > > Caused by commit 3777808873b0 ("bug.h: need linux/kernel.h for
+>>> > > TAINT_WARN") which, unfortunately never made it into linux-next.
+>>> > >
+>>> > > I have reverted that commit for today (which presumably means that sh
+>>> > > builds will be broken again).
+>>> >
+>>> > I'm still unsure as to the best way to fix this, and there was no
+>>> > response to the original mail I posted about it either:
+>>> >
+>>> > http://marc.info/?l=linux-kernel&m=133879579014853&w=2
+>>> >
+>>> > I'll fetch a powerpc cross compiler and see if I can figure out what went
+>>> > wrong.
+>>> >
+>>> Ok, it's because the asm-generic/bug.h __ASSEMBLY__ guarding is
+>>> completely bogus. This should hopefully fix it once and for all.
+>>> Sorry for the trouble.
+>>>
+>>> Signed-off-by: Paul Mundt <lethal@linux-sh.org>
+>>
+>> Tested-by: Stephen Rothwell <sfr@canb.auug.org.au>
+>>
+>> Can you create a proper commit message and send this to Linus, please?  I
+>> have included it in my fixes tree in linux-next for today.
+>>
 >
-> Reviewed-by: Michal Hocko <mhocko@suse.cz>
->
-> One minor comment
-> [...]
->> +void hugetlb_cgroup_commit_charge(int idx, unsigned long nr_pages,
->> +				  struct hugetlb_cgroup *h_cg,
->> +				  struct page *page)
->> +{
->> +	if (hugetlb_cgroup_disabled() || !h_cg)
->> +		return;
->> +
->> +	spin_lock(&hugetlb_lock);
->> +	set_hugetlb_cgroup(page, h_cg);
->> +	spin_unlock(&hugetlb_lock);
->> +	return;
->> +}
->
-> I guess we can remove the lock here because nobody can see the page yet,
-> right?
+> Reference: commit 2a6f7f6bd7a9eb3c835c7e5a7d51b43675fb3881 ("fix
+> bug.h's inclusion of kernel.h")
 >
 
-We need that to make sure when we remove cgroup we find correct page
-hugetlb cgroup values. But i guess we have a bug here. How about the
-below ?
+Hope people don't treat this as nitpicking:
+I looked through the last commits to the involved file, all commits
+are labeled with "bug.h: ...", so follow the "rule"...
 
-NOTE: We also need another patch to update active list during soft
-offline. I will send that in reply.
+"bug.h: Fix inclusion of kernel.h"
 
-commit e4c3fd3cc0f0faa30ea283cb48ba478a5c0d3e74
-Author: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Date:   Fri Jun 15 14:42:27 2012 +0530
-
-    hugetlb/cgroup: Assign the page hugetlb cgroup when we move the page to active list.
-    
-    page's hugetlb cgroup assign and moving to active list should happen with
-    hugetlb_lock held. Otherwise when we remove the hugetlb cgroup we would
-    iterate the active list and will find page with NULL hugetlb cgroup values.
-    
-    Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index ee4da3b..b90dfb4 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -1146,9 +1146,12 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
- 	}
- 	spin_lock(&hugetlb_lock);
- 	page = dequeue_huge_page_vma(h, vma, addr, avoid_reserve);
--	spin_unlock(&hugetlb_lock);
--
--	if (!page) {
-+	if (page) {
-+		/* update page cgroup details */
-+		hugetlb_cgroup_commit_charge(idx, pages_per_huge_page(h), h_cg, page);
-+		spin_unlock(&hugetlb_lock);
-+	} else {
-+		spin_unlock(&hugetlb_lock);
- 		page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
- 		if (!page) {
- 			hugetlb_cgroup_uncharge_cgroup(idx,
-@@ -1159,14 +1162,13 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
- 		}
- 		spin_lock(&hugetlb_lock);
- 		list_move(&page->lru, &h->hugepage_activelist);
-+		hugetlb_cgroup_commit_charge(idx, pages_per_huge_page(h), h_cg, page);
- 		spin_unlock(&hugetlb_lock);
- 	}
- 
- 	set_page_private(page, (unsigned long)spool);
- 
- 	vma_commit_reservation(h, vma, addr);
--	/* update page cgroup details */
--	hugetlb_cgroup_commit_charge(idx, pages_per_huge_page(h), h_cg, page);
- 	return page;
- }
- 
-diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
-index 8e7ca0a..d4f3f7b 100644
---- a/mm/hugetlb_cgroup.c
-+++ b/mm/hugetlb_cgroup.c
-@@ -218,6 +218,7 @@ done:
- 	return ret;
- }
- 
-+/* Should be called with hugetlb_lock held */
- void hugetlb_cgroup_commit_charge(int idx, unsigned long nr_pages,
- 				  struct hugetlb_cgroup *h_cg,
- 				  struct page *page)
-@@ -225,9 +226,7 @@ void hugetlb_cgroup_commit_charge(int idx, unsigned long nr_pages,
- 	if (hugetlb_cgroup_disabled() || !h_cg)
- 		return;
- 
--	spin_lock(&hugetlb_lock);
- 	set_hugetlb_cgroup(page, h_cg);
--	spin_unlock(&hugetlb_lock);
- 	return;
- }
- 
-
+> - Sedat -
+>
+> [1] http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=commitdiff;h=2a6f7f6bd7a9eb3c835c7e5a7d51b43675fb3881
+>
+>> --
+>> Cheers,
+>> Stephen Rothwell                    sfr@canb.auug.org.au
