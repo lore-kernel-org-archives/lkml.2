@@ -1,116 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932212Ab2FOPSV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 11:18:21 -0400
-Received: from mail-lb0-f202.google.com ([209.85.217.202]:41552 "EHLO
-	mail-lb0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932111Ab2FOPSU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 11:18:20 -0400
-From: Greg Thelen <gthelen@google.com>
-To: Sha Zhengju <handai.szj@gmail.com>
-Cc: linux-mm@kvack.org, cgroups@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, yinghan@google.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Sha Zhengju <handai.szj@taobao.com>
-Subject: Re: [PATCH 1/2] memcg: remove MEMCG_NR_FILE_MAPPED
-References: <1339761611-29033-1-git-send-email-handai.szj@taobao.com>
-Date: Fri, 15 Jun 2012 08:18:17 -0700
-Message-ID: <xr937gv8vc1y.fsf@gthelen.mtv.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	id S932220Ab2FOPUQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 11:20:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36192 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932111Ab2FOPUN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 11:20:13 -0400
+Date: Fri, 15 Jun 2012 11:20:07 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: Richard Cochran <richardcochran@gmail.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Fedora Kernel Team <kernel-team@fedoraproject.org>
+Subject: missing leap second patches in stable.
+Message-ID: <20120615152007.GA11793@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Richard Cochran <richardcochran@gmail.com>,
+	John Stultz <john.stultz@linaro.org>,
+	Fedora Kernel Team <kernel-team@fedoraproject.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 15 2012, Sha Zhengju wrote:
+Should these be in -stable ? Looks like all the other recent changes
+in that area are present.  With the leap second just two weeks away,
+it seems like they should be.
 
-> While doing memcg page stat accounting, there's no need to use MEMCG_NR_FILE_MAPPED
-> as an intermediate, we can use MEM_CGROUP_STAT_FILE_MAPPED directly.
->
-> Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
-> ---
->  include/linux/memcontrol.h |   22 ++++++++++++++++------
->  mm/memcontrol.c            |   25 +------------------------
->  mm/rmap.c                  |    4 ++--
->  3 files changed, 19 insertions(+), 32 deletions(-)
+Looks like 6b43ae8a619d17c4935c3320d2ef9e92bdeed05d is in 3.4-stable,
+(haven't checked earlier -stable trees).
 
-I assume this patch is relative to v3.4.
+Were there any other patches I missed ?
 
-> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> index f94efd2..a337c2e 100644
-> --- a/include/linux/memcontrol.h
-> +++ b/include/linux/memcontrol.h
-> @@ -27,9 +27,19 @@ struct page_cgroup;
->  struct page;
->  struct mm_struct;
->  
-> -/* Stats that can be updated by kernel. */
-> -enum mem_cgroup_page_stat_item {
-> -	MEMCG_NR_FILE_MAPPED, /* # of pages charged as file rss */
-> +/*
-> + * Statistics for memory cgroup.
-> + */
-> +enum mem_cgroup_stat_index {
-> +	/*
-> +	 * For MEM_CONTAINER_TYPE_ALL, usage = pagecache + rss.
-> +	 */
-> +	MEM_CGROUP_STAT_CACHE, 	   /* # of pages charged as cache */
-> +	MEM_CGROUP_STAT_RSS,	   /* # of pages charged as anon rss */
-> +	MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
-> +	MEM_CGROUP_STAT_SWAPOUT, /* # of pages, swapped out */
-> +	MEM_CGROUP_STAT_DATA, /* end of data requires synchronization */
-> +	MEM_CGROUP_STAT_NSTATS,
->  };
+	Dave
 
-This has unfortunate side effect of letting code outside of memcontrol.c
-manipulate memcg internally managed statistics
-(e.g. MEM_CGROUP_STAT_CACHE) with mem_cgroup_{dec,inc}_page_stat.  I
-think that your change is fine.  The complexity and presumed performance
-overhead of the extra layer of indirection was not worth it.
 
->  struct mem_cgroup_reclaim_cookie {
-> @@ -170,17 +180,17 @@ static inline void mem_cgroup_end_update_page_stat(struct page *page,
->  }
->  
->  void mem_cgroup_update_page_stat(struct page *page,
-> -				 enum mem_cgroup_page_stat_item idx,
-> +				 enum mem_cgroup_stat_index idx,
->  				 int val);
->  
->  static inline void mem_cgroup_inc_page_stat(struct page *page,
-> -					    enum mem_cgroup_page_stat_item idx)
-> +					    enum mem_cgroup_stat_index idx)
->  {
->  	mem_cgroup_update_page_stat(page, idx, 1);
->  }
->  
->  static inline void mem_cgroup_dec_page_stat(struct page *page,
-> -					    enum mem_cgroup_page_stat_item idx)
-> +					    enum mem_cgroup_stat_index idx)
->  {
->  	mem_cgroup_update_page_stat(page, idx, -1);
->  }
+commit dd48d708ff3e917f6d6b6c2b696c3f18c019feed
+Author: Richard Cochran <richardcochran@gmail.com>
+Date:   Thu Apr 26 14:11:32 2012 +0200
 
-You missed two more uses of enum mem_cgroup_page_stat_item in
-memcontrol.h.
+    ntp: Correct TAI offset during leap second
+    
+    When repeating a UTC time value during a leap second (when the UTC
+    time should be 23:59:60), the TAI timescale should not stop. The kernel
+    NTP code increments the TAI offset one second too late. This patch fixes
+    the issue by incrementing the offset during the leap second itself.
+    
+    Signed-off-by: Richard Cochran <richardcochran@gmail.com>
+    Signed-off-by: John Stultz <john.stultz@linaro.org>
 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index a337c2e..08475b9 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -390,12 +390,12 @@ static inline void mem_cgroup_end_update_page_stat(struct page *page,
- }
+diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
+index f03fd83..e8c8671 100644
+--- a/kernel/time/ntp.c
++++ b/kernel/time/ntp.c
+@@ -412,6 +412,7 @@ int second_overflow(unsigned long secs)
+                if (secs % 86400 == 0) {
+                        leap = -1;
+                        time_state = TIME_OOP;
++                       time_tai++;
+                        printk(KERN_NOTICE
+                                "Clock: inserting leap second 23:59:60 UTC\n");
+                }
+@@ -426,7 +427,6 @@ int second_overflow(unsigned long secs)
+                }
+                break;
+        case TIME_OOP:
+-               time_tai++;
+                time_state = TIME_WAIT;
+                break;
+
+
+
+commit fad0c66c4bb836d57a5f125ecd38bed653ca863a
+Author: John Stultz <john.stultz@linaro.org>
+Date:   Wed May 30 10:54:57 2012 -0700
+
+    timekeeping: Fix CLOCK_MONOTONIC inconsistency during leapsecond
+    
+    Commit 6b43ae8a61 (ntp: Fix leap-second hrtimer livelock) broke the
+    leapsecond update of CLOCK_MONOTONIC. The missing leapsecond update to
+    wall_to_monotonic causes discontinuities in CLOCK_MONOTONIC.
+    
+    Adjust wall_to_monotonic when NTP inserted a leapsecond.
+    
+    Reported-by: Richard Cochran <richardcochran@gmail.com>
+    Signed-off-by: John Stultz <john.stultz@linaro.org>
+    Tested-by: Richard Cochran <richardcochran@gmail.com>
+    Cc: stable@kernel.org
+    Link: http://lkml.kernel.org/r/1338400497-12420-1-git-send-email-john.stultz@linaro.org
+    Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 6e46cac..6f46a00 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -962,6 +962,7 @@ static cycle_t logarithmic_accumulation(cycle_t offset, int shift)
+                timekeeper.xtime.tv_sec++;
+                leap = second_overflow(timekeeper.xtime.tv_sec);
+                timekeeper.xtime.tv_sec += leap;
++               timekeeper.wall_to_monotonic.tv_sec -= leap;
+        }
  
- static inline void mem_cgroup_inc_page_stat(struct page *page,
--					    enum mem_cgroup_page_stat_item idx)
-+					    enum mem_cgroup_stat_index idx)
- {
- }
+        /* Accumulate raw time */
+@@ -1077,6 +1078,7 @@ static void update_wall_time(void)
+                timekeeper.xtime.tv_sec++;
+                leap = second_overflow(timekeeper.xtime.tv_sec);
+                timekeeper.xtime.tv_sec += leap;
++               timekeeper.wall_to_monotonic.tv_sec -= leap;
+        }
  
- static inline void mem_cgroup_dec_page_stat(struct page *page,
--					    enum mem_cgroup_page_stat_item idx)
-+					    enum mem_cgroup_stat_index idx)
- {
- }
+        timekeeping_update(false);
+
