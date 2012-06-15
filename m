@@ -1,72 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753905Ab2FOAGe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 20:06:34 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56620 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756814Ab2FNX7o (ORCPT
+	id S1756816Ab2FOAGk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 20:06:40 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:9135 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756337Ab2FOAGh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 19:59:44 -0400
-Message-Id: <20120614235625.526099208@linuxfoundation.org>
-User-Agent: quilt/0.60-20.1
-Date: Thu, 14 Jun 2012 16:56:41 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Meenakshi Venkataraman <meenakshi.venkataraman@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 18/42] iwlwifi: dont mess up the SCD when removing a key
-In-Reply-To: <20120614235636.GA5275@kroah.com>
+	Thu, 14 Jun 2012 20:06:37 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ak0JAI572k95LAcV/2dsb2JhbABFtA0EgSuBCIIYAQEFOhwjEAgDGC4UJQMhE4gKuhkUix5JhGhgA5Ugj32Ccg
+Date: Fri, 15 Jun 2012 10:06:33 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Wanpeng Li <liwp.linux@gmail.com>, linux-kernel@vger.kernel.org,
+        Gavin Shan <shangw@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2] writeback: avoid race when update bandwidth
+Message-ID: <20120615000633.GB25389@dastard>
+References: <1339501561-4570-1-git-send-email-liwp.linux@gmail.com>
+ <20120612115219.GA17348@localhost>
+ <20120613035920.GV22848@dastard>
+ <20120613121434.GA937@localhost>
+ <20120614020559.GB7339@dastard>
+ <20120614140006.GB15553@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120614140006.GB15553@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Thu, Jun 14, 2012 at 10:00:06PM +0800, Fengguang Wu wrote:
+> On Thu, Jun 14, 2012 at 12:05:59PM +1000, Dave Chinner wrote:
+> > On Wed, Jun 13, 2012 at 08:14:34PM +0800, Fengguang Wu wrote:
+> I wonder if anyone has a simple script for sorting lock_stat output
+> based on that (and perhaps other selectable) criterion? It should be
+> possible to write on myself, but still.. ;-)
+> 
+> Default lock_stat output is sorted by absolute number of contentions.
 
-------------------
+No that I know of. The default is pretty sane, because a highly
+contended lock that is causing performance problems will always show
+up near the top. If it's not in the top 10, then it's usually not
+worth worrying about until you've dealt with the those above it....
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Cheers,
 
-commit d6ee27eb13beab94056e0de52d81220058ca2297 upstream.
-
-When we remove a key, we put a key index which was supposed
-to tell the fw that we are actually removing the key. But
-instead the fw took that index as a valid index and messed
-up the SRAM of the device.
-
-This memory corruption on the device mangled the data of
-the SCD. The impact on the user is that SCD queue 2 got
-stuck after having removed keys.
-The message is the log that was printed is:
-
-Queue 2 stuck for 10000ms
-
-This doesn't seem to fix the higher queues that get stuck
-from time to time.
-
-Reviewed-by: Meenakshi Venkataraman <meenakshi.venkataraman@intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/net/wireless/iwlwifi/iwl-agn-sta.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/drivers/net/wireless/iwlwifi/iwl-agn-sta.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-agn-sta.c
-@@ -1222,7 +1222,7 @@ int iwl_remove_dynamic_key(struct iwl_pr
- 		key_flags |= STA_KEY_MULTICAST_MSK;
- 
- 	sta_cmd.key.key_flags = key_flags;
--	sta_cmd.key.key_offset = WEP_INVALID_OFFSET;
-+	sta_cmd.key.key_offset = keyconf->hw_key_idx;
- 	sta_cmd.sta.modify_mask = STA_MODIFY_KEY_MASK;
- 	sta_cmd.mode = STA_CONTROL_MODIFY_MSK;
- 
-
-
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
