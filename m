@@ -1,73 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756714Ab2FOKum (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 06:50:42 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:48339 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756546Ab2FOKuk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 06:50:40 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
-        rientjes@google.com, akpm@linux-foundation.org, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH -V9 14/15] hugetlb/cgroup: migrate hugetlb cgroup info from oldpage to new page during migration
-In-Reply-To: <20120614100454.GL27397@tiehlicka.suse.cz>
-References: <1339583254-895-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1339583254-895-15-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20120614100454.GL27397@tiehlicka.suse.cz>
-User-Agent: Notmuch/0.13.2+35~g0ff57e7 (http://notmuchmail.org) Emacs/24.1.50.1 (x86_64-unknown-linux-gnu)
-Date: Fri, 15 Jun 2012 16:20:31 +0530
-Message-ID: <87haucn91k.fsf@skywalker.in.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-x-cbid: 12061500-1396-0000-0000-000001656A8E
+	id S1756722Ab2FOKvG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 06:51:06 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37259 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756546Ab2FOKvE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 06:51:04 -0400
+From: Jan Kara <jack@suse.cz>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org,
+        Jan Kara <jack@suse.cz>, Paolo Bonzini <pbonzini@redhat.com>,
+        Jens Axboe <axboe@kernel.dk>,
+        James Bottomley <JBottomley@parallels.com>
+Subject: [PATCH] scsi: Silence unnecessary warnings about ioctl to partition
+Date: Fri, 15 Jun 2012 12:50:57 +0200
+Message-Id: <1339757457-15646-1-git-send-email-jack@suse.cz>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michal Hocko <mhocko@suse.cz> writes:
+Sometimes, warnings about ioctls to partition happen often enough that they
+form majority of the warnings in the kernel log and users complain. In some
+cases warnings are about ioctls such as SG_IO so it's not good to get rid of
+the warnings completely as they can ease debugging of userspace problems
+when ioctl is refused.
 
-> On Wed 13-06-12 15:57:33, Aneesh Kumar K.V wrote:
->> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
->> 
->> With HugeTLB pages, hugetlb cgroup is uncharged in compound page destructor.  Since
->> we are holding a hugepage reference, we can be sure that old page won't
->> get uncharged till the last put_page().
->> 
->> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
->
-> Reviewed-by: Michal Hocko <mhocko@suse.cz>
->
-> One question below
-> [...]
->> +void hugetlb_cgroup_migrate(struct page *oldhpage, struct page *newhpage)
->> +{
->> +	struct hugetlb_cgroup *h_cg;
->> +
->> +	if (hugetlb_cgroup_disabled())
->> +		return;
->> +
->> +	VM_BUG_ON(!PageHuge(oldhpage));
->> +	spin_lock(&hugetlb_lock);
->> +	h_cg = hugetlb_cgroup_from_page(oldhpage);
->> +	set_hugetlb_cgroup(oldhpage, NULL);
->> +	cgroup_exclude_rmdir(&h_cg->css);
->> +
->> +	/* move the h_cg details to new cgroup */
->> +	set_hugetlb_cgroup(newhpage, h_cg);
->> +	spin_unlock(&hugetlb_lock);
->> +	cgroup_release_and_wakeup_rmdir(&h_cg->css);
->> +	return;
->> +}
->> +
->
-> The changelog says that the old page won't get uncharged - which means
-> that the the cgroup cannot go away (even if we raced with the move
-> parent, hugetlb_lock makes sure we either see old or new cgroup) so why
-> do we need to play with css ref. counting?
+Since I have seen warnings from lots of commands, including some proprietary
+userspace applications, I don't think disallowing the ioctls for processes
+with CAP_SYS_RAWIO will happen in the near future if ever. So lets just
+stop warning for processes with CAP_SYS_RAWIO for which ioctl is allowed.
 
-Ok hugetlb_lock should be sufficient here i guess. I will send a patch
-on top to remove the exclude_rmdir and release_and_wakeup_rmdir 
+CC: Paolo Bonzini <pbonzini@redhat.com>
+CC: Jens Axboe <axboe@kernel.dk>
+CC: James Bottomley <JBottomley@parallels.com>
+CC: linux-scsi@vger.kernel.org
+Acked-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+---
+ block/scsi_ioctl.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
--aneesh
+ Resending rebased on 3.5-rc2 with and Ack from Paolo.
+
+diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
+index 260fa80..9a87daa 100644
+--- a/block/scsi_ioctl.c
++++ b/block/scsi_ioctl.c
+@@ -721,11 +721,14 @@ int scsi_verify_blk_ioctl(struct block_device *bd, unsigned int cmd)
+ 		break;
+ 	}
+ 
++	if (capable(CAP_SYS_RAWIO))
++		return 0;
++
+ 	/* In particular, rule out all resets and host-specific ioctls.  */
+ 	printk_ratelimited(KERN_WARNING
+ 			   "%s: sending ioctl %x to a partition!\n", current->comm, cmd);
+ 
+-	return capable(CAP_SYS_RAWIO) ? 0 : -ENOIOCTLCMD;
++	return -ENOIOCTLCMD;
+ }
+ EXPORT_SYMBOL(scsi_verify_blk_ioctl);
+ 
+-- 
+1.7.1
 
