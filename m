@@ -1,68 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755195Ab2FOIyO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 04:54:14 -0400
-Received: from mga11.intel.com ([192.55.52.93]:61010 "EHLO mga11.intel.com"
+	id S1755467Ab2FOI4r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 04:56:47 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57494 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753203Ab2FOIyM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 04:54:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="165999851"
-Date: Fri, 15 Jun 2012 16:54:05 +0800
-From: Fengguang Wu <wfg@linux.intel.com>
-To: Josh Triplett <josh@freedesktop.org>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Christopher Li <sparse@chrisli.org>,
-        Linus Torvalds <torvalds@ppc970.osdl.org>
-Subject: Re: automated warning notifications
-Message-ID: <20120615085405.GB13933@localhost>
-References: <20120614172523.GB4400@mwanda>
- <20120615014835.GA5695@localhost>
- <20120615071222.GZ13539@mwanda>
- <20120615075810.GA13206@localhost>
- <20120615083100.GA29692@leaf>
+	id S1752544Ab2FOI4p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 04:56:45 -0400
+Date: Fri, 15 Jun 2012 10:46:44 +0200
+From: Jan Kara <jack@suse.cz>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Jan Kara <jack@suse.cz>, Jens Axboe <axboe@kernel.dk>,
+        LKML <linux-kernel@vger.kernel.org>,
+        James Bottomley <JBottomley@parallels.com>, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH] scsi: Silence unnecessary warnings about ioctl to
+ partition
+Message-ID: <20120615084644.GA3479@quack.suse.cz>
+References: <1335953452-10460-1-git-send-email-jack@suse.cz>
+ <4FDAEED4.20601@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120615083100.GA29692@leaf>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4FDAEED4.20601@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 15, 2012 at 01:31:00AM -0700, Josh Triplett wrote:
-> On Fri, Jun 15, 2012 at 03:58:10PM +0800, Fengguang Wu wrote:
-> > On Fri, Jun 15, 2012 at 10:12:22AM +0300, Dan Carpenter wrote:
-> > > On Fri, Jun 15, 2012 at 09:48:35AM +0800, Fengguang Wu wrote:
-> > > > In an average working day, 1-2 build errors will be caught and email
-> > > > notified. I guess there will be more sparse warnings if it's turned
-> > > > on.
-> > > > 
-> > > > Perhaps the sparse warnings can be enabled, but only sent to the patch
-> > > > author. If you and anyone else are interested, they could be sent to
-> > > > some mailing list, too. One thing I'm sure is, we probably never want
-> > > > to disturb the busy maintainers with these warnings.
-> > > 
-> > > Eventually I think we will want to set up a mailing list for this or
-> > > we will start sending duplicate messages.
+On Fri 15-06-12 10:14:12, Paolo Bonzini wrote:
+> Il 02/05/2012 12:10, Jan Kara ha scritto:
+> > Sometimes, warnings about ioctls to partition happen often enough that they
+> > form majority of the warnings in the kernel log and users complain. In some
+> > cases warnings are about ioctls such as SG_IO so it's not good to get rid of
+> > the warnings completely as they can ease debugging of userspace problems
+> > when ioctl is refused.
 > > 
-> > Fair enough. How can we setup the mailing list? Once the list up, it
-> > would be trivial for me to send sparse warnings out there.
+> > Since I have seen warnings from lots of commands, including some proprietary
+> > userspace applications, I don't think disallowing the ioctls for processes
+> > with CAP_SYS_RAWIO will happen in the near future if ever. So lets just
+> > stop warning for processes with CAP_SYS_RAWIO for which ioctl is allowed.
+> > 
+> > CC: Paolo Bonzini <pbonzini@redhat.com>
+> > CC: Jens Axboe <axboe@kernel.dk>
+> > CC: James Bottomley <JBottomley@parallels.com>
+> > CC: linux-scsi@vger.kernel.org
+> > Signed-off-by: Jan Kara <jack@suse.cz>
+> > ---
+> >  block/scsi_ioctl.c |    5 ++++-
+> >  1 files changed, 4 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
+> > index 260fa80..9a87daa 100644
+> > --- a/block/scsi_ioctl.c
+> > +++ b/block/scsi_ioctl.c
+> > @@ -721,11 +721,14 @@ int scsi_verify_blk_ioctl(struct block_device *bd, unsigned int cmd)
+> >  		break;
+> >  	}
+> >  
+> > +	if (capable(CAP_SYS_RAWIO))
+> > +		return 0;
+> > +
+> >  	/* In particular, rule out all resets and host-specific ioctls.  */
+> >  	printk_ratelimited(KERN_WARNING
+> >  			   "%s: sending ioctl %x to a partition!\n", current->comm, cmd);
+> >  
+> > -	return capable(CAP_SYS_RAWIO) ? 0 : -ENOIOCTLCMD;
+> > +	return -ENOIOCTLCMD;
+> >  }
+> >  EXPORT_SYMBOL(scsi_verify_blk_ioctl);
+> >  
+> > 
 > 
-> Rather than a mailing list, how about something like test.kernel.org for
-> sparse warnings?
+> Ping?
+  Good that you bring this up :). I've asked the customer about whether
+they can find out the particular SG_IO ioctl Veritas issues but never heard
+back. So will we merge my patch? I remember you gave it reluctant ack once
+;).
 
-It's much more trivial to send new build/sparse errors/warnings to a
-list than to setup a website :-) As the errors come and go every day,
-and they are mostly unstructured, it seems the mailing list would be a
-more natural fit. People can search for known errors there and/or CC
-fixes there.
-
-Anyway, we just sent an request for creating
-
-        automated-warnings@vger.kernel.org
-
-Thanks,
-Fengguang
+									Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
