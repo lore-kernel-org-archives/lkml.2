@@ -1,57 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755851Ab2FOJZB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 05:25:01 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:43071 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751908Ab2FOJY7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 05:24:59 -0400
-Date: Fri, 15 Jun 2012 10:24:51 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: kosaki.motohiro@gmail.com
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        akpm@linux-foundation.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH] mm: clear pages_scanned only if draining a pcp adds
- pages to the buddy allocator again
-Message-ID: <20120615092451.GA20303@csn.ul.ie>
-References: <1339690570-7471-1-git-send-email-kosaki.motohiro@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1339690570-7471-1-git-send-email-kosaki.motohiro@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756093Ab2FOJ0n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 05:26:43 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:53356 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753075Ab2FOJ0m convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 05:26:42 -0400
+Message-ID: <1339752384.2559.44.camel@twins>
+Subject: Re: [PATCH 1/6] perf, x86: Making hardware events tranlations sysfs
+ available
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Stephane Eranian <eranian@google.com>
+Cc: Jiri Olsa <jolsa@redhat.com>, acme@redhat.com, mingo@elte.hu,
+        paulus@samba.org, cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org
+Date: Fri, 15 Jun 2012 11:26:24 +0200
+In-Reply-To: <CABPqkBRWyU2Y8B0d8n5fdm+OzGASoihRQmLnY3cUqRcV9MUwpA@mail.gmail.com>
+References: <1339706321-8802-1-git-send-email-jolsa@redhat.com>
+	 <1339706321-8802-2-git-send-email-jolsa@redhat.com>
+	 <1339708192.2559.40.camel@twins>
+	 <CABPqkBTjr2YiHYPT=32G-pqh6ca7BrtxcA8Nv-xFeG-eZrGtVA@mail.gmail.com>
+	 <20120615072904.GA1767@m.brq.redhat.com>
+	 <CABPqkBT4GPTp3k6Ko-t4Q5Kgz54O5yBZ7L+9M6Uc660rxTtrAA@mail.gmail.com>
+	 <20120615074311.GA2650@m.brq.redhat.com>
+	 <CABPqkBRWyU2Y8B0d8n5fdm+OzGASoihRQmLnY3cUqRcV9MUwpA@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 14, 2012 at 12:16:10PM -0400, kosaki.motohiro@gmail.com wrote:
-> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> 
-> commit 2ff754fa8f (mm: clear pages_scanned only if draining a pcp adds pages
-> to the buddy allocator again) fixed one free_pcppages_bulk() misuse. But two
-> another miuse still exist.
-> 
-> This patch fixes it.
-> 
-> Cc: David Rientjes <rientjes@google.com>
-> Cc: Mel Gorman <mel@csn.ul.ie>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Minchan Kim <minchan.kim@gmail.com>
-> Cc: Wu Fengguang <fengguang.wu@intel.com>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+On Fri, 2012-06-15 at 09:46 +0200, Stephane Eranian wrote:
+> The kernel part should export the event with any of the terms that it exports
+> thru sysfs for that CPU. 
 
-Acked-by: Mel Gorman <mel@csn.ul.ie>
-
--- 
-Mel Gorman
-SUSE Labs
+ack
