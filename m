@@ -1,99 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757640Ab2FOVXx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 17:23:53 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44927 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757255Ab2FOVXw (ORCPT
+	id S932108Ab2FOVZp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 17:25:45 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:42015 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754195Ab2FOVZn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 17:23:52 -0400
-Message-ID: <4FDBA7CC.6060407@vflare.org>
-Date: Fri, 15 Jun 2012 14:23:24 -0700
-From: Nitin Gupta <ngupta@vflare.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	Fri, 15 Jun 2012 17:25:43 -0400
+X-Originating-IP: 217.70.178.129
+X-Originating-IP: 50.43.46.74
+Date: Fri, 15 Jun 2012 14:25:27 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, patches@linaro.org
+Subject: Re: [PATCH tip/core/rcu 13/14] rcu: Split RCU core processing out of
+ __call_rcu()
+Message-ID: <20120615212527.GQ31184@leaf>
+References: <20120615201256.GA26120@linux.vnet.ibm.com>
+ <1339791195-26389-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1339791195-26389-13-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Minchan Kim <minchan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Tejun Heo <tj@kernel.org>, David Howells <dhowells@redhat.com>,
-        x86@kernel.org, Nick Piggin <npiggin@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>
-Subject: Re: [PATCH v2 3/3] x86: Support local_flush_tlb_kernel_range
-References: <1337133919-4182-1-git-send-email-minchan@kernel.org> <1337133919-4182-3-git-send-email-minchan@kernel.org> <4FB4B29C.4010908@kernel.org> <1337266310.4281.30.camel@twins> <4FDB5107.3000308@linux.vnet.ibm.com> <7e925563-082b-468f-a7d8-829e819eeac0@default> <4FDB66B7.2010803@vflare.org> <10ea9d19-bd24-400c-8131-49f0b4e9e5ae@default> <4FDB8808.9010508@linux.vnet.ibm.com> <9c6c8ae0-0212-402d-a906-0d0c61e5e058@default> <4FDB92CF.1070603@vflare.org> <4ffbc3e8-900b-4669-b6ab-e8c066f28c63@default>
-In-Reply-To: <4ffbc3e8-900b-4669-b6ab-e8c066f28c63@default>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339791195-26389-13-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/15/2012 01:13 PM, Dan Magenheimer wrote:
->> From: Nitin Gupta [mailto:ngupta@vflare.org]
->> Subject: Re: [PATCH v2 3/3] x86: Support local_flush_tlb_kernel_range
->>
->> On 06/15/2012 12:39 PM, Dan Magenheimer wrote:
->>>> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
->>>>> The decompression path calls lzo1x directly and it would be
->>>>> a huge pain to make lzo1x smart about page boundaries.  BUT
->>>>> since we know that the decompressed result will always fit
->>>>> into a page (actually exactly a page), you COULD do an extra
->>>>> copy to the end of the target page (using the same smart-
->>>>> about-page-boundaries copying code from above) and then do
->>>>> in-place decompression, knowing that the decompression will
->>>>> not cross a page boundary.  So, with the extra copy, the "pair
->>>>> mapping" can be avoided for decompression as well.
->>>>
->>>> This is an interesting thought.
->>>>
->>>> But this does result in a copy in the decompression (i.e. page fault)
->>>> path, where right now, it is copy free.  The compressed data is
->>>> decompressed directly from its zsmalloc allocation to the page allocated
->>>> in the fault path.
->>>
->>> The page fault occurs as soon as the lzo1x compression code starts anyway,
->>> as do all the cache faults... both just occur earlier, so the only
->>> additional cost is the actual cpu instructions to move the sequence of
->>> (compressed) bytes from the zsmalloc-allocated area to the end
->>> of the target page.
->>>
->>> TLB operations can be very expensive, not to mention (as the
->>> subject of this thread attests) non-portable.
->>
->> Even if you go for copying chunks followed by decompression, it still
->> requires two kmaps and kunmaps. Each of these require one local TLB
->> invlpg. So, a total of 2 local maps + unmaps even with this approach.
+On Fri, Jun 15, 2012 at 01:13:14PM -0700, Paul E. McKenney wrote:
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 > 
-> That may be true for i386, but on a modern (non-highmem) machine those
-> kmaps/kunmaps are free and "pair mappings" in the TLB are still expensive
-> and not very portable.  Doesn't make sense to me to design for better
-> performance on highmem and poorer performance on non-highmem.
+> The __call_rcu() function is a bit overweight, so this commit splits
+> it into actual enqueuing of and accounting for the callback (__call_rcu())
+> and associated RCU-core processing (__call_rcu_core()).
+> 
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+
+>  kernel/rcutree.c |   55 ++++++++++++++++++++++++++++++++++++++++++++++++-----
+>  1 files changed, 49 insertions(+), 6 deletions(-)
+> 
+> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> index 9419ebf..6940a81 100644
+> --- a/kernel/rcutree.c
+> +++ b/kernel/rcutree.c
+> @@ -1858,9 +1858,11 @@ static void invoke_rcu_core(void)
+>  	raise_softirq(RCU_SOFTIRQ);
+>  }
 >  
-
-True, but it seem hard to believe that mapping+unmappig+two local TLB
-invlpg's will be more costly than copying, on average, PAGE_SIZE/2 data.
-
-Anyways, I just looked up the LZO documentation and it supposedly allows
-in place decompression (hopefully we didn't mess up this feature during
-kernel port). Considering cache effects, this may really make copying
-overhead much less than expected.  Additionally, in case we go for
-copying approach, we can further simplify compaction since any client
-can never directly reference pool memory.
-
-
->> The only additional requirement of zsmalloc is that it requires two
->> mappings which are virtually contiguous. The cost is the same in both
->> approaches but the current zsmalloc approach presents a much cleaner
->> interface.
+> -static void
+> -__call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu),
+> -	   struct rcu_state *rsp, bool lazy)
+> +/*
+> + * Handle any core-RCU processing required by a call_rcu() invocation.
+> + */
+> +static void __call_rcu_core(struct rcu_state *rsp, struct rcu_data *rdp,
+> +			    struct rcu_head *head, unsigned long flags)
+>  {
+>  	unsigned long flags;
+>  	struct rcu_data *rdp;
+> @@ -1905,10 +1907,8 @@ __call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu),
+>  		invoke_rcu_core();
+>  
+>  	/* If interrupts were disabled or CPU offline, don't invoke RCU core. */
+> -	if (irqs_disabled_flags(flags) || cpu_is_offline(smp_processor_id())) {
+> -		local_irq_restore(flags);
+> +	if (irqs_disabled_flags(flags) || cpu_is_offline(smp_processor_id()))
+>  		return;
+> -	}
+>  
+>  	/*
+>  	 * Force the grace period if too many callbacks or too long waiting.
+> @@ -1941,6 +1941,49 @@ __call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu),
+>  		}
+>  	} else if (ULONG_CMP_LT(ACCESS_ONCE(rsp->jiffies_force_qs), jiffies))
+>  		force_quiescent_state(rsp, 1);
+> +}
+> +
+> +static void
+> +__call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu),
+> +	   struct rcu_state *rsp, bool lazy)
+> +{
+> +	unsigned long flags;
+> +	struct rcu_data *rdp;
+> +
+> +	WARN_ON_ONCE((unsigned long)head & 0x3); /* Misaligned rcu_head! */
+> +	debug_rcu_head_queue(head);
+> +	head->func = func;
+> +	head->next = NULL;
+> +
+> +	smp_mb(); /* Ensure RCU update seen before callback registry. */
+> +
+> +	/*
+> +	 * Opportunistically note grace-period endings and beginnings.
+> +	 * Note that we might see a beginning right after we see an
+> +	 * end, but never vice versa, since this CPU has to pass through
+> +	 * a quiescent state betweentimes.
+> +	 */
+> +	local_irq_save(flags);
+> +	rdp = this_cpu_ptr(rsp->rda);
+> +
+> +	/* Add the callback to our list. */
+> +	ACCESS_ONCE(rdp->qlen)++;
+> +	if (lazy)
+> +		rdp->qlen_lazy++;
+> +	else
+> +		rcu_idle_count_callbacks_posted();
+> +	smp_mb();  /* Count before adding callback for rcu_barrier(). */
+> +	*rdp->nxttail[RCU_NEXT_TAIL] = head;
+> +	rdp->nxttail[RCU_NEXT_TAIL] = &head->next;
+> +
+> +	if (__is_kfree_rcu_offset((unsigned long)func))
+> +		trace_rcu_kfree_callback(rsp->name, head, (unsigned long)func,
+> +					 rdp->qlen_lazy, rdp->qlen);
+> +	else
+> +		trace_rcu_callback(rsp->name, head, rdp->qlen_lazy, rdp->qlen);
+> +
+> +	/* Go handle any RCU core processing required. */
+> +	__call_rcu_core(rsp, rdp, head, flags);
+>  	local_irq_restore(flags);
+>  }
+>  
+> -- 
+> 1.7.8
 > 
-> OK, it's your code and I'm just making a suggestion. I will shut up now ;-)
-> 
-
-I'm always glad to hear your opinions and was just trying to discuss the
-points you raised. I apologize if I sounded rude.
-
-Thanks,
-Nitin
