@@ -1,82 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755467Ab2FOI4r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 04:56:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57494 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752544Ab2FOI4p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 04:56:45 -0400
-Date: Fri, 15 Jun 2012 10:46:44 +0200
-From: Jan Kara <jack@suse.cz>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Jan Kara <jack@suse.cz>, Jens Axboe <axboe@kernel.dk>,
-        LKML <linux-kernel@vger.kernel.org>,
-        James Bottomley <JBottomley@parallels.com>, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH] scsi: Silence unnecessary warnings about ioctl to
- partition
-Message-ID: <20120615084644.GA3479@quack.suse.cz>
-References: <1335953452-10460-1-git-send-email-jack@suse.cz>
- <4FDAEED4.20601@redhat.com>
+	id S1755469Ab2FOJCV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 05:02:21 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:57239 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754570Ab2FOJCT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 05:02:19 -0400
+Message-ID: <4FDAFA17.6050502@linaro.org>
+Date: Fri, 15 Jun 2012 10:02:15 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FDAEED4.20601@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, arnd@arndb.de, grant.likely@secretlab.ca,
+        linux-i2c@vger.kernel.org
+Subject: Re: [PATCH 1/3] i2c: Add Device Tree support to the Nomadik I2C driver
+References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org> <1339428307-3850-10-git-send-email-lee.jones@linaro.org> <CACRpkdaMDbH4NkiHRLAfbJZ_j4QXbwg94bvaWsdYRPH+dSfc8Q@mail.gmail.com> <4FD8BAD2.50703@linaro.org> <CACRpkdZFi34nChnMEo6yik67zk9owZLk-6zcdP7mmOXyLz8uqQ@mail.gmail.com>
+In-Reply-To: <CACRpkdZFi34nChnMEo6yik67zk9owZLk-6zcdP7mmOXyLz8uqQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 15-06-12 10:14:12, Paolo Bonzini wrote:
-> Il 02/05/2012 12:10, Jan Kara ha scritto:
-> > Sometimes, warnings about ioctls to partition happen often enough that they
-> > form majority of the warnings in the kernel log and users complain. In some
-> > cases warnings are about ioctls such as SG_IO so it's not good to get rid of
-> > the warnings completely as they can ease debugging of userspace problems
-> > when ioctl is refused.
-> > 
-> > Since I have seen warnings from lots of commands, including some proprietary
-> > userspace applications, I don't think disallowing the ioctls for processes
-> > with CAP_SYS_RAWIO will happen in the near future if ever. So lets just
-> > stop warning for processes with CAP_SYS_RAWIO for which ioctl is allowed.
-> > 
-> > CC: Paolo Bonzini <pbonzini@redhat.com>
-> > CC: Jens Axboe <axboe@kernel.dk>
-> > CC: James Bottomley <JBottomley@parallels.com>
-> > CC: linux-scsi@vger.kernel.org
-> > Signed-off-by: Jan Kara <jack@suse.cz>
-> > ---
-> >  block/scsi_ioctl.c |    5 ++++-
-> >  1 files changed, 4 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
-> > index 260fa80..9a87daa 100644
-> > --- a/block/scsi_ioctl.c
-> > +++ b/block/scsi_ioctl.c
-> > @@ -721,11 +721,14 @@ int scsi_verify_blk_ioctl(struct block_device *bd, unsigned int cmd)
-> >  		break;
-> >  	}
-> >  
-> > +	if (capable(CAP_SYS_RAWIO))
-> > +		return 0;
-> > +
-> >  	/* In particular, rule out all resets and host-specific ioctls.  */
-> >  	printk_ratelimited(KERN_WARNING
-> >  			   "%s: sending ioctl %x to a partition!\n", current->comm, cmd);
-> >  
-> > -	return capable(CAP_SYS_RAWIO) ? 0 : -ENOIOCTLCMD;
-> > +	return -ENOIOCTLCMD;
-> >  }
-> >  EXPORT_SYMBOL(scsi_verify_blk_ioctl);
-> >  
-> > 
-> 
-> Ping?
-  Good that you bring this up :). I've asked the customer about whether
-they can find out the particular SG_IO ioctl Veritas issues but never heard
-back. So will we merge my patch? I remember you gave it reluctant ack once
-;).
+From: Lee Jones <lee.jones@linaro.org>
+Date: Tue, 17 Apr 2012 16:04:13 +0100
+Subject: [PATCH 1/1] i2c: Add Device Tree support to the Nomadik I2C driver
 
-									Honza
+Here we apply the bindings required for successful Device Tree
+probing of the i2c-nomadik driver. We also apply a fall-back
+configuration in case either one is not provided, or a required
+element is missing from the one supplied.
+
+Cc: linux-i2c@vger.kernel.org
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/i2c/busses/i2c-nomadik.c |   82 +++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 80 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/i2c/busses/i2c-nomadik.c b/drivers/i2c/busses/i2c-nomadik.c
+index a92440d..58e8114 100644
+--- a/drivers/i2c/busses/i2c-nomadik.c
++++ b/drivers/i2c/busses/i2c-nomadik.c
+@@ -23,6 +23,7 @@
+ #include <linux/io.h>
+ #include <linux/regulator/consumer.h>
+ #include <linux/pm_runtime.h>
++#include <linux/of.h>
+ 
+ #include <plat/i2c.h>
+ 
+@@ -899,15 +900,86 @@ static const struct i2c_algorithm nmk_i2c_algo = {
+ 	.functionality	= nmk_i2c_functionality
+ };
+ 
++static struct nmk_i2c_controller u8500_i2c = {
++	/*
++	 * Slave data setup time; 250ns, 100ns, and 10ns, which
++	 * is 14, 6 and 2 respectively for a 48Mhz i2c clock.
++	 */
++	.slsu           = 0xe,
++	.tft            = 1,      /* Tx FIFO threshold */
++	.rft            = 8,      /* Rx FIFO threshold */
++	.clk_freq       = 100000, /* std. mode operation */
++	.timeout        = 200,    /* Slave response timeout(ms) */
++	.sm             = I2C_FREQ_MODE_FAST,
++};
++
++static int __devinit
++nmk_i2c_of_probe(struct device_node *np, struct nmk_i2c_controller *pdata)
++{
++	of_property_read_u32(np, "clock-frequency", (u32*)&pdata->clk_freq);
++	if (!pdata->clk_freq) {
++		pr_warn("%s: Clock frequency not found\n", np->full_name);
++		return -EINVAL;
++	}
++
++	of_property_read_u32(np, "stericsson,slsu", (u32*)&pdata->slsu);
++	if (!pdata->slsu) {
++		pr_warn("%s: Data line delay not found\n", np->full_name);
++		return -EINVAL;
++	}
++
++	of_property_read_u32(np, "stericsson,tft", (u32*)&pdata->tft);
++	if (!pdata->tft) {
++		pr_warn("%s: Tx FIFO threshold not found\n", np->full_name);
++		return -EINVAL;
++	}
++
++	of_property_read_u32(np, "stericsson,rft", (u32*)&pdata->rft);
++	if (!pdata->rft) {
++		pr_warn("%s: Rx FIFO threshold not found\n", np->full_name);
++		return -EINVAL;
++	}
++
++	of_property_read_u32(np, "stericsson,timeout", (u32*)&pdata->timeout);
++	if (!pdata->timeout) {
++		pr_warn("%s: Timeout not found\n", np->full_name);
++		return -EINVAL;
++	}
++
++	if (of_get_property(np, "stericsson,i2c_freq_mode_fast", NULL))
++		pdata->sm = I2C_FREQ_MODE_FAST;
++	else
++		pdata->sm = I2C_FREQ_MODE_STANDARD;
++
++	return 0;
++}
++
+ static int __devinit nmk_i2c_probe(struct platform_device *pdev)
+ {
+ 	int ret = 0;
+ 	struct resource *res;
+-	struct nmk_i2c_controller *pdata =
+-			pdev->dev.platform_data;
++	struct nmk_i2c_controller *pdata = pdev->dev.platform_data;
++	struct device_node *np = pdev->dev.of_node;
+ 	struct nmk_i2c_dev	*dev;
+ 	struct i2c_adapter *adap;
+ 
++	if (np) {
++		if (!pdata) {
++			pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
++			if (!pdata) {
++				ret = -ENOMEM;
++				goto err_no_mem;
++			}
++		}
++		ret = nmk_i2c_of_probe(np, pdata);
++		if (ret)
++			kfree(pdata);
++	}
++
++	if (!pdata)
++		/* No i2c configuration found, using the default. */
++		pdata = &u8500_i2c;
++
+ 	dev = kzalloc(sizeof(struct nmk_i2c_dev), GFP_KERNEL);
+ 	if (!dev) {
+ 		dev_err(&pdev->dev, "cannot allocate memory\n");
+@@ -1038,11 +1110,17 @@ static int __devexit nmk_i2c_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++static const struct of_device_id nmk_gpio_match[] = {
++	{ .compatible = "st,nomadik-i2c", },
++	{},
++};
++
+ static struct platform_driver nmk_i2c_driver = {
+ 	.driver = {
+ 		.owner = THIS_MODULE,
+ 		.name = DRIVER_NAME,
+ 		.pm = &nmk_i2c_pm,
++		.of_match_table = nmk_gpio_match,
+ 	},
+ 	.probe = nmk_i2c_probe,
+ 	.remove = __devexit_p(nmk_i2c_remove),
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.9.5
