@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932211Ab2FOVGw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 17:06:52 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:49094 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757971Ab2FOVGp (ORCPT
+	id S932135Ab2FOVGu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 17:06:50 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:60154 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757987Ab2FOVGo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 17:06:45 -0400
+	Fri, 15 Jun 2012 17:06:44 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -17,90 +17,87 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         fweisbec@gmail.com, patches@linaro.org,
         "Paul E. McKenney" <paul.mckenney@linaro.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 08/15] rcu: Move rcu_barrier_mutex to rcu_state structure
-Date: Fri, 15 Jun 2012 14:06:03 -0700
-Message-Id: <1339794370-28119-8-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 11/15] rcu: Add rcu_barrier() statistics to debugfs tracing
+Date: Fri, 15 Jun 2012 14:06:06 -0700
+Message-Id: <1339794370-28119-11-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
 In-Reply-To: <1339794370-28119-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20120615210550.GA27506@linux.vnet.ibm.com>
  <1339794370-28119-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12061521-3270-0000-0000-000007375E19
+x-cbid: 12061521-6148-0000-0000-000006BD874A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 
-In order to allow each RCU flavor to concurrently execute its
-rcu_barrier() function, it is necessary to move the relevant
-state to the rcu_state structure.  This commit therefore moves the
-rcu_barrier_mutex global variable to a new ->barrier_mutex field
-in the rcu_state structure.
+This commit adds an rcubarrier file to RCU's debugfs statistical tracing
+directory, providing diagnostic information on rcu_barrier().
 
 Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/rcutree.c |   11 +++--------
- kernel/rcutree.h |    1 +
- 2 files changed, 4 insertions(+), 8 deletions(-)
+ kernel/rcutree_trace.c |   39 +++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 39 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index a946437..93358d4 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -71,9 +71,8 @@ static struct lock_class_key rcu_node_class[RCU_NUM_LVLS];
- 	.onofflock = __RAW_SPIN_LOCK_UNLOCKED(&sname##_state.onofflock), \
- 	.orphan_nxttail = &sname##_state.orphan_nxtlist, \
- 	.orphan_donetail = &sname##_state.orphan_donelist, \
-+	.barrier_mutex = __MUTEX_INITIALIZER(sname##_state.barrier_mutex), \
- 	.fqslock = __RAW_SPIN_LOCK_UNLOCKED(&sname##_state.fqslock), \
--	.n_force_qs = 0, \
--	.n_force_qs_ngp = 0, \
- 	.name = #sname, \
- }
+diff --git a/kernel/rcutree_trace.c b/kernel/rcutree_trace.c
+index a3556a2..057408b 100644
+--- a/kernel/rcutree_trace.c
++++ b/kernel/rcutree_trace.c
+@@ -46,6 +46,40 @@
+ #define RCU_TREE_NONCORE
+ #include "rcutree.h"
  
-@@ -155,10 +154,6 @@ static void invoke_rcu_callbacks(struct rcu_state *rsp, struct rcu_data *rdp);
- unsigned long rcutorture_testseq;
- unsigned long rcutorture_vernum;
++static void print_rcubarrier(struct seq_file *m, struct rcu_state *rsp)
++{
++	seq_printf(m, "%c bcc: %d nbd: %lu\n",
++		   rsp->rcu_barrier_in_progress ? 'B' : '.',
++		   atomic_read(&rsp->barrier_cpu_count),
++		   rsp->n_barrier_done);
++}
++
++static int show_rcubarrier(struct seq_file *m, void *unused)
++{
++#ifdef CONFIG_TREE_PREEMPT_RCU
++	seq_puts(m, "rcu_preempt: ");
++	print_rcubarrier(m, &rcu_preempt_state);
++#endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
++	seq_puts(m, "rcu_sched: ");
++	print_rcubarrier(m, &rcu_sched_state);
++	seq_puts(m, "rcu_bh: ");
++	print_rcubarrier(m, &rcu_bh_state);
++	return 0;
++}
++
++static int rcubarrier_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, show_rcubarrier, NULL);
++}
++
++static const struct file_operations rcubarrier_fops = {
++	.owner = THIS_MODULE,
++	.open = rcubarrier_open,
++	.read = seq_read,
++	.llseek = seq_lseek,
++	.release = single_release,
++};
++
+ #ifdef CONFIG_RCU_BOOST
  
--/* State information for rcu_barrier() and friends. */
--
--static DEFINE_MUTEX(rcu_barrier_mutex);
--
- /*
-  * Return true if an RCU grace period is in progress.  The ACCESS_ONCE()s
-  * permit this function to be invoked without holding the root rcu_node
-@@ -2300,7 +2295,7 @@ static void _rcu_barrier(struct rcu_state *rsp)
- 	init_rcu_head_on_stack(&rd.barrier_head);
+ static char convert_kthread_status(unsigned int kthread_status)
+@@ -453,6 +487,11 @@ static int __init rcutree_trace_init(void)
+ 	if (!rcudir)
+ 		goto free_out;
  
- 	/* Take mutex to serialize concurrent rcu_barrier() requests. */
--	mutex_lock(&rcu_barrier_mutex);
-+	mutex_lock(&rsp->barrier_mutex);
- 
- 	smp_mb();  /* Prevent any prior operations from leaking in. */
- 
-@@ -2377,7 +2372,7 @@ static void _rcu_barrier(struct rcu_state *rsp)
- 	wait_for_completion(&rsp->barrier_completion);
- 
- 	/* Other rcu_barrier() invocations can now safely proceed. */
--	mutex_unlock(&rcu_barrier_mutex);
-+	mutex_unlock(&rsp->barrier_mutex);
- 
- 	destroy_rcu_head_on_stack(&rd.barrier_head);
- }
-diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-index 56fb8d4..d9ac82f 100644
---- a/kernel/rcutree.h
-+++ b/kernel/rcutree.h
-@@ -386,6 +386,7 @@ struct rcu_state {
- 	struct task_struct *rcu_barrier_in_progress;
- 						/* Task doing rcu_barrier(), */
- 						/*  or NULL if no barrier. */
-+	struct mutex barrier_mutex;		/* Guards barrier fields. */
- 	atomic_t barrier_cpu_count;		/* # CPUs waiting on. */
- 	struct completion barrier_completion;	/* Wake at barrier end. */
- 	raw_spinlock_t fqslock;			/* Only one task forcing */
++	retval = debugfs_create_file("rcubarrier", 0444, rcudir,
++						NULL, &rcubarrier_fops);
++	if (!retval)
++		goto free_out;
++
+ 	retval = debugfs_create_file("rcudata", 0444, rcudir,
+ 						NULL, &rcudata_fops);
+ 	if (!retval)
 -- 
 1.7.8
 
