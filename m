@@ -1,53 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758268Ab2FOWXT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 18:23:19 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5300 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758136Ab2FOWXS (ORCPT
+	id S1758297Ab2FOWXj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 18:23:39 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:35102 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758136Ab2FOWXh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 18:23:18 -0400
-X-Authority-Analysis: v=2.0 cv=D8PF24tj c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=ag8JG7z7P3cA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=ynTyILHRb4zuNaQRQaYA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1339798996.25903.19.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 3/3] tools lib traceevent: Introduce pevent_strerror
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
+	Fri, 15 Jun 2012 18:23:37 -0400
+MIME-Version: 1.0
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F19320CC9@ORSMSX104.amr.corp.intel.com>
+References: <20120615170659.GA4060@lizard>
+	<1339780111-12075-3-git-send-email-anton.vorontsov@linaro.org>
+	<3908561D78D1C84285E8C5FCA982C28F1931FC30@ORSMSX104.amr.corp.intel.com>
+	<1339797308.25903.8.camel@gandalf.stny.rr.com>
+	<3908561D78D1C84285E8C5FCA982C28F1931FC85@ORSMSX104.amr.corp.intel.com>
+	<1339798214.25903.17.camel@gandalf.stny.rr.com>
+	<3908561D78D1C84285E8C5FCA982C28F19320CC9@ORSMSX104.amr.corp.intel.com>
+Date: Fri, 15 Jun 2012 15:23:36 -0700
+X-Google-Sender-Auth: CoKz16fWrQGmmJg9-jWJSLCIHO0
+Message-ID: <CAMbhsRTGs8G2Fnvy4jcN=kvuM+gA+Md4UuxOZOQYvASjsNOUBQ@mail.gmail.com>
+Subject: Re: [PATCH 3/6] pstore: Add persistent function tracing
+From: Colin Cross <ccross@android.com>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Date: Fri, 15 Jun 2012 18:23:16 -0400
-In-Reply-To: <87pq9043tk.fsf@gmail.com>
-References: <1339486959-25241-1-git-send-email-namhyung@kernel.org>
-	 <1339486959-25241-4-git-send-email-namhyung@kernel.org>
-	 <1339524114.13377.140.camel@gandalf.stny.rr.com>
-	 <87ehpj6hic.fsf@sejong.aot.lge.com>
-	 <1339730825.13377.311.camel@gandalf.stny.rr.com>
-	 <87ipet3pzf.fsf@sejong.aot.lge.com>
-	 <1339763129.13377.357.camel@gandalf.stny.rr.com> <87pq9043tk.fsf@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1+b1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+        Ingo Molnar <mingo@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        John Stultz <john.stultz@linaro.org>, Shuah Khan <shuahkhan@gmail.com>,
+        "arve@android.com" <arve@android.com>,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "kernel-team@android.com" <kernel-team@android.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-06-16 at 07:18 +0900, Namhyung Kim wrote:
+On Fri, Jun 15, 2012 at 3:19 PM, Luck, Tony <tony.luck@intel.com> wrote:
+>> milli-seconds for recording? This would cripple the kernel. On slow
+>> machines, incorporating lockdep into function tracing (and other debug
+>> options) causes the system to live lock. Tracing the timer interrupt
+>> took so long that by the time it finished, the next timer triggered
+>> again.
+>
+> Ah - I think I misunderstood how this works ... I thought the function
+> trace was taken at some point in the crash/shutdown path.  Now I see
+> that it is being generated repeatedly as the kernel runs ... with the
+> idea that if a hang happens, you can see the last call trace that was
+> successful.
+>
+> Ok then - clearly this is only useful with a ram backend for pstore.
+>
+> Binary makes sense too - but I'll stick with my comment that a different
+> kernel must be able to do the decode. Or we need to spell out clearly
+> that you must have the same, or compatible kernel booted to make any
+> sense of the saved ftrace record.
 
-> So, for now, passing the return value only would be enough. But I think
-> passing pevent into a function name started by pevent_ looks natural. :)
-
-Yeah, I agree, and who knows, maybe in the future it will be useful.
-
-Perhaps, we should add a note that says pevent can be NULL. Just in case
-you just want to convert a return value and you do not have an available
-pevent at hand.
-
--- Steve
-
-
+The decode also converts PCs to symbols, so for all the data to be
+useful you have to boot the exact same kernel.  You could
+theoretically boot a different kernel with a compatible format, but
+you would have to manually extract the PCs from the dump and addr2line
+them against the correct vmlinux, which is probably more trouble than
+it's worth.  Also, the binary data is stored inside a pstore_ram
+ringbuffer that may change formats between kernels.  I would suggest
+documenting that this is only supposed to work booting back to the
+same kernel.
