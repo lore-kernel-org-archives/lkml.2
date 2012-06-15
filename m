@@ -1,51 +1,299 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932451Ab2FOQUH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 12:20:07 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:47795 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932241Ab2FOQUD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 12:20:03 -0400
-Date: Fri, 15 Jun 2012 18:19:53 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: kosaki.motohiro@gmail.com
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        akpm@linux-foundation.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH] mm: clear pages_scanned only if draining a pcp adds
- pages to the buddy allocator again
-Message-ID: <20120615161953.GB27816@cmpxchg.org>
-References: <1339690570-7471-1-git-send-email-kosaki.motohiro@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1339690570-7471-1-git-send-email-kosaki.motohiro@gmail.com>
+	id S932430Ab2FOQWp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 12:22:45 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49476 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932218Ab2FOQWo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 12:22:44 -0400
+From: Will Deacon <will.deacon@arm.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, nico@fluxnic.net,
+        Will Deacon <will.deacon@arm.com>
+Subject: [PATCH v2 1/2] ARM: use generic strnlen_user and strncpy_from_user functions
+Date: Fri, 15 Jun 2012 17:22:36 +0100
+Message-Id: <1339777357-32479-2-git-send-email-will.deacon@arm.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1339777357-32479-1-git-send-email-will.deacon@arm.com>
+References: <1339777357-32479-1-git-send-email-will.deacon@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 14, 2012 at 12:16:10PM -0400, kosaki.motohiro@gmail.com wrote:
-> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> 
-> commit 2ff754fa8f (mm: clear pages_scanned only if draining a pcp adds pages
-> to the buddy allocator again) fixed one free_pcppages_bulk() misuse. But two
-> another miuse still exist.
-> 
-> This patch fixes it.
-> 
-> Cc: David Rientjes <rientjes@google.com>
-> Cc: Mel Gorman <mel@csn.ul.ie>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Minchan Kim <minchan.kim@gmail.com>
-> Cc: Wu Fengguang <fengguang.wu@intel.com>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+This patch implements the word-at-a-time interface for ARM using the
+same algorithm as x86. We use the fls macro from ARMv5 onwards, where
+we have a clz instruction available which saves us a mov instruction
+when targetting Thumb-2. For older CPUs, we use the magic 0x0ff0001
+constant. Big-endian configurations make use of the implementation from
+asm-generic.
 
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+With this implemented, we can replace our byte-at-a-time strnlen_user
+and strncpy_from_user functions with the optimised generic versions.
+
+Reviewed-by: Nicolas Pitre <nico@linaro.org>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+---
+ arch/arm/Kconfig                      |    2 +
+ arch/arm/include/asm/uaccess.h        |   27 +++------------
+ arch/arm/include/asm/word-at-a-time.h |   55 +++++++++++++++++++++++++++++++++
+ arch/arm/kernel/armksyms.c            |    4 --
+ arch/arm/lib/Makefile                 |    1 -
+ arch/arm/lib/strncpy_from_user.S      |   43 -------------------------
+ arch/arm/lib/strnlen_user.S           |   40 ------------------------
+ 7 files changed, 63 insertions(+), 109 deletions(-)
+ create mode 100644 arch/arm/include/asm/word-at-a-time.h
+ delete mode 100644 arch/arm/lib/strncpy_from_user.S
+ delete mode 100644 arch/arm/lib/strnlen_user.S
+
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 84449dd..77a2fad 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -45,6 +45,8 @@ config ARM
+ 	select GENERIC_SMP_IDLE_THREAD
+ 	select KTIME_SCALAR
+ 	select GENERIC_CLOCKEVENTS_BROADCAST if SMP
++	select GENERIC_STRNCPY_FROM_USER
++	select GENERIC_STRNLEN_USER
+ 	help
+ 	  The ARM series is a line of low-power-consumption RISC chip designs
+ 	  licensed by ARM Ltd and targeted at embedded applications and
+diff --git a/arch/arm/include/asm/uaccess.h b/arch/arm/include/asm/uaccess.h
+index 71f6536..479a635 100644
+--- a/arch/arm/include/asm/uaccess.h
++++ b/arch/arm/include/asm/uaccess.h
+@@ -189,6 +189,9 @@ static inline void set_fs(mm_segment_t fs)
+ 
+ #define access_ok(type,addr,size)	(__range_ok(addr,size) == 0)
+ 
++#define user_addr_max() \
++	(segment_eq(get_fs(), USER_DS) ? TASK_SIZE : ~0UL)
++
+ /*
+  * The "__xxx" versions of the user access functions do not verify the
+  * address space - it must have been done previously with a separate
+@@ -398,9 +401,6 @@ extern unsigned long __must_check __clear_user_std(void __user *addr, unsigned l
+ #define __clear_user(addr,n)		(memset((void __force *)addr, 0, n), 0)
+ #endif
+ 
+-extern unsigned long __must_check __strncpy_from_user(char *to, const char __user *from, unsigned long count);
+-extern unsigned long __must_check __strnlen_user(const char __user *s, long n);
+-
+ static inline unsigned long __must_check copy_from_user(void *to, const void __user *from, unsigned long n)
+ {
+ 	if (access_ok(VERIFY_READ, from, n))
+@@ -427,24 +427,9 @@ static inline unsigned long __must_check clear_user(void __user *to, unsigned lo
+ 	return n;
+ }
+ 
+-static inline long __must_check strncpy_from_user(char *dst, const char __user *src, long count)
+-{
+-	long res = -EFAULT;
+-	if (access_ok(VERIFY_READ, src, 1))
+-		res = __strncpy_from_user(dst, src, count);
+-	return res;
+-}
+-
+-#define strlen_user(s)	strnlen_user(s, ~0UL >> 1)
++extern long strncpy_from_user(char *dest, const char __user *src, long count);
+ 
+-static inline long __must_check strnlen_user(const char __user *s, long n)
+-{
+-	unsigned long res = 0;
+-
+-	if (__addr_ok(s))
+-		res = __strnlen_user(s, n);
+-
+-	return res;
+-}
++extern __must_check long strlen_user(const char __user *str);
++extern __must_check long strnlen_user(const char __user *str, long n);
+ 
+ #endif /* _ASMARM_UACCESS_H */
+diff --git a/arch/arm/include/asm/word-at-a-time.h b/arch/arm/include/asm/word-at-a-time.h
+new file mode 100644
+index 0000000..74b2d45
+--- /dev/null
++++ b/arch/arm/include/asm/word-at-a-time.h
+@@ -0,0 +1,55 @@
++#ifndef __ASM_ARM_WORD_AT_A_TIME_H
++#define __ASM_ARM_WORD_AT_A_TIME_H
++
++#ifndef __ARMEB__
++
++/*
++ * Little-endian word-at-a-time zero byte handling.
++ * Heavily based on the x86 algorithm.
++ */
++#include <linux/kernel.h>
++
++struct word_at_a_time {
++	const unsigned long one_bits, high_bits;
++};
++
++#define WORD_AT_A_TIME_CONSTANTS { REPEAT_BYTE(0x01), REPEAT_BYTE(0x80) }
++
++static inline unsigned long has_zero(unsigned long a, unsigned long *bits,
++				     const struct word_at_a_time *c)
++{
++	unsigned long mask = ((a - c->one_bits) & ~a) & c->high_bits;
++	*bits = mask;
++	return mask;
++}
++
++#define prep_zero_mask(a, bits, c) (bits)
++
++static inline unsigned long create_zero_mask(unsigned long bits)
++{
++	bits = (bits - 1) & ~bits;
++	return bits >> 7;
++}
++
++static inline unsigned long find_zero(unsigned long mask)
++{
++	unsigned long ret;
++
++#if __LINUX_ARM_ARCH__ >= 5
++	/* We have clz available. */
++	ret = fls(mask) >> 3;
++#else
++	/* (000000 0000ff 00ffff ffffff) -> ( 1 1 2 3 ) */
++	ret = (0x0ff0001 + mask) >> 23;
++	/* Fix the 1 for 00 case */
++	ret &= mask;
++#endif
++
++	return ret;
++}
++
++#else	/* __ARMEB__ */
++#include <asm-generic/word-at-a-time.h>
++#endif
++
++#endif /* __ASM_ARM_WORD_AT_A_TIME_H */
+diff --git a/arch/arm/kernel/armksyms.c b/arch/arm/kernel/armksyms.c
+index b57c75e..c3dff6a 100644
+--- a/arch/arm/kernel/armksyms.c
++++ b/arch/arm/kernel/armksyms.c
+@@ -87,10 +87,6 @@ EXPORT_SYMBOL(memmove);
+ EXPORT_SYMBOL(memchr);
+ EXPORT_SYMBOL(__memzero);
+ 
+-	/* user mem (segment) */
+-EXPORT_SYMBOL(__strnlen_user);
+-EXPORT_SYMBOL(__strncpy_from_user);
+-
+ #ifdef CONFIG_MMU
+ EXPORT_SYMBOL(copy_page);
+ 
+diff --git a/arch/arm/lib/Makefile b/arch/arm/lib/Makefile
+index 992769a..d5060da 100644
+--- a/arch/arm/lib/Makefile
++++ b/arch/arm/lib/Makefile
+@@ -8,7 +8,6 @@ lib-y		:= backtrace.o changebit.o csumipv6.o csumpartial.o   \
+ 		   csumpartialcopy.o csumpartialcopyuser.o clearbit.o \
+ 		   delay.o findbit.o memchr.o memcpy.o		      \
+ 		   memmove.o memset.o memzero.o setbit.o              \
+-		   strncpy_from_user.o strnlen_user.o                 \
+ 		   strchr.o strrchr.o                                 \
+ 		   testchangebit.o testclearbit.o testsetbit.o        \
+ 		   ashldi3.o ashrdi3.o lshrdi3.o muldi3.o             \
+diff --git a/arch/arm/lib/strncpy_from_user.S b/arch/arm/lib/strncpy_from_user.S
+deleted file mode 100644
+index f202d7b..0000000
+--- a/arch/arm/lib/strncpy_from_user.S
++++ /dev/null
+@@ -1,43 +0,0 @@
+-/*
+- *  linux/arch/arm/lib/strncpy_from_user.S
+- *
+- *  Copyright (C) 1995-2000 Russell King
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
+-#include <linux/linkage.h>
+-#include <asm/assembler.h>
+-#include <asm/errno.h>
+-
+-	.text
+-	.align	5
+-
+-/*
+- * Copy a string from user space to kernel space.
+- *  r0 = dst, r1 = src, r2 = byte length
+- * returns the number of characters copied (strlen of copied string),
+- *  -EFAULT on exception, or "len" if we fill the whole buffer
+- */
+-ENTRY(__strncpy_from_user)
+-	mov	ip, r1
+-1:	subs	r2, r2, #1
+-	ldrusr	r3, r1, 1, pl
+-	bmi	2f
+-	strb	r3, [r0], #1
+-	teq	r3, #0
+-	bne	1b
+-	sub	r1, r1, #1	@ take NUL character out of count
+-2:	sub	r0, r1, ip
+-	mov	pc, lr
+-ENDPROC(__strncpy_from_user)
+-
+-	.pushsection .fixup,"ax"
+-	.align	0
+-9001:	mov	r3, #0
+-	strb	r3, [r0, #0]	@ null terminate
+-	mov	r0, #-EFAULT
+-	mov	pc, lr
+-	.popsection
+-
+diff --git a/arch/arm/lib/strnlen_user.S b/arch/arm/lib/strnlen_user.S
+deleted file mode 100644
+index 0ecbb45..0000000
+--- a/arch/arm/lib/strnlen_user.S
++++ /dev/null
+@@ -1,40 +0,0 @@
+-/*
+- *  linux/arch/arm/lib/strnlen_user.S
+- *
+- *  Copyright (C) 1995-2000 Russell King
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
+-#include <linux/linkage.h>
+-#include <asm/assembler.h>
+-#include <asm/errno.h>
+-
+-	.text
+-	.align	5
+-
+-/* Prototype: unsigned long __strnlen_user(const char *str, long n)
+- * Purpose  : get length of a string in user memory
+- * Params   : str - address of string in user memory
+- * Returns  : length of string *including terminator*
+- *	      or zero on exception, or n + 1 if too long
+- */
+-ENTRY(__strnlen_user)
+-	mov	r2, r0
+-1:
+-	ldrusr	r3, r0, 1
+-	teq	r3, #0
+-	beq	2f
+-	subs	r1, r1, #1
+-	bne	1b
+-	add	r0, r0, #1
+-2:	sub	r0, r0, r2
+-	mov	pc, lr
+-ENDPROC(__strnlen_user)
+-
+-	.pushsection .fixup,"ax"
+-	.align	0
+-9001:	mov	r0, #0
+-	mov	pc, lr
+-	.popsection
+-- 
+1.7.4.1
+
