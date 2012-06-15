@@ -1,71 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758180Ab2FOWS0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 18:18:26 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62906 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758050Ab2FOWSZ (ORCPT
+	id S1758188Ab2FOWTc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 18:19:32 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:35168 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758119Ab2FOWTb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 18:18:25 -0400
-From: Namhyung Kim <namhyung@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 3/3] tools lib traceevent: Introduce pevent_strerror
-References: <1339486959-25241-1-git-send-email-namhyung@kernel.org>
-	<1339486959-25241-4-git-send-email-namhyung@kernel.org>
-	<1339524114.13377.140.camel@gandalf.stny.rr.com>
-	<87ehpj6hic.fsf@sejong.aot.lge.com>
-	<1339730825.13377.311.camel@gandalf.stny.rr.com>
-	<87ipet3pzf.fsf@sejong.aot.lge.com>
-	<1339763129.13377.357.camel@gandalf.stny.rr.com>
-Date: Sat, 16 Jun 2012 07:18:15 +0900
-In-Reply-To: <1339763129.13377.357.camel@gandalf.stny.rr.com> (Steven
-	Rostedt's message of "Fri, 15 Jun 2012 08:25:29 -0400")
-Message-ID: <87pq9043tk.fsf@gmail.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+	Fri, 15 Jun 2012 18:19:31 -0400
+X-Originating-IP: 217.70.178.144
+X-Originating-IP: 50.43.46.74
+Date: Fri, 15 Jun 2012 15:19:16 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH tip/core/rcu 05/15] rcu: Move _rcu_barrier()'s rcu_head
+ structures to rcu_data structures
+Message-ID: <20120615221915.GY31184@leaf>
+References: <20120615210550.GA27506@linux.vnet.ibm.com>
+ <1339794370-28119-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1339794370-28119-5-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339794370-28119-5-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven Rostedt <rostedt@goodmis.org> writes:
-> On Fri, 2012-06-15 at 18:04 +0900, Namhyung Kim wrote:
->> > If you need the code to be thread safe, have all errors do:
->> >
->> > 	ret = pevent_foo();
->> > 	if (ret < 0) {
->> > 		pevent_strerr_val(ret, buf, buflen);
->> >
->> >
->> > For programs that do not need to be thread safe, then:
->> >
->> > 	ret = pevent_foo();
->> > 	if (ret < 0) {
->> > 		pevent_strerr(pevent, buf, buflen);
->> >
->> 
->> Do we really need these two? I think having a single API is just
->> enough, IMHO.
->
-> Hmm, maybe not. I guess I was confused about the need to pass the pevent
-> into the function. I think we only need the return val. Or is there
-> other data in the future that you envision will require needing pevent
-> passed in?
->
+On Fri, Jun 15, 2012 at 02:06:00PM -0700, Paul E. McKenney wrote:
+> From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+> 
+> In order for multiple flavors of RCU to each concurrently run one
+> rcu_barrier(), each flavor needs its own per-CPU set of rcu_head
+> structures.  This commit therefore moves _rcu_barrier()'s set of
+> per-CPU rcu_head structures from per-CPU variables to the existing
+> per-CPU and per-RCU-flavor rcu_data structures.
+> 
+> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-I was thinking about a way to provide additional information in case of
-a parse error by saving them into the pevent. But it turned out to make
-the API non-thread-safe. :/ I couldn't find a good way yet.
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
-So, for now, passing the return value only would be enough. But I think
-passing pevent into a function name started by pevent_ looks natural. :)
-
-Thanks,
-Namhyung
-
+>  kernel/rcutree.c |    6 ++----
+>  kernel/rcutree.h |    3 +++
+>  2 files changed, 5 insertions(+), 4 deletions(-)
+> 
+> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> index 8b3ab4e..2cfbdb8 100644
+> --- a/kernel/rcutree.c
+> +++ b/kernel/rcutree.c
+> @@ -157,7 +157,6 @@ unsigned long rcutorture_vernum;
+>  
+>  /* State information for rcu_barrier() and friends. */
+>  
+> -static DEFINE_PER_CPU(struct rcu_head, rcu_barrier_head) = {NULL};
+>  static atomic_t rcu_barrier_cpu_count;
+>  static DEFINE_MUTEX(rcu_barrier_mutex);
+>  static struct completion rcu_barrier_completion;
+> @@ -2279,12 +2278,11 @@ static void rcu_barrier_callback(struct rcu_head *notused)
+>   */
+>  static void rcu_barrier_func(void *type)
+>  {
+> -	int cpu = smp_processor_id();
+> -	struct rcu_head *head = &per_cpu(rcu_barrier_head, cpu);
+>  	struct rcu_state *rsp = type;
+> +	struct rcu_data *rdp = __this_cpu_ptr(rsp->rda);
+>  
+>  	atomic_inc(&rcu_barrier_cpu_count);
+> -	rsp->call(head, rcu_barrier_callback);
+> +	rsp->call(&rdp->barrier_head, rcu_barrier_callback);
+>  }
+>  
+>  /*
+> diff --git a/kernel/rcutree.h b/kernel/rcutree.h
+> index 15837d7..1783eae 100644
+> --- a/kernel/rcutree.h
+> +++ b/kernel/rcutree.h
+> @@ -300,6 +300,9 @@ struct rcu_data {
+>  	unsigned long n_rp_need_fqs;
+>  	unsigned long n_rp_need_nothing;
+>  
+> +	/* 6) _rcu_barrier() callback. */
+> +	struct rcu_head barrier_head;
+> +
+>  	int cpu;
+>  	struct rcu_state *rsp;
+>  };
+> -- 
+> 1.7.8
+> 
