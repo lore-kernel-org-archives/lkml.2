@@ -1,84 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932391Ab2FOPzD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 11:55:03 -0400
-Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:43425 "EHLO
-	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757030Ab2FOPzA (ORCPT
+	id S1757215Ab2FOQA4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 12:00:56 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:42128 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757033Ab2FOQAz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 11:55:00 -0400
-Date: Fri, 15 Jun 2012 17:54:32 +0200
-From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
-        Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Eric B Munson <emunson@mgebm.net>
-Subject: [PATCH 02.5] mm: sl[au]b: first remove PFMEMALLOC flag then SLAB flag
-Message-ID: <20120615155432.GA5498@breakpoint.cc>
-References: <1337266231-8031-1-git-send-email-mgorman@suse.de>
- <1337266231-8031-3-git-send-email-mgorman@suse.de>
+	Fri, 15 Jun 2012 12:00:55 -0400
+Message-ID: <4FDB5C34.3030401@wwwdotorg.org>
+Date: Fri, 15 Jun 2012 10:00:52 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337266231-8031-3-git-send-email-mgorman@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Walleij <linus.walleij@stericsson.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH] pinctrl/nomadik: document Alt-C glitch
+References: <1339762011-28159-1-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <1339762011-28159-1-git-send-email-linus.walleij@stericsson.com>
+X-Enigmail-Version: 1.5pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+On 06/15/2012 06:06 AM, Linus Walleij wrote:
+> From: Linus Walleij <linus.walleij@linaro.org>
+> 
+> This documentation comment existed in an earlier patch set for
+> GPIO consolidation, so I'm saving it for maintainability of the
+> code.
 
-If we first remove the SLAB flag followed by the PFMEMALLOC flag then the
-removal of the latter will trigger the VM_BUG_ON() as it can be seen in
-| kernel BUG at include/linux/page-flags.h:474!
-| invalid opcode: 0000 [#1] PREEMPT SMP
-| Call Trace:
-|  [<c10e2d77>] slab_destroy+0x27/0x70
-|  [<c10e3285>] drain_freelist+0x55/0x90
-|  [<c10e344e>] __cache_shrink+0x6e/0x90
-|  [<c14e3211>] ? acpi_sleep_init+0xcf/0xcf
-|  [<c10e349d>] kmem_cache_shrink+0x2d/0x40
+Acked-by: Stephen Warren <swarren@wwwdotorg.org>
 
-because the SLAB flag is gone. This patch simply changes the order.
-
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
- mm/slab.c |    2 +-
- mm/slub.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/mm/slab.c b/mm/slab.c
-index 00c601b..b1a39f7 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -2007,8 +2007,8 @@ static void kmem_freepages(struct kmem_cache *cachep, void *addr)
- 				NR_SLAB_UNRECLAIMABLE, nr_freed);
- 	while (i--) {
- 		BUG_ON(!PageSlab(page));
--		__ClearPageSlab(page);
- 		__ClearPageSlabPfmemalloc(page);
-+		__ClearPageSlab(page);
- 		page++;
- 	}
- 	if (current->reclaim_state)
-diff --git a/mm/slub.c b/mm/slub.c
-index f8cbec4..d753146 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -1417,8 +1417,8 @@ static void __free_slab(struct kmem_cache *s, struct page *page)
- 		NR_SLAB_RECLAIMABLE : NR_SLAB_UNRECLAIMABLE,
- 		-pages);
- 
--	__ClearPageSlab(page);
- 	__ClearPageSlabPfmemalloc(page);
-+	__ClearPageSlab(page);
- 	reset_page_mapcount(page);
- 	if (current->reclaim_state)
- 		current->reclaim_state->reclaimed_slab += pages;
--- 
-1.7.10
+(I'm fine adding the comment back; I can't comment on its content:-)
 
