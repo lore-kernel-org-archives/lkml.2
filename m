@@ -1,51 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756535Ab2FODDU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Jun 2012 23:03:20 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:54678 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755919Ab2FODDR (ORCPT
+	id S1756445Ab2FODEL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Jun 2012 23:04:11 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:36654 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754010Ab2FODEJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Jun 2012 23:03:17 -0400
-X-AuditID: b753bd60-98cf0ba000000f6c-3c-4fdaa5f37735
-X-AuditID: b753bd60-98cf0ba000000f6c-3c-4fdaa5f37735
-Message-ID: <4FDAA5F1.806@hitachi.com>
-Date: Fri, 15 Jun 2012 12:03:13 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        yrl.pp-manager.tt@hitachi.com
-Subject: Re: [RFC][PATCH 04/13 v2] ftrace/x86_32: Push ftrace_ops in as
- 3rd parameter to function tracer
-References: <20120612224327.426900129@goodmis.org> <20120612225424.942411318@goodmis.org>
-In-Reply-To: <20120612225424.942411318@goodmis.org>
-Content-Type: text/plain; charset=ISO-2022-JP
+	Thu, 14 Jun 2012 23:04:09 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Date: Fri, 15 Jun 2012 12:03:46 +0900 (JST)
+Message-Id: <20120615.120346.21747125.d.hatayama@jp.fujitsu.com>
+To: avi@redhat.com
+Cc: zhangyanfei@cn.fujitsu.com, mtosatti@redhat.com, ebiederm@xmission.com,
+        luto@mit.edu, joerg.roedel@amd.com, dzickus@redhat.com,
+        paul.gortmaker@windriver.com, ludwig.nussel@suse.de,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        kexec@lists.infradead.org, gregkh@linuxfoundation.org
+Subject: Re: [PATCH v2 3/5] KVM-INTEL: Add new module vmcsinfo-intel to
+ fill VMCSINFO
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+In-Reply-To: <4FD9E936.3030001@redhat.com>
+References: <4FB35C48.30708@cn.fujitsu.com>
+	<4FB35D60.6050009@cn.fujitsu.com>
+	<4FD9E936.3030001@redhat.com>
+X-Mailer: Mew version 6.3 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/06/13 7:43), Steven Rostedt wrote:
-> From: Steven Rostedt <srostedt@redhat.com>
+From: Avi Kivity <avi@redhat.com>
+Subject: Re: [PATCH v2 3/5] KVM-INTEL: Add new module vmcsinfo-intel to fill VMCSINFO
+Date: Thu, 14 Jun 2012 16:37:58 +0300
+
+> On 05/16/2012 10:55 AM, zhangyanfei wrote:
+<cut>
+>> +
+>> +/*
+>> + * The format of VMCSINFO is given below:
+>> + *   +-------------+--------------------------+
+>> + *   | Byte offset | Contents                 |
+>> + *   +-------------+--------------------------+
+>> + *   | 0           | VMCS revision identifier |
+>> + *   +-------------+--------------------------+
+>> + *   | 4           | <field><encoded offset>  |
+>> + *   +-------------+--------------------------+
+>> + *   | 16          | <field><encoded offset>  |
+>> + *   +-------------+--------------------------+
+>> + *   ......
+>> + *
+>> + * The first 32 bits of VMCSINFO contains the VMCS revision
+>> + * identifier.
+>> + * The remainder of VMCSINFO is used for <field><encoded offset>
+>> + * sets. Each set takes 12 bytes: field occupys 4 bytes
+>> + * and its corresponding encoded offset occupys 8 bytes.
+>> + *
+>> + * Encoded offsets are raw values read by vmcs_read{16, 64, 32, l},
+>> + * and they are all unsigned extended to 8 bytes for each
+>> + * <field><encoded offset> set has the same size.
+>> + * We do not decode offsets here. The decoding work is delayed
+>> + * in userspace tools.
 > 
-> Add support of passing the current ftrace_ops into the 3rd parameter
-> of the callback to the function tracer.
-> 
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> It's better to do the decoding here, or no one will know how to do it.
+> Also have an nfields field.
 
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+We did so because actual internal format is unkown; it could possibly
+be encrypted, although unlikely. We thought processing such unkown
+data should have been done in userland debugging tools. But decoding
+them here is no problem; the decode is of simple shift operations and
+has no risk affecting system status, there's only possibility to
+display broken values, which is same as the case displaying the
+encrypted values for users.
 
-Thanks!
+FYI, the assumptions behind the reverse enginerring method are:
 
+- For each field, the corresponding offset is unique; IOW, arbitrary
+  two offsets for the corresponding two fields are different each
+  other.
+- Field size remains 8 bytes, 16 bytes, 32 bytes even on vmcs region.
+- Each field is 8 byte alighed on vmcs region.
+- Some fields may be big endition on vmcs region.
+  - We found this fact under development. We give up if the data is
+    modified more drastically.
+- offset < vmcs region size
 
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+Thanks.
+HATAYAMA, Daisuke
+
