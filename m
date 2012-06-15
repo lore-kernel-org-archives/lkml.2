@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932527Ab2FOPqh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 11:46:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12872 "EHLO mx1.redhat.com"
+	id S932508Ab2FOPrG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 11:47:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44792 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932135Ab2FOPqf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 11:46:35 -0400
-Date: Fri, 15 Jun 2012 17:43:53 +0200
+	id S932430Ab2FOPqF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 11:46:05 -0400
+Date: Fri, 15 Jun 2012 17:43:55 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Anton Arapov <anton@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 12/15] uprobes: simplify the usage of uprobe->pending_list
-Message-ID: <20120615154353.GA9614@redhat.com>
+Subject: [PATCH 13/15] uprobes: don't use loff_t for the valid virtual
+	address
+Message-ID: <20120615154355.GA9622@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -24,70 +25,124 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-uprobe->pending_list is only used to create the temporary list,
-it has no meaning after we drop uprobes_mmap_hash(inode).
+loff_t looks confusing when it is used for the virtual address.
+Change map_info and install_breakpoint/remove_breakpoint paths
+to use "unsigned long".
 
-No need to initialize this node or remove it from tmp_list, and
-we can use list_for_each_entry().
+The patch doesn't change vma_address(), it can't return "long"
+because it is used to verify the mapping. But probably this
+needs some cleanups too.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Anton Arapov <anton@redhat.com>
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Acked-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
 ---
- kernel/events/uprobes.c |   12 ++++--------
- 1 files changed, 4 insertions(+), 8 deletions(-)
+ kernel/events/uprobes.c |   26 +++++++++-----------------
+ 1 files changed, 9 insertions(+), 17 deletions(-)
 
 diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index b9c61bd..7d5c78f 100644
+index 7d5c78f..4df84b7 100644
 --- a/kernel/events/uprobes.c
 +++ b/kernel/events/uprobes.c
-@@ -513,7 +513,6 @@ static struct uprobe *alloc_uprobe(struct inode *inode, loff_t offset)
- 	uprobe->inode = igrab(inode);
- 	uprobe->offset = offset;
- 	init_rwsem(&uprobe->consumer_rwsem);
--	INIT_LIST_HEAD(&uprobe->pending_list);
- 
- 	/* add to uprobes_tree, sorted on inode:offset */
- 	cur_uprobe = insert_uprobe(uprobe);
-@@ -1037,7 +1036,7 @@ static void build_probe_list(struct inode *inode, struct list_head *head)
- int uprobe_mmap(struct vm_area_struct *vma)
+@@ -664,9 +664,8 @@ static int copy_insn(struct uprobe *uprobe, struct file *filp)
+  */
+ static int
+ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
+-			struct vm_area_struct *vma, loff_t vaddr)
++			struct vm_area_struct *vma, unsigned long vaddr)
  {
- 	struct list_head tmp_list;
--	struct uprobe *uprobe, *u;
-+	struct uprobe *uprobe;
- 	struct inode *inode;
- 	int ret, count;
+-	unsigned long addr;
+ 	int ret;
  
-@@ -1055,10 +1054,9 @@ int uprobe_mmap(struct vm_area_struct *vma)
- 	ret = 0;
+ 	/*
+@@ -679,8 +678,6 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
+ 	if (!uprobe->consumers)
+ 		return -EEXIST;
+ 
+-	addr = (unsigned long)vaddr;
+-
+ 	if (!(uprobe->flags & UPROBE_COPY_INSN)) {
+ 		ret = copy_insn(uprobe, vma->vm_file);
+ 		if (ret)
+@@ -689,7 +686,7 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
+ 		if (is_swbp_insn((uprobe_opcode_t *)uprobe->arch.insn))
+ 			return -ENOTSUPP;
+ 
+-		ret = arch_uprobe_analyze_insn(&uprobe->arch, mm, addr);
++		ret = arch_uprobe_analyze_insn(&uprobe->arch, mm, vaddr);
+ 		if (ret)
+ 			return ret;
+ 
+@@ -709,7 +706,7 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
+ 	 * Hence increment before and decrement on failure.
+ 	 */
+ 	atomic_inc(&mm->uprobes_state.count);
+-	ret = set_swbp(&uprobe->arch, mm, addr);
++	ret = set_swbp(&uprobe->arch, mm, vaddr);
+ 	if (ret)
+ 		atomic_dec(&mm->uprobes_state.count);
+ 
+@@ -717,9 +714,9 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
+ }
+ 
+ static void
+-remove_breakpoint(struct uprobe *uprobe, struct mm_struct *mm, loff_t vaddr)
++remove_breakpoint(struct uprobe *uprobe, struct mm_struct *mm, unsigned long vaddr)
+ {
+-	if (!set_orig_insn(&uprobe->arch, mm, (unsigned long)vaddr, true))
++	if (!set_orig_insn(&uprobe->arch, mm, vaddr, true))
+ 		atomic_dec(&mm->uprobes_state.count);
+ }
+ 
+@@ -743,7 +740,7 @@ static void delete_uprobe(struct uprobe *uprobe)
+ struct map_info {
+ 	struct map_info *next;
+ 	struct mm_struct *mm;
+-	loff_t vaddr;
++	unsigned long vaddr;
+ };
+ 
+ static inline struct map_info *free_map_info(struct map_info *info)
+@@ -837,7 +834,6 @@ static int register_for_each_vma(struct uprobe *uprobe, bool is_register)
+ 	while (info) {
+ 		struct mm_struct *mm = info->mm;
+ 		struct vm_area_struct *vma;
+-		loff_t vaddr;
+ 
+ 		if (err)
+ 			goto free;
+@@ -847,9 +843,8 @@ static int register_for_each_vma(struct uprobe *uprobe, bool is_register)
+ 		if (!vma || !valid_vma(vma, is_register))
+ 			goto unlock;
+ 
+-		vaddr = vma_address(vma, uprobe->offset);
+ 		if (vma->vm_file->f_mapping->host != uprobe->inode ||
+-						vaddr != info->vaddr)
++		    vma_address(vma, uprobe->offset) != info->vaddr)
+ 			goto unlock;
+ 
+ 		if (is_register) {
+@@ -1055,10 +1050,8 @@ int uprobe_mmap(struct vm_area_struct *vma)
  	count = 0;
  
--	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
-+	list_for_each_entry(uprobe, &tmp_list, pending_list) {
- 		loff_t vaddr;
- 
--		list_del(&uprobe->pending_list);
+ 	list_for_each_entry(uprobe, &tmp_list, pending_list) {
+-		loff_t vaddr;
+-
  		if (!ret) {
- 			vaddr = vma_address(vma, uprobe->offset);
+-			vaddr = vma_address(vma, uprobe->offset);
++			loff_t vaddr = vma_address(vma, uprobe->offset);
  
-@@ -1106,7 +1104,7 @@ int uprobe_mmap(struct vm_area_struct *vma)
- void uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned long end)
- {
- 	struct list_head tmp_list;
--	struct uprobe *uprobe, *u;
-+	struct uprobe *uprobe;
- 	struct inode *inode;
- 
- 	if (!atomic_read(&uprobe_events) || !valid_vma(vma, false))
-@@ -1123,12 +1121,10 @@ void uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned lon
- 	mutex_lock(uprobes_mmap_hash(inode));
+ 			if (vaddr < vma->vm_start || vaddr >= vma->vm_end) {
+ 				put_uprobe(uprobe);
+@@ -1122,9 +1115,8 @@ void uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned lon
  	build_probe_list(inode, &tmp_list);
  
--	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
-+	list_for_each_entry(uprobe, &tmp_list, pending_list) {
- 		loff_t vaddr;
+ 	list_for_each_entry(uprobe, &tmp_list, pending_list) {
+-		loff_t vaddr;
++		loff_t vaddr = vma_address(vma, uprobe->offset);
  
--		list_del(&uprobe->pending_list);
- 		vaddr = vma_address(vma, uprobe->offset);
--
+-		vaddr = vma_address(vma, uprobe->offset);
  		if (vaddr >= start && vaddr < end) {
  			/*
  			 * An unregister could have removed the probe before
