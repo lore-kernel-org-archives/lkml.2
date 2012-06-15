@@ -1,43 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756578Ab2FOKk6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 06:40:58 -0400
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:25754 "EHLO
-	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754407Ab2FOKk5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 06:40:57 -0400
-X-IronPort-AV: E=Sophos;i="4.75,776,1330902000"; 
-   d="scan'208";a="163040177"
-Date: Fri, 15 Jun 2012 06:40:51 -0400 (EDT)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: Fengguang Wu <wfg@linux.intel.com>
-cc: Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Christopher Li <sparse@chrisli.org>,
-        Josh Triplett <josh@freedesktop.org>,
-        Linus Torvalds <torvalds@ppc970.osdl.org>
-Subject: Re: automated warning notifications
-In-Reply-To: <20120615075810.GA13206@localhost>
-Message-ID: <alpine.DEB.2.02.1206150639130.1864@hadrien>
-References: <20120614172523.GB4400@mwanda> <20120615014835.GA5695@localhost> <20120615071222.GZ13539@mwanda> <20120615075810.GA13206@localhost>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756590Ab2FOKmO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 06:42:14 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:49227 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752229Ab2FOKmM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 06:42:12 -0400
+Message-ID: <1339756931.24527.16.camel@joe2Laptop>
+Subject: Re: [PATCH wireless-next 18/20] ti: Use pr_<level>
+From: Joe Perches <joe@perches.com>
+To: Luciano Coelho <coelho@ti.com>
+Cc: linux-kernel@vger.kernel.org, "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org
+Date: Fri, 15 Jun 2012 03:42:11 -0700
+In-Reply-To: <1339749374.4502.80.camel@cumari.coelho.fi>
+References: <cover.1339739415.git.joe@perches.com>
+	 <a4533db379be3689e3b29ed9b0d170263d875f7d.1339739416.git.joe@perches.com>
+	 <1339749374.4502.80.camel@cumari.coelho.fi>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Eventually I think we will want to set up a mailing list for this or
-> > we will start sending duplicate messages.
->
-> Fair enough. How can we setup the mailing list? Once the list up, it
-> would be trivial for me to send sparse warnings out there.
+On Fri, 2012-06-15 at 11:36 +0300, Luciano Coelho wrote:
+> Hi Joe,
 
-I'm not completely sure that a mailing list would completely eliminate
-duplicate messages.  But still, it could be the place for people who are
-interested in seeing such messages to go to, so it seems like a good
-thing.  I would be happy to contribute content :)
+Hi Luciano.
 
-julia
+> As Johannes already mentioned, I have to also ask why do you need to do
+> this?
+
+To use a more consistent logging style.
+To minimize unnecessary changes when adding
+similar drivers based on this code.
+
+>  I see the point, slightly, with the wl1251 code, because it is
+> still using printks, but with wlcore and friends, there's no functional
+> change.
+
+Using a consistent logging style minimizes defects.
+
+> As mentioned above, this change here is acceptable, but removing the \n
+> from the macro and adding it at the end of each and every call is
+> useless and will just skew git-blame and make it harder to do rebase or
+> apply patches because of conflicts.
+
+In practice, the merging won't be much of an issue.
+Neither will git blame.
+
+> > -#define wl1271_warning(fmt, arg...) \
+> > -	pr_warning(DRIVER_PREFIX "WARNING " fmt "\n", ##arg)
+> > +#define wl1271_warn(fmt, arg...)				\
+> > +	pr_warn(DRIVER_PREFIX "WARNING " fmt, ##arg)
+> 
+> Using pr_warn instead of pr_warning is pointless.  pr_warning is the
+> main definition, actually, and pr_warn is just a "mirror".
+
+I expect one day to reverse the definitions.
+
+The kernel is moving, albeit slowly to prefer
+pr_warn to mirror dev_warn, netdev_warn, etc.
+
+Most of these uses will eventually become netdev_warn.
+netdev_warn still uses a \n.
+
+> Again, moving the \n from the macro definition and changing all the
+> callers is an unnecessary, intrusive change.
+> 
+> We have wanted to change "wl1271" to "wl12xx" for a long time, but we
+> don't do it exactly because this means we need to change the calls
+> everywhere.
+
+Nothing in ever _needed_, no child will go
+hungry or fed here.  This is a consistency change.
+
+There are a couple of instances where \n is
+currently used unnecessarily that are fixed in
+the conversion.
+
+$ git grep -E  "\bwl12[0-9]+_[a-z]+\s*\(.*\\\\n\"" drivers/net/wireless/ti
+drivers/net/wireless/ti/wl12xx/cmd.c:   wl1271_debug(DEBUG_CMD, "FEM autodetect: %s, manufacturer: %d\n",
+drivers/net/wireless/ti/wl12xx/cmd.c:   wl1271_debug(DEBUG_CMD, "FEM autodetect: %s, manufacturer: %d\n",
+drivers/net/wireless/ti/wlcore/main.c:          wl1271_error("Incorrect ampdu action id=%x\n", action);
+
+People make these mistakes because the more
+common and adjacent dev_<level> code _use_
+a newline.  Using a consistent style minimzes
+these defects.
+
+cheers, Joe
+
