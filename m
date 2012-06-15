@@ -1,90 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758105Ab2FOVJr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 17:09:47 -0400
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:32187 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758017Ab2FOVJo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 17:09:44 -0400
-From: Greg Pearson <greg.pearson@hp.com>
-To: tj@kernel.org, hpa@linux.intel.com, akpm@linux-foundation.org,
-        shangw@linux.vnet.ibm.com, mingo@elte.hu
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, greg.pearson@hp.com
-Subject: [PATCH] mm/memblock: fix overlapping allocation when doubling reserved array
-Date: Fri, 15 Jun 2012 15:09:27 -0600
-Message-Id: <1339794567-17784-1-git-send-email-greg.pearson@hp.com>
-X-Mailer: git-send-email 1.7.5.4
+	id S1758024Ab2FOVGh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 17:06:37 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:49633 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757882Ab2FOVGc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 17:06:32 -0400
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 07/15] rcu: Move rcu_barrier_completion to rcu_state structure
+Date: Fri, 15 Jun 2012 14:06:02 -0700
+Message-Id: <1339794370-28119-7-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.8
+In-Reply-To: <1339794370-28119-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20120615210550.GA27506@linux.vnet.ibm.com>
+ <1339794370-28119-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12061521-5806-0000-0000-00001643FB2E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The __alloc_memory_core_early() routine will ask memblock for a range
-of memory then try to reserve it. If the reserved region array lacks
-space for the new range, memblock_double_array() is called to allocate
-more space for the array. If memblock is used to allocate memory for
-the new array it can end up using a range that overlaps with the range
-originally allocated in __alloc_memory_core_early(), leading to possible
-data corruption.
+From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 
-With this patch memblock_double_array() now calls memblock_find_in_range()
-with a narrowed candidate range so any memory allocated will not overlap
-with the original range that was being reserved. The range is narrowed by
-passing in the starting address of the previously allocated range as the
-end of the candidate range. Since memblock_find_in_range_node() looks for
-a free range by walking the free memory list in reverse order (highest
-memory address to lowest address) this change should not unnecessarily
-exclude chunks of memory that could otherwise be used to satisfy the
-request.
+In order to allow each RCU flavor to concurrently execute its
+rcu_barrier() function, it is necessary to move the relevant
+state to the rcu_state structure.  This commit therefore moves the
+rcu_barrier_completion global variable to a new ->barrier_completion
+field in the rcu_state structure.
 
-Signed-off-by: Greg Pearson <greg.pearson@hp.com>
+Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- mm/memblock.c |   11 +++++++----
- 1 files changed, 7 insertions(+), 4 deletions(-)
+ kernel/rcutree.c |    9 ++++-----
+ kernel/rcutree.h |    1 +
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/mm/memblock.c b/mm/memblock.c
-index 952123e..599519c 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -184,7 +184,8 @@ static void __init_memblock memblock_remove_region(struct memblock_type *type, u
- 	}
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index d363416..a946437 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -158,7 +158,6 @@ unsigned long rcutorture_vernum;
+ /* State information for rcu_barrier() and friends. */
+ 
+ static DEFINE_MUTEX(rcu_barrier_mutex);
+-static struct completion rcu_barrier_completion;
+ 
+ /*
+  * Return true if an RCU grace period is in progress.  The ACCESS_ONCE()s
+@@ -2272,7 +2271,7 @@ static void rcu_barrier_callback(struct rcu_head *rhp)
+ 	struct rcu_state *rsp = rdp->rsp;
+ 
+ 	if (atomic_dec_and_test(&rsp->barrier_cpu_count))
+-		complete(&rcu_barrier_completion);
++		complete(&rsp->barrier_completion);
  }
  
--static int __init_memblock memblock_double_array(struct memblock_type *type)
-+static int __init_memblock memblock_double_array(struct memblock_type *type,
-+						phys_addr_t skip_base)
- {
- 	struct memblock_region *new_array, *old_array;
- 	phys_addr_t old_size, new_size, addr;
-@@ -222,7 +223,8 @@ static int __init_memblock memblock_double_array(struct memblock_type *type)
- 		new_array = kmalloc(new_size, GFP_KERNEL);
- 		addr = new_array ? __pa(new_array) : 0;
- 	} else {
--		addr = memblock_find_in_range(0, MEMBLOCK_ALLOC_ACCESSIBLE, new_size, sizeof(phys_addr_t));
-+		addr = memblock_find_in_range(0, skip_base,
-+				new_size, sizeof(phys_addr_t));
- 		new_array = addr ? __va(addr) : 0;
- 	}
- 	if (!addr) {
-@@ -399,7 +401,8 @@ repeat:
+ /*
+@@ -2322,7 +2321,7 @@ static void _rcu_barrier(struct rcu_state *rsp)
+ 	 * 6.	Both rcu_barrier_callback() callbacks are invoked, awakening
+ 	 *	us -- but before CPU 1's orphaned callbacks are invoked!!!
  	 */
- 	if (!insert) {
- 		while (type->cnt + nr_new > type->max)
--			if (memblock_double_array(type) < 0)
-+			/* Avoid possible overlap if range is being reserved */
-+			if (memblock_double_array(type, base) < 0)
- 				return -ENOMEM;
- 		insert = true;
- 		goto repeat;
-@@ -450,7 +453,7 @@ static int __init_memblock memblock_isolate_range(struct memblock_type *type,
+-	init_completion(&rcu_barrier_completion);
++	init_completion(&rsp->barrier_completion);
+ 	atomic_set(&rsp->barrier_cpu_count, 1);
+ 	raw_spin_lock_irqsave(&rsp->onofflock, flags);
+ 	rsp->rcu_barrier_in_progress = current;
+@@ -2372,10 +2371,10 @@ static void _rcu_barrier(struct rcu_state *rsp)
+ 	 * CPU, and thus each counted, remove the initial count.
+ 	 */
+ 	if (atomic_dec_and_test(&rsp->barrier_cpu_count))
+-		complete(&rcu_barrier_completion);
++		complete(&rsp->barrier_completion);
  
- 	/* we'll create at most two more regions */
- 	while (type->cnt + 2 > type->max)
--		if (memblock_double_array(type) < 0)
-+		if (memblock_double_array(type, MEMBLOCK_ALLOC_ACCESSIBLE) < 0)
- 			return -ENOMEM;
+ 	/* Wait for all rcu_barrier_callback() callbacks to be invoked. */
+-	wait_for_completion(&rcu_barrier_completion);
++	wait_for_completion(&rsp->barrier_completion);
  
- 	for (i = 0; i < type->cnt; i++) {
+ 	/* Other rcu_barrier() invocations can now safely proceed. */
+ 	mutex_unlock(&rcu_barrier_mutex);
+diff --git a/kernel/rcutree.h b/kernel/rcutree.h
+index e7d29b7..56fb8d4 100644
+--- a/kernel/rcutree.h
++++ b/kernel/rcutree.h
+@@ -387,6 +387,7 @@ struct rcu_state {
+ 						/* Task doing rcu_barrier(), */
+ 						/*  or NULL if no barrier. */
+ 	atomic_t barrier_cpu_count;		/* # CPUs waiting on. */
++	struct completion barrier_completion;	/* Wake at barrier end. */
+ 	raw_spinlock_t fqslock;			/* Only one task forcing */
+ 						/*  quiescent states. */
+ 	unsigned long jiffies_force_qs;		/* Time at which to invoke */
 -- 
-1.7.5.4
+1.7.8
 
