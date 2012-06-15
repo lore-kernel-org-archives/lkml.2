@@ -1,158 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757487Ab2FOTRC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 15:17:02 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:45983 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751361Ab2FOTRA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 15:17:00 -0400
-From: Sadasivan Shaiju <sshaiju@mvista.com>
+	id S1757497Ab2FOTSr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 15:18:47 -0400
+Received: from na3sys009aog120.obsmtp.com ([74.125.149.140]:35523 "EHLO
+	na3sys009aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753793Ab2FOTSp convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 15:18:45 -0400
+From: Philip Rakity <prakity@marvell.com>
+To: Pankaj Jangra <jangra.pankaj9@gmail.com>
+CC: Philip Rakity <philipspatches@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
+Date: Fri, 15 Jun 2012 12:18:38 -0700
+Subject: Re: [PATCH 1/2] regulator: core.c Pass voltage to notifier when
+ setting voltage
+Thread-Topic: [PATCH 1/2] regulator: core.c Pass voltage to notifier when
+ setting voltage
+Thread-Index: Ac1LK6tEXBFq1GnvQE6kaBDnlwOJPQ==
+Message-ID: <DFD0DA03-D72C-4B5D-9E56-AA214202400A@marvell.com>
+References: <1339784856-1779-1-git-send-email-prakity@marvell.com>
+ <CADTbHxpfQpKMkwzUakUUzt1mKO5rQ2A7_vuh9SA7i6Cq0VinZg@mail.gmail.com>
+In-Reply-To: <CADTbHxpfQpKMkwzUakUUzt1mKO5rQ2A7_vuh9SA7i6Cq0VinZg@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: Ac1LK28RdGDCULtESZ27ija8isEsLQ==
-Date: Fri, 15 Jun 2012 12:16:59 -0700
-Message-ID: <0518844d43f3399a8aaa6d0c915bac97@mail.gmail.com>
-Subject: crash in filesytem during reboot . (and proposed patch)
-To: linux-kernel@vger.kernel.org
-Cc: walker@fifo99.com
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi ,
 
-I  am  getting  the  following  crashes during  a  reboot of   the  system
-.  It  looks  like  a  race  condition   during  umount .
+On Jun 15, 2012, at 11:50 AM, Pankaj Jangra wrote:
 
+> Hi,
+> 
+> On Fri, Jun 15, 2012 at 11:57 PM, Philip Rakity
+> <philipspatches@gmail.com> wrote:
+>> V3
+>> --
+>> 
+>> Fix type where data argument was not passed in
+>> blocking_notifier_call_chain.
+>> 
+>> edits to check in comments (below)
+>> 
+>> V2
+>> --
+>> 
+>> Incorporate performance suggestions made by Mark Brown
+>> Use linux-next as base code rather than mmc-next
+>> 
+>> The voltage being set should be passed to the call in handler
+>> requesting the callback.  Currently this is not done.
+>> 
+>> The callin handler cannot call regulator_get_voltage() to get the
+> 
+> "The calling"
 
+I am not sure what the correct term for this.  The blocking_notifier_call_chain calls 
+what ?   calling might imply blocking_notifier_call_chain() since it is doing the calling.
+What is the receiver of the call named ?
 
-<4>Call Trace:
+> 
+>> information since the mutex is held by the regulator and
+>> deadlock occurs.
+>> 
+>> Without this change the receiver of the call in cannot know what
+>> action to take.  This is used, for example, to set PAD voltages
+>> when doing SD vccq voltage changes.
+>> 
+>> Signed-off-by: Philip Rakity <prakity@marvell.com>
+>> ---
+> 
+> Since you are submitting your patch from the different email than your
+> Singed-off email. So you should put in first line of message
+> From: <your real email>.
+> 
+> Regards,
+> Pankaj Jangra
 
-<4>[] clear_inode+0x28/0xe8
-
-<4>[] generic_drop_inode+0x3c/0xa8
-
-<4>[] d_kill+0x4c/0x78
-
-<4>[] __shrink_dcache_sb+0x258/0x360
-
-<4>[] shrink_dcache_parent+0x140/0x190
-
-<4>[] proc_flush_task+0xac/0x2e8
-
-<4>[] release_task+0x80/0x4c0
-
-<4>[] wait_consider_task+0x608/0xa80
-
-<4>[] do_wait+0x10c/0x2b8
-
-<4>[] SyS_wait4+0x88/0x120
-
-<4>[] compat_sys_wait4+0xc8/0xd0
-
-<4>[] handle_sysn32+0x44/0x84
-
-
-
-
-
-
-
-Call Trace:
-[] file_ra_state_init+0x0/0x20
-[] __dentry_open+0x26c/0x3d0
-[] do_filp_open+0x70c/0xbc8
-[] do_sys_open+0x78/0x1e0
-[] handle_sysn32+0x44/0x84
-
-
-
-
-
-
-Call Trace:
-
-[<ffffffff812ae3e4>] iput+0x3c/0x88
-
-[<ffffffff812aaa84>] d_kill+0x4c/0x78
-
-[<ffffffff812aad08>] __shrink_dcache_sb+0x258/0x360
-
-[<ffffffff812ab300>] shrink_dcache_parent+0x140/0x190
-
-[<ffffffff812eea14>] proc_flush_task+0xac/0x2e8
-
-[<ffffffff811e6538>] release_task+0x80/0x4c0
-
-[<ffffffff811e80c8>] do_exit+0x6f8/0x908
-
-[<ffffffff8121dee8>] unregister_module_notifier+0x0/0x10
-
-
-
-
-
-
-
-Call Trace:
-[<ffffffff812ae3e4>] iput+0x3c/0x88
-[<ffffffff812aaa84>] d_kill+0x4c/0x78
-[<ffffffff812ab6b8>] dput+0x120/0x220
-[<ffffffff812a0f1c>] do_lookup+0xdc/0x210 [<ffffffff812a33e8>]
-__link_path_walk+0x910/0x1408 [<ffffffff812a4194>] path_walk+0x64/0x108
-[<ffffffff812a4350>] do_path_lookup+0x60/0x68 [<ffffffff812a519c>]
-do_filp_open+0xdc/0xbc8 [<ffffffff81293768>] do_sys_open+0x78/0x1e0
-[<ffffffff81103844>] handle_sysn32+0x44/0x84
-
-
-
-
-
-Call Trace:
-[<ffffffff812af56c>] __destroy_inode+0x74/0xb0 [<ffffffff812af5bc>]
-destroy_inode+0x14/0x50 [<ffffffff812aacd4>] d_kill+0x4c/0x78
-[<ffffffff812aaf58>] __shrink_dcache_sb+0x258/0x360 [<ffffffff812ab550>]
-shrink_dcache_parent+0x140/0x190 [<ffffffff812eec9c>]
-proc_flush_task+0xac/0x2e8 [<ffffffff811e65f0>] release_task+0x80/0x4c0
-[<ffffffff811e7038>] wait_consider_task+0x608/0xa80 [<ffffffff811e75bc>]
-do_wait+0x10c/0x2b8 [<ffffffff811e7928>] SyS_waitid+0xa0/0x200
-[<ffffffff812241cc>] compat_sys_waitid+0x64/0xd8 [<ffffffff81103844>]
-handle_sysn32+0x44/0x84
-
-
-
-I  am  thinking  of  putting  the  following  fix  in
-shrink_dcache_parent() .   Please  let  me  know  is  there  any  problem
-with  this  fix .
-
-
-
-Index: linux-2.6.32/fs/dcache.c
-===================================================================
---- linux-2.6.32.orig/fs/dcache.c       2012-05-30 15:59:18.000000000
--0700
-+++ linux-2.6.32/fs/dcache.c    2012-06-11 17:10:33.000000000 -0700
-@@ -881,8 +881,14 @@
-        struct super_block *sb = parent->d_sb;
-        int found;
-
--       while ((found = select_parent(parent)) != 0)
--               __shrink_dcache_sb(sb, &found, 0);
-+       while ((found = select_parent(parent)) != 0) {
-+               if (down_read_trylock(&sb->s_umount)) {
-+                        if ((sb->s_root != NULL)) {
-+                               __shrink_dcache_sb(sb, &found, 0);
-+                }
-+                  up_read(&sb->s_umount);
-+             }
-+        }
-}
-
-/*
-
-
-
-Regards,
-shaiju
