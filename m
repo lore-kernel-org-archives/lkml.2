@@ -1,81 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755756Ab2FOMEh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 08:04:37 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:54290 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751868Ab2FOMEf (ORCPT
+	id S1756246Ab2FOMHX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 08:07:23 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:55884 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754076Ab2FOMHW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 08:04:35 -0400
-Date: Fri, 15 Jun 2012 14:04:30 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Fengguang Wu <fengguang.wu@intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "kay.sievers" <kay.sievers@vrfy.org>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] printk: Add printk_flush() to force buffered text to
- console
-Message-ID: <20120615120430.GB23681@gmail.com>
-References: <1339649173.13377.191.camel@gandalf.stny.rr.com>
- <20120614045930.GA10508@kroah.com>
- <1339671715.13377.209.camel@gandalf.stny.rr.com>
- <20120614154153.GD17140@kroah.com>
- <1339693625.13377.242.camel@gandalf.stny.rr.com>
- <20120615042233.GA10973@localhost>
- <20120615043017.GA9587@kroah.com>
+	Fri, 15 Jun 2012 08:07:22 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Roland Stigge <stigge@antcom.de>
+Subject: Re: [PATCH v2 00/23] ARM: LPC32xx specific updates for next
+Date: Fri, 15 Jun 2012 12:07:06 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
+        srinivas.bakki@nxp.com, aletes.xgr@gmail.com
+References: <1339692673-7848-1-git-send-email-stigge@antcom.de>
+In-Reply-To: <1339692673-7848-1-git-send-email-stigge@antcom.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120615043017.GA9587@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201206151207.07108.arnd@arndb.de>
+X-Provags-ID: V02:K0:o856hGWMxig8kpM+o2r8eyScL8Z1CkYlL+Dkb1FDTwK
+ boaQ9bFSe76gSY9lZEPufUjwvUIowAcC72GAAAnXyEPLrPElNY
+ N6NgSpDEt6Vub0+fF80dGMHXb71usH4LCVnQSlRP+WvuIGCLpe
+ Eno8MVIALUIrurxuqIHvAiftNMhGHg+ojlrLgv6tw1FXFDyEcK
+ 35KX4fNb3ifrpDSh8VxrO1I3CAiD2PdUtoR7jCSZL2kNV/o33f
+ bd5eLuDe2Pm0+wB/PNC/+nS1Qxr61IXzsays17811rb7tBvwQB
+ SCG6vumeuQBeuKJ6uaSthw78iBqEwCl5Z+LXl5MWEKRhcsE5iV
+ AnOcfCh+A+LB0ogAkDOc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
-
-> On Fri, Jun 15, 2012 at 12:22:33PM +0800, Fengguang Wu wrote:
-> > > I actually would like to make these more compact. As all my test box
-> > > consoles go through serial ports, just booting through this takes more
-> > > time the the compile itself.
-> > 
-> > The tests took 23 seconds boot time on one kernel:
-> > 
-> >         [    0.152934] Testing tracer nop: PASSED
-> >         ...1577 lines total...
-> >         [   23.206550] Testing kprobe tracing: OK
-> > 
-> > And 135 seconds in another bloated kernel:
-> > 
-> >         [  115.396441] Testing event 9p_client_req: OK
-> >         ...2545 lines total...
-> >         [  240.268783] Testing kprobe tracing: OK
-> > 
-> > I'd appreciate if the boot time can be reduced. Because I'm doing
-> > kernel boot tests for *every single* commits.
-> > 
-> > It may look insane amount of work, but it's still manageable: with 10
-> > kvm instances each take 1 minute to boot test a kernel, I can boot
-> > test 60*24*10=14400 kernels in one day. That's a rather big number.
-> > That allows me to run more cpu/vm/io stress tests for each kernel :-)
+On Thursday 14 June 2012, Roland Stigge wrote:
+> This patch set includes various updates for mach-lpc32xx, including DT binding
+> for serial, and dts updates. A new reference board is supported (EA3250). The
+> board support file phy3250.c is updated to become more general, useable for
+> other boards also. There is still board specific stuff in it, though (some
+> devicetree auxdata).
 > 
-> Do you really want to enable those tests for your test 
-> kernels?  Can they fail if we mess up other parts of the 
-> kernel, or do they only test the tracing portions?
+> Further, clock updates, DMA support, MMC support and a defconfig update for
+> LPC32xx is included.
+> 
+> Signed-off-by: Roland Stigge <stigge@antcom.de>
+> 
+> --
+> Applies to v3.5-rc2
+> 
+> Changes since v1:
+> * Don't use pointers to functions in dma init struct (Patch 4)
+> * Adjusted DT property status: "disable" -> "disabled" (Patch 15)
+> * defconfig: Added MTD_M25P80 (Patch 9)
+> * Fixed USB PHY I2C address for EA3250 (Patch 6)
+> * Added patches 16 through 23 by Alexandre Pereira da Silva
+> 
+> You can also pull from
+> 
+>   git://git.antcom.de/linux-2.6.git lpc32xx-next
 
-These printk's are useful, are used for a specific (albeit 
-limited) purpose and were and continue to be useful in that 
-role.
+It all looks good from my point of view, so I think we can pull it
+for 3.6 if no other comments come.
 
-The changes Steve bisected to broke this use of printk(). Please 
-apply Steve's fix, fix it yourself or revert the changes that 
-regressed printk().
-
-Thanks,
-
-	Ingo
+	Arnd
