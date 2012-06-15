@@ -1,90 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754958Ab2FOIoH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 04:44:07 -0400
-Received: from smtp-out-050.synserver.de ([212.40.185.50]:1074 "EHLO
-	smtp-out-048.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751734Ab2FOIoC (ORCPT
+	id S1755029Ab2FOIoQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 04:44:16 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:52381 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751734Ab2FOIoK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 04:44:02 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 29226
-Message-ID: <4FDAF6A9.5060908@metafoo.de>
-Date: Fri, 15 Jun 2012 10:47:37 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
+	Fri, 15 Jun 2012 04:44:10 -0400
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Girdwood, Liam" <lrg@ti.com>
+Subject: RE: [PATCH] regulator: add new regulator driver for lp872x
+Thread-Topic: [PATCH] regulator: add new regulator driver for lp872x
+Thread-Index: Ac04uMpPvW/+MWybQq22BmeDiSvaKP//nWsA/9tptFA=
+Date: Fri, 15 Jun 2012 08:44:01 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998FB5BB@DQHE02.ent.ti.com>
+References: <A874F61F95741C4A9BA573A70FE3998FA17F@DQHE02.ent.ti.com>
+ <20120523095808.GD4085@opensource.wolfsonmicro.com>
+In-Reply-To: <20120523095808.GD4085@opensource.wolfsonmicro.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.87.173.87]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Axel Lin <axel.lin@gmail.com>
-CC: linux-kernel@vger.kernel.org, Jonathan Cameron <jic23@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] iio: dac: Convert ad5380 to devm_regmap_* APIs
-References: <1339749621.7253.1.camel@phoenix>
-In-Reply-To: <1339749621.7253.1.camel@phoenix>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/15/2012 10:40 AM, Axel Lin wrote:
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Thanks for your feedback and detailed review.
+Updated patch will be submitted. (title with 'patch v2')
 
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
+Thanks & BR
+Milo -
 
-Thanks.
-
-> ---
->  drivers/iio/dac/ad5380.c |   10 ++++------
->  1 file changed, 4 insertions(+), 6 deletions(-)
+> > +static int lp872x_read_byte(struct lp872x *lp, u8 addr, u8 *data)
+> > +{
+> > +	int ret;
+> > +	unsigned int val;
+> > +
+> > +	mutex_lock(&lp->xfer_lock);
+> > +	ret = regmap_read(lp->regmap, addr, &val);
+> > +	if (ret < 0) {
+> > +		mutex_unlock(&lp->xfer_lock);
+> > +		dev_err(lp->dev, "failed to read 0x%.2x\n", addr);
+> > +		return ret;
+> > +	}
+> > +	mutex_unlock(&lp->xfer_lock);
+> > +
+> > +	*data = (u8)val;
+> > +	return 0;
+> > +}
 > 
-> diff --git a/drivers/iio/dac/ad5380.c b/drivers/iio/dac/ad5380.c
-> index 5dfb445..14991ac 100644
-> --- a/drivers/iio/dac/ad5380.c
-> +++ b/drivers/iio/dac/ad5380.c
-> @@ -373,7 +373,7 @@ static int __devinit ad5380_probe(struct device *dev, struct regmap *regmap,
->  	if (indio_dev == NULL) {
->  		dev_err(dev, "Failed to allocate iio device\n");
->  		ret = -ENOMEM;
-> -		goto error_regmap_exit;
-> +		goto error_out;
->  	}
->  
->  	st = iio_priv(indio_dev);
-> @@ -436,8 +436,7 @@ error_free_reg:
->  	kfree(indio_dev->channels);
->  error_free:
->  	iio_device_free(indio_dev);
-> -error_regmap_exit:
-> -	regmap_exit(regmap);
-> +error_out:
->  
->  	return ret;
->  }
-> @@ -456,7 +455,6 @@ static int __devexit ad5380_remove(struct device *dev)
->  		regulator_put(st->vref_reg);
->  	}
->  
-> -	regmap_exit(st->regmap);
->  	iio_device_free(indio_dev);
->  
->  	return 0;
-> @@ -485,7 +483,7 @@ static int __devinit ad5380_spi_probe(struct spi_device *spi)
->  	const struct spi_device_id *id = spi_get_device_id(spi);
->  	struct regmap *regmap;
->  
-> -	regmap = regmap_init_spi(spi, &ad5380_regmap_config);
-> +	regmap = devm_regmap_init_spi(spi, &ad5380_regmap_config);
->  
->  	if (IS_ERR(regmap))
->  		return PTR_ERR(regmap);
-> @@ -559,7 +557,7 @@ static int __devinit ad5380_i2c_probe(struct i2c_client *i2c,
->  {
->  	struct regmap *regmap;
->  
-> -	regmap = regmap_init_i2c(i2c, &ad5380_regmap_config);
-> +	regmap = devm_regmap_init_i2c(i2c, &ad5380_regmap_config);
->  
->  	if (IS_ERR(regmap))
->  		return PTR_ERR(regmap);
+> This should just be a trivial wrapper around regmap_read, the regmap
+> API
+> handles concurrency for you.  Similarly for all your other I/O
+> functions.
+> 
+> > +static int lp872x_ldo_list_voltage(struct regulator_dev *rdev,
+> > +				unsigned selector)
+> 
+> regulator_list_voltage_table() will appear in -next just after the
+> merge
+> window.
+> 
+> > +static int lp872x_ldo_set_voltage_sel(struct regulator_dev *rdev,
+> > +				unsigned selector)
+> 
+> regulator_set_voltage_sel_regmap().
+> 
+> > +static int lp872x_ldo_get_voltage_sel(struct regulator_dev *rdev)
+> 
+> regulator_get_voltage_sel_regmap().
+> 
+> > +static int lp872x_regulator_enable(struct regulator_dev *rdev)
+> 
+> Your ENABLE define made the code a bit obscure but this is
+> regulator_enable_regmap()
+> 
+> > +static int lp872x_regualtor_disable(struct regulator_dev *rdev)
+> 
+> regulator_disable_regmap()
+> 
+> > +static int lp872x_regulator_is_enabled(struct regulator_dev *rdev)
+> 
+> regulator_is_enabled_regmap()
+> 
+> > +static int lp872x_buck_list_voltage(struct regulator_dev *rdev,
+> > +				unsigned selector)
+> 
+> regulator_list_voltage_table()
+> 
+> > +	case LP8720_ID_BUCK:
+> > +		if (val & LP8720_EXT_DVS_M) {
+> > +			pinstate = pdata->get_dvs_pin_state ?
+> > +				pdata->get_dvs_pin_state() : DVS_LOW;
+> 
+> This is a really odd implementation.  Why isn't the driver managing the
+> pin and what happens to the consumers that expected to set a voltage
+> when the pin gets changed?
+> 
+> > +static int lp8725_buck_enable(struct regulator_dev *rdev)
+> 
+> regulator_enable_regmap()
+> 
+> > +static int lp8725_buck_disable(struct regulator_dev *rdev)
+> 
+> regulator_disable_regmap()
+> 
+> > +static int lp8725_buck_is_enabled(struct regulator_dev *rdev)
+> 
+> regulator_is_enabled_regmap()
+> 
+> > +	for (i = 0 ; i < num ; i++) {
+> > +		regulator_data = lp->pdata->regulator_data + i;
+> > +		desc = &lp872x_regulator_desc[regulator_data->id];
+> > +		init_data = regulator_data->init_data;
+> > +
+> > +		rdev = regulator_register(desc, lp->dev, init_data, lp,
+> NULL);
+> > +		if (IS_ERR(rdev)) {
+> > +			dev_err(lp->dev, "regulator register err");
+> > +			ret =  PTR_ERR(rdev);
+> > +			goto err;
+> > +		}
+> 
+> You should unconditionally register all the regulators the chip has and
+> match the init_data to them rather than only registering regulators you
+> have init_data.  This allows users to inspect unconfigured regulators
+> and allows the core to support things like powering off unused
+> regulators.
+> 
+> > +static const struct regmap_config lp872x_regmap_config = {
+> > +	.reg_bits = 8,
+> > +	.val_bits = 8,
+> > +};
+> 
+> Setting max_register would get you debugfs inspection of the regmap.
+> 
+> > +	lp->regmap = regmap_init_i2c(cl, &lp872x_regmap_config);
+> 
+> devm_regmap_init_i2c().
+> 
+> > +/**
+> > + * lp872x_platform_data
+> > + * @general_config    (mandatory) : the value of LP872X_GENERAL_CFG
+> register
+> 
+> Is the chip default never valid?
+> 
+> > + * @regulator_data    (mandatory) : platform regulator id and init
+> data
+> > + * @num_regulators    (mandatory) : total number of platform
+> regulators
+> 
+> These should be optional.
 
