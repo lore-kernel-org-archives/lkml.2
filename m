@@ -1,34 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756986Ab2FOOWc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 10:22:32 -0400
-Received: from mx4-phx2.redhat.com ([209.132.183.25]:52131 "EHLO
-	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752849Ab2FOOWb (ORCPT
+	id S1757037Ab2FOOWi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 10:22:38 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45235 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756999Ab2FOOWg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 10:22:31 -0400
-Date: Fri, 15 Jun 2012 10:22:11 -0400 (EDT)
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: Nick Bowler <nbowler@elliptictech.com>
-Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        linux-scsi@vger.kernel.org, James Bottomley <JBottomley@parallels.com>,
-        Jens Axboe <axboe@kernel.dk>, ben@decadent.org.uk
-Subject: Re: [PATCH] scsi: Silence unnecessary warnings about ioctl to partition
-Message-ID: <b20e68ee-0e3c-4a44-86e4-734c6205cbbe@zmail13.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <20120615135825.GA12847@elliptictech.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	Fri, 15 Jun 2012 10:22:36 -0400
+Date: Fri, 15 Jun 2012 07:22:19 -0700
+From: tip-bot for Ido Yariv <ido@wizery.com>
+Message-ID: <tip-d48daf37a3d2e2b28a61e615c0fc538301edb0dd@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        shai@scalemp.com, wfg@linux.intel.com, ido@wizery.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        shai@scalemp.com, wfg@linux.intel.com, tglx@linutronix.de,
+        ido@wizery.com
+In-Reply-To: <1339688588-12674-1-git-send-email-ido@wizery.com>
+References: <1339688588-12674-1-git-send-email-ido@wizery.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/platform] x86/vsmp:
+  Fix linker error when CONFIG_PROC_FS is not set
+Git-Commit-ID: d48daf37a3d2e2b28a61e615c0fc538301edb0dd
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-X-Originating-IP: [10.36.112.27]
-X-Mailer: Zimbra 7.1.2_GA_3268 (ZimbraWebClient - FF3.0 (Linux)/7.1.2_GA_3268)
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 15 Jun 2012 07:22:25 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This should be -stable material as well, as >=3.2.y kernel versions
-> are affected (I think 3.0.y is OK?).
+Commit-ID:  d48daf37a3d2e2b28a61e615c0fc538301edb0dd
+Gitweb:     http://git.kernel.org/tip/d48daf37a3d2e2b28a61e615c0fc538301edb0dd
+Author:     Ido Yariv <ido@wizery.com>
+AuthorDate: Thu, 14 Jun 2012 18:43:08 +0300
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Fri, 15 Jun 2012 13:54:11 +0200
 
-Not sure, but -ENOIOCTLCMD needed to be changed to -ENOTTY on some
-kernel versions (but the conflicts will make this pretty evident).
+x86/vsmp: Fix linker error when CONFIG_PROC_FS is not set
 
-Paolo
+set_vsmp_pv_ops() references no_irq_affinity which is undeclared
+if CONFIG_PROC_FS isn't set. Fix this by adding an #ifdef around
+this variable's access.
+
+Reported-by: Fengguang Wu <wfg@linux.intel.com>
+Signed-off-by: Ido Yariv <ido@wizery.com>
+Acked-by: Shai Fultheim <shai@scalemp.com>
+Link: http://lkml.kernel.org/r/1339688588-12674-1-git-send-email-ido@wizery.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/kernel/vsmp_64.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/kernel/vsmp_64.c b/arch/x86/kernel/vsmp_64.c
+index 6b96a73..3f0285a 100644
+--- a/arch/x86/kernel/vsmp_64.c
++++ b/arch/x86/kernel/vsmp_64.c
+@@ -101,7 +101,10 @@ static void __init set_vsmp_pv_ops(void)
+ #ifdef CONFIG_SMP
+ 	if (cap & ctl & BIT(8)) {
+ 		ctl &= ~BIT(8);
++#ifdef CONFIG_PROC_FS
++		/* Don't let users change irq affinity via procfs */
+ 		no_irq_affinity = 1;
++#endif
+ 	}
+ #endif
+ 
