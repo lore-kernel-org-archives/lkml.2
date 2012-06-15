@@ -1,32 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932296Ab2FOPYg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 11:24:36 -0400
-Received: from webmail.umm.ac.id ([202.52.52.15]:40607 "EHLO webmail.umm.ac.id"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932111Ab2FOPYb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 11:24:31 -0400
-X-Greylist: delayed 8421 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Jun 2012 11:24:31 EDT
-X-DKIM: OpenDKIM Filter v2.3.2 webmail.umm.ac.id 394282522383
-Date: Fri, 15 Jun 2012 20:03:19 +0700 (WIT)
-From: "Mrs. Helen Wong" <junai23639@webmail.umm.ac.id>
-Reply-To: "Mrs. Helen Wong" <helen_wong606@yahoo.co.jp>
-Subject: 
-Message-ID: <49163bad-5f21-445c-b331-b077647cd522@webmail.umm.ac.id>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	id S932300Ab2FOPZO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 11:25:14 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:54198 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932175Ab2FOPZL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 11:25:11 -0400
 MIME-Version: 1.0
-X-Originating-IP: [95.141.28.51]
-X-Mailer: Zimbra 7.1.1_GA_3196 (ZimbraWebClient - FF3.0 (Win)/7.1.1_GA_3196)
-To: undisclosed-recipients:;
+In-Reply-To: <20120615135647.GC2464@moon>
+References: <20120615135647.GC2464@moon>
+Date: Fri, 15 Jun 2012 08:25:09 -0700
+X-Google-Sender-Auth: 5mmi3SMYX5J4QmWExWXup_cQvXo
+Message-ID: <CAGXu5jJqzHrxDK1Yd1+n+0pprpnitdWg_MvjhJxuH4g5kpTXQw@mail.gmail.com>
+Subject: Re: [PATCH] c/r: prctl: Move PR_GET_TID_ADDRESS to a proper place
+From: Kees Cook <keescook@chromium.org>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrey Vagin <avagin@openvz.org>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greetings to you,
+On Fri, Jun 15, 2012 at 6:56 AM, Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+> During merging of PR_GET_TID_ADDRESS patch the code
+> has been misplaced (it happened to appear under PR_MCE_KILL)
+> in result noone can use this option.
+>
+> Fix it by moving code snippet to a proper place.
+>
+> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
 
-I am Mrs.Helen Wong, from Shanghai Banking Corporation Limited. (China) I have a business proposal of USD$30,000,000 (Thirty Million United States Dollars Only) for you to transact with me
+Good catch!
 
-Contact me via my email address: helen_wong606@yahoo.co.jp
+Acked-by: Kees Cook <keescook@chromium.org>
 
-Mrs. Helen Wong
+-- 
+Kees Cook
+Chrome OS Security
