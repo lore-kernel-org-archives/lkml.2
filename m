@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757531Ab2FPWGa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jun 2012 18:06:30 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:47108 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757296Ab2FPWE4 (ORCPT
+	id S1757326Ab2FPWEz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jun 2012 18:04:55 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:33059 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756911Ab2FPWEv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jun 2012 18:04:56 -0400
+	Sat, 16 Jun 2012 18:04:51 -0400
 From: David Herrmann <dh.herrmann@googlemail.com>
 To: linux-serial@vger.kernel.org
 Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
         linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         David Herrmann <dh.herrmann@googlemail.com>
-Subject: [PATCH 06/10] fblog: allow enabling/disabling fblog on runtime
-Date: Sun, 17 Jun 2012 00:04:22 +0200
-Message-Id: <1339884266-9201-7-git-send-email-dh.herrmann@googlemail.com>
+Subject: [PATCH 01/10] fblog: new framebuffer kernel log dummy driver
+Date: Sun, 17 Jun 2012 00:04:17 +0200
+Message-Id: <1339884266-9201-2-git-send-email-dh.herrmann@googlemail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1339884266-9201-1-git-send-email-dh.herrmann@googlemail.com>
 References: <1339884266-9201-1-git-send-email-dh.herrmann@googlemail.com>
@@ -23,115 +23,225 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A sysfs file called "active" can be used to enable and disable fblog on
-runtime. For example, the init-process can run "echo '0' >.../active"
-after booting the system. This will allow other applications like X11 to
-use the graphics subsystem. During shutdown, we can write '1' to get
-system messages again.
+Fblog displays all kernel log messages on all connected framebuffers. It
+replaces fbcon when CONFIG_VT=n is selected. Its main purpose is to debug
+boot problems by displaying the whole boot log on the screen. This patch
+provides the first dummy module-init/deinit functions.
 
-When disabling fblog, we remove all framebuffers and will prevent new
-hotplugged framebuffers from being added. When enabling fblog again, we
-rescan the system for all framebuffers and resume operating.
-
-The sysfs file is not registered, yet, as we do not have a "struct device"
-yet. This will follow shortly, though.
+As is uses all the font and fb functions I placed it in
+drivers/video/console. However, this means that we need to move the check
+for CONFIG_VT in Makefile/Kconfig from drivers/video into
+drivers/video/console as fblog does not depend on CONFIG_VT.
 
 Signed-off-by: David Herrmann <dh.herrmann@googlemail.com>
 ---
- Documentation/ABI/testing/sysfs-fblog |    9 ++++++
- drivers/video/console/fblog.c         |   49 +++++++++++++++++++++++++++++++++
- 2 files changed, 58 insertions(+)
- create mode 100644 Documentation/ABI/testing/sysfs-fblog
+ drivers/video/Kconfig          |    5 +---
+ drivers/video/Makefile         |    2 +-
+ drivers/video/console/Kconfig  |   37 +++++++++++++++++++++------
+ drivers/video/console/Makefile |    1 +
+ drivers/video/console/fblog.c  |   55 ++++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 87 insertions(+), 13 deletions(-)
+ create mode 100644 drivers/video/console/fblog.c
 
-diff --git a/Documentation/ABI/testing/sysfs-fblog b/Documentation/ABI/testing/sysfs-fblog
-new file mode 100644
-index 0000000..596393c
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-fblog
-@@ -0,0 +1,9 @@
-+What:		/sys/class/graphics/fblog/active
-+Date:		June 2012
-+KernelVersion:	3.6
-+Contact:	David Herrmann <dh.herrmann@googlemail.com>
-+Description:	Enable/Disable fblog. When setting this to 0, fblog will stop
-+		writing to framebuffers and other applications can use the
-+		graphics subsystem. When setting this to 1, fblog will rescan
-+		the system for all framebuffers and resume drawing the kernel
-+		log onto all framebuffers.
+diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
+index 0217f74..e8fd53d 100644
+--- a/drivers/video/Kconfig
++++ b/drivers/video/Kconfig
+@@ -2448,10 +2448,7 @@ source "drivers/video/omap/Kconfig"
+ source "drivers/video/omap2/Kconfig"
+ source "drivers/video/exynos/Kconfig"
+ source "drivers/video/backlight/Kconfig"
+-
+-if VT
+-	source "drivers/video/console/Kconfig"
+-endif
++source "drivers/video/console/Kconfig"
+ 
+ if FB || SGI_NEWPORT_CONSOLE
+ 	source "drivers/video/logo/Kconfig"
+diff --git a/drivers/video/Makefile b/drivers/video/Makefile
+index ee8dafb..9f8a7f0 100644
+--- a/drivers/video/Makefile
++++ b/drivers/video/Makefile
+@@ -11,7 +11,7 @@ fb-y                              := fbmem.o fbmon.o fbcmap.o fbsysfs.o \
+                                      modedb.o fbcvt.o
+ fb-objs                           := $(fb-y)
+ 
+-obj-$(CONFIG_VT)		  += console/
++obj-y				  += console/
+ obj-$(CONFIG_LOGO)		  += logo/
+ obj-y				  += backlight/
+ 
+diff --git a/drivers/video/console/Kconfig b/drivers/video/console/Kconfig
+index c2d11fe..cfee482 100644
+--- a/drivers/video/console/Kconfig
++++ b/drivers/video/console/Kconfig
+@@ -6,7 +6,7 @@ menu "Console display driver support"
+ 
+ config VGA_CONSOLE
+ 	bool "VGA text console" if EXPERT || !X86
+-	depends on !4xx && !8xx && !SPARC && !M68K && !PARISC && !FRV && !SUPERH && !BLACKFIN && !AVR32 && !MN10300 && (!ARM || ARCH_FOOTBRIDGE || ARCH_INTEGRATOR || ARCH_NETWINDER)
++	depends on VT && !4xx && !8xx && !SPARC && !M68K && !PARISC && !FRV && !SUPERH && !BLACKFIN && !AVR32 && !MN10300 && (!ARM || ARCH_FOOTBRIDGE || ARCH_INTEGRATOR || ARCH_NETWINDER)
+ 	default y
+ 	help
+ 	  Saying Y here will allow you to use Linux in text mode through a
+@@ -45,7 +45,7 @@ config VGACON_SOFT_SCROLLBACK_SIZE
+ 	 screenfuls of scrollback buffer
+ 
+ config MDA_CONSOLE
+-	depends on !M68K && !PARISC && ISA
++	depends on VT && !M68K && !PARISC && ISA
+ 	tristate "MDA text console (dual-headed) (EXPERIMENTAL)"
+ 	---help---
+ 	  Say Y here if you have an old MDA or monochrome Hercules graphics
+@@ -61,14 +61,14 @@ config MDA_CONSOLE
+ 
+ config SGI_NEWPORT_CONSOLE
+         tristate "SGI Newport Console support"
+-        depends on SGI_IP22 
++        depends on VT && SGI_IP22
+         help
+           Say Y here if you want the console on the Newport aka XL graphics
+           card of your Indy.  Most people say Y here.
+ 
+ config DUMMY_CONSOLE
+ 	bool
+-	depends on VGA_CONSOLE!=y || SGI_NEWPORT_CONSOLE!=y 
++	depends on VT && (VGA_CONSOLE!=y || SGI_NEWPORT_CONSOLE!=y)
+ 	default y
+ 
+ config DUMMY_CONSOLE_COLUMNS
+@@ -89,7 +89,7 @@ config DUMMY_CONSOLE_ROWS
+ 
+ config FRAMEBUFFER_CONSOLE
+ 	tristate "Framebuffer Console support"
+-	depends on FB
++	depends on VT && FB
+ 	select CRC32
+ 	help
+ 	  Low-level framebuffer-based console driver.
+@@ -122,16 +122,37 @@ config FRAMEBUFFER_CONSOLE_ROTATION
+ 
+ config STI_CONSOLE
+         bool "STI text console"
+-        depends on PARISC
++        depends on VT && PARISC
+         default y
+         help
+           The STI console is the builtin display/keyboard on HP-PARISC
+           machines.  Say Y here to build support for it into your kernel.
+           The alternative is to use your primary serial port as a console.
+ 
++config FBLOG
++	tristate "Framebuffer Kernel Log Driver"
++	depends on !VT && FB
++	default n
++	help
++	  This driver displays all kernel log messages on all connected
++	  framebuffers. It is mutually exclusive with CONFIG_FRAMEBUFFER_CONSOLE
++	  and CONFIG_VT. It was mainly created for debugging purposes when
++	  CONFIG_VT is not selected but you still want kernel boot messages on
++	  the screen.
++
++	  This driver overwrites all other graphics output on the framebuffer as
++	  long as it is active so the kernel log will always be visible. You
++	  need to disable this driver via sysfs to be able to start another
++	  graphics application.
++
++	  If unsure, say N.
++
++	  To compile this driver as a module, choose M here: the module will
++	  be called fblog.
++
+ config FONTS
+ 	bool "Select compiled-in fonts"
+-	depends on FRAMEBUFFER_CONSOLE || STI_CONSOLE
++	depends on FRAMEBUFFER_CONSOLE || STI_CONSOLE || FBLOG
+ 	help
+ 	  Say Y here if you would like to use fonts other than the default
+ 	  your frame buffer console usually use.
+@@ -158,7 +179,7 @@ config FONT_8x8
+ 
+ config FONT_8x16
+ 	bool "VGA 8x16 font" if FONTS
+-	depends on FRAMEBUFFER_CONSOLE || SGI_NEWPORT_CONSOLE || STI_CONSOLE || USB_SISUSBVGA_CON
++	depends on FRAMEBUFFER_CONSOLE || SGI_NEWPORT_CONSOLE || STI_CONSOLE || USB_SISUSBVGA_CON || FBLOG
+ 	default y if !SPARC && !FONTS
+ 	help
+ 	  This is the "high resolution" font for the VGA frame buffer (the one
+diff --git a/drivers/video/console/Makefile b/drivers/video/console/Makefile
+index a862e91..f608c97 100644
+--- a/drivers/video/console/Makefile
++++ b/drivers/video/console/Makefile
+@@ -20,6 +20,7 @@ font-objs += $(font-objs-y)
+ 
+ # Each configuration option enables a list of files.
+ 
++obj-$(CONFIG_FBLOG)               += fblog.o font.o
+ obj-$(CONFIG_DUMMY_CONSOLE)       += dummycon.o
+ obj-$(CONFIG_SGI_NEWPORT_CONSOLE) += newport_con.o font.o
+ obj-$(CONFIG_STI_CONSOLE)         += sticon.o sticore.o font.o
 diff --git a/drivers/video/console/fblog.c b/drivers/video/console/fblog.c
-index 7d4032e..9b05c56 100644
---- a/drivers/video/console/fblog.c
+new file mode 100644
+index 0000000..ea83643
+--- /dev/null
 +++ b/drivers/video/console/fblog.c
-@@ -92,6 +92,7 @@ struct fblog_fb {
- };
- 
- static struct fblog_fb *fblog_fbs[FB_MAX];
-+static atomic_t fblog_active;
- 
- static void fblog_buf_resize(struct fblog_buf *buf, size_t width,
- 			     size_t height)
-@@ -338,6 +339,8 @@ static void fblog_register(struct fb_info *info)
- 	const struct fb_videomode *mode;
- 	unsigned int width, height;
- 
-+	if (!atomic_read(&fblog_active))
-+		return;
- 	if (!info || info->node < 0 || info->node >= FB_MAX)
- 		return;
- 	if (!registered_fb[info->node] || fblog_fbs[info->node])
-@@ -428,6 +431,52 @@ static void fblog_refresh(struct fblog_fb *fb)
- 	fblog_redraw(fb);
- }
- 
-+static void fblog_activate(void)
-+{
-+	if (atomic_read(&fblog_active))
-+		return;
+@@ -0,0 +1,55 @@
++/*
++ * Framebuffer Kernel Log Driver
++ * Copyright (c) 2012 David Herrmann <dh.herrmann@googlemail.com>
++ */
 +
-+	atomic_set(&fblog_active, 1);
-+	fblog_register_all();
++/*
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the Free
++ * Software Foundation; either version 2 of the License, or (at your option)
++ * any later version.
++ */
++
++/*
++ * Framebuffer Kernel Log
++ * This driver prints the kernel log to all connected display devices. It
++ * replaces CONFIG_VT and cannot run simultaneously with it. It does not provide
++ * any virtual-terminal, though. It should only be used to get kernel boot
++ * messages to debug kernel errors.
++ * Hence, this driver is neither optimized for speed, nor does it provide any
++ * fancy features like colored text output. After booting is done, the init
++ * process should set /sys/class/graphics/fblog/active to 0 which disables this
++ * driver and you can start using the graphics devices. During shutdown, you can
++ * set this to 1 to get log messages again.
++ * This driver forcibly writes to the framebuffer while active, therefore, you
++ * cannot run other graphics applications simultaneously.
++ *
++ * fblog_redraw_line() is heavily based on the fbcon driver. See bitblit.c for
++ * the original implementation copyrighted by:
++ *     Copyright (C) 2004 Antonino Daplas <adaplas@pol.net>
++ *
++ * Please note that nearly all functions here must be called with console_lock
++ * held. This way, we have no locking problems and do not need special
++ * synchronization.
++ */
++
++#include <linux/atomic.h>
++#include <linux/console.h>
++#include <linux/fb.h>
++#include <linux/font.h>
++#include <linux/module.h>
++
++static int __init fblog_init(void)
++{
++	return 0;
 +}
 +
-+static void fblog_deactivate(void)
++static void __exit fblog_exit(void)
 +{
-+	if (!atomic_read(&fblog_active))
-+		return;
-+
-+	atomic_set(&fblog_active, 0);
-+	fblog_unregister_all();
 +}
 +
-+static ssize_t fblog_dev_active_show(struct device *dev,
-+				     struct device_attribute *attr,
-+				     char *buf)
-+{
-+	return snprintf(buf, PAGE_SIZE, "%d\n", atomic_read(&fblog_active));
-+}
-+
-+static ssize_t fblog_dev_active_store(struct device *dev,
-+				      struct device_attribute *attr,
-+				      const char *buf,
-+				      size_t count)
-+{
-+	unsigned long num;
-+
-+	num = simple_strtoul(buf, NULL, 10);
-+	console_lock();
-+	if (num)
-+		fblog_activate();
-+	else
-+		fblog_deactivate();
-+	console_unlock();
-+
-+	return count;
-+}
-+
-+static DEVICE_ATTR(active, S_IRUGO | S_IWUSR | S_IWGRP, fblog_dev_active_show,
-+		   fblog_dev_active_store);
-+
- static int __init fblog_init(void)
- {
- 	return 0;
++module_init(fblog_init);
++module_exit(fblog_exit);
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("David Herrmann <dh.herrmann@googlemail.com>");
++MODULE_DESCRIPTION("Framebuffer Kernel Log Driver");
 -- 
 1.7.10.4
 
