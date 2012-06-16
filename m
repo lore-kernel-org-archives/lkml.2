@@ -1,74 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756017Ab2FPSFo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jun 2012 14:05:44 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:60749 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754893Ab2FPSFn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jun 2012 14:05:43 -0400
-Date: Sat, 16 Jun 2012 20:05:27 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Kasza =?iso-8859-1?Q?P=E9ter?= <mr.schyte@gmail.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        kernel list <linux-kernel@vger.kernel.org>
-Cc: gregkh@linuxfoundation.org
-Subject: Re: Deadlock in suspend console switch
-Message-ID: <20120616180526.GB29917@elf.ucw.cz>
-References: <20120616093737.GA6914@cirque.teteny.elte.hu>
- <20120616153624.GA9401@cirque.teteny.elte.hu>
+	id S1755914Ab2FPSIK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jun 2012 14:08:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38570 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754103Ab2FPSIJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Jun 2012 14:08:09 -0400
+Date: Sat, 16 Jun 2012 20:05:55 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        peterz@infradead.org, Jim Keniston <jkenisto@us.ibm.com>
+Subject: Re: [PATCH v2 1/2] uprobes: Pass probed vaddr to
+	arch_uprobe_analyze_insn()
+Message-ID: <20120616180555.GA13634@redhat.com>
+References: <20120608093257.GG13409@in.ibm.com> <20120611161215.GA12116@redhat.com> <20120612165404.GB30555@linux.vnet.ibm.com> <20120612174305.GA16349@redhat.com> <20120613191519.GA14246@redhat.com> <20120614114514.GA12051@linux.vnet.ibm.com> <20120614181934.GA9424@redhat.com> <20120615123300.GA5748@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120616153624.GA9401@cirque.teteny.elte.hu>
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120615123300.GA5748@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Srikar,
 
-[Rafael really should have been notified].
+To clarify: I am not arguing, I am asking because I know nothing about
+asm/opcodes/etc.
 
-								Pavel
+On 06/15, Srikar Dronamraju wrote:
+>
+> > But this can't protect from the malicious user who does
+> > mmap(64-bit-code, PROT_EXEC) from a 32-bit app, and this can confuse
+> > uprobes even if that 32-bit app never tries to actually execute that
+> > 64-bit-code.
+> >
+>
+> So if we read just after we allocate uprobe struct but before
+> probe insertion, then we dont need to check this for each process.
+>
+> So if the library was 64 bit mapped in 32 bit process and has a valid
+> instruction for 64 bit, then we just check for valid 64 bit instructions
+> and allow insertion of the breakpoint even in the 32 bit process.
 
-On Sat 2012-06-16 17:36:24, Kasza Péter wrote:
-> Dear Recipients!
-> 
-> I've found a deadlock bug in the suspend code. If the virtual terminal
-> is locked using the VT_PROCESS method (using perhaps vlock[1]), the
-> kernel cannot switch to the suspend console, so it waits indefinately
-> for the change to occur.
-> 
-> The console change is initated from "pm_prepare_console"
-> (power/console.c), and the "vt_move_to_console" (tty/vt/vt_ioctl) call
-> hangs by calling the vt_waitactive function. (This problem obviously
-> doesn't occur if the disable_vt_switch variable is true)
-> 
-> I haven't written a patch, because I'm not sure about the semantics we
-> should follow.
-> 
-> Should the kernel perform the switch to the suspend console even if the
-> terminal is locked? Or should we block and notify the clients waiting
-> that the switch cannot be completed (the kernel currently just ignores
-> the request in this case)?
-> 
-> The first option is easier to implement, because we don't have to notify
-> the clients about the error. However the second option is more
-> favourable, because userspace programs can fall into the trap, creating
-> a race condition between the switch and the call to the
-> VT_WAITACTIVE ioctl.
-> 
-> In my opinion the suspend vt-switch should always succeed, and the
-> clients waiting on the switch should also be notified somehow. But this
-> requires some modification of the event handling code, and I haven't
-> found an elegant way to do that yet.
-> 
-> [1] http://freecode.com/projects/vlock
-> 
+And what happens if this insn is not valid from validate_insn_32bits()
+pov and that 32-bit application tries to execute it? Or vice versa,
+see below.
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+> Here is a very crude implementation of the same.
+> Also this depends on read_mapping_page taking NULL as an valid argument
+> for file. As a side-effect we can do away with UPROBE_COPY_INSN which
+> was set and read at just one place.
+>
+> 1. Move the copy_insn to just after alloc_uprobe.
+> 2. Assume that copy_insn can work without struct file
+> ...
+> 5. Move the analyze instruction to before the actual probe insertion.
+
+OK, this is what I think we should do anyway (at least try to do).
+
+> 3. Read the elfhdr for the file.
+> 4. Pass the elfhdr to the arch specific analyze insn
+
+This assumes that everything is elf. Why? An application is free to
+create a file in any format and do mmap(PROT_EXEC).
+
+But OK, probably we can restrict uprobe_register() to work only with
+elf files which do not mix 32/64 bits.
+
+
+
+
+My concern is, are you sure an evil user can't confuse uprobes and
+do something bad?
+
+Just to explain what I mean. For example, we certainly do not want
+to allow to probe the "syscall" insn, at least with the current
+implementation. So I assume that validate_insn_64bits("syscall")
+must fail.
+
+Are you sure that validate_insn_32bits("syscall") will fail too?
+
+Of course, I am not asking about "syscall" in particular. In general,
+suppose that, say, validate_insn_64bits() returns true. Are you sure
+this insn can't do something different and harmful if it is executed
+by __USER32_CS task?
+
+Oleg.
+
