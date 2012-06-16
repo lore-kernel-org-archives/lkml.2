@@ -1,183 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757501Ab2FPWHK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jun 2012 18:07:10 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:55078 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757258Ab2FPWEy (ORCPT
+	id S1757229Ab2FPWEv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jun 2012 18:04:51 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:38450 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756627Ab2FPWEt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jun 2012 18:04:54 -0400
+	Sat, 16 Jun 2012 18:04:49 -0400
 From: David Herrmann <dh.herrmann@googlemail.com>
 To: linux-serial@vger.kernel.org
 Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
         linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         David Herrmann <dh.herrmann@googlemail.com>
-Subject: [PATCH 04/10] fblog: implement fblog_redraw()
-Date: Sun, 17 Jun 2012 00:04:20 +0200
-Message-Id: <1339884266-9201-5-git-send-email-dh.herrmann@googlemail.com>
+Subject: [RFC 00/10] fblog: framebuffer kernel log driver
+Date: Sun, 17 Jun 2012 00:04:16 +0200
+Message-Id: <1339884266-9201-1-git-send-email-dh.herrmann@googlemail.com>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1339884266-9201-1-git-send-email-dh.herrmann@googlemail.com>
-References: <1339884266-9201-1-git-send-email-dh.herrmann@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This mostly copies the functionality from drivers/video/console/bitblit.c
-so we can draw the console content on all available framebuffers.
+Hi
 
-All speed optimizations have been removed for simplicity. The original
-code depends heavily on CONFIG_VT so we cannot share the codebase here.
+As some might know I am working on making CONFIG_VT obsolete. But as a developer
+it is often useful to have a kernel-log on the screen during boot to debug many
+common kernel(-config) errors. However, without CONFIG_VT we cannot use the
+VGA/framebbufer consoles either. Therefore, I am working on a small driver
+called "fblog".
 
-Signed-off-by: David Herrmann <dh.herrmann@googlemail.com>
----
- drivers/video/console/fblog.c |  126 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 126 insertions(+)
+This driver simply writes the kernel log to all connected framebuffers. It works
+similar to fbcon but removes all the complexity of the virtual terminals. There
+is a sysfs attribute called "active" that allows to enable/disable fblog so
+user-space can start an xserver or similar.
 
-diff --git a/drivers/video/console/fblog.c b/drivers/video/console/fblog.c
-index 8038dcc..e790971 100644
---- a/drivers/video/console/fblog.c
-+++ b/drivers/video/console/fblog.c
-@@ -197,6 +197,131 @@ static void fblog_buf_write(struct fblog_buf *buf, const char *str, size_t len)
- 	}
- }
- 
-+static void fblog_redraw_aligned(struct fblog_fb *fb, const char *s, u32 cnt,
-+				 u32 d_pitch, u32 s_pitch, u32 cellsize,
-+				 struct fb_image *image, u8 *dst)
-+{
-+	struct fb_info *info = fb->info;
-+	const struct font_desc *font = fb->font;
-+	u32 idx = font->width >> 3;
-+	u8 *src;
-+
-+	while (cnt--) {
-+		src = (void*)(font->data + (*s++ & 0xff) * cellsize);
-+		fb_pad_aligned_buffer(dst, d_pitch, src, idx, image->height);
-+		dst += s_pitch;
-+	}
-+
-+	info->fbops->fb_imageblit(info, image);
-+}
-+
-+static void fblog_redraw_unaligned(struct fblog_fb *fb, const char *s, u32 cnt,
-+				   u32 d_pitch, u32 s_pitch, u32 cellsize,
-+				   struct fb_image *image, u8 *dst)
-+{
-+	struct fb_info *info = fb->info;
-+	const struct font_desc *font = fb->font;
-+	u32 shift_low = 0, mod = font->width % 8;
-+	u32 shift_high = 8;
-+	u32 idx = font->width >> 3;
-+	u8 *src;
-+
-+	while (cnt--) {
-+		src = (void*)(font->data + (*s++ & 0xff) * cellsize);
-+		fb_pad_unaligned_buffer(dst, d_pitch, src, idx,
-+					image->height, shift_high,
-+					shift_low, mod);
-+		shift_low += mod;
-+		dst += (shift_low >= 8) ? s_pitch : s_pitch - 1;
-+		shift_low &= 7;
-+		shift_high = 8 - shift_low;
-+	}
-+
-+	info->fbops->fb_imageblit(info, image);
-+}
-+
-+static void fblog_redraw_line(struct fblog_fb *fb, size_t line,
-+			      const char *str, size_t len)
-+{
-+	struct fb_info *info = fb->info;
-+	const struct font_desc *font = fb->font;
-+	struct fb_image image;
-+	u32 width = DIV_ROUND_UP(font->width, 8);
-+	u32 cellsize = width * font->height;
-+	u32 maxcnt = info->pixmap.size / cellsize;
-+	u32 scan_align = info->pixmap.scan_align - 1;
-+	u32 buf_align = info->pixmap.buf_align - 1;
-+	u32 mod = font->width % 8;
-+	u32 cnt, pitch, size;
-+	u8 *dst;
-+
-+	image.fg_color = 7;
-+	image.bg_color = 0;
-+	image.dx = 0;
-+	image.dy = line * font->height;
-+	image.height = font->height;
-+	image.depth = 1;
-+
-+	while (len) {
-+		if (len > maxcnt)
-+			cnt = maxcnt;
-+		else
-+			cnt = len;
-+
-+		image.width = font->width * cnt;
-+		pitch = DIV_ROUND_UP(image.width, 8) + scan_align;
-+		pitch &= ~scan_align;
-+		size = pitch * image.height + buf_align;
-+		size &= ~buf_align;
-+		dst = fb_get_buffer_offset(info, &info->pixmap, size);
-+		image.data = dst;
-+
-+		if (!mod)
-+			fblog_redraw_aligned(fb, str, cnt, pitch, width,
-+					     cellsize, &image, dst);
-+		else
-+			fblog_redraw_unaligned(fb, str, cnt, pitch, width,
-+					       cellsize, &image, dst);
-+
-+		image.dx += cnt * font->width;
-+		len -= cnt;
-+		str += cnt;
-+	}
-+}
-+
-+static void fblog_redraw_clear(struct fblog_fb *fb)
-+{
-+	struct fb_fillrect region;
-+	struct fb_info *info = fb->info;
-+
-+	region.color = 0;
-+	region.dx = 0;
-+	region.dy = 0;
-+	region.width = info->var.xres;
-+	region.height = info->var.yres;
-+	region.rop = ROP_COPY;
-+
-+	info->fbops->fb_fillrect(info, &region);
-+}
-+
-+static void fblog_redraw(struct fblog_fb *fb)
-+{
-+	size_t i, len;
-+
-+	if (!fb || !fb->font || test_bit(FBLOG_KILLED, &fb->flags) ||
-+	    test_bit(FBLOG_SUSPENDED, &fb->flags) ||
-+	    test_bit(FBLOG_BLANKED, &fb->flags))
-+		return;
-+
-+	fblog_redraw_clear(fb);
-+
-+	for (i = 0; i < fb->buf.height; ++i) {
-+		len = strnlen(fb->buf.lines[i], fb->buf.width);
-+		if (len)
-+			fblog_redraw_line(fb, i, fb->buf.lines[i], len);
-+	}
-+}
-+
- static struct fblog_fb *fblog_info2fb(struct fb_info *info)
- {
- 	if (!info || info->node < 0 || info->node >= FB_MAX ||
-@@ -244,6 +369,7 @@ static void fblog_register(struct fb_info *info)
- 		width = info->var.xres / fb->font->width;
- 		height = info->var.yres / fb->font->height;
- 		fblog_buf_resize(&fb->buf, width, height);
-+		fblog_redraw(fb);
- 	}
- 
- 	return;
+The main purpose is debugging kernel boot problems. Therefore, it is not
+optimized for speed and I tried keeping it simple. I splitted the patches
+into 10 small chunks to make review easier.
+
+I would be glad if someone could review this and tell me whether this is
+something we could include in mainline or not.
+
+
+There are still some issues but apart from them it works fine on my
+machine (x86):
+  - I register the fblog device during module_init and need to call
+    module_get(). However, this means it is impossible to call "rmmod fblog" as
+    fblog has a reference to itself. Using "rmmod -f fblog" works fine but is a
+    bit ugly. Is there a nice way to fix this? Otherwise I would need to call
+    device_get() in module_exit() if there is a pending user of the fblog-device
+    even though I unregistered it.
+  - I redraw all framebuffers while holding the console-lock. This may slow down
+    machines with more than 2 framebuffers (like 10 or 20). However, as this is
+    supposed to be a debug driver, I think I can ignore this? If someone wants
+    to improve the redraw logic to avoid redrawing the whole screen all the
+    time, I would be glad to include it in this patchset :)
+  - I am really no expert regarding the framebuffer subsystem. So I would
+    appreciate it if someone could comment whether I need to handle the events
+    in a different way or whether it is ok the way it is now.
+
+I run this on my machine with CONFIG_VT=n and it works quite nice. If someone
+wants to test it, this also works with CONFIG_VT=y and x11 running. Just load
+the driver from your xserver and it will redraw the screen with the console.
+Switching VTs back and forth will make the xserver redraw the whole screen
+again. You need to remove "depends on !VT" of course.
+
+Thanks and regards
+David
+
+David Herrmann (10):
+  fblog: new framebuffer kernel log dummy driver
+  fblog: implement buffer management
+  fblog: register framebuffer objects
+  fblog: implement fblog_redraw()
+  fblog: add framebuffer helpers
+  fblog: allow enabling/disabling fblog on runtime
+  fblog: forward kernel log messages to all framebuffers
+  fblog: react on framebuffer events
+  fblog: register all handlers on module-init
+  fblog: add "activate" module parameter
+
+ Documentation/ABI/testing/sysfs-fblog |    9 +
+ drivers/video/Kconfig                 |    5 +-
+ drivers/video/Makefile                |    2 +-
+ drivers/video/console/Kconfig         |   37 +-
+ drivers/video/console/Makefile        |    1 +
+ drivers/video/console/fblog.c         |  694 +++++++++++++++++++++++++++++++++
+ 6 files changed, 735 insertions(+), 13 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-fblog
+ create mode 100644 drivers/video/console/fblog.c
+
 -- 
 1.7.10.4
 
