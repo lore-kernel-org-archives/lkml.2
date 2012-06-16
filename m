@@ -1,79 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755043Ab2FPPih (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Jun 2012 11:38:37 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:54167 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752718Ab2FPPif (ORCPT
+	id S1754392Ab2FPPkv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Jun 2012 11:40:51 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47851 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750856Ab2FPPku (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Jun 2012 11:38:35 -0400
-Message-ID: <4FDCA875.6040905@openvz.org>
-Date: Sat, 16 Jun 2012 19:38:29 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120608 Firefox/10.0.5 Iceape/2.7.5
+	Sat, 16 Jun 2012 11:40:50 -0400
+Date: Sat, 16 Jun 2012 08:40:45 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Fengguang Wu <fengguang.wu@intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "kay.sievers" <kay.sievers@vrfy.org>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] printk: Add printk_flush() to force buffered text to
+ console
+Message-ID: <20120616154045.GB8062@kroah.com>
+References: <1339649173.13377.191.camel@gandalf.stny.rr.com>
+ <20120614045930.GA10508@kroah.com>
+ <1339671715.13377.209.camel@gandalf.stny.rr.com>
+ <20120614154153.GD17140@kroah.com>
+ <1339693625.13377.242.camel@gandalf.stny.rr.com>
+ <20120615042233.GA10973@localhost>
+ <20120615043017.GA9587@kroah.com>
+ <20120615120430.GB23681@gmail.com>
+ <20120615231318.GD8205@kroah.com>
+ <20120616065903.GA24594@gmail.com>
 MIME-Version: 1.0
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Pavel Emelianov <xemul@parallels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Matt Helsley <matthltc@us.ibm.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 3.5] c/r: prctl: less paranoid prctl_set_mm_exe_file()
-References: <20120616085104.14682.16723.stgit@zurg> <20120616090646.GD32029@moon> <20120616091712.GA2021@moon> <4FDC54FF.3020305@openvz.org> <20120616094714.GF32029@moon>
-In-Reply-To: <20120616094714.GF32029@moon>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120616065903.GA24594@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cyrill Gorcunov wrote:
-> On Sat, Jun 16, 2012 at 01:42:23PM +0400, Konstantin Khlebnikov wrote:
->>> Side note: there is a little nit with this patch actually,
->>> because while when we do c/r we do "right things" and unmap
->>> all vm-executable mappings before we set up new exe_file. But
->>> we can't guarantee that some brave soul would not setup
->>> new exe-file just for it's own, then what we migh have
->>>
->>>   - mm::exe_file set up and points to some file, moreover num_exe_file_vmas might be>   1
->>>   - application calls for prctl_set_mm_exe_file
->>>   - set_mm_exe_file(mm, exe_file) called, and it drops num_exe_file_vmas to 0
->>>   - finally application might call for removed_exe_file_vma
->>>
->>> void removed_exe_file_vma(struct mm_struct *mm)
->>> {
->>> 	mm->num_exe_file_vmas--;
->>> 	if ((mm->num_exe_file_vmas == 0)&&   mm->exe_file) {
->>> 		fput(mm->exe_file);
->>> 		mm->exe_file = NULL;
->>> 	}
->>>
->>> }
->>>
->>> and it does _not_ test for num_exe_file_vmas being 0 before doing decrement,
->>> thus we get inconsistency in counter.
->>
->> No, removed_exe_file_vma() is called only for vma with VM_EXECUTABLE flag,
->> there no way to get such vma other than sys_execve().
->> And this brave soul cannot call prctl_set_mm_exe_file() successfully,
->> just because for vma with VM_EXECUTABLE flag vma->vm_file == mm->exe_file.
->>
->> Anyway, I plan to get rid of mm->num_exe_file_vmas and VM_EXECUTABLE.
->
-> Yeah, you've changed !path_equal to path_equal. And yes, getting rid of
-> num_exe_file_vmas is good idea. Btw, Konstantin, why do we need to
-> call for path_equal? Maybe we can simply test for mm->exe_file == NULL,
-> and refuse to change anything if it's not nil value? This will simplify
-> the code.
+On Sat, Jun 16, 2012 at 08:59:03AM +0200, Ingo Molnar wrote:
+> 
+> * Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
+> 
+> > On Fri, Jun 15, 2012 at 02:04:30PM +0200, Ingo Molnar wrote:
+> > > 
+> > > * Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
+> > > 
+> > > > On Fri, Jun 15, 2012 at 12:22:33PM +0800, Fengguang Wu wrote:
+> > > > > > I actually would like to make these more compact. As all my test box
+> > > > > > consoles go through serial ports, just booting through this takes more
+> > > > > > time the the compile itself.
+> > > > > 
+> > > > > The tests took 23 seconds boot time on one kernel:
+> > > > > 
+> > > > >         [    0.152934] Testing tracer nop: PASSED
+> > > > >         ...1577 lines total...
+> > > > >         [   23.206550] Testing kprobe tracing: OK
+> > > > > 
+> > > > > And 135 seconds in another bloated kernel:
+> > > > > 
+> > > > >         [  115.396441] Testing event 9p_client_req: OK
+> > > > >         ...2545 lines total...
+> > > > >         [  240.268783] Testing kprobe tracing: OK
+> > > > > 
+> > > > > I'd appreciate if the boot time can be reduced. Because I'm doing
+> > > > > kernel boot tests for *every single* commits.
+> > > > > 
+> > > > > It may look insane amount of work, but it's still manageable: with 10
+> > > > > kvm instances each take 1 minute to boot test a kernel, I can boot
+> > > > > test 60*24*10=14400 kernels in one day. That's a rather big number.
+> > > > > That allows me to run more cpu/vm/io stress tests for each kernel :-)
+> > > > 
+> > > > Do you really want to enable those tests for your test 
+> > > > kernels?  Can they fail if we mess up other parts of the 
+> > > > kernel, or do they only test the tracing portions?
+> > > 
+> > > These printk's are useful, are used for a specific (albeit 
+> > > limited) purpose and were and continue to be useful in that 
+> > > role.
+> > > 
+> > > The changes Steve bisected to broke this use of printk().
+> > 
+> > And note, fixed others :)
+> 
+> Sorry, the "we fix some bugs and introduce others" stance is not 
+> a valid response to a regression. Either fix *all* regressions 
+> or revert the original change. Simple and robust policy, isn't 
+> it?
 
-After removing VM_EXECUTABLE and mm->num_exe_file_vmas mm->exe_file
-will never becomes NULL automatically. Patch for this not commited yet,
-but I hope it will be in 3.6.
+You are right, to a point :)
 
->
-> 	Cyrill
+> > > Please apply Steve's fix, fix it yourself or revert the 
+> > > changes that regressed printk().
+> > 
+> > I thought Steve's patch was just a RFC thing, is it really 
+> > something that everyone wants to see applied?
+> 
+> You mean the adding of an API to flush buffered output when 
+> that's the desired outcome? Why the heck should we *not* want 
+> that? Either I'm the weird one or you are being difficult ;-)
 
+Sorry, no, I was referring to the fact that he said he didn't really
+like it because of the timestamp garbage in the line.
+
+thanks,
+
+greg k-h
