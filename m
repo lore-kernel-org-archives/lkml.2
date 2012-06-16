@@ -1,205 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758819Ab2FPAZU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Jun 2012 20:25:20 -0400
-Received: from mga09.intel.com ([134.134.136.24]:13531 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757228Ab2FPAZS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Jun 2012 20:25:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="154017783"
-Subject: Re: [PATCH 1/2] x86, irq: update irq_cfg domain unless the new
- affinity is a subset of the current domain
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: yinghai@kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org,
-        gorcunov@openvz.org, Ingo Molnar <mingo@kernel.org>
-Date: Fri, 15 Jun 2012 17:25:20 -0700
-References: <1337643880.1997.166.camel@sbsiddha-desk.sc.intel.com>
-	 <1337644682-19854-1-git-send-email-suresh.b.siddha@intel.com>
-	 <20120606172017.GA4777@dhcp-26-207.brq.redhat.com>
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1339806320.3475.68.camel@sbsiddha-desk.sc.intel.com>
-Mime-Version: 1.0
+	id S1758864Ab2FPA20 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Jun 2012 20:28:26 -0400
+Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:18052 "EHLO
+	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758118Ab2FPA2Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Jun 2012 20:28:25 -0400
+From: Greg Pearson <greg.pearson@hp.com>
+To: tj@kernel.org, hpa@linux.intel.com, akpm@linux-foundation.org,
+        shangw@linux.vnet.ibm.com, mingo@elte.hu
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, greg.pearson@hp.com
+Subject: [PATCH v2] mm/memblock: fix overlapping allocation when doubling reserved array
+Date: Fri, 15 Jun 2012 18:28:16 -0600
+Message-Id: <1339806496-17435-1-git-send-email-greg.pearson@hp.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-06-06 at 16:02 -0700, Suresh Siddha wrote:
-> On Wed, 2012-06-06 at 19:20 +0200, Alexander Gordeev wrote:
-> > 
-> > Suresh,
-> > 
-> > I thought you posted these patches for reference and held off with my comments
-> > until you are collecting the data. But since Ingo picked the patches I will
-> > sound my concerns in this thread.
-> 
-> These are tested patches and I am ok with Ingo picking it up for getting
-> further baked in -tip. About the data collection, I have to find the
-> right system/bios to run the tests for power-aware/round-robin interrupt
-> routing. Anyways logical xapic mode already has this capability and we
-> are adding the capability for x2apic cluster mode here. And also,
-> irqbalance has to ultimately take advantage of this by specifying
-> multiple cpu's when migrating an interrupt.
-> 
-> Only concern I have with this patchset is what I already mentioned in
-> the changelog of the second patch. i.e., it reduces the number of IRQ's
-> that the platform can handle, as we reduce the available number of
-> vectors by a factor of 16.
-> 
-> If this indeed becomes a problem, then there are few options. Either
-> reserve the vectors based on the irq destination mask (rather than
-> reserving on all the cluster members) or reducing the grouping from 16
-> to a smaller number etc. I can post another patch shortly for this.
-> 
+The __alloc_memory_core_early() routine will ask memblock for a range
+of memory then try to reserve it. If the reserved region array lacks
+space for the new range, memblock_double_array() is called to allocate
+more space for the array. If memblock is used to allocate memory for
+the new array it can end up using a range that overlaps with the range
+originally allocated in __alloc_memory_core_early(), leading to possible
+data corruption.
 
-Ok, here is a quick version of the patch doing the first option I
-mentioned above. Reserve the vectors based on the irq destination mask
-and the corresponding vector domain, rather than reserving the vector on
-all the cpu's for the theoretical domain (which is an x2apic cluster).
+With this patch memblock_double_array() now calls memblock_find_in_range()
+with a narrowed candidate range so any memory allocated will not overlap
+with the original range that was being reserved. The range is narrowed by
+passing in both the starting and ending address of the previously allocated
+range. Then the range above the ending address is searched and if a candidate
+is not found, the range below the starting address is searched.
 
-Will do some more testing and post the patch with detailed changelog on
-Monday. For now, appended the patch for quick reference. Thanks.
+Changes from v1: (based on comments from Yinghai Lu)
+- use obase instead of base in memblock_add_region() for exclude start address
+- pass in both the starting and ending address of the exclude range to
+  memblock_double_array()
+- have memblock_double_array() search above the exclude ending address
+  and below the exclude starting address for a free range
+
+Signed-off-by: Greg Pearson <greg.pearson@hp.com>
 ---
+ mm/memblock.c |   15 +++++++++++----
+ 1 files changed, 11 insertions(+), 4 deletions(-)
 
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
----
- arch/x86/include/asm/apic.h           |   10 +++++++---
- arch/x86/kernel/apic/apic_noop.c      |    3 ++-
- arch/x86/kernel/apic/io_apic.c        |   28 ++++++++++++++++++++++++++--
- arch/x86/kernel/apic/x2apic_cluster.c |    7 ++++---
- 4 files changed, 39 insertions(+), 9 deletions(-)
-
-diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
-index 8619a87..af9ec10 100644
---- a/arch/x86/include/asm/apic.h
-+++ b/arch/x86/include/asm/apic.h
-@@ -303,10 +303,12 @@ struct apic {
- 	int disable_esr;
- 
- 	int dest_logical;
-+	bool sub_domain;
- 	unsigned long (*check_apicid_used)(physid_mask_t *map, int apicid);
- 	unsigned long (*check_apicid_present)(int apicid);
- 
--	bool (*vector_allocation_domain)(int cpu, struct cpumask *retmask);
-+	bool (*vector_allocation_domain)(int cpu, struct cpumask *retmask,
-+					 const struct cpumask *mask);
- 	void (*init_apic_ldr)(void);
- 
- 	void (*ioapic_phys_id_map)(physid_mask_t *phys_map, physid_mask_t *retmap);
-@@ -615,7 +617,8 @@ default_cpu_mask_to_apicid_and(const struct cpumask *cpumask,
- 			       unsigned int *apicid);
- 
- static inline bool
--flat_vector_allocation_domain(int cpu, struct cpumask *retmask)
-+flat_vector_allocation_domain(int cpu, struct cpumask *retmask,
-+			      const struct cpumask *mask)
- {
- 	/* Careful. Some cpus do not strictly honor the set of cpus
- 	 * specified in the interrupt destination when using lowest
-@@ -631,7 +634,8 @@ flat_vector_allocation_domain(int cpu, struct cpumask *retmask)
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 952123e..fee3ad9 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -184,7 +184,8 @@ static void __init_memblock memblock_remove_region(struct memblock_type *type, u
+ 	}
  }
  
- static inline bool
--default_vector_allocation_domain(int cpu, struct cpumask *retmask)
-+default_vector_allocation_domain(int cpu, struct cpumask *retmask,
-+				 const struct cpumask *mask)
+-static int __init_memblock memblock_double_array(struct memblock_type *type)
++static int __init_memblock memblock_double_array(struct memblock_type *type,
++			phys_addr_t exclude_start, phys_addr_t exclude_end)
  {
- 	cpumask_copy(retmask, cpumask_of(cpu));
- 	return true;
-diff --git a/arch/x86/kernel/apic/apic_noop.c b/arch/x86/kernel/apic/apic_noop.c
-index 65c07fc..ebdd349 100644
---- a/arch/x86/kernel/apic/apic_noop.c
-+++ b/arch/x86/kernel/apic/apic_noop.c
-@@ -100,7 +100,8 @@ static unsigned long noop_check_apicid_present(int bit)
- 	return physid_isset(bit, phys_cpu_present_map);
- }
+ 	struct memblock_region *new_array, *old_array;
+ 	phys_addr_t old_size, new_size, addr;
+@@ -222,7 +223,12 @@ static int __init_memblock memblock_double_array(struct memblock_type *type)
+ 		new_array = kmalloc(new_size, GFP_KERNEL);
+ 		addr = new_array ? __pa(new_array) : 0;
+ 	} else {
+-		addr = memblock_find_in_range(0, MEMBLOCK_ALLOC_ACCESSIBLE, new_size, sizeof(phys_addr_t));
++		addr = memblock_find_in_range(exclude_end,
++			MEMBLOCK_ALLOC_ACCESSIBLE,
++			new_size, sizeof(phys_addr_t));
++		if (!addr)
++			addr = memblock_find_in_range(0, exclude_start,
++				new_size, sizeof(phys_addr_t));
+ 		new_array = addr ? __va(addr) : 0;
+ 	}
+ 	if (!addr) {
+@@ -399,7 +405,8 @@ repeat:
+ 	 */
+ 	if (!insert) {
+ 		while (type->cnt + nr_new > type->max)
+-			if (memblock_double_array(type) < 0)
++			/* Avoid possible overlap if range is being reserved */
++			if (memblock_double_array(type, obase, obase+size) < 0)
+ 				return -ENOMEM;
+ 		insert = true;
+ 		goto repeat;
+@@ -450,7 +457,7 @@ static int __init_memblock memblock_isolate_range(struct memblock_type *type,
  
--static bool noop_vector_allocation_domain(int cpu, struct cpumask *retmask)
-+static bool noop_vector_allocation_domain(int cpu, struct cpumask *retmask,
-+					  struct cpumask *mask)
- {
- 	if (cpu != 0)
- 		pr_warning("APIC: Vector allocated for non-BSP cpu\n");
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 99a794d..3d1c37c 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -1126,7 +1126,18 @@ __assign_irq_vector(int irq, struct irq_cfg *cfg, const struct cpumask *mask)
- 	old_vector = cfg->vector;
- 	if (old_vector) {
- 		cpumask_and(tmp_mask, mask, cpu_online_mask);
--		if (cpumask_subset(tmp_mask, cfg->domain)) {
-+		/*
-+		 * If the APIC driver says it can't reliably route the
-+		 * interrupt to some subset of the domain members and the
-+		 * incoming affinity mask is already a subset of the domain,
-+		 * then we are done. We will keep the vector assigned in all
-+		 * the domain members.
-+		 *
-+		 * Or if the new mask is same as the existing domain, then
-+		 * also nothing more to do here.
-+		 */
-+		if ((!apic->sub_domain && cpumask_subset(tmp_mask, cfg->domain))
-+		    || (cpumask_equal(tmp_mask, cfg->domain))) {
- 			free_cpumask_var(tmp_mask);
- 			return 0;
- 		}
-@@ -1139,9 +1150,22 @@ __assign_irq_vector(int irq, struct irq_cfg *cfg, const struct cpumask *mask)
- 		int vector, offset;
- 		bool more_domains;
+ 	/* we'll create at most two more regions */
+ 	while (type->cnt + 2 > type->max)
+-		if (memblock_double_array(type) < 0)
++		if (memblock_double_array(type, 0, MEMBLOCK_ALLOC_ACCESSIBLE) < 0)
+ 			return -ENOMEM;
  
--		more_domains = apic->vector_allocation_domain(cpu, tmp_mask);
-+		more_domains =
-+			apic->vector_allocation_domain(cpu, tmp_mask, mask);
- 
- 		if (cpumask_subset(tmp_mask, cfg->domain)) {
-+			/*
-+			 * If the APIC driver can route the interrupt
-+			 * to some subset of the domain, then we can
-+			 * cleanup the vector allocation for other members.
-+			 */
-+			if (apic->sub_domain &&
-+			    !cpumask_equal(tmp_mask, cfg->domain)) {
-+				cpumask_andnot(cfg->old_domain, cfg->domain,
-+					       tmp_mask);
-+				cfg->move_in_progress = 1;
-+				cpumask_and(cfg->domain, cfg->domain, tmp_mask);
-+			}
- 			free_cpumask_var(tmp_mask);
- 			return 0;
- 		}
-diff --git a/arch/x86/kernel/apic/x2apic_cluster.c b/arch/x86/kernel/apic/x2apic_cluster.c
-index 943d03f..46cbbe1 100644
---- a/arch/x86/kernel/apic/x2apic_cluster.c
-+++ b/arch/x86/kernel/apic/x2apic_cluster.c
-@@ -212,10 +212,10 @@ static int x2apic_cluster_probe(void)
- /*
-  * Each x2apic cluster is an allocation domain.
-  */
--static bool cluster_vector_allocation_domain(int cpu, struct cpumask *retmask)
-+static bool cluster_vector_allocation_domain(int cpu, struct cpumask *retmask,
-+					     const struct cpumask *mask)
- {
--	cpumask_clear(retmask);
--	cpumask_copy(retmask, per_cpu(cpus_in_cluster, cpu));
-+	cpumask_and(retmask, mask, per_cpu(cpus_in_cluster, cpu));
- 	return true;
- }
- 
-@@ -233,6 +233,7 @@ static struct apic apic_x2apic_cluster = {
- 	.target_cpus			= online_target_cpus,
- 	.disable_esr			= 0,
- 	.dest_logical			= APIC_DEST_LOGICAL,
-+	.sub_domain			= true,
- 	.check_apicid_used		= NULL,
- 	.check_apicid_present		= NULL,
- 
-
+ 	for (i = 0; i < type->cnt; i++) {
+-- 
+1.7.5.4
 
